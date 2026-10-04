@@ -293,16 +293,16 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The game list server (configure.py --game-browser): hosted games are\n"
 		"listed there, and System Link shows its games; empty for none." },
-	{ "network.list_hosted_games", _config_boolean, "true", "HALO_NET_LIST_GAMES", _environment_value, _platform_all,
+	{ "network.list_hosted_games", _config_boolean, "false", "HALO_NET_LIST_GAMES", _environment_value, _platform_all,
 		"List the system link games this machine hosts on network.browser_url,\n"
-		"where anyone can find and join them. False keeps them to invites and\n"
-		"the local network." },
-	{ "network.report_joined_games", _config_boolean, "true", "HALO_NET_REPORT_GAMES", _environment_value,
+		"where anyone can find and join them. False (this build's default: an\n"
+		"opt-in, Settings > Network) keeps them to invites and the local network." },
+	{ "network.report_joined_games", _config_boolean, "false", "HALO_NET_REPORT_GAMES", _environment_value,
 		_platform_all,
 		"When an internet game this machine joined ends, send network.browser_url\n"
 		"its scores as this machine saw them, with this copy's player ID, so that\n"
-		"games whose host does not report them are recorded too. False sends\n"
-		"nothing." },
+		"games whose host does not report them are recorded too. False (this\n"
+		"build's default: an opt-in, Settings > Network) sends nothing." },
 #endif
 	{ "discord.application_id", _config_string, "\"1553978809840050229\"", "HALO_DISCORD_APPLICATION",
 		_environment_value, _platform_desktop,
