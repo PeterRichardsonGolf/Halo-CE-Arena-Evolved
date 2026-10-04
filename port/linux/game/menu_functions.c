@@ -1458,6 +1458,12 @@ static boolean coop_begin(short controller)
 {
 	struct player_profile profile;
 
+	/* (a lobby left for Multiplayer keeps its network game a while: co-op is
+	not one, and its pause menu would be a multiplayer map's, which the
+	campaign's maps have not; as main_menu_initialize) */
+	dispose_global_network_game_client();
+	dispose_global_network_game_server();
+	network_game_accept_remote_connections(FALSE);
 	player_spawn_count = 1;
 	player_ui_reset_single_player_local_player_controllers();
 	if (!campaign_profile(controller, &profile))
@@ -3715,7 +3721,9 @@ static void lobby_update(struct widget_instance *list)
 		gametype[NUMBEROF(gametype) - 1] = 0;
 		usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\n%d of %d players\r\n\r\n%s", gametype,
 			engine_names[PIN(game->variant.game_engine_index, 0, 5)], lobby_player_count, game->maximum_players,
-			seconds > 0 ? L"Starting in:" : game->machine_count < 2 ? L"Waiting for players" : L"");
+			/* (one computer's split screen starts with its own players alone) */
+			seconds > 0 ? L"Starting in:" :
+				game->machine_count < 2 && lobby_player_count < 2 ? L"Waiting for players" : L"");
 		text[NUMBEROF(text) - 1] = 0;
 		if (seconds > 0)
 		{

@@ -2966,12 +2966,49 @@ boolean server_has_a_player_on_each_machine(
 	return TRUE;
 }
 
+/* port: one computer's split screen in a network game: the host's own machine
+alone, with two or more of its players, plays without a second computer
+(a machine that joins later is in the game as any other) */
+static boolean server_has_local_split_screen(
+	struct network_game_server *server)
+{
+	long player_count = 0;
+	long client_machine_index;
+
+	for (client_machine_index = 0;
+		client_machine_index < MAXIMUM_NETWORK_MACHINE_COUNT;
+		client_machine_index++)
+	{
+		struct network_game_server_client_machine *client_machine =
+			&server->client_machines[client_machine_index];
+		long player_index;
+
+		if (!network_game_server_client_machine_is_joined_to_game(server, client_machine))
+			continue;
+		if (!network_game_server_client_machine_is_local(server, client_machine))
+			return FALSE;
+		for (player_index = 0;
+			player_index < MAXIMUM_NETWORK_PLAYER_COUNT;
+			player_index++)
+		{
+			if (network_player_is_valid(&server->game.players[player_index]) &&
+				server->game.players[player_index].machine_index ==
+					client_machine->machine_index)
+			{
+				player_count++;
+			}
+		}
+	}
+
+	return player_count >= 2;
+}
+
 boolean server_has_enough_machines(
 	struct network_game_server *server)
 {
 	boolean has_enough_machines;
 	long minimum_machine_count =
-		network_game_is_splitscreen_local() ? 1 : 2;
+		network_game_is_splitscreen_local() || server_has_local_split_screen(server) ? 1 : 2;
 	long machine_count = 0;
 	long client_machine_index;
 
@@ -3642,11 +3679,12 @@ void network_game_server_update_countdown(
 				else
 				{
 					if (network_game_should_accept_remote_connections() == FALSE ||
-						network_game_server_get_client_machine_count(server) > 1)
+						network_game_server_get_client_machine_count(server) > 1 ||
+						server_has_local_split_screen(server))
 					{
 						unsigned long countdown;
 
-						if (network_game_is_splitscreen_local())
+						if (network_game_is_splitscreen_local() || server_has_local_split_screen(server))
 							countdown = NETWORK_GAME_SPLITSCREEN_COUNTDOWN_TIME;
 						else
 							countdown = NETWORK_GAME_COUNTDOWN_TIME;
