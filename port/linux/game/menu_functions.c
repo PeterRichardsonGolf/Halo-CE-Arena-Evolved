@@ -3721,9 +3721,9 @@ static void lobby_update(struct widget_instance *list)
 		gametype[NUMBEROF(gametype) - 1] = 0;
 		usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\n%d of %d players\r\n\r\n%s", gametype,
 			engine_names[PIN(game->variant.game_engine_index, 0, 5)], lobby_player_count, game->maximum_players,
-			/* (one computer's split screen starts with its own players alone) */
+			/* (a host starts with its own players alone: one is enough) */
 			seconds > 0 ? L"Starting in:" :
-				game->machine_count < 2 && lobby_player_count < 2 ? L"Waiting for players" : L"");
+				game->machine_count < 2 && lobby_player_count < 1 ? L"Waiting for players" : L"");
 		text[NUMBEROF(text) - 1] = 0;
 		if (seconds > 0)
 		{

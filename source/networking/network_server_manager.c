@@ -2966,10 +2966,10 @@ boolean server_has_a_player_on_each_machine(
 	return TRUE;
 }
 
-/* port: one computer's split screen in a network game: the host's own machine
-alone, with two or more of its players, plays without a second computer
-(a machine that joins later is in the game as any other) */
-static boolean server_has_local_split_screen(
+/* port: the host's own machine alone, with one or more of its players (split
+screen, or one player), plays without a second computer; a machine that
+joins later joins the game under way (network_game_server_start_late_joiner) */
+static boolean server_host_plays_alone(
 	struct network_game_server *server)
 {
 	long player_count = 0;
@@ -3000,7 +3000,7 @@ static boolean server_has_local_split_screen(
 		}
 	}
 
-	return player_count >= 2;
+	return player_count >= 1;
 }
 
 boolean server_has_enough_machines(
@@ -3008,7 +3008,7 @@ boolean server_has_enough_machines(
 {
 	boolean has_enough_machines;
 	long minimum_machine_count =
-		network_game_is_splitscreen_local() || server_has_local_split_screen(server) ? 1 : 2;
+		network_game_is_splitscreen_local() || server_host_plays_alone(server) ? 1 : 2;
 	long machine_count = 0;
 	long client_machine_index;
 
@@ -3680,11 +3680,11 @@ void network_game_server_update_countdown(
 				{
 					if (network_game_should_accept_remote_connections() == FALSE ||
 						network_game_server_get_client_machine_count(server) > 1 ||
-						server_has_local_split_screen(server))
+						server_host_plays_alone(server))
 					{
 						unsigned long countdown;
 
-						if (network_game_is_splitscreen_local() || server_has_local_split_screen(server))
+						if (network_game_is_splitscreen_local() || server_host_plays_alone(server))
 							countdown = NETWORK_GAME_SPLITSCREEN_COUNTDOWN_TIME;
 						else
 							countdown = NETWORK_GAME_COUNTDOWN_TIME;
@@ -3975,7 +3975,8 @@ static boolean network_game_server_setup_game_from_playlist(
 		ustrncpy(server->game.name, machine_name, NETWORK_GAME_NAME_LENGTH - 1);
 		server->game.name[NETWORK_GAME_NAME_LENGTH - 1] = L'\0';
 		server->game.map.version = 0;
-		server->game.minimum_players = 2;
+		/* port: 1, so that a host alone can start (server_host_plays_alone) */
+		server->game.minimum_players = 1;
 		server->game.maximum_players = MAXIMUM_NETWORK_PLAYER_COUNT;
 		network_game_server_port_settings_apply(server);
 		network_game_server_variant_options(&server->game.variant, &server->game.variant_options);
