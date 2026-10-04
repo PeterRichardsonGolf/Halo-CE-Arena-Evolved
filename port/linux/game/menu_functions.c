@@ -498,12 +498,32 @@ static void server_browser_initialize(struct widget_instance *screen)
 	}
 }
 
+/* (game.h's) */
+boolean game_in_progress(void);
+
+/* port (from cybersecurity/halo-ce-universal#67, saulob's in-game settings):
+in a game, the pause menu's SETTINGS edits player 1's active profile, which
+campaign_profile cannot find there (it reads the profiles' files by string
+lists a game's map has not); its OK puts the controller settings into the
+game's copy of the profile too (profile_save_changes) */
+static long pause_profile_edited = NONE;
+
 /* begins editing player 1's profile (as the campaign has it); FALSE if
 there is none */
 boolean pc_menu_profile_edit_begin(void)
 {
 	struct player_profile profile;
+	long active = player_ui_get_active_player_profile_index(0);
 
+	pause_profile_edited = NONE;
+	if (game_in_progress() && active != NONE)
+	{
+		player_ui_begin_editing_profile(active);
+		if (!player_ui_get_edit_player_profile())
+			return FALSE;
+		pause_profile_edited = active;
+		return TRUE;
+	}
 	if (!campaign_profile(0, &profile))
 		return FALSE;
 	player_ui_begin_editing_profile(player_ui_get_active_player_profile_index(0));
@@ -1124,6 +1144,13 @@ static void mods_restart_if_changed(void)
 
 	if (!strcmp(mod ? mod : "", started ? started : ""))
 		return;
+	/* (not from a game's pause menu: its progress since the last checkpoint
+	would go) */
+	if (game_in_progress())
+	{
+		platform_log("mods: %s chosen; it plays at the next start", mod ? mod : "stock");
+		return;
+	}
 	platform_log("mods: %s chosen; starting again", mod ? mod : "stock");
 	if (!platform_restart())
 		platform_log("mods: cannot start again here; the mod plays at the next start");
@@ -3550,8 +3577,28 @@ static boolean profile_save_changes(struct widget_instance *widget, boolean *wid
 {
 	if (player_ui_edit_profile_is_dirty())
 	{
+		struct player_profile *edited = player_ui_get_edit_player_profile();
+		struct player_profile_controller_settings controls;
+		long applied = pause_profile_edited;
+
+		if (edited)
+			controls = edited->controller_settings;
+		pause_profile_edited = NONE;
 		if (player_ui_save_profile())
+		{
+			/* (in a game: the game's copy of the profile, which the save does
+			not touch, gets the controller settings now, as #67's) */
+			if (edited && applied != NONE && player_ui_get_active_player_profile_index(0) == applied)
+			{
+				struct player_profile active;
+
+				player_ui_get_active_player_profile(0, &active);
+				active.controller_settings = controls;
+				player_ui_set_active_player_profile(0, applied, &active);
+				platform_log("menus: the profile's controller settings applied in the game");
+			}
 			return TRUE;
+		}
 		platform_log("menus: could not save the profile's changes");
 		return campaign_fail();
 	}
