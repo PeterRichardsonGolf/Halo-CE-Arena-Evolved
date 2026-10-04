@@ -360,13 +360,14 @@ def LOADOUT_HELPS(slot: str) -> list:
 
 STRING_OVERRIDES.update({
     f"{MT}/multiplayer_options": ["JOIN GAME", "CREATE GAME", "INTERNET", "LAN", "DIRECT LINK", "EDIT GAMETYPES",
-                                  "SERVER BROWSER", "CO-OP CAMPAIGN"],
+                                  "SERVER BROWSER", "CO-OP CAMPAIGN", "SPLIT SCREEN"],
     f"{MT}/multiplayer_option_descriptions": [
         "Browse the games on the\\nInternet.",
         "Join a multiplayer game on\\nyour LAN.",
         "Join a game by its invite link,\\nor one a Discord invite\\nreached.",
         "Host a game on the Internet:\\nplayers join by its invite\\nlink or Discord.",
         "Host a game on your LAN\\nonly.",
+        "Multiplayer on this computer\\nin split screen, as on the\\nXbox: up to four players.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
     ],
@@ -431,7 +432,9 @@ WIDGET_PATCHES = {
     ]},
     # (Co-op, after Create Game's: _coop)
     f"{MT}/multiplayer_type_select_list": {"insert_before": {
-        f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="309"/>'],
+        f"{MT}/multiplayer_type_gametypes_item": [
+            f'<child widget="{MT}/multiplayer_type_split_screen_item" y="302"/>',
+            f'<child widget="{MT}/multiplayer_type_coop_item" y="334"/>'],
     }},
     f"{MT}/join_game/header_join_game": {"children": [
         f'<child widget="{MT}/join_game/header_server_browser"/>',
@@ -863,6 +866,23 @@ def _item_options_extras() -> list:
     return lines
 
 
+def _split_screen() -> list:
+    """Split Screen: the Xbox's split screen multiplayer, which the PC version
+    has not, from Multiplayer: the Xbox's own screens (ui.map's split_screen,
+    the map's tags: menu_tags.c's tag_named), from pressing START to join to
+    the pregame, whose split screen game initialize hosts a game no other
+    machine joins"""
+    return _widget(f"{MT}/multiplayer_type_split_screen_item",
+                   [("type", "text"), ("left", 51), ("width", 232), ("height", 32), ("bitmap", "bitmaps/list_item_bkd"),
+                    ("string_list", f"{MT}/multiplayer_options"), ("string_index", 8), ("font", "ui\\large_ui"),
+                    ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 5)],
+                   [f'<on event="a" open="{SPLIT_SCREEN_JOIN}"/>', f'<on event="start" open="{SPLIT_SCREEN_JOIN}"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>'])
+
+
+SPLIT_SCREEN_JOIN = "ui\\shell\\main_menu\\multiplayer_type_select\\split_screen\\4way_profile_select\\4way_start2join_screen"
+
+
 def multiplayer_files() -> dict:
     """the port's multiplayer widgets: the browser's additions, the server
     settings, the lobby"""
@@ -873,6 +893,7 @@ def multiplayer_files() -> dict:
         f"{MT}/server_settings".replace("/", ".") + ".xml": head + _server_settings() + ["</menus>", ""],
         f"{MT}/lobby".replace("/", ".") + ".xml": head + _lobby() + ["</menus>", ""],
         f"{MT}/coop".replace("/", ".") + ".xml": head + _coop() + ["</menus>", ""],
+        f"{MT}/split_screen".replace("/", ".") + ".port.xml": head + _split_screen() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/item_options_edit".replace("/", ".") + ".port.xml": head + _item_options_extras() + ["</menus>", ""],
     }
 
