@@ -1452,6 +1452,12 @@ unsigned char pc_menu_coop_players(void)
 	return player_spawn_count >= 2;
 }
 
+/* (networking/network_game_globals.c's, declared here as the menus' other
+network calls are) */
+void dispose_global_network_game_client(void);
+void dispose_global_network_game_server(void);
+void network_game_accept_remote_connections(boolean accept_remote_connections);
+
 /* "port coop begin": two players, player 1 on its profile (campaign_profile)
 and the controller that chose co-op */
 static boolean coop_begin(short controller)
