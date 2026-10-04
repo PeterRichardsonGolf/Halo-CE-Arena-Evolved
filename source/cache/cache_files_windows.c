@@ -208,7 +208,10 @@ enum
 
 	SOLO_CACHE_FILE_MAXIMUM_SIZE = 0x11600000,
 	MAIN_MENU_CACHE_FILE_MAXIMUM_SIZE = 0x02300000,
-	MULTIPLAYER_CACHE_FILE_MAXIMUM_SIZE = 0x02F00000,
+	/* port: 80 MB, not 47: modded multiplayer maps (Halo CE+ X's Rat Race
+	is 64 MB) fit as they did with their mods' patched executables; a cache
+	file of the old size is made again (cache_files_open_cache_files) */
+	MULTIPLAYER_CACHE_FILE_MAXIMUM_SIZE = 0x05000000,
 };
 
 /* ---------- macros */
