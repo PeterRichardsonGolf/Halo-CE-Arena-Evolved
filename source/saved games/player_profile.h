@@ -37,6 +37,14 @@ enum
 	_button_preset_swap_a_and_left_trigger,
 	_button_preset_swap_b_and_left_trigger,
 	_button_preset_swap_b_and_right_thumb,
+	/* port: Anniversary's (and the Master Chief Collection's) layouts */
+	_button_preset_bumper_jumper,
+	_button_preset_recon,
+	_button_preset_hero,
+	_button_preset_the_duke,
+	_button_preset_anniversary,
+	/* port: the Master Chief Collection's Universal Reclaimer */
+	_button_preset_universal_reclaimer,
 	NUMBER_OF_BUTTON_PRESETS
 };
 

@@ -423,6 +423,26 @@ void input_abstraction_update_device_changes(
 	return;
 }
 
+/* port: a d-pad direction moves the player unless the button layout binds it
+to a control (Universal Reclaimer's flashlight and grenades: pressing them
+does not also step) */
+static boolean input_abstraction_dpad_moves(
+	long controller_index,
+	struct gamepad_state const *gamepad,
+	short button)
+{
+	short control_index;
+
+	if (!gamepad->buttons[button])
+		return FALSE;
+	for (control_index = 0; control_index < NUMBER_OF_GAME_CONTROLS; control_index++)
+	{
+		if (input_abstraction_globals.player_control_preferences[controller_index].game_control_to_xbox_buttons[control_index] == button)
+			return FALSE;
+	}
+	return TRUE;
+}
+
 void input_abstraction_update(
 	void)
 {
@@ -553,11 +573,11 @@ void input_abstraction_update(
 			switch (input_abstraction_globals.player_control_preferences[controller_index].joystick_controls)
 			{
 				case _joystick_controls_default:
-					if (gamepad->buttons[_gamepad_binary_button_dpad_left])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_left))
 					{
 						state->strafe = 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_right])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_right))
 					{
 						state->strafe = -1.f;
 					}
@@ -565,11 +585,11 @@ void input_abstraction_update(
 					{
 						state->strafe = -left_stick.x;
 					}
-					if (gamepad->buttons[_gamepad_binary_button_dpad_up])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_up))
 					{
 						state->forward_movement = 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_down])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_down))
 					{
 						state->forward_movement = -1.f;
 					}
@@ -581,11 +601,11 @@ void input_abstraction_update(
 					state->pitch = (invert_look ? -1.f : 1.f) * right_stick.y;
 					break;
 				case _joystick_controls_southpaw:
-					if (gamepad->buttons[_gamepad_binary_button_dpad_left])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_left))
 					{
 						state->yaw = 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_right])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_right))
 					{
 						state->yaw = -1.f;
 					}
@@ -593,11 +613,11 @@ void input_abstraction_update(
 					{
 						state->yaw = -left_stick.x;
 					}
-					if (gamepad->buttons[_gamepad_binary_button_dpad_up])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_up))
 					{
 						state->pitch = invert_look ? -1.f : 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_down])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_down))
 					{
 						state->pitch = invert_look ? 1.f : -1.f;
 					}
@@ -609,11 +629,11 @@ void input_abstraction_update(
 					state->strafe = -right_stick.x;
 					break;
 				case _joystick_controls_legacy:
-					if (gamepad->buttons[_gamepad_binary_button_dpad_left])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_left))
 					{
 						state->yaw = 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_right])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_right))
 					{
 						state->yaw = -1.f;
 					}
@@ -621,11 +641,11 @@ void input_abstraction_update(
 					{
 						state->yaw = -left_stick.x;
 					}
-					if (gamepad->buttons[_gamepad_binary_button_dpad_up])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_up))
 					{
 						state->forward_movement = 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_down])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_down))
 					{
 						state->forward_movement = -1.f;
 					}
@@ -637,11 +657,11 @@ void input_abstraction_update(
 					state->pitch = (invert_look ? -1.f : 1.f) * right_stick.y;
 					break;
 				case _joystick_controls_legacy_southpaw:
-					if (gamepad->buttons[_gamepad_binary_button_dpad_left])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_left))
 					{
 						state->strafe = 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_right])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_right))
 					{
 						state->strafe = -1.f;
 					}
@@ -649,11 +669,11 @@ void input_abstraction_update(
 					{
 						state->strafe = -left_stick.x;
 					}
-					if (gamepad->buttons[_gamepad_binary_button_dpad_up])
+					if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_up))
 					{
 						state->pitch = invert_look ? -1.f : 1.f;
 					}
-					else if (gamepad->buttons[_gamepad_binary_button_dpad_down])
+					else if (input_abstraction_dpad_moves(controller_index, gamepad, _gamepad_binary_button_dpad_down))
 					{
 						state->pitch = invert_look ? 1.f : -1.f;
 					}
