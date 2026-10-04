@@ -405,6 +405,8 @@ enum
 {
 	_text_justification_left = 0,
 	_text_justification_right,
+	/* port: draw_string.c's, for the performance overlay */
+	_text_justification_center,
 };
 
 /* ---------- macros */
@@ -2707,65 +2709,145 @@ static void screenshot_render(
 	return;
 }
 
+/* port: the frame statistics of the frame rate counter (display_framerate,
+or display.show_fps) and the performance overlay (display.performance_overlay):
+each frame counted once (split screen draws these once per view), averaged
+over half a second; the 1% low from the slowest 1% of the last frames */
+#define FRAME_STATISTICS_HISTORY 1024
+int config_boolean(const char *name);
+unsigned int halo_gpu_last_frame_draws(void);
+
+static struct
+{
+	unsigned long counted_frame_start;
+	real window_seconds;
+	real window_slowest;
+	long window_frames;
+	real history[FRAME_STATISTICS_HISTORY];
+	long history_count;
+	long history_next;
+	/* as of the last half second */
+	long frame_rate;
+	long low_frame_rate;
+	real frame_milliseconds;
+	real slowest_milliseconds;
+} frame_statistics;
+
+static void frame_statistics_update(
+	void)
+{
+	real seconds = main_globals.seconds_elapsed;
+
+	if (main_globals.frame_start_milliseconds == frame_statistics.counted_frame_start)
+		return;
+	frame_statistics.counted_frame_start = main_globals.frame_start_milliseconds;
+	frame_statistics.window_seconds += seconds;
+	frame_statistics.window_frames++;
+	if (seconds > frame_statistics.window_slowest)
+		frame_statistics.window_slowest = seconds;
+	frame_statistics.history[frame_statistics.history_next] = seconds;
+	frame_statistics.history_next = (frame_statistics.history_next + 1) % FRAME_STATISTICS_HISTORY;
+	if (frame_statistics.history_count < FRAME_STATISTICS_HISTORY)
+		frame_statistics.history_count++;
+	if (frame_statistics.window_seconds >= 0.5f)
+	{
+		/* the slowest 1% (at least one), picked one by one: a few of a
+		thousand, twice a second */
+		long slow_count = MAX(frame_statistics.history_count / 100, 1);
+		unsigned char picked[FRAME_STATISTICS_HISTORY] = { 0 };
+		real slow_seconds = 0.0f;
+		long pick, index;
+
+		for (pick = 0; pick < slow_count; pick++)
+		{
+			long slowest = NONE;
+
+			for (index = 0; index < frame_statistics.history_count; index++)
+			{
+				if (!picked[index] && (slowest == NONE ||
+					frame_statistics.history[index] > frame_statistics.history[slowest]))
+				{
+					slowest = index;
+				}
+			}
+			picked[slowest] = TRUE;
+			slow_seconds += frame_statistics.history[slowest];
+		}
+		frame_statistics.frame_rate =
+			PIN(fast_ftol(frame_statistics.window_frames / frame_statistics.window_seconds), 0, 999);
+		frame_statistics.low_frame_rate = slow_seconds > 0.0f ? PIN(fast_ftol(slow_count / slow_seconds), 0, 999) : 0;
+		frame_statistics.frame_milliseconds =
+			1000.0f * frame_statistics.window_seconds / frame_statistics.window_frames;
+		frame_statistics.slowest_milliseconds = 1000.0f * frame_statistics.window_slowest;
+		frame_statistics.window_seconds = 0.0f;
+		frame_statistics.window_slowest = 0.0f;
+		frame_statistics.window_frames = 0;
+	}
+}
+
+static const union real_argb_color *frame_rate_color(
+	long frame_rate)
+{
+	return frame_rate >= 60 ? global_real_argb_green : frame_rate >= 30 ? global_real_argb_yellow : global_real_argb_red;
+}
+
 void main_framerate_render(
 	void)
 {
-	if (display_framerate)
+	long font_tag_index = hud_globals->messaging.single_player_font.index;
+
+	frame_statistics_update();
+	if ((display_framerate || config_boolean("display.show_fps")) && font_tag_index != NONE)
 	{
-		long font_tag_index;
+		rectangle2d bounds = render.camera.window_bounds;
+		/* room for three digits under C99 snprintf, which (unlike MSVC's
+		_snprintf) keeps a byte of the count for the terminator */
+		char frame_rate_string[8];
 
-		font_tag_index = hud_globals->messaging.single_player_font.index;
-		if (font_tag_index != NONE)
+		_snprintf(
+			frame_rate_string,
+			NUMBEROF(frame_rate_string) - 1,
+			"%d",
+			(short)frame_statistics.frame_rate);
+		frame_rate_string[NUMBEROF(frame_rate_string) - 1] = 0;
+		bounds.x0 = (short)(bounds.x1 - 50);
+		bounds.y0 = (short)(bounds.y1 - 50);
+		draw_string_set_format(NONE, _text_justification_left, 0);
+		draw_string_set_color(frame_statistics.frame_rate >= 30 ? global_real_argb_green : global_real_argb_red);
+		draw_string_set_font(font_tag_index);
+		rasterizer_draw_string(&bounds, NULL, NULL, 0, frame_rate_string);
+	}
+	if (config_boolean("display.performance_overlay") && font_tag_index != NONE)
+	{
+		struct font_header *font = font_definition_get(font_tag_index);
+		short line_height = (short)MAX(font->ascending_height + font->descending_height + font->leading_height, 10);
+		char lines[3][48];
+		const union real_argb_color *colors[3];
+		rectangle2d bounds = render.camera.window_bounds;
+		short line;
+
+		_snprintf(lines[0], sizeof(lines[0]) - 1, "%ld FPS   1%% LOW %ld",
+			frame_statistics.frame_rate, frame_statistics.low_frame_rate);
+		colors[0] = frame_rate_color(frame_statistics.frame_rate);
+		_snprintf(lines[1], sizeof(lines[1]) - 1, "%.1f MS   SLOWEST %.1f MS",
+			frame_statistics.frame_milliseconds, frame_statistics.slowest_milliseconds);
+		/* (the average's colour: the slowest frames are the 1% low's) */
+		colors[1] = frame_rate_color(frame_statistics.frame_milliseconds > 0.0f ?
+			fast_ftol(1000.0f / frame_statistics.frame_milliseconds) : 0);
+		_snprintf(lines[2], sizeof(lines[2]) - 1, "%u DRAWS", halo_gpu_last_frame_draws());
+		colors[2] = global_real_argb_white;
+		/* at the top, centred: the HUD's corners hold the shields and the
+		weapon */
+		bounds.y0 = (short)(bounds.y0 + 8);
+		draw_string_set_format(NONE, _text_justification_center, 0);
+		draw_string_set_font(font_tag_index);
+		for (line = 0; line < NUMBEROF(lines); line++)
 		{
-			real frame_seconds;
-			real frame_rate_real;
-			long frame_rate;
-			rectangle2d bounds;
-			/* room for three digits under C99 snprintf, which (unlike MSVC's
-			_snprintf) keeps a byte of the count for the terminator */
-			char frame_rate_string[8];
-
-			bounds = render.camera.window_bounds;
-			/* The native ports draw at the display's refresh rate, up to
-			hundreds of frames a second: show frames per second averaged over
-			half a second, counting each frame once (split screen draws this
-			once per view), with no 100 cap. */
-			{
-				static unsigned long counted_frame_start = 0;
-				static real window_seconds = 0.0f;
-				static long window_frames = 0;
-				static long average_frame_rate = 0;
-
-				if (main_globals.frame_start_milliseconds != counted_frame_start)
-				{
-					counted_frame_start = main_globals.frame_start_milliseconds;
-					window_seconds += main_globals.seconds_elapsed;
-					window_frames++;
-					if (window_seconds >= 0.5f)
-					{
-						average_frame_rate = fast_ftol(window_frames / window_seconds);
-						window_seconds = 0.0f;
-						window_frames = 0;
-					}
-				}
-				frame_rate = PIN(average_frame_rate, 0, 999);
-				(void)frame_seconds;
-				(void)frame_rate_real;
-			}
-
-			_snprintf(
-				frame_rate_string,
-				NUMBEROF(frame_rate_string) - 1,
-				"%d",
-				(short)frame_rate);
-			frame_rate_string[NUMBEROF(frame_rate_string) - 1] = 0;
-			bounds.x0 = (short)(bounds.x1 - 50);
-			bounds.y0 = (short)(bounds.y1 - 50);
-			draw_string_set_format(NONE, _text_justification_left, 0);
-			draw_string_set_color(
-				(short)frame_rate >= 30 ? global_real_argb_green : global_real_argb_red);
-			draw_string_set_font(font_tag_index);
-			rasterizer_draw_string(&bounds, NULL, NULL, 0, frame_rate_string);
+			lines[line][sizeof(lines[line]) - 1] = 0;
+			bounds.y1 = (short)(bounds.y0 + line_height);
+			draw_string_set_color(colors[line]);
+			rasterizer_draw_string(&bounds, NULL, NULL, 0, lines[line]);
+			bounds.y0 = (short)(bounds.y0 + line_height);
 		}
 	}
 

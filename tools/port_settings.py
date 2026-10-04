@@ -51,6 +51,10 @@ SCREENS = {
              "Draw the HUD from the high-res redraws; off\ndraws the game's own pictures.", None),
             ("HIGH-RES TEXT:", "display.high_res_text", ON_OFF,
              "Draw text and titles with high-res fonts; off\ndraws the game's own.", None),
+            ("FPS COUNTER:", "display.show_fps", ON_OFF,
+             "Show the frames a second in the bottom right\ncorner.", None),
+            ("PERFORMANCE OVERLAY:", "display.performance_overlay", ON_OFF,
+             "Show the frame rate, its 1% low, the frame time\nand the draws of a frame at the top of the screen.", None),
         ],
     },
     "mouse_settings": {

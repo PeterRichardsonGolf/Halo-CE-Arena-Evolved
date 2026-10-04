@@ -415,6 +415,16 @@ static struct
 	unsigned long mirrored_bytes, streamed_bytes;
 } stats;
 
+/* the draws of the frame being drawn and of the last one presented, for the
+performance overlay (display.performance_overlay: main.c's
+main_framerate_render), which debug.gpu_stats's counts are not reset for */
+static unsigned int frame_draws, last_frame_draws;
+
+unsigned int halo_gpu_last_frame_draws(void)
+{
+	return last_frame_draws;
+}
+
 static D3DDevice *device_pointer(void)
 {
 	return (D3DDevice *)&device;
@@ -2692,6 +2702,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 		stats.immediate_draws++;
 	else
 		stats.draws++;
+	frame_draws++;
 	draw_flush();
 	state_program(entry->program);
 #ifdef HALO_ANDROID
@@ -3861,6 +3872,8 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 	}
 	device.frame++;
 	stats.presents++;
+	last_frame_draws = frame_draws;
+	frame_draws = 0;
 	if (debug_settings.statistics && device.frame % 60 == 0)
 	{
 		platform_log("frame %lu: %lu draws, %lu immediate, %lu clears, %lu target changes; skipped %lu no program, %lu no target, %lu link; "
