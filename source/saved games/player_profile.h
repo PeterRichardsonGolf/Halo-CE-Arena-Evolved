@@ -45,6 +45,9 @@ enum
 	_button_preset_anniversary,
 	/* port: the Master Chief Collection's Universal Reclaimer */
 	_button_preset_universal_reclaimer,
+	_button_preset_universal_zoom_and_shoot,
+	_button_preset_universal_bump_and_jump,
+	_button_preset_universal_green_fingers,
 	NUMBER_OF_BUTTON_PRESETS
 };
 

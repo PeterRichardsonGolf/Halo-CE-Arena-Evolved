@@ -1210,6 +1210,56 @@ static void set_local_player_controls_from_player_profile(
 			preferences.game_control_to_xbox_buttons[11] = _gamepad_binary_button_right_thumb;
 			break;
 
+		/* (the other Universal layouts as the Master Chief Collection draws
+		them for Halo 2: the flashlight and grenades on the d-pad too; Bump &
+		Jump's A swaps a left weapon, which this game has not, so it is free;
+		Green Fingers draws no flashlight, and crouches on B and the left
+		stick, of which B) */
+		case _button_preset_universal_zoom_and_shoot:
+			preferences.game_control_to_xbox_buttons[0] = _gamepad_analog_button_a;
+			preferences.game_control_to_xbox_buttons[1] = _gamepad_binary_button_dpad_right;
+			preferences.game_control_to_xbox_buttons[2] = _gamepad_analog_button_x;
+			preferences.game_control_to_xbox_buttons[3] = _gamepad_analog_button_y;
+			preferences.game_control_to_xbox_buttons[4] = _gamepad_binary_button_right_thumb;
+			preferences.game_control_to_xbox_buttons[5] = _gamepad_binary_button_dpad_up;
+			preferences.game_control_to_xbox_buttons[6] = _gamepad_analog_button_black;
+			preferences.game_control_to_xbox_buttons[7] = _gamepad_analog_button_right_trigger;
+			preferences.game_control_to_xbox_buttons[8] = _gamepad_binary_button_start;
+			preferences.game_control_to_xbox_buttons[9] = _gamepad_binary_button_back;
+			preferences.game_control_to_xbox_buttons[10] = _gamepad_analog_button_b;
+			preferences.game_control_to_xbox_buttons[11] = _gamepad_analog_button_left_trigger;
+			break;
+
+		case _button_preset_universal_bump_and_jump:
+			preferences.game_control_to_xbox_buttons[0] = _gamepad_analog_button_white;
+			preferences.game_control_to_xbox_buttons[1] = _gamepad_binary_button_dpad_right;
+			preferences.game_control_to_xbox_buttons[2] = _gamepad_analog_button_b;
+			preferences.game_control_to_xbox_buttons[3] = _gamepad_analog_button_y;
+			preferences.game_control_to_xbox_buttons[4] = _gamepad_analog_button_black;
+			preferences.game_control_to_xbox_buttons[5] = _gamepad_binary_button_dpad_up;
+			preferences.game_control_to_xbox_buttons[6] = _gamepad_analog_button_left_trigger;
+			preferences.game_control_to_xbox_buttons[7] = _gamepad_analog_button_right_trigger;
+			preferences.game_control_to_xbox_buttons[8] = _gamepad_binary_button_start;
+			preferences.game_control_to_xbox_buttons[9] = _gamepad_binary_button_back;
+			preferences.game_control_to_xbox_buttons[10] = _gamepad_binary_button_left_thumb;
+			preferences.game_control_to_xbox_buttons[11] = _gamepad_binary_button_right_thumb;
+			break;
+
+		case _button_preset_universal_green_fingers:
+			preferences.game_control_to_xbox_buttons[0] = _gamepad_analog_button_a;
+			preferences.game_control_to_xbox_buttons[1] = _gamepad_binary_button_dpad_right;
+			preferences.game_control_to_xbox_buttons[2] = _gamepad_analog_button_x;
+			preferences.game_control_to_xbox_buttons[3] = _gamepad_analog_button_y;
+			preferences.game_control_to_xbox_buttons[4] = _gamepad_binary_button_right_thumb;
+			preferences.game_control_to_xbox_buttons[5] = _gamepad_binary_button_dpad_up;
+			preferences.game_control_to_xbox_buttons[6] = _gamepad_analog_button_left_trigger;
+			preferences.game_control_to_xbox_buttons[7] = _gamepad_analog_button_right_trigger;
+			preferences.game_control_to_xbox_buttons[8] = _gamepad_binary_button_start;
+			preferences.game_control_to_xbox_buttons[9] = _gamepad_binary_button_back;
+			preferences.game_control_to_xbox_buttons[10] = _gamepad_analog_button_b;
+			preferences.game_control_to_xbox_buttons[11] = _gamepad_analog_button_black;
+			break;
+
 		case _button_preset_anniversary:
 			preferences.game_control_to_xbox_buttons[0] = _gamepad_analog_button_a;
 			preferences.game_control_to_xbox_buttons[1] = _gamepad_analog_button_b;

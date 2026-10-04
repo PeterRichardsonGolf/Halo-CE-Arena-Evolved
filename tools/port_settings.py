@@ -123,7 +123,8 @@ SCREENS = {
               ("SWAP B, R STICK", "4"),
               # (Anniversary's, player_ui.c)
               ("BUMPER JUMPER", "5"), ("RECON", "6"), ("HERO", "7"), ("THE DUKE", "8"), ("ANNIVERSARY", "9"),
-              ("RECLAIMER", "10")],
+              ("RECLAIMER", "10"), ("ZOOM & SHOOT", "11"),
+              ("BUMP & JUMP", "12"), ("GREEN FINGERS", "13")],
              "Which of the controller's buttons does what (not\nthe keyboard's: Controls Setup sets those).", None),
             ("STICK LAYOUT:", "profile.joystick_preset",
              [("DEFAULT", "0"), ("SOUTHPAW", "1"), ("LEGACY", "2"), ("LEGACY SOUTHPAW", "3")],
