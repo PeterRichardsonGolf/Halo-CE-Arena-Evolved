@@ -1110,6 +1110,25 @@ static struct widget_instance *screen_of(struct widget_instance *widget)
 	return widget;
 }
 
+/* (cache_files.c's and port_config.c's) */
+char const *cache_files_mod(void);
+char const *cache_files_mod_started(void);
+int platform_restart(void);
+
+/* after OK, another mod chosen (Settings > Mods: game.mod): the game starts
+again with it, its maps and menus being read at the start */
+static void mods_restart_if_changed(void)
+{
+	char const *mod = cache_files_mod();
+	char const *started = cache_files_mod_started();
+
+	if (!strcmp(mod ? mod : "", started ? started : ""))
+		return;
+	platform_log("mods: %s chosen; starting again", mod ? mod : "stock");
+	if (!platform_restart())
+		platform_log("mods: cannot start again here; the mod plays at the next start");
+}
+
 /* "port settings save" (OK): those changed written, and applied */
 static boolean setting_changed_save(struct widget_instance *spinner, struct pc_menu_setting *setting)
 {
@@ -4685,6 +4704,7 @@ boolean pc_menu_event_function_invoke(
 		{
 			settings_each(screen_of(widget), setting_changed_save);
 			platform_display_apply();
+			mods_restart_if_changed();
 		}
 		else if (!strcmp(name, "port settings defaults"))
 		{

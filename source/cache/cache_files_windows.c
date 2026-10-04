@@ -409,6 +409,8 @@ static void cached_map_files_delete(
 	short map_file_index);
 static void cache_files_verify_language(
 	void);
+static void cache_files_verify_mod(
+	void);
 static void cache_files_open_cache_files(
 	void);
 static void CALLBACK cache_file_read_io_completion_routine(
@@ -813,6 +815,7 @@ void cache_files_initialize(
 		cache_file_globals.requests);
 	cache_file_windows_thread_create();
 	cache_files_verify_language();
+	cache_files_verify_mod();
 	cache_files_open_cache_files();
 	cache_copy_initialize();
 
@@ -1101,6 +1104,75 @@ static void cache_files_verify_language(
 	return;
 }
 
+/* port: as a change of language, a change of mod (game.mod) empties the
+cache: a cached map is found by its name alone, and a mod's map has a stock
+map's name (cache_files_map_file_path) */
+/* port: the mod the game started with (cache_files_verify_mod): the menus
+start the game again when another is chosen (menu_functions.c) */
+static char cache_files_started_mod[128];
+
+char const *cache_files_mod_started(
+	void)
+{
+	return cache_files_started_mod;
+}
+
+static void cache_files_verify_mod(
+	void)
+{
+	struct file_reference reference;
+	char const *mod = cache_files_mod();
+	char last_mod[128] = "";
+	char current[128];
+
+	snprintf(current, sizeof(current), "%s", mod ? mod : "");
+	snprintf(cache_files_started_mod, sizeof(cache_files_started_mod), "%s", current);
+	if (file_reference_create_from_path(&reference, "z:\\last_mod.txt", FALSE))
+	{
+		if (file_open(&reference, FLAG(_permission_read_bit)))
+		{
+			unsigned long length = file_get_eof(&reference);
+
+			if (length < sizeof(last_mod) && file_read(&reference, length, last_mod))
+				last_mod[length] = 0;
+			else
+				last_mod[0] = 0;
+			file_close(&reference);
+		}
+		else
+		{
+			/* (none recorded: the stock maps', as before mods) */
+			last_mod[0] = 0;
+		}
+	}
+	if (strcmp(last_mod, current))
+	{
+		short map_file_index;
+
+		error(_error_silent, "mod changed from '%s' to '%s': emptying the map cache", last_mod, current);
+		for (map_file_index = NONE;
+			map_file_index < NUMBER_OF_CACHED_MAP_FILES;
+			map_file_index++)
+		{
+			cached_map_files_delete(map_file_index);
+		}
+		if (file_reference_create_from_path(&reference, "z:\\last_mod.txt", FALSE))
+		{
+			if (file_create(&reference) || file_exists(&reference))
+			{
+				if (file_open(&reference, FLAG(_permission_write_bit)))
+				{
+					file_set_eof(&reference, 0);
+					file_write(&reference, (unsigned long)strlen(current), current);
+					file_close(&reference);
+				}
+			}
+		}
+	}
+
+	return;
+}
+
 static void cache_files_open_cache_files(
 	void)
 {
@@ -1337,7 +1409,8 @@ static void cache_file_get_map_path(
 	const char *map_name,
 	char *path)
 {
-	sprintf(path, "%s%s.map", cache_files_map_directory(), map_name);
+	/* port: the mod's, if it has the map (cache_files_map_file_path) */
+	cache_files_map_file_path(map_name, path, 256);
 
 	return;
 }

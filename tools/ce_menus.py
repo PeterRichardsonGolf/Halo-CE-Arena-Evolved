@@ -81,6 +81,11 @@ CHILD_OFFSETS = {
        for row, offset in MULTIPLAYER_ROWS.items()},
     ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_screen",
      "ui\\shell\\main_menu\\blueline"): (64, 370),
+    # the profile menu's Change Color and About a row down, for Mods
+    # (port_settings.WIDGET_PATCHES)
+    **{("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_edit_select_list",
+        f"ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\{item}"): (0, 64)
+       for item in ("color_profile_item", "about_item")},
     # the browser's rows up under the column titles, into the place of the
     # scroll up button (hidden: the list does not scroll)
     **{("ui\\shell\\main_menu\\multiplayer_type_select\\join_game\\join_game_items_list",

@@ -57,6 +57,19 @@ SCREENS = {
              "Show the frame rate, its 1% low, the frame time\nand the draws of a frame at the top of the screen.", None),
         ],
     },
+    # (Mods: its title text, not a picture; the spinner's mods are the data
+    # root's mods/ folders, listed as the menus are read: menu_files.c)
+    "mods_setup": {
+        "screen": "mods_settings_screen",
+        "header": ("header_mods", None),
+        "title": "MODS",
+        "spacing": 30,
+        "rows": [
+            ("MOD:", "game.mod", [("STOCK", "")],
+             "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
+             "desktop"),
+        ],
+    },
     "mouse_settings": {
         "screen": "mouse_settings_screen",
         "header": ("header_profile_mouse_settings", f"{PE}/mouse_settings/header_profile_mouse_settings"),
@@ -152,6 +165,8 @@ CONTROL_ROWS = 7
 
 # the profile menu's words for what its items now open
 STRING_OVERRIDES = {
+    f"{PE}/profile_edit_options": ["CHANGE NAME", "CONTROLS SETUP", "GAMEPADS", "MOUSE SETUP", "AUDIO SETUP",
+                                   "VIDEO SETUP", "CHANGE COLOR", "SAVE CHANGES ", "NETWORK SETUP ", "ABOUT", "MODS"],
     f"{PE}/profile_edit_descriptions": [
         "Rename this profile.\\n\\n\\nProfile:",
         "Choose the keys and mouse\\nbuttons for each action.\\n\\nProfile:",
@@ -160,6 +175,7 @@ STRING_OVERRIDES = {
         "Adjust the volume of the music\\nand of everything else.\\n\\nProfile:",
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
+        "Play a mod: its maps in place\\nof the stock maps they replace.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
     ],
@@ -198,8 +214,11 @@ def _screen(folder: str, spec: dict, rows: list, list_inputs: list, list_handler
                      ['<on event="b" back="true"/>', '<on event="back" back="true"/>',
                       f'<child{attributes([("widget", f"{base}/{header}")])}/>',
                       f'<child{attributes([("widget", f"{base}/options_menu")])}/>'])
-    lines += _widget(f"{base}/{header}", [("controller", 1), ("left", 35), ("top", 11), ("width", 605), ("height", 59),
-                                          ("bitmap", header_bitmap)], [])
+    header_pairs = [("controller", 1), ("left", 35), ("top", 11), ("width", 605), ("height", 59)]
+    # (a screen with no title picture: its title in text)
+    header_pairs += ([("type", "text"), ("text", spec["title"]), ("font", "ui\\large_ui"), ("color", "#FFFFFFFF"),
+                      ("text_x", 30), ("text_y", 20)] if spec.get("title") else [("bitmap", header_bitmap)])
+    lines += _widget(f"{base}/{header}", header_pairs, [])
     lines += _widget(f"{base}/help", [("type", "text"), ("controller", 1), ("left", 68),
                                       ("top", spec.get("help_top", 350)), ("width", 482),
                                       ("height", 60), ("string_list", f"{base}/help_strings"),
@@ -308,11 +327,25 @@ def _controls_screen() -> list:
                    extra)
 
 
+def _mods_item() -> list:
+    """the profile menu's MODS, after NETWORK SETUP (WIDGET_PATCHES), opening
+    the Mods screen"""
+    screen = f"{PE}/mods_setup/mods_settings_screen"
+    return _widget(f"{PE}/mods_profile_item",
+                   [("type", "text"), ("left", 51), ("top", 309), ("width", 232), ("height", 32),
+                    ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PE}/profile_edit_options"),
+                    ("string_index", 10), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                    ("text_y", 5), ("platform", "desktop")],
+                   [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>'])
+
+
 def settings_files() -> dict:
     """the files of the port's screens, by their names in ce/"""
     files = {}
     for folder, spec in SCREENS.items():
-        files[f"{PE}/{folder}".replace("/", ".") + ".xml"] = _setting_screen(folder, spec)
+        files[f"{PE}/{folder}".replace("/", ".") + ".xml"] = _setting_screen(folder, spec) + (
+            _mods_item() if folder == "mods_setup" else [])
     files[f"{PE}/controls_setup".replace("/", ".") + ".xml"] = _controls_screen()
     return {name: ['<?xml version="1.0" encoding="UTF-8"?>',
                    "<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->",
@@ -417,6 +450,11 @@ STRING_OVERRIDES.update({
 # changes to the PC version's widgets (by our names): attributes set, all
 # their handlers replaced, children added
 WIDGET_PATCHES = {
+    # (Mods, after Network Setup: _mods_item; Change Color and About a row down,
+    # ce_menus.CHILD_OFFSETS)
+    f"{PE}/profile_edit_select_list": {"insert_before": {
+        f"{PE}/color_profile_item": [f'<child widget="{PE}/mods_profile_item"/>'],
+    }},
     # (straight to their screens: no "checking for updates" dialog, which
     # asked the PC version's servers)
     f"{MT}/multiplayer_type_join_internet_item": {"set": {"string_index": 6}, "handlers": [

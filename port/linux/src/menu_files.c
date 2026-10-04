@@ -27,6 +27,12 @@ high-res HUD's are (hud_hires.c).
 #include "expat.h"
 
 #include <SDL3/SDL.h>
+#include <ctype.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dirent.h>
+#endif
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -824,6 +830,133 @@ static int read_file(struct reader *reader, const struct menu_file *file)
 
 /* ---------- public code */
 
+/* the mods the spinner of game.mod offers (Settings > Mods): STOCK, then
+each folder of the data root's mods/ with a maps/ in it, by name; listed as
+the menus are read, so a mod added shows at the next start (plain C, not
+SDL's: the dedicated servers read these menus without SDL) */
+#define MAXIMUM_MODS 32
+#define MOD_NAME_LENGTH 64
+
+static char mod_names[MAXIMUM_MODS][MOD_NAME_LENGTH];
+static int mod_count;
+static char mods_folder[1024];
+
+static void mod_consider(const char *name)
+{
+	char maps[1200];
+	int is_folder;
+
+	/* (a name the spinner's "|" lists, and game.mod's checks, can hold) */
+	if (mod_count >= MAXIMUM_MODS || name[0] == '.' || strlen(name) >= MOD_NAME_LENGTH || strchr(name, '|') ||
+		strchr(name, '\\') || strchr(name, '/'))
+	{
+		return;
+	}
+	snprintf(maps, sizeof(maps), "%s/%s/maps", mods_folder, name);
+#ifdef _WIN32
+	{
+		DWORD attributes = GetFileAttributesA(maps);
+
+		is_folder = attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+	}
+#else
+	{
+		/* (opening it as a folder: this port's <sys/stat.h> is MSVC's) */
+		DIR *folder = opendir(maps);
+
+		is_folder = folder != NULL;
+		if (folder)
+			closedir(folder);
+	}
+#endif
+	if (is_folder)
+	{
+		strcpy(mod_names[mod_count], name);
+		mod_count++;
+	}
+}
+
+static void mods_list(void)
+{
+#ifdef _WIN32
+	char pattern[1100];
+	WIN32_FIND_DATAA found;
+	HANDLE search;
+
+	snprintf(pattern, sizeof(pattern), "%s\\*", mods_folder);
+	search = FindFirstFileA(pattern, &found);
+	if (search == INVALID_HANDLE_VALUE)
+		return;
+	do
+	{
+		if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			mod_consider(found.cFileName);
+	} while (FindNextFileA(search, &found));
+	FindClose(search);
+#else
+	DIR *folder = opendir(mods_folder);
+	struct dirent *entry;
+
+	if (!folder)
+		return;
+	while ((entry = readdir(folder)) != NULL)
+		mod_consider(entry->d_name);
+	closedir(folder);
+#endif
+}
+
+static int mod_name_compare(const void *a, const void *b)
+{
+	const unsigned char *x = (const unsigned char *)a, *y = (const unsigned char *)b;
+
+	while (*x && tolower(*x) == tolower(*y))
+	{
+		x++;
+		y++;
+	}
+	return tolower(*x) - tolower(*y);
+}
+
+static void mods_fill(struct halo_menus *menus)
+{
+	static char strings[MAXIMUM_MODS * (MOD_NAME_LENGTH + 1) + 8];
+	static char values[MAXIMUM_MODS * (MOD_NAME_LENGTH + 1) + 8];
+	long index;
+	int mod;
+
+	snprintf(mods_folder, sizeof(mods_folder), "%s/mods", platform_data_root());
+	mod_count = 0;
+	mods_list();
+	qsort(mod_names, (size_t)mod_count, sizeof(mod_names[0]), mod_name_compare);
+	/* STOCK is game.mod's "", which split keeps (menu_tags.c) */
+	strcpy(strings, "STOCK");
+	values[0] = 0;
+	for (mod = 0; mod < mod_count; mod++)
+	{
+		size_t end = strlen(strings);
+		char const *in;
+
+		strings[end++] = '|';
+		for (in = mod_names[mod]; *in; in++)
+			strings[end++] = (char)toupper((unsigned char)*in);
+		strings[end] = 0;
+		strcat(values, "|");
+		strcat(values, mod_names[mod]);
+	}
+	for (index = 0; index < menus->widget_count; index++)
+	{
+		struct halo_menu_widget *widget = &menus->widgets[index];
+
+		if (widget->setting && !strcmp(widget->setting, "game.mod"))
+		{
+			widget->strings = strings;
+			widget->values = values;
+		}
+	}
+	if (mod_count)
+		platform_log("mods: %d in %s", mod_count, mods_folder);
+}
+
 struct halo_menus const *halo_menus_load(void)
 {
 	static int read;
@@ -857,6 +990,7 @@ struct halo_menus const *halo_menus_load(void)
 	}
 	if (!reader.menus.root)
 		reader.menus.root = "main_menu";
+	mods_fill(&reader.menus);
 	menus = reader.menus;
 	succeeded = 1;
 	return &menus;

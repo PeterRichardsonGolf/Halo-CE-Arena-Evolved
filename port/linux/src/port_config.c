@@ -244,6 +244,10 @@ static const struct config_setting config_settings[] =
 	{ "game.language", _config_string, "\"\"", "HALO_LANGUAGE", _environment_value, _platform_all,
 		"The language the game asks the Xbox for: \"ja\", \"de\", \"fr\", \"es\" or \"it\";\n"
 		"empty for English. The game data decides what is translated." },
+	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
+		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
+		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"
+		"Mods chooses it, and the game starts again with it." },
 
 	{ "paths.data", _config_string, "\"\"", "HALO_DATA_ROOT", _environment_value, _platform_desktop,
 		"The folder holding the game data's maps folder; empty looks in the\n"
@@ -1447,4 +1451,53 @@ const char *config_string(const char *name)
 	const char *string = config_value(name, _config_string)->string;
 
 	return string ? string : "";
+}
+
+/* ---------- starting again (Settings > Mods: game.mod) */
+
+#if defined(__linux__) && !defined(HALO_ANDROID) && !defined(__ANDROID__)
+#include <fcntl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#endif
+
+/* starts the game again in this process, with the arguments it was started
+with (/proc/self/cmdline), its files and sockets closed as it does so that the
+new game binds the same ports: 0 where it cannot (and returns), as on Windows */
+int platform_restart(void)
+{
+#if defined(__linux__) && !defined(HALO_ANDROID) && !defined(__ANDROID__)
+	static char line[8192];
+	char *arguments[64];
+	int argument_count = 0;
+	ssize_t length = 0, got;
+	int file = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
+	ssize_t index;
+
+	if (file < 0)
+		return 0;
+	while (length < (ssize_t)sizeof(line) - 1 && (got = read(file, line + length, sizeof(line) - 1 - length)) > 0)
+		length += got;
+	close(file);
+	line[length] = 0;
+	for (index = 0; index < length && argument_count < 63; index += (ssize_t)strlen(line + index) + 1)
+		arguments[argument_count++] = line + index;
+	arguments[argument_count] = NULL;
+	if (!argument_count)
+		return 0;
+	fflush(NULL);
+	/* (closed only if the new game starts: one that cannot leaves this one
+	as it was) */
+#ifdef SYS_close_range
+	if (syscall(SYS_close_range, 3u, ~0u, 4u /* CLOSE_RANGE_CLOEXEC */) != 0)
+#endif
+	{
+		for (index = 3; index < 1024; index++)
+			fcntl((int)index, F_SETFD, FD_CLOEXEC);
+	}
+	execv("/proc/self/exe", arguments);
+	return 0;
+#else
+	return 0;
+#endif
 }

@@ -46,6 +46,17 @@ struct tag_iterator
 
 const char *cache_files_map_directory(
 	void);
+/* port: the mod played (game.mod), or NULL; a map's file, the mod's if it
+has one */
+char const *cache_files_mod(
+	void);
+void cache_files_map_file_path(
+	char const *map_name,
+	char *path,
+	long size);
+/* port: the mod the game started with ("" for none) */
+char const *cache_files_mod_started(
+	void);
 
 boolean cache_file_header_verify(
 	struct cache_file_header *header,

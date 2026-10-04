@@ -379,6 +379,45 @@ char const *cache_files_map_directory(
 	return map_directory;
 }
 
+/* port: the mod played (game.mod: a folder of the data root's mods\), or
+NULL for none; a name that is not one folder's alone is none */
+const char *config_string(const char *name);
+
+char const *cache_files_mod(
+	void)
+{
+	char const *mod = config_string("game.mod");
+
+	if (!mod || !mod[0] || strchr(mod, '\\') || strchr(mod, '/') || strstr(mod, ".."))
+		return NULL;
+	return mod;
+}
+
+/* port: a map's file: the mod's (mods\<mod>\maps\<name>.map) if it has one,
+else the map directory's; a mod replaces the maps it has and plays the rest
+as they are (CE+ X's multiplayer maps, and the campaign's) */
+void cache_files_map_file_path(
+	char const *map_name,
+	char *path,
+	long size)
+{
+	char const *mod = cache_files_mod();
+
+	if (mod)
+	{
+		HANDLE file;
+
+		snprintf(path, (size_t)size, "d:\\mods\\%s\\maps\\%s.map", mod, map_name);
+		file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+		if (file != INVALID_HANDLE_VALUE)
+		{
+			CloseHandle(file);
+			return;
+		}
+	}
+	snprintf(path, (size_t)size, "%s%s.map", cache_files_map_directory(), map_name);
+}
+
 void scenario_tags_unload(
 	void)
 {
@@ -773,7 +812,7 @@ boolean cache_files_map_plays_multiplayer(
 	build[0] = 0;
 	if (!map_name || !map_name[0])
 		return TRUE;
-	snprintf(path, sizeof(path), "%s%s.map", cache_files_map_directory(), tag_name_strip_path(map_name));
+	cache_files_map_file_path(tag_name_strip_path(map_name), path, sizeof(path));
 	file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (file != INVALID_HANDLE_VALUE)
 	{
