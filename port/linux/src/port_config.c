@@ -50,6 +50,9 @@ enum config_environment
 /* the builds a setting means something in, and is written for */
 enum
 {
+	/* an earlier version's setting, which a later one replaced: read from an
+	older file or the environment (config_carry_over), never written */
+	_platform_none = 0,
 	_platform_desktop = 1,
 	_platform_android = 2,
 	_platform_all = _platform_desktop | _platform_android,
@@ -104,13 +107,22 @@ static const struct config_setting config_settings[] =
 	{ "display.max_fps", _config_integer, "0", "HALO_MAX_FPS", _environment_value, _platform_desktop,
 		"With vsync off, the most frames a second: 0 for twice the display's\n"
 		"refresh rate, -1 for no limit (which can hang some Intel graphics)." },
-	{ "display.fps_counter", _config_string, "\"off\"", "HALO_FPS_COUNTER", _environment_value, _platform_all,
-		"The frames a second, on one line at the top of the screen, above the\n"
-		"HUD: \"top_left\", \"top_right\", or \"off\"." },
+	{ "display.performance", _config_string, "\"off\"", "HALO_PERFORMANCE", _environment_value, _platform_all,
+		"A line of performance at the top of the screen, above the HUD: \"fps\"\n"
+		"(the frames a second), \"minimal\" (and the frame time), \"full\" (and\n"
+		"the frame rate's 1% low and the draws of a frame), or \"off\"." },
+	{ "display.performance_position", _config_string, "\"top_right\"", "HALO_PERFORMANCE_POSITION",
+		_environment_value, _platform_all,
+		"Where display.performance's line is: \"top_left\" or \"top_right\"." },
+	/* (display.performance's before it: config_carry_over) */
+	{ "display.fps_counter", _config_string, "\"off\"", "HALO_FPS_COUNTER", _environment_value, _platform_none,
+		"The frames a second, at the top of the screen: \"top_left\",\n"
+		"\"top_right\", or \"off\" (before that, true for the top right)." },
 	{ "display.performance_overlay", _config_string, "\"off\"", "HALO_PERFORMANCE_OVERLAY", _environment_value,
-		_platform_all,
-		"The frame rate, its 1% low, the frame time and the draws of a frame, on\n"
-		"one line at the top of the screen: \"top_left\", \"top_right\", or \"off\"." },
+		_platform_none,
+		"The frame rate, its 1% low, the frame time and the draws of a frame, at\n"
+		"the top of the screen: \"top_left\", \"top_right\", or \"off\" (before\n"
+		"that, true for the top right)." },
 	{ "display.interpolation", _config_boolean, "true", "HALO_INTERPOLATION", _environment_value, _platform_all,
 		"Draw a frame for every display refresh, blending between the game's 30\n"
 		"ticks a second; false keeps the original 30 frames a second." },
@@ -245,8 +257,14 @@ static const struct config_setting config_settings[] =
 		"The language the game asks the Xbox for: \"ja\", \"de\", \"fr\", \"es\" or \"it\";\n"
 		"empty for English. The game data decides what is translated." },
 	{ "game.fall_damage", _config_boolean, "true", "HALO_FALL_DAMAGE", _environment_value, _platform_all,
-		"Players hurt by falls; false only by a fall from a deadly height, a pit or\n"
-		"the map's kill volumes (out of bounds). In a network game, the host's." },
+		"In the campaign, players hurt by falls; false: landings never hurt, from\n"
+		"any height (a pit and the map's kill volumes still kill). Multiplayer\n"
+		"goes by the gametype's FALL DAMAGE (Player Options) instead." },
+	{ "game.health", _config_string, "\"classic\"", "HALO_HEALTH", _environment_value, _platform_all,
+		"How players' health comes back in the campaign: \"classic\" only from\n"
+		"health packs; \"reach\" once the shields are full, to the top of the third\n"
+		"it is in; \"halo3\" once the shields are full, all of it; \"halo2\" all of\n"
+		"it as the shields recharge. Multiplayer goes by the gametype's HEALTH." },
 	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
 		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
 		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"
@@ -349,6 +367,21 @@ static const struct config_setting config_settings[] =
 	{ "debug.network_test_pickup", _config_real, "0.0", "HALO_NETWORK_TEST_PICKUP", _environment_value, _platform_all,
 		"This many seconds into an automated test game the host stands its last\n"
 		"player on a weapon, which a joining player then picks up; 0 never." },
+	{ "debug.network_test_hurt", _config_real, "0.0", "HALO_NETWORK_TEST_HURT", _environment_value, _platform_all,
+		"An automated test host leaves the first player 40% of their health, shields\n"
+		"full, this many seconds into the game; 0 never." },
+	{ "debug.network_test_flags", _config_integer, "0", "HALO_NETWORK_TEST_FLAGS", _environment_value,
+		_platform_all,
+		"Bits an automated test host sets in its game variant's flags (the port's\n"
+		"gametype options, game_engine.h: 65536 no fall damage; health 524288 REACH,\n"
+		"1048576 HALO 3, 1572864 HALO 2)." },
+	{ "debug.network_test_local_players", _config_integer, "1", "HALO_NETWORK_TEST_LOCAL_PLAYERS", _environment_value,
+		_platform_all,
+		"The players an automated test host has on its own machine (split screen,\n"
+		"1 to 4; the last controller's added first)." },
+	{ "debug.network_test_quit", _config_real, "0.0", "HALO_NETWORK_TEST_QUIT", _environment_value, _platform_all,
+		"This many seconds into an automated test game controller 1's player\n"
+		"quits, as their pause menu's QUIT does (split screen: the others stay); 0 never." },
 	{ "debug.network_test_pickup_weapon", _config_string, "\"\"", "HALO_NETWORK_TEST_PICKUP_WEAPON", _environment_value,
 		_platform_all,
 		"The weapon network_test_pickup stands the player on: the first whose tag\n"
@@ -444,6 +477,8 @@ struct config_value
 	long integer;
 	double real;
 	char *string;
+	/* set by the file or the environment, not the default (config_carry_over) */
+	int chosen;
 };
 
 static struct config_value config_values[NUMBER_OF_CONFIG_SETTINGS];
@@ -904,6 +939,13 @@ static void config_set_from_file(struct config_value *value, const struct config
 			free(value->string);
 			value->string = strdup(datum.u.s);
 		}
+		else if (datum.type == TOML_BOOLEAN && setting->platforms == _platform_none)
+		{
+			/* (an earlier version's string setting that was true or false
+			before that, read as the text: config_carry_over) */
+			free(value->string);
+			value->string = strdup(datum.u.boolean ? "true" : "false");
+		}
 		else
 		{
 			wrong_type = 1;
@@ -916,6 +958,10 @@ static void config_set_from_file(struct config_value *value, const struct config
 
 		platform_log("config.toml line %d: %s should be %s; using %s", datum.lineno, setting->name,
 			expected[setting->type], setting->default_value);
+	}
+	else
+	{
+		value->chosen = 1;
 	}
 }
 
@@ -1115,6 +1161,55 @@ static char *config_update_layout(const char *text, toml_datum_t table)
 	return out.buffer;
 }
 
+/* settings that replaced an earlier version's, which an older file (or the
+environment) still sets instead: display.performance and
+display.performance_position from display.performance_overlay (its line:
+"full") or else display.fps_counter (the frame rate: "fps"), each
+"top_left", "top_right" or "off" (true the top right, false off). The
+replacing setting keeps its value where it is set itself, as it is once
+Settings writes it; the earlier ones are left in the file, and not written
+in a new one (_platform_none) */
+static void config_carry_over(void)
+{
+	static const struct
+	{
+		const char *name;
+		const char *level;
+	} earlier[] =
+	{
+		{ "display.performance_overlay", "full" },
+		{ "display.fps_counter", "fps" },
+	};
+	struct config_value *level = &config_values[config_setting_index("display.performance")];
+	struct config_value *position = &config_values[config_setting_index("display.performance_position")];
+	size_t index;
+
+	if (level->chosen && position->chosen)
+		return;
+	for (index = 0; index < sizeof(earlier) / sizeof(earlier[0]); index++)
+	{
+		const struct config_value *value = &config_values[config_setting_index(earlier[index].name)];
+
+		if (!value->chosen || !value->string[0] || config_text_is_false(value->string))
+			continue;
+		/* (nothing holds the defaults' strings yet) */
+		if (!level->chosen)
+		{
+			free(level->string);
+			level->string = strdup(earlier[index].level);
+		}
+		if (!position->chosen)
+		{
+			free(position->string);
+			position->string = strdup(!strcmp(value->string, "top_left") ? "top_left" : "top_right");
+		}
+		platform_log("settings: %s (an earlier version's setting) is %s: display.performance \"%s\", "
+			"display.performance_position \"%s\"", earlier[index].name, value->string, level->string,
+			position->string);
+		break;
+	}
+}
+
 static void config_load(void)
 {
 	char path[1024];
@@ -1215,7 +1310,9 @@ static void config_load(void)
 			config_values[index].boolean = 0;
 			break;
 		}
+		config_values[index].chosen = 1;
 	}
+	config_carry_over();
 }
 
 static const struct config_value *config_value(const char *name, enum config_type type)

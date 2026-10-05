@@ -423,9 +423,10 @@ void input_abstraction_update_device_changes(
 	return;
 }
 
-/* port: a d-pad direction moves the player unless the button layout binds it
-to a control (Universal Reclaimer's flashlight and grenades: pressing them
-does not also step) */
+/* port: a d-pad direction moves the player, as on the Xbox, unless the button
+layout binds any d-pad direction to a control (the Universal layouts'
+flashlight and grenades): then the d-pad is for those, and its other
+directions do nothing rather than step */
 static boolean input_abstraction_dpad_moves(
 	long controller_index,
 	struct gamepad_state const *gamepad,
@@ -437,7 +438,9 @@ static boolean input_abstraction_dpad_moves(
 		return FALSE;
 	for (control_index = 0; control_index < NUMBER_OF_GAME_CONTROLS; control_index++)
 	{
-		if (input_abstraction_globals.player_control_preferences[controller_index].game_control_to_xbox_buttons[control_index] == button)
+		short bound = input_abstraction_globals.player_control_preferences[controller_index].game_control_to_xbox_buttons[control_index];
+
+		if (bound >= _gamepad_binary_button_dpad_up && bound <= _gamepad_binary_button_dpad_right)
 			return FALSE;
 	}
 	return TRUE;

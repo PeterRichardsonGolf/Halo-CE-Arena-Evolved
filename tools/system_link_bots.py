@@ -188,7 +188,10 @@ class Machine:
                 time.sleep(0.001)
 
     def joined(self):
-        self.send(message(CLIENT_JOIN_GAME_REQUEST, wide(self.name, 32) + JOIN_TOKEN))
+        # the name, the token, and (since the bans: network_messages.c) the
+        # machine's hardware id, 0x20 bytes of hex, one of its own per bot
+        hardware_id = ("%032x" % (0xB07 << 64 | self.index)).encode("ascii")
+        self.send(message(CLIENT_JOIN_GAME_REQUEST, wide(self.name, 32) + JOIN_TOKEN + hardware_id))
         self.state = "joining"
 
     def receive(self):

@@ -416,7 +416,7 @@ static struct
 } stats;
 
 /* the draws of the frame being drawn and of the last one presented, for the
-performance overlay (display.performance_overlay: main.c's
+performance line (display.performance "full": main.c's
 main_framerate_render), which debug.gpu_stats's counts are not reset for */
 static unsigned int frame_draws, last_frame_draws;
 

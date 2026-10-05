@@ -2709,9 +2709,8 @@ static void screenshot_render(
 	return;
 }
 
-/* port: the frame statistics of the frame rate counter (display_framerate,
-or display.fps_counter) and the performance overlay (display.performance_overlay):
-each frame counted once (split screen draws these once per view), averaged
+/* port: the frame statistics of the performance line (display.performance,
+or the console's display_framerate): each frame counted once (split screen draws these once per view), averaged
 over half a second; the 1% low from the slowest 1% of the last frames */
 #define FRAME_STATISTICS_HISTORY 1024
 int config_boolean(const char *name);
@@ -2785,26 +2784,66 @@ static void frame_statistics_update(
 	}
 }
 
-static const union real_argb_color *frame_rate_color(
-	long frame_rate)
+/* port: the line's colour, as the HUD's text (at 70%, the world showing
+through): its own blue, else yellow under 60 frames a second and red under
+30 */
+#define FRAME_STATISTICS_ALPHA 0.7f
+#define FRAME_STATISTICS_SCALE 0.8f
+
+static void frame_rate_color(
+	long frame_rate,
+	union real_argb_color *color)
 {
-	return frame_rate >= 60 ? global_real_argb_green : frame_rate >= 30 ? global_real_argb_yellow : global_real_argb_red;
+	if (frame_rate >= 60)
+		*color = hud_globals->messaging.state_color;
+	else
+		*color = *(frame_rate >= 30 ? global_real_argb_yellow : global_real_argb_red);
+	color->alpha = FRAME_STATISTICS_ALPHA;
 }
 
-/* port: where the counter or the overlay is drawn (display.fps_counter,
-display.performance_overlay): "top_left" or "top_right", on one line at the
-top of the view, above the HUD's corners; "off" (or false) none, and true the
-top right */
+/* port: what the performance line shows (display.performance), each level
+its setting's value and a case of main_framerate_render's */
+enum
+{
+	_performance_off,
+	_performance_fps,
+	_performance_minimal,
+	_performance_full,
+	NUMBER_OF_PERFORMANCE_LEVELS
+};
+
+static const char *const performance_level_names[NUMBER_OF_PERFORMANCE_LEVELS] =
+{
+	"off",
+	"fps",
+	"minimal",
+	"full",
+};
+
 const char *config_string(const char *name);
 
-static short frame_statistics_corner(
-	const char *setting)
+static long frame_statistics_level(
+	void)
 {
-	const char *value = config_string(setting);
+	const char *value = config_string("display.performance");
+	long level;
 
-	if (!value || !value[0] || !strcmp(value, "off") || !strcmp(value, "false"))
-		return NONE;
-	return !strcmp(value, "top_left") ? _text_justification_left : _text_justification_right;
+	for (level = 0; value && level < NUMBER_OF_PERFORMANCE_LEVELS; level++)
+	{
+		if (!strcmp(value, performance_level_names[level]))
+			return level;
+	}
+	return _performance_off;
+}
+
+/* port: where the line is drawn (display.performance_position): "top_left"
+or "top_right", at the top of the view, above the HUD's corners */
+static short frame_statistics_corner(
+	void)
+{
+	const char *value = config_string("display.performance_position");
+
+	return value && !strcmp(value, "top_left") ? _text_justification_left : _text_justification_right;
 }
 
 static void frame_statistics_draw(
@@ -2821,47 +2860,57 @@ static void frame_statistics_draw(
 
 	bounds.y0 = (short)(bounds.y0 + 2);
 	bounds.y1 = (short)(bounds.y0 + line_height);
-	bounds.x0 = (short)(bounds.x0 + 6);
-	bounds.x1 = (short)(bounds.x1 - 6);
+	bounds.x0 = (short)(bounds.x0 + 4);
+	bounds.x1 = (short)(bounds.x1 - 4);
 	draw_string_set_format(NONE, corner, 0);
 	draw_string_set_font(font_tag_index);
 	draw_string_set_color(color);
+	/* (smaller, about the line's top corner it hangs from) */
+	rasterizer_text_set_scale(FRAME_STATISTICS_SCALE,
+		(real)(corner == _text_justification_left ? bounds.x0 : bounds.x1), (real)bounds.y0);
 	rasterizer_draw_string(&bounds, NULL, NULL, 0, text);
+	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 }
 
 void main_framerate_render(
 	void)
 {
-	long font_tag_index = hud_globals->messaging.single_player_font.index;
-	short overlay_corner = frame_statistics_corner("display.performance_overlay");
-	short counter_corner = frame_statistics_corner("display.fps_counter");
+	/* (the HUD's smaller font, split screen's, else its own) */
+	long font_tag_index = hud_globals->messaging.multi_player_font.index != NONE ?
+		hud_globals->messaging.multi_player_font.index : hud_globals->messaging.single_player_font.index;
+	long level = frame_statistics_level();
+	union real_argb_color color;
+	/* room for the longest line, under C99 snprintf's terminator byte */
+	char line[80];
 
 	frame_statistics_update();
-	/* (the console's display_framerate: the counter, at the top right unless
-	the setting puts it elsewhere) */
-	if (display_framerate && counter_corner == NONE)
-		counter_corner = _text_justification_right;
+	/* (the console's display_framerate: the frame rate, where the setting
+	shows nothing) */
+	if (display_framerate && level == _performance_off)
+		level = _performance_fps;
 	if (font_tag_index == NONE)
 		return;
-	if (overlay_corner != NONE)
+	line[0] = 0;
+	switch (level)
 	{
-		/* room for the longest line, under C99 snprintf's terminator byte */
-		char line[80];
-
-		_snprintf(line, sizeof(line) - 1, "%ld FPS   1%% LOW %ld   %.1f MS   %u DRAWS",
+	case _performance_fps:
+		_snprintf(line, sizeof(line) - 1, "%ld FPS", frame_statistics.frame_rate);
+		break;
+	case _performance_minimal:
+		_snprintf(line, sizeof(line) - 1, "%ld FPS  %.1f MS", frame_statistics.frame_rate,
+			frame_statistics.frame_milliseconds);
+		break;
+	case _performance_full:
+		_snprintf(line, sizeof(line) - 1, "%ld FPS  1%% LOW %ld  %.1f MS  %u DRAWS",
 			frame_statistics.frame_rate, frame_statistics.low_frame_rate, frame_statistics.frame_milliseconds,
 			halo_gpu_last_frame_draws());
-		line[sizeof(line) - 1] = 0;
-		frame_statistics_draw(font_tag_index, overlay_corner, frame_rate_color(frame_statistics.frame_rate), line);
+		break;
 	}
-	/* (the overlay shows the frame rate already, in its corner) */
-	if (counter_corner != NONE && counter_corner != overlay_corner)
+	line[sizeof(line) - 1] = 0;
+	if (line[0])
 	{
-		char counter[16];
-
-		_snprintf(counter, sizeof(counter) - 1, "%ld FPS", frame_statistics.frame_rate);
-		counter[sizeof(counter) - 1] = 0;
-		frame_statistics_draw(font_tag_index, counter_corner, frame_rate_color(frame_statistics.frame_rate), counter);
+		frame_rate_color(frame_statistics.frame_rate, &color);
+		frame_statistics_draw(font_tag_index, frame_statistics_corner(), &color, line);
 	}
 
 	if (display_vblank_deltas)

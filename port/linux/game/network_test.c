@@ -26,7 +26,12 @@ seconds later stands them at a vehicle's driver's entrance, where a joining
 machine's player holds the action button, as getting in does)
 and debug.network_test_pickup (the last player stands on a weapon lying
 about that many seconds in, and a joining machine's player holds the action
-button a second later, to pick it up).
+button a second later, to pick it up); debug.network_test_hurt (the host
+leaves the first player 40% of their health, shields full, that many
+seconds in, as the port's health regeneration starts from).
+
+debug.network_test_flags sets bits of the host's game variant's flags (the
+port's gametype options: game_engine.h's _game_variant_..._bit).
 
 Called from the main loop every frame (main.c).
 */
@@ -102,6 +107,9 @@ static struct
 	boolean joined;
 	boolean map_set;
 	boolean player_added;
+	/* (the host's: debug.network_test_local_players, and how many added) */
+	short local_players;
+	short local_players_added;
 	real joined_seconds;
 	boolean team_set;
 	real kill_interval;
@@ -109,6 +117,11 @@ static struct
 	real vehicle_time;
 	real pickup_time;
 	char pickup_weapon[64];
+	real hurt_time;
+	boolean hurt;
+	real quit_time;
+	boolean quit;
+	unsigned long variant_flags;
 	long score_to_win;
 	long logged_time;
 } network_test;
@@ -170,6 +183,10 @@ static void network_test_read_settings(
 	snprintf(network_test.pickup_weapon, sizeof(network_test.pickup_weapon), "%s",
 		config_string("debug.network_test_pickup_weapon"));
 	network_test.score_to_win = (long)config_integer("debug.network_test_score");
+	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
+	network_test.quit_time = (real)config_real("debug.network_test_quit");
+	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
+	network_test.local_players = (short)PIN(config_integer("debug.network_test_local_players"), 1, MAXIMUM_LOCAL_PLAYERS);
 	if (network_test.mode != _network_test_off)
 		platform_log("network test: %s", setting);
 }
@@ -807,6 +824,35 @@ void network_test_update(
 					game_time_get() < approach_time + 4 * TICKS_PER_SECOND);
 			}
 		}
+		/* debug.network_test_quit: controller 1's player on this machine
+		quits, as their pause menu's QUIT does (network_game_remove_local_player),
+		once; with split screen the others stay */
+		if (network_test.quit_time > 0.0f && !network_test.quit &&
+			game_time_get() >= (long)(network_test.quit_time * TICKS_PER_SECOND))
+		{
+			network_test.quit = TRUE;
+			network_game_client_local_player_quit(0);
+			if (local_player_count() > 1)
+				player_ui_local_player_left_multiplayer_game(0);
+			platform_log("network test: controller 1's player quits");
+		}
+		/* debug.network_test_hurt: the host leaves the first player 40% of
+		their health, once */
+		if (network_test.mode == _network_test_host && network_test.hurt_time > 0.0f && !network_test.hurt &&
+			game_time_get() >= (long)(network_test.hurt_time * TICKS_PER_SECOND))
+		{
+			network_test.hurt = TRUE;
+			struct data_iterator iterator;
+			struct player_datum *player;
+
+			data_iterator_new(&iterator, player_data);
+			player = (struct player_datum *)data_iterator_next(&iterator);
+			if (player && player->unit_index != NONE)
+			{
+				object_get(player->unit_index)->object.body_vitality = 0.4f;
+				platform_log("network test: the first player hurt to 40%%");
+			}
+		}
 		/* debug.network_test_kill: the host kills the last player every so
 		often, to test deaths and respawns reaching the clients */
 		if (network_test.mode == _network_test_host && network_test.kill_interval > 0.0f &&
@@ -964,12 +1010,30 @@ void network_test_update(
 				/* debug.network_test_score: a short game, to test the next */
 				if (network_test.score_to_win > 0)
 					variant.universal_variant.score_to_win = network_test.score_to_win;
+				/* debug.network_test_flags: the port's gametype options */
+				variant.universal_variant.flags |= network_test.variant_flags;
 				player_ui_set_game_variant(&variant);
 				network_game_server_change_game_variant(global_network_game_server_get(), &variant);
 				network_test.map_set = TRUE;
 			}
-			if (!network_test.player_added && network_test.setup_seconds >= 2.0f && global_network_game_client_get())
-				network_test.player_added = network_game_client_add_player(global_network_game_client_get(), 0);
+			/* debug.network_test_local_players: split screen, a player a
+			second for the controllers from the last down to 1 (as a second
+			controller's player joined first, then player 1's) */
+			if (!network_test.player_added &&
+				network_test.setup_seconds >= 2.0f + network_test.local_players_added &&
+				global_network_game_client_get())
+			{
+				short controller = (short)(network_test.local_players - 1 - network_test.local_players_added);
+
+				if (network_game_client_add_player(global_network_game_client_get(), controller))
+				{
+					if (network_test.local_players > 1)
+						player_ui_local_player_joined_multiplayer_game(controller);
+					network_test.local_players_added++;
+					platform_log("network test: a player added for controller %d", controller + 1);
+				}
+				network_test.player_added = network_test.local_players_added >= network_test.local_players;
+			}
 			if (network_test.setup_seconds >= network_test.start_delay)
 			{
 				network_test.started = TRUE;
