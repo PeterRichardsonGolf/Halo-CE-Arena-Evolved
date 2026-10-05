@@ -1766,6 +1766,11 @@ enum
 	SCOREBOARD_PING_WIDTH = 40,
 	SCOREBOARD_COLUMN_WIDTH = SCOREBOARD_PLACE_WIDTH + SCOREBOARD_NAME_WIDTH + SCOREBOARD_SCORE_WIDTH + SCOREBOARD_PING_WIDTH,
 	SCOREBOARD_COLUMN_GAP = 40,
+	/* the room the panel gives the last column's ping beyond its column,
+	which the times on the title's row end at */
+	SCOREBOARD_PING_ROOM = 8,
+	/* the least room between the title and the times on its row */
+	SCOREBOARD_TITLE_TIMES_GAP = 24,
 	/* the rows a column has: as many as fit between 6 rows of the screen
 	from its top and 2 from its bottom (the motion sensor); the scoreboard
 	is centred on the screen, but never nearer its top than 4 rows (the
@@ -1829,6 +1834,27 @@ static pixel32 scoreboard_background_color(
 	}
 
 	return color;
+}
+
+/* port: a line of the scoreboard's text's width, before it is scaled */
+static long scoreboard_text_width(
+	long font_index,
+	wchar_t const *string)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+	real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = SHORT_MAX / 2;
+	draw_string_set_tab_stops(NULL, 0);
+	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
+	draw_unicode_string_compute_bounds(&bounds, string, &text_bounds, &cursor_bounds);
+
+	return text_bounds.x1 > text_bounds.x0 ? text_bounds.x1 - text_bounds.x0 : 0;
 }
 
 /* a row of the scoreboard: its text (tab separated) from the column's left
@@ -1993,6 +2019,11 @@ static void game_engine_rasterize_scoreboard(
 	wchar_t *score_name;
 	wchar_t times_string[64];
 	boolean times;
+	/* (the times on a row of their own under the title's, where the
+	title's row has not room for both) */
+	boolean times_row;
+	long title_width;
+	long times_width;
 	short block_width;
 
 	if (font_index == NONE)
@@ -2008,11 +2039,8 @@ static void game_engine_rasterize_scoreboard(
 	/* (laid out at full size, then drawn scaled about the title's top left:
 	the screen holds 1/SCOREBOARD_SCALE as much) */
 	width = (short)((bounds.x1 - bounds.x0) / SCOREBOARD_SCALE);
-	/* (the times, on a row of their own under the title, take a row from
-	the columns, before the columns are chosen) */
-	times = game_engine_scoreboard_times(font_index, times_string, NUMBEROF(times_string));
 	rows = (long)((bounds.y1 - SCOREBOARD_LAYOUT_TOP_ROWS * line_height) / SCOREBOARD_SCALE / line_height) - 2 -
-		SCOREBOARD_BOTTOM_ROWS - (times ? 1 : 0);
+		SCOREBOARD_BOTTOM_ROWS;
 	rows = MAX(rows, 1);
 	statistic_buffer_in_game_only = scoreboard_in_game_only();
 	ranked_count = populate_statistic_buffer(ranked, _postgame_statistic_ranking, FALSE);
@@ -2040,6 +2068,16 @@ static void game_engine_rasterize_scoreboard(
 		page = rows * columns;
 	}
 	block_width = (short)(columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP);
+	/* (the times at the end of the title's row; where the title leaves
+	them too little room (one column), on a row of their own under it,
+	taken from the margin under the columns, not from their rows, so that
+	the columns are the same either way) */
+	game_engine_generate_title_string(title_string, player_index);
+	times = game_engine_scoreboard_times(font_index, times_string, NUMBEROF(times_string));
+	title_width = scoreboard_text_width(font_index, title_string);
+	times_width = times ? scoreboard_text_width(font_index, times_string) : 0;
+	times_row = times &&
+		title_width + SCOREBOARD_TITLE_TIMES_GAP + times_width > block_width + SCOREBOARD_PING_ROOM;
 	/* (opened, at the viewer's own player's page; then where the wheel and
 	Page Up/Down take it) */
 	{
@@ -2066,13 +2104,13 @@ static void game_engine_rasterize_scoreboard(
 		scoreboard_scroll = PIN(scoreboard_scroll, 0, MAX(total - page, 0));
 	}
 	left = (short)(bounds.x0 + (width - block_width) / 2);
-	/* (centred on the rows shown: the title's, the times' under it, the
-	heading's, the longest column's, and the footer telling where the
-	scroll is) */
+	/* (centred on the rows shown: the title's, the times' under it when
+	they have their own, the heading's, the longest column's, and the
+	footer telling where the scroll is) */
 	shown_rows = MIN(rows, total);
 	if (total > page)
 		shown_rows++;
-	if (times)
+	if (times_row)
 		shown_rows++;
 	{
 		real height = (2 + shown_rows) * line_height * SCOREBOARD_SCALE;
@@ -2093,7 +2131,7 @@ static void game_engine_rasterize_scoreboard(
 
 				panel.x0 = (short)(block_left - padding);
 				/* (the ping, nearly as wide as its column, given room) */
-				panel.x1 = (short)(block_left + block_extent + padding + 8.0f * SCOREBOARD_SCALE);
+				panel.x1 = (short)(block_left + block_extent + padding + SCOREBOARD_PING_ROOM * SCOREBOARD_SCALE);
 				panel.y0 = (short)(top - padding);
 				panel.y1 = (short)(top + height + padding);
 				draw_quad(&panel, ((pixel32)panel_alpha << 24) | (background & 0x00FFFFFF));
@@ -2101,17 +2139,15 @@ static void game_engine_rasterize_scoreboard(
 		}
 	}
 	rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
-	game_engine_generate_title_string(title_string, player_index);
-	/* (the times in the HUD's colour, right-aligned to the columns' end,
-	on the row under the title's: always there, so they do not move as the
-	title's length changes with the score) */
+	/* (the times in the HUD's colour, right-aligned to the panel's text's
+	end (the last ping's room), on the title's row, or the row under it) */
 	if (times)
 	{
 		rectangle2d times_bounds;
 
 		times_bounds.x0 = left;
-		times_bounds.x1 = (short)(left + block_width);
-		times_bounds.y0 = (short)(top + line_height);
+		times_bounds.x1 = (short)(left + block_width + SCOREBOARD_PING_ROOM);
+		times_bounds.y0 = (short)(top + (times_row ? line_height : 0));
 		times_bounds.y1 = (short)(times_bounds.y0 + line_height);
 		color = hud_globals->messaging.state_color;
 		color.alpha = alpha;
@@ -2132,8 +2168,8 @@ static void game_engine_rasterize_scoreboard(
 	color.alpha = alpha;
 	color.red = color.green = color.blue = 0.7f;
 	scoreboard_draw_row(title_string, FALSE, &color, 0, top, left, FALSE);
-	/* (the rows under the times') */
-	if (times)
+	/* (the rows under the times', on a row of their own) */
+	if (times_row)
 		top = (short)(top + line_height);
 
 	string_list_index = tag_loaded('ustr', "ui\\multiplayer_game_text");

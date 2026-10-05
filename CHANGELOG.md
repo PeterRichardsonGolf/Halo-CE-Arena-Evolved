@@ -24,6 +24,12 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- The full-screen scoreboard shows its times ("1:33 PLAYED · 8:27 LEFT") at
+  the end of the title's row, right-aligned to the panel, instead of on a row
+  of their own. A one-column scoreboard whose title leaves them too little room
+  keeps them on their own row, which now comes from the margin under the
+  columns: a 16-player free-for-all no longer pushes its last player into a
+  second column. Split-screen views keep the times on their own row.
 - TRAINING's spawn markers find their floor on scenery and machines too
   (crates, platforms, bridges), not only the map's structure, so a spawn on
   one has its ring on top, not inside it (on the stock maps: a spawn on a
