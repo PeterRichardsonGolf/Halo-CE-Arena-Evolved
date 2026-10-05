@@ -98,6 +98,15 @@ These files are in the data root:
 | `debug.txt` | The log of the game. At start-up, the game shows the data root in the terminal. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
 | `init.txt` | Console commands that the game does at start-up. For example, `map_name levels\a10\a10` starts the first campaign level. |
 
+Voice packs for the spoken callouts (item and clock timers) are folders of
+WAVs in `voices/<pack>/` in the data root (`one.wav` ... `ten.wav`,
+`one_minute.wav` ... `thirty_minutes.wav`, `rockets.wav`, `beep.wav` and so
+on, with a `manifest.json`). `python tools/import_nhe_voice.py
+<mods/NHE/maps> <data root>/voices/nhe` makes the `nhe` pack from Halo 1:
+NHE's voice timer clips. The clips come from the player's own NHE map files
+and are not distributed with the game; the tool does not write inside the
+repository (except under `build/`).
+
 The settings are in `config.toml` next to the executable. Refer to
 "Settings". Internet play's MQTT brokers are in `brokers.txt` next to it
 (`network.brokers_file`).
