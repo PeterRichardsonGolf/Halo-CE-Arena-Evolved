@@ -812,6 +812,9 @@ void custom_render_nav_point(
 		if (area_left || area_right)
 		{
 			horizontal_radius -= (real)(area_left + area_right)*0.5f;
+			/* (never degenerate in a very narrow view) */
+			if (horizontal_radius < 1.0f)
+				horizontal_radius = 1.0f;
 			radius_product = vertical_radius*horizontal_radius;
 			vertical_component = vertical_radius*screen_position.x;
 			horizontal_component = horizontal_radius*screen_position.y;
