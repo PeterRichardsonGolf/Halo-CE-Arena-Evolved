@@ -563,6 +563,7 @@ symbols in this file:
 #include "items/weapon_definitions.h"
 #include "items/weapons.h"
 #include "game/item_timers.h"
+#include "hs/hs.h"
 #include "main/console.h"
 #include "main/main.h"
 #include "math/integer_math.h"
@@ -3900,6 +3901,72 @@ void game_engine_post_rasterize_objects(
 	return;
 }
 
+/* port: PRE-GAME COUNTDOWN (game_engine_pregame_countdown) in this local
+player's view, over its HUD: the view black, a large 3, 2, 1 in the HUD's
+font and colour centred in it, the black fading out over the countdown's
+last half second. Drawn from game time (the tick's fraction between), as the
+input it holds back (players_update_before_game) */
+#define PREGAME_COUNTDOWN_FADE_TICKS 15
+#define PREGAME_COUNTDOWN_DIGIT_HEIGHT 0.35f	/* (of the view's height) */
+
+static void game_engine_rasterize_pregame_countdown(
+	void)
+{
+	long ticks_left = game_engine_pregame_countdown_ticks_left();
+	real time_left;
+	real black;
+	short view_width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	short view_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	long font_index;
+
+	if (ticks_left <= 0)
+		return;
+	/* (game_time_get() is the next tick: the frame is between it and the
+	one before) */
+	time_left = (real)ticks_left - game_time_get_tick_fraction();
+	black = PIN(time_left / PREGAME_COUNTDOWN_FADE_TICKS, 0.0f, 1.0f);
+	if (black > 0.0f)
+	{
+		rectangle2d view;
+
+		/* (the view's bounds, relative to itself: where this pass draws) */
+		view.x0 = 0;
+		view.y0 = 0;
+		view.x1 = view_width;
+		view.y1 = view_height;
+		draw_quad(&view, (pixel32)(long)(black * 255.0f + 0.5f) << 24);
+	}
+
+	font_index = hud_globals->messaging.single_player_font.index != NONE ?
+		hud_globals->messaging.single_player_font.index : hud_globals->messaging.multi_player_font.index;
+	if (font_index != NONE)
+	{
+		struct font_header *font = font_definition_get(font_index);
+		long line_height = MAX(font->ascending_height + font->descending_height, 1);
+		real scale = MAX(PREGAME_COUNTDOWN_DIGIT_HEIGHT * view_height / line_height, 1.0f);
+		real center_x = view_width / 2.0f;
+		real center_y = view_height / 2.0f;
+		rectangle2d bounds;
+		real_argb_color color = hud_globals->messaging.state_color;
+		wchar_t digit[2];
+
+		digit[0] = (wchar_t)(L'0' + (ticks_left + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND);
+		digit[1] = 0;
+		color.alpha = 1.0f;
+		/* (a line centred on the view's centre, scaled about it) */
+		bounds.x0 = 0;
+		bounds.x1 = view_width;
+		bounds.y0 = (short)(center_y - line_height / 2);
+		bounds.y1 = (short)(bounds.y0 + line_height);
+		draw_string_set_draw_mode(font_index, NONE, 2, 0, &color);
+		rasterizer_text_set_scale(scale, center_x, center_y);
+		rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, digit);
+		rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+	}
+
+	return;
+}
+
 void game_engine_post_rasterize(
 	void)
 {
@@ -3910,6 +3977,7 @@ void game_engine_post_rasterize(
 		case game_engine_mode_active:
 		case game_engine_mode_postgame_delay:
 			game_engine_post_rasterize_in_game();
+			game_engine_rasterize_pregame_countdown();
 			break;
 		case game_engine_mode_postgame_rasterize_delay:
 		case game_engine_mode_postgame_rasterize:
@@ -4277,12 +4345,41 @@ static void game_engine_update_vehicle_respawn(
 	}
 }
 
+/* port: PRE-GAME COUNTDOWN's beep at each of its 3, 2 and 1, the stock
+game's respawn countdown's (game_engine_client_respawn_countdown), on this
+machine for its own players: the first at the first tick of it this machine
+runs (a client's clock may start a few ticks into the game) */
+static void game_engine_update_pregame_countdown_sound(
+	void)
+{
+	static long last_beep_tick = NONE;
+	long ticks_left = game_engine_pregame_countdown_ticks_left();
+	long now;
+
+	if (ticks_left <= 0)
+	{
+		last_beep_tick = NONE;
+		return;
+	}
+	now = game_time_get();
+	if (last_beep_tick == NONE || now < last_beep_tick ||
+		now / TICKS_PER_SECOND != last_beep_tick / TICKS_PER_SECOND)
+	{
+		if (local_player_count() > 0)
+			game_engine_play_multiplayer_sound(_multiplayer_sound_countdown_for_respawn);
+		last_beep_tick = now;
+	}
+
+	return;
+}
+
 void game_engine_update(
 	void)
 {
 	if (game_engine)
 	{
 		game_engine_update_multiplayer_sound();
+		game_engine_update_pregame_countdown_sound();
 		game_engine_update_purge();
 		game_engine_update_weapons();
 		game_engine_update_item_spawn();
@@ -4792,6 +4889,36 @@ boolean game_engine_practice(
 {
 	return game_engine_running() &&
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_practice_bit);
+}
+
+/* port: the gametype's PRE-GAME COUNTDOWN (_game_variant_pregame_countdown_bit):
+the game's first PREGAME_COUNTDOWN_TICKS of game time a 3, 2, 1 on a black
+view, its players able to turn but not to move, jump, fire or throw (as Halo
+1: NHE's maps' countdown, which is their scripts': not on their maps, which
+count down themselves) */
+boolean game_engine_pregame_countdown(
+	void)
+{
+	return game_engine_running() &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_pregame_countdown_bit) &&
+		!hs_scenario_is_nhe();
+}
+
+/* the countdown's ticks left at this tick, 0 when there is none: game time,
+which every machine has as the host's (a machine joining later than the
+countdown has none) */
+long game_engine_pregame_countdown_ticks_left(
+	void)
+{
+	long now;
+
+	if (!game_engine_pregame_countdown() ||
+		game_engine_globals.postgame_state != game_engine_mode_active)
+	{
+		return 0;
+	}
+	now = game_time_get();
+	return now >= 0 && now < PREGAME_COUNTDOWN_TICKS ? PREGAME_COUNTDOWN_TICKS - now : 0;
 }
 
 /* port: the gametype's HEALTH (enum health_style), CLASSIC with no game */

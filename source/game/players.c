@@ -3642,6 +3642,8 @@ void players_update_before_game(
 	struct unit_control_data control_data;
 	long weapon_index;
 	short action_index;
+	/* port: PRE-GAME COUNTDOWN (game_engine_pregame_countdown) */
+	boolean pregame_countdown = game_engine_pregame_countdown_ticks_left() > 0;
 
 	profile_enter(PLAYERS_UPDATE_BEFORE_GAME_PROFILE);
 	if (update_client_dequeue(actions))
@@ -3729,6 +3731,23 @@ void players_update_before_game(
 				if (!players_globals->input_disabled)
 				{
 					network_player_log_idle_action(iterator.datum_index, action->control_flags);
+					/* port: during the PRE-GAME COUNTDOWN a player turns, and
+					nothing else: no moving, jumping, firing, throwing, acting,
+					zooming or changing weapons (a change asked for is kept by
+					player_control.c, and taken when it ends, as Halo 1: NHE's).
+					Here, where every machine drives every player from their
+					input (the host's simulation and a client's prediction
+					alike), by game time, which they share, so all agree */
+					if (pregame_countdown)
+					{
+						action->control_flags = 0;
+						action->throttle.i = 0.0f;
+						action->throttle.j = 0.0f;
+						action->primary_trigger = 0.0f;
+						action->desired_weapon_index = NONE;
+						action->desired_grenade_index = NONE;
+						action->desired_zoom_level = NONE;
+					}
 					/* port: not for the keyboard's action key, which only acts
 					(units.h, UNIT_CONTROL_PORT_ACTION_ONLY_BIT) */
 					if (TEST_FLAG(action->control_flags, _unit_control_action_bit) &&

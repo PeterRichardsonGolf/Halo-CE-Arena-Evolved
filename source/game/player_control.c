@@ -184,6 +184,7 @@ symbols in this file:
 #define limit2d limit2d_inline
 #include "game/game.h"
 #undef limit2d
+#include "game/game_engine.h"
 #include "game/player_control_runtime.h"
 #include "players.h"
 #include "player_queues_new.h"
@@ -805,6 +806,20 @@ static void handle_one_player_input(
 		action.desired_zoom_level = player->zoom_level;
 		action.throttle = player->throttle;
 		action.primary_trigger = player->primary_trigger;
+		/* port: during the PRE-GAME COUNTDOWN (players_update_before_game)
+		none of it sent either but the facing, so that what the host takes of
+		a client's ticks of it, which come to it later, is held back too; the
+		weapon asked for (player->desired_weapon_index) is sent once it ends */
+		if (game_engine_pregame_countdown_ticks_left() > 0)
+		{
+			action.control_flags = 0;
+			action.throttle.i = 0.0f;
+			action.throttle.j = 0.0f;
+			action.primary_trigger = 0.0f;
+			action.desired_weapon_index = NONE;
+			action.desired_grenade_index = NONE;
+			action.desired_zoom_level = NONE;
+		}
 
 		match_assert_valid_real(
 			"c:\\halo\\SOURCE\\game\\player_control.c",

@@ -794,6 +794,15 @@ static void hs_hostman_find(
 	}
 }
 
+/* port: whether the scenario is one of Halo 1: NHE's maps (it has their
+teleport_host global: hs_hostman_find's scan of it at the map's load), whose
+scripts bring their own countdown, timers and training */
+boolean hs_scenario_is_nhe(
+	void)
+{
+	return hs_hostman_global_index != NONE;
+}
+
 /* the hostman global kept false (hs_hostman_global_index) */
 static void hs_hostman_suppress(
 	short designator)
@@ -812,6 +821,8 @@ void hs_runtime_initialize_for_new_map(
 	long internal_thread_index;
 
 	data_make_valid(hs_thread_data);
+	/* port: (no scenario, no hostman) */
+	hs_hostman_global_index = NONE;
 	hs_runtime_globals.initialized = TRUE;
 	hs_runtime_globals.executing_thread_index = NONE;
 	internal_thread_index = hs_thread_new(_hs_thread_type_global_initialize, NONE);

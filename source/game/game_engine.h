@@ -616,6 +616,15 @@ boolean game_engine_no_spread(
 boolean game_engine_practice(
 	void);
 
+/* port: PRE-GAME COUNTDOWN's length: the game's first 3 seconds of game time
+(the 3, the 2 and the 1) */
+#define PREGAME_COUNTDOWN_TICKS (3 * TICKS_PER_SECOND)
+
+boolean game_engine_pregame_countdown(
+	void);
+long game_engine_pregame_countdown_ticks_left(
+	void);
+
 struct scenario_netgame_equipment;
 
 long game_engine_item_respawn_period(

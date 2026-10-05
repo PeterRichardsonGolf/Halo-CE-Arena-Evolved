@@ -199,6 +199,9 @@ long hs_runtime_evaluate(
 	long expression_index);
 char const *hs_runtime_get_executing_thread_name(
 	void);
+/* port: the scenario is one of Halo 1: NHE's maps */
+boolean hs_scenario_is_nhe(
+	void);
 boolean hs_wake_by_name(
 	char const *name);
 void render_debug_scripting(
