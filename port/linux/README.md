@@ -279,7 +279,7 @@ the setting for one start of the game. It has priority over the file.
 | `display.scoreboard_background` | `true` | `HALO_SCOREBOARD_BACKGROUND` | `true`: the multiplayer scoreboard (hold BACK, or tab) has a panel behind its text, for clearer text. |
 | `display.show_quit_players` | `true` | `HALO_SHOW_QUIT_PLAYERS` | `true`: players who quit stay on the multiplayer scoreboard (hold BACK, or tab) and the score in the corner, as in the original game. `false`: they are left off, and the players still in the game are ranked among themselves, as OpenCE does. Only what this machine draws changes. |
 | `display.scoreboard_background_color` | `"16, 16, 16, 150"` | `HALO_SCOREBOARD_BACKGROUND_COLOR` | The colour of the scoreboard's panel: `"red, green, blue, alpha"`, each from `0` to `255`. Alpha `0` is see-through, `255` is solid. |
-| `display.match_clock` | `"down"` | `HALO_MATCH_CLOCK` | The match clock: in a multiplayer game, M:SS in the bottom right corner of each view and on the scoreboard (hold BACK, or tab). `"down"`: the time left of the gametype's time limit; with no time limit, the time played. `"up"`: the time played. `"off"`: no clock. It shows game time, the same on each machine, and hides during PRE-GAME COUNTDOWN and after the game. On Halo 1: NHE's maps, the clock takes the place of their own clock (their Cortana callouts stay); `"off"` leaves their clock. Settings > Game Options sets it. |
+| `display.match_clock` | `"down"` | `HALO_MATCH_CLOCK` | The match clock: in a multiplayer game, M:SS in the bottom right corner of each view, lined up with the motion sensor (as far from the right edge as the sensor is from the left, level with its range). The scoreboard (hold BACK, or tab) shows the time played and, with a time limit, the time left, whichever way the corner counts. `"down"`: the time left of the gametype's time limit; with no time limit, the time played. `"up"`: the time played. `"off"`: no clock. It shows game time, the same on each machine, and hides during PRE-GAME COUNTDOWN and after the game. On Halo 1: NHE's maps, the clock takes the place of their own clock (their Cortana callouts stay); `"off"` leaves their clock. Settings > Game Options sets it. |
 | `audio.enabled` | `true` | `HALO_NO_AUDIO=1` sets `false` | `false`: no audio device. The sound continues without output. |
 | `audio.volume` | `1.0` | `HALO_VOLUME` | The master volume. |
 | `audio.music_volume` | `1.0` | `HALO_MUSIC_VOLUME` | The music's volume, of the master volume. |
@@ -291,6 +291,8 @@ the setting for one start of the game. It has priority over the file.
 | `input.mouse_aim_assist` | `false` | `HALO_MOUSE_AIM_ASSIST` | `true`: the magnetism of the controller also operates for the mouse. `false`: when the mouse moved after the right stick, the view is not slowed or dragged by a target. The autoaim of the bullets operates in both cases. |
 | `controls.<action>` | (the table in "Controls") | `HALO_KEY_<ACTION>` | The keys and mouse buttons of an action, up to two, separated by a comma: `move_forward`, `move_backward`, `strafe_left`, `strafe_right`, `jump`, `crouch`, `fire`, `throw_grenade`, `melee`, `reload`, `zoom`, `switch_weapon`, `switch_grenade`, `action`, `flashlight`, `scoreboard`, `pause`. Keys by their names (`"W"`, `"Space"`, `"Left Ctrl"`, `"F1"`), and `"Mouse Left"`, `"Mouse Right"`, `"Mouse Middle"`, `"Mouse 4"`, `"Mouse 5"`, `"Wheel"` (either way), `"Wheel Up"`, `"Wheel Down"`. |
 | `game.console_log` | `"important"` | `HALO_CONSOLE_LOG` | What the console shows on the screen. `"important"`: bans, players that the host drops for cheating, the reasons that the game refuses a command, and the asserts that stop the game. `"all"`: all the lines. `"none"`: only the asserts that stop the game. The output of a command always shows. `debug.txt` gets all the lines. |
+| `game.fall_damage` | `true` | `HALO_FALL_DAMAGE` | In the campaign: `true`, falls hurt players. `false`: landings never hurt, from any height (pits and the map's kill volumes still kill). Multiplayer uses the gametype's FALL DAMAGE (ARENA OPTIONS). Settings > Game Options sets it (CAMPAIGN FALL DAMAGE). |
+| `game.health` | `"classic"` | `HALO_HEALTH` | In the campaign, how players' health comes back. `"classic"`: only from health packs. `"reach"`: once the shields are full, to the top of the third it is in. `"halo3"`: once the shields are full, all of it. `"halo2"`: all of it as the shields recharge. Multiplayer uses the gametype's HEALTH (ARENA OPTIONS). Settings > Game Options sets it (CAMPAIGN HEALTH). |
 | `game.language` | `""` | `HALO_LANGUAGE` | The language of the menus: `ja`, `de`, `fr`, `es` or `it`. Empty: English. |
 | `paths.data` | `""` | `HALO_DATA_ROOT` | The data root. Refer to "Start the game". |
 | `paths.saves` | `""` | `HALO_SAVE_ROOT` | The save root. Refer to "Files and folders". |
@@ -418,6 +420,17 @@ These are the differences from the Xbox:
 - The lobby shows the local machine and the first three remote machines.
   The other machines are also in the game.
 - In free-for-all games, each player is a team.
+
+The gametype's options from ARENA OPTIONS and the indicator options
+(FALL DAMAGE, HEALTH, NO SPREAD, PRE-GAME COUNTDOWN, PRACTICE MODE, TIMERS,
+TRAINING) go to every machine with the gametype. A machine of this port
+plays and shows them all. A machine of another build (OpenCE,
+ChupathingyCE) keeps its own display and its own shots' spread, but the
+host decides what it can: it respawns items for PRACTICE MODE, and it holds
+every machine to the PRE-GAME COUNTDOWN. During the countdown the host
+refuses a client's own moves and its hits made before the countdown ends,
+and keeps the client's player at its spawn. Refer to "PRE-GAME COUNTDOWN"
+in `NETCODE.md`.
 
 Linux, Windows and Android machines can play in the same game. Each machine
 simulates the players from the same inputs, and the host does not correct

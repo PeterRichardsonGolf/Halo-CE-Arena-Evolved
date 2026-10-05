@@ -19,6 +19,20 @@ both closely.
 > build it yourself (below). The Linux 64-bit build is the one played and
 > tested; the other platforms build from the same code but are untested here.
 
+What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
+
+## Goals
+
+- **Competitive rules in the engine:** Halo 1: NHE's rules, built natively,
+  so they work on every map, on any PC, without modded maps or a modded Xbox.
+- **The later games' features in CE:** options and quality-of-life from Halo
+  2, Halo 3, Reach, Halo 4 and Infinite, and from the Master Chief
+  Collection.
+- **Easy to learn:** item timers, training aids and indicators that make CE's
+  competitive play approachable for new players.
+- **Close to OpenCE:** merge its releases and offer fixes to the shared code
+  back upstream.
+
 ## What it adds
 
 **Gametype options** (a gametype's **ARENA OPTIONS** screen, in the gametype
@@ -30,16 +44,31 @@ editor and in Server Setup)
 | HEALTH | CLASSIC (stock: health packs only), REACH (health recovers to a third), HALO 2 (health refills with the shields), HALO 3 (health refills after the shields). Health packs still spawn. |
 | NO SPREAD | The pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as competitive play has them. Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
-| PRE-GAME COUNTDOWN | A 3-2-1 before the game starts; you can look around but not move or shoot. *(in progress)* |
+| PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. The host holds every player to it, including players on builds without it. |
 
-Plus, in the gametype's indicator options: **TIMERS** (the next spawns of the
-rockets, sniper rifle, overshield and camo across the top of the screen) and
-**TRAINING**.
+Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
+TIMERS shows the power list only: the next spawns of the rockets, sniper
+rifle, overshield and camo, in the top corner opposite the performance
+overlay with one view, and in the margin above or below each view's HUD in
+split screen. The match clock is its own setting (below).
 
-**Arena gametypes**, ready in the gametype list the first time you play: AE
-SLAYER, TEAM SLAYER, CTF, KING, ODDBALL and TRAINING (no fall damage, Halo 2
-health, a pistol in hand and an assault rifle), and NHE-style 1V1, 2V2,
-CTF, POWERUP, VANILLA, TRAIN and PRACTICE.
+These are the host's rules. Players on Arena Evolved see and play them all.
+Players who join on a build without them still play the host's rules where
+the host decides: it holds them to the countdown and respawns items as the
+gametype says. What their own game draws and how their own shots spread is
+up to their build.
+
+**Arena Evolved gametypes**, ready in the gametype list the first time you
+play:
+- **Arena Evolved:** AE SLAYER, AE TEAM SLY, AE CTF, AE KING, AE ODDBALL and
+  AE TRAINING. Each adds no fall damage, HALO 2 health, NO SPREAD and the
+  PRE-GAME COUNTDOWN to its stock gametype, with a pistol in hand and an
+  assault rifle. AE TRAINING also has TIMERS and TRAINING, and plays to 500.
+- **Halo 1: NHE-style:** NHE 1V1, NHE 2V2 TS, NHE CTF, NHE POWERUP, NHE
+  VANILLA, NHE TRAIN and PRACTICE. On Halo 1: NHE's maps their vehicle set
+  picks NHE's mode (Timer Only, NHE & Powerups, Vanilla, Training). All have
+  NO SPREAD and the PRE-GAME COUNTDOWN, except NHE VANILLA, which has
+  neither. PRACTICE has NO SPREAD and PRACTICE MODE.
 
 **Split screen**
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
@@ -54,10 +83,14 @@ CTF, POWERUP, VANILLA, TRAIN and PRACTICE.
   actions on the d-pad don't also move you with it.
 - A performance overlay in the HUD's style (Settings > Video > PERFORMANCE:
   FPS, or FPS with frame times and draws; top left or top right).
-- A match clock in the bottom right corner and on the scoreboard, as in the
-  Master Chief Collection (Settings > Game Options > MATCH CLOCK: COUNT DOWN
-  the time left, COUNT UP the time played, or OFF). On Halo 1: NHE's maps it
-  replaces their own clock.
+- A match clock, as in the Master Chief Collection (Settings > Game Options >
+  MATCH CLOCK: OFF, COUNT DOWN or COUNT UP). COUNT DOWN shows the time left
+  (counting up when there is no time limit), COUNT UP the time played. It
+  sits in the bottom right corner of each view, lined up with the motion
+  sensor. The scoreboard (hold BACK) shows both times, such as
+  "1:33 PLAYED · 8:27 LEFT" (just "1:33 PLAYED" with no time limit), on its
+  title row, or just under the title where the two don't fit side by side.
+  On Halo 1: NHE's maps it replaces their own clock.
 
 **Mods**
 - Settings > Game Options > MOD picks a folder in `mods/`; its `maps` are
