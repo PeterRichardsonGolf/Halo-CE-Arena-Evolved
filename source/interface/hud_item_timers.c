@@ -7,12 +7,15 @@ view from hud_draw_screen (hud.c).
 
 The clock is M:SS in the view's bottom right corner, as the Master Chief
 Collection's (game_engine_match_clock: the time left or the time played, in
-any multiplayer game), lined up with the motion sensor in the opposite
-corner: as far from the view's right edge as the sensor's background is
-from its left, its digits' foot at the background's foot, where the
-sensor's range ("15m") is. The sensor's place is as hud_unit.c last drew it
-in this view (hud_item_timers_set_motion_sensor); where it has not been
-drawn (hidden by a script or the gametype), 4% of the view's width from its
+any multiplayer game): its right edge under the right edge of the shield
+and health meters at the view's top right, its digits' foot level with the
+motion sensor's background's foot in the opposite corner, where the
+sensor's range ("15m") is. The meters' and the sensor's places are as
+hud_unit.c last drew them in this view (hud_item_timers_set_meters,
+hud_item_timers_set_motion_sensor). With no meters seen (or a HUD that has
+them in the view's left half), the clock is as far from the view's right
+edge as the sensor's background is from its left; with no sensor seen
+(hidden by a script or the gametype), 4% of the view's width from its
 right edge and 6% of its height from its bottom. Room is left above it for
 a score box (upstream's always-on score, not merged). On Halo 1: NHE's
 maps it keeps out of their countdown's titles (g_*).
@@ -44,7 +47,10 @@ Neither is drawn once the game is over (game_engine_game_over: the
 postgame's "You won"/"You lost" view and the scores).
 
 Both are drawn like the performance overlay (main.c frame_statistics_draw):
-the HUD's smaller font, its blue, 0.7 alpha, at four fifths size. Unlike the
+the HUD's smaller font, its blue, 0.7 alpha, at four fifths size (the
+clock larger, HUD_ITEM_TIMERS_CLOCK_SCALE, the Master Chief Collection's
+size; its right edge about 9 pixels inside the meters' frame at 1080p, as
+the Collection's, being under the bar's own end). Unlike the
 overlay, drawn in the HUD's pass, the bounds are the view's relative to
 itself.
 
@@ -92,7 +98,8 @@ one list beside them.
 #define HUD_ITEM_TIMERS_ALPHA 0.7f
 #define HUD_ITEM_TIMERS_SCALE 0.8f	/* (as main.c's FRAME_STATISTICS_SCALE) */
 #define HUD_WAYPOINT_ARROW_SIZE 0.6f	/* (our waypoint arrows, of CE's nav point size) */
-#define HUD_WAYPOINT_LABEL_SCALE 0.65f	/* (a waypoint's label text; the timer row and clock stay at HUD_ITEM_TIMERS_SCALE) */
+#define HUD_WAYPOINT_LABEL_SCALE 0.65f	/* (a waypoint's label text; the timer row stays at HUD_ITEM_TIMERS_SCALE) */
+#define HUD_ITEM_TIMERS_CLOCK_SCALE 0.9f	/* (the clock: the Master Chief Collection's size, digits 20 pixels tall at 1080p) */
 #define HUD_ITEM_TIMERS_TOP 2	/* (the overlay's line's, from the view's top) */
 #define HUD_ITEM_TIMERS_SIDE 4	/* (the power list's room from a view's sides, as the overlay's) */
 #define HUD_ITEM_TIMERS_GAP 12	/* (between the power list and the clock, or the overlay) */
@@ -115,6 +122,16 @@ static struct
 	short view_height;
 	rectangle2d bounds;
 } hud_item_timers_motion_sensors[MAXIMUM_LOCAL_PLAYERS];
+
+/* where each local player's view last had its shield and health meters
+(hud_item_timers_set_meters), and the view's size then */
+static struct
+{
+	boolean valid;
+	short view_width;
+	short view_height;
+	rectangle2d bounds;
+} hud_item_timers_meters[MAXIMUM_LOCAL_PLAYERS];
 
 /* the lines (MATCH CLOCK, the power list) each local player's view last
 drew (hud_item_timers_draw_line), the view's coordinates: TRAINING's labels,
@@ -157,6 +174,9 @@ static void hud_item_timers_set_draw_mode(
 	draw_string_set_draw_mode(font_index, NONE, justification, 0, &color);
 }
 
+static void hud_item_timers_draw_line_scaled(long font_index, short justification, short top, short left, short right,
+	wchar_t const *text, real scale);
+
 /* a line from top, inset left and right from the view's edges */
 static void hud_item_timers_draw_line(
 	long font_index,
@@ -166,6 +186,19 @@ static void hud_item_timers_draw_line(
 	short right,
 	wchar_t const *text)
 {
+	hud_item_timers_draw_line_scaled(font_index, justification, top, left, right, text, HUD_ITEM_TIMERS_SCALE);
+}
+
+/* port: the same at a scale (the clock's is larger) */
+static void hud_item_timers_draw_line_scaled(
+	long font_index,
+	short justification,
+	short top,
+	short left,
+	short right,
+	wchar_t const *text,
+	real scale)
+{
 	rectangle2d bounds;
 	real pivot_x;
 
@@ -174,21 +207,21 @@ static void hud_item_timers_draw_line(
 	bounds.x1 = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0 - right);
 	bounds.y0 = top;
 	bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
-	/* (laid out at full size, so as wide as the line's room is at four
-	fifths: a line that fits the room scaled is not cut at its bounds) */
+	/* (laid out at full size, so as wide as the line's room is at its
+	scale: a line that fits the room scaled is not cut at its bounds) */
 	if (justification == _text_justification_left)
 	{
 		pivot_x = (real)bounds.x0;
-		bounds.x1 = (short)(bounds.x0 + (bounds.x1 - bounds.x0) / HUD_ITEM_TIMERS_SCALE);
+		bounds.x1 = (short)(bounds.x0 + (bounds.x1 - bounds.x0) / scale);
 	}
 	else if (justification == _text_justification_right)
 	{
 		pivot_x = (real)bounds.x1;
-		bounds.x0 = (short)(bounds.x1 - (bounds.x1 - bounds.x0) / HUD_ITEM_TIMERS_SCALE);
+		bounds.x0 = (short)(bounds.x1 - (bounds.x1 - bounds.x0) / scale);
 	}
 	else
 	{
-		short half = (short)((bounds.x1 - bounds.x0) / HUD_ITEM_TIMERS_SCALE / 2.0f);
+		short half = (short)((bounds.x1 - bounds.x0) / scale / 2.0f);
 
 		pivot_x = (real)(bounds.x0 + bounds.x1) / 2.0f;
 		bounds.x0 = (short)(pivot_x - half);
@@ -196,7 +229,7 @@ static void hud_item_timers_draw_line(
 	}
 	hud_item_timers_set_draw_mode(font_index, justification);
 	/* (smaller, about the line's top corner it hangs from) */
-	rasterizer_text_set_scale(HUD_ITEM_TIMERS_SCALE, pivot_x, (real)bounds.y0);
+	rasterizer_text_set_scale(scale, pivot_x, (real)bounds.y0);
 	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 
@@ -206,13 +239,13 @@ static void hud_item_timers_draw_line(
 	{
 		rectangle2d *drawn = &hud_item_timers_lines[render.local_player_index].bounds[
 			hud_item_timers_lines[render.local_player_index].count++];
-		long width = hud_item_timers_line_width(font_index, text);
+		long width = hud_item_timers_line_width_scaled(font_index, text, scale);
 
 		drawn->x0 = (short)(justification == _text_justification_left ? pivot_x :
 			justification == _text_justification_right ? pivot_x - width : pivot_x - width / 2);
 		drawn->x1 = (short)(drawn->x0 + width);
 		drawn->y0 = bounds.y0;
-		drawn->y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index) * HUD_ITEM_TIMERS_SCALE + 0.5f);
+		drawn->y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index) * scale + 0.5f);
 	}
 }
 
@@ -246,8 +279,9 @@ static long hud_item_timers_line_width_scaled(
 	return (long)((text_bounds.x1 - text_bounds.x0) * scale + 0.5f);
 }
 
-/* the clock (text) in the view's bottom right corner, by the motion
-sensor's place; returns the room it takes from the view's right edge */
+/* the clock (text) in the view's bottom right corner, by the meters' and
+the motion sensor's places; returns the room it takes from the view's
+right edge */
 static long hud_item_timers_draw_clock(
 	long font_index,
 	wchar_t const *text)
@@ -283,13 +317,24 @@ static long hud_item_timers_draw_clock(
 		inset = (short)(area_right + HUD_ITEM_TIMERS_CLOCK_RIGHT * (view_width - area_left - area_right) + 0.5f);
 		baseline = view_height - (long)(HUD_ITEM_TIMERS_CLOCK_BOTTOM * view_height + 0.5f);
 	}
+	/* (the meters' right edge, where they are in this view's right half;
+	they have moved in with HUD AREA's part of the view already) */
+	if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_timers_meters[local_player_index].valid &&
+		hud_item_timers_meters[local_player_index].view_width == view_width &&
+		hud_item_timers_meters[local_player_index].view_height == view_height &&
+		hud_item_timers_meters[local_player_index].bounds.x1 > view_width / 2 &&
+		hud_item_timers_meters[local_player_index].bounds.x1 <= view_width)
+	{
+		inset = (short)(view_width - hud_item_timers_meters[local_player_index].bounds.x1);
+	}
 	/* (the digits' foot, their baseline, there: the line's top an ascent
-	(at four fifths) above it) */
-	hud_item_timers_draw_line(font_index, _text_justification_right,
-		(short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_SCALE + 0.5f)),
-		inset, inset, text);
+	(at the clock's scale) above it) */
+	hud_item_timers_draw_line_scaled(font_index, _text_justification_right,
+		(short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_CLOCK_SCALE + 0.5f)),
+		inset, inset, text, HUD_ITEM_TIMERS_CLOCK_SCALE);
 
-	return inset + hud_item_timers_line_width(font_index, text);
+	return inset + hud_item_timers_line_width_scaled(font_index, text, HUD_ITEM_TIMERS_CLOCK_SCALE);
 }
 
 /* an entry's name in the shorter power line: its label, RED / BLUE as R /
@@ -1483,11 +1528,28 @@ void hud_item_timers_set_motion_sensor(
 	hud_item_timers_motion_sensors[local_player_index].bounds = *bounds;
 }
 
-/* a new map: no motion sensor seen yet */
+/* where hud_unit.c drew the player's shield and health meters in this
+local player's view (the view's coordinates) */
+void hud_item_timers_set_meters(
+	short local_player_index,
+	rectangle2d const *bounds)
+{
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return;
+	hud_item_timers_meters[local_player_index].valid = TRUE;
+	hud_item_timers_meters[local_player_index].view_width =
+		(short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	hud_item_timers_meters[local_player_index].view_height =
+		(short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	hud_item_timers_meters[local_player_index].bounds = *bounds;
+}
+
+/* a new map: no motion sensor or meters seen yet */
 void hud_item_timers_initialize_for_new_map(
 	void)
 {
 	csmemset(hud_item_timers_motion_sensors, 0, sizeof(hud_item_timers_motion_sensors));
+	csmemset(hud_item_timers_meters, 0, sizeof(hud_item_timers_meters));
 	/* (port: CAMPAIGN TIMER's level starts) */
 	hud_campaign_timer_ticks = 0;
 	csmemset(hud_item_timers_lines, 0, sizeof(hud_item_timers_lines));

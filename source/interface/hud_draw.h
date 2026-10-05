@@ -145,6 +145,14 @@ boolean hud_static_element_bounds(
 	struct static_hud_element_definition const *static_element,
 	short draw_flags,
 	rectangle2d *result);
+/* port: the rectangle hud_draw_meter draws a meter's bitmap in, full: the
+columns of it that show, where the texture can tell (the view's
+coordinates); FALSE for none */
+boolean hud_meter_element_bounds(
+	struct hud_absolute_placement_definition const *placement,
+	struct meter_hud_element_definition const *meter,
+	short draw_flags,
+	rectangle2d *result);
 void hud_draw_bitmap_direct(
 	struct bitmap_data const *bitmap,
 	short placement,

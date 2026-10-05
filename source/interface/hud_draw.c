@@ -1724,15 +1724,24 @@ static void hud_draw_bitmap_with_meter(
 	return;
 }
 
-/* port: the rectangle hud_draw_static_element draws an element's bitmap in
-(the view's coordinates, as hud_calculate_point's), the way
-hud_draw_bitmap_with_meter places it: the element's point, the bitmap's
-bounds from it by its corner, at the placement's scale; FALSE for an
-element whose bitmap is not loaded */
-boolean hud_static_element_bounds(
+/* port: xbox_textures.c's: the columns of a texture's first level that show
+in a cell of it (texels), FALSE where it cannot tell */
+int xgpu_texture_shown_columns(void const *header, long x0, long y0, long x1, long y1, long *first, long *last);
+
+/* port: the rectangle an element's bitmap (the group's, the sequence's
+first) at its placement is drawn in (the view's coordinates, as
+hud_calculate_point's), the way hud_draw_bitmap_with_meter places it: the
+element's point, the bitmap's bounds from it by its corner, at the
+placement's scale; with shown, only the columns of it that show (where the
+texture can tell: its cell can have a clear margin). FALSE for a bitmap not
+loaded */
+static boolean hud_element_bounds(
 	struct hud_absolute_placement_definition const *absolute_placement,
-	struct static_hud_element_definition const *static_element,
+	struct hud_placement_definition const *placement,
+	long bitmap_group_index,
+	short sequence_index,
 	short draw_flags,
+	boolean shown,
 	rectangle2d *result)
 {
 	struct bitmap_group *bitmap_group;
@@ -1743,17 +1752,14 @@ boolean hud_static_element_bounds(
 	boolean is_interface_bitmap;
 	point2d point;
 
-	if (static_element->interface_bitmap.index == NONE)
+	if (bitmap_group_index == NONE)
 		return FALSE;
-	bitmap_group = bitmap_group_get(static_element->interface_bitmap.index);
-	bitmap = bitmap_group_get_bitmap_from_sequence(
-		static_element->interface_bitmap.index,
-		static_element->sequence_index,
-		0);
+	bitmap_group = bitmap_group_get(bitmap_group_index);
+	bitmap = bitmap_group_get_bitmap_from_sequence(bitmap_group_index, sequence_index, 0);
 	if (!bitmap)
 		return FALSE;
 	is_interface_bitmap = bitmap_group->type == _bitmap_group_type_interface_bitmaps;
-	clip = get_sprite_clip_rect(static_element->interface_bitmap.index, static_element->sequence_index, 0);
+	clip = get_sprite_clip_rect(bitmap_group_index, sequence_index, 0);
 	default_clip.x0 = 0.0f;
 	default_clip.x1 = is_interface_bitmap ? (real)bitmap->width : 1.0f;
 	default_clip.y0 = 0.0f;
@@ -1763,19 +1769,62 @@ boolean hud_static_element_bounds(
 	hud_calculate_point(
 		render.local_player_index,
 		absolute_placement,
-		&static_element->placement,
+		placement,
 		NULL,
 		TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit) &&
-			!TEST_FLAG(static_element->placement.multiplayer_scaling_flags, _hud_dont_scale_offset_bit),
+			!TEST_FLAG(placement->multiplayer_scaling_flags, _hud_dont_scale_offset_bit),
 		0.0f,
 		&point);
 	hud_calculate_bitmap_bounds(bitmap, absolute_placement->corner, clip, &bounds, is_interface_bitmap);
-	result->x0 = (short)(point.x + fast_ftol(bounds.x0 * static_element->placement.scale.i));
-	result->x1 = (short)(point.x + fast_ftol(bounds.x1 * static_element->placement.scale.i));
-	result->y0 = (short)(point.y + fast_ftol(bounds.y0 * static_element->placement.scale.j));
-	result->y1 = (short)(point.y + fast_ftol(bounds.y1 * static_element->placement.scale.j));
+	/* (the cell's texels, its first column at the bounds' left) */
+	if (shown)
+	{
+		real texels = is_interface_bitmap ? 1.0f : (real)bitmap->width;
+		real texels_down = is_interface_bitmap ? 1.0f : (real)bitmap->height;
+		long cell_x0 = fast_ftol(clip->x0 * texels + 0.5f);
+		long first;
+		long last;
+
+		if (xgpu_texture_shown_columns(_texture_cache_bitmap_get_hardware_format(bitmap, FALSE, FALSE),
+			cell_x0, fast_ftol(clip->y0 * texels_down + 0.5f), fast_ftol(clip->x1 * texels + 0.5f),
+			fast_ftol(clip->y1 * texels_down + 0.5f), &first, &last))
+		{
+			real left = bounds.x0;
+
+			bounds.x0 = left + (real)(first - cell_x0);
+			bounds.x1 = left + (real)(last - cell_x0);
+		}
+	}
+	result->x0 = (short)(point.x + fast_ftol(bounds.x0 * placement->scale.i));
+	result->x1 = (short)(point.x + fast_ftol(bounds.x1 * placement->scale.i));
+	result->y0 = (short)(point.y + fast_ftol(bounds.y0 * placement->scale.j));
+	result->y1 = (short)(point.y + fast_ftol(bounds.y1 * placement->scale.j));
 
 	return result->x1 > result->x0 && result->y1 > result->y0;
+}
+
+/* port: the rectangle hud_draw_static_element draws an element's bitmap in
+(hud_element_bounds) */
+boolean hud_static_element_bounds(
+	struct hud_absolute_placement_definition const *absolute_placement,
+	struct static_hud_element_definition const *static_element,
+	short draw_flags,
+	rectangle2d *result)
+{
+	return hud_element_bounds(absolute_placement, &static_element->placement,
+		static_element->interface_bitmap.index, static_element->sequence_index, draw_flags, FALSE, result);
+}
+
+/* port: the rectangle hud_draw_meter draws a meter's bitmap in, full: the
+columns of it that show (hud_element_bounds) */
+boolean hud_meter_element_bounds(
+	struct hud_absolute_placement_definition const *absolute_placement,
+	struct meter_hud_element_definition const *meter,
+	short draw_flags,
+	rectangle2d *result)
+{
+	return hud_element_bounds(absolute_placement, &meter->placement,
+		meter->meter_bitmap.index, meter->sequence_index, draw_flags, TRUE, result);
 }
 
 /* ---------- private code */

@@ -404,6 +404,82 @@ static void decode_level(const struct xgpu_texture_description *description, uns
 	}
 }
 
+/* ---------- the texels that show (xgpu_texture_shown_columns) */
+
+/* port: the columns of an Xbox texture's first level that show in its texels
+x0 to x1, y0 to y1 (a sprite's cell): alpha over a quarter (a Halo PC HUD
+meter's shape is its color: its red), the first and one past the last.
+FALSE where it cannot tell (a compressed, palettized, cube or volume
+texture, or pixels outside contiguous memory) or nothing shows. For the HUD
+(hud_draw.c's hud_meter_element_bounds), whose bitmaps' cells can have a
+clear margin */
+int xgpu_texture_shown_columns(const void *header, long x0, long y0, long x1, long y1, long *first, long *last)
+{
+	const DWORD *resource = (const DWORD *)header;
+	struct xgpu_texture_description description;
+	struct format_information information;
+	struct swizzle_masks masks;
+	const unsigned char *source;
+	unsigned long size;
+	BOOL pc_meter;
+	long x, y;
+	long shown_first = -1, shown_last = -1;
+
+	if (!resource || !resource[1])
+		return 0;
+	xgpu_texture_describe(resource[3], resource[4], &description);
+	description.pc_layout = (resource[0] & D3DCOMMON_PORT_PC_LAYOUT) != 0;
+	pc_meter = (resource[0] & D3DCOMMON_PORT_PC_METER) != 0;
+	information = format_information(description.format);
+	if (description.compressed || description.cube_map || description.depth != 1 || description.format == 0x0b ||
+		!information.bytes)
+	{
+		return 0;
+	}
+	x0 = x0 < 0 ? 0 : x0;
+	y0 = y0 < 0 ? 0 : y0;
+	x1 = x1 > (long)description.width ? (long)description.width : x1;
+	y1 = y1 > (long)description.height ? (long)description.height : y1;
+	if (x1 <= x0 || y1 <= y0)
+		return 0;
+	size = description.levels > 1 ? xgpu_texture_level_offset(&description, 1) : xgpu_texture_face_size(&description);
+#ifdef HALO_64BIT
+	source = (const unsigned char *)xbox_pointer((unsigned int)resource[1] | PLATFORM_CONTIGUOUS_BASE);
+#else
+	source = (const unsigned char *)PLATFORM_PHYSICAL_TO_VIRTUAL(resource[1]);
+#endif
+	if (!size || !platform_is_contiguous(source) || !platform_is_contiguous(source + size - 1))
+		return 0;
+	masks = swizzle_masks(description.width, description.height, 1);
+	for (y = y0; y < y1; y++)
+	{
+		const unsigned char *row = source + (unsigned long)y *
+			(description.linear ? description.pitch : description.width * information.bytes);
+
+		for (x = x0; x < x1; x++)
+		{
+			const unsigned char *texel = description.linear || description.pc_layout ?
+				row + (unsigned long)x * information.bytes :
+				source + (spread(masks.x, (unsigned long)x) | spread(masks.y, (unsigned long)y)) * information.bytes;
+			unsigned long color = convert_texel(information.kind, texel, NULL, (unsigned long)x, row);
+			unsigned long shape = pc_meter ? (color >> 16) & 0xff : color >> 24;
+
+			if (shape > 64)
+			{
+				if (shown_first < 0 || x < shown_first)
+					shown_first = x;
+				if (x + 1 > shown_last)
+					shown_last = x + 1;
+			}
+		}
+	}
+	if (shown_first < 0)
+		return 0;
+	*first = shown_first;
+	*last = shown_last;
+	return 1;
+}
+
 #ifdef HALO_ANDROID
 /* ---------- DXT decoding, for ES drivers without S3TC (Mali) */
 

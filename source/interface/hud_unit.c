@@ -745,6 +745,38 @@ void hud_update_unit(
 
 /* ---------- public code */
 
+/* port: a meter's rectangle added to bounds (found: whether bounds has one
+yet): the part of its bitmap that shows, which is the bar as drawn (the
+stock backgrounds' and the split-screen meters' cells have a clear margin
+beyond it), or its background's for a meter with no bitmap */
+static void hud_unit_meter_bounds(
+	struct hud_absolute_placement_definition const *absolute_placement,
+	struct meter_hud_element_definition const *meter,
+	struct static_hud_element_definition const *background,
+	short draw_flags,
+	rectangle2d *bounds,
+	boolean *found)
+{
+	rectangle2d part;
+
+	if (meter->meter_bitmap.index != NONE ?
+		!hud_meter_element_bounds(absolute_placement, meter, draw_flags, &part) :
+		!hud_static_element_bounds(absolute_placement, background, draw_flags, &part))
+	{
+		return;
+	}
+	if (!*found)
+		*bounds = part;
+	else
+	{
+		bounds->x0 = MIN(bounds->x0, part.x0);
+		bounds->y0 = MIN(bounds->y0, part.y0);
+		bounds->x1 = MAX(bounds->x1, part.x1);
+		bounds->y1 = MAX(bounds->y1, part.y1);
+	}
+	*found = TRUE;
+}
+
 void hud_render_unit_interface(
 	struct player_datum *player)
 {
@@ -857,6 +889,10 @@ void hud_render_unit_interface(
 			{
 				struct unit_hud_interface_definition *hud_definition =
 					unit_hud_interface_definition_get(unit_hud_indices[unit_count]);
+				/* port: where the player's own shield and health meters
+				are, for MATCH CLOCK's corner (hud_item_timers.c) */
+				rectangle2d meters_bounds;
+				boolean meters_found = FALSE;
 
 				if (hud_definition->background.interface_bitmap.index != NONE)
 				{
@@ -996,6 +1032,12 @@ void hud_render_unit_interface(
 							draw_flags,
 							hud_state->last_shield_flash_time);
 					}
+					if (unit_count == 0)
+					{
+						hud_unit_meter_bounds(&hud_definition->absolute_placement,
+							&hud_definition->shield_meter.meter, &hud_definition->shield_meter.background,
+							draw_flags, &meters_bounds, &meters_found);
+					}
 				}
 
 				if (!TEST_FLAG(
@@ -1085,9 +1127,18 @@ void hud_render_unit_interface(
 							draw_flags,
 							hud_state->last_health_flash_time);
 					}
+					if (unit_count == 0)
+					{
+						hud_unit_meter_bounds(&hud_definition->absolute_placement,
+							&hud_definition->health_meter.meter, &hud_definition->health_meter.background,
+							draw_flags, &meters_bounds, &meters_found);
+					}
 
 					hud_state->last_body_vitality = hud_unit->object.body_vitality;
 				}
+
+				if (meters_found)
+					hud_item_timers_set_meters(local_player_index, &meters_bounds);
 
 				if (unit_count == 0 &&
 					!TEST_FLAG(

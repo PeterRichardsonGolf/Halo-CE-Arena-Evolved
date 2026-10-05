@@ -24,6 +24,13 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- MATCH CLOCK and CAMPAIGN TIMER: the clock's right edge lines up with the
+  right end of the shield and health meters' bar in the top right corner (the
+  part of the meter's bitmap that shows, so split screen's smaller meters and
+  HUD AREA / COMPACT HUD too), its foot still level with the motion sensor's
+  "15m". It is drawn at the Master Chief Collection's size (digits about 20
+  pixels tall at 1080p) instead of four fifths of the HUD font. With no meters
+  drawn it still lines up with the motion sensor.
 - The full-screen scoreboard shows its times ("1:33 PLAYED · 8:27 LEFT") at
   the end of the title's row, right-aligned to the panel, instead of on a row
   of their own. A one-column scoreboard whose title leaves them too little room

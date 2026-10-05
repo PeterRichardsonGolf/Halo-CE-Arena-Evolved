@@ -160,6 +160,9 @@ void xgpu_texture_describe(DWORD format_word, DWORD size_word, struct xgpu_textu
 unsigned long xgpu_texture_face_size(const struct xgpu_texture_description *description);
 unsigned long xgpu_texture_level_offset(const struct xgpu_texture_description *description, unsigned long level);
 unsigned long xgpu_texture_level_pitch(const struct xgpu_texture_description *description, unsigned long level);
+/* port: the columns of the texture's first level that show in a cell of it
+(the HUD's: hud_draw.c), FALSE where it cannot tell */
+int xgpu_texture_shown_columns(const void *header, long x0, long y0, long x1, long y1, long *first, long *last);
 
 /* the GL texture for an Xbox texture header, uploading or refreshing it
 from guest memory as needed; *target receives GL_TEXTURE_2D etc. */
