@@ -543,16 +543,21 @@ void cinematic_render(
 					By side rather than by each title's own centre, so
 					titles placed side by side (Halo 1: NHE's clock, its
 					minutes, tens and seconds each a title) move together.
-					The side is where the text hangs from: a left-justified
-					title's left edge (Halo 1: NHE's countdown, "3...", from
-					the screen's middle to its right edge, stays at the
-					middle), a right-justified one's right edge, a centred
-					one's centre */
+					On Halo 1: NHE's maps the side is where the text hangs
+					from: a left-justified title's left edge (their
+					countdown, "3...", from the screen's middle to its right
+					edge, stays at the middle), a right-justified one's right
+					edge, a centred one's centre; elsewhere (the campaign's
+					chapter titles) the bounds' centre */
 					static rectangle2d wide_bounds;
-					short anchor =
-						title->justification == _text_justification_left ? title_bounds->x0 :
-						title->justification == _text_justification_right ? title_bounds->x1 :
-						(short)((title_bounds->x0 + title_bounds->x1) / 2);
+					short anchor = (short)((title_bounds->x0 + title_bounds->x1) / 2);
+					if (hs_scenario_is_nhe())
+					{
+						anchor =
+							title->justification == _text_justification_left ? title_bounds->x0 :
+							title->justification == _text_justification_right ? title_bounds->x1 :
+							anchor;
+					}
 					short extra = (short)(halo_screen_width() - 640);
 					short shift = anchor < 640 / 3 ? 0 : anchor > 640 * 2 / 3 ? extra : (short)(extra / 2);
 

@@ -66,9 +66,10 @@ play:
   assault rifle. AE TRAINING also has TIMERS and TRAINING, and plays to 500.
 - **Halo 1: NHE-style:** NHE 1V1, NHE 2V2 TS, NHE CTF, NHE POWERUP, NHE
   VANILLA, NHE TRAIN and PRACTICE. On Halo 1: NHE's maps their vehicle set
-  picks NHE's mode (Timer Only, NHE & Powerups, Vanilla, Training). All have
-  NO SPREAD and the PRE-GAME COUNTDOWN, except NHE VANILLA, which has
-  neither. PRACTICE has NO SPREAD and PRACTICE MODE.
+  picks NHE's mode (Timer Only, NHE & Powerups, Vanilla, Training). NHE 1V1,
+  NHE 2V2 TS, NHE CTF, NHE POWERUP and NHE TRAIN have NO SPREAD and the
+  PRE-GAME COUNTDOWN. NHE VANILLA has neither. PRACTICE has NO SPREAD and
+  PRACTICE MODE, without the countdown.
 
 **Split screen**
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
@@ -88,8 +89,8 @@ play:
   (counting up when there is no time limit), COUNT UP the time played. It
   sits in the bottom right corner of each view, lined up with the motion
   sensor. The scoreboard (hold BACK) shows both times, such as
-  "1:33 PLAYED · 8:27 LEFT" (just "1:33 PLAYED" with no time limit), on its
-  title row, or just under the title where the two don't fit side by side.
+  "1:33 PLAYED · 8:27 LEFT" (just "1:33 PLAYED" with no time limit), on a
+  row under its title.
   On Halo 1: NHE's maps it replaces their own clock.
 
 **Mods**

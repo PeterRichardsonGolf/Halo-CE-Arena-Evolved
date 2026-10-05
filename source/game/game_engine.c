@@ -1954,24 +1954,6 @@ static boolean game_engine_scoreboard_times(
 	return TRUE;
 }
 
-/* port: the width of a line of the scoreboard (at its layout size, before
-it is scaled), in the font and justification set */
-static short scoreboard_text_width(
-	wchar_t const *string)
-{
-	rectangle2d bounds;
-	rectangle2d text_bounds;
-	rectangle2d cursor_bounds;
-
-	bounds.x0 = 0;
-	bounds.y0 = 0;
-	bounds.x1 = SHORT_MAX / 2;
-	bounds.y1 = SHORT_MAX / 2;
-	draw_unicode_string_compute_bounds(&bounds, string, &text_bounds, &cursor_bounds);
-
-	return text_bounds.x1 > text_bounds.x0 ? (short)(text_bounds.x1 - text_bounds.x0) : 0;
-}
-
 static void game_engine_rasterize_scoreboard(
 	long player_index,
 	real alpha)
@@ -2010,9 +1992,6 @@ static void game_engine_rasterize_scoreboard(
 	wchar_t *score_name;
 	wchar_t times_string[64];
 	boolean times;
-	/* (the times on a line of their own, under the title, where the two do
-	not fit side by side) */
-	boolean times_row = FALSE;
 	short block_width;
 
 	if (font_index == NONE)
@@ -2028,9 +2007,11 @@ static void game_engine_rasterize_scoreboard(
 	/* (laid out at full size, then drawn scaled about the title's top left:
 	the screen holds 1/SCOREBOARD_SCALE as much) */
 	width = (short)((bounds.x1 - bounds.x0) / SCOREBOARD_SCALE);
+	/* (the times, on a row of their own under the title, take a row from
+	the columns, before the columns are chosen) */
 	times = game_engine_scoreboard_times(font_index, times_string, NUMBEROF(times_string));
 	rows = (long)((bounds.y1 - SCOREBOARD_LAYOUT_TOP_ROWS * line_height) / SCOREBOARD_SCALE / line_height) - 2 -
-		SCOREBOARD_BOTTOM_ROWS;
+		SCOREBOARD_BOTTOM_ROWS - (times ? 1 : 0);
 	rows = MAX(rows, 1);
 	statistic_buffer_in_game_only = scoreboard_in_game_only();
 	ranked_count = populate_statistic_buffer(ranked, _postgame_statistic_ranking, FALSE);
@@ -2058,20 +2039,6 @@ static void game_engine_rasterize_scoreboard(
 		page = rows * columns;
 	}
 	block_width = (short)(columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP);
-	/* (the times right of the title, at the columns' end; under it, a row
-	taken from the columns, where the two would meet) */
-	game_engine_generate_title_string(title_string, player_index);
-	if (times)
-	{
-		draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, global_real_argb_white);
-		if (scoreboard_text_width(title_string) + SCOREBOARD_COLUMN_GAP + scoreboard_text_width(times_string) >
-			block_width)
-		{
-			times_row = TRUE;
-			rows = MAX(rows - 1, 1);
-			page = team_columns ? rows : rows * columns;
-		}
-	}
 	/* (opened, at the viewer's own player's page; then where the wheel and
 	Page Up/Down take it) */
 	{
@@ -2104,7 +2071,7 @@ static void game_engine_rasterize_scoreboard(
 	shown_rows = MIN(rows, total);
 	if (total > page)
 		shown_rows++;
-	if (times_row)
+	if (times)
 		shown_rows++;
 	{
 		real height = (2 + shown_rows) * line_height * SCOREBOARD_SCALE;
@@ -2133,15 +2100,17 @@ static void game_engine_rasterize_scoreboard(
 		}
 	}
 	rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
-	/* (the times in the HUD's colour, right-aligned to the columns' end:
-	on the title's row, or the row under it) */
+	game_engine_generate_title_string(title_string, player_index);
+	/* (the times in the HUD's colour, right-aligned to the columns' end,
+	on the row under the title's: always there, so they do not move as the
+	title's length changes with the score) */
 	if (times)
 	{
 		rectangle2d times_bounds;
 
 		times_bounds.x0 = left;
 		times_bounds.x1 = (short)(left + block_width);
-		times_bounds.y0 = (short)(top + (times_row ? line_height : 0));
+		times_bounds.y0 = (short)(top + line_height);
 		times_bounds.y1 = (short)(times_bounds.y0 + line_height);
 		color = hud_globals->messaging.state_color;
 		color.alpha = alpha;
@@ -2162,8 +2131,8 @@ static void game_engine_rasterize_scoreboard(
 	color.alpha = alpha;
 	color.red = color.green = color.blue = 0.7f;
 	scoreboard_draw_row(title_string, FALSE, &color, 0, top, left, FALSE);
-	/* (the rows under the times' own) */
-	if (times_row)
+	/* (the rows under the times') */
+	if (times)
 		top = (short)(top + line_height);
 
 	string_list_index = tag_loaded('ustr', "ui\\multiplayer_game_text");
@@ -2310,24 +2279,14 @@ static void game_engine_rasterize_in_game_score(
 	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0, _text_justification_left);
 
 	/* port: the scoreboard's times (MATCH CLOCK), right-aligned to the
-	columns' end on the title's row, or on a row of their own under it
-	where the two would meet (a narrow view), the rows below moved down */
+	columns' end on a row of their own under the title (always: the
+	title's length changes with the score), the rows below moved down */
 	{
 		wchar_t times_string[64];
-		long font_index = hud_get_font_index();
 
-		if (game_engine_scoreboard_times(font_index, times_string, NUMBEROF(times_string)))
+		if (game_engine_scoreboard_times(hud_get_font_index(), times_string, NUMBEROF(times_string)))
 		{
-			rectangle2d bounds;
-			short tab_stops[3];
-			short columns_right = rasterize_in_game_score_layout(&bounds, tab_stops);
-
-			draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, global_real_argb_white);
-			if (bounds.x0 + scoreboard_text_width(title_string) + SCOREBOARD_COLUMN_GAP / 2 +
-				scoreboard_text_width(times_string) > columns_right)
-			{
-				row_offset = 1;
-			}
+			row_offset = 1;
 			color = hud_globals->messaging.state_color;
 			color.alpha = alpha;
 			rasterize_in_game_score_draw_line(times_string, FALSE, &color, row_offset, _text_justification_right);

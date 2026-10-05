@@ -8,8 +8,8 @@ releases yet, so the sections are dated.
 
 ### Added
 - The scoreboard shows the time played and the time left ("1:33 PLAYED ·
-  8:27 LEFT", or just the time played with no time limit) on its title row,
-  or under the title where the two don't fit side by side.
+  8:27 LEFT", or just the time played with no time limit) on a row under its
+  title.
 - The "game rules" line in `debug.txt` gives the gametype's time limit.
 
 ### Changed
@@ -53,7 +53,8 @@ releases yet, so the sections are dated.
 
 ### Changed
 - The Arena Evolved and Halo 1: NHE-style gametypes have NO SPREAD and the
-  PRE-GAME COUNTDOWN on (NHE VANILLA has neither; PRACTICE has PRACTICE MODE).
+  PRE-GAME COUNTDOWN on (NHE VANILLA has neither; PRACTICE has NO SPREAD and
+  PRACTICE MODE, without the countdown).
 - The TIMERS power list shows the item spawns only (the clock is its own
   setting), and in split screen sits in the margin above or below each view's
   HUD.
