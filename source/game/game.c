@@ -650,6 +650,8 @@ void game_initialize_for_new_map(
 	editor_initialize_for_new_map();
 	cinematic_initialize_for_new_map();
 	hs_initialize_for_new_map();
+	/* port: (hs_scenario_is_nhe is this map's from here) */
+	game_engine_log_rules();
 	recorded_animations_initialize_for_new_map();
 	cheats_initialize_for_new_map();
 

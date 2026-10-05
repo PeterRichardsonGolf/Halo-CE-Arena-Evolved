@@ -194,13 +194,7 @@ enum hud_flash_flags
 	NUMBER_OF_HUD_FLASH_FLAGS
 };
 
-enum text_justification
-{
-	_text_justification_left,
-	_text_justification_right,
-	_text_justification_center,
-	NUMBER_OF_TEXT_JUSTIFICATIONS
-};
+/* (the text justifications: draw_string.h) */
 
 enum hud_icon_type
 {

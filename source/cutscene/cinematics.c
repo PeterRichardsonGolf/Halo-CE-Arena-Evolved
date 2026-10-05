@@ -514,11 +514,19 @@ void cinematic_render(
 					extra width, one between moves half of it: centred).
 					By side rather than by each title's own centre, so
 					titles placed side by side (Halo 1: NHE's clock, its
-					minutes, tens and seconds each a title) move together */
+					minutes, tens and seconds each a title) move together.
+					The side is where the text hangs from: a left-justified
+					title's left edge (Halo 1: NHE's countdown, "3...", from
+					the screen's middle to its right edge, stays at the
+					middle), a right-justified one's right edge, a centred
+					one's centre */
 					static rectangle2d wide_bounds;
-					short center = (short)((title_bounds->x0 + title_bounds->x1) / 2);
+					short anchor =
+						title->justification == _text_justification_left ? title_bounds->x0 :
+						title->justification == _text_justification_right ? title_bounds->x1 :
+						(short)((title_bounds->x0 + title_bounds->x1) / 2);
 					short extra = (short)(halo_screen_width() - 640);
-					short shift = center < 640 / 3 ? 0 : center > 640 * 2 / 3 ? extra : (short)(extra / 2);
+					short shift = anchor < 640 / 3 ? 0 : anchor > 640 * 2 / 3 ? extra : (short)(extra / 2);
 
 					wide_bounds = *title_bounds;
 					wide_bounds.x0 += shift;
@@ -529,17 +537,19 @@ void cinematic_render(
 					wchar_t const *text = unicode_string_list_get_string(
 						help_text_tag_index,
 						title->text_index);
-					/* port: a title that repeats itself after a run of blank
-					lines, for the lower view of split screen (Halo 1: NHE's
-					clock), only once with one view: the Xbox's font pushed
-					the copy to the screen's edge, the port's high-res text
-					keeps it on screen */
+					/* port: a title of Halo 1: NHE's maps that repeats itself
+					after a run of blank lines, for the lower view of split
+					screen (their clock), only once with one view: the Xbox's
+					font pushed the copy to the screen's edge, the port's
+					high-res text keeps it on screen. Only on their maps, and
+					only where there is text before the run (one that starts
+					with blank lines, to push its text down, is drawn whole) */
 					/* (one per title slot: the text is drawn later in the
 					frame, so the titles cannot share one) */
 					static wchar_t first_copies[MAXIMUM_QUEUED_CINEMATIC_TITLES][64];
 					wchar_t *first_copy = first_copies[title_slot_index];
 
-					if (text && local_player_count() <= 1)
+					if (text && local_player_count() <= 1 && hs_scenario_is_nhe())
 					{
 						short index;
 						short blank_lines = 0;
@@ -550,11 +560,15 @@ void cinematic_render(
 							{
 								if (++blank_lines >= 5)
 								{
-									/* (cut where the run began) */
+									/* (cut where the run began, if after
+									text) */
 									while (index > 0 && (first_copy[index - 1] == L'\n' || first_copy[index - 1] == L'\r'))
 										index--;
-									first_copy[index] = 0;
-									text = first_copy;
+									if (index > 0)
+									{
+										first_copy[index] = 0;
+										text = first_copy;
+									}
 									break;
 								}
 							}

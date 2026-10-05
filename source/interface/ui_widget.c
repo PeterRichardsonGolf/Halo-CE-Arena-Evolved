@@ -872,13 +872,7 @@ enum
 	_text_box_flashing_text_bit = 2
 };
 
-enum
-{
-	_text_justification_left,
-	_text_justification_right,
-	_text_justification_center,
-	NUMBER_OF_TEXT_JUSTIFICATIONS
-};
+/* (the text justifications: draw_string.h) */
 
 enum
 {

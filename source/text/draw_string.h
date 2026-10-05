@@ -10,6 +10,16 @@ header included in hcex build.
 
 /* ---------- constants */
 
+/* port: a line's justification (draw_string_set_draw_mode,
+draw_string_set_format), one enum for all of its callers */
+enum text_justification
+{
+	_text_justification_left = 0,
+	_text_justification_right,
+	_text_justification_center,
+	NUMBER_OF_TEXT_JUSTIFICATIONS
+};
+
 /* ---------- macros */
 
 /* ---------- structures */

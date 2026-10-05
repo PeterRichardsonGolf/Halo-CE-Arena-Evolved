@@ -127,10 +127,7 @@ enum
 	NUMBER_OF_TEXT_FLAGS = 4,
 	MAXIMUM_NUMBER_OF_TAB_STOPS = 16,
 
-	_text_justification_left = 0,
-	_text_justification_right,
-	_text_justification_center,
-	NUMBER_OF_TEXT_JUSTIFICATIONS,
+	/* (the justifications: draw_string.h) */
 
 	_draw_text_wrap_horizontally_bit = 0,
 	_draw_text_wrap_vertically_bit,

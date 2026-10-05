@@ -7308,19 +7308,35 @@ void game_engine_initialize_for_new_map(
 	the map and the game variant are known */
 	item_timers_map_begin();
 
-	/* port: the rules this game plays by, in the log (the gametype's port
-	options and starting equipment, its vehicle set: Halo 1: NHE's mode) */
+	return;
+}
+
+/* port: the rules this game plays by, in the log (the gametype's port
+options and starting equipment, its time limit, its vehicle set: Halo 1:
+NHE's mode). After the scripts are set up for the new map (game.c), so that
+hs_scenario_is_nhe is this map's */
+void game_engine_log_rules(
+	void)
+{
 	if (game_engine)
 	{
 		static char const *const health_styles[] = { "classic", "reach", "halo 3", "halo 2" };
 		unsigned long flags = global_variant.universal_variant.flags;
+		long time_limit = game_variant_options_get()->time_limit;
+		char time_limit_string[32];
 
+		if (time_limit > 0)
+			_snprintf(time_limit_string, sizeof(time_limit_string) - 1, "%ld min", time_limit);
+		else
+			_snprintf(time_limit_string, sizeof(time_limit_string) - 1, "none");
+		time_limit_string[sizeof(time_limit_string) - 1] = 0;
 		error(_error_silent, "game rules: health %s, fall damage %s, starting equipment %s, vehicle set %ld, "
-			"timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
+			"time limit %s, timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
 			health_styles[(flags & GAME_VARIANT_HEALTH_STYLE_MASK) >> _game_variant_health_style_first_bit],
 			TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
 			global_variant.universal_variant.vehicle_set,
+			time_limit_string,
 			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
 			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
 			TEST_FLAG(flags, _game_variant_no_spread_bit) ? "on" : "off",

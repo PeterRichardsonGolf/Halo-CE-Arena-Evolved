@@ -521,6 +521,9 @@ void game_engine_initialize(
 
 void game_engine_initialize_for_new_map(
 	void);
+/* port: the game's rules in the log, after the scripts' setup (game.c) */
+void game_engine_log_rules(
+	void);
 void game_engine_player_added(
 	long player_index);
 
