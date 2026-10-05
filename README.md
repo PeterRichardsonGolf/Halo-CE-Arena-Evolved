@@ -123,9 +123,10 @@ play:
   the rockets and "rockets are up" as they spawn; ITEMS + CLOCK adds NHE's
   talking timer (the minutes, thirty and twenty seconds left, ten to one,
   beeps). An item's call that would meet the clock's moves earlier, so
-  none is lost. VOICE picks a voice pack in `voices/`. For now the voice is
-  your own import of NHE's clips (`tools/import_nhe_voice.py`); none ships
-  with the game.
+  none is lost. VOICE picks a voice pack in `voices/`. The default voice is
+  Cori, a beta voice that ships with every build (made with Piper and the
+  public-domain en_GB-cori-high voice; the clips are CC0). NHE's own clips
+  are an optional import (`tools/import_nhe_voice.py`; none ships).
 
 **Mods**
 - Settings > Game Options > MOD picks a folder in `mods/`; its `maps` are
@@ -151,8 +152,8 @@ Three rulesets under one roof:
    rather than guessed.
 
 Next up: item spawn waypoints and spawn markers in team colours in the
-style of Halo Infinite, and a voice of our own for the callouts, calling
-every item (the shotgun first), not only NHE's power items.
+style of Halo Infinite, and more of our own voice for the callouts (Cori, beta, ships
+now), calling every item.
 
 ## You need your own copy of Halo
 

@@ -6,7 +6,17 @@ releases yet, so the sections are dated.
 
 ## Unreleased
 
+### Added
+- The Cori beta voice pack ships with every build (`port/assets/voices/cori`,
+  76 clips, made with Piper and the public-domain en_GB-cori-high voice,
+  released CC0; credits in its folder). Every build copies it beside the game
+  as `voices/` (linux, linux64, windows, windows64, macOS next to the bundle
+  and in the release folders; not yet Android's APK). Its builder, picked
+  takes and beeps are in `tools/voices/` (optional).
+
 ### Changed
+- `game.callout_voice` defaults to `cori` (CALLOUTS stays off by default). NHE's
+  imported voice remains an option.
 - CALLOUTS: items spawning together are called together when the voice pack
   has the line, before the separate calls: an overshield and a camo,
   `overshield_camo_in_ten` and `overshield_camo_up`; three items or more,

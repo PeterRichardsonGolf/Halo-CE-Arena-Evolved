@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .version import release_build, version
+from .voice_assets import voices_build
 from .linux_build import (CUSTOM_EDITION_DEFINES, LINUX_PROFILE, MBEDTLS_DIR, MINIUPNPC_DIR, OPTIMISATION, STB_DIR, WINDOWS_PROFILE,
                           XDK_INCLUDE, game_browser_defines, lto_mode, march_flag, miniupnpc_sources, pgo_mode, compile_launcher, game_defines_and_includes,
                           game_sources, musl_math_cflags, musl_math_sources, pgo_profile, profile_use_flags,
@@ -637,5 +638,6 @@ def generate_windows_target(n: Writer, sln: Any, target: WindowsTarget) -> None:
     # internet play's MQTT brokers, a file beside the game (network.brokers_file)
     brokers = build / "brokers.txt"
     n.build(outputs=brokers, rule=f"{prefix}_copy", inputs=Path("port/assets/network/brokers.txt"))
-    n.build(outputs=prefix, rule="phony", inputs=[output, sdl_dll, brokers])
+    voices = voices_build(n, f"{prefix}_copy", build)
+    n.build(outputs=prefix, rule="phony", inputs=[output, sdl_dll, brokers, *voices])
     n.newline()

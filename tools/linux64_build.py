@@ -25,6 +25,7 @@ from .lp64_build import (
     lp64_game_flags,
 )
 from .ninja_syntax import Writer
+from .voice_assets import voices_build
 
 LINUX64_TARGET = "--target=x86_64-linux-gnu"
 
@@ -110,5 +111,6 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
     brokers = build_dir / "brokers.txt"
     n.rule(name="linux64_copy", command="cp $in $out", description="LINUX64 COPY $out")
     n.build(outputs=brokers, rule="linux64_copy", inputs=Path("port/assets/network/brokers.txt"))
-    n.build(outputs="linux64", rule="phony", inputs=[output, brokers])
+    voices = voices_build(n, "linux64_copy", build_dir)
+    n.build(outputs="linux64", rule="phony", inputs=[output, brokers, *voices])
     n.newline()

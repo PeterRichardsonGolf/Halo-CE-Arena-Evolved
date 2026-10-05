@@ -29,6 +29,7 @@ from .lp64_build import (
     lp64_game_flags,
 )
 from .ninja_syntax import Writer
+from .voice_assets import voices_build
 from .version import version
 
 PORT_DIR = Path("port/macos")
@@ -188,5 +189,9 @@ def generate_macos_build(n: Writer, sln: Any) -> None:
     )
     n.build(outputs=bundle / "Contents" / "MacOS" / "halo", rule="macos_bundle", inputs=output,
             implicit=[PORT_DIR / "bundle.py", PORT_DIR / "Info.plist", PORT_DIR / "AppIcon.icns"])
-    n.build(outputs="macos", rule="phony", inputs=[output, bundle / "Contents" / "MacOS" / "halo"])
+    # the built-in callout voices (voices/), beside the bundle: the data root
+    # is the game's data folder, not the bundle (copy the folder there)
+    n.rule(name="macos_copy", command="cp $in $out", description="MACOS COPY $out")
+    voices = voices_build(n, "macos_copy", build_dir)
+    n.build(outputs="macos", rule="phony", inputs=[output, bundle / "Contents" / "MacOS" / "halo", *voices])
     n.newline()

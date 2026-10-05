@@ -1,0 +1,360 @@
+{
+ "voice": "en_GB-cori-high (public domain, Piper)",
+ "clips": {
+  "one": {
+   "text": "one.",
+   "rate": 22050,
+   "seconds": 0.778
+  },
+  "two": {
+   "text": "two.",
+   "rate": 22050,
+   "seconds": 0.546
+  },
+  "three": {
+   "text": "three.",
+   "rate": 22050,
+   "seconds": 0.604
+  },
+  "four": {
+   "text": "four.",
+   "rate": 22050,
+   "seconds": 0.58
+  },
+  "five": {
+   "text": "five.",
+   "rate": 22050,
+   "seconds": 0.72
+  },
+  "six": {
+   "text": "six.",
+   "rate": 22050,
+   "seconds": 0.789
+  },
+  "seven": {
+   "text": "seven.",
+   "rate": 22050,
+   "seconds": 0.755
+  },
+  "eight": {
+   "text": "eight.",
+   "rate": 22050,
+   "seconds": 0.65
+  },
+  "nine": {
+   "text": "nine.",
+   "rate": 22050,
+   "seconds": 0.65
+  },
+  "ten": {
+   "text": "ten.",
+   "rate": 22050,
+   "seconds": 0.569
+  },
+  "twenty_seconds": {
+   "text": "twenty seconds",
+   "rate": 22050,
+   "seconds": 1.486
+  },
+  "thirty_seconds_left": {
+   "text": "thirty seconds [[ l\u02c8\u025bft\u02b0 ]]",
+   "rate": 22050,
+   "seconds": 1.811
+  },
+  "one_minute": {
+   "text": "one minute.",
+   "rate": 22050,
+   "seconds": 1.173
+  },
+  "two_minutes": {
+   "text": "two minutes.",
+   "rate": 22050,
+   "seconds": 1.509
+  },
+  "three_minutes": {
+   "text": "three minutes.",
+   "rate": 22050,
+   "seconds": 1.335
+  },
+  "four_minutes": {
+   "text": "four minutes.",
+   "rate": 22050,
+   "seconds": 1.335
+  },
+  "five_minutes": {
+   "text": "five minutes.",
+   "rate": 22050,
+   "seconds": 1.544
+  },
+  "six_minutes": {
+   "text": "six minutes.",
+   "rate": 22050,
+   "seconds": 1.649
+  },
+  "seven_minutes": {
+   "text": "seven minutes.",
+   "rate": 22050,
+   "seconds": 1.509
+  },
+  "eight_minutes": {
+   "text": "eight minutes.",
+   "rate": 22050,
+   "seconds": 1.509
+  },
+  "nine_minutes": {
+   "text": "nine minutes.",
+   "rate": 22050,
+   "seconds": 1.695
+  },
+  "ten_minutes": {
+   "text": "ten minutes.",
+   "rate": 22050,
+   "seconds": 1.335
+  },
+  "eleven_minutes": {
+   "text": "eleven minutes.",
+   "rate": 22050,
+   "seconds": 1.625
+  },
+  "twelve_minutes": {
+   "text": "twelve minutes.",
+   "rate": 22050,
+   "seconds": 1.486
+  },
+  "thirteen_minutes": {
+   "text": "thirteen minutes.",
+   "rate": 22050,
+   "seconds": 1.625
+  },
+  "fourteen_minutes": {
+   "text": "fourteen minutes.",
+   "rate": 22050,
+   "seconds": 1.521
+  },
+  "fifteen_minutes": {
+   "text": "fifteen minutes.",
+   "rate": 22050,
+   "seconds": 1.614
+  },
+  "sixteen_minutes": {
+   "text": "sixteen minutes.",
+   "rate": 22050,
+   "seconds": 1.939
+  },
+  "seventeen_minutes": {
+   "text": "seventeen minutes.",
+   "rate": 22050,
+   "seconds": 1.788
+  },
+  "eighteen_minutes": {
+   "text": "eighteen minutes.",
+   "rate": 22050,
+   "seconds": 1.776
+  },
+  "nineteen_minutes": {
+   "text": "nineteen minutes.",
+   "rate": 22050,
+   "seconds": 1.649
+  },
+  "twenty_minutes": {
+   "text": "twenty minutes.",
+   "rate": 22050,
+   "seconds": 1.567
+  },
+  "twenty_one_minutes": {
+   "text": "twenty one minutes.",
+   "rate": 22050,
+   "seconds": 1.707
+  },
+  "twenty_two_minutes": {
+   "text": "twenty two minutes.",
+   "rate": 22050,
+   "seconds": 1.788
+  },
+  "twenty_three_minutes": {
+   "text": "twenty three minutes.",
+   "rate": 22050,
+   "seconds": 1.974
+  },
+  "twenty_four_minutes": {
+   "text": "twenty four minutes.",
+   "rate": 22050,
+   "seconds": 1.683
+  },
+  "twenty_five_minutes": {
+   "text": "twenty five minutes.",
+   "rate": 22050,
+   "seconds": 1.962
+  },
+  "twenty_six_minutes": {
+   "text": "twenty six minutes.",
+   "rate": 22050,
+   "seconds": 1.625
+  },
+  "twenty_seven_minutes": {
+   "text": "twenty seven minutes.",
+   "rate": 22050,
+   "seconds": 1.846
+  },
+  "twenty_eight_minutes": {
+   "text": "twenty eight minutes.",
+   "rate": 22050,
+   "seconds": 1.741
+  },
+  "twenty_nine_minutes": {
+   "text": "twenty nine minutes.",
+   "rate": 22050,
+   "seconds": 1.846
+  },
+  "thirty_minutes": {
+   "text": "thirty minutes.",
+   "rate": 22050,
+   "seconds": 1.521
+  },
+  "rockets": {
+   "text": "rockets",
+   "rate": 22050,
+   "seconds": 0.708
+  },
+  "red_rockets": {
+   "text": "red rockets",
+   "rate": 22050,
+   "seconds": 1.149
+  },
+  "blue_rockets": {
+   "text": "blue rockets",
+   "rate": 22050,
+   "seconds": 1.068
+  },
+  "sniper": {
+   "text": "sniper",
+   "rate": 22050,
+   "seconds": 0.917
+  },
+  "camo": {
+   "text": "cammo",
+   "rate": 22050,
+   "seconds": 0.464
+  },
+  "overshield": {
+   "text": "[[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]] in ten",
+   "rate": 22050,
+   "seconds": 2.009
+  },
+  "shotgun": {
+   "text": "shotgun",
+   "rate": 22050,
+   "seconds": 0.789
+  },
+  "rockets_in_ten": {
+   "text": "rockets in ten",
+   "rate": 22050,
+   "seconds": 1.219
+  },
+  "sniper_in_ten": {
+   "text": "sniper in ten",
+   "rate": 22050,
+   "seconds": 1.219
+  },
+  "camo_in_ten": {
+   "text": "cammo in ten",
+   "rate": 22050,
+   "seconds": 1.068
+  },
+  "overshield_in_ten": {
+   "text": "[[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]] in ten",
+   "rate": 22050,
+   "seconds": 2.02
+  },
+  "shotgun_in_ten": {
+   "text": "shotgun in ten",
+   "rate": 22050,
+   "seconds": 1.509
+  },
+  "rockets_up": {
+   "text": "rockets are up",
+   "rate": 22050,
+   "seconds": 1.115
+  },
+  "sniper_up": {
+   "text": "sniper is up",
+   "rate": 22050,
+   "seconds": 1.254
+  },
+  "camo_up": {
+   "text": "active cammo is up",
+   "rate": 22050,
+   "seconds": 1.695
+  },
+  "overshield_up": {
+   "text": "[[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]] is up",
+   "rate": 22050,
+   "seconds": 1.393
+  },
+  "shotgun_up": {
+   "text": "shotgun is up",
+   "rate": 22050,
+   "seconds": 1.149
+  },
+  "red_sniper": {
+   "text": "red sniper",
+   "rate": 22050,
+   "seconds": 1.138
+  },
+  "red_camo": {
+   "text": "red cammo",
+   "rate": 22050,
+   "seconds": 1.776
+  },
+  "red_overshield": {
+   "text": "red [[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]]",
+   "rate": 22050,
+   "seconds": 1.521
+  },
+  "red_shotgun": {
+   "text": "red shotgun",
+   "rate": 22050,
+   "seconds": 1.358
+  },
+  "blue_sniper": {
+   "text": "blue sniper",
+   "rate": 22050,
+   "seconds": 1.068
+  },
+  "blue_camo": {
+   "text": "blue cammo",
+   "rate": 22050,
+   "seconds": 0.929
+  },
+  "blue_overshield": {
+   "text": "blue [[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]]",
+   "rate": 22050,
+   "seconds": 1.672
+  },
+  "blue_shotgun": {
+   "text": "blue shotgun",
+   "rate": 22050,
+   "seconds": 1.045
+  },
+  "overshield_or_camo_in_ten": {
+   "text": "[[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]] or cammo in ten",
+   "rate": 22050,
+   "seconds": 2.403
+  },
+  "overshield_camo_in_ten": {
+   "text": "[[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]] and cammo in ten seconds",
+   "rate": 22050,
+   "seconds": 2.717
+  },
+  "overshield_camo_up": {
+   "text": "[[ \u02c8o\u028av\u025a\u0283\u02cci\u02d0ld ]] and cammo are up",
+   "rate": 22050,
+   "seconds": 2.717
+  },
+  "powerups_in_ten": {
+   "text": "powerups in ten",
+   "rate": 22050,
+   "seconds": 1.312
+  }
+ }
+}

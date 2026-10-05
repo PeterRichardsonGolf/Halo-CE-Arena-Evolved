@@ -159,6 +159,8 @@ def main() -> int:
     # Android's APK has its own copy)
     if args.platform != "android":
         shutil.copy2(ROOT / "port/assets/network/brokers.txt", dist / "brokers.txt")
+        # the built-in callout voices, a folder beside the game
+        shutil.copytree(ROOT / "port/assets/voices", dist / "voices")
     return 0
 
 

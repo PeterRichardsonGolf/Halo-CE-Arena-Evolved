@@ -308,7 +308,7 @@ static const struct config_setting config_settings[] =
 		"voice has it); \"items_clock\" also Halo 1: NHE's talking timer (the\n"
 		"minutes, thirty and twenty seconds left, ten to one, its beeps); \"off\".\n"
 		"Silent on Halo 1: NHE's maps, whose own scripts talk." },
-	{ "game.callout_voice", _config_string, "\"nhe\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
+	{ "game.callout_voice", _config_string, "\"cori\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
 		"The callouts' voice: a folder of voices/ (next to maps/) holding WAVs\n"
 		"named for what they say (one.wav, rockets.wav, ...); the mod played's\n"
 		"own mods/<mod>/voices/<folder>/ clips come first. With no such folder,\n"

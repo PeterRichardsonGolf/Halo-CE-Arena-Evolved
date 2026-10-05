@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from .embed_assets import hud_assets_build, hud_configure_inputs, ui_fonts_build
 from .ninja_syntax import Writer
+from .voice_assets import voices_build
 from .version import release_build, version
 
 PORT_DIR = Path("port/linux")
@@ -597,5 +598,6 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
     brokers = build_dir / "brokers.txt"
     n.rule(name="linux_copy", command="cp $in $out", description="LINUX COPY $out")
     n.build(outputs=brokers, rule="linux_copy", inputs=Path("port/assets/network/brokers.txt"))
-    n.build(outputs="linux", rule="phony", inputs=[output, brokers])
+    voices = voices_build(n, "linux_copy", build_dir)
+    n.build(outputs="linux", rule="phony", inputs=[output, brokers, *voices])
     n.newline()
