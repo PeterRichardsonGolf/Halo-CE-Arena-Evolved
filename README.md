@@ -54,7 +54,14 @@ split screen. The match clock is its own setting (below).
 TRAINING adds, as Halo 1: NHE's Training mode did: a waypoint over each power
 item (rockets, sniper rifle, overshield, camo) from 10 seconds before it spawns
 to 20 seconds after, and green markers on the floor at the player spawns this
-gametype uses (within 25 units, hidden behind walls).
+gametype uses (within 25 units, hidden behind walls). Each waypoint is
+labelled with the item and the time to its spawn ("OVERSHIELD 0:08"), then
+the item alone once it is on the map; a spawn that can be either powerup
+(Blood Gulch's) reads OS/CAMO until it spawns, then the one it spawned. The
+label is red for an item at the red base, blue at the blue base, the HUD's
+colour in the middle (as near to both: within 15% of the bases' distance
+apart). An item a map has at both bases is RED or BLUE in its name, in the
+power list too (RED SNIPER, BLUE SNIPER on Blood Gulch).
 
 These are the host's rules. Players on Arena Evolved see and play them all.
 Players who join on a build without them still play the host's rules where

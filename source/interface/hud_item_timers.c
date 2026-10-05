@@ -52,7 +52,11 @@ each power entry's spawn point while item_timer_waypoint_shown, drawn as
 the game engine draws its goals' (game_engine_render_nav_points): occluded
 or not by a line of sight test from the player's head each frame, at the
 view's edge pointing to it when off screen. For every player (NHE turns
-them on for both teams), only while alive, as the game's nav points.
+them on for both teams), only while alive, as the game's nav points. Each
+has a label over its arrow (hud_item_timers_draw_waypoint_label): the
+item's name and the time to its spawn, the name alone once it is on the
+map, in its base's colour (item_timers.c's sides), following the arrow to
+the view's edge.
 */
 
 /* ---------- headers */
@@ -88,6 +92,8 @@ them on for both teams), only while alive, as the game's nav points.
 #define HUD_ITEM_TIMERS_CLOCK_BOTTOM 0.06f	/* (of the view's height, with no motion sensor) */
 #define HUD_ITEM_TIMERS_MAXIMUM_ENTRIES 64
 #define HUD_ITEM_TIMERS_LINE_LENGTH 160
+#define HUD_ITEM_TIMERS_LABEL_ALPHA 0.9f	/* (a waypoint's label, over the world) */
+#define HUD_ITEM_TIMERS_LABEL_GAP 2	/* (between a waypoint's arrow and its label) */
 
 /* ---------- globals */
 
@@ -279,10 +285,12 @@ static long hud_item_timers_power_line(
 		wchar_t time_string[32];
 		boolean merged = FALSE;
 
-		/* (one of a class spawning with another, as the same second, is one) */
+		/* (one of a class spawning with another, as the same second, is one;
+		not one at the other team's base: RED SNIPER, BLUE SNIPER) */
 		for (other = 0; other < index; other++)
 		{
 			if (entries[other]->timer_class == entries[index]->timer_class &&
+				!ustrcmp(entries[other]->label, entries[index]->label) &&
 				(left[other] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND == (left[index] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND)
 			{
 				merged = TRUE;
@@ -416,13 +424,142 @@ void hud_draw_item_timers(
 	return;
 }
 
-/* TRAINING's waypoints over the power entries, in this local player's
-view (from hud_draw_screen, where the game's nav points are drawn) */
+/* TRAINING's label over a waypoint's arrow (where custom_render_nav_point_placed
+drew it): the item's name (item_timer_waypoint_name) and the time to its
+spawn, the name alone once the item is on the map; in its base's colour
+(red, blue, else the HUD's), centred over the arrow, kept in HUD AREA's
+part of the view (an arrow at the view's top: under it), and clear of the
+labels drawn before it in this view (placed, *placed_count of them; arrows
+together at the view's edge): above them, else below */
+static void hud_item_timers_draw_waypoint_label(
+	long font_index,
+	struct item_timer const *timer,
+	struct hud_nav_point_placement const *placement,
+	rectangle2d *placed,
+	short *placed_count)
+{
+	wchar_t name[32];
+	wchar_t text[48];
+	real_argb_color color;
+	rectangle2d bounds;
+	long width;
+	long height = (long)(hud_item_timers_line_height(font_index) * HUD_ITEM_TIMERS_SCALE + 0.5f);
+	/* (HUD AREA's part of the view, render.camera.window_bounds in its
+	pass, in the view's coordinates) */
+	long left = render.camera.window_bounds.x0 - render.camera.viewport_bounds.x0;
+	long right = render.camera.window_bounds.x1 - render.camera.viewport_bounds.x0;
+	long top_edge = render.camera.window_bounds.y0 - render.camera.viewport_bounds.y0;
+	long bottom_edge = render.camera.window_bounds.y1 - render.camera.viewport_bounds.y0;
+	long x;
+	long top;
+
+	item_timer_waypoint_name(timer, name, NUMBEROF(name));
+	if (item_timer_ticks_left(timer) <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)
+	{
+		wchar_t time_string[32];
+
+		game_engine_format_clock(item_timer_ticks_left(timer), TRUE, time_string, NUMBEROF(time_string));
+		usnprintf(text, NUMBEROF(text), L"%s %s", name, time_string);
+	}
+	else
+	{
+		usnprintf(text, NUMBEROF(text), L"%s", name);
+	}
+	text[NUMBEROF(text) - 1] = 0;
+	width = hud_item_timers_line_width(font_index, text);
+	if (width <= 0)
+		return;
+
+	/* (centred over the arrow; under it where that is off the top) */
+	x = placement->x - width / 2;
+	top = placement->y - placement->half_height - HUD_ITEM_TIMERS_LABEL_GAP - height;
+	if (top < top_edge)
+		top = placement->y + placement->half_height + HUD_ITEM_TIMERS_LABEL_GAP;
+	x = PIN(x, left, MAX(right - width, left));
+	top = PIN(top, top_edge, MAX(bottom_edge - height, top_edge));
+	{
+		long first_top = top;
+		short direction = -1;
+		short attempt;
+
+		for (attempt = 0; attempt < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; attempt++)
+		{
+			short other;
+
+			for (other = 0; other < *placed_count; other++)
+			{
+				if (x < placed[other].x1 + HUD_ITEM_TIMERS_LABEL_GAP * 2 &&
+					placed[other].x0 < x + width + HUD_ITEM_TIMERS_LABEL_GAP * 2 &&
+					top < placed[other].y1 && placed[other].y0 < top + height)
+				{
+					break;
+				}
+			}
+			if (other >= *placed_count)
+				break;
+			/* (a line further up, else from where it was, down) */
+			top = direction < 0 ? placed[other].y0 - height - 1 : placed[other].y1 + 1;
+			if (direction < 0 && top < top_edge)
+			{
+				direction = 1;
+				top = first_top;
+			}
+			else if (direction > 0 && top > bottom_edge - height)
+				break;
+		}
+	}
+	if (*placed_count < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+	{
+		placed[*placed_count].x0 = (short)x;
+		placed[*placed_count].x1 = (short)(x + width);
+		placed[*placed_count].y0 = (short)top;
+		placed[*placed_count].y1 = (short)(top + height);
+		(*placed_count)++;
+	}
+
+	switch (timer->side)
+	{
+	case _item_timer_side_red:
+		color.red = 1.0f;
+		color.green = 0.3f;
+		color.blue = 0.3f;
+		break;
+
+	case _item_timer_side_blue:
+		color.red = 0.35f;
+		color.green = 0.55f;
+		color.blue = 1.0f;
+		break;
+
+	default:
+		color = hud_globals->messaging.text_color;
+		break;
+	}
+	color.alpha = HUD_ITEM_TIMERS_LABEL_ALPHA;
+
+	/* (laid out at full size from its left, drawn at four fifths about
+	its top left corner) */
+	bounds.x0 = (short)x;
+	bounds.y0 = (short)top;
+	bounds.x1 = (short)(x + width / HUD_ITEM_TIMERS_SCALE + 8);
+	bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
+	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
+	rasterizer_text_set_scale(HUD_ITEM_TIMERS_SCALE, (real)bounds.x0, (real)bounds.y0);
+	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+}
+
+/* TRAINING's waypoints over the power entries, with their labels, in this
+local player's view (from hud_draw_screen, where the game's nav points are
+drawn) */
 void hud_draw_item_waypoints(
 	short local_player_index)
 {
 	short count = item_timers_count();
 	short nav_index = NONE;
+	long font_index = hud_item_timers_font_index();
+	rectangle2d placed[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	short placed_count = 0;
 	long player_index;
 	long unit_index;
 	real_point3d head_position;
@@ -442,6 +579,7 @@ void hud_draw_item_waypoints(
 	for (index = 0; index < count; index++)
 	{
 		struct item_timer const *timer = item_timers_get(index);
+		struct hud_nav_point_placement placement;
 		real_point3d position;
 		short render_type;
 
@@ -457,7 +595,9 @@ void hud_draw_item_waypoints(
 		position = timer->position;
 		position.z += ITEM_TIMER_WAYPOINT_HEIGHT;
 		render_type = hud_get_nav_point_render_type(local_player_index, &head_position, &position, NONE);
-		custom_render_nav_point(local_player_index, &position, nav_index, render_type);
+		custom_render_nav_point_placed(local_player_index, &position, nav_index, render_type, &placement);
+		if (placement.drawn && font_index != NONE)
+			hud_item_timers_draw_waypoint_label(font_index, timer, &placement, placed, &placed_count);
 	}
 }
 

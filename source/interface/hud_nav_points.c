@@ -700,6 +700,20 @@ void custom_render_nav_point(
 	short nav_index,
 	short waypoint_type)
 {
+	custom_render_nav_point_placed(local_player_index, position, nav_index, waypoint_type, NULL);
+
+	return;
+}
+
+/* port: custom_render_nav_point, and where it drew the arrow (placement,
+NULL for none): TRAINING's waypoint labels (hud_item_timers.c) go by it */
+void custom_render_nav_point_placed(
+	short local_player_index,
+	real_point3d const *position,
+	short nav_index,
+	short waypoint_type,
+	struct hud_nav_point_placement *placement)
+{
 	long return_eip = get_return_eip();
 	long stack_buffer[STACK_BUFFER_LENGTH];
 	struct hud_waypoint_arrow *arrow;
@@ -715,6 +729,8 @@ void custom_render_nav_point(
 	real theta;
 
 	csmemset(stack_buffer, 0x62, sizeof(stack_buffer));
+	if (placement)
+		csmemset(placement, 0, sizeof(*placement));
 
 	arrow = TAG_BLOCK_GET_ELEMENT(
 		&hud_globals->waypoint.arrows,
@@ -882,6 +898,20 @@ void custom_render_nav_point(
 				theta,
 				((pixel32)alpha<<24) | real_rgb_color_to_pixel32(&rgb_temp),
 				FALSE);
+
+			/* port: where the arrow is: its middle, and half its size
+			either way it may be turned (an arrow at the view's edge) */
+			if (placement)
+			{
+				real width = (clip->x1-clip->x0)*(real)bitmap->width*arrow_scale;
+				real height = (clip->y1-clip->y0)*(real)bitmap->height*arrow_scale;
+
+				placement->drawn = TRUE;
+				placement->off_screen = waypoint_type==_waypoint_off_screen;
+				placement->x = point.x;
+				placement->y = point.y;
+				placement->half_height = (short)((placement->off_screen ? MAX(width, height) : height)*0.5f + 0.5f);
+			}
 
 			if (waypoint_type!=_waypoint_off_screen)
 			{

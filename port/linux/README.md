@@ -104,6 +104,9 @@ WAVs in `voices/<pack>/` in the data root (`one.wav` ... `ten.wav`,
 on, with a `manifest.json`). A pack may also have `beep_minute.wav`,
 `beep_tick.wav` and `beep_item.wav` (else `beep.wav` is used),
 `rockets_in_ten.wav` and the like for the 10-second calls (else the name),
+`red_rockets.wav` / `blue_rockets.wav` (and `red_sniper`, `blue_overshield`
+and so on) for the 10-second call of an item a map has at both bases (else
+the call above, said once for both),
 and `rockets_up.wav`, `sniper_up.wav`, `overshield_up.wav`, `camo_up.wav`
 said at the spawn (else nothing). `python tools/import_nhe_voice.py
 <mods/NHE/maps> <data root>/voices/nhe` makes the `nhe` pack from Halo 1:

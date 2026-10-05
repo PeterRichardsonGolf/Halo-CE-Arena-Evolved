@@ -27,7 +27,7 @@ as it is).
 #include <stdlib.h>
 #include <string.h>
 
-#define MAXIMUM_CALLOUT_CLIPS 64
+#define MAXIMUM_CALLOUT_CLIPS 96
 #define MAXIMUM_PACK_NAME 64
 /* (a callout is a word or two: no clip is near this) */
 #define MAXIMUM_CLIP_FILE_BYTES (16L * 1024 * 1024)

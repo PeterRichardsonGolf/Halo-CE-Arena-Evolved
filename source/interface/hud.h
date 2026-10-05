@@ -129,6 +129,21 @@ void custom_render_nav_point(
 	union real_point3d const *position,
 	short nav_index,
 	short waypoint_type);
+/* port: where custom_render_nav_point_placed drew its arrow */
+struct hud_nav_point_placement
+{
+	boolean drawn;
+	boolean off_screen;	/* at the view's edge, pointing to it */
+	short half_height;	/* half the arrow's drawn size, up and down */
+	short x;	/* its middle, in the view's coordinates */
+	short y;
+};
+void custom_render_nav_point_placed(
+	short local_player_index,
+	union real_point3d const *position,
+	short nav_index,
+	short waypoint_type,
+	struct hud_nav_point_placement *placement);
 
 /* ---------- prototypes/HUD_SOUNDS.C */
 

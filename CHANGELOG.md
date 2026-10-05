@@ -7,6 +7,15 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Changed
+- TRAINING's waypoints are labelled: the item and the time to its spawn
+  ("OVERSHIELD 0:08"), the item alone once it is on the map, following the
+  arrow to the view's edge when off screen. Blood Gulch's mixed spawn reads
+  OS/CAMO until it spawns, then OVERSHIELD or CAMO. Labels are red or blue
+  for an item at a team's base (nearer the team's CTF flag, else its player
+  spawns), the HUD's colour in the middle. An item at both bases is named
+  with its side, RED SNIPER / BLUE SNIPER, in the power list too; its
+  10-second callout is `red_<item>` / `blue_<item>` when the voice pack has
+  the clip (Boarding Action's red and blue rockets).
 - CALLOUTS: item calls in any gametype (no longer only with TIMERS or
   TRAINING). A voice pack may have a beep per moment (`beep_minute`,
   `beep_tick` at :20/:30/:40, `beep_item` before item calls; each falls back

@@ -11,7 +11,9 @@ its own.
 ITEMS, in any gametype: each power item's call (rockets, sniper, overshield,
 camo) 10 seconds before each of its spawns after the game's start, from its
 real period (item_timers.c): "<item> in ten" when the pack has it, else the
-name, after the pack's item beep. "five" .. "one" in the last 5 seconds
+name, after the pack's item beep; an item at both bases (RED / BLUE before
+its name, item_timers.c) its side's "red <item>" / "blue <item>" when the
+pack has it, each side's said. "five" .. "one" in the last 5 seconds
 before the rockets' spawn, and at each spawn "<item> is up" when the pack
 has it.
 
@@ -80,6 +82,14 @@ enum callout_clip
 	_callout_sniper_up,
 	_callout_overshield_up,
 	_callout_camo_up,
+	_callout_red_rockets,	/* "red <item>", as enum item_timer_class */
+	_callout_red_sniper,
+	_callout_red_overshield,
+	_callout_red_camo,
+	_callout_blue_rockets,	/* "blue <item>", as enum item_timer_class */
+	_callout_blue_sniper,
+	_callout_blue_overshield,
+	_callout_blue_camo,
 	NUMBER_OF_CALLOUT_CLIPS
 };
 
@@ -94,6 +104,8 @@ enum callout_kind
 };
 
 #define MAXIMUM_PLANNED_CALLOUTS 64
+/* the items' calls due together: of each class, its red, blue and plain */
+#define MAXIMUM_SPAWNING_CALLOUTS (3 * NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
 /* an item's call this long before its spawn; the rockets' count from five */
 #define CALLOUT_ITEM_WARNING_TICKS (10 * TICKS_PER_SECOND)
 #define CALLOUT_ITEM_COUNT_TICKS (5 * TICKS_PER_SECOND)
@@ -161,6 +173,8 @@ static char const *const callout_clip_names[NUMBER_OF_CALLOUT_CLIPS] =
 	"beep", "beep_minute", "beep_tick", "beep_item",
 	"rockets_in_ten", "sniper_in_ten", "overshield_in_ten", "camo_in_ten",
 	"rockets_up", "sniper_up", "overshield_up", "camo_up",
+	"red_rockets", "red_sniper", "red_overshield", "red_camo",
+	"blue_rockets", "blue_sniper", "blue_overshield", "blue_camo",
 };
 
 /* the power classes' clips (enum item_timer_class; OS/CAMO's is the
@@ -436,12 +450,34 @@ static long callout_plan_room(
 	return NONE;
 }
 
+/* an item's side clip ("red_rockets", "blue_rockets") when it has RED /
+BLUE before its name (item_timers.c) and the pack has the clip, else NONE */
+static short callout_side_clip(
+	struct item_timer const *timer)
+{
+	short clip;
+
+	if (!timer->side_prefix || timer->timer_class < 0 || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
+		return NONE;
+	if (timer->side == _item_timer_side_red)
+		clip = (short)(_callout_red_rockets + timer->timer_class);
+	else if (timer->side == _item_timer_side_blue)
+		clip = (short)(_callout_blue_rockets + timer->timer_class);
+	else
+		return NONE;
+
+	return callout_clip_ticks(clip) > 0 ? clip : NONE;
+}
+
 /* the power entries spawning at this tick, one of each class (OS/CAMO's
 being the overshield's), in NHE's order: rocket, camo, overshield, sniper
-(its calls before a minute); their count */
+(its calls before a minute); with sides, also each other one of a class
+whose side clip (callout_side_clip) differs (red and blue rockets); their
+count (up to MAXIMUM_SPAWNING_CALLOUTS) */
 static short callout_items_spawning(
 	long spawn,
 	long minimum_period,
+	boolean sides,
 	short *indices)
 {
 	short count = item_timers_count();
@@ -450,18 +486,28 @@ static short callout_items_spawning(
 
 	for (order = 0; order < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; order++)
 	{
+		short class_first = found;
 		short index;
 
-		for (index = 0; index < count; index++)
+		for (index = 0; index < count && found < MAXIMUM_SPAWNING_CALLOUTS; index++)
 		{
 			struct item_timer const *timer = item_timers_get(index);
+			boolean called = FALSE;
+			short other;
 
-			if (timer && timer->timer_class == callout_item_order[order] && timer->period_ticks > 0 &&
-				timer->period_ticks >= minimum_period && spawn % timer->period_ticks == 0)
+			if (!timer || timer->timer_class != callout_item_order[order] || timer->period_ticks <= 0 ||
+				timer->period_ticks < minimum_period || spawn % timer->period_ticks != 0)
 			{
-				indices[found++] = index;
-				break;
+				continue;
 			}
+			/* (the class's call made already: the same clip) */
+			for (other = class_first; other < found; other++)
+			{
+				if (!sides || callout_side_clip(item_timers_get(indices[other])) == callout_side_clip(timer))
+					called = TRUE;
+			}
+			if (!called)
+				indices[found++] = index;
 		}
 	}
 
@@ -479,22 +525,26 @@ static void callouts_plan_items(
 	long now,
 	long known)
 {
-	short indices[NUMBER_OF_ITEM_TIMER_POWER_CLASSES];
+	short indices[MAXIMUM_SPAWNING_CALLOUTS];
 	short found;
 	short index;
-	struct callout group[NUMBER_OF_ITEM_TIMER_POWER_CLASSES];
+	struct callout group[MAXIMUM_SPAWNING_CALLOUTS];
 	short group_count = 0;
 	long length = 0;
 	short beep = callout_beep(_callout_beep_item);
 
 	/* the calls 10 s before a spawn (the next: none for an item spawning
 	more often) */
-	found = callout_items_spawning(tick + CALLOUT_ITEM_WARNING_TICKS, CALLOUT_ITEM_WARNING_TICKS, indices);
+	found = callout_items_spawning(tick + CALLOUT_ITEM_WARNING_TICKS, CALLOUT_ITEM_WARNING_TICKS, TRUE, indices);
 	for (index = 0; index < found; index++)
 	{
 		short item_clip = callout_item_clips[item_timers_get(indices[index])->timer_class];
 		short clip = (short)(_callout_rockets_in_ten + (item_clip - _callout_rockets));
 
+		/* (an item at both bases: "red rockets", "blue rockets", when the
+		pack has them) */
+		if (callout_side_clip(item_timers_get(indices[index])) != NONE)
+			clip = callout_side_clip(item_timers_get(indices[index]));
 		if (callout_clip_ticks(clip) <= 0)
 			clip = item_clip;
 		if (callout_clip_ticks(clip) <= 0)
@@ -542,7 +592,7 @@ static void callouts_plan_items(
 	}
 
 	/* the calls at a spawn */
-	found = callout_items_spawning(tick, 1, indices);
+	found = callout_items_spawning(tick, 1, FALSE, indices);
 	for (index = 0; index < found; index++)
 	{
 		struct callout callout;
