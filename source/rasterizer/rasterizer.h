@@ -848,6 +848,11 @@ void rasterizer_debug_triangle(
 	real_point3d const *p1,
 	real_point3d const *p2,
 	real_argb_color const *color);
+/* port: drawn now (depth tested, blended), three points a triangle */
+void rasterizer_debug_draw_triangles_now(
+	real_point3d const *points,
+	long triangle_count,
+	real_argb_color const *color);
 
 /* ---------- prototypes/RASTERIZER_XBOX_DEBUG.C */
 

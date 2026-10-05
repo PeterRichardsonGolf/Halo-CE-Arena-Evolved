@@ -699,4 +699,55 @@ void rasterizer_debug_triangle(
 	return;
 }
 
+/* port: triangles of one colour drawn now, in the current window, as
+rasterizer_debug_draw draws its non-opaque ones (depth tested against what
+the window has drawn, alpha blended, not writing depth), not queued for the
+window's end: the gametype's TRAINING's spawn markers
+(render_spawn_markers.c), drawn in the world pass before the HUD so the HUD
+draws over them */
+void rasterizer_debug_draw_triangles_now(
+	real_point3d const *points,
+	long triangle_count,
+	real_argb_color const *color)
+{
+	long vertex_count = triangle_count*NUMBER_OF_VERTICES_PER_TRIANGLE;
+	long vertex_buffer_index;
+	struct rasterizer_debug_vertex *vertices;
+	pixel32 pixel;
+	long index;
+
+	/* (the debug drawing state is set only while rasterizer_debug_geometry
+	is on, as it is unless turned off at the console) */
+	if (!debug_data.initialized || !rasterizer_debug_options.draw_debug_geometry ||
+		triangle_count <= 0 || color->alpha <= 0.0f)
+	{
+		return;
+	}
+
+	rasterizer_globals.current_lock_operation = _rasterizer_lock_debug;
+	vertex_buffer_index = rasterizer_dynamic_vertices_new(_rasterizer_vertex_type_debug, vertex_count);
+	if (vertex_buffer_index != NONE)
+	{
+		vertices = rasterizer_dynamic_vertices_lock(vertex_buffer_index);
+		if (vertices)
+		{
+			pixel = real_argb_color_to_pixel32(color);
+			for (index = 0; index < vertex_count; index++)
+			{
+				vertices[index].point = points[index];
+				vertices[index].color = pixel;
+			}
+			rasterizer_dynamic_vertices_unlock(vertex_buffer_index);
+			rasterizer_debug_drawing_begin(FALSE, 0);
+			rasterizer_draw_dynamic_vertices(0, triangle_count, vertex_buffer_index,
+				NUMBER_OF_VERTICES_PER_TRIANGLE);
+			rasterizer_debug_drawing_end();
+		}
+		rasterizer_dynamic_vertices_delete(vertex_buffer_index);
+	}
+	rasterizer_globals.current_lock_operation = _rasterizer_lock_none;
+
+	return;
+}
+
 /* ---------- private code */

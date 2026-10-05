@@ -274,6 +274,16 @@ long item_timer_ticks_left(
 	return timer->period_ticks - game_time_get() % timer->period_ticks;
 }
 
+/* whether TRAINING's markers (the waypoints, render_spawn_markers.c's spawn
+markers) may show now: a TRAINING game on a map not Halo 1: NHE's (their
+scripts draw their own), past the PRE-GAME COUNTDOWN and not over */
+boolean item_timers_training_shown(
+	void)
+{
+	return game_engine_training() && !hs_scenario_is_nhe() && !game_engine_game_over() &&
+		game_engine_pregame_countdown_ticks_left() <= 0;
+}
+
 /* TRAINING's waypoint over a power entry (hud_item_timers.c), as Halo 1:
 NHE's Training mode's (activate_*_waypoint with its call, about 10 s before
 the item's spawn; deactivate_powerup_waypoints at :20 of the spawn's
@@ -293,11 +303,8 @@ boolean item_timer_waypoint_shown(
 	{
 		return FALSE;
 	}
-	if (!game_engine_training() || hs_scenario_is_nhe() || game_engine_game_over() ||
-		game_engine_pregame_countdown_ticks_left() > 0)
-	{
+	if (!item_timers_training_shown())
 		return FALSE;
-	}
 
 	now = game_time_get();
 	if (item_timer_ticks_left(timer) <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)

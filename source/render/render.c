@@ -82,6 +82,7 @@ symbols in this file:
 #include "interface/interface.h"
 #include "editor_stubs.h"
 #include "render_debug.h"
+#include "render/render_spawn_markers.h"
 #include "objects/object_lights_rendering.h"
 #include "effects/particle_systems.h"
 #include "effects/weather_particle_systems.h"
@@ -407,6 +408,10 @@ static void render_window(
 		rasterizer_transparent_geometry_draw(FALSE);
 		rasterizer_transparent_geometry_stop();
 		structure_render_fog_screen();
+		/* port: the gametype's TRAINING's spawn markers, in the world (depth
+		tested) under the HUD (render_spawn_markers.c) */
+		if (local_player_index != NONE)
+			render_spawn_markers(local_player_index);
 		rasterizer_lens_flares_draw();
 		interface_draw_screen();
 		rasterizer_screen_flash();
