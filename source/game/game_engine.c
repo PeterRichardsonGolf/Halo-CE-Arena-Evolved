@@ -4989,13 +4989,37 @@ FULL, both always exact (weapons.c weapon_trigger_error_angle_bounds) */
 short game_engine_no_spread(
 	void)
 {
-	unsigned long flags = global_variant.universal_variant.flags;
-
 	if (!game_engine_running())
 		return _no_spread_off;
+	return game_variant_no_spread_level(global_variant.universal_variant.flags);
+}
+
+/* port: a gametype's NO SPREAD level from its flags: the FULL bit decides,
+else the NHE bit (game_engine.h) */
+short game_variant_no_spread_level(
+	unsigned long flags)
+{
 	if (TEST_FLAG(flags, _game_variant_no_spread_full_bit))
 		return _no_spread_full;
 	return TEST_FLAG(flags, _game_variant_no_spread_bit) ? _no_spread_nhe : _no_spread_off;
+}
+
+/* port: the names the logs give a gametype's NO SPREAD level and HEALTH
+(game_engine_log_rules, arena_gametypes.c's seed log) */
+char const *game_variant_no_spread_name(
+	unsigned long flags)
+{
+	static char const *const no_spread_levels[] = { "off", "nhe", "full" };
+
+	return no_spread_levels[game_variant_no_spread_level(flags)];
+}
+
+char const *game_variant_health_style_name(
+	unsigned long flags)
+{
+	static char const *const health_styles[] = { "classic", "reach", "halo 3", "halo 2" };
+
+	return health_styles[(flags & GAME_VARIANT_HEALTH_STYLE_MASK) >> _game_variant_health_style_first_bit];
 }
 
 /* port: the gametype's PRACTICE MODE (_game_variant_practice_bit): every
@@ -7400,7 +7424,6 @@ void game_engine_log_rules(
 {
 	if (game_engine)
 	{
-		static char const *const health_styles[] = { "classic", "reach", "halo 3", "halo 2" };
 		unsigned long flags = global_variant.universal_variant.flags;
 		long time_limit = game_variant_options_get()->time_limit;
 		char time_limit_string[32];
@@ -7412,15 +7435,14 @@ void game_engine_log_rules(
 		time_limit_string[sizeof(time_limit_string) - 1] = 0;
 		error(_error_silent, "game rules: health %s, fall damage %s, starting equipment %s, vehicle set %ld, "
 			"time limit %s, timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
-			health_styles[(flags & GAME_VARIANT_HEALTH_STYLE_MASK) >> _game_variant_health_style_first_bit],
+			game_variant_health_style_name(flags),
 			TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
 			global_variant.universal_variant.vehicle_set,
 			time_limit_string,
 			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
 			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
-			TEST_FLAG(flags, _game_variant_no_spread_full_bit) ? "full" :
-				TEST_FLAG(flags, _game_variant_no_spread_bit) ? "nhe" : "off",
+			game_variant_no_spread_name(flags),
 			!TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "off" :
 				hs_scenario_is_nhe() ? "on (Halo 1: NHE's map: its scripts')" : "on",
 			TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off");

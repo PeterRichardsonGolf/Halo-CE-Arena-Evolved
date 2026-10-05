@@ -59,9 +59,11 @@ enum
 	_game_variant_no_spread_full_bit = 24,
 };
 
-/* port: NO SPREAD's levels (game_engine_no_spread): OFF, stock spread; NHE,
-_game_variant_no_spread_bit alone; FULL, _game_variant_no_spread_full_bit
-(set with the NHE bit) */
+/* port: NO SPREAD's levels (game_variant_no_spread_level): OFF, stock
+spread; NHE, _game_variant_no_spread_bit alone; FULL,
+_game_variant_no_spread_full_bit (set with the NHE bit). Bit 24 on its own
+(which ARENA OPTIONS never writes) is FULL too: the FULL bit decides,
+whatever the NHE bit is */
 enum no_spread_level
 {
 	_no_spread_off = 0,
@@ -639,6 +641,16 @@ short game_engine_health_style(
 
 short game_engine_no_spread(
 	void);
+
+/* port: a gametype's NO SPREAD level (enum no_spread_level) from its flags,
+and its name and its HEALTH's for the logs ("off", "nhe", "full"; "classic",
+"reach", "halo 3", "halo 2") */
+short game_variant_no_spread_level(
+	unsigned long flags);
+char const *game_variant_no_spread_name(
+	unsigned long flags);
+char const *game_variant_health_style_name(
+	unsigned long flags);
 
 boolean game_engine_practice(
 	void);

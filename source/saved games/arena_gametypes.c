@@ -402,12 +402,8 @@ static void arena_gametype_log(
 	struct game_variant_options const *options)
 {
 	static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };
-	static char const *const health_styles[] = { "classic", "reach", "halo 3", "halo 2" };
-	static char const *const no_spread_levels[] = { "off", "nhe", "full" };
 	struct universal_variant const *universal = &variant->universal_variant;
 	unsigned long flags = universal->flags;
-	short no_spread = TEST_FLAG(flags, _game_variant_no_spread_full_bit) ? _no_spread_full :
-		TEST_FLAG(flags, _game_variant_no_spread_bit) ? _no_spread_nhe : _no_spread_off;
 	long engine = variant->game_engine_index;
 
 	error(_error_silent, "seeded arena gametype '%s': %s%s, score to win %ld, time limit %d min, "
@@ -425,9 +421,9 @@ static void arena_gametype_log(
 		universal->vehicle_set,
 		options->loadout == _loadout_custom ? "pistol + assault rifle" : "the weapon set's",
 		TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
-		health_styles[(flags & GAME_VARIANT_HEALTH_STYLE_MASK) >> _game_variant_health_style_first_bit],
+		game_variant_health_style_name(flags),
 		TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
-		no_spread_levels[no_spread],
+		game_variant_no_spread_name(flags),
 		TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "on" : "off",
 		TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
 		TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
