@@ -6263,7 +6263,9 @@ struct game_variant *build_game_variant_oddball(
 struct game_variant *build_game_variant_team_oddball(
 	struct game_variant *variant)
 {
-	struct game_variant result;
+	/* port: zeroed, as every other builder's: its flags' port bits (16 and
+	up), name and padding were the stack's */
+	struct game_variant result = { 0 };
 
 	SET_FLAG(result.universal_variant.flags, _game_variant_draw_object_in_motion_sensor_bit, TRUE);
 	SET_FLAG(result.universal_variant.flags, _game_variant_allow_friendly_navpoints_bit, TRUE);
