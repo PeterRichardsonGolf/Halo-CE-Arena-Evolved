@@ -163,10 +163,10 @@ ignores those it does not know. Most only change what a machine shows, or
 what the host alone decides (PRACTICE MODE's respawns). NO SPREAD is the
 shooter's own: a client without it keeps the stock spread, which the host
 does not check, since it deals the shooter's hits. Its FULL level sets bit
-24 along with NHE's bit 21, so a build that knows only NHE's plays NHE's. The PRE-GAME COUNTDOWN
-is enforced by the host (game time `0` to `PREGAME_COUNTDOWN_TICKS`,
-`game_engine_pregame_countdown_covers`), so that a client without it cannot
-move or shoot frozen players:
+24 along with NHE's bit 21, so a build that knows only NHE's plays NHE's.
+The PRE-GAME COUNTDOWN is enforced by the host (game time `0` to
+`PREGAME_COUNTDOWN_TICKS`, `game_engine_pregame_countdown_covers`), so that
+a client without it cannot move or shoot frozen players:
 
 - every machine lets go of every player's input but the facing during it
   (`player_action_clear_for_pregame_countdown`), so the host's copy of a

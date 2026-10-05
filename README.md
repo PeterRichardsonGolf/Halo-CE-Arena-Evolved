@@ -61,9 +61,11 @@ up to their build.
 **Arena Evolved gametypes**, ready in the gametype list the first time you
 play:
 - **Arena Evolved (casual):** AE SLAYER (25 kills), AE TEAM SLY (50), AE CTF
-  (3 captures), AE KING and AE ODDBALL (5 minutes held), each with a 15-minute
-  time limit, the motion sensor, TIMERS and the stock respawns; and AE
-  TRAINING (TIMERS and TRAINING, plays to 500, no time limit).
+  (3 captures), AE KING and AE ODDBALL (5 minutes held; AE KING is team
+  king, a team game too, and of the two only AE ODDBALL is free for all),
+  each with a 15-minute time limit, the motion sensor, TIMERS and the stock
+  respawns; and AE TRAINING (TIMERS and TRAINING, plays to 500, no time
+  limit).
 - **Arena Evolved PRO** (modern NHE): AE PRO FFA (25 kills), AE PRO TS (50),
   AE PRO CTF (3 captures), AE PRO KING and AE PRO BALL (team games, 5 minutes
   held). 5-second respawn and suicide penalty, no TIMERS, no motion sensor
