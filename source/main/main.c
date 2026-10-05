@@ -2710,7 +2710,7 @@ static void screenshot_render(
 }
 
 /* port: the frame statistics of the frame rate counter (display_framerate,
-or display.show_fps) and the performance overlay (display.performance_overlay):
+or display.fps_counter) and the performance overlay (display.performance_overlay):
 each frame counted once (split screen draws these once per view), averaged
 over half a second; the 1% low from the slowest 1% of the last frames */
 #define FRAME_STATISTICS_HISTORY 1024
@@ -2791,64 +2791,77 @@ static const union real_argb_color *frame_rate_color(
 	return frame_rate >= 60 ? global_real_argb_green : frame_rate >= 30 ? global_real_argb_yellow : global_real_argb_red;
 }
 
+/* port: where the counter or the overlay is drawn (display.fps_counter,
+display.performance_overlay): "top_left" or "top_right", on one line at the
+top of the view, above the HUD's corners; "off" (or false) none, and true the
+top right */
+const char *config_string(const char *name);
+
+static short frame_statistics_corner(
+	const char *setting)
+{
+	const char *value = config_string(setting);
+
+	if (!value || !value[0] || !strcmp(value, "off") || !strcmp(value, "false"))
+		return NONE;
+	return !strcmp(value, "top_left") ? _text_justification_left : _text_justification_right;
+}
+
+static void frame_statistics_draw(
+	long font_tag_index,
+	short corner,
+	const union real_argb_color *color,
+	const char *text)
+{
+	struct font_header *font = font_definition_get(font_tag_index);
+	short line_height = (short)MAX(font->ascending_height + font->descending_height + font->leading_height, 10);
+	/* (the view's own bounds: the window's are inset from it, by the TV safe
+	area, which puts the line on the HUD) */
+	rectangle2d bounds = render.camera.viewport_bounds;
+
+	bounds.y0 = (short)(bounds.y0 + 2);
+	bounds.y1 = (short)(bounds.y0 + line_height);
+	bounds.x0 = (short)(bounds.x0 + 6);
+	bounds.x1 = (short)(bounds.x1 - 6);
+	draw_string_set_format(NONE, corner, 0);
+	draw_string_set_font(font_tag_index);
+	draw_string_set_color(color);
+	rasterizer_draw_string(&bounds, NULL, NULL, 0, text);
+}
+
 void main_framerate_render(
 	void)
 {
 	long font_tag_index = hud_globals->messaging.single_player_font.index;
+	short overlay_corner = frame_statistics_corner("display.performance_overlay");
+	short counter_corner = frame_statistics_corner("display.fps_counter");
 
 	frame_statistics_update();
-	if ((display_framerate || config_boolean("display.show_fps")) && font_tag_index != NONE)
+	/* (the console's display_framerate: the counter, at the top right unless
+	the setting puts it elsewhere) */
+	if (display_framerate && counter_corner == NONE)
+		counter_corner = _text_justification_right;
+	if (font_tag_index == NONE)
+		return;
+	if (overlay_corner != NONE)
 	{
-		rectangle2d bounds = render.camera.window_bounds;
-		/* room for three digits under C99 snprintf, which (unlike MSVC's
-		_snprintf) keeps a byte of the count for the terminator */
-		char frame_rate_string[8];
+		/* room for the longest line, under C99 snprintf's terminator byte */
+		char line[80];
 
-		_snprintf(
-			frame_rate_string,
-			NUMBEROF(frame_rate_string) - 1,
-			"%d",
-			(short)frame_statistics.frame_rate);
-		frame_rate_string[NUMBEROF(frame_rate_string) - 1] = 0;
-		bounds.x0 = (short)(bounds.x1 - 50);
-		bounds.y0 = (short)(bounds.y1 - 50);
-		draw_string_set_format(NONE, _text_justification_left, 0);
-		draw_string_set_color(frame_statistics.frame_rate >= 30 ? global_real_argb_green : global_real_argb_red);
-		draw_string_set_font(font_tag_index);
-		rasterizer_draw_string(&bounds, NULL, NULL, 0, frame_rate_string);
+		_snprintf(line, sizeof(line) - 1, "%ld FPS   1%% LOW %ld   %.1f MS   %u DRAWS",
+			frame_statistics.frame_rate, frame_statistics.low_frame_rate, frame_statistics.frame_milliseconds,
+			halo_gpu_last_frame_draws());
+		line[sizeof(line) - 1] = 0;
+		frame_statistics_draw(font_tag_index, overlay_corner, frame_rate_color(frame_statistics.frame_rate), line);
 	}
-	if (config_boolean("display.performance_overlay") && font_tag_index != NONE)
+	/* (the overlay shows the frame rate already, in its corner) */
+	if (counter_corner != NONE && counter_corner != overlay_corner)
 	{
-		struct font_header *font = font_definition_get(font_tag_index);
-		short line_height = (short)MAX(font->ascending_height + font->descending_height + font->leading_height, 10);
-		char lines[3][48];
-		const union real_argb_color *colors[3];
-		rectangle2d bounds = render.camera.window_bounds;
-		short line;
+		char counter[16];
 
-		_snprintf(lines[0], sizeof(lines[0]) - 1, "%ld FPS   1%% LOW %ld",
-			frame_statistics.frame_rate, frame_statistics.low_frame_rate);
-		colors[0] = frame_rate_color(frame_statistics.frame_rate);
-		_snprintf(lines[1], sizeof(lines[1]) - 1, "%.1f MS   SLOWEST %.1f MS",
-			frame_statistics.frame_milliseconds, frame_statistics.slowest_milliseconds);
-		/* (the average's colour: the slowest frames are the 1% low's) */
-		colors[1] = frame_rate_color(frame_statistics.frame_milliseconds > 0.0f ?
-			fast_ftol(1000.0f / frame_statistics.frame_milliseconds) : 0);
-		_snprintf(lines[2], sizeof(lines[2]) - 1, "%u DRAWS", halo_gpu_last_frame_draws());
-		colors[2] = global_real_argb_white;
-		/* at the top, centred: the HUD's corners hold the shields and the
-		weapon */
-		bounds.y0 = (short)(bounds.y0 + 8);
-		draw_string_set_format(NONE, _text_justification_center, 0);
-		draw_string_set_font(font_tag_index);
-		for (line = 0; line < NUMBEROF(lines); line++)
-		{
-			lines[line][sizeof(lines[line]) - 1] = 0;
-			bounds.y1 = (short)(bounds.y0 + line_height);
-			draw_string_set_color(colors[line]);
-			rasterizer_draw_string(&bounds, NULL, NULL, 0, lines[line]);
-			bounds.y0 = (short)(bounds.y0 + line_height);
-		}
+		_snprintf(counter, sizeof(counter) - 1, "%ld FPS", frame_statistics.frame_rate);
+		counter[sizeof(counter) - 1] = 0;
+		frame_statistics_draw(font_tag_index, counter_corner, frame_rate_color(frame_statistics.frame_rate), counter);
 	}
 
 	if (display_vblank_deltas)

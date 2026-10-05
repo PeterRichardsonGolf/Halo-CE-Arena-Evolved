@@ -104,13 +104,13 @@ static const struct config_setting config_settings[] =
 	{ "display.max_fps", _config_integer, "0", "HALO_MAX_FPS", _environment_value, _platform_desktop,
 		"With vsync off, the most frames a second: 0 for twice the display's\n"
 		"refresh rate, -1 for no limit (which can hang some Intel graphics)." },
-	{ "display.show_fps", _config_boolean, "false", "HALO_SHOW_FPS", _environment_value, _platform_all,
-		"Show the frames a second in the bottom right corner (as the console's\n"
-		"display_framerate does)." },
-	{ "display.performance_overlay", _config_boolean, "false", "HALO_PERFORMANCE_OVERLAY", _environment_value,
+	{ "display.fps_counter", _config_string, "\"off\"", "HALO_FPS_COUNTER", _environment_value, _platform_all,
+		"The frames a second, on one line at the top of the screen, above the\n"
+		"HUD: \"top_left\", \"top_right\", or \"off\"." },
+	{ "display.performance_overlay", _config_string, "\"off\"", "HALO_PERFORMANCE_OVERLAY", _environment_value,
 		_platform_all,
-		"Show the frame rate, its 1% low, the frame time (average and slowest)\n"
-		"and the draws of a frame at the top of the screen." },
+		"The frame rate, its 1% low, the frame time and the draws of a frame, on\n"
+		"one line at the top of the screen: \"top_left\", \"top_right\", or \"off\"." },
 	{ "display.interpolation", _config_boolean, "true", "HALO_INTERPOLATION", _environment_value, _platform_all,
 		"Draw a frame for every display refresh, blending between the game's 30\n"
 		"ticks a second; false keeps the original 30 frames a second." },

@@ -18,6 +18,7 @@ from xml.sax.saxutils import quoteattr
 PE = "main_menu/settings_select/player_setup/player_profile_edit"
 YES_NO = [("YES", "true"), ("NO", "false")]
 ON_OFF = [("ON", "true"), ("OFF", "false")]
+CORNERS = [("OFF", "off"), ("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
@@ -51,10 +52,10 @@ SCREENS = {
              "Draw the HUD from the high-res redraws; off\ndraws the game's own pictures.", None),
             ("HIGH-RES TEXT:", "display.high_res_text", ON_OFF,
              "Draw text and titles with high-res fonts; off\ndraws the game's own.", None),
-            ("FPS COUNTER:", "display.show_fps", ON_OFF,
-             "Show the frames a second in the bottom right\ncorner.", None),
-            ("PERFORMANCE OVERLAY:", "display.performance_overlay", ON_OFF,
-             "Show the frame rate, its 1% low, the frame time\nand the draws of a frame at the top of the screen.", None),
+            ("FPS COUNTER:", "display.fps_counter", CORNERS,
+             "The frames a second, at the top of the screen\nabove the HUD.", None),
+            ("PERFORMANCE OVERLAY:", "display.performance_overlay", CORNERS,
+             "The frame rate, its 1% low, the frame time and\nthe draws of a frame, at the top of the screen.", None),
         ],
     },
     # (Mods: its title text, not a picture; the spinner's mods are the data
