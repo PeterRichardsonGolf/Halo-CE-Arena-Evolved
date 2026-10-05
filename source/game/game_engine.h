@@ -41,6 +41,15 @@ enum
 	_game_variant_health_style_first_bit = 19,
 	_game_variant_health_regeneration_bit = _game_variant_health_style_first_bit,
 	_game_variant_health_style_second_bit = 20,
+	/* port: NO SPREAD (ARENA OPTIONS): the pistol and the unscoped sniper
+	rifle fire exactly where they aim, as Halo 1: NHE's maps' do */
+	_game_variant_no_spread_bit = 21,
+	/* port: PRE-GAME COUNTDOWN (ARENA OPTIONS): a 3-2-1 countdown on a black
+	screen starts the game (not on Halo 1: NHE's maps, which have their own) */
+	_game_variant_pregame_countdown_bit = 22,
+	/* port: PRACTICE MODE (ARENA OPTIONS): every weapon and powerup the map
+	spawns respawns every 30 seconds */
+	_game_variant_practice_bit = 23,
 };
 
 /* port: how a player's health comes back (the gametype's HEALTH, the

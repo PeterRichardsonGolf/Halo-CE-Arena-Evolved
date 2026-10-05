@@ -7034,13 +7034,16 @@ void game_engine_initialize_for_new_map(
 		unsigned long flags = global_variant.universal_variant.flags;
 
 		error(_error_silent, "game rules: health %s, fall damage %s, starting equipment %s, vehicle set %ld, "
-			"timers %s, training %s",
+			"timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
 			health_styles[(flags & GAME_VARIANT_HEALTH_STYLE_MASK) >> _game_variant_health_style_first_bit],
 			TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
 			global_variant.universal_variant.vehicle_set,
 			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
-			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off");
+			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_no_spread_bit) ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off");
 	}
 
 	return;

@@ -4383,14 +4383,18 @@ static struct gametype_option const gametype_options[] =
 	{ "invisible_players_spinner", _option_flag, 0, FLAG(_game_variant_always_invisible_bit), 2, { 1, 0 } },
 	{ "suicide_penalty_spinner", _option_long, VARIANT_FIELD(universal_variant.suicide_penalty), 0, 4,
 		{ 0, 150, 300, 450 } },
-	/* (port: FALL DAMAGE, ON or OFF; HEALTH, CLASSIC, REACH, HALO 2 or HALO 3:
-	game_engine.h's _game_variant_health_style_..._bit) */
+	/* arena options (port: FALL DAMAGE, ON or OFF; HEALTH, CLASSIC, REACH,
+	HALO 2 or HALO 3: game_engine.h's _game_variant_health_style_..._bit; NO
+	SPREAD, PRE-GAME COUNTDOWN and PRACTICE MODE, OFF or ON) */
 	{ "falling_damage_spinner", _option_flag, 0, FLAG(_game_variant_no_falling_damage_bit), 2, { 0, 1 } },
 	{ "health_regeneration_spinner", _option_flags, 0, GAME_VARIANT_HEALTH_STYLE_MASK, 4,
 		{ _health_style_classic << _game_variant_health_style_first_bit,
 		_health_style_reach << _game_variant_health_style_first_bit,
 		_health_style_halo2 << _game_variant_health_style_first_bit,
 		_health_style_halo3 << _game_variant_health_style_first_bit } },
+	{ "no_spread_spinner", _option_flag, 0, FLAG(_game_variant_no_spread_bit), 2, { 0, 1 } },
+	{ "pregame_countdown_spinner", _option_flag, 0, FLAG(_game_variant_pregame_countdown_bit), 2, { 0, 1 } },
+	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
 	/* item options (weapon sets: the PC's list, then the Xbox's NO GRENADES) */
 	{ "item_options_infinite_grenades_spinner", _option_flag, 0, FLAG(_game_variant_infinite_grenades_bit), 2,
 		{ 1, 0 } },

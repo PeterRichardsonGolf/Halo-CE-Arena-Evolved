@@ -271,7 +271,7 @@ static const struct config_setting config_settings[] =
 	{ "game.fall_damage", _config_boolean, "true", "HALO_FALL_DAMAGE", _environment_value, _platform_all,
 		"In the campaign, players hurt by falls; false: landings never hurt, from\n"
 		"any height (a pit and the map's kill volumes still kill). Multiplayer\n"
-		"goes by the gametype's FALL DAMAGE (Player Options) instead." },
+		"goes by the gametype's FALL DAMAGE (Arena Options) instead." },
 	{ "game.health", _config_string, "\"classic\"", "HALO_HEALTH", _environment_value, _platform_all,
 		"How players' health comes back in the campaign: \"classic\" only from\n"
 		"health packs; \"reach\" once the shields are full, to the top of the third\n"

@@ -597,12 +597,6 @@
 		<string text="Every time you cause your own death, there will be a \nfive-second wait before you can rejoin the game. "/>
 		<string text="You'll wait ten seconds after you cause your own \ndeath before you can return to the game."/>
 		<string text="When you suicide, you must wait fifteen seconds \nbefore you can respawn. This will give you an idea of \nwhat eternity is like."/>
-		<string text="A hard landing hurts, and a long enough fall kills."/>
-		<string text="Landings never hurt, from any height. Pits and\nleaving the map still kill."/>
-		<string text="Your health only comes back with a health pack."/>
-		<string text="Once your shields are full, your health comes\nback to the top of the third it is in. Health\npacks fill the rest."/>
-		<string text="Your shields are all that matter: your health\ncomes back as soon as they start to recharge."/>
-		<string text="Once your shields are full, all your health\ncomes back."/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/player_options_edit/player_options_labels">
 		<string text="NUMBER OF LIVES:"/>
@@ -613,8 +607,6 @@
 		<string text="ODD MAN OUT:"/>
 		<string text="INVISIBLE PLAYERS:"/>
 		<string text="SUICIDE PENALTY:"/>
-		<string text="FALL DAMAGE:"/>
-		<string text="HEALTH:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/player_options_edit/var_invisible_players">
 		<string text="YES"/>
@@ -905,6 +897,7 @@
 		<string text="Specify options that change\nhow vehicles work and which\nones spawn in this gametype.\nThis gametype:"/>
 		<string text="Choose which interface indica-\ntors are available while playing \nthis gametype.\nThis gametype:"/>
 		<string text="Modify gameplay options and\nrules used by teamplay game\nmodes.\nThis gametype:"/>
+		<string text="Fall damage, health and Halo 1:\nNHE's competitive options for\nthis gametype.\nThis gametype:"/>
 		<string text="Save changes you've made to\nthis gametype and return to\nthe previous screen.\nThis gametype:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_options">
@@ -916,6 +909,7 @@
 		<string text="SAVE CHANGES"/>
 		<string text="VEHICLE OPTIONS"/>
 		<string text="TEAMPLAY OPTIONS"/>
+		<string text="ARENA OPTIONS"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/playlist_edit/race_edit/cap_race">
 		<string text="When the game ends, each team is ranked by its\nlowest-scoring member."/>

@@ -88,9 +88,9 @@ SCREENS = {
              "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
              "desktop"),
             ("CAMPAIGN FALL DAMAGE:", "game.fall_damage", ON_OFF,
-             "Off: landings never hurt in the campaign. Gametypes\nhave their own, in Player Options.", None),
+             "Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options.", None),
             ("CAMPAIGN HEALTH:", "game.health", HEALTH_STYLES,
-             "How health comes back in the campaign. Gametypes\nhave their own, in Player Options.", None),
+             "How health comes back in the campaign. Gametypes\nhave their own, in Arena Options.", None),
         ],
     },
     "mouse_settings": {
@@ -398,7 +398,8 @@ MT = "main_menu/multiplayer_type_select"
 # and their helps after the five of its own (its helps are the rows' values'
 # in turn: menu_functions.c's gametype_option_help)
 SLAYER_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit/slayer_edit"
-PLAYER_OPTIONS = "main_menu/settings_select/multiplayer_setup/player_options_edit"
+PLAYLIST_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit"
+ARENA_OPTIONS = "main_menu/settings_select/multiplayer_setup/arena_options_edit"
 INDICATOR_OPTIONS = "main_menu/settings_select/multiplayer_setup/indicator_options_edit"
 
 STRING_INSERTS = {
@@ -411,8 +412,13 @@ STRING_INSERTS = {
         "Two hundred and fifty kills to win.",
         "Five hundred kills to win. You'll be here a while.",
     ])],
-    # (Player Options' FALL DAMAGE, after SUICIDE PENALTY: _player_options_extras)
-    f"{PLAYER_OPTIONS}/player_options_labels": [(8, ["FALL DAMAGE:", "HEALTH:"])],
+    # (the gametype editor's ARENA OPTIONS, after TEAMPLAY OPTIONS: its
+    # item's caption, and its description before SAVE CHANGES' (the list's
+    # descriptions go by the items' places): _arena_options)
+    f"{PLAYLIST_EDIT}/playlist_edit_options": [(8, ["ARENA OPTIONS"])],
+    f"{PLAYLIST_EDIT}/playlist_edit_list_extended_dsc_text": [(7, [
+        "Fall damage, health and Halo 1:\\nNHE's competitive options for\\nthis gametype.\\nThis gametype:",
+    ])],
     # (Indicator Options' TIMERS and TRAINING, after FRIEND INDICATORS ON
     # SCREEN: _indicator_options_extras)
     f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:"])],
@@ -421,14 +427,6 @@ STRING_INSERTS = {
         "The match clock, and when and where the rockets,\\nsniper, overshield and camo spawn, for everyone.",
         "No training aids.",
         "Every item's spawn and timer, and the player\\nspawns this match uses. For learning a map.",
-    ])],
-    f"{PLAYER_OPTIONS}/cap_player_options": [(28, [
-        "A hard landing hurts, and a long enough fall kills.",
-        "Landings never hurt, from any height. Pits and\\nleaving the map still kill.",
-        "Your health only comes back with a health pack.",
-        "Once your shields are full, your health comes\\nback to the top of the third it is in. Health\\npacks fill the rest.",
-        "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
-        "Once your shields are full, all your health\\ncomes back.",
     ])],
 }
 
@@ -544,20 +542,17 @@ WIDGET_PATCHES = {
             f'<child widget="main_menu/settings_select/multiplayer_setup/item_options_edit/op_primary_weapon" x="54" y="223"/>',
             f'<child widget="main_menu/settings_select/multiplayer_setup/item_options_edit/op_secondary_weapon" x="54" y="253"/>',
         ]}},
-    # (Player Options' FALL DAMAGE and HEALTH rows, over its buttons, its
-    # rows 27 apart, not 30: ce_menus.CHILD_OFFSETS; and its help lower)
-    f"{PLAYER_OPTIONS}/player_options_menu": {"insert_before": {
-        f"{PLAYER_OPTIONS}/player_button_bar": [
-            f'<child widget="{PLAYER_OPTIONS}/op_falling_damage" x="54" y="289"/>',
-            f'<child widget="{PLAYER_OPTIONS}/op_health_regeneration" x="54" y="316"/>',
-        ]}},
+    # (the gametype editor's ARENA OPTIONS, after TEAMPLAY OPTIONS, over its
+    # buttons: _arena_options)
+    f"{PLAYLIST_EDIT}/edit_playlist_select_list": {"insert_before": {
+        f"{PLAYLIST_EDIT}/playlist_edit_button_bar": [f'<child widget="{PLAYLIST_EDIT}/playlist_edit_arena_item"/>'],
+    }},
     # (Indicator Options' TIMERS and TRAINING rows, over its buttons, 30 apart)
     f"{INDICATOR_OPTIONS}/indicator_options_menu": {"insert_before": {
         f"{INDICATOR_OPTIONS}/indicator_button_bar": [
             f'<child widget="{INDICATOR_OPTIONS}/op_item_timers" x="54" y="163"/>',
             f'<child widget="{INDICATOR_OPTIONS}/op_training" x="54" y="193"/>',
         ]}},
-    f"{PLAYER_OPTIONS}/player_options_help": {"set": {"top": 348, "height": 66}},
     # (the PC's Vehicles row's Start opened Item Options)
     "main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_vehicles_list_item": {"handlers": [
         '<on event="a" open="main_menu/settings_select/multiplayer_setup/vehicle_options_edit/vehicle_options_screen"/>',
@@ -582,6 +577,7 @@ TITLES = {
     f"{MT}/lobby/header_lobby": "GAME LOBBY",
     f"{MT}/coop/header_player_2": "PLAYER 2 PROFILE",
     f"{MT}/lobby/header_add_player": "ADD PLAYER",
+    f"{ARENA_OPTIONS}/header_arena_options": "ARENA OPTIONS",
 }
 
 
@@ -1035,37 +1031,100 @@ def _item_options_extras() -> list:
     return lines
 
 
-def _player_options_row(key: str, label: int) -> list:
-    """a Player Options row of the port's, as SHIELDS': its label (the
-    labels' string label) and its spinner (strings var_KEY)"""
-    lines = _widget(f"{PLAYER_OPTIONS}/op_{key}",
-                    [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
-                     ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
-                    [f'<child widget="{PLAYER_OPTIONS}/{key}_label"/>',
-                     f'<child widget="{PLAYER_OPTIONS}/{key}_spinner" x="320" y="1"/>'])
-    lines += _widget(f"{PLAYER_OPTIONS}/{key}_label",
-                     [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
-                      ("string_list", f"{PLAYER_OPTIONS}/player_options_labels"), ("string_index", label),
-                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
-    lines += _widget(f"{PLAYER_OPTIONS}/{key}_spinner",
-                     [("type", "spinner"), ("left", 2), ("top", 2), ("width", 148), ("height", 20),
-                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
-                      ("string_list", f"{PLAYER_OPTIONS}/var_{key}"), ("font", "ui\\large_ui"),
-                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4), ("list_flags", "items_from_strings"),
-                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
-                     ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
-    return lines
+# ARENA OPTIONS' rows: (key, label, values, their helps); each row's
+# spinner is named for its option in menu_functions.c's gametype_options
+# (KEY_spinner), and its helps are its values' in turn (gametype_option_help)
+ARENA_ROWS = [
+    ("falling_damage", "FALL DAMAGE:", ["ON", "OFF"], [
+        "A hard landing hurts, and a long enough fall kills.",
+        "Landings never hurt, from any height. Pits and\\nleaving the map still kill.",
+    ]),
+    ("health_regeneration", "HEALTH:", ["CLASSIC", "REACH", "HALO 2", "HALO 3"], [
+        "Your health only comes back with a health pack.",
+        "Once your shields are full, your health comes\\nback to the top of the third it is in. Health\\npacks fill the rest.",
+        "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
+        "Once your shields are full, all your health\\ncomes back.",
+    ]),
+    ("no_spread", "NO SPREAD:", ["OFF", "ON"], [
+        "The pistol and sniper rifle spread as in stock Halo.",
+        "The pistol and the unscoped sniper rifle fire\\nexactly where you aim, as in Halo 1: NHE.",
+    ]),
+    ("pregame_countdown", "PRE-GAME COUNTDOWN:", ["OFF", "ON"], [
+        "The game starts at once.",
+        "A 3-2-1 countdown on a black screen starts the\\ngame, so everyone sees the map at the same time.",
+    ]),
+    ("practice", "PRACTICE MODE:", ["OFF", "ON"], [
+        "Weapons and powerups respawn as the map sets.",
+        "Every weapon and powerup respawns every 30\\nseconds, for practising grenade tricks.",
+    ]),
+]
 
 
-def _player_options_extras() -> list:
-    """Player Options' rows of the port's: FALL DAMAGE, ON or OFF (the
-    gametype's _game_variant_no_falling_damage_bit), and HEALTH, CLASSIC,
-    REACH, HALO 2 or HALO 3 (_game_variant_health_style_..._bit)"""
-    lines = _player_options_row("falling_damage", 8)
-    lines += _strings(f"{PLAYER_OPTIONS}/var_falling_damage", ["ON", "OFF"])
-    lines += _player_options_row("health_regeneration", 9)
-    lines += _strings(f"{PLAYER_OPTIONS}/var_health_regeneration", ["CLASSIC", "REACH", "HALO 2", "HALO 3"])
+def _arena_options() -> list:
+    """ARENA OPTIONS, the gametype editor's screen of the port's gameplay
+    options (game_engine.h's _game_variant_..._bit from 16), in Player
+    Options' style: a row of a label and a spinner for each, the help of
+    the value chosen, OK and CANCEL. Its list is created and saved as Player
+    Options' is, by its spinners' names (menu_functions.c's gametype_options:
+    "mp profile init player opts", "mp profile set player options"); and
+    the edit list's item that opens it (WIDGET_PATCHES)"""
+    base = ARENA_OPTIONS
+    screen = f"{base}/arena_options_screen"
+    lines = _widget(f"{PLAYLIST_EDIT}/playlist_edit_arena_item",
+                    [("type", "text"), ("left", 51), ("top", 309), ("width", 232), ("height", 32),
+                     ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PLAYLIST_EDIT}/playlist_edit_options"),
+                     ("string_index", 8), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                     ("text_y", 5)],
+                    [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
+                     '<on event="left_mouse" run="mouse emit accept event"/>'])
+    lines += _widget(screen, [("width", 640), ("height", 480), ("flags", "pass_unhandled_to_focused_child"),
+                              ("bitmap", "bitmaps/gradient")],
+                     [f'<child widget="{base}/header_arena_options"/>', f'<child widget="{base}/arena_options_menu"/>'])
+    lines += _header(f"{base}/header_arena_options", f"{base}/header_arena_options")
+    lines += _widget(f"{base}/arena_options_menu",
+                     [("type", "column_list"), ("width", 640), ("height", 480),
+                      ("flags", "pass_unhandled_to_focused_child up_down_tabs_children"),
+                      ("description", f"{base}/arena_options_help")],
+                     ['<data input="game settings lists text update"/>',
+                      '<on event="created" run="mp profile init player opts"/>',
+                      *[f'<child widget="{base}/op_{key}" x="54" y="{73 + 30 * index}"/>'
+                        for index, (key, *_) in enumerate(ARENA_ROWS)],
+                      f'<child widget="{base}/arena_button_bar" y="414"/>'])
+    lines += _widget(f"{base}/arena_options_help",
+                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 321), ("width", 482), ("height", 79),
+                      ("string_list", f"{base}/cap_arena_options"), ("font", "ui\\large_ui"),
+                      ("color", "#FFFFFFFF")], [])
+    lines += _widget(f"{base}/arena_button_bar",
+                     [("type", "column_list"), ("width", 640), ("height", 28),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
+                     ['<data input="common button bar update"/>',
+                      f'<child widget="{base}/arena_button_ok" x="380" y="1"/>',
+                      '<child widget="common_button_cancel" x="510" y="1"/>'])
+    lines += _button(f"{base}/arena_button_ok", 1,
+                     ['<on event="a" run="mp profile set player options" back="true"/>',
+                      '<on event="start" run="mp profile set player options" back="true"/>'])
+    for index, (key, _, values, _) in enumerate(ARENA_ROWS):
+        lines += _widget(f"{base}/op_{key}",
+                         [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                          ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                         [f'<child widget="{base}/{key}_label"/>',
+                          f'<child widget="{base}/{key}_spinner" x="320" y="1"/>'])
+        lines += _widget(f"{base}/{key}_label",
+                         [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
+                          ("string_list", f"{base}/arena_options_labels"), ("string_index", index or None),
+                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+        lines += _widget(f"{base}/{key}_spinner",
+                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 148), ("height", 20),
+                          ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                          ("string_list", f"{base}/var_{key}"), ("font", "ui\\large_ui"),
+                          ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4),
+                          ("list_flags", "items_from_strings"),
+                          ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
+                         ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+        lines += _strings(f"{base}/var_{key}", values)
+    lines += _strings(f"{base}/arena_options_labels", [label for _, label, _, _ in ARENA_ROWS])
+    lines += _strings(f"{base}/cap_arena_options", [text for *_, helps in ARENA_ROWS for text in helps])
     return lines
 
 
@@ -1130,7 +1189,7 @@ def multiplayer_files() -> dict:
         f"{MT}/lobby".replace("/", ".") + ".xml": head + _lobby() + ["</menus>", ""],
         f"{MT}/coop".replace("/", ".") + ".xml": head + _coop() + ["</menus>", ""],
         f"{MT}/split_screen".replace("/", ".") + ".port.xml": head + _split_screen() + ["</menus>", ""],
-        PLAYER_OPTIONS.replace("/", ".") + ".port.xml": head + _player_options_extras() + ["</menus>", ""],
+        ARENA_OPTIONS.replace("/", ".") + ".xml": head + _arena_options() + ["</menus>", ""],
         INDICATOR_OPTIONS.replace("/", ".") + ".port.xml": head + _indicator_options_extras() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/item_options_edit".replace("/", ".") + ".port.xml": head + _item_options_extras() + ["</menus>", ""],
     }
