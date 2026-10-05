@@ -47,27 +47,6 @@ static short item_timer_count;
 
 /* ---------- private code */
 
-/* (as game_engine_update_item_spawn: the entry's spawn time, else its item
-collection's, else 30 seconds) */
-static long item_timer_period(
-	struct scenario_netgame_equipment const *equipment)
-{
-	long period = 30 * TICKS_PER_SECOND;
-
-	if (equipment->spawn_time != 0)
-		period = equipment->spawn_time * TICKS_PER_SECOND;
-	else if (equipment->item_collection.index != NONE)
-	{
-		struct item_collection_definition *collection =
-			item_collection_definition_get(equipment->item_collection.index);
-
-		if (collection->spawn_time != 0)
-			period = collection->spawn_time * TICKS_PER_SECOND;
-	}
-
-	return period;
-}
-
 /* the class of an item collection: the most powerful item it can spawn
 (rockets, sniper, overshield, camo, else other), as the gametype remaps its
 items; the heaviest permutation names the entry, and *classes has a bit
@@ -247,7 +226,7 @@ void item_timers_map_begin(
 		timer = &item_timers[item_timer_count];
 		item_timer_label(timer_class, classes, definition_index, label);
 		timer->position = equipment->position;
-		timer->period_ticks = item_timer_period(equipment);
+		timer->period_ticks = game_engine_item_respawn_period(equipment);
 		timer->timer_class = timer_class;
 		for (character_index = 0; character_index <= ITEM_TIMER_LABEL_LENGTH; character_index++)
 		{

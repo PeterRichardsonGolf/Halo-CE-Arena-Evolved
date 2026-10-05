@@ -613,6 +613,14 @@ short game_engine_health_style(
 boolean game_engine_no_spread(
 	void);
 
+boolean game_engine_practice(
+	void);
+
+struct scenario_netgame_equipment;
+
+long game_engine_item_respawn_period(
+	struct scenario_netgame_equipment const *equipment);
+
 boolean game_engine_item_timers(
 	void);
 

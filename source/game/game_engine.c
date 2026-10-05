@@ -4766,6 +4766,15 @@ boolean game_engine_no_spread(
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_spread_bit);
 }
 
+/* port: the gametype's PRACTICE MODE (_game_variant_practice_bit): every
+weapon and powerup respawns every 30 seconds (game_engine_item_respawn_period) */
+boolean game_engine_practice(
+	void)
+{
+	return game_engine_running() &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_practice_bit);
+}
+
 /* port: the gametype's HEALTH (enum health_style), CLASSIC with no game */
 short game_engine_health_style(
 	void)
@@ -8520,6 +8529,36 @@ static long random_item(
 }
 
 
+/* port: how often a netgame equipment entry respawns, in ticks: its own
+spawn time, else its item collection's, else 30 seconds; every 30 seconds
+while the gametype's PRACTICE MODE is on (_game_variant_practice_bit, as
+Halo 1: NHE's Practice Mode). Shared by game_engine_update_item_spawn and the
+item timers (item_timers.c) so the timers stay exact. Game time and gametype
+state only, so every machine agrees */
+long game_engine_item_respawn_period(
+	struct scenario_netgame_equipment const *equipment)
+{
+	long respawn_period = 30 * TICKS_PER_SECOND;
+
+	if (game_engine_practice())
+		return respawn_period;
+
+	if (equipment->spawn_time != 0)
+	{
+		respawn_period = equipment->spawn_time * TICKS_PER_SECOND;
+	}
+	else if (equipment->item_collection.index != NONE)
+	{
+		struct item_collection_definition *item_collection =
+			item_collection_definition_get(equipment->item_collection.index);
+
+		if (item_collection->spawn_time != 0)
+			respawn_period = item_collection->spawn_time * TICKS_PER_SECOND;
+	}
+
+	return respawn_period;
+}
+
 static void game_engine_update_item_spawn(
 	void)
 {
@@ -8545,26 +8584,7 @@ static void game_engine_update_item_spawn(
 			NUMBEROF(equipment->game_type),
 			equipment->game_type))
 		{
-			long respawn_period = 30 * TICKS_PER_SECOND;
-			short respawn_time = equipment->spawn_time;
-
-			if (respawn_time == 0)
-			{
-				if (equipment->item_collection.index != NONE)
-				{
-					struct item_collection_definition *item_collection =
-						item_collection_definition_get(
-							equipment->item_collection.index);
-
-					respawn_time = item_collection->spawn_time;
-					if (respawn_time != 0)
-						respawn_period = respawn_time * TICKS_PER_SECOND;
-				}
-			}
-			else
-			{
-				respawn_period = respawn_time * TICKS_PER_SECOND;
-			}
+			long respawn_period = game_engine_item_respawn_period(equipment);
 
 			if (game_time_get() % respawn_period == 0)
 			{
