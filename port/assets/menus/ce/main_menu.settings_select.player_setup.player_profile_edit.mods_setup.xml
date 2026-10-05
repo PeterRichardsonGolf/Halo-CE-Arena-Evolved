@@ -140,7 +140,7 @@
 		<string text="On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide."/>
 		<string text="With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages."/>
 		<string text="How fast the scoreboard fades in and out while\nBack (or Tab) is held."/>
-		<string text="Spoken power item spawns (with TIMERS); with the\nclock, Halo 1: NHE's talking timer too."/>
+		<string text="Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too."/>
 		<string text="The callouts' voice: a folder of voices/, next\nto maps/."/>
 	</strings>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_profile_item" type="text" left="51" top="309" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5" platform="desktop">

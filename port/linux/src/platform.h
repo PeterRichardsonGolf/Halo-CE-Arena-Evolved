@@ -201,10 +201,14 @@ int platform_ui_voice_busy(void);
 
 /* port: the voice pack's clips (callouts.c): read from voices/<pack>/ (a
 mod's first) when the pack or the mod is not the one read, names[i] being
-clip i's file name without .wav; the number read */
+clip i's file name without .wav; the number read. A pack that is no folder
+gives way to the first of voices/ */
 int platform_callout_voice_load(char const *pack, char const *const *names, int count);
+void platform_callout_voice_unload(void);	/* frees the clips (CALLOUTS off) */
 /* clip i starts (nonzero), unless the pack has none (0) */
 int platform_callout_voice_play(int clip);
+long platform_callout_voice_milliseconds(int clip);	/* clip i's length, 0 for none */
+void platform_callout_voice_stop(void);	/* the clip playing, if any, stops */
 int platform_callout_voice_busy(void);
 
 /* ---------- time */

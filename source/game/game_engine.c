@@ -4930,6 +4930,10 @@ void game_engine_player_killed(
 void game_engine_update_non_deterministic(
 	real delta_seconds)
 {
+	/* port: the callouts' clip stops while the game is paused or gone
+	(callouts.c) */
+	callouts_update_non_deterministic();
+
 	if (game_engine)
 	{
 		switch (game_engine_globals.postgame_state)

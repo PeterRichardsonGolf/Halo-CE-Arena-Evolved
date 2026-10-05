@@ -104,9 +104,10 @@ SCREENS = {
             ("SCOREBOARD FADE:", "display.scoreboard_fade", SCOREBOARD_FADES,
              "How fast the scoreboard fades in and out while\nBack (or Tab) is held.", None),
             ("CALLOUTS:", "game.callouts", CALLOUTS,
-             "Spoken power item spawns (with TIMERS); with the\nclock, Halo 1: NHE's talking timer too.", None),
-            # (the spinner's voices are the data root's voices/ folders,
-            # listed as the menus are read: menu_files.c)
+             "Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too.", None),
+            # (the spinner's voices are the data root's voices/ folders and
+            # the mod's mods/<mod>/voices/ ones, listed as the menus are
+            # read: menu_files.c)
             ("VOICE:", "game.callout_voice", [("NHE", "nhe")],
              "The callouts' voice: a folder of voices/, next\nto maps/.", None),
         ],

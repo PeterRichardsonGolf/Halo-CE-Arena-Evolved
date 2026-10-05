@@ -6,12 +6,25 @@ releases yet, so the sections are dated.
 
 ## Unreleased
 
+### Changed
+- CALLOUTS: item calls in any gametype (no longer only with TIMERS or
+  TRAINING). A voice pack may have a beep per moment (`beep_minute`,
+  `beep_tick` at :20/:30/:40, `beep_item` before item calls; each falls back
+  to `beep`), "<item> in ten" clips for the 10-second calls and "<item> is
+  up" clips said at each spawn. Calls are planned ahead from the clips'
+  lengths: an item's call that would meet the clock's "ten" (or another
+  call) moves earlier, items spawning together are called back to back,
+  and none is dropped at :50. A VOICE that is no folder falls back to the
+  first in `voices/`; packs only in the mod's `voices/` are listed; the clip
+  playing stops when the game ends or pauses or CALLOUTS turns off, which
+  also frees the clips; a rejected WAV's log says why.
+
 ### Added
 - CALLOUTS (Settings > Game Options, `game.callouts`): spoken callouts in
   multiplayer, as Halo 1: NHE's voice timer says them. ITEMS: each power
   item's name (rockets, sniper, overshield, camo) 10 seconds before it
   spawns, from its real spawn time on any map, and "five" to "one" before
-  the rockets, when the gametype has TIMERS or TRAINING. ITEMS + CLOCK adds
+  the rockets. ITEMS + CLOCK adds
   NHE's talking timer: "N minutes" each minute, "thirty seconds left",
   "twenty seconds", "ten" to "one" before each minute, and its beeps. One
   call at a time, the items' first. Silent on Halo 1: NHE's maps, during

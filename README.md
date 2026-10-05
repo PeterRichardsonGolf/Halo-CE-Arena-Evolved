@@ -109,12 +109,14 @@ play:
   row under its title.
   On Halo 1: NHE's maps it replaces their own clock.
 - Spoken callouts (Settings > Game Options > CALLOUTS: OFF, ITEMS or ITEMS +
-  CLOCK), as Halo 1: NHE's voice timer: the power items' names 10 seconds
-  before they spawn (with TIMERS or TRAINING) and five to one before the
-  rockets; ITEMS + CLOCK adds NHE's talking timer (the minutes, thirty and
-  twenty seconds left, ten to one, beeps). VOICE picks a voice pack in
-  `voices/`. For now the voice is your own import of NHE's clips
-  (`tools/import_nhe_voice.py`); none ships with the game.
+  CLOCK), as Halo 1: NHE's voice timer, in any gametype: the power items'
+  calls 10 seconds before they spawn ("rockets in ten"), five to one before
+  the rockets and "rockets are up" as they spawn; ITEMS + CLOCK adds NHE's
+  talking timer (the minutes, thirty and twenty seconds left, ten to one,
+  beeps). An item's call that would meet the clock's moves earlier, so
+  none is lost. VOICE picks a voice pack in `voices/`. For now the voice is
+  your own import of NHE's clips (`tools/import_nhe_voice.py`); none ships
+  with the game.
 
 **Mods**
 - Settings > Game Options > MOD picks a folder in `mods/`; its `maps` are

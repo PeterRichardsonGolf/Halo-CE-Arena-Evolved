@@ -301,15 +301,17 @@ static const struct config_setting config_settings[] =
 		"Mods chooses it, and the game starts again with it." },
 	{ "game.callouts", _config_string, "\"off\"", "HALO_CALLOUTS", _environment_value, _platform_all,
 		"Spoken callouts in multiplayer, in game.callout_voice's voice, on this\n"
-		"machine only: \"items\" each power item's name 10 seconds before it\n"
-		"spawns, and five to one before the rockets (when the gametype has TIMERS\n"
-		"or TRAINING); \"items_clock\" also Halo 1: NHE's talking timer (the\n"
+		"machine only, in any gametype: \"items\" each power item's call 10\n"
+		"seconds before it spawns (\"rockets in ten\", else the name), five to\n"
+		"one before the rockets, and \"<item> is up\" as it spawns (when the\n"
+		"voice has it); \"items_clock\" also Halo 1: NHE's talking timer (the\n"
 		"minutes, thirty and twenty seconds left, ten to one, its beeps); \"off\".\n"
 		"Silent on Halo 1: NHE's maps, whose own scripts talk." },
 	{ "game.callout_voice", _config_string, "\"nhe\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
 		"The callouts' voice: a folder of voices/ (next to maps/) holding WAVs\n"
 		"named for what they say (one.wav, rockets.wav, ...); the mod played's\n"
-		"own mods/<mod>/voices/<folder>/ clips come first." },
+		"own mods/<mod>/voices/<folder>/ clips come first. With no such folder,\n"
+		"the first folder of voices/ speaks (this setting stays)." },
 
 	{ "paths.data", _config_string, "\"\"", "HALO_DATA_ROOT", _environment_value, _platform_desktop,
 		"The folder holding the game data's maps folder; empty looks in the\n"

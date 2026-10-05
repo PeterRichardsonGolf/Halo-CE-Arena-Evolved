@@ -958,8 +958,9 @@ static void mods_fill(struct halo_menus *menus)
 }
 
 /* port: the voice packs the spinner of game.callout_voice offers (Settings >
-Game Options > VOICE): each folder of the data root's voices/, by name, its
-name upper-cased; with none, the menus' own (NHE) */
+Game Options > VOICE): each folder of the data root's voices/ and of the
+mod played's mods/<mod>/voices/ (callout_voice.c reads a mod's first), by
+name, its name upper-cased; with none, the menus' own (NHE) */
 #define MAXIMUM_VOICES 32
 
 static char voice_names[MAXIMUM_VOICES][MOD_NAME_LENGTH];
@@ -993,49 +994,68 @@ static void voice_consider(const char *folder, const char *name)
 #endif
 	if (is_folder)
 	{
+		int voice;
+
+		/* (once: a mod's pack may have the name of one in voices/) */
+		for (voice = 0; voice < voice_count; voice++)
+		{
+			if (!strcmp(voice_names[voice], name))
+				return;
+		}
 		strcpy(voice_names[voice_count], name);
 		voice_count++;
 	}
+}
+
+static void voices_list(const char *folder)
+{
+#ifdef _WIN32
+	char pattern[1100];
+	WIN32_FIND_DATAA found;
+	HANDLE search;
+
+	snprintf(pattern, sizeof(pattern), "%s\\*", folder);
+	search = FindFirstFileA(pattern, &found);
+	if (search != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+				voice_consider(folder, found.cFileName);
+		} while (FindNextFileA(search, &found));
+		FindClose(search);
+	}
+#else
+	DIR *opened = opendir(folder);
+	struct dirent *entry;
+
+	if (opened)
+	{
+		while ((entry = readdir(opened)) != NULL)
+			voice_consider(folder, entry->d_name);
+		closedir(opened);
+	}
+#endif
 }
 
 static void voices_fill(struct halo_menus *menus)
 {
 	static char strings[MAXIMUM_VOICES * (MOD_NAME_LENGTH + 1) + 8];
 	static char values[MAXIMUM_VOICES * (MOD_NAME_LENGTH + 1) + 8];
+	char const *mod = config_string("game.mod");
 	char folder[1024];
 	long index;
 	int voice;
 
 	snprintf(folder, sizeof(folder), "%s/voices", platform_data_root());
 	voice_count = 0;
+	voices_list(folder);
+	if (mod && mod[0] && !strchr(mod, '/') && !strchr(mod, '\\') && !strstr(mod, ".."))
 	{
-#ifdef _WIN32
-		char pattern[1100];
-		WIN32_FIND_DATAA found;
-		HANDLE search;
+		char mod_folder[1024];
 
-		snprintf(pattern, sizeof(pattern), "%s\\*", folder);
-		search = FindFirstFileA(pattern, &found);
-		if (search != INVALID_HANDLE_VALUE)
-		{
-			do
-			{
-				if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-					voice_consider(folder, found.cFileName);
-			} while (FindNextFileA(search, &found));
-			FindClose(search);
-		}
-#else
-		DIR *opened = opendir(folder);
-		struct dirent *entry;
-
-		if (opened)
-		{
-			while ((entry = readdir(opened)) != NULL)
-				voice_consider(folder, entry->d_name);
-			closedir(opened);
-		}
-#endif
+		snprintf(mod_folder, sizeof(mod_folder), "%s/mods/%s/voices", platform_data_root(), mod);
+		voices_list(mod_folder);
 	}
 	if (!voice_count)
 		return;
@@ -1067,7 +1087,8 @@ static void voices_fill(struct halo_menus *menus)
 			widget->values = values;
 		}
 	}
-	platform_log("callouts: %d voice packs in %s", voice_count, folder);
+	platform_log("callouts: %d voice packs in %s%s%s%s", voice_count, folder, mod && mod[0] ? " and mods/" : "",
+		mod && mod[0] ? mod : "", mod && mod[0] ? "/voices" : "");
 }
 
 struct halo_menus const *halo_menus_load(void)
