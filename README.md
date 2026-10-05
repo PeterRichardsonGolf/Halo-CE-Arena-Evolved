@@ -79,6 +79,9 @@ play:
   each with a 15-minute time limit, the motion sensor, TIMERS and the stock
   respawns; and AE TRAINING (TIMERS and TRAINING, plays to 500, no time
   limit).
+- **Arena Evolved 2V2** (casual rules for two against two): AE 2V2 SLY (25 kills),
+  AE 2V2 CTF (3 captures), AE 2V2 KING and AE 2V2 BALL (team king and team
+  oddball, 5 minutes held). The player limit of 4 is the host's setting.
 - **Arena Evolved PRO** (modern NHE): AE PRO FFA (25 kills), AE PRO TS (50),
   AE PRO CTF (3 captures), AE PRO KING and AE PRO BALL (team games, 5 minutes
   held). 5-second respawn and suicide penalty, no TIMERS, no motion sensor

@@ -129,6 +129,9 @@ releases yet, so the sections are dated.
 - Arena Evolved PRO gametypes: AE PRO FFA, AE PRO TS, AE PRO CTF, AE PRO KING
   and AE PRO BALL (5-second respawn and suicide penalty, no motion sensor but
   in FFA, no TIMERS; slayers without a time limit, the others 15 minutes).
+- Arena Evolved 2V2 gametypes: AE 2V2 SLY (25 kills), AE 2V2 CTF, AE 2V2 KING
+  and AE 2V2 BALL (team oddball), with the casual rules; seeded into existing
+  saves too. (A gametype cannot hold a player limit: set 4 on the host.)
 - The log names each gametype seeded and its settings.
 - The scoreboard shows the time played and the time left ("1:33 PLAYED ·
   8:27 LEFT", or just the time played with no time limit) on a row under its
