@@ -15,11 +15,12 @@
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_help">
 		<data input="game settings lists text update"/>
 		<on event="created" run="mp profile init player opts"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_falling_damage" x="54" y="73"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_health_regeneration" x="54" y="103"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" x="54" y="133"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" x="54" y="163"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_practice" x="54" y="193"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_time_limit" x="54" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_falling_damage" x="54" y="103"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_health_regeneration" x="54" y="133"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" x="54" y="163"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" x="54" y="193"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_practice" x="54" y="223"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_help" type="text" controller="1" left="68" top="321" width="482" height="79" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options" font="ui\large_ui" color="#FFFFFFFF">
@@ -34,11 +35,29 @@
 		<on event="start" run="mp profile set player options" back="true"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_time_limit" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/time_limit_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/time_limit_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/time_limit_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/time_limit_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_time_limit" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_time_limit">
+		<string text="NONE"/>
+		<string text="10 MINUTES"/>
+		<string text="15 MINUTES"/>
+		<string text="20 MINUTES"/>
+		<string text="25 MINUTES"/>
+		<string text="30 MINUTES"/>
+		<string text="45 MINUTES"/>
+	</strings>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_falling_damage" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_falling_damage" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -51,7 +70,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_health_regeneration" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -66,7 +85,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_no_spread" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -80,7 +99,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_pregame_countdown" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -93,7 +112,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_practice" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -103,6 +122,7 @@
 		<string text="ON"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels">
+		<string text="TIME LIMIT:"/>
 		<string text="FALL DAMAGE:"/>
 		<string text="HEALTH:"/>
 		<string text="NO SPREAD:"/>
@@ -110,6 +130,13 @@
 		<string text="PRACTICE MODE:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options">
+		<string text="No time limit: the game ends only when someone\nreaches the score to win."/>
+		<string text="The game ends after 10 minutes, or sooner\nwhen someone reaches the score to win."/>
+		<string text="The game ends after 15 minutes, or sooner\nwhen someone reaches the score to win."/>
+		<string text="The game ends after 20 minutes, or sooner\nwhen someone reaches the score to win."/>
+		<string text="The game ends after 25 minutes, or sooner\nwhen someone reaches the score to win."/>
+		<string text="The game ends after 30 minutes, or sooner\nwhen someone reaches the score to win."/>
+		<string text="The game ends after 45 minutes, or sooner\nwhen someone reaches the score to win."/>
 		<string text="A hard landing hurts, and a long enough fall kills."/>
 		<string text="Landings never hurt, from any height. Pits and\nleaving the map still kill."/>
 		<string text="Your health only comes back with a health pack."/>

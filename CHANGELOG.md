@@ -7,6 +7,9 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- ARENA OPTIONS has a TIME LIMIT row, first: NONE or 10, 15, 20, 25, 30 or
+  45 MINUTES, the Halo PC gametype screens' own choices, for the same
+  setting. Its description in the gametype editor and Server Setup says so.
 - TRAINING waypoints are smaller: the arrows (and their distances) at 60% of the game's own nav points, which are unchanged, and the labels'
   text at 0.65 scale. An arrow whose label found no clear place now keeps one by the arrow, instead of going unlabelled.
 - CAMPAIGN TIMER (Settings > Game Options, `display.campaign_timer`, off by

@@ -439,7 +439,7 @@ STRING_INSERTS = {
     # descriptions go by the items' places): _arena_options)
     f"{PLAYLIST_EDIT}/playlist_edit_options": [(8, ["ARENA OPTIONS"])],
     f"{PLAYLIST_EDIT}/playlist_edit_list_extended_dsc_text": [(7, [
-        "Fall damage, health and Halo 1:\\nNHE's competitive options for\\nthis gametype.\\nThis gametype:",
+        "Time limit, fall damage, health\\nand Halo 1: NHE's competitive\\noptions for this gametype.\\nThis gametype:",
     ])],
     # (Indicator Options' TIMERS and TRAINING, after FRIEND INDICATORS ON
     # SCREEN: _indicator_options_extras)
@@ -791,7 +791,7 @@ def _server_settings() -> list:
         "Each team's vehicles and their respawn time, for\\nthis game.",
         "The motion tracker and nav points, for this game.",
         "Friendly fire and team balance, for this game.",
-        "Fall damage, health and Halo 1: NHE's competitive\\noptions, for this game.",
+        "Time limit, fall damage, health and Halo 1: NHE's\\ncompetitive options, for this game.",
         # (LISTING's, by its choice)
         "Anyone can see and join your game: it is listed\\nin everyone's Server Browser.",
         "Only players with your invite link can join.",
@@ -1057,8 +1057,16 @@ def _item_options_extras() -> list:
 
 # ARENA OPTIONS' rows: (key, label, values, their helps); each row's
 # spinner is named for its option in menu_functions.c's gametype_options
-# (KEY_spinner), and its helps are its values' in turn (gametype_option_help)
+# (KEY_spinner), and its helps are its values' in turn (gametype_option_help).
+# TIME LIMIT is the Halo PC gametype screens' own (its values TIME_LIMITS,
+# their strings ctf_edit/var_time_limit's), here for every gametype
 ARENA_ROWS = [
+    ("time_limit", "TIME LIMIT:", ["NONE", "10 MINUTES", "15 MINUTES", "20 MINUTES", "25 MINUTES", "30 MINUTES",
+                                   "45 MINUTES"], [
+        "No time limit: the game ends only when someone\\nreaches the score to win.",
+        *[f"The game ends after {minutes} minutes, or sooner\\nwhen someone reaches the score to win."
+          for minutes in (10, 15, 20, 25, 30, 45)],
+    ]),
     ("falling_damage", "FALL DAMAGE:", ["ON", "OFF"], [
         "A hard landing hurts, and a long enough fall kills.",
         "Landings never hurt, from any height. Pits and\\nleaving the map still kill.",

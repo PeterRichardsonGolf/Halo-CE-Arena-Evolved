@@ -184,7 +184,7 @@
 		<string text="Each team's vehicles and their respawn time, for\nthis game."/>
 		<string text="The motion tracker and nav points, for this game."/>
 		<string text="Friendly fire and team balance, for this game."/>
-		<string text="Fall damage, health and Halo 1: NHE's competitive\noptions, for this game."/>
+		<string text="Time limit, fall damage, health and Halo 1: NHE's\ncompetitive options, for this game."/>
 		<string text="Anyone can see and join your game: it is listed\nin everyone's Server Browser."/>
 		<string text="Only players with your invite link can join."/>
 	</strings>

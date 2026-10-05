@@ -897,7 +897,7 @@
 		<string text="Specify options that change\nhow vehicles work and which\nones spawn in this gametype.\nThis gametype:"/>
 		<string text="Choose which interface indica-\ntors are available while playing \nthis gametype.\nThis gametype:"/>
 		<string text="Modify gameplay options and\nrules used by teamplay game\nmodes.\nThis gametype:"/>
-		<string text="Fall damage, health and Halo 1:\nNHE's competitive options for\nthis gametype.\nThis gametype:"/>
+		<string text="Time limit, fall damage, health\nand Halo 1: NHE's competitive\noptions for this gametype.\nThis gametype:"/>
 		<string text="Save changes you've made to\nthis gametype and return to\nthe previous screen.\nThis gametype:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_options">
