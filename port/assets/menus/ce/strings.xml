@@ -459,7 +459,7 @@
 		<string text="Green triangles will appear over the heads of your\nteammates as a reminder that you should not shoot\nthem."/>
 		<string text="Your teammates will only be denoted by the color of\ntheir armor."/>
 		<string text="No timers: learn the spawns the hard way."/>
-		<string text="The match clock, and when and where the rockets,\nsniper, overshield and camo spawn, for everyone."/>
+		<string text="When and where the rockets, sniper, overshield\nand camo spawn, for everyone."/>
 		<string text="No training aids."/>
 		<string text="Every item's spawn and timer, and the player\nspawns this match uses. For learning a map."/>
 	</strings>

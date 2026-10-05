@@ -22,6 +22,7 @@ ON_OFF = [("ON", "true"), ("OFF", "false")]
 PERFORMANCE_LEVELS = [("OFF", "off"), ("FPS", "fps"), ("MINIMAL", "minimal"), ("FULL", "full")]
 CORNERS = [("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
 HEALTH_STYLES = [("CLASSIC", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
+MATCH_CLOCKS = [("OFF", "off"), ("COUNT DOWN", "down"), ("COUNT UP", "up")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
@@ -91,6 +92,8 @@ SCREENS = {
              "Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options.", None),
             ("CAMPAIGN HEALTH:", "game.health", HEALTH_STYLES,
              "How health comes back in the campaign. Gametypes\nhave their own, in Arena Options.", None),
+            ("MATCH CLOCK:", "display.match_clock", MATCH_CLOCKS,
+             "The clock in a multiplayer game's corner and on\nits scoreboard: the time left, or played.", None),
         ],
     },
     "mouse_settings": {
@@ -424,7 +427,7 @@ STRING_INSERTS = {
     f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:"])],
     f"{INDICATOR_OPTIONS}/cap_indicator_options": [(8, [
         "No timers: learn the spawns the hard way.",
-        "The match clock, and when and where the rockets,\\nsniper, overshield and camo spawn, for everyone.",
+        "When and where the rockets, sniper, overshield\\nand camo spawn, for everyone.",
         "No training aids.",
         "Every item's spawn and timer, and the player\\nspawns this match uses. For learning a map.",
     ])],

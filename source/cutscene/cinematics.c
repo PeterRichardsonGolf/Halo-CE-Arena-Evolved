@@ -63,6 +63,7 @@ symbols in this file:
 #include "game/game_engine.h"
 #include "game/game_globals.h"
 #include "game/players.h"
+#include "hs/hs.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
 #include "interface/ui_widget.h"
@@ -260,11 +261,40 @@ void cinematic_stop(
 	return;
 }
 
+/* port: whether a title is one of Halo 1: NHE's maps' clock (their scripts
+set it each second from ui\hud\hudtimer: s_* its seconds, t_* its tens,
+m_* its minutes; not g_*, its countdown), which with MATCH CLOCK on is not
+shown: the HUD has the engine's own (hud_item_timers.c). Its Cortana sounds
+are the scripts' own and stay */
+static boolean cinematic_title_is_hidden_nhe_clock(
+	short title_index)
+{
+	struct scenario_cutscene_title *title;
+
+	if (!game_engine_running() || !hs_scenario_is_nhe() ||
+		game_engine_match_clock_setting() == _match_clock_off ||
+		title_index < 0 || title_index >= global_scenario_get()->cutscene_chapter_titles.count)
+	{
+		return FALSE;
+	}
+	title = TAG_BLOCK_GET_ELEMENT(
+		&global_scenario_get()->cutscene_chapter_titles,
+		title_index,
+		struct scenario_cutscene_title);
+
+	return (title->name[0] == 's' || title->name[0] == 't' || title->name[0] == 'm') &&
+		title->name[1] == '_';
+}
+
 void cinematic_set_title_delayed(
 	short title_index,
 	real delay)
 {
 	short title_slot_index;
+
+	/* port: (not queued: no slot taken) */
+	if (cinematic_title_is_hidden_nhe_clock(title_index))
+		return;
 
 	for (title_slot_index = 0;
 		title_slot_index < MAXIMUM_QUEUED_CINEMATIC_TITLES &&
@@ -378,6 +408,13 @@ void cinematic_render(
 			game time, which stops then, so a map's titles (Halo 1:
 			NHE's clock) stayed over the postgame carnage report */
 			if (game_engine_running() && game_engine_showing_postgame())
+			{
+				active_title->title_index = NONE;
+				active_title->time = NONE;
+				continue;
+			}
+			/* port: (one queued before MATCH CLOCK was turned on) */
+			if (cinematic_title_is_hidden_nhe_clock(active_title->title_index))
 			{
 				active_title->title_index = NONE;
 				active_title->time = NONE;

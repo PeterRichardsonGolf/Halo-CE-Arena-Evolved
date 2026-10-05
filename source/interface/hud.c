@@ -1365,8 +1365,9 @@ void hud_draw_screen(
 		if (game_engine_running() && !cinematic_in_progress())
 			hud_draw_player_names();
 
-		/* port: the gametype's TIMERS and TRAINING (hud_item_timers.c) */
-		if (game_engine_item_timers() && !cinematic_in_progress())
+		/* port: MATCH CLOCK, and the gametype's TIMERS and TRAINING
+		(hud_item_timers.c) */
+		if (game_engine_running() && !cinematic_in_progress())
 			hud_draw_item_timers();
 
 		if (!game_time_get_paused() &&

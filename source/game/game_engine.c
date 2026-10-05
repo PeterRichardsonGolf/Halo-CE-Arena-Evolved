@@ -1179,9 +1179,12 @@ static void game_engine_generate_title_string(
 		}
 	}
 
-	/* port: the gametype's time limit's time left (game_variant_options) */
+	/* port: the gametype's time limit's time left (game_variant_options);
+	with MATCH CLOCK on, the scoreboard's clock line tells it instead
+	(game_engine_rasterize_match_clock) */
 	if (game_variant_options_get()->time_limit > 0 &&
-		game_engine_globals.postgame_state == game_engine_mode_active)
+		game_engine_globals.postgame_state == game_engine_mode_active &&
+		game_engine_match_clock_setting() == _match_clock_off)
 	{
 		long left = game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
 		wchar_t time_string[32];
@@ -1418,7 +1421,8 @@ static void rasterize_in_game_score_draw_line(
 	wchar_t const *string,
 	boolean brighten,
 	real_argb_color *color,
-	long row_index)
+	long row_index,
+	short justification)
 {
 	rectangle2d bounds = render.camera.window_bounds;
 	short narrow_tab_stops[3];
@@ -1464,8 +1468,14 @@ static void rasterize_in_game_score_draw_line(
 				tab_stops[tab_index] += shift;
 			bounds.x0 = tab_stops[0];
 		}
+		/* port: a centred line (the match clock's) over the columns */
+		if (justification == 2)
+		{
+			bounds.x0 = tab_stops[0];
+			bounds.x1 = (short)(tab_stops[2] + (tab_stops[2] - tab_stops[1]) / 2);
+		}
 	}
-	if (row_index)
+	if (row_index > 0)
 		draw_string_set_tab_stops(tab_stops, 3);
 	else
 		draw_string_set_tab_stops(NULL, 0);
@@ -1497,7 +1507,7 @@ static void rasterize_in_game_score_draw_line(
 		row_index += row_offset;
 		bounds.y0 = (short)(row_index * line_height);
 		bounds.y1 = (short)((row_index + 1) * line_height);
-		draw_string_set_draw_mode(font_index, NONE, 0, 0, color);
+		draw_string_set_draw_mode(font_index, NONE, justification, 0, color);
 		rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, string);
 	}
 
@@ -1935,6 +1945,8 @@ static void game_engine_rasterize_scoreboard(
 	short top;
 	wchar_t *column_name;
 	wchar_t *score_name;
+	wchar_t clock_string[32];
+	boolean clock;
 
 	if (font_index == NONE)
 		return;
@@ -1949,8 +1961,10 @@ static void game_engine_rasterize_scoreboard(
 	/* (laid out at full size, then drawn scaled about the title's top left:
 	the screen holds 1/SCOREBOARD_SCALE as much) */
 	width = (short)((bounds.x1 - bounds.x0) / SCOREBOARD_SCALE);
+	/* (MATCH CLOCK's line above the title takes a row) */
+	clock = game_engine_match_clock(clock_string, NUMBEROF(clock_string));
 	rows = (long)((bounds.y1 - SCOREBOARD_LAYOUT_TOP_ROWS * line_height) / SCOREBOARD_SCALE / line_height) - 2 -
-		SCOREBOARD_BOTTOM_ROWS;
+		SCOREBOARD_BOTTOM_ROWS - (clock ? 1 : 0);
 	rows = MAX(rows, 1);
 	statistic_buffer_in_game_only = scoreboard_in_game_only();
 	ranked_count = populate_statistic_buffer(ranked, _postgame_statistic_ranking, FALSE);
@@ -2003,10 +2017,12 @@ static void game_engine_rasterize_scoreboard(
 		scoreboard_scroll = PIN(scoreboard_scroll, 0, MAX(total - page, 0));
 	}
 	left = (short)(bounds.x0 + (width - (columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP)) / 2);
-	/* (centred on the rows shown: the title's, the heading's, the longest
-	column's, and the footer telling where the scroll is) */
+	/* (centred on the rows shown: the clock's, the title's, the heading's,
+	the longest column's, and the footer telling where the scroll is) */
 	shown_rows = MIN(rows, total);
 	if (total > page)
+		shown_rows++;
+	if (clock)
 		shown_rows++;
 	{
 		real height = (2 + shown_rows) * line_height * SCOREBOARD_SCALE;
@@ -2033,6 +2049,24 @@ static void game_engine_rasterize_scoreboard(
 				draw_quad(&panel, ((pixel32)panel_alpha << 24) | (background & 0x00FFFFFF));
 			}
 		}
+	}
+	/* (the clock in the HUD's colour, centred over the columns, the rows
+	below it) */
+	if (clock)
+	{
+		rectangle2d clock_bounds;
+
+		rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
+		clock_bounds.x0 = left;
+		clock_bounds.x1 = (short)(left + columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP);
+		clock_bounds.y0 = top;
+		clock_bounds.y1 = (short)(top + line_height);
+		color = hud_globals->messaging.state_color;
+		color.alpha = alpha;
+		draw_string_set_tab_stops(NULL, 0);
+		draw_string_set_draw_mode(font_index, NONE, 2, 0, &color);
+		rasterizer_draw_unicode_string(&clock_bounds, NULL, NULL, 0, clock_string);
+		top = (short)(top + line_height * SCOREBOARD_SCALE);
 	}
 	rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
 
@@ -2185,11 +2219,23 @@ static void game_engine_rasterize_in_game_score(
 		NUMBEROF(entries));
 	statistic_buffer_in_game_only = FALSE;
 
+	/* port: MATCH CLOCK's, on a line above the title (as the HUD's corner) */
+	{
+		wchar_t clock_string[32];
+
+		if (game_engine_match_clock(clock_string, NUMBEROF(clock_string)))
+		{
+			color = hud_globals->messaging.state_color;
+			color.alpha = alpha;
+			rasterize_in_game_score_draw_line(clock_string, FALSE, &color, -1, 2);
+		}
+	}
+
 	color.alpha = alpha;
 	color.red = 0.7f;
 	color.green = 0.7f;
 	color.blue = 0.7f;
-	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0);
+	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0, 0);
 
 	color.red = 0.5f;
 	color.green = 0.5f;
@@ -2210,7 +2256,7 @@ static void game_engine_rasterize_in_game_score(
 
 	game_engine->format_score_name(score_string);
 	usprintf(row_string, L"\t%s\t%s\t%s", column_name, score_name, score_string);
-	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1);
+	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1, 0);
 
 	for (entry_index = 0; entry_index < entry_count; entry_index++)
 	{
@@ -2282,7 +2328,8 @@ static void game_engine_rasterize_in_game_score(
 				row_string,
 				is_current_player,
 				row_color,
-				entry_index + 2);
+				entry_index + 2,
+				0);
 		}
 	}
 
@@ -4919,6 +4966,65 @@ long game_engine_pregame_countdown_ticks_left(
 	}
 	now = game_time_get();
 	return now >= 0 && now < PREGAME_COUNTDOWN_TICKS ? PREGAME_COUNTDOWN_TICKS - now : 0;
+}
+
+/* port: MATCH CLOCK (display.match_clock: "off", "down" or "up"), this
+machine's own display choice, not the gametype's */
+short game_engine_match_clock_setting(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static short setting = _match_clock_down;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		char const *value = config_string("display.match_clock");
+
+		read_at = config_changes();
+		if (value && !csstrcmp(value, "off"))
+			setting = _match_clock_off;
+		else if (value && !csstrcmp(value, "up"))
+			setting = _match_clock_up;
+		else
+			setting = _match_clock_down;
+	}
+
+	return setting;
+}
+
+/* the match clock's text (M:SS) in a multiplayer game, FALSE for none: MATCH
+CLOCK off, the game over, or PRE-GAME COUNTDOWN counting. COUNT DOWN is the
+time left of the gametype's time limit (rounded up, so 0:00 only as it
+ends), or with no time limit the game time; COUNT UP is the game time. Game
+time only, which every machine has as the host's */
+boolean game_engine_match_clock(
+	wchar_t *string,
+	long count)
+{
+	short setting = game_engine_match_clock_setting();
+	long time_limit;
+	long seconds;
+
+	if (!game_engine_running() || setting == _match_clock_off ||
+		game_engine_globals.postgame_state != game_engine_mode_active ||
+		game_engine_pregame_countdown_ticks_left() > 0 || count <= 0)
+	{
+		return FALSE;
+	}
+	time_limit = game_variant_options_get()->time_limit;
+	if (setting == _match_clock_down && time_limit > 0)
+	{
+		long left = MAX(time_limit * 60L * TICKS_PER_SECOND - game_time_get(), 0);
+
+		seconds = (left + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
+	}
+	else
+		seconds = MAX(game_time_get(), 0) / TICKS_PER_SECOND;
+	usnprintf(string, count, L"%d:%02d", (int)(seconds / 60), (int)(seconds % 60));
+	string[count - 1] = 0;
+
+	return TRUE;
 }
 
 /* port: the gametype's HEALTH (enum health_style), CLASSIC with no game */

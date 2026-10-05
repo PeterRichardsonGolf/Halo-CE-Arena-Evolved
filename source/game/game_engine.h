@@ -32,7 +32,7 @@ enum
 	kill volumes still kill); the port's own bits from 16, clear of the
 	game's */
 	_game_variant_no_falling_damage_bit = 16,
-	/* port: TIMERS (the match clock, the power items' spawns) and TRAINING
+	/* port: TIMERS (the power items' spawns) and TRAINING
 	(every item's spawn and the match's player spawns too) */
 	_game_variant_item_timers_bit = 17,
 	_game_variant_training_bit = 18,
@@ -624,6 +624,20 @@ boolean game_engine_pregame_countdown(
 	void);
 long game_engine_pregame_countdown_ticks_left(
 	void);
+
+/* port: MATCH CLOCK (display.match_clock) */
+enum
+{
+	_match_clock_off = 0,
+	_match_clock_down,
+	_match_clock_up
+};
+
+short game_engine_match_clock_setting(
+	void);
+boolean game_engine_match_clock(
+	wchar_t *string,
+	long count);
 
 struct scenario_netgame_equipment;
 

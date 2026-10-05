@@ -181,6 +181,10 @@ void main_pregame_render(
 void main_framerate_render(
 	void);
 
+/* port: whether main_framerate_render's line shows */
+boolean main_framerate_shown(
+	void);
+
 void main_loop_of_death(
 	void);
 

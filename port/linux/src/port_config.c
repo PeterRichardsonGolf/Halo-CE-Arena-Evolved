@@ -179,6 +179,11 @@ static const struct config_setting config_settings[] =
 		_environment_value, _platform_all,
 		"The scoreboard panel's colour: \"red, green, blue, alpha\", each 0 to 255\n"
 		"(alpha 0 is see-through, 255 solid)." },
+	{ "display.match_clock", _config_string, "\"down\"", "HALO_MATCH_CLOCK", _environment_value, _platform_all,
+		"A clock in the bottom right corner of a multiplayer game's view and on\n"
+		"its scoreboard: \"down\" the time left of the gametype's time limit (with\n"
+		"none, the time played), \"up\" the time played, or \"off\". On Halo 1:\n"
+		"NHE's maps it takes the place of their own clock; off leaves theirs." },
 
 	{ "audio.enabled", _config_boolean, "true", "HALO_NO_AUDIO", _environment_set_is_false, _platform_all,
 		"Play sound." },

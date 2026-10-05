@@ -33,8 +33,8 @@ editor and in Server Setup)
 | PRE-GAME COUNTDOWN | A 3-2-1 before the game starts; you can look around but not move or shoot. *(in progress)* |
 
 Plus, in the gametype's indicator options: **TIMERS** (the next spawns of the
-rockets, sniper rifle, overshield and camo across the top of the screen, and a
-match clock) and **TRAINING**.
+rockets, sniper rifle, overshield and camo across the top of the screen) and
+**TRAINING**.
 
 **Arena gametypes**, ready in the gametype list the first time you play: AE
 SLAYER, TEAM SLAYER, CTF, KING, ODDBALL and TRAINING (no fall damage, Halo 2
@@ -54,6 +54,10 @@ CTF, POWERUP, VANILLA, TRAIN and PRACTICE.
   actions on the d-pad don't also move you with it.
 - A performance overlay in the HUD's style (Settings > Video > PERFORMANCE:
   FPS, or FPS with frame times and draws; top left or top right).
+- A match clock in the bottom right corner and on the scoreboard, as in the
+  Master Chief Collection (Settings > Game Options > MATCH CLOCK: COUNT DOWN
+  the time left, COUNT UP the time played, or OFF). On Halo 1: NHE's maps it
+  replaces their own clock.
 
 **Mods**
 - Settings > Game Options > MOD picks a folder in `mods/`; its `maps` are
@@ -78,8 +82,7 @@ Three rulesets under one roof:
 3. **Hardcore**: closer to Halo Infinite's competitive settings, researched
    rather than guessed.
 
-Next up: a match clock in the corner (counting down or up, also on the
-scoreboard), item spawn waypoints and spawn markers in team colours in the
+Next up: item spawn waypoints and spawn markers in team colours in the
 style of Halo Infinite, and voice callouts for item spawns and the clock with
 swappable voice packs.
 

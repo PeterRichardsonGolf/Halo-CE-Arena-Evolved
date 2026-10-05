@@ -2877,6 +2877,14 @@ static long frame_statistics_level(
 	return _performance_off;
 }
 
+/* port: whether main_framerate_render draws its line at the top of the
+screen (hud_item_timers.c keeps the power list clear of it) */
+boolean main_framerate_shown(
+	void)
+{
+	return display_framerate || frame_statistics_level() != _performance_off;
+}
+
 /* port: where the line is drawn (display.performance_position): "top_left"
 or "top_right", at the top of the view, above the HUD's corners */
 static short frame_statistics_corner(

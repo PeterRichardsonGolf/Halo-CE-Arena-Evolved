@@ -1,8 +1,8 @@
 /*
 HUD_ITEM_TIMERS.H
 
-port: the match clock and the power list of the gametype's TIMERS and
-TRAINING (hud_item_timers.c).
+port: MATCH CLOCK and the power list of the gametype's TIMERS and TRAINING
+(hud_item_timers.c).
 */
 
 #ifndef __HUD_ITEM_TIMERS_H
