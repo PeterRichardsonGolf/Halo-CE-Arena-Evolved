@@ -153,6 +153,11 @@ releases yet, so the sections are dated.
   rest and the sniper rifle's unzoomed shots go where you aim.
 - The time left in the scoreboard's title reads M:SS, as the clock does.
 
+### Removed
+- Split Screen from the PC menus' Multiplayer (it opened the Xbox's split
+  screen screens): a lobby's ADD PLAYER (or another controller's START) adds
+  split-screen players to System Link and online games, as upstream's menus do.
+
 ### Fixed
 - Split screen: a player's pause > SETTINGS (the PC menus' profile and
   settings screens) ran off the bottom of their view, drawn at full-screen

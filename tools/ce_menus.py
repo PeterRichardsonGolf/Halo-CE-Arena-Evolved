@@ -70,17 +70,14 @@ LEFT_OUT = {
     "ui\\shell\\main_menu\\multiplayer_type_select\\checking_updates_screen_join",
 }
 # children moved: (parent, child) to (x, y); the main menu's Quit up into
-# Credits' place; Multiplayer's rows 32 apart, not 33, and Edit Gametypes and
-# its line down two rows, for Split Screen and Co-op (port_settings.WIDGET_PATCHES)
-MULTIPLAYER_ROWS = {"join": (-32, 78), "join_internet": (0, 110), "join_lan": (0, 142), "join_direct": (0, 174),
-                    "create": (-32, 206), "create_internet": (0, 238), "create_lan": (0, 270), "gametypes": (0, 376)}
+# Credits' place; Multiplayer's Edit Gametypes and its line down a row, for
+# Co-op (port_settings.WIDGET_PATCHES)
 CHILD_OFFSETS = {
     ("ui\\shell\\main_menu\\main_menu_select_list", "ui\\shell\\main_menu\\main_menu_item_quit_game"): (192, 391),
-    **{("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
-        f"ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_{row}_item"): offset
-       for row, offset in MULTIPLAYER_ROWS.items()},
+    ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
+     "ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_gametypes_item"): (0, 375),
     ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_screen",
-     "ui\\shell\\main_menu\\blueline"): (64, 370),
+     "ui\\shell\\main_menu\\blueline"): (64, 358),
     # the profile menu's Change Color and About a row down, for Mods
     # (port_settings.WIDGET_PATCHES)
     **{("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_edit_select_list",

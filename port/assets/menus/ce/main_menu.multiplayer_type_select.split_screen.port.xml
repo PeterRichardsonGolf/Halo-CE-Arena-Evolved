@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- The port's multiplayer screens, in the PC version's style (tools/port_settings.py) -->
-<menus>
-	<widget name="main_menu/multiplayer_type_select/multiplayer_type_split_screen_item" type="text" left="51" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/multiplayer_type_select/multiplayer_options" string_index="8" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
-		<on event="a" open="ui\shell\main_menu\multiplayer_type_select\split_screen\4way_profile_select\4way_start2join_screen"/>
-		<on event="start" open="ui\shell\main_menu\multiplayer_type_select\split_screen\4way_profile_select\4way_start2join_screen"/>
-		<on event="left_mouse" run="mouse emit accept event"/>
-	</widget>
-</menus>
