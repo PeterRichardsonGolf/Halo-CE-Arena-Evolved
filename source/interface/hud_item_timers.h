@@ -19,6 +19,9 @@ void hud_item_timers_set_motion_sensor(short local_player_index, rectangle2d con
 /* where hud_unit.c drew the player's shield and health meters (the view's
 coordinates), whose right edge MATCH CLOCK's corner lines up with */
 void hud_item_timers_set_meters(short local_player_index, rectangle2d const *bounds);
+/* whether MATCH CLOCK's or CAMPAIGN TIMER's clock is drawn now (hud_unit.c
+finds the meters only for it) */
+boolean hud_item_timers_clock_shown(void);
 void hud_item_timers_initialize_for_new_map(void);
 /* port: CAMPAIGN TIMER: drawn for render.local_player_index; ticked by
 game_tick; told of a game state loaded (game_state.c) */

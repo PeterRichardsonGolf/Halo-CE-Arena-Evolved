@@ -4590,7 +4590,16 @@ static void gametype_options_each(struct widget_instance *list, boolean save)
 			if (save)
 			{
 				short index = (short)PIN(spinner->parameters.list.selected_index, 0, option->count - 1);
+				long value = gametype_option_value(option, variant, options);
+				short listed;
 
+				/* (a value not in the spinner's list (a time limit of 60
+				from another gametype's file, say), shown as the nearest,
+				kept unless the spinner was moved off it) */
+				for (listed = 0; listed < option->count && option->values[listed] != value; listed++)
+					;
+				if (listed == option->count && gametype_option_index(option, value) == index)
+					continue;
 				gametype_option_value_set(option, option->values[index], variant, options);
 			}
 			else

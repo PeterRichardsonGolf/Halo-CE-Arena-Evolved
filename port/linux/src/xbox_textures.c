@@ -52,69 +52,76 @@ struct format_information
 	unsigned char linear;
 };
 
+static const struct format_information format_table[0x42] =
+{
+	[0x00] = { _texel_l8, 1, 0 },
+	[0x01] = { _texel_al8, 1, 0 },
+	[0x02] = { _texel_a1r5g5b5, 2, 0 },
+	[0x03] = { _texel_x1r5g5b5, 2, 0 },
+	[0x04] = { _texel_a4r4g4b4, 2, 0 },
+	[0x05] = { _texel_r5g6b5, 2, 0 },
+	[0x06] = { _texel_a8r8g8b8, 4, 0 },
+	[0x07] = { _texel_x8r8g8b8, 4, 0 },
+	[0x0b] = { _texel_p8, 1, 0 },
+	[0x0c] = { _texel_dxt1, 8, 0 },
+	[0x0e] = { _texel_dxt3, 16, 0 },
+	[0x0f] = { _texel_dxt5, 16, 0 },
+	[0x10] = { _texel_a1r5g5b5, 2, 1 },
+	[0x11] = { _texel_r5g6b5, 2, 1 },
+	[0x12] = { _texel_a8r8g8b8, 4, 1 },
+	[0x13] = { _texel_l8, 1, 1 },
+	[0x16] = { _texel_r8b8, 2, 1 },
+	[0x17] = { _texel_g8b8, 2, 1 },
+	[0x19] = { _texel_a8, 1, 0 },
+	[0x1a] = { _texel_a8l8, 2, 0 },
+	[0x1b] = { _texel_al8, 1, 1 },
+	[0x1c] = { _texel_x1r5g5b5, 2, 1 },
+	[0x1d] = { _texel_a4r4g4b4, 2, 1 },
+	[0x1e] = { _texel_x8r8g8b8, 4, 1 },
+	[0x1f] = { _texel_a8, 1, 1 },
+	[0x20] = { _texel_a8l8, 2, 1 },
+	[0x24] = { _texel_yuy2, 2, 1 },
+	[0x25] = { _texel_uyvy, 2, 1 },
+	[0x27] = { _texel_r6g5b5, 2, 0 },
+	[0x28] = { _texel_g8b8, 2, 0 },
+	[0x29] = { _texel_r8b8, 2, 0 },
+	[0x2a] = { _texel_d24s8, 4, 0 },
+	[0x2b] = { _texel_d24s8, 4, 0 },
+	[0x2c] = { _texel_d16, 2, 0 },
+	[0x2d] = { _texel_d16, 2, 0 },
+	[0x2e] = { _texel_d24s8, 4, 1 },
+	[0x2f] = { _texel_d24s8, 4, 1 },
+	[0x30] = { _texel_d16, 2, 1 },
+	[0x31] = { _texel_d16, 2, 1 },
+	[0x32] = { _texel_l16, 2, 0 },
+	[0x33] = { _texel_v16u16, 4, 0 },
+	[0x35] = { _texel_l16, 2, 1 },
+	[0x36] = { _texel_v16u16, 4, 1 },
+	[0x37] = { _texel_r6g5b5, 2, 1 },
+	[0x38] = { _texel_r5g5b5a1, 2, 0 },
+	[0x39] = { _texel_r4g4b4a4, 2, 0 },
+	[0x3a] = { _texel_a8b8g8r8, 4, 0 },
+	[0x3b] = { _texel_b8g8r8a8, 4, 0 },
+	[0x3c] = { _texel_r8g8b8a8, 4, 0 },
+	[0x3d] = { _texel_r5g5b5a1, 2, 1 },
+	[0x3e] = { _texel_r4g4b4a4, 2, 1 },
+	[0x3f] = { _texel_a8b8g8r8, 4, 1 },
+	[0x40] = { _texel_b8g8r8a8, 4, 1 },
+	[0x41] = { _texel_r8g8b8a8, 4, 1 },
+};
+
+/* whether the format is one of format_table's */
+static BOOL format_known(DWORD format)
+{
+	return format < sizeof(format_table) / sizeof(format_table[0]) && format_table[format].kind != _texel_unknown;
+}
+
 static struct format_information format_information(DWORD format)
 {
-	static const struct format_information table[0x42] =
-	{
-		[0x00] = { _texel_l8, 1, 0 },
-		[0x01] = { _texel_al8, 1, 0 },
-		[0x02] = { _texel_a1r5g5b5, 2, 0 },
-		[0x03] = { _texel_x1r5g5b5, 2, 0 },
-		[0x04] = { _texel_a4r4g4b4, 2, 0 },
-		[0x05] = { _texel_r5g6b5, 2, 0 },
-		[0x06] = { _texel_a8r8g8b8, 4, 0 },
-		[0x07] = { _texel_x8r8g8b8, 4, 0 },
-		[0x0b] = { _texel_p8, 1, 0 },
-		[0x0c] = { _texel_dxt1, 8, 0 },
-		[0x0e] = { _texel_dxt3, 16, 0 },
-		[0x0f] = { _texel_dxt5, 16, 0 },
-		[0x10] = { _texel_a1r5g5b5, 2, 1 },
-		[0x11] = { _texel_r5g6b5, 2, 1 },
-		[0x12] = { _texel_a8r8g8b8, 4, 1 },
-		[0x13] = { _texel_l8, 1, 1 },
-		[0x16] = { _texel_r8b8, 2, 1 },
-		[0x17] = { _texel_g8b8, 2, 1 },
-		[0x19] = { _texel_a8, 1, 0 },
-		[0x1a] = { _texel_a8l8, 2, 0 },
-		[0x1b] = { _texel_al8, 1, 1 },
-		[0x1c] = { _texel_x1r5g5b5, 2, 1 },
-		[0x1d] = { _texel_a4r4g4b4, 2, 1 },
-		[0x1e] = { _texel_x8r8g8b8, 4, 1 },
-		[0x1f] = { _texel_a8, 1, 1 },
-		[0x20] = { _texel_a8l8, 2, 1 },
-		[0x24] = { _texel_yuy2, 2, 1 },
-		[0x25] = { _texel_uyvy, 2, 1 },
-		[0x27] = { _texel_r6g5b5, 2, 0 },
-		[0x28] = { _texel_g8b8, 2, 0 },
-		[0x29] = { _texel_r8b8, 2, 0 },
-		[0x2a] = { _texel_d24s8, 4, 0 },
-		[0x2b] = { _texel_d24s8, 4, 0 },
-		[0x2c] = { _texel_d16, 2, 0 },
-		[0x2d] = { _texel_d16, 2, 0 },
-		[0x2e] = { _texel_d24s8, 4, 1 },
-		[0x2f] = { _texel_d24s8, 4, 1 },
-		[0x30] = { _texel_d16, 2, 1 },
-		[0x31] = { _texel_d16, 2, 1 },
-		[0x32] = { _texel_l16, 2, 0 },
-		[0x33] = { _texel_v16u16, 4, 0 },
-		[0x35] = { _texel_l16, 2, 1 },
-		[0x36] = { _texel_v16u16, 4, 1 },
-		[0x37] = { _texel_r6g5b5, 2, 1 },
-		[0x38] = { _texel_r5g5b5a1, 2, 0 },
-		[0x39] = { _texel_r4g4b4a4, 2, 0 },
-		[0x3a] = { _texel_a8b8g8r8, 4, 0 },
-		[0x3b] = { _texel_b8g8r8a8, 4, 0 },
-		[0x3c] = { _texel_r8g8b8a8, 4, 0 },
-		[0x3d] = { _texel_r5g5b5a1, 2, 1 },
-		[0x3e] = { _texel_r4g4b4a4, 2, 1 },
-		[0x3f] = { _texel_a8b8g8r8, 4, 1 },
-		[0x40] = { _texel_b8g8r8a8, 4, 1 },
-		[0x41] = { _texel_r8g8b8a8, 4, 1 },
-	};
 	struct format_information unknown = { _texel_a8r8g8b8, 4, 0 };
 
-	if (format < sizeof(table) / sizeof(table[0]) && table[format].kind != _texel_unknown)
-		return table[format];
+	if (format_known(format))
+		return format_table[format];
 	return unknown;
 }
 
@@ -409,8 +416,8 @@ static void decode_level(const struct xgpu_texture_description *description, uns
 /* port: the columns of an Xbox texture's first level that show in its texels
 x0 to x1, y0 to y1 (a sprite's cell): alpha over a quarter (a Halo PC HUD
 meter's shape is its color: its red), the first and one past the last.
-FALSE where it cannot tell (a compressed, palettized, cube or volume
-texture, or pixels outside contiguous memory) or nothing shows. For the HUD
+FALSE where it cannot tell (an unknown, compressed, palettized, cube or
+volume texture, or pixels outside contiguous memory) or nothing shows. For the HUD
 (hud_draw.c's hud_meter_element_bounds), whose bitmaps' cells can have a
 clear margin */
 int xgpu_texture_shown_columns(const void *header, long x0, long y0, long x1, long y1, long *first, long *last)
@@ -431,8 +438,8 @@ int xgpu_texture_shown_columns(const void *header, long x0, long y0, long x1, lo
 	description.pc_layout = (resource[0] & D3DCOMMON_PORT_PC_LAYOUT) != 0;
 	pc_meter = (resource[0] & D3DCOMMON_PORT_PC_METER) != 0;
 	information = format_information(description.format);
-	if (description.compressed || description.cube_map || description.depth != 1 || description.format == 0x0b ||
-		!information.bytes)
+	if (!format_known(description.format) || description.compressed || description.cube_map ||
+		description.depth != 1 || description.format == 0x0b || !information.bytes)
 	{
 		return 0;
 	}
@@ -461,13 +468,14 @@ int xgpu_texture_shown_columns(const void *header, long x0, long y0, long x1, lo
 			const unsigned char *texel = description.linear || description.pc_layout ?
 				row + (unsigned long)x * information.bytes :
 				source + (spread(masks.x, (unsigned long)x) | spread(masks.y, (unsigned long)y)) * information.bytes;
-			unsigned long color = convert_texel(information.kind, texel, NULL, (unsigned long)x, row);
+			unsigned long color = convert_texel(information.kind, texel, NULL, (unsigned long)x,
+				description.linear || description.pc_layout ? row : texel);
 			unsigned long shape = pc_meter ? (color >> 16) & 0xff : color >> 24;
 
 			if (shape > 64)
 			{
 				if (shown_first < 0 || x < shown_first)
-					shown_first = x;
+					shown_first = x;	/* (a later row can start further left) */
 				if (x + 1 > shown_last)
 					shown_last = x + 1;
 			}

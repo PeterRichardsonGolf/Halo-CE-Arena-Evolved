@@ -1769,8 +1769,6 @@ enum
 	/* the room the panel gives the last column's ping beyond its column,
 	which the times on the title's row end at */
 	SCOREBOARD_PING_ROOM = 8,
-	/* the least room between the title and the times on its row */
-	SCOREBOARD_TITLE_TIMES_GAP = 24,
 	/* the rows a column has: as many as fit between 6 rows of the screen
 	from its top and 2 from its bottom (the motion sensor); the scoreboard
 	is centred on the screen, but never nearer its top than 4 rows (the
@@ -1834,27 +1832,6 @@ static pixel32 scoreboard_background_color(
 	}
 
 	return color;
-}
-
-/* port: a line of the scoreboard's text's width, before it is scaled */
-static long scoreboard_text_width(
-	long font_index,
-	wchar_t const *string)
-{
-	rectangle2d bounds;
-	rectangle2d text_bounds;
-	rectangle2d cursor_bounds;
-	real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-	bounds.x0 = 0;
-	bounds.y0 = 0;
-	bounds.x1 = SHORT_MAX / 2;
-	bounds.y1 = SHORT_MAX / 2;
-	draw_string_set_tab_stops(NULL, 0);
-	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
-	draw_unicode_string_compute_bounds(&bounds, string, &text_bounds, &cursor_bounds);
-
-	return text_bounds.x1 > text_bounds.x0 ? text_bounds.x1 - text_bounds.x0 : 0;
 }
 
 /* a row of the scoreboard: its text (tab separated) from the column's left
@@ -2019,11 +1996,9 @@ static void game_engine_rasterize_scoreboard(
 	wchar_t *score_name;
 	wchar_t times_string[64];
 	boolean times;
-	/* (the times on a row of their own under the title's, where the
-	title's row has not room for both) */
+	/* (the times on a row of their own under the title's: with one
+	column, whose title's row has not room for both) */
 	boolean times_row;
-	long title_width;
-	long times_width;
 	short block_width;
 
 	if (font_index == NONE)
@@ -2068,16 +2043,22 @@ static void game_engine_rasterize_scoreboard(
 		page = rows * columns;
 	}
 	block_width = (short)(columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP);
-	/* (the times at the end of the title's row; where the title leaves
-	them too little room (one column), on a row of their own under it,
-	taken from the margin under the columns, not from their rows, so that
-	the columns are the same either way) */
+	/* (the times at the end of the title's row with two columns; with one,
+	whose title (as long as "Tied for 1st place with 25") and times
+	("12:34 PLAYED \xB7 7:26 LEFT") do not fit side by side, on a row of
+	their own under it. Chosen by the columns alone, not the texts' widths,
+	so that they keep their place while the scoreboard is open. The row is
+	taken from the margin under the column, not from its rows (so that a
+	full column does not spill into a second), but from a column that
+	scrolls anyway) */
 	game_engine_generate_title_string(title_string, player_index);
 	times = game_engine_scoreboard_times(font_index, times_string, NUMBEROF(times_string));
-	title_width = scoreboard_text_width(font_index, title_string);
-	times_width = times ? scoreboard_text_width(font_index, times_string) : 0;
-	times_row = times &&
-		title_width + SCOREBOARD_TITLE_TIMES_GAP + times_width > block_width + SCOREBOARD_PING_ROOM;
+	times_row = times && columns == 1;
+	if (times_row && total > rows && rows > 1)
+	{
+		rows--;
+		page = team_columns ? rows : rows * columns;
+	}
 	/* (opened, at the viewer's own player's page; then where the wheel and
 	Page Up/Down take it) */
 	{

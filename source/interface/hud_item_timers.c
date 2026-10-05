@@ -49,8 +49,8 @@ postgame's "You won"/"You lost" view and the scores).
 Both are drawn like the performance overlay (main.c frame_statistics_draw):
 the HUD's smaller font, its blue, 0.7 alpha, at four fifths size (the
 clock larger, HUD_ITEM_TIMERS_CLOCK_SCALE, the Master Chief Collection's
-size; its right edge about 9 pixels inside the meters' frame at 1080p, as
-the Collection's, being under the bar's own end). Unlike the
+size; its right edge about 10 pixels inside the meters' frame at 1080p,
+the Collection's about 9, being under the bar's own end). Unlike the
 overlay, drawn in the HUD's pass, the bounds are the view's relative to
 itself.
 
@@ -695,6 +695,18 @@ static boolean hud_campaign_timer_shown(
 	}
 
 	return shown;
+}
+
+/* whether a clock is drawn now: MATCH CLOCK's (game_engine_match_clock),
+or CAMPAIGN TIMER's (hud_draw_campaign_timer) */
+boolean hud_item_timers_clock_shown(
+	void)
+{
+	wchar_t clock[32];
+
+	if (game_engine_running())
+		return game_engine_match_clock(clock, NUMBEROF(clock));
+	return !main_menu_is_active() && hud_campaign_timer_shown();
 }
 
 void hud_draw_campaign_timer(
@@ -1550,6 +1562,8 @@ void hud_item_timers_initialize_for_new_map(
 {
 	csmemset(hud_item_timers_motion_sensors, 0, sizeof(hud_item_timers_motion_sensors));
 	csmemset(hud_item_timers_meters, 0, sizeof(hud_item_timers_meters));
+	/* (and the meters' texels read for it) */
+	hud_element_bounds_new_map();
 	/* (port: CAMPAIGN TIMER's level starts) */
 	hud_campaign_timer_ticks = 0;
 	csmemset(hud_item_timers_lines, 0, sizeof(hud_item_timers_lines));

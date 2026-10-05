@@ -27,6 +27,9 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- The gametype editor's OK keeps a setting whose value is not one of its
+  spinner's choices (a 60-minute time limit from another gametype file, say)
+  unless that spinner was moved, instead of rounding it to the nearest choice.
 - MATCH CLOCK and CAMPAIGN TIMER: the clock's right edge lines up with the
   right end of the shield and health meters' bar in the top right corner (the
   part of the meter's bitmap that shows, so split screen's smaller meters and
@@ -35,11 +38,12 @@ releases yet, so the sections are dated.
   pixels tall at 1080p) instead of four fifths of the HUD font. With no meters
   drawn it still lines up with the motion sensor.
 - The full-screen scoreboard shows its times ("1:33 PLAYED · 8:27 LEFT") at
-  the end of the title's row, right-aligned to the panel, instead of on a row
-  of their own. A one-column scoreboard whose title leaves them too little room
-  keeps them on their own row, which now comes from the margin under the
-  columns: a 16-player free-for-all no longer pushes its last player into a
-  second column. Split-screen views keep the times on their own row.
+  the end of the title's row, right-aligned to the panel, when it has two
+  columns, instead of on a row of their own. A one-column scoreboard keeps them
+  on their own row (always, so they do not move as the score changes), which
+  now comes from the margin under the column: a 16-player free-for-all no
+  longer pushes its last player into a second column. Split-screen views keep
+  the times on their own row.
 - TRAINING's spawn markers find their floor on scenery and machines too
   (crates, platforms, bridges), not only the map's structure, so a spawn on
   one has its ring on top, not inside it (on the stock maps: a spawn on a

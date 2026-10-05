@@ -1728,6 +1728,65 @@ static void hud_draw_bitmap_with_meter(
 in a cell of it (texels), FALSE where it cannot tell */
 int xgpu_texture_shown_columns(void const *header, long x0, long y0, long x1, long y1, long *first, long *last);
 
+/* port: the shown columns found (hud_element_shown_columns), by bitmap and
+cell: they stay as they are while the map is loaded (its bitmaps' pixels),
+so the texels are read once; cleared with each new map
+(hud_element_bounds_new_map) */
+#define HUD_SHOWN_COLUMNS_CACHE_SIZE 16
+static struct
+{
+	struct bitmap_data const *bitmap;
+	long cell[4];
+	long first;
+	long last;
+} hud_shown_columns_cache[HUD_SHOWN_COLUMNS_CACHE_SIZE];
+static short hud_shown_columns_cache_count = 0;
+static short hud_shown_columns_cache_next = 0;
+
+void hud_element_bounds_new_map(
+	void)
+{
+	hud_shown_columns_cache_count = 0;
+	hud_shown_columns_cache_next = 0;
+}
+
+/* port: the columns of a bitmap's cell that show (xgpu_texture_shown_columns),
+remembered; FALSE where the texture cannot tell (or is not loaded yet: asked
+again) */
+static boolean hud_element_shown_columns(
+	struct bitmap_data *bitmap,
+	long const cell[4],
+	long *first,
+	long *last)
+{
+	short index;
+
+	for (index = 0; index < hud_shown_columns_cache_count; index++)
+	{
+		if (hud_shown_columns_cache[index].bitmap == bitmap &&
+			!csmemcmp(hud_shown_columns_cache[index].cell, cell, sizeof(hud_shown_columns_cache[index].cell)))
+		{
+			*first = hud_shown_columns_cache[index].first;
+			*last = hud_shown_columns_cache[index].last;
+			return TRUE;
+		}
+	}
+	if (!xgpu_texture_shown_columns(_texture_cache_bitmap_get_hardware_format(bitmap, FALSE, FALSE),
+		cell[0], cell[1], cell[2], cell[3], first, last))
+	{
+		return FALSE;
+	}
+	index = hud_shown_columns_cache_next;
+	hud_shown_columns_cache_next = (short)((hud_shown_columns_cache_next + 1) % HUD_SHOWN_COLUMNS_CACHE_SIZE);
+	hud_shown_columns_cache_count = (short)MIN(hud_shown_columns_cache_count + 1, HUD_SHOWN_COLUMNS_CACHE_SIZE);
+	hud_shown_columns_cache[index].bitmap = bitmap;
+	csmemcpy(hud_shown_columns_cache[index].cell, cell, sizeof(hud_shown_columns_cache[index].cell));
+	hud_shown_columns_cache[index].first = *first;
+	hud_shown_columns_cache[index].last = *last;
+
+	return TRUE;
+}
+
 /* port: the rectangle an element's bitmap (the group's, the sequence's
 first) at its placement is drawn in (the view's coordinates, as
 hud_calculate_point's), the way hud_draw_bitmap_with_meter places it: the
@@ -1781,18 +1840,20 @@ static boolean hud_element_bounds(
 	{
 		real texels = is_interface_bitmap ? 1.0f : (real)bitmap->width;
 		real texels_down = is_interface_bitmap ? 1.0f : (real)bitmap->height;
-		long cell_x0 = fast_ftol(clip->x0 * texels + 0.5f);
+		long cell[4];
 		long first;
 		long last;
 
-		if (xgpu_texture_shown_columns(_texture_cache_bitmap_get_hardware_format(bitmap, FALSE, FALSE),
-			cell_x0, fast_ftol(clip->y0 * texels_down + 0.5f), fast_ftol(clip->x1 * texels + 0.5f),
-			fast_ftol(clip->y1 * texels_down + 0.5f), &first, &last))
+		cell[0] = fast_ftol(clip->x0 * texels + 0.5f);
+		cell[1] = fast_ftol(clip->y0 * texels_down + 0.5f);
+		cell[2] = fast_ftol(clip->x1 * texels + 0.5f);
+		cell[3] = fast_ftol(clip->y1 * texels_down + 0.5f);
+		if (hud_element_shown_columns(bitmap, cell, &first, &last))
 		{
 			real left = bounds.x0;
 
-			bounds.x0 = left + (real)(first - cell_x0);
-			bounds.x1 = left + (real)(last - cell_x0);
+			bounds.x0 = left + (real)(first - cell[0]);
+			bounds.x1 = left + (real)(last - cell[0]);
 		}
 	}
 	result->x0 = (short)(point.x + fast_ftol(bounds.x0 * placement->scale.i));

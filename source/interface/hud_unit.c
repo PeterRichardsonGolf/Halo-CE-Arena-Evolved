@@ -893,6 +893,7 @@ void hud_render_unit_interface(
 				are, for MATCH CLOCK's corner (hud_item_timers.c) */
 				rectangle2d meters_bounds;
 				boolean meters_found = FALSE;
+				boolean clock_shown = unit_count == 0 && hud_item_timers_clock_shown();
 
 				if (hud_definition->background.interface_bitmap.index != NONE)
 				{
@@ -1032,7 +1033,7 @@ void hud_render_unit_interface(
 							draw_flags,
 							hud_state->last_shield_flash_time);
 					}
-					if (unit_count == 0)
+					if (unit_count == 0 && clock_shown)
 					{
 						hud_unit_meter_bounds(&hud_definition->absolute_placement,
 							&hud_definition->shield_meter.meter, &hud_definition->shield_meter.background,
@@ -1127,7 +1128,7 @@ void hud_render_unit_interface(
 							draw_flags,
 							hud_state->last_health_flash_time);
 					}
-					if (unit_count == 0)
+					if (unit_count == 0 && clock_shown)
 					{
 						hud_unit_meter_bounds(&hud_definition->absolute_placement,
 							&hud_definition->health_meter.meter, &hud_definition->health_meter.background,
