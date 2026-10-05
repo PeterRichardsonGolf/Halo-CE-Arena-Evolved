@@ -1050,9 +1050,10 @@ ARENA_ROWS = [
         "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
         "Once your shields are full, all your health\\ncomes back.",
     ]),
-    ("no_spread", "NO SPREAD:", ["OFF", "ON"], [
+    ("no_spread", "NO SPREAD:", ["OFF", "NHE", "FULL"], [
         "The pistol and sniper rifle spread as in stock Halo.",
         "The pistol's first shot from rest, and every\\nunzoomed sniper rifle shot, go exactly where\\nyou aim, as in Halo 1: NHE.",
+        "Every pistol and sniper rifle shot goes exactly\\nwhere you aim, held fire too: no spread and no\\nbloom. Other weapons are unchanged.",
     ]),
     ("pregame_countdown", "PRE-GAME COUNTDOWN:", ["OFF", "ON"], [
         "The game starts at once.",

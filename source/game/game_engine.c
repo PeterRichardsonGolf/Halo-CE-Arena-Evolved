@@ -4975,14 +4975,19 @@ boolean game_engine_training(
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit);
 }
 
-/* port: the gametype's NO SPREAD (_game_variant_no_spread_bit): the
-pistol's and the sniper rifle's shots as Halo 1: NHE's maps have them
-(weapons.c weapon_trigger_error_angle_bounds) */
-boolean game_engine_no_spread(
+/* port: the gametype's NO SPREAD level (enum no_spread_level): NHE, the
+pistol's and the sniper rifle's shots as Halo 1: NHE's maps have them;
+FULL, both always exact (weapons.c weapon_trigger_error_angle_bounds) */
+short game_engine_no_spread(
 	void)
 {
-	return game_engine_running() &&
-		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_spread_bit);
+	unsigned long flags = global_variant.universal_variant.flags;
+
+	if (!game_engine_running())
+		return _no_spread_off;
+	if (TEST_FLAG(flags, _game_variant_no_spread_full_bit))
+		return _no_spread_full;
+	return TEST_FLAG(flags, _game_variant_no_spread_bit) ? _no_spread_nhe : _no_spread_off;
 }
 
 /* port: the gametype's PRACTICE MODE (_game_variant_practice_bit): every
@@ -7406,7 +7411,8 @@ void game_engine_log_rules(
 			time_limit_string,
 			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
 			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
-			TEST_FLAG(flags, _game_variant_no_spread_bit) ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_no_spread_full_bit) ? "full" :
+				TEST_FLAG(flags, _game_variant_no_spread_bit) ? "nhe" : "off",
 			!TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "off" :
 				hs_scenario_is_nhe() ? "on (Halo 1: NHE's map: its scripts')" : "on",
 			TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off");

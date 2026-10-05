@@ -41,9 +41,10 @@ enum
 	_game_variant_health_style_first_bit = 19,
 	_game_variant_health_regeneration_bit = _game_variant_health_style_first_bit,
 	_game_variant_health_style_second_bit = 20,
-	/* port: NO SPREAD (ARENA OPTIONS): the pistol's first shot from rest
-	and the sniper rifle's unzoomed shots go exactly where they aim (held
-	fire still spreads the pistol), as Halo 1: NHE's maps' do */
+	/* port: NO SPREAD (ARENA OPTIONS), its NHE level: the pistol's first
+	shot from rest and the sniper rifle's unzoomed shots go exactly where
+	they aim (held fire still spreads the pistol), as Halo 1: NHE's maps'
+	do (enum no_spread_level) */
 	_game_variant_no_spread_bit = 21,
 	/* port: PRE-GAME COUNTDOWN (ARENA OPTIONS): a 3-2-1 countdown on a black
 	screen starts the game (not on Halo 1: NHE's maps, which have their own) */
@@ -51,7 +52,27 @@ enum
 	/* port: PRACTICE MODE (ARENA OPTIONS): every weapon and powerup the map
 	spawns respawns every 30 seconds */
 	_game_variant_practice_bit = 23,
+	/* port: NO SPREAD's FULL level: the pistol's and the sniper rifle's
+	shots always exact, held fire too (no bloom); set with
+	_game_variant_no_spread_bit, so a build that knows only that bit plays
+	NHE's */
+	_game_variant_no_spread_full_bit = 24,
 };
+
+/* port: NO SPREAD's levels (game_engine_no_spread): OFF, stock spread; NHE,
+_game_variant_no_spread_bit alone; FULL, _game_variant_no_spread_full_bit
+(set with the NHE bit) */
+enum no_spread_level
+{
+	_no_spread_off = 0,
+	_no_spread_nhe,
+	_no_spread_full,
+};
+
+#define GAME_VARIANT_NO_SPREAD_MASK \
+	(FLAG(_game_variant_no_spread_bit) | FLAG(_game_variant_no_spread_full_bit))
+#define GAME_VARIANT_NO_SPREAD_NHE FLAG(_game_variant_no_spread_bit)
+#define GAME_VARIANT_NO_SPREAD_FULL GAME_VARIANT_NO_SPREAD_MASK
 
 /* port: how a player's health comes back (the gametype's HEALTH, the
 campaign's game.health): CLASSIC only from health packs; REACH, once the
@@ -614,7 +635,7 @@ boolean game_engine_no_falling_damage(
 short game_engine_health_style(
 	void);
 
-boolean game_engine_no_spread(
+short game_engine_no_spread(
 	void);
 
 boolean game_engine_practice(

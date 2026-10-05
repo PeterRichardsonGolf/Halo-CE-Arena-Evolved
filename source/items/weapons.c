@@ -2273,27 +2273,33 @@ static void projectile_distribute(
 }
 
 /* port: a trigger's projectile error angle bounds; the gametype's NO SPREAD
-(game_engine_no_spread) gives the pistol and the sniper rifle what Halo 1:
-NHE's maps have: the pistol's lower bound 0 (its first shot from rest goes
-where it is aimed, held fire still spreads to the upper bound), the sniper
-rifle's both 0 (scoped it has no error anyway: use error when unzoomed).
-NHE also zeroed the sniper's initial and final error, which nothing reads
-(the runtime error acceleration and deceleration, unchanged, drive the
-trigger's error). Host and clients alike: each fires its own players' shots
-here, and the host's hit checks do not look at the error. */
+(game_engine_no_spread) changes the pistol's and the sniper rifle's. NHE:
+what Halo 1: NHE's maps have, the pistol's lower bound 0 (its first shot
+from rest goes where it is aimed, held fire still spreads to the upper
+bound), the sniper rifle's both 0 (scoped it has no error anyway: use error
+when unzoomed). NHE also zeroed the sniper's initial and final error, which
+nothing reads (the runtime error acceleration and deceleration, unchanged,
+drive the trigger's error). FULL: both weapons' bounds 0, so every shot,
+held fire too, goes where it is aimed (no bloom). Other weapons keep their
+tag's. Host and clients alike: each fires its own players' shots here, and
+the host's hit checks do not look at the error. */
 static void weapon_trigger_error_angle_bounds(
 	long weapon_definition_index,
 	struct weapon_trigger_definition const *trigger_definition,
 	real *lower_bound,
 	real *upper_bound)
 {
+	short no_spread= game_engine_no_spread();
+
 	*lower_bound= trigger_definition->projectile_error_angle_lower_bound;
 	*upper_bound= trigger_definition->projectile_error_angle_upper_bound;
-	if (game_engine_no_spread())
+	if (no_spread != _no_spread_off)
 	{
 		if (game_engine_weapon_is_pistol(weapon_definition_index))
 		{
 			*lower_bound= 0.0f;
+			if (no_spread == _no_spread_full)
+				*upper_bound= 0.0f;
 		}
 		else if (game_engine_weapon_is_sniper_rifle(weapon_definition_index))
 		{
