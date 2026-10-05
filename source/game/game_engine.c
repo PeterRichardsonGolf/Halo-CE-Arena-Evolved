@@ -3634,6 +3634,34 @@ void game_engine_rasterize_message(
 	return;
 }
 
+/* port: SCOREBOARD FADE (display.scoreboard_fade: "instant", "fast",
+"normal" or "slow"), the seconds the in-game scoreboard takes to fade in or
+out: 0, a quarter, a half (the original game's 15 ticks) or 1 */
+static real game_engine_scoreboard_fade_seconds(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static real seconds = 0.5f;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		char const *value = config_string("display.scoreboard_fade");
+
+		read_at = config_changes();
+		if (!csstrcmp(value, "instant"))
+			seconds = 0.0f;
+		else if (!csstrcmp(value, "fast"))
+			seconds = 0.25f;
+		else if (!csstrcmp(value, "slow"))
+			seconds = 1.0f;
+		else
+			seconds = 0.5f;
+	}
+
+	return seconds;
+}
+
 static void game_engine_post_rasterize_in_game(
 	void)
 {
@@ -3642,6 +3670,7 @@ static void game_engine_post_rasterize_in_game(
 	struct player_datum *player;
 	struct gamepad_state const *gamepad;
 	real fade;
+	real fade_seconds;
 
 	local_player_index = render.local_player_index;
 	player_index = local_player_get_player_index(local_player_index);
@@ -3661,17 +3690,25 @@ static void game_engine_post_rasterize_in_game(
 
 	gamepad = input_get_gamepad_state(local_player_index);
 	fade = game_engine_globals.hud_message_timers[local_player_index];
+	fade_seconds = game_engine_scoreboard_fade_seconds();
 	if ((!gamepad ||
 		!gamepad->buttons[_gamepad_binary_button_back]) &&
 		game_engine_globals.postgame_state != game_engine_mode_postgame_delay)
 	{
 		/* a frame is no longer a tick (render_interpolation.c): fade in half
-		a second, not in 15 frames */
-		fade -= 0.06666667f * main_get_seconds_elapsed() * TICKS_PER_SECOND;
+		a second, not in 15 frames. port: in SCOREBOARD FADE's time, at once
+		with none */
+		if (fade_seconds > 0.0f)
+			fade -= 0.06666667f * main_get_seconds_elapsed() * TICKS_PER_SECOND * (0.5f / fade_seconds);
+		else
+			fade = 0.0f;
 	}
 	else
 	{
-		fade += 0.06666667f * main_get_seconds_elapsed() * TICKS_PER_SECOND;
+		if (fade_seconds > 0.0f)
+			fade += 0.06666667f * main_get_seconds_elapsed() * TICKS_PER_SECOND * (0.5f / fade_seconds);
+		else
+			fade = 1.0f;
 	}
 
 	fade = PIN(fade, 0.0f, 1.0f);

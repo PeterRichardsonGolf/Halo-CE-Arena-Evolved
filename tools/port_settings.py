@@ -23,6 +23,8 @@ PERFORMANCE_LEVELS = [("OFF", "off"), ("FPS", "fps"), ("MINIMAL", "minimal"), ("
 CORNERS = [("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
 HEALTH_STYLES = [("CLASSIC", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
 MATCH_CLOCKS = [("OFF", "off"), ("COUNT DOWN", "down"), ("COUNT UP", "up")]
+HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
+SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
@@ -94,6 +96,12 @@ SCREENS = {
              "How health comes back in the campaign. Gametypes\nhave their own, in Arena Options.", None),
             ("MATCH CLOCK:", "display.match_clock", MATCH_CLOCKS,
              "The clock in a multiplayer game's corner and on\nits scoreboard: the time left, or played.", None),
+            ("HUD AREA:", "display.hud_area", HUD_AREAS,
+             "On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide.", None),
+            ("COMPACT HUD:", "display.compact_hud", ON_OFF,
+             "With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages.", None),
+            ("SCOREBOARD FADE:", "display.scoreboard_fade", SCOREBOARD_FADES,
+             "How fast the scoreboard fades in and out while\nBack (or Tab) is held.", None),
         ],
     },
     "mouse_settings": {

@@ -32,6 +32,10 @@ where the two would meet (main.c's main_framerate_extent); at a lower
 view's bottom it keeps clear of the clock in the corner. Entries that would
 take the line wider than its room are left off (the latest).
 
+With HUD AREA (display.hud_area: hud_area_inset), both keep to its part of
+the view: the clock by the sensor, which has moved in with the HUD, the
+power list's line (and the clock with no sensor) from that part's sides.
+
 Neither is drawn once the game is over (game_engine_game_over: the
 postgame's "You won"/"You lost" view and the scores).
 
@@ -61,6 +65,7 @@ them on for both teams), only while alive, as the game's nav points.
 #include "game/players.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "interface/hud_draw.h"
 #include "interface/hud_item_timers.h"
 #include "interface/hud_messaging.h"
 #include "main/main.h"
@@ -213,7 +218,10 @@ static long hud_item_timers_draw_clock(
 	}
 	else
 	{
-		inset = (short)(HUD_ITEM_TIMERS_CLOCK_RIGHT * view_width + 0.5f);
+		/* (port: of HUD AREA's part of the view) */
+		short area_inset = hud_area_inset();
+
+		inset = (short)(area_inset + HUD_ITEM_TIMERS_CLOCK_RIGHT * (view_width - 2 * area_inset) + 0.5f);
 		baseline = view_height - (long)(HUD_ITEM_TIMERS_CLOCK_BOTTOM * view_height + 0.5f);
 	}
 	/* (the digits' foot, their baseline, there: the line's top an ascent
@@ -311,7 +319,9 @@ static void hud_item_timers_draw_powers(
 	short justification = !one_view ? _text_justification_center :
 		main_framerate_shown() && main_framerate_corner() == _text_justification_left ?
 			_text_justification_right : _text_justification_left;
-	long width = hud_item_timers_power_line(font_index, view_width - 2 * HUD_ITEM_TIMERS_SIDE, line);
+	/* (the room from the view's sides: in HUD AREA's part of it) */
+	long side = HUD_ITEM_TIMERS_SIDE + hud_area_inset();
+	long width = hud_item_timers_power_line(font_index, view_width - 2 * side, line);
 	long overlay = 0;
 	long top;
 	boolean bottom;
@@ -326,8 +336,8 @@ static void hud_item_timers_draw_powers(
 
 		if (render.camera.viewport_bounds.y0 <= 0 && main_framerate_shown() && main_framerate_extent(&extent))
 		{
-			long x0 = justification == _text_justification_left ? HUD_ITEM_TIMERS_SIDE :
-				justification == _text_justification_right ? view_width - HUD_ITEM_TIMERS_SIDE - width :
+			long x0 = justification == _text_justification_left ? side :
+				justification == _text_justification_right ? view_width - side - width :
 				(view_width - width) / 2;
 			long x1 = x0 + width;
 
@@ -353,7 +363,7 @@ static void hud_item_timers_draw_powers(
 	}
 	else
 		top = overlay + HUD_ITEM_TIMERS_TOP;
-	inset = justification == _text_justification_center ? 0 : HUD_ITEM_TIMERS_SIDE;
+	inset = justification == _text_justification_center ? 0 : (short)side;
 	hud_item_timers_draw_line(font_index, justification, (short)top, inset, line);
 }
 

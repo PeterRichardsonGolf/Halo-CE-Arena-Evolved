@@ -7,6 +7,16 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- HUD AREA (Settings > Game Options, `display.hud_area`): FULL, 16:9 or 4:3.
+  On a wider screen, 16:9 or 4:3 keeps the whole HUD (meters, motion sensor,
+  ammo, messages, scoreboard, match clock, power list, waypoint arrows) in a
+  part of that shape at the middle of each view; the view stays wide.
+- COMPACT HUD (Settings > Game Options, `display.compact_hud`): with one
+  player, the game's smaller split-screen HUD (meters, motion sensor,
+  messages). The reticle stays full size.
+- SCOREBOARD FADE (Settings > Game Options, `display.scoreboard_fade`): the
+  scoreboard fades in and out INSTANT, FAST (0.25 s), NORMAL (0.5 s, as
+  before) or SLOW (1 s).
 - TRAINING (indicator options) shows a waypoint over each power item (rockets,
   sniper rifle, overshield, camo) from 10 seconds before it spawns to 20
   seconds after, as Halo 1: NHE's Training did, and green markers on the floor

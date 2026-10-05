@@ -403,7 +403,7 @@ void hud_play_unit_sounds(
 				unit_definition_get(unit->definition_index);
 			long active_hud_index = unit_definition_get_active_hud_index(
 				unit_definition,
-				local_player_count() > 1);
+				hud_split_screen_layout());
 
 			if (active_hud_index == NONE)
 				return;
@@ -594,7 +594,7 @@ void hud_render_damage_indicators(
 			&hud_globals->damage_indicators;
 		real theta;
 		real_point2d screen_position;
-		real scale = hud_globals_get_scale(local_player_count() > 1);
+		real scale = hud_globals_get_scale(hud_split_screen_layout());
 		byte damage_indicators[NUMBER_OF_HUD_DAMAGE_INDICATOR_DIRECTIONS];
 		short direction;
 
@@ -671,7 +671,7 @@ void hud_render_damage_indicators(
 				screen_position.x -= (real)render.camera.viewport_bounds.x0;
 				screen_position.y -= (real)render.camera.viewport_bounds.y0;
 				bitmap_group_index = definition->indicator_bitmap.index;
-				if (local_player_count() > 1)
+				if (hud_split_screen_layout())
 					sequence_index = definition->multiplayer_sequence_index;
 				else
 					sequence_index = definition->sequence_index;
@@ -775,7 +775,7 @@ void hud_render_unit_interface(
 		{
 			unit_definition_get_active_hud_index(
 				unit_definition,
-				local_player_count() > 1)
+				hud_split_screen_layout())
 		};
 		long unit_count = 1;
 		unsigned long auxilary_flags;
@@ -802,7 +802,7 @@ void hud_render_unit_interface(
 			get_hud_state(local_player_index);
 			parent_hud_index = unit_definition_get_active_hud_index(
 				parent_unit_definition,
-				local_player_count() > 1);
+				hud_split_screen_layout());
 
 			if (TEST_FLAG(seat->flags, _unit_seat_driver_bit))
 			{
@@ -830,7 +830,7 @@ void hud_render_unit_interface(
 							unit_definition_get_seat_active_hud_index(
 								parent_unit_definition,
 								child_unit->unit.parent_seat_index,
-								local_player_count() > 1);
+								hud_split_screen_layout());
 						unit_count++;
 					}
 
@@ -869,7 +869,7 @@ void hud_render_unit_interface(
 					SET_FLAG(
 						draw_flags,
 						_hud_draw_in_multiplayer_bit,
-						local_player_count() > 1);
+						hud_split_screen_layout());
 					hud_draw_static_element(
 						local_player_index,
 						&hud_definition->absolute_placement,
@@ -896,7 +896,7 @@ void hud_render_unit_interface(
 					SET_FLAG(
 						draw_flags,
 						_hud_draw_in_multiplayer_bit,
-						local_player_count() > 1);
+						hud_split_screen_layout());
 
 					if (unit_count == 0)
 					{
@@ -1017,7 +1017,7 @@ void hud_render_unit_interface(
 					SET_FLAG(
 						draw_flags,
 						_hud_draw_in_multiplayer_bit,
-						local_player_count() > 1);
+						hud_split_screen_layout());
 
 					if (unit_count == 0)
 					{
@@ -1103,7 +1103,7 @@ void hud_render_unit_interface(
 					SET_FLAG(
 						draw_flags,
 						_hud_draw_in_multiplayer_bit,
-						local_player_count() > 1);
+						hud_split_screen_layout());
 					SET_FLAG(
 						draw_flags,
 						_hud_draw_flashing_bit,
@@ -1154,12 +1154,12 @@ void hud_render_unit_interface(
 						&absolute_placement,
 						&hud_definition->blip_placement,
 						NULL,
-						local_player_count() > 1,
+						hud_split_screen_layout(),
 						0.0f,
 						&corner);
 					motion_sensor_draw_screen(
 						local_player_index,
-						local_player_count() > 1,
+						hud_split_screen_layout(),
 						&corner);
 				}
 
@@ -1172,7 +1172,7 @@ void hud_render_unit_interface(
 					SET_FLAG(
 						draw_flags,
 						_hud_draw_in_multiplayer_bit,
-						local_player_count() > 1);
+						hud_split_screen_layout());
 					for (overlay_index = 0;
 						overlay_index < auxilary_panel->auxilary_overlays.count;
 						overlay_index++)
@@ -1235,7 +1235,7 @@ void hud_render_unit_interface(
 							SET_FLAG(
 								draw_flags,
 								_hud_draw_in_multiplayer_bit,
-								local_player_count() > 1);
+								hud_split_screen_layout());
 							SET_FLAG(
 								draw_flags,
 								_hud_draw_flashing_bit,
@@ -1290,7 +1290,7 @@ void hud_render_unit_interface(
 							SET_FLAG(
 								draw_flags,
 								_hud_draw_in_multiplayer_bit,
-								local_player_count() > 1);
+								hud_split_screen_layout());
 							SET_FLAG(
 								draw_flags,
 								_hud_draw_flashing_bit,

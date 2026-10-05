@@ -86,6 +86,7 @@ symbols in this file:
 #include "interface/first_person_weapons.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "interface/hud_draw.h"
 #include "interface/interface.h"
 #include "interface/hud_messaging.h"
 #include "interface/terminal.h"
@@ -726,8 +727,16 @@ void interface_draw_screen(
 		rasterizer_screen_effect(NULL);
 	}
 
-	hud_draw_screen();
-	game_engine_post_rasterize();
+	/* port: the HUD and the game engine's (the scoreboard, its messages) in
+	HUD AREA's part of the view (hud_draw.c) */
+	{
+		rectangle2d window_bounds;
+
+		hud_area_begin(&window_bounds);
+		hud_draw_screen();
+		game_engine_post_rasterize();
+		hud_area_end(&window_bounds);
+	}
 
 	return;
 }

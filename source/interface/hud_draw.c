@@ -410,7 +410,21 @@ static void hud_draw_multitexture_overlay(
 int backtrace(void **frames, int count);
 #endif
 
+/* port_config.c's */
+int config_boolean(const char *name);
+const char *config_string(const char *name);
+unsigned long config_changes(void);
+
 /* ---------- globals */
+
+/* port: HUD AREA in the HUD's pass of a view (hud_area_begin): the view's
+whole window, and how far each side of it is moved in */
+static struct
+{
+	boolean active;
+	short inset;
+	rectangle2d window_bounds;
+} hud_area_globals;
 
 /* ---------- public code */
 
@@ -1322,16 +1336,109 @@ boolean hud_number_shows_only_when_zoomed(
 }
 
 /* the window as it would be 640 wide, at the middle of the wide one (each
-split screen window its share) */
+split screen window its share). port: of the view's whole window, not
+HUD AREA's part of it (hud_area_begin), and no wider than that part */
 void hud_zoomed_layout_begin(
 	rectangle2d *saved_window_bounds)
 {
 	long width = render.camera.window_bounds.x1 - render.camera.window_bounds.x0;
-	short inset = (short)((width - width * 640 / halo_screen_width()) / 2);
+	long whole = hud_area_globals.active ?
+		hud_area_globals.window_bounds.x1 - hud_area_globals.window_bounds.x0 : width;
+	long zoomed = MIN(whole * 640 / halo_screen_width(), width);
+	short inset = (short)((width - zoomed) / 2);
 
 	*saved_window_bounds = render.camera.window_bounds;
 	render.camera.window_bounds.x0 += inset;
 	render.camera.window_bounds.x1 -= inset;
+}
+
+/* port: HUD AREA (display.hud_area): "full", "16:9" or "4:3", as the
+width of the HUD's part of a view to its height (0 for the whole view) */
+static real hud_area_aspect(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static real aspect = 0.0f;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		char const *value = config_string("display.hud_area");
+
+		read_at = config_changes();
+		if (!csstrcmp(value, "16:9"))
+			aspect = 16.0f / 9.0f;
+		else if (!csstrcmp(value, "4:3"))
+			aspect = 4.0f / 3.0f;
+		else
+			aspect = 0.0f;
+	}
+
+	return aspect;
+}
+
+/* port: the HUD's pass of a view (interface_draw_screen) drawn in HUD
+AREA's part of it: the view's window (render.camera.window_bounds, which
+every HUD element's corner, the messages, the nav points' edge and the
+scoreboard keep to) narrowed to the part's shape at its middle, where the
+view is wider than that. The view's camera was set up from the whole window
+before this; only the HUD moves */
+void hud_area_begin(
+	rectangle2d *saved_window_bounds)
+{
+	real aspect = hud_area_aspect();
+	long width = render.camera.window_bounds.x1 - render.camera.window_bounds.x0;
+	long height = render.camera.window_bounds.y1 - render.camera.window_bounds.y0;
+
+	*saved_window_bounds = render.camera.window_bounds;
+	hud_area_globals.window_bounds = render.camera.window_bounds;
+	hud_area_globals.active = TRUE;
+	hud_area_globals.inset = 0;
+	if (aspect > 0.0f && height > 0 && width > height * aspect)
+	{
+		hud_area_globals.inset = (short)((width - (long)(height * aspect + 0.5f)) / 2);
+		render.camera.window_bounds.x0 += hud_area_globals.inset;
+		render.camera.window_bounds.x1 -= hud_area_globals.inset;
+	}
+}
+
+void hud_area_end(
+	rectangle2d const *saved_window_bounds)
+{
+	render.camera.window_bounds = *saved_window_bounds;
+	hud_area_globals.active = FALSE;
+	hud_area_globals.inset = 0;
+}
+
+/* port: how far HUD AREA has moved each side of the view's HUD in (0 for
+all of it, and outside the HUD's pass) */
+short hud_area_inset(
+	void)
+{
+	return hud_area_globals.active ? hud_area_globals.inset : 0;
+}
+
+/* port: whether this view's HUD is split screen's (the game's own for two
+or more views: the unit's split-screen HUD, the weapons' elements for it,
+the smaller motion sensor, messages and their font), as it is for two or
+more local players, and with COMPACT HUD (display.compact_hud) for one. The
+weapon's reticle goes by the players alone (hud_weapon.c's crosshairs) */
+boolean hud_split_screen_layout(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean compact = FALSE;
+
+	if (local_player_count() > 1)
+		return TRUE;
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		compact = config_boolean("display.compact_hud") != 0;
+	}
+
+	return compact;
 }
 
 void hud_zoomed_layout_end(

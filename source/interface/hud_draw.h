@@ -87,6 +87,15 @@ void hud_zoomed_layout_begin(
 	rectangle2d *saved_window_bounds);
 void hud_zoomed_layout_end(
 	rectangle2d const *saved_window_bounds);
+/* port: HUD AREA and COMPACT HUD */
+void hud_area_begin(
+	rectangle2d *saved_window_bounds);
+void hud_area_end(
+	rectangle2d const *saved_window_bounds);
+short hud_area_inset(
+	void);
+boolean hud_split_screen_layout(
+	void);
 long get_flash_duration(
 	struct hud_color_definition const *hud_color);
 pixel32 get_flash_color(
