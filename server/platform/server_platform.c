@@ -269,6 +269,24 @@ void platform_video_swap(void)
 {
 }
 
+/* the Video settings' resolution and window size lists (menu_tags.c): none
+on a server, which has no display */
+int platform_display_resolutions(long *widths, long *heights, int maximum)
+{
+	(void)widths;
+	(void)heights;
+	(void)maximum;
+	return 0;
+}
+
+int platform_window_sizes(long *widths, long *heights, int maximum)
+{
+	(void)widths;
+	(void)heights;
+	(void)maximum;
+	return 0;
+}
+
 void platform_mouse_capture(BOOL capture)
 {
 	(void)capture;
