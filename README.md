@@ -44,7 +44,7 @@ editor and in Server Setup)
 | HEALTH | CLASSIC (stock: health packs only), REACH (health recovers to a third), HALO 2 (health refills with the shields), HALO 3 (health refills after the shields). Health packs still spawn. |
 | NO SPREAD | OFF (stock), NHE (the pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as Halo 1: NHE has them) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
-| PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. The host holds every player to it, including players on builds without it. |
+| PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. A weapon switch (Y) pressed during it is kept and taken as it ends, as in Halo 1: NHE; any other button pressed during it does nothing until you let go of it, so nothing fires, zooms, reloads or picks up the moment it ends. The host holds every player to it, including players on builds without it. |
 
 Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
 TIMERS shows the power list only: the next spawns of the rockets, sniper

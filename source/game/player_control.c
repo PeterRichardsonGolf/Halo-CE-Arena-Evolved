@@ -1318,10 +1318,37 @@ static void get_local_player_input_blob(
 
 			{
 				byte effective_buttons[NUMBER_OF_ACTION_CONTROL_BUTTONS] = {0};
-				word buttons_to_reset =
+				word buttons_to_reset;
+				long button_index;
+
+				/* port: during the PRE-GAME COUNTDOWN a button pressed does
+				nothing until it is let go of, even once the countdown ends,
+				so that nothing pressed in it acts as it ends (a zoom, a
+				pickup, a reload, a held trigger): only SWITCH WEAPON (Y) is
+				kept, its change taken as it ends, as Halo 1: NHE's
+				(players_update_before_game). Not START or BACK, which are
+				not the player's actions (the scoreboard, held) */
+				if (game_engine_pregame_countdown_ticks_left() > 0)
+				{
+					for (button_index = 0;
+						button_index < NUMBER_OF_ACTION_CONTROL_BUTTONS;
+						button_index++)
+					{
+						/* (the keyboard's reload key shares X's) */
+						if (button_index != _button_switch_weapon &&
+							button_index != _button_start &&
+							button_index != _button_back &&
+							(input_state->buttons[button_index] ||
+							(button_index == _button_action_reload &&
+							input_abstraction_port_reload(gamepad_index))))
+						{
+							player_control_inhibit_buttons(local_player_index, (word)FLAG(button_index), TRUE);
+						}
+					}
+				}
+				buttons_to_reset =
 					control->inhibited_button_bit_vector &
 					control->reset_button_when_released_bit_vector;
-				long button_index;
 
 				if (buttons_to_reset)
 				{
@@ -1329,8 +1356,12 @@ static void get_local_player_input_blob(
 						button_index < NUMBER_OF_ACTION_CONTROL_BUTTONS;
 						button_index++)
 					{
+						/* (port: the keyboard's reload key, which shares X's
+						inhibition, let go of too) */
 						if (TEST_FLAG(buttons_to_reset, button_index) &&
-							!input_state->buttons[button_index])
+							!input_state->buttons[button_index] &&
+							(button_index != _button_action_reload ||
+							!input_abstraction_port_reload(gamepad_index)))
 						{
 							SET_FLAG(
 								control->inhibited_button_bit_vector,

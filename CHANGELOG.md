@@ -22,6 +22,11 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- PRE-GAME COUNTDOWN: a button pressed during it, other than SWITCH WEAPON
+  (Y, still kept and taken as it ends, as Halo 1: NHE's), does nothing until
+  it is let go of, even after the countdown: a zoom, a pickup or reload, a
+  grenade switch or a trigger held through the end no longer act at its
+  last tick. The keyboard's reload key is held back with X.
 - `game.callout_voice` defaults to `cori` (CALLOUTS stays off by default). NHE's
   imported voice remains an option.
 - CALLOUTS: items spawning together are called together when the voice pack
