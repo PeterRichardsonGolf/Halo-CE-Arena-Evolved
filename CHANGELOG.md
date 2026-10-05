@@ -143,7 +143,8 @@ releases yet, so the sections are dated.
   size in it. With two players the screens are now drawn at half size in the
   player's half, centred (shape kept; the dim covers the whole half); with
   three or four players they are drawn over the whole screen, after the
-  views. One player's menus and the Xbox pause screens are unchanged.
+  views, one player's at a time (the lowest player's; another player's is
+  drawn smaller in their own view, under it). One player's menus and the Xbox pause screens are unchanged.
   (Automated tests: `debug.test_input` menu presses can name another
   controller, `2:start`.)
 - Pause > SETTINGS > profile > RENAME in a match crashed the game: the Xbox

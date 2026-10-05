@@ -7362,29 +7362,71 @@ enum
 };
 
 /* the widgets render_ui_widgets left for render_ui_widgets_full_screen this
-frame, a flag for each of active_widgets */
+frame, a flag for each of active_widgets (cleared as the frame's views start) */
 static long ui_widgets_full_screen_pending = 0;
 
+/* whether a view is less than the whole frame: a split screen player's */
+static boolean split_screen_view(
+	rectangle2d const *window_bounds)
+{
+	rectangle2d const *frame = &rasterizer_globals.reserved04.frame_bounds;
+
+	return window_bounds->x1 - window_bounds->x0 < frame->x1 - frame->x0 ||
+		window_bounds->y1 - window_bounds->y0 < frame->y1 - frame->y0;
+}
+
+/* whether a widget is a PC menu screen of a player's own, with more than one
+local player: one split_screen_menu_layout draws other than as it was */
+static boolean split_screen_menu(
+	struct widget_instance const *widget)
+{
+	/* (an error dialog, the PC menus' too, stays in the view as it was: none
+	opens from the pause menu's SETTINGS) */
+	return widget &&
+		local_player_count() >= 2 &&
+		widget->local_player_index != NONE &&
+		!widget->render_regardless_of_controller_index &&
+		!widget->widget_is_error_dialog &&
+		pc_menu_tag(widget->definition_tag_index);
+}
+
+/* how a widget is drawn, whatever the view: one menu at a time over the whole
+screen with three or four players, the lowest player's; the others smaller,
+in their own views (as with two players) */
+static short split_screen_menu_kind(
+	struct widget_instance const *widget)
+{
+	long widget_index;
+
+	if (!split_screen_menu(widget))
+		return _split_screen_menu_in_view;
+	if (local_player_count() < 3)
+		return _split_screen_menu_scaled;
+	for (widget_index = 0;
+		widget_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS;
+		widget_index++)
+	{
+		struct widget_instance const *other = widget_globals.active_widgets[widget_index];
+
+		if (other != widget && split_screen_menu(other) &&
+			other->local_player_index < widget->local_player_index)
+		{
+			return _split_screen_menu_scaled;
+		}
+	}
+
+	return _split_screen_menu_full_screen;
+}
+
+/* how a widget is drawn in a view */
 static short split_screen_menu_layout(
 	struct widget_instance const *widget,
 	rectangle2d const *window_bounds)
 {
-	rectangle2d const *frame = &rasterizer_globals.reserved04.frame_bounds;
-	boolean whole_frame =
-		window_bounds->x1 - window_bounds->x0 >= frame->x1 - frame->x0 &&
-		window_bounds->y1 - window_bounds->y0 >= frame->y1 - frame->y0;
-
-	if (whole_frame ||
-		local_player_count() < 2 ||
-		widget->local_player_index == NONE ||
-		widget->render_regardless_of_controller_index ||
-		widget->widget_is_error_dialog ||
-		!pc_menu_tag(widget->definition_tag_index))
-	{
+	if (!split_screen_view(window_bounds))
 		return _split_screen_menu_in_view;
-	}
 
-	return local_player_count() >= 3 ? _split_screen_menu_full_screen : _split_screen_menu_scaled;
+	return split_screen_menu_kind(widget);
 }
 
 /* draws what follows (a menu screen) smaller, to fit a split screen view, its
@@ -7449,6 +7491,8 @@ void render_ui_widgets(
 	rectangle2d bounds;
 	long widget_index;
 	boolean first_players_render = local_player_index == NONE || local_player_index == 0;
+	/* port: the first player's own view (not a mirror's, NONE) */
+	boolean first_players_view = local_player_index == 0;
 	/* port: the first player's menu left for the whole screen, which notes
 	and settles the targets itself (render_ui_widgets_full_screen) */
 	boolean first_players_menu_full_screen = FALSE;
@@ -7459,16 +7503,20 @@ void render_ui_widgets(
 		window_bounds != NULL);
 	local_player_index_for_draw_string_and_hack_in_icons =
 		local_player_index == NONE ? 0 : local_player_index;
-	if (bink_playback_ui_rendering_inhibited())
-		return;
-	/* port: the first player's menu is drawn whole, until this render
-	draws it smaller (split_screen_menu_scale_begin) */
-	if (first_players_render)
+	/* port: the first player's menu is drawn whole, until their view's
+	render draws it smaller (split_screen_menu_scale_begin); and the frame's
+	views start with no menu left for the whole screen (the first player's
+	view is the frame's first) */
+	if (first_players_view || !split_screen_view(window_bounds))
 	{
 		ui_mouse_menu_scale = 1.0f;
 		ui_mouse_menu_origin_x = 0.0f;
 		ui_mouse_menu_origin_y = 0.0f;
 	}
+	if (first_players_view)
+		ui_widgets_full_screen_pending = 0;
+	if (bink_playback_ui_rendering_inhibited())
+		return;
 	if (!virtual_keyboard_active())
 	{
 		local_player_index = PIN(
@@ -7530,9 +7578,11 @@ void render_ui_widgets(
 				/* port: or smaller, to fit the view */
 				if (layout == _split_screen_menu_scaled)
 				{
+					/* (the pointer: in the first player's own view, not a
+					mirror's) */
 					split_screen_menu_scale_begin(
 						window_bounds,
-						first_players_render && widget->local_player_index == 0,
+						first_players_view && widget->local_player_index == 0,
 						&bounds);
 				}
 				/* the mouse drives the first player's menus; a widget shown in
@@ -7632,8 +7682,12 @@ void render_ui_widgets_full_screen(
 		point2d offset;
 		boolean noting;
 
-		if (!TEST_FLAG(pending, widget_index) || !widget)
+		/* (and still one: a flag from an earlier frame draws nothing) */
+		if (!TEST_FLAG(pending, widget_index) ||
+			split_screen_menu_kind(widget) != _split_screen_menu_full_screen)
+		{
 			continue;
+		}
 		bounds.x0 = 0;
 		bounds.y0 = 0;
 		bounds.x1 = window_bounds->x1 - window_bounds->x0;

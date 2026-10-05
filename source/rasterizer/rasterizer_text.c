@@ -208,8 +208,6 @@ static void rasterizer_draw_character_with_dropshadow(
 static long hires_text_font_get(
 	long font_index,
 	real oversample);
-static real hires_text_oversample(
-	void);
 static void rasterizer_text_draw_scaled_character(
 	struct dynamic_screen_vertex const *vertices);
 static void rasterizer_draw_hires_character(
@@ -458,7 +456,7 @@ rasterizer_draw_string(
 			}
 
 			/* port: from the font's atlas, when it has every character */
-			hires_text_font = hires_text_atlas ? hires_text_font_get(draw_string_get_font(), hires_text_oversample()) : NONE;
+			hires_text_font = hires_text_atlas ? hires_text_font_get(draw_string_get_font(), MAX(text_scale, 1.0f)) : NONE;
 			if (hires_text_font != NONE)
 			{
 				long character_index;
@@ -601,7 +599,7 @@ rasterizer_draw_unicode_string(
 			}
 
 			/* port: from the font's atlas, when it has every character */
-			hires_text_font = hires_text_atlas ? hires_text_font_get(draw_string_get_font(), hires_text_oversample()) : NONE;
+			hires_text_font = hires_text_atlas ? hires_text_font_get(draw_string_get_font(), MAX(text_scale, 1.0f)) : NONE;
 			if (hires_text_font != NONE)
 			{
 				long character_index;
@@ -783,21 +781,6 @@ void rasterizer_text_set_scale(
 	text_scale_origin_y = origin_y;
 
 	return;
-}
-
-/* port: how many times the display's pixels the high-res text's glyphs are
-drawn with: more for text drawn larger (rasterizer_text_set_scale), and
-fewer for text drawn smaller through the screen transform (rasterizer.h),
-which would otherwise be shrunk from glyphs drawn for the full size */
-static real hires_text_oversample(
-	void)
-{
-	real oversample = MAX(text_scale, 1.0f);
-
-	if (rasterizer_screen_transform.active && rasterizer_screen_transform.scale < 1.0f)
-		oversample *= rasterizer_screen_transform.scale;
-
-	return oversample;
 }
 
 /* port: a character's quad, scaled (rasterizer_text_set_scale) */
