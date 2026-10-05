@@ -684,8 +684,8 @@ def _server_settings() -> list:
     whether the server browser lists it (PUBLIC or PRIVATE: an internet
     game's)"""
     base = f"{MT}/server_settings"
-    # (ten rows: closer together, the help lower)
-    spec = {"screen": "server_settings_screen", "spacing": 28, "help_top": 358,
+    # (eleven rows: closer together, the help lower, as video_settings)
+    spec = {"screen": "server_settings_screen", "spacing": 25, "help_top": 358,
             "header": ("header_server_settings", f"{base}/header_server_settings")}
     rows, extra = [], []
     extra += _value_row(base, "server_name", 0, "ss edit server name")
@@ -717,7 +717,7 @@ def _server_settings() -> list:
                       f'<child widget="{base}/listing_spinner" x="320" y="1"/>'])
     extra += _widget(f"{base}/listing_label", [("type", "text"), ("controller", 1), ("width", 300),
                                                ("height", 22), ("string_list", f"{base}/labels"),
-                                               ("string_index", 9), ("font", "ui\\large_ui"),
+                                               ("string_index", 10), ("font", "ui\\large_ui"),
                                                ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
     extra += _widget(f"{base}/listing_spinner",
                      [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
@@ -757,7 +757,7 @@ def _server_settings() -> list:
                       '<on event="left_mouse" run="mouse emit accept event"/>'])
     extra += _strings(f"{base}/labels", ["GAME NAME:", "MAXIMUM PLAYERS:", "INVITE LINK:", "GAME TYPE:",
                                          "PLAYER OPTIONS:", "ITEM OPTIONS:", "VEHICLE OPTIONS:", "INDICATOR OPTIONS:",
-                                         "TEAMPLAY OPTIONS:", "LISTING:"])
+                                         "TEAMPLAY OPTIONS:", "ARENA OPTIONS:", "LISTING:"])
     extra += _strings(f"{base}/help_strings", [
         "",
         "The name the game shows in the lists of games.\\nEnter changes it.",
@@ -769,6 +769,7 @@ def _server_settings() -> list:
         "Each team's vehicles and their respawn time, for\\nthis game.",
         "The motion tracker and nav points, for this game.",
         "Friendly fire and team balance, for this game.",
+        "Fall damage, health and Halo 1: NHE's competitive\\noptions, for this game.",
         # (LISTING's, by its choice)
         "Anyone can see and join your game: it is listed\\nin everyone's Server Browser.",
         "Only players with your invite link can join.",
@@ -793,6 +794,7 @@ SETUP_OPTION_SCREENS = [
     ("vehicle_options", "vehicle_options_edit/vehicle_options_screen"),
     ("indicator_options", "indicator_options_edit/indicator_options_screen"),
     ("team_options", "teamplay_options_edit/teamplay_options_screen"),
+    ("arena_options", "arena_options_edit/arena_options_screen"),
 ]
 
 

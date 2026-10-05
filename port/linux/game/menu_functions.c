@@ -2481,7 +2481,7 @@ static void server_settings_update(struct widget_instance *list)
 		multiplayer.game_private = !public;
 		p2p_set_hosting_public(public);
 		if (help && list->focused_child == named(list, "op_listing", 0))
-			help->parameters.text_box.string_list_index = (short)(10 + spinner->parameters.list.selected_index);
+			help->parameters.text_box.string_list_index = (short)(11 + spinner->parameters.list.selected_index);
 	}
 }
 
