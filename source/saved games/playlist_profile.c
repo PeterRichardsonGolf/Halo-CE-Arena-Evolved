@@ -310,14 +310,7 @@ void playlist_profiles_enumerate_available_to_local_player_index(
 		custom gametypes first), before the gametypes are listed */
 		if (arena_gametypes_seed())
 		{
-			if (playlist_profile_globals.thread)
-			{
-				while (!thread_has_exited(playlist_profile_globals.thread))
-				{
-				}
-				dispose_thread(playlist_profile_globals.thread);
-				playlist_profile_globals.thread = NULL;
-			}
+			playlist_profile_wait_for_write();
 			saved_game_files_notify_memory_units_changed();
 		}
 	}
@@ -557,6 +550,22 @@ void playlist_profile_save_with_options(
 		}
 		playlist_profile_write_options = *options;
 		playlist_profile_write(playlist_profile_index, variant);
+	}
+
+	return;
+}
+
+/* port: the asynchronous write finished (as playlist_profile_read waits) */
+void playlist_profile_wait_for_write(
+	void)
+{
+	if (playlist_profile_globals.thread)
+	{
+		while (!thread_has_exited(playlist_profile_globals.thread))
+		{
+		}
+		dispose_thread(playlist_profile_globals.thread);
+		playlist_profile_globals.thread = NULL;
 	}
 
 	return;

@@ -47,6 +47,9 @@ void playlist_profile_save_with_options(
 	long playlist_profile_index,
 	struct game_variant *variant,
 	struct game_variant_options const *options);
+/* port: the asynchronous write (playlist_profile_save) finished */
+void playlist_profile_wait_for_write(
+	void);
 void playlist_profile_delete(
 	long playlist_profile_index);
 boolean playlist_profile_get_from_path(

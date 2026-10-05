@@ -5078,6 +5078,21 @@ void main_screen_shell_load(
 	}
 	if (load_main_menu)
 	{
+		/* port: the main menu waits for the filesystem check thread to end,
+		as on the Xbox, where the intro movie (which it cannot skip until then:
+		_bink_playback_dont_allow_skipping_if_filesystem_check_thread_is_active_bit)
+		plays first; here no movie plays. Screens enumerate the saved games
+		as they load (the PC menus' gametype lists, debug.menu_open's profile),
+		and that thread is still making the first-time ones
+		(playlist_profiles_enumerate_available_to_local_player_index: the
+		default and Arena Evolved gametypes), which nothing else may do at the
+		same time. ui_widgets_process still disposes of it. */
+		if (widget_globals.initialization_thread)
+		{
+			while (!thread_has_exited(widget_globals.initialization_thread))
+			{
+			}
+		}
 		attract_mode_reset_timer();
 		ui_widgets_close_all();
 		/* port: the menus' main menu, when they are there (port/linux/game/menu_tags.c) */

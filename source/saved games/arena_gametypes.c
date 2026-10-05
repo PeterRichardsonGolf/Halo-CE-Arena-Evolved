@@ -383,6 +383,12 @@ static boolean arena_gametype_write(
 		return FALSE;
 	}
 	playlist_profile_save_with_options(profile_index, &variant, &options);
+	/* (and written before the next gametype's file is made: the write's
+	thread opens the saved games' mapfile, which making a file
+	(create_enumerated_saved_game_file's count_enumerated_profiles_in_mapfile)
+	resets without taking its mutex; a player saving gametypes is never
+	that quick) */
+	playlist_profile_wait_for_write();
 	*written = TRUE;
 	arena_gametype_log(gametype, &variant, &options);
 
