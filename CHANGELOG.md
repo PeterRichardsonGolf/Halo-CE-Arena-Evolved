@@ -22,6 +22,11 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- TRAINING's spawn markers find their floor on scenery and machines too
+  (crates, platforms, bridges), not only the map's structure, so a spawn on
+  one has its ring on top, not inside it (on the stock maps: a spawn on a
+  flag base on Hang 'Em High and on Prisoner). Bipeds, vehicles, items and
+  projectiles are still ignored; the ray stays 0.5 over to 1 under the spawn.
 - PRE-GAME COUNTDOWN: a button pressed during it, other than SWITCH WEAPON
   (Y, still kept and taken as it ends, as Halo 1: NHE's), does nothing until
   it is let go of, even after the countdown: a zoom, a pickup or reload, a

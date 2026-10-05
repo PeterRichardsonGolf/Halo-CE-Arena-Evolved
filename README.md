@@ -53,7 +53,7 @@ overlay with one view, and in the margin above or below each view's HUD in
 split screen. The match clock is its own setting (below).
 TRAINING adds, as Halo 1: NHE's Training mode did: a waypoint over each power
 item (rockets, sniper rifle, overshield, camo) from 10 seconds before it spawns
-to 20 seconds after, and green markers on the floor at the player spawns this
+to 20 seconds after, and green markers on the floor (or the crate or platform a spawn stands on) at the player spawns this
 gametype uses (within 25 units, hidden behind walls). Each waypoint is
 labelled with the item and the time to its spawn ("OVERSHIELD 0:08"), then
 the item alone once it is on the map; a spawn that can be either powerup

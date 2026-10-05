@@ -10,16 +10,17 @@ as NHE's (team colours are for later).
 
 Each is a flat ring with a chevron in it pointing the way the spawn faces,
 lying on the floor (a short collision ray down from the spawn point finds
-it and its slope) SPAWN_MARKER_HEIGHT over it, drawn in the world: depth
-tested against what the view has drawn, so walls, floors and objects hide
-it as they would NHE's scenery, and the first person weapon and the HUD
-(drawn after it) stay over it. Within SPAWN_MARKER_RANGE world units of the
-view's camera, fading out over the last SPAWN_MARKER_FADE, and not behind
-it. Every marker a view shows is built into one array (each fading through
-its vertices' alpha) and drawn with one call through the debug geometry
-path's non-opaque triangles (rasterizer_debug_draw_triangles_now): one
-dynamic vertex buffer a view, alpha blended, no texture, so no tag is
-needed.
+it and its slope: the map's structure, or scenery or a machine the spawn
+stands on, such as a crate, a platform or a bridge) SPAWN_MARKER_HEIGHT
+over it, drawn in the world: depth tested against what the view has drawn,
+so walls, floors and objects hide it as they would NHE's scenery, and the
+first person weapon and the HUD (drawn after it) stay over it. Within
+SPAWN_MARKER_RANGE world units of the view's camera, fading out over the
+last SPAWN_MARKER_FADE, and not behind it. Every marker a view shows is
+built into one array (each fading through its vertices' alpha) and drawn
+with one call through the debug geometry path's non-opaque triangles
+(rasterizer_debug_draw_triangles_now): one dynamic vertex buffer a view,
+alpha blended, no texture, so no tag is needed.
 
 Drawn per local player's view from render_window (render.c), whether the
 player is alive or not (as scenery is), while item_timers_training_shown:
@@ -309,7 +310,12 @@ static void spawn_marker_floor(
 		global_current_collision_users[global_current_collision_user_depth++] = 20;
 		pushed = TRUE;
 	}
-	if (collision_test_vector(FLAG(_collision_test_front_facing_surfaces_bit) | FLAG(_collision_test_structure_bit),
+	/* (the map's structure and the objects a spawn can stand on: scenery,
+	such as crates, and machines, such as platforms and bridges; not
+	bipeds, vehicles, items or projectiles, which come and go) */
+	if (collision_test_vector(FLAG(_collision_test_front_facing_surfaces_bit) | FLAG(_collision_test_structure_bit) |
+			FLAG(_collision_test_objects_bit) | FLAG(_collision_test_objects_scenery_bit) |
+			FLAG(_collision_test_objects_machines_bit),
 			&start, &vector, NONE, &result) &&
 		result.plane.n.k > 0.5f)
 	{
