@@ -29,6 +29,12 @@ buffer, so streams still drain at their real rate.
 audio.volume sets the master volume (default 1.0); audio.enabled = false
 skips opening a device; audio.buffer_frames sets the device's buffer
 (port_config.c).
+
+port: besides the game's streams, one UI voice for the callouts
+(callout_voice.c): a clip of 16-bit PCM, mono or stereo at any rate, mixed
+in 2D at the master and effects volumes (audio.volume and
+audio.effects_volume, as the game's effects) and resampled as the streams
+are, outside the game's sound system, so none of its sounds cut it.
 */
 
 #include "platform.h"
@@ -116,6 +122,27 @@ static struct
 } listener = { { 0, 0, 0 }, { 0, 0, 1 }, { 0, 1, 0 }, 1.0f, 1.0f };
 
 static float master_volume = 1.0f;
+static float effects_volume = 1.0f;
+
+/* the UI voice's clip, under mixer_lock (its samples are the caller's until
+it ends or platform_ui_voice_stop) */
+static struct
+{
+	short const *samples;	/* interleaved, its channel count */
+	unsigned long frames;
+	unsigned long channels;
+	double step;	/* source frames for each output frame */
+	double cursor;
+	BOOL playing;
+} ui_voice;
+
+/* audio.effects_volume, 0 to 1 (as sound_manager.c reads it) */
+static float effects_volume_read(void)
+{
+	double volume = config_real("audio.effects_volume");
+
+	return volume < 0.0 ? 0.0f : volume > 1.0 ? 1.0f : (float)volume;
+}
 
 static float gain_from_millibels(LONG millibels)
 {
@@ -409,6 +436,40 @@ static void mix_voice(struct sdl_stream *stream, float *output, unsigned long fr
 	stream->current_right = target_right;
 }
 
+/* the UI voice's clip into the output, linearly interpolated (under
+mixer_lock) */
+static void mix_ui_voice(float *output, unsigned long frames)
+{
+	float gain = master_volume * effects_volume / 32768.0f;
+	unsigned long frame;
+
+	if (!ui_voice.playing)
+		return;
+	for (frame = 0; frame < frames; frame++)
+	{
+		unsigned long index = (unsigned long)ui_voice.cursor;
+		unsigned long next = index + 1 < ui_voice.frames ? index + 1 : index;
+		float fraction = (float)(ui_voice.cursor - (double)index);
+		short const *here, *there;
+		float left, right;
+
+		if (index >= ui_voice.frames)
+		{
+			ui_voice.playing = FALSE;
+			break;
+		}
+		here = ui_voice.samples + index * ui_voice.channels;
+		there = ui_voice.samples + next * ui_voice.channels;
+		left = here[0] + (there[0] - here[0]) * fraction;
+		right = ui_voice.channels > 1 ? here[1] + (there[1] - here[1]) * fraction : left;
+		output[frame * 2] += left * gain;
+		output[frame * 2 + 1] += right * gain;
+		ui_voice.cursor += ui_voice.step;
+	}
+	if ((unsigned long)ui_voice.cursor >= ui_voice.frames)
+		ui_voice.playing = FALSE;
+}
+
 static void mix(float *output, unsigned long frames)
 {
 	struct sdl_stream *stream;
@@ -418,6 +479,7 @@ static void mix(float *output, unsigned long frames)
 	pthread_mutex_lock(&mixer_lock);
 	for (stream = streams; stream; stream = stream->next)
 		mix_voice(stream, output, frames);
+	mix_ui_voice(output, frames);
 	pthread_mutex_unlock(&mixer_lock);
 	/* soft limit rather than wrap or hard clip when many voices pile up */
 	for (sample = 0; sample < frames * OUTPUT_CHANNELS; sample++)
@@ -491,6 +553,7 @@ static void audio_start(void)
 		return;
 	audio_started = TRUE;
 	master_volume = (float)config_real("audio.volume");
+	effects_volume = effects_volume_read();
 
 	if (config_boolean("audio.enabled") && platform_sdl_initialize())
 	{
@@ -746,8 +809,45 @@ VOID WINAPI DirectSoundDoWork(void)
 	{
 		volume_read_at = config_changes();
 		master_volume = (float)config_real("audio.volume");
+		effects_volume = effects_volume_read();
 	}
 	streams_complete_finished();
+}
+
+/* ---------- the UI voice (port: callout_voice.c) */
+
+/* plays a clip in place of the one playing, if any; the samples must stay
+until it ends (platform_ui_voice_busy) or platform_ui_voice_stop */
+void platform_ui_voice_start(short const *samples, unsigned long frames, unsigned long channels,
+	unsigned long sample_rate)
+{
+	audio_start();
+	pthread_mutex_lock(&mixer_lock);
+	ui_voice.samples = samples;
+	ui_voice.frames = frames;
+	ui_voice.channels = channels;
+	ui_voice.step = (double)sample_rate / OUTPUT_RATE;
+	ui_voice.cursor = 0.0;
+	ui_voice.playing = samples && frames && channels && sample_rate;
+	pthread_mutex_unlock(&mixer_lock);
+}
+
+void platform_ui_voice_stop(void)
+{
+	pthread_mutex_lock(&mixer_lock);
+	ui_voice.playing = FALSE;
+	ui_voice.samples = NULL;
+	pthread_mutex_unlock(&mixer_lock);
+}
+
+int platform_ui_voice_busy(void)
+{
+	BOOL playing;
+
+	pthread_mutex_lock(&mixer_lock);
+	playing = ui_voice.playing;
+	pthread_mutex_unlock(&mixer_lock);
+	return playing;
 }
 
 VOID WINAPI DirectSoundUseFullHRTF(void)

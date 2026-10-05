@@ -299,6 +299,17 @@ static const struct config_setting config_settings[] =
 		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
 		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"
 		"Mods chooses it, and the game starts again with it." },
+	{ "game.callouts", _config_string, "\"off\"", "HALO_CALLOUTS", _environment_value, _platform_all,
+		"Spoken callouts in multiplayer, in game.callout_voice's voice, on this\n"
+		"machine only: \"items\" each power item's name 10 seconds before it\n"
+		"spawns, and five to one before the rockets (when the gametype has TIMERS\n"
+		"or TRAINING); \"items_clock\" also Halo 1: NHE's talking timer (the\n"
+		"minutes, thirty and twenty seconds left, ten to one, its beeps); \"off\".\n"
+		"Silent on Halo 1: NHE's maps, whose own scripts talk." },
+	{ "game.callout_voice", _config_string, "\"nhe\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
+		"The callouts' voice: a folder of voices/ (next to maps/) holding WAVs\n"
+		"named for what they say (one.wav, rockets.wav, ...); the mod played's\n"
+		"own mods/<mod>/voices/<folder>/ clips come first." },
 
 	{ "paths.data", _config_string, "\"\"", "HALO_DATA_ROOT", _environment_value, _platform_desktop,
 		"The folder holding the game data's maps folder; empty looks in the\n"

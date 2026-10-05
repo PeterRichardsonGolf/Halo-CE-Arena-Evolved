@@ -189,6 +189,24 @@ void memory_watch_prepare_write(void *address, unsigned long size);
 /* the range was remapped or reprotected: treat it as written and unwatched */
 void memory_watch_forget(void *address, unsigned long size);
 
+/* ---------- the callouts' voice (dsound_sdl.c's UI voice, callout_voice.c) */
+
+/* port: one clip of 16-bit PCM (interleaved, mono or stereo, any rate) mixed
+at the master and effects volumes, in place of the one playing; its samples
+must stay until it ends or is stopped */
+void platform_ui_voice_start(short const *samples, unsigned long frames, unsigned long channels,
+	unsigned long sample_rate);
+void platform_ui_voice_stop(void);
+int platform_ui_voice_busy(void);
+
+/* port: the voice pack's clips (callouts.c): read from voices/<pack>/ (a
+mod's first) when the pack or the mod is not the one read, names[i] being
+clip i's file name without .wav; the number read */
+int platform_callout_voice_load(char const *pack, char const *const *names, int count);
+/* clip i starts (nonzero), unless the pack has none (0) */
+int platform_callout_voice_play(int clip);
+int platform_callout_voice_busy(void);
+
 /* ---------- time */
 
 /* sleep until a CLOCK_MONOTONIC deadline (clock_nanosleep with

@@ -48,6 +48,6 @@ struct item_timer const *item_timers_get(short index);
 long item_timer_ticks_left(struct item_timer const *timer);	/* 1..period */
 boolean item_timers_training_shown(void);	/* TRAINING's markers may show, now */
 boolean item_timer_waypoint_shown(struct item_timer const *timer);	/* TRAINING's waypoint over it, now */
-void item_timers_update(void);	/* per tick: logs TRAINING's waypoints going on and off; the voice (Task 6) */
+void item_timers_update(void);	/* per tick: logs TRAINING's waypoints going on and off */
 
 #endif // __ITEM_TIMERS_H

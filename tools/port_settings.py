@@ -25,6 +25,7 @@ HEALTH_STYLES = [("CLASSIC", "classic"), ("REACH", "reach"), ("HALO 2", "halo2")
 MATCH_CLOCKS = [("OFF", "off"), ("COUNT DOWN", "down"), ("COUNT UP", "up")]
 HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
 SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
+CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
@@ -102,6 +103,12 @@ SCREENS = {
              "With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages.", None),
             ("SCOREBOARD FADE:", "display.scoreboard_fade", SCOREBOARD_FADES,
              "How fast the scoreboard fades in and out while\nBack (or Tab) is held.", None),
+            ("CALLOUTS:", "game.callouts", CALLOUTS,
+             "Spoken power item spawns (with TIMERS); with the\nclock, Halo 1: NHE's talking timer too.", None),
+            # (the spinner's voices are the data root's voices/ folders,
+            # listed as the menus are read: menu_files.c)
+            ("VOICE:", "game.callout_voice", [("NHE", "nhe")],
+             "The callouts' voice: a folder of voices/, next\nto maps/.", None),
         ],
     },
     "mouse_settings": {

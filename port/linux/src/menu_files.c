@@ -957,6 +957,119 @@ static void mods_fill(struct halo_menus *menus)
 		platform_log("mods: %d in %s", mod_count, mods_folder);
 }
 
+/* port: the voice packs the spinner of game.callout_voice offers (Settings >
+Game Options > VOICE): each folder of the data root's voices/, by name, its
+name upper-cased; with none, the menus' own (NHE) */
+#define MAXIMUM_VOICES 32
+
+static char voice_names[MAXIMUM_VOICES][MOD_NAME_LENGTH];
+static int voice_count;
+
+static void voice_consider(const char *folder, const char *name)
+{
+	char path[1200];
+	int is_folder;
+
+	if (voice_count >= MAXIMUM_VOICES || name[0] == '.' || strlen(name) >= MOD_NAME_LENGTH || strchr(name, '|') ||
+		strchr(name, '\\') || strchr(name, '/'))
+	{
+		return;
+	}
+	snprintf(path, sizeof(path), "%s/%s", folder, name);
+#ifdef _WIN32
+	{
+		DWORD attributes = GetFileAttributesA(path);
+
+		is_folder = attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+	}
+#else
+	{
+		DIR *opened = opendir(path);
+
+		is_folder = opened != NULL;
+		if (opened)
+			closedir(opened);
+	}
+#endif
+	if (is_folder)
+	{
+		strcpy(voice_names[voice_count], name);
+		voice_count++;
+	}
+}
+
+static void voices_fill(struct halo_menus *menus)
+{
+	static char strings[MAXIMUM_VOICES * (MOD_NAME_LENGTH + 1) + 8];
+	static char values[MAXIMUM_VOICES * (MOD_NAME_LENGTH + 1) + 8];
+	char folder[1024];
+	long index;
+	int voice;
+
+	snprintf(folder, sizeof(folder), "%s/voices", platform_data_root());
+	voice_count = 0;
+	{
+#ifdef _WIN32
+		char pattern[1100];
+		WIN32_FIND_DATAA found;
+		HANDLE search;
+
+		snprintf(pattern, sizeof(pattern), "%s\\*", folder);
+		search = FindFirstFileA(pattern, &found);
+		if (search != INVALID_HANDLE_VALUE)
+		{
+			do
+			{
+				if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+					voice_consider(folder, found.cFileName);
+			} while (FindNextFileA(search, &found));
+			FindClose(search);
+		}
+#else
+		DIR *opened = opendir(folder);
+		struct dirent *entry;
+
+		if (opened)
+		{
+			while ((entry = readdir(opened)) != NULL)
+				voice_consider(folder, entry->d_name);
+			closedir(opened);
+		}
+#endif
+	}
+	if (!voice_count)
+		return;
+	qsort(voice_names, (size_t)voice_count, sizeof(voice_names[0]), mod_name_compare);
+	strings[0] = 0;
+	values[0] = 0;
+	for (voice = 0; voice < voice_count; voice++)
+	{
+		size_t end = strlen(strings);
+		char const *in;
+
+		if (voice)
+		{
+			strings[end++] = '|';
+			strcat(values, "|");
+		}
+		for (in = voice_names[voice]; *in; in++)
+			strings[end++] = (char)toupper((unsigned char)*in);
+		strings[end] = 0;
+		strcat(values, voice_names[voice]);
+	}
+	for (index = 0; index < menus->widget_count; index++)
+	{
+		struct halo_menu_widget *widget = &menus->widgets[index];
+
+		if (widget->setting && !strcmp(widget->setting, "game.callout_voice"))
+		{
+			widget->strings = strings;
+			widget->values = values;
+		}
+	}
+	platform_log("callouts: %d voice packs in %s", voice_count, folder);
+}
+
 struct halo_menus const *halo_menus_load(void)
 {
 	static int read;
@@ -991,6 +1104,7 @@ struct halo_menus const *halo_menus_load(void)
 	if (!reader.menus.root)
 		reader.menus.root = "main_menu";
 	mods_fill(&reader.menus);
+	voices_fill(&reader.menus);
 	menus = reader.menus;
 	succeeded = 1;
 	return &menus;

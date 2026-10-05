@@ -108,6 +108,13 @@ play:
   "1:33 PLAYED · 8:27 LEFT" (just "1:33 PLAYED" with no time limit), on a
   row under its title.
   On Halo 1: NHE's maps it replaces their own clock.
+- Spoken callouts (Settings > Game Options > CALLOUTS: OFF, ITEMS or ITEMS +
+  CLOCK), as Halo 1: NHE's voice timer: the power items' names 10 seconds
+  before they spawn (with TIMERS or TRAINING) and five to one before the
+  rockets; ITEMS + CLOCK adds NHE's talking timer (the minutes, thirty and
+  twenty seconds left, ten to one, beeps). VOICE picks a voice pack in
+  `voices/`. For now the voice is your own import of NHE's clips
+  (`tools/import_nhe_voice.py`); none ships with the game.
 
 **Mods**
 - Settings > Game Options > MOD picks a folder in `mods/`; its `maps` are
@@ -133,8 +140,8 @@ Three rulesets under one roof:
    rather than guessed.
 
 Next up: item spawn waypoints and spawn markers in team colours in the
-style of Halo Infinite, and voice callouts for item spawns and the clock with
-swappable voice packs.
+style of Halo Infinite, and a voice of our own for the callouts, calling
+every item (the shotgun first), not only NHE's power items.
 
 ## You need your own copy of Halo
 

@@ -562,6 +562,7 @@ symbols in this file:
 #include "items/item_definitions.h"
 #include "items/weapon_definitions.h"
 #include "items/weapons.h"
+#include "game/callouts.h"
 #include "game/item_timers.h"
 #include "hs/hs.h"
 #include "main/console.h"
@@ -4636,8 +4637,10 @@ void game_engine_update(
 			break;
 		}
 
-		/* port: the item timers' (item_timers.c), on every machine */
+		/* port: the item timers' (item_timers.c) and the callouts'
+		(callouts.c), on every machine */
 		item_timers_update();
+		callouts_update();
 	}
 
 	return;
@@ -7446,8 +7449,9 @@ void game_engine_initialize_for_new_map(
 	}
 
 	/* port: the netgame equipment's spawns for the item timers, now that
-	the map and the game variant are known */
+	the map and the game variant are known, and the callouts' voice */
 	item_timers_map_begin();
+	callouts_map_begin();
 
 	return;
 }

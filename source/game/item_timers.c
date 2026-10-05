@@ -342,6 +342,4 @@ void item_timers_update(
 			item_timer_waypoints[index] = shown;
 		}
 	}
-
-	/* (the timers' voice goes here) */
 }

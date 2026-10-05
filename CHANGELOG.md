@@ -7,6 +7,17 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- CALLOUTS (Settings > Game Options, `game.callouts`): spoken callouts in
+  multiplayer, as Halo 1: NHE's voice timer says them. ITEMS: each power
+  item's name (rockets, sniper, overshield, camo) 10 seconds before it
+  spawns, from its real spawn time on any map, and "five" to "one" before
+  the rockets, when the gametype has TIMERS or TRAINING. ITEMS + CLOCK adds
+  NHE's talking timer: "N minutes" each minute, "thirty seconds left",
+  "twenty seconds", "ten" to "one" before each minute, and its beeps. One
+  call at a time, the items' first. Silent on Halo 1: NHE's maps, during
+  the PRE-GAME COUNTDOWN and after the game. VOICE (`game.callout_voice`)
+  picks a folder of `voices/`; for now the only voice is the player's own
+  import of NHE's clips (`tools/import_nhe_voice.py`), not shipped.
 - HUD AREA (Settings > Game Options, `display.hud_area`): FULL, 16:9 or 4:3.
   On a wider screen, 16:9 or 4:3 keeps the whole HUD (meters, motion sensor,
   ammo, messages, scoreboard, postgame screens, match clock, power list,
