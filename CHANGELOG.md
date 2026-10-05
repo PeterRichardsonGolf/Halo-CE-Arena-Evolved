@@ -7,6 +7,8 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- TRAINING waypoints are smaller: the arrows (and their distances) at 60% of the game's own nav points, which are unchanged, and the labels'
+  text at 0.65 scale. An arrow whose label found no clear place now keeps one by the arrow, instead of going unlabelled.
 - CAMPAIGN TIMER (Settings > Game Options, `display.campaign_timer`, off by
   default): an MCC-style clock of the time played on a campaign level, drawn
   where the match clock is (bottom right, lined up with the motion sensor).

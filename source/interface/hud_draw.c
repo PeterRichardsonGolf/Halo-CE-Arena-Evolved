@@ -2359,6 +2359,7 @@ boolean hud_numbers_bounds(
 	struct number_hud_element_definition const *numbers,
 	short decimal_value,
 	short draw_flags,
+	real override_scale,
 	rectangle2d *bounds)
 {
 	long hud_number_index = interface_get_tag_index(_interface_hud_digits);
@@ -2384,7 +2385,8 @@ boolean hud_numbers_bounds(
 	if (TEST_FLAG(numbers->number_flags, _hud_number_show_trailing_m_bit))
 		digit_count += 1.0f;
 	decimal_point_width = (real)(numbers->fractional_digits ? hud_number->decimal_point_width : 0);
-	scale = hud_globals_get_scale(TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
+	scale = override_scale > 0.0f ? override_scale :
+		hud_globals_get_scale(TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
 	hud_calculate_point(local_player_index, absolute_placement, &numbers->placement, NULL,
 		TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit), 0.0f, &origin);
 	width = ((digit_count - 1.0f) * hud_number->screen_width + decimal_point_width) * scale +

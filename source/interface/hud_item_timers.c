@@ -91,6 +91,8 @@ one list beside them.
 
 #define HUD_ITEM_TIMERS_ALPHA 0.7f
 #define HUD_ITEM_TIMERS_SCALE 0.8f	/* (as main.c's FRAME_STATISTICS_SCALE) */
+#define HUD_WAYPOINT_ARROW_SIZE 0.6f	/* (our waypoint arrows, of CE's nav point size) */
+#define HUD_WAYPOINT_LABEL_SCALE 0.65f	/* (a waypoint's label text; the timer row and clock stay at HUD_ITEM_TIMERS_SCALE) */
 #define HUD_ITEM_TIMERS_TOP 2	/* (the overlay's line's, from the view's top) */
 #define HUD_ITEM_TIMERS_SIDE 4	/* (the power list's room from a view's sides, as the overlay's) */
 #define HUD_ITEM_TIMERS_GAP 12	/* (between the power list and the clock, or the overlay) */
@@ -127,6 +129,7 @@ static struct
 /* ---------- code */
 
 static long hud_item_timers_line_width(long font_index, wchar_t const *text);
+static long hud_item_timers_line_width_scaled(long font_index, wchar_t const *text, real scale);
 
 static long hud_item_timers_font_index(
 	void)
@@ -218,6 +221,15 @@ static long hud_item_timers_line_width(
 	long font_index,
 	wchar_t const *text)
 {
+	return hud_item_timers_line_width_scaled(font_index, text, HUD_ITEM_TIMERS_SCALE);
+}
+
+/* port: the same at a scale (TRAINING's waypoint labels' is smaller) */
+static long hud_item_timers_line_width_scaled(
+	long font_index,
+	wchar_t const *text,
+	real scale)
+{
 	rectangle2d bounds;
 	rectangle2d text_bounds;
 	rectangle2d cursor_bounds;
@@ -231,7 +243,7 @@ static long hud_item_timers_line_width(
 	if (text_bounds.x1 <= text_bounds.x0)
 		return 0;
 
-	return (long)((text_bounds.x1 - text_bounds.x0) * HUD_ITEM_TIMERS_SCALE + 0.5f);
+	return (long)((text_bounds.x1 - text_bounds.x0) * scale + 0.5f);
 }
 
 /* the clock (text) in the view's bottom right corner, by the motion
@@ -735,7 +747,7 @@ static long hud_item_timers_text_advance(
 	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
 	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
 
-	return (long)((cursor_bounds.x0 - bounds.x0) * HUD_ITEM_TIMERS_SCALE + 0.5f);
+	return (long)((cursor_bounds.x0 - bounds.x0) * HUD_WAYPOINT_LABEL_SCALE + 0.5f);
 }
 
 /* a label's colour: its base's (red, blue), else the HUD's text */
@@ -852,7 +864,7 @@ static long hud_waypoint_line(
 		part_starts[index] = hud_item_timers_text_advance(font_index, before);
 	}
 
-	return hud_item_timers_line_width(font_index, text);
+	return hud_item_timers_line_width_scaled(font_index, text, HUD_WAYPOINT_LABEL_SCALE);
 }
 
 /* a block's width (its widest line) */
@@ -1054,7 +1066,7 @@ static void hud_waypoint_draw_labels(
 {
 	struct hud_waypoint_block blocks[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 	short block_count = 0;
-	long line_height = (long)(hud_item_timers_line_height(font_index) * HUD_ITEM_TIMERS_SCALE + 0.5f);
+	long line_height = (long)(hud_item_timers_line_height(font_index) * HUD_WAYPOINT_LABEL_SCALE + 0.5f);
 	long gap = hud_item_timers_text_advance(font_index, L" ");
 	rectangle2d view;
 	rectangle2d area;
@@ -1285,6 +1297,62 @@ static void hud_waypoint_draw_labels(
 		}
 	}
 
+	/* (an arrow must not be left without a label: one that found no clear
+	place goes by the arrow, over or under it, clear of the labels placed
+	if it can be, else on them) */
+	for (index = 0; index < block_count; index++)
+	{
+		struct hud_waypoint_block *block = &blocks[index];
+		rectangle2d const *room = block->edge ? &area : &view;
+		short side;
+
+		if (block->placed)
+			continue;
+		block->width = hud_waypoint_block_width(font_index, labels, label_count, blocks, index);
+		for (other = 0; other < label_count; other++)
+		{
+			if (labels[other].block == index && labels[other].line >= block->line_count)
+				labels[other].block = NONE;
+		}
+		for (side = 0; side < 4 && !block->placed; side++)
+		{
+			short direction = (short)(side & 1 ? 1 : -1);
+			long shift;
+
+			if (!block->edge)
+				block->vertical = direction;
+			for (shift = 0; shift <= 4 && !block->placed; shift++)
+			{
+				rectangle2d bounds;
+				short met;
+
+				if (!hud_waypoint_block_bounds(block, &labels[block->first], line_height, direction * shift, room, &bounds))
+					continue;
+				/* (side 0 and 1: clear of the blocks; 2 and 3: wherever) */
+				met = NONE;
+				if (side < 2)
+				{
+					short test;
+
+					for (test = 0; test < block_count; test++)
+					{
+						if (test != index && blocks[test].placed &&
+							hud_waypoint_rectangles_meet(&bounds, &blocks[test].bounds, 1))
+						{
+							met = test;
+							break;
+						}
+					}
+				}
+				if (met == NONE)
+				{
+					block->bounds = bounds;
+					block->placed = TRUE;
+				}
+			}
+		}
+	}
+
 	/* (drawn: each part of each line in its colour) */
 	for (index = 0; index < block_count; index++)
 	{
@@ -1323,10 +1391,10 @@ static void hud_waypoint_draw_labels(
 				fifths about its top left corner) */
 				bounds.x0 = (short)(x + starts[part]);
 				bounds.y0 = (short)top;
-				bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width(font_index, piece) / HUD_ITEM_TIMERS_SCALE + 8);
+				bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, piece, HUD_WAYPOINT_LABEL_SCALE) / HUD_WAYPOINT_LABEL_SCALE + 8);
 				bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
 				draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
-				rasterizer_text_set_scale(HUD_ITEM_TIMERS_SCALE, (real)bounds.x0, (real)bounds.y0);
+				rasterizer_text_set_scale(HUD_WAYPOINT_LABEL_SCALE, (real)bounds.x0, (real)bounds.y0);
 				rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, piece);
 				rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 			}
@@ -1381,7 +1449,7 @@ void hud_draw_item_waypoints(
 		position = timer->position;
 		position.z += ITEM_TIMER_WAYPOINT_HEIGHT;
 		render_type = hud_get_nav_point_render_type(local_player_index, &head_position, &position, NONE);
-		custom_render_nav_point_placed(local_player_index, &position, nav_index, render_type, &label->arrow);
+		custom_render_nav_point_placed(local_player_index, &position, nav_index, render_type, HUD_WAYPOINT_ARROW_SIZE, &label->arrow);
 		if (!label->arrow.drawn || font_index == NONE || label_count >= HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
 			continue;
 

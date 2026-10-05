@@ -169,6 +169,7 @@ boolean hud_numbers_bounds(
 	struct number_hud_element_definition const *numbers,
 	short decimal_value,
 	short draw_flags,
+	real override_scale,
 	rectangle2d *bounds);
 
 /* ---------- public code */

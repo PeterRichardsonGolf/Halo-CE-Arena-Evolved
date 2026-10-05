@@ -700,7 +700,7 @@ void custom_render_nav_point(
 	short nav_index,
 	short waypoint_type)
 {
-	custom_render_nav_point_placed(local_player_index, position, nav_index, waypoint_type, NULL);
+	custom_render_nav_point_placed(local_player_index, position, nav_index, waypoint_type, 1.0f, NULL);
 
 	return;
 }
@@ -712,6 +712,7 @@ void custom_render_nav_point_placed(
 	real_point3d const *position,
 	short nav_index,
 	short waypoint_type,
+	real size,
 	struct hud_nav_point_placement *arrow_placement)
 {
 	long return_eip = get_return_eip();
@@ -766,6 +767,9 @@ void custom_render_nav_point_placed(
 			1.0f-distance*(1.0f/15.0f),
 			0.7) + 0.5f;
 	}
+
+	/* port: TRAINING's waypoints are drawn smaller (size), the game's own at 1 */
+	arrow_scale *= size;
 
 	matrix4x3_transform_point(
 		&render.frustum.world_to_view,
@@ -964,7 +968,7 @@ void custom_render_nav_point_placed(
 						decimal_value,
 						0,
 						0,
-						0.0f);
+						size != 1.0f ? hud_globals_get_scale(FALSE)*size : 0.0f);
 					/* port: where it drew the distance */
 					if (arrow_placement)
 					{
@@ -974,6 +978,7 @@ void custom_render_nav_point_placed(
 							&numbers,
 							decimal_value,
 							0,
+							size != 1.0f ? hud_globals_get_scale(FALSE)*size : 0.0f,
 							&arrow_placement->number_bounds);
 					}
 				}
