@@ -414,6 +414,10 @@ void player_aiming_vector_from_facing(
 
 void players_update_before_game(
 	void);
+/* port: PRE-GAME COUNTDOWN: all of a player's input but the facing let go
+of (players.c) */
+void player_action_clear_for_pregame_countdown(
+	struct player_action *action);
 void players_update_after_game(
 	void);
 void players_show_telefragged(

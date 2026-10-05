@@ -154,6 +154,36 @@ A speed hack of less than a tenth is let be: the host's bounds on how far
 and how fast a client's player moves and fires hold it to the host's time
 anyway.
 
+## PRE-GAME COUNTDOWN
+
+A gametype's ARENA OPTIONS travel in its flags (bits 16 and up of
+`universal_variant.flags`, `game_engine.h`) to every machine, and a client
+of another build (OpenCE's, ChupathingyCE's: the same network version)
+ignores those it does not know. Most only change what a machine shows, or
+what the host alone decides (PRACTICE MODE's respawns). NO SPREAD is the
+shooter's own: a client without it keeps the stock spread, which the host
+does not check, since it deals the shooter's hits. The PRE-GAME COUNTDOWN
+is enforced by the host (game time `0` to `PREGAME_COUNTDOWN_TICKS`,
+`game_engine_pregame_countdown_covers`), so that a client without it cannot
+move or shoot frozen players:
+
+- every machine lets go of every player's input but the facing during it
+  (`player_action_clear_for_pregame_countdown`), so the host's copy of a
+  client's player stays at its spawn;
+- the host refuses a client's predicted moves (its players' and vehicles')
+  stamped with a tick of the countdown or arriving during it, as it does a
+  fast clock's (`network_distributed_handle_message`): the host's copy
+  stands, and the client is corrected back to it once the countdown ends;
+- the host refuses a hit report whose stamp (the host's tick the shooter
+  had heard of) is a tick of the countdown (`distributed_report_valid`).
+
+A shot fired in the first tick or two after the countdown, before the
+shooter's machine has heard of the host's tick 90, is refused the same way.
+
+The reverse, a client of this port on another build's host with these bits
+set (a gametype file written by this port), freezes the client alone and
+shows item timers that the host does not keep.
+
 ## Joining a game in progress
 
 A game stays open when it starts (on the Xbox it closed, since every

@@ -3631,6 +3631,23 @@ void player_aiming_vector_from_facing(
 	return;
 }
 
+/* port: PRE-GAME COUNTDOWN (game_engine_pregame_countdown): a player's input
+with only the facing kept (no moving, jumping, firing, throwing, acting,
+zooming or changing weapons), the same where a machine sends its own
+players' input (player_control.c) and where every machine drives every
+player from it (players_update_before_game), so they agree */
+void player_action_clear_for_pregame_countdown(
+	struct player_action *action)
+{
+	action->control_flags = 0;
+	action->throttle.i = 0.0f;
+	action->throttle.j = 0.0f;
+	action->primary_trigger = 0.0f;
+	action->desired_weapon_index = NONE;
+	action->desired_grenade_index = NONE;
+	action->desired_zoom_level = NONE;
+}
+
 void players_update_before_game(
 	void)
 {
@@ -3739,15 +3756,7 @@ void players_update_before_game(
 					input (the host's simulation and a client's prediction
 					alike), by game time, which they share, so all agree */
 					if (pregame_countdown)
-					{
-						action->control_flags = 0;
-						action->throttle.i = 0.0f;
-						action->throttle.j = 0.0f;
-						action->primary_trigger = 0.0f;
-						action->desired_weapon_index = NONE;
-						action->desired_grenade_index = NONE;
-						action->desired_zoom_level = NONE;
-					}
+						player_action_clear_for_pregame_countdown(action);
 					/* port: not for the keyboard's action key, which only acts
 					(units.h, UNIT_CONTROL_PORT_ACTION_ONLY_BIT) */
 					if (TEST_FLAG(action->control_flags, _unit_control_action_bit) &&

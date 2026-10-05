@@ -811,15 +811,7 @@ static void handle_one_player_input(
 		a client's ticks of it, which come to it later, is held back too; the
 		weapon asked for (player->desired_weapon_index) is sent once it ends */
 		if (game_engine_pregame_countdown_ticks_left() > 0)
-		{
-			action.control_flags = 0;
-			action.throttle.i = 0.0f;
-			action.throttle.j = 0.0f;
-			action.primary_trigger = 0.0f;
-			action.desired_weapon_index = NONE;
-			action.desired_grenade_index = NONE;
-			action.desired_zoom_level = NONE;
-		}
+			player_action_clear_for_pregame_countdown(&action);
 
 		match_assert_valid_real(
 			"c:\\halo\\SOURCE\\game\\player_control.c",

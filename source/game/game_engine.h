@@ -624,6 +624,10 @@ boolean game_engine_pregame_countdown(
 	void);
 long game_engine_pregame_countdown_ticks_left(
 	void);
+/* port: whether a tick of this game's time is one of its PRE-GAME
+COUNTDOWN's (the host's check of what a client sends) */
+boolean game_engine_pregame_countdown_covers(
+	long time);
 
 /* port: MATCH CLOCK (display.match_clock) */
 enum

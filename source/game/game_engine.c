@@ -4968,6 +4968,17 @@ long game_engine_pregame_countdown_ticks_left(
 	return now >= 0 && now < PREGAME_COUNTDOWN_TICKS ? PREGAME_COUNTDOWN_TICKS - now : 0;
 }
 
+/* whether a tick of this game is one of the countdown's: the host refuses a
+client's predicted moves and hit reports made at one (network_distributed.c,
+network_damage.c), as a client that does not play the countdown (OpenCE's,
+ChupathingyCE's, any not of this port) sends them; the host's own copy of its
+player stands, its input let go of (players_update_before_game) */
+boolean game_engine_pregame_countdown_covers(
+	long time)
+{
+	return game_engine_pregame_countdown() && time < PREGAME_COUNTDOWN_TICKS;
+}
+
 /* port: MATCH CLOCK (display.match_clock: "off", "down" or "up"), this
 machine's own display choice, not the gametype's */
 short game_engine_match_clock_setting(

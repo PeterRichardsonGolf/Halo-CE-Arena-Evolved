@@ -54,6 +54,7 @@ machine (their datum identifiers need not be).
 #include "cseries.h"
 #include "cseries/errors.h"
 #include "game/game.h"
+#include "game/game_engine.h"
 #include "game/game_globals.h"
 #include "game/players.h"
 #include "game/player_queues_new.h"
@@ -3696,13 +3697,18 @@ void network_distributed_handle_message(
 	if (distributed_message_stale(machine_index, &header))
 		return;
 	/* (the host: a client's clock, by its messages' ticks; and its players'
-	predictions not taken while its game runs fast) */
+	predictions not taken while its game runs fast, nor during the
+	gametype's PRE-GAME COUNTDOWN, made then or taken then: a client that
+	does not play it, as OpenCE's, moves its player, which the host's copy,
+	its input let go of, does not, and is corrected back) */
 	if (machine_index != NONE)
 	{
 		distributed_note_client_clock(machine_index, header.game_time);
 		if ((header.type == _distributed_message_player_prediction ||
 				header.type == _distributed_message_vehicle_prediction) &&
-			distributed_machine_clock_fast(machine_index))
+			(distributed_machine_clock_fast(machine_index) ||
+				game_engine_pregame_countdown_covers(header.game_time) ||
+				game_engine_pregame_countdown_ticks_left() > 0))
 		{
 			return;
 		}

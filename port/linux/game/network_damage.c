@@ -37,6 +37,7 @@ being hit looks and feels like on the clients).
 
 #include "cseries.h"
 #include "game/game.h"
+#include "game/game_engine.h"
 #include "game/game_globals.h"
 #include "game/players.h"
 #include "networking/network_game_globals.h"
@@ -1668,6 +1669,11 @@ static boolean distributed_report_valid(
 	looked back over from then: however long it took to come (sent again,
 	reliably), where the shooter saw the target */
 	if (report->host_time == NONE || report->host_time > now || now - report->host_time > REPORT_MAXIMUM_AGE_TICKS)
+		return FALSE;
+	/* port: none made during the gametype's PRE-GAME COUNTDOWN (its
+	stamp, the host's tick the shooter had heard of, one of its ticks): a
+	client that does not play it, as OpenCE's, fires through it */
+	if (game_engine_pregame_countdown_covers(report->host_time))
 		return FALSE;
 	ticks = MIN(now - report->host_time + TARGET_HISTORY_SLACK_TICKS, TARGET_HISTORY_TICKS - 1);
 	/* damage that player could deal, and how they deal it */
