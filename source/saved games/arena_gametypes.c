@@ -39,18 +39,31 @@ enum
 	ARENA_GAMETYPES_RECORD_SIZE = 1024,
 };
 
-/* what every AE gametype adds to its stock one: no landing damage, HALO 2
-health (health back as the shields recharge), and the generic starting
-equipment (the stock gametypes take the map's, Blood Gulch's a plasma
-pistol); its loadout is a pistol in hand and an assault rifle
-(arena_gametype.custom_loadout) */
+/* what every AE gametype adds to its stock one: NHE's rules (NO SPREAD, the
+PRE-GAME COUNTDOWN), no landing damage, HALO 2 health (health back as the
+shields recharge), and the generic starting equipment (the stock gametypes
+take the map's, Blood Gulch's a plasma pistol); its loadout is a pistol in
+hand and an assault rifle (arena_gametype.custom_loadout) */
 #define ARENA_GAMETYPE_FLAGS \
 	(FLAG(_game_variant_no_falling_damage_bit) | \
 	(_health_style_halo2 << _game_variant_health_style_first_bit) | \
-	FLAG(_game_variant_generic_starting_equipment_bit))
+	FLAG(_game_variant_generic_starting_equipment_bit) | \
+	NHE_RULES_FLAGS)
 
-/* NHE's: only the generic starting equipment (stock rules otherwise) */
+/* NHE's competitive rules, as ARENA OPTIONS has them: NO SPREAD and the
+PRE-GAME COUNTDOWN (on NHE's maps their scripts count down instead) */
+#define NHE_RULES_FLAGS \
+	(FLAG(_game_variant_no_spread_bit) | \
+	FLAG(_game_variant_pregame_countdown_bit))
+
+/* NHE's: the generic starting equipment (stock rules otherwise); each adds
+NHE_RULES_FLAGS but VANILLA (NHE's Vanilla had neither) */
 #define NHE_GAMETYPE_FLAGS FLAG(_game_variant_generic_starting_equipment_bit)
+
+/* TRAINING's aids: the item TIMERS and TRAINING's waypoints */
+#define ARENA_TRAINING_FLAGS \
+	(FLAG(_game_variant_item_timers_bit) | \
+	FLAG(_game_variant_training_bit))
 
 /* AE TRAINING's score to win: the most the gametype editor offers (its
 KILLS TO WIN, menu_functions.c), as near "no limit" as a variant goes
@@ -105,23 +118,23 @@ static struct arena_gametype const arena_gametypes[] =
 	{ "AE CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE ODDBALL", build_game_variant_oddball, ARENA_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_STOCK, TRUE },
-	/* TRAINING: free for all slayer with no practical score limit. When
-	they exist, OR in FLAG(_game_variant_training_bit) (18: waypoints over
-	item and player spawns) and FLAG(_game_variant_item_timers_bit) (17)
-	here (notes/specs/2026-10-04-timers-training-design.md) */
-	{ "AE TRAINING", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS, ARENA_TRAINING_SCORE_TO_WIN,
-		ARENA_VEHICLES_DEFAULT, TRUE },
+	/* TRAINING: free for all slayer with no practical score limit, the
+	item timers and TRAINING's waypoints */
+	{ "AE TRAINING", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_TRAINING_FLAGS,
+		ARENA_TRAINING_SCORE_TO_WIN, ARENA_VEHICLES_DEFAULT, TRUE },
 	/* Halo 1: NHE's competitive play (the mods/NHE maps): stock rules (fall
-	damage, classic health), its mode from the vehicle set; on stock maps the
-	set only picks the vehicles. PRACTICE is race, which NHE's maps turn into
+	damage, classic health) with NHE's NO SPREAD and PRE-GAME COUNTDOWN, its
+	mode from the vehicle set; on stock maps the set only picks the
+	vehicles. PRACTICE is race, which NHE's maps turn into
 	practice (every weapon and powerup each 30 seconds). */
-	{ "NHE 1V1", build_game_variant_slayer, NHE_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_GHOST, FALSE },
-	{ "NHE 2V2 TS", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_GHOST, FALSE },
-	{ "NHE CTF", build_game_variant_ctf, NHE_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_GHOST, FALSE },
-	{ "NHE POWERUP", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_TANK, FALSE },
+	{ "NHE 1V1", build_game_variant_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS, 0, ARENA_VEHICLES_GHOST, FALSE },
+	{ "NHE 2V2 TS", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS, 0, ARENA_VEHICLES_GHOST, FALSE },
+	{ "NHE CTF", build_game_variant_ctf, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS, 0, ARENA_VEHICLES_GHOST, FALSE },
+	{ "NHE POWERUP", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS, 0, ARENA_VEHICLES_TANK, FALSE },
 	{ "NHE VANILLA", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_NONE, FALSE },
-	{ "NHE TRAIN", build_game_variant_slayer, NHE_GAMETYPE_FLAGS, ARENA_TRAINING_SCORE_TO_WIN, ARENA_VEHICLES_DEFAULT, FALSE },
-	{ "PRACTICE", build_game_variant_race, NHE_GAMETYPE_FLAGS, 0, ARENA_VEHICLES_GHOST, FALSE },
+	{ "NHE TRAIN", build_game_variant_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS, ARENA_TRAINING_SCORE_TO_WIN, ARENA_VEHICLES_DEFAULT, FALSE },
+	{ "PRACTICE", build_game_variant_race,
+		NHE_GAMETYPE_FLAGS | FLAG(_game_variant_no_spread_bit) | FLAG(_game_variant_practice_bit), 0, ARENA_VEHICLES_GHOST, FALSE },
 };
 
 static char const arena_gametypes_record_path[] = "z:\\saved\\playlists\\arena_gametypes.txt";
