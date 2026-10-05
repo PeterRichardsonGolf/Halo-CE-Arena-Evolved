@@ -215,6 +215,13 @@ Re-run `configure.py` when source files or the menus are added.
   extract-xiso, and Project Nayuki's QR Code generator. Their licenses are
   beside them in `port/third_party`.
 
-Halo is a trademark of Microsoft. Halo CE: Arena Evolved is a fan project, not
-made or endorsed by Microsoft, Bungie or 343 Industries, and includes none of
-the game's content. The code is released under [CC0](LICENSE.md).
+Halo is a trademark of Microsoft. Halo CE: Arena Evolved is a non-commercial
+fan project, not made or endorsed by Microsoft, Bungie, 343 Industries or Halo
+Studios, and includes none of the game's content: you need your own copy of the
+game. It is free, and must never be sold (Microsoft's Game Content Usage Rules
+allow free fan projects only).
+
+The code is released under [CC0](LICENSE.md), as OpenCE's and ChupathingyCE's
+are, so upstream and the community are free to use and improve it. If you use
+it, a credit is appreciated: "Halo CE: Arena Evolved by PeterRichardsonGolf",
+with a link to this repository.
