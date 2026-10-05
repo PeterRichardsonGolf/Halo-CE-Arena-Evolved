@@ -580,6 +580,9 @@ void _rasterizer_screen_flash(
 	void);
 /* ---------- globals */
 
+/* port: off (rasterizer_screen_transform_set) */
+struct rasterizer_screen_transform rasterizer_screen_transform = { FALSE, 1.0f, 0.0f, 0.0f, { 0, 0, 0, 0 } };
+
 const struct rasterizer_global_defaults rasterizer_global_defaults =
 {
 	0.0625f,
@@ -1645,6 +1648,33 @@ void rasterizer_psuedo_dynamic_screen_quad_draw(
 	struct dynamic_screen_vertex *vertices)
 {
 	_rasterizer_psuedo_dynamic_screen_quad_draw(parameters, vertices);
+	return;
+}
+
+/* port: the screen transform (rasterizer.h) */
+void rasterizer_screen_transform_set(
+	real scale,
+	real x,
+	real y,
+	rectangle2d const *visible)
+{
+	rasterizer_screen_transform.active = TRUE;
+	rasterizer_screen_transform.scale = scale > 0.0f ? scale : 1.0f;
+	rasterizer_screen_transform.x = x;
+	rasterizer_screen_transform.y = y;
+	rasterizer_screen_transform.visible = *visible;
+
+	return;
+}
+
+void rasterizer_screen_transform_reset(
+	void)
+{
+	rasterizer_screen_transform.active = FALSE;
+	rasterizer_screen_transform.scale = 1.0f;
+	rasterizer_screen_transform.x = 0.0f;
+	rasterizer_screen_transform.y = 0.0f;
+
 	return;
 }
 

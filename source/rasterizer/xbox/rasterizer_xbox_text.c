@@ -244,6 +244,19 @@ void rasterizer_text_begin(
 		vertex_constants[4][1] = parameters->second_constants[1];
 		vertex_constants[4][2] = 0.0f;
 		vertex_constants[4][3] = 1.0f;
+		/* port: drawn through the screen transform (rasterizer.h): the
+		point (and the offset) scaled, then moved */
+		if (rasterizer_screen_transform.active)
+		{
+			real transform_scale = rasterizer_screen_transform.scale;
+
+			vertex_constants[0][0] = 2.0f * transform_scale / window_width;
+			vertex_constants[0][3] = transform_scale * scale.i +
+				2.0f * rasterizer_screen_transform.x / window_width - (1.0f + 1.0f / window_width);
+			vertex_constants[1][1] = -2.0f * transform_scale / window_height;
+			vertex_constants[1][3] = transform_scale * scale.j -
+				2.0f * rasterizer_screen_transform.y / window_height + 1.0f / window_height + 1.0f;
+		}
 
 		texture_constants[0][0] = parameters->second_constants[2];
 		texture_constants[0][1] = parameters->second_constants[3];

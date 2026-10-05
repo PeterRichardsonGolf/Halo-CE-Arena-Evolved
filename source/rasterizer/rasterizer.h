@@ -911,6 +911,34 @@ void rasterizer_text_cache_flush(
 void rasterizer_text_cache_dispose(
 	void);
 
+/* ---------- port: the screen transform (RASTERIZER.C)
+
+The screen-space drawing that follows (quads and text: a menu screen) drawn
+scale times its size and moved by (x, y) units of the viewport: a point is
+drawn at point * scale + (x, y). visible is the part of the drawing's own
+space that lands in the viewport, which takes the viewport's place where the
+drawing would hold itself to the viewport. Off until reset (ui_widget.c:
+a PC menu screen in a split screen player's view). */
+
+struct rasterizer_screen_transform
+{
+	boolean active;
+	real scale;
+	real x;
+	real y;
+	rectangle2d visible;
+};
+
+extern struct rasterizer_screen_transform rasterizer_screen_transform;
+
+void rasterizer_screen_transform_set(
+	real scale,
+	real x,
+	real y,
+	rectangle2d const *visible);
+void rasterizer_screen_transform_reset(
+	void);
+
 /* ---------- globals */
 
 extern real_argb_color *global_rasterizer_model_ambient_reflection_tint;

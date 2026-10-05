@@ -202,6 +202,10 @@ void render_ui_widgets_postgame(
 void render_ui_widgets(
 	short local_player_index,
 	rectangle2d const *window_bounds);
+/* port: the PC menu screens that split screen players with three or four
+views opened, over the whole screen after the views (render.c) */
+void render_ui_widgets_full_screen(
+	rectangle2d const *window_bounds);
 struct widget_instance *ui_widget_load_by_name_or_tag(
 	char const *name,
 	long tag_index,

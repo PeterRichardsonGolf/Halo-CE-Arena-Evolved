@@ -214,6 +214,11 @@ static void render_nonplayer_frame(
 		/* letterbox bars and split screen dividers: laid out from the
 		viewport, so not centered like the menus on a wide screen */
 		interface_draw_fullscreen_overlays();
+		/* port: a PC menu screen that a split screen player with three or
+		four views opened, over them all (ui_widget.c) */
+		halo_screen_ui_offset(TRUE);
+		render_ui_widgets_full_screen(&window->rasterizer_camera.viewport_bounds);
+		halo_screen_ui_offset(FALSE);
 		rasterizer_debug_draw();
 		break;
 

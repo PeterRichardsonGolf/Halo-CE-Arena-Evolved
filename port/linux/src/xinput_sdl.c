@@ -589,7 +589,8 @@ void test_input_hold_action(int hold)
 the first poll, for testing the menus: a, b, x, y, lb, rb (white and black),
 up, down, left, right, start, back, key:<a key's name> (a key of the
 keyboard, as SDL names it: key:C), or wait (none), separated by spaces or
-commas */
+commas; a button with its controller's number before it (2:start) is
+another controller's (split screen) */
 static char test_input_menu[512];
 static Uint64 test_input_menu_since;
 
@@ -634,7 +635,7 @@ static void test_input_menu_keys(struct platform_input_state *input)
 		input->keys[scancode] = 1;
 }
 
-static void test_input_menu_gamepad(XINPUT_GAMEPAD *pad)
+static void test_input_menu_gamepad(XINPUT_GAMEPAD *pad, int port)
 {
 	static const struct
 	{
@@ -661,6 +662,16 @@ static void test_input_menu_gamepad(XINPUT_GAMEPAD *pad)
 	unsigned int index;
 
 	if (!token)
+		return;
+	/* (2:start: the second controller's) */
+	if (length > 2 && token[1] == ':' && token[0] >= '1' && token[0] <= '4')
+	{
+		if (token[0] - '1' != port)
+			return;
+		token += 2;
+		length -= 2;
+	}
+	else if (port != 0)
 		return;
 	for (index = 0; index < sizeof(buttons) / sizeof(buttons[0]); index++)
 	{
@@ -704,7 +715,7 @@ static void test_input_gamepad(XINPUT_GAMEPAD *pad)
 	}
 	if (test_input_menu[0])
 	{
-		test_input_menu_gamepad(pad);
+		test_input_menu_gamepad(pad, 0);
 		return;
 	}
 	if (seed < 0)
@@ -938,11 +949,37 @@ VOID WINAPI XInitDevices(DWORD preallocation_type_count, PXDEVICE_PREALLOC_TYPE 
 	platform_sdl_initialize();
 }
 
+/* the controllers past the first that debug.test_input's menu presses name
+(2:start), which are connected for them */
+static DWORD test_input_menu_ports(void)
+{
+	static int checked;
+	static DWORD ports;
+
+	if (!checked)
+	{
+		const char *setting = config_string("debug.test_input");
+		const char *character;
+
+		checked = 1;
+		if (!strncmp(setting, "menu:", 5))
+		{
+			for (character = setting + 5; *character; character++)
+			{
+				if (character[1] == ':' && character[0] >= '2' && character[0] <= '4' &&
+					(character == setting + 5 || character[-1] == ' ' || character[-1] == ','))
+					ports |= 1UL << (character[0] - '1');
+			}
+		}
+	}
+	return ports;
+}
+
 static DWORD connected_gamepads(void)
 {
 	SDL_Gamepad *gamepads[PORT_COUNT];
 	int count = sdl_gamepads(gamepads);
-	DWORD mask = XDEVICE_PORT0_MASK;
+	DWORD mask = XDEVICE_PORT0_MASK | test_input_menu_ports();
 	int port;
 
 	/* the first pad shares port 0 with the keyboard (port_gamepad) */
@@ -1064,9 +1101,13 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 			pthread_mutex_unlock(&mouse_lock);
 		}
 	}
-	else if (port_gamepad(gamepads, count, port))
+	else
 	{
-		sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad);
+		if (port_gamepad(gamepads, count, port))
+			sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad);
+		/* (debug.test_input's presses for this controller: 2:start) */
+		if (test_input_menu[0])
+			test_input_menu_gamepad(&state->Gamepad, port);
 	}
 
 	if (memcmp(&state->Gamepad, &controllers[port].previous, sizeof(state->Gamepad)))

@@ -5772,6 +5772,12 @@ static boolean ui_mouse_hover_pending = FALSE;
 static boolean ui_mouse_click_pending = FALSE;
 static short ui_mouse_hover_x, ui_mouse_hover_y;
 static short ui_mouse_click_x, ui_mouse_click_y;
+/* the first player's menu as it was last drawn: smaller in a split screen
+view (render_ui_widgets), the pointer is at (pointer - origin) / scale in
+the menu's own units; scale 1 at the origin as drawn whole */
+static real ui_mouse_menu_scale = 1.0f;
+static real ui_mouse_menu_origin_x = 0.0f;
+static real ui_mouse_menu_origin_y = 0.0f;
 /* whether the latest pointer read was the touchscreen: the taller legend
 areas are for a finger only, the desktop mouse keeps their original height */
 static boolean ui_mouse_pointer_is_touch = FALSE;
@@ -6704,6 +6710,18 @@ static long ui_mouse_wheel_room(
 	return NONE;
 }
 
+/* a coordinate of the pointer in the first player's menu's own units (its
+origin's coordinate: ui_mouse_menu_scale) */
+static short ui_mouse_menu_point(
+	short value,
+	real origin)
+{
+	if (ui_mouse_menu_scale == 1.0f && origin == 0.0f)
+		return value;
+
+	return (short)floor((value - origin) / ui_mouse_menu_scale);
+}
+
 /* the menu the mouse drives: the first player's, or everyone's */
 static struct widget_instance *ui_mouse_menu(
 	void)
@@ -6886,14 +6904,14 @@ static void ui_widgets_process_mouse(
 		if (pointer.moved)
 		{
 			ui_mouse_hover_pending = TRUE;
-			ui_mouse_hover_x = pointer.x;
-			ui_mouse_hover_y = pointer.y;
+			ui_mouse_hover_x = ui_mouse_menu_point(pointer.x, ui_mouse_menu_origin_x);
+			ui_mouse_hover_y = ui_mouse_menu_point(pointer.y, ui_mouse_menu_origin_y);
 		}
 		if (pointer.left_clicks)
 		{
 			ui_mouse_click_pending = TRUE;
-			ui_mouse_click_x = pointer.click_x;
-			ui_mouse_click_y = pointer.click_y;
+			ui_mouse_click_x = ui_mouse_menu_point(pointer.click_x, ui_mouse_menu_origin_x);
+			ui_mouse_click_y = ui_mouse_menu_point(pointer.click_y, ui_mouse_menu_origin_y);
 		}
 		if (pointer.right_clicks)
 			ui_mouse_press(_widget_event_b_button);
@@ -7123,7 +7141,7 @@ static void widget_instance_render_recursive(
 			bounds.x0 <= 0 && bounds.y0 <= 0 &&
 			bounds.x1 >= 640 && bounds.y1 >= 480 &&
 			bitmap->width <= 16 &&
-			halo_screen_width() > 640;
+			(halo_screen_width() > 640 || rasterizer_screen_transform.active);
 
 		if (use_nifty_plasma_fx)
 		{
@@ -7137,6 +7155,18 @@ static void widget_instance_render_recursive(
 			long extra = (halo_screen_width() - 640) / 2;
 			bounds.x0 -= (short)extra;
 			bounds.x1 = (short)(640 + extra);
+			/* port: a menu screen drawn smaller in a split screen view
+			(render_ui_widgets): the whole view, which is more of the
+			drawing's space than the screen is */
+			if (rasterizer_screen_transform.active)
+			{
+				rectangle2d const *visible = &rasterizer_screen_transform.visible;
+
+				bounds.x0 = MIN(bounds.x0, (short)(visible->x0 - offset.x));
+				bounds.y0 = MIN(bounds.y0, (short)(visible->y0 - offset.y));
+				bounds.x1 = MAX(bounds.x1, (short)(visible->x1 - offset.x));
+				bounds.y1 = MAX(bounds.y1, (short)(visible->y1 - offset.y));
+			}
 		}
 		bounds.x0 += offset.x;
 		bounds.x1 += offset.x;
@@ -7315,6 +7345,99 @@ void render_ui_widgets_postgame(
 	return;
 }
 
+/* port: how a PC menu screen (port/assets/menus) that a split screen player
+opened is drawn. The screens are laid out for the whole 640x480 screen, so in
+a player's view they would run off it: with two players the screen is drawn
+smaller, to fit that player's half (its shape kept, centred, as the Xbox's
+pause menus sit in each view); with three or four, whose quarters would make
+its text too small to read, it is drawn over the whole screen, after the
+views (render_ui_widgets_full_screen). Anything else (the Xbox's screens, a
+dialog shown in every view, the screens of a game with one view) is drawn as
+it always was. */
+enum
+{
+	_split_screen_menu_in_view,
+	_split_screen_menu_scaled,
+	_split_screen_menu_full_screen
+};
+
+/* the widgets render_ui_widgets left for render_ui_widgets_full_screen this
+frame, a flag for each of active_widgets */
+static long ui_widgets_full_screen_pending = 0;
+
+static short split_screen_menu_layout(
+	struct widget_instance const *widget,
+	rectangle2d const *window_bounds)
+{
+	rectangle2d const *frame = &rasterizer_globals.reserved04.frame_bounds;
+	boolean whole_frame =
+		window_bounds->x1 - window_bounds->x0 >= frame->x1 - frame->x0 &&
+		window_bounds->y1 - window_bounds->y0 >= frame->y1 - frame->y0;
+
+	if (whole_frame ||
+		local_player_count() < 2 ||
+		widget->local_player_index == NONE ||
+		widget->render_regardless_of_controller_index ||
+		widget->widget_is_error_dialog ||
+		!pc_menu_tag(widget->definition_tag_index))
+	{
+		return _split_screen_menu_in_view;
+	}
+
+	return local_player_count() >= 3 ? _split_screen_menu_full_screen : _split_screen_menu_scaled;
+}
+
+/* draws what follows (a menu screen) smaller, to fit a split screen view, its
+shape kept, centred in it (the screen transform: rasterizer.h); the clip is
+set to the part of the screen's space that lands in the view, and the
+first player's menu's pointer (ui_mouse_menu_scale) follows it */
+static void split_screen_menu_scale_begin(
+	rectangle2d const *window_bounds,
+	boolean first_players_menu,
+	rectangle2d *clip)
+{
+	real width = (real)(window_bounds->x1 - window_bounds->x0);
+	real height = (real)(window_bounds->y1 - window_bounds->y0);
+	/* (the menus' centering on a wide screen, which the renderer adds:
+	halo_screen_ui_offset) */
+	real centering = (real)((halo_screen_width() - 640) / 2);
+	real scale = MIN(width / 640.0f, height / 480.0f);
+	real x = (width - 640.0f * scale) / 2.0f - centering;
+	real y = (height - 480.0f * scale) / 2.0f;
+	rectangle2d visible;
+
+	visible.x0 = (short)floor((-x - centering) / scale);
+	visible.y0 = (short)floor(-y / scale);
+	visible.x1 = (short)ceil((width - x - centering) / scale);
+	visible.y1 = (short)ceil((height - y) / scale);
+	rasterizer_screen_transform_set(scale, x, y, &visible);
+	*clip = visible;
+	/* (the pointer is in the screen's units, less the centering) */
+	if (first_players_menu)
+	{
+		ui_mouse_menu_scale = scale;
+		ui_mouse_menu_origin_x = (real)window_bounds->x0 + x;
+		ui_mouse_menu_origin_y = (real)window_bounds->y0 + y;
+	}
+
+	return;
+}
+
+/* the frame's targets, once noted (ui_mouse_targets_settled) */
+static void ui_mouse_settle_targets(
+	void)
+{
+	/* fit the legends while the rows are still targets (merging
+	removes them); widen after merging (the merged values are
+	row-tall) */
+	ui_mouse_fit_button_targets();
+	ui_mouse_merge_setting_rows();
+	ui_mouse_widen_values();
+	ui_mouse_targets_settled = TRUE;
+
+	return;
+}
+
 /* renders the active widgets for one local player's viewport (or the whole
 screen), noting and settling the first player's tap targets in the frame's
 first render that can, and draws the debug view of the targets and the
@@ -7326,6 +7449,9 @@ void render_ui_widgets(
 	rectangle2d bounds;
 	long widget_index;
 	boolean first_players_render = local_player_index == NONE || local_player_index == 0;
+	/* port: the first player's menu left for the whole screen, which notes
+	and settles the targets itself (render_ui_widgets_full_screen) */
+	boolean first_players_menu_full_screen = FALSE;
 
 	match_assert(
 		"c:\\halo\\SOURCE\\interface\\ui_widget.c",
@@ -7335,6 +7461,14 @@ void render_ui_widgets(
 		local_player_index == NONE ? 0 : local_player_index;
 	if (bink_playback_ui_rendering_inhibited())
 		return;
+	/* port: the first player's menu is drawn whole, until this render
+	draws it smaller (split_screen_menu_scale_begin) */
+	if (first_players_render)
+	{
+		ui_mouse_menu_scale = 1.0f;
+		ui_mouse_menu_origin_x = 0.0f;
+		ui_mouse_menu_origin_y = 0.0f;
+	}
 	if (!virtual_keyboard_active())
 	{
 		local_player_index = PIN(
@@ -7376,13 +7510,31 @@ void render_ui_widgets(
 			if (should_render)
 			{
 				point2d offset;
+				short layout = split_screen_menu_layout(widget, window_bounds);
 
+				/* port: a PC menu screen over the whole screen, after the
+				views (split_screen_menu_layout) */
+				if (layout == _split_screen_menu_full_screen)
+				{
+					ui_widgets_full_screen_pending |= FLAG(widget_index);
+					if (first_players_render && widget->local_player_index == 0)
+						first_players_menu_full_screen = TRUE;
+					continue;
+				}
 				bounds.x0 = 0;
 				bounds.y0 = 0;
 				bounds.x1 = window_bounds->x1 - window_bounds->x0;
 				bounds.y1 = window_bounds->y1 - window_bounds->y0;
 				offset.x = 0;
 				offset.y = 0;
+				/* port: or smaller, to fit the view */
+				if (layout == _split_screen_menu_scaled)
+				{
+					split_screen_menu_scale_begin(
+						window_bounds,
+						first_players_render && widget->local_player_index == 0,
+						&bounds);
+				}
 				/* the mouse drives the first player's menus; a widget shown in
 				every viewport (a dialog for everyone) is noted in the first
 				player's render only, and once a frame */
@@ -7395,6 +7547,14 @@ void render_ui_widgets(
 					TRUE,
 					FALSE);
 				ui_mouse_noting_targets = FALSE;
+				if (layout == _split_screen_menu_scaled)
+				{
+					rasterizer_screen_transform_reset();
+					bounds.x0 = 0;
+					bounds.y0 = 0;
+					bounds.x1 = window_bounds->x1 - window_bounds->x0;
+					bounds.y1 = window_bounds->y1 - window_bounds->y0;
+				}
 				if (widget_globals.debug_show_path)
 				{
 					real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -7419,16 +7579,8 @@ void render_ui_widgets(
 				}
 			}
 		}
-		if (first_players_render && !ui_mouse_targets_settled)
-		{
-			/* fit the legends while the rows are still targets (merging
-			removes them); widen after merging (the merged values are
-			row-tall) */
-			ui_mouse_fit_button_targets();
-			ui_mouse_merge_setting_rows();
-			ui_mouse_widen_values();
-			ui_mouse_targets_settled = TRUE;
-		}
+		if (first_players_render && !ui_mouse_targets_settled && !first_players_menu_full_screen)
+			ui_mouse_settle_targets();
 		if (widget_globals.fade_to_black >= 0.0f &&
 			widget_globals.fade_to_black <= 1.0f)
 		{
@@ -7454,6 +7606,50 @@ void render_ui_widgets(
 		browser_screen_render();
 #endif
 	ui_debug_draw_targets(first_players_render);
+
+	return;
+}
+
+/* port: the PC menu screens that split screen players with three or four
+views opened, which their views left out this frame (split_screen_menu_layout),
+over the whole screen: the frame's last window (render.c), with the menus'
+centering on */
+void render_ui_widgets_full_screen(
+	rectangle2d const *window_bounds)
+{
+	long pending = ui_widgets_full_screen_pending;
+	long widget_index;
+
+	ui_widgets_full_screen_pending = 0;
+	if (!pending || bink_playback_ui_rendering_inhibited() || virtual_keyboard_active())
+		return;
+	for (widget_index = 0;
+		widget_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS;
+		widget_index++)
+	{
+		struct widget_instance *widget = widget_globals.active_widgets[widget_index];
+		rectangle2d bounds;
+		point2d offset;
+		boolean noting;
+
+		if (!TEST_FLAG(pending, widget_index) || !widget)
+			continue;
+		bounds.x0 = 0;
+		bounds.y0 = 0;
+		bounds.x1 = window_bounds->x1 - window_bounds->x0;
+		bounds.y1 = window_bounds->y1 - window_bounds->y0;
+		offset.x = 0;
+		offset.y = 0;
+		local_player_index_for_draw_string_and_hack_in_icons =
+			widget->local_player_index == NONE ? 0 : widget->local_player_index;
+		/* (the first player's: its targets, which its view left) */
+		noting = !ui_mouse_targets_settled && widget->local_player_index == 0;
+		ui_mouse_noting_targets = noting;
+		widget_instance_render_recursive(widget, &bounds, offset, TRUE, FALSE);
+		ui_mouse_noting_targets = FALSE;
+		if (noting)
+			ui_mouse_settle_targets();
+	}
 
 	return;
 }

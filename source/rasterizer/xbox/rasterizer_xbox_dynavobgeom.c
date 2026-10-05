@@ -370,6 +370,20 @@ void _rasterizer_psuedo_dynamic_screen_quad_draw(
 		map_constants[22] = 0.0f;
 		map_constants[23] = 0.0f;
 
+		/* port: drawn through the screen transform (rasterizer.h): the
+		point (and the offset) scaled, then moved */
+		if (rasterizer_screen_transform.active)
+		{
+			real transform_scale = rasterizer_screen_transform.scale;
+
+			vertex_constants[0] = 2.0f * transform_scale / width;
+			vertex_constants[3] = transform_scale * normalized_offset.i +
+				2.0f * rasterizer_screen_transform.x / width - (1.0f / width + 1.0f);
+			vertex_constants[5] = -2.0f * transform_scale / height;
+			vertex_constants[7] = 1.0f / height + transform_scale * normalized_offset.j -
+				2.0f * rasterizer_screen_transform.y / height + 1.0f;
+		}
+
 		IDirect3DDevice8_SetVertexShaderConstant(
 			global_d3d_device,
 			SCREEN_GEOMETRY_TRANSFORM_CONSTANT,
