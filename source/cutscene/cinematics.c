@@ -488,14 +488,53 @@ void cinematic_render(
 					wide_bounds.x1 += shift;
 					title_bounds = &wide_bounds;
 				}
-				rasterizer_draw_unicode_string(
-					title_bounds,
-					NULL,
-					NULL,
-					0,
-					unicode_string_list_get_string(
+				{
+					wchar_t const *text = unicode_string_list_get_string(
 						help_text_tag_index,
-						title->text_index));
+						title->text_index);
+					/* port: a title that repeats itself after a run of blank
+					lines, for the lower view of split screen (Halo 1: NHE's
+					clock), only once with one view: the Xbox's font pushed
+					the copy to the screen's edge, the port's high-res text
+					keeps it on screen */
+					/* (one per title slot: the text is drawn later in the
+					frame, so the titles cannot share one) */
+					static wchar_t first_copies[MAXIMUM_QUEUED_CINEMATIC_TITLES][64];
+					wchar_t *first_copy = first_copies[title_slot_index];
+
+					if (text && local_player_count() <= 1)
+					{
+						short index;
+						short blank_lines = 0;
+
+						for (index = 0; text[index] && index < (short)NUMBEROF(first_copies[0]) - 1; index++)
+						{
+							if (text[index] == L'\n')
+							{
+								if (++blank_lines >= 5)
+								{
+									/* (cut where the run began) */
+									while (index > 0 && (first_copy[index - 1] == L'\n' || first_copy[index - 1] == L'\r'))
+										index--;
+									first_copy[index] = 0;
+									text = first_copy;
+									break;
+								}
+							}
+							else if (text[index] != L'\r')
+							{
+								blank_lines = 0;
+							}
+							first_copy[index] = text[index];
+						}
+					}
+					rasterizer_draw_unicode_string(
+						title_bounds,
+						NULL,
+						NULL,
+						0,
+						text);
+				}
 
 				rasterizer_text_set_shadow_color(0);
 			}
