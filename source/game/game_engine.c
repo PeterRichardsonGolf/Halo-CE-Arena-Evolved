@@ -3797,6 +3797,14 @@ boolean game_engine_showing_postgame(
 	return game_engine != NULL && game_engine_globals.postgame_state == game_engine_mode_postgame_rasterize;
 }
 
+/* port: whether the game is over: from its end (the postgame's delay before
+the scores) on, while game_engine_running still holds */
+boolean game_engine_game_over(
+	void)
+{
+	return game_engine != NULL && game_engine_globals.postgame_state != game_engine_mode_active;
+}
+
 void game_variant_options_default(
 	struct game_variant const *variant,
 	struct game_variant_options *options)

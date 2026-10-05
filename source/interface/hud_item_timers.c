@@ -36,6 +36,15 @@ Both are drawn like the performance overlay (main.c frame_statistics_draw):
 the HUD's smaller font, its blue, 0.7 alpha, at four fifths size. Unlike the
 overlay, drawn in the HUD's pass, the bounds are the view's relative to
 itself.
+
+TRAINING's waypoints (hud_draw_item_waypoints) are the game's own nav
+points, as Halo 1: NHE's Training mode's: the "default" arrow (CTF's over
+a flag carrier's own base, where it scores) with the distance by it, over
+each power entry's spawn point while item_timer_waypoint_shown, drawn as
+the game engine draws its goals' (game_engine_render_nav_points): occluded
+or not by a line of sight test from the player's head each frame, at the
+view's edge pointing to it when off screen. For every player (NHE turns
+them on for both teams), only while alive, as the game's nav points.
 */
 
 /* ---------- headers */
@@ -57,6 +66,7 @@ itself.
 #include "text/draw_string.h"
 #include "text/font_group.h"
 #include "text/unicode.h"
+#include "units/units.h"
 
 /* ---------- constants */
 
@@ -361,6 +371,51 @@ void hud_draw_item_timers(
 		hud_item_timers_draw_powers(font_index, clock_room);
 
 	return;
+}
+
+/* TRAINING's waypoints over the power entries, in this local player's
+view (from hud_draw_screen, where the game's nav points are drawn) */
+void hud_draw_item_waypoints(
+	short local_player_index)
+{
+	short count = item_timers_count();
+	short nav_index = NONE;
+	long player_index;
+	long unit_index;
+	real_point3d head_position;
+	short index;
+
+	if (!count || local_player_index == NONE || !hud_globals ||
+		hud_globals->waypoint.arrow_bitmap.index == NONE)
+	{
+		return;
+	}
+	player_index = local_player_get_player_index(local_player_index);
+	unit_index = player_index == NONE ? NONE : player_get(player_index)->unit_index;
+	if (unit_index == NONE)
+		return;
+	unit_get_head_position(unit_index, &head_position);
+
+	for (index = 0; index < count; index++)
+	{
+		struct item_timer const *timer = item_timers_get(index);
+		real_point3d position;
+		short render_type;
+
+		if (!item_timer_waypoint_shown(timer))
+			continue;
+		/* (the arrow NHE's calls have on a stock map's HUD globals) */
+		if (nav_index == NONE)
+		{
+			nav_index = hud_nav_point_index("default");
+			if (nav_index == NONE)
+				return;
+		}
+		position = timer->position;
+		position.z += ITEM_TIMER_WAYPOINT_HEIGHT;
+		render_type = hud_get_nav_point_render_type(local_player_index, &head_position, &position, NONE);
+		custom_render_nav_point(local_player_index, &position, nav_index, render_type);
+	}
 }
 
 /* where hud_unit.c drew the motion sensor's background in this local

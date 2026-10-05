@@ -16,6 +16,7 @@ time alone (a client has the host's: game_time_set_distributed).
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/item_timers.h"
+#include "hs/hs.h"
 #include "items/equipment_definitions.h"
 #include "items/item_definitions.h"
 #include "items/weapon_definitions.h"
@@ -44,6 +45,8 @@ void platform_log(char const *format, ...);
 
 static struct item_timer item_timers[MAXIMUM_ITEM_TIMERS];
 static short item_timer_count;
+/* each entry's TRAINING waypoint at the last tick (item_timers_update's log) */
+static boolean item_timer_waypoints[MAXIMUM_ITEM_TIMERS];
 
 /* ---------- private code */
 
@@ -193,6 +196,7 @@ void item_timers_map_begin(
 	short equipment_index;
 
 	item_timer_count = 0;
+	csmemset(item_timer_waypoints, 0, sizeof(item_timer_waypoints));
 	if (!game_engine_running())
 		return;
 
@@ -270,8 +274,67 @@ long item_timer_ticks_left(
 	return timer->period_ticks - game_time_get() % timer->period_ticks;
 }
 
+/* TRAINING's waypoint over a power entry (hud_item_timers.c), as Halo 1:
+NHE's Training mode's (activate_*_waypoint with its call, about 10 s before
+the item's spawn; deactivate_powerup_waypoints at :20 of the spawn's
+minute), from the entry's own spawns rather than NHE's minutes: from
+ITEM_TIMER_WAYPOINT_BEFORE_TICKS before each spawn after the game's start
+(not the items placed as it starts, as NHE) until
+ITEM_TIMER_WAYPOINT_AFTER_TICKS after it. None on Halo 1: NHE's maps (their
+scripts draw their own), while the PRE-GAME COUNTDOWN counts or once the
+game is over. Game time only, so every machine shows the same */
+boolean item_timer_waypoint_shown(
+	struct item_timer const *timer)
+{
+	long now;
+
+	if (!timer || timer->timer_class < 0 || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES ||
+		timer->period_ticks <= 0)
+	{
+		return FALSE;
+	}
+	if (!game_engine_training() || hs_scenario_is_nhe() || game_engine_game_over() ||
+		game_engine_pregame_countdown_ticks_left() > 0)
+	{
+		return FALSE;
+	}
+
+	now = game_time_get();
+	if (item_timer_ticks_left(timer) <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)
+		return TRUE;
+
+	return now >= timer->period_ticks && now % timer->period_ticks < ITEM_TIMER_WAYPOINT_AFTER_TICKS;
+}
+
 void item_timers_update(
 	void)
 {
+	short count = item_timers_count();
+	short index;
+
+	/* (TRAINING's waypoints going on and off, with the spawn they are
+	for: the next one's going on, the last one's going off) */
+	for (index = 0; index < count; index++)
+	{
+		struct item_timer const *timer = &item_timers[index];
+		boolean shown = item_timer_waypoint_shown(timer);
+
+		if (shown != item_timer_waypoints[index])
+		{
+			long now = game_time_get();
+			long ticks_left = item_timer_ticks_left(timer);
+			long spawn = ticks_left <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS ? now + ticks_left : now - now % timer->period_ticks;
+			char label[ITEM_TIMER_LABEL_LENGTH + 1];
+			short character_index;
+
+			for (character_index = 0; character_index < ITEM_TIMER_LABEL_LENGTH && timer->label[character_index]; character_index++)
+				label[character_index] = (char)timer->label[character_index];
+			label[character_index] = 0;
+			platform_log("item timers: waypoint %d %s %s at tick %ld (spawn at tick %ld)", index, label,
+				shown ? "on" : "off", now, spawn);
+			item_timer_waypoints[index] = shown;
+		}
+	}
+
 	/* (the timers' voice goes here) */
 }

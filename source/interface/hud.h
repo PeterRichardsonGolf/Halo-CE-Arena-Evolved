@@ -117,6 +117,8 @@ void hud_draw_screen(
 
 short find_nav_point(
 	char const *name);
+short hud_nav_point_index(
+	char const *name);
 short hud_get_nav_point_render_type(
 	short local_player_index,
 	union real_point3d const *head,

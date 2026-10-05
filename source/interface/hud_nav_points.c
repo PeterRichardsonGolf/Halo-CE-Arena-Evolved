@@ -258,6 +258,27 @@ short find_nav_point(
 	return nav_index;
 }
 
+/* port: a nav point's index by its name, NONE (without find_nav_point's
+error) where this map's HUD globals have none */
+short hud_nav_point_index(
+	char const *name)
+{
+	short index;
+
+	if (!hud_globals)
+		return NONE;
+	for (index = 0; index<hud_globals->waypoint.arrows.count; index++)
+	{
+		struct hud_waypoint_arrow *arrow = TAG_BLOCK_GET_ELEMENT(
+			&hud_globals->waypoint.arrows, index, struct hud_waypoint_arrow);
+
+		if (!_stricmp(name, arrow->name))
+			return index;
+	}
+
+	return NONE;
+}
+
 struct hud_nav_point_player_datum *get_nav_point_datum(
 	short local_player_index)
 {

@@ -1384,6 +1384,10 @@ void hud_draw_screen(
 				hud_play_unit_sounds(player, hud_scripted_globals->show_hud);
 				hud_render_unit_interface(player);
 				hud_render_nav_points(render.local_player_index);
+				/* port: the gametype's TRAINING's waypoints over the power
+				items' spawns, as nav points (hud_item_timers.c) */
+				if (game_engine_running() && !cinematic_in_progress())
+					hud_draw_item_waypoints(render.local_player_index);
 				hud_render_damage_indicators(render.local_player_index);
 			}
 			else
