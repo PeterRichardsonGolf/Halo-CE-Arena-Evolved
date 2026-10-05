@@ -13,6 +13,7 @@ time alone (a client has the host's: game_time_set_distributed).
 #include "cseries/cseries.h"
 
 #include "cache/cache_files.h"
+#include "game/callouts.h"
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/item_timers.h"
@@ -726,11 +727,15 @@ void item_timers_update(
 	void)
 {
 	short count = item_timers_count();
+	/* (the items by a mixed entry's spawn point looked for only when
+	TRAINING's waypoints or CALLOUTS name the item it spawned: no other game
+	walks the objects for them) */
+	boolean find_spawned = item_timers_training_shown() || callouts_items_called();
 	short index;
 
 	/* (the item a mixed entry spawned, once it is on the map: a client
 	has it when the host's update reaches it) */
-	for (index = 0; index < count; index++)
+	for (index = 0; find_spawned && index < count; index++)
 	{
 		struct item_timer const *timer = &item_timers[index];
 		long spawn;

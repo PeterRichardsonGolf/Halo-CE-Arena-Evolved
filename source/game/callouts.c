@@ -17,6 +17,17 @@ pack has both, each side's said. "five" .. "one" in the last 5 seconds
 before the rockets' spawn, and at each spawn "<item> is up" when the pack
 has it.
 
+Items spawning together are called together when the pack has the line,
+before the separate calls: an overshield and a camo, "overshield and camo
+in ten" and "overshield and camo are up"; three items or more, "powerups
+in ten", then each one's "is up" (the line names none of them, so the
+spawn does), the overshield and camo still as one. An item called with its
+side keeps its own call before the spawn ("is up" has no side). A spawn
+point of overshield or camo at random (Blood Gulch's OS/CAMO) is
+"overshield or camo in ten", and at the spawn the item it spawned
+(item_timers.c sees it on the map) is up, waited for up to a second, else
+not called. A pack without a line makes the calls it has instead.
+
 ITEMS + CLOCK adds NHE's talking timer (its nhe_combined_timer script),
 which counts each minute of game time: a beep on the minute and "N minutes"
 half a second later (1 .. 30, then 1 again), beeps at :20, :30 and :40 with
@@ -28,8 +39,9 @@ beep_item), else its beep.
 One call at a time, planned ahead from the clips' lengths: the counts (the
 numbers and the clock's beeps) and the clock's words keep their moment;
 an item's call that would meet one moves earlier, as NHE's are staggered
-before :50, with the items spawning together back to back; an "is up"
-waits for the clock's words before it. The same word due at the same tick
+before :50, with the items spawning together back to back (else in order
+around the calls between them, else said together as "powerups in ten" or
+without their sides); an "is up" waits for the clock's words before it. The same word due at the same tick
 is said once (the rockets' five to one before a minute are the clock's).
 A call that is late anyway (the mixer, a slow machine) is dropped rather
 than said late: a count over a second late or overtaken by a later count,
@@ -90,6 +102,10 @@ enum callout_clip
 	_callout_blue_sniper,
 	_callout_blue_overshield,
 	_callout_blue_camo,
+	_callout_overshield_camo_in_ten,	/* the two spawning together */
+	_callout_overshield_camo_up,
+	_callout_powerups_in_ten,	/* three items or more spawning together */
+	_callout_overshield_or_camo_in_ten,	/* a spawn point of either at random */
 	NUMBER_OF_CALLOUT_CLIPS
 };
 
@@ -101,11 +117,21 @@ enum callout_kind
 	_callout_kind_item_beep,	/* the beep before items' calls */
 	_callout_kind_item,	/* "<item> in ten": its moment or earlier */
 	_callout_kind_item_up,	/* "<item> is up": its moment or later */
+	_callout_kind_item_up_group	/* a spawn's "is up" calls, made as it is due
+		(callouts_say_up_group) */
 };
 
 #define MAXIMUM_PLANNED_CALLOUTS 64
-/* the items' calls due together: of each class, its red, blue and plain */
-#define MAXIMUM_SPAWNING_CALLOUTS (3 * NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
+/* the items' calls due together: the item beep, a combined call, of each
+class its red, blue and plain, and a mixed entry's */
+#define MAXIMUM_SPAWNING_CALLOUTS (3 * NUMBER_OF_ITEM_TIMER_POWER_CLASSES + 3)
+/* the mixed entries (OS/CAMO) spawning together whose item is called */
+#define MAXIMUM_MIXED_CALLOUTS 4
+/* the longest an "is up" waits for a mixed entry's item to be seen */
+#define CALLOUT_MIXED_WAIT_TICKS TICKS_PER_SECOND
+/* the power classes (bits of enum item_timer_class) */
+#define CALLOUT_POWER_CLASSES ((unsigned short)(FLAG(NUMBER_OF_ITEM_TIMER_POWER_CLASSES) - 1))
+#define CALLOUT_OVERSHIELD_CAMO ((unsigned short)(FLAG(_item_timer_overshield) | FLAG(_item_timer_camo)))
 /* an item's call this long before its spawn; the rockets' count from five */
 #define CALLOUT_ITEM_WARNING_TICKS (10 * TICKS_PER_SECOND)
 #define CALLOUT_ITEM_COUNT_TICKS (5 * TICKS_PER_SECOND)
@@ -136,9 +162,16 @@ struct callout
 	long start;	/* the tick it is planned for */
 	long end;	/* start + its length + CALLOUT_GAP_TICKS */
 	long spawn;	/* the item's spawn, NONE for the clock's */
-	short clip;
+	short clip;	/* NONE for an "is up" group */
 	short item_index;	/* the item timer's (item_timers_get), NONE for the clock's */
 	short kind;	/* enum callout_kind */
+	unsigned short covers;	/* a combined call's classes (bits of enum item_timer_class), else 0 */
+	/* an "is up" group's: the classes known to spawn and an entry of each
+	(NONE), and the mixed entries whose item is seen at the spawn */
+	unsigned short up_classes;
+	short class_items[NUMBER_OF_ITEM_TIMER_POWER_CLASSES];
+	short mixed_count;
+	short mixed_items[MAXIMUM_MIXED_CALLOUTS];
 };
 
 /* ---------- prototypes */
@@ -175,6 +208,7 @@ static char const *const callout_clip_names[NUMBER_OF_CALLOUT_CLIPS] =
 	"rockets_up", "sniper_up", "overshield_up", "camo_up",
 	"red_rockets", "red_sniper", "red_overshield", "red_camo",
 	"blue_rockets", "blue_sniper", "blue_overshield", "blue_camo",
+	"overshield_camo_in_ten", "overshield_camo_up", "powerups_in_ten", "overshield_or_camo_in_ten",
 };
 
 /* the power classes' clips (enum item_timer_class; OS/CAMO's is the
@@ -185,6 +219,15 @@ static short const callout_item_clips[NUMBER_OF_ITEM_TIMER_POWER_CLASSES] =
 	_callout_sniper,
 	_callout_overshield,
 	_callout_camo,
+};
+
+/* the power classes' names in the log (enum item_timer_class) */
+static char const *const callout_class_names[NUMBER_OF_ITEM_TIMER_POWER_CLASSES] =
+{
+	"ROCKETS",
+	"SNIPER",
+	"OVERSHIELD",
+	"CAMO",
 };
 
 /* the order of the items' calls due together, NHE's (rocket, camo,
@@ -223,7 +266,7 @@ static boolean callout_is_count(
 static long callout_clip_ticks(
 	short clip)
 {
-	long milliseconds = platform_callout_voice_milliseconds(clip);
+	long milliseconds = clip != NONE ? platform_callout_voice_milliseconds(clip) : 0;
 
 	if (milliseconds <= 0)
 		return 0;
@@ -240,6 +283,30 @@ static short callout_beep(
 	if (callout_clip_ticks(_callout_beep) > 0)
 		return _callout_beep;
 	return NONE;
+}
+
+/* a call due at due (start there), of the item spawning at spawn (NONE
+for the clock's) */
+static void callout_new(
+	struct callout *callout,
+	long due,
+	long spawn,
+	short clip,
+	short item_index,
+	short kind)
+{
+	short index;
+
+	csmemset(callout, 0, sizeof(*callout));
+	callout->due = due;
+	callout->start = due;
+	callout->end = due;
+	callout->spawn = spawn;
+	callout->clip = clip;
+	callout->item_index = item_index;
+	callout->kind = kind;
+	for (index = 0; index < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; index++)
+		callout->class_items[index] = NONE;
 }
 
 static void callouts_flush(
@@ -298,12 +365,19 @@ static short callouts_mode(
 	return callout_globals.mode;
 }
 
+/* a clip's name, the group's for an "is up" group */
+static char const *callout_clip_name(
+	short clip)
+{
+	return clip == NONE ? "is_up_group" : callout_clip_names[clip];
+}
+
 static void callout_label(
-	struct callout const *callout,
+	short item_index,
 	char *label,
 	short size)
 {
-	struct item_timer const *timer = callout->item_index != NONE ? item_timers_get(callout->item_index) : NULL;
+	struct item_timer const *timer = item_index != NONE ? item_timers_get(item_index) : NULL;
 	short index = 0;
 
 	if (timer)
@@ -330,16 +404,28 @@ static void callout_log(
 	if (callout->item_index != NONE)
 	{
 		char label[32];
+		char covers[64];
+		short timer_class;
 
-		callout_label(callout, label, sizeof(label));
-		platform_log("callouts: tick %ld %s%s (due at tick %ld%s; item %d %s spawns at tick %ld)", now, what,
-			callout_clip_names[callout->clip], callout->due, planned, callout->item_index, label,
-			callout->spawn);
+		callout_label(callout->item_index, label, sizeof(label));
+		/* (a combined call: the items it says) */
+		covers[0] = 0;
+		for (timer_class = 0; timer_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; timer_class++)
+		{
+			if (TEST_FLAG(callout->covers, timer_class))
+			{
+				csprintf(covers + csstrlen(covers), "%s%s", covers[0] ? " + " : "; for ",
+					callout_class_names[timer_class]);
+			}
+		}
+		platform_log("callouts: tick %ld %s%s (due at tick %ld%s; item %d %s spawns at tick %ld%s)", now, what,
+			callout_clip_name(callout->clip), callout->due, planned, callout->item_index, label,
+			callout->spawn, covers);
 	}
 	else
 	{
 		platform_log("callouts: tick %ld %s%s (due at tick %ld%s; clock)", now, what,
-			callout_clip_names[callout->clip], callout->due, planned);
+			callout_clip_name(callout->clip), callout->due, planned);
 	}
 }
 
@@ -372,7 +458,7 @@ static void callout_plan_insert(
 	if (count >= MAXIMUM_PLANNED_CALLOUTS)
 	{
 		platform_log("callouts: tick %ld %s not planned: the plan is full", callout->due,
-			callout_clip_names[callout->clip]);
+			callout_clip_name(callout->clip));
 		return;
 	}
 	for (at = count; at > 0 && plan[at - 1].start > callout->start; at--)
@@ -405,12 +491,7 @@ static void callout_plan_fixed(
 			return;
 	}
 
-	callout.due = due;
-	callout.start = due;
-	callout.spawn = spawn;
-	callout.clip = clip;
-	callout.item_index = item_index;
-	callout.kind = kind;
+	callout_new(&callout, due, spawn, clip, item_index, kind);
 	while ((other = callout_planned_overlap(callout.start, callout.start + 1)) != NULL)
 		callout.start = other->end;
 	callout.end = callout.start + ticks + CALLOUT_GAP_TICKS;
@@ -473,154 +554,495 @@ static short callout_side_clip(
 	return NONE;
 }
 
-/* the power entries spawning at this tick, one of each class (OS/CAMO's
-being the overshield's), in NHE's order: rocket, camo, overshield, sniper
-(its calls before a minute); with sides, also each other one of a class
-whose side clip (callout_side_clip) differs (red and blue rockets); their
-count (up to MAXIMUM_SPAWNING_CALLOUTS) */
-static short callout_items_spawning(
+/* the power classes an entry can spawn (bits of enum item_timer_class) */
+static unsigned short callout_power_classes(
+	struct item_timer const *timer)
+{
+	return (unsigned short)(timer->classes & CALLOUT_POWER_CLASSES);
+}
+
+/* an entry that spawns one of more than one power class at random
+(OS/CAMO): its item is called as it is seen on the map */
+static boolean callout_item_mixed(
+	struct item_timer const *timer)
+{
+	unsigned short classes = callout_power_classes(timer);
+
+	return (classes & (classes - 1)) != 0;
+}
+
+/* whether an entry spawns at this tick, as a power item with a period of
+minimum_period or more */
+static boolean callout_item_spawns(
+	struct item_timer const *timer,
 	long spawn,
-	long minimum_period,
-	boolean sides,
-	short *indices)
+	long minimum_period)
+{
+	return timer && timer->timer_class >= 0 && timer->timer_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES &&
+		timer->period_ticks > 0 && timer->period_ticks >= minimum_period && spawn % timer->period_ticks == 0;
+}
+
+/* the power entries spawning at a tick (callout_items_spawning), as their
+calls 10 s before it have them */
+struct callout_spawning
+{
+	short plain[NUMBER_OF_ITEM_TIMER_POWER_CLASSES];	/* an entry of each class called by its name, NONE */
+	short sided[NUMBER_OF_ITEM_TIMER_POWER_CLASSES][2];	/* of each, the red and blue called with their side, NONE */
+	short either;	/* an OS/CAMO entry called "overshield or camo in ten", NONE */
+};
+
+/* the power entries spawning at this tick (with a period of 10 s or more:
+none for an item spawning more often): of each class one called by its
+name; one with its side (callout_side_clip) for each side; and an OS/CAMO
+entry when the pack has "overshield or camo in ten" (else it is the
+overshield's, as its class) */
+static void callout_items_spawning(
+	long spawn,
+	struct callout_spawning *spawning)
 {
 	short count = item_timers_count();
-	short found = 0;
+	short index;
+
+	for (index = 0; index < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; index++)
+	{
+		spawning->plain[index] = NONE;
+		spawning->sided[index][0] = NONE;
+		spawning->sided[index][1] = NONE;
+	}
+	spawning->either = NONE;
+	for (index = 0; index < count; index++)
+	{
+		struct item_timer const *timer = item_timers_get(index);
+		short side_clip;
+
+		if (!callout_item_spawns(timer, spawn, CALLOUT_ITEM_WARNING_TICKS))
+			continue;
+		if (callout_power_classes(timer) == CALLOUT_OVERSHIELD_CAMO &&
+			callout_clip_ticks(_callout_overshield_or_camo_in_ten) > 0)
+		{
+			if (spawning->either == NONE)
+				spawning->either = index;
+			continue;
+		}
+		side_clip = callout_side_clip(timer);
+		if (side_clip != NONE)
+		{
+			short side = timer->side == _item_timer_side_red ? 0 : 1;
+
+			if (spawning->sided[timer->timer_class][side] == NONE)
+				spawning->sided[timer->timer_class][side] = index;
+			continue;
+		}
+		if (spawning->plain[timer->timer_class] == NONE)
+			spawning->plain[timer->timer_class] = index;
+	}
+}
+
+/* adds a call to a group made before a spawn; FALSE when it is full */
+static boolean callout_group_add(
+	struct callout *calls,
+	short *count,
+	long due,
+	long spawn,
+	short clip,
+	short item_index,
+	short kind,
+	unsigned short covers)
+{
+	if (*count >= MAXIMUM_SPAWNING_CALLOUTS)
+		return FALSE;
+	callout_new(&calls[*count], due, spawn, clip, item_index, kind);
+	calls[*count].covers = covers;
+	(*count)++;
+	return TRUE;
+}
+
+/* the calls 10 s before the spawn of the entries spawning (due at tick),
+in their order: a combined call first when the pack has its line ("powerups
+in ten" for three items or more called by their names, else "overshield and
+camo in ten" for those two), then in NHE's order (rocket, camo, overshield,
+sniper) each other item's "<item> in ten" (else its name), the item's
+calls with their side after it, and the OS/CAMO entry's "overshield or camo
+in ten" after the overshield's. merge_sides: none with its side (the items
+at both bases are the item's, as the pack without side clips has them) and
+the OS/CAMO entry one of the three for "powerups in ten"; their count */
+static short callout_compose_in_ten(
+	struct callout_spawning const *spawning,
+	boolean merge_sides,
+	long tick,
+	struct callout *calls)
+{
+	long spawn = tick + CALLOUT_ITEM_WARNING_TICKS;
+	short plain[NUMBER_OF_ITEM_TIMER_POWER_CLASSES];
+	unsigned short classes = 0;
+	unsigned short covered = 0;
+	short either = spawning->either;
+	short items;
+	short combined = NONE;
+	short count = 0;
 	short order;
 
 	for (order = 0; order < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; order++)
 	{
-		short class_first = found;
-		short index;
+		plain[order] = spawning->plain[order];
+		if (merge_sides && plain[order] == NONE)
+			plain[order] = spawning->sided[order][0] != NONE ? spawning->sided[order][0] : spawning->sided[order][1];
+		if (plain[order] != NONE)
+			SET_FLAG(classes, order, TRUE);
+	}
+	items = (short)((TEST_FLAG(classes, 0) ? 1 : 0) + (TEST_FLAG(classes, 1) ? 1 : 0) +
+		(TEST_FLAG(classes, 2) ? 1 : 0) + (TEST_FLAG(classes, 3) ? 1 : 0));
+	if (merge_sides && either != NONE)
+		items++;
 
-		for (index = 0; index < count && found < MAXIMUM_SPAWNING_CALLOUTS; index++)
+	if (items >= 3 && callout_clip_ticks(_callout_powerups_in_ten) > 0)
+	{
+		combined = _callout_powerups_in_ten;
+		covered = classes;
+		if (merge_sides)
+			either = NONE;
+	}
+	else if ((classes & CALLOUT_OVERSHIELD_CAMO) == CALLOUT_OVERSHIELD_CAMO &&
+		callout_clip_ticks(_callout_overshield_camo_in_ten) > 0)
+	{
+		combined = _callout_overshield_camo_in_ten;
+		covered = CALLOUT_OVERSHIELD_CAMO;
+	}
+	if (combined != NONE)
+	{
+		short item_index = NONE;
+
+		for (order = 0; order < NUMBER_OF_ITEM_TIMER_POWER_CLASSES && item_index == NONE; order++)
 		{
-			struct item_timer const *timer = item_timers_get(index);
-			boolean called = FALSE;
-			short other;
+			if (TEST_FLAG(covered, callout_item_order[order]))
+				item_index = plain[callout_item_order[order]];
+		}
+		if (item_index == NONE)
+			item_index = spawning->either;
+		callout_group_add(calls, &count, tick, spawn, combined, item_index, _callout_kind_item, covered);
+	}
 
-			if (!timer || timer->timer_class != callout_item_order[order] || timer->period_ticks <= 0 ||
-				timer->period_ticks < minimum_period || spawn % timer->period_ticks != 0)
+	for (order = 0; order < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; order++)
+	{
+		short timer_class = callout_item_order[order];
+		short side;
+
+		if (TEST_FLAG(classes, timer_class) && !TEST_FLAG(covered, timer_class))
+		{
+			short clip = (short)(_callout_rockets_in_ten + timer_class);
+
+			if (callout_clip_ticks(clip) <= 0)
+				clip = callout_item_clips[timer_class];
+			if (callout_clip_ticks(clip) > 0)
+				callout_group_add(calls, &count, tick, spawn, clip, plain[timer_class], _callout_kind_item, 0);
+		}
+		for (side = 0; !merge_sides && side < 2; side++)
+		{
+			short item_index = spawning->sided[timer_class][side];
+
+			if (item_index != NONE)
 			{
-				continue;
+				callout_group_add(calls, &count, tick, spawn, callout_side_clip(item_timers_get(item_index)),
+					item_index, _callout_kind_item, 0);
 			}
-			/* (the class's call made already: the same clip) */
-			for (other = class_first; other < found; other++)
-			{
-				if (!sides || callout_side_clip(item_timers_get(indices[other])) == callout_side_clip(timer))
-					called = TRUE;
-			}
-			if (!called)
-				indices[found++] = index;
+		}
+		if (timer_class == _item_timer_overshield && either != NONE)
+		{
+			callout_group_add(calls, &count, tick, spawn, _callout_overshield_or_camo_in_ten, either,
+				_callout_kind_item, 0);
 		}
 	}
 
-	return found;
+	return count;
+}
+
+/* the "is up" calls of the classes spawning (bits of enum item_timer_class;
+an entry of each in class_items), due at tick: "overshield and camo are
+up" for those two together when the pack has it, first, then each other's
+"<item> is up" in NHE's order; their count (the "powerups in ten" before
+three or more names none of them: each is said up) */
+static short callout_compose_up(
+	unsigned short classes,
+	short const *class_items,
+	long tick,
+	struct callout *calls)
+{
+	short count = 0;
+	short order;
+
+	if ((classes & CALLOUT_OVERSHIELD_CAMO) == CALLOUT_OVERSHIELD_CAMO &&
+		callout_clip_ticks(_callout_overshield_camo_up) > 0)
+	{
+		callout_group_add(calls, &count, tick, tick, _callout_overshield_camo_up,
+			class_items[_item_timer_overshield], _callout_kind_item_up, CALLOUT_OVERSHIELD_CAMO);
+		classes &= (unsigned short)~CALLOUT_OVERSHIELD_CAMO;
+	}
+	for (order = 0; order < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; order++)
+	{
+		short timer_class = callout_item_order[order];
+		short clip = (short)(_callout_rockets_up + timer_class);
+
+		if (TEST_FLAG(classes, timer_class) && callout_clip_ticks(clip) > 0)
+			callout_group_add(calls, &count, tick, tick, clip, class_items[timer_class], _callout_kind_item_up, 0);
+	}
+
+	return count;
+}
+
+/* calls' length, with the gap after each */
+static long callout_calls_ticks(
+	struct callout const *calls,
+	short count)
+{
+	long ticks = 0;
+	short index;
+
+	for (index = 0; index < count; index++)
+		ticks += callout_clip_ticks(calls[index].clip) + CALLOUT_GAP_TICKS;
+
+	return ticks;
+}
+
+/* the first start from at on, by latest, at which length ticks are free of
+the plan and end by known; NONE for none */
+static long callout_plan_next_room(
+	long at,
+	long latest,
+	long length,
+	long known)
+{
+	while (at <= latest && at + length <= known)
+	{
+		struct callout const *other;
+
+		if (game_engine_pregame_countdown_covers(at))
+		{
+			at++;
+			continue;
+		}
+		other = callout_planned_overlap(at, at + length);
+		if (!other)
+			return at;
+		at = other->end;
+	}
+
+	return NONE;
+}
+
+/* the calls planned in their order from first (the first there, by latest),
+each in the first room after the one before (around the calls planned
+between them), each ending by known; inserted when insert. FALSE when one
+has no room */
+static boolean callout_plan_spread(
+	struct callout *calls,
+	short count,
+	long first,
+	long latest,
+	long known,
+	boolean insert)
+{
+	long at = first;
+	short index;
+
+	for (index = 0; index < count; index++)
+	{
+		long length = callout_clip_ticks(calls[index].clip) + CALLOUT_GAP_TICKS;
+		long start = callout_plan_next_room(at, index ? known : latest, length, known);
+
+		if (start == NONE || (!index && start != first))
+			return FALSE;
+		calls[index].start = start;
+		calls[index].end = start + length;
+		at = calls[index].end;
+	}
+	for (index = 0; insert && index < count; index++)
+		callout_plan_insert(&calls[index]);
+
+	return TRUE;
+}
+
+/* the item beep and the calls 10 s before a spawn (calls[0] the beep when
+the pack has one), due at tick: back to back, as late as they fit by their
+moment, else earlier (NHE's staggered calls before :50), else later; else
+in their order around the calls planned between them, the same way. FALSE
+for no room */
+static boolean callout_plan_item_group(
+	struct callout *calls,
+	short count,
+	long tick,
+	long now,
+	long known)
+{
+	long lead = calls[0].kind == _callout_kind_item_beep ? callout_clip_ticks(calls[0].clip) + CALLOUT_GAP_TICKS : 0;
+	long earliest = tick - lead - CALLOUT_MOVE_EARLIER_TICKS;
+	long latest = tick + CALLOUT_LATEST_ITEM_TICKS;
+	long start;
+	short index;
+
+	if (earliest <= now)
+		earliest = now + 1;
+	start = callout_plan_room(tick - lead, earliest, latest, callout_calls_ticks(calls, count), known);
+	if (start != NONE)
+	{
+		for (index = 0; index < count; index++)
+		{
+			calls[index].start = start;
+			calls[index].end = start + callout_clip_ticks(calls[index].clip) + CALLOUT_GAP_TICKS;
+			callout_plan_insert(&calls[index]);
+			start = calls[index].end;
+		}
+		return TRUE;
+	}
+
+	/* (no room for them back to back: around the calls between them) */
+	for (start = tick - lead; start >= earliest; start--)
+	{
+		if (callout_plan_spread(calls, count, start, latest, known, TRUE))
+			return TRUE;
+	}
+	for (start = (tick - lead + 1 > earliest ? tick - lead + 1 : earliest); start <= latest; start++)
+	{
+		if (callout_plan_spread(calls, count, start, latest, known, TRUE))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+/* the calls 10 s before a spawn, due at tick (the items' moment), placed
+when the plan is known as far as known: the item beep, then the calls
+(callout_compose_in_ten); when they have no room, the calls with the items
+at both bases as one and the OS/CAMO entry among "powerups in ten" */
+static void callouts_plan_in_ten(
+	long tick,
+	long now,
+	long known)
+{
+	struct callout_spawning spawning;
+	struct callout calls[MAXIMUM_SPAWNING_CALLOUTS + 1];
+	short beep = callout_beep(_callout_beep_item);
+	boolean merges = FALSE;
+	short merge_sides;
+	short count = 0;
+	short index;
+
+	callout_items_spawning(tick + CALLOUT_ITEM_WARNING_TICKS, &spawning);
+	for (index = 0; index < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; index++)
+	{
+		if (spawning.sided[index][0] != NONE || spawning.sided[index][1] != NONE)
+			merges = TRUE;
+	}
+	if (spawning.either != NONE)
+		merges = TRUE;
+
+	for (merge_sides = FALSE; merge_sides <= (merges ? TRUE : FALSE); merge_sides++)
+	{
+		short offset = beep != NONE ? 1 : 0;
+
+		count = callout_compose_in_ten(&spawning, (boolean)merge_sides, tick, calls + offset);
+		if (count <= 0)
+			return;
+		if (beep != NONE)
+		{
+			calls[0] = calls[1];
+			calls[0].clip = beep;
+			calls[0].kind = _callout_kind_item_beep;
+			calls[0].covers = 0;
+		}
+		if (callout_plan_item_group(calls, (short)(count + offset), tick, now, known))
+		{
+			if (merge_sides)
+			{
+				platform_log("callouts: tick %ld the item calls due at tick %ld said as %d without their sides, "
+					"for room", now, tick, count);
+			}
+			return;
+		}
+	}
+	platform_log("callouts: tick %ld no room for %d item calls due at tick %ld", now, count, tick);
+}
+
+/* the "is up" calls at a spawn, due at tick: planned as one group
+(_callout_kind_item_up_group) at the spawn, or as soon after it as there is
+room, made as it is due (callouts_say_up_group), when the mixed entries'
+items are seen. Its room is the longest the calls can be, and for mixed
+entries CALLOUT_MIXED_WAIT_TICKS before them */
+static void callouts_plan_up(
+	long tick,
+	long now,
+	long known)
+{
+	struct callout group;
+	struct callout calls[MAXIMUM_SPAWNING_CALLOUTS];
+	short count = item_timers_count();
+	unsigned short possible = 0;
+	unsigned short subset;
+	long length = 0;
+	long first = tick > now ? tick : now + 1;
+	short index;
+
+	callout_new(&group, tick, tick, NONE, NONE, _callout_kind_item_up_group);
+	for (index = 0; index < count; index++)
+	{
+		struct item_timer const *timer = item_timers_get(index);
+
+		if (!callout_item_spawns(timer, tick, 1))
+			continue;
+		if (callout_item_mixed(timer))
+		{
+			if (group.mixed_count < MAXIMUM_MIXED_CALLOUTS)
+			{
+				group.mixed_items[group.mixed_count++] = index;
+				possible |= callout_power_classes(timer);
+			}
+			continue;
+		}
+		SET_FLAG(group.up_classes, timer->timer_class, TRUE);
+		if (group.class_items[timer->timer_class] == NONE)
+			group.class_items[timer->timer_class] = index;
+	}
+	if (!group.up_classes && !group.mixed_count)
+		return;
+
+	/* (the longest: of the classes known and any the mixed entries spawn) */
+	for (subset = 0; subset <= CALLOUT_POWER_CLASSES; subset++)
+	{
+		long ticks;
+
+		if (subset & (unsigned short)~possible)
+			continue;
+		ticks = callout_calls_ticks(calls, callout_compose_up((unsigned short)(group.up_classes | subset),
+			group.class_items, tick, calls));
+		if (ticks > length)
+			length = ticks;
+	}
+	if (length <= 0)
+		return;
+	if (group.mixed_count)
+		length += CALLOUT_MIXED_WAIT_TICKS;
+	for (index = 0; index < NUMBER_OF_ITEM_TIMER_POWER_CLASSES && group.item_index == NONE; index++)
+		group.item_index = group.class_items[callout_item_order[index]];
+	if (group.item_index == NONE)
+		group.item_index = group.mixed_items[0];
+	group.start = callout_plan_room(first, first, tick + CALLOUT_LATEST_ITEM_TICKS, length, known);
+	if (group.start == NONE)
+	{
+		platform_log("callouts: tick %ld no room for the is up calls due at tick %ld", now, tick);
+		return;
+	}
+	group.end = group.start + length;
+	callout_plan_insert(&group);
 }
 
 /* the items' calls with their moment at this tick, placed when the plan is
-known as far as known. "<item> in ten" (else the name), 10 s before each
-spawn: the items spawning together back to back after one item beep, as
-late as they fit by their moment, else earlier (NHE's staggered calls
-before :50). "<item> is up" at the spawn, or as soon after it as there is
-room */
+known as far as known: those 10 s before each spawn, and those at it */
 static void callouts_plan_items(
 	long tick,
 	long now,
 	long known)
 {
-	short indices[MAXIMUM_SPAWNING_CALLOUTS];
-	short found;
-	short index;
-	struct callout group[MAXIMUM_SPAWNING_CALLOUTS];
-	short group_count = 0;
-	long length = 0;
-	short beep = callout_beep(_callout_beep_item);
-
-	/* the calls 10 s before a spawn (the next: none for an item spawning
-	more often) */
-	found = callout_items_spawning(tick + CALLOUT_ITEM_WARNING_TICKS, CALLOUT_ITEM_WARNING_TICKS, TRUE, indices);
-	for (index = 0; index < found; index++)
-	{
-		short item_clip = callout_item_clips[item_timers_get(indices[index])->timer_class];
-		short clip = (short)(_callout_rockets_in_ten + (item_clip - _callout_rockets));
-
-		/* (an item at both bases: "red rockets", "blue rockets", when the
-		pack has them) */
-		if (callout_side_clip(item_timers_get(indices[index])) != NONE)
-			clip = callout_side_clip(item_timers_get(indices[index]));
-		if (callout_clip_ticks(clip) <= 0)
-			clip = item_clip;
-		if (callout_clip_ticks(clip) <= 0)
-			continue;
-		group[group_count].due = tick;
-		group[group_count].spawn = tick + CALLOUT_ITEM_WARNING_TICKS;
-		group[group_count].clip = clip;
-		group[group_count].item_index = indices[index];
-		group[group_count].kind = _callout_kind_item;
-		length += callout_clip_ticks(clip) + CALLOUT_GAP_TICKS;
-		group_count++;
-	}
-	if (group_count > 0)
-	{
-		long beep_length = beep != NONE ? callout_clip_ticks(beep) + CALLOUT_GAP_TICKS : 0;
-		long earliest = tick - beep_length - CALLOUT_MOVE_EARLIER_TICKS;
-		long start = callout_plan_room(tick - beep_length, earliest > now ? earliest : now + 1,
-			tick + CALLOUT_LATEST_ITEM_TICKS, beep_length + length, known);
-
-		if (start == NONE)
-		{
-			platform_log("callouts: tick %ld no room for %d item calls due at tick %ld", now, group_count, tick);
-		}
-		else
-		{
-			if (beep != NONE)
-			{
-				struct callout callout = group[0];
-
-				callout.clip = beep;
-				callout.kind = _callout_kind_item_beep;
-				callout.start = start;
-				callout.end = start + beep_length;
-				callout_plan_insert(&callout);
-				start = callout.end;
-			}
-			for (index = 0; index < group_count; index++)
-			{
-				group[index].start = start;
-				group[index].end = start + callout_clip_ticks(group[index].clip) + CALLOUT_GAP_TICKS;
-				callout_plan_insert(&group[index]);
-				start = group[index].end;
-			}
-		}
-	}
-
-	/* the calls at a spawn */
-	found = callout_items_spawning(tick, 1, FALSE, indices);
-	for (index = 0; index < found; index++)
-	{
-		struct callout callout;
-		short item_clip = callout_item_clips[item_timers_get(indices[index])->timer_class];
-		short clip = (short)(_callout_rockets_up + (item_clip - _callout_rockets));
-		long first = tick > now ? tick : now + 1;
-
-		if (callout_clip_ticks(clip) <= 0)
-			continue;
-		callout.due = tick;
-		callout.spawn = tick;
-		callout.clip = clip;
-		callout.item_index = indices[index];
-		callout.kind = _callout_kind_item_up;
-		length = callout_clip_ticks(clip) + CALLOUT_GAP_TICKS;
-		callout.start = callout_plan_room(first, first, tick + CALLOUT_LATEST_ITEM_TICKS, length, known);
-		if (callout.start == NONE)
-		{
-			platform_log("callouts: tick %ld no room for %s due at tick %ld", now, callout_clip_names[clip], tick);
-			continue;
-		}
-		callout.end = callout.start + length;
-		callout_plan_insert(&callout);
-	}
+	callouts_plan_in_ten(tick, now, known);
+	callouts_plan_up(tick, now, known);
 }
 
 /* the rockets' count with its moment at this tick */
@@ -762,6 +1184,72 @@ static boolean callout_dropped(
 	return FALSE;
 }
 
+/* the "is up" group first in the plan, due now: its calls, made of the
+classes known and the items its mixed entries spawned as seen on the map
+(item_timer_spawned_class), waited for up to CALLOUT_MIXED_WAIT_TICKS
+after its start (one not seen by then is not called), and planned back to
+back from now in its room. FALSE while it waits */
+static boolean callouts_say_up_group(
+	long now)
+{
+	struct callout group = callout_globals.plan[0];
+	struct callout calls[MAXIMUM_SPAWNING_CALLOUTS];
+	unsigned short classes = group.up_classes;
+	boolean dropped = callout_dropped(&group, now);
+	short count;
+	short index;
+	long start;
+
+	for (index = 0; !dropped && index < group.mixed_count; index++)
+	{
+		struct item_timer const *timer = item_timers_get(group.mixed_items[index]);
+
+		if (timer && item_timer_spawned_class(timer) == NONE && now - group.start < CALLOUT_MIXED_WAIT_TICKS)
+			return FALSE;
+	}
+
+	callout_globals.planned_count--;
+	for (index = 0; index < callout_globals.planned_count; index++)
+		callout_globals.plan[index] = callout_globals.plan[index + 1];
+	if (dropped)
+	{
+		callout_log("dropped ", &group, now);
+		return TRUE;
+	}
+
+	for (index = 0; index < group.mixed_count; index++)
+	{
+		struct item_timer const *timer = item_timers_get(group.mixed_items[index]);
+		short timer_class = timer ? item_timer_spawned_class(timer) : NONE;
+		char label[32];
+
+		callout_label(group.mixed_items[index], label, sizeof(label));
+		if (timer_class < 0 || timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
+		{
+			platform_log("callouts: tick %ld item %d %s spawned at tick %ld: its item not seen, not called", now,
+				group.mixed_items[index], label, group.spawn);
+			continue;
+		}
+		platform_log("callouts: tick %ld item %d %s spawned %s at tick %ld", now, group.mixed_items[index], label,
+			callout_class_names[timer_class], group.spawn);
+		SET_FLAG(classes, timer_class, TRUE);
+		if (group.class_items[timer_class] == NONE)
+			group.class_items[timer_class] = group.mixed_items[index];
+	}
+
+	count = callout_compose_up(classes, group.class_items, group.due, calls);
+	start = now;
+	for (index = 0; index < count; index++)
+	{
+		calls[index].start = start;
+		calls[index].end = start + callout_clip_ticks(calls[index].clip) + CALLOUT_GAP_TICKS;
+		callout_plan_insert(&calls[index]);
+		start = calls[index].end;
+	}
+
+	return TRUE;
+}
+
 /* the next call planned by now, once the last one has been said */
 static void callouts_say_next(
 	long now)
@@ -771,6 +1259,13 @@ static void callouts_say_next(
 	{
 		struct callout callout = callout_globals.plan[0];
 		short index;
+
+		if (callout.kind == _callout_kind_item_up_group)
+		{
+			if (!callouts_say_up_group(now))
+				break;
+			continue;
+		}
 
 		callout_globals.planned_count--;
 		for (index = 0; index < callout_globals.planned_count; index++)
@@ -835,4 +1330,12 @@ void callouts_update_non_deterministic(
 	{
 		callouts_flush();
 	}
+}
+
+/* whether CALLOUTS (as last read) says items' calls on this map: on, and
+not on Halo 1: NHE's maps (their scripts talk) */
+boolean callouts_items_called(
+	void)
+{
+	return callout_globals.mode != _callouts_off && !hs_scenario_is_nhe();
 }

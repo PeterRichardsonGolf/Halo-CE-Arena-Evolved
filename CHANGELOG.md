@@ -7,6 +7,18 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Changed
+- CALLOUTS: items spawning together are called together when the voice pack
+  has the line, before the separate calls: an overshield and a camo,
+  `overshield_camo_in_ten` and `overshield_camo_up`; three items or more,
+  `powerups_in_ten`, then each one's "is up". Items called with their side
+  (`red_sniper`) keep their own calls. Blood Gulch's mixed spawn is
+  `overshield_or_camo_in_ten`, and at the spawn the item it really spawned
+  is up (waited for up to a second, else not called). Calls that do not
+  fit back to back go around the clock's; if they still do not fit, the
+  items at both bases lose their sides. A pack without these lines (NHE's)
+  makes the calls it has, as before.
+- Only TRAINING and CALLOUTS look for the item Blood Gulch's mixed spawn
+  made; other games no longer walk the map's objects for it.
 - TRAINING's waypoints are labelled: the item and the time to its spawn
   ("OVERSHIELD 0:08"), the item alone once it is on the map. Labels keep
   clear of the arrows, their distances, the power list, the clock and each

@@ -108,7 +108,11 @@ on, with a `manifest.json`). A pack may also have `beep_minute.wav`,
 and so on) for the 10-second call of an item a map has at both bases, when the pack
 has both sides' (else the call above, said once for both),
 and `rockets_up.wav`, `sniper_up.wav`, `overshield_up.wav`, `camo_up.wav`
-said at the spawn (else nothing). `python tools/import_nhe_voice.py
+said at the spawn (else nothing). Items spawning together use
+`overshield_camo_in_ten.wav` / `overshield_camo_up.wav` (an overshield and
+a camo) and `powerups_in_ten.wav` (three or more), and a spawn point of
+overshield or camo at random `overshield_or_camo_in_ten.wav`, when the pack
+has them (else the separate calls). `python tools/import_nhe_voice.py
 <mods/NHE/maps> <data root>/voices/nhe` makes the `nhe` pack from Halo 1:
 NHE's voice timer clips. The clips come from the player's own NHE map files
 and are not distributed with the game; the tool does not write inside the
