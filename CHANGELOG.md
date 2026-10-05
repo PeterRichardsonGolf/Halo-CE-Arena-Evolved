@@ -27,6 +27,13 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- Merged OpenCE build-126..128 and ChupathingyCE 0.6.7b: co-op's triggers,
+  cutscenes and failed missions work for every player, a client waits on
+  its floor for the host's BSP, extra enemies spread onto free ground,
+  glass and destructible scenery break the same on every machine, a client
+  never reverts its game on its own. Network version 17 is announced; hosts
+  of versions 11 through 17 can be joined (OpenCE build-128 and
+  ChupathingyCE 0.6.7b host 17 and join only 17).
 - Merged ChupathingyCE's main (its 0.6.6b): Halo PC / Custom Edition maps'
   compatibility sweep, protected maps among them; the dedicated server's
   commands, console, control API and web admin page; brokers.txt built in;
