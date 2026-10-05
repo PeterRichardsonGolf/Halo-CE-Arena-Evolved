@@ -359,6 +359,33 @@ static void virtual_keyboard_set_active(boolean active)
 	platform_text_typing(active);
 }
 
+/* port: the keyboard definition and its font live in ui.map; during a match the
+loaded cache file is the map, so the pointer taken at initialize is stale or the
+tag is absent. Look the tag up again in the cache file loaded right now and
+report whether the keyboard can be used; never touch a tag that is not loaded. */
+static boolean virtual_keyboard_available(
+	void)
+{
+	long keyboard_index = tag_loaded(VIRTUAL_KEYBOARD_TAG, "ui\\english");
+
+	if (keyboard_index == NONE)
+	{
+		virtual_keyboard_globals.keyboard = NULL;
+		return FALSE;
+	}
+
+	virtual_keyboard_globals.keyboard = virtual_keyboard_definition_get(keyboard_index);
+	if (!virtual_keyboard_globals.keyboard ||
+		virtual_keyboard_globals.keyboard->font_tag.index == NONE ||
+		!font_definition_get(virtual_keyboard_globals.keyboard->font_tag.index))
+	{
+		virtual_keyboard_globals.keyboard = NULL;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 /* ---------- public code */
 
 boolean virtual_keyboard_initialize(
@@ -437,6 +464,10 @@ boolean virtual_keyboard_launch(
 	short caption_index)
 {
 	boolean result = FALSE;
+
+	/* port: refuse to open when the keyboard's tags are not loaded (in a match) */
+	if (!virtual_keyboard_available())
+		return FALSE;
 
 	match_assert(
 		"c:\\halo\\SOURCE\\interface\\virtual_keyboard.c",
@@ -961,7 +992,12 @@ void virtual_keyboard_render(
 	void)
 {
 	if (virtual_keyboard_globals.active)
-		virtual_keyboard_render_internal();
+	{
+		if (virtual_keyboard_available())
+			virtual_keyboard_render_internal();
+		else
+			virtual_keyboard_set_active(FALSE);
+	}
 
 	return;
 }
@@ -970,7 +1006,12 @@ void virtual_keyboard_process(
 	void)
 {
 	if (virtual_keyboard_globals.active)
-		virtual_keyboard_process_internal();
+	{
+		if (virtual_keyboard_available())
+			virtual_keyboard_process_internal();
+		else
+			virtual_keyboard_set_active(FALSE);
+	}
 
 	return;
 }

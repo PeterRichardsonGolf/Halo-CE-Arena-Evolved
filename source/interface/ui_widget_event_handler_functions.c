@@ -2571,6 +2571,25 @@ static boolean netgame_unjoin_player(
 	return result;
 }
 
+/* port: hides and disables the profile edit screen's name item */
+static void hide_rename_item(
+	struct widget_instance *widget)
+{
+	struct widget_instance *child;
+
+	for (child = widget ? widget->child : NULL; child; child = child->next)
+	{
+		if (!strcmp(child->name, "name_profile_item"))
+		{
+			child->visible = FALSE;
+			child->disabled = TRUE;
+			if (widget->focused_child == child)
+				widget->focused_child = child->next;
+		}
+		hide_rename_item(child);
+	}
+}
+
 static boolean close_calling_widget_if_not_editing_profile(
 	struct widget_instance *widget,
 	struct event_record *event,
@@ -2586,7 +2605,13 @@ static boolean close_calling_widget_if_not_editing_profile(
 		top->visible = result;
 	}
 	else
+	{
 		result = TRUE;
+		/* port: in a match (the pause menu's SETTINGS) the profile's RENAME is
+		hidden: its virtual keyboard's tags live in ui.map, which is not loaded */
+		if (game_in_progress() && !main_menu_is_active())
+			hide_rename_item(widget_instance_get_topmost_parent(widget));
+	}
 	return result;
 }
 

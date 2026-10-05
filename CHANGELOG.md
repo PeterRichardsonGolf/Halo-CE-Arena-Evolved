@@ -136,6 +136,11 @@ releases yet, so the sections are dated.
 - The time left in the scoreboard's title reads M:SS, as the clock does.
 
 ### Fixed
+- Pause > SETTINGS > profile > RENAME in a match crashed the game: the Xbox
+  virtual keyboard's tags live in ui.map, which a match has not loaded. The
+  keyboard now refuses to open (and does nothing) when its tags are not
+  loaded, and RENAME is hidden in the in-game pause SETTINGS (it stays in the
+  main menu's).
 - The TIMERS power list no longer stays on screen over the end of game.
 - The dedicated server builds again (it lacked the Video settings' resolution
   lists' platform calls).
