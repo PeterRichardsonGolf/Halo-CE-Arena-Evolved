@@ -41,6 +41,9 @@ typedef short SHORT;
 enum {_error_already_a_saved_game_file_with_that_name, _error_cannot_create_saved_game_file_with_empty_name};
 static int keyboard_available=1, unique_name=1, valid_name=1, action;
 static long tag_loaded(int group,const char *name) {return keyboard_available?0:NONE;}
+/* (virtual_keyboard.c's checks the keyboard's tags and its font in the cache
+file loaded now: here, the stubbed tag lookup's answer) */
+static boolean virtual_keyboard_available(void) {return tag_loaded(VIRTUAL_KEYBOARD_TAG,"ui\\english")!=NONE;}
 static void event_manager_flush(void) {}
 static void ui_play_audio_feedback_sound(int sound) {}
 static void display_error(int code,int controller,int a,int b) {}
