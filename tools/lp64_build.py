@@ -265,7 +265,11 @@ class Lp64Build:
         game_cflags = " ".join([
             abi, " ".join(host.game_flags),
             f"-include {_quote(prefix_header)}", f"-include {_quote(self.semantics_header)}",
-            defines, f"-I{_quote(port_include)}", includes, f"-idirafter {xdk}",
+            defines, f"-I{_quote(port_include)}",
+            # the headers of the port's own game units (port/linux/game), for
+            # the game sources that call them (OpenCE's co-op: network_coop.h)
+            f"-iquote {_quote(lp64(Path(linux_config['game_sources'])))}",
+            includes, f"-idirafter {xdk}",
         ])
         for source in game_sources(linux_config):
             if source.as_posix() not in excluded:

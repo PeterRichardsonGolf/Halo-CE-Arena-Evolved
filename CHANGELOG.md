@@ -27,6 +27,17 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- Merged OpenCE build-113..125 and the commit after it: online co-op, the
+  campaign played together over LAN and the internet (host a game, choose
+  SINGLEPLAYER on the Map screen, then a level and its difficulty), with
+  co-op's later fixes (every
+  machine on the host's BSP, doors and elevators, Flood, dropships,
+  allegiances, vehicles destroyed by the host), Server Setup's co-op
+  FRIENDLY FIRE and EXTRA ENEMIES, a kick command, New Game's and the Map
+  screen's SINGLEPLAYER / MULTIPLAYER chooser, room for more than 256
+  actors, and (the commit after build-125) much faster frames with many
+  enemies. Network version 16. Co-op's Server Setup hides ARENA OPTIONS with
+  the other gametype rows.
 - The gametype editor's OK keeps a setting whose value is not one of its
   spinner's choices (a 60-minute time limit from another gametype file, say)
   unless that spinner was moved, instead of rounding it to the nearest choice.

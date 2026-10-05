@@ -126,6 +126,7 @@ symbols in this file:
 #ifdef HALO_64BIT
 #include "cseries/errors.h"
 #endif
+#include "network_coop.h" /* port: port/linux/game/network_coop.c */
 
 /* ---------- constants */
 
@@ -524,6 +525,7 @@ void hud_activate_team_nav_point_with_flag(
 	short flag_index,
 	float vertical_offset)
 {
+	network_coop_note_nav_point(_coop_nav_point_team_flag, nav_index, team_index, flag_index, vertical_offset);
 	hud_activate_team_nav_point(nav_index, team_index, _hud_nav_point_type_flag, flag_index, vertical_offset);
 
 	return;
@@ -535,6 +537,7 @@ void hud_activate_team_nav_point_with_object(
 	long object_index,
 	float vertical_offset)
 {
+	network_coop_note_nav_point(_coop_nav_point_team_object, nav_index, team_index, object_index, vertical_offset);
 	hud_activate_team_nav_point(nav_index, team_index, _hud_nav_point_type_object, object_index, vertical_offset);
 
 	return;
@@ -581,6 +584,7 @@ void hud_deactivate_team_nav_point_with_flag(
 	short team_index,
 	short flag_index)
 {
+	network_coop_note_nav_point(_coop_nav_point_team_flag, NONE, team_index, flag_index, 0.0f);
 	hud_deactivate_team_nav_point(team_index, _hud_nav_point_type_flag, flag_index);
 
 	return;
@@ -590,6 +594,7 @@ void hud_deactivate_team_nav_point_with_object(
 	short team_index,
 	long object_index)
 {
+	network_coop_note_nav_point(_coop_nav_point_team_object, NONE, team_index, object_index, 0.0f);
 	hud_deactivate_team_nav_point(team_index, _hud_nav_point_type_object, object_index);
 
 	return;
@@ -603,6 +608,7 @@ void hud_unit_activate_nav_point_with_flag(
 {
 	long player_index = player_index_from_unit_index(unit_index);
 
+	network_coop_note_nav_point(_coop_nav_point_unit_flag, nav_index, unit_index, flag_index, vertical_offset);
 	if (player_index!=NONE)
 	{
 		hud_activate_nav_point(nav_index, player_index, _hud_nav_point_type_flag, flag_index, vertical_offset);
@@ -619,6 +625,7 @@ void hud_unit_activate_nav_point_with_object(
 {
 	long player_index = player_index_from_unit_index(unit_index);
 
+	network_coop_note_nav_point(_coop_nav_point_unit_object, nav_index, unit_index, object_index, vertical_offset);
 	if (player_index!=NONE)
 	{
 		hud_activate_nav_point(nav_index, player_index, _hud_nav_point_type_object, object_index, vertical_offset);
@@ -633,6 +640,7 @@ void hud_unit_deactivate_nav_point_with_flag(
 {
 	long player_index = player_index_from_unit_index(unit_index);
 
+	network_coop_note_nav_point(_coop_nav_point_unit_flag, NONE, unit_index, flag_index, 0.0f);
 	if (player_index!=NONE)
 	{
 		hud_deactivate_nav_point(player_index, _hud_nav_point_type_flag, flag_index);
@@ -647,6 +655,7 @@ void hud_unit_deactivate_nav_point_with_object(
 {
 	long player_index = player_index_from_unit_index(unit_index);
 
+	network_coop_note_nav_point(_coop_nav_point_unit_object, NONE, unit_index, object_index, 0.0f);
 	if (player_index!=NONE)
 	{
 		hud_deactivate_nav_point(player_index, _hud_nav_point_type_object, object_index);
