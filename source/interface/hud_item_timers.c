@@ -32,6 +32,9 @@ where the two would meet (main.c's main_framerate_extent); at a lower
 view's bottom it keeps clear of the clock in the corner. Entries that would
 take the line wider than its room are left off (the latest).
 
+Neither is drawn once the game is over (game_engine_game_over: the
+postgame's "You won"/"You lost" view and the scores).
+
 Both are drawn like the performance overlay (main.c frame_statistics_draw):
 the HUD's smaller font, its blue, 0.7 alpha, at four fifths size. Unlike the
 overlay, drawn in the HUD's pass, the bounds are the view's relative to
@@ -366,8 +369,9 @@ void hud_draw_item_timers(
 	/* (not over Halo 1: NHE's maps' countdown) */
 	if (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
 		clock_room = hud_item_timers_draw_clock(font_index, clock);
-	/* (the gametype's TIMERS and TRAINING) */
-	if (game_engine_item_timers())
+	/* (the gametype's TIMERS and TRAINING; not once the game is over, over
+	the postgame's view, as the clock is not) */
+	if (game_engine_item_timers() && !game_engine_game_over())
 		hud_item_timers_draw_powers(font_index, clock_room);
 
 	return;
