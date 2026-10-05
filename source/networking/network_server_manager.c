@@ -819,13 +819,11 @@ enum
 {
 	MAXIMUM_KICKED_ADDRESSES = 64,
 };
-enum
-{
-	_kick_none = 0,
-	_kick_kept_out,
-	_kick_rejoinable,
-};
-static byte network_game_server_kick_pending[MAXIMUM_NETWORK_MACHINE_COUNT];
+static boolean network_game_server_kick_pending[MAXIMUM_NETWORK_MACHINE_COUNT];
+/* (how each is refused, and whether its address is kept out after: a
+cheater's is, a machine the dedicated server's commands drop is not) */
+static short network_game_server_kick_rejection_codes[MAXIMUM_NETWORK_MACHINE_COUNT];
+static boolean network_game_server_kick_keeps_out[MAXIMUM_NETWORK_MACHINE_COUNT];
 /* port: each client machine's hardware id as it told it joining, hex only
 (p2p_hardware_id_sanitize), by slot */
 static char network_game_server_hardware_ids[MAXIMUM_NETWORK_MACHINE_COUNT][P2P_HARDWARE_ID_SIZE];
@@ -1054,7 +1052,9 @@ boolean network_game_server_ban_player(
 	if (!network_game_server_named_machine("ban", text, &machine_index, names, sizeof(names)))
 		return FALSE;
 	network_distributed_ban(machine_index, network_game_server_client_machine_addresses[machine_index], names);
-	network_game_server_kick_pending[machine_index] = _kick_kept_out;
+	network_game_server_kick_pending[machine_index] = TRUE;
+	network_game_server_kick_rejection_codes[machine_index] = _rejection_code_blacklisted_machine;
+	network_game_server_kick_keeps_out[machine_index] = TRUE;
 	return TRUE;
 }
 
@@ -1070,7 +1070,10 @@ boolean network_game_server_kick_player(
 	if (!network_game_server_named_machine("kick", text, &machine_index, names, sizeof(names)))
 		return FALSE;
 	network_distributed_kick(names);
-	network_game_server_kick_pending[machine_index] = _kick_rejoinable;
+	network_game_server_kick_pending[machine_index] = TRUE;
+	network_game_server_kick_rejection_codes[machine_index] = _rejection_code_blacklisted_machine;
+	/* (not kept out: it may join again at once) */
+	network_game_server_kick_keeps_out[machine_index] = FALSE;
 	return TRUE;
 }
 
@@ -1118,7 +1121,27 @@ void network_game_server_kick_machine(
 	{
 		return;
 	}
-	network_game_server_kick_pending[machine_index] = _kick_kept_out;
+	network_game_server_kick_pending[machine_index] = TRUE;
+	network_game_server_kick_rejection_codes[machine_index] = _rejection_code_blacklisted_machine;
+	network_game_server_kick_keeps_out[machine_index] = TRUE;
+}
+
+boolean network_game_server_drop_machine(
+	long machine_index,
+	short rejection_code)
+{
+	struct network_game_server *server = global_network_game_server_get();
+
+	if (!server || !VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) ||
+		!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[machine_index]) ||
+		network_game_server_client_machine_is_local(server, &server->client_machines[machine_index]))
+	{
+		return FALSE;
+	}
+	network_game_server_kick_pending[machine_index] = TRUE;
+	network_game_server_kick_rejection_codes[machine_index] = rejection_code;
+	network_game_server_kick_keeps_out[machine_index] = FALSE;
+	return TRUE;
 }
 
 /* (a client machine's player queued to add in game: one refused is as one
@@ -2022,7 +2045,7 @@ boolean network_game_server_accept_client_machine_into_game(
 	}
 	/* (a kick asked for the slot's machine before is not this one's) */
 	if (VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT))
-		network_game_server_kick_pending[machine_index] = _kick_none;
+		network_game_server_kick_pending[machine_index] = FALSE;
 	if (VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) &&
 		machine == &server->client_machines[machine_index])
 	{
@@ -2936,12 +2959,19 @@ void network_game_server_begin_game_start_countdown(
 	return;
 }
 
+/**
+ * @brief Whether a team game lacks a player on one of its teams, which
+ * holds back the start. Never with debug.solo_game.
+ * @param server the server whose game is asked about
+ * @return TRUE if the start has to wait for more players
+ */
 boolean server_needs_more_teams(
 	struct network_game_server *server)
 {
 	boolean needs_more_teams = FALSE;
 
-	if (server->game.variant.universal_variant.teams)
+	if (server->game.variant.universal_variant.teams
+		&& !network_game_solo_game())
 	{
 		short player_count_by_team[NUMBER_OF_MULTIPLAYER_TEAMS] = { 0, 0 };
 		long player_index;
@@ -3060,11 +3090,18 @@ static boolean server_host_plays_alone(
 	return player_count >= 1;
 }
 
+/**
+ * @brief Whether enough machines joined to start: two, or one for a
+ * splitscreen game or with debug.solo_game.
+ * @param server the server whose game is asked about
+ * @return TRUE if the game may start with the machines that joined
+ */
 boolean server_has_enough_machines(
 	struct network_game_server *server)
 {
 	boolean has_enough_machines;
 	long minimum_machine_count =
+		network_game_solo_game() ||
 		network_game_is_splitscreen_local() || server_host_plays_alone(server) ? 1 : 2;
 	long machine_count = 0;
 	long client_machine_index;
@@ -3664,6 +3701,13 @@ static void network_game_server_dump(
 	return;
 }
 
+/**
+ * @brief Starts, adjusts or stops the pregame countdown on an event.
+ * With debug.solo_game a lone machine starts the countdown without a
+ * remote client.
+ * @param server the server, in the pregame state
+ * @param countdown_event a _network_game_server_countdown_event_*
+ */
 void network_game_server_update_countdown(
 	struct network_game_server *server,
 	short countdown_event)
@@ -3736,6 +3780,7 @@ void network_game_server_update_countdown(
 				else
 				{
 					if (network_game_should_accept_remote_connections() == FALSE ||
+						network_game_solo_game() ||
 						network_game_server_get_client_machine_count(server) > 1 ||
 						server_host_plays_alone(server))
 					{
@@ -4087,6 +4132,13 @@ static void network_game_server_variant_options(
 		game_variant_options_default(variant, options);
 }
 
+/**
+ * @brief Opens the server's game for the stage its variant names. The
+ * minimum player count is 1 with debug.solo_game, else 2.
+ * @param server the server
+ * @return TRUE if the game was opened; FALSE if the stage is not found
+ * (probably a missing playlist)
+ */
 static boolean network_game_server_setup_game_from_playlist(
 	struct network_game_server *server)
 {
@@ -4371,19 +4423,20 @@ static boolean network_game_server_handle_client_machines(
 					network_event("failed to remove client machine %x from game", machine_index);
 			}
 			/* port: one the distributed netcode found cheating, or the host
-			banned or kicked: told, and dropped; its address kept out but
-			for a kick's */
+			banned or kicked, or the dedicated server's commands drop: told, and
+			dropped; its address kept out but for a kick's or a drop's */
 			else if (VALID_INDEX(client_machine->machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) &&
-				network_game_server_kick_pending[client_machine->machine_index] != _kick_none)
+				network_game_server_kick_pending[client_machine->machine_index])
 			{
 				short machine_index = client_machine->machine_index;
-				struct message_server_machine_rejected rejection = { _rejection_code_blacklisted_machine };
+				struct message_server_machine_rejected rejection;
 				struct network_message *message;
 				unsigned long address = network_game_server_client_machine_addresses[machine_index];
-				boolean kept_out = network_game_server_kick_pending[machine_index] == _kick_kept_out;
 
-				network_game_server_kick_pending[machine_index] = _kick_none;
-				if (kept_out && address && !network_game_server_client_machine_is_local(server, client_machine))
+				rejection.reason = network_game_server_kick_rejection_codes[machine_index];
+				network_game_server_kick_pending[machine_index] = FALSE;
+				if (address && network_game_server_kick_keeps_out[machine_index] &&
+					!network_game_server_client_machine_is_local(server, client_machine))
 				{
 					network_game_server_kicked_addresses[network_game_server_kicked_address_next++ %
 						MAXIMUM_KICKED_ADDRESSES] = address;

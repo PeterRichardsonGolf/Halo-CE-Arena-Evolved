@@ -219,11 +219,11 @@ static const struct config_setting config_settings[] =
 		"rides out stalls that cut the sound out, smaller has less delay. 2048\n"
 		"(43 ms) on macOS, 512 (11 ms) elsewhere." },
 
-	{ "input.touch_controls", _config_string, "\"auto\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
-		"The on-screen touch controls in a game: \"auto\" shows them on a\n"
-		"touchscreen while no controller is connected, \"on\" also with a\n"
-		"controller, \"off\" never. A device without a touchscreen never shows\n"
-		"them. The menus take taps in any case." },
+	{ "input.touch_controls", _config_string, "\"on\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
+		"The on-screen touch controls in a game: \"on\" shows them on a\n"
+		"touchscreen (their Hide button hides them for a controller), \"auto\"\n"
+		"only while no controller is connected, \"off\" never. A device without\n"
+		"a touchscreen never shows them. The menus take taps in any case." },
 	{ "input.mouse_sensitivity", _config_real, "1.0", "HALO_MOUSE_SENSITIVITY", _environment_value, _platform_desktop,
 		"How far the view turns for the mouse's movement." },
 	{ "input.invert_mouse", _config_boolean, "false", "HALO_MOUSE_INVERT", _environment_set_is_true, _platform_desktop,
@@ -482,6 +482,9 @@ static const struct config_setting config_settings[] =
 		"keyboard's keys white), mark where the last finger went down and the\n"
 		"last tap landed for 3 seconds, and log each tap with the target it hit\n"
 		"(and a value's split); to judge touch accuracy." },
+	{ "debug.solo_game", _config_boolean, "false", "HALO_SOLO_GAME", _environment_set_is_true, _platform_all,
+		"Let a system link or split screen game start with one player (to test\n"
+		"multiplayer maps without a second machine)." },
 	{ "debug.network_latency", _config_real, "0.0", "HALO_NETWORK_LATENCY", _environment_value, _platform_all,
 		"Milliseconds everything received is held back (a round trip between two\n"
 		"machines of twice it), to test the netcode as over the internet; 0 none." },
@@ -1139,14 +1142,23 @@ static char *config_update_layout(const char *text, toml_datum_t table)
 	int lines[NUMBER_OF_CONFIG_SETTINGS];
 	struct config_text out = { NULL, 0, 0 };
 	struct config_text changed = { NULL, 0, 0 };
-	int line_number = 1, defaults = 0, version_written;
+	int line_number = 1, defaults = 0, version_written, written_by_game;
 	const char *line;
-	size_t index;
+	size_t index, present = 0;
 
 	if (version.type == TOML_INT64 && version.u.int64 >= CONFIG_VERSION)
 		return NULL;
 	/* (an older version's line is changed where it is) */
 	version_written = version.type != TOML_UNKNOWN;
+	/* (the builds before config_version wrote every setting as a value: a
+	file holding fewer than half of them was written by a person, whose
+	values, an older default's included, are theirs) */
+	for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS; index++)
+	{
+		if (toml_seek(table, config_settings[index].name).type != TOML_UNKNOWN)
+			present++;
+	}
+	written_by_game = present * 2 >= NUMBER_OF_CONFIG_SETTINGS;
 	for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS; index++)
 	{
 		const struct config_setting *setting = &config_settings[index];
@@ -1161,7 +1173,7 @@ static char *config_update_layout(const char *text, toml_datum_t table)
 			lines[index] = datum.lineno;
 			continue;
 		}
-		for (old = 0; old < NUMBER_OF_CONFIG_OLD_DEFAULTS; old++)
+		for (old = 0; written_by_game && old < NUMBER_OF_CONFIG_OLD_DEFAULTS; old++)
 		{
 			if (!strcmp(config_old_defaults[old].name, setting->name) &&
 				config_datum_is(datum, setting->type, config_old_defaults[old].default_value))

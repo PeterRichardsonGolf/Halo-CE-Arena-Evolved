@@ -77,6 +77,9 @@ static void print_usage(FILE *stream)
 		"  HALO_DEDICATED_MAXIMUM_PLAYERS  players a game takes (12)\n"
 		"  HALO_DEDICATED_IDLE_LIMIT       minutes without a score that end a game (5; 0 never)\n"
 		"  HALO_DEDICATED_PUBLIC           false: not listed in the in-game Server Browser\n"
+		"  HALO_DEDICATED_COMMANDS         a file of commands in the data folder, run at start\n"
+		"  HALO_DEDICATED_CONSOLE          true/false: commands on standard input (on in a terminal)\n"
+		"  HALO_DEDICATED_CONTROL          the control API's port or address (off; 127.0.0.1)\n"
 		"  HALO_DATA_ROOT, HALO_SAVE_ROOT  the data folder, and where saves go\n"
 		"\n"
 		"HALO_PROBE=<invite> reads the game an invite leads to, prints it and exits.\n"
@@ -235,11 +238,21 @@ BOOL platform_screen_mode(long *width, long *height)
 	return FALSE;
 }
 
-BOOL platform_window_pixel_size(long *width, long *height)
+/* (Video Setup's lists: a server has no display) */
+int platform_display_resolutions(long *widths, long *heights, int maximum)
 {
-	(void)width;
-	(void)height;
-	return FALSE;
+	(void)widths;
+	(void)heights;
+	(void)maximum;
+	return 0;
+}
+
+int platform_window_sizes(long *widths, long *heights, int maximum)
+{
+	(void)widths;
+	(void)heights;
+	(void)maximum;
+	return 0;
 }
 
 BOOL platform_video_initialize(unsigned long width, unsigned long height)
@@ -267,24 +280,6 @@ void platform_video_window_size(int *width, int *height)
 
 void platform_video_swap(void)
 {
-}
-
-/* the Video settings' resolution and window size lists (menu_tags.c): none
-on a server, which has no display */
-int platform_display_resolutions(long *widths, long *heights, int maximum)
-{
-	(void)widths;
-	(void)heights;
-	(void)maximum;
-	return 0;
-}
-
-int platform_window_sizes(long *widths, long *heights, int maximum)
-{
-	(void)widths;
-	(void)heights;
-	(void)maximum;
-	return 0;
 }
 
 void platform_mouse_capture(BOOL capture)

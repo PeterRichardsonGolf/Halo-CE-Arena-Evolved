@@ -314,7 +314,9 @@ enum
 frames hold two native pointers): community maps' scripts nest deeper than
 the Xbox checked (Halo 1: NHE's timer, 30-deep else-if chains, needs about
 1000 bytes, 1600 on 64-bit), which the retail game let run over into the
-next thread's datum unchecked */
+next thread's datum unchecked. ChupathingyCE doubles the 64-bit size for
+Halo PC's maps (Halo Kart's scripts run deeper than the Xbox's): 0x1000
+covers both. */
 enum
 {
 #ifdef HALO_64BIT

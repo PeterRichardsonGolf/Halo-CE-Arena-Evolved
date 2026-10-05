@@ -352,7 +352,10 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		"\t\tposition = vec4((clip_position.xyz * c[%d].xyz + (c[%d].xyz + vec3(0.5 + screen_offset, 0.5, 0.0)\n"
 		"\t\t\t- viewport_offset.xyz) * clip_position.w) / scale, clip_position.w);\n"
 		"\telse\n"
-		"\t\tposition = vec4((vec3(oPos.xy + vec2(0.5 + screen_offset, 0.5), oPos.z) - viewport_offset.xyz) / scale * oPos.w, oPos.w);\n"
+		"\t{\n"
+		"\t\tvec3 ndc = (vec3(oPos.xy + vec2(0.5 + screen_offset, 0.5), oPos.z) - viewport_offset.xyz) / scale;\n"
+		"\t\tposition = vec4(ndc * oPos.w, oPos.w);\n"
+		"\t}\n"
 		/* A position whose w is zero, or is not a number, is the clip-space
 		origin: the screen conversion's reciprocal is clamped rather than
 		infinite, so a large position times a w of zero is exactly zero, and

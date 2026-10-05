@@ -27,6 +27,12 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- Merged ChupathingyCE's main (its 0.6.6b): Halo PC / Custom Edition maps'
+  compatibility sweep, protected maps among them; the dedicated server's
+  commands, console, control API and web admin page; brokers.txt built in;
+  `debug.solo_game`; its Delta docs and network version table. Network
+  version 16 is announced; hosts of versions 11 through 16 can be joined
+  (OpenCE build-76 and later, ChupathingyCE).
 - Merged OpenCE build-113..125 and the commit after it: online co-op, the
   campaign played together over LAN and the internet (host a game, choose
   SINGLEPLAYER on the Map screen, then a level and its difficulty), with
