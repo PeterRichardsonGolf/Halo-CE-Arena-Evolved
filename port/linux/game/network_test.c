@@ -10,6 +10,9 @@ Automated system link sessions for testing the netcode without the menus
   screen's fast setup does, and starts it debug.network_test_start seconds
   later; with more variants, once a game is over (debug.network_test_score
   makes it short) the next, as the host's button on the scores does;
+- "host:<level>:coop" hosts a network co-op game of that campaign level
+  (a10, ...) at Normal, as choosing the level and its difficulty on the
+  PC menus' Map screen does (ui_widget_port_cooperative_level_choose);
 - "join" searches for games and joins the first it finds, as picking it in
   the system link list does.
 
@@ -72,6 +75,9 @@ const char *config_string(char const *name);
 double config_real(char const *name);
 long config_integer(char const *name);
 void platform_log(char const *format, ...);
+/* main.c's and ui_widget_event_handler_functions.c's (network co-op) */
+short main_get_solo_level_from_name(char const *name);
+boolean ui_widget_port_cooperative_level_choose(char const *map_name, short difficulty);
 /* damage.c's */
 void damage_kill_object_for_player(long object_index, long player_index);
 /* network_distributed.c's */
@@ -991,6 +997,22 @@ void network_test_update(
 			network_test.setup_seconds += seconds;
 			/* the map (fast setup clears it), and a player for controller 1, as
 			pressing A in the lobby adds one */
+			/* ("host:<level>:coop": network co-op of a campaign level, as the
+			Map screen's level and difficulty set it up) */
+			if (!network_test.map_set && network_test.setup_seconds >= 1.0f && global_network_game_server_get() &&
+				!strcmp(network_test.variant_name, "coop"))
+			{
+				short level = main_get_solo_level_from_name(network_test.map_name);
+
+				if (level != NONE &&
+					ui_widget_port_cooperative_level_choose(main_get_solo_level_name(level), _game_difficulty_level_normal))
+				{
+					platform_log("network test: co-op, %s", main_get_solo_level_name(level));
+				}
+				else
+					platform_log("network test: no co-op level %s", network_test.map_name);
+				network_test.map_set = TRUE;
+			}
 			if (!network_test.map_set && network_test.setup_seconds >= 1.0f && global_network_game_server_get())
 			{
 				char path[128];
