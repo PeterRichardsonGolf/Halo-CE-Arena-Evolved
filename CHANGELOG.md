@@ -7,6 +7,11 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- TRAINING (indicator options) shows a waypoint over each power item (rockets,
+  sniper rifle, overshield, camo) from 10 seconds before it spawns to 20
+  seconds after, as Halo 1: NHE's Training did, and green markers on the floor
+  at the player spawns the gametype uses (within 25 units, hidden behind
+  walls). Off on Halo 1: NHE's own maps, which draw their own.
 - NO SPREAD has three levels: OFF, NHE (as before) and FULL, where every
   pistol and sniper rifle shot goes exactly where you aim, held fire too (no
   bloom). Every Arena Evolved gametype has FULL; the Halo 1: NHE-style ones
@@ -43,6 +48,11 @@ releases yet, so the sections are dated.
 - The time left in the scoreboard's title reads M:SS, as the clock does.
 
 ### Fixed
+- The TIMERS power list no longer stays on screen over the end of game.
+- The dedicated server builds again (it lacked the Video settings' resolution
+  lists' platform calls).
+- No crash when a gametype list is the first screen to open after start-up
+  (two threads made the first-time gametypes at once).
 - The built-in Team Oddball no longer picks up random gametype options: its
   settings were built on uninitialised memory.
 - Halo 1: NHE's start countdown ("3...", "2...", "1...") is centred on wide

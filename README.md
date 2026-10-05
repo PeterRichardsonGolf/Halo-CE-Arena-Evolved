@@ -51,6 +51,10 @@ TIMERS shows the power list only: the next spawns of the rockets, sniper
 rifle, overshield and camo, in the top corner opposite the performance
 overlay with one view, and in the margin above or below each view's HUD in
 split screen. The match clock is its own setting (below).
+TRAINING adds, as Halo 1: NHE's Training mode did: a waypoint over each power
+item (rockets, sniper rifle, overshield, camo) from 10 seconds before it spawns
+to 20 seconds after, and green markers on the floor at the player spawns this
+gametype uses (within 25 units, hidden behind walls).
 
 These are the host's rules. Players on Arena Evolved see and play them all.
 Players who join on a build without them still play the host's rules where

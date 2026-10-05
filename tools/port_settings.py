@@ -429,7 +429,7 @@ STRING_INSERTS = {
         "No timers: learn the spawns the hard way.",
         "When and where the rockets, sniper, overshield\\nand camo spawn, for everyone.",
         "No training aids.",
-        "Every item's spawn and timer, and the player\\nspawns this match uses. For learning a map.",
+        "Waypoints over the power items as they come up,\\nand the player spawns. For learning a map.",
     ])],
 }
 

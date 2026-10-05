@@ -461,7 +461,7 @@
 		<string text="No timers: learn the spawns the hard way."/>
 		<string text="When and where the rockets, sniper, overshield\nand camo spawn, for everyone."/>
 		<string text="No training aids."/>
-		<string text="Every item's spawn and timer, and the player\nspawns this match uses. For learning a map."/>
+		<string text="Waypoints over the power items as they come up,\nand the player spawns. For learning a map."/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_labels">
 		<string text="OBJECTIVES INDICATOR:"/>
