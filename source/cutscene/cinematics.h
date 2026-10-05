@@ -81,6 +81,10 @@ void cinematic_set_title(
 
 /* ---------- globals */
 
+/* port: whether one of Halo 1: NHE's maps' countdown titles (g_*) shows */
+boolean cinematic_nhe_countdown_title_showing(
+	void);
+
 extern struct cinematic_global_data *cinematic_globals;
 
 /* ---------- public code */

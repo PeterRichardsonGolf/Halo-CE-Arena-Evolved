@@ -1588,6 +1588,60 @@ static void hud_draw_bitmap_with_meter(
 	return;
 }
 
+/* port: the rectangle hud_draw_static_element draws an element's bitmap in
+(the view's coordinates, as hud_calculate_point's), the way
+hud_draw_bitmap_with_meter places it: the element's point, the bitmap's
+bounds from it by its corner, at the placement's scale; FALSE for an
+element whose bitmap is not loaded */
+boolean hud_static_element_bounds(
+	struct hud_absolute_placement_definition const *absolute_placement,
+	struct static_hud_element_definition const *static_element,
+	short draw_flags,
+	rectangle2d *result)
+{
+	struct bitmap_group *bitmap_group;
+	struct bitmap_data *bitmap;
+	real_rectangle2d const *clip;
+	real_rectangle2d default_clip;
+	real_rectangle2d bounds;
+	boolean is_interface_bitmap;
+	point2d point;
+
+	if (static_element->interface_bitmap.index == NONE)
+		return FALSE;
+	bitmap_group = bitmap_group_get(static_element->interface_bitmap.index);
+	bitmap = bitmap_group_get_bitmap_from_sequence(
+		static_element->interface_bitmap.index,
+		static_element->sequence_index,
+		0);
+	if (!bitmap)
+		return FALSE;
+	is_interface_bitmap = bitmap_group->type == _bitmap_group_type_interface_bitmaps;
+	clip = get_sprite_clip_rect(static_element->interface_bitmap.index, static_element->sequence_index, 0);
+	default_clip.x0 = 0.0f;
+	default_clip.x1 = is_interface_bitmap ? (real)bitmap->width : 1.0f;
+	default_clip.y0 = 0.0f;
+	default_clip.y1 = is_interface_bitmap ? (real)bitmap->height : 1.0f;
+	if (!clip)
+		clip = &default_clip;
+	hud_calculate_point(
+		render.local_player_index,
+		absolute_placement,
+		&static_element->placement,
+		NULL,
+		TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit) &&
+			!TEST_FLAG(static_element->placement.multiplayer_scaling_flags, _hud_dont_scale_offset_bit),
+		0.0f,
+		&point);
+	hud_calculate_bitmap_bounds(bitmap, absolute_placement->corner, clip, &bounds, is_interface_bitmap);
+	result->x0 = (short)(point.x + fast_ftol(bounds.x0 * static_element->placement.scale.i));
+	result->x1 = (short)(point.x + fast_ftol(bounds.x1 * static_element->placement.scale.i));
+	result->y0 = (short)(point.y + fast_ftol(bounds.y0 * static_element->placement.scale.j));
+	result->y1 = (short)(point.y + fast_ftol(bounds.y1 * static_element->placement.scale.j));
+
+	return result->x1 > result->x0 && result->y1 > result->y0;
+}
+
 /* ---------- private code */
 
 static real_rectangle2d const *get_sprite_clip_rect(

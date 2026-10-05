@@ -1180,8 +1180,8 @@ static void game_engine_generate_title_string(
 	}
 
 	/* port: the gametype's time limit's time left (game_variant_options);
-	with MATCH CLOCK on, the scoreboard's clock line tells it instead
-	(game_engine_rasterize_match_clock) */
+	with MATCH CLOCK on, the scoreboard's clock tells it instead
+	(game_engine_match_clock) */
 	if (game_variant_options_get()->time_limit > 0 &&
 		game_engine_globals.postgame_state == game_engine_mode_active &&
 		game_engine_match_clock_setting() == _match_clock_off)
@@ -1189,7 +1189,7 @@ static void game_engine_generate_title_string(
 		long left = game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
 		wchar_t time_string[32];
 
-		ticks_to_unicode_time_string(MAX(left, 0), NUMBEROF(time_string), time_string);
+		game_engine_format_clock(left, TRUE, time_string, NUMBEROF(time_string));
 		if (secondary_string[0] && secondary_string != time_left_string)
 		{
 			usnprintf(time_left_string, NUMBEROF(time_left_string), L"%s, %s left", secondary_string, time_string);
@@ -1417,6 +1417,56 @@ static void game_engine_generate_title_string(
 	return;
 }
 
+/* port: the split-screen scoreboard's place in the view (view coordinates):
+its bounds, from the title's left, and its three tab stops; returns where
+its columns end (the score's room past the last stop). Centred in the view
+(the Xbox drew it from the view's left edge, far off centre in a wide
+split-screen view): the columns, from the first tab stop to the last and
+room for the score, are centred, and the title starts over the first
+column (tab stops are view coordinates, so they move too) */
+static short rasterize_in_game_score_layout(
+	rectangle2d *bounds,
+	short *tab_stops)
+{
+	short left;
+	short right;
+	short shift;
+
+	*bounds = render.camera.window_bounds;
+	if (bounds->x1 - bounds->x0 > 320)
+	{
+		tab_stops[0] = 130;
+		tab_stops[1] = 195;
+		tab_stops[2] = 315;
+	}
+	else
+	{
+		tab_stops[0] = 80;
+		tab_stops[1] = 125;
+		tab_stops[2] = 200;
+	}
+	offset_rectangle2d(
+		bounds,
+		-render.camera.viewport_bounds.x0,
+		-render.camera.viewport_bounds.y0);
+
+	left = tab_stops[0];
+	right = (short)(tab_stops[2] + (tab_stops[2] - tab_stops[1]) / 2);
+	shift = (short)(((bounds->x0 + bounds->x1) - (left + right)) / 2);
+	if (left + shift > bounds->x0)
+	{
+		short tab_index;
+
+		for (tab_index = 0; tab_index < 3; tab_index++)
+			tab_stops[tab_index] += shift;
+		bounds->x0 = tab_stops[0];
+	}
+
+	return (short)(tab_stops[2] + (tab_stops[2] - tab_stops[1]) / 2);
+}
+
+/* justification: _text_justification_right for a line right-aligned to
+the columns' end (the scoreboard's times, port) */
 static void rasterize_in_game_score_draw_line(
 	wchar_t const *string,
 	boolean brighten,
@@ -1424,58 +1474,18 @@ static void rasterize_in_game_score_draw_line(
 	long row_index,
 	short justification)
 {
-	rectangle2d bounds = render.camera.window_bounds;
-	short narrow_tab_stops[3];
-	short wide_tab_stops[3];
-	short *tab_stops;
+	rectangle2d bounds;
+	short tab_stops[3];
 	boolean splitscreen;
 	long font_index;
+	short columns_right;
 
 	splitscreen = local_player_count() > 1;
 	font_index = hud_get_font_index();
-	narrow_tab_stops[0] = 80;
-	narrow_tab_stops[1] = 125;
-	narrow_tab_stops[2] = 200;
-	wide_tab_stops[0] = 130;
-	wide_tab_stops[1] = 195;
-	wide_tab_stops[2] = 315;
-
-	if (bounds.x1 - bounds.x0 > 320)
-		tab_stops = wide_tab_stops;
-	else
-		tab_stops = narrow_tab_stops;
-
-	offset_rectangle2d(
-		&bounds,
-		-render.camera.viewport_bounds.x0,
-		-render.camera.viewport_bounds.y0);
-
-	/* port: centred in the view (the Xbox drew it from the view's left
-	edge, far off centre in a wide split-screen view): the columns, from
-	the first tab stop to the last and room for the score, are centred,
-	and the title starts over the first column (tab stops are view
-	coordinates, so they move too) */
-	{
-		short left = tab_stops[0];
-		short right = (short)(tab_stops[2] + (tab_stops[2] - tab_stops[1]) / 2);
-		short shift = (short)(((bounds.x0 + bounds.x1) - (left + right)) / 2);
-
-		if (left + shift > bounds.x0)
-		{
-			short tab_index;
-
-			for (tab_index = 0; tab_index < 3; tab_index++)
-				tab_stops[tab_index] += shift;
-			bounds.x0 = tab_stops[0];
-		}
-		/* port: a centred line (the match clock's) over the columns */
-		if (justification == 2)
-		{
-			bounds.x0 = tab_stops[0];
-			bounds.x1 = (short)(tab_stops[2] + (tab_stops[2] - tab_stops[1]) / 2);
-		}
-	}
-	if (row_index > 0)
+	columns_right = rasterize_in_game_score_layout(&bounds, tab_stops);
+	if (justification == _text_justification_right)
+		bounds.x1 = columns_right;
+	if (row_index > 0 && justification == _text_justification_left)
 		draw_string_set_tab_stops(tab_stops, 3);
 	else
 		draw_string_set_tab_stops(NULL, 0);
@@ -1861,7 +1871,7 @@ static void scoreboard_draw_row(
 		bounds.x0 = left;
 	bounds.y0 = (short)(top + row_index * line_height);
 	bounds.y1 = (short)(bounds.y0 + line_height);
-	draw_string_set_draw_mode(font_index, NONE, 0, 0, &color);
+	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
 	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, string);
 	draw_string_set_tab_stops(NULL, 0);
 
@@ -1909,6 +1919,59 @@ static void game_engine_scoreboard_closed(
 	}
 }
 
+/* port: the scoreboard's times, with MATCH CLOCK not OFF (whichever way the
+HUD's corner counts): the time played, and with a time limit the time left,
+"1:33 PLAYED \xB7 8:27 LEFT" (" / " between, in a font without the dot);
+FALSE for none (game_engine_match_clock's: no clock, the game over or
+PRE-GAME COUNTDOWN counting) */
+static boolean game_engine_scoreboard_times(
+	long font_index,
+	wchar_t *string,
+	long count)
+{
+	wchar_t played[16];
+	wchar_t left[16];
+	long time_limit;
+
+	if (count <= 0 || !game_engine_match_clock(played, NUMBEROF(played)))
+		return FALSE;
+	game_engine_format_clock(game_time_get(), FALSE, played, NUMBEROF(played));
+	time_limit = game_variant_options_get()->time_limit;
+	if (time_limit > 0)
+	{
+		struct font_header *font = font_index != NONE ? font_definition_get(font_index) : NULL;
+		boolean dot = font && font->character_tables.count > 0 &&
+			font_get_character_by_ascii_code(font, 0x00B7) != NULL;
+
+		game_engine_format_clock(time_limit * 60L * TICKS_PER_SECOND - game_time_get(), TRUE, left,
+			NUMBEROF(left));
+		usnprintf(string, count, L"%s PLAYED%s%s LEFT", played, dot ? L" \x00B7 " : L"  /  ", left);
+	}
+	else
+		usnprintf(string, count, L"%s PLAYED", played);
+	string[count - 1] = 0;
+
+	return TRUE;
+}
+
+/* port: the width of a line of the scoreboard (at its layout size, before
+it is scaled), in the font and justification set */
+static short scoreboard_text_width(
+	wchar_t const *string)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = SHORT_MAX / 2;
+	draw_unicode_string_compute_bounds(&bounds, string, &text_bounds, &cursor_bounds);
+
+	return text_bounds.x1 > text_bounds.x0 ? (short)(text_bounds.x1 - text_bounds.x0) : 0;
+}
+
 static void game_engine_rasterize_scoreboard(
 	long player_index,
 	real alpha)
@@ -1945,8 +2008,12 @@ static void game_engine_rasterize_scoreboard(
 	short top;
 	wchar_t *column_name;
 	wchar_t *score_name;
-	wchar_t clock_string[32];
-	boolean clock;
+	wchar_t times_string[64];
+	boolean times;
+	/* (the times on a line of their own, under the title, where the two do
+	not fit side by side) */
+	boolean times_row = FALSE;
+	short block_width;
 
 	if (font_index == NONE)
 		return;
@@ -1961,10 +2028,9 @@ static void game_engine_rasterize_scoreboard(
 	/* (laid out at full size, then drawn scaled about the title's top left:
 	the screen holds 1/SCOREBOARD_SCALE as much) */
 	width = (short)((bounds.x1 - bounds.x0) / SCOREBOARD_SCALE);
-	/* (MATCH CLOCK's line above the title takes a row) */
-	clock = game_engine_match_clock(clock_string, NUMBEROF(clock_string));
+	times = game_engine_scoreboard_times(font_index, times_string, NUMBEROF(times_string));
 	rows = (long)((bounds.y1 - SCOREBOARD_LAYOUT_TOP_ROWS * line_height) / SCOREBOARD_SCALE / line_height) - 2 -
-		SCOREBOARD_BOTTOM_ROWS - (clock ? 1 : 0);
+		SCOREBOARD_BOTTOM_ROWS;
 	rows = MAX(rows, 1);
 	statistic_buffer_in_game_only = scoreboard_in_game_only();
 	ranked_count = populate_statistic_buffer(ranked, _postgame_statistic_ranking, FALSE);
@@ -1991,6 +2057,21 @@ static void game_engine_rasterize_scoreboard(
 		total = list_counts[0];
 		page = rows * columns;
 	}
+	block_width = (short)(columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP);
+	/* (the times right of the title, at the columns' end; under it, a row
+	taken from the columns, where the two would meet) */
+	game_engine_generate_title_string(title_string, player_index);
+	if (times)
+	{
+		draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, global_real_argb_white);
+		if (scoreboard_text_width(title_string) + SCOREBOARD_COLUMN_GAP + scoreboard_text_width(times_string) >
+			block_width)
+		{
+			times_row = TRUE;
+			rows = MAX(rows - 1, 1);
+			page = team_columns ? rows : rows * columns;
+		}
+	}
 	/* (opened, at the viewer's own player's page; then where the wheel and
 	Page Up/Down take it) */
 	{
@@ -2016,13 +2097,14 @@ static void game_engine_rasterize_scoreboard(
 		scoreboard_scroll += notches * SCOREBOARD_WHEEL_STEP + pages * page;
 		scoreboard_scroll = PIN(scoreboard_scroll, 0, MAX(total - page, 0));
 	}
-	left = (short)(bounds.x0 + (width - (columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP)) / 2);
-	/* (centred on the rows shown: the clock's, the title's, the heading's,
-	the longest column's, and the footer telling where the scroll is) */
+	left = (short)(bounds.x0 + (width - block_width) / 2);
+	/* (centred on the rows shown: the title's, the times' under it, the
+	heading's, the longest column's, and the footer telling where the
+	scroll is) */
 	shown_rows = MIN(rows, total);
 	if (total > page)
 		shown_rows++;
-	if (clock)
+	if (times_row)
 		shown_rows++;
 	{
 		real height = (2 + shown_rows) * line_height * SCOREBOARD_SCALE;
@@ -2033,7 +2115,7 @@ static void game_engine_rasterize_scoreboard(
 		{
 			pixel32 background = scoreboard_background_color();
 			real padding = 0.5f * line_height * SCOREBOARD_SCALE;
-			real block_width = (columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP) * SCOREBOARD_SCALE;
+			real block_extent = block_width * SCOREBOARD_SCALE;
 			real block_left = bounds.x0 + (left - bounds.x0) * SCOREBOARD_SCALE;
 
 			if (background >> 24)
@@ -2043,32 +2125,30 @@ static void game_engine_rasterize_scoreboard(
 
 				panel.x0 = (short)(block_left - padding);
 				/* (the ping, nearly as wide as its column, given room) */
-				panel.x1 = (short)(block_left + block_width + padding + 8.0f * SCOREBOARD_SCALE);
+				panel.x1 = (short)(block_left + block_extent + padding + 8.0f * SCOREBOARD_SCALE);
 				panel.y0 = (short)(top - padding);
 				panel.y1 = (short)(top + height + padding);
 				draw_quad(&panel, ((pixel32)panel_alpha << 24) | (background & 0x00FFFFFF));
 			}
 		}
 	}
-	/* (the clock in the HUD's colour, centred over the columns, the rows
-	below it) */
-	if (clock)
+	rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
+	/* (the times in the HUD's colour, right-aligned to the columns' end:
+	on the title's row, or the row under it) */
+	if (times)
 	{
-		rectangle2d clock_bounds;
+		rectangle2d times_bounds;
 
-		rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
-		clock_bounds.x0 = left;
-		clock_bounds.x1 = (short)(left + columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP);
-		clock_bounds.y0 = top;
-		clock_bounds.y1 = (short)(top + line_height);
+		times_bounds.x0 = left;
+		times_bounds.x1 = (short)(left + block_width);
+		times_bounds.y0 = (short)(top + (times_row ? line_height : 0));
+		times_bounds.y1 = (short)(times_bounds.y0 + line_height);
 		color = hud_globals->messaging.state_color;
 		color.alpha = alpha;
 		draw_string_set_tab_stops(NULL, 0);
-		draw_string_set_draw_mode(font_index, NONE, 2, 0, &color);
-		rasterizer_draw_unicode_string(&clock_bounds, NULL, NULL, 0, clock_string);
-		top = (short)(top + line_height * SCOREBOARD_SCALE);
+		draw_string_set_draw_mode(font_index, NONE, _text_justification_right, 0, &color);
+		rasterizer_draw_unicode_string(&times_bounds, NULL, NULL, 0, times_string);
 	}
-	rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
 
 	team_colors[0].alpha = alpha;
 	team_colors[0].red = 0.6f;
@@ -2079,10 +2159,12 @@ static void game_engine_rasterize_scoreboard(
 	team_colors[1].green = 0.3f;
 	team_colors[1].blue = 0.6f;
 
-	game_engine_generate_title_string(title_string, player_index);
 	color.alpha = alpha;
 	color.red = color.green = color.blue = 0.7f;
 	scoreboard_draw_row(title_string, FALSE, &color, 0, top, left, FALSE);
+	/* (the rows under the times' own) */
+	if (times_row)
+		top = (short)(top + line_height);
 
 	string_list_index = tag_loaded('ustr', "ui\\multiplayer_game_text");
 	column_name = string_list_index != NONE ? unicode_string_list_get_string(string_list_index, 0x43) : L"";
@@ -2203,6 +2285,8 @@ static void game_engine_rasterize_in_game_score(
 	long string_list_index;
 	wchar_t *column_name;
 	wchar_t *score_name;
+	/* port: (a row for the scoreboard's times under the title, or none) */
+	long row_offset = 0;
 
 	/* port: a full-screen view's its own (game_engine_rasterize_scoreboard) */
 	if (local_player_count() <= 1)
@@ -2219,23 +2303,36 @@ static void game_engine_rasterize_in_game_score(
 		NUMBEROF(entries));
 	statistic_buffer_in_game_only = FALSE;
 
-	/* port: MATCH CLOCK's, on a line above the title (as the HUD's corner) */
-	{
-		wchar_t clock_string[32];
-
-		if (game_engine_match_clock(clock_string, NUMBEROF(clock_string)))
-		{
-			color = hud_globals->messaging.state_color;
-			color.alpha = alpha;
-			rasterize_in_game_score_draw_line(clock_string, FALSE, &color, -1, 2);
-		}
-	}
-
 	color.alpha = alpha;
 	color.red = 0.7f;
 	color.green = 0.7f;
 	color.blue = 0.7f;
-	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0, 0);
+	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0, _text_justification_left);
+
+	/* port: the scoreboard's times (MATCH CLOCK), right-aligned to the
+	columns' end on the title's row, or on a row of their own under it
+	where the two would meet (a narrow view), the rows below moved down */
+	{
+		wchar_t times_string[64];
+		long font_index = hud_get_font_index();
+
+		if (game_engine_scoreboard_times(font_index, times_string, NUMBEROF(times_string)))
+		{
+			rectangle2d bounds;
+			short tab_stops[3];
+			short columns_right = rasterize_in_game_score_layout(&bounds, tab_stops);
+
+			draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, global_real_argb_white);
+			if (bounds.x0 + scoreboard_text_width(title_string) + SCOREBOARD_COLUMN_GAP / 2 +
+				scoreboard_text_width(times_string) > columns_right)
+			{
+				row_offset = 1;
+			}
+			color = hud_globals->messaging.state_color;
+			color.alpha = alpha;
+			rasterize_in_game_score_draw_line(times_string, FALSE, &color, row_offset, _text_justification_right);
+		}
+	}
 
 	color.red = 0.5f;
 	color.green = 0.5f;
@@ -2256,7 +2353,7 @@ static void game_engine_rasterize_in_game_score(
 
 	game_engine->format_score_name(score_string);
 	usprintf(row_string, L"\t%s\t%s\t%s", column_name, score_name, score_string);
-	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1, 0);
+	rasterize_in_game_score_draw_line(row_string, FALSE, &color, row_offset + 1, _text_justification_left);
 
 	for (entry_index = 0; entry_index < entry_count; entry_index++)
 	{
@@ -2328,8 +2425,8 @@ static void game_engine_rasterize_in_game_score(
 				row_string,
 				is_current_player,
 				row_color,
-				entry_index + 2,
-				0);
+				row_offset + entry_index + 2,
+				_text_justification_left);
 		}
 	}
 
@@ -4005,7 +4102,7 @@ static void game_engine_rasterize_pregame_countdown(
 		bounds.x1 = view_width;
 		bounds.y0 = (short)(center_y - line_height / 2);
 		bounds.y1 = (short)(bounds.y0 + line_height);
-		draw_string_set_draw_mode(font_index, NONE, 2, 0, &color);
+		draw_string_set_draw_mode(font_index, NONE, _text_justification_center, 0, &color);
 		rasterizer_text_set_scale(scale, center_x, center_y);
 		rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, digit);
 		rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
@@ -5015,7 +5112,6 @@ boolean game_engine_match_clock(
 {
 	short setting = game_engine_match_clock_setting();
 	long time_limit;
-	long seconds;
 
 	if (!game_engine_running() || setting == _match_clock_off ||
 		game_engine_globals.postgame_state != game_engine_mode_active ||
@@ -5025,17 +5121,27 @@ boolean game_engine_match_clock(
 	}
 	time_limit = game_variant_options_get()->time_limit;
 	if (setting == _match_clock_down && time_limit > 0)
-	{
-		long left = MAX(time_limit * 60L * TICKS_PER_SECOND - game_time_get(), 0);
-
-		seconds = (left + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
-	}
+		game_engine_format_clock(time_limit * 60L * TICKS_PER_SECOND - game_time_get(), TRUE, string, count);
 	else
-		seconds = MAX(game_time_get(), 0) / TICKS_PER_SECOND;
-	usnprintf(string, count, L"%d:%02d", (int)(seconds / 60), (int)(seconds % 60));
-	string[count - 1] = 0;
+		game_engine_format_clock(game_time_get(), FALSE, string, count);
 
 	return TRUE;
+}
+
+/* M:SS (the engine's time string leaves the minute blank under one); a
+countdown rounds up, so 0:00 only as it ends, a time played rounds down */
+void game_engine_format_clock(
+	long ticks,
+	boolean round_up,
+	wchar_t *string,
+	long count)
+{
+	long seconds = (MAX(ticks, 0) + (round_up ? TICKS_PER_SECOND - 1 : 0)) / TICKS_PER_SECOND;
+
+	if (count <= 0)
+		return;
+	usnprintf(string, count, L"%d:%02d", (int)(seconds / 60), (int)(seconds % 60));
+	string[count - 1] = 0;
 }
 
 /* port: the gametype's HEALTH (enum health_style), CLASSIC with no game */

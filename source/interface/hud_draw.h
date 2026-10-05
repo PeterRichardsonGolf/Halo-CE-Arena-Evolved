@@ -126,6 +126,13 @@ void hud_draw_static_element(
 	struct static_hud_element_definition const *static_element,
 	short draw_flags,
 	long flash_reference_time);
+/* port: the rectangle hud_draw_static_element draws an element's bitmap
+in (the view's coordinates), FALSE for none */
+boolean hud_static_element_bounds(
+	struct hud_absolute_placement_definition const *placement,
+	struct static_hud_element_definition const *static_element,
+	short draw_flags,
+	rectangle2d *result);
 void hud_draw_bitmap_direct(
 	struct bitmap_data const *bitmap,
 	short placement,

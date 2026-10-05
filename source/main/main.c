@@ -2887,6 +2887,26 @@ static short frame_statistics_corner(
 	return value && !strcmp(value, "top_left") ? _text_justification_left : _text_justification_right;
 }
 
+short main_framerate_corner(
+	void)
+{
+	return frame_statistics_corner();
+}
+
+/* port: where the line's text was last drawn, for the power list
+(hud_item_timers.c), which the HUD's pass draws before it */
+static boolean frame_statistics_drawn = FALSE;
+static rectangle2d frame_statistics_extent;
+
+boolean main_framerate_extent(
+	rectangle2d *bounds)
+{
+	if (frame_statistics_drawn)
+		*bounds = frame_statistics_extent;
+
+	return frame_statistics_drawn;
+}
+
 static void frame_statistics_draw(
 	long font_tag_index,
 	short corner,
@@ -2906,6 +2926,19 @@ static void frame_statistics_draw(
 	draw_string_set_format(NONE, corner, 0);
 	draw_string_set_font(font_tag_index);
 	draw_string_set_color(color);
+	/* (where it goes, scaled as it is drawn) */
+	{
+		rectangle2d text_bounds;
+		rectangle2d cursor_bounds;
+		real pivot = (real)(corner == _text_justification_left ? bounds.x0 : bounds.x1);
+
+		draw_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+		frame_statistics_drawn = text_bounds.x1 > text_bounds.x0;
+		frame_statistics_extent.x0 = (short)(pivot + (text_bounds.x0 - pivot) * FRAME_STATISTICS_SCALE);
+		frame_statistics_extent.x1 = (short)(pivot + (text_bounds.x1 - pivot) * FRAME_STATISTICS_SCALE + 0.5f);
+		frame_statistics_extent.y0 = bounds.y0;
+		frame_statistics_extent.y1 = (short)(bounds.y0 + line_height * FRAME_STATISTICS_SCALE + 0.5f);
+	}
 	/* (smaller, about the line's top corner it hangs from) */
 	rasterizer_text_set_scale(FRAME_STATISTICS_SCALE,
 		(real)(corner == _text_justification_left ? bounds.x0 : bounds.x1), (real)bounds.y0);
@@ -2925,6 +2958,7 @@ void main_framerate_render(
 	char line[80];
 
 	frame_statistics_update();
+	frame_statistics_drawn = FALSE;
 	/* (the console's display_framerate: the frame rate, where the setting
 	shows nothing) */
 	if (display_framerate && level == _performance_off)

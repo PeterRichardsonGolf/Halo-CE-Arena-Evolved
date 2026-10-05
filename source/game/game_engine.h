@@ -642,6 +642,13 @@ enum
 
 short game_engine_match_clock_setting(
 	void);
+/* port: a time as M:SS (the match clock's, the scoreboard's, the power
+list's) */
+void game_engine_format_clock(
+	long ticks,
+	boolean round_up,
+	wchar_t *string,
+	long count);
 boolean game_engine_match_clock(
 	wchar_t *string,
 	long count);

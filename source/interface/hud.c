@@ -268,6 +268,8 @@ void hud_initialize_for_new_map(
 	hud_initialize_weapon_interface_for_new_map();
 	hud_initialize_nav_points_for_new_map();
 	motion_sensor_initialize_for_new_map();
+	/* port: (MATCH CLOCK's motion sensor places) */
+	hud_item_timers_initialize_for_new_map();
 	return;
 }
 
@@ -1365,11 +1367,6 @@ void hud_draw_screen(
 		if (game_engine_running() && !cinematic_in_progress())
 			hud_draw_player_names();
 
-		/* port: MATCH CLOCK, and the gametype's TIMERS and TRAINING
-		(hud_item_timers.c) */
-		if (game_engine_running() && !cinematic_in_progress())
-			hud_draw_item_timers();
-
 		if (!game_time_get_paused() &&
 			render.local_player_index == local_player_get_next(NONE))
 		{
@@ -1399,6 +1396,12 @@ void hud_draw_screen(
 		{
 			hud_play_unit_sounds(player, FALSE);
 		}
+
+		/* port: MATCH CLOCK, and the gametype's TIMERS and TRAINING
+		(hud_item_timers.c), after the unit's HUD: the clock lines up with
+		the motion sensor it has just drawn */
+		if (game_engine_running() && !cinematic_in_progress())
+			hud_draw_item_timers();
 
 		hud_messaging_update(render.local_player_index);
 	}

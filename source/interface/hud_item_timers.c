@@ -6,22 +6,31 @@ gametype's TIMERS and TRAINING, drawn once per local player's view from
 hud_draw_screen (hud.c).
 
 The clock is M:SS in the view's bottom right corner, as the Master Chief
-Collection's: 4% of the view's width from its right edge, its digits' foot 6%
-of its height from its bottom (game_engine_match_clock: the time left or the
-time played, in any multiplayer game). Room is left above it for a score box
-(upstream's always-on score, not merged).
+Collection's (game_engine_match_clock: the time left or the time played, in
+any multiplayer game), lined up with the motion sensor in the opposite
+corner: as far from the view's right edge as the sensor's background is
+from its left, its digits' foot at the background's foot, where the
+sensor's range ("15m") is. The sensor's place is as hud_unit.c last drew it
+in this view (hud_item_timers_set_motion_sensor); where it has not been
+drawn (hidden by a script or the gametype), 4% of the view's width from its
+right edge and 6% of its height from its bottom. Room is left above it for
+a score box (upstream's always-on score, not merged). On Halo 1: NHE's
+maps it keeps out of their countdown's titles (g_*).
 
 The power list is one line of the rockets', sniper's, overshield's and
 camo's next spawns, soonest first (entries of one class spawning together
-are one), centred in the margin the HUD leaves at the screen's edge, in
-every view (one view, or 2, 3 or 4 in split screen): the HUD's window
+are one). With one view, in the top corner opposite the performance
+overlay (display.performance_position; the overlay off puts it at the
+left), on the overlay's line. In split screen, centred in the margin the
+HUD leaves at the screen's edge (2, 3 or 4 views): the HUD's window
 (render.camera.window_bounds, which its meters hang from) is inset from the
 screen's edges, not from a split screen's middle, so a view at the screen's
 top has the margin above its HUD and a lower view has it below (where its
-HUD's top meters would meet a line at the view's top). At the screen's top
-it goes under the performance overlay's line when that shows (main.c); at a
-lower view's bottom it keeps clear of the clock in the corner. Entries that
-would take the line wider than that are left off (the latest).
+HUD's top meters would meet a line at the view's top, or its corner the
+ammo's). A line at the screen's top goes under the overlay's line only
+where the two would meet (main.c's main_framerate_extent); at a lower
+view's bottom it keeps clear of the clock in the corner. Entries that would
+take the line wider than its room are left off (the latest).
 
 Both are drawn like the performance overlay (main.c frame_statistics_draw):
 the HUD's smaller font, its blue, 0.7 alpha, at four fifths size. Unlike the
@@ -34,8 +43,10 @@ itself.
 #include "cseries/cseries.h"
 
 #include "game/game.h"
+#include "cutscene/cinematics.h"
 #include "game/game_engine.h"
 #include "game/item_timers.h"
+#include "game/players.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
 #include "interface/hud_item_timers.h"
@@ -51,21 +62,25 @@ itself.
 
 #define HUD_ITEM_TIMERS_ALPHA 0.7f
 #define HUD_ITEM_TIMERS_SCALE 0.8f	/* (as main.c's FRAME_STATISTICS_SCALE) */
-#define HUD_ITEM_TIMERS_TOP 2
+#define HUD_ITEM_TIMERS_TOP 2	/* (the overlay's line's, from the view's top) */
 #define HUD_ITEM_TIMERS_SIDE 4	/* (the power list's room from a view's sides, as the overlay's) */
-#define HUD_ITEM_TIMERS_GAP 12	/* (between the power list and the clock) */
-#define HUD_ITEM_TIMERS_CLOCK_RIGHT 0.04f	/* (of the view's width) */
-#define HUD_ITEM_TIMERS_CLOCK_BOTTOM 0.06f	/* (of the view's height) */
+#define HUD_ITEM_TIMERS_GAP 12	/* (between the power list and the clock, or the overlay) */
+#define HUD_ITEM_TIMERS_CLOCK_RIGHT 0.04f	/* (of the view's width, with no motion sensor) */
+#define HUD_ITEM_TIMERS_CLOCK_BOTTOM 0.06f	/* (of the view's height, with no motion sensor) */
 #define HUD_ITEM_TIMERS_MAXIMUM_ENTRIES 64
 #define HUD_ITEM_TIMERS_LINE_LENGTH 160
 
-/* (the HUD's text justifications: left, right, centre) */
-enum
+/* ---------- globals */
+
+/* where each local player's view last had its motion sensor's background
+(hud_item_timers_set_motion_sensor), and the view's size then */
+static struct
 {
-	_hud_item_timers_left = 0,
-	_hud_item_timers_right,
-	_hud_item_timers_center
-};
+	boolean valid;
+	short view_width;
+	short view_height;
+	rectangle2d bounds;
+} hud_item_timers_motion_sensors[MAXIMUM_LOCAL_PLAYERS];
 
 /* ---------- code */
 
@@ -83,20 +98,6 @@ static long hud_item_timers_line_height(
 	struct font_header *font = font_definition_get(font_index);
 
 	return MAX(font->ascending_height + font->descending_height + font->leading_height, 10);
-}
-
-/* (M:SS: the engine's time string leaves the minute blank under one) */
-static void hud_item_timers_time_string(
-	long ticks,
-	boolean round_up,
-	wchar_t *string,
-	long count)
-{
-	/* (countdowns round up: 0:00 only at the spawn, as the voice counts) */
-	long seconds = (MAX(ticks, 0) + (round_up ? TICKS_PER_SECOND - 1 : 0)) / TICKS_PER_SECOND;
-
-	usnprintf(string, count, L"%d:%02d", (int)(seconds / 60), (int)(seconds % 60));
-	string[count - 1] = 0;
 }
 
 static void hud_item_timers_set_draw_mode(
@@ -127,12 +128,12 @@ static void hud_item_timers_draw_line(
 	bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
 	/* (laid out at full size, so as wide as the line's room is at four
 	fifths: a line that fits the room scaled is not cut at its bounds) */
-	if (justification == _hud_item_timers_left)
+	if (justification == _text_justification_left)
 	{
 		pivot_x = (real)bounds.x0;
 		bounds.x1 = (short)(bounds.x0 + (bounds.x1 - bounds.x0) / HUD_ITEM_TIMERS_SCALE);
 	}
-	else if (justification == _hud_item_timers_right)
+	else if (justification == _text_justification_right)
 	{
 		pivot_x = (real)bounds.x1;
 		bounds.x0 = (short)(bounds.x1 - (bounds.x1 - bounds.x0) / HUD_ITEM_TIMERS_SCALE);
@@ -165,7 +166,7 @@ static long hud_item_timers_line_width(
 	bounds.y0 = 0;
 	bounds.x1 = SHORT_MAX / 2;
 	bounds.y1 = (short)hud_item_timers_line_height(font_index);
-	hud_item_timers_set_draw_mode(font_index, _hud_item_timers_left);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
 	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
 	if (text_bounds.x1 <= text_bounds.x0)
 		return 0;
@@ -173,8 +174,8 @@ static long hud_item_timers_line_width(
 	return (long)((text_bounds.x1 - text_bounds.x0) * HUD_ITEM_TIMERS_SCALE + 0.5f);
 }
 
-/* the clock (text) in the view's bottom right corner; returns the room it
-takes from the view's right edge */
+/* the clock (text) in the view's bottom right corner, by the motion
+sensor's place; returns the room it takes from the view's right edge */
 static long hud_item_timers_draw_clock(
 	long font_index,
 	wchar_t const *text)
@@ -182,50 +183,48 @@ static long hud_item_timers_draw_clock(
 	struct font_header *font = font_definition_get(font_index);
 	short view_width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 	short view_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
-	short inset = (short)(HUD_ITEM_TIMERS_CLOCK_RIGHT * view_width + 0.5f);
+	short local_player_index = render.local_player_index;
+	short inset;
 	long baseline;
 
-	/* (the digits' foot, their baseline, at the corner's height: the line's
-	top an ascent (at four fifths) above it) */
-	baseline = view_height - (long)(HUD_ITEM_TIMERS_CLOCK_BOTTOM * view_height + 0.5f);
-	hud_item_timers_draw_line(font_index, _hud_item_timers_right,
+	if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_timers_motion_sensors[local_player_index].valid &&
+		hud_item_timers_motion_sensors[local_player_index].view_width == view_width &&
+		hud_item_timers_motion_sensors[local_player_index].view_height == view_height)
+	{
+		rectangle2d const *sensor = &hud_item_timers_motion_sensors[local_player_index].bounds;
+
+		/* (the sensor's left inset, mirrored; its background's foot) */
+		inset = (short)MAX(sensor->x0, 0);
+		baseline = MIN(sensor->y1, view_height);
+	}
+	else
+	{
+		inset = (short)(HUD_ITEM_TIMERS_CLOCK_RIGHT * view_width + 0.5f);
+		baseline = view_height - (long)(HUD_ITEM_TIMERS_CLOCK_BOTTOM * view_height + 0.5f);
+	}
+	/* (the digits' foot, their baseline, there: the line's top an ascent
+	(at four fifths) above it) */
+	hud_item_timers_draw_line(font_index, _text_justification_right,
 		(short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_SCALE + 0.5f)),
 		inset, text);
 
 	return inset + hud_item_timers_line_width(font_index, text);
 }
 
-/* clock_room: the room the clock takes from the view's right edge, 0 with
-none */
-static void hud_item_timers_draw_powers(
+/* the power list's line, as many entries as fit in maximum_width; returns
+its width, 0 for none */
+static long hud_item_timers_power_line(
 	long font_index,
-	long clock_room)
+	long maximum_width,
+	wchar_t *line)
 {
 	struct item_timer const *entries[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 	long left[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 	short count = 0;
 	short total = item_timers_count();
 	short index, other;
-	wchar_t line[HUD_ITEM_TIMERS_LINE_LENGTH];
 	long used = 0;
-	long view_width = render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0;
-	long line_height = (long)(hud_item_timers_line_height(font_index) * HUD_ITEM_TIMERS_SCALE);
-	/* (the margin the HUD leaves at the screen's edge: above the HUD's
-	window in a view at the screen's top, below it in a lower one; the
-	performance overlay's line, the same font and size, first at the
-	screen's top) */
-	long top_margin = render.camera.window_bounds.y0 - render.camera.viewport_bounds.y0;
-	long bottom_margin = render.camera.viewport_bounds.y1 - render.camera.window_bounds.y1;
-	long overlay = main_framerate_shown() ? HUD_ITEM_TIMERS_TOP + line_height : 0;
-	boolean bottom = top_margin < overlay + HUD_ITEM_TIMERS_TOP + line_height &&
-		bottom_margin >= HUD_ITEM_TIMERS_TOP + line_height;
-	long top = bottom ?
-		render.camera.window_bounds.y1 - render.camera.viewport_bounds.y0 + HUD_ITEM_TIMERS_TOP :
-		overlay + HUD_ITEM_TIMERS_TOP;
-	/* (centred, as wide as the view leaves; at the bottom, clear of the
-	clock on both sides) */
-	long side = bottom && clock_room > 0 ? clock_room + HUD_ITEM_TIMERS_GAP : HUD_ITEM_TIMERS_SIDE;
-	long maximum_width = view_width - 2 * side;
 
 	for (index = 0; index < total && count < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; index++)
 	{
@@ -264,7 +263,7 @@ static void hud_item_timers_draw_powers(
 		}
 		if (merged)
 			continue;
-		hud_item_timers_time_string(left[index], TRUE, time_string, NUMBEROF(time_string));
+		game_engine_format_clock(left[index], TRUE, time_string, NUMBEROF(time_string));
 		usnprintf(line + used, HUD_ITEM_TIMERS_LINE_LENGTH - used, L"%s%s %s",
 			used ? L"   " : L"", entries[index]->label, time_string);
 		line[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
@@ -276,8 +275,73 @@ static void hud_item_timers_draw_powers(
 		}
 		used = (long)ustrlen(line);
 	}
-	if (used)
-		hud_item_timers_draw_line(font_index, _hud_item_timers_center, (short)top, 0, line);
+
+	return used ? hud_item_timers_line_width(font_index, line) : 0;
+}
+
+/* clock_room: the room the clock takes from the view's right edge, 0 with
+none */
+static void hud_item_timers_draw_powers(
+	long font_index,
+	long clock_room)
+{
+	wchar_t line[HUD_ITEM_TIMERS_LINE_LENGTH];
+	long view_width = render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0;
+	long line_height = (long)(hud_item_timers_line_height(font_index) * HUD_ITEM_TIMERS_SCALE);
+	/* (the margin the HUD leaves at the screen's edge: above the HUD's
+	window in a view at the screen's top, below it in a lower one) */
+	long top_margin = render.camera.window_bounds.y0 - render.camera.viewport_bounds.y0;
+	long bottom_margin = render.camera.viewport_bounds.y1 - render.camera.window_bounds.y1;
+	boolean one_view = local_player_count() <= 1;
+	/* (one view: the top corner opposite the overlay's; split screen:
+	centred) */
+	short justification = !one_view ? _text_justification_center :
+		main_framerate_shown() && main_framerate_corner() == _text_justification_left ?
+			_text_justification_right : _text_justification_left;
+	long width = hud_item_timers_power_line(font_index, view_width - 2 * HUD_ITEM_TIMERS_SIDE, line);
+	long overlay = 0;
+	long top;
+	boolean bottom;
+	short inset;
+
+	if (!width)
+		return;
+	/* (the screen's top line: under the overlay's line where they would
+	meet, in the screen's coordinates) */
+	{
+		rectangle2d extent;
+
+		if (render.camera.viewport_bounds.y0 <= 0 && main_framerate_shown() && main_framerate_extent(&extent))
+		{
+			long x0 = justification == _text_justification_left ? HUD_ITEM_TIMERS_SIDE :
+				justification == _text_justification_right ? view_width - HUD_ITEM_TIMERS_SIDE - width :
+				(view_width - width) / 2;
+			long x1 = x0 + width;
+
+			x0 += render.camera.viewport_bounds.x0;
+			x1 += render.camera.viewport_bounds.x0;
+			if (x0 < extent.x1 + HUD_ITEM_TIMERS_GAP && x1 > extent.x0 - HUD_ITEM_TIMERS_GAP)
+				overlay = MAX(extent.y1 - render.camera.viewport_bounds.y0, 0);
+		}
+	}
+	/* (a lower split-screen view: below its HUD) */
+	bottom = !one_view && top_margin < overlay + HUD_ITEM_TIMERS_TOP + line_height &&
+		bottom_margin >= HUD_ITEM_TIMERS_TOP + line_height;
+	if (bottom)
+	{
+		top = render.camera.window_bounds.y1 - render.camera.viewport_bounds.y0 + HUD_ITEM_TIMERS_TOP;
+		/* (clear of the clock on both sides) */
+		if (clock_room > 0)
+		{
+			width = hud_item_timers_power_line(font_index, view_width - 2 * (clock_room + HUD_ITEM_TIMERS_GAP), line);
+			if (!width)
+				return;
+		}
+	}
+	else
+		top = overlay + HUD_ITEM_TIMERS_TOP;
+	inset = justification == _text_justification_center ? 0 : HUD_ITEM_TIMERS_SIDE;
+	hud_item_timers_draw_line(font_index, justification, (short)top, inset, line);
 }
 
 void hud_draw_item_timers(
@@ -289,11 +353,35 @@ void hud_draw_item_timers(
 
 	if (font_index == NONE)
 		return;
-	if (game_engine_match_clock(clock, NUMBEROF(clock)))
+	/* (not over Halo 1: NHE's maps' countdown) */
+	if (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
 		clock_room = hud_item_timers_draw_clock(font_index, clock);
 	/* (the gametype's TIMERS and TRAINING) */
 	if (game_engine_item_timers())
 		hud_item_timers_draw_powers(font_index, clock_room);
 
 	return;
+}
+
+/* where hud_unit.c drew the motion sensor's background in this local
+player's view (the view's coordinates) */
+void hud_item_timers_set_motion_sensor(
+	short local_player_index,
+	rectangle2d const *bounds)
+{
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return;
+	hud_item_timers_motion_sensors[local_player_index].valid = TRUE;
+	hud_item_timers_motion_sensors[local_player_index].view_width =
+		(short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	hud_item_timers_motion_sensors[local_player_index].view_height =
+		(short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	hud_item_timers_motion_sensors[local_player_index].bounds = *bounds;
+}
+
+/* a new map: no motion sensor seen yet */
+void hud_item_timers_initialize_for_new_map(
+	void)
+{
+	csmemset(hud_item_timers_motion_sensors, 0, sizeof(hud_item_timers_motion_sensors));
 }

@@ -77,6 +77,7 @@ symbols in this file:
 #include "bitmaps/bitmap_color_conversion.h"
 #include "interface/hud_draw.h"
 #include "interface/hud.h"
+#include "interface/hud_item_timers.h"
 #include "interface/motion_sensor.h"
 #include "interface/hud_unit.h"
 #include "interface/unit_hud_interface_definition.h"
@@ -1122,12 +1123,21 @@ void hud_render_unit_interface(
 
 					if (hud_definition->motion_sensor.background.interface_bitmap.index != NONE)
 					{
+						rectangle2d sensor_bounds;
+
 						hud_draw_static_element(
 							local_player_index,
 							&absolute_placement,
 							&hud_definition->motion_sensor.background,
 							draw_flags,
 							NONE);
+						/* port: where it is, for MATCH CLOCK's corner
+						(hud_item_timers.c) */
+						if (hud_static_element_bounds(&absolute_placement,
+							&hud_definition->motion_sensor.background, draw_flags, &sensor_bounds))
+						{
+							hud_item_timers_set_motion_sensor(local_player_index, &sensor_bounds);
+						}
 					}
 					if (hud_definition->motion_sensor.foreground.interface_bitmap.index != NONE)
 					{

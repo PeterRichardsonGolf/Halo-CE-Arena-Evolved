@@ -184,6 +184,13 @@ void main_framerate_render(
 /* port: whether main_framerate_render's line shows */
 boolean main_framerate_shown(
 	void);
+/* port: the corner it is drawn in (_text_justification_left or _right) */
+short main_framerate_corner(
+	void);
+/* port: where its text was last drawn (the screen's coordinates), FALSE
+when it was not */
+boolean main_framerate_extent(
+	rectangle2d *bounds);
 
 void main_loop_of_death(
 	void);

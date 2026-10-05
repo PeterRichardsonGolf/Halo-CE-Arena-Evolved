@@ -286,6 +286,34 @@ static boolean cinematic_title_is_hidden_nhe_clock(
 		title->name[1] == '_';
 }
 
+/* port: whether one of Halo 1: NHE's maps' countdown titles (g_*: their
+scripts' 3, 2, 1 at a game's start) is queued or showing, so that MATCH
+CLOCK's corner keeps out of it (hud_item_timers.c) */
+boolean cinematic_nhe_countdown_title_showing(
+	void)
+{
+	short title_slot_index;
+
+	if (!game_engine_running() || !hs_scenario_is_nhe() || !cinematic_globals)
+		return FALSE;
+	for (title_slot_index = 0; title_slot_index < MAXIMUM_QUEUED_CINEMATIC_TITLES; title_slot_index++)
+	{
+		short title_index = cinematic_globals->queued_titles[title_slot_index].title_index;
+		struct scenario_cutscene_title *title;
+
+		if (title_index < 0 || title_index >= global_scenario_get()->cutscene_chapter_titles.count)
+			continue;
+		title = TAG_BLOCK_GET_ELEMENT(
+			&global_scenario_get()->cutscene_chapter_titles,
+			title_index,
+			struct scenario_cutscene_title);
+		if (title->name[0] == 'g' && title->name[1] == '_')
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 void cinematic_set_title_delayed(
 	short title_index,
 	real delay)
