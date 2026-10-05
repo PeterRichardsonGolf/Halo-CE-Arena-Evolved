@@ -116,7 +116,7 @@
 		<string text="Your shields are all that matter: your health\ncomes back as soon as they start to recharge."/>
 		<string text="Once your shields are full, all your health\ncomes back."/>
 		<string text="The pistol and sniper rifle spread as in stock Halo."/>
-		<string text="The pistol and the unscoped sniper rifle fire\nexactly where you aim, as in Halo 1: NHE."/>
+		<string text="The pistol's first shot from rest, and every\nunzoomed sniper rifle shot, go exactly where\nyou aim, as in Halo 1: NHE."/>
 		<string text="The game starts at once."/>
 		<string text="A 3-2-1 countdown on a black screen starts the\ngame, so everyone sees the map at the same time."/>
 		<string text="Weapons and powerups respawn as the map sets."/>

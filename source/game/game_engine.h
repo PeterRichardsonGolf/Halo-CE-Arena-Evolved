@@ -41,8 +41,9 @@ enum
 	_game_variant_health_style_first_bit = 19,
 	_game_variant_health_regeneration_bit = _game_variant_health_style_first_bit,
 	_game_variant_health_style_second_bit = 20,
-	/* port: NO SPREAD (ARENA OPTIONS): the pistol and the unscoped sniper
-	rifle fire exactly where they aim, as Halo 1: NHE's maps' do */
+	/* port: NO SPREAD (ARENA OPTIONS): the pistol's first shot from rest
+	and the sniper rifle's unzoomed shots go exactly where they aim (held
+	fire still spreads the pistol), as Halo 1: NHE's maps' do */
 	_game_variant_no_spread_bit = 21,
 	/* port: PRE-GAME COUNTDOWN (ARENA OPTIONS): a 3-2-1 countdown on a black
 	screen starts the game (not on Halo 1: NHE's maps, which have their own) */

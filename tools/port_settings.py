@@ -1052,7 +1052,7 @@ ARENA_ROWS = [
     ]),
     ("no_spread", "NO SPREAD:", ["OFF", "ON"], [
         "The pistol and sniper rifle spread as in stock Halo.",
-        "The pistol and the unscoped sniper rifle fire\\nexactly where you aim, as in Halo 1: NHE.",
+        "The pistol's first shot from rest, and every\\nunzoomed sniper rifle shot, go exactly where\\nyou aim, as in Halo 1: NHE.",
     ]),
     ("pregame_countdown", "PRE-GAME COUNTDOWN:", ["OFF", "ON"], [
         "The game starts at once.",
