@@ -7,12 +7,29 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- NO SPREAD has three levels: OFF, NHE (as before) and FULL, where every
+  pistol and sniper rifle shot goes exactly where you aim, held fire too (no
+  bloom). Every Arena Evolved gametype has FULL; the Halo 1: NHE-style ones
+  keep NHE.
+- Arena Evolved PRO gametypes: AE PRO FFA, AE PRO TS, AE PRO CTF, AE PRO KING
+  and AE PRO BALL (5-second respawn and suicide penalty, no motion sensor but
+  in FFA, no TIMERS; slayers without a time limit, the others 15 minutes).
+- The log names each gametype seeded and its settings.
 - The scoreboard shows the time played and the time left ("1:33 PLAYED ·
   8:27 LEFT", or just the time played with no time limit) on a row under its
   title.
 - The "game rules" line in `debug.txt` gives the gametype's time limit.
 
 ### Changed
+- The Arena Evolved casual gametypes have a 15-minute time limit, the TIMERS
+  and the motion sensor; AE SLAYER plays to 25 kills, AE KING and AE ODDBALL
+  to 5 minutes held.
+- NHE 1V1, NHE 2V2 TS, NHE CTF and NHE POWERUP play Beach LAN 15's rules:
+  5-second respawn and suicide penalty, no motion sensor, no time limit; NHE
+  1V1 plays to 25 kills, and NHE 1V1, NHE 2V2 TS and NHE CTF are NHE & Timer
+  (the warthog vehicle set) instead of Timer Only.
+- These apply to gametypes seeded from now on: a save root that already has
+  them keeps its own (delete them and the record file to seed them again).
 - The host enforces the PRE-GAME COUNTDOWN for every player: a player on a
   build without it (OpenCE, ChupathingyCE) can no longer move off their spawn
   or land hits before it ends.
@@ -26,6 +43,8 @@ releases yet, so the sections are dated.
 - The time left in the scoreboard's title reads M:SS, as the clock does.
 
 ### Fixed
+- The built-in Team Oddball no longer picks up random gametype options: its
+  settings were built on uninitialised memory.
 - Halo 1: NHE's start countdown ("3...", "2...", "1...") is centred on wide
   screens again, not pushed to the right.
 - The match clock no longer shows over Halo 1: NHE's own countdown.

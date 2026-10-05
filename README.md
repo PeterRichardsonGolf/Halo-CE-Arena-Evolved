@@ -42,7 +42,7 @@ editor and in Server Setup)
 | --- | --- |
 | FALL DAMAGE | Off: no landing damage from any height (pits and kill zones still kill). |
 | HEALTH | CLASSIC (stock: health packs only), REACH (health recovers to a third), HALO 2 (health refills with the shields), HALO 3 (health refills after the shields). Health packs still spawn. |
-| NO SPREAD | The pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as competitive play has them. Other weapons are unchanged. |
+| NO SPREAD | OFF (stock), NHE (the pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as Halo 1: NHE has them) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
 | PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. The host holds every player to it, including players on builds without it. |
 
@@ -60,15 +60,25 @@ up to their build.
 
 **Arena Evolved gametypes**, ready in the gametype list the first time you
 play:
-- **Arena Evolved:** AE SLAYER, AE TEAM SLY, AE CTF, AE KING, AE ODDBALL and
-  AE TRAINING. Each adds no fall damage, HALO 2 health, NO SPREAD and the
-  PRE-GAME COUNTDOWN to its stock gametype, with a pistol in hand and an
-  assault rifle. AE TRAINING also has TIMERS and TRAINING, and plays to 500.
+- **Arena Evolved (casual):** AE SLAYER (25 kills), AE TEAM SLY (50), AE CTF
+  (3 captures), AE KING and AE ODDBALL (5 minutes held), each with a 15-minute
+  time limit, the motion sensor, TIMERS and the stock respawns; and AE
+  TRAINING (TIMERS and TRAINING, plays to 500, no time limit).
+- **Arena Evolved PRO** (modern NHE): AE PRO FFA (25 kills), AE PRO TS (50),
+  AE PRO CTF (3 captures), AE PRO KING and AE PRO BALL (team games, 5 minutes
+  held). 5-second respawn and suicide penalty, no TIMERS, no motion sensor
+  (but in AE PRO FFA); the slayers have no time limit, the others 15 minutes.
+- Every Arena Evolved gametype has no fall damage, HALO 2 health, NO SPREAD
+  FULL, the PRE-GAME COUNTDOWN and generic starting equipment, with a pistol
+  in hand and an assault rifle.
 - **Halo 1: NHE-style:** NHE 1V1, NHE 2V2 TS, NHE CTF, NHE POWERUP, NHE
   VANILLA, NHE TRAIN and PRACTICE. On Halo 1: NHE's maps their vehicle set
-  picks NHE's mode (Timer Only, NHE & Powerups, Vanilla, Training). NHE 1V1,
-  NHE 2V2 TS, NHE CTF, NHE POWERUP and NHE TRAIN have NO SPREAD and the
-  PRE-GAME COUNTDOWN. NHE VANILLA has neither. PRACTICE has NO SPREAD and
+  picks NHE's mode (NHE & Timer, NHE & Powerups, Vanilla, Training, Timer
+  Only). NHE 1V1 (25 kills), NHE 2V2 TS (50), NHE CTF (3 captures) and NHE
+  POWERUP (50) play Beach LAN 15's rules: NHE & Timer (NHE POWERUP: NHE &
+  Powerups), 5-second respawn and suicide penalty, no motion sensor, no time
+  limit, NO SPREAD NHE and the PRE-GAME COUNTDOWN. NHE TRAIN has NO SPREAD NHE
+  and the countdown; NHE VANILLA has neither. PRACTICE has NO SPREAD NHE and
   PRACTICE MODE, without the countdown.
 
 **Split screen**

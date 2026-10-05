@@ -162,7 +162,8 @@ of another build (OpenCE's, ChupathingyCE's: the same network version)
 ignores those it does not know. Most only change what a machine shows, or
 what the host alone decides (PRACTICE MODE's respawns). NO SPREAD is the
 shooter's own: a client without it keeps the stock spread, which the host
-does not check, since it deals the shooter's hits. The PRE-GAME COUNTDOWN
+does not check, since it deals the shooter's hits. Its FULL level sets bit
+24 along with NHE's bit 21, so a build that knows only NHE's plays NHE's. The PRE-GAME COUNTDOWN
 is enforced by the host (game time `0` to `PREGAME_COUNTDOWN_TICKS`,
 `game_engine_pregame_countdown_covers`), so that a client without it cannot
 move or shoot frozen players:
