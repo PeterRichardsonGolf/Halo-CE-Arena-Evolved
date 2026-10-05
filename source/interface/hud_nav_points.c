@@ -705,14 +705,14 @@ void custom_render_nav_point(
 	return;
 }
 
-/* port: custom_render_nav_point, and where it drew the arrow (placement,
-NULL for none): TRAINING's waypoint labels (hud_item_timers.c) go by it */
+/* port: custom_render_nav_point, and where it drew the arrow and its
+distance (arrow_placement, NULL for none): TRAINING's waypoint labels (hud_item_timers.c) go by it */
 void custom_render_nav_point_placed(
 	short local_player_index,
 	real_point3d const *position,
 	short nav_index,
 	short waypoint_type,
-	struct hud_nav_point_placement *placement)
+	struct hud_nav_point_placement *arrow_placement)
 {
 	long return_eip = get_return_eip();
 	long stack_buffer[STACK_BUFFER_LENGTH];
@@ -729,8 +729,8 @@ void custom_render_nav_point_placed(
 	real theta;
 
 	csmemset(stack_buffer, 0x62, sizeof(stack_buffer));
-	if (placement)
-		csmemset(placement, 0, sizeof(*placement));
+	if (arrow_placement)
+		csmemset(arrow_placement, 0, sizeof(*arrow_placement));
 
 	arrow = TAG_BLOCK_GET_ELEMENT(
 		&hud_globals->waypoint.arrows,
@@ -901,16 +901,17 @@ void custom_render_nav_point_placed(
 
 			/* port: where the arrow is: its middle, and half its size
 			either way it may be turned (an arrow at the view's edge) */
-			if (placement)
+			if (arrow_placement)
 			{
 				real width = (clip->x1-clip->x0)*(real)bitmap->width*arrow_scale;
 				real height = (clip->y1-clip->y0)*(real)bitmap->height*arrow_scale;
 
-				placement->drawn = TRUE;
-				placement->off_screen = waypoint_type==_waypoint_off_screen;
-				placement->x = point.x;
-				placement->y = point.y;
-				placement->half_height = (short)((placement->off_screen ? MAX(width, height) : height)*0.5f + 0.5f);
+				arrow_placement->drawn = TRUE;
+				arrow_placement->off_screen = waypoint_type==_waypoint_off_screen;
+				arrow_placement->x = point.x;
+				arrow_placement->y = point.y;
+				arrow_placement->half_width = (short)((arrow_placement->off_screen ? MAX(width, height) : width)*0.5f + 0.5f);
+				arrow_placement->half_height = (short)((arrow_placement->off_screen ? MAX(width, height) : height)*0.5f + 0.5f);
 			}
 
 			if (waypoint_type!=_waypoint_off_screen)
@@ -964,6 +965,17 @@ void custom_render_nav_point_placed(
 						0,
 						0,
 						0.0f);
+					/* port: where it drew the distance */
+					if (arrow_placement)
+					{
+						arrow_placement->number = hud_numbers_bounds(
+							local_player_index,
+							&placement,
+							&numbers,
+							decimal_value,
+							0,
+							&arrow_placement->number_bounds);
+					}
 				}
 			}
 		}

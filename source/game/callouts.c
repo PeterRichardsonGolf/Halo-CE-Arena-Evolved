@@ -13,7 +13,7 @@ camo) 10 seconds before each of its spawns after the game's start, from its
 real period (item_timers.c): "<item> in ten" when the pack has it, else the
 name, after the pack's item beep; an item at both bases (RED / BLUE before
 its name, item_timers.c) its side's "red <item>" / "blue <item>" when the
-pack has it, each side's said. "five" .. "one" in the last 5 seconds
+pack has both, each side's said. "five" .. "one" in the last 5 seconds
 before the rockets' spawn, and at each spawn "<item> is up" when the pack
 has it.
 
@@ -451,22 +451,26 @@ static long callout_plan_room(
 }
 
 /* an item's side clip ("red_rockets", "blue_rockets") when it has RED /
-BLUE before its name (item_timers.c) and the pack has the clip, else NONE */
+BLUE before its name (item_timers.c) and the pack has both sides' clips
+for it, else NONE (one plain call for both) */
 static short callout_side_clip(
 	struct item_timer const *timer)
 {
-	short clip;
+	short red;
+	short blue;
 
 	if (!timer->side_prefix || timer->timer_class < 0 || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
 		return NONE;
-	if (timer->side == _item_timer_side_red)
-		clip = (short)(_callout_red_rockets + timer->timer_class);
-	else if (timer->side == _item_timer_side_blue)
-		clip = (short)(_callout_blue_rockets + timer->timer_class);
-	else
+	red = (short)(_callout_red_rockets + timer->timer_class);
+	blue = (short)(_callout_blue_rockets + timer->timer_class);
+	if (callout_clip_ticks(red) <= 0 || callout_clip_ticks(blue) <= 0)
 		return NONE;
+	if (timer->side == _item_timer_side_red)
+		return red;
+	if (timer->side == _item_timer_side_blue)
+		return blue;
 
-	return callout_clip_ticks(clip) > 0 ? clip : NONE;
+	return NONE;
 }
 
 /* the power entries spawning at this tick, one of each class (OS/CAMO's

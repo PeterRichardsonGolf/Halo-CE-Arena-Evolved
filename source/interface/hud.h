@@ -8,6 +8,8 @@ header included in hcex build.
 #define __HUD_H
 #pragma once
 
+#include "math/integer_math.h"	/* (port: rectangle2d, hud_nav_point_placement's) */
+
 /* ---------- constants */
 
 /* ---------- macros */
@@ -134,9 +136,12 @@ struct hud_nav_point_placement
 {
 	boolean drawn;
 	boolean off_screen;	/* at the view's edge, pointing to it */
-	short half_height;	/* half the arrow's drawn size, up and down */
+	boolean number;	/* the distance drawn by it, at number_bounds */
+	short half_width;	/* half the arrow's drawn size, across (turned at the edge: its largest) */
+	short half_height;	/* and up and down */
 	short x;	/* its middle, in the view's coordinates */
 	short y;
+	rectangle2d number_bounds;	/* (the view's coordinates) */
 };
 void custom_render_nav_point_placed(
 	short local_player_index,

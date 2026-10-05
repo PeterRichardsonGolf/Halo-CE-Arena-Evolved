@@ -2349,3 +2349,65 @@ void hud_draw_numbers(
 
 	return;
 }
+
+/* port: where hud_draw_numbers would draw a number (the view's
+coordinates): from the placement's point to the right of its last
+character (the "m"), as tall as a digit; FALSE when it would draw none */
+boolean hud_numbers_bounds(
+	short local_player_index,
+	struct hud_absolute_placement_definition const *absolute_placement,
+	struct number_hud_element_definition const *numbers,
+	short decimal_value,
+	short draw_flags,
+	rectangle2d *bounds)
+{
+	long hud_number_index = interface_get_tag_index(_interface_hud_digits);
+	struct hud_number_definition const *hud_number;
+	struct bitmap_data const *digit_bitmap = NULL;
+	real_rectangle2d const *clip = NULL;
+	real digit_count;
+	real decimal_point_width;
+	real scale;
+	real width;
+	point2d origin;
+
+	if (hud_number_index == NONE)
+		return FALSE;
+	hud_number = hud_number_definition_get(hud_number_index);
+	hud_retrieve_bitmap_and_bounding_rect(hud_number->number_bitmap.index, 0, 0, &digit_bitmap, &clip);
+	if (!digit_bitmap || !clip)
+		return FALSE;
+
+	/* (as hud_draw_numbers counts and places them) */
+	digit_count = (real)(numbers->digits +
+		(numbers->fractional_digits && decimal_value != NONE ? MIN(numbers->fractional_digits, 4) + 1 : 0));
+	if (TEST_FLAG(numbers->number_flags, _hud_number_show_trailing_m_bit))
+		digit_count += 1.0f;
+	decimal_point_width = (real)(numbers->fractional_digits ? hud_number->decimal_point_width : 0);
+	scale = hud_globals_get_scale(TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
+	hud_calculate_point(local_player_index, absolute_placement, &numbers->placement, NULL,
+		TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit), 0.0f, &origin);
+	width = ((digit_count - 1.0f) * hud_number->screen_width + decimal_point_width) * scale +
+		(clip->x1 - clip->x0) * digit_bitmap->width * scale;
+
+	switch (absolute_placement->corner)
+	{
+	case _hud_anchor_center:
+		bounds->x0 = (short)(origin.x - width * 0.5f);
+		break;
+
+	case _hud_anchor_top_right:
+	case _hud_anchor_bottom_right:
+		bounds->x0 = (short)(origin.x - width);
+		break;
+
+	default:
+		bounds->x0 = origin.x;
+		break;
+	}
+	bounds->x1 = (short)(bounds->x0 + width + 0.5f);
+	bounds->y0 = origin.y;
+	bounds->y1 = (short)(origin.y + (clip->y1 - clip->y0) * digit_bitmap->height * scale + 0.5f);
+
+	return TRUE;
+}

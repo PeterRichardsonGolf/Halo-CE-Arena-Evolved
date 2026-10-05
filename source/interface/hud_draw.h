@@ -163,6 +163,13 @@ void hud_draw_numbers(
 	short draw_flags,
 	long flash_reference_time,
 	real override_scale);
+boolean hud_numbers_bounds(
+	short local_player_index,
+	struct hud_absolute_placement_definition const *absolute_placement,
+	struct number_hud_element_definition const *numbers,
+	short decimal_value,
+	short draw_flags,
+	rectangle2d *bounds);
 
 /* ---------- public code */
 

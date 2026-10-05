@@ -61,7 +61,9 @@ the item alone once it is on the map; a spawn that can be either powerup
 label is red for an item at the red base, blue at the blue base, the HUD's
 colour in the middle (as near to both: within 15% of the bases' distance
 apart). An item a map has at both bases is RED or BLUE in its name, in the
-power list too (RED SNIPER, BLUE SNIPER on Blood Gulch).
+power list too (RED SNIPER, BLUE SNIPER on Blood Gulch). Arrows together at
+the screen's edge share one list of labels, and items spawning at the same
+time share a line ("0:07 ROCKETS · OS/CAMO · RED SNIPER").
 
 These are the host's rules. Players on Arena Evolved see and play them all.
 Players who join on a build without them still play the host's rules where

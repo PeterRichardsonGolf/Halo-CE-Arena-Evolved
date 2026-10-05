@@ -19,7 +19,6 @@ time alone (a client has the host's: game_time_set_distributed).
 #include "hs/hs.h"
 #include "items/equipment_definitions.h"
 #include "items/item_definitions.h"
-#include "items/items.h"
 #include "items/weapon_definitions.h"
 #include "objects/object_definitions.h"
 #include "objects/object_types.h"
@@ -38,8 +37,14 @@ of the distance between the bases is in the middle (of the entry's own
 distance, an item far along a map's length from both, as Boarding Action's
 snipers at a ship's end, would be) */
 #define ITEM_TIMER_MIDDLE_FRACTION 0.15f
+/* bases nearer each other than this, or than this part of how far the
+map's spawns spread, tell no sides */
+#define ITEM_TIMER_MINIMUM_BASES_APART 10.0f
+#define ITEM_TIMER_MINIMUM_BASES_SPREAD 0.25f
 /* how far from its spawn point an entry's spawned item is looked for */
 #define ITEM_TIMER_SPAWNED_RADIUS 2.0f
+/* the most items of an entry's classes by its spawn point looked at */
+#define ITEM_TIMER_MAXIMUM_NEARBY 8
 
 /* ---------- macros */
 
@@ -57,11 +62,18 @@ static short item_timer_count;
 /* each entry's TRAINING waypoint at the last tick (item_timers_update's log) */
 static boolean item_timer_waypoints[MAXIMUM_ITEM_TIMERS];
 /* the item a mixed entry (OS/CAMO) last spawned, as seen on the map
-(item_timers_update): the spawn's tick, its class (NONE: not seen) */
+(item_timers_update): the spawn's tick, its class (NONE: not seen); and
+the items of its classes by its spawn point in the countdown to a spawn
+(that spawn's tick, NONE for none), which are not the one it spawns: a
+client has the host's new item, and its removal of an old one, a few ticks
+late */
 static struct
 {
 	long spawn_tick;
 	short timer_class;
+	long before_spawn_tick;
+	short before_count;
+	long before[ITEM_TIMER_MAXIMUM_NEARBY];
 } item_timer_spawned[MAXIMUM_ITEM_TIMERS];
 
 static char const *const item_timer_side_names[NUMBER_OF_ITEM_TIMER_SIDES] =
@@ -216,34 +228,38 @@ static void item_timer_label(
 	label[length] = 0;
 }
 
-/* a team's base (0 red, 1 blue): the middle of its CTF flags, else of
-its player starting locations (whatever their game types: a free for all
-map's still have teams); FALSE for none */
+/* a team's base (0 red, 1 blue): the middle of its CTF flags (flags TRUE)
+or of its player starting locations (whatever their game types: a free
+for all map's still have teams); FALSE for none */
 static boolean item_timers_team_base(
 	struct scenario *scenario,
 	short team_index,
+	boolean flags,
 	real_point3d *base)
 {
 	long count = 0;
 	short index;
 
 	base->x = base->y = base->z = 0.0f;
-	for (index = 0; index < scenario->netgame_flags.count; index++)
+	if (flags)
 	{
-		struct scenario_netgame_flag const *flag = TAG_BLOCK_GET_ELEMENT(
-			&scenario->netgame_flags,
-			index,
-			struct scenario_netgame_flag);
-
-		if (flag->type == _netgame_flag_ctf_flag && flag->team_index == team_index)
+		for (index = 0; index < scenario->netgame_flags.count; index++)
 		{
-			base->x += flag->position.x;
-			base->y += flag->position.y;
-			base->z += flag->position.z;
-			count++;
+			struct scenario_netgame_flag const *flag = TAG_BLOCK_GET_ELEMENT(
+				&scenario->netgame_flags,
+				index,
+				struct scenario_netgame_flag);
+
+			if (flag->type == _netgame_flag_ctf_flag && flag->team_index == team_index)
+			{
+				base->x += flag->position.x;
+				base->y += flag->position.y;
+				base->z += flag->position.z;
+				count++;
+			}
 		}
 	}
-	if (!count)
+	else
 	{
 		for (index = 0; index < scenario->players.count; index++)
 		{
@@ -270,27 +286,76 @@ static boolean item_timers_team_base(
 	return TRUE;
 }
 
+/* how far the map's player starting locations spread: their bounding
+box's diagonal, 0 for none */
+static real item_timers_spawn_spread(
+	struct scenario *scenario)
+{
+	real_point3d low;
+	real_point3d high;
+	short index;
+
+	if (scenario->players.count <= 0)
+		return 0.0f;
+	for (index = 0; index < scenario->players.count; index++)
+	{
+		struct player_starting_location const *location = TAG_BLOCK_GET_ELEMENT(
+			&scenario->players,
+			index,
+			struct player_starting_location);
+
+		if (!index)
+		{
+			low = location->position;
+			high = location->position;
+			continue;
+		}
+		low.x = MIN(low.x, location->position.x);
+		low.y = MIN(low.y, location->position.y);
+		low.z = MIN(low.z, location->position.z);
+		high.x = MAX(high.x, location->position.x);
+		high.y = MAX(high.y, location->position.y);
+		high.z = MAX(high.z, location->position.z);
+	}
+
+	return distance3d(&low, &high);
+}
+
 /* each power entry's side: the nearer team's base, else the middle (as
 near to both, within ITEM_TIMER_MIDDLE_FRACTION of the bases' distance
-apart, or a map without both teams' bases); and RED / BLUE before the name of an entry whose item (its
-class and label) is also at the other team's base */
+apart). The bases are both teams' CTF flags when both have them, else both
+teams' player spawns; none (every item in the middle) when a team has
+neither, or the bases are too near each other to tell sides by
+(ITEM_TIMER_MINIMUM_BASES_APART, ITEM_TIMER_MINIMUM_BASES_SPREAD). And RED
+/ BLUE before the name of an entry whose item (its class and label) is
+also at the other team's base */
 static void item_timers_find_sides(
 	char labels[][ITEM_TIMER_LABEL_LENGTH + 1])
 {
 	struct scenario *scenario = global_scenario_get();
 	real_point3d bases[2];
-	boolean found = item_timers_team_base(scenario, 0, &bases[0]) && item_timers_team_base(scenario, 1, &bases[1]);
+	boolean flags = item_timers_team_base(scenario, 0, TRUE, &bases[0]) &&
+		item_timers_team_base(scenario, 1, TRUE, &bases[1]);
+	boolean found = flags ||
+		(item_timers_team_base(scenario, 0, FALSE, &bases[0]) && item_timers_team_base(scenario, 1, FALSE, &bases[1]));
 	real apart = found ? distance3d(&bases[0], &bases[1]) : 0.0f;
+	real spread = item_timers_spawn_spread(scenario);
 	short index, other;
 
-	if (found)
+	if (!found)
 	{
-		platform_log("item timers: red base (%.1f %.1f %.1f), blue base (%.1f %.1f %.1f)",
-			bases[0].x, bases[0].y, bases[0].z, bases[1].x, bases[1].y, bases[1].z);
+		platform_log("item timers: no red and blue bases; every item is in the middle");
+	}
+	else if (apart < ITEM_TIMER_MINIMUM_BASES_APART || apart < ITEM_TIMER_MINIMUM_BASES_SPREAD * spread)
+	{
+		platform_log("item timers: the red and blue bases (%s) are %.1f apart, the spawns spread %.1f: too near "
+			"for sides; every item is in the middle", flags ? "flags" : "spawns", apart, spread);
+		found = FALSE;
 	}
 	else
 	{
-		platform_log("item timers: no red and blue bases; every item is in the middle");
+		platform_log("item timers: red base (%.1f %.1f %.1f), blue base (%.1f %.1f %.1f), from their %s, %.1f apart",
+			bases[0].x, bases[0].y, bases[0].z, bases[1].x, bases[1].y, bases[1].z, flags ? "flags" : "spawns", apart);
 	}
 	for (index = 0; index < item_timer_count; index++)
 	{
@@ -326,41 +391,93 @@ static void item_timers_find_sides(
 	}
 }
 
-/* the item on the map a mixed entry (OS/CAMO) spawned: the nearest of its
-classes by its spawn point, not held, the latest placed of any there; its
-class, else NONE */
-static short item_timer_find_spawned(
-	struct item_timer const *timer)
+/* the items on the map of a mixed entry's classes by its spawn point, not
+held: their datum indices and classes, nearest first; their count (up to
+maximum) */
+static short item_timer_nearby_items(
+	struct item_timer const *timer,
+	long *indices,
+	short *classes,
+	short maximum)
 {
 	struct object_iterator iterator;
-	short found_class = NONE;
-	long found_time = 0;
+	real distances[ITEM_TIMER_MAXIMUM_NEARBY];
+	short count = 0;
+
+	maximum = MIN(maximum, ITEM_TIMER_MAXIMUM_NEARBY);
 
 	object_iterator_new(&iterator, _object_mask_weapon | _object_mask_equipment, 0);
 	while (object_iterator_next(&iterator))
 	{
 		struct object_datum *object = object_get(iterator.index);
 		short object_class;
-		long placed;
+		real distance;
+		short at;
 
 		if (object->object.parent_object_index != NONE ||
-			!TEST_FLAG(object->object.flags, _object_connected_to_map_bit) ||
-			distance3d(&timer->position, &object->object.position) > ITEM_TIMER_SPAWNED_RADIUS)
+			!TEST_FLAG(object->object.flags, _object_connected_to_map_bit))
 		{
 			continue;
 		}
+		distance = distance3d(&timer->position, &object->object.position);
+		if (distance > ITEM_TIMER_SPAWNED_RADIUS)
+			continue;
 		object_class = item_timer_definition_class(object->definition_index);
 		if (object_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES || !TEST_FLAG(timer->classes, object_class))
 			continue;
-		placed = item_get(iterator.index)->item.last_owned_time;
-		if (found_class == NONE || placed > found_time)
+		/* (nearest first; the farthest falls off a full list) */
+		if (count < maximum)
+			at = count++;
+		else if (distance < distances[count - 1])
+			at = (short)(count - 1);
+		else
+			continue;
+		for (; at > 0 && distances[at - 1] > distance; at--)
 		{
-			found_class = object_class;
-			found_time = placed;
+			distances[at] = distances[at - 1];
+			indices[at] = indices[at - 1];
+			classes[at] = classes[at - 1];
 		}
+		distances[at] = distance;
+		indices[at] = iterator.index;
+		classes[at] = object_class;
 	}
 
-	return found_class;
+	return count;
+}
+
+/* the class of the item a mixed entry spawned: the nearest of its classes
+by its spawn point that was not there in the countdown to the spawn (an
+old one, taken or not, may still be there for a few ticks on a client);
+NONE while there is none */
+static short item_timer_find_spawned(
+	struct item_timer const *timer,
+	short index,
+	long spawn)
+{
+	long indices[ITEM_TIMER_MAXIMUM_NEARBY];
+	short classes[ITEM_TIMER_MAXIMUM_NEARBY];
+	short count = item_timer_nearby_items(timer, indices, classes, ITEM_TIMER_MAXIMUM_NEARBY);
+	short nearby;
+
+	for (nearby = 0; nearby < count; nearby++)
+	{
+		boolean before = FALSE;
+		short other;
+
+		if (item_timer_spawned[index].before_spawn_tick == spawn)
+		{
+			for (other = 0; other < item_timer_spawned[index].before_count; other++)
+			{
+				if (item_timer_spawned[index].before[other] == indices[nearby])
+					before = TRUE;
+			}
+		}
+		if (!before)
+			return classes[nearby];
+	}
+
+	return NONE;
 }
 
 /* an entry that can spawn more than one power class (OS/CAMO) */
@@ -395,6 +512,8 @@ void item_timers_map_begin(
 	{
 		item_timer_spawned[index].spawn_tick = NONE;
 		item_timer_spawned[index].timer_class = NONE;
+		item_timer_spawned[index].before_spawn_tick = NONE;
+		item_timer_spawned[index].before_count = 0;
 	}
 	if (!game_engine_running())
 		return;
@@ -563,7 +682,8 @@ short item_timer_spawned_class(
 
 /* the name over TRAINING's waypoint: RED / BLUE as the power list has it,
 and the item's whole name (ROCKETS, SNIPER, OVERSHIELD, CAMO); a mixed
-entry's OS/CAMO until the item it spawned is seen on the map */
+entry's power list label (OS/CAMO) until the item it spawned is seen on
+the map */
 void item_timer_waypoint_name(
 	struct item_timer const *timer,
 	wchar_t *name,
@@ -577,22 +697,22 @@ void item_timer_waypoint_name(
 		"CAMO",
 	};
 	char text[32];
-	char const *item = "OS/CAMO";
+	char const *item;
 	short timer_class = item_timer_mixed(timer) ? item_timer_spawned_class(timer) : timer->timer_class;
 	short index;
 
 	if (size <= 0)
 		return;
-	if (timer_class >= 0 && timer_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
-		item = power_names[timer_class];
-	else if (!item_timer_mixed(timer))
+	if (timer_class < 0 || timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
 	{
-		/* (not a power item: the power list's label) */
+		/* (a mixed entry's item not seen yet, or not a power item: the
+		power list's label, OS/CAMO) */
 		for (index = 0; index < size - 1 && timer->label[index]; index++)
 			name[index] = timer->label[index];
 		name[index] = 0;
 		return;
 	}
+	item = power_names[timer_class];
 	if (timer->side_prefix)
 		snprintf(text, sizeof(text), "%s %s", item_timer_side_names[timer->side], item);
 	else
@@ -615,7 +735,19 @@ void item_timers_update(
 		struct item_timer const *timer = &item_timers[index];
 		long spawn;
 
-		if (!item_timer_mixed(timer) || !item_timer_on_map(timer))
+		if (!item_timer_mixed(timer))
+			continue;
+		/* (in the countdown to a spawn: the items there before it) */
+		if (item_timer_ticks_left(timer) < timer->period_ticks &&
+			item_timer_ticks_left(timer) <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)
+		{
+			short classes[ITEM_TIMER_MAXIMUM_NEARBY];
+
+			item_timer_spawned[index].before_spawn_tick = game_time_get() + item_timer_ticks_left(timer);
+			item_timer_spawned[index].before_count = item_timer_nearby_items(timer,
+				item_timer_spawned[index].before, classes, ITEM_TIMER_MAXIMUM_NEARBY);
+		}
+		if (!item_timer_on_map(timer))
 			continue;
 		spawn = game_time_get() - game_time_get() % timer->period_ticks;
 		if (item_timer_spawned[index].spawn_tick != spawn)
@@ -625,7 +757,7 @@ void item_timers_update(
 		}
 		if (item_timer_spawned[index].timer_class == NONE)
 		{
-			item_timer_spawned[index].timer_class = item_timer_find_spawned(timer);
+			item_timer_spawned[index].timer_class = item_timer_find_spawned(timer, index, spawn);
 			if (item_timer_spawned[index].timer_class != NONE)
 			{
 				wchar_t name[32];
