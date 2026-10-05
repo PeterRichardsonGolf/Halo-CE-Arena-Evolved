@@ -63,12 +63,14 @@ SCREENS = {
     "mods_setup": {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
-        "title": "MODS",
+        "title": "GAME OPTIONS",
         "spacing": 30,
         "rows": [
             ("MOD:", "game.mod", [("STOCK", "")],
              "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
              "desktop"),
+            ("FALL DAMAGE:", "game.fall_damage", ON_OFF,
+             "Off: falls hurt no player, but a deadly height's,\na pit's and out of bounds still kill.", None),
         ],
     },
     "mouse_settings": {
@@ -167,7 +169,8 @@ CONTROL_ROWS = 7
 # the profile menu's words for what its items now open
 STRING_OVERRIDES = {
     f"{PE}/profile_edit_options": ["CHANGE NAME", "CONTROLS SETUP", "GAMEPADS", "MOUSE SETUP", "AUDIO SETUP",
-                                   "VIDEO SETUP", "CHANGE COLOR", "SAVE CHANGES ", "NETWORK SETUP ", "ABOUT", "MODS"],
+                                   "VIDEO SETUP", "CHANGE COLOR", "SAVE CHANGES ", "NETWORK SETUP ", "ABOUT",
+                                   "GAME OPTIONS"],
     f"{PE}/profile_edit_descriptions": [
         "Rename this profile.\\n\\n\\nProfile:",
         "Choose the keys and mouse\\nbuttons for each action.\\n\\nProfile:",
@@ -176,7 +179,7 @@ STRING_OVERRIDES = {
         "Adjust the volume of the music\\nand of everything else.\\n\\nProfile:",
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
-        "Play a mod: its maps in place\\nof the stock maps they replace.\\n\\nProfile:",
+        "Mods, and how the game plays:\\nfall damage and more.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
     ],

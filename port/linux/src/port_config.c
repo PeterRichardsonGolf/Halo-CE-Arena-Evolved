@@ -244,6 +244,9 @@ static const struct config_setting config_settings[] =
 	{ "game.language", _config_string, "\"\"", "HALO_LANGUAGE", _environment_value, _platform_all,
 		"The language the game asks the Xbox for: \"ja\", \"de\", \"fr\", \"es\" or \"it\";\n"
 		"empty for English. The game data decides what is translated." },
+	{ "game.fall_damage", _config_boolean, "true", "HALO_FALL_DAMAGE", _environment_value, _platform_all,
+		"Players hurt by falls; false only by a fall from a deadly height, a pit or\n"
+		"the map's kill volumes (out of bounds). In a network game, the host's." },
 	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
 		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
 		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"

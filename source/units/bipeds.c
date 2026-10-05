@@ -779,6 +779,11 @@ static void biped_bumped_object(
 	return;
 }
 
+/* port: game.fall_damage (Settings > Game Options): false spares players
+the damage of a fall short of a deadly one; a fall from a deadly height, a
+pit (falling past the deadliest speed) and the map's kill volumes still kill */
+int config_boolean(const char *name);
+
 static void biped_falling_damage(
 	long biped_index,
 	real collision_velocity)
@@ -811,6 +816,12 @@ static void biped_falling_damage(
 					damage.scale,
 					0.f,
 					1.f);
+				/* port: no fall damage (game.fall_damage) but a deadly fall's */
+				if (damage.scale < 1.f && biped->unit.player_index != NONE &&
+					!config_boolean("game.fall_damage"))
+				{
+					return;
+				}
 				object_cause_damage(&damage, biped_index, NONE, NONE, NONE, NULL);
 			}
 		}
