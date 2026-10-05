@@ -19,5 +19,6 @@ over the floor, drawn within 25 world units and fading out over the last 10 */
 /* ---------- prototypes/RENDER_SPAWN_MARKERS.C */
 
 void render_spawn_markers(short local_player_index);	/* in render_window's world pass, before the HUD */
+void render_spawn_markers_initialize_for_new_map(void);	/* the log's per-view state, from render_initialize_for_new_map */
 
 #endif // __RENDER_SPAWN_MARKERS_H

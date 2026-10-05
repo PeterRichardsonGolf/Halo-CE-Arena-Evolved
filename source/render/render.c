@@ -172,6 +172,8 @@ void render_initialize_for_new_map(
 	void)
 {
 	render_objects_initialize_for_new_map();
+	/* port: the gametype's TRAINING's spawn markers' log starts over */
+	render_spawn_markers_initialize_for_new_map();
 }
 
 void render_dispose_from_old_map(
