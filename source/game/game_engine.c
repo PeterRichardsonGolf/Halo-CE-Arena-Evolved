@@ -1440,15 +1440,34 @@ static void rasterize_in_game_score_draw_line(
 	else
 		tab_stops = narrow_tab_stops;
 
-	if (row_index)
-		draw_string_set_tab_stops(tab_stops, 3);
-	else
-		draw_string_set_tab_stops(NULL, 0);
-
 	offset_rectangle2d(
 		&bounds,
 		-render.camera.viewport_bounds.x0,
 		-render.camera.viewport_bounds.y0);
+
+	/* port: centred in the view (the Xbox drew it from the view's left
+	edge, far off centre in a wide split-screen view): the columns, from
+	the first tab stop to the last and room for the score, are centred,
+	and the title starts over the first column (tab stops are view
+	coordinates, so they move too) */
+	{
+		short left = tab_stops[0];
+		short right = (short)(tab_stops[2] + (tab_stops[2] - tab_stops[1]) / 2);
+		short shift = (short)(((bounds.x0 + bounds.x1) - (left + right)) / 2);
+
+		if (left + shift > bounds.x0)
+		{
+			short tab_index;
+
+			for (tab_index = 0; tab_index < 3; tab_index++)
+				tab_stops[tab_index] += shift;
+			bounds.x0 = tab_stops[0];
+		}
+	}
+	if (row_index)
+		draw_string_set_tab_stops(tab_stops, 3);
+	else
+		draw_string_set_tab_stops(NULL, 0);
 
 	if (font_index != NONE)
 	{
