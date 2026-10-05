@@ -185,9 +185,10 @@ static const struct config_setting config_settings[] =
 		"none, the time played), \"up\" the time played, or \"off\". On Halo 1:\n"
 		"NHE's maps it takes the place of their own clock; off leaves theirs." },
 	{ "display.hud_area", _config_string, "\"full\"", "HALO_HUD_AREA", _environment_value, _platform_all,
-		"Where the HUD is drawn on a wider screen: \"full\" out to the view's\n"
-		"edges, \"16:9\" or \"4:3\" in a part of that shape at the middle of\n"
-		"each view wider than it. The view itself stays the full width." },
+		"Where the HUD is drawn on a wider screen: \"full\" out to the screen's\n"
+		"edges, \"16:9\" or \"4:3\" in a part of the screen of that shape at\n"
+		"its middle (a split screen view's sides at the screen's edges move\n"
+		"in). The view itself stays the full width." },
 	{ "display.compact_hud", _config_boolean, "false", "HALO_COMPACT_HUD", _environment_value, _platform_all,
 		"With one view, draw split screen's HUD: the game's own smaller meters,\n"
 		"motion sensor and messages. The reticle stays as it is." },

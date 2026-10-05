@@ -32,9 +32,10 @@ where the two would meet (main.c's main_framerate_extent); at a lower
 view's bottom it keeps clear of the clock in the corner. Entries that would
 take the line wider than its room are left off (the latest).
 
-With HUD AREA (display.hud_area: hud_area_inset), both keep to its part of
-the view: the clock by the sensor, which has moved in with the HUD, the
-power list's line (and the clock with no sensor) from that part's sides.
+With HUD AREA (display.hud_area: hud_area_insets), both keep to its part
+of the view: the clock mirrors the sensor (which has moved in with the HUD)
+about that part's middle, and the power list's line (and the clock with no
+sensor) keeps to that part's sides, centred on its middle.
 
 Neither is drawn once the game is over (game_engine_game_over: the
 postgame's "You won"/"You lost" view and the scores).
@@ -128,20 +129,21 @@ static void hud_item_timers_set_draw_mode(
 	draw_string_set_draw_mode(font_index, NONE, justification, 0, &color);
 }
 
-/* a line from top, inset (left and right) from the view's edges */
+/* a line from top, inset left and right from the view's edges */
 static void hud_item_timers_draw_line(
 	long font_index,
 	short justification,
 	short top,
-	short inset,
+	short left,
+	short right,
 	wchar_t const *text)
 {
 	rectangle2d bounds;
 	real pivot_x;
 
 	/* (the view's own bounds, relative to it: where this pass draws) */
-	bounds.x0 = inset;
-	bounds.x1 = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0 - inset);
+	bounds.x0 = left;
+	bounds.x1 = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0 - right);
 	bounds.y0 = top;
 	bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
 	/* (laid out at full size, so as wide as the line's room is at four
@@ -204,6 +206,11 @@ static long hud_item_timers_draw_clock(
 	short local_player_index = render.local_player_index;
 	short inset;
 	long baseline;
+	/* (port: HUD AREA's insets of the view's HUD, hud_area_insets) */
+	short area_left;
+	short area_right;
+
+	hud_area_insets(&area_left, &area_right);
 
 	if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
 		hud_item_timers_motion_sensors[local_player_index].valid &&
@@ -212,23 +219,23 @@ static long hud_item_timers_draw_clock(
 	{
 		rectangle2d const *sensor = &hud_item_timers_motion_sensors[local_player_index].bounds;
 
-		/* (the sensor's left inset, mirrored; its background's foot) */
-		inset = (short)MAX(sensor->x0, 0);
+		/* (the sensor's left inset, mirrored; its background's foot. port:
+		mirrored about the middle of HUD AREA's part of the view, which is
+		the view's own moved by half the difference of its insets) */
+		inset = (short)MAX(sensor->x0 + area_right - area_left, 0);
 		baseline = MIN(sensor->y1, view_height);
 	}
 	else
 	{
 		/* (port: of HUD AREA's part of the view) */
-		short area_inset = hud_area_inset();
-
-		inset = (short)(area_inset + HUD_ITEM_TIMERS_CLOCK_RIGHT * (view_width - 2 * area_inset) + 0.5f);
+		inset = (short)(area_right + HUD_ITEM_TIMERS_CLOCK_RIGHT * (view_width - area_left - area_right) + 0.5f);
 		baseline = view_height - (long)(HUD_ITEM_TIMERS_CLOCK_BOTTOM * view_height + 0.5f);
 	}
 	/* (the digits' foot, their baseline, there: the line's top an ascent
 	(at four fifths) above it) */
 	hud_item_timers_draw_line(font_index, _text_justification_right,
 		(short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_SCALE + 0.5f)),
-		inset, text);
+		inset, inset, text);
 
 	return inset + hud_item_timers_line_width(font_index, text);
 }
@@ -319,14 +326,23 @@ static void hud_item_timers_draw_powers(
 	short justification = !one_view ? _text_justification_center :
 		main_framerate_shown() && main_framerate_corner() == _text_justification_left ?
 			_text_justification_right : _text_justification_left;
-	/* (the room from the view's sides: in HUD AREA's part of it) */
-	long side = HUD_ITEM_TIMERS_SIDE + hud_area_inset();
-	long width = hud_item_timers_power_line(font_index, view_width - 2 * side, line);
+	/* (the room from the view's sides: in HUD AREA's part of it,
+	hud_area_insets, and the middle of that part) */
+	short area_left;
+	short area_right;
+	long left;
+	long right;
+	long middle;
+	long width;
 	long overlay = 0;
 	long top;
 	boolean bottom;
-	short inset;
 
+	hud_area_insets(&area_left, &area_right);
+	left = HUD_ITEM_TIMERS_SIDE + area_left;
+	right = HUD_ITEM_TIMERS_SIDE + area_right;
+	middle = area_left + (view_width - area_left - area_right) / 2;
+	width = hud_item_timers_power_line(font_index, view_width - left - right, line);
 	if (!width)
 		return;
 	/* (the screen's top line: under the overlay's line where they would
@@ -336,9 +352,9 @@ static void hud_item_timers_draw_powers(
 
 		if (render.camera.viewport_bounds.y0 <= 0 && main_framerate_shown() && main_framerate_extent(&extent))
 		{
-			long x0 = justification == _text_justification_left ? side :
-				justification == _text_justification_right ? view_width - side - width :
-				(view_width - width) / 2;
+			long x0 = justification == _text_justification_left ? left :
+				justification == _text_justification_right ? view_width - right - width :
+				area_left + (view_width - area_left - area_right - width) / 2;
 			long x1 = x0 + width;
 
 			x0 += render.camera.viewport_bounds.x0;
@@ -356,15 +372,28 @@ static void hud_item_timers_draw_powers(
 		/* (clear of the clock on both sides) */
 		if (clock_room > 0)
 		{
-			width = hud_item_timers_power_line(font_index, view_width - 2 * (clock_room + HUD_ITEM_TIMERS_GAP), line);
+			width = hud_item_timers_power_line(font_index,
+				view_width - area_left - area_right - 2 * (clock_room - area_right + HUD_ITEM_TIMERS_GAP), line);
 			if (!width)
 				return;
 		}
 	}
 	else
 		top = overlay + HUD_ITEM_TIMERS_TOP;
-	inset = justification == _text_justification_center ? 0 : (short)side;
-	hud_item_timers_draw_line(font_index, justification, (short)top, inset, line);
+	/* (centred: about the middle of HUD AREA's part, as wide on both
+	sides) */
+	if (justification == _text_justification_center)
+	{
+		long half = MIN(middle, view_width - middle);
+
+		if (!area_left && !area_right)
+			hud_item_timers_draw_line(font_index, justification, (short)top, 0, 0, line);
+		else
+			hud_item_timers_draw_line(font_index, justification, (short)top,
+				(short)(middle - half), (short)(view_width - middle - half), line);
+	}
+	else
+		hud_item_timers_draw_line(font_index, justification, (short)top, (short)left, (short)right, line);
 }
 
 void hud_draw_item_timers(

@@ -1342,7 +1342,7 @@ void hud_messaging_update(
 			&hud_msg_def->absolute_placement,
 			&hud_msg_def->placement,
 			NULL,
-			hud_split_screen_layout(),
+			split_screen,
 			0.0f,
 			&screen_point);
 		line_top = screen_point.y;
@@ -1360,7 +1360,7 @@ void hud_messaging_update(
 		}
 		first_line_height = line_height;
 		datum = &hud_messaging_globals->message_data[render.local_player_index];
-		maximum_message_count = 4 - (hud_split_screen_layout());
+		maximum_message_count = 4 - split_screen;
 		objective_active = hud_messaging_globals->objective.message &&
 			hud_messaging_globals->objective.uptime;
 		help_active = hud_scripted_globals->show_hud_help_text &&

@@ -92,8 +92,11 @@ void hud_area_begin(
 	rectangle2d *saved_window_bounds);
 void hud_area_end(
 	rectangle2d const *saved_window_bounds);
-short hud_area_inset(
-	void);
+void hud_area_window(
+	rectangle2d *window_bounds);
+void hud_area_insets(
+	short *left,
+	short *right);
 boolean hud_split_screen_layout(
 	void);
 long get_flash_duration(

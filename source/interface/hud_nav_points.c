@@ -777,12 +777,20 @@ void custom_render_nav_point(
 			render.camera.viewport_bounds.y0);
 	}
 
-	horizontal_radius =
-		((real)(render.camera.window_bounds.x1-render.camera.window_bounds.x0) -
-		(hud_globals->waypoint.right_offset+hud_globals->waypoint.left_offset))*0.5f;
-	vertical_radius =
-		((real)(render.camera.window_bounds.y1-render.camera.window_bounds.y0) -
-		(hud_globals->waypoint.bottom_offset+hud_globals->waypoint.top_offset))*0.5f;
+	/* port: whether it is on screen by the view's whole window (HUD AREA's
+	pass narrows render.camera.window_bounds: hud_area_window), so that a
+	waypoint in sight stays over its object */
+	{
+		rectangle2d whole;
+
+		hud_area_window(&whole);
+		horizontal_radius =
+			((real)(whole.x1-whole.x0) -
+			(hud_globals->waypoint.right_offset+hud_globals->waypoint.left_offset))*0.5f;
+		vertical_radius =
+			((real)(whole.y1-whole.y0) -
+			(hud_globals->waypoint.bottom_offset+hud_globals->waypoint.top_offset))*0.5f;
+	}
 	radius_product = vertical_radius*horizontal_radius;
 	vertical_component = vertical_radius*screen_position.x;
 	horizontal_component = horizontal_radius*screen_position.y;
@@ -792,7 +800,23 @@ void custom_render_nav_point(
 		radius_product*radius_product <=
 		vertical_component*vertical_component + horizontal_component*horizontal_component)
 	{
-		real scale = square_root(
+		real scale;
+		short area_left;
+		short area_right;
+
+		/* port: an arrow at the edge of HUD AREA's part of the view (its
+		window as narrowed, about its middle: the view's moved by half the
+		difference of the insets), in the direction it points from the
+		view's middle; with all of it, the whole window's edge, as before */
+		hud_area_insets(&area_left, &area_right);
+		if (area_left || area_right)
+		{
+			horizontal_radius -= (real)(area_left + area_right)*0.5f;
+			radius_product = vertical_radius*horizontal_radius;
+			vertical_component = vertical_radius*screen_position.x;
+			horizontal_component = horizontal_radius*screen_position.y;
+		}
+		scale = square_root(
 			(radius_product*radius_product) /
 			(vertical_component*vertical_component + horizontal_component*horizontal_component));
 
@@ -804,6 +828,7 @@ void custom_render_nav_point(
 		{
 			theta = -arctangent(screen_position.x, screen_position.y);
 		}
+		screen_position.x += (real)(area_left - area_right)*0.5f;
 	}
 
 	screen_position.x += (real)(

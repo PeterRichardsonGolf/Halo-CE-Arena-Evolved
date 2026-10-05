@@ -418,11 +418,10 @@ unsigned long config_changes(void);
 /* ---------- globals */
 
 /* port: HUD AREA in the HUD's pass of a view (hud_area_begin): the view's
-whole window, and how far each side of it is moved in */
+whole window */
 static struct
 {
 	boolean active;
-	short inset;
 	rectangle2d window_bounds;
 } hud_area_globals;
 
@@ -1008,11 +1007,13 @@ void hud_calculate_point(
 	else
 	{
 		point2d window_center;
+		/* port: the view's middle, where its camera aims, with HUD AREA too
+		(hud_area_window; in the zoomed layout, the same middle) */
+		rectangle2d window;
 
-		window_center.x = (short)(
-			(render.camera.window_bounds.x1 + render.camera.window_bounds.x0) / 2);
-		window_center.y = (short)(
-			(render.camera.window_bounds.y1 + render.camera.window_bounds.y0) / 2);
+		hud_area_window(&window);
+		window_center.x = (short)((window.x1 + window.x0) / 2);
+		window_center.y = (short)((window.y1 + window.y0) / 2);
 
 		point.x = window_center.x - render.camera.viewport_bounds.x0 +
 			placement->offset.x * scale;
@@ -1336,24 +1337,25 @@ boolean hud_number_shows_only_when_zoomed(
 }
 
 /* the window as it would be 640 wide, at the middle of the wide one (each
-split screen window its share). port: of the view's whole window, not
-HUD AREA's part of it (hud_area_begin), and no wider than that part */
+split screen window its share). port: of the view's whole window, where
+its camera aims, not HUD AREA's part of it (hud_area_begin) */
 void hud_zoomed_layout_begin(
 	rectangle2d *saved_window_bounds)
 {
-	long width = render.camera.window_bounds.x1 - render.camera.window_bounds.x0;
-	long whole = hud_area_globals.active ?
-		hud_area_globals.window_bounds.x1 - hud_area_globals.window_bounds.x0 : width;
-	long zoomed = MIN(whole * 640 / halo_screen_width(), width);
-	short inset = (short)((width - zoomed) / 2);
+	rectangle2d whole;
+	long width;
+	short inset;
 
+	hud_area_window(&whole);
+	width = whole.x1 - whole.x0;
+	inset = (short)((width - width * 640 / halo_screen_width()) / 2);
 	*saved_window_bounds = render.camera.window_bounds;
-	render.camera.window_bounds.x0 += inset;
-	render.camera.window_bounds.x1 -= inset;
+	render.camera.window_bounds.x0 = (short)(whole.x0 + inset);
+	render.camera.window_bounds.x1 = (short)(whole.x1 - inset);
 }
 
 /* port: HUD AREA (display.hud_area): "full", "16:9" or "4:3", as the
-width of the HUD's part of a view to its height (0 for the whole view) */
+width of the HUD's part of the screen to its height (0 for all of it) */
 static real hud_area_aspect(
 	void)
 {
@@ -1378,27 +1380,40 @@ static real hud_area_aspect(
 }
 
 /* port: the HUD's pass of a view (interface_draw_screen) drawn in HUD
-AREA's part of it: the view's window (render.camera.window_bounds, which
-every HUD element's corner, the messages, the nav points' edge and the
-scoreboard keep to) narrowed to the part's shape at its middle, where the
-view is wider than that. The view's camera was set up from the whole window
-before this; only the HUD moves */
+AREA's part of the screen: a screen of the area's shape, as tall as this
+one, at its middle, and that screen's title-safe frame (the HUD's, as
+rasterizer_xbox.c sets frame_bounds in proportion to the width). The
+view's window (render.camera.window_bounds, which every HUD element's
+corner, the messages, the scoreboard and the postgame's screens keep to) is
+clipped to that frame: a view's sides at the screen's edges move in, those
+where views meet stay. On a screen no wider than the area, nothing moves.
+The view's camera was set up from the whole window before this, and what is
+placed by the view's middle (the reticle, the zoomed view's elements) stays
+there; only the HUD's sides move */
 void hud_area_begin(
 	rectangle2d *saved_window_bounds)
 {
+	rectangle2d const *screen = &rasterizer_globals.reserved04.screen_bounds;
+	rectangle2d const *frame = &rasterizer_globals.reserved04.frame_bounds;
 	real aspect = hud_area_aspect();
-	long width = render.camera.window_bounds.x1 - render.camera.window_bounds.x0;
-	long height = render.camera.window_bounds.y1 - render.camera.window_bounds.y0;
+	real screen_width = (real)(screen->x1 - screen->x0);
+	real area_width = (real)(screen->y1 - screen->y0) * aspect;
 
 	*saved_window_bounds = render.camera.window_bounds;
 	hud_area_globals.window_bounds = render.camera.window_bounds;
 	hud_area_globals.active = TRUE;
-	hud_area_globals.inset = 0;
-	if (aspect > 0.0f && height > 0 && width > height * aspect)
+	if (aspect > 0.0f && screen_width > 0.0f && area_width < screen_width)
 	{
-		hud_area_globals.inset = (short)((width - (long)(height * aspect + 0.5f)) / 2);
-		render.camera.window_bounds.x0 += hud_area_globals.inset;
-		render.camera.window_bounds.x1 -= hud_area_globals.inset;
+		/* (the area's side margin, and its frame's inset in proportion) */
+		real margin = (screen_width - area_width) / 2.0f +
+			(real)(frame->x0 - screen->x0) * area_width / screen_width;
+		short x0 = (short)(screen->x0 + margin + 0.5f);
+		short x1 = (short)(screen->x1 - margin + 0.5f);
+
+		render.camera.window_bounds.x0 = MAX(render.camera.window_bounds.x0, x0);
+		render.camera.window_bounds.x1 = MIN(render.camera.window_bounds.x1, x1);
+		if (render.camera.window_bounds.x1 <= render.camera.window_bounds.x0)
+			render.camera.window_bounds = hud_area_globals.window_bounds;
 	}
 }
 
@@ -1407,15 +1422,29 @@ void hud_area_end(
 {
 	render.camera.window_bounds = *saved_window_bounds;
 	hud_area_globals.active = FALSE;
-	hud_area_globals.inset = 0;
 }
 
-/* port: how far HUD AREA has moved each side of the view's HUD in (0 for
-all of it, and outside the HUD's pass) */
-short hud_area_inset(
-	void)
+/* port: the view's whole window (its camera's), in HUD AREA's pass as
+outside it */
+void hud_area_window(
+	rectangle2d *window_bounds)
 {
-	return hud_area_globals.active ? hud_area_globals.inset : 0;
+	*window_bounds = hud_area_globals.active ? hud_area_globals.window_bounds : render.camera.window_bounds;
+}
+
+/* port: how far HUD AREA has moved the view's HUD's left and right sides
+in (0 for all of it, and outside the HUD's pass) */
+void hud_area_insets(
+	short *left,
+	short *right)
+{
+	*left = 0;
+	*right = 0;
+	if (hud_area_globals.active)
+	{
+		*left = (short)MAX(render.camera.window_bounds.x0 - hud_area_globals.window_bounds.x0, 0);
+		*right = (short)MAX(hud_area_globals.window_bounds.x1 - render.camera.window_bounds.x1, 0);
+	}
 }
 
 /* port: whether this view's HUD is split screen's (the game's own for two

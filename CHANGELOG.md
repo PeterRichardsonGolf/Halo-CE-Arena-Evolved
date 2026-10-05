@@ -9,8 +9,9 @@ releases yet, so the sections are dated.
 ### Added
 - HUD AREA (Settings > Game Options, `display.hud_area`): FULL, 16:9 or 4:3.
   On a wider screen, 16:9 or 4:3 keeps the whole HUD (meters, motion sensor,
-  ammo, messages, scoreboard, match clock, power list, waypoint arrows) in a
-  part of that shape at the middle of each view; the view stays wide.
+  ammo, messages, scoreboard, postgame screens, match clock, power list,
+  off-screen waypoint arrows) in a part of the screen of that shape at its
+  middle; split screen views' outer sides move in. The view stays wide.
 - COMPACT HUD (Settings > Game Options, `display.compact_hud`): with one
   player, the game's smaller split-screen HUD (meters, motion sensor,
   messages). The reticle stays full size.
