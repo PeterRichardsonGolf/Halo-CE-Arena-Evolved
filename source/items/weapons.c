@@ -466,6 +466,11 @@ static void projectile_distribute(
 	real distribution_angle,
 	short projectile_index,
 	short projectile_count);
+static void weapon_trigger_error_angle_bounds(
+	long weapon_definition_index,
+	struct weapon_trigger_definition const *trigger_definition,
+	real *lower_bound,
+	real *upper_bound);
 static void trigger_create_projectiles(
 	long weapon_index,
 	short trigger_index);
@@ -2267,6 +2272,39 @@ static void projectile_distribute(
 	return;
 }
 
+/* port: a trigger's projectile error angle bounds; the gametype's NO SPREAD
+(game_engine_no_spread) gives the pistol and the sniper rifle what Halo 1:
+NHE's maps have: the pistol's lower bound 0 (its first shot from rest goes
+where it is aimed, held fire still spreads to the upper bound), the sniper
+rifle's both 0 (scoped it has no error anyway: use error when unzoomed).
+NHE also zeroed the sniper's initial and final error, which nothing reads
+(the runtime error acceleration and deceleration, unchanged, drive the
+trigger's error). Host and clients alike: each fires its own players' shots
+here, and the host's hit checks do not look at the error. */
+static void weapon_trigger_error_angle_bounds(
+	long weapon_definition_index,
+	struct weapon_trigger_definition const *trigger_definition,
+	real *lower_bound,
+	real *upper_bound)
+{
+	*lower_bound= trigger_definition->projectile_error_angle_lower_bound;
+	*upper_bound= trigger_definition->projectile_error_angle_upper_bound;
+	if (game_engine_no_spread())
+	{
+		if (game_engine_weapon_is_pistol(weapon_definition_index))
+		{
+			*lower_bound= 0.0f;
+		}
+		else if (game_engine_weapon_is_sniper_rifle(weapon_definition_index))
+		{
+			*lower_bound= 0.0f;
+			*upper_bound= 0.0f;
+		}
+	}
+
+	return;
+}
+
 static void trigger_create_projectiles(
 	long weapon_index,
 	short trigger_index)
@@ -2425,8 +2463,11 @@ static void trigger_create_projectiles(
 					real fraction= TEST_FLAG(trigger_definition->flags, _weapon_trigger_analog_rate_of_fire_bit) ?
 						weapon->weapon.primary_trigger :
 						trigger->error;
+					real lower_bound;
+					real upper_bound;
 
-					error= (1.0f-fraction)*trigger_definition->projectile_error_angle_lower_bound + fraction*trigger_definition->projectile_error_angle_upper_bound;
+					weapon_trigger_error_angle_bounds(weapon->definition_index, trigger_definition, &lower_bound, &upper_bound);
+					error= (1.0f-fraction)*lower_bound + fraction*upper_bound;
 				}
 
 				if (!TEST_FLAG(trigger_definition->flags, _weapon_trigger_use_error_when_unzoomed_bit) ||

@@ -4756,6 +4756,16 @@ boolean game_engine_training(
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit);
 }
 
+/* port: the gametype's NO SPREAD (_game_variant_no_spread_bit): the
+pistol's and the sniper rifle's shots as Halo 1: NHE's maps have them
+(weapons.c weapon_trigger_error_angle_bounds) */
+boolean game_engine_no_spread(
+	void)
+{
+	return game_engine_running() &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_spread_bit);
+}
+
 /* port: the gametype's HEALTH (enum health_style), CLASSIC with no game */
 short game_engine_health_style(
 	void)
@@ -7623,8 +7633,8 @@ long game_engine_remap_item_definition(
 	return result;
 }
 
-/* port: whether a weapon definition is the globals' rocket launcher or
-sniper rifle (item_timers.c) */
+/* port: whether a weapon definition is the globals' rocket launcher,
+sniper rifle (item_timers.c) or pistol (weapons.c's NO SPREAD) */
 boolean game_engine_weapon_is_rocket_launcher(
 	long definition_index)
 {
@@ -7635,6 +7645,12 @@ boolean game_engine_weapon_is_sniper_rifle(
 	long definition_index)
 {
 	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_sniper_rifle;
+}
+
+boolean game_engine_weapon_is_pistol(
+	long definition_index)
+{
+	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_pistol;
 }
 
 /* ---------- private code */
