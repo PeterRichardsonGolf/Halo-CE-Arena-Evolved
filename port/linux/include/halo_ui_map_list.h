@@ -3,7 +3,8 @@ HALO_UI_MAP_LIST.H
 
 The menus' list of multiplayer maps on the native builds
 (port/linux/game/ui_map_list.c): the Xbox's thirteen, as they were, then the
-Custom Edition maps, named with [CE], with Halo PC's names, descriptions and
+Xbox v5 community maps (custom_maps.c), then the Custom Edition maps,
+named with [CE], with Halo PC's names, descriptions and
 pictures of them, then HaloMD's maps, named with [MD] (halo_map_families.h). The multiplayer map list, its rows and the
 lobby (source/interface) ask it in place of the game's fixed thirteen.
 */
@@ -24,6 +25,14 @@ enum
 	_ui_map_list_string_lobby_name,
 	NUMBER_OF_UI_MAP_LIST_STRINGS
 };
+
+/* an Xbox map's (a stock map's or an Xbox v5 community map's) frame of the
+loaded ui.map's ui\shell\bitmaps\mp_map_grafix, found by its name in that
+ui.map's ui\shell\main_menu\mp_map_list (a mod's ui.map has its own order),
+else that list's "Unknown Level" frame; own (or NULL): whether the frame and
+that list's string of the same index are the map's own (not the unknown
+level's) */
+short ui_map_list_xbox_picture(char const *map_name, boolean *own);
 
 /* the list anew: the game's thirteen Xbox map names, then those found */
 void ui_map_list_refresh(char *const *xbox_maps);

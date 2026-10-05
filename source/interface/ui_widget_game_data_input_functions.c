@@ -359,6 +359,9 @@ symbols in this file:
 #include "interface/ui_widget_instance.h"
 #endif
 #include "halo_menus.h" /* port: PC_MENU_FUNCTION_BASE */
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+#include "halo_custom_maps.h"
+#endif
 
 #ifdef HALO_CUSTOM_EDITION
 #include "halo_ui_map_list.h"
@@ -697,6 +700,24 @@ static byte const local_player_controller_bitmap_frames[2][MAXIMUM_LOCAL_PLAYERS
 };
 
 /* ---------- public code */
+
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+static void custom_map_text(struct widget_instance *widget, char const *caption)
+{
+	char name[HALO_CUSTOM_MAP_NAME_SIZE];
+	unsigned int i;
+	wchar_t *text;
+
+	native_map_display_name(caption, name, sizeof(name));
+	widget->parameters.text_box.string_list_index = HALO_CUSTOM_MAP_TEXT;
+	text = ui_widget_realloc(widget->parameters.text_box.text,
+		sizeof(name) * sizeof(wchar_t), __FILE__, __LINE__);
+	if (!text) return;
+	widget->parameters.text_box.text = text;
+	for (i = 0; name[i]; i++) text[i] = (unsigned char)name[i];
+	text[i] = 0;
+}
+#endif
 
 void ui_widget_game_data_function_invoke(
 	struct widget_instance *widget,
@@ -1146,6 +1167,19 @@ static void server_list_menu_update(
 				}
 
 				map_name = server->map_name;
+#ifdef HALO_CUSTOM_EDITION
+				/* port: the picture (and its name, the list's string of the same
+				index) by the map's name in the loaded ui.map, else its unknown
+				level's: a mod's ui.map has its maps in its own order */
+				if (!strchr(map_name, '@'))
+					map_bitmap->animation.current_frame_index = ui_map_list_xbox_picture(map_name, NULL);
+				else
+#endif
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+				if (native_map_is_custom(map_name))
+					map_bitmap->animation.current_frame_index = 13;
+				else
+#endif
 				if (strstr(map_name, "beavercreek"))
 					map_bitmap->animation.current_frame_index = 0;
 				else if (strstr(map_name, "sidewinder"))
@@ -1179,6 +1213,10 @@ static void server_list_menu_update(
 					(server->open == TRUE) ? 20 : 21;
 				map_name_text->parameters.text_box.string_list_index =
 					map_bitmap->animation.current_frame_index;
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+				if (native_map_is_custom(map_name))
+					custom_map_text(map_name_text, map_name);
+#endif
 
 				switch (server->engine_type)
 				{
@@ -1285,7 +1323,12 @@ static void server_list_menu_update(
 			{
 				game_type_bitmap->animation.current_frame_index =
 					_multiplayer_game_bitmap_unknown;
+#ifdef HALO_CUSTOM_EDITION
+				/* port: the loaded ui.map's unknown level's (a mod's is not 13) */
+				map_bitmap->animation.current_frame_index = ui_map_list_xbox_picture("", NULL);
+#else
 				map_bitmap->animation.current_frame_index = 13;
+#endif
 				open_closed_text->parameters.text_box.string_list_index = 1;
 				map_name_text->parameters.text_box.string_list_index = 14;
 				ruleset_text->parameters.text_box.string_list_index = 1;
@@ -2429,8 +2472,9 @@ static void multiplayer_game_set_text_box_for_map_name(
 	{
 		map_name = game->map.name;
 #ifdef HALO_CUSTOM_EDITION
-	/* port: a map past the Xbox's is named as the menus' map list names it */
-	if (strchr(map_name, '@'))
+	/* port: a map past the Xbox's is named as the menus' map list names it
+	(a Custom Edition or HaloMD map, or an Xbox v5 community map) */
+	if (strchr(map_name, '@') || native_map_is_custom(map_name))
 	{
 		long row = ui_map_list_lookup(map_name);
 
@@ -2441,6 +2485,27 @@ static void multiplayer_game_set_text_box_for_map_name(
 			return;
 		}
 	}
+	/* port: a stock map's name by its name in the loaded ui.map's list (a
+	mod's has its own order), as its picture (set_bitmap_for_map) */
+	if (!strchr(map_name, '@') && !native_map_is_custom(map_name))
+	{
+		boolean own;
+		short index = ui_map_list_xbox_picture(map_name, &own);
+
+		if (own)
+		{
+			widget->parameters.text_box.string_list_index = index;
+			return;
+		}
+	}
+#endif
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+		/* (upstream PR #63: a community map the list lacks, by its name) */
+		if (native_map_is_custom(map_name))
+		{
+			custom_map_text(widget, map_name);
+			return;
+		}
 #endif
 	if (strstr(map_name, "beavercreek"))
 	{
@@ -2711,8 +2776,9 @@ static void multiplayer_game_set_bitmap_for_map(
 	{
 		map_name = game->map.name;
 #ifdef HALO_CUSTOM_EDITION
-	/* port: a map past the Xbox's shows the menus' map list's picture for it */
-	if (strchr(map_name, '@'))
+	/* port: a map past the Xbox's shows the menus' map list's picture for it
+	(a Custom Edition or HaloMD map, or an Xbox v5 community map) */
+	if (strchr(map_name, '@') || native_map_is_custom(map_name))
 	{
 		long row = ui_map_list_lookup(map_name);
 
@@ -2722,6 +2788,21 @@ static void multiplayer_game_set_bitmap_for_map(
 			return;
 		}
 	}
+	/* port: an Xbox map's picture by its name in the loaded ui.map (a mod's
+	has its own order), else its unknown level's, not the frames below */
+	if (!strchr(map_name, '@'))
+	{
+		widget->animation.current_frame_index = ui_map_list_xbox_picture(map_name, NULL);
+		return;
+	}
+#endif
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+		/* (upstream PR #63: a community map the list lacks: the generic preview) */
+		if (native_map_is_custom(map_name))
+		{
+			widget->animation.current_frame_index = 13;
+			return;
+		}
 #endif
 	if (strstr(map_name, "beavercreek"))
 	{
@@ -4282,6 +4363,19 @@ static void mp_level_select_list_update_displayed_items(
 			(short)displayed_item_indices[item_index];
 		map_description->parameters.text_box.string_list_index =
 			(short)displayed_item_indices[item_index];
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+		/* (upstream PR #63: a v5 community map past the stock thirteen) */
+		if (displayed_item_indices[item_index] >= HALO_STOCK_MULTIPLAYER_MAP_COUNT)
+		{
+			char const *map = "Unknown map";
+			if (list_widget->parameters.list.list_items &&
+				displayed_item_indices[item_index] < list_widget->parameters.list.number_of_items)
+				map = ((char **)list_widget->parameters.list.list_items)[displayed_item_indices[item_index]];
+			custom_map_text(map_name, map);
+			custom_map_text(map_description, "Community map");
+			map_bitmap->animation.current_frame_index = 13;
+		}
+#endif
 #endif
 	}
 	return;

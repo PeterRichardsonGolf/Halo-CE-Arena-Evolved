@@ -693,6 +693,13 @@ boolean cache_file_header_verify(
 		header->footer_signature != CACHE_FILE_FOOTER_SIGNATURE ||
 		header->file_length < 0 ||
 		header->file_length > 0x11600000 ||
+#ifdef HALO_PORT_MULTIPLAYER_CACHE_SIZE
+		/* Direct/network precaching can reach a map without the menu scanner.
+		(port: Xbox v5 maps only: a Custom Edition or HaloMD map is read in
+		place, not copied into a multiplayer disk slot, cache_files_windows.c) */
+		(header->version == 5 && header->reserved60[0] == 1 && header->reserved60[1] == 0 &&
+			header->file_length > HALO_PORT_MULTIPLAYER_CACHE_SIZE) ||
+#endif
 		csstrlen(header->name) > 31)
 	{
 		if (fatal)
@@ -764,6 +771,9 @@ static struct
 	{ "01.01.14.2342", "PAL" },
 	{ "01.10.12.2276", "NTSC" },
 	{ "01.08.15.1749", "NTSC" },
+	/* port: Halo 1: NHE's (Neutral Host Edition, 2018), an NTSC mod whose
+	maps all its players share */
+	{ "01.10.12.2300", "NTSC" },
 };
 
 /* the region of a build's maps ("PAL" or "NTSC") if it is listed above, else

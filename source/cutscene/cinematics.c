@@ -60,6 +60,7 @@ symbols in this file:
 #include "bitmaps/bitmap_group.h"
 #include "editor/editor_stubs.h"
 #include "game/game.h"
+#include "game/game_engine.h"
 #include "game/game_globals.h"
 #include "game/players.h"
 #include "interface/hud.h"
@@ -373,6 +374,16 @@ void cinematic_render(
 			if (active_title->title_index == NONE)
 				continue;
 
+			/* port: none once a multiplayer game is over: titles fade by
+			game time, which stops then, so a map's titles (Halo 1:
+			NHE's clock) stayed over the postgame carnage report */
+			if (game_engine_running() && game_engine_showing_postgame())
+			{
+				active_title->title_index = NONE;
+				active_title->time = NONE;
+				continue;
+			}
+
 			font_index = hud_globals->messaging.single_player_font.index;
 			if (font_index == NONE)
 				continue;
@@ -461,10 +472,16 @@ void cinematic_render(
 
 				{
 					/* the bounds are for 640 columns: on a wider screen move
-					them so they keep their place relative to its sides */
+					them with the side they are on (a title in the left
+					third stays, one in the right third moves the whole
+					extra width, one between moves half of it: centred).
+					By side rather than by each title's own centre, so
+					titles placed side by side (Halo 1: NHE's clock, its
+					minutes, tens and seconds each a title) move together */
 					static rectangle2d wide_bounds;
-					short shift = (short)(((title_bounds->x0 + title_bounds->x1) / 2) *
-						(halo_screen_width() - 640) / 640);
+					short center = (short)((title_bounds->x0 + title_bounds->x1) / 2);
+					short extra = (short)(halo_screen_width() - 640);
+					short shift = center < 640 / 3 ? 0 : center > 640 * 2 / 3 ? extra : (short)(extra / 2);
 
 					wide_bounds = *title_bounds;
 					wide_bounds.x0 += shift;

@@ -310,13 +310,17 @@ enum
 	MAXIMUM_HS_DEBUG_STRING_ARGUMENTS = 32
 };
 
+/* port: four times the Xbox's (0x200; doubled again on 64-bit, whose stack
+frames hold two native pointers): community maps' scripts nest deeper than
+the Xbox checked (Halo 1: NHE's timer, 30-deep else-if chains, needs about
+1000 bytes, 1600 on 64-bit), which the retail game let run over into the
+next thread's datum unchecked */
 enum
 {
 #ifdef HALO_64BIT
-	/* doubled: stack frames hold two native pointers */
-	HS_THREAD_STACK_SIZE = 0x400
+	HS_THREAD_STACK_SIZE = 0x1000
 #else
-	HS_THREAD_STACK_SIZE = 0x200
+	HS_THREAD_STACK_SIZE = 0x800
 #endif
 };
 
@@ -430,11 +434,10 @@ struct hs_thread_datum
 	   script deeper than 0x200 bytes wrote over the next thread's datum */
 	byte stack_data[HS_THREAD_STACK_SIZE];
 };
-#ifndef HALO_64BIT
 
+/* (the Xbox's was 0x218: a 0x200 stack) */
 typedef char hs_thread_datum_size_assert[
-	sizeof(struct hs_thread_datum) == 0x218 ? 1 : -1];
-#endif
+	sizeof(struct hs_thread_datum) >= 0x218 ? 1 : -1];
 
 /* ---------- prototypes */
 
@@ -739,12 +742,8 @@ void hs_runtime_initialize(
 	short global_index;
 	long index;
 
-#ifdef HALO_64BIT
-	/* the thread holds a native stack frame pointer */
+	/* (the port's larger stack: HS_THREAD_STACK_SIZE) */
 	hs_thread_data = game_state_data_new("hs thread", 0x100, MAX(0x218, sizeof(struct hs_thread_datum)));
-#else
-	hs_thread_data = game_state_data_new("hs thread", 0x100, 0x218);
-#endif
 	hs_global_data = game_state_data_new("hs globals", 0x400, 8);
 	if (hs_thread_data && hs_global_data)
 	{
@@ -769,6 +768,44 @@ void hs_runtime_initialize(
 	return;
 }
 
+/* port: Halo 1: NHE's maps make the host's player its "hostman" (a dedicated
+Xbox's player teleported out of the map) when their teleport_host is true.
+Here a neutral host is the dedicated server, and the netcode leaves the
+host no advantage to hide: teleport_host stays false, whatever the scripts
+set, so no real player is taken out of the game (its timers, training and
+countdown are untouched). The global's index, NONE on other maps. */
+static short hs_hostman_global_index = NONE;
+
+static void hs_hostman_find(
+	struct scenario *scenario)
+{
+	short global_index;
+
+	hs_hostman_global_index = NONE;
+	for (global_index = 0; global_index < scenario->hs_globals.count; global_index++)
+	{
+		struct hs_global const *global = TAG_BLOCK_GET_ELEMENT(&scenario->hs_globals, global_index, struct hs_global);
+
+		if (global->type == _hs_type_boolean && !csstrncmp(global->name, "teleport_host", sizeof(global->name)))
+		{
+			hs_hostman_global_index = global_index;
+			return;
+		}
+	}
+}
+
+/* the hostman global kept false (hs_hostman_global_index) */
+static void hs_hostman_suppress(
+	short designator)
+{
+	if (hs_hostman_global_index != NONE && !HS_GLOBAL_DESIGNATOR_IS_EXTERNAL((word)designator) &&
+		HS_GLOBAL_DESIGNATOR_TO_INDEX(designator) == hs_hostman_global_index)
+	{
+		((struct hs_global_datum *)datum_get(hs_global_data,
+			HS_GLOBAL_DESIGNATOR_TO_INDEX(designator) + hs_external_global_count))->value = FALSE;
+	}
+}
+
 void hs_runtime_initialize_for_new_map(
 	void)
 {
@@ -783,6 +820,8 @@ void hs_runtime_initialize_for_new_map(
 	{
 		struct scenario *scenario = global_scenario_get();
 		struct hs_thread_datum *internal_thread = hs_thread_get(internal_thread_index);
+
+		hs_hostman_find(scenario);
 		struct hs_global_datum *global_datum;
 		long global_datum_index;
 		short global_index;
@@ -827,6 +866,7 @@ void hs_runtime_initialize_for_new_map(
 					internal_thread->sleep_until==0,
 					"a global initialization attempted to sleep.");
 			}
+			hs_hostman_suppress(global_index);
 			hs_global_reconcile_write(global_index);
 		}
 
@@ -2084,6 +2124,7 @@ void hs_evaluate_set(
 	}
 	else
 	{
+		hs_hostman_suppress((short)variable->data);
 		hs_global_reconcile_write((short)variable->data);
 		if (type==_hs_type_object_list)
 			object_list_add_reference(hs_global_evaluate((short)variable->data));

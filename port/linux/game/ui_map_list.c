@@ -3,7 +3,9 @@ UI_MAP_LIST.C
 
 The menus' list of multiplayer maps, filled by the port rather than fixed in
 the game (ui_widget_event_handler_functions.c's multiplayer level list): the
-Xbox's thirteen maps first, as they were, then the Custom Edition maps
+Xbox's thirteen maps first, as they were, then the Xbox v5 community maps
+found (custom_maps.c, upstream PR #63: named by their caches' names,
+described as a community map), then the Custom Edition maps
 (Halo PC's, played as <name>@ce), each named with [CE], then HaloMD's maps
 (Halo PC retail's, played as <name>@md), each named with [MD]: each family
 in its folders (halo_map_families.h), in the order of their names.
@@ -45,6 +47,174 @@ asks whether the map is in its family's folders (ui_map_list_family_present).
 #include "halo_map_families.h"
 #include "halo_ui_map_list.h"
 #include "halomd_map_names.h"
+#include "halo_custom_maps.h"
+
+#include "bitmaps/bitmap_group.h"
+#include "tag_files/tag_groups.h"
+#include "text/text_group.h"
+
+/* ---------- an Xbox map's picture in the loaded ui.map
+
+The menus' map pictures (ui\shell\bitmaps\mp_map_grafix) and names
+(ui\shell\main_menu\mp_map_list) are the loaded ui.map's, and a mod's ui.map
+has its own: Halo 1: NHE's has 27 maps' pictures in its own order and its
+"Unknown Level" (a "?") at 27, the Xbox's 13 maps in theirs and its "?" at 13.
+Frame i of that bitmap is the map named by string i of that list (both
+ui.maps), so a map's picture is found by its name there, never by a fixed
+frame: a map the list lacks gets the list's "Unknown Level" picture. */
+
+/* the Xbox's thirteen maps (the game's order) and their names */
+static char const *const xbox_map_files[] =
+{
+	"beavercreek", "sidewinder", "damnation", "ratrace", "prisoner", "hangemhigh", "chillout",
+	"carousel", "boardingaction", "bloodgulch", "wizard", "putput", "longest",
+};
+static char const *const xbox_map_captions[] =
+{
+	"Battle Creek", "Sidewinder", "Damnation", "Rat Race", "Prisoner", "Hang 'Em High", "Chill Out",
+	"Derelict", "Boarding Action", "Blood Gulch", "Wizard", "Chiron TL34", "Longest",
+};
+/* map files named other than their maps (Halo 1: NHE's, whose scenarios are
+levels\test\beavercreek\..., ...\outbound\... and ...\damnation\...) */
+static struct
+{
+	char const *file;
+	char const *caption;
+} const map_file_captions[] =
+{
+	{ "badcreek", "Battle Creek" },
+	{ "outbnd", "Outbound" },
+	{ "dammy", "Damnation" },
+};
+
+enum
+{
+	/* the Xbox ui.map's "Unknown Level" frame */
+	XBOX_UNKNOWN_LEVEL_FRAME = 13,
+	MAP_KEY_LENGTH = 48,
+};
+
+/* a name's letters and digits, lower case ("Hang 'Em High ": hangemhigh) */
+static void map_key(
+	char const *name,
+	char *key)
+{
+	long length = 0;
+
+	for (; *name && length < MAP_KEY_LENGTH - 1; name++)
+	{
+		char character = *name;
+
+		if (character >= 'A' && character <= 'Z')
+			character = (char)(character - 'A' + 'a');
+		if ((character >= 'a' && character <= 'z') || (character >= '0' && character <= '9'))
+			key[length++] = character;
+	}
+	key[length] = 0;
+}
+
+static void map_key_wide(
+	wchar_t const *name,
+	char *key)
+{
+	long length = 0;
+
+	for (; name && *name && length < MAP_KEY_LENGTH - 1; name++)
+	{
+		wchar_t character = *name;
+
+		if (character >= 'A' && character <= 'Z')
+			character = (wchar_t)(character - 'A' + 'a');
+		if ((character >= 'a' && character <= 'z') || (character >= '0' && character <= '9'))
+			key[length++] = (char)character;
+	}
+	key[length] = 0;
+}
+
+/* the frames of the loaded mp_map_grafix the menus draw (its first
+sequence's, as bitmap_group_get_bitmap_from_sequence takes them), or 0 */
+static short xbox_picture_count(
+	void)
+{
+	long index = tag_loaded('bitm', "ui\\shell\\bitmaps\\mp_map_grafix");
+	struct bitmap_group *group = index != NONE ? bitmap_group_get(index) : NULL;
+
+	if (!group)
+		return 0;
+	if (group->sequences.count > 0)
+	{
+		struct bitmap_group_sequence *sequence =
+			TAG_BLOCK_GET_ELEMENT(&group->sequences, 0, struct bitmap_group_sequence);
+
+		if (sequence->bitmap_count > 0)
+			return sequence->bitmap_count;
+	}
+	return (short)MIN(group->bitmaps.count, 0x7fff);
+}
+
+/* the stock (Xbox) map of a name, else NONE */
+static short xbox_map_index(
+	char const *file)
+{
+	short index;
+
+	for (index = 0; index < (short)NUMBEROF(xbox_map_files); index++)
+	{
+		if (!_stricmp(file, xbox_map_files[index]))
+			return index;
+	}
+	return NONE;
+}
+
+short ui_map_list_xbox_picture(
+	char const *map_name,
+	boolean *own)
+{
+	char const *file = native_map_basename(map_name);
+	char const *caption = file;
+	short stock = xbox_map_index(file);
+	/* (the loaded ui.map's list of names unreadable: as the Xbox's) */
+	short fallback = stock != NONE ? stock : XBOX_UNKNOWN_LEVEL_FRAME;
+	long list = tag_loaded('ustr', "ui\\shell\\main_menu\\mp_map_list");
+	short pictures = xbox_picture_count();
+	short unknown = NONE, count, index;
+	char key[MAP_KEY_LENGTH], entry[MAP_KEY_LENGTH];
+
+	if (own)
+		*own = stock != NONE;
+	if (stock != NONE)
+		caption = xbox_map_captions[stock];
+	for (index = 0; index < (short)NUMBEROF(map_file_captions); index++)
+	{
+		if (!_stricmp(file, map_file_captions[index].file))
+			caption = map_file_captions[index].caption;
+	}
+	if (list == NONE || pictures <= 0)
+		return fallback;
+	map_key(caption, key);
+	count = (short)MIN(unicode_string_list_definition_get(list)->strings.count, pictures);
+	for (index = 0; index < count; index++)
+	{
+		map_key_wide(unicode_string_list_get_string(list, index), entry);
+		if (key[0] && !strcmp(entry, key))
+		{
+			if (own)
+				*own = TRUE;
+			return index;
+		}
+		if (unknown == NONE && !strcmp(entry, "unknownlevel"))
+			unknown = index;
+	}
+	/* (a list read, without this map: its unknown level's; a list of
+	other names, another language's, as the Xbox's) */
+	if (unknown != NONE)
+	{
+		if (own)
+			*own = FALSE;
+		return unknown;
+	}
+	return fallback;
+}
 
 /* Halo PC's multiplayer maps, in the order of its map list (its strings and
 pictures), and an Xbox map of the same kind whose picture stands in
@@ -216,6 +386,9 @@ struct ui_map_entry
 	/* its row among the Xbox's (their strings and bitmap frames), or NONE */
 	short xbox_index;
 	short picture_index;
+	/* port: the Xbox map whose picture it shows, found in the loaded ui.map
+	when asked (ui_map_list_xbox_picture), or empty for picture_index */
+	char picture_map[MAP_NAME_LENGTH];
 };
 
 /* ---------- prototypes */
@@ -512,7 +685,8 @@ static void add_entry(
 	wchar_t const *lobby_name,
 	wchar_t const *description,
 	short xbox_index,
-	short picture_index)
+	short picture_index,
+	char const *picture_map)
 {
 	struct ui_map_entry *entry;
 
@@ -525,6 +699,7 @@ static void add_entry(
 	wide_copy(entry->description, DESCRIPTION_LENGTH, description);
 	entry->xbox_index = xbox_index;
 	entry->picture_index = picture_index;
+	snprintf(entry->picture_map, sizeof(entry->picture_map), "%s", picture_map ? picture_map : "");
 	ui_map_list_names_array[ui_map_list_count_value] = entry->map_name;
 	ui_map_list_count_value++;
 }
@@ -543,6 +718,7 @@ static void add_pc_entry(
 	wchar_t const *mark = L"CE";
 	long ce_index = CE_UNKNOWN_LEVEL;
 	short picture_index = 9;
+	char const *picture_map = NULL;
 	short known;
 
 	name[0] = 0;
@@ -580,6 +756,10 @@ static void add_pc_entry(
 	}
 	if (ce_index < ce_ui.picture_count)
 		picture_index = (short)(UI_MAP_LIST_PICTURE_BASE + ce_index);
+	else
+		/* (an Xbox map's picture stands in: found by its name in the loaded
+		ui.map, a mod's having its own order) */
+		picture_map = xbox_map_files[picture_index];
 	wide_copy(lobby_name, DISPLAY_NAME_LENGTH, name);
 	wide_append(lobby_name, DISPLAY_NAME_LENGTH, L" [");
 	wide_append(lobby_name, DISPLAY_NAME_LENGTH, mark);
@@ -589,7 +769,7 @@ static void add_pc_entry(
 	wide_append(display_name, DISPLAY_NAME_LENGTH, mark);
 	wide_append(display_name, DISPLAY_NAME_LENGTH, L"]");
 	snprintf(map_name, sizeof(map_name), "%s%s", file, map_family_suffix(family));
-	add_entry(map_name, display_name, lobby_name, description, NONE, picture_index);
+	add_entry(map_name, display_name, lobby_name, description, NONE, picture_index, picture_map);
 }
 
 /* the files found of a family's maps, while the list is filled */
@@ -624,7 +804,40 @@ void ui_map_list_refresh(
 
 	ui_map_list_count_value = 0;
 	for (index = 0; index < XBOX_MAP_COUNT; index++)
-		add_entry(xbox_maps[index], L"", L"", L"", index, index);
+	{
+		/* (its strings and picture the loaded ui.map's, by its name there:
+		ui_map_list_string_index; this name only where that ui.map lacks it) */
+		wchar_t name[DISPLAY_NAME_LENGTH];
+		char const *caption = xbox_map_captions[index];
+		long character;
+
+		for (character = 0; caption[character] && character < DISPLAY_NAME_LENGTH - 1; character++)
+			name[character] = (wchar_t)(unsigned char)caption[character];
+		name[character] = 0;
+		add_entry(xbox_maps[index], name, name, L"", index, index, xbox_maps[index]);
+	}
+	/* port (upstream PR #63): the Xbox v5 community maps found in the map
+	directory and the active mod's maps folder (port/linux/game/custom_maps.c),
+	each by its cache's name, after the Xbox's and before Halo PC's */
+	{
+		short community_count = 0;
+		char **community = native_multiplayer_map_list((char **)xbox_maps, XBOX_MAP_COUNT, &community_count);
+
+		for (index = XBOX_MAP_COUNT; index < community_count; index++)
+		{
+			char caption[HALO_CUSTOM_MAP_NAME_SIZE];
+			wchar_t name[DISPLAY_NAME_LENGTH];
+			long character;
+
+			native_map_display_name(community[index], caption, sizeof(caption));
+			for (character = 0; caption[character] && character < DISPLAY_NAME_LENGTH - 1; character++)
+				name[character] = (wchar_t)(unsigned char)caption[character];
+			name[character] = 0;
+			/* (its picture the loaded ui.map's of its name, else that
+			ui.map's unknown level's: ui_map_list_xbox_picture) */
+			add_entry(community[index], name, name, L"Community map", NONE, 13, community[index]);
+		}
+	}
 	for (family = _map_family_custom_edition; family < NUMBER_OF_MAP_FAMILIES; family++)
 	{
 		long file;
@@ -685,7 +898,15 @@ short ui_map_list_string_index(
 	if (row < 0 || row >= ui_map_list_count_value)
 		return 0;
 	if (ui_map_list[row].xbox_index != NONE)
-		return ui_map_list[row].xbox_index;
+	{
+		/* (port: a stock map's strings are the loaded ui.map's of its name,
+		a mod's in its own order) */
+		boolean own;
+		short index = ui_map_list_xbox_picture(ui_map_list[row].map_name, &own);
+
+		if (own)
+			return index;
+	}
 	return (short)(UI_MAP_LIST_STRING_BASE + row * UI_MAP_LIST_STRINGS_PER_ROW + kind);
 }
 
@@ -695,6 +916,8 @@ short ui_map_list_picture_index(
 {
 	if (row < 0 || row >= ui_map_list_count_value)
 		return 0;
+	if (ui_map_list[row].picture_map[0])
+		return ui_map_list_xbox_picture(ui_map_list[row].picture_map, NULL);
 	return ui_map_list[row].picture_index;
 }
 

@@ -714,13 +714,8 @@ enum
 	BADGE_MARGIN = 12,
 };
 
-/* the map pictures (the menus' mp_map_grafix, in their order:
-ui_widget_game_data_input_functions.c) and the game types' (game_type_grafix) */
-static char const *const map_picture_order[] =
-{
-	"beavercreek", "sidewinder", "damnation", "ratrace", "prisoner", "hangemhigh", "chillout",
-	"carousel", "boardingaction", "bloodgulch", "wizard", "putput", "longest",
-};
+/* the game types' pictures (game_type_grafix; a map's, the menus'
+mp_map_grafix's: ui_map_list_xbox_picture) */
 static short const engine_picture[] = { 5, 0, 2, 3, 1, 4 };
 
 static char const *const sort_names[NUMBER_OF_SORTS] = { "PLAYERS", "NAME", "MAP", "TYPE" };
@@ -1184,7 +1179,7 @@ void browser_screen_render(
 	ui_overlay_outline(LIST_X, DETAIL_Y, LIST_WIDTH, DETAIL_HEIGHT, 6, 1.0f, COLOR_PANEL_EDGE);
 	if (selected)
 	{
-		short map_frame = NUMBEROF(map_picture_order);
+		short map_frame;
 		char file[BROWSER_MAP_LENGTH], map_name[64];
 		short ce_state = ce_map_state(selected, FALSE);
 		float y = DETAIL_Y + DETAIL_FIRST_LINE;
@@ -1203,11 +1198,9 @@ void browser_screen_render(
 		}
 		else
 		{
-			for (index = 0; index < NUMBEROF(map_picture_order); index++)
-			{
-				if (!strcmp(file, map_picture_order[index]))
-					map_frame = (short)index;
-			}
+			/* (port: by its name in the loaded ui.map, a mod's in its own
+			order, else that ui.map's unknown level's) */
+			map_frame = ui_map_list_xbox_picture(file, NULL);
 			draw_picture("ui\\shell\\bitmaps\\mp_map_grafix", map_frame, 140, 116, 46, DETAIL_Y + 9, 171,
 				DETAIL_Y + DETAIL_HEIGHT - 9);
 		}

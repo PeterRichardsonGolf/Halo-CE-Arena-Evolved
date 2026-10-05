@@ -935,6 +935,9 @@ boolean playlist_profile_get_options(long playlist_profile_index, struct game_va
 #endif
 #include "text/unicode.h"
 #include "halo_menus.h" /* port: PC_MENU_FUNCTION_BASE */
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+#include "halo_custom_maps.h"
+#endif
 
 #ifdef HALO_CUSTOM_EDITION
 #include "halo_ui_map_list.h"
@@ -3001,8 +3004,8 @@ static boolean multiplayer_level_list_initialize(
 	char map_name[256];
 	struct ui_widget_definition *definition = ui_widget_definition_get(widget->definition_tag_index);
 #ifdef HALO_CUSTOM_EDITION
-	/* port: the menus' map list, the Xbox's thirteen then the Custom
-	Edition maps */
+	/* port: the menus' map list, the Xbox's thirteen then the Xbox v5
+	community maps (upstream PR #63) then the Custom Edition maps */
 	short level_count;
 	char **level_names;
 
@@ -3012,6 +3015,10 @@ static boolean multiplayer_level_list_initialize(
 #else
 	short level_count = 13;
 	char **level_names = event_handler_functions.multiplayer_levels;
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+	/* port (upstream PR #63): the stock maps followed by compatible v5 caches */
+	level_names = native_multiplayer_map_list(level_names, level_count, &level_count);
+#endif
 #endif
 
 	match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 1228,
@@ -3026,8 +3033,13 @@ static boolean multiplayer_level_list_initialize(
 	{
 		widget->parameters.list.selected_index = 0;
 		while (widget->parameters.list.selected_index < level_count &&
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+			_stricmp(native_map_basename(map_name),
+				native_map_basename(level_names[widget->parameters.list.selected_index])))
+#else
 			_stricmp(map_name,
 				level_names[widget->parameters.list.selected_index]))
+#endif
 		{
 			widget->parameters.list.selected_index++;
 		}
@@ -5653,6 +5665,14 @@ static boolean playlist_profile_change_player_options(
 	return result;
 }
 
+/* The saved-game API writes a fixed 256-byte field from this pointer. */
+static void multiplayer_map_remember(char const *map_name)
+{
+	char stored_name[256] = {0};
+	csstrncpy(stored_name, map_name, sizeof(stored_name) - 1);
+	saved_game_file_remember_last_used_multiplayer_map(stored_name);
+}
+
 static boolean multiplayer_level_select(
 	struct widget_instance *widget,
 	struct event_record *event,
@@ -5691,10 +5711,16 @@ static boolean multiplayer_level_select(
 		"invalid multiplayer level specified from 'multiplayer level list' list widget");
 	map_name = ui_map_list_names()[level_list->parameters.list.selected_index];
 #else
+	/* port (upstream PR #63): the list's own items, the stock maps then the
+	v5 community maps */
 	match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 1298,
-		level_list->parameters.list.selected_index >= 0 && level_list->parameters.list.selected_index < 13,
+		level_list->parameters.list.selected_index >= 0 &&
+		level_list->parameters.list.selected_index < level_list->parameters.list.number_of_items,
 		"invalid multiplayer level specified from 'multiplayer level list' list widget");
-	map_name = event_handler_functions.multiplayer_levels[level_list->parameters.list.selected_index];
+	if (!level_list->parameters.list.list_items || level_list->parameters.list.selected_index < 0 ||
+		level_list->parameters.list.selected_index >= level_list->parameters.list.number_of_items)
+		return FALSE;
+	map_name = ((char **)level_list->parameters.list.list_items)[level_list->parameters.list.selected_index];
 #endif
 	file = fopen("d:\\map_automation.txt", "r");
 	if (file)
@@ -5727,13 +5753,14 @@ static boolean multiplayer_level_select(
 #ifdef HALO_CUSTOM_EDITION
 	level_index = ui_map_list_find(map_name);
 	if (level_index != NONE)
-		saved_game_file_remember_last_used_multiplayer_map(ui_map_list_names()[level_index]);
+		multiplayer_map_remember(ui_map_list_names()[level_index]);
 #else
-	for (level_index = 0; level_index < 13; level_index++)
+	for (level_index = 0; level_index < level_list->parameters.list.number_of_items; level_index++)
 	{
-		if (!_stricmp(map_name, event_handler_functions.multiplayer_levels[level_index]))
+		char *listed_map = ((char **)level_list->parameters.list.list_items)[level_index];
+		if (!_stricmp(map_name, listed_map))
 		{
-			saved_game_file_remember_last_used_multiplayer_map(event_handler_functions.multiplayer_levels[level_index]);
+			multiplayer_map_remember(listed_map);
 			break;
 		}
 	}
@@ -5961,25 +5988,36 @@ boolean ui_online_games_start_server(
 /* port: the PC version's multiplayer menus (port/linux/game/menu_functions.c),
 on our lists rather than the Xbox's spinners: */
 
-/* the multiplayer maps (the Xbox's 13), and the one used last (else 0) */
+/* The stock maps followed by compatible v5 caches (upstream PR #63), and
+the last used map (else 0). (port: the Custom Edition and HaloMD maps are
+the Xbox-style menus' alone, ui_map_list.c) */
 short ui_widget_port_multiplayer_maps(
 	char const *const **names,
 	short *last_used)
 {
 	char map_name[256];
 	short level_index;
+	short level_count = 13;
+	char **levels = event_handler_functions.multiplayer_levels;
 
-	*names = (char const *const *)event_handler_functions.multiplayer_levels;
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+	levels = native_multiplayer_map_list(levels, level_count, &level_count);
+#endif
+	*names = (char const *const *)levels;
 	*last_used = 0;
 	if (saved_game_file_retrieve_last_used_multiplayer_map(map_name))
 	{
-		for (level_index = 0; level_index < 13; level_index++)
+		for (level_index = 0; level_index < level_count; level_index++)
 		{
-			if (!_stricmp(map_name, event_handler_functions.multiplayer_levels[level_index]))
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+			if (!_stricmp(native_map_basename(map_name), native_map_basename(levels[level_index])))
+#else
+			if (!_stricmp(map_name, levels[level_index]))
+#endif
 				*last_used = level_index;
 		}
 	}
-	return 13;
+	return level_count;
 }
 
 /* the map chosen (as multiplayer_level_select), the server's if there is
@@ -5988,11 +6026,14 @@ boolean ui_widget_port_multiplayer_map_choose(
 	short level_index)
 {
 	char const *map_name;
+	char const *const *names;
+	short last_used;
+	short level_count = ui_widget_port_multiplayer_maps(&names, &last_used);
 	void *server = global_network_game_server_get();
 
-	if (level_index < 0 || level_index >= 13)
+	if (level_index < 0 || level_index >= level_count)
 		return FALSE;
-	map_name = event_handler_functions.multiplayer_levels[level_index];
+	map_name = names[level_index];
 	{
 		char build[0x20];
 
@@ -6007,7 +6048,7 @@ boolean ui_widget_port_multiplayer_map_choose(
 	game_engine_override_map_name(map_name);
 	if (server)
 		network_game_server_change_map_name(server, map_name);
-	saved_game_file_remember_last_used_multiplayer_map(event_handler_functions.multiplayer_levels[level_index]);
+	multiplayer_map_remember(map_name);
 	return TRUE;
 }
 
