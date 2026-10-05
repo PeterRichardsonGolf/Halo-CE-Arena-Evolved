@@ -86,7 +86,8 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        "spacing": 30,
+        # (26, not 30: ten rows, above the help line, as video_settings)
+        "spacing": 26,
         "rows": [
             ("MOD:", "game.mod", [("STOCK", "")],
              "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
@@ -95,6 +96,8 @@ SCREENS = {
              "Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options.", None),
             ("CAMPAIGN HEALTH:", "game.health", HEALTH_STYLES,
              "How health comes back in the campaign. Gametypes\nhave their own, in Arena Options.", None),
+            ("CAMPAIGN TIMER:", "display.campaign_timer", ON_OFF,
+             "A clock of the time played on the level, in the\ncampaign's corner by the motion sensor.", None),
             ("MATCH CLOCK:", "display.match_clock", MATCH_CLOCKS,
              "The clock in a multiplayer game's corner and on\nits scoreboard: the time left, or played.", None),
             ("HUD AREA:", "display.hud_area", HUD_AREAS,

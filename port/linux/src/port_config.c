@@ -185,6 +185,11 @@ static const struct config_setting config_settings[] =
 		"its scoreboard: \"down\" the time left of the gametype's time limit (with\n"
 		"none, the time played), \"up\" the time played, or \"off\". On Halo 1:\n"
 		"NHE's maps it takes the place of their own clock; off leaves theirs." },
+	{ "display.campaign_timer", _config_boolean, "false", "HALO_CAMPAIGN_TIMER", _environment_value, _platform_all,
+		"A clock in the bottom right corner of each view in the campaign, as the\n"
+		"Master Chief Collection's: the time played on the level, in game time\n"
+		"(stopped in the pause menu; the cutscenes count). A revert to a\n"
+		"checkpoint keeps it; the level started again starts it at 0:00." },
 	{ "display.hud_area", _config_string, "\"full\"", "HALO_HUD_AREA", _environment_value, _platform_all,
 		"Where the HUD is drawn on a wider screen: \"full\" out to the screen's\n"
 		"edges, \"16:9\" or \"4:3\" in a part of the screen of that shape at\n"

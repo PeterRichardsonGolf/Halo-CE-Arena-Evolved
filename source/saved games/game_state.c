@@ -116,6 +116,7 @@ symbols in this file:
 #include "structures.h"
 #include "director.h"
 #include "hud_messaging.h"
+#include "hud_item_timers.h"
 #include "crc.h"
 #include "data.h"
 #include "lruv_cache.h"
@@ -196,7 +197,9 @@ static game_state_after_load_proc after_load_procs[] =
 	game_state_set_revert_time,
 	player_control_fix_for_loaded_game_state,
 	director_initialize_for_saved_game,
-	scripted_hud_messages_clear
+	scripted_hud_messages_clear,
+	/* port: CAMPAIGN TIMER, from a resumed saved game's time */
+	hud_campaign_timer_game_state_loaded
 };
 
 /* ---------- public code */

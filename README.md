@@ -117,6 +117,11 @@ play:
   "1:33 PLAYED · 8:27 LEFT" (just "1:33 PLAYED" with no time limit), on a
   row under its title.
   On Halo 1: NHE's maps it replaces their own clock.
+- A campaign timer, as in the Master Chief Collection (Settings > Game Options
+  > CAMPAIGN TIMER: OFF or ON, off by default): the time played on the level,
+  in the same corner as the match clock. It counts game time, so it stops in
+  the pause menu; cutscenes count. Reverting to a checkpoint does not take
+  time back, and starting the level again starts it at 0:00.
 - Spoken callouts (Settings > Game Options > CALLOUTS: OFF, ITEMS or ITEMS +
   CLOCK), as Halo 1: NHE's voice timer, in any gametype: the power items'
   calls 10 seconds before they spawn ("rockets in ten"), five to one before

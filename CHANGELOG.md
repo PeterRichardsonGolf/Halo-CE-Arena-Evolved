@@ -7,6 +7,13 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- CAMPAIGN TIMER (Settings > Game Options, `display.campaign_timer`, off by
+  default): an MCC-style clock of the time played on a campaign level, drawn
+  where the match clock is (bottom right, lined up with the motion sensor).
+  Game time: stopped in the pause menu, the cutscenes counted (hidden while
+  they play); a revert does not take time back; a new or restarted level
+  starts at 0:00, a resumed saved game at its time. Game Options' rows are
+  closer together (26, not 30) to fit it above the help line.
 - The Cori beta voice pack ships with every build (`port/assets/voices/cori`,
   76 clips, made with Piper and the public-domain en_GB-cori-high voice,
   released CC0; credits in its folder). Every build copies it beside the game

@@ -1,9 +1,9 @@
 /*
 HUD_ITEM_TIMERS.C
 
-port: MATCH CLOCK (display.match_clock) and the power list of the
-gametype's TIMERS and TRAINING, drawn once per local player's view from
-hud_draw_screen (hud.c).
+port: MATCH CLOCK (display.match_clock), CAMPAIGN TIMER and the power
+list of the gametype's TIMERS and TRAINING, drawn once per local player's
+view from hud_draw_screen (hud.c).
 
 The clock is M:SS in the view's bottom right corner, as the Master Chief
 Collection's (game_engine_match_clock: the time left or the time played, in
@@ -36,6 +36,9 @@ With HUD AREA (display.hud_area: hud_area_insets), both keep to its part
 of the view: the clock mirrors the sensor (which has moved in with the HUD)
 about that part's middle, and the power list's line (and the clock with no
 sensor) keeps to that part's sides, centred on its middle.
+
+CAMPAIGN TIMER (display.campaign_timer) draws the time played on a
+campaign level as the clock, in the same place (hud_draw_campaign_timer).
 
 Neither is drawn once the game is over (game_engine_game_over: the
 postgame's "You won"/"You lost" view and the scores).
@@ -75,6 +78,7 @@ one list beside them.
 #include "interface/hud_draw.h"
 #include "interface/hud_item_timers.h"
 #include "interface/hud_messaging.h"
+#include "interface/ui_widget.h"
 #include "main/main.h"
 #include "rasterizer/rasterizer.h"
 #include "render/render.h"
@@ -577,6 +581,81 @@ void hud_draw_item_timers(
 	the postgame's view, as the clock is not) */
 	if (game_engine_item_timers() && !game_engine_game_over())
 		hud_item_timers_draw_powers(font_index, clock_room);
+
+	return;
+}
+
+/* ---------- CAMPAIGN TIMER */
+
+/* port_config.c's */
+int config_boolean(const char *name);
+unsigned long config_changes(void);
+
+/* port: CAMPAIGN TIMER (display.campaign_timer), the Master Chief
+Collection's campaign play clock: the time played on this level, M:SS where
+MATCH CLOCK's clock is. Game time: a tick at a time (game_tick), so it
+stops with the game (the pause menu, loading) and counts the cutscenes
+(drawn with no HUD over them, as MCC's scoreboard is not). Kept outside the
+game state, so a revert to a checkpoint does not take back the time played
+since it (played again, it is played twice); a new level, or the mission
+started again, starts it at 0:00, and a saved game resumed from the main
+menu at its game time (hud_campaign_timer_game_state_loaded). Every view
+of co-op has it, the same */
+static long hud_campaign_timer_ticks = 0;
+
+void hud_campaign_timer_tick(
+	void)
+{
+	if (!game_engine_running() && !main_menu_is_active())
+		hud_campaign_timer_ticks++;
+
+	return;
+}
+
+/* a game state loaded (game_state.c's after load procs): a revert keeps the
+time played, but a saved game loaded before any tick of this map (the
+campaign's resume) starts from the saved game's time */
+void hud_campaign_timer_game_state_loaded(
+	void)
+{
+	if (hud_campaign_timer_ticks == 0)
+		hud_campaign_timer_ticks = MAX(game_time_get(), 0);
+
+	return;
+}
+
+static boolean hud_campaign_timer_shown(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean shown = FALSE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		shown = config_boolean("display.campaign_timer") != 0;
+	}
+
+	return shown;
+}
+
+void hud_draw_campaign_timer(
+	void)
+{
+	long font_index;
+	wchar_t clock[32];
+
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
+		hud_item_timers_lines[render.local_player_index].count = 0;
+	/* (not on the main menu's map, whose player the menus stand over) */
+	if (game_engine_running() || main_menu_is_active() || !hud_campaign_timer_shown())
+		return;
+	font_index = hud_item_timers_font_index();
+	if (font_index == NONE)
+		return;
+	game_engine_format_clock(hud_campaign_timer_ticks, FALSE, clock, NUMBEROF(clock));
+	hud_item_timers_draw_clock(font_index, clock);
 
 	return;
 }
@@ -1341,5 +1420,7 @@ void hud_item_timers_initialize_for_new_map(
 	void)
 {
 	csmemset(hud_item_timers_motion_sensors, 0, sizeof(hud_item_timers_motion_sensors));
+	/* (port: CAMPAIGN TIMER's level starts) */
+	hud_campaign_timer_ticks = 0;
 	csmemset(hud_item_timers_lines, 0, sizeof(hud_item_timers_lines));
 }

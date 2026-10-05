@@ -308,6 +308,8 @@ void hud_update(
 	hud_update_unit();
 	hud_update_nav_points();
 	hud_messaging_globals_update();
+	/* port: CAMPAIGN TIMER counts this tick (hud_item_timers.c) */
+	hud_campaign_timer_tick();
 	if (game_engine_force_single_screen())
 	{
 		for (local_player_index = 0;
@@ -1406,6 +1408,9 @@ void hud_draw_screen(
 		the motion sensor it has just drawn */
 		if (game_engine_running() && !cinematic_in_progress())
 			hud_draw_item_timers();
+		/* port: CAMPAIGN TIMER, there in the campaign */
+		else if (!game_engine_running() && !cinematic_in_progress())
+			hud_draw_campaign_timer();
 
 		hud_messaging_update(render.local_player_index);
 	}
