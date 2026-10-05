@@ -79,6 +79,8 @@ their handlers open opens.
 #include "text/unicode.h"
 
 #include "halo_menus.h"
+#include "halo_custom_maps.h"
+#include "halo_ui_map_list.h"
 /* (internet play's server browser: the platform layer's) */
 #include "../src/p2p.h"
 #ifdef HALO_GAME_BROWSER
@@ -504,19 +506,24 @@ static void server_browser_initialize(struct widget_instance *screen)
 boolean game_in_progress(void);
 
 /* port (from cybersecurity/halo-ce-universal#67, saulob's in-game settings):
-in a game, the pause menu's SETTINGS edits player 1's active profile, which
-campaign_profile cannot find there (it reads the profiles' files by string
-lists a game's map has not); its OK puts the controller settings into the
-game's copy of the profile too (profile_save_changes) */
+in a game, the pause menu's SETTINGS edits the active profile of the player
+whose pause menu it is (split screen: each their own), which campaign_profile
+cannot find there (it reads the profiles' files by string lists a game's map
+has not); its OK puts the controller settings into the game's copy of the
+profile too (profile_save_changes) */
 static long pause_profile_edited = NONE;
+static short pause_profile_player = 0;
 
 /* begins editing player 1's profile (as the campaign has it); FALSE if
 there is none */
-boolean pc_menu_profile_edit_begin(void)
+boolean pc_menu_profile_edit_begin(short local_player)
 {
 	struct player_profile profile;
-	long active = player_ui_get_active_player_profile_index(0);
+	long active;
 
+	if (local_player < 0 || local_player >= 4)
+		local_player = 0;
+	active = player_ui_get_active_player_profile_index(local_player);
 	pause_profile_edited = NONE;
 	if (game_in_progress() && active != NONE)
 	{
@@ -524,6 +531,7 @@ boolean pc_menu_profile_edit_begin(void)
 		if (!player_ui_get_edit_player_profile())
 			return FALSE;
 		pause_profile_edited = active;
+		pause_profile_player = local_player;
 		return TRUE;
 	}
 	if (!campaign_profile(0, &profile))
@@ -1147,8 +1155,8 @@ static void mods_restart_if_changed(void)
 	if (!strcmp(mod ? mod : "", started ? started : ""))
 		return;
 	/* (not from a game's pause menu: its progress since the last checkpoint
-	would go) */
-	if (game_in_progress())
+	would go; the main menu's own background runs game time too) */
+	if (game_in_progress() && !main_menu_is_active())
 	{
 		platform_log("mods: %s chosen; it plays at the next start", mod ? mod : "stock");
 		return;
@@ -1821,7 +1829,6 @@ Xbox's networking, run by the engine's port entry points
 (ui_widget_event_handler_functions.c) on our lists */
 
 #define MAXIMUM_ADVERTISED_GAMES 9
-#define MULTIPLAYER_MAP_COUNT 13
 #define MAP_ROWS 11
 #define GAMETYPE_ROWS 10
 #define MAXIMUM_GAMETYPES 100
@@ -1951,6 +1958,11 @@ static struct
 	network.host_public's choice: PUBLIC unless set otherwise) */
 	boolean game_private;
 } multiplayer = { 0, 0, 0, { 0 }, 0, { 0 }, 0, 0, 0, 0, { 0 }, NUMBEROF(maximum_players) - 1 };
+
+/* (upstream PR #63: the stock maps then the Xbox v5 community maps found,
+ui_widget_port_multiplayer_maps) */
+static char const *const *multiplayer_map_names;
+static short multiplayer_map_count;
 
 /* ---- a text field (Direct Link's link, the game's name): the keyboard
 types into it (Ctrl+V pastes), its row's A (enter) is done, B (escape)
@@ -2104,18 +2116,48 @@ static boolean multiplayer_host(struct widget_instance *widget, struct event_rec
 
 /* ---- the map list */
 
+static void map_name_text(char const *name, wchar_t *text)
+{
+	char caption[HALO_CUSTOM_MAP_NAME_SIZE];
+	short index;
+
+	native_map_display_name(name, caption, sizeof(caption));
+	for (index = 0; caption[index]; index++) text[index] = (unsigned char)caption[index];
+	text[index] = 0;
+}
+
+/* These preview boxes also show authored stock strings. Resize even when
+   one of those shorter strings already allocated their text buffer. */
+static void map_caption_set(struct widget_instance *widget, wchar_t const *caption)
+{
+	wchar_t *text;
+	if (!widget) return;
+	text = ui_widget_realloc(widget->parameters.text_box.text,
+		ROW_TEXT_LENGTH * sizeof(wchar_t), __FILE__, __LINE__);
+	if (!text) return;
+	widget->parameters.text_box.text = text;
+	ustrncpy(text, caption, ROW_TEXT_LENGTH - 1);
+	text[ROW_TEXT_LENGTH - 1] = 0;
+	widget->parameters.text_box.string_list_index = HALO_CUSTOM_MAP_TEXT;
+}
+
 static void map_row_text(short row, wchar_t *text)
 {
-	string_get("pc\\main_menu\\mp_map_list", (short)(multiplayer.map_first + row), text);
+	short map = (short)(multiplayer.map_first + row);
+	text[0] = 0;
+	if (map < 0 || map >= multiplayer_map_count) return;
+	if (map < HALO_STOCK_MULTIPLAYER_MAP_COUNT)
+		string_get("pc\\main_menu\\mp_map_list", map, text);
+	else
+		map_name_text(multiplayer_map_names[map], text);
 }
 
 /* "mp level list initialize" */
 static boolean map_list_initialize(struct widget_instance *list)
 {
-	char const *const *names;
-
-	ui_widget_port_multiplayer_maps(&names, &multiplayer.map_chosen);
-	multiplayer.map_first = (short)PIN(multiplayer.map_chosen - MAP_ROWS / 2, 0, MULTIPLAYER_MAP_COUNT - MAP_ROWS);
+	multiplayer_map_count = ui_widget_port_multiplayer_maps(&multiplayer_map_names, &multiplayer.map_chosen);
+	multiplayer.map_first = (short)PIN(multiplayer.map_chosen - MAP_ROWS / 2,
+		0, MAX(0, multiplayer_map_count - MAP_ROWS));
 	focus_row(list, (short)(multiplayer.map_chosen - multiplayer.map_first));
 	return TRUE;
 }
@@ -2125,15 +2167,34 @@ static void map_list_update(struct widget_instance *list)
 {
 	struct widget_instance *description = list->parameters.list.extended_description;
 	struct widget_instance *widget;
-	short map = list_scroll(list, &multiplayer.map_first, MULTIPLAYER_MAP_COUNT, MAP_ROWS);
+	short map = list_scroll(list, &multiplayer.map_first, multiplayer_map_count, MAP_ROWS);
+	wchar_t caption[ROW_TEXT_LENGTH];
 
-	if (map != NONE)
+	if (map >= 0 && map < multiplayer_map_count)
 		multiplayer.map_chosen = map;
-	rows_update(list, MAP_ROWS, map_row_text);
+	rows_update(list, (short)MIN(MAP_ROWS, MAX(0, multiplayer_map_count - multiplayer.map_first)), map_row_text);
+	if (multiplayer.map_chosen < 0 || multiplayer.map_chosen >= multiplayer_map_count) return;
+	if (multiplayer.map_chosen >= HALO_STOCK_MULTIPLAYER_MAP_COUNT)
+	{
+		map_name_text(multiplayer_map_names[multiplayer.map_chosen], caption);
+		map_caption_set(named(description, "mp_map_right_name", 0), caption);
+		map_caption_set(named(description, "mp_map_right_data", 0), L"Community map");
+		/* (port: its picture in the loaded ui.map, by its name, else that
+		ui.map's unknown level's: never a fixed frame, which is another map's
+		in a mod's ui.map, and Hang 'Em High's in the Xbox's, of 14) */
+		if ((widget = named(description, "mp_map_right_pic", 0)) != NULL)
+			widget->animation.current_frame_index =
+				ui_map_list_xbox_picture(multiplayer_map_names[multiplayer.map_chosen], NULL);
+		profile_name_show(description);
+		return;
+	}
 	if ((widget = named(description, "mp_map_right_name", 0)) != NULL)
 		widget->parameters.text_box.string_list_index = multiplayer.map_chosen;
+	/* (port: the stock map's picture by its name in the loaded ui.map: a
+	mod's, NHE's, has its maps in its own order) */
 	if ((widget = named(description, "mp_map_right_pic", 0)) != NULL)
-		widget->animation.current_frame_index = multiplayer.map_chosen;
+		widget->animation.current_frame_index =
+			ui_map_list_xbox_picture(multiplayer_map_names[multiplayer.map_chosen], NULL);
 	if ((widget = named(description, "mp_map_right_data", 0)) != NULL)
 		widget->parameters.text_box.string_list_index = multiplayer.map_chosen;
 	profile_name_show(description);
@@ -2599,7 +2660,11 @@ static void map_display_name(char const *map_name, wchar_t *text)
 	{
 		if (!_stricmp(scenario_name(names[index]), scenario_name(map_name)))
 		{
-			string_get("pc\\main_menu\\mp_map_list", index, text);
+			/* (upstream PR #63: a community map past the stock ones by its name) */
+			if (index < HALO_STOCK_MULTIPLAYER_MAP_COUNT)
+				string_get("pc\\main_menu\\mp_map_list", index, text);
+			else
+				map_name_text(names[index], text);
 			return;
 		}
 	}
@@ -3594,13 +3659,14 @@ static boolean profile_save_changes(struct widget_instance *widget, boolean *wid
 		{
 			/* (in a game: the game's copy of the profile, which the save does
 			not touch, gets the controller settings now, as #67's) */
-			if (edited && applied != NONE && player_ui_get_active_player_profile_index(0) == applied)
+			if (edited && applied != NONE &&
+				player_ui_get_active_player_profile_index(pause_profile_player) == applied)
 			{
 				struct player_profile active;
 
-				player_ui_get_active_player_profile(0, &active);
+				player_ui_get_active_player_profile(pause_profile_player, &active);
 				active.controller_settings = controls;
-				player_ui_set_active_player_profile(0, applied, &active);
+				player_ui_set_active_player_profile(pause_profile_player, applied, &active);
 				platform_log("menus: the profile's controller settings applied in the game");
 			}
 			return TRUE;
@@ -3956,13 +4022,29 @@ static void lobby_map_show(struct widget_instance *description, char const *map_
 
 	for (index = 0; index < count; index++)
 	{
-		if (!_stricmp(names[index], map_name))
+		if (index < HALO_STOCK_MULTIPLAYER_MAP_COUNT &&
+			!_stricmp(native_map_basename(names[index]), native_map_basename(map_name)))
 			map = index;
 	}
+	/* (port: an Xbox map's picture by its name in the loaded ui.map, else its
+	unknown level's; a Custom Edition or HaloMD map's, the unknown level's) */
 	if ((widget = named(description, "lobby_map_pic", 0)) != NULL)
-		widget->animation.current_frame_index = map;
+		widget->animation.current_frame_index =
+			ui_map_list_xbox_picture(strchr(map_name, '@') ? "" : map_name, NULL);
 	if ((widget = named(description, "lobby_map_name", 0)) != NULL)
-		widget->parameters.text_box.string_list_index = map;
+	{
+		/* (upstream PR #63: a community map by its name; port: a Custom
+		Edition or HaloMD map as the server browser names it) */
+		if (map == 19 && native_map_is_custom(map_name))
+		{
+			wchar_t caption[ROW_TEXT_LENGTH];
+			if (server_browser_map_family(map_name, caption, ROW_TEXT_LENGTH) == _map_family_xbox)
+				map_name_text(map_name, caption);
+			map_caption_set(widget, caption);
+		}
+		else
+			widget->parameters.text_box.string_list_index = map;
+	}
 }
 
 /* "port lobby update" */
@@ -4222,7 +4304,8 @@ enum
 	_option_health,		/* the variant's health, tenths */
 	_option_short,		/* a short of the options */
 	_option_option_byte,	/* a byte of the options */
-	_option_radar		/* the options' radar players, and the variant's flag */
+	_option_radar,		/* the options' radar players, and the variant's flag */
+	_option_flags		/* bits of the variant's flags (argument: their mask), set to the value */
 };
 
 struct gametype_option
@@ -4252,6 +4335,14 @@ static struct gametype_option const gametype_options[] =
 	{ "invisible_players_spinner", _option_flag, 0, FLAG(_game_variant_always_invisible_bit), 2, { 1, 0 } },
 	{ "suicide_penalty_spinner", _option_long, VARIANT_FIELD(universal_variant.suicide_penalty), 0, 4,
 		{ 0, 150, 300, 450 } },
+	/* (port: FALL DAMAGE, ON or OFF; HEALTH, CLASSIC, REACH, HALO 2 or HALO 3:
+	game_engine.h's _game_variant_health_style_..._bit) */
+	{ "falling_damage_spinner", _option_flag, 0, FLAG(_game_variant_no_falling_damage_bit), 2, { 0, 1 } },
+	{ "health_regeneration_spinner", _option_flags, 0, GAME_VARIANT_HEALTH_STYLE_MASK, 4,
+		{ _health_style_classic << _game_variant_health_style_first_bit,
+		_health_style_reach << _game_variant_health_style_first_bit,
+		_health_style_halo2 << _game_variant_health_style_first_bit,
+		_health_style_halo3 << _game_variant_health_style_first_bit } },
 	/* item options (weapon sets: the PC's list, then the Xbox's NO GRENADES) */
 	{ "item_options_infinite_grenades_spinner", _option_flag, 0, FLAG(_game_variant_infinite_grenades_bit), 2,
 		{ 1, 0 } },
@@ -4273,6 +4364,9 @@ static struct gametype_option const gametype_options[] =
 		{ _radar_players_all, _radar_players_friends, _radar_players_none } },
 	{ "indicator_options_friends_on_screen_spinner", _option_flag, 0, FLAG(_game_variant_allow_friendly_navpoints_bit),
 		2, { 1, 0 } },
+	/* (port: TIMERS and TRAINING, OFF or ON) */
+	{ "item_timers_spinner", _option_flag, 0, FLAG(_game_variant_item_timers_bit), 2, { 0, 1 } },
+	{ "training_spinner", _option_flag, 0, FLAG(_game_variant_training_bit), 2, { 0, 1 } },
 	/* capture the flag */
 	{ "assault_spinner", _option_byte, VARIANT_FIELD(game_engine_variant.ctf.assault), 0, 2, { 1, 0 } },
 	{ "single_flag_spinner", _option_long, VARIANT_FIELD(game_engine_variant.ctf.single_flag_time), 0, 6,
@@ -4356,6 +4450,7 @@ static long gametype_option_value(struct gametype_option const *option, struct g
 	case _option_long: return *(long *)(v + option->offset);
 	case _option_byte: return v[option->offset] != 0;
 	case _option_flag: return (variant->universal_variant.flags & option->argument) != 0;
+	case _option_flags: return (long)(variant->universal_variant.flags & option->argument);
 	case _option_health: return (long)(variant->universal_variant.health * 10.0f + 0.5f);
 	case _option_short: return *(short *)(o + option->offset);
 	case _option_option_byte: return o[option->offset];
@@ -4379,6 +4474,10 @@ static void gametype_option_value_set(struct gametype_option const *option, long
 			variant->universal_variant.flags |= option->argument;
 		else
 			variant->universal_variant.flags &= ~option->argument;
+		break;
+	case _option_flags:
+		variant->universal_variant.flags = (variant->universal_variant.flags & ~option->argument) |
+			((unsigned long)value & option->argument);
 		break;
 	case _option_health: variant->universal_variant.health = (real)value / 10.0f; break;
 	case _option_short: *(short *)(o + option->offset) = (short)value; break;
@@ -4886,7 +4985,7 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "profile set edit begin"))
 		{
-			return pc_menu_profile_edit_begin();
+			return pc_menu_profile_edit_begin(controller_of(widget));
 		}
 		/* (the press posted is the controller's that chose the button: a
 		split screen player's LEAVE is theirs) */

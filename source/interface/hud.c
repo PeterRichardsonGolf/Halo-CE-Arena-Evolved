@@ -86,6 +86,7 @@ symbols in this file:
 #include "game/players.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "interface/hud_item_timers.h"
 #include "interface/hud_messaging.h"
 #include "interface/hud_unit.h"
 #include "interface/hud_weapon.h"
@@ -1363,6 +1364,10 @@ void hud_draw_screen(
 		/* port: players' names above their heads, in multiplayer */
 		if (game_engine_running() && !cinematic_in_progress())
 			hud_draw_player_names();
+
+		/* port: the gametype's TIMERS and TRAINING (hud_item_timers.c) */
+		if (game_engine_item_timers() && !cinematic_in_progress())
+			hud_draw_item_timers();
 
 		if (!game_time_get_paused() &&
 			render.local_player_index == local_player_get_next(NONE))

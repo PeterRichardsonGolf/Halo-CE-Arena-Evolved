@@ -1887,6 +1887,82 @@ void area_of_effect_cause_damage(
 	return;
 }
 
+/* port: how players' health comes back (enum health_style): in multiplayer
+the gametype's HEALTH (game_engine_health_style), in the campaign game.health.
+REACH and HALO 3: once the shields are full, a third every four seconds, up
+to the top of the third it is in (REACH: a health pack fills the rest) or all
+of it (HALO 3); HALO 2: all of it within a second as the shields start to
+recharge. With no shields, from five seconds after the body's last damage.
+The host runs it with the shields (objects_update_shields); clients have its
+health. */
+#define HEALTH_REGENERATION_PER_TICK (1.f / (3.f * 4.f * TICKS_PER_SECOND))
+#define HEALTH_REGENERATION_HALO2_PER_TICK (1.f / TICKS_PER_SECOND)
+#define HEALTH_REGENERATION_UNSHIELDED_DELAY (5 * TICKS_PER_SECOND)
+const char *config_string(const char *name);
+
+static short health_style_current(
+	void)
+{
+	/* (the setting read once a tick, not once an object) */
+	static long checked_time = NONE;
+	static short style;
+	long now = game_time_get();
+
+	if (now != checked_time)
+	{
+		checked_time = now;
+		if (game_engine_running())
+			style = game_engine_health_style();
+		else
+		{
+			const char *value = config_string("game.health");
+
+			style = !value ? _health_style_classic :
+				!csstrcmp(value, "reach") ? _health_style_reach :
+				!csstrcmp(value, "halo3") ? _health_style_halo3 :
+				!csstrcmp(value, "halo2") ? _health_style_halo2 :
+				_health_style_classic;
+		}
+	}
+	return style;
+}
+
+static void object_regenerate_health(
+	long object_index,
+	short style)
+{
+	struct object_datum *object = object_get(object_index);
+	real health = object->object.body_vitality;
+	real cap = 1.f;
+	boolean ready;
+
+	if (health <= 0.f || health >= 1.f ||
+		TEST_FLAG(object->object.damage_flags, _object_dead_bit) ||
+		object->object.maximum_body_vitality <= 0.f)
+	{
+		return;
+	}
+	if (object->object.maximum_shield_vitality > 0.f)
+	{
+		/* (HALO 2: as soon as the shields recharge, not once they are full) */
+		ready = style == _health_style_halo2 ?
+			object->object.shield_stun_ticks == 0 :
+			object->object.shield_vitality >= 1.f;
+	}
+	else
+	{
+		ready = object->object.body_damage_decay_timer == NONE ||
+			object->object.body_damage_decay_timer >= HEALTH_REGENERATION_UNSHIELDED_DELAY;
+	}
+	if (!ready || player_index_from_unit_index(object_index) == NONE)
+		return;
+	/* (REACH: the top of the third it is in; on a third's top, none) */
+	if (style == _health_style_reach)
+		cap = MIN((real)((long)(health * 3.f - 0.0001f) + 1) / 3.f, 1.f);
+	object->object.body_vitality = MIN(health + (style == _health_style_halo2 ?
+		HEALTH_REGENERATION_HALO2_PER_TICK : HEALTH_REGENERATION_PER_TICK), cap);
+}
+
 void object_damage_update(
 	long object_index)
 {
@@ -2050,6 +2126,9 @@ void object_damage_update(
 			}
 		}
 	}
+
+	if (objects_update_shields() && health_style_current() != _health_style_classic)
+		object_regenerate_health(object_index, health_style_current());
 
 	if (object->object.body_damage_decay_timer != NONE)
 	{

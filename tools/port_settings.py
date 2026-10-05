@@ -18,7 +18,10 @@ from xml.sax.saxutils import quoteattr
 PE = "main_menu/settings_select/player_setup/player_profile_edit"
 YES_NO = [("YES", "true"), ("NO", "false")]
 ON_OFF = [("ON", "true"), ("OFF", "false")]
-CORNERS = [("OFF", "off"), ("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
+# (display.performance's levels: main.c's performance_level_names)
+PERFORMANCE_LEVELS = [("OFF", "off"), ("FPS", "fps"), ("MINIMAL", "minimal"), ("FULL", "full")]
+CORNERS = [("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
+HEALTH_STYLES = [("CLASSIC", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
@@ -52,10 +55,11 @@ SCREENS = {
              "Draw the HUD from the high-res redraws; off\ndraws the game's own pictures.", None),
             ("HIGH-RES TEXT:", "display.high_res_text", ON_OFF,
              "Draw text and titles with high-res fonts; off\ndraws the game's own.", None),
-            ("FPS COUNTER:", "display.fps_counter", CORNERS,
-             "The frames a second, at the top of the screen\nabove the HUD.", None),
-            ("PERFORMANCE OVERLAY:", "display.performance_overlay", CORNERS,
-             "The frame rate, its 1% low, the frame time and\nthe draws of a frame, at the top of the screen.", None),
+            ("PERFORMANCE:", "display.performance", PERFORMANCE_LEVELS,
+             "FPS, with Minimal the frame time, with Full the\n1% low and the draws, at the top of the screen.",
+             None),
+            ("POSITION:", "display.performance_position", CORNERS,
+             "The corner the performance line is drawn in,\nabove the HUD.", None),
         ],
     },
     # (Mods: its title text, not a picture; the spinner's mods are the data
@@ -69,8 +73,10 @@ SCREENS = {
             ("MOD:", "game.mod", [("STOCK", "")],
              "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
              "desktop"),
-            ("FALL DAMAGE:", "game.fall_damage", ON_OFF,
-             "Off: falls hurt no player, but a deadly height's,\na pit's and out of bounds still kill.", None),
+            ("CAMPAIGN FALL DAMAGE:", "game.fall_damage", ON_OFF,
+             "Off: landings never hurt in the campaign. Gametypes\nhave their own, in Player Options.", None),
+            ("CAMPAIGN HEALTH:", "game.health", HEALTH_STYLES,
+             "How health comes back in the campaign. Gametypes\nhave their own, in Player Options.", None),
         ],
     },
     "mouse_settings": {
@@ -373,6 +379,9 @@ MT = "main_menu/multiplayer_type_select"
 # and their helps after the five of its own (its helps are the rows' values'
 # in turn: menu_functions.c's gametype_option_help)
 SLAYER_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit/slayer_edit"
+PLAYER_OPTIONS = "main_menu/settings_select/multiplayer_setup/player_options_edit"
+INDICATOR_OPTIONS = "main_menu/settings_select/multiplayer_setup/indicator_options_edit"
+
 STRING_INSERTS = {
     f"{SLAYER_EDIT}/var_kills_to_win": [(5, ["75", "100", "150", "200", "250", "500"])],
     f"{SLAYER_EDIT}/cap_slayer": [(11, [
@@ -382,6 +391,25 @@ STRING_INSERTS = {
         "Two hundred kills to win. Bring friends. Lots of\\nthem.",
         "Two hundred and fifty kills to win.",
         "Five hundred kills to win. You'll be here a while.",
+    ])],
+    # (Player Options' FALL DAMAGE, after SUICIDE PENALTY: _player_options_extras)
+    f"{PLAYER_OPTIONS}/player_options_labels": [(8, ["FALL DAMAGE:", "HEALTH:"])],
+    # (Indicator Options' TIMERS and TRAINING, after FRIEND INDICATORS ON
+    # SCREEN: _indicator_options_extras)
+    f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:"])],
+    f"{INDICATOR_OPTIONS}/cap_indicator_options": [(8, [
+        "No timers: learn the spawns the hard way.",
+        "The match clock, and when and where the rockets,\\nsniper, overshield and camo spawn, for everyone.",
+        "No training aids.",
+        "Every item's spawn and timer, and the player\\nspawns this match uses. For learning a map.",
+    ])],
+    f"{PLAYER_OPTIONS}/cap_player_options": [(28, [
+        "A hard landing hurts, and a long enough fall kills.",
+        "Landings never hurt, from any height. Pits and\\nleaving the map still kill.",
+        "Your health only comes back with a health pack.",
+        "Once your shields are full, your health comes\\nback to the top of the third it is in. Health\\npacks fill the rest.",
+        "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
+        "Once your shields are full, all your health\\ncomes back.",
     ])],
 }
 
@@ -497,6 +525,20 @@ WIDGET_PATCHES = {
             f'<child widget="main_menu/settings_select/multiplayer_setup/item_options_edit/op_primary_weapon" x="54" y="223"/>',
             f'<child widget="main_menu/settings_select/multiplayer_setup/item_options_edit/op_secondary_weapon" x="54" y="253"/>',
         ]}},
+    # (Player Options' FALL DAMAGE and HEALTH rows, over its buttons, its
+    # rows 27 apart, not 30: ce_menus.CHILD_OFFSETS; and its help lower)
+    f"{PLAYER_OPTIONS}/player_options_menu": {"insert_before": {
+        f"{PLAYER_OPTIONS}/player_button_bar": [
+            f'<child widget="{PLAYER_OPTIONS}/op_falling_damage" x="54" y="289"/>',
+            f'<child widget="{PLAYER_OPTIONS}/op_health_regeneration" x="54" y="316"/>',
+        ]}},
+    # (Indicator Options' TIMERS and TRAINING rows, over its buttons, 30 apart)
+    f"{INDICATOR_OPTIONS}/indicator_options_menu": {"insert_before": {
+        f"{INDICATOR_OPTIONS}/indicator_button_bar": [
+            f'<child widget="{INDICATOR_OPTIONS}/op_item_timers" x="54" y="163"/>',
+            f'<child widget="{INDICATOR_OPTIONS}/op_training" x="54" y="193"/>',
+        ]}},
+    f"{PLAYER_OPTIONS}/player_options_help": {"set": {"top": 348, "height": 66}},
     # (the PC's Vehicles row's Start opened Item Options)
     "main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_vehicles_list_item": {"handlers": [
         '<on event="a" open="main_menu/settings_select/multiplayer_setup/vehicle_options_edit/vehicle_options_screen"/>',
@@ -974,6 +1016,73 @@ def _item_options_extras() -> list:
     return lines
 
 
+def _player_options_row(key: str, label: int) -> list:
+    """a Player Options row of the port's, as SHIELDS': its label (the
+    labels' string label) and its spinner (strings var_KEY)"""
+    lines = _widget(f"{PLAYER_OPTIONS}/op_{key}",
+                    [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                     ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                    [f'<child widget="{PLAYER_OPTIONS}/{key}_label"/>',
+                     f'<child widget="{PLAYER_OPTIONS}/{key}_spinner" x="320" y="1"/>'])
+    lines += _widget(f"{PLAYER_OPTIONS}/{key}_label",
+                     [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
+                      ("string_list", f"{PLAYER_OPTIONS}/player_options_labels"), ("string_index", label),
+                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{PLAYER_OPTIONS}/{key}_spinner",
+                     [("type", "spinner"), ("left", 2), ("top", 2), ("width", 148), ("height", 20),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                      ("string_list", f"{PLAYER_OPTIONS}/var_{key}"), ("font", "ui\\large_ui"),
+                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4), ("list_flags", "items_from_strings"),
+                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
+                     ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    return lines
+
+
+def _player_options_extras() -> list:
+    """Player Options' rows of the port's: FALL DAMAGE, ON or OFF (the
+    gametype's _game_variant_no_falling_damage_bit), and HEALTH, CLASSIC,
+    REACH, HALO 2 or HALO 3 (_game_variant_health_style_..._bit)"""
+    lines = _player_options_row("falling_damage", 8)
+    lines += _strings(f"{PLAYER_OPTIONS}/var_falling_damage", ["ON", "OFF"])
+    lines += _player_options_row("health_regeneration", 9)
+    lines += _strings(f"{PLAYER_OPTIONS}/var_health_regeneration", ["CLASSIC", "REACH", "HALO 2", "HALO 3"])
+    return lines
+
+
+def _indicator_options_row(key: str, label: int) -> list:
+    """an Indicator Options row of the port's, OFF or ON: its label (the
+    labels' string label) and its spinner (strings var_KEY)"""
+    lines = _widget(f"{INDICATOR_OPTIONS}/op_{key}",
+                    [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                     ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                    [f'<child widget="{INDICATOR_OPTIONS}/{key}_label"/>',
+                     f'<child widget="{INDICATOR_OPTIONS}/{key}_spinner" x="366" y="1"/>'])
+    lines += _widget(f"{INDICATOR_OPTIONS}/{key}_label",
+                     [("type", "text"), ("controller", 1), ("width", 320), ("height", 22),
+                      ("string_list", f"{INDICATOR_OPTIONS}/indicator_options_labels"), ("string_index", label),
+                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{INDICATOR_OPTIONS}/{key}_spinner",
+                     [("type", "spinner"), ("left", 2), ("top", 2), ("width", 46), ("height", 20),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                      ("string_list", f"{INDICATOR_OPTIONS}/var_{key}"), ("font", "ui\\large_ui"),
+                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4), ("list_flags", "items_from_strings"),
+                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 48 19 54")],
+                     ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    return lines
+
+
+def _indicator_options_extras() -> list:
+    """Indicator Options' rows of the port's: TIMERS and TRAINING, OFF or ON
+    (the gametype's _game_variant_item_timers_bit and _training_bit)"""
+    lines = _indicator_options_row("item_timers", 4)
+    lines += _strings(f"{INDICATOR_OPTIONS}/var_item_timers", ["OFF", "ON"])
+    lines += _indicator_options_row("training", 5)
+    lines += _strings(f"{INDICATOR_OPTIONS}/var_training", ["OFF", "ON"])
+    return lines
+
+
 def _split_screen() -> list:
     """Split Screen: the Xbox's split screen multiplayer, which the PC version
     has not, from Multiplayer: the Xbox's own screens (ui.map's split_screen,
@@ -1002,6 +1111,8 @@ def multiplayer_files() -> dict:
         f"{MT}/lobby".replace("/", ".") + ".xml": head + _lobby() + ["</menus>", ""],
         f"{MT}/coop".replace("/", ".") + ".xml": head + _coop() + ["</menus>", ""],
         f"{MT}/split_screen".replace("/", ".") + ".port.xml": head + _split_screen() + ["</menus>", ""],
+        PLAYER_OPTIONS.replace("/", ".") + ".port.xml": head + _player_options_extras() + ["</menus>", ""],
+        INDICATOR_OPTIONS.replace("/", ".") + ".port.xml": head + _indicator_options_extras() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/item_options_edit".replace("/", ".") + ".port.xml": head + _item_options_extras() + ["</menus>", ""],
     }
 

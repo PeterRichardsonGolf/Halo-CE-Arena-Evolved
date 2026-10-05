@@ -78,6 +78,7 @@ symbols in this file:
 
 #include "cseries/cseries.h"
 #include "saved games/playlist_profile.h"
+#include "saved games/arena_gametypes.h"
 #include "bungie_net/common/thread.h"
 #include "cseries/errors.h"
 #include "text/unicode.h"
@@ -303,6 +304,22 @@ void playlist_profiles_enumerate_available_to_local_player_index(
 	{
 		playlist_profile_create_default_profiles_on_disk();
 		playlist_profile_default_data.first_time = FALSE;
+		/* port: and the Arena Evolved gametypes, as custom ones
+		(arena_gametypes.c); any written, their writes are finished and the
+		files enumerated again, in the order every later start has (the
+		custom gametypes first), before the gametypes are listed */
+		if (arena_gametypes_seed())
+		{
+			if (playlist_profile_globals.thread)
+			{
+				while (!thread_has_exited(playlist_profile_globals.thread))
+				{
+				}
+				dispose_thread(playlist_profile_globals.thread);
+				playlist_profile_globals.thread = NULL;
+			}
+			saved_game_files_notify_memory_units_changed();
+		}
 	}
 
 	saved_game_files_enumerate_available_to_local_player_index(

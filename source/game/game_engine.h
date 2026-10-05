@@ -28,7 +28,36 @@ enum
 	_game_variant_always_invisible_bit,
 	/* (the starting equipment: generic, else the map's) */
 	_game_variant_generic_starting_equipment_bit,
+	/* port: a player's landing does no damage, from any height (pits and
+	kill volumes still kill); the port's own bits from 16, clear of the
+	game's */
+	_game_variant_no_falling_damage_bit = 16,
+	/* port: TIMERS (the match clock, the power items' spawns) and TRAINING
+	(every item's spawn and the match's player spawns too) */
+	_game_variant_item_timers_bit = 17,
+	_game_variant_training_bit = 18,
+	/* port: two bits, how a player's health comes back (enum health_style):
+	bit 19 alone is REACH */
+	_game_variant_health_style_first_bit = 19,
+	_game_variant_health_regeneration_bit = _game_variant_health_style_first_bit,
+	_game_variant_health_style_second_bit = 20,
 };
+
+/* port: how a player's health comes back (the gametype's HEALTH, the
+campaign's game.health): CLASSIC only from health packs; REACH, once the
+shields are full, up to the top of the third it is in; HALO 3, once the
+shields are full, all of it; HALO 2, all of it at once as the shields start
+to recharge (objects/damage.c) */
+enum health_style
+{
+	_health_style_classic = 0,
+	_health_style_reach,
+	_health_style_halo3,
+	_health_style_halo2,
+};
+
+#define GAME_VARIANT_HEALTH_STYLE_MASK \
+	(FLAG(_game_variant_health_style_first_bit) | FLAG(_game_variant_health_style_second_bit))
 
 enum game_engine_type
 {
@@ -566,6 +595,21 @@ boolean game_engine_allow_dynamic_lighting(
 boolean game_engine_infinite_grenades(
 	long player_index);
 
+boolean game_engine_no_falling_damage(
+	long player_index);
+
+short game_engine_health_style(
+	void);
+
+boolean game_engine_item_timers(
+	void);
+
+boolean game_engine_training(
+	void);
+
+boolean game_engine_matches_game_type(
+	short const *game_types);
+
 boolean game_engine_has_shield(
 	long player_index);
 
@@ -668,6 +712,10 @@ void game_engine_intialize_queued_sounds(
 	void);
 
 long game_engine_remap_object_definition(long definition_index);
+/* port: the item timers' (item_timers.c) */
+long game_engine_remap_item_definition(long definition_index);
+boolean game_engine_weapon_is_rocket_launcher(long definition_index);
+boolean game_engine_weapon_is_sniper_rifle(long definition_index);
 
 long game_engine_remap_vehicle(long vehicle_definition_index);
 long game_engine_remap_equipment(long equipment_definition_index);

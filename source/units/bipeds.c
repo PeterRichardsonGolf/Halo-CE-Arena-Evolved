@@ -779,10 +779,23 @@ static void biped_bumped_object(
 	return;
 }
 
-/* port: game.fall_damage (Settings > Game Options): false spares players
-the damage of a fall short of a deadly one; a fall from a deadly height, a
-pit (falling past the deadliest speed) and the map's kill volumes still kill */
+/* port: whether a player's landing does no damage, from any height: in
+multiplayer the gametype's NO FALLING DAMAGE, in the campaign game.fall_damage
+(Settings > Game Options) false. A pit (falling past the deadliest speed) and
+the map's kill volumes still kill, and every fall hurts those not players. */
 int config_boolean(const char *name);
+
+static boolean biped_spared_falling_damage(
+	struct biped_datum const *biped)
+{
+	long player_index = biped->unit.player_index;
+
+	if (player_index == NONE)
+		return FALSE;
+	if (game_engine_running())
+		return game_engine_no_falling_damage(player_index);
+	return !config_boolean("game.fall_damage");
+}
 
 static void biped_falling_damage(
 	long biped_index,
@@ -816,12 +829,9 @@ static void biped_falling_damage(
 					damage.scale,
 					0.f,
 					1.f);
-				/* port: no fall damage (game.fall_damage) but a deadly fall's */
-				if (damage.scale < 1.f && biped->unit.player_index != NONE &&
-					!config_boolean("game.fall_damage"))
-				{
+				/* port: no fall damage (biped_spared_falling_damage) */
+				if (biped_spared_falling_damage(biped))
 					return;
-				}
 				object_cause_damage(&damage, biped_index, NONE, NONE, NONE, NULL);
 			}
 		}

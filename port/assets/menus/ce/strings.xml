@@ -458,12 +458,18 @@
 		<string text="Other players in the game will never show up on your\nMotion Tracker."/>
 		<string text="Green triangles will appear over the heads of your\nteammates as a reminder that you should not shoot\nthem."/>
 		<string text="Your teammates will only be denoted by the color of\ntheir armor."/>
+		<string text="No timers: learn the spawns the hard way."/>
+		<string text="The match clock, and when and where the rockets,\nsniper, overshield and camo spawn, for everyone."/>
+		<string text="No training aids."/>
+		<string text="Every item's spawn and timer, and the player\nspawns this match uses. For learning a map."/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_labels">
 		<string text="OBJECTIVES INDICATOR:"/>
 		<string text="OBJECTIVES ON SCREEN:"/>
 		<string text="OTHER PLAYERS ON RADAR:"/>
 		<string text="FRIEND INDICATORS ON SCREEN:"/>
+		<string text="TIMERS:"/>
+		<string text="TRAINING:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_friends_on_screen">
 		<string text="YES"/>
@@ -591,6 +597,12 @@
 		<string text="Every time you cause your own death, there will be a \nfive-second wait before you can rejoin the game. "/>
 		<string text="You'll wait ten seconds after you cause your own \ndeath before you can return to the game."/>
 		<string text="When you suicide, you must wait fifteen seconds \nbefore you can respawn. This will give you an idea of \nwhat eternity is like."/>
+		<string text="A hard landing hurts, and a long enough fall kills."/>
+		<string text="Landings never hurt, from any height. Pits and\nleaving the map still kill."/>
+		<string text="Your health only comes back with a health pack."/>
+		<string text="Once your shields are full, your health comes\nback to the top of the third it is in. Health\npacks fill the rest."/>
+		<string text="Your shields are all that matter: your health\ncomes back as soon as they start to recharge."/>
+		<string text="Once your shields are full, all your health\ncomes back."/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/player_options_edit/player_options_labels">
 		<string text="NUMBER OF LIVES:"/>
@@ -601,6 +613,8 @@
 		<string text="ODD MAN OUT:"/>
 		<string text="INVISIBLE PLAYERS:"/>
 		<string text="SUICIDE PENALTY:"/>
+		<string text="FALL DAMAGE:"/>
+		<string text="HEALTH:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/player_options_edit/var_invisible_players">
 		<string text="YES"/>

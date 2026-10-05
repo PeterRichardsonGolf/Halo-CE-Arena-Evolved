@@ -562,6 +562,7 @@ symbols in this file:
 #include "items/item_definitions.h"
 #include "items/weapon_definitions.h"
 #include "items/weapons.h"
+#include "game/item_timers.h"
 #include "main/console.h"
 #include "main/main.h"
 #include "math/integer_math.h"
@@ -4370,6 +4371,9 @@ void game_engine_update(
 				!"unreachable");
 			break;
 		}
+
+		/* port: the item timers' (item_timers.c), on every machine */
+		item_timers_update();
 	}
 
 	return;
@@ -4724,6 +4728,42 @@ boolean game_engine_infinite_grenades(
 		infinite_grenades = game_engine_infinite_grenades_internal();
 
 	return infinite_grenades;
+}
+
+/* port: the gametype's NO FALLING DAMAGE (_game_variant_no_falling_damage_bit),
+for players */
+boolean game_engine_no_falling_damage(
+	long player_index)
+{
+	return game_engine_running() && player_index!=NONE &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_falling_damage_bit);
+}
+
+/* port: the gametype's TIMERS (TRAINING has them too) */
+boolean game_engine_item_timers(
+	void)
+{
+	return game_engine_running() &&
+		(TEST_FLAG(global_variant.universal_variant.flags, _game_variant_item_timers_bit) ||
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit));
+}
+
+/* port: the gametype's TRAINING */
+boolean game_engine_training(
+	void)
+{
+	return game_engine_running() &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit);
+}
+
+/* port: the gametype's HEALTH (enum health_style), CLASSIC with no game */
+short game_engine_health_style(
+	void)
+{
+	if (!game_engine_running())
+		return _health_style_classic;
+	return (short)((global_variant.universal_variant.flags & GAME_VARIANT_HEALTH_STYLE_MASK) >>
+		_game_variant_health_style_first_bit);
 }
 
 boolean game_engine_has_shield(
@@ -6606,6 +6646,14 @@ static long game_engine_get_type(
 	return game_engine_type;
 }
 
+/* port: whether a scenario entry's four game types include this game's
+(as the item spawns and starting locations test them) */
+boolean game_engine_matches_game_type(
+	short const *game_types)
+{
+	return match_game_type(game_engine_get_type(), 4, game_types);
+}
+
 struct game_variant *game_engine_get_variant(
 	void)
 {
@@ -6972,6 +7020,27 @@ void game_engine_initialize_for_new_map(
 		}
 
 		game_engine_predict_resources();
+	}
+
+	/* port: the netgame equipment's spawns for the item timers, now that
+	the map and the game variant are known */
+	item_timers_map_begin();
+
+	/* port: the rules this game plays by, in the log (the gametype's port
+	options and starting equipment, its vehicle set: Halo 1: NHE's mode) */
+	if (game_engine)
+	{
+		static char const *const health_styles[] = { "classic", "reach", "halo 3", "halo 2" };
+		unsigned long flags = global_variant.universal_variant.flags;
+
+		error(_error_silent, "game rules: health %s, fall damage %s, starting equipment %s, vehicle set %ld, "
+			"timers %s, training %s",
+			health_styles[(flags & GAME_VARIANT_HEALTH_STYLE_MASK) >> _game_variant_health_style_first_bit],
+			TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
+			TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
+			global_variant.universal_variant.vehicle_set,
+			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off");
 	}
 
 	return;
@@ -7528,6 +7597,41 @@ long game_engine_remap_object_definition(
 	}
 
 	return definition_index;
+}
+
+/* port: an item's definition as game_engine_remap_object_definition makes
+it when the item spawns, for the item timers (item_timers.c), without that
+spawn's random draws: the global random seed is left as it was, and the
+grenades a game of 5 or more players drops at random count as spawning */
+long game_engine_remap_item_definition(
+	long definition_index)
+{
+	unsigned long *seed = get_global_random_seed_address();
+	unsigned long saved_seed = *seed;
+	unsigned long saved_flags = game_engine_globals.flags;
+	long result;
+
+	SET_FLAG(game_engine_globals.flags, _game_engine_5_or_more_players_bit, FALSE);
+	SET_FLAG(game_engine_globals.flags, _game_engine_9_or_more_players_bit, FALSE);
+	result = game_engine_remap_object_definition(definition_index);
+	game_engine_globals.flags = saved_flags;
+	*seed = saved_seed;
+
+	return result;
+}
+
+/* port: whether a weapon definition is the globals' rocket launcher or
+sniper rifle (item_timers.c) */
+boolean game_engine_weapon_is_rocket_launcher(
+	long definition_index)
+{
+	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_rocket_launcher;
+}
+
+boolean game_engine_weapon_is_sniper_rifle(
+	long definition_index)
+{
+	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_sniper_rifle;
 }
 
 /* ---------- private code */

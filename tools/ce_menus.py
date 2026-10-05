@@ -86,6 +86,12 @@ CHILD_OFFSETS = {
     **{("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_edit_select_list",
         f"ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\{item}"): (0, 64)
        for item in ("color_profile_item", "about_item")},
+    # Player Options' rows 27 apart, not 30, for FALL DAMAGE and HEALTH
+    # (port_settings.WIDGET_PATCHES)
+    **{("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\player_options_edit\\player_options_menu",
+        f"ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\player_options_edit\\op_{row}"): (54, 73 + 27 * index)
+       for index, row in enumerate(("number_of_lives", "maximum_health", "shields", "respawn_time",
+                                    "respawn_time_growth", "odd_man_out", "invisible_players", "suicide_penalty"))},
     # the browser's rows up under the column titles, into the place of the
     # scroll up button (hidden: the list does not scroll)
     **{("ui\\shell\\main_menu\\multiplayer_type_select\\join_game\\join_game_items_list",

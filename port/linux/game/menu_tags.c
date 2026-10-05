@@ -1437,7 +1437,7 @@ static void *pause_button(struct cache_file_tag_instance *instances, struct ui_w
 /* the list's buttons: SETTINGS (and the host's END GAME) put before LEAVE
 GAME (quit); returns how many were added */
 static long pause_list_patch(struct cache_file_tag_instance *instances, struct ui_widget_definition *list, long quit,
-	boolean host, boolean fit)
+	boolean host, boolean fit, long *settings_tag)
 {
 	struct ui_widget_child_reference *children = xbox_pointer(list->child_widgets.address);
 	long count = list->child_widgets.count, added = host ? 2 : 1, child;
@@ -1451,18 +1451,28 @@ static long pause_list_patch(struct cache_file_tag_instance *instances, struct u
 
 	if (!grown || settings_widget == NONE || spacing <= 0)
 		return 0;
-	tags[0] = next_tag();
-	buttons[0] = pause_button(instances, model, "pause/settings_button", "SETTINGS",
-		function_index("profile set edit begin", "pause", 0), build.widget_tags[settings_widget]);
-	tags[1] = host ? next_tag() : NONE;
-	buttons[1] = host ? pause_button(instances, model, "pause/end_game_button", "END GAME",
-		function_index("port pause end game", "pause", 0), NONE) : NULL;
-	if (!buttons[0] || (host && !buttons[1]))
-		return 0;
-	for (child = 0; child < added; child++)
+	/* (a campaign's second list, split screen's: the SETTINGS button the
+	first list got, not another) */
+	if (*settings_tag != NONE && !host)
 	{
-		instance_set(instances, UI_WIDGET_DEFINITION_TAG, tags[child],
-			child ? "pause/end_game_button" : "pause/settings_button", "", buttons[child]);
+		tags[0] = *settings_tag;
+	}
+	else
+	{
+		tags[0] = next_tag();
+		buttons[0] = pause_button(instances, model, "pause/settings_button", "SETTINGS",
+			function_index("profile set edit begin", "pause", 0), build.widget_tags[settings_widget]);
+		tags[1] = host ? next_tag() : NONE;
+		buttons[1] = host ? pause_button(instances, model, "pause/end_game_button", "END GAME",
+			function_index("port pause end game", "pause", 0), NONE) : NULL;
+		if (!buttons[0] || (host && !buttons[1]))
+			return 0;
+		for (child = 0; child < added; child++)
+		{
+			instance_set(instances, UI_WIDGET_DEFINITION_TAG, tags[child],
+				child ? "pause/end_game_button" : "pause/settings_button", "", buttons[child]);
+		}
+		*settings_tag = tags[0];
 	}
 	if (quit)
 		memcpy(grown, children, quit * sizeof(*grown));
@@ -1542,7 +1552,7 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 	boolean solo = collection == NONE;
 	boolean host = !solo && global_network_game_server_get() != NULL;
 	struct tag_block const *screens = NULL;
-	long patched_list = NONE, added = 0, buttons = 0, screen, screen_count;
+	long patched_list = NONE, added = 0, buttons = 0, screen, screen_count, settings_tag = NONE;
 	boolean box_redrawn = FALSE;
 
 	if (!solo && quit_function == NONE)
@@ -1580,9 +1590,11 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 				continue;
 			}
 			quit = solo ? pause_solo_quit_button(list) : pause_quit_button(list, quit_function);
-			if (quit == NONE || patched_list != NONE)
+			/* (a campaign's screens have a list each: one player's and split
+			screen's, both patched) */
+			if (quit == NONE || (patched_list != NONE && !solo))
 				continue;
-			added = pause_list_patch(instances, list, quit, host, solo);
+			added = pause_list_patch(instances, list, quit, host, solo, &settings_tag);
 			if (!added)
 				return;
 			buttons = list->child_widgets.count;
@@ -1795,9 +1807,9 @@ char const *pc_menus_root_name(
 		}
 		if (tag_loaded(UI_WIDGET_DEFINITION_TAG, name) != NONE)
 		{
-			extern boolean pc_menu_profile_edit_begin(void);
+			extern boolean pc_menu_profile_edit_begin(short local_player);
 
-			pc_menu_profile_edit_begin();
+			pc_menu_profile_edit_begin(0);
 			return name;
 		}
 		platform_log("menus: debug.menu_open: there is no widget named %s", open);
