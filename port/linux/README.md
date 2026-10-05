@@ -463,7 +463,7 @@ interface.
 
 `tools/system_link_bots.py` adds simple machines to a game. Each machine has
 one player. The machines obey the system link protocol, but they do not
-calculate the game or move their players.
+calculate the game. By default their players stand still.
 
 1. Start a game on the host.
 2. Enter `python tools/system_link_bots.py --host 127.0.0.200 --machines 127 --start`.
@@ -471,6 +471,13 @@ calculate the game or move their players.
 Each machine uses its own loopback address, from 127.0.0.2. The option
 `--start` starts the game when all the machines are in the lobby. If the
 host has no `network.address`, do not give `--host`.
+
+Add `--move` to make the players move. Each machine then sends its player's
+input to the host every tick, as a real client does. The players run, strafe,
+turn, jump and crouch in random patterns (`--seed N` picks other ones). Add
+`--fire` to make them shoot in bursts too. The host moves the players from
+this input. Their shots do not hurt anyone, because the bots do not report
+hits. The bots do not aim, follow paths or pick up items.
 
 ## Internet play
 
