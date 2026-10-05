@@ -105,5 +105,10 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
         },
         implicit=[Path("tools/linux_link_check.py")],
     )
-    n.build(outputs="linux64", rule="phony", inputs=output)
+    # internet play's MQTT brokers, a file beside the game (network.brokers_file),
+    # as the 32-bit build has it (linux_build.py)
+    brokers = build_dir / "brokers.txt"
+    n.rule(name="linux64_copy", command="cp $in $out", description="LINUX64 COPY $out")
+    n.build(outputs=brokers, rule="linux64_copy", inputs=Path("port/assets/network/brokers.txt"))
+    n.build(outputs="linux64", rule="phony", inputs=[output, brokers])
     n.newline()

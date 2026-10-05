@@ -2442,7 +2442,13 @@ static boolean network_game_remove_local_player(
 	short controller_index = event && event->controller_index >= 0 && event->controller_index < 4 ?
 		event->controller_index : widget->local_player_index;
 
-	network_game_client_local_player_quit(controller_index != NONE ? controller_index : 0);
+	if (controller_index == NONE)
+		controller_index = 0;
+	network_game_client_local_player_quit(controller_index);
+	/* port: a split screen player who quit, the others staying, is not
+	joined to the next game */
+	if (local_player_count() > 1)
+		player_ui_local_player_left_multiplayer_game(controller_index);
 	return TRUE;
 }
 
@@ -5793,6 +5799,15 @@ static boolean multiplayer_profile_set_for_game(
 	}
 	if (playlist_profile_get(profile_index, &profile))
 	{
+		/* port: and its PC options (time limit, friendly fire, loadout...), as
+		ui_widget_port_gametype_choose has them: split screen's picking left
+		the last game's */
+		{
+			struct game_variant_options options;
+
+			playlist_profile_get_options(profile_index, &options);
+			player_ui_set_game_variant_options(&options);
+		}
 		server = global_network_game_server_get();
 		if (saved_game_file_get_path_to_enclosing_directory(profile_index, directory_path))
 			saved_game_file_remember_last_used_multiplayer_variant_directory(directory_path);
@@ -6054,7 +6069,11 @@ boolean ui_widget_port_gametype_choose(
 	return TRUE;
 }
 
-/* hosting (as the Xbox's server list's Y) */
+/* hosting (as the Xbox's server list's Y): always a new game. A game made
+before and backed out of keeps its server (the lobby's last player leaving
+pauses it: netgame_unjoin_player), and network_game_start_new_server joins
+only a server it makes, so the client it made for that one never joined it
+and the lobby had nobody in it */
 boolean ui_widget_port_host(
 	struct widget_instance *widget,
 	struct event_record *event,
@@ -6062,6 +6081,8 @@ boolean ui_widget_port_host(
 {
 	boolean result;
 
+	dispose_global_network_game_client();
+	dispose_global_network_game_server();
 	network_game_port_pc_menus_hosting = TRUE;
 	result = network_game_start_new_server(widget, event, widget_deleted);
 	network_game_port_pc_menus_hosting = FALSE;
@@ -6150,6 +6171,22 @@ boolean ui_widget_port_multiplayer_player(
 	player_ui_set_active_player_profile(controller_index, profile_index, &profile);
 	player_ui_local_player_joined_multiplayer_game(controller_index);
 	return TRUE;
+}
+
+/* the lobby's B of a player (port/linux/game/menu_functions.c): that
+controller's player leaves the game (netgame_unjoin_player); TRUE if they were
+the machine's last, which leaves it (and are joined again if its host's
+lobby comes back), else they leave the next game too */
+boolean ui_widget_port_unjoin_player(
+	struct widget_instance *widget,
+	struct event_record *event,
+	boolean *widget_deleted)
+{
+	boolean left = netgame_unjoin_player(widget, event, widget_deleted);
+
+	if (!left && event && event->controller_index >= 0 && event->controller_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS)
+		player_ui_local_player_left_multiplayer_game(event->controller_index);
+	return left;
 }
 
 /* a screen by name in place of the widget's (back returns to it: as
