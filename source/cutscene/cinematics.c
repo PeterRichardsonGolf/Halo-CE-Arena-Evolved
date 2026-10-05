@@ -551,6 +551,9 @@ void cinematic_render(
 					chapter titles) the bounds' centre */
 					static rectangle2d wide_bounds;
 					short anchor = (short)((title_bounds->x0 + title_bounds->x1) / 2);
+					short extra = (short)(halo_screen_width() - 640);
+					short shift;
+
 					if (hs_scenario_is_nhe())
 					{
 						anchor =
@@ -558,8 +561,7 @@ void cinematic_render(
 							title->justification == _text_justification_right ? title_bounds->x1 :
 							anchor;
 					}
-					short extra = (short)(halo_screen_width() - 640);
-					short shift = anchor < 640 / 3 ? 0 : anchor > 640 * 2 / 3 ? extra : (short)(extra / 2);
+					shift = anchor < 640 / 3 ? 0 : anchor > 640 * 2 / 3 ? extra : (short)(extra / 2);
 
 					wide_bounds = *title_bounds;
 					wide_bounds.x0 += shift;
