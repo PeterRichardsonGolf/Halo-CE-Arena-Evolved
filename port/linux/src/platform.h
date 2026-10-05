@@ -109,6 +109,13 @@ other systems). An application's own files are not written: it is signed,
 and may be where its player cannot write (port_config.c) */
 int platform_app_folder(char *path, unsigned long size);
 const char *platform_save_root(void);
+/* port: folders for the menus' and the callouts' lists (menu_files.c,
+callout_voice.c), through posix.h's helpers (posix_files.c; on Windows,
+win32_files.c): a unit that sees the Xbox SDK cannot include <windows.h> or
+<dirent.h>. Nonzero when path is a folder that opens; and visit called with
+each name in one (not . or ..), 0 when it does not open */
+int platform_folder_exists(const char *path);
+int platform_folder_list(const char *path, void (*visit)(const char *name, void *context), void *context);
 #ifdef HALO_GAME_BROWSER
 /* a web page opened in the web browser (from any thread: the main thread
 opens it) */

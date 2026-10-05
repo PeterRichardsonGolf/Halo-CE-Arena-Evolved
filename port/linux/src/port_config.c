@@ -16,6 +16,7 @@ edits and comments stay.
 
 #include "platform.h"
 #include "port_config.h"
+#include "posix.h"
 #include "tomlc17.h"
 
 #include <SDL3/SDL.h>
@@ -1600,6 +1601,36 @@ const char *config_string(const char *name)
 	const char *string = config_value(name, _config_string)->string;
 
 	return string ? string : "";
+}
+
+/* ---------- folders (platform.h) */
+
+int platform_folder_exists(const char *path)
+{
+	struct posix_file_information information;
+	void *opened;
+
+	/* (a folder, and one that opens, as opendir() alone told before) */
+	if (posix_stat(path, &information) != 0 || !(information.flags & _posix_file_is_directory))
+		return 0;
+	opened = posix_directory_open(path);
+	if (!opened)
+		return 0;
+	posix_directory_close(opened);
+	return 1;
+}
+
+int platform_folder_list(const char *path, void (*visit)(const char *name, void *context), void *context)
+{
+	void *opened = posix_directory_open(path);
+	char name[260];
+
+	if (!opened)
+		return 0;
+	while (posix_directory_next(opened, name, sizeof(name)))
+		visit(name, context);
+	posix_directory_close(opened);
+	return 1;
 }
 
 /* ---------- starting again (Settings > Mods: game.mod) */

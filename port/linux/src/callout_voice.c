@@ -17,11 +17,6 @@ as it is).
 #include "port_config.h"
 
 #include <ctype.h>
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <dirent.h>
-#endif
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,21 +49,6 @@ static int folder_name_valid(const char *name)
 		!strstr(name, "..");
 }
 
-static int folder_exists(const char *path)
-{
-#ifdef _WIN32
-	DWORD attributes = GetFileAttributesA(path);
-
-	return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
-#else
-	DIR *opened = opendir(path);
-
-	if (opened)
-		closedir(opened);
-	return opened != NULL;
-#endif
-}
-
 static int name_compare(const char *a, const char *b)
 {
 	while (*a && tolower((unsigned char)*a) == tolower((unsigned char)*b))
@@ -79,51 +59,36 @@ static int name_compare(const char *a, const char *b)
 	return tolower((unsigned char)*a) - tolower((unsigned char)*b);
 }
 
-static void first_pack_consider(const char *folder, const char *name, char *first)
+/* first_pack's search: the voices/ folder read, and the first of its
+folders by name so far */
+struct first_pack_search
 {
+	const char *folder;
+	char *first;
+};
+
+static void first_pack_consider(const char *name, void *context)
+{
+	struct first_pack_search *search = (struct first_pack_search *)context;
 	char path[1200];
 
-	if (name[0] == '.' || !folder_name_valid(name) || (first[0] && name_compare(name, first) >= 0))
+	if (name[0] == '.' || !folder_name_valid(name) || (search->first[0] && name_compare(name, search->first) >= 0))
 		return;
-	snprintf(path, sizeof(path), "%s/%s", folder, name);
-	if (folder_exists(path))
-		strcpy(first, name);
+	snprintf(path, sizeof(path), "%s/%s", search->folder, name);
+	if (platform_folder_exists(path))
+		strcpy(search->first, name);
 }
 
 /* the first folder of a voices/ folder by name (as the VOICE spinner lists
 them), "" for none */
 static void first_pack(const char *folder, char *first)
 {
+	struct first_pack_search search;
+
 	first[0] = 0;
-	{
-#ifdef _WIN32
-		char pattern[1100];
-		WIN32_FIND_DATAA found;
-		HANDLE search;
-
-		snprintf(pattern, sizeof(pattern), "%s\\*", folder);
-		search = FindFirstFileA(pattern, &found);
-		if (search != INVALID_HANDLE_VALUE)
-		{
-			do
-			{
-				if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-					first_pack_consider(folder, found.cFileName, first);
-			} while (FindNextFileA(search, &found));
-			FindClose(search);
-		}
-#else
-		DIR *opened = opendir(folder);
-		struct dirent *entry;
-
-		if (opened)
-		{
-			while ((entry = readdir(opened)) != NULL)
-				first_pack_consider(folder, entry->d_name, first);
-			closedir(opened);
-		}
-#endif
-	}
+	search.folder = folder;
+	search.first = first;
+	platform_folder_list(folder, first_pack_consider, &search);
 }
 
 static unsigned long little_endian(const unsigned char *bytes, int count)
@@ -266,11 +231,11 @@ static void pack_resolve(const char *pack, const char *mod, char *resolved)
 		if (mod[0])
 		{
 			snprintf(folder, sizeof(folder), "%s/mods/%s/voices/%s", platform_data_root(), mod, pack);
-			if (folder_exists(folder))
+			if (platform_folder_exists(folder))
 				strcpy(resolved, pack);
 		}
 		snprintf(folder, sizeof(folder), "%s/voices/%s", platform_data_root(), pack);
-		if (!resolved[0] && folder_exists(folder))
+		if (!resolved[0] && platform_folder_exists(folder))
 			strcpy(resolved, pack);
 		if (resolved[0])
 			return;
