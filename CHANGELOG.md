@@ -61,7 +61,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   Setup's PASSWORD for a PUBLIC internet game; the Server Browser shows a
   lock and asks for the password, which opens the listed invite; an invite
   link still joins without it), the server browser's lock icon, the profile
-  settings' picture of the profile's gamepad layout on GAMEPADS, the port's
+  settings' picture of the profile's gamepad layout on GAMEPADS (the Xbox's
+  five button settings; Arena Evolved's own layouts show the controller as
+  before, and ABOUT keeps its picture), the port's
   own zlib for the maps', menus' and HUD's data, dynamic-light storage
   fixed, and a second hardening round (models, animations, effects, sounds,
   scripts and network messages checked; a host spends at most 10 ms a frame

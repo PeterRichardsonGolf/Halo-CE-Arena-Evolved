@@ -1790,19 +1790,32 @@ the PC version's nine the Xbox's five of the button settings */
 #define PROFILE_GAMEPAD_FRAME 2
 #define PROFILE_FIRST_LAYOUT_FRAME 9
 
+/* (AE: the Xbox's five button settings have pictures; Arena Evolved's
+layouts after them have none, and show GAMEPADS' own picture) */
+#define PROFILE_XBOX_BUTTON_PRESETS 5
+
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's
-row, the edited profile's button settings */
+row, the edited profile's button settings. (AE: the row is the one the
+description's text names, its string_list_index: Arena Evolved's list has
+rows past the PC version's nine, whose numbers are the layouts' frames;
+those keep the picture they had before the layouts' frames, the frame
+their number wraps to) */
 static void profile_gamepad_layout(struct widget_instance *picture)
 {
 	struct player_profile *profile = player_ui_get_edit_player_profile();
+	struct widget_instance *text = picture->parent ? picture->parent->child : NULL;
 	short frame = picture->animation.current_frame_index;
+	short row = text && text != picture ? text->parameters.text_box.string_list_index : frame;
+	short preset = profile ? (short)profile->controller_settings.button_preset : (short)_button_preset_standard;
 
-	if (frame == PROFILE_GAMEPAD_FRAME ||
-		(frame >= PROFILE_FIRST_LAYOUT_FRAME && frame < PROFILE_FIRST_LAYOUT_FRAME + NUMBER_OF_BUTTON_PRESETS))
+	if (row == PROFILE_GAMEPAD_FRAME)
 	{
-		picture->animation.current_frame_index = (short)(PROFILE_FIRST_LAYOUT_FRAME +
-			(profile && profile->controller_settings.button_preset < NUMBER_OF_BUTTON_PRESETS ?
-				profile->controller_settings.button_preset : _button_preset_standard));
+		picture->animation.current_frame_index = preset >= 0 && preset < PROFILE_XBOX_BUTTON_PRESETS ?
+			(short)(PROFILE_FIRST_LAYOUT_FRAME + preset) : (short)PROFILE_GAMEPAD_FRAME;
+	}
+	else if (row >= PROFILE_FIRST_LAYOUT_FRAME)
+	{
+		picture->animation.current_frame_index = (short)(row % PROFILE_FIRST_LAYOUT_FRAME);
 	}
 }
 
