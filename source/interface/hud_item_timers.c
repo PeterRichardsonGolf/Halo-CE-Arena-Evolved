@@ -23,11 +23,11 @@ On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*).
 
 The power list is one line of the rockets', sniper's, overshield's and
 camo's next spawns, soonest first (entries of one class spawning together
-are one). With one view, small (HUD_ITEM_TIMERS_POWER_SCALE) in the view's
-top left corner, in at most half its width: at the view's top, under the
-performance overlay's line where the two would meet (main.c's
-main_framerate_extent: the overlay at the top left, drawn at the list's
-scale, hud_item_timers_power_scale), and under the HUD's own elements in
+are one). With one view, at the text scale in the view's top left corner,
+in at most half its width: at the view's top, under the performance
+overlay's line where the two would meet (main.c's main_framerate_extent:
+the overlay at the top left, drawn at the text scale too,
+hud_item_timers_overlay_text_scale), and under the HUD's own elements in
 that corner (the ammo, the grenades, as hud.c saw them drawn:
 hud_item_timers_set_top_left) where it would meet them (made smaller to
 stay over them where it nearly fits), the HUD's messages under them moved
@@ -36,11 +36,10 @@ views, every view has the shorter line (a time for each group spawning
 together, "0:21 R/B SNIPER OS 0:51 ROCKETS") at its foot, centred between
 the motion sensor and the clock (clear of it by two of the clock's digits),
 on the clock's baseline (the sensor's foot: hud_item_timers_clock_place),
-upper and lower views alike (HUD_ITEM_TIMERS_POWER_SCALE with two,
-HUD_ITEM_TIMERS_POWER_SCALE_SMALL with more). A line that does not fit its
-room is the shorter one (entries spawning together grouped), then smaller
-(down to HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE); only at the smallest are its
-latest entries left off.
+upper and lower views alike. A line that does not fit its room is the
+shorter one (entries spawning together grouped), then smaller (down to
+HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE); only at the smallest are its latest
+entries left off.
 
 With HUD AREA (display.hud_area: hud_area_insets), both keep to its part
 of the view: the clock mirrors the sensor (which has moved in with the HUD)
@@ -54,12 +53,16 @@ Neither is drawn once the game is over (game_engine_game_over: the
 postgame's "You won"/"You lost" view and the scores).
 
 Both are drawn like the performance overlay (main.c frame_statistics_draw):
-the HUD's smaller font, its blue, 0.7 alpha, smaller (the power list as
-above; the clock HUD_ITEM_TIMERS_CLOCK_SCALE, the Master Chief Collection's
-size; its right edge about 10 pixels inside the meters' frame at 1080p,
-the Collection's about 9, being under the bar's own end). Unlike the
-overlay, drawn in the HUD's pass, the bounds are the view's relative to
-itself.
+the HUD's smaller font, its blue, 0.7 alpha, smaller. Every text of ours in
+a view (the power list, the waypoints' labels and their distances, BOTH's
+time played, and in the first view the performance overlay) is drawn at one
+size, the view's text scale: HUD_ITEM_TIMERS_TEXT_SCALE in one view,
+smaller in a smaller view (hud_item_timers_view_factor); the clock a step
+larger, HUD_ITEM_TIMERS_CLOCK_SCALE (the Master Chief Collection's size in
+one view), by the same rule. Its right edge is about 10 pixels inside the
+meters' frame at 1080p, the Collection's about 9, being under the bar's own
+end. Unlike the overlay, drawn in the HUD's pass, the bounds are the view's
+relative to itself.
 
 TRAINING's waypoints (hud_draw_item_waypoints) are the game's own nav
 points, as Halo 1: NHE's Training mode's: the "default" arrow (CTF's over
@@ -104,10 +107,9 @@ one list beside them.
 /* ---------- constants */
 
 #define HUD_ITEM_TIMERS_ALPHA 0.7f
-#define HUD_WAYPOINT_ARROW_SIZE 0.6f	/* (our waypoint arrows, of CE's nav point size) */
-#define HUD_WAYPOINT_LABEL_SCALE 0.65f	/* (a waypoint's label text) */
-#define HUD_ITEM_TIMERS_CLOCK_SCALE 0.9f	/* (the clock: the Master Chief Collection's size, digits 20 pixels tall at 1080p) */
-#define HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE (0.7f * HUD_ITEM_TIMERS_CLOCK_SCALE)	/* (MATCH CLOCK BOTH's time played over it) */
+#define HUD_WAYPOINT_ARROW_SIZE 0.6f	/* (our waypoint arrows, of CE's nav point size, in one view) */
+#define HUD_ITEM_TIMERS_CLOCK_SCALE 0.9f	/* (the clock in one view: the Master Chief Collection's size, digits 20 pixels tall at 1080p) */
+#define HUD_ITEM_TIMERS_TEXT_SCALE 0.7f	/* (all our other text in one view: the power list, the waypoints' labels, BOTH's time played, the performance overlay) */
 #define HUD_ITEM_TIMERS_TOP 2	/* (the overlay's line's, from the view's top) */
 #define HUD_ITEM_TIMERS_SIDE 4	/* (the power list's room from a view's sides, as the overlay's) */
 #define HUD_ITEM_TIMERS_GAP 12	/* (between the power list and the clock, or the overlay) */
@@ -118,8 +120,6 @@ one list beside them.
 #define HUD_ITEM_TIMERS_LABEL_ALPHA 0.9f	/* (a waypoint's label, over the world) */
 #define HUD_ITEM_TIMERS_LABEL_GAP 2	/* (between a waypoint's arrow and its label) */
 #define HUD_WAYPOINT_MERGE_DISTANCE 24	/* (arrows this near each other share their labels) */
-#define HUD_ITEM_TIMERS_POWER_SCALE 0.7f	/* (the power list with one or two views, and the overlay) */
-#define HUD_ITEM_TIMERS_POWER_SCALE_SMALL 0.6f	/* (and with three or four) */
 #define HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE 0.4f	/* (the smallest it is made to fit) */
 #define HUD_ITEM_TIMERS_POWER_WIDTH 0.5f	/* (the most of the view's width it takes in its top left corner) */
 #define HUD_ITEM_TIMERS_POWER_ABOVE_SCALE 0.55f	/* (the smallest it is made to stay over the HUD's top left elements) */
@@ -186,12 +186,60 @@ static long hud_item_timers_font_index(
 		hud_globals->messaging.multi_player_font.index : hud_globals->messaging.single_player_font.index;
 }
 
-/* the power list's scale before it is made smaller to fit, by the number
-of views: the performance overlay's too (main.c) */
-real hud_item_timers_power_scale(
+/* how much smaller a view's text is than one view's: by the view's size
+on the screen, half way between the same size and the square root of its
+share of the screen's area (a half-screen view 0.85, a quarter 0.75), so
+that every text of ours in a view is drawn at one size (the text scale),
+the clock a step larger, both smaller in smaller views */
+static real hud_item_timers_view_factor_for(
+	long width,
+	long height)
+{
+	long screen_width = rasterizer_globals.reserved04.frame_bounds.x1 - rasterizer_globals.reserved04.frame_bounds.x0;
+	long screen_height = rasterizer_globals.reserved04.frame_bounds.y1 - rasterizer_globals.reserved04.frame_bounds.y0;
+	real share;
+
+	if (screen_width <= 0 || screen_height <= 0 || width <= 0 || height <= 0)
+		return 1.0f;
+	share = ((real)width * (real)height) / ((real)screen_width * (real)screen_height);
+	share = PIN(share, 0.0f, 1.0f);
+
+	return 0.5f + 0.5f * square_root(share);
+}
+
+static real hud_item_timers_view_factor(
 	void)
 {
-	return local_player_count() > 2 ? HUD_ITEM_TIMERS_POWER_SCALE_SMALL : HUD_ITEM_TIMERS_POWER_SCALE;
+	return hud_item_timers_view_factor_for(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0,
+		render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+}
+
+/* this view's text scale (the power list's before it is made smaller to
+fit, the waypoints' labels', BOTH's time played's) and its clock's */
+static real hud_item_timers_text_scale(
+	void)
+{
+	return HUD_ITEM_TIMERS_TEXT_SCALE * hud_item_timers_view_factor();
+}
+
+static real hud_item_timers_clock_scale(
+	void)
+{
+	return HUD_ITEM_TIMERS_CLOCK_SCALE * hud_item_timers_view_factor();
+}
+
+/* the performance overlay's text scale (main.c): the text scale of the
+first view, in whose top corner it is drawn */
+real hud_item_timers_overlay_text_scale(
+	void)
+{
+	long count = PIN(local_player_count(), 1, MAXIMUM_LOCAL_PLAYERS);
+	rectangle2d view;
+	rectangle2d safe;
+
+	compute_window_bounds(0, count, &view, &safe);
+
+	return HUD_ITEM_TIMERS_TEXT_SCALE * hud_item_timers_view_factor_for(view.x1 - view.x0, view.y1 - view.y0);
 }
 
 static long hud_item_timers_line_height(
@@ -374,17 +422,17 @@ static long hud_item_timers_draw_clock(
 	hud_item_timers_clock_place(&inset, &baseline);
 	/* (the digits' foot, their baseline, there: the line's top an ascent
 	(at the clock's scale) above it) */
-	top = (short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_CLOCK_SCALE + 0.5f));
+	top = (short)(baseline - (long)(font->ascending_height * hud_item_timers_clock_scale() + 0.5f));
 	hud_item_timers_draw_line_scaled(font_index, _text_justification_right, top, inset, inset, text,
-		HUD_ITEM_TIMERS_CLOCK_SCALE);
-	room = hud_item_timers_line_width_scaled(font_index, text, HUD_ITEM_TIMERS_CLOCK_SCALE);
+		hud_item_timers_clock_scale());
+	room = hud_item_timers_line_width_scaled(font_index, text, hud_item_timers_clock_scale());
 	/* (the smaller line's baseline at the clock's line's top) */
 	if (above && above[0])
 	{
 		hud_item_timers_draw_line_scaled(font_index, _text_justification_right,
-			(short)(top - (long)(font->ascending_height * HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE + 0.5f)), inset, inset,
-			above, HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE);
-		room = MAX(room, hud_item_timers_line_width_scaled(font_index, above, HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE));
+			(short)(top - (long)(font->ascending_height * hud_item_timers_text_scale() + 0.5f)), inset, inset,
+			above, hud_item_timers_text_scale());
+		room = MAX(room, hud_item_timers_line_width_scaled(font_index, above, hud_item_timers_text_scale()));
 	}
 
 	return inset + room;
@@ -662,9 +710,9 @@ static void hud_item_timers_draw_powers(
 		if (clock_room > 0)
 		{
 			right = MAX(right, clock_room +
-				hud_item_timers_line_width_scaled(font_index, L"00", HUD_ITEM_TIMERS_CLOCK_SCALE));
+				hud_item_timers_line_width_scaled(font_index, L"00", hud_item_timers_clock_scale()));
 		}
-		width = hud_item_timers_power_line(font_index, view_width - left - right, hud_item_timers_power_scale(),
+		width = hud_item_timers_power_line(font_index, view_width - left - right, hud_item_timers_text_scale(),
 			TRUE, line, &scale);
 		if (!width)
 			return;
@@ -685,7 +733,7 @@ static void hud_item_timers_draw_powers(
 	/* (one view: the top left corner) */
 	width = hud_item_timers_power_line(font_index,
 		(long)((view_width - area_left - area_right) * HUD_ITEM_TIMERS_POWER_WIDTH) - HUD_ITEM_TIMERS_SIDE,
-		HUD_ITEM_TIMERS_POWER_SCALE, FALSE, line, &scale);
+		hud_item_timers_text_scale(), FALSE, line, &scale);
 	if (!width)
 		return;
 	line_height = (long)(hud_item_timers_line_height(font_index) * scale + 0.5f);
@@ -948,7 +996,7 @@ static long hud_item_timers_text_advance(
 	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
 	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
 
-	return (long)((cursor_bounds.x0 - bounds.x0) * HUD_WAYPOINT_LABEL_SCALE + 0.5f);
+	return (long)((cursor_bounds.x0 - bounds.x0) * hud_item_timers_text_scale() + 0.5f);
 }
 
 /* a label's colour: its base's (red, blue), else the HUD's text */
@@ -1065,7 +1113,7 @@ static long hud_waypoint_line(
 		part_starts[index] = hud_item_timers_text_advance(font_index, before);
 	}
 
-	return hud_item_timers_line_width_scaled(font_index, text, HUD_WAYPOINT_LABEL_SCALE);
+	return hud_item_timers_line_width_scaled(font_index, text, hud_item_timers_text_scale());
 }
 
 /* a block's width (its widest line) */
@@ -1267,7 +1315,7 @@ static void hud_waypoint_draw_labels(
 {
 	struct hud_waypoint_block blocks[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 	short block_count = 0;
-	long line_height = (long)(hud_item_timers_line_height(font_index) * HUD_WAYPOINT_LABEL_SCALE + 0.5f);
+	long line_height = (long)(hud_item_timers_line_height(font_index) * hud_item_timers_text_scale() + 0.5f);
 	long gap = hud_item_timers_text_advance(font_index, L" ");
 	rectangle2d view;
 	rectangle2d area;
@@ -1588,14 +1636,14 @@ static void hud_waypoint_draw_labels(
 				ustrncpy(piece, text + begin, ends[part] - begin);
 				piece[ends[part] - begin] = 0;
 				hud_waypoint_label_color(timers[part], &color);
-				/* (laid out at full size from its left, drawn at four
-				fifths about its top left corner) */
+				/* (laid out at full size from its left, drawn at the
+				view's text scale about its top left corner) */
 				bounds.x0 = (short)(x + starts[part]);
 				bounds.y0 = (short)top;
-				bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, piece, HUD_WAYPOINT_LABEL_SCALE) / HUD_WAYPOINT_LABEL_SCALE + 8);
+				bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, piece, hud_item_timers_text_scale()) / hud_item_timers_text_scale() + 8);
 				bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
 				draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
-				rasterizer_text_set_scale(HUD_WAYPOINT_LABEL_SCALE, (real)bounds.x0, (real)bounds.y0);
+				rasterizer_text_set_scale(hud_item_timers_text_scale(), (real)bounds.x0, (real)bounds.y0);
 				rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, piece);
 				rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 			}
@@ -1654,7 +1702,8 @@ void hud_draw_item_waypoints(
 		position = timer->position;
 		position.z += ITEM_TIMER_WAYPOINT_HEIGHT;
 		render_type = hud_get_nav_point_render_type(local_player_index, &head_position, &position, NONE);
-		custom_render_nav_point_placed(local_player_index, &position, nav_index, render_type, HUD_WAYPOINT_ARROW_SIZE, &label->arrow);
+		custom_render_nav_point_placed(local_player_index, &position, nav_index, render_type,
+			HUD_WAYPOINT_ARROW_SIZE * hud_item_timers_view_factor(), &label->arrow);
 		if (!label->arrow.drawn || font_index == NONE || label_count >= HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
 			continue;
 

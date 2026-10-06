@@ -29,9 +29,9 @@ short hud_item_timers_messages_offset(short local_player_index);
 /* whether MATCH CLOCK's or CAMPAIGN TIMER's clock is drawn now (hud_unit.c
 finds the meters only for it) */
 boolean hud_item_timers_clock_shown(void);
-/* the power list's scale by the number of views (before a line too long is
-made smaller), which the performance overlay (main.c) is drawn at too */
-real hud_item_timers_power_scale(void);
+/* the text scale of the first view (the power list's, the waypoints'
+labels'), which the performance overlay (main.c) is drawn at */
+real hud_item_timers_overlay_text_scale(void);
 void hud_item_timers_initialize_for_new_map(void);
 /* port: CAMPAIGN TIMER: drawn for render.local_player_index; ticked by
 game_tick; told of a game state loaded (game_state.c) */

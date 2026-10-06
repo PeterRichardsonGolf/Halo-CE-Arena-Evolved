@@ -2993,9 +2993,10 @@ static void frame_statistics_draw(
 	/* (the view's own bounds: the window's are inset from it, by the TV safe
 	area, which puts the line on the HUD) */
 	rectangle2d bounds = render.camera.viewport_bounds;
-	/* (the power list's scale in these views, so that the two match and
-	stack at the top left: hud_item_timers.c) */
-	real scale = hud_item_timers_power_scale();
+	/* (the first view's text scale, the power list's and the waypoints'
+	labels' there, so that they match and stack at the top left:
+	hud_item_timers.c) */
+	real scale = hud_item_timers_overlay_text_scale();
 
 	bounds.y0 = (short)(bounds.y0 + 2);
 	bounds.y1 = (short)(bounds.y0 + line_height);

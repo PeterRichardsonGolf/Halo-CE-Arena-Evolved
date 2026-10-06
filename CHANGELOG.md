@@ -48,11 +48,15 @@ build-128.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
-- The performance overlay is drawn at the power list's size: the same font
-  and line height, at 0.7 of it with one or two views and 0.6 with three or
-  four (it was 0.8), in the same colours (yellow under 60 FPS, red under
-  30). At the top left the power list stacks under it; at the top right it
-  is alone.
+- One text size per view for all of Arena Evolved's HUD text: the power
+  list, TRAINING's waypoint labels (and their distances and arrows), BOTH's
+  time played and the performance overlay (in the first view) are drawn at
+  the view's text scale, 0.7 of the HUD's smaller font in one view and
+  smaller in a smaller view (about 0.6 in half the screen, 0.53 in a
+  quarter); the clock is a step larger by the same rule (0.9 in one view).
+  The overlay was 0.8 and the waypoint labels 0.65 in every view. The
+  overlay keeps its colours (yellow under 60 FPS, red under 30); at the top
+  left the power list stacks under it, at the top right it is alone.
 - The power list's line at the foot of a split-screen view sits on the
   clock's baseline (the motion sensor's foot) in every view, upper and
   lower (the lower views had it at the screen's bottom edge, under their
