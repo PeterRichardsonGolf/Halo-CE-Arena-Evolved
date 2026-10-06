@@ -1589,6 +1589,32 @@ static void pause_box_redraw(struct ui_widget_definition const *box, long button
 	}
 }
 
+/* port: a multiplayer pause screen's B and Back (the keyboard's Escape and
+Backspace in the menus, on controller 1) close only the pressing player's
+pause, as its RESUME GAME does: the Xbox's close every open widget, so one
+split-screen player's B closed the others' pauses too (ui_widget.c's
+event_handler_dispatch). A campaign's pause is the whole game's, and keeps
+its own. Returns how many handlers changed */
+static long pause_back_patch(struct ui_widget_definition *screen)
+{
+	struct ui_widget_event_handler_reference *handlers = xbox_pointer(screen->event_handlers.address);
+	long b = name_index("b", event_names, NUMBEROF(event_names));
+	long back = name_index("back", event_names, NUMBEROF(event_names));
+	long handler, changed = 0;
+
+	for (handler = 0; handler < screen->event_handlers.count; handler++)
+	{
+		if ((handlers[handler].event_type == b || handlers[handler].event_type == back) &&
+			TEST_FLAG(handlers[handler].flags, _event_handler_close_all_widgets_bit))
+		{
+			SET_FLAG(handlers[handler].flags, _event_handler_close_all_widgets_bit, FALSE);
+			SET_FLAG(handlers[handler].flags, _event_handler_close_current_widget_bit, TRUE);
+			changed++;
+		}
+	}
+	return changed;
+}
+
 static void pause_patch(struct cache_file_tag_instance *instances)
 {
 	long collection = tag_loaded('Soul', MULTIPLAYER_COLLECTION);
@@ -1598,7 +1624,7 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 	boolean solo = collection == NONE;
 	boolean host = !solo && global_network_game_server_get() != NULL;
 	struct tag_block const *screens = NULL;
-	long patched_list = NONE, added = 0, buttons = 0, screen, screen_count, settings_tag = NONE;
+	long patched_list = NONE, added = 0, buttons = 0, screen, screen_count, settings_tag = NONE, backs = 0;
 	boolean box_redrawn = FALSE;
 
 	if (!solo && quit_function == NONE)
@@ -1650,6 +1676,7 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 		/* (a campaign screen: its buttons fit the box as it is, pause_list_patch) */
 		if (list_child == NONE || solo)
 			continue;
+		backs += pause_back_patch(definition);
 		for (child = 0; child < definition->child_widgets.count; child++)
 		{
 			if (child != list_child && children[child].widget_tag.index != NONE &&
@@ -1677,6 +1704,8 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 	}
 	if (patched_list != NONE)
 		platform_log("menus: the pause menu has SETTINGS%s", host ? " and END GAME" : "");
+	if (backs)
+		platform_log("menus: the pause screens' B and Back close only their player's pause (%ld)", backs);
 }
 
 void menu_tags_loaded(
