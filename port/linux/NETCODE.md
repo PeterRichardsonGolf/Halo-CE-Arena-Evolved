@@ -180,10 +180,12 @@ hosts of 11 to 20 (delta.h's table: 19 and 20 are additive for a client).
 It already sends the co-op collisions setting (in what was a padding byte,
 which version 18 machines ignore: their players still collide). A public
 listing's version states its layout: a game with a password is listed as
-20 (its sealed token), which browsers of 18 and below skip as above their
-range; every other listing is 18, the layout they read. OpenCE build-132
-and later (19, 20) join only their own version, so they do not join Arena
-Evolved's hosts; Arena Evolved joins theirs.
+20 (its sealed token), as is its tombstone, which browsers of 18 and
+below skip as above their range; every other listing is 18, the layout they
+read. OpenCE build-132 and later (19, 20) join only their own version, so
+they do not join Arena Evolved's hosts; Arena Evolved joins theirs. OpenCE
+build-138's Server Browser shows Arena Evolved's games with a password, but
+its players cannot join them (the host announces 18).
 
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. That

@@ -63,8 +63,9 @@ first of its releases with each, and whether the version's change is one the
 version before plays multiplayer with as it is (additive: messages a machine
 of the older version drops) or not (breaking). OpenCE's clients join only
 hosts of their exact version; ours join every version back to the newest
-breaking one (HALO_PORT_NETWORK_VERSION_MINIMUM), and our hosts announce the
-newest (HALO_PORT_NETWORK_VERSION). One row a version, oldest first; the
+breaking one (HALO_PORT_NETWORK_VERSION_MINIMUM), and our hosts announce
+HALO_PORT_NETWORK_VERSION (Arena Evolved: 18, within the range;
+halo_port_limits.h). One row a version, oldest first; the
 command repository's watch adds a row when it follows OpenCE's raise
 (tools/follow.py there). Versions 1 to 9 each changed the wire format
 (port/linux/NETCODE.md, "Versions"). */

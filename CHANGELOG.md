@@ -76,8 +76,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   listing's version states its layout: a game with a password is listed as
   20, which browsers of 18 skip, every other game as 18. OpenCE
   build-132..138 join only their own version, so they do not join Arena
-  Evolved's hosts. The game list (`network.list_hosted_games`) never lists
-  a game with a password (it would show its invite).
+  Evolved's hosts; OpenCE build-138's Server Browser shows Arena Evolved's
+  games with a password, but its players cannot join them. A game with a
+  password's invite is never sent to the game list's site
+  (`network.browser_url`): not listed, not claimed after the game, not in a
+  joined game's report.
 - Merged OpenCE build-129..132: maps' and the network's input checked
   before it is trusted (a damaged map or message is refused, not followed);
   anti-aliasing (Settings > Video ANTI-ALIASING: FXAA, SMAA, SSAA 2X, MSAA
