@@ -1424,6 +1424,22 @@ void platform_pump_events(void)
 				if (event.key.down)
 					keys_pressed[event.key.scancode] = 1;
 			}
+#if defined(__linux__) && !defined(HALO_ANDROID)
+			/* Alt+F4 quits at once, as closing the window does (the
+			SDL_EVENT_QUIT it posts, read next in this loop): while the game
+			holds the keyboard (the mouse captured, fullscreen) a Wayland
+			compositor sends it the keys its own shortcuts would take, Alt+F4
+			among them, so the window is never asked to close. Before the
+			binding capture, so it is never a binding. (Windows and macOS
+			close the window themselves.) */
+			if (event.key.down && !event.key.repeat && event.key.scancode == SDL_SCANCODE_F4 &&
+				(event.key.mod & SDL_KMOD_ALT) && !(event.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_SHIFT | SDL_KMOD_GUI)))
+			{
+				platform_log("Alt+F4: quitting");
+				platform_request_quit();
+				break;
+			}
+#endif
 			if (binding_capture == _binding_capture_waiting && event.key.down && !event.key.repeat &&
 				event.key.scancode != SDL_SCANCODE_F11 && event.key.scancode != SDL_SCANCODE_F12)
 			{
