@@ -514,6 +514,7 @@ boolean spawn_heat_near_uniform(
 {
 	real least = 0.0f;
 	real most = 0.0f;
+	long pickable = 0;
 	long index;
 
 	for (index = 0; index < count; index++)
@@ -522,13 +523,15 @@ boolean spawn_heat_near_uniform(
 
 		if (!(probability > 0.0f))
 			continue;
+		pickable++;
 		if (most == 0.0f || probability < least)
 			least = probability;
 		if (probability > most)
 			most = probability;
 	}
 
-	return most > 0.0f && least >= most * SPAWN_HEAT_UNIFORM_RATIO;
+	/* (one spawn that can be picked is certain, not uniform) */
+	return pickable >= 2 && least >= most * SPAWN_HEAT_UNIFORM_RATIO;
 }
 
 /* ---------- private code */

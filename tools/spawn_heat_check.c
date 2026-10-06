@@ -664,12 +664,14 @@ static void check_probabilities(void)
 		static real const close[] = { 0.21f, 0.26f, 0.0f };
 		static real const apart[] = { 0.3f, 0.25f, 0.45f };
 		static real const none[] = { 0.0f, 0.0f };
+		static real const one[] = { 0.0f, 1.0f, 0.0f };
 
 		if (!spawn_heat_near_uniform(5, equal) || !spawn_heat_near_uniform(3, close) ||
-			spawn_heat_near_uniform(3, apart) || spawn_heat_near_uniform(2, none))
+			spawn_heat_near_uniform(3, apart) || spawn_heat_near_uniform(2, none) || spawn_heat_near_uniform(3, one))
 		{
-			fail("spawn_heat_near_uniform: equal %d close %d apart %d none %d", spawn_heat_near_uniform(5, equal),
-				spawn_heat_near_uniform(3, close), spawn_heat_near_uniform(3, apart), spawn_heat_near_uniform(2, none));
+			fail("spawn_heat_near_uniform: equal %d close %d apart %d none %d one %d", spawn_heat_near_uniform(5, equal),
+				spawn_heat_near_uniform(3, close), spawn_heat_near_uniform(3, apart), spawn_heat_near_uniform(2, none),
+				spawn_heat_near_uniform(3, one));
 		}
 		/* (free for all, one spawn of 16 a little lower: rated 0.995, near
 		uniform; rated 0.9 (an enemy 4.7 wu from it), not: against 15
