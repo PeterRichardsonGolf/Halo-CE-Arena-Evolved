@@ -112,7 +112,7 @@ boolean server_browser_map_blocked(char const *map, wchar_t *message, short leng
 		snprintf(text, sizeof(text), "Needs %s/%s.map to join", map_family_folder(family), file);
 		break;
 	case _ce_map_unsupported:
-		snprintf(text, sizeof(text), "%s maps need ChupathingyCE with Halo PC map support.",
+		snprintf(text, sizeof(text), "%s maps need Arena Evolved with Halo PC map support.",
 			family == _map_family_halomd ? "HaloMD" : "Halo PC");
 		break;
 	default:

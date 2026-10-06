@@ -1,11 +1,11 @@
 name: Bug report
-description: Something in ChupathingyCE doesn't work as it should.
+description: "Something in Halo CE: Arena Evolved doesn't work as it should."
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. One bug per issue, please. ChupathingyCE never provides game files, so please don't attach maps or disc images.
+        Thanks for reporting. One bug per issue, please. Arena Evolved never provides game files, so please don't attach maps or disc images.
   - type: dropdown
     id: platform
     attributes:

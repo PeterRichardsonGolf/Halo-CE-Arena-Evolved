@@ -1,4 +1,4 @@
-<!-- This pull request should be against ChupathingyCE/chupathingyce's main. GitHub suggests OpenCommunityEdition/OpenCE first because this repository is a fork: change the base repository if it does. -->
+<!-- This pull request should be against PeterRichardsonGolf/Halo-CE-Arena-Evolved's main. A fix that belongs in OpenCE or ChupathingyCE themselves is best sent there (CONTRIBUTING.md). -->
 
 **What it does**
 

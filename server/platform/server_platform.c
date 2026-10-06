@@ -22,6 +22,7 @@ never hosts.
 */
 
 #include "platform.h"
+#include "halo_product.h"
 #include "sdl_platform.h"
 #include "port_config.h"
 #include "posix.h"
@@ -56,7 +57,7 @@ static volatile sig_atomic_t stop_requested;
 
 static void print_version(void)
 {
-	printf("ChupathingyCE Dedicated Server %s (linux-%s, network version %d)\n", HALO_VERSION,
+	printf(HALO_PRODUCT_NAME " Dedicated Server %s (linux-%s, network version %d; " HALO_UPSTREAM_BASE ")\n", HALO_VERSION,
 		SERVER_ARCHITECTURE, (int)HALO_PORT_NETWORK_VERSION);
 }
 
@@ -87,7 +88,7 @@ static void print_usage(FILE *stream)
 		"  --version  prints the version\n"
 		"  --help     prints this\n"
 		"\n"
-		"More: server/README.md, https://github.com/ChupathingyCE/chupathingyce\n");
+		"More: server/README.md, https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved\n");
 }
 
 static BOOL readable(const char *path)
@@ -186,7 +187,8 @@ static void server_arguments(void)
 		print_usage(stderr);
 		exit(2);
 	}
-	platform_log("ChupathingyCE Dedicated Server %s (linux-%s)", HALO_VERSION, SERVER_ARCHITECTURE);
+	platform_log(HALO_PRODUCT_NAME " Dedicated Server %s (linux-%s; " HALO_UPSTREAM_BASE ")", HALO_VERSION,
+		SERVER_ARCHITECTURE);
 	server_check_data();
 	/* a write to a connection the other end closed fails instead of ending
 	the server (as sdl_platform.c); SIGTERM and SIGINT stop it at the next

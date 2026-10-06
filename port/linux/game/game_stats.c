@@ -538,7 +538,7 @@ static void stats_client_report(
 	used = stats_append_path(extra, sizeof(extra), used, game->map.name);
 	used = stats_append(extra, sizeof(extra), used,
 		"\", \"engine\": %d, \"score_limit\": %d, \"host\": %s, \"reporter\": %s, \"client_joined\": %ld, "
-		"\"build\": \"ChupathingyCE %s\", \"network_version\": %d, ",
+		"\"build\": \"Arena Evolved %s\", \"network_version\": %d, ",
 		(int)variant->game_engine_index, (int)variant->universal_variant.score_to_win, host, name,
 		game_stats.first_tick / TICKS_PER_SECOND, updater_version(), (int)HALO_PORT_NETWORK_VERSION);
 	game_stats_game_extra(FALSE, extra + used, (long)sizeof(extra) - used);

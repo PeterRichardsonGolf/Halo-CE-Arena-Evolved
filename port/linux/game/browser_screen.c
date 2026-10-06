@@ -467,8 +467,8 @@ static char const *ce_map_blocker(
 		snprintf(text, (size_t)size, "Needs %s/%s.map to join", map_family_folder(family), file);
 		return text;
 	case _ce_map_unsupported:
-		return family == _map_family_halomd ? "HaloMD maps need ChupathingyCE with Halo PC map support." :
-			"Halo PC maps need ChupathingyCE with Halo PC map support.";
+		return family == _map_family_halomd ? "HaloMD maps need Arena Evolved with Halo PC map support." :
+			"Halo PC maps need Arena Evolved with Halo PC map support.";
 	default:
 		return NULL;
 	}

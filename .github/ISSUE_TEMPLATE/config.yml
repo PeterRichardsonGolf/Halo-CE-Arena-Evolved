@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Help with setup
-    url: https://discord.gg/4BUm2FwuCB
-    about: Questions about installing or playing go in #help on the ChupathingyCE Discord.
+  - name: Bugs that OpenCE has too
+    url: https://github.com/OpenCommunityEdition/OpenCE/issues
+    about: A bug that is not only Arena Evolved's (OpenCE, which Arena Evolved is built on, has it too) is best reported to OpenCE.
