@@ -167,6 +167,8 @@ static long wav_milliseconds(char const *folder, char const *name)
 }
 
 static char const *voice_folder;
+/* the clips the pack is played without, NULL for none */
+static char const *const *check_missing;
 
 int platform_callout_voice_load(char const *pack, char const *const *names, int count)
 {
@@ -175,7 +177,16 @@ int platform_callout_voice_load(char const *pack, char const *const *names, int 
 	(void)pack;
 	clip_count = count < MAXIMUM_CLIPS ? count : MAXIMUM_CLIPS;
 	for (index = 0; index < clip_count; index++)
+	{
+		int missing;
+
 		clip_milliseconds[index] = wav_milliseconds(voice_folder, names[index]);
+		for (missing = 0; check_missing && check_missing[missing]; missing++)
+		{
+			if (!strcmp(names[index], check_missing[missing]))
+				clip_milliseconds[index] = 0;
+		}
+	}
 	return clip_count;
 }
 
@@ -466,6 +477,8 @@ int main(int argc, char **argv)
 	timer_add("OS", 60, _item_timer_overshield, 1 << _item_timer_overshield);
 	timer_add("CAMO", 120, _item_timer_camo, 1 << _item_timer_camo);
 	timer_add("OS/CAMO", 180, _item_timer_overshield, (1 << _item_timer_overshield) | (1 << _item_timer_camo));
+	/* (rockets spawning every 5 s: never called, nor counted) */
+	timer_add("FAST ROCKETS", 5, _item_timer_rockets, 1 << _item_timer_rockets);
 
 	check_detail_level("minimal", 6 * TICKS_PER_SECOND);
 	check_detail_level("standard", 6 * TICKS_PER_SECOND);
@@ -486,6 +499,57 @@ int main(int argc, char **argv)
 		fail("no powerup_up for a spot whose item was not seen");
 	else if (call->tick < 5400 + TICKS_PER_SECOND / 2)
 		fail("powerup_up at tick %ld: before its half second wait", call->tick);
+	/* (the known items' "is up" not held up by it) */
+	call = played_at(5400, NULL);
+	if (!call || strcmp(call->clip, "rockets_up"))
+		fail("unseen spot: rockets_up not on tick 5400: %s", call ? call->clip : "nothing");
+	if (!played_due(5400, "overshield_up"))
+		fail("unseen spot: no overshield_up");
+	play("minimal", 0);
+	if (!played_at(5400, "rockets_up") || played_due(5400, "powerup_up"))
+		fail("unseen spot, MINIMAL: not rockets_up alone on tick 5400");
+
+	/* (no count for the rockets spawning every 5 s) */
+	{
+		int index;
+
+		play("standard", 1);
+		for (index = 0; index < played_count; index++)
+		{
+			if (played[index].spawn != NONE && played[index].spawn % (90 * TICKS_PER_SECOND) &&
+				(!strcmp(played[index].clip, "five") || !strcmp(played[index].clip, "one")))
+			{
+				fail("a count at tick %ld for rockets spawning at tick %ld", played[index].tick, played[index].spawn);
+				break;
+			}
+		}
+	}
+
+	/* (MINIMAL with a pack without the kinds' lines: said as STANDARD's
+	calls, still without beeps and with the first item's "is up" only) */
+	{
+		static char const *const no_lines[] = { "weapons_and_power_items_in_ten", "weapons_and_powerups_in_ten",
+			"power_weapons_in_ten", "power_items_in_ten", "powerups_in_ten", NULL };
+		int index;
+		int ups = 0;
+
+		check_missing = no_lines;
+		play("minimal", 1);
+		check_missing = NULL;
+		for (index = 0; index < played_count; index++)
+		{
+			if (is_beep(played[index].clip))
+			{
+				fail("MINIMAL without its lines said %s at tick %ld", played[index].clip, played[index].tick);
+				break;
+			}
+			ups += played[index].spawn == 3600 && played[index].due == 3600;
+		}
+		if (!played_due(3300, "sniper_in_ten") && !played_due(3300, "camo_in_ten"))
+			fail("MINIMAL without its lines: the 2:00 wave not said as STANDARD's calls");
+		if (ups != 1)
+			fail("MINIMAL without its lines: %d is up calls at 2:00, not one", ups);
+	}
 
 	if (failures)
 	{

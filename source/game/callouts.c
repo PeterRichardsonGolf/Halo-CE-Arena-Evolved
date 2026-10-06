@@ -227,6 +227,10 @@ struct callout
 	short class_items[NUMBER_OF_ITEM_TIMER_POWER_CLASSES];
 	short mixed_count;
 	short mixed_items[MAXIMUM_MIXED_CALLOUTS];
+	/* (while it waits for a mixed entry's item: the tick it began waiting,
+	NONE before, and the classes said meanwhile) */
+	long wait_from;
+	unsigned short said_classes;
 };
 
 /* an item of a wave, as called */
@@ -418,6 +422,7 @@ static void callout_new(
 	callout->item_index = item_index;
 	callout->kind = kind;
 	callout->up_clip = NONE;
+	callout->wait_from = NONE;
 	for (index = 0; index < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; index++)
 		callout->class_items[index] = NONE;
 }
@@ -980,19 +985,20 @@ static boolean callout_compose_list(
 }
 
 /* a wave's calls 10 s before its spawn (due at tick) at a detail, the item
-beep first (STANDARD's and VERBOSE's, when the pack has one), and how its
-"is up" calls are made (*up_style, *up_clip); their count, 0 when the pack
-can't say it at this detail */
+beep first (with_beep: STANDARD's and VERBOSE's, when the pack has one),
+and how its "is up" calls are made (*up_style, *up_clip); their count, 0
+when the pack can't say it at this detail */
 static short callout_compose_in_ten(
 	struct callout_wave const *wave,
 	short detail,
+	boolean with_beep,
 	long tick,
 	struct callout *calls,
 	short *up_style,
 	short *up_clip)
 {
 	unsigned short classes = callout_wave_classes(wave);
-	short beep = detail != _callout_detail_minimal ? callout_beep(_callout_beep_item) : NONE;
+	short beep = with_beep && detail != _callout_detail_minimal ? callout_beep(_callout_beep_item) : NONE;
 	short count = 0;
 	short index;
 
@@ -1026,8 +1032,8 @@ static short callout_compose_in_ten(
 		return callout_compose_list(wave, tick, calls, &count) ? count : 0;
 
 	default:
-		/* (an overshield and a camo as one; three or more, or weapons and
-		power items, as their kinds' line; else each in turn) */
+		/* (an overshield and a camo as one; three or more as their kinds'
+		line; else each in turn) */
 		*up_style = _callout_up_combined;
 		if (wave->count == 2 && classes == CALLOUT_OVERSHIELD_CAMO && !wave->items[0].either &&
 			!wave->items[1].either && wave->items[0].side_clip == NONE && wave->items[1].side_clip == NONE &&
@@ -1272,7 +1278,10 @@ static void callouts_plan_in_ten(
 	for (attempt = 0; callout_detail_try(detail, attempt) != NONE; attempt++)
 	{
 		short at = callout_detail_try(detail, attempt);
-		short count = callout_compose_in_ten(wave, at, tick, calls, up_style, up_clip);
+		/* (MINIMAL asked for keeps its rules said another detail's way: no
+		beep, the first item up) */
+		short count = callout_compose_in_ten(wave, at, detail != _callout_detail_minimal, tick, calls, up_style,
+			up_clip);
 		long length;
 		long lead;
 		long preferred;
@@ -1281,6 +1290,11 @@ static void callouts_plan_in_ten(
 
 		if (count <= 0)
 			continue;
+		if (detail == _callout_detail_minimal)
+		{
+			*up_style = _callout_up_first;
+			*up_clip = NONE;
+		}
 		if (!called)
 			return;
 		length = callout_calls_ticks(calls, count);
@@ -1447,7 +1461,9 @@ static void callouts_plan_item_counts(
 		struct item_timer const *timer = item_timers_get(index);
 		long ticks_left;
 
-		if (!timer || timer->timer_class != _item_timer_rockets || timer->period_ticks <= 0)
+		/* (as callout_item_spawns: none for rockets spawning more often than
+		every 10 s) */
+		if (!timer || timer->timer_class != _item_timer_rockets || timer->period_ticks < CALLOUT_ITEM_WARNING_TICKS)
 			continue;
 		/* (as item_timer_ticks_left, at this tick: 1..period) */
 		ticks_left = timer->period_ticks - tick % timer->period_ticks;
@@ -1575,9 +1591,10 @@ static boolean callout_dropped(
 /* the "is up" group first in the plan, due now: its calls, made of the
 classes known and the items its mixed entries spawned as seen on the map
 (item_timer_spawned_class), waited for up to CALLOUT_MIXED_WAIT_TICKS
-after its start (one not seen by then is "powerup is up"; a wave's line
-waits for none), and planned back to back from now in its room. FALSE
-while it waits */
+(one not seen by then is "powerup is up"; a wave's line waits for none, nor
+MINIMAL's first item when one is known), and planned back to back from now.
+While it waits, the known classes' calls are said, the group after them
+(only the mixed entries' then). FALSE while it waits */
 static boolean callouts_say_up_group(
 	long now)
 {
@@ -1585,19 +1602,28 @@ static boolean callouts_say_up_group(
 	struct callout calls[MAXIMUM_SPAWNING_CALLOUTS];
 	unsigned short classes = group.up_classes;
 	boolean dropped = callout_dropped(&group, now);
+	boolean waiting = FALSE;
 	short unseen = 0;
 	short unseen_item = NONE;
 	short count;
 	short index;
 	long start;
 
-	for (index = 0; !dropped && group.up_style != _callout_up_line && index < group.mixed_count; index++)
+	if (!dropped && group.up_style != _callout_up_line && group.mixed_count &&
+		!(group.up_style == _callout_up_first && group.up_classes))
 	{
-		struct item_timer const *timer = item_timers_get(group.mixed_items[index]);
+		if (group.wait_from == NONE)
+			group.wait_from = callout_globals.plan[0].wait_from = now;
+		for (index = 0; index < group.mixed_count; index++)
+		{
+			struct item_timer const *timer = item_timers_get(group.mixed_items[index]);
 
-		if (timer && item_timer_spawned_class(timer) == NONE && now - group.start < CALLOUT_MIXED_WAIT_TICKS)
-			return FALSE;
+			if (timer && item_timer_spawned_class(timer) == NONE && now - group.wait_from < CALLOUT_MIXED_WAIT_TICKS)
+				waiting = TRUE;
+		}
 	}
+	if (waiting && !(group.up_classes & (unsigned short)~group.said_classes))
+		return FALSE;
 
 	callout_globals.planned_count--;
 	for (index = 0; index < callout_globals.planned_count; index++)
@@ -1605,6 +1631,31 @@ static boolean callouts_say_up_group(
 	if (dropped)
 	{
 		callout_log("dropped ", &group, now);
+		return TRUE;
+	}
+
+	if (waiting)
+	{
+		/* (the known classes now; the group, for the mixed entries' items,
+		after them) */
+		classes = (unsigned short)(group.up_classes & ~group.said_classes);
+		count = callout_compose_up(group.up_style, group.up_clip, classes, group.class_items, 0, NONE, group.due,
+			calls);
+		start = now;
+		for (index = 0; index < count; index++)
+		{
+			calls[index].start = start;
+			calls[index].end = start + callout_clip_ticks(calls[index].clip) + CALLOUT_GAP_TICKS;
+			callout_plan_insert(&calls[index]);
+			start = calls[index].end;
+		}
+		group.said_classes |= classes;
+		group.start = start;
+		if (group.end <= group.start)
+			group.end = group.start + 1;
+		callout_plan_insert(&group);
+		platform_log("callouts: tick %ld the is up calls due at tick %ld: the known items' said, the mixed spot's "
+			"waited for", now, group.due);
 		return TRUE;
 	}
 
@@ -1632,6 +1683,8 @@ static boolean callouts_say_up_group(
 			group.class_items[timer_class] = group.mixed_items[index];
 	}
 
+	/* (less the classes said while it waited) */
+	classes &= (unsigned short)~group.said_classes;
 	count = callout_compose_up(group.up_style, group.up_clip, classes, group.class_items, unseen, unseen_item,
 		group.due, calls);
 	start = now;
