@@ -6046,7 +6046,16 @@ short ui_widget_port_multiplayer_maps(
 	short level_count = 13;
 	char **levels = event_handler_functions.multiplayer_levels;
 
-#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+#ifdef HALO_CUSTOM_EDITION
+	/* port: the menus' map list (ui_map_list.c), as the Xbox menus' has it:
+	the stock maps, the Xbox v5 community maps, then the Custom Edition and
+	HaloMD maps found (filled anew by ui_widget_port_multiplayer_maps_refresh,
+	as a list is made, so a list's indices stay those it showed) */
+	if (!ui_map_list_count())
+		ui_map_list_refresh(event_handler_functions.multiplayer_levels);
+	levels = ui_map_list_names();
+	level_count = (short)MIN(ui_map_list_count(), SHORT_MAX);
+#elif defined(HALO_PORT_MAXIMUM_NETWORK_PLAYERS)
 	levels = native_multiplayer_map_list(levels, level_count, &level_count);
 #endif
 	*names = (char const *const *)levels;
@@ -6064,6 +6073,17 @@ short ui_widget_port_multiplayer_maps(
 		}
 	}
 	return level_count;
+}
+
+/* port: the PC menus' map lists filled anew as one is made: the maps put in
+the folders while the game runs are there the next time */
+void ui_widget_port_multiplayer_maps_refresh(
+	void)
+{
+#ifdef HALO_CUSTOM_EDITION
+	ui_map_list_refresh(event_handler_functions.multiplayer_levels);
+#endif
+	return;
 }
 
 /* the map chosen (as multiplayer_level_select), the server's if there is

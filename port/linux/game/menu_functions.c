@@ -926,6 +926,7 @@ enum
 
 static void visible_set(struct widget_instance *widget, boolean visible);
 short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
+void ui_widget_port_multiplayer_maps_refresh(void);
 
 /* the kind the chooser shows (kept at `only`, unless NONE) */
 static short map_kind_shown(struct widget_instance *list, short only)
@@ -1013,6 +1014,25 @@ static void map_name_text(char const *name, wchar_t *text)
 	text[index] = 0;
 }
 
+/* port: one of a map list's strings (_ui_map_list_string_...) of a row past
+the stock maps: the menus' map list's (ui_map_list.c: a Custom Edition map
+named with [CE], a HaloMD map with [MD]), else (and on builds without them)
+none: FALSE */
+static boolean map_row_string(short map, short kind, wchar_t *text)
+{
+#ifdef HALO_CUSTOM_EDITION
+	wchar_t const *string = ui_map_list_text(ui_map_list_string_index(map, kind));
+
+	if (string)
+	{
+		ustrncpy(text, string, ROW_TEXT_LENGTH - 1);
+		text[ROW_TEXT_LENGTH - 1] = 0;
+		return TRUE;
+	}
+#endif
+	return FALSE;
+}
+
 /* These preview boxes also show authored stock strings. Resize even when
    one of those shorter strings already allocated their text buffer. */
 static void map_caption_set(struct widget_instance *widget, wchar_t const *caption)
@@ -1033,7 +1053,8 @@ static void multiplayer_map_text(short map, wchar_t *text)
 	text[0] = 0;
 	if (map >= 0 && map < HALO_STOCK_MULTIPLAYER_MAP_COUNT)
 		string_get("pc\\main_menu\\mp_map_list", map, text);
-	else if (map >= 0 && multiplayer_map_names)
+	else if (map >= 0 && multiplayer_map_names &&
+		!map_row_string(map, _ui_map_list_string_lobby_name, text))
 		/* (a community map: its name, upstream PR #63) */
 		map_name_text(multiplayer_map_names[map], text);
 	text[ROW_TEXT_LENGTH - 1] = 0;
@@ -1064,14 +1085,25 @@ static void map_description_show(struct widget_instance *description, short leve
 	{
 		wchar_t caption[ROW_TEXT_LENGTH];
 
-		map_name_text(multiplayer_map_names[map], caption);
+		if (!map_row_string(map, _ui_map_list_string_lobby_name, caption))
+			map_name_text(multiplayer_map_names[map], caption);
 		map_caption_set(named(description, "mp_map_right_name", 0), caption);
-		map_caption_set(named(description, "mp_map_right_data", 0), L"Community map");
+		/* (port: a Custom Edition or HaloMD map's description and picture,
+		the menus' map list's: Halo PC's, ui_map_list.c) */
+		if (!map_row_string(map, _ui_map_list_string_description, caption))
+			ustrncpy(caption, L"Community map", ROW_TEXT_LENGTH - 1);
+		map_caption_set(named(description, "mp_map_right_data", 0), caption);
 		/* (port: its picture in the loaded ui.map, by its name, else that
 		ui.map's unknown level's: never a fixed frame, which is another map's
 		in a mod's ui.map, and Hang 'Em High's in the Xbox's, of 14) */
 		if ((widget = named(description, "mp_map_right_pic", 0)) != NULL)
+		{
+#ifdef HALO_CUSTOM_EDITION
+			widget->animation.current_frame_index = ui_map_list_picture_index(map);
+#else
 			widget->animation.current_frame_index = ui_map_list_xbox_picture(multiplayer_map_names[map], NULL);
+#endif
+		}
 		return;
 	}
 	if ((widget = named(description, "mp_map_right_name", 0)) != NULL)
@@ -1112,6 +1144,7 @@ static boolean level_list_initialize(struct widget_instance *list, short control
 	if (!campaign.levels[level].available)
 		level = 0;
 	campaign.shown_level = level;
+	ui_widget_port_multiplayer_maps_refresh();
 	level_list.map_count = ui_widget_port_multiplayer_maps(&level_list.map_names, &last_used);
 	multiplayer_map_names = level_list.map_names;
 	level_list.kind = MAP_KIND_SINGLEPLAYER;
@@ -2454,6 +2487,7 @@ static boolean map_list_initialize(struct widget_instance *list)
 	short last_used = 0;
 
 	map_list.hosting = global_network_game_server_get() != NULL && !network_game_is_splitscreen_local();
+	ui_widget_port_multiplayer_maps_refresh();
 	map_list.map_count = ui_widget_port_multiplayer_maps(&multiplayer_map_names, &last_used);
 	map_list.kind = MAP_KIND_MULTIPLAYER;
 	map_kind_set(list, map_list.kind);
@@ -3161,7 +3195,7 @@ static void map_display_name(char const *map_name, wchar_t *text)
 			/* (upstream PR #63: a community map past the stock ones by its name) */
 			if (index < HALO_STOCK_MULTIPLAYER_MAP_COUNT)
 				string_get("pc\\main_menu\\mp_map_list", index, text);
-			else
+			else if (!map_row_string(index, _ui_map_list_string_lobby_name, text))
 				map_name_text(names[index], text);
 			return;
 		}
