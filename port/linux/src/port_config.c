@@ -57,6 +57,8 @@ enum
 	_platform_desktop = 1,
 	_platform_android = 2,
 	_platform_all = _platform_desktop | _platform_android,
+	/* (of the desktop builds, only Windows) */
+	_platform_windows = 4,
 };
 
 struct config_setting
@@ -469,6 +471,12 @@ static const struct config_setting config_settings[] =
 		"No effect: Arena Evolved never looks for a new version (its updater is\n"
 		"off). Where the updater is on: look for a new version when the game\n"
 		"starts, and offer to update to it; false never looks." },
+	{ "crash_reports.upload", _config_string, "\"ask\"", "HALO_CRASH_REPORTS", _environment_value, _platform_windows,
+		"No effect: Arena Evolved's builds send no crash reports (only OpenCE's\n"
+		"numbered builds do). Where they are on: send a report of each crash (a\n"
+		"minidump and halo.log) to the developers' Sentry project\n"
+		"(port/windows/src/win32_crash.c): \"yes\" sends them, \"no\" never does,\n"
+		"\"ask\" asks at the next crash and writes the answer here." },
 
 	{ "debug.network_test", _config_string, "\"\"", "HALO_NETWORK_TEST", _environment_value, _platform_all,
 		"Automated system link sessions for testing (port/linux/game/network_test.c):\n"
@@ -599,6 +607,8 @@ static const struct config_setting config_settings[] =
 
 #ifdef HALO_ANDROID
 #define CONFIG_PLATFORM _platform_android
+#elif defined(_WIN32)
+#define CONFIG_PLATFORM (_platform_desktop | _platform_windows)
 #else
 #define CONFIG_PLATFORM _platform_desktop
 #endif

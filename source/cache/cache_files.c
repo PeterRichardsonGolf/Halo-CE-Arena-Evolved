@@ -413,12 +413,30 @@ static boolean cache_file_tag_header_verify(
 	{
 		long scenario_absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(tag_header->scenario_tag_index);
 		struct cache_file_tag_instance *tag_instances = xbox_pointer(tag_header->tag_instances);
+		long absolute_index;
 
 		if (scenario_absolute_index >= tag_header->tag_count ||
 			tag_instances[scenario_absolute_index].tag_index != tag_header->scenario_tag_index ||
 			tag_instances[scenario_absolute_index].group_tag != SCENARIO_TAG)
 		{
 			problem = "scenario tag";
+		}
+
+		/* port: each tag's data lies in the tag cache, or there is none yet
+		(a structure bsp's, set as it loads). Every tag_get goes by these.
+		The port's own tags (menu_tags.c) are added after this, and may lie
+		elsewhere */
+		for (absolute_index = 0;
+			!problem && absolute_index < tag_header->tag_count;
+			absolute_index++)
+		{
+			void const *base_address = xbox_pointer(tag_instances[absolute_index].base_address);
+
+			if (base_address &&
+				!cache_file_region_contains(tag_header, TAG_CACHE_SIZE, base_address, 1, 1))
+			{
+				problem = "tag data address";
+			}
 		}
 	}
 

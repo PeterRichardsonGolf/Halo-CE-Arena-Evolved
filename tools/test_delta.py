@@ -41,8 +41,12 @@ def test_limits_follow_the_table():
     table = rows()
     newest = table[-1][0]
     last_breaking = max(number for number, _, kind in table if kind == "breaking")
-    assert define(limits, "HALO_PORT_NETWORK_VERSION") == newest, \
-        "hosts must announce the table's newest version"
+    # (Arena Evolved: hosts announce a version within the range, 18 below
+    # the newest, so that the clients of 18 join them: halo_port_limits.h)
+    minimum = define(limits, "HALO_PORT_NETWORK_VERSION_MINIMUM")
+    maximum = define(limits, "HALO_PORT_NETWORK_VERSION_MAXIMUM")
+    assert minimum <= define(limits, "HALO_PORT_NETWORK_VERSION") <= maximum, \
+        "hosts must announce a version within the range the clients join"
     assert define(limits, "HALO_PORT_NETWORK_VERSION_MAXIMUM") == newest, \
         "clients must join hosts up to the table's newest version"
     assert define(limits, "HALO_PORT_NETWORK_VERSION_MINIMUM") == last_breaking, \

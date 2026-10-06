@@ -57,6 +57,25 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   player's pause, not every player's.
 - The network test's quick launch gives each local player the last-used
   profile, so their controller layouts apply.
+- Merged OpenCE build-133..138: password-protected public lobbies (Server
+  Setup's PASSWORD for a PUBLIC internet game; the Server Browser shows a
+  lock and asks for the password, which opens the listed invite; an invite
+  link still joins without it), the server browser's lock icon, the profile
+  settings' picture of the profile's gamepad layout on GAMEPADS, the port's
+  own zlib for the maps', menus' and HUD's data, dynamic-light storage
+  fixed, and a second hardening round (models, animations, effects, sounds,
+  scripts and network messages checked; a host spends at most 10 ms a frame
+  on each machine's messages). Server Setup's rows are 23 apart (was 25) for
+  its twelve places. Windows crash reports (OpenCE's Sentry) stay off:
+  Arena Evolved's builds are not numbered builds, so they never send one.
+  Network: Arena Evolved still announces version 18 (so ChupathingyCE 0.6.8b
+  and OpenCE build-129..131 join its hosts) and now joins hosts of 11 to 20,
+  OpenCE build-132..138's included (19 and 20 are additive). A public
+  listing's version states its layout: a game with a password is listed as
+  20, which browsers of 18 skip, every other game as 18. OpenCE
+  build-132..138 join only their own version, so they do not join Arena
+  Evolved's hosts. The game list (`network.list_hosted_games`) never lists
+  a game with a password (it would show its invite).
 - Merged OpenCE build-129..132: maps' and the network's input checked
   before it is trusted (a damaged map or message is refused, not followed);
   anti-aliasing (Settings > Video ANTI-ALIASING: FXAA, SMAA, SSAA 2X, MSAA

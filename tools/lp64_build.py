@@ -41,6 +41,9 @@ from .linux_build import (
     STB_DIR,
     TOML_DIR,
     XDK_INCLUDE,
+    ZLIB_DEFINES,
+    ZLIB_DIR,
+    ZLIB_SOURCES,
     compile_launcher,
     game_sources,
     game_browser_defines,
@@ -296,6 +299,8 @@ class Lp64Build:
             f"-I{QRCODEGEN_DIR}",
             # (public games' signatures', likewise)
             f"-I{MONOCYPHER_DIR}",
+            # (the port's zlib's, likewise)
+            f"-I{ZLIB_DIR}",
             f"-I{_quote(lp64(Path('source')))} -I{_quote(lp64(Path('source/cseries')))}",
             host.host_include, f"-idirafter {xdk}",
         ])
@@ -356,6 +361,10 @@ class Lp64Build:
         # with the host's ABI: its API is bytes and size_t
         for name in ("monocypher.c", "monocypher-ed25519.c"):
             add(MONOCYPHER_DIR / name, " ".join(native_third_party), native=True)
+        # the port's zlib (port/third_party/zlib/zlib_prefixed.h), with the
+        # host's ABI: its callers use only its own types (uLong, z_stream)
+        for name in ZLIB_SOURCES:
+            add(ZLIB_DIR / name, " ".join([*native_third_party, *ZLIB_DEFINES]), native=True)
         third_party = " ".join([abi, "-std=gnu11", "-w"])
         add(lp64(TOML_DIR / "tomlc17.c"), third_party)
         add(lp64(KCP_DIR / "ikcp.c"), third_party)

@@ -75,6 +75,7 @@ jobs:
         run: |
           python -m pytest -q tools/test_linux_port.py tools/test_touch_menu.py tools/test_server_control.py tools/test_delta.py
           python -m unittest tools.test_custom_maps tools.test_virtual_keyboard_input
+          python tools/test_light_storage.py
 
       - name: Compile cache
         run: ccache --show-stats
@@ -353,6 +354,9 @@ jobs:
 
       - name: Release
         run: python tools/ci_build.py windows release
+
+      - name: Test light storage
+        run: python tools/test_light_storage.py
 
       - name: Compile cache
         run: ccache --show-stats

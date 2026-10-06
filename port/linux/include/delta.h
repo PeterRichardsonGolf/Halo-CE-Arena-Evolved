@@ -77,6 +77,8 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(15, "build-124", additive) /* co-op allegiances, loading zones, falling players */ \
 	X(16, "build-125", additive) /* co-op: every machine stays on the host's BSP */ \
 	X(17, "build-128", additive) /* followed from OpenCE: additive */ \
-	X(18, "build-129", additive) /* followed from OpenCE: additive */
+	X(18, "build-129", additive) /* followed from OpenCE: additive */ \
+	X(19, "build-132", additive) /* co-op's player collisions in a padding byte, 0 from older hosts */ \
+	X(20, "build-138", additive) /* a password game's public listing's layout only (p2p_lobby.c) */
 
 #endif
