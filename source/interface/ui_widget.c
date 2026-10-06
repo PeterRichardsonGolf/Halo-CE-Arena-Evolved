@@ -2201,6 +2201,11 @@ static void pop_widget(
 static void dispose_widget_stack(
 	struct widget_stack_node **top)
 {
+	/* port: a player's history gone (a match's end, the main menu's fade):
+	no Settings screen comes back from the saving screen to close
+	(menu_functions.c's pc_menu_settings_closing_after_save) */
+	extern void pc_menu_settings_history_cleared(short local_player);
+
 	while (*top)
 	{
 		struct widget_stack_node *node = *top;
@@ -2208,6 +2213,8 @@ static void dispose_widget_stack(
 		*top = node->next;
 		dispose_pointer(widget_memory_pool, node);
 	}
+	if (top >= widget_globals.widget_stack && top < widget_globals.widget_stack + MAXIMUM_NUMBER_OF_LOCAL_PLAYERS)
+		pc_menu_settings_history_cleared((short)(top - widget_globals.widget_stack));
 
 	return;
 }
@@ -3692,6 +3699,12 @@ static void event_handler_dispatch(
 					struct widget_stack_data data;
 
 					pop_widget(&widget_globals.widget_stack[widget_index], &data);
+				}
+				/* port: (as dispose_widget_stack's) */
+				{
+					extern void pc_menu_settings_history_cleared(short local_player);
+
+					pc_menu_settings_history_cleared((short)widget_index);
 				}
 			}
 			widget_deleted = TRUE;

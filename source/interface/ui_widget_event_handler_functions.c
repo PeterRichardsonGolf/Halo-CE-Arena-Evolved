@@ -2656,13 +2656,17 @@ static boolean close_calling_widget_if_not_editing_profile(
 {
 	extern boolean pc_menu_settings_refresh(short local_player);
 	extern boolean pc_menu_settings_closing_after_save(short local_player);
+	extern char *tag_get_name(long tag_index);
 	boolean result;
 	boolean without_profile;
 
 	/* port: back from the saving screen after a saved Settings OK (PC
-	menus, menu_functions.c's profile_save_changes): the screen closes, as
-	the Xbox's did by failing here, but quietly */
-	if (pc_menu_settings_closing_after_save(widget_instance_get_topmost_parent(widget)->local_player_index))
+	menus, menu_functions.c's profile_save_changes): the Settings screen
+	(not another that uses this check: the gametype editor's) closes, as the
+	Xbox's did by failing here, but quietly */
+	if (widget_instance_get_topmost_parent(widget)->definition_tag_index != NONE &&
+		strstr(tag_get_name(widget_instance_get_topmost_parent(widget)->definition_tag_index), "\\player_profile_edit\\") &&
+		pc_menu_settings_closing_after_save(widget_instance_get_topmost_parent(widget)->local_player_index))
 	{
 		widget_instance_get_topmost_parent(widget)->milliseconds_to_auto_close = 1;
 		widget_instance_get_topmost_parent(widget)->visible = FALSE;

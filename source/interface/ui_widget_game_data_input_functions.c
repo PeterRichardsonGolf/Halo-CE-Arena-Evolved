@@ -2208,11 +2208,16 @@ static void get_editable_player_profile_display_name(
 		extern boolean pc_menu_settings_refresh(short local_player);
 		extern void pc_menu_settings_profile_note(short local_player, wchar_t *text, short length);
 		extern void ui_widget_port_block_profile_items(struct widget_instance *widget, boolean block);
+		extern boolean pc_menu_settings_in_match(void);
+		extern boolean pc_menu_tag(long tag_index);
 		boolean without_profile = pc_menu_settings_refresh(widget->local_player_index);
+		struct widget_instance *top = widget_instance_get_topmost_parent(widget);
 
-		/* (and its rows as it is now: blocked, or usable once the holder is
-		done and the player has their own profile) */
-		ui_widget_port_block_profile_items(widget_instance_get_topmost_parent(widget), without_profile);
+		/* (and, in a match on the PC menus' screen, its rows as it is now:
+		blocked, or usable once the holder is done and the player has their
+		own profile) */
+		if (pc_menu_settings_in_match() && pc_menu_tag(top->definition_tag_index))
+			ui_widget_port_block_profile_items(top, without_profile);
 		if (without_profile)
 		{
 			widget->parameters.text_box.text = ui_widget_realloc(widget->parameters.text_box.text,

@@ -554,6 +554,19 @@ static boolean settings_in_match(void)
 	return game_in_progress() && !main_menu_is_active();
 }
 
+/* (ui_widget_game_data_input_functions.c's) */
+boolean pc_menu_settings_in_match(void)
+{
+	return settings_in_match();
+}
+
+/* (ui_widget.c's: the player's history disposed) */
+void pc_menu_settings_history_cleared(short local_player)
+{
+	if (local_player >= 0 && local_player < 4)
+		settings_saved[local_player] = FALSE;
+}
+
 /* whether the player holds the edit: its owner, an edit open, and the
 player still in their SETTINGS (its screens, or under a dialog: an owner
 whose screens closed with their pause or the game's end has given it up) */
