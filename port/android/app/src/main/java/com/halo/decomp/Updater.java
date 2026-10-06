@@ -29,6 +29,11 @@ import java.util.zip.ZipInputStream;
 /**
  * The app's self-updater, as the desktop games' (port/linux/src/updater.c).
  *
+ * Off in Arena Evolved (ENABLED): it is not ChupathingyCE, whose releases
+ * this updater was made for, and no build of it may offer or install one of
+ * those, a release's build (HALO_RELEASE_BUILD) included. start() returns
+ * before anything is asked of the network. As inherited:
+ *
  * A release's build (BuildConfig.HALO_RELEASE_BUILD: built from the
  * release's tag, v<version>, by ChupathingyCE's release workflow) knows its
  * version (BuildConfig.HALO_VERSION, 0.5.0b); nightlies and other builds
@@ -37,7 +42,7 @@ import java.util.zip.ZipInputStream;
  * the latest release when it starts, on a thread of its own, and if it is
  * newer asks the player whether to update:
  *
- * - Yes: the release's app (chupathingyce-android-release.zip or -debug.zip) is
+ * - Yes: the release's app (arena-evolved-android-release.zip or -debug.zip) is
  *   downloaded and handed to Android's package installer, which replaces the
  *   game (closing it) and offers to open the new version.
  * - No: nothing, until the next start.
@@ -49,8 +54,11 @@ import java.util.zip.ZipInputStream;
  * over it.
  */
 final class Updater {
-    private static final String REPOSITORY = "ChupathingyCE/chupathingyce";
-    private static final String USER_AGENT = "chupathingyce-updater";
+    /** false: Arena Evolved's builds never look for or install updates */
+    private static final boolean ENABLED = false;
+    /** Arena Evolved's releases (unused while ENABLED is false) */
+    private static final String REPOSITORY = "PeterRichardsonGolf/Halo-CE-Arena-Evolved";
+    private static final String USER_AGENT = "arena-evolved-updater";
     private static final int TIMEOUT_MILLISECONDS = 20000;
     /** the most a download (a release's zip, about 25 MB) or the app in it may be */
     private static final long MAXIMUM_UPDATE_SIZE = 256L * 1024 * 1024;
@@ -62,7 +70,7 @@ final class Updater {
     static void start(Activity activity) {
         File config = configFile(activity);
 
-        if (!BuildConfig.HALO_RELEASE_BUILD || config == null || !autoUpdate(config))
+        if (!ENABLED || !BuildConfig.HALO_RELEASE_BUILD || config == null || !autoUpdate(config))
             return;
         new Thread(() -> {
             String latest = latestRelease();
@@ -230,8 +238,8 @@ final class Updater {
         if (activity.isFinishing())
             return;
         new AlertDialog.Builder(activity)
-            .setTitle("ChupathingyCE: new version")
-            .setMessage("A new version of ChupathingyCE is out (" + latest + "; this is "
+            .setTitle("Arena Evolved: new version")
+            .setMessage("A new version of Arena Evolved is out (" + latest + "; this is "
                 + BuildConfig.HALO_VERSION + ").\n\nDo you want to update? The game will close and start "
                 + "the new version.")
             .setCancelable(false)
@@ -243,7 +251,7 @@ final class Updater {
 
     private static void confirmNever(Activity activity) {
         new AlertDialog.Builder(activity)
-            .setTitle("ChupathingyCE: new version")
+            .setTitle("Arena Evolved: new version")
             .setMessage("Stop asking about new versions?\n\nTo ask again, set auto = true in the [update] section "
                 + "of config.toml.")
             .setCancelable(false)
@@ -260,7 +268,7 @@ final class Updater {
     /* ---------- updating */
 
     private static void update(Activity activity, String latest) {
-        String asset = "chupathingyce-android-" + (BuildConfig.DEBUG ? "debug" : "release") + ".zip";
+        String asset = "arena-evolved-android-" + (BuildConfig.DEBUG ? "debug" : "release") + ".zip";
         File directory = new File(activity.getCacheDir(), UpdateProvider.DIRECTORY);
         LinearLayout layout = new LinearLayout(activity);
         TextView status = new TextView(activity);
@@ -275,7 +283,7 @@ final class Updater {
         layout.addView(status);
         layout.addView(bar);
         AlertDialog progress = new AlertDialog.Builder(activity)
-            .setTitle("ChupathingyCE: new version")
+            .setTitle("Arena Evolved: new version")
             .setView(layout)
             .setCancelable(false)
             .show();
@@ -303,7 +311,7 @@ final class Updater {
                 activity.runOnUiThread(() -> {
                     progress.dismiss();
                     new AlertDialog.Builder(activity)
-                        .setTitle("ChupathingyCE: new version")
+                        .setTitle("Arena Evolved: new version")
                         .setMessage("The update failed:\n\n" + e.getMessage())
                         .setPositiveButton("OK", null)
                         .show();

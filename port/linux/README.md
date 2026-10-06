@@ -339,7 +339,7 @@ the setting for one start of the game. It has priority over the file.
 | `network.brokers_file` | `"brokers.txt"` | `HALO_NET_BROKERS_FILE` | The file of the public MQTT brokers that let the machines of an invite find each other, and that carry the listings of the server browser: next to `config.toml`, unless a full path. One `host:port` on each line, up to 4; `#` starts a comment. |
 | `network.stun_servers` | Google and Cloudflare | `HALO_NET_STUN` | The public STUN servers (`host:port`, with commas between them) that give the internet address of a machine. |
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
-| `update.auto` | `true` | `HALO_UPDATE_AUTO` | `true`: at start-up, the game looks for a new version. Refer to "Updates". `false`: the game does not look. |
+| `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
 | `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds. `0`: never. |
 | `debug.screenshot_directory`, `debug.screenshot_every` | `""`, `0` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY` | The game writes each Nth frame to this folder as a BMP file. |
@@ -357,6 +357,15 @@ With Mesa drivers, the game sends its GL calls through the GL thread of
 Mesa. To stop this, set the environment variable `mesa_glthread=false`.
 
 ## Updates
+
+Arena Evolved does not update itself: no build of it (a release's
+included) looks for a new version or downloads one, whatever `update.auto`
+says. Get a new version from the
+[Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
+page. The updater it inherited from ChupathingyCE stays in the code, off
+(`src/updater.c`, and the Android app's `Updater.java`), so that it can
+never offer or install a ChupathingyCE build. What follows is how that
+updater works when it is on.
 
 The builds from GitHub Actions (refer to the main [README](../../README.md#download))
 can update themselves. At start-up, the game asks GitHub for the latest

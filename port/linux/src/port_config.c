@@ -420,8 +420,9 @@ static const struct config_setting config_settings[] =
 		"Discord desktop client runs; empty for none." },
 
 	{ "update.auto", _config_boolean, "true", "HALO_UPDATE_AUTO", _environment_value, _platform_all,
-		"Look for a new version when the game starts, and offer to update to it;\n"
-		"false never looks (the game's \"Do not ask again\" writes false here)." },
+		"No effect: Arena Evolved never looks for a new version (its updater is\n"
+		"off). Where the updater is on: look for a new version when the game\n"
+		"starts, and offer to update to it; false never looks." },
 
 	{ "debug.network_test", _config_string, "\"\"", "HALO_NETWORK_TEST", _environment_value, _platform_all,
 		"Automated system link sessions for testing (port/linux/game/network_test.c):\n"

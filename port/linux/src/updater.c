@@ -4,8 +4,10 @@ UPDATER.C
 The desktop ports' self-updater (Linux and Windows; the Android app updates
 itself in Java, port/android).
 
-A release's build (HALO_RELEASE_BUILD: built from the release's tag,
-v<version>, by ChupathingyCE's release workflow; tools/version.py) knows its
+Off in Arena Evolved (HALO_RELEASE_BUILD is forced to 0 below): nothing
+here runs, and no build of it looks for or installs a new version. As
+inherited from ChupathingyCE: a release's build (HALO_RELEASE_BUILD: built
+from the release's tag, v<version>, by the release workflow; tools/version.py) knows its
 version (HALO_VERSION, 0.5.0b); nightlies and other builds never look for
 updates. When update.auto in config.toml is true (the default), the game
 asks GitHub for the latest release when it starts, on a thread of its own:
@@ -13,7 +15,7 @@ the game starts meanwhile, and nothing happens if the release is not newer
 or cannot be reached. If it is newer, the game asks whether to update:
 
 - Yes: the release's build for this platform and configuration
-  (chupathingyce-<platform>-<release|debug>.zip) is downloaded next to the executable
+  (arena-evolved-<platform>-<release|debug>.zip) is downloaded next to the executable
   (into update.partial/), with its signature (<zip>.sig) checked against
   the release key the game is built with (update_signature.c, update_key.h),
   and unpacked, its files put in place of the running
@@ -28,6 +30,7 @@ update.h's: posix_update.c on Linux, win32_update.c on Windows.
 */
 
 #include "platform.h"
+#include "halo_product.h"
 #include "port_config.h"
 #include "update.h"
 #include "update_signature.h"
@@ -50,17 +53,21 @@ macos_build.py; the Android app's version is its own, build.gradle) */
 #ifndef HALO_RELEASE_BUILD
 #define HALO_RELEASE_BUILD 0
 #endif
-#ifdef __APPLE__
-/* (the macOS application does not update itself yet) */
+/* Arena Evolved does not update itself, on any platform, release or not:
+it is not ChupathingyCE, whose releases (and release key) this updater was
+made for, and none of its builds may ever offer or install one of those. A
+release build (HALO_RELEASE_BUILD=1, tools/ci_build.py) is no exception, so
+updater_start returns before anything is asked of the network. */
 #undef HALO_RELEASE_BUILD
 #define HALO_RELEASE_BUILD 0
-#endif
 #ifndef HALO_BUILD_FLAVOR
 #define HALO_BUILD_FLAVOR "release"
 #endif
 
-/* ChupathingyCE's releases */
-#define UPDATE_REPOSITORY "ChupathingyCE/chupathingyce"
+/* Arena Evolved's releases (unused while the updater is off, above; its
+signature key, update_key.h, is still ChupathingyCE's, so a download from
+here could not be installed either) */
+#define UPDATE_REPOSITORY "PeterRichardsonGolf/Halo-CE-Arena-Evolved"
 #if defined(_WIN32) && defined(HALO_64BIT)
 /* (the 64-bit Windows build's own download, ninja windows64: tools/ci_build.py) */
 #define UPDATE_PLATFORM "windows64"
@@ -79,7 +86,7 @@ macos_build.py; the Android app's version is its own, build.gradle) */
 #define UPDATE_PLATFORM "linux"
 #define PATH_SEPARATOR "/"
 #endif
-#define UPDATE_ASSET "chupathingyce-" UPDATE_PLATFORM "-" HALO_BUILD_FLAVOR ".zip"
+#define UPDATE_ASSET "arena-evolved-" UPDATE_PLATFORM "-" HALO_BUILD_FLAVOR ".zip"
 #define UPDATE_DIRECTORY "update.partial"
 #define MAXIMUM_UPDATE_FILES 32
 /* the most a download may be: GitHub's answer about the latest release, a
@@ -530,7 +537,7 @@ static int updater_download_zip(const char *zip_path, char *error, size_t error_
 		snprintf(error, error_size, "could not start the download");
 		return 0;
 	}
-	window = SDL_CreateWindow("ChupathingyCE", 640, 150, 0);
+	window = SDL_CreateWindow(HALO_PRODUCT_NAME, 640, 150, 0);
 	if (window)
 		renderer = SDL_CreateRenderer(window, SDL_SOFTWARE_RENDERER);
 	while (!finished)
@@ -686,7 +693,7 @@ static void updater_update(void)
 		char message[800];
 
 		snprintf(message, sizeof(message), "The update failed:\n\n%s", error);
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ChupathingyCE", message, NULL);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, HALO_PRODUCT_NAME, message, NULL);
 	}
 }
 
@@ -785,11 +792,11 @@ void updater_poll(SDL_Window *window)
 	if (fullscreen)
 		SDL_SetWindowFullscreen(window, false);
 	snprintf(message, sizeof(message),
-		"A new version of ChupathingyCE is out (%s; this is %s).\n\n"
+		"A new version of " HALO_PRODUCT_NAME " is out (%s; this is %s).\n\n"
 		"Do you want to update? The game will close and start the new version.",
 		updater_latest_version, HALO_VERSION);
 	{
-		SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, window, "ChupathingyCE: new version", message,
+		SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, window, HALO_PRODUCT_NAME ": new version", message,
 			3, question_buttons, NULL };
 
 		if (!SDL_ShowMessageBox(&question, &answer))
@@ -797,7 +804,7 @@ void updater_poll(SDL_Window *window)
 	}
 	if (answer == 2)
 	{
-		SDL_MessageBoxData confirm = { SDL_MESSAGEBOX_WARNING, window, "ChupathingyCE: new version",
+		SDL_MessageBoxData confirm = { SDL_MESSAGEBOX_WARNING, window, HALO_PRODUCT_NAME ": new version",
 			"Stop asking about new versions?\n\n"
 			"To ask again, set auto = true in the [update] section of config.toml.",
 			2, confirm_buttons, NULL };
