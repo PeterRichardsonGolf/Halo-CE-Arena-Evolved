@@ -494,6 +494,11 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The players an automated test host has on its own machine (split screen,\n"
 		"1 to 4; the last controller's added first)." },
+	{ "debug.network_test_profiles", _config_boolean, "true", "HALO_NETWORK_TEST_NO_PROFILES", _environment_set_is_false,
+		_platform_all,
+		"An automated test host's local players play with a profile, as a lobby's\n"
+		"do: player 1's last used, else the first saved; false: with none (the\n"
+		"default profile's settings, players 2-4 with no profile of their own)." },
 	{ "debug.network_test_quit", _config_real, "0.0", "HALO_NETWORK_TEST_QUIT", _environment_value, _platform_all,
 		"This many seconds into an automated test game controller 1's player\n"
 		"quits, as their pause menu's QUIT does (split screen: the others stay); 0 never." },

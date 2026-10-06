@@ -61,6 +61,8 @@ Called from the main loop every frame (main.c).
 #include "scenario/scenario.h"
 #include "tag_files/tag_files.h"
 #include "camera/observer.h"
+#include "saved games/player_profile.h"
+#include "saved games/saved_game_files.h"
 
 #include <math.h>
 #include <stdarg.h>
@@ -74,6 +76,7 @@ boolean player_handle_powerup(long player_index, short powerup_type, short durat
 const char *config_string(char const *name);
 double config_real(char const *name);
 long config_integer(char const *name);
+int config_boolean(char const *name);
 void platform_log(char const *format, ...);
 /* main.c's and ui_widget_event_handler_functions.c's (network co-op) */
 short main_get_solo_level_from_name(char const *name);
@@ -155,6 +158,52 @@ static boolean network_test_variant(
 		snprintf(name, size, "%.*s", (int)length, variant);
 	}
 	return TRUE;
+}
+
+/* a local player the test adds plays with a profile, as a lobby's player
+picks one: player 1's last used, else the first saved (System Link's Start:
+browser_screen.c's join_first_player), one profile shared by every local
+player when it is the only one, as choosing it in the lobby is; a player
+that has one already keeps it. Its controller settings (layout, sensitivity)
+then drive that player's controller, and its name is the player's
+(network_game_client_add_player reads the active profile); none saved, the
+player keeps the default profile */
+static void network_test_local_player_profile(
+	short local_player_index)
+{
+	long profile_index = player_ui_get_player1_last_used_profile_index();
+	struct player_profile profile;
+
+	/* (debug.network_test_profiles false: none, to test a player with none) */
+	if (player_ui_get_active_player_profile_index(local_player_index) != NONE ||
+		!config_boolean("debug.network_test_profiles"))
+	{
+		return;
+	}
+	if (profile_index == NONE || !TEST_FLAG(profile_index, _saved_game_file_index_valid_bit))
+	{
+		long profile_indices[100];
+		word profile_count = NUMBEROF(profile_indices);
+
+		player_profiles_enumerate_available_to_local_player_index(NONE, &profile_count, profile_indices, FALSE);
+		profile_index = profile_count ? profile_indices[0] : NONE;
+	}
+	if (profile_index != NONE && TEST_FLAG(profile_index, _saved_game_file_index_valid_bit) &&
+		player_profile_get(profile_index, &profile))
+	{
+		char name[MAXIMUM_PLAYER_PROFILE_NAME_LENGTH + 1];
+		short index;
+
+		player_ui_set_active_player_profile(local_player_index, profile_index, &profile);
+		for (index = 0; index < MAXIMUM_PLAYER_PROFILE_NAME_LENGTH && profile.player_name[index]; index++)
+			name[index] = profile.player_name[index] < 128 ? (char)profile.player_name[index] : '?';
+		name[index] = 0;
+		platform_log("network test: local player %d plays with profile \"%s\" (button layout %d, look sensitivity %d)",
+			local_player_index + 1, name, (int)profile.controller_settings.button_preset,
+			(int)profile.controller_settings.look_sensitivity);
+	}
+	else
+		platform_log("network test: local player %d has no saved profile to play with", local_player_index + 1);
 }
 
 static void network_test_read_settings(
@@ -1047,6 +1096,7 @@ void network_test_update(
 			{
 				short controller = (short)(network_test.local_players - 1 - network_test.local_players_added);
 
+				network_test_local_player_profile(controller);
 				if (network_game_client_add_player(global_network_game_client_get(), controller))
 				{
 					if (network_test.local_players > 1)
