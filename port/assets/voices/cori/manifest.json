@@ -355,6 +355,61 @@
    "text": "powerups in ten",
    "rate": 22050,
    "seconds": 1.312
+  },
+  "and": {
+   "text": "and,",
+   "rate": 22050,
+   "seconds": 0.626
+  },
+  "in_ten": {
+   "text": "in ten",
+   "rate": 22050,
+   "seconds": 0.964
+  },
+  "powerup_up": {
+   "text": "powerup is up",
+   "rate": 22050,
+   "seconds": 0.94
+  },
+  "weapons_and_power_items_in_ten": {
+   "text": "weapons and power items in ten",
+   "rate": 22050,
+   "seconds": 2.287
+  },
+  "weapons_and_power_items_up": {
+   "text": "weapons and power items are up.",
+   "rate": 22050,
+   "seconds": 2.027
+  },
+  "weapons_and_powerups_in_ten": {
+   "text": "weapons and powerups in ten",
+   "rate": 22050,
+   "seconds": 2.159
+  },
+  "weapons_and_powerups_up": {
+   "text": "weapons and powerups are up",
+   "rate": 22050,
+   "seconds": 1.892
+  },
+  "power_weapons_in_ten": {
+   "text": "power weapons in ten",
+   "rate": 22050,
+   "seconds": 1.695
+  },
+  "power_weapons_up": {
+   "text": "power weapons are up",
+   "rate": 22050,
+   "seconds": 1.289
+  },
+  "power_items_in_ten": {
+   "text": "power items in ten",
+   "rate": 22050,
+   "seconds": 1.637
+  },
+  "power_items_up": {
+   "text": "power items are up",
+   "rate": 22050,
+   "seconds": 1.3
   }
  }
 }

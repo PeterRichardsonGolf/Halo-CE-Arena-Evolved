@@ -32,7 +32,13 @@ for side in ('red', 'blue'):
 	clips.update({side + '_sniper': side + ' sniper', side + '_camo': side + ' ' + CAMO, side + '_overshield': side + ' ' + OS,
 		side + '_shotgun': side + ' shotgun'})
 clips.update({'overshield_or_camo_in_ten': OS + ' or ' + CAMO + ' in ten', 'overshield_camo_in_ten': OS + ' and ' + CAMO + ' in ten seconds',
-	'overshield_camo_up': OS + ' and ' + CAMO + ' are up', 'powerups_in_ten': 'powerups in ten'})
+	'overshield_camo_up': OS + ' and ' + CAMO + ' are up', 'powerups_in_ten': 'powerups in ten', 'powerup_up': 'powerup is up'})
+# the waves' lines (CALLOUT DETAIL; the takes used are picks_cori's) and VERBOSE's list pieces
+clips.update({'and': 'and,', 'in_ten': 'in ten',
+	'weapons_and_power_items_in_ten': 'weapons and power items in ten', 'weapons_and_power_items_up': 'weapons and power items are up.',
+	'weapons_and_powerups_in_ten': 'weapons and powerups in ten', 'weapons_and_powerups_up': 'weapons and powerups are up',
+	'power_weapons_in_ten': 'power weapons in ten', 'power_weapons_up': 'power weapons are up',
+	'power_items_in_ten': 'power items in ten', 'power_items_up': 'power items are up'})
 def clip_config(name):
 	if name in nums:
 		return SynthesisConfig(length_scale=1.15, noise_scale=0.4)
