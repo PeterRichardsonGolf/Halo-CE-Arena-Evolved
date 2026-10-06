@@ -15,6 +15,7 @@ alone. Prints PASS or the failures.
 */
 
 #include "p2p_internal.h"
+#include "halo_port_limits.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -297,6 +298,9 @@ static void lobby_checks(void)
 	lobby_update(token, 3, 16);
 	hear(published, published_size, 0, NULL);
 	check(games(&listing) == 1 && listing.locked && !listing.invite[0], "a game with a password is listed locked");
+	/* (AE: a listing's version states its layout: 20 for a password's) */
+	check(published_size > 5 && (published[3] << 8 | published[4]) == 20,
+		"a game with a password is listed as version 20");
 	{
 		int offset, found = 0;
 
@@ -315,6 +319,8 @@ static void lobby_checks(void)
 	hear(published, published_size, 0, NULL);
 	check(games(&listing) == 1 && !listing.locked && !strcmp(listing.invite, expected_invite),
 		"a game whose password is taken off is listed open");
+	check(published_size > 5 && (published[3] << 8 | published[4]) == HALO_PORT_NETWORK_VERSION,
+		"a game without a password is listed as the announced version");
 }
 
 int main(void)
