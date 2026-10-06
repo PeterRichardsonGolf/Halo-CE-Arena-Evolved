@@ -4,6 +4,14 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## Unreleased
+
+### Changed
+- Merged ChupathingyCE's main (its 0.6.8b): network version 18, as OpenCE's
+  build-129. Network version 18 is announced; hosts of versions 11 through
+  18 can be joined (ChupathingyCE 0.6.8b and OpenCE build-129 and later
+  host 18).
+
 ## 0.1.0-beta - 2026-10-05
 
 Arena Evolved's first pre-release, built on ChupathingyCE 0.6.7b and OpenCE
