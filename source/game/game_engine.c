@@ -1190,7 +1190,7 @@ static void game_engine_generate_title_string(
 	}
 
 	/* port: the gametype's time limit's time left (game_variant_options);
-	with MATCH CLOCK on, the scoreboard's clock tells it instead
+	with MATCH CLOCK on, the HUD's corner clock tells it instead
 	(game_engine_match_clock) */
 	if (game_variant_options_get()->time_limit > 0 &&
 		game_engine_globals.postgame_state == game_engine_mode_active &&
@@ -1428,13 +1428,12 @@ static void game_engine_generate_title_string(
 }
 
 /* port: the split-screen scoreboard's place in the view (view coordinates):
-its bounds, from the title's left, and its three tab stops; returns where
-its columns end (the score's room past the last stop). Centred in the view
+its bounds, from the title's left, and its three tab stops. Centred in the view
 (the Xbox drew it from the view's left edge, far off centre in a wide
 split-screen view): the columns, from the first tab stop to the last and
 room for the score, are centred, and the title starts over the first
 column (tab stops are view coordinates, so they move too) */
-static short rasterize_in_game_score_layout(
+static void rasterize_in_game_score_layout(
 	rectangle2d *bounds,
 	short *tab_stops)
 {
@@ -1472,37 +1471,24 @@ static short rasterize_in_game_score_layout(
 		bounds->x0 = tab_stops[0];
 	}
 
-	return (short)(tab_stops[2] + (tab_stops[2] - tab_stops[1]) / 2);
+	return;
 }
 
-/* justification: port, _text_justification_center for a line centred over
-the columns (the scoreboard's times) */
 static void rasterize_in_game_score_draw_line(
 	wchar_t const *string,
 	boolean brighten,
 	real_argb_color *color,
-	long row_index,
-	short justification)
+	long row_index)
 {
 	rectangle2d bounds;
 	short tab_stops[3];
 	boolean splitscreen;
 	long font_index;
-	short columns_right;
 
 	splitscreen = local_player_count() > 1;
 	font_index = hud_get_font_index();
-	columns_right = rasterize_in_game_score_layout(&bounds, tab_stops);
-	if (justification == _text_justification_center)
-	{
-		short middle = (short)((tab_stops[0] + columns_right) / 2);
-		short half = (short)MIN(middle - render.camera.window_bounds.x0 + render.camera.viewport_bounds.x0,
-			render.camera.window_bounds.x1 - render.camera.viewport_bounds.x0 - middle);
-
-		bounds.x0 = (short)(middle - half);
-		bounds.x1 = (short)(middle + half);
-	}
-	if (row_index > 0 && justification == _text_justification_left)
+	rasterize_in_game_score_layout(&bounds, tab_stops);
+	if (row_index > 0)
 		draw_string_set_tab_stops(tab_stops, 3);
 	else
 		draw_string_set_tab_stops(NULL, 0);
@@ -1534,7 +1520,7 @@ static void rasterize_in_game_score_draw_line(
 		row_index += row_offset;
 		bounds.y0 = (short)(row_index * line_height);
 		bounds.y1 = (short)((row_index + 1) * line_height);
-		draw_string_set_draw_mode(font_index, NONE, justification, 0, color);
+		draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, color);
 		rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, string);
 	}
 
@@ -1782,8 +1768,7 @@ enum
 	SCOREBOARD_PING_WIDTH = 40,
 	SCOREBOARD_COLUMN_WIDTH = SCOREBOARD_PLACE_WIDTH + SCOREBOARD_NAME_WIDTH + SCOREBOARD_SCORE_WIDTH + SCOREBOARD_PING_WIDTH,
 	SCOREBOARD_COLUMN_GAP = 40,
-	/* the room the panel gives the last column's ping beyond its column
-	(the times under the title are centred over the columns and it) */
+	/* the room the panel gives the last column's ping beyond its column */
 	SCOREBOARD_PING_ROOM = 8,
 	/* the rows a column has: as many as fit between 6 rows of the screen
 	from its top and 2 from its bottom (the motion sensor); the scoreboard
@@ -1939,85 +1924,6 @@ static void game_engine_scoreboard_closed(
 	}
 }
 
-/* port: the scoreboard's times, with MATCH CLOCK not OFF (whichever way the
-HUD's corner counts): the time played, and with a time limit the time left,
-"1:33 PLAYED \xB7 8:27 LEFT" (" / " between, in a font without the dot), on a
-line of their own under the title, centred over the table, as the title
-drawn. Where the view has not room for that across (room, in the text's
-units: as wide as the line can be, centred where it is), shorter: "1:33
-\xB7 8:27 LEFT", then "8:27 LEFT". The form is chosen by the line's length
-with every digit as wide as an 8, so that it does not change with the
-seconds while the scoreboard is open. FALSE for none
-(game_engine_match_clock's: no clock, the game over or PRE-GAME COUNTDOWN
-counting) */
-static long scoreboard_times_width(
-	long font_index,
-	wchar_t const *string)
-{
-	wchar_t measured[64];
-	rectangle2d bounds;
-	rectangle2d text_bounds;
-	rectangle2d cursor_bounds;
-	real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	long index;
-
-	for (index = 0; index < NUMBEROF(measured) - 1 && string[index]; index++)
-		measured[index] = string[index] >= L'0' && string[index] <= L'9' ? L'8' : string[index];
-	measured[index] = 0;
-	bounds.x0 = 0;
-	bounds.y0 = 0;
-	bounds.x1 = SHORT_MAX / 2;
-	bounds.y1 = SHORT_MAX / 2;
-	draw_string_set_tab_stops(NULL, 0);
-	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
-	draw_unicode_string_compute_bounds(&bounds, measured, &text_bounds, &cursor_bounds);
-
-	return MAX(text_bounds.x1 - text_bounds.x0, 0);
-}
-
-static boolean game_engine_scoreboard_times(
-	long font_index,
-	long room,
-	wchar_t *string,
-	long count)
-{
-	wchar_t played[16];
-	wchar_t left[16];
-	long time_limit;
-	short form;
-
-	if (count <= 0 || !game_engine_match_clock(played, NUMBEROF(played)))
-		return FALSE;
-	game_engine_format_clock(game_time_get(), FALSE, played, NUMBEROF(played));
-	time_limit = game_variant_options_get()->time_limit;
-	if (time_limit <= 0)
-	{
-		usnprintf(string, count, L"%s PLAYED", played);
-		string[count - 1] = 0;
-		return TRUE;
-	}
-	game_engine_format_clock(time_limit * 60L * TICKS_PER_SECOND - game_time_get(), TRUE, left,
-		NUMBEROF(left));
-	for (form = 0; form < 3; form++)
-	{
-		struct font_header *font = font_index != NONE ? font_definition_get(font_index) : NULL;
-		wchar_t const *between = font && font->character_tables.count > 0 &&
-			font_get_character_by_ascii_code(font, 0x00B7) != NULL ? L" \x00B7 " : L"  /  ";
-
-		if (form == 0)
-			usnprintf(string, count, L"%s PLAYED%s%s LEFT", played, between, left);
-		else if (form == 1)
-			usnprintf(string, count, L"%s%s%s LEFT", played, between, left);
-		else
-			usnprintf(string, count, L"%s LEFT", left);
-		string[count - 1] = 0;
-		if (font_index == NONE || room <= 0 || scoreboard_times_width(font_index, string) <= room)
-			break;
-	}
-
-	return TRUE;
-}
-
 static void game_engine_rasterize_scoreboard(
 	long player_index,
 	real alpha)
@@ -2054,8 +1960,6 @@ static void game_engine_rasterize_scoreboard(
 	short top;
 	wchar_t *column_name;
 	wchar_t *score_name;
-	wchar_t times_string[64];
-	boolean times;
 	short block_width;
 
 	if (font_index == NONE)
@@ -2100,25 +2004,7 @@ static void game_engine_rasterize_scoreboard(
 		page = rows * columns;
 	}
 	block_width = (short)(columns * SCOREBOARD_COLUMN_WIDTH + (columns - 1) * SCOREBOARD_COLUMN_GAP);
-	/* (the times on a row of their own under the title, centred over the
-	table (its columns and the last ping's room), as wide as the screen
-	lets a line centred there be. The columns are chosen without them, so
-	that they keep their place while the scoreboard is open: the row is
-	taken from the margin under the columns, not from their rows (so that
-	a full column does not spill into a second), but from a list that
-	scrolls anyway) */
 	game_engine_generate_title_string(title_string, player_index);
-	{
-		long middle = (block_width + SCOREBOARD_PING_ROOM) / 2;
-
-		times = game_engine_scoreboard_times(font_index, 2 * MIN((width - block_width) / 2 + middle,
-			width - (width - block_width) / 2 - middle), times_string, NUMBEROF(times_string));
-	}
-	if (times && total > page && rows > 1)
-	{
-		rows--;
-		page = team_columns ? rows : rows * columns;
-	}
 	/* (opened, at the viewer's own player's page; then where the wheel and
 	Page Up/Down take it) */
 	{
@@ -2145,13 +2031,10 @@ static void game_engine_rasterize_scoreboard(
 		scoreboard_scroll = PIN(scoreboard_scroll, 0, MAX(total - page, 0));
 	}
 	left = (short)(bounds.x0 + (width - block_width) / 2);
-	/* (centred on the rows shown: the title's, the times' under it when
-	they have their own, the heading's, the longest column's, and the
-	footer telling where the scroll is) */
+	/* (centred on the rows shown: the title's, the heading's, the longest
+	column's, and the footer telling where the scroll is) */
 	shown_rows = MIN(rows, total);
 	if (total > page)
-		shown_rows++;
-	if (times)
 		shown_rows++;
 	{
 		real height = (2 + shown_rows) * line_height * SCOREBOARD_SCALE;
@@ -2180,26 +2063,6 @@ static void game_engine_rasterize_scoreboard(
 		}
 	}
 	rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
-	/* (the times as the title, centred over the panel's text (to the last
-	ping's room), on the row under the title's; a line wider than that
-	reaches as far on both sides) */
-	if (times)
-	{
-		rectangle2d times_bounds;
-		short middle = (short)(left + (block_width + SCOREBOARD_PING_ROOM) / 2);
-		short half = (short)MIN(middle - bounds.x0, bounds.x0 + width - middle);
-
-		times_bounds.x0 = (short)(middle - half);
-		times_bounds.x1 = (short)(middle + half);
-		times_bounds.y0 = (short)(top + line_height);
-		times_bounds.y1 = (short)(times_bounds.y0 + line_height);
-		color.alpha = alpha;
-		color.red = color.green = color.blue = 0.7f;
-		draw_string_set_tab_stops(NULL, 0);
-		draw_string_set_draw_mode(font_index, NONE, _text_justification_center, 0, &color);
-		rasterizer_draw_unicode_string(&times_bounds, NULL, NULL, 0, times_string);
-	}
-
 	team_colors[0].alpha = alpha;
 	team_colors[0].red = 0.6f;
 	team_colors[0].green = 0.3f;
@@ -2212,9 +2075,6 @@ static void game_engine_rasterize_scoreboard(
 	color.alpha = alpha;
 	color.red = color.green = color.blue = 0.7f;
 	scoreboard_draw_row(title_string, FALSE, &color, 0, top, left, FALSE);
-	/* (the rows under the times') */
-	if (times)
-		top = (short)(top + line_height);
 
 	string_list_index = tag_loaded('ustr', "ui\\multiplayer_game_text");
 	column_name = string_list_index != NONE ? unicode_string_list_get_string(string_list_index, 0x43) : L"";
@@ -2335,8 +2195,6 @@ static void game_engine_rasterize_in_game_score(
 	long string_list_index;
 	wchar_t *column_name;
 	wchar_t *score_name;
-	/* port: (a row for the scoreboard's times under the title, or none) */
-	long row_offset = 0;
 
 	/* port: a full-screen view's its own (game_engine_rasterize_scoreboard) */
 	if (local_player_count() <= 1)
@@ -2357,28 +2215,7 @@ static void game_engine_rasterize_in_game_score(
 	color.red = 0.7f;
 	color.green = 0.7f;
 	color.blue = 0.7f;
-	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0, _text_justification_left);
-
-	/* port: the scoreboard's times (MATCH CLOCK) as the title, centred
-	over the columns on a row of their own under it, the rows below moved
-	down; as wide as the view lets a line centred there be */
-	{
-		wchar_t times_string[64];
-		rectangle2d layout_bounds;
-		short tab_stops[3];
-		short columns_right = rasterize_in_game_score_layout(&layout_bounds, tab_stops);
-		short middle = (short)((tab_stops[0] + columns_right) / 2);
-		long room = 2 * MIN(middle - render.camera.window_bounds.x0 + render.camera.viewport_bounds.x0,
-			render.camera.window_bounds.x1 - render.camera.viewport_bounds.x0 - middle);
-
-		if (game_engine_scoreboard_times(hud_get_font_index(), room, times_string, NUMBEROF(times_string)))
-		{
-			row_offset = 1;
-			color.alpha = alpha;
-			color.red = color.green = color.blue = 0.7f;
-			rasterize_in_game_score_draw_line(times_string, FALSE, &color, row_offset, _text_justification_center);
-		}
-	}
+	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0);
 
 	color.red = 0.5f;
 	color.green = 0.5f;
@@ -2399,7 +2236,7 @@ static void game_engine_rasterize_in_game_score(
 
 	game_engine->format_score_name(score_string);
 	usprintf(row_string, L"\t%s\t%s\t%s", column_name, score_name, score_string);
-	rasterize_in_game_score_draw_line(row_string, FALSE, &color, row_offset + 1, _text_justification_left);
+	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1);
 
 	for (entry_index = 0; entry_index < entry_count; entry_index++)
 	{
@@ -2471,8 +2308,7 @@ static void game_engine_rasterize_in_game_score(
 				row_string,
 				is_current_player,
 				row_color,
-				row_offset + entry_index + 2,
-				_text_justification_left);
+				entry_index + 2);
 		}
 	}
 
