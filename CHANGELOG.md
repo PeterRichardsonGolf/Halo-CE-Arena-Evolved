@@ -7,9 +7,24 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Changed
+- Merged OpenCE build-129..132: maps' and the network's input checked
+  before it is trusted (a damaged map or message is refused, not followed);
+  anti-aliasing (Settings > Video ANTI-ALIASING: FXAA, SMAA, SSAA 2X, MSAA
+  2X/4X/8X, `display.anti_aliasing`), PER-PIXEL LIGHTING
+  (`display.per_pixel_lighting`) and SHADOW RESOLUTION
+  (`display.shadow_resolution`); the audio's I3DL2 reverb and muffled sounds
+  behind walls (Settings > Audio REVERB, `audio.reverb`), a resampler with a
+  windowed sinc, a limiter, sound distances and Xbox ADPCM decoding fixed;
+  New Game's multiplayer maps played alone; co-op's PLAYER COLLISIONS in
+  Server Setup (`network.coop_player_collisions`). Settings > Video's rows
+  are closer together (20, not 25) for its fourteen places. The callouts'
+  voice is mixed dry (not reverberated) and goes through the new limiter.
+  Network version stays 18, ChupathingyCE's: OpenCE build-132 announces 19
+  and joins only 19, so it does not play with this version until
+  ChupathingyCE follows it (build-129 to build-131 do).
 - Merged ChupathingyCE's main (its 0.6.8b): network version 18, as OpenCE's
   build-129. Network version 18 is announced; hosts of versions 11 through
-  18 can be joined (ChupathingyCE 0.6.8b and OpenCE build-129 and later
+  18 can be joined (ChupathingyCE 0.6.8b and OpenCE build-129 to build-131
   host 18).
 
 ## 0.1.0-beta - 2026-10-05

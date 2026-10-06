@@ -31,19 +31,23 @@ VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
 # each screen: its folder below PE, its screen's widget (the name the profile
 # menu opens), its header (widget, bitmap), the row spacing, and its rows:
-# (label, setting, [(shown, value)], help, platform)
+# (label, setting, [(shown, value)], help, platform[, key]): key names the
+# row's widgets where two rows set one setting (one for each platform), else
+# the setting's name does
 SCREENS = {
     "video_settings": {
         "screen": "video_settings_screen",
         "header": ("header_profile_video_settings", f"{PE}/video_settings/header_profile_video_settings"),
-        # (25, and the help line 8 lower, as server_settings: eleven places
-        # (Resolution and Window Size share one) above the help line)
-        "spacing": 25,
-        "help_top": 358,
+        # (20 and the help as low as upstream's, for all fourteen places
+        # (Resolution and Window Size share one, as do the two
+        # anti-aliasing rows) to fit above it: upstream's twelve and
+        # PERFORMANCE and POSITION)
+        "spacing": 20,
+        "help_top": 364,
         # (rows in the place of the row before them: Window Size in
         # Resolution's, port/linux/game/menu_functions.c showing the one the
-        # display mode chosen uses)
-        "same_place": ["display.window_size"],
+        # display mode chosen uses; Android's anti-aliasing in the desktop's)
+        "same_place": ["display.window_size", "anti_aliasing_android"],
         "rows": [
             ("DISPLAY MODE:", "display.mode",
              [("FULLSCREEN", "fullscreen"), ("BORDERLESS", "borderless"), ("WINDOWED", "windowed")],
@@ -73,6 +77,21 @@ SCREENS = {
              "Draw the HUD from the high-res redraws; off\ndraws the game's own pictures.", None),
             ("HIGH-RES TEXT:", "display.high_res_text", ON_OFF,
              "Draw text and titles with high-res fonts; off\ndraws the game's own.", None),
+            ("ANTI-ALIASING:", "display.anti_aliasing",
+             [("OFF", "off"), ("FXAA", "fxaa"), ("SMAA", "smaa"), ("SSAA 2X", "ssaa2x"), ("MSAA 2X", "msaa2x"),
+              ("MSAA 4X", "msaa4x"), ("MSAA 8X", "msaa8x")],
+             "Smooth jagged edges, which the Xbox did not. FXAA\nand SMAA are cheap; SSAA and MSAA are sharper.",
+             "desktop"),
+            ("ANTI-ALIASING:", "display.anti_aliasing",
+             [("OFF", "off"), ("FXAA", "fxaa"), ("MSAA 2X", "msaa2x"), ("MSAA 4X", "msaa4x")],
+             "Smooth jagged edges, which the Xbox did not. FXAA\nis cheap; MSAA is sharper.",
+             "android", "anti_aliasing_android"),
+            ("SHADOW RESOLUTION:", "display.shadow_resolution",
+             [("128", "128"), ("256", "256"), ("512", "512"), ("1024", "1024")],
+             "The size objects' shadows are drawn at: 128 as on\nthe Xbox; larger for smoother, as soft, edges.",
+             None),
+            ("PER-PIXEL LIGHTING:", "display.per_pixel_lighting", ON_OFF,
+             "Light models for each pixel, without the facets\nof the Xbox's lighting for each vertex.", None),
             ("PERFORMANCE:", "display.performance", PERFORMANCE_LEVELS,
              "FPS, with Minimal the frame time, with Full the\n1% low and the draws, at the top of the screen.",
              None),
@@ -145,6 +164,8 @@ SCREENS = {
             ("MUSIC VOLUME:", "audio.music_volume", VOLUMES, "The music's volume.", None),
             ("EFFECTS VOLUME:", "audio.effects_volume", VOLUMES,
              "The volume of every other sound: effects and\nspeech.", None),
+            ("REVERB:", "audio.reverb", ON_OFF,
+             "Echo sounds as the place you are in does, and\nmuffle those behind walls, as the Xbox did.", None),
             ("SOUND:", "audio.enabled", ON_OFF,
              "Play sound at all; from the next time the game\nstarts.", None),
         ],
@@ -302,10 +323,10 @@ def _setting_screen(folder: str, spec: dict) -> list:
     # (the spinners' place in their rows and width: the arrows just past
     # their ends)
     spinner_x, spinner_width = spec.get("spinner", (320, 147))
-    for index, (label, setting, choices, _, platform) in enumerate(spec["rows"]):
-        key = setting.split(".", 1)[1]
+    for index, (label, setting, choices, _, platform, *named) in enumerate(spec["rows"]):
+        key = named[0] if named else setting.split(".", 1)[1]
         row = f"{base}/op_{key}"
-        if setting not in spec.get("same_place", ()):
+        if setting not in spec.get("same_place", ()) and key not in spec.get("same_place", ()):
             place += 1
         rows.append((row, platform, place))
         extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
@@ -335,7 +356,7 @@ def _setting_screen(folder: str, spec: dict) -> list:
     # 0. A row with a help for each value has "@first" there, the string its
     # first value's is, after the rows': menu_functions.c's settings_help)
     helps, value_helps = [""], []
-    for _, _, choices, help_text, _ in spec["rows"]:
+    for _, _, choices, help_text, *_ in spec["rows"]:
         if isinstance(help_text, list):
             assert len(help_text) == len(choices)
             helps.append(f"@{1 + len(spec['rows']) + len(value_helps)}")
@@ -855,6 +876,11 @@ def _server_settings() -> list:
     spinner_row("enemies_multiplier", 14, [f"{value}X" for value in COOP_ENEMIES_MULTIPLIERS],
                 "network.coop_enemies_multiplier", COOP_ENEMIES_MULTIPLIERS)
     rows.append((f"{base}/op_enemies_multiplier", None, 6))
+    # ... and its PLAYER COLLISIONS, below them (network.coop_player_collisions,
+    # which the host sends its players as the game begins: menu_functions.c's
+    # server_start)
+    spinner_row("player_collisions", 15, ["ON", "OFF"], "network.coop_player_collisions", ["true", "false"])
+    rows.append((f"{base}/op_player_collisions", None, 7))
     # the gametype's options for this game (the gametype editor's screens,
     # editing a copy of the gametype chosen: "port setup edit")
     for index, (key, screen) in enumerate(SETUP_OPTION_SCREENS):
@@ -885,7 +911,7 @@ def _server_settings() -> list:
     extra += _strings(f"{base}/labels", ["GAME NAME:", "MAXIMUM PLAYERS:", "INVITE LINK:", "GAME TYPE:",
                                          "PLAYER OPTIONS:", "ITEM OPTIONS:", "VEHICLE OPTIONS:", "INDICATOR OPTIONS:",
                                          "TEAMPLAY OPTIONS:", "ARENA OPTIONS:", "LISTING:", "FRIENDLY FIRE:",
-                                         "EXTRA ENEMIES:", "PER PLAYER:", "MULTIPLIER:"])
+                                         "EXTRA ENEMIES:", "PER PLAYER:", "MULTIPLIER:", "PLAYER COLLISIONS:"])
     extra += _strings(f"{base}/help_strings", [
         "",
         "The name the game shows in the lists of games.\\nEnter changes it.",
@@ -913,6 +939,9 @@ def _server_settings() -> list:
         # (PER PLAYER's and MULTIPLIER's)
         "For each player past the first, enemy squads get\\nthis much more of themselves (100%: as many again).",
         "Each enemy squad is this many times as large.",
+        # (PLAYER COLLISIONS', by its choice)
+        "Players bump into each other, as in the campaign.",
+        "Players walk through each other, so that no one\\nblocks a doorway. The AI's characters still block.",
     ])
     lines = _screen(base, spec, rows, ["server settings update"],
                     ['<on event="created" run="server settings init"/>'], extra)

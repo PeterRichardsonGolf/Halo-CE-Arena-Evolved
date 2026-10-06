@@ -1109,9 +1109,12 @@ unsigned long network_game_server_machine_address(
 
 /* port: the distributed netcode asks that a client machine be dropped (its
 game ran faster than this one's: network_distributed.c); it is, once this
-server next looks at its machines, not while its messages are read */
+server next looks at its machines, not while its messages are read. Its
+address kept out of this server's games (kept_out), else it may join
+again, as a kick's */
 void network_game_server_kick_machine(
-	long machine_index)
+	long machine_index,
+	boolean kept_out)
 {
 	struct network_game_server *server = global_network_game_server_get();
 
@@ -1123,7 +1126,7 @@ void network_game_server_kick_machine(
 	}
 	network_game_server_kick_pending[machine_index] = TRUE;
 	network_game_server_kick_rejection_codes[machine_index] = _rejection_code_blacklisted_machine;
-	network_game_server_kick_keeps_out[machine_index] = TRUE;
+	network_game_server_kick_keeps_out[machine_index] = kept_out;
 }
 
 boolean network_game_server_drop_machine(
@@ -3207,6 +3210,11 @@ struct network_machine *network_game_server_get_client_machine(
 	if (machine_index)
 		*machine_index = NONE;
 
+	/* port: none for a connection without a slot (NONE: the assert is not
+	checked in release builds) */
+	if (client_machine->machine_index < 0 || client_machine->machine_index >= MAXIMUM_NETWORK_MACHINE_COUNT)
+		return NULL;
+
 	machine = &server->game.machines[client_machine->machine_index];
 	if (machine_index)
 		*machine_index = machine->machine_index;
@@ -3242,6 +3250,10 @@ struct network_game_server_client_machine *network_game_server_get_client_machin
 {
 	match_assert(NETWORK_SERVER_MANAGER_FILE, 0x741,
 		server && (index<MAXIMUM_NETWORK_MACHINE_COUNT));
+
+	/* (port: and in release builds) */
+	if (index < 0 || index >= MAXIMUM_NETWORK_MACHINE_COUNT)
+		return NULL;
 
 	return &server->client_machines[index];
 }
@@ -4116,6 +4128,18 @@ void network_game_server_port_set_cooperative_friendly_fire(
 	server->game.variant_options.friendly_fire = friendly_fire;
 	if (server->state == _network_game_server_state_pregame && !network_game_server_send_game_data_pregame(server))
 		network_event("network_game_server_port_set_cooperative_friendly_fire() failed to send updated game settings to clients");
+}
+
+void network_game_server_port_set_cooperative_player_collisions(
+	boolean player_collisions)
+{
+	struct network_game_server *server = global_network_game_server_get();
+
+	if (!server)
+		return;
+	SET_FLAG(server->game.cooperative_flags, _network_game_cooperative_no_player_collisions_bit, !player_collisions);
+	if (server->state == _network_game_server_state_pregame && !network_game_server_send_game_data_pregame(server))
+		network_event("network_game_server_port_set_cooperative_player_collisions() failed to send updated game settings to clients");
 }
 
 /* port: a gametype's PC options: the menus' (player_ui_set_game_variant_options)

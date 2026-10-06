@@ -2468,6 +2468,14 @@ static boolean network_game_remove_local_player(
 
 	if (controller_index == NONE)
 		controller_index = 0;
+	/* port: a multiplayer map played alone (its pause screen: ui_widget.c's
+	ui_check_for_pause_game) has no network game to leave: the main menu,
+	the map not saved (as the campaign's pause screen quits it) */
+	if (!global_network_game_client_get())
+	{
+		main_goto_main_menu();
+		return TRUE;
+	}
 	network_game_client_local_player_quit(controller_index);
 	/* port: a split screen player who quit, the others staying, is not
 	joined to the next game */
