@@ -334,6 +334,17 @@ static const struct config_setting config_settings[] =
 		"voice has it); \"items_clock\" also Halo 1: NHE's talking timer (the\n"
 		"minutes, thirty and twenty seconds left, ten to one, its beeps); \"off\".\n"
 		"Silent on Halo 1: NHE's maps, whose own scripts talk." },
+	{ "game.callout_detail", _config_string, "\"standard\"", "HALO_CALLOUT_DETAIL", _environment_value, _platform_all,
+		"How much the callouts say of the power items spawning together (a\n"
+		"wave): \"minimal\" one line a wave (\"power items in ten\", an item alone\n"
+		"its own) and the first item's \"is up\", no beeps, no five to one, and\n"
+		"of the clock only the minutes and thirty seconds left; \"standard\" the\n"
+		"item beep, an overshield and camo as one line, three items or more as\n"
+		"the line of their kinds, else each item's, and each \"is up\";\n"
+		"\"verbose\" every item named (\"rockets, sniper and overshield in ten\")\n"
+		"and each item's own \"is up\" (a wave that can't be said so in 8 seconds\n"
+		"as \"standard\"). Waves start early enough to end by their 10 seconds\n"
+		"mark." },
 	{ "game.callout_voice", _config_string, "\"cori\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
 		"The callouts' voice: a folder of voices/ (next to maps/) holding WAVs\n"
 		"named for what they say (one.wav, rockets.wav, ...); the mod played's\n"

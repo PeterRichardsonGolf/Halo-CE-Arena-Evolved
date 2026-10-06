@@ -14,15 +14,16 @@
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/help">
 		<data input="port settings help"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_mod" x="54" y="73" platform="desktop"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_fall_damage" x="54" y="99"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_health" x="54" y="125"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_campaign_timer" x="54" y="151"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_match_clock" x="54" y="177"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_hud_area" x="54" y="203"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_compact_hud" x="54" y="229"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_scoreboard_fade" x="54" y="255"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callouts" x="54" y="281"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_voice" x="54" y="307"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_fall_damage" x="54" y="97"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_health" x="54" y="121"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_campaign_timer" x="54" y="145"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_match_clock" x="54" y="169"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_hud_area" x="54" y="193"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_compact_hud" x="54" y="217"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_scoreboard_fade" x="54" y="241"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callouts" x="54" y="265"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_detail" x="54" y="289"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_voice" x="54" y="313"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
@@ -111,11 +112,20 @@
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callouts_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|ITEMS|ITEMS+CLOCK" setting="game.callouts" values="off|items|items_clock" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
 		<on event="created" run="port setting load"/>
 	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_detail" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="MINIMAL|STANDARD|VERBOSE" setting="game.callout_detail" values="minimal|standard|verbose" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_voice" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_label"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_spinner" x="300" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NHE" setting="game.callout_voice" values="nhe" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
 		<on event="created" run="port setting load"/>
@@ -140,6 +150,7 @@
 		<string text="COMPACT HUD:"/>
 		<string text="SCOREBOARD FADE:"/>
 		<string text="CALLOUTS:"/>
+		<string text="CALLOUT DETAIL:"/>
 		<string text="VOICE:"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/help_strings">
@@ -148,16 +159,20 @@
 		<string text="Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options."/>
 		<string text="How health comes back in the campaign. Gametypes\nhave their own, in Arena Options."/>
 		<string text="A clock of the time played on the level, in the\ncampaign's corner by the motion sensor."/>
-		<string text="@11"/>
+		<string text="@12"/>
 		<string text="On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide."/>
 		<string text="With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages."/>
 		<string text="How fast the scoreboard fades in and out while\nBack (or Tab) is held."/>
 		<string text="Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too."/>
+		<string text="@16"/>
 		<string text="The callouts' voice: a folder of voices/, next\nto maps/."/>
 		<string text="No clock in a multiplayer game's corner."/>
 		<string text="Display the time remaining until the game ends."/>
 		<string text="Display the time elapsed since the game started."/>
 		<string text="Display the time remaining, with the time\nelapsed above it."/>
+		<string text="One short line for the items spawning together,\nand the first one up. No beeps."/>
+		<string text="Items spawning together in one line where the\nvoice has one, the item beep and five to one."/>
+		<string text="Every item spawning together named, then each\none up in turn."/>
 	</strings>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_profile_item" type="text" left="51" top="309" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5" platform="desktop">
 		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/mods_settings_screen"/>

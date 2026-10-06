@@ -6,7 +6,26 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+### Added
+- CALLOUT DETAIL (Settings > Game Options, under CALLOUTS;
+  `game.callout_detail`, `HALO_CALLOUT_DETAIL`): MINIMAL says one line a
+  wave of items spawning together and the first item's "is up", with no
+  beeps and only the minutes and "thirty seconds left" of the clock;
+  STANDARD is the calls as before; VERBOSE names every item of a wave
+  ("rockets, sniper and overshield in ten") and says each one up in turn.
+  Cori has the new lines: "power weapons", "power items" and "weapons and
+  power items" in ten / are up, "and", "in ten" and "powerup is up".
+
 ### Changed
+- Callout timing: the items' calls are planned before the clock's, so an
+  item alone is called on its 10-second mark and is up on its spawn's tick
+  (they were up to 6.7 seconds early and 2 to 4.5 seconds late, moved
+  around the clock's "ten" and minute calls); a wave starts early enough
+  to end by its 10-second mark; the clock's "ten" gives way to an item's
+  call due then, and the minute comes after the spawn's "is up". An OS/CAMO
+  spot's item is said up as soon as it is seen, else "powerup is up" half
+  a second on (it was left out). Items spawning more often than every 10
+  seconds are no longer said up.
 - Merged OpenCE build-129..132: maps' and the network's input checked
   before it is trusted (a damaged map or message is refused, not followed);
   anti-aliasing (Settings > Video ANTI-ALIASING: FXAA, SMAA, SSAA 2X, MSAA

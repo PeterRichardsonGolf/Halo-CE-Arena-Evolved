@@ -129,8 +129,12 @@ play:
   calls 10 seconds before they spawn ("rockets in ten"), five to one before
   the rockets and "rockets are up" as they spawn; ITEMS + CLOCK adds NHE's
   talking timer (the minutes, thirty and twenty seconds left, ten to one,
-  beeps). An item's call that would meet the clock's moves earlier, so
-  none is lost. VOICE picks a voice pack in `voices/`. The default voice is
+  beeps). The items' calls come first: an item alone is called on its
+  second, items spawning together (a wave) start early enough to end by
+  the 10-second mark, the clock's "ten" gives way to an item's call due
+  then, and "is up" comes before the minute. CALLOUT DETAIL picks how much
+  a wave says: MINIMAL (one line, the first item up, no beeps), STANDARD
+  or VERBOSE (every item named). VOICE picks a voice pack in `voices/`. The default voice is
   Cori, a beta voice that ships with every build (made with Piper and the
   public-domain en_GB-cori-high voice; the clips are CC0). NHE's own clips
   are an optional import (`tools/import_nhe_voice.py`; none ships).

@@ -26,6 +26,7 @@ MATCH_CLOCKS = [("OFF", "off"), ("TIME REMAINING", "down"), ("TIME ELAPSED", "up
 HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
 SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
 CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
+CALLOUT_DETAILS = [("MINIMAL", "minimal"), ("STANDARD", "standard"), ("VERBOSE", "verbose")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
@@ -105,8 +106,8 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (26, not 30: ten rows, above the help line, as video_settings)
-        "spacing": 26,
+        # (24, not 30: eleven rows, above the help line, as video_settings)
+        "spacing": 24,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -133,6 +134,11 @@ SCREENS = {
              "How fast the scoreboard fades in and out while\nBack (or Tab) is held.", None),
             ("CALLOUTS:", "game.callouts", CALLOUTS,
              "Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too.", None),
+            # (a help for each value)
+            ("CALLOUT DETAIL:", "game.callout_detail", CALLOUT_DETAILS,
+             ["One short line for the items spawning together,\nand the first one up. No beeps.",
+              "Items spawning together in one line where the\nvoice has one, the item beep and five to one.",
+              "Every item spawning together named, then each\none up in turn."], None),
             # (the spinner's voices are the data root's voices/ folders and
             # the mod's mods/<mod>/voices/ ones, listed as the menus are
             # read: menu_files.c)

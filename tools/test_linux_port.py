@@ -350,3 +350,47 @@ def test_p2p_signatures_and_listings(tmp_path):
     result = subprocess.run([str(program)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout
     assert "PASS" in result.stdout
+
+
+def _ninja_compile_flags(obj: str) -> list:
+    """the flags ninja compiles an object with, less the compiler (and
+    ccache), its output and dependency file, LTO and the PGO profile"""
+    import shlex
+
+    command = subprocess.run(["ninja", "-t", "commands", obj],
+                             capture_output=True, text=True, check=True).stdout.strip().splitlines()[-1]
+    words = shlex.split(command)
+    while words and not words[0].startswith("-"):
+        words = words[1:]
+    flags = []
+    skip = False
+    for word in words:
+        if skip:
+            skip = False
+        elif word in ("-MF", "-o", "-c"):
+            skip = True
+        elif word == "-MMD" or word.startswith("-flto") or word.startswith("-fprofile-use"):
+            continue
+        else:
+            flags.append(word)
+    return flags
+
+
+def test_callouts_plan(tmp_path):
+    """the callouts' plan (source/game/callouts.c) through a game of Blood
+    Gulch's power items at each CALLOUT DETAIL with the Cori pack's clips
+    (tools/callouts_check.c): items on their 10 s mark and spawn tick, waves
+    ending by their mark, the clock's "ten" giving way, "is up" before the
+    minute, MINIMAL's and VERBOSE's lines, an OS/CAMO spot's "is up"; built
+    with the flags ninja gives the game's code"""
+    if not shutil.which("clang") or not shutil.which("ninja") or not Path("build.ninja").is_file():
+        pytest.skip("needs clang, ninja and a configured build")
+    flags = _ninja_compile_flags("build/linux/obj/source/game/callouts.o")
+    program = tmp_path / "callouts_check"
+    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-Wl,--unresolved-symbols=ignore-all", "-o",
+                            str(program), "tools/callouts_check.c", "source/game/callouts.c"],
+                           capture_output=True, text=True)
+    assert built.returncode == 0, built.stderr[-4000:]
+    result = subprocess.run([str(program), "port/assets/voices/cori"], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout[-4000:]
+    assert "PASS" in result.stdout
