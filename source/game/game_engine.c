@@ -3137,9 +3137,13 @@ static boolean nearby_vehicle(
 	return FALSE;
 }
 
-static real game_engine_get_friendly_bonus(
+/* port: ignore_unit_index's unit is left out (NONE for none: the stock
+rule), for TRAINING's spawn heat (spawn_heat.c), which rates a living
+player's spawns as if they were dead */
+static real game_engine_get_friendly_bonus_ex(
 	long player_index,
-	real_point3d const *position)
+	real_point3d const *position,
+	long ignore_unit_index)
 {
 	struct player_datum *player = player_get(player_index);
 	struct data_iterator iterator;
@@ -3151,7 +3155,8 @@ static real game_engine_get_friendly_bonus(
 	while (other_player)
 	{
 		if (player->team_index == other_player->team_index &&
-			other_player->unit_index != NONE)
+			other_player->unit_index != NONE &&
+			other_player->unit_index != ignore_unit_index)
 		{
 			real_point3d origin;
 			real distance;
@@ -3175,9 +3180,13 @@ static real game_engine_get_friendly_bonus(
 	return rating * 3.0f + 1.0f;
 }
 
-static real default_starting_location_rate_function(
+/* port: as game_engine_get_friendly_bonus_ex, and *zero_reason (when not
+NULL) set to why the rating is 0 (_spawn_rating_..., spawn_heat.c's) */
+static real default_starting_location_rate_function_ex(
 	long player_index,
-	struct player_starting_location const *starting_location)
+	struct player_starting_location const *starting_location,
+	long ignore_unit_index,
+	short *zero_reason)
 {
 	struct player_datum *player = player_get(player_index);
 	real rating = 1.0f;
@@ -3187,20 +3196,25 @@ static real default_starting_location_rate_function(
 		player->team_index != starting_location->team_index)
 	{
 		rating = 0.0f;
+		if (zero_reason)
+			*zero_reason = _spawn_rating_zero_team;
 	}
 
 	if (rating > 0.0f)
 	{
-		rating *= game_engine_get_distance_rating_for_spawn(
+		rating *= game_engine_get_distance_rating_for_spawn_ex(
 			player_index,
-			&starting_location->position);
+			&starting_location->position,
+			ignore_unit_index,
+			zero_reason);
 	}
 
 	if (game_engine_running() && rating > 0.0f && game_engine_has_teams())
 	{
-		rating *= game_engine_get_friendly_bonus(
+		rating *= game_engine_get_friendly_bonus_ex(
 			player_index,
-			&starting_location->position);
+			&starting_location->position,
+			ignore_unit_index);
 	}
 
 	if (game_engine_running() && game_engine->starting_location_rating)
@@ -3209,6 +3223,9 @@ static real default_starting_location_rate_function(
 			player_index,
 			starting_location);
 	}
+
+	if (zero_reason && !(rating > 0.0f) && *zero_reason == _spawn_rating_rated)
+		*zero_reason = _spawn_rating_zero_other;
 
 	return rating;
 }
@@ -7524,6 +7541,18 @@ real game_engine_get_distance_rating_for_spawn(
 	long player_index,
 	real_point3d const *position)
 {
+	return game_engine_get_distance_rating_for_spawn_ex(player_index, position, NONE, NULL);
+}
+
+/* port: ignore_unit_index's unit is left out (NONE for none: the stock
+rule), and *zero_reason (when not NULL) set to why the rating is 0: an
+enemy within 2 world units, a teammate within 0.25 (spawn_heat.c) */
+real game_engine_get_distance_rating_for_spawn_ex(
+	long player_index,
+	real_point3d const *position,
+	long ignore_unit_index,
+	short *zero_reason)
+{
 	boolean has_teams = game_engine ? global_variant.universal_variant.teams : FALSE;
 	struct player_datum *player;
 	struct data_iterator iterator;
@@ -7536,7 +7565,8 @@ real game_engine_get_distance_rating_for_spawn(
 	other_player = (struct player_datum *)data_iterator_next(&iterator);
 	while (other_player)
 	{
-		if (other_player->unit_index!=NONE)
+		if (other_player->unit_index!=NONE &&
+			other_player->unit_index!=ignore_unit_index)
 		{
 			real_point3d origin;
 			real distance;
@@ -7549,16 +7579,31 @@ real game_engine_get_distance_rating_for_spawn(
 				!(distance>0.25f))
 			{
 				if (distance<0.25f)
+				{
 					rating = 0.0f;
+					if (zero_reason && *zero_reason == _spawn_rating_rated)
+					{
+						*zero_reason = other_player->team_index != player->team_index ?
+							_spawn_rating_zero_enemy : _spawn_rating_zero_teammate;
+					}
+				}
 				else if (distance<1.0f)
 					rating *= 0.1f;
 
 				if (other_player->team_index!=player->team_index)
 				{
 					if (distance<2.0f)
+					{
 						rating = 0.0f;
+						if (zero_reason && *zero_reason == _spawn_rating_rated)
+							*zero_reason = _spawn_rating_zero_enemy;
+					}
 					else if (!(distance>5.0f))
+					{
 						rating = (distance-2.0f)*rating*0.33333334f;
+						if (zero_reason && !(rating>0.0f) && *zero_reason == _spawn_rating_rated)
+							*zero_reason = _spawn_rating_zero_enemy;
+					}
 				}
 			}
 		}
@@ -7574,13 +7619,39 @@ real game_engine_get_starting_location_rating(
 	long player_index,
 	struct player_starting_location const *starting_location)
 {
+	return game_engine_get_starting_location_rating_ex(player_index, starting_location, NONE, NULL);
+}
+
+/* port: game_engine_get_starting_location_rating with ignore_unit_index's
+unit left out (NONE for none) and why a spawn rates 0 in *zero_reason
+(when not NULL; _spawn_rating_rated when it does not): TRAINING's spawn
+heat (spawn_heat.c), which rates spawns for a living player as if dead.
+The same rules, one copy */
+real game_engine_get_starting_location_rating_ex(
+	long player_index,
+	struct player_starting_location const *starting_location,
+	long ignore_unit_index,
+	short *zero_reason)
+{
+	if (zero_reason)
+		*zero_reason = _spawn_rating_rated;
+
 	if (!match_game_type(game_engine_get_type(), 4, starting_location->game_types))
+	{
+		if (zero_reason)
+			*zero_reason = _spawn_rating_zero_game_type;
 		return 0.0f;
+	}
 
 	if (nearby_vehicle(player_index, starting_location))
+	{
+		if (zero_reason)
+			*zero_reason = _spawn_rating_zero_vehicle;
 		return 0.0f;
+	}
 
-	return default_starting_location_rate_function(player_index, starting_location);
+	return default_starting_location_rate_function_ex(player_index, starting_location, ignore_unit_index,
+		zero_reason);
 }
 
 /* port: the gametype's vehicles of each team (game_variant_options) */

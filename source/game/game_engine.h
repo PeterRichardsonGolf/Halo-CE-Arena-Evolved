@@ -557,6 +557,27 @@ real game_engine_get_distance_rating_for_spawn(
 	long player_index,
 	union real_point3d const *position);
 
+/* port: why a spawn rates 0 (game_engine_get_starting_location_rating_ex),
+for TRAINING's spawn heat (spawn_heat.c) */
+enum spawn_rating_zero_reason
+{
+	_spawn_rating_rated = 0,		/* not 0 */
+	_spawn_rating_zero_game_type,	/* not one of the game type's spawns */
+	_spawn_rating_zero_vehicle,		/* a vehicle on it */
+	_spawn_rating_zero_team,		/* CTF: the other team's (or neither's) */
+	_spawn_rating_zero_enemy,		/* an enemy within 2 world units */
+	_spawn_rating_zero_teammate,	/* a teammate within 0.25 world units */
+	_spawn_rating_zero_other,		/* the gametype's own rule */
+
+	NUMBER_OF_SPAWN_RATING_ZERO_REASONS
+};
+
+real game_engine_get_distance_rating_for_spawn_ex(
+	long player_index,
+	union real_point3d const *position,
+	long ignore_unit_index,
+	short *zero_reason);
+
 void game_engine_variant_cleanup(
 	struct game_variant *variant);
 
@@ -569,6 +590,11 @@ boolean game_engine_can_score(
 real game_engine_get_starting_location_rating(
 	long player_index,
 	struct player_starting_location const *starting_location);
+real game_engine_get_starting_location_rating_ex(
+	long player_index,
+	struct player_starting_location const *starting_location,
+	long ignore_unit_index,
+	short *zero_reason);
 boolean game_engine_should_spawn_player(
 	long player_index);
 void game_engine_client_respawn_countdown(
