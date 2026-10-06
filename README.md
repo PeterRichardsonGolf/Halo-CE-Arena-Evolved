@@ -48,9 +48,9 @@ editor and in Server Setup)
 
 Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
 TIMERS shows the power list only: the next spawns of the rockets, sniper
-rifle, overshield and camo, in the top corner opposite the performance
-overlay with one view, and in the margin above or below each view's HUD in
-split screen. The match clock is its own setting (below).
+rifle, overshield and camo, in the top left corner with one view (under the
+performance overlay when that is at the top left), and along the foot of
+each view, between the motion sensor and the clock, in split screen. The match clock is its own setting (below).
 TRAINING adds, as Halo 1: NHE's Training mode did: a waypoint over each power
 item (rockets, sniper rifle, overshield, camo) from 10 seconds before it spawns
 to 20 seconds after, and green markers on the floor (or the crate or platform a spawn stands on) at the player spawns this

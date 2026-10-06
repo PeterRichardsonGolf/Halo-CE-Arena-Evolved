@@ -23,20 +23,20 @@ On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*).
 
 The power list is one line of the rockets', sniper's, overshield's and
 camo's next spawns, soonest first (entries of one class spawning together
-are one). With one or two views, small (HUD_ITEM_TIMERS_POWER_SCALE) in
-each view's top left corner, in at most half its width: at the view's top,
-under the performance overlay's line where the two would meet (main.c's
-main_framerate_extent: the overlay at the top left), and under the HUD's
-own elements in that corner (the ammo, the grenades, as hud.c saw them
-drawn: hud_item_timers_set_top_left) where it would meet them (made
-smaller to stay over them where it nearly fits), the HUD's messages under
-them moved down under it (hud_item_timers_messages_offset), as in a lower
-split-screen view, whose HUD starts at its top (the HUD's window,
-render.camera.window_bounds, is inset from the screen's edges, not from a
-split screen's middle). With three or four views, every view has the
-shorter line (a time for each group spawning together, "0:21 R/B SNIPER
-OS   0:51 ROCKETS") at its foot, centred between the motion sensor and the
-clock. A line that does not fit its room is the shorter one (entries
+are one). With one view, small (HUD_ITEM_TIMERS_POWER_SCALE) in the view's
+top left corner, in at most half its width: at the view's top, under the
+performance overlay's line where the two would meet (main.c's
+main_framerate_extent: the overlay at the top left, drawn at the list's
+scale, hud_item_timers_power_scale), and under the HUD's own elements in
+that corner (the ammo, the grenades, as hud.c saw them drawn:
+hud_item_timers_set_top_left) where it would meet them (made smaller to
+stay over them where it nearly fits), the HUD's messages under them moved
+down under it (hud_item_timers_messages_offset). With two, three or four
+views, every view has the shorter line (a time for each group spawning
+together, "0:21 R/B SNIPER OS   0:51 ROCKETS") at its foot, centred between
+the motion sensor and the clock, upper and lower views alike
+(HUD_ITEM_TIMERS_POWER_SCALE with two, HUD_ITEM_TIMERS_POWER_SCALE_SMALL
+with more). A line that does not fit its room is the shorter one (entries
 spawning together grouped), then smaller (down to
 HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE); only at the smallest are its latest
 entries left off.
@@ -117,7 +117,7 @@ one list beside them.
 #define HUD_ITEM_TIMERS_LABEL_ALPHA 0.9f	/* (a waypoint's label, over the world) */
 #define HUD_ITEM_TIMERS_LABEL_GAP 2	/* (between a waypoint's arrow and its label) */
 #define HUD_WAYPOINT_MERGE_DISTANCE 24	/* (arrows this near each other share their labels) */
-#define HUD_ITEM_TIMERS_POWER_SCALE 0.7f	/* (the power list with one or two views) */
+#define HUD_ITEM_TIMERS_POWER_SCALE 0.7f	/* (the power list with one or two views, and the overlay) */
 #define HUD_ITEM_TIMERS_POWER_SCALE_SMALL 0.6f	/* (and with three or four) */
 #define HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE 0.4f	/* (the smallest it is made to fit) */
 #define HUD_ITEM_TIMERS_POWER_WIDTH 0.5f	/* (the most of the view's width it takes in its top left corner) */
@@ -183,6 +183,14 @@ static long hud_item_timers_font_index(
 	/* (the overlay's: the HUD's smaller font, split screen's, else its own) */
 	return hud_globals->messaging.multi_player_font.index != NONE ?
 		hud_globals->messaging.multi_player_font.index : hud_globals->messaging.single_player_font.index;
+}
+
+/* the power list's scale before it is made smaller to fit, by the number
+of views: the performance overlay's too (main.c) */
+real hud_item_timers_power_scale(
+	void)
+{
+	return local_player_count() > 2 ? HUD_ITEM_TIMERS_POWER_SCALE_SMALL : HUD_ITEM_TIMERS_POWER_SCALE;
 }
 
 static long hud_item_timers_line_height(
@@ -592,10 +600,10 @@ static long hud_item_timers_power_line(
 	return hud_item_timers_line_width_scaled(font_index, line, *scale);
 }
 
-/* port: the power list's line (see this file's head): with one or two
-views, in each view's top left corner, under the performance overlay's
+/* port: the power list's line (see this file's head): with one view, in
+its top left corner, under the performance overlay's
 line where they would meet and under the HUD's own elements there (the
-ammo, the grenades) where it would meet them; with three or four, the
+ammo, the grenades) where it would meet them; with two, three or four, the
 grouped line at each view's foot between the motion sensor and the clock.
 clock_room: the room the clock takes from the view's right edge, 0 with
 none */
@@ -623,9 +631,9 @@ static void hud_item_timers_draw_powers(
 	left = HUD_ITEM_TIMERS_SIDE + area_left;
 	right = HUD_ITEM_TIMERS_SIDE + area_right;
 
-	/* (three or four views: at the foot, between the sensor and the clock,
-	centred there) */
-	if (local_player_count() > 2)
+	/* (two, three or four views: at the foot, between the sensor and the
+	clock, centred there) */
+	if (local_player_count() > 1)
 	{
 		if (in_range && hud_item_timers_motion_sensors[local_player_index].valid &&
 			hud_item_timers_motion_sensors[local_player_index].view_width == view_width &&
@@ -635,7 +643,7 @@ static void hud_item_timers_draw_powers(
 		}
 		if (clock_room > 0)
 			right = MAX(right, clock_room + HUD_ITEM_TIMERS_GAP);
-		width = hud_item_timers_power_line(font_index, view_width - left - right, HUD_ITEM_TIMERS_POWER_SCALE_SMALL,
+		width = hud_item_timers_power_line(font_index, view_width - left - right, hud_item_timers_power_scale(),
 			TRUE, line, &scale);
 		if (!width)
 			return;
@@ -646,7 +654,7 @@ static void hud_item_timers_draw_powers(
 		return;
 	}
 
-	/* (one or two views: the top left corner) */
+	/* (one view: the top left corner) */
 	width = hud_item_timers_power_line(font_index,
 		(long)((view_width - area_left - area_right) * HUD_ITEM_TIMERS_POWER_WIDTH) - HUD_ITEM_TIMERS_SIDE,
 		HUD_ITEM_TIMERS_POWER_SCALE, FALSE, line, &scale);

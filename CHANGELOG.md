@@ -34,6 +34,11 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- With two views, the power list is drawn as with three or four: the grouped
+  line at the foot of each view, centred between the motion sensor and the
+  clock, the same in the upper and the lower view (it was over the ammo in
+  the upper view and under it in the lower). One view keeps it in the top
+  left corner.
 - The scoreboard no longer shows the PLAYED / LEFT times: it is back to the
   stock layout (title, headings, rows) in every view, one column or two. The
   match clock is the corner clock alone.
