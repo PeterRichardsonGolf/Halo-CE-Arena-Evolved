@@ -61,7 +61,8 @@ each power entry's spawn point while item_timer_waypoint_shown, drawn as
 the game engine draws its goals' (game_engine_render_nav_points): occluded
 or not by a line of sight test from the player's head each frame, at the
 view's edge pointing to it when off screen. For every player (NHE turns
-them on for both teams), only while alive, as the game's nav points. Each
+them on for both teams), only while alive, as the game's nav points, and
+not while the view's scoreboard shows (game_engine_scoreboard_shown). Each
 has a label by its arrow (hud_waypoint_draw_labels): the item's name and
 the time to its spawn, the name alone once it is on the map, in its base's
 colour (item_timers.c's sides). Every arrow is drawn first; the labels are
@@ -1480,6 +1481,10 @@ void hud_draw_item_waypoints(
 	{
 		return;
 	}
+	/* (none while this view's scoreboard shows, even fading: they would be
+	drawn over its text) */
+	if (game_engine_scoreboard_shown(local_player_index) > 0.0f)
+		return;
 	font_index = hud_item_timers_font_index();
 	player_index = local_player_get_player_index(local_player_index);
 	unit_index = player_index == NONE ? NONE : player_get(player_index)->unit_index;

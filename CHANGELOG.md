@@ -27,6 +27,9 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- TRAINING's waypoints (arrows and labels) are hidden in a view while its
+  scoreboard shows, so they no longer draw over the scoreboard's text; the
+  other views keep theirs.
 - The scoreboard's times ("2:25 PLAYED · 7:35 LEFT", "PLAYED" alone without
   a time limit) keep a line of their own directly under the title in every
   view, centred over the table, in the title's font and grey (they were

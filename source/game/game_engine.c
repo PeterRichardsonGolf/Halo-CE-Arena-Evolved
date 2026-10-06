@@ -3816,6 +3816,21 @@ static void game_engine_post_rasterize_in_game(
 	return;
 }
 
+/* port: how far a local player's view's scoreboard has faded in (0 closed,
+1 shown), as game_engine_post_rasterize_in_game last drew it; 0 with no
+game */
+real game_engine_scoreboard_shown(
+	short local_player_index)
+{
+	if (!game_engine_running() || local_player_index < 0 ||
+		local_player_index >= NUMBEROF(game_engine_globals.hud_message_timers))
+	{
+		return 0.0f;
+	}
+
+	return PIN(game_engine_globals.hud_message_timers[local_player_index], 0.0f, 1.0f);
+}
+
 long game_engine_player_get_team_index(
 	long player_index)
 {

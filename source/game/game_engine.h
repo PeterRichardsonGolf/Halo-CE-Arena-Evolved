@@ -688,6 +688,10 @@ void game_engine_format_clock(
 boolean game_engine_match_clock(
 	wchar_t *string,
 	long count);
+/* port: how far a local player's view's scoreboard has faded in (0 closed,
+1 shown), as last drawn */
+real game_engine_scoreboard_shown(
+	short local_player_index);
 
 struct scenario_netgame_equipment;
 
