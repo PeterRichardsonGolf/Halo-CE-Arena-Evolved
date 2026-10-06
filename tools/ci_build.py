@@ -13,19 +13,20 @@ release build does (profile-guided optimisation needs clang 22 or later,
 and is skipped with an older one). CI_COMPILER_LAUNCHER (ccache, say) is
 passed on as --compiler-launcher.
 
-The version comes from the environment (tools/version.py), which
-ChupathingyCE's release workflows set: HALO_VERSION (0.5.0b, or
-0.5.0b-nightly.42), and HALO_RELEASE_BUILD=1 for a release (whose version
-must be VERSION's). Without them, a build is VERSION's -dev and never looks
-for updates.
+The version comes from the environment (tools/version.py), which a
+release workflow sets: HALO_VERSION (0.1.0-beta, or
+0.1.0-beta-nightly.42), and HALO_RELEASE_BUILD=1 for a release (whose
+version must be VERSION's). Without them, a build is VERSION's -dev. No
+Arena Evolved build looks for updates, a release's included (the updater
+is off: port/linux/src/updater.c).
 
-The Android app is signed with ChupathingyCE's key when
-port/android/keystore.properties is there (the release workflows write it;
-port/android/README.md): chupathingyce-android-<config>.apk. Without it
+The Android app is signed with a release key when
+port/android/keystore.properties is there (a release workflow writes it;
+port/android/README.md): arena-evolved-android-<config>.apk. Without it
 (pull requests, forks), the debug build has the runner's own key,
-chupathingyce-android-debug-testkey.apk, which installs over nothing
-signed with ChupathingyCE's key, and the release build is unsigned,
-chupathingyce-android-release-unsigned.apk.
+arena-evolved-android-debug-testkey.apk, which installs over nothing
+signed with another key, and the release build is unsigned,
+arena-evolved-android-release-unsigned.apk.
 
 The dedicated server (server-x86, server-x64, server-arm64:
 tools/server_build.py) is built against musl, so that it is one static
@@ -125,11 +126,11 @@ def main() -> int:
             (ROOT / stale).unlink(missing_ok=True)
         run([gradlew, "--console=plain", "-q", f"assemble{args.config.capitalize()}"], cwd=ROOT / "port/android")
         if (ROOT / "port/android/keystore.properties").exists():
-            apk, name = APKS[args.config], f"chupathingyce-android-{args.config}.apk"
+            apk, name = APKS[args.config], f"arena-evolved-android-{args.config}.apk"
         elif args.config == "debug":
-            apk, name = APKS["debug"], "chupathingyce-android-debug-testkey.apk"
+            apk, name = APKS["debug"], "arena-evolved-android-debug-testkey.apk"
         else:
-            apk, name = UNSIGNED_APK, "chupathingyce-android-release-unsigned.apk"
+            apk, name = UNSIGNED_APK, "arena-evolved-android-release-unsigned.apk"
         outputs = [apk]
         apk_names[apk] = name
     else:
@@ -139,7 +140,7 @@ def main() -> int:
     if server:
         return server_dist(args.platform, args.config, outputs[0])
 
-    dist = ROOT / "dist" / f"chupathingyce-{args.platform}-{args.config}"
+    dist = ROOT / "dist" / f"arena-evolved-{args.platform}-{args.config}"
     if dist.exists():
         shutil.rmtree(dist)
     dist.mkdir(parents=True)

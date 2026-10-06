@@ -5,10 +5,11 @@ name: Build
 # x86, x64 and arm64) and its container, for every pushed commit and pull
 # request, uploaded as artifacts: whether a change builds. tools/ci_build.py does each build; see it for the options.
 #
-# Releases and nightlies are not made here: ChupathingyCE's release
-# workflows build them from the versions they pin, signed, and publish them
-# to this repository's Releases (tools/version.py). These builds are
-# VERSION's -dev, and never look for updates.
+# Releases and nightlies are not made here (tools/version.py). These builds
+# are VERSION's -dev, named arena-evolved-<platform>-<configuration> (the
+# dedicated server keeps chupathingyce-server, the name its documentation
+# and container use), and never look for updates: Arena Evolved's updater
+# is off (port/linux/src/updater.c).
 #
 # Kept cheap:
 # - one job per platform builds both configurations, so its set-up (tools,
@@ -80,14 +81,14 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-linux-debug
-          path: dist/chupathingyce-linux-debug
+          name: arena-evolved-linux-debug
+          path: dist/arena-evolved-linux-debug
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-linux-release
-          path: dist/chupathingyce-linux-release
+          name: arena-evolved-linux-release
+          path: dist/arena-evolved-linux-release
           retention-days: 3
 
   linux64:
@@ -120,14 +121,14 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-linux64-debug
-          path: dist/chupathingyce-linux64-debug
+          name: arena-evolved-linux64-debug
+          path: dist/arena-evolved-linux64-debug
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-linux64-release
-          path: dist/chupathingyce-linux64-release
+          name: arena-evolved-linux64-release
+          path: dist/arena-evolved-linux64-release
           retention-days: 3
 
   server:
@@ -286,10 +287,9 @@ jobs:
 
       # No keystore.properties here (pull requests and forks have no
       # secrets): the debug app has the runner's own debug key
-      # (chupathingyce-android-debug-testkey.apk), which does not install
-      # over ChupathingyCE's builds, and the release app is unsigned, only
-      # checked to build. The release workflows (ChupathingyCE/command) sign
-      # both with ChupathingyCE's key (port/android/README.md).
+      # (arena-evolved-android-debug-testkey.apk), which does not install
+      # over a build signed with another key, and the release app is
+      # unsigned, only checked to build (port/android/README.md).
       - name: Debug
         run: python3 tools/ci_build.py android debug
 
@@ -301,14 +301,14 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-android-debug-testkey
-          path: dist/chupathingyce-android-debug
+          name: arena-evolved-android-debug-testkey
+          path: dist/arena-evolved-android-debug
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-android-release-unsigned
-          path: dist/chupathingyce-android-release
+          name: arena-evolved-android-release-unsigned
+          path: dist/arena-evolved-android-release
           retention-days: 3
 
   windows:
@@ -359,14 +359,14 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-windows-debug
-          path: dist/chupathingyce-windows-debug
+          name: arena-evolved-windows-debug
+          path: dist/arena-evolved-windows-debug
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-windows-release
-          path: dist/chupathingyce-windows-release
+          name: arena-evolved-windows-release
+          path: dist/arena-evolved-windows-release
           retention-days: 3
 
   windows64:
@@ -418,14 +418,14 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-windows64-debug
-          path: dist/chupathingyce-windows64-debug
+          name: arena-evolved-windows64-debug
+          path: dist/arena-evolved-windows64-debug
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-windows64-release
-          path: dist/chupathingyce-windows64-release
+          name: arena-evolved-windows64-release
+          path: dist/arena-evolved-windows64-release
           retention-days: 3
 
   macos:
@@ -461,17 +461,17 @@ jobs:
 
       - name: Package
         run: |
-          tar -C dist -cf chupathingyce-macos-debug.tar chupathingyce-macos-debug
-          tar -C dist -cf chupathingyce-macos-release.tar chupathingyce-macos-release
+          tar -C dist -cf arena-evolved-macos-debug.tar arena-evolved-macos-debug
+          tar -C dist -cf arena-evolved-macos-release.tar arena-evolved-macos-release
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-macos-debug
-          path: chupathingyce-macos-debug.tar
+          name: arena-evolved-macos-debug
+          path: arena-evolved-macos-debug.tar
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chupathingyce-macos-release
-          path: chupathingyce-macos-release.tar
+          name: arena-evolved-macos-release
+          path: arena-evolved-macos-release.tar
           retention-days: 3

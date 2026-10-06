@@ -283,8 +283,8 @@ Where each build gets its signature:
   `keystore.properties` if it is present.
 - Pull requests (`.github/workflows/build.yml` of this repository): there
   is no key, because forks have no secrets. The artifacts are
-  `chupathingyce-android-debug-testkey.apk` (the debug key of the runner)
-  and `chupathingyce-android-release-unsigned.apk`. A build with the debug
+  `arena-evolved-android-debug-testkey.apk` (the debug key of the runner)
+  and `arena-evolved-android-release-unsigned.apk`. A build with the debug
   key of the runner does not install over a build with ChupathingyCE's key.
 - Nightly builds and releases (the workflows of ChupathingyCE/command):
   the workflow writes `keystore.properties` from its secrets, signs the

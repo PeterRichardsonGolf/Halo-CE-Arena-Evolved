@@ -46,8 +46,8 @@ Ubuntu 25.04 or later) instead of the 32-bit ones, and the 64-bit OpenGL and
 sound libraries to start. An SDL3 built by hand is found through
 `LIBRARY_PATH` when linking and `LD_LIBRARY_PATH` when starting. It is not
 optimised with a profile (the committed profiles are the 32-bit build's).
-Its releases are their own download, `chupathingyce-linux64-release.zip`,
-which its self-updater asks for. It plays Halo PC's Custom Edition maps
+Its releases are their own download, `arena-evolved-linux64-release.zip`.
+It plays Halo PC's Custom Edition maps
 (`maps/ce/`) and plays with the 32-bit builds and the other ports over the
 network, and it is a dedicated server too (`server/README.md`).
 
