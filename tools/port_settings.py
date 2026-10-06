@@ -255,7 +255,7 @@ STRING_OVERRIDES = {
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Mods, and how the game plays:\\nfall damage and more.\\n\\nProfile:",
-        "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
+        "Change the profile's free-for-\\nall color: in a match, from the\\nnext time you join a game.\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
     ],
 }

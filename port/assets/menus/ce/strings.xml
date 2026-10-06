@@ -1334,7 +1334,7 @@
 		<string text="Choose a window or the full\nscreen, the frame rate and more.\n\nProfile:"/>
 		<string text="Internet play, updates and the\nmultiplayer HUD.\n\nProfile:"/>
 		<string text="Mods, and how the game plays:\nfall damage and more.\n\nProfile:"/>
-		<string text="Change the current profile's\nfree-for-all multiplayer color.\n\nProfile:"/>
+		<string text="Change the profile's free-for-\nall color: in a match, from the\nnext time you join a game.\nProfile:"/>
 		<string text="Halo: Combat Evolved, the Xbox\ngame, on this computer.\n\nProfile:"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options">
