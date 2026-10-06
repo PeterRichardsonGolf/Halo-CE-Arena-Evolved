@@ -38,8 +38,9 @@ ninja) and these items:
 
 `ninja android` builds only the game image and the native libraries.
 
-The app is `dev.horrible.chupathingyce`, and its name on the device is
-ChupathingyCE. Refer to "App ID, signing and versions".
+The app is `dev.horrible.chupathingyce` (ChupathingyCE's ID, kept so its
+data folder stays where it was), and its name on the device is Arena
+Evolved. Refer to "App ID, signing and versions".
 
 ## Game data
 

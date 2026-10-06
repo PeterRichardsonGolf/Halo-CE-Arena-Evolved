@@ -10,6 +10,7 @@ and the debug keyboard that the game's console reads.
 */
 
 #include "platform.h"
+#include "halo_product.h"
 #include "sdl_platform.h"
 #include "gl.h"
 #include "port_config.h"
@@ -105,7 +106,10 @@ BOOL platform_sdl_initialize(void)
 	one already running, and goes */
 	if (p2p_hand_off_invite())
 		exit(EXIT_SUCCESS);
-	SDL_SetHint(SDL_HINT_APP_NAME, "ChupathingyCE");
+	/* "Halo CE: Arena Evolved 0.1.0-beta (ChupathingyCE 0.6.7b, OpenCE
+	build-128)": this build, and what it is built on */
+	platform_log("%s %s (%s)", HALO_PRODUCT_NAME, updater_version(), HALO_UPSTREAM_BASE);
+	SDL_SetHint(SDL_HINT_APP_NAME, HALO_PRODUCT_NAME);
 #ifdef __APPLE__
 	/* closing the window is the event's to decide (platform_pump_events:
 	Command-W does not quit) */
@@ -221,7 +225,7 @@ static BOOL data_extract(const char *image, const char *destination, char *error
 	/* (waited for through extraction.finished; the Windows port's threads
 	cannot be joined) */
 	pthread_detach(thread);
-	window = SDL_CreateWindow("ChupathingyCE", 640, 150, 0);
+	window = SDL_CreateWindow(HALO_PRODUCT_NAME, 640, 150, 0);
 	if (window)
 	{
 		renderer = SDL_CreateRenderer(window, NULL);
@@ -344,7 +348,7 @@ BOOL platform_offer_game_data(const char *destination)
 		destination);
 	for (;;)
 	{
-		SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, NULL, "ChupathingyCE", message, 2, buttons, NULL };
+		SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, NULL, HALO_PRODUCT_NAME, message, 2, buttons, NULL };
 		char image[1024];
 		char error[512];
 		int answer = 0;
@@ -364,7 +368,7 @@ BOOL platform_offer_game_data(const char *destination)
 			return TRUE;
 		}
 		platform_log("extraction failed: %s", error);
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ChupathingyCE", error, NULL);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, HALO_PRODUCT_NAME, error, NULL);
 	}
 }
 #endif
@@ -753,8 +757,8 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 	setenv("mesa_glthread", "true", 0);
 #endif
 
-	/* "ChupathingyCE 0.5.0b" */
-	snprintf(title, sizeof(title), "ChupathingyCE %s", updater_version());
+	/* "Halo CE: Arena Evolved 0.1.0-beta" */
+	snprintf(title, sizeof(title), "%s %s", HALO_PRODUCT_NAME, updater_version());
 #ifdef HALO_ANDROID
 	{
 		int scale = (int)config_integer("display.window_scale");

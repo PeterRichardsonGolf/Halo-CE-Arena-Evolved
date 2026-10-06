@@ -8,7 +8,7 @@ C library, SDL3 and FFmpeg from Homebrew, and the macOS-only units in
 port/macos/src.
 
 The result is build/macos/halo and the application bundle
-build/macos/ChupathingyCE.app. See port/macos/README.md.
+build/macos/ArenaEvolved.app. See port/macos/README.md.
 """
 
 import os
@@ -180,7 +180,7 @@ def generate_macos_build(n: Writer, sln: Any) -> None:
         n.build(outputs=output, rule="macos_lipo", inputs=slices)
 
     # the application bundle, which macOS shows with the game's name and icon
-    bundle = build_dir / "ChupathingyCE.app"
+    bundle = build_dir / "ArenaEvolved.app"
     n.rule(
         name="macos_bundle",
         command=(f"$python {PORT_DIR / 'bundle.py'} --executable $in --output {_quote(bundle)} --version {version()}"

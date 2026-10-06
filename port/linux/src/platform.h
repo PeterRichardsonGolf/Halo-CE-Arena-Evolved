@@ -103,7 +103,7 @@ out of an Xbox disc image into destination (sdl_platform.c), and quits if
 the player declines; nonzero once destination has one */
 BOOL platform_offer_game_data(const char *destination);
 /* the macOS application's folder for its data and settings, when the game
-runs as an application (ChupathingyCE.app): ~/Library/Application
+runs as an application (ArenaEvolved.app): ~/Library/Application
 Support/ChupathingyCE, made if need be, into path; 0 otherwise (and on
 other systems). An application's own files are not written: it is signed,
 and may be where its player cannot write (port_config.c) */

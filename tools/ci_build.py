@@ -59,7 +59,7 @@ OUTPUTS = {
     "windows64": ["build/windows64/halo.exe", "build/windows64/SDL3.dll"],
     "android": [],  # the APK, below
     # the application (universal and self-contained: --portable), whole
-    "macos": ["build/macos/ChupathingyCE.app"],
+    "macos": ["build/macos/ArenaEvolved.app"],
     # the dedicated server (ninja server-<arch>; tools/server_build.py)
     "server-x86": ["build/server-x86/chupathingyce-server"],
     "server-x64": ["build/server-x64/chupathingyce-server"],

@@ -64,7 +64,7 @@ void host_fatal(const char *format, ...)
 	vsnprintf(message, sizeof(message), format, arguments);
 	va_end(arguments);
 	__android_log_write(ANDROID_LOG_FATAL, "halo", message);
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ChupathingyCE", message, NULL);
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Halo CE: Arena Evolved", message, NULL);
 	_exit(1);
 }
 
