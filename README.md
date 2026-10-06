@@ -178,10 +178,10 @@ folder (about 2 GB) out of it.
 
 1. Start the game and point it at your Halo disc image (see above).
 2. The menus are the PC version's (`display.menus` in `config.toml`):
-   that's where Arena Evolved's settings
-   live — Settings > Game Options (callouts, voice, mods, campaign rules),
-   Settings > Video (performance overlay, HUD area, match clock), and in a
-   gametype's options, ARENA OPTIONS and INDICATOR OPTIONS.
+   that's where Arena Evolved's settings live: Settings > Game Options
+   (callouts, voice, mods, campaign rules, the match clock, HUD area),
+   Settings > Video (the performance overlay), and in a gametype's options,
+   ARENA OPTIONS and INDICATOR OPTIONS.
 3. Multiplayer > Create Game > LAN, pick a map and one of the AE gametypes
    (in the gametype list's CUSTOM bank). For split screen, press START on
    each extra controller in the lobby.
