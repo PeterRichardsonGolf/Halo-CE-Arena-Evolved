@@ -1652,6 +1652,9 @@ static void hud_draw_bitmap_internal(
 	return;
 }
 
+static void hud_top_left_extent_add(short corner, point2d const *point, real_rectangle2d const *bounds,
+	real_vector2d const *xy_scale);
+
 static void hud_draw_bitmap_with_meter(
 	void *meter_parameters,
 	struct bitmap_data const *bitmap,
@@ -1709,6 +1712,7 @@ static void hud_draw_bitmap_with_meter(
 		clip,
 		&bounds,
 		is_interface_bitmap);
+	hud_top_left_extent_add(absolute_placement->corner, &point, &bounds, &xy_scale);
 	hud_draw_bitmap_internal(
 		meter_parameters,
 		bitmap,
@@ -1722,6 +1726,71 @@ static void hud_draw_bitmap_with_meter(
 	match_assert_stack_frame("c:\\halo\\SOURCE\\interface\\hud_draw.c", 814);
 
 	return;
+}
+
+/* port: the top left corner's elements' extent (hud_top_left_extent_begin,
+_end), gathered from the elements drawn meanwhile anchored there whose
+middle is in the top left quarter of the HUD's window and that are smaller
+than half of it (not an overlay over all of it) */
+static boolean hud_top_left_tracking = FALSE;
+static boolean hud_top_left_found = FALSE;
+static rectangle2d hud_top_left_bounds;
+
+void hud_top_left_extent_begin(
+	void)
+{
+	hud_top_left_tracking = TRUE;
+	hud_top_left_found = FALSE;
+}
+
+boolean hud_top_left_extent_end(
+	rectangle2d *result)
+{
+	hud_top_left_tracking = FALSE;
+	if (hud_top_left_found)
+		*result = hud_top_left_bounds;
+
+	return hud_top_left_found;
+}
+
+static void hud_top_left_extent_add(
+	short corner,
+	point2d const *point,
+	real_rectangle2d const *bounds,
+	real_vector2d const *xy_scale)
+{
+	rectangle2d drawn;
+	rectangle2d window;
+	long x0, x1, y0, y1;
+
+	if (!hud_top_left_tracking || corner != _hud_anchor_top_left)
+		return;
+	x0 = point->x + fast_ftol(MIN(bounds->x0 * xy_scale->i, bounds->x1 * xy_scale->i));
+	x1 = point->x + fast_ftol(MAX(bounds->x0 * xy_scale->i, bounds->x1 * xy_scale->i));
+	y0 = point->y + fast_ftol(MIN(bounds->y0 * xy_scale->j, bounds->y1 * xy_scale->j));
+	y1 = point->y + fast_ftol(MAX(bounds->y0 * xy_scale->j, bounds->y1 * xy_scale->j));
+	window = render.camera.window_bounds;
+	offset_rectangle2d(&window, -render.camera.viewport_bounds.x0, -render.camera.viewport_bounds.y0);
+	if (x1 <= x0 || y1 <= y0 ||
+		2 * (x1 - x0) > window.x1 - window.x0 || 2 * (y1 - y0) > window.y1 - window.y0 ||
+		(x0 + x1) / 2 >= (window.x0 + window.x1) / 2 || (y0 + y1) / 2 >= (window.y0 + window.y1) / 2)
+	{
+		return;
+	}
+	drawn.x0 = (short)x0;
+	drawn.x1 = (short)x1;
+	drawn.y0 = (short)y0;
+	drawn.y1 = (short)y1;
+	if (!hud_top_left_found)
+		hud_top_left_bounds = drawn;
+	else
+	{
+		hud_top_left_bounds.x0 = MIN(hud_top_left_bounds.x0, drawn.x0);
+		hud_top_left_bounds.x1 = MAX(hud_top_left_bounds.x1, drawn.x1);
+		hud_top_left_bounds.y0 = MIN(hud_top_left_bounds.y0, drawn.y0);
+		hud_top_left_bounds.y1 = MAX(hud_top_left_bounds.y1, drawn.y1);
+	}
+	hud_top_left_found = TRUE;
 }
 
 /* port: xbox_textures.c's: the columns of a texture's first level that show
@@ -2033,6 +2102,7 @@ void hud_draw_bitmap_direct(
 		clip,
 		&bounds,
 		is_interface_bitmap);
+	hud_top_left_extent_add(placement, point, &bounds, &xy_scale);
 	hud_draw_bitmap_internal(
 		NULL,
 		bitmap,

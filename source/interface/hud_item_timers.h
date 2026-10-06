@@ -19,6 +19,13 @@ void hud_item_timers_set_motion_sensor(short local_player_index, rectangle2d con
 /* where hud_unit.c drew the player's shield and health meters (the view's
 coordinates), whose right edge MATCH CLOCK's corner lines up with */
 void hud_item_timers_set_meters(short local_player_index, rectangle2d const *bounds);
+/* where the weapon's and unit's HUD drew their elements in the top left
+corner (the view's coordinates; NULL for none), which the power list keeps
+clear of */
+void hud_item_timers_set_top_left(short local_player_index, rectangle2d const *bounds);
+/* how far the power list moves the HUD's messages down in the view this
+frame (hud_messaging.c; read once) */
+short hud_item_timers_messages_offset(short local_player_index);
 /* whether MATCH CLOCK's or CAMPAIGN TIMER's clock is drawn now (hud_unit.c
 finds the meters only for it) */
 boolean hud_item_timers_clock_shown(void);

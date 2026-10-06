@@ -94,6 +94,9 @@ void hud_broadcast_team_message(
 	wchar_t const *message);
 void hud_messaging_update(
 	short local_player_index);
+/* port: the top of the messages' first line in the view (hud_messaging.c) */
+short hud_messaging_top(
+	short local_player_index);
 void hud_set_state_message(
 	short local_player_index,
 	short message_index);

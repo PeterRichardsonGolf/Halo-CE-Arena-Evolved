@@ -129,6 +129,7 @@ symbols in this file:
 #include "bitmaps/bitmap_color_conversion.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "interface/hud_item_timers.h"
 #include "interface/hud_messaging.h"
 #include "interface/interface.h"
 #include "interface/ui_widget.h"
@@ -1359,6 +1360,29 @@ static long compare_messages(
 	return difference;
 }
 
+/* port: the top of the HUD's messages' first line in this local player's
+view (the view's coordinates), as hud_messaging_update places it: the power
+list under the HUD's top left elements keeps above it (hud_item_timers.c) */
+short hud_messaging_top(
+	short local_player_index)
+{
+	boolean split_screen = hud_split_screen_layout();
+	point2d screen_point;
+
+	if (!hud_msg_def)
+		return SHORT_MAX;
+	hud_calculate_point(
+		local_player_index,
+		&hud_msg_def->absolute_placement,
+		&hud_msg_def->placement,
+		NULL,
+		split_screen,
+		0.0f,
+		&screen_point);
+
+	return (short)(screen_point.y - (split_screen ? split_screen_hud_message_offset : 0));
+}
+
 void hud_messaging_update(
 	short local_player_index)
 {
@@ -1391,7 +1415,9 @@ void hud_messaging_update(
 			split_screen,
 			0.0f,
 			&screen_point);
-		line_top = screen_point.y;
+		/* port: under the power list where it is under the HUD's top left
+		elements (hud_item_timers.c) */
+		line_top = (short)(screen_point.y + hud_item_timers_messages_offset(local_player_index));
 		font = font_definition_get(font_index);
 		if (split_screen)
 		{

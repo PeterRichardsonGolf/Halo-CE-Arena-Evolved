@@ -86,6 +86,7 @@ symbols in this file:
 #include "game/players.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "interface/hud_draw.h"
 #include "interface/hud_item_timers.h"
 #include "interface/hud_messaging.h"
 #include "interface/hud_unit.h"
@@ -1391,10 +1392,18 @@ void hud_draw_screen(
 				perspective != _director_perspective_scripted &&
 				player->unit_index != NONE)
 			{
+				rectangle2d top_left;
+
+				/* port: where the weapon's and unit's HUD have elements in the
+				top left corner (the ammo, the grenades), which the power list
+				keeps clear of (hud_item_timers.c) */
+				hud_top_left_extent_begin();
 				hud_render_weapon_interface(player);
 				hud_show_action_response(player_index);
 				hud_play_unit_sounds(player, hud_scripted_globals->show_hud);
 				hud_render_unit_interface(player);
+				hud_item_timers_set_top_left(render.local_player_index,
+					hud_top_left_extent_end(&top_left) ? &top_left : NULL);
 				hud_render_nav_points(render.local_player_index);
 				/* port: the gametype's TRAINING's waypoints over the power
 				items' spawns, as nav points (hud_item_timers.c) */

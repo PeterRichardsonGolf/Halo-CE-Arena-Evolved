@@ -145,6 +145,13 @@ boolean hud_static_element_bounds(
 	struct static_hud_element_definition const *static_element,
 	short draw_flags,
 	rectangle2d *result);
+/* port: the extent of the HUD's elements anchored to its top left corner
+(the ammo and grenades) drawn between begin and end in this view (the
+view's coordinates); end returns FALSE for none */
+void hud_top_left_extent_begin(
+	void);
+boolean hud_top_left_extent_end(
+	rectangle2d *result);
 /* port: a new map: hud_meter_element_bounds' remembered texels forgotten */
 void hud_element_bounds_new_map(
 	void);

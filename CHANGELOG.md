@@ -27,6 +27,15 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- The power list (TIMERS and TRAINING, "SNIPER 0:22   CAMO 0:52") moves:
+  with one or two players it is small, in the top left corner of each view
+  (under the performance overlay when that is at the top left, clear of the
+  ammo and grenade display: under it in a lower split-screen view, which
+  moves the HUD's messages down under the list); with three or four players
+  every view has the short grouped line ("0:21 R/B SNIPER OS   0:51 ROCKETS")
+  at its foot, between the motion sensor and the clock. A line too long for
+  its room is grouped, then made smaller; entries are no longer left off
+  (only at the smallest size, as a last resort).
 - TRAINING's waypoints (arrows and labels) are hidden in a view while its
   scoreboard shows, so they no longer draw over the scoreboard's text; the
   other views keep theirs.
