@@ -1,10 +1,24 @@
 # Changelog
 
 What has changed in Halo CE: Arena Evolved, newest first. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). There are no
-releases yet, so the sections are dated.
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
+release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
-## Unreleased
+## 0.1.0-beta - 2026-10-05
+
+Arena Evolved's first pre-release, built on ChupathingyCE 0.6.7b and OpenCE
+build-128.
+
+### Changed
+- Arena Evolved has its own name and version: the window's title, the
+  dialogs and the start-up log say "Halo CE: Arena Evolved 0.1.0-beta" (the
+  log also names the upstream base), and the downloads are
+  `arena-evolved-<platform>-<configuration>`. Save folders, `config.toml`
+  and network play are unchanged, and it still plays with OpenCE and
+  ChupathingyCE of the same network version.
+- The self-updater is off: no build of Arena Evolved looks for, offers or
+  installs a new version (and never a ChupathingyCE one). New versions are
+  on the Releases page.
 
 ### Added
 - MULTIPLAYER GAME TIMER (Settings > Game Options, `display.match_clock`)

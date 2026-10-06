@@ -15,9 +15,9 @@ port of the Halo: Combat Evolved decompilation, by way of
 [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce), and follows
 both closely.
 
-> **Status: early and in active development.** There are no releases yet;
-> build it yourself (below). The Linux 64-bit build is the one played and
-> tested; the other platforms build from the same code but are untested here.
+> **Status: early and in active development.** The first pre-release is
+> 0.1.0-beta (below). The Linux 64-bit build is the one played and tested;
+> the other platforms build from the same code but are untested here.
 
 What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
 
@@ -164,6 +164,20 @@ Next up: a TRAINING view of the game's own spawn choice (spawn points lit by
 how likely you are to spawn there), a side-by-side split-screen layout, a
 per-player in-game menu and HUD, and more of our own voice for the callouts
 (Cori, beta, ships now), calling every item.
+
+## Download
+
+Releases are on the
+[Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
+page: 0.1.0-beta, built on ChupathingyCE 0.6.7b and OpenCE build-128, is
+the first, a pre-release. Each platform is a zip of its own,
+`arena-evolved-<platform>-release.zip`; `arena-evolved-linux64-release.zip`
+(Linux, 64-bit) is the one played and tested. The dedicated server keeps
+its own name, `chupathingyce-server-linux-<arch>`
+([server/README.md](server/README.md)).
+
+Arena Evolved does not update itself: get a new version from the Releases
+page. Its window's title and its start-up log say which version it is.
 
 ## You need your own copy of Halo
 
