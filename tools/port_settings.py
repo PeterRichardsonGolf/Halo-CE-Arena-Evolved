@@ -26,6 +26,7 @@ MATCH_CLOCKS = [("OFF", "off"), ("TIME REMAINING", "down"), ("TIME ELAPSED", "up
 HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
 SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
 CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
+SPAWN_HEATS = [("OFF", "off"), ("MINE", "mine"), ("ENEMY", "enemy")]
 CALLOUT_DETAILS = [("MINIMAL", "minimal"), ("STANDARD", "standard"), ("VERBOSE", "verbose")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
@@ -106,8 +107,10 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (24, not 30: eleven rows, above the help line, as video_settings)
+        # (24, not 30: twelve rows, with the help line as low as
+        # video_settings' (and 2 lower: the last row ends at 365))
         "spacing": 24,
+        "help_top": 366,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -144,6 +147,12 @@ SCREENS = {
             # read: menu_files.c)
             ("VOICE:", "game.callout_voice", [("NHE", "nhe")],
              "The callouts' voice: a folder of voices/, next\nto maps/.", None),
+            # (TRAINING's spawn markers' colours: spawn_heat.c; a help for
+            # each value)
+            ("SPAWN HEAT:", "display.spawn_heat", SPAWN_HEATS,
+             ["TRAINING's spawn markers stay plain green.",
+              "TRAINING's spawn markers glow where you would\nspawn next: hot is likely, dark red can't.",
+              "TRAINING's spawn markers glow where the other\nteam would spawn next (in team games)."], None),
         ],
     },
     "mouse_settings": {

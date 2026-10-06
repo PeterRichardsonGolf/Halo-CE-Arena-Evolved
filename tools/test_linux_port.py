@@ -394,3 +394,43 @@ def test_callouts_plan(tmp_path):
     result = subprocess.run([str(program), "port/assets/voices/cori"], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout[-4000:]
     assert "PASS" in result.stdout
+
+
+def build_spawn_heat_check(tmp_path: Path, game_engine: str = "source/game/game_engine.c",
+                           base: bool = False) -> Path:
+    """tools/spawn_heat_check.c with source/game/spawn_heat.c, game_engine.c
+    (or another, base: the stock one, without spawn_heat.c) and the game's
+    maths (port/third_party/musl-math: halo_pow and the rest), built with
+    the flags ninja gives them"""
+    musl = sorted(Path("port/third_party/musl-math/src").glob("*.c"))
+    musl_flags = _ninja_compile_flags(f"build/linux/obj/{musl[0].with_suffix('.o')}")
+    objects = tmp_path / "musl"
+    objects.mkdir()
+    for source in musl:
+        built = subprocess.run(["clang", *musl_flags, "-O1", "-c", str(source), "-o",
+                                str(objects / source.with_suffix(".o").name)], capture_output=True, text=True)
+        assert built.returncode == 0, built.stderr[-4000:]
+    flags = _ninja_compile_flags("build/linux/obj/source/game/spawn_heat.o")
+    program = tmp_path / ("spawn_heat_check_base" if base else "spawn_heat_check")
+    sources = (["-DSPAWN_HEAT_CHECK_BASE", "tools/spawn_heat_check.c", game_engine] if base else
+               ["tools/spawn_heat_check.c", "source/game/spawn_heat.c", game_engine])
+    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-Wl,--unresolved-symbols=ignore-all", "-o",
+                            str(program), *sources, *(str(path) for path in sorted(objects.glob("*.o")))],
+                           capture_output=True, text=True)
+    assert built.returncode == 0, built.stderr[-4000:]
+    return program
+
+
+def test_spawn_heat(tmp_path):
+    """TRAINING's spawn heat (source/game/spawn_heat.c,
+    tools/spawn_heat_check.c): the spawn chances worked out as
+    find_best_starting_location_index's draw picks (its examples, sums,
+    order, and the engine's own draw run 200000 times), and the spawn
+    ratings bit for bit the stock rules, with a living player's own unit
+    left out the same as if dead, and why a spawn rates 0"""
+    if not shutil.which("clang") or not shutil.which("ninja") or not Path("build.ninja").is_file():
+        pytest.skip("needs clang, ninja and a configured build")
+    program = build_spawn_heat_check(tmp_path)
+    result = subprocess.run([str(program)], capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stdout[-4000:]
+    assert "PASS" in result.stdout

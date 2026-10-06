@@ -6,7 +6,16 @@ mode's green floor markers (its spawn_marker scenery, created by its map
 scripts), on any map: one at each player starting location the game type
 uses (scenario players matching game_engine_matches_game_type, as
 game_engine_get_starting_location_rating takes them), GREEN for every spawn
-as NHE's (team colours are for later).
+as NHE's; or with SPAWN HEAT (display.spawn_heat, spawn_heat.c) each
+coloured by how likely it is to be picked next for the view's player (or
+an enemy): by its chance over the likeliest's, t, from cold blue-grey
+(t 0) through green and yellow to hot orange-red (t 1), alpha 0.35 + 0.5 t,
+the one likeliest pulsing slowly; dark red with a cross through the chevron
+(alpha 0.3) for one that can't be picked now (an enemy within 2 world
+units, a teammate on it, a vehicle on it), the other team's CTF spawns
+faint in their team's colour (alpha 0.15). A player's real spawn flashes:
+a bright ring growing out from its spawn's for 1.5 seconds (the team's
+colour, white without teams).
 
 Each is a flat ring with a chevron in it pointing the way the spawn faces,
 lying on the floor (a short collision ray down from the spawn point finds
@@ -40,6 +49,7 @@ networked.
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/item_timers.h"
+#include "game/spawn_heat.h"
 #include "math/real_math.h"
 #include "networking/network_connection.h"
 #include "physics/collisions.h"
@@ -59,13 +69,42 @@ networked.
 #define SPAWN_MARKER_CHEVRON_TRIANGLES 2
 #define SPAWN_MARKER_TRIANGLES (2 * SPAWN_MARKER_SEGMENTS + SPAWN_MARKER_CHEVRON_TRIANGLES)
 #define SPAWN_MARKER_VERTICES (SPAWN_MARKER_TRIANGLES * NUMBER_OF_VERTICES_PER_TRIANGLE)
+/* SPAWN HEAT's cross through a spawn that can't be picked: two bars */
+#define SPAWN_MARKER_CROSS_TRIANGLES 4
+#define SPAWN_MARKER_CROSS_HALF_LENGTH 0.26f
+#define SPAWN_MARKER_CROSS_HALF_WIDTH 0.035f
+/* a real spawn's flash: a ring (as the marker's) growing from the marker's
+size to this, as wide as this, fading out */
+#define SPAWN_MARKER_FLASH_TRIANGLES (2 * SPAWN_MARKER_SEGMENTS)
+#define SPAWN_MARKER_FLASH_RADIUS 1.6f
+#define SPAWN_MARKER_FLASH_WIDTH 0.12f
+#define SPAWN_MARKER_MAXIMUM_FLASHES 4
 
-/* the most markers a view draws (its one draw's 48 * 102 vertices): within
-a window's share of the frame's debug vertices in a four-way split screen
-(24576 / 4, rasterizer_xbox_draw_primitives.c), with room left for the
-debug geometry's own; more spawns than that within SPAWN_MARKER_RANGE are
-left out (the latest) */
+/* the most vertices a view draws (its one draw's: 48 plain markers of 102):
+within a window's share of the frame's debug vertices in a four-way split
+screen (24576 / 4, rasterizer_xbox_draw_primitives.c), with room left for
+the debug geometry's own; more spawns than fit within SPAWN_MARKER_RANGE
+are left out (the latest; SPAWN HEAT's flashes go first) */
 #define SPAWN_MARKER_MAXIMUM_DRAWN 48
+#define SPAWN_MARKER_MAXIMUM_VERTICES (SPAWN_MARKER_MAXIMUM_DRAWN * SPAWN_MARKER_VERTICES)
+
+/* SPAWN HEAT's colours: the scale's stops (t, red, green, blue), dark red
+for a spawn that can't be picked, the teams' (red 0, blue 1) */
+static real const spawn_heat_scale[][4] =
+{
+	{ 0.0f, 0.55f, 0.66f, 0.85f },	/* cold blue-grey */
+	{ 0.4f, 0.15f, 0.95f, 0.30f },	/* green */
+	{ 0.7f, 1.00f, 0.88f, 0.10f },	/* yellow */
+	{ 1.0f, 1.00f, 0.30f, 0.05f },	/* hot orange-red */
+};
+#define SPAWN_HEAT_ALPHA_COLD 0.35f
+#define SPAWN_HEAT_ALPHA_HOT_EXTRA 0.5f
+#define SPAWN_HEAT_ZERO_ALPHA 0.3f
+#define SPAWN_HEAT_OTHER_TEAM_ALPHA 0.15f
+/* the likeliest spawn's pulse: its alpha from all of it to this part and
+back, once in this many ticks (1.6 s) */
+#define SPAWN_HEAT_PULSE_LOW 0.55f
+#define SPAWN_HEAT_PULSE_TICKS 48
 
 /* the floor is looked for from this far over the spawn point to this far
 under it */
@@ -84,7 +123,11 @@ void platform_log(char const *format, ...);
 static void spawn_marker_floor(real_point3d const *position, real_point3d *floor, real_vector3d *normal);
 static void spawn_marker_point(real_point3d const *center, real_vector3d const *forward,
 	real_vector3d const *left, real x, real y, real_point3d *point);
-static long spawn_marker_build(struct player_starting_location const *location, real_point3d *points);
+static long spawn_marker_build(struct player_starting_location const *location, boolean cross, real_point3d *points);
+static long spawn_marker_flash_build(struct player_starting_location const *location, real age, real_point3d *points);
+static void spawn_marker_heat_color(struct spawn_heat_view const *heat, long index, real_argb_color *color,
+	boolean *cross);
+static void spawn_marker_team_color(short team_index, real_argb_color *color);
 
 /* ---------- globals */
 
@@ -97,8 +140,8 @@ static real spawn_marker_ring[SPAWN_MARKER_SEGMENTS + 1][2];
 static boolean spawn_marker_ring_ready = FALSE;
 
 /* one view's markers, drawn in one call */
-static real_point3d spawn_marker_points[SPAWN_MARKER_MAXIMUM_DRAWN * SPAWN_MARKER_VERTICES];
-static pixel32 spawn_marker_colors[SPAWN_MARKER_MAXIMUM_DRAWN * SPAWN_MARKER_VERTICES];
+static real_point3d spawn_marker_points[SPAWN_MARKER_MAXIMUM_VERTICES];
+static pixel32 spawn_marker_colors[SPAWN_MARKER_MAXIMUM_VERTICES];
 
 /* ---------- public code */
 
@@ -114,6 +157,11 @@ void render_spawn_markers(
 	short local_player_index)
 {
 	struct scenario *scenario;
+	struct spawn_heat_view const *heat;
+	struct spawn_heat_flash flashes[SPAWN_HEAT_MAXIMUM_FLASHES];
+	short flash_count;
+	short flash_index;
+	short flashes_drawn = 0;
 	boolean shown;
 	short in_range = 0;
 	long vertex_count = 0;
@@ -140,6 +188,44 @@ void render_spawn_markers(
 		}
 
 		scenario = global_scenario_get();
+		heat = spawn_heat_get_view(local_player_index);
+
+		/* SPAWN HEAT's flashes of real spawns, first (those in range, at
+		most SPAWN_MARKER_MAXIMUM_FLASHES) */
+		flash_count = spawn_heat_get_flashes(flashes, SPAWN_HEAT_MAXIMUM_FLASHES);
+		for (flash_index = 0; flash_index < flash_count; flash_index++)
+		{
+			struct player_starting_location const *location;
+			real_argb_color color;
+			real distance;
+			pixel32 pixel;
+			long built;
+			long vertex_index;
+
+			if (flashes[flash_index].spawn_index >= scenario->players.count)
+				continue;
+			location = TAG_BLOCK_GET_ELEMENT(&scenario->players, flashes[flash_index].spawn_index,
+				struct player_starting_location);
+			distance = distance3d(&location->position, &render.camera.position);
+			if (distance >= SPAWN_MARKER_RANGE || flashes_drawn >= SPAWN_MARKER_MAXIMUM_FLASHES)
+				continue;
+			if (vertex_count + SPAWN_MARKER_FLASH_TRIANGLES * NUMBER_OF_VERTICES_PER_TRIANGLE >
+				(long)NUMBEROF(spawn_marker_points))
+			{
+				continue;
+			}
+			built = spawn_marker_flash_build(location, flashes[flash_index].age, &spawn_marker_points[vertex_count]);
+			spawn_marker_team_color(flashes[flash_index].team_index, &color);
+			color.alpha = 1.0f - flashes[flash_index].age;
+			if (distance > SPAWN_MARKER_RANGE - SPAWN_MARKER_FADE)
+				color.alpha *= (SPAWN_MARKER_RANGE - distance) / SPAWN_MARKER_FADE;
+			pixel = real_argb_color_to_pixel32(&color);
+			for (vertex_index = 0; vertex_index < built; vertex_index++)
+				spawn_marker_colors[vertex_count + vertex_index] = pixel;
+			vertex_count += built;
+			flashes_drawn++;
+		}
+
 		for (index = 0; index < scenario->players.count; index++)
 		{
 			struct player_starting_location const *location =
@@ -148,6 +234,7 @@ void render_spawn_markers(
 			real_vector3d delta;
 			real distance;
 			pixel32 pixel;
+			boolean cross = FALSE;
 			long built;
 			long vertex_index;
 
@@ -163,20 +250,28 @@ void render_spawn_markers(
 			/* (none behind the camera: no ray, no triangles) */
 			if (dot_product3d(&render.camera.forward, &delta) < -SPAWN_MARKER_EXTENT)
 				continue;
-			if (vertex_count + SPAWN_MARKER_VERTICES > (long)NUMBEROF(spawn_marker_points))
-				continue;
 
-			built = spawn_marker_build(location, &spawn_marker_points[vertex_count]);
-			if (!built)
-				continue;
-
-			/* GREEN, fading out toward the range's limit */
+			/* GREEN, or SPAWN HEAT's colour */
 			color.alpha = SPAWN_MARKER_ALPHA;
-			if (distance > SPAWN_MARKER_RANGE - SPAWN_MARKER_FADE)
-				color.alpha *= (SPAWN_MARKER_RANGE - distance) / SPAWN_MARKER_FADE;
 			color.red = 0.15f;
 			color.green = 1.0f;
 			color.blue = 0.25f;
+			if (heat && index < heat->count)
+				spawn_marker_heat_color(heat, index, &color, &cross);
+			if (vertex_count + SPAWN_MARKER_VERTICES +
+				(cross ? SPAWN_MARKER_CROSS_TRIANGLES * NUMBER_OF_VERTICES_PER_TRIANGLE : 0) >
+				(long)NUMBEROF(spawn_marker_points))
+			{
+				continue;
+			}
+
+			built = spawn_marker_build(location, cross, &spawn_marker_points[vertex_count]);
+			if (!built)
+				continue;
+
+			/* fading out toward the range's limit */
+			if (distance > SPAWN_MARKER_RANGE - SPAWN_MARKER_FADE)
+				color.alpha *= (SPAWN_MARKER_RANGE - distance) / SPAWN_MARKER_FADE;
 			pixel = real_argb_color_to_pixel32(&color);
 			for (vertex_index = 0; vertex_index < built; vertex_index++)
 				spawn_marker_colors[vertex_count + vertex_index] = pixel;
@@ -206,11 +301,12 @@ void render_spawn_markers(
 
 /* ---------- private code */
 
-/* a spawn's marker's triangles into points (SPAWN_MARKER_VERTICES of them):
-returns how many points, 0 for none (a spawn facing straight into its
-floor) */
+/* a spawn's marker's triangles into points (SPAWN_MARKER_VERTICES of them,
+with a cross SPAWN_MARKER_CROSS_TRIANGLES' more): returns how many points,
+0 for none (a spawn facing straight into its floor) */
 static long spawn_marker_build(
 	struct player_starting_location const *location,
+	boolean cross,
 	real_point3d *points)
 {
 	real_point3d center;
@@ -283,7 +379,202 @@ static long spawn_marker_build(
 		points[point_index++] = right_wing;
 	}
 
+	/* SPAWN HEAT's cross through the chevron: two bars, corner to corner */
+	if (cross)
+	{
+		short bar;
+
+		for (bar = 0; bar < 2; bar++)
+		{
+			real side = bar ? -1.0f : 1.0f;
+			real_point3d corners[4];
+			real along = SPAWN_MARKER_CROSS_HALF_LENGTH * 0.70710678f;
+			real across = SPAWN_MARKER_CROSS_HALF_WIDTH * 0.70710678f;
+
+			/* (the bar from (-along, -along side) to (along, along side),
+			widened across it) */
+			spawn_marker_point(&center, &forward, &left, -along - across, (-along + across) * side, &corners[0]);
+			spawn_marker_point(&center, &forward, &left, along - across, (along + across) * side, &corners[1]);
+			spawn_marker_point(&center, &forward, &left, along + across, (along - across) * side, &corners[2]);
+			spawn_marker_point(&center, &forward, &left, -along + across, (-along - across) * side, &corners[3]);
+			points[point_index++] = corners[0];
+			points[point_index++] = corners[1];
+			points[point_index++] = corners[2];
+			points[point_index++] = corners[0];
+			points[point_index++] = corners[2];
+			points[point_index++] = corners[3];
+		}
+	}
+
 	return point_index;
+}
+
+/* a real spawn's flash's ring into points (SPAWN_MARKER_FLASH_TRIANGLES *
+3), age 0 to 1 growing it from the marker's ring to
+SPAWN_MARKER_FLASH_RADIUS; how many points */
+static long spawn_marker_flash_build(
+	struct player_starting_location const *location,
+	real age,
+	real_point3d *points)
+{
+	real_point3d center;
+	real_vector3d normal;
+	real_vector3d forward;
+	real_vector3d left;
+	real outer = SPAWN_MARKER_OUTER_RADIUS + (SPAWN_MARKER_FLASH_RADIUS - SPAWN_MARKER_OUTER_RADIUS) * age;
+	real inner = outer - SPAWN_MARKER_FLASH_WIDTH;
+	short segment;
+	long point_index = 0;
+
+	spawn_marker_floor(&location->position, &center, &normal);
+	center.x += normal.i * SPAWN_MARKER_HEIGHT;
+	center.y += normal.j * SPAWN_MARKER_HEIGHT;
+	center.z += normal.k * SPAWN_MARKER_HEIGHT;
+
+	/* (any two directions along the floor: a ring has no facing) */
+	forward.i = 1.0f;
+	forward.j = 0.0f;
+	forward.k = 0.0f;
+	if (normal.i > 0.9f || normal.i < -0.9f)
+	{
+		forward.i = 0.0f;
+		forward.j = 1.0f;
+	}
+	{
+		real length = dot_product3d(&forward, &normal);
+
+		forward.i -= normal.i * length;
+		forward.j -= normal.j * length;
+		forward.k -= normal.k * length;
+	}
+	normalize3d(&forward);
+	cross_product3d(&normal, &forward, &left);
+
+	for (segment = 0; segment < SPAWN_MARKER_SEGMENTS; segment++)
+	{
+		real cos0 = spawn_marker_ring[segment][0];
+		real sin0 = spawn_marker_ring[segment][1];
+		real cos1 = spawn_marker_ring[segment + 1][0];
+		real sin1 = spawn_marker_ring[segment + 1][1];
+		real_point3d outer0;
+		real_point3d outer1;
+		real_point3d inner0;
+		real_point3d inner1;
+
+		spawn_marker_point(&center, &forward, &left, cos0 * outer, sin0 * outer, &outer0);
+		spawn_marker_point(&center, &forward, &left, cos1 * outer, sin1 * outer, &outer1);
+		spawn_marker_point(&center, &forward, &left, cos0 * inner, sin0 * inner, &inner0);
+		spawn_marker_point(&center, &forward, &left, cos1 * inner, sin1 * inner, &inner1);
+		points[point_index++] = outer0;
+		points[point_index++] = outer1;
+		points[point_index++] = inner1;
+		points[point_index++] = outer0;
+		points[point_index++] = inner1;
+		points[point_index++] = inner0;
+	}
+
+	return point_index;
+}
+
+/* SPAWN HEAT's colour of the view's spawn index (color's alpha the
+marker's before its fade), and whether it gets a cross */
+static void spawn_marker_heat_color(
+	struct spawn_heat_view const *heat,
+	long index,
+	real_argb_color *color,
+	boolean *cross)
+{
+	struct spawn_heat_spawn const *spawn = &heat->spawns[index];
+
+	*cross = FALSE;
+	switch (spawn->zero_reason)
+	{
+	case _spawn_rating_rated:
+	{
+		real t = heat->probability_maximum > 0.0f ? spawn->probability / heat->probability_maximum : 0.0f;
+		short stop;
+
+		t = PIN(t, 0.0f, 1.0f);
+		for (stop = 1; stop < (short)NUMBEROF(spawn_heat_scale) - 1 && t > spawn_heat_scale[stop][0]; stop++)
+			;
+		{
+			real const *low = spawn_heat_scale[stop - 1];
+			real const *high = spawn_heat_scale[stop];
+			real part = (t - low[0]) / (high[0] - low[0]);
+
+			part = PIN(part, 0.0f, 1.0f);
+			color->red = low[1] + (high[1] - low[1]) * part;
+			color->green = low[2] + (high[2] - low[2]) * part;
+			color->blue = low[3] + (high[3] - low[3]) * part;
+		}
+		color->alpha = SPAWN_HEAT_ALPHA_COLD + SPAWN_HEAT_ALPHA_HOT_EXTRA * t;
+		/* (the one likeliest pulses) */
+		if (index == heat->hottest)
+		{
+			real phase = (real)(game_time_get() % SPAWN_HEAT_PULSE_TICKS) / (real)SPAWN_HEAT_PULSE_TICKS;
+			real wave = 0.5f + 0.5f * (real)cos(2.0f * _pi * phase);
+
+			color->alpha *= SPAWN_HEAT_PULSE_LOW + (1.0f - SPAWN_HEAT_PULSE_LOW) * wave;
+		}
+		break;
+	}
+
+	case _spawn_rating_zero_team:
+	{
+		/* (CTF: the other team's, faint in its colour; neither's grey) */
+		struct player_starting_location const *location =
+			TAG_BLOCK_GET_ELEMENT(&global_scenario_get()->players, index, struct player_starting_location);
+
+		spawn_marker_team_color(location->team_index == NONE ? (short)2 : location->team_index, color);
+		color->alpha = SPAWN_HEAT_OTHER_TEAM_ALPHA;
+		break;
+	}
+
+	default:
+		/* (can't be picked now: dark red, crossed) */
+		color->red = 0.5f;
+		color->green = 0.03f;
+		color->blue = 0.03f;
+		color->alpha = SPAWN_HEAT_ZERO_ALPHA;
+		*cross = TRUE;
+		break;
+	}
+
+	return;
+}
+
+/* a team's colour: red 0, blue 1, white for none (a game without teams),
+grey for another (a CTF spawn neither team uses) */
+static void spawn_marker_team_color(
+	short team_index,
+	real_argb_color *color)
+{
+	color->alpha = 1.0f;
+	switch (team_index)
+	{
+	case 0:
+		color->red = 1.0f;
+		color->green = 0.22f;
+		color->blue = 0.18f;
+		break;
+	case 1:
+		color->red = 0.25f;
+		color->green = 0.5f;
+		color->blue = 1.0f;
+		break;
+	case NONE:
+		color->red = 1.0f;
+		color->green = 1.0f;
+		color->blue = 1.0f;
+		break;
+	default:
+		color->red = 0.6f;
+		color->green = 0.6f;
+		color->blue = 0.6f;
+		break;
+	}
+
+	return;
 }
 
 /* the floor under (or a little over) a spawn point, and its normal; the

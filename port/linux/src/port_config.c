@@ -214,6 +214,15 @@ static const struct config_setting config_settings[] =
 		"How fast the in-game scoreboard (hold BACK, or tab) fades in and out:\n"
 		"\"instant\", \"fast\" (a quarter of a second), \"normal\" (half a\n"
 		"second, as the original game) or \"slow\" (a second)." },
+	{ "display.spawn_heat", _config_string, "\"mine\"", "HALO_SPAWN_HEAT", _environment_value, _platform_all,
+		"The gametype's TRAINING's spawn markers coloured by how likely each\n"
+		"spawn is to be picked next (CE's own rules, worked out on this machine;\n"
+		"nothing is sent): \"mine\" where your player would spawn, \"enemy\"\n"
+		"where the other team's would (in a team game; without teams as\n"
+		"\"mine\"), \"off\" the plain green markers. Cold blue-grey is unlikely,\n"
+		"hot orange-red the likeliest; dark red with a cross can't be picked\n"
+		"now (an enemy within 6 m, a vehicle on it); a flash where a player\n"
+		"really spawns." },
 	{ "display.per_pixel_lighting", _config_boolean, "false", "HALO_PER_PIXEL_LIGHTING", _environment_value,
 		_platform_all,
 		"Light the models (characters, weapons, vehicles, scenery) for each\n"

@@ -564,6 +564,7 @@ symbols in this file:
 #include "items/weapons.h"
 #include "game/callouts.h"
 #include "game/item_timers.h"
+#include "game/spawn_heat.h"
 #include "hs/hs.h"
 #include "main/console.h"
 #include "main/main.h"
@@ -4601,9 +4602,11 @@ void game_engine_update(
 		}
 
 		/* port: the item timers' (item_timers.c) and the callouts'
-		(callouts.c), on every machine */
+		(callouts.c), on every machine; and TRAINING's spawn heat
+		(spawn_heat.c), display only */
 		item_timers_update();
 		callouts_update();
+		spawn_heat_update();
 	}
 
 	return;
@@ -7436,6 +7439,8 @@ void game_engine_initialize_for_new_map(
 	the map and the game variant are known, and the callouts' voice */
 	item_timers_map_begin();
 	callouts_map_begin();
+	/* port: TRAINING's spawn heat starts over (spawn_heat.c) */
+	spawn_heat_initialize_for_new_map();
 
 	return;
 }

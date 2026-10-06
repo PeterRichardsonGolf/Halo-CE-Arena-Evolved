@@ -65,6 +65,15 @@ power list too (RED SNIPER, BLUE SNIPER on Blood Gulch). Arrows together at
 the screen's edge share one list of labels, and items spawning at the same
 time share a line ("0:07 ROCKETS · OS/CAMO · RED SNIPER").
 
+With TRAINING, SPAWN HEAT (Settings > Game Options; MINE by default) colours
+each spawn marker by how likely you are to spawn there next, by CE's own
+spawn rules worked out on your machine: cold blue-grey is unlikely, hot
+orange-red the likeliest (it pulses), dark red with a cross can't be picked
+right now (an enemy within 6 m, a vehicle on it). ENEMY shows where the other
+team would spawn instead. A ring flashes where a player really spawns. CE
+spawns ignore line of sight: an enemy over 15 m from a spawn makes no
+difference, while a teammate within 18 m makes it far likelier.
+
 These are the host's rules. Players on Arena Evolved see and play them all.
 Players who join on a build without them still play the host's rules where
 the host decides: it holds them to the countdown and respawns items as the
@@ -167,8 +176,7 @@ Three rulesets under one roof:
 3. **Hardcore**: closer to Halo Infinite's competitive settings, researched
    rather than guessed.
 
-Next up: a TRAINING view of the game's own spawn choice (spawn points lit by
-how likely you are to spawn there), a side-by-side split-screen layout, a
+Next up: a side-by-side split-screen layout, a
 per-player in-game menu and HUD, and more of our own voice for the callouts
 (Cori, beta, ships now), calling every item.
 

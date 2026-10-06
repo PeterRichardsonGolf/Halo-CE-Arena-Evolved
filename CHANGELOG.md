@@ -7,6 +7,16 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
+- SPAWN HEAT (Settings > Game Options, under VOICE; `display.spawn_heat`,
+  `HALO_SPAWN_HEAT`): with the gametype's TRAINING, the spawn markers are
+  coloured by how likely each spawn is to be picked next, by CE's own spawn
+  rules worked out on each machine (nothing is sent, the game's random
+  numbers are untouched): MINE (the default) for your player, ENEMY for the
+  other team (team games), OFF the plain green markers. Cold blue-grey to
+  hot orange-red, the likeliest pulsing; dark red with a cross for a spawn
+  that can't be picked now; the other team's CTF spawns faint. A ring
+  flashes where a player really spawns, and debug.txt logs each spawn with
+  the chance it had. Each split-screen view has its own.
 - CALLOUT DETAIL (Settings > Game Options, under CALLOUTS;
   `game.callout_detail`, `HALO_CALLOUT_DETAIL`): MINIMAL says one line a
   wave of items spawning together and the first item's "is up", with no

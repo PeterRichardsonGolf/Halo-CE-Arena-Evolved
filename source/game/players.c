@@ -243,6 +243,7 @@ symbols in this file:
 #include "effects/player_effects.h"
 #include "game.h"
 #include "game/game_globals.h"
+#include "game/spawn_heat.h" /* port: TRAINING's spawn heat */
 #include "game_engine.h"
 #include "input.h"
 #include "interface/hud.h"
@@ -1425,6 +1426,10 @@ static void player_spawn(
 
 		starting_location_index =
 			(short)find_best_starting_location_index(player_index);
+		/* port: TRAINING's spawn heat's flash and log line (spawn_heat.c:
+		display only; no random numbers) */
+		if (starting_location_index != NONE && game_engine_running())
+			spawn_heat_note_spawn(player_index, starting_location_index);
 		if (starting_location_index != NONE)
 		{
 			game_globals = scenario_get_game_globals();
@@ -1535,6 +1540,7 @@ void network_player_attach_unit(
 {
 	struct player_datum *player = player_get(player_index);
 	struct unit_datum *unit = unit_get(unit_index);
+	boolean spawned = player->unit_index == NONE;
 
 	/* port: the host's team for the player (auto team balance moves a
 	player to the other team at his death: game_engine_player_killed) */
@@ -1552,6 +1558,10 @@ void network_player_attach_unit(
 	player->action_object_index = NONE;
 	if (player->local_player_index != NONE)
 		observer_obsolete_position(player->local_player_index);
+	/* (a unit for a player who had none: a spawn on the host, for TRAINING's
+	spawn heat's flash and log line, spawn_heat.c) */
+	if (spawned)
+		spawn_heat_note_unit_attached(player_index, unit_index);
 }
 
 /* ... and shows what the host says its player picked up (the host decides

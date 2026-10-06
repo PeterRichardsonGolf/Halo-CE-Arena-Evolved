@@ -10,8 +10,9 @@ port: the gametype's TRAINING's spawn markers (render_spawn_markers.c).
 
 /* ---------- constants */
 
-/* as Halo 1: NHE's floor markers: GREEN for every spawn, 0.1 world units
-over the floor, drawn within 25 world units and fading out over the last 10 */
+/* as Halo 1: NHE's floor markers: GREEN for every spawn (or SPAWN HEAT's
+colours: spawn_heat.c), 0.1 world units over the floor, drawn within 25
+world units and fading out over the last 10 */
 #define SPAWN_MARKER_HEIGHT 0.1f
 #define SPAWN_MARKER_RANGE 25.0f
 #define SPAWN_MARKER_FADE 10.0f
