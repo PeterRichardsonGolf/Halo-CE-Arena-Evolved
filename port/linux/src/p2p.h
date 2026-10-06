@@ -115,6 +115,9 @@ void p2p_set_hosting_password(const char *password);
 /* (AE) whether the game hosted has a password (p2p_set_hosting_password):
 browser.c then lists it on no game list, whose invites are plain */
 int p2p_hosting_has_password(void);
+/* (AE) whether a password opened this invite code (p2p_listing_unlock; the
+code as p2p_joined_invite gives it): browser.c sends it nowhere */
+int p2p_invite_code_was_locked(const char *code);
 /* the hosted game's details as listed (printable ASCII is kept; NULL leaves
 one as it was): the game's server calls it as they change (calling it with
 the same again costs little) */

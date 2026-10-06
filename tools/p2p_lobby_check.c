@@ -68,6 +68,7 @@ void p2p_sign(const void *message, int size, unsigned char *signature)
 	p2p_ed25519_sign(seed, signing_key, message, size, signature);
 }
 void p2p_new_invite_if_listed(void) {}
+void p2p_new_invite(void) {}
 void p2p_signal_lobby_topics(int listed, int browsing) { (void)listed; (void)browsing; }
 void p2p_signal_lobby_query(void) {}
 void p2p_signal_lobby_publish(const unsigned char *listing, int size, int closing)
@@ -312,6 +313,18 @@ static void lobby_checks(void)
 	check(!p2p_listing_unlock(&listing, "") && !listing.invite[0], "no password opens nothing");
 	check(p2p_listing_unlock(&listing, "hunter2") && !strcmp(listing.invite, expected_invite),
 		"the password opens the host's invite");
+	/* (AE) its tombstone: version 20 too, and taken */
+	p2p_set_hosting_public(0);
+	lobby_update(token, 3, 16);
+	check(published_closing && published_size > 5 && (published[3] << 8 | published[4]) == 20,
+		"a password game's tombstone is version 20");
+	hear(published, published_size, 0, NULL);
+	check(games(NULL) == 0, "a password game's tombstone removes the game");
+	p2p_set_hosting_public(1);
+	clock_now += 10000;
+	lobby_update(token, 3, 16);
+	hear(published, published_size, 0, NULL);
+	check(games(&listing) == 1 && listing.locked, "a password game listed again is listed locked");
 	/* the password taken off: listed open again */
 	p2p_set_hosting_password(NULL);
 	clock_now += 6000;

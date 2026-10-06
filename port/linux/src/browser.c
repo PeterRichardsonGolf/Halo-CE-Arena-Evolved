@@ -1260,8 +1260,9 @@ void browser_report_game(int teams, int red_score, int blue_score, int duration_
 	const struct browser_report_player *players, int count, const char *extra)
 {
 	char invite[BROWSER_INVITE_LENGTH + 1];
+	/* (AE: a game with a password's invite goes nowhere) */
 	char *report = report_json(teams, red_score, blue_score, duration_seconds, players, count, extra,
-		p2p_hosting_invite(invite, sizeof(invite)) ? invite : NULL);
+		!p2p_hosting_has_password() && p2p_hosting_invite(invite, sizeof(invite)) ? invite : NULL);
 
 	if (!report)
 		return;
@@ -1279,8 +1280,9 @@ void browser_client_report(int teams, int red_score, int blue_score, int duratio
 	char *body, *report;
 	size_t size;
 
+	/* (AE: nor a game joined through its password) */
 	if (!config_string("network.browser_url")[0] || !config_boolean("network.report_joined_games") ||
-		!p2p_joined_invite(invite, sizeof(invite)))
+		!p2p_joined_invite(invite, sizeof(invite)) || p2p_invite_code_was_locked(invite))
 	{
 		return;
 	}
@@ -1312,6 +1314,10 @@ void browser_claim_game(const unsigned short (*names)[12], int count)
 
 	if (count <= 0 || !config_string("network.browser_url")[0] ||
 		(!p2p_hosting_invite(invite, sizeof(invite)) && !p2p_joined_invite(invite, sizeof(invite))))
+		return;
+	/* (AE: no claim of a game with a password, hosted or joined through it:
+	its invite goes nowhere) */
+	if (p2p_hosting_has_password() || p2p_invite_code_was_locked(invite))
 		return;
 	if (count > MAXIMUM_CLAIM_NAMES)
 		count = MAXIMUM_CLAIM_NAMES;

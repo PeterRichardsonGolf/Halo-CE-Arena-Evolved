@@ -11,8 +11,9 @@ whose X25519 form's hash is the invite's host part (p2p.c), so no one but
 the host can list its invite, alter its listing, or list another's under
 false details:
 
-	"HL", format 1, the lobby version (2: HALO_PORT_NETWORK_VERSION; browsers
-	hide others), flags (open, under way, teams, closed, password), sequence
+	"HL", format 1, the listing's version (2: 20 for a password's layout, and
+	its game's tombstone, else HALO_PORT_NETWORK_VERSION; browsers take
+	MINIMUM..MAXIMUM), flags (open, under way, teams, closed, password), sequence
 	(4: newest wins), Unix time (4), the Ed25519 key (32), the invite's token
 	(16; a password's game's sealed with the password's key, 56:
 	p2p_seal_token; a tombstone's zero), players, most players, the
@@ -270,10 +271,17 @@ static int listing_make(unsigned char *bytes, int flags)
 	bytes[size++] = 'L';
 	bytes[size++] = LISTING_FORMAT;
 	/* (AE: the version states the listing's layout: a password's sealed
-	token is version 20's, which browsers of 18 and below skip; any other is
-	this build's announced version, 18: NETCODE.md) */
-	bytes[size++] = (unsigned char)(((flags & _listing_password) ? LISTING_PASSWORD_VERSION : HALO_PORT_NETWORK_VERSION) >> 8);
-	bytes[size++] = (unsigned char)((flags & _listing_password) ? LISTING_PASSWORD_VERSION : HALO_PORT_NETWORK_VERSION);
+	token is version 20's, which browsers of 18 and below skip, and a
+	password game's tombstone is 20 too, so that the browsers that took its
+	listings take it; any other is this build's announced version, 18:
+	NETCODE.md) */
+	{
+		int version = (flags & _listing_password) || ((flags & _listing_closed) && lobby.has_password) ?
+			LISTING_PASSWORD_VERSION : HALO_PORT_NETWORK_VERSION;
+
+		bytes[size++] = (unsigned char)(version >> 8);
+		bytes[size++] = (unsigned char)version;
+	}
 	bytes[size++] = (unsigned char)flags;
 	put_long(bytes + size, ++lobby.sequence);
 	size += 4;
@@ -748,8 +756,12 @@ void p2p_set_hosting_password(const char *password)
 		(has_password && !p2p_equal(key, lobby.password_key, P2P_PASSWORD_KEY_SIZE)))
 	{
 		/* (a new invite, if one was listed: who saw it, with no password or
-		another, cannot join with it) */
-		p2p_new_invite_if_listed();
+		another, cannot join with it. AE: the first password always makes
+		one, as the game list may have shown the plain one) */
+		if (has_password && !lobby.has_password)
+			p2p_new_invite();
+		else
+			p2p_new_invite_if_listed();
 		lobby.has_password = has_password;
 		if (has_password)
 			memcpy(lobby.password_key, key, sizeof(key));
@@ -868,6 +880,20 @@ int p2p_lobby_games(struct p2p_listing *games, int maximum_count)
 	return count;
 }
 
+/* (AE) the invite code (hexadecimal, as p2p_joined_invite gives it) a
+password last opened: browser.c sends it nowhere */
+static char unlocked_code[2 * (P2P_KEY_HASH_SIZE + P2P_TOKEN_SIZE) + 1];
+
+int p2p_invite_code_was_locked(const char *code)
+{
+	int locked;
+
+	pthread_mutex_lock(&p2p_lock);
+	locked = code && unlocked_code[0] && !strcmp(code, unlocked_code);
+	pthread_mutex_unlock(&p2p_lock);
+	return locked;
+}
+
 int p2p_listing_unlock(struct p2p_listing *listing, const char *password)
 {
 	unsigned char key[P2P_PASSWORD_KEY_SIZE];
@@ -884,6 +910,9 @@ int p2p_listing_unlock(struct p2p_listing *listing, const char *password)
 	{
 		p2p_hex(bytes, sizeof(bytes), text);
 		snprintf(listing->invite, sizeof(listing->invite), "halo://join/%s", text);
+		pthread_mutex_lock(&p2p_lock);
+		snprintf(unlocked_code, sizeof(unlocked_code), "%s", text);
+		pthread_mutex_unlock(&p2p_lock);
 	}
 	memset(key, 0, sizeof(key));
 	memset(bytes, 0, sizeof(bytes));

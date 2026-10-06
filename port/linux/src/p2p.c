@@ -2560,6 +2560,16 @@ void p2p_new_invite_if_listed(void)
 {
 	if (!p2p.has_token || !p2p.token_listed)
 		return;
+	p2p_new_invite();
+}
+
+/* (AE) a new invite whether or not the one before was listed: a game's
+first password (p2p_set_hosting_password), whose plain invite another list
+(browser.c's game list) may have shown */
+void p2p_new_invite(void)
+{
+	if (!p2p.has_token)
+		return;
 	make_invite();
 	{
 		char shown[128];

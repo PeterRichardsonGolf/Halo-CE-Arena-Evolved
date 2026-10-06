@@ -108,6 +108,8 @@ void p2p_invite_received(const char *text);
 server browser (going private: those who saw it must not get in); under
 p2p_lock */
 void p2p_new_invite_if_listed(void);
+/* (AE) a new invite, listed or not (the caller holds p2p_lock) */
+void p2p_new_invite(void);
 
 /* ---------- p2p_signal.c: signalling through public MQTT brokers */
 
