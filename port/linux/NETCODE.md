@@ -171,7 +171,10 @@ failed co-op mission's revert to the host; version 18 sends with an object
 the bitmap of its shaders it draws with when its actor variant set one (co-op:
 the Elite major's and commander's armor); version 19 sends with the game's
 settings whether co-op's players collide with each other (Server Setup's PLAYER
-COLLISIONS: each machine's players then pass through the others').
+COLLISIONS: each machine's players then pass through the others'). Arena
+Evolved announces version 18 but already sends that setting (in what was a
+padding byte, which other version 18 machines ignore: their players still
+collide).
 
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. That
