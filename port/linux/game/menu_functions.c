@@ -4884,12 +4884,14 @@ struct gametype_option
 	short offset;
 	unsigned long argument;
 	short count;
-	long values[16];
+	long values[20];
 };
 
 #define VARIANT_FIELD(field) (short)offsetof(struct game_variant, field)
 #define OPTIONS_FIELD(field) (short)offsetof(struct game_variant_options, field)
 #define TIME_LIMITS { 0, 10, 15, 20, 25, 30, 45 }
+/* (port: ARENA OPTIONS' TIME LIMIT, minutes: finer, and an hour) */
+#define ARENA_TIME_LIMITS { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 45, 60 }
 
 static struct gametype_option const gametype_options[] =
 {
@@ -4904,10 +4906,11 @@ static struct gametype_option const gametype_options[] =
 	{ "invisible_players_spinner", _option_flag, 0, FLAG(_game_variant_always_invisible_bit), 2, { 1, 0 } },
 	{ "suicide_penalty_spinner", _option_long, VARIANT_FIELD(universal_variant.suicide_penalty), 0, 4,
 		{ 0, 150, 300, 450 } },
-	/* arena options (port: FALL DAMAGE, ON or OFF; HEALTH, CLASSIC, REACH,
+	/* arena options (port: TIME LIMIT, NONE or 1 to 60 minutes; FALL DAMAGE, ON or OFF; HEALTH, CLASSIC, REACH,
 	HALO 2 or HALO 3: game_engine.h's _game_variant_health_style_..._bit; NO
 	SPREAD, OFF, NHE or FULL: enum no_spread_level's bits; PRE-GAME
 	COUNTDOWN and PRACTICE MODE, OFF or ON) */
+	{ "arena_time_limit_spinner", _option_short, OPTIONS_FIELD(time_limit), 0, 18, ARENA_TIME_LIMITS },
 	{ "falling_damage_spinner", _option_flag, 0, FLAG(_game_variant_no_falling_damage_bit), 2, { 0, 1 } },
 	{ "health_regeneration_spinner", _option_flags, 0, GAME_VARIANT_HEALTH_STYLE_MASK, 4,
 		{ _health_style_classic << _game_variant_health_style_first_bit,

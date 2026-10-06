@@ -1192,14 +1192,16 @@ def _item_options_extras() -> list:
 # ARENA OPTIONS' rows: (key, label, values, their helps); each row's
 # spinner is named for its option in menu_functions.c's gametype_options
 # (KEY_spinner), and its helps are its values' in turn (gametype_option_help).
-# TIME LIMIT is the Halo PC gametype screens' own (its values TIME_LIMITS,
-# their strings ctf_edit/var_time_limit's), here for every gametype
+# TIME LIMIT is the same setting as the Halo PC gametype screens' own, here
+# for every gametype, in finer steps and to an hour (menu_functions.c's
+# ARENA_TIME_LIMITS, minutes)
+ARENA_TIME_LIMITS = [*range(1, 11), 12, 15, 20, 25, 30, 45, 60]
 ARENA_ROWS = [
-    ("time_limit", "TIME LIMIT:", ["NONE", "10 MINUTES", "15 MINUTES", "20 MINUTES", "25 MINUTES", "30 MINUTES",
-                                   "45 MINUTES"], [
+    ("arena_time_limit", "TIME LIMIT:",
+     ["NONE", *[f"{minutes} MINUTE{'' if minutes == 1 else 'S'}" for minutes in ARENA_TIME_LIMITS]], [
         "No time limit: the game ends only when someone\\nreaches the score to win.",
-        *[f"The game ends after {minutes} minutes, or sooner\\nwhen someone reaches the score to win."
-          for minutes in (10, 15, 20, 25, 30, 45)],
+        *[f"The game ends after {minutes} minute{'' if minutes == 1 else 's'}, or sooner\\nwhen someone "
+          "reaches the score to win." for minutes in ARENA_TIME_LIMITS],
     ]),
     ("falling_damage", "FALL DAMAGE:", ["ON", "OFF"], [
         "A hard landing hurts, and a long enough fall kills.",

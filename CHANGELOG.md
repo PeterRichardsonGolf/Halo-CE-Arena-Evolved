@@ -27,6 +27,10 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- ARENA OPTIONS' TIME LIMIT has finer steps and an hour: NONE, 1 to 10
+  minutes by one, then 12, 15, 20, 25, 30, 45 and 60 (the Halo PC gametype
+  screens' own TIME LIMIT rows keep their choices). A gametype's time limit
+  that is none of them is still kept unless the row is moved.
 - Settings > Game Options' MATCH CLOCK row is MULTIPLAYER GAME TIMER, as in
   the Master Chief Collection: OFF, TIME REMAINING or TIME ELAPSED (the same
   `display.match_clock` values: off, down, up), with the Collection's help
