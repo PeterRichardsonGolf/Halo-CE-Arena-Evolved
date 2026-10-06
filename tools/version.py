@@ -5,9 +5,9 @@ same):
   - VERSION, in the repository's root, is the version being made:
     0.1.0-beta. It is Arena Evolved's own, not the upstream's; what it is
     built on is UPSTREAM_BASE (below), which the game logs at start-up.
-  - A release is built by GitHub Actions from its tag, v<VERSION>
-    (tools/ci_build.py gives HALO_VERSION, and HALO_RELEASE_BUILD=1, the
-    only builds whose self-updater looks for newer releases).
+  - A release is built by GitHub Actions from its tag, v<VERSION>: such a
+    build is VERSION's own (version() reads the tag; HALO_VERSION, when
+    set, wins). Arena Evolved's self-updater is off in every build.
   - Other builds of the workflow are nightlies, <VERSION>-nightly.<run>; a
     build anywhere else is <VERSION>-dev.
 """
@@ -30,8 +30,15 @@ def base_version() -> str:
 
 
 def version() -> str:
-    """this build's"""
-    return os.environ.get("HALO_VERSION") or f"{base_version()}-dev"
+    """this build's: HALO_VERSION if set; VERSION's own when GitHub Actions
+    builds the release's tag, v<VERSION>; else VERSION's -dev"""
+    if os.environ.get("HALO_VERSION"):
+        return os.environ["HALO_VERSION"]
+    base = base_version()
+    if (os.environ.get("GITHUB_REF_TYPE") == "tag" and
+            os.environ.get("GITHUB_REF_NAME") == f"v{base}"):
+        return base
+    return f"{base}-dev"
 
 
 def release_build() -> bool:
