@@ -248,9 +248,9 @@ The settings are in `config.toml` next to the executable
 with a comment for each setting and its default value, commented out:
 
 ```toml
-# The menus: "xbox" for the Xbox's (with Online Games), "pc" for the
+# The menus: "pc" (the default) for the PC version's main menu
 # ...
-# menus = "xbox"
+# menus = "pc"
 ```
 
 A setting that is commented out follows the default of the version that
@@ -272,7 +272,7 @@ Earlier versions wrote every setting as a value. The first start of this
 version updates such a file once (`config_version = 2` at the top
 marks it): a setting that holds the default of this version, or the
 default of an earlier version (`display.menus = "pc"`, the default before
-0.5.2b), is commented out, so that it follows the default. A setting with
+ChupathingyCE 0.5.2b, or `"xbox"`, its default since), is commented out, so that it follows the default. A setting with
 another value stays. The log has one line that tells what changed.
 
 Each setting has an environment variable. The environment variable changes

@@ -1102,6 +1102,8 @@ static const struct
 {
 	/* upstream's, which ChupathingyCE kept until v0.5.2b */
 	{ "display.menus", "\"pc\"" },
+	/* ChupathingyCE's from v0.5.2b, before Arena Evolved went back to "pc" */
+	{ "display.menus", "\"xbox\"" },
 };
 
 #define NUMBER_OF_CONFIG_OLD_DEFAULTS (sizeof(config_old_defaults) / sizeof(config_old_defaults[0]))
