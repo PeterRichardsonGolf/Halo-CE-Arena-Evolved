@@ -147,8 +147,10 @@ play:
   from Halo: The Master Chief Collection on Steam (`halo1/maps/custom_edition`).
 
 **Privacy**
-- Games you host are not listed publicly, and the games you join are not
-  reported to any stats site, unless you turn them on (Settings > Network).
+- Internet games you host start PUBLIC, as upstream's do: they show in the
+  in-game Server Browser unless you set LISTING to PRIVATE in Server Setup.
+  Listing them on the website game list, and reporting the games you join to a
+  stats site, stay off unless you turn them on (Settings > Network).
 
 ## Where it's going
 
@@ -160,9 +162,10 @@ Three rulesets under one roof:
 3. **Hardcore**: closer to Halo Infinite's competitive settings, researched
    rather than guessed.
 
-Next up: item spawn waypoints and spawn markers in team colours in the
-style of Halo Infinite, and more of our own voice for the callouts (Cori, beta, ships
-now), calling every item.
+Next up: a TRAINING view of the game's own spawn choice (spawn points lit by
+how likely you are to spawn there), a side-by-side split-screen layout, a
+per-player in-game menu and HUD, and more of our own voice for the callouts
+(Cori, beta, ships now), calling every item.
 
 ## You need your own copy of Halo
 
@@ -170,6 +173,18 @@ Arena Evolved doesn't include the game's maps, sounds or art. You need an
 Xbox disc image (`.iso` or `.xiso`) of Halo: Combat Evolved; any region works.
 The first time it starts, the game asks for the image and copies its `maps`
 folder (about 2 GB) out of it.
+
+## Getting started
+
+1. Start the game and point it at your Halo disc image (see above).
+2. The menus are the PC version's (`display.menus` in `config.toml`):
+   that's where Arena Evolved's settings
+   live — Settings > Game Options (callouts, voice, mods, campaign rules),
+   Settings > Video (performance overlay, HUD area, match clock), and in a
+   gametype's options, ARENA OPTIONS and INDICATOR OPTIONS.
+3. Multiplayer > Create Game > LAN, pick a map and one of the AE gametypes
+   (in the gametype list's CUSTOM bank). For split screen, press START on
+   each extra controller in the lobby.
 
 On Linux, the maps and settings (`config.toml`) go next to the `halo`
 executable, and the saves in `~/.local/share/halo-linux`. Everything the port
