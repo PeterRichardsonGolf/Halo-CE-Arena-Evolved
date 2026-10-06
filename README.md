@@ -69,7 +69,9 @@ With TRAINING, SPAWN HEAT (Settings > Game Options; MINE by default) colours
 each spawn marker by how likely you are to spawn there next, by CE's own
 spawn rules worked out on your machine: cold blue-grey is unlikely, hot
 orange-red the likeliest (it pulses), dark red with a cross can't be picked
-right now (an enemy within 6 m, a vehicle on it). ENEMY shows where the other
+right now (an enemy within 6 m, a vehicle on it). When the spawns that can be
+picked are about equally likely they are all green, none pulsing. A marker
+fades as you come near it, so the one under your feet stays faint. ENEMY shows where the other
 team would spawn instead. A ring flashes where a player really spawns. CE
 spawns ignore line of sight: an enemy over 15 m from a spawn makes no
 difference, while a teammate within 18 m makes it far likelier.

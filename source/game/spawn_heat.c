@@ -24,7 +24,10 @@ the engine has none for a dead player); ENEMY rates an enemy's (any player
 of the other team: their spawns' ratings differ only by their own unit,
 left out), in a team game; without teams ENEMY is as MINE (every other
 player is an enemy, each with spawns of their own). OFF leaves the plain
-markers. Worked out every SPAWN_HEAT_UPDATE_TICKS ticks for each local
+markers. When the spawns that can be picked are near uniform (the least
+likely at least SPAWN_HEAT_UNIFORM_RATIO as likely as the most: free for
+all, mostly) they are drawn alike, in the scale's middle, none pulsing.
+Worked out every SPAWN_HEAT_UPDATE_TICKS ticks for each local
 player's view while the markers show (TRAINING's rules:
 item_timers_training_shown, and not in a cinematic).
 */
@@ -277,9 +280,9 @@ void spawn_heat_update(
 					}
 				}
 			}
-			platform_log("spawn heat: view %d tick %ld: %ld rated, %ld at 0; likeliest %ld %.1f%%, %ld %.1f%%, %ld %.1f%%; "
+			platform_log("spawn heat: view %d tick %ld: %ld rated%s, %ld at 0; likeliest %ld %.1f%%, %ld %.1f%%, %ld %.1f%%; "
 				"%ld updates, %.1f us average, %.1f us slowest",
-				local_player_index, now, rated_count, zero_count,
+				local_player_index, now, rated_count, view->near_uniform ? " (near uniform)" : "", zero_count,
 				best[0], best[0] != NONE ? view->spawns[best[0]].probability * 100.0f : 0.0f,
 				best[1], best[1] != NONE ? view->spawns[best[1]].probability * 100.0f : 0.0f,
 				best[2], best[2] != NONE ? view->spawns[best[2]].probability * 100.0f : 0.0f,
@@ -505,6 +508,29 @@ void spawn_heat_probabilities(
 	return;
 }
 
+boolean spawn_heat_near_uniform(
+	long count,
+	real const *probabilities)
+{
+	real least = 0.0f;
+	real most = 0.0f;
+	long index;
+
+	for (index = 0; index < count; index++)
+	{
+		real probability = probabilities[index];
+
+		if (!(probability > 0.0f))
+			continue;
+		if (most == 0.0f || probability < least)
+			least = probability;
+		if (probability > most)
+			most = probability;
+	}
+
+	return most > 0.0f && least >= most * SPAWN_HEAT_UNIFORM_RATIO;
+}
+
 /* ---------- private code */
 
 /* every spawn's rating and chance for the player, the unit left out (NONE
@@ -580,7 +606,8 @@ static boolean spawn_heat_rate(
 		}
 	}
 	view->probability_maximum = probability_maximum;
-	view->hottest = probability_maximum > 0.0f &&
+	view->near_uniform = spawn_heat_near_uniform(view->count, spawn_heat_chances);
+	view->hottest = !view->near_uniform && probability_maximum > 0.0f &&
 		(double)probability_maximum > (double)probability_second * SPAWN_HEAT_HOTTEST_MARGIN ? hottest : NONE;
 
 	return TRUE;

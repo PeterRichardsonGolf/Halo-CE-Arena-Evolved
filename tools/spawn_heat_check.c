@@ -658,6 +658,34 @@ static void check_probabilities(void)
 	expect("the one rated", chances[2], 1.0, 1e-6);
 	expect("one at 0", chances[0], 0.0, 0.0);
 
+	/* near uniform: the least chance above 0 at least 0.8 of the most */
+	{
+		static real const equal[] = { 0.25f, 0.25f, 0.0f, 0.25f, 0.25f };
+		static real const close[] = { 0.21f, 0.26f, 0.0f };
+		static real const apart[] = { 0.3f, 0.25f, 0.45f };
+		static real const none[] = { 0.0f, 0.0f };
+
+		if (!spawn_heat_near_uniform(5, equal) || !spawn_heat_near_uniform(3, close) ||
+			spawn_heat_near_uniform(3, apart) || spawn_heat_near_uniform(2, none))
+		{
+			fail("spawn_heat_near_uniform: equal %d close %d apart %d none %d", spawn_heat_near_uniform(5, equal),
+				spawn_heat_near_uniform(3, close), spawn_heat_near_uniform(3, apart), spawn_heat_near_uniform(2, none));
+		}
+		/* (free for all, one spawn of 16 a little lower: rated 0.995, near
+		uniform; rated 0.9 (an enemy 4.7 wu from it), not: against 15
+		others rated 1 its chance is about rating^30 of theirs, 86% and 4%) */
+		for (index = 0; index < 16; index++)
+			ratings[index] = 1.0f;
+		ratings[3] = 0.995f;
+		spawn_heat_probabilities(16, ratings, chances);
+		if (!spawn_heat_near_uniform(16, chances))
+			fail("one spawn of 16 rated 0.995: not near uniform");
+		ratings[3] = 0.9f;
+		spawn_heat_probabilities(16, ratings, chances);
+		if (spawn_heat_near_uniform(16, chances))
+			fail("one spawn of 16 rated 0.9: near uniform");
+	}
+
 	/* sets of every size: the chances sum to 1, a higher rating never less
 	likely, equal ratings as likely; and the engine's own draw agrees */
 	for (set = 0; set < 400; set++)
@@ -720,7 +748,7 @@ static void check_probabilities(void)
 			}
 		}
 	}
-	printf("chances: examples, 400 sets (sums, order, ties), the engine's draw 200000 times on 12\n");
+	printf("chances: examples, near uniform, 400 sets (sums, order, ties), the engine's draw 200000 times on 12\n");
 }
 
 #endif

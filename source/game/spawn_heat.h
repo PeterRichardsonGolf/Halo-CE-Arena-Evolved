@@ -18,6 +18,11 @@ at most this many) */
 /* the heat is worked out again every this many ticks (5 a second) */
 #define SPAWN_HEAT_UPDATE_TICKS 6
 
+/* the spawns that can be picked are "near uniform" (all drawn in one
+middle colour, none pulsing) when the least likely of them is at least
+this part as likely as the likeliest: free for all, mostly */
+#define SPAWN_HEAT_UNIFORM_RATIO 0.8f
+
 /* a real spawn's flash lasts this many ticks (1.5 s) */
 #define SPAWN_HEAT_FLASH_TICKS 45
 #define SPAWN_HEAT_MAXIMUM_FLASHES 16
@@ -50,7 +55,8 @@ struct spawn_heat_view
 	boolean enemy;				/* rated for an enemy (ENEMY in a team game) */
 	boolean any_rated;			/* any spawn rated above 0 */
 	long count;					/* spawns rated (the scenario's, at most SPAWN_HEAT_MAXIMUM_SPAWNS) */
-	long hottest;				/* the one spawn likelier than any other, NONE for a tie */
+	long hottest;				/* the one spawn likelier than any other, NONE for a tie or near uniform */
+	boolean near_uniform;		/* spawn_heat_near_uniform's */
 	real probability_maximum;
 	struct spawn_heat_spawn spawns[SPAWN_HEAT_MAXIMUM_SPAWNS];
 };
@@ -87,5 +93,8 @@ void spawn_heat_note_unit_attached(long player_index, long unit_index);
 picks (the highest rating * sqrt(random 0..1)): probabilities[i] for
 ratings[i], 0 for a rating of 0 or less; all 0 when every one is. Pure */
 void spawn_heat_probabilities(long count, real const *ratings, real *probabilities);
+/* whether the chances above 0 are near uniform: the least at least
+SPAWN_HEAT_UNIFORM_RATIO of the most (FALSE for none). Pure */
+boolean spawn_heat_near_uniform(long count, real const *probabilities);
 
 #endif // __SPAWN_HEAT_H

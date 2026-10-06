@@ -10,7 +10,9 @@ as NHE's; or with SPAWN HEAT (display.spawn_heat, spawn_heat.c) each
 coloured by how likely it is to be picked next for the view's player (or
 an enemy): by its chance over the likeliest's, t, from cold blue-grey
 (t 0) through green and yellow to hot orange-red (t 1), alpha 0.35 + 0.5 t,
-the one likeliest pulsing slowly; dark red with a cross through the chevron
+the one likeliest pulsing slowly (near uniform chances, as free for all's
+mostly are: all the scale's middle, none pulsing); fading as the camera
+nears one (one underfoot stays faint); dark red with a cross through the chevron
 (alpha 0.3) for one that can't be picked now (an enemy within 2 world
 units, a teammate on it, a vehicle on it), the other team's CTF spawns
 faint in their team's colour (alpha 0.15). A player's real spawn flashes:
@@ -105,6 +107,17 @@ static real const spawn_heat_scale[][4] =
 back, once in this many ticks (1.6 s) */
 #define SPAWN_HEAT_PULSE_LOW 0.55f
 #define SPAWN_HEAT_PULSE_TICKS 48
+/* SPAWN HEAT's near fade: a marker (and a flash) the view's camera is near
+fades, from all of its alpha this far from its spawn point to this part
+of it this near (a standing player's eyes are about 0.6 over the spawn
+they stand on): one underfoot stays faintly there, not over the view */
+#define SPAWN_HEAT_NEAR_FULL 4.0f
+#define SPAWN_HEAT_NEAR_FAINT 1.5f
+#define SPAWN_HEAT_NEAR_FAINT_PART 0.2f
+/* near uniform chances (spawn_heat_near_uniform: free for all, mostly):
+every spawn that can be picked is drawn as this point of the scale, none
+pulsing */
+#define SPAWN_HEAT_UNIFORM_T 0.5f
 
 /* the floor is looked for from this far over the spawn point to this far
 under it */
@@ -128,6 +141,7 @@ static long spawn_marker_flash_build(struct player_starting_location const *loca
 static void spawn_marker_heat_color(struct spawn_heat_view const *heat, long index, real_argb_color *color,
 	boolean *cross);
 static void spawn_marker_team_color(short team_index, real_argb_color *color);
+static real spawn_marker_near_fade(real distance);
 
 /* ---------- globals */
 
@@ -216,7 +230,7 @@ void render_spawn_markers(
 			}
 			built = spawn_marker_flash_build(location, flashes[flash_index].age, &spawn_marker_points[vertex_count]);
 			spawn_marker_team_color(flashes[flash_index].team_index, &color);
-			color.alpha = 1.0f - flashes[flash_index].age;
+			color.alpha = (1.0f - flashes[flash_index].age) * spawn_marker_near_fade(distance);
 			if (distance > SPAWN_MARKER_RANGE - SPAWN_MARKER_FADE)
 				color.alpha *= (SPAWN_MARKER_RANGE - distance) / SPAWN_MARKER_FADE;
 			pixel = real_argb_color_to_pixel32(&color);
@@ -269,9 +283,12 @@ void render_spawn_markers(
 			if (!built)
 				continue;
 
-			/* fading out toward the range's limit */
+			/* fading out toward the range's limit; with SPAWN HEAT, and
+			near the camera */
 			if (distance > SPAWN_MARKER_RANGE - SPAWN_MARKER_FADE)
 				color.alpha *= (SPAWN_MARKER_RANGE - distance) / SPAWN_MARKER_FADE;
+			if (heat)
+				color.alpha *= spawn_marker_near_fade(distance);
 			pixel = real_argb_color_to_pixel32(&color);
 			for (vertex_index = 0; vertex_index < built; vertex_index++)
 				spawn_marker_colors[vertex_count + vertex_index] = pixel;
@@ -492,6 +509,10 @@ static void spawn_marker_heat_color(
 	case _spawn_rating_rated:
 	{
 		real t = heat->probability_maximum > 0.0f ? spawn->probability / heat->probability_maximum : 0.0f;
+
+		/* (near uniform: all the middle colour) */
+		if (heat->near_uniform)
+			t = SPAWN_HEAT_UNIFORM_T;
 		short stop;
 
 		t = PIN(t, 0.0f, 1.0f);
@@ -541,6 +562,23 @@ static void spawn_marker_heat_color(
 	}
 
 	return;
+}
+
+/* SPAWN HEAT's near fade at a distance from the camera: 1 from
+SPAWN_HEAT_NEAR_FULL out, SPAWN_HEAT_NEAR_FAINT_PART from
+SPAWN_HEAT_NEAR_FAINT in, straight between */
+static real spawn_marker_near_fade(
+	real distance)
+{
+	real part;
+
+	if (distance >= SPAWN_HEAT_NEAR_FULL)
+		return 1.0f;
+	if (distance <= SPAWN_HEAT_NEAR_FAINT)
+		return SPAWN_HEAT_NEAR_FAINT_PART;
+	part = (distance - SPAWN_HEAT_NEAR_FAINT) / (SPAWN_HEAT_NEAR_FULL - SPAWN_HEAT_NEAR_FAINT);
+
+	return SPAWN_HEAT_NEAR_FAINT_PART + (1.0f - SPAWN_HEAT_NEAR_FAINT_PART) * part;
 }
 
 /* a team's colour: red 0, blue 1, white for none (a game without teams),

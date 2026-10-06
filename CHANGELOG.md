@@ -13,8 +13,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   rules worked out on each machine (nothing is sent, the game's random
   numbers are untouched): MINE (the default) for your player, ENEMY for the
   other team (team games), OFF the plain green markers. Cold blue-grey to
-  hot orange-red, the likeliest pulsing; dark red with a cross for a spawn
-  that can't be picked now; the other team's CTF spawns faint. A ring
+  hot orange-red, the likeliest pulsing (all green, none pulsing, when the
+  spawns that can be picked are about equally likely: the least likely at
+  least 80% of the likeliest); dark red with a cross for a spawn that can't
+  be picked now; the other team's CTF spawns faint. Markers and flashes fade
+  as the camera comes within 4 units, to a fifth at 1.5 units, so the one
+  underfoot doesn't cover the view. A ring
   flashes where a player really spawns, and debug.txt logs each spawn with
   the chance it had. Each split-screen view has its own.
 - CALLOUT DETAIL (Settings > Game Options, under CALLOUTS;
