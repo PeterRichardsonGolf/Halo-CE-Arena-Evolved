@@ -113,13 +113,11 @@ play:
 - A performance overlay in the HUD's style (Settings > Video > PERFORMANCE:
   FPS, or FPS with frame times and draws; top left or top right).
 - A match clock, as in the Master Chief Collection (Settings > Game Options >
-  MULTIPLAYER GAME TIMER: OFF, TIME REMAINING or TIME ELAPSED). TIME
+  MULTIPLAYER GAME TIMER: OFF, TIME REMAINING, TIME ELAPSED or BOTH). TIME
   REMAINING shows the time left (counting up when there is no time limit),
-  TIME ELAPSED the time played. It
-  sits in the bottom right corner of each view, lined up with the motion
-  sensor. The scoreboard (hold BACK) shows both times, such as
-  "1:33 PLAYED · 8:27 LEFT" (just "1:33 PLAYED" with no time limit), on a
-  row under its title.
+  TIME ELAPSED the time played, and BOTH the time left with the time played
+  smaller above it (the time played alone with no time limit). It sits in
+  the bottom right corner of each view, lined up with the motion sensor.
   On Halo 1: NHE's maps it replaces their own clock.
 - A campaign timer, as in the Master Chief Collection (Settings > Game Options
   > CAMPAIGN TIMER: OFF or ON, off by default): the time played on the level,

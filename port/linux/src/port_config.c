@@ -181,10 +181,11 @@ static const struct config_setting config_settings[] =
 		"The scoreboard panel's colour: \"red, green, blue, alpha\", each 0 to 255\n"
 		"(alpha 0 is see-through, 255 solid)." },
 	{ "display.match_clock", _config_string, "\"down\"", "HALO_MATCH_CLOCK", _environment_value, _platform_all,
-		"A clock in the bottom right corner of a multiplayer game's view and on\n"
-		"its scoreboard: \"down\" the time left of the gametype's time limit (with\n"
-		"none, the time played), \"up\" the time played, or \"off\". On Halo 1:\n"
-		"NHE's maps it takes the place of their own clock; off leaves theirs." },
+		"A clock in the bottom right corner of a multiplayer game's view: \"down\"\n"
+		"the time left of the gametype's time limit (with none, the time played),\n"
+		"\"up\" the time played, \"both\" the time left with the time played smaller\n"
+		"above it (with no time limit, the time played alone), or \"off\". On Halo\n"
+		"1: NHE's maps it takes the place of their own clock; off leaves theirs." },
 	{ "display.campaign_timer", _config_boolean, "false", "HALO_CAMPAIGN_TIMER", _environment_value, _platform_all,
 		"A clock in the bottom right corner of each view in the campaign, as the\n"
 		"Master Chief Collection's: the time played on the level, in game time\n"

@@ -7,6 +7,13 @@ releases yet, so the sections are dated.
 ## Unreleased
 
 ### Added
+- MULTIPLAYER GAME TIMER (Settings > Game Options, `display.match_clock`)
+  has a fourth value, BOTH (`both`): the corner clock shows the time
+  remaining where it always is, with the time elapsed smaller (0.7 of it)
+  directly above it, right-aligned to the same edge; with no time limit, the
+  time elapsed alone. Help: "Display the time remaining, with the time
+  elapsed above it."
+
 - ARENA OPTIONS has a TIME LIMIT row, first: NONE or 10, 15, 20, 25, 30 or
   45 MINUTES, the Halo PC gametype screens' own choices, for the same
   setting. Its description in the gametype editor and Server Setup says so.
@@ -27,6 +34,9 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- The scoreboard no longer shows the PLAYED / LEFT times: it is back to the
+  stock layout (title, headings, rows) in every view, one column or two. The
+  match clock is the corner clock alone.
 - `debug.test_input`'s scripted menu presses (`menu:`) are held 250 ms of
   their second, not 150, so that a slow frame (a test run at a low priority)
   does not miss one.
