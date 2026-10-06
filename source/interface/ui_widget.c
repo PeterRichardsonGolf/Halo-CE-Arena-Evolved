@@ -4005,6 +4005,30 @@ static void widget_instance_initialize(
 	return;
 }
 
+/* port: whether the local player's open screen is one whose tag path has
+the text in it (menu_functions.c: is the player still in their SETTINGS,
+which has the profile edit) */
+boolean ui_widget_port_local_player_screen_in(
+	short local_player_index,
+	char const *path_part)
+{
+	long widget_index;
+
+	if (!widget_globals.initialized)
+		return FALSE;
+	for (widget_index = 0; widget_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS; widget_index++)
+	{
+		struct widget_instance *widget = widget_globals.active_widgets[widget_index];
+
+		if (widget && widget->local_player_index == local_player_index && widget->definition_tag_index != NONE &&
+			strstr(tag_get_name(widget->definition_tag_index), path_part))
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /* port: the PC version's events that this engine never sends (its custom
 activation), for the menus' functions (port/linux/game/menu_functions.c):
 runs the widget's handlers for the event, else the first descendant's that

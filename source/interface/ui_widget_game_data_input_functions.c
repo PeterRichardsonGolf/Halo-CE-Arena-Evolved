@@ -2201,6 +2201,22 @@ static void get_editable_player_profile_display_name(
 		widget->local_player_index >= 0 && widget->local_player_index < 4,
 		"profile display name requires a valid local player index");
 
+	/* port: a split-screen player's in-game SETTINGS without their own
+	profile shows why, not the profile being edited (another player's:
+	port/linux/game/menu_functions.c) */
+	{
+		extern boolean pc_menu_settings_without_profile(short local_player);
+		extern void pc_menu_settings_profile_note(short local_player, wchar_t *text, short length);
+
+		if (pc_menu_settings_without_profile(widget->local_player_index))
+		{
+			widget->parameters.text_box.text = ui_widget_realloc(widget->parameters.text_box.text,
+				32 * sizeof(wchar_t), "c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c", 0xA04);
+			if (widget->parameters.text_box.text)
+				pc_menu_settings_profile_note(widget->local_player_index, widget->parameters.text_box.text, 32);
+			return;
+		}
+	}
 	profile = player_ui_get_edit_player_profile();
 	if (profile)
 	{

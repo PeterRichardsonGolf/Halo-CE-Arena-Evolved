@@ -121,6 +121,7 @@ int config_boolean(char const *name);
 #endif
 
 /* the game's (port) */
+boolean ui_widget_port_local_player_screen_in(short local_player_index, char const *path_part);
 boolean ui_widget_port_dispatch_event(struct widget_instance *widget, short event_type, short controller_index,
 	boolean *deleted);
 void ui_widget_port_go_back(struct widget_instance *widget);
@@ -533,18 +534,95 @@ has not); its OK puts the controller settings into the game's copy of the
 profile too (profile_save_changes) */
 static long pause_profile_edited = NONE;
 static short pause_profile_player = 0;
+/* port: in a match, player_ui's one profile edit is one player's at a time
+(two split-screen players' SETTINGS would edit, show and save each other's):
+the local player whose SETTINGS has it (NONE: nobody's in a match). A
+player's SETTINGS opened while another's has it, or by a player with no
+profile of their own (players 2-4 never fall back to player 1's), has its
+profile's rows (GAMEPADS, COLOR) dimmed and blocked and the screen's other
+rows (the game-wide settings) as they are: settings_without_profile, with
+the player whose edit it is (NONE: the player has no profile) */
+static short pause_profile_owner = NONE;
+static boolean settings_without_profile[4];
+static short settings_profile_holder[4];
+
+/* (ui_widget_event_handler_functions.c's and ui_widget_game_data_input_functions.c's) */
+boolean pc_menu_settings_without_profile(short local_player)
+{
+	/* (only in a match: a flag left by a screen the game's end closed is
+	not the main menu's) */
+	return local_player >= 0 && local_player < 4 && settings_without_profile[local_player] &&
+		game_in_progress() && !main_menu_is_active();
+}
+
+/* the profile edit screen's profile label for such a player: why their
+profile's rows are blocked */
+void pc_menu_settings_profile_note(short local_player, wchar_t *text, short length)
+{
+	char note[40];
+	short index;
+
+	if (!pc_menu_settings_without_profile(local_player) || length <= 0)
+		return;
+	if (settings_profile_holder[local_player] == NONE)
+		snprintf(note, sizeof(note), "NO PROFILE");
+	else
+		snprintf(note, sizeof(note), "PLAYER %d IS EDITING", settings_profile_holder[local_player] + 1);
+	for (index = 0; index < length - 1 && note[index]; index++)
+		text[index] = (wchar_t)note[index];
+	text[index] = 0;
+}
+
+/* the screen's B or back ("player profile end editing"): FALSE when the
+edit is not the player's (it stays the other player's); TRUE to end it */
+boolean pc_menu_profile_edit_end(short local_player)
+{
+	if (pc_menu_settings_without_profile(local_player))
+	{
+		settings_without_profile[local_player] = FALSE;
+		return FALSE;
+	}
+	if (pause_profile_owner == local_player)
+		pause_profile_owner = NONE;
+	return TRUE;
+}
 
 /* begins editing player 1's profile (as the campaign has it); FALSE if
-there is none */
+there is none. In a match, the player's own profile (see above) */
 boolean pc_menu_profile_edit_begin(short local_player)
 {
 	struct player_profile profile;
 	long active;
+	boolean match = game_in_progress() && !main_menu_is_active();
 
 	if (local_player < 0 || local_player >= 4)
 		local_player = 0;
 	active = player_ui_get_active_player_profile_index(local_player);
+	settings_without_profile[local_player] = FALSE;
+	if (match)
+	{
+		/* (an owner no longer in their SETTINGS, its screens closed with
+		their pause or the game's end, has given it up) */
+		if (pause_profile_owner != NONE && pause_profile_owner != local_player &&
+			player_ui_get_edit_player_profile() &&
+			ui_widget_port_local_player_screen_in(pause_profile_owner, "\\player_profile_edit\\"))
+		{
+			settings_without_profile[local_player] = TRUE;
+			settings_profile_holder[local_player] = pause_profile_owner;
+			platform_log("menus: player %d's settings without their profile (player %d is editing theirs)",
+				local_player + 1, pause_profile_owner + 1);
+			return TRUE;
+		}
+		if (active == NONE && local_player != 0)
+		{
+			settings_without_profile[local_player] = TRUE;
+			settings_profile_holder[local_player] = NONE;
+			platform_log("menus: player %d's settings without a profile (they have none)", local_player + 1);
+			return TRUE;
+		}
+	}
 	pause_profile_edited = NONE;
+	pause_profile_owner = NONE;
 	if (game_in_progress() && active != NONE)
 	{
 		player_ui_begin_editing_profile(active);
@@ -552,11 +630,15 @@ boolean pc_menu_profile_edit_begin(short local_player)
 			return FALSE;
 		pause_profile_edited = active;
 		pause_profile_player = local_player;
+		if (match)
+			pause_profile_owner = local_player;
 		return TRUE;
 	}
 	if (!campaign_profile(0, &profile))
 		return FALSE;
 	player_ui_begin_editing_profile(player_ui_get_active_player_profile_index(0));
+	if (match)
+		pause_profile_owner = local_player;
 	return TRUE;
 }
 
@@ -4223,6 +4305,18 @@ is chosen), editing ends and the previous screen comes back, as CANCEL
 (the Xbox's called that a failure, and closed every screen) */
 static boolean profile_save_changes(struct widget_instance *widget, boolean *widget_deleted)
 {
+	short local_player = controller_of(widget);
+
+	/* (port: a player's settings without their profile: the edit, if any,
+	is another player's, not to be saved or ended here) */
+	if (pc_menu_settings_without_profile(local_player))
+	{
+		settings_without_profile[local_player] = FALSE;
+		ui_play_audio_feedback_sound(SOUND_FORWARD);
+		ui_widget_port_go_back(widget);
+		*widget_deleted = TRUE;
+		return TRUE;
+	}
 	if (player_ui_edit_profile_is_dirty())
 	{
 		struct player_profile *edited = player_ui_get_edit_player_profile();
@@ -4234,6 +4328,8 @@ static boolean profile_save_changes(struct widget_instance *widget, boolean *wid
 		pause_profile_edited = NONE;
 		if (player_ui_save_profile())
 		{
+			if (pause_profile_owner == local_player)
+				pause_profile_owner = NONE;
 			/* (in a game: the game's copy of the profile, which the save does
 			not touch, gets the controller settings now, as #67's) */
 			if (edited && applied != NONE &&
@@ -4251,6 +4347,8 @@ static boolean profile_save_changes(struct widget_instance *widget, boolean *wid
 		platform_log("menus: could not save the profile's changes");
 		return campaign_fail();
 	}
+	if (pause_profile_owner == local_player)
+		pause_profile_owner = NONE;
 	player_ui_end_editing_profile();
 	ui_play_audio_feedback_sound(SOUND_FORWARD);
 	ui_widget_port_go_back(widget);

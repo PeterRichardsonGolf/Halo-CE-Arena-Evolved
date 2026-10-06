@@ -2195,6 +2195,12 @@ static boolean player_profile_end_editing(
 	struct event_record *event,
 	boolean *widget_deleted)
 {
+	/* port: not another split-screen player's edit (menu_functions.c's
+	pc_menu_profile_edit_end) */
+	extern boolean pc_menu_profile_edit_end(short local_player);
+
+	if (!pc_menu_profile_edit_end(widget->local_player_index))
+		return TRUE;
 	event_handler_functions.profile_index = NONE;
 	player_ui_end_editing_profile();
 	return TRUE;
@@ -2619,13 +2625,38 @@ static void hide_rename_item(
 	}
 }
 
+/* port: a split-screen player's in-game SETTINGS without their own profile
+(port/linux/game/menu_functions.c's pc_menu_profile_edit_begin): the
+profile's rows (GAMEPADS, COLOR) dimmed, as the Xbox's dims what a missing
+network cable stops, and blocked */
+static void block_profile_items(
+	struct widget_instance *widget)
+{
+	struct widget_instance *child;
+
+	for (child = widget ? widget->child : NULL; child; child = child->next)
+	{
+		if (!strcmp(child->name, "gamepads_profile_item") || !strcmp(child->name, "color_profile_item"))
+		{
+			child->disabled = TRUE;
+			child->alpha_modifier = 0.333f;
+			if (widget->focused_child == child)
+				widget->focused_child = child->next;
+		}
+		block_profile_items(child);
+	}
+}
+
 static boolean close_calling_widget_if_not_editing_profile(
 	struct widget_instance *widget,
 	struct event_record *event,
 	boolean *widget_deleted)
 {
+	extern boolean pc_menu_settings_without_profile(short local_player);
 	boolean result;
-	if (!player_ui_get_edit_player_profile() && !player_ui_get_edit_playlist_profile())
+	boolean without_profile = pc_menu_settings_without_profile(widget_instance_get_topmost_parent(widget)->local_player_index);
+
+	if (!without_profile && !player_ui_get_edit_player_profile() && !player_ui_get_edit_playlist_profile())
 	{
 		struct widget_instance *top = widget_instance_get_topmost_parent(widget);
 		error(2, "closing widget '%s' because no saved game file is being edited", top->name);
@@ -2640,6 +2671,8 @@ static boolean close_calling_widget_if_not_editing_profile(
 		hidden: its virtual keyboard's tags live in ui.map, which is not loaded */
 		if (game_in_progress() && !main_menu_is_active())
 			hide_rename_item(widget_instance_get_topmost_parent(widget));
+		if (without_profile)
+			block_profile_items(widget_instance_get_topmost_parent(widget));
 	}
 	return result;
 }
