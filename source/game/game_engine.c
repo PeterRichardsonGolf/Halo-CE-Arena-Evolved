@@ -5062,7 +5062,7 @@ boolean game_engine_pregame_countdown_covers(
 	return game_engine_pregame_countdown() && time < PREGAME_COUNTDOWN_TICKS;
 }
 
-/* port: MATCH CLOCK (display.match_clock: "off", "down" or "up"), this
+/* port: MATCH CLOCK (display.match_clock: "off", "down", "up" or "both"), this
 machine's own display choice, not the gametype's */
 short game_engine_match_clock_setting(
 	void)
@@ -5080,6 +5080,8 @@ short game_engine_match_clock_setting(
 			setting = _match_clock_off;
 		else if (value && !csstrcmp(value, "up"))
 			setting = _match_clock_up;
+		else if (value && !csstrcmp(value, "both"))
+			setting = _match_clock_both;
 		else
 			setting = _match_clock_down;
 	}
@@ -5090,8 +5092,9 @@ short game_engine_match_clock_setting(
 /* the match clock's text (M:SS) in a multiplayer game, FALSE for none: MATCH
 CLOCK off, the game over, or PRE-GAME COUNTDOWN counting. COUNT DOWN is the
 time left of the gametype's time limit (rounded up, so 0:00 only as it
-ends), or with no time limit the game time; COUNT UP is the game time. Game
-time only, which every machine has as the host's */
+ends), or with no time limit the game time; COUNT UP is the game time; BOTH
+is COUNT DOWN's (the time played over it: game_engine_match_clock_elapsed).
+Game time only, which every machine has as the host's */
 boolean game_engine_match_clock(
 	wchar_t *string,
 	long count)
@@ -5106,10 +5109,24 @@ boolean game_engine_match_clock(
 		return FALSE;
 	}
 	time_limit = game_variant_options_get()->time_limit;
-	if (setting == _match_clock_down && time_limit > 0)
+	if ((setting == _match_clock_down || setting == _match_clock_both) && time_limit > 0)
 		game_engine_format_clock(time_limit * 60L * TICKS_PER_SECOND - game_time_get(), TRUE, string, count);
 	else
 		game_engine_format_clock(game_time_get(), FALSE, string, count);
+
+	return TRUE;
+}
+
+boolean game_engine_match_clock_elapsed(
+	wchar_t *string,
+	long count)
+{
+	if (game_engine_match_clock_setting() != _match_clock_both || game_variant_options_get()->time_limit <= 0 ||
+		!game_engine_match_clock(string, count))
+	{
+		return FALSE;
+	}
+	game_engine_format_clock(game_time_get(), FALSE, string, count);
 
 	return TRUE;
 }

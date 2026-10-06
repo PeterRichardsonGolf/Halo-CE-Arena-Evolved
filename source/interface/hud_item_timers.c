@@ -7,18 +7,19 @@ view from hud_draw_screen (hud.c).
 
 The clock is M:SS in the view's bottom right corner, as the Master Chief
 Collection's (game_engine_match_clock: the time left or the time played, in
-any multiplayer game): its right edge under the right edge of the shield
-and health meters at the view's top right, its digits' foot level with the
-motion sensor's background's foot in the opposite corner, where the
-sensor's range ("15m") is. The meters' and the sensor's places are as
-hud_unit.c last drew them in this view (hud_item_timers_set_meters,
-hud_item_timers_set_motion_sensor). With no meters seen (or a HUD that has
-them in the view's left half), the clock is as far from the view's right
-edge as the sensor's background is from its left; with no sensor seen
-(hidden by a script or the gametype), 4% of the view's width from its
-right edge and 6% of its height from its bottom. Room is left above it for
-a score box (upstream's always-on score, not merged). On Halo 1: NHE's
-maps it keeps out of their countdown's titles (g_*).
+any multiplayer game; with BOTH and a time limit, the time played smaller
+directly above the time left, game_engine_match_clock_elapsed): its right
+edge under the right edge of the shield and health meters at the view's top
+right, its digits' foot level with the motion sensor's background's foot in
+the opposite corner, where the sensor's range ("15m") is. The meters' and
+the sensor's places are as hud_unit.c last drew them in this view
+(hud_item_timers_set_meters, hud_item_timers_set_motion_sensor). With no
+meters seen (or a HUD that has them in the view's left half), the clock is
+as far from the view's right edge as the sensor's background is from its
+left; with no sensor seen (hidden by a script or the gametype), 4% of the
+view's width from its right edge and 6% of its height from its bottom. Room
+is left above it for a score box (upstream's always-on score, not merged).
+On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*).
 
 The power list is one line of the rockets', sniper's, overshield's and
 camo's next spawns, soonest first (entries of one class spawning together
@@ -105,6 +106,7 @@ one list beside them.
 #define HUD_WAYPOINT_ARROW_SIZE 0.6f	/* (our waypoint arrows, of CE's nav point size) */
 #define HUD_WAYPOINT_LABEL_SCALE 0.65f	/* (a waypoint's label text) */
 #define HUD_ITEM_TIMERS_CLOCK_SCALE 0.9f	/* (the clock: the Master Chief Collection's size, digits 20 pixels tall at 1080p) */
+#define HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE (0.7f * HUD_ITEM_TIMERS_CLOCK_SCALE)	/* (MATCH CLOCK BOTH's time played over it) */
 #define HUD_ITEM_TIMERS_TOP 2	/* (the overlay's line's, from the view's top) */
 #define HUD_ITEM_TIMERS_SIDE 4	/* (the power list's room from a view's sides, as the overlay's) */
 #define HUD_ITEM_TIMERS_GAP 12	/* (between the power list and the clock, or the overlay) */
@@ -293,18 +295,22 @@ static long hud_item_timers_line_width_scaled(
 }
 
 /* the clock (text) in the view's bottom right corner, by the meters' and
-the motion sensor's places; returns the room it takes from the view's
-right edge */
+the motion sensor's places, and above it a smaller line (above: MATCH CLOCK
+BOTH's time played; NULL for none) right-aligned to the same edge; returns
+the room they take from the view's right edge */
 static long hud_item_timers_draw_clock(
 	long font_index,
-	wchar_t const *text)
+	wchar_t const *text,
+	wchar_t const *above)
 {
 	struct font_header *font = font_definition_get(font_index);
 	short view_width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 	short view_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
 	short local_player_index = render.local_player_index;
 	short inset;
+	short top;
 	long baseline;
+	long room;
 	/* (port: HUD AREA's insets of the view's HUD, hud_area_insets) */
 	short area_left;
 	short area_right;
@@ -343,11 +349,20 @@ static long hud_item_timers_draw_clock(
 	}
 	/* (the digits' foot, their baseline, there: the line's top an ascent
 	(at the clock's scale) above it) */
-	hud_item_timers_draw_line_scaled(font_index, _text_justification_right,
-		(short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_CLOCK_SCALE + 0.5f)),
-		inset, inset, text, HUD_ITEM_TIMERS_CLOCK_SCALE);
+	top = (short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_CLOCK_SCALE + 0.5f));
+	hud_item_timers_draw_line_scaled(font_index, _text_justification_right, top, inset, inset, text,
+		HUD_ITEM_TIMERS_CLOCK_SCALE);
+	room = hud_item_timers_line_width_scaled(font_index, text, HUD_ITEM_TIMERS_CLOCK_SCALE);
+	/* (the smaller line's baseline at the clock's line's top) */
+	if (above && above[0])
+	{
+		hud_item_timers_draw_line_scaled(font_index, _text_justification_right,
+			(short)(top - (long)(font->ascending_height * HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE + 0.5f)), inset, inset,
+			above, HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE);
+		room = MAX(room, hud_item_timers_line_width_scaled(font_index, above, HUD_ITEM_TIMERS_CLOCK_ABOVE_SCALE));
+	}
 
-	return inset + hud_item_timers_line_width_scaled(font_index, text, HUD_ITEM_TIMERS_CLOCK_SCALE);
+	return inset + room;
 }
 
 /* an entry's name in the shorter power line: its label, RED / BLUE as R /
@@ -711,6 +726,7 @@ void hud_draw_item_timers(
 {
 	long font_index = hud_item_timers_font_index();
 	wchar_t clock[32];
+	wchar_t elapsed[32];
 	long clock_room = 0;
 
 	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
@@ -722,7 +738,10 @@ void hud_draw_item_timers(
 		return;
 	/* (not over Halo 1: NHE's maps' countdown) */
 	if (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
-		clock_room = hud_item_timers_draw_clock(font_index, clock);
+	{
+		clock_room = hud_item_timers_draw_clock(font_index, clock,
+			game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)) ? elapsed : NULL);
+	}
 	/* (the gametype's TIMERS and TRAINING; not once the game is over, over
 	the postgame's view, as the clock is not) */
 	if (game_engine_item_timers() && !game_engine_game_over())
@@ -813,7 +832,7 @@ void hud_draw_campaign_timer(
 	if (font_index == NONE)
 		return;
 	game_engine_format_clock(hud_campaign_timer_ticks, FALSE, clock, NUMBEROF(clock));
-	hud_item_timers_draw_clock(font_index, clock);
+	hud_item_timers_draw_clock(font_index, clock, NULL);
 
 	return;
 }

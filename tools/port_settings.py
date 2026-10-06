@@ -22,7 +22,7 @@ ON_OFF = [("ON", "true"), ("OFF", "false")]
 PERFORMANCE_LEVELS = [("OFF", "off"), ("FPS", "fps"), ("MINIMAL", "minimal"), ("FULL", "full")]
 CORNERS = [("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
 HEALTH_STYLES = [("CLASSIC", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
-MATCH_CLOCKS = [("OFF", "off"), ("TIME REMAINING", "down"), ("TIME ELAPSED", "up")]
+MATCH_CLOCKS = [("OFF", "off"), ("TIME REMAINING", "down"), ("TIME ELAPSED", "up"), ("BOTH", "both")]
 HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
 SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
 CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
@@ -102,9 +102,10 @@ SCREENS = {
              "A clock of the time played on the level, in the\ncampaign's corner by the motion sensor.", None),
             # (a help for each value, as the Master Chief Collection's)
             ("MULTIPLAYER GAME TIMER:", "display.match_clock", MATCH_CLOCKS,
-             ["No clock in a multiplayer game's corner or on\nits scoreboard.",
+             ["No clock in a multiplayer game's corner.",
               "Display the time remaining until the game ends.",
-              "Display the time elapsed since the game started."], None),
+              "Display the time elapsed since the game started.",
+              "Display the time remaining, with the time\nelapsed above it."], None),
             ("HUD AREA:", "display.hud_area", HUD_AREAS,
              "On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide.", None),
             ("COMPACT HUD:", "display.compact_hud", ON_OFF,

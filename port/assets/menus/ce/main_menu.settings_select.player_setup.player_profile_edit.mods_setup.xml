@@ -72,7 +72,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/match_clock_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/match_clock_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|TIME REMAINING|TIME ELAPSED" setting="display.match_clock" values="off|down|up" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/match_clock_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|TIME REMAINING|TIME ELAPSED|BOTH" setting="display.match_clock" values="off|down|up|both" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
 		<on event="created" run="port setting load"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_hud_area" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
@@ -154,9 +154,10 @@
 		<string text="How fast the scoreboard fades in and out while\nBack (or Tab) is held."/>
 		<string text="Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too."/>
 		<string text="The callouts' voice: a folder of voices/, next\nto maps/."/>
-		<string text="No clock in a multiplayer game's corner or on\nits scoreboard."/>
+		<string text="No clock in a multiplayer game's corner."/>
 		<string text="Display the time remaining until the game ends."/>
 		<string text="Display the time elapsed since the game started."/>
+		<string text="Display the time remaining, with the time\nelapsed above it."/>
 	</strings>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_profile_item" type="text" left="51" top="309" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5" platform="desktop">
 		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/mods_settings_screen"/>

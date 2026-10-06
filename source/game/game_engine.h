@@ -673,7 +673,9 @@ enum
 {
 	_match_clock_off = 0,
 	_match_clock_down,
-	_match_clock_up
+	_match_clock_up,
+	/* (the time left, the time played smaller above it) */
+	_match_clock_both
 };
 
 short game_engine_match_clock_setting(
@@ -686,6 +688,11 @@ void game_engine_format_clock(
 	wchar_t *string,
 	long count);
 boolean game_engine_match_clock(
+	wchar_t *string,
+	long count);
+/* port: MATCH CLOCK BOTH's second line, the time played over the time left
+(FALSE where there is none: another setting, no time limit, no clock) */
+boolean game_engine_match_clock_elapsed(
 	wchar_t *string,
 	long count);
 /* port: how far a local player's view's scoreboard has faded in (0 closed,
