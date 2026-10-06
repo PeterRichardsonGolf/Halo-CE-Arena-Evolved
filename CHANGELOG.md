@@ -48,6 +48,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   spot's item is said up as soon as it is seen, else "powerup is up" half
   a second on (it was left out). Items spawning more often than every 10
   seconds are no longer said up.
+- In a match, one player at a time edits a profile from the pause menu's
+  SETTINGS: another player's SETTINGS shows "PLAYER n IS EDITING" with
+  GAMEPADS and CHANGE COLOR dimmed until that player is done, and players 2
+  to 4 without a profile get "NO PROFILE" (they no longer edit player 1's).
+  CHANGE COLOR says the colour is used from the next time you join a game.
+- Multiplayer pause screens (PC menus): B or Back closes only the pressing
+  player's pause, not every player's.
+- The network test's quick launch gives each local player the last-used
+  profile, so their controller layouts apply.
 - Merged OpenCE build-129..132: maps' and the network's input checked
   before it is trusted (a damaged map or message is refused, not followed);
   anti-aliasing (Settings > Video ANTI-ALIASING: FXAA, SMAA, SSAA 2X, MSAA
@@ -67,6 +76,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   build-129. Network version 18 is announced; hosts of versions 11 through
   18 can be joined (ChupathingyCE 0.6.8b and OpenCE build-129 to build-131
   host 18).
+
+### Fixed
+- Linux: Alt+F4 quits, as closing the window does (a fullscreen game's
+  keyboard grab kept the desktop's shortcut from reaching it).
+- No red "event handler function failed" line after saving SETTINGS.
+- Halo 1: NHE's maps and Custom Edition maps load again past the merged
+  map checks (NHE's ui, a10 and atlas maps end a little short of their
+  header's size; NHE Blood Gulch's scripts sit 2 bytes off alignment; CE
+  maps' scripts are checked against the CE tag cache).
 
 ## 0.1.0-beta - 2026-10-05
 

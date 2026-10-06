@@ -117,7 +117,8 @@ play:
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
   you can start on your own.
 - SETTINGS from the pause menu in the campaign, for each player in split
-  screen, changing that player's own profile.
+  screen, changing that player's own profile; in a match one player edits
+  a profile at a time, and B closes only your own pause.
 - The in-game scoreboard centred in each view.
 
 **Controls and display**
