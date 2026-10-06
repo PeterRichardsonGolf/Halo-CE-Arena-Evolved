@@ -17,6 +17,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   power items" in ten / are up, "and", "in ten" and "powerup is up".
 
 ### Changed
+- Gametype names: AE SLAYER is now AE FFA SLAY and AE ODDBALL is AE FFA
+  BALL, so the free for all gametypes say so (the other Arena Evolved ones
+  are team games). On a save that has them, the old ones are renamed in
+  place while they are as they were seeded; one you changed is kept and the
+  new one added beside it, and one you deleted stays deleted.
+- The gametype lists (the PC menus' and split screen's) show the custom
+  gametypes in order: the Arena Evolved set, then the NHE set, then your
+  own, each alphabetical; the built-in gametypes keep their order.
 - Callout timing: the items' calls are planned before the clock's, so an
   item alone is called on its 10-second mark and is up on its spawn's tick
   (they were up to 6.7 seconds early and 2 to 4.5 seconds late, moved

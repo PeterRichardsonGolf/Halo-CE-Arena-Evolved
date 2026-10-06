@@ -47,6 +47,12 @@ void playlist_profile_save_with_options(
 	long playlist_profile_index,
 	struct game_variant *variant,
 	struct game_variant_options const *options);
+/* port: whether a gametype's file is exactly what saving this variant with
+these options writes */
+boolean playlist_profile_matches(
+	long playlist_profile_index,
+	struct game_variant const *variant,
+	struct game_variant_options const *options);
 /* port: the asynchronous write (playlist_profile_save) finished */
 void playlist_profile_wait_for_write(
 	void);

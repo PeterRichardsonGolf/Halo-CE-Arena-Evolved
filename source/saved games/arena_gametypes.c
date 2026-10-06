@@ -12,6 +12,14 @@ yet seeded is written, unless a saved game of its name already exists
 (never overwritten), and its name is added to the record
 z:\saved\playlists\arena_gametypes.txt. One the player deletes or renames
 is not written again; deleting the record brings back the missing ones.
+
+A gametype seeded under a name since changed (arena_gametype_renames) is
+renamed in place while its file is still exactly as seeded; one the player
+changed is left as it is and the new one written beside it; one the player
+deleted stays deleted.
+
+The gametype lists show the custom gametypes in order
+(arena_gametypes_sort): the AE set, Halo 1: NHE's, then the player's own.
 */
 
 /* ---------- headers */
@@ -24,8 +32,11 @@ is not written again; deleting the record brings back the missing ones.
 #include "saved games/playlist_profile.h"
 #include "saved games/saved_game_files.h"
 #include "tag_files/files.h"
+#include "text/unicode.h"
 
 #include <string.h>
+/* (MAX_GAMENAME: a saved game's display name) */
+#include <xtl.h>
 
 /* ---------- constants */
 
@@ -37,6 +48,17 @@ enum
 	ARENA_GAMETYPE_NAME_LENGTH = 12,
 	/* the record of those seeded: their names, a line each */
 	ARENA_GAMETYPES_RECORD_SIZE = 1024,
+	/* the custom gametypes looked through (saved_game_files.c lists at
+	most 100 saved games) */
+	ARENA_GAMETYPES_MAXIMUM_SAVED = 128,
+};
+
+/* the gametype lists' groups of custom gametypes, in their order */
+enum
+{
+	_arena_group_ae,
+	_arena_group_nhe,
+	_arena_group_player,
 };
 
 /* what every AE gametype adds to its stock one: AE's rules (NO SPREAD FULL,
@@ -163,8 +185,9 @@ gametype options it adds (game_engine.h's universal_variant flags) */
 static struct arena_gametype const arena_gametypes[] =
 {
 	/* AE's casual set: TIMERS, the motion sensor, 15 minutes, the stock
-	respawns */
-	{ "AE SLAYER", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+	respawns. The free for all ones say FFA (AE PRO FFA too); the rest
+	are team games */
+	{ "AE FFA SLAY", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE TEAM SLY", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
@@ -172,7 +195,7 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
-	{ "AE ODDBALL", build_game_variant_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+	{ "AE FFA BALL", build_game_variant_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
 	/* the casual set for two against two (split-screen on one machine):
 	the same rules; the host's player limit (4) is a server setting, not
@@ -236,6 +259,18 @@ static struct arena_gametype const arena_gametypes[] =
 		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_GHOST, FALSE },
 };
 
+/* the AE gametypes seeded before under other names (free for all ones
+whose names did not say so) */
+static struct
+{
+	char const *old_name;
+	char const *name;
+} const arena_gametype_renames[] =
+{
+	{ "AE SLAYER", "AE FFA SLAY" },
+	{ "AE ODDBALL", "AE FFA BALL" },
+};
+
 static char const arena_gametypes_record_path[] = "z:\\saved\\playlists\\arena_gametypes.txt";
 
 /* ---------- prototypes */
@@ -243,6 +278,28 @@ static char const arena_gametypes_record_path[] = "z:\\saved\\playlists\\arena_g
 static boolean arena_gametype_write(
 	struct arena_gametype const *gametype,
 	boolean *written);
+static void arena_gametype_build(
+	struct arena_gametype const *gametype,
+	wchar_t const *name,
+	struct game_variant *variant,
+	struct game_variant_options *options);
+static void arena_gametype_wide_name(
+	char const *name,
+	wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH]);
+static boolean arena_gametypes_record_add(
+	char *record,
+	unsigned long *record_length,
+	char const *name);
+static void arena_gametypes_rename(
+	char *record,
+	unsigned long *record_length,
+	boolean *record_changed,
+	boolean *written);
+static short arena_gametype_group(
+	wchar_t const *name);
+static int arena_gametype_name_compare(
+	wchar_t const *a,
+	wchar_t const *b);
 static void arena_gametype_log(
 	struct arena_gametype const *gametype,
 	struct game_variant const *variant,
@@ -290,11 +347,13 @@ boolean arena_gametypes_seed(
 		file_close(&file);
 	}
 
+	/* (those seeded under their old names: renamed if unchanged) */
+	arena_gametypes_rename(record, &record_length, &record_changed, &written);
+
 	for (index = 0; index < NUMBEROF(arena_gametypes); index++)
 	{
 		struct arena_gametype const *gametype = &arena_gametypes[index];
 		char line[ARENA_GAMETYPE_NAME_LENGTH + 2];
-		unsigned long line_length;
 
 		_snprintf(line, sizeof(line), "\n%s\n", gametype->name);
 		line[sizeof(line) - 1] = 0;
@@ -303,14 +362,8 @@ boolean arena_gametypes_seed(
 			continue;
 		if (!arena_gametype_write(gametype, &written))
 			continue;
-		line_length = (unsigned long)strlen(line + 1);
-		if (record_length + line_length <= ARENA_GAMETYPES_RECORD_SIZE)
-		{
-			csmemcpy(record + record_length, line + 1, line_length);
-			record_length += line_length;
-			record[record_length] = 0;
+		if (arena_gametypes_record_add(record, &record_length, gametype->name))
 			record_changed = TRUE;
-		}
 	}
 
 	if (record_changed &&
@@ -326,7 +379,266 @@ boolean arena_gametypes_seed(
 	return written;
 }
 
+/* the custom gametypes among count gametypes (playlist_profile.c's list, the
+built-in ones read only) in order: the AE set, Halo 1: NHE's, then the
+player's own, each alphabetical (case aside); they take the places the
+custom ones had, so the built-in ones keep theirs and their order */
+void arena_gametypes_sort(
+	word count,
+	long *indices)
+{
+	struct arena_sort_entry
+	{
+		long index;
+		short group;
+		wchar_t name[ARENA_GAMETYPE_NAME_LENGTH * 2];
+	};
+	/* (static, not on the stack: one list is sorted at a time, the
+	menus' or the start's file system thread's, which the menus wait for) */
+	static struct arena_sort_entry entries[ARENA_GAMETYPES_MAXIMUM_SAVED];
+	short places[ARENA_GAMETYPES_MAXIMUM_SAVED];
+	short entry_count = 0;
+	short index;
+
+	for (index = 0; index < (short)count && entry_count < ARENA_GAMETYPES_MAXIMUM_SAVED; index++)
+	{
+		struct arena_sort_entry *entry = &entries[entry_count];
+		wchar_t display_name[MAX_GAMENAME];
+
+		if (indices[index] == NONE || TEST_FLAG(indices[index], _saved_game_file_index_read_only_bit))
+			continue;
+		display_name[0] = 0;
+		playlist_profile_get_display_name(indices[index], display_name);
+		ustrncpy(entry->name, display_name, NUMBEROF(entry->name) - 1);
+		entry->name[NUMBEROF(entry->name) - 1] = 0;
+		entry->index = indices[index];
+		entry->group = arena_gametype_group(entry->name);
+		places[entry_count++] = index;
+	}
+
+	/* (an insertion sort, which keeps equal names in the order they were) */
+	for (index = 1; index < entry_count; index++)
+	{
+		struct arena_sort_entry entry = entries[index];
+		short other = index;
+
+		while (other > 0 &&
+			(entries[other - 1].group > entry.group ||
+			(entries[other - 1].group == entry.group &&
+			arena_gametype_name_compare(entries[other - 1].name, entry.name) > 0)))
+		{
+			entries[other] = entries[other - 1];
+			other--;
+		}
+		entries[other] = entry;
+	}
+
+	for (index = 0; index < entry_count; index++)
+		indices[places[index]] = entries[index].index;
+
+	return;
+}
+
 /* ---------- private code */
+
+/* a name's line added to the record, if it fits: TRUE when added */
+static boolean arena_gametypes_record_add(
+	char *record,
+	unsigned long *record_length,
+	char const *name)
+{
+	unsigned long line_length = (unsigned long)strlen(name) + 1;
+
+	if (*record_length + line_length > ARENA_GAMETYPES_RECORD_SIZE)
+		return FALSE;
+	csmemcpy(record + *record_length, name, line_length - 1);
+	record[*record_length + line_length - 1] = '\n';
+	*record_length += line_length;
+	record[*record_length] = 0;
+	return TRUE;
+}
+
+/* the AE gametypes seeded under an old name (in the record, the new name
+not yet): renamed in place while the file is exactly as seeded (the new
+name recorded, so not seeded again); the player's changed one kept, the new
+one then seeded beside it; one the player deleted (or renamed) stays so,
+its new name recorded unseeded */
+static void arena_gametypes_rename(
+	char *record,
+	unsigned long *record_length,
+	boolean *record_changed,
+	boolean *written)
+{
+	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
+	word saved_count = 0;
+	short rename_index;
+
+	for (rename_index = 0; rename_index < NUMBEROF(arena_gametype_renames); rename_index++)
+	{
+		char const *old_name = arena_gametype_renames[rename_index].old_name;
+		char const *new_name = arena_gametype_renames[rename_index].name;
+		struct arena_gametype const *gametype = NULL;
+		char old_line[ARENA_GAMETYPE_NAME_LENGTH + 2];
+		char new_line[ARENA_GAMETYPE_NAME_LENGTH + 2];
+		wchar_t old_wide[ARENA_GAMETYPE_NAME_LENGTH];
+		wchar_t new_wide[ARENA_GAMETYPE_NAME_LENGTH];
+		long profile_index = NONE;
+		struct game_variant variant;
+		struct game_variant_options options;
+		short index;
+
+		_snprintf(old_line, sizeof(old_line), "\n%s\n", old_name);
+		old_line[sizeof(old_line) - 1] = 0;
+		_snprintf(new_line, sizeof(new_line), "\n%s\n", new_name);
+		new_line[sizeof(new_line) - 1] = 0;
+		if (!strstr(record, old_line) || strstr(record, new_line))
+			continue;
+		for (index = 0; index < NUMBEROF(arena_gametypes); index++)
+		{
+			if (!strcmp(arena_gametypes[index].name, new_name))
+				gametype = &arena_gametypes[index];
+		}
+		if (!gametype)
+			continue;
+
+		/* (the custom gametypes, listed once) */
+		if (!saved_count)
+		{
+			saved_count = NUMBEROF(saved);
+			saved_game_files_enumerate_available_to_local_player_index(NONE,
+				_saved_game_file_type_game_variant, &saved_count, saved, FALSE);
+		}
+		arena_gametype_wide_name(old_name, old_wide);
+		arena_gametype_wide_name(new_name, new_wide);
+		for (index = 0; index < (short)saved_count && profile_index == NONE; index++)
+		{
+			wchar_t display_name[MAX_GAMENAME];
+
+			display_name[0] = 0;
+			if (playlist_profile_get_display_name(saved[index], display_name) &&
+				!ustrcmp(display_name, old_wide))
+			{
+				profile_index = saved[index];
+			}
+		}
+
+		if (profile_index == NONE)
+		{
+			/* (deleted or renamed by the player: not brought back) */
+			error(_error_silent, "arena gametype '%s' (once '%s') not seeded: the player removed '%s'",
+				new_name, old_name, old_name);
+			if (arena_gametypes_record_add(record, record_length, new_name))
+				*record_changed = TRUE;
+			continue;
+		}
+
+		arena_gametype_build(gametype, old_wide, &variant, &options);
+		if (!playlist_profile_matches(profile_index, &variant, &options))
+		{
+			/* (the player's own now: kept, and the new one seeded beside it) */
+			error(_error_silent, "arena gametype '%s' kept as it is (changed since it was seeded); '%s' seeded beside it",
+				old_name, new_name);
+			continue;
+		}
+		if (!saved_game_file_name_unique(new_wide))
+		{
+			/* (a saved game has the new name: the seeding leaves both) */
+			error(_error_silent, "arena gametype '%s' not renamed: a saved game named '%s' exists", old_name, new_name);
+			continue;
+		}
+
+		{
+			char old_directory[MAXIMUM_FILENAME_LENGTH + 1];
+			char last_used[MAXIMUM_FILENAME_LENGTH + 1];
+			boolean was_last_used = FALSE;
+
+			/* (the gametype used last, if this one: still so after) */
+			if (saved_game_file_get_path_to_enclosing_directory(profile_index, old_directory) &&
+				saved_game_file_retrieve_last_used_multiplayer_variant_directory(last_used) &&
+				!strcmp(old_directory, last_used))
+			{
+				was_last_used = TRUE;
+			}
+
+			/* (renamed as the PC menus' rename does: the variant saved under
+			its new name, which moves its saved game's name with it) */
+			csmemcpy(variant.human_readable_game_description, new_wide, sizeof(new_wide));
+			playlist_profile_save_with_options(profile_index, &variant, &options);
+			playlist_profile_wait_for_write();
+			*written = TRUE;
+
+			if (was_last_used)
+			{
+				char new_directory[MAXIMUM_FILENAME_LENGTH + 1];
+
+				if (saved_game_file_get_path_to_enclosing_directory(profile_index, new_directory))
+					saved_game_file_remember_last_used_multiplayer_variant_directory(new_directory);
+			}
+		}
+		error(_error_silent, "renamed arena gametype '%s' to '%s'", old_name, new_name);
+		if (arena_gametypes_record_add(record, record_length, new_name))
+			*record_changed = TRUE;
+	}
+
+	return;
+}
+
+/* a gametype's group in the lists: the AE set (and AE names of before),
+Halo 1: NHE's, else the player's own */
+static short arena_gametype_group(
+	wchar_t const *name)
+{
+	short index;
+
+	for (index = 0; index < NUMBEROF(arena_gametypes); index++)
+	{
+		wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH];
+
+		arena_gametype_wide_name(arena_gametypes[index].name, wide_name);
+		if (!arena_gametype_name_compare(name, wide_name))
+			return strncmp(arena_gametypes[index].name, "AE ", 3) ? _arena_group_nhe : _arena_group_ae;
+	}
+	for (index = 0; index < NUMBEROF(arena_gametype_renames); index++)
+	{
+		wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH];
+
+		arena_gametype_wide_name(arena_gametype_renames[index].old_name, wide_name);
+		if (!arena_gametype_name_compare(name, wide_name))
+			return _arena_group_ae;
+	}
+	return _arena_group_player;
+}
+
+/* names compared as the lists sort them: letters' case aside */
+static int arena_gametype_name_compare(
+	wchar_t const *a,
+	wchar_t const *b)
+{
+	for (;; a++, b++)
+	{
+		wchar_t x = *a >= 'a' && *a <= 'z' ? (wchar_t)(*a - 'a' + 'A') : *a;
+		wchar_t y = *b >= 'a' && *b <= 'z' ? (wchar_t)(*b - 'a' + 'A') : *b;
+
+		if (x != y)
+			return x < y ? -1 : 1;
+		if (!x)
+			return 0;
+	}
+}
+
+/* an ASCII name as a gametype's (wide, NUL-filled) */
+static void arena_gametype_wide_name(
+	char const *name,
+	wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH])
+{
+	short index;
+
+	csmemset(wide_name, 0, ARENA_GAMETYPE_NAME_LENGTH * sizeof(wchar_t));
+	for (index = 0; index < ARENA_GAMETYPE_NAME_LENGTH - 1 && name[index]; index++)
+		wide_name[index] = (wchar_t)name[index];
+
+	return;
+}
 
 /* a gametype saved as the PC menus' Edit Gametypes saves one
 (player_ui_save_profile): a new custom gametype file
@@ -338,16 +650,12 @@ static boolean arena_gametype_write(
 	struct arena_gametype const *gametype,
 	boolean *written)
 {
-	struct game_variant temporary;
 	struct game_variant variant;
 	struct game_variant_options options;
 	wchar_t name[ARENA_GAMETYPE_NAME_LENGTH];
 	long profile_index;
-	short index;
 
-	csmemset(name, 0, sizeof(name));
-	for (index = 0; index < ARENA_GAMETYPE_NAME_LENGTH - 1 && gametype->name[index]; index++)
-		name[index] = (wchar_t)gametype->name[index];
+	arena_gametype_wide_name(gametype->name, name);
 
 	/* (a saved game of that name, a gametype or a player profile: not
 	ours to replace) */
@@ -357,8 +665,40 @@ static boolean arena_gametype_write(
 		return TRUE;
 	}
 
+	arena_gametype_build(gametype, name, &variant, &options);
+	profile_index = playlist_profile_new(NONE, name);
+	if (profile_index == NONE)
+	{
+		error(_error_silent, "failed to create arena gametype '%s'", gametype->name);
+		return FALSE;
+	}
+	playlist_profile_save_with_options(profile_index, &variant, &options);
+	/* (and written before the next gametype's file is made: the write's
+	thread opens the saved games' mapfile, which making a file
+	(create_enumerated_saved_game_file's count_enumerated_profiles_in_mapfile)
+	resets without taking its mutex; a player saving gametypes is never
+	that quick) */
+	playlist_profile_wait_for_write();
+	*written = TRUE;
+	arena_gametype_log(gametype, &variant, &options);
+
+	return TRUE;
+}
+
+/* a gametype's variant and PC options as seeded, named name (the variant
+before a save's clean-up) */
+static void arena_gametype_build(
+	struct arena_gametype const *gametype,
+	wchar_t const *name,
+	struct game_variant *variant_out,
+	struct game_variant_options *options_out)
+{
+	struct game_variant temporary;
+	struct game_variant variant;
+	struct game_variant_options options;
+
 	variant = *gametype->build(&temporary);
-	csmemcpy(variant.human_readable_game_description, name, sizeof(name));
+	csmemcpy(variant.human_readable_game_description, name, ARENA_GAMETYPE_NAME_LENGTH * sizeof(wchar_t));
 	/* (a custom gametype, not one of the system's defaults: playlist_profile.c's
 	_game_variant_is_system_default_bit, and their string index above it) */
 	variant.flags = 0;
@@ -386,24 +726,10 @@ static boolean arena_gametype_write(
 		options.primary_weapon = _loadout_weapon_pistol;
 		options.secondary_weapon = _loadout_weapon_assault_rifle;
 	}
+	*variant_out = variant;
+	*options_out = options;
 
-	profile_index = playlist_profile_new(NONE, name);
-	if (profile_index == NONE)
-	{
-		error(_error_silent, "failed to create arena gametype '%s'", gametype->name);
-		return FALSE;
-	}
-	playlist_profile_save_with_options(profile_index, &variant, &options);
-	/* (and written before the next gametype's file is made: the write's
-	thread opens the saved games' mapfile, which making a file
-	(create_enumerated_saved_game_file's count_enumerated_profiles_in_mapfile)
-	resets without taking its mutex; a player saving gametypes is never
-	that quick) */
-	playlist_profile_wait_for_write();
-	*written = TRUE;
-	arena_gametype_log(gametype, &variant, &options);
-
-	return TRUE;
+	return;
 }
 
 /* a seeded gametype's rules, in the log */

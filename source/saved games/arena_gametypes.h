@@ -18,5 +18,9 @@ ordinary custom gametypes (arena_gametypes.c).
 /* TRUE when it wrote any */
 boolean arena_gametypes_seed(
 	void);
+/* the custom gametypes among count gametypes in the lists' order */
+void arena_gametypes_sort(
+	word count,
+	long *indices);
 
 #endif // __ARENA_GAMETYPES_H

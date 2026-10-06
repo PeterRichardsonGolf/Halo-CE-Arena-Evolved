@@ -196,6 +196,10 @@ static boolean playlist_profile_options_from_block(
 static void playlist_profile_options_to_block(
 	byte *block,
 	struct game_variant_options const *options);
+static void playlist_profile_block_build(
+	byte *block,
+	struct game_variant const *variant,
+	struct game_variant_options const *options);
 
 /* ---------- globals */
 
@@ -321,6 +325,10 @@ void playlist_profiles_enumerate_available_to_local_player_index(
 		number_of_profiles,
 		playlist_profile_indices,
 		TRUE);
+	/* port: the custom gametypes in order (the Arena Evolved set, Halo 1:
+	NHE's, then the player's own, each alphabetical), in the places they
+	have among the built-in ones, whose order is kept */
+	arena_gametypes_sort(*number_of_profiles, playlist_profile_indices);
 
 	return;
 }
@@ -553,6 +561,30 @@ void playlist_profile_save_with_options(
 	}
 
 	return;
+}
+
+/* port: whether a gametype's file holds exactly the block that saving this
+variant with these options writes (playlist_profile_save_with_options):
+arena_gametypes.c's test of a seeded gametype not changed since */
+boolean playlist_profile_matches(
+	long playlist_profile_index,
+	struct game_variant const *variant,
+	struct game_variant_options const *options)
+{
+	byte expected[SAVED_GAME_FILE_BLOCK_SIZE];
+	byte block[SAVED_GAME_FILE_BLOCK_SIZE];
+	struct game_variant saved = *variant;
+
+	if (playlist_profile_index == NONE ||
+		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
+		!playlist_profile_read_block(playlist_profile_index, block))
+	{
+		return FALSE;
+	}
+	/* (as a save cleans it up before it is written) */
+	game_engine_variant_cleanup(&saved);
+	playlist_profile_block_build(expected, &saved, options);
+	return !csmemcmp(expected, block, sizeof(block));
 }
 
 /* port: the asynchronous write finished (as playlist_profile_read waits) */
@@ -802,16 +834,7 @@ static unsigned long __stdcall playlist_profile_write_thread_proc(
 		{
 			/* port: the block cleared (the Xbox game wrote its stack's bytes
 			after the signature), and the PC options after it */
-			csmemset(block, 0, sizeof(block));
-			csmemcpy(
-				block,
-				variant,
-				sizeof(struct game_variant));
-			saved_game_file_generate_checksum(
-				block,
-				sizeof(struct game_variant),
-				(struct _XCALCSIG_SIGNATURE *)(block + sizeof(struct game_variant)));
-			playlist_profile_options_to_block(block, &playlist_profile_write_options);
+			playlist_profile_block_build(block, variant, &playlist_profile_write_options);
 
 			if (!file_set_position(&file, 0) ||
 				!file_write(&file, sizeof(block), block))
@@ -978,6 +1001,25 @@ static void playlist_profile_options_to_block(
 	csmemcpy(data, &header, sizeof(header));
 	csmemcpy(data + sizeof(header), options, sizeof(*options));
 	saved_game_file_generate_checksum(data, size, (XCALCSIG_SIGNATURE *)(data + size));
+}
+
+/* port: a gametype file's block as a save writes it: the variant and its
+signature, zeros, and the PC options' block */
+static void playlist_profile_block_build(
+	byte *block,
+	struct game_variant const *variant,
+	struct game_variant_options const *options)
+{
+	csmemset(block, 0, SAVED_GAME_FILE_BLOCK_SIZE);
+	csmemcpy(
+		block,
+		variant,
+		sizeof(struct game_variant));
+	saved_game_file_generate_checksum(
+		block,
+		sizeof(struct game_variant),
+		(struct _XCALCSIG_SIGNATURE *)(block + sizeof(struct game_variant)));
+	playlist_profile_options_to_block(block, options);
 }
 
 typedef char verify_playlist_profile_options_fit[

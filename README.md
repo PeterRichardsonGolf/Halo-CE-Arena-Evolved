@@ -73,12 +73,11 @@ up to their build.
 
 **Arena Evolved gametypes**, ready in the gametype list the first time you
 play:
-- **Arena Evolved (casual):** AE SLAYER (25 kills), AE TEAM SLY (50), AE CTF
-  (3 captures), AE KING and AE ODDBALL (5 minutes held; AE KING is team
-  king, a team game too, and of the two only AE ODDBALL is free for all),
-  each with a 15-minute time limit, the motion sensor, TIMERS and the stock
-  respawns; and AE TRAINING (TIMERS and TRAINING, plays to 500, no time
-  limit).
+- **Arena Evolved (casual):** AE FFA SLAY (free for all, 25 kills), AE TEAM
+  SLY (50), AE CTF (3 captures), AE KING (team king) and AE FFA BALL (free
+  for all oddball; both 5 minutes held), each with a 15-minute time limit,
+  the motion sensor, TIMERS and the stock respawns; and AE TRAINING (TIMERS
+  and TRAINING, plays to 500, no time limit).
 - **Arena Evolved 2V2** (casual rules for two against two): AE 2V2 SLY (25 kills),
   AE 2V2 CTF (3 captures), AE 2V2 KING and AE 2V2 BALL (team king and team
   oddball, 5 minutes held). The player limit of 4 is the host's setting.
@@ -98,6 +97,10 @@ play:
   limit, NO SPREAD NHE and the PRE-GAME COUNTDOWN. NHE TRAIN has NO SPREAD NHE
   and the countdown; NHE VANILLA has neither. PRACTICE has NO SPREAD NHE and
   PRACTICE MODE, without the countdown.
+- The free for all gametypes say FFA in their names (AE FFA SLAY, AE FFA
+  BALL, AE PRO FFA); the other Arena Evolved ones are team games. The
+  gametype lists show the Arena Evolved set first, then the NHE set, then
+  your own gametypes, each in alphabetical order, before the built-in ones.
 
 **Split screen**
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
