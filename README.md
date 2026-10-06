@@ -113,8 +113,9 @@ play:
 - A performance overlay in the HUD's style (Settings > Video > PERFORMANCE:
   FPS, or FPS with frame times and draws; top left or top right).
 - A match clock, as in the Master Chief Collection (Settings > Game Options >
-  MATCH CLOCK: OFF, COUNT DOWN or COUNT UP). COUNT DOWN shows the time left
-  (counting up when there is no time limit), COUNT UP the time played. It
+  MULTIPLAYER GAME TIMER: OFF, TIME REMAINING or TIME ELAPSED). TIME
+  REMAINING shows the time left (counting up when there is no time limit),
+  TIME ELAPSED the time played. It
   sits in the bottom right corner of each view, lined up with the motion
   sensor. The scoreboard (hold BACK) shows both times, such as
   "1:33 PLAYED · 8:27 LEFT" (just "1:33 PLAYED" with no time limit), on a

@@ -112,6 +112,7 @@ void platform_binding_capture_begin(void);
 int platform_binding_capture_poll(int *input);
 void halo_input_name(int input, char *name, size_t size);
 short pc_menu_string_index(long definition_index);
+long pc_menu_string_list(long definition_index);
 #ifdef HALO_64BIT
 /* (declared for the 64-bit build, which takes no implicit declarations; the
 32-bit build calls them as it did) */
@@ -1468,7 +1469,7 @@ static boolean setting_default_show(struct widget_instance *spinner, struct pc_m
 }
 
 /* "port settings help": the line of the row chosen (by its label's string:
-the buttons' is the first) */
+the buttons' is the first), or of its value (tools/port_settings.py) */
 static void settings_help(struct widget_instance *list)
 {
 	struct widget_instance *help = list->parameters.list.extended_description;
@@ -1483,6 +1484,24 @@ static void settings_help(struct widget_instance *list)
 
 		if (label != NONE)
 			index = label + 1;
+		/* (port: a row with a help for each value has "@first" there, the
+		string its first value's is: the spinner's value's) */
+		{
+			long strings = pc_menu_string_list(help->definition_tag_index);
+			wchar_t const *text = strings != NONE ? unicode_string_list_get_string(strings, index) : NULL;
+			struct widget_instance *spinner;
+
+			for (spinner = row->child; spinner && spinner->type != 2 /* spinner */; spinner = spinner->next)
+				;
+			if (text && text[0] == '@' && spinner)
+			{
+				short first = 0;
+
+				for (text++; *text >= '0' && *text <= '9'; text++)
+					first = (short)(first * 10 + (*text - '0'));
+				index = (short)(first + spinner->parameters.list.selected_index);
+			}
+		}
 	}
 	help->parameters.text_box.string_list_index = index;
 }

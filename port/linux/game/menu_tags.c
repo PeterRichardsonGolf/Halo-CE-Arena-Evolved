@@ -1878,6 +1878,16 @@ short pc_menu_string_index(
 	return definition ? definition->string_list_index : NONE;
 }
 
+/* a widget definition's text's string list (port settings help: the help
+line's), NONE for none */
+long pc_menu_string_list(
+	long definition_index)
+{
+	struct ui_widget_definition *definition = tag_get(UI_WIDGET_DEFINITION_TAG, definition_index);
+
+	return definition ? definition->text_label_string_list.index : NONE;
+}
+
 /* the screen the engine opens by name after a network game (the Xbox's),
 or ours where the PC version's menus are up: the host's map select, the
 lobby */

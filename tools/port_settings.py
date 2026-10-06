@@ -22,7 +22,7 @@ ON_OFF = [("ON", "true"), ("OFF", "false")]
 PERFORMANCE_LEVELS = [("OFF", "off"), ("FPS", "fps"), ("MINIMAL", "minimal"), ("FULL", "full")]
 CORNERS = [("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
 HEALTH_STYLES = [("CLASSIC", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
-MATCH_CLOCKS = [("OFF", "off"), ("COUNT DOWN", "down"), ("COUNT UP", "up")]
+MATCH_CLOCKS = [("OFF", "off"), ("TIME REMAINING", "down"), ("TIME ELAPSED", "up")]
 HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
 SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
 CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
@@ -88,6 +88,8 @@ SCREENS = {
         "title": "GAME OPTIONS",
         # (26, not 30: ten rows, above the help line, as video_settings)
         "spacing": 26,
+        # (the spinners wider, from further left: "TIME REMAINING")
+        "spinner": (300, 187),
         "rows": [
             ("MOD:", "game.mod", [("STOCK", "")],
              "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
@@ -98,8 +100,11 @@ SCREENS = {
              "How health comes back in the campaign. Gametypes\nhave their own, in Arena Options.", None),
             ("CAMPAIGN TIMER:", "display.campaign_timer", ON_OFF,
              "A clock of the time played on the level, in the\ncampaign's corner by the motion sensor.", None),
-            ("MATCH CLOCK:", "display.match_clock", MATCH_CLOCKS,
-             "The clock in a multiplayer game's corner and on\nits scoreboard: the time left, or played.", None),
+            # (a help for each value, as the Master Chief Collection's)
+            ("MULTIPLAYER GAME TIMER:", "display.match_clock", MATCH_CLOCKS,
+             ["No clock in a multiplayer game's corner or on\nits scoreboard.",
+              "Display the time remaining until the game ends.",
+              "Display the time elapsed since the game started."], None),
             ("HUD AREA:", "display.hud_area", HUD_AREAS,
              "On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide.", None),
             ("COMPACT HUD:", "display.compact_hud", ON_OFF,
@@ -293,6 +298,9 @@ def _setting_screen(folder: str, spec: dict) -> list:
     base = f"{PE}/{folder}"
     rows, extra = [], []
     place = -1
+    # (the spinners' place in their rows and width: the arrows just past
+    # their ends)
+    spinner_x, spinner_width = spec.get("spinner", (320, 147))
     for index, (label, setting, choices, _, platform) in enumerate(spec["rows"]):
         key = setting.split(".", 1)[1]
         row = f"{base}/op_{key}"
@@ -302,28 +310,38 @@ def _setting_screen(folder: str, spec: dict) -> list:
         extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                                ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF"), ("platform", platform)],
                          [f'<child{attributes([("widget", f"{base}/{key}_label")])}/>',
-                          f'<child{attributes([("widget", f"{base}/{key}_spinner"), ("x", 320), ("y", 1)])}/>'])
+                          f'<child{attributes([("widget", f"{base}/{key}_spinner"), ("x", spinner_x), ("y", 1)])}/>'])
         extra += _widget(f"{base}/{key}_label",
                          [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
                           ("string_list", f"{base}/labels"), ("string_index", index), ("font", "ui\\large_ui"),
                           ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
         extra += _widget(f"{base}/{key}_spinner",
-                         [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
+                         [("type", "spinner"), ("left", 3), ("top", 2), ("width", spinner_width), ("height", 20),
                           ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
                           ("strings", "|".join(shown for shown, _ in choices)), ("setting", setting),
                           ("values", "|".join(value for _, value in choices)), ("font", "ui\\large_ui"),
                           ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
                           ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
+                          ("header_bounds", "7 -6 19 0"),
+                          ("footer_bounds", f"7 {spinner_width + 3} 19 {spinner_width + 9}")],
                          ['<on event="created" run="port setting load"/>'])
     extra += _button(f"{base}/button_defaults", 3, ['<on event="a" run="port settings defaults"/>',
                                                     '<on event="start" run="port settings defaults"/>'])
     extra += _button(f"{base}/button_ok", 1, ['<on event="a" run="port settings save" back="true"/>',
                                               '<on event="start" run="port settings save" back="true"/>'])
     extra += _strings(f"{base}/labels", [label for label, *_ in spec["rows"]])
-    # (the help of the row whose label is string n is n + 1: the buttons' is 0)
-    extra += _strings(f"{base}/help_strings",
-                      [""] + [help_text.replace("\n", "\\n") for _, _, _, help_text, _ in spec["rows"]])
+    # (the help of the row whose label is string n is n + 1: the buttons' is
+    # 0. A row with a help for each value has "@first" there, the string its
+    # first value's is, after the rows': menu_functions.c's settings_help)
+    helps, value_helps = [""], []
+    for _, _, choices, help_text, _ in spec["rows"]:
+        if isinstance(help_text, list):
+            assert len(help_text) == len(choices)
+            helps.append(f"@{1 + len(spec['rows']) + len(value_helps)}")
+            value_helps += help_text
+        else:
+            helps.append(help_text)
+    extra += _strings(f"{base}/help_strings", [text.replace("\n", "\\n") for text in helps + value_helps])
     return _screen(folder, spec, rows, ["port settings help"], [], extra)
 
 

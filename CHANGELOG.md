@@ -27,6 +27,12 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- Settings > Game Options' MATCH CLOCK row is MULTIPLAYER GAME TIMER, as in
+  the Master Chief Collection: OFF, TIME REMAINING or TIME ELAPSED (the same
+  `display.match_clock` values: off, down, up), with the Collection's help
+  for each value ("Display the time remaining until the game ends."). The
+  screen's spinners are wider to fit. A settings screen's row can now have a
+  help line for each of its values.
 - The power list (TIMERS and TRAINING, "SNIPER 0:22   CAMO 0:52") moves:
   with one or two players it is small, in the top left corner of each view
   (under the performance overlay when that is at the top left, clear of the
