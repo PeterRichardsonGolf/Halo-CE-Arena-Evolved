@@ -27,6 +27,12 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- The scoreboard's times ("2:25 PLAYED · 7:35 LEFT", "PLAYED" alone without
+  a time limit) keep a line of their own directly under the title in every
+  view, centred over the table, in the title's font and grey (they were
+  right-aligned, in the HUD's blue). A view too narrow for the whole line shortens it
+  ("2:25 · 7:35 LEFT", then "7:35 LEFT"), chosen by its length so that it
+  does not change while the scoreboard is open.
 - Merged OpenCE build-126..128 and ChupathingyCE 0.6.7b: co-op's triggers,
   cutscenes and failed missions work for every player, a client waits on
   its floor for the host's BSP, extra enemies spread onto free ground,
