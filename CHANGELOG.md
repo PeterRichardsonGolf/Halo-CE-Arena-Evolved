@@ -68,8 +68,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   fixed, and a second hardening round (models, animations, effects, sounds,
   scripts and network messages checked; a host spends at most 10 ms a frame
   on each machine's messages). Server Setup's rows are 23 apart (was 25) for
-  its twelve places. Windows crash reports (OpenCE's Sentry) stay off:
-  Arena Evolved's builds are not numbered builds, so they never send one.
+  its twelve places. Windows crash reports (OpenCE's Sentry) are off in
+  every Arena Evolved build, HALO_CRASH_REPORTS_ANY_BUILD included: no
+  minidump, no question, nothing sent (the crash's lines still go to
+  debug.txt).
   Network: Arena Evolved still announces version 18 (so ChupathingyCE 0.6.8b
   and OpenCE build-129..131 join its hosts) and now joins hosts of 11 to 20,
   OpenCE build-132..138's included (19 and 20 are additive). A public

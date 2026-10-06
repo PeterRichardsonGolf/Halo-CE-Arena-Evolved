@@ -472,7 +472,7 @@ static const struct config_setting config_settings[] =
 		"off). Where the updater is on: look for a new version when the game\n"
 		"starts, and offer to update to it; false never looks." },
 	{ "crash_reports.upload", _config_string, "\"ask\"", "HALO_CRASH_REPORTS", _environment_value, _platform_windows,
-		"No effect: Arena Evolved's builds send no crash reports (only OpenCE's\n"
+		"No effect: Arena Evolved's builds send no crash reports (OpenCE's\n"
 		"numbered builds do). Where they are on: send a report of each crash (a\n"
 		"minidump and halo.log) to the developers' Sentry project\n"
 		"(port/windows/src/win32_crash.c): \"yes\" sends them, \"no\" never does,\n"
