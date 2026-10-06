@@ -565,7 +565,19 @@ static void arena_gametypes_rename(
 			csmemcpy(variant.human_readable_game_description, new_wide, sizeof(new_wide));
 			playlist_profile_save_with_options(profile_index, &variant, &options);
 			playlist_profile_wait_for_write();
+			/* (the files changed either way: listed again) */
 			*written = TRUE;
+
+			/* (a write that failed deletes the gametype, playlist_profile.c's
+			write thread, or leaves it under its old name: the new name is
+			recorded only once a saved game has it, else the seeding below
+			writes a new one) */
+			if (saved_game_file_name_unique(new_wide))
+			{
+				error(_error_silent, "failed to rename arena gametype '%s' to '%s'; '%s' seeded instead",
+					old_name, new_name, new_name);
+				continue;
+			}
 
 			if (was_last_used)
 			{
