@@ -8,7 +8,13 @@ port (this fork): the fixtures use the shared widget instance
 (source/interface/ui_widget_instance.h, which this tree's event handlers
 use), stub the active mod (cache_files_mod) with the platform paths of
 d:\\mods\\<mod>\\maps\\, and also check that a mod's own community maps are
-discovered (before the map directory's, the stock names skipped).
+discovered (before the map directory's, the stock names skipped). The PC
+menus' Map screen is the merged one (OpenCE build-128): its first row is
+the SINGLEPLAYER / MULTIPLAYER chooser, then ten map rows
+(map_kind_rows_update), and a map's row text is multiplayer_map_text. The
+Custom Edition and HaloMD rows (map_row_string, ui_map_list.c) are compiled
+out here (no HALO_CUSTOM_EDITION): the game's own map list tests and the
+headless CE map runs cover them.
 """
 from pathlib import Path
 import re
@@ -198,14 +204,13 @@ int main(int argc,char **argv) {
 
 MENU_STUBS = r'''
 #define ROW_TEXT_LENGTH 64
-#define MAP_ROWS 11
-#define MAXIMUM_ROWS 32
+#define MAXIMUM_ROWS 11
+#define NUMBER_OF_SINGLE_PLAYER_LEVELS 10
+#define NUMBER_OF_GAME_DIFFICULTY_LEVELS 4
 #define _ui_widget_type_bitmap 0
 #define _ui_widget_type_text_box 1
 #define _ui_widget_type_spinner_list 2
-static struct {short map_first,map_chosen;} multiplayer;
 static char const *const *multiplayer_map_names;
-static short multiplayer_map_count;
 static struct {char *multiplayer_levels[13];} event_handler_functions;
 struct event_record {short type,controller_index;};
 struct ui_widget_definition {short type,child_count; struct {long index;} text_label_string_list; short string_list_index;};
@@ -225,6 +230,13 @@ static wchar_t *unicode_string_list_get_string(long tag,short index) {
     assert(index>=0 && index<13); stock_lookups++; return (wchar_t *)stock_text[index];
 }
 static void profile_name_show(struct widget_instance *widget) {}
+/* (the campaign's levels: the multiplayer maps' paths here are not one) */
+static char const *main_get_solo_level_name(short level) {assert(level>=0 && level<NUMBER_OF_SINGLE_PLAYER_LEVELS);return "levels\\a10\\a10";}
+static int level_descriptions;
+static void level_description(struct widget_instance *description,char const *prefix,short level,boolean in_progress,
+    boolean const *finished,short saved_difficulty) {level_descriptions++;}
+static int refreshes;
+void ui_widget_port_multiplayer_maps_refresh(void) {refreshes++;}
 enum {_map_family_xbox,_map_family_custom_edition,_map_family_halomd};
 /* (server_browser.c: a Custom Edition or HaloMD map's name; none here) */
 static short server_browser_map_family(char const *map,wchar_t *text,short length) {return _map_family_xbox;}
@@ -297,32 +309,57 @@ int main(int argc,char **argv) {
     selector.parameters.list.selected_index=15;assert(multiplayer_level_select(&wrapper,NULL,&deleted));
     assert(!strcmp(saved_copy,"h1pb_prisoner") && !strcmp(main_map,saved_copy));
 
-    /* Actual PC scrolling and row update, including the end of the list. */
-    struct widget_instance list={0},rows[12]={0},row_text[11]={0},description={0},preview[3]={0};
+    /* The PC Map screen (merged menus): its first row the SINGLEPLAYER /
+       MULTIPLAYER chooser, then ten map rows, scrolled at their ends. */
+    struct widget_instance list={0},rows[12]={0},row_text[11]={0},spinner={0},description={0},preview[4]={0};
     char row_names[12][24];
     for(int i=0;i<12;i++) {
         snprintf(row_names[i],sizeof(row_names[i]),i<11?"list_item_%d":"buttons",i);
         rows[i].name=row_names[i];rows[i].next=i<11?&rows[i+1]:NULL;
-        if(i<11){rows[i].child=&row_text[i];row_text[i].name="list_item_text";}
+        if(i>0 && i<11){rows[i].child=&row_text[i];row_text[i].name="list_item_text";}
     }
+    spinner.name="list_item_0_map_kind_spinner";rows[0].child=&spinner;row_text[0].name="unused";
     preview[0].name="mp_map_right_name";preview[1].name="mp_map_right_pic";preview[2].name="mp_map_right_data";
-    preview[0].next=&preview[1];preview[1].next=&preview[2];description.child=preview;
+    preview[3].name="mp_map_right_item";
+    for(int i=0;i<3;i++) preview[i].next=&preview[i+1];
+    description.child=preview;
     list.child=rows;list.parameters.list.extended_description=&description;
-    assert(map_list_initialize(&list) && multiplayer.map_chosen==14 && multiplayer.map_first==5);
-    map_list_update(&list); assert(wide_equals(preview[0].parameters.text_box.text,L"Downrush"));
+    int refreshed=refreshes;
+    assert(map_list_initialize(&list) && refreshes==refreshed+1);
+    /* (on the map used last, in the middle of the ten rows: 14 of 16, rows from 6) */
+    assert(map_list.kind==MAP_KIND_MULTIPLAYER && spinner.parameters.list.selected_index==MAP_KIND_MULTIPLAYER);
+    assert(map_list.map_count==16 && map_list.chosen==14 && map_list.first==6 && list.focused_child==&rows[9]);
+    map_list_update(&list); assert(map_list.chosen==14 && preview[3].visible && level_descriptions==0);
+    assert(wide_equals(preview[0].parameters.text_box.text,L"Downrush"));
     assert(preview[1].animation.current_frame_index==13 && preview[0].parameters.text_box.string_list_index==HALO_CUSTOM_MAP_TEXT);
     assert(wide_equals(preview[2].parameters.text_box.text,L"Community map"));
-    list.focused_child=&rows[10];map_list_update(&list);assert(multiplayer.map_chosen==15);
+    /* (the rows: entries 6 to 15, the stock ones by their strings, the community ones by their names) */
+    for(int i=1;i<=10;i++) assert(rows[i].visible);
+    assert(wide_equals(row_text[1].parameters.text_box.text,L"Chill Out") && wide_equals(row_text[8].parameters.text_box.text,L"Atlas"));
     assert(wide_equals(row_text[10].parameters.text_box.text,L"H1pb Prisoner"));
-    list.focused_child=&rows[11];map_list_update(&list);assert(multiplayer.map_chosen==15);
-    multiplayer.map_first=0;focus_row(&list,4);map_list_update(&list);
-    assert(multiplayer.map_chosen==4 && preview[0].parameters.text_box.string_list_index==4 && preview[1].animation.current_frame_index==4);
+    list.focused_child=&rows[10];map_list_update(&list);assert(map_list.chosen==15 && map_list.first==6);
+    list.focused_child=&rows[11];map_list_update(&list);assert(map_list.chosen==15);
+    /* (scrolled down one at the last row, and up one at the first) */
+    map_list.first=5;focus_row(&list,10);map_list_update(&list);
+    assert(map_list.first==6 && map_list.chosen==14 && list.focused_child==&rows[9]);
+    map_list.first=1;focus_row(&list,1);map_list_update(&list);
+    assert(map_list.first==0 && map_list.chosen==1 && list.focused_child==&rows[2]);
+    map_list.first=0;focus_row(&list,5);map_list_update(&list);
+    assert(map_list.chosen==4 && preview[0].parameters.text_box.string_list_index==4 && preview[1].animation.current_frame_index==4);
     render_caption(&preview[0],&definitions[3]);assert(wide_equals(preview[0].parameters.text_box.text,L"Prisoner"));
     /* Stock rendering allocated only18 bytes: custom caption must resize it. */
-    multiplayer.map_first=5;focus_row(&list,10);map_list_update(&list);
+    map_list.first=6;focus_row(&list,10);map_list_update(&list);assert(map_list.chosen==15);
     int lookups=stock_lookups;render_caption(&preview[0],&definitions[3]);
     assert(stock_lookups==lookups && wide_equals(preview[0].parameters.text_box.text,L"H1pb Prisoner"));
-    wchar_t caption[64];map_row_text(11,caption);assert(caption[0]==0);
+    wchar_t caption[64];multiplayer_map_text(-1,caption);assert(caption[0]==0);
+    multiplayer_map_text(15,caption);assert(wide_equals(caption,L"H1pb Prisoner"));
+    multiplayer_map_text(4,caption);assert(wide_equals(caption,L"Prisoner"));
+    /* (split screen is multiplayer only: the chooser is held at MULTIPLAYER) */
+    local_game=1;spinner.parameters.list.selected_index=MAP_KIND_SINGLEPLAYER;
+    assert(map_list_initialize(&list) && !map_list.hosting);
+    spinner.parameters.list.selected_index=MAP_KIND_SINGLEPLAYER;map_list_update(&list);
+    assert(map_list.kind==MAP_KIND_MULTIPLAYER && spinner.parameters.list.selected_index==MAP_KIND_MULTIPLAYER && level_descriptions==0);
+    local_game=0;
 
     /* Browser/lobby stock basenames and aliases never share stock indices. */
     struct advertised_game advertised;strcpy(advertised.map_name,"levels\\test\\h1pb_prisoner\\h1pb_prisoner");
@@ -354,7 +391,7 @@ int main(int argc,char **argv) {
     assert(wide_equals(xbox_name.parameters.text_box.text,L"H1pb Prisoner") && xbox_picture.animation.current_frame_index==13);
     strcpy(network_game.map.name,stock[4]);multiplayer_game_set_text_box_for_map_name(&xbox_name);multiplayer_game_set_bitmap_for_map(&xbox_picture);
     assert(xbox_name.parameters.text_box.string_list_index==4 && xbox_picture.animation.current_frame_index==4);
-    for(int i=0;i<11;i++) free_text(&row_text[i]);free_text(&preview[0]);free_text(&preview[2]);free_text(&xbox_name);
+    for(int i=1;i<11;i++) free_text(&row_text[i]);free_text(&preview[0]);free_text(&preview[2]);free_text(&xbox_name);
     for(int i=0;i<3;i++){free_text(&card_labels[i][0]);free_text(&card_labels[i][2]);}
     assert(handles==0);return 0;
 }
@@ -372,6 +409,9 @@ static long cached_map_file_get_size(short index) {
     assert(index>=0 && index<6);return index<=1?0x11600000:index==2?0x02300000:HALO_PORT_MULTIPLAYER_CACHE_SIZE;
 }
 static int CompareFileTime(const long *a,const long *b) {return *a>*b?1:*a<*b?-1:0;}
+enum {_error_silent};
+static int damaged;
+static void error(int level,const char *format,...) {damaged++;}
 '''
 
 CACHE_MAIN = r'''
@@ -391,6 +431,14 @@ int main(void) {
     header.reserved60[0]=1;header.file_length=0x11600000;
     assert(!cache_file_header_verify(&header,"direct-precache",FALSE));
     header.file_length=8192;header.version=7;assert(!cache_file_header_verify(&header,"pc",FALSE));
+    /* (merged hardening: the tag data lies in the file and fits the tag cache) */
+    header.version=5;header.file_length=0x02000000;header.tag_data_offset=2048;header.tag_data_size=TAG_CACHE_SIZE;
+    assert(cache_file_header_verify(&header,"tags",FALSE) && damaged==0);
+    header.tag_data_size++;assert(!cache_file_header_verify(&header,"tags-too-large",FALSE) && damaged==1);
+    header.tag_data_size=0x1000;header.tag_data_offset=header.file_length-0xFFF;
+    assert(!cache_file_header_verify(&header,"tags-past-end",FALSE) && damaged==2);
+    header.tag_data_offset=-1;assert(!cache_file_header_verify(&header,"tags-negative",FALSE) && damaged==3);
+    header.tag_data_offset=2048;header.file_length=2047;assert(!cache_file_header_verify(&header,"short",FALSE));
     return 0;
 }
 '''
@@ -410,15 +458,24 @@ def fixture_sources():
     shared = (ROOT / "source/interface/ui_widget_instance.h").read_text()
     widget = c_block(shared, shared.index("struct widget_animation_data\n")) + ";\n" + \
         c_block(shared, shared.index("struct widget_instance\n")) + ";\n"
-    event_widget = ""
+    # (the map list's string kinds, from the header the menus include; the
+    # Map screen's state is map_list there, as custom_maps.c's own list is)
+    map_list_header = (ROOT / "port/linux/include/halo_ui_map_list.h").read_text()
+    start = map_list_header.index("enum\n{\n", map_list_header.index("a row's strings"))
+    event_widget = map_list_header[start:map_list_header.index("};", start) + 2] + "\n#define map_list pc_map_list\n"
     functions = []
     for name in ("multiplayer_map_remember", "ui_widget_port_multiplayer_maps", "ui_widget_port_multiplayer_map_choose",
                  "multiplayer_level_list_initialize", "multiplayer_level_select"):
         functions.append(function(events, name))
+    # (the map lists' kinds, the Map screen's steps and its state, as declared)
+    functions.append(menu[menu.index("enum\n{\n\tMAP_KIND_SINGLEPLAYER,"):menu.index("static void visible_set(struct widget_instance *widget, boolean visible);")])
+    functions.append(menu[menu.index("enum\n{\n\tMAP_STEP_MAPS,"):menu.index("} map_list;") + len("} map_list;\n")])
     for name in ("descendant", "named", "text_set_length", "text_set", "string_get", "focused_row", "focus_row",
-                 "rows_update", "list_scroll", "map_name_text", "map_caption_set", "map_row_text",
-                 "map_list_initialize", "map_list_update", "scenario_name", "map_display_name", "game_map_name",
-                 "lobby_map_show"):
+                 "visible_set", "map_kind_shown", "map_kind_set", "map_kind_first", "map_kind_focus",
+                 "map_kind_rows_update", "map_name_text", "map_row_string", "map_caption_set", "multiplayer_map_text",
+                 "map_description_show", "map_step_count", "map_step_open", "map_level_text", "map_difficulty_text",
+                 "map_list_initialize", "map_list_update", "scenario_name", "campaign_level_of", "map_display_name",
+                 "game_map_name", "lobby_map_show"):
         functions.append(function(menu, name))
     for name in ("custom_map_text", "mp_level_select_list_update_displayed_items",
                  "multiplayer_game_set_text_box_for_map_name", "multiplayer_game_set_bitmap_for_map"):
@@ -431,7 +488,8 @@ def fixture_sources():
     cache_header = c_block(cache, cache.index("struct cache_file_header\n")) + ";\n"
     cache_header = re.sub(r"\blong\b", "int32_t", cache_header.replace("unsigned long", "uint32_t"))
     slots = (ROOT / "source/cache/cache_files_windows.c").read_text()
-    cache_fixture = ('#include "cseries.h"\n#include "halo_port_capacity.h"\n' + cache_header + CACHE_STUBS +
+    tag_cache = re.search(r"(?m)^#define TAG_CACHE_SIZE .*$", (ROOT / "source/cache/physical_memory_map.h").read_text()).group()
+    cache_fixture = ('#include "cseries.h"\n#include "halo_port_capacity.h"\n' + tag_cache + "\n" + cache_header + CACHE_STUBS +
                      function(cache, "cache_file_header_verify") + function(slots, "cached_map_files_find_free_map") + CACHE_MAIN)
     return {"scanner": common + SCANNER_MAIN,
             "menus": common + widget + event_widget + MENU_STUBS + "\n\n".join(functions) + MENU_MAIN,
