@@ -33,13 +33,14 @@ hud_item_timers_set_top_left) where it would meet them (made smaller to
 stay over them where it nearly fits), the HUD's messages under them moved
 down under it (hud_item_timers_messages_offset). With two, three or four
 views, every view has the shorter line (a time for each group spawning
-together, "0:21 R/B SNIPER OS   0:51 ROCKETS") at its foot, centred between
-the motion sensor and the clock, upper and lower views alike
-(HUD_ITEM_TIMERS_POWER_SCALE with two, HUD_ITEM_TIMERS_POWER_SCALE_SMALL
-with more). A line that does not fit its room is the shorter one (entries
-spawning together grouped), then smaller (down to
-HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE); only at the smallest are its latest
-entries left off.
+together, "0:21 R/B SNIPER OS 0:51 ROCKETS") at its foot, centred between
+the motion sensor and the clock (clear of it by two of the clock's digits),
+on the clock's baseline (the sensor's foot: hud_item_timers_clock_place),
+upper and lower views alike (HUD_ITEM_TIMERS_POWER_SCALE with two,
+HUD_ITEM_TIMERS_POWER_SCALE_SMALL with more). A line that does not fit its
+room is the shorter one (entries spawning together grouped), then smaller
+(down to HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE); only at the smallest are its
+latest entries left off.
 
 With HUD AREA (display.hud_area: hud_area_insets), both keep to its part
 of the view: the clock mirrors the sensor (which has moved in with the HUD)
@@ -302,23 +303,19 @@ static long hud_item_timers_line_width_scaled(
 	return (long)((text_bounds.x1 - text_bounds.x0) * scale + 0.5f);
 }
 
-/* the clock (text) in the view's bottom right corner, by the meters' and
-the motion sensor's places, and above it a smaller line (above: MATCH CLOCK
-BOTH's time played; NULL for none) right-aligned to the same edge; returns
-the room they take from the view's right edge */
-static long hud_item_timers_draw_clock(
-	long font_index,
-	wchar_t const *text,
-	wchar_t const *above)
+/* the clock's place in the view's bottom right corner, by the meters' and
+the motion sensor's places: its right edge's inset from the view's right
+edge, and its digits' baseline (the power list's row at a view's foot sits
+on it too) */
+static void hud_item_timers_clock_place(
+	short *inset_out,
+	long *baseline_out)
 {
-	struct font_header *font = font_definition_get(font_index);
 	short view_width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 	short view_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
 	short local_player_index = render.local_player_index;
 	short inset;
-	short top;
 	long baseline;
-	long room;
 	/* (port: HUD AREA's insets of the view's HUD, hud_area_insets) */
 	short area_left;
 	short area_right;
@@ -355,6 +352,26 @@ static long hud_item_timers_draw_clock(
 	{
 		inset = (short)(view_width - hud_item_timers_meters[local_player_index].bounds.x1);
 	}
+	*inset_out = inset;
+	*baseline_out = baseline;
+}
+
+/* the clock (text) at its place (hud_item_timers_clock_place), and above it
+a smaller line (above: MATCH CLOCK BOTH's time played; NULL for none)
+right-aligned to the same edge; returns the room they take from the view's
+right edge */
+static long hud_item_timers_draw_clock(
+	long font_index,
+	wchar_t const *text,
+	wchar_t const *above)
+{
+	struct font_header *font = font_definition_get(font_index);
+	short inset;
+	short top;
+	long baseline;
+	long room;
+
+	hud_item_timers_clock_place(&inset, &baseline);
 	/* (the digits' foot, their baseline, there: the line's top an ascent
 	(at the clock's scale) above it) */
 	top = (short)(baseline - (long)(font->ascending_height * HUD_ITEM_TIMERS_CLOCK_SCALE + 0.5f));
@@ -641,14 +658,25 @@ static void hud_item_timers_draw_powers(
 		{
 			left = MAX(left, hud_item_timers_motion_sensors[local_player_index].bounds.x1 + HUD_ITEM_TIMERS_GAP);
 		}
+		/* (clear of the clock by two of its digits) */
 		if (clock_room > 0)
-			right = MAX(right, clock_room + HUD_ITEM_TIMERS_GAP);
+		{
+			right = MAX(right, clock_room +
+				hud_item_timers_line_width_scaled(font_index, L"00", HUD_ITEM_TIMERS_CLOCK_SCALE));
+		}
 		width = hud_item_timers_power_line(font_index, view_width - left - right, hud_item_timers_power_scale(),
 			TRUE, line, &scale);
 		if (!width)
 			return;
-		line_height = (long)(hud_item_timers_line_height(font_index) * scale + 0.5f);
-		top = view_height - HUD_ITEM_TIMERS_TOP - line_height;
+		/* (on the clock's baseline, which follows the motion sensor's foot,
+		whether the clock is drawn or not) */
+		{
+			short inset;
+			long baseline;
+
+			hud_item_timers_clock_place(&inset, &baseline);
+			top = baseline - (long)(font_definition_get(font_index)->ascending_height * scale + 0.5f);
+		}
 		hud_item_timers_draw_line_scaled(font_index, _text_justification_center, (short)top, (short)left, (short)right,
 			line, scale);
 		return;

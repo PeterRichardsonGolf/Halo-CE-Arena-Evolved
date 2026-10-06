@@ -53,6 +53,11 @@ build-128.
   four (it was 0.8), in the same colours (yellow under 60 FPS, red under
   30). At the top left the power list stacks under it; at the top right it
   is alone.
+- The power list's line at the foot of a split-screen view sits on the
+  clock's baseline (the motion sensor's foot) in every view, upper and
+  lower (the lower views had it at the screen's bottom edge, under their
+  clock), and stops two of the clock's digits short of the clock's left
+  edge (the wider of BOTH's lines), made smaller to fit rather than crowd it.
 - With two views, the power list is drawn as with three or four: the grouped
   line at the foot of each view, centred between the motion sensor and the
   clock, the same in the upper and the lower view (it was over the ammo in
