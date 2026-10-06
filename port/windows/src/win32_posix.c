@@ -67,7 +67,7 @@ static void windows_startup(void)
 /* Unwinds context, a frame at a time, with the unwind information every x64
 function has (its frame pointer, when it keeps one, points partway into its
 frame: there is no chain to follow); the return addresses, at most count,
-go to frames. Also the crash reports' (win32_memory_watch.c). */
+go to frames. Also the crash reports' (win32_crash.c). */
 int win32_unwind(CONTEXT *context, void **frames, int count)
 {
 	int captured = 0;

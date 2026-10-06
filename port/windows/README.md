@@ -57,8 +57,9 @@ It is the 64-bit build of the other systems (`HALO_64BIT`: see
   if it cannot get that address. The executable does not use high-entropy
   address randomization, which could put the first allocations of the
   process in that range.
-- The write tracking and the crash reports of `src/win32_memory_watch.c`
-  convert between Xbox addresses and the pointers of the process. A crash
+- The write tracking of `src/win32_memory_watch.c` and the crash reports of
+  `src/win32_crash.c` convert between Xbox addresses and the pointers of the
+  process. A crash
   report gives the address of `halo.exe` in that run, and the calls come
   from the unwind data of x64 code, not from a chain of frame pointers.
 - It is not optimized with a profile. The committed profiles are those of
@@ -147,6 +148,12 @@ Thus the build also includes the declarations of the Linux build
 A crash writes the faulting address and the calls that led to it to
 `debug.txt` and to the log. The builds of the workflow (the releases)
 also send a crash report to the Sentry project of the developers:
+
+(Arena Evolved: its builds send no crash reports and write no minidumps:
+`crash_reports_enabled()` in `src/win32_crash.c` is always false, also with
+`HALO_CRASH_REPORTS_ANY_BUILD`, and `crash_reports.upload` has no effect.
+The rest of this section describes OpenCE's builds. A crash's lines still go
+to `debug.txt`.)
 
 1. The game starts a second copy of `halo.exe` (`halo.exe --crash-report`).
    This copy writes a minidump of the game to `crashes\` next to

@@ -27,6 +27,10 @@ has) report crashes; the HALO_CRASH_REPORTS_ANY_BUILD environment variable
 makes any build report (for testing). Abort() and the C runtime's invalid
 parameter checks, which end the process without an exception, raise one
 here, so they are reported too.
+
+Arena Evolved: crash_reports_enabled() is always 0, so none of its builds
+writes a minidump, asks, or sends a report to that Sentry project (which is
+OpenCE's); the crash's lines still go to debug.txt.
 */
 
 #include <windows.h>
@@ -729,9 +733,12 @@ static void crash_uploader(void)
 
 /* ---------- the crashed game */
 
+/* (AE: never. Arena Evolved's builds are not OpenCE's, whose Sentry project
+the reports go to and which has no symbols of them; HALO_CRASH_REPORTS_ANY_BUILD
+does not change it. The crash's lines still go to debug.txt) */
 static int crash_reports_enabled(void)
 {
-	return HALO_BUILD_NUMBER > 0 || GetEnvironmentVariableW(L"HALO_CRASH_REPORTS_ANY_BUILD", NULL, 0) > 0;
+	return 0;
 }
 
 /* starts this executable again with the option and its arguments, with no
@@ -767,8 +774,9 @@ static int crash_dump(EXCEPTION_POINTERS *exception)
 	event = CreateEventW(NULL, TRUE, FALSE, name);
 	if (!event)
 		return 0;
-	_snwprintf(arguments, 128, CRASH_REPORT_OPTION L" %lu %lu %lx", (unsigned long)GetCurrentProcessId(),
-		(unsigned long)GetCurrentThreadId(), (unsigned long)(ULONG_PTR)exception);
+	/* (the pointer as 64 bits: windows64's long is 32) */
+	_snwprintf(arguments, 128, CRASH_REPORT_OPTION L" %lu %lu %llx", (unsigned long)GetCurrentProcessId(),
+		(unsigned long)GetCurrentThreadId(), (unsigned long long)(ULONG_PTR)exception);
 	waits[0] = event;
 	waits[1] = crash_start_reporter(arguments);
 	if (!waits[1])
@@ -925,9 +933,10 @@ static void crash_reports_install(void)
 
 	if ((arguments = crash_option(CRASH_REPORT_OPTION)) != NULL)
 	{
-		unsigned long process_id = 0, thread_id = 0, exception_pointers = 0;
+		unsigned long process_id = 0, thread_id = 0;
+		unsigned long long exception_pointers = 0;
 
-		if (swscanf(arguments, L" %lu %lu %lx", &process_id, &thread_id, &exception_pointers) == 3)
+		if (swscanf(arguments, L" %lu %lu %llx", &process_id, &thread_id, &exception_pointers) == 3)
 			crash_reporter((DWORD)process_id, (DWORD)thread_id, (ULONG_PTR)exception_pointers);
 		ExitProcess(0);
 	}
