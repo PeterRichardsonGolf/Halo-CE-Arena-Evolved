@@ -3186,7 +3186,15 @@ static void widget_instance_set_focused_child_by_index(
 			}
 			if (index == child_index)
 			{
+				/* port: a list given the focus back keeps the item its
+				creation focused (the PC menus' lists, whose own event opened
+				the next screen: their rows' focus would be lost, and the
+				d-pad, which steps from it, would do nothing) */
+				struct widget_instance *focused_item = child->focused_child;
+
 				widget_instance_give_focus_directly(widget, child);
+				if (!child->focused_child && focused_item && focused_item->parent == child)
+					child->focused_child = focused_item;
 				if (child->parent &&
 					(child->parent->type == _ui_widget_type_spinner_list ||
 					child->parent->type == _ui_widget_type_column_list))

@@ -1147,6 +1147,10 @@ static boolean level_list_initialize(struct widget_instance *list, short control
 	campaign.shown_level = level;
 	ui_widget_port_multiplayer_maps_refresh();
 	level_list.map_count = ui_widget_port_multiplayer_maps(&level_list.map_names, &last_used);
+	/* (not the Custom Edition and HaloMD maps, <file>@ce and @md, last in the
+	list: they play only as multiplayer games, not as a campaign game here) */
+	while (level_list.map_count > 0 && strchr(level_list.map_names[level_list.map_count - 1], '@'))
+		level_list.map_count--;
 	multiplayer_map_names = level_list.map_names;
 	level_list.kind = MAP_KIND_SINGLEPLAYER;
 	level_list.chosen = level;
