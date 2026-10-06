@@ -98,6 +98,11 @@ enum
 
 static const char signature_label[] = "hceu-lobby-1";
 
+/* (AE) the network version whose listings have a password's layout
+(OpenCE build-138's); HALO_PORT_NETWORK_VERSION_MAXIMUM is at least it */
+#define LISTING_PASSWORD_VERSION 20
+typedef char check_listing_password_version[LISTING_PASSWORD_VERSION <= HALO_PORT_NETWORK_VERSION_MAXIMUM ? 1 : -1];
+
 /* (p2p.h's sizes of a locked listing's are p2p_internal.h's) */
 typedef char check_listing_sizes[P2P_LISTING_SIGNING_KEY_SIZE == P2P_KEY_SIZE &&
 	P2P_LISTING_KEY_HASH_SIZE == P2P_KEY_HASH_SIZE && P2P_LISTING_SEALED_TOKEN_SIZE == P2P_SEALED_TOKEN_SIZE ? 1 : -1];
@@ -264,8 +269,11 @@ static int listing_make(unsigned char *bytes, int flags)
 	bytes[size++] = 'H';
 	bytes[size++] = 'L';
 	bytes[size++] = LISTING_FORMAT;
-	bytes[size++] = (unsigned char)(HALO_PORT_NETWORK_VERSION >> 8);
-	bytes[size++] = (unsigned char)HALO_PORT_NETWORK_VERSION;
+	/* (AE: the version states the listing's layout: a password's sealed
+	token is version 20's, which browsers of 18 and below skip; any other is
+	this build's announced version, 18: NETCODE.md) */
+	bytes[size++] = (unsigned char)(((flags & _listing_password) ? LISTING_PASSWORD_VERSION : HALO_PORT_NETWORK_VERSION) >> 8);
+	bytes[size++] = (unsigned char)((flags & _listing_password) ? LISTING_PASSWORD_VERSION : HALO_PORT_NETWORK_VERSION);
 	bytes[size++] = (unsigned char)flags;
 	put_long(bytes + size, ++lobby.sequence);
 	size += 4;
@@ -752,6 +760,16 @@ void p2p_set_hosting_password(const char *password)
 	}
 	pthread_mutex_unlock(&p2p_lock);
 	memset(key, 0, sizeof(key));
+}
+
+int p2p_hosting_has_password(void)
+{
+	int has_password;
+
+	pthread_mutex_lock(&p2p_lock);
+	has_password = lobby.has_password;
+	pthread_mutex_unlock(&p2p_lock);
+	return has_password;
 }
 
 void p2p_set_game_listing(const char *name, const char *map, const char *gametype, int engine_type, int open,

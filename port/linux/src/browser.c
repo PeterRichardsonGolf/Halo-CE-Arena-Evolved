@@ -801,7 +801,9 @@ static void update_hosting(void)
 	browser.host_changed = 0;
 	pthread_mutex_unlock(&browser_lock);
 
-	hosting = reported && config_boolean("network.list_hosted_games") &&
+	/* (AE: never a game with a password: the list shows its invite, which
+	joins it without the password) */
+	hosting = reported && config_boolean("network.list_hosted_games") && !p2p_hosting_has_password() &&
 		p2p_hosting_invite(invite, sizeof(invite));
 	if (!hosting)
 	{
