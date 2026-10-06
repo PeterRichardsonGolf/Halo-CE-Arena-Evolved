@@ -1631,16 +1631,18 @@ static void cache_copy_run_decompression(
 			decompressor_timer_stop(_decompressor_timer_zlib_during_write_file);
 
 		/* port: a stream that ends before the size the header gives the map
-		is a bad file: the rest of the cache file would be taken for it. One
-		that ends past the map's tag data, which a map's file ends with, is
-		not: Halo 1: NHE's ui.map, a10.map and atlas.map end there, their
-		header's size rounded up to a whole 2048 bytes */
+		is a bad file: the rest of the cache file would be taken for it. The
+		one exception is a stream short only by the header's rounding (under
+		2048 bytes) that ends exactly where the map's tag data ends, which a
+		map's file ends with: Halo 1: NHE's ui.map, a10.map and atlas.map,
+		their header's size rounded up to a whole 2048 bytes */
 		if (zlib_result == Z_STREAM_END &&
 			zlib_stream->total_out != (uLong)(self->header.size - sizeof(self->header)) &&
 			(zlib_stream->total_out > (uLong)(self->header.size - sizeof(self->header)) ||
+			(uLong)(self->header.size - sizeof(self->header)) - zlib_stream->total_out >= 2048 ||
 			self->header.tag_data_offset < (long)sizeof(self->header) ||
 			self->header.tag_data_size < 0 ||
-			(uLong)(self->header.tag_data_offset - sizeof(self->header)) + (uLong)self->header.tag_data_size >
+			(uLong)(self->header.tag_data_offset - sizeof(self->header)) + (uLong)self->header.tag_data_size !=
 				zlib_stream->total_out))
 		{
 			match_vassert(

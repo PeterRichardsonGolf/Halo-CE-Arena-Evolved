@@ -84,6 +84,14 @@ boolean cache_files_map_plays_multiplayer(
 void cache_files_show_multiplayer_unavailable(
 	char const *map_name,
 	char const *build);
+#ifdef HALO_CUSTOM_EDITION
+/* port: whether the loaded map is a Custom Edition map, and the tag cache
+its tags are in (a Custom Edition map's own, else the Xbox's) and its size */
+boolean cache_file_tags_are_ce(
+	void);
+void *cache_file_tag_cache_bounds(
+	long *size);
+#endif
 
 unsigned long cache_files_get_checksum(
 	void);

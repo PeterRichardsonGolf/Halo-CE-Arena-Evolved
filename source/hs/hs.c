@@ -12615,8 +12615,8 @@ static boolean hs_scenario_syntax_data_valid(
 	byte const *address = (byte const *)xbox_pointer(scenario->hs_syntax_data.address);
 	struct data_array const *data = (struct data_array const *)address;
 #ifdef HALO_CUSTOM_EDITION
-	/* (a Custom Edition map's tags are in a tag cache of their own) */
-	extern void *cache_file_tag_cache_bounds(long *size);
+	/* (a Custom Edition map's tags are in a tag cache of their own:
+	cache_file_tag_cache_bounds, cache/cache_files.h) */
 	long tag_cache_size;
 	byte const *tag_cache = (byte const *)cache_file_tag_cache_bounds(&tag_cache_size);
 #else

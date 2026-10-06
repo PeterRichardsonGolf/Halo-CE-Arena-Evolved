@@ -349,7 +349,9 @@ static boolean cache_file_region_contains(
 	long count,
 	long element_size)
 {
-	/* (POINTER_BITS: a 64-bit build's pointers are wider than a long) */
+	/* (POINTER_BITS: a 64-bit build's pointers are wider than a long; the
+	offset is that full-width difference once it is checked to be at most
+	region_size) */
 	unsigned long offset = (unsigned long)(POINTER_BITS(address) - POINTER_BITS(region));
 
 	if (count == 0)
@@ -358,7 +360,6 @@ static boolean cache_file_region_contains(
 	return count > 0 &&
 		POINTER_BITS(address) >= POINTER_BITS(region) &&
 		POINTER_BITS(address) - POINTER_BITS(region) <= region_size &&
-		offset <= region_size &&
 		(unsigned long)count <= (region_size - offset) / (unsigned long)element_size;
 }
 
@@ -467,7 +468,13 @@ static boolean cache_file_structure_bsp_reference_verify(
 		return FALSE;
 	}
 
+	/* (what cache_file_read reads: whole sectors, but a Custom Edition map
+	to the byte, cache_files_windows.c) */
 	read_size = (reference->file_size + CACHE_FILE_SECTOR_SIZE - 1) & ~(CACHE_FILE_SECTOR_SIZE - 1);
+#ifdef HALO_CUSTOM_EDITION
+	if (cache_file_is_ce)
+		read_size = reference->file_size;
+#endif
 	if (!cache_file_region_contains(
 		tag_cache_base_address + tag_data_size,
 		tag_cache_size - tag_data_size,
