@@ -511,6 +511,20 @@ boolean cache_file_tags_are_ce(
 {
 	return cache_file_globals.tags_loaded && cache_file_is_ce;
 }
+
+/* port: the tag cache the loaded map's tags are in, and its size: a Custom
+Edition map's own, else the Xbox's (hs.c's hs_scenario_syntax_data_valid) */
+void *cache_file_tag_cache_bounds(
+	long *size)
+{
+	if (cache_file_tags_are_ce())
+	{
+		*size = (long)CE_TAG_CACHE_SIZE;
+		return xbox_pointer(CE_TAG_CACHE_BASE);
+	}
+	*size = TAG_CACHE_SIZE;
+	return physical_memory_get_tag_cache_base_address();
+}
 #endif
 
 char const *cache_files_map_directory(

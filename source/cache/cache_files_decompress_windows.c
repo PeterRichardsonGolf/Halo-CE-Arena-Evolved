@@ -1631,9 +1631,17 @@ static void cache_copy_run_decompression(
 			decompressor_timer_stop(_decompressor_timer_zlib_during_write_file);
 
 		/* port: a stream that ends before the size the header gives the map
-		is a bad file: the rest of the cache file would be taken for it */
+		is a bad file: the rest of the cache file would be taken for it. One
+		that ends past the map's tag data, which a map's file ends with, is
+		not: Halo 1: NHE's ui.map, a10.map and atlas.map end there, their
+		header's size rounded up to a whole 2048 bytes */
 		if (zlib_result == Z_STREAM_END &&
-			zlib_stream->total_out != (uLong)(self->header.size - sizeof(self->header)))
+			zlib_stream->total_out != (uLong)(self->header.size - sizeof(self->header)) &&
+			(zlib_stream->total_out > (uLong)(self->header.size - sizeof(self->header)) ||
+			self->header.tag_data_offset < (long)sizeof(self->header) ||
+			self->header.tag_data_size < 0 ||
+			(uLong)(self->header.tag_data_offset - sizeof(self->header)) + (uLong)self->header.tag_data_size >
+				zlib_stream->total_out))
 		{
 			match_vassert(
 				"c:\\halo\\SOURCE\\cache\\cache_files_decompress_windows.c",

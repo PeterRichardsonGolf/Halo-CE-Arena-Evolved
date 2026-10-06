@@ -12612,15 +12612,26 @@ static boolean hs_scenario_syntax_data_valid(
 {
 	long const syntax_data_size =
 		sizeof(struct data_array)+MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO*sizeof(struct hs_syntax_node);
-	byte const *tag_cache = (byte const *)physical_memory_get_tag_cache_base_address();
 	byte const *address = (byte const *)xbox_pointer(scenario->hs_syntax_data.address);
 	struct data_array const *data = (struct data_array const *)address;
+#ifdef HALO_CUSTOM_EDITION
+	/* (a Custom Edition map's tags are in a tag cache of their own) */
+	extern void *cache_file_tag_cache_bounds(long *size);
+	long tag_cache_size;
+	byte const *tag_cache = (byte const *)cache_file_tag_cache_bounds(&tag_cache_size);
+#else
+	long const tag_cache_size = TAG_CACHE_SIZE;
+	byte const *tag_cache = (byte const *)physical_memory_get_tag_cache_base_address();
+#endif
 
 	if (scenario->hs_syntax_data.size != syntax_data_size ||
 		!tag_cache ||
 		address < tag_cache ||
-		address > tag_cache+TAG_CACHE_SIZE-syntax_data_size ||
-		(POINTER_BITS(address) & 3))
+		address > tag_cache+tag_cache_size-syntax_data_size ||
+		/* (two bytes, not four: Halo 1: NHE's bloodgulch holds its array
+		two bytes past a multiple of four, which the Xbox and the native
+		builds read as they are) */
+		(POINTER_BITS(address) & 1))
 	{
 		return FALSE;
 	}
