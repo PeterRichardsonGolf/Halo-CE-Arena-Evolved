@@ -666,6 +666,7 @@ struct widget_instance;
 #include "networking/network_game_globals.h"
 #include "networking/network_server_manager.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "halo_menus.h" /* port: PC_MENU_FUNCTION_BASE */
 #include "rasterizer/rasterizer.h"
 #include "saved games/player_profile.h"
 #include "saved games/playlist_profile.h"
@@ -3476,7 +3477,18 @@ static void event_handler_dispatch(
 			handler->function,
 			&widget_deleted))
 	{
-		error(_error_silent, "event handler function failed");
+		/* port: which function, and on which widget */
+		extern char const *pc_menu_function_name(long function_index);
+		extern char const *ui_widget_event_handler_function_name(long function_index);
+		long function_index = (unsigned short)handler->function;
+		char const *function_name = function_index >= PC_MENU_FUNCTION_BASE ?
+			pc_menu_function_name(function_index - PC_MENU_FUNCTION_BASE) :
+			ui_widget_event_handler_function_name(function_index);
+
+		error(_error_silent, "event handler function %ld '%s' failed (widget '%s', event %d)",
+			function_index, function_name ? function_name : "?",
+			widget->definition_tag_index != NONE ? tag_get_name(widget->definition_tag_index) : "?",
+			(int)handler->event_type);
 		function_failed = TRUE;
 	}
 	else
