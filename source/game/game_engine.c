@@ -4523,7 +4523,8 @@ static void game_engine_update_vehicle_respawn(
 /* port: PRE-GAME COUNTDOWN's beep at each of its 3, 2 and 1, the stock
 game's respawn countdown's (game_engine_client_respawn_countdown), on this
 machine for its own players: the first at the first tick of it this machine
-runs (a client's clock may start a few ticks into the game) */
+runs (a client's clock may start a few ticks into the game); and at its end
+the respawn countdown's last sound, as the players are let go */
 static void game_engine_update_pregame_countdown_sound(
 	void)
 {
@@ -4533,6 +4534,14 @@ static void game_engine_update_pregame_countdown_sound(
 
 	if (ticks_left <= 0)
 	{
+		/* (only when this machine ran the countdown to its end, not when
+		the game was left or ended during it) */
+		if (last_beep_tick != NONE && local_player_count() > 0 &&
+			game_engine_pregame_countdown() &&
+			game_engine_globals.postgame_state == game_engine_mode_active)
+		{
+			game_engine_play_multiplayer_sound(_multiplayer_sound_respawn);
+		}
 		last_beep_tick = NONE;
 		return;
 	}
