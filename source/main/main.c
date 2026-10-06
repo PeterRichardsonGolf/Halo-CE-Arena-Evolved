@@ -364,6 +364,7 @@ symbols in this file:
 #include "bitmaps/tiff_file.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "interface/hud_item_timers.h"
 #include "interface/attract_mode.h"
 #include "interface/interface.h"
 #include "interface/marketing_and_strategic_business_development.h"
@@ -2896,7 +2897,6 @@ static void frame_statistics_update(
 through): its own blue, else yellow under 60 frames a second and red under
 30 */
 #define FRAME_STATISTICS_ALPHA 0.7f
-#define FRAME_STATISTICS_SCALE 0.8f
 
 static void frame_rate_color(
 	long frame_rate,
@@ -2993,6 +2993,9 @@ static void frame_statistics_draw(
 	/* (the view's own bounds: the window's are inset from it, by the TV safe
 	area, which puts the line on the HUD) */
 	rectangle2d bounds = render.camera.viewport_bounds;
+	/* (the power list's scale in these views, so that the two match and
+	stack at the top left: hud_item_timers.c) */
+	real scale = hud_item_timers_power_scale();
 
 	bounds.y0 = (short)(bounds.y0 + 2);
 	bounds.y1 = (short)(bounds.y0 + line_height);
@@ -3009,13 +3012,13 @@ static void frame_statistics_draw(
 
 		draw_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
 		frame_statistics_drawn = text_bounds.x1 > text_bounds.x0;
-		frame_statistics_extent.x0 = (short)(pivot + (text_bounds.x0 - pivot) * FRAME_STATISTICS_SCALE);
-		frame_statistics_extent.x1 = (short)(pivot + (text_bounds.x1 - pivot) * FRAME_STATISTICS_SCALE + 0.5f);
+		frame_statistics_extent.x0 = (short)(pivot + (text_bounds.x0 - pivot) * scale);
+		frame_statistics_extent.x1 = (short)(pivot + (text_bounds.x1 - pivot) * scale + 0.5f);
 		frame_statistics_extent.y0 = bounds.y0;
-		frame_statistics_extent.y1 = (short)(bounds.y0 + line_height * FRAME_STATISTICS_SCALE + 0.5f);
+		frame_statistics_extent.y1 = (short)(bounds.y0 + line_height * scale + 0.5f);
 	}
 	/* (smaller, about the line's top corner it hangs from) */
-	rasterizer_text_set_scale(FRAME_STATISTICS_SCALE,
+	rasterizer_text_set_scale(scale,
 		(real)(corner == _text_justification_left ? bounds.x0 : bounds.x1), (real)bounds.y0);
 	rasterizer_draw_string(&bounds, NULL, NULL, 0, text);
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);

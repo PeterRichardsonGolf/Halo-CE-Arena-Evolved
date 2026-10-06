@@ -34,6 +34,11 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- The performance overlay is drawn at the power list's size: the same font
+  and line height, at 0.7 of it with one or two views and 0.6 with three or
+  four (it was 0.8), in the same colours (yellow under 60 FPS, red under
+  30). At the top left the power list stacks under it; at the top right it
+  is alone.
 - With two views, the power list is drawn as with three or four: the grouped
   line at the foot of each view, centred between the motion sensor and the
   clock, the same in the upper and the lower view (it was over the ammo in
