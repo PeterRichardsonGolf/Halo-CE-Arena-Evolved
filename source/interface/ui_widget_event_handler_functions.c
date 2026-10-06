@@ -2626,24 +2626,26 @@ static void hide_rename_item(
 }
 
 /* port: a split-screen player's in-game SETTINGS without their own profile
-(port/linux/game/menu_functions.c's pc_menu_profile_edit_begin): the
+(port/linux/game/menu_functions.c's pc_menu_settings_refresh): the
 profile's rows (GAMEPADS, COLOR) dimmed, as the Xbox's dims what a missing
-network cable stops, and blocked */
-static void block_profile_items(
-	struct widget_instance *widget)
+network cable stops, and blocked; FALSE: rows so blocked made usable again */
+void ui_widget_port_block_profile_items(
+	struct widget_instance *widget,
+	boolean block)
 {
 	struct widget_instance *child;
 
 	for (child = widget ? widget->child : NULL; child; child = child->next)
 	{
-		if (!strcmp(child->name, "gamepads_profile_item") || !strcmp(child->name, "color_profile_item"))
+		if ((!strcmp(child->name, "gamepads_profile_item") || !strcmp(child->name, "color_profile_item")) &&
+			child->disabled != block)
 		{
-			child->disabled = TRUE;
-			child->alpha_modifier = 0.333f;
-			if (widget->focused_child == child)
+			child->disabled = block;
+			child->alpha_modifier = block ? 0.333f : 1.0f;
+			if (block && widget->focused_child == child)
 				widget->focused_child = child->next;
 		}
-		block_profile_items(child);
+		ui_widget_port_block_profile_items(child, block);
 	}
 }
 
@@ -2652,10 +2654,21 @@ static boolean close_calling_widget_if_not_editing_profile(
 	struct event_record *event,
 	boolean *widget_deleted)
 {
-	extern boolean pc_menu_settings_without_profile(short local_player);
+	extern boolean pc_menu_settings_refresh(short local_player);
+	extern boolean pc_menu_settings_closing_after_save(short local_player);
 	boolean result;
-	boolean without_profile = pc_menu_settings_without_profile(widget_instance_get_topmost_parent(widget)->local_player_index);
+	boolean without_profile;
 
+	/* port: back from the saving screen after a saved Settings OK (PC
+	menus, menu_functions.c's profile_save_changes): the screen closes, as
+	the Xbox's did by failing here, but quietly */
+	if (pc_menu_settings_closing_after_save(widget_instance_get_topmost_parent(widget)->local_player_index))
+	{
+		widget_instance_get_topmost_parent(widget)->milliseconds_to_auto_close = 1;
+		widget_instance_get_topmost_parent(widget)->visible = FALSE;
+		return TRUE;
+	}
+	without_profile = pc_menu_settings_refresh(widget_instance_get_topmost_parent(widget)->local_player_index);
 	if (!without_profile && !player_ui_get_edit_player_profile() && !player_ui_get_edit_playlist_profile())
 	{
 		struct widget_instance *top = widget_instance_get_topmost_parent(widget);
@@ -2672,7 +2685,7 @@ static boolean close_calling_widget_if_not_editing_profile(
 		if (game_in_progress() && !main_menu_is_active())
 			hide_rename_item(widget_instance_get_topmost_parent(widget));
 		if (without_profile)
-			block_profile_items(widget_instance_get_topmost_parent(widget));
+			ui_widget_port_block_profile_items(widget_instance_get_topmost_parent(widget), TRUE);
 	}
 	return result;
 }

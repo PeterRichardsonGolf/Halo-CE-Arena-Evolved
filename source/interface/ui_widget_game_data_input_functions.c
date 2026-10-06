@@ -2205,10 +2205,15 @@ static void get_editable_player_profile_display_name(
 	profile shows why, not the profile being edited (another player's:
 	port/linux/game/menu_functions.c) */
 	{
-		extern boolean pc_menu_settings_without_profile(short local_player);
+		extern boolean pc_menu_settings_refresh(short local_player);
 		extern void pc_menu_settings_profile_note(short local_player, wchar_t *text, short length);
+		extern void ui_widget_port_block_profile_items(struct widget_instance *widget, boolean block);
+		boolean without_profile = pc_menu_settings_refresh(widget->local_player_index);
 
-		if (pc_menu_settings_without_profile(widget->local_player_index))
+		/* (and its rows as it is now: blocked, or usable once the holder is
+		done and the player has their own profile) */
+		ui_widget_port_block_profile_items(widget_instance_get_topmost_parent(widget), without_profile);
+		if (without_profile)
 		{
 			widget->parameters.text_box.text = ui_widget_realloc(widget->parameters.text_box.text,
 				32 * sizeof(wchar_t), "c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c", 0xA04);

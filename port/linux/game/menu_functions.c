@@ -545,14 +545,30 @@ the player whose edit it is (NONE: the player has no profile) */
 static short pause_profile_owner = NONE;
 static boolean settings_without_profile[4];
 static short settings_profile_holder[4];
+/* (a player whose Settings OK just saved: the Settings screen the saving
+screen goes back to closes, quietly: pc_menu_settings_closing_after_save) */
+static boolean settings_saved[4];
+
+static boolean settings_in_match(void)
+{
+	return game_in_progress() && !main_menu_is_active();
+}
+
+/* whether the player holds the edit: its owner, an edit open, and the
+player still in their SETTINGS (its screens, or under a dialog: an owner
+whose screens closed with their pause or the game's end has given it up) */
+static boolean profile_edit_held_by(short player)
+{
+	return player != NONE && pause_profile_owner == player && player_ui_get_edit_player_profile() &&
+		ui_widget_port_local_player_screen_in(player, "\\player_profile_edit\\");
+}
 
 /* (ui_widget_event_handler_functions.c's and ui_widget_game_data_input_functions.c's) */
 boolean pc_menu_settings_without_profile(short local_player)
 {
 	/* (only in a match: a flag left by a screen the game's end closed is
 	not the main menu's) */
-	return local_player >= 0 && local_player < 4 && settings_without_profile[local_player] &&
-		game_in_progress() && !main_menu_is_active();
+	return local_player >= 0 && local_player < 4 && settings_without_profile[local_player] && settings_in_match();
 }
 
 /* the profile edit screen's profile label for such a player: why their
@@ -573,8 +589,55 @@ void pc_menu_settings_profile_note(short local_player, wchar_t *text, short leng
 	text[index] = 0;
 }
 
+boolean pc_menu_profile_edit_begin(short local_player);
+
+/* a player's SETTINGS screen as it is created (also again, from their
+history) and each frame its profile label is drawn: TRUE while it is
+without profile. In a match, a screen that finds another player's edit open
+is without profile (it never shows or saves another's); one waiting on a
+holder who is done takes the player's own profile, as opening SETTINGS then
+would */
+boolean pc_menu_settings_refresh(short local_player)
+{
+	if (!settings_in_match() || local_player < 0 || local_player >= 4)
+		return FALSE;
+	if (settings_without_profile[local_player])
+	{
+		short holder = settings_profile_holder[local_player];
+
+		if (holder != NONE && !profile_edit_held_by(holder))
+		{
+			platform_log("menus: player %d's settings: player %d is done editing", local_player + 1, holder + 1);
+			pc_menu_profile_edit_begin(local_player);
+		}
+		return settings_without_profile[local_player];
+	}
+	if (pause_profile_owner != NONE && pause_profile_owner != local_player && player_ui_get_edit_player_profile())
+	{
+		settings_without_profile[local_player] = TRUE;
+		settings_profile_holder[local_player] = pause_profile_owner;
+		platform_log("menus: player %d's settings without their profile (player %d is editing theirs)",
+			local_player + 1, pause_profile_owner + 1);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/* TRUE once after the player's Settings OK saved (the screen then closes) */
+boolean pc_menu_settings_closing_after_save(short local_player)
+{
+	boolean saved;
+
+	if (local_player < 0 || local_player >= 4)
+		local_player = 0;
+	saved = settings_saved[local_player];
+	settings_saved[local_player] = FALSE;
+	return saved;
+}
+
 /* the screen's B or back ("player profile end editing"): FALSE when the
-edit is not the player's (it stays the other player's); TRUE to end it */
+edit is not the player's (in a match, another player's stays theirs); TRUE
+to end it */
 boolean pc_menu_profile_edit_end(short local_player)
 {
 	if (pc_menu_settings_without_profile(local_player))
@@ -582,6 +645,8 @@ boolean pc_menu_profile_edit_end(short local_player)
 		settings_without_profile[local_player] = FALSE;
 		return FALSE;
 	}
+	if (settings_in_match() && pause_profile_owner != NONE && pause_profile_owner != local_player)
+		return FALSE;
 	if (pause_profile_owner == local_player)
 		pause_profile_owner = NONE;
 	return TRUE;
@@ -593,19 +658,16 @@ boolean pc_menu_profile_edit_begin(short local_player)
 {
 	struct player_profile profile;
 	long active;
-	boolean match = game_in_progress() && !main_menu_is_active();
+	boolean match = settings_in_match();
 
 	if (local_player < 0 || local_player >= 4)
 		local_player = 0;
 	active = player_ui_get_active_player_profile_index(local_player);
 	settings_without_profile[local_player] = FALSE;
+	settings_saved[local_player] = FALSE;
 	if (match)
 	{
-		/* (an owner no longer in their SETTINGS, its screens closed with
-		their pause or the game's end, has given it up) */
-		if (pause_profile_owner != NONE && pause_profile_owner != local_player &&
-			player_ui_get_edit_player_profile() &&
-			ui_widget_port_local_player_screen_in(pause_profile_owner, "\\player_profile_edit\\"))
+		if (pause_profile_owner != local_player && profile_edit_held_by(pause_profile_owner))
 		{
 			settings_without_profile[local_player] = TRUE;
 			settings_profile_holder[local_player] = pause_profile_owner;
@@ -4309,7 +4371,8 @@ static boolean profile_save_changes(struct widget_instance *widget, boolean *wid
 
 	/* (port: a player's settings without their profile: the edit, if any,
 	is another player's, not to be saved or ended here) */
-	if (pc_menu_settings_without_profile(local_player))
+	if (pc_menu_settings_without_profile(local_player) ||
+		(settings_in_match() && pause_profile_owner != NONE && pause_profile_owner != local_player))
 	{
 		settings_without_profile[local_player] = FALSE;
 		ui_play_audio_feedback_sound(SOUND_FORWARD);
@@ -4330,6 +4393,7 @@ static boolean profile_save_changes(struct widget_instance *widget, boolean *wid
 		{
 			if (pause_profile_owner == local_player)
 				pause_profile_owner = NONE;
+			settings_saved[local_player] = TRUE;
 			/* (in a game: the game's copy of the profile, which the save does
 			not touch, gets the controller settings now, as #67's) */
 			if (edited && applied != NONE &&

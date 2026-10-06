@@ -4005,7 +4005,8 @@ static void widget_instance_initialize(
 	return;
 }
 
-/* port: whether the local player's open screen is one whose tag path has
+/* port: whether the local player's open screen, or one in their history
+under it (a dialog over it, a screen it opened), is one whose tag path has
 the text in it (menu_functions.c: is the player still in their SETTINGS,
 which has the profile edit) */
 boolean ui_widget_port_local_player_screen_in(
@@ -4013,9 +4014,18 @@ boolean ui_widget_port_local_player_screen_in(
 	char const *path_part)
 {
 	long widget_index;
+	struct widget_stack_node *node;
 
-	if (!widget_globals.initialized)
+	if (!widget_globals.initialized || local_player_index < 0 ||
+		local_player_index >= MAXIMUM_NUMBER_OF_LOCAL_PLAYERS)
+	{
 		return FALSE;
+	}
+	for (node = widget_globals.widget_stack[local_player_index]; node; node = node->next)
+	{
+		if (node->data.previous_widget_tag != NONE && strstr(tag_get_name(node->data.previous_widget_tag), path_part))
+			return TRUE;
+	}
 	for (widget_index = 0; widget_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS; widget_index++)
 	{
 		struct widget_instance *widget = widget_globals.active_widgets[widget_index];
