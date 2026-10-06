@@ -601,8 +601,9 @@ static const char *test_input_menu_token(size_t *length)
 	Uint64 step = elapsed / 1000;
 	const char *token = test_input_menu;
 
-	/* (pressed for the first 150 ms of its second) */
-	if (!test_input_menu[0] || elapsed % 1000 >= 150)
+	/* (pressed for the first 250 ms of its second: a slow frame, as at a
+	low priority, longer than 150 ms let a press go unseen) */
+	if (!test_input_menu[0] || elapsed % 1000 >= 250)
 		return NULL;
 	for (;;)
 	{

@@ -27,6 +27,9 @@ releases yet, so the sections are dated.
   takes and beeps are in `tools/voices/` (optional).
 
 ### Changed
+- `debug.test_input`'s scripted menu presses (`menu:`) are held 250 ms of
+  their second, not 150, so that a slow frame (a test run at a low priority)
+  does not miss one.
 - ARENA OPTIONS' TIME LIMIT has finer steps and an hour: NONE, 1 to 10
   minutes by one, then 12, 15, 20, 25, 30, 45 and 60 (the Halo PC gametype
   screens' own TIME LIMIT rows keep their choices). A gametype's time limit
