@@ -165,6 +165,11 @@ def main() -> int:
             shutil.rmtree(symbols)
         symbols.mkdir(parents=True)
         for pdb in [ROOT / "build/windows/halo.pdb", *sorted((ROOT / "build/windows/third_party").glob("SDL3-*/lib/x86/SDL3.pdb"))]:
+            # (AE: its workflow uploads no symbols: a PDB that is not there is
+            # skipped, not a failed build)
+            if not pdb.is_file():
+                print(f"{pdb.relative_to(ROOT)}: not there; no symbols copied for it", flush=True)
+                continue
             shutil.copy2(pdb, symbols)
             print(f"{pdb.relative_to(ROOT)} -> {symbols.relative_to(ROOT)}", flush=True)
     # the disc image readers (port/linux/src/xiso.c, and the Android app's
