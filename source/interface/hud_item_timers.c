@@ -1068,6 +1068,7 @@ struct hud_item_timers_column_line
 	long ticks;
 	boolean red;
 	boolean blue;
+	short entries;	/* (how many: one of a numbered label's shows its number, RED ROCKETS 2) */
 };
 
 /* the second a time left is shown as (rounded up, as the clock's) */
@@ -1123,8 +1124,10 @@ static short hud_item_timers_column_lines(
 			lines[line].ticks = left[index];
 			lines[line].red = FALSE;
 			lines[line].blue = FALSE;
+			lines[line].entries = 0;
 			line_count++;
 		}
+		lines[line].entries++;
 		if (timer->side_prefix && timer->side == _item_timer_side_red)
 			lines[line].red = TRUE;
 		if (timer->side_prefix && timer->side == _item_timer_side_blue)
@@ -1134,7 +1137,7 @@ static short hud_item_timers_column_lines(
 	return line_count;
 }
 
-/* a line's name ("R/B ROCKETS", "R SNIPER", "OS/CAMO"), flush right on
+/* a line's name ("R/B ROCKETS", "R SNIPER", "OS/CAMO", "B SHOTGUN 2"), flush right on
 right, its R and B in their bases' colours and the rest the HUD's; returns
 its left edge */
 static real hud_item_timers_draw_column_name(
@@ -1176,6 +1179,14 @@ static real hud_item_timers_draw_column_name(
 		usnprintf(texts[count], NUMBEROF(texts[count]), L"%s", line->timer->label);
 	}
 	texts[count][NUMBEROF(texts[count]) - 1] = 0;
+	/* (one entry of a label the map has twice on a side: its number) */
+	if (line->entries == 1 && line->timer->number > 0)
+	{
+		short used = (short)ustrlen(texts[count]);
+
+		usnprintf(texts[count] + used, NUMBEROF(texts[count]) - used, L" %d", (int)line->timer->number);
+		texts[count][NUMBEROF(texts[count]) - 1] = 0;
+	}
 	hud_item_timers_color(alpha, &colors[count++]);
 
 	for (index = 0; index < count; index++)
@@ -2191,8 +2202,12 @@ void hud_draw_item_waypoints(
 		position = timer->position;
 		position.z += ITEM_TIMER_WAYPOINT_HEIGHT;
 		render_type = hud_get_nav_point_render_type(local_player_index, &head_position, &position, NONE);
+		/* (no distance by the arrow while its label shows the time to the
+		spawn: the label says what matters then, and the game's distance
+		digits were larger than it) */
 		custom_render_nav_point_placed(local_player_index, &position, nav_index, render_type,
-			HUD_WAYPOINT_ARROW_SIZE * hud_item_timers_view_factor(), &label->arrow);
+			HUD_WAYPOINT_ARROW_SIZE * hud_item_timers_view_factor(),
+			font_index == NONE || item_timer_ticks_left(timer) > ITEM_TIMER_WAYPOINT_BEFORE_TICKS, &label->arrow);
 		if (!label->arrow.drawn || font_index == NONE || label_count >= HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
 			continue;
 

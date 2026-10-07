@@ -52,6 +52,7 @@ struct item_timer
 	short side;	/* enum item_timer_side */
 	boolean side_prefix;	/* RED / BLUE before its name: the same item is at the other base */
 	wchar_t label[16];	/* the power list's: "SNIPER", "RED ROCKETS", "OS/CAMO", "SHOTGUN" */
+	short number;	/* 1, 2, ... among power entries of the same label (two RED ROCKETS), else 0 */
 };
 
 /* ---------- prototypes/ITEM_TIMERS.C */

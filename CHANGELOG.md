@@ -51,6 +51,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   power items" in ten / are up, "and", "in ten" and "powerup is up".
 
 ### Changed
+- TRAINING's waypoints: an item a map has twice on one side (or twice in
+  the middle) is numbered, RED ROCKETS 1 and RED ROCKETS 2 on Boarding
+  Action, in its label and in the power column when it spawns alone; and
+  while a label shows the time to the spawn, the game's distance digits by
+  its arrow are not drawn.
 - Halo 1: NHE's maps: their own on-screen clock (their scripts' titles) is
   never drawn now. Arena Evolved's MATCH CLOCK takes its place, laid out as
   on any map with the power column over it, and MATCH CLOCK OFF shows no

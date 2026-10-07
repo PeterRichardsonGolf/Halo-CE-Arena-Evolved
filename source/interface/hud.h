@@ -149,6 +149,7 @@ void custom_render_nav_point_placed(
 	short nav_index,
 	short waypoint_type,
 	real size,
+	boolean distance_shown,	/* (FALSE: the arrow alone, no distance by it) */
 	struct hud_nav_point_placement *placement);
 
 /* ---------- prototypes/HUD_SOUNDS.C */
