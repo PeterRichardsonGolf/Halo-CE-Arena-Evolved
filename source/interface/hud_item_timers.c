@@ -17,34 +17,48 @@ the sensor's places are as hud_unit.c last drew them in this view
 meters seen (or a HUD that has them in the view's left half), the clock is
 as far from the view's right edge as the sensor's background is from its
 left; with no sensor seen (hidden by a script or the gametype), 4% of the
-view's width from its right edge and 6% of its height from its bottom. Room
-is left above it for a score box (upstream's always-on score, not merged).
-On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*).
+view's width from its right edge and 6% of its height from its bottom.
+On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*). Its
+digits are tabular (each in a cell as wide as the widest digit), so that it
+keeps still as the seconds tick.
 
-The power list is one line of the rockets', sniper's, overshield's and
-camo's next spawns, soonest first (entries of one class spawning together
-are one). With one view, at the text scale in the view's top left corner,
-in at most half its width: at the view's top, under the performance
-overlay's line where the two would meet (main.c's main_framerate_extent:
-the overlay at the top left, drawn at the text scale too,
-hud_item_timers_overlay_text_scale), and under the HUD's own elements in
-that corner (the ammo, the grenades, as hud.c saw them drawn:
-hud_item_timers_set_top_left) where it would meet them (made smaller to
-stay over them where it nearly fits), the HUD's messages under them moved
-down under it (hud_item_timers_messages_offset). With two, three or four
-views, every view has the shorter line (a time for each group spawning
-together, "0:21 R/B SNIPER OS 0:51 ROCKETS") at its foot, centred between
-the motion sensor and the clock (clear of it by two of the clock's digits),
-on the clock's baseline (the sensor's foot: hud_item_timers_clock_place),
-upper and lower views alike. A line that does not fit its room is the
-shorter one (entries spawning together grouped), then smaller (down to
+The power list is the rockets', sniper's, overshield's and camo's next
+spawns. In every view (one view's by default: display.power_list "clock")
+it is a column stacked over the clock (hud_item_timers_draw_column), the
+same in every view at every count of views: a line for each class and name
+spawning in a second ("R/B ROCKETS", an item at both bases one line, its R
+and B in the bases' colours; different classes in one second each their
+own line, the time on each), two aligned columns, NAME and TIME. The times
+are flush right on the clock's right edge in the same tabular figures (so
+"1:20" over "0:50" has one colon line), as wide as the widest (10:00 moves
+every name left together); the names flush right a digit's cell before
+them. The soonest is at the foot, a cap (of the text scale) over the
+clock's digits' cap top (or BOTH's time played's), and each line a cap and
+a half over the one under it; with no clock it sits on the clock's
+baseline; with the clock hidden a moment (NHE's countdown titles) it stays
+where it was. At most four lines: the three soonest and "+N" with more, in
+the time column at half alpha. A line ten seconds from its spawn or nearer
+is drawn at full alpha (as the voice's "ten"). Never made smaller: at the
+view's text scale. Not while the view's scoreboard shows (the clock stays).
+
+With one view, display.power_list "top_left" (TOP LEFT) has it as before:
+one line at the text scale in the view's top left corner, in at most half
+its width: at the view's top, under the performance overlay's line where
+the two would meet (main.c's main_framerate_extent: the overlay at the top
+left, drawn at the text scale too, hud_item_timers_overlay_text_scale), and
+under the HUD's own elements in that corner (the ammo, the grenades, as
+hud.c saw them drawn: hud_item_timers_set_top_left) where it would meet
+them (made smaller to stay over them where it nearly fits), the HUD's
+messages under them moved down under it (hud_item_timers_messages_offset).
+A line that does not fit its room is the shorter one (entries spawning
+together grouped), then smaller (down to
 HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE); only at the smallest are its latest
 entries left off.
 
 With HUD AREA (display.hud_area: hud_area_insets), both keep to its part
 of the view: the clock mirrors the sensor (which has moved in with the HUD)
-about that part's middle, and the power list's line (and the clock with no
-sensor) keeps to that part's sides.
+about that part's middle, the power column with it, and the TOP LEFT line
+(and the clock with no sensor) keeps to that part's sides.
 
 CAMPAIGN TIMER (display.campaign_timer) draws the time played on a
 campaign level as the clock, in the same place (hud_draw_campaign_timer).
@@ -53,7 +67,8 @@ Neither is drawn once the game is over (game_engine_game_over: the
 postgame's "You won"/"You lost" view and the scores).
 
 Both are drawn like the performance overlay (main.c frame_statistics_draw):
-the HUD's smaller font, its blue, 0.7 alpha, smaller. Every text of ours in
+the HUD's smaller font, its blue, 0.7 alpha, smaller; placed to fractions of
+a unit (hud_item_timers_draw_text_at). Every text of ours in
 a view (the power list, the waypoints' labels and their distances, BOTH's
 time played, and in the first view the performance overlay) is drawn at one
 size, the view's text scale: HUD_ITEM_TIMERS_TEXT_SCALE in one view,
@@ -82,6 +97,8 @@ one list beside them.
 */
 
 /* ---------- headers */
+
+#include <math.h>
 
 #include "cseries/cseries.h"
 
@@ -112,7 +129,7 @@ one list beside them.
 #define HUD_ITEM_TIMERS_TEXT_SCALE 0.7f	/* (all our other text in one view: the power list, the waypoints' labels, BOTH's time played, the performance overlay) */
 #define HUD_ITEM_TIMERS_TOP 2	/* (the overlay's line's, from the view's top) */
 #define HUD_ITEM_TIMERS_SIDE 4	/* (the power list's room from a view's sides, as the overlay's) */
-#define HUD_ITEM_TIMERS_GAP 12	/* (between the power list and the clock, or the overlay) */
+#define HUD_ITEM_TIMERS_GAP 12	/* (between the TOP LEFT power list and the overlay) */
 #define HUD_ITEM_TIMERS_CLOCK_RIGHT 0.04f	/* (of the view's width, with no motion sensor) */
 #define HUD_ITEM_TIMERS_CLOCK_BOTTOM 0.06f	/* (of the view's height, with no motion sensor) */
 #define HUD_ITEM_TIMERS_MAXIMUM_ENTRIES 64
@@ -124,6 +141,27 @@ one list beside them.
 #define HUD_ITEM_TIMERS_POWER_WIDTH 0.5f	/* (the most of the view's width it takes in its top left corner) */
 #define HUD_ITEM_TIMERS_POWER_ABOVE_SCALE 0.55f	/* (the smallest it is made to stay over the HUD's top left elements) */
 #define HUD_ITEM_TIMERS_HUD_GAP 3	/* (between the power list and the HUD's top left elements) */
+#define HUD_ITEM_TIMERS_COLUMN_LINES 4	/* (the most lines of the power column: the three soonest and "+N" with more) */
+#define HUD_ITEM_TIMERS_COLUMN_PITCH 1.5f	/* (from one line of the column to the next, in caps) */
+#define HUD_ITEM_TIMERS_COLUMN_GAP 1.0f	/* (from the column's foot to the clock's cap top, in caps) */
+#define HUD_ITEM_TIMERS_SOON_SECONDS 10	/* (a line this near its spawn drawn brighter) */
+#define HUD_ITEM_TIMERS_MORE_ALPHA 0.5f	/* (the column's "+N") */
+
+/* ---------- structures */
+
+/* a font's character (font_group.h's; as rasterizer_text.c has it) */
+struct font_character
+{
+	word character;
+	short character_width;
+	short bitmap_width;
+	short bitmap_height;
+	short bitmap_origin_x;
+	short bitmap_origin_y;
+	short hardware_character_index;
+	short pad;
+	long pixels_offset;
+};
 
 /* ---------- globals */
 
@@ -351,10 +389,199 @@ static long hud_item_timers_line_width_scaled(
 	return (long)((text_bounds.x1 - text_bounds.x0) * scale + 0.5f);
 }
 
+/* a character's height over the baseline (its glyph's top: a capital's or
+a digit's, the cap height), at full size */
+static real hud_item_timers_cap_height(
+	long font_index,
+	wchar_t character)
+{
+	struct font_header *font = font_definition_get(font_index);
+	struct font_character const *glyph = font_get_character_by_ascii_code(font, (word)character);
+
+	if (glyph && glyph->bitmap_origin_y > 0 && glyph->bitmap_origin_y <= font->ascending_height + 2)
+		return (real)glyph->bitmap_origin_y;
+
+	return (real)font->ascending_height;
+}
+
+/* how far drawing text moves along at a scale (its advance: without the
+font's leading width, which every line drawn starts with), in fractions of
+a unit */
+static real hud_item_timers_advance(
+	long font_index,
+	wchar_t const *text,
+	real scale)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	if (!text[0])
+		return 0.0f;
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = (short)hud_item_timers_line_height(font_index);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+
+	return (real)(cursor_bounds.x0 - bounds.x0 - font_definition_get(font_index)->leading_width) * scale;
+}
+
+/* text at a scale, its first character at x and its line's top at top (the
+view's coordinates, in fractions of a unit: laid out from whole units, and
+scaled about the point that moves that layout to exactly there), in a
+colour */
+static void hud_item_timers_draw_text_at(
+	long font_index,
+	real x,
+	real top,
+	wchar_t const *text,
+	real scale,
+	real_argb_color const *color)
+{
+	rectangle2d bounds;
+	real pivot_x;
+	real pivot_y;
+
+	if (!text[0])
+		return;
+	/* (the line's layout starts a leading width before its first character) */
+	x -= (real)font_definition_get(font_index)->leading_width * scale;
+	if (scale < 0.999f || scale > 1.001f)
+	{
+		bounds.x0 = (short)floor(x);
+		bounds.y0 = (short)floor(top);
+		pivot_x = (x - (real)bounds.x0 * scale) / (1.0f - scale);
+		pivot_y = (top - (real)bounds.y0 * scale) / (1.0f - scale);
+	}
+	else
+	{
+		bounds.x0 = (short)floor(x + 0.5f);
+		bounds.y0 = (short)floor(top + 0.5f);
+		pivot_x = (real)bounds.x0;
+		pivot_y = (real)bounds.y0;
+		scale = 1.0f;
+	}
+	/* (laid out as wide as it needs, at full size) */
+	bounds.x1 = (short)(bounds.x0 + hud_item_timers_advance(font_index, text, 1.0f) + 16.0f);
+	bounds.y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index));
+	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, color);
+	rasterizer_text_set_scale(scale, pivot_x, pivot_y);
+	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+}
+
+/* tabular figures: the cells every digit and the colon of a time are drawn
+in at a scale (a digit's as wide as the widest digit), so that the colons
+of times drawn one over another line up, and a ticking clock keeps still */
+struct hud_item_timers_cells
+{
+	real digit;
+	real colon;
+};
+
+static void hud_item_timers_cells_get(
+	long font_index,
+	real scale,
+	struct hud_item_timers_cells *cells)
+{
+	wchar_t digit[2];
+
+	cells->digit = 0.0f;
+	digit[1] = 0;
+	for (digit[0] = L'0'; digit[0] <= L'9'; digit[0]++)
+		cells->digit = MAX(cells->digit, hud_item_timers_advance(font_index, digit, scale));
+	cells->colon = hud_item_timers_advance(font_index, L":", scale);
+}
+
+/* a character's cell (a digit's, the colon's, else its own advance) */
+static real hud_item_timers_cell_width(
+	long font_index,
+	wchar_t character,
+	real scale,
+	struct hud_item_timers_cells const *cells)
+{
+	wchar_t text[2];
+
+	if (character >= L'0' && character <= L'9')
+		return cells->digit;
+	if (character == L':')
+		return cells->colon;
+	text[0] = character;
+	text[1] = 0;
+
+	return hud_item_timers_advance(font_index, text, scale);
+}
+
+/* a time's width in tabular figures */
+static real hud_item_timers_tabular_width(
+	long font_index,
+	wchar_t const *text,
+	real scale,
+	struct hud_item_timers_cells const *cells)
+{
+	real width = 0.0f;
+
+	for (; *text; text++)
+		width += hud_item_timers_cell_width(font_index, *text, scale, cells);
+
+	return width;
+}
+
+/* a time in tabular figures, flush right on right (each character at the
+middle of its cell), its line's top at top; returns its width */
+static real hud_item_timers_draw_tabular(
+	long font_index,
+	real right,
+	real top,
+	wchar_t const *text,
+	real scale,
+	real_argb_color const *color,
+	struct hud_item_timers_cells const *cells)
+{
+	real width = hud_item_timers_tabular_width(font_index, text, scale, cells);
+	real x = right - width;
+
+	for (; *text; text++)
+	{
+		wchar_t character[2];
+		real cell = hud_item_timers_cell_width(font_index, *text, scale, cells);
+
+		character[0] = *text;
+		character[1] = 0;
+		hud_item_timers_draw_text_at(font_index,
+			x + (cell - hud_item_timers_advance(font_index, character, scale)) / 2.0f, top, character, scale, color);
+		x += cell;
+	}
+
+	return width;
+}
+
+/* where the clock (and the power column over it) was drawn in this view,
+for TRAINING's labels to keep clear of (hud_item_timers_lines) */
+static void hud_item_timers_record(
+	real x0,
+	real y0,
+	real x1,
+	real y1)
+{
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_timers_lines[render.local_player_index].count < HUD_ITEM_TIMERS_MAXIMUM_LINES)
+	{
+		rectangle2d *drawn = &hud_item_timers_lines[render.local_player_index].bounds[
+			hud_item_timers_lines[render.local_player_index].count++];
+
+		drawn->x0 = (short)floor(x0);
+		drawn->y0 = (short)floor(y0);
+		drawn->x1 = (short)ceil(x1);
+		drawn->y1 = (short)ceil(y1);
+	}
+}
+
 /* the clock's place in the view's bottom right corner, by the meters' and
 the motion sensor's places: its right edge's inset from the view's right
-edge, and its digits' baseline (the power list's row at a view's foot sits
-on it too) */
+edge, and its digits' baseline (the power column stands on it) */
 static void hud_item_timers_clock_place(
 	short *inset_out,
 	long *baseline_out)
@@ -404,38 +631,141 @@ static void hud_item_timers_clock_place(
 	*baseline_out = baseline;
 }
 
-/* the clock (text) at its place (hud_item_timers_clock_place), and above it
-a smaller line (above: MATCH CLOCK BOTH's time played; NULL for none)
-right-aligned to the same edge; returns the room they take from the view's
-right edge */
-static long hud_item_timers_draw_clock(
+/* our HUD text's colour (the clock's, the power column's): the HUD's
+blue */
+static void hud_item_timers_color(
+	real alpha,
+	real_argb_color *color)
+{
+	*color = hud_globals->messaging.state_color;
+	color->alpha = alpha;
+}
+
+/* a base's colour (red, blue: TRAINING's labels', the power column's R and
+B), else the HUD's text's */
+static void hud_item_timers_side_color(
+	short side,
+	real alpha,
+	real_argb_color *color)
+{
+	switch (side)
+	{
+	case _item_timer_side_red:
+		color->red = 1.0f;
+		color->green = 0.3f;
+		color->blue = 0.3f;
+		break;
+
+	case _item_timer_side_blue:
+		color->red = 0.35f;
+		color->green = 0.55f;
+		color->blue = 1.0f;
+		break;
+
+	default:
+		*color = hud_globals->messaging.text_color;
+		break;
+	}
+	color->alpha = alpha;
+}
+
+/* port_config.c's */
+const char *config_string(const char *name);
+int config_boolean(const char *name);
+unsigned long config_changes(void);
+
+/* whether one view's power list is the TOP LEFT line (display.power_list
+"top_left"), not the column over the clock ("clock", as split screen's
+always is) */
+static boolean hud_item_timers_power_list_top_left(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean top_left = FALSE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		top_left = !csstrcmp(config_string("display.power_list"), "top_left");
+	}
+
+	return top_left;
+}
+
+/* the clock (text) at its place (hud_item_timers_clock_place) in tabular
+figures, flush right, and above it a smaller line (above: MATCH CLOCK
+BOTH's time played; NULL for none) flush right to the same edge, its
+baseline at the clock's line's top */
+static void hud_item_timers_draw_clock(
 	long font_index,
 	wchar_t const *text,
 	wchar_t const *above)
 {
 	struct font_header *font = font_definition_get(font_index);
+	real view_width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	real clock_scale = hud_item_timers_clock_scale();
+	real text_scale = hud_item_timers_text_scale();
+	struct hud_item_timers_cells cells;
+	real_argb_color color;
 	short inset;
-	short top;
 	long baseline;
-	long room;
+	real right;
+	real top;
+	real top_drawn;
+	real width;
 
 	hud_item_timers_clock_place(&inset, &baseline);
+	right = view_width - (real)inset;
+	hud_item_timers_color(HUD_ITEM_TIMERS_ALPHA, &color);
 	/* (the digits' foot, their baseline, there: the line's top an ascent
 	(at the clock's scale) above it) */
-	top = (short)(baseline - (long)(font->ascending_height * hud_item_timers_clock_scale() + 0.5f));
-	hud_item_timers_draw_line_scaled(font_index, _text_justification_right, top, inset, inset, text,
-		hud_item_timers_clock_scale());
-	room = hud_item_timers_line_width_scaled(font_index, text, hud_item_timers_clock_scale());
-	/* (the smaller line's baseline at the clock's line's top) */
+	top = (real)baseline - (real)font->ascending_height * clock_scale;
+	hud_item_timers_cells_get(font_index, clock_scale, &cells);
+	width = hud_item_timers_draw_tabular(font_index, right, top, text, clock_scale, &color, &cells);
+	top_drawn = top;
 	if (above && above[0])
 	{
-		hud_item_timers_draw_line_scaled(font_index, _text_justification_right,
-			(short)(top - (long)(font->ascending_height * hud_item_timers_text_scale() + 0.5f)), inset, inset,
-			above, hud_item_timers_text_scale());
-		room = MAX(room, hud_item_timers_line_width_scaled(font_index, above, hud_item_timers_text_scale()));
+		real above_top = top - (real)font->ascending_height * text_scale;
+
+		hud_item_timers_cells_get(font_index, text_scale, &cells);
+		width = MAX(width, hud_item_timers_draw_tabular(font_index, right, above_top, above, text_scale, &color, &cells));
+		top_drawn = above_top;
+	}
+	hud_item_timers_record(right - width, top_drawn, right,
+		top + (real)hud_item_timers_line_height(font_index) * clock_scale);
+}
+
+/* the power entries (TIMERS' and TRAINING's), soonest first, and the time
+left to each: their count */
+static short hud_item_timers_power_entries(
+	struct item_timer const **entries,
+	long *left)
+{
+	short count = 0;
+	short total = item_timers_count();
+	short index, other;
+
+	for (index = 0; index < total && count < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; index++)
+	{
+		struct item_timer const *timer = item_timers_get(index);
+		long ticks;
+
+		if (!timer || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
+			continue;
+		ticks = item_timer_ticks_left(timer);
+		/* (insertion sort, soonest first) */
+		for (other = count; other > 0 && left[other - 1] > ticks; other--)
+		{
+			entries[other] = entries[other - 1];
+			left[other] = left[other - 1];
+		}
+		entries[other] = timer;
+		left[other] = ticks;
+		count++;
 	}
 
-	return inset + room;
+	return count;
 }
 
 /* an entry's name in the shorter power line: its label, RED / BLUE as R /
@@ -562,82 +892,58 @@ static boolean hud_item_timers_compact_line(
 	return used > 0;
 }
 
-/* the power list's line, every entry ("SNIPER 0:22   CAMO 0:52", or with
-grouped the shorter line's groups, hud_item_timers_compact_line), no wider
-than maximum_width: at base scale where it fits; else the shorter line
-there; else smaller, as far as HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE; only
-then are the latest groups left off. Returns its width, 0 for none, and the
-scale it is drawn at */
+/* the power list's line (one view's TOP LEFT), every entry ("SNIPER 0:22
+CAMO 0:52"), no wider than maximum_width: at base scale where it fits; else
+the shorter line (hud_item_timers_compact_line) there; else smaller, as far
+as HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE; only then are the latest groups
+left off. Returns its width, 0 for none, and the scale it is drawn at */
 static long hud_item_timers_power_line(
 	long font_index,
 	long maximum_width,
 	real base,
-	boolean grouped,
 	wchar_t *line,
 	real *scale)
 {
 	struct item_timer const *entries[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 	long left[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
-	short count = 0;
-	short total = item_timers_count();
+	short count = hud_item_timers_power_entries(entries, left);
 	short index, other;
 	long used = 0;
 	long width;
 
 	*scale = base;
 	line[0] = 0;
-	for (index = 0; index < total && count < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; index++)
-	{
-		struct item_timer const *timer = item_timers_get(index);
-		long ticks;
-
-		if (!timer || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
-			continue;
-		ticks = item_timer_ticks_left(timer);
-		/* (insertion sort, soonest first) */
-		for (other = count; other > 0 && left[other - 1] > ticks; other--)
-		{
-			entries[other] = entries[other - 1];
-			left[other] = left[other - 1];
-		}
-		entries[other] = timer;
-		left[other] = ticks;
-		count++;
-	}
 	if (!count || maximum_width <= 0)
 		return 0;
 
-	if (!grouped)
+	for (index = 0; index < count; index++)
 	{
-		for (index = 0; index < count; index++)
-		{
-			wchar_t time_string[32];
-			boolean merged = FALSE;
+		wchar_t time_string[32];
+		boolean merged = FALSE;
 
-			/* (one of a class spawning with another, as the same second, is
-			one; not one at the other team's base: RED SNIPER, BLUE SNIPER) */
-			for (other = 0; other < index; other++)
+		/* (one of a class spawning with another, as the same second, is
+		one; not one at the other team's base: RED SNIPER, BLUE SNIPER) */
+		for (other = 0; other < index; other++)
+		{
+			if (entries[other]->timer_class == entries[index]->timer_class &&
+				!ustrcmp(entries[other]->label, entries[index]->label) &&
+				(left[other] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND == (left[index] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND)
 			{
-				if (entries[other]->timer_class == entries[index]->timer_class &&
-					!ustrcmp(entries[other]->label, entries[index]->label) &&
-					(left[other] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND == (left[index] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND)
-				{
-					merged = TRUE;
-					break;
-				}
+				merged = TRUE;
+				break;
 			}
-			if (merged)
-				continue;
-			game_engine_format_clock(left[index], TRUE, time_string, NUMBEROF(time_string));
-			usnprintf(line + used, HUD_ITEM_TIMERS_LINE_LENGTH - used, L"%s%s %s",
-				used ? L"   " : L"", entries[index]->label, time_string);
-			line[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
-			used = (long)ustrlen(line);
 		}
-		width = hud_item_timers_line_width_scaled(font_index, line, base);
-		if (width <= maximum_width)
-			return width;
+		if (merged)
+			continue;
+		game_engine_format_clock(left[index], TRUE, time_string, NUMBEROF(time_string));
+		usnprintf(line + used, HUD_ITEM_TIMERS_LINE_LENGTH - used, L"%s%s %s",
+			used ? L"   " : L"", entries[index]->label, time_string);
+		line[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
+		used = (long)ustrlen(line);
 	}
+	width = hud_item_timers_line_width_scaled(font_index, line, base);
+	if (width <= maximum_width)
+		return width;
 	/* (the shorter line, where it is shorter: else the whole line made
 	smaller) */
 	{
@@ -645,7 +951,7 @@ static long hud_item_timers_power_line(
 
 		ustrncpy(whole, line, HUD_ITEM_TIMERS_LINE_LENGTH - 1);
 		whole[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
-		if (!hud_item_timers_compact_line(font_index, 0x7FFFFFFFL, base, grouped, entries, left, count, line))
+		if (!hud_item_timers_compact_line(font_index, 0x7FFFFFFFL, base, FALSE, entries, left, count, line))
 		{
 			ustrncpy(line, whole, HUD_ITEM_TIMERS_LINE_LENGTH - 1);
 			line[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
@@ -665,16 +971,12 @@ static long hud_item_timers_power_line(
 	return hud_item_timers_line_width_scaled(font_index, line, *scale);
 }
 
-/* port: the power list's line (see this file's head): with one view, in
-its top left corner, under the performance overlay's
-line where they would meet and under the HUD's own elements there (the
-ammo, the grenades) where it would meet them; with two, three or four, the
-grouped line at each view's foot between the motion sensor and the clock.
-clock_room: the room the clock takes from the view's right edge, 0 with
-none */
-static void hud_item_timers_draw_powers(
-	long font_index,
-	long clock_room)
+/* port: one view's TOP LEFT power list (display.power_list "top_left";
+see this file's head): a line in its top left corner, under the
+performance overlay's line where they would meet and under the HUD's own
+elements there (the ammo, the grenades) where it would meet them */
+static void hud_item_timers_draw_powers_top_left(
+	long font_index)
 {
 	wchar_t line[HUD_ITEM_TIMERS_LINE_LENGTH];
 	short local_player_index = render.local_player_index;
@@ -696,44 +998,10 @@ static void hud_item_timers_draw_powers(
 	left = HUD_ITEM_TIMERS_SIDE + area_left;
 	right = HUD_ITEM_TIMERS_SIDE + area_right;
 
-	/* (two, three or four views: at the foot, between the sensor and the
-	clock, centred there) */
-	if (local_player_count() > 1)
-	{
-		if (in_range && hud_item_timers_motion_sensors[local_player_index].valid &&
-			hud_item_timers_motion_sensors[local_player_index].view_width == view_width &&
-			hud_item_timers_motion_sensors[local_player_index].view_height == view_height)
-		{
-			left = MAX(left, hud_item_timers_motion_sensors[local_player_index].bounds.x1 + HUD_ITEM_TIMERS_GAP);
-		}
-		/* (clear of the clock by two of its digits) */
-		if (clock_room > 0)
-		{
-			right = MAX(right, clock_room +
-				hud_item_timers_line_width_scaled(font_index, L"00", hud_item_timers_clock_scale()));
-		}
-		width = hud_item_timers_power_line(font_index, view_width - left - right, hud_item_timers_text_scale(),
-			TRUE, line, &scale);
-		if (!width)
-			return;
-		/* (on the clock's baseline, which follows the motion sensor's foot,
-		whether the clock is drawn or not) */
-		{
-			short inset;
-			long baseline;
-
-			hud_item_timers_clock_place(&inset, &baseline);
-			top = baseline - (long)(font_definition_get(font_index)->ascending_height * scale + 0.5f);
-		}
-		hud_item_timers_draw_line_scaled(font_index, _text_justification_center, (short)top, (short)left, (short)right,
-			line, scale);
-		return;
-	}
-
 	/* (one view: the top left corner) */
 	width = hud_item_timers_power_line(font_index,
 		(long)((view_width - area_left - area_right) * HUD_ITEM_TIMERS_POWER_WIDTH) - HUD_ITEM_TIMERS_SIDE,
-		hud_item_timers_text_scale(), FALSE, line, &scale);
+		hud_item_timers_text_scale(), line, &scale);
 	if (!width)
 		return;
 	line_height = (long)(hud_item_timers_line_height(font_index) * scale + 0.5f);
@@ -789,6 +1057,243 @@ static void hud_item_timers_draw_powers(
 		line, scale);
 }
 
+/* ---------- the power column */
+
+/* a line of the power column: the entries of one class and name spawning
+in the same second (an item at both bases one line, R/B) */
+struct hud_item_timers_column_line
+{
+	struct item_timer const *timer;	/* (its first) */
+	long ticks;
+	boolean red;
+	boolean blue;
+};
+
+/* the second a time left is shown as (rounded up, as the clock's) */
+static long hud_item_timers_second(
+	long ticks)
+{
+	return (MAX(ticks, 0) + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
+}
+
+/* an entry's name without its base's word (RED SNIPER: SNIPER) */
+static wchar_t const *hud_item_timers_base_name(
+	struct item_timer const *timer)
+{
+	if (timer->side_prefix)
+	{
+		wchar_t const *space = ustrchr(timer->label, L' ');
+
+		if (space)
+			return space + 1;
+	}
+
+	return timer->label;
+}
+
+/* the power column's lines, soonest first: their count */
+static short hud_item_timers_column_lines(
+	struct hud_item_timers_column_line *lines)
+{
+	struct item_timer const *entries[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	long left[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	short count = hud_item_timers_power_entries(entries, left);
+	short line_count = 0;
+	short index;
+
+	for (index = 0; index < count; index++)
+	{
+		struct item_timer const *timer = entries[index];
+		short line;
+
+		for (line = 0; line < line_count; line++)
+		{
+			if (hud_item_timers_second(lines[line].ticks) == hud_item_timers_second(left[index]) &&
+				lines[line].timer->timer_class == timer->timer_class &&
+				lines[line].timer->side_prefix == timer->side_prefix &&
+				!ustrcmp(hud_item_timers_base_name(lines[line].timer), hud_item_timers_base_name(timer)))
+			{
+				break;
+			}
+		}
+		if (line == line_count)
+		{
+			lines[line].timer = timer;
+			lines[line].ticks = left[index];
+			lines[line].red = FALSE;
+			lines[line].blue = FALSE;
+			line_count++;
+		}
+		if (timer->side_prefix && timer->side == _item_timer_side_red)
+			lines[line].red = TRUE;
+		if (timer->side_prefix && timer->side == _item_timer_side_blue)
+			lines[line].blue = TRUE;
+	}
+
+	return line_count;
+}
+
+/* a line's name ("R/B ROCKETS", "R SNIPER", "OS/CAMO"), flush right on
+right, its R and B in their bases' colours and the rest the HUD's; returns
+its left edge */
+static real hud_item_timers_draw_column_name(
+	long font_index,
+	real right,
+	real top,
+	struct hud_item_timers_column_line const *line,
+	real alpha,
+	real scale)
+{
+	wchar_t texts[4][24];
+	real_argb_color colors[4];
+	short count = 0;
+	short index;
+	real width = 0.0f;
+	real x;
+
+	if (line->red || line->blue)
+	{
+		if (line->red)
+		{
+			ustrncpy(texts[count], L"R", NUMBEROF(texts[count]));
+			hud_item_timers_side_color(_item_timer_side_red, alpha, &colors[count++]);
+		}
+		if (line->red && line->blue)
+		{
+			ustrncpy(texts[count], L"/", NUMBEROF(texts[count]));
+			hud_item_timers_color(alpha, &colors[count++]);
+		}
+		if (line->blue)
+		{
+			ustrncpy(texts[count], L"B", NUMBEROF(texts[count]));
+			hud_item_timers_side_color(_item_timer_side_blue, alpha, &colors[count++]);
+		}
+		usnprintf(texts[count], NUMBEROF(texts[count]), L" %s", hud_item_timers_base_name(line->timer));
+	}
+	else
+	{
+		usnprintf(texts[count], NUMBEROF(texts[count]), L"%s", line->timer->label);
+	}
+	texts[count][NUMBEROF(texts[count]) - 1] = 0;
+	hud_item_timers_color(alpha, &colors[count++]);
+
+	for (index = 0; index < count; index++)
+		width += hud_item_timers_advance(font_index, texts[index], scale);
+	x = right - width;
+	for (index = 0; index < count; index++)
+	{
+		hud_item_timers_draw_text_at(font_index, x, top, texts[index], scale, &colors[index]);
+		x += hud_item_timers_advance(font_index, texts[index], scale);
+	}
+
+	return right - width;
+}
+
+/* port: the power column (see this file's head), stacked over the clock in
+the view's bottom right corner: two aligned columns, NAME  TIME, the times
+flush right on the clock's right edge in tabular figures (their colons in
+one line), the names flush right a digit's cell before the widest time;
+the soonest at the foot, a cap over the clock's digits (or BOTH's time
+played), each line a cap and a half over the one under it; at most four
+lines, the three soonest and "+N" over them with more. Not while this
+view's scoreboard shows (the clock stays) */
+static void hud_item_timers_draw_column(
+	long font_index)
+{
+	struct hud_item_timers_column_line lines[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	struct font_header *font = font_definition_get(font_index);
+	real view_width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	real scale = hud_item_timers_text_scale();
+	real clock_scale = hud_item_timers_clock_scale();
+	real cap = hud_item_timers_cap_height(font_index, L'H') * scale;
+	real ascent = (real)font->ascending_height * scale;
+	real pitch = HUD_ITEM_TIMERS_COLUMN_PITCH * cap;
+	struct hud_item_timers_cells cells;
+	real_argb_color color;
+	wchar_t clock[32];
+	wchar_t elapsed[32];
+	wchar_t time[32];
+	short count;
+	short shown;
+	short line;
+	short inset;
+	long baseline;
+	real right;
+	real lowest;
+	real time_width = 0.0f;
+	real name_right;
+	real x0;
+	real y0;
+
+	if (render.local_player_index < 0 || render.local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
+		game_engine_scoreboard_shown(render.local_player_index) > 0.0f)
+	{
+		return;
+	}
+	count = hud_item_timers_column_lines(lines);
+	if (!count)
+		return;
+	shown = count > HUD_ITEM_TIMERS_COLUMN_LINES ? HUD_ITEM_TIMERS_COLUMN_LINES - 1 : count;
+
+	/* (the clock's right edge, and its place: its digits' cap top, or BOTH's
+	time played's, whether the clock is drawn this moment or not (Halo 1:
+	NHE's countdown titles hide it), so that the column keeps still; with
+	no clock, its baseline) */
+	hud_item_timers_clock_place(&inset, &baseline);
+	right = view_width - (real)inset;
+	lowest = (real)baseline;
+	if (game_engine_match_clock(clock, NUMBEROF(clock)))
+	{
+		real cap_top = (real)baseline - hud_item_timers_cap_height(font_index, L'0') * clock_scale;
+
+		if (game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)))
+		{
+			cap_top = (real)baseline - (real)font->ascending_height * clock_scale -
+				hud_item_timers_cap_height(font_index, L'0') * scale;
+		}
+		lowest = cap_top - HUD_ITEM_TIMERS_COLUMN_GAP * cap;
+	}
+
+	/* (the widest time's cell: all the names a digit's cell before it) */
+	hud_item_timers_cells_get(font_index, scale, &cells);
+	for (line = 0; line < shown; line++)
+	{
+		game_engine_format_clock(lines[line].ticks, TRUE, time, NUMBEROF(time));
+		time_width = MAX(time_width, hud_item_timers_tabular_width(font_index, time, scale, &cells));
+	}
+	name_right = right - time_width - cells.digit;
+	x0 = right - time_width;
+	y0 = lowest;
+
+	for (line = 0; line < shown; line++)
+	{
+		real top = lowest - pitch * (real)line - ascent;
+		/* (one ten seconds away or nearer, as the voice's "ten", brighter) */
+		real alpha = hud_item_timers_second(lines[line].ticks) <= HUD_ITEM_TIMERS_SOON_SECONDS ? 1.0f :
+			HUD_ITEM_TIMERS_ALPHA;
+
+		hud_item_timers_color(alpha, &color);
+		game_engine_format_clock(lines[line].ticks, TRUE, time, NUMBEROF(time));
+		hud_item_timers_draw_tabular(font_index, right, top, time, scale, &color, &cells);
+		x0 = MIN(x0, hud_item_timers_draw_column_name(font_index, name_right, top, &lines[line], alpha, scale));
+		y0 = top;
+	}
+	if (count > shown)
+	{
+		real top = lowest - pitch * (real)shown - ascent;
+		real width;
+
+		usnprintf(time, NUMBEROF(time), L"+%d", (int)(count - shown));
+		time[NUMBEROF(time) - 1] = 0;
+		hud_item_timers_color(HUD_ITEM_TIMERS_MORE_ALPHA, &color);
+		width = hud_item_timers_draw_tabular(font_index, right, top, time, scale, &color, &cells);
+		x0 = MIN(x0, right - width);
+		y0 = top;
+	}
+	/* (one rectangle round it all, for TRAINING's labels to keep clear of) */
+	hud_item_timers_record(x0, y0, right, lowest + 1.0f);
+}
+
 /* how far the HUD's messages move down in this local player's view, under
 the power list (drawn before them, hud_draw_screen), this frame: read once,
 then 0 until the power list moves them again */
@@ -811,7 +1316,6 @@ void hud_draw_item_timers(
 	long font_index = hud_item_timers_font_index();
 	wchar_t clock[32];
 	wchar_t elapsed[32];
-	long clock_room = 0;
 
 	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
 	{
@@ -823,22 +1327,23 @@ void hud_draw_item_timers(
 	/* (not over Halo 1: NHE's maps' countdown) */
 	if (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
 	{
-		clock_room = hud_item_timers_draw_clock(font_index, clock,
+		hud_item_timers_draw_clock(font_index, clock,
 			game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)) ? elapsed : NULL);
 	}
 	/* (the gametype's TIMERS and TRAINING; not once the game is over, over
 	the postgame's view, as the clock is not) */
 	if (game_engine_item_timers() && !game_engine_game_over())
-		hud_item_timers_draw_powers(font_index, clock_room);
+	{
+		if (local_player_count() <= 1 && hud_item_timers_power_list_top_left())
+			hud_item_timers_draw_powers_top_left(font_index);
+		else
+			hud_item_timers_draw_column(font_index);
+	}
 
 	return;
 }
 
 /* ---------- CAMPAIGN TIMER */
-
-/* port_config.c's */
-int config_boolean(const char *name);
-unsigned long config_changes(void);
 
 /* port: CAMPAIGN TIMER (display.campaign_timer), the Master Chief
 Collection's campaign play clock: the time played on this level, M:SS where
@@ -1004,25 +1509,7 @@ static void hud_waypoint_label_color(
 	struct item_timer const *timer,
 	real_argb_color *color)
 {
-	switch (timer ? timer->side : _item_timer_side_middle)
-	{
-	case _item_timer_side_red:
-		color->red = 1.0f;
-		color->green = 0.3f;
-		color->blue = 0.3f;
-		break;
-
-	case _item_timer_side_blue:
-		color->red = 0.35f;
-		color->green = 0.55f;
-		color->blue = 1.0f;
-		break;
-
-	default:
-		*color = hud_globals->messaging.text_color;
-		break;
-	}
-	color->alpha = HUD_ITEM_TIMERS_LABEL_ALPHA;
+	hud_item_timers_side_color(timer ? timer->side : _item_timer_side_middle, HUD_ITEM_TIMERS_LABEL_ALPHA, color);
 }
 
 /* a block's line: one label's "NAME 0:07" (or its name), several sharing a

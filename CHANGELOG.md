@@ -31,6 +31,27 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   power items" in ten / are up, "and", "in ten" and "powerup is up".
 
 ### Changed
+- Split screen: every view has its own safe area, 7.5% of its own height in
+  from its top and foot and 7.5% of its own width in from its sides (the
+  share the title-safe frame takes of one view), and the camera aims through
+  its middle. The reticle and aim now sit at the centre of each half and
+  quarter (they were 16 lines low or high in halves and 29.5 units off to the
+  side in quarters, about 36 and 66 pixels at 1080p), and the HUD is laid out
+  the same in every half and every quarter, upper and lower, left and right.
+  The view shows the world at half of one view's scale (2% closer than
+  before). One view is unchanged.
+- The power list (TIMERS, TRAINING) is a column stacked over the match clock
+  in the bottom right corner of every view: two aligned columns, NAME and
+  TIME, the times flush right on the clock's right edge, the soonest at the
+  foot; an item at both bases on one line ("R/B SNIPER", R and B in the
+  bases' colours); at most four lines (the three soonest and "+N"); a line
+  ten seconds from its spawn or nearer drawn brighter; hidden while that
+  view's scoreboard shows (the clock stays), so a 16-player board never meets
+  it. `display.power_list` (`HALO_POWER_LIST`) `"top_left"` keeps the single
+  line in the top left corner with one view.
+- The match clock's digits are tabular (each in a cell as wide as the widest
+  digit), so it no longer shifts sideways as the seconds tick; the power
+  column's times use the same cells, their colons in one line.
 - Gametype names: AE SLAYER is now AE FFA SLAY and AE ODDBALL is AE FFA
   BALL, so the free for all gametypes say so (the other Arena Evolved ones
   are team games). On a save that has them, the old ones are renamed in
