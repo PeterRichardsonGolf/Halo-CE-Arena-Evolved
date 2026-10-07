@@ -22,8 +22,9 @@ In the menus the keys drive the controller, to move about them:
 on-screen keyboard takes what is typed, and the mouse is free and drives a
 pointer
 (port/linux/include/halo_ui_pointer.h, source/interface/ui_widget.c).
-F11 switches between fullscreen and the window, and F12 releases or
-recaptures the mouse, always.
+F11 switches between fullscreen and the window, F12 releases or
+recaptures the mouse, F9 takes a screenshot and F10 starts or stops a
+recording (capture.c), always (the game never sees F9 and F10).
 
 Mouse aim does not go through the right stick: the game's look code asks
 halo_linux_mouse_look for the motion since its last call and adds it to the

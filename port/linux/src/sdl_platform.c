@@ -18,6 +18,7 @@ and the debug keyboard that the game's console reads.
 #include "xiso.h"
 #include "touch_input.h"
 #include "delta.h"
+#include "capture.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -82,6 +83,11 @@ static long scoreboard_pages;
 
 /* debug keyboard queue */
 #define KEYSTROKE_QUEUE_SIZE 64
+
+/* the capture's keys (capture.c): never a binding, never the game's */
+#define CAPTURE_SCREENSHOT_KEY SDL_SCANCODE_F9
+#define CAPTURE_RECORD_KEY SDL_SCANCODE_F10
+
 static struct platform_keystroke keystroke_queue[KEYSTROKE_QUEUE_SIZE];
 static unsigned long keystroke_head, keystroke_count;
 
@@ -1494,6 +1500,23 @@ void platform_pump_events(void)
 			exit(EXIT_SUCCESS);
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
+#ifndef HALO_ANDROID
+			/* F9 takes a screenshot and F10 starts or stops a recording
+			(capture.c), always: never held for the game's controls (a
+			binding to them from before is not pressed), never a binding,
+			never the game's keystrokes (its debug keys have F9) */
+			if (event.key.scancode == CAPTURE_SCREENSHOT_KEY || event.key.scancode == CAPTURE_RECORD_KEY)
+			{
+				if (event.key.down && !event.key.repeat)
+				{
+					if (event.key.scancode == CAPTURE_SCREENSHOT_KEY)
+						capture_request_screenshot();
+					else
+						capture_request_recording_toggle();
+				}
+				break;
+			}
+#endif
 			if (event.key.scancode < SDL_SCANCODE_COUNT)
 			{
 				input_state.keys[event.key.scancode] = event.key.down;
@@ -1517,7 +1540,8 @@ void platform_pump_events(void)
 			}
 #endif
 			if (binding_capture == _binding_capture_waiting && event.key.down && !event.key.repeat &&
-				event.key.scancode != SDL_SCANCODE_F11 && event.key.scancode != SDL_SCANCODE_F12)
+				event.key.scancode != SDL_SCANCODE_F11 && event.key.scancode != SDL_SCANCODE_F12 &&
+				event.key.scancode != CAPTURE_SCREENSHOT_KEY && event.key.scancode != CAPTURE_RECORD_KEY)
 			{
 				binding_capture = _binding_capture_taken;
 				binding_taken_ms = SDL_GetTicks();

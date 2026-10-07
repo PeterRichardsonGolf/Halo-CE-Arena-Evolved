@@ -35,6 +35,7 @@ Conventions carried over from the Xbox:
 #include "browser.h"
 #include "ui_overlay.h"
 #endif
+#include "capture.h"
 
 /* port: OpenGL ES 3 and macOS's OpenGL 4.1 have neither OpenGL 4.3's vertex
 attribute binding nor 4.4's multi-bind: each attribute is pointed at on its
@@ -4745,9 +4746,12 @@ static void write_screenshot(struct render_target_entry *target)
 	unsigned char header[54] = { 'B', 'M' };
 	unsigned long image_size = width * height * 4;
 
-	if (!directory)
+	/* (16384 each way at most: the size in bytes fits) */
+	if (!directory || !width || !height || width > 16384 || height > 16384)
 		return;
 	pixels = malloc(image_size);
+	if (!pixels)
+		return;
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer_get(target->target.texture, 0));
 	glReadPixels(0, 0, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 	/* the display ignores destination alpha, which the game uses as scratch;
@@ -4761,6 +4765,21 @@ static void write_screenshot(struct render_target_entry *target)
 		pixels[row * 4 + 2] = red;
 #endif
 		pixels[row * 4 + 3] = 0xff;
+	}
+	/* debug.screenshot_format: "png", written by capture.c's screenshot
+	thread, never here (a frame it has no room for is skipped and counted);
+	else, or where there is no capture (the server, Android), BMP */
+	if (!strcmp(config_string("debug.screenshot_format"), "png") &&
+		snprintf(path, sizeof(path), "%s/frame%05lu.png", directory, device.frame) < (int)sizeof(path))
+	{
+		int queued = capture_png_queue_bgra(path, pixels, (int)width, (int)height);
+
+		if (queued >= 0)
+		{
+			if (!queued)
+				free(pixels);
+			return;
+		}
 	}
 	snprintf(path, sizeof(path), "%s/frame%05lu.bmp", directory, device.frame);
 	file = fopen(path, "wb");
@@ -4805,6 +4824,9 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 		render_target_resolve(&back_buffer->target);
 		if (screenshot_every > 0 && device.frame % (unsigned long)screenshot_every == 0)
 			write_screenshot(back_buffer);
+		/* F9's screenshot and F10's recording (capture.c), before the red dot */
+		capture_frame(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width,
+			(int)back_buffer->target.gl_height);
 
 		platform_video_drawable_size(&window_width, &window_height);
 		/* letterbox to the back buffer's aspect ratio */
@@ -4831,6 +4853,8 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 		(ui_overlay.c) */
 		ui_overlay_present(x, y, width, height, window_width, window_height);
 #endif
+		/* the recording's red dot, over the window only */
+		capture_present_overlay(x, y, width, height);
 		platform_video_swap();
 		xgpu_gl_state_invalidate();
 		xgpu_texture_cache_begin_frame();
@@ -4853,11 +4877,23 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 	frame_draws = 0;
 	if (debug_settings.statistics && device.frame % 60 == 0)
 	{
+		/* (and the frames' mean time, wall clock, since the last line) */
+		static struct timespec last_line;
+		struct timespec now;
+		double frame_ms = 0.0;
+
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		if (last_line.tv_sec)
+		{
+			frame_ms = ((double)(now.tv_sec - last_line.tv_sec) * 1000.0 +
+				(double)(now.tv_nsec - last_line.tv_nsec) / 1000000.0) / (double)stats.presents;
+		}
+		last_line = now;
 		platform_log("frame %lu: %lu draws, %lu immediate, %lu clears, %lu target changes; skipped %lu no program, %lu no target, %lu link; "
-			"%lu KB mirrored, %lu KB streamed",
+			"%lu KB mirrored, %lu KB streamed; %.2f ms a frame",
 			device.frame, stats.draws / stats.presents, stats.immediate_draws / stats.presents, stats.clears / stats.presents,
 			stats.target_changes / stats.presents, stats.skipped_no_program, stats.skipped_no_target, stats.skipped_link,
-			stats.mirrored_bytes / stats.presents / 1024, stats.streamed_bytes / stats.presents / 1024);
+			stats.mirrored_bytes / stats.presents / 1024, stats.streamed_bytes / stats.presents / 1024, frame_ms);
 		memset(&stats, 0, sizeof(stats));
 	}
 	platform_pump_events();
