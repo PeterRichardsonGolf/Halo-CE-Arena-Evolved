@@ -8,8 +8,8 @@ calls them from PC_MENU_FUNCTION_BASE on):
 - "port quit game" (and the PC version's "main menu quit game") quits, as
   closing the window does;
 - the PC version's "profile set edit begin" begins editing the first player
-  profile, as its settings screens need, and fails with none (its handlers
-  then open the screens that make one);
+  profile, as its settings screens need, making one (New001) if there is
+  none;
 - "gamespy screen init" hides the server browser's error and filter panels,
   and the title of the mode "mp type set mode" did not choose (Internet or
   LAN);
@@ -76,6 +76,7 @@ their handlers open opens.
 #include "main/main.h"
 #include "networking/network_game_manager.h"
 #include "saved games/player_profile.h"
+#include "saved games/saved_game_files.h"
 #include "tag_files/tag_groups.h"
 #include "text/text_group.h"
 #include "text/unicode.h"
@@ -100,6 +101,10 @@ their handlers open opens.
 void platform_log(char const *format, ...);
 void platform_request_quit(void);
 char const *pc_menu_function_name(long function_index);
+#ifdef HALO_GAME_BROWSER
+/* (delta_peer_game.c's) */
+int delta_peer_host_coop(void);
+#endif
 char const *pc_menu_game_data_input_name(long function_index);
 void event_manager_post_button(short controller_index, short button_index);
 int config_text(char const *name, char *text, size_t size);
@@ -111,6 +116,7 @@ void platform_display_apply(void);
 void platform_binding_capture_begin(void);
 int platform_binding_capture_poll(int *input);
 void halo_input_name(int input, char *name, size_t size);
+void halo_input_shown_name(char const *binding, char *shown, size_t size);
 short pc_menu_string_index(long definition_index);
 long pc_menu_string_list(long definition_index);
 #ifdef HALO_64BIT
@@ -665,8 +671,13 @@ boolean pc_menu_profile_edit_end(short local_player)
 	return TRUE;
 }
 
-/* begins editing player 1's profile (as the campaign has it); FALSE if
-there is none. In a match, the player's own profile (see above) */
+/* begins editing player 1's profile (as the campaign has it). With none (a
+new install), it makes one with the first unused untitled name ("New001"),
+as a new campaign's does when its name is left as offered; Settings' Name
+renames it. (The PC menus' Settings then opened nothing: its screens that
+make a profile take the name a new campaign asks for, which Settings never
+asks for.) FALSE if none can be made. In a match, the player's own profile
+(see above) */
 boolean pc_menu_profile_edit_begin(short local_player)
 {
 	struct player_profile profile;
@@ -710,7 +721,20 @@ boolean pc_menu_profile_edit_begin(short local_player)
 		return TRUE;
 	}
 	if (!campaign_profile(0, &profile))
-		return FALSE;
+	{
+		wchar_t name[128];
+		long profile_index;
+
+		saved_game_file_get_useable_untitled_profile_name(name);
+		name[11] = L'\0';
+		profile_index = player_profile_new(0, name);
+		if (profile_index == NONE || !campaign_profile(0, &profile))
+		{
+			platform_log("menus: no player profile, and one could not be made");
+			return FALSE;
+		}
+		platform_log("menus: made a player profile for Settings");
+	}
 	player_ui_begin_editing_profile(player_ui_get_active_player_profile_index(0));
 	if (match)
 		pause_profile_owner = local_player;
@@ -2325,15 +2349,21 @@ static void controls_update(struct widget_instance *list)
 		{
 			char const *binding = controls_screen.bindings[control][slot];
 			wchar_t text[ROW_TEXT_LENGTH];
+			char name[CONTROL_NAME_LENGTH];
 			char shown[64];
 			short index;
 
+			/* (the key as the keyboard's layout labels it: xinput_sdl.c) */
+			if (*binding)
+				halo_input_shown_name(binding, name, sizeof(name));
+			else
+				snprintf(name, sizeof(name), "%s", "-");
 			if (controls_screen.capturing_control == control && controls_screen.capturing_slot == slot)
 				snprintf(shown, sizeof(shown), "%s", "PRESS A KEY");
 			else if (row == focused_row && controls_screen.slot == slot)
-				snprintf(shown, sizeof(shown), "> %s <", *binding ? binding : "-");
+				snprintf(shown, sizeof(shown), "> %s <", name);
 			else
-				snprintf(shown, sizeof(shown), "%s", *binding ? binding : "-");
+				snprintf(shown, sizeof(shown), "%s", name);
 			for (index = 0; shown[index] && index < ROW_TEXT_LENGTH - 1; index++)
 				text[index] = (wchar_t)(unsigned char)shown[index];
 			text[index] = 0;
@@ -2779,6 +2809,15 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		return campaign_fail();
 	if (map_list.step == MAP_STEP_DIFFICULTIES)
 	{
+#ifdef HALO_GAME_BROWSER
+		/* (no co-op while a machine that does not play it, the original
+		Xbox, is in the game: Delta's platform policy) */
+		if (!delta_peer_host_coop())
+		{
+			platform_log("Delta Peer: co-op is not offered while a machine that does not play it is in the game");
+			return campaign_fail();
+		}
+#endif
 		/* the co-op game set up, then Server Setup in the gametypes' place */
 		if (!ui_widget_port_cooperative_level_choose(main_get_solo_level_name(map_list.level), chosen))
 			return campaign_fail();
@@ -4049,8 +4088,10 @@ static void lobby_browser_rules_text(struct p2p_listing const *game, wchar_t *te
 	score[0] = 0;
 	if (score_limit > 0)
 		usnprintf(score, NUMBEROF(score) - 1, L" to %d", score_limit);
-	usnprintf(text, size - 1, L"%s%s on %s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 5)],
+	/* (a dedicated server's game says so: its listing's flag, p2p_lobby.c) */
+	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 5)],
 		score, map, family == _map_family_halomd ? L" (HALOMD)" : family != _map_family_xbox ? L" (HALO PC)" : L"",
+		game->dedicated ? L" (DEDICATED)" : L"",
 		!game->open ? L": full or starting" : game->in_progress ? L": under way" : L"",
 		game->locked ? L", password" : L"");
 	text[size - 1] = 0;

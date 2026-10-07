@@ -13239,26 +13239,48 @@ static boolean hs_scenario_syntax_data_valid(
 {
 	long const syntax_data_size =
 		sizeof(struct data_array)+MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO*sizeof(struct hs_syntax_node);
+	/* (the tag cache the map's tags are in: a Custom Edition map's is its
+	own, cache_files.c) */
+	unsigned long tag_cache_size;
+	byte const *tag_cache = (byte const *)cache_files_tag_cache(&tag_cache_size);
 	byte const *address = (byte const *)xbox_pointer(scenario->hs_syntax_data.address);
 	struct data_array const *data = (struct data_array const *)address;
-#ifdef HALO_CUSTOM_EDITION
-	/* (a Custom Edition map's tags are in a tag cache of their own:
-	cache_file_tag_cache_bounds, cache/cache_files.h) */
-	long tag_cache_size;
-	byte const *tag_cache = (byte const *)cache_file_tag_cache_bounds(&tag_cache_size);
-#else
-	long const tag_cache_size = TAG_CACHE_SIZE;
-	byte const *tag_cache = (byte const *)physical_memory_get_tag_cache_base_address();
-#endif
 
 	if (scenario->hs_syntax_data.size != syntax_data_size ||
 		!tag_cache ||
+		!scenario->hs_syntax_data.address ||
 		address < tag_cache ||
-		address > tag_cache+tag_cache_size-syntax_data_size ||
-		/* (two bytes, not four: Halo 1: NHE's bloodgulch holds its array
-		two bytes past a multiple of four, which the Xbox and the native
-		builds read as they are) */
-		(POINTER_BITS(address) & 1))
+		address > tag_cache+tag_cache_size-syntax_data_size)
+	{
+		return FALSE;
+	}
+
+#ifdef HALO_CUSTOM_EDITION
+	/* port: a Custom Edition or HaloMD map's array, which Halo PC's tools
+	wrote: after its signature its header is laid out otherwise (its counts
+	are not the Xbox's fields, and do not pass the checks below), and it need
+	not lie at a 4-byte boundary. Its place in the tag cache, its size, its
+	signature and the node count and size it was made with are checked: a
+	node is found by an index below the array's maximum count, so its scripts
+	read nothing outside it. These maps' scripts ran so before the checks
+	below were added (Coldsnap's, for one) */
+	{
+		extern boolean cache_file_tags_are_ce(void);
+
+		if (cache_file_tags_are_ce())
+		{
+			return data->signature == 'd@t@' &&
+				data->maximum_count == MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO &&
+				data->size == sizeof(struct hs_syntax_node) &&
+				hs_scenario_string_constants_valid(scenario);
+		}
+	}
+#endif
+
+	/* (two bytes, not four: Halo 1: NHE's bloodgulch holds its array two
+	bytes past a multiple of four, which the Xbox and the native builds read
+	as they are) */
+	if (POINTER_BITS(address) & 1)
 	{
 		return FALSE;
 	}
@@ -13283,21 +13305,15 @@ bytes at their end that the console's expressions are written to
 static boolean hs_scenario_string_constants_valid(
 	struct scenario const *scenario)
 {
-#ifdef HALO_CUSTOM_EDITION
-	/* (a Custom Edition map's tags are in a tag cache of their own:
-	cache_file_tag_cache_bounds, cache/cache_files.h) */
-	long tag_cache_size;
-	byte const *tag_cache = (byte const *)cache_file_tag_cache_bounds(&tag_cache_size);
-#else
-	long const tag_cache_size = TAG_CACHE_SIZE;
-	byte const *tag_cache = (byte const *)physical_memory_get_tag_cache_base_address();
-#endif
+	unsigned long tag_cache_size;
+	byte const *tag_cache = (byte const *)cache_files_tag_cache(&tag_cache_size);
 	byte const *address = (byte const *)xbox_pointer(scenario->hs_string_constants.address);
 	long size = scenario->hs_string_constants.size;
 
 	return tag_cache &&
+		scenario->hs_string_constants.address &&
 		size >= 0x400 &&
-		size <= tag_cache_size &&
+		(unsigned long)size <= tag_cache_size &&
 		address >= tag_cache &&
 		address <= tag_cache+tag_cache_size-size;
 }
@@ -15690,6 +15706,10 @@ boolean hs_scenario_postprocess(
 #endif
 	if (!recompile && hs_compile_postprocess(&error_message, &error_source))
 	{
+		/* port: in debug.txt, what the map's scripts are */
+		error(_error_silent, "scenario scripts: %ld scripts, %ld globals",
+			scenario->hs_scripts.count,
+			scenario->hs_globals.count);
 		/* port: before the console's expressions are compiled into the
 		same nodes */
 		hs_scenario_functions_check(scenario);

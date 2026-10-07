@@ -11,13 +11,12 @@ whose X25519 form's hash is the invite's host part (p2p.c), so no one but
 the host can list its invite, alter its listing, or list another's under
 false details:
 
-	"HL", format 1, the listing's version (2: 20 for a password's layout, and
-	its game's tombstone, else HALO_PORT_NETWORK_VERSION; browsers take
-	MINIMUM..MAXIMUM), flags (open, under way, teams, closed, password), sequence
-	(4: newest wins), Unix time (4), the Ed25519 key (32), the invite's token
-	(16; a password's game's sealed with the password's key, 56:
-	p2p_seal_token; a tombstone's zero), players, most players, the
-	gametype's engine (1 each), the game's name,
+	"HL", format 1, the lobby version (2: HALO_PORT_NETWORK_VERSION; browsers
+	hide others), flags (open, under way, teams, closed, password,
+	dedicated), sequence (4: newest wins), Unix time (4), the Ed25519 key
+	(32), the invite's token (16; a password's game's sealed with the
+	password's key, 56: p2p_seal_token; a tombstone's zero), players, most
+	players, the gametype's engine (1 each), the game's name,
 	map and gametype (a length byte, then up to 32, 32 and 24 characters of
 	printable ASCII), a stamp (8, reserved: zero), and the signature (64) of
 	"hceu-lobby-1" and all before it.
@@ -75,6 +74,10 @@ enum
 	_listing_closed = 8,
 	/* its token sealed with a password's key */
 	_listing_password = 16,
+	/* a dedicated server's game, nobody playing at the host (ChupathingyCE's;
+	OpenCE's browsers take no notice of a bit they don't know, and may list
+	these apart) */
+	_listing_dedicated = 128,
 	STAMP_SIZE = 8,
 	/* the signed part's end: everything but the signature */
 	MAXIMUM_LISTING_SIZE = 2 + 1 + 2 + 1 + 4 + 4 + P2P_KEY_SIZE + P2P_SEALED_TOKEN_SIZE + 3 +
@@ -98,11 +101,6 @@ enum
 };
 
 static const char signature_label[] = "hceu-lobby-1";
-
-/* (AE) the network version whose listings have a password's layout
-(OpenCE build-138's); HALO_PORT_NETWORK_VERSION_MAXIMUM is at least it */
-#define LISTING_PASSWORD_VERSION 20
-typedef char check_listing_password_version[LISTING_PASSWORD_VERSION <= HALO_PORT_NETWORK_VERSION_MAXIMUM ? 1 : -1];
 
 /* (p2p.h's sizes of a locked listing's are p2p_internal.h's) */
 typedef char check_listing_sizes[P2P_LISTING_SIGNING_KEY_SIZE == P2P_KEY_SIZE &&
@@ -164,6 +162,8 @@ static struct
 	char gametype[P2P_LISTING_GAMETYPE_SIZE + 1];
 	int engine_type;
 	int flags;
+	/* a dedicated server hosts (p2p_set_hosting_dedicated) */
+	int dedicated;
 	int player_count, maximum_player_count;
 	/* the password's key (p2p_set_hosting_password), if it has one */
 	int has_password;
@@ -270,18 +270,8 @@ static int listing_make(unsigned char *bytes, int flags)
 	bytes[size++] = 'H';
 	bytes[size++] = 'L';
 	bytes[size++] = LISTING_FORMAT;
-	/* (AE: the version states the listing's layout: a password's sealed
-	token is version 20's, which browsers of 18 and below skip, and a
-	password game's tombstone is 20 too, so that the browsers that took its
-	listings take it; any other is this build's announced version, 18:
-	NETCODE.md) */
-	{
-		int version = (flags & _listing_password) || ((flags & _listing_closed) && lobby.has_password) ?
-			LISTING_PASSWORD_VERSION : HALO_PORT_NETWORK_VERSION;
-
-		bytes[size++] = (unsigned char)(version >> 8);
-		bytes[size++] = (unsigned char)version;
-	}
+	bytes[size++] = (unsigned char)(delta_legacy_announce() >> 8);
+	bytes[size++] = (unsigned char)delta_legacy_announce();
 	bytes[size++] = (unsigned char)flags;
 	put_long(bytes + size, ++lobby.sequence);
 	size += 4;
@@ -656,6 +646,7 @@ static void listing_take(const struct queued *queued, const struct listing *list
 	shown->open = (listing->flags & _listing_open) != 0;
 	shown->in_progress = (listing->flags & _listing_in_progress) != 0;
 	shown->has_teams = (listing->flags & _listing_has_teams) != 0;
+	shown->dedicated = (listing->flags & _listing_dedicated) != 0;
 	shown->ping = -1;
 }
 
@@ -678,8 +669,8 @@ static void update_browsing(void)
 		int good;
 
 		memmove(lobby.queue, lobby.queue + 1, sizeof(*lobby.queue) * (size_t)(--lobby.queue_count));
-		if (!listing_read(queued.payload, queued.size, &listing) || listing.version < HALO_PORT_NETWORK_VERSION_MINIMUM ||
-			listing.version > HALO_PORT_NETWORK_VERSION_MAXIMUM ||
+		if (!listing_read(queued.payload, queued.size, &listing) || listing.version < delta_legacy_minimum() ||
+			listing.version > delta_legacy_maximum() ||
 			!signing_key_hash(listing.key, key_hash) || memcmp(key_hash, queued.key_hash, P2P_KEY_HASH_SIZE))
 		{
 			continue;
@@ -732,6 +723,13 @@ void p2p_lobby_quit(void)
 }
 
 /* ---------- the game's side */
+
+void p2p_set_hosting_dedicated(int dedicated)
+{
+	pthread_mutex_lock(&p2p_lock);
+	lobby.dedicated = dedicated ? 1 : 0;
+	pthread_mutex_unlock(&p2p_lock);
+}
 
 void p2p_set_hosting_public(int public)
 {
@@ -791,7 +789,7 @@ void p2p_set_game_listing(const char *name, const char *map, const char *gametyp
 	char new_map[P2P_LISTING_MAP_SIZE + 1];
 	char new_gametype[P2P_LISTING_GAMETYPE_SIZE + 1];
 	int flags = (open ? _listing_open : 0) | (in_progress ? _listing_in_progress : 0) |
-		(has_teams ? _listing_has_teams : 0);
+		(has_teams ? _listing_has_teams : 0) | (lobby.dedicated ? _listing_dedicated : 0);
 
 	sanitize(new_name, P2P_LISTING_NAME_SIZE, name ? name : lobby.name, P2P_LISTING_NAME_SIZE);
 	sanitize(new_map, P2P_LISTING_MAP_SIZE, map ? map : lobby.map, P2P_LISTING_MAP_SIZE);

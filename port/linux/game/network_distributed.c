@@ -3762,27 +3762,6 @@ void network_distributed_ban_until(
 	}
 }
 
-/* (the host: network_server_manager.c, its kick command) players kicked by
-the host, which may join again: every machine told, nothing kept (no line
-in BANS_FILE) */
-void network_distributed_kick(
-	char const *names)
-{
-	char kept_names[64];
-	char notice[MAXIMUM_NOTICE_LENGTH];
-
-	distributed_printable(kept_names, sizeof(kept_names), names);
-	snprintf(notice, sizeof(notice), "%s kicked by the host", kept_names);
-	/* (to every client in the game: in the lobby, the host's own) */
-	if (game_in_progress())
-		distributed_send_notice(notice);
-	else
-	{
-		console_warning("%s", notice);
-		error(_error_log, "%s", notice);
-	}
-}
-
 void network_distributed_ban(
 	long machine_index,
 	unsigned long address,
@@ -3900,6 +3879,27 @@ boolean network_distributed_unban(
 	}
 	fclose(file);
 	return TRUE;
+}
+
+/* (the host: network_server_manager.c, its kick command) players kicked by
+the host, which may join again: every machine told, nothing kept (no line
+in BANS_FILE) */
+void network_distributed_kick(
+	char const *names)
+{
+	char kept_names[64];
+	char notice[MAXIMUM_NOTICE_LENGTH];
+
+	distributed_printable(kept_names, sizeof(kept_names), names);
+	snprintf(notice, sizeof(notice), "%s kicked by the host", kept_names);
+	/* (to every client in the game: in the lobby, the host's own) */
+	if (game_in_progress())
+		distributed_send_notice(notice);
+	else
+	{
+		console_warning("%s", notice);
+		error(_error_log, "%s", notice);
+	}
 }
 
 /* (the host) a client machine's tick, which one of its messages is

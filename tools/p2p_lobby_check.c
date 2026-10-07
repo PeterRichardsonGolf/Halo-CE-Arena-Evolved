@@ -37,6 +37,10 @@ void posix_random_bytes(void *buffer, unsigned long size) { memset(buffer, 0x5a,
 unsigned long p2p_now(void) { return clock_now; }
 int config_boolean(const char *name) { (void)name; return 1; }
 void platform_log(const char *format, ...) { (void)format; }
+/* (delta.c's legacy number: the built-in one) */
+int delta_legacy_announce(void) { return HALO_PORT_NETWORK_VERSION; }
+int delta_legacy_minimum(void) { return HALO_PORT_NETWORK_VERSION_MINIMUM; }
+int delta_legacy_maximum(void) { return HALO_PORT_NETWORK_VERSION_MAXIMUM; }
 
 void p2p_hex(const unsigned char *bytes, int size, char *text)
 {

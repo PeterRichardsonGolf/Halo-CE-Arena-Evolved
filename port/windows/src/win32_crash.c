@@ -53,13 +53,19 @@ OpenCE's); the crash's lines still go to debug.txt.
 #ifndef HALO_BUILD_FLAVOR
 #define HALO_BUILD_FLAVOR "release"
 #endif
+#ifndef HALO_VERSION
+#define HALO_VERSION "dev"
+#endif
+#ifndef HALO_COMMIT
+#define HALO_COMMIT "unknown"
+#endif
 
 /* the minidump endpoint of the project's DSN,
 https://e656c596e8f90402b0f47a2613b69e50@o4512207906603008.ingest.de.sentry.io/4512207917744208
 (a DSN is public: it only lets a client send events) */
 #define SENTRY_HOST L"o4512207906603008.ingest.de.sentry.io"
 #define SENTRY_MINIDUMP_PATH L"/api/4512207917744208/minidump/?sentry_key=e656c596e8f90402b0f47a2613b69e50"
-#define SENTRY_USER_AGENT L"halo-ce-universal-crash-reporter"
+#define SENTRY_USER_AGENT L"ChupathingyCE/" HALO_VERSION L" (Windows crash reporter)"
 
 #define CRASH_REPORT_OPTION L"--crash-report"
 #define CRASH_UPLOAD_OPTION L"--crash-upload"
@@ -774,7 +780,6 @@ static int crash_dump(EXCEPTION_POINTERS *exception)
 	event = CreateEventW(NULL, TRUE, FALSE, name);
 	if (!event)
 		return 0;
-	/* (the pointer as 64 bits: windows64's long is 32) */
 	_snwprintf(arguments, 128, CRASH_REPORT_OPTION L" %lu %lu %llx", (unsigned long)GetCurrentProcessId(),
 		(unsigned long)GetCurrentThreadId(), (unsigned long long)(ULONG_PTR)exception);
 	waits[0] = event;
@@ -791,6 +796,10 @@ static int crash_dump(EXCEPTION_POINTERS *exception)
 	CloseHandle(event);
 	return result == WAIT_OBJECT_0;
 }
+
+#ifdef HALO_64BIT
+int win32_unwind(CONTEXT *context, void **frames, int count);
+#endif
 
 /* a line of the report, to the log and to debug.txt (a player sends
 debug.txt; the console closes with the game) */
@@ -820,9 +829,6 @@ static LONG WINAPI crash_filter(EXCEPTION_POINTERS *exception)
 	static volatile LONG crashed_thread = 0;
 	EXCEPTION_RECORD *record = exception->ExceptionRecord;
 	CONTEXT *context = exception->ContextRecord;
-#ifndef HALO_64BIT
-	const DWORD *stack = (const DWORD *)context->Esp;
-#endif
 	LONG thread = (LONG)GetCurrentThreadId();
 	LONG first = InterlockedCompareExchange(&crashed_thread, thread, 0);
 	int dumped;
@@ -837,14 +843,13 @@ static LONG WINAPI crash_filter(EXCEPTION_POINTERS *exception)
 	dumped = crash_reports_enabled() && crash_dump(exception);
 	/* (where halo.exe is: tools/symbolize_crash.py finds the lines of the
 	addresses below from it and halo.pdb) */
-	crash_line("crash: halo.exe at %p, build %d (%s)", (void *)GetModuleHandleW(NULL), HALO_BUILD_NUMBER,
-		HALO_BUILD_FLAVOR);
+	crash_line("crash: halo.exe at %p, ChupathingyCE %s (%s config, commit %s)", (void *)GetModuleHandleW(NULL),
+		HALO_VERSION, HALO_BUILD_FLAVOR, HALO_COMMIT);
 #ifdef HALO_64BIT
-	/* (AE: the 64-bit build's registers and its calls from the unwind
-	information, win32_posix.c, as ChupathingyCE's crash filter had them) */
 	{
 		CONTEXT unwound = *context;
-		const DWORD64 *stack64 = (const DWORD64 *)context->Rsp;
+		const DWORD64 *stack = (const DWORD64 *)context->Rsp;
+		DWORD64 image = (DWORD64)GetModuleHandleA(NULL);
 		void *frames[32];
 		int count, depth;
 
@@ -852,13 +857,19 @@ static LONG WINAPI crash_filter(EXCEPTION_POINTERS *exception)
 			record->ExceptionCode, record->ExceptionAddress,
 			record->NumberParameters >= 2 ? (void *)record->ExceptionInformation[1] : NULL,
 			context->Rip, context->Rbp, context->Rsp);
-		if (!IsBadReadPtr(stack64, 4 * sizeof(DWORD64)))
-			crash_line("crash: stack %016llx %016llx %016llx %016llx", stack64[0], stack64[1], stack64[2], stack64[3]);
+		/* (halo.exe's place this run: the addresses below, less it, are the
+		build's own) */
+		crash_line("crash: rip at +%llx", context->Rip - image);
+		if (!IsBadReadPtr(stack, 4 * sizeof(DWORD64)))
+			crash_line("crash: stack %016llx %016llx %016llx %016llx", stack[0], stack[1], stack[2], stack[3]);
+		/* the calls, from the unwind information (win32_posix.c) */
 		count = win32_unwind(&unwound, frames, 32);
 		for (depth = 0; depth < count; depth++)
 			crash_line("crash: called from %p", frames[depth]);
 	}
 #else
+	const DWORD *stack = (const DWORD *)context->Esp;
+
 	crash_line("crash: exception %08lx at %p (accessing %p), eip %08lx ebp %08lx esp %08lx",
 		record->ExceptionCode, record->ExceptionAddress,
 		record->NumberParameters >= 2 ? (void *)record->ExceptionInformation[1] : NULL,
@@ -934,6 +945,7 @@ static void crash_reports_install(void)
 	if ((arguments = crash_option(CRASH_REPORT_OPTION)) != NULL)
 	{
 		unsigned long process_id = 0, thread_id = 0;
+		/* (a pointer of the game's: 64 bits in the 64-bit build) */
 		unsigned long long exception_pointers = 0;
 
 		if (swscanf(arguments, L" %lu %lu %llx", &process_id, &thread_id, &exception_pointers) == 3)

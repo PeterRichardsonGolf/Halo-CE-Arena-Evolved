@@ -118,6 +118,9 @@ int p2p_hosting_has_password(void);
 /* (AE) whether a password opened this invite code (p2p_listing_unlock; the
 code as p2p_joined_invite gives it): browser.c sends it nowhere */
 int p2p_invite_code_was_locked(const char *code);
+/* whether a dedicated server hosts: its listing says so, for browsers that
+list dedicated servers apart (the next p2p_set_game_listing publishes it) */
+void p2p_set_hosting_dedicated(int dedicated);
 /* the hosted game's details as listed (printable ASCII is kept; NULL leaves
 one as it was): the game's server calls it as they change (calling it with
 the same again costs little) */
@@ -152,7 +155,7 @@ struct p2p_listing
 	char map[P2P_LISTING_MAP_SIZE + 1];
 	char gametype[P2P_LISTING_GAMETYPE_SIZE + 1];
 	unsigned char player_count, maximum_player_count, engine_type;
-	unsigned char open, in_progress, has_teams;
+	unsigned char open, in_progress, has_teams, dedicated;
 	/* joining it failed this run (p2p_lobby_mark_failed) */
 	unsigned char failed;
 	/* milliseconds, -1 if not known */

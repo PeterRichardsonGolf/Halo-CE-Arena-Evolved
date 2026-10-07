@@ -48,7 +48,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.version import base_version, release_build, version  # noqa: E402
+from tools.version import base_version, commit, release_build, version  # noqa: E402
 
 # what each port's build leaves, and what goes into dist/
 OUTPUTS = {
@@ -154,17 +154,19 @@ def main() -> int:
     if args.platform == "macos":
         # (the SDL3 inside it, the build's own: zlib license)
         shutil.copy2(ROOT / "build/macos/third_party/SDL3/LICENSE.txt", dist / "SDL3-LICENSE.txt")
-    if args.platform == "windows":
+    if args.platform in ("windows", "windows64"):
         # the symbols of halo.exe and SDL3.dll, apart (players do not need
         # them): the workflow uploads them to Sentry, which turns the crash
         # reports' minidumps into function names and lines
         # (port/windows/src/win32_crash.c), and tools/symbolize_crash.py
         # reads debug.txt's crash lines with them
-        symbols = ROOT / "dist" / f"halo-windows-{args.config}-symbols"
+        symbols = ROOT / "dist" / f"arena-evolved-{args.platform}-{args.config}-symbols"
+        sdl_arch = "x64" if args.platform == "windows64" else "x86"
         if symbols.exists():
             shutil.rmtree(symbols)
         symbols.mkdir(parents=True)
-        for pdb in [ROOT / "build/windows/halo.pdb", *sorted((ROOT / "build/windows/third_party").glob("SDL3-*/lib/x86/SDL3.pdb"))]:
+        for pdb in [ROOT / f"build/{args.platform}/halo.pdb",
+                    *sorted((ROOT / "build/windows/third_party").glob(f"SDL3-*/lib/{sdl_arch}/SDL3.pdb"))]:
             # (AE: its workflow uploads no symbols: a PDB that is not there is
             # skipped, not a failed build)
             if not pdb.is_file():
@@ -176,10 +178,9 @@ def main() -> int:
     # XisoExtractor.java) follow extract-xiso, whose license asks binaries
     # to carry its notice
     shutil.copy2(ROOT / "port/third_party/extract-xiso/LICENSE.TXT", dist / "extract-xiso-LICENSE.txt")
-    if args.platform in ("linux", "linux64"):
-        # the self-updater's TLS (port/third_party/mbedtls), whose Apache
-        # license asks the same
-        shutil.copy2(ROOT / "port/third_party/mbedtls/LICENSE", dist / "mbedtls-LICENSE.txt")
+    # the game list's and the self-updater's TLS (port/third_party/mbedtls),
+    # in every build (HALO_GAME_BROWSER), whose Apache license asks the same
+    shutil.copy2(ROOT / "port/third_party/mbedtls/LICENSE", dist / "mbedtls-LICENSE.txt")
     # internet play's UPnP (port/third_party/miniupnpc), in every build,
     # whose BSD license asks binaries to carry its notice
     shutil.copy2(ROOT / "port/third_party/miniupnpc/LICENSE", dist / "miniupnpc-LICENSE.txt")
@@ -217,6 +218,9 @@ def alpine_build(platform: str, config: str) -> int:
         if name in ("CCACHE_DIR", "CCACHE_BASEDIR") and Path(value).resolve().is_relative_to(ROOT):
             value = (Path("/src") / Path(value).resolve().relative_to(ROOT)).as_posix()
         environment += ["-e", f"{name}={value}"]
+    # (the checkout's commit, which git in the container may not read: the
+    # checkout's owner is another user there)
+    environment += ["-e", f"HALO_COMMIT={commit()}"]
     script = f"apk add --no-cache -q {' '.join(ALPINE_PACKAGES)} && python3 tools/ci_build.py {platform} {config}"
     run(["docker", "run", "--rm", "--platform", DOCKER_PLATFORMS[platform], "-v", f"{ROOT}:/src", "-w", "/src",
          *environment, ALPINE_IMAGE, "sh", "-c", script])

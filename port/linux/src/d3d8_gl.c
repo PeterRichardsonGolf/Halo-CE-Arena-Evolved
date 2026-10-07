@@ -624,8 +624,8 @@ xgpu_gl_state_invalidate, after which every value is set again. Unknown
 values are all ones, which no real value matches (floats become NaN, which
 compares unequal to everything). */
 
-/* (port: macOS's OpenGL 4.1 has no vertex attribute bindings, 4.3's, so it
-points each attribute on its own as OpenGL ES does) */
+/* (each attribute pointed at on its own, glVertexAttribPointer: OpenGL ES,
+and macOS, whose OpenGL 4.1 has no vertex attribute binding of 4.3) */
 #if defined(HALO_ANDROID) || defined(__APPLE__)
 struct attribute_pointer
 {

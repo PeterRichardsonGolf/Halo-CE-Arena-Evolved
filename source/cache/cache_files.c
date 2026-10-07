@@ -390,9 +390,6 @@ static boolean cache_file_region_contains(
 	long count,
 	long element_size)
 {
-	/* (POINTER_BITS: a 64-bit build's pointers are wider than a long; the
-	offset is that full-width difference once it is checked to be at most
-	region_size) */
 	unsigned long offset = (unsigned long)(POINTER_BITS(address) - POINTER_BITS(region));
 
 	if (count == 0)
@@ -400,7 +397,7 @@ static boolean cache_file_region_contains(
 
 	return count > 0 &&
 		POINTER_BITS(address) >= POINTER_BITS(region) &&
-		POINTER_BITS(address) - POINTER_BITS(region) <= region_size &&
+		offset <= region_size &&
 		(unsigned long)count <= (region_size - offset) / (unsigned long)element_size;
 }
 
@@ -452,8 +449,8 @@ static boolean cache_file_tag_header_verify(
 	}
 	else
 	{
-		long scenario_absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(tag_header->scenario_tag_index);
 		struct cache_file_tag_instance *tag_instances = xbox_pointer(tag_header->tag_instances);
+		long scenario_absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(tag_header->scenario_tag_index);
 		long absolute_index;
 
 		if (scenario_absolute_index >= tag_header->tag_count ||
@@ -471,7 +468,8 @@ static boolean cache_file_tag_header_verify(
 			!problem && absolute_index < tag_header->tag_count;
 			absolute_index++)
 		{
-			void const *base_address = xbox_pointer(tag_instances[absolute_index].base_address);
+			void const *base_address = tag_instances[absolute_index].base_address ?
+				xbox_pointer(tag_instances[absolute_index].base_address) : NULL;
 
 			if (base_address &&
 				!cache_file_region_contains(tag_header, TAG_CACHE_SIZE, base_address, 1, 1))
@@ -577,21 +575,26 @@ boolean cache_file_tags_are_ce(
 {
 	return cache_file_globals.tags_loaded && cache_file_is_ce;
 }
+#endif
 
-/* port: the tag cache the loaded map's tags are in, and its size: a Custom
-Edition map's own, else the Xbox's (hs.c's hs_scenario_syntax_data_valid) */
-void *cache_file_tag_cache_bounds(
-	long *size)
+/* port: the tag cache the map's tags are read into, and its size: a Custom
+Edition map's is its own, larger (CE_TAG_CACHE_BASE), the others' the
+Xbox's (physical_memory_map.c) */
+void *cache_files_tag_cache(
+	unsigned long *size)
 {
-	if (cache_file_tags_are_ce())
+#ifdef HALO_CUSTOM_EDITION
+	if (cache_file_is_ce)
 	{
-		*size = (long)CE_TAG_CACHE_SIZE;
+		*size = CE_TAG_CACHE_SIZE;
+
 		return xbox_pointer(CE_TAG_CACHE_BASE);
 	}
+#endif
 	*size = TAG_CACHE_SIZE;
+
 	return physical_memory_get_tag_cache_base_address();
 }
-#endif
 
 char const *cache_files_map_directory(
 	void)
@@ -1019,13 +1022,17 @@ boolean cache_file_header_verify(
 	/* port: the map holds at least its header, and its tag data lies in it
 	and fits the tag cache, which it is read into whole (a size rounded up
 	to whole sectors still fits, the cache being whole sectors). Checked
-	without overflow: the offset and size are each checked first. A Custom
-	Edition map's, larger, is checked against its own: ce_map_checks.c */
+	without overflow: the offset and size are each checked first. A
+	Custom Edition map's goes in a larger tag cache of its own, and is
+	checked further against its file before it is opened: ce_map_checks.c */
 	if (header->file_length < (long)sizeof(struct cache_file_header) ||
 		header->tag_data_offset < 0 ||
 		header->tag_data_size < 0 ||
-		(header->version == 5 && header->tag_data_size > TAG_CACHE_SIZE) ||
-		header->tag_data_size > header->file_length ||
+#ifdef HALO_CUSTOM_EDITION
+		header->tag_data_size > (CACHE_FILE_VERSION_IS_PC(header->version) ? (long)CE_TAG_CACHE_SIZE : TAG_CACHE_SIZE) ||
+#else
+		header->tag_data_size > TAG_CACHE_SIZE ||
+#endif
 		header->tag_data_offset > header->file_length - header->tag_data_size)
 	{
 		error(

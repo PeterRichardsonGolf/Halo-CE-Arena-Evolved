@@ -54,6 +54,9 @@ struct tag_iterator
 
 /* ---------- prototypes/CACHE_FILES.C */
 
+void *cache_files_tag_cache(
+	unsigned long *size);
+
 const char *cache_files_map_directory(
 	void);
 /* port: the mod played (game.mod), or NULL; a map's file, the mod's if it
@@ -85,12 +88,10 @@ void cache_files_show_multiplayer_unavailable(
 	char const *map_name,
 	char const *build);
 #ifdef HALO_CUSTOM_EDITION
-/* port: whether the loaded map is a Custom Edition map, and the tag cache
-its tags are in (a Custom Edition map's own, else the Xbox's) and its size */
+/* port: whether the loaded map is a Custom Edition map (the tag cache its
+tags are in: cache_files_tag_cache) */
 boolean cache_file_tags_are_ce(
 	void);
-void *cache_file_tag_cache_bounds(
-	long *size);
 #endif
 
 unsigned long cache_files_get_checksum(

@@ -1698,10 +1698,16 @@ static boolean network_game_server_handle_message_client_broadcast_game_search(
 			/* the native builds' network version and netcode (a client
 			refuses a host of another version, or of the lockstep netcode
 			older builds had: network_client_manager.c) */
-			advertisement.reserved[HALO_PORT_ADVERTISED_VERSION_OFFSET] = (byte)(HALO_PORT_NETWORK_VERSION & 0xFF);
-			advertisement.reserved[HALO_PORT_ADVERTISED_VERSION_OFFSET + 1] = (byte)(HALO_PORT_NETWORK_VERSION >> 8);
+			advertisement.reserved[HALO_PORT_ADVERTISED_VERSION_OFFSET] = (byte)(delta_legacy_announce() & 0xFF);
+			advertisement.reserved[HALO_PORT_ADVERTISED_VERSION_OFFSET + 1] = (byte)(delta_legacy_announce() >> 8);
 			advertisement.reserved[HALO_PORT_ADVERTISED_FLAGS_OFFSET] =
 				HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG;
+#ifdef HALO_GAME_BROWSER
+			/* (and Delta Peer's flag, while this host speaks it: OpenCE's
+			machines ignore the bit; port/linux/src/delta_peer.h) */
+			{ unsigned char delta_peer_advertised_flags(void);
+			  advertisement.reserved[HALO_PORT_ADVERTISED_FLAGS_OFFSET] |= delta_peer_advertised_flags(); }
+#endif
 			if (network_game_server_get_state(server, NULL) != _network_game_server_state_pregame ||
 				network_game_server_game_is_loading(server))
 			{
@@ -1992,7 +1998,9 @@ static boolean network_game_server_handle_message_client_join_game_request(
 						struct message_server_machine_rejected rejection;
 						struct network_message *reply;
 
-						rejection.reason = _network_game_server_rejection_reason_game_not_open;
+						/* port: a banned machine is told so (it was told the
+						game is not open) */
+						rejection.reason = network_game_server_last_refusal_code();
 						network_event(
 							"server failed to accept valid client machine '%s' @%s into the game",
 							join_game_request.machine_name,

@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 from .embed_assets import hud_assets_build, hud_configure_inputs, ui_fonts_build
 from .ninja_syntax import Writer
 from .voice_assets import voices_build
-from .version import release_build, version
+from .version import VERSION_SOURCES, identity_defines, release_build, version
 
 PORT_DIR = Path("port/linux")
 PORT_CONFIG = PORT_DIR / "port.json"
@@ -152,10 +152,10 @@ def updater_defines(release: bool) -> str:
     """the version's defines (port/linux/src/updater.c, the self-updater, has
     them, and gives the version to the rest): the version (tools/version.py),
     whether this build is a release's (only those look for updates), and its
-    configuration"""
+    configuration; and the channel and commit (build_identity.c)"""
     flavor = "release" if release else "debug"
     return (f'-DHALO_VERSION=\\"{version()}\\" -DHALO_RELEASE_BUILD={int(release_build())} '
-            f'-DHALO_BUILD_FLAVOR=\\"{flavor}\\"')
+            f'-DHALO_BUILD_FLAVOR=\\"{flavor}\\" {identity_defines()}')
 
 PLATFORM_FLAGS = [
     "-std=gnu11",
@@ -208,17 +208,19 @@ def musl_math_cflags(abi: str) -> str:
                      f"-include {MUSL_MATH_DIR}/include/libm.h"])
 
 
-# Halo PC's Custom Edition maps (maps/ce/<name>.map, played as <name>@ce):
-# the port code of source/cache, sound, interface and text and
-# port/linux/game/ce_*.c (HALO_CUSTOM_EDITION). The native desktop builds
-# (Linux here, macOS: macos_build.py) have them; the Windows and Android
-# builds do not yet.
+# Halo PC's Custom Edition maps (maps/ce/<name>.map, played as <name>@ce)
+# and HaloMD's (md_maps/<name>.map, played as <name>@md): the port code of
+# source/cache, sound, interface and text and port/linux/game/ce_*.c
+# (HALO_CUSTOM_EDITION). Every build has them: Linux here (32-bit and
+# 64-bit) and the dedicated server, macOS (lp64_build.py), Windows (32-bit
+# and 64-bit: windows_build.py) and Android (android_build.py). Only the
+# Xbox builds (Warthog) do not.
 CUSTOM_EDITION_DEFINES = ["-DHALO_CUSTOM_EDITION"]
 
 
 def game_browser_defines(sln: Any) -> List[str]:
     """configure.py --game-browser: the game list and server browser
-    (port/linux/src/browser.c), off in the builds the project ships"""
+    (port/linux/src/browser.c), on unless --no-game-browser"""
     return ["-DHALO_GAME_BROWSER"] if getattr(sln, "game_browser", False) else []
 
 
@@ -452,7 +454,7 @@ def linux32_objects(n: Writer, units: Linux32Units, obj_dir: Path, extra_cflags:
             add_object(source, f"{posix_cflags} -I{STB_DIR}", posix=True)
         elif source.name.startswith("posix_"):
             add_object(source, posix_cflags, posix=True)
-        elif source.name == "updater.c":
+        elif source.name in VERSION_SOURCES:
             add_object(source, f"{platform_cflags} {updater_defines(getattr(sln, 'port_release', False))}")
         else:
             add_object(source, platform_cflags)
