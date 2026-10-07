@@ -54,7 +54,8 @@ frames draw 23 MB, Foundation's 66 MB, a frame of bigass_v3 more than 64 MB
 The desktop builds (Linux, macOS and Windows, 32-bit and 64-bit) are not
 held to the Xbox's memory: their window is 512 MB (port/linux/src/platform.h),
 whose pages are backed as they are used, and their cache 256 MB, half of it
-(OpenCE build-145's size; ChupathingyCE's was 128 MB). Nothing of the
+(OpenCE build-145's size) in the 64-bit builds, 128 MB (ChupathingyCE's) in
+the 32-bit ones, whose process the window shares with everything else. Nothing of the
 cache's size reaches the network or the game state.
 
 Android's window stays the development kit's 128 MB (its guest image is
@@ -68,8 +69,12 @@ builds (HALO_XBOX_CONSOLE) keep the Xbox's cache. */
 
 #if defined(HALO_ANDROID)
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0xB00 /* (0x580) */
-#elif !defined(HALO_XBOX_CONSOLE)
+#elif !defined(HALO_XBOX_CONSOLE) && defined(HALO_64BIT)
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x4000 /* (0x580) */
+#elif !defined(HALO_XBOX_CONSOLE)
+/* (a 32-bit desktop build: ChupathingyCE's 128 MB, its address space being
+the 32-bit process's own, which the 512 MB window and the rest share) */
+#define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x2000 /* (0x580) */
 #else
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x580 /* (0x580) */
 #endif

@@ -14,8 +14,11 @@ stb_vorbis (port/third_party/stb).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 #endif
-/* (port/third_party/stb, a game include directory: port/linux/port.json) */
-#include "stb_vorbis.c"
+/* ChupathingyCE's copy, by its path: OpenCE build-145's own stb_vorbis.c, in
+port/linux/game (the game units' quoted-include folder), is another file of
+that name and is built into no game (tools/linux_build.py,
+OPENCE_CUSTOM_EDITION_SOURCES) */
+#include "../../third_party/stb/stb_vorbis.c"
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
