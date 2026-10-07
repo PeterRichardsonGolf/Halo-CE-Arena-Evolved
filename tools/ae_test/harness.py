@@ -8,7 +8,7 @@ import this module. Machine-specific paths come from a JSON config file
     $AE_TEST_CONFIG, or ~/.config/ae_test/config.json, or --config FILE
 
 A game runs headless in its own network namespace (unshare -rn: its own loopback,
-so several games and system-link bots never meet), under xvfb-run when there is
+so several games and system-link bots never meet), with its own Xvfb when there is
 no display, from its own copy of the binary (config.toml is written beside it),
 with its own data root (links to the maps and mods) and save root. Its debug.txt,
 stdout and screenshots (converted to PNG, the BMPs deleted) land in the run's
@@ -66,7 +66,7 @@ DEFAULTS = {
     "min_free_gb": 3,
     # look for the owner's own game here (a halo process outside work_dir, or port 5150 listening)
     "owner_check": True,
-    # "auto": xvfb-run when DISPLAY is unset
+    # "auto": an Xvfb per game when DISPLAY is unset
     "xvfb": "auto",
     "box": {
         "ssh": None,             # ssh alias of the build box
@@ -130,7 +130,8 @@ def stamp():
 
 
 def new_out_dir(cfg, tool, label=None, name=None):
-    base = expand(cfg["out_dir"]) / tool
+    base = expand(cfg["out_dir"]).resolve() / tool  # (absolute: the game writes into it from its own cwd)
+    check_not_tmp(base, "out_dir")  # (and each game's own /tmp hides the machine's /tmp)
     d = base / (name or (stamp() + (f"-{safe_name(label)}" if label else "")))
     d.mkdir(parents=True, exist_ok=True)
     return d
@@ -226,8 +227,30 @@ def other_games(cfg, procs=None, own=None):
     return [p for p in procs if not any(under(p[2], o) for o in own)]
 
 
+LIVE_INNERS = set()   # inner runners of this tool now running (any thread)
+STOPPING = threading.Event()  # set by TERM/INT: no new game starts
+
+
+def term_as_exit():
+    """TERM (and SIGINT, even where a shell started us with it ignored) stop this tool: no new game starts, every
+    running inner runner gets one TERM (it stops its games and X servers), and the main thread exits"""
+    import signal
+
+    def on_signal(signum, frame):
+        STOPPING.set()
+        for p in list(LIVE_INNERS):
+            try:
+                os.killpg(p.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        raise SystemExit(128 + signum)
+    signal.signal(signal.SIGTERM, on_signal)
+    signal.signal(signal.SIGINT, on_signal)
+
+
 def apply_load_policy(cfg, args=None):
-    """nice, and slow mode while the owner plays: one game at a time, fewer build jobs"""
+    """nice, and slow mode while the owner plays: one game at a time, fewer build jobs; TERM/INT cleanup"""
+    term_as_exit()
     slow = owner_playing(cfg)
     level = 19 if slow else int(cfg.get("nice", 10))
     try:
@@ -246,6 +269,9 @@ def apply_load_policy(cfg, args=None):
 def resolve_parallel(cfg, requested):
     """games at once: an explicit number, else 3, or 1 when other games already run here (or in slow mode)"""
     if cfg.get("_slow") or not netns_ok():
+        return 1
+    if not private_tmp_ok():
+        log("ae_test: no private /tmp for the games' X servers here: one game at a time")
         return 1
     req = requested if requested not in (None, "auto") else cfg.get("parallel", "auto")
     if req in (None, "auto"):
@@ -305,7 +331,12 @@ class GameSlots:
     def __init__(self, cfg, parallel, shared_network=None):
         self.cfg = cfg
         self.shared_network = (not netns_ok()) if shared_network is None else shared_network
-        self.parallel = 1 if self.shared_network else parallel
+        self.parallel = parallel
+        if self.shared_network:
+            self.parallel = 1
+        elif parallel > 1 and not private_tmp_ok():
+            log("ae_test: no private /tmp for the games' X servers here: one game at a time")
+            self.parallel = 1
         self.lock = threading.Lock()
         self.mine = 0
         self.dir = slots_dir() / "slots"
@@ -314,7 +345,7 @@ class GameSlots:
     def _registered(self):
         """(slot count, owner pids) of the live slot files of other harness processes (stale ones removed).
         A slot file is <owner pid>-<n> and holds the owner's pid: the harness process that starts the game,
-        which every process of that game descends from (unshare, the inner runner, xvfb-run, halo)."""
+        which every process of that game descends from (unshare, the inner runner, Xvfb, halo)."""
         n, owners = 0, set()
         for f in self.dir.glob("*-*"):
             try:
@@ -366,6 +397,8 @@ class GameSlots:
     def acquire(self, games=1, poll=5, quiet=False):
         waited = False
         while True:
+            if STOPPING.is_set():
+                raise RuntimeError("ae_test: stopping (TERM/INT): no new game")
             ok, why = self.try_acquire(games)
             if ok:
                 return
@@ -537,7 +570,8 @@ SPEC_KEYS = {
     "test_input": "HALO_TEST_INPUT",
     "config_toml": "a config.toml to put beside the binary",
     "env": "more environment variables",
-    "record": "seconds of MP4 to record (when the game supports HALO_RECORD_SECONDS and ffmpeg is present)",
+    "record": "seconds of MP4 to record from the first frame of play (HALO_RECORD_SECONDS; skipped with "
+              "older builds or without ffmpeg)",
     "address": "this game's loopback address (default 127.0.0.200)",
     "broadcast": "HALO_NET_BROADCAST",
     "delay": "seconds after the first game of a group before this one starts",
@@ -665,7 +699,8 @@ def parse_debug(text):
     lines = text.splitlines()
     r = {"version": "", "network_version": None, "joined": None, "delta": [], "tick": None, "players": 0,
          "items": None, "asserts": 0, "exceptions": 0, "refusals": 0, "lost_scripts": 0, "lost_lines": [],
-         "scenario_scripts": None, "corrected": 0, "clean_exit": False, "problems": [], "final": {}}
+         "scenario_scripts": None, "corrected": 0, "clean_exit": False, "problems": [], "final": {},
+         "shots_skipped": 0, "record_dropped": None}
     for line in lines:
         s = line.strip()
         if not r["version"] and re.match(r"^[\w-]+: (Halo CE|ChupathingyCE|OpenCE|halo)", s, re.I) and \
@@ -715,6 +750,14 @@ def parse_debug(text):
             r["corrected"] += 1
         if "exiting after debug.exit_after" in s:
             r["clean_exit"] = True
+        m = re.search(r"capture: screenshot .* skipped \((\d+) so far\)", s)
+        if m:
+            r["shots_skipped"] = max(r["shots_skipped"], int(m[1]))
+        elif re.search(r"capture: screenshot .* skipped", s):
+            r["shots_skipped"] += 1
+        m = re.search(r"capture: stopped after .*?(\d+) dropped", s)
+        if m:
+            r["record_dropped"] = (r["record_dropped"] or 0) + int(m[1])
     return r
 
 
@@ -760,6 +803,8 @@ def evaluate(spec, result):
     exp = spec.get("expect", {})
     if result.get("skipped"):
         return "SKIP", [result["skipped"]]
+    if result.get("error"):
+        why.append(result["error"])
     if result.get("timed_out"):
         why.append("timed out (killed)")
     elif result.get("exit_code") not in (0,):
@@ -783,7 +828,18 @@ def evaluate(spec, result):
             why.append(f"tick {d.get('tick')} < {min_tick}")
         if exp.get("scripts", kind == "campaign") and not d.get("scenario_scripts"):
             why.append("no scenario scripts line")
+    if str(result.get("record") or "").startswith("recording") and not result.get("recordings"):
+        why.append("recording asked, no mp4")
     return ("FAIL" if why else "PASS"), why
+
+
+def find_recordings(folder):
+    """the finished clips the game wrote into HALO_RECORD_DIR: <dir>/<name>.mp4 (its intermediates,
+    <name>.video.mp4.part and <name>.audio.f32.part, are not clips)"""
+    folder = Path(folder)
+    if not folder.exists():
+        return []
+    return sorted(p for p in folder.glob("*.mp4") if p.is_file())
 
 
 def one_line(name, result):
@@ -801,6 +857,14 @@ def one_line(name, result):
                 f"refused {d.get('refusals', '-')} lost {d.get('lost_scripts', '-')}")
     if result.get("shots"):
         bits.append(f"{len(result['shots'])} png")
+    if d.get("shots_skipped"):
+        bits.append(f"{d['shots_skipped']} screenshots skipped")
+    if result.get("recordings"):
+        bits.append(f"{len(result['recordings'])} mp4 ({', '.join(result['recordings'])})")
+        if d.get("record_dropped"):
+            bits.append(f"{d['record_dropped']} frames dropped")
+    elif result.get("record") and result["record"] != "off":
+        bits.append(f"record: {result['record']}")
     if result.get("why"):
         bits.append("(" + "; ".join(result["why"]) + ")")
     return f"{name}: " + ", ".join(bits)
@@ -926,6 +990,8 @@ def convert_shots(folder, delete=True):
     folder = Path(folder)
     if not folder.exists():
         return []
+    for part in folder.glob("*.part"):  # (a PNG the game was still writing when it was stopped)
+        part.unlink(missing_ok=True)
     for b in sorted(folder.glob("*.bmp")):
         try:
             bmp_to_png(b, delete)
@@ -1042,19 +1108,28 @@ def reticle_offsets(w, h, rgb, players, is_reticle=reticle_pixel, radius=0.25, j
 
 
 _NETNS = {}
+UNSHARE = ["unshare", "-rnm", "--pid", "--fork", "--mount-proc"]  # (own user, network, mount and pid namespaces)
 
 
 def netns_ok():
-    """unshare -rn works here (a user and network namespace without root); asked once"""
+    """the games can run in their own namespaces here (unshare without root); asked once"""
     if "ok" not in _NETNS:
         _NETNS["ok"] = _netns_probe()
     return _NETNS["ok"]
 
 
+def private_tmp_ok():
+    """inside those namespaces a private /tmp can be mounted (each game's X server then has its own); asked once"""
+    if "tmp" not in _NETNS:
+        _NETNS["tmp"] = netns_ok() and subprocess.run(
+            [*UNSHARE, "mount", "-t", "tmpfs", "-o", "mode=1777", "tmpfs", "/tmp"], capture_output=True).returncode == 0
+    return _NETNS["tmp"]
+
+
 def _netns_probe():
     if not shutil.which("unshare") or not shutil.which("ip"):
         return False
-    r = subprocess.run(["unshare", "-rn", "true"], capture_output=True)
+    r = subprocess.run([*UNSHARE, "true"], capture_output=True)
     return r.returncode == 0
 
 
@@ -1101,6 +1176,10 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
     if spec.get("config_toml"):
         shutil.copy2(expand(spec["config_toml"]), binf / "config.toml")
     env = spec_env(spec, root, save, shots)
+    if spec.get("screenshots") and "HALO_SCREENSHOT_FORMAT" not in env:
+        import record as record_mod
+        if record_mod.binary_names(build["binary"], b"HALO_SCREENSHOT_FORMAT"):
+            env["HALO_SCREENSHOT_FORMAT"] = "png"  # (the game writes PNGs; older builds write BMPs, converted)
     env.update({k: str(v) for k, v in build.get("env", {}).items()})
     rec = None
     if spec.get("record"):
@@ -1115,91 +1194,264 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
 
 
 def run_group(cfg, games, bots=None, inner_out=None):
-    """run prepared games together (one network namespace) and wait; [{exit_code, timed_out, seconds}]"""
+    """run prepared games together (one set of namespaces) and wait; [{exit_code, timed_out, seconds, display,
+    error, notes}]. If this tool is interrupted, the inner runner's group gets one TERM and stops its games and
+    X servers (within 10 s, so the 40 s here are enough), then KILL."""
+    import signal
     plan = {"games": games, "bots": bots, "xvfb": use_xvfb(cfg), "nice": 19 if cfg.get("_slow") else cfg.get("nice", 10),
-            "addresses": sorted({g["address"] for g in games})}
+            "addresses": sorted({g["address"] for g in games}), "in_namespace": False,
+            "host_mnt_ns": _ns("mnt")}
     inner_out = Path(inner_out)
     plan_path = inner_out / "plan.json"
-    write_json(plan_path, plan)
     res_path = inner_out / "inner_result.json"
     cmd = [sys.executable, str(HERE / "harness.py"), "--inner", str(plan_path), str(res_path)]
     if netns_ok():
-        cmd = ["unshare", "-rn", *cmd]
+        plan["in_namespace"] = True  # (only here: _inner never guesses it from its euid)
+        cmd = [*UNSHARE, *cmd]  # (the inner runner is pid 1 there: anything left is killed when it exits)
     else:
-        log("ae_test: no unshare -rn here: the game shares this machine's network (one game on the machine at a time)")
-    subprocess.run(cmd)
+        log("ae_test: no namespaces here: the game shares this machine's network and /tmp (one game at a time)")
+    write_json(plan_path, plan)
+    if STOPPING.is_set():
+        raise RuntimeError("ae_test: stopping (TERM/INT): no new game")
+    p = subprocess.Popen(cmd, start_new_session=True)  # (its own group: Ctrl-C reaches it once, through us)
+    LIVE_INNERS.add(p)
     try:
-        return json.loads(res_path.read_text())
+        p.wait()
+    except BaseException:
+        try:
+            os.killpg(p.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            p.wait(timeout=40)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            p.wait()
+        raise
+    finally:
+        LIVE_INNERS.discard(p)
+    try:
+        got = json.loads(res_path.read_text())
     except (OSError, ValueError):  # (no result: e.g. the disk filled up)
-        pass
-    return [{"exit_code": None, "timed_out": False, "seconds": 0, "error": "inner runner wrote no result"}
-            for _ in games]
+        got = []
+    return got + [{"exit_code": None, "timed_out": False, "seconds": 0, "error": "inner runner wrote no result"}
+                  for _ in games[len(got):]]
 
 
-def _inner(plan_path, res_path):
-    """(inside the namespace) loopback addresses, the games under xvfb-run and timeout, the bots"""
+def _ns(kind):
+    try:
+        return os.readlink(f"/proc/self/ns/{kind}")
+    except OSError:
+        return None
+
+
+def start_xvfb(screen, log_file, xvfb="Xvfb", wait=30):
+    """our own X server for one game: Xvfb picks a free display itself (-displayfd) and says which.
+    (Not xvfb-run: its cleanup `kill`s an Xvfb that may already be gone and then returns 1 for a game
+    that exited cleanly.) Returns (process, ":N"); raises RuntimeError (or OSError) with no X server left."""
+    import select
+    r, w = os.pipe()
+    p = None
+    ok = False
+    try:
+        try:
+            p = subprocess.Popen([xvfb, "-displayfd", str(w), "-screen", "0", f"{screen}x24", "-nolisten", "tcp",
+                                  "-noreset"], pass_fds=(w,), stdin=subprocess.DEVNULL, stdout=log_file,
+                                 stderr=log_file, start_new_session=True)
+        finally:
+            os.close(w)
+        data = b""
+        deadline = time.time() + wait
+        while b"\n" not in data and time.time() < deadline:
+            ready, _, _ = select.select([r], [], [], 0.5)
+            if ready:
+                chunk = os.read(r, 64)
+                if not chunk:
+                    break
+                data += chunk
+        num = data.strip().decode(errors="replace")
+        if not num.isdigit():
+            raise RuntimeError(f"{xvfb} gave no display number within {wait} s ({num!r})")
+        ok = True
+        return p, f":{num}"
+    finally:
+        os.close(r)
+        if not ok and p is not None:
+            stop_process_group(p)
+
+
+def stop_process_group(p, grace=10):
+    """TERM, then KILL, a process group we started; already gone is fine. Its exit code (or None)."""
+    import signal
+    if p.poll() is not None:
+        return p.returncode
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(p.pid, sig)
+        except ProcessLookupError:
+            break
+        try:
+            return p.wait(timeout=grace)
+        except subprocess.TimeoutExpired:
+            continue
+    return p.wait()
+
+
+def stop_all(procs, grace=10):
+    """TERM every process group first, then wait for them all within one shared grace, then KILL the rest:
+    the whole cleanup takes about `grace` seconds however many there are"""
+    import signal
+    live = [p for p in procs if p is not None and p.poll() is None]
+    for p in live:
+        try:
+            os.killpg(p.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    deadline = time.time() + grace
+    for p in live:
+        try:
+            p.wait(timeout=max(0.01, deadline - time.time()))
+        except subprocess.TimeoutExpired:
+            pass
+    for p in live:
+        if p.poll() is None:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    for p in live:
+        p.wait()
+
+
+def private_x_tmp(plan, notes):
+    """(only inside our own namespaces) a private /tmp (tmpfs, with its .X11-unix): the X server's lock file and
+    socket live there, so parallel games' X servers never meet, even when (as Xvfb does) each takes :0. Never on
+    the machine's own /tmp: only when run_group said we are in the namespaces and the mount namespace is not the
+    machine's, and never when a path of this run is under /tmp (it would be hidden). True when mounted; any
+    reason it is not goes to `notes`."""
+    if not plan.get("in_namespace"):
+        return False
+    if _ns("mnt") is None or _ns("mnt") == plan.get("host_mnt_ns"):
+        notes.append("private /tmp: not in our own mount namespace; not mounted")
+        return False
+    paths = [g["cwd"] for g in plan["games"]] + [g.get("shots", "") for g in plan["games"]]
+    if any(p and under(p, "/tmp") for p in paths):
+        notes.append("private /tmp: a path of this run is under /tmp; not mounted (X servers may share :0)")
+        return False
+    try:
+        r = subprocess.run(["mount", "-t", "tmpfs", "-o", "mode=1777", "tmpfs", "/tmp"], capture_output=True, text=True)
+        if r.returncode:
+            notes.append(f"private /tmp: mount failed ({r.stderr.strip()[:120]}); X servers may share :0")
+            return False
+        x11 = Path("/tmp/.X11-unix")
+        x11.mkdir(exist_ok=True)
+        x11.chmod(0o1777)
+        return True
+    except OSError as e:
+        notes.append(f"private /tmp: {e}; X servers may share :0")
+        return False
+
+
+def _inner(plan_path, res_path, geteuid=os.geteuid, grace=10):
+    """(inside the namespace) loopback addresses, each game with its own Xvfb (when headless) and a timeout,
+    the bots. A game's exit code is its own (halo is our direct child), never an X wrapper's. A game whose X
+    server failed is never started (and never sees the caller's DISPLAY). Whatever happens (an error, TERM
+    from the tool, Ctrl-C), every game, X server and bot started here is stopped before this returns."""
+    import signal
     import socket
+
+    def on_term(signum, frame):
+        raise SystemExit(128 + signum)
+    saved_signals = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
+    signal.signal(signal.SIGTERM, on_term)
     plan = json.loads(Path(plan_path).read_text())
-    if os.geteuid() == 0:  # root of the new user namespace: our own loopback
+    notes = []
+    if plan.get("in_namespace") and geteuid() == 0:  # (root of our own user namespace, said run_group)
         subprocess.run(["ip", "link", "set", "lo", "up"], capture_output=True)
         for a in plan["addresses"]:
             subprocess.run(["ip", "addr", "add", f"{a}/8", "dev", "lo"], capture_output=True)
-    procs = []
-    t0 = time.time()
-    for g in plan["games"]:
-        while time.time() - t0 < g.get("delay", 0):
-            time.sleep(0.5)
-        cmd = ["./halo"]
         if plan["xvfb"]:
-            cmd = ["xvfb-run", "-a", "-s", f"-screen 0 {g['screen']}x24", *cmd]
-        env = dict(os.environ)
-        env.update(g["env"])
-        out = open(Path(g["cwd"]).parent / "stdout.log", "w")
-        p = subprocess.Popen(cmd, cwd=g["cwd"], env=env, stdout=out, stderr=subprocess.STDOUT,
-                             start_new_session=True)
-        procs.append((g, p, time.time(), out))
+            private_x_tmp(plan, notes)
+    for n in notes:
+        print(f"ae_test: {n}", file=sys.stderr, flush=True)
+    started = []   # [game result dict, game process or None, start time, [files], X server or None]
     bot_proc = None
-    b = plan.get("bots")
-    if b and b.get("machines"):
-        host = b.get("host", ADDRESS)
-        deadline = time.time() + 120
-        while time.time() < deadline:
-            try:
-                with socket.create_connection((host, GAME_PORT), timeout=1):
-                    break
-            except OSError:
-                time.sleep(1)
-        bf = open(b["log"], "w")
-        bot_proc = subprocess.Popen([sys.executable, str(TOOLS / "system_link_bots.py"), "--host", host,
-                                     "--machines", str(b["machines"]), "--seed", str(b.get("seed", 7)),
-                                     "--seconds", str(b.get("seconds", 80)), *b.get("args", [])],
-                                    stdout=bf, stderr=subprocess.STDOUT, start_new_session=True)
     results = []
-    import signal
-    for g, p, start, out in procs:
-        timed_out = False
-        try:
-            rc = p.wait(timeout=max(1, g["timeout"] - (time.time() - start)))
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            try:
-                os.killpg(p.pid, signal.SIGTERM)
-                rc = p.wait(timeout=10)
-            except (subprocess.TimeoutExpired, ProcessLookupError):
+    try:
+        t0 = time.time()
+        for g in plan["games"]:
+            while time.time() - t0 < g.get("delay", 0):
+                time.sleep(0.5)
+            entry = [{"exit_code": None, "timed_out": False, "seconds": 0, "display": None}, None, time.time(), [], None]
+            started.append(entry)
+            env = dict(os.environ)
+            env.update(g["env"])
+            out = open(Path(g["cwd"]).parent / "stdout.log", "w")
+            entry[3].append(out)
+            if plan["xvfb"]:
+                for k in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY"):  # (never the caller's desktop)
+                    env.pop(k, None)
+                xlog = open(Path(g["cwd"]).parent / "xvfb.log", "w")
+                entry[3].append(xlog)
                 try:
-                    os.killpg(p.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                rc = p.wait()
-        out.close()
-        results.append({"exit_code": rc, "timed_out": timed_out, "seconds": round(time.time() - start, 1)})
-    if bot_proc:
-        try:
-            os.killpg(bot_proc.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        bot_proc.wait()
-    write_json(res_path, results)
+                    entry[4], env["DISPLAY"] = start_xvfb(g["screen"], xlog, plan.get("xvfb_bin", "Xvfb"))
+                except (OSError, RuntimeError) as e:
+                    entry[0]["error"] = f"no X server: {e}"
+                    out.write(f"ae_test: {entry[0]['error']}: the game was not started\n")
+                    out.flush()
+                    continue
+                entry[0]["display"] = env["DISPLAY"]
+            entry[2] = time.time()
+            entry[1] = subprocess.Popen([g.get("command", "./halo")], cwd=g["cwd"], env=env, stdout=out,
+                                        stderr=subprocess.STDOUT, start_new_session=True)
+        b = plan.get("bots")
+        if b and b.get("machines") and any(e[1] for e in started):
+            host = b.get("host", ADDRESS)
+            deadline = time.time() + 120
+            while time.time() < deadline:
+                try:
+                    with socket.create_connection((host, GAME_PORT), timeout=1):
+                        break
+                except OSError:
+                    time.sleep(1)
+            bf = open(b["log"], "w")
+            started[0][3].append(bf)
+            bot_proc = subprocess.Popen([sys.executable, str(TOOLS / "system_link_bots.py"), "--host", host,
+                                         "--machines", str(b["machines"]), "--seed", str(b.get("seed", 7)),
+                                         "--seconds", str(b.get("seconds", 80)), *b.get("args", [])],
+                                        stdout=bf, stderr=subprocess.STDOUT, start_new_session=True)
+        for g, entry in zip(plan["games"], started):
+            res, p, start = entry[0], entry[1], entry[2]
+            if p is not None:
+                try:
+                    res["exit_code"] = p.wait(timeout=max(1, g["timeout"] - (time.time() - start)))
+                except subprocess.TimeoutExpired:
+                    res["timed_out"] = True
+                    res["exit_code"] = stop_process_group(p)
+                res["seconds"] = round(time.time() - start, 1)
+            if entry[4] is not None:
+                stop_process_group(entry[4])  # (after the game; one that already quit is fine)
+        results = [e[0] for e in started]
+    finally:
+        # (an error, TERM or Ctrl-C above: nothing we started outlives us, and a second signal can't stop that)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        stop_all([e[1] for e in started] + [bot_proc], grace)
+        stop_all([e[4] for e in started], grace)
+        for entry in started:
+            for f in entry[3]:
+                f.close()
+        if not results:
+            results = [dict(e[0], error=e[0].get("error") or "interrupted") for e in started]
+        for r in results:
+            if notes:
+                r["notes"] = list(notes)
+        write_json(res_path, results)
+        for sig, handler in saved_signals.items():  # (as they were: for a caller that goes on, e.g. the tests)
+            signal.signal(sig, handler)
 
 
 def collect_game(spec, prepared, inner, out, keep_work=False):
@@ -1222,11 +1474,14 @@ def collect_game(spec, prepared, inner, out, keep_work=False):
         if (root / extra).exists():
             shutil.copy2(root / extra, out / extra)
     pngs = convert_shots(prepared["shots"]) if spec.get("screenshots") else []
+    recordings = find_recordings(out / "video")
     result = {"name": spec["name"], "build": spec.get("build"), "kind": spec_kind(spec),
               "exit_code": inner.get("exit_code"), "timed_out": inner.get("timed_out"),
               "seconds": inner.get("seconds"), "debug_found": bool(found), "debug": parse_debug(text),
               "shots": [str(Path(p).relative_to(out)) for p in pngs], "env": prepared["env"],
-              "record": (prepared.get("record") or {}).get("status")}
+              "record": (prepared.get("record") or {}).get("status"),
+              "display": inner.get("display"), "error": inner.get("error"), "notes": inner.get("notes", []),
+              "recordings": [str(p.relative_to(out)) for p in recordings]}
     status, why = evaluate(spec, result)
     result["status"], result["why"] = status, why
     write_json(out / "result.json", result)
@@ -1274,11 +1529,20 @@ def play(cfg, spec, out, slots=None, keep_work=False, run_id=None):
         bots = {"machines": spec["bots"], "args": spec.get("bot_args", []), "host": spec.get("address", ADDRESS),
                 "seconds": spec["exit_after"], "log": str(out / "bots.log")}
     slots = slots or GameSlots(cfg, 1)
-    slots.acquire()
     try:
-        inner = run_group(cfg, [prepared], bots, work)[0]
-    finally:
-        slots.release()
+        slots.acquire()
+        try:
+            inner = run_group(cfg, [prepared], bots, work)[0]
+        finally:
+            slots.release()
+    except BaseException:  # (interrupted: no result, but no save root or map cache left behind either)
+        if not keep_work:
+            shutil.rmtree(work, ignore_errors=True)
+            try:
+                work.parent.rmdir()
+            except OSError:
+                pass
+        raise
     result = collect_game(spec, prepared, inner, out, keep_work)
     result["build_label"] = build["label"]
     write_json(out / "result.json", result)

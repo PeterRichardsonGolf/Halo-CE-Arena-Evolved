@@ -13,7 +13,7 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 | Split-screen pictures, before vs after (1p/2p/3p/4p, 4p at 720p), reticle offsets | `python3 tools/ae_test/sheet.py --after <rev> --before <rev> [--reticle --flat] --box` |
 | Host/client pairs with stock Chupa / stock OpenCE (version, Delta, positions, kills) | `python3 tools/ae_test/handshake.py --ae <rev> --other stock --box` |
 | A Windows CI build on the Windows test box | `python3 tools/ae_test/windows.py --artifact arena-evolved-windows64-release` |
-| An MP4 clip (no-op until the game has HALO_RECORD_SECONDS and ffmpeg is installed) | `python3 tools/ae_test/record.py --build <rev> --map bloodgulch --seconds 20 --box` |
+| An MP4 clip of a game (H.264 + AAC; needs ffmpeg on the machine) | `python3 tools/ae_test/record.py --build <rev> --map bloodgulch --seconds 20 --box` |
 
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists
@@ -58,11 +58,22 @@ The harness sets: `SDL_AUDIO_DRIVER=dummy`, `SDL_GAMECONTROLLER_IGNORE_DEVICES=a
 `HALO_NET_ONLINE=false` (else hosted games are listed publicly), `HALO_NET_ADDRESS=127.0.0.200`,
 `HALO_UPDATE_AUTO=false`, its own `HALO_DATA_ROOT` (links to the maps and mods) and `HALO_SAVE_ROOT`, a copy of
 the binary (config.toml is written beside it), its own network namespace (`unshare -rn`, so games and bots
-never meet), `xvfb-run` when there is no display. A spec's `env` adds or overrides.
+never meet), its own `Xvfb` when there is no display (started by the harness with `-displayfd`, with a private
+`/tmp` in the game's own mount namespace, so every game may get `:0` and they still never meet; not `xvfb-run`,
+whose cleanup can turn a clean exit into exit 1).
+The game's exit code is the game's own, the display is in result.json, a game whose X server failed is not started
+(the reason is in `why`), and nothing the harness started outlives it (errors, TERM, Ctrl-C): the inner runner is
+pid 1 of its own pid namespace, so even a grandchild that left its process group dies with it. Without namespaces
+(no `unshare` for this user) games run one at a time on the machine's own network and `/tmp`, nothing is mounted,
+and a grandchild that leaves its process group can outlive the run (the one limit). Output and work folders are
+never under /tmp (each game's private /tmp would hide them). A spec's `env` adds or overrides.
 
 - Save roots and work folders **never under /tmp** (a RAM disk on the laptop; map caches are up to 290 MB each).
   The tools refuse it, and delete each game's work folder afterwards (`--keep-work` keeps it).
-- Screenshots: **PNG, never BMP**. The game writes BMPs; the tools convert them and delete the BMPs.
+- Screenshots: **PNG, never BMP**. On Linux, builds with the capture feature write PNGs themselves (run, smoke,
+  sheet and handshake set `HALO_SCREENSHOT_FORMAT=png`; frames the game had to skip are counted in the result);
+  older builds (stock Chupa/OpenCE in handshakes) write BMPs, which the tools convert and delete. `windows.py` still
+  has the Windows build write BMPs and converts them on the laptop.
 - Verdicts read `debug.txt`: exit code and the clean-exit line, asserts, exceptions, refusals ("cannot be
   played"), lost scripts ("scripts won't run"), the last network-test tick, items, scenario scripts.
 
@@ -86,6 +97,13 @@ setup, outside this repository):
 
 ## Recording
 
-`record.py` / `run.py --record N` asks for an MP4 when the game supports `HALO_RECORD_SECONDS` /
-`HALO_RECORD_DIR` and `ffmpeg` is on the machine; otherwise the game runs normally and its result says
-`record: skipped (<why>)`. ffmpeg is not yet on the build box.
+The game records itself: F9 saves a screenshot and F10 starts/stops a recording in play, and for tests
+`HALO_RECORD_SECONDS=N` records N seconds from the first frame of play into `HALO_RECORD_DIR` (H.264 at the
+`capture.record_fps` rate, 60 by default, with AAC sound, muxed by ffmpeg). `record.py --seconds N` / `run.py
+--record N` set both, so give the game an exit-after past its start plus N. The clips are listed in result.json
+(`recordings`) and the one-line summary (`N mp4 (path)`). With an older build (no `HALO_RECORD_SECONDS`) or
+without ffmpeg on the machine, the game runs normally and the result says `record: skipped (<why>)`.
+
+- Build box: ffmpeg installed; `record.py --box` works end to end.
+- Windows test box: ffmpeg is staged but not yet deployed there, so recordings on Windows are not possible yet;
+  `windows.py` does not ask for them.
