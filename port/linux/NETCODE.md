@@ -52,14 +52,13 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   Until a client has the host's, the host takes none of its players'
   movement and none of its loading zones, and after any switch no loading
   zone switches again until every machine has the new BSP (ten seconds at
-  most). A loading zone into a
-  BSP the team hasn't been in brings every player to whoever crossed it,
-  as split screen does; one back into a BSP it has been in switches only
-  with two thirds of the living players at it (in the trigger, or within
-  15 world units of the player in it, about 45 metres), so one player can't
-  drag the team back through the level; a player held back is told how
-  many are there and how many it needs. A player outside the loaded BSP
-  and falling for two seconds is brought back beside a teammate. A dead
+  most). Only the host's crossing of a loading zone switches the BSP, and
+  it brings every player to the host, however far behind, so no one
+  running ahead or doubling back drags the team through the level (while
+  none of the host's players are alive, anyone's crossing does); a client
+  standing on a loading zone is told it waits for the host. A player
+  outside the loaded BSP and falling for two seconds is brought back beside
+  the host, else a teammate. A dead
   player watches a living teammate (`coop_spectate.c`) and comes back
   beside one once it is safe. With everyone dead they come back where they
   were at the last checkpoint, without a revert. A mission the scripts fail
@@ -173,14 +172,42 @@ the Elite major's and commander's armor); version 19 sends with the game's
 settings whether co-op's players collide with each other (Server Setup's PLAYER
 COLLISIONS: each machine's players then pass through the others'); version 20
 lists a public game with a password with its invite's token sealed with the
-password's key (`p2p_lobby.c`), a listing of another layout.
+password's key (`p2p_lobby.c`), a listing of another layout; version 21
+sends each killing blow again reliably and an object come to rest three
+times (a client waits for a player's blow before its body dies without one),
+and switches co-op's BSP on the host's crossing alone.
 
-Arena Evolved follows ChupathingyCE 0.7.0b's numbers: it announces version
-20 in its game's advertisement and joins hosts of 11 to 20 (delta.h's
-table), so ChupathingyCE 0.7.0b and OpenCE build-133 to build-139 (20) and
-Arena Evolved join each other's games both ways, and the hosts of 11 to 19
-are joined; ChupathingyCE 0.6.8b and OpenCE build-129 to build-131 (18) do
-not join its hosts. Every public listing is version 20, a game with a
+Arena Evolved announces ChupathingyCE 0.7.0b's version, 20, in its game's
+advertisement, and joins hosts of 11 to 21 (delta.h's table), so
+ChupathingyCE 0.7.0b and OpenCE build-133 to build-140 (20) and Arena
+Evolved join each other's games both ways; it joins OpenCE build-141 and
+later's hosts (21), whose clients do not join its own (OpenCE's clients join
+only their own version), and the hosts of 11 to 19; ChupathingyCE 0.6.8b and
+OpenCE build-129 to build-131 (18) do not join its hosts. It runs version
+21's code and still announces 20 because 21 is additive between the two:
+- the killing blow sent once more reliably is a message a client of 20
+  already takes (the damage events, which the host of 20 sent only with a
+  tick's others): it replays one blow of a unit only (a dead unit's is
+  passed over), and a copy older than the damage it has is dropped as
+  stale; a client of 21 with a host of 20 waits half a second for a
+  player's lost blow before the body dies without one (as an actor's
+  always did), where it died at once;
+- an object come to rest sent three times is the same state message, three
+  times; a client of 21 takes the host's word on rest from every state,
+  which a host of 20 sends as before;
+- co-op's BSP switching on the host's crossing alone is the host's
+  decision (clients never switch on their own): a client of 20 under a
+  host of 21 may say it waits for its team to go back when only the host's
+  crossing switches, and a client of 21 under a host of 20 that it waits
+  for the host when a client's crossing switches too. Words only.
+Nothing else build-140 to build-144 changed is sent: their hardening refuses
+only what no machine sends (a flag or ball of no team, a vehicle that is its
+own rider's parent, an actor of an eleventh team, a game record whose
+machine has two players on one controller, a map name of other characters,
+a host's tick past 2^30), and a client takes the game's own messages only
+over its host's connection, which every host of 11 to 21 sends them over
+(only its advertisement, its answers to pings and the distributed netcode's
+messages come in datagrams). Every public listing is version 20, a game with a
 password's and its tombstone included. These numbers are fixed: Arena
 Evolved's wire ID is its own (`ae-20a`, `delta.h`), so ChupathingyCE's
 signed legacy tables (Delta, `docs/delta.md`), which have no row for it,
@@ -430,9 +457,12 @@ a pregame keep-alive every five seconds from the host
 4. (Done) Corrections: the host sends each client where its moving objects
    are (vehicles, items, bodies) as often as they are near that client's
    nearest player (every tick within 25 world units, every second within
-   60, every third within 120, every fourth further off), once more to
-   every client as an object comes to rest, and a few of those at rest,
-   round them all. A client puts its copies there, and the difference is
+   60, every third within 120, every fourth further off), to every client
+   three times over half a second as an object comes to rest (one lost
+   would leave a falling body hanging until its turn round all of them),
+   and a few of those at rest, round them all. A client takes the host's
+   word on whether each is at rest even when its copy is close enough to
+   leave where it is. A client puts its copies there, and the difference is
    drawn fading over a few ticks (`render_interpolation.c`) instead of a
    jump. A client drives its own player's vehicle and sends where it is,
    which the host takes within a tolerance, as it does its own player's
@@ -532,9 +562,11 @@ a pregame keep-alive every five seconds from the host
      player's screen effects to that player's machine alone, but for a
      weapon's own shake of the player firing it (no one's damage), which
      that player's machine shows itself at once. The killing blow is sent
-     unreliably: an actor's body the host says is dead (the objects' states
-     say so) that is still alive half a second on is killed with nothing
-     to show (a player's the units' states kill).
+     with the tick's other damage and once more reliably (a client replays
+     one blow of a unit only), so every body falls as the host's did: a
+     body the host says is dead (the objects' states say so of an actor's,
+     the units' states of a player's) that is still alive half a second on
+     is killed with nothing to show.
    - A client's own projectiles respond to what they hit as the game has
      them: the host's shields and health, which the client has, say
      whether the shield or the body took the hit, and how much is left of
@@ -546,6 +578,14 @@ What reaches the other machines, and how, decides how the game feels over
 a real network as much as the model does (compared with Quake III, Source,
 Unity's Netcode for Entities, lightyear, netfox and the Ares source):
 
+- **Datagrams carry only what is theirs.** A datagram is known to be a
+  machine's only by the address it came from, which anyone can send one
+  as. So a client takes from a datagram only what the host sends in one: its
+  game's advertisement, its answer to a ping, and the distributed netcode's
+  messages (checked as the host's below); the game's own messages (a player
+  added or removed, the game begun or over, its settings), which the host
+  sends over its connection, are ignored in a datagram
+  (`network_client_message_handler.c`).
 - **Nothing held back.** The game's connections (the reliable messages:
   objects made and deleted, the game type's state, hits, pickups) send each
   write at once (`TCP_NODELAY`, in `xnet.c` for the game's sockets and in
@@ -643,7 +683,16 @@ shortens the game, to test the next (`host:<map>:<variant>,<variant>...`
 plays the variants in turn, the next once a game is over, as the host's
 button on the scores does). `debug.network_latency` and
 `debug.network_loss` hold back what a machine receives and drop some of its
-datagrams, to test as over the internet.
+datagrams, to test as over the internet. `debug.network_corrupt` damages
+that share of the datagrams a machine receives at random (bytes changed,
+cut short, stretched to a full datagram, or replaced throughout: `xnet.c`),
+and `debug.network_corrupt_stream` that share of its reads of connections
+(a damaged connection is closed, so a little goes a long way), from
+`debug.network_corrupt_after` seconds after the start (what a host sends its
+own client over the loopback is damaged too, so the game is set up and
+started first), to test that nothing another machine sends can crash the
+game: a host and a client with a third of their datagrams damaged must play
+on, their logs noting what they refused.
 
 The host logs to `debug.txt` when a player on another machine presses the
 action button where the host has nothing for them to pick up, with where it

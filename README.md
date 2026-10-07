@@ -193,8 +193,8 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, will
-be the first, a pre-release. Each platform is a zip of its own,
+page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, is
+the first, a pre-release (2026-10-06). Each platform is a zip of its own,
 `arena-evolved-<platform>-release.zip`; `arena-evolved-linux64-release.zip`
 (Linux, 64-bit) is the one played and tested. The dedicated server keeps
 its own name, `chupathingyce-server-linux-<arch>`
@@ -258,10 +258,12 @@ Re-run `configure.py` when source files or the menus are added.
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
 - Online, Arena Evolved plays with ChupathingyCE 0.7.0b and OpenCE build-133
-  to build-139 (network version 20), both ways, and joins games hosted on
-  network versions 11 to 20. Older builds' hosts (network version 10) can't
-  be joined, and ChupathingyCE 0.6.8b and OpenCE build-129 to build-131
-  (version 18) don't join Arena Evolved's games.
+  to build-140 (network version 20), both ways, and joins games hosted on
+  network versions 11 to 21, OpenCE build-141 and later's (21) included;
+  those builds don't join Arena Evolved's games, which say 20. Older
+  builds' hosts (network version 10) can't be joined, and ChupathingyCE
+  0.6.8b and OpenCE build-129 to build-131 (version 18) don't join Arena
+  Evolved's games.
 
 ## Credits
 

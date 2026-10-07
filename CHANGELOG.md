@@ -57,6 +57,32 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   player's pause, not every player's.
 - The network test's quick launch gives each local player the last-used
   profile, so their controller layouts apply.
+- Merged OpenCE build-140..144: network co-op's campaign has the
+  scoreboard (names and pings), a respawn starts behind its teammate, a
+  gate one player passes (a script waiting on a trigger volume) brings the
+  rest of the team, and only the host's crossing of a loading zone switches
+  the BSP (the team comes to the host; a client on a loading zone is told
+  it waits for the host); killing blows reach every client (sent again
+  reliably) and a body come to rest is sent three times, so none hangs in
+  the air; a player joining a game in progress starts at zero; the host's
+  garbage collection no longer runs every tick in network co-op; a third
+  hardening round (what another machine sends, checkpoints and cores
+  checked against the game state as made before they are taken, a map
+  whose header names another map refused, `loading.tga` read only as the
+  loading screen's picture, a broken lights array survived and reported,
+  `debug.network_corrupt` to test it); and fewer GL calls (a sampler object
+  for each sampler state, a vertex array object for each vertex layout,
+  the changed texture units bound in one call, the water's mip texture
+  rebuilt only when a level changed, visibility tests read on the CPU no
+  longer stalling). Network: OpenCE build-141 raised its version to 21,
+  which is additive between 20 and 21 (NETCODE.md), so Arena Evolved still
+  announces 20, which ChupathingyCE 0.7.0b joins, and now joins hosts of
+  11 to 21, OpenCE build-141 to build-144's included; their clients, which
+  join only their own version, don't join Arena Evolved's. A client's new
+  check of the map's name takes a Custom Edition or HaloMD map's
+  (`<file>@ce`, `<file>@md`), so their games still join. macOS keeps
+  pointing each attribute and binding each texture unit on its own, as
+  OpenGL 4.1 has neither vertex attribute binding nor multi-bind.
 - Merged ChupathingyCE 0.7.0b. Network: Arena Evolved now announces
   version 20, as ChupathingyCE 0.7.0b and OpenCE build-133..139 do, and
   joins hosts of 11 to 20, so those builds and Arena Evolved join each
@@ -174,12 +200,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   header's size; NHE Blood Gulch's scripts sit 2 bytes off alignment; CE
   maps' scripts are checked against the CE tag cache).
 
-## 0.1.0-beta - 2026-10-05
+## 0.1.0-beta - 2026-10-06
 
 Arena Evolved's first pre-release, built on ChupathingyCE 0.7.0b and OpenCE
-build-139. Not yet tagged: the Unreleased entries above go into it when it
-is (the date then becomes the tag's); the entries below were first made on
-ChupathingyCE 0.6.7b and OpenCE build-128.
+build-139: tagged v0.1.0-beta and published as a pre-release on 2026-10-06.
+The Unreleased entries above came after it; the entries below were first
+made on ChupathingyCE 0.6.7b and OpenCE build-128.
 
 ### Changed
 - Arena Evolved has its own name and version: the window's title, the

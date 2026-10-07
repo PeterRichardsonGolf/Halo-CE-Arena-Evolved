@@ -390,6 +390,9 @@ symbols in this file:
 #include "networking/network_game_protocol.h"
 #include "networking/network_messages.h"
 #include "networking/network_server_manager.h"
+#ifdef HALO_CUSTOM_EDITION
+#include "halo_map_families.h"
+#endif
 #include "text/unicode.h"
 
 /* ---------- constants */
@@ -769,6 +772,8 @@ static void network_game_client_update_precache_status(
 static boolean network_game_client_map_name_is_valid(
 	char const *map_name,
 	long size);
+static boolean network_game_client_game_record_is_valid(
+	struct network_game *game);
 static boolean network_game_client_idle_searching(
 	struct network_game_client *client);
 static boolean network_game_client_idle_joining(
@@ -1297,6 +1302,14 @@ boolean network_game_client_game_settings_updated(
 	{
 		struct network_game previous_game;
 
+		/* port: the record's players: no two the same machine's same
+		controller, no machine with more than its local players; the
+		strings ending in their fields */
+		if (!network_game_client_game_record_is_valid(message_packet))
+		{
+			network_event("invalid message_server_game_settings_update message received: its players");
+			return FALSE;
+		}
 		if (csstrcmp(message_packet->map.name, client->game.map.name))
 		{
 			char build[0x20];
@@ -1619,7 +1632,13 @@ boolean network_game_client_handle_game_update(
 	/* (the host's time at the start, and a game in progress's past 16 bits
 	of ticks: the host's whole time, if it is ahead; never back, which the
 	host would take for old messages) */
-	if (network_game_client_late_join_clock_pending)
+	/* port: and never one the game's arithmetic on its time (a second more,
+	a time limit) could take past a long */
+	if (message_packet->game_time < 0 || message_packet->game_time > 0x3FFFFFFF)
+	{
+		network_event("ignoring the host's game tick #%ld", message_packet->game_time);
+	}
+	else if (network_game_client_late_join_clock_pending)
 	{
 		network_game_client_late_join_clock_pending = FALSE;
 		if (message_packet->game_time > game_time_get())
@@ -2355,15 +2374,101 @@ void network_game_client_rejected_by_game(
 
 /* a map name from the host ends within its field and names a map in the maps
 folder: it goes into the map's path (cache_files_windows.c) */
+#ifdef HALO_CUSTOM_EDITION
+/* port: the length of a map family's suffix at text (halo_map_families.h:
+"@ce", "@md") that ends a part of a map's name, a map past the Xbox's
+(levels\test\<file>@ce\<file>@ce); 0 if none does */
+static long network_game_client_map_family_suffix_length(
+	char const *text)
+{
+	short family;
+
+	for (family = _map_family_xbox + 1; family < NUMBER_OF_MAP_FAMILIES; family++)
+	{
+		char const *suffix = map_family_suffix(family);
+		long length = (long)strlen(suffix);
+
+		if (length > 0 && !strncmp(text, suffix, (size_t)length) && (text[length] == '\\' || !text[length]))
+			return length;
+	}
+
+	return 0;
+}
+#endif
+
 static boolean network_game_client_map_name_is_valid(
 	char const *map_name,
 	long size)
 {
 	/* (a scenario's tag path, of which the cache takes the name after the
-	last backslash) */
-	return memchr(map_name, '\0', size) != NULL &&
-		!strchr(map_name, '/') &&
-		!strstr(map_name, "..");
+	last backslash: letters, digits and a few more, none that a path reads
+	otherwise; port: and a map family's suffix ending a part, a map past the
+	Xbox's) */
+	char const *character;
+	char const *leaf;
+	char const *leaf_end;
+
+	if (!memchr(map_name, '\0', size))
+		return FALSE;
+	leaf = map_name;
+	leaf_end = NULL;
+	for (character = map_name; *character; character++)
+	{
+#ifdef HALO_CUSTOM_EDITION
+		long suffix_length = network_game_client_map_family_suffix_length(character);
+
+		if (suffix_length > 0 && character > map_name && character[-1] != '\\')
+		{
+			leaf_end = character;
+			character += suffix_length - 1;
+			continue;
+		}
+#endif
+		if (!((*character >= 'a' && *character <= 'z') || (*character >= 'A' && *character <= 'Z') ||
+			(*character >= '0' && *character <= '9') || *character == '_' || *character == '-' ||
+			*character == '.' || *character == ' ' || *character == '\\'))
+		{
+			return FALSE;
+		}
+		if (*character == '\\')
+		{
+			leaf = character + 1;
+			leaf_end = NULL;
+		}
+	}
+	if (strstr(map_name, ".."))
+		return FALSE;
+	if (!leaf_end)
+		leaf_end = character;
+	return leaf + strspn(leaf, ". ") < leaf_end;
+}
+
+/* port: the players of a settings record the host sends: each valid one
+the only one of its machine's controller (so no machine has more than its
+local players); the record's strings made to end in their fields */
+static boolean network_game_client_game_record_is_valid(
+	struct network_game *game)
+{
+	short machine_players[HALO_PORT_MAXIMUM_NETWORK_MACHINES][MAXIMUM_LOCAL_PLAYERS];
+	short index;
+
+	game->name[NUMBEROF(game->name) - 1] = 0;
+	game->variant.human_readable_game_description[NUMBEROF(game->variant.human_readable_game_description) - 1] = 0;
+	for (index = 0; index < NUMBEROF(game->machines); index++)
+		game->machines[index].name[NUMBEROF(game->machines[index].name) - 1] = 0;
+	csmemset(machine_players, 0, sizeof(machine_players));
+	for (index = 0; index < NUMBEROF(game->players); index++)
+	{
+		struct network_player *player = &game->players[index];
+
+		player->name[NUMBEROF(player->name) - 1] = 0;
+		if (!network_player_is_valid(player))
+			continue;
+		if (machine_players[player->machine_index][player->controller_index]++)
+			return FALSE;
+	}
+
+	return TRUE;
 }
 
 static boolean add_advertised_game(

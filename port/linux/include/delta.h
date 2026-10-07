@@ -154,8 +154,10 @@ after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one.
 (Arena Evolved: its own, "ae-20a", so that ChupathingyCE's signed tables,
 whose rows are for ChupathingyCE's wires, never set Arena Evolved's numbers
-or turn off its capabilities: it plays its built-in 20 / 11..20. The wire
-ID is never sent; the game protocol is the same as chupa-20a's) */
+or turn off its capabilities: it plays its built-in 20 / 11..21. The wire
+ID is never sent; the game protocol is chupa-20a's, with OpenCE build-141's
+additive version 21 joined too: its hosts announce 20, not the table's
+newest, so that ChupathingyCE 0.7.0b, of 20, joins them) */
 #define DELTA_WIRE "ae-20a"
 
 /* OpenCE's network versions (HALO_PORT_NETWORK_VERSION in its builds), the
@@ -164,7 +166,9 @@ version before plays multiplayer with as it is (additive: messages a machine
 of the older version drops) or not (breaking). OpenCE's clients join only
 hosts of their exact version; ours join every version back to the newest
 breaking one (HALO_PORT_NETWORK_VERSION_MINIMUM), and our hosts announce the
-newest (HALO_PORT_NETWORK_VERSION). One row a version, oldest first; the
+newest (HALO_PORT_NETWORK_VERSION; Arena Evolved's announce an older one
+whose clients, every version above it being additive, play with them:
+tools/test_delta.py). One row a version, oldest first; the
 command repository's watch adds a row when it follows OpenCE's raise
 (tools/follow.py there). Versions 1 to 9 each changed the wire format
 (port/linux/NETCODE.md, "Versions"). */
@@ -179,7 +183,8 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(17, "build-128", additive) /* followed from OpenCE: additive */ \
 	X(18, "build-129", additive) /* followed from OpenCE: additive */ \
 	X(19, "build-132", additive) /* co-op's player collisions switch, in a padding byte of the game settings */ \
-	X(20, "build-133", additive) /* password games' internet listings (another listing layout); game messages as 19 */
+	X(20, "build-133", additive) /* password games' internet listings (another listing layout); game messages as 19 */ \
+	X(21, "build-141", additive) /* killing blows again reliably, objects at rest three times, co-op's BSP on the host's crossing: what a machine of 20 receives it already takes, a host of 20 a client of 21 plays (NETCODE.md) */
 
 
 /* ---------- the legacy table (port/linux/src/delta.c)
