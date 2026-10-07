@@ -58,7 +58,8 @@ The harness sets: `SDL_AUDIO_DRIVER=dummy`, `SDL_GAMECONTROLLER_IGNORE_DEVICES=a
 `HALO_NET_ONLINE=false` (else hosted games are listed publicly), `HALO_NET_ADDRESS=127.0.0.200`,
 `HALO_UPDATE_AUTO=false`, its own `HALO_DATA_ROOT` (links to the maps and mods) and `HALO_SAVE_ROOT`, a copy of
 the binary (config.toml is written beside it), its own network namespace (`unshare -rn`, so games and bots
-never meet), `xvfb-run` when there is no display. A spec's `env` adds or overrides.
+never meet), its own `Xvfb` when there is no display (started by the harness on a free display, not
+`xvfb-run`, whose cleanup can turn a clean exit into exit 1); the game's exit code is the game's own. A spec's `env` adds or overrides.
 
 - Save roots and work folders **never under /tmp** (a RAM disk on the laptop; map caches are up to 290 MB each).
   The tools refuse it, and delete each game's work folder afterwards (`--keep-work` keeps it).

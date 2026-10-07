@@ -8,7 +8,7 @@ import this module. Machine-specific paths come from a JSON config file
     $AE_TEST_CONFIG, or ~/.config/ae_test/config.json, or --config FILE
 
 A game runs headless in its own network namespace (unshare -rn: its own loopback,
-so several games and system-link bots never meet), under xvfb-run when there is
+so several games and system-link bots never meet), with its own Xvfb when there is
 no display, from its own copy of the binary (config.toml is written beside it),
 with its own data root (links to the maps and mods) and save root. Its debug.txt,
 stdout and screenshots (converted to PNG, the BMPs deleted) land in the run's
@@ -66,7 +66,7 @@ DEFAULTS = {
     "min_free_gb": 3,
     # look for the owner's own game here (a halo process outside work_dir, or port 5150 listening)
     "owner_check": True,
-    # "auto": xvfb-run when DISPLAY is unset
+    # "auto": an Xvfb per game when DISPLAY is unset
     "xvfb": "auto",
     "box": {
         "ssh": None,             # ssh alias of the build box
@@ -314,7 +314,7 @@ class GameSlots:
     def _registered(self):
         """(slot count, owner pids) of the live slot files of other harness processes (stale ones removed).
         A slot file is <owner pid>-<n> and holds the owner's pid: the harness process that starts the game,
-        which every process of that game descends from (unshare, the inner runner, xvfb-run, halo)."""
+        which every process of that game descends from (unshare, the inner runner, Xvfb, halo)."""
         n, owners = 0, set()
         for f in self.dir.glob("*-*"):
             try:
@@ -1153,8 +1153,57 @@ def run_group(cfg, games, bots=None, inner_out=None):
             for _ in games]
 
 
+def start_xvfb(screen, log_file, xvfb="Xvfb", wait=30):
+    """our own X server for one game: Xvfb picks a free display itself (-displayfd) and says which.
+    (Not xvfb-run: its cleanup `kill`s an Xvfb that may already be gone and then returns 1 for a game
+    that exited cleanly.) Returns (process, ":N")."""
+    import select
+    r, w = os.pipe()
+    try:
+        p = subprocess.Popen([xvfb, "-displayfd", str(w), "-screen", "0", f"{screen}x24", "-nolisten", "tcp",
+                              "-noreset"], pass_fds=(w,), stdin=subprocess.DEVNULL, stdout=log_file,
+                             stderr=log_file, start_new_session=True)
+    finally:
+        os.close(w)
+    data = b""
+    deadline = time.time() + wait
+    try:
+        while b"\n" not in data and time.time() < deadline:
+            ready, _, _ = select.select([r], [], [], 0.5)
+            if ready:
+                chunk = os.read(r, 64)
+                if not chunk:
+                    break
+                data += chunk
+    finally:
+        os.close(r)
+    num = data.strip().decode(errors="replace")
+    if not num.isdigit():
+        stop_process_group(p)
+        raise RuntimeError(f"{xvfb} gave no display number ({num!r})")
+    return p, f":{num}"
+
+
+def stop_process_group(p, grace=10):
+    """TERM, then KILL, a process group we started; already gone is fine. Its exit code (or None)."""
+    import signal
+    if p.poll() is not None:
+        return p.returncode
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(p.pid, sig)
+        except ProcessLookupError:
+            break
+        try:
+            return p.wait(timeout=grace)
+        except subprocess.TimeoutExpired:
+            continue
+    return p.wait()
+
+
 def _inner(plan_path, res_path):
-    """(inside the namespace) loopback addresses, the games under xvfb-run and timeout, the bots"""
+    """(inside the namespace) loopback addresses, each game with its own Xvfb (when headless) and a timeout,
+    the bots. A game's exit code is its own (halo is our direct child), never an X wrapper's."""
     import socket
     plan = json.loads(Path(plan_path).read_text())
     if os.geteuid() == 0:  # root of the new user namespace: our own loopback
@@ -1166,15 +1215,22 @@ def _inner(plan_path, res_path):
     for g in plan["games"]:
         while time.time() - t0 < g.get("delay", 0):
             time.sleep(0.5)
-        cmd = ["./halo"]
-        if plan["xvfb"]:
-            cmd = ["xvfb-run", "-a", "-s", f"-screen 0 {g['screen']}x24", *cmd]
+        cmd = [g.get("command", "./halo")]
         env = dict(os.environ)
         env.update(g["env"])
         out = open(Path(g["cwd"]).parent / "stdout.log", "w")
+        xserver = None
+        if plan["xvfb"]:
+            xlog = open(Path(g["cwd"]).parent / "xvfb.log", "w")
+            try:
+                xserver, env["DISPLAY"] = start_xvfb(g["screen"], xlog, plan.get("xvfb_bin", "Xvfb"))
+            except (OSError, RuntimeError) as e:
+                out.write(f"ae_test: no X server: {e}\n")
+            env.pop("WAYLAND_DISPLAY", None)
+            env.pop("XAUTHORITY", None)
         p = subprocess.Popen(cmd, cwd=g["cwd"], env=env, stdout=out, stderr=subprocess.STDOUT,
                              start_new_session=True)
-        procs.append((g, p, time.time(), out))
+        procs.append((g, p, time.time(), out, xserver))
     bot_proc = None
     b = plan.get("bots")
     if b and b.get("machines"):
@@ -1193,21 +1249,15 @@ def _inner(plan_path, res_path):
                                     stdout=bf, stderr=subprocess.STDOUT, start_new_session=True)
     results = []
     import signal
-    for g, p, start, out in procs:
+    for g, p, start, out, xserver in procs:
         timed_out = False
         try:
             rc = p.wait(timeout=max(1, g["timeout"] - (time.time() - start)))
         except subprocess.TimeoutExpired:
             timed_out = True
-            try:
-                os.killpg(p.pid, signal.SIGTERM)
-                rc = p.wait(timeout=10)
-            except (subprocess.TimeoutExpired, ProcessLookupError):
-                try:
-                    os.killpg(p.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                rc = p.wait()
+            rc = stop_process_group(p)
+        if xserver is not None:
+            stop_process_group(xserver)  # (after the game; one that already quit is fine)
         out.close()
         results.append({"exit_code": rc, "timed_out": timed_out, "seconds": round(time.time() - start, 1)})
     if bot_proc:

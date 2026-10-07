@@ -8,6 +8,7 @@ import os
 import struct
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -422,6 +423,53 @@ class Recordings(unittest.TestCase):
                 build = {"dir": str(b), "binary": str(b / "halo"), "env": {}}
                 prep = harness.prepare_game(cfg, spec, build, d / "work" / name, d / "out" / name)
                 self.assertEqual(prep["env"].get("HALO_SCREENSHOT_FORMAT"), want, name)
+
+
+class Inner(unittest.TestCase):
+    """the inner runner with a fake Xvfb and a fake game (no X, no game, no namespace)"""
+
+    def fake(self, d, name, body):
+        f = Path(d) / name
+        f.write_text("#!" + sys.executable + "\n" + body)
+        f.chmod(0o755)
+        return str(f)
+
+    def plan(self, d, xvfb_body, game_code=0, game_sleep=0.0):
+        xvfb = self.fake(d, "Xvfb", xvfb_body)
+        cwd = Path(d) / "case" / "bin"
+        cwd.mkdir(parents=True)
+        self.fake(cwd, "halo", f"import os, sys, time\ntime.sleep({game_sleep})\n"
+                  "print('DISPLAY=' + os.environ.get('DISPLAY', ''))\nsys.exit(" + str(game_code) + ")\n")
+        game = {"name": "g", "cwd": str(cwd), "env": {}, "delay": 0, "timeout": 30, "screen": "640x480",
+                "address": "127.0.0.200"}
+        plan = {"games": [game], "bots": None, "xvfb": True, "xvfb_bin": xvfb, "addresses": ["127.0.0.200"]}
+        (Path(d) / "plan.json").write_text(json.dumps(plan))
+        return Path(d) / "plan.json", Path(d) / "res.json", cwd.parent / "stdout.log"
+
+    WRITE_DISPLAY = ("import os, sys, time\nfd = int(sys.argv[sys.argv.index('-displayfd') + 1])\n"
+                     "os.write(fd, b'57\\n')\n")
+
+    def test_x_server_gone_first_is_not_a_failure(self):
+        # (the flake: the X server is gone before the cleanup; xvfb-run then returned 1 for a clean game)
+        with tempfile.TemporaryDirectory() as d:
+            plan, res, stdout = self.plan(d, self.WRITE_DISPLAY + "sys.exit(0)\n", 0, 0.5)
+            harness._inner(str(plan), str(res))
+            self.assertEqual(json.loads(res.read_text())[0]["exit_code"], 0)
+            self.assertIn("DISPLAY=:57", stdout.read_text())
+
+    def test_game_exit_code_is_the_games(self):
+        with tempfile.TemporaryDirectory() as d:
+            plan, res, _ = self.plan(d, self.WRITE_DISPLAY + "time.sleep(60)\n", 3)
+            t0 = time.time()
+            harness._inner(str(plan), str(res))
+            self.assertEqual(json.loads(res.read_text())[0]["exit_code"], 3)
+            self.assertLess(time.time() - t0, 20)  # (the X server was stopped, not waited for)
+
+    def test_no_display_number(self):
+        with tempfile.TemporaryDirectory() as d:
+            xvfb = self.fake(d, "Xvfb", "import sys\nsys.exit(1)\n")
+            with open(Path(d) / "x.log", "w") as log, self.assertRaises(RuntimeError):
+                harness.start_xvfb("640x480", log, xvfb, wait=5)
 
 
 class Load(unittest.TestCase):
