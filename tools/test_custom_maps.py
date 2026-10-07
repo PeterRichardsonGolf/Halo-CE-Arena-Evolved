@@ -6,7 +6,8 @@ No game data, application launch, or optional CE conversion is required.
 
 port (this fork): the fixtures use the shared widget instance
 (source/interface/ui_widget_instance.h, which this tree's event handlers
-use), stub the active mod (cache_files_mod) with the platform paths of
+use), stub the active mod (cache_files_mod, and cache_files_mod_started,
+the one the game started with, which the map lists follow) with the platform paths of
 d:\\mods\\<mod>\\maps\\, and also check that a mod's own community maps are
 discovered (before the map directory's, the stock names skipped). The PC
 menus' Map screen is the merged one (OpenCE build-128): its first row is
@@ -116,6 +117,8 @@ static char mod_name[64],mod_root[512];
 static int handles;
 const char *cache_files_map_directory(void) {return directory;}
 const char *cache_files_mod(void) {return mod_name[0]?mod_name:NULL;}
+/* (the mod the game started with: the lists follow it, custom_maps.c) */
+const char *cache_files_mod_started(void) {return mod_name;}
 /* the platform's d:\mods\ (the data root's mods folder) is mod_root here */
 static void host_path(const char *name,char *out,size_t size) {
     if(!strncmp(name,"d:\\mods\\",8)) {
@@ -508,7 +511,8 @@ class NativeCustomMaps(unittest.TestCase):
         (cls.folder / "cseries.h").write_text("#pragma once\n" + CSERIES)
         (cls.folder / "xtl.h").write_text(XTL)
         (cls.folder / "cache/cache_files.h").write_text("char const *cache_files_map_directory(void);\nchar const *cache_files_build_region(char const *);\n"
-                                                  "char const *cache_files_mod(void);\n")
+                                                  "char const *cache_files_mod(void);\n"
+                                                  "char const *cache_files_mod_started(void);\n")
         cls.binaries = {}
         for name, source in fixture_sources().items():
             path = cls.folder / f"{name}.c"
