@@ -1477,7 +1477,10 @@ static void cache_file_get_map_path(
 	const char *map_name,
 	char *path)
 {
-	/* port: the mod's, if it has the map (cache_files_map_file_path) */
+	/* port: the mod's, if it has the map (cache_files_map_file_path); no
+	more than the callers' paths hold (256; the name can be a host's, over the
+	network). One that doesn't fit is no path (no file is found), not a cut
+	one (another file could be). */
 	cache_files_map_file_path(map_name, path, 256);
 
 	return;
