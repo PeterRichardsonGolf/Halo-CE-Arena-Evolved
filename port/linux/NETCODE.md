@@ -181,9 +181,12 @@ table), so ChupathingyCE 0.7.0b and OpenCE build-133 to build-139 (20) and
 Arena Evolved join each other's games both ways, and the hosts of 11 to 19
 are joined; ChupathingyCE 0.6.8b and OpenCE build-129 to build-131 (18) do
 not join its hosts. Every public listing is version 20, a game with a
-password's and its tombstone included. A signed legacy table (Delta,
-`docs/delta.md`, ChupathingyCE's key) can widen these numbers at run time,
-as in ChupathingyCE's builds. Arena Evolved's own rule on top: a game with
+password's and its tombstone included. These numbers are fixed: Arena
+Evolved's wire ID is its own (`ae-20a`, `delta.h`), so ChupathingyCE's
+signed legacy tables (Delta, `docs/delta.md`), which have no row for it,
+neither widen them nor turn off its Delta capabilities, and they are not
+fetched unless `network.legacy_table_fetch` is on (off by default). Arena
+Evolved's own rule on top: a game with
 a password never has its invite sent to the game list's site (`browser.c`:
 not listed, not claimed, not reported, hosted or joined through the
 password).

@@ -168,11 +168,12 @@ play:
   in-game Server Browser unless you set LISTING to PRIVATE in Server Setup.
   Listing them on the website game list, and reporting the games you join to a
   stats site, stay off unless you turn them on (Settings > Network).
-- At start and every few hours the game fetches ChupathingyCE's signed table
-  of the network versions to play with (Delta) from the game list's site
-  (`network.browser_url`), else from GitHub. In a game, machines that speak
-  Delta tell each other their platform; your player ID only with
-  `network.share_profile` (off).
+- The game does not fetch ChupathingyCE's signed table of network versions
+  (Delta) unless you turn `network.legacy_table_fetch` on (it would change
+  nothing: Arena Evolved has its own wire ID). In a game, machines that speak
+  Delta tell each other their platform and build; your player ID only with
+  `network.share_profile` (off). `network.protocol = "opence"` turns Delta
+  Peer off.
 
 ## Where it's going
 
@@ -192,8 +193,8 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, is
-the first, a pre-release. Each platform is a zip of its own,
+page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, will
+be the first, a pre-release. Each platform is a zip of its own,
 `arena-evolved-<platform>-release.zip`; `arena-evolved-linux64-release.zip`
 (Linux, 64-bit) is the one played and tested. The dedicated server keeps
 its own name, `chupathingyce-server-linux-<arch>`

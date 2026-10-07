@@ -11,7 +11,8 @@ whose X25519 form's hash is the invite's host part (p2p.c), so no one but
 the host can list its invite, alter its listing, or list another's under
 false details:
 
-	"HL", format 1, the lobby version (2: HALO_PORT_NETWORK_VERSION; browsers
+	"HL", format 1, the lobby version (2: the announced version,
+	delta_legacy_announce; browsers take delta_legacy_minimum..maximum and
 	hide others), flags (open, under way, teams, closed, password,
 	dedicated), sequence (4: newest wins), Unix time (4), the Ed25519 key
 	(32), the invite's token (16; a password's game's sealed with the

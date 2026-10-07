@@ -66,15 +66,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   replaces the version 18 and the listings labelled by their layout of the
   entries below). A game with a password's invite still never goes to the
   game list's site. Delta, ChupathingyCE's network family, comes with it:
-  a signed table of the network versions to announce and join, which can
-  widen the built-in ones (fetched from the game list's site,
-  `network.browser_url`, else ChupathingyCE's GitHub, at start and every
-  few hours, kept in the save folder, and passed between machines;
-  `network.legacy_table` sets one by hand), and Delta Peer, messages beside
-  the game's between the machines of a game (UDP, the game's port + 10:
-  5160): each machine's platform and its player limits, and its player ID
+  Delta Peer, messages beside the game's between the machines of a game
+  (UDP, the game's port + 10: 5160): each machine's platform and its
+  player limits, its build ("Arena Evolved 0.1.0-beta"), and its player ID
   only with `network.share_profile`; it never decides game state, and
-  `network.protocol = "opence"` turns it off. Also: a dedicated server's
+  `network.protocol = "opence"` turns Delta Peer off. ChupathingyCE's
+  signed table of the network versions to announce and join does not
+  apply to Arena Evolved: it has its own wire ID (`ae-20a`, which those
+  tables have no row for), so its numbers stay 20 and 11 to 20 and no such
+  table turns any of its Delta capabilities off; and it is not fetched
+  unless `network.legacy_table_fetch` is turned on (off by default;
+  `network.legacy_table` still sets a table by hand). The log's lines
+  start `arena-evolved: `, and the game's requests say ArenaEvolved (user
+  agents). Also: a dedicated server's
   game says so in the Server Browser's Rules line; the log starts with the
   build's identity (Arena Evolved's name, version, commit, platform and
   upstream base) and the network numbers; `audio.resampling` ("sinc", or
@@ -100,11 +104,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   Custom Edition maps are checked as before, not by the Xbox schema; Halo
   1: NHE's maps load, corrected (mostly their tags' parent groups); CE+ X's
   ui.map, which holds bytes that are the same once for several tags, is
-  accepted where those bytes are the same structure, or no runtime value of
+  accepted (a mod's maps only: every other map is refused for such bytes,
+  as upstream's check does) where those bytes are the same structure, or no runtime value of
   either and unchanged by the check; Halo PC's script functions and globals
   that Custom Edition maps call stay allowed, a Custom Edition map's
-  scripts may set any external global as Halo PC let them (H2_Zanzibar's
-  sets rasterizer_wireframe), and a main menu's scripts may
+  scripts may also set rasterizer_wireframe (H2_Zanzibar's does; no other
+  global a map may not set, and the number of players a map starts with is
+  never more than four), and the main menu's scripts (ui.map's) may
   switch maps and flush the caches (CE+ X's menu does). NHE's Prisoner Bots
   (a10, which crashed when hosted before) calls map_reset, which is
   refused. Network version and messages unchanged by it.
@@ -165,8 +171,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## 0.1.0-beta - 2026-10-05
 
-Arena Evolved's first pre-release, built on ChupathingyCE 0.6.7b and OpenCE
-build-128.
+Arena Evolved's first pre-release, built on ChupathingyCE 0.7.0b and OpenCE
+build-139. Not yet tagged: the Unreleased entries above go into it when it
+is (the date then becomes the tag's); the entries below were first made on
+ChupathingyCE 0.6.7b and OpenCE build-128.
 
 ### Changed
 - Arena Evolved has its own name and version: the window's title, the

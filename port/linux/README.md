@@ -355,6 +355,7 @@ the setting for one start of the game. It has priority over the file.
 | `network.coop_public` | `false` | `HALO_NET_COOP_PUBLIC` | `true`: an online co-op game (Create Game > Internet, a SINGLEPLAYER map) starts as PUBLIC. `false`: it starts as PRIVATE. LISTING in co-op's Server Setup writes its choice here. Refer to "Server browser". |
 | `network.brokers_file` | `"brokers.txt"` | `HALO_NET_BROKERS_FILE` | The file of the public MQTT brokers that let the machines of an invite find each other, and that carry the listings of the server browser: next to `config.toml`, unless a full path. One `host:port` on each line, up to 4; `#` starts a comment. |
 | `network.stun_servers` | Google and Cloudflare | `HALO_NET_STUN` | The public STUN servers (`host:port`, with commas between them) that give the internet address of a machine. |
+| `network.legacy_table_fetch` | `false` | `HALO_LEGACY_TABLE_FETCH` | Arena Evolved. `true`: at start and every few hours the game fetches ChupathingyCE's signed legacy table from `network.browser_url` (else GitHub). It changes nothing in Arena Evolved, whose wire ID (`ae-20a`) those tables have no row for. `false`: no fetch. |
 | `network.legacy_table` | `""` | `HALO_LEGACY_TABLE` | For testing, and for admins: a legacy table file, not signed, next to `config.toml` unless a full path. Its row for the wire of the build sets the OpenCE network versions that the game announces and joins, in place of the signed tables. The log shows a warning at start. Refer to `docs/delta.md`. Empty: none. |
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
@@ -862,16 +863,25 @@ In Arena Evolved:
 - `map_validate` reads Halo 1: NHE's ui.map, a10.map and atlas.map as the
   game does (a stream short by the header's rounding). NHE's maps get many
   corrections, nearly all of them their tags' parent groups.
-- A map may hold bytes that are the same once for several structures, as
-  CE+ X's ui.map does (`extent_claim` in `game/tag_validate.c`): an
-  overlap is allowed only from the same first byte, and only where the
-  structures are of the same kind, or share no runtime value and come
-  through the check unchanged. The walk of a shared element may not
-  correct it. Every other overlap is refused.
+- A mod's map (read from `mods/<mod>/maps`) may hold bytes that are the
+  same once for several structures, as CE+ X's ui.map does (`extent_claim`
+  in `game/tag_validate.c`, `tag_validate_allow_shared_bytes`;
+  `map_validate --mod`): an overlap is allowed only from the same first
+  byte, and only where the structures are of the same kind, or share no
+  runtime value and come through the check unchanged. The walk of a shared
+  element may not correct it. Every other overlap is refused, and in any
+  other map every overlap is, as upstream's check does.
 - Halo PC's script functions and globals that ChupathingyCE adds are
-  allowed in maps, and a Custom Edition map's scripts may set any external
-  global, as Halo PC let them (as DamnationCE does). A main menu's scripts may also call `map_name`,
+  allowed in maps, and a Custom Edition map's scripts may also set
+  `rasterizer_wireframe` (H2_Zanzibar's does; `hs_external_global_settable_by_ce_maps`),
+  no other global the list refuses. `create_local_players` makes at most
+  four players whatever `player_spawn_count` says. The main menu's
+  scripts (a main menu scenario in ui.map) may also call `map_name`,
   `texture_cache_flush` and `sound_cache_flush` (CE+ X's menu does).
+- A Custom Edition map's structure bsps get only ChupathingyCE's checks
+  (`ce_map_checks.c`'s `ce_bsp_check`, before the map opens), not
+  build-139's schema, since ChupathingyCE 0.7.0b has none for them; to
+  revisit when ChupathingyCE merges build-139.
 
 ## What operates
 
