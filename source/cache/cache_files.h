@@ -96,6 +96,8 @@ tags are in: cache_files_tag_cache) */
 boolean cache_file_tags_are_ce(
 	void);
 #endif
+boolean cache_files_map_present(
+	char const *map_name);
 
 unsigned long cache_files_get_checksum(
 	void);
@@ -203,6 +205,9 @@ short cache_file_read(
 	boolean blocking);
 
 unsigned long tag_get_group_tag(long tag_index);
+/* port: whether size bytes at address lie in the tag cache the loaded map's
+tags are in: this build's, or a Custom Edition map's own */
+boolean cache_file_tag_cache_contains(void const *address, long size);
 
 /* ---------- prototypes/XBOX_TEXTURE_CACHE.C */
 

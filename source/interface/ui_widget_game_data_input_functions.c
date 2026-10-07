@@ -358,6 +358,7 @@ symbols in this file:
 #include "cseries/errors.h"
 #include "interface/ui_widget_instance.h"
 #endif
+#include "custom_edition_maps.h" /* port: port/linux/game/custom_edition_maps.c */
 #include "halo_menus.h" /* port: PC_MENU_FUNCTION_BASE */
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "halo_custom_maps.h"
@@ -698,6 +699,17 @@ static byte const local_player_controller_bitmap_frames[2][MAXIMUM_LOCAL_PLAYERS
 	{{3, 4, 5}, {6, 7, 8}, {9, 10, 11}, {12, 13, 14}},
 	{{3, 5, 4}, {6, 8, 7}, {9, 11, 10}, {12, 14, 13}}
 };
+
+/* port: the display index of a Custom Edition multiplayer map this machine
+has, which the menus show by its own name and picture even when its name
+holds an Xbox level's (port/linux/game/custom_edition_maps.c), or NONE */
+static short custom_edition_map_display_index(
+	char const *map_name)
+{
+	short display_index = custom_edition_maps_display_index(map_name);
+
+	return display_index != NONE && !custom_edition_maps_campaign(display_index) ? display_index : NONE;
+}
 
 /* ---------- public code */
 
@@ -1208,6 +1220,9 @@ static void server_list_menu_update(
 					map_bitmap->animation.current_frame_index = 12;
 				else
 					map_bitmap->animation.current_frame_index = 13;
+				/* port: a Custom Edition map shows its own name and picture */
+				if (custom_edition_map_display_index(map_name) != NONE)
+					map_bitmap->animation.current_frame_index = custom_edition_map_display_index(map_name);
 
 				open_closed_text->parameters.text_box.string_list_index =
 					(server->open == TRUE) ? 20 : 21;

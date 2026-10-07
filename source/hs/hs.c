@@ -13246,6 +13246,8 @@ static boolean hs_scenario_syntax_data_valid(
 	byte const *address = (byte const *)xbox_pointer(scenario->hs_syntax_data.address);
 	struct data_array const *data = (struct data_array const *)address;
 
+	/* (in the loaded map's tag cache: this build's, or a Custom Edition
+	map's, cache_file_tag_cache_contains) */
 	if (scenario->hs_syntax_data.size != syntax_data_size ||
 		!tag_cache ||
 		!scenario->hs_syntax_data.address ||
@@ -15755,26 +15757,15 @@ boolean hs_scenario_postprocess(
 		}
 		else
 #endif
-		if (hs_compile_source() && hs_compile_postprocess(&error_message, &error_source))
 		{
-			success = TRUE;
-			/* port: a cache file's blocks can't be resized (tag_block_resize),
-			so the recompile didn't reset the map's scripts and globals: they
-			still name the nodes hs_compile_initialize deleted. None run */
-			hs_scenario_scripts_disable(scenario);
-		}
-		else
-		{
+			/* port: the map's script source is not compiled again. A cache
+			file's blocks can't be resized (tag_block_resize), so the recompile
+			never reset the map's scripts and globals and none ran afterwards
+			either way; and the source is the map's, which the compiler would
+			recurse into as deep as it nests. The nodes go, and none run */
+			error(priority, "the scenario's scripts won't run");
 			data_delete_all(hs_syntax_data);
-			if (!tag_block_resize(&scenario->hs_globals, 0) ||
-				!tag_block_resize(&scenario->hs_scripts, 0) ||
-				!tag_data_resize(&global_scenario_get()->hs_string_constants, 0x400))
-			{
-				error(0, "couldn't reset scripts.");
-				/* port: a cache file's can't be resized: none run against the
-				nodes just deleted */
-				hs_scenario_scripts_disable(scenario);
-			}
+			hs_scenario_scripts_disable(scenario);
 			success = FALSE;
 		}
 	}

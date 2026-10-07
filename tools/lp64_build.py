@@ -46,6 +46,7 @@ from .linux_build import (
     ZLIB_SOURCES,
     compile_launcher,
     game_sources,
+    port_game_sources,
     game_browser_defines,
     miniupnpc_sources,
     musl_math_sources,
@@ -279,7 +280,7 @@ class Lp64Build:
             if source.as_posix() not in excluded:
                 add(lp64(source), game_cflags)
         # the port's own units that see the game as its sources do (port/linux/game)
-        for source in sorted(Path(linux_config["game_sources"]).glob("*.c")):
+        for source in port_game_sources(linux_config):
             if source.as_posix() not in excluded:
                 add(lp64(source), game_cflags)
         # the dedicated server's director, with the game browser (server/)

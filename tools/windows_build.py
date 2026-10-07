@@ -34,7 +34,7 @@ from .version import VERSION_SOURCES, identity_defines, release_build, version
 from .voice_assets import voices_build
 from .linux_build import (CUSTOM_EDITION_DEFINES, LINUX_PROFILE, MBEDTLS_DIR, MINIUPNPC_DIR, OPTIMISATION, STB_DIR, WINDOWS_PROFILE,
                           XDK_INCLUDE, game_browser_defines, lto_mode, march_flag, miniupnpc_sources, pgo_mode, compile_launcher, game_defines_and_includes,
-                          game_sources, musl_math_cflags, musl_math_sources, pgo_profile, profile_use_flags,
+                          game_sources, musl_math_cflags, musl_math_sources, pgo_profile, port_game_sources, profile_use_flags,
                           xdk_headers)
 from .lp64_build import lp64_excluded
 from .embed_assets import hud_assets_build, hud_configure_inputs, ui_fonts_build
@@ -503,7 +503,7 @@ def generate_windows_target(n: Writer, sln: Any, target: WindowsTarget) -> None:
         for source in game_sources(linux_config):
             if source.as_posix() not in excluded:
                 add_object(source, game_cflags)
-        for source in sorted(Path(linux_config["game_sources"]).glob("*.c")):
+        for source in port_game_sources(linux_config):
             add_object(source, game_cflags)
         # the dedicated server's director, with the game browser (server/)
         if getattr(sln, "game_browser", False):

@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional
 
 from .linux_build import (CUSTOM_EDITION_DEFINES, LINUX_PROFILE, MBEDTLS_DIR, MINIUPNPC_DEFINES, MINIUPNPC_DIR, MUSL_MATH_DIR, STB_DIR,
                           XDK_INCLUDE, compile_launcher, game_browser_defines, game_defines_and_includes, game_sources, miniupnpc_sources,
+                          port_game_sources,
                           musl_math_sources, pgo_mode, pgo_profile,
                           profile_use_flags, updater_defines, xdk_headers)
 from .embed_assets import hud_assets_build, hud_configure_inputs, ui_fonts_build
@@ -450,7 +451,7 @@ def generate_android_build(n: Writer, sln: Any) -> None:
         if source.as_posix() in VARIADIC_PROTOTYPE_FILES:
             cflags += f" -include {PORT_DIR}/include/halo_android_variadic_prototypes.h"
         objects.append(guest_object(source, cflags))
-    for source in sorted(Path(config["game_sources"]).glob("*.c")):
+    for source in port_game_sources(config):
         objects.append(guest_object(source, game_cflags))
     # the dedicated server's director, with the game browser (server/)
     if getattr(sln, "game_browser", False):

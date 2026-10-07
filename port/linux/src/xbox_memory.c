@@ -37,6 +37,8 @@ Xbox kernel does.
 */
 
 #include "platform.h"
+#include "port_config.h"
+#include "../game/cache_file_formats.h"
 
 #include <errno.h>
 #include <string.h>
@@ -171,6 +173,15 @@ void xbox_address_out_of_range(void const *pointer)
 	platform_log("pointer %p is outside the Xbox address space and cannot be stored in 32 bits", pointer);
 	abort();
 #endif
+}
+
+/* port: OpenCE's Custom Edition tag cache (0x40440000). In Arena Evolved
+ChupathingyCE's loader owns that window (PLATFORM_CE_TAG_CACHE_BASE,
+platform_ce_tag_cache_ready, reserved above) and OpenCE's loader is not
+built (tools/linux_build.py, OPENCE_CUSTOM_EDITION_SOURCES): none. */
+void *halo_custom_edition_tag_cache(void)
+{
+	return NULL;
 }
 
 BOOL platform_is_contiguous(const void *address)
