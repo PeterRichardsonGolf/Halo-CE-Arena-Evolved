@@ -7,6 +7,22 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
+- MATCH CLOCK LABELS (`display.match_clock_labels`, `HALO_MATCH_CLOCK_LABELS`;
+  off by default, config only for now): a small heading over each line of
+  the corner clock, TIME LEFT or ELAPSED (with BOTH, each line its own),
+  under the power column.
+- ENEMY NAME COLOR (Settings > Network Setup, under PLAYER NAME SIZE;
+  `display.enemy_name_color`, `HALO_ENEMY_NAME_COLOR`): `"red"` shows
+  enemies' names, the one under your reticle and those over heads, in red,
+  as the Master Chief Collection's; `"classic"` (the default) shows them in
+  the HUD's blue (the over-head enemy names were red before).
+- The shotgun is a power item (a one-shot kill up close in CE): TIMERS'
+  power column has its row (SHOTGUN, R/B SHOTGUN at both bases), TRAINING
+  puts a labelled waypoint over its spawns, and the callouts say "shotgun in
+  ten" and "shotgun is up" (Cori has the clips; a pack without them says
+  "power weapons in ten" / "power weapons are up"). SHOTGUN AS POWER
+  (`display.shotgun_power`, `HALO_SHOTGUN_POWER`, on by default, config
+  only) set false makes it a weapon as any other again, from the next game.
 - Screenshots and recordings: F9 saves the game's picture as a PNG in
   `screenshots/` beside `config.toml` ("SCREENSHOT SAVED" at the top right);
   F10 starts and stops a recording with the game's sound, an MP4 in
@@ -46,6 +62,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   power items" in ten / are up, "and", "in ten" and "powerup is up".
 
 ### Changed
+- TRAINING's waypoints: an item a map has twice on one side (or twice in
+  the middle) is numbered, RED ROCKETS 1 and RED ROCKETS 2 on Boarding
+  Action, in its label and in the power column when it spawns alone; and
+  while a label shows the time to the spawn, the game's distance digits by
+  its arrow are not drawn.
 - Halo 1: NHE's maps: their own on-screen clock (their scripts' titles) is
   never drawn now. Arena Evolved's MATCH CLOCK takes its place, laid out as
   on any map with the power column over it, and MATCH CLOCK OFF shows no

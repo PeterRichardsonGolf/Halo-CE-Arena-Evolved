@@ -8,8 +8,8 @@ as Halo 1: NHE's maps' voice timer says them. From game time alone, which
 every machine has as the host's, so nothing is networked: each machine says
 its own.
 
-ITEMS, in any gametype: the power items (rockets, sniper, overshield, camo)
-spawning at one tick are a WAVE, called 10 seconds before each of its
+ITEMS, in any gametype: the power items (rockets, sniper, shotgun,
+overshield, camo) spawning at one tick are a WAVE, called 10 seconds before each of its
 spawns after the game's start, from their real periods (item_timers.c),
 and at the spawn. An item at both bases (RED / BLUE before its name,
 item_timers.c) is called with its side ("red sniper") when the pack has
@@ -103,6 +103,7 @@ enum callout_clip
 	_callout_first_minute,	/* .. + 29: "thirty minutes" */
 	_callout_rockets = _callout_first_minute + 30,	/* the names, as enum item_timer_class */
 	_callout_sniper,
+	_callout_shotgun,
 	_callout_overshield,
 	_callout_camo,
 	_callout_beep,
@@ -111,18 +112,22 @@ enum callout_clip
 	_callout_beep_item,
 	_callout_rockets_in_ten,	/* "<item> in ten", as enum item_timer_class */
 	_callout_sniper_in_ten,
+	_callout_shotgun_in_ten,
 	_callout_overshield_in_ten,
 	_callout_camo_in_ten,
 	_callout_rockets_up,	/* "<item> is up", as enum item_timer_class */
 	_callout_sniper_up,
+	_callout_shotgun_up,
 	_callout_overshield_up,
 	_callout_camo_up,
 	_callout_red_rockets,	/* "red <item>", as enum item_timer_class */
 	_callout_red_sniper,
+	_callout_red_shotgun,
 	_callout_red_overshield,
 	_callout_red_camo,
 	_callout_blue_rockets,	/* "blue <item>", as enum item_timer_class */
 	_callout_blue_sniper,
+	_callout_blue_shotgun,
 	_callout_blue_overshield,
 	_callout_blue_camo,
 	_callout_overshield_camo_in_ten,	/* the two spawning together */
@@ -243,13 +248,13 @@ struct callout_wave_item
 };
 
 /* the power items spawning at one tick (callout_wave_build), in NHE's
-order (rocket, camo, overshield, sniper; of each its plain, red, blue; the
+order (rocket, camo, overshield, sniper, then the shotgun; of each its plain, red, blue; the
 OS/CAMO spot after the overshield) */
 struct callout_wave
 {
 	long spawn;
 	short count;
-	boolean weapons;	/* rockets or sniper */
+	boolean weapons;	/* rockets, sniper or shotgun */
 	boolean powerups;	/* overshield or camo */
 	struct callout_wave_item items[MAXIMUM_WAVE_ITEMS];
 };
@@ -282,12 +287,12 @@ static char const *const callout_clip_names[NUMBER_OF_CALLOUT_CLIPS] =
 	"twenty_one_minutes", "twenty_two_minutes", "twenty_three_minutes", "twenty_four_minutes",
 	"twenty_five_minutes", "twenty_six_minutes", "twenty_seven_minutes", "twenty_eight_minutes",
 	"twenty_nine_minutes", "thirty_minutes",
-	"rockets", "sniper", "overshield", "camo",
+	"rockets", "sniper", "shotgun", "overshield", "camo",
 	"beep", "beep_minute", "beep_tick", "beep_item",
-	"rockets_in_ten", "sniper_in_ten", "overshield_in_ten", "camo_in_ten",
-	"rockets_up", "sniper_up", "overshield_up", "camo_up",
-	"red_rockets", "red_sniper", "red_overshield", "red_camo",
-	"blue_rockets", "blue_sniper", "blue_overshield", "blue_camo",
+	"rockets_in_ten", "sniper_in_ten", "shotgun_in_ten", "overshield_in_ten", "camo_in_ten",
+	"rockets_up", "sniper_up", "shotgun_up", "overshield_up", "camo_up",
+	"red_rockets", "red_sniper", "red_shotgun", "red_overshield", "red_camo",
+	"blue_rockets", "blue_sniper", "blue_shotgun", "blue_overshield", "blue_camo",
 	"overshield_camo_in_ten", "overshield_camo_up", "powerups_in_ten", "overshield_or_camo_in_ten",
 	"and", "in_ten", "powerup_up",
 	"weapons_and_power_items_in_ten", "weapons_and_power_items_up",
@@ -302,6 +307,7 @@ static short const callout_item_clips[NUMBER_OF_ITEM_TIMER_POWER_CLASSES] =
 {
 	_callout_rockets,
 	_callout_sniper,
+	_callout_shotgun,
 	_callout_overshield,
 	_callout_camo,
 };
@@ -311,6 +317,7 @@ static char const *const callout_class_names[NUMBER_OF_ITEM_TIMER_POWER_CLASSES]
 {
 	"ROCKETS",
 	"SNIPER",
+	"SHOTGUN",
 	"OVERSHIELD",
 	"CAMO",
 };
@@ -323,13 +330,14 @@ static char const *const callout_detail_names[NUMBER_OF_CALLOUT_DETAILS] =
 };
 
 /* the order of the items' calls due together, NHE's (rocket, camo,
-overshield, sniper before a minute) */
+overshield, sniper before a minute; port: then the shotgun) */
 static short const callout_item_order[NUMBER_OF_ITEM_TIMER_POWER_CLASSES] =
 {
 	_item_timer_rockets,
 	_item_timer_camo,
 	_item_timer_overshield,
 	_item_timer_sniper,
+	_item_timer_shotgun,
 };
 
 static struct
@@ -838,7 +846,7 @@ name; NONE for none */
 static short callout_wave_item_line(
 	struct callout_wave_item const *item)
 {
-	short clips[2];
+	short clips[3];
 
 	if (item->either)
 		return callout_clip_ticks(_callout_overshield_or_camo_in_ten) > 0 ? _callout_overshield_or_camo_in_ten : NONE;
@@ -846,7 +854,10 @@ static short callout_wave_item_line(
 		return item->side_clip;
 	clips[0] = (short)(_callout_rockets_in_ten + item->timer_class);
 	clips[1] = callout_item_clips[item->timer_class];
-	return callout_first_clip(clips, 2);
+	/* (port: a pack with no shotgun clips, made before it was a power
+	item, calls it as a power weapon) */
+	clips[2] = item->timer_class == _item_timer_shotgun ? _callout_power_weapons_in_ten : NONE;
+	return callout_first_clip(clips, 3);
 }
 
 /* the wave's line of its kinds, "... in ten" or at the spawn "... are up":
@@ -1107,6 +1118,9 @@ static short callout_compose_up(
 		short timer_class = callout_item_order[order];
 		short clip = (short)(_callout_rockets_up + timer_class);
 
+		/* (port: as callout_wave_item_line, a pack's with no shotgun clips) */
+		if (timer_class == _item_timer_shotgun && callout_clip_ticks(clip) <= 0)
+			clip = _callout_power_weapons_up;
 		if (TEST_FLAG(classes, timer_class) && callout_clip_ticks(clip) > 0)
 		{
 			callout_group_add(calls, &count, tick, tick, clip, class_items[timer_class], _callout_kind_item_up, 0);

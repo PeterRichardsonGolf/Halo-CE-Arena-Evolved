@@ -77,6 +77,10 @@ static struct
 	long before[ITEM_TIMER_MAXIMUM_NEARBY];
 } item_timer_spawned[MAXIMUM_ITEM_TIMERS];
 
+/* port_config.c's */
+int config_boolean(char const *name);
+unsigned long config_changes(void);
+
 static char const *const item_timer_side_names[NUMBER_OF_ITEM_TIMER_SIDES] =
 {
 	"MIDDLE",
@@ -86,7 +90,8 @@ static char const *const item_timer_side_names[NUMBER_OF_ITEM_TIMER_SIDES] =
 
 /* ---------- private code */
 
-/* a power item's class (rockets, sniper, overshield, camo), else other */
+/* a power item's class (rockets, sniper, shotgun, overshield, camo), else
+other */
 static short item_timer_definition_class(
 	long definition_index)
 {
@@ -97,6 +102,8 @@ static short item_timer_definition_class(
 			return _item_timer_rockets;
 		if (game_engine_weapon_is_sniper_rifle(definition_index))
 			return _item_timer_sniper;
+		if (game_engine_weapon_is_shotgun(definition_index) && item_timers_shotgun_is_power())
+			return _item_timer_shotgun;
 		break;
 
 	case EQUIPMENT_DEFINITION_TAG:
@@ -115,7 +122,7 @@ static short item_timer_definition_class(
 }
 
 /* the class of an item collection: the most powerful item it can spawn
-(rockets, sniper, overshield, camo, else other), as the gametype remaps its
+(rockets, sniper, shotgun, overshield, camo, else other), as the gametype remaps its
 items; the heaviest permutation names the entry, and *classes has a bit
 for each class it can spawn. FALSE when the gametype spawns none of them
 (no shields: no overshield, always invisible: no camo, no weapons on the
@@ -191,6 +198,7 @@ static void item_timer_label(
 	{
 		"ROCKETS",
 		"SNIPER",
+		"SHOTGUN",
 		"OS",
 		"CAMO",
 	};
@@ -392,6 +400,42 @@ static void item_timers_find_sides(
 	}
 }
 
+/* power entries of one label (an item twice on one side: Boarding
+Action's RED ROCKETS, Beaver Creek's SNIPER, Hang 'Em High's BLUE
+SHOTGUN) numbered 1, 2, ... in the map's order, so that TRAINING's labels
+and the power column can tell them apart (RED ROCKETS 2); 0 for the rest */
+static void item_timers_number_duplicates(
+	char labels[][ITEM_TIMER_LABEL_LENGTH + 1])
+{
+	short index, other;
+
+	for (index = 0; index < item_timer_count; index++)
+	{
+		struct item_timer *timer = &item_timers[index];
+		short same = 0;
+		short before = 0;
+
+		timer->number = 0;
+		if (timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
+			continue;
+		for (other = 0; other < item_timer_count; other++)
+		{
+			struct item_timer const *twin = &item_timers[other];
+
+			/* (the side matters only where the label shows it) */
+			if (twin->timer_class == timer->timer_class && twin->side_prefix == timer->side_prefix &&
+				(!timer->side_prefix || twin->side == timer->side) && !csstrcmp(labels[other], labels[index]))
+			{
+				same++;
+				if (other < index)
+					before++;
+			}
+		}
+		if (same > 1)
+			timer->number = (short)(before + 1);
+	}
+}
+
 /* the items on the map of a mixed entry's classes by its spawn point, not
 held: their datum indices and classes, nearest first; their count (up to
 maximum) */
@@ -499,6 +543,27 @@ static boolean item_timer_mixed(
 
 /* ---------- public code */
 
+/* SHOTGUN AS POWER (display.shotgun_power, on by default): whether the
+shotgun is a power item (its timer row, TRAINING's waypoints, the
+callouts), else a weapon as any other. This machine's choice: the timers
+are worked out on each machine. The one place to ask; the timers' table
+takes it as a map starts (a change in Settings from the next game) */
+boolean item_timers_shotgun_is_power(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean power = TRUE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		power = config_boolean("display.shotgun_power") != 0;
+	}
+
+	return power;
+}
+
 void item_timers_map_begin(
 	void)
 {
@@ -555,6 +620,7 @@ void item_timers_map_begin(
 
 	/* (the power list's labels: RED / BLUE before an item at both bases) */
 	item_timers_find_sides(labels);
+	item_timers_number_duplicates(labels);
 	for (index = 0; index < item_timer_count; index++)
 	{
 		struct item_timer *timer = &item_timers[index];
@@ -572,7 +638,8 @@ void item_timers_map_begin(
 				break;
 		}
 
-		platform_log("item timers: %d %s every %lds at (%.1f %.1f %.1f), %s", index, label,
+		platform_log("item timers: %d %s%s%.0d every %lds at (%.1f %.1f %.1f), %s", index, label,
+			timer->number ? " " : "", timer->number,
 			timer->period_ticks / TICKS_PER_SECOND, timer->position.x, timer->position.y, timer->position.z,
 			timer->timer_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES ? item_timer_side_names[timer->side] : "not a power item");
 	}
@@ -682,9 +749,10 @@ short item_timer_spawned_class(
 }
 
 /* the name over TRAINING's waypoint: RED / BLUE as the power list has it,
-and the item's whole name (ROCKETS, SNIPER, OVERSHIELD, CAMO); a mixed
+and the item's whole name (ROCKETS, SNIPER, SHOTGUN, OVERSHIELD, CAMO); a mixed
 entry's power list label (OS/CAMO) until the item it spawned is seen on
-the map */
+the map; its number after it where the map has two of its label (RED
+ROCKETS 2) */
 void item_timer_waypoint_name(
 	struct item_timer const *timer,
 	wchar_t *name,
@@ -694,6 +762,7 @@ void item_timer_waypoint_name(
 	{
 		"ROCKETS",
 		"SNIPER",
+		"SHOTGUN",
 		"OVERSHIELD",
 		"CAMO",
 	};
@@ -708,16 +777,25 @@ void item_timer_waypoint_name(
 	{
 		/* (a mixed entry's item not seen yet, or not a power item: the
 		power list's label, OS/CAMO) */
-		for (index = 0; index < size - 1 && timer->label[index]; index++)
-			name[index] = timer->label[index];
-		name[index] = 0;
-		return;
+		for (index = 0; index < (short)sizeof(text) - 1 && timer->label[index]; index++)
+			text[index] = (char)timer->label[index];
+		text[index] = 0;
+		item = NULL;
 	}
-	item = power_names[timer_class];
-	if (timer->side_prefix)
-		snprintf(text, sizeof(text), "%s %s", item_timer_side_names[timer->side], item);
 	else
+	{
+		item = power_names[timer_class];
+	}
+	if (item && timer->side_prefix)
+		snprintf(text, sizeof(text), "%s %s", item_timer_side_names[timer->side], item);
+	else if (item)
 		snprintf(text, sizeof(text), "%s", item);
+	if (timer->number > 0)
+	{
+		size_t used = strlen(text);
+
+		snprintf(text + used, sizeof(text) - used, " %d", (int)timer->number);
+	}
 	for (index = 0; index < size - 1 && text[index]; index++)
 		name[index] = (wchar_t)(unsigned char)text[index];
 	name[index] = 0;

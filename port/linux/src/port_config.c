@@ -173,6 +173,13 @@ static const struct config_setting config_settings[] =
 		"Arena Evolved's own menus (experimental, not finished): true shows\n"
 		"them in place of the game's; false keeps the menus display.menus\n"
 		"picks. Read at start-up." },
+	{ "display.enemy_name_color", _config_string, "\"classic\"", "HALO_ENEMY_NAME_COLOR", _environment_value,
+		_platform_all,
+		"Enemies' names (anyone's in a free for all), the one under your\n"
+		"reticle and those over heads (display.player_names): \"red\" in red,\n"
+		"as the Master Chief Collection's ENEMY PLAYER NAME COLOR; \"classic\"\n"
+		"in the HUD's blue, as the game drew its name under the reticle. Only\n"
+		"this machine's look." },
 	{ "display.player_names", _config_string, "\"all\"", "HALO_PLAYER_NAMES", _environment_value, _platform_all,
 		"In multiplayer, whose names are drawn above their heads: \"all\",\n"
 		"\"allies\", \"enemies\" or \"none\". An enemy's shows only within the\n"
@@ -205,6 +212,16 @@ static const struct config_setting config_settings[] =
 		"above it (with no time limit, the time played alone), or \"off\". On Halo\n"
 		"1: NHE's maps their own clock is never shown: this one is in its place,\n"
 		"and off shows none." },
+	{ "display.match_clock_labels", _config_boolean, "false", "HALO_MATCH_CLOCK_LABELS", _environment_value,
+		_platform_all,
+		"A small heading over each line of the match clock in the corner: TIME\n"
+		"LEFT over the time left, ELAPSED over the time played (with BOTH, each\n"
+		"line its own); the power column stays a cap above the top one." },
+	{ "display.shotgun_power", _config_boolean, "true", "HALO_SHOTGUN_POWER", _environment_value, _platform_all,
+		"SHOTGUN AS POWER: the shotgun is a power item, with its row in TIMERS'\n"
+		"power column, TRAINING's waypoints and the callouts; false a weapon as\n"
+		"any other, from the next game. Only this machine's timers: nothing is\n"
+		"sent." },
 	{ "display.power_list", _config_string, "\"clock\"", "HALO_POWER_LIST", _environment_value, _platform_all,
 		"Where the gametype's TIMERS and TRAINING list the power items' next\n"
 		"spawns with one player: \"clock\" a column over the match clock in the\n"
@@ -567,6 +584,10 @@ static const struct config_setting config_settings[] =
 	{ "debug.network_test_score", _config_integer, "0", "HALO_NETWORK_TEST_SCORE", _environment_value, _platform_all,
 		"The score an automated test host's game type plays to (a short game, to\n"
 		"test the next); 0 the game type's own." },
+	{ "debug.network_test_time_limit", _config_integer, "0", "HALO_NETWORK_TEST_TIME_LIMIT", _environment_value,
+		_platform_all,
+		"The time limit, in minutes, of an automated test host's game type (the\n"
+		"match clock's time left); 0 the game type's own." },
 	{ "debug.network_test_shoot", _config_real, "0.0", "HALO_NETWORK_TEST_SHOOT", _environment_value, _platform_all,
 		"Every this many seconds each automated test player hits the next with\n"
 		"their weapon, within its reach (the host brings far players near the\n"

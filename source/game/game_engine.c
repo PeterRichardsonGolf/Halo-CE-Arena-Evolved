@@ -3569,9 +3569,21 @@ real get_blink_alpha(
 	return sin(phase * (3.14159265358979/2700.0));
 }
 
+/* port: a message in a colour (an enemy's name, ENEMY PLAYER NAME COLOR) */
+static void game_engine_rasterize_message_colored(wchar_t const *message, real alpha,
+	real_rgb_color const *rgb);
+
 void game_engine_rasterize_message(
 	wchar_t const *message,
 	real alpha)
+{
+	game_engine_rasterize_message_colored(message, alpha, NULL);
+}
+
+static void game_engine_rasterize_message_colored(
+	wchar_t const *message,
+	real alpha,
+	real_rgb_color const *rgb)
 {
 	rectangle2d bounds;
 	real_argb_color color;
@@ -3597,6 +3609,12 @@ void game_engine_rasterize_message(
 	color.red = 0.45882353f;
 	color.green = 0.7294118f;
 	color.blue = 1.0f;
+	if (rgb)
+	{
+		color.red = rgb->red;
+		color.green = rgb->green;
+		color.blue = rgb->blue;
+	}
 
 	offset_rectangle2d(
 		&bounds,
@@ -5204,6 +5222,14 @@ boolean game_engine_match_clock(
 		game_engine_format_clock(game_time_get(), FALSE, string, count);
 
 	return TRUE;
+}
+
+boolean game_engine_match_clock_counts_down(
+	void)
+{
+	short setting = game_engine_match_clock_setting();
+
+	return (setting == _match_clock_down || setting == _match_clock_both) && game_variant_options_get()->time_limit > 0;
 }
 
 boolean game_engine_match_clock_elapsed(
@@ -8226,6 +8252,13 @@ boolean game_engine_weapon_is_pistol(
 	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_pistol;
 }
 
+/* port: the item timers' shotgun (item_timers.c) */
+boolean game_engine_weapon_is_shotgun(
+	long definition_index)
+{
+	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_shotgun;
+}
+
 /* ---------- private code */
 
 static void netgame_flag_verify_no_team_duplicates(
@@ -8557,6 +8590,24 @@ static void game_engine_verify_current_map(
 	return;
 }
 
+/* port: ENEMY PLAYER NAME COLOR (display.enemy_name_color): "red" or
+"classic"; the name under the reticle and the names over heads (hud.c) */
+boolean game_engine_enemy_name_red(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean red = FALSE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		red = !csstrcmp(config_string("display.enemy_name_color"), "red");
+	}
+
+	return red;
+}
+
 static void internal_rasterize_target_name(
 	long player_index)
 {
@@ -8614,7 +8665,20 @@ static void internal_rasterize_target_name(
 		ustrncpy(target_name, target_player->name, NUMBEROF(target_name) - 1);
 		target_name[NUMBEROF(target_name) - 1] = 0;
 		alpha = linear_to_non_linear_alpha(hold_time * 0.1f) * 0.5f;
-		game_engine_rasterize_message(target_name, alpha);
+		/* port: ENEMY PLAYER NAME COLOR (display.enemy_name_color) RED,
+		the Master Chief Collection's: an enemy's name in red (as the
+		over-head names', hud.c); CLASSIC as the game drew it */
+		if (game_engine_enemy_name_red() &&
+			(!game_engine_has_teams() || target_player->team_index != player->team_index))
+		{
+			static real_rgb_color const enemy_red = { 1.0f, 0.3f, 0.25f };
+
+			game_engine_rasterize_message_colored(target_name, alpha, &enemy_red);
+		}
+		else
+		{
+			game_engine_rasterize_message(target_name, alpha);
+		}
 	}
 
 	return;

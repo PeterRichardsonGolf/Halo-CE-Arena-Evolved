@@ -132,6 +132,7 @@ static struct
 	boolean quit;
 	unsigned long variant_flags;
 	long score_to_win;
+	long time_limit;	/* (debug.network_test_time_limit: minutes, 0 the variant's) */
 	long logged_time;
 } network_test;
 
@@ -238,6 +239,7 @@ static void network_test_read_settings(
 	snprintf(network_test.pickup_weapon, sizeof(network_test.pickup_weapon), "%s",
 		config_string("debug.network_test_pickup_weapon"));
 	network_test.score_to_win = (long)config_integer("debug.network_test_score");
+	network_test.time_limit = (long)config_integer("debug.network_test_time_limit");
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
@@ -1095,6 +1097,16 @@ void network_test_update(
 					/* debug.network_test_flags: the port's gametype options */
 					variant.universal_variant.flags |= network_test.variant_flags;
 					player_ui_set_game_variant(&variant);
+					/* debug.network_test_time_limit: the gametype's PC option
+					(MATCH CLOCK's time left, its headings) */
+					if (network_test.time_limit > 0)
+					{
+						struct game_variant_options options;
+
+						game_variant_options_default(&variant, &options);
+						options.time_limit = (short)network_test.time_limit;
+						player_ui_set_game_variant_options(&options);
+					}
 					network_game_server_change_game_variant(global_network_game_server_get(), &variant);
 				}
 				network_test.map_set = TRUE;

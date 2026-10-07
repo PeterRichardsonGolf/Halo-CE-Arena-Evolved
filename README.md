@@ -48,14 +48,14 @@ editor and in Server Setup)
 
 Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
 TIMERS shows the power list only: the next spawns of the rockets, sniper
-rifle, overshield and camo, as a column stacked over the match clock in the
+rifle, shotgun, overshield and camo, as a column stacked over the match clock in the
 bottom right corner of every view (one view and split screen alike), the
 soonest at the foot, NAME and TIME in two aligned columns ("R/B SNIPER 1:50",
 R and B in the bases' colours); at most four lines, "+N" for more; hidden
 while that view's scoreboard shows. With one view, `display.power_list`
 `"top_left"` keeps the earlier single line in the top left corner. The match clock is its own setting (below).
 TRAINING adds, as Halo 1: NHE's Training mode did: a waypoint over each power
-item (rockets, sniper rifle, overshield, camo) from 10 seconds before it spawns
+item (rockets, sniper rifle, shotgun, overshield, camo) from 10 seconds before it spawns
 to 20 seconds after, and green markers on the floor (or the crate or platform a spawn stands on) at the player spawns this
 gametype uses (within 25 units, hidden behind walls). Each waypoint is
 labelled with the item and the time to its spawn ("OVERSHIELD 0:08"), then
@@ -64,7 +64,7 @@ the item alone once it is on the map; a spawn that can be either powerup
 label is red for an item at the red base, blue at the blue base, the HUD's
 colour in the middle (as near to both: within 15% of the bases' distance
 apart). An item a map has at both bases is RED or BLUE in its name, in the
-power list too (RED SNIPER, BLUE SNIPER on Blood Gulch). Arrows together at
+power list too (RED SNIPER, BLUE SNIPER on Blood Gulch); an item a map has twice on one side is numbered (Boarding Action's RED ROCKETS 1 and RED ROCKETS 2). While a label shows the time to the spawn, its arrow has no distance by it. Arrows together at
 the screen's edge share one list of labels, and items spawning at the same
 time share a line ("0:07 ROCKETS · OS/CAMO · RED SNIPER").
 

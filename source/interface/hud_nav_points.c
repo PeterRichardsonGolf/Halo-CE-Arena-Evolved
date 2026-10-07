@@ -709,19 +709,22 @@ void custom_render_nav_point(
 	short nav_index,
 	short waypoint_type)
 {
-	custom_render_nav_point_placed(local_player_index, position, nav_index, waypoint_type, 1.0f, NULL);
+	custom_render_nav_point_placed(local_player_index, position, nav_index, waypoint_type, 1.0f, TRUE, NULL);
 
 	return;
 }
 
 /* port: custom_render_nav_point, and where it drew the arrow and its
-distance (arrow_placement, NULL for none): TRAINING's waypoint labels (hud_item_timers.c) go by it */
+distance (arrow_placement, NULL for none): TRAINING's waypoint labels
+(hud_item_timers.c) go by it; with no distance where distance_shown is
+FALSE (a TRAINING label showing a time) */
 void custom_render_nav_point_placed(
 	short local_player_index,
 	real_point3d const *position,
 	short nav_index,
 	short waypoint_type,
 	real size,
+	boolean distance_shown,
 	struct hud_nav_point_placement *arrow_placement)
 {
 	long return_eip = get_return_eip();
@@ -927,7 +930,7 @@ void custom_render_nav_point_placed(
 				arrow_placement->half_height = (short)((arrow_placement->off_screen ? MAX(width, height) : height)*0.5f + 0.5f);
 			}
 
-			if (waypoint_type!=_waypoint_off_screen)
+			if (waypoint_type!=_waypoint_off_screen && distance_shown)
 			{
 				struct number_hud_element_definition numbers;
 				struct hud_absolute_placement_definition placement;
