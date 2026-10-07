@@ -1242,7 +1242,7 @@ static boolean bitmap_group_check(
 		}
 		for (bitmap_index = 0; bitmap_index < group->bitmaps.count; bitmap_index++)
 		{
-			struct bitmap_data *bitmap = (struct bitmap_data *)group->bitmaps.address + bitmap_index;
+			struct bitmap_data *bitmap = XBOX_POINTER(struct bitmap_data, group->bitmaps.address) + bitmap_index;
 
 			if (bitmap->pixels_offset > file_length - group->pixel_data.file_offset - bitmap->pixels_size)
 			{
