@@ -8,6 +8,7 @@ screen is open.
 */
 
 #include "cseries.h"
+#include "../src/ae_draw.h"
 #include "ae_hooks.h"
 #include "ae_input.h"
 #include "ae_ui.h"
@@ -16,6 +17,8 @@ screen is open.
 is the platform side's) */
 int config_boolean(char const *name);
 void platform_log(char const *format, ...);
+/* interface/virtual_keyboard.c (its header needs the game's math types first) */
+boolean virtual_keyboard_active(void);
 
 boolean ae_menus_active(
 	void)
@@ -32,10 +35,18 @@ boolean ae_menus_active(
 	return cached != 0;
 }
 
+/* whether AE's screens are up: the flag, a screen open, and a renderer to
+draw them (without one, the game's own menus stay) */
+static boolean ae_ui_up(
+	void)
+{
+	return ae_menus_active() && ae_ui_depth() && ae_draw_available();
+}
+
 boolean ae_ui_process(
 	void)
 {
-	if (!ae_menus_active() || !ae_ui_depth())
+	if (!ae_ui_up())
 		return FALSE;
 	ae_input_poll();
 
@@ -46,20 +57,37 @@ void ae_ui_render(
 	short local_player_index,
 	union rectangle2d const *window_bounds)
 {
+	static boolean drawn = FALSE;
+	static unsigned int drawn_frame = 0;
+	unsigned int frame;
+
 	(void)window_bounds;
-	if (!ae_menus_active() || !ae_ui_depth())
+	if (!ae_ui_up())
 		return;
-	/* M1: the screens are drawn once a frame, over the frame's first view
-	(render_ui_widgets runs once per view in split screen) */
+	/* the virtual keyboard is drawn by the game, under AE's drawing (which
+	goes over the whole picture at Present): while it is up, AE draws nothing
+	so that it shows (ae_hooks.md) */
+	if (virtual_keyboard_active())
+		return;
+	/* M1: the screens are drawn once a frame, over the first player's view or
+	the whole screen. render_ui_widgets runs once per view in split screen,
+	and once more for a mirror's view, which arrives as player 0 too (with the
+	virtual keyboard down the index is pinned to 0..3): the frame (AE's count
+	of Presents) decides */
 	if (local_player_index != NONE && local_player_index != 0)
 		return;
+	frame = ae_draw_frame();
+	if (drawn && drawn_frame == frame)
+		return;
+	drawn = TRUE;
+	drawn_frame = frame;
 	ae_ui_draw();
 }
 
 boolean ae_ui_pointer(
 	struct halo_ui_pointer const *pointer)
 {
-	if (!ae_menus_active() || !ae_ui_depth())
+	if (!ae_ui_up())
 		return FALSE;
 	ae_input_pointer(pointer);
 

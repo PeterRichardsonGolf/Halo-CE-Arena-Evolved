@@ -13,8 +13,11 @@ TESTS = ROOT / "port" / "linux" / "tests"
 # AE's game-side units sit flat in port/linux/game with the ae_ prefix
 UI = ROOT / "port" / "linux" / "game"
 
+SRC = ROOT / "port" / "linux" / "src"
+
 # each test: its sources besides the test file, and extra flags
 UNITS = {
+    "ae_draw_layout_test.c": ([SRC / "ae_layout.c"], []),
     "ae_ui_test.c": ([UI / "ae_ui.c"], []),
 }
 

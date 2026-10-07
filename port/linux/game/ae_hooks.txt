@@ -1,7 +1,11 @@
-# path<TAB>exact text of the hook line (one per AE hook in an upstream file; notes/ae-hooks.md says where each goes)
-# tools/test_ae_hooks.py checks every line is present, and every line marked AE hook upstream is listed here.
-port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean,
+# path<TAB>exact text of the hook (one per AE hook in an upstream file; notes/ae-hooks.md says where each goes).
+# A hook of several lines writes them joined by \n: each line is matched with its indentation trimmed, and the
+# lines must follow each other. tools/test_ae_hooks.py checks every hook is present, and every line marked
+# AE hook upstream is a line of one listed here.
+port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/d3d8_gl.c	#include "ae_draw.h" /* AE hook */
+port/linux/src/d3d8_gl.c	render_target_resolve(&back_buffer->target);\nae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */\nif (screenshot_every > 0 && device.frame % (unsigned long)screenshot_every == 0)
 source/interface/ui_widget.c	#include "ae_hooks.h" /* AE hook */
-source/interface/ui_widget.c	if (ae_ui_process()) /* AE hook */
+source/interface/ui_widget.c	if (ae_ui_process()) /* AE hook */\nreturn;
 source/interface/ui_widget.c	ae_ui_render(local_player_index, window_bounds); /* AE hook */
-source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */
+source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */\npointer_active = FALSE;

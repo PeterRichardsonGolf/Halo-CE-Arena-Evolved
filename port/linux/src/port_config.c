@@ -169,8 +169,9 @@ static const struct config_setting config_settings[] =
 		"Arena Evolved settings are; \"xbox\" for the Xbox's (with Online Games)." },
 	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */
 		_platform_all,
-		"Arena Evolved's own menus (port/linux/game/ae_*) in place of the\n"
-		"game's; false uses the menus display.menus picks, as upstream." },
+		"Arena Evolved's own menus (experimental, not finished): true shows\n"
+		"them in place of the game's; false keeps the menus display.menus\n"
+		"picks. Read at start-up." },
 	{ "display.player_names", _config_string, "\"all\"", "HALO_PLAYER_NAMES", _environment_value, _platform_all,
 		"In multiplayer, whose names are drawn above their heads: \"all\",\n"
 		"\"allies\", \"enemies\" or \"none\". An enemy's shows only within the\n"

@@ -1,5 +1,5 @@
-"""Every AE hook line listed in port/linux/game/ae_hooks.txt is present in its upstream file (a merge that drops
-one fails here, not in play), and every line marked as an AE hook in an upstream file is listed."""
+"""Every AE hook listed in port/linux/game/ae_hooks.txt is present in its upstream file (a merge that drops one,
+or a line of one, fails here, not in play), and every line marked as an AE hook in an upstream file is listed."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -8,6 +8,20 @@ MARK = "/* AE hook */"
 # where upstream code lives; AE's own files (ae_*) and tests are not upstream
 SCANNED = ("source", "port")
 SUFFIXES = (".c", ".h", ".cpp", ".m", ".mm")
+
+
+def hook_lines(needle):
+    """A hook's lines: written joined by a literal \\n, each with its indentation trimmed."""
+    return [part.strip() for part in needle.split("\\n")]
+
+
+def normalised(text):
+    return "\n".join(line.strip() for line in text.splitlines())
+
+
+def present(needle, text):
+    """Whether the hook's lines follow each other in the text (indentation aside)."""
+    return "\n".join(hook_lines(needle)) in normalised(text)
 
 
 def hooks():
@@ -33,16 +47,24 @@ def test_hooks_listed():
     assert list(hooks()), "ae_hooks.txt lists no hooks"
 
 
+def test_hook_lines_must_follow_each_other():
+    hook = "if (ae_ui_process()) /* AE hook */\\nreturn;"
+    assert present(hook, "\tif (ae_ui_process()) /* AE hook */\n\t\treturn;\n")
+    # a merge that kept the if but lost (or moved) its body
+    assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n#ifdef HALO_GAME_BROWSER\n\t\treturn;\n")
+    assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n")
+
+
 def test_hooks_present():
     missing = [f"{path}: {needle}" for path, needle in hooks()
-               if needle not in (ROOT / path).read_text(errors="replace")]
+               if not present(needle, (ROOT / path).read_text(errors="replace"))]
     assert not missing, "AE hooks missing (re-attach them, see notes/ae-hooks.md):\n" + "\n".join(missing)
 
 
 def test_marked_hooks_listed():
     listed = {}
     for path, needle in hooks():
-        listed.setdefault(path, []).append(needle)
+        listed.setdefault(path, set()).update(hook_lines(needle))
     unlisted = []
     for path in upstream_files():
         text = path.read_text(errors="replace")
@@ -50,6 +72,6 @@ def test_marked_hooks_listed():
             continue
         relative = path.relative_to(ROOT).as_posix()
         for number, line in enumerate(text.splitlines(), 1):
-            if MARK in line and not any(needle in line for needle in listed.get(relative, [])):
+            if MARK in line and line.strip() not in listed.get(relative, set()):
                 unlisted.append(f"{relative}:{number}: {line.strip()}")
     assert not unlisted, "AE hook lines not listed in ae_hooks.txt:\n" + "\n".join(unlisted)
