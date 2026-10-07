@@ -211,13 +211,26 @@ static unsigned char *map_read(char const *path, struct cache_file_header *heade
 		}
 		else
 		{
-			uLongf inflated = header->file_length - CACHE_FILE_HEADER_SIZE;
+			uLongf expected = header->file_length - CACHE_FILE_HEADER_SIZE;
+			uLongf inflated = expected;
 
+			/* (as the game reads it, cache_files_decompress_windows.c: a stream
+			short only by the header's rounding, under 2048 bytes, that ends
+			exactly where the tag data ends is the map: Halo 1: NHE's ui.map,
+			a10.map and atlas.map; the bytes after it are zeros) */
 			if (uncompress(bytes + CACHE_FILE_HEADER_SIZE, &inflated, compressed, size - CACHE_FILE_HEADER_SIZE) != Z_OK ||
-				inflated != (uLongf)(header->file_length - CACHE_FILE_HEADER_SIZE))
+				(inflated != expected &&
+					(inflated > expected || expected - inflated >= 2048 ||
+						header->tag_data_offset < CACHE_FILE_HEADER_SIZE || header->tag_data_size < 0 ||
+						(uLongf)(header->tag_data_offset - CACHE_FILE_HEADER_SIZE) + (uLongf)header->tag_data_size !=
+							inflated)))
 			{
 				free(bytes);
 				bytes = NULL;
+			}
+			else if (inflated != expected)
+			{
+				memset(bytes + CACHE_FILE_HEADER_SIZE + inflated, 0, expected - inflated);
 			}
 		}
 	}
