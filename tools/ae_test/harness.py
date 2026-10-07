@@ -581,7 +581,8 @@ SPEC_KEYS = {
     "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true}",
     "save": "a named save root shared by the cases of one run (default: the case's own)",
     "save_from": "a folder (on the machine that plays) copied as the case's save root before the game (a "
-                 "shared one: once, when it is made); never under /tmp",
+                 "shared one: once, when it is made; links copied as files); never under /tmp. A real save "
+                 "root may be the source: only the copy is played",
 }
 
 
@@ -1166,7 +1167,7 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
         if not save_from.is_dir():
             raise SystemExit(f"ae_test: save_from {save_from} is not a folder")
         if not Path(save).exists():
-            shutil.copytree(save_from, save, symlinks=True)
+            shutil.copytree(save_from, save, symlinks=False)  # (links copied as files: none points out of the copy)
     Path(save).mkdir(parents=True, exist_ok=True)
     shots = out / "shots"
     if spec.get("screenshots"):

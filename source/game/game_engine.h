@@ -57,6 +57,68 @@ enum
 	_game_variant_no_spread_bit, so a build that knows only that bit plays
 	NHE's */
 	_game_variant_no_spread_full_bit = 24,
+	/* port: SPAWN HEAT allowed (the host's): inverted, so that every
+	TRAINING gametype from before keeps it (0, ON); each player's own MINE /
+	ENEMY / OFF still decides what they see (spawn_heat.c) */
+	_game_variant_no_spawn_heat_bit = 25,
+	/* port: TIMERS' second bit (enum timers_level, with
+	_game_variant_item_timers_bit): 17 alone HUD, 17 + 26 HUD + WAYPOINTS,
+	26 alone LINE OF SIGHT, so that older builds show a strip, or nothing */
+	_game_variant_item_waypoints_bit = 26,
+	/* port: the objective's indicator only in line of sight (AE COMP) */
+	_game_variant_objective_in_sight_bit = 27,
+	/* port: NHE EXTRAS: all players on red, no team swap after a game, no
+	bored camera, the match clock counting up (the Halo 1: NHE set) */
+	_game_variant_nhe_extras_bit = 28,
+	/* port: two bits, DROP SECONDARY (enum drop_secondary) */
+	_game_variant_drop_secondary_first_bit = 29,
+	_game_variant_drop_secondary_second_bit = 30,
+	/* (bit 31 reserved for WEAPON INDICATORS; never through menu_functions.c's
+	_option_flags, whose values are long) */
+};
+
+/* port: TIMERS' levels (game_variant_timers_level): OFF; HUD, the power
+items' strip; HUD + WAYPOINTS, the strip and their waypoints; LINE OF
+SIGHT, waypoints only while the spot is in view (no strip) */
+enum timers_level
+{
+	_timers_off = 0,
+	_timers_hud,
+	_timers_hud_waypoints,
+	_timers_line_of_sight,
+};
+
+#define GAME_VARIANT_TIMERS_MASK \
+	(FLAG(_game_variant_item_timers_bit) | FLAG(_game_variant_item_waypoints_bit))
+
+/* port: DROP SECONDARY (game_variant_drop_secondary): CE, as the game
+does; ALWAYS, a dead player's second weapon always drops; ALWAYS EXCEPT
+POWER, unless it is a power weapon. The field's 3 reads as ALWAYS EXCEPT
+POWER, as the gametype editor shows it */
+enum drop_secondary
+{
+	_drop_secondary_ce = 0,
+	_drop_secondary_always,
+	_drop_secondary_always_except_power,
+};
+
+#define GAME_VARIANT_DROP_SECONDARY_MASK \
+	(FLAG(_game_variant_drop_secondary_first_bit) | FLAG(_game_variant_drop_secondary_second_bit))
+
+/* port: NHE MODE (universal_variant.nhe_mode, a byte): on Halo 1: NHE's
+maps the mode their scripts play; BY VEHICLES, the vehicle set's (as
+before: none Vanilla, ghosts Timer Only, warthogs NHE & Timer, scorpions NHE
+& Powerups, all Training). Values past TRAINING read as BY VEHICLES
+(game_variant_nhe_mode) */
+enum nhe_mode
+{
+	_nhe_mode_by_vehicles = 0,
+	_nhe_mode_vanilla,
+	_nhe_mode_timer_only,
+	_nhe_mode_nhe_and_timer,
+	_nhe_mode_nhe_and_powerups,
+	_nhe_mode_training,
+	NUMBER_OF_NHE_MODES
 };
 
 /* port: NO SPREAD's levels (game_variant_no_spread_level): OFF, stock
@@ -128,7 +190,7 @@ union real_rgb_color;
 struct universal_variant
 {
 	boolean teams;
-	byte pad0;
+	byte nhe_mode; /* port: was pad0 (zero in every builder): enum nhe_mode */
 	byte pad1;
 	byte pad2;
 	unsigned long flags;
@@ -678,6 +740,36 @@ char const *game_variant_no_spread_name(
 char const *game_variant_health_style_name(
 	unsigned long flags);
 
+/* port: the AE gametype options from a variant's flags / its nhe_mode byte
+(enum timers_level, drop_secondary, nhe_mode), and their names for the logs */
+short game_variant_timers_level(
+	unsigned long flags);
+short game_variant_drop_secondary(
+	unsigned long flags);
+short game_variant_nhe_mode(
+	byte nhe_mode);
+char const *game_variant_timers_name(
+	unsigned long flags);
+char const *game_variant_drop_secondary_name(
+	unsigned long flags);
+char const *game_variant_nhe_mode_name(
+	byte nhe_mode);
+
+/* port: the running game's: TIMERS' level, SPAWN HEAT allowed, the
+objective in line of sight, NHE EXTRAS, DROP SECONDARY, NHE MODE */
+short game_engine_timers_level(
+	void);
+boolean game_engine_spawn_heat_allowed(
+	void);
+boolean game_engine_objective_in_sight(
+	void);
+boolean game_engine_nhe_extras(
+	void);
+short game_engine_drop_secondary(
+	void);
+short game_engine_nhe_mode(
+	void);
+
 boolean game_engine_practice(
 	void);
 
@@ -743,7 +835,12 @@ struct scenario_netgame_equipment;
 long game_engine_item_respawn_period(
 	struct scenario_netgame_equipment const *equipment);
 
+/* port: the power items' strip: TIMERS (bit 17: HUD, HUD + WAYPOINTS) or
+TRAINING */
 boolean game_engine_item_timers(
+	void);
+/* port: item_timers.c runs: any TIMERS level (LINE OF SIGHT too) or TRAINING */
+boolean game_engine_item_timers_active(
 	void);
 
 boolean game_engine_training(

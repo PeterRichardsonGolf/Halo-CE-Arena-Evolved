@@ -267,7 +267,9 @@ static boolean network_test_saved_gametype(
 	struct game_variant *variant,
 	struct game_variant_options *options)
 {
-	long indices[100];
+	/* (at most 100 saved gametypes a memory unit, saved_game_files.c, and
+	the built-in ones) */
+	long indices[256];
 	short last_used;
 	short count;
 	short index;
@@ -275,6 +277,8 @@ static boolean network_test_saved_gametype(
 	if (!network_test.saved_gametype[0])
 		return FALSE;
 	count = ui_widget_port_gametypes(indices, (short)NUMBEROF(indices), &last_used);
+	if (count >= (short)NUMBEROF(indices))
+		platform_log("network test: the first %d gametypes searched (the list is longer)", (int)count);
 	for (index = 0; index < count; index++)
 	{
 		wchar_t name[MAX_GAMENAME];

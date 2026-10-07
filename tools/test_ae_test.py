@@ -23,6 +23,7 @@ import run  # noqa: E402
 import sheet  # noqa: E402
 import smoke  # noqa: E402
 import windows  # noqa: E402
+import gametype_file  # noqa: E402
 
 DEBUG_MP = """\
 arena-evolved: Halo CE: Arena Evolved 0.1.0-beta-dev (dev, release config, commit 623d8f22) Linux x64
@@ -161,6 +162,7 @@ class Specs(unittest.TestCase):
             src = d / "from"
             (src / "UDATA" / "x").mkdir(parents=True)
             (src / "UDATA" / "x" / "blam.lst").write_text("seed")
+            (src / "link.txt").symlink_to(src / "UDATA" / "x" / "blam.lst")
             b = d / "b"
             b.mkdir()
             (b / "halo").write_bytes(b"x")
@@ -169,6 +171,9 @@ class Specs(unittest.TestCase):
             spec = harness.parse_spec({"name": "g", "map": "bloodgulch", "save_from": str(src)})
             prep = harness.prepare_game(cfg, spec, build, d / "work" / "g", d / "out" / "g")
             self.assertEqual((Path(prep["save"]) / "UDATA" / "x" / "blam.lst").read_text(), "seed")
+            # (links are copied as files: nothing in the copy points back into the source)
+            self.assertFalse((Path(prep["save"]) / "link.txt").is_symlink())
+            self.assertEqual((Path(prep["save"]) / "link.txt").read_text(), "seed")
             # (a shared save root is copied into once, when it is made: the next case keeps what the first left)
             spec = harness.parse_spec({"name": "h", "map": "bloodgulch", "save_from": str(src), "save": "s"})
             roots = {}
@@ -188,6 +193,44 @@ class Specs(unittest.TestCase):
         with redirect_stdout(buf):
             run.main(["--build", "abc", "--map", "damnation", "--dry-run"])
         self.assertEqual(json.loads(buf.getvalue())["env"]["HALO_NETWORK_TEST"], "host:damnation")
+
+
+class GametypeFile(unittest.TestCase):
+    """a saved gametype file's variant bytes patched and signed again (the signature over its first 0x68 bytes)"""
+
+    def make(self, root, name, folder="ABCDEF012345"):
+        block = bytearray(512)
+        block[:24] = name.encode("utf-16-le").ljust(24, b"\0")
+        block[0x1C] = 1
+        f = Path(root) / "u" / "UDATA" / folder / "blam.lst"
+        f.parent.mkdir(parents=True)
+        f.write_bytes(gametype_file.sign(bytes(block)))
+        return f
+
+    def test_sign_and_patch(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            f = self.make(d, "NHE 1V1")
+            self.make(d, "AE PRO TS", "000000000001")
+            self.assertTrue(gametype_file.signed(f.read_bytes()))
+            self.assertEqual(gametype_file.find(d, "nhe 1v1"), f)
+            self.assertIsNone(gametype_file.find(d, "NHE 2V2"))
+            gametype_file.patch(f, {0x1D: 3})
+            b = f.read_bytes()
+            self.assertEqual(b[0x1D], 3)
+            self.assertEqual(b[0x1C], 1)
+            self.assertTrue(gametype_file.signed(b))
+            self.assertEqual(len(b), 512)
+            # (only the variant's bytes; a file that was not signed is refused)
+            with self.assertRaises(SystemExit):
+                gametype_file.patch(f, {0x68: 1})
+            f.write_bytes(b[:0x30] + b"x" + b[0x31:])
+            with self.assertRaises(SystemExit):
+                gametype_file.patch(f, {0x1D: 4})
+            with self.assertRaises(SystemExit):
+                gametype_file.main(["/tmp/save", "--name", "NHE 1V1", "--set", "0x1d=3"])
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(gametype_file.main([d, "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
+            self.assertEqual(gametype_file.find(d, "AE PRO TS").read_bytes()[0x1D], 5)
 
 
 class Debug(unittest.TestCase):

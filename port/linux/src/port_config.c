@@ -610,7 +610,9 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"An automated test host's gametype: a custom one of the save root, by its\n"
 		"stored name (with its PC options, as picking it in the menus does), in\n"
-		"place of the built-in one; not found, the built-in one. Empty for none." },
+		"place of the built-in one; not found, the built-in one. Empty for none.\n"
+		"(Looking seeds the Arena Evolved gametypes into the save root in use:\n"
+		"set HALO_SAVE_ROOT for tests.)" },
 	{ "debug.network_test_local_players", _config_integer, "1", "HALO_NETWORK_TEST_LOCAL_PLAYERS", _environment_value,
 		_platform_all,
 		"The players an automated test host has on its own machine (split screen,\n"

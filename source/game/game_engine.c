@@ -5073,12 +5073,125 @@ boolean game_engine_item_timers(
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit));
 }
 
+/* port: item_timers.c's spawns followed: any TIMERS level (LINE OF SIGHT
+too, which has no strip) or TRAINING */
+boolean game_engine_item_timers_active(
+	void)
+{
+	return game_engine_running() &&
+		(game_variant_timers_level(global_variant.universal_variant.flags) != _timers_off ||
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit));
+}
+
 /* port: the gametype's TRAINING */
 boolean game_engine_training(
 	void)
 {
 	return game_engine_running() &&
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit);
+}
+
+/* port: a gametype's TIMERS level from its flags (bits 17 and 26) */
+short game_variant_timers_level(
+	unsigned long flags)
+{
+	boolean hud = TEST_FLAG(flags, _game_variant_item_timers_bit);
+	boolean waypoints = TEST_FLAG(flags, _game_variant_item_waypoints_bit);
+
+	if (hud)
+		return waypoints ? _timers_hud_waypoints : _timers_hud;
+	return waypoints ? _timers_line_of_sight : _timers_off;
+}
+
+/* port: a gametype's DROP SECONDARY from its flags (bits 29-30; 3 is
+ALWAYS EXCEPT POWER, as the editor shows it) */
+short game_variant_drop_secondary(
+	unsigned long flags)
+{
+	unsigned long value = (flags & GAME_VARIANT_DROP_SECONDARY_MASK) >> _game_variant_drop_secondary_first_bit;
+
+	return value >= _drop_secondary_always_except_power ? _drop_secondary_always_except_power : (short)value;
+}
+
+/* port: a gametype's NHE MODE from its byte (past TRAINING: BY VEHICLES) */
+short game_variant_nhe_mode(
+	byte nhe_mode)
+{
+	return nhe_mode < NUMBER_OF_NHE_MODES ? (short)nhe_mode : _nhe_mode_by_vehicles;
+}
+
+char const *game_variant_timers_name(
+	unsigned long flags)
+{
+	static char const *const levels[] = { "off", "hud", "hud + waypoints", "line of sight" };
+
+	return levels[game_variant_timers_level(flags)];
+}
+
+char const *game_variant_drop_secondary_name(
+	unsigned long flags)
+{
+	static char const *const values[] = { "ce", "always", "always except power" };
+
+	return values[game_variant_drop_secondary(flags)];
+}
+
+char const *game_variant_nhe_mode_name(
+	byte nhe_mode)
+{
+	static char const *const modes[] =
+	{
+		"by vehicles", "vanilla", "timer only", "nhe & timer", "nhe & powerups", "training"
+	};
+
+	return modes[game_variant_nhe_mode(nhe_mode)];
+}
+
+/* port: the running game's TIMERS level (OFF with no game) */
+short game_engine_timers_level(
+	void)
+{
+	return game_engine_running() ? game_variant_timers_level(global_variant.universal_variant.flags) : _timers_off;
+}
+
+/* port: the host's SPAWN HEAT allowed (bit 25 inverted: clear is ON) */
+boolean game_engine_spawn_heat_allowed(
+	void)
+{
+	return game_engine_running() &&
+		!TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_spawn_heat_bit);
+}
+
+/* port: the objective's indicator only in line of sight */
+boolean game_engine_objective_in_sight(
+	void)
+{
+	return game_engine_running() &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_objective_in_sight_bit);
+}
+
+/* port: NHE EXTRAS */
+boolean game_engine_nhe_extras(
+	void)
+{
+	return game_engine_running() &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_nhe_extras_bit);
+}
+
+/* port: the running game's DROP SECONDARY (CE with no game) */
+short game_engine_drop_secondary(
+	void)
+{
+	return game_engine_running() ? game_variant_drop_secondary(global_variant.universal_variant.flags) :
+		_drop_secondary_ce;
+}
+
+/* port: the running game's NHE MODE (BY VEHICLES with no game) */
+short game_engine_nhe_mode(
+	void)
+{
+	return game_engine_running() ? game_variant_nhe_mode(global_variant.universal_variant.nhe_mode) :
+		_nhe_mode_by_vehicles;
 }
 
 /* port: the gametype's NO SPREAD level (enum no_spread_level): NHE, the
@@ -7744,6 +7857,15 @@ void game_engine_log_rules(
 					team_scoring[engine_variant->race.team_scoring] : "?");
 			break;
 		}
+		/* (the AE gametype options: game_engine.h, bits 25-30 and nhe_mode) */
+		game_engine_log_append(line, sizeof(line), "; timers level %s, spawn heat %s, objective %s, "
+			"nhe extras %s, drop secondary %s, nhe mode %s",
+			game_variant_timers_name(flags),
+			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
+			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) ? "line of sight" : "normal",
+			TEST_FLAG(flags, _game_variant_nhe_extras_bit) ? "on" : "off",
+			game_variant_drop_secondary_name(flags),
+			game_variant_nhe_mode_name(universal->nhe_mode));
 		error(_error_silent, "%s", line);
 	}
 

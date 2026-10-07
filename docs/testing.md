@@ -14,6 +14,7 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 | Host/client pairs with stock Chupa / stock OpenCE (version, Delta, positions, kills) | `python3 tools/ae_test/handshake.py --ae <rev> --other stock --box` |
 | A Windows CI build on the Windows test box | `python3 tools/ae_test/windows.py --artifact arena-evolved-windows64-release` |
 | An MP4 clip of a game (H.264 + AAC; needs ffmpeg on the machine) | `python3 tools/ae_test/record.py --build <rev> --map bloodgulch --seconds 20 --box` |
+| A saved gametype's variant bytes patched and signed again (in a copy of a save root, for `--save-from`) | `python3 tools/ae_test/gametype_file.py <save root> --name "NHE 1V1" --set 0x1d=3` (on the machine that plays) |
 
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists
