@@ -210,8 +210,8 @@ SCREENS = {
             ("PLAYER NAME SIZE:", "display.player_name_scale",
              [(f"{value:g}x", f"{value:g}") for value in (0.5, 0.75, 1, 1.25, 1.5, 2)],
              "How large the players' names are drawn.", None),
-            # (MCC's ENEMY PLAYER NAME COLOR, the name under the reticle:
-            # game_engine.c internal_rasterize_target_name)
+            # (MCC's ENEMY PLAYER NAME COLOR: the name under the reticle,
+            # game_engine.c internal_rasterize_target_name, and the names over heads)
             ("ENEMY NAME COLOR:", "display.enemy_name_color", [("CLASSIC", "classic"), ("RED", "red")],
              ["Enemies' names, aimed at and over heads, in the\nHUD's blue, as teammates'.",
               "Enemies' names, aimed at and over heads, in red,\nas the Master Chief Collection's."], None),

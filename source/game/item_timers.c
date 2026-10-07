@@ -422,8 +422,9 @@ static void item_timers_number_duplicates(
 		{
 			struct item_timer const *twin = &item_timers[other];
 
-			if (twin->timer_class == timer->timer_class && twin->side == timer->side &&
-				twin->side_prefix == timer->side_prefix && !csstrcmp(labels[other], labels[index]))
+			/* (the side matters only where the label shows it) */
+			if (twin->timer_class == timer->timer_class && twin->side_prefix == timer->side_prefix &&
+				(!timer->side_prefix || twin->side == timer->side) && !csstrcmp(labels[other], labels[index]))
 			{
 				same++;
 				if (other < index)
