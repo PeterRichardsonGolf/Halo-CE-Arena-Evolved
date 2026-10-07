@@ -892,6 +892,9 @@ In Arena Evolved:
   four players whatever `player_spawn_count` says. The main menu's
   scripts (a main menu scenario in ui.map) may also call `map_name`,
   `texture_cache_flush` and `sound_cache_flush` (CE+ X's menu does).
+- A network game's map name, which a client checks (build-140), may end in
+  a map family's suffix (`<file>@ce`, `<file>@md`: `halo_map_families.h`),
+  so that games of Custom Edition and HaloMD maps join.
 - A Custom Edition map's structure bsps get only ChupathingyCE's checks
   (`ce_map_checks.c`'s `ce_bsp_check`, before the map opens), not
   build-139's schema, since ChupathingyCE 0.7.0b has none for them; to

@@ -258,10 +258,12 @@ Re-run `configure.py` when source files or the menus are added.
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
 - Online, Arena Evolved plays with ChupathingyCE 0.7.0b and OpenCE build-133
-  to build-139 (network version 20), both ways, and joins games hosted on
-  network versions 11 to 20. Older builds' hosts (network version 10) can't
-  be joined, and ChupathingyCE 0.6.8b and OpenCE build-129 to build-131
-  (version 18) don't join Arena Evolved's games.
+  to build-140 (network version 20), both ways, and joins games hosted on
+  network versions 11 to 21, OpenCE build-141 and later's (21) included;
+  those builds don't join Arena Evolved's games, which say 20. Older
+  builds' hosts (network version 10) can't be joined, and ChupathingyCE
+  0.6.8b and OpenCE build-129 to build-131 (version 18) don't join Arena
+  Evolved's games.
 
 ## Credits
 
