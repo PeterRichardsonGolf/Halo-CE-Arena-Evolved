@@ -200,12 +200,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   header's size; NHE Blood Gulch's scripts sit 2 bytes off alignment; CE
   maps' scripts are checked against the CE tag cache).
 
-## 0.1.0-beta - 2026-10-05
+## 0.1.0-beta - 2026-10-06
 
 Arena Evolved's first pre-release, built on ChupathingyCE 0.7.0b and OpenCE
-build-139. Not yet tagged: the Unreleased entries above go into it when it
-is (the date then becomes the tag's); the entries below were first made on
-ChupathingyCE 0.6.7b and OpenCE build-128.
+build-139: tagged v0.1.0-beta and published as a pre-release on 2026-10-06.
+The Unreleased entries above came after it; the entries below were first
+made on ChupathingyCE 0.6.7b and OpenCE build-128.
 
 ### Changed
 - Arena Evolved has its own name and version: the window's title, the

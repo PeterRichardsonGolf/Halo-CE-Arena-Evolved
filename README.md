@@ -193,8 +193,8 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, will
-be the first, a pre-release. Each platform is a zip of its own,
+page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, is
+the first, a pre-release (2026-10-06). Each platform is a zip of its own,
 `arena-evolved-<platform>-release.zip`; `arena-evolved-linux64-release.zip`
 (Linux, 64-bit) is the one played and tested. The dedicated server keeps
 its own name, `chupathingyce-server-linux-<arch>`

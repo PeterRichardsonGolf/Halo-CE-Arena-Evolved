@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # the upstream releases this version is built on, as the game logs them at
 # start-up ("Halo CE: Arena Evolved 0.1.0-beta (ChupathingyCE 0.7.0b, OpenCE
-# build-139)"); kept in step with port/linux/include/halo_product.h's
+# build-144)"); kept in step with port/linux/include/halo_product.h's
 # HALO_UPSTREAM_BASE when an upstream release is merged
 UPSTREAM_BASE = "ChupathingyCE 0.7.0b, OpenCE build-144"
 
