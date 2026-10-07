@@ -1647,7 +1647,8 @@ boolean tag_validate_custom_edition_tags(
 	this build's, custom_edition_geometry.c) */
 	validate_buffers(&validation, NULL, 0, NULL, 0);
 
-	return validate_tag_table(&validation, header_instances(header), header->tag_count);
+	return validate_tag_table(&validation, XBOX_POINTER(struct tag_validate_instance, header->instances),
+		header->tag_count);
 }
 
 boolean tag_validate_structure_bsp(
@@ -1740,10 +1741,10 @@ boolean tag_validate_any_claimed(
 	void const *address,
 	unsigned long size)
 {
-	unsigned long offset = (unsigned long)address - (unsigned long)tag_validate_globals.header;
+	unsigned long offset = (unsigned long)(POINTER_BITS(address) - POINTER_BITS(tag_validate_globals.header));
 	unsigned long bit;
 
-	if (!tag_validate_globals.header || (unsigned long)address < (unsigned long)tag_validate_globals.header ||
+	if (!tag_validate_globals.header || POINTER_BITS(address) < POINTER_BITS(tag_validate_globals.header) ||
 		offset > tag_validate_globals.tag_cache_size || size > tag_validate_globals.tag_cache_size - offset)
 	{
 		return TRUE;

@@ -1358,7 +1358,7 @@ long scenario_tags_load(
 			&cache_file_globals.header);
 		if (cache_file_globals.tag_header)
 		{
-			global_tag_instances = cache_file_globals.tag_header->tag_instances;
+			global_tag_instances = xbox_pointer(cache_file_globals.tag_header->tag_instances);
 			global_tag_count = cache_file_globals.tag_header->tag_count;
 			cache_file_globals.tags_loaded = TRUE;
 			/* (the menus' tags, as for this build's maps below) */
@@ -1721,7 +1721,7 @@ boolean scenario_structure_bsp_load(
 	/* port: a Halo Custom Edition bsp has no Xbox vertex buffers: its
 	materials' vertices, as checked, are compressed and given buffers
 	(port/linux/game/custom_edition_geometry.c) */
-	if (custom_edition_cache_tags_loaded() && !custom_edition_structure_bsp_load(structure_bsp_header->base_address))
+	if (custom_edition_cache_tags_loaded() && !custom_edition_structure_bsp_load(xbox_pointer(structure_bsp_header->base_address)))
 		return FALSE;
 
 	cache_file_globals.structure_bsp_header = structure_bsp_header;

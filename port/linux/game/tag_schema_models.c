@@ -394,11 +394,11 @@ static boolean model_geometry_part_check(
 			" of its own: none", part->uncompressed_vertices.count, part->compressed_vertices.count,
 			part->triangles.count);
 		part->uncompressed_vertices.count = 0;
-		part->uncompressed_vertices.address = NULL;
+		part->uncompressed_vertices.address = XBOX_NULL;
 		part->compressed_vertices.count = 0;
-		part->compressed_vertices.address = NULL;
+		part->compressed_vertices.address = XBOX_NULL;
 		part->triangles.count = 0;
-		part->triangles.address = NULL;
+		part->triangles.address = XBOX_NULL;
 	}
 	if (!vertex_buffer->hardware_format || !triangle_buffer->hardware_format)
 		return TRUE;

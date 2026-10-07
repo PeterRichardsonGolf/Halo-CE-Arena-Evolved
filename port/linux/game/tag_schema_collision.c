@@ -1292,7 +1292,7 @@ static void structure_vertex_buffer_check(
 	their vertices are compressed, custom_edition_geometry.c) */
 	if (tag_validate_custom_edition(validation))
 	{
-		vertices->hardware_format = NULL;
+		vertices->hardware_format = XBOX_NULL;
 		return;
 	}
 	data = lightmap ?
@@ -1396,7 +1396,7 @@ static void structure_material_check(
 	no buffer. The retail maps' lightless materials have one, so this is no
 	correction) */
 	if (!material->lightmap_vertices.count)
-		material->lightmap_vertices.hardware_format = NULL;
+		material->lightmap_vertices.hardware_format = XBOX_NULL;
 
 	/* (its surfaces' vertices: its own, and its lightmap's when it has them
 	or its lightmap a bitmap, which object_lights.c samples them in) */
