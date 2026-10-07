@@ -578,6 +578,86 @@ class Inner(unittest.TestCase):
                 harness._inner(str(plan), str(res), geteuid=self.NOT_ROOT)
             self.assertEqual(self.left_running(d), [])
 
+    def test_double_term_does_not_stop_the_cleanup(self):
+        # (games that ignore TERM: the cleanup waits its grace, then KILLs; a second TERM meanwhile changes nothing)
+        import signal
+        with tempfile.TemporaryDirectory() as d:
+            g = self.game(d, "g", 0, 60)
+            Path(g["cwd"], "halo").write_text("#!" + sys.executable + "\nimport os, signal, time, pathlib\n"
+                                              "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                                              "pathlib.Path('started').write_text(str(os.getpid()))\ntime.sleep(60)\n")
+            plan, res = self.plan(d, self.xvfb_body("time.sleep(60)\n"), [g])
+            code = (f"import sys; sys.path.insert(0, {str(HERE)!r}); import harness; "
+                    f"harness._inner({str(plan)!r}, {str(res)!r}, geteuid=lambda: 1000, grace=3)")
+            p = harness.subprocess.Popen([sys.executable, "-c", code])
+            started = Path(d) / "g" / "bin" / "started"
+            t0 = time.time()
+            while not started.exists() and time.time() - t0 < 15:
+                time.sleep(0.1)
+            self.assertTrue(started.exists())
+            p.send_signal(signal.SIGTERM)
+            time.sleep(1)  # (the cleanup is waiting out the game's grace now)
+            p.send_signal(signal.SIGTERM)
+            p.send_signal(signal.SIGINT)
+            self.assertEqual(p.wait(timeout=30), 128 + signal.SIGTERM)
+            self.assertEqual(self.left_running(d), [])
+            r = json.loads(res.read_text())[0]
+            self.assertEqual(r.get("error"), "interrupted")
+
+    def test_root_without_namespace_never_mounts(self):
+        # (no unshare: run_group never says in_namespace, so even root never mounts /tmp or touches lo)
+        calls = []
+        orig = harness.subprocess.run
+        harness.subprocess.run = lambda cmd, **kw: calls.append(cmd) or orig(["true"], **kw)
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                plan, res = self.plan(d, self.xvfb_body("sys.exit(0)\n"), [self.game(d, "g")])
+                harness._inner(str(plan), str(res), geteuid=lambda: 0)
+                notes = []
+                p = json.loads(plan.read_text())
+                self.assertFalse(harness.private_x_tmp(p, notes))
+                p.update(in_namespace=True, host_mnt_ns=harness._ns("mnt"))  # (flag set, but the host's mounts)
+                self.assertFalse(harness.private_x_tmp(p, notes))
+                self.assertIn("not in our own mount namespace", notes[0])
+        finally:
+            harness.subprocess.run = orig
+        self.assertFalse([c for c in calls if c and c[0] in ("mount", "ip")])
+
+    def test_cleanup_is_one_shared_grace(self):
+        # (three groups ignoring TERM: about one grace in all, not one each)
+        with tempfile.TemporaryDirectory() as d:
+            body = "import signal, time\nsignal.signal(signal.SIGTERM, signal.SIG_IGN)\ntime.sleep(60)\n"
+            procs = [harness.subprocess.Popen([self.fake(d, f"p{i}", body)], start_new_session=True) for i in range(3)]
+            time.sleep(0.5)
+            t0 = time.time()
+            harness.stop_all(procs, grace=2)
+            self.assertLess(time.time() - t0, 5)
+            self.assertTrue(all(p.poll() is not None for p in procs))
+
+    def test_tool_term_stops_inner_runners_and_new_games(self):
+        import signal
+        saved = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
+        with tempfile.TemporaryDirectory() as d:
+            inner = harness.subprocess.Popen([self.fake(d, "inner", "import time\ntime.sleep(60)\n")],
+                                             start_new_session=True)
+            harness.LIVE_INNERS.add(inner)
+            try:
+                harness.term_as_exit()
+                with self.assertRaises(SystemExit):
+                    os.kill(os.getpid(), signal.SIGTERM)
+                    time.sleep(1)
+                self.assertEqual(inner.wait(timeout=10), -signal.SIGTERM)
+                with self.assertRaises(RuntimeError):
+                    harness.GameSlots(dict(harness.DEFAULTS, work_dir=d), 1, shared_network=False).acquire()
+            finally:
+                harness.LIVE_INNERS.discard(inner)
+                harness.STOPPING.clear()
+                for sig, h in saved.items():
+                    signal.signal(sig, h)
+                if inner.poll() is None:
+                    inner.kill()
+                    inner.wait()
+
     def test_term_stops_everything_started(self):
         # (the tool interrupted: run_group sends TERM to the inner runner, which must clean up)
         import signal
@@ -704,6 +784,9 @@ class BuildRemove(unittest.TestCase):
 
 class Slots(unittest.TestCase):
     def setUp(self):
+        self.saved_tmp = harness.private_tmp_ok
+        harness.private_tmp_ok = lambda: True  # (CI containers may have no namespaces)
+        self.addCleanup(setattr, harness, "private_tmp_ok", self.saved_tmp)
         self.lockdir = tempfile.TemporaryDirectory(dir=Path.home())
         self.saved = os.environ.get(harness.LOCK_DIR_ENV)
         os.environ[harness.LOCK_DIR_ENV] = self.lockdir.name

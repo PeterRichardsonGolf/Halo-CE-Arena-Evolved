@@ -69,11 +69,17 @@ def run_pair(cfg, name, host_build, client_build, out, a, slots):
     harness.OWN_WORK.add(work)
     builds = [harness.resolve_build(cfg, host_build), harness.resolve_build(cfg, client_build)]
     prepared = [harness.prepare_game(cfg, s, b, work / s["name"], pdir / s["name"]) for s, b in zip((host, client), builds)]
-    slots.acquire(2)
     try:
-        inner = harness.run_group(cfg, prepared, None, work)
-    finally:
-        slots.release(2)
+        slots.acquire(2)
+        try:
+            inner = harness.run_group(cfg, prepared, None, work)
+        finally:
+            slots.release(2)
+    except BaseException:  # (interrupted: leave no save roots behind)
+        if not a.keep_work:
+            import shutil
+            shutil.rmtree(work, ignore_errors=True)
+        raise
     results = [harness.collect_game(s, pr, i, pdir / s["name"], a.keep_work)
                for s, pr, i in zip((host, client), prepared, inner)]
     texts = [(pdir / s["name"] / "debug.txt").read_text(errors="replace") if (pdir / s["name"] / "debug.txt").exists()

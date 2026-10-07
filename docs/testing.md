@@ -62,7 +62,11 @@ never meet), its own `Xvfb` when there is no display (started by the harness wit
 `/tmp` in the game's own mount namespace, so every game may get `:0` and they still never meet; not `xvfb-run`,
 whose cleanup can turn a clean exit into exit 1).
 The game's exit code is the game's own, the display is in result.json, a game whose X server failed is not started
-(the reason is in `why`), and nothing the harness started outlives it (errors, TERM, Ctrl-C). A spec's `env` adds or overrides.
+(the reason is in `why`), and nothing the harness started outlives it (errors, TERM, Ctrl-C): the inner runner is
+pid 1 of its own pid namespace, so even a grandchild that left its process group dies with it. Without namespaces
+(no `unshare` for this user) games run one at a time on the machine's own network and `/tmp`, nothing is mounted,
+and a grandchild that leaves its process group can outlive the run (the one limit). Output and work folders are
+never under /tmp (each game's private /tmp would hide them). A spec's `env` adds or overrides.
 
 - Save roots and work folders **never under /tmp** (a RAM disk on the laptop; map caches are up to 290 MB each).
   The tools refuse it, and delete each game's work folder afterwards (`--keep-work` keeps it).
