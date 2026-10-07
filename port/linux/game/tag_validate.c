@@ -66,6 +66,25 @@ enum
 	/* the claims: a bit for each byte of the tag cache */
 	CLAIM_BITS = 32,
 	CLAIM_WORDS = TAG_CACHE_SIZE / CLAIM_BITS,
+
+	/* port (Arena Evolved): the most claims kept by their first byte
+	(extent_claim), for the tags and for a structure bsp (powers of two),
+	and how full a table is let get */
+	MAXIMUM_EXTENTS = 0x40000,
+	MAXIMUM_STRUCTURE_BSP_EXTENTS = 0x20000,
+	/* port (Arena Evolved): the most bytes that extents of different kinds
+	may share in a map (or a bsp), kept to be found unchanged at the end
+	(extent_claim) */
+	MAXIMUM_SHARED_BYTES = 0x4000,
+	MAXIMUM_SHARED_EXTENTS = 256,
+};
+
+/* port (Arena Evolved): what an extent is (extent_claim) */
+enum
+{
+	_extent_root,
+	_extent_block,
+	_extent_data,
 };
 
 /* the passes of the walk over a tag */
@@ -152,6 +171,9 @@ struct tag_validation
 	short pass;
 	boolean refused;
 	long corrections;
+	/* port (Arena Evolved): how many of the elements being walked are
+	another tag's too (extent_claim): their bytes may not be corrected */
+	short shared_depth;
 
 	struct tag_validation_frame frames[MAXIMUM_VALIDATION_DEPTH];
 	short depth;
@@ -183,9 +205,52 @@ static unsigned long tag_validate_claims[CLAIM_WORDS];
 static char const tag_validate_empty_name[] = "";
 #endif
 
+/* port (Arena Evolved): each root, block and data claimed, by its first
+byte (extent_claim): what another at the same bytes may be the same one
+of. The tags' are kept apart from the structure bsp's, which go as
+another bsp loads; extent_table is the one in use */
+struct tag_validate_extent
+{
+	byte const *address;
+	/* its group's or block's schema, or its data's field */
+	void const *kind;
+	/* the instance, block or data that claimed it */
+	void const *owner;
+	unsigned long size;
+	short kind_type;
+};
+static struct tag_validate_extent tag_validate_extents[MAXIMUM_EXTENTS];
+static struct tag_validate_extent tag_validate_structure_bsp_extents[MAXIMUM_STRUCTURE_BSP_EXTENTS];
+static struct
+{
+	struct tag_validate_extent *extents;
+	unsigned long mask;
+	long count;
+	long maximum_count;
+} extent_table;
+
+/* port (Arena Evolved): the bytes that extents of different kinds share,
+as they were when the second was claimed (extent_claim): they must be the
+same when the map (or bsp) has been checked */
+static struct
+{
+	long count;
+	long byte_count;
+	struct
+	{
+		byte const *address;
+		long size;
+		long first_byte;
+	} extents[MAXIMUM_SHARED_EXTENTS];
+	byte bytes[MAXIMUM_SHARED_BYTES];
+} tag_validate_shared;
+
 /* ---------- prototypes */
 
 static struct tag_validate_instance *header_instances(struct tag_validate_header const *header);
+static boolean extent_claim(void const *address, unsigned long size, void const *kind, short kind_type,
+	void const *owner, boolean *shared);
+static boolean extent_shared(void const *address, void const *owner);
 static void validate_element(struct tag_validation *validation, byte *base,
 	struct tag_schema_definition const *definition, char const *field_name, long element_index);
 static void validate_fields(struct tag_validation *validation, byte *base,
@@ -537,6 +602,7 @@ static void validate_block_extent(
 	struct tag_schema_field const *field)
 {
 	struct tag_schema_definition const *definition = field->definition;
+	boolean shared;
 
 	block->definition = XBOX_NULL;
 	if (block->count < 0)
@@ -559,7 +625,8 @@ static void validate_block_extent(
 			block->count, definition->size, (unsigned long)block->address);
 		return;
 	}
-	if (!claim(XBOX_POINTER(void, block->address), (unsigned long)block->count * definition->size))
+	if (!extent_claim(XBOX_POINTER(void, block->address), (unsigned long)block->count * definition->size,
+		definition, _extent_block, block, &shared))
 	{
 		tag_validate_refuse(validation, "has %ld elements of %ld bytes at %08lx, which overlap another's",
 			block->count, definition->size, (unsigned long)block->address);
@@ -576,6 +643,8 @@ static void validate_data_extent(
 	struct tag_data *data,
 	struct tag_schema_field const *field)
 {
+	boolean shared;
+
 	data->definition = XBOX_NULL;
 	if (data->size < 0)
 	{
@@ -599,7 +668,7 @@ static void validate_data_extent(
 	}
 	if (data->size &&
 		(!region_contains(validation, XBOX_POINTER(void, data->address), data->size) ||
-			!claim(XBOX_POINTER(void, data->address), data->size)))
+			!extent_claim(XBOX_POINTER(void, data->address), data->size, field, _extent_data, data, &shared)))
 	{
 		tag_validate_refuse(validation, "has %ld bytes at %08lx, outside the tags or overlapping another's",
 			data->size, (unsigned long)data->address);
@@ -752,9 +821,12 @@ static void validate_fields(
 				else
 				{
 					struct tag_block *block = (struct tag_block *)address;
+					boolean shared = extent_shared(XBOX_POINTER(void, block->address), block);
 					long element_index;
 
-					/* (the elements, through every pass) */
+					/* (the elements, through every pass; another tag's too
+					not corrected: extent_claim) */
+					validation->shared_depth += shared;
 					for (element_index = 0;
 						element_index < block->count && !validation->refused;
 						element_index++)
@@ -767,6 +839,7 @@ static void validate_fields(
 							field->name,
 							element_index);
 					}
+					validation->shared_depth -= shared;
 					validation->field_name = field->name;
 				}
 				break;
@@ -940,6 +1013,273 @@ static boolean schemas_fit(
 	return (boolean)fit;
 }
 
+static unsigned long extent_slot(
+	void const *address)
+{
+	return (unsigned long)((POINTER_BITS(address) >> 2) * 2654435761UL) & extent_table.mask;
+}
+
+/* the table's extents of a map, or of a structure bsp, emptied */
+static void extent_table_new(
+	struct tag_validate_extent *extents,
+	long size)
+{
+	memset(extents, 0, (size_t)size * sizeof(*extents));
+	extent_table.extents = extents;
+	extent_table.mask = (unsigned long)size - 1;
+	extent_table.count = 0;
+	extent_table.maximum_count = size / 4 * 3;
+	tag_validate_shared.count = 0;
+	tag_validate_shared.byte_count = 0;
+
+	return;
+}
+
+/* the next extent at address after *slot's (start with extent_slot's): NULL
+when there are no more */
+static struct tag_validate_extent *extent_next(
+	void const *address,
+	unsigned long *slot)
+{
+	while (extent_table.extents && extent_table.extents[*slot].address)
+	{
+		struct tag_validate_extent *extent = &extent_table.extents[*slot];
+
+		*slot = (*slot + 1) & extent_table.mask;
+		if (extent->address == address)
+			return extent;
+	}
+
+	return NULL;
+}
+
+/* (kept; FALSE if the table is full, which the claim is not shared with any
+other then) */
+static boolean extent_add(
+	void const *address,
+	unsigned long size,
+	void const *kind,
+	short kind_type,
+	void const *owner)
+{
+	unsigned long slot = extent_slot(address);
+	struct tag_validate_extent *extent;
+
+	if (!size || !extent_table.extents || extent_table.count >= extent_table.maximum_count)
+		return FALSE;
+	while (extent_table.extents[slot].address)
+		slot = (slot + 1) & extent_table.mask;
+	extent = &extent_table.extents[slot];
+	extent->address = address;
+	extent->size = size;
+	extent->kind = kind;
+	extent->kind_type = kind_type;
+	extent->owner = owner;
+	extent_table.count++;
+
+	return TRUE;
+}
+
+/* whether a definition has a runtime value (a field the game writes as it
+runs: _tag_schema_reset) in its bytes from..to, in its structures too */
+static boolean definition_resets_in(
+	struct tag_schema_definition const *definition,
+	long from,
+	long to,
+	short depth)
+{
+	struct tag_schema_field const *field;
+
+	if (depth > MAXIMUM_VALIDATION_DEPTH)
+		return TRUE;
+	for (field = definition->fields; field->type != _tag_schema_terminator; field++)
+	{
+		short index;
+
+		for (index = 0; index < field->count; index++)
+		{
+			long start = field->offset + (long)index * field->size;
+			long end = start + (field->type == _tag_schema_struct ?
+				((struct tag_schema_definition const *)field->definition)->size : field->size);
+
+			if (end <= from || start >= to)
+				continue;
+			if (field->type == _tag_schema_reset ||
+				(field->type == _tag_schema_struct &&
+					definition_resets_in(field->definition, from - start, to - start, depth + 1)))
+			{
+				return TRUE;
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+/* whether an extent of a kind may have bytes the game writes as it runs in
+its first size bytes: a root's or block's runtime values, or the scripts'
+data (hs_syntax_data's nodes, hs_string_constants', which the console's
+strings are added to) */
+static boolean kind_written_in(
+	void const *kind,
+	short kind_type,
+	unsigned long size)
+{
+	struct tag_schema_definition const *definition;
+	long element;
+
+	switch (kind_type)
+	{
+	case _extent_root:
+		definition = ((struct tag_schema_group const *)kind)->definition;
+		break;
+	case _extent_block:
+		definition = kind;
+		break;
+	default:
+	{
+		char const *name = ((struct tag_schema_field const *)kind)->name;
+
+		return name[0] == 'h' && name[1] == 's' && name[2] == '_';
+	}
+	}
+	for (element = 0; element * definition->size < (long)size; element++)
+	{
+		if (definition_resets_in(definition, 0, (long)size - element * definition->size, 0))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+/* port (Arena Evolved): the claim of an extent at address (claim), kept by
+its first byte: TRUE if it is claimed, or if its bytes are, from the same
+first byte, other extents' that it may share them with (*shared is then
+set; any bytes past theirs must be no other's).
+
+Some maps hold bytes that are the same once, for every structure that has
+them: CE+ X's ui.map (built by a tool that shares bytes that are the same)
+names a shader, string lists and text widgets under two or more names,
+shares bitmaps' sequences, strings and event handlers between tags, and a
+few bytes of one kind with another's (a color table's empty root is the
+start of a model's geometry; a string's bytes are the start of another
+string list's strings).
+
+- The same kind (the same group's root, the same block's elements, the same
+  field's data) is the same structure at the same offsets: whatever is
+  written through one owner lands in the same field of the other.
+- Another kind may share bytes that hold no runtime value of either (no
+  field the game writes as it runs: tag_schema.h), and that the check leaves
+  as they were (shared_bytes_unchanged): nothing written through one lands
+  in the other.
+
+Each owner's walk checks the shared bytes in its own place, but may not
+correct them (tag_validate_correct): what is right for one owner must be
+right for each. Bytes shared from another first byte are still refused */
+static boolean extent_claim(
+	void const *address,
+	unsigned long size,
+	void const *kind,
+	short kind_type,
+	void const *owner,
+	boolean *shared)
+{
+	struct tag_validate_extent *extent;
+	unsigned long slot = extent_slot(address);
+	unsigned long covered = 0;
+	unsigned long shared_size = 0;
+	boolean found = FALSE;
+
+	*shared = FALSE;
+	if (claim(address, size))
+	{
+		extent_add(address, size, kind, kind_type, owner);
+		return TRUE;
+	}
+	while ((extent = extent_next(address, &slot)) != NULL)
+	{
+		unsigned long overlap = MIN(size, extent->size);
+
+		found = TRUE;
+		covered = MAX(covered, extent->size);
+		if (extent->kind == kind)
+			continue;
+		if (kind_written_in(kind, kind_type, overlap) ||
+			kind_written_in(extent->kind, extent->kind_type, overlap))
+		{
+			return FALSE;
+		}
+		shared_size = MAX(shared_size, overlap);
+	}
+	if (!found ||
+		(shared_size &&
+			(tag_validate_shared.count >= MAXIMUM_SHARED_EXTENTS ||
+				(long)shared_size > MAXIMUM_SHARED_BYTES - tag_validate_shared.byte_count)) ||
+		(size > covered && !claim((byte const *)address + covered, size - covered)))
+	{
+		return FALSE;
+	}
+	if (shared_size)
+	{
+		tag_validate_shared.extents[tag_validate_shared.count].address = address;
+		tag_validate_shared.extents[tag_validate_shared.count].size = (long)shared_size;
+		tag_validate_shared.extents[tag_validate_shared.count].first_byte = tag_validate_shared.byte_count;
+		memcpy(tag_validate_shared.bytes + tag_validate_shared.byte_count, address, shared_size);
+		tag_validate_shared.count++;
+		tag_validate_shared.byte_count += (long)shared_size;
+	}
+	/* (so that one after it shares with it too) */
+	if (size > covered)
+		extent_add(address, size, kind, kind_type, owner);
+	*shared = TRUE;
+
+	return TRUE;
+}
+
+/* whether the bytes extents of different kinds share are as they were
+(extent_claim); the record is emptied for the next map or bsp */
+static boolean shared_bytes_unchanged(
+	void)
+{
+	long index;
+	boolean unchanged = TRUE;
+
+	for (index = 0; index < tag_validate_shared.count; index++)
+	{
+		byte const *now = tag_validate_shared.extents[index].address;
+		byte const *then = tag_validate_shared.bytes + tag_validate_shared.extents[index].first_byte;
+		long offset;
+
+		for (offset = 0; offset < tag_validate_shared.extents[index].size; offset++)
+		{
+			if (now[offset] != then[offset])
+				unchanged = FALSE;
+		}
+	}
+	tag_validate_shared.count = 0;
+	tag_validate_shared.byte_count = 0;
+
+	return unchanged;
+}
+
+/* whether the extent at address that owner names is another owner's too
+(extent_claim): the first extent kept at that address, which the walk
+reaches first, is its own */
+static boolean extent_shared(
+	void const *address,
+	void const *owner)
+{
+	unsigned long slot;
+	struct tag_validate_extent const *extent;
+
+	if (!address)
+		return FALSE;
+	slot = extent_slot(address);
+	extent = extent_next(address, &slot);
+
+	return extent && extent->owner != owner;
+}
+
 /* a tag of the table through a pass of its group's schema, if it has one */
 static void validate_instance(
 	struct tag_validation *validation,
@@ -949,8 +1289,15 @@ static void validate_instance(
 	struct tag_schema_group const *group = schema_group_get(instance->group_tag);
 
 	if (group && group->definition && instance->base_address)
+	{
+		/* (another tag's root under its name: extent_claim) */
+		boolean shared = extent_shared(XBOX_POINTER(void, instance->base_address), instance);
+
+		validation->shared_depth += shared;
 		validate_tag(validation, instance->tag_index, XBOX_POINTER(void, instance->base_address), group->definition,
 			pass);
+		validation->shared_depth -= shared;
+	}
 
 	return;
 }
@@ -1031,6 +1378,7 @@ boolean tag_validate_tags(
 	tag_validate_globals.file_length = file_length;
 	snprintf(tag_validate_globals.map_name, sizeof(tag_validate_globals.map_name), "%s", map_name);
 	memset(tag_validate_claims, 0, sizeof(tag_validate_claims));
+	extent_table_new(tag_validate_extents, MAXIMUM_EXTENTS);
 	validation_new(&validation, tag_header, (unsigned long)tag_data_size);
 
 	if (!schemas_fit())
@@ -1100,13 +1448,27 @@ boolean tag_validate_tags(
 			tag_validate_refuse(&validation, "has no data");
 			break;
 		}
-		if (group && group->definition &&
-			(!region_contains(&validation, XBOX_POINTER(void, instance->base_address), group->definition->size) ||
-				!claim(XBOX_POINTER(void, instance->base_address), group->definition->size)))
+		if (group && group->definition)
 		{
-			tag_validate_refuse(&validation, "has its data at %08lx, outside the tags or overlapping another's",
-				(unsigned long)instance->base_address);
-			break;
+			boolean shared;
+
+			if (!region_contains(&validation, XBOX_POINTER(void, instance->base_address), group->definition->size) ||
+				!extent_claim(XBOX_POINTER(void, instance->base_address), group->definition->size, group, _extent_root,
+					instance, &shared))
+			{
+				tag_validate_refuse(&validation, "has its data at %08lx, outside the tags or overlapping another's",
+					(unsigned long)instance->base_address);
+				break;
+			}
+			if (shared)
+			{
+				unsigned long slot = extent_slot(XBOX_POINTER(void, instance->base_address));
+				struct tag_validate_extent const *extent =
+					extent_next(XBOX_POINTER(void, instance->base_address), &slot);
+
+				tag_validate_correct(&validation, "is tag '%s' of its group under another name: checked as that one",
+					tag_name(((struct tag_validate_instance const *)extent->owner)->tag_index));
+			}
 		}
 	}
 
@@ -1115,6 +1477,12 @@ boolean tag_validate_tags(
 		validate_instance(&validation, &header_instances(header)[absolute_index], _pass_values);
 	for (absolute_index = 0; absolute_index < header->tag_count && !validation.refused; absolute_index++)
 		validate_instance(&validation, &header_instances(header)[absolute_index], _pass_checks);
+	/* port (Arena Evolved): (extent_claim) */
+	if (!shared_bytes_unchanged() && !validation.refused)
+	{
+		validation.tag_index = NONE;
+		tag_validate_refuse(&validation, "has bytes that tags of different kinds share, which its check changed");
+	}
 
 	tag_validate_globals.corrections = validation.corrections;
 
@@ -1145,6 +1513,7 @@ boolean tag_validate_structure_bsp(
 	}
 	/* (another bsp may have been where this one is) */
 	unclaim(tag_validate_globals.tag_data_size, TAG_CACHE_SIZE - tag_validate_globals.tag_data_size);
+	extent_table_new(tag_validate_structure_bsp_extents, MAXIMUM_STRUCTURE_BSP_EXTENTS);
 
 	if (bsp_header->signature != STRUCTURE_BSP_HEADER_SIGNATURE ||
 		!claim(bsp_header, sizeof(*bsp_header)) ||
@@ -1172,6 +1541,9 @@ boolean tag_validate_structure_bsp(
 				_pass_checks);
 		}
 	}
+	/* port (Arena Evolved): (extent_claim) */
+	if (!shared_bytes_unchanged() && !validation.refused)
+		tag_validate_refuse(&validation, "has bytes that structures of different kinds share, which its check changed");
 	tag_validate_globals.corrections += validation.corrections;
 
 	return !validation.refused;
@@ -1221,6 +1593,18 @@ void tag_validate_correct(
 {
 	va_list arguments;
 
+	/* port (Arena Evolved): bytes that another tag's walk reads too are
+	not corrected for this one (extent_claim) */
+	if (validation->shared_depth > 0)
+	{
+		char message[MAXIMUM_MESSAGE_LENGTH];
+
+		va_start(arguments, format);
+		vsnprintf(message, sizeof(message), format, arguments);
+		va_end(arguments);
+		tag_validate_refuse(validation, "shares its data with another tag, and would need correcting here: %s", message);
+		return;
+	}
 	validation->corrections++;
 	if (validation->corrections <= MAXIMUM_LOGGED_CORRECTIONS)
 	{
