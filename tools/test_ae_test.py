@@ -385,6 +385,45 @@ class Record(unittest.TestCase):
             self.assertEqual(record.record_env(b, 0, Path(d) / "v")["env"], {})
 
 
+class Recordings(unittest.TestCase):
+    def test_result_and_line_list_the_clips(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d)
+            (out / "video" / "recordings").mkdir(parents=True)
+            (out / "video" / "recordings" / "clip.mp4").write_bytes(b"x")
+            (out / "video" / "recordings" / "clip2.video.mp4").write_bytes(b"x")  # (an intermediate)
+            (out / "video" / "recordings" / "clip3.mp4.part").write_bytes(b"x")
+            self.assertEqual([p.name for p in harness.find_recordings(out / "video")], ["clip.mp4"])
+            self.assertEqual(harness.find_recordings(out / "none"), [])
+            work = out / "work"
+            (work / "root").mkdir(parents=True)
+            (work / "save").mkdir()
+            (work / "root" / "debug.txt").write_text(DEBUG_MP)
+            spec = harness.parse_spec({"name": "g", "map": "bloodgulch", "record": 10})
+            prepared = {"root": str(work / "root"), "save": str(work / "save"), "cwd": str(work / "bin"),
+                        "shots": str(out / "shots"), "env": {}, "record": {"status": "recording 10 s"}}
+            r = harness.collect_game(spec, prepared, {"exit_code": 0, "timed_out": False, "seconds": 40}, out)
+            self.assertEqual(r["recordings"], ["video/recordings/clip.mp4"])
+            self.assertEqual(json.loads((out / "result.json").read_text())["recordings"], ["video/recordings/clip.mp4"])
+            self.assertIn("1 mp4 (video/recordings/clip.mp4)", harness.one_line("g", r))
+            self.assertIn("record: skipped (x)", harness.one_line("g", dict(r, recordings=[], record="skipped (x)")))
+
+    def test_png_screenshots_when_the_game_has_them(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            d = Path(d)
+            data = d / "data"
+            (data / "maps").mkdir(parents=True)
+            cfg = dict(harness.DEFAULTS, data_dir=str(data))
+            spec = harness.parse_spec({"name": "g", "map": "bloodgulch", "screenshots": 100})
+            for name, blob, want in (("new", b"..HALO_SCREENSHOT_FORMAT..", "png"), ("old", b"stock build", None)):
+                b = d / name
+                b.mkdir()
+                (b / "halo").write_bytes(blob)
+                build = {"dir": str(b), "binary": str(b / "halo"), "env": {}}
+                prep = harness.prepare_game(cfg, spec, build, d / "work" / name, d / "out" / name)
+                self.assertEqual(prep["env"].get("HALO_SCREENSHOT_FORMAT"), want, name)
+
+
 class Load(unittest.TestCase):
     def test_owner_detection(self):
         cfg = dict(harness.DEFAULTS, work_dir=str(Path.home() / "halo-test" / "ae_test" / "work"))

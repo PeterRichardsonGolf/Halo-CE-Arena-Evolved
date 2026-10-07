@@ -537,7 +537,8 @@ SPEC_KEYS = {
     "test_input": "HALO_TEST_INPUT",
     "config_toml": "a config.toml to put beside the binary",
     "env": "more environment variables",
-    "record": "seconds of MP4 to record (when the game supports HALO_RECORD_SECONDS and ffmpeg is present)",
+    "record": "seconds of MP4 to record from the first frame of play (HALO_RECORD_SECONDS; skipped with "
+              "older builds or without ffmpeg)",
     "address": "this game's loopback address (default 127.0.0.200)",
     "broadcast": "HALO_NET_BROADCAST",
     "delay": "seconds after the first game of a group before this one starts",
@@ -786,6 +787,14 @@ def evaluate(spec, result):
     return ("FAIL" if why else "PASS"), why
 
 
+def find_recordings(folder):
+    """the finished MP4 clips in a recording folder (not the game's .video.mp4 / .part intermediates)"""
+    folder = Path(folder)
+    if not folder.exists():
+        return []
+    return sorted(p for p in folder.rglob("*.mp4") if not p.name.endswith(".video.mp4"))
+
+
 def one_line(name, result):
     d = result.get("debug") or {}
     if result.get("skipped"):
@@ -801,6 +810,10 @@ def one_line(name, result):
                 f"refused {d.get('refusals', '-')} lost {d.get('lost_scripts', '-')}")
     if result.get("shots"):
         bits.append(f"{len(result['shots'])} png")
+    if result.get("recordings"):
+        bits.append(f"{len(result['recordings'])} mp4 ({', '.join(result['recordings'])})")
+    elif result.get("record") and result["record"] != "off":
+        bits.append(f"record: {result['record']}")
     if result.get("why"):
         bits.append("(" + "; ".join(result["why"]) + ")")
     return f"{name}: " + ", ".join(bits)
@@ -1101,6 +1114,10 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
     if spec.get("config_toml"):
         shutil.copy2(expand(spec["config_toml"]), binf / "config.toml")
     env = spec_env(spec, root, save, shots)
+    if spec.get("screenshots") and "HALO_SCREENSHOT_FORMAT" not in env:
+        import record as record_mod
+        if record_mod.binary_names(build["binary"], b"HALO_SCREENSHOT_FORMAT"):
+            env["HALO_SCREENSHOT_FORMAT"] = "png"  # (the game writes PNGs; older builds write BMPs, converted)
     env.update({k: str(v) for k, v in build.get("env", {}).items()})
     rec = None
     if spec.get("record"):
@@ -1222,11 +1239,13 @@ def collect_game(spec, prepared, inner, out, keep_work=False):
         if (root / extra).exists():
             shutil.copy2(root / extra, out / extra)
     pngs = convert_shots(prepared["shots"]) if spec.get("screenshots") else []
+    recordings = find_recordings(out / "video")
     result = {"name": spec["name"], "build": spec.get("build"), "kind": spec_kind(spec),
               "exit_code": inner.get("exit_code"), "timed_out": inner.get("timed_out"),
               "seconds": inner.get("seconds"), "debug_found": bool(found), "debug": parse_debug(text),
               "shots": [str(Path(p).relative_to(out)) for p in pngs], "env": prepared["env"],
-              "record": (prepared.get("record") or {}).get("status")}
+              "record": (prepared.get("record") or {}).get("status"),
+              "recordings": [str(p.relative_to(out)) for p in recordings]}
     status, why = evaluate(spec, result)
     result["status"], result["why"] = status, why
     write_json(out / "result.json", result)

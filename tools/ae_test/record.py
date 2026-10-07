@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""record: an MP4 clip of a headless game (the capture feature, queue item 50).
+"""record: an MP4 clip of a headless game (the game's capture: HALO_RECORD_SECONDS / HALO_RECORD_DIR).
 
-The game records when it supports HALO_RECORD_SECONDS / HALO_RECORD_DIR and ffmpeg is on the
-machine. Until both hold, recording is a clean no-op: the game runs as asked and its result says
-"record: skipped (<why>)". run.py takes --record SECONDS; this tool is run.py with --record set:
+The game records (H.264 + AAC, through ffmpeg) from its first frame of play for the asked seconds;
+give it an exit-after past start + seconds. With an older build (no HALO_RECORD_SECONDS, e.g. stock
+Chupa/OpenCE) or no ffmpeg on the machine, recording is a clean no-op: the game runs as asked and its
+result says "record: skipped (<why>)". The result lists the clips (result.json "recordings", and
+"N mp4" in the summary line). run.py takes --record SECONDS; this tool is run.py with --record set:
 
     python3 tools/ae_test/record.py --build <rev> --map bloodgulch --seconds 20 [--box]
 """
@@ -18,7 +20,12 @@ RECORD_VARIABLE = b"HALO_RECORD_SECONDS"
 
 
 def game_supports_record(binary):
-    """the binary names HALO_RECORD_SECONDS (read in 1 MiB pieces)"""
+    """the binary names HALO_RECORD_SECONDS"""
+    return binary_names(binary, RECORD_VARIABLE)
+
+
+def binary_names(binary, name):
+    """the binary contains this byte string (an environment variable's name; read in 1 MiB pieces)"""
     try:
         with open(binary, "rb") as f:
             tail = b""
@@ -26,9 +33,9 @@ def game_supports_record(binary):
                 piece = f.read(1 << 20)
                 if not piece:
                     return False
-                if RECORD_VARIABLE in tail + piece:
+                if name in tail + piece:
                     return True
-                tail = piece[-len(RECORD_VARIABLE):]
+                tail = piece[-len(name):]
     except OSError:
         return False
 
