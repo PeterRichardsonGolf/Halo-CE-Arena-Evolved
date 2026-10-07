@@ -35,8 +35,7 @@ every name left together); the names flush right a digit's cell before
 them. The soonest is at the foot, a cap (of the text scale) over the
 clock's digits' cap top (or BOTH's time played's), and each line a cap and
 a half over the one under it; with no clock it sits on the clock's
-baseline, but a cap over Halo 1: NHE's own clock where that would meet it
-(MATCH CLOCK off on their maps: cinematic_nhe_clock_bounds); with the clock hidden a moment (NHE's countdown titles) it stays
+baseline; with the clock hidden a moment (NHE's countdown titles) it stays
 where it was. At most four lines: the three soonest and "+N" with more, in
 the time column at half alpha. A line ten seconds from its spawn or nearer
 is drawn at full alpha (as the voice's "ten"). Never made smaller: at the
@@ -1191,29 +1190,6 @@ static real hud_item_timers_draw_column_name(
 	return right - width;
 }
 
-/* a line's name's width ("R/B ROCKETS", as hud_item_timers_draw_column_name
-draws it) */
-static real hud_item_timers_column_name_width(
-	long font_index,
-	struct hud_item_timers_column_line const *line,
-	real scale)
-{
-	wchar_t name[40];
-
-	if (line->red || line->blue)
-	{
-		usnprintf(name, NUMBEROF(name), L"%s %s", line->red && line->blue ? L"R/B" : line->red ? L"R" : L"B",
-			hud_item_timers_base_name(line->timer));
-	}
-	else
-	{
-		usnprintf(name, NUMBEROF(name), L"%s", line->timer->label);
-	}
-	name[NUMBEROF(name) - 1] = 0;
-
-	return hud_item_timers_advance(font_index, name, scale);
-}
-
 /* port: the power column (see this file's head), stacked over the clock in
 the view's bottom right corner: two aligned columns, NAME  TIME, the times
 flush right on the clock's right edge in tabular figures (their colons in
@@ -1288,29 +1264,6 @@ static void hud_item_timers_draw_column(
 		time_width = MAX(time_width, hud_item_timers_tabular_width(font_index, time, scale, &cells));
 	}
 	name_right = right - time_width - cells.digit;
-
-	/* (Halo 1: NHE's maps' own clock, with MATCH CLOCK off, where the column
-	would meet it: the column's foot a cap over its top, as over our
-	clock's; cinematic_nhe_clock_bounds, where the titles' layout put it) */
-	{
-		rectangle2d nhe;
-
-		if (cinematic_nhe_clock_bounds(&render.camera.viewport_bounds, &nhe))
-		{
-			real nhe_x0 = (real)(nhe.x0 - render.camera.viewport_bounds.x0);
-			real nhe_x1 = (real)(nhe.x1 - render.camera.viewport_bounds.x0);
-			real nhe_y0 = (real)(nhe.y0 - render.camera.viewport_bounds.y0);
-			real nhe_y1 = (real)(nhe.y1 - render.camera.viewport_bounds.y0);
-			real names = 0.0f;
-			short rows = (short)(shown + (count > shown ? 1 : 0));
-			real top = lowest - pitch * (real)(rows - 1) - ascent;
-
-			for (line = 0; line < shown; line++)
-				names = MAX(names, hud_item_timers_column_name_width(font_index, &lines[line], scale));
-			if (nhe_x0 < right && nhe_x1 > name_right - names && nhe_y0 < lowest + 2.0f && nhe_y1 > top)
-				lowest = nhe_y0 - HUD_ITEM_TIMERS_COLUMN_GAP * cap;
-		}
-	}
 	x0 = right - time_width;
 	y0 = lowest;
 

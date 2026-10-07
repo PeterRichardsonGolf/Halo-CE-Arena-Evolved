@@ -46,6 +46,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   power items" in ten / are up, "and", "in ten" and "powerup is up".
 
 ### Changed
+- Halo 1: NHE's maps: their own on-screen clock (their scripts' titles) is
+  never drawn now. Arena Evolved's MATCH CLOCK takes its place, laid out as
+  on any map with the power column over it, and MATCH CLOCK OFF shows no
+  clock (it used to leave NHE's, which sat where the power column goes in
+  split screen). Their Cortana talking timer, its beeps and their 3-2-1
+  countdown stay.
 - Split screen: every view has its own safe area, 7.5% of its own height in
   from its top and foot and 7.5% of its own width in from its sides (the
   share the title-safe frame takes of one view), and the camera aims through
