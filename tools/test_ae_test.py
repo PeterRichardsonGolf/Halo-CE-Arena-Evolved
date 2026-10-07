@@ -476,9 +476,48 @@ class BuildRemove(unittest.TestCase):
             (Path(d) / "623d8f2223fe").symlink_to(Path.home())  # (a link out of builds_dir is refused)
             with self.assertRaises(SystemExit):
                 harness.removable_build(cfg, "623d8f2223fe")
+            (Path(d) / "aaaaaaaaaaaa").mkdir()                    # (a sha-named link to a sibling build too)
+            (Path(d) / "bbbbbbbbbbbb").symlink_to(Path(d) / "aaaaaaaaaaaa")
+            with self.assertRaises(SystemExit):
+                harness.removable_build(cfg, "bbbbbbbbbbbb")
+            self.assertEqual(harness.removable_build(cfg, "aaaaaaaaaaaa"), Path(d).resolve() / "aaaaaaaaaaaa")
 
 
 class Slots(unittest.TestCase):
+    def setUp(self):
+        self.lockdir = tempfile.TemporaryDirectory(dir=Path.home())
+        self.saved = os.environ.get(harness.LOCK_DIR_ENV)
+        os.environ[harness.LOCK_DIR_ENV] = self.lockdir.name
+        self.reg = Path(self.lockdir.name) / "slots"
+
+    def tearDown(self):
+        if self.saved is None:
+            os.environ.pop(harness.LOCK_DIR_ENV, None)
+        else:
+            os.environ[harness.LOCK_DIR_ENV] = self.saved
+        self.lockdir.cleanup()
+
+    def test_lock_is_host_wide(self):
+        os.environ.pop(harness.LOCK_DIR_ENV, None)
+        self.assertEqual(harness.slots_dir(), Path.home() / ".cache" / "ae_test")
+        a = harness.GameSlots(dict(harness.DEFAULTS, work_dir="~/w1"), 1, shared_network=False)
+        b = harness.GameSlots(dict(harness.DEFAULTS, work_dir="~/w2"), 1, shared_network=False)
+        self.assertEqual(a.dir, b.dir)  # (different configs, one registry)
+
+    def test_orphaned_game_counts(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            cfg = dict(harness.DEFAULTS, work_dir=d, max_games_total=1)
+            orphan = [(5, "/x/halo", d + "/dead-run/case/bin")]  # (its harness died: no slot file)
+            orig = harness.list_halo_processes
+            harness.list_halo_processes = lambda: orphan
+            try:
+                self.assertFalse(harness.GameSlots(cfg, 3, shared_network=False).try_acquire(1)[0])
+                self.assertFalse(harness.GameSlots(cfg, 3, shared_network=True).try_acquire(1)[0])
+                harness.list_halo_processes = lambda: []
+                self.assertTrue(harness.GameSlots(cfg, 3, shared_network=True).try_acquire(1)[0])
+            finally:
+                harness.list_halo_processes = orig
+
     def test_registry_counts_other_processes(self):
         with tempfile.TemporaryDirectory(dir=Path.home()) as d:
             cfg = dict(harness.DEFAULTS, work_dir=d, max_games_total=2)
@@ -488,17 +527,17 @@ class Slots(unittest.TestCase):
                 a = harness.GameSlots(cfg, 3, shared_network=False)
                 self.assertTrue(a.try_acquire(1)[0])
                 # another harness process holding a slot (a live pid that is not ours: our parent)
-                (Path(d) / ".slots" / f"{os.getppid()}-1").write_text("x")
+                (self.reg / f"{os.getppid()}-1").write_text("x")
                 self.assertFalse(a.try_acquire(1)[0])
                 a.release(1)
                 self.assertTrue(a.try_acquire(1)[0])
                 # a stale slot (dead pid) is removed and does not count
-                (Path(d) / ".slots" / f"{os.getppid()}-1").unlink()
-                (Path(d) / ".slots" / "999999999-1").write_text("x")
+                (self.reg / f"{os.getppid()}-1").unlink()
+                (self.reg / "999999999-1").write_text("x")
                 self.assertTrue(a.try_acquire(1)[0])
-                self.assertFalse((Path(d) / ".slots" / "999999999-1").exists())
+                self.assertFalse((self.reg / "999999999-1").exists())
                 a.release(2)
-                self.assertEqual(list((Path(d) / ".slots").iterdir()), [])
+                self.assertEqual(list(self.reg.iterdir()), [])
             finally:
                 harness.list_halo_processes = orig
 

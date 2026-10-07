@@ -263,14 +263,25 @@ def pid_alive(pid):
         return True
 
 
+LOCK_DIR_ENV = "AE_TEST_LOCK_DIR"
+
+
+def slots_dir():
+    """the host-wide slot registry and lock, the same for every harness and config of this user
+    (~/.cache/ae_test; $AE_TEST_LOCK_DIR only for tests)"""
+    return Path(os.environ.get(LOCK_DIR_ENV) or "~/.cache/ae_test").expanduser()
+
+
 class GameSlots:
     """at most max_games_total games on this machine (all helpers), and at most `parallel` from this tool.
 
-    Every harness process on the machine registers its games as files in <work_dir>/.slots
-    (<pid>-<n>), checked and written under one lock file (fcntl.flock), so two tools cannot both
-    take the last slot. Games of other scripts count by their halo processes outside work_dir.
+    Every harness process on the machine registers its games as files in slots_dir()/slots
+    (<pid>-<n>), checked and written under one host-wide lock file (fcntl.flock), so two tools cannot
+    both take the last slot, whatever their configs. Games of other scripts count by their halo
+    processes outside work_dir, and a game left running under work_dir by a harness that died still
+    counts (the halo processes there that are not this tool's, if more than the registered slots).
     Without network namespaces all games share the machine's network: then there is one slot for
-    the whole machine (a handshake pair takes it as one)."""
+    the whole machine, taken only while no halo process at all runs (a handshake pair takes it as one)."""
 
     def __init__(self, cfg, parallel, shared_network=None):
         self.cfg = cfg
@@ -278,7 +289,7 @@ class GameSlots:
         self.parallel = 1 if self.shared_network else parallel
         self.lock = threading.Lock()
         self.mine = 0
-        self.dir = expand(cfg["work_dir"]) / ".slots"
+        self.dir = slots_dir() / "slots"
         self.files = []
 
     def _registered(self):
@@ -297,21 +308,25 @@ class GameSlots:
                 f.unlink(missing_ok=True)
         return n
 
-    def _outside(self):
-        """games of other scripts: halo processes outside the harness's work folder"""
+    def _others(self, procs):
+        """games that are not this tool's: other harnesses' (registered, or left running by a harness that
+        died: halo processes under work_dir that are not ours) and other scripts' (outside work_dir)"""
         work = expand(self.cfg["work_dir"])
-        return len([p for p in list_halo_processes() if not under(p[2], work)])
+        outside = [p for p in procs if not under(p[2], work)]
+        inside_not_mine = [p for p in procs if under(p[2], work) and not any(under(p[2], o) for o in OWN_WORK)]
+        return max(self._registered(), len(inside_not_mine)) + len(outside)
 
     def try_acquire(self, games=1):
         """take the slots now if they are free: (True, None) or (False, why)"""
         import fcntl
         self.dir.mkdir(parents=True, exist_ok=True)
-        with self.lock, open(self.dir.parent / ".slots.lock", "w") as lk:
+        with self.lock, open(self.dir.parent / "slots.lock", "w") as lk:
             fcntl.flock(lk, fcntl.LOCK_EX)
-            others = self._registered() + self._outside()
+            procs = list_halo_processes()
+            others = self._others(procs)
             limit = 1 if self.shared_network else int(self.cfg.get("max_games_total", 4))
-            if self.shared_network:
-                ok = others == 0 and self.mine == 0
+            if self.shared_network:  # (any halo process at all, ours or not, orphaned or not: wait)
+                ok = not procs and others == 0 and self.mine == 0
             else:
                 ok = self.mine + games <= max(self.parallel, games) and \
                     others + self.mine + games <= max(limit, games)
@@ -427,7 +442,10 @@ def removable_build(cfg, sha):
     if not re.fullmatch(r"[0-9a-f]{12,40}", sha or ""):
         raise SystemExit(f"ae_test build: --remove takes a commit's 12-40 hex digit sha, not {sha!r}")
     builds = expand(cfg["builds_dir"]).resolve()
-    target = (builds / sha[:12]).resolve()
+    candidate = builds / sha[:12]
+    if candidate.is_symlink():  # (never follow a link: it could name another build or anything else)
+        raise SystemExit(f"ae_test build: {candidate} is a symbolic link; not removed")
+    target = candidate.resolve()
     if target.parent != builds:
         raise SystemExit(f"ae_test build: {target} is not in {builds}")
     return target
