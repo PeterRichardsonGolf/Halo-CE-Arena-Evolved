@@ -30,6 +30,11 @@ int main(void)
 	CHECK(held[0] && !held[1]);
 	ae_input_key_directions(AE_KEY_SHIFT | AE_KEY_Q, held);
 	CHECK(!held[0] && !held[1]);
+	/* the keypad's arrows (Num Lock off) are the arrows */
+	ae_input_key_directions(AE_KEY_UP | AE_KEY_RIGHT, held);
+	CHECK(held[0] && !held[1] && !held[2] && held[3]);
+	ae_input_key_directions(AE_KEY_DOWN | AE_KEY_LEFT, held);
+	CHECK(!held[0] && held[1] && held[2] && !held[3]);
 
 	/* key presses (not holds) are actions; mouse button 4 is BACK */
 	CHECK(ae_input_key_actions(AE_KEY_Q, 0, 0, actions, 8) == 1 && actions[0] == AE_ACTION_TAB_PREVIOUS);

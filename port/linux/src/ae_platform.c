@@ -14,10 +14,49 @@ pure, so the unit tests build it.)
 #include "sdl_platform.h"
 #include "ae_platform.h"
 
+#ifndef HALO_SERVER
+#include <SDL3/SDL_keyboard.h>
+#endif
+
 #ifdef HALO_GAME_BROWSER
 /* (xinput_sdl.c, with the game browser; the dedicated server has its own) */
 int platform_input_scheme(void);
 #endif
+
+/* whether Num Lock is on (the dedicated server has no keyboard: on, so the keypad is digits) */
+static int num_lock(void)
+{
+#ifdef HALO_SERVER
+	return 1;
+#else
+	return (SDL_GetModState() & SDL_KMOD_NUM) != 0;
+#endif
+}
+
+/* the numeric keypad's keys as AE's, with Num Lock off (SDL scancodes are where the keys are: KP_9 is the keypad's
+Page Up whether or not Num Lock makes it a 9) */
+static int keypad_keys(
+	unsigned char const *keys,
+	int numbers)
+{
+	int result = 0;
+
+	if (numbers)
+		return 0;
+	if (keys[SDL_SCANCODE_KP_9])
+		result |= AE_KEY_PAGE_UP;
+	if (keys[SDL_SCANCODE_KP_3])
+		result |= AE_KEY_PAGE_DOWN;
+	if (keys[SDL_SCANCODE_KP_8])
+		result |= AE_KEY_UP;
+	if (keys[SDL_SCANCODE_KP_2])
+		result |= AE_KEY_DOWN;
+	if (keys[SDL_SCANCODE_KP_4])
+		result |= AE_KEY_LEFT;
+	if (keys[SDL_SCANCODE_KP_6])
+		result |= AE_KEY_RIGHT;
+	return result;
+}
 
 int ae_platform_keys(void)
 {
@@ -39,7 +78,7 @@ int ae_platform_keys(void)
 		keys |= AE_KEY_TAB;
 	if (input.keys[SDL_SCANCODE_LSHIFT] || input.keys[SDL_SCANCODE_RSHIFT])
 		keys |= AE_KEY_SHIFT;
-	return keys;
+	return keys | keypad_keys(input.keys, num_lock());
 }
 
 int ae_platform_input_scheme(void)

@@ -30,7 +30,8 @@ single-player controllers; negative: none). A controller no player has is AE_PLA
 any controller (the menus before anyone is bound), when controller c is player c. */
 short ae_input_player_of_controller(short controller, short const bindings[AE_MAXIMUM_PLAYERS]);
 
-/* AE's own keys (ae_platform.h AE_KEY_*) as directions held, up, down, left, right: Tab steps down, Shift+Tab up */
+/* AE's own keys (ae_platform.h AE_KEY_*) as directions held, up, down, left, right: Tab steps down, Shift+Tab up;
+the keypad's arrows (Num Lock off) as the arrows */
 void ae_input_key_directions(int keys, int held[4]);
 /* the actions of the keys pressed since previous (Q, E: tabs; Page Up, Page Down) and of mouse button 4's presses
 (BACK); the count written, at most maximum */

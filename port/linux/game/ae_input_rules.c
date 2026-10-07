@@ -24,10 +24,10 @@ void ae_input_key_directions(int keys, int held[4])
 	int tab = (keys & AE_KEY_TAB) != 0;
 	int shift = (keys & AE_KEY_SHIFT) != 0;
 
-	held[0] = tab && shift;
-	held[1] = tab && !shift;
-	held[2] = 0;
-	held[3] = 0;
+	held[0] = (tab && shift) || (keys & AE_KEY_UP) != 0;
+	held[1] = (tab && !shift) || (keys & AE_KEY_DOWN) != 0;
+	held[2] = (keys & AE_KEY_LEFT) != 0;
+	held[3] = (keys & AE_KEY_RIGHT) != 0;
 }
 
 int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char actions[], int maximum)
