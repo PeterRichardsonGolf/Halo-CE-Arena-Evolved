@@ -1108,7 +1108,12 @@ enum
 	MAP_KIND_MULTIPLAYER,
 	MAP_KIND_CUSTOM_SINGLEPLAYER,
 	MAP_KIND_CUSTOM_MULTIPLAYER,
-	NUMBER_OF_MAP_KINDS
+	NUMBER_OF_MAP_KINDS,
+	/* port (Arena Evolved): the kinds its chooser offers, SINGLEPLAYER and
+	MULTIPLAYER (tools/port_settings.py): its Custom Edition maps are
+	ChupathingyCE's, with the multiplayer maps; OpenCE's custom kinds, whose
+	loader is not built, would list none */
+	MAP_KINDS_CHOSEN = MAP_KIND_CUSTOM_SINGLEPLAYER
 };
 
 /* the rows after the chooser */
@@ -1133,13 +1138,13 @@ static short map_kind_shown(struct widget_instance *list, boolean singleplayer, 
 
 	if (!spinner)
 		return singleplayer ? MAP_KIND_SINGLEPLAYER : MAP_KIND_MULTIPLAYER;
-	kind = (short)PIN(spinner->parameters.list.selected_index, 0, NUMBER_OF_MAP_KINDS - 1);
+	kind = (short)PIN(spinner->parameters.list.selected_index, 0, MAP_KINDS_CHOSEN - 1);
 	if (!singleplayer && map_kind_singleplayer(kind))
 	{
-		short step = kind == (previous + NUMBER_OF_MAP_KINDS - 1) % NUMBER_OF_MAP_KINDS ? -1 : 1;
+		short step = kind == (previous + MAP_KINDS_CHOSEN - 1) % MAP_KINDS_CHOSEN ? -1 : 1;
 
 		do
-			kind = (short)((kind + step + NUMBER_OF_MAP_KINDS) % NUMBER_OF_MAP_KINDS);
+			kind = (short)((kind + step + MAP_KINDS_CHOSEN) % MAP_KINDS_CHOSEN);
 		while (map_kind_singleplayer(kind));
 		spinner->parameters.list.selected_index = kind;
 	}
