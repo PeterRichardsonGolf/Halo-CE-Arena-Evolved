@@ -699,18 +699,22 @@ class Load(unittest.TestCase):
             self.assertIn("GB free", harness.low_disk(dict(cfg, min_free_gb=1e9)))
 
     def test_parallel(self):
-        # (stub the namespace check: CI runners may have no network namespaces)
-        saved = harness.netns_ok
+        # (stub the namespace and private /tmp checks: CI runners may have neither)
+        saved = harness.netns_ok, harness.private_tmp_ok
         try:
             harness.netns_ok = lambda: True
+            harness.private_tmp_ok = lambda: True
             cfg = dict(harness.DEFAULTS, _slow=True)
             self.assertEqual(harness.resolve_parallel(cfg, "3"), 1)
             cfg["_slow"] = False
             self.assertEqual(harness.resolve_parallel(cfg, "2"), 2)
+            harness.private_tmp_ok = lambda: False
+            self.assertEqual(harness.resolve_parallel(cfg, "2"), 1)
+            harness.private_tmp_ok = lambda: True
             harness.netns_ok = lambda: False
             self.assertEqual(harness.resolve_parallel(cfg, "2"), 1)
         finally:
-            harness.netns_ok = saved
+            harness.netns_ok, harness.private_tmp_ok = saved
 
     def test_targets(self):
         self.assertEqual(harness.expand_targets(["all"]), ["linux64", "linux", "server", "server-x64"])
