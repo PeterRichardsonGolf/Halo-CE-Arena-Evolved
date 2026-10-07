@@ -62,6 +62,9 @@ int main(void)
 	CHECK(ae_ui_top()->focus == 1);
 	e = ev(3, AE_ACTION_BACK); ae_ui_dispatch(&e);
 	CHECK(ae_ui_depth() == 2);
+	CHECK(entered == 4 && left == 2);                       /* every push entered, every pop left */
+	drawn = 0; ae_ui_draw();
+	CHECK(drawn == 2);                                      /* both screens on the stack draw */
 	/* stack limit */
 	ae_ui_reset();
 	{ int i, ok = 1; for (i = 0; i < AE_MAXIMUM_SCREENS; i++) ok &= ae_ui_push(&plain, 0, NULL); CHECK(ok); }
@@ -116,7 +119,6 @@ int main(void)
 	CHECK(ae_repeat_update(&r, 1, 300) == 1);
 	CHECK(ae_repeat_update(&r, 1, 379) == 0);
 	CHECK(ae_repeat_update(&r, 1, 380) == 1);
-	(void)drawn;
 	if (failures) return 1;
 	printf("ae_ui: ok\n");
 	return 0;

@@ -37,19 +37,19 @@ enum ae_device ae_ui_last_device(void)
 	return last_device;
 }
 
-int ae_ui_push(struct ae_screen_class const *class, short owner, void *data)
+int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *data)
 {
 	struct ae_screen *screen;
 
-	if (!class || depth >= AE_MAXIMUM_SCREENS)
+	if (!screen_class || depth >= AE_MAXIMUM_SCREENS)
 		return 0;
 	screen = &stack[depth++];
-	screen->class = class;
+	screen->screen_class = screen_class;
 	screen->owner = owner;
 	screen->focus = 0;
 	screen->data = data;
-	if (class->enter)
-		class->enter(screen);
+	if (screen_class->enter)
+		screen_class->enter(screen);
 	return 1;
 }
 
@@ -59,8 +59,8 @@ void ae_ui_pop(void)
 
 	if (!screen)
 		return;
-	if (screen->class->leave)
-		screen->class->leave(screen);
+	if (screen->screen_class->leave)
+		screen->screen_class->leave(screen);
 	depth--;
 }
 
@@ -72,11 +72,11 @@ void ae_ui_dispatch(struct ae_event const *event)
 	if (!screen || !event)
 		return;
 	owned = screen->owner == AE_OWNER_ANY || screen->owner == event->player;
-	if (!owned && !(event->action == AE_ACTION_START && screen->class->start_from_anyone))
+	if (!owned && !(event->action == AE_ACTION_START && screen->screen_class->start_from_anyone))
 		return;
 	/* only input that reaches a screen picks the prompts' glyphs */
 	last_device = (enum ae_device)event->device;
-	if (screen->class->handle && screen->class->handle(screen, event))
+	if (screen->screen_class->handle && screen->screen_class->handle(screen, event))
 		return;
 	/* pop only the screen that saw the BACK (handle may have changed the stack) */
 	if (event->action == AE_ACTION_BACK && owned && ae_ui_top() == screen)
@@ -88,8 +88,8 @@ void ae_ui_draw(void)
 	int index;
 
 	for (index = 0; index < depth; index++)
-		if (stack[index].class->draw)
-			stack[index].class->draw(&stack[index]);
+		if (stack[index].screen_class->draw)
+			stack[index].screen_class->draw(&stack[index]);
 }
 
 int ae_repeat_update(struct ae_repeat *repeat, int held, unsigned long now_ms)

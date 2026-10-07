@@ -40,12 +40,12 @@ struct ae_screen_class
 	/* nonzero: START from a player who doesn't own the screen still reaches handle (lobbies: join / your settings) */
 	int start_from_anyone;
 };
-struct ae_screen { struct ae_screen_class const *class; short owner; short focus; void *data; };
+struct ae_screen { struct ae_screen_class const *screen_class; short owner; short focus; void *data; };
 
 /* empties the stack (no leave calls) and forgets the last device */
 void ae_ui_reset(void);
 /* pushes a screen (focus 0) and calls its enter; 0 when the stack is full */
-int ae_ui_push(struct ae_screen_class const *class, short owner, void *data);
+int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *data);
 /* calls the top screen's leave and removes it */
 void ae_ui_pop(void);
 struct ae_screen *ae_ui_top(void);

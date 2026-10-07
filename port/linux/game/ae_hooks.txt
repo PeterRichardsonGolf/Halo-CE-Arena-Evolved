@@ -1,0 +1,7 @@
+# path<TAB>exact text of the hook line (one per AE hook in an upstream file; notes/ae-hooks.md says where each goes)
+# tools/test_ae_hooks.py checks every line is present, and every line marked AE hook upstream is listed here.
+port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean,
+source/interface/ui_widget.c	#include "ae_hooks.h" /* AE hook */
+source/interface/ui_widget.c	if (ae_ui_process()) /* AE hook */
+source/interface/ui_widget.c	ae_ui_render(local_player_index, window_bounds); /* AE hook */
+source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */
