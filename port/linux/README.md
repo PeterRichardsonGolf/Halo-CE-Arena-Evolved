@@ -164,7 +164,8 @@ gamepads' only.
 | pause menu | escape |
 
 Always: \` opens the developer console, F12 releases or captures the mouse,
-F11 changes between fullscreen and window.
+F11 changes between fullscreen and window, F9 takes a screenshot and F10
+starts or stops a recording (refer to "Screenshots and recordings").
 
 One movement of the mouse wheel changes the weapon one time. A second
 movement after a short pause changes it again.
@@ -184,6 +185,40 @@ The keyboard also operates the menus, with keys of its own: the arrow keys
 (and W, A, S, D) move, space or enter selects, escape or backspace goes
 back (escape resumes the game from the pause menu), delete deletes. When the game continues, the mouse aims again. A mouse button that you hold from the menu does not fire until
 you push it again.
+
+## Screenshots and recordings
+
+F9 saves the whole picture (every split-screen view, the HUD and the menus)
+as a PNG file in `screenshots/` next to `config.toml`, named by the date,
+the time and the map (`2026-10-07_21-05-12_bloodgulch.png`). "SCREENSHOT
+SAVED" shows at the top right for a moment.
+
+F10 starts a recording and F10 again stops it: a video with the game's
+sound, `recordings/<date>_<time>_<map>.mp4` next to `config.toml`
+(`capture.record_directory`). A red dot shows at the top right while
+recording (`capture.record_indicator`); the dot is never in the video.
+Recordings need [ffmpeg](https://ffmpeg.org), which the game does not ship:
+put `ffmpeg` (`ffmpeg.exe` on Windows) next to the game or on the `PATH`,
+or set `capture.ffmpeg_path`. Without it, F10 shows "RECORDING NEEDS
+FFMPEG" and does nothing else.
+
+- The video has a fixed frame rate (`capture.record_fps`, 60 or 30) and
+  plays at the real speed: a frame that the game draws slower than that
+  is repeated, and frames that it draws faster are left out.
+- The picture is the game's own resolution (the window's, or 640x480 with
+  `display.resolution_scaling = "original"`). If the window changes size
+  during a recording, the middle of the picture at the first size is kept.
+- The video is H.264 (`capture.record_quality`: CRF 28, 23 or 18) and the
+  sound AAC, from what you hear (after the volumes). The game writes the
+  picture and the sound into two files beside the video while it records,
+  and puts them together when the recording stops ("RECORDING SAVED"). A
+  recording that is still being saved when the game closes is finished
+  first.
+- The game never waits for ffmpeg: if ffmpeg falls behind, frames are left
+  out (the log counts them), and the video keeps to real time.
+
+`debug.record_seconds` (`HALO_RECORD_SECONDS`) records that many seconds
+from the first frame of play (a map other than the main menu's), for tests.
 
 ## Menus
 
@@ -321,6 +356,11 @@ the setting for one start of the game. It has priority over the file.
 | `audio.buffer_frames` | `2048` on macOS, `512` elsewhere | `HALO_AUDIO_BUFFER_FRAMES` | The audio device's buffer, in sample frames at 48 kHz, from `64` to `8192`. Larger rides out stalls that would cut the sound out; smaller has less delay (512 is 11 ms, 2048 is 43 ms). |
 | `audio.reverb` | `true` | `HALO_REVERB` | `true`: the sounds of the world reverberate as the place the player is in does: the sound environments of the maps (a corridor, a cave, a large hall, outdoors) set the reverberation, as the I3DL2 reverb of the Xbox did. A sound behind a wall or a door is muffled in it too. `false`: no reverberation (sounds behind a wall are still muffled). |
 | `audio.resampling` | `"sinc"` | `HALO_AUDIO_RESAMPLING` | How the sounds, most of them recorded at 22 kHz, are brought to the output's 48 kHz. `"sinc"`: a windowed sinc low pass keeps each sound's band (flat to about 9 kHz for a 22 kHz sound) and nothing above it. `"linear"`: linear interpolation, as before OpenCE's build 130: the top of each sound's band is duller (-4 dB at 8 kHz) and images of the band reach up to 22 kHz, a brighter, grainier sound. |
+| `capture.ffmpeg_path` | `""` | `HALO_FFMPEG` | The ffmpeg program for recordings. Empty: `ffmpeg` next to the game, else on the `PATH`. Refer to "Screenshots and recordings". |
+| `capture.record_fps` | `60` | `HALO_RECORD_FPS` | The frames a second of a recording, `60` or `30`. |
+| `capture.record_quality` | `"medium"` | `HALO_RECORD_QUALITY` | The quality and size of a recording: `"low"`, `"medium"` or `"high"` (H.264 at CRF 28, 23 or 18). |
+| `capture.record_indicator` | `true` | `HALO_RECORD_INDICATOR` | `true`: a red dot at the top right while recording. It is never in the recording. |
+| `capture.record_directory` | `""` | `HALO_RECORD_DIR` | The folder for recordings. Empty: `recordings/` next to `config.toml`. |
 | `input.mouse_sensitivity` | `1.0` | `HALO_MOUSE_SENSITIVITY` | The multiplier for the mouse aim. |
 | `input.mouse_vertical_sensitivity` | `0.0` | `HALO_MOUSE_VERTICAL_SENSITIVITY` | The multiplier for the vertical mouse aim. `0`: the same as `input.mouse_sensitivity`. |
 | `input.invert_mouse` | `false` | `HALO_MOUSE_INVERT=1` sets `true` | `true`: the vertical mouse aim is inverted. |
@@ -362,7 +402,8 @@ the setting for one start of the game. It has priority over the file.
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
 | `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds. `0`: never. |
-| `debug.screenshot_directory`, `debug.screenshot_every` | `""`, `0` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY` | The game writes each Nth frame to this folder as a BMP file. |
+| `debug.screenshot_directory`, `debug.screenshot_every`, `debug.screenshot_format` | `""`, `0`, `"bmp"` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY`, `HALO_SCREENSHOT_FORMAT` | The game writes each Nth frame to this folder as a BMP file, or a PNG file with `"png"`. |
+| `debug.record_seconds` | `0.0` | `HALO_RECORD_SECONDS` | Record this number of seconds (as F10 does) from the first frame of play, a map other than the main menu's, one time. `0`: never. |
 | `debug.hidden_window`, `debug.null_renderer` | `false` | `HALO_HIDDEN_WINDOW`, `HALO_NULL_RENDERER` | `true`: no visible window, or no graphics. |
 | `debug.gpu_stats`, `debug.gpu_trace_frame`, `debug.gpu_trace_constants`, `debug.gpu_dump_shaders`, `debug.texture_dump_directory`, `debug.texture_log`, `debug.gl_debug`, `debug.texture_no_cache` | off | `HALO_GPU_STATS`, `HALO_GPU_TRACE`, `HALO_GPU_TRACE_CONSTANTS`, `HALO_GPU_DUMP_SHADERS`, `HALO_TEXTURE_DUMP`, `HALO_TEXTURE_LOG`, `HALO_GL_DEBUG`, `HALO_TEXTURE_NO_CACHE` | Tools to find problems in the graphics: counts for each frame, all the GL state of one frame, the GLSL code, the textures. |
 | `debug.menu_open` | `""` | `HALO_MENU_OPEN` | Start on this screen of the menus (`main_menu/settings_select/...`, as `port/assets/menus` names it), a player profile being edited, to look at it. |
