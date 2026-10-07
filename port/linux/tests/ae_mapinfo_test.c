@@ -133,6 +133,20 @@ static void check_synthetic(void)
 	CHECK(info.spawns[1] == 5 && info.spawns[2] == 6 && info.spawns[3] == 5 && info.spawns[4] == 5 && info.spawns[5] == 5);
 	CHECK(info.hills == 1 && info.race_checkpoints == 1 && info.equipment == 2 && info.vehicles == 1 && info.bsps == 1);
 	CHECK(near(info.play_extent, 67.08f));                 /* x 0..60, y -10..20 */
+	/* NaN, infinite and far-off positions are left out of the spread: it stays finite, as it was */
+	{
+		union { unsigned int u; float f; } nan_bits, inf_bits;
+
+		nan_bits.u = 0x7FC00000u;
+		inf_bits.u = 0x7F800000u;
+		memcpy(bad, map, CE_SIZE);
+		putf(bad + HEADER + 0x1000 + 0 * 0x34, nan_bits.f);
+		putf(bad + HEADER + 0x1000 + 1 * 0x34 + 4, inf_bits.f);
+		putf(bad + HEADER + 0x1000 + 2 * 0x34, 1.0e30f);
+		CHECK(parse(bad, CE_SIZE, &info) == AE_MAPINFO_OK);
+		/* (the equipment at x 0 and 60 and the flags keep the spread: 67.08, finite) */
+		CHECK(isfinite(info.play_extent) && near(info.play_extent, 67.08f));
+	}
 	/* both teams' flags and two checkpoints: every mode */
 	ce_map(map, 609, "scnr", 1);
 	CHECK(parse(map, CE_SIZE, &info) == AE_MAPINFO_OK && info.modes == 31 && info.race_checkpoints == 2);
@@ -230,6 +244,40 @@ static void check_xbox(void)
 	}
 	memset(map + HEADER + 2, 0xFF, 64);
 	CHECK(parse(map, HEADER + packed, &info) == AE_MAPINFO_UNREADABLE);
+	/* a tiny file whose header claims the most tag data the engine takes, or a longer stream than it takes: refused
+	(before anything that size is allocated) */
+	header(map, 5, HEADER + 0x1700000, 0x1700000, "01.10.12.2276");
+	CHECK(parse(map, HEADER + 64, &info) == AE_MAPINFO_UNREADABLE);
+	header(map, 5, 0x11600000UL + 1, TAGS, "01.10.12.2276");
+	CHECK(parse(map, HEADER + 64, &info) == AE_MAPINFO_UNREADABLE);
+	header(map, 5, HEADER + 0x1700001, 0x1700001, "01.10.12.2276");
+	CHECK(parse(map, HEADER + 64, &info) == AE_MAPINFO_UNREADABLE);
+	header(map, 5, HEADER, TAGS, "01.10.12.2276");                 /* tag data past the stream's length */
+	CHECK(parse(map, HEADER + 64, &info) == AE_MAPINFO_UNREADABLE);
+	/* tag data near the end of the longest stream: refused when the stream runs out */
+	scenario(tags, XBOX_BASE, 0x24, "scnr", 1);
+	packed = TAGS + 4096 - 16;
+	CHECK(compress2(map + HEADER, &packed, tags, TAGS, 6) == Z_OK);
+	header(map, 5, 0x11600000UL, TAGS, "01.10.12.2276");
+	put32(map + 0x10, 0x11600000UL - TAGS);
+	CHECK(parse(map, HEADER + packed, &info) == AE_MAPINFO_UNREADABLE);
+	/* random bytes in the header and the stream: whatever the result, no read out of bounds (the sanitizers) */
+	{
+		static unsigned char good[HEADER + TAGS + 4096], bad[HEADER + TAGS + 4096];
+		int i, k, n;
+
+		header(good, 5, HEADER + TAGS, TAGS, "01.10.12.2276");
+		memcpy(good + HEADER, map + HEADER, packed);
+		srand(4321);
+		for (i = 0; i < 4000; i++)
+		{
+			memcpy(bad, good, HEADER + packed);
+			n = 1 + rand() % 8;
+			for (k = 0; k < n; k++)
+				bad[i % 4 ? HEADER + (unsigned long)rand() % packed : (unsigned long)rand() % 0x80] = (unsigned char)rand();
+			parse(bad, HEADER + packed, &info);
+		}
+	}
 }
 
 /* ae_mapinfo_read: a file, an empty file, a missing one */
@@ -278,7 +326,7 @@ static int check_real_maps(void)
 		return 0;
 	while (fgets(line, sizeof(line), fixture))
 	{
-		char file[128], modes[8];
+		char file[128], modes[8] = { 0 };
 		int family, spawns[5], hills, race, equipment, vehicles, bsps, protected_map, mode_bits = 0, i;
 		float extent;
 		struct ae_mapinfo info;
@@ -286,7 +334,7 @@ static int check_real_maps(void)
 
 		if (line[0] == '#' || sscanf(line, "%127s %d %7s %d %d %d %d %d %d %d %d %d %d %f %d", file, &family, modes,
 			&spawns[0], &spawns[1], &spawns[2], &spawns[3], &spawns[4], &hills, &race, &equipment, &vehicles, &bsps,
-			&extent, &protected_map) != 15)
+			&extent, &protected_map) != 15 || strlen(modes) != 5)
 		{
 			continue;
 		}

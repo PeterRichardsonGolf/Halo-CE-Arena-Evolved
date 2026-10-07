@@ -30,6 +30,9 @@ UNITS = {
 }
 # a test's exit code for "nothing to check here" (the real maps missing): pytest.skip
 SKIPPED = 77
+# a build failing only for what this machine lacks (zlib's headers, the sanitizers' runtimes): pytest.skip
+MISSING = ("zlib.h: No such file", "cannot find -lz", "cannot find -lasan", "cannot find -lubsan",
+           "libasan", "libubsan", "libclang_rt.asan", "libclang_rt.ubsan")
 
 
 def compiler():
@@ -52,6 +55,8 @@ def test_unit(test, tmp_path):
     build = subprocess.run([cc, "-std=c99", "-Wall", "-Wextra", "-Werror", "-O1", *flags,
                             f"-I{UI}", str(TESTS / test), *map(str, sources), *libraries, "-lm", "-o", str(binary)],
                            capture_output=True, text=True)
+    if build.returncode != 0 and any(missing in build.stderr for missing in MISSING):
+        pytest.skip("this machine lacks what the test builds with: " + build.stderr.strip().splitlines()[-1])
     assert build.returncode == 0, build.stdout + build.stderr
     run = subprocess.run([str(binary)], capture_output=True, text=True, cwd=ROOT,
                          env=dict(os.environ, AE_TEST_SCRATCH=str(tmp_path)))

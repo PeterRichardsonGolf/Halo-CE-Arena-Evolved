@@ -37,6 +37,10 @@ that play; they are not the rule here.
 Every pointer and count is checked against what was read before it is used
 (as ce_map_checks.c does): a map cut short, a pointer out of range or a
 count past the tag data makes it unreadable, never a read past the buffer.
+On valid maps this reader and mapmeta.py agree; on corrupt ones it is the
+stricter: a negative or huge block count makes the map unreadable (mapmeta.py
+takes it as empty), and NaN, infinite or far-off positions (beyond 10^6
+units) are left out of the play area's spread.
 */
 
 #include <math.h>
@@ -64,9 +68,11 @@ enum
 	XBOX_TAG_HEADER_SIZE = 0x24,
 	CE_TAG_HEADER_SIZE = 0x28,
 	TAG_INSTANCE_SIZE = 0x20,
-	/* (more than any map's tag data, which is a few MB; a corrupt size is refused) */
-	MAXIMUM_TAG_DATA = 64 * 1024 * 1024,
-	MAXIMUM_DECOMPRESSED = 512 * 1024 * 1024,
+	/* the engine's own limits: no map with more tag data than its tag cache holds can be played
+	(CE_TAG_CACHE_SIZE, cache_files.c; the Xbox's TAG_CACHE_SIZE, physical_memory_map.h, is smaller), nor one larger
+	than its largest cache file (SOLO_CACHE_FILE_MAXIMUM_SIZE, cache_files_windows.c) */
+	MAXIMUM_TAG_DATA = 0x1700000,
+	MAXIMUM_DECOMPRESSED = 0x11600000,
 	MAXIMUM_TAGS = 65535,
 	/* (blocks: more than any map's; Sanctuary's 256 starting locations are the most seen) */
 	MAXIMUM_BLOCK_COUNT = 16384,
@@ -397,7 +403,7 @@ static int inflate_tag_data(ae_mapinfo_reader read, void *context, unsigned long
 int ae_mapinfo_parse(ae_mapinfo_reader read, void *context, unsigned long file_size, struct ae_mapinfo *info)
 {
 	unsigned char header[HEADER_SIZE];
-	unsigned long version, offset, size, tag_header_size;
+	unsigned long version, decompressed, offset, size, tag_header_size;
 	struct tag_data tags;
 	int result;
 
@@ -405,6 +411,7 @@ int ae_mapinfo_parse(ae_mapinfo_reader read, void *context, unsigned long file_s
 	if (!read || file_size < HEADER_SIZE || !read(context, 0, header, HEADER_SIZE) || memcmp(header, "daeh", 4))
 		return AE_MAPINFO_UNREADABLE;
 	version = u32(header + 4);
+	decompressed = u32(header + 8);
 	offset = u32(header + 0x10);
 	size = u32(header + 0x14);
 	copy_text(info->name, sizeof(info->name), header + 0x20, 0x20);
@@ -438,10 +445,14 @@ int ae_mapinfo_parse(ae_mapinfo_reader read, void *context, unsigned long file_s
 	}
 	if (size < tag_header_size || size > MAXIMUM_TAG_DATA || offset < HEADER_SIZE)
 		return AE_MAPINFO_UNREADABLE;
-	/* (an Xbox map's tag data is in its inflated stream, which is read until it is in: its offset only bounded; the
-	header's decompressed length is not relied on) */
-	if (version == XBOX_VERSION ? offset > MAXIMUM_DECOMPRESSED - size : offset > file_size || size > file_size - offset)
+	/* (an Xbox map's tag data ends its inflated stream: the header's decompressed length is at least its end
+	(rounded up to a whole 2048 bytes on Halo 1: NHE's maps: cache_files_decompress_windows.c) and within the engine's
+	limit, checked before anything is allocated; a Custom Edition map's is in the file) */
+	if (version == XBOX_VERSION ? decompressed > MAXIMUM_DECOMPRESSED || offset > decompressed ||
+		size > decompressed - offset : offset > file_size || size > file_size - offset)
+	{
 		return AE_MAPINFO_UNREADABLE;
+	}
 	tags.size = size;
 	tags.bytes = malloc(size);
 	if (!tags.bytes)

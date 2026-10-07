@@ -34,7 +34,9 @@ enum
 struct ae_mapinfo
 {
 	int family;                 /* enum ae_map_family */
-	char name[32], build[33];
+	/* the header's bytes as they are (a map's name up to 32 characters, its build up to 32), NUL-terminated: not
+	checked as text, so the caller makes them safe to draw (control bytes, bytes 0x80-0xFF) */
+	char name[33], build[33];
 	int scenario_type;          /* 0 solo, 1 multiplayer, 2 ui */
 	int modes;                  /* AE_MODE_*: the game types the map's objects support (mapmeta.py's rule) */
 	int hills, race_checkpoints;
