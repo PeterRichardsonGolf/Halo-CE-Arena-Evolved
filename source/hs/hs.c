@@ -13458,7 +13458,16 @@ static short hs_syntax_node_refusal(
 			if (!value || value->type != hs_global_get_type(designator))
 				return _hs_node_refusal_damaged;
 		}
-		if ((designator & 0x8000) && !hs_external_global_settable_by_maps(designator & 0x7FFF))
+		/* port (Arena Evolved): a Custom Edition map's scripts may set any,
+		as Halo PC let them (H2_Zanzibar's get_off_the_hax sets
+		rasterizer_wireframe; DamnationCE found coldsnap's and lolcano's
+		setting the cheats). A global's value is checked against its type
+		above, as for every map */
+		if ((designator & 0x8000) &&
+#ifdef HALO_CUSTOM_EDITION
+			!cache_file_tags_are_ce() &&
+#endif
+			!hs_external_global_settable_by_maps(designator & 0x7FFF))
 		{
 			*name = hs_global_external_get(designator & 0x7FFF)->name;
 			return _hs_node_refusal_global;

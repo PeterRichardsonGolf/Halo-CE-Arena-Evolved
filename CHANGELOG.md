@@ -72,7 +72,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   ui.map, which holds bytes that are the same once for several tags, is
   accepted where those bytes are the same structure, or no runtime value of
   either and unchanged by the check; Halo PC's script functions and globals
-  that Custom Edition maps call stay allowed, and a main menu's scripts may
+  that Custom Edition maps call stay allowed, a Custom Edition map's
+  scripts may set any external global as Halo PC let them (H2_Zanzibar's
+  sets rasterizer_wireframe), and a main menu's scripts may
   switch maps and flush the caches (CE+ X's menu does). NHE's Prisoner Bots
   (a10, which crashed when hosted before) calls map_reset, which is
   refused. Network version and messages unchanged: Arena Evolved announces

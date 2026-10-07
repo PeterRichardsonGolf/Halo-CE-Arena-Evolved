@@ -859,7 +859,8 @@ In Arena Evolved:
   through the check unchanged. The walk of a shared element may not
   correct it. Every other overlap is refused.
 - Halo PC's script functions and globals that ChupathingyCE adds are
-  allowed in maps. A main menu's scripts may also call `map_name`,
+  allowed in maps, and a Custom Edition map's scripts may set any external
+  global, as Halo PC let them (as DamnationCE does). A main menu's scripts may also call `map_name`,
   `texture_cache_flush` and `sound_cache_flush` (CE+ X's menu does).
 
 ## What operates
