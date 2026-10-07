@@ -18,6 +18,8 @@ SRC = ROOT / "port" / "linux" / "src"
 
 # each test: its sources besides the test file, extra compile flags, and libraries
 UNITS = {
+    # (the catalog's readers take any text: under the sanitizers)
+    "ae_catalog_test.c": ([UI / "ae_catalog.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_draw_layout_test.c": ([SRC / "ae_layout.c"], [], []),
     "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", SRC / "ae_back_presses.c"], [], []),
     "ae_list_test.c": ([UI / "ae_list.c"], [], []),
