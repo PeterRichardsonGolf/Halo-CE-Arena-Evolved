@@ -38,9 +38,12 @@ parts.
 If ffmpeg cannot start or dies, the recording stops at once ("RECORDING
 FAILED", the dot gone). An ffmpeg that takes no frame for 10 seconds, or
 does not finish in time, is killed: only the child the capture started.
-Quitting (capture_shutdown) waits a bounded time for a recording being
-saved and for the screenshots being written, then kills the capture's
-ffmpeg and removes the files left unfinished.
+Quitting (capture_shutdown) gives a recording being saved 30 seconds in
+all (its encoder's end and the mux), after which its writer kills its
+ffmpeg and removes its files, and the screenshots 5; a thread that still
+does not end keeps its files, left as .part files, which a later start
+removes (capture_parts_clean). Everything being written is a .part file
+until it is whole.
 
 Notices ("SCREENSHOT SAVED", "RECORDING NEEDS FFMPEG", ...) are drawn by the
 game for 1.5 seconds (halo_capture_notice, main.c), and are in the frames
@@ -104,6 +107,10 @@ void capture_shutdown(void)
 {
 }
 
+void capture_resume(void)
+{
+}
+
 int halo_capture_notice(char *text, int size)
 {
 	(void)text;
@@ -116,6 +123,7 @@ int halo_capture_notice(char *text, int size)
 #include "gl.h"
 #include "zlib_prefixed.h"
 #include "capture_child.h"
+#include "posix.h"
 
 #include <SDL3/SDL.h>
 #ifndef _WIN32
@@ -155,6 +163,9 @@ waited for, and the threads' end after they are given up */
 #define SHUTDOWN_RECORDING_MS 30000
 #define SHUTDOWN_SCREENSHOTS_MS 5000
 #define SHUTDOWN_CANCEL_MS 3000
+/* a .part file, or a name made and never filled, untouched this long is
+one an earlier session left (capture_parts_clean) */
+#define STALE_SECONDS 600
 
 /* quitting has begun (capture_shutdown): nothing new is taken */
 static int capture_shut_down;
@@ -901,9 +912,18 @@ static int ffmpeg_search(const char *program, char *path, size_t size)
 	while (search && *search)
 	{
 		const char *end = strchr(search, separator);
+		const char *entry = search;
 		size_t length = end ? (size_t)(end - search) : strlen(search);
 
-		if (length && path_format(path, size, "%.*s/%s%s", (int)length, search, program, extension) &&
+#ifdef _WIN32
+		/* (an entry in quotes, as "C:\Program Files\ffmpeg\bin") */
+		if (length >= 2 && entry[0] == '"' && entry[length - 1] == '"')
+		{
+			entry++;
+			length -= 2;
+		}
+#endif
+		if (length && path_format(path, size, "%.*s/%s%s", (int)length, entry, program, extension) &&
 			capture_file_executable(path))
 			return 1;
 		search = end ? end + 1 : NULL;
@@ -927,8 +947,14 @@ static int ffmpeg_find(char *path, size_t size)
 			return 1;
 #ifdef _WIN32
 		{
-			const char *name = strrchr(configured, '\\') ? strrchr(configured, '\\') : configured;
+			/* (the name after the last separator, either kind) */
+			const char *name = configured, *at;
 
+			for (at = configured; *at; at++)
+			{
+				if (*at == '\\' || *at == '/')
+					name = at + 1;
+			}
 			if (!strchr(name, '.') && path_format(path, size, "%s.exe", configured) &&
 				capture_file_executable(path))
 				return 1;
@@ -957,6 +983,9 @@ struct shot_job
 	it went */
 	int reserved;
 	char path[PATH_SIZE];
+	/* written here first, then renamed to path: a file left half written
+	is a .part (capture_parts_clean) */
+	char part[PATH_SIZE];
 };
 
 static struct
@@ -970,10 +999,8 @@ static struct
 	struct shot_job jobs[SHOT_QUEUE_MAXIMUM];
 	int head;
 	int count;
-	/* (lock) the job being written */
+	/* (lock) the job being written, which only the thread touches */
 	int busy;
-	int busy_reserved;
-	int busy_opened;
 	char busy_path[PATH_SIZE];
 	int stopping;
 	SDL_AtomicInt cancel;
@@ -983,9 +1010,55 @@ static struct
 
 static SDL_AtomicInt screenshot_requested;
 
+/* the capture's folders (capture_initialize), for capture_parts_clean */
+static char clean_folders[3][PATH_SIZE];
+static int clean_folder_count;
+
+/* in one of the capture's own folders, what an earlier session left: .part
+files, and names made (empty, capture_name_reserve) and never filled, that
+nothing has touched for STALE_SECONDS (a recording or screenshot under way,
+in this game or another, writes its .part all the time) */
+static void capture_parts_clean(const char *folder)
+{
+	void *directory = posix_directory_open(folder);
+	char name[256], path[PATH_SIZE];
+	SDL_Time now = 0;
+	int removed = 0;
+
+	if (!directory)
+		return;
+	SDL_GetCurrentTime(&now);
+	while (posix_directory_next(directory, name, sizeof(name)))
+	{
+		struct posix_file_information information;
+		size_t length = strlen(name);
+		int part = length > 5 && !strcmp(name + length - 5, ".part");
+		/* (the names the capture makes: <year>-<month>-..., .png or .mp4) */
+		int made = length > 4 && name[0] >= '0' && name[0] <= '9' &&
+			(!strcmp(name + length - 4, ".png") || !strcmp(name + length - 4, ".mp4"));
+
+		if ((!part && !made) || !path_format(path, sizeof(path), "%s/%s", folder, name) ||
+			posix_stat(path, &information) != 0 || (information.flags & _posix_file_is_directory))
+			continue;
+		if (!part && (information.size_low || information.size_high))
+			continue;
+		if ((Sint64)now / SDL_NS_PER_SECOND - (Sint64)information.modification_seconds < STALE_SECONDS)
+			continue;
+		if (SDL_RemovePath(path))
+			removed++;
+	}
+	posix_directory_close(directory);
+	if (removed)
+		platform_log("capture: removed %d unfinished files an earlier session left in %s", removed, folder);
+}
+
 static int SDLCALL screenshot_thread(void *parameter)
 {
+	int index;
+
 	(void)parameter;
+	for (index = 0; index < clean_folder_count; index++)
+		capture_parts_clean(clean_folders[index]);
 	SDL_LockMutex(shots.lock);
 	for (;;)
 	{
@@ -1002,8 +1075,6 @@ static int SDLCALL screenshot_thread(void *parameter)
 		shots.head = (shots.head + 1) % SHOT_QUEUE_MAXIMUM;
 		shots.count--;
 		shots.busy = 1;
-		shots.busy_reserved = job.reserved;
-		shots.busy_opened = 0;
 		SDL_strlcpy(shots.busy_path, job.path, sizeof(shots.busy_path));
 		SDL_UnlockMutex(shots.lock);
 
@@ -1011,15 +1082,16 @@ static int SDLCALL screenshot_thread(void *parameter)
 		ok = png_encode(job.pixels, job.width, job.height, &png, &shots.cancel);
 		if (ok && !SDL_GetAtomicInt(&shots.cancel))
 		{
-			SDL_IOStream *file;
+			SDL_IOStream *file = file_create(job.part);
 
-			SDL_LockMutex(shots.lock);
-			shots.busy_opened = opened = 1;
-			SDL_UnlockMutex(shots.lock);
-			file = file_create(job.path);
+			opened = 1;
 			ok = file && SDL_WriteIO(file, png.data, png.size) == png.size;
 			if (file && !SDL_CloseIO(file))
 				ok = 0;
+			/* (over the name made, or an older debug frame's) */
+			if (ok)
+				SDL_RemovePath(job.path);
+			ok = ok && SDL_RenamePath(job.part, job.path);
 		}
 		else
 		{
@@ -1036,8 +1108,10 @@ static int SDLCALL screenshot_thread(void *parameter)
 		}
 		else
 		{
-			/* (no partial file left: the reserved one, or the one begun) */
-			if (job.reserved || opened)
+			/* (no partial file left: the one begun, and the name made) */
+			if (opened)
+				SDL_RemovePath(job.part);
+			if (job.reserved)
 				SDL_RemovePath(job.path);
 			if (!SDL_GetAtomicInt(&shots.cancel))
 			{
@@ -1070,16 +1144,35 @@ static int SDLCALL screenshot_thread(void *parameter)
 }
 
 /* (the game thread) the capture's start, at its first frame: the
-screenshot thread, and the teardown at exit; 1 while the thread runs */
+screenshot thread, which first clears what an earlier session left in the
+capture's folders, and the teardown at exit; 1 while the thread runs */
 static int capture_initialize(void)
 {
+	static int exit_registered;
+
 	if (shots.started)
 		return shots.thread != NULL;
 	shots.started = 1;
-	atexit(capture_shutdown);
-	shots.lock = SDL_CreateMutex();
-	shots.wake = SDL_CreateCondition();
-	shots.idle = SDL_CreateCondition();
+	if (!exit_registered)
+	{
+		atexit(capture_shutdown);
+		exit_registered = 1;
+	}
+	clean_folder_count = 0;
+	if (capture_folder("screenshots", NULL, clean_folders[clean_folder_count], PATH_SIZE))
+		clean_folder_count++;
+	if (capture_folder("recordings", NULL, clean_folders[clean_folder_count], PATH_SIZE))
+		clean_folder_count++;
+	if (*config_string("capture.record_directory") &&
+		capture_folder("recordings", config_string("capture.record_directory"), clean_folders[clean_folder_count],
+		PATH_SIZE))
+		clean_folder_count++;
+	if (!shots.lock)
+		shots.lock = SDL_CreateMutex();
+	if (!shots.wake)
+		shots.wake = SDL_CreateCondition();
+	if (!shots.idle)
+		shots.idle = SDL_CreateCondition();
 	if (shots.lock && shots.wake && shots.idle)
 		shots.thread = SDL_CreateThread(screenshot_thread, "screenshot", NULL);
 	if (!shots.thread)
@@ -1100,7 +1193,12 @@ static int shot_queue(const char *path, unsigned char *pixels, int width, int he
 		return 0;
 	}
 	SDL_LockMutex(shots.lock);
-	if (!shots.stopping && shots.count + shots.busy < maximum)
+	if (strlen(path) + sizeof(".part") > PATH_SIZE)
+	{
+		shots.skipped++;
+		platform_log("capture: screenshot %s skipped: its path is too long", path);
+	}
+	else if (!shots.stopping && shots.count + shots.busy < maximum)
 	{
 		struct shot_job *job = &shots.jobs[(shots.head + shots.count) % SHOT_QUEUE_MAXIMUM];
 
@@ -1109,6 +1207,7 @@ static int shot_queue(const char *path, unsigned char *pixels, int width, int he
 		job->height = height;
 		job->reserved = reserved;
 		SDL_strlcpy(job->path, path, sizeof(job->path));
+		snprintf(job->part, sizeof(job->part), "%s.part", path);
 		shots.count++;
 		queued = 1;
 		SDL_SignalCondition(shots.wake);
@@ -1185,14 +1284,19 @@ static Uint32 audio_event_position[AUDIO_EVENTS];
 static Uint32 audio_event_frames[AUDIO_EVENTS];
 static SDL_AtomicU32 audio_event_write;
 static SDL_AtomicU32 audio_event_read;
-/* a recording takes the sound; the mixer is in capture_audio; which
-recording (a new one forgets a loss left over from the last) */
-static SDL_AtomicInt audio_capturing;
-static SDL_AtomicInt audio_producing;
-static SDL_AtomicInt audio_generation;
+/* the mixer's way in: AUDIO_CLOSED (no recording takes the sound),
+AUDIO_OPEN, AUDIO_IN (the mixer is in capture_audio). The mixer goes
+OPEN -> IN -> OPEN, the game thread OPEN -> CLOSED (waiting while it is
+IN) and CLOSED -> OPEN, each with a compare-and-swap: while CLOSED the
+mixer cannot enter, so the ring is the game thread's to reset, and the loss
+not yet told its to hand over. */
+#define AUDIO_CLOSED 0
+#define AUDIO_OPEN 1
+#define AUDIO_IN 2
+static SDL_AtomicInt audio_gate;
 static SDL_AtomicInt audio_lost_frames;
-/* the mixer's own */
-static int producer_generation = -1;
+/* the mixer's while it is in, the game thread's while closed: a loss the
+event queue had no room for (nothing goes in after it until it is told) */
 static Uint32 producer_lost_position;
 static Uint32 producer_lost_frames;
 
@@ -1214,21 +1318,15 @@ void capture_audio(const float *samples, unsigned int frames, unsigned int chann
 {
 	Uint32 write, room;
 
-	SDL_SetAtomicInt(&audio_producing, 1);
-	if (!SDL_GetAtomicInt(&audio_capturing) || channels != AUDIO_CHANNELS || rate != AUDIO_RATE || !frames ||
-		frames > AUDIO_RING_FRAMES)
-	{
-		SDL_SetAtomicInt(&audio_producing, 0);
+	if (!SDL_CompareAndSwapAtomicInt(&audio_gate, AUDIO_OPEN, AUDIO_IN))
 		return;
-	}
-	if (producer_generation != SDL_GetAtomicInt(&audio_generation))
+	if (channels != AUDIO_CHANNELS || rate != AUDIO_RATE || !frames || frames > AUDIO_RING_FRAMES)
 	{
-		producer_generation = SDL_GetAtomicInt(&audio_generation);
-		producer_lost_frames = 0;
+		SDL_SetAtomicInt(&audio_gate, AUDIO_OPEN);
+		return;
 	}
 	write = SDL_GetAtomicU32(&audio_write_position);
 	room = AUDIO_RING_FRAMES - (write - SDL_GetAtomicU32(&audio_read_position));
-	/* (a loss not yet told: nothing goes in after it until it is) */
 	if (producer_lost_frames && audio_event_push(producer_lost_position, producer_lost_frames))
 		producer_lost_frames = 0;
 	if (producer_lost_frames || frames > room)
@@ -1250,26 +1348,40 @@ void capture_audio(const float *samples, unsigned int frames, unsigned int chann
 			(size_t)(frames - first) * AUDIO_CHANNELS * sizeof(float));
 		SDL_SetAtomicU32(&audio_write_position, write + frames);
 	}
-	SDL_SetAtomicInt(&audio_producing, 0);
+	SDL_SetAtomicInt(&audio_gate, AUDIO_OPEN);
+}
+
+/* (the game thread) the mixer shut out, once it has left capture_audio */
+static void audio_close(void)
+{
+	while (!SDL_CompareAndSwapAtomicInt(&audio_gate, AUDIO_OPEN, AUDIO_CLOSED) &&
+		SDL_GetAtomicInt(&audio_gate) != AUDIO_CLOSED)
+		SDL_DelayNS(50000);
 }
 
 /* (the game thread, no recording taking the sound) the ring emptied, then
 the sound taken from now on */
 static void audio_begin(void)
 {
-	SDL_SetAtomicInt(&audio_capturing, 0);
-	while (SDL_GetAtomicInt(&audio_producing))
-		SDL_DelayNS(100000);
+	audio_close();
 	SDL_SetAtomicU32(&audio_read_position, SDL_GetAtomicU32(&audio_write_position));
 	SDL_SetAtomicU32(&audio_event_read, SDL_GetAtomicU32(&audio_event_write));
-	SDL_AddAtomicInt(&audio_generation, 1);
+	producer_lost_frames = 0;
 	SDL_SetAtomicInt(&audio_lost_frames, 0);
-	SDL_SetAtomicInt(&audio_capturing, 1);
+	SDL_SetAtomicInt(&audio_gate, AUDIO_OPEN);
 }
 
-static void audio_end(void)
+/* (the game thread) no more sound: the mixer shut out, and the loss it had
+not told yet (it comes after all the sound in the ring) handed over, for
+the writer's last drain */
+static Uint32 audio_end(void)
 {
-	SDL_SetAtomicInt(&audio_capturing, 0);
+	Uint32 lost;
+
+	audio_close();
+	lost = producer_lost_frames;
+	producer_lost_frames = 0;
+	return lost;
 }
 
 /* (the writer thread) the ring's sound to the file in order, a loss as
@@ -1332,9 +1444,15 @@ static Uint64 audio_drain(SDL_IOStream *file)
 
 /* ---------- recording: the writer */
 
+/* the files: the result (made, empty, at the start: its name), the video
+and the sound while recording, and the two put together; the last three are
+.part files until the result takes the mux's, so that one a recording left
+behind is known for what it is (capture_parts_clean) */
 #define RECORDING_FINAL 0
 #define RECORDING_VIDEO 1
 #define RECORDING_AUDIO 2
+#define RECORDING_MUX 3
+#define RECORDING_PATHS 4
 
 struct recording
 {
@@ -1345,9 +1463,8 @@ struct recording
 	int crf;
 	size_t frame_bytes;
 	char ffmpeg[PATH_SIZE];
-	/* the result, the video part and the sound part (RECORDING_*), made
-	at the start */
-	char paths[3][PATH_SIZE];
+	/* RECORDING_*: the first three made at the start */
+	char paths[RECORDING_PATHS][PATH_SIZE];
 
 	SDL_Thread *thread;
 	SDL_Mutex *lock;
@@ -1371,8 +1488,13 @@ struct recording
 	Uint64 audio_frames;
 	/* ffmpeg failed: the game thread stops the recording */
 	SDL_AtomicInt failed;
-	/* quitting with it unfinished: everything given up */
+	/* quitting with it unfinished: everything given up, the files removed */
 	SDL_AtomicInt cancel;
+	/* quitting: by when it is saved (SDL_GetTicks, never 0), else given up;
+	0 none */
+	SDL_AtomicU32 deadline;
+	/* (set before stopping) sound lost at the end, the mixer's last loss */
+	Uint32 final_lost;
 	/* when the write to ffmpeg under way began (SDL_GetTicks, never 0), 0
 	none */
 	SDL_AtomicU32 write_since;
@@ -1386,7 +1508,9 @@ static void recording_child_set(struct recording *recording, struct capture_chil
 	SDL_UnlockMutex(recording->lock);
 }
 
-/* (any thread) the recording's ffmpeg killed, if one runs: that child only */
+/* (any thread) the recording's ffmpeg killed, if one runs: that child only
+(the writer reaps it under the same lock, so a child reaped is never
+signalled) */
 static void recording_child_kill(struct recording *recording)
 {
 	SDL_LockMutex(recording->lock);
@@ -1395,27 +1519,50 @@ static void recording_child_kill(struct recording *recording)
 	SDL_UnlockMutex(recording->lock);
 }
 
+/* given up: cancelled, or quitting's deadline passed */
+static int recording_given_up(struct recording *recording)
+{
+	Uint32 deadline = SDL_GetAtomicU32(&recording->deadline);
+
+	if (deadline && (Sint32)((Uint32)SDL_GetTicks() - deadline) >= 0)
+		SDL_SetAtomicInt(&recording->cancel, 1);
+	return SDL_GetAtomicInt(&recording->cancel);
+}
+
 /* (the writer) the child's end within timeout_ms, else it is killed; its
-exit code, -1 if it was killed */
+exit code, -1 if it was killed or given up. Each look at it is under the
+lock, as recording_child_kill's kill. */
 static int recording_child_finish(struct recording *recording, struct capture_child *child, int timeout_ms)
 {
-	Uint64 deadline = SDL_GetTicks() + (Uint64)timeout_ms;
-	int exit_code = -1;
+	Uint64 deadline = SDL_GetTicks() + (Uint64)timeout_ms, kill_deadline = 0;
+	int exit_code = -1, ended = 0, killed = 0;
 
-	while (!capture_child_wait(child, 100, &exit_code))
+	for (;;)
 	{
-		if (SDL_GetAtomicInt(&recording->cancel) || SDL_GetTicks() >= deadline)
+		SDL_LockMutex(recording->lock);
+		ended = capture_child_wait(child, 0, &exit_code);
+		if (ended || (killed && SDL_GetTicks() >= kill_deadline))
+		{
+			recording->child = NULL;
+		}
+		else if (!killed && (recording_given_up(recording) || SDL_GetTicks() >= deadline))
 		{
 			platform_log("capture: ffmpeg did not finish in time; killed");
+			/* (while quitting, that is the recording given up: no video
+			kept without its sound) */
+			if (SDL_GetAtomicU32(&recording->deadline))
+				SDL_SetAtomicInt(&recording->cancel, 1);
 			capture_child_kill(child);
-			capture_child_wait(child, 5000, &exit_code);
-			exit_code = -1;
-			break;
+			killed = 1;
+			kill_deadline = SDL_GetTicks() + 5000;
 		}
+		SDL_UnlockMutex(recording->lock);
+		if (!recording->child && (ended || killed))
+			break;
+		SDL_Delay(20);
 	}
-	recording_child_set(recording, NULL);
 	capture_child_free(child);
-	return exit_code;
+	return ended && !killed ? exit_code : -1;
 }
 
 static int SDLCALL recording_thread(void *parameter)
@@ -1453,6 +1600,8 @@ static int SDLCALL recording_thread(void *parameter)
 	arguments[count++] = crf_text;
 	arguments[count++] = "-pix_fmt";
 	arguments[count++] = "yuv420p";
+	arguments[count++] = "-f";
+	arguments[count++] = "mp4";
 	arguments[count++] = recording->paths[RECORDING_VIDEO];
 	arguments[count] = NULL;
 	child = capture_child_start(arguments, 1);
@@ -1483,7 +1632,7 @@ static int SDLCALL recording_thread(void *parameter)
 		recording->queue_head = (recording->queue_head + 1) % QUEUE_MAXIMUM;
 		recording->queue_count--;
 		SDL_UnlockMutex(recording->lock);
-		while (repeat-- > 0 && !SDL_GetAtomicInt(&recording->failed) && !SDL_GetAtomicInt(&recording->cancel))
+		while (repeat-- > 0 && !SDL_GetAtomicInt(&recording->failed) && !recording_given_up(recording))
 		{
 			int ok;
 
@@ -1505,8 +1654,23 @@ static int SDLCALL recording_thread(void *parameter)
 	}
 	SDL_UnlockMutex(recording->lock);
 
-	/* the rest of the sound (the game thread stopped the mixer's: audio_end) */
+	/* the rest of the sound (the game thread stopped the mixer's: audio_end),
+	and the loss at its end as silence */
 	recording->audio_frames += audio_drain(audio_file);
+	{
+		static const float silence[512 * AUDIO_CHANNELS];
+		Uint32 lost = recording->final_lost;
+
+		while (lost)
+		{
+			Uint32 piece = lost > 512 ? 512 : lost;
+
+			if (audio_file)
+				SDL_WriteIO(audio_file, silence, (size_t)piece * AUDIO_CHANNELS * sizeof(float));
+			lost -= piece;
+			recording->audio_frames += piece;
+		}
+	}
 	has_audio = audio_file && recording->audio_frames > 0;
 	if (audio_file)
 		SDL_CloseIO(audio_file);
@@ -1516,8 +1680,10 @@ static int SDLCALL recording_thread(void *parameter)
 		capture_child_close_input(child);
 		exit_code = recording_child_finish(recording, child, ENCODER_END_MS);
 	}
-	video_ok = !SDL_GetAtomicInt(&recording->failed) && !SDL_GetAtomicInt(&recording->cancel) && exit_code == 0 &&
+	video_ok = !SDL_GetAtomicInt(&recording->failed) && !recording_given_up(recording) && exit_code == 0 &&
 		recording->frames_written > 0;
+	/* the result: the video and the sound put together (the mux's .part),
+	or the video alone when there is no sound; never when given up */
 	if (video_ok && has_audio)
 	{
 		/* the picture as it is, the sound as AAC, as long as the picture:
@@ -1540,6 +1706,8 @@ static int SDLCALL recording_thread(void *parameter)
 		mux[count++] = "-loglevel";
 		mux[count++] = "error";
 		mux[count++] = "-y";
+		mux[count++] = "-f";
+		mux[count++] = "mp4";
 		mux[count++] = "-i";
 		mux[count++] = recording->paths[RECORDING_VIDEO];
 		mux[count++] = "-f";
@@ -1565,9 +1733,11 @@ static int SDLCALL recording_thread(void *parameter)
 		mux[count++] = "192k";
 		mux[count++] = "-movflags";
 		mux[count++] = "+faststart";
-		mux[count++] = recording->paths[RECORDING_FINAL];
+		mux[count++] = "-f";
+		mux[count++] = "mp4";
+		mux[count++] = recording->paths[RECORDING_MUX];
 		mux[count] = NULL;
-		child = SDL_GetAtomicInt(&recording->cancel) ? NULL : capture_child_start(mux, 0);
+		child = recording_given_up(recording) ? NULL : capture_child_start(mux, 0);
 		exit_code = -1;
 		if (child)
 		{
@@ -1575,9 +1745,15 @@ static int SDLCALL recording_thread(void *parameter)
 			/* (30 seconds, and half a second for each minute of video) */
 			exit_code = recording_child_finish(recording, child, 30000 + (int)(video_seconds * 1000.0 / 120.0));
 		}
-		if (exit_code == 0)
+		if (recording_given_up(recording))
 		{
-			SDL_RemovePath(recording->paths[RECORDING_VIDEO]);
+			video_ok = 0;
+		}
+		else if (exit_code == 0)
+		{
+			/* (over the name made at the start) */
+			SDL_RemovePath(recording->paths[RECORDING_FINAL]);
+			video_ok = SDL_RenamePath(recording->paths[RECORDING_MUX], recording->paths[RECORDING_FINAL]);
 		}
 		else
 		{
@@ -1585,13 +1761,15 @@ static int SDLCALL recording_thread(void *parameter)
 			has_audio = 0;
 		}
 	}
-	if (video_ok && !has_audio)
+	if (video_ok && !has_audio && !recording_given_up(recording))
 	{
-		/* (the name made at the start given to the video) */
 		SDL_RemovePath(recording->paths[RECORDING_FINAL]);
 		video_ok = SDL_RenamePath(recording->paths[RECORDING_VIDEO], recording->paths[RECORDING_FINAL]);
 	}
+	/* the parts, whatever happened; the result too if there is none */
+	SDL_RemovePath(recording->paths[RECORDING_VIDEO]);
 	SDL_RemovePath(recording->paths[RECORDING_AUDIO]);
+	SDL_RemovePath(recording->paths[RECORDING_MUX]);
 	if (video_ok)
 	{
 		platform_log("capture: recording %s: %llu frames written (%.1f s at %d fps), %.1f s of sound%s",
@@ -1602,12 +1780,18 @@ static int SDLCALL recording_thread(void *parameter)
 	}
 	else
 	{
-		platform_log("capture: the recording %s failed (ffmpeg exit %d, %llu frames written)",
-			recording->paths[RECORDING_FINAL], exit_code, (unsigned long long)recording->frames_written);
-		SDL_RemovePath(recording->paths[RECORDING_VIDEO]);
 		SDL_RemovePath(recording->paths[RECORDING_FINAL]);
-		if (!SDL_GetAtomicInt(&recording->cancel))
+		if (recording_given_up(recording))
+		{
+			platform_log("capture: the recording %s was given up unfinished; its files are removed",
+				recording->paths[RECORDING_FINAL]);
+		}
+		else
+		{
+			platform_log("capture: the recording %s failed (ffmpeg exit %d, %llu frames written)",
+				recording->paths[RECORDING_FINAL], exit_code, (unsigned long long)recording->frames_written);
 			notice(2, "RECORDING FAILED");
+		}
 	}
 	SDL_SetAtomicInt(&recording->finished, 1);
 	return 0;
@@ -1729,7 +1913,7 @@ static int record_quality_crf(void)
 
 static void recording_start(int width, int height)
 {
-	static const char *const extensions[3] = { ".mp4", ".video.mp4", ".audio.f32" };
+	static const char *const extensions[3] = { ".mp4", ".video.mp4.part", ".audio.f32.part" };
 	struct recording *recording;
 	char folder[PATH_SIZE], base[256];
 	const char *failure = "RECORDING FAILED";
@@ -1795,6 +1979,16 @@ static void recording_start(int width, int height)
 	if (!capture_name_reserve(folder, extensions, 3, recording->paths, base, sizeof(base), &failure))
 	{
 		notice(2, failure);
+		recording_free(recording);
+		return;
+	}
+	if (!path_format(recording->paths[RECORDING_MUX], PATH_SIZE, "%s.part", recording->paths[RECORDING_FINAL]))
+	{
+		int index;
+
+		for (index = 0; index < 3; index++)
+			SDL_RemovePath(recording->paths[index]);
+		notice(2, "CAPTURE PATH TOO LONG");
 		recording_free(recording);
 		return;
 	}
@@ -1917,7 +2111,7 @@ static void recording_stop(int harvest)
 			glDeleteBuffers(1, &buffer->id);
 		buffer->id = 0;
 	}
-	audio_end();
+	recording->final_lost = audio_end();
 	SDL_LockMutex(recording->lock);
 	/* (time a dropped last frame stood for, given to the one before) */
 	if (capture.carry && recording->queue_count)
@@ -2068,71 +2262,118 @@ void capture_frame(unsigned int framebuffer, int width, int height)
 
 /* ---------- quitting */
 
+/* (the game thread) a recording being saved, within what is left of
+SHUTDOWN_RECORDING_MS (its writer gives up at that deadline, kills its
+ffmpeg and removes its files); 1 if it is done */
+static int shutdown_recording(void)
+{
+	struct recording *saving = capture.saving;
+	Uint32 deadline;
+
+	if (!saving || recording_reap(0))
+		return 1;
+	platform_log("capture: saving the recording before quitting (%d seconds at most)", SHUTDOWN_RECORDING_MS / 1000);
+	notice(1, "SAVING RECORDING...");
+	deadline = ((Uint32)SDL_GetTicks() + SHUTDOWN_RECORDING_MS) | 1u;
+	SDL_SetAtomicU32(&saving->deadline, deadline);
+	if (recording_reap(SHUTDOWN_RECORDING_MS))
+		return 1;
+	/* (a writer stuck in a write: its ffmpeg killed makes the write fail) */
+	SDL_SetAtomicInt(&saving->cancel, 1);
+	recording_child_kill(saving);
+	if (recording_reap(SHUTDOWN_CANCEL_MS))
+		return 1;
+	/* the writer still runs and owns its files: they are left (the .part
+	ones are removed at a later start, capture_parts_clean) */
+	platform_log("capture: the recording's writer did not end; left: %s, %s, %s, %s", saving->paths[RECORDING_FINAL],
+		saving->paths[RECORDING_VIDEO], saving->paths[RECORDING_AUDIO], saving->paths[RECORDING_MUX]);
+	return 0;
+}
+
+/* (the game thread) the screenshots queued, written within
+SHUTDOWN_SCREENSHOTS_MS, else given up; 1 if the thread has ended */
+static int shutdown_screenshots(void)
+{
+	Uint64 deadline = SDL_GetTicks() + SHUTDOWN_SCREENSHOTS_MS;
+
+	if (!shots.thread)
+		return 1;
+	SDL_LockMutex(shots.lock);
+	shots.stopping = 1;
+	SDL_SignalCondition(shots.wake);
+	while ((shots.count || shots.busy) && SDL_GetTicks() < deadline)
+		SDL_WaitConditionTimeout(shots.idle, shots.lock, 50);
+	if (shots.count || shots.busy)
+	{
+		platform_log("capture: screenshots still being written after %d seconds; given up",
+			SHUTDOWN_SCREENSHOTS_MS / 1000);
+		SDL_SetAtomicInt(&shots.cancel, 1);
+		SDL_SignalCondition(shots.wake);
+	}
+	SDL_UnlockMutex(shots.lock);
+	deadline = SDL_GetTicks() + SHUTDOWN_CANCEL_MS;
+	while (!SDL_GetAtomicInt(&shots.exited) && SDL_GetTicks() < deadline)
+		SDL_Delay(10);
+	if (SDL_GetAtomicInt(&shots.exited))
+	{
+		SDL_WaitThread(shots.thread, NULL);
+		shots.thread = NULL;
+		return 1;
+	}
+	/* the jobs not begun are the queue's, taken out of it here (their
+	names given back); the one being written is the thread's, left as it
+	is (its .part removed at a later start) */
+	SDL_LockMutex(shots.lock);
+	while (shots.count)
+	{
+		struct shot_job *job = &shots.jobs[shots.head];
+
+		if (job->reserved)
+			SDL_RemovePath(job->path);
+		free(job->pixels);
+		job->pixels = NULL;
+		shots.head = (shots.head + 1) % SHOT_QUEUE_MAXIMUM;
+		shots.count--;
+	}
+	platform_log("capture: the screenshot thread did not end; left: %s (and its .part)", shots.busy_path);
+	SDL_UnlockMutex(shots.lock);
+	return 0;
+}
+
+/* whether everything ended at the last shutdown (capture_resume) */
+static int shutdown_clean;
+
 void capture_shutdown(void)
 {
+	int clean;
+
 	if (capture_shut_down)
 		return;
 	capture_shut_down = 1;
-	/* a recording: stopped, and saved within the bounded wait; after it, its
-	ffmpeg killed and its files removed (by its writer) */
+	/* a recording: stopped, and saved within the bounded wait */
 	if (capture.active)
 		recording_stop(0);
-	if (capture.saving && !recording_reap(SHUTDOWN_RECORDING_MS))
-	{
-		platform_log("capture: the recording is still being saved after %d seconds; given up",
-			SHUTDOWN_RECORDING_MS / 1000);
-		SDL_SetAtomicInt(&capture.saving->cancel, 1);
-		recording_child_kill(capture.saving);
-		if (!recording_reap(SHUTDOWN_CANCEL_MS))
-			platform_log("capture: the recording's writer did not end");
-	}
-	/* the screenshots queued: written within the bounded wait, else given up
-	(a file not finished removed) */
-	if (shots.thread)
-	{
-		Uint64 deadline = SDL_GetTicks() + SHUTDOWN_SCREENSHOTS_MS;
+	clean = shutdown_recording();
+	clean = shutdown_screenshots() && clean;
+	shutdown_clean = clean;
+}
 
-		SDL_LockMutex(shots.lock);
-		shots.stopping = 1;
-		SDL_SignalCondition(shots.wake);
-		while ((shots.count || shots.busy) && SDL_GetTicks() < deadline)
-			SDL_WaitConditionTimeout(shots.idle, shots.lock, 50);
-		if (shots.count || shots.busy)
-		{
-			platform_log("capture: screenshots still being written after %d seconds; given up",
-				SHUTDOWN_SCREENSHOTS_MS / 1000);
-			SDL_SetAtomicInt(&shots.cancel, 1);
-			SDL_SignalCondition(shots.wake);
-		}
-		SDL_UnlockMutex(shots.lock);
-		deadline = SDL_GetTicks() + SHUTDOWN_CANCEL_MS;
-		while (!SDL_GetAtomicInt(&shots.exited) && SDL_GetTicks() < deadline)
-			SDL_Delay(10);
-		if (SDL_GetAtomicInt(&shots.exited))
-		{
-			SDL_WaitThread(shots.thread, NULL);
-			shots.thread = NULL;
-		}
-		else
-		{
-			/* (its file, if the thread is stuck in it, and the ones not
-			begun) */
-			SDL_LockMutex(shots.lock);
-			if (shots.busy && (shots.busy_reserved || shots.busy_opened))
-				SDL_RemovePath(shots.busy_path);
-			while (shots.count)
-			{
-				struct shot_job *job = &shots.jobs[shots.head];
-
-				if (job->reserved)
-					SDL_RemovePath(job->path);
-				shots.head = (shots.head + 1) % SHOT_QUEUE_MAXIMUM;
-				shots.count--;
-			}
-			SDL_UnlockMutex(shots.lock);
-			platform_log("capture: the screenshot thread did not end");
-		}
+void capture_resume(void)
+{
+	if (!capture_shut_down)
+		return;
+	if (!shutdown_clean)
+	{
+		platform_log("capture: stays off: a thread of the last shutdown is still running");
+		return;
 	}
+	/* (the screenshot thread started again at the next frame) */
+	SDL_SetAtomicInt(&shots.cancel, 0);
+	SDL_SetAtomicInt(&shots.exited, 0);
+	shots.stopping = 0;
+	shots.started = 0;
+	capture_shut_down = 0;
+	platform_log("capture: on again");
 }
 
 /* ---------- the red dot */

@@ -1855,6 +1855,8 @@ int platform_restart(void)
 			fcntl((int)index, F_SETFD, FD_CLOEXEC);
 	}
 	execv("/proc/self/exe", arguments);
+	/* (it did not start: this game goes on, capture with it) */
+	capture_resume();
 	return 0;
 #else
 	return 0;

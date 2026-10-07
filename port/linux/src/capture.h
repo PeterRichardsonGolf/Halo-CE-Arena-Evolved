@@ -44,6 +44,10 @@ wait, after which only the capture's own ffmpeg is killed and unfinished
 files removed */
 void capture_shutdown(void);
 
+/* platform_restart: the restart failed (execv returned), so capture goes on
+as before, unless a thread of the shutdown is still running */
+void capture_resume(void);
+
 /* the notice to draw now ("SCREENSHOT SAVED", "RECORDING NEEDS FFMPEG"),
 for about 1.5 seconds (main.c, main_framerate_render): 0 none, 1 news, 2 a
 failure */

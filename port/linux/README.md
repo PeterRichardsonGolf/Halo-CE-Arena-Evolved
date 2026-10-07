@@ -226,9 +226,12 @@ else. On Windows, ffmpeg runs without a window of its own.
   out (the log counts them), and the video keeps to real time. If ffmpeg
   fails or stops, the recording stops at once ("RECORDING FAILED"); an
   ffmpeg that takes no frame for 10 seconds is stopped.
-- When the game closes during a recording, the recording is saved first,
-  for up to 30 seconds; after that the game stops its ffmpeg and removes
-  the unfinished files.
+- When the game closes during a recording, it saves the recording first
+  (the log says so), for up to 30 seconds in all. A recording that is not
+  saved by then is lost: the game stops its ffmpeg and removes its files,
+  and keeps no video without its sound. Files that are still being written have names that
+  end in `.part`; the game removes any that an earlier session left (10
+  minutes old or more) when it starts.
 
 `debug.record_seconds` (`HALO_RECORD_SECONDS`) records that many seconds
 from the first frame of play (a map other than the main menu's), for tests.

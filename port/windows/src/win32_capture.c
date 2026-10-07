@@ -7,7 +7,8 @@ other systems' is in capture.c): ffmpeg started with CreateProcessW, with
   the game is not, so it would open one, and take the focus from a
   fullscreen game;
 - only its own handles inherited (PROC_THREAD_ATTRIBUTE_HANDLE_LIST): the
-  read end of its input pipe and NUL, never the game's sockets or files;
+  read end of its input pipe and NUL, never the game's sockets or files,
+  and those made inheritable only once made (never the game's end);
 - an input pipe that waits (anonymous pipes do) with a 1 MB buffer, which
   the writer thread fills a frame at a time;
 - its command line quoted as the C runtime's parser reads it back
@@ -116,7 +117,6 @@ static void command_append(struct command_line *line, const wchar_t *argument)
 
 struct capture_child *capture_child_start(const char *const *arguments, int with_input)
 {
-	SECURITY_ATTRIBUTES inheritable = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
 	STARTUPINFOEXW startup;
 	PROCESS_INFORMATION information;
 	LPPROC_THREAD_ATTRIBUTE_LIST attributes = NULL;
@@ -148,16 +148,18 @@ struct capture_child *capture_child_start(const char *const *arguments, int with
 		goto done;
 	line.text[line.length] = 0;
 
-	/* the child's handles: inheritable; the game's end of the pipe not */
-	nul = CreateFileW(L"NUL", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &inheritable,
+	/* every handle made not inheritable, then the child's own (NUL, the
+	pipe's read end) marked so: the game's end of the pipe never is, even
+	for a moment (a child of it would keep ffmpeg's input open) */
+	nul = CreateFileW(L"NUL", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
 		OPEN_EXISTING, 0, NULL);
-	if (nul == INVALID_HANDLE_VALUE)
+	if (nul == INVALID_HANDLE_VALUE || !SetHandleInformation(nul, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT))
 		goto done;
 	if (with_input)
 	{
-		if (!CreatePipe(&read_end, &write_end, &inheritable, PIPE_BUFFER_BYTES))
+		if (!CreatePipe(&read_end, &write_end, NULL, PIPE_BUFFER_BYTES))
 			goto done;
-		if (!SetHandleInformation(write_end, HANDLE_FLAG_INHERIT, 0))
+		if (!SetHandleInformation(read_end, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT))
 			goto done;
 	}
 	inherited[0] = nul;
