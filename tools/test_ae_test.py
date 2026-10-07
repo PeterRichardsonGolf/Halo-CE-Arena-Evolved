@@ -390,24 +390,60 @@ class Recordings(unittest.TestCase):
     def test_result_and_line_list_the_clips(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d)
-            (out / "video" / "recordings").mkdir(parents=True)
-            (out / "video" / "recordings" / "clip.mp4").write_bytes(b"x")
-            (out / "video" / "recordings" / "clip2.video.mp4").write_bytes(b"x")  # (an intermediate)
-            (out / "video" / "recordings" / "clip3.mp4.part").write_bytes(b"x")
+            (out / "video").mkdir(parents=True)  # (the game writes <HALO_RECORD_DIR>/<name>.mp4 and, until then,
+            (out / "video" / "clip.mp4").write_bytes(b"x")  # <name>.video.mp4.part and <name>.audio.f32.part)
+            (out / "video" / "clip2.video.mp4.part").write_bytes(b"x")
+            (out / "video" / "clip2.audio.f32.part").write_bytes(b"x")
             self.assertEqual([p.name for p in harness.find_recordings(out / "video")], ["clip.mp4"])
             self.assertEqual(harness.find_recordings(out / "none"), [])
             work = out / "work"
             (work / "root").mkdir(parents=True)
             (work / "save").mkdir()
-            (work / "root" / "debug.txt").write_text(DEBUG_MP)
+            clean = DEBUG_MP.replace("EXCEPTION assert", "note").replace("2 scripts won't", "ok")
+            (work / "root" / "debug.txt").write_text(clean)
             spec = harness.parse_spec({"name": "g", "map": "bloodgulch", "record": 10})
             prepared = {"root": str(work / "root"), "save": str(work / "save"), "cwd": str(work / "bin"),
                         "shots": str(out / "shots"), "env": {}, "record": {"status": "recording 10 s"}}
             r = harness.collect_game(spec, prepared, {"exit_code": 0, "timed_out": False, "seconds": 40}, out)
-            self.assertEqual(r["recordings"], ["video/recordings/clip.mp4"])
-            self.assertEqual(json.loads((out / "result.json").read_text())["recordings"], ["video/recordings/clip.mp4"])
-            self.assertIn("1 mp4 (video/recordings/clip.mp4)", harness.one_line("g", r))
+            self.assertEqual(r["recordings"], ["video/clip.mp4"])
+            self.assertEqual(r["status"], "PASS")
+            self.assertEqual(json.loads((out / "result.json").read_text())["recordings"], ["video/clip.mp4"])
+            self.assertIn("1 mp4 (video/clip.mp4)", harness.one_line("g", r))
+            # (asked for, none made: a FAIL with its reason)
+            (out / "video" / "clip.mp4").unlink()
+            (work / "root").mkdir(parents=True, exist_ok=True)
+            (work / "save").mkdir(exist_ok=True)
+            (work / "root" / "debug.txt").write_text(clean)
+            r2 = harness.collect_game(spec, prepared, {"exit_code": 0, "timed_out": False, "seconds": 40}, out)
+            self.assertEqual(r2["status"], "FAIL")
+            self.assertIn("recording asked, no mp4", r2["why"])
             self.assertIn("record: skipped (x)", harness.one_line("g", dict(r, recordings=[], record="skipped (x)")))
+
+    def test_capture_counts_and_part_files(self):
+        d = harness.parse_debug("chupa: capture: screenshot /s/frame00100.png skipped (1 so far): the screenshot "
+                                "thread is behind\nchupa: capture: screenshot /s/frame00200.png skipped (3 so far): x\n"
+                                "chupa: capture: stopped after 10.03 s: 602 frames due, 600 reads, 2 dropped, 0 reads\n")
+        self.assertEqual((d["shots_skipped"], d["record_dropped"]), (3, 2))
+        line = harness.one_line("g", {"status": "PASS", "exit_code": 0, "seconds": 1, "debug": d,
+                                      "recordings": ["video/a.mp4"]})
+        self.assertIn("3 screenshots skipped", line)
+        self.assertIn("2 frames dropped", line)
+        with tempfile.TemporaryDirectory() as t:
+            Path(t, "frame00001.png").write_bytes(harness.png_bytes(1, 1, b"abc"))
+            Path(t, "frame00002.png.part").write_bytes(b"half")
+            self.assertEqual([p.name for p in harness.convert_shots(t)], ["frame00001.png"])
+            self.assertFalse(Path(t, "frame00002.png.part").exists())
+
+    def test_out_dir_is_absolute(self):
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            os.chdir(d)
+            try:
+                out = harness.new_out_dir(dict(harness.DEFAULTS, out_dir="rel-out"), "run", None, "n")
+            finally:
+                os.chdir(cwd)
+            self.assertTrue(out.is_absolute())
+            self.assertEqual(out, Path(d).resolve() / "rel-out" / "run" / "n")
 
     def test_png_screenshots_when_the_game_has_them(self):
         with tempfile.TemporaryDirectory(dir=Path.home()) as d:
@@ -426,7 +462,10 @@ class Recordings(unittest.TestCase):
 
 
 class Inner(unittest.TestCase):
-    """the inner runner with a fake Xvfb and a fake game (no X, no game, no namespace)"""
+    """the inner runner with a fake Xvfb and fake games (no X, no game; geteuid stubbed, so even a root run never
+    touches the real loopback or mounts)"""
+
+    NOT_ROOT = staticmethod(lambda: 1000)
 
     def fake(self, d, name, body):
         f = Path(d) / name
@@ -434,42 +473,127 @@ class Inner(unittest.TestCase):
         f.chmod(0o755)
         return str(f)
 
-    def plan(self, d, xvfb_body, game_code=0, game_sleep=0.0):
-        xvfb = self.fake(d, "Xvfb", xvfb_body)
-        cwd = Path(d) / "case" / "bin"
-        cwd.mkdir(parents=True)
-        self.fake(cwd, "halo", f"import os, sys, time\ntime.sleep({game_sleep})\n"
-                  "print('DISPLAY=' + os.environ.get('DISPLAY', ''))\nsys.exit(" + str(game_code) + ")\n")
-        game = {"name": "g", "cwd": str(cwd), "env": {}, "delay": 0, "timeout": 30, "screen": "640x480",
-                "address": "127.0.0.200"}
-        plan = {"games": [game], "bots": None, "xvfb": True, "xvfb_bin": xvfb, "addresses": ["127.0.0.200"]}
-        (Path(d) / "plan.json").write_text(json.dumps(plan))
-        return Path(d) / "plan.json", Path(d) / "res.json", cwd.parent / "stdout.log"
+    # (a fake Xvfb: notes its pid, says display 57 on the -displayfd fd, then does `tail`)
+    def xvfb_body(self, tail, say=True):
+        return ("import os, sys, time, pathlib\n"
+                "pathlib.Path(__file__).with_name('xvfb-%d.pid' % os.getpid()).write_text('x')\n"
+                "fd = int(sys.argv[sys.argv.index('-displayfd') + 1])\n" +
+                ("os.write(fd, b'57\\n')\n" if say else "") + tail)
 
-    WRITE_DISPLAY = ("import os, sys, time\nfd = int(sys.argv[sys.argv.index('-displayfd') + 1])\n"
-                     "os.write(fd, b'57\\n')\n")
+    def game(self, d, name, code=0, sleep=0.0, command=None):
+        cwd = Path(d) / name / "bin"
+        cwd.mkdir(parents=True)
+        self.fake(cwd, "halo", f"import os, sys, time, pathlib\npathlib.Path('started').write_text(str(os.getpid()))\n"
+                  f"time.sleep({sleep})\nprint('DISPLAY=' + os.environ.get('DISPLAY', ''))\nsys.exit({code})\n")
+        g = {"name": name, "cwd": str(cwd), "env": {}, "delay": 0, "timeout": 30, "screen": "640x480",
+             "address": "127.0.0.200"}
+        if command:
+            g["command"] = command
+        return g
+
+    def plan(self, d, xvfb_body, games):
+        xvfb = self.fake(d, "Xvfb", xvfb_body)
+        plan = {"games": games, "bots": None, "xvfb": True, "xvfb_bin": xvfb, "addresses": ["127.0.0.200"]}
+        (Path(d) / "plan.json").write_text(json.dumps(plan))
+        return Path(d) / "plan.json", Path(d) / "res.json"
+
+    def left_running(self, d, wait=5):
+        """processes still running from the fake scripts in d (their path is in their command line)"""
+        t0 = time.time()
+        while True:
+            left = []
+            for proc in Path("/proc").iterdir():
+                if not proc.name.isdigit() or int(proc.name) == os.getpid():
+                    continue
+                try:
+                    cmd = (proc / "cmdline").read_bytes()
+                    state = (proc / "stat").read_text().rsplit(")", 1)[1].split()[0]
+                except OSError:
+                    continue
+                if d.encode() in cmd and state != "Z":
+                    left.append(int(proc.name))
+            if not left or time.time() - t0 > wait:
+                return left
+            time.sleep(0.1)
+
+    def xvfb_pids(self, d):
+        return [int(p.name[5:-4]) for p in Path(d).glob("xvfb-*.pid")]
 
     def test_x_server_gone_first_is_not_a_failure(self):
         # (the flake: the X server is gone before the cleanup; xvfb-run then returned 1 for a clean game)
         with tempfile.TemporaryDirectory() as d:
-            plan, res, stdout = self.plan(d, self.WRITE_DISPLAY + "sys.exit(0)\n", 0, 0.5)
-            harness._inner(str(plan), str(res))
-            self.assertEqual(json.loads(res.read_text())[0]["exit_code"], 0)
-            self.assertIn("DISPLAY=:57", stdout.read_text())
+            plan, res = self.plan(d, self.xvfb_body("sys.exit(0)\n"), [self.game(d, "g", 0, 0.5)])
+            harness._inner(str(plan), str(res), geteuid=self.NOT_ROOT)
+            r = json.loads(res.read_text())[0]
+            self.assertEqual((r["exit_code"], r["display"]), (0, ":57"))
+            self.assertIn("DISPLAY=:57", (Path(d) / "g" / "stdout.log").read_text())
 
     def test_game_exit_code_is_the_games(self):
         with tempfile.TemporaryDirectory() as d:
-            plan, res, _ = self.plan(d, self.WRITE_DISPLAY + "time.sleep(60)\n", 3)
+            plan, res = self.plan(d, self.xvfb_body("time.sleep(60)\n"), [self.game(d, "g", 3)])
             t0 = time.time()
-            harness._inner(str(plan), str(res))
+            harness._inner(str(plan), str(res), geteuid=self.NOT_ROOT)
             self.assertEqual(json.loads(res.read_text())[0]["exit_code"], 3)
             self.assertLess(time.time() - t0, 20)  # (the X server was stopped, not waited for)
+            self.assertEqual(self.left_running(d), [])
 
-    def test_no_display_number(self):
+    def test_no_x_server_no_game(self):
         with tempfile.TemporaryDirectory() as d:
-            xvfb = self.fake(d, "Xvfb", "import sys\nsys.exit(1)\n")
+            saved = os.environ.get("DISPLAY")
+            os.environ["DISPLAY"] = ":0"  # (the caller's desktop: must never reach a game)
+            try:
+                plan, res = self.plan(d, "import sys\nsys.exit(1)\n", [self.game(d, "g")])
+                harness._inner(str(plan), str(res), geteuid=self.NOT_ROOT)
+            finally:
+                if saved is None:
+                    os.environ.pop("DISPLAY", None)
+                else:
+                    os.environ["DISPLAY"] = saved
+            r = json.loads(res.read_text())[0]
+            self.assertIsNone(r["exit_code"])
+            self.assertIn("no X server", r["error"])
+            self.assertFalse((Path(d) / "g" / "bin" / "started").exists())
+            spec = harness.parse_spec({"name": "g", "map": "bloodgulch"})
+            status, why = harness.evaluate(spec, {"exit_code": None, "error": r["error"], "debug_found": False})
+            self.assertEqual(status, "FAIL")
+            self.assertTrue(why[0].startswith("no X server"))
+
+    def test_silent_x_server_is_killed_at_the_deadline(self):
+        with tempfile.TemporaryDirectory() as d:
+            xvfb = self.fake(d, "Xvfb", self.xvfb_body("time.sleep(60)\n", say=False))
+            t0 = time.time()
             with open(Path(d) / "x.log", "w") as log, self.assertRaises(RuntimeError):
-                harness.start_xvfb("640x480", log, xvfb, wait=5)
+                harness.start_xvfb("640x480", log, xvfb, wait=2)
+            self.assertLess(time.time() - t0, 15)
+            self.assertEqual(len(self.xvfb_pids(d)), 1)  # (it ran, and)
+            self.assertEqual(self.left_running(d), [])   # (it was stopped)
+
+    def test_an_error_stops_everything_started(self):
+        # (the second game's binary is missing: Popen raises; the first game and both X servers must be stopped)
+        with tempfile.TemporaryDirectory() as d:
+            g1 = self.game(d, "g1", 0, 60)
+            g2 = self.game(d, "g2", command="./no-such-binary")
+            plan, res = self.plan(d, self.xvfb_body("time.sleep(60)\n"), [g1, g2])
+            with self.assertRaises(OSError):
+                harness._inner(str(plan), str(res), geteuid=self.NOT_ROOT)
+            self.assertEqual(self.left_running(d), [])
+
+    def test_term_stops_everything_started(self):
+        # (the tool interrupted: run_group sends TERM to the inner runner, which must clean up)
+        import signal
+        with tempfile.TemporaryDirectory() as d:
+            plan, res = self.plan(d, self.xvfb_body("time.sleep(60)\n"), [self.game(d, "g", 0, 60)])
+            code = (f"import sys; sys.path.insert(0, {str(HERE)!r}); import harness; "
+                    f"harness._inner({str(plan)!r}, {str(res)!r}, geteuid=lambda: 1000)")
+            p = harness.subprocess.Popen([sys.executable, "-c", code])
+            started = Path(d) / "g" / "bin" / "started"
+            t0 = time.time()
+            while not started.exists() and time.time() - t0 < 15:
+                time.sleep(0.1)
+            p.send_signal(signal.SIGTERM)
+            self.assertTrue(started.exists())
+            self.assertEqual(p.wait(timeout=30), 128 + signal.SIGTERM)
+            self.assertEqual(self.left_running(d), [])
 
 
 class Load(unittest.TestCase):

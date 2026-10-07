@@ -130,7 +130,7 @@ def stamp():
 
 
 def new_out_dir(cfg, tool, label=None, name=None):
-    base = expand(cfg["out_dir"]) / tool
+    base = expand(cfg["out_dir"]).resolve() / tool  # (absolute: the game writes into it from its own cwd)
     d = base / (name or (stamp() + (f"-{safe_name(label)}" if label else "")))
     d.mkdir(parents=True, exist_ok=True)
     return d
@@ -666,7 +666,8 @@ def parse_debug(text):
     lines = text.splitlines()
     r = {"version": "", "network_version": None, "joined": None, "delta": [], "tick": None, "players": 0,
          "items": None, "asserts": 0, "exceptions": 0, "refusals": 0, "lost_scripts": 0, "lost_lines": [],
-         "scenario_scripts": None, "corrected": 0, "clean_exit": False, "problems": [], "final": {}}
+         "scenario_scripts": None, "corrected": 0, "clean_exit": False, "problems": [], "final": {},
+         "shots_skipped": 0, "record_dropped": None}
     for line in lines:
         s = line.strip()
         if not r["version"] and re.match(r"^[\w-]+: (Halo CE|ChupathingyCE|OpenCE|halo)", s, re.I) and \
@@ -716,6 +717,14 @@ def parse_debug(text):
             r["corrected"] += 1
         if "exiting after debug.exit_after" in s:
             r["clean_exit"] = True
+        m = re.search(r"capture: screenshot .* skipped \((\d+) so far\)", s)
+        if m:
+            r["shots_skipped"] = max(r["shots_skipped"], int(m[1]))
+        elif re.search(r"capture: screenshot .* skipped", s):
+            r["shots_skipped"] += 1
+        m = re.search(r"capture: stopped after .*?(\d+) dropped", s)
+        if m:
+            r["record_dropped"] = (r["record_dropped"] or 0) + int(m[1])
     return r
 
 
@@ -761,6 +770,8 @@ def evaluate(spec, result):
     exp = spec.get("expect", {})
     if result.get("skipped"):
         return "SKIP", [result["skipped"]]
+    if result.get("error"):
+        why.append(result["error"])
     if result.get("timed_out"):
         why.append("timed out (killed)")
     elif result.get("exit_code") not in (0,):
@@ -784,15 +795,18 @@ def evaluate(spec, result):
             why.append(f"tick {d.get('tick')} < {min_tick}")
         if exp.get("scripts", kind == "campaign") and not d.get("scenario_scripts"):
             why.append("no scenario scripts line")
+    if str(result.get("record") or "").startswith("recording") and not result.get("recordings"):
+        why.append("recording asked, no mp4")
     return ("FAIL" if why else "PASS"), why
 
 
 def find_recordings(folder):
-    """the finished MP4 clips in a recording folder (not the game's .video.mp4 / .part intermediates)"""
+    """the finished clips the game wrote into HALO_RECORD_DIR: <dir>/<name>.mp4 (its intermediates,
+    <name>.video.mp4.part and <name>.audio.f32.part, are not clips)"""
     folder = Path(folder)
     if not folder.exists():
         return []
-    return sorted(p for p in folder.rglob("*.mp4") if not p.name.endswith(".video.mp4"))
+    return sorted(p for p in folder.glob("*.mp4") if p.is_file())
 
 
 def one_line(name, result):
@@ -810,8 +824,12 @@ def one_line(name, result):
                 f"refused {d.get('refusals', '-')} lost {d.get('lost_scripts', '-')}")
     if result.get("shots"):
         bits.append(f"{len(result['shots'])} png")
+    if d.get("shots_skipped"):
+        bits.append(f"{d['shots_skipped']} screenshots skipped")
     if result.get("recordings"):
         bits.append(f"{len(result['recordings'])} mp4 ({', '.join(result['recordings'])})")
+        if d.get("record_dropped"):
+            bits.append(f"{d['record_dropped']} frames dropped")
     elif result.get("record") and result["record"] != "off":
         bits.append(f"record: {result['record']}")
     if result.get("why"):
@@ -939,6 +957,8 @@ def convert_shots(folder, delete=True):
     folder = Path(folder)
     if not folder.exists():
         return []
+    for part in folder.glob("*.part"):  # (a PNG the game was still writing when it was stopped)
+        part.unlink(missing_ok=True)
     for b in sorted(folder.glob("*.bmp")):
         try:
             bmp_to_png(b, delete)
@@ -1058,7 +1078,7 @@ _NETNS = {}
 
 
 def netns_ok():
-    """unshare -rn works here (a user and network namespace without root); asked once"""
+    """unshare -rnm works here (a user, network and mount namespace without root); asked once"""
     if "ok" not in _NETNS:
         _NETNS["ok"] = _netns_probe()
     return _NETNS["ok"]
@@ -1067,7 +1087,7 @@ def netns_ok():
 def _netns_probe():
     if not shutil.which("unshare") or not shutil.which("ip"):
         return False
-    r = subprocess.run(["unshare", "-rn", "true"], capture_output=True)
+    r = subprocess.run(["unshare", "-rnm", "true"], capture_output=True)
     return r.returncode == 0
 
 
@@ -1132,7 +1152,9 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
 
 
 def run_group(cfg, games, bots=None, inner_out=None):
-    """run prepared games together (one network namespace) and wait; [{exit_code, timed_out, seconds}]"""
+    """run prepared games together (one network namespace) and wait; [{exit_code, timed_out, seconds, display,
+    error}]. If this tool is interrupted, the inner runner gets SIGTERM and stops its games and X servers."""
+    import signal
     plan = {"games": games, "bots": bots, "xvfb": use_xvfb(cfg), "nice": 19 if cfg.get("_slow") else cfg.get("nice", 10),
             "addresses": sorted({g["address"] for g in games})}
     inner_out = Path(inner_out)
@@ -1141,10 +1163,20 @@ def run_group(cfg, games, bots=None, inner_out=None):
     res_path = inner_out / "inner_result.json"
     cmd = [sys.executable, str(HERE / "harness.py"), "--inner", str(plan_path), str(res_path)]
     if netns_ok():
-        cmd = ["unshare", "-rn", *cmd]
+        cmd = ["unshare", "-rnm", *cmd]  # (own network, and own mounts: a private /tmp for the X server)
     else:
-        log("ae_test: no unshare -rn here: the game shares this machine's network (one game on the machine at a time)")
-    subprocess.run(cmd)
+        log("ae_test: no unshare -rnm here: the game shares this machine's network (one game on the machine at a time)")
+    p = subprocess.Popen(cmd)
+    try:
+        p.wait()
+    except BaseException:
+        p.send_signal(signal.SIGTERM)  # (the inner runner cleans up on TERM; KILL only if it hangs)
+        try:
+            p.wait(timeout=40)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.wait()
+        raise
     try:
         return json.loads(res_path.read_text())
     except (OSError, ValueError):  # (no result: e.g. the disk filled up)
@@ -1156,18 +1188,20 @@ def run_group(cfg, games, bots=None, inner_out=None):
 def start_xvfb(screen, log_file, xvfb="Xvfb", wait=30):
     """our own X server for one game: Xvfb picks a free display itself (-displayfd) and says which.
     (Not xvfb-run: its cleanup `kill`s an Xvfb that may already be gone and then returns 1 for a game
-    that exited cleanly.) Returns (process, ":N")."""
+    that exited cleanly.) Returns (process, ":N"); raises RuntimeError (or OSError) with no X server left."""
     import select
     r, w = os.pipe()
+    p = None
+    ok = False
     try:
-        p = subprocess.Popen([xvfb, "-displayfd", str(w), "-screen", "0", f"{screen}x24", "-nolisten", "tcp",
-                              "-noreset"], pass_fds=(w,), stdin=subprocess.DEVNULL, stdout=log_file,
-                             stderr=log_file, start_new_session=True)
-    finally:
-        os.close(w)
-    data = b""
-    deadline = time.time() + wait
-    try:
+        try:
+            p = subprocess.Popen([xvfb, "-displayfd", str(w), "-screen", "0", f"{screen}x24", "-nolisten", "tcp",
+                                  "-noreset"], pass_fds=(w,), stdin=subprocess.DEVNULL, stdout=log_file,
+                                 stderr=log_file, start_new_session=True)
+        finally:
+            os.close(w)
+        data = b""
+        deadline = time.time() + wait
         while b"\n" not in data and time.time() < deadline:
             ready, _, _ = select.select([r], [], [], 0.5)
             if ready:
@@ -1175,13 +1209,15 @@ def start_xvfb(screen, log_file, xvfb="Xvfb", wait=30):
                 if not chunk:
                     break
                 data += chunk
+        num = data.strip().decode(errors="replace")
+        if not num.isdigit():
+            raise RuntimeError(f"{xvfb} gave no display number within {wait} s ({num!r})")
+        ok = True
+        return p, f":{num}"
     finally:
         os.close(r)
-    num = data.strip().decode(errors="replace")
-    if not num.isdigit():
-        stop_process_group(p)
-        raise RuntimeError(f"{xvfb} gave no display number ({num!r})")
-    return p, f":{num}"
+        if not ok and p is not None:
+            stop_process_group(p)
 
 
 def stop_process_group(p, grace=10):
@@ -1201,71 +1237,108 @@ def stop_process_group(p, grace=10):
     return p.wait()
 
 
-def _inner(plan_path, res_path):
+def private_x_tmp():
+    """(root of our own user and mount namespace) a private /tmp (tmpfs, with its .X11-unix): the X server's
+    lock file and socket live there, so parallel games' X servers can never meet, even when (as Xvfb does here)
+    each picks display :0. Nothing of the harness is in /tmp (work, save and output folders never are).
+    False when not possible (no namespace)."""
+    if os.geteuid() != 0:
+        return False
+    r = subprocess.run(["mount", "-t", "tmpfs", "-o", "mode=1777", "tmpfs", "/tmp"], capture_output=True)
+    if r.returncode:
+        return False
+    x11 = Path("/tmp/.X11-unix")
+    x11.mkdir(exist_ok=True)
+    x11.chmod(0o1777)
+    return True
+
+
+def _inner(plan_path, res_path, geteuid=os.geteuid):
     """(inside the namespace) loopback addresses, each game with its own Xvfb (when headless) and a timeout,
-    the bots. A game's exit code is its own (halo is our direct child), never an X wrapper's."""
+    the bots. A game's exit code is its own (halo is our direct child), never an X wrapper's. A game whose X
+    server failed is never started (and never sees the caller's DISPLAY). Whatever happens (an error, TERM
+    from the tool, Ctrl-C), every game, X server and bot started here is stopped before this returns."""
+    import signal
     import socket
+
+    def on_term(signum, frame):
+        raise SystemExit(128 + signum)
+    signal.signal(signal.SIGTERM, on_term)
     plan = json.loads(Path(plan_path).read_text())
-    if os.geteuid() == 0:  # root of the new user namespace: our own loopback
+    if geteuid() == 0:  # root of the new user namespace: our own loopback, our own X socket folder
         subprocess.run(["ip", "link", "set", "lo", "up"], capture_output=True)
         for a in plan["addresses"]:
             subprocess.run(["ip", "addr", "add", f"{a}/8", "dev", "lo"], capture_output=True)
-    procs = []
-    t0 = time.time()
-    for g in plan["games"]:
-        while time.time() - t0 < g.get("delay", 0):
-            time.sleep(0.5)
-        cmd = [g.get("command", "./halo")]
-        env = dict(os.environ)
-        env.update(g["env"])
-        out = open(Path(g["cwd"]).parent / "stdout.log", "w")
-        xserver = None
         if plan["xvfb"]:
-            xlog = open(Path(g["cwd"]).parent / "xvfb.log", "w")
-            try:
-                xserver, env["DISPLAY"] = start_xvfb(g["screen"], xlog, plan.get("xvfb_bin", "Xvfb"))
-            except (OSError, RuntimeError) as e:
-                out.write(f"ae_test: no X server: {e}\n")
-            env.pop("WAYLAND_DISPLAY", None)
-            env.pop("XAUTHORITY", None)
-        p = subprocess.Popen(cmd, cwd=g["cwd"], env=env, stdout=out, stderr=subprocess.STDOUT,
-                             start_new_session=True)
-        procs.append((g, p, time.time(), out, xserver))
+            private_x_tmp()
+    started = []   # [game result dict, game process or None, start time, [files], X server or None]
     bot_proc = None
-    b = plan.get("bots")
-    if b and b.get("machines"):
-        host = b.get("host", ADDRESS)
-        deadline = time.time() + 120
-        while time.time() < deadline:
-            try:
-                with socket.create_connection((host, GAME_PORT), timeout=1):
-                    break
-            except OSError:
-                time.sleep(1)
-        bf = open(b["log"], "w")
-        bot_proc = subprocess.Popen([sys.executable, str(TOOLS / "system_link_bots.py"), "--host", host,
-                                     "--machines", str(b["machines"]), "--seed", str(b.get("seed", 7)),
-                                     "--seconds", str(b.get("seconds", 80)), *b.get("args", [])],
-                                    stdout=bf, stderr=subprocess.STDOUT, start_new_session=True)
     results = []
-    import signal
-    for g, p, start, out, xserver in procs:
-        timed_out = False
-        try:
-            rc = p.wait(timeout=max(1, g["timeout"] - (time.time() - start)))
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            rc = stop_process_group(p)
-        if xserver is not None:
-            stop_process_group(xserver)  # (after the game; one that already quit is fine)
-        out.close()
-        results.append({"exit_code": rc, "timed_out": timed_out, "seconds": round(time.time() - start, 1)})
-    if bot_proc:
-        try:
-            os.killpg(bot_proc.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        bot_proc.wait()
+    try:
+        t0 = time.time()
+        for g in plan["games"]:
+            while time.time() - t0 < g.get("delay", 0):
+                time.sleep(0.5)
+            entry = [{"exit_code": None, "timed_out": False, "seconds": 0, "display": None}, None, time.time(), [], None]
+            started.append(entry)
+            env = dict(os.environ)
+            env.update(g["env"])
+            out = open(Path(g["cwd"]).parent / "stdout.log", "w")
+            entry[3].append(out)
+            if plan["xvfb"]:
+                for k in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY"):  # (never the caller's desktop)
+                    env.pop(k, None)
+                xlog = open(Path(g["cwd"]).parent / "xvfb.log", "w")
+                entry[3].append(xlog)
+                try:
+                    entry[4], env["DISPLAY"] = start_xvfb(g["screen"], xlog, plan.get("xvfb_bin", "Xvfb"))
+                except (OSError, RuntimeError) as e:
+                    entry[0]["error"] = f"no X server: {e}"
+                    out.write(f"ae_test: {entry[0]['error']}: the game was not started\n")
+                    out.flush()
+                    continue
+                entry[0]["display"] = env["DISPLAY"]
+            entry[2] = time.time()
+            entry[1] = subprocess.Popen([g.get("command", "./halo")], cwd=g["cwd"], env=env, stdout=out,
+                                        stderr=subprocess.STDOUT, start_new_session=True)
+        b = plan.get("bots")
+        if b and b.get("machines") and any(e[1] for e in started):
+            host = b.get("host", ADDRESS)
+            deadline = time.time() + 120
+            while time.time() < deadline:
+                try:
+                    with socket.create_connection((host, GAME_PORT), timeout=1):
+                        break
+                except OSError:
+                    time.sleep(1)
+            bf = open(b["log"], "w")
+            started[0][3].append(bf)
+            bot_proc = subprocess.Popen([sys.executable, str(TOOLS / "system_link_bots.py"), "--host", host,
+                                         "--machines", str(b["machines"]), "--seed", str(b.get("seed", 7)),
+                                         "--seconds", str(b.get("seconds", 80)), *b.get("args", [])],
+                                        stdout=bf, stderr=subprocess.STDOUT, start_new_session=True)
+        for g, entry in zip(plan["games"], started):
+            res, p, start = entry[0], entry[1], entry[2]
+            if p is not None:
+                try:
+                    res["exit_code"] = p.wait(timeout=max(1, g["timeout"] - (time.time() - start)))
+                except subprocess.TimeoutExpired:
+                    res["timed_out"] = True
+                    res["exit_code"] = stop_process_group(p)
+                res["seconds"] = round(time.time() - start, 1)
+            if entry[4] is not None:
+                stop_process_group(entry[4])  # (after the game; one that already quit is fine)
+        results = [e[0] for e in started]
+    finally:
+        for entry in started:  # (an error or TERM above: nothing we started outlives us)
+            if entry[1] is not None and entry[1].poll() is None:
+                stop_process_group(entry[1])
+            if entry[4] is not None:
+                stop_process_group(entry[4])
+            for f in entry[3]:
+                f.close()
+        if bot_proc is not None:
+            stop_process_group(bot_proc)
     write_json(res_path, results)
 
 
@@ -1295,6 +1368,7 @@ def collect_game(spec, prepared, inner, out, keep_work=False):
               "seconds": inner.get("seconds"), "debug_found": bool(found), "debug": parse_debug(text),
               "shots": [str(Path(p).relative_to(out)) for p in pngs], "env": prepared["env"],
               "record": (prepared.get("record") or {}).get("status"),
+              "display": inner.get("display"), "error": inner.get("error"),
               "recordings": [str(p.relative_to(out)) for p in recordings]}
     status, why = evaluate(spec, result)
     result["status"], result["why"] = status, why

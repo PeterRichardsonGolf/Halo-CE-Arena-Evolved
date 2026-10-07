@@ -58,14 +58,18 @@ The harness sets: `SDL_AUDIO_DRIVER=dummy`, `SDL_GAMECONTROLLER_IGNORE_DEVICES=a
 `HALO_NET_ONLINE=false` (else hosted games are listed publicly), `HALO_NET_ADDRESS=127.0.0.200`,
 `HALO_UPDATE_AUTO=false`, its own `HALO_DATA_ROOT` (links to the maps and mods) and `HALO_SAVE_ROOT`, a copy of
 the binary (config.toml is written beside it), its own network namespace (`unshare -rn`, so games and bots
-never meet), its own `Xvfb` when there is no display (started by the harness on a free display, not
-`xvfb-run`, whose cleanup can turn a clean exit into exit 1); the game's exit code is the game's own. A spec's `env` adds or overrides.
+never meet), its own `Xvfb` when there is no display (started by the harness with `-displayfd`, with a private
+`/tmp` in the game's own mount namespace, so every game may get `:0` and they still never meet; not `xvfb-run`,
+whose cleanup can turn a clean exit into exit 1).
+The game's exit code is the game's own, the display is in result.json, a game whose X server failed is not started
+(the reason is in `why`), and nothing the harness started outlives it (errors, TERM, Ctrl-C). A spec's `env` adds or overrides.
 
 - Save roots and work folders **never under /tmp** (a RAM disk on the laptop; map caches are up to 290 MB each).
   The tools refuse it, and delete each game's work folder afterwards (`--keep-work` keeps it).
-- Screenshots: **PNG, never BMP**. Builds with the capture feature write PNGs themselves (the tools set
-  `HALO_SCREENSHOT_FORMAT=png`); older builds (stock Chupa/OpenCE in handshakes) write BMPs, which the tools convert
-  and delete.
+- Screenshots: **PNG, never BMP**. On Linux, builds with the capture feature write PNGs themselves (run, smoke,
+  sheet and handshake set `HALO_SCREENSHOT_FORMAT=png`; frames the game had to skip are counted in the result);
+  older builds (stock Chupa/OpenCE in handshakes) write BMPs, which the tools convert and delete. `windows.py` still
+  has the Windows build write BMPs and converts them on the laptop.
 - Verdicts read `debug.txt`: exit code and the clean-exit line, asserts, exceptions, refusals ("cannot be
   played"), lost scripts ("scripts won't run"), the last network-test tick, items, scenario scripts.
 
