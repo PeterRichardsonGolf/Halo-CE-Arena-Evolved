@@ -3,7 +3,7 @@
 
     python3 tools/ae_test/run.py --build <rev|name|path> --map bloodgulch [--players 2] [--bots 3 --bot-args=--move]
         [--mod NHE] [--window 1920x1080] [--exit-after 40] [--shots 300] [--env HALO_MATCH_CLOCK=both ...]
-        [--init 'map_name levels\\a10\\a10'] [--record 20] [--box]
+        [--init 'map_name levels\\a10\\a10'] [--record 20] [--saved-gametype "AE PRO TS"] [--save-from DIR] [--box]
     python3 tools/ae_test/run.py --spec game.json [--box]
 
 A spec file is a JSON object with the keys in harness.SPEC_KEYS (--list-keys prints them). The result
@@ -27,7 +27,8 @@ def spec_from_args(a):
     pairs = {"build": a.build, "map": a.map, "gametype": a.gametype, "flags": a.flags, "start": a.start,
              "local_players": a.players, "bots": a.bots, "mod": a.mod, "menus": a.menus, "window": a.window,
              "exit_after": a.exit_after, "screenshots": a.shots, "test_input": a.test_input, "record": a.record,
-             "target": a.target, "name": a.name, "network_test": a.network_test}
+             "target": a.target, "name": a.name, "network_test": a.network_test,
+             "saved_gametype": a.saved_gametype, "save_from": a.save_from}
     for k, v in pairs.items():
         if v is not None:
             data[k] = v
@@ -56,6 +57,8 @@ def parser():
     p.add_argument("--name")
     p.add_argument("--map")
     p.add_argument("--gametype")
+    p.add_argument("--saved-gametype", help="a custom gametype of the save root, by its stored name")
+    p.add_argument("--save-from", help="a folder copied as the game's save root first (never under /tmp)")
     p.add_argument("--network-test", help="raw HALO_NETWORK_TEST")
     p.add_argument("--flags", type=int)
     p.add_argument("--start", type=float)

@@ -555,6 +555,8 @@ SPEC_KEYS = {
     "map": "multiplayer map (host:<map>; '<name>@ce' for Custom Edition) or a campaign scenario "
            "path with backslashes (levels\\a10\\a10, through init.txt)",
     "gametype": "variant for the hosted game (host:<map>:<gametype>)",
+    "saved_gametype": "a custom gametype of the save root, by its stored name, for the hosted game "
+                      "(HALO_NETWORK_TEST_GAMETYPE; not found: the built-in one, as without it)",
     "network_test": "raw HALO_NETWORK_TEST (overrides map: 'join' for a client)",
     "flags": "HALO_NETWORK_TEST_FLAGS (gametype option bits)",
     "start": "HALO_NETWORK_TEST_START seconds",
@@ -578,6 +580,8 @@ SPEC_KEYS = {
     "timeout_extra": "seconds past exit_after before the game is killed (default 150)",
     "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true}",
     "save": "a named save root shared by the cases of one run (default: the case's own)",
+    "save_from": "a folder (on the machine that plays) copied as the case's save root before the game (a "
+                 "shared one: once, when it is made); never under /tmp",
 }
 
 
@@ -636,6 +640,8 @@ def spec_env(spec, data_root, save_root, shots_dir=None):
         env["HALO_NETWORK_TEST_LOCAL_PLAYERS"] = str(spec["local_players"])
     if spec.get("flags") is not None:
         env["HALO_NETWORK_TEST_FLAGS"] = str(spec["flags"])
+    if spec.get("saved_gametype"):
+        env["HALO_NETWORK_TEST_GAMETYPE"] = spec["saved_gametype"]
     if spec.get("start") is not None:
         env["HALO_NETWORK_TEST_START"] = str(spec["start"])
     if spec.get("mod") is not None:
@@ -1153,6 +1159,14 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
         save = (save_roots or {}).setdefault(spec["save"], work.parent / f"save-{safe_name(spec['save'])}")
     else:
         save = work / "save"
+    if spec.get("save_from"):
+        # (a save root to start from, e.g. one with saved gametypes: copied when the save root is made)
+        save_from = expand(spec["save_from"])
+        check_not_tmp(save_from, "save_from")
+        if not save_from.is_dir():
+            raise SystemExit(f"ae_test: save_from {save_from} is not a folder")
+        if not Path(save).exists():
+            shutil.copytree(save_from, save, symlinks=True)
     Path(save).mkdir(parents=True, exist_ok=True)
     shots = out / "shots"
     if spec.get("screenshots"):

@@ -594,6 +594,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "text/unicode.h"
 #include "units/bipeds.h"
 #include "units/units.h"
+#include <stdarg.h> /* port: game_engine_log_append */
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
@@ -7548,30 +7549,115 @@ void game_engine_initialize_for_new_map(
 	return;
 }
 
+/* port: appends to a log line, cut short when it is full */
+static void game_engine_log_append(
+	char *line,
+	size_t size,
+	char const *format,
+	...)
+{
+	size_t length = strlen(line);
+	va_list arguments;
+
+	if (length + 1 >= size)
+		return;
+	va_start(arguments, format);
+	vsnprintf(line + length, size - length, format, arguments);
+	va_end(arguments);
+	line[size - 1] = 0;
+
+	return;
+}
+
+/* port: "N ticks (S s)", so 225 ticks shows as 7.5 s */
+static char const *game_engine_log_ticks(
+	char *string,
+	size_t size,
+	long ticks)
+{
+	_snprintf(string, size - 1, "%ld ticks (%g s)", ticks, (double)ticks / TICKS_PER_SECOND);
+	string[size - 1] = 0;
+
+	return string;
+}
+
+/* port: a vehicle set's name (universal_variant's, a team's PC option's) */
+static char const *game_engine_log_vehicle_set(
+	long vehicle_set)
+{
+	static char const *const vehicle_sets[] = { "default", "none", "warthogs", "ghosts", "scorpions" };
+
+	if (vehicle_set == VARIANT_VEHICLE_SET_CUSTOM)
+		return "custom";
+	return vehicle_set >= 0 && vehicle_set < (long)NUMBEROF(vehicle_sets) ? vehicle_sets[vehicle_set] : "?";
+}
+
+/* port: a custom loadout's weapon's name (game_engine.h's _loadout_weapon_*) */
+static char const *game_engine_log_loadout_weapon(
+	byte weapon)
+{
+	static char const *const weapons[] =
+	{
+		"none", "random", "assault rifle", "pistol", "shotgun", "sniper rifle", "rocket launcher",
+		"plasma pistol", "plasma rifle", "needler"
+	};
+
+	return weapon < NUMBEROF(weapons) ? weapons[weapon] : "?";
+}
+
+/* port: whether this game's first spawned player's weapons and grenades
+are in the log (game_engine_postspawn_player_update); a new map's game logs
+them again */
+static boolean game_engine_first_spawn_logged = FALSE;
+
 /* port: the rules this game plays by, in the log (the gametype's port
 options and starting equipment, its time limit, its vehicle set: Halo 1:
-NHE's mode). After the scripts are set up for the new map (game.c), so that
-hs_scenario_is_nhe is this map's */
+NHE's mode; and the variant's own rules: score, respawn, the weapon set,
+the PC options, the game engine's options). After the scripts are set up
+for the new map (game.c), so that hs_scenario_is_nhe is this map's */
 void game_engine_log_rules(
 	void)
 {
+	game_engine_first_spawn_logged = FALSE;
 	if (game_engine)
 	{
-		unsigned long flags = global_variant.universal_variant.flags;
-		long time_limit = game_variant_options_get()->time_limit;
+		static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };
+		static char const *const friendly_fire[] = { "on", "off", "shields only", "explosives only" };
+		static char const *const radar_players[] = { "all", "friends", "none" };
+		static char const *const goal_radar[] = { "motion tracker", "nav points", "none" };
+		static char const *const weapon_sets[] =
+		{
+			"normal", "pistols", "assault rifles", "plasma", "sniping", "no sniping", "rocket launchers",
+			"shotguns", "short range", "human", "no grenades", "covenant", "classic", "heavy"
+		};
+		static char const *const speeds[] = { "slow", "normal", "faster" };
+		static char const *const traits[] = { "none", "invisible", "extra damage", "damage resistant" };
+		static char const *const ball_types[] = { "normal", "magic", "terminator" };
+		static char const *const race_types[] = { "normal", "any order", "rally" };
+		static char const *const team_scoring[] = { "minimum", "maximum", "sum" };
+		struct universal_variant const *universal = &global_variant.universal_variant;
+		union game_engine_variant const *engine_variant = &global_variant.game_engine_variant;
+		struct game_variant_options const *options = game_variant_options_get();
+		unsigned long flags = universal->flags;
+		long time_limit = options->time_limit;
+		long engine = global_variant.game_engine_index;
 		char time_limit_string[32];
+		char respawn[48];
+		char suicide[48];
+		char line[1024];
 
 		if (time_limit > 0)
 			_snprintf(time_limit_string, sizeof(time_limit_string) - 1, "%ld min", time_limit);
 		else
 			_snprintf(time_limit_string, sizeof(time_limit_string) - 1, "none");
 		time_limit_string[sizeof(time_limit_string) - 1] = 0;
-		error(_error_silent, "game rules: health %s, fall damage %s, starting equipment %s, vehicle set %ld, "
-			"time limit %s, timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
+		line[0] = 0;
+		game_engine_log_append(line, sizeof(line), "game rules: health %s, fall damage %s, starting equipment %s, "
+			"vehicle set %ld, time limit %s, timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
 			game_variant_health_style_name(flags),
 			TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
-			global_variant.universal_variant.vehicle_set,
+			universal->vehicle_set,
 			time_limit_string,
 			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
 			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
@@ -7579,7 +7665,132 @@ void game_engine_log_rules(
 			!TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "off" :
 				hs_scenario_is_nhe() ? "on (Halo 1: NHE's map: its scripts')" : "on",
 			TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off");
+		game_engine_log_append(line, sizeof(line), "; %s%s, score to win %ld, respawn %s, suicide penalty %s, "
+			"friendly fire %s, radar players %s, goal radar %s, shields %s, invisible %s, infinite grenades %s, "
+			"weapon set %s",
+			engine >= 0 && engine < (long)NUMBEROF(engines) ? engines[engine] : "?",
+			universal->teams ? " (teams)" : "",
+			universal->score_to_win,
+			game_engine_log_ticks(respawn, sizeof(respawn), universal->respawn_time),
+			game_engine_log_ticks(suicide, sizeof(suicide), universal->suicide_penalty),
+			options->friendly_fire >= 0 && options->friendly_fire < (short)NUMBEROF(friendly_fire) ?
+				friendly_fire[options->friendly_fire] : "?",
+			options->radar_players < NUMBEROF(radar_players) ? radar_players[options->radar_players] : "?",
+			universal->goal_radar >= 0 && universal->goal_radar < (long)NUMBEROF(goal_radar) ?
+				goal_radar[universal->goal_radar] : "?",
+			TEST_FLAG(flags, _game_variant_no_shields_bit) ? "off" : "on",
+			TEST_FLAG(flags, _game_variant_always_invisible_bit) ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_infinite_grenades_bit) ? "on" : "off",
+			universal->weapon_set >= 0 && universal->weapon_set < (long)NUMBEROF(weapon_sets) ?
+				weapon_sets[universal->weapon_set] : "?");
+		if (options->loadout == _loadout_custom)
+			game_engine_log_append(line, sizeof(line), ", loadout %s + %s",
+				game_engine_log_loadout_weapon(options->primary_weapon),
+				game_engine_log_loadout_weapon(options->secondary_weapon));
+		else
+			game_engine_log_append(line, sizeof(line), ", loadout category");
+		game_engine_log_append(line, sizeof(line), ", no map weapons %s, vehicle sets %s (red %s, blue %s)",
+			options->no_map_weapons ? "on" : "off",
+			game_engine_log_vehicle_set(universal->vehicle_set),
+			game_engine_log_vehicle_set(options->vehicle_set[0]),
+			game_engine_log_vehicle_set(options->vehicle_set[1]));
+		switch (engine)
+		{
+		case game_engine_slayer:
+			game_engine_log_append(line, sizeof(line), ", death bonus %s, kill penalty %s, kill in order %s",
+				engine_variant->slayer.no_death_bonus ? "off" : "on",
+				engine_variant->slayer.no_kill_penalty ? "off" : "on",
+				engine_variant->slayer.kill_in_order ? "on" : "off");
+			break;
+		case game_engine_ctf:
+		{
+			char single_flag[48];
+
+			game_engine_log_append(line, sizeof(line), ", flag at home to score %s, assault %s, single flag %s",
+				engine_variant->ctf.flag_at_home_to_score ? "on" : "off",
+				engine_variant->ctf.assault ? "on" : "off",
+				engine_variant->ctf.single_flag_time > 0 ?
+					game_engine_log_ticks(single_flag, sizeof(single_flag), engine_variant->ctf.single_flag_time) : "off");
+			break;
+		}
+		case game_engine_king:
+			game_engine_log_append(line, sizeof(line), ", moving hill %s",
+				engine_variant->king.moving_hill ? "on" : "off");
+			break;
+		case game_engine_oddball:
+		{
+			struct oddball_variant const *oddball = &engine_variant->oddball;
+
+			game_engine_log_append(line, sizeof(line), ", ball %s, balls %ld, speed with ball %s, "
+				"with ball %s, without ball %s, random start %s",
+				oddball->oddball_ball_type >= 0 && oddball->oddball_ball_type < (long)NUMBEROF(ball_types) ?
+					ball_types[oddball->oddball_ball_type] : "?",
+				oddball->ball_spawn_count,
+				oddball->speed_with_ball >= 0 && oddball->speed_with_ball < (long)NUMBEROF(speeds) ?
+					speeds[oddball->speed_with_ball] : "?",
+				oddball->trait_with_ball >= 0 && oddball->trait_with_ball < (long)NUMBEROF(traits) ?
+					traits[oddball->trait_with_ball] : "?",
+				oddball->trait_without_ball >= 0 && oddball->trait_without_ball < (long)NUMBEROF(traits) ?
+					traits[oddball->trait_without_ball] : "?",
+				oddball->random_start ? "on" : "off");
+			break;
+		}
+		case game_engine_race:
+			game_engine_log_append(line, sizeof(line), ", race %s, team scoring %s",
+				engine_variant->race.race_type >= 0 && engine_variant->race.race_type < (long)NUMBEROF(race_types) ?
+					race_types[engine_variant->race.race_type] : "?",
+				engine_variant->race.team_scoring >= 0 &&
+					engine_variant->race.team_scoring < (long)NUMBEROF(team_scoring) ?
+					team_scoring[engine_variant->race.team_scoring] : "?");
+			break;
+		}
+		error(_error_silent, "%s", line);
 	}
+
+	return;
+}
+
+/* port: this game's first spawned player's weapons and grenades, in the log
+(once a game: game_engine_log_rules starts it over), with the player count's
+grenade rule (game_engine_postspawn_player_update) */
+static void game_engine_log_first_spawn(
+	long unit_index,
+	long most_fragmentation_grenades,
+	long most_plasma_grenades)
+{
+	struct unit_datum *unit;
+	char line[512];
+	short index;
+	boolean any = FALSE;
+
+	if (game_engine_first_spawn_logged || unit_index == NONE)
+		return;
+	game_engine_first_spawn_logged = TRUE;
+	unit = object_get_and_verify_type(unit_index, _object_mask_unit);
+	line[0] = 0;
+	game_engine_log_append(line, sizeof(line), "first spawn: ");
+	for (index = 0; index < MAXIMUM_WEAPONS_PER_UNIT; index++)
+	{
+		long weapon_index = unit->unit.weapon_object_indices[index];
+		char const *name;
+		char const *last;
+
+		if (weapon_index == NONE)
+			continue;
+		name = tag_get_name(object_get(weapon_index)->definition_index);
+		last = name ? strrchr(name, '\\') : NULL;
+		game_engine_log_append(line, sizeof(line), "%s%s", any ? " + " : "", last ? last + 1 : name ? name : "?");
+		any = TRUE;
+	}
+	game_engine_log_append(line, sizeof(line), "%s, %d frag, %d plasma (%s players; the most %ld frag, %ld plasma)",
+		any ? "" : "no weapons",
+		(int)unit->unit.grenade_counts[_unit_grenade_human_fragmentation],
+		(int)unit->unit.grenade_counts[_unit_grenade_covenant_plasma],
+		TEST_FLAG(game_engine_globals.flags, _game_engine_9_or_more_players_bit) ? "9 or more" :
+			TEST_FLAG(game_engine_globals.flags, _game_engine_5_or_more_players_bit) ? "5 to 8" : "under 5",
+		most_fragmentation_grenades,
+		most_plasma_grenades);
+	error(_error_silent, "%s", line);
 
 	return;
 }
@@ -9517,6 +9728,8 @@ void game_engine_postspawn_player_update(
 				_unit_grenade_covenant_plasma] =
 				(char)starting_plasma_grenade_count;
 		}
+		/* port: the game's first spawn's weapons and grenades, in the log */
+		game_engine_log_first_spawn(unit_index, fragmentation_grenade_count, plasma_grenade_count);
 	}
 
 	return;

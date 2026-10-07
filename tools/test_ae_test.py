@@ -144,6 +144,45 @@ class Specs(unittest.TestCase):
         self.assertEqual(s["env"], {"A": "1"})
         self.assertEqual(s["local_players"], 2)
 
+    def test_saved_gametype_env(self):
+        s = harness.parse_spec({"map": "bloodgulch", "saved_gametype": "AE PRO TS"})
+        self.assertEqual(harness.spec_env(s, "/r", "/s")["HALO_NETWORK_TEST_GAMETYPE"], "AE PRO TS")
+        self.assertNotIn("HALO_NETWORK_TEST_GAMETYPE", harness.spec_env(harness.parse_spec({"map": "x"}), "/r", "/s"))
+        a = run.parser().parse_args(["--build", "abc", "--map", "bloodgulch", "--saved-gametype", "NHE 1V1",
+                                     "--save-from", "~/saves"])
+        s = run.spec_from_args(a)
+        self.assertEqual(s["saved_gametype"], "NHE 1V1")
+        self.assertEqual(s["save_from"], "~/saves")
+
+    def test_save_from_copied(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            d = Path(d)
+            (d / "data" / "maps").mkdir(parents=True)
+            src = d / "from"
+            (src / "UDATA" / "x").mkdir(parents=True)
+            (src / "UDATA" / "x" / "blam.lst").write_text("seed")
+            b = d / "b"
+            b.mkdir()
+            (b / "halo").write_bytes(b"x")
+            build = {"dir": str(b), "binary": str(b / "halo"), "env": {}}
+            cfg = dict(harness.DEFAULTS, data_dir=str(d / "data"))
+            spec = harness.parse_spec({"name": "g", "map": "bloodgulch", "save_from": str(src)})
+            prep = harness.prepare_game(cfg, spec, build, d / "work" / "g", d / "out" / "g")
+            self.assertEqual((Path(prep["save"]) / "UDATA" / "x" / "blam.lst").read_text(), "seed")
+            # (a shared save root is copied into once, when it is made: the next case keeps what the first left)
+            spec = harness.parse_spec({"name": "h", "map": "bloodgulch", "save_from": str(src), "save": "s"})
+            roots = {}
+            prep = harness.prepare_game(cfg, spec, build, d / "work" / "h", d / "out" / "h", roots)
+            (Path(prep["save"]) / "UDATA" / "x" / "blam.lst").write_text("played")
+            prep = harness.prepare_game(cfg, spec, build, d / "work" / "i", d / "out" / "i", roots)
+            self.assertEqual((Path(prep["save"]) / "UDATA" / "x" / "blam.lst").read_text(), "played")
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "t", "map": "x", "save_from": "/tmp/saves"}),
+                                     build, d / "work" / "t", d / "out" / "t")
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "m", "map": "x", "save_from": str(d / "no")}),
+                                     build, d / "work" / "m", d / "out" / "m")
+
     def test_run_dry_run(self):
         buf = io.StringIO()
         with redirect_stdout(buf):

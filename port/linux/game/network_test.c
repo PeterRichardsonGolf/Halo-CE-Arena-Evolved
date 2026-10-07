@@ -35,6 +35,8 @@ seconds in, as the port's health regeneration starts from).
 
 debug.network_test_flags sets bits of the host's game variant's flags (the
 port's gametype options: game_engine.h's _game_variant_..._bit).
+debug.network_test_gametype: the host plays a custom gametype of the save
+root (by its stored name, with its PC options) in place of the built-in one.
 
 Called from the main loop every frame (main.c).
 */
@@ -63,6 +65,8 @@ Called from the main loop every frame (main.c).
 #include "camera/observer.h"
 #include "saved games/player_profile.h"
 #include "saved games/saved_game_files.h"
+#include "saved games/playlist_profile.h"
+#include <xtl.h> /* (MAX_GAMENAME) */
 
 #include <math.h>
 #include <stdarg.h>
@@ -89,6 +93,8 @@ void network_distributed_item_statistics(long *creates, long *deletes, long *fai
 void network_damage_statistics(long *sent_reports, long *dealt_reports, long *rejected_reports, long *replayed_events);
 /* xinput_sdl.c's */
 void test_input_hold_action(int hold);
+/* ui_widget_event_handler_functions.c's (the PC menus' gametype list) */
+short ui_widget_port_gametypes(long *indices, short maximum, short *last_used);
 
 enum
 {
@@ -131,6 +137,9 @@ static struct
 	real quit_time;
 	boolean quit;
 	unsigned long variant_flags;
+	/* (debug.network_test_gametype: a custom gametype's stored name, empty
+	for the built-in one) */
+	char saved_gametype[64];
 	long score_to_win;
 	long time_limit;	/* (debug.network_test_time_limit: minutes, 0 the variant's) */
 	long logged_time;
@@ -243,9 +252,60 @@ static void network_test_read_settings(
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
+	snprintf(network_test.saved_gametype, sizeof(network_test.saved_gametype), "%s",
+		config_string("debug.network_test_gametype"));
 	network_test.local_players = (short)PIN(config_integer("debug.network_test_local_players"), 1, MAXIMUM_LOCAL_PLAYERS);
 	if (network_test.mode != _network_test_off)
 		platform_log("network test: %s", setting);
+}
+
+/* debug.network_test_gametype: the save root's custom gametype of that
+stored name (letters' case aside, as the lists sort them), its variant and
+PC options, as the menus' gametype list has them (the Arena Evolved
+gametypes seeded first); FALSE when there is none */
+static boolean network_test_saved_gametype(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	long indices[100];
+	short last_used;
+	short count;
+	short index;
+
+	if (!network_test.saved_gametype[0])
+		return FALSE;
+	count = ui_widget_port_gametypes(indices, (short)NUMBEROF(indices), &last_used);
+	for (index = 0; index < count; index++)
+	{
+		wchar_t name[MAX_GAMENAME];
+		char const *wanted = network_test.saved_gametype;
+		short character;
+
+		/* (the saved ones: the built-in ones have no stored name) */
+		if (!(indices[index] & 0x80000000) || !playlist_profile_get_display_name(indices[index], name))
+			continue;
+		for (character = 0; character < MAX_GAMENAME; character++)
+		{
+			wchar_t a = name[character];
+			wchar_t b = (wchar_t)(unsigned char)wanted[character];
+
+			if (a >= 'a' && a <= 'z')
+				a = (wchar_t)(a - 'a' + 'A');
+			if (b >= 'a' && b <= 'z')
+				b = (wchar_t)(b - 'a' + 'A');
+			if (a != b || !a)
+				break;
+		}
+		if (character < MAX_GAMENAME && (name[character] || wanted[character]))
+			continue;
+		if (!playlist_profile_get(indices[index], variant))
+			continue;
+		playlist_profile_get_options(indices[index], options);
+		platform_log("network test: gametype '%s' from the save root", wanted);
+		return TRUE;
+	}
+	platform_log("network test: gametype '%s' not found in the save root", network_test.saved_gametype);
+	return FALSE;
 }
 
 /* appends to a line, cut short when it is full */
@@ -1087,10 +1147,17 @@ void network_test_update(
 				}
 				else
 				{
+					struct game_variant_options options;
+					/* debug.network_test_gametype: a saved gametype and its PC
+					options, as picking it in the menus does; else (and when it
+					is not there) the variant, as picking the game settings does */
+					boolean saved = network_test_saved_gametype(&variant, &options);
+
 					network_game_server_change_map_name(global_network_game_server_get(), path);
-					/* the variant, as picking the game settings does */
-					variant = *game_engine_get_variant_by_name(&variant, variant_name);
-					platform_log("network test: game %d, %s", network_test.variant_index + 1, variant_name);
+					if (!saved)
+						variant = *game_engine_get_variant_by_name(&variant, variant_name);
+					platform_log("network test: game %d, %s", network_test.variant_index + 1,
+						saved ? network_test.saved_gametype : variant_name);
 					/* debug.network_test_score: a short game, to test the next */
 					if (network_test.score_to_win > 0)
 						variant.universal_variant.score_to_win = network_test.score_to_win;
@@ -1099,12 +1166,12 @@ void network_test_update(
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */
-					if (network_test.time_limit > 0)
+					if (saved || network_test.time_limit > 0)
 					{
-						struct game_variant_options options;
-
-						game_variant_options_default(&variant, &options);
-						options.time_limit = (short)network_test.time_limit;
+						if (!saved)
+							game_variant_options_default(&variant, &options);
+						if (network_test.time_limit > 0)
+							options.time_limit = (short)network_test.time_limit;
 						player_ui_set_game_variant_options(&options);
 					}
 					network_game_server_change_game_variant(global_network_game_server_get(), &variant);
