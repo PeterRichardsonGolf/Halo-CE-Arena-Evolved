@@ -58,6 +58,7 @@ struct item_timer
 /* ---------- prototypes/ITEM_TIMERS.C */
 
 void item_timers_map_begin(void);	/* rebuilds the table for this map and game type */
+boolean item_timers_shotgun_is_power(void);	/* SHOTGUN AS POWER (display.shotgun_power): the shotgun is a power item */
 short item_timers_count(void);
 struct item_timer const *item_timers_get(short index);
 long item_timer_ticks_left(struct item_timer const *timer);	/* 1..period */

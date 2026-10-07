@@ -212,6 +212,11 @@ static const struct config_setting config_settings[] =
 		"A small heading over each line of the match clock in the corner: TIME\n"
 		"LEFT over the time left, ELAPSED over the time played (with BOTH, each\n"
 		"line its own); the power column stays a cap above the top one." },
+	{ "display.shotgun_power", _config_boolean, "true", "HALO_SHOTGUN_POWER", _environment_value, _platform_all,
+		"SHOTGUN AS POWER: the shotgun is a power item, with its row in TIMERS'\n"
+		"power column, TRAINING's waypoints and the callouts; false a weapon as\n"
+		"any other, from the next game. Only this machine's timers: nothing is\n"
+		"sent." },
 	{ "display.power_list", _config_string, "\"clock\"", "HALO_POWER_LIST", _environment_value, _platform_all,
 		"Where the gametype's TIMERS and TRAINING list the power items' next\n"
 		"spawns with one player: \"clock\" a column over the match clock in the\n"

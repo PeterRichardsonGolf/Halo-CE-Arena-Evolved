@@ -77,6 +77,10 @@ static struct
 	long before[ITEM_TIMER_MAXIMUM_NEARBY];
 } item_timer_spawned[MAXIMUM_ITEM_TIMERS];
 
+/* port_config.c's */
+int config_boolean(char const *name);
+unsigned long config_changes(void);
+
 static char const *const item_timer_side_names[NUMBER_OF_ITEM_TIMER_SIDES] =
 {
 	"MIDDLE",
@@ -98,7 +102,7 @@ static short item_timer_definition_class(
 			return _item_timer_rockets;
 		if (game_engine_weapon_is_sniper_rifle(definition_index))
 			return _item_timer_sniper;
-		if (game_engine_weapon_is_shotgun(definition_index))
+		if (game_engine_weapon_is_shotgun(definition_index) && item_timers_shotgun_is_power())
 			return _item_timer_shotgun;
 		break;
 
@@ -537,6 +541,27 @@ static boolean item_timer_mixed(
 }
 
 /* ---------- public code */
+
+/* SHOTGUN AS POWER (display.shotgun_power, on by default): whether the
+shotgun is a power item (its timer row, TRAINING's waypoints, the
+callouts), else a weapon as any other. This machine's choice: the timers
+are worked out on each machine. The one place to ask; the timers' table
+takes it as a map starts (a change in Settings from the next game) */
+boolean item_timers_shotgun_is_power(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean power = TRUE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		power = config_boolean("display.shotgun_power") != 0;
+	}
+
+	return power;
+}
 
 void item_timers_map_begin(
 	void)
