@@ -168,6 +168,13 @@ static const struct config_setting config_settings[] =
 		"The menus: \"pc\" (the default) for the PC version's main menu\n"
 		"(port/assets/menus, and a menus folder here for your own), where the\n"
 		"Arena Evolved settings are; \"xbox\" for the Xbox's (with Online Games)." },
+	{ "display.enemy_name_color", _config_string, "\"classic\"", "HALO_ENEMY_NAME_COLOR", _environment_value,
+		_platform_all,
+		"The name of the player under your reticle when it is an enemy (anyone\n"
+		"in a free for all): \"red\" in red, as the Master Chief Collection's\n"
+		"ENEMY PLAYER NAME COLOR; \"classic\" in the HUD's blue, as the game\n"
+		"drew it. Only this machine's look; the names over heads are\n"
+		"display.player_names'." },
 	{ "display.player_names", _config_string, "\"all\"", "HALO_PLAYER_NAMES", _environment_value, _platform_all,
 		"In multiplayer, whose names are drawn above their heads: \"all\",\n"
 		"\"allies\", \"enemies\" or \"none\". An enemy's shows only within the\n"

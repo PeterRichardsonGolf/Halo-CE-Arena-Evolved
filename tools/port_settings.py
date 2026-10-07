@@ -188,8 +188,8 @@ SCREENS = {
     "network_setup": {
         "screen": "network_settings_screen",
         "header": ("header_profile_network_settings", f"{PE}/network_setup/header_profile_network_settings"),
-        # (26, not 30: ten rows, above the help line, as video_settings)
-        "spacing": 26,
+        # (24, not 30: eleven rows, above the help line, as mods_setup's)
+        "spacing": 24,
         "rows": [
             ("INTERNET PLAY:", "network.online", ON_OFF,
              "Host and join games over the internet by invite\nlinks; off keeps to the local network.", None),
@@ -210,6 +210,11 @@ SCREENS = {
             ("PLAYER NAME SIZE:", "display.player_name_scale",
              [(f"{value:g}x", f"{value:g}") for value in (0.5, 0.75, 1, 1.25, 1.5, 2)],
              "How large the players' names are drawn.", None),
+            # (MCC's ENEMY PLAYER NAME COLOR, the name under the reticle:
+            # game_engine.c internal_rasterize_target_name)
+            ("ENEMY NAME COLOR:", "display.enemy_name_color", [("CLASSIC", "classic"), ("RED", "red")],
+             ["The name of a player you aim at in the HUD's\nblue, an enemy's as a teammate's.",
+              "The name of an enemy you aim at in red, as the\nMaster Chief Collection's."], None),
             ("SCOREBOARD LAYOUT:", "display.scoreboard_team_layout", [("TEAMS", "teams"), ("BY SCORE", "score")],
              "A team game's scoreboard: a column for each team,\nor every player in order of score.", None),
             ("SCOREBOARD PANEL:", "display.scoreboard_background", ON_OFF,

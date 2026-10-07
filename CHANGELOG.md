@@ -7,6 +7,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
+- ENEMY NAME COLOR (Settings > Network Setup, under PLAYER NAME SIZE;
+  `display.enemy_name_color`, `HALO_ENEMY_NAME_COLOR`): `"red"` shows the name of an enemy under your
+  reticle in red, as the Master Chief Collection's; `"classic"` (the
+  default) keeps the game's blue.
 - The shotgun is a power item (a one-shot kill up close in CE): TIMERS'
   power column has its row (SHOTGUN, R/B SHOTGUN at both bases), TRAINING
   puts a labelled waypoint over its spawns, and the callouts say "shotgun in
