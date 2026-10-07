@@ -264,16 +264,17 @@ void cinematic_stop(
 
 /* port: whether a title is one of Halo 1: NHE's maps' clock (their scripts
 set it each second from ui\hud\hudtimer: s_* its seconds, t_* its tens,
-m_* its minutes; not g_*, its countdown), which with MATCH CLOCK on is not
-shown: the HUD has the engine's own (hud_item_timers.c). Its Cortana sounds
-are the scripts' own and stay */
+m_* its minutes; not g_*, its countdown's 3, 2, 1), which is never shown:
+Arena Evolved's own clock takes its place, MATCH CLOCK (hud_item_timers.c),
+laid out as on any map, and with MATCH CLOCK off there is no clock. Matched
+by the title's name; no other title is held back. Its Cortana sounds and
+beeps are the scripts' own (sound_impulse_start, not the titles) and stay */
 static boolean cinematic_title_is_hidden_nhe_clock(
 	short title_index)
 {
 	struct scenario_cutscene_title *title;
 
 	if (!game_engine_running() || !hs_scenario_is_nhe() ||
-		game_engine_match_clock_setting() == _match_clock_off ||
 		title_index < 0 || title_index >= global_scenario_get()->cutscene_chapter_titles.count)
 	{
 		return FALSE;
@@ -443,7 +444,7 @@ void cinematic_render(
 				active_title->time = NONE;
 				continue;
 			}
-			/* port: (one queued before MATCH CLOCK was turned on) */
+			/* port: (NHE's clock, one queued before the game was running) */
 			if (cinematic_title_is_hidden_nhe_clock(active_title->title_index))
 			{
 				active_title->title_index = NONE;

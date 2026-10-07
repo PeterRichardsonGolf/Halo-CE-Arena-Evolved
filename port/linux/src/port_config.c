@@ -198,7 +198,8 @@ static const struct config_setting config_settings[] =
 		"the time left of the gametype's time limit (with none, the time played),\n"
 		"\"up\" the time played, \"both\" the time left with the time played smaller\n"
 		"above it (with no time limit, the time played alone), or \"off\". On Halo\n"
-		"1: NHE's maps it takes the place of their own clock; off leaves theirs." },
+		"1: NHE's maps their own clock is never shown: this one is in its place,\n"
+		"and off shows none." },
 	{ "display.power_list", _config_string, "\"clock\"", "HALO_POWER_LIST", _environment_value, _platform_all,
 		"Where the gametype's TIMERS and TRAINING list the power items' next\n"
 		"spawns with one player: \"clock\" a column over the match clock in the\n"
