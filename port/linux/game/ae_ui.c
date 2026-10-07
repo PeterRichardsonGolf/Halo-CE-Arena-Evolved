@@ -9,7 +9,9 @@ enum
 	AE_REPEAT_DELAY_MS = 400,
 	AE_REPEAT_INTERVAL_MS = 80,
 	AE_REPEAT_FAST_AFTER_MS = 1000,
-	AE_REPEAT_FAST_INTERVAL_MS = 40
+	AE_REPEAT_FAST_INTERVAL_MS = 40,
+	/* (a seeded hold: about 24 days, within a 32-bit millisecond count) */
+	AE_REPEAT_NEVER_MS = 0x7FFFFFFF
 };
 
 static struct ae_screen stack[AE_MAXIMUM_SCREENS];
@@ -87,9 +89,10 @@ void ae_ui_dispatch_pointer(struct ae_pointer const *pointer)
 {
 	struct ae_screen *screen = ae_ui_top();
 
-	if (!screen || !pointer || (screen->owner != AE_OWNER_ANY && screen->owner != 0))
+	if (!screen || !pointer || (screen->owner != AE_OWNER_ANY && screen->owner != pointer->player))
 		return;
-	if (pointer->moved || pointer->left_clicks || pointer->right_clicks || pointer->wheel_steps)
+	/* (a touch keeps the prompts: a touchscreen has no keys to show) */
+	if (!pointer->touch && (pointer->moved || pointer->left_clicks || pointer->right_clicks || pointer->wheel_steps))
 		last_device = AE_DEVICE_KEYBOARD_MOUSE;
 	if (screen->screen_class->pointer)
 		screen->screen_class->pointer(screen, pointer);
@@ -126,4 +129,12 @@ int ae_repeat_update(struct ae_repeat *repeat, int held, unsigned long now_ms)
 		repeat->next += repeat->next - repeat->since >= AE_REPEAT_FAST_AFTER_MS ?
 			AE_REPEAT_FAST_INTERVAL_MS : AE_REPEAT_INTERVAL_MS;
 	return 1;
+}
+
+void ae_repeat_seed(struct ae_repeat *repeat, int held, unsigned long now_ms)
+{
+	repeat->held = held != 0;
+	repeat->since = now_ms;
+	/* (as far ahead as offsets from the press reach: a step only after a new press) */
+	repeat->next = now_ms + (held ? AE_REPEAT_NEVER_MS : AE_REPEAT_DELAY_MS);
 }

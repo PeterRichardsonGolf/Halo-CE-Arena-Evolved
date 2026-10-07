@@ -17,7 +17,9 @@ game's event queue empty (the menus behind see none of it) */
 void ae_input_poll(void);
 /* the menus' pointer (port/linux/include/halo_ui_pointer.h), while a screen is open */
 void ae_input_pointer(struct halo_ui_pointer const *pointer);
-/* nonzero while a controller (or the keyboard driving the first) holds a button or a stick */
-int ae_input_held(void);
+/* after the last screen closes: holds back the inputs held now from the game's menus until each is let go of (at
+most 2 s); ae_input_holding is nonzero while it does */
+void ae_input_hold_begin(void);
+int ae_input_holding(void);
 
 #endif

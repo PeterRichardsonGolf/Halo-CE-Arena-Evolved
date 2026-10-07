@@ -313,6 +313,8 @@ static void draw_view(
 
 		x = prompt(x, AE_BUTTON_A, "SELECT");
 		x = prompt(x, AE_BUTTON_B, "BACK");
+		x += ae_draw_button(device_font(), AE_BUTTON_LEFT_SHOULDER, 40.0f, x, FOOTER_Y, COLOR_TITLE) + 6.0f;
+		x = prompt(x, AE_BUTTON_RIGHT_SHOULDER, "TABS");
 		x = prompt(x, AE_BUTTON_LEFT_TRIGGER, "PAGE UP");
 		prompt(x, AE_BUTTON_RIGHT_TRIGGER, "PAGE DOWN");
 	}

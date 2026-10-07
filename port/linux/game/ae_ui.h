@@ -5,8 +5,9 @@
  * Screens: a stack of up to AE_MAXIMUM_SCREENS; the top screen gets the input, every screen draws from the
  * bottom of the stack to the top (dialogs draw over the screens under them).
  *
- * Owners: a screen belongs to one local player (0-3) or to anyone (AE_OWNER_ANY). Input from a player who
- * doesn't own the top screen is dropped, except START on a screen whose class sets start_from_anyone (lobbies:
+ * Owners: a screen belongs to one local player (0-3) or to anyone (AE_OWNER_ANY). An event's player is the local
+ * player its controller drives (ae_input_rules.h ae_input_player_of_controller, from the game's own bindings), or
+ * AE_PLAYER_NONE for a controller no player has. Input from a player who doesn't own the top screen is dropped, except START on a screen whose class sets start_from_anyone (lobbies:
  * join / your own settings). An unhandled BACK from the owner pops the screen.
  *
  * Focus memory: each screen's `focus` is opaque to the core and survives while screens above it come and go,
@@ -16,11 +17,13 @@
  * Last device: the device of the last event that passed the owner filter (prompts show its glyphs); another
  * player's dropped input doesn't change it.
  *
- * Pointer (mouse, touch): it belongs to the first player. It reaches the top screen's `pointer` handler when that
- * screen is player 0's or anyone's; moving it or clicking makes the keyboard and mouse the last device.
+ * Pointer (mouse, touch): it belongs to the player of the first controller (the keyboard's), named in the pointer.
+ * It reaches the top screen's `pointer` handler when that screen is that player's or anyone's; moving the mouse or
+ * clicking makes the keyboard and mouse the last device (a touch doesn't: the prompts stay as they were).
  *
  * Key repeat: a held direction steps once on the press, again after 400 ms, then every 80 ms, every 40 ms after
- * it has been held 1 s. At most one step per call: after a stall the missed ticks are skipped, not replayed.
+ * it has been held 1 s. At most one step per call: after a stall the missed ticks are skipped, not replayed. A repeat
+ * seeded as held (ae_repeat_seed) steps only after it is let go of and pressed again.
  */
 #ifndef __AE_UI_H
 #define __AE_UI_H
@@ -29,10 +32,11 @@ enum ae_action { AE_ACTION_NONE, AE_ACTION_UP, AE_ACTION_DOWN, AE_ACTION_LEFT, A
 	AE_ACTION_BACK, AE_ACTION_TAB_PREVIOUS, AE_ACTION_TAB_NEXT, AE_ACTION_X, AE_ACTION_Y, AE_ACTION_START,
 	AE_ACTION_SELECT, AE_ACTION_PAGE_UP, AE_ACTION_PAGE_DOWN, AE_NUMBER_OF_ACTIONS };
 enum ae_device { AE_DEVICE_KEYBOARD_MOUSE, AE_DEVICE_XBOX, AE_DEVICE_PLAYSTATION, AE_DEVICE_NINTENDO };
-enum { AE_OWNER_ANY = -1, AE_MAXIMUM_PLAYERS = 4, AE_MAXIMUM_SCREENS = 16 };
+enum { AE_OWNER_ANY = -1, AE_PLAYER_NONE = -2, AE_MAXIMUM_PLAYERS = 4, AE_MAXIMUM_SCREENS = 16 };
 struct ae_event { short player; unsigned char action; unsigned char device; };
 /* the pointer this frame, in layout units of the whole frame (ae_layout.h) */
-struct ae_pointer { float x, y; unsigned char moved, left_clicks, right_clicks, touch; signed char wheel_steps; };
+struct ae_pointer { float x, y; unsigned char moved, left_clicks, right_clicks, touch; signed char wheel_steps;
+	short player; };
 struct ae_screen;
 struct ae_screen_class
 {
@@ -59,7 +63,7 @@ struct ae_screen *ae_ui_top(void);
 int ae_ui_depth(void);
 /* routes one event to the top screen (owner filter, START from anyone, BACK pops) */
 void ae_ui_dispatch(struct ae_event const *event);
-/* routes the pointer to the top screen, if it is player 0's or anyone's */
+/* routes the pointer to the top screen, if it is the pointer's player's or anyone's */
 void ae_ui_dispatch_pointer(struct ae_pointer const *pointer);
 /* draws every screen, bottom to top */
 void ae_ui_draw(void);
@@ -67,5 +71,8 @@ enum ae_device ae_ui_last_device(void);
 /* key repeat: steps due now for a held direction (400 ms, then 80 ms, 40 ms after 1 s held) */
 struct ae_repeat { unsigned long since, next; int held; };
 int ae_repeat_update(struct ae_repeat *repeat, int held, unsigned long now_ms);
+/* starts a repeat as held (a direction already held when a screen opens, or after a stall): no step until it is let
+go of and pressed again; not held: as new */
+void ae_repeat_seed(struct ae_repeat *repeat, int held, unsigned long now_ms);
 
 #endif

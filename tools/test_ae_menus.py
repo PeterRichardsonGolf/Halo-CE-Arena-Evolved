@@ -15,6 +15,7 @@ CI and in a plain pytest run of tools/. Each game is 30 s or more; the three tes
 
     AE_MENUS_BUILD=$PWD/build/linux64 python3 -m pytest -q tools/test_ae_menus.py
 """
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -23,8 +24,22 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 HARNESS = Path(os.environ.get("AE_TEST_HARNESS") or ROOT / "tools" / "ae_test").expanduser()
-sys.path.insert(0, str(HARNESS))
-import harness  # noqa: E402  (tools/ae_test/harness.py, or $AE_TEST_HARNESS's)
+# tools/ae_test/harness.py (or $AE_TEST_HARNESS's), loaded by path when a test needs it (load_harness). The harness
+# imports its sibling modules (record.py, ...) when it runs, so its folder goes on sys.path then, but last: it can't
+# shadow another test's imports of the same names
+harness = None
+
+
+def load_harness():
+    global harness
+    if harness is None:
+        if str(HARNESS) not in sys.path:
+            sys.path.append(str(HARNESS))
+        spec = importlib.util.spec_from_file_location("ae_menus_test_harness", HARNESS / "harness.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        harness = module
+    return harness
 
 LEAD_IN = 12  # seconds of waits before the first press: the game starts and the main menu (and the screen) opens
 EXIT_AFTER = 34
@@ -45,7 +60,9 @@ def build():
 
 
 def config():
-    cfg = harness.load_config()
+    if not build() or not (HARNESS / "harness.py").exists():
+        return None
+    cfg = load_harness().load_config()
     data = cfg.get("data_dir")
     if not data or not (harness.expand(data) / "maps").exists():
         return None
@@ -129,7 +146,7 @@ def tile(pngs, out, width=960, columns=3, gap=8):
 @pytest.fixture(scope="module")
 def cfg():
     c = config()
-    if not c or not build():
+    if not c:
         pytest.skip("needs the ae_test harness config (data_dir with maps) and a built game ($AE_MENUS_BUILD)")
     return c
 
@@ -232,6 +249,6 @@ if __name__ == "__main__":
     if sys.argv[1:2] != ["sheet"]:
         sys.exit("usage: tools/test_ae_menus.py sheet  (the contact sheet; or run it with pytest)")
     c = config()
-    if not c or not build():
+    if not c:
         sys.exit("needs the ae_test harness config and a built game ($AE_MENUS_BUILD)")
     print(contact_sheet(c, out_dir(c, "sheet")))

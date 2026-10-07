@@ -12,6 +12,7 @@ and the debug keyboard that the game's console reads.
 #include "platform.h"
 #include "halo_product.h"
 #include "sdl_platform.h"
+#include "ae_platform.h" /* AE hook */
 #include "gl.h"
 #include "port_config.h"
 #include "p2p.h"
@@ -1587,6 +1588,7 @@ void platform_pump_events(void)
 			that resumes the game does not also fire */
 			if (input_state.ui_pointer)
 			{
+				if (event.button.down && event.button.button == SDL_BUTTON_X1) ae_platform_count_back_press(); /* AE hook */
 				if (event.button.down && event.button.button == SDL_BUTTON_LEFT)
 				{
 					ui_pointer.left_clicks++;

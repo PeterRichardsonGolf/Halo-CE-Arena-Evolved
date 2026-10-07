@@ -51,8 +51,8 @@ boolean ae_ui_process(
 	void)
 {
 	static boolean test_screen_checked = FALSE;
-	/* a screen was up last frame; input is held back after the last closes */
-	static boolean was_up = FALSE, holding = FALSE;
+	/* a screen was up last frame */
+	static boolean was_up = FALSE;
 
 	if (!ae_menus_active())
 		return FALSE;
@@ -65,27 +65,25 @@ boolean ae_ui_process(
 		if (views > 0)
 			ae_screen_test_open((int)views);
 	}
+	/* (closed since: by the pointer, which comes before this) */
 	if (was_up && !ae_ui_depth())
-		holding = TRUE;
+		ae_input_hold_begin();
 	was_up = FALSE;
 	if (ae_ui_up())
 	{
 		ae_input_poll();
 		was_up = ae_ui_depth() != 0;
-		holding = !was_up;
+		if (!was_up)
+			ae_input_hold_begin();
 		return TRUE;
 	}
-	/* the buttons that closed the last screen (or were held then) reach the
-	game's menus only once let go of: a B that closed it is not also their
-	B, nor an A their A */
-	if (holding)
+	/* the inputs held as the last screen closed reach the game's menus only
+	once let go of (each; at most 2 s): a B that closed it is not also their
+	B, nor a held direction their direction */
+	if (ae_input_holding())
 	{
-		if (ae_input_held())
-		{
-			event_manager_flush();
-			return TRUE;
-		}
-		holding = FALSE;
+		event_manager_flush();
+		return TRUE;
 	}
 
 	return FALSE;

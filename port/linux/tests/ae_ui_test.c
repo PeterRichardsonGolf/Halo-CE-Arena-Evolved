@@ -98,19 +98,29 @@ int main(void)
 	CHECK(ae_ui_last_device() == AE_DEVICE_NINTENDO);
 	/* pointer: player 0's (or anyone's) top screen takes it; it makes the keyboard and mouse the last device */
 	{
-		struct ae_pointer p = { 10.0f, 20.0f, 1, 1, 0, 0, 0 };
+		struct ae_pointer p = { 10.0f, 20.0f, 1, 1, 0, 0, 0, 0 };
 
 		ae_ui_reset();
 		ae_ui_dispatch_pointer(&p);                        /* no screen: nothing */
 		ae_ui_push(&plain, 0, NULL);
+		p.touch = 1;                                       /* a tap keeps the prompts */
 		ae_ui_dispatch_pointer(&p);
-		CHECK(pointed == 1 && ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE);
+		CHECK(pointed == 1 && ae_ui_last_device() == AE_DEVICE_XBOX);
+		p.touch = 0;
+		ae_ui_dispatch_pointer(&p);
+		CHECK(pointed == 2 && ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE);
 		ae_ui_push(&plain, 1, NULL);                       /* player 2's screen: not the mouse's */
 		ae_ui_dispatch_pointer(&p);
-		CHECK(pointed == 1);
+		CHECK(pointed == 2);
+		p.player = 1;                                      /* unless the mouse is player 2's */
+		ae_ui_dispatch_pointer(&p);
+		CHECK(pointed == 3);
+		p.player = AE_PLAYER_NONE;                         /* nobody's: only anyone's screens */
+		ae_ui_dispatch_pointer(&p);
+		CHECK(pointed == 3);
 		ae_ui_push(&lobby, AE_OWNER_ANY, NULL);            /* no pointer handler */
 		ae_ui_dispatch_pointer(&p);
-		CHECK(pointed == 1 && ae_ui_depth() == 3);
+		CHECK(pointed == 3 && ae_ui_depth() == 3);
 		ae_ui_dispatch_pointer(NULL);
 	}
 	/* repeat: first press steps once, then 400 ms, then every 80, 40 after 1 s; at most one step per call */
@@ -126,6 +136,12 @@ int main(void)
 	CHECK(ae_repeat_update(&r, 1, 2079) == 0);
 	CHECK(ae_repeat_update(&r, 1, 2080) == 1);
 	CHECK(ae_repeat_update(&r, 0, 2090) == 0 && !r.held);
+	/* a controller with no player reaches only anyone's screens */
+	ae_ui_reset(); ae_ui_push(&plain, 0, NULL);
+	e = ev(AE_PLAYER_NONE, AE_ACTION_DOWN); ae_ui_dispatch(&e);
+	CHECK(ae_ui_top()->focus == 0);
+	ae_ui_push(&plain, AE_OWNER_ANY, NULL); ae_ui_dispatch(&e);
+	CHECK(ae_ui_top()->focus == 1);
 	/* a new press starts over */
 	CHECK(ae_repeat_update(&r, 1, 3000) == 1);
 	CHECK(ae_repeat_update(&r, 1, 3100) == 0);
@@ -138,6 +154,15 @@ int main(void)
 	CHECK(ae_repeat_update(&r, 1, 300) == 1);
 	CHECK(ae_repeat_update(&r, 1, 379) == 0);
 	CHECK(ae_repeat_update(&r, 1, 380) == 1);
+	/* seeded as held (held when the screen opened): no step while held, however long; a new press steps */
+	ae_repeat_seed(&r, 1, 5000);
+	CHECK(ae_repeat_update(&r, 1, 5000) == 0);
+	CHECK(ae_repeat_update(&r, 1, 5400) == 0);
+	CHECK(ae_repeat_update(&r, 1, 90000) == 0);
+	CHECK(ae_repeat_update(&r, 0, 90010) == 0);
+	CHECK(ae_repeat_update(&r, 1, 90020) == 1);
+	ae_repeat_seed(&r, 0, 100000);                          /* not held: as new */
+	CHECK(!r.held && ae_repeat_update(&r, 1, 100010) == 1);
 	if (failures) return 1;
 	printf("ae_ui: ok\n");
 	return 0;

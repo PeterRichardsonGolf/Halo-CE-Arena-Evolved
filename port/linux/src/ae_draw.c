@@ -29,6 +29,8 @@ What changed from ui_overlay.c:
 - drawn into the back buffer's framebuffer before the screenshot is taken
   (d3d8_gl.c), not into the window after the display blit: screenshots and
   recordings show AE's screens;
+- the keyboard's prompts are AE's menu keys (Esc, Page Up/Down, Q/E for
+  the tabs), not the game's in-play keys the overlay showed;
 - no cutouts (the game's pictures through the overlay); fonts: the overlay's
   Noto Regular/Bold and Kenney's prompts (M1; the look's fonts come in M2).
 */
@@ -178,9 +180,10 @@ static struct
 
 static const unsigned int button_glyphs[4][AE_NUMBER_OF_BUTTONS] =
 {
-	/* keyboard: Enter, Backspace, E, Tab, Esc, Q, X, Q, C (the game's keys
-	for them, xinput_sdl.c), Left, Right, F1 */
-	{ 0xE05E, 0xE038, 0xE05A, 0xE0D1, 0xE062, 0xE0B3, 0xE0E3, 0xE0B3, 0xE046, 0xE020, 0xE022, 0xE067 },
+	/* keyboard: AE's menu keys (ae_input.c), not the game's in-play keys:
+	Enter, Esc, Delete, - (Y has no key: Tab steps the focus), - (START has
+	none), Page Up, Page Down, Q, E (the tabs), Left, Right, F1 */
+	{ 0xE05E, 0xE062, 0xE058, 0, 0, 0xE0A7, 0xE0A5, 0xE0B3, 0xE05A, 0xE020, 0xE022, 0xE067 },
 	/* Xbox: A, B, X, Y, menu, LT, RT, LB, RB, -, -, view */
 	{ 0xE004, 0xE006, 0xE01E, 0xE020, 0xE014, 0xE047, 0xE04D, 0xE043, 0xE049, 0, 0, 0xE01C },
 	/* PlayStation: cross, circle, square, triangle, options, L2, R2, L1, R1,
