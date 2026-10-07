@@ -261,6 +261,9 @@ class Images(unittest.TestCase):
         for y in range(118, 125):          # a 7x7 white square centred at (113, 121): offset (+13.5, +21.5)
             for x in range(110, 117):
                 rgb[(y * w + x) * 3:(y * w + x) * 3 + 3] = b"\xff\xff\xff"
+        for y in range(5, 45):              # a bigger white decoy far from the middle (a light) is not taken
+            for x in range(55, 95):
+                rgb[(y * w + x) * 3:(y * w + x) * 3 + 3] = b"\xff\xff\xff"
         v = harness.reticle_offsets(w, h, rgb, 1)[0]
         self.assertTrue(v["found"])
         self.assertEqual(v["offset"], [13.5, 21.5])

@@ -74,6 +74,8 @@ def compare(result, base):
 
 
 def table(results, baseline=None):
+    def v(x):
+        return "-" if x is None else str(x)
     rows = []
     head = f"{'case':20} {'verdict':12} {'exit':>4} {'secs':>5} {'tick':>5} {'items':>5} {'scr':>4} " \
            f"{'ass':>3} {'exc':>3} {'ref':>3} {'lost':>4}  notes"
@@ -84,11 +86,11 @@ def table(results, baseline=None):
         verdict, notes = compare(r, (baseline or {}).get(name)) if baseline else (r.get("status"), [])
         why = r.get("why") or []
         n = "; ".join(why + (["vs baseline: " + ", ".join(notes)] if notes else []))
-        rows.append(f"{name:20} {verdict or '?':12} {str(r.get('exit_code', '-')):>4} {r.get('seconds') or 0:5.0f} "
-                    f"{str(d.get('tick', '-')):>5} {str(d.get('items', '-')):>5} "
-                    f"{str(d.get('scenario_scripts', '-')):>4} {str(d.get('asserts', '-')):>3} "
-                    f"{str(d.get('exceptions', '-')):>3} {str(d.get('refusals', '-')):>3} "
-                    f"{str(d.get('lost_scripts', '-')):>4}  {n}")
+        rows.append(f"{name:20} {verdict or '?':12} {v(r.get('exit_code')):>4} {r.get('seconds') or 0:5.0f} "
+                    f"{v(d.get('tick')):>5} {v(d.get('items')):>5} "
+                    f"{v(d.get('scenario_scripts')):>4} {v(d.get('asserts')):>3} "
+                    f"{v(d.get('exceptions')):>3} {v(d.get('refusals')):>3} "
+                    f"{v(d.get('lost_scripts')):>4}  {n}")
     return "\n".join(rows)
 
 

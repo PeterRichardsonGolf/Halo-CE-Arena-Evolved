@@ -12,9 +12,10 @@ not black. Written to the output folder:
     <case>.png                             before above after (only with --before)
     sheet.json                             the picked frames, per-view reticle offsets (--reticle)
 
---reticle measures, per view, the reticle's offset from the view's centre (the biggest near-white blob
-near the middle). Use --flat (HALO_GPU_DEBUG_FLAT=1: the world in flat colour) for a clean measure; on a
-normal render the sky or a light can be taken for the reticle. Labelling needs Pillow (on the machine
+--reticle measures, per view, the reticle's offset from the view's centre (the blob of reticle colours,
+white to the HUD's cyan and blue, nearest the middle); --flat (HALO_GPU_DEBUG_FLAT=1: the world in flat
+colour) makes it safer, as on a normal render a bright light near the middle can be taken for it.
+--compose <folder> --reticle measures an earlier run again. Labelling needs Pillow (on the machine
 that composes: with --box the games run on the box and the images are composed here); without Pillow
 the frames are copied unlabelled.
 """
@@ -134,6 +135,19 @@ def compose(out):
     return written
 
 
+def remeasure(out):
+    """measure the reticle again on an earlier run's picked frames (sheet.json updated)"""
+    meta = json.loads((out / "sheet.json").read_text())
+    for case, by in meta["cases"].items():
+        for e in by.values():
+            if e.get("frame"):
+                w, h, rgb = harness.read_png(out / e["frame"])
+                e["reticle"] = harness.reticle_offsets(w, h, rgb, CASES[case][0])
+    harness.write_json(out / "sheet.json", meta)
+    (out / "summary.txt").write_text(summary(meta) + "\n")
+    print(summary(meta))
+
+
 def summary(meta):
     lines = []
     for case, by in meta["cases"].items():
@@ -155,10 +169,13 @@ def main(argv):
     p.add_argument("--flat", action="store_true", help="flat-colour world (HALO_GPU_DEBUG_FLAT=1)")
     p.add_argument("--parallel", default=None)
     p.add_argument("--no-compose", action="store_true", help="play only (sheet.json); compose elsewhere")
-    p.add_argument("--compose", help="compose the labelled PNGs of an earlier run's folder")
+    p.add_argument("--compose", help="compose the labelled PNGs of an earlier run's folder (with --reticle: "
+                                     "measure again first)")
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)
     if a.compose:
+        if a.reticle:
+            remeasure(Path(a.compose))
         for f in compose(Path(a.compose)):
             print(f)
         return 0

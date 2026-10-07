@@ -838,12 +838,17 @@ def split_views(w, h, players):
             (w // 2, h // 2, w - w // 2, h - h // 2)]
 
 
-def reticle_offsets(w, h, rgb, players, threshold=(200, 245, 235), radius=0.25, join=12):
-    """per view: the reticle's centre (the bounding box of the biggest near-white blob near the view's
-    middle, grown by the blobs within `join` px of it: a ring of ticks is several blobs) and its offset
-    from the view's centre in px. Best on a flat render (HALO_GPU_DEBUG_FLAT=1), where the world is flat
-    colour and the HUD keeps its own: on a real scene the sky or a light can win."""
-    rt, gt, bt = threshold
+def reticle_pixel(r, g, b):
+    """a pixel the HUD's reticle is drawn in: white, the HUD's cyan (~170,255,255) or its blue (~90,187,255)"""
+    return (r > 230 and g > 230 and b > 230) or (g > 240 and b > 240 and r > 120) or \
+        (b > 235 and g > 160 and b - r > 40)
+
+
+def reticle_offsets(w, h, rgb, players, is_reticle=reticle_pixel, radius=0.25, join=12):
+    """per view: the reticle's centre and its offset from the view's centre in px. The reticle is the blob
+    of reticle-coloured pixels (reticle_pixel) nearest the view's
+    middle, grown by the blobs within `join` px of it (a ring of ticks is several blobs). Most reliable on a
+    flat render (HALO_GPU_DEBUG_FLAT=1); on a normal one a bright light near the middle can be taken."""
     out = []
     for i, (x, y, vw, vh) in enumerate(split_views(w, h, players)):
         cx, cy = x + vw / 2.0, y + vh / 2.0
@@ -856,7 +861,7 @@ def reticle_offsets(w, h, rgb, players, threshold=(200, 245, 235), radius=0.25, 
             row = rgb[(yy * w + x0) * 3:(yy * w + x1) * 3]
             base = (yy - y0) * cw
             for xx in range(cw):
-                if row[xx * 3] > rt and row[xx * 3 + 1] > gt and row[xx * 3 + 2] > bt:
+                if is_reticle(row[xx * 3], row[xx * 3 + 1], row[xx * 3 + 2]):
                     mask[base + xx] = 1
         blobs = []
         seen = bytearray(len(mask))
@@ -884,7 +889,10 @@ def reticle_offsets(w, h, rgb, players, threshold=(200, 245, 235), radius=0.25, 
         if not blobs:
             out.append({"view": i + 1, "found": False})
             continue
-        big = max(range(len(blobs)), key=lambda k: blobs[k][0])
+        mx, my = cw / 2.0, ch / 2.0
+        cands = [k for k in range(len(blobs)) if blobs[k][0] >= 3] or list(range(len(blobs)))
+        big = min(cands, key=lambda k: ((blobs[k][1] + blobs[k][3]) / 2.0 - mx) ** 2 +
+                  ((blobs[k][2] + blobs[k][4]) / 2.0 - my) ** 2)
         _, bx0, by0, bx1, by1 = blobs[big]
         used, grown = {big}, True
         while grown:
