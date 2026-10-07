@@ -1086,7 +1086,7 @@ flush_hardware_character(
 	{
 		hardware_character->character->hardware_character_index = NONE;
 
-		if (hardware_character->character->pad == magic_number)
+		if (hardware_character->character->pad == (word)magic_number)
 			error(_error_log, "font cache overwrote character in use");
 
 		hardware_character->character = NULL;
