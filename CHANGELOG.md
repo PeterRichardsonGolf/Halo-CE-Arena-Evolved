@@ -7,6 +7,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
+- MATCH CLOCK LABELS (`display.match_clock_labels`, `HALO_MATCH_CLOCK_LABELS`;
+  off by default, config only for now): a small heading over each line of
+  the corner clock, TIME LEFT or ELAPSED (with BOTH, each line its own),
+  under the power column.
 - ENEMY NAME COLOR (Settings > Network Setup, under PLAYER NAME SIZE;
   `display.enemy_name_color`, `HALO_ENEMY_NAME_COLOR`): `"red"` shows the name of an enemy under your
   reticle in red, as the Master Chief Collection's; `"classic"` (the

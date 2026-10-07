@@ -5224,6 +5224,14 @@ boolean game_engine_match_clock(
 	return TRUE;
 }
 
+boolean game_engine_match_clock_counts_down(
+	void)
+{
+	short setting = game_engine_match_clock_setting();
+
+	return (setting == _match_clock_down || setting == _match_clock_both) && game_variant_options_get()->time_limit > 0;
+}
+
 boolean game_engine_match_clock_elapsed(
 	wchar_t *string,
 	long count)

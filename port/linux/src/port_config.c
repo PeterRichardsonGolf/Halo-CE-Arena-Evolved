@@ -207,6 +207,11 @@ static const struct config_setting config_settings[] =
 		"above it (with no time limit, the time played alone), or \"off\". On Halo\n"
 		"1: NHE's maps their own clock is never shown: this one is in its place,\n"
 		"and off shows none." },
+	{ "display.match_clock_labels", _config_boolean, "false", "HALO_MATCH_CLOCK_LABELS", _environment_value,
+		_platform_all,
+		"A small heading over each line of the match clock in the corner: TIME\n"
+		"LEFT over the time left, ELAPSED over the time played (with BOTH, each\n"
+		"line its own); the power column stays a cap above the top one." },
 	{ "display.power_list", _config_string, "\"clock\"", "HALO_POWER_LIST", _environment_value, _platform_all,
 		"Where the gametype's TIMERS and TRAINING list the power items' next\n"
 		"spawns with one player: \"clock\" a column over the match clock in the\n"
@@ -564,6 +569,10 @@ static const struct config_setting config_settings[] =
 	{ "debug.network_test_score", _config_integer, "0", "HALO_NETWORK_TEST_SCORE", _environment_value, _platform_all,
 		"The score an automated test host's game type plays to (a short game, to\n"
 		"test the next); 0 the game type's own." },
+	{ "debug.network_test_time_limit", _config_integer, "0", "HALO_NETWORK_TEST_TIME_LIMIT", _environment_value,
+		_platform_all,
+		"The time limit, in minutes, of an automated test host's game type (the\n"
+		"match clock's time left); 0 the game type's own." },
 	{ "debug.network_test_shoot", _config_real, "0.0", "HALO_NETWORK_TEST_SHOOT", _environment_value, _platform_all,
 		"Every this many seconds each automated test player hits the next with\n"
 		"their weapon, within its reach (the host brings far players near the\n"

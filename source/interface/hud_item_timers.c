@@ -18,6 +18,9 @@ meters seen (or a HUD that has them in the view's left half), the clock is
 as far from the view's right edge as the sensor's background is from its
 left; with no sensor seen (hidden by a script or the gametype), 4% of the
 view's width from its right edge and 6% of its height from its bottom.
+With MATCH CLOCK LABELS (display.match_clock_labels) each line has a
+small heading over it at the text scale, TIME LEFT or ELAPSED
+(hud_item_timers_clock_layout_get stacks them).
 On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*). Its
 digits are tabular (each in a cell as wide as the widest digit), so that it
 keeps still as the seconds tick.
@@ -144,6 +147,7 @@ one list beside them.
 #define HUD_ITEM_TIMERS_COLUMN_LINES 4	/* (the most lines of the power column: the three soonest and "+N" with more) */
 #define HUD_ITEM_TIMERS_COLUMN_PITCH 1.5f	/* (from one line of the column to the next, in caps) */
 #define HUD_ITEM_TIMERS_COLUMN_GAP 1.0f	/* (from the column's foot to the clock's cap top, in caps) */
+#define HUD_ITEM_TIMERS_LABEL_GROUP_GAP 0.5f	/* (MATCH CLOCK LABELS: between the clock's heading and BOTH's time played, in caps) */
 #define HUD_ITEM_TIMERS_SOON_SECONDS 10	/* (a line this near its spawn drawn brighter) */
 #define HUD_ITEM_TIMERS_MORE_ALPHA 0.5f	/* (the column's "+N") */
 
@@ -694,47 +698,146 @@ static boolean hud_item_timers_power_list_top_left(
 	return top_left;
 }
 
+/* MATCH CLOCK LABELS (display.match_clock_labels): whether the match
+clock's lines have their headings */
+static boolean hud_item_timers_clock_labels(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean labels = FALSE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		labels = config_boolean("display.match_clock_labels") != 0;
+	}
+
+	return labels;
+}
+
+/* where the clock's lines go over its baseline, bottom up: the clock, its
+heading (labels), BOTH's time played (above), its heading; each line's
+baseline at the top of the line under it. The headings and the time played
+at the text scale, the clock at its own. top_cap: the top line's cap top
+(the power column stands a cap above it) */
+struct hud_item_timers_clock_layout
+{
+	real clock_top;
+	real clock_label_top;
+	real above_top;
+	real above_label_top;
+	real top;	/* (the top line's top) */
+	real top_cap;
+};
+
+static void hud_item_timers_clock_layout_get(
+	long font_index,
+	long baseline,
+	boolean above,
+	boolean labels,
+	struct hud_item_timers_clock_layout *layout)
+{
+	struct font_header *font = font_definition_get(font_index);
+	real clock_scale = hud_item_timers_clock_scale();
+	real text_scale = hud_item_timers_text_scale();
+	real ascent = (real)font->ascending_height;
+	real y;
+
+	/* (the digits' foot, their baseline, there: the line's top an ascent
+	(at the clock's scale) above it) */
+	layout->clock_top = (real)baseline - ascent * clock_scale;
+	layout->top_cap = (real)baseline - hud_item_timers_cap_height(font_index, L'0') * clock_scale;
+	y = layout->clock_top;
+	layout->clock_label_top = y;
+	layout->above_top = y;
+	layout->above_label_top = y;
+	if (labels)
+	{
+		layout->clock_label_top = y - ascent * text_scale;
+		layout->top_cap = y - hud_item_timers_cap_height(font_index, L'H') * text_scale;
+		y = layout->clock_label_top;
+	}
+	if (above)
+	{
+		/* (with headings, half a cap of air between the clock's pair and
+		the time played's, so that each heading reads with its own line) */
+		if (labels)
+			y -= HUD_ITEM_TIMERS_LABEL_GROUP_GAP * hud_item_timers_cap_height(font_index, L'H') * text_scale;
+		layout->above_top = y - ascent * text_scale;
+		layout->top_cap = y - hud_item_timers_cap_height(font_index, L'0') * text_scale;
+		y = layout->above_top;
+		if (labels)
+		{
+			layout->above_label_top = y - ascent * text_scale;
+			layout->top_cap = y - hud_item_timers_cap_height(font_index, L'H') * text_scale;
+			y = layout->above_label_top;
+		}
+	}
+	layout->top = y;
+}
+
+/* a heading, flush right on right; its width */
+static real hud_item_timers_draw_label(
+	long font_index,
+	real right,
+	real top,
+	wchar_t const *text,
+	real scale,
+	real_argb_color const *color)
+{
+	real width = hud_item_timers_advance(font_index, text, scale);
+
+	hud_item_timers_draw_text_at(font_index, right - width, top, text, scale, color);
+
+	return width;
+}
+
 /* the clock (text) at its place (hud_item_timers_clock_place) in tabular
 figures, flush right, and above it a smaller line (above: MATCH CLOCK
 BOTH's time played; NULL for none) flush right to the same edge, its
-baseline at the clock's line's top */
+baseline at the clock's line's top; with headings (label, above_label:
+MATCH CLOCK LABELS; NULL for none) each over its line */
 static void hud_item_timers_draw_clock(
 	long font_index,
 	wchar_t const *text,
-	wchar_t const *above)
+	wchar_t const *above,
+	wchar_t const *label,
+	wchar_t const *above_label)
 {
-	struct font_header *font = font_definition_get(font_index);
 	real view_width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 	real clock_scale = hud_item_timers_clock_scale();
 	real text_scale = hud_item_timers_text_scale();
+	struct hud_item_timers_clock_layout layout;
 	struct hud_item_timers_cells cells;
 	real_argb_color color;
+	boolean has_above = above && above[0];
 	short inset;
 	long baseline;
 	real right;
-	real top;
-	real top_drawn;
 	real width;
 
 	hud_item_timers_clock_place(&inset, &baseline);
 	right = view_width - (real)inset;
 	hud_item_timers_color(HUD_ITEM_TIMERS_ALPHA, &color);
-	/* (the digits' foot, their baseline, there: the line's top an ascent
-	(at the clock's scale) above it) */
-	top = (real)baseline - (real)font->ascending_height * clock_scale;
+	hud_item_timers_clock_layout_get(font_index, baseline, has_above, label != NULL, &layout);
 	hud_item_timers_cells_get(font_index, clock_scale, &cells);
-	width = hud_item_timers_draw_tabular(font_index, right, top, text, clock_scale, &color, &cells);
-	top_drawn = top;
-	if (above && above[0])
+	width = hud_item_timers_draw_tabular(font_index, right, layout.clock_top, text, clock_scale, &color, &cells);
+	if (label)
+		width = MAX(width, hud_item_timers_draw_label(font_index, right, layout.clock_label_top, label, text_scale, &color));
+	if (has_above)
 	{
-		real above_top = top - (real)font->ascending_height * text_scale;
-
 		hud_item_timers_cells_get(font_index, text_scale, &cells);
-		width = MAX(width, hud_item_timers_draw_tabular(font_index, right, above_top, above, text_scale, &color, &cells));
-		top_drawn = above_top;
+		width = MAX(width, hud_item_timers_draw_tabular(font_index, right, layout.above_top, above, text_scale, &color,
+			&cells));
+		if (label && above_label)
+		{
+			width = MAX(width, hud_item_timers_draw_label(font_index, right, layout.above_label_top, above_label,
+				text_scale, &color));
+		}
 	}
-	hud_item_timers_record(right - width, top_drawn, right,
-		top + (real)hud_item_timers_line_height(font_index) * clock_scale);
+	hud_item_timers_record(right - width, layout.top, right,
+		layout.clock_top + (real)hud_item_timers_line_height(font_index) * clock_scale);
 }
 
 /* the power entries (TIMERS' and TRAINING's), soonest first, and the time
@@ -1216,7 +1319,6 @@ static void hud_item_timers_draw_column(
 	struct font_header *font = font_definition_get(font_index);
 	real view_width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 	real scale = hud_item_timers_text_scale();
-	real clock_scale = hud_item_timers_clock_scale();
 	real cap = hud_item_timers_cap_height(font_index, L'H') * scale;
 	real ascent = (real)font->ascending_height * scale;
 	real pitch = HUD_ITEM_TIMERS_COLUMN_PITCH * cap;
@@ -1257,14 +1359,11 @@ static void hud_item_timers_draw_column(
 	lowest = (real)baseline;
 	if (game_engine_match_clock(clock, NUMBEROF(clock)))
 	{
-		real cap_top = (real)baseline - hud_item_timers_cap_height(font_index, L'0') * clock_scale;
+		struct hud_item_timers_clock_layout layout;
 
-		if (game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)))
-		{
-			cap_top = (real)baseline - (real)font->ascending_height * clock_scale -
-				hud_item_timers_cap_height(font_index, L'0') * scale;
-		}
-		lowest = cap_top - HUD_ITEM_TIMERS_COLUMN_GAP * cap;
+		hud_item_timers_clock_layout_get(font_index, baseline,
+			game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)), hud_item_timers_clock_labels(), &layout);
+		lowest = layout.top_cap - HUD_ITEM_TIMERS_COLUMN_GAP * cap;
 	}
 
 	/* (the widest time's cell: all the names a digit's cell before it) */
@@ -1340,8 +1439,13 @@ void hud_draw_item_timers(
 	/* (not over Halo 1: NHE's maps' countdown) */
 	if (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
 	{
-		hud_item_timers_draw_clock(font_index, clock,
-			game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)) ? elapsed : NULL);
+		boolean has_elapsed = game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed));
+		/* (MATCH CLOCK LABELS: the clock's heading by what it counts) */
+		wchar_t const *label = !hud_item_timers_clock_labels() ? NULL :
+			game_engine_match_clock_counts_down() ? L"TIME LEFT" : L"ELAPSED";
+
+		hud_item_timers_draw_clock(font_index, clock, has_elapsed ? elapsed : NULL, label,
+			has_elapsed ? L"ELAPSED" : NULL);
 	}
 	/* (the gametype's TIMERS and TRAINING; not once the game is over, over
 	the postgame's view, as the clock is not) */
@@ -1434,7 +1538,7 @@ void hud_draw_campaign_timer(
 	if (font_index == NONE)
 		return;
 	game_engine_format_clock(hud_campaign_timer_ticks, FALSE, clock, NUMBEROF(clock));
-	hud_item_timers_draw_clock(font_index, clock, NULL);
+	hud_item_timers_draw_clock(font_index, clock, NULL, NULL, NULL);
 
 	return;
 }
