@@ -9,16 +9,20 @@ screen is open.
 
 #include "cseries.h"
 #include "../src/ae_draw.h"
+#include "interface/event_manager.h"
 #include "ae_hooks.h"
 #include "ae_input.h"
+#include "ae_screen_test.h"
 #include "ae_ui.h"
 
 /* port_config.c (declared here as the game's other port units do: its header
 is the platform side's) */
 int config_boolean(char const *name);
+long config_integer(char const *name);
 void platform_log(char const *format, ...);
-/* interface/virtual_keyboard.c (its header needs the game's math types first) */
+/* interface/virtual_keyboard.c and ui_widget.c (their headers need the game's math types first) */
 boolean virtual_keyboard_active(void);
+boolean main_menu_is_active(void);
 
 boolean ae_menus_active(
 	void)
@@ -46,11 +50,45 @@ static boolean ae_ui_up(
 boolean ae_ui_process(
 	void)
 {
-	if (!ae_ui_up())
-		return FALSE;
-	ae_input_poll();
+	static boolean test_screen_checked = FALSE;
+	/* a screen was up last frame; input is held back after the last closes */
+	static boolean was_up = FALSE, holding = FALSE;
 
-	return TRUE;
+	if (!ae_menus_active())
+		return FALSE;
+	/* debug.ae_test_screen: the test screen, once, as the main menu first shows */
+	if (!test_screen_checked && ae_draw_available() && main_menu_is_active())
+	{
+		long views = config_integer("debug.ae_test_screen");
+
+		test_screen_checked = TRUE;
+		if (views > 0)
+			ae_screen_test_open((int)views);
+	}
+	if (was_up && !ae_ui_depth())
+		holding = TRUE;
+	was_up = FALSE;
+	if (ae_ui_up())
+	{
+		ae_input_poll();
+		was_up = ae_ui_depth() != 0;
+		holding = !was_up;
+		return TRUE;
+	}
+	/* the buttons that closed the last screen (or were held then) reach the
+	game's menus only once let go of: a B that closed it is not also their
+	B, nor an A their A */
+	if (holding)
+	{
+		if (ae_input_held())
+		{
+			event_manager_flush();
+			return TRUE;
+		}
+		holding = FALSE;
+	}
+
+	return FALSE;
 }
 
 void ae_ui_render(

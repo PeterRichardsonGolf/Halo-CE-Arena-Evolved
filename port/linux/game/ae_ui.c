@@ -83,6 +83,18 @@ void ae_ui_dispatch(struct ae_event const *event)
 		ae_ui_pop();
 }
 
+void ae_ui_dispatch_pointer(struct ae_pointer const *pointer)
+{
+	struct ae_screen *screen = ae_ui_top();
+
+	if (!screen || !pointer || (screen->owner != AE_OWNER_ANY && screen->owner != 0))
+		return;
+	if (pointer->moved || pointer->left_clicks || pointer->right_clicks || pointer->wheel_steps)
+		last_device = AE_DEVICE_KEYBOARD_MOUSE;
+	if (screen->screen_class->pointer)
+		screen->screen_class->pointer(screen, pointer);
+}
+
 void ae_ui_draw(void)
 {
 	int index;

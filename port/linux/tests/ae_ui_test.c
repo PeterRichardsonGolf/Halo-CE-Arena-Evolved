@@ -13,14 +13,16 @@ static int handle(struct ae_screen *s, struct ae_event const *e)
 	return 0;
 }
 static void draw(struct ae_screen *s) { (void)s; drawn++; }
-static struct ae_screen_class const plain = { "plain", enter, leave, handle, draw, 0 };
-static struct ae_screen_class const lobby = { "lobby", enter, leave, handle, draw, 1 };
+static int pointed;
+static void point(struct ae_screen *s, struct ae_pointer const *p) { (void)s; if (p->left_clicks) pointed++; }
+static struct ae_screen_class const plain = { "plain", enter, leave, handle, draw, 0, point };
+static struct ae_screen_class const lobby = { "lobby", enter, leave, handle, draw, 1, NULL };
 
 /* draw order: records the focus of each screen drawn */
 static short order[AE_MAXIMUM_SCREENS];
 static int ordered;
 static void draw_order(struct ae_screen *s) { if (ordered < AE_MAXIMUM_SCREENS) order[ordered++] = s->focus; }
-static struct ae_screen_class const layered = { "layered", NULL, NULL, NULL, draw_order, 0 };
+static struct ae_screen_class const layered = { "layered", NULL, NULL, NULL, draw_order, 0, NULL };
 
 static struct ae_event ev(short player, int action) { struct ae_event e; e.player = player; e.action = (unsigned char)action; e.device = AE_DEVICE_XBOX; return e; }
 
@@ -94,6 +96,23 @@ int main(void)
 	ae_ui_reset(); ae_ui_push(&plain, AE_OWNER_ANY, NULL);
 	e = ev(2, AE_ACTION_DOWN); e.device = AE_DEVICE_NINTENDO; ae_ui_dispatch(&e);
 	CHECK(ae_ui_last_device() == AE_DEVICE_NINTENDO);
+	/* pointer: player 0's (or anyone's) top screen takes it; it makes the keyboard and mouse the last device */
+	{
+		struct ae_pointer p = { 10.0f, 20.0f, 1, 1, 0, 0, 0 };
+
+		ae_ui_reset();
+		ae_ui_dispatch_pointer(&p);                        /* no screen: nothing */
+		ae_ui_push(&plain, 0, NULL);
+		ae_ui_dispatch_pointer(&p);
+		CHECK(pointed == 1 && ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE);
+		ae_ui_push(&plain, 1, NULL);                       /* player 2's screen: not the mouse's */
+		ae_ui_dispatch_pointer(&p);
+		CHECK(pointed == 1);
+		ae_ui_push(&lobby, AE_OWNER_ANY, NULL);            /* no pointer handler */
+		ae_ui_dispatch_pointer(&p);
+		CHECK(pointed == 1 && ae_ui_depth() == 3);
+		ae_ui_dispatch_pointer(NULL);
+	}
 	/* repeat: first press steps once, then 400 ms, then every 80, 40 after 1 s; at most one step per call */
 	CHECK(ae_repeat_update(&r, 1, 1000) == 1);
 	CHECK(ae_repeat_update(&r, 1, 1000) == 0);

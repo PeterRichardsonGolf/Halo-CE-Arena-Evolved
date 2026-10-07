@@ -557,6 +557,8 @@ int ae_draw_image_load(const unsigned char *rgba, int width, int height)
 		image_free(slot = least_recent_image());
 	image = &ae.images[slot];
 	image->pixels = malloc(size);
+	/* (out of memory: 0, and the images freed above to make room stay freed; their ids draw nothing, as after
+	any eviction) */
 	if (!image->pixels)
 		return 0;
 	memcpy(image->pixels, rgba, size);
@@ -1040,8 +1042,20 @@ static int build_vertices(int *atlas_full)
 	return count;
 }
 
+/* (at every Present, drawn or not: GL's context is current) */
 static void frame_done(void)
 {
+	int index;
+
+	/* the textures of freed images */
+	for (index = 0; index < MAXIMUM_IMAGES; index++)
+	{
+		if (!ae.images[index].live && ae.images[index].texture)
+		{
+			glDeleteTextures(1, &ae.images[index].texture);
+			ae.images[index].texture = 0;
+		}
+	}
 	ae.quad_count = ae.text_count = ae.text_used = 0;
 	ae.clip_depth = 0;
 	ae.view.height = 0.0f;
@@ -1111,15 +1125,6 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 		glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
 #endif
 
-	/* the textures of freed images */
-	for (index = 0; index < MAXIMUM_IMAGES; index++)
-	{
-		if (!ae.images[index].live && ae.images[index].texture)
-		{
-			glDeleteTextures(1, &ae.images[index].texture);
-			ae.images[index].texture = 0;
-		}
-	}
 	/* the vertices (packing new glyphs binds the atlas; new images their textures) */
 	count = build_vertices(&atlas_full);
 

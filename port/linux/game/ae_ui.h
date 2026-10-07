@@ -16,6 +16,9 @@
  * Last device: the device of the last event that passed the owner filter (prompts show its glyphs); another
  * player's dropped input doesn't change it.
  *
+ * Pointer (mouse, touch): it belongs to the first player. It reaches the top screen's `pointer` handler when that
+ * screen is player 0's or anyone's; moving it or clicking makes the keyboard and mouse the last device.
+ *
  * Key repeat: a held direction steps once on the press, again after 400 ms, then every 80 ms, every 40 ms after
  * it has been held 1 s. At most one step per call: after a stall the missed ticks are skipped, not replayed.
  */
@@ -28,6 +31,8 @@ enum ae_action { AE_ACTION_NONE, AE_ACTION_UP, AE_ACTION_DOWN, AE_ACTION_LEFT, A
 enum ae_device { AE_DEVICE_KEYBOARD_MOUSE, AE_DEVICE_XBOX, AE_DEVICE_PLAYSTATION, AE_DEVICE_NINTENDO };
 enum { AE_OWNER_ANY = -1, AE_MAXIMUM_PLAYERS = 4, AE_MAXIMUM_SCREENS = 16 };
 struct ae_event { short player; unsigned char action; unsigned char device; };
+/* the pointer this frame, in layout units of the whole frame (ae_layout.h) */
+struct ae_pointer { float x, y; unsigned char moved, left_clicks, right_clicks, touch; signed char wheel_steps; };
 struct ae_screen;
 struct ae_screen_class
 {
@@ -39,6 +44,8 @@ struct ae_screen_class
 	void (*draw)(struct ae_screen *screen);
 	/* nonzero: START from a player who doesn't own the screen still reaches handle (lobbies: join / your settings) */
 	int start_from_anyone;
+	/* the pointer (hover, clicks, wheel); NULL: the screen takes none */
+	void (*pointer)(struct ae_screen *screen, struct ae_pointer const *pointer);
 };
 struct ae_screen { struct ae_screen_class const *screen_class; short owner; short focus; void *data; };
 
@@ -52,6 +59,8 @@ struct ae_screen *ae_ui_top(void);
 int ae_ui_depth(void);
 /* routes one event to the top screen (owner filter, START from anyone, BACK pops) */
 void ae_ui_dispatch(struct ae_event const *event);
+/* routes the pointer to the top screen, if it is player 0's or anyone's */
+void ae_ui_dispatch_pointer(struct ae_pointer const *pointer);
 /* draws every screen, bottom to top */
 void ae_ui_draw(void);
 enum ae_device ae_ui_last_device(void);

@@ -3,6 +3,7 @@
 # lines must follow each other. tools/test_ae_hooks.py checks every hook is present, and every line marked
 # AE hook upstream is a line of one listed here.
 port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.ae_test_screen", _config_integer, "0", "HALO_AE_TEST_SCREEN", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/d3d8_gl.c	#include "ae_draw.h" /* AE hook */
 port/linux/src/d3d8_gl.c	render_target_resolve(&back_buffer->target);\nae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */\nif (screenshot_every > 0 && device.frame % (unsigned long)screenshot_every == 0)
 source/interface/ui_widget.c	#include "ae_hooks.h" /* AE hook */

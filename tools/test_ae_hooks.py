@@ -1,5 +1,6 @@
 """Every AE hook listed in port/linux/game/ae_hooks.txt is present in its upstream file (a merge that drops one,
 or a line of one, fails here, not in play), and every line marked as an AE hook in an upstream file is listed."""
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -78,3 +79,29 @@ def test_marked_hooks_listed():
             if MARK in line and line.strip() not in listed.get(relative, set()):
                 unlisted.append(f"{relative}:{number}: {line.strip()}")
     assert not unlisted, "AE hook lines not listed in ae_hooks.txt:\n" + "\n".join(unlisted)
+
+
+def enum_values(text, first):
+    """name -> value of the C enum whose first name is first (plain names, '= N' honoured)"""
+    match = re.search(r"enum\s*\{\s*(" + re.escape(first) + r"\b[^}]*)\}", text)
+    assert match, f"no enum starting with {first}"
+    values, value = {}, -1
+    for item in match.group(1).split(","):
+        item = re.sub(r"/\*.*?\*/", "", item, flags=re.S).strip()
+        if not item:
+            continue
+        name, _, given = item.partition("=")
+        value = int(given.strip(), 0) if given.strip() else value + 1
+        values[name.strip()] = value
+    return values
+
+
+def test_event_types_agree():
+    """ae_input.c copies event_manager.c's private event type (P22): the copy must match the original."""
+    upstream = enum_values((ROOT / "source" / "interface" / "event_manager.c").read_text(errors="replace"),
+                           "_event_type_null")
+    ours = (ROOT / "port" / "linux" / "game" / "ae_input.c").read_text(errors="replace")
+    copied = re.search(r"AE_EVENT_TYPE_BUTTON\s*=\s*(\d+)", ours)
+    assert copied, "ae_input.c has no AE_EVENT_TYPE_BUTTON"
+    assert int(copied.group(1)) == upstream["_event_type_button"], \
+        "event_manager.c's _event_type_button moved: update AE_EVENT_TYPE_BUTTON in ae_input.c"
