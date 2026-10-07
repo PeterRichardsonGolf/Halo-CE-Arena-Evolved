@@ -784,7 +784,8 @@ static int texture_slot(GLenum target)
 	return target == GL_TEXTURE_CUBE_MAP ? 1 : target == GL_TEXTURE_3D ? 2 : 0;
 }
 
-#ifdef HALO_GL_LEGACY_BINDING
+/* (each unit on its own: OpenGL ES, macOS, and a desktop context without
+OpenGL 4.4's glBindTextures, bind_textures) */
 static void state_texture(int unit, GLenum target, GLuint texture)
 {
 	int slot = texture_slot(target);
@@ -799,7 +800,6 @@ static void state_texture(int unit, GLenum target, GLuint texture)
 	gl_state.textures[unit][slot] = texture;
 	glBindTexture(target, texture);
 }
-#endif
 
 static void state_sampler(int unit, GLuint sampler)
 {
@@ -3113,6 +3113,13 @@ static void bind_textures(struct nv2a_pixel_shader_key *key, float texture_scale
 	for (stage = 0; stage < D3DTSS_MAXSTAGES; stage++)
 		state_texture(stage, gl_targets[stage], gl_textures[stage]);
 #else
+	/* (OpenGL 4.4's: a context without it binds each unit on its own) */
+	if (!glBindTextures)
+	{
+		for (stage = 0; stage < D3DTSS_MAXSTAGES; stage++)
+			state_texture(stage, gl_targets[stage], gl_textures[stage]);
+	}
+	else
 	{
 		/* the units whose texture changes, bound in one call (GL 4.4's
 		multi-bind) rather than selecting and binding each unit; binding no
