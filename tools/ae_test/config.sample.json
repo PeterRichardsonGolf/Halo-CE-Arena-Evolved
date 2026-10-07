@@ -1,0 +1,32 @@
+{
+  "_comment": "Copy to ~/.config/ae_test/config.json (or point $AE_TEST_CONFIG at it) and fill in the <...> values. Every key is optional: harness.py DEFAULTS has the rest. One config on the laptop (box and windows sections) and one on the build box (data, builds).",
+  "repo": "<git checkout that builds commits, e.g. ~/ae>",
+  "builds_dir": "~/halo-test/ae_test/builds",
+  "work_dir": "~/halo-test/ae_test/work",
+  "out_dir": "~/halo-test/ae_test/out",
+  "data_dir": "<folder with maps/ (maps/ce/ for Custom Edition) and mods/<name>/maps>",
+  "named_builds": {
+    "stock": "<folder with a stock ChupathingyCE linux64 halo>",
+    "opence": {"dir": "<folder with a stock OpenCE 32-bit halo>", "env": {"LIBGL_ALWAYS_SOFTWARE": "1"}}
+  },
+  "configure_args": ["--release", "--compiler-launcher", "ccache"],
+  "pkg_config_path_32": "/usr/lib32/pkgconfig",
+  "jobs": 16,
+  "jobs_slow": 8,
+  "nice": 10,
+  "parallel": "auto",
+  "max_games_total": 4,
+  "owner_check": true,
+  "xvfb": "auto",
+  "box": {
+    "ssh": "<ssh alias of the build box>",
+    "git_url": "<ssh alias>:<repo path on the box>",
+    "harness_dir": "~/halo-test/ae_test/harness"
+  },
+  "windows": {
+    "ssh": "<ssh alias of the Windows test box>",
+    "root": "C:\\halo-test",
+    "artifact": "arena-evolved-windows64-release",
+    "window_size": "1280x720"
+  }
+}
