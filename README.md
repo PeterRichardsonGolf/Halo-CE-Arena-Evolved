@@ -168,6 +168,11 @@ play:
   in-game Server Browser unless you set LISTING to PRIVATE in Server Setup.
   Listing them on the website game list, and reporting the games you join to a
   stats site, stay off unless you turn them on (Settings > Network).
+- At start and every few hours the game fetches ChupathingyCE's signed table
+  of the network versions to play with (Delta) from the game list's site
+  (`network.browser_url`), else from GitHub. In a game, machines that speak
+  Delta tell each other their platform; your player ID only with
+  `network.share_profile` (off).
 
 ## Where it's going
 
@@ -187,7 +192,7 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.1.0-beta, built on ChupathingyCE 0.6.7b and OpenCE build-128, is
+page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, is
 the first, a pre-release. Each platform is a zip of its own,
 `arena-evolved-<platform>-release.zip`; `arena-evolved-linux64-release.zip`
 (Linux, 64-bit) is the one played and tested. The dedicated server keeps
@@ -251,6 +256,11 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
+- Online, Arena Evolved plays with ChupathingyCE 0.7.0b and OpenCE build-133
+  to build-139 (network version 20), both ways, and joins games hosted on
+  network versions 11 to 20. Older builds' hosts (network version 10) can't
+  be joined, and ChupathingyCE 0.6.8b and OpenCE build-129 to build-131
+  (version 18) don't join Arena Evolved's games.
 
 ## Credits
 

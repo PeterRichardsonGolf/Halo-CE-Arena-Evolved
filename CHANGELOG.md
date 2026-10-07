@@ -57,6 +57,36 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   player's pause, not every player's.
 - The network test's quick launch gives each local player the last-used
   profile, so their controller layouts apply.
+- Merged ChupathingyCE 0.7.0b. Network: Arena Evolved now announces
+  version 20, as ChupathingyCE 0.7.0b and OpenCE build-133..139 do, and
+  joins hosts of 11 to 20, so those builds and Arena Evolved join each
+  other's games both ways; ChupathingyCE 0.6.8b and OpenCE build-129..131
+  (18) no longer join Arena Evolved's hosts. Every public listing,
+  a game with a password's and its tombstone too, is version 20 (this
+  replaces the version 18 and the listings labelled by their layout of the
+  entries below). A game with a password's invite still never goes to the
+  game list's site. Delta, ChupathingyCE's network family, comes with it:
+  a signed table of the network versions to announce and join, which can
+  widen the built-in ones (fetched from the game list's site,
+  `network.browser_url`, else ChupathingyCE's GitHub, at start and every
+  few hours, kept in the save folder, and passed between machines;
+  `network.legacy_table` sets one by hand), and Delta Peer, messages beside
+  the game's between the machines of a game (UDP, the game's port + 10:
+  5160): each machine's platform and its player limits, and its player ID
+  only with `network.share_profile`; it never decides game state, and
+  `network.protocol = "opence"` turns it off. Also: a dedicated server's
+  game says so in the Server Browser's Rules line; the log starts with the
+  build's identity (Arena Evolved's name, version, commit, platform and
+  upstream base) and the network numbers; `audio.resampling` ("sinc", or
+  "linear" as before OpenCE's build 130); muffling off with the reverb;
+  Halo PC maps in the maps folder explained at start instead of a blue
+  screen; keyboard crouch-walking, and Controls Setup's keys by the
+  keyboard's own labels; a deleted profile's name can be used again; the
+  PC menus' Settings on a new install makes a profile; a network game's
+  pause menu no longer moves its player with the controller that works
+  it; a Custom Edition map's script data checked as Halo PC wrote it; a
+  banned machine's join refused as banned; the Windows build starts on
+  Windows 7.
 - Merged OpenCE build-139: a map's tags are checked against a schema of
   their groups before the game uses them, and each structure bsp as it
   loads; a map whose blocks lie outside its tags is refused, smaller
@@ -77,8 +107,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   sets rasterizer_wireframe), and a main menu's scripts may
   switch maps and flush the caches (CE+ X's menu does). NHE's Prisoner Bots
   (a10, which crashed when hosted before) calls map_reset, which is
-  refused. Network version and messages unchanged: Arena Evolved announces
-  18 and joins 11 to 20.
+  refused. Network version and messages unchanged by it.
 - Merged OpenCE build-133..138: password-protected public lobbies (Server
   Setup's PASSWORD for a PUBLIC internet game; the Server Browser shows a
   lock and asks for the password, which opens the listed invite; an invite

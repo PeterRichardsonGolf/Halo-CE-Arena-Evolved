@@ -175,17 +175,18 @@ COLLISIONS: each machine's players then pass through the others'); version 20
 lists a public game with a password with its invite's token sealed with the
 password's key (`p2p_lobby.c`), a listing of another layout.
 
-Arena Evolved announces version 18 in its game's advertisement and joins
-hosts of 11 to 20 (delta.h's table: 19 and 20 are additive for a client).
-It already sends the co-op collisions setting (in what was a padding byte,
-which version 18 machines ignore: their players still collide). A public
-listing's version states its layout: a game with a password is listed as
-20 (its sealed token), as is its tombstone, which browsers of 18 and
-below skip as above their range; every other listing is 18, the layout they
-read. OpenCE build-132 and later (19, 20) join only their own version, so
-they do not join Arena Evolved's hosts; Arena Evolved joins theirs. OpenCE
-build-138's Server Browser shows Arena Evolved's games with a password, but
-its players cannot join them (the host announces 18).
+Arena Evolved follows ChupathingyCE 0.7.0b's numbers: it announces version
+20 in its game's advertisement and joins hosts of 11 to 20 (delta.h's
+table), so ChupathingyCE 0.7.0b and OpenCE build-133 to build-139 (20) and
+Arena Evolved join each other's games both ways, and the hosts of 11 to 19
+are joined; ChupathingyCE 0.6.8b and OpenCE build-129 to build-131 (18) do
+not join its hosts. Every public listing is version 20, a game with a
+password's and its tombstone included. A signed legacy table (Delta,
+`docs/delta.md`, ChupathingyCE's key) can widen these numbers at run time,
+as in ChupathingyCE's builds. Arena Evolved's own rule on top: a game with
+a password never has its invite sent to the game list's site (`browser.c`:
+not listed, not claimed, not reported, hosted or joined through the
+password).
 
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. That

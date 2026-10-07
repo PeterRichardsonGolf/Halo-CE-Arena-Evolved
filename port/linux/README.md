@@ -648,8 +648,7 @@ ChupathingyCE's own parts of the server browser:
 
 - A game hosted from the Xbox menus (System Link, or Online Games) is an
   internet game too, and public as `network.host_public` says, so it shows
-  in the Server Browser of ChupathingyCE and OpenCE build-129..131 (Arena
-  Evolved: OpenCE build-132 and later hide its version-18 listings). The dedicated server
+  in the Server Browser of OpenCE and ChupathingyCE. The dedicated server
   (`server/`) is public unless `HALO_DEDICATED_PUBLIC=false`.
 - Builds with the game list (`configure.py --game-browser`) also show the
   games of `network.browser_url` (halo.milenko.org). While the Server

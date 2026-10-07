@@ -303,9 +303,10 @@ static void lobby_checks(void)
 	lobby_update(token, 3, 16);
 	hear(published, published_size, 0, NULL);
 	check(games(&listing) == 1 && listing.locked && !listing.invite[0], "a game with a password is listed locked");
-	/* (AE: a listing's version states its layout: 20 for a password's) */
-	check(published_size > 5 && (published[3] << 8 | published[4]) == 20,
-		"a game with a password is listed as version 20");
+	/* (AE: a password game's listing is the announced version, as every
+	listing is) */
+	check(published_size > 5 && (published[3] << 8 | published[4]) == HALO_PORT_NETWORK_VERSION,
+		"a game with a password is listed as the announced version");
 	{
 		int offset, found = 0;
 
@@ -317,11 +318,11 @@ static void lobby_checks(void)
 	check(!p2p_listing_unlock(&listing, "") && !listing.invite[0], "no password opens nothing");
 	check(p2p_listing_unlock(&listing, "hunter2") && !strcmp(listing.invite, expected_invite),
 		"the password opens the host's invite");
-	/* (AE) its tombstone: version 20 too, and taken */
+	/* (AE) its tombstone: the announced version too, and taken */
 	p2p_set_hosting_public(0);
 	lobby_update(token, 3, 16);
-	check(published_closing && published_size > 5 && (published[3] << 8 | published[4]) == 20,
-		"a password game's tombstone is version 20");
+	check(published_closing && published_size > 5 && (published[3] << 8 | published[4]) == HALO_PORT_NETWORK_VERSION,
+		"a password game's tombstone is the announced version");
 	hear(published, published_size, 0, NULL);
 	check(games(NULL) == 0, "a password game's tombstone removes the game");
 	p2p_set_hosting_public(1);
