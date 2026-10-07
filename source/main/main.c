@@ -1342,6 +1342,34 @@ static void compute_subframe_counts(
 	return;
 }
 
+/* port: a split-screen view's safe frame (its camera's window, which the
+HUD keeps to and the reticle and the aim sit at the middle of) is the view
+itself inset by 7.5% of its own height at the top and foot and 7.5% of its
+own width at the sides: the share the title-safe frame takes of one view
+(36 of 480 lines, 48 of 640), so that every half view is laid out as every
+other and a quarter as one view at half the size, with the reticle at the
+middle of each. The game cut the views from the screen's title-safe frame
+with 4 lines between them, which put an upper view's reticle 16 lines
+under its middle and a left quarter's 29.5 right of it (and the HUD's top
+and foot at another place in each view). A half or quarter view's window
+is 204 lines tall (one view's 408, halved; the game's was 200) */
+static void compute_window_split_safe_frame(
+	rectangle2d const *pixel_bounds,
+	rectangle2d *safe_frame_bounds)
+{
+	long width = pixel_bounds->x1-pixel_bounds->x0;
+	long height = pixel_bounds->y1-pixel_bounds->y0;
+	short inset_x = (short)(width*0.075f+0.5f);
+	short inset_y = (short)(height*0.075f+0.5f);
+
+	if (width<=2*inset_x || height<=2*inset_y)
+		return;
+	safe_frame_bounds->x0 = (short)(pixel_bounds->x0+inset_x);
+	safe_frame_bounds->x1 = (short)(pixel_bounds->x1-inset_x);
+	safe_frame_bounds->y0 = (short)(pixel_bounds->y0+inset_y);
+	safe_frame_bounds->y1 = (short)(pixel_bounds->y1-inset_y);
+}
+
 void compute_window_bounds(
 	long player_index,
 	long num_players,
@@ -1422,6 +1450,10 @@ void compute_window_bounds(
 		pixel_bounds->y0 = rasterizer_globals.reserved04.screen_bounds.y0;
 	if (vertical_index+1==vertical_count)
 		pixel_bounds->y1 = rasterizer_globals.reserved04.screen_bounds.y1;
+
+	/* port: with two or more views, each view's own safe frame */
+	if (num_players>1)
+		compute_window_split_safe_frame(pixel_bounds, safe_frame_bounds);
 
 	return;
 }

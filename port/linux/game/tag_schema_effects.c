@@ -478,20 +478,6 @@ typedef char verify_hud_waypoint_arrow_size[sizeof(struct hud_waypoint_arrow) ==
 typedef char verify_hud_state_message_definition_size[sizeof(struct hud_state_message_definition) == 0x40 ? 1 : -1];
 typedef char verify_hud_message_text_definition_size[sizeof(struct hud_message_text_definition) == 0x80 ? 1 : -1];
 
-/* draw_string.c's (and rasterizer_text.c's) */
-struct font_character
-{
-	word character;
-	short character_width;
-	short bitmap_width;
-	short bitmap_height;
-	short bitmap_origin_x;
-	short bitmap_origin_y;
-	short hardware_character_index;
-	word pad;
-	long pixels_offset;
-};
-
 /* (a character table's entry) */
 struct font_character_index
 {

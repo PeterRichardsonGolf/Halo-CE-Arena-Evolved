@@ -199,6 +199,11 @@ static const struct config_setting config_settings[] =
 		"\"up\" the time played, \"both\" the time left with the time played smaller\n"
 		"above it (with no time limit, the time played alone), or \"off\". On Halo\n"
 		"1: NHE's maps it takes the place of their own clock; off leaves theirs." },
+	{ "display.power_list", _config_string, "\"clock\"", "HALO_POWER_LIST", _environment_value, _platform_all,
+		"Where the gametype's TIMERS and TRAINING list the power items' next\n"
+		"spawns with one player: \"clock\" a column over the match clock in the\n"
+		"bottom right corner, the soonest at the foot, or \"top_left\" one line in\n"
+		"the top left corner. Split screen's views always have the column." },
 	{ "display.campaign_timer", _config_boolean, "false", "HALO_CAMPAIGN_TIMER", _environment_value, _platform_all,
 		"A clock in the bottom right corner of each view in the campaign, as the\n"
 		"Master Chief Collection's: the time played on the level, in game time\n"

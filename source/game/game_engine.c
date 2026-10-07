@@ -3725,6 +3725,28 @@ real game_engine_scoreboard_shown(
 	return PIN(game_engine_globals.hud_message_timers[local_player_index], 0.0f, 1.0f);
 }
 
+/* port: whether a local player's view's scoreboard is opening or open this
+frame, as game_engine_post_rasterize_in_game will draw it after the HUD in
+the same pass (BACK held, or the postgame's delay): the HUD hides what the
+board would meet (the power column, TRAINING's waypoints) from the frame it
+appears, not a frame
+later as game_engine_scoreboard_shown has it */
+boolean game_engine_scoreboard_held(
+	short local_player_index)
+{
+	struct gamepad_state const *gamepad;
+
+	if (!game_engine_running() || local_player_index < 0 ||
+		local_player_index >= NUMBEROF(game_engine_globals.hud_message_timers))
+	{
+		return FALSE;
+	}
+	gamepad = input_get_gamepad_state(local_player_index);
+
+	return (gamepad && gamepad->buttons[_gamepad_binary_button_back]) ||
+		game_engine_globals.postgame_state == game_engine_mode_postgame_delay;
+}
+
 long game_engine_player_get_team_index(
 	long player_index)
 {

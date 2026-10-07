@@ -82,8 +82,6 @@ symbols in this file:
 
 /* ---------- headers */
 
-#include <stdlib.h>
-
 #include "cseries/cseries.h"
 #include "cseries/errors.h"
 #include "math/real_math.h"
@@ -99,7 +97,6 @@ symbols in this file:
 #include "interface/hud_draw.h"
 #include "interface/interface.h"
 #include "interface/unit_hud_interface_definition.h"
-#include "main/main.h"
 #include "items/weapon_definitions.h"
 #include "items/weapons.h"
 #include "objects/objects.h"
@@ -1398,61 +1395,6 @@ void hud_zoomed_layout_begin(
 	render.camera.window_bounds.x1 = (short)(whole.x1 - inset);
 }
 
-/* port (temporary, while the owner picks one: HALO_HUD_BOTTOM_MARGIN):
-the foot of a split-screen view's HUD. compute_window_bounds (main.c)
-insets every view's window (the HUD's frame) by the screen's title-safe
-frame (36 of 480 lines, 7.5%) on the sides that touch the screen's edges
-and by 4 lines where views meet, so a lower view's bottom row (the motion
-sensor, its "15m", the power list and the clock on its foot) sits 36 lines
-over the screen's foot while an upper view's sits 4 over the divider.
-"tight": every split view's foot 4 lines over its own foot (an upper
-view's as it was); "equal": 7.5% of the view's own height over it (18
-lines in a half or quarter view: the title-safe share one view has, which
-puts one view's foot where it is). Unset: as the game sets it. One view is
-left as it is. Only the HUD's pass: the window the camera aims by
-(hud_area_window) is the whole one */
-static short hud_area_bottom_margin(
-	short view_height)
-{
-	static int mode = -1;
-
-	if (mode < 0)
-	{
-		char const *value = getenv("HALO_HUD_BOTTOM_MARGIN");
-
-		mode = 0;
-		if (value && !csstrcmp(value, "tight"))
-			mode = 1;
-		else if (value && !csstrcmp(value, "equal"))
-			mode = 2;
-	}
-	switch (mode)
-	{
-	case 1:
-		return 4;
-	case 2:
-		return (short)(view_height * 0.075f + 0.5f);
-	default:
-		return NONE;
-	}
-}
-
-static void hud_area_bottom_begin(
-	void)
-{
-	short view_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
-	short margin;
-
-	if (main_get_window_count() <= 1)
-		return;
-	margin = hud_area_bottom_margin(view_height);
-	if (margin < 0)
-		return;
-	render.camera.window_bounds.y1 = (short)(render.camera.viewport_bounds.y1 - margin);
-	if (render.camera.window_bounds.y1 <= render.camera.window_bounds.y0)
-		render.camera.window_bounds.y1 = hud_area_globals.window_bounds.y1;
-}
-
 /* port: HUD AREA (display.hud_area): "full", "16:9" or "4:3", as the
 width of the HUD's part of the screen to its height (0 for all of it) */
 static real hud_area_aspect(
@@ -1514,7 +1456,6 @@ void hud_area_begin(
 		if (render.camera.window_bounds.x1 <= render.camera.window_bounds.x0)
 			render.camera.window_bounds = hud_area_globals.window_bounds;
 	}
-	hud_area_bottom_begin();
 }
 
 void hud_area_end(

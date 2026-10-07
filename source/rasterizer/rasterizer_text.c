@@ -121,19 +121,6 @@ enum
 
 /* ---------- structures */
 
-struct font_character
-{
-	word character;
-	short character_width;
-	short bitmap_width;
-	short bitmap_height;
-	short bitmap_origin_x;
-	short bitmap_origin_y;
-	short hardware_character_index;
-	short pad;
-	long pixels_offset;
-};
-
 struct parse_string_state;
 
 typedef void (*draw_character_proc)(
@@ -1099,7 +1086,7 @@ flush_hardware_character(
 	{
 		hardware_character->character->hardware_character_index = NONE;
 
-		if (hardware_character->character->pad == magic_number)
+		if (hardware_character->character->pad == (word)magic_number)
 			error(_error_log, "font cache overwrote character in use");
 
 		hardware_character->character = NULL;
