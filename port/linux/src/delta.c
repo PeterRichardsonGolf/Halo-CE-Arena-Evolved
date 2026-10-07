@@ -649,7 +649,9 @@ static enum delta_result delta_take(const char *document, size_t size, const cha
 		delta.minimum = table.minimum;
 		delta.maximum = table.maximum;
 	}
-	delta.disabled = table.disabled;
+	/* (Arena Evolved: a table with no row for this build's wire turns off
+	none of its capabilities either: it is another build's) */
+	delta.disabled = table.has_row ? table.disabled : 0;
 	pthread_mutex_unlock(&delta_lock);
 
 	platform_log("Delta: legacy table %u from %s: announcing %d, joining %d to %d%s", table.serial, source,
@@ -857,8 +859,10 @@ void delta_legacy_start(void)
 	started = 1;
 #ifdef HALO_GAME_BROWSER
 	/* (no key, nothing to check a table with; no list server, the player's
-	choice to talk to none) */
-	if (!delta_legacy_override() && delta_has_key() && config_string("network.browser_url")[0])
+	choice to talk to none. Arena Evolved: and only when the player turned
+	the fetch on, network.legacy_table_fetch) */
+	if (!delta_legacy_override() && delta_has_key() && config_string("network.browser_url")[0] &&
+		config_boolean("network.legacy_table_fetch"))
 	{
 		pthread_t thread;
 

@@ -319,8 +319,9 @@ def checker(keys, tmp_path_factory):
     return program
 
 
-def run_checker(program, root, *steps, override=None, url=""):
-    environment = {"DELTA_CHECK_ROOT": str(root), "PATH": "/usr/bin:/bin", "DELTA_CHECK_URL": url}
+def run_checker(program, root, *steps, override=None, url="", fetch=True):
+    environment = {"DELTA_CHECK_ROOT": str(root), "PATH": "/usr/bin:/bin", "DELTA_CHECK_URL": url,
+                   "DELTA_CHECK_FETCH": "1" if fetch else "0"}
     if override:
         environment["DELTA_CHECK_OVERRIDE"] = str(override)
     result = subprocess.run([str(program), *map(str, steps)], capture_output=True, text=True, env=environment,
@@ -403,15 +404,19 @@ def test_loader_drops_tampered_and_unsigned(keys, checker, tmp_path):
 
 
 def test_loader_reads_known_rows_and_kill_switch(keys, checker, tmp_path):
-    """another wire's row is not this build's; disabled_capabilities sets the
-    kill switch's bits for the names it knows"""
+    """another wire's row is not this build's, nor (Arena Evolved) is its
+    kill switch: a table with no row for this build's wire turns nothing off;
+    one with a row sets the kill switch's bits for the names it knows"""
     data = document(serial=12, wire="chupa-other", disabled_capabilities=["chat", "unknown", "platform"],
                     unknown_field={"nested": [1, 2.5e3, None, True, "\u00e9"]},
                     platform_policy={"xbox": {"host_players": 16}, "android": {"join_players": 15}})
     output = run_checker(checker, tmp_path, "offer", write_signed(keys, tmp_path / "t12", data), "state")
     assert "offer 1" in output and "no row for" in output
     assert state_line(output)[0].startswith(
-        f"state {floor()['announce']} {floor()['minimum']} {floor()['maximum']} serial 12 override 0 disabled 9 ")
+        f"state {floor()['announce']} {floor()['minimum']} {floor()['maximum']} serial 12 override 0 disabled 0 ")
+    data = document(serial=13, disabled_capabilities=["chat", "unknown", "platform"])
+    output = run_checker(checker, tmp_path, "offer", write_signed(keys, tmp_path / "t13", data), "state")
+    assert "offer 1" in output and " serial 13 override 0 disabled 9 " in state_line(output)[0]
 
 
 def test_loader_override(keys, checker, tmp_path):
@@ -463,6 +468,13 @@ def test_loader_fetches_site_then_github(keys, checker, tmp_path):
 
 def test_loader_fetches_nothing_without_a_list_server(keys, checker, tmp_path):
     output = run_checker(checker, tmp_path, "start", "state", url="")
+    assert "request:" not in output
+
+
+def test_loader_fetches_nothing_unless_turned_on(keys, checker, tmp_path):
+    """(Arena Evolved) network.legacy_table_fetch off, its default: no
+    request, with a list server set"""
+    output = run_checker(checker, tmp_path, "start", "sleep", 300, url="https://list.example", fetch=False)
     assert "request:" not in output
 
 

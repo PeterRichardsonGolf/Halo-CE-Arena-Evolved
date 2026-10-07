@@ -61,6 +61,15 @@ const char *config_string(const char *name)
 	return value ? value : "";
 }
 
+/* (Arena Evolved: network.legacy_table_fetch, on unless DELTA_CHECK_FETCH
+is 0) */
+int config_boolean(const char *name)
+{
+	const char *fetch = getenv("DELTA_CHECK_FETCH");
+
+	return !strcmp(name, "network.legacy_table_fetch") && !(fetch && !strcmp(fetch, "0"));
+}
+
 void config_folder(char *path, size_t size)
 {
 	snprintf(path, size, "%s/", platform_save_root());

@@ -52,7 +52,8 @@ platform.
 #include <stdlib.h>
 #include <string.h>
 
-#define BROWSER_USER_AGENT "chupathingyce-browser"
+/* (Arena Evolved's own name) */
+#define BROWSER_USER_AGENT "arena-evolved-browser"
 #define TIMEOUT_MILLISECONDS 10000
 
 #ifndef _WIN32

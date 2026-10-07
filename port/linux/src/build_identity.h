@@ -11,8 +11,8 @@ platform layer and the system side (posix_*.c, win32_*.c) alike.
 #define BUILD_IDENTITY_H
 
 /* the start of each line of the platform layer's log (platform_log:
-standard error, debug.txt) */
-#define PLATFORM_LOG_PREFIX "chupathingyce: "
+standard error, debug.txt; Arena Evolved's) */
+#define PLATFORM_LOG_PREFIX "arena-evolved: "
 
 /* "ChupathingyCE 0.7.0b (release, release config, commit 65d3130d, built
 2026-10-06) macOS arm64" (Arena Evolved: its name, halo_product.h, and
@@ -20,7 +20,7 @@ standard error, debug.txt) */
 const char *build_identity(void);
 
 /* the User-Agent of this build's own requests: "ChupathingyCE/0.7.0b
-(macOS arm64)" */
+(macOS arm64)" (Arena Evolved: "ArenaEvolved/0.1.0-beta (Linux x64)") */
 const char *build_identity_user_agent(void);
 
 /* the log's header, first in debug.txt for this run (before the game's own

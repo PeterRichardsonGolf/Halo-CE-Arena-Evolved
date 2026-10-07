@@ -32,8 +32,7 @@ HALO_BUILD_FLAVOR.
 #endif
 
 /* (Arena Evolved: its own name, halo_product.h, as its window and start-up
-log have it; the user agent below keeps ChupathingyCE's, for its updater,
-which is off) */
+log have it, and in the user agent below) */
 #ifdef HALO_SERVER
 #define BUILD_IDENTITY_NAME HALO_PRODUCT_NAME " Dedicated Server"
 #else
@@ -89,7 +88,7 @@ static void identity_make(void)
 	snprintf(identity, sizeof(identity), "%s %s (%s, %s config, commit %s, built %s) %s %s; %s", BUILD_IDENTITY_NAME,
 		HALO_VERSION, HALO_CHANNEL, HALO_BUILD_FLAVOR, HALO_COMMIT, date, BUILD_IDENTITY_PLATFORM,
 		BUILD_IDENTITY_ARCHITECTURE, HALO_UPSTREAM_BASE);
-	snprintf(user_agent, sizeof(user_agent), "ChupathingyCE/%s (%s %s)", HALO_VERSION, BUILD_IDENTITY_PLATFORM,
+	snprintf(user_agent, sizeof(user_agent), "ArenaEvolved/%s (%s %s)", HALO_VERSION, BUILD_IDENTITY_PLATFORM,
 		BUILD_IDENTITY_ARCHITECTURE);
 }
 

@@ -20,6 +20,7 @@ HALO_GAME_BROWSER; network.protocol = "opence" turns all of it off.
 #include "halo_port_limits.h"
 #include "delta.h"
 #include "delta_peer.h"
+#include "halo_product.h"
 #ifdef HALO_GAME_BROWSER
 #include "browser.h"
 #endif
@@ -264,7 +265,8 @@ int delta_peer_protocol(void)
 		local.capabilities = (delta_u32)1 << _delta_capability_platform | (delta_u32)1 << _delta_capability_profile;
 		local.legacy_version = HALO_PORT_NETWORK_VERSION;
 		delta_peer_local_key(&local.key);
-		snprintf(local.build, sizeof(local.build), "ChupathingyCE %s", updater_version());
+		/* (Arena Evolved: its own name, which other machines log) */
+		snprintf(local.build, sizeof(local.build), HALO_PRODUCT_SHORT_NAME " %s", updater_version());
 		local.has_profile = local_profile(&local.profile);
 		local.ignore_platform_limits = !config_boolean("network.host_platform_limits");
 		{

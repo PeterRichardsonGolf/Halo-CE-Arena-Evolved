@@ -477,6 +477,11 @@ static const struct config_setting config_settings[] =
 		"HALO_NET_STUN", _environment_value, _platform_all,
 		"Public STUN servers that tell this machine its internet address;\n"
 		"comma-separated host:port." },
+	{ "network.legacy_table_fetch", _config_boolean, "false", "HALO_LEGACY_TABLE_FETCH", _environment_value,
+		_platform_all,
+		"Fetch ChupathingyCE's signed legacy table (Delta) from network.browser_url\n"
+		"(else GitHub) at start and every few hours. Off in Arena Evolved: its\n"
+		"own wire has no row in those tables, so they change nothing here." },
 	{ "network.legacy_table", _config_string, "\"\"", "HALO_LEGACY_TABLE", _environment_value, _platform_all,
 		"For testing, and for admins who know better: a legacy table file\n"
 		"(docs/delta.md, \"The legacy table as config\"), beside this file unless a\n"

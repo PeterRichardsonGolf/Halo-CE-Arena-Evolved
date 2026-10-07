@@ -65,7 +65,7 @@ https://e656c596e8f90402b0f47a2613b69e50@o4512207906603008.ingest.de.sentry.io/4
 (a DSN is public: it only lets a client send events) */
 #define SENTRY_HOST L"o4512207906603008.ingest.de.sentry.io"
 #define SENTRY_MINIDUMP_PATH L"/api/4512207917744208/minidump/?sentry_key=e656c596e8f90402b0f47a2613b69e50"
-#define SENTRY_USER_AGENT L"ChupathingyCE/" HALO_VERSION L" (Windows crash reporter)"
+#define SENTRY_USER_AGENT L"ArenaEvolved/" HALO_VERSION L" (Windows crash reporter)"
 
 #define CRASH_REPORT_OPTION L"--crash-report"
 #define CRASH_UPLOAD_OPTION L"--crash-upload"

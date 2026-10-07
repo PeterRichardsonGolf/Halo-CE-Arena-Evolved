@@ -151,8 +151,12 @@ legacy table's "platform_policy" section is to tune them without a release
 legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
-Give each release that changes what the machines send a new one. */
-#define DELTA_WIRE "chupa-20a"
+Give each release that changes what the machines send a new one.
+(Arena Evolved: its own, "ae-20a", so that ChupathingyCE's signed tables,
+whose rows are for ChupathingyCE's wires, never set Arena Evolved's numbers
+or turn off its capabilities: it plays its built-in 20 / 11..20. The wire
+ID is never sent; the game protocol is the same as chupa-20a's) */
+#define DELTA_WIRE "ae-20a"
 
 /* OpenCE's network versions (HALO_PORT_NETWORK_VERSION in its builds), the
 first of its releases with each, and whether the version's change is one the
