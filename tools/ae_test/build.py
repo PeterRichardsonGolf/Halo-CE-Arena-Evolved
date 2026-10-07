@@ -44,7 +44,7 @@ def main(argv):
                 print(f"{d.name}  {' '.join(have) or '(not built)'}")
         return 0
     if a.remove:
-        d = builds / a.remove[:12]
+        d = harness.removable_build(cfg, a.remove)
         if d.exists():
             harness.git(cfg["repo"], "worktree", "remove", "--force", str(d), check=False)
             shutil.rmtree(d, ignore_errors=True)

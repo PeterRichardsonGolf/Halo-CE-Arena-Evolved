@@ -193,15 +193,25 @@ def port_listening(port=GAME_PORT, tables=("/proc/net/tcp", "/proc/net/tcp6")):
     return False
 
 
+def under(path, folder):
+    """path is folder or inside it (both resolved: no prefix tricks such as work-other or ..)"""
+    if not path or not folder:
+        return False
+    try:
+        return Path(path).resolve().is_relative_to(Path(folder).resolve())
+    except (OSError, ValueError):
+        return False
+
+
 def owner_playing(cfg, procs=None, listening=None):
     """the owner's own game runs here: a halo process whose cwd is outside the harness's work folder,
     or a listener on 5150 (a lobby) in the machine's own namespace. Never touch it."""
     if not cfg.get("owner_check", True):
         return False
-    work = str(expand(cfg["work_dir"]))
+    work = expand(cfg["work_dir"])
     procs = list_halo_processes() if procs is None else procs
     for _pid, _exe, cwd in procs:
-        if not cwd.startswith(work):
+        if not under(cwd, work):
             return True
     return port_listening() if listening is None else listening
 
@@ -213,7 +223,7 @@ def other_games(cfg, procs=None, own=None):
     """halo processes on this machine that are not this tool's (other helpers' or tools' games, the owner's)"""
     own = OWN_WORK if own is None else own
     procs = list_halo_processes() if procs is None else procs
-    return [p for p in procs if not any(p[2].startswith(str(o) + "/") for o in own)]
+    return [p for p in procs if not any(under(p[2], o) for o in own)]
 
 
 def apply_load_policy(cfg, args=None):
@@ -235,7 +245,7 @@ def apply_load_policy(cfg, args=None):
 
 def resolve_parallel(cfg, requested):
     """games at once: an explicit number, else 3, or 1 when other games already run here (or in slow mode)"""
-    if cfg.get("_slow"):
+    if cfg.get("_slow") or not netns_ok():
         return 1
     req = requested if requested not in (None, "auto") else cfg.get("parallel", "auto")
     if req in (None, "auto"):
@@ -243,32 +253,94 @@ def resolve_parallel(cfg, requested):
     return max(1, int(req))
 
 
-class GameSlots:
-    """at most max_games_total games on this machine (all helpers), and at most `parallel` from this tool"""
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
 
-    def __init__(self, cfg, parallel):
+
+class GameSlots:
+    """at most max_games_total games on this machine (all helpers), and at most `parallel` from this tool.
+
+    Every harness process on the machine registers its games as files in <work_dir>/.slots
+    (<pid>-<n>), checked and written under one lock file (fcntl.flock), so two tools cannot both
+    take the last slot. Games of other scripts count by their halo processes outside work_dir.
+    Without network namespaces all games share the machine's network: then there is one slot for
+    the whole machine (a handshake pair takes it as one)."""
+
+    def __init__(self, cfg, parallel, shared_network=None):
         self.cfg = cfg
-        self.parallel = parallel
+        self.shared_network = (not netns_ok()) if shared_network is None else shared_network
+        self.parallel = 1 if self.shared_network else parallel
         self.lock = threading.Lock()
         self.mine = 0
+        self.dir = expand(cfg["work_dir"]) / ".slots"
+        self.files = []
+
+    def _registered(self):
+        """live slot files of other harness processes (stale ones removed)"""
+        n = 0
+        for f in self.dir.glob("*-*"):
+            try:
+                pid = int(f.name.split("-", 1)[0])
+            except ValueError:
+                continue
+            if pid == os.getpid():
+                continue
+            if pid_alive(pid):
+                n += 1
+            else:
+                f.unlink(missing_ok=True)
+        return n
+
+    def _outside(self):
+        """games of other scripts: halo processes outside the harness's work folder"""
+        work = expand(self.cfg["work_dir"])
+        return len([p for p in list_halo_processes() if not under(p[2], work)])
+
+    def try_acquire(self, games=1):
+        """take the slots now if they are free: (True, None) or (False, why)"""
+        import fcntl
+        self.dir.mkdir(parents=True, exist_ok=True)
+        with self.lock, open(self.dir.parent / ".slots.lock", "w") as lk:
+            fcntl.flock(lk, fcntl.LOCK_EX)
+            others = self._registered() + self._outside()
+            limit = 1 if self.shared_network else int(self.cfg.get("max_games_total", 4))
+            if self.shared_network:
+                ok = others == 0 and self.mine == 0
+            else:
+                ok = self.mine + games <= max(self.parallel, games) and \
+                    others + self.mine + games <= max(limit, games)
+            if not ok:
+                return False, f"{others} other games run here, limit {limit}"
+            for _ in range(games):
+                f = self.dir / f"{os.getpid()}-{time.monotonic_ns()}"
+                f.write_text(str(os.getpid()))
+                self.files.append(f)
+            self.mine += games
+            return True, None
 
     def acquire(self, games=1, poll=5, quiet=False):
         waited = False
         while True:
-            with self.lock:
-                others = len(other_games(self.cfg))
-                limit = int(self.cfg.get("max_games_total", 4))
-                if self.mine + games <= max(self.parallel, games) and others + self.mine + games <= max(limit, games):
-                    self.mine += games
-                    return
+            ok, why = self.try_acquire(games)
+            if ok:
+                return
             if not waited and not quiet:
-                log(f"ae_test: waiting for a game slot ({others} other games run here, limit {limit})")
+                log(f"ae_test: waiting for a game slot ({why})")
                 waited = True
             time.sleep(poll)
 
     def release(self, games=1):
         with self.lock:
             self.mine -= games
+            for _ in range(games):
+                if self.files:
+                    self.files.pop(0).unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------------------------------------- builds
@@ -347,6 +419,18 @@ def build_commit(cfg, rev, targets=("linux64",), rebuild=False, jobs=None, log_d
     finally:
         fcntl.flock(lock, fcntl.LOCK_UN)
         lock.close()
+
+
+def removable_build(cfg, sha):
+    """the folder of a built commit to delete: sha must be 12-40 hex digits and the folder directly in
+    builds_dir (resolved), else SystemExit"""
+    if not re.fullmatch(r"[0-9a-f]{12,40}", sha or ""):
+        raise SystemExit(f"ae_test build: --remove takes a commit's 12-40 hex digit sha, not {sha!r}")
+    builds = expand(cfg["builds_dir"]).resolve()
+    target = (builds / sha[:12]).resolve()
+    if target.parent != builds:
+        raise SystemExit(f"ae_test build: {target} is not in {builds}")
+    return target
 
 
 def expand_targets(targets):
@@ -915,8 +999,17 @@ def reticle_offsets(w, h, rgb, players, is_reticle=reticle_pixel, radius=0.25, j
 # ---------------------------------------------------------------------------------------------- running games
 
 
+_NETNS = {}
+
+
 def netns_ok():
-    """unshare -rn works here (a user and network namespace without root)"""
+    """unshare -rn works here (a user and network namespace without root); asked once"""
+    if "ok" not in _NETNS:
+        _NETNS["ok"] = _netns_probe()
+    return _NETNS["ok"]
+
+
+def _netns_probe():
     if not shutil.which("unshare") or not shutil.which("ip"):
         return False
     r = subprocess.run(["unshare", "-rn", "true"], capture_output=True)
@@ -991,7 +1084,7 @@ def run_group(cfg, games, bots=None, inner_out=None):
     if netns_ok():
         cmd = ["unshare", "-rn", *cmd]
     else:
-        log("ae_test: no unshare -rn here: the game shares this machine's network (one game at a time)")
+        log("ae_test: no unshare -rn here: the game shares this machine's network (one game on the machine at a time)")
     subprocess.run(cmd)
     try:
         return json.loads(res_path.read_text())
@@ -1097,6 +1190,10 @@ def collect_game(spec, prepared, inner, out, keep_work=False):
     write_json(out / "result.json", result)
     if not keep_work:
         shutil.rmtree(work, ignore_errors=True)
+        try:
+            work.parent.rmdir()  # (the run's folder, once its last game is gone)
+        except OSError:
+            pass
     return result
 
 
@@ -1160,6 +1257,34 @@ def add_common_args(p):
     p.add_argument("--keep-work", action="store_true", help="keep the work folders (save roots, binary copies)")
 
 
+TOOL_NAMES = ("build", "run", "smoke", "sheet", "handshake", "windows", "record")
+
+
+def remote_shell_path(p):
+    """a remote path for a POSIX shell command: quoted, only a leading ~ expanded (as "$HOME")"""
+    p = str(p)
+    if p == "~":
+        return '"$HOME"'
+    if p.startswith("~/"):
+        return '"$HOME"/' + shlex.quote(p[2:])
+    if p.startswith("~"):
+        raise SystemExit(f"ae_test: remote path {p!r}: only ~/ is expanded")
+    return shlex.quote(p)
+
+
+def remote_rsync_path(p):
+    """a remote path for rsync with --protect-args (no remote shell parsing): ~/x as x (relative paths
+    are from the remote home)"""
+    p = str(p)
+    if p == "~":
+        return "."
+    if p.startswith("~/"):
+        return p[2:] or "."
+    if p.startswith("~"):
+        raise SystemExit(f"ae_test: remote path {p!r}: only ~/ is expanded")
+    return p
+
+
 def remote(cfg, tool, argv, fetch=True):
     """run `tool` on the box with these arguments: the box's own config applies there. Commits named in
     the build arguments are resolved here and pushed to the box first. Returns (exit code, local out dir)."""
@@ -1167,6 +1292,8 @@ def remote(cfg, tool, argv, fetch=True):
     if not box.get("ssh"):
         raise SystemExit("ae_test: no box.ssh in the config")
     hdir = box["harness_dir"]
+    if tool not in TOOL_NAMES:
+        raise SystemExit(f"ae_test: unknown tool {tool!r}")
     argv = list(argv)
     out_args = []
     i = 0
@@ -1196,22 +1323,25 @@ def remote(cfg, tool, argv, fetch=True):
     name = None
     if "--out-name" in out_args:
         name = out_args[out_args.index("--out-name") + 1]
+        if safe_name(name) != name:
+            raise SystemExit(f"ae_test: --out-name {name!r}: letters, digits and _.+- only")
     else:
         name = stamp()
         out_args += ["--out-name", name]
     sync_harness(cfg)
-    cmd = f"cd {hdir} && python3 tools/ae_test/{tool}.py " + " ".join(shlex.quote(a) for a in out_args)
+    cmd = f"cd {remote_shell_path(hdir)} && python3 {shlex.quote(f'tools/ae_test/{tool}.py')} " + \
+        " ".join(shlex.quote(a) for a in out_args)
     log(f"ae_test: on {box['ssh']}: {tool}.py {' '.join(out_args)}")
     r = subprocess.run(["ssh", box["ssh"], cmd])
     local = None
     if fetch:
         local = expand(cfg["out_dir"]) / tool / name
         local.mkdir(parents=True, exist_ok=True)
-        rr = subprocess.run(["ssh", box["ssh"], f"cd {hdir} && python3 tools/ae_test/harness.py --out-dir {tool} {name}"],
-                            capture_output=True, text=True)
+        rr = subprocess.run(["ssh", box["ssh"], f"cd {remote_shell_path(hdir)} && python3 tools/ae_test/harness.py "
+                             f"--out-dir {shlex.quote(tool)} {shlex.quote(name)}"], capture_output=True, text=True)
         rdir = rr.stdout.strip().splitlines()[-1] if rr.stdout.strip() else None
         if rdir:
-            subprocess.run(["rsync", "-a", f"{box['ssh']}:{rdir}/", f"{local}/"])
+            subprocess.run(["rsync", "-a", "--protect-args", f"{box['ssh']}:{remote_rsync_path(rdir)}/", f"{local}/"])
             log(f"ae_test: results fetched to {local}")
     return r.returncode, local
 
@@ -1239,10 +1369,12 @@ def push_commit(cfg, rev, pushed):
 def sync_harness(cfg):
     box = cfg["box"]
     hdir = box["harness_dir"]
-    subprocess.run(["ssh", box["ssh"], f"mkdir -p {hdir}/tools/ae_test"], check=True)
-    subprocess.run(["rsync", "-a", "--delete", "--exclude", "__pycache__", f"{HERE}/",
-                    f"{box['ssh']}:{hdir}/tools/ae_test/"], check=True)
-    subprocess.run(["rsync", "-a", f"{TOOLS}/system_link_bots.py", f"{box['ssh']}:{hdir}/tools/"], check=True)
+    subprocess.run(["ssh", box["ssh"], f"mkdir -p {remote_shell_path(hdir)}/tools/ae_test"], check=True)
+    dest = remote_rsync_path(hdir)
+    subprocess.run(["rsync", "-a", "--protect-args", "--delete", "--exclude", "__pycache__", f"{HERE}/",
+                    f"{box['ssh']}:{dest}/tools/ae_test/"], check=True)
+    subprocess.run(["rsync", "-a", "--protect-args", f"{TOOLS}/system_link_bots.py", f"{box['ssh']}:{dest}/tools/"],
+                   check=True)
 
 
 # ---------------------------------------------------------------------------------------------- entry

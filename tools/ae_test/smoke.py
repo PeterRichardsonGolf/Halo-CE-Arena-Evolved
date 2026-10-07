@@ -10,7 +10,8 @@ A case whose map or mod is missing from the data folder is SKIP, not FAIL.
 
 Verdicts: PASS; FAIL (exit code, no clean exit, asserts, exceptions, refusals, lost scripts, too few
 network-test ticks, no scenario scripts in the campaign); with --baseline also the same cases on the
-baseline build, and each FAIL whose every reason the baseline shares is PRE-EXISTING; a case that
+baseline build, and each FAIL whose every reason the baseline shares, with no count (asserts, exceptions,
+refusals, lost scripts) above the baseline's, is PRE-EXISTING; a case that
 passes but differs from the baseline in a count (scripts, items, corrected tags, ticks down by a
 quarter) is listed under "differences". --baseline-from <summary.json> compares with an earlier run
 instead of playing the baseline again.
@@ -39,6 +40,7 @@ SMOKE = [
     {"name": "cex_mp", "map": "bloodgulch", "mod": "CE+ X", "exit_after": 90, "screenshots": 1200},
 ]
 
+WORSE_COUNTS = ("asserts", "exceptions", "refusals", "lost_scripts")  # (more than the baseline: never PRE-EXISTING)
 COUNTS = ("asserts", "exceptions", "refusals", "lost_scripts", "scenario_scripts", "items", "corrected")
 
 
@@ -65,10 +67,13 @@ def compare(result, base):
     if bool(d.get("clean_exit")) != bool(b.get("clean_exit")):
         notes.append(f"clean exit {b.get('clean_exit')} -> {d.get('clean_exit')}")
     status = result.get("status")
+    worse = [k for k in WORSE_COUNTS if (d.get(k) or 0) > (b.get(k) or 0)]
+    for k in worse:
+        notes.append(f"{k} worse than the baseline")
     if status == "FAIL" and base.get("status") == "FAIL":
         mine = {w.split(" ", 1)[-1] if w[0].isdigit() else w for w in result.get("why", [])}
         theirs = {w.split(" ", 1)[-1] if w[0].isdigit() else w for w in base.get("why", [])}
-        if mine <= theirs:
+        if mine <= theirs and not worse:  # (the same failures, none of them grown)
             status = "PRE-EXISTING"
     return status, notes
 

@@ -4,6 +4,7 @@ comparison, the Windows runner contract and the remote argument rewriting. No ga
 """
 import io
 import json
+import os
 import struct
 import sys
 import tempfile
@@ -200,6 +201,16 @@ class Smoke(unittest.TestCase):
             harness.parse_spec(dict(c, build="x"))
         self.assertEqual([c["name"] for c in smoke.cases("nhe_")], ["nhe_badcreek", "nhe_bloodgulch"])
 
+    def test_worse_counts_are_not_pre_existing(self):
+        d = harness.parse_debug(DEBUG_MP)
+        base = {"status": "FAIL", "why": ["1 asserts"], "debug": dict(d, asserts=1)}
+        mine = {"status": "FAIL", "why": ["9 asserts"], "debug": dict(d, asserts=9)}
+        verdict, notes = smoke.compare(mine, base)
+        self.assertEqual(verdict, "FAIL")
+        self.assertIn("asserts worse than the baseline", notes)
+        same = {"status": "FAIL", "why": ["1 asserts"], "debug": dict(d, asserts=1)}
+        self.assertEqual(smoke.compare(same, base)[0], "PRE-EXISTING")
+
     def test_baseline_compare(self):
         d = harness.parse_debug(DEBUG_MP)
         mine = {"status": "FAIL", "why": ["1 asserts"], "debug": d}
@@ -312,7 +323,8 @@ class Windows(unittest.TestCase):
         req = windows.make_request("ae-1", "C:\\halo-test\\builds\\b\\halo.exe", "C:\\halo-test\\builds\\b", env)
         self.assertEqual(req["run_id"], "ae-1")
         script = windows.prepare_script("C:\\halo-test", "ae-1", windows.init_lines(a), req)
-        self.assertIn("mklink /J C:\\halo-test\\runs\\ae-1\\data\\maps C:\\halo-test\\maps", script)
+        self.assertIn("New-Item -ItemType Junction -Path 'C:\\halo-test\\runs\\ae-1\\data\\maps' "
+                      "-Target 'C:\\halo-test\\maps'", script)
         self.assertIn("levels\\test\\bloodgulch\\bloodgulch", script)
         self.assertNotIn("schtasks", script)
         for line in script.splitlines():
@@ -325,6 +337,39 @@ class Windows(unittest.TestCase):
         import base64
         self.assertEqual(base64.b64decode(windows.ps_encode("Write-Output 'a'")).decode("utf-16-le"),
                          "Write-Output 'a'")
+
+
+class WindowsPaths(unittest.TestCase):
+    def test_root_must_be_halo_test(self):
+        self.assertEqual(windows.check_root("c:\\HALO-TEST\\"), "C:\\halo-test")
+        for bad in ("C:\\", "C:\\halo-test\\..\\Windows", "D:\\halo-test", "C:\\halo-test2", "\\\\pc\\share"):
+            with self.assertRaises(SystemExit, msg=bad):
+                windows.check_root(bad)
+
+    def test_inside(self):
+        self.assertTrue(windows.inside("C:\\halo-test\\builds\\abc\\halo.exe", "C:\\halo-test\\builds"))
+        self.assertTrue(windows.inside("c:/HALO-TEST/builds/abc", "C:\\halo-test\\builds"))
+        self.assertFalse(windows.inside("C:\\halo-test\\builds\\..\\..\\Windows", "C:\\halo-test\\builds"))
+        self.assertFalse(windows.inside("C:\\halo-test\\builds2\\x", "C:\\halo-test\\builds"))
+        self.assertFalse(windows.inside("builds\\x", "C:\\halo-test"))
+
+    def test_build_dir(self):
+        self.assertEqual(windows.build_dir_path("C:\\halo-test", "86ac29d065e7"), "C:\\halo-test\\builds\\86ac29d065e7")
+        for bad in ("..\\..\\Windows", "C:\\Windows", "\\Windows", "a\\..\\..", "../x", "D:x", ""):
+            with self.assertRaises(SystemExit, msg=bad):
+                windows.build_dir_path("C:\\halo-test", bad)
+
+    def test_env_overrides(self):
+        root, rid = "C:\\halo-test", "ae-1"
+        self.assertEqual(windows.check_env_overrides(root, rid, ["HALO_MATCH_CLOCK=both", "HALO_NETWORK_TEST=host:x"]),
+                         {"HALO_MATCH_CLOCK": "both", "HALO_NETWORK_TEST": "host:x"})
+        ok = windows.check_env_overrides(root, rid, ["HALO_NET_BROKERS_FILE=C:\\halo-test\\runs\\ae-1\\b.txt"])
+        self.assertEqual(len(ok), 1)
+        for bad in ("HALO_DATA_ROOT=C:\\halo-test\\runs\\ae-1\\data", "halo_save_root=x",
+                    "HALO_SCREENSHOT_DIR=C:\\halo-test\\runs\\ae-1\\s", "HALO_NET_BROKERS_FILE=C:\\Users\\x.txt",
+                    "HALO_X=C:\\Windows\\y", "HALO_LOG_FILE=b.txt", "HALO_X=..\\..\\y", "noequals"):
+            with self.assertRaises(SystemExit, msg=bad):
+                windows.check_env_overrides(root, rid, [bad])
 
 
 class Record(unittest.TestCase):
@@ -351,6 +396,9 @@ class Load(unittest.TestCase):
         self.assertTrue(harness.owner_playing(cfg, [], listening=True))
         self.assertFalse(harness.owner_playing(dict(cfg, owner_check=False), theirs, listening=True))
         self.assertEqual(len(harness.other_games(cfg, mine + theirs, own={work + "/r"})), 1)
+        sibling = [(3, "/x/halo", work + "-other/r/case/bin")]  # (a prefix, not inside work_dir)
+        self.assertTrue(harness.owner_playing(cfg, sibling, listening=False))
+        self.assertFalse(harness.under(work + "/../work-x", work))
         self.assertEqual(len(harness.other_games(cfg, mine + theirs, own={work + "/other-run"})), 2)
 
     def test_low_disk(self):
@@ -370,6 +418,105 @@ class Load(unittest.TestCase):
         self.assertEqual(harness.expand_targets(["linux64", "servers"]), ["linux64", "server", "server-x64"])
         with self.assertRaises(SystemExit):
             harness.expand_targets(["android"])
+
+
+class Remote(unittest.TestCase):
+    def test_shell_paths(self):
+        self.assertEqual(harness.remote_shell_path("~/ae test"), '"$HOME"/' + "'ae test'")
+        self.assertEqual(harness.remote_shell_path("~"), '"$HOME"')
+        self.assertEqual(harness.remote_shell_path("/srv/x;rm -rf ~"), "'/srv/x;rm -rf ~'")
+        with self.assertRaises(SystemExit):
+            harness.remote_shell_path("~other/x")
+
+    def test_rsync_paths(self):
+        self.assertEqual(harness.remote_rsync_path("~/ae-test"), "ae-test")
+        self.assertEqual(harness.remote_rsync_path("/srv/a b"), "/srv/a b")
+        self.assertEqual(harness.remote_rsync_path("~"), ".")
+
+    def test_remote_command_is_quoted(self):
+        calls = []
+
+        class R:
+            returncode = 0
+            stdout = ""
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            return R()
+        cfg = dict(harness.DEFAULTS, box={"ssh": "box", "git_url": "box:ae", "harness_dir": "~/h dir"})
+        orig = harness.subprocess.run
+        harness.subprocess.run = fake_run
+        try:
+            with redirect_stdout(io.StringIO()):
+                harness.remote(cfg, "run", ["--map", "x; touch y", "--out-name", "n1"], fetch=False)
+            with self.assertRaises(SystemExit):
+                harness.remote(cfg, "run", ["--out-name", "a;b"], fetch=False)
+            with self.assertRaises(SystemExit):
+                harness.remote(cfg, "rm -rf", [], fetch=False)
+        finally:
+            harness.subprocess.run = orig
+        ssh_cmds = [c[2] for c in calls if c[0] == "ssh"]
+        self.assertIn("mkdir -p \"$HOME\"/'h dir'/tools/ae_test", ssh_cmds)
+        self.assertTrue(any(c.startswith("cd \"$HOME\"/'h dir' && python3 tools/ae_test/run.py ") and
+                            "'x; touch y'" in c for c in ssh_cmds))
+        rsyncs = [c for c in calls if c[0] == "rsync"]
+        self.assertTrue(rsyncs and all("--protect-args" in c for c in rsyncs))
+        self.assertTrue(any(c[-1] == "box:h dir/tools/ae_test/" for c in rsyncs))
+
+
+class BuildRemove(unittest.TestCase):
+    def test_only_shas_inside_builds(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            cfg = dict(harness.DEFAULTS, builds_dir=d)
+            self.assertEqual(harness.removable_build(cfg, "623d8f2223fea69530e6e87d11686fc41e82b3ae"),
+                             Path(d).resolve() / "623d8f2223fe")
+            for bad in ("../..", "/", "623d8f22", "623D8F2223FE", "623d8f2223fe/..", "", "x" * 12):
+                with self.assertRaises(SystemExit, msg=bad):
+                    harness.removable_build(cfg, bad)
+            (Path(d) / "623d8f2223fe").symlink_to(Path.home())  # (a link out of builds_dir is refused)
+            with self.assertRaises(SystemExit):
+                harness.removable_build(cfg, "623d8f2223fe")
+
+
+class Slots(unittest.TestCase):
+    def test_registry_counts_other_processes(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            cfg = dict(harness.DEFAULTS, work_dir=d, max_games_total=2)
+            orig = harness.list_halo_processes
+            harness.list_halo_processes = lambda: []
+            try:
+                a = harness.GameSlots(cfg, 3, shared_network=False)
+                self.assertTrue(a.try_acquire(1)[0])
+                # another harness process holding a slot (a live pid that is not ours: our parent)
+                (Path(d) / ".slots" / f"{os.getppid()}-1").write_text("x")
+                self.assertFalse(a.try_acquire(1)[0])
+                a.release(1)
+                self.assertTrue(a.try_acquire(1)[0])
+                # a stale slot (dead pid) is removed and does not count
+                (Path(d) / ".slots" / f"{os.getppid()}-1").unlink()
+                (Path(d) / ".slots" / "999999999-1").write_text("x")
+                self.assertTrue(a.try_acquire(1)[0])
+                self.assertFalse((Path(d) / ".slots" / "999999999-1").exists())
+                a.release(2)
+                self.assertEqual(list((Path(d) / ".slots").iterdir()), [])
+            finally:
+                harness.list_halo_processes = orig
+
+    def test_shared_network_is_one_slot(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            cfg = dict(harness.DEFAULTS, work_dir=d)
+            orig = harness.list_halo_processes
+            harness.list_halo_processes = lambda: []
+            try:
+                a = harness.GameSlots(cfg, 3, shared_network=True)
+                self.assertEqual(a.parallel, 1)
+                self.assertTrue(a.try_acquire(2)[0])   # (a handshake pair takes it as one)
+                self.assertFalse(a.try_acquire(1)[0])
+                a.release(2)
+                harness.list_halo_processes = lambda: [(1, "/x/halo", "/elsewhere")]
+                self.assertFalse(a.try_acquire(1)[0])  # (any other game on the machine: wait)
+            finally:
+                harness.list_halo_processes = orig
 
 
 class Sheet(unittest.TestCase):

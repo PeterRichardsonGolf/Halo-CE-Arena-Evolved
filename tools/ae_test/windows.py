@@ -22,6 +22,8 @@ import argparse
 import base64
 import datetime
 import json
+import ntpath
+import re
 import shutil
 import subprocess
 import sys
@@ -33,6 +35,57 @@ import harness  # noqa: E402
 
 NOT_STARTED = 10
 FAILED = 11
+ROOT = "C:\\halo-test"  # the only folder this tool touches on the Windows box
+# (set by this tool, never by --env: they decide where the game writes)
+PROTECTED_ENV = ("HALO_DATA_ROOT", "HALO_SAVE_ROOT", "HALO_SCREENSHOT_DIR", "HALO_RECORD_DIR")
+
+
+def check_root(root):
+    """the configured root must be C:\\halo-test (Windows path rules); returns it"""
+    if ntpath.normcase(ntpath.normpath(str(root))) != ntpath.normcase(ROOT):
+        raise SystemExit(f"ae_test windows: windows.root must be {ROOT}, not {root!r}")
+    return ROOT
+
+
+def inside(path, folder):
+    """path is strictly inside folder, by Windows path rules (case, separators, .. resolved)"""
+    path, folder = str(path), str(folder)
+    if not ntpath.isabs(path) or not ntpath.splitdrive(path)[0]:
+        return False
+    p = ntpath.normcase(ntpath.normpath(path))
+    f = ntpath.normcase(ntpath.normpath(folder)).rstrip("\\")
+    return p.startswith(f + "\\")
+
+
+def build_dir_path(root, value):
+    """C:\\halo-test\\builds\\<value>: value is a folder name (no drive, no absolute path, no ..)"""
+    v = str(value)
+    parts = re.split(r"[\\/]+", v)
+    if not v or ntpath.isabs(v) or ntpath.splitdrive(v)[0] or ".." in parts or ":" in v:
+        raise SystemExit(f"ae_test windows: --build-dir {v!r}: a folder name under {root}\\builds")
+    path = ntpath.join(root, "builds", v)
+    if not inside(path, ntpath.join(root, "builds")):
+        raise SystemExit(f"ae_test windows: --build-dir {v!r} is not under {root}\\builds")
+    return ntpath.normpath(path)
+
+
+def check_env_overrides(root, run_id, pairs):
+    """--env NAME=value pairs: never the path variables the tool sets, and any other path-like value
+    (a *_DIR/_ROOT/_PATH/_FILE name, or a value with a drive, separator or ..) must be inside the run's folder"""
+    run = ntpath.join(root, "runs", run_id)
+    out = {}
+    for kv in pairs or []:
+        k, sep, v = kv.partition("=")
+        if not sep or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", k):
+            raise SystemExit(f"ae_test windows: --env {kv!r}: NAME=value")
+        if k.upper() in PROTECTED_ENV:
+            raise SystemExit(f"ae_test windows: --env may not set {k} (the tool sets it inside {run})")
+        pathlike = re.search(r"_(DIR|ROOT|PATH|FILE)$", k.upper()) or ntpath.splitdrive(v)[0] or \
+            "\\" in v or "/" in v or ".." in v
+        if pathlike and not inside(v, run):
+            raise SystemExit(f"ae_test windows: --env {k}: {v!r} is not inside {run}")
+        out[k] = v
+    return out
 
 
 def ps_encode(script):
@@ -77,9 +130,7 @@ def game_env(root, run_id, a):
     if a.map:
         env["HALO_NETWORK_TEST"] = f"host:{a.map}"
         env["HALO_NET_ADDRESS"] = "127.0.0.1"
-    for kv in a.env or []:
-        k, _, v = kv.partition("=")
-        env[k] = v
+    env.update(check_env_overrides(root, run_id, a.env))
     return env
 
 
@@ -99,7 +150,8 @@ def prepare_script(root, run_id, init, request):
         f"New-Item -ItemType Directory -Force {ps_str(run + chr(92) + 'shots')} | Out-Null",
         f"New-Item -ItemType Directory -Force {ps_str(root + chr(92) + 'saves' + chr(92) + run_id)} | Out-Null",
         f"if (-not (Test-Path {ps_str(run + chr(92) + 'data' + chr(92) + 'maps')})) "
-        f"{{ cmd /c mklink /J {run}\\data\\maps {root}\\maps | Out-Null }}",
+        f"{{ New-Item -ItemType Junction -Path {ps_str(run + chr(92) + 'data' + chr(92) + 'maps')} "
+        f"-Target {ps_str(root + chr(92) + 'maps')} | Out-Null }}",
     ]
     if init:
         text = "`r`n".join(l.replace("`", "``").replace('"', '`"').replace("$", "`$") for l in init) + "`r`n"
@@ -172,7 +224,7 @@ def main(argv):
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)
     w = cfg["windows"]
-    root = w["root"]
+    root = check_root(w["root"])
     a.window = a.window or w.get("window_size", "1280x720")
     run_id = f"ae-{datetime.datetime.now().strftime('%m%d-%H%M%S')}-{harness.safe_name(a.label)}"
     out = harness.new_out_dir(cfg, "windows", None, a.out_name or run_id)
@@ -183,7 +235,8 @@ def main(argv):
         if a.dry_run:
             build_dir = f"{root}\\builds\\<fetched>"
         else:
-            script = (f"& powershell -NoProfile -ExecutionPolicy Bypass -File {root}\\runner\\fetch-build.ps1 "
+            script = (f"& powershell -NoProfile -ExecutionPolicy Bypass -File "
+                      f"{ps_str(root + chr(92) + 'runner' + chr(92) + 'fetch-build.ps1')} "
                       f"-Artifact {ps_str(a.artifact)}" + (f" -RunId {int(a.ci_run)}" if a.ci_run else "") +
                       "; Write-Output \"AE_EXIT=$LASTEXITCODE\"")
             code, outp = ps(cfg, script, timeout=1800)
@@ -194,14 +247,18 @@ def main(argv):
                 print(json.dumps(result, indent=2))
                 return 2
             build_dir = paths[-1]
+            if not inside(build_dir, ntpath.join(root, "builds")):
+                raise SystemExit(f"ae_test windows: fetch-build.ps1 gave {build_dir!r}, not under {root}\\builds")
     elif a.build_dir == "latest":
         code, outp = ps(cfg, f"(Get-ChildItem {ps_str(root + chr(92) + 'builds')} -Directory | Sort-Object LastWriteTime "
                              f"| Select-Object -Last 1).FullName")
         build_dir = outp.strip().splitlines()[-1] if outp.strip() else ""
         if not build_dir:
             raise SystemExit("ae_test windows: no build under builds; pass --artifact")
+        if not inside(build_dir, ntpath.join(root, "builds")):
+            raise SystemExit(f"ae_test windows: {build_dir!r} is not under {root}\\builds")
     else:
-        build_dir = f"{root}\\builds\\{a.build_dir}"
+        build_dir = build_dir_path(root, a.build_dir)
     exe = f"{build_dir}\\halo.exe"
     if not a.dry_run:
         code, outp = ps(cfg, f"(Get-ChildItem {ps_str(build_dir)} -Recurse -Filter halo.exe | Select-Object -First 1).FullName")
@@ -209,9 +266,10 @@ def main(argv):
         if not found:
             raise SystemExit(f"ae_test windows: no halo.exe under {build_dir}")
         exe = found
-    workdir = exe.rsplit("\\", 1)[0]
-    if not exe.lower().startswith(root.lower() + "\\") or not workdir.lower().startswith(root.lower() + "\\"):
-        raise SystemExit("ae_test windows: exe and workdir must be under " + root)
+    workdir = ntpath.dirname(exe)
+    builds = ntpath.join(root, "builds")
+    if not inside(exe, builds) or not inside(workdir, builds):
+        raise SystemExit(f"ae_test windows: exe and workdir must be under {builds}")
     env = game_env(root, run_id, a)
     request = make_request(run_id, exe, workdir, env, a.timeout)
     prep = prepare_script(root, run_id, init_lines(a), request)
@@ -227,7 +285,8 @@ def main(argv):
         harness.write_json(out / "result.json", result)
         print(json.dumps(result, indent=2))
         return 2
-    start = (f"& powershell -NoProfile -ExecutionPolicy Bypass -File {root}\\runner\\start-test.ps1 -Wait; "
+    start = (f"& powershell -NoProfile -ExecutionPolicy Bypass -File "
+             f"{ps_str(root + chr(92) + 'runner' + chr(92) + 'start-test.ps1')} -Wait; "
              "Write-Output \"AE_EXIT=$LASTEXITCODE\"")
     code, outp = ps(cfg, start, timeout=400)
     (out / "start-test.txt").write_text(outp)
