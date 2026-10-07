@@ -126,20 +126,20 @@ static void data_check_maps(void)
 		platform_log("maps folder: %ld Halo PC maps in %s/maps (%s)", maps.stray_pc_maps, maps.root,
 			maps.stray_names);
 		if (!quiet)
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "ChupathingyCE", message, NULL);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, HALO_PRODUCT_NAME, message, NULL);
 		return;
 	case _maps_folder_halo_pc:
 		snprintf(message, sizeof(message),
 			"The maps folder holds Halo PC maps, not the Xbox maps: its ui.map is from %s.\n\n%s\n\n"
 			"To copy the Xbox maps out of your disc image again, move this maps folder aside and "
-			"start ChupathingyCE.",
+			"start " HALO_PRODUCT_NAME ".",
 			maps.ui_version == 609 ? "Halo PC (Custom Edition)" : "Halo PC", where);
 		break;
 	default:
 		snprintf(message, sizeof(message),
 			"Halo's Xbox maps were not found: %s/maps has no ui.map.%s\n\n%s\n\n"
 			"To copy the Xbox maps out of your disc image, move the maps folder aside and start "
-			"ChupathingyCE.",
+			HALO_PRODUCT_NAME ".",
 			maps.root, maps.stray_pc_maps || maps.pc_maps_beside ?
 				" Its Halo PC maps play only alongside the Xbox maps." : "",
 			where);
@@ -149,7 +149,7 @@ static void data_check_maps(void)
 		maps.ui_version);
 	platform_log("%s", message);
 	if (!quiet)
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ChupathingyCE", message, NULL);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, HALO_PRODUCT_NAME, message, NULL);
 	exit(EXIT_FAILURE);
 }
 #endif

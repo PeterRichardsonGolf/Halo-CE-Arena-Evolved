@@ -12,6 +12,7 @@ HALO_BUILD_FLAVOR.
 #include "halo_port_limits.h"
 #include "delta.h"
 #include "build_identity.h"
+#include "halo_product.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -30,10 +31,13 @@ HALO_BUILD_FLAVOR.
 #define HALO_BUILD_FLAVOR "release"
 #endif
 
+/* (Arena Evolved: its own name, halo_product.h, as its window and start-up
+log have it; the user agent below keeps ChupathingyCE's, for its updater,
+which is off) */
 #ifdef HALO_SERVER
-#define BUILD_IDENTITY_NAME "ChupathingyCE Dedicated Server"
+#define BUILD_IDENTITY_NAME HALO_PRODUCT_NAME " Dedicated Server"
 #else
-#define BUILD_IDENTITY_NAME "ChupathingyCE"
+#define BUILD_IDENTITY_NAME HALO_PRODUCT_NAME
 #endif
 
 #if defined(HALO_ANDROID)
@@ -81,9 +85,10 @@ static void identity_make(void)
 	char date[16];
 
 	build_date(date, sizeof(date));
-	snprintf(identity, sizeof(identity), "%s %s (%s, %s config, commit %s, built %s) %s %s", BUILD_IDENTITY_NAME,
+	/* (AE: and what it is built on) */
+	snprintf(identity, sizeof(identity), "%s %s (%s, %s config, commit %s, built %s) %s %s; %s", BUILD_IDENTITY_NAME,
 		HALO_VERSION, HALO_CHANNEL, HALO_BUILD_FLAVOR, HALO_COMMIT, date, BUILD_IDENTITY_PLATFORM,
-		BUILD_IDENTITY_ARCHITECTURE);
+		BUILD_IDENTITY_ARCHITECTURE, HALO_UPSTREAM_BASE);
 	snprintf(user_agent, sizeof(user_agent), "ChupathingyCE/%s (%s %s)", HALO_VERSION, BUILD_IDENTITY_PLATFORM,
 		BUILD_IDENTITY_ARCHITECTURE);
 }

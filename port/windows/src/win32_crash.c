@@ -843,7 +843,7 @@ static LONG WINAPI crash_filter(EXCEPTION_POINTERS *exception)
 	dumped = crash_reports_enabled() && crash_dump(exception);
 	/* (where halo.exe is: tools/symbolize_crash.py finds the lines of the
 	addresses below from it and halo.pdb) */
-	crash_line("crash: halo.exe at %p, ChupathingyCE %s (%s config, commit %s)", (void *)GetModuleHandleW(NULL),
+	crash_line("crash: halo.exe at %p, Arena Evolved %s (%s config, commit %s)", (void *)GetModuleHandleW(NULL),
 		HALO_VERSION, HALO_BUILD_FLAVOR, HALO_COMMIT);
 #ifdef HALO_64BIT
 	{
