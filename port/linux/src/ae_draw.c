@@ -24,7 +24,8 @@ What changed from ui_overlay.c:
 - drawing is in call order: text is laid out where it was drawn among the
   shapes (the overlay drew all text over all shapes), so a dialog covers the
   text of the screen under it;
-- images (RGBA textures, at most 64 live) drawn as quads with a tint;
+- images (RGBA textures, at most 64 live and 256 MB, 64 MB on 32-bit) drawn
+  as quads with a tint;
 - drawn into the back buffer's framebuffer before the screenshot is taken
   (d3d8_gl.c), not into the window after the display blit: screenshots and
   recordings show AE's screens;
@@ -78,7 +79,7 @@ enum
 struct quad
 {
 	int kind;
-	/* text: its entry; image: its slot */
+	/* text: its entry; image: its id (a slot reused later in the frame then draws nothing) */
 	int index;
 	float x, y, width, height;
 	float radius, thickness;
@@ -123,8 +124,11 @@ struct image
 	unsigned int generation;
 	unsigned int last_used;
 	int width, height;
+	/* its size as a texture (and as pixels while they wait), counted in ae.image_bytes */
+	size_t bytes;
 	/* its pixels until they are uploaded at a Present */
 	unsigned char *pixels;
+	/* (kept when the slot is freed and reused; a free slot's is deleted at the next Present) */
 	GLuint texture;
 };
 
@@ -163,6 +167,7 @@ static struct
 
 	struct image images[MAXIMUM_IMAGES];
 	unsigned int image_generation;
+	size_t image_bytes;
 
 	struct run runs[MAXIMUM_RUNS];
 	int run_count;
@@ -498,40 +503,69 @@ static struct image *image_of(int id)
 	return image->live && image->generation == key / MAXIMUM_IMAGES ? image : NULL;
 }
 
+/* the most the live images may take (map pictures are small: a 512x256 one is 512 KB) */
+static size_t image_budget(void)
+{
+	return (size_t)(sizeof(void *) >= 8 ? 256 : 64) * 1024 * 1024;
+}
+
+/* the live image drawn longest ago (-1: none) */
+static int least_recent_image(void)
+{
+	int slot, oldest = -1;
+
+	for (slot = 0; slot < MAXIMUM_IMAGES; slot++)
+	{
+		if (ae.images[slot].live &&
+			(oldest < 0 || ae.frame - ae.images[slot].last_used > ae.frame - ae.images[oldest].last_used))
+		{
+			oldest = slot;
+		}
+	}
+	return oldest;
+}
+
+/* frees a slot (its ids then draw nothing; its texture goes at the next Present) */
+static void image_free(int slot)
+{
+	struct image *image = &ae.images[slot];
+
+	free(image->pixels);
+	image->pixels = NULL;
+	image->live = 0;
+	ae.image_bytes -= image->bytes;
+	image->bytes = 0;
+}
+
 int ae_draw_image_load(const unsigned char *rgba, int width, int height)
 {
-	struct image *image = NULL;
+	struct image *image;
 	size_t size;
-	int slot, oldest = 0;
+	int slot;
 
 	if (!rgba || width <= 0 || height <= 0 || width > MAXIMUM_IMAGE_SIZE || height > MAXIMUM_IMAGE_SIZE)
 		return 0;
-	for (slot = 0; slot < MAXIMUM_IMAGES; slot++)
-	{
-		if (!ae.images[slot].live)
-		{
-			image = &ae.images[slot];
-			break;
-		}
-		if (ae.frame - ae.images[slot].last_used > ae.frame - ae.images[oldest].last_used)
-			oldest = slot;
-	}
-	if (!image)
-		image = &ae.images[slot = oldest];
 	size = (size_t)width * (size_t)height * 4;
-	free(image->pixels);
+	if (size > image_budget())
+		return 0;
+	/* (room: the images drawn longest ago go) */
+	while (ae.image_bytes + size > image_budget() && (slot = least_recent_image()) >= 0)
+		image_free(slot);
+	for (slot = 0; slot < MAXIMUM_IMAGES && ae.images[slot].live; slot++)
+		;
+	if (slot >= MAXIMUM_IMAGES)
+		image_free(slot = least_recent_image());
+	image = &ae.images[slot];
 	image->pixels = malloc(size);
 	if (!image->pixels)
-	{
-		image->live = 0;
 		return 0;
-	}
 	memcpy(image->pixels, rgba, size);
-	/* (the slot's texture, if any, is kept and filled again at its first draw) */
 	ae.image_generation = (ae.image_generation + 1) & 0xFFFFFF;
 	image->generation = ae.image_generation;
 	image->width = width;
 	image->height = height;
+	image->bytes = size;
+	ae.image_bytes += size;
 	image->last_used = ae.frame;
 	image->live = 1;
 	return (int)(image->generation * MAXIMUM_IMAGES + (unsigned int)slot) + 1;
@@ -548,7 +582,7 @@ void ae_draw_image(int id, float x, float y, float width, float height, unsigned
 	quad = new_quad(_quad_image, x, y, width, height);
 	if (!quad)
 		return;
-	quad->index = (int)(image - ae.images);
+	quad->index = id;
 	quad->top = quad->bottom = tint;
 }
 
@@ -984,8 +1018,8 @@ static int build_vertices(int *atlas_full)
 			break;
 		case _quad_image:
 		{
-			struct image *image = &ae.images[quad->index];
-			GLuint texture = image->live ? image_texture(image) : 0;
+			struct image *image = image_of(quad->index);
+			GLuint texture = image ? image_texture(image) : 0;
 			float left, top;
 
 			if (!texture)
@@ -1077,6 +1111,15 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 		glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
 #endif
 
+	/* the textures of freed images */
+	for (index = 0; index < MAXIMUM_IMAGES; index++)
+	{
+		if (!ae.images[index].live && ae.images[index].texture)
+		{
+			glDeleteTextures(1, &ae.images[index].texture);
+			ae.images[index].texture = 0;
+		}
+	}
 	/* the vertices (packing new glyphs binds the atlas; new images their textures) */
 	count = build_vertices(&atlas_full);
 

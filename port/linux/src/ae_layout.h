@@ -35,8 +35,9 @@ float ae_view_width(struct ae_view const *view);
 void ae_view_to_layout(struct ae_view const *view, float x, float y, float *layout_x, float *layout_y);
 void ae_view_from_layout(struct ae_view const *view, float layout_x, float layout_y, float *x, float *y);
 
-/* the menus' 640x480 pointer coordinates (halo_ui_pointer: x 0 at the left of the 640 columns centred in a
-picture screen_width wide) to layout units of a layout layout_width wide, and back */
+/* the menus' 640x480 pointer coordinates (halo_ui_pointer: whole pixels, x 0 at the left of the 640 columns centred
+in a picture screen_width wide) to layout units of a layout layout_width wide (a menu pixel's middle), and back
+(fractional menu pixels; layout_width 0, before any picture, as wide as the picture's own aspect) */
 void ae_layout_from_menu_point(short menu_x, short menu_y, int screen_width, float layout_width, float *x, float *y);
 void ae_layout_to_menu_point(float x, float y, int screen_width, float layout_width, float *menu_x, float *menu_y);
 

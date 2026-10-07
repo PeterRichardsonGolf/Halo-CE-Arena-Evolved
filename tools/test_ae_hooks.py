@@ -20,8 +20,8 @@ def normalised(text):
 
 
 def present(needle, text):
-    """Whether the hook's lines follow each other in the text (indentation aside)."""
-    return "\n".join(hook_lines(needle)) in normalised(text)
+    """Whether the hook's lines are whole lines of the text, following each other (indentation aside)."""
+    return "\n" + "\n".join(hook_lines(needle)) + "\n" in "\n" + normalised(text) + "\n"
 
 
 def hooks():
@@ -53,6 +53,9 @@ def test_hook_lines_must_follow_each_other():
     # a merge that kept the if but lost (or moved) its body
     assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n#ifdef HALO_GAME_BROWSER\n\t\treturn;\n")
     assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n")
+    # whole lines only: not the end of a longer first line, nor the start of a longer last one
+    assert not present(hook, "\t/* if (ae_ui_process()) /* AE hook */\n\t\treturn;\n")
+    assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n\t\treturn; /* and more */\n")
 
 
 def test_hooks_present():

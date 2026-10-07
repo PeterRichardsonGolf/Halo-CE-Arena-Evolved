@@ -37,7 +37,8 @@ enum { AE_FONT_LAST_DEVICE = -1 };
 
 /* the frame's layout (as of the last Present; before the first, from the game's screen width) */
 void ae_draw_current_layout(struct ae_layout *layout);
-/* a view (split screen): its rectangle in layout units; drawing goes inside it, scaled */
+/* a view (split screen): its rectangle in layout units; drawing goes inside it, scaled and clipped to it. Setting a
+view (or the full one) empties the clip stack: push clips after it */
 void ae_draw_view(float x, float y, float width, float height);
 void ae_draw_view_full(void);
 /* the current view's own width (its height is 1080) */
@@ -57,8 +58,9 @@ float ae_draw_text_width(int font, float size, const char *utf8);
 y its top; returns its width */
 float ae_draw_button(int device_font, int button, float size, float x, float y, unsigned int rgba);
 float ae_draw_button_width(int device_font, int button, float size);
-/* an RGBA image (map pictures): id from ae_draw_image_load (0: none), drawn scaled into the rectangle; at most
-64 live, the least recently drawn freed for a new one (its id then draws nothing) */
+/* an RGBA image (map pictures): id from ae_draw_image_load (0: none: too large, or out of memory), drawn scaled
+into the rectangle; at most 64 live and 256 MB of them (64 MB on 32-bit), the least recently drawn freed for a new
+one (its id then draws nothing, even if already drawn this frame) */
 int ae_draw_image_load(const unsigned char *rgba, int width, int height);
 void ae_draw_image(int id, float x, float y, float width, float height, unsigned int tint);
 /* pointer: from the menus' 640x480 coordinates (halo_ui_pointer) to layout units */

@@ -6,24 +6,25 @@ static int failures;
 #define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
 #define NEAR(a, b) (fabs((a) - (b)) < 0.01)
 
-/* a pointer round trip: layout point -> menu point (as halo_ui_pointer reports it, whole numbers) -> layout */
+/* a pointer round trip: layout point -> menu point -> floored to a whole menu pixel, as halo_ui_pointer reports
+it (d3d8_gl.c ui_point_from_window) -> layout: within half a menu pixel of where it started */
 static void pointer_round_trip(int screen_width, float layout_width)
 {
 	float menu_x, menu_y, x, y;
-	float points[3][2] = { { 0.0f, 0.0f }, { 0.0f, 0.0f }, { 0.0f, 1080.0f } };
-	int index;
+	float half_x = 0.5f * layout_width / (float)screen_width + 0.01f, half_y = 0.5f * 1080.0f / 480.0f + 0.01f;
+	int i, j;
 
-	points[1][0] = layout_width * 0.5f; points[1][1] = 540.0f;
-	points[2][0] = layout_width;
-	for (index = 0; index < 3; index++)
-	{
-		ae_layout_to_menu_point(points[index][0], points[index][1], screen_width, layout_width, &menu_x, &menu_y);
-		ae_layout_from_menu_point((short)floorf(menu_x + 0.5f), (short)floorf(menu_y + 0.5f), screen_width, layout_width,
-			&x, &y);
-		/* (a menu pixel is 2.25 layout units tall; whole menu pixels lose up to half of one) */
-		CHECK(fabs(x - points[index][0]) <= 1.2 * layout_width / screen_width + 0.01);
-		CHECK(fabs(y - points[index][1]) <= 1.2 * 1080.0 / 480.0 + 0.01);
-	}
+	for (i = 0; i <= 16; i++)
+		for (j = 0; j <= 16; j++)
+		{
+			/* (a grid over the whole picture, its edges' last pixels included) */
+			float px = layout_width * (float)i / 16.0f - (i == 16 ? 0.001f : 0.0f);
+			float py = 1080.0f * (float)j / 16.0f - (j == 16 ? 0.001f : 0.0f);
+
+			ae_layout_to_menu_point(px, py, screen_width, layout_width, &menu_x, &menu_y);
+			ae_layout_from_menu_point((short)floorf(menu_x), (short)floorf(menu_y), screen_width, layout_width, &x, &y);
+			CHECK(fabs(x - px) <= half_x && fabs(y - py) <= half_y);
+		}
 }
 
 int main(void)
@@ -71,17 +72,24 @@ int main(void)
 	CHECK(NEAR(v.scale, 1.0));
 
 	/* the menus' pointer: 640 columns centred in the picture, 480 lines */
+	/* (a menu pixel maps to its middle: 2.25 layout units a pixel, so half of one is 1.125) */
 	ae_layout_from_menu_point(0, 0, 640, 1440, &x, &y);       /* 4:3: the columns are the picture */
-	CHECK(NEAR(x, 0) && NEAR(y, 0));
-	ae_layout_from_menu_point(640, 480, 640, 1440, &x, &y);
-	CHECK(NEAR(x, 1440) && NEAR(y, 1080));
+	CHECK(NEAR(x, 1.125) && NEAR(y, 1.125));
+	ae_layout_from_menu_point(639, 479, 640, 1440, &x, &y);   /* its last pixel */
+	CHECK(NEAR(x, 1440 - 1.125) && NEAR(y, 1080 - 1.125));
 	ae_layout_from_menu_point(-107, 240, 854, 1921.5f, &x, &y); /* 16:9 (854 wide): the left margin */
-	CHECK(NEAR(x, 0) && NEAR(y, 540));
+	CHECK(NEAR(x, 1.125) && NEAR(y, 541.125));
 	ae_layout_from_menu_point(320, 0, 1120, 2520, &x, &y);    /* 21:9 (1120 wide): the middle */
-	CHECK(NEAR(x, 1260));
+	CHECK(NEAR(x, 1261.125));
+	ae_layout_to_menu_point(1261.125f, 541.125f, 1120, 2520, &x, &y);
+	CHECK(NEAR(x, 320.5) && NEAR(y, 240.5));
+	ae_layout_to_menu_point(1440, 1080, 640, 0, &x, &y);      /* no picture yet: no division by zero */
+	CHECK(NEAR(x, 640) && NEAR(y, 480));
 	pointer_round_trip(640, 1440);
 	pointer_round_trip(854, 1921.5f);
 	pointer_round_trip(1120, 2520);
+	pointer_round_trip(800, 1800);                            /* 16:10 */
+	pointer_round_trip(1280, 2880);                           /* 32:9 */
 	if (failures)
 		return 1;
 	printf("ae_draw_layout: ok\n");

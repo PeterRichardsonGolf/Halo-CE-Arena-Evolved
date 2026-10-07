@@ -61,14 +61,18 @@ void ae_layout_from_menu_point(short menu_x, short menu_y, int screen_width, flo
 {
 	float width = screen_width > 0 ? (float)screen_width : (float)MENU_WIDTH;
 
-	*x = ((float)menu_x + (width - (float)MENU_WIDTH) * 0.5f) * layout_width / width;
-	*y = (float)menu_y * (float)AE_LAYOUT_HEIGHT / (float)MENU_HEIGHT;
+	/* (the menus' point is a whole pixel, floored (d3d8_gl.c ui_point_from_window): its middle) */
+	*x = ((float)menu_x + 0.5f + (width - (float)MENU_WIDTH) * 0.5f) * layout_width / width;
+	*y = ((float)menu_y + 0.5f) * (float)AE_LAYOUT_HEIGHT / (float)MENU_HEIGHT;
 }
 
 void ae_layout_to_menu_point(float x, float y, int screen_width, float layout_width, float *menu_x, float *menu_y)
 {
 	float width = screen_width > 0 ? (float)screen_width : (float)MENU_WIDTH;
 
+	/* (no picture yet, layout_width 0: the menus' own aspect) */
+	if (layout_width <= 0.0f)
+		layout_width = width * (float)AE_LAYOUT_HEIGHT / (float)MENU_HEIGHT;
 	*menu_x = x * width / layout_width - (width - (float)MENU_WIDTH) * 0.5f;
 	*menu_y = y * (float)MENU_HEIGHT / (float)AE_LAYOUT_HEIGHT;
 }
