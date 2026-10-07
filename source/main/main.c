@@ -3033,6 +3033,48 @@ static void frame_statistics_draw(
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 }
 
+/* port: the capture's notice (port/linux/src/capture.c: "SCREENSHOT SAVED",
+"RECORDING NEEDS FFMPEG" and the like), for a moment at the top right of the
+screen, under the performance line when that is there too; a failure's in
+red */
+int halo_capture_notice(char *text, int size);
+
+static void capture_notice_draw(
+	long font_tag_index)
+{
+	char text[64];
+	int kind = halo_capture_notice(text, sizeof(text));
+	struct font_header *font;
+	short line_height;
+	rectangle2d bounds;
+	real scale;
+	union real_argb_color color;
+
+	if (!kind)
+		return;
+	font = font_definition_get(font_tag_index);
+	line_height = (short)MAX(font->ascending_height + font->descending_height + font->leading_height, 10);
+	bounds = render.camera.viewport_bounds;
+	scale = hud_item_timers_overlay_text_scale();
+	bounds.y0 = (short)(bounds.y0 + 2);
+	if (frame_statistics_drawn && frame_statistics_corner() == _text_justification_right)
+		bounds.y0 = (short)(frame_statistics_extent.y1 + 2);
+	bounds.y1 = (short)(bounds.y0 + line_height);
+	bounds.x0 = (short)(bounds.x0 + 4);
+	bounds.x1 = (short)(bounds.x1 - 4);
+	if (kind == 2)
+		color = *global_real_argb_red;
+	else
+		color = hud_globals->messaging.state_color;
+	color.alpha = 0.9f;
+	draw_string_set_format(NONE, _text_justification_right, 0);
+	draw_string_set_font(font_tag_index);
+	draw_string_set_color(&color);
+	rasterizer_text_set_scale(scale, (real)bounds.x1, (real)bounds.y0);
+	rasterizer_draw_string(&bounds, NULL, NULL, 0, text);
+	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+}
+
 void main_framerate_render(
 	void)
 {
@@ -3074,6 +3116,7 @@ void main_framerate_render(
 		frame_rate_color(frame_statistics.frame_rate, &color);
 		frame_statistics_draw(font_tag_index, frame_statistics_corner(), &color, line);
 	}
+	capture_notice_draw(font_tag_index);
 
 	if (display_vblank_deltas)
 	{

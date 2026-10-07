@@ -257,6 +257,22 @@ static const struct config_setting config_settings[] =
 		"OpenCE's build 130: their top octave duller, and images of their band\n"
 		"above it (a brighter, grainier sound)." },
 
+	{ "capture.ffmpeg_path", _config_string, "\"\"", "HALO_FFMPEG", _environment_value, _platform_desktop,
+		"The ffmpeg program F10's recordings are made with (it is not shipped\n"
+		"with the game). Empty: ffmpeg beside the game, else on the PATH." },
+	{ "capture.record_fps", _config_integer, "60", "HALO_RECORD_FPS", _environment_value, _platform_desktop,
+		"The recordings' frames a second, 60 or 30, whatever the game's frame\n"
+		"rate: frames are repeated or left out to keep to real time." },
+	{ "capture.record_quality", _config_string, "\"medium\"", "HALO_RECORD_QUALITY", _environment_value,
+		_platform_desktop,
+		"The recordings' quality and size: \"low\", \"medium\" or \"high\" (H.264\n"
+		"at CRF 28, 23 or 18)." },
+	{ "capture.record_indicator", _config_boolean, "true", "HALO_RECORD_INDICATOR", _environment_value,
+		_platform_desktop,
+		"A red dot at the top right while recording (never in the recording)." },
+	{ "capture.record_directory", _config_string, "\"\"", "HALO_RECORD_DIR", _environment_value, _platform_desktop,
+		"The folder recordings go to. Empty: recordings/ beside this file." },
+
 	{ "input.touch_controls", _config_string, "\"on\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
 		"The on-screen touch controls in a game: \"on\" shows them on a\n"
 		"touchscreen (their Hide button hides them for a controller), \"auto\"\n"
@@ -635,6 +651,12 @@ static const struct config_setting config_settings[] =
 		"A folder to save frames to (with screenshot_every); empty none." },
 	{ "debug.screenshot_every", _config_integer, "0", "HALO_SCREENSHOT_EVERY", _environment_value, _platform_all,
 		"Save every this many frames to screenshot_directory; 0 none." },
+	{ "debug.screenshot_format", _config_string, "\"bmp\"", "HALO_SCREENSHOT_FORMAT", _environment_value,
+		_platform_all,
+		"The screenshot_every frames' format: \"bmp\" or \"png\"." },
+	{ "debug.record_seconds", _config_real, "0.0", "HALO_RECORD_SECONDS", _environment_value, _platform_desktop,
+		"Record this many seconds (as F10 does) from the first frame of play\n"
+		"(a map other than the main menu's), once; 0 never." },
 	{ "debug.texture_dump_directory", _config_string, "\"\"", "HALO_TEXTURE_DUMP", _environment_value, _platform_all,
 		"A folder to write every texture to as it is uploaded; empty none." },
 	{ "debug.texture_log", _config_boolean, "false", "HALO_TEXTURE_LOG", _environment_set_is_true, _platform_all,

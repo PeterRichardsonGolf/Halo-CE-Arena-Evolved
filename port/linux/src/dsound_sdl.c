@@ -45,6 +45,7 @@ it. It is not sent to the reverb, and goes through the limiter.
 #include "platform.h"
 #include "sdl_platform.h"
 #include "port_config.h"
+#include "capture.h"
 
 #include <SDL3/SDL.h>
 #include <math.h>
@@ -1173,6 +1174,8 @@ static void mix(float *output, unsigned long frames)
 			reverb_clear();
 	}
 	limit(output, frames);
+	/* port: what is heard, for a recording (capture.c) */
+	capture_audio(output, (unsigned int)frames, OUTPUT_CHANNELS, OUTPUT_RATE);
 }
 
 /* ---------- output */
