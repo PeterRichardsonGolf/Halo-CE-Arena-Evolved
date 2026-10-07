@@ -166,7 +166,7 @@
 		<string text="@12"/>
 		<string text="A team game's scoreboard: a column for each team,\nor every player in order of score."/>
 		<string text="Draw a panel behind the scoreboard, for clearer\ntext."/>
-		<string text="The name of a player you aim at in the HUD's\nblue, an enemy's as a teammate's."/>
-		<string text="The name of an enemy you aim at in red, as the\nMaster Chief Collection's."/>
+		<string text="Enemies' names, aimed at and over heads, in the\nHUD's blue, as teammates'."/>
+		<string text="Enemies' names, aimed at and over heads, in red,\nas the Master Chief Collection's."/>
 	</strings>
 </menus>

@@ -1170,9 +1170,20 @@ static void hud_draw_player_name(
 	}
 	else
 	{
-		color.red = 1.0f;
-		color.green = 0.3f;
-		color.blue = 0.25f;
+		/* port: ENEMY NAME COLOR (game_engine_enemy_name_red): RED red;
+		CLASSIC the HUD's text colour, as an ally's (stock CE drew no
+		names over heads: its one name, the one under the reticle, is
+		blue) */
+		if (game_engine_enemy_name_red())
+		{
+			color.red = 1.0f;
+			color.green = 0.3f;
+			color.blue = 0.25f;
+		}
+		else
+		{
+			hud_get_text_color(&color);
+		}
 		/* (whole up to four fifths of the range, then fading out) */
 		color.alpha = PIN((enemy_range - distance) / (0.2f * enemy_range), 0.0f, 1.0f);
 	}

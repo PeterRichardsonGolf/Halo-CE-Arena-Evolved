@@ -725,6 +725,10 @@ boolean game_engine_match_clock_elapsed(
 BOTH with a time limit), not the time played */
 boolean game_engine_match_clock_counts_down(
 	void);
+/* port: ENEMY NAME COLOR (display.enemy_name_color) RED: enemies' names in
+red, under the reticle and over heads; FALSE for CLASSIC, the HUD's blue */
+boolean game_engine_enemy_name_red(
+	void);
 /* port: how far a local player's view's scoreboard has faded in (0 closed,
 1 shown), as last drawn */
 real game_engine_scoreboard_shown(

@@ -8582,8 +8582,8 @@ static void game_engine_verify_current_map(
 }
 
 /* port: ENEMY PLAYER NAME COLOR (display.enemy_name_color): "red" or
-"classic" */
-static boolean game_engine_enemy_name_red(
+"classic"; the name under the reticle and the names over heads (hud.c) */
+boolean game_engine_enemy_name_red(
 	void)
 {
 	static unsigned long read_at = (unsigned long)-1;
@@ -8657,8 +8657,8 @@ static void internal_rasterize_target_name(
 		target_name[NUMBEROF(target_name) - 1] = 0;
 		alpha = linear_to_non_linear_alpha(hold_time * 0.1f) * 0.5f;
 		/* port: ENEMY PLAYER NAME COLOR (display.enemy_name_color) RED,
-		the Master Chief Collection's: an enemy's name in red (the over-head
-		names' red, hud.c); CLASSIC as the game drew it */
+		the Master Chief Collection's: an enemy's name in red (as the
+		over-head names', hud.c); CLASSIC as the game drew it */
 		if (game_engine_enemy_name_red() &&
 			(!game_engine_has_teams() || target_player->team_index != player->team_index))
 		{

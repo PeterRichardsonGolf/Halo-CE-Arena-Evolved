@@ -213,8 +213,8 @@ SCREENS = {
             # (MCC's ENEMY PLAYER NAME COLOR, the name under the reticle:
             # game_engine.c internal_rasterize_target_name)
             ("ENEMY NAME COLOR:", "display.enemy_name_color", [("CLASSIC", "classic"), ("RED", "red")],
-             ["The name of a player you aim at in the HUD's\nblue, an enemy's as a teammate's.",
-              "The name of an enemy you aim at in red, as the\nMaster Chief Collection's."], None),
+             ["Enemies' names, aimed at and over heads, in the\nHUD's blue, as teammates'.",
+              "Enemies' names, aimed at and over heads, in red,\nas the Master Chief Collection's."], None),
             ("SCOREBOARD LAYOUT:", "display.scoreboard_team_layout", [("TEAMS", "teams"), ("BY SCORE", "score")],
              "A team game's scoreboard: a column for each team,\nor every player in order of score.", None),
             ("SCOREBOARD PANEL:", "display.scoreboard_background", ON_OFF,
