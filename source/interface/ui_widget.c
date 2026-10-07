@@ -7342,15 +7342,19 @@ static void widget_instance_render_recursive(
 	Evolved, where it gives none) */
 	frame_index = widget->animation.current_frame_index;
 	custom_edition_picture = custom_edition_maps_picture(definition->background_bitmap.index, &frame_index);
-	bitmap = custom_edition_picture ? custom_edition_picture : bitmap_group_get_bitmap_from_sequence(
-		definition->background_bitmap.index,
-		0,
-		frame_index);
+	bitmap = custom_edition_picture;
 #ifdef HALO_CUSTOM_EDITION
-	/* port: a picture of the menus' map list's own, past ui.map's */
-	if (!custom_edition_picture && ui_map_list_picture(widget->animation.current_frame_index))
+	/* port: a picture of the menus' map list's own, past ui.map's (its
+	frames, 0x4000 and up, are no frames of the widget's sequence: found
+	before the sequence is asked, which a frame past it would assert in) */
+	if (!bitmap)
 		bitmap = ui_map_list_picture(widget->animation.current_frame_index);
 #endif
+	if (!bitmap)
+		bitmap = bitmap_group_get_bitmap_from_sequence(
+			definition->background_bitmap.index,
+			0,
+			frame_index);
 	if (bitmap)
 	{
 		real alpha = alpha_modifier;
