@@ -31,6 +31,7 @@ Conventions carried over from the Xbox:
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "ae_draw.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 #include "browser.h"
 #include "ui_overlay.h"
@@ -4822,6 +4823,7 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 			platform_log("present back buffer %08lx texture %u", (unsigned long)device.back_buffer.Data,
 				back_buffer->target.texture);
 		render_target_resolve(&back_buffer->target);
+		ae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */
 		if (screenshot_every > 0 && device.frame % (unsigned long)screenshot_every == 0)
 			write_screenshot(back_buffer);
 		/* F9's screenshot and F10's recording (capture.c), before the red dot */

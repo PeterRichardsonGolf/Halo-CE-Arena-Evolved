@@ -168,6 +168,11 @@ static const struct config_setting config_settings[] =
 		"The menus: \"pc\" (the default) for the PC version's main menu\n"
 		"(port/assets/menus, and a menus folder here for your own), where the\n"
 		"Arena Evolved settings are; \"xbox\" for the Xbox's (with Online Games)." },
+	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */
+		_platform_all,
+		"Arena Evolved's own menus (experimental, not finished): true shows\n"
+		"them in place of the game's; false keeps the menus display.menus\n"
+		"picks. Read at start-up." },
 	{ "display.player_names", _config_string, "\"all\"", "HALO_PLAYER_NAMES", _environment_value, _platform_all,
 		"In multiplayer, whose names are drawn above their heads: \"all\",\n"
 		"\"allies\", \"enemies\" or \"none\". An enemy's shows only within the\n"
@@ -654,6 +659,11 @@ static const struct config_setting config_settings[] =
 	{ "debug.menu_open", _config_string, "\"\"", "HALO_MENU_OPEN", _environment_value, _platform_all,
 		"Start on this screen of the menus (port/assets/menus) instead of the main\n"
 		"menu, a player profile being edited; empty for the main menu." },
+	{ "debug.ae_test_screen", _config_integer, "0", "HALO_AE_TEST_SCREEN", _environment_value, /* AE hook */
+		_platform_all,
+		"With display.arena_menus: open Arena Evolved's test screen at the main\n"
+		"menu (for the automated tests). 0: no; 1: over the whole screen; 2 or 4:\n"
+		"drawn into that many split-screen views." },
 	{ "debug.gpu_flush_draws", _config_integer, "-1", "HALO_GPU_FLUSH_DRAWS", _environment_value, _platform_desktop,
 		"Flush the GPU's pipeline every this many draws: -1 for every 3 on Intel\n"
 		"graphics with Mesa's driver (which can hang without), 0 never." },

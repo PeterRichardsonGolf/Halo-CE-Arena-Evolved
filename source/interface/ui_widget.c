@@ -689,6 +689,7 @@ struct widget_instance;
 #ifdef HALO_CUSTOM_EDITION
 #include "halo_ui_map_list.h"
 #endif
+#include "ae_hooks.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 /* the in-game server browser (port/linux/game/browser_screen.c): a screen of
 code over the widgets, as the virtual keyboard is */
@@ -7087,6 +7088,8 @@ static void ui_widgets_process_mouse(
 
 	ui_debug_frame++;
 	pointer_active = halo_ui_pointer_update(ui_mouse_menus_active(), &pointer) != 0;
+	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */
+		pointer_active = FALSE;
 	if (pointer_active)
 		ui_mouse_pointer_is_touch = pointer.touch != 0;
 	if (pointer_active && ui_debug_targets_enabled())
@@ -7922,6 +7925,7 @@ void render_ui_widgets(
 	if (browser_screen_active())
 		browser_screen_render();
 #endif
+	ae_ui_render(local_player_index, window_bounds); /* AE hook */
 	ui_debug_draw_targets(first_players_render);
 
 	return;
@@ -9006,6 +9010,8 @@ void process_ui_widgets(
 
 		return;
 	}
+	if (ae_ui_process()) /* AE hook */
+		return;
 #ifdef HALO_GAME_BROWSER
 	if (browser_screen_active())
 	{
