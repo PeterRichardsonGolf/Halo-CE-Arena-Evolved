@@ -844,6 +844,24 @@ Defensive checks stay in the game code too. An index into a tag block, the
 tags or a tag's data that is out of range gets zeros (`tag_empty_data` in
 `tag_files/tag_groups.c`), not other memory.
 
+In Arena Evolved:
+
+- A Custom Edition map (Halo PC's format) is checked as before
+  (`game/ce_map_checks.c`), not by the Xbox schema, its structure bsps too.
+  `map_validate` refuses such maps, since it reads only the Xbox's format.
+- `map_validate` reads Halo 1: NHE's ui.map, a10.map and atlas.map as the
+  game does (a stream short by the header's rounding). NHE's maps get many
+  corrections, nearly all of them their tags' parent groups.
+- A map may hold bytes that are the same once for several structures, as
+  CE+ X's ui.map does (`extent_claim` in `game/tag_validate.c`): an
+  overlap is allowed only from the same first byte, and only where the
+  structures are of the same kind, or share no runtime value and come
+  through the check unchanged. The walk of a shared element may not
+  correct it. Every other overlap is refused.
+- Halo PC's script functions and globals that ChupathingyCE adds are
+  allowed in maps. A main menu's scripts may also call `map_name`,
+  `texture_cache_flush` and `sound_cache_flush` (CE+ X's menu does).
+
 ## What operates
 
 | Area | Status |

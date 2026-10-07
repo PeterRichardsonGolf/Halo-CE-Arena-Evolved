@@ -57,6 +57,26 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   player's pause, not every player's.
 - The network test's quick launch gives each local player the last-used
   profile, so their controller layouts apply.
+- Merged OpenCE build-139: a map's tags are checked against a schema of
+  their groups before the game uses them, and each structure bsp as it
+  loads; a map whose blocks lie outside its tags is refused, smaller
+  problems are corrected and written to debug.txt
+  (`build/linux/map_validate [--strict] map.map...` runs the same checks
+  without the game). A map's scripts may call only the script functions a
+  map needs: one that calls a refused one (files, saved state, the
+  console, debugging, cheats, map switching, the network, player settings)
+  does not run. A third hardening round (AI, caches, cutscenes, recorded
+  animations). The maps that played before still play, with their scripts:
+  Custom Edition maps are checked as before, not by the Xbox schema; Halo
+  1: NHE's maps load, corrected (mostly their tags' parent groups); CE+ X's
+  ui.map, which holds bytes that are the same once for several tags, is
+  accepted where those bytes are the same structure, or no runtime value of
+  either and unchanged by the check; Halo PC's script functions and globals
+  that Custom Edition maps call stay allowed, and a main menu's scripts may
+  switch maps and flush the caches (CE+ X's menu does). NHE's Prisoner Bots
+  (a10, which crashed when hosted before) calls map_reset, which is
+  refused. Network version and messages unchanged: Arena Evolved announces
+  18 and joins 11 to 20.
 - Merged OpenCE build-133..138: password-protected public lobbies (Server
   Setup's PASSWORD for a PUBLIC internet game; the Server Browser shows a
   lock and asks for the password, which opens the listed invite; an invite
