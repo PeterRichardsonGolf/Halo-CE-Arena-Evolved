@@ -259,6 +259,40 @@ A speed hack of less than a tenth is let be: the host's bounds on how far
 and how fast a client's player moves and fires hold it to the host's time
 anyway.
 
+## Known Delta Peer limitations (upstream)
+
+Delta Peer (ChupathingyCE's, `port/linux/src/delta_peer.c`, `docs/delta.md`)
+takes a HELLO by its source address and the machine index it claims
+(`host_find_machine`): no secret of the game's own connection proves which
+machine sends it. Where the host sees a machine's real address (LAN and
+System Link games, DIRECT LINK, a dedicated server reached by its address),
+another device behind the same address (the same NAT or carrier-grade NAT,
+or a LAN device that forges the address) can claim that machine. Internet
+games over the invite tunnel are not affected: each tunnel peer has its
+own virtual address (100.64.0.0/10) on a sealed, authenticated tunnel.
+
+What such a device could do: take over the machine's Delta session a
+second after it began, receive the room's roster (each machine's platform,
+build and, where shared, player ID), show its own claims as that machine's,
+and lower the host's player limit with its platform key's `join_players`
+(new players are then refused; players in the game stay). It never gets
+the invite or a password, and Delta Peer never decides game state.
+
+Arena Evolved's host-side mitigation, with no wire change (ChupathingyCE
+0.7.0b's clients play with it, tested both ways): a machine's session,
+once made, is never replaced by another session's HELLO while the machine
+stays in the game; only its own BYE (which needs the session's random
+number) or its leaving frees it. What remains, until the protocol binds a
+session to the game's own connection:
+- a device behind the same address can claim the Delta slot of a machine
+  that does not speak Delta (an OpenCE build, or `network.protocol =
+  "opence"`), or of one whose HELLO it beats;
+- through that slot, the roster and the player limit as above;
+- a Delta client that restarts its session without its BYE arriving is
+  played without Delta until it leaves the game.
+A host can ignore the platform limits (`network.host_platform_limits =
+false`). This is to be reported to ChupathingyCE, whose protocol it is.
+
 ## PRE-GAME COUNTDOWN
 
 A gametype's ARENA OPTIONS travel in its flags (bits 16 and up of

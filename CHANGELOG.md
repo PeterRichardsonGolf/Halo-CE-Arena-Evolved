@@ -70,7 +70,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   (UDP, the game's port + 10: 5160): each machine's platform and its
   player limits, its build ("Arena Evolved 0.1.0-beta"), and its player ID
   only with `network.share_profile`; it never decides game state, and
-  `network.protocol = "opence"` turns Delta Peer off. ChupathingyCE's
+  `network.protocol = "opence"` turns Delta Peer off. Arena Evolved's host
+  never lets a HELLO replace a machine's Delta session while it stays in
+  the game (another device behind the same address could otherwise take it
+  over: NETCODE.md, "Known Delta Peer limitations"). A game with a
+  password's invite is read with its password at once, so one set
+  meanwhile can't let its new invite reach the game list. ChupathingyCE's
   signed table of the network versions to announce and join does not
   apply to Arena Evolved: it has its own wire ID (`ae-20a`, which those
   tables have no row for), so its numbers stay 20 and 11 to 20 and no such

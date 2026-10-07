@@ -563,7 +563,15 @@ static void host_hello(struct delta_peer *peer, delta_u32 now, delta_u32 ipv4, u
 		host_send_welcome(peer, machine_index);
 		return;
 	}
-	if (client->used && !elapsed(now, client->session_time, DELTA_PEER_NEW_SESSION_GAP))
+	/* (Arena Evolved: a machine's session, once made, is never replaced by a
+	HELLO of another session while that machine stays in the game; its own
+	BYE (which only that session's number opens) or its leaving the game
+	frees it. A HELLO is taken by its address and the machine index it
+	claims, which another device behind the same address can send: it could
+	otherwise take over a Delta machine's session, its roster and its claims
+	a second after the session began. No wire change: ChupathingyCE's
+	clients say BYE before a new session) */
+	if (client->used)
 	{
 		peer->dropped++;
 		return;

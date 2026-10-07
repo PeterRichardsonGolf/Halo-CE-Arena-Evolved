@@ -823,7 +823,10 @@ static void test_strangers(void)
 		delta_peer_receive(&nodes[0].peer, now, nodes[1].ipv4, 40001, data, size);
 	CHECK(nodes[0].peer.dropped - dropped == 1000 - DELTA_PEER_HOST_BURST);
 
-	/* new sessions from one machine: no more than one a second */
+	/* new sessions from one machine (Arena Evolved): a session made is
+	never replaced by another's HELLO, however long after (another device
+	behind the machine's address could send it); its BYE frees the machine
+	for a new one */
 	now += 5000;
 	hello.machine_index = 1;
 	size = delta_wire_write_hello(data, 1, &hello);
@@ -833,7 +836,22 @@ static void test_strangers(void)
 	delta_peer_receive(&nodes[0].peer, now + 10, nodes[1].ipv4, 40001, data, size);
 	CHECK(nodes[0].peer.peers[1].session == 1);
 	delta_peer_receive(&nodes[0].peer, now + DELTA_PEER_NEW_SESSION_GAP, nodes[1].ipv4, 40001, data, size);
-	CHECK(nodes[0].peer.peers[1].session == 2);
+	delta_peer_receive(&nodes[0].peer, now + 60000, nodes[1].ipv4, 40002, data, size);
+	CHECK(nodes[0].peer.peers[1].session == 1);
+	/* (a BYE of another session frees nothing; the session's own does) */
+	size = delta_wire_write_empty(data, DELTA_MAJOR, _delta_message_bye, 2);
+	delta_peer_receive(&nodes[0].peer, now + 60010, nodes[1].ipv4, 40001, data, size);
+	CHECK(nodes[0].peer.peers[1].used && nodes[0].peer.peers[1].session == 1);
+	size = delta_wire_write_empty(data, DELTA_MAJOR, _delta_message_bye, 1);
+	delta_peer_receive(&nodes[0].peer, now + 60020, nodes[1].ipv4, 40001, data, size);
+	CHECK(!nodes[0].peer.peers[1].used);
+	size = delta_wire_write_hello(data, 2, &hello);
+	delta_peer_receive(&nodes[0].peer, now + 61000, nodes[1].ipv4, 40001, data, size);
+	CHECK(nodes[0].peer.peers[1].used && nodes[0].peer.peers[1].session == 2);
+	/* (and that session says BYE, as a client does before a new one) */
+	size = delta_wire_write_empty(data, DELTA_MAJOR, _delta_message_bye, 2);
+	delta_peer_receive(&nodes[0].peer, now + 61010, nodes[1].ipv4, 40001, data, size);
+	CHECK(!nodes[0].peer.peers[1].used);
 	queued = 0;
 
 	/* the client hears its host alone, of its session alone */

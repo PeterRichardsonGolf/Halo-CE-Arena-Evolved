@@ -50,7 +50,8 @@ enum
 	/* a client forgets a machine the roster has not named this long */
 	DELTA_PEER_ROSTER_EXPIRY = 12000,
 	/* a host takes a new session (a HELLO of a new session) from a machine
-	at most this often */
+	at most this often (Arena Evolved: unused; a machine's session is never
+	replaced while it stays in the game, delta_peer.c host_hello) */
 	DELTA_PEER_NEW_SESSION_GAP = 1000,
 
 	/* the messages a host takes from one machine, a second (and at once);
