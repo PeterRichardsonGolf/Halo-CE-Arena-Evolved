@@ -1,7 +1,8 @@
 /*
 BUILD_IDENTITY.C
 
-Which ChupathingyCE build this is (build_identity.h). The build gives this
+Which Arena Evolved build this is (build_identity.h; ChupathingyCE's file,
+with Arena Evolved's name). The build gives this
 file the version's defines, as it does updater.c (tools/linux_build.py
 updater_defines): HALO_VERSION, HALO_CHANNEL, HALO_COMMIT and
 HALO_BUILD_FLAVOR.

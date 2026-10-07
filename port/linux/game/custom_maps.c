@@ -155,7 +155,9 @@ char **native_multiplayer_map_list(char **stock, short stock_count, short *count
            cache_files_map_file_path finds a map there before the map
            directory; a mod is chosen before the game starts (the menus
            restart it for another), so once per process still holds. */
-        mod = cache_files_mod();
+        mod = cache_files_mod_started();
+        if (mod && !mod[0])
+            mod = NULL;
         if (mod) {
             char directory[256];
             snprintf(directory, sizeof(directory), "d:\\mods\\%s\\maps\\", mod);

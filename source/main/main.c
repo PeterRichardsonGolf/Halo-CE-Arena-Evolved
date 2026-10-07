@@ -1533,8 +1533,9 @@ static void main_change_map_name(
 			game_unload();
 			main_new_map(&options);
 
+			/* (port: at most one a gamepad, as create_local_players) */
 			for (local_player_index = 0;
-				local_player_index < player_spawn_count;
+				local_player_index < PIN(player_spawn_count, 0, MAXIMUM_GAMEPADS);
 				local_player_index++)
 			{
 				player_profile_save_last_level_played(local_player_index);
@@ -2243,7 +2244,8 @@ static void main_won_map_private(
 	level = main_get_solo_level_from_name(main_globals.soloplayer_map_name) + 1;
 	if (level >= 10)
 		level = NONE;
-	for (local_player_index = 0; local_player_index < player_spawn_count; local_player_index++)
+	/* (port: at most one a gamepad, as create_local_players) */
+	for (local_player_index = 0; local_player_index < PIN(player_spawn_count, 0, MAXIMUM_GAMEPADS); local_player_index++)
 		player_profile_save_level_completed(local_player_index);
 	ui_set_next_level(level);
 	return;

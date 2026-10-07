@@ -653,15 +653,29 @@ char const *cache_files_mod(
 	return mod;
 }
 
+/* port: the mod whose maps are played: the one the game started with
+(cache_files_mod_started), NULL for none. A mod chosen in a game plays at
+the next start (menu_functions.c's mods_restart_if_changed), and the cached
+maps are its (cache_files_verify_mod), so a map's file and its check
+(tag_validate_allow_shared_bytes) follow the started mod, not game.mod */
+static char const *cache_files_mod_played(
+	void)
+{
+	char const *mod = cache_files_mod_started();
+
+	return mod && mod[0] ? mod : NULL;
+}
+
 /* port: a map's file: the mod's (mods\<mod>\maps\<name>.map) if it has one,
 else the map directory's; a mod replaces the maps it has and plays the rest
-as they are (CE+ X's multiplayer maps, and the campaign's) */
+as they are (CE+ X's multiplayer maps, and the campaign's). The mod is the
+one the game started with (cache_files_mod_played) */
 void cache_files_map_file_path(
 	char const *map_name,
 	char *path,
 	long size)
 {
-	char const *mod = cache_files_mod();
+	char const *mod = cache_files_mod_played();
 	int length;
 
 	/* (a path that doesn't fit is no path (no file is found), not a cut one
@@ -1381,7 +1395,7 @@ long scenario_tags_load(
 				char path[256];
 
 				cache_files_map_file_path(stripped_scenario_name, path, sizeof(path));
-				tag_validate_allow_shared_bytes(cache_files_mod() != NULL &&
+				tag_validate_allow_shared_bytes(cache_files_mod_played() != NULL &&
 					!csstrncmp(path, "d:\\mods\\", 8));
 			}
 			if (!tag_validate_tags(

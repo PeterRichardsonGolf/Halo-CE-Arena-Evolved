@@ -1,7 +1,8 @@
 /*
 BUILD_IDENTITY.H
 
-Which ChupathingyCE build this is, for its logs and its requests: the
+Which Arena Evolved build this is (ChupathingyCE's file, with Arena
+Evolved's name: halo_product.h), for its logs and its requests: the
 version, channel and commit the build was given (tools/version.py), and the
 platform it was compiled for. build_identity.c has it; plain C, for the
 platform layer and the system side (posix_*.c, win32_*.c) alike.
@@ -14,13 +15,13 @@ platform layer and the system side (posix_*.c, win32_*.c) alike.
 standard error, debug.txt; Arena Evolved's) */
 #define PLATFORM_LOG_PREFIX "arena-evolved: "
 
-/* "ChupathingyCE 0.7.0b (release, release config, commit 65d3130d, built
-2026-10-06) macOS arm64" (Arena Evolved: its name, halo_product.h, and
-"; " HALO_UPSTREAM_BASE after it) */
+/* "Halo CE: Arena Evolved 0.1.0-beta (release, release config, commit
+328b9dba, built 2026-10-06) Linux x64; ChupathingyCE 0.7.0b, OpenCE
+build-139" (HALO_PRODUCT_NAME, and HALO_UPSTREAM_BASE after it) */
 const char *build_identity(void);
 
-/* the User-Agent of this build's own requests: "ChupathingyCE/0.7.0b
-(macOS arm64)" (Arena Evolved: "ArenaEvolved/0.1.0-beta (Linux x64)") */
+/* the User-Agent of this build's own requests: "ArenaEvolved/0.1.0-beta
+(Linux x64)" */
 const char *build_identity_user_agent(void);
 
 /* the log's header, first in debug.txt for this run (before the game's own
