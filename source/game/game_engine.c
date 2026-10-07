@@ -8217,6 +8217,13 @@ boolean game_engine_weapon_is_pistol(
 	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_pistol;
 }
 
+/* port: the item timers' shotgun (item_timers.c) */
+boolean game_engine_weapon_is_shotgun(
+	long definition_index)
+{
+	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_shotgun;
+}
+
 /* ---------- private code */
 
 static void netgame_flag_verify_no_team_duplicates(

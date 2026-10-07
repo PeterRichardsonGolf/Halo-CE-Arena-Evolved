@@ -851,6 +851,7 @@ long game_engine_remap_item_definition(long definition_index);
 boolean game_engine_weapon_is_rocket_launcher(long definition_index);
 boolean game_engine_weapon_is_sniper_rifle(long definition_index);
 boolean game_engine_weapon_is_pistol(long definition_index);
+boolean game_engine_weapon_is_shotgun(long definition_index);	/* port */
 
 long game_engine_remap_vehicle(long vehicle_definition_index);
 long game_engine_remap_equipment(long equipment_definition_index);

@@ -22,7 +22,7 @@ On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*). Its
 digits are tabular (each in a cell as wide as the widest digit), so that it
 keeps still as the seconds tick.
 
-The power list is the rockets', sniper's, overshield's and camo's next
+The power list is the rockets', sniper's, shotgun's, overshield's and camo's next
 spawns. In every view (one view's by default: display.power_list "clock")
 it is a column stacked over the clock (hud_item_timers_draw_column), the
 same in every view at every count of views: a line for each class and name

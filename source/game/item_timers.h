@@ -17,6 +17,7 @@ enum item_timer_class
 {
 	_item_timer_rockets = 0,
 	_item_timer_sniper,
+	_item_timer_shotgun,	/* (port: a one-shot kill up close in CE: timed as a power weapon) */
 	_item_timer_overshield,
 	_item_timer_camo,
 	NUMBER_OF_ITEM_TIMER_POWER_CLASSES,
@@ -50,7 +51,7 @@ struct item_timer
 	unsigned short classes;	/* a flag for each class it can spawn (OS/CAMO: both) */
 	short side;	/* enum item_timer_side */
 	boolean side_prefix;	/* RED / BLUE before its name: the same item is at the other base */
-	wchar_t label[16];	/* the power list's: "SNIPER", "RED ROCKETS", "OS/CAMO" */
+	wchar_t label[16];	/* the power list's: "SNIPER", "RED ROCKETS", "OS/CAMO", "SHOTGUN" */
 };
 
 /* ---------- prototypes/ITEM_TIMERS.C */

@@ -48,14 +48,14 @@ editor and in Server Setup)
 
 Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
 TIMERS shows the power list only: the next spawns of the rockets, sniper
-rifle, overshield and camo, as a column stacked over the match clock in the
+rifle, shotgun, overshield and camo, as a column stacked over the match clock in the
 bottom right corner of every view (one view and split screen alike), the
 soonest at the foot, NAME and TIME in two aligned columns ("R/B SNIPER 1:50",
 R and B in the bases' colours); at most four lines, "+N" for more; hidden
 while that view's scoreboard shows. With one view, `display.power_list`
 `"top_left"` keeps the earlier single line in the top left corner. The match clock is its own setting (below).
 TRAINING adds, as Halo 1: NHE's Training mode did: a waypoint over each power
-item (rockets, sniper rifle, overshield, camo) from 10 seconds before it spawns
+item (rockets, sniper rifle, shotgun, overshield, camo) from 10 seconds before it spawns
 to 20 seconds after, and green markers on the floor (or the crate or platform a spawn stands on) at the player spawns this
 gametype uses (within 25 units, hidden behind walls). Each waypoint is
 labelled with the item and the time to its spawn ("OVERSHIELD 0:08"), then

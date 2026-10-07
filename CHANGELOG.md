@@ -7,6 +7,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
+- The shotgun is a power item (a one-shot kill up close in CE): TIMERS'
+  power column has its row (SHOTGUN, R/B SHOTGUN at both bases), TRAINING
+  puts a labelled waypoint over its spawns, and the callouts say "shotgun in
+  ten" and "shotgun is up" (Cori has the clips; a pack without them says
+  "power weapons in ten" / "power weapons are up").
 - Screenshots and recordings: F9 saves the game's picture as a PNG in
   `screenshots/` beside `config.toml` ("SCREENSHOT SAVED" at the top right);
   F10 starts and stops a recording with the game's sound, an MP4 in

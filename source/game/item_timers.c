@@ -86,7 +86,8 @@ static char const *const item_timer_side_names[NUMBER_OF_ITEM_TIMER_SIDES] =
 
 /* ---------- private code */
 
-/* a power item's class (rockets, sniper, overshield, camo), else other */
+/* a power item's class (rockets, sniper, shotgun, overshield, camo), else
+other */
 static short item_timer_definition_class(
 	long definition_index)
 {
@@ -97,6 +98,8 @@ static short item_timer_definition_class(
 			return _item_timer_rockets;
 		if (game_engine_weapon_is_sniper_rifle(definition_index))
 			return _item_timer_sniper;
+		if (game_engine_weapon_is_shotgun(definition_index))
+			return _item_timer_shotgun;
 		break;
 
 	case EQUIPMENT_DEFINITION_TAG:
@@ -115,7 +118,7 @@ static short item_timer_definition_class(
 }
 
 /* the class of an item collection: the most powerful item it can spawn
-(rockets, sniper, overshield, camo, else other), as the gametype remaps its
+(rockets, sniper, shotgun, overshield, camo, else other), as the gametype remaps its
 items; the heaviest permutation names the entry, and *classes has a bit
 for each class it can spawn. FALSE when the gametype spawns none of them
 (no shields: no overshield, always invisible: no camo, no weapons on the
@@ -191,6 +194,7 @@ static void item_timer_label(
 	{
 		"ROCKETS",
 		"SNIPER",
+		"SHOTGUN",
 		"OS",
 		"CAMO",
 	};
@@ -682,7 +686,7 @@ short item_timer_spawned_class(
 }
 
 /* the name over TRAINING's waypoint: RED / BLUE as the power list has it,
-and the item's whole name (ROCKETS, SNIPER, OVERSHIELD, CAMO); a mixed
+and the item's whole name (ROCKETS, SNIPER, SHOTGUN, OVERSHIELD, CAMO); a mixed
 entry's power list label (OS/CAMO) until the item it spawned is seen on
 the map */
 void item_timer_waypoint_name(
@@ -694,6 +698,7 @@ void item_timer_waypoint_name(
 	{
 		"ROCKETS",
 		"SNIPER",
+		"SHOTGUN",
 		"OVERSHIELD",
 		"CAMO",
 	};
