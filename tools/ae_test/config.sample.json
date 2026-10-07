@@ -16,6 +16,7 @@
   "nice": 10,
   "parallel": "auto",
   "max_games_total": 4,
+  "min_free_gb": 3,
   "owner_check": true,
   "xvfb": "auto",
   "box": {

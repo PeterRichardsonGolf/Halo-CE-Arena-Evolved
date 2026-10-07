@@ -350,6 +350,12 @@ class Load(unittest.TestCase):
         self.assertEqual(len(harness.other_games(cfg, mine + theirs, own={work + "/r"})), 1)
         self.assertEqual(len(harness.other_games(cfg, mine + theirs, own={work + "/other-run"})), 2)
 
+    def test_low_disk(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            cfg = dict(harness.DEFAULTS, work_dir=d)
+            self.assertIsNone(harness.low_disk(dict(cfg, min_free_gb=0)))
+            self.assertIn("GB free", harness.low_disk(dict(cfg, min_free_gb=1e9)))
+
     def test_parallel(self):
         cfg = dict(harness.DEFAULTS, _slow=True)
         self.assertEqual(harness.resolve_parallel(cfg, "3"), 1)

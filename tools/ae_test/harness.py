@@ -62,6 +62,8 @@ DEFAULTS = {
     "parallel": "auto",
     # headless games on this machine, all helpers together (a tool waits for a free slot)
     "max_games_total": 4,
+    # no game starts while the work folder's disk has less free than this
+    "min_free_gb": 3,
     # look for the owner's own game here (a halo process outside work_dir, or port 5150 listening)
     "owner_check": True,
     # "auto": xvfb-run when DISPLAY is unset
@@ -983,8 +985,10 @@ def run_group(cfg, games, bots=None, inner_out=None):
     else:
         log("ae_test: no unshare -rn here: the game shares this machine's network (one game at a time)")
     subprocess.run(cmd)
-    if res_path.exists():
+    try:
         return json.loads(res_path.read_text())
+    except (OSError, ValueError):  # (no result: e.g. the disk filled up)
+        pass
     return [{"exit_code": None, "timed_out": False, "seconds": 0, "error": "inner runner wrote no result"}
             for _ in games]
 
@@ -1088,6 +1092,16 @@ def collect_game(spec, prepared, inner, out, keep_work=False):
     return result
 
 
+def low_disk(cfg):
+    """a reason not to start a game when the work folder's disk has less than min_free_gb free (a save root
+    with its map cache takes up to 290 MB; other helpers share the disk), else None"""
+    need = float(cfg.get("min_free_gb", 3))
+    p = expand(cfg["work_dir"])
+    p.mkdir(parents=True, exist_ok=True)
+    free = shutil.disk_usage(p).free / 1e9
+    return f"only {free:.1f} GB free on the work disk (min_free_gb {need:g})" if free < need else None
+
+
 def play(cfg, spec, out, slots=None, keep_work=False, run_id=None):
     """one game, start to finish: the result dict (also out/result.json)"""
     if "timeout_extra" not in spec:  # (not parsed yet)
@@ -1100,6 +1114,11 @@ def play(cfg, spec, out, slots=None, keep_work=False, run_id=None):
         write_json(out / "result.json", result)
         return result
     build = resolve_build(cfg, spec["build"], spec.get("target", "linux64"))
+    low = low_disk(cfg)
+    if low:
+        result = {"name": spec["name"], "build": spec.get("build"), "status": "FAIL", "why": [low]}
+        write_json(out / "result.json", result)
+        return result
     work = expand(cfg["work_dir"]) / (run_id or stamp()) / safe_name(spec["name"])
     OWN_WORK.add(work.parent)
     prepared = prepare_game(cfg, spec, build, work, out)

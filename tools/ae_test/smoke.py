@@ -99,7 +99,10 @@ def run_set(cfg, build, label, specs, out, parallel, keep_work):
     def one(c):
         c = dict(c, build=build)
         spec = harness.parse_spec(c)
-        r = harness.play(cfg, spec, out / label / spec["name"], slots, keep_work, run_id=f"{out.name}-{label}")
+        try:
+            r = harness.play(cfg, spec, out / label / spec["name"], slots, keep_work, run_id=f"{out.name}-{label}")
+        except Exception as e:  # (one broken case must not lose the table)
+            r = {"name": spec["name"], "status": "FAIL", "why": [f"harness error: {type(e).__name__}: {e}"]}
         harness.log("  " + harness.one_line(f"{label}/{spec['name']}", r))
         return spec["name"], r
 
