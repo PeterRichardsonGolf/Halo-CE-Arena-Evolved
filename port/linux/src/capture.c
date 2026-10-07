@@ -123,7 +123,6 @@ int halo_capture_notice(char *text, int size)
 #include "gl.h"
 #include "zlib_prefixed.h"
 #include "capture_child.h"
-#include "posix.h"
 
 #include <SDL3/SDL.h>
 #ifndef _WIN32
@@ -1014,42 +1013,65 @@ static SDL_AtomicInt screenshot_requested;
 static char clean_folders[3][PATH_SIZE];
 static int clean_folder_count;
 
-/* in one of the capture's own folders, what an earlier session left: .part
-files, and names made (empty, capture_name_reserve) and never filled, that
-nothing has touched for STALE_SECONDS (a recording or screenshot under way,
-in this game or another, writes its .part all the time) */
+/* whether name is one the capture makes, whole: <date>_<time>
+("2026-10-07_21-05-12"), then nothing or "_" and the map's name and the
+number (capture_name_reserve; letters, digits, "-" and "_" only), then one
+of its suffixes. 1: a part (.part); 2: a name made, whose file is only the
+capture's while empty; 0: anything else. */
+static int capture_name_owned(const char *name)
+{
+	/* (longest first: ".mp4.part" ends ".video.mp4.part" too) */
+	static const char *const suffixes[] = { ".video.mp4.part", ".audio.f32.part", ".png.part", ".mp4.part", ".png", ".mp4" };
+	static const int kinds[] = { 1, 1, 1, 1, 2, 2 };
+	static const char stamp[] = "0000-00-00_00-00-00";
+	size_t length = strlen(name), stamp_length = sizeof(stamp) - 1, index, at;
+
+	if (length <= stamp_length)
+		return 0;
+	for (at = 0; at < stamp_length; at++)
+	{
+		if (stamp[at] == '0' ? name[at] < '0' || name[at] > '9' : name[at] != stamp[at])
+			return 0;
+	}
+	for (index = 0; index < sizeof(suffixes) / sizeof(suffixes[0]); index++)
+	{
+		size_t suffix_length = strlen(suffixes[index]);
+		size_t middle = length - stamp_length - suffix_length;
+		int whole = 1;
+
+		if (length < stamp_length + suffix_length || strcmp(name + length - suffix_length, suffixes[index]))
+			continue;
+		/* (nothing, or "_" and 1 to 63 of the map name's characters) */
+		if (middle)
+		{
+			whole = middle >= 2 && middle <= 64 && name[stamp_length] == '_';
+			for (at = stamp_length + 1; whole && at < stamp_length + middle; at++)
+			{
+				char c = name[at];
+
+				whole = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' ||
+					c == '_';
+			}
+		}
+		if (whole)
+			return kinds[index];
+	}
+	return 0;
+}
+
+/* in one of the capture's own folders, what an earlier session left: its
+.part files, and names it made and never filled, untouched for
+STALE_SECONDS (a recording or screenshot under way, in this game or
+another, writes its .part all the time); nothing else (capture_name_owned,
+capture_folder_clean) */
 static void capture_parts_clean(const char *folder)
 {
-	void *directory = posix_directory_open(folder);
-	char name[256], path[PATH_SIZE];
-	SDL_Time now = 0;
-	int removed = 0;
+	int removed = capture_folder_clean(folder, STALE_SECONDS, capture_name_owned);
 
-	if (!directory)
-		return;
-	SDL_GetCurrentTime(&now);
-	while (posix_directory_next(directory, name, sizeof(name)))
-	{
-		struct posix_file_information information;
-		size_t length = strlen(name);
-		int part = length > 5 && !strcmp(name + length - 5, ".part");
-		/* (the names the capture makes: <year>-<month>-..., .png or .mp4) */
-		int made = length > 4 && name[0] >= '0' && name[0] <= '9' &&
-			(!strcmp(name + length - 4, ".png") || !strcmp(name + length - 4, ".mp4"));
-
-		if ((!part && !made) || !path_format(path, sizeof(path), "%s/%s", folder, name) ||
-			posix_stat(path, &information) != 0 || (information.flags & _posix_file_is_directory))
-			continue;
-		if (!part && (information.size_low || information.size_high))
-			continue;
-		if ((Sint64)now / SDL_NS_PER_SECOND - (Sint64)information.modification_seconds < STALE_SECONDS)
-			continue;
-		if (SDL_RemovePath(path))
-			removed++;
-	}
-	posix_directory_close(directory);
-	if (removed)
+	if (removed > 0)
 		platform_log("capture: removed %d unfinished files an earlier session left in %s", removed, folder);
+	else if (removed < 0)
+		platform_log("capture: %s not cleared of an earlier session's files (a link, or not readable)", folder);
 }
 
 static int SDLCALL screenshot_thread(void *parameter)
@@ -1285,14 +1307,18 @@ static Uint32 audio_event_frames[AUDIO_EVENTS];
 static SDL_AtomicU32 audio_event_write;
 static SDL_AtomicU32 audio_event_read;
 /* the mixer's way in: AUDIO_CLOSED (no recording takes the sound),
-AUDIO_OPEN, AUDIO_IN (the mixer is in capture_audio). The mixer goes
-OPEN -> IN -> OPEN, the game thread OPEN -> CLOSED (waiting while it is
-IN) and CLOSED -> OPEN, each with a compare-and-swap: while CLOSED the
-mixer cannot enter, so the ring is the game thread's to reset, and the loss
-not yet told its to hand over. */
+AUDIO_OPEN, AUDIO_IN (the mixer is in capture_audio), AUDIO_CLOSING (it is,
+and the game thread is waiting to close). The mixer goes OPEN -> IN with a
+compare-and-swap, and back IN -> OPEN, or CLOSING -> CLOSED when the game
+thread asked meanwhile; the game thread goes OPEN -> CLOSED, or IN ->
+CLOSING and waits for that one call to leave, and CLOSED -> OPEN. So the
+close waits for one call at most, and while CLOSED the mixer cannot enter:
+the ring is the game thread's to reset, and the loss not yet told its to
+hand over. */
 #define AUDIO_CLOSED 0
 #define AUDIO_OPEN 1
 #define AUDIO_IN 2
+#define AUDIO_CLOSING 3
 static SDL_AtomicInt audio_gate;
 static SDL_AtomicInt audio_lost_frames;
 /* the mixer's while it is in, the game thread's while closed: a loss the
@@ -1312,6 +1338,14 @@ static int audio_event_push(Uint32 position, Uint32 frames)
 	return 1;
 }
 
+/* (the audio thread) out of capture_audio: the gate open again, or closed
+if the game thread is waiting to close it */
+static void audio_leave(void)
+{
+	if (!SDL_CompareAndSwapAtomicInt(&audio_gate, AUDIO_IN, AUDIO_OPEN))
+		SDL_SetAtomicInt(&audio_gate, AUDIO_CLOSED);
+}
+
 /* (the audio thread) never waits: what does not fit is lost, its place
 noted */
 void capture_audio(const float *samples, unsigned int frames, unsigned int channels, unsigned int rate)
@@ -1322,7 +1356,7 @@ void capture_audio(const float *samples, unsigned int frames, unsigned int chann
 		return;
 	if (channels != AUDIO_CHANNELS || rate != AUDIO_RATE || !frames || frames > AUDIO_RING_FRAMES)
 	{
-		SDL_SetAtomicInt(&audio_gate, AUDIO_OPEN);
+		audio_leave();
 		return;
 	}
 	write = SDL_GetAtomicU32(&audio_write_position);
@@ -1348,15 +1382,26 @@ void capture_audio(const float *samples, unsigned int frames, unsigned int chann
 			(size_t)(frames - first) * AUDIO_CHANNELS * sizeof(float));
 		SDL_SetAtomicU32(&audio_write_position, write + frames);
 	}
-	SDL_SetAtomicInt(&audio_gate, AUDIO_OPEN);
+	audio_leave();
 }
 
-/* (the game thread) the mixer shut out, once it has left capture_audio */
+/* (the game thread) the mixer shut out, once the call in it (one at most)
+has left capture_audio */
 static void audio_close(void)
 {
-	while (!SDL_CompareAndSwapAtomicInt(&audio_gate, AUDIO_OPEN, AUDIO_CLOSED) &&
-		SDL_GetAtomicInt(&audio_gate) != AUDIO_CLOSED)
-		SDL_DelayNS(50000);
+	for (;;)
+	{
+		int gate = SDL_GetAtomicInt(&audio_gate);
+
+		if (gate == AUDIO_CLOSED)
+			return;
+		if (gate == AUDIO_OPEN && SDL_CompareAndSwapAtomicInt(&audio_gate, AUDIO_OPEN, AUDIO_CLOSED))
+			return;
+		if (gate == AUDIO_IN)
+			SDL_CompareAndSwapAtomicInt(&audio_gate, AUDIO_IN, AUDIO_CLOSING);
+		else if (gate == AUDIO_CLOSING)
+			SDL_DelayNS(50000);
+	}
 }
 
 /* (the game thread, no recording taking the sound) the ring emptied, then
@@ -1454,6 +1499,11 @@ behind is known for what it is (capture_parts_clean) */
 #define RECORDING_MUX 3
 #define RECORDING_PATHS 4
 
+/* struct recording's terminal */
+#define RECORDING_RUNNING 0
+#define RECORDING_CANCELLED 1
+#define RECORDING_COMMITTED 2
+
 struct recording
 {
 	/* set at the start, read by both threads */
@@ -1488,8 +1538,11 @@ struct recording
 	Uint64 audio_frames;
 	/* ffmpeg failed: the game thread stops the recording */
 	SDL_AtomicInt failed;
-	/* quitting with it unfinished: everything given up, the files removed */
-	SDL_AtomicInt cancel;
+	/* how it ends, decided once with a compare-and-swap (recording_cancel,
+	recording_commit): RECORDING_RUNNING until it is given up (its files
+	removed) or its result published under the final name, whichever comes
+	first; the other then gives way */
+	SDL_AtomicInt terminal;
 	/* quitting: by when it is saved (SDL_GetTicks, never 0), else given up;
 	0 none */
 	SDL_AtomicU32 deadline;
@@ -1519,14 +1572,29 @@ static void recording_child_kill(struct recording *recording)
 	SDL_UnlockMutex(recording->lock);
 }
 
-/* given up: cancelled, or quitting's deadline passed */
+/* (any thread) the recording given up, unless its result was published
+first (then it is kept: a whole recording) */
+static void recording_cancel(struct recording *recording)
+{
+	SDL_CompareAndSwapAtomicInt(&recording->terminal, RECORDING_RUNNING, RECORDING_CANCELLED);
+}
+
+/* (the writer) the result about to be published under the final name: 1
+if it may be (from now on a cancel gives way), 0 if it was given up first
+(then everything is removed) */
+static int recording_commit(struct recording *recording)
+{
+	return SDL_CompareAndSwapAtomicInt(&recording->terminal, RECORDING_RUNNING, RECORDING_COMMITTED);
+}
+
+/* given up: cancelled, or quitting's deadline passed (before a commit) */
 static int recording_given_up(struct recording *recording)
 {
 	Uint32 deadline = SDL_GetAtomicU32(&recording->deadline);
 
 	if (deadline && (Sint32)((Uint32)SDL_GetTicks() - deadline) >= 0)
-		SDL_SetAtomicInt(&recording->cancel, 1);
-	return SDL_GetAtomicInt(&recording->cancel);
+		recording_cancel(recording);
+	return SDL_GetAtomicInt(&recording->terminal) == RECORDING_CANCELLED;
 }
 
 /* (the writer) the child's end within timeout_ms, else it is killed; its
@@ -1551,7 +1619,7 @@ static int recording_child_finish(struct recording *recording, struct capture_ch
 			/* (while quitting, that is the recording given up: no video
 			kept without its sound) */
 			if (SDL_GetAtomicU32(&recording->deadline))
-				SDL_SetAtomicInt(&recording->cancel, 1);
+				recording_cancel(recording);
 			capture_child_kill(child);
 			killed = 1;
 			kill_deadline = SDL_GetTicks() + 5000;
@@ -1570,7 +1638,7 @@ static int SDLCALL recording_thread(void *parameter)
 	struct recording *recording = parameter;
 	char size_text[32], rate_text[16], crf_text[16];
 	const char *arguments[32];
-	int count = 0, video_ok, exit_code = -1, has_audio;
+	int count = 0, video_ok, exit_code = -1, has_audio, published = 0;
 	struct capture_child *child;
 	SDL_IOStream *audio_file;
 
@@ -1745,15 +1813,21 @@ static int SDLCALL recording_thread(void *parameter)
 			/* (30 seconds, and half a second for each minute of video) */
 			exit_code = recording_child_finish(recording, child, 30000 + (int)(video_seconds * 1000.0 / 120.0));
 		}
-		if (recording_given_up(recording))
+		if (exit_code == 0 && !recording_given_up(recording))
+		{
+			/* (over the name made at the start; only if not given up
+			first, which a cancel from now on gives way to) */
+			published = 1;
+			video_ok = recording_commit(recording);
+			if (video_ok)
+			{
+				SDL_RemovePath(recording->paths[RECORDING_FINAL]);
+				video_ok = SDL_RenamePath(recording->paths[RECORDING_MUX], recording->paths[RECORDING_FINAL]);
+			}
+		}
+		else if (recording_given_up(recording))
 		{
 			video_ok = 0;
-		}
-		else if (exit_code == 0)
-		{
-			/* (over the name made at the start) */
-			SDL_RemovePath(recording->paths[RECORDING_FINAL]);
-			video_ok = SDL_RenamePath(recording->paths[RECORDING_MUX], recording->paths[RECORDING_FINAL]);
 		}
 		else
 		{
@@ -1761,10 +1835,15 @@ static int SDLCALL recording_thread(void *parameter)
 			has_audio = 0;
 		}
 	}
-	if (video_ok && !has_audio && !recording_given_up(recording))
+	/* the video alone, by the same rule */
+	if (video_ok && !published)
 	{
-		SDL_RemovePath(recording->paths[RECORDING_FINAL]);
-		video_ok = SDL_RenamePath(recording->paths[RECORDING_VIDEO], recording->paths[RECORDING_FINAL]);
+		video_ok = recording_commit(recording);
+		if (video_ok)
+		{
+			SDL_RemovePath(recording->paths[RECORDING_FINAL]);
+			video_ok = SDL_RenamePath(recording->paths[RECORDING_VIDEO], recording->paths[RECORDING_FINAL]);
+		}
 	}
 	/* the parts, whatever happened; the result too if there is none */
 	SDL_RemovePath(recording->paths[RECORDING_VIDEO]);
@@ -2279,7 +2358,7 @@ static int shutdown_recording(void)
 	if (recording_reap(SHUTDOWN_RECORDING_MS))
 		return 1;
 	/* (a writer stuck in a write: its ffmpeg killed makes the write fail) */
-	SDL_SetAtomicInt(&saving->cancel, 1);
+	recording_cancel(saving);
 	recording_child_kill(saving);
 	if (recording_reap(SHUTDOWN_CANCEL_MS))
 		return 1;

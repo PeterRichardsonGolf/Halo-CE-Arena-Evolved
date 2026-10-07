@@ -2,11 +2,12 @@
 CAPTURE_CHILD.H
 
 What the capture (capture.c) needs of the system to run ffmpeg and to make
-its files: a child process with a pipe to its standard input, and a file
-made only if it is not there yet. capture.c has them for Linux and macOS
-(SDL's process API, its pipe made to wait); port/windows/src/
-win32_capture.c for Windows (CreateProcessW: no console window, only the
-pipe inherited). Plain C types only: both sides see this header.
+its files: a child process with a pipe to its standard input, a file made
+only if it is not there yet, and an earlier session's leftovers cleared.
+capture.c has the first two for Linux and macOS (SDL's process API, its
+pipe made to wait), posix_capture.c the last; port/windows/src/
+win32_capture.c all of them for Windows (CreateProcessW: no console window,
+only the pipe inherited). Plain C types only: every side sees this header.
 
 Paths and arguments are UTF-8.
 */
@@ -47,5 +48,16 @@ int capture_file_reserve(const char *path);
 
 /* 1 if path is a file (not a folder) that can be run */
 int capture_file_executable(const char *path);
+
+/* in folder, the files an earlier session of the capture left: owned(name)
+says which names are the capture's (0 not, 1 its, 2 its only while empty);
+of those, a regular file (never a link, a folder or a device) untouched
+for stale_seconds is removed. The folder is opened once and refused if it
+is a link (or, on Windows, any reparse point); each file is looked at and
+removed through it, never following a link. Anything unsure is kept. The
+files removed, or -1 if the folder was refused or cannot be opened.
+(port/linux/src/posix_capture.c, with the C library's own ABI; Windows':
+win32_capture.c) */
+int capture_folder_clean(const char *folder, int stale_seconds, int (*owned)(const char *name));
 
 #endif

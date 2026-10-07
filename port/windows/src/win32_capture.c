@@ -13,7 +13,8 @@ other systems' is in capture.c): ffmpeg started with CreateProcessW, with
   the writer thread fills a frame at a time;
 - its command line quoted as the C runtime's parser reads it back
   (CommandLineToArgvW's rules).
-Files made with CREATE_NEW, so a name is never taken twice.
+Files made with CREATE_NEW, so a name is never taken twice; an earlier
+session's leftovers cleared without following a reparse point.
 
 Paths and arguments are UTF-8.
 */
@@ -294,4 +295,107 @@ int capture_file_executable(const char *path)
 	attributes = GetFileAttributesW(wide);
 	free(wide);
 	return attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+/* the capture's leftovers (capture_child.h): the folder held open (and so
+not renamed or replaced meanwhile), refused if it is a reparse point (a
+link or junction); each file opened without following one
+(FILE_FLAG_OPEN_REPARSE_POINT), looked at and removed through that handle */
+int capture_folder_clean(const char *folder, int stale_seconds, int (*owned)(const char *name))
+{
+	wchar_t *wide = wide_from_utf8(folder), *pattern = NULL, *path = NULL;
+	HANDLE directory, find = INVALID_HANDLE_VALUE;
+	BY_HANDLE_FILE_INFORMATION information;
+	WIN32_FIND_DATAW data;
+	FILETIME now_time;
+	ULONGLONG now;
+	size_t folder_length;
+	int removed = 0;
+
+	if (!wide)
+		return -1;
+	directory = CreateFileW(wide, FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+	if (directory == INVALID_HANDLE_VALUE)
+	{
+		free(wide);
+		return -1;
+	}
+	if (!GetFileInformationByHandle(directory, &information) ||
+		(information.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) ||
+		!(information.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		CloseHandle(directory);
+		free(wide);
+		return -1;
+	}
+	folder_length = wcslen(wide);
+	pattern = malloc((folder_length + 3) * sizeof(wchar_t));
+	path = malloc((folder_length + 2 + MAX_PATH) * sizeof(wchar_t));
+	if (pattern && path)
+	{
+		memcpy(pattern, wide, folder_length * sizeof(wchar_t));
+		pattern[folder_length] = L'\\';
+		pattern[folder_length + 1] = L'*';
+		pattern[folder_length + 2] = 0;
+		find = FindFirstFileW(pattern, &data);
+	}
+	GetSystemTimeAsFileTime(&now_time);
+	now = ((ULONGLONG)now_time.dwHighDateTime << 32) | now_time.dwLowDateTime;
+	while (find != INVALID_HANDLE_VALUE)
+	{
+		char name[MAX_PATH * 4];
+		size_t name_length = wcslen(data.cFileName);
+		int kind = 0;
+
+		if (!(data.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) &&
+			name_length < MAX_PATH &&
+			WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, data.cFileName, -1, name, (int)sizeof(name), NULL,
+			NULL) > 0)
+			kind = owned(name);
+		if (kind)
+		{
+			HANDLE file;
+
+			memcpy(path, wide, folder_length * sizeof(wchar_t));
+			path[folder_length] = L'\\';
+			memcpy(path + folder_length + 1, data.cFileName, (name_length + 1) * sizeof(wchar_t));
+			file = CreateFileW(path, DELETE | FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+			if (file != INVALID_HANDLE_VALUE)
+			{
+				BY_HANDLE_FILE_INFORMATION file_information;
+
+				if (GetFileInformationByHandle(file, &file_information) &&
+					!(file_information.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT |
+					FILE_ATTRIBUTE_DEVICE)) &&
+					(kind != 2 || (!file_information.nFileSizeHigh && !file_information.nFileSizeLow)))
+				{
+					ULONGLONG written = ((ULONGLONG)file_information.ftLastWriteTime.dwHighDateTime << 32) |
+						file_information.ftLastWriteTime.dwLowDateTime;
+
+					/* (100 ns ticks) */
+					if (now > written && (now - written) / 10000000ull >= (ULONGLONG)stale_seconds)
+					{
+						FILE_DISPOSITION_INFO disposition;
+
+						disposition.DeleteFile = TRUE;
+						if (SetFileInformationByHandle(file, FileDispositionInfo, &disposition, sizeof(disposition)))
+							removed++;
+					}
+				}
+				CloseHandle(file);
+			}
+		}
+		if (!FindNextFileW(find, &data))
+		{
+			FindClose(find);
+			find = INVALID_HANDLE_VALUE;
+		}
+	}
+	free(pattern);
+	free(path);
+	CloseHandle(directory);
+	free(wide);
+	return removed;
 }
