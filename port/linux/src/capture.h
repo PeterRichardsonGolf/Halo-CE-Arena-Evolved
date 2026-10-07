@@ -32,8 +32,17 @@ void capture_audio(const float *samples, unsigned int frames, unsigned int chann
 
 /* the debug screenshots (debug.screenshot_format = "png"): the whole
 picture, 4 bytes a pixel, blue green red and an ignored byte, row 0 the
-top; 1 on success */
-int capture_png_write_bgra(const char *path, const unsigned char *pixels, int width, int height);
+top (malloc'd), to be written as a PNG at path by the screenshot thread,
+never on the caller's: 1 queued (pixels are the thread's to free), 0
+skipped and counted (the queue full), -1 no PNG here (the server's and
+Android's builds); on 0 and -1 the pixels stay the caller's */
+int capture_png_queue_bgra(const char *path, unsigned char *pixels, int width, int height);
+
+/* quitting (atexit, and platform_restart before it replaces the game): a
+recording stopped and saved, the screenshots written, each within a bounded
+wait, after which only the capture's own ffmpeg is killed and unfinished
+files removed */
+void capture_shutdown(void);
 
 /* the notice to draw now ("SCREENSHOT SAVED", "RECORDING NEEDS FFMPEG"),
 for about 1.5 seconds (main.c, main_framerate_render): 0 none, 1 news, 2 a

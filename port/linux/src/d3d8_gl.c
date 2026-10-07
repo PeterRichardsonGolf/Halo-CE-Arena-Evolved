@@ -34,8 +34,8 @@ Conventions carried over from the Xbox:
 #ifdef HALO_GAME_BROWSER
 #include "browser.h"
 #include "ui_overlay.h"
-#include "capture.h"
 #endif
+#include "capture.h"
 
 void d3d8_surface_initialize(D3DSurface *surface, D3DFORMAT format, unsigned long width, unsigned long height);
 void d3d8_surface_resize(D3DSurface *surface, D3DFORMAT format, unsigned long width, unsigned long height);
@@ -4470,9 +4470,12 @@ static void write_screenshot(struct render_target_entry *target)
 	unsigned char header[54] = { 'B', 'M' };
 	unsigned long image_size = width * height * 4;
 
-	if (!directory)
+	/* (16384 each way at most: the size in bytes fits) */
+	if (!directory || !width || !height || width > 16384 || height > 16384)
 		return;
 	pixels = malloc(image_size);
+	if (!pixels)
+		return;
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer_get(target->target.texture, 0));
 	glReadPixels(0, 0, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 	/* the display ignores destination alpha, which the game uses as scratch;
@@ -4487,13 +4490,18 @@ static void write_screenshot(struct render_target_entry *target)
 #endif
 		pixels[row * 4 + 3] = 0xff;
 	}
-	/* debug.screenshot_format: "png" (capture.c's encoder), else BMP */
-	if (!strcmp(config_string("debug.screenshot_format"), "png"))
+	/* debug.screenshot_format: "png", written by capture.c's screenshot
+	thread, never here (a frame it has no room for is skipped and counted);
+	else, or where there is no capture (the server, Android), BMP */
+	if (!strcmp(config_string("debug.screenshot_format"), "png") &&
+		snprintf(path, sizeof(path), "%s/frame%05lu.png", directory, device.frame) < (int)sizeof(path))
 	{
-		snprintf(path, sizeof(path), "%s/frame%05lu.png", directory, device.frame);
-		if (capture_png_write_bgra(path, pixels, (int)width, (int)height))
+		int queued = capture_png_queue_bgra(path, pixels, (int)width, (int)height);
+
+		if (queued >= 0)
 		{
-			free(pixels);
+			if (!queued)
+				free(pixels);
 			return;
 		}
 	}

@@ -7,7 +7,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
-- Screenshots and recordings: F9 saves the whole picture as a PNG in
+- Screenshots and recordings: F9 saves the game's picture as a PNG in
   `screenshots/` beside `config.toml` ("SCREENSHOT SAVED" at the top
   right); F10 starts and stops a recording with the game's sound, an MP4 in
   `recordings/`, made by ffmpeg, which the game does not ship (next to the
@@ -16,7 +16,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   (`capture.record_fps`, 60 or 30) whatever the game's frame rate,
   `capture.record_quality` low / medium / high, and a red dot shows while
   recording (`capture.record_indicator`), never in the video; the game
-  never waits for ffmpeg. For tests: `HALO_RECORD_SECONDS` records that
+  never waits for ffmpeg, and a recording whose ffmpeg fails stops at
+  once (on Windows ffmpeg runs without a window). For tests: `HALO_RECORD_SECONDS` records that
   many seconds from the first frame of play, `HALO_RECORD_DIR` sets the
   folder, and `HALO_SCREENSHOT_FORMAT=png` writes the `HALO_SCREENSHOT_EVERY`
   frames as PNG (BMP stays the default). No settings screen yet.

@@ -188,10 +188,12 @@ you push it again.
 
 ## Screenshots and recordings
 
-F9 saves the whole picture (every split-screen view, the HUD and the menus)
-as a PNG file in `screenshots/` next to `config.toml`, named by the date,
-the time and the map (`2026-10-07_21-05-12_bloodgulch.png`). "SCREENSHOT
-SAVED" shows at the top right for a moment.
+F9 saves the game's picture (every split-screen view, the HUD and the game's
+menus) as a PNG file in `screenshots/` next to `config.toml`, named by the
+date, the time and the map (`2026-10-07_21-05-12_bloodgulch.png`; a second
+one in the same second gets `_2`, and so on to `_99`). "SCREENSHOT SAVED"
+shows at the top right for a moment. The overlay screens that are drawn
+over the window and not by the game (the game list's) are not in it.
 
 F10 starts a recording and F10 again stops it: a video with the game's
 sound, `recordings/<date>_<time>_<map>.mp4` next to `config.toml`
@@ -199,23 +201,34 @@ sound, `recordings/<date>_<time>_<map>.mp4` next to `config.toml`
 recording (`capture.record_indicator`); the dot is never in the video.
 Recordings need [ffmpeg](https://ffmpeg.org), which the game does not ship:
 put `ffmpeg` (`ffmpeg.exe` on Windows) next to the game or on the `PATH`,
-or set `capture.ffmpeg_path`. Without it, F10 shows "RECORDING NEEDS
-FFMPEG" and does nothing else.
+or set `capture.ffmpeg_path` (its path, or a name to look for on the
+`PATH`). Without it, F10 shows "RECORDING NEEDS FFMPEG" and does nothing
+else. On Windows, ffmpeg runs without a window of its own.
 
 - The video has a fixed frame rate (`capture.record_fps`, 60 or 30) and
   plays at the real speed: a frame that the game draws slower than that
   is repeated, and frames that it draws faster are left out.
-- The picture is the game's own resolution (the window's, or 640x480 with
-  `display.resolution_scaling = "original"`). If the window changes size
-  during a recording, the middle of the picture at the first size is kept.
+- The picture is the game's own resolution: the window's, 640x480 with
+  `display.resolution_scaling = "original"`, and larger than the window
+  with supersampling (a 1080p window gives a 4K video, four times the
+  data). The frames on their way to ffmpeg have a memory budget (160 MB,
+  48 MB in the 32-bit builds): a picture too large for it is not recorded
+  ("RECORDING TOO LARGE").
+- The video keeps the size the picture had when the recording started. If
+  the window grows during a recording, the video shows the middle of the
+  picture; if it shrinks, the picture is in the middle of the video, on
+  black.
 - The video is H.264 (`capture.record_quality`: CRF 28, 23 or 18) and the
   sound AAC, from what you hear (after the volumes). The game writes the
   picture and the sound into two files beside the video while it records,
-  and puts them together when the recording stops ("RECORDING SAVED"). A
-  recording that is still being saved when the game closes is finished
-  first.
+  and puts them together when the recording stops ("RECORDING SAVED").
 - The game never waits for ffmpeg: if ffmpeg falls behind, frames are left
-  out (the log counts them), and the video keeps to real time.
+  out (the log counts them), and the video keeps to real time. If ffmpeg
+  fails or stops, the recording stops at once ("RECORDING FAILED"); an
+  ffmpeg that takes no frame for 10 seconds is stopped.
+- When the game closes during a recording, the recording is saved first,
+  for up to 30 seconds; after that the game stops its ffmpeg and removes
+  the unfinished files.
 
 `debug.record_seconds` (`HALO_RECORD_SECONDS`) records that many seconds
 from the first frame of play (a map other than the main menu's), for tests.
@@ -356,8 +369,8 @@ the setting for one start of the game. It has priority over the file.
 | `audio.buffer_frames` | `2048` on macOS, `512` elsewhere | `HALO_AUDIO_BUFFER_FRAMES` | The audio device's buffer, in sample frames at 48 kHz, from `64` to `8192`. Larger rides out stalls that would cut the sound out; smaller has less delay (512 is 11 ms, 2048 is 43 ms). |
 | `audio.reverb` | `true` | `HALO_REVERB` | `true`: the sounds of the world reverberate as the place the player is in does: the sound environments of the maps (a corridor, a cave, a large hall, outdoors) set the reverberation, as the I3DL2 reverb of the Xbox did. A sound behind a wall or a door is muffled in it too. `false`: no reverberation (sounds behind a wall are still muffled). |
 | `audio.resampling` | `"sinc"` | `HALO_AUDIO_RESAMPLING` | How the sounds, most of them recorded at 22 kHz, are brought to the output's 48 kHz. `"sinc"`: a windowed sinc low pass keeps each sound's band (flat to about 9 kHz for a 22 kHz sound) and nothing above it. `"linear"`: linear interpolation, as before OpenCE's build 130: the top of each sound's band is duller (-4 dB at 8 kHz) and images of the band reach up to 22 kHz, a brighter, grainier sound. |
-| `capture.ffmpeg_path` | `""` | `HALO_FFMPEG` | The ffmpeg program for recordings. Empty: `ffmpeg` next to the game, else on the `PATH`. Refer to "Screenshots and recordings". |
-| `capture.record_fps` | `60` | `HALO_RECORD_FPS` | The frames a second of a recording, `60` or `30`. |
+| `capture.ffmpeg_path` | `""` | `HALO_FFMPEG` | The ffmpeg program for recordings: its path, or a name to look for on the `PATH`. Empty: `ffmpeg` next to the game, else on the `PATH`. Refer to "Screenshots and recordings". |
+| `capture.record_fps` | `60` | `HALO_RECORD_FPS` | The frames a second of a recording, `60` or `30` (another value is `60`). |
 | `capture.record_quality` | `"medium"` | `HALO_RECORD_QUALITY` | The quality and size of a recording: `"low"`, `"medium"` or `"high"` (H.264 at CRF 28, 23 or 18). |
 | `capture.record_indicator` | `true` | `HALO_RECORD_INDICATOR` | `true`: a red dot at the top right while recording. It is never in the recording. |
 | `capture.record_directory` | `""` | `HALO_RECORD_DIR` | The folder for recordings. Empty: `recordings/` next to `config.toml`. |

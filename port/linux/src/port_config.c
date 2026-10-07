@@ -16,6 +16,7 @@ edits and comments stay.
 
 #include "platform.h"
 #include "port_config.h"
+#include "capture.h"
 #include "posix.h"
 #include "tomlc17.h"
 
@@ -259,10 +260,12 @@ static const struct config_setting config_settings[] =
 
 	{ "capture.ffmpeg_path", _config_string, "\"\"", "HALO_FFMPEG", _environment_value, _platform_desktop,
 		"The ffmpeg program F10's recordings are made with (it is not shipped\n"
-		"with the game). Empty: ffmpeg beside the game, else on the PATH." },
+		"with the game): its path, or a name looked for on the PATH. Empty:\n"
+		"ffmpeg beside the game, else on the PATH." },
 	{ "capture.record_fps", _config_integer, "60", "HALO_RECORD_FPS", _environment_value, _platform_desktop,
-		"The recordings' frames a second, 60 or 30, whatever the game's frame\n"
-		"rate: frames are repeated or left out to keep to real time." },
+		"The recordings' frames a second, 60 or 30 (anything else is 60),\n"
+		"whatever the game's frame rate: frames are repeated or left out to\n"
+		"keep to real time." },
 	{ "capture.record_quality", _config_string, "\"medium\"", "HALO_RECORD_QUALITY", _environment_value,
 		_platform_desktop,
 		"The recordings' quality and size: \"low\", \"medium\" or \"high\" (H.264\n"
@@ -1839,6 +1842,8 @@ int platform_restart(void)
 	arguments[argument_count] = NULL;
 	if (!argument_count)
 		return 0;
+	/* (a recording saved, the screenshots written: atexit is not run) */
+	capture_shutdown();
 	fflush(NULL);
 	/* (closed only if the new game starts: one that cannot leaves this one
 	as it was) */

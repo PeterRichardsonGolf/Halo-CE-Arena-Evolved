@@ -1500,6 +1500,23 @@ void platform_pump_events(void)
 			exit(EXIT_SUCCESS);
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
+#ifndef HALO_ANDROID
+			/* F9 takes a screenshot and F10 starts or stops a recording
+			(capture.c), always: never held for the game's controls (a
+			binding to them from before is not pressed), never a binding,
+			never the game's keystrokes (its debug keys have F9) */
+			if (event.key.scancode == CAPTURE_SCREENSHOT_KEY || event.key.scancode == CAPTURE_RECORD_KEY)
+			{
+				if (event.key.down && !event.key.repeat)
+				{
+					if (event.key.scancode == CAPTURE_SCREENSHOT_KEY)
+						capture_request_screenshot();
+					else
+						capture_request_recording_toggle();
+				}
+				break;
+			}
+#endif
 			if (event.key.scancode < SDL_SCANCODE_COUNT)
 			{
 				input_state.keys[event.key.scancode] = event.key.down;
@@ -1533,22 +1550,6 @@ void platform_pump_events(void)
 				binding_captured_input = event.key.scancode;
 				break;
 			}
-#ifndef HALO_ANDROID
-			/* F9 takes a screenshot and F10 starts or stops a recording
-			(capture.c), always; the game never sees them (its debug keys
-			have F9) */
-			if (event.key.scancode == CAPTURE_SCREENSHOT_KEY || event.key.scancode == CAPTURE_RECORD_KEY)
-			{
-				if (event.key.down && !event.key.repeat)
-				{
-					if (event.key.scancode == CAPTURE_SCREENSHOT_KEY)
-						capture_request_screenshot();
-					else
-						capture_request_recording_toggle();
-				}
-				break;
-			}
-#endif
 			queue_keystroke(&event.key);
 			if (SDL_GetTicks() < scoreboard_open_until_ms && event.key.down &&
 				(event.key.scancode == SDL_SCANCODE_PAGEUP || event.key.scancode == SDL_SCANCODE_PAGEDOWN))
