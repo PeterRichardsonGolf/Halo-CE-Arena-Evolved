@@ -84,6 +84,11 @@ void cinematic_set_title(
 /* port: whether one of Halo 1: NHE's maps' countdown titles (g_*) shows */
 boolean cinematic_nhe_countdown_title_showing(
 	void);
+/* port: where Halo 1: NHE's maps' own clock (MATCH CLOCK off) shows in an
+area (the screen's coordinates), FALSE where it does not */
+boolean cinematic_nhe_clock_bounds(
+	rectangle2d const *area,
+	rectangle2d *bounds);
 
 extern struct cinematic_global_data *cinematic_globals;
 

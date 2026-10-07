@@ -127,6 +127,24 @@ typedef char verify_hud_global_default_title_bounds_offset[
 
 struct cinematic_global_data *cinematic_globals = NULL;
 
+/* port: where NHE's clock (its titles, shown with MATCH CLOCK off) was last
+drawn: a rectangle round each line of each of its titles as the text's
+layout put it (in split screen a title repeats itself after blank lines,
+for the lower view), the screen's coordinates; and the game time then. The
+HUD's power column stacks itself above it where they would meet
+(hud_item_timers.c, cinematic_nhe_clock_bounds). Kept a second after the
+last title is drawn, so that the column does not jump between them */
+#define CINEMATIC_NHE_CLOCK_MAXIMUM_LINES 16
+static struct
+{
+	short count;
+	rectangle2d lines[CINEMATIC_NHE_CLOCK_MAXIMUM_LINES];
+	long game_time;
+	/* (this frame's, while the titles are drawn) */
+	short drawn_count;
+	rectangle2d drawn_lines[CINEMATIC_NHE_CLOCK_MAXIMUM_LINES];
+} cinematic_nhe_clock = { 0 };
+
 /* ---------- public code */
 
 void cinematic_initialize(
@@ -158,6 +176,8 @@ void cinematic_initialize_for_new_map(
 		cinematic_globals->queued_titles,
 		NONE,
 		sizeof(cinematic_globals->queued_titles));
+	/* port: (no NHE clock seen on this map yet) */
+	csmemset(&cinematic_nhe_clock, 0, sizeof(cinematic_nhe_clock));
 
 	return;
 }
@@ -264,7 +284,16 @@ void cinematic_stop(
 
 /* port: whether a title is one of Halo 1: NHE's maps' clock (their scripts
 set it each second from ui\hud\hudtimer: s_* its seconds, t_* its tens,
-m_* its minutes; not g_*, its countdown), which with MATCH CLOCK on is not
+m_* its minutes; not g_*, its countdown) */
+static boolean cinematic_title_is_nhe_clock(
+	struct scenario_cutscene_title const *title)
+{
+	return hs_scenario_is_nhe() &&
+		(title->name[0] == 's' || title->name[0] == 't' || title->name[0] == 'm') &&
+		title->name[1] == '_';
+}
+
+/* port: whether a title is NHE's clock, which with MATCH CLOCK on is not
 shown: the HUD has the engine's own (hud_item_timers.c). Its Cortana sounds
 are the scripts' own and stay */
 static boolean cinematic_title_is_hidden_nhe_clock(
@@ -283,8 +312,103 @@ static boolean cinematic_title_is_hidden_nhe_clock(
 		title_index,
 		struct scenario_cutscene_title);
 
-	return (title->name[0] == 's' || title->name[0] == 't' || title->name[0] == 'm') &&
-		title->name[1] == '_';
+	return cinematic_title_is_nhe_clock(title);
+}
+
+/* the lines of an NHE clock title's text just drawn in bounds (with the
+draw mode it was drawn in), noted as cinematic_nhe_clock's */
+static void cinematic_nhe_clock_note(
+	rectangle2d const *bounds,
+	wchar_t const *text)
+{
+	wchar_t prefix[128];
+	short index;
+	short line_start = 0;
+
+	for (index = 0; index < (short)NUMBEROF(prefix) - 1; index++)
+	{
+		wchar_t character = text[index];
+
+		if (character == L'\n' || !character)
+		{
+			short at;
+			short end = index;
+			boolean printed = FALSE;
+
+			/* (a "\r\n" line's text ends before its "\r", which the layout
+			takes as a break of its own) */
+			while (end > line_start && text[end - 1] == L'\r')
+				end--;
+			for (at = line_start; at < end; at++)
+				printed |= text[at] != L' ' && text[at] != L'\t';
+			if (printed && cinematic_nhe_clock.drawn_count < CINEMATIC_NHE_CLOCK_MAXIMUM_LINES)
+			{
+				wchar_t line[128];
+				rectangle2d text_bounds;
+				rectangle2d cursor_bounds;
+				rectangle2d *noted = &cinematic_nhe_clock.drawn_lines[cinematic_nhe_clock.drawn_count];
+
+				/* (its height: where the text up to its end leaves the
+				cursor's line; its sides: the line alone, justified in the
+				same bounds) */
+				csmemcpy(prefix, text, end * sizeof(wchar_t));
+				prefix[end] = 0;
+				draw_unicode_string_compute_bounds(bounds, prefix, &text_bounds, &cursor_bounds);
+				noted->y0 = (short)(cursor_bounds.y0 + render.camera.viewport_bounds.y0);
+				noted->y1 = (short)(cursor_bounds.y1 + render.camera.viewport_bounds.y0);
+				csmemcpy(line, text + line_start, (end - line_start) * sizeof(wchar_t));
+				line[end - line_start] = 0;
+				draw_unicode_string_compute_bounds(bounds, line, &text_bounds, &cursor_bounds);
+				if (text_bounds.x1 > text_bounds.x0)
+				{
+					noted->x0 = (short)(text_bounds.x0 + render.camera.viewport_bounds.x0);
+					noted->x1 = (short)(text_bounds.x1 + render.camera.viewport_bounds.x0);
+					cinematic_nhe_clock.drawn_count++;
+				}
+			}
+			line_start = (short)(index + 1);
+		}
+		if (!character)
+			break;
+	}
+}
+
+/* port: where NHE's clock shows in an area (a view: the screen's
+coordinates), the union of its lines there; FALSE where it does not */
+boolean cinematic_nhe_clock_bounds(
+	rectangle2d const *area,
+	rectangle2d *bounds)
+{
+	short index;
+	boolean found = FALSE;
+
+	if (!game_engine_running() || !hs_scenario_is_nhe() || !cinematic_nhe_clock.count ||
+		game_time_get() < cinematic_nhe_clock.game_time ||
+		game_time_get() - cinematic_nhe_clock.game_time > TICKS_PER_SECOND)
+	{
+		return FALSE;
+	}
+	for (index = 0; index < cinematic_nhe_clock.count; index++)
+	{
+		rectangle2d const *line = &cinematic_nhe_clock.lines[index];
+
+		if (line->x0 >= area->x1 || line->x1 <= area->x0 || line->y0 >= area->y1 || line->y1 <= area->y0)
+			continue;
+		if (!found)
+		{
+			*bounds = *line;
+			found = TRUE;
+		}
+		else
+		{
+			bounds->x0 = MIN(bounds->x0, line->x0);
+			bounds->y0 = MIN(bounds->y0, line->y0);
+			bounds->x1 = MAX(bounds->x1, line->x1);
+			bounds->y1 = MAX(bounds->y1, line->y1);
+		}
+	}
+
+	return found;
 }
 
 /* port: whether one of Halo 1: NHE's maps' countdown titles (g_*: their
@@ -416,6 +540,8 @@ void cinematic_render(
 	{
 		short title_slot_index;
 
+		/* port: (NHE's clock's lines drawn this frame) */
+		cinematic_nhe_clock.drawn_count = 0;
 		for (title_slot_index = 0;
 			title_slot_index < MAXIMUM_QUEUED_CINEMATIC_TITLES;
 			title_slot_index++)
@@ -622,6 +748,9 @@ void cinematic_render(
 						NULL,
 						0,
 						text);
+					/* port: where NHE's clock is (cinematic_nhe_clock) */
+					if (text && fade_amount > 0.0f && cinematic_title_is_nhe_clock(title))
+						cinematic_nhe_clock_note(title_bounds, text);
 				}
 
 				rasterizer_text_set_shadow_color(0);
@@ -638,6 +767,15 @@ void cinematic_render(
 				active_title->title_index = NONE;
 				active_title->time = NONE;
 			}
+		}
+		/* port: (kept where none was drawn this frame: a second, from the
+		last drawn, cinematic_nhe_clock_bounds) */
+		if (cinematic_nhe_clock.drawn_count)
+		{
+			cinematic_nhe_clock.count = cinematic_nhe_clock.drawn_count;
+			csmemcpy(cinematic_nhe_clock.lines, cinematic_nhe_clock.drawn_lines,
+				cinematic_nhe_clock.count * sizeof(rectangle2d));
+			cinematic_nhe_clock.game_time = game_time_get();
 		}
 	}
 
