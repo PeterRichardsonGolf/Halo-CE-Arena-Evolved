@@ -497,22 +497,13 @@ static boolean cache_file_structure_bsp_reference_verify(
 	struct scenario_structure_bsp_reference *reference)
 {
 	byte *tag_cache_base_address = physical_memory_get_tag_cache_base_address();
-	long tag_cache_size = TAG_CACHE_SIZE;
 	long tag_data_size = cache_file_globals.header.tag_data_size;
 	long absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(reference->structure_bsp.index);
 	long read_size;
 
-#ifdef HALO_CUSTOM_EDITION
-	/* (a Custom Edition map's bsps are in its own tag cache, after its tags) */
-	if (cache_file_is_ce)
-	{
-		tag_cache_base_address = xbox_pointer(CE_TAG_CACHE_BASE);
-		tag_cache_size = CE_TAG_CACHE_SIZE;
-	}
-#endif
 	if (reference->file_offset < 0 ||
 		reference->file_size < (long)sizeof(struct cache_file_structure_bsp_header) ||
-		reference->file_size > tag_cache_size ||
+		reference->file_size > TAG_CACHE_SIZE ||
 		reference->file_offset > cache_file_globals.header.file_length - reference->file_size)
 	{
 		error(
@@ -525,16 +516,10 @@ static boolean cache_file_structure_bsp_reference_verify(
 		return FALSE;
 	}
 
-	/* (what cache_file_read reads: whole sectors, but a Custom Edition map
-	to the byte, cache_files_windows.c) */
 	read_size = (reference->file_size + CACHE_FILE_SECTOR_SIZE - 1) & ~(CACHE_FILE_SECTOR_SIZE - 1);
-#ifdef HALO_CUSTOM_EDITION
-	if (cache_file_is_ce)
-		read_size = reference->file_size;
-#endif
 	if (!cache_file_region_contains(
 		tag_cache_base_address + tag_data_size,
-		tag_cache_size - tag_data_size,
+		TAG_CACHE_SIZE - tag_data_size,
 		xbox_pointer(reference->base_address),
 		read_size,
 		1))
@@ -1461,13 +1446,15 @@ boolean scenario_structure_bsp_load(
 	/* port: the tag data's size was checked as the map loaded
 	(cache_file_header_verify); the bsp's reference is the map's, and is
 	checked before anything is read where it says */
-	if (cache_file_globals.header.tag_data_size < 0 ||
+	if (
 #ifdef HALO_CUSTOM_EDITION
-		cache_file_globals.header.tag_data_size > (cache_file_is_ce ? (long)CE_TAG_CACHE_SIZE : TAG_CACHE_SIZE) ||
-#else
-		cache_file_globals.header.tag_data_size > TAG_CACHE_SIZE ||
+		/* (a Custom Edition map's bsps are in its own tag cache, checked
+		against its file before it was opened: ce_map_checks.c) */
+		!cache_file_is_ce &&
 #endif
-		!cache_file_structure_bsp_reference_verify(reference))
+		(cache_file_globals.header.tag_data_size < 0 ||
+		cache_file_globals.header.tag_data_size > TAG_CACHE_SIZE ||
+		!cache_file_structure_bsp_reference_verify(reference)))
 	{
 		return FALSE;
 	}
@@ -1502,14 +1489,11 @@ boolean scenario_structure_bsp_load(
 		}
 
 		/* port: a bsp that did not all read, or whose header's pointers
-		leave what was read, is not loaded (a Custom Edition map's header
-		is Halo PC's, checked before the map was opened: ce_map_checks.c) */
+		leave what was read, is not loaded */
 		structure_bsp_header = xbox_pointer(reference->base_address);
 		if (read_complete != TRUE ||
 #ifdef HALO_CUSTOM_EDITION
 			(!cache_file_is_ce && (
-#else
-			((
 #endif
 			structure_bsp_header->signature != CACHE_FILE_STRUCTURE_BSP_HEADER_SIGNATURE ||
 			!cache_file_region_contains(
@@ -1529,7 +1513,11 @@ boolean scenario_structure_bsp_load(
 				reference->file_size,
 				xbox_pointer(structure_bsp_header->index_buffers),
 				structure_bsp_header->index_buffer_count,
-				CACHE_FILE_BUFFER_SIZE))))
+				CACHE_FILE_BUFFER_SIZE)
+#ifdef HALO_CUSTOM_EDITION
+			))
+#endif
+			)
 		{
 			error(
 				_error_silent,
