@@ -13388,7 +13388,13 @@ static short hs_syntax_node_refusal(
 			value as that type) */
 			if (function->parse == hs_macro_function_parse &&
 				argument_count<function->parameter_count &&
+#ifdef HALO_64BIT
+				/* (a 64-bit build's parameters are past the definition's
+				pointers: hs.h) */
+				argument->type != HS_FUNCTION_PARAMETER_TYPE(function, argument_count))
+#else
 				argument->type != function->parameter_types[argument_count])
+#endif
 			{
 				return _hs_node_refusal_damaged;
 			}

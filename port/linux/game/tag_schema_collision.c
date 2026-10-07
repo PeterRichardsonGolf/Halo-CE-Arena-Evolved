@@ -1252,7 +1252,7 @@ static boolean structure_collision_bsp_check(
 static struct collision_bsp *structure_collision_bsp_get(
 	struct structure_bsp *structure_bsp)
 {
-	return structure_bsp->collision_bsp.count ? structure_bsp->collision_bsp.address : NULL;
+	return structure_bsp->collision_bsp.count ? xbox_pointer(structure_bsp->collision_bsp.address) : NULL;
 }
 
 /* a material's vertex buffer: its hardware buffer one of the bsp header's
