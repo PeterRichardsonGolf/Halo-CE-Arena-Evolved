@@ -71,8 +71,34 @@ void p2p_sign(const void *message, int size, unsigned char *signature)
 {
 	p2p_ed25519_sign(seed, signing_key, message, size, signature);
 }
-void p2p_new_invite_if_listed(void) {}
-void p2p_new_invite(void) {}
+/* (AE: the invites, by generation: p2p_new_invite makes the one a first
+password makes, p2p_new_invite_if_listed (here always) the one a password
+taken off makes; p2p_hosting_invite_locked gives the current one, and counts
+the reads made without p2p_lock held) */
+enum { INVITE_GENERATIONS = 4096 };
+static int invite_generation;
+static unsigned char invite_is_passwords[INVITE_GENERATIONS];
+static int invite_unlocked_reads;
+void p2p_new_invite_if_listed(void)
+{
+	invite_generation++;
+	invite_is_passwords[invite_generation % INVITE_GENERATIONS] = 0;
+}
+void p2p_new_invite(void)
+{
+	invite_generation++;
+	invite_is_passwords[invite_generation % INVITE_GENERATIONS] = 1;
+}
+int p2p_hosting_invite_locked(char *text, int size)
+{
+	if (pthread_mutex_trylock(&p2p_lock) == 0)
+	{
+		invite_unlocked_reads++;
+		pthread_mutex_unlock(&p2p_lock);
+	}
+	snprintf(text, (size_t)size, "%d", invite_generation);
+	return 1;
+}
 void p2p_signal_lobby_topics(int listed, int browsing) { (void)listed; (void)browsing; }
 void p2p_signal_lobby_query(void) {}
 void p2p_signal_lobby_publish(const unsigned char *listing, int size, int closing)
@@ -341,10 +367,69 @@ static void lobby_checks(void)
 		"a game without a password is listed as the announced version");
 }
 
+/* (AE) browser.c publishes the hosted invite only through
+p2p_hosting_open_invite: never a game with a password's, even with the
+password set by another thread between any two of its reads */
+static volatile int toggler_done;
+
+static void *password_toggler(void *unused)
+{
+	int index;
+
+	(void)unused;
+	for (index = 0; index < 400; index++)
+		p2p_set_hosting_password(index & 1 ? NULL : "hunter2");
+	__atomic_store_n(&toggler_done, 1, __ATOMIC_SEQ_CST);
+	return NULL;
+}
+
+static void open_invite_checks(void)
+{
+	char text[64];
+	pthread_t thread;
+	int reads = 0, leaks = 0, opens = 0;
+
+	p2p_set_hosting_password(NULL);
+	check(p2p_hosting_open_invite(text, sizeof(text)) && text[0], "an open game's invite is given");
+	p2p_set_hosting_password("hunter2");
+	check(!p2p_hosting_open_invite(text, sizeof(text)) && !text[0], "a password game's invite is not given");
+	p2p_set_hosting_password(NULL);
+	check(p2p_hosting_open_invite(text, sizeof(text)), "the invite is given again once the password is off");
+	/* (the password set and taken off meanwhile, 400 times) */
+	if (pthread_create(&thread, NULL, password_toggler, NULL) == 0)
+	{
+		void *result;
+		int done = 0;
+
+		while (!done)
+		{
+			done = __atomic_load_n(&toggler_done, __ATOMIC_SEQ_CST);
+			reads++;
+			if (p2p_hosting_open_invite(text, sizeof(text)))
+			{
+				int generation = atoi(text);
+
+				opens++;
+				pthread_mutex_lock(&p2p_lock);
+				leaks += invite_is_passwords[generation % INVITE_GENERATIONS];
+				pthread_mutex_unlock(&p2p_lock);
+			}
+			if (reads > 50000000)
+				break;
+		}
+		pthread_join(thread, &result);
+	}
+	check(leaks == 0, "no password game's invite is given while its password is set by another thread");
+	check(opens > 0, "open invites are given meanwhile");
+	check(invite_unlocked_reads == 0, "the invite is read under p2p_lock, with the password");
+	p2p_set_hosting_password(NULL);
+}
+
 int main(void)
 {
 	crypto_checks();
 	lobby_checks();
+	open_invite_checks();
 	printf("%s (%d failures)\n", failures ? "FAIL" : "PASS", failures);
 	return failures != 0;
 }

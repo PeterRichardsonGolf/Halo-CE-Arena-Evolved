@@ -2409,10 +2409,18 @@ int p2p_hosting_invite(char *text, int size)
 	int result;
 
 	pthread_mutex_lock(&p2p_lock);
-	result = p2p.running && p2p.hosting && p2p.has_token;
+	result = p2p_hosting_invite_locked(text, size);
+	pthread_mutex_unlock(&p2p_lock);
+	return result;
+}
+
+/* (p2p_internal.h) */
+int p2p_hosting_invite_locked(char *text, int size)
+{
+	int result = p2p.running && p2p.hosting && p2p.has_token;
+
 	if (result)
 		snprintf(text, (size_t)size, "%s", p2p.invite + strlen("halo://join/"));
-	pthread_mutex_unlock(&p2p_lock);
 	return result;
 }
 

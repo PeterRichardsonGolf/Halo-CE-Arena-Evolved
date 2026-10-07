@@ -112,9 +112,11 @@ join from the server browser (its invite link still joins it). Setting or
 changing it makes a new invite, if the old one was listed. It takes a few
 milliseconds (the password's key) */
 void p2p_set_hosting_password(const char *password);
-/* (AE) whether the game hosted has a password (p2p_set_hosting_password):
-browser.c then lists it on no game list, whose invites are plain */
-int p2p_hosting_has_password(void);
+/* (AE) the hosted game's invite (as p2p_hosting_invite) only if it has no
+password, read with the password in one critical section: what browser.c
+publishes (a game with a password's invite goes nowhere). FALSE, and text
+empty, for a game with a password or none hosted */
+int p2p_hosting_open_invite(char *text, int size);
 /* (AE) whether a password opened this invite code (p2p_listing_unlock; the
 code as p2p_joined_invite gives it): browser.c sends it nowhere */
 int p2p_invite_code_was_locked(const char *code);

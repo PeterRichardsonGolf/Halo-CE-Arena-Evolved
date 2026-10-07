@@ -803,8 +803,8 @@ static void update_hosting(void)
 
 	/* (AE: never a game with a password: the list shows its invite, which
 	joins it without the password) */
-	hosting = reported && config_boolean("network.list_hosted_games") && !p2p_hosting_has_password() &&
-		p2p_hosting_invite(invite, sizeof(invite));
+	hosting = reported && config_boolean("network.list_hosted_games") &&
+		p2p_hosting_open_invite(invite, sizeof(invite));
 	if (!hosting)
 	{
 		withdraw();
@@ -1262,7 +1262,7 @@ void browser_report_game(int teams, int red_score, int blue_score, int duration_
 	char invite[BROWSER_INVITE_LENGTH + 1];
 	/* (AE: a game with a password's invite goes nowhere) */
 	char *report = report_json(teams, red_score, blue_score, duration_seconds, players, count, extra,
-		!p2p_hosting_has_password() && p2p_hosting_invite(invite, sizeof(invite)) ? invite : NULL);
+		p2p_hosting_open_invite(invite, sizeof(invite)) ? invite : NULL);
 
 	if (!report)
 		return;
@@ -1312,13 +1312,22 @@ void browser_claim_game(const unsigned short (*names)[12], int count)
 {
 	char invite[BROWSER_INVITE_LENGTH + 1];
 
-	if (count <= 0 || !config_string("network.browser_url")[0] ||
-		(!p2p_hosting_invite(invite, sizeof(invite)) && !p2p_joined_invite(invite, sizeof(invite))))
+	if (count <= 0 || !config_string("network.browser_url")[0])
 		return;
-	/* (AE: no claim of a game with a password, hosted or joined through it:
-	its invite goes nowhere) */
-	if (p2p_hosting_has_password() || p2p_invite_code_was_locked(invite))
-		return;
+	/* (AE: no claim of a game with a password, hosted (its invite read with
+	the password at once: p2p_hosting_open_invite) or joined through it: its
+	invite goes nowhere) */
+	if (!p2p_hosting_open_invite(invite, sizeof(invite)))
+	{
+		/* (hosting, with a password: nothing) */
+		if (p2p_hosting_invite(invite, sizeof(invite)))
+		{
+			memset(invite, 0, sizeof(invite));
+			return;
+		}
+		if (!p2p_joined_invite(invite, sizeof(invite)) || p2p_invite_code_was_locked(invite))
+			return;
+	}
 	if (count > MAXIMUM_CLAIM_NAMES)
 		count = MAXIMUM_CLAIM_NAMES;
 	pthread_once(&browser_once, start_thread);

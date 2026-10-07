@@ -773,14 +773,18 @@ void p2p_set_hosting_password(const char *password)
 	memset(key, 0, sizeof(key));
 }
 
-int p2p_hosting_has_password(void)
+int p2p_hosting_open_invite(char *text, int size)
 {
-	int has_password;
+	int result;
 
+	/* (one critical section: a password set meanwhile, which makes a new
+	invite under the same lock, is seen with that invite or not at all) */
 	pthread_mutex_lock(&p2p_lock);
-	has_password = lobby.has_password;
+	result = !lobby.has_password && p2p_hosting_invite_locked(text, size);
 	pthread_mutex_unlock(&p2p_lock);
-	return has_password;
+	if (!result && size > 0)
+		text[0] = 0;
+	return result;
 }
 
 void p2p_set_game_listing(const char *name, const char *map, const char *gametype, int engine_type, int open,
