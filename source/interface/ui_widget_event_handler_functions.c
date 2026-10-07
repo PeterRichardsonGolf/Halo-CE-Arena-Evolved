@@ -928,6 +928,7 @@ symbols in this file:
 #include "saved games/player_profile.h"
 #include "interface/ui_widget_definitions.h"
 #include "interface/ui_widget_instance.h"
+#include "custom_edition_maps.h" /* port: port/linux/game/custom_edition_maps.c */
 #include "saved games/saved_game_files.h"
 #ifdef HALO_64BIT
 /* port: (saved games/playlist_profile.h's, whose other prototypes this unit
@@ -6213,7 +6214,9 @@ boolean ui_widget_port_cooperative_level_choose(
 	struct network_game_server *server = global_network_game_server_get();
 	struct game_variant variant;
 
-	if (!server || !map_name || main_get_solo_level_from_name(map_name) == NONE)
+	/* (a campaign level, or a Custom Edition campaign map's:
+	port/linux/game/custom_edition_maps.c) */
+	if (!server || !map_name || !custom_edition_maps_level_campaign(map_name))
 		return FALSE;
 	csmemset(&variant, 0, sizeof(variant));
 	ustrncpy(variant.human_readable_game_description, L"Co-op",

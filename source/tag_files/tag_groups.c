@@ -18,6 +18,7 @@ void *ce_tags_pointer(unsigned long address, long size);
 boolean cache_file_tags_are_ce(void);
 boolean tag_index_is_group(long tag_index, long group_tag);
 #endif
+#include "custom_edition_cache.h" /* port: port/linux/game/custom_edition_cache.c */
 
 /* ---------- constants */
 
@@ -121,6 +122,8 @@ char const *tag_empty_string(
 
 	return "";
 }
+/* port: (cache_files.c) */
+boolean tag_index_is_group(long tag_index, long group_tag);
 
 long verify_tag_reference(
 	const struct tag_reference *reference)
@@ -163,8 +166,15 @@ void* tag_data_get_pointer(
 	long offset, 
 	long size) 
 {
-	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3073, size>=0);
-	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3074, offset>=0 && offset+size<=data->size);
+	/* port: Halo PC reads a Custom Edition map's tags unchecked, and maps
+	made for it can hold an offset past a tag data's end, which never
+	stopped a game there: it gets the empty data below without an
+	assertion. This build's maps keep theirs */
+	if (!custom_edition_cache_tags_loaded())
+	{
+		match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3073, size>=0);
+		match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3074, offset>=0 && offset+size<=data->size);
+	}
 	/* port: bytes past the data are the empty data's (tag_empty_data), as
 	far as they go */
 	if (size < 0 || offset < 0 || offset > data->size || size > data->size - offset || (size && !data->address))

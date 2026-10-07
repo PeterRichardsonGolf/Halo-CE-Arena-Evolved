@@ -241,6 +241,16 @@ static void level_description(struct widget_instance *description,char const *pr
 static int refreshes;
 void ui_widget_port_multiplayer_maps_refresh(void) {refreshes++;}
 enum {_map_family_xbox,_map_family_custom_edition,_map_family_halomd};
+/* (OpenCE build-145's own Custom Edition maps' lists, custom_edition_maps.c,
+which Arena Evolved does not build: ae_opence_custom_edition_off.c, none) */
+static boolean custom_edition_level_name(char const *name) {return 0;}
+static short custom_edition_maps_display_index(char const *name) {return -1;}
+static void custom_edition_maps_look_again(void) {}
+static wchar_t *custom_edition_maps_name(short display_index) {return NULL;}
+static short custom_edition_maps_count(boolean campaign) {return 0;}
+static short custom_edition_maps_display_index_of(boolean campaign, short index) {return -1;}
+static void custom_campaign_map_text(short map, wchar_t *text) {text[0] = 0;}
+static void custom_multiplayer_map_text(short map, wchar_t *text) {text[0] = 0;}
 /* (server_browser.c: a Custom Edition or HaloMD map's name; none here) */
 static short server_browser_map_family(char const *map,wchar_t *text,short length) {return _map_family_xbox;}
 /* (ui_map_list.c: an Xbox map's frame by its name in the loaded ui.map; here
@@ -415,6 +425,8 @@ static int CompareFileTime(const long *a,const long *b) {return *a>*b?1:*a<*b?-1
 enum {_error_silent};
 static int damaged;
 static void error(int level,const char *format,...) {damaged++;}
+/* (OpenCE build-145's Custom Edition loader, not built: ae_opence_custom_edition_off.c) */
+static boolean custom_edition_cache_refuse(void const *header,char const *build,char const *path) {return 0;}
 '''
 
 CACHE_MAIN = r'''
@@ -473,6 +485,9 @@ def fixture_sources():
     # (the map lists' kinds, the Map screen's steps and its state, as declared)
     functions.append(menu[menu.index("enum\n{\n\tMAP_KIND_SINGLEPLAYER,"):menu.index("static void visible_set(struct widget_instance *widget, boolean visible);")])
     functions.append(menu[menu.index("enum\n{\n\tMAP_STEP_MAPS,"):menu.index("} map_list;") + len("} map_list;\n")])
+    # (the map kinds' helpers, OpenCE build-145's)
+    for name in ("map_kind_singleplayer", "xbox_multiplayer_map_count", "map_kind_count", "map_kind_display_index"):
+        functions.append(function(menu, name))
     for name in ("descendant", "named", "text_set_length", "text_set", "string_get", "focused_row", "focus_row",
                  "visible_set", "map_kind_shown", "map_kind_set", "map_kind_first", "map_kind_focus",
                  "map_kind_rows_update", "map_name_text", "map_row_string", "map_caption_set", "multiplayer_map_text",

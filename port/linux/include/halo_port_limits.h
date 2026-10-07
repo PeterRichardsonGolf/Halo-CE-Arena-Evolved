@@ -68,7 +68,7 @@ which hosts built before there was a version send as zeros: version 0.
 Raise it with any change to what the machines send each other. */
 #define HALO_PORT_NETWORK_VERSION 20
 /* (port: Arena Evolved announces 20, ChupathingyCE 0.7.0b's, below its
-newest, 21, OpenCE build-141's, which is additive: delta.h's table) */
+newest, 22, OpenCE build-145's: 21 and 22 are additive, delta.h's table) */
 /* ... the versions whose hosts a client joins: its own, and those that differ
 from it only in what the other machines leave out (a message a machine of
 the other version does not know it drops). Which are which is delta.h's
@@ -78,7 +78,7 @@ them; they stay numbers here, which the command repository reads). A host
 never checks a client's version: the client does (network_client_manager.c),
 so the range is the client's. */
 #define HALO_PORT_NETWORK_VERSION_MINIMUM 11
-#define HALO_PORT_NETWORK_VERSION_MAXIMUM 21
+#define HALO_PORT_NETWORK_VERSION_MAXIMUM 22
 /* ... the numbers in use (port/linux/src/delta.c): the three above, until a
 legacy table (docs/delta.md) widens them; code asks these, not the numbers */
 int delta_legacy_announce(void);

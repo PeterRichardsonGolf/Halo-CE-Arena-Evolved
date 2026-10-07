@@ -175,7 +175,7 @@ BOOL platform_sdl_initialize(void)
 	if (p2p_hand_off_invite())
 		exit(EXIT_SUCCESS);
 	/* "Halo CE: Arena Evolved 0.1.0-beta (ChupathingyCE 0.7.0b, OpenCE
-	build-144)": this build, and what it is built on */
+	build-145)": this build, and what it is built on */
 	platform_log("%s %s (%s)", HALO_PRODUCT_NAME, updater_version(), HALO_UPSTREAM_BASE);
 	SDL_SetHint(SDL_HINT_APP_NAME, HALO_PRODUCT_NAME);
 #ifdef __APPLE__

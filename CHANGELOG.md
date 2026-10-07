@@ -99,6 +99,25 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   player's pause, not every player's.
 - The network test's quick launch gives each local player the last-used
   profile, so their controller layouts apply.
+- Merged OpenCE build-145 and the commit after it: the desktop builds'
+  memory window is 512 MB with a 256 MB texture cache (was 128 MB), for the
+  biggest community maps' textures; map loading hardened against hostile
+  maps (resampling overflow, script constants' types, a map's script
+  source never compiled again: a map whose scripts do not load plays
+  without them, every map's model index buffers and lightmaps checked);
+  a client joining a game on a map it lacks is told which and where to copy
+  it (the error text wraps to its dialog). OpenCE's own Halo Custom Edition
+  maps' loader and lists (custom_maps\<name>, CUSTOM SINGLEPLAYER and
+  CUSTOM MULTIPLAYER) are not built into Arena Evolved: its Custom Edition
+  and HaloMD maps stay ChupathingyCE's, as <file>@ce and <file>@md from
+  maps/ce and md_maps, with the multiplayer maps as [CE] and [MD]; the Map
+  screen's chooser offers SINGLEPLAYER and MULTIPLAYER. `map_validate` also
+  checks Custom Edition maps the way OpenCE's loader reads them (a tool
+  only: the game does not use that loader). Network: OpenCE build-145's
+  version 22 changes no message, only the name its hosts give their Custom
+  Edition maps; Arena Evolved still announces 20 and now joins hosts of 11
+  to 22, OpenCE build-145's on the game's own maps (on one of its Custom
+  Edition maps the player is told what it is and the game is left).
 - Merged OpenCE build-140..144: network co-op's campaign has the
   scoreboard (names and pings), a respawn starts behind its teammate, a
   gate one player passes (a script waiting on a trigger volume) brings the

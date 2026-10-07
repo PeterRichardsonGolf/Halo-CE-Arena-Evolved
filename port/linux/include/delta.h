@@ -154,9 +154,9 @@ after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one.
 (Arena Evolved: its own, "ae-20a", so that ChupathingyCE's signed tables,
 whose rows are for ChupathingyCE's wires, never set Arena Evolved's numbers
-or turn off its capabilities: it plays its built-in 20 / 11..21. The wire
+or turn off its capabilities: it plays its built-in 20 / 11..22. The wire
 ID is never sent; the game protocol is chupa-20a's, with OpenCE build-141's
-additive version 21 joined too: its hosts announce 20, not the table's
+and build-145's additive versions 21 and 22 joined too: its hosts announce 20, not the table's
 newest, so that ChupathingyCE 0.7.0b, of 20, joins them) */
 #define DELTA_WIRE "ae-20a"
 
@@ -184,7 +184,8 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(18, "build-129", additive) /* followed from OpenCE: additive */ \
 	X(19, "build-132", additive) /* co-op's player collisions switch, in a padding byte of the game settings */ \
 	X(20, "build-133", additive) /* password games' internet listings (another listing layout); game messages as 19 */ \
-	X(21, "build-141", additive) /* killing blows again reliably, objects at rest three times, co-op's BSP on the host's crossing: what a machine of 20 receives it already takes, a host of 20 a client of 21 plays (NETCODE.md) */
+	X(21, "build-141", additive) /* killing blows again reliably, objects at rest three times, co-op's BSP on the host's crossing: what a machine of 20 receives it already takes, a host of 20 a client of 21 plays (NETCODE.md) */ \
+	X(22, "build-145", additive) /* a host names its Custom Edition maps custom_maps\<name> (OpenCE's loader): a client without it is told it lacks the map; game messages as 21 */
 
 
 /* ---------- the legacy table (port/linux/src/delta.c)

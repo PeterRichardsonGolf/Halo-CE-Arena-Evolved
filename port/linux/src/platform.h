@@ -99,6 +99,9 @@ host path below the data root. Components are matched case-insensitively
 against what exists on disk, as the Xbox file system is case-insensitive. */
 void platform_translate_path(const char *xbox_path, char *host_path, unsigned long host_path_size);
 const char *platform_data_root(void);
+/* the Halo Custom Edition install the Xbox drive h:\ is (paths.custom_edition),
+or "" when none is set or it has no maps folder */
+const char *platform_custom_edition_root(void);
 /* on the desktop, when the data root has no maps folder: offers to copy it
 out of an Xbox disc image into destination (sdl_platform.c), and quits if
 the player declines; nonzero once destination has one */
@@ -204,6 +207,15 @@ void *xbox_heap_allocate(size_t size, BOOL zero);
 void xbox_heap_free(void *pointer);
 size_t xbox_heap_capacity(void *pointer);
 BOOL xbox_heap_contains(const void *pointer);
+
+/* The window Halo Custom Edition tag data are linked to (0x40440000):
+reserved at start-up when the game.custom_edition setting is on, else NULL
+(also declared for the game in halo_linux_source_fixups.h). */
+void *halo_custom_edition_tag_cache(void);
+/* which textures hold their channels where Halo PC keeps them
+(xbox_textures.c; also declared for the game there) */
+void halo_custom_edition_texels_channels(const void *texels, unsigned char channel_order);
+void halo_custom_edition_texels_forget(void);
 
 /* ---------- guest memory write tracking (memory_watch.c)
 

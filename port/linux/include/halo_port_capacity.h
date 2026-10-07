@@ -48,30 +48,32 @@ debug.txt) and the surfaces drawn with them show whatever is at their
 pixels' addresses. The Xbox's maps fit the Xbox's 22 MB. Halo PC's maps
 keep their bump maps in 32 bits a pixel, not the Xbox's 8-bit palettized
 ones, and community maps draw many large ones at once: Portent's busiest
-frames draw 23 MB, Foundation's 66 MB.
+frames draw 23 MB, Foundation's 66 MB, a frame of bigass_v3 more than 64 MB
+(DamnationCE's measurement).
 
 The desktop builds (Linux, macOS and Windows, 32-bit and 64-bit) are not
-held to the Xbox's memory: their window is 512 MB (port/linux/src/platform.h) and
-their cache 128 MB, about twice Foundation's busiest frame; with it the
-window still has about 300 MB free. Nothing of the cache's size reaches
-the network or the game state.
+held to the Xbox's memory: their window is 512 MB (port/linux/src/platform.h),
+whose pages are backed as they are used, and their cache 256 MB, half of it
+(OpenCE build-145's size; ChupathingyCE's was 128 MB). Nothing of the
+cache's size reaches the network or the game state.
 
 Android's window stays the development kit's 128 MB (its guest image is
 linked just above it), 82 MB of it above the game state. Besides the
 texture cache, Portent and Foundation take about 23 MB of that in a game
 (the sound cache and Direct3D's resources), so Android's cache is twice
-the Xbox's, 44 MB, and leaves about 15 MB free: Portent's busiest frames
-fit, Foundation's (66 MB) do not, and some of its surfaces can show the
-wrong pixels there. The Xbox builds (HALO_XBOX_CONSOLE) keep the Xbox's
-cache. */
+the Xbox's, 44 MB (ChupathingyCE's; OpenCE's Android keeps the Xbox's), and
+leaves about 15 MB free: Portent's busiest frames fit, Foundation's (66 MB)
+do not, and some of its surfaces can show the wrong pixels there. The Xbox
+builds (HALO_XBOX_CONSOLE) keep the Xbox's cache. */
 
 #if defined(HALO_ANDROID)
-#define HALO_PORT_TEXTURE_CACHE_SIZE 0x2C00000 /* (0x1600000) */
+#define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0xB00 /* (0x580) */
 #elif !defined(HALO_XBOX_CONSOLE)
-#define HALO_PORT_TEXTURE_CACHE_SIZE 0x8000000 /* (0x1600000) */
+#define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x4000 /* (0x580) */
 #else
-#define HALO_PORT_TEXTURE_CACHE_SIZE 0x1600000 /* (0x1600000) */
+#define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x580 /* (0x580) */
 #endif
+#define HALO_PORT_TEXTURE_CACHE_SIZE (HALO_PORT_TEXTURE_CACHE_PAGE_COUNT*0x4000) /* (0x1600000) */
 
 /* ---------- structure rendering
 

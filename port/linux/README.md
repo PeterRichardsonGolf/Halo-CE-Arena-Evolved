@@ -909,6 +909,21 @@ allowlist in `hs/hs.c`). They cannot call the functions for files, the
 saved state of the game, the console, debugging or cheats. A script that
 calls one does not run. The developer console can call every function.
 
+(OpenCE's; not in Arena Evolved, whose Custom Edition maps are
+ChupathingyCE's: see "In Arena Evolved" below.) Halo Custom Edition maps get
+the same checks (those that need OpenSauce are refused). Their own loader (`game/cache_file_formats.c`) reads them into
+their tag cache at 0x40440000 and converts what Custom Edition lays out
+differently, then the validator checks their tags and each of their BSPs as
+it checks this build's maps, before the game converts their models, BSP
+geometry and scripts. Put them with `bitmaps.map`, `sounds.map` and
+`loc.map` in `custom_maps`, beside `maps`, or set `paths.custom_edition` to
+a Custom Edition install; the map lists show them as CUSTOM SINGLEPLAYER and
+CUSTOM MULTIPLAYER, played as campaign levels (alone, or as network co-op)
+or as multiplayer maps by their scenario type, and `game.custom_edition =
+false` refuses them. `map_validate` checks them too, with the resource maps
+beside each map or in `--maps <folder>`. See
+`docs/custom_edition_caches.md`.
+
 Defensive checks stay in the game code too. An index into a tag block, the
 tags or a tag's data that is out of range gets zeros (`tag_empty_data` in
 `tag_files/tag_groups.c`), not other memory.
@@ -950,6 +965,17 @@ In Arena Evolved:
   four players whatever `player_spawn_count` says. The main menu's
   scripts (a main menu scenario in ui.map) may also call `map_name`,
   `texture_cache_flush` and `sound_cache_flush` (CE+ X's menu does).
+- Custom Edition and HaloMD maps are ChupathingyCE's (`ce_*.c`,
+  `map_families.c`: `<file>@ce`, `<file>@md`), not OpenCE build-145's
+  loader, whose files (`custom_edition_*.c`, `cache_file_formats.c`,
+  `bmp_files.c`, `stb_vorbis.c`) stay in the tree but in no build of the
+  game (`tools/linux_build.py`, `OPENCE_CUSTOM_EDITION_SOURCES`;
+  `game/ae_opence_custom_edition_off.c` answers the game's calls into them
+  with no such map). The `game.custom_edition` setting and the
+  `custom_maps` folder are OpenCE's and not used; `paths.custom_edition`
+  does nothing here. `map_validate` alone builds `cache_file_formats.c`,
+  so that it checks a Custom Edition map as OpenCE's loader reads it, which
+  is not how the game reads it.
 - A network game's map name, which a client checks (build-140), may end in
   a map family's suffix (`<file>@ce`, `<file>@md`: `halo_map_families.h`),
   so that games of Custom Edition and HaloMD maps join.

@@ -175,14 +175,19 @@ lists a public game with a password with its invite's token sealed with the
 password's key (`p2p_lobby.c`), a listing of another layout; version 21
 sends each killing blow again reliably and an object come to rest three
 times (a client waits for a player's blow before its body dies without one),
-and switches co-op's BSP on the host's crossing alone.
+and switches co-op's BSP on the host's crossing alone; version 22 names a
+Halo Custom Edition map a host plays `custom_maps\<name>` (its loader,
+`custom_edition_cache.c`), which a client of an older version cannot load
+or explain (a client of 22 tells its player the map it lacks and where to
+copy it: `cache_files_map_present`).
 
 Arena Evolved announces ChupathingyCE 0.7.0b's version, 20, in its game's
-advertisement, and joins hosts of 11 to 21 (delta.h's table), so
+advertisement, and joins hosts of 11 to 22 (delta.h's table), so
 ChupathingyCE 0.7.0b and OpenCE build-133 to build-140 (20) and Arena
-Evolved join each other's games both ways; it joins OpenCE build-141 and
-later's hosts (21), whose clients do not join its own (OpenCE's clients join
-only their own version), and the hosts of 11 to 19; ChupathingyCE 0.6.8b and
+Evolved join each other's games both ways; it joins OpenCE build-141 to
+build-144's hosts (21) and build-145 and later's (22), whose clients do not
+join its own (OpenCE's clients join only their own version), and the hosts
+of 11 to 19; ChupathingyCE 0.6.8b and
 OpenCE build-129 to build-131 (18) do not join its hosts. It runs version
 21's code and still announces 20 because 21 is additive between the two:
 - the killing blow sent once more reliably is a message a client of 20
@@ -200,12 +205,22 @@ OpenCE build-129 to build-131 (18) do not join its hosts. It runs version
   host of 21 may say it waits for its team to go back when only the host's
   crossing switches, and a client of 21 under a host of 20 that it waits
   for the host when a client's crossing switches too. Words only.
+Version 22 changes no message: only the name an OpenCE host gives its
+Custom Edition maps, `custom_maps\<name>`, which Arena Evolved does not
+play (it plays them as ChupathingyCE does, `<file>@ce` from maps/ce, with
+ChupathingyCE's loader; OpenCE's is not built:
+`port/linux/game/ae_opence_custom_edition_off.c`). Its client tells such a
+name apart and leaves with that said (`cache_files_map_present`), never
+playing the Xbox map of that file name in its place; on the game's own maps
+a host of 22 is joined as one of 21. Custom Edition maps between Arena
+Evolved and OpenCE stay impossible either way (OpenCE's clients join only
+22, and the two name the maps differently).
 Nothing else build-140 to build-144 changed is sent: their hardening refuses
 only what no machine sends (a flag or ball of no team, a vehicle that is its
 own rider's parent, an actor of an eleventh team, a game record whose
 machine has two players on one controller, a map name of other characters,
 a host's tick past 2^30), and a client takes the game's own messages only
-over its host's connection, which every host of 11 to 21 sends them over
+over its host's connection, which every host of 11 to 22 sends them over
 (only its advertisement, its answers to pings and the distributed netcode's
 messages come in datagrams). Every public listing is version 20, a game with a
 password's and its tombstone included. These numbers are fixed: Arena
