@@ -147,22 +147,6 @@ one list beside them.
 #define HUD_ITEM_TIMERS_SOON_SECONDS 10	/* (a line this near its spawn drawn brighter) */
 #define HUD_ITEM_TIMERS_MORE_ALPHA 0.5f	/* (the column's "+N") */
 
-/* ---------- structures */
-
-/* a font's character (font_group.h's; as rasterizer_text.c has it) */
-struct font_character
-{
-	word character;
-	short character_width;
-	short bitmap_width;
-	short bitmap_height;
-	short bitmap_origin_x;
-	short bitmap_origin_y;
-	short hardware_character_index;
-	short pad;
-	long pixels_offset;
-};
-
 /* ---------- globals */
 
 /* where each local player's view last had its motion sensor's background
@@ -298,14 +282,13 @@ static void hud_item_timers_set_draw_mode(
 	draw_string_set_draw_mode(font_index, NONE, justification, 0, &color);
 }
 
-static void hud_item_timers_draw_line_scaled(long font_index, short justification, short top, short left, short right,
+static void hud_item_timers_draw_line_scaled(long font_index, short top, short left, short right,
 	wchar_t const *text, real scale);
 
-/* a line from top, inset left and right from the view's edges, at a scale
-(the clock's larger, the power list's smaller) */
+/* a line (the TOP LEFT power list's) from top, flush left, inset left and
+right from the view's edges, at a scale */
 static void hud_item_timers_draw_line_scaled(
 	long font_index,
-	short justification,
 	short top,
 	short left,
 	short right,
@@ -322,31 +305,10 @@ static void hud_item_timers_draw_line_scaled(
 	bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
 	/* (laid out at full size, so as wide as the line's room is at its
 	scale: a line that fits the room scaled is not cut at its bounds) */
-	if (justification == _text_justification_left)
-	{
-		pivot_x = (real)bounds.x0;
-		bounds.x1 = (short)(bounds.x0 + (bounds.x1 - bounds.x0) / scale);
-	}
-	else if (justification == _text_justification_right)
-	{
-		pivot_x = (real)bounds.x1;
-		bounds.x0 = (short)(bounds.x1 - (bounds.x1 - bounds.x0) / scale);
-	}
-	else
-	{
-		/* (centred between the insets, but laid out as wide as the view
-		lets a line centred there be, so that one that fits is not cut by
-		its glyphs' overhang) */
-		short half;
-
-		pivot_x = (real)(bounds.x0 + bounds.x1) / 2.0f;
-		half = (short)(MIN(pivot_x, render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0 - pivot_x) /
-			scale);
-		bounds.x0 = (short)(pivot_x - half);
-		bounds.x1 = (short)(pivot_x + half);
-	}
-	hud_item_timers_set_draw_mode(font_index, justification);
-	/* (smaller, about the line's top corner it hangs from) */
+	pivot_x = (real)bounds.x0;
+	bounds.x1 = (short)(bounds.x0 + (bounds.x1 - bounds.x0) / scale);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	/* (smaller, about the line's top left corner it hangs from) */
 	rasterizer_text_set_scale(scale, pivot_x, (real)bounds.y0);
 	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
@@ -357,11 +319,9 @@ static void hud_item_timers_draw_line_scaled(
 	{
 		rectangle2d *drawn = &hud_item_timers_lines[render.local_player_index].bounds[
 			hud_item_timers_lines[render.local_player_index].count++];
-		long width = hud_item_timers_line_width_scaled(font_index, text, scale);
 
-		drawn->x0 = (short)(justification == _text_justification_left ? pivot_x :
-			justification == _text_justification_right ? pivot_x - width : pivot_x - width / 2);
-		drawn->x1 = (short)(drawn->x0 + width);
+		drawn->x0 = (short)pivot_x;
+		drawn->x1 = (short)(drawn->x0 + hud_item_timers_line_width_scaled(font_index, text, scale));
 		drawn->y0 = bounds.y0;
 		drawn->y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index) * scale + 0.5f);
 	}
@@ -404,20 +364,16 @@ static real hud_item_timers_cap_height(
 	return (real)font->ascending_height;
 }
 
-/* how far drawing text moves along at a scale (its advance: without the
-font's leading width, which every line drawn starts with), in fractions of
-a unit */
-static real hud_item_timers_advance(
+/* how far drawing text moves along at full size (its advance: without the
+font's leading width, which every line drawn starts with), by laying it out */
+static long hud_item_timers_layout_advance(
 	long font_index,
-	wchar_t const *text,
-	real scale)
+	wchar_t const *text)
 {
 	rectangle2d bounds;
 	rectangle2d text_bounds;
 	rectangle2d cursor_bounds;
 
-	if (!text[0])
-		return 0.0f;
 	bounds.x0 = 0;
 	bounds.y0 = 0;
 	bounds.x1 = SHORT_MAX / 2;
@@ -425,7 +381,52 @@ static real hud_item_timers_advance(
 	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
 	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
 
-	return (real)(cursor_bounds.x0 - bounds.x0 - font_definition_get(font_index)->leading_width) * scale;
+	return cursor_bounds.x0 - bounds.x0 - font_definition_get(font_index)->leading_width;
+}
+
+/* each ASCII character's advance in our font, laid out once (a line's
+advance is its characters' added up: the layout moves each one its own
+width), so that the clock's and the power column's cells and names are
+measured without laying text out every frame; again for another font or
+map (hud_item_timers_initialize_for_new_map) */
+static struct
+{
+	long font_index;
+	short advances[128];	/* (NONE: not laid out yet) */
+} hud_item_timers_advances = { NONE };
+
+static real hud_item_timers_advance(
+	long font_index,
+	wchar_t const *text,
+	real scale)
+{
+	long advance = 0;
+	wchar_t const *character;
+
+	if (hud_item_timers_advances.font_index != font_index)
+	{
+		short index;
+
+		hud_item_timers_advances.font_index = font_index;
+		for (index = 0; index < (short)NUMBEROF(hud_item_timers_advances.advances); index++)
+			hud_item_timers_advances.advances[index] = NONE;
+	}
+	for (character = text; *character; character++)
+	{
+		if ((unsigned long)*character >= NUMBEROF(hud_item_timers_advances.advances))
+			return (real)hud_item_timers_layout_advance(font_index, text) * scale;
+		if (hud_item_timers_advances.advances[*character] == NONE)
+		{
+			wchar_t one[2];
+
+			one[0] = *character;
+			one[1] = 0;
+			hud_item_timers_advances.advances[*character] = (short)hud_item_timers_layout_advance(font_index, one);
+		}
+		advance += hud_item_timers_advances.advances[*character];
+	}
+
+	return (real)advance * scale;
 }
 
 /* text at a scale, its first character at x and its line's top at top (the
@@ -1053,7 +1054,7 @@ static void hud_item_timers_draw_powers_top_left(
 			}
 		}
 	}
-	hud_item_timers_draw_line_scaled(font_index, _text_justification_left, (short)top, (short)left, (short)right,
+	hud_item_timers_draw_line_scaled(font_index, (short)top, (short)left, (short)right,
 		line, scale);
 }
 
@@ -2160,9 +2161,9 @@ void hud_draw_item_waypoints(
 	{
 		return;
 	}
-	/* (none while this view's scoreboard shows, even fading: they would be
-	drawn over its text) */
-	if (game_engine_scoreboard_shown(local_player_index) > 0.0f)
+	/* (none while this view's scoreboard shows, even fading, or opens this
+	frame: they would be drawn over its text) */
+	if (game_engine_scoreboard_shown(local_player_index) > 0.0f || game_engine_scoreboard_held(local_player_index))
 		return;
 	font_index = hud_item_timers_font_index();
 	player_index = local_player_get_player_index(local_player_index);
@@ -2280,6 +2281,8 @@ void hud_item_timers_initialize_for_new_map(
 	csmemset(hud_item_timers_top_left, 0, sizeof(hud_item_timers_top_left));
 	/* (and the meters' texels read for it) */
 	hud_element_bounds_new_map();
+	/* (our font's advances, laid out again on this map) */
+	hud_item_timers_advances.font_index = NONE;
 	/* (port: CAMPAIGN TIMER's level starts) */
 	hud_campaign_timer_ticks = 0;
 	csmemset(hud_item_timers_lines, 0, sizeof(hud_item_timers_lines));

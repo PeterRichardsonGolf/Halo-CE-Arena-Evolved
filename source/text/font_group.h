@@ -27,7 +27,21 @@ enum
 
 /* ---------- structures */
 
-struct font_character;
+/* port: a font's character, as its tag has it (FONT_CHARACTER_SIZE bytes):
+one definition for draw_string.c, rasterizer_text.c, virtual_keyboard.c,
+the tag schema's checks and the HUD's timers, which each had their own */
+struct font_character
+{
+	word character;
+	short character_width;
+	short bitmap_width;
+	short bitmap_height;
+	short bitmap_origin_x;
+	short bitmap_origin_y;
+	short hardware_character_index;
+	word pad;
+	long pixels_offset;
+};
 
 struct font_character_table
 {

@@ -227,20 +227,6 @@ struct virtual_keyboard_definition
 	struct tag_block keys;
 };
 
-/* font_group.h leaves this incomplete; draw_string.c and rasterizer_text.c define it the same way */
-struct font_character
-{
-	word character;
-	short character_width;
-	short bitmap_width;
-	short bitmap_height;
-	short bitmap_origin_x;
-	short bitmap_origin_y;
-	short hardware_character_index;
-	word pad;
-	long pixels_offset;
-};
-
 struct virtual_keyboard_globals
 {
 	boolean active;

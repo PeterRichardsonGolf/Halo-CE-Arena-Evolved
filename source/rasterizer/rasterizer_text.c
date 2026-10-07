@@ -121,19 +121,6 @@ enum
 
 /* ---------- structures */
 
-struct font_character
-{
-	word character;
-	short character_width;
-	short bitmap_width;
-	short bitmap_height;
-	short bitmap_origin_x;
-	short bitmap_origin_y;
-	short hardware_character_index;
-	short pad;
-	long pixels_offset;
-};
-
 struct parse_string_state;
 
 typedef void (*draw_character_proc)(

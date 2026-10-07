@@ -3688,7 +3688,8 @@ real game_engine_scoreboard_shown(
 /* port: whether a local player's view's scoreboard is opening or open this
 frame, as game_engine_post_rasterize_in_game will draw it after the HUD in
 the same pass (BACK held, or the postgame's delay): the HUD hides what the
-board would meet (the power column) from the frame it appears, not a frame
+board would meet (the power column, TRAINING's waypoints) from the frame it
+appears, not a frame
 later as game_engine_scoreboard_shown has it */
 boolean game_engine_scoreboard_held(
 	short local_player_index)
