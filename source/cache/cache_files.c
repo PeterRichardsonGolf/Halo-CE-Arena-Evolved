@@ -1536,11 +1536,18 @@ boolean scenario_structure_bsp_load(
 	}
 
 	/* port: and checked against its schema, as the map's tags were
-	(port/linux/game/tag_validate.c) */
-	if (!tag_validate_structure_bsp(
-		reference->structure_bsp.index,
-		xbox_pointer(reference->base_address),
-		reference->file_size))
+	(port/linux/game/tag_validate.c). Not a Custom Edition map's: its tags
+	were not (scenario_tags_load), and its bsp is Halo PC's, checked before
+	the map was opened (ce_map_checks.c) and converted as it loads
+	(ce_bsp.c) */
+	if (
+#ifdef HALO_CUSTOM_EDITION
+		!cache_file_is_ce &&
+#endif
+		!tag_validate_structure_bsp(
+			reference->structure_bsp.index,
+			xbox_pointer(reference->base_address),
+			reference->file_size))
 	{
 		return FALSE;
 	}
