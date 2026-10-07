@@ -9,6 +9,7 @@ screen is open.
 
 #include "cseries.h"
 #include "../src/ae_draw.h"
+#include "../src/ae_platform.h"
 #include "interface/event_manager.h"
 #include "ae_hooks.h"
 #include "ae_input.h"
@@ -71,12 +72,16 @@ boolean ae_ui_process(
 	was_up = FALSE;
 	if (ae_ui_up())
 	{
+		ae_platform_arm_back_presses(TRUE);
 		ae_input_poll();
 		was_up = ae_ui_depth() != 0;
 		if (!was_up)
 			ae_input_hold_begin();
+		ae_platform_arm_back_presses(was_up);
 		return TRUE;
 	}
+	/* (mouse button 4 is counted for AE only while one of its screens is open) */
+	ae_platform_arm_back_presses(FALSE);
 	/* the inputs held as the last screen closed reach the game's menus only
 	once let go of (each; at most 2 s): a B that closed it is not also their
 	B, nor a held direction their direction */

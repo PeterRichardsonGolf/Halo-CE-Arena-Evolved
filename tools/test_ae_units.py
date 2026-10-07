@@ -18,7 +18,7 @@ SRC = ROOT / "port" / "linux" / "src"
 # each test: its sources besides the test file, and extra flags
 UNITS = {
     "ae_draw_layout_test.c": ([SRC / "ae_layout.c"], []),
-    "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c"], []),
+    "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", SRC / "ae_back_presses.c"], []),
     "ae_list_test.c": ([UI / "ae_list.c"], []),
     "ae_ui_test.c": ([UI / "ae_ui.c"], []),
 }

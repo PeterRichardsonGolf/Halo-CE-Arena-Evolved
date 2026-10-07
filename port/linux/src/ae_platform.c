@@ -6,8 +6,8 @@ game's menu keys leave out or use otherwise (Q and E for tabs, Tab and
 Shift+Tab as focus steps, Page Up and Page Down), mouse button 4's presses,
 and the device the player last used. It reads the state sdl_platform.c
 already keeps (platform_input_read, without taking the mouse's motion) and
-xinput_sdl.c's platform_input_scheme; sdl_platform.c's pointer branch counts
-button 4 here (one AE hook line).
+xinput_sdl.c's platform_input_scheme. (Button 4's count is ae_back_presses.c,
+pure, so the unit tests build it.)
 */
 
 #include "platform.h"
@@ -40,23 +40,6 @@ int ae_platform_keys(void)
 	if (input.keys[SDL_SCANCODE_LSHIFT] || input.keys[SDL_SCANCODE_RSHIFT])
 		keys |= AE_KEY_SHIFT;
 	return keys;
-}
-
-/* (both run on the game's thread: sdl_platform.c's events are pumped from
-XInputGetState and Present) */
-static int back_presses;
-
-void ae_platform_count_back_press(void)
-{
-	back_presses++;
-}
-
-int ae_platform_take_back_presses(void)
-{
-	int presses = back_presses;
-
-	back_presses = 0;
-	return presses;
 }
 
 int ae_platform_input_scheme(void)

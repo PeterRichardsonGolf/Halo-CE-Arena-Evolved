@@ -35,9 +35,11 @@ void ae_input_key_directions(int keys, int held[4]);
 /* the actions of the keys pressed since previous (Q, E: tabs; Page Up, Page Down) and of mouse button 4's presses
 (BACK); the count written, at most maximum */
 int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char actions[], int maximum);
-/* whether the first controller's button action comes from one of AE's own keys and is dropped: while E is held, X
-(E drives X in the game's menu keys); while Tab is held, Y (Tab drives Y there) */
-int ae_input_key_drops(int keys, int action);
+/* the action to send for a first-controller button's action, given AE's keys held and whether the keyboard is the
+device last used: while E is held, its X (E drives X in the game's menu keys) is none; Tab drives Y there, so while
+Tab is held Y is none (Tab's own focus step comes from the held directions), and a Y from the keyboard with Tab not
+held is a Tab tapped between two polls: its focus step (down, up with Shift) */
+int ae_input_key_translate(int keys, int action, int keyboard);
 
 /* the hold-back after the last screen closes: the inputs held then reach the game's menus only once let go of (each
 on its own), and nothing is held back longer than AE_INPUT_HOLD_MAXIMUM_MS; inputs pressed after the close are not

@@ -52,9 +52,15 @@ int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char
 	return count;
 }
 
-int ae_input_key_drops(int keys, int action)
+int ae_input_key_translate(int keys, int action, int keyboard)
 {
-	return (action == AE_ACTION_X && (keys & AE_KEY_E)) || (action == AE_ACTION_Y && (keys & AE_KEY_TAB));
+	if (action == AE_ACTION_X && (keys & AE_KEY_E))
+		return AE_ACTION_NONE;
+	if (action == AE_ACTION_Y && (keys & AE_KEY_TAB))
+		return AE_ACTION_NONE;
+	if (action == AE_ACTION_Y && keyboard)
+		return keys & AE_KEY_SHIFT ? AE_ACTION_UP : AE_ACTION_DOWN;
+	return action;
 }
 
 void ae_hold_begin(struct ae_hold *hold, unsigned int const held[AE_INPUT_HELD_MASKS], unsigned long now_ms)

@@ -22,9 +22,12 @@ enum
 
 /* the AE_KEY_* held now (0 without a focused window) */
 int ae_platform_keys(void);
-/* mouse button 4 (back) presses while the menus have the pointer: sdl_platform.c counts them (an AE hook line,
-since its pointer branch keeps them from the controller), the game's side takes them (and the count starts over) */
+/* mouse button 4 (back) presses while the menus have the pointer (ae_back_presses.c): sdl_platform.c counts them
+(an AE hook line, since its pointer branch keeps them from the controller), but only while armed: the game's side
+arms the count while an AE screen is open (never with display.arena_menus off) and takes the presses (the count
+starts over); disarming drops what was counted */
 void ae_platform_count_back_press(void);
+void ae_platform_arm_back_presses(int armed);
 int ae_platform_take_back_presses(void);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */

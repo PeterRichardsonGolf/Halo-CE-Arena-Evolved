@@ -43,9 +43,30 @@ int main(void)
 	CHECK(ae_input_key_actions(AE_KEY_TAB | AE_KEY_SHIFT, 0, 0, actions, 8) == 0); /* Tab is a direction */
 
 	/* the game's menu-key mapping's X (E) and Y (Tab) are dropped while those keys are held */
-	CHECK(ae_input_key_drops(AE_KEY_E, AE_ACTION_X) && !ae_input_key_drops(0, AE_ACTION_X));
-	CHECK(ae_input_key_drops(AE_KEY_TAB, AE_ACTION_Y) && !ae_input_key_drops(AE_KEY_TAB, AE_ACTION_X));
-	CHECK(!ae_input_key_drops(AE_KEY_E | AE_KEY_TAB, AE_ACTION_ACCEPT));
+	CHECK(ae_input_key_translate(AE_KEY_E, AE_ACTION_X, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(0, AE_ACTION_X, 1) == AE_ACTION_X);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_ACTION_X, 1) == AE_ACTION_X);
+	CHECK(ae_input_key_translate(AE_KEY_E | AE_KEY_TAB, AE_ACTION_ACCEPT, 1) == AE_ACTION_ACCEPT);
+	/* a Tab tapped and let go of between two polls: not held, but its Y comes from the keyboard: Tab's step */
+	CHECK(ae_input_key_translate(0, AE_ACTION_Y, 1) == AE_ACTION_DOWN);
+	CHECK(ae_input_key_translate(AE_KEY_SHIFT, AE_ACTION_Y, 1) == AE_ACTION_UP);
+	/* a pad's Y is Y */
+	CHECK(ae_input_key_translate(0, AE_ACTION_Y, 0) == AE_ACTION_Y);
+
+	/* mouse button 4: counted only while armed (an AE screen open); disarming drops the count */
+	CHECK(ae_platform_take_back_presses() == 0);
+	ae_platform_count_back_press();                        /* the game's own menus up: not counted */
+	CHECK(ae_platform_take_back_presses() == 0);
+	ae_platform_arm_back_presses(1);
+	ae_platform_count_back_press();
+	ae_platform_count_back_press();
+	CHECK(ae_platform_take_back_presses() == 2 && ae_platform_take_back_presses() == 0);
+	ae_platform_count_back_press();
+	ae_platform_arm_back_presses(0);                       /* the screen closed: what was counted goes */
+	ae_platform_arm_back_presses(1);
+	CHECK(ae_platform_take_back_presses() == 0);
+	ae_platform_arm_back_presses(0);
 
 	/* the hold-back: nothing held at the close, none */
 	ae_hold_begin(&hold, masks, 1000);
