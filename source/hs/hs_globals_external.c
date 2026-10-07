@@ -2990,4 +2990,31 @@ boolean hs_external_global_settable_by_maps(
 		hs_external_global_settable_in_maps[global_index];
 }
 
+#ifdef HALO_CUSTOM_EDITION
+/* port (Arena Evolved): the external globals a Custom Edition map's scripts
+may set besides those above: only those real Custom Edition maps set, found
+from their scripts (every map of the owner's maps/ce run with the plain
+list: H2_Zanzibar's get_off_the_hax sets rasterizer_wireframe, a drawing
+switch, and no other map sets one the list refuses). Not the player's
+count, the cheats, files, the network or the player's own settings */
+boolean hs_external_global_settable_by_ce_maps(
+	short global_index)
+{
+	static struct hs_external_global_definition const *const allowed[] =
+	{
+		&rasterizer_wireframe_definition,
+	};
+	short index;
+
+	if (global_index < 0 || global_index >= (short)NUMBEROF(hs_external_globals))
+		return FALSE;
+	for (index = 0; index < (short)NUMBEROF(allowed); index++)
+	{
+		if (hs_external_globals[global_index] == allowed[index])
+			return TRUE;
+	}
+	return FALSE;
+}
+#endif
+
 /* ---------- private code */

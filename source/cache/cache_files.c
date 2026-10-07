@@ -581,6 +581,14 @@ void *cache_files_tag_cache(
 	return physical_memory_get_tag_cache_base_address();
 }
 
+/* port (Arena Evolved): whether the map loaded is the main menu's, ui.map
+(by its header's name, which the game finds a map by: cache_files_windows.c) */
+boolean cache_files_loaded_map_is_main_menu(
+	void)
+{
+	return cache_file_globals.tags_loaded && !csstrcmp(cache_file_globals.header.name, "ui");
+}
+
 char const *cache_files_map_directory(
 	void)
 {
@@ -1366,7 +1374,16 @@ long scenario_tags_load(
 			/* port: and every tag checked against its group's schema before
 			anything reads it (port/linux/game/tag_validate.c): a map whose
 			tags' pointers cannot be trusted is refused; what can be
-			corrected is */
+			corrected is. (Arena Evolved: a mod's map, read from
+			mods\<mod>\maps, may hold bytes shared by several structures,
+			as CE+ X's ui.map does; its bsps too, until the next map) */
+			{
+				char path[256];
+
+				cache_files_map_file_path(stripped_scenario_name, path, sizeof(path));
+				tag_validate_allow_shared_bytes(cache_files_mod() != NULL &&
+					!csstrncmp(path, "d:\\mods\\", 8));
+			}
 			if (!tag_validate_tags(
 				tag_cache_base_address,
 				cache_file_globals.header.tag_data_size,

@@ -767,6 +767,11 @@ static void create_local_players(
 	long j;
 	long player;
 	short gamepad_index;
+	/* port: the players to make, at most one a gamepad whatever the global
+	says (a map's script or the console may set player_spawn_count; the
+	arrays above are MAXIMUM_GAMEPADS long, and release builds go on past a
+	failed assert) */
+	long spawn_count = PIN(player_spawn_count, 0, MAXIMUM_GAMEPADS);
 
 	if (main_globals.main_menu_scenario_loaded)
 	{
@@ -788,12 +793,13 @@ static void create_local_players(
 			"c:\\halo\\SOURCE\\main\\main.c",
 			741,
 			game_connection() == _game_connection_local);
-		for (i = 0; i < player_spawn_count; i++)
+		for (i = 0; i < spawn_count; i++)
 		{
 			gamepad_index =
 				player_ui_get_single_player_local_player_controller(i);
 			desired_controllers[i] = gamepad_index;
-			if (desired_controllers[i] == NONE)
+			/* (port: and one out of range, as none) */
+			if (desired_controllers[i] < 0 || desired_controllers[i] >= MAXIMUM_GAMEPADS)
 				desired_controllers[i] = default_controllers[i];
 			match_assert(
 				"c:\\halo\\SOURCE\\main\\main.c",
@@ -827,7 +833,7 @@ static void create_local_players(
 			MAXIMUM_GAMEPADS,
 			sizeof(*desired_controllers),
 			(int (__cdecl *)(void const *, void const *))sort_desired_local_player_controllers);
-		for (i = 0; i < player_spawn_count; i++)
+		for (i = 0; i < spawn_count; i++)
 		{
 			gamepad_index = desired_controllers[i];
 			match_assert(

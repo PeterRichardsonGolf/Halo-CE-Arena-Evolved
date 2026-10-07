@@ -22,7 +22,11 @@ hang, and a map it lets through must be clean when checked again.
 With --log, each run that was corrected is written to a file as the map's
 name, the seed and the changed words (offset:value in the inflated file).
 
-usage: map_validate [--strict] [--quiet] [--fuzz iterations [--seed n] [--log file]] map.map...
+With --mod (Arena Evolved), the maps after it are checked as a mod's
+maps (mods/<mod>/maps), which may hold bytes shared by several structures
+(tag_validate_allow_shared_bytes); --no-mod ends that.
+
+usage: map_validate [--strict] [--quiet] [--mod] [--fuzz iterations [--seed n] [--log file]] map.map...
 */
 
 #include <stdarg.h>
@@ -119,6 +123,7 @@ unsigned char tag_validate_tags(void *tag_header, long tag_data_size, long file_
 unsigned char tag_validate_structure_bsp(long tag_index, void *base, long size);
 long tag_validate_corrections(void);
 unsigned char tag_validate_claimed(void const *address);
+void tag_validate_allow_shared_bytes(unsigned char allow);
 
 static int quiet;
 /* (fuzzing: each bsp is checked twice, and whether a second check of one
@@ -562,6 +567,11 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[argument], "--quiet"))
 		{
 			quiet = 1;
+			continue;
+		}
+		if (!strcmp(argv[argument], "--mod") || !strcmp(argv[argument], "--no-mod"))
+		{
+			tag_validate_allow_shared_bytes(argv[argument][2] == 'm');
 			continue;
 		}
 		if (!strcmp(argv[argument], "--fuzz") && argument + 1 < argc)

@@ -468,3 +468,72 @@ def test_tag_validator_survives_damaged_maps():
     result = subprocess.run([str(MAP_VALIDATE), "--fuzz", "300", "--seed", "1", *map(str, chosen)],
                             capture_output=True, text=True, timeout=1800)
     assert result.returncode == 0, (result.stdout + result.stderr)[-6000:]
+
+
+# ---------- (Arena Evolved) bytes shared by several structures (tag_validate.c extent_claim)
+
+def _crafted_overlap(source: Path, destination: Path, moved_group: str, onto_group: str,
+                     moved_zero_root: bool = False) -> None:
+    """a retail map, uncompressed, with the root of a tag of moved_group
+    moved onto the root of the first tag of onto_group: a cross-kind
+    overlap from the same first byte"""
+    import struct
+    import zlib
+
+    base = 0x803A6000
+    raw = source.read_bytes()
+    header = raw[:0x800]
+    file_length, tag_offset = struct.unpack_from("<i", header, 8)[0], struct.unpack_from("<i", header, 16)[0]
+    data = bytearray(header + zlib.decompressobj().decompress(raw[0x800:]))
+    data += b"\0" * (file_length - len(data))
+    instances, _, _, count = struct.unpack_from("<IiIi", data, tag_offset)
+    first = tag_offset + instances - base
+
+    def group(index):
+        return struct.unpack_from("<I", data, first + index * 32)[0].to_bytes(4, "big").decode("latin1")
+
+    def root(index):
+        return struct.unpack_from("<I", data, first + index * 32 + 20)[0]
+
+    def zero_root(index):
+        offset = tag_offset + root(index) - base
+        return root(index) and data[offset:offset + 12] == bytes(12)
+
+    moved = next(index for index in range(count) if group(index) == moved_group and
+                 (not moved_zero_root or zero_root(index)))
+    onto = next(index for index in range(count) if group(index) == onto_group)
+    struct.pack_into("<I", data, first + moved * 32 + 20, root(onto))
+    destination.write_bytes(bytes(data))
+
+
+def _validate(*arguments) -> subprocess.CompletedProcess:
+    return subprocess.run([str(MAP_VALIDATE), *map(str, arguments)], capture_output=True, text=True, timeout=600)
+
+
+def test_shared_bytes_only_in_a_mods_maps(tmp_path):
+    """a color table's empty root moved onto a model collision's: two kinds
+    sharing bytes with no runtime value. A map checked as upstream's (not a
+    mod's) is refused for it; a mod's map (--mod: CE+ X's ui.map) is played,
+    the shared tag noted"""
+    maps = [path for path in _retail_maps() if path.stem == "bloodgulch"]
+    if not maps:
+        pytest.skip("needs bloodgulch.map in assets/maps")
+    crafted = tmp_path / "crafted.map"
+    _crafted_overlap(maps[0], crafted, "colo", "coll", moved_zero_root=True)
+    plain = _validate(crafted)
+    assert plain.returncode == 1 and "overlapping another's" in plain.stdout, plain.stdout[-4000:]
+    mod = _validate("--mod", crafted)
+    assert mod.returncode == 0 and "under another name" in mod.stdout, mod.stdout[-4000:]
+
+
+def test_shared_bytes_never_over_a_runtime_value(tmp_path):
+    """a model collision's root moved onto a looping sound's, whose
+    runtime_scripting_sound_index (a value the game writes as it runs, at
+    0x1C) the overlap covers: refused even as a mod's map"""
+    maps = [path for path in _retail_maps() if path.stem == "bloodgulch"]
+    if not maps:
+        pytest.skip("needs bloodgulch.map in assets/maps")
+    crafted = tmp_path / "crafted.map"
+    _crafted_overlap(maps[0], crafted, "coll", "lsnd")
+    mod = _validate("--mod", crafted)
+    assert mod.returncode == 1 and "with a value the game writes as it runs" in mod.stdout, mod.stdout[-4000:]

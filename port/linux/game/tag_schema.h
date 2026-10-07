@@ -262,6 +262,13 @@ extern struct tag_schema_group const tag_schema_scenario_groups[];
 
 /* ---------- prototypes/TAG_VALIDATE.C */
 
+/* port (Arena Evolved): whether the next maps checked (and their bsps) may
+hold bytes shared by several structures (extent_claim): only a mod's maps
+(mods/<mod>/maps: CE+ X's ui.map), set by scenario_tags_load. FALSE (the
+default) checks a map as upstream does: any overlap refuses it */
+void tag_validate_allow_shared_bytes(
+	boolean allow);
+
 /* the tags at tag_header (tag_data_size bytes read from a map file of
 file_length bytes): FALSE if they cannot be used. Before anything else
 reads them; corrections are made in place */

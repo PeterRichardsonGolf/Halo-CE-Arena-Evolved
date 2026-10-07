@@ -56,6 +56,9 @@ struct tag_iterator
 
 void *cache_files_tag_cache(
 	unsigned long *size);
+/* port (Arena Evolved): whether the map loaded is ui.map, the main menu's */
+boolean cache_files_loaded_map_is_main_menu(
+	void);
 
 const char *cache_files_map_directory(
 	void);

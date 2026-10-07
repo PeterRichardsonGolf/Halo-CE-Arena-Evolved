@@ -219,6 +219,9 @@ struct tag_validate_extent
 	unsigned long size;
 	short kind_type;
 };
+/* port (Arena Evolved): whether the maps checked may share bytes at all
+(tag_validate_allow_shared_bytes): only a mod's */
+static boolean tag_validate_shared_bytes_allowed = FALSE;
 static struct tag_validate_extent tag_validate_extents[MAXIMUM_EXTENTS];
 static struct tag_validate_extent tag_validate_structure_bsp_extents[MAXIMUM_STRUCTURE_BSP_EXTENTS];
 static struct
@@ -1119,7 +1122,16 @@ static boolean definition_resets_in(
 /* whether an extent of a kind may have bytes the game writes as it runs in
 its first size bytes: a root's or block's runtime values, or the scripts'
 data (hs_syntax_data's nodes, hs_string_constants', which the console's
-strings are added to) */
+strings are added to).
+
+(Arena Evolved) The shared-bytes rule (extent_claim) is as safe as two
+premises of the schemas, which upstream's own checks rest on too:
+- every field of a root or block that the game writes after the map has
+  loaded is a _tag_schema_reset field (tag_schema.h);
+- no tag data is written as the game runs but the scripts' (hs_*).
+A runtime write that the schemas do not mark would land in the other
+owner's bytes after they were checked. tools/test_linux_port.py's
+test_shared_bytes_* hold the rule to these premises on crafted maps */
 static boolean kind_written_in(
 	void const *kind,
 	short kind_type,
@@ -1196,6 +1208,10 @@ static boolean extent_claim(
 		extent_add(address, size, kind, kind_type, owner);
 		return TRUE;
 	}
+	/* (only a mod's maps may share bytes: tag_validate_allow_shared_bytes;
+	any other map is refused for an overlap, as upstream's check does) */
+	if (!tag_validate_shared_bytes_allowed)
+		return FALSE;
 	while ((extent = extent_next(address, &slot)) != NULL)
 	{
 		unsigned long overlap = MIN(size, extent->size);
@@ -1207,6 +1223,12 @@ static boolean extent_claim(
 		if (kind_written_in(kind, kind_type, overlap) ||
 			kind_written_in(extent->kind, extent->kind_type, overlap))
 		{
+			char message[MAXIMUM_MESSAGE_LENGTH];
+
+			snprintf(message, sizeof(message), "the map '%s' has bytes at %08lx that structures of different kinds "
+				"share, with a value the game writes as it runs", tag_validate_globals.map_name,
+				(unsigned long)xbox_address(address));
+			tag_validate_report(message);
 			return FALSE;
 		}
 		shared_size = MAX(shared_size, overlap);
@@ -1361,6 +1383,13 @@ static boolean validate_buffers(
 }
 
 /* ---------- public code */
+
+/* port (Arena Evolved): (tag_schema.h) */
+void tag_validate_allow_shared_bytes(
+	boolean allow)
+{
+	tag_validate_shared_bytes_allowed = allow ? TRUE : FALSE;
+}
 
 boolean tag_validate_tags(
 	void *tag_header,

@@ -13474,16 +13474,16 @@ static short hs_syntax_node_refusal(
 			if (!value || value->type != hs_global_get_type(designator))
 				return _hs_node_refusal_damaged;
 		}
-		/* port (Arena Evolved): a Custom Edition map's scripts may set any,
-		as Halo PC let them (H2_Zanzibar's get_off_the_hax sets
-		rasterizer_wireframe; DamnationCE found coldsnap's and lolcano's
-		setting the cheats). A global's value is checked against its type
-		above, as for every map */
+		/* port (Arena Evolved): a Custom Edition map's scripts may also set
+		the few globals real Custom Edition maps set
+		(hs_external_global_settable_by_ce_maps); the value is checked
+		against its type above, as for every map */
 		if ((designator & 0x8000) &&
+			!hs_external_global_settable_by_maps(designator & 0x7FFF)
 #ifdef HALO_CUSTOM_EDITION
-			!cache_file_tags_are_ce() &&
+			&& !(cache_file_tags_are_ce() && hs_external_global_settable_by_ce_maps(designator & 0x7FFF))
 #endif
-			!hs_external_global_settable_by_maps(designator & 0x7FFF))
+			)
 		{
 			*name = hs_global_external_get(designator & 0x7FFF)->name;
 			return _hs_node_refusal_global;
@@ -13597,7 +13597,9 @@ static void hs_scenario_functions_check(
 	short disabled_global_count = 0;
 	char reason[128];
 
-	hs_scenario_is_main_menu = scenario->type == _scenario_type_main_menu;
+	/* (Arena Evolved: a main menu's scenario in the main menu's map, ui.map,
+	not any map whose scenario says it is one) */
+	hs_scenario_is_main_menu = scenario->type == _scenario_type_main_menu && cache_files_loaded_map_is_main_menu();
 	csmemset(hs_syntax_nodes_marked, 0, sizeof(hs_syntax_nodes_marked));
 	for (script_index = 0; script_index<scenario->hs_scripts.count; script_index++)
 	{

@@ -266,6 +266,12 @@ boolean hs_scenario_global_initializer_disabled(
 /* port: the external globals a map's scripts may set */
 boolean hs_external_global_settable_by_maps(
 	short global_index);
+#ifdef HALO_CUSTOM_EDITION
+/* port (Arena Evolved): and the ones a Custom Edition map's scripts may set
+too (those real Custom Edition maps set) */
+boolean hs_external_global_settable_by_ce_maps(
+	short global_index);
+#endif
 /* ---------- prototypes/HS_COMPILE.C */
 
 void hs_compile_initialize(
