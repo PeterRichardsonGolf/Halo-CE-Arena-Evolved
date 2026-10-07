@@ -272,8 +272,9 @@ games over the invite tunnel are not affected: each tunnel peer has its
 own virtual address (100.64.0.0/10) on a sealed, authenticated tunnel.
 
 What such a device could do: take over the machine's Delta session a
-second after it began, receive the room's roster (each machine's platform,
-build and, where shared, player ID), show its own claims as that machine's,
+second after it began, receive the room's roster (each machine's capabilities,
+platform key, profile revision and, where shared, player ID; the host's
+build comes in its WELCOME), show its own claims as that machine's,
 and lower the host's player limit with its platform key's `join_players`
 (new players are then refused; players in the game stay). It never gets
 the invite or a password, and Delta Peer never decides game state.
