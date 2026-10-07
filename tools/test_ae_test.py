@@ -504,6 +504,30 @@ class Slots(unittest.TestCase):
         b = harness.GameSlots(dict(harness.DEFAULTS, work_dir="~/w2"), 1, shared_network=False)
         self.assertEqual(a.dir, b.dir)  # (different configs, one registry)
 
+    def test_registered_game_counted_once(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            cfg = dict(harness.DEFAULTS, work_dir=d, max_games_total=2)
+            owner = os.getppid()  # (a live process that is not us: another harness with another work_dir)
+            self.reg.mkdir(parents=True, exist_ok=True)
+            (self.reg / f"{owner}-1").write_text(str(owner))
+            game = [(900001, "/x/halo", "/other-work/run/case/bin")]   # halo 900001 <- xvfb 900000 <- owner
+            parents = {900001: 900000, 900000: owner, owner: 1}
+            orig = harness.list_halo_processes
+            harness.list_halo_processes = lambda: game
+            try:
+                slots = harness.GameSlots(cfg, 3, shared_network=False)
+                self.assertEqual(slots._others(game, parents.get), 1)   # (its slot, not also "outside")
+                stray = game + [(900005, "/y/halo", "/elsewhere")]      # (another script's game counts)
+                self.assertEqual(slots._others(stray, lambda p: parents.get(p, 1)), 2)
+                mine = [(900007, "/x/halo", d + "/r/c/bin")]
+                self.assertEqual(slots._others(mine, {900007: os.getpid()}.get), 1)  # (ours: only the registry's 1)
+            finally:
+                harness.list_halo_processes = orig
+
+    def test_ancestors(self):
+        self.assertEqual(harness.ancestors(5, {5: 4, 4: 1, 1: 0}.get), {5, 4, 1})
+        self.assertIn(os.getppid(), harness.ancestors(os.getpid()))
+
     def test_orphaned_game_counts(self):
         with tempfile.TemporaryDirectory(dir=Path.home()) as d:
             cfg = dict(harness.DEFAULTS, work_dir=d, max_games_total=1)

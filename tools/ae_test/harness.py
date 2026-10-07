@@ -263,6 +263,25 @@ def pid_alive(pid):
         return True
 
 
+def parent_pid(pid):
+    """the parent of a process (0 when gone): /proc/<pid>/stat's 4th field, after the command's ')'"""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+        return int(stat.rsplit(")", 1)[1].split()[1])
+    except (OSError, ValueError, IndexError):
+        return 0
+
+
+def ancestors(pid, parent_of=None, limit=64):
+    """the process and all its ancestors' pids"""
+    parent_of = parent_of or parent_pid
+    out = set()
+    while pid and pid > 0 and pid not in out and len(out) < limit:
+        out.add(pid)
+        pid = parent_of(pid) or 0
+    return out
+
+
 LOCK_DIR_ENV = "AE_TEST_LOCK_DIR"
 
 
@@ -276,10 +295,10 @@ class GameSlots:
     """at most max_games_total games on this machine (all helpers), and at most `parallel` from this tool.
 
     Every harness process on the machine registers its games as files in slots_dir()/slots
-    (<pid>-<n>), checked and written under one host-wide lock file (fcntl.flock), so two tools cannot
-    both take the last slot, whatever their configs. Games of other scripts count by their halo
-    processes outside work_dir, and a game left running under work_dir by a harness that died still
-    counts (the halo processes there that are not this tool's, if more than the registered slots).
+    (<owner pid>-<n>), checked and written under one host-wide lock file (fcntl.flock), so two tools
+    cannot both take the last slot, whatever their configs. A halo process descending from a registered
+    owner is that owner's slot (counted once); any other halo process (another script's game, or one left
+    running by a harness that died) counts by itself.
     Without network namespaces all games share the machine's network: then there is one slot for
     the whole machine, taken only while no halo process at all runs (a handshake pair takes it as one)."""
 
@@ -293,8 +312,10 @@ class GameSlots:
         self.files = []
 
     def _registered(self):
-        """live slot files of other harness processes (stale ones removed)"""
-        n = 0
+        """(slot count, owner pids) of the live slot files of other harness processes (stale ones removed).
+        A slot file is <owner pid>-<n> and holds the owner's pid: the harness process that starts the game,
+        which every process of that game descends from (unshare, the inner runner, xvfb-run, halo)."""
+        n, owners = 0, set()
         for f in self.dir.glob("*-*"):
             try:
                 pid = int(f.name.split("-", 1)[0])
@@ -304,17 +325,20 @@ class GameSlots:
                 continue
             if pid_alive(pid):
                 n += 1
+                owners.add(pid)
             else:
                 f.unlink(missing_ok=True)
-        return n
+        return n, owners
 
-    def _others(self, procs):
-        """games that are not this tool's: other harnesses' (registered, or left running by a harness that
-        died: halo processes under work_dir that are not ours) and other scripts' (outside work_dir)"""
-        work = expand(self.cfg["work_dir"])
-        outside = [p for p in procs if not under(p[2], work)]
-        inside_not_mine = [p for p in procs if under(p[2], work) and not any(under(p[2], o) for o in OWN_WORK)]
-        return max(self._registered(), len(inside_not_mine)) + len(outside)
+    def _others(self, procs, parent_of=None):
+        """games that are not this tool's: the registered slots of other harnesses, plus every halo process
+        that descends neither from this process nor from a registered owner (other scripts' games, and games
+        left running by a harness that died). A registered game is counted once, by its slot, wherever its
+        work folder is."""
+        n, owners = self._registered()
+        mine = os.getpid()
+        unattributed = [p for p in procs if not (ancestors(p[0], parent_of) & (owners | {mine}))]
+        return n + len(unattributed)
 
     def try_acquire(self, games=1):
         """take the slots now if they are free: (True, None) or (False, why)"""
