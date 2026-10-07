@@ -13096,6 +13096,39 @@ static boolean const hs_function_allowed_in_maps[]=
 typedef char verify_hs_function_allowed_in_maps_size[
 	NUMBEROF(hs_function_allowed_in_maps) == NUMBEROF(hs_function_table.functions) ? 1 : -1];
 
+/* port (Arena Evolved): what a main menu's scripts may call besides
+(hs_syntax_node_refusal). CE+ X's ui.map has two menu scripts that switch to
+its own maps (map_name) and a continuous one that flushes the texture and
+sound caches every three seconds. At the main menu no game is played, so no
+other machine plays one with this machine, and the caches are emptied as a
+map loads anyway. Any other map's scripts may not call these */
+static struct hs_function_definition const *const hs_functions_allowed_in_main_menus[]=
+{
+	&map_name_definition.definition,
+	&texture_cache_flush_definition,
+	&sound_cache_flush_definition,
+};
+
+/* port (Arena Evolved): whether the scripts being checked are a main
+menu's (hs_scenario_functions_check) */
+static boolean hs_scenario_is_main_menu;
+
+static boolean hs_function_allowed_in_main_menu(
+	struct hs_function_definition const *function)
+{
+	short index;
+
+	if (!hs_scenario_is_main_menu)
+		return FALSE;
+	for (index = 0; index<(short)NUMBEROF(hs_functions_allowed_in_main_menus); index++)
+	{
+		if (hs_functions_allowed_in_main_menus[index] == function)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 /* port: the arguments the special forms' evaluators read (hs_runtime.c), by
 the function table's index; NONE is any number (hs_syntax_node_refusal). The
 rest's are their parameters'. The shipped maps' all have these */
@@ -13354,7 +13387,7 @@ static short hs_syntax_node_refusal(
 		return _hs_node_refusal_damaged;
 	function = hs_function_get(function_index);
 	*name = function->name;
-	if (!hs_function_allowed_in_maps[function_index])
+	if (!hs_function_allowed_in_maps[function_index] && !hs_function_allowed_in_main_menu(function))
 		return _hs_node_refusal_function;
 
 	if (function->parse == hs_macro_function_parse)
@@ -13539,6 +13572,7 @@ static void hs_scenario_functions_check(
 	short disabled_global_count = 0;
 	char reason[128];
 
+	hs_scenario_is_main_menu = scenario->type == _scenario_type_main_menu;
 	csmemset(hs_syntax_nodes_marked, 0, sizeof(hs_syntax_nodes_marked));
 	for (script_index = 0; script_index<scenario->hs_scripts.count; script_index++)
 	{
