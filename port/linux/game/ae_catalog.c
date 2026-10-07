@@ -10,6 +10,9 @@ enum
 	/* (a line longer than this is cut before it is read: no field of any format needs more) */
 	MAXIMUM_LINE = 1024,
 	MAXIMUM_PLAYERS = 128,
+	/* a catalog's skipped lines logged, each cut to this many bytes; the rest summed up in one line */
+	LOGGED_LINES = 16,
+	LOGGED_BYTES = 120,
 	FACT_FIELDS = 6,
 	KIND_MAP = 0,
 	KIND_GAMETYPE = 1,
@@ -21,14 +24,6 @@ static void (*catalog_log)(char const *what, char const *line);
 void ae_catalog_set_log(void (*log)(char const *what, char const *line))
 {
 	catalog_log = log;
-}
-
-static void skip(struct ae_catalog *catalog, char const *what, char const *line)
-{
-	if (catalog->skipped_lines < 0x7FFF)
-		catalog->skipped_lines++;
-	if (catalog_log)
-		catalog_log(what, line);
 }
 
 /* copies text (length bytes) into out (size bytes with its NUL), cut at a UTF-8 character's boundary */
@@ -43,6 +38,70 @@ static void copy_field(char *out, size_t size, char const *text, size_t length)
 	}
 	memcpy(out, text, length);
 	out[length] = 0;
+}
+
+static int control_character(char c)
+{
+	return (unsigned char)c < 0x20 || c == 0x7F;
+}
+
+/* a line skipped: counted, and logged (the first LOGGED_LINES of the catalog, cut, control characters as '?') */
+static void skip(struct ae_catalog *catalog, char const *what, char const *line)
+{
+	char shown[LOGGED_BYTES + 1];
+	size_t index;
+
+	if (catalog->skipped_lines < 0x7FFF)
+		catalog->skipped_lines++;
+	if (!catalog_log || catalog->skipped_lines > LOGGED_LINES + 1)
+		return;
+	if (catalog->skipped_lines == LOGGED_LINES + 1)
+	{
+		catalog_log("more lines skipped (not logged)", "");
+		return;
+	}
+	copy_field(shown, sizeof(shown), line, strlen(line));
+	for (index = 0; shown[index]; index++)
+	{
+		if (control_character(shown[index]))
+			shown[index] = '?';
+	}
+	catalog_log(what, shown);
+}
+
+/* the text after a UTF-8 byte-order mark (Windows' Notepad writes one) */
+static char const *after_bom(char const *text)
+{
+	return text && !strncmp(text, "\xEF\xBB\xBF", 3) ? text + 3 : text;
+}
+
+/* a line without the spaces and tabs at either end */
+static void trim(char *line)
+{
+	size_t length = strlen(line), start = 0;
+
+	while (length > 0 && (line[length - 1] == ' ' || line[length - 1] == '\t'))
+		length--;
+	line[length] = 0;
+	while (line[start] == ' ' || line[start] == '\t')
+		start++;
+	memmove(line, line + start, length - start + 1);
+}
+
+/* a map's file name as the catalog keeps it: not empty, within its room, no control characters, and never a path
+('/', '\\', "..") */
+static int file_name(char const *name)
+{
+	size_t length = strlen(name), index;
+
+	if (!length || length >= AE_CATALOG_NAME || strchr(name, '/') || strchr(name, '\\') || strstr(name, ".."))
+		return 0;
+	for (index = 0; index < length; index++)
+	{
+		if (control_character(name[index]))
+			return 0;
+	}
+	return 1;
 }
 
 /* the next line of text (without its CR LF / LF) into line; the text after it, or NULL at the end */
@@ -83,7 +142,7 @@ static int entry_kind(char const *entry)
 		return KIND_NONE;
 	for (index = 0; index < length; index++)
 	{
-		if ((unsigned char)entry[index] < 0x20 || entry[index] == 0x7F)
+		if (control_character(entry[index]))
 			return KIND_NONE;
 	}
 	if (!strncmp(entry, "map:", 4))
@@ -120,8 +179,9 @@ static int parse_players(char const *text, short *minimum, short *maximum)
 
 void ae_catalog_read_facts(struct ae_catalog *catalog, const char *text)
 {
-	char line[MAXIMUM_LINE];
+	char line[MAXIMUM_LINE], original[MAXIMUM_LINE];
 
+	text = after_bom(text);
 	while ((text = next_line(text, line)) != NULL)
 	{
 		char *fields[FACT_FIELDS];
@@ -131,6 +191,7 @@ void ae_catalog_read_facts(struct ae_catalog *catalog, const char *text)
 
 		if (blank_or_comment(line))
 			continue;
+		strcpy(original, line);
 		/* the tab-separated fields (more than six: the rest ignored) */
 		while (count < FACT_FIELDS)
 		{
@@ -144,15 +205,14 @@ void ae_catalog_read_facts(struct ae_catalog *catalog, const char *text)
 		}
 		if (count < FACT_FIELDS)
 		{
-			skip(catalog, "maps.txt: fewer than 6 fields", line);
+			skip(catalog, "maps.txt: fewer than 6 fields", original);
 			continue;
 		}
 		memset(&facts, 0, sizeof(facts));
-		if (!fields[0][0] || strlen(fields[0]) >= AE_CATALOG_NAME ||
-			!parse_players(fields[2], &facts.players_min, &facts.players_max) ||
+		if (!file_name(fields[0]) || !parse_players(fields[2], &facts.players_min, &facts.players_max) ||
 			strlen(fields[3]) != 1 || !strchr("sml-", fields[3][0]))
 		{
-			skip(catalog, "maps.txt: a bad file, players or size", fields[0]);
+			skip(catalog, "maps.txt: a bad file, players or size", original);
 			continue;
 		}
 		copy_field(facts.file, sizeof(facts.file), fields[0], strlen(fields[0]));
@@ -208,8 +268,10 @@ void ae_catalog_read_favourites(struct ae_catalog *catalog, const char *text)
 {
 	char line[MAXIMUM_LINE];
 
+	text = after_bom(text);
 	while ((text = next_line(text, line)) != NULL)
 	{
+		trim(line);
 		if (blank_or_comment(line))
 			continue;
 		if (entry_kind(line) == KIND_NONE)
@@ -233,7 +295,7 @@ int ae_catalog_favourite_toggle(struct ae_catalog *catalog, const char *entry)
 	int index;
 
 	if (entry_kind(entry) == KIND_NONE)
-		return 0;
+		return -1;
 	index = favourite_index(catalog, entry);
 	if (index >= 0)
 	{
@@ -243,7 +305,7 @@ int ae_catalog_favourite_toggle(struct ae_catalog *catalog, const char *entry)
 		return 0;
 	}
 	if (catalog->favourite_count >= AE_CATALOG_MAXIMUM_ITEMS)
-		return 0;
+		return -1;
 	strcpy(catalog->favourites[catalog->favourite_count++], entry);
 	return 1;
 }
@@ -302,10 +364,12 @@ void ae_catalog_read_recent(struct ae_catalog *catalog, const char *text)
 {
 	char line[MAXIMUM_LINE];
 
+	text = after_bom(text);
 	while ((text = next_line(text, line)) != NULL)
 	{
 		int kind, index, known = 0;
 
+		trim(line);
 		if (blank_or_comment(line))
 			continue;
 		kind = entry_kind(line);
@@ -335,28 +399,51 @@ void ae_catalog_read_playlists(struct ae_catalog *catalog, const char *text)
 	char line[MAXIMUM_LINE];
 	struct ae_playlist *playlist = NULL;
 
+	text = after_bom(text);
 	while ((text = next_line(text, line)) != NULL)
 	{
-		size_t length = strlen(line);
+		size_t length;
 
+		trim(line);
+		length = strlen(line);
 		if (blank_or_comment(line))
 			continue;
 		if (line[0] == '[')
 		{
+			char name[AE_CATALOG_NAME];
+			int index, bad = 0;
+
 			playlist = NULL;
 			if (length < 3 || line[length - 1] != ']')
 			{
 				skip(catalog, "playlists: a bad [name]", line);
 				continue;
 			}
-			if (catalog->playlist_count >= AE_CATALOG_PLAYLISTS)
+			copy_field(name, sizeof(name), line + 1, length - 2);
+			for (index = 0; name[index]; index++)
+				bad |= control_character(name[index]);
+			if (bad)
 			{
-				skip(catalog, "playlists: more playlists than the catalog holds", line);
+				skip(catalog, "playlists: a bad [name]", line);
 				continue;
 			}
-			playlist = &catalog->playlists[catalog->playlist_count++];
+			/* (a playlist read again: the later one) */
+			for (index = 0; index < catalog->playlist_count; index++)
+			{
+				if (!strcmp(catalog->playlists[index].name, name))
+					playlist = &catalog->playlists[index];
+			}
+			if (!playlist)
+			{
+				if (catalog->playlist_count >= AE_CATALOG_PLAYLISTS)
+				{
+					skip(catalog, "playlists: more playlists than the catalog holds", line);
+					continue;
+				}
+				playlist = &catalog->playlists[catalog->playlist_count++];
+			}
 			memset(playlist, 0, sizeof(*playlist));
-			copy_field(playlist->name, sizeof(playlist->name), line + 1, length - 2);
+			strcpy(playlist->name, name);
 			continue;
 		}
 		if (!playlist)
@@ -364,7 +451,7 @@ void ae_catalog_read_playlists(struct ae_catalog *catalog, const char *text)
 			skip(catalog, "playlists: a map outside a playlist", line);
 			continue;
 		}
-		if (length >= AE_CATALOG_NAME || strchr(line, '\t'))
+		if (!file_name(line))
 		{
 			skip(catalog, "playlists: a bad map file", line);
 			continue;
