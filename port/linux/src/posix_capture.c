@@ -47,6 +47,12 @@ int capture_folder_clean(const char *folder, int stale_seconds, int (*owned)(con
 			continue;
 		if (now - information.st_mtime < (time_t)stale_seconds)
 			continue;
+		/* (between the fstatat and the unlinkat another process could put
+		something else under the name. That is accepted: the unlinkat is
+		relative to our own folder, opened O_NOFOLLOW, and only for a name of
+		the capture's exact pattern, so at most a capture-named entry in our
+		own folder is removed, which a process able to swap entries there
+		could remove itself anyway) */
 		if (unlinkat(dirfd(stream), entry->d_name, 0) == 0)
 			removed++;
 	}

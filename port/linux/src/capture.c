@@ -822,6 +822,17 @@ static int capture_folder(const char *name, const char *override, char *path, si
 	return 1;
 }
 
+/* the names the capture makes (capture_name_reserve), which
+capture_name_owned knows again: CAPTURE_STAMP_LENGTH characters of date and
+time ("2026-10-07_21-05-12"), then "_" and the map's name, the two cut to
+CAPTURE_NAME_STAMP_SIZE - 1 characters, then "_2" to "_99" for a name taken;
+so what comes between the date and time and the extension is at most
+CAPTURE_NAME_MIDDLE_MAXIMUM characters */
+#define CAPTURE_STAMP_LENGTH 19
+#define CAPTURE_NAME_STAMP_SIZE 64
+#define CAPTURE_NAME_NUMBER_MAXIMUM 99
+#define CAPTURE_NAME_MIDDLE_MAXIMUM (CAPTURE_NAME_STAMP_SIZE - 1 - CAPTURE_STAMP_LENGTH + 3 /* "_99" */)
+
 /* names folder/<date>_<time>[_<map>][_<n>]<extension> for each of
 extensions and makes them, empty, here and now (an exclusive create) so
 that nothing else takes them: paths[i] each, and base without the
@@ -832,7 +843,7 @@ static int capture_name_reserve(const char *folder, const char *const *extension
 {
 	SDL_Time now = 0;
 	SDL_DateTime date;
-	char stamp[64], map[64];
+	char stamp[CAPTURE_NAME_STAMP_SIZE], map[64];
 	int number;
 
 	memset(&date, 0, sizeof(date));
@@ -847,7 +858,7 @@ static int capture_name_reserve(const char *folder, const char *const *extension
 		SDL_strlcat(stamp, "_", sizeof(stamp));
 		SDL_strlcat(stamp, map, sizeof(stamp));
 	}
-	for (number = 1; number <= 99; number++)
+	for (number = 1; number <= CAPTURE_NAME_NUMBER_MAXIMUM; number++)
 	{
 		int index, made = 0, taken = 0;
 
@@ -1023,7 +1034,7 @@ static int capture_name_owned(const char *name)
 	/* (longest first: ".mp4.part" ends ".video.mp4.part" too) */
 	static const char *const suffixes[] = { ".video.mp4.part", ".audio.f32.part", ".png.part", ".mp4.part", ".png", ".mp4" };
 	static const int kinds[] = { 1, 1, 1, 1, 2, 2 };
-	static const char stamp[] = "0000-00-00_00-00-00";
+	static const char stamp[CAPTURE_STAMP_LENGTH + 1] = "0000-00-00_00-00-00";
 	size_t length = strlen(name), stamp_length = sizeof(stamp) - 1, index, at;
 
 	if (length <= stamp_length)
@@ -1041,10 +1052,11 @@ static int capture_name_owned(const char *name)
 
 		if (length < stamp_length + suffix_length || strcmp(name + length - suffix_length, suffixes[index]))
 			continue;
-		/* (nothing, or "_" and 1 to 63 of the map name's characters) */
+		/* (nothing, or "_" and the map name's characters and the number, as
+		capture_name_reserve makes them: CAPTURE_NAME_MIDDLE_MAXIMUM at most) */
 		if (middle)
 		{
-			whole = middle >= 2 && middle <= 64 && name[stamp_length] == '_';
+			whole = middle >= 2 && middle <= CAPTURE_NAME_MIDDLE_MAXIMUM && name[stamp_length] == '_';
 			for (at = stamp_length + 1; whole && at < stamp_length + middle; at++)
 			{
 				char c = name[at];
