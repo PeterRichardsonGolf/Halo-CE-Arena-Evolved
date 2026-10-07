@@ -1226,7 +1226,8 @@ static void hud_item_timers_draw_column(
 	real y0;
 
 	if (render.local_player_index < 0 || render.local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
-		game_engine_scoreboard_shown(render.local_player_index) > 0.0f)
+		game_engine_scoreboard_shown(render.local_player_index) > 0.0f ||
+		game_engine_scoreboard_held(render.local_player_index))
 	{
 		return;
 	}

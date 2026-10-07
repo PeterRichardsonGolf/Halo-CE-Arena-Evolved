@@ -725,6 +725,10 @@ boolean game_engine_match_clock_elapsed(
 1 shown), as last drawn */
 real game_engine_scoreboard_shown(
 	short local_player_index);
+/* port: whether a local player's view's scoreboard is opening or open this
+frame (BACK held, or the postgame's delay), before it is drawn */
+boolean game_engine_scoreboard_held(
+	short local_player_index);
 
 struct scenario_netgame_equipment;
 
