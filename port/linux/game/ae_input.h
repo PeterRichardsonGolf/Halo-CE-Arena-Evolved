@@ -12,6 +12,8 @@ unit tests.
 
 struct halo_ui_pointer;
 
+/* a screen opened over none (ae_hooks.c): the next poll takes nothing held then as a press */
+void ae_input_screen_opened(void);
 /* reads this frame's input, dispatches it to the top screen, and leaves the
 game's event queue empty (the menus behind see none of it) */
 void ae_input_poll(void);

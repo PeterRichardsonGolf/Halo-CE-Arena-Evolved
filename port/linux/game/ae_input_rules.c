@@ -63,6 +63,16 @@ int ae_input_key_translate(int keys, int action, int keyboard)
 	return action;
 }
 
+int ae_input_direction_step(struct ae_repeat *repeat, int held, unsigned long now_ms, int opening, int stalled)
+{
+	if (opening || (stalled && repeat->held && held))
+	{
+		ae_repeat_seed(repeat, held, now_ms);
+		return 0;
+	}
+	return ae_repeat_update(repeat, held, now_ms);
+}
+
 void ae_hold_begin(struct ae_hold *hold, unsigned int const held[AE_INPUT_HELD_MASKS], unsigned long now_ms)
 {
 	int index;

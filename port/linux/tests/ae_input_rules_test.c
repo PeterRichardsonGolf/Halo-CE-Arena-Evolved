@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "../src/ae_platform.h"
 #include "ae_input_rules.h"
 
@@ -72,6 +73,28 @@ int main(void)
 	ae_platform_arm_back_presses(1);
 	CHECK(ae_platform_take_back_presses() == 0);
 	ae_platform_arm_back_presses(0);
+
+	/* a direction's step: a screen opening seeds what is held */
+	{
+		struct ae_repeat repeat = { 0, 0, 0 };
+
+		CHECK(ae_input_direction_step(&repeat, 1, 1000, 1, 0) == 0);        /* held as the screen opened */
+		CHECK(ae_input_direction_step(&repeat, 1, 1600, 0, 0) == 0);        /* still held: no repeat either */
+		CHECK(ae_input_direction_step(&repeat, 0, 1700, 0, 0) == 0);
+		CHECK(ae_input_direction_step(&repeat, 1, 1800, 0, 0) == 1);        /* a new press steps */
+		/* a low frame rate (every poll 500 ms after the last: a stall each time) drops no press */
+		memset(&repeat, 0, sizeof(repeat));
+		CHECK(ae_input_direction_step(&repeat, 1, 5000, 0, 1) == 1);        /* pressed during the stall: steps */
+		CHECK(ae_input_direction_step(&repeat, 1, 5500, 0, 1) == 0);        /* held through the next: no burst */
+		CHECK(ae_input_direction_step(&repeat, 0, 6000, 0, 1) == 0);
+		CHECK(ae_input_direction_step(&repeat, 1, 6500, 0, 1) == 1);        /* pressed again: steps */
+		/* no stall: the repeat as ever (400 ms, then 80 ms) */
+		memset(&repeat, 0, sizeof(repeat));
+		CHECK(ae_input_direction_step(&repeat, 1, 9000, 0, 0) == 1);
+		CHECK(ae_input_direction_step(&repeat, 1, 9399, 0, 0) == 0);
+		CHECK(ae_input_direction_step(&repeat, 1, 9400, 0, 0) == 1);
+		CHECK(ae_input_direction_step(&repeat, 1, 9480, 0, 0) == 1);
+	}
 
 	/* the hold-back: nothing held at the close, none */
 	ae_hold_begin(&hold, masks, 1000);

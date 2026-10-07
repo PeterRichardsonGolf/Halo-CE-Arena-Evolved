@@ -73,6 +73,9 @@ long ae_catalog_write_favourites(struct ae_catalog const *catalog, char *buffer,
 long ae_catalog_write_recent(struct ae_catalog const *catalog, char *buffer, long size);
 long ae_catalog_write_playlists(struct ae_catalog const *catalog, char *buffer, long size);
 void ae_catalog_recent_push(struct ae_catalog *catalog, const char *entry);   /* newest first, unique, capped */
+/* a map file added to a playlist (made if it isn't there): 0 when the name or file is refused (a file starting with
+'#' or '[', a path, control characters...: anything that wouldn't read back as itself) or there is no room */
+int ae_catalog_playlist_add(struct ae_catalog *catalog, const char *playlist, const char *file);
 /* the entry's new state: 1 a favourite, 0 not; -1 when it isn't an entry, or the list is full */
 int ae_catalog_favourite_toggle(struct ae_catalog *catalog, const char *entry);
 struct ae_map_facts const *ae_catalog_facts(struct ae_catalog const *catalog, const char *file);

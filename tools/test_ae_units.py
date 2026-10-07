@@ -23,8 +23,8 @@ UNITS = {
     "ae_draw_layout_test.c": ([SRC / "ae_layout.c"], [], []),
     "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", SRC / "ae_back_presses.c"], [], []),
     "ae_list_test.c": ([UI / "ae_list.c"], [], []),
-    # (the map reader with the system's zlib; under the sanitizers, as it reads corrupt files; it checks the stock
-    # maps when $AE_MAPINFO_MAPS or $HALO_DATA_ROOT/maps has them, and exits 77 when it found none: a skip)
+    # (the map reader with the system's zlib; under the sanitizers, as it reads corrupt files: the maps it writes
+    # itself here, the stock maps in test_mapinfo_stock_maps)
     "ae_mapinfo_test.c": ([UI / "ae_mapinfo.c"],
                           ["-DAE_MAPINFO_SYSTEM_ZLIB", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                           ["-lz"]),
@@ -46,9 +46,8 @@ def compiler():
     return None
 
 
-@pytest.mark.parametrize("test", sorted(UNITS))
-def test_unit(test, tmp_path):
-    """Builds one unit with its test, warnings as errors, and runs it."""
+def build_unit(test, tmp_path):
+    """Builds one unit with its test, warnings as errors: the binary (skips without a compiler or what it needs)."""
     cc = compiler()
     if not cc:
         pytest.skip("no C compiler")
@@ -60,8 +59,24 @@ def test_unit(test, tmp_path):
     if build.returncode != 0 and any(missing in build.stderr for missing in MISSING):
         pytest.skip("this machine lacks what the test builds with: " + build.stderr.strip().splitlines()[-1])
     assert build.returncode == 0, build.stdout + build.stderr
-    run = subprocess.run([str(binary)], capture_output=True, text=True, cwd=ROOT,
+    return binary
+
+
+def run_unit(binary, tmp_path, *args):
+    run = subprocess.run([str(binary), *args], capture_output=True, text=True, cwd=ROOT,
                          env=dict(os.environ, AE_TEST_SCRATCH=str(tmp_path)))
     if run.returncode == SKIPPED:
         pytest.skip(run.stdout.strip().splitlines()[-1] if run.stdout.strip() else "nothing to check")
     assert run.returncode == 0, run.stdout + run.stderr
+
+
+@pytest.mark.parametrize("test", sorted(UNITS))
+def test_unit(test, tmp_path):
+    """Builds one unit with its test, warnings as errors, and runs it."""
+    run_unit(build_unit(test, tmp_path), tmp_path)
+
+
+def test_mapinfo_stock_maps(tmp_path):
+    """The map reader against the stock maps' known facts: skipped when $AE_MAPINFO_MAPS or $HALO_DATA_ROOT/maps
+    doesn't have them (as on CI); the reader's own maps are test_unit's."""
+    run_unit(build_unit("ae_mapinfo_test.c", tmp_path), tmp_path, "stock")

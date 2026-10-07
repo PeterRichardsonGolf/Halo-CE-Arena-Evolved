@@ -14,7 +14,7 @@ pure, so the unit tests build it.)
 #include "sdl_platform.h"
 #include "ae_platform.h"
 
-#ifndef HALO_SERVER
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
 #include <SDL3/SDL_keyboard.h>
 #endif
 
@@ -23,10 +23,11 @@ pure, so the unit tests build it.)
 int platform_input_scheme(void);
 #endif
 
-/* whether Num Lock is on (the dedicated server has no keyboard: on, so the keypad is digits) */
+/* whether Num Lock is on. The dedicated server has no keyboard, and Android's guest has no SDL_GetModState (its SDL
+is port/android/guest/runtime/guest_sdl.c's few functions): on there, so the keypad is digits */
 static int num_lock(void)
 {
-#ifdef HALO_SERVER
+#if defined(HALO_SERVER) || defined(HALO_ANDROID)
 	return 1;
 #else
 	return (SDL_GetModState() & SDL_KMOD_NUM) != 0;

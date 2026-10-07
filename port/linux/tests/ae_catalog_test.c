@@ -124,9 +124,26 @@ static void check_edges(void)
 	ae_catalog_read_playlists(&again, " [ List ] \n  one.map  \n\ttwo.map\nbad\x01.map\n");
 	CHECK(again.playlist_count == 1 && again.playlists[0].count == 2 && !strcmp(again.playlists[0].maps[0], "one.map"));
 	CHECK(again.skipped_lines == 1);
+	CHECK(!strcmp(again.playlists[0].name, "List"));                              /* the name trimmed too */
 	/* a playlist read again replaces the earlier one (no second of the same name) */
 	ae_catalog_read_playlists(&again, "[ List ]\nthree.map\n");
 	CHECK(again.playlist_count == 1 && again.playlists[0].count == 1 && !strcmp(again.playlists[0].maps[0], "three.map"));
+	/* playlists built in code: only what reads back as itself (no file starting with '#' or '[', no path) */
+	memset(&again, 0, sizeof(again));
+	CHECK(ae_catalog_playlist_add(&again, "Mine", "bloodgulch.map") == 1);
+	CHECK(ae_catalog_playlist_add(&again, "Mine", "#hidden.map") == 0);
+	CHECK(ae_catalog_playlist_add(&again, "Mine", "[header.map") == 0);
+	CHECK(ae_catalog_playlist_add(&again, "Mine", "../up.map") == 0 && ae_catalog_playlist_add(&again, "Mine", " sp.map") == 0);
+	CHECK(ae_catalog_playlist_add(&again, " Mine", "a.map") == 0 && ae_catalog_playlist_add(&again, "", "a.map") == 0);
+	CHECK(ae_catalog_playlist_add(&again, "Mine", "dam#nation[1].map") == 1);   /* inside a name: fine */
+	CHECK(again.playlist_count == 1 && again.playlists[0].count == 2);
+	length = ae_catalog_write_playlists(&again, written, sizeof(written));
+	memset(&catalog, 0, sizeof(catalog));
+	ae_catalog_read_playlists(&catalog, written);
+	CHECK(length > 0 && catalog.playlist_count == 1 && catalog.playlists[0].count == 2 &&
+		!strcmp(catalog.playlists[0].maps[1], "dam#nation[1].map") && catalog.skipped_lines == 0);
+	strcpy(again.playlists[0].maps[1], "#put-by-hand.map");                     /* the struct edited by hand */
+	CHECK(ae_catalog_write_playlists(&again, written, sizeof(written)) == -1);
 	/* a 1000+ byte favourites line */
 	memset(&again, 0, sizeof(again));
 	memcpy(text, "map:", 4);

@@ -69,9 +69,11 @@ boolean ae_ui_process(
 	/* (closed since: by the pointer, which comes before this) */
 	if (was_up && !ae_ui_depth())
 		ae_input_hold_begin();
-	was_up = FALSE;
 	if (ae_ui_up())
 	{
+		/* (opened since the last frame, over none: its first poll takes nothing held as a press) */
+		if (!was_up)
+			ae_input_screen_opened();
 		ae_platform_arm_back_presses(TRUE);
 		ae_input_poll();
 		was_up = ae_ui_depth() != 0;
@@ -80,6 +82,7 @@ boolean ae_ui_process(
 		ae_platform_arm_back_presses(was_up);
 		return TRUE;
 	}
+	was_up = FALSE;
 	/* (mouse button 4 is counted for AE only while one of its screens is open) */
 	ae_platform_arm_back_presses(FALSE);
 	/* the inputs held as the last screen closed reach the game's menus only

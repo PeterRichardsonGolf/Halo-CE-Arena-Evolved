@@ -42,6 +42,12 @@ Tab is held Y is none (Tab's own focus step comes from the held directions), and
 held is a Tab tapped between two polls: its focus step (down, up with Shift) */
 int ae_input_key_translate(int keys, int action, int keyboard);
 
+/* a held direction this poll: whether it steps (AE's repeat). opening: the first poll of a screen just opened: what
+is held then doesn't step (it is seeded as held). stalled: the last poll was long ago (a stall, a very low frame
+rate): a direction held then and still held doesn't step either (no burst), but one pressed since steps as any
+press does */
+int ae_input_direction_step(struct ae_repeat *repeat, int held, unsigned long now_ms, int opening, int stalled);
+
 /* the hold-back after the last screen closes: the inputs held then reach the game's menus only once let go of (each
 on its own), and nothing is held back longer than AE_INPUT_HOLD_MAXIMUM_MS; inputs pressed after the close are not
 held back */

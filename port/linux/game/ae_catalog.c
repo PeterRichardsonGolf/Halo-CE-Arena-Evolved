@@ -88,14 +88,18 @@ static void trim(char *line)
 	memmove(line, line + start, length - start + 1);
 }
 
-/* a map's file name as the catalog keeps it: not empty, within its room, no control characters, and never a path
-('/', '\\', "..") */
+/* a map's file name as the catalog keeps it: not empty, within its room, no control characters, never a path ('/',
+'\\', ".."), and not starting with '#' or '[' (written to a file, it would read back as a comment or a playlist's
+header) or with a space or tab (trimmed away on reading) */
 static int file_name(char const *name)
 {
-	size_t length = strlen(name), index;
+	size_t length = name ? strlen(name) : 0, index;
 
-	if (!length || length >= AE_CATALOG_NAME || strchr(name, '/') || strchr(name, '\\') || strstr(name, ".."))
+	if (!length || length >= AE_CATALOG_NAME || strchr(name, '/') || strchr(name, '\\') || strstr(name, "..") ||
+		name[0] == '#' || name[0] == '[' || name[0] == ' ' || name[length - 1] == ' ')
+	{
 		return 0;
+	}
 	for (index = 0; index < length; index++)
 	{
 		if (control_character(name[index]))
@@ -153,6 +157,8 @@ static int entry_kind(char const *entry)
 		return KIND_NONE;
 	return entry[kind == KIND_MAP ? 4 : 9] ? kind : KIND_NONE;
 }
+
+static int playlist_name(char const *name);
 
 /* ---------- map facts */
 
@@ -411,7 +417,7 @@ void ae_catalog_read_playlists(struct ae_catalog *catalog, const char *text)
 		if (line[0] == '[')
 		{
 			char name[AE_CATALOG_NAME];
-			int index, bad = 0;
+			int index, bad;
 
 			playlist = NULL;
 			if (length < 3 || line[length - 1] != ']')
@@ -420,8 +426,8 @@ void ae_catalog_read_playlists(struct ae_catalog *catalog, const char *text)
 				continue;
 			}
 			copy_field(name, sizeof(name), line + 1, length - 2);
-			for (index = 0; name[index]; index++)
-				bad |= control_character(name[index]);
+			trim(name);
+			bad = !playlist_name(name);
 			if (bad)
 			{
 				skip(catalog, "playlists: a bad [name]", line);
@@ -463,6 +469,48 @@ void ae_catalog_read_playlists(struct ae_catalog *catalog, const char *text)
 		}
 		strcpy(playlist->maps[playlist->count++], line);
 	}
+}
+
+/* a playlist's name as the catalog keeps it: not empty, within its room, no control characters, not starting or
+ending with a space (trimmed away on reading) */
+static int playlist_name(char const *name)
+{
+	size_t length = name ? strlen(name) : 0, index;
+
+	if (!length || length >= AE_CATALOG_NAME || name[0] == ' ' || name[length - 1] == ' ')
+		return 0;
+	for (index = 0; index < length; index++)
+	{
+		if (control_character(name[index]))
+			return 0;
+	}
+	return 1;
+}
+
+int ae_catalog_playlist_add(struct ae_catalog *catalog, const char *playlist, const char *file)
+{
+	struct ae_playlist *list = NULL;
+	int index;
+
+	if (!playlist_name(playlist) || !file_name(file))
+		return 0;
+	for (index = 0; index < catalog->playlist_count; index++)
+	{
+		if (!strcmp(catalog->playlists[index].name, playlist))
+			list = &catalog->playlists[index];
+	}
+	if (!list)
+	{
+		if (catalog->playlist_count >= AE_CATALOG_PLAYLISTS)
+			return 0;
+		list = &catalog->playlists[catalog->playlist_count++];
+		memset(list, 0, sizeof(*list));
+		strcpy(list->name, playlist);
+	}
+	if (list->count >= AE_CATALOG_PLAYLIST_MAPS)
+		return 0;
+	strcpy(list->maps[list->count++], file);
+	return 1;
 }
 
 /* ---------- writers */
@@ -521,11 +569,12 @@ long ae_catalog_write_playlists(struct ae_catalog const *catalog, char *buffer, 
 	{
 		struct ae_playlist const *list = &catalog->playlists[playlist];
 
-		if (!append_line(buffer, size, &used, "[", list->name, "]"))
+		/* (a name or file that wouldn't read back as itself, put in the struct by hand: nothing written) */
+		if (!playlist_name(list->name) || !append_line(buffer, size, &used, "[", list->name, "]"))
 			return -1;
 		for (map = 0; map < list->count; map++)
 		{
-			if (!append_line(buffer, size, &used, "", list->maps[map], ""))
+			if (!file_name(list->maps[map]) || !append_line(buffer, size, &used, "", list->maps[map], ""))
 				return -1;
 		}
 	}

@@ -20,7 +20,8 @@ while an AE screen is open (ae_hooks.c arms the count).
 Directions: each controller's d-pad and left stick, held (and Tab on the
 first), with AE's own repeat (ae_repeat: 400 ms, then 80 ms, 40 ms after
 1 s), not the event queue's 250 ms one. A direction already held when a
-screen opens, or after a stall, doesn't step until pressed again.
+screen opens, or held through a stall, doesn't step until pressed again; a
+low frame rate drops no press.
 
 Players: an event's player is the local player its controller drives, by the
 game's bindings (player_ui's single-player controllers; ae_input_rules.c).
@@ -61,7 +62,7 @@ enum
 
 	/* a stick this far over is a direction held */
 	AE_STICK_THRESHOLD = 16384,
-	/* a poll this long after the last one starts over: what is held then doesn't step */
+	/* a poll this long after the last one: a stall (a direction held through it doesn't step) */
 	AE_POLL_GAP_MS = 250,
 	NUMBER_OF_DIRECTIONS = 4,
 	MAXIMUM_ACTIONS = 16
@@ -73,6 +74,7 @@ static struct
 	unsigned long last_poll;
 	int polled;
 	int keys;
+	int opening;
 	struct ae_hold hold;
 } ae_input;
 
@@ -208,6 +210,12 @@ void ae_input_hold_begin(
 	ae_platform_take_back_presses();
 }
 
+void ae_input_screen_opened(
+	void)
+{
+	ae_input.opening = 1;
+}
+
 int ae_input_holding(
 	void)
 {
@@ -228,12 +236,14 @@ void ae_input_poll(
 	unsigned char actions[MAXIMUM_ACTIONS];
 	int action_count, index, back_presses;
 	short controller;
-	boolean starting = !ae_input.polled || now - ae_input.last_poll > AE_POLL_GAP_MS;
+	/* (a screen just opened: keys held then are not pressed now, and no button 4 press counted before is; a stall,
+	a low frame rate, drops no press: only directions held through it wait for a new press) */
+	boolean opening = ae_input.opening || !ae_input.polled;
+	boolean stalled = now - ae_input.last_poll > AE_POLL_GAP_MS;
 
-	/* (a poll after a gap, as when a screen opens: keys held then are not pressed now, and no button 4 press counted
-	before is) */
+	ae_input.opening = 0;
 	back_presses = ae_platform_take_back_presses();
-	action_count = ae_input_key_actions(keys, starting ? keys : ae_input.keys, starting ? 0 : back_presses,
+	action_count = ae_input_key_actions(keys, opening ? keys : ae_input.keys, opening ? 0 : back_presses,
 		actions, MAXIMUM_ACTIONS);
 	ae_input.polled = 1;
 	ae_input.last_poll = now;
@@ -266,10 +276,7 @@ void ae_input_poll(
 		{
 			struct ae_repeat *repeat = &ae_input.repeats[controller][direction];
 
-			/* (held from before: it steps once let go of and pressed again) */
-			if (starting)
-				ae_repeat_seed(repeat, held[direction], now);
-			else if (ae_repeat_update(repeat, held[direction], now))
+			if (ae_input_direction_step(repeat, held[direction], now, opening, stalled))
 				send_action(controller, direction_actions[direction]);
 		}
 	}

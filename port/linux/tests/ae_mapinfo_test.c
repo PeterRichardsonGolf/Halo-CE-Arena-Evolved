@@ -1,8 +1,8 @@
 /* ae_mapinfo (port/linux/game/ae_mapinfo.c): maps the test writes itself (a Custom Edition map, its protected,
 HaloMD, OpenSauce and MCC kinds, an Xbox map zlib-compressed), corrupt and cut ones (every length, pointers out of
-range, counts past the data, random bytes), and the stock Xbox maps against the tools' readings
-(port/linux/tests/data/ae_mapinfo_expected.txt) when $AE_MAPINFO_MAPS or $HALO_DATA_ROOT/maps has them. Exits 77
-(a skip) when it found no real map, after checking everything else. */
+range, counts past the data, random bytes). With the argument "stock": the stock Xbox maps against the tools'
+readings (port/linux/tests/data/ae_mapinfo_expected.txt) when $AE_MAPINFO_MAPS or $HALO_DATA_ROOT/maps has them,
+exiting 77 (a skip) when it found none. */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -383,21 +383,29 @@ static int check_real_maps(void)
 	return found;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
 	int real;
 
+	/* "stock": the stock maps only (exit 77, a skip, without them); else everything else */
+	if (argc > 1 && !strcmp(argv[1], "stock"))
+	{
+		real = check_real_maps();
+		if (failures)
+			return 1;
+		if (!real)
+		{
+			printf("ae_mapinfo: no stock maps found (set AE_MAPINFO_MAPS or HALO_DATA_ROOT to check them)\n");
+			return 77;
+		}
+		printf("ae_mapinfo: stock maps ok\n");
+		return 0;
+	}
 	check_synthetic();
 	check_xbox();
 	check_files();
-	real = check_real_maps();
 	if (failures)
 		return 1;
-	if (!real)
-	{
-		printf("ae_mapinfo: ok (no stock maps found: set AE_MAPINFO_MAPS or HALO_DATA_ROOT to check them)\n");
-		return 77;
-	}
 	printf("ae_mapinfo: ok\n");
 	return 0;
 }
