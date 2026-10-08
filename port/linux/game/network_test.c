@@ -1028,7 +1028,12 @@ void network_test_update(
 	if (game_in_progress() && !main_menu_loaded && network_test.mode == _network_test_host)
 	{
 		if (game_time_get() < network_test.damage_logged_time)
+		{
+			/* (a new game: the script and the change log start over) */
 			network_test.damage_done = 0;
+			network_test.damage_logged_time = 0;
+			network_test.damage_last[0] = network_test.damage_last[1] = network_test.damage_last[2] = -1.0f;
+		}
 		network_test_damage_script();
 	}
 	/* the game running: report (from the start of each game: the next

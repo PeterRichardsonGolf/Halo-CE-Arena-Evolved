@@ -144,8 +144,9 @@ enum no_spread_level
 /* port: how a player's health comes back (the gametype's HEALTH, the
 campaign's game.health): CLASSIC only from health packs; REACH, once the
 shields are full, up to the top of the third it is in; HALO 3, once the
-shields are full, all of it; HALO 2, all of it at once as the shields start
-to recharge (objects/damage.c) */
+shields are full, all of it; HALO 2, Halo 2's timers: shields recharge 5 s
+after the last shield damage and fill in 2 s, health refills in 5 s starting
+10 s after the last damage that reached the body (objects/damage.c) */
 enum health_style
 {
 	_health_style_classic = 0,

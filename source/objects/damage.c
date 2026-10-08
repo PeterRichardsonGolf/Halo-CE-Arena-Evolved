@@ -188,7 +188,8 @@ static void halo2_body_damaged(long object_index)
 {
 	long slot = DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index);
 
-	if (slot < MAXIMUM_OBJECTS_PER_MAP)
+	/* (players only: no entries for AI or vehicles) */
+	if (slot < MAXIMUM_OBJECTS_PER_MAP && player_index_from_unit_index(object_index) != NONE)
 	{
 		halo2_body_damage_table[slot].identifier = DATUM_INDEX_TO_IDENTIFIER(object_index);
 		halo2_body_damage_table[slot].time = game_time_get();
@@ -207,6 +208,17 @@ static long halo2_body_quiet_ticks(long object_index)
 		halo2_body_damage_table[slot].time > game_time_get())
 		halo2_body_damaged(object_index);
 	return game_time_get() - halo2_body_damage_table[slot].time;
+}
+
+/* a new map, a loaded or reverted saved game: the table starts empty */
+static void halo2_body_damage_table_reset(void)
+{
+	csmemset(halo2_body_damage_table, 0, sizeof(halo2_body_damage_table));
+}
+
+void damage_game_state_loaded(void)
+{
+	halo2_body_damage_table_reset();
 }
 
 /* ---------- constants */
@@ -448,6 +460,7 @@ void damage_dispose(void)
 void damage_initialize_for_new_map(void)
 {
 	global_debug_damage_object_index = NONE;
+	halo2_body_damage_table_reset();
 	return;
 }
 
@@ -1052,8 +1065,10 @@ static void object_damage_shield(
 
 	if (halo2_player_shields(object_index))
 	{
-		/* (HALO 2: any shield damage restarts the 5 seconds, depletion adds none) */
-		if (shield_damage > 0.f)
+		/* (HALO 2: any shield damage restarts the 5 seconds, depletion adds
+		none; damage reaching a player whose shield is already empty restarts
+		them too, so the shields never recharge under fire) */
+		if (shield_damage > 0.f || object->object.shield_vitality == 0.f)
 			object->object.shield_stun_ticks = HALO2_SHIELD_STUN_TICKS;
 	}
 	else if (shield_damage >= damage_resistance->minimum_shield_stun_damage ||
@@ -2069,6 +2084,8 @@ static void object_regenerate_health(
 	{
 		return;
 	}
+	if (player_index_from_unit_index(object_index) == NONE)
+		return;
 	if (style == _health_style_halo2)
 	{
 		/* (HALO 2: its own timer, shields or none) */
@@ -2083,7 +2100,7 @@ static void object_regenerate_health(
 		ready = object->object.body_damage_decay_timer == NONE ||
 			object->object.body_damage_decay_timer >= HEALTH_REGENERATION_UNSHIELDED_DELAY;
 	}
-	if (!ready || player_index_from_unit_index(object_index) == NONE)
+	if (!ready)
 		return;
 	/* (REACH: the top of the third it is in; on a third's top, none) */
 	if (style == _health_style_reach)
