@@ -623,6 +623,10 @@ static const struct config_setting config_settings[] =
 		"An automated test host's custom loadout: \"primary,secondary\" as the\n"
 		"gametype editor's weapon numbers (0 none, 2 assault rifle, 3 pistol, 4\n"
 		"shotgun, 5 sniper rifle, 6 rocket launcher...); empty: the gametype's." },
+	{ "debug.network_test_auto_balance", _config_boolean, "false", "HALO_NETWORK_TEST_AUTO_BALANCE",
+		_environment_value, _platform_all,
+		"An automated test host turns its gametype's AUTO TEAM BALANCE on (a team\n"
+		"game whose players all joined red, NHE EXTRAS, then starts)." },
 	{ "debug.item_log", _config_boolean, "false", "HALO_ITEM_LOG", _environment_value, _platform_all,
 		"For the automated tests of DROP SECONDARY: each item a unit drops (its\n"
 		"owned time, the rule) and each item the 30 second purge deletes." },

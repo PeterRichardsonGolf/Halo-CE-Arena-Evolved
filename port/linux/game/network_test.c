@@ -148,6 +148,9 @@ static struct
 	_loadout_weapon_* values; NONE: the gametype's loadout) */
 	long loadout_primary;
 	long loadout_secondary;
+	/* (debug.network_test_auto_balance: the gametype's AUTO TEAM BALANCE on,
+	so a team game whose players all joined one team (NHE EXTRAS) starts) */
+	boolean auto_balance;
 	long logged_time;
 } network_test;
 
@@ -269,6 +272,7 @@ static void network_test_read_settings(
 		network_test.loadout_primary = NONE;
 		network_test.loadout_secondary = NONE;
 	}
+	network_test.auto_balance = config_boolean("debug.network_test_auto_balance") != 0;
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
@@ -1222,7 +1226,8 @@ void network_test_update(
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */
-					if (saved || network_test.time_limit > 0 || network_test.loadout_primary != NONE)
+					if (saved || network_test.time_limit > 0 || network_test.loadout_primary != NONE ||
+						network_test.auto_balance)
 					{
 						if (!saved)
 							game_variant_options_default(&variant, &options);
@@ -1235,6 +1240,9 @@ void network_test_update(
 							options.primary_weapon = (byte)network_test.loadout_primary;
 							options.secondary_weapon = (byte)network_test.loadout_secondary;
 						}
+						/* debug.network_test_auto_balance */
+						if (network_test.auto_balance)
+							options.auto_team_balance = TRUE;
 						player_ui_set_game_variant_options(&options);
 					}
 					network_game_server_change_game_variant(global_network_game_server_get(), &variant);

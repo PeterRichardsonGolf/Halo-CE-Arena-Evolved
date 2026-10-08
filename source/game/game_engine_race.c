@@ -534,6 +534,18 @@ static void race_complete_lap(
 	struct player_datum *team_player;
 	long team_score;
 
+	/* port: PRACTICE MODE (Halo 1: NHE's TS PRACTICE on any map): a lap
+	never completes, so laps never end the game; the player's flags start
+	over */
+	if (game_engine_practice())
+	{
+		race_globals.lap_bit_vector[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)] = 0;
+		player->multiplayer_special = game_time_get();
+		error(_error_silent, "race: PRACTICE MODE: a lap of player %ld not counted",
+			(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index));
+		return;
+	}
+
 	race_globals.lap_bit_vector[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)] = 0;
 	player->statistics.multiplayer_statistics.race_statistics.last_lap_time = (short)lap_time;
 	race_show_lap(player_index);

@@ -5125,13 +5125,14 @@ boolean game_engine_no_falling_damage(
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_falling_damage_bit);
 }
 
-/* port: the gametype's TIMERS (TRAINING has them too) */
+/* port: the gametype's TIMERS' strip (TRAINING has it too, but on Halo 1:
+NHE's maps, whose TRAINING mode shows its own timers: NHE's TS TRAINING) */
 boolean game_engine_item_timers(
 	void)
 {
 	return game_engine_running() &&
 		(TEST_FLAG(global_variant.universal_variant.flags, _game_variant_item_timers_bit) ||
-		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit));
+		(TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit) && !hs_scenario_is_nhe()));
 }
 
 /* port: item_timers.c's spawns followed: any TIMERS level (LINE OF SIGHT
@@ -8128,6 +8129,16 @@ void game_engine_log_rules(
 			TEST_FLAG(flags, _game_variant_nhe_extras_bit) ? "on" : "off",
 			game_variant_drop_secondary_name(flags),
 			game_variant_nhe_mode_name(universal->nhe_mode));
+		/* (and the players' rules the lines above leave out) */
+		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "
+			"friend indicators %s, auto team balance %s, friendly fire penalty %d s",
+			universal->lives,
+			(double)universal->health * 100.0,
+			universal->respawn_time_growth,
+			universal->odd_man_out ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_allow_friendly_navpoints_bit) ? "on" : "off",
+			options->auto_team_balance ? "on" : "off",
+			(int)options->friendly_fire_penalty);
 	}
 
 	return;

@@ -70,7 +70,8 @@ def judge(host_r, client_r, tracks, max_median=0.5):
 
 
 def run_pair(cfg, name, host_build, client_build, out, a, slots):
-    host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay, map_name=a.map, mod=a.mod,
+    env = dict(e.split("=", 1) for e in (getattr(a, "env", None) or []))
+    host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay, env=env, map_name=a.map, mod=a.mod,
                               saved_gametype=a.saved_gametype, save_from=a.save_from)
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
@@ -130,6 +131,7 @@ def main(argv):
                    "Without --one-way the reverse pair hosts it (and --save-from) on the other build, which may "
                    "seed or migrate that root by its own rules or not know the setting")
     p.add_argument("--save-from", help="a folder copied as the host's save root (never under /tmp)")
+    p.add_argument("--env", action="append", default=[], help="NAME=value for both machines (repeat)")
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)
     if a.box:

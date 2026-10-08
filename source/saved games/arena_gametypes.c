@@ -61,7 +61,7 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations) */
-	ARENA_GAMETYPES_REVISION = 3,
+	ARENA_GAMETYPES_REVISION = 4,
 	/* a memory unit holds at most 100 saved games (saved_game_files.c):
 	the self-check warns past this many */
 	ARENA_GAMETYPES_SAVED_WARNING = 90,
@@ -101,6 +101,21 @@ PRE-GAME COUNTDOWN (on NHE's maps their scripts count down instead) */
 NHE_RULES_FLAGS but VANILLA (NHE's Vanilla had neither) */
 #define NHE_GAMETYPE_FLAGS FLAG(_game_variant_generic_starting_equipment_bit)
 
+/* Halo 1: NHE's own 23 gametypes (revision 4; notes: NHE 1.0 Gametypes,
+typed in, never read from NHE's files): the generic starting equipment,
+NHE's rules (NO SPREAD NHE, never FULL; the PRE-GAME COUNTDOWN) and NHE
+EXTRAS (all join red, no team swap, the own dead camera, the clock counting
+up); no TIMERS, DROP SECONDARY CE, classic health, fall damage */
+#define NHE_SET_FLAGS \
+	(NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS | FLAG(_game_variant_nhe_extras_bit))
+
+/* TS PRACTICE's: infinite grenades, PRACTICE MODE (every weapon and
+powerup each 30 seconds) and TRAINING's markers (not on NHE's maps, whose
+scripts have their own) */
+#define NHE_PRACTICE_FLAGS \
+	(NHE_SET_FLAGS | FLAG(_game_variant_infinite_grenades_bit) | FLAG(_game_variant_practice_bit) | \
+	FLAG(_game_variant_training_bit))
+
 /* AE's casual gametypes' aid: the power items' TIMERS */
 #define ARENA_CASUAL_FLAGS FLAG(_game_variant_item_timers_bit)
 
@@ -135,6 +150,12 @@ enum
 	ARENA_CTF_SCORE = 3,
 	/* King's and Oddball's minutes held */
 	ARENA_TIMED_SCORE = 5,
+	/* Halo 1: NHE's respawns and suicide penalties, ticks: 5 seconds, its
+	objective gametypes' "hacked" 7.5 (the stock editor cannot set it; the
+	gametype editor shows it: menu_functions.c's respawn spinner) and 10 */
+	NHE_RESPAWN_5 = 5 * TICKS_PER_SECOND,
+	NHE_RESPAWN_7_5 = 225,
+	NHE_RESPAWN_10 = 10 * TICKS_PER_SECOND,
 };
 
 /* the gametype's motion sensor: other players on it or not (the variant's
@@ -179,10 +200,27 @@ PRACTICE's NO SPREAD NHE and PRACTICE MODE) */
 #define ARENA_REV1_NHE_FLAGS 0x00000020UL
 #define ARENA_REV1_NHE_RULES_FLAGS 0x00600020UL
 #define ARENA_REV1_NHE_PRACTICE_FLAGS 0x00A00020UL
+/* (revision 4's NHE set: NHE_SET_FLAGS (the generic starting equipment, NO
+SPREAD NHE, the PRE-GAME COUNTDOWN, NHE EXTRAS) and NHE_PRACTICE_FLAGS (and
+infinite grenades, PRACTICE MODE, TRAINING)) */
+#define ARENA_REV4_NHE_SET_FLAGS 0x10600020UL
+#define ARENA_REV4_NHE_PRACTICE_FLAGS 0x10E40024UL
 
 /* the seed fields whose 0 means the stock gametype's (or AE's default):
 a value is given as value + 1 */
 #define ARENA_SET(value) ((value) + 1)
+
+/* the objectives indicator (universal_variant.goal_radar, game_engine.c's
+enum goal_radar) and the weapon sets (enum game_engine_weapons), as
+ARENA_SET values */
+enum
+{
+	ARENA_GOAL_MOTION_TRACKER = ARENA_SET(0),
+	ARENA_GOAL_NAV_POINTS = ARENA_SET(1),
+	ARENA_GOAL_NONE = ARENA_SET(2),
+	ARENA_WEAPONS_PISTOLS = ARENA_SET(1),
+	ARENA_WEAPONS_SNIPING = ARENA_SET(4),
+};
 
 /* ---------- structures */
 
@@ -249,6 +287,15 @@ struct arena_gametype_migration
 	char const *old_block_hash;
 };
 
+/* ---------- prototypes */
+
+static void arena_gametype_nhe_slayer(
+	struct game_variant *variant,
+	struct game_variant_options *options);
+static void arena_gametype_nhe_ctf(
+	struct game_variant *variant,
+	struct game_variant_options *options);
+
 /* ---------- globals */
 
 /* the AE gametypes: the stock gametype each is built from, and the
@@ -302,23 +349,96 @@ static struct arena_gametype const arena_gametypes[] =
 	{ "AE COMP OB", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
 		ARENA_VEHICLES_STOCK, TRUE },
-	/* Halo 1: NHE's competitive play (the mods/NHE maps): stock rules (fall
-	damage, classic health) with NHE's NO SPREAD and PRE-GAME COUNTDOWN, its
-	mode NHE MODE's (revision 3; before, the vehicle set's), with no vehicles
-	on other maps. 1V1, 2V2 TS, CTF and POWERUP are Beach LAN 15's (5 second
-	respawn and suicide penalty, no motion sensor, no time limit: NHE's
-	timer counts up instead) with NHE & TIMER, POWERUP NHE & POWERUPS.
-	PRACTICE is race, which NHE's maps turn into practice (every weapon and
-	powerup each 30 seconds), on TRAINING as NHE's TS PRACTICE. */
-	{ "NHE 1V1", build_game_variant_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
-		ARENA_FFA_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
-	{ "NHE 2V2 TS", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
-	{ "NHE CTF", build_game_variant_ctf, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
-		ARENA_CTF_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
+	/* Halo 1: NHE's own 23 gametypes (revision 4), in NHE's order: on its
+	maps (mods/NHE) each plays its NHE MODE; on other maps no vehicles.
+	Classic health, fall damage, shields, infinite lives, NHE_SET_FLAGS, the
+	weapon set's loadout (an assault rifle in hand), friendly fire on, no
+	time limit. Respawn and suicide penalty in ticks; King's and Oddball's
+	score minutes held; the slayers without death bonus or kill penalty */
+	{ "TS 50", build_game_variant_team_slayer, NHE_SET_FLAGS, 50, 0, NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NONE, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_slayer },
+	{ "TS 100", build_game_variant_team_slayer, NHE_SET_FLAGS, 100, 0, NHE_RESPAWN_5, NHE_RESPAWN_10, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NONE, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_slayer },
+	{ "TS ON-OFF", build_game_variant_team_slayer, NHE_SET_FLAGS, 50, 0, NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NONE, .nhe_mode = _nhe_mode_timer_only,
+		.adjust = arena_gametype_nhe_slayer },
+	/* (and TRAINING's markers on other maps) */
+	{ "TS TRAINING", build_game_variant_team_slayer, NHE_SET_FLAGS | FLAG(_game_variant_training_bit), 50, 0,
+		NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NONE,
+		.nhe_mode = _nhe_mode_training, .adjust = arena_gametype_nhe_slayer },
+	/* (team race to 1 lap, which NHE's maps turn into practice; on other
+	maps PRACTICE MODE does, and keeps a lap from ending it:
+	game_engine_race.c) */
+	{ "TS PRACTICE", build_game_variant_team_race, NHE_PRACTICE_FLAGS, 1, 0, 0, 0, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NONE, .nhe_mode = _nhe_mode_training },
+	/* (invisible players, as NHE's file has them) */
+	{ "TS SNIPERS", build_game_variant_team_slayer, NHE_SET_FLAGS | FLAG(_game_variant_always_invisible_bit), 50, 0,
+		NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, FALSE,
+		.weapon_set = ARENA_WEAPONS_SNIPING, .goal_radar = ARENA_GOAL_NONE, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_slayer },
+	{ "FFA 50 NR", build_game_variant_slayer, NHE_SET_FLAGS, 50, 0, NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NONE, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_slayer },
+	{ "FFA 50 R", build_game_variant_slayer, NHE_SET_FLAGS, 50, 0, NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_ON,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_MOTION_TRACKER, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_slayer },
+	{ "1 V 1 NR", build_game_variant_slayer, NHE_SET_FLAGS, 15, 0, NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NONE, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_slayer },
+	{ "1 V 1 R", build_game_variant_slayer, NHE_SET_FLAGS, 15, 0, NHE_RESPAWN_5, NHE_RESPAWN_5, ARENA_RADAR_ON,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_MOTION_TRACKER, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_slayer },
+	/* (team King, its stock moving hill) */
+	{ "KOTH 5M 7S", build_game_variant_team_king, NHE_SET_FLAGS, ARENA_TIMED_SCORE, 0, NHE_RESPAWN_7_5, NHE_RESPAWN_10,
+		ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS,
+		.nhe_mode = _nhe_mode_nhe_and_timer },
+	{ "KOTH 5M 10S", build_game_variant_team_king, NHE_SET_FLAGS, ARENA_TIMED_SCORE, 0, NHE_RESPAWN_10, NHE_RESPAWN_10,
+		ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS,
+		.nhe_mode = _nhe_mode_nhe_and_timer },
+	/* (team Oddball, its stock ball: slow with it, no traits, one normal
+	ball, no random start or spawn delay) */
+	{ "BALL 5M 7S", build_game_variant_team_oddball, NHE_SET_FLAGS, ARENA_TIMED_SCORE, 0, NHE_RESPAWN_7_5,
+		NHE_RESPAWN_10, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS,
+		.nhe_mode = _nhe_mode_nhe_and_timer },
+	{ "BALL 5M 10S", build_game_variant_team_oddball, NHE_SET_FLAGS, ARENA_TIMED_SCORE, 0, NHE_RESPAWN_10,
+		NHE_RESPAWN_10, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS,
+		.nhe_mode = _nhe_mode_nhe_and_timer },
+	/* (CTF: the flag at home to score; no assault, reset on capture, flag
+	must reset or single flag, the stock's) */
+	{ "CTF 3C 7S", build_game_variant_ctf, NHE_SET_FLAGS, 3, 0, NHE_RESPAWN_7_5, NHE_RESPAWN_10, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	{ "CTF 3C 7S R", build_game_variant_ctf, NHE_SET_FLAGS, 3, 0, NHE_RESPAWN_7_5, NHE_RESPAWN_10, ARENA_RADAR_ON,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	{ "CTF 3C 10S", build_game_variant_ctf, NHE_SET_FLAGS, 3, 0, NHE_RESPAWN_10, NHE_RESPAWN_10, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	{ "CTF 3 10S R", build_game_variant_ctf, NHE_SET_FLAGS, 3, 0, NHE_RESPAWN_10, NHE_RESPAWN_10, ARENA_RADAR_ON,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	{ "CTF 5C 7S", build_game_variant_ctf, NHE_SET_FLAGS, 5, 0, NHE_RESPAWN_7_5, NHE_RESPAWN_10, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	{ "CTF 5C 7S R", build_game_variant_ctf, NHE_SET_FLAGS, 5, 0, NHE_RESPAWN_7_5, NHE_RESPAWN_10, ARENA_RADAR_ON,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	{ "CTF 5C 10S", build_game_variant_ctf, NHE_SET_FLAGS, 5, 0, NHE_RESPAWN_10, NHE_RESPAWN_10, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	{ "CTF 5 10S R", build_game_variant_ctf, NHE_SET_FLAGS, 5, 0, NHE_RESPAWN_10, NHE_RESPAWN_10, ARENA_RADAR_ON,
+		ARENA_VEHICLES_NONE, FALSE, .goal_radar = ARENA_GOAL_NAV_POINTS, .nhe_mode = _nhe_mode_nhe_and_timer,
+		.adjust = arena_gametype_nhe_ctf },
+	/* (pistols, the motion tracker for players and objectives) */
+	{ "CTF WIZARD", build_game_variant_ctf, NHE_SET_FLAGS, 5, 0, NHE_RESPAWN_10, NHE_RESPAWN_10, ARENA_RADAR_ON,
+		ARENA_VEHICLES_NONE, FALSE, .weapon_set = ARENA_WEAPONS_PISTOLS, .goal_radar = ARENA_GOAL_MOTION_TRACKER,
+		.nhe_mode = _nhe_mode_nhe_and_timer, .adjust = arena_gametype_nhe_ctf },
+	/* the seeds of before kept as they were (Halo 1: NHE ships no such
+	gametype): listed with AE's (arena_gametype_names.c's AE VANILLA, AE
+	POWERUPS, AE TRAINING); NHE's rules (but VANILLA), NHE's mode on its
+	maps, no vehicles on other maps */
 	{ "NHE POWERUP", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
 		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_powerups },
@@ -327,15 +447,14 @@ static struct arena_gametype const arena_gametypes[] =
 	{ "NHE TRAIN", build_game_variant_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
 		ARENA_TRAINING_SCORE_TO_WIN, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE,
 		.nhe_mode = _nhe_mode_training },
-	{ "PRACTICE", build_game_variant_race,
-		NHE_GAMETYPE_FLAGS | GAME_VARIANT_NO_SPREAD_NHE | FLAG(_game_variant_practice_bit),
-		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_training },
 };
 
 /* the seeds' migrations, by revision (the record's "#revision N": each
 above it runs once). Revision 1: the free for all ones whose names did not
 say so; revision 2: AE PRO -> AE COMP (values unchanged); revision 3: the
-NHE seeds' mode from NHE MODE, no vehicles (on stock maps). A row whose old
+NHE seeds' mode from NHE MODE, no vehicles (on stock maps); revision 4:
+Halo 1: NHE's own set (NHE 2V2 TS -> TS 50, NHE 1V1 -> 1 V 1 NR, NHE CTF ->
+CTF 3C 7S, PRACTICE -> TS PRACTICE, with NHE's values). A row whose old
 and new names are the same is a value update (in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
@@ -453,6 +572,45 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.score_to_win = 0, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
 			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_training },
 		.old_block_hash = "bbdd586bb412eb7b7be0300deaf43d3da25b3ae6" },
+	/* revision 4: Halo 1: NHE's own gametypes; four seeds of before become
+	the NHE ones they were near (the old rows: revision 3's new ones; the
+	other 19 are seeded new) */
+	{ .revision = 4,
+		.old_row = { .name = "NHE 2V2 TS", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 50, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
+		.new_row = { .name = "TS 50", .build = build_game_variant_team_slayer, .flags = ARENA_REV4_NHE_SET_FLAGS,
+			.score_to_win = 50, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .goal_radar = ARENA_SET(2),
+			.nhe_mode = _nhe_mode_nhe_and_timer, .adjust = arena_gametype_nhe_slayer },
+		.old_block_hash = "085f93df63f0c49c323c732c3529537179910f98" },
+	{ .revision = 4,
+		.old_row = { .name = "NHE 1V1", .build = build_game_variant_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 25, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
+		.new_row = { .name = "1 V 1 NR", .build = build_game_variant_slayer, .flags = ARENA_REV4_NHE_SET_FLAGS,
+			.score_to_win = 15, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .goal_radar = ARENA_SET(2),
+			.nhe_mode = _nhe_mode_nhe_and_timer, .adjust = arena_gametype_nhe_slayer },
+		.old_block_hash = "b516a0d00a444984d4e535735e8314a1cc00ed56" },
+	{ .revision = 4,
+		.old_row = { .name = "NHE CTF", .build = build_game_variant_ctf, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 3, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
+		.new_row = { .name = "CTF 3C 7S", .build = build_game_variant_ctf, .flags = ARENA_REV4_NHE_SET_FLAGS,
+			.score_to_win = 3, .time_limit = 0, .respawn_time = 225, .suicide_penalty = 300,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .goal_radar = ARENA_SET(1),
+			.nhe_mode = _nhe_mode_nhe_and_timer, .adjust = arena_gametype_nhe_ctf },
+		.old_block_hash = "708be132828b3b69f2c11c39944f8eda2e2786ae" },
+	{ .revision = 4,
+		.old_row = { .name = "PRACTICE", .build = build_game_variant_race, .flags = ARENA_REV1_NHE_PRACTICE_FLAGS,
+			.score_to_win = 0, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_training },
+		.new_row = { .name = "TS PRACTICE", .build = build_game_variant_team_race, .flags = ARENA_REV4_NHE_PRACTICE_FLAGS,
+			.score_to_win = 1, .time_limit = 0, .respawn_time = 0, .suicide_penalty = 0,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .goal_radar = ARENA_SET(2),
+			.nhe_mode = _nhe_mode_training },
+		.old_block_hash = "bfeebb5af53cd227c97147297762dadb737833b2" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -1604,7 +1762,9 @@ static void arena_gametypes_self_check(
 			continue;
 		for (index = migration_index + 1; index < (short)NUMBEROF(arena_gametype_migrations); index++)
 		{
-			if (!strcmp(arena_gametype_migrations[index].new_row.name, new_row->name))
+			/* (a later one moves it on: updates it, or renames it) */
+			if (!strcmp(arena_gametype_migrations[index].new_row.name, new_row->name) ||
+				!strcmp(arena_gametype_migrations[index].old_row.name, new_row->name))
 				break;
 		}
 		if (index < (short)NUMBEROF(arena_gametype_migrations))
@@ -1783,6 +1943,37 @@ static void arena_gametype_build(
 	return;
 }
 
+/* Halo 1: NHE's slayers (revision 4): no death bonus, no kill penalty (the
+stock gametypes' speed changes on a death or a kill), not in order.
+Shipped: never edited (a change is a new function) */
+static void arena_gametype_nhe_slayer(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	(void)options;
+	variant->game_engine_variant.slayer.no_death_bonus = TRUE;
+	variant->game_engine_variant.slayer.no_kill_penalty = TRUE;
+	variant->game_engine_variant.slayer.kill_in_order = FALSE;
+
+	return;
+}
+
+/* Halo 1: NHE's CTF (revision 4): your flag at home to score; no assault,
+reset on capture, flag must reset or single flag. Shipped: never edited */
+static void arena_gametype_nhe_ctf(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	(void)options;
+	variant->game_engine_variant.ctf.flag_at_home_to_score = TRUE;
+	variant->game_engine_variant.ctf.assault = FALSE;
+	variant->game_engine_variant.ctf.reset_on_capture = FALSE;
+	variant->game_engine_variant.ctf.flag_must_reset = FALSE;
+	variant->game_engine_variant.ctf.single_flag_time = 0;
+
+	return;
+}
+
 /* a seeded gametype's rules, in the log */
 static void arena_gametype_log(
 	struct arena_gametype const *gametype,
@@ -1795,7 +1986,7 @@ static void arena_gametype_log(
 	long engine = variant->game_engine_index;
 
 	error(_error_silent, "seeded arena gametype '%s': %s%s, score to win %ld, time limit %d min, "
-		"respawn %ld s, suicide penalty %ld s, motion sensor %s, vehicle set %ld, loadout %s, "
+		"respawn %g s, suicide penalty %g s, motion sensor %s, vehicle set %ld, loadout %s, "
 		"equipment %s, health %s, fall damage %s, no spread %s, pre-game countdown %s, timers %s, "
 		"training %s, practice %s, nhe mode %s",
 		gametype->name,
@@ -1803,8 +1994,8 @@ static void arena_gametype_log(
 		universal->teams ? " (teams)" : "",
 		universal->score_to_win,
 		(int)options->time_limit,
-		universal->respawn_time / TICKS_PER_SECOND,
-		universal->suicide_penalty / TICKS_PER_SECOND,
+		(double)universal->respawn_time / TICKS_PER_SECOND,
+		(double)universal->suicide_penalty / TICKS_PER_SECOND,
 		TEST_FLAG(flags, _game_variant_draw_object_in_motion_sensor_bit) ? "on" : "off",
 		universal->vehicle_set,
 		options->loadout == _loadout_custom ? "pistol + assault rifle" : "the weapon set's",

@@ -588,6 +588,7 @@
 		<string text="The shields on your battle suit will not work, making\nit much easier for everyone to perish."/>
 		<string text="After you die, you'll be able to respawn immediately."/>
 		<string text="When you die, there will be a five-second wait before\nyou can rejoin the game."/>
+		<string text="When you die, there will be a seven and a half\nsecond wait before you can rejoin the game, as in\nHalo 1: NHE's objective gametypes."/>
 		<string text="You'll wait ten seconds after you perish before you\ncan return to the game."/>
 		<string text="When you die, you must wait fifteen seconds before\nyou can respawn. This will give you an idea of what\neternity is like."/>
 		<string text="Respawn time will always remain at its initial\nsetting."/>
@@ -638,6 +639,7 @@
 	<strings name="main_menu/settings_select/multiplayer_setup/player_options_edit/var_respawn_time">
 		<string text="INSTANT"/>
 		<string text="5 SECONDS"/>
+		<string text="7.5 SECONDS"/>
 		<string text="10 SECONDS"/>
 		<string text="15 SECONDS"/>
 	</strings>
