@@ -275,6 +275,9 @@ int ae_field_type(struct ae_text *text, struct ae_text_key const *keys, int coun
 the keys now */
 void ae_field_edit_guard(void);
 void ae_field_edit_abort(void);
+/* (M2) AE's screens not shown this frame: abort only when the stack is empty (the server browser over them or no
+renderer: an open edit is kept) */
+void ae_field_edit_screens_hidden(void);
 int ae_field_edit_live(void);
 /* opens AE's keyboard (a popover) for a field: only after a pad's A on the field; a keyboard types into the field
 whenever it is editing, keyboard shown or not. Its rects are layout units, view the player's view it draws in

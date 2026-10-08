@@ -259,8 +259,8 @@ boolean ae_ui_process(
 		ae_platform_arm_tab_presses(was_up);
 		return TRUE;
 	}
-	/* (AE's screens gone: nothing is being typed into) */
-	ae_field_edit_abort();
+	/* (AE's screens gone: nothing is being typed into; only hidden (the server browser, no renderer): kept) */
+	ae_field_edit_screens_hidden();
 	typing_guard();
 	/* (the last screen closed by the pointer before this frame's input: its BACK plays now; else nothing is kept) */
 	ae_glue_sound_play(ae_sound_end_frame(was_up, FALSE, now));

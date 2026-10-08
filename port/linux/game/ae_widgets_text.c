@@ -172,6 +172,14 @@ void ae_field_edit_abort(void)
 		edit_finish(typing_owner, 0, 1);
 }
 
+void ae_field_edit_screens_hidden(void)
+{
+	/* (the stack empty: nothing left to type into; screens kept under the server browser or without a renderer keep
+	their edit for when they show again) */
+	if (!ae_ui_depth())
+		ae_field_edit_abort();
+}
+
 void ae_field_edit_guard(void)
 {
 	/* (the owner's screen left the stack without ending it: a pop, a reset) */
@@ -438,6 +446,8 @@ struct keyboard_state
 	/* (its own typing: while it is open it owns the physical keyboard, so a typed key reaches it) */
 	struct ae_field_edit edit;
 	int closing;
+	/* (the field's text before editing: what its edit restores on a cancel once it takes the keys from this one) */
+	struct ae_text field_before;
 };
 static struct keyboard_state keyboards[KEYBOARD_SLOTS];
 
@@ -557,6 +567,20 @@ static void keyboard_enter(struct ae_screen *screen)
 	ae_sound_request(AE_SOUND_FORWARD, 0);
 }
 
+/* the keyboard's own edit ended from outside: a reset stack (or the guard) cancelled it: the opener hears done(0)
+once; another field taking the keys (kept) leaves the keyboard open */
+static void keyboard_edit_done(int keep, void *context)
+{
+	struct keyboard_state *state = context;
+
+	if (keep || state->closing)
+		return;
+	state->closing = 1;
+	state->open = 0;
+	if (state->spec.done)
+		state->spec.done(0, state->spec.context);
+}
+
 static void keyboard_leave(struct ae_screen *screen)
 {
 	struct keyboard_state *state = screen->data;
@@ -581,7 +605,7 @@ static void keyboard_update(struct ae_screen *screen)
 	struct ae_text_key keys[32];
 	struct ae_text *text = state->spec.text;
 	struct ae_field_edit *field = state->spec.edit;
-	int count, index;
+	int count, index, whole;
 
 	if (!state->edit.active || !text)
 		return;
@@ -595,11 +619,16 @@ static void keyboard_update(struct ae_screen *screen)
 				ae_sound_request(AE_SOUND_FAILURE, 0);
 			continue;
 		}
-		/* (the field's edit takes the keys first, so typing mode stays on; then this keyboard closes, kept) */
+		/* (the field's edit takes the keys first, so typing mode stays on, keeping the field's text from before
+		editing; the key and the rest are typed; then this keyboard closes, kept, its done seeing them) */
 		if (field)
+		{
 			ae_field_edit_begin(field, text);
+			field->before = state->field_before;
+		}
+		whole = ae_field_type(text, &keys[index], count - index);
 		keyboard_close(state, 1);
-		if (!ae_field_type(text, &keys[index], count - index))
+		if (!whole)
 			ae_sound_request(AE_SOUND_FAILURE, 0);
 		return;
 	}
@@ -842,6 +871,11 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
 	state->open = 1;
 	/* (it owns the physical keyboard while open: typing mode, its keys to keyboard_update) */
 	state->edit.holder = state;
+	state->edit.done = keyboard_edit_done;
+	state->edit.context = state;
+	/* (the field was the one typing: its text from before that edit, else the text now) */
+	state->field_before = spec->edit && spec->edit->active && spec->edit == typing_owner ? spec->edit->before :
+		*spec->text;
 	ae_field_edit_begin(&state->edit, spec->text);
 	return 1;
 }

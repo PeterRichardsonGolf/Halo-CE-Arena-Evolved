@@ -240,10 +240,15 @@ static void keyboard_layout(void)
 }
 
 static short done_keep = -1;
+static int done_count;
+static char done_text[AE_TEXT_MAXIMUM];
+/* (context, when given: the text, as done saw it) */
 static void done(int keep, void *context)
 {
-	(void)context;
 	done_keep = (short)keep;
+	done_count++;
+	if (context)
+		snprintf(done_text, sizeof(done_text), "%s", ((struct ae_text const *)context)->text);
 }
 
 static struct ae_screen_class const base = { .name = "base" };
@@ -467,36 +472,67 @@ static void keyboard_typing(void)
 	ae_ui_update();
 	CHECK(done_keep == 1 && ae_ui_depth() == 1 && edit.active && ae_field_edit_live() && typing_ended == 0 &&
 		typing_begun == 1 && !strcmp(text.text, "SLAYE") && edit_dones[0] == 0);
-	/* typing goes on through the field's edit; its end turns typing off */
+	/* typing goes on through the field's edit; a cancel then restores the text from before the keyboard opened */
 	key(AE_TEXT_KEY_CHAR, 'r');
 	ae_field_edit_keys(&edit);
 	CHECK(!strcmp(text.text, "SLAYER"));
-	ae_field_edit_end(&edit, 1);
-	CHECK(typing_ended == 1 && !ae_field_edit_live());
-	/* no field edit given: the key inserted, the keyboard closed, typing ends */
+	ae_field_edit_end(&edit, 0);
+	CHECK(typing_ended == 1 && !ae_field_edit_live() && !strcmp(text.text, "SLAY"));
+	/* (the field editing when its keyboard opened: a later cancel restores the text from before that edit) */
+	ae_text_init(&text, "AB", 11, 1);
+	ae_field_edit_begin(&edit, &text);
+	key(AE_TEXT_KEY_CHAR, 'c');
+	ae_field_edit_keys(&edit);
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && !strcmp(text.text, "ABC") && typing_begun == 2);
+	key(AE_TEXT_KEY_CHAR, 'd');
+	ae_ui_update();
+	CHECK(ae_ui_depth() == 1 && edit.active && !strcmp(text.text, "ABCD"));
+	ae_field_edit_end(&edit, 0);
+	CHECK(!strcmp(text.text, "AB") && typing_ended == 2);
+	ae_text_init(&text, "SLAYER", 11, 1);
+	/* no field edit given: the key inserted (before done(1), which sees it), the keyboard closed, typing ends */
 	spec.edit = NULL;
+	spec.context = &text;
 	done_keep = -1;
-	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 2);
+	done_text[0] = 0;
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 3);
 	key(AE_TEXT_KEY_CHAR, 's');
 	ae_ui_update();
-	CHECK(done_keep == 1 && ae_ui_depth() == 1 && !strcmp(text.text, "SLAYERS") && typing_ended == 2 &&
-		!ae_field_edit_live());
+	CHECK(done_keep == 1 && ae_ui_depth() == 1 && !strcmp(text.text, "SLAYERS") && !strcmp(done_text, "SLAYERS") &&
+		typing_ended == 3 && !ae_field_edit_live());
 	/* popped by something else (not B / START / DONE): the text from before, done(0), typing off */
 	done_keep = -1;
-	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 3);
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 4);
 	key(AE_TEXT_KEY_BACKSPACE, 0);
 	ae_ui_update();
 	CHECK(!strcmp(text.text, "SLAYER"));
 	ae_ui_pop();
-	CHECK(done_keep == 0 && !strcmp(text.text, "SLAYERS") && typing_ended == 3 && !ae_field_edit_live() &&
+	CHECK(done_keep == 0 && !strcmp(text.text, "SLAYERS") && typing_ended == 4 && !ae_field_edit_live() &&
 		ae_ui_depth() == 1);
-	/* a reset with the keyboard open: typing off, and the slot opens again */
-	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 4);
+	/* the screens hidden (the server browser over them, no renderer) with the keyboard open: its edit kept */
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 5);
+	key(AE_TEXT_KEY_BACKSPACE, 0);
+	ae_ui_update();
+	ae_field_edit_screens_hidden();
+	CHECK(ae_field_edit_live() && typing_ended == 4 && !strcmp(text.text, "SLAYER") && ae_ui_depth() == 2);
+	/* a reset with the keyboard open: typing off, the text from before, its opener's done(0) once; the slot opens
+	again */
+	done_keep = -1;
+	done_count = 0;
 	ae_ui_reset();
-	CHECK(typing_ended == 4 && !ae_field_edit_live() && !strcmp(text.text, "SLAYERS"));
+	CHECK(typing_ended == 5 && !ae_field_edit_live() && !strcmp(text.text, "SLAYERS") && done_keep == 0 &&
+		done_count == 1);
+	ae_field_edit_abort();
+	ae_field_edit_guard();
+	CHECK(done_count == 1);
 	ae_ui_push(&base, AE_OWNER_ANY, NULL);
-	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY));
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && done_count == 1);
 	ae_ui_reset();
+	CHECK(done_count == 2);
+	/* the stack empty: an edit left is aborted */
+	ae_field_edit_begin(&edit, &text);
+	ae_field_edit_screens_hidden();
+	CHECK(!edit.active && !ae_field_edit_live());
 	queued_count = 0;
 }
 
