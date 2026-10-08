@@ -4663,7 +4663,8 @@ static void game_engine_update_start_text(
 	}
 	shown = TRUE;
 	{
-		wchar_t name[NUMBEROF(global_variant.human_readable_game_description) + 1];
+		/* (40 wide as the scoreboard's: a display name is longer than the stored one) */
+		wchar_t name[40];
 		char name_ascii[NUMBEROF(name)];
 		wchar_t const *mode = NULL;
 		short local_player_index;
@@ -4671,6 +4672,7 @@ static void game_engine_update_start_text(
 
 		if (!game_engine_scoreboard_gametype_name(name, NUMBEROF(name)))
 		{
+			csmemset(name, 0, sizeof(name));
 			csmemcpy(name, global_variant.human_readable_game_description,
 				sizeof(global_variant.human_readable_game_description));
 			name[NUMBEROF(name) - 1] = 0;

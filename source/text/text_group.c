@@ -316,8 +316,10 @@ wchar_t *unicode_string_list_get_string(long tag_index, short string_index)
 	{
 		struct string_list *list = unicode_string_list_definition_get(tag_index);
 
-		if (ae_text_override(tag_index, string_index))
-			result = ae_text_override(tag_index, string_index);
+		wchar_t *override = ae_text_override(tag_index, string_index);
+
+		if (override)
+			result = override;
 		else
 #ifdef HALO_CUSTOM_EDITION
 		if (custom_edition_keyboard_string(tag_index, string_index))
