@@ -3410,6 +3410,36 @@ void network_game_server_change_game_variant(
 	match_assert(NETWORK_SERVER_MANAGER_FILE, 0x7BF,
 		server->state == _network_game_server_state_pregame);
 
+	/* port: NHE EXTRAS: the host switching the lobby from a gametype
+	without it to a team gametype with it moves every player there to red
+	(as everyone joins red), and they pick their teams from there; one NHE
+	EXTRAS gametype to another keeps the teams they picked */
+	{
+		boolean was = server->game.variant.universal_variant.teams &&
+			TEST_FLAG(server->game.variant.universal_variant.flags, _game_variant_nhe_extras_bit);
+		boolean now = variant->universal_variant.teams &&
+			TEST_FLAG(variant->universal_variant.flags, _game_variant_nhe_extras_bit);
+
+		if (now && !was)
+		{
+			long player_index;
+			long moved = 0;
+
+			for (player_index = 0; player_index < MAXIMUM_NETWORK_PLAYER_COUNT; player_index++)
+			{
+				struct network_player *player = &server->game.players[player_index];
+
+				if (network_player_is_valid(player))
+				{
+					if (player->team_index != _team_red)
+						moved++;
+					player->team_index = _team_red;
+				}
+			}
+			network_event("NHE EXTRAS: the lobby's players moved to red (%ld moved)", moved);
+		}
+	}
+
 	csmemcpy(&server->game.variant, variant, sizeof(server->game.variant));
 	network_game_server_variant_options(&server->game.variant, &server->game.variant_options);
 
