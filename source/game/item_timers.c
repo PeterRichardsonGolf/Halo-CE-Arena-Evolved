@@ -50,6 +50,7 @@ map's spawns spread, tell no sides */
 as picked up (item_timer_taken): the copy from before is purged the tick
 after the spawn, and a client has the host's new one a few ticks late */
 #define ITEM_TIMER_TAKEN_AFTER_TICKS TICKS_PER_SECOND
+#define ITEM_TIMER_TAKEN_SCAN_TICKS TICKS_PER_SECOND
 
 /* ---------- macros */
 
@@ -81,6 +82,8 @@ static struct
 	long before[ITEM_TIMER_MAXIMUM_NEARBY];
 	/* (the spawn whose item has left its spot: picked up; item_timer_taken) */
 	long taken_spawn_tick;
+	/* (the tick of the last scan for it: once a second at most) */
+	long taken_scan_tick;
 } item_timer_spawned[MAXIMUM_ITEM_TIMERS];
 
 /* port_config.c's */
@@ -589,6 +592,7 @@ void item_timers_map_begin(
 		item_timer_spawned[index].before_spawn_tick = NONE;
 		item_timer_spawned[index].before_count = 0;
 		item_timer_spawned[index].taken_spawn_tick = NONE;
+		item_timer_spawned[index].taken_scan_tick = NONE;
 	}
 	if (!game_engine_running())
 		return;
@@ -869,12 +873,15 @@ void item_timers_update(
 		struct item_timer const *timer = &item_timers[index];
 		long spawn;
 
-		if (!item_timer_mixed(timer) && !find_taken)
+		boolean mixed = item_timer_mixed(timer);
+
+		if (!mixed && !find_taken)
 			continue;
 		if (timer->timer_class < 0 || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
 			continue;
-		/* (in the countdown to a spawn: the items there before it) */
-		if (item_timer_ticks_left(timer) < timer->period_ticks &&
+		/* (in the countdown to a spawn: the items there before it; only a
+		mixed entry needs them, to tell which item it spawned) */
+		if (mixed && item_timer_ticks_left(timer) < timer->period_ticks &&
 			item_timer_ticks_left(timer) <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)
 		{
 			short classes[ITEM_TIMER_MAXIMUM_NEARBY];
@@ -891,7 +898,25 @@ void item_timers_update(
 			item_timer_spawned[index].spawn_tick = spawn;
 			item_timer_spawned[index].timer_class = NONE;
 		}
-		if (item_timer_spawned[index].timer_class == NONE)
+		if (!mixed)
+		{
+			/* (its item is its class: nothing to find, and one line a spawn) */
+			if (item_timer_spawned[index].timer_class == NONE)
+			{
+				wchar_t name[32];
+				char text[32];
+				short character_index;
+
+				item_timer_spawned[index].timer_class = timer->timer_class;
+				item_timer_waypoint_name(timer, name, NUMBEROF(name));
+				for (character_index = 0; character_index < (short)sizeof(text) - 1 && name[character_index]; character_index++)
+					text[character_index] = (char)name[character_index];
+				text[character_index] = 0;
+				platform_log("item timers: %d spawned %s at tick %ld (seen at tick %ld)", index, text, spawn,
+					game_time_get());
+			}
+		}
+		else if (item_timer_spawned[index].timer_class == NONE)
 		{
 			item_timer_spawned[index].timer_class = item_timer_find_spawned(timer, index, spawn);
 			if (item_timer_spawned[index].timer_class != NONE)
@@ -912,11 +937,17 @@ void item_timers_update(
 		before is gone (purged the tick after it) and a client has the new
 		one, no item of its classes at its spot) */
 		if (find_taken && item_timer_spawned[index].taken_spawn_tick != spawn &&
-			game_time_get() - spawn >= ITEM_TIMER_TAKEN_AFTER_TICKS)
+			game_time_get() - spawn >= ITEM_TIMER_TAKEN_AFTER_TICKS &&
+			/* (the scan of the objects once a second at most: what it
+			found stays until the next scan) */
+			(item_timer_spawned[index].taken_scan_tick == NONE ||
+			game_time_get() < item_timer_spawned[index].taken_scan_tick ||
+			game_time_get() - item_timer_spawned[index].taken_scan_tick >= ITEM_TIMER_TAKEN_SCAN_TICKS))
 		{
 			long indices[ITEM_TIMER_MAXIMUM_NEARBY];
 			short classes[ITEM_TIMER_MAXIMUM_NEARBY];
 
+			item_timer_spawned[index].taken_scan_tick = game_time_get();
 			if (!item_timer_nearby_items(timer, indices, classes, ITEM_TIMER_MAXIMUM_NEARBY))
 			{
 				item_timer_spawned[index].taken_spawn_tick = spawn;
