@@ -236,7 +236,7 @@ void ae_input_poll(
 	struct event_record event;
 	unsigned long now = system_milliseconds();
 	int keys = ae_platform_keys();
-	int previous_keys, tab_forward, tab_backward, tab_down, tab_up;
+	int previous_keys, tab_forward, tab_backward, tab_ignored, tab_down, tab_up;
 	unsigned char actions[MAXIMUM_ACTIONS];
 	int action_count, index, back_presses;
 	short controller;
@@ -248,9 +248,9 @@ void ae_input_poll(
 	ae_input.opening = 0;
 	previous_keys = opening ? keys : ae_input.keys;
 	/* (Tab's presses since the last poll; a screen just opened takes none from before) */
-	ae_platform_take_tab_presses(&tab_forward, &tab_backward);
+	ae_platform_take_tab_presses(&tab_forward, &tab_backward, &tab_ignored);
 	if (opening)
-		tab_forward = tab_backward = 0;
+		tab_forward = tab_backward = tab_ignored = 0;
 	back_presses = ae_platform_take_back_presses();
 	action_count = ae_input_key_actions(keys, previous_keys, opening ? 0 : back_presses,
 		actions, MAXIMUM_ACTIONS);
@@ -269,7 +269,8 @@ void ae_input_poll(
 		}
 		action = button_action(event.data.button.index);
 		if (event.controller_index == 0)
-			action = ae_input_key_translate(keys, tab_forward + tab_backward, action,
+			/* (an Alt+Tab steps nothing, but its Y is dropped as well) */
+			action = ae_input_key_translate(keys, tab_forward + tab_backward + tab_ignored, action,
 				device_of(0) == AE_DEVICE_KEYBOARD_MOUSE);
 		if (action != AE_ACTION_NONE)
 			send_action(event.controller_index, action);

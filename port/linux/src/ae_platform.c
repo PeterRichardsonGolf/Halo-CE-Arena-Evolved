@@ -87,17 +87,22 @@ int ae_platform_keys(void)
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
 /* (atomics: SDL may call a watch from the thread that queues the event; the game's thread pumps them here) */
-static SDL_AtomicInt tab_armed, tab_forward, tab_backward;
+static SDL_AtomicInt tab_armed, tab_forward, tab_backward, tab_ignored;
 
 static bool SDLCALL tab_watch(
 	void *userdata,
 	SDL_Event *event)
 {
 	(void)userdata;
-	if (event->type == SDL_EVENT_KEY_DOWN && !event->key.repeat && event->key.scancode == SDL_SCANCODE_TAB &&
-		SDL_GetAtomicInt(&tab_armed))
+	if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_TAB && SDL_GetAtomicInt(&tab_armed))
 	{
-		SDL_AddAtomicInt(event->key.mod & SDL_KMOD_SHIFT ? &tab_backward : &tab_forward, 1);
+		switch (ae_platform_tab_press_kind(event->key.repeat, (event->key.mod & SDL_KMOD_SHIFT) != 0,
+			(event->key.mod & SDL_KMOD_ALT) != 0, (event->key.mod & SDL_KMOD_GUI) != 0))
+		{
+		case AE_TAB_PRESS_FORWARD: SDL_AddAtomicInt(&tab_forward, 1); break;
+		case AE_TAB_PRESS_BACKWARD: SDL_AddAtomicInt(&tab_backward, 1); break;
+		case AE_TAB_PRESS_IGNORED: SDL_AddAtomicInt(&tab_ignored, 1); break;
+		}
 	}
 	/* (a watch's answer is ignored: the event is queued as ever) */
 	return true;
@@ -115,15 +120,18 @@ void ae_platform_arm_tab_presses(
 	{
 		SDL_SetAtomicInt(&tab_forward, 0);
 		SDL_SetAtomicInt(&tab_backward, 0);
+		SDL_SetAtomicInt(&tab_ignored, 0);
 	}
 }
 
 void ae_platform_take_tab_presses(
 	int *forward,
-	int *backward)
+	int *backward,
+	int *ignored)
 {
 	*forward = SDL_SetAtomicInt(&tab_forward, 0);
 	*backward = SDL_SetAtomicInt(&tab_backward, 0);
+	*ignored = SDL_SetAtomicInt(&tab_ignored, 0);
 }
 #else
 void ae_platform_arm_tab_presses(
@@ -134,9 +142,10 @@ void ae_platform_arm_tab_presses(
 
 void ae_platform_take_tab_presses(
 	int *forward,
-	int *backward)
+	int *backward,
+	int *ignored)
 {
-	*forward = *backward = 0;
+	*forward = *backward = *ignored = 0;
 }
 #endif
 

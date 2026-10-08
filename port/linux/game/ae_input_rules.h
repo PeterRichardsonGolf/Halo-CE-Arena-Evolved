@@ -22,7 +22,9 @@ enum
 	AE_INPUT_STICK_LEFT = 1 << 18,
 	AE_INPUT_STICK_RIGHT = 1 << 19,
 	/* the hold-back's limit: a stuck button can't keep the game's menus from their input longer */
-	AE_INPUT_HOLD_MAXIMUM_MS = 2000
+	AE_INPUT_HOLD_MAXIMUM_MS = 2000,
+	/* the most of Tab's counted presses one poll steps (a stall can't release a burst) */
+	AE_INPUT_TAB_STEPS_MAXIMUM = 4
 };
 
 /* the local player a controller drives. bindings[p] is the controller of local player p (the game's: player_ui's
@@ -46,7 +48,7 @@ int ae_input_key_translate(int keys, int tab_presses, int action, int keyboard);
 /* Tab's focus steps from its presses counted since the last poll, forward (down) and backward (up: Shift held at
 the press), beyond the step the held directions give: a press still held at this poll that was not at the last
 (previous_keys) is the held direction's step (and its repeat), the others (taps let go of between the polls, two in
-one frame are two) step here */
+one frame are two) step here, at most AE_INPUT_TAB_STEPS_MAXIMUM in all (forward first) */
 void ae_input_tab_steps(int forward, int backward, int keys, int previous_keys, int *down, int *up);
 
 /* a held direction this poll: whether it steps (AE's repeat). opening: the first poll of a screen just opened: what

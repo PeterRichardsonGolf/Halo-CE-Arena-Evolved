@@ -87,6 +87,21 @@ int main(void)
 		/* nothing counted: nothing */
 		ae_input_tab_steps(0, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 0 && up == 0);
 		ae_input_tab_steps(-3, 0, 0, 0, &down, &up); CHECK(down == 0 && up == 0);
+		/* a stall's pile of presses: at most AE_INPUT_TAB_STEPS_MAXIMUM (4) steps a poll, forward first */
+		ae_input_tab_steps(9, 0, 0, 0, &down, &up); CHECK(down == 4 && up == 0);
+		ae_input_tab_steps(3, 5, 0, 0, &down, &up); CHECK(down == 3 && up == 1);
+		ae_input_tab_steps(0, 7, 0, 0, &down, &up); CHECK(down == 0 && up == 4);
+		ae_input_tab_steps(5, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 4 && up == 0);
+		CHECK(AE_INPUT_TAB_STEPS_MAXIMUM == 4);
+		/* which Tab key downs count: not the key's own repeats, never with Alt or the GUI key (Alt+Tab, Super+Tab
+		switch windows), backward with Shift */
+		CHECK(ae_platform_tab_press_kind(0, 0, 0, 0) == AE_TAB_PRESS_FORWARD);
+		CHECK(ae_platform_tab_press_kind(0, 1, 0, 0) == AE_TAB_PRESS_BACKWARD);
+		CHECK(ae_platform_tab_press_kind(1, 0, 0, 0) == AE_TAB_PRESS_NONE);
+		CHECK(ae_platform_tab_press_kind(1, 0, 1, 0) == AE_TAB_PRESS_NONE);
+		CHECK(ae_platform_tab_press_kind(0, 0, 1, 0) == AE_TAB_PRESS_IGNORED);
+		CHECK(ae_platform_tab_press_kind(0, 1, 1, 0) == AE_TAB_PRESS_IGNORED);
+		CHECK(ae_platform_tab_press_kind(0, 0, 0, 1) == AE_TAB_PRESS_IGNORED);
 	}
 	/* a held Tab: one step at its press (the count adds none), then the direction's repeat as before */
 	{

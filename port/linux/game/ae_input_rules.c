@@ -76,6 +76,11 @@ void ae_input_tab_steps(int forward, int backward, int keys, int previous_keys, 
 		if (*direction > 0)
 			(*direction)--;
 	}
+	/* (at most a few a poll: presses piled up in a stall don't come out as a burst) */
+	if (*down > AE_INPUT_TAB_STEPS_MAXIMUM)
+		*down = AE_INPUT_TAB_STEPS_MAXIMUM;
+	if (*up > AE_INPUT_TAB_STEPS_MAXIMUM - *down)
+		*up = AE_INPUT_TAB_STEPS_MAXIMUM - *down;
 }
 
 int ae_input_direction_step(struct ae_repeat *repeat, int held, unsigned long now_ms, int opening, int stalled)
