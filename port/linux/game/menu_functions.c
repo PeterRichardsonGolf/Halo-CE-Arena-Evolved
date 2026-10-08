@@ -5619,6 +5619,8 @@ static struct gametype_option const gametype_options[] =
 	/* (port: TIMERS and TRAINING, OFF or ON) */
 	{ "item_timers_spinner", _option_flag, 0, FLAG(_game_variant_item_timers_bit), 2, { 0, 1 } },
 	{ "training_spinner", _option_flag, 0, FLAG(_game_variant_training_bit), 2, { 0, 1 } },
+	/* (SPAWN HEAT: ON is the bit clear, game_engine.h) */
+	{ "spawn_heat_spinner", _option_flag, 0, FLAG(_game_variant_no_spawn_heat_bit), 2, { 0, 1 } },
 	/* capture the flag */
 	{ "assault_spinner", _option_byte, VARIANT_FIELD(game_engine_variant.ctf.assault), 0, 2, { 1, 0 } },
 	{ "single_flag_spinner", _option_long, VARIANT_FIELD(game_engine_variant.ctf.single_flag_time), 0, 6,

@@ -460,6 +460,8 @@
 		<string text="When and where the rockets, sniper, overshield\nand camo spawn, for everyone."/>
 		<string text="No training aids."/>
 		<string text="Waypoints over the power items as they come up,\nand the player spawns. For learning a map."/>
+		<string text="Spawn markers show where players are likely\nto spawn next (with TRAINING). Each player picks\nMINE or ENEMY in Settings."/>
+		<string text="Plain spawn markers for everyone."/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_labels">
 		<string text="OBJECTIVES INDICATOR:"/>
@@ -468,6 +470,7 @@
 		<string text="FRIEND INDICATORS ON SCREEN:"/>
 		<string text="TIMERS:"/>
 		<string text="TRAINING:"/>
+		<string text="SPAWN HEAT:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_friends_on_screen">
 		<string text="YES"/>

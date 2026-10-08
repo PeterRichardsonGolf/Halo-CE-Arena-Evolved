@@ -501,14 +501,16 @@ STRING_INSERTS = {
     f"{PLAYLIST_EDIT}/playlist_edit_list_extended_dsc_text": [(7, [
         "Time limit, fall damage, health\\nand Halo 1: NHE's competitive\\noptions for this gametype.\\nThis gametype:",
     ])],
-    # (Indicator Options' TIMERS and TRAINING, after FRIEND INDICATORS ON
-    # SCREEN: _indicator_options_extras)
-    f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:"])],
+    # (Indicator Options' TIMERS, TRAINING and SPAWN HEAT, after FRIEND
+    # INDICATORS ON SCREEN: _indicator_options_extras)
+    f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:", "SPAWN HEAT:"])],
     f"{INDICATOR_OPTIONS}/cap_indicator_options": [(8, [
         "No timers: learn the spawns the hard way.",
         "When and where the rockets, sniper, overshield\\nand camo spawn, for everyone.",
         "No training aids.",
         "Waypoints over the power items as they come up,\\nand the player spawns. For learning a map.",
+        "Spawn markers show where players are likely\\nto spawn next (with TRAINING). Each player picks\\nMINE or ENEMY in Settings.",
+        "Plain spawn markers for everyone.",
     ])],
 }
 
@@ -660,11 +662,13 @@ WIDGET_PATCHES = {
     f"{PLAYLIST_EDIT}/edit_playlist_select_list": {"insert_before": {
         f"{PLAYLIST_EDIT}/playlist_edit_button_bar": [f'<child widget="{PLAYLIST_EDIT}/playlist_edit_arena_item"/>'],
     }},
-    # (Indicator Options' TIMERS and TRAINING rows, over its buttons, 30 apart)
+    # (Indicator Options' TIMERS, TRAINING and SPAWN HEAT rows, over its
+    # buttons, 30 apart)
     f"{INDICATOR_OPTIONS}/indicator_options_menu": {"insert_before": {
         f"{INDICATOR_OPTIONS}/indicator_button_bar": [
             f'<child widget="{INDICATOR_OPTIONS}/op_item_timers" x="54" y="163"/>',
             f'<child widget="{INDICATOR_OPTIONS}/op_training" x="54" y="193"/>',
+            f'<child widget="{INDICATOR_OPTIONS}/op_spawn_heat" x="54" y="223"/>',
         ]}},
     # (the PC's Vehicles row's Start opened Item Options)
     "main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_vehicles_list_item": {"handlers": [
@@ -1433,11 +1437,15 @@ def _indicator_options_row(key: str, label: int) -> list:
 
 def _indicator_options_extras() -> list:
     """Indicator Options' rows of the port's: TIMERS and TRAINING, OFF or ON
-    (the gametype's _game_variant_item_timers_bit and _training_bit)"""
+    (the gametype's _game_variant_item_timers_bit and _training_bit), and
+    SPAWN HEAT, ON or OFF (_game_variant_no_spawn_heat_bit, inverted: clear
+    is ON)"""
     lines = _indicator_options_row("item_timers", 4)
     lines += _strings(f"{INDICATOR_OPTIONS}/var_item_timers", ["OFF", "ON"])
     lines += _indicator_options_row("training", 5)
     lines += _strings(f"{INDICATOR_OPTIONS}/var_training", ["OFF", "ON"])
+    lines += _indicator_options_row("spawn_heat", 6)
+    lines += _strings(f"{INDICATOR_OPTIONS}/var_spawn_heat", ["ON", "OFF"])
     return lines
 
 
