@@ -413,7 +413,7 @@ static struct arena_gametype_migration const arena_gametype_test_migration =
 static boolean arena_gametype_migration_unsafe[NUMBEROF(arena_gametype_migrations) + 1];
 
 /* port_config.c's */
-int config_boolean(char const *name);
+long config_integer(char const *name);
 
 
 static char const arena_gametypes_record_path[] = "z:\\saved\\playlists\\arena_gametypes.txt";
@@ -444,7 +444,9 @@ static void arena_gametypes_migrate(
 	unsigned long *record_length,
 	short record_revision,
 	boolean *record_changed,
-	boolean *written);
+	boolean *written,
+	short *deferred_revision,
+	char *deferred_names);
 static void arena_gametypes_self_check(
 	void);
 static boolean arena_gametypes_record_read(
@@ -462,8 +464,10 @@ static struct arena_gametype_migration const *arena_gametypes_migration(
 	short index);
 static short arena_gametypes_revision(
 	void);
-static boolean arena_gametypes_revision_backed_up(
-	short revision);
+static boolean arena_gametypes_row_begun(
+	short revision,
+	char const *old_name,
+	boolean mark);
 static int arena_gametype_name_compare(
 	wchar_t const *a,
 	wchar_t const *b);
@@ -485,10 +489,16 @@ boolean arena_gametypes_seed(
 	boolean record_changed = FALSE;
 	boolean record_unreadable = FALSE;
 	boolean written = FALSE;
+	/* (the lowest revision with a migration put off to the next start, and
+	the new names it is not to seed this start, "\nNAME\n" each) */
+	short deferred_revision = NONE;
+	char deferred_names[ARENA_GAMETYPES_RECORD_SIZE];
 	short index;
 
 	csmemset(record, 0, sizeof(record));
 	record[0] = '\n';
+	csmemset(deferred_names, 0, sizeof(deferred_names));
+	deferred_names[0] = '\n';
 	record_changed = arena_gametypes_record_read(record, &record_length, &record_revision, &record_unreadable);
 	/* (a record there but not read: nothing seeded or migrated, which
 	would bring back what the player deleted; tried again next start) */
@@ -499,7 +509,8 @@ boolean arena_gametypes_seed(
 	builds as seeded is skipped) */
 	arena_gametypes_self_check();
 	/* (those seeded under their old names: migrated if unchanged) */
-	arena_gametypes_migrate(record, &record_length, record_revision, &record_changed, &written);
+	arena_gametypes_migrate(record, &record_length, record_revision, &record_changed, &written, &deferred_revision,
+		deferred_names);
 
 	for (index = 0; index < NUMBEROF(arena_gametypes); index++)
 	{
@@ -508,8 +519,9 @@ boolean arena_gametypes_seed(
 
 		_snprintf(line, sizeof(line), "\n%s\n", gametype->name);
 		line[sizeof(line) - 1] = 0;
-		/* (seeded before: deleted, renamed or edited since, it stays so) */
-		if (strstr(record, line))
+		/* (seeded before: deleted, renamed or edited since, it stays so; or
+		its migration put off: not seeded beside the old one) */
+		if (strstr(record, line) || strstr(deferred_names, line))
 			continue;
 		if (!arena_gametype_write(gametype, &written))
 			continue;
@@ -518,9 +530,16 @@ boolean arena_gametypes_seed(
 	}
 
 	/* (never a lower revision: a record a newer build wrote keeps its own,
-	so its revisions do not run again after a rollback) */
-	if (record_changed || record_revision < arena_gametypes_revision())
-		arena_gametypes_record_write(record, record_length, MAX(record_revision, arena_gametypes_revision()));
+	so its revisions do not run again after a rollback; a migration put off
+	keeps its revision unrecorded, so it runs again next start: the others
+	of it and after it find themselves done) */
+	{
+		short revision = deferred_revision != NONE ? (short)(deferred_revision - 1) : arena_gametypes_revision();
+
+		revision = MAX(record_revision, revision);
+		if (record_changed || record_revision < revision)
+			arena_gametypes_record_write(record, record_length, revision);
+	}
 
 	return written;
 }
@@ -847,10 +866,13 @@ static boolean arena_gametypes_directory(
 
 /* a file copied into a directory under its own name, never over a file
 there (one there already is kept: an earlier backup's): TRUE when the copy
-is there */
+is there. must_match: one there already counts only with the same bytes (a
+gametype's file); else it counts as it is (the record's, from the
+revision's first start: the record before the revision) */
 static boolean arena_gametypes_backup_file(
 	struct file_reference *source,
-	char const *directory_path)
+	char const *directory_path,
+	boolean must_match)
 {
 	char name[MAXIMUM_FILENAME_LENGTH + 1];
 	char path[MAXIMUM_FILENAME_LENGTH + 1];
@@ -870,6 +892,15 @@ static boolean arena_gametypes_backup_file(
 	data = file_read_into_memory(source, &size);
 	if (!data)
 		return FALSE;
+	if (file_exists(&destination) && !must_match)
+	{
+		/* (the record's backup from this revision's first start: the
+		record as it was before the revision, which is what to keep; the
+		record has changed since) */
+		error(_error_silent, "arena gametypes: backup '%s' is there already: kept (the earlier one)", path);
+		free(data);
+		return TRUE;
+	}
 	if (file_exists(&destination))
 	{
 		unsigned long backup_size = 0;
@@ -925,7 +956,7 @@ static boolean arena_gametypes_backup(
 		struct file_reference record;
 
 		if (file_reference_create_from_path(&record, arena_gametypes_record_path, FALSE) && file_exists(&record) &&
-			!arena_gametypes_backup_file(&record, revision_path))
+			!arena_gametypes_backup_file(&record, revision_path, FALSE))
 		{
 			return FALSE;
 		}
@@ -957,7 +988,7 @@ static boolean arena_gametypes_backup(
 	}
 	for (index = 0; index < file_count; index++)
 	{
-		if (!arena_gametypes_backup_file(&files[index], gametype_path))
+		if (!arena_gametypes_backup_file(&files[index], gametype_path, TRUE))
 			return FALSE;
 	}
 	return TRUE;
@@ -1002,7 +1033,7 @@ static short arena_gametypes_migration_count(
 	void)
 {
 	return (short)(NUMBEROF(arena_gametype_migrations) +
-		(config_boolean("debug.arena_test_migration") ? 1 : 0));
+		(config_integer("debug.arena_test_migration") ? 1 : 0));
 }
 
 static struct arena_gametype_migration const *arena_gametypes_migration(
@@ -1019,16 +1050,111 @@ static short arena_gametypes_revision(
 	return arena_gametypes_migration(arena_gametypes_migration_count() - 1)->revision;
 }
 
-/* whether a start began a revision's rewrites (its record backup is there) */
-static boolean arena_gametypes_revision_backed_up(
-	short revision)
+/* a row's mark that a start began rewriting it (after its backup, before
+its rewrite): z:\saved\playlists_backup\revision_N\begun <old name>.txt.
+mark: made; else whether it is there */
+static boolean arena_gametypes_row_begun(
+	short revision,
+	char const *old_name,
+	boolean mark)
 {
 	char path[MAXIMUM_FILENAME_LENGTH + 1];
 	struct file_reference file;
 
-	_snprintf(path, sizeof(path) - 1, "%s\\revision_%d\\arena_gametypes.txt", arena_gametypes_backup_path, (int)revision);
+	_snprintf(path, sizeof(path) - 1, "%s\\revision_%d\\begun %s.txt", arena_gametypes_backup_path, (int)revision,
+		old_name);
 	path[sizeof(path) - 1] = 0;
-	return file_reference_create_from_path(&file, path, FALSE) && file_exists(&file);
+	if (!file_reference_create_from_path(&file, path, FALSE))
+		return FALSE;
+	if (file_exists(&file))
+		return TRUE;
+	return mark && file_create(&file);
+}
+
+/* a name's line taken out of the record (a seeded gametype to write again) */
+static void arena_gametypes_record_remove(
+	char *record,
+	unsigned long *record_length,
+	char const *name)
+{
+	char line[ARENA_GAMETYPE_NAME_LENGTH + 2];
+	char *found;
+	unsigned long line_length;
+
+	_snprintf(line, sizeof(line), "\n%s\n", name);
+	line[sizeof(line) - 1] = 0;
+	found = strstr(record, line);
+	if (!found)
+		return;
+	/* (its name and newline; the newline before it stays) */
+	line_length = (unsigned long)strlen(line) - 1;
+	csmemmove(found + 1, found + 1 + line_length, *record_length - (unsigned long)(found + 1 + line_length - record) + 1);
+	*record_length -= line_length;
+}
+
+/* a value update's file written beside it (blam.new) and put in its place
+in one step: any failure leaves the old file whole (the saved game's name
+and folder are the same, so nothing else changes). debug.arena_test_migration
+2 fails it on purpose, for the tests */
+static boolean arena_gametype_update_in_place(
+	long profile_index,
+	struct game_variant const *variant,
+	struct game_variant_options const *options)
+{
+	char directory[MAXIMUM_FILENAME_LENGTH + 1];
+	char path[MAXIMUM_FILENAME_LENGTH + 1];
+	char new_path[MAXIMUM_FILENAME_LENGTH + 1];
+	unsigned char block[SAVED_GAME_FILE_BLOCK_SIZE];
+	struct file_reference file;
+	boolean written = FALSE;
+	boolean success = FALSE;
+
+	if (!saved_game_file_get_path_to_enclosing_directory(profile_index, directory))
+		return FALSE;
+	while (directory[0] && directory[strlen(directory) - 1] == '\\')
+		directory[strlen(directory) - 1] = 0;
+	_snprintf(path, sizeof(path) - 1, "%s\\blam.lst", directory);
+	path[sizeof(path) - 1] = 0;
+	_snprintf(new_path, sizeof(new_path) - 1, "%s\\blam.new", directory);
+	new_path[sizeof(new_path) - 1] = 0;
+	playlist_profile_expected_block(variant, options, block);
+	if (!saved_game_files_take_mutex())
+		return FALSE;
+	if (file_reference_create_from_path(&file, new_path, FALSE) &&
+		(file_exists(&file) || file_create(&file)) &&
+		file_open(&file, FLAG(_permission_write_bit)))
+	{
+		written = file_set_eof(&file, 0) && file_write(&file, sizeof(block), block);
+		file_close(&file);
+	}
+	if (written && config_integer("debug.arena_test_migration") == 2)
+	{
+		error(_error_silent, "arena gametypes: debug.arena_test_migration 2: the update's write fails");
+		written = FALSE;
+	}
+	success = written && platform_replace_file(new_path, path);
+	if (!success && file_reference_create_from_path(&file, new_path, FALSE) && file_exists(&file))
+		file_delete(&file);
+	saved_game_files_release_mutex();
+	return success;
+}
+
+/* a migration put off to the next start: its revision unrecorded, and its
+new name not seeded beside the old one meanwhile */
+static void arena_gametypes_defer(
+	struct arena_gametype_migration const *migration,
+	short *deferred_revision,
+	char *deferred_names)
+{
+	unsigned long length = (unsigned long)strlen(deferred_names);
+
+	if (*deferred_revision == NONE || migration->revision < *deferred_revision)
+		*deferred_revision = migration->revision;
+	if (length + strlen(migration->new_row.name) + 2 < ARENA_GAMETYPES_RECORD_SIZE)
+	{
+		csstrcat(deferred_names, migration->new_row.name);
+		csstrcat(deferred_names, "\n");
+	}
 }
 
 /* the seeds' migrations of each revision above the record's, in order (a
@@ -1043,17 +1169,15 @@ static void arena_gametypes_migrate(
 	unsigned long *record_length,
 	short record_revision,
 	boolean *record_changed,
-	boolean *written)
+	boolean *written,
+	short *deferred_revision,
+	char *deferred_names)
 {
 	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
 	word saved_count = 0;
 	boolean listed = FALSE;
 	boolean record_backed_up = FALSE;
 	short backed_up_revision = NONE;
-	/* (whether an earlier start began this revision's rewrites: its record
-	backup there before this start's) */
-	short checked_revision = NONE;
-	boolean revision_begun_before = FALSE;
 	short migration_index;
 
 	for (migration_index = 0; migration_index < arena_gametypes_migration_count(); migration_index++)
@@ -1077,19 +1201,16 @@ static void arena_gametypes_migrate(
 		old_line[sizeof(old_line) - 1] = 0;
 		_snprintf(new_line, sizeof(new_line), "\n%s\n", new_name);
 		new_line[sizeof(new_line) - 1] = 0;
-		if (checked_revision != migration->revision)
-		{
-			checked_revision = migration->revision;
-			revision_begun_before = arena_gametypes_revision_backed_up(migration->revision);
-		}
 		if (!strstr(record, old_line) || (!same_name && strstr(record, new_line)))
 			continue;
 		/* (its old row does not build as the builds before seeded it: no
-		file could match it rightly, so none is touched) */
+		file could match it rightly, so none is touched; put off, for a
+		build whose row does) */
 		if (arena_gametype_migration_unsafe[migration_index])
 		{
 			error(_error_silent, "arena gametype '%s' not migrated (revision %d): its frozen row no longer builds "
-				"as seeded (self-check)", old_name, (int)migration->revision);
+				"as seeded (self-check); put off to the next start", old_name, (int)migration->revision);
+			arena_gametypes_defer(migration, deferred_revision, deferred_names);
 			continue;
 		}
 
@@ -1109,9 +1230,11 @@ static void arena_gametypes_migrate(
 		{
 			if (!saved_game_file_name_unique(old_wide))
 			{
-				/* (there, but past the list's limit: tried again next start) */
-				error(_error_silent, "arena gametype '%s' not migrated (revision %d): not in the saved games' list",
-					old_name, (int)migration->revision);
+				/* (there, but past the list's limit: put off, its revision
+				unrecorded, so it runs again next start) */
+				error(_error_silent, "arena gametype '%s' not migrated (revision %d): not in the saved games' list; "
+					"put off to the next start", old_name, (int)migration->revision);
+				arena_gametypes_defer(migration, deferred_revision, deferred_names);
 				continue;
 			}
 			if (same_name)
@@ -1126,11 +1249,11 @@ static void arena_gametypes_migrate(
 				/* (renamed already, by a start that ended before its record) */
 				error(_error_silent, "arena gametype '%s' is there already (revision %d)", new_name, (int)migration->revision);
 			}
-			else if (revision_begun_before)
+			else if (arena_gametypes_row_begun(migration->revision, old_name, FALSE))
 			{
-				/* (this revision began rewriting before, on a start that did
-				not finish: perhaps this one was lost then; the seeding
-				writes the new one, not a deletion recorded) */
+				/* (a start began rewriting this one and did not finish:
+				perhaps it was lost then; the seeding writes the new one,
+				not a deletion recorded) */
 				error(_error_silent, "arena gametype '%s' missing after an earlier start's migration (revision %d); "
 					"'%s' seeded", old_name, (int)migration->revision, new_name);
 				continue;
@@ -1185,6 +1308,38 @@ static void arena_gametypes_migrate(
 				old_name, new_name);
 			continue;
 		}
+		/* (a rename's mark: a later start that finds the old one missing
+		knows this one was begun, not deleted by the player) */
+		if (!same_name)
+			arena_gametypes_row_begun(migration->revision, old_name, TRUE);
+
+		if (same_name)
+		{
+			/* (a value update: written beside the file and put in its place,
+			so a failure leaves it whole; put off then, to try again) */
+			arena_gametype_build(&migration->new_row, new_wide, &variant, &options);
+			if (!arena_gametype_update_in_place(profile_index, &variant, &options))
+			{
+				if (saved_game_file_name_unique(old_wide))
+				{
+					/* (gone after all: seeded again, its name out of the record) */
+					error(_error_silent, "failed to update arena gametype '%s' (revision %d), and it is gone: seeded "
+						"again", old_name, (int)migration->revision);
+					arena_gametypes_record_remove(record, record_length, old_name);
+					*record_changed = TRUE;
+				}
+				else
+				{
+					error(_error_silent, "failed to update arena gametype '%s' (revision %d): kept as it is; put off "
+						"to the next start", old_name, (int)migration->revision);
+					arena_gametypes_defer(migration, deferred_revision, deferred_names);
+				}
+				continue;
+			}
+			*written = TRUE;
+			error(_error_silent, "updated arena gametype '%s' (revision %d)", old_name, (int)migration->revision);
+			continue;
+		}
 
 		{
 			char old_directory[MAXIMUM_FILENAME_LENGTH + 1];
@@ -1212,16 +1367,11 @@ static void arena_gametypes_migrate(
 			/* (a write that failed deletes the gametype, playlist_profile.c's
 			write thread, or leaves it under its old name: the new name is
 			recorded only once a saved game has it, else the seeding below
-			writes a new one; a value update is judged by its bytes) */
-			if (same_name ? !playlist_profile_matches(profile_index, &variant, &options) :
-				saved_game_file_name_unique(new_wide))
+			writes a new one) */
+			if (saved_game_file_name_unique(new_wide))
 			{
-				if (same_name)
-					error(_error_silent, "failed to update arena gametype '%s' (revision %d); its backup is in %s\\revision_%d",
-						old_name, (int)migration->revision, arena_gametypes_backup_path, (int)migration->revision);
-				else
-					error(_error_silent, "failed to migrate arena gametype '%s' to '%s'; '%s' seeded instead",
-						old_name, new_name, new_name);
+				error(_error_silent, "failed to migrate arena gametype '%s' to '%s'; '%s' seeded instead",
+					old_name, new_name, new_name);
 				continue;
 			}
 
@@ -1232,11 +1382,6 @@ static void arena_gametypes_migrate(
 				if (saved_game_file_get_path_to_enclosing_directory(profile_index, new_directory))
 					saved_game_file_remember_last_used_multiplayer_variant_directory(new_directory);
 			}
-		}
-		if (same_name)
-		{
-			error(_error_silent, "updated arena gametype '%s' (revision %d)", old_name, (int)migration->revision);
-			continue;
 		}
 		error(_error_silent, "migrated arena gametype '%s' to '%s' (revision %d)", old_name, new_name,
 			(int)migration->revision);

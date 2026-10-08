@@ -56,6 +56,8 @@ def compare_golden(hashes, golden, renames=None, only=None):
     for name, want in sorted(golden.items()):
         if only and name not in only:
             continue
+        if "content" not in want:  # (a derived entry: only its "block", for the migrations' hashes)
+            continue
         here = renames.get(name, name)
         got = hashes.get(here)
         if not got:
