@@ -41,6 +41,12 @@ UNITS = {
     # (the texts, checked against Overpass 900)
     "ae_strings_test.c": ([UI / "ae_strings.c", SRC / "ae_font.c"], [f"-I{SRC}"], []),
     # (the widget core with the recording ae_draw stub and the real fonts; under the sanitizers)
+    # (tabs, page dots, prompts, the in-view panel: the widget core with them, the stub, the real fonts)
+    "ae_widgets_nav_test.c": ([UI / "ae_widgets_nav.c", UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c",
+                               UI / "ae_motion.c", UI / "ae_sound.c", UI / "ae_strings.c", UI / "ae_ui.c",
+                               TESTS / "ae_draw_stub.c", SRC / "ae_font.c", SRC / "ae_layout.c"],
+                              [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                              []),
     "ae_widgets_test.c": ([UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c", UI / "ae_motion.c",
                            UI / "ae_sound.c", UI / "ae_strings.c", UI / "ae_ui.c", TESTS / "ae_draw_stub.c",
                            SRC / "ae_font.c", SRC / "ae_layout.c"],

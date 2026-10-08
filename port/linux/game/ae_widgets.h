@@ -118,4 +118,49 @@ int ae_list_view_event(struct ae_list_view *view, struct ae_event const *event);
 leaves the window; track click pages; thumb drags; returns the item clicked or -1 */
 short ae_list_view_pointer(struct ae_list_view *view, struct ae_pointer const *pointer, short hit_id);
 
+/* ---------- navigation (ae_widgets_nav.c, spec 4.4, 4.10, 4.13, 6) */
+
+struct ae_tab { const char *label; int changed; int disabled; const char *disabled_reason; };
+struct ae_tabs { struct ae_tab const *tabs; short count, active, hover; struct ae_motion strip; };
+/* draws the strip (LB / RB glyphs or Q / E caps at its ends), records hits; returns its height */
+float ae_widget_tabs(struct ae_density const *density, struct ae_tabs *tabs, float x, float y, float width,
+	short hit_id);
+/* the next enabled tab in direction (wraps; skips disabled), or the same when none */
+short ae_tabs_step(struct ae_tabs const *tabs, short direction);
+/* LB / RB / Q / E / clicks: 1 handled; a click on a disabled tab returns 2 (the screen shows why) */
+int ae_tabs_event(struct ae_tabs *tabs, struct ae_event const *event);
+int ae_tabs_pointer(struct ae_tabs *tabs, struct ae_pointer const *pointer, short hit_id);
+
+void ae_widget_page_dots(struct ae_density const *density, float center_x, float y, const char *page_title,
+	short count, short current, unsigned int current_color, short hit_id);
+short ae_page_step(short count, short current, short direction);   /* wraps */
+
+struct ae_prompt { int button; const char *label; const char *key; /* NULL: ae_prompt_key(button) */ int action; };
+const char *ae_prompt_key(int button);      /* A Enter, B Esc, X Ctrl+F, Y R, LB Q, RB E, LT PgUp, RT PgDn,
+                                               START Enter */
+unsigned int ae_prompt_tint(int device, int button);   /* AE_TINT_*, or AE_COLOR_KEY_CAP */
+/* the footer: a row whose centre is center_y; 32 u between prompts; status right-aligned at right_x (muted);
+pressed: the prompt index the pointer holds down (-1) */
+void ae_widget_prompts(struct ae_density const *density, float x, float center_y, struct ae_prompt const *prompts,
+	short count, const char *status, float right_x, short pressed, short hit_id);
+/* a click on a prompt: its action as an event of player 0 from the keyboard; 1 when sent. (A pointer move over the
+prompts also sets which one shows the hover wash at the next draw) */
+int ae_prompts_pointer(struct ae_prompt const *prompts, short count, struct ae_pointer const *pointer,
+	short hit_id, struct ae_event *event);
+/* a drawn key cap with words (keyboard prompts, PlayStation OPTIONS / CREATE); returns its width */
+float ae_widget_key_cap(struct ae_density const *density, float x, float y, float height, const char *words);
+
+/* the in-view panel (§6) in a view of view_width x view_height pixels, drawn in an ae_draw view of that view:
+view-panel fill, a 3 u top stripe in the player colour, header (emblem with the slot number, "PLAYER n", page name),
+page dots under it in the player colour; *content gets the rectangle left for the page (drawing units), above the
+help strip and prompts */
+void ae_widget_view_panel(struct ae_density const *density, float view_width, float view_height, short player,
+	unsigned int player_color, const char *page_name, short page, short page_count, struct ae_rect *content);
+/* (M2) where the panel's footer goes, drawing units: the help strip's top and the prompts row's centre (under the
+content ae_widget_view_panel leaves, a rule between them and the prompts) */
+void ae_view_panel_footer(struct ae_density const *density, float view_width, float view_height, float *help_y,
+	float *prompts_center_y);
+/* VIEW's help: two lines (Overpass 750 body, minor floor) above the prompts, the second cut with "…" */
+void ae_widget_help_strip(struct ae_density const *density, float x, float y, float width, const char *text);
+
 #endif
