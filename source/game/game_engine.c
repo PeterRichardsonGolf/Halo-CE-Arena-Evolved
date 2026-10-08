@@ -8841,7 +8841,10 @@ static boolean game_engine_item_log_on(
 to CE's rule: the rocket launcher, the sniper rifle and the shotgun. A
 host's gameplay rule, so a fixed set every machine agrees on: not
 item_timers_shotgun_is_power(), which follows display.shotgun_power, each
-player's own display setting (owner, 2026-10-07: the shotgun counts) */
+player's own display setting (owner, 2026-10-07: the shotgun counts).
+Only the globals' weapons match: a weapon outside that list (a custom map's
+own sniper rifle or rocket launcher, say) counts as a normal weapon and
+gets ALWAYS's rule */
 static boolean game_engine_drop_secondary_power_weapon(
 	long definition_index)
 {
@@ -8854,13 +8857,16 @@ static boolean game_engine_drop_secondary_power_weapon(
 unit's inventory): whether its owned time is now, so it lies 30 s like any
 drop. The host's (it alone purges: game_engine_update_purge); CE: never
 (stock); ALWAYS: always; ALWAYS EXCEPT POWER (a stored 3 too): but for a
-power weapon */
+power weapon. Never for the CTF flag or the oddball (can_delete_item's
+flag weapons): their return timers count from their owned time, as stock */
 boolean game_engine_drop_refreshes_owned_time(
 	long item_index)
 {
 	struct object_datum *item;
 
 	if (!game_engine_running() || network_game_distributed_client())
+		return FALSE;
+	if (weapon_try_and_get(item_index) && weapon_is_flag(item_index))
 		return FALSE;
 	switch (game_engine_drop_secondary())
 	{

@@ -20,7 +20,8 @@ Once the game runs, every second each machine logs where every player's
 unit is, so the machines' views of the game can be compared.
 
 Scripted play for the netcode's parts the bots' wandering does not reach:
-debug.network_test_kill (the host kills the last player every so often),
+debug.network_test_kill (the host's player, else the first, kills the last
+other player every so often),
 debug.network_test_shoot (every so often each machine's player hits the
 next with their weapon's projectile: a client's through its report to the
 host) and debug.network_test_vehicle (the host seats the last player as a
@@ -257,8 +258,14 @@ static void network_test_read_settings(
 	network_test.loadout_primary = NONE;
 	network_test.loadout_secondary = NONE;
 	if (sscanf(config_string("debug.network_test_loadout"), "%ld,%ld", &network_test.loadout_primary,
-		&network_test.loadout_secondary) != 2)
+		&network_test.loadout_secondary) != 2 ||
+		network_test.loadout_primary < _loadout_weapon_none || network_test.loadout_primary >= NUMBER_OF_LOADOUT_WEAPONS ||
+		network_test.loadout_secondary < _loadout_weapon_none ||
+		network_test.loadout_secondary >= NUMBER_OF_LOADOUT_WEAPONS)
 	{
+		if (config_string("debug.network_test_loadout")[0])
+			platform_log("network test: debug.network_test_loadout '%s' is not two weapon numbers 0..%d: ignored",
+				config_string("debug.network_test_loadout"), NUMBER_OF_LOADOUT_WEAPONS - 1);
 		network_test.loadout_primary = NONE;
 		network_test.loadout_secondary = NONE;
 	}
@@ -1010,7 +1017,7 @@ void network_test_update(
 				platform_log("network test: the first player hurt to 40%%");
 			}
 		}
-		/* debug.network_test_kill: the host kills the last player every so
+		/* debug.network_test_kill: the host kills the last other player every so
 		often, to test deaths and respawns reaching the clients */
 		if (network_test.mode == _network_test_host && network_test.kill_interval > 0.0f &&
 			game_time_get() % MAX(1, (long)(network_test.kill_interval * TICKS_PER_SECOND)) < TICKS_PER_SECOND)
@@ -1044,7 +1051,7 @@ void network_test_update(
 			if (last && first && last->unit_index != NONE && first->unit_index != NONE)
 			{
 				/* killed by the first player: a kill that scores */
-				platform_log("network test: the first player kills the last");
+				platform_log("network test: the host's player (else the first) kills the last other");
 				damage_kill_object_for_player(last->unit_index, first_index);
 				/* and picks up a weapon lying about, and two grenades of each kind */
 				{
