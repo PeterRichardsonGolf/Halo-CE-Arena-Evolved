@@ -2270,6 +2270,8 @@ static struct
 {
 	long tested_at;
 	long seen_at;
+	/* (drawn last frame: the log tells when a hold ends) */
+	boolean drawn;
 } hud_item_waypoint_sight[MAXIMUM_LOCAL_PLAYERS][HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 /* (debug.waypoint_log: the second each view last logged) */
 static long hud_item_waypoint_logged_at[MAXIMUM_LOCAL_PLAYERS];
@@ -2404,7 +2406,23 @@ void hud_draw_item_waypoints(
 			on_screen = hud_item_waypoint_on_screen(&spot);
 		}
 		if (in_sight_only)
+		{
 			in_sight = hud_item_waypoint_in_sight(local_player_index, index, timer, &head_position, on_screen, &ray_seen);
+			if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS && index < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+			{
+				boolean *drawn = &hud_item_waypoint_sight[local_player_index][index].drawn;
+
+				/* (the hold's end, in the log: when it was last seen) */
+				if (*drawn && !in_sight && hud_item_waypoint_log_on())
+				{
+					long seen_at = hud_item_waypoint_sight[local_player_index][index].seen_at;
+
+					platform_log("waypoint: view %d entry %d hidden at tick %ld, last seen at tick %ld (held %ld ticks)",
+						(int)local_player_index, (int)index, game_time_get(), seen_at, game_time_get() - seen_at);
+				}
+				*drawn = in_sight;
+			}
+		}
 		if (log_now)
 		{
 			char text[32];
@@ -2539,6 +2557,7 @@ void hud_item_timers_initialize_for_new_map(
 			{
 				hud_item_waypoint_sight[local][entry].tested_at = NONE;
 				hud_item_waypoint_sight[local][entry].seen_at = NONE;
+				hud_item_waypoint_sight[local][entry].drawn = FALSE;
 			}
 		}
 	}

@@ -617,6 +617,9 @@ static const struct config_setting config_settings[] =
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"
 		"ray, and whether it is drawn; and each item call muted at LINE OF SIGHT." },
+	{ "debug.los_test_blink", _config_boolean, "false", "HALO_LOS_TEST_BLINK", _environment_value, _platform_all,
+		"For the automated tests of LINE OF SIGHT: every other second of game time\n"
+		"nothing counts as in sight, so the logs show the 0.3 s hold ending." },
 	{ "debug.arena_test_migration", _config_integer, "0", "HALO_ARENA_TEST_MIGRATION", _environment_value,
 		_platform_all,
 		"For the automated tests of the seeded gametypes' migrations: 1 adds a\n"

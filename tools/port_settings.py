@@ -504,7 +504,11 @@ STRING_INSERTS = {
     # (Indicator Options' TIMERS, TRAINING and SPAWN HEAT, after FRIEND
     # INDICATORS ON SCREEN: _indicator_options_extras)
     f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:", "SPAWN HEAT:"])],
-    f"{INDICATOR_OPTIONS}/cap_indicator_options": [(8, [
+    # (the objectives indicator's LINE OF SIGHT, after NONE: _option_goal_radar)
+    f"{INDICATOR_OPTIONS}/var_radar display": [(3, ["LINE OF SIGHT"])],
+    f"{INDICATOR_OPTIONS}/cap_indicator_options": [(3, [
+        "The game's objectives will have special markers\\ndisplayed over them on screen, only while you\\ncan see them.",
+    ]), (9, [
         "No timers: learn the spawns the hard way.",
         "When the power items (rockets, sniper, shotgun,\\novershield, camo) spawn, in a list for\\neveryone.",
         "The power items' list, and waypoints over\\ntheir spots from 10 seconds before they\\nspawn, seen through walls.",

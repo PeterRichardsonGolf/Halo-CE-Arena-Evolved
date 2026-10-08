@@ -5549,7 +5549,8 @@ enum
 	_option_option_byte,	/* a byte of the options */
 	_option_radar,		/* the options' radar players, and the variant's flag */
 	_option_flags,		/* bits of the variant's flags (argument: their mask), set to the value */
-	_option_nhe_mode	/* the variant's NHE MODE byte, its value (past TRAINING: BY VEHICLE SET) */
+	_option_nhe_mode,	/* the variant's NHE MODE byte, its value (past TRAINING: BY VEHICLE SET) */
+	_option_goal_radar	/* the variant's goal radar, 3: nav points in line of sight (bit 27) */
 };
 
 struct gametype_option
@@ -5615,8 +5616,9 @@ static struct gametype_option const gametype_options[] =
 	{ "secondary_weapon_spinner", _option_option_byte, OPTIONS_FIELD(secondary_weapon), 0, NUMBER_OF_LOADOUT_WEAPONS,
 		{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 } },
 	/* indicator options */
-	{ "indicator_options_radar display_spinner", _option_long, VARIANT_FIELD(universal_variant.goal_radar), 0, 3,
-		{ 0, 1, 2 } },
+	/* (the objectives indicator: MOTION TRACKER, NAV POINTS, NONE, and LINE OF
+	SIGHT: nav points with _game_variant_objective_in_sight_bit) */
+	{ "indicator_options_radar display_spinner", _option_goal_radar, 0, 0, 4, { 0, 1, 2, 3 } },
 	{ "indicator_options_players_on_radar_spinner", _option_radar, OPTIONS_FIELD(radar_players), 0, 3,
 		{ _radar_players_all, _radar_players_friends, _radar_players_none } },
 	{ "indicator_options_friends_on_screen_spinner", _option_flag, 0, FLAG(_game_variant_allow_friendly_navpoints_bit),
@@ -5719,6 +5721,10 @@ static long gametype_option_value(struct gametype_option const *option, struct g
 	case _option_option_byte: return o[option->offset];
 	case _option_radar: return options->radar_players;
 	case _option_nhe_mode: return game_variant_nhe_mode(variant->universal_variant.nhe_mode);
+	case _option_goal_radar:
+		return variant->universal_variant.goal_radar == 1 &&
+			TEST_FLAG(variant->universal_variant.flags, _game_variant_objective_in_sight_bit) ? 3 :
+			variant->universal_variant.goal_radar;
 	}
 	return 0;
 }
@@ -5747,6 +5753,11 @@ static void gametype_option_value_set(struct gametype_option const *option, long
 	case _option_short: *(short *)(o + option->offset) = (short)value; break;
 	case _option_option_byte: o[option->offset] = (byte)value; break;
 	case _option_nhe_mode: variant->universal_variant.nhe_mode = (byte)value; break;
+	case _option_goal_radar:
+		/* (LINE OF SIGHT: nav points, in sight only) */
+		variant->universal_variant.goal_radar = value == 3 ? 1 : value;
+		SET_FLAG(variant->universal_variant.flags, _game_variant_objective_in_sight_bit, value == 3);
+		break;
 	case _option_radar:
 		/* (and the Xbox's flag: other players on the tracker or not) */
 		options->radar_players = (byte)value;

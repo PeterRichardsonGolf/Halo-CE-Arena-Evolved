@@ -103,6 +103,7 @@ symbols in this file:
 #include "game_state.h"
 #include "game/game_engine.h"
 #include "game/players.h"
+#include "game/game.h"
 #include "networking/network_connection.h"
 #include "memory/data.h"
 #include "physics/collisions.h"
@@ -703,6 +704,24 @@ short hud_get_nav_point_render_type(
 	return render_type;
 }
 
+int config_boolean(char const *name);
+unsigned long config_changes(void);
+
+/* debug.los_test_blink, read again only when the settings change */
+static boolean hud_nav_point_test_blink(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean on = FALSE;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		on = config_boolean("debug.los_test_blink") != 0;
+	}
+	return on;
+}
+
 boolean hud_nav_point_in_sight(
 	short local_player_index,
 	real_point3d const *head,
@@ -717,6 +736,11 @@ boolean hud_nav_point_in_sight(
 	real_point3d start = *head;
 	boolean seen = FALSE;
 	short pass;
+
+	/* (debug.los_test_blink: every other second nothing is in sight, so the
+	automated tests see LINE OF SIGHT's hold end) */
+	if (hud_nav_point_test_blink() && (game_time_get() / TICKS_PER_SECOND) % 2)
+		return FALSE;
 
 	match_assert("c:\\halo\\SOURCE\\interface\\hud_nav_points.c", 510, global_current_collision_user_depth < MAXIMUM_COLLISION_USER_STACK_DEPTH);
 	global_current_collision_users[global_current_collision_user_depth++] = 20;

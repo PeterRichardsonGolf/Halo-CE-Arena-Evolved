@@ -6063,6 +6063,79 @@ short game_engine_player_get_custom_motion_sensor_positions(
 	return count;
 }
 
+/* port: the objective's indicator in line of sight
+(_game_variant_objective_in_sight_bit): per view and goal, the game tick it
+was last seen (NONE: not yet); a goal is drawn while seen within
+GOAL_IN_SIGHT_HOLD_TICKS, and the log (debug.waypoint_log) says so each
+second */
+#define GOAL_IN_SIGHT_HOLD_TICKS ((long)(0.3f * TICKS_PER_SECOND))
+void platform_log(char const *format, ...);
+static long game_engine_goal_seen_at[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal)];
+/* (whether each was drawn last frame: the log tells when a hold ends) */
+static boolean game_engine_goal_drawn[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal)];
+static long game_engine_goal_logged_at[MAXIMUM_LOCAL_PLAYERS];
+
+/* (debug.waypoint_log, read again only when the settings change) */
+static boolean game_engine_goal_log_on(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean on = FALSE;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		on = config_boolean("debug.waypoint_log") != 0;
+	}
+	return on;
+}
+
+/* a new map: no goal seen yet */
+static void game_engine_goals_in_sight_reset(
+	void)
+{
+	short local;
+	short goal;
+
+	for (local = 0; local < MAXIMUM_LOCAL_PLAYERS; local++)
+	{
+		game_engine_goal_logged_at[local] = NONE;
+		for (goal = 0; goal < (short)NUMBEROF(global_goal); goal++)
+		{
+			game_engine_goal_seen_at[local][goal] = NONE;
+			game_engine_goal_drawn[local][goal] = FALSE;
+		}
+	}
+}
+
+/* LINE OF SIGHT: whether the goal counts as seen in this view now. Its one
+ray (as the stock render type's): the viewer and its vehicle seen through,
+a hit on the goal's carrier (the player it ignores: a flag's or ball's) or
+the vehicle the carrier is in counting as seen */
+static boolean game_engine_goal_in_sight(
+	short local_player_index,
+	long goal_index,
+	real_point3d const *head_position,
+	boolean *ray_seen)
+{
+	long now = game_time_get();
+	long reference = NONE;
+	long *seen_at = &game_engine_goal_seen_at[PIN(local_player_index, 0, MAXIMUM_LOCAL_PLAYERS - 1)][goal_index];
+
+	if (global_goal[goal_index].ignore_player_index != NONE)
+	{
+		struct player_datum *carrier = (struct player_datum *)datum_try_and_get(player_data,
+			global_goal[goal_index].ignore_player_index);
+
+		if (carrier)
+			reference = carrier->unit_index;
+	}
+	*ray_seen = hud_nav_point_in_sight(local_player_index, head_position, &global_goal[goal_index].position, reference);
+	if (*ray_seen)
+		*seen_at = now;
+	return *seen_at != NONE && now >= *seen_at && now - *seen_at < GOAL_IN_SIGHT_HOLD_TICKS;
+}
+
 void game_engine_render_nav_points(
 	short local_player_index)
 {
@@ -6087,11 +6160,51 @@ void game_engine_render_nav_points(
 				{
 					if (goal_matches_player(player, player_index, goal_index))
 					{
-						short render_type = hud_get_nav_point_render_type(
-							local_player_index,
-							&head_position,
-							&global_goal[goal_index].position,
-							NONE);
+						short render_type;
+
+						/* port: LINE OF SIGHT (AE COMP): drawn only while seen,
+						held 0.3 s; else the stock nav point, through walls */
+						if (game_engine_objective_in_sight())
+						{
+							boolean ray_seen = FALSE;
+							boolean seen = game_engine_goal_in_sight(local_player_index, goal_index, &head_position,
+								&ray_seen);
+
+							if (game_engine_goal_log_on() && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+								game_engine_goal_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND)
+							{
+								platform_log("objective: view %d goal %ld (carrier %s): ray %s, drawn %s",
+									(int)local_player_index, goal_index,
+									global_goal[goal_index].ignore_player_index != NONE ? "yes" : "no",
+									ray_seen ? "seen" : "blocked", seen ? "yes" : "no");
+							}
+							/* (the hold's end, in the log: when it was last seen) */
+							if (local_player_index < MAXIMUM_LOCAL_PLAYERS)
+							{
+								boolean *drawn = &game_engine_goal_drawn[local_player_index][goal_index];
+
+								if (*drawn && !seen && game_engine_goal_log_on())
+								{
+									long seen_at = game_engine_goal_seen_at[local_player_index][goal_index];
+
+									platform_log("objective: view %d goal %ld hidden at tick %ld, last seen at tick %ld "
+										"(held %ld ticks)", (int)local_player_index, goal_index, game_time_get(), seen_at,
+										game_time_get() - seen_at);
+								}
+								*drawn = seen;
+							}
+							if (!seen)
+								continue;
+							render_type = 0;
+						}
+						else
+						{
+							render_type = hud_get_nav_point_render_type(
+								local_player_index,
+								&head_position,
+								&global_goal[goal_index].position,
+								NONE);
+						}
 
 						custom_render_nav_point(
 							local_player_index,
@@ -6100,6 +6213,8 @@ void game_engine_render_nav_points(
 							render_type);
 					}
 				}
+				if (game_engine_goal_log_on() && local_player_index < MAXIMUM_LOCAL_PLAYERS)
+					game_engine_goal_logged_at[local_player_index] = game_time_get() / TICKS_PER_SECOND;
 			}
 		}
 	}
@@ -7764,6 +7879,8 @@ void game_engine_initialize_for_new_map(
 		game_engine_vehicle_home_count = NONE;
 		/* port: (NHE MODE's set is applied once the map's scripts are known) */
 		game_engine_nhe_vehicle_set = NONE;
+		/* port: (LINE OF SIGHT's objective: nothing seen yet) */
+		game_engine_goals_in_sight_reset();
 		timeout_for_endgame_sound = 0;
 		game_engine_network_state_read = FALSE;
 

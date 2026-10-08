@@ -451,6 +451,7 @@
 		<string text="The game's objectives (hills, flags, balls and the like)\nwill appear in your Motion Tracker."/>
 		<string text="The game's objectives will have special markers\ndisplayed over them on screen."/>
 		<string text="The game's objectives will not be visible in your\nMotion Tracker or on screen."/>
+		<string text="The game's objectives will have special markers\ndisplayed over them on screen, only while you\ncan see them."/>
 		<string text="All other players in the game will show up on your \nMotion Tracker when mobile."/>
 		<string text="Other friendly players in the game will show up on \nyour Motion Tracker when mobile."/>
 		<string text="Other players in the game will never show up on your\nMotion Tracker."/>
@@ -491,6 +492,7 @@
 		<string text="MOTION TRACKER"/>
 		<string text="NAV POINTS"/>
 		<string text="NONE"/>
+		<string text="LINE OF SIGHT"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/item_options_edit/cap_item_options">
 		<string text="Everyone has a limitless supply of grenades, which\nmakes for loud, explosive and occasionally messy fun."/>
