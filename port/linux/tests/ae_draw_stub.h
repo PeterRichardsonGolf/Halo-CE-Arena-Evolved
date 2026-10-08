@@ -36,6 +36,8 @@ struct ae_stub_call
 forgets the calls; the full view, no clips, opaque (as after a Present) */
 void ae_stub_reset(float layout_width, float window_height);
 int ae_stub_count(void);
+/* nonzero when a call found no room (more than 8192 since the reset): it was not recorded; tests assert it is 0 */
+int ae_stub_overflowed(void);
 /* the index-th call (NULL past the last) */
 struct ae_stub_call const *ae_stub_get(int index);
 int ae_stub_find_text(const char *text, int from);   /* index of the first TEXT call with exactly this text, -1 */

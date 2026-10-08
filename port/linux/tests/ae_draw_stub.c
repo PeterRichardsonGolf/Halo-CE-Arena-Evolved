@@ -29,6 +29,8 @@ static struct
 	float alpha;
 	struct ae_stub_call calls[MAXIMUM_CALLS];
 	int count;
+	/* a call found the record full */
+	int overflowed;
 	unsigned int frame;
 	int images;
 	/* the faces' data (kept while loaded) */
@@ -106,12 +108,18 @@ void ae_stub_reset(float layout_width, float window_height)
 	stub.clip_depth = 0;
 	stub.alpha = 1.0f;
 	stub.count = 0;
+	stub.overflowed = 0;
 	stub.frame++;
 }
 
 int ae_stub_count(void)
 {
 	return stub.count;
+}
+
+int ae_stub_overflowed(void)
+{
+	return stub.overflowed;
 }
 
 struct ae_stub_call const *ae_stub_get(int index)
@@ -194,7 +202,10 @@ static struct ae_stub_call *record(int kind, float x, float y, float width, floa
 	struct ae_stub_call *call;
 
 	if (stub.count >= MAXIMUM_CALLS)
+	{
+		stub.overflowed = 1;
 		return NULL;
+	}
 	call = &stub.calls[stub.count++];
 	memset(call, 0, sizeof(*call));
 	call->kind = kind;

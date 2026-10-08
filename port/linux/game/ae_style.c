@@ -16,7 +16,8 @@ struct ae_metrics const ae_metrics_view =
 };
 
 /* the frame's aspect, and the §6 rule's reference view */
-#define FRAME_ASPECT (16.0f / 9.0f)
+/* (a 16:9 box 1080 tall: 1080 x 16 / 9, multiplied first so it is exactly 1920) */
+#define FRAME_WIDTH (1080.0f * 16.0f / 9.0f)
 /* (margins: 5 % of the frame width, as a division so 1920 gives exactly 96) */
 #define FRAME_MARGIN_PARTS 20.0f
 #define VIEW_REFERENCE_WIDTH 800.0f
@@ -115,7 +116,7 @@ void ae_view_panel_rect(float view_width, float view_height, float ui_scale, str
 
 void ae_frame_compute(float layout_width, float ui_scale, struct ae_frame *frame)
 {
-	float width = smaller(layout_width, 1080.0f * FRAME_ASPECT);
+	float width = smaller(layout_width, FRAME_WIDTH);
 
 	frame->rect.x = (layout_width - width) * 0.5f;
 	frame->rect.y = 0.0f;

@@ -184,8 +184,14 @@ static void stub(void)
 	CHECK(ae_stub_get(ae_stub_count() - 1)->kind == AE_STUB_VIEW);
 	ae_draw_rect(0, 0, 1, 1, 0, 0xFFFFFFFFu);
 	CHECK(ae_stub_get(ae_stub_count() - 1)->rgba == 0xFFFFFFFFu);
+	CHECK(!ae_stub_overflowed());
+	/* past 8192 calls: not recorded, the overflow flag set; a reset clears it */
+	for (index = ae_stub_count(); index <= 8192; index++)
+		ae_draw_rect(0, 0, 1, 1, 0, AE_COLOR_ROW);
+	CHECK(ae_stub_count() == 8192 && ae_stub_overflowed());
 	/* (a fresh frame: nothing recorded, the full view, opaque) */
 	ae_stub_reset(1920, 1080);
+	CHECK(!ae_stub_overflowed());
 	CHECK(ae_stub_count() == 0 && ae_stub_get(0) == NULL);
 	ae_draw_current_view(&view);
 	CHECK(view.x == 0 && view.width == 1920 && view.height == 1080);
