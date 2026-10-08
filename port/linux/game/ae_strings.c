@@ -90,6 +90,10 @@ static const char *const strings[AE_NUMBER_OF_STRINGS] =
 	"Profile not found",
 	"A guest's settings are not saved",
 	"Not while a game is running",
+	"Internet play is off",
+	"That is not an invite",
+	"That game can't be joined from this version",
+	"The host did not answer",
 };
 
 const char *ae_string(int id)

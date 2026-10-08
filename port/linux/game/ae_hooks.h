@@ -27,6 +27,9 @@ void ae_ui_replace_menus(void);
 /* (M2, ui_widget.c network_game_reset_to_pregame_ui, preflight P19) TRUE when AE shows its own lobby for its own
 session back from a game, instead of upstream's pregame / SELECT MAP screens (ae_glue_lobby.c) */
 boolean ae_lobby_take_pregame_ui(void);
+/* (M2, network_client_manager.c where an advertisement's network version is stored) a LAN host advertising: its
+network version and netcode flags (HALO_PORT_ADVERTISED_*), for AE's join reasons (ae_glue_lobby.c) */
+void ae_lobby_advertised(unsigned short version, unsigned char flags);
 /* the settings the widgets read, cached; ae_settings_refresh re-reads config (M3 calls it after a change) */
 float ae_settings_ui_scale(void);
 boolean ae_settings_reduce_motion(void);

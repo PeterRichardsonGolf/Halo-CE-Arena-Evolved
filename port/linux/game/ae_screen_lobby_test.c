@@ -196,7 +196,11 @@ void ae_screen_lobby_test_tick(unsigned long now)
 		if (!(main_menu_is_active() && ae_ui_holds(&drive)))
 			drive.since = now;
 		else if (now - drive.since >= 1000)
-			step_to(ae_lobby_leave().ok ? DRIVE_DONE : DRIVE_DONE, now);
+		{
+			/* (a failure is the glue's to log) */
+			ae_lobby_leave();
+			step_to(DRIVE_DONE, now);
+		}
 		break;
 	default:
 		break;

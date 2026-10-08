@@ -19,5 +19,5 @@ source/interface/ui_widget.c	if (ae_ui_takes_pointer()) /* AE hook */\nreturn TR
 port/linux/src/xinput_sdl.c	#include "ae_platform.h" /* AE hook */
 port/linux/src/xinput_sdl.c	if (scancode != SDL_SCANCODE_UNKNOWN && text_typing) ae_platform_test_keystroke((int)scancode); /* AE hook */
 source/interface/ui_widget.c	if (ae_lobby_take_pregame_ui()) /* AE hook */\nreturn;
-source/networking/network_client_manager.c	void ae_lobby_advertised(unsigned short version); /* AE hook */
-source/networking/network_client_manager.c	ae_lobby_advertised(network_game_client_advertised_versions[game_index].version); /* AE hook */
+source/networking/network_client_manager.c	#include "ae_hooks.h" /* AE hook */
+source/networking/network_client_manager.c	ae_lobby_advertised(network_game_client_advertised_versions[game_index].version, network_game_client_advertised_versions[game_index].flags); /* AE hook */

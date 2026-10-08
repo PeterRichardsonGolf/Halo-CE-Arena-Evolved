@@ -151,7 +151,8 @@ def test_local_refuses(cfg):
     assert result.get("status") == "PASS", result.get("why")
     assert "ae lobby: hosting (LOCAL)" in text
     rosters = [line.rsplit(" ", 1)[1] for line in text.splitlines() if "ae lobby: roster " in line]
-    assert rosters and rosters[-1] == "1", rosters
+    # (every roster line 1: nobody admitted, not even for a while)
+    assert rosters and all(r == "1" for r in rosters), rosters
     bots = (out / "local" / "bots.log")
     bot_log = bots.read_text(errors="replace") if bots.exists() else ""
     # (system_link_bots.py logs "all N machines are in the lobby" once they joined)
@@ -166,8 +167,22 @@ def test_online_lists_only_when_allowed(cfg):
         "exit_after": 35, "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "95", "HALO_NET_ONLINE": "false"},
         "expect": {"ticks": 0}})
     assert result.get("status") == "PASS", result.get("why")
-    assert "ae lobby: hosting (ONLINE)" in text
+    assert "ae lobby: hosting (ONLINE, invite only)" in text
     assert "Internet play: hosting" not in text and "Game list: the game is listed" not in text
+
+
+def test_online_is_invite_only(cfg):
+    """the M2 ruling: an ONLINE host is INVITE ONLY whatever network.host_public says: with internet play on (and
+    host_public on), it hosts for invites but never lists the game in everyone's server browser"""
+    out = menus.out_dir(cfg, "lobby-online-on")
+    result, text, pngs = play(cfg, out, "online-on", {
+        "exit_after": 45, "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "95", "HALO_NET_ONLINE": "true",
+                                  "HALO_NET_HOST_PUBLIC": "true", "HALO_NET_PUBLIC_LOBBY": "true"},
+        "expect": {"ticks": 0}})
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae lobby: hosting (ONLINE, invite only)" in text
+    assert "listed in everyone's server browser" not in text
+    assert "Game list: the game is listed" not in text
 
 
 def test_join_reason_no_game(cfg):
@@ -176,6 +191,8 @@ def test_join_reason_no_game(cfg):
     result, text, pngs = play(cfg, out, "no-game", {
         "exit_after": 35, "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "91"}, "expect": {"ticks": 0}})
     assert result.get("status") == "PASS", result.get("why")
-    assert "ae lobby: join: No game found on the LAN" in text
-    searching = text.index("ae lobby: searching the LAN")
-    assert "ae lobby: join: No game found on the LAN" in text[searching:]
+    import re
+    in_order(text, ["ae lobby: searching the LAN", "ae lobby: join gave up after", "ae lobby: join: No game found on the LAN"])
+    # (within 15 s of the search's start: the glue's 10 s)
+    seconds = int(re.search(r"ae lobby: join gave up after (\d+) s", text)[1])
+    assert 10 <= seconds <= 15, seconds
