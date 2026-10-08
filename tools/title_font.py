@@ -67,7 +67,7 @@ def ink(font: TTFont, character: str) -> tuple:
 
 
 def build(output: Path = OUTPUT) -> Path:
-    font = TTFont(SOURCE)
+    font = TTFont(SOURCE, recalcTimestamp=False)   # (head.modified stays: the same font saves byte-identical)
     # Newtown's hhea and typo descents are positive (+190), which puts the line box's bottom above the baseline
     # in any renderer that trusts them; descents are negative
     font["hhea"].descent = -abs(font["hhea"].descent)
