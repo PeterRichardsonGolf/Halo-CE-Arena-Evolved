@@ -56,12 +56,16 @@ enum
 	MAXIMUM_GAME_VARIANT_NAME_LENGTH) */
 	ARENA_GAMETYPE_NAME_LENGTH = 12,
 	/* the record of those seeded: their names, a line each, after its
-	"#revision N" line */
+	"#revision N" line. Builds before the migrations (a17102e2) read at
+	most 1024 bytes, and one that finds it longer reads it as empty and
+	seeds again: the record past ARENA_GAMETYPES_RECORD_OLD_LIMIT logs a
+	warning (run only builds since the migrations on a migrated root) */
 	ARENA_GAMETYPES_RECORD_SIZE = 2048,
+	ARENA_GAMETYPES_RECORD_OLD_LIMIT = 1000,
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations) */
-	ARENA_GAMETYPES_REVISION = 5,
+	ARENA_GAMETYPES_REVISION = 6,
 	/* a memory unit holds at most 100 saved games (saved_game_files.c):
 	the self-check warns past this many */
 	ARENA_GAMETYPES_SAVED_WARNING = 90,
@@ -252,6 +256,8 @@ DROP SECONDARY ALWAYS) and its objective games' (objective in sight)) */
 #define ARENA_REV5_TRAINING_FLAGS 0x207F0020UL
 #define ARENA_REV5_COMP_FLAGS 0x24790020UL
 #define ARENA_REV5_COMP_OBJECTIVE_FLAGS 0x2C790020UL
+/* (revision 6's AE VANILLA and AE POWERUPS: the casual set's, as
+ARENA_REV5_CASUAL_FLAGS) */
 
 /* the seed fields whose 0 means the stock gametype's (or AE's default):
 a value is given as value + 1 */
@@ -408,7 +414,7 @@ static struct arena_gametype const arena_gametypes[] =
 	{ "AE SWAT", build_game_variant_team_slayer, ARENA_SWAT_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE,
 		.weapon_set = ARENA_WEAPONS_PISTOLS, .loadout_primary = ARENA_SET(_loadout_weapon_pistol),
-		.loadout_secondary = ARENA_SET(_loadout_weapon_none) },
+		.loadout_secondary = ARENA_SET(_loadout_weapon_none), .starting_frags = STARTING_GRENADES_NONE },
 	{ "AE ROCKETS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
 		.weapon_set = ARENA_WEAPONS_ROCKET_LAUNCHERS, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
@@ -421,6 +427,15 @@ static struct arena_gametype const arena_gametypes[] =
 		75, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_DEFAULT, TRUE,
 		.weapon_set = ARENA_WEAPONS_HEAVY, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_assault_rifle) },
+	/* the casual set on Halo 1: NHE's maps' own modes (revision 6; NHE
+	VANILLA and NHE POWERUP before): team slayer on the casual set's values,
+	NHE's VANILLA and NHE & POWERUPS modes on its maps */
+	{ "AE VANILLA", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.nhe_mode = _nhe_mode_vanilla },
+	{ "AE POWERUPS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.nhe_mode = _nhe_mode_nhe_and_powerups },
 	/* TRAINING: free for all slayer with no practical score limit, the
 	item timers and TRAINING's waypoints */
 	{ "AE TRAINING", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_TRAINING_FLAGS | ARENA_DROP_ALWAYS,
@@ -531,18 +546,9 @@ static struct arena_gametype const arena_gametypes[] =
 	{ "CTF WIZARD", build_game_variant_ctf, NHE_SET_FLAGS, 5, 0, NHE_RESPAWN_10, NHE_RESPAWN_10, ARENA_RADAR_ON,
 		ARENA_VEHICLES_NONE, FALSE, .weapon_set = ARENA_WEAPONS_PISTOLS, .goal_radar = ARENA_GOAL_MOTION_TRACKER,
 		.nhe_mode = _nhe_mode_nhe_and_timer, .adjust = arena_gametype_nhe_ctf },
-	/* the seeds of before kept as they were (Halo 1: NHE ships no such
-	gametype): listed with AE's (arena_gametype_names.c's AE VANILLA, AE
-	POWERUPS, AE TRAINING); NHE's rules (but VANILLA), NHE's mode on its
-	maps, no vehicles on other maps */
-	{ "NHE POWERUP", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_powerups },
-	{ "NHE VANILLA", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS,
-		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_vanilla },
-	{ "NHE TRAIN", build_game_variant_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
-		ARENA_TRAINING_SCORE_TO_WIN, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE,
-		.nhe_mode = _nhe_mode_training },
+	/* (NHE TRAIN, a seed of before, is folded into AE TRAINING (revision 6):
+	no longer seeded; a root's file stays as it is, listed as AE TRAINING's
+	old name; NHE VANILLA and NHE POWERUP became AE VANILLA and AE POWERUPS) */
 };
 
 /* the seeds' migrations, by revision (the record's "#revision N": each
@@ -921,6 +927,37 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_DEFAULT, .custom_loadout = TRUE,
 			.weapon_set = ARENA_SET(13), .loadout_primary = ARENA_SET(6), .loadout_secondary = ARENA_SET(2) },
 		.old_block_hash = "01ae17ad57f6bd2e20d59864e2af6fc250dda7d7" },
+	/* revision 6: owner answer A (NHE VANILLA -> AE VANILLA, NHE POWERUP -> AE
+	POWERUPS, both on the casual set's values, their NHE modes kept; NHE
+	TRAIN folded into AE TRAINING: not seeded, left as it is) and AE SWAT
+	without grenades (owner, 2026-10-08). The old rows: revision 3's / 5's */
+	{ .revision = 6,
+		.old_row = { .name = "NHE VANILLA", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_FLAGS,
+			.score_to_win = 0, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_vanilla },
+		.new_row = { .name = "AE VANILLA", .build = build_game_variant_team_slayer, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .nhe_mode = _nhe_mode_vanilla },
+		.old_block_hash = "8a9d058b6f15b05a0faed94cf3792aedb4b76806" },
+	{ .revision = 6,
+		.old_row = { .name = "NHE POWERUP", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 50, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_powerups },
+		.new_row = { .name = "AE POWERUPS", .build = build_game_variant_team_slayer, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .nhe_mode = _nhe_mode_nhe_and_powerups },
+		.old_block_hash = "5983b3c2cac78def220bd4f42f03e4eb924a054e" },
+	{ .revision = 6,
+		.old_row = { .name = "AE SWAT", .build = build_game_variant_team_slayer, .flags = ARENA_REV5_SWAT_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(1), .loadout_primary = ARENA_SET(3), .loadout_secondary = ARENA_SET(0) },
+		.new_row = { .name = "AE SWAT", .build = build_game_variant_team_slayer, .flags = ARENA_REV5_SWAT_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(1), .loadout_primary = ARENA_SET(3), .loadout_secondary = ARENA_SET(0),
+			.starting_frags = 0xFF },
+		.old_block_hash = "55b0a0eee3f300a6789734e71851be8b4ac930df" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -1074,6 +1111,11 @@ boolean arena_gametypes_seed(
 		revision = MAX(record_revision, revision);
 		if (record_changed || record_revision < revision)
 			arena_gametypes_record_write(record, record_length, revision);
+	}
+	if (record_length > ARENA_GAMETYPES_RECORD_OLD_LIMIT)
+	{
+		error(_error_silent, "arena gametypes: warning: the record is %lu bytes; builds before the migrations "
+			"(a17102e2) read at most 1024 and would seed again", record_length);
 	}
 
 	return written;
@@ -2086,6 +2128,13 @@ static void arena_gametypes_self_check(
 		}
 		if (!row)
 		{
+			struct arena_gametype_info info;
+
+			/* (a seed folded into another, no longer seeded: an old name of
+			the names table's, NHE TRAIN) */
+			arena_gametype_wide_name(new_row->name, wide_name);
+			if (arena_gametype_info(wide_name, &info) && !info.description)
+				continue;
 			error(_error_silent, "arena gametypes self-check: '%s' (revision %d's) is not seeded",
 				new_row->name, (int)migration->revision);
 			continue;

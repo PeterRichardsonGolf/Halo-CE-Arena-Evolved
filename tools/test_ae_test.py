@@ -322,18 +322,20 @@ class SeedCompare(unittest.TestCase):
         seeded under the old name: revisions 1-3 golden_seeds_a17102e2.json's "block" (AE SLAYER / AE ODDBALL
         derived from a17102e2's AE FFA SLAY / AE FFA BALL under their old names), revision 4
         golden_seeds_rev3_083c49e9.json's (a root seeded at revision 3 by 083c49e9), revision 5
-        golden_seeds_rev4_da271472.json's (a root seeded at revision 4 by da271472's tree)"""
+        golden_seeds_rev4_da271472.json's (a root seeded at revision 4 by da271472's tree), revision 6
+        golden_seeds_rev5_736ce3a7.json's (a root seeded at revision 5 by 736ce3a7's tree)"""
         import re
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
         table = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
         found = re.findall(r'\.revision = (\d+),\s*\.old_row = \{ \.name = "([^"]+)".*?\.old_block_hash = "([0-9a-f]{40})"',
                            table, re.S)
-        self.assertGreaterEqual(len(found), 34)
+        self.assertGreaterEqual(len(found), 37)
         golden = json.loads((HERE / "golden_seeds_a17102e2.json").read_text())
         golden_rev3 = json.loads((HERE / "golden_seeds_rev3_083c49e9.json").read_text())
         golden_rev4 = json.loads((HERE / "golden_seeds_rev4_da271472.json").read_text())
+        golden_rev5 = json.loads((HERE / "golden_seeds_rev5_736ce3a7.json").read_text())
         for revision, name, digest in found:
-            g = golden_rev4 if int(revision) >= 5 else golden_rev3 if int(revision) == 4 else golden
+            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5}.get(int(revision), golden)
             self.assertEqual(g[name]["block"], digest, name)
 
 

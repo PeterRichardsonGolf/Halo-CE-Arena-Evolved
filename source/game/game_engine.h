@@ -190,14 +190,18 @@ union real_point2d;
 union real_point3d;
 union real_rgb_color;
 
+/* port: universal_variant.starting_frags' "no grenades" */
+#define STARTING_GRENADES_NONE 0xFF
+
 struct universal_variant
 {
 	boolean teams;
 	byte nhe_mode; /* port: was pad0 (zero in every builder): enum nhe_mode */
 	/* port: was pad1 (zero in every builder): the frag grenades each player
 	starts with, 1-4 (no more than the game's rule for the player count
-	allows: 1 with 9 or more players, 2 with 5 or more); 0, the game's rule
-	(the globals' most, 4, under 5 players). AE COMP's 2 */
+	allows: 1 with 9 or more players, 2 with 5 or more); STARTING_GRENADES_NONE,
+	no grenades at all (frag or plasma); 0 or anything else, the game's rule
+	(the globals' most, 4, under 5 players). AE COMP's 2, AE SWAT's none */
 	byte starting_frags;
 	byte pad2;
 	unsigned long flags;

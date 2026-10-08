@@ -8145,7 +8145,7 @@ void game_engine_log_rules(
 		line's length never cuts them off: game_engine.h, bits 25-30 and
 		nhe_mode) */
 		error(_error_silent, "AE rules: timers level %s, spawn heat %s, objective %s, nhe extras %s, "
-			"drop secondary %s, nhe mode %s, starting frags %d",
+			"drop secondary %s, nhe mode %s, starting frags %s",
 			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) && universal->goal_radar == _radar_nav_point ?
@@ -8153,7 +8153,9 @@ void game_engine_log_rules(
 			TEST_FLAG(flags, _game_variant_nhe_extras_bit) ? "on" : "off",
 			game_variant_drop_secondary_name(flags),
 			game_variant_nhe_mode_name(universal->nhe_mode),
-			(int)universal->starting_frags);
+			universal->starting_frags == STARTING_GRENADES_NONE ? "none" :
+				universal->starting_frags == 1 ? "1" : universal->starting_frags == 2 ? "2" :
+				universal->starting_frags == 3 ? "3" : universal->starting_frags == 4 ? "4" : "0");
 		/* (and the players' rules the lines above leave out) */
 		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "
 			"friend indicators %s, auto team balance %s, friendly fire penalty %d s",
@@ -10184,11 +10186,6 @@ void game_engine_postspawn_player_update(
 			fragmentation_grenade_count;
 		long starting_plasma_grenade_count = 0;
 
-		/* port: the gametype's starting frag grenades (universal_variant.
-		starting_frags; the MIN below keeps the player count's rule) */
-		if (global_variant.universal_variant.starting_frags > 0)
-			starting_fragmentation_grenade_count = global_variant.universal_variant.starting_frags;
-
 		/* port: a custom loadout's weapons (game_variant_options) */
 		if (game_variant_options_get()->loadout == _loadout_custom)
 		{
@@ -10200,6 +10197,20 @@ void game_engine_postspawn_player_update(
 				unit_index,
 				&starting_fragmentation_grenade_count,
 				&starting_plasma_grenade_count);
+		}
+
+		/* port: the gametype's starting grenades (universal_variant.
+		starting_frags: 1-4 frags, the MIN below keeping the player count's
+		rule; none at all; other values the game's rule) */
+		if (global_variant.universal_variant.starting_frags == STARTING_GRENADES_NONE)
+		{
+			starting_fragmentation_grenade_count = 0;
+			starting_plasma_grenade_count = 0;
+		}
+		else if (global_variant.universal_variant.starting_frags >= 1 &&
+			global_variant.universal_variant.starting_frags <= 4)
+		{
+			starting_fragmentation_grenade_count = global_variant.universal_variant.starting_frags;
 		}
 
 		if (game_engine_infinite_grenades_internal())
