@@ -5747,16 +5747,38 @@ void game_engine_playlist_next(
 	return;
 }
 
+/* port: whether any player is still in the game (not quit) */
+static boolean game_engine_any_player_in_game(
+	void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+
+	data_iterator_new(&iterator, player_data);
+	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		if (!player->quit_out_of_game)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 boolean game_engine_should_end_game(
 	void)
 {
 	boolean should_end_game = FALSE;
 
 	/* port: under PRACTICE MODE players leaving never end the game (one
-	team, or one player, left): it runs until the host ends it, or the time
-	limit */
-	if (game_engine && !multiple_teams_alive() && !game_engine_practice())
+	team, or one player, left): it runs until the host ends it or its time
+	limit, which is also all that advances a dedicated server's playlist;
+	but when no player at all is left it ends (a dedicated server does not
+	sit in an empty practice game) */
+	if (game_engine && !multiple_teams_alive() &&
+		(!game_engine_practice() || !game_engine_any_player_in_game()))
+	{
 		should_end_game = TRUE;
+	}
+
 	/* port: the gametype's time limit (game_variant_options) */
 	if (game_engine && game_variant_options_get()->time_limit > 0 &&
 		game_time_get() >= game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND)
