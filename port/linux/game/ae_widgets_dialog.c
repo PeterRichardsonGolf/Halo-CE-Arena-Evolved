@@ -311,6 +311,13 @@ static void dialog_draw(struct ae_screen *screen)
 	int error = spec->kind == AE_DIALOG_ERROR;
 
 	ae_motion_dialog(ae_motion_progress(&state->motion), 1, &scrim, &scale, &alpha);
+	/* (closing: its ghost goes out as ae_ui's close motion says, the scrim with it) */
+	if (ae_ui_drawing_ghost())
+	{
+		scrim *= ae_ui_drawing_alpha();
+		alpha *= ae_ui_drawing_alpha();
+		scale *= ae_ui_drawing_scale();
+	}
 	/* the scrim over its view (P12: the player's own for VIEW; else the whole frame), clicks outside taken there */
 	if (spec->view.width > 0.0f && spec->view.height > 0.0f)
 	{

@@ -71,6 +71,11 @@ int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *da
 /* calls the top screen's leave and removes it */
 void ae_ui_pop(void);
 struct ae_screen *ae_ui_top(void);
+/* (M2) while a screen draws (its draw may read these): whether it is a closing screen's ghost (drawn after its leave,
+going out: it takes no hits), and the alpha and scale its motion gives it (ae_ui_draw passes them to before_draw too) */
+int ae_ui_drawing_ghost(void);
+float ae_ui_drawing_alpha(void);
+float ae_ui_drawing_scale(void);
 /* (M2) removes the topmost screen with this data wherever it is (the top: as ae_ui_pop; under others: its leave, gone
 at once); 0 when none has it */
 int ae_ui_remove(void const *data);

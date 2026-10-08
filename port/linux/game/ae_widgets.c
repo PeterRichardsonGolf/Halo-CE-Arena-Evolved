@@ -82,6 +82,10 @@ void ae_hit_add(float x, float y, float width, float height, short id, short par
 
 	float left, top;
 
+	/* (a closing screen's ghost takes no hits: it is off the stack) */
+	if (ae_ui_drawing_ghost())
+		return;
+
 	if (width <= 0.0f || height <= 0.0f)
 		return;
 	ae_draw_current_view(&view);

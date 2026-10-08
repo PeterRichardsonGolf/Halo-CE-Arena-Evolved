@@ -276,6 +276,29 @@ static void motion(void)
 	ae_motion_set_now(5150);
 	draw(1080);
 	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_SCRIM) == 1 && count_calls(AE_STUB_RECT, AE_COLOR_POPOVER) == 1);
+	/* its close (the owner's decision over P7): picked at 6000, at 6050 its ghost still draws, fading (the scrim with
+	it), and takes no hits: a click there is the screen beneath's; at 6100 it is gone */
+	ae_motion_set_now(6000);
+	picked_count = 0;
+	dispatch(0, AE_ACTION_ACCEPT);
+	CHECK(picked_count == 1 && ae_ui_depth() == 1);
+	ae_motion_set_now(6050);
+	draw(1080);
+	{
+		struct ae_hit hit;
+		int index, faded = 0;
+
+		for (index = 0; index < ae_stub_count(); index++)
+			if (ae_stub_get(index)->kind == AE_STUB_RECT &&
+				(ae_stub_get(index)->rgba & 0xFFFFFF00u) == (AE_COLOR_POPOVER & 0xFFFFFF00u) &&
+				(ae_stub_get(index)->rgba & 0xFFu) < 0xFFu && (ae_stub_get(index)->rgba & 0xFFu) > 0)
+				faded++;
+		CHECK(faded == 1);
+		CHECK(!ae_hit_at(960, 540, 0, &hit));
+	}
+	ae_motion_set_now(6100);
+	draw(1080);
+	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_POPOVER) == 0 && count_calls(AE_STUB_RECT, AE_COLOR_SCRIM) == 0);
 	ae_motion_set_reduced(1);
 	ae_ui_reset();
 }

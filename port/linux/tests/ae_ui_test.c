@@ -58,6 +58,20 @@ static struct ae_screen *updated_screen;
 static void update(struct ae_screen *s) { updated++; updated_screen = s; }
 static struct ae_screen_class const typing = { .name = "typing", .draw = draw_order, .update = update };
 static struct ae_screen_class const popover = { .name = "popover", .draw = draw_order, .popover = 1 };
+/* (a draw that notes whether it drew as a closing screen's ghost) */
+static int ghost_draws, plain_draws;
+static void draw_ghost_note(struct ae_screen *s)
+{
+	(void)s;
+	if (ae_ui_drawing_ghost())
+		ghost_draws++;
+	else
+		plain_draws++;
+}
+static struct ae_screen_class const noting = { .name = "noting", .draw = draw_ghost_note, .handle = handle,
+	.leave = leave };
+static struct ae_screen_class const noting_popover = { .name = "noting popover", .draw = draw_ghost_note,
+	.leave = leave, .popover = 1 };
 
 static struct ae_event ev(short player, int action) { struct ae_event e; e.player = player; e.action = (unsigned char)action; e.device = AE_DEVICE_XBOX; e.repeat = 0; return e; }
 
@@ -190,7 +204,7 @@ int main(void)
 		ordered = befores = 0; ae_ui_draw();
 		CHECK(befores == 2 && before_motions[1][1] == 1.0f && before_motions[1][2] == 1.0f);
 		/* a pointer that reaches the top screen finishes a transition too */
-		ae_ui_pop();                                             /* (a popover's pop: instant) */
+		ae_ui_pop();                                             /* (a popover's pop: its ghost fades out) */
 		ae_ui_push(&plain, 0, NULL);
 		ae_motion_set_now(2100);
 		{
@@ -200,17 +214,47 @@ int main(void)
 		}
 		ordered = befores = 0; ae_ui_draw();
 		CHECK(befores == 1 && before_motions[0][0] == 0.0f && before_motions[0][1] == 1.0f);
-		/* BACK pops (a back slide: the revealed screen in from the left, the popped one gone at once) and asks for
-		the back sound */
+		/* BACK pops (the owner's decision over P7: a back slide mirrors the forward one: the revealed screen in from
+		the left, the popped one's ghost out to the right, fading, drawn last) and asks for the back sound */
 		ae_sound_reset();
 		ae_motion_set_now(3000);
 		e = ev(0, AE_ACTION_BACK); ae_ui_dispatch(&e);
 		CHECK(ae_ui_depth() == 2 && ae_sound_take(3000) == AE_SOUND_BACK);
 		ordered = befores = 0; ae_ui_draw();
-		CHECK(befores == 1 && before_index[0] == 1 && before_motions[0][0] == -120.0f && before_motions[0][1] == 0.0f);
+		CHECK(befores == 2 && before_index[0] == 1 && before_motions[0][0] == -120.0f && before_motions[0][1] == 0.0f);
+		CHECK(before_index[1] == 2 && before_motions[1][0] == 0.0f && before_motions[1][1] == 1.0f);
+		ae_motion_set_now(3050);
+		ordered = befores = 0; ae_ui_draw();
+		CHECK(befores == 2 && fabsf(before_motions[1][0] - 120.0f * ae_ease_out(.25f)) < 1e-3f &&
+			fabsf(before_motions[1][1] - (1.0f - .25f / .6f)) < 1e-3f);
 		ae_motion_set_now(3200);
 		ordered = befores = 0; ae_ui_draw();
 		CHECK(befores == 1 && before_motions[0][0] == 0.0f && before_motions[0][1] == 1.0f);
+		/* a popover's close: its ghost fades and scales out over 100 ms, over the screen beneath, which draws as it
+		is; the ghost draws knowing it is one (ae_ui_drawing_ghost: no hits) */
+		ae_ui_push(&noting_popover, 0, NULL);
+		ae_motion_set_now(4000);
+		ae_ui_pop();
+		ae_motion_set_now(4050);
+		ordered = befores = ghost_draws = plain_draws = 0; ae_ui_draw();
+		CHECK(befores == 2 && ghost_draws == 1 && before_index[1] == 2 && before_motions[1][1] > 0.0f &&
+			before_motions[1][1] < 1.0f && before_motions[1][2] < 1.0f && before_motions[1][2] >= .96f);
+		CHECK(!ae_ui_drawing_ghost() && ae_ui_drawing_alpha() == 1.0f);
+		ae_motion_set_now(4100);
+		ordered = befores = ghost_draws = 0; ae_ui_draw();
+		CHECK(befores == 1 && ghost_draws == 0);
+		/* a press during a close lands on the screen beneath, and the close is over (no ghost drawn after it) */
+		ae_ui_push(&noting, 0, NULL); ae_ui_top()->focus = 40;
+		ae_motion_set_now(5000);
+		ae_ui_pop();
+		ae_motion_set_now(5050);
+		ordered = befores = ghost_draws = 0; ae_ui_draw();
+		CHECK(ghost_draws == 1);
+		handled = 0;
+		e = ev(0, AE_ACTION_DOWN); ae_ui_dispatch(&e);
+		CHECK(handled == 1 && ae_ui_top()->focus == 22);
+		ordered = befores = ghost_draws = 0; ae_ui_draw();
+		CHECK(befores == 1 && ghost_draws == 0 && before_motions[0][0] == 0.0f && before_motions[0][1] == 1.0f);
 		/* REDUCE MOTION: every transition instant */
 		ae_motion_set_reduced(1);
 		ae_ui_push(&plain, 0, NULL);
@@ -219,6 +263,11 @@ int main(void)
 		ae_ui_push(&popover, 0, NULL);
 		ordered = befores = 0; ae_ui_draw();
 		CHECK(befores == 2 && before_motions[1][1] == 1.0f && before_motions[1][2] == 1.0f);
+		/* (closes too: no ghost) */
+		ae_ui_pop();
+		ae_ui_pop();
+		ordered = befores = 0; ae_ui_draw();
+		CHECK(befores == 1);
 		ae_ui_set_before_draw(NULL);
 	}
 	/* last device: only input that passes the owner filter changes it */
