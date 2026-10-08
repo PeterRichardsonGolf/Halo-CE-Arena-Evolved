@@ -2793,6 +2793,7 @@ symbols in this file:
 #include "cutscene/cinematics.h"
 #include "effects/player_effects.h"
 #include "game/cheats.h"
+#include "game/game_engine.h"
 #include "game/players.h"
 #include "interface/attract_mode.h"
 #include "interface/hud.h"
@@ -3387,9 +3388,10 @@ struct hs_function_table_storage
 {
 #ifdef HALO_CUSTOM_EDITION
 	/* port: and Halo PC's functions the Xbox's have none of (below) */
-	struct hs_function_definition const *functions[418 + 3 + 24];
+	/* (and the port's loose_sounds_reload and loose_sounds, last) */
+	struct hs_function_definition const *functions[418 + 3 + 24 + 2];
 #else
-	struct hs_function_definition const *functions[418];
+	struct hs_function_definition const *functions[418 + 2];
 #endif
 	struct profile_section profile;
 	hs_token_enumerator token_enumerators[18];
@@ -11639,6 +11641,41 @@ static struct hs_function_definition_with_1_parameter const xbox_set_machine_nam
 	},
 };
 
+/* port: the sounds of tag files played over the map's, for those making
+them (audio.loose_sounds: port/linux/game/loose_sounds.c), at the console */
+void loose_sounds_reload(void);
+void loose_sounds_enable(boolean enabled);
+
+HS_EVALUATE_NO_ARGUMENTS(hs_loose_sounds_reload_evaluate, loose_sounds_reload)
+HS_EVALUATE_VOID_BOOLEAN(hs_loose_sounds_evaluate, loose_sounds_enable)
+
+static struct hs_function_definition const loose_sounds_reload_definition=
+{
+	_hs_type_void,
+	0,
+	"loose_sounds_reload",
+	hs_macro_function_parse,
+	hs_loose_sounds_reload_evaluate,
+	"reads the sound tag files under the data root's tags folder again (all sounds stop if any changed).",
+	NULL,
+	0,
+};
+
+static struct hs_function_definition_with_1_parameter const loose_sounds_definition=
+{
+	{
+		_hs_type_void,
+		0,
+		"loose_sounds",
+		hs_macro_function_parse,
+		hs_loose_sounds_evaluate,
+		"plays the map's sounds from the tags folder's sound tag files, or (false) from the map, until the map changes.",
+		NULL,
+		1,
+		{ _hs_type_boolean },
+	},
+};
+
 #ifdef HALO_CUSTOM_EDITION
 /* port: Halo PC's functions that a Custom Edition map's scripts may call and
 the Xbox's engine has none of. A map whose scripts call one did not load
@@ -11650,11 +11687,19 @@ static void hs_sv_say(
 {
 	wchar_t text[128];
 	short local_player_index;
+	long length = 0;
 	long index;
 
-	for (index = 0; message && message[index] && index < NUMBEROF(text) - 1; index++)
-		text[index] = (wchar_t)(unsigned char)message[index];
-	text[index] = 0;
+	/* (without '|', which the HUD's text takes with the character after it
+	as one: at the end, the string's terminator) */
+	for (index = 0; message && message[index] && length < NUMBEROF(text) - 1; index++)
+	{
+		if (message[index] != '|')
+		{
+			text[length++] = (unsigned char)message[index];
+		}
+	}
+	text[length] = 0;
 	for (local_player_index = 0; local_player_index < MAXIMUM_LOCAL_PLAYERS; local_player_index++)
 	{
 		if (local_player_get_player_index(local_player_index) != NONE)
@@ -12098,9 +12143,9 @@ static struct hs_function_definition const sound_eax_enabled_definition=
 	0,
 };
 
-long const hs_function_table_count= 418 + 3 + 24;
+long const hs_function_table_count= 418 + 3 + 24 + 2;
 #else
-long const hs_function_table_count= 418;
+long const hs_function_table_count= 418 + 2;
 #endif
 
 struct hs_enum_definition const hs_enum_table[]=
@@ -12562,6 +12607,8 @@ struct hs_function_table_storage hs_function_table=
 		&sound_enable_eax_definition.definition,
 		&sound_eax_enabled_definition,
 #endif
+		&loose_sounds_reload_definition,
+		&loose_sounds_definition.definition,
 	},
 	{
 		"hs_update",
@@ -13090,6 +13137,10 @@ static boolean const hs_function_allowed_in_maps[]=
 	TRUE, /* sound_enable_eax */
 	TRUE, /* sound_eax_enabled */
 #endif
+
+	/* the port's, for those making sounds */
+	FALSE, /* loose_sounds_reload */
+	FALSE, /* loose_sounds */
 };
 typedef char verify_hs_function_allowed_in_maps_size[
 	NUMBEROF(hs_function_allowed_in_maps) == NUMBEROF(hs_function_table.functions) ? 1 : -1];

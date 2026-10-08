@@ -101,6 +101,21 @@ state. Android and the Xbox builds keep the Xbox's. */
 #define HALO_PORT_MAXIMUM_DYNAMIC_TRIANGLES 32768 /* (32768) */
 #endif
 
+/* ---------- sounds
+
+The sound cache holds the sounds being played in 4 KB pages, 4 MB of them on
+the Xbox. Halo Custom Edition maps' sounds, converted when they load
+(port/linux/game/custom_edition_sounds.c), and those of sound tags loaded
+over a map's (loose_sounds.c), are longer than the Xbox maps' and fill it (a
+campaign map's dialogue and music did, "SOUND CACHE BLOWN" in debug.txt).
+The desktop builds' cache is 16 MB; Android's window keeps the Xbox's. */
+
+#ifdef HALO_ANDROID
+#define HALO_PORT_SOUND_CACHE_SIZE 0x400000 /* (0x400000) */
+#else
+#define HALO_PORT_SOUND_CACHE_SIZE 0x1000000 /* (0x400000) */
+#endif
+
 /* ---------- AI
 
 Network co-op adds enemies for its players (port/linux/game/coop_enemies.c):

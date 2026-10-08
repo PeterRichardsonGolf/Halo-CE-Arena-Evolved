@@ -617,8 +617,7 @@ void network_game_invalidate(
 		network_game_invalidate_machine(game, (short)machine_index);
 
 	csmemset(game->players, NONE, sizeof(game->players));
-	/* port: 1 (network_server_manager.c's server_host_plays_alone) */
-	game->minimum_players = 1;
+	game->minimum_players = 2;
 	/* (port: 128 in the native builds, halo_port_limits.h) */
 	game->maximum_players = NETWORK_GAME_PLAYER_SLOTS;
 	game->local_data.game_objects_loaded = FALSE;

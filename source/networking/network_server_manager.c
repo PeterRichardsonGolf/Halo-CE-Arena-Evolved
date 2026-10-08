@@ -3093,9 +3093,11 @@ boolean server_has_a_player_on_each_machine(
 	return TRUE;
 }
 
-/* port: the host's own machine alone, with one or more of its players (split
-screen, or one player), plays without a second computer; a machine that
-joins later joins the game under way (network_game_server_start_late_joiner) */
+/* port (Arena Evolved): the host's own machine alone, with several of its
+players (split screen in a system link or internet lobby), plays without a
+second computer, with split screen's short countdown; a machine that joins
+later joins the game under way (network_game_server_start_late_joiner). One
+player alone is upstream's server_alone */
 static boolean server_host_plays_alone(
 	struct network_game_server *server)
 {
@@ -3140,9 +3142,9 @@ boolean server_has_enough_machines(
 	struct network_game_server *server)
 {
 	boolean has_enough_machines;
-	long minimum_machine_count =
-		network_game_solo_game() ||
-		network_game_is_splitscreen_local() || server_host_plays_alone(server) ? 1 : 2;
+	/* port: a system link or internet game starts with the host's machine
+	alone, and others join it in progress */
+	long minimum_machine_count = 1;
 	long machine_count = 0;
 	long client_machine_index;
 
@@ -3164,13 +3166,23 @@ boolean server_has_enough_machines(
 	return has_enough_machines;
 }
 
+/* port: a game's one player, with no one else in it yet, may start it:
+a system link or internet game's host, or split screen's first player */
+static boolean server_alone(
+	struct network_game_server *server)
+{
+	return server->game.player_count == 1;
+}
+
 boolean server_ok_to_countdown(
 	struct network_game_server *server)
 {
+	/* (port: a game's one player may start it alone, server_alone, as
+	upstream has it; Arena Evolved logs why a lobby is held) */
 	boolean enough_machines = server_has_enough_machines(server);
 	boolean a_player_on_each = server_has_a_player_on_each_machine(server);
-	boolean teams_full = !server_needs_more_teams(server);
-	boolean enough_players = server->game.player_count >= server->game.minimum_players;
+	boolean teams_full = !server_needs_more_teams(server) || server_alone(server);
+	boolean enough_players = server->game.player_count >= server->game.minimum_players || server_alone(server);
 	boolean ok = enough_machines && a_player_on_each && teams_full && enough_players;
 
 	/* port: a host nobody watches leaves no trace of why its lobby does not
@@ -3354,7 +3366,7 @@ boolean network_game_server_game_can_start(
 	match_assert(NETWORK_SERVER_MANAGER_FILE, 0x782, server);
 
 	return server->state == 0 &&
-		server->game.player_count >= server->game.minimum_players;
+		(server->game.player_count >= server->game.minimum_players || server_alone(server));
 }
 
 void network_game_server_pause_countdown(
@@ -3864,6 +3876,7 @@ void network_game_server_update_countdown(
 					if (network_game_should_accept_remote_connections() == FALSE ||
 						network_game_solo_game() ||
 						network_game_server_get_client_machine_count(server) > 1 ||
+						server_alone(server) ||
 						server_host_plays_alone(server))
 					{
 						unsigned long countdown;
@@ -4250,8 +4263,8 @@ static boolean network_game_server_setup_game_from_playlist(
 		ustrncpy(server->game.name, machine_name, NETWORK_GAME_NAME_LENGTH - 1);
 		server->game.name[NETWORK_GAME_NAME_LENGTH - 1] = L'\0';
 		server->game.map.version = (long)cache_files_map_version(server->game.map.name);
-		/* port: 1, so that a host alone can start (server_host_plays_alone) */
-		server->game.minimum_players = 1;
+		/* (port: one player alone starts by server_alone, as upstream has it) */
+		server->game.minimum_players = network_game_solo_game() ? 1 : 2;
 		server->game.maximum_players = MAXIMUM_NETWORK_PLAYER_COUNT;
 		network_game_server_port_settings_apply(server);
 		network_game_server_variant_options(&server->game.variant, &server->game.variant_options);

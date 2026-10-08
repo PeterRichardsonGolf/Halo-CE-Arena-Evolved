@@ -83,9 +83,13 @@ struct config_setting
 
 /* macOS's audio cuts out with SDL's 512-frame buffer when the mixer is late
 (a 10.6 ms budget at 48 kHz); 2048 frames (43 ms) rides that out. Elsewhere
-512 keeps the latency low. */
+512 keeps the latency low; Android's callback is handed to a thread that
+can run the guest (host_sdl.c), which 512 left too little time (the menus'
+music broke up) and 1024 does not. */
 #ifdef __APPLE__
 #define DEFAULT_AUDIO_BUFFER_FRAMES "2048"
+#elif defined(HALO_ANDROID)
+#define DEFAULT_AUDIO_BUFFER_FRAMES "1024"
 #else
 #define DEFAULT_AUDIO_BUFFER_FRAMES "512"
 #endif
@@ -274,7 +278,7 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The audio device's buffer, in sample frames at 48 kHz (64 to 8192): larger\n"
 		"rides out stalls that cut the sound out, smaller has less delay. 2048\n"
-		"(43 ms) on macOS, 512 (11 ms) elsewhere." },
+		"(43 ms) on macOS, 1024 on Android, 512 (11 ms) elsewhere." },
 	{ "audio.reverb", _config_boolean, "true", "HALO_REVERB", _environment_value, _platform_all,
 		"Reverberate the world's sounds as the place the player is in does (the\n"
 		"maps' sound environments, as the Xbox's I3DL2 reverb did); false keeps\n"
@@ -285,6 +289,12 @@ static const struct config_setting config_settings[] =
 		"\"linear\" interpolates between their samples, as the game did before\n"
 		"OpenCE's build 130: their top octave duller, and images of their band\n"
 		"above it (a brighter, grainier sound)." },
+	{ "audio.loose_sounds", _config_boolean, "false", "HALO_LOOSE_SOUNDS", _environment_value, _platform_all,
+		"For those making sounds: play each of a map's sounds that has a Halo PC\n"
+		"sound tag file of its name under the data root's tags folder\n"
+		"(tags/sound/.../name.sound) from that file. At the console,\n"
+		"loose_sounds_reload reads the files again and loose_sounds false gives\n"
+		"the map's sounds back." },
 
 	{ "capture.ffmpeg_path", _config_string, "\"\"", "HALO_FFMPEG", _environment_value, _platform_desktop,
 		"The ffmpeg program F10's recordings are made with (it is not shipped\n"

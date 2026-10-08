@@ -398,6 +398,16 @@ symbols in this file:
 #include "interface/marketing_and_strategic_business_development.h"
 #endif
 
+#if defined(HALO_WINDOWS) || defined(HALO_ANDROID) || defined(__linux__) || defined(__APPLE__)
+#define HALO_NATIVE_BUILD_INFO 1
+#ifndef HALO_BUILD_NUMBER
+#define HALO_BUILD_NUMBER 0
+#endif
+#ifndef HALO_BUILD_FLAVOR
+#define HALO_BUILD_FLAVOR "local"
+#endif
+#endif
+
 /* ---------- constants */
 
 enum
@@ -1725,15 +1735,79 @@ void main_crash(
 	return;
 }
 
-/* port: the native build's identity (port/linux/src/build_identity.c), for
-the halt screen */
-static char const *port_build_identity(
-	void)
+#ifdef HALO_NATIVE_BUILD_INFO
+/* The original Xbox version string describes the map format, not this port.
+   Keep it on Xbox; native builds name the binary that is actually running. */
+static void main_native_build_label(char *label, size_t capacity)
 {
+	/* port (Arena Evolved): the native build's identity
+	(port/linux/src/build_identity.c), as ChupathingyCE's halt screen has it */
 	extern char const *build_identity(void);
 
-	return build_identity();
+	_snprintf(label, capacity - 1, "%s", build_identity());
+	label[capacity - 1] = 0;
 }
+
+/* The 2 KB error buffer keeps recent lines at its end. Put the newest first
+   so the failure is visible even if older messages run off the screen. */
+static char const *main_native_error_tail(char const *messages)
+{
+	enum { MAX_LINES = 8, MAX_LINE_BYTES = 110 };
+	static char recent[MAX_LINES * (MAX_LINE_BYTES + 5) + 1];
+	char const *lines[MAX_LINES];
+	size_t lengths[MAX_LINES];
+	char const *cursor;
+	char const *start;
+	size_t length;
+	size_t copied;
+	size_t used = 0;
+	unsigned int count = 0;
+	unsigned int index;
+
+	for (cursor = messages; *cursor; )
+	{
+		start = cursor;
+		while (*cursor && *cursor != '\r' && *cursor != '\n')
+			cursor++;
+		length = cursor - start;
+		while (*cursor == '\r' || *cursor == '\n')
+			cursor++;
+		if (!length || (length >= sizeof("[...too many errors to print...]") - 1 &&
+			!strncmp(start, "[...too many errors to print...]",
+				sizeof("[...too many errors to print...]") - 1)))
+			continue;
+		if (count == MAX_LINES)
+		{
+			for (index = 1; index < MAX_LINES; index++)
+			{
+				lines[index - 1] = lines[index];
+				lengths[index - 1] = lengths[index];
+			}
+			count--;
+		}
+		lines[count] = start;
+		lengths[count++] = length;
+	}
+	if (!count)
+		return "No recent messages. See debug.txt for details.\r\n";
+	for (index = count; index > 0; index--)
+	{
+		length = lengths[index - 1];
+		copied = length < MAX_LINE_BYTES ? length : MAX_LINE_BYTES;
+		memcpy(recent + used, lines[index - 1], copied);
+		used += copied;
+		if (copied < length)
+		{
+			memcpy(recent + used, "...", 3);
+			used += 3;
+		}
+		recent[used++] = '\r';
+		recent[used++] = '\n';
+	}
+	recent[used] = 0;
+	return recent;
+}
+#endif
 
 void main_print_version(
 	void)
@@ -3256,6 +3330,10 @@ void halt_and_catch_fire(
 	struct scenario *scenario;
 	struct rasterizer_frame_begin_parameters frame_parameters;
 	struct rasterizer_window_begin_parameters window_parameters;
+	#ifdef HALO_NATIVE_BUILD_INFO
+	char banner[512];
+	char label[256];
+	#endif
 
 	if (!global_screenshot_count.halt_recursion_lock)
 	{
@@ -3282,6 +3360,13 @@ void halt_and_catch_fire(
 				FONT_GROUP_TAG,
 				"old tags\\internal system plain");
 		}
+		#ifdef HALO_NATIVE_BUILD_INFO
+		main_native_build_label(label, sizeof(label));
+		_snprintf(banner, sizeof(banner) - 1,
+			"%s\r\nCompiled: %s %s\r\nFull log: debug.txt (game data folder)\r\nRecent messages (newest first):",
+			label, __DATE__, __TIME__);
+		banner[sizeof(banner) - 1] = 0;
+		#endif
 
 		while (TRUE)
 		{
@@ -3337,14 +3422,22 @@ void halt_and_catch_fire(
 					NULL,
 					&cursor,
 					-4,
-					port_build_identity());
+					#ifdef HALO_NATIVE_BUILD_INFO
+					banner);
+				#else
+					"halobeta xbox 01.01.14.2342 built at: Jan 14 2002 12:49:20");
+				#endif
 				bounds.y0 = cursor.y - 1;
 				rasterizer_draw_string(
 					&bounds,
 					NULL,
 					&cursor,
 					-4,
+					#ifdef HALO_NATIVE_BUILD_INFO
+					main_native_error_tail(error_get()));
+				#else
 					error_get());
+				#endif
 			}
 
 			rasterizer_transparent_geometry_draw(TRUE);
