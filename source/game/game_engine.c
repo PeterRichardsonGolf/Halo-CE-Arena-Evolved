@@ -5752,7 +5752,10 @@ boolean game_engine_should_end_game(
 {
 	boolean should_end_game = FALSE;
 
-	if (game_engine && !multiple_teams_alive())
+	/* port: under PRACTICE MODE players leaving never end the game (one
+	team, or one player, left): it runs until the host ends it, or the time
+	limit */
+	if (game_engine && !multiple_teams_alive() && !game_engine_practice())
 		should_end_game = TRUE;
 	/* port: the gametype's time limit (game_variant_options) */
 	if (game_engine && game_variant_options_get()->time_limit > 0 &&

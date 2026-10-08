@@ -1473,8 +1473,10 @@ static void race_engine_update(
 		}
 	}
 
-	/* (a client ends the game when the host has) */
-	if (game_engine_has_teams() && !network_game_distributed_client())
+	/* (a client ends the game when the host has; port: PRACTICE MODE (TS
+	PRACTICE) never ends on a team that can no longer win, as one with a
+	player who left: it runs until the host ends it) */
+	if (game_engine_has_teams() && !network_game_distributed_client() && !game_engine_practice())
 	{
 		if (!race_team_can_win_game(0))
 			game_engine_end_game();
