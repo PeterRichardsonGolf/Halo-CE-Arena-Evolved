@@ -7592,7 +7592,6 @@ void render_ui_widgets_postgame(
 	};
 	rectangle2d bounds;
 	long widget_index;
-	boolean any_rendered = FALSE;
 
 	if (virtual_keyboard_active())
 		return;
@@ -7644,13 +7643,11 @@ void render_ui_widgets_postgame(
 				offsets[local_player_count() - 1][local_player_index],
 				TRUE,
 				FALSE);
-			any_rendered = TRUE;
 		}
 	}
 #ifdef HALO_CUSTOM_EDITION
 	/* (AE: the map's name, under the report this view shows) */
-	if (any_rendered)
-		render_postgame_map_name(local_player_index, offsets[local_player_count() - 1][local_player_index]);
+	render_postgame_map_name(local_player_index, offsets[local_player_count() - 1][local_player_index]);
 #endif
 
 	return;
