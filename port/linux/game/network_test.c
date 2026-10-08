@@ -141,6 +141,12 @@ static struct
 	long pickup_weapon_index;
 	real hurt_time;
 	boolean hurt;
+	/* (debug.network_test_damage: "seconds:scale" hits on the host's first
+	player, by its weapon's bullet; applied once each) */
+	char damage_script[128];
+	long damage_done;
+	long damage_logged_time;
+	real damage_last[3];
 	real quit_time;
 	boolean quit;
 	unsigned long variant_flags;
@@ -286,6 +292,8 @@ static void network_test_read_settings(
 	network_test.auto_balance = config_boolean("debug.network_test_auto_balance") != 0;
 	network_test.kill_host = config_boolean("debug.network_test_kill_host") != 0;
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
+	snprintf(network_test.damage_script, sizeof(network_test.damage_script), "%s",
+		config_string("debug.network_test_damage"));
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
 	snprintf(network_test.saved_gametype, sizeof(network_test.saved_gametype), "%s",
@@ -922,6 +930,91 @@ static void network_test_pickup(
 	}
 }
 
+/* debug.network_test_damage: "seconds:scale,seconds:scale ...": at that game
+time the host's first player is hit by its weapon's bullet, its damage
+multiplied by the scale (a small one only the shields feel); every change of
+the player's health, shields or shield stun is logged with its tick. */
+static void network_test_damage_script(
+	void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	struct object_datum *object;
+	char const *cursor = network_test.damage_script;
+	long entry = 0;
+
+	if (!network_test.damage_script[0])
+		return;
+	data_iterator_new(&iterator, player_data);
+	player = (struct player_datum *)data_iterator_next(&iterator);
+	if (!player || player->unit_index == NONE)
+		return;
+	object = object_get(player->unit_index);
+	while (*cursor)
+	{
+		char *end;
+		double seconds = strtod(cursor, &end);
+		double scale;
+
+		if (end == cursor || *end != ':')
+			break;
+		scale = strtod(end + 1, &end);
+		if (entry == network_test.damage_done && game_time_get() >= (long)(seconds * TICKS_PER_SECOND))
+		{
+			struct unit_datum *unit = unit_get(player->unit_index);
+			long weapon_index = unit->unit.current_weapon_index == NONE ? NONE :
+				unit->unit.weapon_object_indices[unit->unit.current_weapon_index];
+
+			network_test.damage_done++;
+			if (weapon_index != NONE)
+			{
+				struct weapon_definition *weapon = weapon_definition_get(object_get(weapon_index)->definition_index);
+
+				if (weapon->weapon.triggers.count > 0)
+				{
+					struct weapon_trigger_definition *trigger =
+						TAG_BLOCK_GET_ELEMENT(&weapon->weapon.triggers, 0, struct weapon_trigger_definition);
+
+					if (trigger->projectile.index != NONE)
+					{
+						struct damage_data damage;
+
+						damage_data_new(&damage, projectile_definition_get(trigger->projectile.index)->projectile.impact_damage.index);
+						damage.owner_player_index = NONE;
+						damage.owner_object_index = NONE;
+						damage.owner_team_index = NONE;
+						damage.origin = object->object.position;
+						damage.epicenter = object->object.position;
+						damage.direction.i = 1.0f;
+						damage.direction.j = 0.0f;
+						damage.direction.k = 0.0f;
+						damage.scale = (real)scale;
+						scenario_location_from_point(&damage.location, &damage.epicenter);
+						object_cause_damage(&damage, player->unit_index, NONE, NONE, NONE, NULL);
+						platform_log("network test: tick %ld hit x%.1f: health %.4f shield %.4f stun %d", game_time_get(),
+							scale, object->object.body_vitality, object->object.shield_vitality,
+							(int)object->object.shield_stun_ticks);
+					}
+				}
+			}
+		}
+		entry++;
+		cursor = *end == ',' ? end + 1 : end;
+	}
+	if (network_test.damage_logged_time != game_time_get() && (
+		network_test.damage_last[0] != object->object.body_vitality ||
+		network_test.damage_last[1] != object->object.shield_vitality ||
+		network_test.damage_last[2] != (real)object->object.shield_stun_ticks))
+	{
+		network_test.damage_logged_time = game_time_get();
+		network_test.damage_last[0] = object->object.body_vitality;
+		network_test.damage_last[1] = object->object.shield_vitality;
+		network_test.damage_last[2] = (real)object->object.shield_stun_ticks;
+		platform_log("network test: tick %ld health %.4f shield %.4f stun %d", game_time_get(),
+			object->object.body_vitality, object->object.shield_vitality, (int)object->object.shield_stun_ticks);
+	}
+}
+
 void network_test_update(
 	boolean main_menu_loaded,
 	real seconds)
@@ -931,6 +1024,13 @@ void network_test_update(
 	if (network_test.mode == _network_test_off)
 		return;
 
+	/* (per frame, not per second: ticks matter) */
+	if (game_in_progress() && !main_menu_loaded && network_test.mode == _network_test_host)
+	{
+		if (game_time_get() < network_test.damage_logged_time)
+			network_test.damage_done = 0;
+		network_test_damage_script();
+	}
 	/* the game running: report (from the start of each game: the next
 	game's time starts over) */
 	if (game_in_progress() && game_time_get() < network_test.logged_time)
