@@ -8906,43 +8906,55 @@ static boolean game_engine_drop_secondary_power_weapon(
 }
 
 /* port: DROP SECONDARY (items.c's item_in_unit_inventory, an item leaving a
-unit's inventory): whether its owned time is now, so it lies 30 s like any
-drop. The host's (it alone purges: game_engine_update_purge); CE: never
-(stock); ALWAYS: always; EXCEPT POWER (a stored 3 too): but for a
-power weapon. Never for the CTF flag or the oddball (can_delete_item's
-flag weapons): their return timers count from their owned time, as stock */
-boolean game_engine_drop_refreshes_owned_time(
-	long item_index)
+unit's inventory): its owned time from now on, which game_engine_update_purge
+counts 30 seconds from. The host's (it alone purges); never the CTF flag's
+or the oddball's (can_delete_item's flag weapons: their return timers count
+from their owned time, as stock). CE: as it is (stock: a holstered weapon
+is updated only once it has been put away after a swap, so a spawn's
+second weapon that was never in hand vanishes at once, one put away from
+hand lies 30 seconds); ALWAYS: now, every drop lies 30 seconds; EXCEPT POWER
+(a stored 3 too): now, but a power weapon a dying unit had holstered is
+made 30 seconds old, so the next purge takes it (the one in hand lies 30
+seconds) */
+long game_engine_drop_owned_time(
+	long item_index,
+	long owned_time)
 {
 	struct object_datum *item;
 
 	if (!game_engine_running() || network_game_distributed_client())
-		return FALSE;
+		return owned_time;
 	if (weapon_try_and_get(item_index) && weapon_is_flag(item_index))
-		return FALSE;
+		return owned_time;
 	switch (game_engine_drop_secondary())
 	{
 	case _drop_secondary_always:
-		return TRUE;
+		return game_time_get();
 	case _drop_secondary_always_except_power:
 		item = object_get(item_index);
-		return !(item->object.type == _object_type_weapon &&
-			game_engine_drop_secondary_power_weapon(item->definition_index));
+		if (item->object.type == _object_type_weapon &&
+			game_engine_drop_secondary_power_weapon(item->definition_index) &&
+			unit_dropping_holstered_weapons_at_death())
+		{
+			return game_time_get() - 30 * TICKS_PER_SECOND - 1;
+		}
+		return game_time_get();
 	}
-	return FALSE;
+	return owned_time;
 }
 
 /* port: debug.item_log: an item a unit dropped */
 void game_engine_log_item_dropped(
 	long item_index,
 	long owned_before,
-	boolean refreshed)
+	long owned_now)
 {
 	if (!game_engine_item_log_on() || !game_engine_running() || network_game_distributed_client())
 		return;
 	platform_log("items: dropped %s (%lx) at tick %ld, owned at tick %ld%s (drop secondary %s)",
 		tag_get_name(object_get(item_index)->definition_index), item_index, game_time_get(), owned_before,
-		refreshed ? ", now" : "", game_variant_drop_secondary_name(global_variant.universal_variant.flags));
+		owned_now == owned_before ? "" : owned_now >= game_time_get() ? ", now" : ", gone",
+		game_variant_drop_secondary_name(global_variant.universal_variant.flags));
 }
 
 /* port: whether a weapon definition is the globals' rocket launcher,

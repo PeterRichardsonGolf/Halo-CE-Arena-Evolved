@@ -1368,7 +1368,7 @@ ARENA_ROWS = [
     ("drop_secondary", "DROP SECONDARY:", ["CE", "ALWAYS", "EXCEPT POWER"], [
         "As Halo CE: a holstered weapon you haven't drawn\\nfor 30 seconds vanishes when you die.",
         "Both your weapons drop when you die, and stay\\n30 seconds.",
-        "Both drop, but a holstered rocket launcher,\\nsniper rifle or shotgun follows Halo CE's rule.",
+        "Both drop and stay 30 seconds, but a holstered\\nrocket launcher, sniper rifle or shotgun vanishes.",
     ]),
     # (_game_variant_nhe_extras_bit, 28)
     ("nhe_extras", "NHE EXTRAS:", ["OFF", "ON"], [

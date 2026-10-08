@@ -230,7 +230,7 @@
 		<string text="On Halo 1: NHE's maps: NHE's training: the\ncountdown, spawn markers, randoms and waypoints.\nOther maps: the gametype's vehicles."/>
 		<string text="As Halo CE: a holstered weapon you haven't drawn\nfor 30 seconds vanishes when you die."/>
 		<string text="Both your weapons drop when you die, and stay\n30 seconds."/>
-		<string text="Both drop, but a holstered rocket launcher,\nsniper rifle or shotgun follows Halo CE's rule."/>
+		<string text="Both drop and stay 30 seconds, but a holstered\nrocket launcher, sniper rifle or shotgun vanishes."/>
 		<string text="Stock teams and camera."/>
 		<string text="As Halo 1: NHE: everyone joins red and keeps their\ncolour between games, the dead camera stays on you,\nand the match clock counts up."/>
 	</strings>

@@ -2739,6 +2739,15 @@ static void unit_drop_inventory_weapons(
 	return;
 }
 
+/* port: TRUE while unit_died drops a unit's holstered weapons */
+static boolean unit_dropping_holstered_at_death = FALSE;
+
+boolean unit_dropping_holstered_weapons_at_death(
+	void)
+{
+	return unit_dropping_holstered_at_death;
+}
+
 void unit_died(
 	long unit_index,
 	boolean feigned)
@@ -2827,7 +2836,11 @@ void unit_died(
 	}
 
 	unit->unit.speech.queued.priority = 0;
+	/* (port: a dead unit's holstered weapons dropping: DROP SECONDARY's
+	EXCEPT POWER, game_engine_drop_owned_time) */
+	unit_dropping_holstered_at_death = TRUE;
 	unit_drop_inventory_weapons(unit_index);
+	unit_dropping_holstered_at_death = FALSE;
 	fresh_unit = unit_get(unit_index);
 	if (fresh_unit->unit.equipment_object_index != NONE)
 	{

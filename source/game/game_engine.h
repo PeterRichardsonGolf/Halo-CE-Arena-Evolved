@@ -629,12 +629,13 @@ void game_engine_log_vehicles_placed(
 	void);
 /* port: DROP SECONDARY: whether an item leaving a unit's inventory is owned
 until now (items.c), and the drop in the log (debug.item_log) */
-boolean game_engine_drop_refreshes_owned_time(
-	long item_index);
+long game_engine_drop_owned_time(
+	long item_index,
+	long owned_time);
 void game_engine_log_item_dropped(
 	long item_index,
 	long owned_before,
-	boolean refreshed);
+	long owned_now);
 long game_engine_effective_vehicle_set(
 	void);
 byte game_engine_effective_team_vehicle_set(

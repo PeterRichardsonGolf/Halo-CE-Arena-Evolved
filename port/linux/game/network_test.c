@@ -151,6 +151,10 @@ static struct
 	/* (debug.network_test_auto_balance: the gametype's AUTO TEAM BALANCE on,
 	so a team game whose players all joined one team (NHE EXTRAS) starts) */
 	boolean auto_balance;
+	/* (debug.network_test_kill_host: the kill hook's victim is the host's own
+	player, killed by another of this machine's players: a local player's
+	death, its input from debug.test_input) */
+	boolean kill_host;
 	long logged_time;
 } network_test;
 
@@ -273,6 +277,7 @@ static void network_test_read_settings(
 		network_test.loadout_secondary = NONE;
 	}
 	network_test.auto_balance = config_boolean("debug.network_test_auto_balance") != 0;
+	network_test.kill_host = config_boolean("debug.network_test_kill_host") != 0;
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
@@ -1051,6 +1056,34 @@ void network_test_update(
 			{
 				if (player != first)
 					last = player;
+			}
+			/* (debug.network_test_kill_host: the other way round, the host's
+			player killed by the last other of this machine's players) */
+			if (network_test.kill_host)
+			{
+				struct player_datum *victim = NULL;
+				struct player_datum *killer = NULL;
+				long killer_index = NONE;
+
+				/* (the victim local player 1: controller 1, whose presses
+				debug.test_input makes) */
+				data_iterator_new(&iterator, player_data);
+				while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+				{
+					if (player->local_player_index == 0)
+						victim = player;
+					else if (player->local_player_index != NONE)
+					{
+						killer = player;
+						killer_index = iterator.datum_index;
+					}
+				}
+				if (killer && victim && killer->unit_index != NONE && victim->unit_index != NONE)
+				{
+					platform_log("network test: another of the host's players kills local player 1");
+					damage_kill_object_for_player(victim->unit_index, killer_index);
+				}
+				last = NULL;
 			}
 			if (last && first && last->unit_index != NONE && first->unit_index != NONE)
 			{
