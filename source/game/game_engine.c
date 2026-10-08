@@ -7906,7 +7906,7 @@ void game_engine_log_rules(
 			TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
 			universal->vehicle_set,
 			time_limit_string,
-			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
+			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
 			game_variant_no_spread_name(flags),
 			!TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "off" :

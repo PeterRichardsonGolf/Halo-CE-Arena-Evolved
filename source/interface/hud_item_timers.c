@@ -2275,7 +2275,23 @@ static struct
 static long hud_item_waypoint_logged_at[MAXIMUM_LOCAL_PLAYERS];
 
 int config_boolean(char const *name);
+unsigned long config_changes(void);
 void platform_log(char const *format, ...);
+
+/* debug.waypoint_log, read again only when the settings change */
+static boolean hud_item_waypoint_log_on(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean on = FALSE;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		on = config_boolean("debug.waypoint_log") != 0;
+	}
+	return on;
+}
 
 /* whether a point is in this view's picture (in front of the camera,
 within the viewport): the projection the waypoint arrow uses */
@@ -2316,8 +2332,9 @@ static boolean hud_item_waypoint_in_sight(
 
 		spot.z += ITEM_TIMER_SIGHT_HEIGHT;
 		*tested_at = now;
-		/* (hud_nav_points.c's own test: render type 0, nothing in the way) */
-		*ray_seen = hud_get_nav_point_render_type(local_player_index, head_position, &spot, NONE) == 0;
+		/* (hud_nav_points.c's: nothing in the way but the viewer and the
+		vehicle it is in) */
+		*ray_seen = hud_nav_point_in_sight(local_player_index, head_position, &spot, NONE);
 		if (*ray_seen)
 			*seen_at = now;
 	}
@@ -2361,7 +2378,7 @@ void hud_draw_item_waypoints(
 	unit_get_head_position(unit_index, &head_position);
 	in_sight_only = item_timers_waypoints_in_sight_only();
 	/* (debug.waypoint_log: each second, per view and entry in its window) */
-	log_now = config_boolean("debug.waypoint_log") && local_player_index >= 0 &&
+	log_now = hud_item_waypoint_log_on() && local_player_index >= 0 &&
 		local_player_index < MAXIMUM_LOCAL_PLAYERS &&
 		hud_item_waypoint_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND;
 	if (log_now)

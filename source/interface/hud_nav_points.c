@@ -703,6 +703,63 @@ short hud_get_nav_point_render_type(
 	return render_type;
 }
 
+boolean hud_nav_point_in_sight(
+	short local_player_index,
+	real_point3d const *head,
+	real_point3d const *position,
+	long reference_object_index)
+{
+	long player_index = local_player_get_player_index(local_player_index);
+	long unit_index = player_index == NONE ? NONE : player_get(player_index)->unit_index;
+	long vehicle_index = unit_index == NONE ? NONE : object_get(unit_index)->object.parent_object_index;
+	long reference_vehicle_index = reference_object_index == NONE ? NONE :
+		object_get(reference_object_index)->object.parent_object_index;
+	real_point3d start = *head;
+	boolean seen = FALSE;
+	short pass;
+
+	match_assert("c:\\halo\\SOURCE\\interface\\hud_nav_points.c", 510, global_current_collision_user_depth < MAXIMUM_COLLISION_USER_STACK_DEPTH);
+	global_current_collision_users[global_current_collision_user_depth++] = 20;
+	/* (the viewer's own vehicle seen through: from just past each hit on
+	it, a few at most) */
+	for (pass = 0; pass < 3; pass++)
+	{
+		struct collision_result result;
+		real_vector3d vector;
+		real length;
+
+		vector.i = position->x - start.x;
+		vector.j = position->y - start.y;
+		vector.k = position->z - start.z;
+		if (!collision_test_vector(_collision_test_for_line_of_sight_flags, &start, &vector, unit_index, &result))
+		{
+			seen = TRUE;
+			break;
+		}
+		if (result.type == _collision_result_object && reference_object_index != NONE &&
+			(result.object_index == reference_object_index || result.object_index == reference_vehicle_index))
+		{
+			seen = TRUE;
+			break;
+		}
+		if (result.type != _collision_result_object || vehicle_index == NONE || result.object_index != vehicle_index)
+			break;
+		length = square_root(vector.i * vector.i + vector.j * vector.j + vector.k * vector.k);
+		if (length <= 0.0f)
+		{
+			seen = TRUE;
+			break;
+		}
+		start.x = result.point.x + vector.i / length * 0.05f;
+		start.y = result.point.y + vector.j / length * 0.05f;
+		start.z = result.point.z + vector.k / length * 0.05f;
+	}
+	match_assert("c:\\halo\\SOURCE\\interface\\hud_nav_points.c", 528, global_current_collision_user_depth > 1);
+	--global_current_collision_user_depth;
+
+	return seen;
+}
+
 void custom_render_nav_point(
 	short local_player_index,
 	real_point3d const *position,

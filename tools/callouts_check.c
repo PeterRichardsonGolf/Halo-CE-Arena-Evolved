@@ -94,6 +94,8 @@ boolean game_engine_pregame_countdown_covers(long time) { return time < 0; }
 /* (the gametype's TIMERS level: HUD, else LINE OF SIGHT's check) */
 static short check_timers_level = _timers_hud;
 short game_engine_timers_level(void) { return check_timers_level; }
+static boolean check_training = FALSE;
+boolean game_engine_training(void) { return check_training; }
 int config_boolean(char const *name) { (void)name; return 0; }
 
 char const *config_string(char const *name)
@@ -578,6 +580,23 @@ int main(int argc, char **argv)
 			fail("LINE OF SIGHT: no clock calls");
 		else
 			printf("LINE OF SIGHT: %d clock calls, no item calls\n", clock_calls);
+	}
+	/* (LINE OF SIGHT with TRAINING: the item calls stay) */
+	{
+		int index;
+		int item_calls = 0;
+
+		check_timers_level = _timers_line_of_sight;
+		check_training = TRUE;
+		play("verbose", 1);
+		check_timers_level = _timers_hud;
+		check_training = FALSE;
+		for (index = 0; index < played_count; index++)
+			item_calls += played[index].spawn != NONE;
+		if (!item_calls)
+			fail("LINE OF SIGHT with TRAINING: no item calls");
+		else
+			printf("LINE OF SIGHT with TRAINING: %d item calls\n", item_calls);
 	}
 
 	if (failures)

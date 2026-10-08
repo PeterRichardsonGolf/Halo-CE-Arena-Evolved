@@ -1443,11 +1443,12 @@ static boolean callout_tick_valid(
 	return tick > 0 && !game_engine_pregame_countdown_covers(tick);
 }
 
-/* the items' calls muted: the gametype's TIMERS at LINE OF SIGHT */
+/* the items' calls muted: the gametype's TIMERS at LINE OF SIGHT, but not
+with TRAINING on (the learning aid keeps them) */
 static boolean callouts_items_muted(
 	void)
 {
-	return game_engine_timers_level() == _timers_line_of_sight;
+	return game_engine_timers_level() == _timers_line_of_sight && !game_engine_training();
 }
 
 /* the items' calls of the wave spawning at this tick: those 10 s before it

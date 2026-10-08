@@ -1813,7 +1813,7 @@ static void arena_gametype_log(
 		TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
 		game_variant_no_spread_name(flags),
 		TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "on" : "off",
-		TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
+		game_variant_timers_name(flags),
 		TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
 		TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off",
 		game_variant_nhe_mode_name(universal->nhe_mode));
