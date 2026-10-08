@@ -20,8 +20,8 @@ is declared in ae_hooks.h (preflight P19). Include after cseries.h.
 enum ae_lobby_kind { AE_LOBBY_LOCAL, AE_LOBBY_LAN, AE_LOBBY_ONLINE };
 
 /* hosts a game: LAN (Check B's sequence: listed on the LAN, joinable), LOCAL (the same, nobody can join, nothing
-listed), ONLINE (LAN plus internet hosting, as upstream's Create Game > internet: p2p hosting allowed, listed public
-as network.host_public says; network.list_hosted_games honoured by p2p) */
+listed), ONLINE (LAN plus internet hosting, as upstream's Create Game > internet: p2p hosting allowed, INVITE ONLY in
+M2 whatever network.host_public says; PUBLIC is M4's PRIVACY row) */
 struct ae_result ae_lobby_host(int kind);
 /* a local player for a controller (0-3; logged 1-based) */
 struct ae_result ae_lobby_add_local_player(short controller);

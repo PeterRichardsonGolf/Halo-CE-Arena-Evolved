@@ -361,9 +361,48 @@ static void trimmed(const char *text, char *out, size_t size)
 		out[length - 1] = 0;
 }
 
+#ifdef HALO_GAME_BROWSER
+/* the invite's code in the text itself (hexadecimal, lower case, as network_game_client_join_invite_host reads
+it): after "halo://join/" (any case) when the text is a link, else the text's digits alone; as p2p.c parse_invite
+reads it. FALSE if the text holds no invite of this version (a key link, an older invite, anything else) */
+static int invite_code(const char *text, char *code, size_t size)
+{
+	static const char prefix[] = "halo://join/";
+	const char *start = text;
+	const char *search;
+	size_t digits;
+
+	for (search = text; *search; search++)
+	{
+		size_t length;
+
+		for (length = 0; prefix[length] && search[length] && (search[length] | 0x20) == prefix[length]; length++)
+			;
+		if (!prefix[length])
+		{
+			start = search + length;
+			break;
+		}
+	}
+	for (digits = 0; (start[digits] >= '0' && start[digits] <= '9') || ((start[digits] | 0x20) >= 'a' &&
+		(start[digits] | 0x20) <= 'f'); digits++)
+		;
+	/* (the host's key hash and the token: 16 bytes each, p2p_internal.h; a bare code is its digits alone) */
+	if (digits != 64 || digits >= size || (start == text && start[digits]))
+		return 0;
+	for (search = start; search < start + digits; search++)
+		*code++ = (char)(*search >= 'A' && *search <= 'F' ? *search | 0x20 : *search);
+	*code = 0;
+	return 1;
+}
+#endif
+
 struct ae_result ae_lobby_join_address(const char *address)
 {
 	char text[256];
+#ifdef HALO_GAME_BROWSER
+	char code[sizeof(lobby.invite)];
+#endif
 
 	if (!main_menu_is_active())
 		return failed("join", AE_STR_ERR_IN_GAME, NULL);
@@ -376,6 +415,10 @@ struct ae_result ae_lobby_join_address(const char *address)
 #else
 	if (!config_boolean("network.online"))
 		return failed("join", AE_STR_ERR_INTERNET_OFF, NULL);
+	/* (the code from this text, never p2p_joined_invite's: that is the last invite joined, an older one while
+	this one waits for internet play to start) */
+	if (!invite_code(text, code, sizeof(code)))
+		return failed("join", AE_STR_ERR_NOT_INVITE, NULL);
 	if (!join_client(JOIN_INVITE))
 		return lobby.join_failure;
 	/* as upstream's Server Browser (browser_screen.c join, wait_for_host): the invite reached (p2p_join_invite),
@@ -385,13 +428,7 @@ struct ae_result ae_lobby_join_address(const char *address)
 		join_failed(failed_result("join", AE_STR_ERR_NOT_INVITE));
 		return lobby.join_failure;
 	}
-	if (!p2p_joined_invite(lobby.invite, sizeof(lobby.invite)))
-	{
-		/* (the code itself: after "halo://join/" when the text is a link) */
-		const char *code = strstr(text, "//join/");
-
-		snprintf(lobby.invite, sizeof(lobby.invite), "%s", code ? code + 7 : text);
-	}
+	snprintf(lobby.invite, sizeof(lobby.invite), "%s", code);
 	platform_log("ae lobby: reaching the invite's host");
 	return succeeded();
 #endif
@@ -488,12 +525,15 @@ void ae_lobby_update(unsigned long now)
 	else if (lobby.join == JOIN_INVITE)
 	{
 #ifdef HALO_GAME_BROWSER
-		long joined = client ? network_game_client_join_invite_host(lobby.invite) : -1;
+		long joined = client ? network_game_client_join_invite_host(lobby.invite) : 0;
 #else
-		long joined = -1;
+		long joined = 0;
 #endif
 
-		if (joined > 0)
+		/* (the client gone: nothing to join with, as no game found) */
+		if (!client)
+			join_failed(failed_result("join", AE_STR_ERR_NO_GAME));
+		else if (joined > 0)
 		{
 			lobby.join = JOIN_CONNECTING;
 			lobby.join_since = now;

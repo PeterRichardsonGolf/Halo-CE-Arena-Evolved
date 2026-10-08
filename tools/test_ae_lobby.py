@@ -181,7 +181,10 @@ def test_online_is_invite_only(cfg):
         "expect": {"ticks": 0}})
     assert result.get("status") == "PASS", result.get("why")
     assert "ae lobby: hosting (ONLINE, invite only)" in text
+    # (the positive control: internet play really hosted, so a public listing would have been logged here)
+    assert "Internet play: hosting" in text
     assert "listed in everyone's server browser" not in text
+    # (network.list_hosted_games is off by default: the OpenCE game list is that opt-in's, M4's PRIVACY row)
     assert "Game list: the game is listed" not in text
 
 
