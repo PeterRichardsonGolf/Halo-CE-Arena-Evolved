@@ -8634,6 +8634,10 @@ long game_engine_remap_vehicle(
 	return result;
 }
 
+/* port: while game_engine_give_loadout makes a custom loadout's weapons,
+which stay as chosen (the weapon set is the map's) */
+static boolean game_engine_giving_loadout = FALSE;
+
 long game_engine_remap_weapon(
 	long weapon_definition_index)
 {
@@ -8652,8 +8656,12 @@ long game_engine_remap_weapon(
 	if (weapon_list_index == _weapon_list_flamethrower || weapon_list_index == _weapon_list_gravity_rifle)
 		weapon_list_index = _weapon_list_rocket_launcher;
 
-	/* port: a custom loadout (game_variant_options) has no weapon set */
-	if (game_variant_options_get()->loadout == _loadout_custom)
+	/* port: a custom loadout's own weapons (game_variant_options) are as
+	chosen; the map's weapons follow the weapon set with either loadout (AE:
+	before, a custom loadout had no weapon set; the gametype editor now shows
+	WEAPON SET with both, for AE's special modes: a sniper rifle and a pistol
+	each, the sniping set's weapons on the map) */
+	if (game_engine_giving_loadout)
 		return list_index_to_weapon_definition_index(weapon_list_index);
 
 	switch (global_variant.universal_variant.weapon_set)
@@ -10072,7 +10080,10 @@ static void game_engine_give_loadout(
 		if (definition_index == NONE)
 			continue;
 		object_placement_data_new(&placement_data, definition_index, NONE);
+		/* (not the weapon set's: game_engine_remap_weapon) */
+		game_engine_giving_loadout = TRUE;
 		weapon_index = object_new(&placement_data);
+		game_engine_giving_loadout = FALSE;
 		if (weapon_index == NONE)
 			continue;
 		if (!first && unit_has_weapon_definition_index(unit_index, definition_index))

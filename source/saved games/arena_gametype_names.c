@@ -82,7 +82,8 @@ static struct arena_gametype_name const arena_gametype_names[] =
 	{ "AE 2V2 BALL", "TEAM AE 2V2 ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
 		"Team Oddball for two against two (split screen too), on AE's rules." },
 	{ "AE PRACTICE", "FFA AE PRACTICE", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
-		"Free for all practice: every weapon and powerup respawns every 30 seconds; 500 kills to win, no time limit." },
+		"Free for all practice: every weapon and powerup respawns every 30 seconds; 500 kills to win, no time limit, "
+		"the map's vehicles." },
 	/* AE casual's special team modes */
 	{ "AE SNIPERS", "TEAM AE SNIPERS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
 		"Team slayer with sniper rifles and pistols, sniper ammo on the map, no motion tracker." },

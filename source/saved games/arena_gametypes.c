@@ -119,6 +119,19 @@ scripts have their own) */
 /* AE's casual gametypes' aid: the power items' TIMERS */
 #define ARENA_CASUAL_FLAGS FLAG(_game_variant_item_timers_bit)
 
+/* the AE gametypes added later (AE TEAM OB, AE PRACTICE, the special
+modes): AE's rules, TIMERS HUD + WAYPOINTS (the strip and the waypoints
+through walls) and DROP SECONDARY ALWAYS (both weapons drop and stay 30
+seconds) */
+#define ARENA_LATER_FLAGS \
+	(ARENA_GAMETYPE_FLAGS | FLAG(_game_variant_item_timers_bit) | FLAG(_game_variant_item_waypoints_bit) | \
+	(_drop_secondary_always << _game_variant_drop_secondary_first_bit))
+
+/* SWAT's: those, but classic health (a health pack's) and no shields: a
+headshot kills */
+#define ARENA_SWAT_FLAGS \
+	((ARENA_LATER_FLAGS & ~GAME_VARIANT_HEALTH_STYLE_MASK) | FLAG(_game_variant_no_shields_bit))
+
 /* TRAINING's aids: the item TIMERS and TRAINING's waypoints */
 #define ARENA_TRAINING_FLAGS \
 	(FLAG(_game_variant_item_timers_bit) | \
@@ -220,6 +233,9 @@ enum
 	ARENA_GOAL_NONE = ARENA_SET(2),
 	ARENA_WEAPONS_PISTOLS = ARENA_SET(1),
 	ARENA_WEAPONS_SNIPING = ARENA_SET(4),
+	ARENA_WEAPONS_ROCKET_LAUNCHERS = ARENA_SET(6),
+	ARENA_WEAPONS_SHOTGUNS = ARENA_SET(7),
+	ARENA_WEAPONS_HEAVY = ARENA_SET(13),
 };
 
 /* ---------- structures */
@@ -326,6 +342,43 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE 2V2 BALL", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
+	/* the casual set's later ones (ARENA_LATER_FLAGS: TIMERS HUD +
+	WAYPOINTS, DROP SECONDARY ALWAYS), friendly fire on, the stock
+	respawns. Team Oddball, its objective shown by nav points */
+	{ "AE TEAM OB", build_game_variant_team_oddball, ARENA_LATER_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS },
+	/* PRACTICE: free for all slayer with PRACTICE MODE (every weapon and
+	powerup each 30 seconds), no practical score limit, no time limit, the
+	map's vehicles */
+	{ "AE PRACTICE", build_game_variant_slayer, ARENA_LATER_FLAGS | FLAG(_game_variant_practice_bit),
+		ARENA_TRAINING_SCORE_TO_WIN, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_DEFAULT, TRUE },
+	/* the special modes: team slayer to 50 (HEAVIES 75), each with its
+	loadout and weapon set */
+	{ "AE SNIPERS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE,
+		.weapon_set = ARENA_WEAPONS_SNIPING, .loadout_primary = ARENA_SET(_loadout_weapon_sniper_rifle),
+		.loadout_secondary = ARENA_SET(_loadout_weapon_pistol) },
+	{ "AE SHOTSNIP", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE,
+		.loadout_primary = ARENA_SET(_loadout_weapon_shotgun), .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle),
+		.no_map_weapons = TRUE },
+	{ "AE SWAT", build_game_variant_team_slayer, ARENA_SWAT_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE,
+		.weapon_set = ARENA_WEAPONS_PISTOLS, .loadout_primary = ARENA_SET(_loadout_weapon_pistol),
+		.loadout_secondary = ARENA_SET(_loadout_weapon_none) },
+	{ "AE ROCKETS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.weapon_set = ARENA_WEAPONS_ROCKET_LAUNCHERS, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
+		.loadout_secondary = ARENA_SET(_loadout_weapon_none) },
+	{ "AE SHOTGUNS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.weapon_set = ARENA_WEAPONS_SHOTGUNS, .loadout_primary = ARENA_SET(_loadout_weapon_shotgun),
+		.loadout_secondary = ARENA_SET(_loadout_weapon_pistol) },
+	{ "AE HEAVIES", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
+		75, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_DEFAULT, TRUE,
+		.weapon_set = ARENA_WEAPONS_HEAVY, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
+		.loadout_secondary = ARENA_SET(_loadout_weapon_assault_rifle) },
 	/* TRAINING: free for all slayer with no practical score limit, the
 	item timers and TRAINING's waypoints */
 	{ "AE TRAINING", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_TRAINING_FLAGS,
@@ -1981,10 +2034,26 @@ static void arena_gametype_log(
 	struct game_variant_options const *options)
 {
 	static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };
+	/* (game_engine.h's _loadout_weapon_*) */
+	static char const *const weapons[] =
+	{
+		"none", "random", "assault rifle", "pistol", "shotgun", "sniper rifle", "rocket launcher",
+		"plasma pistol", "plasma rifle", "needler"
+	};
+	char loadout[48];
 	struct universal_variant const *universal = &variant->universal_variant;
 	unsigned long flags = universal->flags;
 	long engine = variant->game_engine_index;
 
+	if (options->loadout == _loadout_custom)
+	{
+		_snprintf(loadout, sizeof(loadout) - 1, "%s + %s",
+			options->primary_weapon < NUMBEROF(weapons) ? weapons[options->primary_weapon] : "?",
+			options->secondary_weapon < NUMBEROF(weapons) ? weapons[options->secondary_weapon] : "?");
+		loadout[sizeof(loadout) - 1] = 0;
+	}
+	else
+		csstrcpy(loadout, "the weapon set's");
 	error(_error_silent, "seeded arena gametype '%s': %s%s, score to win %ld, time limit %d min, "
 		"respawn %g s, suicide penalty %g s, motion sensor %s, vehicle set %ld, loadout %s, "
 		"equipment %s, health %s, fall damage %s, no spread %s, pre-game countdown %s, timers %s, "
@@ -1998,7 +2067,7 @@ static void arena_gametype_log(
 		(double)universal->suicide_penalty / TICKS_PER_SECOND,
 		TEST_FLAG(flags, _game_variant_draw_object_in_motion_sensor_bit) ? "on" : "off",
 		universal->vehicle_set,
-		options->loadout == _loadout_custom ? "pistol + assault rifle" : "the weapon set's",
+		loadout,
 		TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
 		game_variant_health_style_name(flags),
 		TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
