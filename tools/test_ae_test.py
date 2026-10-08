@@ -497,6 +497,23 @@ class Handshake(unittest.TestCase):
         self.assertEqual(handshake.judge(r, r, tracks)[0], "PASS")
         self.assertEqual(handshake.judge(r, {"debug": dict(clean, joined=None)}, tracks)[0], "FAIL")
 
+    def test_kd_at_a_common_tick(self):
+        """kills/deaths compared at the lower of the two machines' last ticks: a kill the host logs after the
+        client's last line is not a difference; one at or before it is"""
+        line = "x: network test: tick {t} player 0: (1.0 2.0 3.0) s0 k{k} d0 f0 t0 m0 player 1: (4.0 5.0 6.0) s0 k0 d{k} f0 t1 m1 | items 1"
+        host = "\n".join(line.format(t=t, k=k) for t, k in ((100, 0), (130, 0), (160, 1)))
+        client = "\n".join(line.format(t=t, k=k) for t, k in ((101, 0), (131, 0)))
+        tracks = harness.compare_tracks(host, client)
+        self.assertEqual((tracks[0]["kd_tick"], tracks[0]["host_kd"], tracks[0]["client_kd"]), (131, [0, 0], [0, 0]))
+        self.assertTrue(tracks[0]["kd_match"])
+        # (a kill the client logs a few ticks before the host's next line: matched within the window)
+        host = "\n".join(line.format(t=t, k=k) for t, k in ((100, 0), (130, 0), (160, 1), (190, 1)))
+        client = "\n".join(line.format(t=t, k=k) for t, k in ((101, 0), (131, 0), (150, 1)))
+        self.assertTrue(harness.compare_tracks(host, client)[0]["kd_match"])
+        # (a difference that lasts is one)
+        client = "\n".join(line.format(t=t, k=k) for t, k in ((101, 0), (131, 2), (161, 2), (189, 2)))
+        self.assertFalse(harness.compare_tracks(host, client)[0]["kd_match"])
+
 
 class Windows(unittest.TestCase):
     def test_start_outcomes(self):

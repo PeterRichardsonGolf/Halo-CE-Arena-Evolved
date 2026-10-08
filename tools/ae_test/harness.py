@@ -724,7 +724,8 @@ def parse_debug(text):
         if m:
             r["tick"] = int(m[1])
             players = RE_PLAYER.findall(m[2])
-            r["players"] = len(players)
+            # (players seen alive in any one status line: a player dead at the last line was seen)
+            r["players"] = max(r["players"] or 0, len(players))
             r["final"] = {int(p[0]): {"k": int(p[4]), "d": int(p[5])} for p in players}
             im = re.search(r"\| items (\d+)", m[2])
             if im:
@@ -781,9 +782,13 @@ def player_tracks(text):
     return d
 
 
-def compare_tracks(host_text, client_text, window=2):
+def compare_tracks(host_text, client_text, window=2, kd_window=45):
     """per player: samples, median and 90th percentile of the host-client distance at the same tick
-    (within `window` ticks), and both machines' last kills/deaths"""
+    (within `window` ticks), and both machines' kills/deaths at a common last tick: each one's latest sample at
+    or before the lower of the two machines' last ticks ("kd_tick"), so a kill in the last second before one
+    machine stops logging is not a difference. The machines log a second apart at their own ticks, and a kill
+    reaches a client a few ticks late, so "kd_match" holds when some host sample within `kd_window` ticks of the
+    client's has the client's kills/deaths"""
     import math
     h, c = player_tracks(host_text), player_tracks(client_text)
     out = {}
@@ -795,8 +800,12 @@ def compare_tracks(host_text, client_text, window=2):
                 u = min(near, key=lambda u: abs(u - t))
                 diffs.append(math.dist(v[:3], c[p][u][:3]))
         diffs.sort()
-        ht, ct = max(h[p]), max(c[p])
-        out[p] = {"samples": len(diffs),
+        common = min(max(h[p]), max(c[p]))
+        ht = max(t for t in h[p] if t <= common)
+        ct = max((t for t in c[p] if t <= common), default=min(c[p]))
+        kd_match = any(abs(t - ct) <= kd_window and [v[3], v[4]] == [c[p][ct][3], c[p][ct][4]]
+                       for t, v in h[p].items())
+        out[p] = {"samples": len(diffs), "kd_tick": common, "kd_match": kd_match,
                   "median_m": round(diffs[len(diffs) // 2], 3) if diffs else None,
                   "p90_m": round(diffs[int(len(diffs) * 0.9)], 3) if diffs else None,
                   "host_kd": [h[p][ht][3], h[p][ht][4]], "client_kd": [c[p][ct][3], c[p][ct][4]]}

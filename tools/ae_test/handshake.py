@@ -10,8 +10,8 @@ For each other build, two pairs: AE hosts and the other joins, then the other ho
 Checked per pair, from both debug.txt files: the client joined (its "joining a host of network version"
 line), both builds' versions and network versions, the Delta Peer agreement lines, refusals, asserts;
 the players' positions at the same tick on host and client (median and 90th percentile distance) and
-both machines' final kills/deaths. PASS: joined, two players seen on both, every player's median
-distance under --max-median metres (default 0.5) and the same final kills/deaths, no asserts/exceptions.
+both machines' kills/deaths at a common last tick (the lower of their last samples). PASS: joined, two players seen on both, every player's median
+distance under --max-median metres (default 0.5) and the same kills/deaths at that tick, no asserts/exceptions.
 
 A named build can carry its own environment in the config, e.g. a 32-bit stock OpenCE build:
 "opence": {"dir": ".../build/linux", "env": {"LIBGL_ALWAYS_SOFTWARE": "1"}}.
@@ -64,7 +64,7 @@ def judge(host_r, client_r, tracks, max_median=0.5):
     for p, t in tracks.items():
         if t["median_m"] is None or t["median_m"] > max_median:
             why.append(f"player {p}: median {t['median_m']} m")
-        if t["host_kd"] != t["client_kd"]:
+        if not t.get("kd_match", t["host_kd"] == t["client_kd"]):
             why.append(f"player {p}: k/d host {t['host_kd']} client {t['client_kd']}")
     return ("FAIL" if why else "PASS"), why
 
