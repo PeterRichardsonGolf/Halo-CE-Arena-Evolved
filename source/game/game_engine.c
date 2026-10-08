@@ -4686,14 +4686,20 @@ static void game_engine_update_start_text(
 				/* (the newest message is drawn first: the name on top) */
 				if (mode)
 					hud_print_message(local_player_index, mode);
-				hud_print_message(local_player_index, name);
+				/* (a built-in gametype of the tests has no name) */
+				if (name[0])
+					hud_print_message(local_player_index, name);
 			}
 		}
+		name_ascii[0] = 0;
 		for (index = 0; index < (long)NUMBEROF(name); index++)
 		{
 			name_ascii[index] = name[index] > 0 && name[index] < 128 ? (char)name[index] : '?';
 			if (!name[index])
+			{
+				name_ascii[index] = 0;
 				break;
+			}
 		}
 		name_ascii[NUMBEROF(name_ascii) - 1] = 0;
 		error(_error_silent, "game start text: %s%s", name_ascii,
