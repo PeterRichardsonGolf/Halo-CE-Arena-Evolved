@@ -107,10 +107,10 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (24, not 30: twelve rows, with the help line as low as
-        # video_settings' (and 2 lower: the last row ends at 365))
-        "spacing": 24,
-        "help_top": 366,
+        # (20, not 24: thirteen rows, with the help line where
+        # video_settings' is, as its fourteen at 20)
+        "spacing": 20,
+        "help_top": 364,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -153,6 +153,8 @@ SCREENS = {
              ["TRAINING's spawn markers stay plain green.",
               "TRAINING's spawn markers glow where you would\nspawn next: hot is likely, dark red can't.",
               "TRAINING's spawn markers glow where the other\nteam would spawn next (in team games)."], None),
+            ("SHORT MESSAGES:", "display.short_messages", ON_OFF,
+             "Shorter game messages, as Halo 1: NHE's: a\nkilling spree reads Killing Spree!", None),
         ],
     },
     "mouse_settings": {

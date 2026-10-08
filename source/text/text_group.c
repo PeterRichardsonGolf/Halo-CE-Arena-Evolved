@@ -228,6 +228,35 @@ static wchar_t *fallback_string(long tag_index, short string_index)
 	return fallback_multiplayer_game_text_strings[fallback_index];
 }
 
+/* AE: the gametype's text in a short form (SHORT MESSAGES, a player's setting;
+display.short_messages) or for PRACTICE MODE: the multiplayer game text string
+asked for, or NULL for the game's own */
+extern int config_boolean(const char *name);
+extern unsigned long config_changes(void);
+extern boolean game_engine_practice(void);
+
+static wchar_t *ae_text_override(long tag_index, short string_index)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean short_messages = FALSE;
+
+	if (string_index != 87 && string_index != 93 && string_index != 177)
+		return NULL;
+	if (csstrcasecmp(tag_get_name(tag_index), MULTIPLAYER_GAME_TEXT_TAG_NAME))
+		return NULL;
+	if (string_index == 177)
+		return game_engine_practice() ? L"Practice Mode" : NULL;
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		short_messages = config_boolean("display.short_messages") != 0;
+	}
+	if (!short_messages)
+		return NULL;
+	return string_index == 87 ? L"Killing Spree!" : L"Killing Spree! (%d)";
+}
+
 #ifdef HALO_CUSTOM_EDITION
 /* Custom Edition maps' ui\multiplayer_game_text (Halo PC's, 194 strings) has
 the PAL list's strings at the same indices, but three of them name keys, for
@@ -287,6 +316,9 @@ wchar_t *unicode_string_list_get_string(long tag_index, short string_index)
 	{
 		struct string_list *list = unicode_string_list_definition_get(tag_index);
 
+		if (ae_text_override(tag_index, string_index))
+			result = ae_text_override(tag_index, string_index);
+		else
 #ifdef HALO_CUSTOM_EDITION
 		if (custom_edition_keyboard_string(tag_index, string_index))
 			result = custom_edition_keyboard_string(tag_index, string_index);

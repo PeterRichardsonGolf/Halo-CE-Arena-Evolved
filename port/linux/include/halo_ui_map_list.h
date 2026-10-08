@@ -44,6 +44,8 @@ long ui_map_list_find(char const *map_name);
 /* as ui_map_list_find, the list filled anew for a name it lacks
 (ui_widget_event_handler_functions.c, which has the Xbox's names) */
 long ui_map_list_lookup(char const *map_name);
+/* AE: a map's name on one line (the post-game report's), after a lookup */
+void ui_map_list_caption(char const *map_name, wchar_t *text, long size);
 /* a row's string list index for one of its strings: an Xbox map's own in
 ui.map, or one of this list's (ui_map_list_text) */
 short ui_map_list_string_index(long row, short kind);

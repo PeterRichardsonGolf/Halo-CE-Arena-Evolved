@@ -254,7 +254,11 @@ static const struct config_setting config_settings[] =
 		"hot orange-red the likeliest; dark red with a cross can't be picked\n"
 		"now (an enemy within 6 m, a vehicle on it); a flash where a player\n"
 		"really spawns." },
-	{ "display.per_pixel_lighting", _config_boolean, "false", "HALO_PER_PIXEL_LIGHTING", _environment_value,
+	{ "display.short_messages", _config_boolean, "false", "HALO_SHORT_MESSAGES", _environment_value, _platform_all,
+		"Shorter game messages, as Halo 1: NHE's: a killing spree reads\n"
+		"\"Killing Spree!\" (with the count, if there is one). false keeps the\n"
+		"game's own text." },
+	{ "display.per_pixel_lighting",_config_boolean, "false", "HALO_PER_PIXEL_LIGHTING", _environment_value,
 		_platform_all,
 		"Light the models (characters, weapons, vehicles, scenery) for each\n"
 		"pixel by the lights the game gives them, without the facets the light\n"

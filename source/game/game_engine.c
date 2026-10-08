@@ -4638,6 +4638,68 @@ static void game_engine_update_pregame_countdown_sound(
 	return;
 }
 
+/* port: the gametype's name, then "Training Mode!" with TRAINING and
+"Practice Mode!" with PRACTICE MODE, as HUD messages for each local player
+as the game starts (after the pre-game countdown when it has one; not on
+NHE's maps, whose scripts show theirs; not for a machine joining later than
+a few seconds in). The gametype's display name is the scoreboard's, else the
+stored one. */
+static void game_engine_update_start_text(
+	void)
+{
+	static long last_tick = NONE;
+	static boolean shown = FALSE;
+	long now = game_time_get();
+	long start = game_engine_pregame_countdown() ? PREGAME_COUNTDOWN_TICKS : 0;
+
+	if (last_tick == NONE || now < last_tick || now < start)
+		shown = FALSE;
+	last_tick = now;
+	if (shown || now < start || now >= start + 4 * TICKS_PER_SECOND ||
+		game_engine_globals.postgame_state != game_engine_mode_active ||
+		hs_scenario_is_nhe() || local_player_count() <= 0)
+	{
+		return;
+	}
+	shown = TRUE;
+	{
+		wchar_t name[NUMBEROF(global_variant.human_readable_game_description) + 1];
+		char name_ascii[NUMBEROF(name)];
+		wchar_t const *mode = NULL;
+		short local_player_index;
+		long index;
+
+		if (!game_engine_scoreboard_gametype_name(name, NUMBEROF(name)))
+		{
+			csmemcpy(name, global_variant.human_readable_game_description,
+				sizeof(global_variant.human_readable_game_description));
+			name[NUMBEROF(name) - 1] = 0;
+		}
+		if (game_engine_practice())
+			mode = L"Practice Mode!";
+		else if (game_engine_training())
+			mode = L"Training Mode!";
+		for (local_player_index = 0; local_player_index < MAXIMUM_LOCAL_PLAYERS; local_player_index++)
+		{
+			if (local_player_get_player_index(local_player_index) != NONE)
+			{
+				hud_print_message(local_player_index, name);
+				if (mode)
+					hud_print_message(local_player_index, mode);
+			}
+		}
+		for (index = 0; index < (long)NUMBEROF(name); index++)
+		{
+			name_ascii[index] = name[index] > 0 && name[index] < 128 ? (char)name[index] : '?';
+			if (!name[index])
+				break;
+		}
+		name_ascii[NUMBEROF(name_ascii) - 1] = 0;
+		error(_error_silent, "game start text: %s%s", name_ascii,
+			!mode ? "" : game_engine_practice() ? ", Practice Mode!" : ", Training Mode!");
+	}
+}
+
 void game_engine_update(
 	void)
 {
@@ -4645,6 +4707,7 @@ void game_engine_update(
 	{
 		game_engine_update_multiplayer_sound();
 		game_engine_update_pregame_countdown_sound();
+		game_engine_update_start_text();
 		game_engine_update_purge();
 		game_engine_update_weapons();
 		game_engine_update_item_spawn();

@@ -894,6 +894,44 @@ long ui_map_list_find(
 	return NONE;
 }
 
+/* AE: a map's name on one line, for the post-game report: a stock map's caption
+(or its Halo 1: NHE file's alias: badcreek is Battle Creek), else its row's
+lobby name, else the file's name made readable. Ask ui_map_list_lookup first so
+that the list has the map's row. */
+void ui_map_list_caption(
+	char const *map_name,
+	wchar_t *text,
+	long size)
+{
+	char const *file = native_map_basename(map_name);
+	long row, index;
+	short stock = xbox_map_index(file);
+	char const *caption = stock != NONE ? xbox_map_captions[stock] : NULL;
+	char readable[DISPLAY_NAME_LENGTH];
+
+	text[0] = 0;
+	if (size <= 0)
+		return;
+	for (index = 0; index < (long)NUMBEROF(map_file_captions); index++)
+	{
+		if (!_stricmp(file, map_file_captions[index].file))
+			caption = map_file_captions[index].caption;
+	}
+	if (!caption && (row = ui_map_list_find(map_name)) != NONE && ui_map_list[row].lobby_name[0])
+	{
+		wide_copy(text, size, ui_map_list[row].lobby_name);
+		return;
+	}
+	if (!caption)
+	{
+		native_map_display_name(map_name, readable, sizeof(readable));
+		caption = readable;
+	}
+	for (index = 0; index < size - 1 && caption[index]; index++)
+		text[index] = (wchar_t)(unsigned char)caption[index];
+	text[index] = 0;
+}
+
 /* a row's string list index for one of its strings (_ui_map_list_string_*):
 the Xbox's own, or this list's */
 short ui_map_list_string_index(

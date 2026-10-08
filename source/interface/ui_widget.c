@@ -651,6 +651,7 @@ struct widget_instance;
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
 #include "interface/hud_draw.h"
+#include "interface/hud_messaging.h"
 #include "bitmaps/bitmap_color_conversion.h"
 #include "interface/interface.h"
 #include "interface/player_ui.h"
@@ -7545,6 +7546,39 @@ static void widget_instance_render_recursive(
 	return;
 }
 
+#ifdef HALO_CUSTOM_EDITION
+/* AE: the map's name bottom left of a view's post-game report ("Battle Creek"
+for NHE's badcreek too), in the view's own corner: the views are the report's
+offsets' (render_ui_widgets_postgame) */
+static void render_postgame_map_name(
+	short local_player_index,
+	point2d offset)
+{
+	short count = local_player_count();
+	short view_width = (count == 4 || (count == 3 && local_player_index > 0)) ? 320 : 640;
+	short view_height = count > 1 ? 240 : 480;
+	char const *map_name = main_get_multiplayer_map_name();
+	long font_index = hud_get_font_index();
+	wchar_t text[64];
+	rectangle2d bounds;
+	real_argb_color color = { 1.0f, 0.85f, 0.9f, 1.0f };
+
+	if (local_player_index >= count || font_index == NONE || !map_name || !map_name[0])
+		return;
+	ui_map_list_lookup(map_name);
+	ui_map_list_caption(map_name, text, NUMBEROF(text));
+	if (!text[0])
+		return;
+	bounds.x0 = offset.x + 16;
+	bounds.x1 = offset.x + view_width - 16;
+	bounds.y1 = offset.y + view_height - 8;
+	bounds.y0 = bounds.y1 - 24;
+	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
+	draw_string_set_tab_stops(NULL, 0);
+	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+}
+#endif
+
 void render_ui_widgets_postgame(
 	short local_player_index,
 	rectangle2d *window_bounds)
@@ -7558,6 +7592,7 @@ void render_ui_widgets_postgame(
 	};
 	rectangle2d bounds;
 	long widget_index;
+	boolean any_rendered = FALSE;
 
 	if (virtual_keyboard_active())
 		return;
@@ -7609,8 +7644,14 @@ void render_ui_widgets_postgame(
 				offsets[local_player_count() - 1][local_player_index],
 				TRUE,
 				FALSE);
+			any_rendered = TRUE;
 		}
 	}
+#ifdef HALO_CUSTOM_EDITION
+	/* (AE: the map's name, under the report this view shows) */
+	if (any_rendered)
+		render_postgame_map_name(local_player_index, offsets[local_player_count() - 1][local_player_index]);
+#endif
 
 	return;
 }
