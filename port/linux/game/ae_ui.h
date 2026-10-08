@@ -69,6 +69,8 @@ int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *da
 void ae_ui_pop(void);
 struct ae_screen *ae_ui_top(void);
 int ae_ui_depth(void);
+/* (M2) whether a screen on the stack has this data (a widget's state: open or left behind by a reset) */
+int ae_ui_holds(void const *data);
 /* routes one event to the top screen (owner filter, START from anyone, BACK pops) */
 void ae_ui_dispatch(struct ae_event const *event);
 /* routes the pointer to the top screen, if it is the pointer's player's or anyone's */

@@ -194,7 +194,8 @@ int ae_picker_open(struct ae_picker_spec const *spec, short owner);
 
 enum { AE_CHIP_ON = 1, AE_CHIP_FOCUSED = 2, AE_CHIP_HOVER = 4, AE_CHIP_UNSUPPORTED = 8, AE_CHIP_DISABLED = 16 };
 struct ae_chip { const char *label; short count; /* -1 none */ unsigned int flags; };
-/* lays chips out wrapping in width: rects (drawing units, relative to x, y); returns the height */
+/* lays chips out wrapping in width: rects (drawing units, relative to x, y; room for count of them); returns the
+height (ae_widget_chips draws at most 32) */
 float ae_chips_layout(struct ae_density const *density, float width, struct ae_chip const *chips, short count,
 	struct ae_rect *rects);
 float ae_widget_chips(struct ae_density const *density, float x, float y, float width, struct ae_chip const *chips,

@@ -419,7 +419,7 @@ static void help(void)
 	/* Default, and the changed line: "Changed from REACH" in accent, a drawn separator dot, the Y glyph and Reset */
 	CHECK(text_call("Default: REACH") && text_call("Default: REACH")->rgba == AE_COLOR_MUTED);
 	CHECK(text_call("Changed from REACH") && text_call("Changed from REACH")->rgba == AE_COLOR_ACCENT);
-	CHECK(dots == 1 && text_call("Reset"));
+	CHECK(dots == 1 && text_call("Reset") && text_call("Reset")->rgba == AE_COLOR_ACCENT);   /* (the whole line accent) */
 	middle_of(text_call("Reset"), &x, &y, 1080);
 	CHECK(ae_hit_at(x, y, 0, &hit) && hit.id == 8 && hit.part == AE_PART_PROMPT && hit.index == -1);
 	/* the preview: the rest of the panel, dashed */
@@ -440,12 +440,194 @@ static void help(void)
 	CHECK(!ae_stub_overflowed());
 }
 
+/* fix round 1: a picker per view at once (4 players), refused re-opening, degenerate bounds, the help's sections
+cut at the panel's bottom */
+static short picks[5];
+static void picked_view(short index, void *context)
+{
+	picks[*(short *)context] = (short)(index + 1);
+}
+
+static void fixes(void)
+{
+	static const char *const values[12] = { "60", "72", "90", "120", "144", "165", "180", "200", "240", "300", "360",
+		"UNLIMITED" };
+	static short contexts[4] = { 0, 1, 2, 3 };
+	static const float origins[4][2] = { { 0, 0 }, { 960, 0 }, { 0, 540 }, { 960, 540 } };
+	struct ae_picker_spec spec;
+	struct ae_rect panel, pops[4], pixels;
+	struct ae_event event;
+	struct ae_pointer pointer;
+	struct ae_hit hit;
+	short ids[4];
+	int index, n;
+
+	ae_motion_set_reduced(1);
+	ae_ui_reset();
+	ae_ui_set_before_draw(NULL);
+	ae_ui_push(&base, AE_OWNER_ANY, NULL);
+	ae_view_panel_rect(960, 540, 1.0f, &panel);
+	for (n = 0; n < 4; n++)
+	{
+		memset(&spec, 0, sizeof(spec));
+		spec.values = values;
+		spec.count = 12;
+		spec.current = (short)(2 + n);
+		ae_density_view(960, 540, 1.0f, &spec.density);
+		spec.view.x = origins[n][0]; spec.view.y = origins[n][1]; spec.view.width = 960; spec.view.height = 540;
+		/* (a 1920 x 1080 window: layout units are its pixels, so the panel's pixels from the quarter's corner are
+		layout units too) */
+		spec.bounds.x = origins[n][0] + panel.x; spec.bounds.y = origins[n][1] + panel.y;
+		spec.bounds.width = panel.width; spec.bounds.height = panel.height;
+		spec.row.x = spec.bounds.x; spec.row.width = spec.bounds.width; spec.row.height = 40;
+		spec.row.y = spec.bounds.y + 120;
+		spec.picked = picked_view;
+		spec.context = &contexts[n];
+		CHECK(ae_picker_open(&spec, (short)n));
+		/* (its owner's picker is open: a second is refused, the first untouched) */
+		CHECK(!ae_picker_open(&spec, (short)n));
+	}
+	CHECK(ae_ui_depth() == 5);
+	ae_stub_reset(1920, 1080);
+	ae_hits_clear();
+	ae_ui_draw();
+	/* each drawn in its own view, inside its panel */
+	n = 0;
+	for (index = 0; index < ae_stub_count(); index++)
+	{
+		struct ae_stub_call const *call = ae_stub_get(index);
+
+		if (call->kind == AE_STUB_RECT && call->rgba == AE_COLOR_POPOVER && n < 4)
+		{
+			struct ae_rect bounds = { origins[n][0] + panel.x, origins[n][1] + panel.y, panel.width, panel.height };
+
+			ae_stub_pixels(call, &pops[n]);
+			CHECK(near(call->view.x, origins[n][0], 0.01f) && near(call->view.y, origins[n][1], 0.01f));
+			CHECK(inside(&pops[n], &bounds, 0.05f));
+			n++;
+		}
+	}
+	CHECK(n == 4);
+	/* each takes its own hits: the current value's item in each view, four ids */
+	for (n = 0; n < 4; n++)
+	{
+		float x = pops[n].x + pops[n].width * 0.5f, y;
+
+		y = pops[n].y + 2.0f;
+		CHECK(ae_hit_at(x, y, 0, &hit) && hit.part == AE_PART_ITEM && hit.index >= 0);
+		ids[n] = hit.id;
+		/* (and its view's empty space is its outside) */
+		CHECK(ae_hit_at(origins[n][0] + 900, origins[n][1] + 500, 0, &hit) && hit.id == ids[n] && hit.part == AE_PART_OUTSIDE);
+	}
+	CHECK(ids[0] != ids[1] && ids[0] != ids[2] && ids[0] != ids[3] && ids[1] != ids[2] && ids[1] != ids[3] &&
+		ids[2] != ids[3]);
+	/* closing, each its own way, each its own callback: player 4 picks with A; player 3 closes with B; player 2 clicks
+	an item of its own; player 1 clicks outside, in its view */
+	memset(picks, 0, sizeof(picks));
+	event.device = AE_DEVICE_XBOX; event.repeat = 0;
+	event.player = 3; event.action = AE_ACTION_ACCEPT;
+	ae_ui_dispatch(&event);
+	CHECK(picks[3] == 5 + 1 && ae_ui_depth() == 4 && picks[0] == 0 && picks[1] == 0 && picks[2] == 0);
+	ae_stub_reset(1920, 1080);
+	ae_hits_clear();
+	ae_ui_draw();
+	n = 0;
+	for (index = 0; index < ae_stub_count(); index++)
+	{
+		struct ae_stub_call const *call = ae_stub_get(index);
+
+		if (call->kind == AE_STUB_RECT && call->rgba == AE_COLOR_POPOVER && n < 3)
+		{
+			/* (the others where they were) */
+			ae_stub_pixels(call, &pixels);
+			CHECK(near(pixels.x, pops[n].x, 0.01f) && near(pixels.y, pops[n].y, 0.01f));
+			n++;
+		}
+	}
+	CHECK(n == 3);
+	event.player = 2; event.action = AE_ACTION_BACK;
+	ae_ui_dispatch(&event);
+	CHECK(ae_ui_depth() == 3 && picks[2] == 0);
+	memset(&pointer, 0, sizeof(pointer));
+	pointer.player = 1;
+	pointer.x = pops[1].x + pops[1].width * 0.5f;
+	pointer.y = pops[1].y + 2.0f;
+	pointer.left_clicks = 1;
+	ae_ui_dispatch_pointer(&pointer);
+	CHECK(ae_ui_depth() == 2 && picks[1] > 0 && picks[0] == 0);
+	pointer.player = 0;
+	pointer.x = origins[0][0] + 900;
+	pointer.y = origins[0][1] + 500;
+	ae_ui_dispatch_pointer(&pointer);
+	CHECK(ae_ui_depth() == 1 && picks[0] == 0);
+	/* (closed: its slot opens again; a reset stack leaves no slot taken) */
+	spec.current = 0;
+	CHECK(ae_picker_open(&spec, 0));
+	ae_ui_reset();
+	CHECK(ae_picker_open(&spec, 0));
+	ae_ui_reset();
+
+	/* degenerate bounds, shorter than one item: the popover no taller than they are */
+	{
+		struct ae_rect row = { 100, 100, 400, 50 }, bounds = { 0, 100, 1920, 20 }, pop;
+		short first;
+
+		ae_picker_place(&row, &bounds, 5, 2, 42, 300, &pop, &first);
+		CHECK(inside(&pop, &bounds, 0.01f) && pop.height <= 20.01f);
+	}
+
+	/* the help's sections stop at the panel's bottom: a short panel with a long body, values and a change */
+	{
+		static const char *const options[4] = { "CLASSIC", "REACH", "HALO 2", "HALO 3" };
+		struct ae_density d;
+		struct ae_help h;
+		struct ae_rect rect = { 100, 50, 440, 260 }, preview;
+		float bottom = 50 + 260 - 28;
+		int texts = 0;
+
+		ae_stub_reset(1920, 1080);
+		ae_hits_clear();
+		ae_density_full(1080, 1.0f, &d);
+		memset(&h, 0, sizeof(h));
+		h.title = "Health";
+		h.body = "How players heal. HALO 2: shields and health recharge, no health packs needed. REACH: shields recharge, "
+			"health recharges in thirds. CLASSIC: shields recharge, health only from packs.";
+		h.values = options;
+		h.value_count = 4;
+		h.current = 1;
+		h.default_value = "REACH";
+		h.changed_from = "REACH";
+		h.preview = 1;
+		ae_widget_help(&d, &rect, &h, 8, &preview);
+		for (index = 0; index < ae_stub_count(); index++)
+		{
+			struct ae_stub_call const *call = ae_stub_get(index);
+
+			if (call->kind == AE_STUB_TEXT)
+			{
+				CHECK(call->y + call->bottom <= bottom + 2.01f);
+				CHECK(call->clipped && call->clip[3] <= bottom + 0.01f);
+				texts++;
+			}
+		}
+		/* (the body cut short with "…", nothing after it: no room) */
+		CHECK(texts >= 3 && preview.height == 0);
+		for (index = 0; index < ae_stub_count(); index++)
+			if (ae_stub_get(index)->kind == AE_STUB_TEXT && strstr(ae_stub_get(index)->text, "\xE2\x80\xA6"))
+				texts = -1;
+		CHECK(texts == -1 && !text_call("VALUES") && !text_call("Reset"));
+		CHECK(!ae_hit_at(300, bottom + 5, 0, &hit));
+	}
+	CHECK(!ae_stub_overflowed());
+}
+
 int main(void)
 {
 	placement();
 	picker();
 	chips();
 	help();
+	fixes();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

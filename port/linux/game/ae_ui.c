@@ -78,6 +78,16 @@ int ae_ui_depth(void)
 	return depth;
 }
 
+int ae_ui_holds(void const *data)
+{
+	int index;
+
+	for (index = 0; index < depth; index++)
+		if (stack[index].data == data)
+			return 1;
+	return 0;
+}
+
 struct ae_screen *ae_ui_top(void)
 {
 	return depth ? &stack[depth - 1] : NULL;
