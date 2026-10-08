@@ -73,8 +73,9 @@ enum
 	/* port: two bits, DROP SECONDARY (enum drop_secondary) */
 	_game_variant_drop_secondary_first_bit = 29,
 	_game_variant_drop_secondary_second_bit = 30,
-	/* (bit 31 reserved for WEAPON INDICATORS; never through menu_functions.c's
-	_option_flags, whose values are long) */
+	/* (bit 31 reserved for WEAPON INDICATORS: write it as 0x80000000UL, not
+	FLAG(31), whose 1 << 31 on an int is undefined; never through
+	menu_functions.c's _option_flags, whose values are long) */
 };
 
 /* port: TIMERS' levels (game_variant_timers_level): OFF; HUD, the power
@@ -86,6 +87,7 @@ enum timers_level
 	_timers_hud,
 	_timers_hud_waypoints,
 	_timers_line_of_sight,
+	NUMBER_OF_TIMERS_LEVELS
 };
 
 #define GAME_VARIANT_TIMERS_MASK \
@@ -100,6 +102,7 @@ enum drop_secondary
 	_drop_secondary_ce = 0,
 	_drop_secondary_always,
 	_drop_secondary_always_except_power,
+	NUMBER_OF_DROP_SECONDARY_VALUES
 };
 
 #define GAME_VARIANT_DROP_SECONDARY_MASK \

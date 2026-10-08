@@ -209,28 +209,46 @@ class GametypeFile(unittest.TestCase):
 
     def test_sign_and_patch(self):
         with tempfile.TemporaryDirectory(dir=Path.home()) as d:
-            f = self.make(d, "NHE 1V1")
-            self.make(d, "AE PRO TS", "000000000001")
-            self.assertTrue(gametype_file.signed(f.read_bytes()))
-            self.assertEqual(gametype_file.find(d, "nhe 1v1"), f)
-            self.assertIsNone(gametype_file.find(d, "NHE 2V2"))
-            gametype_file.patch(f, {0x1D: 3})
-            b = f.read_bytes()
-            self.assertEqual(b[0x1D], 3)
-            self.assertEqual(b[0x1C], 1)
+            src = Path(d) / "from"
+            f = self.make(src, "NHE 1V1")
+            self.make(src, "AE PRO TS", "000000000001")
+            original = f.read_bytes()
+            self.assertTrue(gametype_file.signed(original))
+            self.assertEqual(gametype_file.find(src, "nhe 1v1"), f)
+            self.assertIsNone(gametype_file.find(src, "NHE 2V2"))
+            # (copy first: the source is never written; the copy patched and signed again)
+            to = Path(d) / "to"
+            g = gametype_file.copy_and_patch(src, to, "NHE 1V1", {0x1D: 3})
+            self.assertEqual(f.read_bytes(), original)
+            self.assertTrue(str(g).startswith(str(to)))
+            b = g.read_bytes()
+            self.assertEqual((b[0x1C], b[0x1D], len(b)), (1, 3, 512))
             self.assertTrue(gametype_file.signed(b))
-            self.assertEqual(len(b), 512)
-            # (only the variant's bytes; a file that was not signed is refused)
+            self.assertTrue(gametype_file.find(to, "AE PRO TS"))
+            # (a --to that exists, /tmp, real save roots and Quiver installs are refused)
+            for frm, dst in ((src, to), (src, "/tmp/ae-to"), ("/tmp/ae-from", Path(d) / "t2"),
+                             (Path.home() / ".local/share/halo-linux-x", Path(d) / "t3"),
+                             (src, Path.home() / ".local/share/halo-linux-x/copy"),
+                             (Path(d) / "Quiver Launcher" / "Apps" / "halo", Path(d) / "t4")):
+                with self.assertRaises(SystemExit, msg=f"{frm} -> {dst}"):
+                    gametype_file.copy_and_patch(frm, dst, "NHE 1V1", {0x1D: 3})
+            # (only the variant's bytes, only byte values, and a signed file with a unique name)
+            for values in ({0x68: 1}, {0x1D: 256}, {0x1D: -1}):
+                with self.assertRaises(SystemExit):
+                    gametype_file.copy_and_patch(src, Path(d) / "v", "NHE 1V1", values)
+                self.assertFalse((Path(d) / "v").exists())
+            self.make(src, "nhe 1v1", "000000000002")
             with self.assertRaises(SystemExit):
-                gametype_file.patch(f, {0x68: 1})
-            f.write_bytes(b[:0x30] + b"x" + b[0x31:])
+                gametype_file.find(src, "NHE 1V1")
+            (src / "u" / "UDATA" / "000000000002" / "blam.lst").unlink()
+            f.write_bytes(original[:0x30] + b"x" + original[0x31:])
             with self.assertRaises(SystemExit):
-                gametype_file.patch(f, {0x1D: 4})
-            with self.assertRaises(SystemExit):
-                gametype_file.main(["/tmp/save", "--name", "NHE 1V1", "--set", "0x1d=3"])
+                gametype_file.copy_and_patch(src, Path(d) / "w", "NHE 1V1", {0x1D: 4})
+            f.write_bytes(original)
             with redirect_stdout(io.StringIO()):
-                self.assertEqual(gametype_file.main([d, "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
-            self.assertEqual(gametype_file.find(d, "AE PRO TS").read_bytes()[0x1D], 5)
+                self.assertEqual(gametype_file.main(["--from", str(src), "--to", str(Path(d) / "m"),
+                                                     "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
+            self.assertEqual(gametype_file.find(Path(d) / "m", "AE PRO TS").read_bytes()[0x1D], 5)
 
 
 class Debug(unittest.TestCase):

@@ -5124,6 +5124,7 @@ char const *game_variant_timers_name(
 	unsigned long flags)
 {
 	static char const *const levels[] = { "off", "hud", "hud + waypoints", "line of sight" };
+	typedef char verify_timers_level_names[NUMBEROF(levels) == NUMBER_OF_TIMERS_LEVELS ? 1 : -1];
 
 	return levels[game_variant_timers_level(flags)];
 }
@@ -5132,6 +5133,7 @@ char const *game_variant_drop_secondary_name(
 	unsigned long flags)
 {
 	static char const *const values[] = { "ce", "always", "always except power" };
+	typedef char verify_drop_secondary_names[NUMBEROF(values) == NUMBER_OF_DROP_SECONDARY_VALUES ? 1 : -1];
 
 	return values[game_variant_drop_secondary(flags)];
 }
@@ -5143,6 +5145,7 @@ char const *game_variant_nhe_mode_name(
 	{
 		"by vehicles", "vanilla", "timer only", "nhe & timer", "nhe & powerups", "training"
 	};
+	typedef char verify_nhe_mode_names[NUMBEROF(modes) == NUMBER_OF_NHE_MODES ? 1 : -1];
 
 	return modes[game_variant_nhe_mode(nhe_mode)];
 }
@@ -7757,7 +7760,7 @@ void game_engine_log_rules(
 		char time_limit_string[32];
 		char respawn[48];
 		char suicide[48];
-		char line[1024];
+		char line[896]; /* (under error()'s 1024, with room for its time stamp) */
 
 		if (time_limit > 0)
 			_snprintf(time_limit_string, sizeof(time_limit_string) - 1, "%ld min", time_limit);
@@ -7857,16 +7860,18 @@ void game_engine_log_rules(
 					team_scoring[engine_variant->race.team_scoring] : "?");
 			break;
 		}
-		/* (the AE gametype options: game_engine.h, bits 25-30 and nhe_mode) */
-		game_engine_log_append(line, sizeof(line), "; timers level %s, spawn heat %s, objective %s, "
-			"nhe extras %s, drop secondary %s, nhe mode %s",
+		error(_error_silent, "%s", line);
+		/* (the AE gametype options, a line of their own so that the first
+		line's length never cuts them off: game_engine.h, bits 25-30 and
+		nhe_mode) */
+		error(_error_silent, "AE rules: timers level %s, spawn heat %s, objective %s, nhe extras %s, "
+			"drop secondary %s, nhe mode %s",
 			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) ? "line of sight" : "normal",
 			TEST_FLAG(flags, _game_variant_nhe_extras_bit) ? "on" : "off",
 			game_variant_drop_secondary_name(flags),
 			game_variant_nhe_mode_name(universal->nhe_mode));
-		error(_error_silent, "%s", line);
 	}
 
 	return;
