@@ -449,6 +449,8 @@ static void arena_gametypes_migrate(
 	char *deferred_names);
 static void arena_gametypes_self_check(
 	void);
+static void arena_gametypes_remove_stray_updates(
+	void);
 static boolean arena_gametypes_record_read(
 	char *record,
 	unsigned long *record_length,
@@ -508,6 +510,7 @@ boolean arena_gametypes_seed(
 	/* (the frozen rows checked first: a migration whose old row no longer
 	builds as seeded is skipped) */
 	arena_gametypes_self_check();
+	arena_gametypes_remove_stray_updates();
 	/* (those seeded under their old names: migrated if unchanged) */
 	arena_gametypes_migrate(record, &record_length, record_revision, &record_changed, &written, &deferred_revision,
 		deferred_names);
@@ -894,12 +897,31 @@ static boolean arena_gametypes_backup_file(
 		return FALSE;
 	if (file_exists(&destination) && !must_match)
 	{
+		unsigned long backup_size = 0;
+		char *backup = file_read_into_memory(&destination, &backup_size);
+		boolean parses = backup && backup_size > 0 && backup_size <= ARENA_GAMETYPES_RECORD_SIZE;
+		unsigned long character;
+
 		/* (the record's backup from this revision's first start: the
 		record as it was before the revision, which is what to keep; the
-		record has changed since) */
-		error(_error_silent, "arena gametypes: backup '%s' is there already: kept (the earlier one)", path);
-		free(data);
-		return TRUE;
+		record has changed since. Only a whole one, though: not empty, a
+		record's size, its lines text; else it is made again) */
+		for (character = 0; parses && character < backup_size; character++)
+		{
+			char c = backup[character];
+
+			parses = (c >= ' ' && c <= '~') || c == '\n' || c == '\r';
+		}
+		if (backup)
+			free(backup);
+		if (parses)
+		{
+			error(_error_silent, "arena gametypes: backup '%s' is there already: kept (the earlier one)", path);
+			free(data);
+			return TRUE;
+		}
+		error(_error_silent, "arena gametypes: backup '%s' is there but not a record: made again", path);
+		file_delete(&destination);
 	}
 	if (file_exists(&destination))
 	{
@@ -916,10 +938,24 @@ static boolean arena_gametypes_backup_file(
 			success ? "the same, kept" : "different, kept (this gametype not migrated)");
 		return success;
 	}
-	if (file_create(&destination) && file_open(&destination, FLAG(_permission_write_bit)))
+	/* (written to a temporary file, then put in place: a start that ends
+	at any moment leaves no half backup) */
 	{
-		success = file_write(&destination, size, data);
-		file_close(&destination);
+		char temporary_path[MAXIMUM_FILENAME_LENGTH + 1];
+		struct file_reference temporary;
+
+		_snprintf(temporary_path, sizeof(temporary_path) - 1, "%s.tmp", path);
+		temporary_path[sizeof(temporary_path) - 1] = 0;
+		if (file_reference_create_from_path(&temporary, temporary_path, FALSE) &&
+			(file_exists(&temporary) || file_create(&temporary)) &&
+			file_open(&temporary, FLAG(_permission_write_bit)))
+		{
+			success = file_set_eof(&temporary, 0) && file_write(&temporary, size, data);
+			file_close(&temporary);
+			success = success && platform_replace_file(temporary_path, path);
+			if (!success && file_exists(&temporary))
+				file_delete(&temporary);
+		}
 	}
 	free(data);
 	if (success)
@@ -1137,6 +1173,63 @@ static boolean arena_gametype_update_in_place(
 		file_delete(&file);
 	saved_game_files_release_mutex();
 	return success;
+}
+
+/* a value update's blam.new left in a saved gametype's folder (a start that
+ended between writing it and putting it in place) taken away, only while
+the gametype's own blam.lst is there and whole (its block, its signature
+right); else left, for whoever recovers it */
+static void arena_gametypes_remove_stray_updates(
+	void)
+{
+	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
+	word saved_count = NUMBEROF(saved);
+	short index;
+
+	saved_game_files_enumerate_available_to_local_player_index(NONE,
+		_saved_game_file_type_game_variant, &saved_count, saved, FALSE);
+	for (index = 0; index < (short)saved_count; index++)
+	{
+		char directory[MAXIMUM_FILENAME_LENGTH + 1];
+		char path[MAXIMUM_FILENAME_LENGTH + 1];
+		struct file_reference stray;
+		struct file_reference file;
+		unsigned long size = 0;
+		unsigned char *data;
+		boolean whole = FALSE;
+
+		if (!saved_game_file_get_path_to_enclosing_directory(saved[index], directory))
+			continue;
+		while (directory[0] && directory[strlen(directory) - 1] == '\\')
+			directory[strlen(directory) - 1] = 0;
+		_snprintf(path, sizeof(path) - 1, "%s\\blam.new", directory);
+		path[sizeof(path) - 1] = 0;
+		if (!file_reference_create_from_path(&stray, path, FALSE) || !file_exists(&stray))
+			continue;
+		_snprintf(path, sizeof(path) - 1, "%s\\blam.lst", directory);
+		path[sizeof(path) - 1] = 0;
+		if (file_reference_create_from_path(&file, path, FALSE) && file_exists(&file) &&
+			(data = file_read_into_memory(&file, &size)) != NULL)
+		{
+			XCALCSIG_SIGNATURE signature;
+
+			if (size >= SAVED_GAME_FILE_BLOCK_SIZE)
+			{
+				saved_game_file_generate_checksum(data, sizeof(struct game_variant), &signature);
+				whole = !csmemcmp(&signature, data + sizeof(struct game_variant), sizeof(signature));
+			}
+			free(data);
+		}
+		if (whole)
+		{
+			file_delete(&stray);
+			error(_error_silent, "arena gametypes: a stray update '%s\\blam.new' taken away", directory);
+		}
+		else
+		{
+			error(_error_silent, "arena gametypes: '%s\\blam.new' left: its blam.lst is not whole", directory);
+		}
+	}
 }
 
 /* a migration put off to the next start: its revision unrecorded, and its
