@@ -51,7 +51,9 @@ float ae_motion_progress(struct ae_motion const *motion)
 
 	if (reduced || !motion->duration)
 		return 1.0f;
-	/* (offsets from the start: a wrapping clock is fine) */
+	/* (offsets from the start: a wrapping clock is fine, as 32-bit builds' unsigned long wraps after 49 days;
+	system_milliseconds never goes back, so a clock behind the start, read as a huge offset, ends the motion,
+	which is safe) */
 	elapsed = now - motion->start;
 	return elapsed >= motion->duration ? 1.0f : (float)elapsed / (float)motion->duration;
 }

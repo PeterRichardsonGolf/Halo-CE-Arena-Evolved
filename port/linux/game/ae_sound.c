@@ -32,6 +32,15 @@ void ae_sound_request(int sound, int repeat)
 		requested_repeat = 0;
 }
 
+int ae_sound_end_frame(int was_up, int up, unsigned long now_ms)
+{
+	if (up || was_up)
+		return ae_sound_take(now_ms);
+	requested = AE_SOUND_NONE;
+	requested_repeat = 0;
+	return AE_SOUND_NONE;
+}
+
 int ae_sound_take(unsigned long now_ms)
 {
 	int sound = requested;

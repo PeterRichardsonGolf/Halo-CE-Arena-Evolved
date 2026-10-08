@@ -214,15 +214,19 @@ boolean ae_ui_process(
 		ae_input_hold_begin();
 	if (ae_ui_up())
 	{
-		/* (opened since the last frame, over none: its first poll takes nothing held as a press) */
+		/* (opened since the last frame, over none: its first poll takes nothing held as a press, and nothing asked
+		before it plays) */
 		if (!was_up)
+		{
 			ae_input_screen_opened();
+			ae_sound_reset();
+		}
 		ae_platform_arm_back_presses(TRUE);
 		ae_platform_arm_tab_presses(TRUE);
 		ae_ui_update();
 		ae_input_poll();
 		/* (the frame's one sound: ae_sound.h) */
-		ae_glue_sound_play(ae_sound_take(now));
+		ae_glue_sound_play(ae_sound_end_frame(TRUE, TRUE, now));
 		was_up = ae_ui_depth() != 0;
 		if (!was_up)
 			ae_input_hold_begin();
@@ -230,6 +234,8 @@ boolean ae_ui_process(
 		ae_platform_arm_tab_presses(was_up);
 		return TRUE;
 	}
+	/* (the last screen closed by the pointer before this frame's input: its BACK plays now; else nothing is kept) */
+	ae_glue_sound_play(ae_sound_end_frame(was_up, FALSE, now));
 	was_up = FALSE;
 	/* (mouse button 4 is counted for AE only while one of its screens is open) */
 	ae_platform_arm_back_presses(FALSE);
@@ -288,6 +294,8 @@ boolean ae_ui_pointer(
 {
 	if (!ae_ui_up())
 		return FALSE;
+	/* (the clock for what the pointer starts: it comes before ae_ui_process this frame) */
+	ae_motion_set_now(system_milliseconds());
 	ae_input_pointer(pointer);
 
 	return TRUE;

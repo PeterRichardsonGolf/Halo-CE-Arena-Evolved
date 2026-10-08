@@ -43,6 +43,19 @@ int main(void)
 	/* the throttle is the cursor's only: a repeat's stronger sound plays */
 	ae_sound_request(AE_SOUND_CURSOR, 1); ae_sound_request(AE_SOUND_FAILURE, 1);
 	CHECK(ae_sound_take(1125) == AE_SOUND_FAILURE);
+	/* the hooks' frames: a pointer's right-click closes the last screen (its BACK asked before the frame's input):
+	the closing frame plays it, once; the frames after, with no screen, play nothing and keep nothing; the next screen
+	opened over none starts afresh (ae_sound_reset) and its first frame plays nothing */
+	ae_sound_reset();
+	ae_sound_request(AE_SOUND_CURSOR, 0); CHECK(ae_sound_end_frame(1, 1, 2000) == AE_SOUND_CURSOR);
+	ae_sound_request(AE_SOUND_BACK, 0); CHECK(ae_sound_end_frame(1, 0, 2016) == AE_SOUND_BACK);
+	CHECK(ae_sound_end_frame(0, 0, 2032) == AE_SOUND_NONE);
+	ae_sound_request(AE_SOUND_FORWARD, 0); CHECK(ae_sound_end_frame(0, 0, 2048) == AE_SOUND_NONE);
+	CHECK(ae_sound_end_frame(0, 0, 2064) == AE_SOUND_NONE);   /* (not kept) */
+	ae_sound_request(AE_SOUND_FAILURE, 0);                     /* (stale, before the next screen) */
+	ae_sound_reset();                                          /* a screen opens over none */
+	CHECK(ae_sound_end_frame(0, 1, 2080) == AE_SOUND_NONE);
+	ae_sound_request(AE_SOUND_CURSOR, 0); CHECK(ae_sound_end_frame(1, 1, 2096) == AE_SOUND_CURSOR);
 	/* reset forgets the last cursor */
 	ae_sound_reset();
 	ae_sound_request(AE_SOUND_CURSOR, 1); CHECK(ae_sound_take(1126) == AE_SOUND_CURSOR);

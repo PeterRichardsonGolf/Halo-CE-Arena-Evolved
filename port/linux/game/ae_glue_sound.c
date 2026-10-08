@@ -5,7 +5,7 @@ Plays the AE menus' frame sound (ae_sound.h ae_glue_sound_play): CE's own UI
 feedback sounds, the ones ui_widget.c's ui_play_audio_feedback_sound plays for
 the game's menus (sound\sfx\ui\cursor, forward, back, flag_failure, from the
 loaded maps' tags), through the same unspatialized impulse, scaled by
-audio.arena_menus_volume (ae_settings_menu_volume; 0 plays nothing). While
+audio.arena_menus_volume (ae_settings_menu_volume; 0 plays nothing, logged "(muted)"). While
 debug.ae_test_screen is set, each sound played is logged "ae sound: NAME" for
 the tests.
 */
@@ -37,14 +37,13 @@ void ae_glue_sound_play(
 	if (sound <= AE_SOUND_NONE || sound > AE_SOUND_FAILURE)
 		return;
 	volume = ae_settings_menu_volume();
-	if (volume <= 0.0f)
-		return;
 	/* (the sound definition group, 'snd!': sound/sound_definitions.h SOUND_DEFINITION_TAG) */
 	definition = tag_loaded('snd!', tags[sound]);
-	if (definition != NONE)
+	if (definition != NONE && volume > 0.0f)
 		unspatialized_impulse_sound_new(definition, volume);
 	if (logging < 0)
 		logging = config_integer("debug.ae_test_screen") != 0;
 	if (logging)
-		platform_log("ae sound: %s%s", names[sound], definition == NONE ? " (its tag is not loaded)" : "");
+		platform_log("ae sound: %s%s", names[sound],
+			definition == NONE ? " (its tag is not loaded)" : volume <= 0.0f ? " (muted)" : "");
 }

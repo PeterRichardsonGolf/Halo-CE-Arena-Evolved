@@ -94,6 +94,8 @@ static bool SDLCALL tab_watch(
 	SDL_Event *event)
 {
 	(void)userdata;
+	/* (Alt is either Alt key: right Alt+Tab switches windows on most desktops too; an AltGr that SDL reports as
+	right Alt (some layouts) is taken as Alt, AltGr+Tab then stepping nothing, which costs nothing real) */
 	if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_TAB && SDL_GetAtomicInt(&tab_armed))
 	{
 		switch (ae_platform_tab_press_kind(event->key.repeat, (event->key.mod & SDL_KMOD_SHIFT) != 0,
