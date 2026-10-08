@@ -250,6 +250,9 @@ def test_profile_drive(cfg):
     assert made, text[-1500:]
     index = made[1]
     in_order(text, [f"ae profiles: new 'AE TEST' -> index {index}", "ae profiles: new: That name is already used",
+                    "ae profiles: new: A name can't use that character",
+                    "ae profiles: new: A name can't use that character",
+                    "ae profiles: new: Names are up to 11 characters",
                     f"ae profiles: player 1 uses {index}", "ae profiles: controls 2 5 1 0 saved",
                     "ae profiles: colour 3 saved", "ae profiles: read back controls 2 5 1 0 colour 3",
                     "ae profiles: player 1 controls 2 5 1 0 in the game",

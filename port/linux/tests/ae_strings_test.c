@@ -53,7 +53,7 @@ int main(void)
 
 	font = read_file("port/assets/fonts/Overpass-900.ttf", &size);
 	CHECK(font && ae_font_load(AE_FACE_OVERPASS_900, font, size));
-	CHECK(AE_NUMBER_OF_STRINGS == 88 && !strcmp(ae_string(AE_STR_SELECT), "Select") &&
+	CHECK(AE_NUMBER_OF_STRINGS == 89 && !strcmp(ae_string(AE_STR_SELECT), "Select") &&
 		!strcmp(ae_string(AE_STR_ERR_IN_GAME), "Not while a game is running") && !strcmp(ae_string(-1), "") &&
 		!strcmp(ae_string(AE_NUMBER_OF_STRINGS), ""));
 	for (id = 0; id < AE_NUMBER_OF_STRINGS; id++)

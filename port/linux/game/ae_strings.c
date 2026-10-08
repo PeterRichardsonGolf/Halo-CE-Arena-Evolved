@@ -102,6 +102,7 @@ static const char *const strings[AE_NUMBER_OF_STRINGS] =
 	"Could not make the profile",
 	"Not a valid setting",
 	"Guest %d",
+	"A name can't use that character",
 };
 
 const char *ae_string(int id)

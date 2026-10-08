@@ -132,8 +132,11 @@ static void profile_drive(void)
 	before = log_profiles("");
 	if (before < 0 || !ae_profile_new("AE TEST", &index).ok)
 		return;
-	/* (a second of the same name: refused, the glue logs why) */
+	/* (a second of the same name, a tab, 4-byte UTF-8, 12 characters: refused, the glue logs why) */
 	ae_profile_new("AE TEST", NULL);
+	ae_profile_new("AE\tTAB", NULL);
+	ae_profile_new("AE \xF0\x9F\x8E\xAE", NULL);
+	ae_profile_new("ABCDEFGHIJKL", NULL);
 	if (!ae_profile_switch(0, index).ok || !ae_profile_set_controls(0, &controls).ok || !ae_profile_set_color(0, 3).ok)
 		return;
 	/* the profile read again from its file (player_profile_get waits for the save's write) */

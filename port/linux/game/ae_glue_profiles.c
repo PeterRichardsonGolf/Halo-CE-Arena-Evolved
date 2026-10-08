@@ -126,8 +126,11 @@ static void name_to_utf8(const wchar_t *name, char *text, size_t size)
 	text[used] = 0;
 }
 
+enum { NAME_TOO_LONG = -1, NAME_BAD_CHARACTER = -2 };
+
 /* UTF-8 text as a profile's name (up to 11 characters, as upstream's new profile: the 12th is its end); the
-characters' count, -1 if the text is longer or not UTF-8 the name can hold */
+characters' count, NAME_BAD_CHARACTER for one a name can't hold (a control character or tab, a character outside
+UCS-2: 4-byte UTF-8, a surrogate, text that is not UTF-8), else NAME_TOO_LONG for more than 11 */
 static short name_from_utf8(const char *text, wchar_t *name)
 {
 	const unsigned char *cursor = (const unsigned char *)text;
@@ -137,22 +140,29 @@ static short name_from_utf8(const char *text, wchar_t *name)
 	{
 		unsigned int c;
 
-		if (count >= MAXIMUM_PLAYER_PROFILE_NAME_LENGTH - 1)
-			return -1;
 		if (cursor[0] < 0x80)
 			c = *cursor++;
 		else if ((cursor[0] & 0xE0) == 0xC0 && (cursor[1] & 0xC0) == 0x80)
 		{
 			c = ((cursor[0] & 0x1Fu) << 6) | (cursor[1] & 0x3Fu);
 			cursor += 2;
+			if (c < 0x80)
+				return NAME_BAD_CHARACTER;
 		}
 		else if ((cursor[0] & 0xF0) == 0xE0 && (cursor[1] & 0xC0) == 0x80 && (cursor[2] & 0xC0) == 0x80)
 		{
 			c = ((cursor[0] & 0x0Fu) << 12) | ((cursor[1] & 0x3Fu) << 6) | (cursor[2] & 0x3Fu);
 			cursor += 3;
+			if (c < 0x800 || (c >= 0xD800 && c <= 0xDFFF))
+				return NAME_BAD_CHARACTER;
 		}
 		else
-			return -1;
+			return NAME_BAD_CHARACTER;
+		/* (C0 and C1 control characters, tab and delete among them) */
+		if (c < 0x20 || (c >= 0x7F && c <= 0x9F))
+			return NAME_BAD_CHARACTER;
+		if (count >= MAXIMUM_PLAYER_PROFILE_NAME_LENGTH - 1)
+			return NAME_TOO_LONG;
 		name[count++] = (wchar_t)c;
 	}
 	name[count] = 0;
@@ -268,8 +278,11 @@ struct ae_result ae_profile_new(const char *name, int *profile_index)
 		trimmed[length - 1] = 0;
 	if (!trimmed[0])
 		return failed("new", AE_STR_ERR_NAME_EMPTY);
-	if (name_from_utf8(trimmed, wide) < 0)
-		return failed("new", AE_STR_ERR_NAME_LONG);
+	switch (name_from_utf8(trimmed, wide))
+	{
+	case NAME_BAD_CHARACTER: return failed("new", AE_STR_ERR_NAME_CHARACTER);
+	case NAME_TOO_LONG: return failed("new", AE_STR_ERR_NAME_LONG);
+	}
 	/* (two profiles of one name: upstream's lists could not tell them apart) */
 	if (ae_profiles_list(profiles, AE_PROFILES_MAXIMUM, &count).ok)
 	{
@@ -408,6 +421,9 @@ static void change_controls(struct player_profile *profile, void const *data)
 	apply_controls(profile, data);
 }
 
+/* (the game's copy's colour is read only when the player is added to a game, network_client_manager.c
+network_game_client_add_player: a match under way keeps the colour its network player has; upstream's CHANGE COLOR
+leaves the copy as it was, so its "from the next game you join" waits for the profile to be read again) */
 static void change_color(struct player_profile *profile, void const *data)
 {
 	profile->primary_color_index = *(short const *)data;

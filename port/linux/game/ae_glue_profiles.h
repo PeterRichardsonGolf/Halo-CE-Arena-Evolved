@@ -50,7 +50,9 @@ struct ae_result ae_profile_get_controls(short local_player, struct ae_profile_c
 /* saved to that player's own profile at once (no shared edit buffer, no "PLAYER n IS EDITING": M7's rule); a
 guest's apply to the session and return ok with reason AE_STR_ERR_GUEST (a note, not a failure) */
 struct ae_result ae_profile_set_controls(short local_player, struct ae_profile_controls const *controls);
-/* applies from the next game, as upstream's CHANGE COLOR says */
+/* saved at once; the player's colour changes from the next game they join, as upstream's CHANGE COLOR says: the
+game's copy is updated now, but it is read only when a player is added to a game, so a match under way (and the
+lobby the player is in) keeps the colour the player joined with */
 struct ae_result ae_profile_set_color(short local_player, short color);
 
 #endif
