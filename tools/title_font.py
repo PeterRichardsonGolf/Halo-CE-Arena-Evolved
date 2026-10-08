@@ -68,6 +68,10 @@ def ink(font: TTFont, character: str) -> tuple:
 
 def build(output: Path = OUTPUT) -> Path:
     font = TTFont(SOURCE)
+    # Newtown's hhea and typo descents are positive (+190), which puts the line box's bottom above the baseline
+    # in any renderer that trusts them; descents are negative
+    font["hhea"].descent = -abs(font["hhea"].descent)
+    font["OS/2"].sTypoDescender = -abs(font["OS/2"].sTypoDescender)
     glyf, hmtx, cmap = font["glyf"], font["hmtx"], font.getBestCmap()
     respaced = set()
     for character, (left, right) in SPACING.items():
