@@ -56,5 +56,8 @@ int ae_platform_mouse_left_held(void);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */
 int ae_platform_input_scheme(void);
+/* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
+as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
+void ae_platform_test_keystroke(int scancode);
 
 #endif

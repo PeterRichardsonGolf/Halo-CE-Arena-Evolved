@@ -171,29 +171,24 @@ static void picker_frame(struct picker_state const *state, struct ae_rect *popov
 	*item = popover->height / (float)(state->list.rows > 0 ? state->list.rows : 1);
 }
 
-static void picker_draw(struct ae_screen *screen)
+/* the open list in popover (drawing units), its items item tall: the panel, the items, the focus bar, the current
+value's check, the scrollbar; hits under id */
+static void picker_list_draw(struct ae_density const *density, struct ae_rect const *popover_rect, float item,
+	struct ae_list const *list, const char *const *values, short current_value, short id)
 {
-	struct picker_state *state = screen->data;
-	struct ae_density const *density = &state->spec.density;
-	struct ae_rect popover;
-	float item, size = picker_text(density), track = units(density, PICKER_TRACK_U);
-	short row, id = picker_hit_id(state);
+	struct ae_rect popover = *popover_rect;
+	float size = picker_text(density), track = units(density, PICKER_TRACK_U);
+	short row;
 
-	/* (P12: in the player's own view for VIEW; else in the view before_draw set, the dialog's scale included) */
-	if (state->spec.view.width > 0.0f && state->spec.view.height > 0.0f)
-		ae_draw_view(state->spec.view.x, state->spec.view.y, state->spec.view.width, state->spec.view.height);
-	picker_frame(state, &popover, &item);
-	/* clicks anywhere else in its view close it: a hit over the view under the popover's own */
-	ae_hit_add(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, id, AE_PART_OUTSIDE, -1);
 	ae_draw_rect(popover.x, popover.y, popover.width, popover.height, units(density, density->metrics->corner),
 		AE_COLOR_POPOVER);
 	ae_hit_add(popover.x, popover.y, popover.width, popover.height, id, AE_PART_CARD, -1);
 	ae_draw_clip_push(popover.x, popover.y, popover.width, popover.height);
-	for (row = 0; row < state->list.rows; row++)
+	for (row = 0; row < list->rows; row++)
 	{
-		short index = ae_list_item_at_row(&state->list, row);
+		short index = ae_list_item_at_row(list, row);
 		float y = popover.y + (float)row * item, center = y + item * 0.5f;
-		int focused = index == state->list.focus, current = index == state->spec.current;
+		int focused = index == list->focus, current = index == current_value;
 		unsigned int color = focused ? AE_COLOR_SELECTION_TEXT : current ? AE_COLOR_ACCENT : AE_COLOR_TEXT;
 
 		if (index < 0)
@@ -201,7 +196,7 @@ static void picker_draw(struct ae_screen *screen)
 		/* the focus: a white bar with a notch */
 		if (focused)
 		{
-			ae_draw_rect(popover.x, y, popover.width - (state->list.count > state->list.rows ? track * 2.0f : 0.0f), item,
+			ae_draw_rect(popover.x, y, popover.width - (list->count > list->rows ? track * 2.0f : 0.0f), item,
 				0.0f, AE_COLOR_SELECTION);
 			ae_draw_rect(popover.x, y, units(density, NOTCH_U), item, 0.0f, AE_COLOR_ACCENT);
 		}
@@ -214,22 +209,55 @@ static void picker_draw(struct ae_screen *screen)
 			ae_draw_line(x - half, center, x - half * 0.35f, center + half * 0.65f, stroke, color);
 			ae_draw_line(x - half * 0.35f, center + half * 0.65f, x + half, center - half * 0.8f, stroke, color);
 		}
-		if (state->spec.values && state->spec.values[index])
+		if (values && values[index])
 			ae_draw_text(AE_FONT_ROW, size, popover.x + units(density, PICKER_TEXT_X_U), text_top(AE_FONT_ROW, size, center),
-				AE_ALIGN_LEFT, color, state->spec.values[index]);
+				AE_ALIGN_LEFT, color, values[index]);
 		ae_hit_add(popover.x, y, popover.width, item, id, AE_PART_ITEM, index);
 	}
 	ae_draw_clip_pop();
 	/* more than it shows: a 6 u scrollbar */
-	if (state->list.count > state->list.rows)
+	if (list->count > list->rows)
 	{
 		float thumb_y, thumb_height, x = popover.x + popover.width - track * 1.5f;
 
-		ae_scrollbar_thumb(state->list.count, state->list.rows, (float)state->list.first, popover.height, item,
-			&thumb_y, &thumb_height);
+		ae_scrollbar_thumb(list->count, list->rows, (float)list->first, popover.height, item, &thumb_y, &thumb_height);
 		ae_draw_rect(x, popover.y, track, popover.height, track * 0.5f, AE_COLOR_TRACK);
 		ae_draw_rect(x, popover.y + thumb_y, track, thumb_height, track * 0.5f, AE_COLOR_MUTED);
 	}
+}
+
+static void picker_draw(struct ae_screen *screen)
+{
+	struct picker_state *state = screen->data;
+	struct ae_rect popover;
+	float item;
+	short id = picker_hit_id(state);
+
+	/* (P12: in the player's own view for VIEW; else in the view before_draw set, the dialog's scale included) */
+	if (state->spec.view.width > 0.0f && state->spec.view.height > 0.0f)
+		ae_draw_view(state->spec.view.x, state->spec.view.y, state->spec.view.width, state->spec.view.height);
+	picker_frame(state, &popover, &item);
+	/* clicks anywhere else in its view close it: a hit over the view under the popover's own */
+	ae_hit_add(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, id, AE_PART_OUTSIDE, -1);
+	picker_list_draw(&state->spec.density, &popover, item, &state->list, state->spec.values, state->spec.current, id);
+}
+
+void ae_widget_picker_sample(struct ae_density const *density, struct ae_rect const *row, struct ae_rect const *bounds,
+	const char *const *values, short count, short current, short focus, short hit_id)
+{
+	struct ae_list list;
+	struct ae_rect popover;
+	float item = ae_size_row(density) * PICKER_ITEM_PER_ROW;
+	short first, rows;
+
+	if (count <= 0)
+		return;
+	ae_picker_place(row, bounds, count, current, item, ae_picker_width(density, values, count), &popover, &first);
+	rows = (short)(popover.height / item + 0.5f);
+	ae_list_init(&list, count, rows > 0 ? rows : 1);
+	ae_list_set_focus(&list, focus >= 0 && focus < count ? focus : 0);
+	list.first = first;
+	picker_list_draw(density, &popover, item, &list, values, current, hit_id);
 }
 
 /* picks an item: the forward sound, closed, then the callback (which may open another) */

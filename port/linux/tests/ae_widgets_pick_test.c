@@ -621,6 +621,42 @@ static void fixes(void)
 	CHECK(!ae_stub_overflowed());
 }
 
+/* the open list as a picture (the gallery's open-state sample): drawn as the picker draws it, nothing pushed */
+static void sample(void)
+{
+	static const char *const values[] = { "PUBLIC", "FRIENDS", "INVITE ONLY" };
+	struct ae_density d;
+	struct ae_rect row = { 100, 500, 690, 50 }, bounds = { 0, 0, 1920, 1080 }, pop, placed, bar;
+	short first;
+	int depth = ae_ui_depth();
+
+	ae_stub_reset(1920, 1080);
+	ae_hits_clear();
+	ae_density_full(1080, 1.0f, &d);
+	ae_widget_picker_sample(&d, &row, &bounds, values, 3, 2, 1, 0x0200);
+	CHECK(ae_ui_depth() == depth && count_calls(AE_STUB_RECT, AE_COLOR_POPOVER) == 1);
+	/* (where the picker would open: the current value over the row) */
+	ae_picker_place(&row, &bounds, 3, 2, ae_size_row(&d) * 42.0f / 50.0f, ae_picker_width(&d, values, 3), &placed, &first);
+	for (first = 0; first < ae_stub_count(); first++)
+		if (ae_stub_get(first)->kind == AE_STUB_RECT && ae_stub_get(first)->rgba == AE_COLOR_POPOVER)
+			ae_stub_pixels(ae_stub_get(first), &pop);
+	CHECK(near(pop.x, placed.x, 0.01f) && near(pop.y, placed.y, 0.01f) && near(pop.width, placed.width, 0.01f));
+	/* the focus bar on FRIENDS (dark text), INVITE ONLY checked in the accent */
+	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_SELECTION) == 1 && text_call("FRIENDS") &&
+		text_call("FRIENDS")->rgba == AE_COLOR_SELECTION_TEXT && text_call("INVITE ONLY")->rgba == AE_COLOR_ACCENT);
+	for (first = 0; first < ae_stub_count(); first++)
+		if (ae_stub_get(first)->kind == AE_STUB_RECT && ae_stub_get(first)->rgba == AE_COLOR_SELECTION)
+			ae_stub_pixels(ae_stub_get(first), &bar);
+	{
+		struct ae_rect friends;
+
+		ae_stub_pixels(text_call("FRIENDS"), &friends);
+		CHECK(friends.y >= bar.y && friends.y + friends.height <= bar.y + bar.height);
+	}
+	CHECK(count_calls(AE_STUB_LINE, AE_COLOR_ACCENT) == 2);
+	CHECK(!ae_stub_overflowed());
+}
+
 int main(void)
 {
 	placement();
@@ -628,6 +664,7 @@ int main(void)
 	chips();
 	help();
 	fixes();
+	sample();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

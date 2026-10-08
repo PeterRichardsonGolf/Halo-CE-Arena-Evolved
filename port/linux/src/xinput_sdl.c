@@ -42,6 +42,7 @@ drive the controller.
 #include "port_config.h"
 #include "touch_input.h"
 #include "halo_keyboard.h"
+#include "ae_platform.h" /* AE hook */
 
 #include <SDL3/SDL.h>
 #include <math.h>
@@ -683,6 +684,7 @@ static void test_input_menu_keys(struct platform_input_state *input)
 		scancode = SDL_GetScancodeFromName(name);
 		if (scancode != SDL_SCANCODE_UNKNOWN)
 			input->keys[scancode] = 1;
+		if (scancode != SDL_SCANCODE_UNKNOWN && text_typing) ae_platform_test_keystroke((int)scancode); /* AE hook */
 	}
 }
 

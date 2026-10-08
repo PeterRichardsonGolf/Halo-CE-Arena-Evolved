@@ -26,6 +26,7 @@ view it draws in (preflight P12). Its hits' ids are KEYBOARD_HIT_ID + the slot (
 #define KEY_GAP_U 6.0f
 #define KEY_VIEW_WIDTH_U 48.0f
 #define KEY_VIEW_GAP_U 5.0f
+#define KEY_MINIMUM_PIXELS 24.0f      /* a VIEW key fitted to the space by its field: never narrower */
 #define KEY_BASE_U 4.0f
 #define KEYBOARD_PAD_U 16.0f
 #define KEYBOARD_GAP_U 12.0f           /* the field to the keyboard */
@@ -245,6 +246,19 @@ static float prefix_width(int font, float size, const char *text, short count)
 	memcpy(buffer, text, (size_t)count);
 	buffer[count] = 0;
 	return ae_draw_text_width(font, size, buffer);
+}
+
+void ae_field_well(struct ae_density const *density, float x, float y, float width, struct ae_field const *field,
+	struct ae_rect *well)
+{
+	float label_size = floored(density, FIELD_LABEL_U, MINOR_FLOOR_PIXELS);
+
+	well->x = x;
+	well->y = y;
+	if (field->label && *field->label)
+		well->y += ae_draw_cap_height(AE_FONT_BODY, label_size) + units(density, FIELD_LABEL_GAP_U);
+	well->width = width;
+	well->height = density->kind == AE_DENSITY_VIEW ? ae_size_row(density) : units(density, 50.0f);
 }
 
 float ae_widget_field(struct ae_density const *density, float x, float y, float width, struct ae_field const *field,
@@ -806,7 +820,7 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
 	struct keyboard_state *state;
 	struct ae_rect const *field, *bounds;
 	short slot = (short)(owner >= 0 && owner < AE_MAXIMUM_PLAYERS ? owner : AE_MAXIMUM_PLAYERS);
-	float scale, pad, keys_width, keys_height, strip, width, height, gap, content;
+	float scale, pad, keys_width, keys_height, strip, width, height, gap, content, room;
 
 	if (!spec || !spec->text)
 		return 0;
@@ -828,11 +842,28 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
 	/* the size: the keys (VIEW: shrunk to the bounds' width), the padding, the strip; layout units */
 	content = bounds->width / scale - 2.0f * units(&spec->density, KEYBOARD_PAD_U);
 	keyboard_parts(&spec->density, content, &pad, &keys_width, &keys_height, &strip);
-	/* (VIEW: too tall for the bounds, a short quarter: the keys shrunk to the height as well, their shape kept) */
-	if (spec->density.kind == AE_DENSITY_VIEW && (keys_height + 2.0f * pad + strip) * scale > bounds->height)
+	/* (VIEW: too tall for its room, a short quarter: the keys shrunk to the height as well, their shape kept. Its room:
+	the bounds' height, or, when it goes under or over the field (no room beside it), the taller of the spaces under
+	and over the field, so the field stays in sight, unless that is under 40 % of the bounds) */
+	room = bounds->height;
+	gap = units(&spec->density, KEYBOARD_GAP_U) * scale;
+	if (spec->density.kind == AE_DENSITY_VIEW &&
+		field->x + field->width + gap + (keys_width + 2.0f * pad) * scale > bounds->x + bounds->width)
+	{
+		float below = bounds->y + bounds->height - (field->y + field->height + gap), above = field->y - gap - bounds->y;
+		float best = below > above ? below : above;
+
+		if (best >= bounds->height * 0.4f)
+			room = best;
+	}
+	if (spec->density.kind == AE_DENSITY_VIEW && (keys_height + 2.0f * pad + strip) * scale > room)
 	{
 		float key_gap = units(&spec->density, KEY_VIEW_GAP_U);
-		float key_height = ((bounds->height / scale - 2.0f * pad - strip) - 4.0f * key_gap) / 5.0f;
+		float key_height = ((room / scale - 2.0f * pad - strip) - 4.0f * key_gap) / 5.0f;
+
+		/* (keys too small for their words in the space by the field: the bounds' height, over the field) */
+		if (room < bounds->height && key_height * KEY_WIDTH_U / KEY_HEIGHT_U < KEY_MINIMUM_PIXELS * spec->density.pixel)
+			key_height = ((bounds->height / scale - 2.0f * pad - strip) - 4.0f * key_gap) / 5.0f;
 		float fit = 10.0f * (key_height * KEY_WIDTH_U / KEY_HEIGHT_U) + 9.0f * key_gap;
 
 		if (fit < content)
@@ -851,10 +882,20 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
 	}
 	else
 	{
-		state->popover.x = field->x;
+		/* (under it, centred on it; over it when under has no room) */
+		state->popover.x = field->x + (field->width - width) * 0.5f;
 		state->popover.y = field->y + field->height + gap;
+		/* (over it when there is room there; with room on neither side, the side with more, so it covers the field
+		least) */
 		if (state->popover.y + height > bounds->y + bounds->height)
-			state->popover.y = field->y - gap - height;
+		{
+			float below = bounds->y + bounds->height - (field->y + field->height), above = field->y - bounds->y;
+
+			if (field->y - gap - height >= bounds->y || above > below)
+				state->popover.y = field->y - gap - height;
+			else
+				state->popover.y = bounds->y + bounds->height - height;
+		}
 	}
 	state->popover.width = width;
 	state->popover.height = height;

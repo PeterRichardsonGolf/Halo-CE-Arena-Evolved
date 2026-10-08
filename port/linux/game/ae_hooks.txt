@@ -16,3 +16,5 @@ source/interface/ui_widget.c	if (ae_ui_process()) /* AE hook */\nreturn;
 source/interface/ui_widget.c	ae_ui_render(local_player_index, window_bounds); /* AE hook */
 source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */\npointer_active = FALSE;
 source/interface/ui_widget.c	if (ae_ui_takes_pointer()) /* AE hook */\nreturn TRUE;
+port/linux/src/xinput_sdl.c	#include "ae_platform.h" /* AE hook */
+port/linux/src/xinput_sdl.c	if (scancode != SDL_SCANCODE_UNKNOWN && text_typing) ae_platform_test_keystroke((int)scancode); /* AE hook */

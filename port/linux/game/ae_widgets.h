@@ -192,6 +192,10 @@ struct ae_picker_spec
 	struct ae_rect view;         /* (M2, P12) layout units; zero size: the whole frame */
 };
 int ae_picker_open(struct ae_picker_spec const *spec, short owner);
+/* (M2) the open list drawn as a picture, not a screen (the gallery's open-state sample): placed for row in bounds
+(drawing units of the current view), the current value checked, the focus on focus */
+void ae_widget_picker_sample(struct ae_density const *density, struct ae_rect const *row, struct ae_rect const *bounds,
+	const char *const *values, short count, short current, short focus, short hit_id);
 
 enum { AE_CHIP_ON = 1, AE_CHIP_FOCUSED = 2, AE_CHIP_HOVER = 4, AE_CHIP_UNSUPPORTED = 8, AE_CHIP_DISABLED = 16 };
 struct ae_chip { const char *label; short count; /* -1 none */ unsigned int flags; };
@@ -256,6 +260,9 @@ struct ae_field { const char *label; const char *placeholder; struct ae_text *te
 	const char *error; unsigned long caret_since; };
 float ae_widget_field(struct ae_density const *density, float x, float y, float width, struct ae_field const *field,
 	short hit_id);   /* returns its height incl. label and error line */
+/* (M2) where ae_widget_field puts the field's well (its box, under the label), drawing units */
+void ae_field_well(struct ae_density const *density, float x, float y, float width, struct ae_field const *field,
+	struct ae_rect *well);
 /* (M2) typing into a field (keyboard and mouse: Enter or a click on it starts editing, preflight P17; a pad's A opens
 AE's keyboard instead): begin keeps the text to restore on cancel and starts the platform's typing mode (the host);
 keys applies this frame's typed keys; end keeps the text or restores it. ae_field_type applies keys to a text (pure):

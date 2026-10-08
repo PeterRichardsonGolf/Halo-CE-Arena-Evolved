@@ -14,12 +14,14 @@ pure, so the unit tests build it.)
 #include "platform.h"
 #include "sdl_platform.h"
 #include "ae_platform.h"
+#include "port_config.h"
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
 #include <SDL3/SDL_atomic.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_mouse.h>
+#include <SDL3/SDL_timer.h>
 #endif
 
 #ifdef HALO_GAME_BROWSER
@@ -167,5 +169,37 @@ int ae_platform_input_scheme(void)
 	return platform_input_scheme();
 #else
 	return 1;
+#endif
+}
+
+void ae_platform_test_keystroke(
+	int scancode)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	static Uint64 last[SDL_SCANCODE_COUNT];
+	Uint64 now = SDL_GetTicks();
+	SDL_Event event;
+
+	if (scancode <= SDL_SCANCODE_UNKNOWN || scancode >= SDL_SCANCODE_COUNT || !config_boolean("display.arena_menus"))
+		return;
+	/* (a token is held for the first 250 ms of its second: one keystroke for it, the next a second later) */
+	if (last[scancode] && now - last[scancode] < 500)
+	{
+		last[scancode] = now;
+		return;
+	}
+	last[scancode] = now;
+	SDL_zero(event);
+	event.type = SDL_EVENT_KEY_DOWN;
+	event.key.scancode = (SDL_Scancode)scancode;
+	event.key.key = SDL_GetKeyFromScancode((SDL_Scancode)scancode, SDL_KMOD_NONE, false);
+	event.key.down = true;
+	event.key.timestamp = SDL_GetTicksNS();
+	SDL_PushEvent(&event);
+	event.type = SDL_EVENT_KEY_UP;
+	event.key.down = false;
+	SDL_PushEvent(&event);
+#else
+	(void)scancode;
 #endif
 }

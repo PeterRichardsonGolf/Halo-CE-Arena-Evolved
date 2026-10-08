@@ -141,6 +141,24 @@ static void fields(void)
 	CHECK(count_calls(AE_STUB_OUTLINE, AE_COLOR_WARNING) == 1 && count_calls(AE_STUB_OUTLINE, AE_COLOR_ACCENT) == 0);
 	CHECK(text_call(field.error) && text_call(field.error)->rgba == AE_COLOR_WARNING &&
 		text_call(field.error)->y > 100 + 50);
+	/* (ae_field_well: the well ae_widget_field draws, under the label; no label: at y) */
+	{
+		struct ae_rect well, drawn = { 0, 0, 0, 0 };
+		int index;
+
+		ae_stub_reset(1920, 1080);
+		ae_widget_field(&d, 100, 100, 800, &field, 4);
+		for (index = 0; index < ae_stub_count(); index++)
+			if (ae_stub_get(index)->kind == AE_STUB_RECT && ae_stub_get(index)->rgba == AE_COLOR_WELL)
+				ae_stub_pixels(ae_stub_get(index), &drawn);
+		ae_field_well(&d, 100, 100, 800, &field, &well);
+		CHECK(near(well.x, drawn.x, 0.01f) && near(well.y, drawn.y, 0.01f) && near(well.width, drawn.width, 0.01f) &&
+			near(well.height, drawn.height, 0.01f) && well.y > 100);
+		field.label = NULL;
+		ae_field_well(&d, 100, 100, 800, &field, &well);
+		CHECK(near(well.y, 100, 0.01f));
+		field.label = "GAME TYPE NAME";
+	}
 	/* hover: a wash; empty: the placeholder, muted, Overpass 750 */
 	ae_text_init(&text, "", 40, 0);
 	field.flags = AE_FIELD_HOVER;
@@ -601,6 +619,10 @@ static void keyboard_view(float window_height)
 	}
 	CHECK(keys == 46);
 	CHECK(pop.width > 0 && inside(&pop, &content_pixels, 0.05f));
+	/* (a 960x540 quarter has room under the field: the keyboard there, the field in sight; 640x360 hasn't: keys
+	that small couldn't hold their words, so it goes over the field) */
+	if (window_height >= 1080.0f)
+		CHECK(pop.y >= (spec.field.y + spec.field.height) * pixels - 0.05f);
 	if (!inside(&pop, &content_pixels, 0.05f))
 		printf("  popover %.2f %.2f %.2f %.2f content %.2f %.2f %.2f %.2f; window %.0f\n", pop.x, pop.y, pop.width,
 			pop.height, content_pixels.x, content_pixels.y, content_pixels.width, content_pixels.height, window_height);
@@ -635,6 +657,52 @@ static void keyboard_view(float window_height)
 	CHECK(!ae_stub_overflowed());
 }
 
+/* a 1920x540 half at 130 %: just too little room under the field for the shrunk keyboard (by a fraction): it goes
+to the roomier side, under, clamped to the panel's foot, never over the panel's header and the field */
+static void keyboard_half(void)
+{
+	struct ae_density d;
+	struct ae_rect panel, content, well, pop = { 0, 0, 0, 0 };
+	struct ae_keyboard_spec spec;
+	struct ae_text text;
+	struct ae_field field;
+	float scale = 540.0f / 1080.0f;
+	int index;
+
+	ae_ui_reset();
+	ae_ui_set_before_draw(NULL);
+	ae_ui_push(&base, AE_OWNER_ANY, NULL);
+	ae_stub_reset(1920, 1080);
+	ae_draw_view(0, 0, 1920, 540);
+	ae_density_view(1920, 540, 1.3f, &d);
+	ae_view_panel_rect(1920, 540, 1.3f, &panel);
+	ae_widget_view_panel(&d, 1920, 540, 0, 0xC0392BFFu, "MY HUD", 2, 6, &content);
+	ae_text_init(&text, "PRO HUD", 11, 1);
+	memset(&field, 0, sizeof(field));
+	field.label = "HUD PRESET NAME";
+	field.text = &text;
+	ae_field_well(&d, content.x, content.y, content.width, &field, &well);
+	memset(&spec, 0, sizeof(spec));
+	spec.text = &text;
+	spec.density = d;
+	spec.view.width = 1920;
+	spec.view.height = 540;
+	spec.bounds = panel;
+	spec.field.x = well.x * scale;
+	spec.field.y = well.y * scale;
+	spec.field.width = well.width * scale;
+	spec.field.height = well.height * scale;
+	CHECK(ae_keyboard_open(&spec, 0));
+	ae_stub_reset(1920, 1080);
+	ae_hits_clear();
+	ae_ui_draw();
+	for (index = 0; index < ae_stub_count(); index++)
+		if (ae_stub_get(index)->kind == AE_STUB_RECT && ae_stub_get(index)->rgba == AE_COLOR_POPOVER)
+			ae_stub_pixels(ae_stub_get(index), &pop);
+	CHECK(pop.height > 0 && pop.y >= spec.field.y + spec.field.height * 0.5f && inside(&pop, &panel, 0.05f));
+	ae_ui_reset();
+}
+
 int main(void)
 {
 	fields();
@@ -644,6 +712,7 @@ int main(void)
 	keyboard_view(1080.0f);
 	typing_owners();
 	keyboard_typing();
+	keyboard_half();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;
