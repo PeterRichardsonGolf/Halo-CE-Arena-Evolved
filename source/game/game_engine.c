@@ -4683,9 +4683,10 @@ static void game_engine_update_start_text(
 		{
 			if (local_player_get_player_index(local_player_index) != NONE)
 			{
-				hud_print_message(local_player_index, name);
+				/* (the newest message is drawn first: the name on top) */
 				if (mode)
 					hud_print_message(local_player_index, mode);
+				hud_print_message(local_player_index, name);
 			}
 		}
 		for (index = 0; index < (long)NUMBEROF(name); index++)
