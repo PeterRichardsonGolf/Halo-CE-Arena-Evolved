@@ -30,6 +30,40 @@ Prints the failures, or PASS.
 
 #undef printf
 
+/* (the game's memory functions, which this check does not link) */
+long csmemcmp(const void *p1, const void *p2, unsigned long size)
+{
+	unsigned char const *a = p1;
+	unsigned char const *b = p2;
+
+	while (size--)
+	{
+		if (*a != *b)
+			return *a < *b ? -1 : 1;
+		a++, b++;
+	}
+	return 0;
+}
+
+void *csmemset(void *buffer, long c, unsigned long size)
+{
+	unsigned char *bytes = buffer;
+
+	while (size--)
+		*bytes++ = (unsigned char)c;
+	return buffer;
+}
+
+void *csmemcpy(void *destination, const void *source, unsigned long size)
+{
+	unsigned char *to = destination;
+	unsigned char const *from = source;
+
+	while (size--)
+		*to++ = *from++;
+	return destination;
+}
+
 /* (a stand-in for the XDK signature: any function of the bytes) */
 void saved_game_file_generate_checksum(
 	void const *buffer,
@@ -48,6 +82,35 @@ void saved_game_file_generate_checksum(
 		hash = (hash ^ index) * 16777619u;
 		out[index] = (byte)(hash >> 8);
 	}
+}
+
+/* (the game's wchar_t may be 16 bits: the C library's wide functions cannot be used) */
+static int wlen(wchar_t const *text)
+{
+	int length = 0;
+
+	while (text[length])
+		length++;
+	return length;
+}
+
+static int wsame(wchar_t const *a, wchar_t const *b)
+{
+	int index = 0;
+
+	while (a[index] && a[index] == b[index])
+		index++;
+	return a[index] == b[index];
+}
+
+static int wprefix(wchar_t const *a, wchar_t const *b, int count)
+{
+	int index;
+
+	for (index = 0; index < count; index++)
+		if (a[index] != b[index])
+			return 0;
+	return 1;
 }
 
 static int failures = 0;
@@ -100,7 +163,7 @@ int main(void)
 	fill(block);
 	memcpy(original, block, sizeof(block));
 	playlist_display_name_to_block(block, L"Big Team Battle");
-	check(playlist_display_name_from_block(block, name) && !wcscmp(name, L"Big Team Battle"), "round trip");
+	check(playlist_display_name_from_block(block, name) && wsame(name, L"Big Team Battle"), "round trip");
 	outside = 0;
 	for (index = 0; index < SAVED_GAME_FILE_BLOCK_SIZE; index++)
 	{
@@ -132,16 +195,16 @@ int main(void)
 	/* lengths */
 	wide(long_name, "ABCDEFGHIJ", 70);
 	playlist_display_name_to_block(block, long_name);
-	check(playlist_display_name_from_block(block, name) && wcslen(name) == 31 && !wcsncmp(name, long_name, 31),
+	check(playlist_display_name_from_block(block, name) && wlen(name) == 31 && wprefix(name, long_name, 31),
 		"a long name is cut at 31");
 	wide(long_name, "ABCDEFGHIJ", 31);
 	playlist_display_name_to_block(block, long_name);
-	check(playlist_display_name_from_block(block, name) && !wcscmp(name, long_name), "31 characters whole");
+	check(playlist_display_name_from_block(block, name) && wsame(name, long_name), "31 characters whole");
 	wide(long_name, "ABCDEFGHIJ", 32);
 	playlist_display_name_to_block(block, long_name);
-	check(playlist_display_name_from_block(block, name) && wcslen(name) == 31, "32 characters cut to 31");
+	check(playlist_display_name_from_block(block, name) && wlen(name) == 31, "32 characters cut to 31");
 	playlist_display_name_to_block(block, L"X");
-	check(playlist_display_name_from_block(block, name) && !wcscmp(name, L"X"), "one character");
+	check(playlist_display_name_from_block(block, name) && wsame(name, L"X"), "one character");
 
 	/* empty and NULL clear */
 	fill(block);
@@ -158,7 +221,8 @@ int main(void)
 
 	/* control character, wide character */
 	playlist_display_name_to_block(block, L"AB\nCD");
-	check(playlist_display_name_from_block(block, name) && !wcscmp(name, L"AB"), "a control character ends the name");
+	check(playlist_display_name_from_block(block, name) && wsame(name, L"AB"), "a control character ends the name");
+	if (sizeof(wchar_t) > 2)
 	{
 		wchar_t emoji[3];
 
@@ -166,7 +230,7 @@ int main(void)
 		emoji[1] = (wchar_t)0x1F600;
 		emoji[2] = 0;
 		playlist_display_name_to_block(block, emoji);
-		check(playlist_display_name_from_block(block, name) && !wcscmp(name, L"A?"), "a character past 16 bits is a question mark");
+		check(playlist_display_name_from_block(block, name) && wsame(name, L"A?"), "a character past 16 bits is a question mark");
 	}
 	{
 		wchar_t accent[3];
@@ -184,7 +248,7 @@ int main(void)
 	memset(block, 0, sizeof(block));
 	playlist_display_name_to_block(block, L"Carried Over");
 	playlist_display_name_carry(other, block);
-	check(playlist_display_name_from_block(other, name) && !wcscmp(name, L"Carried Over"), "carry: the name arrives");
+	check(playlist_display_name_from_block(other, name) && wsame(name, L"Carried Over"), "carry: the name arrives");
 	outside = 0;
 	for (index = 0; index < SAVED_GAME_FILE_BLOCK_SIZE; index++)
 	{
