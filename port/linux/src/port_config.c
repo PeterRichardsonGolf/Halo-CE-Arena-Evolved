@@ -258,7 +258,7 @@ static const struct config_setting config_settings[] =
 		"Shorter game messages, as Halo 1: NHE's: a killing spree reads\n"
 		"\"Killing Spree!\" (with the count, if there is one). false keeps the\n"
 		"game's own text." },
-	{ "display.per_pixel_lighting",_config_boolean, "false", "HALO_PER_PIXEL_LIGHTING", _environment_value,
+	{ "display.per_pixel_lighting", _config_boolean, "false", "HALO_PER_PIXEL_LIGHTING", _environment_value,
 		_platform_all,
 		"Light the models (characters, weapons, vehicles, scenery) for each\n"
 		"pixel by the lights the game gives them, without the facets the light\n"
