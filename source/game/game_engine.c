@@ -5778,7 +5778,6 @@ boolean game_engine_should_end_game(
 	{
 		should_end_game = TRUE;
 	}
-
 	/* port: the gametype's time limit (game_variant_options) */
 	if (game_engine && game_variant_options_get()->time_limit > 0 &&
 		game_time_get() >= game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND)
@@ -8146,14 +8145,15 @@ void game_engine_log_rules(
 		line's length never cuts them off: game_engine.h, bits 25-30 and
 		nhe_mode) */
 		error(_error_silent, "AE rules: timers level %s, spawn heat %s, objective %s, nhe extras %s, "
-			"drop secondary %s, nhe mode %s",
+			"drop secondary %s, nhe mode %s, starting frags %d",
 			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) && universal->goal_radar == _radar_nav_point ?
 				"line of sight" : "normal",
 			TEST_FLAG(flags, _game_variant_nhe_extras_bit) ? "on" : "off",
 			game_variant_drop_secondary_name(flags),
-			game_variant_nhe_mode_name(universal->nhe_mode));
+			game_variant_nhe_mode_name(universal->nhe_mode),
+			(int)universal->starting_frags);
 		/* (and the players' rules the lines above leave out) */
 		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "
 			"friend indicators %s, auto team balance %s, friendly fire penalty %d s",
@@ -10171,6 +10171,11 @@ void game_engine_postspawn_player_update(
 		long starting_fragmentation_grenade_count =
 			fragmentation_grenade_count;
 		long starting_plasma_grenade_count = 0;
+
+		/* port: the gametype's starting frag grenades (universal_variant.
+		starting_frags; the MIN below keeps the player count's rule) */
+		if (global_variant.universal_variant.starting_frags > 0)
+			starting_fragmentation_grenade_count = global_variant.universal_variant.starting_frags;
 
 		/* port: a custom loadout's weapons (game_variant_options) */
 		if (game_variant_options_get()->loadout == _loadout_custom)

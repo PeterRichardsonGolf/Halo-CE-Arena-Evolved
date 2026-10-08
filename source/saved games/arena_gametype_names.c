@@ -61,18 +61,18 @@ static struct arena_gametype_name const arena_gametype_names[] =
 {
 	/* AE casual */
 	{ "AE FFA SLAY", "FFA AE SLAYER", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
-		"Free for all slayer on AE's rules: Halo 2 health, no fall damage, no spread, a pre-game countdown, "
-		"power item timers and the motion tracker." },
+		"Free for all slayer on AE's rules: Halo 2 health, no fall damage, NHE's no spread, a countdown, "
+		"both weapons dropped, power item timers and waypoints." },
 	{ "AE TEAM SLY", "TEAM AE SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
-		"Team slayer on AE's rules, with power item timers and the motion tracker." },
+		"Team slayer on AE's rules, with power item timers and waypoints and the motion tracker." },
 	{ "AE CTF", "TEAM AE CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
-		"Capture the flag on AE's rules, with power item timers and the motion tracker." },
+		"Capture the flag on AE's rules, with power item timers and waypoints and the motion tracker." },
 	{ "AE KING", "TEAM AE KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
-		"Team King of the Hill on AE's rules, with power item timers and the motion tracker." },
+		"Team King of the Hill on AE's rules, with power item timers and waypoints and the motion tracker." },
 	{ "AE FFA BALL", "FFA AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, FALSE, FALSE,
-		"Free for all Oddball on AE's rules, with power item timers and the motion tracker." },
+		"Free for all Oddball on AE's rules, with power item timers and waypoints and the motion tracker." },
 	{ "AE TEAM OB", "TEAM AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
-		"Team Oddball on AE's rules, with power item timers and the motion tracker." },
+		"Team Oddball on AE's rules, with power item timers and waypoints and the motion tracker." },
 	{ "AE 2V2 SLY", "TEAM AE 2V2 SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
 		"Team slayer for two against two (split screen too), to 25 kills, on AE's rules." },
 	{ "AE 2V2 CTF", "TEAM AE 2V2 CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
@@ -105,19 +105,20 @@ static struct arena_gametype_name const arena_gametype_names[] =
 
 	/* AE COMP */
 	{ "AE COMP FFA", "FFA AE COMP SLAYER", _arena_gametype_set_ae_comp, game_engine_slayer, FALSE, FALSE,
-		"Competitive free for all: 5 second respawns, no motion tracker, power item timers only in line of sight, "
-		"25 kills." },
+		"Competitive free for all: 5 second respawns, 2 frag grenades, no motion tracker, power item waypoints only "
+		"in line of sight, 25 kills." },
 	{ "AE COMP TS", "TEAM AE COMP SLAYER", _arena_gametype_set_ae_comp, game_engine_slayer, TRUE, FALSE,
-		"Competitive team slayer: 5 second respawns, no motion tracker, power item timers only in line of sight, "
-		"50 kills." },
+		"Competitive team slayer: 5 second respawns, 2 frag grenades, no motion tracker, power item waypoints only "
+		"in line of sight, 50 kills." },
 	{ "AE COMP CTF", "TEAM AE COMP CTF", _arena_gametype_set_ae_comp, game_engine_ctf, TRUE, FALSE,
-		"Competitive capture the flag: 3 captures, 5 second respawns, no motion tracker; the flags show only in "
-		"line of sight." },
+		"Competitive capture the flag: 3 captures, 5 second respawns, 2 frag grenades, no motion tracker; the flags "
+		"show only in line of sight." },
 	{ "AE COMP KOH", "TEAM AE COMP KING", _arena_gametype_set_ae_comp, game_engine_king, TRUE, FALSE,
-		"Competitive team King of the Hill: 5 minutes in the hill, 5 second respawns; the hill shows only in line "
-		"of sight." },
+		"Competitive team King of the Hill: 5 minutes in the hill, 5 second respawns, 2 frag grenades; the hill "
+		"shows only in line of sight." },
 	{ "AE COMP OB", "TEAM AE COMP ODDBALL", _arena_gametype_set_ae_comp, game_engine_oddball, TRUE, FALSE,
-		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns; the ball shows only in line of sight." },
+		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns, 2 frag grenades; the ball shows only "
+		"in line of sight." },
 
 	/* Halo 1: NHE's 23 gametypes, in its own order (010 to 230) */
 	{ "TS 50", "TEAM NHE SLAYER 50", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,

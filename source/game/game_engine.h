@@ -194,7 +194,11 @@ struct universal_variant
 {
 	boolean teams;
 	byte nhe_mode; /* port: was pad0 (zero in every builder): enum nhe_mode */
-	byte pad1;
+	/* port: was pad1 (zero in every builder): the frag grenades each player
+	starts with, 1-4 (no more than the game's rule for the player count
+	allows: 1 with 9 or more players, 2 with 5 or more); 0, the game's rule
+	(the globals' most, 4, under 5 players). AE COMP's 2 */
+	byte starting_frags;
 	byte pad2;
 	unsigned long flags;
 	long goal_radar;
