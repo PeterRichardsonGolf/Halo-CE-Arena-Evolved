@@ -286,7 +286,8 @@ Re-run `configure.py` when source files or the menus are added.
 - Fonts: [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
   [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
 - Libraries: SDL3, stb, Mbed TLS, miniupnpc, KCP, tomlc17, musl's maths,
-  extract-xiso, and Project Nayuki's QR Code generator. Their licenses are
+  extract-xiso, Expat, Monocypher, zlib, SMAA, and Project Nayuki's QR Code
+  generator. Their licenses are
   beside them in `port/third_party`.
 
 Halo is a trademark of Microsoft. Halo CE: Arena Evolved is a non-commercial

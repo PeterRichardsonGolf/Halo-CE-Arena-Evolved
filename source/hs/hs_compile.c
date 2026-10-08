@@ -2634,6 +2634,7 @@ static boolean hs_compile_postprocess_drop_failed(
 }
 #endif
 
+
 /* (hs.c's function table's count) */
 extern long const hs_function_table_count;
 
@@ -2895,6 +2896,15 @@ boolean hs_compile_postprocess(
 	{
 		if (!hs_postprocess_passthrough_arguments(expression_index))
 		{
+#ifdef HALO_CUSTOM_EDITION
+			/* (a Halo PC map's, dropped alone, as above) */
+			if (drop_failed)
+			{
+				hs_compile_postprocess_failed(expression_index);
+				failed_count++;
+				continue;
+			}
+#endif
 			hs_compile_globals.error = "a value is not of the type it is returned as (you need to recompile scripts.)";
 #ifdef HALO_CUSTOM_EDITION
 			/* (port: a Halo PC map's expression is dropped with what holds

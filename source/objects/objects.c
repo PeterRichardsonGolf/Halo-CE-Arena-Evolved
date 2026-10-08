@@ -558,7 +558,8 @@ void object_pvs_set_camera_point(
 void objects_port_set_activating_cluster(
 	short cluster_index)
 {
-	if (cluster_index == NONE || cluster_index >= global_structure_bsp_get()->clusters.count)
+	/* (a co-op host's, from the network: only one of the BSP's clusters is taken) */
+	if (cluster_index < 0 || cluster_index >= global_structure_bsp_get()->clusters.count)
 	{
 		object_globals->pvs_activation_type = _pvs_activation_normal;
 		return;
@@ -3079,7 +3080,7 @@ void object_render_debug(
 		object_get_world_matrix(object_index, &world_matrix);
 		object_get_velocities(object_index, &velocity, NULL);
 
-		model_name = model_name ? &model_name[1] : object_definition->object.model.name;
+		model_name = model_name ? &model_name[1] : (char *)xbox_pointer(object_definition->object.model.name);
 		
 		render_debug_string_at_point(0, &world_matrix.position, model_name, global_real_argb_orange);
 		render_debug_matrix(TRUE, &world_matrix, object->object.bounding_sphere_radius);
@@ -3682,7 +3683,9 @@ long object_new(
 	if (object_index==NONE && definition_index!=NONE)
 	{
 		char string[512];
-		sprintf(string, "OUT OF OBJECTS: cannot create %s", tag_name_strip_path(tag_get_name(definition_index)));
+		/* port: snprintf (a map's tag's name may be any length) */
+		snprintf(string, sizeof(string), "OUT OF OBJECTS: cannot create %s",
+			tag_name_strip_path(tag_get_name(definition_index)));
 		console_printf(FALSE, "%s", string);
 		error(_error_log, "%s", string);
 	}

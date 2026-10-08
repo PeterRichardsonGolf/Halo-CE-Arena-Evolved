@@ -24,11 +24,11 @@ build/macos/halo          # or open build/macos/ArenaEvolved.app
 The game was written for the Xbox's 32-bit CPU, and its data formats embed
 32-bit pointers: cache files hold tag data whose blocks and references point
 at each other by address, game state is saved and restored as raw memory, and
-Direct3D resources carry physical addresses. The Linux, Windows and Android
-builds keep 32-bit pointers (Android as ILP32 code in a 64-bit process), but
-a 64-bit macOS process cannot: arm64 macOS reserves the low 4 GB of every
-process. So this build is 64-bit code, with two changes that the other builds
-never see:
+Direct3D resources carry physical addresses. The 32-bit Linux and Windows
+builds and Android keep 32-bit pointers (Android as ILP32 code in a 64-bit
+process), but a 64-bit macOS process cannot: arm64 macOS reserves the low
+4 GB of every process. So this build is 64-bit code, as the 64-bit Linux and
+Windows builds are, with two changes that the 32-bit builds never see:
 
 - **Pointers inside Xbox data** (`HALO_64BIT`). The platform layer reserves
   4 GB at a fixed host address (`port/linux/src/xbox_memory.c`) and puts

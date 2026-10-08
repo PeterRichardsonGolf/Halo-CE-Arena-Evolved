@@ -653,120 +653,6 @@ static struct tag_schema_field const model_fields[] =
 	TAG_SCHEMA_END
 };
 
-/* Custom Edition's gbxmodels ('mod2': cache_file_formats.c), which the game
-takes as models once port/linux/game/custom_edition_geometry.c has made
-their parts this build's: a model, but for its parts. Where this build's
-part has its buffers, a gbxmodel part has where its strip and vertices are
-in the map's model data (the loader checked that they lie in it), and after
-them the model's nodes its vertices name by their place in its table, when
-the model's parts have local nodes. */
-
-struct gbxmodel_geometry_part
-{
-	unsigned long flags;
-	short shader_index;
-	char previous_part_index;
-	char next_part_index;
-	short centroid_primary_node_index;
-	short centroid_secondary_node_index;
-	real centroid_primary_node_weight;
-	real centroid_secondary_node_weight;
-	real_point3d centroid;
-	struct tag_block uncompressed_vertices;
-	struct tag_block compressed_vertices;
-	struct tag_block triangles;
-	short strip_type;
-	word pad1;
-	long strip_triangle_count;
-	unsigned long strip_offset;
-	unsigned long unused1;
-	short vertex_type;
-	word pad2;
-	long vertex_count;
-	unsigned long unused2[2];
-	unsigned long vertex_offset;
-	byte pad3[3];
-	byte local_node_count;
-	byte local_node_indices[MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART];
-	word pad4;
-};
-
-typedef char verify_gbxmodel_geometry_part_size[sizeof(struct gbxmodel_geometry_part) == 0x84 ? 1 : -1];
-
-/* its local nodes are the model's (the game's skinning names them through
-the table, custom_edition_geometry.c) */
-static boolean gbxmodel_geometry_part_check(
-	struct tag_validation *validation,
-	void *base)
-{
-	struct gbxmodel_geometry_part *part = base;
-	struct model const *model = (struct model const *)tag_validate_root(validation);
-	short node_index;
-
-	if (part->local_node_count > MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART)
-	{
-		tag_validate_correct(validation, "has %d local nodes, more than %d: %d", part->local_node_count,
-			MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART, MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART);
-		part->local_node_count = MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART;
-	}
-	for (node_index = 0; node_index < part->local_node_count; node_index++)
-	{
-		if (part->local_node_indices[node_index] >= model->nodes.count)
-		{
-			tag_validate_correct(validation, "has local node %d naming node %d of its model's %ld: 0", node_index,
-				part->local_node_indices[node_index], model->nodes.count);
-			part->local_node_indices[node_index] = 0;
-		}
-	}
-
-	return TRUE;
-}
-
-static struct tag_schema_field const gbxmodel_geometry_part_fields[] =
-{
-	TAG_SCHEMA_BLOCK_INDEX(struct gbxmodel_geometry_part, shader_index, TAG_SCHEMA_ROOT,
-		offsetof(struct model, shaders), 0),
-	TAG_SCHEMA_BLOCK_INDEX(struct gbxmodel_geometry_part, previous_part_index, 1,
-		offsetof(struct model_geometry, parts), FLAG(_tag_schema_none_bit)),
-	TAG_SCHEMA_BLOCK_INDEX(struct gbxmodel_geometry_part, next_part_index, 1,
-		offsetof(struct model_geometry, parts), FLAG(_tag_schema_none_bit)),
-	TAG_SCHEMA_BLOCK_INDEX(struct gbxmodel_geometry_part, centroid_primary_node_index, TAG_SCHEMA_ROOT,
-		offsetof(struct model, nodes), 0),
-	TAG_SCHEMA_BLOCK_INDEX(struct gbxmodel_geometry_part, centroid_secondary_node_index, TAG_SCHEMA_ROOT,
-		offsetof(struct model, nodes), 0),
-	TAG_SCHEMA_BLOCK(struct gbxmodel_geometry_part, uncompressed_vertices, model_vertex_uncompressed_schema,
-		MAXIMUM_VERTICES_PER_MODEL_GEOMETRY_PART),
-	TAG_SCHEMA_BLOCK(struct gbxmodel_geometry_part, compressed_vertices, model_vertex_compressed_schema,
-		MAXIMUM_VERTICES_PER_MODEL_GEOMETRY_PART),
-	TAG_SCHEMA_BLOCK(struct gbxmodel_geometry_part, triangles, model_triangle_schema,
-		MAXIMUM_TRIANGLES_PER_MODEL_GEOMETRY_PART),
-	TAG_SCHEMA_CHECK(gbxmodel_geometry_part_check),
-	TAG_SCHEMA_END
-};
-
-static struct tag_schema_definition const gbxmodel_geometry_part_schema =
-	TAG_SCHEMA_DEFINITION(gbxmodel_geometry_part, struct gbxmodel_geometry_part, gbxmodel_geometry_part_fields);
-
-static struct tag_schema_field const gbxmodel_geometry_fields[] =
-{
-	TAG_SCHEMA_BLOCK(struct model_geometry, parts, gbxmodel_geometry_part_schema, MAXIMUM_PARTS_PER_MODEL_GEOMETRY),
-	TAG_SCHEMA_END
-};
-
-static struct tag_schema_definition const gbxmodel_geometry_schema =
-	TAG_SCHEMA_DEFINITION(gbxmodel_geometry, struct model_geometry, gbxmodel_geometry_fields);
-
-static struct tag_schema_field const gbxmodel_fields[] =
-{
-	TAG_SCHEMA_BLOCK(struct model, markers, model_marker_schema, MAXIMUM_MARKERS_PER_MODEL),
-	TAG_SCHEMA_BLOCK(struct model, nodes, model_node_schema, MAXIMUM_NODES_PER_MODEL),
-	TAG_SCHEMA_BLOCK(struct model, regions, model_region_schema, MAXIMUM_REGIONS_PER_MODEL),
-	TAG_SCHEMA_BLOCK(struct model, geometries, gbxmodel_geometry_schema, MAXIMUM_GEOMETRIES_PER_MODEL),
-	TAG_SCHEMA_BLOCK(struct model, shaders, model_shader_reference_schema, MAXIMUM_SHADERS_PER_MODEL),
-	TAG_SCHEMA_CHECK(model_check),
-	TAG_SCHEMA_END
-};
-
 /* animations */
 
 /* how many of the first node_count nodes have their flag set
@@ -885,7 +771,7 @@ static char const *animation_data_problem(
 		{
 			return "compressed data offset";
 		}
-		data = XBOX_POINTER(byte const, animation->data.address) + animation->compressed_data_offset;
+		data = (byte const *)xbox_pointer(animation->data.address) + animation->compressed_data_offset;
 		size = animation->data.size - animation->compressed_data_offset;
 		header = (struct compressed_animation_header const *)data;
 		if (!animation_data_contains(size, header->default_rotations_offset, 0, node_count, 6) ||
@@ -981,8 +867,11 @@ static boolean animation_graph_check(
 {
 	struct animation_graph *graph = base;
 	struct animation *animations = xbox_pointer(graph->animations.address);
-	/* (0 not walked, 1 on the list being walked, 2 walked) */
+	/* (0 not walked, 1 on the list being walked, 2 walked; this build's
+	Halo PC maps are checked by their own loader, ce_map_checks.c, so a
+	graph here is the Xbox tools': at most their maximum) */
 	byte states[MAXIMUM_ANIMATIONS_PER_GRAPH];
+	long maximum_count = MAXIMUM_ANIMATIONS_PER_GRAPH;
 	long first_index;
 
 	if (!node_tree_check(validation, xbox_pointer(graph->nodes.address), graph->nodes.count, sizeof(struct animation_graph_node),
@@ -993,12 +882,12 @@ static boolean animation_graph_check(
 		return FALSE;
 	}
 
-	if (graph->animations.count > MAXIMUM_ANIMATIONS_PER_GRAPH)
+	if (graph->animations.count > maximum_count)
 	{
 		tag_validate_refuse(validation, "has %ld animations", graph->animations.count);
 		return FALSE;
 	}
-	memset(states, 0, sizeof(states));
+	memset(states, 0, (size_t)graph->animations.count);
 	for (first_index = 0; first_index < graph->animations.count; first_index++)
 	{
 		short animation_index = (short)first_index;
@@ -1223,7 +1112,7 @@ static struct tag_schema_field const animation_graph_fields[] =
 {
 	TAG_SCHEMA_BLOCK(struct animation_graph, object_overlays, animation_graph_object_overlay_schema,
 		MAXIMUM_OBJECT_OVERLAYS_PER_GRAPH),
-	TAG_SCHEMA_BLOCK(struct animation_graph, unit_seats, animation_graph_unit_seat_schema,
+	TAG_SCHEMA_TOOL_BLOCK(struct animation_graph, unit_seats, animation_graph_unit_seat_schema,
 		MAXIMUM_UNIT_SEATS_PER_GRAPH),
 	TAG_SCHEMA_BLOCK(struct animation_graph, weapon_animations, animation_graph_weapon_animations_schema, 1),
 	TAG_SCHEMA_BLOCK(struct animation_graph, vehicle_animations, vehicle_animation_schema, 1),
@@ -1235,7 +1124,7 @@ static struct tag_schema_field const animation_graph_fields[] =
 	TAG_SCHEMA_BLOCK(struct animation_graph, sound_references, animation_graph_sound_reference_schema,
 		MAXIMUM_SOUND_REFERENCES_PER_ANIMATION_GRAPH),
 	TAG_SCHEMA_BLOCK(struct animation_graph, nodes, animation_graph_node_schema, MAXIMUM_NODES_PER_ANIMATION),
-	TAG_SCHEMA_BLOCK(struct animation_graph, animations, animation_schema, MAXIMUM_ANIMATIONS_PER_GRAPH),
+	TAG_SCHEMA_TOOL_BLOCK(struct animation_graph, animations, animation_schema, MAXIMUM_ANIMATIONS_PER_GRAPH),
 	TAG_SCHEMA_CHECK(animation_graph_check),
 	TAG_SCHEMA_END
 };
@@ -1244,8 +1133,6 @@ static struct tag_schema_field const animation_graph_fields[] =
 
 static struct tag_schema_definition const model_schema =
 	TAG_SCHEMA_DEFINITION(model, struct model, model_fields);
-static struct tag_schema_definition const gbxmodel_schema =
-	TAG_SCHEMA_DEFINITION(gbxmodel, struct model, gbxmodel_fields);
 static struct tag_schema_definition const animation_graph_schema =
 	TAG_SCHEMA_DEFINITION(animation_graph, struct animation_graph, animation_graph_fields);
 
@@ -1253,11 +1140,5 @@ struct tag_schema_group const tag_schema_model_groups[] =
 {
 	{ 'mode', { NONE, NONE }, &model_schema },
 	{ 'antr', { NONE, NONE }, &animation_graph_schema },
-	{ 0 }
-};
-
-struct tag_schema_group const tag_schema_custom_edition_groups[] =
-{
-	{ 'mod2', { NONE, NONE }, &gbxmodel_schema },
 	{ 0 }
 };

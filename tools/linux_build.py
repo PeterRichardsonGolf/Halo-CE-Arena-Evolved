@@ -41,33 +41,9 @@ def game_sources(config: Dict[str, Any]) -> List[Path]:
     )
 
 
-# (Arena Evolved) OpenCE's own Custom Edition maps' loader and lists
-# (build-145: docs/custom_edition_caches.md), which no build of the game
-# takes: Arena Evolved plays Custom Edition and HaloMD maps with
-# ChupathingyCE's loader (port/linux/game/ce_*.c, map_families.c), and
-# port/linux/game/ae_opence_custom_edition_off.c answers OpenCE's calls into
-# these with "no such map". The files stay in the tree as upstream has them,
-# so its next merges stay plain. map_validate alone builds
-# cache_file_formats.c, the format library its own Custom Edition check uses.
-OPENCE_CUSTOM_EDITION_SOURCES = frozenset((
-    "bmp_files.c",
-    "cache_file_formats.c",
-    "custom_edition_bitmaps.c",
-    "custom_edition_cache.c",
-    "custom_edition_geometry.c",
-    "custom_edition_maps.c",
-    "custom_edition_objects.c",
-    "custom_edition_scripts.c",
-    "custom_edition_sounds.c",
-    "stb_vorbis.c",
-))
-
-
 def port_game_sources(config: Dict[str, Any]) -> List[Path]:
-    """the port's own game units (port.json "game_sources",
-    port/linux/game), but OpenCE's Custom Edition ones"""
-    return sorted(source for source in Path(config["game_sources"]).glob("*.c")
-                  if source.name not in OPENCE_CUSTOM_EDITION_SOURCES)
+    """the port's own game units (port.json "game_sources", port/linux/game)"""
+    return sorted(Path(config["game_sources"]).glob("*.c"))
 
 
 def game_defines_and_includes(config: Dict[str, Any]) -> str:
@@ -237,8 +213,9 @@ def musl_math_cflags(abi: str) -> str:
                      f"-include {MUSL_MATH_DIR}/include/libm.h"])
 
 
-# Halo PC's Custom Edition maps (maps/ce/<name>.map, played as <name>@ce)
-# and HaloMD's (md_maps/<name>.map, played as <name>@md): the port code of
+# Halo PC's maps: Custom Edition's (maps_ce/<name>.map, played as
+# <name>@ce), HaloMD's (maps_md/<name>.map, <name>@md) and Halo PC retail's
+# (maps_pc/<name>.map, <name>@pc): the port code of
 # source/cache, sound, interface and text and port/linux/game/ce_*.c
 # (HALO_CUSTOM_EDITION). Every build has them: Linux here (32-bit and
 # 64-bit) and the dedicated server, macOS (lp64_build.py), Windows (32-bit
@@ -445,16 +422,6 @@ def linux32_objects(n: Writer, units: Linux32Units, obj_dir: Path, extra_cflags:
     # sources do (port/linux/game).
     for source in port_game_sources(config):
         add_object(source, game_cflags)
-    # (OpenCE's Custom Edition format library, for map_validate alone, not
-    # linked into the game: OPENCE_CUSTOM_EDITION_SOURCES)
-    formats = Path(config["game_sources"]) / "cache_file_formats.c"
-    n.build(
-        outputs=obj_dir / formats.with_suffix(".o"),
-        rule=units.rule,
-        inputs=formats,
-        implicit=[*xdk_headers(), prefix_header, semantics_header, platform_semantics_header, *implicit_inputs],
-        variables={"cflags": f"{game_cflags} {extra}"},
-    )
     # the dedicated server's director, with the game browser (server/)
     if units.game_browser:
         for source in sorted(Path("server/src").glob("*.c")):
@@ -646,8 +613,8 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
         # reads maps (tools/map_validate.c)
         if validator is not None:
             game_dir = Path(config["game_sources"])
-            # (the posix_* units' flags, as linux32_objects gives them)
-            posix_cflags = " ".join(POSIX_FLAGS + [march_flag(sln), f"-I{Path(config['platform_sources'])}"])
+            platform_dir = Path(config["platform_sources"])
+            posix_cflags = " ".join(POSIX_FLAGS + [march_flag(sln), f"-I{platform_dir}"])
             posix_extra = " ".join(flag for flag in extra_cflags if not flag.startswith("-flto"))
             tool = Path("tools/map_validate.c")
             tool_object = obj_dir / tool.with_suffix(".o")
@@ -657,9 +624,7 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
                 inputs=tool,
                 variables={"cflags": " ".join([posix_cflags, f"-I{ZLIB_DIR}", *ZLIB_DEFINES, posix_extra])},
             )
-            # (and the Custom Edition maps' loader, cache_file_formats.c)
             tool_objects = [tool_object, obj_dir / (game_dir / "tag_validate.o"),
-                            obj_dir / (game_dir / "cache_file_formats.o"),
                             *(obj_dir / source.with_suffix(".o") for source in sorted(game_dir.glob("tag_schema*.c"))),
                             *(obj_dir / (ZLIB_DIR / name).with_suffix(".o") for name in ZLIB_SOURCES)]
             n.build(

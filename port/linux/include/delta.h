@@ -51,9 +51,12 @@ enum delta_capability
 	_delta_capability_server_messages = 2,
 	/* text chat between Delta players */
 	_delta_capability_chat = 3,
-	/* Halo PC maps' identity (name and hash) */
+	/* Halo PC maps' identity (MAP: the game's map's family, file name,
+	size and hash), for every family past the Xbox's: Custom Edition,
+	HaloMD and Halo PC retail (port/linux/src/delta_maps.c) */
 	_delta_capability_ce_maps = 4,
-	/* HaloMD maps' identity */
+	/* retired before use: ce_maps carries every Halo PC family's identity.
+	The bit stays taken and is never set */
 	_delta_capability_md_maps = 5,
 	/* network co-op beyond OpenCE's */
 	_delta_capability_coop = 6,
@@ -65,6 +68,10 @@ enum delta_capability
 	(struct delta_platform_key), which every Delta machine sends. The bit
 	stays taken and is never set */
 	_delta_capability_console_slots = 9,
+	/* a dedicated server's moderators: a player signs in with a key made
+	from their player key, and kicks and bans from the game
+	(docs/delta.md, Moderation) */
+	_delta_capability_moderation = 10,
 
 	NUMBER_OF_DELTA_CAPABILITIES
 };
@@ -152,13 +159,13 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one.
-(Arena Evolved: its own, "ae-20a", so that ChupathingyCE's signed tables,
+(Arena Evolved: its own, "ae-24a", so that ChupathingyCE's signed tables,
 whose rows are for ChupathingyCE's wires, never set Arena Evolved's numbers
-or turn off its capabilities: it plays its built-in 20 / 11..22. The wire
-ID is never sent; the game protocol is chupa-20a's, with OpenCE build-141's
-and build-145's additive versions 21 and 22 joined too: its hosts announce 20, not the table's
-newest, so that ChupathingyCE 0.7.0b, of 20, joins them) */
-#define DELTA_WIRE "ae-20a"
+or turn off its capabilities: it plays its built-in 24 / 11..24. The wire
+ID is never sent; the game protocol is chupa-24a's, OpenCE build-149's:
+its hosts announce 24, the table's newest, as ChupathingyCE 0.7.1d's and
+OpenCE build-149's and later's do) */
+#define DELTA_WIRE "ae-24a"
 
 /* OpenCE's network versions (HALO_PORT_NETWORK_VERSION in its builds), the
 first of its releases with each, and whether the version's change is one the
@@ -166,9 +173,7 @@ version before plays multiplayer with as it is (additive: messages a machine
 of the older version drops) or not (breaking). OpenCE's clients join only
 hosts of their exact version; ours join every version back to the newest
 breaking one (HALO_PORT_NETWORK_VERSION_MINIMUM), and our hosts announce the
-newest (HALO_PORT_NETWORK_VERSION; Arena Evolved's announce an older one
-whose clients, every version above it being additive, play with them:
-tools/test_delta.py). One row a version, oldest first; the
+newest (HALO_PORT_NETWORK_VERSION). One row a version, oldest first; the
 command repository's watch adds a row when it follows OpenCE's raise
 (tools/follow.py there). Versions 1 to 9 each changed the wire format
 (port/linux/NETCODE.md, "Versions"). */
@@ -184,9 +189,10 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(18, "build-129", additive) /* followed from OpenCE: additive */ \
 	X(19, "build-132", additive) /* co-op's player collisions switch, in a padding byte of the game settings */ \
 	X(20, "build-133", additive) /* password games' internet listings (another listing layout); game messages as 19 */ \
-	X(21, "build-141", additive) /* killing blows again reliably, objects at rest three times, co-op's BSP on the host's crossing: what a machine of 20 receives it already takes, a host of 20 a client of 21 plays (NETCODE.md) */ \
-	X(22, "build-145", additive) /* a host names its Custom Edition maps custom_maps\<name> (OpenCE's loader): a client without it is told it lacks the map; game messages as 21 */
-
+	X(21, "build-141", additive) /* killing blows and resting bodies resent, co-op BSP switches by the host's crossing */ \
+	X(22, "build-145", additive) /* a Custom Edition map named custom_maps\\<name> in the game's settings */ \
+	X(23, "build-147", additive) /* a Custom Edition map's blocks past the Xbox tools' limits kept, its version in the game's settings; Xbox maps as 22 */ \
+	X(24, "build-149", additive) /* the gametype's PC vehicle set: every vehicle the map places */
 
 /* ---------- the legacy table (port/linux/src/delta.c)
 
@@ -210,6 +216,12 @@ is newer than the one in use and widens no less than the built-in numbers;
 int delta_legacy_offer(const char *signed_table, int size);
 /* whether the table in use turns a capability off (its kill switch) */
 int delta_capability_disabled(int capability);
+/* what the build follows, for its log and status: "Following OpenCE
+build-145 (table 2)" (the table's row names the OpenCE build the cross-play
+gate proved it with), "Following OpenCE network version 20 (built in)" */
+#define DELTA_FOLLOWS_SIZE 32
+void delta_legacy_following(char *text, int size);
+
 /* whether a local, unsigned table (network.legacy_table) is in use */
 int delta_legacy_override(void);
 /* whether this machine relays signed tables (Delta Peer: takes them from

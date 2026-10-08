@@ -84,8 +84,6 @@ their handlers open opens.
 #include "halo_menus.h"
 #include "halo_custom_maps.h"
 #include "halo_ui_map_list.h"
-#include "custom_edition_cache.h"
-#include "custom_edition_maps.h"
 /* (internet play's server browser: the platform layer's) */
 #include "../src/p2p.h"
 #ifdef HALO_GAME_BROWSER
@@ -1047,6 +1045,7 @@ static void profile_name_show(struct widget_instance *description)
 	static struct player_profile profile;
 	static long read_index = NONE;
 	static unsigned long read_time;
+	static boolean read_good;
 	long index = player_ui_get_active_player_profile_index(0);
 
 	if (!description)
@@ -1058,13 +1057,17 @@ static void profile_name_show(struct widget_instance *description)
 	}
 	else if ((index = player_ui_get_player1_last_used_profile_index()) == NONE)
 		return;
-	else if (index != read_index || system_milliseconds() - read_time > 1000)
+	else
 	{
-		read_index = NONE;
-		if (!player_profile_get(index, &profile))
+		/* (one that cannot be read too: tried again a second later) */
+		if (index != read_index || system_milliseconds() - read_time > 1000)
+		{
+			read_index = index;
+			read_good = player_profile_get(index, &profile);
+			read_time = system_milliseconds();
+		}
+		if (!read_good)
 			return;
-		read_index = index;
-		read_time = system_milliseconds();
 	}
 	text_set(named(description, "current_profile_name", 0), profile.player_name);
 }
@@ -1094,26 +1097,15 @@ static boolean campaign_continue(short controller)
 }
 
 /* ---- the map lists (New Game's and the Map screen's): their first row's
-chooser of SINGLEPLAYER (the campaign's levels), MULTIPLAYER maps (the
-Xbox's), CUSTOM SINGLEPLAYER or CUSTOM MULTIPLAYER maps (the Custom Edition
-maps of the custom_maps folder, by the scenario type their files give:
-custom_edition_maps.c) (port_settings.MAP_KIND_CHOOSER), then the kind's
-rows, scrolling as list_scroll scrolls. A singleplayer kind's map is played
-as the campaign is (alone, or hosted as network co-op), a multiplayer kind's
-as multiplayer maps are. */
+chooser of SINGLEPLAYER (the campaign's levels) or MULTIPLAYER maps
+(port_settings.MAP_KIND_CHOOSER), then the kind's rows, scrolling as
+list_scroll scrolls */
 
 enum
 {
 	MAP_KIND_SINGLEPLAYER,
 	MAP_KIND_MULTIPLAYER,
-	MAP_KIND_CUSTOM_SINGLEPLAYER,
-	MAP_KIND_CUSTOM_MULTIPLAYER,
-	NUMBER_OF_MAP_KINDS,
-	/* port (Arena Evolved): the kinds its chooser offers, SINGLEPLAYER and
-	MULTIPLAYER (tools/port_settings.py): its Custom Edition maps are
-	ChupathingyCE's, with the multiplayer maps; OpenCE's custom kinds, whose
-	loader is not built, would list none */
-	MAP_KINDS_CHOSEN = MAP_KIND_CUSTOM_SINGLEPLAYER
+	NUMBER_OF_MAP_KINDS
 };
 
 /* the rows after the chooser */
@@ -1123,32 +1115,16 @@ static void visible_set(struct widget_instance *widget, boolean visible);
 short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
 void ui_widget_port_multiplayer_maps_refresh(void);
 
-static boolean map_kind_singleplayer(short kind)
-{
-	return kind == MAP_KIND_SINGLEPLAYER || kind == MAP_KIND_CUSTOM_SINGLEPLAYER;
-}
-
-/* The kind the chooser shows, kept to the multiplayer kinds unless
-`singleplayer`: a singleplayer kind it was turned to becomes the next
-multiplayer one the way it turned from `previous`. */
-static short map_kind_shown(struct widget_instance *list, boolean singleplayer, short previous)
+/* the kind the chooser shows (kept at `only`, unless NONE) */
+static short map_kind_shown(struct widget_instance *list, short only)
 {
 	struct widget_instance *spinner = named(list, "list_item_0_map_kind_spinner", 0);
-	short kind;
 
 	if (!spinner)
-		return singleplayer ? MAP_KIND_SINGLEPLAYER : MAP_KIND_MULTIPLAYER;
-	kind = (short)PIN(spinner->parameters.list.selected_index, 0, MAP_KINDS_CHOSEN - 1);
-	if (!singleplayer && map_kind_singleplayer(kind))
-	{
-		short step = kind == (previous + MAP_KINDS_CHOSEN - 1) % MAP_KINDS_CHOSEN ? -1 : 1;
-
-		do
-			kind = (short)((kind + step + MAP_KINDS_CHOSEN) % MAP_KINDS_CHOSEN);
-		while (map_kind_singleplayer(kind));
-		spinner->parameters.list.selected_index = kind;
-	}
-	return kind;
+		return only != NONE ? only : MAP_KIND_SINGLEPLAYER;
+	if (only != NONE)
+		spinner->parameters.list.selected_index = only;
+	return (short)PIN(spinner->parameters.list.selected_index, 0, NUMBER_OF_MAP_KINDS - 1);
 }
 
 static void map_kind_set(struct widget_instance *list, short kind)
@@ -1259,13 +1235,6 @@ static void map_caption_set(struct widget_instance *widget, wchar_t const *capti
 	widget->parameters.text_box.string_list_index = HALO_CUSTOM_MAP_TEXT;
 }
 
-/* the Xbox's multiplayer maps: the first of the multiplayer maps
-(ui_widget_port_multiplayer_maps), which go on with the Custom Edition ones */
-static short xbox_multiplayer_map_count(short multiplayer_map_count)
-{
-	return (short)MAX(multiplayer_map_count - custom_edition_maps_count(FALSE), 0);
-}
-
 static void multiplayer_map_text(short map, wchar_t *text)
 {
 	text[0] = 0;
@@ -1278,30 +1247,9 @@ static void multiplayer_map_text(short map, wchar_t *text)
 	text[ROW_TEXT_LENGTH - 1] = 0;
 }
 
-/* a Custom Edition map's name (the menus find its name, picture and
-description by its display index: custom_edition_maps.c) */
-static void custom_map_text(boolean campaign, short map, wchar_t *text)
-{
-	wchar_t const *name = custom_edition_maps_name(custom_edition_maps_display_index_of(campaign, map));
-
-	ustrncpy(text, name ? name : L"", ROW_TEXT_LENGTH - 1);
-	text[ROW_TEXT_LENGTH - 1] = 0;
-}
-
-static void custom_campaign_map_text(short map, wchar_t *text)
-{
-	custom_map_text(TRUE, map, text);
-}
-
-static void custom_multiplayer_map_text(short map, wchar_t *text)
-{
-	custom_map_text(FALSE, map, text);
-}
-
 /* the description's map (each list's has both kinds' widgets): a campaign
-level's picture, name and words (level_description sets them), or a map's
-by its display index (a multiplayer map's, or a Custom Edition map's), or
-(both NONE) neither */
+level's picture, name and words (level_description sets them), or a
+multiplayer map's, or (both NONE) neither */
 static void map_description_show(struct widget_instance *description, short level, short map)
 {
 	struct widget_instance *widget;
@@ -1358,9 +1306,7 @@ static void map_description_show(struct widget_instance *description, short leve
 
 /* New Game's list: SINGLEPLAYER's levels, the profile's reached, or
 MULTIPLAYER's maps, played alone to walk around (no game engine: a campaign
-game on the map); CUSTOM SINGLEPLAYER's maps played as the campaign's levels
-are, at the difficulty chosen next, and CUSTOM MULTIPLAYER's walked around
-as MULTIPLAYER's are */
+game on the map) */
 static struct
 {
 	short kind;
@@ -1369,43 +1315,6 @@ static struct
 	char const *const *map_names;
 	short map_count;
 } level_list;
-
-/* a map list's entries of a kind (the Map screen's difficulties aside) */
-static short map_kind_count(short kind, short multiplayer_map_count)
-{
-	switch (kind)
-	{
-	case MAP_KIND_SINGLEPLAYER:
-		return NUMBER_OF_SINGLE_PLAYER_LEVELS;
-	case MAP_KIND_MULTIPLAYER:
-		return xbox_multiplayer_map_count(multiplayer_map_count);
-	case MAP_KIND_CUSTOM_SINGLEPLAYER:
-		return custom_edition_maps_count(TRUE);
-	default:
-		return custom_edition_maps_count(FALSE);
-	}
-}
-
-/* the display index of a multiplayer or Custom Edition kind's entry, for its
-description (map_description_show) */
-static short map_kind_display_index(short kind, short entry)
-{
-	switch (kind)
-	{
-	case MAP_KIND_CUSTOM_SINGLEPLAYER:
-		return custom_edition_maps_display_index_of(TRUE, entry);
-	case MAP_KIND_CUSTOM_MULTIPLAYER:
-		return custom_edition_maps_display_index_of(FALSE, entry);
-	default:
-		return entry;
-	}
-}
-
-/* the level name of a Custom Edition kind's entry, or NULL */
-static char const *custom_map_level_name(short kind, short entry)
-{
-	return custom_edition_maps_level_name(map_kind_display_index(kind, entry));
-}
 
 /* "initialize sp level list solo" starts on the level last played */
 static boolean level_list_initialize(struct widget_instance *list, short controller)
@@ -1446,24 +1355,21 @@ static void level_row_text(short level, wchar_t *text)
 static void level_list_update(struct widget_instance *list)
 {
 	struct widget_instance *description = list->parameters.list.extended_description;
-	short kind = map_kind_shown(list, TRUE, level_list.kind), count, entry, level;
+	short kind = map_kind_shown(list, NONE), count, entry, level;
 
 	if (kind != level_list.kind)
 	{
 		level_list.kind = kind;
 		level_list.first = level_list.chosen = 0;
 	}
-	count = map_kind_count(kind, level_list.map_count);
+	count = kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : level_list.map_count;
 	entry = map_kind_rows_update(list, &level_list.first, count,
-		kind == MAP_KIND_SINGLEPLAYER ? level_row_text :
-		kind == MAP_KIND_MULTIPLAYER ? multiplayer_map_text :
-		kind == MAP_KIND_CUSTOM_SINGLEPLAYER ? custom_campaign_map_text : custom_multiplayer_map_text);
+		kind == MAP_KIND_SINGLEPLAYER ? level_row_text : multiplayer_map_text);
 	if (entry != NONE)
 		level_list.chosen = entry;
-	if (kind != MAP_KIND_SINGLEPLAYER)
+	if (kind == MAP_KIND_MULTIPLAYER)
 	{
-		map_description_show(description, NONE,
-			level_list.chosen < count ? map_kind_display_index(kind, level_list.chosen) : NONE);
+		map_description_show(description, NONE, level_list.chosen < count ? level_list.chosen : NONE);
 		profile_name_show(description);
 		return;
 	}
@@ -1477,36 +1383,23 @@ static void level_list_update(struct widget_instance *list)
 	profile_name_show(description);
 }
 
-/* "solo level set map": the level shown, if reached, or the Custom Edition
-campaign map, for the difficulty menu; or the multiplayer map, played at
-once (FALSE: no difficulty menu) */
+/* "solo level set map": the level shown, if reached, for the difficulty
+menu; or the multiplayer map, played at once (FALSE: no difficulty menu) */
 static boolean level_choose(short controller)
 {
 	short level = campaign.shown_level;
-	short count = map_kind_count(level_list.kind, level_list.map_count);
 
-	if (level_list.kind != MAP_KIND_SINGLEPLAYER && (level_list.chosen < 0 || level_list.chosen >= count))
-		return campaign_fail();
-	if (level_list.kind == MAP_KIND_MULTIPLAYER || level_list.kind == MAP_KIND_CUSTOM_MULTIPLAYER)
+	if (level_list.kind == MAP_KIND_MULTIPLAYER)
 	{
 		struct player_profile profile;
-		char const *map_name = level_list.kind == MAP_KIND_MULTIPLAYER ? level_list.map_names[level_list.chosen] :
-			custom_map_level_name(level_list.kind, level_list.chosen);
 
-		if (!map_name || !campaign_profile(controller, &profile))
+		if (level_list.chosen < 0 || level_list.chosen >= level_list.map_count ||
+			!campaign_profile(controller, &profile))
+		{
 			return campaign_fail();
-		campaign_start(map_name, main_get_difficulty(), controller);
+		}
+		campaign_start(level_list.map_names[level_list.chosen], main_get_difficulty(), controller);
 		return FALSE;
-	}
-	if (level_list.kind == MAP_KIND_CUSTOM_SINGLEPLAYER)
-	{
-		char const *map_name = custom_map_level_name(level_list.kind, level_list.chosen);
-
-		if (!map_name)
-			return campaign_fail();
-		main_set_map_name(map_name);
-		main_defer_map_map_change();
-		return TRUE;
 	}
 	if (level < 0 || level >= NUMBER_OF_SINGLE_PLAYER_LEVELS || !campaign.levels[level].available)
 		return campaign_fail();
@@ -1526,8 +1419,7 @@ static boolean difficulty_start(short difficulty, short controller)
 
 	if (!campaign_profile(controller, &profile))
 		return campaign_fail();
-	/* (a campaign level, or a Custom Edition campaign map) */
-	if (!custom_edition_maps_level_campaign(map_name))
+	if (!map_name || main_get_solo_level_from_name(map_name) == NONE)
 		map_name = main_get_solo_level_name(0);
 	campaign_start(map_name, PIN(difficulty, 0, 3), controller);
 	return TRUE;
@@ -2809,13 +2701,11 @@ static boolean multiplayer_host(struct widget_instance *widget, struct event_rec
 	return ui_widget_port_host(widget, event, widget_deleted);
 }
 
-/* ---- the map list (the Map screen's): its chooser's SINGLEPLAYER levels,
-MULTIPLAYER maps, CUSTOM SINGLEPLAYER or CUSTOM MULTIPLAYER maps (the map
-lists', above). A level or Custom Edition campaign map chosen lists the
-difficulties (B goes back to the map) and is hosted as a network co-op game,
-which goes to Server Setup; a multiplayer map goes on to the gametypes.
-Split screen hosts only multiplayer maps, its chooser kept to the
-multiplayer kinds. */
+/* ---- the map list (the Map screen's): its chooser's SINGLEPLAYER levels
+or MULTIPLAYER maps (the map lists', above). A level chosen lists the
+difficulties (B goes back to the level) and is hosted as a network co-op
+game, which goes to Server Setup; a map goes on to the gametypes. Split
+screen hosts only multiplayer maps, its chooser kept at MULTIPLAYER. */
 
 enum
 {
@@ -2828,12 +2718,10 @@ static struct
 	short kind, step;
 	/* hosting over the network, which co-op needs */
 	boolean hosting;
-	/* the multiplayer maps (ui_widget_port_multiplayer_maps): the Xbox's,
-	then the Custom Edition ones */
+	/* the multiplayer maps (ui_widget_port_multiplayer_maps) */
 	short map_count;
 	short first, chosen;
-	/* the level or Custom Edition campaign map (the kind's entry) whose
-	difficulties are listed */
+	/* the level whose difficulties are listed */
 	short level;
 } map_list;
 
@@ -2843,7 +2731,7 @@ static short map_step_count(void)
 {
 	if (map_list.step == MAP_STEP_DIFFICULTIES)
 		return NUMBER_OF_GAME_DIFFICULTY_LEVELS;
-	return map_kind_count(map_list.kind, map_list.map_count);
+	return map_list.kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : map_list.map_count;
 }
 
 /* opens a step at the entry given */
@@ -2875,16 +2763,8 @@ static boolean map_list_initialize(struct widget_instance *list)
 
 	map_list.hosting = global_network_game_server_get() != NULL && !network_game_is_splitscreen_local();
 	ui_widget_port_multiplayer_maps_refresh();
-	/* (the maps folders looked for again as the list opens) */
-	custom_edition_maps_look_again();
 	map_list.map_count = ui_widget_port_multiplayer_maps(&multiplayer_map_names, &last_used);
-	/* (a Custom Edition map's kind, when it was one) */
 	map_list.kind = MAP_KIND_MULTIPLAYER;
-	if (last_used >= xbox_multiplayer_map_count(map_list.map_count))
-	{
-		map_list.kind = MAP_KIND_CUSTOM_MULTIPLAYER;
-		last_used -= xbox_multiplayer_map_count(map_list.map_count);
-	}
 	map_kind_set(list, map_list.kind);
 	map_step_open(list, MAP_STEP_MAPS, last_used);
 	return TRUE;
@@ -2895,8 +2775,7 @@ them the level or map chosen: its picture, name and words */
 static void map_list_update(struct widget_instance *list)
 {
 	struct widget_instance *description = list->parameters.list.extended_description;
-	short kind = map_kind_shown(list, map_list.hosting, map_list.kind), count, entry;
-	short shown;
+	short kind = map_kind_shown(list, map_list.hosting ? NONE : MAP_KIND_MULTIPLAYER), count, entry;
 
 	if (kind != map_list.kind)
 	{
@@ -2906,24 +2785,20 @@ static void map_list_update(struct widget_instance *list)
 	}
 	count = map_step_count();
 	entry = map_kind_rows_update(list, &map_list.first, count, map_list.step == MAP_STEP_DIFFICULTIES ?
-		map_difficulty_text : kind == MAP_KIND_SINGLEPLAYER ? map_level_text :
-		kind == MAP_KIND_MULTIPLAYER ? multiplayer_map_text :
-		kind == MAP_KIND_CUSTOM_SINGLEPLAYER ? custom_campaign_map_text : custom_multiplayer_map_text);
+		map_difficulty_text : kind == MAP_KIND_SINGLEPLAYER ? map_level_text : multiplayer_map_text);
 	if (entry != NONE)
 		map_list.chosen = entry;
 	visible_set(named(description, "mp_map_right_item", 0), map_list.chosen < count);
-	/* (the map whose difficulties are listed, else the one chosen) */
-	shown = map_list.step == MAP_STEP_DIFFICULTIES ? map_list.level : map_list.chosen;
-	if (kind == MAP_KIND_SINGLEPLAYER)
+	if (map_list.step == MAP_STEP_DIFFICULTIES || kind == MAP_KIND_SINGLEPLAYER)
 	{
-		map_description_show(description, shown, NONE);
-		level_description(description, "replay_level", shown, FALSE, NULL, NONE);
+		short level = map_list.step == MAP_STEP_DIFFICULTIES ? map_list.level : map_list.chosen;
+
+		map_description_show(description, level, NONE);
+		level_description(description, "replay_level", level, FALSE, NULL, NONE);
 	}
 	else
 	{
-		map_description_show(description, NONE,
-			map_list.step == MAP_STEP_DIFFICULTIES || map_list.chosen < count ? map_kind_display_index(kind, shown) :
-			NONE);
+		map_description_show(description, NONE, map_list.chosen < count ? map_list.chosen : NONE);
 	}
 	profile_name_show(description);
 }
@@ -2939,9 +2814,6 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		return campaign_fail();
 	if (map_list.step == MAP_STEP_DIFFICULTIES)
 	{
-		char const *map_name = map_list.kind == MAP_KIND_SINGLEPLAYER ? main_get_solo_level_name(map_list.level) :
-			custom_map_level_name(map_list.kind, map_list.level);
-
 #ifdef HALO_GAME_BROWSER
 		/* (no co-op while a machine that does not play it, the original
 		Xbox, is in the game: Delta's platform policy) */
@@ -2952,16 +2824,12 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		}
 #endif
 		/* the co-op game set up, then Server Setup in the gametypes' place */
-		if (!ui_widget_port_cooperative_level_choose(map_name, chosen))
+		if (!ui_widget_port_cooperative_level_choose(main_get_solo_level_name(map_list.level), chosen))
 			return campaign_fail();
 		return ui_widget_port_open(list, SERVER_SETUP_NAME, widget_deleted);
 	}
-	/* (a multiplayer map: the Xbox's, then the Custom Edition ones, in the
-	multiplayer maps) */
 	if (map_list.kind == MAP_KIND_MULTIPLAYER)
 		return ui_widget_port_multiplayer_map_choose(chosen);
-	if (map_list.kind == MAP_KIND_CUSTOM_MULTIPLAYER)
-		return ui_widget_port_multiplayer_map_choose((short)(xbox_multiplayer_map_count(map_list.map_count) + chosen));
 	ui_play_audio_feedback_sound(SOUND_FORWARD);
 	map_list.level = chosen;
 	map_step_open(list, MAP_STEP_DIFFICULTIES, (short)PIN(main_get_difficulty(), 0, NUMBER_OF_GAME_DIFFICULTY_LEVELS - 1));
@@ -3145,15 +3013,11 @@ static void game_name_done(char const *text)
 	multiplayer.game_name[index] = 0;
 }
 
-/* Whether a network game is co-op: a campaign level or a Custom Edition
-campaign map, with no game engine (set up by
-ui_widget_port_cooperative_level_choose). A Custom Edition map this machine
-has not is taken to be one: co-op is the only game with no game engine. */
+/* Whether a network game is co-op: a campaign level with no game engine
+(set up by ui_widget_port_cooperative_level_choose). */
 static boolean game_cooperative(struct network_game const *game)
 {
-	return game && !game->variant.game_engine_index &&
-		(custom_edition_maps_level_campaign(game->map.name) ||
-		(custom_edition_level_name(game->map.name) && custom_edition_maps_display_index(game->map.name) == NONE));
+	return game && !game->variant.game_engine_index && main_get_solo_level_from_name(game->map.name) != NONE;
 }
 
 /* the same, for the game this machine is hosting */
@@ -3637,9 +3501,6 @@ static short campaign_level_of(char const *map_name)
 {
 	short level;
 
-	/* (a Custom Edition map, custom_maps\a30, is never one) */
-	if (custom_edition_level_name(map_name))
-		return NONE;
 	for (level = 0; level < NUMBER_OF_SINGLE_PLAYER_LEVELS; level++)
 	{
 		if (!_stricmp(scenario_name(main_get_solo_level_name(level)), scenario_name(map_name)))
@@ -3661,24 +3522,9 @@ scenario's path or name */
 static void map_display_name(char const *map_name, wchar_t *text)
 {
 	char const *const *names;
-	short last, index;
-	short count = xbox_multiplayer_map_count(ui_widget_port_multiplayer_maps(&names, &last));
+	short index;
+	short count = ui_widget_port_multiplayer_maps(&names, NULL);
 
-	/* (a Custom Edition map's, if this machine has it: custom_edition_maps.c) */
-	if (custom_edition_level_name(map_name))
-	{
-		short display_index = custom_edition_maps_display_index(map_name);
-		wchar_t const *name = display_index != NONE ? custom_edition_maps_name(display_index) : NULL;
-
-		if (name)
-		{
-			ustrncpy(text, name, ROW_TEXT_LENGTH - 1);
-			text[ROW_TEXT_LENGTH - 1] = 0;
-			return;
-		}
-		map_name = scenario_name(map_name);
-		count = 0;
-	}
 	for (index = 0; index < count; index++)
 	{
 		if (!_stricmp(scenario_name(names[index]), scenario_name(map_name)))
@@ -4040,7 +3886,7 @@ static short lobby_browser_rows_place(struct widget_instance *list)
 /* ---- the server browser's second source (configure.py --game-browser):
 the games of a game list, network.browser_url (port/linux/src/browser.c;
 halo.milenko.org by default), merged into the listings' as listings of
-their own. A game both list is shown once, as its listing (the same invite
+their own. A game both lists have is shown once, as its listing (the same invite
 token). One on a Halo PC map, which its host lists as <map>@ce (Custom
 Edition) or <map>@md (HaloMD), is marked PC or MD, and joined only where it
 can be played (with the map in its family's folders: server_browser.c), as
@@ -4194,6 +4040,40 @@ static short lobby_browser_score_limit(struct p2p_listing const *game)
 
 	return listed ? listed->score_limit : 0;
 }
+
+/* the Rules line's host, when the list has it (docs/delta.md, Delta List):
+" (MAC HOST, DELTA)", " (DEDICATED, LINUX, DELTA)", " (OPENCE)"; "" if not */
+static void lobby_browser_host_text(struct p2p_listing const *game, wchar_t *text, short size)
+{
+	static wchar_t const *const platforms[] = {
+		L"", L"WINDOWS", L"MAC", L"LINUX", L"ANDROID", L"STEAM DECK", L"XBOX", L"XBOX 360", L"WII U", L"SWITCH",
+	};
+	struct browser_game const *listed = lobby_browser_listed_game(game);
+	boolean dedicated;
+	wchar_t const *platform;
+
+	text[0] = 0;
+	if (!listed)
+		return;
+	dedicated = listed->hosting == BROWSER_HOSTING_DEDICATED || listed->hosting == BROWSER_HOSTING_OFFICIAL;
+	platform = listed->has_platform && listed->host_platform < NUMBEROF(platforms) ? platforms[listed->host_platform] : L"";
+	usnprintf(text, size - 1, L"%s%s%s%s%s%s%s",
+		dedicated ? (listed->hosting == BROWSER_HOSTING_OFFICIAL ? L"OFFICIAL SERVER" : L"DEDICATED") : L"",
+		dedicated && platform[0] ? L", " : L"", platform, !dedicated && platform[0] ? L" HOST" : L"",
+		(dedicated || platform[0]) && listed->protocol ? L", " : L"",
+		listed->protocol == BROWSER_PROTOCOL_DELTA ? L"DELTA" : L"",
+		listed->protocol == BROWSER_PROTOCOL_OPENCE ? L"OPENCE" : L"");
+	text[size - 1] = 0;
+	if (text[0])
+	{
+		wchar_t inner[64];
+
+		ustrncpy(inner, text, NUMBEROF(inner) - 1);
+		inner[NUMBEROF(inner) - 1] = 0;
+		usnprintf(text, size - 1, L" (%s)", inner);
+		text[size - 1] = 0;
+	}
+}
 #else
 static void lobby_browser_add_listed(void)
 {
@@ -4210,6 +4090,13 @@ static short lobby_browser_score_limit(struct p2p_listing const *game)
 {
 	(void)game;
 	return 0;
+}
+
+static void lobby_browser_host_text(struct p2p_listing const *game, wchar_t *text, short size)
+{
+	(void)game;
+	(void)size;
+	text[0] = 0;
 }
 #endif
 
@@ -4239,6 +4126,7 @@ static void lobby_browser_rules_text(struct p2p_listing const *game, wchar_t *te
 	wchar_t gametype[P2P_LISTING_GAMETYPE_SIZE + 1];
 	wchar_t map[ROW_TEXT_LENGTH];
 	wchar_t score[16];
+	wchar_t host[64];
 	short score_limit = lobby_browser_score_limit(game);
 	short family;
 
@@ -4247,10 +4135,12 @@ static void lobby_browser_rules_text(struct p2p_listing const *game, wchar_t *te
 	score[0] = 0;
 	if (score_limit > 0)
 		usnprintf(score, NUMBEROF(score) - 1, L" to %d", score_limit);
-	/* (a dedicated server's game says so: its listing's flag, p2p_lobby.c) */
-	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 5)],
+	/* (a dedicated server's game says so: its listing's flag, p2p_lobby.c;
+	a game list's game, its host as the list says) */
+	lobby_browser_host_text(game, host, NUMBEROF(host));
+	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 5)],
 		score, map, family == _map_family_halomd ? L" (HALOMD)" : family != _map_family_xbox ? L" (HALO PC)" : L"",
-		game->dedicated ? L" (DEDICATED)" : L"",
+		game->dedicated && !host[0] ? L" (DEDICATED)" : L"", host,
 		!game->open ? L": full or starting" : game->in_progress ? L": under way" : L"",
 		game->locked ? L", password" : L"");
 	text[size - 1] = 0;
@@ -5203,7 +5093,7 @@ static void lobby_rows_color(struct widget_instance *list, struct network_game c
 static void lobby_map_show(struct widget_instance *description, char const *map_name)
 {
 	char const *const *names;
-	short last, count = xbox_multiplayer_map_count(ui_widget_port_multiplayer_maps(&names, &last)), map = 19, index;
+	short count = ui_widget_port_multiplayer_maps(&names, NULL), map = 19, index;
 	short level = campaign_level_of(map_name);
 	struct widget_instance *widget;
 
@@ -5213,10 +5103,6 @@ static void lobby_map_show(struct widget_instance *description, char const *map_
 			!_stricmp(native_map_basename(names[index]), native_map_basename(map_name)))
 			map = index;
 	}
-	/* (a Custom Edition map's picture and name, multiplayer or campaign, by
-	its display index, if this machine has it: custom_edition_maps.c) */
-	if (custom_edition_level_name(map_name) && custom_edition_maps_display_index(map_name) != NONE)
-		map = custom_edition_maps_display_index(map_name);
 	/* (a network co-op game's level: its picture and name, sp_levels' and
 	map_list's, in the place of the map's) */
 	visible_set(named(description, "lobby_map_pic", 0), level == NONE);
@@ -5793,8 +5679,9 @@ static char const *const vehicle_spinners[NUMBER_OF_VARIANT_VEHICLES] =
 {
 	"warthog_spinner", "ghost_spinner", "scorpion_spinner", "rwarthog_spinner", "banshee_spinner", "cgturret_spinner"
 };
-/* (the presets' spinner: the vehicle sets 0 to 7, then CUSTOM) */
-#define VEHICLE_PRESET_CUSTOM 8
+/* (the presets' spinner: the vehicle sets 0 to 7, then PC and CUSTOM) */
+#define VEHICLE_PRESET_PC 8
+#define VEHICLE_PRESET_CUSTOM 9
 
 static struct widget_instance *vehicle_spinner(struct widget_instance *list, char const *name)
 {
@@ -5822,7 +5709,8 @@ static void vehicles_show(struct widget_instance *list)
 		spinner->parameters.list.selected_index = side;
 	if ((spinner = vehicle_spinner(list, "vehicle_presets_spinner")) != NULL)
 		spinner->parameters.list.selected_index = options->vehicle_set[side] == VARIANT_VEHICLE_SET_CUSTOM ?
-			VEHICLE_PRESET_CUSTOM : (short)MIN(options->vehicle_set[side], VEHICLE_PRESET_CUSTOM - 1);
+			VEHICLE_PRESET_CUSTOM : options->vehicle_set[side] == VARIANT_VEHICLE_SET_PC ?
+			VEHICLE_PRESET_PC : (short)MIN(options->vehicle_set[side], VEHICLE_PRESET_PC - 1);
 	for (index = 0; index < NUMBER_OF_VARIANT_VEHICLES; index++)
 	{
 		if ((spinner = vehicle_spinner(list, vehicle_spinners[index])) != NULL)
@@ -5844,7 +5732,8 @@ static void vehicles_keep(struct widget_instance *list)
 		return;
 	if ((spinner = vehicle_spinner(list, "vehicle_presets_spinner")) != NULL)
 		options->vehicle_set[side] = spinner->parameters.list.selected_index >= VEHICLE_PRESET_CUSTOM ?
-			VARIANT_VEHICLE_SET_CUSTOM : (byte)spinner->parameters.list.selected_index;
+			VARIANT_VEHICLE_SET_CUSTOM : spinner->parameters.list.selected_index == VEHICLE_PRESET_PC ?
+			VARIANT_VEHICLE_SET_PC : (byte)spinner->parameters.list.selected_index;
 	for (index = 0; index < NUMBER_OF_VARIANT_VEHICLES; index++)
 	{
 		if ((spinner = vehicle_spinner(list, vehicle_spinners[index])) != NULL)
@@ -6002,7 +5891,7 @@ static void gametype_edit_list_update(struct widget_instance *list)
 		gametype_edit_read();
 	focused = list_scroll(list, &gametype_edit.first, gametype_edit.count, GAMETYPE_EDIT_ROWS);
 	if (focused != NONE)
-		gametype_edit.chosen = (short)MIN(focused, gametype_edit.count - 1);
+		gametype_edit.chosen = (short)MAX(0, MIN(focused, gametype_edit.count - 1));
 	rows_update(list, (short)MIN(gametype_edit.count, GAMETYPE_EDIT_ROWS), gametype_edit_row_text);
 	visible_set(named(description, "gametype_right_item", 0), gametype_edit.count > 0);
 	if (gametype_edit.chosen < gametype_edit.count)

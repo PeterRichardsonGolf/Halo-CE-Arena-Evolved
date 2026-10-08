@@ -656,7 +656,6 @@ struct widget_instance;
 #include "interface/player_ui.h"
 #include "interface/progress_bar.h"
 #include "interface/ui_widget_game_data_input_functions.h"
-#include "custom_edition_maps.h" /* port: port/linux/game/custom_edition_maps.c */
 #include "interface/ui_widget_event_handler_functions.h"
 #include "interface/ui_widget_text_search_and_replace_functions.h"
 #include "interface/virtual_keyboard.h"
@@ -697,6 +696,11 @@ boolean browser_screen_active(void);
 void browser_screen_open(void);
 void browser_screen_process(void);
 void browser_screen_render(void);
+/* port: moderation on a dedicated server (port/linux/game/moderation_screen.c) */
+boolean moderation_screen_active(void);
+void moderation_screen_update(boolean menu_open);
+void moderation_screen_process(void);
+void moderation_screen_render(void);
 /* the menus' pointer, while it is up (its own taps and clicks) */
 void browser_screen_pointer(struct halo_ui_pointer const *pointer);
 /* (ONLINE GAMES, below: its list moves focus item by item) */
@@ -1847,8 +1851,6 @@ void draw_bitmap_in_rect(
 
 		parameters.meter_parameters = NULL;
 		parameters.point_sampled = FALSE;
-		/* port: (rasterizer.h) */
-		parameters.alpha_weighted = FALSE;
 		parameters.framebuffer_blend_function = 0;
 		rasterizer_psuedo_dynamic_screen_quad_draw(&parameters, vertices);
 	}
@@ -5438,6 +5440,7 @@ static long search_and_replace(
 	return replacements;
 }
 
+
 /* port: the port's own error text (display_error_text_deferred), which may be
 longer than a line of its dialog: broken at spaces (the strings' line break,
 '\r') where a line would be wider than `width` in the font drawn with.
@@ -5492,6 +5495,7 @@ static boolean ui_widget_port_text_wrap(
 
 	return fits;
 }
+
 
 static void widget_instance_render_text_box(
 	struct widget_instance *widget,
@@ -7314,9 +7318,6 @@ static void widget_instance_render_recursive(
 	long input_index;
 	struct widget_instance *child;
 	struct bitmap_data *bitmap;
-	/* port: (custom_edition_maps_picture) */
-	struct bitmap_data *custom_edition_picture;
-	short frame_index;
 
 	if (!use_nifty_plasma_fx &&
 		TEST_FLAG(definition->flags, _widget_always_render_with_nifty_fx_bit))
@@ -7339,25 +7340,15 @@ static void widget_instance_render_recursive(
 	if (!widget->visible)
 		return;
 	ui_mouse_note_target(widget, definition, offset);
-	/* port: a Custom Edition map's picture, drawn over the whole widget, or
-	the unknown level's frame for a map without one
-	(port/linux/game/custom_edition_maps.c: OpenCE's, not built in Arena
-	Evolved, where it gives none) */
-	frame_index = widget->animation.current_frame_index;
-	custom_edition_picture = custom_edition_maps_picture(definition->background_bitmap.index, &frame_index);
-	bitmap = custom_edition_picture;
 #ifdef HALO_CUSTOM_EDITION
-	/* port: a picture of the menus' map list's own, past ui.map's (its
-	frames, 0x4000 and up, are no frames of the widget's sequence: found
-	before the sequence is asked, which a frame past it would assert in) */
+	/* port: a picture of the menus' map list's own, past ui.map's */
+	bitmap = ui_map_list_picture(widget->animation.current_frame_index);
 	if (!bitmap)
-		bitmap = ui_map_list_picture(widget->animation.current_frame_index);
 #endif
-	if (!bitmap)
-		bitmap = bitmap_group_get_bitmap_from_sequence(
-			definition->background_bitmap.index,
-			0,
-			frame_index);
+	bitmap = bitmap_group_get_bitmap_from_sequence(
+		definition->background_bitmap.index,
+		0,
+		widget->animation.current_frame_index);
 	if (bitmap)
 	{
 		real alpha = alpha_modifier;
@@ -7447,14 +7438,10 @@ static void widget_instance_render_recursive(
 			/* port: a frame of ui.map's that the menus scale (the Xbox's
 			picture of the button settings, in the profile settings' smaller
 			box): drawn at their size, from where they place it, in units of
-			that size rather than one to a texel. A Custom Edition map's own
-			picture is stretched over the widget; a stock campaign level's is
-			laid out as the stock pictures are */
+			that size rather than one to a texel */
 			rectangle2d texels = bounds;
 			short frame_x, frame_y, frame_width, frame_height;
 			boolean shown = TRUE;
-			boolean stretched = custom_edition_picture &&
-				custom_edition_maps_campaign_level(widget->animation.current_frame_index) == NONE;
 
 			if (pc_menu_frame_placement(bitmap, &frame_x, &frame_y, &frame_width, &frame_height))
 			{
@@ -7471,7 +7458,7 @@ static void widget_instance_render_recursive(
 				draw_bitmap_in_rect(
 					bitmap,
 					&bounds,
-					stretched ? NULL : &texels,
+					&texels,
 					clip,
 					color,
 					&multitexture_params,
@@ -7924,6 +7911,8 @@ void render_ui_widgets(
 #ifdef HALO_GAME_BROWSER
 	if (browser_screen_active())
 		browser_screen_render();
+	if (first_players_render)
+		moderation_screen_render();
 #endif
 	ae_ui_render(local_player_index, window_bounds); /* AE hook */
 	ui_debug_draw_targets(first_players_render);
@@ -9016,6 +9005,14 @@ void process_ui_widgets(
 	if (browser_screen_active())
 	{
 		browser_screen_process();
+
+		return;
+	}
+	/* port: moderation's screen, over a menu of a dedicated server's game */
+	moderation_screen_update(widget_globals.active_widgets[0] != NULL);
+	if (moderation_screen_active())
+	{
+		moderation_screen_process();
 
 		return;
 	}

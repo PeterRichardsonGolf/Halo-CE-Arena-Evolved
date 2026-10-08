@@ -2371,7 +2371,8 @@ void rasterizer_transparent_geometry_group_draw(
 
 							/* port: the next layer each time: January never advanced
 							layer_index, so the loop never ended on a chicago shader with
-							a layer (retail's have none) */
+							a layer (the Xbox's maps have none; Halo PC's do: Hornets
+							Nest's) */
 							for (layer_index = 0;
 								layer_index < shader_transparent_chicago->chicago.extra_layers.count;
 								layer_index++)

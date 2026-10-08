@@ -394,7 +394,7 @@ static boolean scenario_check_object_names(
 
 	for (name_index = 0; name_index < scenario->object_names.count; name_index++)
 	{
-		struct scenario_object_name *name = XBOX_POINTER(struct scenario_object_name, scenario->object_names.address) + name_index;
+		struct scenario_object_name *name = (struct scenario_object_name *)xbox_pointer(scenario->object_names.address) + name_index;
 		struct tag_block const *placements = NULL;
 
 		if (name->runtime_object_type == NONE && name->runtime_scenario_datum_index == NONE)
@@ -486,14 +486,14 @@ static boolean scenario_check_scripts(
 	memset(hs_nodes_reached, 0, sizeof(hs_nodes_reached));
 	for (index = 0; index < scenario->hs_scripts.count && !error; index++)
 	{
-		struct hs_script const *script = XBOX_POINTER(struct hs_script const, scenario->hs_scripts.address) + index;
+		struct hs_script const *script = (struct hs_script const *)xbox_pointer(scenario->hs_scripts.address) + index;
 
 		if (!hs_node_link(nodes, script->root_expression_index, TRUE))
 			error = "a script's root is not a node, or is another's";
 	}
 	for (index = 0; index < scenario->hs_globals.count && !error; index++)
 	{
-		struct hs_global const *global = XBOX_POINTER(struct hs_global const, scenario->hs_globals.address) + index;
+		struct hs_global const *global = (struct hs_global const *)xbox_pointer(scenario->hs_globals.address) + index;
 
 		if (!hs_node_link(nodes, global->initialization_expression_index, TRUE))
 			error = "a global's root is not a node, or is another's";
@@ -520,14 +520,14 @@ static boolean scenario_check_scripts(
 	}
 	for (index = 0; index < scenario->hs_scripts.count && !error; index++)
 	{
-		long root = (XBOX_POINTER(struct hs_script const, scenario->hs_scripts.address))[index].root_expression_index;
+		long root = ((struct hs_script const *)xbox_pointer(scenario->hs_scripts.address))[index].root_expression_index;
 
 		if (root != NONE)
 			hs_nodes_to_walk[walk_count++] = (short)root;
 	}
 	for (index = 0; index < scenario->hs_globals.count && !error; index++)
 	{
-		long root = (XBOX_POINTER(struct hs_global const, scenario->hs_globals.address))[index].initialization_expression_index;
+		long root = ((struct hs_global const *)xbox_pointer(scenario->hs_globals.address))[index].initialization_expression_index;
 
 		if (root != NONE)
 			hs_nodes_to_walk[walk_count++] = (short)root;
@@ -1288,7 +1288,8 @@ static struct tag_schema_field const scenario_fields[] =
 	TAG_SCHEMA_BLOCK(struct scenario, bipeds, biped_schema, MAXIMUM_BIPED_DATUMS_PER_SCENARIO),
 	TAG_SCHEMA_BLOCK(struct scenario, biped_palette, biped_palette_schema,
 		MAXIMUM_SCENARIO_OBJECT_PALETTE_ENTRIES_PER_BLOCK),
-	TAG_SCHEMA_BLOCK(struct scenario, vehicles, vehicle_schema, MAXIMUM_VEHICLE_DATUMS_PER_SCENARIO),
+	/* (the game places them as many as there are: object_types_place_all) */
+	TAG_SCHEMA_TOOL_BLOCK(struct scenario, vehicles, vehicle_schema, MAXIMUM_VEHICLE_DATUMS_PER_SCENARIO),
 	TAG_SCHEMA_BLOCK(struct scenario, vehicle_palette, vehicle_palette_schema,
 		MAXIMUM_SCENARIO_OBJECT_PALETTE_ENTRIES_PER_BLOCK),
 	TAG_SCHEMA_BLOCK(struct scenario, equipment, equipment_schema, MAXIMUM_EQUIPMENT_DATUMS_PER_SCENARIO),

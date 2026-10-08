@@ -2952,9 +2952,17 @@ static long hs_type_default_value(
 		return _hs_type_long_integer_default;
 	case _hs_type_string:
 #ifdef HALO_64BIT
-		/* (a script's string is an Xbox address: an empty one in that
-		address space, tag_groups.c) */
-		return (long)xbox_address(tag_empty_string());
+	{
+		/* (a string value is an Xbox address: an empty string there) */
+		static char *empty_string;
+
+		if (!empty_string)
+			empty_string = malloc(1);
+		if (!empty_string)
+			return 0;
+		empty_string[0] = 0;
+		return (long)xbox_address(empty_string);
+	}
 #else
 		return (long)_hs_type_string_default;
 #endif

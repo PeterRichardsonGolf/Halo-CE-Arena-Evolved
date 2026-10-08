@@ -1758,6 +1758,30 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 		platform_log("menus: the pause screens' B and Back close only their player's pause (%ld)", backs);
 }
 
+/* whether display.menus asks for the PC version's menus: "pc" in any case
+(a value neither "pc" nor "xbox" is said once in the log, and is the Xbox's) */
+static boolean menus_pc_chosen(void)
+{
+	static boolean said;
+	char const *value = config_string("display.menus");
+	char lower[8];
+	size_t index;
+
+	for (index = 0; index + 1 < sizeof(lower) && value[index]; index++)
+		lower[index] = (char)(value[index] >= 'A' && value[index] <= 'Z' ? value[index] - 'A' + 'a' : value[index]);
+	lower[index] = 0;
+	if (value[index])
+		lower[0] = 0;
+	if (!strcmp(lower, "pc"))
+		return TRUE;
+	if (strcmp(lower, "xbox") && !said)
+	{
+		platform_log("menus: display.menus \"%s\" is not \"xbox\" or \"pc\": the Xbox's", value);
+		said = TRUE;
+	}
+	return FALSE;
+}
+
 void menu_tags_loaded(
 	char const *map_name)
 {
@@ -1772,7 +1796,7 @@ void menu_tags_loaded(
 		tag_loaded(UI_WIDGET_DEFINITION_TAG, solo_pause_screens[0]) != NONE;
 
 	/* (ui.map, and a game map: its pause menu's SETTINGS) */
-	if ((game_map && !network_map && !solo_map) || strcmp(config_string("display.menus"), "pc"))
+	if ((game_map && !network_map && !solo_map) || !menus_pc_chosen())
 	{
 		return;
 	}

@@ -14,11 +14,8 @@ stb_vorbis (port/third_party/stb).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 #endif
-/* ChupathingyCE's copy, by its path: OpenCE build-145's own stb_vorbis.c, in
-port/linux/game (the game units' quoted-include folder), is another file of
-that name and is built into no game (tools/linux_build.py,
-OPENCE_CUSTOM_EDITION_SOURCES) */
-#include "../../third_party/stb/stb_vorbis.c"
+/* (port/third_party/stb, a game include directory: port/linux/port.json) */
+#include "stb_vorbis.c"
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
@@ -78,16 +75,18 @@ int ce_vorbis_decode(const unsigned char *data, int size, int *channels, int *sa
 			capacity *= 2;
 		}
 	}
-	free(buffer);
+	if (buffer)
+		free(buffer);
 	stb_vorbis_close(vorbis);
 	return -1;
 }
 
 /* the samples ce_vorbis_decode gave (freed as stb_vorbis allocated them: the
-game's units free through its own allocator) */
+game's units free through its own allocator, which takes no NULL: debug_free) */
 void ce_vorbis_free(short *samples)
 {
-	free(samples);
+	if (samples)
+		free(samples);
 }
 
 #endif

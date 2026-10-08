@@ -294,9 +294,9 @@ void collision_features_from_vertex(
 	{
 		long edge_surface_index = edge->surface_indices[0];
 
-		if (edge_surface_index < 0 || edge_surface_index >= bsp->surfaces.count)
+		if (!collision_bsp_valid_surface_index(bsp, edge_surface_index))
 			edge_surface_index = edge->surface_indices[1];
-		if (edge_surface_index < 0 || edge_surface_index >= bsp->surfaces.count)
+		if (!collision_bsp_valid_surface_index(bsp, edge_surface_index))
 			return;
 		surface = TAG_BLOCK_GET_ELEMENT(&bsp->surfaces, edge_surface_index, struct collision_surface);
 		surface_index = object_index != NONE ? NONE : edge_surface_index;

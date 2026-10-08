@@ -2804,6 +2804,7 @@ symbols in this file:
 #include "networking/network_game_globals.h"
 #ifdef HALO_CUSTOM_EDITION
 #include "game/game_engine.h"
+#include "halo_map_families.h" /* port: map_is_downloaded */
 #endif
 #include "networking/network_game_manager.h"
 #include "networking/network_server_manager.h"
@@ -3672,6 +3673,8 @@ enum
 	_hs_node_refusal_global,
 	_hs_node_refusal_arguments,
 	_hs_node_refusal_damaged,
+	_hs_node_refusal_downloaded_function,
+	_hs_node_refusal_downloaded_global,
 };
 
 /* ---------- globals */
@@ -13057,13 +13060,8 @@ static boolean const hs_function_allowed_in_maps[]=
 	FALSE, /* network_game_start_now: starts a network game */
 	FALSE, /* xbox_set_machine_name: the machine's name */
 #ifdef HALO_CUSTOM_EDITION
-
-	/* Halo PC's (a Custom Edition map's scripts call them: lookout_classic's
-	and the Halo Kart maps' sv_say, coldsnap's): none reaches what the
-	refused ones above do. quit does nothing from a map's script, sv_say
-	shows a HUD message, sv_end_game ends the game on the host as its time
-	running out does, sound_impulse_predict does nothing, and the rest do
-	nothing (hs_halo_pc_unsupported_evaluate) */
+	/* Halo PC's, which Custom Edition maps' scripts call: each shows a message,
+	ends the game as a Halo PC server's script does, or does nothing */
 	TRUE, /* sv_say */
 	TRUE, /* quit */
 	TRUE, /* sound_impulse_predict */
@@ -13246,8 +13244,6 @@ static boolean hs_scenario_syntax_data_valid(
 	byte const *address = (byte const *)xbox_pointer(scenario->hs_syntax_data.address);
 	struct data_array const *data = (struct data_array const *)address;
 
-	/* (in the loaded map's tag cache: this build's, or a Custom Edition
-	map's, cache_file_tag_cache_contains) */
 	if (scenario->hs_syntax_data.size != syntax_data_size ||
 		!tag_cache ||
 		!scenario->hs_syntax_data.address ||
@@ -13360,6 +13356,51 @@ static boolean hs_syntax_node_linked_twice(
 	return twice;
 }
 
+/* port: what a downloaded map's scripts (map_is_downloaded: one a map
+download brought, or game.downloaded_maps names) may not call or set, on top
+of what no map's may (hs_function_allowed_in_maps,
+hs_external_global_settable_by_maps): what changes the player's settings
+(their profile's), other players' games (ending a game for everyone, the
+HUD text every player sees), and the globals that outlive the map (they
+keep their values into the maps played after it, a host's other players'
+among them) */
+static char const *const hs_functions_denied_to_downloaded_maps[]=
+{
+	"player0_look_invert_pitch",
+	"sv_end_game",
+	"sv_say",
+	NULL
+};
+
+static char const *const hs_globals_denied_to_downloaded_maps[]=
+{
+	"cheat_deathless_player",
+	"rider_ejection",
+	"stun_enable",
+	"rasterizer_near_clip_distance",
+	"rasterizer_far_clip_distance",
+	"rasterizer_first_person_weapon_near_clip_distance",
+	"rasterizer_first_person_weapon_far_clip_distance",
+	NULL
+};
+
+/* port: whether the map whose scripts are checked is a downloaded one
+(hs_scenario_functions_check) */
+static boolean hs_scenario_downloaded = FALSE;
+
+static boolean hs_name_listed(
+	char const *name,
+	char const *const *list)
+{
+	for (; name && *list; list++)
+	{
+		if (!csstrcmp(name, *list))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 /* port: why a map's script may not have the node (_hs_node_refusal_none if
 it may), and the function or global it names. A map may not have:
 - a link (to the next argument, or a call's first node) that isn't a node:
@@ -13407,6 +13448,8 @@ static short hs_syntax_node_refusal(
 	*name = function->name;
 	if (!hs_function_allowed_in_maps[function_index] && !hs_function_allowed_in_main_menu(function))
 		return _hs_node_refusal_function;
+	if (hs_scenario_downloaded && hs_name_listed(function->name, hs_functions_denied_to_downloaded_maps))
+		return _hs_node_refusal_downloaded_function;
 
 	if (function->parse == hs_macro_function_parse)
 	{
@@ -13489,6 +13532,12 @@ static short hs_syntax_node_refusal(
 		{
 			*name = hs_global_external_get(designator & 0x7FFF)->name;
 			return _hs_node_refusal_global;
+		}
+		if ((designator & 0x8000) && hs_scenario_downloaded &&
+			hs_name_listed(hs_global_external_get(designator & 0x7FFF)->name, hs_globals_denied_to_downloaded_maps))
+		{
+			*name = hs_global_external_get(designator & 0x7FFF)->name;
+			return _hs_node_refusal_downloaded_global;
 		}
 	}
 	else if (function_index == _hs_function_wake)
@@ -13602,6 +13651,12 @@ static void hs_scenario_functions_check(
 	/* (Arena Evolved: a main menu's scenario in the main menu's map, ui.map,
 	not any map whose scenario says it is one) */
 	hs_scenario_is_main_menu = scenario->type == _scenario_type_main_menu && cache_files_loaded_map_is_main_menu();
+#ifdef HALO_CUSTOM_EDITION
+	/* (a downloaded map's are held to tighter rules: halo_map_families.h) */
+	hs_scenario_downloaded = map_is_downloaded(cache_file_loaded_map_name());
+	if (hs_scenario_downloaded)
+		error(_error_silent, "%s is a downloaded map: its scripts may call and set less", cache_file_loaded_map_name());
+#endif
 	csmemset(hs_syntax_nodes_marked, 0, sizeof(hs_syntax_nodes_marked));
 	for (script_index = 0; script_index<scenario->hs_scripts.count; script_index++)
 	{
@@ -13708,6 +13763,12 @@ static void hs_scenario_functions_check(
 			break;
 		case _hs_node_refusal_global:
 			csprintf(reason, "sets %s, which a map's scripts may not", first_name);
+			break;
+		case _hs_node_refusal_downloaded_function:
+			csprintf(reason, "calls %s, which a downloaded map's scripts may not", first_name);
+			break;
+		case _hs_node_refusal_downloaded_global:
+			csprintf(reason, "sets %s, which a downloaded map's scripts may not", first_name);
 			break;
 		case _hs_node_refusal_arguments:
 			csprintf(reason, "calls %s with arguments it doesn't take", first_name);
@@ -14293,7 +14354,11 @@ static void hs_get_function_parameters_string(
 #ifdef HALO_64BIT
 			csstrcat(result, hs_type_names[HS_FUNCTION_PARAMETER_TYPE(function, parameter_index)]);
 #else
+#ifdef HALO_64BIT
+			csstrcat(result, hs_type_names[HS_FUNCTION_PARAMETER_TYPE(function, parameter_index)]);
+#else
 			csstrcat(result, hs_type_names[function->parameter_types[parameter_index]]);
+#endif
 #endif
 			csstrcat(result, ">");
 		}
@@ -15745,29 +15810,16 @@ boolean hs_scenario_postprocess(
 		else
 			error(priority, "%s: %s", error_source, error_message);
 
-#ifdef HALO_CUSTOM_EDITION
-		/* port: a Halo PC map's scripts are not compiled again: it has no
-		source, and its tags cannot be resized; it plays without them */
-		if (cache_file_tags_are_ce())
-		{
-			data_delete_all(hs_syntax_data);
-			scenario->hs_scripts.count = 0;
-			scenario->hs_globals.count = 0;
-			success = FALSE;
-		}
-		else
-#endif
-		{
-			/* port: the map's script source is not compiled again. A cache
-			file's blocks can't be resized (tag_block_resize), so the recompile
-			never reset the map's scripts and globals and none ran afterwards
-			either way; and the source is the map's, which the compiler would
-			recurse into as deep as it nests. The nodes go, and none run */
-			error(priority, "the scenario's scripts won't run");
-			data_delete_all(hs_syntax_data);
-			hs_scenario_scripts_disable(scenario);
-			success = FALSE;
-		}
+		/* port: the map's script source is not compiled again (a Halo PC
+		map has none). A cache file's blocks can't be resized
+		(tag_block_resize), so the recompile never reset the map's scripts and
+		globals and none ran afterwards either way; and the source is the
+		map's, which the compiler would recurse into as deep as it nests. The
+		nodes go, and none run */
+		error(priority, "the scenario's scripts won't run");
+		data_delete_all(hs_syntax_data);
+		hs_scenario_scripts_disable(scenario);
+		success = FALSE;
 	}
 	if (restore_syntax_data)
 		hs_syntax_data = saved_syntax_data;
@@ -15905,6 +15957,10 @@ static boolean hs_compile_and_evaluate_command(
 	char buffer[1024];
 	char expanded[1024];
 
+	/* port: the co-op host's bringto, which brings every player to the host
+	(players.c; a client is told it is the host's) */
+	if (hs_host_player_command(expression, "bringto"))
+		return players_coop_bring_to_host();
 	/* port: playing in another's game, the host decides the game: no
 	cheats, no game speed, nothing else a command changes of the game (the
 	game run each tick also puts back what was changed before joining,

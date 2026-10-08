@@ -698,6 +698,8 @@ struct optional_meter_hud_element
 /* ---------- prototypes */
 
 static boolean effect_part_check(struct tag_validation *validation, void *base);
+static boolean effect_particles_check(struct tag_validation *validation, void *base);
+static boolean breakable_surface_particle_effect_check(struct tag_validation *validation, void *base);
 static boolean sound_check(struct tag_validation *validation, void *base);
 static boolean multitexture_overlay_check(struct tag_validation *validation, void *base);
 static boolean optional_static_hud_element_check(struct tag_validation *validation, void *base);
@@ -755,6 +757,7 @@ static struct tag_schema_field const effect_particles_fields[] =
 	TAG_SCHEMA_REFERENCE(struct effect_particles_definition, particle, TAG_SCHEMA_GROUPS('part')),
 	TAG_SCHEMA_ENUM(struct effect_particles_definition, distribution_function,
 		NUMBER_OF_EFFECT_PARTICLE_DISTRIBUTION_FUNCTIONS, 0),
+	TAG_SCHEMA_CHECK(effect_particles_check),
 	TAG_SCHEMA_END
 };
 
@@ -1930,6 +1933,7 @@ static struct tag_schema_definition const game_globals_falling_damage_schema =
 static struct tag_schema_field const breakable_surface_particle_effect_fields[] =
 {
 	TAG_SCHEMA_REFERENCE(struct breakable_surface_particle_effect, particle, TAG_SCHEMA_GROUPS('part')),
+	TAG_SCHEMA_CHECK(breakable_surface_particle_effect_check),
 	TAG_SCHEMA_END
 };
 
@@ -2009,6 +2013,33 @@ struct tag_schema_group const tag_schema_effect_groups[] =
 
 /* ---------- private code */
 
+/* (the scale of each particle's radius, which it collides with:
+particle_get_radius) */
+static boolean effect_particles_check(
+	struct tag_validation *validation,
+	void *base)
+{
+	struct effect_particles_definition *particles = base;
+
+	tag_validate_non_negative(validation, "radius", &particles->radius_lower_bound);
+	tag_validate_non_negative(validation, "radius", &particles->radius_upper_bound);
+
+	return TRUE;
+}
+
+/* (the same, for a breakable surface's particles) */
+static boolean breakable_surface_particle_effect_check(
+	struct tag_validation *validation,
+	void *base)
+{
+	struct breakable_surface_particle_effect *particles = base;
+
+	tag_validate_non_negative(validation, "radius", &particles->radius_lower_bound);
+	tag_validate_non_negative(validation, "radius", &particles->radius_upper_bound);
+
+	return TRUE;
+}
+
 /* a part's base class is what the game makes of its tag (effects.c,
 effect_generate_part): it must be the tag's */
 static boolean effect_part_check(
@@ -2068,7 +2099,6 @@ static long tag_index_get(
 		unsigned long checksum;
 		long tag_count;
 	};
-	/* (addresses as integers: POINTER_BITS) */
 	__UINTPTR_TYPE__ low = 0;
 	__UINTPTR_TYPE__ high = POINTER_BITS(root);
 	struct tag_header const *header;
@@ -2089,16 +2119,16 @@ static long tag_index_get(
 	header = (struct tag_header const *)low;
 	if (!tag_validate_contains(validation, header, sizeof(*header)) ||
 		header->tag_count <= 0 || header->tag_count > UNSIGNED_SHORT_MAX ||
-		!tag_validate_contains(validation, XBOX_POINTER(struct tag_instance, header->instances),
+		!tag_validate_contains(validation, xbox_pointer(header->instances),
 			(unsigned long)header->tag_count * sizeof(struct tag_instance)))
 	{
 		return NONE;
 	}
 	for (index = 0; index < header->tag_count; index++)
 	{
-		struct tag_instance const *instance = &XBOX_POINTER(struct tag_instance, header->instances)[index];
+		struct tag_instance const *instance = (struct tag_instance const *)xbox_pointer(header->instances) + index;
 
-		if (XBOX_POINTER(void, instance->base_address) == root && instance->group_tag == group_tag)
+		if (xbox_pointer(instance->base_address) == root && instance->group_tag == group_tag)
 			return instance->tag_index;
 	}
 
@@ -2133,7 +2163,7 @@ static boolean sound_check(
 	}
 	for (range_index = 0; range_index < definition->pitch_ranges.count; range_index++)
 	{
-		struct sound_pitch_range *range = XBOX_POINTER(struct sound_pitch_range, definition->pitch_ranges.address) + range_index;
+		struct sound_pitch_range *range = (struct sound_pitch_range *)xbox_pointer(definition->pitch_ranges.address) + range_index;
 		long most = MIN(range->permutations.count, MAXIMUM_PLAYED_PERMUTATIONS_PER_PITCH_RANGE);
 		long permutation_index;
 
@@ -2147,7 +2177,7 @@ static boolean sound_check(
 		for (permutation_index = 0; permutation_index < range->permutations.count; permutation_index++)
 		{
 			struct sound_permutation *permutation =
-				XBOX_POINTER(struct sound_permutation, range->permutations.address) + permutation_index;
+				(struct sound_permutation *)xbox_pointer(range->permutations.address) + permutation_index;
 
 			/* (cache_tag_index and runtime_tag_index) */
 			if (tag_validate_tag_get(validation, (long)permutation->unknown2, SOUND_DEFINITION_TAG) != base ||
@@ -2202,7 +2232,7 @@ static boolean bitmap_from_sequence_exists(
 	if (group->sequences.count > 0 && sequence_index >= 0)
 	{
 		struct bitmap_group_sequence *sequence =
-			XBOX_POINTER(struct bitmap_group_sequence, group->sequences.address) + sequence_index % group->sequences.count;
+			(struct bitmap_group_sequence *)xbox_pointer(group->sequences.address) + sequence_index % group->sequences.count;
 
 		if (!tag_validate_contains(validation, sequence, sizeof(*sequence)))
 			return FALSE;
@@ -2216,7 +2246,7 @@ static boolean bitmap_from_sequence_exists(
 			index = 0;
 			if (frame_index < sequence->sprites.count)
 			{
-				struct bitmap_group_sprite *sprite = XBOX_POINTER(struct bitmap_group_sprite, sequence->sprites.address) + frame_index;
+				struct bitmap_group_sprite *sprite = (struct bitmap_group_sprite *)xbox_pointer(sequence->sprites.address) + frame_index;
 
 				if (!tag_validate_contains(validation, sprite, sizeof(*sprite)))
 					return FALSE;
@@ -2247,14 +2277,14 @@ static boolean hud_bitmap_exists(
 	*sprite_exists = FALSE;
 	if (!group || sequence_index < 0 || sequence_index >= group->sequences.count)
 		return FALSE;
-	sequence = XBOX_POINTER(struct bitmap_group_sequence, group->sequences.address) + sequence_index;
+	sequence = (struct bitmap_group_sequence *)xbox_pointer(group->sequences.address) + sequence_index;
 	if (!tag_validate_contains(validation, sequence, sizeof(*sequence)))
 		return FALSE;
 	frame_index &= 0x7FFF;
 	if (sequence->sprites.count > 0)
 	{
 		struct bitmap_group_sprite *sprite =
-			XBOX_POINTER(struct bitmap_group_sprite, sequence->sprites.address) + frame_index % sequence->sprites.count;
+			(struct bitmap_group_sprite *)xbox_pointer(sequence->sprites.address) + frame_index % sequence->sprites.count;
 
 		if (!tag_validate_contains(validation, sprite, sizeof(*sprite)))
 			return FALSE;
@@ -2285,7 +2315,7 @@ static boolean multitexture_overlay_check(
 	for (index = 0; index < overlay->functions.count; index++)
 	{
 		struct multitexture_overlay_hud_element_effector_definition *effector =
-			XBOX_POINTER(struct multitexture_overlay_hud_element_effector_definition, overlay->functions.address) + index;
+			(struct multitexture_overlay_hud_element_effector_definition *)xbox_pointer(overlay->functions.address) + index;
 		short map_index = (short)(effector->destination - _hud_multitexture_overlay_effector_destination_primary_map);
 
 		if ((effector->destination_type == _hud_multitexture_overlay_effector_type_horizontal_offset ||
@@ -2470,7 +2500,7 @@ static boolean hud_message_text_check(
 	for (message_index = 0; message_index < definition->messages.count; message_index++)
 	{
 		struct hud_state_message_definition *message =
-			XBOX_POINTER(struct hud_state_message_definition, definition->messages.address) + message_index;
+			(struct hud_state_message_definition *)xbox_pointer(definition->messages.address) + message_index;
 		long position = message->text_start_index;
 		short element_index;
 
@@ -2486,7 +2516,7 @@ static boolean hud_message_text_check(
 				message->element_count = (byte)element_index;
 				break;
 			}
-			element = XBOX_POINTER(struct hud_state_message_element, definition->elements.address) + index;
+			element = (struct hud_state_message_element *)xbox_pointer(definition->elements.address) + index;
 			if (element->type == _hud_message_type_icon && element->data >= NUMBER_OF_HUD_ICON_TYPES)
 			{
 				tag_validate_correct(validation, "has element %ld an icon of type %d: 0", index, element->data);
@@ -2527,7 +2557,7 @@ static boolean hud_globals_check(
 		arrow_index < definition->waypoint.arrows.count && definition->waypoint.arrow_bitmap.index != NONE;
 		arrow_index++)
 	{
-		struct hud_waypoint_arrow *arrow = XBOX_POINTER(struct hud_waypoint_arrow, definition->waypoint.arrows.address) + arrow_index;
+		struct hud_waypoint_arrow *arrow = (struct hud_waypoint_arrow *)xbox_pointer(definition->waypoint.arrows.address) + arrow_index;
 		short type;
 
 		for (type = 0; type < NUMBER_OF_WAYPOINT_TYPES; type++)
@@ -2565,7 +2595,7 @@ static boolean font_check(
 
 	for (index = 0; index < font->characters.count; index++)
 	{
-		struct font_character *character = XBOX_POINTER(struct font_character, font->characters.address) + index;
+		struct font_character *character = (struct font_character *)xbox_pointer(font->characters.address) + index;
 		boolean has_pixels = character->bitmap_width > 0 && character->bitmap_height > 0;
 
 		if (character->bitmap_width < -HARDWARE_CHARACTER_CACHE_BORDERS ||
@@ -2763,7 +2793,7 @@ static struct tag_reference *widget_loaded_reference(
 	short reference_index)
 {
 	if (reference_index < widget->child_widgets.count)
-		return &(XBOX_POINTER(struct ui_widget_child_reference, widget->child_widgets.address) + reference_index)->widget_tag;
+		return &((struct ui_widget_child_reference *)xbox_pointer(widget->child_widgets.address) + reference_index)->widget_tag;
 	if (reference_index == widget->child_widgets.count && widget->type == _ui_widget_type_column_list)
 		return &widget->extended_description_widget;
 

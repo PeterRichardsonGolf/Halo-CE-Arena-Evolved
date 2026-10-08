@@ -2956,10 +2956,7 @@ static boolean const hs_external_global_settable_in_maps[]=
 	FALSE, /* find_all_fucked_up_shit */
 	FALSE, /* run_game_scripts */
 #ifdef HALO_CUSTOM_EDITION
-
-	/* Halo PC's, which a Custom Edition map's scripts may set (coldsnap's
-	multiplayer_draw_teammates_names and developer_mode): each reads as it
-	was set and changes nothing here */
+	/* Halo PC's, which Custom Edition maps' scripts set: they change nothing */
 	TRUE, /* multiplayer_draw_teammates_names */
 	TRUE, /* developer_mode */
 	TRUE, /* multiplayer_hit_sound_volume */

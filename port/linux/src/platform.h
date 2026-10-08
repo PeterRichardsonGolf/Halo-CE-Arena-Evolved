@@ -99,9 +99,6 @@ host path below the data root. Components are matched case-insensitively
 against what exists on disk, as the Xbox file system is case-insensitive. */
 void platform_translate_path(const char *xbox_path, char *host_path, unsigned long host_path_size);
 const char *platform_data_root(void);
-/* the Halo Custom Edition install the Xbox drive h:\ is (paths.custom_edition),
-or "" when none is set or it has no maps folder */
-const char *platform_custom_edition_root(void);
 /* on the desktop, when the data root has no maps folder: offers to copy it
 out of an Xbox disc image into destination (sdl_platform.c), and quits if
 the player declines; nonzero once destination has one */
@@ -124,15 +121,27 @@ struct platform_maps_folder
 	/* the data root, whole */
 	char root[1024];
 	long ui_version;
-	/* Halo PC maps in maps/ itself (not named <name>@ce.map or
-	<name>@md.map): how many, and the first PLATFORM_MAPS_FOLDER_NAMED's
+	/* Halo PC maps in maps/ itself (not named <name>@ce.map, <name>@md.map
+	or <name>@pc.map): how many, and the first PLATFORM_MAPS_FOLDER_NAMED's
 	names */
 	long stray_pc_maps;
 	char stray_names[256];
-	/* and in maps/ce and md_maps */
+	/* and in maps_ce, maps_md and maps_pc (and the older maps/ce, md_maps
+	and OpenCE's custom_maps) */
 	long pc_maps_beside;
 };
 void platform_maps_folder_check(struct platform_maps_folder *maps);
+/* the older folders of Halo PC maps that can be moved into their new ones
+beside maps (maps/ce to maps_ce, md_maps to maps_md: halo_map_families.h),
+each one's move described on a line of description (size bytes): how many.
+A folder is movable when its new one does not exist yet and neither it nor
+the folder it is in is a link (whose folder may be elsewhere, a player's own
+or another game's). OpenCE's custom_maps is read but never moved: it is
+OpenCE's, and may be shared with an OpenCE install. */
+int platform_old_map_folders(char *description, unsigned long size);
+/* moves them, each folder whole (a rename: nothing is copied or deleted, and
+one that cannot be moved stays where it is), and logs each: how many moved */
+int platform_old_map_folders_move(void);
 /* the macOS application's folder for its data and settings, when the game
 runs as an application (ArenaEvolved.app): ~/Library/Application
 Support/ChupathingyCE, made if need be, into path; 0 otherwise (and on
@@ -207,15 +216,6 @@ void *xbox_heap_allocate(size_t size, BOOL zero);
 void xbox_heap_free(void *pointer);
 size_t xbox_heap_capacity(void *pointer);
 BOOL xbox_heap_contains(const void *pointer);
-
-/* The window Halo Custom Edition tag data are linked to (0x40440000):
-reserved at start-up when the game.custom_edition setting is on, else NULL
-(also declared for the game in halo_linux_source_fixups.h). */
-void *halo_custom_edition_tag_cache(void);
-/* which textures hold their channels where Halo PC keeps them
-(xbox_textures.c; also declared for the game there) */
-void halo_custom_edition_texels_channels(const void *texels, unsigned char channel_order);
-void halo_custom_edition_texels_forget(void);
 
 /* ---------- guest memory write tracking (memory_watch.c)
 

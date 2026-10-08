@@ -394,6 +394,7 @@ symbols in this file:
 #include "halo_map_families.h"
 #endif
 #include "text/unicode.h"
+#include "halo_map_families.h" /* port: map_family_from_wire_name */
 
 /* ---------- constants */
 
@@ -1310,17 +1311,31 @@ boolean network_game_client_game_settings_updated(
 			network_event("invalid message_server_game_settings_update message received: its players");
 			return FALSE;
 		}
-		if (csstrcmp(message_packet->map.name, client->game.map.name))
+		/* port: a Halo PC map named as the game's protocol names it
+		(custom_maps\\<name>) as this port names it (<name>@ce:
+		halo_map_families.h), for everything that reads it from here */
+		{
+			char map_name[sizeof(message_packet->map.name)];
+
+			map_family_from_wire_name(message_packet->map.name, map_name, sizeof(map_name));
+			csmemcpy(message_packet->map.name, map_name, sizeof(map_name));
+		}
+		if (csstrcmp(message_packet->map.name, client->game.map.name) ||
+			message_packet->map.version != client->game.map.version)
 		{
 			char build[0x20];
 
 			/* port: a map this machine has not (a Custom Edition map not in
-			its custom_maps folder, say): the player told which and where to
-			copy it (the main menu's error, in place of the failed join's), and
-			the game left, rather than precaching it, which would give the
-			damaged disc error (cache_files.c) */
-			if (!network_game_is_splitscreen_local() && !cache_files_map_present(message_packet->map.name))
+			its folder, or another version of it than the host's, say): the
+			player told which and where to copy it (the main menu's error, in
+			place of the failed join's), and the game left, rather than
+			precaching it, which would give the damaged disc error
+			(cache_files.c) */
+			if (!network_game_is_splitscreen_local() &&
+				!cache_files_map_present(message_packet->map.name, (unsigned long)message_packet->map.version))
+			{
 				return FALSE;
+			}
 
 			/* port: a map of a build this version does not play with others
 			(its objects would not be the host's): said, and the game left */
@@ -2382,73 +2397,50 @@ void network_game_client_rejected_by_game(
 
 /* a map name from the host ends within its field and names a map in the maps
 folder: it goes into the map's path (cache_files_windows.c) */
-#ifdef HALO_CUSTOM_EDITION
-/* port: the length of a map family's suffix at text (halo_map_families.h:
-"@ce", "@md") that ends a part of a map's name, a map past the Xbox's
-(levels\test\<file>@ce\<file>@ce); 0 if none does */
-static long network_game_client_map_family_suffix_length(
-	char const *text)
-{
-	short family;
-
-	for (family = _map_family_xbox + 1; family < NUMBER_OF_MAP_FAMILIES; family++)
-	{
-		char const *suffix = map_family_suffix(family);
-		long length = (long)strlen(suffix);
-
-		if (length > 0 && !strncmp(text, suffix, (size_t)length) && (text[length] == '\\' || !text[length]))
-			return length;
-	}
-
-	return 0;
-}
-#endif
-
 static boolean network_game_client_map_name_is_valid(
 	char const *map_name,
 	long size)
 {
 	/* (a scenario's tag path, of which the cache takes the name after the
 	last backslash: letters, digits and a few more, none that a path reads
-	otherwise; port: and a map family's suffix ending a part, a map past the
-	Xbox's) */
+	otherwise; '@' too, of a ChupathingyCE host's Halo PC map: name@ce; and
+	the [ ] ( ) + that Custom Edition maps' names use, [H2]_Lockout) */
 	char const *character;
 	char const *leaf;
-	char const *leaf_end;
 
 	if (!memchr(map_name, '\0', size))
 		return FALSE;
-	leaf = map_name;
-	leaf_end = NULL;
 	for (character = map_name; *character; character++)
 	{
-#ifdef HALO_CUSTOM_EDITION
-		long suffix_length = network_game_client_map_family_suffix_length(character);
-
-		if (suffix_length > 0 && character > map_name && character[-1] != '\\')
-		{
-			leaf_end = character;
-			character += suffix_length - 1;
-			continue;
-		}
-#endif
 		if (!((*character >= 'a' && *character <= 'z') || (*character >= 'A' && *character <= 'Z') ||
 			(*character >= '0' && *character <= '9') || *character == '_' || *character == '-' ||
-			*character == '.' || *character == ' ' || *character == '\\'))
+			*character == '.' || *character == ' ' || *character == '\\' || *character == '@' ||
+			*character == '[' || *character == ']' || *character == '(' || *character == ')' || *character == '+'))
 		{
 			return FALSE;
-		}
-		if (*character == '\\')
-		{
-			leaf = character + 1;
-			leaf_end = NULL;
 		}
 	}
 	if (strstr(map_name, ".."))
 		return FALSE;
-	if (!leaf_end)
-		leaf_end = character;
-	return leaf + strspn(leaf, ". ") < leaf_end;
+	leaf = strrchr(map_name, '\\');
+	leaf = leaf ? leaf + 1 : map_name;
+	/* port: and not one of Windows's devices (con, nul, com1...), whatever
+	follows it: maps\com1.map opens the serial port there */
+	{
+		static char const *const devices[] = { "con", "prn", "aux", "nul", "com", "lpt" };
+		long stem = (long)strcspn(leaf, ".@ ");
+		short device;
+
+		for (device = 0; device < (short)NUMBEROF(devices); device++)
+		{
+			if (!_strnicmp(leaf, devices[device], 3) &&
+				(stem == 3 || (device >= 4 && stem == 4 && leaf[3] >= '0' && leaf[3] <= '9')))
+			{
+				return FALSE;
+			}
+		}
+	}
+	return *leaf && leaf[strspn(leaf, ". ")] != 0;
 }
 
 /* port: the players of a settings record the host sends: each valid one
@@ -2593,6 +2585,14 @@ static boolean add_advertised_game(
 			sizeof(advertisement->map));
 		/* (from any machine on the network: not trusted to end) */
 		advertised_game->map.name[NUMBEROF(advertised_game->map.name) - 1] = '\0';
+		/* port: a Halo PC map's name as this port names it
+		(halo_map_families.h) */
+		{
+			char map_name[sizeof(advertised_game->map.name)];
+
+			map_family_from_wire_name(advertised_game->map.name, map_name, sizeof(map_name));
+			csmemcpy(advertised_game->map.name, map_name, sizeof(map_name));
+		}
 
 		advertised_game->machine_count = advertisement->machine_count;
 		advertised_game->player_count = advertisement->player_count;
@@ -2705,10 +2705,9 @@ static void network_game_client_update_precache_status(
 			struct message_client_map_is_precached_pregame map_is_precached = {0};
 			message_header *message;
 
-			csstrncpy(
-				map_is_precached.map_name,
-				map_name,
-				sizeof(map_is_precached.map_name));
+			/* port: a Halo PC map named as the game's protocol names it, as
+			the host's settings did (halo_map_families.h) */
+			map_family_wire_name(map_name, map_is_precached.map_name, sizeof(map_is_precached.map_name));
 
 			message = create_network_game_message(
 				_message_client_map_is_precached_pregame,

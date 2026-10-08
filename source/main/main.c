@@ -397,7 +397,6 @@ symbols in this file:
 #include "interface/player_ui.h"
 #include "interface/marketing_and_strategic_business_development.h"
 #endif
-#include "custom_edition_cache.h" /* port: custom_edition_level_name */
 
 /* ---------- constants */
 
@@ -1258,10 +1257,10 @@ short main_get_solo_level_from_name(
 	char lower_name[128] = { 0 };
 	short level;
 
-	/* port: a Custom Edition map (custom_maps\a30) is never one of the
-	campaign's levels, whatever its name holds
-	(port/linux/game/custom_edition_cache.c) */
-	if (custom_edition_level_name(name))
+	/* port: a Halo PC map (name@ce, @pc or @md) is never one of the
+	campaign's levels, whatever its name holds (OpenCE's build-145 found
+	this of its Custom Edition maps) */
+	if (strchr(name, '@'))
 		return NONE;
 	csstrncpy(lower_name, name, NUMBEROF(lower_name) - 1);
 	lower_name[NUMBEROF(lower_name) - 1] = 0;
@@ -1726,10 +1725,25 @@ void main_crash(
 	return;
 }
 
+/* port: the native build's identity (port/linux/src/build_identity.c), for
+the halt screen */
+static char const *port_build_identity(
+	void)
+{
+	extern char const *build_identity(void);
+
+	return build_identity();
+}
+
 void main_print_version(
 	void)
 {
-	console_printf(FALSE, "halobeta xbox 01.01.14.2342 Jan 14 2002 12:49:20");
+	/* port: the native build's identity (port/linux/src/build_identity.c),
+	then the Xbox build the game's code is */
+	extern char const *build_identity(void);
+
+	console_printf(FALSE, "%s", build_identity());
+	console_printf(FALSE, "from halobeta xbox 01.01.14.2342 Jan 14 2002 12:49:20");
 	return;
 }
 
@@ -2280,8 +2294,8 @@ static void main_won_map_private(
 	main_globals.want_to_be_at_main_menu = TRUE;
 	main_globals.won_map = FALSE;
 	level = main_get_solo_level_from_name(main_globals.soloplayer_map_name);
-	/* port: a level not in the campaign (a Custom Edition map's) has no next
-	one, rather than the first */
+	/* port: a level not in the campaign (a Halo PC map's) has no next one,
+	rather than the first */
 	level = level == NONE ? NONE : level + 1;
 	if (level >= 10)
 		level = NONE;
@@ -3323,7 +3337,7 @@ void halt_and_catch_fire(
 					NULL,
 					&cursor,
 					-4,
-					"halobeta xbox 01.01.14.2342 built at: Jan 14 2002 12:49:20");
+					port_build_identity());
 				bounds.y0 = cursor.y - 1;
 				rasterizer_draw_string(
 					&bounds,

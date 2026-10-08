@@ -9,16 +9,15 @@ TAG_GROUPS.C
 #include "tag_files.h"
 #include "byte_swapping.h"
 #include "tag_groups.h"
-#ifdef HALO_64BIT
-#include "cseries_windows.h" /* port: XPhysicalAlloc (tag_empty_data) */
-#endif
 
 #ifdef HALO_CUSTOM_EDITION
 void *ce_tags_pointer(unsigned long address, long size);
 boolean cache_file_tags_are_ce(void);
 boolean tag_index_is_group(long tag_index, long group_tag);
+/* (whether the map being loaded, or loaded, is a Custom Edition map:
+cache_files.c) */
+extern boolean cache_file_is_ce;
 #endif
-#include "custom_edition_cache.h" /* port: port/linux/game/custom_edition_cache.c */
 
 /* ---------- constants */
 
@@ -31,8 +30,13 @@ enum
 
 /* ---------- globals */
 
-/* port: (tag_empty_data) */
+/* port: (tag_empty_data; in the Xbox address space on the 64-bit builds,
+where a tag's pointers to it are Xbox addresses: xbox_address.h) */
+#ifdef HALO_64BIT
+static unsigned long *tag_empty_data_bytes;
+#else
 static unsigned long tag_empty_data_bytes[TAG_EMPTY_DATA_SIZE / sizeof(unsigned long)];
+#endif
 
 /* ---------- private code */
 
@@ -62,61 +66,37 @@ place of whatever lies past the block, the data or the tags. Whatever
 reads it reads an element or tag with nothing in it (no elements in its
 blocks, no tags referenced, every index 0); whatever writes it writes
 nowhere that matters */
-#ifdef HALO_64BIT
-/* port: the 64-bit builds' empty data is in the Xbox's address space
-(cseries/xbox_address.h), so that a tag's pointer, a 32-bit Xbox address,
-can name it (the empty tag's root and name: cache_files.c; a nameless tag's
-name: tag_validate.c). It is allocated once, as the game's caches are, with
-an empty string past the data's bytes that tag_empty_data never zeroes. NULL
-if there is no memory (tag_empty_data then gives its bytes in the host's
-memory) */
-static byte *tag_empty_data_storage(
-	void)
-{
-	static byte *storage = NULL;
-	byte *allocated;
-
-	if (storage)
-		return storage;
-	allocated = XPhysicalAlloc(TAG_EMPTY_DATA_SIZE + sizeof(unsigned long), (unsigned long)-1, 0, PAGE_READWRITE);
-	if (!allocated)
-		return NULL;
-	csmemset(allocated, 0, TAG_EMPTY_DATA_SIZE + sizeof(unsigned long));
-	/* (another thread's, if it came first: this one's is not freed) */
-	if (!__sync_bool_compare_and_swap(&storage, NULL, allocated))
-		return storage;
-
-	return storage;
-}
-#endif
-
 void *tag_empty_data(
 	void)
 {
 #ifdef HALO_64BIT
-	byte *storage = tag_empty_data_storage();
-
-	if (storage)
-	{
-		csmemset(storage, 0, TAG_EMPTY_DATA_SIZE);
-		return storage;
-	}
-#endif
+	if (!tag_empty_data_bytes)
+		tag_empty_data_bytes = malloc(TAG_EMPTY_DATA_SIZE);
+	if (!tag_empty_data_bytes)
+		return NULL;
+	csmemset(tag_empty_data_bytes, 0, TAG_EMPTY_DATA_SIZE);
+#else
 	csmemset(tag_empty_data_bytes, 0, sizeof(tag_empty_data_bytes));
+#endif
 
 	return tag_empty_data_bytes;
 }
 
+/* port (Arena Evolved): an empty string a tag's pointer can name: in the
+Xbox's address space in the 64-bit builds (cseries/xbox_address.h), as the
+empty data is */
 char const *tag_empty_string(
 	void)
 {
 #ifdef HALO_64BIT
-	byte *storage = tag_empty_data_storage();
+	static char *empty_string;
 
-	if (storage)
+	if (!empty_string)
+		empty_string = malloc(1);
+	if (empty_string)
 	{
-		storage[TAG_EMPTY_DATA_SIZE] = 0;
-		return (char const *)storage + TAG_EMPTY_DATA_SIZE;
+		empty_string[0] = 0;
+		return empty_string;
 	}
 #endif
 
@@ -166,15 +146,8 @@ void* tag_data_get_pointer(
 	long offset, 
 	long size) 
 {
-	/* port: Halo PC reads a Custom Edition map's tags unchecked, and maps
-	made for it can hold an offset past a tag data's end, which never
-	stopped a game there: it gets the empty data below without an
-	assertion. This build's maps keep theirs */
-	if (!custom_edition_cache_tags_loaded())
-	{
-		match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3073, size>=0);
-		match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3074, offset>=0 && offset+size<=data->size);
-	}
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3073, size>=0);
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3074, offset>=0 && offset+size<=data->size);
 	/* port: bytes past the data are the empty data's (tag_empty_data), as
 	far as they go */
 	if (size < 0 || offset < 0 || offset > data->size || size > data->size - offset || (size && !data->address))
@@ -184,18 +157,17 @@ void* tag_data_get_pointer(
 	}
 
 #ifdef HALO_CUSTOM_EDITION
-	/* port: (a Custom Edition map's, only in its tag cache: ce_map_checks.c) */
-	return ce_tags_pointer((unsigned long)data->address + offset, size);
-#elif defined(HALO_64BIT)
+	/* port: (a Custom Edition map's, only in its tag cache: ce_map_checks.c;
+	the other maps' as below, without the call) */
+	if (cache_file_is_ce)
+		return ce_tags_pointer((unsigned long)data->address + offset, size);
+#endif
+#if defined(HALO_64BIT)
 	return (void *)((byte *)TAG_DATA_ADDRESS(data) + offset);
 #else
 	return (void *)((byte *)data->address + offset);
 #endif
 }
-
-#if defined(HALO_CUSTOM_EDITION) && !defined(HALO_64BIT)
-extern boolean cache_file_is_ce;
-#endif
 
 void *tag_block_get_element_with_size(
 	const struct tag_block *block,
@@ -233,9 +205,12 @@ void *tag_block_get_element_with_size(
 	}
 
 #ifdef HALO_CUSTOM_EDITION
-	/* port: (a Custom Edition map's, only in its tag cache: ce_map_checks.c) */
-	return ce_tags_pointer((unsigned long)block->address + index * element_size, element_size);
-#elif defined(HALO_64BIT)
+	/* port: (a Custom Edition map's, only in its tag cache: ce_map_checks.c;
+	the other maps' as below, without the call) */
+	if (cache_file_is_ce)
+		return ce_tags_pointer((unsigned long)block->address + index * element_size, element_size);
+#endif
+#if defined(HALO_64BIT)
 	return (void *)((byte *)TAG_BLOCK_ADDRESS(block) + (index * element_size));
 #else
 	return (void *)((byte *)block->address + (index * element_size));

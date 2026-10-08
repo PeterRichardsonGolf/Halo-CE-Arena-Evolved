@@ -28,18 +28,6 @@ The validator is the game's only reader of a map that is not the game's own
 data (a map made by other tools, downloaded, or converted from another
 format): it reads nothing but the tags it is given, so tools/map_validate.c
 runs it alone on a map file.
-
-A Halo Custom Edition map's tags are checked the same way, once its loader
-has read them into their own tag cache and made them this build's where only
-their bytes differ (port/linux/game/cache_file_formats.c): its tag header has
-no vertex or index buffers, its pixels and samples are in several files, and
-its models are gbxmodels, whose parts keep their geometry in the map's model
-data and which the game takes as models (tag_schema_custom_edition_groups).
-
-port: in the 64-bit builds (HALO_64BIT) the tags' pointers are 32-bit Xbox
-addresses (cseries/xbox_address.h): each one is turned into the host's
-pointer as it is read (XBOX_POINTER) and back as it is written
-(xbox_address), and pointers are compared as integers by POINTER_BITS.
 */
 
 /* ---------- headers */
@@ -66,13 +54,18 @@ enum
 
 	/* how deep blocks go in a schema (the deepest are 6 or 7) */
 	MAXIMUM_VALIDATION_DEPTH = 32,
+	/* the longest a tag's name is, with its terminator (Halo's tools' paths:
+	the game's buffers for them, game_state.c's, objects.c's, are this
+	size) */
+	MAXIMUM_TAG_NAME_LENGTH = 256,
+
 	/* how many corrections are logged one by one, for each map or bsp */
 	MAXIMUM_LOGGED_CORRECTIONS = 64,
 	MAXIMUM_MESSAGE_LENGTH = 512,
 
-	/* the claims: a bit for each byte of the largest tag cache */
+	/* the claims: a bit for each byte of the tag cache */
 	CLAIM_BITS = 32,
-	CLAIM_WORDS = TAG_VALIDATE_MAXIMUM_TAG_CACHE_SIZE / CLAIM_BITS,
+	CLAIM_WORDS = TAG_CACHE_SIZE / CLAIM_BITS,
 
 	/* port (Arena Evolved): the most claims kept by their first byte
 	(extent_claim), for the tags and for a structure bsp (powers of two),
@@ -84,12 +77,6 @@ enum
 	(extent_claim) */
 	MAXIMUM_SHARED_BYTES = 0x4000,
 	MAXIMUM_SHARED_EXTENTS = 256,
-
-	/* a Custom Edition map's models (cache_file_formats.c) */
-	GBXMODEL_GROUP_TAG = 'mod2',
-	MODEL_GROUP_TAG = 'mode',
-	TRANSPARENT_CHICAGO_EXTENDED_GROUP_TAG = 'scex',
-	TRANSPARENT_CHICAGO_GROUP_TAG = 'schi',
 };
 
 /* port (Arena Evolved): what an extent is (extent_claim) */
@@ -154,26 +141,7 @@ struct tag_validate_structure_bsp_header
 	unsigned long signature;
 };
 
-/* a Custom Edition map's tags' header: its model data is in the file, and it
-has no buffers */
-struct tag_validate_custom_edition_header
-{
-	XPTR(struct tag_validate_instance) instances;
-	long scenario_tag_index;
-	unsigned long checksum;
-	long tag_count;
-	long model_part_count;
-	long model_vertex_data_offset;
-	long model_part_count_again;
-	long model_index_data_offset;
-	long model_data_size;
-	unsigned long signature;
-};
-
-typedef char verify_tag_validate_maximum_tag_cache_size[TAG_CACHE_SIZE <= TAG_VALIDATE_MAXIMUM_TAG_CACHE_SIZE ? 1 : -1];
 typedef char verify_tag_validate_instance_size[sizeof(struct tag_validate_instance) == 0x20 ? 1 : -1];
-typedef char verify_tag_validate_custom_edition_header_size[
-	sizeof(struct tag_validate_custom_edition_header) == 0x28 ? 1 : -1];
 typedef char verify_tag_validate_header_size[sizeof(struct tag_validate_header) == 0x24 ? 1 : -1];
 typedef char verify_tag_validate_structure_bsp_header_size[
 	sizeof(struct tag_validate_structure_bsp_header) == 0x18 ? 1 : -1];
@@ -218,16 +186,10 @@ struct tag_validation
 
 static struct
 {
-	/* the tags last checked (tag_validate_tags), in a tag cache of
-	tag_cache_size bytes */
+	/* the tags last checked (tag_validate_tags) */
 	struct tag_validate_header *header;
 	long tag_data_size;
-	unsigned long tag_cache_size;
-	/* where their data in files may be: a map's file, or a Custom Edition
-	map's files */
-	struct tag_validate_file_range file_ranges[MAXIMUM_TAG_VALIDATE_FILE_RANGES];
-	short file_range_count;
-	boolean custom_edition;
+	long file_length;
 	char map_name[64];
 	long corrections;
 } tag_validate_globals;
@@ -236,9 +198,10 @@ static struct
 holds */
 static unsigned long tag_validate_claims[CLAIM_WORDS];
 
+/* (in the Xbox address space on the 64-bit builds, where the tags'
+pointers are Xbox addresses: xbox_address.h) */
 #ifdef HALO_64BIT
-/* (an Xbox address, in the tags' address space: tag_groups.c) */
-#define tag_validate_empty_name ((char const *)tag_empty_string())
+static char *tag_validate_empty_name;
 #else
 static char const tag_validate_empty_name[] = "";
 #endif
@@ -288,10 +251,10 @@ static struct
 
 /* ---------- prototypes */
 
-static struct tag_validate_instance *header_instances(struct tag_validate_header const *header);
 static boolean extent_claim(void const *address, unsigned long size, void const *kind, short kind_type,
 	void const *owner, boolean *shared);
 static boolean extent_shared(void const *address, void const *owner);
+
 static void validate_element(struct tag_validation *validation, byte *base,
 	struct tag_schema_definition const *definition, char const *field_name, long element_index);
 static void validate_fields(struct tag_validation *validation, byte *base,
@@ -299,29 +262,25 @@ static void validate_fields(struct tag_validation *validation, byte *base,
 
 /* ---------- private code */
 
-/* the header's tag table */
-static struct tag_validate_instance *header_instances(
-	struct tag_validate_header const *header)
+/* the tags' table */
+static struct tag_validate_instance *instances_get(
+	struct tag_validate_header *header)
 {
-	return XBOX_POINTER(struct tag_validate_instance, header->instances);
+	return xbox_pointer(header->instances);
+}
+
+/* a vertex or index buffer's Data: its bytes' address before it is
+registered (an Xbox address in the tags) */
+static void *buffer_data_address(
+	void const *buffer)
+{
+	return xbox_pointer(*(XPTR(void) const *)((byte const *)buffer + 4));
 }
 
 static struct tag_schema_group const *schema_group_get(
 	unsigned long group_tag)
 {
 	struct tag_schema_group const *const *list;
-
-	/* (a Custom Edition map's groups laid out otherwise come first) */
-	if (tag_validate_globals.custom_edition)
-	{
-		struct tag_schema_group const *group;
-
-		for (group = tag_schema_custom_edition_groups; group->group_tag; group++)
-		{
-			if (group->group_tag == group_tag)
-				return group;
-		}
-	}
 
 	for (list = tag_schema_group_lists; *list; list++)
 	{
@@ -365,7 +324,7 @@ static char const *tag_name(
 
 	if (!header || absolute_index < 0 || absolute_index >= header->tag_count)
 		return "?";
-	name = XBOX_POINTER(char const, header_instances(header)[absolute_index].name);
+	name = xbox_pointer(instances_get(header)[absolute_index].name);
 	if (name == tag_validate_empty_name)
 		return name;
 	offset = (unsigned long)(POINTER_BITS(name) - POINTER_BITS(header));
@@ -391,7 +350,7 @@ static void validation_where(
 	short depth;
 
 	if (header && absolute_index >= 0 && absolute_index < header->tag_count)
-		tag_to_text(header_instances(header)[absolute_index].group_tag, group);
+		tag_to_text(instances_get(header)[absolute_index].group_tag, group);
 	snprintf(where, size, "tag '%s' (%s): ", tag_name(validation->tag_index), group);
 	for (depth = 1; depth < validation->depth; depth++)
 	{
@@ -448,7 +407,7 @@ static boolean claim(
 
 	if (!size)
 		return TRUE;
-	if (first > tag_validate_globals.tag_cache_size || size > tag_validate_globals.tag_cache_size - first)
+	if (first > TAG_CACHE_SIZE || size > TAG_CACHE_SIZE - first)
 		return FALSE;
 
 	/* (whole words where they can be) */
@@ -487,7 +446,7 @@ static void unclaim(
 	unsigned long end = first + size;
 	unsigned long bit;
 
-	if (first > tag_validate_globals.tag_cache_size || size > tag_validate_globals.tag_cache_size - first)
+	if (first > TAG_CACHE_SIZE || size > TAG_CACHE_SIZE - first)
 		return;
 	for (bit = first; bit < end; )
 	{
@@ -517,12 +476,18 @@ static boolean string_valid(
 	/* (the name a nameless tag or reference is given) */
 	if (string == tag_validate_empty_name)
 		return TRUE;
+	/* (and no longer than a tag's path is, MAXIMUM_TAG_NAME_LENGTH: the
+	game copies and formats names into buffers of that size) */
 	if (region_contains(validation, string, 1))
-		return memchr(string, 0, validation->region_size - offset) != NULL;
+	{
+		return memchr(string, 0, MIN(validation->region_size - offset, (unsigned long)MAXIMUM_TAG_NAME_LENGTH)) !=
+			NULL;
+	}
 	if (tags && POINTER_BITS(string) >= POINTER_BITS(tags) &&
 		tags_offset < (unsigned long)tag_validate_globals.tag_data_size)
 	{
-		return memchr(string, 0, tag_validate_globals.tag_data_size - tags_offset) != NULL;
+		return memchr(string, 0, MIN(tag_validate_globals.tag_data_size - tags_offset,
+			(unsigned long)MAXIMUM_TAG_NAME_LENGTH)) != NULL;
 	}
 
 	return FALSE;
@@ -538,7 +503,7 @@ static struct tag_validate_instance *instance_get(
 
 	if (!header || tag_index == NONE || absolute_index < 0 || absolute_index >= header->tag_count)
 		return NULL;
-	instance = &header_instances(header)[absolute_index];
+	instance = &instances_get(header)[absolute_index];
 
 	return instance->tag_index == tag_index ? instance : NULL;
 }
@@ -552,9 +517,6 @@ static boolean instance_in_groups(
 		return TRUE;
 	for (; *groups; groups++)
 	{
-		/* (a Custom Edition map's gbxmodels are the game's models) */
-		if (tag_validate_globals.custom_edition && instance->group_tag == GBXMODEL_GROUP_TAG && *groups == MODEL_GROUP_TAG)
-			return TRUE;
 		if (instance->group_tag == *groups ||
 			instance->parent_group_tags[0] == *groups ||
 			instance->parent_group_tags[1] == *groups)
@@ -666,6 +628,9 @@ static void validate_block_extent(
 		tag_validate_refuse(validation, "has %ld elements", block->count);
 		return;
 	}
+	/* (a block of the tools' maximum, _tag_schema_tool_maximum_bit, is cut
+	too: this build's Halo PC maps, which go past them, are checked by their
+	own loader, ce_map_checks.c, not here) */
 	if (field->maximum > 0 && block->count > field->maximum)
 	{
 		tag_validate_correct(validation, "has %ld elements, more than the game's %ld: cut to %ld",
@@ -674,14 +639,13 @@ static void validate_block_extent(
 	}
 	if (block->count &&
 		((unsigned long)block->count > validation->region_size / (unsigned long)definition->size ||
-			!region_contains(validation, XBOX_POINTER(void, block->address),
-				(unsigned long)block->count * definition->size)))
+			!region_contains(validation, xbox_pointer(block->address), (unsigned long)block->count * definition->size)))
 	{
 		tag_validate_refuse(validation, "has %ld elements of %ld bytes at %08lx, outside the tags",
 			block->count, definition->size, (unsigned long)block->address);
 		return;
 	}
-	if (!extent_claim(XBOX_POINTER(void, block->address), (unsigned long)block->count * definition->size,
+	if (!extent_claim(xbox_pointer(block->address), (unsigned long)block->count * definition->size,
 		definition, _extent_block, block, &shared))
 	{
 		tag_validate_refuse(validation, "has %ld elements of %ld bytes at %08lx, which overlap another's",
@@ -715,16 +679,16 @@ static void validate_data_extent(
 	}
 	if (field->type == _tag_schema_file_data)
 	{
-		if (!tag_validate_file_contains(validation, data->file_offset, data->size))
+		if (data->file_offset < 0 || data->file_offset > tag_validate_globals.file_length - data->size)
 		{
-			tag_validate_refuse(validation, "has %ld bytes at %08lx, outside the map's files",
-				data->size, (unsigned long)data->file_offset);
+			tag_validate_refuse(validation, "has %ld bytes at %08lx, outside the map's %ld",
+				data->size, data->file_offset, tag_validate_globals.file_length);
 		}
 		return;
 	}
 	if (data->size &&
-		(!region_contains(validation, XBOX_POINTER(void, data->address), data->size) ||
-			!extent_claim(XBOX_POINTER(void, data->address), data->size, field, _extent_data, data, &shared)))
+		(!region_contains(validation, xbox_pointer(data->address), data->size) ||
+			!extent_claim(xbox_pointer(data->address), data->size, field, _extent_data, data, &shared)))
 	{
 		tag_validate_refuse(validation, "has %ld bytes at %08lx, outside the tags or overlapping another's",
 			data->size, (unsigned long)data->address);
@@ -754,14 +718,6 @@ static void validate_tag_index(
 			*tag_index, groups_text(groups, text, sizeof(text)));
 		*tag_index = NONE;
 		return;
-	}
-	/* (a Custom Edition map's transparent chicago extended shaders are its
-	loader's transparent chicago shaders now, cache_file_formats.c: the
-	references that say so are not wrong) */
-	if (group_tag && tag_validate_globals.custom_edition &&
-		*group_tag == TRANSPARENT_CHICAGO_EXTENDED_GROUP_TAG && instance->group_tag == TRANSPARENT_CHICAGO_GROUP_TAG)
-	{
-		*group_tag = instance->group_tag;
 	}
 	/* (what the game takes the reference's tag to be: the tag's group) */
 	if (group_tag && *group_tag != instance->group_tag)
@@ -793,11 +749,11 @@ static void validate_value(
 
 		/* (a reference to no tag often has a name pointer that is not one,
 		in the retail maps too: only one to a tag counts as a correction) */
-		if (!string_valid(validation, XBOX_POINTER(char const, reference->name)))
+		if (!string_valid(validation, xbox_pointer(reference->name)))
 		{
 			if (reference->index != NONE)
 				tag_validate_correct(validation, "has a name outside the tags: none");
-			reference->name = xbox_address(tag_validate_empty_name);
+			reference->name = XBOX_ADDRESS(tag_validate_empty_name);
 		}
 		validate_tag_index(validation, &reference->index, &reference->group_tag, field->definition);
 		break;
@@ -885,7 +841,7 @@ static void validate_fields(
 				else
 				{
 					struct tag_block *block = (struct tag_block *)address;
-					boolean shared = extent_shared(XBOX_POINTER(void, block->address), block);
+					boolean shared = extent_shared(xbox_pointer(block->address), block);
 					long element_index;
 
 					/* (the elements, through every pass; another tag's too
@@ -897,8 +853,7 @@ static void validate_fields(
 					{
 						validate_element(
 							validation,
-							XBOX_POINTER(byte, block->address) +
-								element_index * ((struct tag_schema_definition const *)field->definition)->size,
+							(byte *)xbox_pointer(block->address) + element_index * ((struct tag_schema_definition const *)field->definition)->size,
 							field->definition,
 							field->name,
 							element_index);
@@ -1374,11 +1329,10 @@ static void validate_instance(
 	if (group && group->definition && instance->base_address)
 	{
 		/* (another tag's root under its name: extent_claim) */
-		boolean shared = extent_shared(XBOX_POINTER(void, instance->base_address), instance);
+		boolean shared = extent_shared(xbox_pointer(instance->base_address), instance);
 
 		validation->shared_depth += shared;
-		validate_tag(validation, instance->tag_index, XBOX_POINTER(void, instance->base_address), group->definition,
-			pass);
+		validate_tag(validation, instance->tag_index, xbox_pointer(instance->base_address), group->definition, pass);
 		validation->shared_depth -= shared;
 	}
 
@@ -1430,12 +1384,12 @@ static boolean validate_buffers(
 			vertex_buffers + index * BUFFER_SIZE :
 			index_buffers + (index - vertex_buffer_count) * BUFFER_SIZE;
 		/* (the buffer's Data, its bytes' address before it is registered) */
-		void *data = XBOX_POINTER(void, *(XPTR(void) const *)(buffer + 4));
+		void *data = buffer_data_address(buffer);
 
 		if (!region_contains(validation, data, 1))
 		{
 			tag_validate_refuse(validation, "has a vertex or index buffer's data at %08lx, outside the tags",
-				(unsigned long)*(XPTR(void) const *)(buffer + 4));
+				(unsigned long)XBOX_ADDRESS(data));
 			return FALSE;
 		}
 	}
@@ -1452,34 +1406,76 @@ void tag_validate_allow_shared_bytes(
 	tag_validate_shared_bytes_allowed = allow ? TRUE : FALSE;
 }
 
-/* the tags at tag_header (tag_data_size bytes of a tag cache), whose header
-the caller has checked and claimed: each tag's table entry, then every tag
-through its schema, then every tag's checks */
-static boolean validate_tag_table(
-	struct tag_validation *validation,
-	struct tag_validate_instance *instances,
-	long tag_count)
+boolean tag_validate_tags(
+	void *tag_header,
+	long tag_data_size,
+	long file_length,
+	char const *map_name)
 {
+	struct tag_validate_header *header = tag_header;
+	struct tag_validation validation;
 	long absolute_index;
 
-	/* the tag table: each tag's index, name, groups and root */
-	for (absolute_index = 0; absolute_index < tag_count && !validation->refused; absolute_index++)
+	memset(&tag_validate_globals, 0, sizeof(tag_validate_globals));
+	tag_validate_globals.header = header;
+	tag_validate_globals.tag_data_size = tag_data_size;
+	tag_validate_globals.file_length = file_length;
+	snprintf(tag_validate_globals.map_name, sizeof(tag_validate_globals.map_name), "%s", map_name);
+	memset(tag_validate_claims, 0, sizeof(tag_validate_claims));
+	extent_table_new(tag_validate_extents, MAXIMUM_EXTENTS);
+	validation_new(&validation, tag_header, (unsigned long)tag_data_size);
+#ifdef HALO_64BIT
+	if (!tag_validate_empty_name)
+		tag_validate_empty_name = malloc(1);
+	if (!tag_validate_empty_name)
 	{
-		struct tag_validate_instance *instance = &instances[absolute_index];
+		tag_validate_refuse(&validation, "cannot be checked: out of memory");
+		return FALSE;
+	}
+	tag_validate_empty_name[0] = 0;
+#endif
+
+	if (!schemas_fit())
+	{
+		tag_validate_refuse(&validation, "cannot be checked: a tag schema is wrong");
+		return FALSE;
+	}
+	if (tag_data_size < (long)sizeof(*header) || tag_data_size > TAG_CACHE_SIZE ||
+		header->signature != TAG_HEADER_SIGNATURE ||
+		header->tag_count <= 0 || header->tag_count > UNSIGNED_SHORT_MAX ||
+		!region_contains(&validation, instances_get(header), header->tag_count * sizeof(struct tag_validate_instance)))
+	{
+		tag_validate_refuse(&validation, "has a damaged tag header");
+		return FALSE;
+	}
+	if (!claim(header, sizeof(*header)) ||
+		!claim(instances_get(header), header->tag_count * sizeof(struct tag_validate_instance)) ||
+		!validate_buffers(&validation, xbox_pointer(header->vertex_buffers), header->vertex_buffer_count,
+			xbox_pointer(header->index_buffers), header->index_buffer_count))
+	{
+		if (!validation.refused)
+			tag_validate_refuse(&validation, "has a damaged tag header");
+		return FALSE;
+	}
+
+	/* the tag table: each tag's index, name, groups and root */
+	for (absolute_index = 0; absolute_index < header->tag_count && !validation.refused; absolute_index++)
+	{
+		struct tag_validate_instance *instance = &instances_get(header)[absolute_index];
 		struct tag_schema_group const *group = schema_group_get(instance->group_tag);
 		unsigned long parent_group_tags[2];
 
-		validation->tag_index = instance->tag_index;
+		validation.tag_index = instance->tag_index;
 		if ((short)instance->tag_index != absolute_index)
 		{
-			tag_validate_refuse(validation, "has tag %08lx in the table's place %ld", instance->tag_index,
+			tag_validate_refuse(&validation, "has tag %08lx in the table's place %ld", instance->tag_index,
 				absolute_index);
 			break;
 		}
-		if (!string_valid(validation, XBOX_POINTER(char const, instance->name)))
+		if (!string_valid(&validation, xbox_pointer(instance->name)))
 		{
-			instance->name = xbox_address(tag_validate_empty_name);
-			tag_validate_correct(validation, "has no name");
+			instance->name = XBOX_ADDRESS(tag_validate_empty_name);
+			tag_validate_correct(&validation, "has no name");
 		}
 		/* (a group's parents are what the game asks a tag's group by
 		(tag_get): they are the group's, not the map's) */
@@ -1490,7 +1486,7 @@ static boolean validate_tag_table(
 		{
 			char text[5];
 
-			tag_validate_correct(validation, "has the wrong parent groups for '%s'",
+			tag_validate_correct(&validation, "has the wrong parent groups for '%s'",
 				tag_to_text(instance->group_tag, text));
 			instance->parent_group_tags[0] = parent_group_tags[0];
 			instance->parent_group_tags[1] = parent_group_tags[1];
@@ -1503,152 +1499,47 @@ static boolean validate_tag_table(
 		}
 		if (!instance->base_address)
 		{
-			tag_validate_refuse(validation, "has no data");
+			tag_validate_refuse(&validation, "has no data");
 			break;
 		}
 		if (group && group->definition)
 		{
 			boolean shared;
 
-			if (!region_contains(validation, XBOX_POINTER(void, instance->base_address), group->definition->size) ||
-				!extent_claim(XBOX_POINTER(void, instance->base_address), group->definition->size, group, _extent_root,
+			if (!region_contains(&validation, xbox_pointer(instance->base_address), group->definition->size) ||
+				!extent_claim(xbox_pointer(instance->base_address), group->definition->size, group, _extent_root,
 					instance, &shared))
 			{
-				tag_validate_refuse(validation, "has its data at %08lx, outside the tags or overlapping another's",
+				tag_validate_refuse(&validation, "has its data at %08lx, outside the tags or overlapping another's",
 					(unsigned long)instance->base_address);
 				break;
 			}
 			if (shared)
 			{
-				unsigned long slot = extent_slot(XBOX_POINTER(void, instance->base_address));
-				struct tag_validate_extent const *extent =
-					extent_next(XBOX_POINTER(void, instance->base_address), &slot);
+				unsigned long slot = extent_slot(xbox_pointer(instance->base_address));
+				struct tag_validate_extent const *extent = extent_next(xbox_pointer(instance->base_address), &slot);
 
-				tag_validate_correct(validation, "is tag '%s' of its group under another name: checked as that one",
+				tag_validate_correct(&validation, "is tag '%s' of its group under another name: checked as that one",
 					tag_name(((struct tag_validate_instance const *)extent->owner)->tag_index));
 			}
 		}
 	}
 
 	/* every tag through its schema, then every tag's checks */
-	for (absolute_index = 0; absolute_index < tag_count && !validation->refused; absolute_index++)
-		validate_instance(validation, &instances[absolute_index], _pass_values);
-	for (absolute_index = 0; absolute_index < tag_count && !validation->refused; absolute_index++)
-		validate_instance(validation, &instances[absolute_index], _pass_checks);
+	for (absolute_index = 0; absolute_index < header->tag_count && !validation.refused; absolute_index++)
+		validate_instance(&validation, &instances_get(header)[absolute_index], _pass_values);
+	for (absolute_index = 0; absolute_index < header->tag_count && !validation.refused; absolute_index++)
+		validate_instance(&validation, &instances_get(header)[absolute_index], _pass_checks);
 	/* port (Arena Evolved): (extent_claim) */
-	if (!shared_bytes_unchanged() && !validation->refused)
+	if (!shared_bytes_unchanged() && !validation.refused)
 	{
-		validation->tag_index = NONE;
-		tag_validate_refuse(validation, "has bytes that tags of different kinds share, which its check changed");
+		validation.tag_index = NONE;
+		tag_validate_refuse(&validation, "has bytes that tags of different kinds share, which its check changed");
 	}
 
-	tag_validate_globals.corrections = validation->corrections;
+	tag_validate_globals.corrections = validation.corrections;
 
-	return !validation->refused;
-}
-
-/* the globals for checking tags in a tag cache of tag_cache_size bytes, and
-the validation of the tag_data_size bytes at tag_header */
-static void validation_begin(
-	struct tag_validation *validation,
-	void *tag_header,
-	long tag_data_size,
-	unsigned long tag_cache_size,
-	boolean custom_edition,
-	char const *map_name)
-{
-	memset(&tag_validate_globals, 0, sizeof(tag_validate_globals));
-	tag_validate_globals.header = tag_header;
-	tag_validate_globals.tag_data_size = tag_data_size;
-	tag_validate_globals.tag_cache_size = tag_cache_size;
-	tag_validate_globals.custom_edition = custom_edition;
-	snprintf(tag_validate_globals.map_name, sizeof(tag_validate_globals.map_name), "%s", map_name);
-	memset(tag_validate_claims, 0, sizeof(tag_validate_claims));
-	extent_table_new(tag_validate_extents, MAXIMUM_EXTENTS);
-	validation_new(validation, tag_header, (unsigned long)tag_data_size);
-
-	return;
-}
-
-boolean tag_validate_tags(
-	void *tag_header,
-	long tag_data_size,
-	long file_length,
-	char const *map_name)
-{
-	struct tag_validate_header *header = tag_header;
-	struct tag_validation validation;
-
-	validation_begin(&validation, tag_header, tag_data_size, TAG_CACHE_SIZE, FALSE, map_name);
-	tag_validate_globals.file_ranges[0].offset = 0;
-	tag_validate_globals.file_ranges[0].size = file_length < 0 ? 0 : (unsigned long)file_length;
-	tag_validate_globals.file_range_count = 1;
-
-	if (!schemas_fit())
-	{
-		tag_validate_refuse(&validation, "cannot be checked: a tag schema is wrong");
-		return FALSE;
-	}
-	if (tag_data_size < (long)sizeof(*header) || tag_data_size > TAG_CACHE_SIZE ||
-		header->signature != TAG_HEADER_SIGNATURE ||
-		header->tag_count <= 0 || header->tag_count > UNSIGNED_SHORT_MAX ||
-		!region_contains(&validation, header_instances(header), header->tag_count * sizeof(struct tag_validate_instance)))
-	{
-		tag_validate_refuse(&validation, "has a damaged tag header");
-		return FALSE;
-	}
-	if (!claim(header, sizeof(*header)) ||
-		!claim(header_instances(header), header->tag_count * sizeof(struct tag_validate_instance)) ||
-		!validate_buffers(&validation, XBOX_POINTER(byte, header->vertex_buffers), header->vertex_buffer_count,
-			XBOX_POINTER(byte, header->index_buffers), header->index_buffer_count))
-	{
-		if (!validation.refused)
-			tag_validate_refuse(&validation, "has a damaged tag header");
-		return FALSE;
-	}
-
-	return validate_tag_table(&validation, header_instances(header), header->tag_count);
-}
-
-boolean tag_validate_custom_edition_tags(
-	void *tag_header,
-	long loaded_size,
-	unsigned long tag_cache_size,
-	struct tag_validate_file_range const *file_ranges,
-	short file_range_count,
-	char const *map_name)
-{
-	struct tag_validate_custom_edition_header *header = tag_header;
-	struct tag_validation validation;
-	short range_index;
-
-	validation_begin(&validation, tag_header, loaded_size, tag_cache_size, TRUE, map_name);
-	for (range_index = 0; range_index < file_range_count && range_index < MAXIMUM_TAG_VALIDATE_FILE_RANGES; range_index++)
-		tag_validate_globals.file_ranges[range_index] = file_ranges[range_index];
-	tag_validate_globals.file_range_count = range_index;
-
-	if (!schemas_fit())
-	{
-		tag_validate_refuse(&validation, "cannot be checked: a tag schema is wrong");
-		return FALSE;
-	}
-	if (tag_cache_size > TAG_VALIDATE_MAXIMUM_TAG_CACHE_SIZE ||
-		loaded_size < (long)sizeof(*header) || (unsigned long)loaded_size > tag_cache_size ||
-		header->signature != TAG_HEADER_SIGNATURE ||
-		header->tag_count <= 0 || header->tag_count > UNSIGNED_SHORT_MAX ||
-		!region_contains(&validation, XBOX_POINTER(struct tag_validate_instance, header->instances), header->tag_count * sizeof(struct tag_validate_instance)) ||
-		!claim(header, sizeof(*header)) ||
-		!claim(XBOX_POINTER(struct tag_validate_instance, header->instances), header->tag_count * sizeof(struct tag_validate_instance)))
-	{
-		tag_validate_refuse(&validation, "has a damaged tag header");
-		return FALSE;
-	}
-	/* (no buffers: its models and bsps are given theirs as they are made
-	this build's, custom_edition_geometry.c) */
-	validate_buffers(&validation, NULL, 0, NULL, 0);
-
-	return validate_tag_table(&validation, XBOX_POINTER(struct tag_validate_instance, header->instances),
-		header->tag_count);
+	return !validation.refused;
 }
 
 boolean tag_validate_structure_bsp(
@@ -1661,27 +1552,26 @@ boolean tag_validate_structure_bsp(
 	struct tag_validate_instance *instance = instance_get(tag_index);
 	struct tag_schema_group const *group = schema_group_get(STRUCTURE_BSP_GROUP_TAG);
 	struct tag_validation validation;
-	unsigned long tag_cache_offset = (unsigned long)((byte *)base - (byte *)header);
+	unsigned long tag_cache_offset = (unsigned long)(POINTER_BITS(base) - POINTER_BITS(header));
 
 	validation_new(&validation, base, (unsigned long)size);
 	validation.tag_index = tag_index;
 	if (!header || !instance || instance->group_tag != STRUCTURE_BSP_GROUP_TAG ||
 		size < (long)sizeof(*bsp_header) ||
 		tag_cache_offset < (unsigned long)tag_validate_globals.tag_data_size ||
-		tag_cache_offset > tag_validate_globals.tag_cache_size ||
-		(unsigned long)size > tag_validate_globals.tag_cache_size - tag_cache_offset)
+		tag_cache_offset > TAG_CACHE_SIZE || (unsigned long)size > TAG_CACHE_SIZE - tag_cache_offset)
 	{
 		tag_validate_refuse(&validation, "has a structure bsp outside the tag cache");
 		return FALSE;
 	}
 	/* (another bsp may have been where this one is) */
-	unclaim(tag_validate_globals.tag_data_size, tag_validate_globals.tag_cache_size - tag_validate_globals.tag_data_size);
+	unclaim(tag_validate_globals.tag_data_size, TAG_CACHE_SIZE - tag_validate_globals.tag_data_size);
 	extent_table_new(tag_validate_structure_bsp_extents, MAXIMUM_STRUCTURE_BSP_EXTENTS);
 
 	if (bsp_header->signature != STRUCTURE_BSP_HEADER_SIGNATURE ||
 		!claim(bsp_header, sizeof(*bsp_header)) ||
-		!validate_buffers(&validation, XBOX_POINTER(byte, bsp_header->vertex_buffers), bsp_header->vertex_buffer_count,
-			XBOX_POINTER(byte, bsp_header->index_buffers), bsp_header->index_buffer_count))
+		!validate_buffers(&validation, xbox_pointer(bsp_header->vertex_buffers), bsp_header->vertex_buffer_count,
+			xbox_pointer(bsp_header->index_buffers), bsp_header->index_buffer_count))
 	{
 		if (!validation.refused)
 			tag_validate_refuse(&validation, "has a damaged structure bsp header");
@@ -1689,20 +1579,16 @@ boolean tag_validate_structure_bsp(
 	}
 	if (group && group->definition)
 	{
-		if (!region_contains(&validation, XBOX_POINTER(void, bsp_header->base_address), group->definition->size) ||
-			!claim(XBOX_POINTER(void, bsp_header->base_address), group->definition->size))
+		if (!region_contains(&validation, xbox_pointer(bsp_header->base_address), group->definition->size) ||
+			!claim(xbox_pointer(bsp_header->base_address), group->definition->size))
 		{
 			tag_validate_refuse(&validation, "has its structure bsp at %08lx, outside it",
 				(unsigned long)bsp_header->base_address);
 			return FALSE;
 		}
-		validate_tag(&validation, tag_index, XBOX_POINTER(void, bsp_header->base_address), group->definition,
-			_pass_values);
+		validate_tag(&validation, tag_index, xbox_pointer(bsp_header->base_address), group->definition, _pass_values);
 		if (!validation.refused)
-		{
-			validate_tag(&validation, tag_index, XBOX_POINTER(void, bsp_header->base_address), group->definition,
-				_pass_checks);
-		}
+			validate_tag(&validation, tag_index, xbox_pointer(bsp_header->base_address), group->definition, _pass_checks);
 	}
 	/* port (Arena Evolved): (extent_claim) */
 	if (!shared_bytes_unchanged() && !validation.refused)
@@ -1726,7 +1612,7 @@ boolean tag_validate_claimed(
 	unsigned long offset = (unsigned long)(POINTER_BITS(address) - POINTER_BITS(tag_validate_globals.header));
 
 	if (!tag_validate_globals.header || POINTER_BITS(address) < POINTER_BITS(tag_validate_globals.header) ||
-		offset >= tag_validate_globals.tag_cache_size)
+		offset >= TAG_CACHE_SIZE)
 	{
 		return FALSE;
 	}
@@ -1745,7 +1631,7 @@ boolean tag_validate_any_claimed(
 	unsigned long bit;
 
 	if (!tag_validate_globals.header || POINTER_BITS(address) < POINTER_BITS(tag_validate_globals.header) ||
-		offset > tag_validate_globals.tag_cache_size || size > tag_validate_globals.tag_cache_size - offset)
+		offset > TAG_CACHE_SIZE || size > TAG_CACHE_SIZE - offset)
 	{
 		return TRUE;
 	}
@@ -1781,6 +1667,20 @@ void tag_validate_refuse(
 	va_start(arguments, format);
 	validation_message(validation, "cannot be played", format, arguments);
 	va_end(arguments);
+
+	return;
+}
+
+void tag_validate_non_negative(
+	struct tag_validation *validation,
+	char const *name,
+	real *value)
+{
+	if (!(*value >= 0.0f))
+	{
+		tag_validate_correct(validation, "has a %s of %f: 0", name, *value);
+		*value = 0.0f;
+	}
 
 	return;
 }
@@ -1823,42 +1723,12 @@ void tag_validate_correct(
 	return;
 }
 
-boolean tag_validate_file_contains(
-	struct tag_validation *validation,
-	long offset,
-	long size)
-{
-	short range_index;
-
-	(void)validation;
-	if (offset < 0 || size < 0)
-		return FALSE;
-	for (range_index = 0; range_index < tag_validate_globals.file_range_count; range_index++)
-	{
-		struct tag_validate_file_range const *range = &tag_validate_globals.file_ranges[range_index];
-
-		if ((unsigned long)offset >= range->offset && (unsigned long)offset - range->offset <= range->size &&
-			(unsigned long)size <= range->size - ((unsigned long)offset - range->offset))
-		{
-			return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
-void *tag_validate_root(
-	struct tag_validation *validation)
-{
-	return validation->depth > 0 ? validation->frames[0].base : NULL;
-}
-
-boolean tag_validate_custom_edition(
+long tag_validate_file_length(
 	struct tag_validation *validation)
 {
 	(void)validation;
 
-	return tag_validate_globals.custom_edition;
+	return tag_validate_globals.file_length;
 }
 
 boolean tag_validate_contains(
@@ -1883,7 +1753,7 @@ void *tag_validate_tag_get(
 	if (!instance || !instance->base_address || !instance_in_groups(instance, groups))
 		return NULL;
 
-	return XBOX_POINTER(void, instance->base_address);
+	return xbox_pointer(instance->base_address);
 }
 
 static void *buffer_data(
@@ -1899,7 +1769,7 @@ static void *buffer_data(
 		return NULL;
 	}
 
-	return XBOX_POINTER(void, *(XPTR(void) const *)((byte const *)buffer + 4));
+	return buffer_data_address(buffer);
 }
 
 void *tag_validate_vertex_buffer_data(

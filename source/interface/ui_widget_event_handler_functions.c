@@ -928,7 +928,6 @@ symbols in this file:
 #include "saved games/player_profile.h"
 #include "interface/ui_widget_definitions.h"
 #include "interface/ui_widget_instance.h"
-#include "custom_edition_maps.h" /* port: port/linux/game/custom_edition_maps.c */
 #include "saved games/saved_game_files.h"
 #ifdef HALO_64BIT
 /* port: (saved games/playlist_profile.h's, whose other prototypes this unit
@@ -3513,6 +3512,58 @@ static boolean multiplayer_profiles_list_initialize(
 	return TRUE;
 }
 
+/* port: whether a widget of a map's may not run an event handler's function.
+A widget's handlers name the functions they run by their index in the
+function table, which nothing checks: any map's widget could run any of the
+main menu's functions (deleting player and playlist profiles, saving them,
+running the demos) and the port's own (writing config.toml, quitting,
+connecting), on its created event too, as its screen opens. The shipped
+game maps' widgets (their pause screens) run none of these: those of the
+port's own menus' tags (pc_menu_tag) may run the port's, and the main menu's
+map (ui.map) the main menu's. Each refusal is logged once */
+static boolean ui_widget_function_denied(
+	struct widget_instance *widget,
+	word function_index)
+{
+	extern boolean pc_menu_tag(long tag_index);
+	static short const main_menu_functions[] =
+	{
+		41, /* mp profile change name */
+		60, /* mp profile save changes */
+		64, 65, 66, 67, /* player profile begin and end editing, change name, save changes */
+		68, 69, 70, 71, /* player profile controller settings */
+		74, 75, 76, 77, 78, 79, 80, /* profile deletion and creation */
+		86, 87, /* the demos */
+	};
+	static boolean logged = FALSE;
+	char const *map_name = cache_file_loaded_map_name();
+	boolean denied = FALSE;
+	short index;
+
+	if (pc_menu_tag(widget->definition_tag_index))
+		return FALSE;
+	if (function_index >= PC_MENU_FUNCTION_BASE && function_index < 0x8000)
+	{
+		denied = TRUE;
+	}
+	else if (map_name && csstrcmp(map_name, "ui"))
+	{
+		for (index = 0; index < (short)NUMBEROF(main_menu_functions); index++)
+		{
+			if (function_index == (word)main_menu_functions[index])
+				denied = TRUE;
+		}
+	}
+	if (denied && !logged)
+	{
+		logged = TRUE;
+		error(_error_silent, "the map %s's widget may not run event handler function %d; it is skipped",
+			map_name ? map_name : "", function_index);
+	}
+
+	return denied;
+}
+
 boolean ui_widget_event_handler_function_invoke(
 	struct widget_instance *widget,
 	struct event_record *event,
@@ -3524,6 +3575,10 @@ boolean ui_widget_event_handler_function_invoke(
 	match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 478,
 		widget != NULL && widget_deleted != NULL,
 		"(widget != NULL) && (widget_deleted != NULL)");
+	/* port: a map's own widgets (not the menus' tags the port adds) may not
+	run what changes the player's files or settings: ui_widget_function_denied */
+	if (ui_widget_function_denied(widget, function_index))
+		return TRUE;
 	/* port: the menus' own functions (port/linux/game/menu_functions.c) */
 	if (function_index >= PC_MENU_FUNCTION_BASE && function_index < 0x8000)
 	{
@@ -6118,6 +6173,10 @@ short ui_widget_port_multiplayer_maps(
 	levels = native_multiplayer_map_list(levels, level_count, &level_count);
 #endif
 	*names = (char const *const *)levels;
+	/* (unless last_used is NULL: it is read from a file of the save root,
+	which the menus that name maps each frame need not do) */
+	if (!last_used)
+		return level_count;
 	*last_used = 0;
 	if (saved_game_file_retrieve_last_used_multiplayer_map(map_name))
 	{
@@ -6214,9 +6273,7 @@ boolean ui_widget_port_cooperative_level_choose(
 	struct network_game_server *server = global_network_game_server_get();
 	struct game_variant variant;
 
-	/* (a campaign level, or a Custom Edition campaign map's:
-	port/linux/game/custom_edition_maps.c) */
-	if (!server || !map_name || !custom_edition_maps_level_campaign(map_name))
+	if (!server || !map_name || main_get_solo_level_from_name(map_name) == NONE)
 		return FALSE;
 	csmemset(&variant, 0, sizeof(variant));
 	ustrncpy(variant.human_readable_game_description, L"Co-op",

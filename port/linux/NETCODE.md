@@ -75,7 +75,8 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
 
   The host's EXTRA ENEMIES (`coop_enemies.c`, `network.coop_enemies_mode`)
   give each squad of enemies a level places more of itself: PER PLAYER, a
-  percentage of itself for each player past the first; STATIC MULTIPLIER,
+  percentage of itself for each player past the first, to 8 times its size
+  at most (more filled the clients' objects); STATIC MULTIPLIER,
   that many times itself for any number of players. They stand around its
   starting locations on free ground (the same floor, clear of crates and
   other actors, with room to stand), or where none is left on rings about
@@ -176,62 +177,10 @@ password's key (`p2p_lobby.c`), a listing of another layout; version 21
 sends each killing blow again reliably and an object come to rest three
 times (a client waits for a player's blow before its body dies without one),
 and switches co-op's BSP on the host's crossing alone; version 22 names a
-Halo Custom Edition map a host plays `custom_maps\<name>` (its loader,
-`custom_edition_cache.c`), which a client of an older version cannot load
-or explain (a client of 22 tells its player the map it lacks and where to
-copy it: `cache_files_map_present`).
-
-Arena Evolved announces ChupathingyCE 0.7.0b's version, 20, in its game's
-advertisement, and joins hosts of 11 to 22 (delta.h's table), so
-ChupathingyCE 0.7.0b and OpenCE build-133 to build-140 (20) and Arena
-Evolved join each other's games both ways; it joins OpenCE build-141 to
-build-144's hosts (21) and build-145 and later's (22), whose clients do not
-join its own (OpenCE's clients join only their own version), and the hosts
-of 11 to 19; ChupathingyCE 0.6.8b and
-OpenCE build-129 to build-131 (18) do not join its hosts. It runs version
-21's code and still announces 20 because 21 is additive between the two:
-- the killing blow sent once more reliably is a message a client of 20
-  already takes (the damage events, which the host of 20 sent only with a
-  tick's others): it replays one blow of a unit only (a dead unit's is
-  passed over), and a copy older than the damage it has is dropped as
-  stale; a client of 21 with a host of 20 waits half a second for a
-  player's lost blow before the body dies without one (as an actor's
-  always did), where it died at once;
-- an object come to rest sent three times is the same state message, three
-  times; a client of 21 takes the host's word on rest from every state,
-  which a host of 20 sends as before;
-- co-op's BSP switching on the host's crossing alone is the host's
-  decision (clients never switch on their own): a client of 20 under a
-  host of 21 may say it waits for its team to go back when only the host's
-  crossing switches, and a client of 21 under a host of 20 that it waits
-  for the host when a client's crossing switches too. Words only.
-Version 22 changes no message: only the name an OpenCE host gives its
-Custom Edition maps, `custom_maps\<name>`, which Arena Evolved does not
-play (it plays them as ChupathingyCE does, `<file>@ce` from maps/ce, with
-ChupathingyCE's loader; OpenCE's is not built:
-`port/linux/game/ae_opence_custom_edition_off.c`). Its client tells such a
-name apart and leaves with that said (`cache_files_map_present`), never
-playing the Xbox map of that file name in its place; on the game's own maps
-a host of 22 is joined as one of 21. Custom Edition maps between Arena
-Evolved and OpenCE stay impossible either way (OpenCE's clients join only
-22, and the two name the maps differently).
-Nothing else build-140 to build-144 changed is sent: their hardening refuses
-only what no machine sends (a flag or ball of no team, a vehicle that is its
-own rider's parent, an actor of an eleventh team, a game record whose
-machine has two players on one controller, a map name of other characters,
-a host's tick past 2^30), and a client takes the game's own messages only
-over its host's connection, which every host of 11 to 22 sends them over
-(only its advertisement, its answers to pings and the distributed netcode's
-messages come in datagrams). Every public listing is version 20, a game with a
-password's and its tombstone included. These numbers are fixed: Arena
-Evolved's wire ID is its own (`ae-20a`, `delta.h`), so ChupathingyCE's
-signed legacy tables (Delta, `docs/delta.md`), which have no row for it,
-neither widen them nor turn off its Delta capabilities, and they are not
-fetched unless `network.legacy_table_fetch` is on (off by default). Arena
-Evolved's own rule on top: a game with
-a password never has its invite sent to the game list's site (`browser.c`:
-not listed, not claimed, not reported, hosted or joined through the
-password).
+Halo Custom Edition map `custom_maps\<name>` in the game's settings, and a
+client without the map it names is told which map it misses and where to
+put it; version 24 sends the gametype's PC vehicle set, with which every
+machine places all of the map's vehicles.
 
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. That
@@ -600,7 +549,12 @@ Unity's Netcode for Entities, lightyear, netfox and the Ares source):
   messages (checked as the host's below); the game's own messages (a player
   added or removed, the game begun or over, its settings), which the host
   sends over its connection, are ignored in a datagram
-  (`network_client_message_handler.c`).
+  (`network_client_message_handler.c`). The host takes a client's hits,
+  Discord user and readiness only over its connection too, and every
+  machine drops a datagram of the netcode stamped with a tick more than 15
+  seconds from the latest it had from that machine (one stamped far ahead
+  would have the machine's newer ones taken for stale); a message over the
+  connection is taken whatever its tick (`network_distributed.c`).
 - **Nothing held back.** The game's connections (the reliable messages:
   objects made and deleted, the game type's state, hits, pickups) send each
   write at once (`TCP_NODELAY`, in `xnet.c` for the game's sockets and in

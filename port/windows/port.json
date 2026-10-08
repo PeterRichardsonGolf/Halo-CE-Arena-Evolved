@@ -8,7 +8,8 @@
     "msvc_wide.c",
     "posix_update.c",
     "posix_upnp.c",
-    "posix_capture.c"
+    "posix_capture.c",
+    "posix_crash.c"
   ],
   "libraries": [
     "ws2_32",
