@@ -119,6 +119,7 @@ static void confirm_spec(struct ae_dialog_spec *spec, struct ae_density const *d
 	spec->choice_count = 2;
 	spec->safe_choice = 1;
 	spec->cancel_choice = 1;
+	spec->has_cancel = 1;
 	spec->density = *density;
 	spec->bounds.width = 1920;
 	spec->bounds.height = 1080;
@@ -193,14 +194,33 @@ static void confirm(void)
 	dispatch(0, AE_ACTION_BACK);
 	CHECK(picked_choice == 1 && picked_count == 1 && ae_ui_depth() == 1 && ae_ui_top()->focus == 2 &&
 		ae_sound_take(0) == AE_SOUND_BACK);
-	/* (no cancel choice set, AE_DIALOG_NONE: B does nothing, the dialog stays; set: B picks it, as above) */
-	spec.cancel_choice = AE_DIALOG_NONE;
+	/* (no cancel choice set (has_cancel 0, as a zeroed spec has it): B does nothing, the dialog stays; set: B picks
+	it, as above) */
+	spec.has_cancel = 0;
 	CHECK(ae_dialog_open(&spec, AE_OWNER_ANY));
 	ae_sound_reset();
 	dispatch(0, AE_ACTION_BACK);
 	CHECK(picked_count == 1 && ae_ui_depth() == 2 && ae_sound_take(0) == AE_SOUND_NONE);
 	ae_ui_pop();
-	spec.cancel_choice = 1;
+	spec.has_cancel = 1;
+	/* (a zeroed spec, only what it needs filled in: B does nothing) */
+	{
+		struct ae_dialog_spec zeroed;
+
+		memset(&zeroed, 0, sizeof(zeroed));
+		zeroed.title = "Zeroed";
+		zeroed.choices[0] = "DELETE";
+		zeroed.choices[1] = "KEEP";
+		zeroed.choice_count = 2;
+		zeroed.safe_choice = 1;
+		zeroed.density = d;
+		zeroed.bounds = spec.bounds;
+		zeroed.picked = picked;
+		CHECK(ae_dialog_open(&zeroed, AE_OWNER_ANY));
+		dispatch(0, AE_ACTION_BACK);
+		CHECK(picked_count == 1 && ae_ui_depth() == 2);
+		ae_ui_pop();
+	}
 	/* A picks the focused one (forward) */
 	CHECK(ae_dialog_open(&spec, AE_OWNER_ANY));
 	dispatch(0, AE_ACTION_DOWN);
@@ -295,6 +315,7 @@ static void timed_revert(void)
 	spec.choice_count = 2;
 	spec.safe_choice = 0;
 	spec.cancel_choice = 1;
+	spec.has_cancel = 1;
 	spec.timeout_choice = 1;
 	spec.density = d;
 	spec.bounds.width = 1920;
@@ -431,6 +452,8 @@ static void error_dialog(void)
 	spec.choices[0] = "BACK TO SERVER BROWSER";
 	spec.choices[1] = "DETAILS";
 	spec.choice_count = 2;
+	/* (BACK, the safe choice, on B: set, as a zeroed spec has B do nothing) */
+	spec.has_cancel = 1;
 	spec.density = d;
 	spec.bounds.width = 1920;
 	spec.bounds.height = 1080;

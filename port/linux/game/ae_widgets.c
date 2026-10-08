@@ -668,11 +668,18 @@ void ae_widget_list(struct ae_density const *density, struct ae_list_view *view,
 	short rows = ae_list_view_rows(density, height), item, last;
 	int bar_moving;
 
-	/* (the "▲ N more" line only while items are above: then it takes the top, and a row less shows) */
-	if (list->first > 0 && rows > 1)
+	/* (the "▲ N more" line only while items are above: then it takes the top, and a row less shows; the rows move
+	down to make its room with the scroll, never at once) */
 	{
-		rows--;
-		rows_top += more_line(density);
+		float top = list->first > 0 && rows > 1 ? 1.0f : 0.0f;
+
+		if (top > 0.0f)
+			rows--;
+		if (view->top.to != top)
+			ae_motion_start(&view->top, view->top.to, top, AE_MOTION_SCROLL_MS);
+		if (view->dragging)
+			ae_motion_finish(&view->top);
+		rows_top += more_line(density) * ae_motion_value(&view->top);
 	}
 	if (list->rows != rows)
 	{

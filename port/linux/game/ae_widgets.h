@@ -99,6 +99,8 @@ struct ae_list_view
 	scrolls it only where nothing of a higher layer, a popover over it, lies under the pointer) */
 	struct ae_rect area;
 	short layer;
+	/* (M2) the "▲ N more" line's room over the rows, 0 -> 1 as items go above (with the scroll, 100 ms) */
+	struct ae_motion top;
 };
 /* a list of count items in rows rows: the focus on the first, no motion running, nothing hovered */
 void ae_list_view_init(struct ae_list_view *view, short count, short rows);
@@ -315,20 +317,21 @@ FULL). The dialog copies its strings (the caller's need not outlive the call). O
 owner's is open); an error then is logged and fails at once and waits, shown when the slot frees (a newer error
 replaces a waiting one; a reset drops it) */
 enum { AE_DIALOG_CONFIRM, AE_DIALOG_TIMED_REVERT, AE_DIALOG_ERROR };
-enum { AE_DIALOG_CHOICES = 4, AE_DIALOG_REVERT_MS = 10000, AE_DIALOG_NONE = -1 };
+enum { AE_DIALOG_CHOICES = 4, AE_DIALOG_REVERT_MS = 10000 };
 struct ae_dialog_spec
 {
 	short kind;
 	const char *title, *body;
 	const char *choices[AE_DIALOG_CHOICES]; short choice_count;
 	short safe_choice;            /* the first focus (CANCEL on quit, KEEP after a display change, BACK on an error) */
-	short cancel_choice;          /* B / Esc picks it (normally the safe choice); AE_DIALOG_NONE: B does nothing */
+	short cancel_choice;          /* B / Esc picks it when has_cancel (normally the safe choice) */
 	short timeout_choice;         /* timed revert: picked at 0 (REVERT); 10 s */
 	struct ae_density density;
 	struct ae_rect bounds;        /* FULL: the frame; VIEW: the panel or its page (the dialog draws inside it, at its
 	                                 width, and hides what is under it there) */
 	void (*picked)(short choice, void *context); void *context;
 	struct ae_rect view;          /* (P12) */
+	int has_cancel;               /* 0 (a zeroed spec): B / Esc does nothing; else B / Esc picks cancel_choice */
 };
 int ae_dialog_open(struct ae_dialog_spec const *spec, short owner);
 /* once a frame (ae_hooks, AE's screens shown or not): timed reverts at 0 pick their timeout choice wherever they are

@@ -828,6 +828,7 @@ static void dialog_open_full(void)
 	/* (the safe choice SAVE AS NEW, as the mockup; B / Esc, the cancel choice, picks it: the dialog ruling) */
 	spec.safe_choice = 1;
 	spec.cancel_choice = 1;
+	spec.has_cancel = 1;
 	spec.density = gallery.density;
 	spec.bounds = gallery.frame.rect;
 	spec.picked = dialog_picked;
@@ -1072,6 +1073,9 @@ static void view_popover(int view)
 		spec.choices[0] = ae_string(AE_STR_STAY);
 		spec.choices[1] = ae_string(AE_STR_LEAVE);
 		spec.choice_count = 2;
+		/* (B: STAY, the safe choice) */
+		spec.cancel_choice = 0;
+		spec.has_cancel = 1;
 		spec.density = v->density;
 		/* (the panel under its header: the page it hides, mockup 25) */
 		spec.bounds = v->panel;

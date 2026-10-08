@@ -666,6 +666,38 @@ static void list_edges(void)
 			/* (the line clear of the first row shown: nothing drawn over a label) */
 			CHECK(more_box.y + more_box.height <= row_box.y);
 		}
+		/* (the top line's room comes with the scroll: off the top, the rows (the track: their top) don't jump down at
+		once but move over the scroll's 100 ms) */
+		{
+			struct ae_rect track;
+			float line;
+
+			ae_motion_set_reduced(0);
+			ae_motion_set_now(50000);
+			ae_list_view_init(&view, 40, rows);
+			ae_stub_reset(1920, 1080);
+			ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+			ae_stub_pixels(ae_stub_get(find_call(AE_STUB_RECT, AE_COLOR_TRACK)), &track);
+			CHECK(near(track.y, 100, 0.01f));
+			ae_list_set_focus(&view.list, (short)(rows + 2));
+			CHECK(view.list.first > 0);
+			ae_stub_reset(1920, 1080);
+			ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+			ae_stub_pixels(ae_stub_get(find_call(AE_STUB_RECT, AE_COLOR_TRACK)), &track);
+			CHECK(near(track.y, 100, 0.01f));
+			ae_motion_set_now(50050);
+			ae_stub_reset(1920, 1080);
+			ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+			ae_stub_pixels(ae_stub_get(find_call(AE_STUB_RECT, AE_COLOR_TRACK)), &track);
+			line = track.y - 100;
+			CHECK(line > 0.5f);
+			ae_motion_set_now(50100);
+			ae_stub_reset(1920, 1080);
+			ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+			ae_stub_pixels(ae_stub_get(find_call(AE_STUB_RECT, AE_COLOR_TRACK)), &track);
+			CHECK(track.y - 100 > line);
+			ae_motion_set_reduced(1);
+		}
 		/* (back to the list at rest for what follows) */
 		ae_list_view_init(&view, 40, rows);
 		ae_stub_reset(1920, 1080);

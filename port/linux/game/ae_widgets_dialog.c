@@ -419,7 +419,7 @@ static int dialog_handle(struct ae_screen *screen, struct ae_event const *event)
 		return 1;
 	/* (B / Esc: the cancel choice, with the back sound; handled here, so the stack never pops it on its own) */
 	case AE_ACTION_BACK:
-		if (dialog_choice_valid(state, state->spec.cancel_choice))
+		if (state->spec.has_cancel && dialog_choice_valid(state, state->spec.cancel_choice))
 			dialog_pick(state, state->spec.cancel_choice, AE_SOUND_BACK);
 		return 1;
 	default:
