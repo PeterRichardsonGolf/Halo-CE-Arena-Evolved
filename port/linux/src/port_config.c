@@ -617,6 +617,14 @@ static const struct config_setting config_settings[] =
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"
 		"ray, and whether it is drawn; and each item call muted at LINE OF SIGHT." },
+	{ "debug.network_test_loadout", _config_string, "\"\"", "HALO_NETWORK_TEST_LOADOUT", _environment_value,
+		_platform_all,
+		"An automated test host's custom loadout: \"primary,secondary\" as the\n"
+		"gametype editor's weapon numbers (0 none, 2 assault rifle, 3 pistol, 4\n"
+		"shotgun, 5 sniper rifle, 6 rocket launcher...); empty: the gametype's." },
+	{ "debug.item_log", _config_boolean, "false", "HALO_ITEM_LOG", _environment_value, _platform_all,
+		"For the automated tests of DROP SECONDARY: each item a unit drops (its\n"
+		"owned time, the rule) and each item the 30 second purge deletes." },
 	{ "debug.los_test_blink", _config_boolean, "false", "HALO_LOS_TEST_BLINK", _environment_value, _platform_all,
 		"For the automated tests of LINE OF SIGHT: every other second of game time\n"
 		"nothing counts as in sight, so the logs show the 0.3 s hold ending." },

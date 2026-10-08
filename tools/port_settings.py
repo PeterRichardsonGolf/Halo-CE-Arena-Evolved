@@ -1357,6 +1357,12 @@ ARENA_ROWS = [
         "On Halo 1: NHE's maps: NHE's timers and its\\npowerup calls. On other maps the gametype's\\nvehicles apply.",
         "On Halo 1: NHE's maps: NHE's training: the\\ncountdown, spawn markers, randoms and waypoints.\\nOther maps: the gametype's vehicles.",
     ]),
+    # (game_engine.h's enum drop_secondary: bits 29-30; the host's rule)
+    ("drop_secondary", "DROP SECONDARY:", ["CE", "ALWAYS", "ALWAYS EXCEPT POWER"], [
+        "As Halo CE: a holstered weapon you haven't drawn\\nfor 30 seconds vanishes when you die.",
+        "Both your weapons drop when you die, and stay\\n30 seconds.",
+        "Both drop, but a holstered rocket launcher,\\nsniper rifle or shotgun follows Halo CE's rule.",
+    ]),
 ]
 
 
@@ -1408,19 +1414,19 @@ def _arena_options() -> list:
                          [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                           ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
                          [f'<child widget="{base}/{key}_label"/>',
-                          f'<child widget="{base}/{key}_spinner" x="320" y="1"/>'])
+                          f'<child widget="{base}/{key}_spinner" x="256" y="1"/>'])
         lines += _widget(f"{base}/{key}_label",
                          [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
                           ("string_list", f"{base}/arena_options_labels"), ("string_index", index or None),
                           ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
         lines += _widget(f"{base}/{key}_spinner",
-                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 176), ("height", 20),
+                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 240), ("height", 20),
                           ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
                           ("string_list", f"{base}/var_{key}"), ("font", "ui\\large_ui"),
                           ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4),
                           ("list_flags", "items_from_strings"),
                           ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 178 19 184")],
+                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 242 19 248")],
                          ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
         lines += _strings(f"{base}/var_{key}", values)
     lines += _strings(f"{base}/arena_options_labels", [label for _, label, _, _ in ARENA_ROWS])

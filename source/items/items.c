@@ -205,6 +205,20 @@ void item_in_unit_inventory(
 		return;
 	}
 
+	/* port: DROP SECONDARY (the gametype's ARENA OPTIONS): an item leaving a
+	unit's inventory owned until now, so it lies the 30 seconds any drop does
+	(a holstered weapon is not updated: its time is from when it was last in
+	hand or picked up, and game_engine_update_purge would take it at once);
+	CE's rule otherwise) */
+	if (TEST_FLAG(item->item.flags, _item_attached_to_unit_bit))
+	{
+		long owned_before = item->item.last_owned_time;
+		boolean refreshed = game_engine_drop_refreshes_owned_time(item_index);
+
+		if (refreshed)
+			item->item.last_owned_time = game_time_get();
+		game_engine_log_item_dropped(item_index, owned_before, refreshed);
+	}
 	item->item.flags &=
 		~(FLAG(_item_attached_to_unit_bit) | FLAG(_item_belongs_to_player_bit));
 

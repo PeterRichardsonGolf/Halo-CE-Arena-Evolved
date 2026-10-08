@@ -143,6 +143,10 @@ static struct
 	char saved_gametype[64];
 	long score_to_win;
 	long time_limit;	/* (debug.network_test_time_limit: minutes, 0 the variant's) */
+	/* (debug.network_test_loadout: a custom loadout's weapons, game_engine.h's
+	_loadout_weapon_* values; NONE: the gametype's loadout) */
+	long loadout_primary;
+	long loadout_secondary;
 	long logged_time;
 } network_test;
 
@@ -250,6 +254,14 @@ static void network_test_read_settings(
 		config_string("debug.network_test_pickup_weapon"));
 	network_test.score_to_win = (long)config_integer("debug.network_test_score");
 	network_test.time_limit = (long)config_integer("debug.network_test_time_limit");
+	network_test.loadout_primary = NONE;
+	network_test.loadout_secondary = NONE;
+	if (sscanf(config_string("debug.network_test_loadout"), "%ld,%ld", &network_test.loadout_primary,
+		&network_test.loadout_secondary) != 2)
+	{
+		network_test.loadout_primary = NONE;
+		network_test.loadout_secondary = NONE;
+	}
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
@@ -1010,17 +1022,26 @@ void network_test_update(
 			struct player_datum *first = NULL;
 			long first_index = NONE;
 
+			/* (the killer is the host's own player when it has one, else the
+			first: the host deals no damage a remote player owns, which that
+			player's machine reports, network_damage_deals; the victim the last
+			other player) */
 			data_iterator_new(&iterator, player_data);
 			while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 			{
-				if (!first)
+				if (!first || (player->local_player_index != NONE && first->local_player_index == NONE))
 				{
 					first = player;
 					first_index = iterator.datum_index;
 				}
-				last = player;
 			}
-			if (last && last != first && last->unit_index != NONE && first->unit_index != NONE)
+			data_iterator_new(&iterator, player_data);
+			while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+			{
+				if (player != first)
+					last = player;
+			}
+			if (last && first && last->unit_index != NONE && first->unit_index != NONE)
 			{
 				/* killed by the first player: a kill that scores */
 				platform_log("network test: the first player kills the last");
@@ -1194,12 +1215,19 @@ void network_test_update(
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */
-					if (saved || network_test.time_limit > 0)
+					if (saved || network_test.time_limit > 0 || network_test.loadout_primary != NONE)
 					{
 						if (!saved)
 							game_variant_options_default(&variant, &options);
 						if (network_test.time_limit > 0)
 							options.time_limit = (short)network_test.time_limit;
+						/* debug.network_test_loadout: a custom loadout */
+						if (network_test.loadout_primary != NONE)
+						{
+							options.loadout = _loadout_custom;
+							options.primary_weapon = (byte)network_test.loadout_primary;
+							options.secondary_weapon = (byte)network_test.loadout_secondary;
+						}
 						player_ui_set_game_variant_options(&options);
 					}
 					network_game_server_change_game_variant(global_network_game_server_get(), &variant);

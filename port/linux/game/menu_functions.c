@@ -5597,6 +5597,11 @@ static struct gametype_option const gametype_options[] =
 		{ 0, GAME_VARIANT_NO_SPREAD_NHE, GAME_VARIANT_NO_SPREAD_FULL } },
 	{ "pregame_countdown_spinner", _option_flag, 0, FLAG(_game_variant_pregame_countdown_bit), 2, { 0, 1 } },
 	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
+	/* (DROP SECONDARY: bits 29-30, enum drop_secondary; a stored 3 shows as
+	ALWAYS EXCEPT POWER, the nearest, as the engine reads it) */
+	{ "drop_secondary_spinner", _option_flags, 0, GAME_VARIANT_DROP_SECONDARY_MASK, 3,
+		{ 0, _drop_secondary_always << _game_variant_drop_secondary_first_bit,
+		_drop_secondary_always_except_power << _game_variant_drop_secondary_first_bit } },
 	/* (NHE MODE: enum nhe_mode, in the row's order) */
 	{ "nhe_mode_spinner", _option_nhe_mode, 0, 0, NUMBER_OF_NHE_MODES,
 		{ _nhe_mode_by_vehicles, _nhe_mode_vanilla, _nhe_mode_timer_only, _nhe_mode_nhe_and_timer,

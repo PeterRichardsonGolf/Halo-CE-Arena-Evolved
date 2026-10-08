@@ -3409,6 +3409,9 @@ static boolean find_closest_player_callback(
 	return result;
 }
 
+void platform_log(char const *format, ...);
+static boolean game_engine_item_log_on(void);
+
 static void game_engine_update_purge(
 	void)
 {
@@ -3430,7 +3433,16 @@ static void game_engine_update_purge(
 			{
 				long item_index = item_iterator.index;
 				if (can_delete_item(item_index))
+				{
+					/* port: debug.item_log */
+					if (game_engine_item_log_on())
+					{
+						platform_log("items: purged %s (%lx) at tick %ld, owned at tick %ld (%ld ticks before)",
+							tag_get_name(item->definition_index), item_index, game_time_get(),
+							item->item.last_owned_time, game_time_get() - item->item.last_owned_time);
+					}
 					object_delete(item_iterator.index);
+				}
 			}
 		}
 	}
@@ -6069,7 +6081,6 @@ was last seen (NONE: not yet); a goal is drawn while seen within
 GOAL_IN_SIGHT_HOLD_TICKS, and the log (debug.waypoint_log) says so each
 second */
 #define GOAL_IN_SIGHT_HOLD_TICKS ((long)(0.3f * TICKS_PER_SECOND))
-void platform_log(char const *format, ...);
 static long game_engine_goal_seen_at[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal)];
 /* (whether each was drawn last frame: the log tells when a hold ends) */
 static boolean game_engine_goal_drawn[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal)];
@@ -8809,6 +8820,71 @@ long game_engine_remap_item_definition(
 	*seed = saved_seed;
 
 	return result;
+}
+
+/* port: debug.item_log, read again only when the settings change */
+static boolean game_engine_item_log_on(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean on = FALSE;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		on = config_boolean("debug.item_log") != 0;
+	}
+	return on;
+}
+
+/* port: DROP SECONDARY's power weapons, which ALWAYS EXCEPT POWER leaves
+to CE's rule: the rocket launcher, the sniper rifle and the shotgun. A
+host's gameplay rule, so a fixed set every machine agrees on: not
+item_timers_shotgun_is_power(), which follows display.shotgun_power, each
+player's own display setting (owner, 2026-10-07: the shotgun counts) */
+static boolean game_engine_drop_secondary_power_weapon(
+	long definition_index)
+{
+	return game_engine_weapon_is_rocket_launcher(definition_index) ||
+		game_engine_weapon_is_sniper_rifle(definition_index) ||
+		game_engine_weapon_is_shotgun(definition_index);
+}
+
+/* port: DROP SECONDARY (items.c's item_in_unit_inventory, an item leaving a
+unit's inventory): whether its owned time is now, so it lies 30 s like any
+drop. The host's (it alone purges: game_engine_update_purge); CE: never
+(stock); ALWAYS: always; ALWAYS EXCEPT POWER (a stored 3 too): but for a
+power weapon */
+boolean game_engine_drop_refreshes_owned_time(
+	long item_index)
+{
+	struct object_datum *item;
+
+	if (!game_engine_running() || network_game_distributed_client())
+		return FALSE;
+	switch (game_engine_drop_secondary())
+	{
+	case _drop_secondary_always:
+		return TRUE;
+	case _drop_secondary_always_except_power:
+		item = object_get(item_index);
+		return !(item->object.type == _object_type_weapon &&
+			game_engine_drop_secondary_power_weapon(item->definition_index));
+	}
+	return FALSE;
+}
+
+/* port: debug.item_log: an item a unit dropped */
+void game_engine_log_item_dropped(
+	long item_index,
+	long owned_before,
+	boolean refreshed)
+{
+	if (!game_engine_item_log_on() || !game_engine_running() || network_game_distributed_client())
+		return;
+	platform_log("items: dropped %s (%lx) at tick %ld, owned at tick %ld%s (drop secondary %s)",
+		tag_get_name(object_get(item_index)->definition_index), item_index, game_time_get(), owned_before,
+		refreshed ? ", now" : "", game_variant_drop_secondary_name(global_variant.universal_variant.flags));
 }
 
 /* port: whether a weapon definition is the globals' rocket launcher,
