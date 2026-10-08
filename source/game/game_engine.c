@@ -1484,12 +1484,14 @@ static long rasterize_in_game_score_untabbed_rows = 1;
 
 /* port: a seeded gametype's display name (arena_gametype_names.c), for the
 scoreboards' line under their title: "TEAM AE SLAYER"; FALSE for any other
-gametype, which has no such line */
+gametype, which has no such line, an old name (an alias, which has no
+description and would only repeat the stored name) too */
 static boolean game_engine_scoreboard_gametype_name(
 	wchar_t *text,
 	short size)
 {
 	wchar_t stored_name[NUMBEROF(global_variant.human_readable_game_description) + 1];
+	struct arena_gametype_info info;
 
 	text[0] = 0;
 	if (!game_engine)
@@ -1497,7 +1499,7 @@ static boolean game_engine_scoreboard_gametype_name(
 	csmemcpy(stored_name, global_variant.human_readable_game_description,
 		sizeof(global_variant.human_readable_game_description));
 	stored_name[NUMBEROF(stored_name) - 1] = 0;
-	if (!arena_gametype_info(stored_name, NULL))
+	if (!arena_gametype_info(stored_name, &info) || !info.description)
 		return FALSE;
 	arena_gametype_display_name(stored_name, text, size);
 	return TRUE;
