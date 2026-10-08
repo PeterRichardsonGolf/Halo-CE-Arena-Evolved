@@ -214,4 +214,66 @@ value chips (AE_PART_CHIP, the value's index) and the reset (AE_PART_PROMPT, ind
 void ae_widget_help(struct ae_density const *density, struct ae_rect const *rect, struct ae_help const *help,
 	short hit_id, struct ae_rect *preview);
 
+/* ---------- text (ae_widgets_text.c, spec 4.8-4.9; the glue: ae_glue_text.c) */
+
+#include "ae_text_edit.h"
+
+/* a key typed while a field is being edited (the game's input_get_key: the platform's typing mode) */
+enum { AE_TEXT_KEY_CHAR, AE_TEXT_KEY_BACKSPACE, AE_TEXT_KEY_DELETE, AE_TEXT_KEY_HOME, AE_TEXT_KEY_END,
+	AE_TEXT_KEY_SELECT_ALL, AE_TEXT_KEY_COPY, AE_TEXT_KEY_PASTE };
+struct ae_text_key { short kind; short shift; char character; };
+/* the engine contact the pure widgets use (preflight P13): ae_glue_text_install puts the game's in (the hooks call it
+when the menus are on), a test its own; with none, each does nothing (and reads nothing) */
+struct ae_host
+{
+	void (*write_log)(const char *text);
+	void (*text_begin)(void);
+	void (*text_end)(void);
+	int (*text_keys)(struct ae_text_key *keys, int maximum);
+	int (*clipboard_get)(char *text, int size);
+	void (*clipboard_set)(const char *text);
+};
+void ae_host_set(struct ae_host const *host);
+void ae_host_log(const char *text);
+void ae_host_text_begin(void);
+void ae_host_text_end(void);
+int ae_host_text_keys(struct ae_text_key *keys, int maximum);
+int ae_host_clipboard_get(char *text, int size);
+void ae_host_clipboard_set(const char *text);
+/* (ae_glue_text.c, game side) the platform's typing mode and keys, the clipboard */
+void ae_glue_text_begin(void);   /* platform_text_field(TRUE); drains input_get_key (as text_field_begin does) */
+void ae_glue_text_end(void);     /* platform_text_field(FALSE) */
+int ae_glue_text_keys(struct ae_text_key *keys, int maximum);   /* this frame's (input_get_key) */
+int ae_glue_clipboard_get(char *text, int size);
+void ae_glue_clipboard_set(const char *text);
+/* (M2) the glue as the host; whether a field is being typed into (AE's own keys then stand aside: ae_input.c) */
+void ae_glue_text_install(void);
+int ae_glue_text_typing(void);
+
+enum { AE_FIELD_FOCUSED = 1, AE_FIELD_EDITING = 2, AE_FIELD_HOVER = 4, AE_FIELD_DISABLED = 8, AE_FIELD_ERROR = 16 };
+struct ae_field { const char *label; const char *placeholder; struct ae_text *text; unsigned int flags;
+	const char *error; unsigned long caret_since; };
+float ae_widget_field(struct ae_density const *density, float x, float y, float width, struct ae_field const *field,
+	short hit_id);   /* returns its height incl. label and error line */
+/* (M2) typing into a field (keyboard and mouse: Enter or a click on it starts editing, preflight P17; a pad's A opens
+AE's keyboard instead): begin keeps the text to restore on cancel and starts the platform's typing mode (the host);
+keys applies this frame's typed keys; end keeps the text or restores it. ae_field_type applies keys to a text (pure):
+typing, Backspace, Delete, Home, End, Ctrl+A / C / V; 0 when something was refused (the limit, a character fields
+don't take): the caller plays failure once */
+struct ae_field_edit { struct ae_text *text; struct ae_text before; int active; };
+void ae_field_edit_begin(struct ae_field_edit *edit, struct ae_text *text);
+int ae_field_edit_keys(struct ae_field_edit *edit);
+void ae_field_edit_end(struct ae_field_edit *edit, int keep);
+int ae_field_type(struct ae_text *text, struct ae_text_key const *keys, int count);
+/* opens AE's keyboard (a popover) for a field: only after a pad's A on the field; a keyboard types into the field
+whenever it is editing, keyboard shown or not. Its rects are layout units, view the player's view it draws in
+(preflight P12: zero size for the whole frame); one per owner at a time (0 when the owner's is open) */
+struct ae_keyboard_spec { struct ae_text *text; struct ae_rect field; struct ae_rect bounds; struct ae_density density;
+	void (*done)(int keep, void *context); void *context;
+	struct ae_rect view;         /* (M2, P12) */ };
+int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner);
+/* the keyboard's keys: rects (drawing units, relative to the popover) for a page (0 letters, 1 symbols) */
+short ae_keyboard_layout(struct ae_density const *density, float content_width, int page, struct ae_rect *keys,
+	const char **labels, short maximum);
+
 #endif

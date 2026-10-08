@@ -37,6 +37,8 @@ UNITS = {
                           ["-lz"]),
     "ae_motion_test.c": ([UI / "ae_motion.c"], [], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
+    # (editing a field's text: under the sanitizers, as it takes pasted text)
+    "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_ui_test.c": ([UI / "ae_ui.c", UI / "ae_motion.c", UI / "ae_sound.c"], [], []),
     # (the texts, checked against Overpass 900)
     "ae_strings_test.c": ([UI / "ae_strings.c", SRC / "ae_font.c"], [f"-I{SRC}"], []),
@@ -52,6 +54,13 @@ UNITS = {
                                 UI / "ae_style.c", UI / "ae_list.c", UI / "ae_motion.c", UI / "ae_sound.c",
                                 UI / "ae_strings.c", UI / "ae_ui.c", TESTS / "ae_draw_stub.c", SRC / "ae_font.c",
                                 SRC / "ae_layout.c"],
+                               [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                               []),
+    # (the text field, typing, AE's keyboard)
+    "ae_widgets_text_test.c": ([UI / "ae_widgets_text.c", UI / "ae_text_edit.c", UI / "ae_widgets_nav.c",
+                                UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c", UI / "ae_motion.c",
+                                UI / "ae_sound.c", UI / "ae_strings.c", UI / "ae_ui.c", TESTS / "ae_draw_stub.c",
+                                SRC / "ae_font.c", SRC / "ae_layout.c"],
                                [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                                []),
     "ae_widgets_test.c": ([UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c", UI / "ae_motion.c",

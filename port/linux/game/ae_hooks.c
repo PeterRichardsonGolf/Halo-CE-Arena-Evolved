@@ -46,7 +46,11 @@ boolean ae_menus_active(
 	{
 		cached = config_boolean("display.arena_menus") ? 1 : 0;
 		if (cached)
+		{
 			platform_log("arena menus: on (display.arena_menus)");
+			/* (the engine contact the pure widgets use: typing, the clipboard, the log) */
+			ae_glue_text_install();
+		}
 	}
 
 	return cached != 0;

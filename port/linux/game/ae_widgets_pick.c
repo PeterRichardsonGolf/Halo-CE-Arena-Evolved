@@ -42,7 +42,8 @@ value step is ae_value_step (ae_widgets_nav.c: the shared step, no wrapping). Te
 #define TEXT_FLOOR_PIXELS 16.0f
 #define MINOR_FLOOR_PIXELS 14.0f
 #define LINE 1.4f                            /* a line of text: its size x this, at least */
-/* the picker's hits (one picker open at a time) */
+/* the pickers' hits: PICKER_HIT_ID + the slot (one per local player, one full-screen): ids 0x7E01..0x7E05 are
+reserved for them (AE's on-screen keyboard's are 0x7E11..0x7E15, ae_widgets_text.c) */
 enum { PICKER_HIT_ID = 0x7E01 };
 
 static float units(struct ae_density const *density, float spec_units)

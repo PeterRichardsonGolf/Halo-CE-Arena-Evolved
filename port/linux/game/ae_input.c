@@ -52,6 +52,7 @@ are held back until each is let go of, for at most 2 s (ae_hooks.c).
 #include "../src/ae_platform.h"
 #include "ae_input.h"
 #include "ae_input_rules.h"
+#include "ae_widgets.h"
 #include "ae_ui.h"
 
 /* interface/player_ui.c: the controller a local player plays with (NONE: none) */
@@ -245,7 +246,8 @@ void ae_input_poll(
 {
 	struct event_record event;
 	unsigned long now = system_milliseconds();
-	int keys = ae_platform_keys();
+	/* (a field being typed into takes the keys: AE's own Q, E, Tab, Page Up / Down stand aside) */
+	int keys = ae_glue_text_typing() ? 0 : ae_platform_keys();
 	int previous_keys, tab_forward, tab_backward, tab_ignored, tab_down, tab_up;
 	unsigned char actions[MAXIMUM_ACTIONS];
 	int action_count, index, back_presses;
@@ -259,7 +261,7 @@ void ae_input_poll(
 	previous_keys = opening ? keys : ae_input.keys;
 	/* (Tab's presses since the last poll; a screen just opened takes none from before) */
 	ae_platform_take_tab_presses(&tab_forward, &tab_backward, &tab_ignored);
-	if (opening)
+	if (opening || ae_glue_text_typing())
 		tab_forward = tab_backward = tab_ignored = 0;
 	back_presses = ae_platform_take_back_presses();
 	action_count = ae_input_key_actions(keys, previous_keys, opening ? 0 : back_presses,
