@@ -1246,7 +1246,7 @@ boolean arena_gametype_as_seeded(
 }
 
 /* a saved gametype by its stored name: its profile index, else NONE */
-static long arena_gametype_find_saved(
+static long arena_gametype_saved_by_name(
 	wchar_t const *stored_name)
 {
 	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
@@ -1323,7 +1323,7 @@ boolean arena_gametype_own_display_name_for_stored_name(
 		/* (a seeded gametype has none) */
 		if (!arena_gametype_info(key, NULL))
 		{
-			profile_index = arena_gametype_find_saved(key);
+			profile_index = arena_gametype_saved_by_name(key);
 			if (profile_index != NONE)
 				memo_found = playlist_profile_get_own_display_name(profile_index, memo_name);
 		}
@@ -1372,7 +1372,7 @@ void arena_gametypes_debug_set_display_name(
 	csmemset(display_name, 0, sizeof(display_name));
 	for (index = 0; index < PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH && equals[1 + index]; index++)
 		display_name[index] = (wchar_t)(unsigned char)equals[1 + index];
-	profile_index = arena_gametype_find_saved(stored_name);
+	profile_index = arena_gametype_saved_by_name(stored_name);
 	if (profile_index == NONE)
 	{
 		error(_error_silent, "arena gametypes: debug.set_display_name: no saved gametype '%.*s'",
