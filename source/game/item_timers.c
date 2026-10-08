@@ -684,7 +684,30 @@ boolean item_timers_training_shown(
 		game_engine_pregame_countdown_ticks_left() <= 0;
 }
 
-/* TRAINING's waypoint over a power entry (hud_item_timers.c), as Halo 1:
+/* whether the power entries' waypoints may show now: TRAINING's, or a TIMERS
+level with waypoints (HUD + WAYPOINTS, LINE OF SIGHT), on a map not Halo 1:
+NHE's (their scripts draw their own), past the PRE-GAME COUNTDOWN and not
+over */
+boolean item_timers_waypoints_shown(
+	void)
+{
+	short level = game_engine_timers_level();
+
+	if (!game_engine_training() && level != _timers_hud_waypoints && level != _timers_line_of_sight)
+		return FALSE;
+	return !hs_scenario_is_nhe() && !game_engine_game_over() && game_engine_pregame_countdown_ticks_left() <= 0;
+}
+
+/* whether the waypoints show only while their spot is in view (LINE OF
+SIGHT, hud_item_timers.c); TRAINING's, through walls, win over it */
+boolean item_timers_waypoints_in_sight_only(
+	void)
+{
+	return !game_engine_training() && game_engine_timers_level() == _timers_line_of_sight;
+}
+
+/* the waypoint over a power entry (hud_item_timers.c): TRAINING's, or the
+TIMERS level's (HUD + WAYPOINTS, LINE OF SIGHT), as Halo 1:
 NHE's Training mode's (activate_*_waypoint with its call, about 10 s before
 the item's spawn; deactivate_powerup_waypoints at :20 of the spawn's
 minute), from the entry's own spawns rather than NHE's minutes: from
@@ -703,7 +726,7 @@ boolean item_timer_waypoint_shown(
 	{
 		return FALSE;
 	}
-	if (!item_timers_training_shown())
+	if (!item_timers_waypoints_shown())
 		return FALSE;
 
 	now = game_time_get();
@@ -808,7 +831,7 @@ void item_timers_update(
 	/* (the items by a mixed entry's spawn point looked for only when
 	TRAINING's waypoints or CALLOUTS name the item it spawned: no other game
 	walks the objects for them) */
-	boolean find_spawned = item_timers_training_shown() || callouts_items_called();
+	boolean find_spawned = item_timers_waypoints_shown() || callouts_items_called();
 	short index;
 
 	/* (the item a mixed entry spawned, once it is on the map: a client
@@ -857,7 +880,7 @@ void item_timers_update(
 		}
 	}
 
-	/* (TRAINING's waypoints going on and off, with the spawn they are
+	/* (the waypoints going on and off, with the spawn they are
 	for: the next one's going on, the last one's going off) */
 	for (index = 0; index < count; index++)
 	{

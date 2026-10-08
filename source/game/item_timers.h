@@ -63,7 +63,9 @@ short item_timers_count(void);
 struct item_timer const *item_timers_get(short index);
 long item_timer_ticks_left(struct item_timer const *timer);	/* 1..period */
 boolean item_timers_training_shown(void);	/* TRAINING's markers may show, now */
-boolean item_timer_waypoint_shown(struct item_timer const *timer);	/* TRAINING's waypoint over it, now */
+boolean item_timers_waypoints_shown(void);	/* the waypoints (TRAINING's, or TIMERS' with waypoints) may show, now */
+boolean item_timers_waypoints_in_sight_only(void);	/* LINE OF SIGHT: only while the spot is in view */
+boolean item_timer_waypoint_shown(struct item_timer const *timer);	/* the waypoint over it, now (in its window) */
 boolean item_timer_on_map(struct item_timer const *timer);	/* its last spawn was under 20 s ago */
 short item_timer_spawned_class(struct item_timer const *timer);	/* the item on the map's class, else NONE */
 void item_timer_waypoint_name(struct item_timer const *timer, wchar_t *name, short size);	/* "RED OVERSHIELD" */

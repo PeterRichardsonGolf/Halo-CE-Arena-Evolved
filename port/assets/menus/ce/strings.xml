@@ -457,7 +457,9 @@
 		<string text="Green triangles will appear over the heads of your\nteammates as a reminder that you should not shoot\nthem."/>
 		<string text="Your teammates will only be denoted by the color of\ntheir armor."/>
 		<string text="No timers: learn the spawns the hard way."/>
-		<string text="When and where the rockets, sniper, overshield\nand camo spawn, for everyone."/>
+		<string text="When the power items (rockets, sniper, shotgun,\novershield, camo) spawn, in a list for\neveryone."/>
+		<string text="The power items' list, and waypoints over\ntheir spots from 10 seconds before they\nspawn, seen through walls."/>
+		<string text="Waypoints over the power items' spots only\nwhile you can see them, from 10 seconds before\nthey spawn. No list, no item calls."/>
 		<string text="No training aids."/>
 		<string text="Waypoints over the power items as they come up,\nand the player spawns. For learning a map."/>
 		<string text="Spawn markers show where players are likely\nto spawn next (with TRAINING). Each player picks\nMINE or ENEMY in Settings."/>

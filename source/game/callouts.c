@@ -263,6 +263,7 @@ struct callout_wave
 
 void platform_log(char const *format, ...);
 char const *config_string(char const *name);
+int config_boolean(char const *name);
 unsigned long config_changes(void);
 
 /* the voice pack (port/linux/src/callout_voice.c) */
@@ -1442,6 +1443,13 @@ static boolean callout_tick_valid(
 	return tick > 0 && !game_engine_pregame_countdown_covers(tick);
 }
 
+/* the items' calls muted: the gametype's TIMERS at LINE OF SIGHT */
+static boolean callouts_items_muted(
+	void)
+{
+	return game_engine_timers_level() == _timers_line_of_sight;
+}
+
 /* the items' calls of the wave spawning at this tick: those 10 s before it
 (when that is still to come) and those at it */
 static void callouts_plan_items(
@@ -1459,15 +1467,23 @@ static void callouts_plan_items(
 	callout_wave_build(spawn, &wave);
 	if (!wave.count)
 		return;
+	/* (none at LINE OF SIGHT: AE COMP's timers are only what a player sees;
+	the clock's calls stay) */
+	if (callouts_items_muted())
+	{
+		if (config_boolean("debug.waypoint_log"))
+			platform_log("callouts: item call muted (line of sight): the spawn at tick %ld", spawn);
+		return;
+	}
 	callouts_plan_in_ten(&wave, detail, tick > now && callout_tick_valid(tick), now, &up_style, &up_clip);
 	callouts_plan_up(spawn, up_style, up_clip, now);
 }
 
-/* the rockets' count with its moment at this tick */
+/* the rockets' count with its moment at this tick (none at LINE OF SIGHT) */
 static void callouts_plan_item_counts(
 	long tick)
 {
-	short count = item_timers_count();
+	short count = callouts_items_muted() ? 0 : item_timers_count();
 	short index;
 
 	for (index = 0; index < count; index++)

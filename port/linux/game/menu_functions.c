@@ -5622,7 +5622,11 @@ static struct gametype_option const gametype_options[] =
 	{ "indicator_options_friends_on_screen_spinner", _option_flag, 0, FLAG(_game_variant_allow_friendly_navpoints_bit),
 		2, { 1, 0 } },
 	/* (port: TIMERS and TRAINING, OFF or ON) */
-	{ "item_timers_spinner", _option_flag, 0, FLAG(_game_variant_item_timers_bit), 2, { 0, 1 } },
+	/* (TIMERS' levels: bits 17 and 26, game_engine.h's enum timers_level) */
+	{ "item_timers_spinner", _option_flags, 0, GAME_VARIANT_TIMERS_MASK, 4,
+		{ 0, FLAG(_game_variant_item_timers_bit),
+		FLAG(_game_variant_item_timers_bit) | FLAG(_game_variant_item_waypoints_bit),
+		FLAG(_game_variant_item_waypoints_bit) } },
 	{ "training_spinner", _option_flag, 0, FLAG(_game_variant_training_bit), 2, { 0, 1 } },
 	/* (SPAWN HEAT: ON is the bit clear, game_engine.h) */
 	{ "spawn_heat_spinner", _option_flag, 0, FLAG(_game_variant_no_spawn_heat_bit), 2, { 0, 1 } },

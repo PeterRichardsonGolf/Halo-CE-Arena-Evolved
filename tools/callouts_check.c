@@ -91,6 +91,10 @@ boolean game_engine_running(void) { return TRUE; }
 boolean game_engine_game_over(void) { return FALSE; }
 boolean hs_scenario_is_nhe(void) { return FALSE; }
 boolean game_engine_pregame_countdown_covers(long time) { return time < 0; }
+/* (the gametype's TIMERS level: HUD, else LINE OF SIGHT's check) */
+static short check_timers_level = _timers_hud;
+short game_engine_timers_level(void) { return check_timers_level; }
+int config_boolean(char const *name) { (void)name; return 0; }
 
 char const *config_string(char const *name)
 {
@@ -549,6 +553,31 @@ int main(int argc, char **argv)
 			fail("MINIMAL without its lines: the 2:00 wave not said as STANDARD's calls");
 		if (ups != 1)
 			fail("MINIMAL without its lines: %d is up calls at 2:00, not one", ups);
+	}
+
+	/* (LINE OF SIGHT: no item calls, nor the rockets' count; the clock's
+	calls stay) */
+	{
+		int index;
+		int clock_calls = 0;
+
+		check_timers_level = _timers_line_of_sight;
+		play("verbose", 1);
+		check_timers_level = _timers_hud;
+		for (index = 0; index < played_count; index++)
+		{
+			if (played[index].spawn != NONE)
+			{
+				fail("LINE OF SIGHT: %s at tick %ld for the spawn at tick %ld", played[index].clip, played[index].tick,
+					played[index].spawn);
+				break;
+			}
+			clock_calls++;
+		}
+		if (!clock_calls)
+			fail("LINE OF SIGHT: no clock calls");
+		else
+			printf("LINE OF SIGHT: %d clock calls, no item calls\n", clock_calls);
 	}
 
 	if (failures)

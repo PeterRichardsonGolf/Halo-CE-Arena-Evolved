@@ -506,7 +506,9 @@ STRING_INSERTS = {
     f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:", "SPAWN HEAT:"])],
     f"{INDICATOR_OPTIONS}/cap_indicator_options": [(8, [
         "No timers: learn the spawns the hard way.",
-        "When and where the rockets, sniper, overshield\\nand camo spawn, for everyone.",
+        "When the power items (rockets, sniper, shotgun,\\novershield, camo) spawn, in a list for\\neveryone.",
+        "The power items' list, and waypoints over\\ntheir spots from 10 seconds before they\\nspawn, seen through walls.",
+        "Waypoints over the power items' spots only\\nwhile you can see them, from 10 seconds before\\nthey spawn. No list, no item calls.",
         "No training aids.",
         "Waypoints over the power items as they come up,\\nand the player spawns. For learning a map.",
         "Spawn markers show where players are likely\\nto spawn next (with TRAINING). Each player picks\\nMINE or ENEMY in Settings.",
@@ -1422,36 +1424,38 @@ def _arena_options() -> list:
     return lines
 
 
-def _indicator_options_row(key: str, label: int) -> list:
-    """an Indicator Options row of the port's, OFF or ON: its label (the
-    labels' string label) and its spinner (strings var_KEY)"""
+def _indicator_options_row(key: str, label: int, width: int = 46) -> list:
+    """an Indicator Options row of the port's: its label (the labels' string
+    label) and its spinner (strings var_KEY), 46 wide for OFF or ON, wider
+    for longer values (centred where the narrow ones are)"""
     lines = _widget(f"{INDICATOR_OPTIONS}/op_{key}",
                     [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                      ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
                     [f'<child widget="{INDICATOR_OPTIONS}/{key}_label"/>',
-                     f'<child widget="{INDICATOR_OPTIONS}/{key}_spinner" x="366" y="1"/>'])
+                     f'<child widget="{INDICATOR_OPTIONS}/{key}_spinner" x="{366 - (width - 46) // 2}" y="1"/>'])
     lines += _widget(f"{INDICATOR_OPTIONS}/{key}_label",
                      [("type", "text"), ("controller", 1), ("width", 320), ("height", 22),
                       ("string_list", f"{INDICATOR_OPTIONS}/indicator_options_labels"), ("string_index", label),
                       ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
     lines += _widget(f"{INDICATOR_OPTIONS}/{key}_spinner",
-                     [("type", "spinner"), ("left", 2), ("top", 2), ("width", 46), ("height", 20),
+                     [("type", "spinner"), ("left", 2), ("top", 2), ("width", width), ("height", 20),
                       ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
                       ("string_list", f"{INDICATOR_OPTIONS}/var_{key}"), ("font", "ui\\large_ui"),
                       ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4), ("list_flags", "items_from_strings"),
                       ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 48 19 54")],
+                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", f"7 {width + 2} 19 {width + 8}")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     return lines
 
 
 def _indicator_options_extras() -> list:
-    """Indicator Options' rows of the port's: TIMERS and TRAINING, OFF or ON
-    (the gametype's _game_variant_item_timers_bit and _training_bit), and
+    """Indicator Options' rows of the port's: TIMERS, OFF / HUD / HUD +
+    WAYPOINTS / LINE OF SIGHT (the gametype's bits 17 and 26), TRAINING, OFF
+    or ON (_game_variant_training_bit), and
     SPAWN HEAT, ON or OFF (_game_variant_no_spawn_heat_bit, inverted: clear
     is ON)"""
-    lines = _indicator_options_row("item_timers", 4)
-    lines += _strings(f"{INDICATOR_OPTIONS}/var_item_timers", ["OFF", "ON"])
+    lines = _indicator_options_row("item_timers", 4, 176)
+    lines += _strings(f"{INDICATOR_OPTIONS}/var_item_timers", ["OFF", "HUD", "HUD + WAYPOINTS", "LINE OF SIGHT"])
     lines += _indicator_options_row("training", 5)
     lines += _strings(f"{INDICATOR_OPTIONS}/var_training", ["OFF", "ON"])
     lines += _indicator_options_row("spawn_heat", 6)
