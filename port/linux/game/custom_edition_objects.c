@@ -106,7 +106,9 @@ boolean custom_edition_vehicles_by_placement(
 {
 	return custom_edition_cache_tags_loaded() &&
 		game_engine_running() &&
-		game_engine_get_variant()->universal_variant.vehicle_set != VEHICLE_SET_NONE &&
+		/* (the vehicle set the game plays by: NHE MODE's on a map with NHE's
+		scripts, game_engine_effective_vehicle_set) */
+		game_engine_effective_vehicle_set() != VEHICLE_SET_NONE &&
 		default_spawn_flag_bit() != NONE;
 }
 

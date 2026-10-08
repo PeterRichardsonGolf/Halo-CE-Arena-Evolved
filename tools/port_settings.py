@@ -1347,7 +1347,7 @@ ARENA_ROWS = [
         "Halo 1: NHE's maps only: the vehicle set picks\\nNHE's mode, as NHE did. On other maps the\\ngametype's vehicles apply.",
         "On Halo 1: NHE's maps: no timers, as retail\\nwith NHE's messages. On other maps the\\ngametype's vehicles apply.",
         "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers. On other maps the\\ngametype's vehicles apply.",
-        "On Halo 1: NHE's maps: NHE's timers, as NHE &\\nTIMER. On other maps the gametype's vehicles\\napply.",
+        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers (its host teleport stays off:\\nAE hosts neutrally). Other maps: the gametype's.",
         "On Halo 1: NHE's maps: NHE's timers and its\\npowerup calls. On other maps the gametype's\\nvehicles apply.",
         "On Halo 1: NHE's maps: NHE's training: the\\ncountdown, spawn markers, randoms and waypoints.\\nOther maps: the gametype's vehicles.",
     ]),

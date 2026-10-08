@@ -126,7 +126,9 @@ def main(argv):
     p.add_argument("--max-median", type=float, default=0.5)
     p.add_argument("--map", default="bloodgulch", help="the map both play (default bloodgulch)")
     p.add_argument("--mod", default="", help="HALO_MOD for both (e.g. NHE: its maps)")
-    p.add_argument("--saved-gametype", help="the host's gametype: a saved one of its save root, by stored name")
+    p.add_argument("--saved-gametype", help="the host's gametype: a saved one of its save root, by stored name. "
+                   "Without --one-way the reverse pair hosts it (and --save-from) on the other build, which may "
+                   "seed or migrate that root by its own rules or not know the setting")
     p.add_argument("--save-from", help="a folder copied as the host's save root (never under /tmp)")
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)

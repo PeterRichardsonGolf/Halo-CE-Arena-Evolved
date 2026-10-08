@@ -969,7 +969,9 @@ static boolean arena_gametypes_backup_file(
 		/* (the record's backup from this revision's first start: the
 		record as it was before the revision, which is what to keep; the
 		record has changed since. Only a whole one, though: not empty, a
-		record's size, its lines text; else it is made again) */
+		record's size, its lines text; else it is made again, from the
+		record as it is now: after a put-off revision's earlier start, a
+		later state than before the revision) */
 		for (character = 0; parses && character < backup_size; character++)
 		{
 			char c = backup[character];
@@ -984,7 +986,8 @@ static boolean arena_gametypes_backup_file(
 			free(data);
 			return TRUE;
 		}
-		error(_error_silent, "arena gametypes: backup '%s' is there but not a record: made again", path);
+		error(_error_silent, "arena gametypes: backup '%s' is there but not a record: made again from the record "
+			"as it is now (perhaps later than before the revision)", path);
 		file_delete(&destination);
 	}
 	if (file_exists(&destination))
