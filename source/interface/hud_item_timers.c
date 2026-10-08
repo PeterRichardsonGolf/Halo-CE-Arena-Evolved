@@ -2280,21 +2280,6 @@ int config_boolean(char const *name);
 unsigned long config_changes(void);
 void platform_log(char const *format, ...);
 
-/* debug.waypoint_log, read again only when the settings change */
-static boolean hud_item_waypoint_log_on(
-	void)
-{
-	static unsigned long read_at = (unsigned long)-1;
-	static boolean on = FALSE;
-
-	if (read_at != config_changes())
-	{
-		read_at = config_changes();
-		on = config_boolean("debug.waypoint_log") != 0;
-	}
-	return on;
-}
-
 /* whether a point is in this view's picture (in front of the camera,
 within the viewport): the projection the waypoint arrow uses */
 static boolean hud_item_waypoint_on_screen(
@@ -2380,7 +2365,7 @@ void hud_draw_item_waypoints(
 	unit_get_head_position(unit_index, &head_position);
 	in_sight_only = item_timers_waypoints_in_sight_only();
 	/* (debug.waypoint_log: each second, per view and entry in its window) */
-	log_now = hud_item_waypoint_log_on() && local_player_index >= 0 &&
+	log_now = hud_debug_flag(_hud_debug_waypoint_log) && local_player_index >= 0 &&
 		local_player_index < MAXIMUM_LOCAL_PLAYERS &&
 		hud_item_waypoint_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND;
 	if (log_now)
@@ -2396,6 +2381,13 @@ void hud_draw_item_waypoints(
 		boolean ray_seen = FALSE;
 		boolean in_sight = TRUE;
 
+		/* (an entry not drawn in sight this frame: not drawn, for the log's
+		hold ends) */
+		if ((!in_sight_only || !item_timer_waypoint_shown(timer)) && local_player_index >= 0 &&
+			local_player_index < MAXIMUM_LOCAL_PLAYERS && index < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+		{
+			hud_item_waypoint_sight[local_player_index][index].drawn = FALSE;
+		}
 		if (!item_timer_waypoint_shown(timer))
 			continue;
 		if (in_sight_only || log_now)
@@ -2413,7 +2405,7 @@ void hud_draw_item_waypoints(
 				boolean *drawn = &hud_item_waypoint_sight[local_player_index][index].drawn;
 
 				/* (the hold's end, in the log: when it was last seen) */
-				if (*drawn && !in_sight && hud_item_waypoint_log_on())
+				if (*drawn && !in_sight && hud_debug_flag(_hud_debug_waypoint_log))
 				{
 					long seen_at = hud_item_waypoint_sight[local_player_index][index].seen_at;
 

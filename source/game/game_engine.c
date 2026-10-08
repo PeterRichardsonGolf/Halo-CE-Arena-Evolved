@@ -5218,7 +5218,7 @@ boolean game_engine_spawn_heat_allowed(
 boolean game_engine_objective_in_sight(
 	void)
 {
-	return game_engine_running() &&
+	return game_engine_running() && global_variant.universal_variant.goal_radar == _radar_nav_point &&
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_objective_in_sight_bit);
 }
 
@@ -6075,21 +6075,6 @@ static long game_engine_goal_seen_at[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal
 static boolean game_engine_goal_drawn[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal)];
 static long game_engine_goal_logged_at[MAXIMUM_LOCAL_PLAYERS];
 
-/* (debug.waypoint_log, read again only when the settings change) */
-static boolean game_engine_goal_log_on(
-	void)
-{
-	static unsigned long read_at = (unsigned long)-1;
-	static boolean on = FALSE;
-
-	if (read_at != config_changes())
-	{
-		read_at = config_changes();
-		on = config_boolean("debug.waypoint_log") != 0;
-	}
-	return on;
-}
-
 /* a new map: no goal seen yet */
 static void game_engine_goals_in_sight_reset(
 	void)
@@ -6158,6 +6143,13 @@ void game_engine_render_nav_points(
 		/* port: every goal, one per player in the native builds' sessions */
 		for (goal_index = 0; goal_index < (long)NUMBEROF(global_goal); goal_index++)
 				{
+					/* (a goal not shown in sight this frame: not drawn, for the
+					log's hold ends) */
+					if (local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+						(!goal_matches_player(player, player_index, goal_index) || !game_engine_objective_in_sight()))
+					{
+						game_engine_goal_drawn[local_player_index][goal_index] = FALSE;
+					}
 					if (goal_matches_player(player, player_index, goal_index))
 					{
 						short render_type;
@@ -6170,7 +6162,7 @@ void game_engine_render_nav_points(
 							boolean seen = game_engine_goal_in_sight(local_player_index, goal_index, &head_position,
 								&ray_seen);
 
-							if (game_engine_goal_log_on() && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+							if (hud_debug_flag(_hud_debug_waypoint_log) && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
 								game_engine_goal_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND)
 							{
 								platform_log("objective: view %d goal %ld (carrier %s): ray %s, drawn %s",
@@ -6183,7 +6175,7 @@ void game_engine_render_nav_points(
 							{
 								boolean *drawn = &game_engine_goal_drawn[local_player_index][goal_index];
 
-								if (*drawn && !seen && game_engine_goal_log_on())
+								if (*drawn && !seen && hud_debug_flag(_hud_debug_waypoint_log))
 								{
 									long seen_at = game_engine_goal_seen_at[local_player_index][goal_index];
 
@@ -6213,7 +6205,7 @@ void game_engine_render_nav_points(
 							render_type);
 					}
 				}
-				if (game_engine_goal_log_on() && local_player_index < MAXIMUM_LOCAL_PLAYERS)
+				if (hud_debug_flag(_hud_debug_waypoint_log) && local_player_index < MAXIMUM_LOCAL_PLAYERS)
 					game_engine_goal_logged_at[local_player_index] = game_time_get() / TICKS_PER_SECOND;
 			}
 		}
@@ -8116,7 +8108,8 @@ void game_engine_log_rules(
 			"drop secondary %s, nhe mode %s",
 			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
-			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) ? "line of sight" : "normal",
+			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) && universal->goal_radar == _radar_nav_point ?
+				"line of sight" : "normal",
 			TEST_FLAG(flags, _game_variant_nhe_extras_bit) ? "on" : "off",
 			game_variant_drop_secondary_name(flags),
 			game_variant_nhe_mode_name(universal->nhe_mode));

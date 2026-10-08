@@ -707,19 +707,23 @@ short hud_get_nav_point_render_type(
 int config_boolean(char const *name);
 unsigned long config_changes(void);
 
-/* debug.los_test_blink, read again only when the settings change */
-static boolean hud_nav_point_test_blink(
-	void)
+/* port: the debug settings the HUD's tests read (enum hud_debug_flag), each
+read again only when the settings change */
+boolean hud_debug_flag(
+	short flag)
 {
-	static unsigned long read_at = (unsigned long)-1;
-	static boolean on = FALSE;
+	static char const *const names[NUMBER_OF_HUD_DEBUG_FLAGS] = { "debug.waypoint_log", "debug.los_test_blink" };
+	static unsigned long read_at[NUMBER_OF_HUD_DEBUG_FLAGS] = { (unsigned long)-1, (unsigned long)-1 };
+	static boolean on[NUMBER_OF_HUD_DEBUG_FLAGS];
 
-	if (read_at != config_changes())
+	if (flag < 0 || flag >= NUMBER_OF_HUD_DEBUG_FLAGS)
+		return FALSE;
+	if (read_at[flag] != config_changes())
 	{
-		read_at = config_changes();
-		on = config_boolean("debug.los_test_blink") != 0;
+		read_at[flag] = config_changes();
+		on[flag] = config_boolean(names[flag]) != 0;
 	}
-	return on;
+	return on[flag];
 }
 
 boolean hud_nav_point_in_sight(
@@ -739,7 +743,7 @@ boolean hud_nav_point_in_sight(
 
 	/* (debug.los_test_blink: every other second nothing is in sight, so the
 	automated tests see LINE OF SIGHT's hold end) */
-	if (hud_nav_point_test_blink() && (game_time_get() / TICKS_PER_SECOND) % 2)
+	if (hud_debug_flag(_hud_debug_los_test_blink) && (game_time_get() / TICKS_PER_SECOND) % 2)
 		return FALSE;
 
 	match_assert("c:\\halo\\SOURCE\\interface\\hud_nav_points.c", 510, global_current_collision_user_depth < MAXIMUM_COLLISION_USER_STACK_DEPTH);
