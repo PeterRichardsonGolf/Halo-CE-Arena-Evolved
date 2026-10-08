@@ -194,7 +194,7 @@ int main(void)
 		ae_ui_push(&plain, 0, NULL);
 		ae_motion_set_now(2100);
 		{
-			struct ae_pointer p = { 10.0f, 20.0f, 1, 0, 0, 0, 0, 0 };
+			struct ae_pointer p = { 10.0f, 20.0f, 1, 0, 0, 0, 0, 0, 0 };
 
 			ae_ui_dispatch_pointer(&p);
 		}
@@ -234,7 +234,7 @@ int main(void)
 	CHECK(ae_ui_last_device() == AE_DEVICE_NINTENDO);
 	/* pointer: player 0's (or anyone's) top screen takes it; it makes the keyboard and mouse the last device */
 	{
-		struct ae_pointer p = { 10.0f, 20.0f, 1, 1, 0, 0, 0, 0 };
+		struct ae_pointer p = { 10.0f, 20.0f, 1, 1, 0, 0, 0, 0, 0 };
 
 		ae_ui_reset();
 		ae_ui_dispatch_pointer(&p);                        /* no screen: nothing */

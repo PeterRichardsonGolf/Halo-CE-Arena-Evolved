@@ -37,7 +37,9 @@ enum { AE_OWNER_ANY = -1, AE_PLAYER_NONE = -2, AE_MAXIMUM_PLAYERS = 4, AE_MAXIMU
 struct ae_event { short player; unsigned char action; unsigned char device; unsigned char repeat; };
 /* the pointer this frame, in layout units of the whole frame (ae_layout.h) */
 struct ae_pointer { float x, y; unsigned char moved, left_clicks, right_clicks, touch; signed char wheel_steps;
-	short player; };
+	short player;
+	/* (M2) the left button held now (a thumb drag); a change of it is an event of its own */
+	unsigned char left_held; };
 struct ae_screen;
 struct ae_screen_class
 {

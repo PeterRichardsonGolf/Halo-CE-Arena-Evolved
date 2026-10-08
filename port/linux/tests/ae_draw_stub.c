@@ -399,6 +399,13 @@ float ae_draw_text_box(int font, float size, const char *utf8, float *top, float
 	return width;
 }
 
+float ae_draw_cap_height(int font, float size)
+{
+	int face = face_of(font);
+
+	return face < 0 ? 0.7f * size : ae_font_cap_height(face, size);
+}
+
 float ae_draw_text_tracked(int font, float size, float tracking_em, float x, float y, int align, unsigned int rgba,
 	const char *utf8)
 {

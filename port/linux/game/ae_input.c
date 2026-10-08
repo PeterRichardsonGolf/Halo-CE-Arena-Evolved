@@ -315,12 +315,15 @@ void ae_input_poll(
 void ae_input_pointer(
 	struct halo_ui_pointer const *pointer)
 {
+	static unsigned char was_held;
 	struct ae_pointer moved, clicked;
 	short player = player_of(0);
+	/* (the left button held: a scrollbar thumb's drag; a mouse's only) */
+	unsigned char held = (unsigned char)(!pointer || pointer->touch ? 0 : ae_platform_mouse_left_held() != 0);
 
 	if (!pointer)
 		return;
-	if (pointer->moved || pointer->wheel_steps)
+	if (pointer->moved || pointer->wheel_steps || held != was_held)
 	{
 		memset(&moved, 0, sizeof(moved));
 		ae_draw_pointer_to_layout(pointer->x, pointer->y, &moved.x, &moved.y);
@@ -328,8 +331,10 @@ void ae_input_pointer(
 		moved.wheel_steps = pointer->wheel_steps;
 		moved.touch = pointer->touch;
 		moved.player = player;
+		moved.left_held = held;
 		ae_ui_dispatch_pointer(&moved);
 	}
+	was_held = held;
 	if (pointer->left_clicks && ae_ui_depth())
 	{
 		memset(&clicked, 0, sizeof(clicked));
@@ -337,6 +342,7 @@ void ae_input_pointer(
 		clicked.left_clicks = pointer->left_clicks;
 		clicked.touch = pointer->touch;
 		clicked.player = player;
+		clicked.left_held = held;
 		ae_ui_dispatch_pointer(&clicked);
 	}
 	if (pointer->right_clicks && ae_ui_depth())

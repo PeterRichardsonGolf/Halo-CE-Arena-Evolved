@@ -19,6 +19,7 @@ pure, so the unit tests build it.)
 #include <SDL3/SDL_atomic.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_mouse.h>
 #endif
 
 #ifdef HALO_GAME_BROWSER
@@ -150,6 +151,15 @@ void ae_platform_take_tab_presses(
 	*forward = *backward = *ignored = 0;
 }
 #endif
+
+int ae_platform_mouse_left_held(void)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	return (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LMASK) != 0;
+#else
+	return 0;
+#endif
+}
 
 int ae_platform_input_scheme(void)
 {

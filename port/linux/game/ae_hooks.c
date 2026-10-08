@@ -19,6 +19,7 @@ screen is open.
 #include "ae_sound.h"
 #include "ae_style.h"
 #include "ae_ui.h"
+#include "ae_widgets.h"
 
 /* port_config.c (declared here as the game's other port units do: its header
 is the platform side's) */
@@ -165,8 +166,9 @@ static void before_draw(
 	float scale)
 {
 	(void)screen;
-	(void)index;
 	ae_draw_view_full();
+	/* (the hits the screen records are its layer's) */
+	ae_hits_layer((short)index);
 	if (offset_x_u != 0.0f || scale != 1.0f)
 	{
 		struct ae_layout layout;
@@ -286,6 +288,8 @@ void ae_ui_render(
 		ae_ui_set_before_draw(before_draw);
 		before_draw_set = TRUE;
 	}
+	/* (the pointer's targets are this frame's drawing's) */
+	ae_hits_clear();
 	ae_ui_draw();
 }
 

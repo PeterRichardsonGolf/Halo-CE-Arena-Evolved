@@ -562,6 +562,13 @@ float ae_draw_text_box(int font, float size, const char *utf8, float *top, float
 	return width;
 }
 
+float ae_draw_cap_height(int font, float size)
+{
+	struct face face = face_of(font);
+
+	return face.ae ? ae_font_cap_height(face.id, size) : 0.7f * size;
+}
+
 /* text of a face at x, y in the view's units; its width in them */
 static float add_text(struct face face, float size, float tracking, float x, float y, int align, unsigned int color,
 	const char *text)
@@ -1445,6 +1452,7 @@ float ae_draw_text_box(int font, float size, const char *utf8, float *top, float
 	*top = *bottom = 0.0f;
 	return 0.0f;
 }
+float ae_draw_cap_height(int font, float size) { (void)font; return 0.7f * size; }
 void ae_draw_line(float x0, float y0, float x1, float y1, float thickness, unsigned int rgba)
 {
 	(void)x0; (void)y0; (void)x1; (void)y1; (void)thickness; (void)rgba;

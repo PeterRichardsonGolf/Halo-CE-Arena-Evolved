@@ -64,6 +64,9 @@ float ae_draw_text_tracked_width(int font, float size, float tracking_em, const 
 /* a text's ink box relative to y, each edge padded by 2 window pixels: *top <= 0 when ink rises above the capitals,
 *bottom >= the cap height; returns the width. Clips and boxes around text are made from this, never from metrics */
 float ae_draw_text_box(int font, float size, const char *utf8, float *top, float *bottom);
+/* the capitals' height of a font at a size (AE_FONT_TITLE / ROW / BODY: the top of 'H' at that em; a device font, or
+a face drawn with Noto, 0.7 of the size): widgets centre text on it */
+float ae_draw_cap_height(int font, float size);
 /* a straight stroke (check marks): a thickness-wide rectangle from x0, y0 to x1, y1, round ends */
 void ae_draw_line(float x0, float y0, float x1, float y1, float thickness, unsigned int rgba);
 /* every following colour's alpha multiplied by alpha (0..1) until changed; ae_draw_view_full and each Present reset
