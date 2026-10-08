@@ -251,6 +251,26 @@ class GametypeFile(unittest.TestCase):
                                                      "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
             self.assertEqual(gametype_file.find(Path(d) / "m", "AE PRO TS").read_bytes()[0x1D], 5)
 
+    def test_own_copy(self):
+        """--own: a player's own gametype of a seed's name, in the folder the game keeps that name in"""
+        # (folders a seeded root has: xbox_xapi.c's save_name_hash)
+        self.assertEqual(gametype_file.save_folder_name("AE TEAM SLY"), "04B847B13D90")
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            src = Path(d) / "from"
+            f = self.make(src, "AE TEAM SLY", gametype_file.save_folder_name("AE TEAM SLY"))
+            g = gametype_file.copy_and_patch(src, Path(d) / "to", "AE TEAM SLY", {0x40: 33}, own_name="TS 50")
+            self.assertEqual(g.parent.name, gametype_file.save_folder_name("TS 50"))
+            b = g.read_bytes()
+            self.assertEqual((gametype_file.name_of(b), b[0x40]), ("TS 50", 33))
+            self.assertTrue(gametype_file.signed(b))
+            self.assertEqual((g.parent / "SaveMeta.xbx").read_bytes(), "TS 50".encode("utf-16-le"))
+            # (the original stays, unpatched)
+            self.assertEqual(gametype_file.find(Path(d) / "to", "AE TEAM SLY").read_bytes(), f.read_bytes())
+            # (a name in use, or too long, is refused)
+            for own in ("AE TEAM SLY", "TWELVE CHARS"):
+                with self.assertRaises(SystemExit):
+                    gametype_file.copy_and_patch(src, Path(d) / own.replace(" ", "_"), "AE TEAM SLY", {}, own_name=own)
+
 
 class SeedCompare(unittest.TestCase):
     """saved gametypes' hashes by stored name: content (after the name) and whole file"""

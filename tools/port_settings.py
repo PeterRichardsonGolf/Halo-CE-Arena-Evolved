@@ -490,7 +490,7 @@ STRING_INSERTS = {
     # 5 SECONDS, its help after that one's: menu_functions.c's respawn_time_spinner)
     f"{PLAYER_OPTIONS}/var_respawn_time": [(2, ["7.5 SECONDS"])],
     f"{PLAYER_OPTIONS}/cap_player_options": [(14, [
-        "When you die, there will be a seven and a half\nsecond wait before you can rejoin the game, as in\nHalo 1: NHE's objective gametypes.",
+        "When you die, there will be a seven and a half\\nsecond wait before you can rejoin the game, as in\\nHalo 1: NHE's objective gametypes.",
     ])],
     f"{SLAYER_EDIT}/var_kills_to_win": [(5, ["75", "100", "150", "200", "250", "500"])],
     f"{SLAYER_EDIT}/cap_slayer": [(11, [

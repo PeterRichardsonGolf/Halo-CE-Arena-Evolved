@@ -2,6 +2,10 @@
 """gametype_file: a COPY of a save root with a saved gametype's variant bytes patched and signed again, for tests.
 
     python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3
+    python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "AE TEAM SLY" --own "TS 50"
+        (--own: the copy gets one more saved gametype, --name's file saved again under that name, as a player's
+        own made in the editor would be: its folder is the one the game keeps that name in, xbox_xapi.c's
+        save_name_hash; the original stays)
 
 A saved gametype is u/UDATA/<folder>/blam.lst in a save root: the game variant (0x68 bytes, its name in
 the first 24 as UTF-16), then its signature, a SHA-1 over "halo-linux content signature\\0" and those
@@ -97,7 +101,38 @@ def _patch_copy(path, values):
     Path(path).write_bytes(sign(b))
 
 
-def copy_and_patch(from_root, to_root, name, values):
+def save_folder_name(name):
+    """the folder (u/UDATA/<this>) the game keeps a saved game of that name in: xbox_xapi.c's save_name_hash,
+    FNV-1a over the UTF-16 units, its low 48 bits in 12 upper-case hex digits"""
+    h = 1469598103934665603
+    units = name.encode("utf-16-le")
+    for i in range(0, len(units), 2):
+        h = ((h ^ (units[i] | units[i + 1] << 8)) * 1099511628211) & 0xFFFFFFFFFFFFFFFF
+    return "%012X" % (h & 0xFFFFFFFFFFFF)
+
+
+def add_own_copy(root, name, own_name, values):
+    """in a copied root: --name's file saved again as the player's own own_name (its folder, SaveMeta.xbx, the
+    name in the variant), values patched into it; the new file"""
+    if len(own_name) > 11:
+        raise SystemExit(f"gametype_file: '{own_name}' is longer than a stored name (11)")
+    if find(root, own_name):
+        raise SystemExit(f"gametype_file: a saved gametype '{own_name}' exists in {root}")
+    f = find(root, name)
+    folder = f.parent.parent / save_folder_name(own_name)
+    if folder.exists():
+        raise SystemExit(f"gametype_file: {folder} exists")
+    shutil.copytree(f.parent, folder)
+    b = bytearray((folder / "blam.lst").read_bytes())
+    b[0:NAME_SIZE] = (own_name.encode("utf-16-le") + b"\0" * NAME_SIZE)[:NAME_SIZE]
+    for offset, value in values.items():
+        b[offset] = value
+    (folder / "blam.lst").write_bytes(sign(b))
+    (folder / "SaveMeta.xbx").write_bytes(own_name.encode("utf-16-le"))
+    return folder / "blam.lst"
+
+
+def copy_and_patch(from_root, to_root, name, values, own_name=None):
     """--from copied to --to (new), and that gametype patched in the copy; the copy's file"""
     check_path(from_root, "--from")
     check_path(to_root, "--to")
@@ -111,6 +146,8 @@ def copy_and_patch(from_root, to_root, name, values):
     if not signed(f.read_bytes()):
         raise SystemExit(f"gametype_file: {f} is not a signed saved gametype")
     shutil.copytree(from_root, to_root, symlinks=False)
+    if own_name:
+        return add_own_copy(to_root, name, own_name, values)
     copy = to_root / f.relative_to(from_root)
     _patch_copy(copy, values)
     return copy
@@ -122,12 +159,14 @@ def main(argv):
     p.add_argument("--to", dest="to_root", required=True, help="a new folder for the patched copy")
     p.add_argument("--name", required=True, help="the gametype's stored name")
     p.add_argument("--set", action="append", default=[], help="OFFSET=BYTE (e.g. 0x1d=3: nhe_mode); repeat")
+    p.add_argument("--own", help="save --name's file again as the player's own gametype of this name (--set "
+                   "patches that one)")
     a = p.parse_args(argv)
     values = {}
     for kv in a.set:
         k, _, v = kv.partition("=")
         values[int(k, 0)] = int(v, 0)
-    f = copy_and_patch(a.from_root, a.to_root, a.name, values)
+    f = copy_and_patch(a.from_root, a.to_root, a.name, values, own_name=a.own)
     print(f"gametype_file: {f} ({name_of(f.read_bytes())}) patched {', '.join(f'{k:#x}={v}' for k, v in values.items())}")
     return 0
 
