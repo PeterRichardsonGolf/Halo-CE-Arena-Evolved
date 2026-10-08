@@ -144,6 +144,20 @@ static void rows(struct density_case const *c)
 		near(call->clip[2], width - d.metrics->pad * d.unit + allowance, 0.01f));
 	/* the label had no room: drawn as nothing rather than over the value */
 	CHECK(ae_stub_find_text("X", 0) < 0);
+	/* the value's hit is cut to the row (none left of it) */
+	{
+		struct ae_view view;
+		struct ae_hit hit;
+		float lx, ly;
+
+		ae_hits_clear();
+		ae_widget_row(&d, 0, 0, width, &row, 1, 0);
+		ae_draw_current_view(&view);
+		ae_view_to_layout(&view, 1.0f, 10.0f, &lx, &ly);
+		CHECK(ae_hit_at(lx, ly, 0, &hit) && hit.part == AE_PART_VALUE && hit.rect.x >= view.x - 0.01f);
+		ae_view_to_layout(&view, -1.0f, 10.0f, &lx, &ly);
+		CHECK(!ae_hit_at(lx, ly, 0, &hit) || hit.rect.x >= view.x - 0.01f);
+	}
 	/* disabled: the reason replaces the value, in warning colour; the label muted; the row at 43 % */
 	ae_stub_reset(1920, c->window_height);
 	if (c->view)
@@ -211,6 +225,11 @@ static void rows(struct density_case const *c)
 		CHECK(call && near(ae_stub_text_em_pixels(call), 16, .1f));
 		call = text_call("REACH");
 		CHECK(call && near(ae_stub_text_em_pixels(call), 14, .1f));
+		/* (the AE badge: 12 view u is 8 px here, floored to 14; its box tall enough for it) */
+		call = text_call("AE");
+		CHECK(call && near(ae_stub_text_em_pixels(call), 14, .1f));
+		index = find_call(AE_STUB_RECT, AE_COLOR_SELECTION_TEXT);   /* (focused: the badge's dark fill) */
+		CHECK(index >= 0 && ae_stub_get(index)->height * 360.0f / 1080.0f >= 14.0f * 1.5f - 0.1f);
 	}
 	/* the value arrows' cells and hits; an arrow cell lights under the mouse */
 	ae_stub_reset(1920, c->window_height);
@@ -271,7 +290,12 @@ static void rows(struct density_case const *c)
 	CHECK(near(ae_widget_group(&d, 0, 0, width, "DISPLAY"), d.metrics->group_height * d.unit, 0.01f));
 	call = text_call("DISPLAY");
 	CHECK(call && call->font == AE_FONT_BODY && call->rgba == AE_COLOR_MUTED && near(call->thickness, 0.09f, 1e-6f) &&
-		near(call->x, 10 * d.unit, 0.01f) && near(call->size, d.metrics->group * d.unit, 0.01f));
+		near(call->x, 10 * d.unit, 0.01f));
+	/* (its size: 18 u FULL, 15 view u VIEW, never below the 14 px minor floor: 10 px at a 720p quarter otherwise) */
+	if (c->view && c->view_height == 360)
+		CHECK(call && near(ae_stub_text_em_pixels(call), 14, .1f));
+	else
+		CHECK(call && near(call->size, d.metrics->group * d.unit, 0.01f));
 	CHECK(!ae_stub_overflowed());
 }
 
@@ -554,6 +578,121 @@ static void texts(void)
 	CHECK(!ae_stub_overflowed());
 }
 
+/* a list at one density: 0, 1 and exactly as many items as rows (no thumb, no "more"); the "N more" line takes no
+hover or click (I1); the wheel only over the list; a dragged thumb follows at once; the hits' cap */
+static void list_edges(void)
+{
+	struct ae_density d;
+	struct ae_list_view view;
+	struct list_context context;
+	struct ae_pointer pointer;
+	struct ae_hit hit;
+	struct ae_event event;
+	float width, height;
+	short rows, counts[3];
+	int index, n, more_lines;
+	char more[32];
+
+	case_name = "list edges";
+	ae_density_full(1080, 1.0f, &d);
+	context.density = &d;
+	context.hit_id = 5;
+	width = 600;
+	height = 500;
+	rows = ae_list_view_rows(&d, height);
+	counts[0] = 0;
+	counts[1] = 1;
+	counts[2] = rows;
+	ae_motion_set_reduced(1);
+	for (n = 0; n < 3; n++)
+	{
+		ae_stub_reset(1920, 1080);
+		ae_hits_clear();
+		ae_list_view_init(&view, counts[n], rows);
+		ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+		CHECK(find_call(AE_STUB_RECT, AE_COLOR_TRACK) < 0 && find_call(AE_STUB_RECT, AE_COLOR_MUTED) < 0);
+		more_lines = 0;
+		for (index = 0; index < ae_stub_count(); index++)
+			if (ae_stub_get(index)->kind == AE_STUB_TEXT && strstr(ae_stub_get(index)->text, "more"))
+				more_lines++;
+		CHECK(more_lines == 0);
+		CHECK(counts[n] == 0 ? ae_stub_find_text("ROW 1", 0) < 0 : ae_stub_find_text("ROW 1", 0) >= 0);
+		snprintf(more, sizeof(more), "ROW %d", counts[n] + 1);
+		CHECK(ae_stub_find_text(more, 0) < 0);
+		/* (events on an empty list: handled, nothing moves, no sound) */
+		event.player = 0; event.action = AE_ACTION_DOWN; event.device = AE_DEVICE_XBOX; event.repeat = 0;
+		ae_sound_reset();
+		CHECK(ae_list_view_event(&view, &event));
+		CHECK(counts[n] > 1 ? view.list.focus == 1 : view.list.focus == (counts[n] ? 0 : -1));
+		CHECK(counts[n] > 1 ? ae_sound_take(0) == AE_SOUND_CURSOR : ae_sound_take(0) == AE_SOUND_NONE);
+		/* (a click on the first row: its item; on an empty list: nothing) */
+		memset(&pointer, 0, sizeof(pointer));
+		pointer.x = 150;
+		pointer.y = text_call("ROW 1") ? text_call("ROW 1")->y : 100 + 60;
+		pointer.left_clicks = 1;
+		CHECK(ae_list_view_pointer(&view, &pointer, 5) == (counts[n] ? 0 : -1));
+	}
+	/* I1: 40 items at rest; the "▼ N more" line below the rows takes no hover and no click */
+	ae_stub_reset(1920, 1080);
+	ae_hits_clear();
+	ae_list_view_init(&view, 40, rows);
+	ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+	snprintf(more, sizeof(more), "\xE2\x96\xBC %d more", 40 - rows);
+	index = ae_stub_find_text(more, 0);
+	CHECK(index >= 0);
+	if (index >= 0)
+	{
+		struct ae_stub_call const *call = ae_stub_get(index);
+
+		memset(&pointer, 0, sizeof(pointer));
+		pointer.x = 100 + 40;
+		pointer.y = call->y + 2;
+		CHECK(!ae_hit_at(pointer.x, pointer.y, 0, &hit));
+		pointer.moved = 1;
+		ae_list_view_pointer(&view, &pointer, 5);
+		CHECK(view.list.focus == 0 && view.hover == -1 && view.list.first == 0);
+		pointer.moved = 0;
+		pointer.left_clicks = 1;
+		CHECK(ae_list_view_pointer(&view, &pointer, 5) == -1 && view.list.focus == 0);
+		/* (and the item after the last visible row is not drawn at all) */
+		snprintf(more, sizeof(more), "ROW %d", rows + 1);
+		CHECK(ae_stub_find_text(more, 0) < 0);
+	}
+	/* M2: the wheel scrolls the list only with the pointer over it */
+	memset(&pointer, 0, sizeof(pointer));
+	pointer.x = 1500;
+	pointer.y = 300;
+	pointer.wheel_steps = -1;
+	ae_list_view_pointer(&view, &pointer, 5);
+	CHECK(view.list.first == 0);
+	pointer.x = 140;
+	pointer.wheel_steps = -1;
+	ae_list_view_pointer(&view, &pointer, 5);
+	CHECK(view.list.first == 3);
+	/* M6: a dragged thumb is drawn where the window is, at once (no 100 ms trail) */
+	ae_motion_set_reduced(0);
+	ae_motion_set_now(9000);
+	ae_list_view_init(&view, 40, rows);
+	ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+	view.dragging = 1;
+	ae_list_scroll(&view.list, 20);
+	ae_stub_reset(1920, 1080);
+	ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+	CHECK(view.scroll.to == (float)view.list.first && ae_motion_value(&view.scroll) == (float)view.list.first);
+	view.dragging = 0;
+	ae_motion_set_reduced(1);
+	/* M4: past AE_HITS_MAXIMUM hits the rest are dropped and flagged; a clear starts over */
+	ae_hits_clear();
+	for (index = 0; index < AE_HITS_MAXIMUM; index++)
+		ae_hit_add((float)index, 0, 1, 1, 1, AE_PART_ROW, 0);
+	CHECK(!ae_hits_overflowed());
+	ae_hit_add(0, 0, 1, 1, 1, AE_PART_ROW, 0);
+	CHECK(ae_hits_overflowed());
+	ae_hits_clear();
+	CHECK(!ae_hits_overflowed());
+	CHECK(!ae_stub_overflowed());
+}
+
 int main(void)
 {
 	int index;
@@ -565,6 +704,7 @@ int main(void)
 	}
 	thumbs();
 	texts();
+	list_edges();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

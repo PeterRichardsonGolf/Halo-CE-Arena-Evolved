@@ -50,11 +50,23 @@ static const char ellipsis[] = "\xE2\x80\xA6";
 static struct ae_hit hits[AE_HITS_MAXIMUM];
 static int hit_count;
 static short hit_layer;
+/* a hit found no room this frame (the last added are the topmost: popovers'); the hooks log it */
+static int hits_overflowed;
+/* (ae_widget_list while its rows draw: their hits are cut to the list's rows, layout units) */
+static int hit_clip_on;
+static float hit_clip[4];
 
 void ae_hits_clear(void)
 {
 	hit_count = 0;
 	hit_layer = 0;
+	hits_overflowed = 0;
+	hit_clip_on = 0;
+}
+
+int ae_hits_overflowed(void)
+{
+	return hits_overflowed;
 }
 
 void ae_hits_layer(short layer)
@@ -68,14 +80,33 @@ void ae_hit_add(float x, float y, float width, float height, short id, short par
 	struct ae_hit *hit;
 	float right, bottom;
 
-	if (hit_count >= AE_HITS_MAXIMUM || width <= 0.0f || height <= 0.0f)
+	float left, top;
+
+	if (width <= 0.0f || height <= 0.0f)
 		return;
 	ae_draw_current_view(&view);
-	hit = &hits[hit_count++];
-	ae_view_to_layout(&view, x, y, &hit->rect.x, &hit->rect.y);
+	ae_view_to_layout(&view, x, y, &left, &top);
 	ae_view_to_layout(&view, x + width, y + height, &right, &bottom);
-	hit->rect.width = right - hit->rect.x;
-	hit->rect.height = bottom - hit->rect.y;
+	if (hit_clip_on)
+	{
+		left = left > hit_clip[0] ? left : hit_clip[0];
+		top = top > hit_clip[1] ? top : hit_clip[1];
+		right = right < hit_clip[2] ? right : hit_clip[2];
+		bottom = bottom < hit_clip[3] ? bottom : hit_clip[3];
+	}
+	/* (nothing of it left: a row scrolled out of the list) */
+	if (right <= left || bottom <= top)
+		return;
+	if (hit_count >= AE_HITS_MAXIMUM)
+	{
+		hits_overflowed = 1;
+		return;
+	}
+	hit = &hits[hit_count++];
+	hit->rect.x = left;
+	hit->rect.y = top;
+	hit->rect.width = right - left;
+	hit->rect.height = bottom - top;
 	hit->id = id;
 	hit->part = part;
 	hit->index = index;
@@ -294,9 +325,25 @@ static float minor_size(struct ae_density const *density)
 	return ae_size_minor(density);
 }
 
+/* the minor floor (VIEW: 14 px) for small texts the spec sizes below it at small views: group headers, badges */
+static float floored_minor(struct ae_density const *density, float spec_units)
+{
+	return ae_size(density, spec_units, density->kind == AE_DENSITY_VIEW ? MINOR_FLOOR_PIXELS : 0.0f);
+}
+
 static float badge_size(struct ae_density const *density)
 {
-	return units(density, density->metrics->badge);
+	return floored_minor(density, density->metrics->badge);
+}
+
+/* the badge's box: 20 u tall at FULL, 18 at VIEW, and never shorter than its text needs (a floored text) */
+#define BADGE_TEXT_LINE 1.5f
+static float badge_height(struct ae_density const *density)
+{
+	float height = units(density, density->kind == AE_DENSITY_VIEW ? BADGE_HEIGHT_VIEW_U : BADGE_HEIGHT_FULL_U);
+	float needed = badge_size(density) * BADGE_TEXT_LINE;
+
+	return height > needed ? height : needed;
 }
 
 void ae_row_layout(struct ae_density const *density, float width, struct ae_row const *row,
@@ -447,7 +494,7 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	}
 	if (layout.badge)
 	{
-		float height = units(density, density->kind == AE_DENSITY_VIEW ? BADGE_HEIGHT_VIEW_U : BADGE_HEIGHT_FULL_U);
+		float height = badge_height(density);
 		float size = badge_size(density);
 
 		if (on_bar)
@@ -493,10 +540,15 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	}
 	ae_draw_clip_pop();
 
-	/* hits: the row, its value, its arrows (the last added wins) */
+	/* hits: the row, its value (cut to the row: a value wider than it), its arrows (the last added wins) */
 	ae_hit_add(x, y, width, layout.height, hit_id, AE_PART_ROW, index);
 	if (shown && !disabled)
-		ae_hit_add(x + layout.value_x, y, layout.value_width, layout.height, hit_id, AE_PART_VALUE, index);
+	{
+		float value_left = layout.value_x > 0.0f ? layout.value_x : 0.0f;
+		float value_right = layout.value_x + layout.value_width < width ? layout.value_x + layout.value_width : width;
+
+		ae_hit_add(x + value_left, y, value_right - value_left, layout.height, hit_id, AE_PART_VALUE, index);
+	}
 	if (arrows)
 	{
 		ae_hit_add(x + layout.arrow_left_x, y, layout.arrow_cell, layout.height, hit_id, AE_PART_ARROW_LEFT, index);
@@ -507,7 +559,8 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 
 float ae_widget_group(struct ae_density const *density, float x, float y, float width, const char *label)
 {
-	float size = units(density, density->metrics->group), height = units(density, density->metrics->group_height);
+	float size = floored_minor(density, density->metrics->group);
+	float height = units(density, density->metrics->group_height);
 	float inset = units(density, GROUP_INSET_U), allowance = CLIP_ALLOWANCE_PIXELS * density->pixel;
 
 	if (label && *label)
@@ -626,6 +679,9 @@ void ae_widget_list(struct ae_density const *density, struct ae_list_view *view,
 			(float)list->focus, AE_MOTION_SELECTION_MS);
 		view->previous_focus = list->focus;
 	}
+	/* (a thumb being dragged follows the pointer at once) */
+	if (view->dragging)
+		ae_motion_finish(&view->scroll);
 	first = ae_motion_value(&view->scroll);
 	bar = ae_motion_value(&view->bar);
 	bar_moving = list->focus >= 0 && ae_motion_running(&view->bar);
@@ -643,10 +699,23 @@ void ae_widget_list(struct ae_density const *density, struct ae_list_view *view,
 	last = (short)((int)(first + (float)rows) + 1);
 	if (last > list->count)
 		last = list->count;
+	/* (the rows' hits, the list's and the rows' own, cut to the rows: none over the "N more" lines) */
+	{
+		struct ae_view rows_view;
+
+		ae_draw_current_view(&rows_view);
+		ae_view_to_layout(&rows_view, x, rows_top, &hit_clip[0], &hit_clip[1]);
+		ae_view_to_layout(&rows_view, x + rows_width, rows_top + rows_height, &hit_clip[2], &hit_clip[3]);
+		hit_clip_on = 1;
+	}
 	for (; item < last; item++)
 	{
 		float row_y = rows_top + ((float)item - first) * pitch, distance = (float)item - bar;
 		unsigned int flags = 0;
+
+		/* (a row wholly outside the rows: not drawn, no hit) */
+		if (row_y >= rows_top + rows_height || row_y + row <= rows_top)
+			continue;
 
 		if (distance < 0.0f)
 			distance = -distance;
@@ -669,6 +738,7 @@ void ae_widget_list(struct ae_density const *density, struct ae_list_view *view,
 		if (draw_item)
 			draw_item(context, item, x, row_y, rows_width, row, flags);
 	}
+	hit_clip_on = 0;
 	ae_draw_clip_pop();
 
 	/* overflow: a one-row fade at a cut edge, and how many more */
@@ -759,8 +829,8 @@ short ae_list_view_pointer(struct ae_list_view *view, struct ae_pointer const *p
 		}
 		return -1;
 	}
-	/* the wheel: 3 rows a notch (away from the user: up); the focus moves only if it leaves the window */
-	if (pointer->wheel_steps)
+	/* the wheel over the list: 3 rows a notch (away from the user: up); the focus moves only if it leaves the window */
+	if (pointer->wheel_steps && over)
 		ae_list_scroll(list, (short)(-WHEEL_ROWS * pointer->wheel_steps));
 	/* hover focuses only when the pointer moves (scrolling never steals the focus), and never scrolls */
 	if (pointer->moved)

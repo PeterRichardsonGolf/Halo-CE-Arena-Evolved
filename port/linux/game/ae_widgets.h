@@ -27,6 +27,8 @@ enum { AE_PART_ROW, AE_PART_ARROW_LEFT, AE_PART_ARROW_RIGHT, AE_PART_VALUE, AE_P
 struct ae_hit { struct ae_rect rect; short id, part, index, layer; };
 void ae_hits_clear(void);                      /* before ae_ui_draw each frame (ae_hooks) */
 void ae_hits_layer(short layer);               /* the screen index drawing now (before_draw) */
+/* nonzero when a hit found the AE_HITS_MAXIMUM full since the last clear (it was dropped: ae_hooks logs it) */
+int ae_hits_overflowed(void);
 /* x, y, width, height in the current ae_draw view's units (stored in layout units via ae_draw_current_view) */
 void ae_hit_add(float x, float y, float width, float height, short id, short part, short index);
 /* the last added hit under a layout point at layer >= minimum_layer; 0 when none */

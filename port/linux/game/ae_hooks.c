@@ -270,7 +270,11 @@ void ae_ui_render(
 	goes over the whole picture at Present): while it is up, AE draws nothing
 	so that it shows (ae_hooks.md) */
 	if (virtual_keyboard_active())
+	{
+		/* (nothing drawn: no targets of an earlier frame stay live) */
+		ae_hits_clear();
 		return;
+	}
 	/* M1: the screens are drawn once a frame, over the first player's view or
 	the whole screen. render_ui_widgets runs once per view in split screen,
 	and once more for a mirror's view, which arrives as player 0 too (with the
@@ -291,6 +295,14 @@ void ae_ui_render(
 	/* (the pointer's targets are this frame's drawing's) */
 	ae_hits_clear();
 	ae_ui_draw();
+	if (ae_hits_overflowed())
+	{
+		static boolean logged = FALSE;
+
+		if (!logged)
+			platform_log("ae menus: more than %d hit rectangles in a frame: the last were dropped", AE_HITS_MAXIMUM);
+		logged = TRUE;
+	}
 }
 
 boolean ae_ui_pointer(
