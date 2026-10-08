@@ -5166,7 +5166,7 @@ short game_variant_timers_level(
 }
 
 /* port: a gametype's DROP SECONDARY from its flags (bits 29-30; 3 is
-ALWAYS EXCEPT POWER, as the editor shows it) */
+EXCEPT POWER, as the editor shows it) */
 short game_variant_drop_secondary(
 	unsigned long flags)
 {
@@ -5194,7 +5194,7 @@ char const *game_variant_timers_name(
 char const *game_variant_drop_secondary_name(
 	unsigned long flags)
 {
-	static char const *const values[] = { "ce", "always", "always except power" };
+	static char const *const values[] = { "ce", "always", "except power" };
 	typedef char verify_drop_secondary_names[NUMBEROF(values) == NUMBER_OF_DROP_SECONDARY_VALUES ? 1 : -1];
 
 	return values[game_variant_drop_secondary(flags)];
@@ -8867,7 +8867,7 @@ static boolean game_engine_item_log_on(
 	return on;
 }
 
-/* port: DROP SECONDARY's power weapons, which ALWAYS EXCEPT POWER leaves
+/* port: DROP SECONDARY's power weapons, which EXCEPT POWER leaves
 to CE's rule: the rocket launcher, the sniper rifle and the shotgun. A
 host's gameplay rule, so a fixed set every machine agrees on: not
 item_timers_shotgun_is_power(), which follows display.shotgun_power, each
@@ -8886,7 +8886,7 @@ static boolean game_engine_drop_secondary_power_weapon(
 /* port: DROP SECONDARY (items.c's item_in_unit_inventory, an item leaving a
 unit's inventory): whether its owned time is now, so it lies 30 s like any
 drop. The host's (it alone purges: game_engine_update_purge); CE: never
-(stock); ALWAYS: always; ALWAYS EXCEPT POWER (a stored 3 too): but for a
+(stock); ALWAYS: always; EXCEPT POWER (a stored 3 too): but for a
 power weapon. Never for the CTF flag or the oddball (can_delete_item's
 flag weapons): their return timers count from their owned time, as stock */
 boolean game_engine_drop_refreshes_owned_time(
