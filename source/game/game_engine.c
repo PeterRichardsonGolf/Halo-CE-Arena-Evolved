@@ -8955,7 +8955,7 @@ void game_engine_log_item_dropped(
 		return;
 	platform_log("items: dropped %s (%lx) at tick %ld, owned at tick %ld%s (drop secondary %s)",
 		tag_get_name(object_get(item_index)->definition_index), item_index, game_time_get(), owned_before,
-		owned_now == owned_before ? "" : owned_now >= game_time_get() ? ", now" : ", gone",
+		owned_now >= game_time_get() ? ", now" : owned_now != owned_before ? ", gone" : "",
 		game_variant_drop_secondary_name(global_variant.universal_variant.flags));
 }
 

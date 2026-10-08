@@ -520,6 +520,25 @@ class Handshake(unittest.TestCase):
         self.assertFalse(harness.compare_tracks(host, client)[0]["kd_match"])
 
 
+class SeedRules(unittest.TestCase):
+    def test_table_and_parse(self):
+        """seed_rules.py: the 48 seeds, and a run's rules lines read back field by field"""
+        import seed_rules
+        self.assertEqual(len(seed_rules.ROWS), 48)
+        for name in seed_rules.ROWS:
+            self.assertLessEqual(len(name), 11, name)
+        text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
+                "time limit none, timers line of sight, training off, no spread nhe, pre-game countdown on, practice off; "
+                "slayer (teams), score to win 50, respawn 150 ticks (5 s), suicide penalty 150 ticks (5 s), friendly fire on, "
+                "radar players none, goal radar motion tracker, shields on, invisible off, infinite grenades off, "
+                "weapon set normal, loadout pistol + assault rifle, no map weapons off, vehicle sets none (red none, blue none)\n"
+                "x  AE rules: timers level line of sight, spawn heat on, objective normal, nhe extras off, "
+                "drop secondary always, nhe mode by vehicles, starting frags 2\n")
+        f = seed_rules.fields(text)
+        self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),
+                         ("slayer (teams)", "150 ticks (5 s)", "line of sight", "pistol + assault rifle", "always"))
+
+
 class Windows(unittest.TestCase):
     def test_start_outcomes(self):
         self.assertEqual(windows.parse_start(10, "TEST NOT STARTED: not idle (gpu 40%)\n"),

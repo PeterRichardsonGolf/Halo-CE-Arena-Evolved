@@ -1366,7 +1366,7 @@ ARENA_ROWS = [
     ]),
     # (game_engine.h's enum drop_secondary: bits 29-30; the host's rule)
     ("drop_secondary", "DROP SECONDARY:", ["CE", "ALWAYS", "EXCEPT POWER"], [
-        "As Halo CE: a holstered weapon you haven't drawn\\nfor 30 seconds vanishes when you die.",
+        "As Halo CE: your spawn's second weapon vanishes\\nwhen you die; one you put away from hand stays\\n30 seconds.",
         "Both your weapons drop when you die, and stay\\n30 seconds.",
         "Both drop and stay 30 seconds, but a holstered\\nrocket launcher, sniper rifle or shotgun vanishes.",
     ]),

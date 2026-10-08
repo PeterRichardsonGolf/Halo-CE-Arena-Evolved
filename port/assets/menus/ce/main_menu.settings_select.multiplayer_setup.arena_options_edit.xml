@@ -228,7 +228,7 @@
 		<string text="On Halo 1: NHE's maps: NHE's talking and\non-screen timers (its host teleport stays off:\nAE hosts neutrally). Other maps: the gametype's."/>
 		<string text="On Halo 1: NHE's maps: NHE's timers and its\npowerup calls. On other maps the gametype's\nvehicles apply."/>
 		<string text="On Halo 1: NHE's maps: NHE's training: the\ncountdown, spawn markers, randoms and waypoints.\nOther maps: the gametype's vehicles."/>
-		<string text="As Halo CE: a holstered weapon you haven't drawn\nfor 30 seconds vanishes when you die."/>
+		<string text="As Halo CE: your spawn's second weapon vanishes\nwhen you die; one you put away from hand stays\n30 seconds."/>
 		<string text="Both your weapons drop when you die, and stay\n30 seconds."/>
 		<string text="Both drop and stay 30 seconds, but a holstered\nrocket launcher, sniper rifle or shotgun vanishes."/>
 		<string text="Stock teams and camera."/>

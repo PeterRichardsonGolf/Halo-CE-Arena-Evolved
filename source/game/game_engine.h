@@ -201,7 +201,9 @@ struct universal_variant
 	starts with, 1-4 (no more than the game's rule for the player count
 	allows: 1 with 9 or more players, 2 with 5 or more); STARTING_GRENADES_NONE,
 	no grenades at all (frag or plasma); 0 or anything else, the game's rule
-	(the globals' most, 4, under 5 players). AE COMP's 2, AE SWAT's none */
+	(the globals' most, 4, under 5 players). 1-4 and none also override a
+	map's own (custom) starting equipment's grenades. AE COMP's 2, AE SWAT's
+	none */
 	byte starting_frags;
 	byte pad2;
 	unsigned long flags;
