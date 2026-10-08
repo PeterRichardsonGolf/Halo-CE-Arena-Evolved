@@ -167,10 +167,18 @@ def test_test_screen_draws_and_takes_input(cfg):
     # the swatch (white, alpha 0.25) is one blend over the picture, early and late: no build-up in the back
     # buffer the game keeps from frame to frame (over a background b, one blend is 0.75 b + 64, two 0.56 b + 112)
     late = harness.read_png(pngs[-1])
-    early = harness.read_png(pngs[-10])
     assert late[0] == 1920 and late[1] == 1080, "the picture is not 1920x1080"
     inner = (SWATCH[0] + 4, SWATCH[1] + 4, SWATCH[2] - 4, SWATCH[3] - 4)
     ring = (SWATCH[0] - 12, SWATCH[1] - 12, SWATCH[2] + 12, SWATCH[3] + 12)
+    # (early: about 10 shots before the last, but never one taken before the first frame was drawn: on a loaded box
+    # the run takes only ~10 shots and the 10th from the end is the black frame 0)
+    early = None
+    for path in pngs[max(0, len(pngs) - 10):-1]:
+        image = harness.read_png(path)
+        if brightness_median(image, SWATCH, ring) > 0:
+            early = image
+            break
+    assert early is not None, "no drawn picture before the last"
     blends = []
     for image in (early, late):
         swatch = brightness_median(image, inner)
