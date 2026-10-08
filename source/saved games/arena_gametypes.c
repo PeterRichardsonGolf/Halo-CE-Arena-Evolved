@@ -13,10 +13,16 @@ yet seeded is written, unless a saved game of its name already exists
 z:\saved\playlists\arena_gametypes.txt. One the player deletes or renames
 is not written again; deleting the record brings back the missing ones.
 
-A gametype seeded under a name since changed (arena_gametype_renames) is
-renamed in place while its file is still exactly as seeded; one the player
-changed is left as it is and the new one written beside it; one the player
-deleted stays deleted.
+The record's first line is "#revision N", the seeds' revision it was
+last brought to (none: 0). Each later revision's migrations
+(arena_gametype_migrations) run once, in order: a gametype seeded under an
+old name, its file still exactly as that revision's predecessor seeded it
+(a frozen copy of its row), is backed up (z:\saved\playlists_backup\
+revision_N\) and rewritten in place under its new name from the
+revision's frozen new row; one the player changed is kept as it is and the
+new one written beside it; one the player deleted stays deleted. The record
+is written through a temporary file, so a crash leaves the old one or the
+new one, never half of one.
 
 The gametype lists show the custom gametypes in order
 (arena_gametypes_sort): by set (AE, AE COMP, Halo 1: NHE's, TRAINING:
@@ -35,6 +41,7 @@ arena_gametype_names.c), each in its table's order, then the player's own.
 #include "tag_files/files.h"
 #include "text/unicode.h"
 
+#include <stdlib.h>
 #include <string.h>
 /* (MAX_GAMENAME: a saved game's display name) */
 #include <xtl.h>
@@ -47,8 +54,16 @@ enum
 	human_readable_game_description; playlist_profile.c's
 	MAXIMUM_GAME_VARIANT_NAME_LENGTH) */
 	ARENA_GAMETYPE_NAME_LENGTH = 12,
-	/* the record of those seeded: their names, a line each */
-	ARENA_GAMETYPES_RECORD_SIZE = 1024,
+	/* the record of those seeded: their names, a line each, after its
+	"#revision N" line */
+	ARENA_GAMETYPES_RECORD_SIZE = 2048,
+	/* the seeds' revision now (the last of arena_gametype_migrations) */
+	ARENA_GAMETYPES_REVISION = 2,
+	/* a memory unit holds at most 100 saved games (saved_game_files.c):
+	the self-check warns past this many */
+	ARENA_GAMETYPES_SAVED_WARNING = 90,
+	/* a gametype directory's files backed up (blam.lst, SaveMeta.xbx) */
+	ARENA_GAMETYPES_BACKUP_FILES = 8,
 	/* the custom gametypes looked through (saved_game_files.c lists at
 	most 100 saved games) */
 	ARENA_GAMETYPES_MAXIMUM_SAVED = 128,
@@ -148,6 +163,18 @@ enum
 	ARENA_VEHICLES_TANK,
 };
 
+/* frozen copies of the flags the seeds of revisions 1 and 2 have, as
+literals (the macros above may change; a migration compares a file with the
+row its predecessor seeded): ARENA_GAMETYPE_FLAGS (no landing damage, HALO
+2 health, the generic starting equipment, NO SPREAD FULL, the PRE-GAME
+COUNTDOWN) and ARENA_CASUAL_FLAGS (TIMERS) */
+#define ARENA_REV1_GAMETYPE_FLAGS 0x01790020UL
+#define ARENA_REV1_CASUAL_FLAGS 0x00020000UL
+
+/* the seed fields whose 0 means the stock gametype's (or AE's default):
+a value is given as value + 1 */
+#define ARENA_SET(value) ((value) + 1)
+
 /* ---------- structures */
 
 struct arena_gametype
@@ -168,8 +195,41 @@ struct arena_gametype
 	/* the vehicle set (ARENA_VEHICLES_*): on NHE's maps, its mode */
 	long vehicle_set;
 	/* the PC options' loadout: TRUE, a pistol in hand and an assault rifle
-	(AE's); FALSE, the weapon set's (NHE's: an assault rifle in hand) */
+	(AE's; others with loadout_primary / loadout_secondary); FALSE, the
+	weapon set's (NHE's: an assault rifle in hand) */
 	boolean custom_loadout;
+	/* (the fields below: 0, as before them; rows list them as needed) */
+	/* the weapon set: 0 the stock gametype's, else
+	ARENA_SET(_game_engine_weapons_*) */
+	short weapon_set;
+	/* a custom loadout's weapons: 0 AE's (pistol, assault rifle), else
+	ARENA_SET(_loadout_weapon_*) */
+	byte loadout_primary;
+	byte loadout_secondary;
+	/* the PC options' NO MAP WEAPONS */
+	boolean no_map_weapons;
+	/* the PC options' FRIENDLY FIRE: 0 the default (on), else
+	ARENA_SET(_friendly_fire_*) */
+	short friendly_fire;
+	/* the objectives indicator: 0 the stock gametype's, else
+	ARENA_SET(goal radar: 0 motion tracker, 1 nav points, 2 none) */
+	short goal_radar;
+	/* NHE MODE (universal_variant.nhe_mode: enum nhe_mode; 0 BY VEHICLES) */
+	byte nhe_mode;
+	/* anything else, after the rest (a shipped one is never edited: a
+	changed one is a new function); NULL for none */
+	void (*adjust)(struct game_variant *variant, struct game_variant_options *options);
+};
+
+/* a revision's change of a seeded gametype: its frozen rows, the old one
+as the revision before seeded it (under its old name) and the new one as
+this revision seeds it (under its new name); rows are never edited once a
+build ships them */
+struct arena_gametype_migration
+{
+	short revision;
+	struct arena_gametype old_row;
+	struct arena_gametype new_row;
 };
 
 /* ---------- globals */
@@ -179,7 +239,7 @@ gametype options it adds (game_engine.h's universal_variant flags) */
 static struct arena_gametype const arena_gametypes[] =
 {
 	/* AE's casual set: TIMERS, the motion sensor, 15 minutes, the stock
-	respawns. The free for all ones say FFA (AE PRO FFA too); the rest
+	respawns. The free for all ones say FFA (AE COMP FFA too); the rest
 	are team games */
 	{ "AE FFA SLAY", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
@@ -206,22 +266,23 @@ static struct arena_gametype const arena_gametypes[] =
 	item timers and TRAINING's waypoints */
 	{ "AE TRAINING", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_TRAINING_FLAGS,
 		ARENA_TRAINING_SCORE_TO_WIN, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_DEFAULT, TRUE },
-	/* AE PRO, modern NHE: Beach LAN's 5 second respawn and suicide penalty,
+	/* AE COMP (AE PRO before revision 2), modern NHE: Beach LAN's 5 second
+	respawn and suicide penalty,
 	no motion sensor (but free for all's), no TIMERS; the slayers without a
 	time limit, the objective games 15 minutes; team King and Oddball */
-	{ "AE PRO FFA", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS,
+	{ "AE COMP FFA", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS,
 		ARENA_FFA_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_ON,
 		ARENA_VEHICLES_STOCK, TRUE },
-	{ "AE PRO TS", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS,
+	{ "AE COMP TS", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
 		ARENA_VEHICLES_STOCK, TRUE },
-	{ "AE PRO CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS,
+	{ "AE COMP CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS,
 		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
 		ARENA_VEHICLES_STOCK, TRUE },
-	{ "AE PRO KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS,
+	{ "AE COMP KOH", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
 		ARENA_VEHICLES_STOCK, TRUE },
-	{ "AE PRO BALL", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS,
+	{ "AE COMP OB", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
 		ARENA_VEHICLES_STOCK, TRUE },
 	/* Halo 1: NHE's competitive play (the mods/NHE maps): stock rules (fall
@@ -253,19 +314,58 @@ static struct arena_gametype const arena_gametypes[] =
 		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_GHOST, FALSE },
 };
 
-/* the AE gametypes seeded before under other names (free for all ones
-whose names did not say so) */
-static struct
+/* the seeds' migrations, by revision (the record's "#revision N": each
+above it runs once). Revision 1: the free for all ones whose names did not
+say so; revision 2: AE PRO -> AE COMP (values unchanged) */
+static struct arena_gametype_migration const arena_gametype_migrations[] =
 {
-	char const *old_name;
-	char const *name;
-} const arena_gametype_renames[] =
-{
-	{ "AE SLAYER", "AE FFA SLAY" },
-	{ "AE ODDBALL", "AE FFA BALL" },
+	{ 1,
+		{ "AE SLAYER", build_game_variant_slayer, ARENA_REV1_GAMETYPE_FLAGS | ARENA_REV1_CASUAL_FLAGS,
+			25, 15, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
+		{ "AE FFA SLAY", build_game_variant_slayer, ARENA_REV1_GAMETYPE_FLAGS | ARENA_REV1_CASUAL_FLAGS,
+			25, 15, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE } },
+	{ 1,
+		{ "AE ODDBALL", build_game_variant_oddball, ARENA_REV1_GAMETYPE_FLAGS | ARENA_REV1_CASUAL_FLAGS,
+			5, 15, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
+		{ "AE FFA BALL", build_game_variant_oddball, ARENA_REV1_GAMETYPE_FLAGS | ARENA_REV1_CASUAL_FLAGS,
+			5, 15, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE } },
+	{ 2,
+		{ "AE PRO FFA", build_game_variant_slayer, ARENA_REV1_GAMETYPE_FLAGS,
+			25, 0, 150, 150, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE },
+		{ "AE COMP FFA", build_game_variant_slayer, ARENA_REV1_GAMETYPE_FLAGS,
+			25, 0, 150, 150, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE } },
+	{ 2,
+		{ "AE PRO TS", build_game_variant_team_slayer, ARENA_REV1_GAMETYPE_FLAGS,
+			50, 0, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE },
+		{ "AE COMP TS", build_game_variant_team_slayer, ARENA_REV1_GAMETYPE_FLAGS,
+			50, 0, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE } },
+	{ 2,
+		{ "AE PRO CTF", build_game_variant_ctf, ARENA_REV1_GAMETYPE_FLAGS,
+			3, 15, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE },
+		{ "AE COMP CTF", build_game_variant_ctf, ARENA_REV1_GAMETYPE_FLAGS,
+			3, 15, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE } },
+	{ 2,
+		{ "AE PRO KING", build_game_variant_team_king, ARENA_REV1_GAMETYPE_FLAGS,
+			5, 15, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE },
+		{ "AE COMP KOH", build_game_variant_team_king, ARENA_REV1_GAMETYPE_FLAGS,
+			5, 15, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE } },
+	{ 2,
+		{ "AE PRO BALL", build_game_variant_team_oddball, ARENA_REV1_GAMETYPE_FLAGS,
+			5, 15, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE },
+		{ "AE COMP OB", build_game_variant_team_oddball, ARENA_REV1_GAMETYPE_FLAGS,
+			5, 15, 150, 150, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE } },
 };
 
 static char const arena_gametypes_record_path[] = "z:\\saved\\playlists\\arena_gametypes.txt";
+/* (the record being written: renamed over the record once complete) */
+static char const arena_gametypes_record_new_path[] = "z:\\saved\\playlists\\arena_gametypes.new";
+static char const arena_gametypes_record_new_name[] = "arena_gametypes.new";
+static char const arena_gametypes_record_name[] = "arena_gametypes.txt";
+static char const arena_gametypes_backup_path[] = "z:\\saved\\playlists_backup";
+
+/* files_windows.c's (not in files.h): renames a file in its directory, FALSE
+when a file has the new name */
+boolean file_rename(struct file_reference *file, const char *new_name);
 
 /* ---------- prototypes */
 
@@ -284,11 +384,21 @@ static boolean arena_gametypes_record_add(
 	char *record,
 	unsigned long *record_length,
 	char const *name);
-static void arena_gametypes_rename(
+static void arena_gametypes_migrate(
 	char *record,
 	unsigned long *record_length,
+	short record_revision,
 	boolean *record_changed,
 	boolean *written);
+static void arena_gametypes_self_check(
+	void);
+static boolean arena_gametypes_record_read(
+	char *record,
+	unsigned long *record_length,
+	short *revision);
+static void arena_gametypes_record_write(
+	char const *record,
+	unsigned long record_length);
 static int arena_gametype_name_compare(
 	wchar_t const *a,
 	wchar_t const *b);
@@ -302,45 +412,22 @@ static void arena_gametype_log(
 boolean arena_gametypes_seed(
 	void)
 {
-	struct file_reference file;
-	/* the record, after a newline (each name is looked for as "\nNAME\n") */
-	char record[ARENA_GAMETYPES_RECORD_SIZE + 2];
+	/* the record's names, after a newline (each name is looked for as
+	"\nNAME\n"), without its "#revision N" line */
+	char record[ARENA_GAMETYPES_RECORD_SIZE + 3];
 	unsigned long record_length = 1;
+	short record_revision = 0;
 	boolean record_changed = FALSE;
 	boolean written = FALSE;
 	short index;
 
 	csmemset(record, 0, sizeof(record));
 	record[0] = '\n';
-	if (file_reference_create_from_path(&file, arena_gametypes_record_path, FALSE) &&
-		file_exists(&file) &&
-		file_open(&file, FLAG(_permission_read_bit)))
-	{
-		unsigned long length = file_get_eof(&file);
+	record_changed = arena_gametypes_record_read(record, &record_length, &record_revision);
 
-		if (length <= ARENA_GAMETYPES_RECORD_SIZE && file_read(&file, length, record + 1))
-		{
-			unsigned long character;
-
-			record_length = 1 + length;
-			record[record_length] = 0;
-			/* (a record edited by hand: its line ends, and its last line's) */
-			for (character = 1; character < record_length; character++)
-			{
-				if (record[character] == '\r')
-					record[character] = '\n';
-			}
-			if (record[record_length - 1] != '\n')
-			{
-				record[record_length++] = '\n';
-				record[record_length] = 0;
-			}
-		}
-		file_close(&file);
-	}
-
-	/* (those seeded under their old names: renamed if unchanged) */
-	arena_gametypes_rename(record, &record_length, &record_changed, &written);
+	/* (those seeded under their old names: migrated if unchanged) */
+	arena_gametypes_migrate(record, &record_length, record_revision, &record_changed, &written);
+	arena_gametypes_self_check();
 
 	for (index = 0; index < NUMBEROF(arena_gametypes); index++)
 	{
@@ -358,15 +445,8 @@ boolean arena_gametypes_seed(
 			record_changed = TRUE;
 	}
 
-	if (record_changed &&
-		file_reference_create_from_path(&file, arena_gametypes_record_path, FALSE) &&
-		(file_exists(&file) || file_create(&file)) &&
-		file_open(&file, FLAG(_permission_write_bit)))
-	{
-		file_set_eof(&file, 0);
-		file_write(&file, record_length - 1, record + 1);
-		file_close(&file);
-	}
+	if (record_changed || record_revision != ARENA_GAMETYPES_REVISION)
+		arena_gametypes_record_write(record, record_length);
 
 	return written;
 }
@@ -511,92 +591,365 @@ static boolean arena_gametypes_record_add(
 	return TRUE;
 }
 
-/* the AE gametypes seeded under an old name (in the record, the new name
-not yet): renamed in place while the file is exactly as seeded (the new
-name recorded, so not seeded again); the player's changed one kept, the new
-one then seeded beside it; one the player deleted (or renamed) stays so,
-its new name recorded unseeded */
-static void arena_gametypes_rename(
+/* a record file read into the record's buffer (after its first newline),
+its "#revision N" line taken out: FALSE when it is not there or too long */
+static boolean arena_gametypes_record_read_file(
+	char const *path,
 	char *record,
 	unsigned long *record_length,
+	short *revision)
+{
+	struct file_reference file;
+	unsigned long length;
+	unsigned long character;
+	boolean success = FALSE;
+
+	if (!file_reference_create_from_path(&file, path, FALSE) || !file_exists(&file) ||
+		!file_open(&file, FLAG(_permission_read_bit)))
+	{
+		return FALSE;
+	}
+	length = file_get_eof(&file);
+	if (length <= ARENA_GAMETYPES_RECORD_SIZE && file_read(&file, length, record + 1))
+	{
+		success = TRUE;
+		*record_length = 1 + length;
+		record[*record_length] = 0;
+		/* (a record edited by hand: its line ends, and its last line's) */
+		for (character = 1; character < *record_length; character++)
+		{
+			if (record[character] == '\r')
+				record[character] = '\n';
+		}
+		if (record[*record_length - 1] != '\n')
+		{
+			record[(*record_length)++] = '\n';
+			record[*record_length] = 0;
+		}
+		/* (its revision: the first line's; none, 0) */
+		*revision = 0;
+		if (!strncmp(record + 1, "#revision ", 10))
+		{
+			char *end = strchr(record + 1, '\n');
+			unsigned long line_length = (unsigned long)(end - (record + 1)) + 1;
+
+			*revision = (short)atol(record + 11);
+			csmemmove(record + 1, record + 1 + line_length, *record_length - 1 - line_length + 1);
+			*record_length -= line_length;
+		}
+	}
+	else
+	{
+		error(_error_silent, "arena gametypes: the record '%s' is not read (%lu bytes)", path, length);
+	}
+	file_close(&file);
+
+	return success;
+}
+
+/* the record, else (a start that ended between writing a new record and
+putting it in the old one's place) the new one: TRUE then, to be put in
+place; a new one beside the record is a start's that ended before it was
+complete: dropped */
+static boolean arena_gametypes_record_read(
+	char *record,
+	unsigned long *record_length,
+	short *revision)
+{
+	struct file_reference record_new;
+	boolean new_there = file_reference_create_from_path(&record_new, arena_gametypes_record_new_path, FALSE) &&
+		file_exists(&record_new);
+
+	*revision = 0;
+	if (arena_gametypes_record_read_file(arena_gametypes_record_path, record, record_length, revision))
+	{
+		if (new_there)
+		{
+			error(_error_silent, "arena gametypes: an unfinished record '%s' dropped", arena_gametypes_record_new_path);
+			file_delete(&record_new);
+		}
+		return FALSE;
+	}
+	if (new_there &&
+		arena_gametypes_record_read_file(arena_gametypes_record_new_path, record, record_length, revision))
+	{
+		error(_error_silent, "arena gametypes: the record recovered from '%s'", arena_gametypes_record_new_path);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+/* the record written (its "#revision N" line, the current revision, then
+the names) to a new file, then put in the old one's place: a start that
+ends at any moment leaves a whole record */
+static void arena_gametypes_record_write(
+	char const *record,
+	unsigned long record_length)
+{
+	struct file_reference file;
+	struct file_reference record_file;
+	char revision_line[32];
+	boolean success = FALSE;
+
+	_snprintf(revision_line, sizeof(revision_line) - 1, "#revision %d\n", (int)ARENA_GAMETYPES_REVISION);
+	revision_line[sizeof(revision_line) - 1] = 0;
+	if (file_reference_create_from_path(&file, arena_gametypes_record_new_path, FALSE) &&
+		(file_exists(&file) || file_create(&file)) &&
+		file_open(&file, FLAG(_permission_write_bit)))
+	{
+		success = file_set_eof(&file, 0) &&
+			file_write(&file, (unsigned long)strlen(revision_line), revision_line) &&
+			(record_length <= 1 || file_write(&file, record_length - 1, record + 1));
+		file_close(&file);
+	}
+	if (!success)
+	{
+		error(_error_silent, "arena gametypes: failed to write the record '%s'", arena_gametypes_record_new_path);
+		return;
+	}
+	if (file_reference_create_from_path(&record_file, arena_gametypes_record_path, FALSE) &&
+		file_exists(&record_file) && !file_delete(&record_file))
+	{
+		error(_error_silent, "arena gametypes: failed to replace the record '%s'", arena_gametypes_record_path);
+		return;
+	}
+	if (!file_rename(&file, arena_gametypes_record_name))
+		error(_error_silent, "arena gametypes: failed to rename '%s'", arena_gametypes_record_new_path);
+
+	return;
+}
+
+/* a saved gametype of that name (letters' case aside) among the saved ones,
+else NONE */
+static long arena_gametype_find_saved(
+	wchar_t const *name,
+	long const *saved,
+	word saved_count)
+{
+	short index;
+
+	for (index = 0; index < (short)saved_count; index++)
+	{
+		wchar_t display_name[MAX_GAMENAME];
+
+		display_name[0] = 0;
+		if (playlist_profile_get_display_name(saved[index], display_name) &&
+			!arena_gametype_name_compare(display_name, name))
+		{
+			return saved[index];
+		}
+	}
+	return NONE;
+}
+
+/* a directory made if it is not there: TRUE when it is */
+static boolean arena_gametypes_directory(
+	char const *path)
+{
+	struct file_reference directory;
+
+	return file_reference_create_from_path(&directory, path, TRUE) &&
+		(file_exists(&directory) || file_create(&directory));
+}
+
+/* a file copied into a directory under its own name, never over a file
+there (one there already is kept: an earlier backup's): TRUE when the copy
+is there */
+static boolean arena_gametypes_backup_file(
+	struct file_reference *source,
+	char const *directory_path)
+{
+	char name[MAXIMUM_FILENAME_LENGTH + 1];
+	char path[MAXIMUM_FILENAME_LENGTH + 1];
+	struct file_reference destination;
+	unsigned long size = 0;
+	void *data;
+	boolean success = FALSE;
+
+	name[0] = 0;
+	file_reference_get_name(source, FLAG(_name_filename_bit) | FLAG(_name_extension_bit), name);
+	if (!name[0])
+		return FALSE;
+	_snprintf(path, sizeof(path) - 1, "%s\\%s", directory_path, name);
+	path[sizeof(path) - 1] = 0;
+	if (!file_reference_create_from_path(&destination, path, FALSE))
+		return FALSE;
+	if (file_exists(&destination))
+	{
+		error(_error_silent, "arena gametypes: backup '%s' is there already: kept", path);
+		return TRUE;
+	}
+	data = file_read_into_memory(source, &size);
+	if (!data)
+		return FALSE;
+	if (file_create(&destination) && file_open(&destination, FLAG(_permission_write_bit)))
+	{
+		success = file_write(&destination, size, data);
+		file_close(&destination);
+	}
+	free(data);
+	if (success)
+		error(_error_silent, "arena gametypes: backed up '%s'", path);
+	return success;
+}
+
+/* before a revision's first rewrite, the record (once), then the gametype's
+directory's files, into z:\saved\playlists_backup\revision_N\ (its
+directory under its own name): TRUE when all are there */
+static boolean arena_gametypes_backup(
+	short revision,
+	long profile_index,
+	boolean *record_backed_up)
+{
+	char revision_path[MAXIMUM_FILENAME_LENGTH + 1];
+	char gametype_path[MAXIMUM_FILENAME_LENGTH + 1];
+	char directory_path[MAXIMUM_FILENAME_LENGTH + 1];
+	struct file_reference files[ARENA_GAMETYPES_BACKUP_FILES];
+	struct file_reference directory;
+	char *directory_name;
+	long file_count;
+	long index;
+
+	_snprintf(revision_path, sizeof(revision_path) - 1, "%s\\revision_%d", arena_gametypes_backup_path, (int)revision);
+	revision_path[sizeof(revision_path) - 1] = 0;
+	if (!arena_gametypes_directory(arena_gametypes_backup_path) || !arena_gametypes_directory(revision_path))
+	{
+		error(_error_silent, "arena gametypes: no backup directory '%s'", revision_path);
+		return FALSE;
+	}
+	if (!*record_backed_up)
+	{
+		struct file_reference record;
+
+		if (file_reference_create_from_path(&record, arena_gametypes_record_path, FALSE) && file_exists(&record) &&
+			!arena_gametypes_backup_file(&record, revision_path))
+		{
+			return FALSE;
+		}
+		*record_backed_up = TRUE;
+	}
+
+	/* (its directory: u:\UDATA\<name>\, the last part of the path) */
+	if (!saved_game_file_get_path_to_enclosing_directory(profile_index, directory_path))
+		return FALSE;
+	while (directory_path[0] && directory_path[strlen(directory_path) - 1] == '\\')
+		directory_path[strlen(directory_path) - 1] = 0;
+	directory_name = strrchr(directory_path, '\\');
+	directory_name = directory_name ? directory_name + 1 : directory_path;
+	if (!directory_name[0])
+		return FALSE;
+	_snprintf(gametype_path, sizeof(gametype_path) - 1, "%s\\%s", revision_path, directory_name);
+	gametype_path[sizeof(gametype_path) - 1] = 0;
+	if (!arena_gametypes_directory(gametype_path) ||
+		!file_reference_create_from_path(&directory, directory_path, TRUE))
+	{
+		return FALSE;
+	}
+	file_count = find_files(0, &directory, NUMBEROF(files), files);
+	if (file_count <= 0)
+		return FALSE;
+	for (index = 0; index < file_count; index++)
+	{
+		if (!arena_gametypes_backup_file(&files[index], gametype_path))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+/* the seeds' migrations of each revision above the record's, in order (a
+migration acts only while its old name is in the record and its new name
+not): the gametype of the old name exactly as the revision before seeded it
+is backed up and rewritten in place under its new name from the new row
+(the new name recorded, so not seeded again); the player's changed one is
+kept, the new one then seeded beside it; one the player deleted (or
+renamed) stays so, its new name recorded unseeded */
+static void arena_gametypes_migrate(
+	char *record,
+	unsigned long *record_length,
+	short record_revision,
 	boolean *record_changed,
 	boolean *written)
 {
 	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
 	word saved_count = 0;
-	short rename_index;
+	boolean listed = FALSE;
+	boolean record_backed_up = FALSE;
+	short backed_up_revision = NONE;
+	short migration_index;
 
-	for (rename_index = 0; rename_index < NUMBEROF(arena_gametype_renames); rename_index++)
+	for (migration_index = 0; migration_index < NUMBEROF(arena_gametype_migrations); migration_index++)
 	{
-		char const *old_name = arena_gametype_renames[rename_index].old_name;
-		char const *new_name = arena_gametype_renames[rename_index].name;
-		struct arena_gametype const *gametype = NULL;
+		struct arena_gametype_migration const *migration = &arena_gametype_migrations[migration_index];
+		char const *old_name = migration->old_row.name;
+		char const *new_name = migration->new_row.name;
 		char old_line[ARENA_GAMETYPE_NAME_LENGTH + 2];
 		char new_line[ARENA_GAMETYPE_NAME_LENGTH + 2];
 		wchar_t old_wide[ARENA_GAMETYPE_NAME_LENGTH];
 		wchar_t new_wide[ARENA_GAMETYPE_NAME_LENGTH];
-		long profile_index = NONE;
+		long profile_index;
 		struct game_variant variant;
 		struct game_variant_options options;
-		short index;
 
+		if (migration->revision <= record_revision)
+			continue;
 		_snprintf(old_line, sizeof(old_line), "\n%s\n", old_name);
 		old_line[sizeof(old_line) - 1] = 0;
 		_snprintf(new_line, sizeof(new_line), "\n%s\n", new_name);
 		new_line[sizeof(new_line) - 1] = 0;
 		if (!strstr(record, old_line) || strstr(record, new_line))
 			continue;
-		for (index = 0; index < NUMBEROF(arena_gametypes); index++)
-		{
-			if (!strcmp(arena_gametypes[index].name, new_name))
-				gametype = &arena_gametypes[index];
-		}
-		if (!gametype)
-			continue;
 
 		/* (the custom gametypes, listed once) */
-		if (!saved_count)
+		if (!listed)
 		{
 			saved_count = NUMBEROF(saved);
 			saved_game_files_enumerate_available_to_local_player_index(NONE,
 				_saved_game_file_type_game_variant, &saved_count, saved, FALSE);
+			listed = TRUE;
 		}
 		arena_gametype_wide_name(old_name, old_wide);
 		arena_gametype_wide_name(new_name, new_wide);
-		for (index = 0; index < (short)saved_count && profile_index == NONE; index++)
-		{
-			wchar_t display_name[MAX_GAMENAME];
-
-			display_name[0] = 0;
-			if (playlist_profile_get_display_name(saved[index], display_name) &&
-				!ustrcmp(display_name, old_wide))
-			{
-				profile_index = saved[index];
-			}
-		}
+		profile_index = arena_gametype_find_saved(old_wide, saved, saved_count);
 
 		if (profile_index == NONE)
 		{
-			/* (deleted or renamed by the player: not brought back) */
-			error(_error_silent, "arena gametype '%s' (once '%s') not seeded: the player removed '%s'",
-				new_name, old_name, old_name);
+			/* (deleted or renamed by the player: not brought back; or
+			renamed already, by a start that ended before its record) */
+			if (!saved_game_file_name_unique(new_wide))
+				error(_error_silent, "arena gametype '%s' is there already (revision %d)", new_name, (int)migration->revision);
+			else
+				error(_error_silent, "arena gametype '%s' (once '%s') not seeded: the player removed '%s'",
+					new_name, old_name, old_name);
 			if (arena_gametypes_record_add(record, record_length, new_name))
 				*record_changed = TRUE;
 			continue;
 		}
 
-		arena_gametype_build(gametype, old_wide, &variant, &options);
+		arena_gametype_build(&migration->old_row, old_wide, &variant, &options);
 		if (!playlist_profile_matches(profile_index, &variant, &options))
 		{
 			/* (the player's own now: kept, and the new one seeded beside it) */
-			error(_error_silent, "arena gametype '%s' kept as it is (changed since it was seeded); '%s' seeded beside it",
+			error(_error_silent, "arena gametype '%s' kept as it is (changed since seeded); '%s' seeded beside it",
 				old_name, new_name);
 			continue;
 		}
 		if (!saved_game_file_name_unique(new_wide))
 		{
 			/* (a saved game has the new name: the seeding leaves both) */
-			error(_error_silent, "arena gametype '%s' not renamed: a saved game named '%s' exists", old_name, new_name);
+			error(_error_silent, "arena gametype '%s' not migrated: a saved game named '%s' exists", old_name, new_name);
+			continue;
+		}
+		if (backed_up_revision != migration->revision)
+		{
+			record_backed_up = FALSE;
+			backed_up_revision = migration->revision;
+		}
+		if (!arena_gametypes_backup(migration->revision, profile_index, &record_backed_up))
+		{
+			/* (no backup, no rewrite: kept, the new one seeded beside it) */
+			error(_error_silent, "arena gametype '%s' kept as it is: its backup failed; '%s' seeded beside it",
+				old_name, new_name);
 			continue;
 		}
 
@@ -613,13 +966,15 @@ static void arena_gametypes_rename(
 				was_last_used = TRUE;
 			}
 
-			/* (renamed as the PC menus' rename does: the variant saved under
-			its new name, which moves its saved game's name with it) */
-			csmemcpy(variant.human_readable_game_description, new_wide, sizeof(new_wide));
+			/* (rewritten as the PC menus' save does, in its own slot: the
+			new row under its new name, which moves its saved game's name
+			with it) */
+			arena_gametype_build(&migration->new_row, new_wide, &variant, &options);
 			playlist_profile_save_with_options(profile_index, &variant, &options);
 			playlist_profile_wait_for_write();
 			/* (the files changed either way: listed again) */
 			*written = TRUE;
+			listed = FALSE;
 
 			/* (a write that failed deletes the gametype, playlist_profile.c's
 			write thread, or leaves it under its old name: the new name is
@@ -627,7 +982,7 @@ static void arena_gametypes_rename(
 			writes a new one) */
 			if (saved_game_file_name_unique(new_wide))
 			{
-				error(_error_silent, "failed to rename arena gametype '%s' to '%s'; '%s' seeded instead",
+				error(_error_silent, "failed to migrate arena gametype '%s' to '%s'; '%s' seeded instead",
 					old_name, new_name, new_name);
 				continue;
 			}
@@ -640,9 +995,74 @@ static void arena_gametypes_rename(
 					saved_game_file_remember_last_used_multiplayer_variant_directory(new_directory);
 			}
 		}
-		error(_error_silent, "renamed arena gametype '%s' to '%s'", old_name, new_name);
+		error(_error_silent, "migrated arena gametype '%s' to '%s' (revision %d)", old_name, new_name,
+			(int)migration->revision);
 		if (arena_gametypes_record_add(record, record_length, new_name))
 			*record_changed = TRUE;
+	}
+
+	return;
+}
+
+/* the start's self-check: each name's row now is its last migration's new
+row (else a migration rewrites to one thing and the seeding another), and
+the saved games are not near the memory unit's limit */
+static void arena_gametypes_self_check(
+	void)
+{
+	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
+	word gametype_count = NUMBEROF(saved);
+	word profile_count = NUMBEROF(saved);
+	short migration_index;
+
+	for (migration_index = 0; migration_index < NUMBEROF(arena_gametype_migrations); migration_index++)
+	{
+		struct arena_gametype const *new_row = &arena_gametype_migrations[migration_index].new_row;
+		struct arena_gametype const *row = NULL;
+		wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH];
+		struct game_variant variant[2];
+		struct game_variant_options options[2];
+		short index;
+
+		/* (only a name's last migration) */
+		for (index = migration_index + 1; index < NUMBEROF(arena_gametype_migrations); index++)
+		{
+			if (!strcmp(arena_gametype_migrations[index].new_row.name, new_row->name))
+				break;
+		}
+		if (index < NUMBEROF(arena_gametype_migrations))
+			continue;
+		for (index = 0; index < NUMBEROF(arena_gametypes) && !row; index++)
+		{
+			if (!strcmp(arena_gametypes[index].name, new_row->name))
+				row = &arena_gametypes[index];
+		}
+		if (!row)
+		{
+			error(_error_silent, "arena gametypes self-check: '%s' (revision %d's) is not seeded",
+				new_row->name, (int)arena_gametype_migrations[migration_index].revision);
+			continue;
+		}
+		arena_gametype_wide_name(new_row->name, wide_name);
+		csmemset(variant, 0, sizeof(variant));
+		csmemset(options, 0, sizeof(options));
+		arena_gametype_build(new_row, wide_name, &variant[0], &options[0]);
+		arena_gametype_build(row, wide_name, &variant[1], &options[1]);
+		if (csmemcmp(&variant[0], &variant[1], sizeof(variant[0])) || csmemcmp(&options[0], &options[1], sizeof(options[0])))
+		{
+			error(_error_silent, "arena gametypes self-check: '%s' is seeded otherwise than revision %d's migration "
+				"rewrites it", new_row->name, (int)arena_gametype_migrations[migration_index].revision);
+		}
+	}
+
+	saved_game_files_enumerate_available_to_local_player_index(NONE,
+		_saved_game_file_type_game_variant, &gametype_count, saved, FALSE);
+	saved_game_files_enumerate_available_to_local_player_index(NONE,
+		_saved_game_file_type_player_profile, &profile_count, saved, FALSE);
+	if (gametype_count + profile_count > ARENA_GAMETYPES_SAVED_WARNING)
+	{
+		error(_error_silent, "arena gametypes: warning: %d saved games (%d gametypes, %d profiles); a memory unit "
+			"holds at most 100", (int)(gametype_count + profile_count), (int)gametype_count, (int)profile_count);
 	}
 
 	return;
@@ -755,6 +1175,13 @@ static void arena_gametype_build(
 	}
 	if (gametype->vehicle_set != ARENA_VEHICLES_STOCK)
 		variant.universal_variant.vehicle_set = gametype->vehicle_set;
+	/* (the fields whose 0 is the stock gametype's: ARENA_SET) */
+	if (gametype->weapon_set)
+		variant.universal_variant.weapon_set = gametype->weapon_set - 1;
+	if (gametype->goal_radar)
+		variant.universal_variant.goal_radar = gametype->goal_radar - 1;
+	if (gametype->nhe_mode)
+		variant.universal_variant.nhe_mode = gametype->nhe_mode;
 	/* (the PC options a new custom gametype gets: both teams' vehicle sets
 	the variant's, RADAR PLAYERS from its motion sensor bit) */
 	game_variant_options_default(&variant, &options);
@@ -762,9 +1189,17 @@ static void arena_gametype_build(
 	if (gametype->custom_loadout)
 	{
 		options.loadout = _loadout_custom;
-		options.primary_weapon = _loadout_weapon_pistol;
-		options.secondary_weapon = _loadout_weapon_assault_rifle;
+		options.primary_weapon = gametype->loadout_primary ? (byte)(gametype->loadout_primary - 1) :
+			_loadout_weapon_pistol;
+		options.secondary_weapon = gametype->loadout_secondary ? (byte)(gametype->loadout_secondary - 1) :
+			_loadout_weapon_assault_rifle;
 	}
+	if (gametype->no_map_weapons)
+		options.no_map_weapons = TRUE;
+	if (gametype->friendly_fire)
+		options.friendly_fire = (short)(gametype->friendly_fire - 1);
+	if (gametype->adjust)
+		gametype->adjust(&variant, &options);
 	*variant_out = variant;
 	*options_out = options;
 

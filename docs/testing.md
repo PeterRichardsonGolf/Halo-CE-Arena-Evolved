@@ -15,6 +15,7 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 | A Windows CI build on the Windows test box | `python3 tools/ae_test/windows.py --artifact arena-evolved-windows64-release` |
 | An MP4 clip of a game (H.264 + AAC; needs ffmpeg on the machine) | `python3 tools/ae_test/record.py --build <rev> --map bloodgulch --seconds 20 --box` |
 | A copy of a save root with a saved gametype's variant bytes patched and signed again (for `--save-from`; never in place, never a real save root) | `python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3` (on the machine that plays) |
+| A save root's seeded gametypes against golden hashes (`tools/ae_test/golden_seeds_a17102e2.json`, a17102e2's seeds; `--rename OLD=NEW` for migrated names) or against another root (byte-identical, `--same-as`) | `python3 tools/ae_test/seed_compare.py <save root> --golden tools/ae_test/golden_seeds_a17102e2.json` |
 
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists

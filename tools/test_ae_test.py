@@ -24,6 +24,7 @@ import sheet  # noqa: E402
 import smoke  # noqa: E402
 import windows  # noqa: E402
 import gametype_file  # noqa: E402
+import seed_compare  # noqa: E402
 
 DEBUG_MP = """\
 arena-evolved: Halo CE: Arena Evolved 0.1.0-beta-dev (dev, release config, commit 623d8f22) Linux x64
@@ -249,6 +250,44 @@ class GametypeFile(unittest.TestCase):
                 self.assertEqual(gametype_file.main(["--from", str(src), "--to", str(Path(d) / "m"),
                                                      "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
             self.assertEqual(gametype_file.find(Path(d) / "m", "AE PRO TS").read_bytes()[0x1D], 5)
+
+
+class SeedCompare(unittest.TestCase):
+    """saved gametypes' hashes by stored name: content (after the name) and whole file"""
+
+    def make(self, root, name, folder, value=1):
+        block = bytearray(512)
+        block[:24] = name.encode("utf-16-le").ljust(24, b"\0")
+        block[0x40] = value
+        block[0x100:0x104] = b"GPVO"
+        f = Path(root) / "u" / "UDATA" / folder / "blam.lst"
+        f.parent.mkdir(parents=True)
+        f.write_bytes(gametype_file.sign(bytes(block)))
+
+    def test_golden_rename_and_same_as(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            a, b = Path(d) / "a", Path(d) / "b"
+            self.make(a, "AE PRO TS", "01")
+            self.make(a, "TS 50", "02")
+            self.make(b, "AE COMP TS", "01")
+            self.make(b, "TS 50", "02")
+            golden = seed_compare.gametype_hashes(a)
+            hb = seed_compare.gametype_hashes(b)
+            # (a rename keeps the content: found under the new name)
+            self.assertEqual(seed_compare.compare_golden(hb, golden, {"AE PRO TS": "AE COMP TS"}), [])
+            self.assertEqual(seed_compare.compare_golden(hb, golden), ["AE PRO TS: missing"])
+            self.assertEqual(seed_compare.compare_roots(hb, golden, ["AE PRO TS"]), [])
+            self.assertEqual(seed_compare.compare_roots(hb, golden), ["AE PRO TS: missing"])
+            # (a changed value: content and file differ)
+            c = Path(d) / "c"
+            self.make(c, "TS 50", "02", value=2)
+            hc = seed_compare.gametype_hashes(c)
+            self.assertEqual(seed_compare.compare_golden(hc, golden, only=["TS 50"]),
+                             ["TS 50: content differs from golden TS 50"])
+            self.assertEqual(seed_compare.compare_roots(hc, golden, ["AE PRO TS"]), ["TS 50: not byte-identical (or moved)"])
+            self.make(c, "ts 50", "03")
+            with self.assertRaises(SystemExit):
+                seed_compare.gametype_hashes(c)
 
 
 class Debug(unittest.TestCase):
