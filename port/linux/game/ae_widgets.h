@@ -154,6 +154,7 @@ int ae_prompts_pointer(struct ae_prompt const *prompts, short count, struct ae_p
 	short hit_id, struct ae_event *event);
 /* a drawn key cap with words (keyboard prompts, PlayStation OPTIONS / CREATE); returns its width */
 float ae_widget_key_cap(struct ae_density const *density, float x, float y, float height, const char *words);
+float ae_key_cap_width(struct ae_density const *density, float height, const char *words);   /* (M2) */
 
 /* the in-view panel (§6) in a view of view_width x view_height pixels, drawn in an ae_draw view of that view:
 view-panel fill, a 3 u top stripe in the player colour, header (emblem with the slot number, "PLAYER n", page name),
@@ -292,5 +293,59 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner);
 /* the keyboard's keys: rects (drawing units, relative to the popover) for a page (0 letters, 1 symbols) */
 short ae_keyboard_layout(struct ae_density const *density, float content_width, int page, struct ae_rect *keys,
 	const char **labels, short maximum);
+
+/* ---------- (M2, ae_widgets_dialog.c) the dialog and the roster cards (spec 4.11, 4.12) */
+
+/* A dialog: a popover over the scrim (its open motion: ae_motion_dialog; its close is instant, preflight P7), a 4 u top
+stripe (accent; an error's warning, with a warning title), the title (Overpass 900 32 u), the body (22 u on 32 u
+lines), the choices as ordinary rows and its prompts inside it. The first focus is the safe choice; A / Enter picks
+the focused choice, B / Esc the cancel choice; a click outside does nothing; the opener's focus is untouched (focus
+memory). A timed revert shows "Reverting in N s" over a 3 u accent bar draining over 10 s (REDUCE MOTION: in whole
+seconds) and picks timeout_choice at 0. An error plays failure as it opens and logs "ae menus: error: <title>:
+<body>" (the glue's reason text as it is). Rects are layout units of the whole frame; view is the player's view it
+draws in (preflight P12: zero size for FULL). One per owner at a time (0 when the owner's is open) */
+enum { AE_DIALOG_CONFIRM, AE_DIALOG_TIMED_REVERT, AE_DIALOG_ERROR };
+enum { AE_DIALOG_CHOICES = 4, AE_DIALOG_REVERT_MS = 10000 };
+struct ae_dialog_spec
+{
+	short kind;
+	const char *title, *body;
+	const char *choices[AE_DIALOG_CHOICES]; short choice_count;
+	short safe_choice;            /* the first focus (CANCEL on quit, KEEP after a display change, BACK on an error) */
+	short cancel_choice;          /* B / Esc */
+	short timeout_choice;         /* timed revert: picked at 0 (REVERT); 10 s */
+	struct ae_density density;
+	struct ae_rect bounds;        /* FULL: the frame; VIEW: the panel (the dialog draws inside it, at its width) */
+	void (*picked)(short choice, void *context); void *context;
+	struct ae_rect view;          /* (P12) */
+};
+int ae_dialog_open(struct ae_dialog_spec const *spec, short owner);
+/* the dialog's box (layout units): 560-840 u wide by its content (the title, the body's longest line wrapped at
+720 u, the choices), centred in the bounds; VIEW (preflight P14): at most the bounds' width less a pad each side, so
+it can be under 560 */
+void ae_dialog_place(struct ae_dialog_spec const *spec, struct ae_rect *box);
+
+enum { AE_CARD_FOCUSED = 1, AE_CARD_EDITING = 2, AE_CARD_AWAY = 4, AE_CARD_GUEST = 8, AE_CARD_HOST = 16,
+	AE_CARD_TEAM = 32, AE_CARD_HOVER = 64 };
+struct ae_roster_card
+{
+	const char *name; short slot; unsigned int color;          /* emblem: the colour WITH the slot number */
+	const char *sub_line;                                     /* input, where, state */
+	const char *team_name; unsigned int team_color;           /* AE_CARD_TEAM */
+	const char *reason;                                       /* away / disconnected */
+	unsigned int flags;
+};
+/* a roster card (66 u, VIEW 52): the emblem (42 u, VIEW 32) with the slot number, the name, one sub-line (a guest's
+says "guest (not saved)", an away one's its reason), the team stripe and name, the HOST badge; focus a white bar,
+editing a 2 u outline in the player's colour, away 43 %. Hit AE_PART_CARD, index; returns its height */
+float ae_widget_roster_card(struct ae_density const *density, float x, float y, float width,
+	struct ae_roster_card const *card, short hit_id, short index);
+/* the open card, always last: a dashed rule, "Press [START] to add a player (split screen)"; keyboard_only ->
+"Connect a controller and press START" (hit AE_PART_CARD, index -1) */
+float ae_widget_open_card(struct ae_density const *density, float x, float y, float width, int keyboard_only,
+	short hit_id);
+/* (ruling) the slot number's colour on an emblem: AE_COLOR_SELECTION_TEXT or AE_COLOR_TITLE, whichever contrasts
+more with the emblem's colour (WCAG contrast ratio) */
+unsigned int ae_emblem_number_color(unsigned int emblem_rgba);
 
 #endif

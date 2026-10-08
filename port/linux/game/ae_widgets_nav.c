@@ -141,6 +141,11 @@ static float key_cap_width(struct ae_density const *density, float height, const
 	return width > cap ? width : cap;
 }
 
+float ae_key_cap_width(struct ae_density const *density, float height, const char *words)
+{
+	return key_cap_width(density, height, words);
+}
+
 float ae_widget_key_cap(struct ae_density const *density, float x, float y, float height, const char *words)
 {
 	float cap = cap_height(density, height), width = key_cap_width(density, height, words), size = cap * CAP_TEXT;
