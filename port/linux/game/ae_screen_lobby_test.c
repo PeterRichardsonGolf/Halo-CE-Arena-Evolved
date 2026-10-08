@@ -3,19 +3,23 @@ AE_SCREEN_LOBBY_TEST.C
 
 The lobby drives (ae_screen_lobby_test.h), debug.ae_test_screen 90-95: AE's
 lobby glue (ae_glue_lobby.h) end to end with no upstream widget, for
-tools/test_ae_lobby.py. 90 replaces the game's menus, hosts a LAN game, adds
-controller 1's player, waits for 4 players (system-link bots) or 30 s, sets
-Blood Gulch and slayer, starts, ends the game 8 s in, goes back to the lobby 4 s
-into the post-game, and logs the roster once it is back. 92 does the same for 2
-players and then logs the roster as it changes; 91 joins the first LAN game,
-waits for 2 players, and once back from the host's game leaves; 93 hosts LOCAL
-and 95 ONLINE, logging the roster as it changes. Its screen draws the
-roster as roster cards and the map and gametype as rows (FULL density); it is
-off the stack while the game plays, and the post-game take-over
+tools/test_ae_lobby.py, and (94) the profiles' glue (ae_glue_profiles.h). 90
+replaces the game's menus, hosts a LAN game, adds controller 1's player, waits
+for 4 players (system-link bots) or 30 s, sets Blood Gulch and slayer, starts,
+ends the game 8 s in, goes back to the lobby 4 s into the post-game, and logs
+the roster once it is back. 92 does the same for 2 players and then logs the
+roster as it changes; 91 joins the first LAN game, waits for 2 players, and
+once back from the host's game leaves; 93 hosts LOCAL and 95 ONLINE, logging
+the roster as it changes. 94 (the profile drive) makes a profile, gives it to
+player 1, saves controls and a colour, reads the profile back from its file,
+then makes player 2 a guest whose settings are never saved. Its screen draws
+the roster as roster cards and the map and gametype as rows (FULL density); it
+is off the stack while the game plays, and the post-game take-over
 (ae_lobby_take_pregame_ui) puts it back.
 
 Its log: "ae lobby: roster N" (before the map), "ae lobby: back in the lobby,
-roster N"; the glue logs the rest ("ae lobby: hosting (LAN)", ...).
+roster N"; the glue logs the rest ("ae lobby: hosting (LAN)", ...). The
+profile drive's: "ae profiles: ..." (below and the glue's).
 */
 
 #include <stdio.h>
@@ -23,9 +27,12 @@ roster N"; the glue logs the rest ("ae lobby: hosting (LAN)", ...).
 
 #include "cseries.h"
 #include "game/game_engine.h"
+#include "interface/player_ui.h"
 #include "interface/ui_widget.h"
+#include "saved games/player_profile.h"
 #include "../src/ae_draw.h"
 #include "ae_glue_lobby.h"
+#include "ae_glue_profiles.h"
 #include "ae_hooks.h"
 #include "ae_screen_lobby_test.h"
 #include "ae_strings.h"
@@ -37,7 +44,7 @@ void platform_log(char const *format, ...);
 enum
 {
 	DRIVE_IDLE, DRIVE_HOST, DRIVE_JOIN, DRIVE_JOINING, DRIVE_ADD_PLAYER, DRIVE_WAIT_PLAYERS, DRIVE_IN_GAME,
-	DRIVE_POSTGAME, DRIVE_BACK, DRIVE_WATCH, DRIVE_CLIENT_GAME, DRIVE_CLIENT_BACK, DRIVE_DONE,
+	DRIVE_POSTGAME, DRIVE_BACK, DRIVE_WATCH, DRIVE_CLIENT_GAME, DRIVE_CLIENT_BACK, DRIVE_PROFILES, DRIVE_DONE,
 	WAIT_PLAYERS_MS = 30000, GAME_MS = 8000, POSTGAME_MS = 4000
 };
 
@@ -97,6 +104,70 @@ static void start_game(unsigned long now)
 		step_to(DRIVE_DONE, now);
 }
 
+/* the profiles listed: their count, and each as the list has it */
+static short log_profiles(const char *when)
+{
+	static struct ae_profile_summary profiles[AE_PROFILES_MAXIMUM];
+	short count = 0, index;
+
+	if (!ae_profiles_list(profiles, AE_PROFILES_MAXIMUM, &count).ok)
+		return -1;
+	platform_log("ae profiles: count %d%s", count, when);
+	for (index = 0; index < count; index++)
+		platform_log("ae profiles: '%s' colour %08X layout %d", profiles[index].name, profiles[index].color,
+			profiles[index].layout);
+	return count;
+}
+
+/* 94: the profile drive, at once (the glue's calls are all immediate) */
+static void profile_drive(void)
+{
+	static struct ae_profile_controls const controls = { 2, 5, 1, 0 }, guest_controls = { 3, 7, 0, 1 };
+	struct ae_profile_controls read;
+	struct player_profile profile;
+	struct ae_result result;
+	short before;
+	int index;
+
+	before = log_profiles("");
+	if (before < 0 || !ae_profile_new("AE TEST", &index).ok)
+		return;
+	/* (a second of the same name: refused, the glue logs why) */
+	ae_profile_new("AE TEST", NULL);
+	if (!ae_profile_switch(0, index).ok || !ae_profile_set_controls(0, &controls).ok || !ae_profile_set_color(0, 3).ok)
+		return;
+	/* the profile read again from its file (player_profile_get waits for the save's write) */
+	if (player_profile_get((long)(unsigned int)index, &profile))
+	{
+		platform_log("ae profiles: read back controls %d %d %d %d colour %d",
+			profile.controller_settings.button_preset, profile.controller_settings.look_sensitivity,
+			profile.controller_settings.invert_look ? 1 : 0, profile.controller_settings.vibration_disabled ? 0 : 1,
+			profile.primary_color_index);
+	}
+	if (ae_profile_get_controls(0, &read).ok)
+		platform_log("ae profiles: player 1 controls %d %d %d %d in the game", read.layout, read.look_sensitivity,
+			read.invert, read.vibration);
+	/* upstream's edit buffer open with nobody's profile edit screen up (left over): not a lock */
+	player_ui_begin_editing_profile((long)(unsigned int)index);
+	if (ae_profile_set_color(0, 4).ok)
+		platform_log("ae profiles: saved past an idle upstream edit buffer");
+	player_ui_end_editing_profile();
+	log_profiles(" before the guest");
+	/* player 2 a guest: their settings this session's only */
+	if (!ae_profile_guest(1).ok)
+		return;
+	platform_log("ae profiles: player 2 is guest %d, player 1 is guest %d", ae_profile_is_guest(1),
+		ae_profile_is_guest(0));
+	result = ae_profile_set_controls(1, &guest_controls);
+	platform_log("ae profiles: guest controls ok %d (%s)", result.ok, result.reason);
+	if (ae_profile_get_controls(1, &read).ok)
+		platform_log("ae profiles: guest controls %d %d %d %d this session", read.layout, read.look_sensitivity,
+			read.invert, read.vibration);
+	ae_profile_set_color(1, 5);
+	log_profiles(" after the guest");
+	platform_log("ae profiles: done");
+}
+
 void ae_screen_lobby_test_tick(unsigned long now)
 {
 	switch (drive.step)
@@ -105,6 +176,11 @@ void ae_screen_lobby_test_tick(unsigned long now)
 		/* (the game's menus closed: an AE screen that replaces them) */
 		ae_ui_replace_menus();
 		step_to(ae_lobby_host(host_kind()).ok ? DRIVE_ADD_PLAYER : DRIVE_DONE, now);
+		break;
+	case DRIVE_PROFILES:
+		ae_ui_replace_menus();
+		profile_drive();
+		step_to(DRIVE_DONE, now);
 		break;
 	case DRIVE_JOIN:
 		ae_ui_replace_menus();
@@ -278,7 +354,7 @@ static struct ae_screen_class const lobby_class =
 
 int ae_screen_lobby_test_open(int value)
 {
-	if (value != 90 && value != 91 && value != 92 && value != 93 && value != 95)
+	if (value < 90 || value > 95)
 		return 0;
 	memset(&drive, 0, sizeof(drive));
 	drive.value = value;
@@ -288,6 +364,6 @@ int ae_screen_lobby_test_open(int value)
 	if (!ae_ui_push(&lobby_class, AE_OWNER_ANY, &drive))
 		return 0;
 	platform_log("ae lobby: drive (value %d)", value);
-	step_to(value == 91 ? DRIVE_JOIN : DRIVE_HOST, 0);
+	step_to(value == 91 ? DRIVE_JOIN : value == 94 ? DRIVE_PROFILES : DRIVE_HOST, 0);
 	return 1;
 }

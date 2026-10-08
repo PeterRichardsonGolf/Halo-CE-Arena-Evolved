@@ -232,15 +232,15 @@ boolean ae_ui_process(
 		long views = config_integer("debug.ae_test_screen");
 
 		test_screen_checked = TRUE;
-		/* (M1's test screen: 1, 2, 4, and 9 with the game's menus closed; the profiles' value (94) opens nothing
-		until its task routes it) */
+		/* (M1's test screen: 1, 2, 4, and 9 with the game's menus closed) */
 		if (views == 1 || views == 2 || views == 4 || views == 9)
 			ae_screen_test_open((int)views);
 		/* (the widget gallery: 11-15 one view, 21 / 23 two, 41 four) */
 		else if ((views >= 11 && views <= 15) || views == 21 || views == 23 || views == 41)
 			ae_screen_gallery_open((int)views);
-		/* (the lobby drives: 90 hosts LAN with bots, 91 joins, 92 hosts for a joiner, 93 hosts LOCAL, 95 ONLINE) */
-		else if (views >= 90 && views <= 95 && views != 94)
+		/* (the lobby drives: 90 hosts LAN with bots, 91 joins, 92 hosts for a joiner, 93 hosts LOCAL, 94 the
+		profiles, 95 ONLINE) */
+		else if (views >= 90 && views <= 95)
 			ae_screen_lobby_test_open((int)views);
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);

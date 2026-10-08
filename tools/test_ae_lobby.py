@@ -7,7 +7,9 @@
   as before and the hook says it left it to the game;
 - (Task 13) an AE joiner (91) joins an AE host (92) on loopback, plays its game, takes the client's pregame UI after
   it, and leaves; a LOCAL host (93) refuses a bot; an ONLINE host (95) with internet play off lists nothing; a join
-  with no host gives its reason.
+  with no host gives its reason;
+- (Task 14) the profile drive (94) makes, switches, saves and reads back a profile on a fresh save root, and a guest's
+  settings are never written.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config, as test_ae_menus.py); about 90 s a game:
 
@@ -199,3 +201,67 @@ def test_join_reason_no_game(cfg):
     # (within 15 s of the search's start: the glue's 10 s)
     seconds = int(re.search(r"ae lobby: join gave up after (\d+) s", text)[1])
     assert 10 <= seconds <= 15, seconds
+
+
+def profile_files(save_root):
+    """the profiles' files in a save root (the hard drive's saved games, u:\\UDATA\\<id>\\blam.sav: a game
+    variant's is blam.lst, saved_game_files.c; the game's default profiles under z:\\saved are not players'):
+    {path: (name, colour, button preset, look sensitivity, invert, vibration disabled)}, each read as the game
+    writes it (player_profile.c: the 0x30-byte struct player_profile first, the name 12 UCS-2 characters)"""
+    import struct
+    files = {}
+    for path in sorted(Path(save_root).rglob("blam.sav")):
+        if "default_profile" in [p.lower() for p in path.parts]:
+            continue
+        data = path.read_bytes()
+        if len(data) < 0x30:
+            continue
+        name = data[:24].decode("utf-16-le").split("\0")[0]
+        colour, = struct.unpack_from("<h", data, 24)
+        button, joystick, sensitivity, invert, vibration_disabled = struct.unpack_from("<5B", data, 40)
+        files[str(path)] = (name, colour, button, sensitivity, invert, vibration_disabled)
+    return files
+
+
+def test_profile_drive(cfg):
+    """the profiles' glue (94) on a fresh throwaway save root: a profile made, player 1's, controls 2 5 1 0 and colour
+    3 saved, read back from the file by the game and here from the save root; player 2 a guest: their settings apply
+    to the session and nothing is written (the profile files the same before and after)"""
+    import re
+    harness = menus.harness
+    out = menus.out_dir(cfg, "lobby-profiles")
+    run_id = "ae-profiles-" + harness.stamp()
+    spec = {"name": "profiles", "build": menus.build(), "window": "1280x720", "exit_after": 25,
+            "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "94"}, "expect": {"ticks": 0}}
+    work = harness.expand(cfg["work_dir"]) / run_id
+    try:
+        result = harness.play(cfg, spec, out / "profiles", keep_work=True, run_id=run_id)
+        debug = out / "profiles" / "debug.txt"
+        text = debug.read_text(errors="replace") if debug.exists() else ""
+        save_root = Path(result.get("env", {}).get("HALO_SAVE_ROOT", work / "missing"))
+        files = profile_files(save_root)
+        listing = sorted(str(p.relative_to(save_root)) for p in save_root.rglob("*") if p.is_file()) \
+            if save_root.exists() else []
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    assert result.get("status") == "PASS", result.get("why")
+    before = int(re.search(r"ae profiles: count (\d+)\s*$", text, re.M)[1])
+    made = re.search(r"ae profiles: new 'AE TEST' -> index ([0-9A-F]{8})", text)
+    assert made, text[-1500:]
+    index = made[1]
+    in_order(text, [f"ae profiles: new 'AE TEST' -> index {index}", "ae profiles: new: That name is already used",
+                    f"ae profiles: player 1 uses {index}", "ae profiles: controls 2 5 1 0 saved",
+                    "ae profiles: colour 3 saved", "ae profiles: read back controls 2 5 1 0 colour 3",
+                    "ae profiles: player 1 controls 2 5 1 0 in the game",
+                    "ae profiles: colour 4 saved", "ae profiles: saved past an idle upstream edit buffer",
+                    f"ae profiles: count {before + 1} before the guest", "ae profiles: 'AE TEST' colour ",
+                    "ae profiles: player 2 guest", "ae profiles: player 2 is guest 1, player 1 is guest 0",
+                    "ae profiles: guest controls not saved",
+                    "ae profiles: guest controls ok 1 (A guest's settings are not saved)",
+                    "ae profiles: guest controls 3 7 0 1 this session", "ae profiles: guest colour not saved",
+                    f"ae profiles: count {before + 1} after the guest", "ae profiles: done"])
+    # (the save root: the one profile made, as the drive left it: colour 4 last, controls 2 5 1 0; the guest's
+    # controls 3 7 0 1 and colour 5 nowhere, and no other file)
+    assert len(files) == before + 1, (files, listing)
+    assert ("AE TEST", 4, 2, 5, 1, 1) in files.values(), files
+    assert not [f for f in files.values() if f[0].startswith("Guest")], files

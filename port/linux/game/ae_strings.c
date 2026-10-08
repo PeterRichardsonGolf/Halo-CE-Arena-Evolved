@@ -94,6 +94,14 @@ static const char *const strings[AE_NUMBER_OF_STRINGS] =
 	"That is not an invite",
 	"That game can't be joined from this version",
 	"The host did not answer",
+	/* (Task 14: the profiles; a guest's name is its profile name: 11 characters at most) */
+	"Player %d is editing a profile",
+	"Enter a name",
+	"Names are up to 11 characters",
+	"That name is already used",
+	"Could not make the profile",
+	"Not a valid setting",
+	"Guest %d",
 };
 
 const char *ae_string(int id)

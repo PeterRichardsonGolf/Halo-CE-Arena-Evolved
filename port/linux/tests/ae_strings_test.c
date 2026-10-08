@@ -12,7 +12,8 @@ static const struct { int id, d, s; } formats[] =
 {
 	{ AE_STR_MORE, 1, 0 }, { AE_STR_DEFAULT, 0, 1 }, { AE_STR_CHANGED_FROM, 0, 1 }, { AE_STR_COUNT, 2, 0 },
 	{ AE_STR_REVERTING, 1, 0 }, { AE_STR_CONTROLLER_N, 1, 0 }, { AE_STR_PLAYER_N, 1, 0 }, { AE_STR_ERR_VERSION, 2, 0 },
-	{ AE_STR_ERR_MAP, 0, 1 }, { AE_STR_ERR_GAMETYPE, 0, 1 },
+	{ AE_STR_ERR_MAP, 0, 1 }, { AE_STR_ERR_GAMETYPE, 0, 1 }, { AE_STR_ERR_PROFILE_EDITING, 1, 0 },
+	{ AE_STR_GUEST_NAME, 1, 0 },
 };
 
 static int count(const char *text, const char *what)
@@ -52,7 +53,7 @@ int main(void)
 
 	font = read_file("port/assets/fonts/Overpass-900.ttf", &size);
 	CHECK(font && ae_font_load(AE_FACE_OVERPASS_900, font, size));
-	CHECK(AE_NUMBER_OF_STRINGS == 81 && !strcmp(ae_string(AE_STR_SELECT), "Select") &&
+	CHECK(AE_NUMBER_OF_STRINGS == 88 && !strcmp(ae_string(AE_STR_SELECT), "Select") &&
 		!strcmp(ae_string(AE_STR_ERR_IN_GAME), "Not while a game is running") && !strcmp(ae_string(-1), "") &&
 		!strcmp(ae_string(AE_NUMBER_OF_STRINGS), ""));
 	for (id = 0; id < AE_NUMBER_OF_STRINGS; id++)
