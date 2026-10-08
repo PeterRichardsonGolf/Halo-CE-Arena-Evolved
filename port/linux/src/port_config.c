@@ -613,6 +613,11 @@ static const struct config_setting config_settings[] =
 		"place of the built-in one; not found, the built-in one. Empty for none.\n"
 		"(Looking seeds the Arena Evolved gametypes into the save root in use:\n"
 		"set HALO_SAVE_ROOT for tests.)" },
+	{ "debug.arena_test_migration", _config_boolean, "false", "HALO_ARENA_TEST_MIGRATION", _environment_value,
+		_platform_all,
+		"For the automated tests of the seeded gametypes' migrations: a value\n"
+		"update after the last revision (AE TEAM SLY's score 50 -> 51, in place).\n"
+		"Never on a real save root." },
 	{ "debug.network_test_local_players", _config_integer, "1", "HALO_NETWORK_TEST_LOCAL_PLAYERS", _environment_value,
 		_platform_all,
 		"The players an automated test host has on its own machine (split screen,\n"

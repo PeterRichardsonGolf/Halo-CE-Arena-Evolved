@@ -573,7 +573,6 @@ boolean playlist_profile_matches(
 {
 	byte expected[SAVED_GAME_FILE_BLOCK_SIZE];
 	byte block[SAVED_GAME_FILE_BLOCK_SIZE];
-	struct game_variant saved = *variant;
 
 	if (playlist_profile_index == NONE ||
 		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
@@ -581,10 +580,21 @@ boolean playlist_profile_matches(
 	{
 		return FALSE;
 	}
+	playlist_profile_expected_block(variant, options, expected);
+	return !csmemcmp(expected, block, sizeof(block));
+}
+
+/* port: the block a save of this variant and options writes */
+void playlist_profile_expected_block(
+	struct game_variant const *variant,
+	struct game_variant_options const *options,
+	unsigned char *block)
+{
+	struct game_variant saved = *variant;
+
 	/* (as a save cleans it up before it is written) */
 	game_engine_variant_cleanup(&saved);
-	playlist_profile_block_build(expected, &saved, options);
-	return !csmemcmp(expected, block, sizeof(block));
+	playlist_profile_block_build(block, &saved, options);
 }
 
 /* port: the asynchronous write finished (as playlist_profile_read waits) */

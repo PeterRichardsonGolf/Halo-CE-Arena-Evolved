@@ -288,6 +288,27 @@ class SeedCompare(unittest.TestCase):
             self.make(c, "ts 50", "03")
             with self.assertRaises(SystemExit):
                 seed_compare.gametype_hashes(c)
+            # (content covers the bytes past the options block too: matches compares all 512)
+            e = Path(d) / "e"
+            self.make(e, "TS 50", "02")
+            f = e / "u" / "UDATA" / "02" / "blam.lst"
+            raw = bytearray(f.read_bytes())
+            raw[0x150] = 7
+            f.write_bytes(bytes(raw))
+            self.assertNotEqual(seed_compare.gametype_hashes(e)["TS 50"]["content"], golden["TS 50"]["content"])
+
+    def test_migrations_old_block_hashes_are_golden(self):
+        """each migration's old_block_hash (arena_gametypes.c) is the golden hash of the file the builds before
+        seeded under the old name (golden_seeds_a17102e2.json's "block"; AE SLAYER / AE ODDBALL derived from
+        a17102e2's AE FFA SLAY / AE FFA BALL under their old names)"""
+        import re
+        source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
+        table = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
+        found = re.findall(r'\.old_row = \{ \.name = "([^"]+)".*?\.old_block_hash = "([0-9a-f]{40})"', table, re.S)
+        self.assertGreaterEqual(len(found), 7)
+        golden = json.loads((HERE / "golden_seeds_a17102e2.json").read_text())
+        for name, digest in found:
+            self.assertEqual(golden[name]["block"], digest, name)
 
 
 class Debug(unittest.TestCase):

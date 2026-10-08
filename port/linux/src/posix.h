@@ -71,6 +71,8 @@ int posix_disk_space(const char *path,
 /* permissions and directories */
 int posix_set_read_only(const char *path, int read_only);
 int posix_make_directory(const char *path);
+/* a file put in another's place in one step, the other replaced (0, else -1) */
+int posix_replace_file(const char *path, const char *new_path);
 
 /* directory enumeration; the handle is opaque */
 void *posix_directory_open(const char *path);

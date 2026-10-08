@@ -66,6 +66,11 @@ char const *arena_gametype_catalog_stored_name(
 
 /* ---------- prototypes/ARENA_GAMETYPES.C */
 
+/* the stored name a seeded gametype of this old name has now (its
+migrations' renames followed: "AE PRO TS" -> "AE COMP TS"), else name */
+char const *arena_gametypes_migrated_name(
+	char const *name);
+
 /* TRUE while that seeded gametype's file is still exactly as seeded
 (FALSE: edited, not on disk, or not one seeded by this build) */
 boolean arena_gametype_as_seeded(

@@ -53,6 +53,12 @@ boolean playlist_profile_matches(
 	long playlist_profile_index,
 	struct game_variant const *variant,
 	struct game_variant_options const *options);
+/* port: the file's block (SAVED_GAME_FILE_BLOCK_SIZE bytes) that saving this
+variant with these options writes, as playlist_profile_matches compares */
+void playlist_profile_expected_block(
+	struct game_variant const *variant,
+	struct game_variant_options const *options,
+	unsigned char *block);
 /* port: the asynchronous write (playlist_profile_save) finished */
 void playlist_profile_wait_for_write(
 	void);

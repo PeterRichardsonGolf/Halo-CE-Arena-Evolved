@@ -66,6 +66,7 @@ Called from the main loop every frame (main.c).
 #include "saved games/player_profile.h"
 #include "saved games/saved_game_files.h"
 #include "saved games/playlist_profile.h"
+#include "saved games/arena_gametypes.h"
 #include <xtl.h> /* (MAX_GAMENAME) */
 
 #include <math.h>
@@ -259,10 +260,13 @@ static void network_test_read_settings(
 		platform_log("network test: %s", setting);
 }
 
+static boolean network_test_gametype_named(long profile_index, char const *wanted);
+
 /* debug.network_test_gametype: the save root's custom gametype of that
 stored name (letters' case aside, as the lists sort them), its variant and
 PC options, as the menus' gametype list has them (the Arena Evolved
-gametypes seeded first); FALSE when there is none */
+gametypes seeded first); an old name of a seeded one (its migrations: "AE
+PRO TS") finds it under its name now; FALSE when there is none */
 static boolean network_test_saved_gametype(
 	struct game_variant *variant,
 	struct game_variant_options *options)
@@ -272,44 +276,64 @@ static boolean network_test_saved_gametype(
 	long indices[256];
 	short last_used;
 	short count;
-	short index;
+	short attempt;
 
 	if (!network_test.saved_gametype[0])
 		return FALSE;
 	count = ui_widget_port_gametypes(indices, (short)NUMBEROF(indices), &last_used);
 	if (count >= (short)NUMBEROF(indices))
 		platform_log("network test: the first %d gametypes searched (the list is longer)", (int)count);
-	for (index = 0; index < count; index++)
+	for (attempt = 0; attempt < 2; attempt++)
 	{
-		wchar_t name[MAX_GAMENAME];
-		char const *wanted = network_test.saved_gametype;
-		short character;
+		char const *wanted = attempt ? arena_gametypes_migrated_name(network_test.saved_gametype) :
+			network_test.saved_gametype;
+		short index;
 
-		/* (the saved ones: the built-in ones have no stored name) */
-		if (!(indices[index] & 0x80000000) || !playlist_profile_get_display_name(indices[index], name))
-			continue;
-		for (character = 0; character < MAX_GAMENAME; character++)
+		if (attempt && wanted == network_test.saved_gametype)
+			break;
+		for (index = 0; index < count; index++)
 		{
-			wchar_t a = name[character];
-			wchar_t b = (wchar_t)(unsigned char)wanted[character];
-
-			if (a >= 'a' && a <= 'z')
-				a = (wchar_t)(a - 'a' + 'A');
-			if (b >= 'a' && b <= 'z')
-				b = (wchar_t)(b - 'a' + 'A');
-			if (a != b || !a)
-				break;
+			if (network_test_gametype_named(indices[index], wanted) && playlist_profile_get(indices[index], variant))
+			{
+				playlist_profile_get_options(indices[index], options);
+				if (attempt)
+					platform_log("network test: gametype '%s' (once '%s') from the save root", wanted,
+						network_test.saved_gametype);
+				else
+					platform_log("network test: gametype '%s' from the save root", wanted);
+				return TRUE;
+			}
 		}
-		if (character < MAX_GAMENAME && (name[character] || wanted[character]))
-			continue;
-		if (!playlist_profile_get(indices[index], variant))
-			continue;
-		playlist_profile_get_options(indices[index], options);
-		platform_log("network test: gametype '%s' from the save root", wanted);
-		return TRUE;
 	}
 	platform_log("network test: gametype '%s' not found in the save root", network_test.saved_gametype);
 	return FALSE;
+}
+
+/* whether a gametype of the list is a saved one of that stored name
+(letters' case aside) */
+static boolean network_test_gametype_named(
+	long profile_index,
+	char const *wanted)
+{
+	wchar_t name[MAX_GAMENAME];
+	short character;
+
+	/* (the saved ones: the built-in ones have no stored name) */
+	if (!(profile_index & 0x80000000) || !playlist_profile_get_display_name(profile_index, name))
+		return FALSE;
+	for (character = 0; character < MAX_GAMENAME; character++)
+	{
+		wchar_t a = name[character];
+		wchar_t b = (wchar_t)(unsigned char)wanted[character];
+
+		if (a >= 'a' && a <= 'z')
+			a = (wchar_t)(a - 'a' + 'A');
+		if (b >= 'a' && b <= 'z')
+			b = (wchar_t)(b - 'a' + 'A');
+		if (a != b || !a)
+			break;
+	}
+	return !(character < MAX_GAMENAME && (name[character] || wanted[character]));
 }
 
 /* appends to a line, cut short when it is full */

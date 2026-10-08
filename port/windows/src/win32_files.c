@@ -199,6 +199,12 @@ int posix_set_read_only(const char *path, int read_only)
 	return SetFileAttributesA(path, attributes) ? 0 : fail();
 }
 
+/* (MoveFileEx, the target replaced, written through) */
+int posix_replace_file(const char *path, const char *new_path)
+{
+	return MoveFileExA(path, new_path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) ? 0 : fail();
+}
+
 int posix_make_directory(const char *path)
 {
 	return CreateDirectoryA(path, NULL) ? 0 : fail();

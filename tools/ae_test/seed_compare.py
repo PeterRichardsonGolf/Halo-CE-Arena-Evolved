@@ -6,9 +6,11 @@
         [--rename "AE PRO TS=AE COMP TS" ...] [--only NAME ...]
     python3 tools/ae_test/seed_compare.py <save root> --same-as <other root> [--except NAME ...]
 
-For each u/UDATA/<folder>/blam.lst: "content", a SHA-1 of the variant after its name (bytes 0x18..0x67) and
-the PC options block (0x100: header, options; not its signature), which a rename leaves alone; and "file", a
-SHA-1 of the whole file (byte-identical files). --golden checks every golden name's content (a renamed one
+For each u/UDATA/<folder>/blam.lst: "content", a SHA-1 of every byte playlist_profile_matches compares but the
+name and its signature (the variant after its name, 0x18..0x67, and 0x100..0x1FF: the PC options block with
+its own signature, and the rest), which a rename leaves alone; "file", a SHA-1 of the whole file
+(byte-identical files); and "block", the game's own hash of its 512-byte block (a SHA-1 of the content
+signature's key and the block: arena_gametypes.c's migrations' old_block_hash). --golden checks every golden name's content (a renamed one
 under its new name); --same-as checks every gametype of the other root is byte-identical here. Reads only.
 Exit 0 when everything matches, 1 otherwise.
 """
@@ -23,7 +25,12 @@ sys.path.insert(0, str(HERE))
 import gametype_file  # noqa: E402
 
 OPTIONS_OFFSET = 0x100
-OPTIONS_BYTES = 8 + 0x1C  # (playlist_profile_options_header, struct game_variant_options)
+BLOCK_SIZE = 0x200  # (SAVED_GAME_FILE_BLOCK_SIZE: what playlist_profile_matches compares)
+
+
+def block_hash(block):
+    """the game's hash of a 512-byte block (arena_gametypes.c's old_block_hash)"""
+    return hashlib.sha1(gametype_file.KEY + bytes(block[:BLOCK_SIZE])).hexdigest()
 
 
 def gametype_hashes(save_root):
@@ -31,13 +38,14 @@ def gametype_hashes(save_root):
     out = {}
     for f in sorted((Path(save_root) / "u" / "UDATA").glob("*/blam.lst")):
         b = f.read_bytes()
-        if len(b) < OPTIONS_OFFSET + OPTIONS_BYTES:
+        if len(b) < BLOCK_SIZE:
             continue
         name = gametype_file.name_of(b)
         if name.upper() in {n.upper() for n in out}:
             raise SystemExit(f"seed_compare: two saved gametypes named '{name}' in {save_root}")
-        content = hashlib.sha1(b[0x18:gametype_file.VARIANT_SIZE] + b[OPTIONS_OFFSET:OPTIONS_OFFSET + OPTIONS_BYTES])
-        out[name] = {"content": content.hexdigest(), "file": hashlib.sha1(b).hexdigest(), "folder": f.parent.name}
+        content = hashlib.sha1(b[0x18:gametype_file.VARIANT_SIZE] + b[OPTIONS_OFFSET:BLOCK_SIZE])
+        out[name] = {"content": content.hexdigest(), "file": hashlib.sha1(b).hexdigest(), "block": block_hash(b),
+                     "folder": f.parent.name}
     return out
 
 

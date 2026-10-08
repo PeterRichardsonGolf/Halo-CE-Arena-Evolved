@@ -5,6 +5,7 @@ glibc file system helpers for the platform layer (see posix.h). Built with
 the host ABI and _FILE_OFFSET_BITS=64.
 */
 
+#include <stdio.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <string.h>
@@ -121,6 +122,12 @@ int posix_set_read_only(const char *path, int read_only)
 	mode = st.st_mode & 07777;
 	mode = read_only ? (mode & ~(mode_t)0222) : (mode | S_IWUSR);
 	return chmod(path, mode);
+}
+
+/* (rename(2): atomic, the target replaced) */
+int posix_replace_file(const char *path, const char *new_path)
+{
+	return rename(path, new_path);
 }
 
 int posix_make_directory(const char *path)
