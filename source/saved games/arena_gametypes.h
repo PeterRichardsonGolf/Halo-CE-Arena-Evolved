@@ -72,6 +72,28 @@ char const *arena_gametype_catalog_stored_name(
 
 /* ---------- prototypes/ARENA_GAMETYPES.C */
 
+/* a player's own gametype's longer display name (an 'AEDN' block in its
+file; a seeded gametype never has one). TRUE, and the name (size characters
+with the NUL), when it has one */
+boolean arena_gametype_own_display_name(
+	long profile_index,
+	wchar_t *display_name,
+	short size);
+/* the same by stored name (the network game's, a lobby's, the scoreboard's):
+the saved gametype of that name, remembered until a gametype file changes */
+boolean arena_gametype_own_display_name_for_stored_name(
+	wchar_t const *stored_name,
+	wchar_t *display_name,
+	short size);
+/* debug.set_display_name: see arena_gametypes.c; once at the start */
+void arena_gametypes_debug_set_display_name(
+	void);
+/* sets it (empty or NULL: takes it away); FALSE for a seeded gametype's
+profile or a failed write. For the AE menus (MY GAME TYPES) */
+boolean arena_gametype_set_own_display_name(
+	long profile_index,
+	wchar_t const *display_name);
+
 /* the stored name a seeded gametype of this old name has now (its
 migrations' renames followed: "AE PRO TS" -> "AE COMP TS"), else name */
 char const *arena_gametypes_migrated_name(

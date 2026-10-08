@@ -416,6 +416,24 @@ def test_arena_gametype_names(tmp_path):
     assert "PASS" in result.stdout
 
 
+def test_playlist_display_name(tmp_path):
+    """an own gametype's display name block (source/saved games/
+    playlist_display_name.c, tools/playlist_display_name_check.c): round trip,
+    absent / torn / wrong-signature blocks are no name, cut at 31, empty
+    clears, only the block's own bytes change (0..0x67 and the GPVO block
+    untouched), carrying over; built with the flags ninja gives the game's code"""
+    if not shutil.which("clang") or not shutil.which("ninja") or not Path("build.ninja").is_file():
+        pytest.skip("needs clang, ninja and a configured build")
+    flags = _ninja_compile_flags("build/linux/obj/source/saved games/arena_gametype_names.o")
+    program = tmp_path / "playlist_display_name_check"
+    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-Wl,--unresolved-symbols=ignore-all", "-o",
+                            str(program), "tools/playlist_display_name_check.c"], capture_output=True, text=True)
+    assert built.returncode == 0, built.stderr[-4000:]
+    result = subprocess.run([str(program)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout[-4000:]
+    assert "PASS" in result.stdout
+
+
 def build_spawn_heat_check(tmp_path: Path, game_engine: str = "source/game/game_engine.c",
                            base: bool = False) -> Path:
     """tools/spawn_heat_check.c with source/game/spawn_heat.c, game_engine.c

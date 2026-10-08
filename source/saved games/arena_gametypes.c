@@ -36,6 +36,7 @@ arena_gametype_names.c), each in its table's order, then the player's own.
 #include "cseries/errors.h"
 #include "game/game_engine.h"
 #include "game/game_engine_playlist.h"
+#include "saved games/playlist_display_name.h"
 #include "saved games/playlist_profile.h"
 #include "saved games/saved_game_files.h"
 #include "tag_files/files.h"
@@ -1047,6 +1048,8 @@ static void arena_gametype_log(
 	struct game_variant const *variant,
 	struct game_variant_options const *options);
 
+const char *config_string(const char *name);
+
 /* ---------- public code */
 
 boolean arena_gametypes_seed(
@@ -1240,6 +1243,144 @@ boolean arena_gametype_as_seeded(
 		return playlist_profile_matches(saved[index], &variant, &options);
 	}
 	return FALSE;
+}
+
+/* a saved gametype by its stored name: its profile index, else NONE */
+static long arena_gametype_find_saved(
+	wchar_t const *stored_name)
+{
+	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
+	word saved_count = NUMBEROF(saved);
+	short index;
+
+	saved_game_files_enumerate_available_to_local_player_index(NONE,
+		_saved_game_file_type_game_variant, &saved_count, saved, FALSE);
+	for (index = 0; index < (short)saved_count; index++)
+	{
+		wchar_t display_name[MAX_GAMENAME];
+
+		display_name[0] = 0;
+		if (playlist_profile_get_display_name(saved[index], display_name) &&
+			!arena_gametype_name_compare(display_name, stored_name))
+		{
+			return saved[index];
+		}
+	}
+	return NONE;
+}
+
+boolean arena_gametype_own_display_name(
+	long profile_index,
+	wchar_t *display_name,
+	short size)
+{
+	wchar_t name[PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1];
+	short index;
+
+	if (!display_name || size <= 0)
+		return FALSE;
+	display_name[0] = 0;
+	if (!playlist_profile_get_own_display_name(profile_index, name))
+		return FALSE;
+	for (index = 0; index < size - 1 && name[index]; index++)
+		display_name[index] = name[index];
+	display_name[index] = 0;
+	return index > 0;
+}
+
+boolean arena_gametype_own_display_name_for_stored_name(
+	wchar_t const *stored_name,
+	wchar_t *display_name,
+	short size)
+{
+	/* (the last one asked: a lobby or a scoreboard asks every frame) */
+	static wchar_t memo_stored[ARENA_GAMETYPE_NAME_LENGTH];
+	static wchar_t memo_name[PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1];
+	static boolean memo_found = FALSE;
+	static long memo_generation = -1;
+	static boolean memo_valid = FALSE;
+	wchar_t key[ARENA_GAMETYPE_NAME_LENGTH];
+	short index;
+
+	if (!display_name || size <= 0)
+		return FALSE;
+	display_name[0] = 0;
+	if (!stored_name || !stored_name[0])
+		return FALSE;
+	csmemset(key, 0, sizeof(key));
+	for (index = 0; index < ARENA_GAMETYPE_NAME_LENGTH - 1 && stored_name[index]; index++)
+		key[index] = stored_name[index];
+	if (!memo_valid || memo_generation != playlist_profile_content_generation_get() ||
+		arena_gametype_name_compare(memo_stored, key))
+	{
+		long profile_index;
+
+		memo_generation = playlist_profile_content_generation_get();
+		csmemcpy(memo_stored, key, sizeof(memo_stored));
+		memo_name[0] = 0;
+		memo_found = FALSE;
+		memo_valid = TRUE;
+		/* (a seeded gametype has none) */
+		if (!arena_gametype_info(key, NULL))
+		{
+			profile_index = arena_gametype_find_saved(key);
+			if (profile_index != NONE)
+				memo_found = playlist_profile_get_own_display_name(profile_index, memo_name);
+		}
+	}
+	if (!memo_found)
+		return FALSE;
+	for (index = 0; index < size - 1 && memo_name[index]; index++)
+		display_name[index] = memo_name[index];
+	display_name[index] = 0;
+	return index > 0;
+}
+
+boolean arena_gametype_set_own_display_name(
+	long profile_index,
+	wchar_t const *display_name)
+{
+	wchar_t stored_name[MAX_GAMENAME];
+
+	stored_name[0] = 0;
+	if (!playlist_profile_get_display_name(profile_index, stored_name) ||
+		arena_gametype_info(stored_name, NULL))
+	{
+		return FALSE;
+	}
+	return playlist_profile_set_own_display_name(profile_index, display_name);
+}
+
+/* debug.set_display_name ("<stored name>=<display name>"): once at the start,
+that own gametype gets that display name (the automated tests' way to make
+one before the AE menus can); logged. Never on a real save root */
+void arena_gametypes_debug_set_display_name(
+	void)
+{
+	char const *value = config_string("debug.set_display_name");
+	char const *equals;
+	wchar_t stored_name[ARENA_GAMETYPE_NAME_LENGTH];
+	wchar_t display_name[PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1];
+	short index;
+	long profile_index;
+
+	if (!value || !value[0] || !(equals = strchr(value, '=')))
+		return;
+	csmemset(stored_name, 0, sizeof(stored_name));
+	for (index = 0; index < ARENA_GAMETYPE_NAME_LENGTH - 1 && value + index < equals; index++)
+		stored_name[index] = (wchar_t)(unsigned char)value[index];
+	csmemset(display_name, 0, sizeof(display_name));
+	for (index = 0; index < PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH && equals[1 + index]; index++)
+		display_name[index] = (wchar_t)(unsigned char)equals[1 + index];
+	profile_index = arena_gametype_find_saved(stored_name);
+	if (profile_index == NONE)
+	{
+		error(_error_silent, "arena gametypes: debug.set_display_name: no saved gametype '%.*s'",
+			(int)(equals - value), value);
+		return;
+	}
+	error(_error_silent, "arena gametypes: debug.set_display_name: '%.*s' -> '%s': %s", (int)(equals - value), value,
+		equals + 1, arena_gametype_set_own_display_name(profile_index, display_name) ? "set" : "refused");
 }
 
 /* ---------- private code */
@@ -1733,6 +1874,15 @@ static boolean arena_gametype_update_in_place(
 	playlist_profile_expected_block(variant, options, block);
 	if (!saved_game_files_take_mutex())
 		return FALSE;
+	/* (a display name block the file has stays: no write drops it) */
+	if (file_reference_create_from_path(&file, path, FALSE) && file_open(&file, FLAG(_permission_read_bit)))
+	{
+		unsigned char old_block[SAVED_GAME_FILE_BLOCK_SIZE];
+
+		if (file_read(&file, sizeof(old_block), old_block))
+			playlist_display_name_carry(block, old_block);
+		file_close(&file);
+	}
 	if (file_reference_create_from_path(&file, new_path, FALSE) &&
 		(file_exists(&file) || file_create(&file)) &&
 		file_open(&file, FLAG(_permission_write_bit)))

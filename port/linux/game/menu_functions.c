@@ -3043,6 +3043,9 @@ static void gametype_display_name(long profile_index, wchar_t *text)
 	if (playlist_profile_get_display_name(profile_index, name))
 	{
 		name[MAX_GAMENAME - 1] = 0;
+		/* (a player's own gametype's longer display name, if it has one) */
+		if (arena_gametype_own_display_name(profile_index, text, ROW_TEXT_LENGTH))
+			return;
 		if (arena_gametype_info(name, NULL))
 			arena_gametype_display_name(name, text, ROW_TEXT_LENGTH);
 		else
@@ -5327,7 +5330,8 @@ static void lobby_update(struct widget_instance *list)
 
 		ustrncpy(stored_name, game->variant.human_readable_game_description, NUMBEROF(stored_name) - 1);
 		stored_name[NUMBEROF(stored_name) - 1] = 0;
-		arena_gametype_display_name(stored_name, gametype, NUMBEROF(gametype));
+		if (!arena_gametype_own_display_name_for_stored_name(stored_name, gametype, NUMBEROF(gametype)))
+			arena_gametype_display_name(stored_name, gametype, NUMBEROF(gametype));
 		gametype_panel_name(gametype, NUMBEROF(gametype));
 		usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\n%d of %d players\r\n\r\n%s", gametype,
 			engine_names[PIN(game->variant.game_engine_index, 0, 5)], lobby_player_count, game->maximum_players,

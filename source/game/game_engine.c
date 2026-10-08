@@ -1482,8 +1482,8 @@ and the gametype's display name's under it when it has one
 (game_engine_rasterize_in_game_score) */
 static long rasterize_in_game_score_untabbed_rows = 1;
 
-/* port: a seeded gametype's display name (arena_gametype_names.c), for the
-scoreboards' line under their title: "TEAM AE SLAYER"; FALSE for any other
+/* port: a seeded gametype's display name (arena_gametype_names.c), or a
+player's own gametype's longer one, for the scoreboards' line under their title: "TEAM AE SLAYER"; FALSE for any other
 gametype, which has no such line, an old name (an alias, which has no
 description and would only repeat the stored name) too */
 static boolean game_engine_scoreboard_gametype_name(
@@ -1499,6 +1499,9 @@ static boolean game_engine_scoreboard_gametype_name(
 	csmemcpy(stored_name, global_variant.human_readable_game_description,
 		sizeof(global_variant.human_readable_game_description));
 	stored_name[NUMBEROF(stored_name) - 1] = 0;
+	/* (a player's own gametype's longer display name, if it has one) */
+	if (arena_gametype_own_display_name_for_stored_name(stored_name, text, size))
+		return TRUE;
 	if (!arena_gametype_info(stored_name, &info) || !info.description)
 		return FALSE;
 	arena_gametype_display_name(stored_name, text, size);

@@ -641,6 +641,11 @@ static const struct config_setting config_settings[] =
 	{ "debug.los_test_blink", _config_boolean, "false", "HALO_LOS_TEST_BLINK", _environment_value, _platform_all,
 		"For the automated tests of LINE OF SIGHT: every other second of game time\n"
 		"nothing counts as in sight, so the logs show the 0.3 s hold ending." },
+	{ "debug.set_display_name", _config_string, "\"\"", "HALO_DEBUG_SET_DISPLAY_NAME", _environment_value,
+		_platform_all,
+		"For the automated tests of own gametypes' display names: \"STORED=DISPLAY\"\n"
+		"gives the saved gametype of that stored name that display name, once at the\n"
+		"start (logged). Empty: nothing. Never on a real save root." },
 	{ "debug.arena_test_migration", _config_integer, "0", "HALO_ARENA_TEST_MIGRATION", _environment_value,
 		_platform_all,
 		"For the automated tests of the seeded gametypes' migrations: 1 adds a\n"

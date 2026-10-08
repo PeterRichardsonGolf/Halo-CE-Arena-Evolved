@@ -59,6 +59,20 @@ void playlist_profile_expected_block(
 	struct game_variant const *variant,
 	struct game_variant_options const *options,
 	unsigned char *block);
+/* port: a gametype's own display name (the longer name of a player's own
+gametype, an 'AEDN' block in its file, playlist_display_name.h): TRUE, and
+the name (32 characters at least), when it has one */
+boolean playlist_profile_get_own_display_name(
+	long playlist_profile_index,
+	wchar_t *name);
+/* port: sets it (31 characters at most; empty or NULL: none), writing only
+that block. TRUE when written */
+boolean playlist_profile_set_own_display_name(
+	long playlist_profile_index,
+	wchar_t const *name);
+/* port: counts the changes of gametype files' content */
+long playlist_profile_content_generation_get(
+	void);
 /* port: the asynchronous write (playlist_profile_save) finished */
 void playlist_profile_wait_for_write(
 	void);
