@@ -52,16 +52,30 @@ int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char
 	return count;
 }
 
-int ae_input_key_translate(int keys, int previous_keys, int action, int keyboard)
+int ae_input_key_translate(int keys, int tab_presses, int action, int keyboard)
 {
 	if (action == AE_ACTION_X && (keys & AE_KEY_E))
 		return AE_ACTION_NONE;
 	if (action == AE_ACTION_Y && (keys & AE_KEY_TAB))
 		return AE_ACTION_NONE;
-	/* (Tab let go of since the last poll: the Y its press made is its step) */
-	if (action == AE_ACTION_Y && keyboard && (previous_keys & AE_KEY_TAB))
-		return (keys | previous_keys) & AE_KEY_SHIFT ? AE_ACTION_UP : AE_ACTION_DOWN;
+	/* (the Y a counted Tab press made: its step is ae_input_tab_steps's) */
+	if (action == AE_ACTION_Y && keyboard && tab_presses > 0)
+		return AE_ACTION_NONE;
 	return action;
+}
+
+void ae_input_tab_steps(int forward, int backward, int keys, int previous_keys, int *down, int *up)
+{
+	*down = forward > 0 ? forward : 0;
+	*up = backward > 0 ? backward : 0;
+	/* (a press the held directions see as new steps there, its way by the Shift held now) */
+	if ((keys & AE_KEY_TAB) && !(previous_keys & AE_KEY_TAB))
+	{
+		int *direction = keys & AE_KEY_SHIFT ? up : down;
+
+		if (*direction > 0)
+			(*direction)--;
+	}
 }
 
 int ae_input_direction_step(struct ae_repeat *repeat, int held, unsigned long now_ms, int opening, int stalled)

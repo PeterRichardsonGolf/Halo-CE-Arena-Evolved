@@ -344,7 +344,7 @@ static void draw(
 
 static struct ae_screen_class const test_screen_class =
 {
-	"test", enter, leave, handle, draw, FALSE, pointer
+	.name = "test", .enter = enter, .leave = leave, .handle = handle, .draw = draw, .pointer = pointer
 };
 
 int ae_screen_test_open(

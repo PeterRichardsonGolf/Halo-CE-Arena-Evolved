@@ -3,8 +3,9 @@ AE_PLATFORM.C
 
 What AE's menus read from the platform layer (ae_platform.h): the keys the
 game's menu keys leave out or use otherwise (Q and E for tabs, Tab and
-Shift+Tab as focus steps, Page Up and Page Down), mouse button 4's presses,
-and the device the player last used. It reads the state sdl_platform.c
+Shift+Tab as focus steps, Page Up and Page Down), Tab's presses (counted by
+an SDL event watch, so a tap within one frame counts), mouse button 4's
+presses, and the device the player last used. It reads the state sdl_platform.c
 already keeps (platform_input_read, without taking the mouse's motion) and
 xinput_sdl.c's platform_input_scheme. (Button 4's count is ae_back_presses.c,
 pure, so the unit tests build it.)
@@ -15,6 +16,8 @@ pure, so the unit tests build it.)
 #include "ae_platform.h"
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+#include <SDL3/SDL_atomic.h>
+#include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keyboard.h>
 #endif
 
@@ -81,6 +84,61 @@ int ae_platform_keys(void)
 		keys |= AE_KEY_SHIFT;
 	return keys | keypad_keys(input.keys, num_lock());
 }
+
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+/* (atomics: SDL may call a watch from the thread that queues the event; the game's thread pumps them here) */
+static SDL_AtomicInt tab_armed, tab_forward, tab_backward;
+
+static bool SDLCALL tab_watch(
+	void *userdata,
+	SDL_Event *event)
+{
+	(void)userdata;
+	if (event->type == SDL_EVENT_KEY_DOWN && !event->key.repeat && event->key.scancode == SDL_SCANCODE_TAB &&
+		SDL_GetAtomicInt(&tab_armed))
+	{
+		SDL_AddAtomicInt(event->key.mod & SDL_KMOD_SHIFT ? &tab_backward : &tab_forward, 1);
+	}
+	/* (a watch's answer is ignored: the event is queued as ever) */
+	return true;
+}
+
+void ae_platform_arm_tab_presses(
+	int armed)
+{
+	static int watching;
+
+	if (armed && !watching)
+		watching = SDL_AddEventWatch(tab_watch, NULL) ? 1 : 0;
+	SDL_SetAtomicInt(&tab_armed, armed != 0);
+	if (!armed)
+	{
+		SDL_SetAtomicInt(&tab_forward, 0);
+		SDL_SetAtomicInt(&tab_backward, 0);
+	}
+}
+
+void ae_platform_take_tab_presses(
+	int *forward,
+	int *backward)
+{
+	*forward = SDL_SetAtomicInt(&tab_forward, 0);
+	*backward = SDL_SetAtomicInt(&tab_backward, 0);
+}
+#else
+void ae_platform_arm_tab_presses(
+	int armed)
+{
+	(void)armed;
+}
+
+void ae_platform_take_tab_presses(
+	int *forward,
+	int *backward)
+{
+	*forward = *backward = 0;
+}
+#endif
 
 int ae_platform_input_scheme(void)
 {

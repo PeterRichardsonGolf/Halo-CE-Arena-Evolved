@@ -239,7 +239,11 @@ def test_menus_closed_keys_still_work(cfg):
 
 
 def test_pad_y_after_keyboard(cfg):
-    """a pad's Y on the first controller after keyboard use is a Y, not Tab's focus step (M1 review M2)"""
+    """a Y on the first controller after keyboard use, with no Tab pressed, is a Y, not Tab's focus step (M1 review
+    M2). The harness's injected pad leaves platform_input_scheme on the keyboard (a real SDL pad sets it to the pad
+    in the read that makes its Y), so this stands in for the scheme-less cases: a touch overlay's Y on Android
+    without a pad, and such injected pads. (A Tab tapped within one frame can't be injected: the harness's key:
+    tokens go into the controller's read only, never as SDL key events; ae_input_rules_test.c pins that rule.)"""
     out = out_dir(cfg, "pad-y")
     result, text, pngs = play(cfg, out, "pad-y", test_input=menu_input("key:Down", "y"))
     assert result.get("status") == "PASS", result.get("why")

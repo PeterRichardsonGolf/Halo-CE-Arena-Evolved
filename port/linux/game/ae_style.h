@@ -97,5 +97,7 @@ float ae_frame_x(struct ae_frame const *frame, float fraction);   /* rect.x + fr
 float ae_frame_y(struct ae_frame const *frame, float fraction);
 /* config percent to scale: the nearest of 90 / 100 / 115 / 130 (ties up); <= 0 is 100 */
 float ae_ui_scale_from_percent(int percent);
+/* audio.arena_menus_volume to the menus' gain: clamped to 0..1, NaN (strtod takes "nan") 0 */
+float ae_volume_from_config(double volume);
 
 #endif

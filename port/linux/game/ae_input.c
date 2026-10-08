@@ -12,9 +12,11 @@ Space are A, Escape and Backspace are B, Delete (and E) X, Tab Y, C the black
 button. AE's own keys are read from the platform (ae_platform.c): Q and E are
 the tabs, Page Up and Page Down page, Tab and Shift+Tab step the focus as the
 d-pad does; while E or Tab is held, the first controller's X or Y (their
-game mapping) is dropped, and a keyboard Y with Tab let go of since the
-previous poll is Tab's focus step (any other Y is a Y: a pad's, after the
-keyboard was used). Mouse button 4 is BACK: while the menus have
+game mapping) is dropped. Tab's presses are counted as SDL queues them
+(ae_platform.c), so a tap let go of within one frame is a step too: a
+keyboard Y with a Tab press counted is dropped, and each counted press the
+held directions didn't see steps (ae_input_tab_steps); any other Y is a Y (a
+pad's after the keyboard was used, a touch Y). Mouse button 4 is BACK: while the menus have
 the pointer, sdl_platform.c keeps it from the controller and counts it for AE,
 while an AE screen is open (ae_hooks.c arms the count).
 
@@ -234,7 +236,7 @@ void ae_input_poll(
 	struct event_record event;
 	unsigned long now = system_milliseconds();
 	int keys = ae_platform_keys();
-	int previous_keys;
+	int previous_keys, tab_forward, tab_backward, tab_down, tab_up;
 	unsigned char actions[MAXIMUM_ACTIONS];
 	int action_count, index, back_presses;
 	short controller;
@@ -245,6 +247,10 @@ void ae_input_poll(
 
 	ae_input.opening = 0;
 	previous_keys = opening ? keys : ae_input.keys;
+	/* (Tab's presses since the last poll; a screen just opened takes none from before) */
+	ae_platform_take_tab_presses(&tab_forward, &tab_backward);
+	if (opening)
+		tab_forward = tab_backward = 0;
 	back_presses = ae_platform_take_back_presses();
 	action_count = ae_input_key_actions(keys, previous_keys, opening ? 0 : back_presses,
 		actions, MAXIMUM_ACTIONS);
@@ -263,12 +269,19 @@ void ae_input_poll(
 		}
 		action = button_action(event.data.button.index);
 		if (event.controller_index == 0)
-			action = ae_input_key_translate(keys, previous_keys, action, device_of(0) == AE_DEVICE_KEYBOARD_MOUSE);
+			action = ae_input_key_translate(keys, tab_forward + tab_backward, action,
+				device_of(0) == AE_DEVICE_KEYBOARD_MOUSE);
 		if (action != AE_ACTION_NONE)
 			send_action(event.controller_index, action);
 	}
 	for (index = 0; index < action_count && ae_ui_depth(); index++)
 		send_action(0, actions[index]);
+	/* (Tab's taps the held directions below don't see: one step each) */
+	ae_input_tab_steps(tab_forward, tab_backward, keys, previous_keys, &tab_down, &tab_up);
+	for (index = 0; index < tab_down && ae_ui_depth(); index++)
+		send_action(0, AE_ACTION_DOWN);
+	for (index = 0; index < tab_up && ae_ui_depth(); index++)
+		send_action(0, AE_ACTION_UP);
 	for (controller = 0; controller < AE_INPUT_CONTROLLERS && ae_ui_depth(); controller++)
 	{
 		int held[NUMBER_OF_DIRECTIONS];

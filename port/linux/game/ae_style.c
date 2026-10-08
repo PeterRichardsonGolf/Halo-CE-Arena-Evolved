@@ -136,6 +136,12 @@ float ae_frame_y(struct ae_frame const *frame, float fraction)
 	return frame->rect.y + fraction * frame->rect.height;
 }
 
+float ae_volume_from_config(double volume)
+{
+	/* (written so a NaN fails the first test) */
+	return !(volume >= 0.0) ? 0.0f : volume > 1.0 ? 1.0f : (float)volume;
+}
+
 float ae_ui_scale_from_percent(int percent)
 {
 	static const int steps[] = { 90, 100, 115, 130 };

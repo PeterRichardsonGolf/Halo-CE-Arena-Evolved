@@ -52,20 +52,55 @@ int main(void)
 	CHECK(ae_input_key_translate(AE_KEY_E, 0, AE_ACTION_X, 1) == AE_ACTION_NONE);
 	CHECK(ae_input_key_translate(0, 0, AE_ACTION_X, 1) == AE_ACTION_X);
 	CHECK(ae_input_key_translate(AE_KEY_TAB, 0, AE_ACTION_Y, 1) == AE_ACTION_NONE);
-	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, 1, AE_ACTION_Y, 1) == AE_ACTION_NONE);
 	CHECK(ae_input_key_translate(AE_KEY_TAB, 0, AE_ACTION_X, 1) == AE_ACTION_X);
 	CHECK(ae_input_key_translate(AE_KEY_E | AE_KEY_TAB, 0, AE_ACTION_ACCEPT, 1) == AE_ACTION_ACCEPT);
-	/* a Tab let go of since the previous poll: its Y is Tab's step (down, up with Shift) */
-	CHECK(ae_input_key_translate(0, AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_DOWN);
-	CHECK(ae_input_key_translate(0, AE_KEY_TAB | AE_KEY_SHIFT, AE_ACTION_Y, 1) == AE_ACTION_UP);
-	CHECK(ae_input_key_translate(AE_KEY_SHIFT, AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_UP);
-	/* no Tab now or before: a real Y, from a pad on the first controller after keyboard or mouse use (M1 review M2:
-	this was a focus step) */
+	/* a Tab press counted since the last poll (an SDL key down, so a tap let go of within one frame counts): the
+	keyboard Y it made is dropped, its step comes from the count (ae_input_tab_steps) */
+	CHECK(ae_input_key_translate(0, 1, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_SHIFT, 2, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	/* no Tab press and none held: a real Y (a pad on the first controller after keyboard use, a touch Y; M1 review
+	M2: this was a focus step) */
 	CHECK(ae_input_key_translate(0, 0, AE_ACTION_Y, 1) == AE_ACTION_Y);
-	CHECK(ae_input_key_translate(AE_KEY_SHIFT, AE_KEY_SHIFT, AE_ACTION_Y, 1) == AE_ACTION_Y);
-	/* a pad's Y is Y */
+	CHECK(ae_input_key_translate(AE_KEY_SHIFT, 0, AE_ACTION_Y, 1) == AE_ACTION_Y);
+	/* a pad's Y is Y, even in a frame with a Tab press */
 	CHECK(ae_input_key_translate(0, 0, AE_ACTION_Y, 0) == AE_ACTION_Y);
-	CHECK(ae_input_key_translate(0, AE_KEY_TAB, AE_ACTION_Y, 0) == AE_ACTION_Y);
+	CHECK(ae_input_key_translate(0, 1, AE_ACTION_Y, 0) == AE_ACTION_Y);
+
+	/* Tab's steps from its counted presses, beyond the step the held direction gives a press it sees */
+	{
+		int down, up;
+
+		/* a sub-frame tap (pressed and let go of between two polls): one step; with Shift at the press, back */
+		ae_input_tab_steps(1, 0, 0, 0, &down, &up); CHECK(down == 1 && up == 0);
+		ae_input_tab_steps(0, 1, 0, 0, &down, &up); CHECK(down == 0 && up == 1);
+		/* two taps in one frame: two steps (each press counted); mixed Shift: one each way */
+		ae_input_tab_steps(2, 0, 0, 0, &down, &up); CHECK(down == 2 && up == 0);
+		ae_input_tab_steps(1, 1, 0, 0, &down, &up); CHECK(down == 1 && up == 1);
+		/* a press still held at the poll: the held direction steps for it (and repeats), the count adds nothing */
+		ae_input_tab_steps(1, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 0 && up == 0);
+		ae_input_tab_steps(0, 1, AE_KEY_TAB | AE_KEY_SHIFT, 0, &down, &up); CHECK(down == 0 && up == 0);
+		/* a tap, then a press still held: the tap steps, the held press is the direction's */
+		ae_input_tab_steps(2, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 1 && up == 0);
+		/* held through the poll before, let go of and pressed again in between: the direction saw no new press */
+		ae_input_tab_steps(1, 0, AE_KEY_TAB, AE_KEY_TAB, &down, &up); CHECK(down == 1 && up == 0);
+		/* nothing counted: nothing */
+		ae_input_tab_steps(0, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 0 && up == 0);
+		ae_input_tab_steps(-3, 0, 0, 0, &down, &up); CHECK(down == 0 && up == 0);
+	}
+	/* a held Tab: one step at its press (the count adds none), then the direction's repeat as before */
+	{
+		struct ae_repeat repeat = { 0, 0, 0 };
+		int held[4], down, up;
+
+		ae_input_key_directions(AE_KEY_TAB, held);
+		ae_input_tab_steps(1, 0, AE_KEY_TAB, 0, &down, &up);
+		CHECK(held[1] && ae_input_direction_step(&repeat, held[1], 1000, 0, 0) == 1 && down == 0);
+		ae_input_tab_steps(0, 0, AE_KEY_TAB, AE_KEY_TAB, &down, &up);
+		CHECK(ae_input_direction_step(&repeat, held[1], 1100, 0, 0) == 0 && down == 0);
+		CHECK(ae_input_direction_step(&repeat, held[1], 1400, 0, 0) == 1);
+		CHECK(ae_input_direction_step(&repeat, held[1], 1480, 0, 0) == 1);
+	}
 
 	/* mouse button 4: counted only while armed (an AE screen open); disarming drops the count */
 	CHECK(ae_platform_take_back_presses() == 0);

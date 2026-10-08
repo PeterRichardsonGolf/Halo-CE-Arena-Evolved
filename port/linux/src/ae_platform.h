@@ -36,6 +36,14 @@ starts over); disarming drops what was counted */
 void ae_platform_count_back_press(void);
 void ae_platform_arm_back_presses(int armed);
 int ae_platform_take_back_presses(void);
+/* Tab's presses for AE's menus (Tab and Shift+Tab step the focus): key downs, not the key's own repeats, counted as
+SDL queues them (an event watch, ae_platform.c), so a Tab tapped and let go of within one frame still counts, where
+the held keys (ae_platform_keys) never see it. forward: without Shift, backward: Shift held at the press. Counted only
+while armed (the game's side arms it with the back presses, while an AE screen is open; installed at the first arming,
+never with display.arena_menus off); disarming drops the count. Taking them starts the count over. None on the
+dedicated server and Android (no SDL event watch there) */
+void ae_platform_arm_tab_presses(int armed);
+void ae_platform_take_tab_presses(int *forward, int *backward);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */
 int ae_platform_input_scheme(void);

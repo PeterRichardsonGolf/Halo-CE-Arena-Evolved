@@ -68,8 +68,14 @@ static boolean ae_ui_up(
 {
 	static boolean waiting = FALSE;
 
-	if (!ae_menus_active() || !ae_ui_depth() || !ae_draw_available())
+	if (!ae_menus_active())
 		return FALSE;
+	/* (no screen: the next time the browser is over one logs again) */
+	if (!ae_ui_depth() || !ae_draw_available())
+	{
+		waiting = FALSE;
+		return FALSE;
+	}
 	if (server_browser_up())
 	{
 		if (!waiting)
@@ -107,12 +113,11 @@ static struct
 void ae_settings_refresh(
 	void)
 {
-	double volume = config_real("audio.arena_menus_volume");
-
 	/* (UI SCALE snapped to its steps, 90 / 100 / 115 / 130: ae_style.c, preflight P27) */
 	ae_settings.ui_scale = ae_ui_scale_from_percent((int)config_integer("display.arena_menus_scale"));
 	ae_settings.reduce_motion = config_boolean("display.arena_menus_reduce_motion") ? TRUE : FALSE;
-	ae_settings.menu_volume = volume < 0.0 ? 0.0f : volume > 1.0 ? 1.0f : (float)volume;
+	/* (0..1, NaN 0: ae_style.c) */
+	ae_settings.menu_volume = ae_volume_from_config(config_real("audio.arena_menus_volume"));
 	ae_settings.read = TRUE;
 	platform_log("ae menus: settings: scale %.2f, reduce motion %d, volume %.2f", ae_settings.ui_scale,
 		ae_settings.reduce_motion ? 1 : 0, ae_settings.menu_volume);
@@ -179,8 +184,12 @@ boolean ae_ui_process(
 		long views = config_integer("debug.ae_test_screen");
 
 		test_screen_checked = TRUE;
-		if (views > 0)
+		/* (M1's test screen: 1, 2, 4, and 9 with the game's menus closed; the gallery's and the drives' values
+		open nothing until their tasks route them) */
+		if (views == 1 || views == 2 || views == 4 || views == 9)
 			ae_screen_test_open((int)views);
+		else if (views != 0)
+			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
 	/* (closed since: by the pointer, which comes before this) */
 	if (was_up && !ae_ui_depth())
@@ -191,17 +200,20 @@ boolean ae_ui_process(
 		if (!was_up)
 			ae_input_screen_opened();
 		ae_platform_arm_back_presses(TRUE);
+		ae_platform_arm_tab_presses(TRUE);
 		ae_ui_update();
 		ae_input_poll();
 		was_up = ae_ui_depth() != 0;
 		if (!was_up)
 			ae_input_hold_begin();
 		ae_platform_arm_back_presses(was_up);
+		ae_platform_arm_tab_presses(was_up);
 		return TRUE;
 	}
 	was_up = FALSE;
 	/* (mouse button 4 is counted for AE only while one of its screens is open) */
 	ae_platform_arm_back_presses(FALSE);
+	ae_platform_arm_tab_presses(FALSE);
 	/* the inputs held as the last screen closed reach the game's menus only
 	once let go of (each; at most 2 s): a B that closed it is not also their
 	B, nor a held direction their direction */
@@ -219,6 +231,7 @@ void ae_ui_render(
 	union rectangle2d const *window_bounds)
 {
 	static boolean drawn = FALSE;
+	static boolean before_draw_set = FALSE;
 	static unsigned int drawn_frame = 0;
 	unsigned int frame;
 
@@ -242,7 +255,11 @@ void ae_ui_render(
 		return;
 	drawn = TRUE;
 	drawn_frame = frame;
-	ae_ui_set_before_draw(before_draw);
+	if (!before_draw_set)
+	{
+		ae_ui_set_before_draw(before_draw);
+		before_draw_set = TRUE;
+	}
 	ae_ui_draw();
 }
 

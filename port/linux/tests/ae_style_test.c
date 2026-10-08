@@ -106,6 +106,10 @@ static void scales(void)
 		ae_ui_scale_from_percent(107) == 1.0f && ae_ui_scale_from_percent(108) == 1.15f &&   /* (100 / 115 meet at 107.5) */
 		ae_ui_scale_from_percent(122) == 1.15f && ae_ui_scale_from_percent(123) == 1.3f &&
 		ae_ui_scale_from_percent(115) == 1.15f && ae_ui_scale_from_percent(130) == 1.3f);
+	/* the menus' volume: 0..1, NaN 0 */
+	CHECK(ae_volume_from_config(0.5) == 0.5f && ae_volume_from_config(-1.0) == 0.0f && ae_volume_from_config(2.0) == 1.0f);
+	CHECK(ae_volume_from_config(0.0) == 0.0f && ae_volume_from_config(1.0) == 1.0f && ae_volume_from_config(NAN) == 0.0f);
+	CHECK(ae_volume_from_config(-HUGE_VAL) == 0.0f && ae_volume_from_config(HUGE_VAL) == 1.0f);
 	/* FULL: 1 u = window_height / 1080 x scale pixels */
 	ae_density_full(720, 1.3f, &d); CHECK(near(d.s, 720.0f / 1080 * 1.3f, 1e-4f));
 	CHECK(d.kind == AE_DENSITY_FULL && d.metrics == &ae_metrics_full);

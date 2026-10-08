@@ -36,13 +36,18 @@ void ae_input_key_directions(int keys, int held[4]);
 /* the actions of the keys pressed since previous (Q, E: tabs; Page Up, Page Down) and of mouse button 4's presses
 (BACK); the count written, at most maximum */
 int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char actions[], int maximum);
-/* the action to send for a first-controller button's action, given AE's keys held now (keys) and at the previous
-poll (previous_keys) and whether the keyboard is the device last used: while E is held, its X (E drives X in the
-game's menu keys) is none; Tab drives Y there, so while Tab is held Y is none (Tab's own focus step comes from the
-held directions). A Y from the keyboard is a Tab tapped between polls only when Tab is held now or was in the previous
-poll (previous_keys): let go of since, its focus step (down, up with Shift now or then); otherwise it is a real Y (a
-pad on the first controller after keyboard or mouse use; M1 review M2) */
-int ae_input_key_translate(int keys, int previous_keys, int action, int keyboard);
+/* the action to send for a first-controller button's action, given AE's keys held now, the Tab presses counted since
+the last poll (ae_platform_take_tab_presses: key downs, so a tap let go of within one frame counts too) and whether
+the keyboard is the device last used: while E is held, its X (E drives X in the game's menu keys) is none; Tab drives
+Y there, so while Tab is held Y is none, and a keyboard Y with a Tab press counted is none too (Tab's steps come from
+the held directions and ae_input_tab_steps); any other Y is a real Y (a pad on the first controller after keyboard or
+mouse use, a touch Y; M1 review M2, Task 4 fix round I1) */
+int ae_input_key_translate(int keys, int tab_presses, int action, int keyboard);
+/* Tab's focus steps from its presses counted since the last poll, forward (down) and backward (up: Shift held at
+the press), beyond the step the held directions give: a press still held at this poll that was not at the last
+(previous_keys) is the held direction's step (and its repeat), the others (taps let go of between the polls, two in
+one frame are two) step here */
+void ae_input_tab_steps(int forward, int backward, int keys, int previous_keys, int *down, int *up);
 
 /* a held direction this poll: whether it steps (AE's repeat). opening: the first poll of a screen just opened: what
 is held then doesn't step (it is seeded as held). stalled: the last poll was long ago (a stall, a very low frame
