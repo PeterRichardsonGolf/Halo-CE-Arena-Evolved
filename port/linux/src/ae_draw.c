@@ -31,11 +31,20 @@ What changed from ui_overlay.c:
   recordings show AE's screens;
 - the keyboard's prompts are AE's menu keys (Esc, Page Up/Down, Q/E for
   the tabs), not the game's in-play keys the overlay showed;
-- no cutouts (the game's pictures through the overlay); fonts: the overlay's
-  Noto Regular/Bold and Kenney's prompts (M1; the look's fonts come in M2).
+- no cutouts (the game's pictures through the overlay);
+- fonts: the look's own faces (ae_font.c, M2): OpenCE for AE_FONT_TITLE,
+  Overpass 900 for AE_FONT_ROW, Overpass 750 for AE_FONT_BODY, sized by
+  their em with y the capitals' top, and text boxes from the glyphs' own ink
+  (ae_draw_text_box), never from the fonts' line metrics; a face that will
+  not load falls back to the overlay's Noto Bold/Regular (as in M1: size the
+  line's height, y its top). The device fonts are Kenney's prompts, as in
+  the overlay;
+- the glyph cache is found through a hash (the overlay scans its list);
+- lines (a rotated rounded rectangle), and a global alpha for fades.
 */
 
 #include "ae_draw.h"
+#include "ae_font.h"
 
 #ifdef HALO_GAME_BROWSER
 
@@ -62,6 +71,8 @@ enum
 	MAXIMUM_VERTICES = MAXIMUM_QUADS * 6,
 	ATLAS_SIZE = 2048,
 	MAXIMUM_GLYPHS = 4096,
+	/* (the glyph hash's slots: a power of two, twice the glyphs, so a probe always ends at an empty slot) */
+	GLYPH_SLOTS = 8192,
 	MAXIMUM_TEXTS = 1024,
 	MAXIMUM_TEXT = 64 * 1024,
 	MAXIMUM_CLIPS = 8,
@@ -85,6 +96,8 @@ struct quad
 	int index;
 	float x, y, width, height;
 	float radius, thickness;
+	/* a shape turned about its centre (radians, clockwise on the screen: ae_draw_line) */
+	float angle;
 	unsigned int top, bottom;
 	/* what of the layout it may draw into: x0, y0, x1, y1 */
 	float clip[4];
@@ -102,9 +115,17 @@ struct vertex
 	unsigned char color[4];
 };
 
+/* the face that draws a font: AE's own (ae_font.c; id an AE_FACE_*: size an em, y the capitals' top) or the
+overlay's (posix_ui_font.c; id a POSIX_UI_FONT_*: size the line's height, y its top, as in M1) */
+struct face
+{
+	int ae;
+	int id;
+};
+
 struct glyph
 {
-	int font;
+	struct face face;
 	int pixel_size;
 	unsigned int codepoint;
 	/* its place in the atlas, and from the pen on the baseline (pixels) */
@@ -114,8 +135,10 @@ struct glyph
 
 struct text
 {
-	int font, align;
-	float size, x, y;
+	struct face face;
+	int align;
+	/* size: in layout units; tracking: in ems, after every glyph but the last */
+	float size, x, y, tracking;
 	unsigned int color;
 	int offset;
 };
@@ -153,6 +176,8 @@ static struct
 	struct ae_view view;
 	float clips[MAXIMUM_CLIPS][4];
 	int clip_depth;
+	/* 1 - the alpha every colour is multiplied by (ae_draw_set_alpha; 0, the default, is opaque) */
+	float fade;
 
 	struct quad quads[MAXIMUM_QUADS];
 	int quad_count;
@@ -164,6 +189,8 @@ static struct
 
 	struct glyph glyphs[MAXIMUM_GLYPHS];
 	int glyph_count;
+	/* each slot a glyph's index + 1 (0: empty), by glyph_hash; linear probing */
+	unsigned short glyph_slots[GLYPH_SLOTS];
 	int shelf_x, shelf_y, shelf_height;
 	float last_scale;
 
@@ -230,8 +257,51 @@ static int posix_font(int font)
 	case AE_FONT_NINTENDO: return POSIX_UI_FONT_NINTENDO;
 	case AE_FONT_KEYBOARD: return POSIX_UI_FONT_KEYBOARD;
 	}
-	/* (titles and rows: bold until the look's fonts come) */
+	/* (titles and rows, when their own faces will not load) */
 	return POSIX_UI_FONT_BOLD;
+}
+
+static struct face posix_face(int posix)
+{
+	struct face face;
+
+	face.ae = 0;
+	face.id = posix;
+	return face;
+}
+
+/* the face drawing a font: the look's own for titles, rows and body text (loaded the first time one is asked
+for: measuring before the first Present agrees with drawing), else the overlay's */
+static struct face face_of(int font)
+{
+	struct face face;
+	int ae_face = -1;
+
+	switch (font)
+	{
+	case AE_FONT_TITLE: ae_face = AE_FACE_OPENCE; break;
+	case AE_FONT_ROW: ae_face = AE_FACE_OVERPASS_900; break;
+	case AE_FONT_BODY: ae_face = AE_FACE_OVERPASS_750; break;
+	}
+	if (ae_face >= 0)
+	{
+		ae_font_embedded_load();
+		if (ae_font_ready(ae_face))
+		{
+			face.ae = 1;
+			face.id = ae_face;
+			return face;
+		}
+	}
+	return posix_face(posix_font(font));
+}
+
+/* a glyph's advance at a size (an em for AE's faces, a line's height for the overlay's), with the kerning after
+the previous (0: none) */
+static float advance_of(struct face face, float size, unsigned int codepoint, unsigned int previous)
+{
+	return face.ae ? ae_font_advance(face.id, size, codepoint, previous) :
+		posix_ui_font_advance(face.id, size, codepoint, previous);
 }
 
 /* ---------- layout, views and clips */
@@ -262,23 +332,56 @@ void ae_draw_view(float x, float y, float width, float height)
 	ae.clip_depth = 0;
 }
 
-void ae_draw_view_full(void)
+/* the whole frame as the view (the first drawing of a frame sets it: that keeps the alpha set before it) */
+static void view_full(void)
 {
 	ae_draw_view(0.0f, 0.0f, layout()->width, layout()->height);
 }
 
-float ae_draw_view_width(void)
+void ae_draw_view_full(void)
 {
-	if (ae.view.height <= 0.0f)
-		ae_draw_view_full();
-	return ae_view_width(&ae.view);
+	view_full();
+	ae.fade = 0.0f;
 }
 
 static struct ae_view const *view(void)
 {
 	if (ae.view.height <= 0.0f)
-		ae_draw_view_full();
+		view_full();
 	return &ae.view;
+}
+
+float ae_draw_view_width(void)
+{
+	return ae_view_width(view());
+}
+
+void ae_draw_current_view(struct ae_view *out)
+{
+	*out = *view();
+}
+
+float ae_draw_units_per_pixel(void)
+{
+	float pixels = layout()->scale * view()->scale;
+
+	return pixels > 0.0f ? 1.0f / pixels : 1.0f;
+}
+
+void ae_draw_set_alpha(float alpha)
+{
+	ae.fade = alpha >= 1.0f ? 0.0f : alpha > 0.0f ? 1.0f - alpha : 1.0f;
+}
+
+/* a colour with the global alpha */
+static unsigned int faded(unsigned int rgba)
+{
+	float alpha;
+
+	if (ae.fade <= 0.0f)
+		return rgba;
+	alpha = (float)(rgba & 0xFFu) * (1.0f - ae.fade);
+	return (rgba & 0xFFFFFF00u) | (unsigned int)floorf(alpha + 0.5f);
 }
 
 /* the clips stored (a push past the deepest stores none) */
@@ -364,8 +467,8 @@ void ae_draw_gradient(float x, float y, float width, float height, float radius,
 	if (!quad)
 		return;
 	quad->radius = radius * view()->scale;
-	quad->top = top;
-	quad->bottom = bottom;
+	quad->top = faded(top);
+	quad->bottom = faded(bottom);
 }
 
 void ae_draw_rect(float x, float y, float width, float height, float radius, unsigned int rgba)
@@ -381,55 +484,90 @@ void ae_draw_outline(float x, float y, float width, float height, float radius, 
 		return;
 	quad->radius = radius * view()->scale;
 	quad->thickness = (thickness > 0.0f ? thickness : 1.0f) * view()->scale;
-	quad->top = quad->bottom = rgba;
+	quad->top = quad->bottom = faded(rgba);
 }
 
+void ae_draw_line(float x0, float y0, float x1, float y1, float thickness, unsigned int rgba)
+{
+	float dx = x1 - x0, dy = y1 - y0;
+	float length = sqrtf(dx * dx + dy * dy);
+	float wide = thickness > 0.0f ? thickness : 1.0f;
+	struct quad *quad;
+
+	/* (a rounded rectangle along the stroke, a half thickness past each end: its ends are round) */
+	quad = new_quad(_quad_shape, (x0 + x1) * 0.5f - (length + wide) * 0.5f, (y0 + y1) * 0.5f - wide * 0.5f,
+		length + wide, wide);
+	if (!quad)
+		return;
+	quad->radius = wide * 0.5f * view()->scale;
+	quad->angle = atan2f(dy, dx);
+	quad->top = quad->bottom = faded(rgba);
+}
+
+/* (UTF-8 read as ae_font.c reads it: invalid bytes are U+FFFD) */
 static unsigned int next_codepoint(const char **cursor)
 {
-	const unsigned char *bytes = (const unsigned char *)*cursor;
-	unsigned int codepoint;
-	int extra;
-
-	if (!*bytes)
-		return 0;
-	if (bytes[0] < 0x80) { codepoint = bytes[0]; extra = 0; }
-	else if ((bytes[0] & 0xE0) == 0xC0) { codepoint = bytes[0] & 0x1F; extra = 1; }
-	else if ((bytes[0] & 0xF0) == 0xE0) { codepoint = bytes[0] & 0x0F; extra = 2; }
-	else { codepoint = bytes[0] & 0x07; extra = 3; }
-	*cursor += 1;
-	while (extra-- > 0 && (**cursor & 0xC0) == 0x80)
-	{
-		codepoint = (codepoint << 6) | (unsigned int)(**cursor & 0x3F);
-		*cursor += 1;
-	}
-	return codepoint;
+	return ae_font_utf8_next(cursor);
 }
 
-/* a string's width at a size (of a posix font) */
-static float measure(int font, float size, const char *text)
+/* a string's width at a size, tracking ems after every glyph but the last */
+static float measure(struct face face, float size, float tracking, const char *text)
 {
 	const char *cursor = text;
 	unsigned int codepoint, previous = 0;
 	float width = 0.0f;
 
+	if (face.ae)
+		return ae_font_measure(face.id, size, tracking, text, NULL, NULL);
 	while ((codepoint = next_codepoint(&cursor)) != 0)
 	{
-		width += posix_ui_font_advance(font, size, codepoint, previous);
+		if (previous)
+			width += tracking * size;
+		width += posix_ui_font_advance(face.id, size, codepoint, previous);
 		previous = codepoint;
 	}
 	return width;
 }
 
-float ae_draw_text_width(int font, float size, const char *utf8)
+float ae_draw_text_tracked_width(int font, float size, float tracking_em, const char *utf8)
 {
-	return utf8 ? measure(posix_font(font), size, utf8) : 0.0f;
+	return utf8 ? measure(face_of(font), size, tracking_em, utf8) : 0.0f;
 }
 
-/* text of a posix font at x, y in the view's units; its width in them */
-static float add_text(int font, float size, float x, float y, int align, unsigned int color, const char *text)
+float ae_draw_text_width(int font, float size, const char *utf8)
+{
+	return ae_draw_text_tracked_width(font, size, 0.0f, utf8);
+}
+
+float ae_draw_text_box(int font, float size, const char *utf8, float *top, float *bottom)
+{
+	struct face face = face_of(font);
+	float padding = 2.0f * ae_draw_units_per_pixel();
+	float width, ink_top, ink_bottom, cap;
+
+	if (!utf8)
+		utf8 = "";
+	if (!face.ae)
+	{
+		/* (the overlay's Noto stands in: its line, y its top, size its height) */
+		*top = -padding;
+		*bottom = size + padding;
+		return measure(face, size, 0.0f, utf8);
+	}
+	/* (the ink from the glyphs' boxes, above and below the baseline, which is the cap height below y) */
+	width = ae_font_measure(face.id, size, 0.0f, utf8, &ink_top, &ink_bottom);
+	cap = ae_font_cap_height(face.id, size);
+	*top = cap - ink_top - padding;
+	*bottom = cap + ink_bottom + padding;
+	return width;
+}
+
+/* text of a face at x, y in the view's units; its width in them */
+static float add_text(struct face face, float size, float tracking, float x, float y, int align, unsigned int color,
+	const char *text)
 {
 	int length = (int)strlen(text);
-	float width = measure(font, size, text);
+	float width = measure(face, size, tracking, text);
 	struct quad *quad;
 	struct text *entry;
 
@@ -440,21 +578,28 @@ static float add_text(int font, float size, float x, float y, int align, unsigne
 		return width;
 	quad->index = ae.text_count;
 	entry = &ae.texts[ae.text_count++];
-	entry->font = font;
+	entry->face = face;
 	entry->align = align;
 	entry->size = size * view()->scale;
+	entry->tracking = tracking;
 	entry->x = quad->x;
 	entry->y = quad->y;
-	entry->color = color;
+	entry->color = faded(color);
 	entry->offset = ae.text_used;
 	memcpy(ae.text + ae.text_used, text, (size_t)length + 1);
 	ae.text_used += length + 1;
 	return width;
 }
 
+float ae_draw_text_tracked(int font, float size, float tracking_em, float x, float y, int align, unsigned int rgba,
+	const char *utf8)
+{
+	return utf8 && *utf8 ? add_text(face_of(font), size, tracking_em, x, y, align, rgba, utf8) : 0.0f;
+}
+
 float ae_draw_text(int font, float size, float x, float y, int align, unsigned int rgba, const char *utf8)
 {
-	return utf8 && *utf8 ? add_text(posix_font(font), size, x, y, align, rgba, utf8) : 0.0f;
+	return ae_draw_text_tracked(font, size, 0.0f, x, y, align, rgba, utf8);
 }
 
 static void utf8_of(unsigned int codepoint, char *out)
@@ -473,9 +618,9 @@ float ae_draw_button_width(int device_font, int button, float size)
 	if (button < 0 || button >= AE_NUMBER_OF_BUTTONS)
 		return 0.0f;
 	if (!button_glyphs[device][button] || !posix_ui_font_has(button_fonts[device], button_glyphs[device][button]))
-		return measure(POSIX_UI_FONT_BOLD, size, button_words[button]);
+		return measure(posix_face(POSIX_UI_FONT_BOLD), size, 0.0f, button_words[button]);
 	utf8_of(button_glyphs[device][button], text);
-	return measure(button_fonts[device], size, text);
+	return measure(posix_face(button_fonts[device]), size, 0.0f, text);
 }
 
 float ae_draw_button(int device_font, int button, float size, float x, float y, unsigned int rgba)
@@ -487,9 +632,9 @@ float ae_draw_button(int device_font, int button, float size, float x, float y, 
 		return 0.0f;
 	/* (a button the device's font lacks: its name) */
 	if (!button_glyphs[device][button] || !posix_ui_font_has(button_fonts[device], button_glyphs[device][button]))
-		return add_text(POSIX_UI_FONT_BOLD, size, x, y, AE_ALIGN_LEFT, rgba, button_words[button]);
+		return add_text(posix_face(POSIX_UI_FONT_BOLD), size, 0.0f, x, y, AE_ALIGN_LEFT, rgba, button_words[button]);
 	utf8_of(button_glyphs[device][button], text);
-	return add_text(button_fonts[device], size, x, y, AE_ALIGN_LEFT, rgba, text);
+	return add_text(posix_face(button_fonts[device]), size, 0.0f, x, y, AE_ALIGN_LEFT, rgba, text);
 }
 
 /* ---------- images */
@@ -588,7 +733,7 @@ void ae_draw_image(int id, float x, float y, float width, float height, unsigned
 	if (!quad)
 		return;
 	quad->index = id;
-	quad->top = quad->bottom = tint;
+	quad->top = quad->bottom = faded(tint);
 }
 
 /* ---------- the pointer */
@@ -778,26 +923,60 @@ static int set_up(void)
 	return 1;
 }
 
+/* a glyph's first slot in the hash (its face, its pixel size and its code point mixed) */
+static unsigned int glyph_hash(struct face face, int pixel_size, unsigned int codepoint)
+{
+	unsigned int hash = codepoint * 0x9E3779B1u;
+
+	hash ^= ((unsigned int)pixel_size << 8 | (unsigned int)(face.id & 0x7F) << 1 | (unsigned int)(face.ae != 0)) *
+		0x85EBCA77u;
+	hash ^= hash >> 15;
+	hash *= 0xC2B2AE3Du;
+	hash ^= hash >> 13;
+	return hash & (GLYPH_SLOTS - 1);
+}
+
+static void glyph_free(struct face face, unsigned char *bitmap)
+{
+	if (!bitmap)
+		return;
+	if (face.ae)
+		ae_font_free(bitmap);
+	else
+		posix_ui_font_free(bitmap);
+}
+
 /* a glyph at a pixel size, packed into the atlas the first time (NULL: the
 atlas is full; it starts over at the next frame) */
-static struct glyph *glyph(int font, int pixel_size, unsigned int codepoint, int *atlas_full)
+static struct glyph *glyph(struct face face, int pixel_size, unsigned int codepoint, int *atlas_full)
 {
 	struct glyph *entry;
 	unsigned char *bitmap;
-	int index, width, height, x_offset, y_offset;
+	unsigned int slot;
+	int width, height, x_offset, y_offset;
 
-	for (index = 0; index < ae.glyph_count; index++)
+	/* (at most MAXIMUM_GLYPHS of the GLYPH_SLOTS are taken: the probe ends at an empty slot, where a new glyph
+	goes) */
+	for (slot = glyph_hash(face, pixel_size, codepoint); ae.glyph_slots[slot]; slot = (slot + 1) & (GLYPH_SLOTS - 1))
 	{
-		entry = &ae.glyphs[index];
-		if (entry->codepoint == codepoint && entry->pixel_size == pixel_size && entry->font == font)
+		entry = &ae.glyphs[ae.glyph_slots[slot] - 1];
+		if (entry->codepoint == codepoint && entry->pixel_size == pixel_size && entry->face.ae == face.ae &&
+			entry->face.id == face.id)
+		{
 			return entry;
+		}
 	}
 	if (ae.glyph_count >= MAXIMUM_GLYPHS)
 	{
 		*atlas_full = 1;
 		return NULL;
 	}
-	bitmap = posix_ui_font_glyph(font, (float)pixel_size, codepoint, &width, &height, &x_offset, &y_offset);
+	if (face.ae)
+		bitmap = ae_font_glyph(face.id, (float)pixel_size, codepoint, &width, &height, &x_offset, &y_offset);
+	else
+		bitmap = posix_ui_font_glyph(face.id, (float)pixel_size, codepoint, &width, &height, &x_offset, &y_offset);
+	if (!bitmap)
+		width = height = 0;
 	if (width > 0 && height > 0)
 	{
 		if (ae.shelf_x + width + 2 > ATLAS_SIZE)
@@ -806,22 +985,23 @@ static struct glyph *glyph(int font, int pixel_size, unsigned int codepoint, int
 			ae.shelf_y += ae.shelf_height + 2;
 			ae.shelf_height = 0;
 		}
-		if (ae.shelf_y + height + 2 > ATLAS_SIZE)
+		if (width + 4 > ATLAS_SIZE || ae.shelf_y + height + 2 > ATLAS_SIZE)
 		{
-			posix_ui_font_free(bitmap);
+			glyph_free(face, bitmap);
 			*atlas_full = 1;
 			return NULL;
 		}
 	}
+	ae.glyph_slots[slot] = (unsigned short)(ae.glyph_count + 1);
 	entry = &ae.glyphs[ae.glyph_count++];
-	entry->font = font;
+	entry->face = face;
 	entry->pixel_size = pixel_size;
 	entry->codepoint = codepoint;
 	entry->width = (short)width;
 	entry->height = (short)height;
 	entry->x_offset = (short)x_offset;
 	entry->y_offset = (short)y_offset;
-	entry->advance = posix_ui_font_advance(font, (float)pixel_size, codepoint, 0);
+	entry->advance = advance_of(face, (float)pixel_size, codepoint, 0);
 	entry->atlas_x = (short)ae.shelf_x;
 	entry->atlas_y = (short)ae.shelf_y;
 	if (bitmap && width > 0 && height > 0)
@@ -833,14 +1013,14 @@ static struct glyph *glyph(int font, int pixel_size, unsigned int codepoint, int
 		if (height > ae.shelf_height)
 			ae.shelf_height = height;
 	}
-	if (bitmap)
-		posix_ui_font_free(bitmap);
+	glyph_free(face, bitmap);
 	return entry;
 }
 
 static void forget_glyphs(void)
 {
 	ae.glyph_count = 0;
+	memset(ae.glyph_slots, 0, sizeof(ae.glyph_slots));
 	ae.shelf_x = ae.shelf_y = 2;
 	ae.shelf_height = 0;
 }
@@ -885,30 +1065,42 @@ static void put_textured(int *count, float left, float top, float right, float b
 	*count += 6;
 }
 
-/* a shape (layout units) as two triangles in pixels, a pixel larger all round for the smooth edge */
+/* a shape (layout units) as two triangles in pixels, a pixel larger all round for the smooth edge; a turned shape
+(ae_draw_line) has its corners turned about its centre while their local coordinates stay the upright
+rectangle's, so the fragment shader's rounded rectangle is drawn turned */
 static void put_shape(int *count, const struct quad *quad, float const clip[4])
 {
+	static const float corners[6][2] = { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 }, { -1, 1 } };
 	struct ae_layout const *l = &ae.layout;
 	struct vertex *v;
-	float left, top, right, bottom, half_width, half_height, radius, thickness;
+	float left, top, half_width, half_height, centre_x, centre_y, radius, thickness, cosine = 1.0f, sine = 0.0f;
 	const float grow = 1.0f;
+	int corner;
 
 	if (*count + 6 > MAXIMUM_VERTICES)
 		return;
 	v = &ae.vertices[*count];
 	ae_layout_to_pixels(l, quad->x, quad->y, &left, &top);
-	right = left + quad->width * l->scale;
-	bottom = top + quad->height * l->scale;
-	half_width = (right - left) * 0.5f;
-	half_height = (bottom - top) * 0.5f;
+	half_width = quad->width * l->scale * 0.5f;
+	half_height = quad->height * l->scale * 0.5f;
+	centre_x = left + half_width;
+	centre_y = top + half_height;
 	radius = quad->radius * l->scale;
 	thickness = quad->thickness > 0.0f ? fmaxf(1.0f, quad->thickness * l->scale) : 0.0f;
-	put_vertex(&v[0], left - grow, top - grow, -1.0f, 0.0f, -half_width - grow, -half_height - grow, half_width, half_height, radius, thickness, clip, 0.0f, quad->top);
-	put_vertex(&v[1], right + grow, top - grow, -1.0f, 0.0f, half_width + grow, -half_height - grow, half_width, half_height, radius, thickness, clip, 0.0f, quad->top);
-	put_vertex(&v[2], left - grow, bottom + grow, -1.0f, 0.0f, -half_width - grow, half_height + grow, half_width, half_height, radius, thickness, clip, 0.0f, quad->bottom);
-	put_vertex(&v[3], right + grow, top - grow, -1.0f, 0.0f, half_width + grow, -half_height - grow, half_width, half_height, radius, thickness, clip, 0.0f, quad->top);
-	put_vertex(&v[4], right + grow, bottom + grow, -1.0f, 0.0f, half_width + grow, half_height + grow, half_width, half_height, radius, thickness, clip, 0.0f, quad->bottom);
-	put_vertex(&v[5], left - grow, bottom + grow, -1.0f, 0.0f, -half_width - grow, half_height + grow, half_width, half_height, radius, thickness, clip, 0.0f, quad->bottom);
+	if (quad->angle != 0.0f)
+	{
+		cosine = cosf(quad->angle);
+		sine = sinf(quad->angle);
+	}
+	for (corner = 0; corner < 6; corner++)
+	{
+		float local_x = corners[corner][0] * (half_width + grow);
+		float local_y = corners[corner][1] * (half_height + grow);
+
+		put_vertex(&v[corner], centre_x + local_x * cosine - local_y * sine, centre_y + local_x * sine + local_y * cosine,
+			-1.0f, 0.0f, local_x, local_y, half_width, half_height, radius, thickness, clip, 0.0f,
+			corners[corner][1] < 0 ? quad->top : quad->bottom);
+	}
 	*count += 6;
 }
 
@@ -918,21 +1110,33 @@ static void put_text(int *count, const struct text *entry, float const clip[4], 
 	struct ae_layout const *l = &ae.layout;
 	const char *text = ae.text + entry->offset;
 	const char *cursor = text;
-	int font = entry->font;
-	int pixel_size = (int)floorf(entry->size * l->scale + 0.5f);
-	float ascent, descent, pen_x, pen_y, width;
+	struct face face = entry->face;
+	float size = entry->size * l->scale;
+	int pixel_size = (int)floorf(size + 0.5f);
+	float ascent, descent, pen_x, pen_y, width, tracking = entry->tracking * (float)pixel_size;
 	unsigned int codepoint, previous = 0;
 
-	if (pixel_size < 4 || !posix_ui_font_metrics(font, (float)pixel_size, &ascent, &descent))
+	if (pixel_size < 4)
 		return;
-	width = measure(font, (float)pixel_size, text);
 	ae_layout_to_pixels(l, entry->x, entry->y, &pen_x, &pen_y);
+	if (face.ae)
+	{
+		/* (y the capitals' top: the baseline the cap height below, at the unrounded size, as ae_draw_text_box
+		has it) */
+		pen_y += ae_font_cap_height(face.id, size);
+	}
+	else
+	{
+		if (!posix_ui_font_metrics(face.id, (float)pixel_size, &ascent, &descent))
+			return;
+		/* (y the line's top: the baseline an ascent below, centred in the size) */
+		pen_y += ((float)pixel_size - (ascent + descent)) * 0.5f + ascent;
+	}
+	width = measure(face, (float)pixel_size, entry->tracking, text);
 	if (entry->align == AE_ALIGN_CENTER)
 		pen_x -= width * 0.5f;
 	else if (entry->align == AE_ALIGN_RIGHT)
 		pen_x -= width;
-	/* (y the line's top: the baseline an ascent below, centred in the size) */
-	pen_y += ((float)pixel_size - (ascent + descent)) * 0.5f + ascent;
 	pen_x = floorf(pen_x + 0.5f);
 	pen_y = floorf(pen_y + 0.5f);
 	while ((codepoint = next_codepoint(&cursor)) != 0)
@@ -940,9 +1144,9 @@ static void put_text(int *count, const struct text *entry, float const clip[4], 
 		struct glyph *g;
 
 		if (previous)
-			pen_x += posix_ui_font_advance(font, (float)pixel_size, codepoint, previous) -
-				posix_ui_font_advance(font, (float)pixel_size, codepoint, 0);
-		g = glyph(font, pixel_size, codepoint, atlas_full);
+			pen_x += advance_of(face, (float)pixel_size, codepoint, previous) -
+				advance_of(face, (float)pixel_size, codepoint, 0) + tracking;
+		g = glyph(face, pixel_size, codepoint, atlas_full);
 		if (!g)
 			return;
 		if (g->width > 0)
@@ -1062,6 +1266,7 @@ static void frame_done(void)
 	ae.quad_count = ae.text_count = ae.text_used = 0;
 	ae.clip_depth = 0;
 	ae.view.height = 0.0f;
+	ae.fade = 0.0f;
 	ae.frame++;
 }
 
@@ -1075,6 +1280,8 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 	GLint saved_blend_rgb_source = 0, saved_blend_rgb_destination = 0, saved_blend_alpha_source = 0,
 		saved_blend_alpha_destination = 0, saved_blend_equation = 0;
 
+	/* (the look's faces: once, from the game's data) */
+	ae_font_embedded_load();
 	if (width <= 0 || height <= 0)
 	{
 		frame_done();
@@ -1221,6 +1428,34 @@ float ae_draw_text(int font, float size, float x, float y, int align, unsigned i
 	return 0.0f;
 }
 float ae_draw_text_width(int font, float size, const char *utf8) { (void)font; (void)size; (void)utf8; return 0.0f; }
+float ae_draw_text_tracked(int font, float size, float tracking_em, float x, float y, int align, unsigned int rgba,
+	const char *utf8)
+{
+	(void)font; (void)size; (void)tracking_em; (void)x; (void)y; (void)align; (void)rgba; (void)utf8;
+	return 0.0f;
+}
+float ae_draw_text_tracked_width(int font, float size, float tracking_em, const char *utf8)
+{
+	(void)font; (void)size; (void)tracking_em; (void)utf8;
+	return 0.0f;
+}
+float ae_draw_text_box(int font, float size, const char *utf8, float *top, float *bottom)
+{
+	(void)font; (void)size; (void)utf8;
+	*top = *bottom = 0.0f;
+	return 0.0f;
+}
+void ae_draw_line(float x0, float y0, float x1, float y1, float thickness, unsigned int rgba)
+{
+	(void)x0; (void)y0; (void)x1; (void)y1; (void)thickness; (void)rgba;
+}
+void ae_draw_set_alpha(float alpha) { (void)alpha; }
+void ae_draw_current_view(struct ae_view *view)
+{
+	view->x = view->y = view->width = view->height = 0.0f;
+	view->scale = 1.0f;
+}
+float ae_draw_units_per_pixel(void) { return 1.0f; }
 float ae_draw_button(int device_font, int button, float size, float x, float y, unsigned int rgba)
 {
 	(void)device_font; (void)button; (void)size; (void)x; (void)y; (void)rgba;

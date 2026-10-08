@@ -21,6 +21,8 @@ UNITS = {
     # (the catalog's readers take any text: under the sanitizers)
     "ae_catalog_test.c": ([UI / "ae_catalog.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_draw_layout_test.c": ([SRC / "ae_layout.c"], [], []),
+    # (AE's faces with stb_truetype; under the sanitizers, as it is handed garbage and truncated fonts)
+    "ae_font_test.c": ([SRC / "ae_font.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", SRC / "ae_back_presses.c"], [], []),
     "ae_list_test.c": ([UI / "ae_list.c"], [], []),
     # (the map reader with the system's zlib; under the sanitizers, as it reads corrupt files: the maps it writes

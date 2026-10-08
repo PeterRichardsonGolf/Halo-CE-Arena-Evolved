@@ -22,7 +22,8 @@ a stub and ae_draw_available() is 0.
 
 #include "ae_layout.h"
 
-/* fonts (M1: the overlay's faces; the look's own fonts come with M2's widgets) */
+/* fonts: AE_FONT_TITLE OpenCE, AE_FONT_ROW Overpass 900, AE_FONT_BODY Overpass 750 (the look's own faces,
+ae_font.h; the overlay's Noto stands in for one that will not load); the device fonts are Kenney's Input Prompts */
 enum { AE_FONT_TITLE, AE_FONT_ROW, AE_FONT_BODY, AE_FONT_XBOX, AE_FONT_PLAYSTATION, AE_FONT_NINTENDO,
 	AE_FONT_KEYBOARD, AE_NUMBER_OF_FONTS };
 enum { AE_ALIGN_LEFT, AE_ALIGN_CENTER, AE_ALIGN_RIGHT };
@@ -51,9 +52,26 @@ void ae_draw_rect(float x, float y, float width, float height, float radius, uns
 void ae_draw_gradient(float x, float y, float width, float height, float radius, unsigned int top, unsigned int bottom);
 /* a rectangle's outline, thickness wide, inside it */
 void ae_draw_outline(float x, float y, float width, float height, float radius, float thickness, unsigned int rgba);
-/* text (UTF-8) on one line, size its height, y its top; returns its width */
+/* text (UTF-8) on one line; returns its width. AE_FONT_TITLE / ROW / BODY: size is the em size (layout or view
+units) and y the top of the capitals (baseline = y + cap height); the device fonts (AE_FONT_XBOX..KEYBOARD) keep M1's
+meaning (size = pixel height, y the line's top) */
 float ae_draw_text(int font, float size, float x, float y, int align, unsigned int rgba, const char *utf8);
 float ae_draw_text_width(int font, float size, const char *utf8);
+/* the same with tracking: tracking_em x size after every glyph but the last */
+float ae_draw_text_tracked(int font, float size, float tracking_em, float x, float y, int align, unsigned int rgba,
+	const char *utf8);
+float ae_draw_text_tracked_width(int font, float size, float tracking_em, const char *utf8);
+/* a text's ink box relative to y, each edge padded by 2 window pixels: *top <= 0 when ink rises above the capitals,
+*bottom >= the cap height; returns the width. Clips and boxes around text are made from this, never from metrics */
+float ae_draw_text_box(int font, float size, const char *utf8, float *top, float *bottom);
+/* a straight stroke (check marks): a thickness-wide rectangle from x0, y0 to x1, y1, round ends */
+void ae_draw_line(float x0, float y0, float x1, float y1, float thickness, unsigned int rgba);
+/* every following colour's alpha multiplied by alpha (0..1) until changed; ae_draw_view_full and each Present reset
+it to 1 */
+void ae_draw_set_alpha(float alpha);
+/* the current view, and the current view's own units per window pixel (for pixel floors) */
+void ae_draw_current_view(struct ae_view *view);
+float ae_draw_units_per_pixel(void);
 /* a button's glyph (device_font AE_FONT_XBOX..AE_FONT_KEYBOARD, or AE_FONT_LAST_DEVICE), size high, x its left,
 y its top; returns its width */
 float ae_draw_button(int device_font, int button, float size, float x, float y, unsigned int rgba);
