@@ -25,6 +25,9 @@ UNITS = {
     "ae_font_test.c": ([SRC / "ae_font.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", SRC / "ae_back_presses.c"], [], []),
     "ae_list_test.c": ([UI / "ae_list.c"], [], []),
+    # (the look's tokens, frame and densities, with the recording ae_draw stub that measures with the real fonts)
+    "ae_style_test.c": ([UI / "ae_style.c", TESTS / "ae_draw_stub.c", SRC / "ae_font.c", SRC / "ae_layout.c"],
+                        [f"-I{SRC}", f"-I{TESTS}"], []),
     # (the map reader with the system's zlib; under the sanitizers, as it reads corrupt files: the maps it writes
     # itself here, the stock maps in test_mapinfo_stock_maps)
     "ae_mapinfo_test.c": ([UI / "ae_mapinfo.c"],
