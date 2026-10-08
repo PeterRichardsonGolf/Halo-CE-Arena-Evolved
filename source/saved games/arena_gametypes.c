@@ -77,10 +77,9 @@ enum
 	ARENA_GAMETYPES_MAXIMUM_SAVED = 128,
 };
 
-
 /* what every AE gametype adds to its stock one: AE's rules (NO SPREAD NHE,
-the PRE-GAME COUNTDOWN), no landing damage, HALO 2 health (health back as
-the shields recharge), and the generic starting equipment (the stock
+the PRE-GAME COUNTDOWN), no landing damage, HALO 2 health (Halo 2's shield and
+body timers), and the generic starting equipment (the stock
 gametypes take the map's, Blood Gulch's a plasma pistol); its loadout is a
 pistol in hand and an assault rifle (arena_gametype.custom_loadout) */
 #define ARENA_GAMETYPE_FLAGS \

@@ -390,8 +390,9 @@ static const struct config_setting config_settings[] =
 	{ "game.health", _config_string, "\"classic\"", "HALO_HEALTH", _environment_value, _platform_all,
 		"How players' health comes back in the campaign: \"classic\" only from\n"
 		"health packs; \"reach\" once the shields are full, to the top of the third\n"
-		"it is in; \"halo3\" once the shields are full, all of it; \"halo2\" all of\n"
-		"it as the shields recharge. Multiplayer goes by the gametype's HEALTH." },
+		"it is in; \"halo3\" once the shields are full, all of it; \"halo2\" Halo 2's\n"
+		"timers (shields 5 s then 2 s; health 10 s after the last body damage, then\n"
+		"5 s). Multiplayer goes by the gametype's HEALTH." },
 	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
 		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
 		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"
