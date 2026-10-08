@@ -627,6 +627,10 @@ static const struct config_setting config_settings[] =
 		_environment_value, _platform_all,
 		"An automated test host turns its gametype's AUTO TEAM BALANCE on (a team\n"
 		"game whose players all joined red, NHE EXTRAS, then starts)." },
+	{ "debug.network_test_pickup_give", _config_boolean, "false", "HALO_NETWORK_TEST_PICKUP_GIVE",
+		_environment_value, _platform_all,
+		"With debug.network_test_pickup, an automated test host puts the weapon the\n"
+		"last player stands on in its inventory two seconds on (a host pickup)." },
 	{ "debug.network_test_kill_host", _config_boolean, "false", "HALO_NETWORK_TEST_KILL_HOST", _environment_value,
 		_platform_all,
 		"An automated test host's kill (debug.network_test_kill) kills its local player\n"

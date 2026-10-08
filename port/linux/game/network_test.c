@@ -134,6 +134,11 @@ static struct
 	real vehicle_time;
 	real pickup_time;
 	char pickup_weapon[64];
+	/* (debug.network_test_pickup_give: the host puts the weapon the last
+	player stands on in its inventory two seconds on, a pickup every machine
+	sees; the weapon, NONE for none) */
+	boolean pickup_give;
+	long pickup_weapon_index;
 	real hurt_time;
 	boolean hurt;
 	real quit_time;
@@ -258,6 +263,8 @@ static void network_test_read_settings(
 	network_test.shoot_interval = (real)config_real("debug.network_test_shoot");
 	network_test.vehicle_time = (real)config_real("debug.network_test_vehicle");
 	network_test.pickup_time = (real)config_real("debug.network_test_pickup");
+	network_test.pickup_give = config_boolean("debug.network_test_pickup_give") != 0;
+	network_test.pickup_weapon_index = NONE;
 	snprintf(network_test.pickup_weapon, sizeof(network_test.pickup_weapon), "%s",
 		config_string("debug.network_test_pickup_weapon"));
 	network_test.score_to_win = (long)config_integer("debug.network_test_score");
@@ -909,6 +916,7 @@ static void network_test_pickup(
 
 		position.z += 0.1f;
 		object_set_position(last->unit_index, &position, NULL, NULL);
+		network_test.pickup_weapon_index = nearest_index;
 		platform_log("network test: the last player stands on weapon %lx (%lx)", nearest_index,
 			object_get(nearest_index)->definition_index);
 	}
@@ -960,6 +968,27 @@ void network_test_update(
 			if (game_time_get() >= pickup_time && game_time_get() - pickup_time < TICKS_PER_SECOND)
 			{
 				network_test_pickup();
+			}
+			/* (debug.network_test_pickup_give: the host's pickup for the last
+			player, two seconds on) */
+			if (network_test.mode == _network_test_host && network_test.pickup_give &&
+				network_test.pickup_weapon_index != NONE && game_time_get() >= pickup_time + 2 * TICKS_PER_SECOND)
+			{
+				struct data_iterator iterator;
+				struct player_datum *player;
+				struct player_datum *last = NULL;
+				struct weapon_datum *weapon = weapon_try_and_get(network_test.pickup_weapon_index);
+
+				data_iterator_new(&iterator, player_data);
+				while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+					last = player;
+				if (last && last->unit_index != NONE && weapon && weapon->object.parent_object_index == NONE &&
+					unit_add_weapon_to_inventory(last->unit_index, network_test.pickup_weapon_index, TRUE))
+				{
+					platform_log("network test: the host gives the last player weapon %lx at tick %ld",
+						network_test.pickup_weapon_index, game_time_get());
+				}
+				network_test.pickup_weapon_index = NONE;
 			}
 			/* (standing there for four seconds, the button held from a second
 			on) */
