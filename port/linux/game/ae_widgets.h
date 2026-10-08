@@ -168,4 +168,49 @@ void ae_view_panel_footer(struct ae_density const *density, float view_width, fl
 /* VIEW's help: two lines (Overpass 750 body, minor floor) above the prompts, the second cut with "…" */
 void ae_widget_help_strip(struct ae_density const *density, float x, float y, float width, const char *text);
 
+/* ---------- picking (ae_widgets_pick.c, spec 4.5-4.7) */
+
+/* the open list's width: the longest value (Overpass 900 22 u) + 76 u, at least 240 u (drawing units) */
+float ae_picker_width(struct ae_density const *density, const char *const *values, short count);
+/* the open list's placement: width = the longest value + 76 u (at least 240 u), items item_height, at most 8
+visible; the current item over the row; upward when it would leave the bounds below; never outside bounds (the
+frame, or the VIEW panel) */
+void ae_picker_place(struct ae_rect const *row, struct ae_rect const *bounds, short count, short current,
+	float item_height, float width, struct ae_rect *popover, short *first_visible);
+/* opens the picker as a popover screen owned by owner; picked(index, context) on A / Enter / click; B / Esc / a
+click outside close it unchanged; focus returns to the opening row (focus memory). Every rect of a popover spec is in
+layout units of the whole frame; view is the player's view it draws in (preflight P12: empty for FULL), so a VIEW
+popover draws in that view, inside its panel */
+struct ae_picker_spec
+{
+	const char *const *values; short count, current;
+	struct ae_rect row;          /* layout units */
+	struct ae_rect bounds;       /* layout units */
+	struct ae_density density;
+	void (*picked)(short index, void *context); void *context;
+	struct ae_rect view;         /* (M2, P12) layout units; zero size: the whole frame */
+};
+int ae_picker_open(struct ae_picker_spec const *spec, short owner);
+
+enum { AE_CHIP_ON = 1, AE_CHIP_FOCUSED = 2, AE_CHIP_HOVER = 4, AE_CHIP_UNSUPPORTED = 8, AE_CHIP_DISABLED = 16 };
+struct ae_chip { const char *label; short count; /* -1 none */ unsigned int flags; };
+/* lays chips out wrapping in width: rects (drawing units, relative to x, y); returns the height */
+float ae_chips_layout(struct ae_density const *density, float width, struct ae_chip const *chips, short count,
+	struct ae_rect *rects);
+float ae_widget_chips(struct ae_density const *density, float x, float y, float width, struct ae_chip const *chips,
+	short count, short hit_id);
+
+struct ae_help
+{
+	const char *title, *body;
+	const char *const *values; short value_count, current;   /* value chips; value_count 0: none */
+	const char *default_value;                               /* NULL: no "Default:" line */
+	const char *changed_from;                                /* NULL: unchanged */
+	int preview;                                             /* reserve the preview area */
+};
+/* the help / preview panel in rect; *preview gets the preview area (or zero size); never takes focus. Its hits: the
+value chips (AE_PART_CHIP, the value's index) and the reset (AE_PART_PROMPT, index -1) */
+void ae_widget_help(struct ae_density const *density, struct ae_rect const *rect, struct ae_help const *help,
+	short hit_id, struct ae_rect *preview);
+
 #endif
