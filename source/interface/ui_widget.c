@@ -4926,6 +4926,8 @@ void network_game_reset_to_pregame_ui(
 	void)
 {
 	ui_widgets_close_all();
+	if (ae_lobby_take_pregame_ui()) /* AE hook */
+		return;
 	if (network_game_is_splitscreen_local())
 	{
 		if (network_game_is_quickstart_local())

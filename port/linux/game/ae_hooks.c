@@ -16,6 +16,7 @@ screen is open.
 #include "ae_input.h"
 #include "ae_motion.h"
 #include "ae_screen_gallery.h"
+#include "ae_screen_lobby_test.h"
 #include "ae_screen_test.h"
 #include "ae_sound.h"
 #include "ae_style.h"
@@ -230,18 +231,23 @@ boolean ae_ui_process(
 		long views = config_integer("debug.ae_test_screen");
 
 		test_screen_checked = TRUE;
-		/* (M1's test screen: 1, 2, 4, and 9 with the game's menus closed; the lobby drives' values open nothing
+		/* (M1's test screen: 1, 2, 4, and 9 with the game's menus closed; the other lobby drives' values open nothing
 		until their tasks route them) */
 		if (views == 1 || views == 2 || views == 4 || views == 9)
 			ae_screen_test_open((int)views);
 		/* (the widget gallery: 11-15 one view, 21 / 23 two, 41 four) */
 		else if ((views >= 11 && views <= 15) || views == 21 || views == 23 || views == 41)
 			ae_screen_gallery_open((int)views);
+		/* (the lobby drive: 90 hosts LAN with bots; Task 13 adds 91-93) */
+		else if (views == 90)
+			ae_screen_lobby_test_open((int)views);
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
 	/* (a timed revert counts down and reverts covered or hidden too; a waiting error opens) */
 	ae_dialog_tick();
+	/* (the lobby drive, debug.ae_test_screen 90: in the menus and in the game) */
+	ae_screen_lobby_test_tick(now);
 	/* (closed since: by the pointer, which comes before this) */
 	if (was_up && !ae_ui_depth())
 		ae_input_hold_begin();

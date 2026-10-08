@@ -24,6 +24,9 @@ keep the pointer and the keys (early check A) */
 boolean ae_ui_takes_pointer(void);
 /* closes upstream's widgets because an AE screen replaces them (gallery, lobby drives, AE's lobby session) */
 void ae_ui_replace_menus(void);
+/* (M2, ui_widget.c network_game_reset_to_pregame_ui, preflight P19) TRUE when AE shows its own lobby for its own
+session back from a game, instead of upstream's pregame / SELECT MAP screens (ae_glue_lobby.c) */
+boolean ae_lobby_take_pregame_ui(void);
 /* the settings the widgets read, cached; ae_settings_refresh re-reads config (M3 calls it after a change) */
 float ae_settings_ui_scale(void);
 boolean ae_settings_reduce_motion(void);

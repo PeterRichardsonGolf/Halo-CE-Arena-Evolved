@@ -63,6 +63,9 @@ UNITS = {
                                 SRC / "ae_font.c", SRC / "ae_layout.c"],
                                [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                                []),
+    # (the lobby's roster order and names, preflight P18)
+    "ae_lobby_roster_test.c": ([UI / "ae_lobby_roster.c"], [f"-I{UI}", "-fsanitize=address,undefined",
+                                                              "-fno-sanitize-recover=all"], []),
     # (the dialog, roster cards)
     "ae_widgets_dialog_test.c": ([UI / "ae_widgets_dialog.c", UI / "ae_widgets_text.c", UI / "ae_text_edit.c",
                                   UI / "ae_widgets_nav.c", UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c",

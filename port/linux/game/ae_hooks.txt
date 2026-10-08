@@ -18,3 +18,4 @@ source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* A
 source/interface/ui_widget.c	if (ae_ui_takes_pointer()) /* AE hook */\nreturn TRUE;
 port/linux/src/xinput_sdl.c	#include "ae_platform.h" /* AE hook */
 port/linux/src/xinput_sdl.c	if (scancode != SDL_SCANCODE_UNKNOWN && text_typing) ae_platform_test_keystroke((int)scancode); /* AE hook */
+source/interface/ui_widget.c	if (ae_lobby_take_pregame_ui()) /* AE hook */\nreturn;
