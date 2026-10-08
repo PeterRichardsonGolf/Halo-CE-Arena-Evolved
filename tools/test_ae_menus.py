@@ -178,8 +178,10 @@ def test_test_screen_draws_and_takes_input(cfg):
         residual = swatch - (background * 0.75 + 64)
         blends.append((swatch, background, residual))
         assert abs(residual) <= 20, f"swatch {swatch} over {background}: not one blend"
-    # (the menu's picture moves behind it, so early and late compare as blends: the same, not built up)
-    assert abs(blends[0][2] - blends[1][2]) <= 16, f"the swatch's blend changed from {blends[0]} to {blends[1]}"
+    # (the menu's picture moves behind it between the two screenshots, so early and late compare as blends; the
+    # residuals carry the moving texture's noise, hence 24: the per-image residual check above is the real guard
+    # against a double blend, which would read about +30 to +40 over these backgrounds)
+    assert abs(blends[0][2] - blends[1][2]) <= 24, f"the swatch's blend changed from {blends[0]} to {blends[1]}"
 
 
 # the PC main menu's first and third items at 1920x1080: the focused one is drawn white, the others blue

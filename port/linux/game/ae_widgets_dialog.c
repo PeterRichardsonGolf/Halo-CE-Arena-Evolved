@@ -477,18 +477,33 @@ static int dialog_timed(struct dialog_state const *state)
 is dropped (there is nothing left to show it over) */
 static void dialog_reset(void)
 {
+	struct { void (*picked)(short, void *); void *context; short choice; } picks[DIALOG_SLOTS];
 	short slot;
 
+	/* (every slot cleared first, then the picks: a callback opening a dialog or an error for any slot keeps it) */
 	for (slot = 0; slot < DIALOG_SLOTS; slot++)
 	{
 		struct dialog_state *state = &dialogs[slot];
-		int timed = state->open && dialog_timed(state);
 
+		picks[slot].picked = state->open && dialog_timed(state) ? state->spec.picked : NULL;
+		picks[slot].context = state->spec.context;
+		picks[slot].choice = state->spec.timeout_choice;
 		pending[slot].waiting = 0;
 		state->open = 0;
-		if (timed && state->spec.picked)
-			state->spec.picked(state->spec.timeout_choice, state->spec.context);
 	}
+	for (slot = 0; slot < DIALOG_SLOTS; slot++)
+		if (picks[slot].picked)
+			picks[slot].picked(picks[slot].choice, picks[slot].context);
+}
+
+int ae_dialog_timed_open(void)
+{
+	short slot;
+
+	for (slot = 0; slot < DIALOG_SLOTS; slot++)
+		if (dialog_live(&dialogs[slot]) && dialog_timed(&dialogs[slot]))
+			return 1;
+	return 0;
 }
 
 /* pushes a slot's dialog; announce: an error's log line and failure (not again for a pending one) */

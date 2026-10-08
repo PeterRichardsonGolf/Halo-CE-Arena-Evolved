@@ -79,6 +79,17 @@ static void picked(short choice, void *context)
 
 static struct ae_screen_class const base = { .name = "base" };
 
+/* (N1) a revert's callback that opens another player's dialog */
+static struct ae_dialog_spec other_spec;
+static int other_opened;
+static void picked_then_open(short choice, void *context)
+{
+	(void)context;
+	picked_choice = choice;
+	picked_count++;
+	other_opened = ae_dialog_open(&other_spec, 1);
+}
+
 static void dispatch(short player, int action)
 {
 	struct ae_event event;
@@ -342,6 +353,31 @@ static void timed_revert(void)
 	ae_dialog_tick();
 	ae_ui_reset();
 	CHECK(picked_count == 3);
+	/* (N1) a reset whose revert callback opens player 2's dialog: that dialog stays open (its slot not cleared) */
+	{
+		struct ae_dialog_spec timed = spec;
+
+		other_spec = spec;
+		other_spec.kind = AE_DIALOG_CONFIRM;
+		other_spec.picked = picked;
+		timed.picked = picked_then_open;
+		other_opened = 0;
+		CHECK(ae_dialog_open(&timed, 0));
+		ae_ui_reset();
+		CHECK(picked_count == 4 && other_opened && ae_ui_depth() == 1 && !ae_dialog_open(&other_spec, 1));
+		ae_ui_reset();
+		picked_count = 3;
+	}
+	/* (N2) a timed revert open is known to the hooks, which tick it with AE's menus off too: reverted at 10 s with
+	nothing drawn or updated, then none open */
+	ae_ui_push(&base, AE_OWNER_ANY, NULL);
+	ae_motion_set_now(350000);
+	CHECK(!ae_dialog_timed_open() && ae_dialog_open(&spec, AE_OWNER_ANY) && ae_dialog_timed_open());
+	ae_motion_set_now(360000);
+	ae_dialog_tick();
+	CHECK(picked_count == 4 && picked_choice == 1 && !ae_dialog_timed_open() && ae_ui_depth() == 1);
+	picked_count = 3;
+	ae_ui_reset();
 	/* the clock gone back before the opening (M4): the whole 10 s left, nothing picked */
 	ae_ui_push(&base, AE_OWNER_ANY, NULL);
 	ae_motion_set_now(400000);

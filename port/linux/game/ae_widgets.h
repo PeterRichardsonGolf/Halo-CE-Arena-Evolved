@@ -326,6 +326,8 @@ int ae_dialog_open(struct ae_dialog_spec const *spec, short owner);
 /* once a frame (ae_hooks, AE's screens shown or not): timed reverts at 0 pick their timeout choice wherever they are
 on the stack; a waiting error opens once its slot is free */
 void ae_dialog_tick(void);
+/* (M2) a timed revert is open: the hooks tick it even with AE's menus off */
+int ae_dialog_timed_open(void);
 /* the dialog's box (layout units): 720 u wide (the body wrapped in it), up to 840 u for a wide title or choice,
 centred in the bounds; under 720 u only when the room forces it: VIEW (preflight P14) at most the bounds' width less
 a pad each side */

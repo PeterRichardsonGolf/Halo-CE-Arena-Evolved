@@ -214,7 +214,15 @@ boolean ae_ui_process(
 	unsigned long now;
 
 	if (!ae_menus_active())
+	{
+		/* (a timed revert left open as AE's menus went off still reverts at 10 s) */
+		if (ae_dialog_timed_open())
+		{
+			ae_motion_set_now(system_milliseconds());
+			ae_dialog_tick();
+		}
 		return FALSE;
+	}
 	/* (the frame's clock and REDUCE MOTION, before anything opens, moves or draws) */
 	now = system_milliseconds();
 	ae_motion_set_now(now);
