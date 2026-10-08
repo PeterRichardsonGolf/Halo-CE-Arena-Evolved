@@ -5371,6 +5371,10 @@ short game_engine_match_clock_setting(
 			setting = _match_clock_down;
 	}
 
+	/* port: NHE EXTRAS: the clock counts up, as on Halo 1: NHE (COUNT DOWN
+	and BOTH read as COUNT UP; OFF stays off) */
+	if (setting != _match_clock_off && game_engine_nhe_extras())
+		return _match_clock_up;
 	return setting;
 }
 

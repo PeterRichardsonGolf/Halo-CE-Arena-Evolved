@@ -2418,6 +2418,13 @@ boolean network_game_server_add_player_to_game(
 				}
 			}
 			player->team_index = player_count_by_team[1] < player_count_by_team[0] ? 1 : 0;
+			/* port: NHE EXTRAS (the host's gametype): everyone joins red, as
+			on Halo 1: NHE; auto balance, when on, still moves players */
+			if (TEST_FLAG(server->game.variant.universal_variant.flags, _game_variant_nhe_extras_bit))
+			{
+				player->team_index = _team_red;
+				network_event("NHE EXTRAS: a joining player starts on red");
+			}
 		}
 
 		/* (the name comes from the wire) */
@@ -4929,7 +4936,9 @@ boolean network_game_server_reset_to_pregame(
 			else
 				network_event("server resetting to pregame (some machines missed it)");
 
-			if (server->game.variant.universal_variant.teams)
+			/* port: NHE EXTRAS (the gametype played): teams stay as they are */
+			if (server->game.variant.universal_variant.teams &&
+				!TEST_FLAG(server->game.variant.universal_variant.flags, _game_variant_nhe_extras_bit))
 			{
 				for (i = 0; i < MAXIMUM_NETWORK_PLAYER_COUNT; i++)
 				{
@@ -5003,7 +5012,9 @@ boolean network_game_server_reset_to_pregame(
 	{
 		success = network_game_server_setup_game_from_playlist(server);
 
-		if (server->game.variant.universal_variant.teams)
+		/* port: NHE EXTRAS (the next game's gametype): teams stay as they are */
+		if (server->game.variant.universal_variant.teams &&
+			!TEST_FLAG(server->game.variant.universal_variant.flags, _game_variant_nhe_extras_bit))
 		{
 			for (i = 0; i < MAXIMUM_NETWORK_PLAYER_COUNT; i++)
 			{

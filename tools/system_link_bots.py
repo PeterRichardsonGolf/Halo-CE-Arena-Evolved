@@ -588,6 +588,8 @@ def main():
                              "turn, jump and crouch")
     parser.add_argument("--fire", action="store_true", help="(--move) hold the trigger in bursts too")
     parser.add_argument("--seed", type=int, default=1, help="(--move) the bots' patterns' seed")
+    parser.add_argument("--join-delay", type=float, default=0.0,
+                        help="seconds to wait before the first machine connects (after a host's game setup)")
     options = parser.parse_args()
     if options.fire and not options.move:
         parser.error("--fire needs --move")
@@ -623,7 +625,7 @@ def main():
         for machine in machines:
             selector.register(machine.udp, selectors.EVENT_READ, (machine, "udp"))
     waiting = list(machines)
-    next_connect_time = 0
+    next_connect_time = time.monotonic() + max(0.0, options.join_delay)
     log("connecting %d machines to %s:%d" % (len(machines), options.host, SERVER_PORT))
 
     start_requested = False

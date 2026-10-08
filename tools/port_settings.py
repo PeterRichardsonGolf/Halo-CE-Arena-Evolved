@@ -1363,6 +1363,11 @@ ARENA_ROWS = [
         "Both your weapons drop when you die, and stay\\n30 seconds.",
         "Both drop, but a holstered rocket launcher,\\nsniper rifle or shotgun follows Halo CE's rule.",
     ]),
+    # (_game_variant_nhe_extras_bit, 28)
+    ("nhe_extras", "NHE EXTRAS:", ["OFF", "ON"], [
+        "Stock teams and camera.",
+        "As Halo 1: NHE: everyone joins red and keeps their\\ncolour between games, the dead camera stays on you,\\nand the match clock counts up.",
+    ]),
 ]
 
 
@@ -1393,11 +1398,11 @@ def _arena_options() -> list:
                       ("description", f"{base}/arena_options_help")],
                      ['<data input="game settings lists text update"/>',
                       '<on event="created" run="mp profile init player opts"/>',
-                      *[f'<child widget="{base}/op_{key}" x="54" y="{73 + 30 * index}"/>'
+                      *[f'<child widget="{base}/op_{key}" x="54" y="{73 + 28 * index}"/>'
                         for index, (key, *_) in enumerate(ARENA_ROWS)],
                       f'<child widget="{base}/arena_button_bar" y="414"/>'])
     lines += _widget(f"{base}/arena_options_help",
-                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 321), ("width", 482), ("height", 79),
+                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 331), ("width", 482), ("height", 79),
                       ("string_list", f"{base}/cap_arena_options"), ("font", "ui\\large_ui"),
                       ("color", "#FFFFFFFF")], [])
     lines += _widget(f"{base}/arena_button_bar",

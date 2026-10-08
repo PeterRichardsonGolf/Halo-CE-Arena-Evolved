@@ -5597,6 +5597,7 @@ static struct gametype_option const gametype_options[] =
 		{ 0, GAME_VARIANT_NO_SPREAD_NHE, GAME_VARIANT_NO_SPREAD_FULL } },
 	{ "pregame_countdown_spinner", _option_flag, 0, FLAG(_game_variant_pregame_countdown_bit), 2, { 0, 1 } },
 	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
+	{ "nhe_extras_spinner", _option_flag, 0, FLAG(_game_variant_nhe_extras_bit), 2, { 0, 1 } },
 	/* (DROP SECONDARY: bits 29-30, enum drop_secondary; a stored 3 shows as
 	ALWAYS EXCEPT POWER, the nearest, as the engine reads it) */
 	{ "drop_secondary_spinner", _option_flags, 0, GAME_VARIANT_DROP_SECONDARY_MASK, 3,
