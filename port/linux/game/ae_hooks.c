@@ -232,6 +232,8 @@ boolean ae_ui_process(
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
+	/* (a timed revert counts down and reverts covered or hidden too; a waiting error opens) */
+	ae_dialog_tick();
 	/* (closed since: by the pointer, which comes before this) */
 	if (was_up && !ae_ui_depth())
 		ae_input_hold_begin();

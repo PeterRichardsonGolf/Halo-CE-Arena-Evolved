@@ -18,7 +18,6 @@ horizontal ink are allowed. */
 
 /* spec units */
 #define DIALOG_WIDTH_U 720.0f
-#define DIALOG_MINIMUM_U 560.0f
 #define DIALOG_MAXIMUM_U 840.0f
 #define DIALOG_STRIPE_U 4.0f
 #define DIALOG_TITLE_U 32.0f
@@ -104,7 +103,8 @@ static void dialog_layout(struct ae_dialog_spec const *spec, float maximum_width
 	{
 		float y;
 
-		/* the width: the body wrapped at 720 u, the title and the choices; 560-840 u; at most the room there is */
+		/* the width: 720 u, wider (to 840 u) for a wide title or choice; under 720 u only when the room forces it
+		(VIEW, P14) */
 		wrap = units(density, DIALOG_WIDTH_U) - 2.0f * l->pad;
 		if (wrap > maximum_width - 2.0f * l->pad)
 			wrap = maximum_width - 2.0f * l->pad;
@@ -128,8 +128,8 @@ static void dialog_layout(struct ae_dialog_spec const *spec, float maximum_width
 			content = width > content ? width : content;
 		}
 		l->width = content + 2.0f * l->pad;
-		if (l->width < units(density, DIALOG_MINIMUM_U))
-			l->width = units(density, DIALOG_MINIMUM_U);
+		if (l->width < units(density, DIALOG_WIDTH_U))
+			l->width = units(density, DIALOG_WIDTH_U);
 		if (l->width > units(density, DIALOG_MAXIMUM_U))
 			l->width = units(density, DIALOG_MAXIMUM_U);
 		if (l->width > maximum_width)
@@ -204,6 +204,34 @@ void ae_dialog_place(struct ae_dialog_spec const *spec, struct ae_rect *box)
 		box->y = spec->bounds.y;
 }
 
+/* a dialog's own copy of its text (M1: the caller's strings need not outlive the call) */
+struct dialog_text
+{
+	char title[128], body[512];
+	char choices[AE_DIALOG_CHOICES][96];
+};
+
+static const char *copied(char *out, size_t size, const char *text)
+{
+	if (!text)
+		return NULL;
+	snprintf(out, size, "%s", text);
+	return out;
+}
+
+/* the spec with its strings pointing into text */
+static void dialog_copy(struct ae_dialog_spec *out, struct dialog_text *text, struct ae_dialog_spec const *spec)
+{
+	short index;
+
+	*out = *spec;
+	out->title = copied(text->title, sizeof(text->title), spec->title);
+	out->body = copied(text->body, sizeof(text->body), spec->body);
+	for (index = 0; index < AE_DIALOG_CHOICES; index++)
+		out->choices[index] = index < spec->choice_count ? copied(text->choices[index], sizeof(text->choices[index]),
+			spec->choices[index]) : NULL;
+}
+
 /* the open dialogs: one slot per local player and one for a full-screen dialog (as the pickers) */
 enum { DIALOG_SLOTS = AE_MAXIMUM_PLAYERS + 1 };
 struct dialog_state
@@ -211,11 +239,22 @@ struct dialog_state
 	int open;
 	short slot, focus, pressed;
 	struct ae_dialog_spec spec;
+	struct dialog_text text;
 	struct ae_rect box;            /* layout units */
 	struct ae_motion motion;       /* the open motion, 0 -> 1 */
 	unsigned long opened;          /* the timed revert's start */
 };
 static struct dialog_state dialogs[DIALOG_SLOTS];
+/* (M2 ruling) an error that came while its owner's slot was busy: logged and failed at once, shown when the slot frees
+(the newest one; a reset drops it) */
+struct dialog_pending
+{
+	int waiting;
+	short owner;
+	struct ae_dialog_spec spec;
+	struct dialog_text text;
+};
+static struct dialog_pending pending[DIALOG_SLOTS];
 
 static short dialog_hit_id(struct dialog_state const *state)
 {
@@ -227,10 +266,14 @@ static int dialog_choice_valid(struct dialog_state const *state, short choice)
 	return choice >= 0 && choice < state->spec.choice_count;
 }
 
-/* the timed revert's milliseconds left */
+/* the timed revert's milliseconds left (a clock gone back before the opening: all of them) */
 static unsigned long dialog_remaining(struct dialog_state const *state)
 {
-	unsigned long elapsed = ae_motion_now() - state->opened;
+	unsigned long now = ae_motion_now(), elapsed;
+
+	if (now < state->opened)
+		return AE_DIALOG_REVERT_MS;
+	elapsed = now - state->opened;
 
 	return elapsed >= AE_DIALOG_REVERT_MS ? 0 : AE_DIALOG_REVERT_MS - elapsed;
 }
@@ -414,21 +457,100 @@ static void dialog_pointer(struct ae_screen *screen, struct ae_pointer const *po
 		dialog_pick(state, hit.index, AE_SOUND_FORWARD);
 }
 
-/* the timed revert reaching 0 picks its timeout choice (the top screen's update, once a frame) */
-static void dialog_update(struct ae_screen *screen)
-{
-	struct dialog_state *state = screen->data;
-
-	if (state->spec.kind == AE_DIALOG_TIMED_REVERT && !dialog_remaining(state) &&
-		dialog_choice_valid(state, state->spec.timeout_choice))
-		dialog_pick(state, state->spec.timeout_choice, AE_SOUND_BACK);
-}
-
 static struct ae_screen_class const dialog_class =
 {
 	.name = "dialog", .leave = dialog_leave, .handle = dialog_handle, .draw = dialog_draw, .pointer = dialog_pointer,
-	.popover = 1, .update = dialog_update,
+	.popover = 1,
 };
+
+static int dialog_live(struct dialog_state const *state)
+{
+	return state->open && ae_ui_holds(state);
+}
+
+static int dialog_timed(struct dialog_state const *state)
+{
+	return state->spec.kind == AE_DIALOG_TIMED_REVERT && dialog_choice_valid(state, state->spec.timeout_choice);
+}
+
+/* a reset stack: every open timed revert picks its timeout choice (once: the slot is closed first); a pending error
+is dropped (there is nothing left to show it over) */
+static void dialog_reset(void)
+{
+	short slot;
+
+	for (slot = 0; slot < DIALOG_SLOTS; slot++)
+	{
+		struct dialog_state *state = &dialogs[slot];
+		int timed = state->open && dialog_timed(state);
+
+		pending[slot].waiting = 0;
+		state->open = 0;
+		if (timed && state->spec.picked)
+			state->spec.picked(state->spec.timeout_choice, state->spec.context);
+	}
+}
+
+/* pushes a slot's dialog; announce: an error's log line and failure (not again for a pending one) */
+static int dialog_push(struct dialog_state *state, short owner, int announce)
+{
+	state->pressed = -1;
+	/* (the first focus: the safe choice) */
+	state->focus = state->spec.safe_choice >= 0 && state->spec.safe_choice < state->spec.choice_count ?
+		state->spec.safe_choice : 0;
+	ae_dialog_place(&state->spec, &state->box);
+	state->opened = ae_motion_now();
+	ae_motion_start(&state->motion, 0.0f, 1.0f, AE_MOTION_DIALOG_OPEN_MS);
+	ae_ui_add_reset_hook(dialog_reset);
+	if (!ae_ui_push(&dialog_class, owner, state))
+		return 0;
+	state->open = 1;
+	if (announce)
+		ae_sound_request(state->spec.kind == AE_DIALOG_ERROR ? AE_SOUND_FAILURE : AE_SOUND_FORWARD, 0);
+	return 1;
+}
+
+/* an error's line in the log, its text as it is */
+static void dialog_log_error(struct ae_dialog_spec const *spec)
+{
+	char text[700];
+
+	snprintf(text, sizeof(text), "ae menus: error: %s: %s", spec->title ? spec->title : "", spec->body ? spec->body : "");
+	ae_host_log(text);
+}
+
+void ae_dialog_tick(void)
+{
+	short slot;
+
+	for (slot = 0; slot < DIALOG_SLOTS; slot++)
+	{
+		struct dialog_state *state = &dialogs[slot];
+
+		/* a timed revert at 0 picks its timeout choice wherever it is on the stack (covered or not) */
+		if (dialog_live(state) && dialog_timed(state) && !dialog_remaining(state))
+		{
+			void (*picked)(short, void *) = state->spec.picked;
+			void *context = state->spec.context;
+			short choice = state->spec.timeout_choice;
+
+			ae_sound_request(AE_SOUND_BACK, 0);
+			ae_ui_remove(state);
+			state->open = 0;
+			if (picked)
+				picked(choice, context);
+		}
+		/* a pending error once its slot is free (and AE's screens are there to show it over) */
+		if (pending[slot].waiting && !dialog_live(state) && ae_ui_depth() > 0)
+		{
+			pending[slot].waiting = 0;
+			memset(state, 0, sizeof(*state));
+			state->slot = slot;
+			dialog_copy(&state->spec, &state->text, &pending[slot].spec);
+			dialog_push(state, pending[slot].owner, 0);
+		}
+	}
+}
 
 int ae_dialog_open(struct ae_dialog_spec const *spec, short owner)
 {
@@ -438,34 +560,25 @@ int ae_dialog_open(struct ae_dialog_spec const *spec, short owner)
 	if (!spec || spec->choice_count <= 0 || spec->choice_count > AE_DIALOG_CHOICES)
 		return 0;
 	state = &dialogs[slot];
-	/* (the owner's dialog is open: refused, never replaced; a slot left marked by a reset stack is free) */
-	if (state->open && ae_ui_holds(state))
+	/* an error: its text in the log as it is and failure, at once (shown now, or when the slot frees) */
+	if (spec->kind == AE_DIALOG_ERROR)
+		dialog_log_error(spec);
+	/* (the owner's dialog is open: refused, never replaced; an error waits for the slot, the newest one kept; a slot
+	left marked by a reset stack is free) */
+	if (dialog_live(state))
+	{
+		if (spec->kind != AE_DIALOG_ERROR)
+			return 0;
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		pending[slot].waiting = 1;
+		pending[slot].owner = owner;
+		dialog_copy(&pending[slot].spec, &pending[slot].text, spec);
 		return 0;
+	}
 	memset(state, 0, sizeof(*state));
 	state->slot = slot;
-	state->spec = *spec;
-	state->pressed = -1;
-	/* (the first focus: the safe choice) */
-	state->focus = spec->safe_choice >= 0 && spec->safe_choice < spec->choice_count ? spec->safe_choice : 0;
-	ae_dialog_place(spec, &state->box);
-	state->opened = ae_motion_now();
-	ae_motion_start(&state->motion, 0.0f, 1.0f, AE_MOTION_DIALOG_OPEN_MS);
-	if (!ae_ui_push(&dialog_class, owner, state))
-		return 0;
-	state->open = 1;
-	/* an error: failure, and its text in the log as it is; else the forward sound */
-	if (spec->kind == AE_DIALOG_ERROR)
-	{
-		char text[400];
-
-		snprintf(text, sizeof(text), "ae menus: error: %s: %s", spec->title ? spec->title : "",
-			spec->body ? spec->body : "");
-		ae_host_log(text);
-		ae_sound_request(AE_SOUND_FAILURE, 0);
-	}
-	else
-		ae_sound_request(AE_SOUND_FORWARD, 0);
-	return 1;
+	dialog_copy(&state->spec, &state->text, spec);
+	return dialog_push(state, owner, 1);
 }
 
 /* ---------- roster cards */
@@ -512,6 +625,9 @@ float ae_widget_roster_card(struct ae_density const *density, float x, float y, 
 	unsigned int sub_color = faded(focused ? AE_COLOR_SELECTION_TEXT : AE_COLOR_MUTED, factor * (focused ? 0.75f : 1.0f));
 	char text[256], fitted[256];
 
+	/* (VIEW: the number at the minor floor at least) */
+	if (density->kind == AE_DENSITY_VIEW && number_size < MINOR_FLOOR_PIXELS * density->pixel)
+		number_size = MINOR_FLOOR_PIXELS * density->pixel;
 	/* the card: a row's fill, the focus a white bar, the hover a wash */
 	ae_draw_rect(x, y, width, height, corner, faded(focused ? AE_COLOR_SELECTION : AE_COLOR_ROW, factor));
 	if (!focused && (card->flags & AE_CARD_HOVER))

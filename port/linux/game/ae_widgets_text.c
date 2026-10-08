@@ -195,7 +195,7 @@ int ae_field_edit_live(void)
 void ae_field_edit_begin(struct ae_field_edit *edit, struct ae_text *text)
 {
 	/* (a reset stack ends whatever was being typed: ae_ui_reset calls it) */
-	ae_ui_set_reset_hook(ae_field_edit_abort);
+	ae_ui_add_reset_hook(ae_field_edit_abort);
 	edit->text = text;
 	edit->before = *text;
 	edit->active = 1;

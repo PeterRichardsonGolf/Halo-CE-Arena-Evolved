@@ -10,6 +10,7 @@ under them. One transition at a time: a new push or pop finishes the last, and s
 reaches a screen (the press acts on the new screen: nothing waits on motion). REDUCE MOTION makes them instant. */
 
 #include <stddef.h>
+#include <string.h>
 #include "ae_motion.h"
 #include "ae_sound.h"
 #include "ae_ui.h"
@@ -66,20 +67,35 @@ static int screen_below(int index)
 	return -1;
 }
 
-static void (*reset_hook)(void);
+enum { RESET_HOOKS = 4 };
+static void (*reset_hooks[RESET_HOOKS])(void);
 
-void ae_ui_set_reset_hook(void (*hook)(void))
+int ae_ui_add_reset_hook(void (*hook)(void))
 {
-	reset_hook = hook;
+	int index;
+
+	for (index = 0; index < RESET_HOOKS; index++)
+		if (reset_hooks[index] == hook)
+			return 1;
+	for (index = 0; index < RESET_HOOKS; index++)
+		if (!reset_hooks[index])
+		{
+			reset_hooks[index] = hook;
+			return 1;
+		}
+	return 0;
 }
 
 void ae_ui_reset(void)
 {
+	int index;
+
 	depth = 0;
 	last_device = AE_DEVICE_XBOX;
 	transition_finish();
-	if (reset_hook)
-		reset_hook();
+	for (index = 0; index < RESET_HOOKS; index++)
+		if (reset_hooks[index])
+			reset_hooks[index]();
 }
 
 int ae_ui_depth(void)
@@ -145,6 +161,29 @@ void ae_ui_pop(void)
 	revealed = screen_below(depth);
 	if (!screen->screen_class->popover && revealed >= 0)
 		transition_start(TRANSITION_SCREEN, -1, revealed, AE_MOTION_SCREEN_MS);
+}
+
+int ae_ui_remove(void const *data)
+{
+	int index;
+
+	for (index = depth - 1; index >= 0; index--)
+		if (stack[index].data == data)
+			break;
+	if (index < 0)
+		return 0;
+	if (index == depth - 1)
+	{
+		ae_ui_pop();
+		return 1;
+	}
+	/* (under others: gone at once, nothing moves) */
+	transition_finish();
+	if (stack[index].screen_class->leave)
+		stack[index].screen_class->leave(&stack[index]);
+	memmove(&stack[index], &stack[index + 1], sizeof(stack[0]) * (size_t)(depth - index - 1));
+	depth--;
+	return 1;
 }
 
 void ae_ui_dispatch(struct ae_event const *event)

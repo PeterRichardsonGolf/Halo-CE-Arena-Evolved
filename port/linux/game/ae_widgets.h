@@ -301,9 +301,12 @@ stripe (accent; an error's warning, with a warning title), the title (Overpass 9
 lines), the choices as ordinary rows and its prompts inside it. The first focus is the safe choice; A / Enter picks
 the focused choice, B / Esc the cancel choice; a click outside does nothing; the opener's focus is untouched (focus
 memory). A timed revert shows "Reverting in N s" over a 3 u accent bar draining over 10 s (REDUCE MOTION: in whole
-seconds) and picks timeout_choice at 0. An error plays failure as it opens and logs "ae menus: error: <title>:
-<body>" (the glue's reason text as it is). Rects are layout units of the whole frame; view is the player's view it
-draws in (preflight P12: zero size for FULL). One per owner at a time (0 when the owner's is open) */
+seconds) and picks timeout_choice at 0 (ae_dialog_tick: covered by other screens too; a reset stack picks it at
+once). An error plays failure as it opens and logs "ae menus: error: <title>: <body>" (the glue's reason text as it
+is). Rects are layout units of the whole frame; view is the player's view it draws in (preflight P12: zero size for
+FULL). The dialog copies its strings (the caller's need not outlive the call). One per owner at a time (0 when the
+owner's is open); an error then is logged and fails at once and waits, shown when the slot frees (a newer error
+replaces a waiting one; a reset drops it) */
 enum { AE_DIALOG_CONFIRM, AE_DIALOG_TIMED_REVERT, AE_DIALOG_ERROR };
 enum { AE_DIALOG_CHOICES = 4, AE_DIALOG_REVERT_MS = 10000 };
 struct ae_dialog_spec
@@ -320,9 +323,12 @@ struct ae_dialog_spec
 	struct ae_rect view;          /* (P12) */
 };
 int ae_dialog_open(struct ae_dialog_spec const *spec, short owner);
-/* the dialog's box (layout units): 560-840 u wide by its content (the title, the body's longest line wrapped at
-720 u, the choices), centred in the bounds; VIEW (preflight P14): at most the bounds' width less a pad each side, so
-it can be under 560 */
+/* once a frame (ae_hooks, AE's screens shown or not): timed reverts at 0 pick their timeout choice wherever they are
+on the stack; a waiting error opens once its slot is free */
+void ae_dialog_tick(void);
+/* the dialog's box (layout units): 720 u wide (the body wrapped in it), up to 840 u for a wide title or choice,
+centred in the bounds; under 720 u only when the room forces it: VIEW (preflight P14) at most the bounds' width less
+a pad each side */
 void ae_dialog_place(struct ae_dialog_spec const *spec, struct ae_rect *box);
 
 enum { AE_CARD_FOCUSED = 1, AE_CARD_EDITING = 2, AE_CARD_AWAY = 4, AE_CARD_GUEST = 8, AE_CARD_HOST = 16,

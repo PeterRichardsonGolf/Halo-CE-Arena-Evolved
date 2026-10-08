@@ -61,15 +61,19 @@ struct ae_screen_class
 };
 struct ae_screen { struct ae_screen_class const *screen_class; short owner; short focus; void *data; };
 
-/* empties the stack (no leave calls) and forgets the last device; then the reset hook, if any (M2: text editing's,
-which ends typing mode) */
+/* empties the stack (no leave calls) and forgets the last device; then the reset hooks (M2: text editing's, which
+ends typing mode; the dialogs', which revert a timed revert) */
 void ae_ui_reset(void);
-void ae_ui_set_reset_hook(void (*hook)(void));
+/* (M2) adds a reset hook (once; at most 4): 0 when full */
+int ae_ui_add_reset_hook(void (*hook)(void));
 /* pushes a screen (focus 0) and calls its enter; 0 when the stack is full */
 int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *data);
 /* calls the top screen's leave and removes it */
 void ae_ui_pop(void);
 struct ae_screen *ae_ui_top(void);
+/* (M2) removes the topmost screen with this data wherever it is (the top: as ae_ui_pop; under others: its leave, gone
+at once); 0 when none has it */
+int ae_ui_remove(void const *data);
 int ae_ui_depth(void);
 /* (M2) whether a screen on the stack has this data (a widget's state: open or left behind by a reset) */
 int ae_ui_holds(void const *data);
