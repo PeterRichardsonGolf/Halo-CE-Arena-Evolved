@@ -327,9 +327,9 @@ static void panel(void)
 			ae_stub_pixels(call, &pixels);
 			/* (the view: pixels 640..1280 x 0..360 of the window) */
 			CHECK(pixels.x >= 640 && pixels.y >= 0 && pixels.x + pixels.width <= 1280 && pixels.y + pixels.height <= 360);
-			CHECK(pixels.x + pixels.width < 640 + 320);                /* left of the view's centre */
 			CHECK(near(pixels.width, 294.4f, .6f) && near(pixels.height, 309.6f, .6f));
-			CHECK(near(pixels.x, 640 + 0.03f * 640, .1f) && near(pixels.y, 0.07f * 360, .1f));
+			/* (centred in the view: the owner's decision) */
+			CHECK(near(pixels.x + pixels.width * 0.5f, 640 + 320, .1f) && near(pixels.y + pixels.height * 0.5f, 180, .1f));
 			found = 1;
 		}
 	}
@@ -569,7 +569,8 @@ static void fixes(void)
 			{
 				panel_found = 1;
 				CHECK(near(box.width, panels[n].panel_width, .6f) && near(box.height, panels[n].panel_height, .6f));
-				CHECK(box.x >= view_left && box.x + box.width < view_left + panels[n].view_width * 0.5f);
+				/* (centred in its view: the owner's decision) */
+				CHECK(box.x >= view_left && near(box.x + box.width * 0.5f, view_left + panels[n].view_width * 0.5f, .6f));
 				CHECK(box.y + box.height <= panels[n].view_height);
 			}
 			if (rect->rgba == 0xE0B020FFu && near(rect->width, 22 * d.unit, 0.01f) && near(rect->height, 8 * d.unit, 0.01f))

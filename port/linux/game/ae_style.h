@@ -87,7 +87,7 @@ float ae_size_minor(struct ae_density const *density);
 float ae_size_glyph(struct ae_density const *density);
 float ae_size_row(struct ae_density const *density);
 /* §6 panel, window pixels from the view's top-left: w = min(46 % view_w, 470 s), h = 86 % view_h,
-at (3 % view_w, 7 % view_h) */
+centred in the view on both axes (the owner's decision over spec 6's (3 %, 7 %) from its top-left) */
 void ae_view_panel_rect(float view_width, float view_height, float ui_scale, struct ae_rect *panel);
 /* the frame (spec §1) in layout units of a layout layout_width x 1080: a 16:9 box as tall, centred (the whole
 width when narrower); margin 5 % of its width; unit = layout units per u (= ui_scale) */

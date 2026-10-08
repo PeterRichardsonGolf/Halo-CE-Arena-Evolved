@@ -28,8 +28,6 @@ struct ae_metrics const ae_metrics_view =
 #define PANEL_WIDTH_SHARE 0.46f
 #define PANEL_WIDTH_UNITS 470.0f
 #define PANEL_HEIGHT_SHARE 0.86f
-#define PANEL_X_SHARE 0.03f
-#define PANEL_Y_SHARE 0.07f
 /* §6 floors, window pixels */
 #define FLOOR_TEXT 16.0f
 #define FLOOR_MINOR 14.0f
@@ -107,11 +105,13 @@ float ae_size_row(struct ae_density const *density)
 
 void ae_view_panel_rect(float view_width, float view_height, float ui_scale, struct ae_rect *panel)
 {
-	panel->x = PANEL_X_SHARE * view_width;
-	panel->y = PANEL_Y_SHARE * view_height;
+	/* (centred in the view on both axes: the owner's decision, over spec 6's top-left place; it covers the crosshair
+	while open) */
 	panel->width = smaller(PANEL_WIDTH_SHARE * view_width,
 		PANEL_WIDTH_UNITS * ae_view_scale(view_width, view_height, ui_scale));
 	panel->height = PANEL_HEIGHT_SHARE * view_height;
+	panel->x = (view_width - panel->width) * 0.5f;
+	panel->y = (view_height - panel->height) * 0.5f;
 }
 
 void ae_frame_compute(float layout_width, float ui_scale, struct ae_frame *frame)

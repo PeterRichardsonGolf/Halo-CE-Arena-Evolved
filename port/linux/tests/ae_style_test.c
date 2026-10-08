@@ -63,9 +63,9 @@ static void views(void)
 		CHECK(near(s, r[2], .01f));
 		ae_view_panel_rect(w, h, 1.0f, &p);
 		CHECK(near(p.width, r[3], .6f) && near(p.height, r[4], .6f));
-		CHECK(near(p.x, .03f * w, .01f) && near(p.y, .07f * h, .01f));
-		/* the panel never covers the view centre */
-		CHECK(p.x + p.width < w / 2);
+		/* (centred in the view on both axes: the owner's decision) */
+		CHECK(near(p.x + p.width * 0.5f, w * 0.5f, .01f) && near(p.y + p.height * 0.5f, h * 0.5f, .01f));
+		CHECK(p.x >= 0.0f && p.y >= 0.0f && p.x + p.width <= w && p.y + p.height <= h);
 		ae_density_view(w, h, 1.0f, &d);
 		CHECK(d.kind == AE_DENSITY_VIEW && d.metrics == &ae_metrics_view && near(d.s, s, 1e-5f));
 		CHECK(near(ae_size_text(&d) / d.pixel, r[5], .6f));
