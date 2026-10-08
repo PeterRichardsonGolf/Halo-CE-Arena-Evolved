@@ -242,8 +242,9 @@ float ae_widget_tabs(struct ae_density const *density, struct ae_tabs *tabs, flo
 			target = total - area_width;
 	}
 	/* (a strip never drawn, all zero, starts where it belongs: no slide as its screen opens) */
-	if (!tabs->strip.start && !tabs->strip.duration && tabs->strip.from == 0.0f && tabs->strip.to == 0.0f)
+	if (!tabs->drawn)
 		tabs->strip.from = tabs->strip.to = target;
+	tabs->drawn = 1;
 	if (tabs->strip.to != target)
 		ae_motion_start(&tabs->strip, tabs->strip.to, target, AE_MOTION_SCROLL_MS);
 	offset = ae_motion_value(&tabs->strip);
@@ -347,35 +348,82 @@ short ae_page_step(short count, short current, short direction)
 	return step(count, current, direction, NULL, NULL);
 }
 
-void ae_widget_page_dots(struct ae_density const *density, float center_x, float y, const char *page_title,
-	short count, short current, unsigned int current_color, short hit_id)
+/* the height an end of a strip takes: its glyph's, or its key cap's (grown at VIEW to hold its words) */
+static float end_height(struct ae_density const *density, float glyph)
+{
+	return ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE ? cap_height(density, glyph) : glyph;
+}
+
+/* the dots' row's height (its ends included), for the panel's layout */
+static float dots_row_height(struct ae_density const *density)
+{
+	float glyph = ae_size_glyph(density), cap = cap_height(density, glyph);
+
+	/* (as tall as the taller of a glyph and a grown cap: the device can change between frames) */
+	return cap > glyph ? cap : glyph;
+}
+
+/* page dots within max_width (0: no limit). Short of room the gaps shrink, down to DOTS_GAP_MINIMUM_U; shorter still,
+the dots give way to a "3 / 12" counter in the current page's colour (spec 4.13 has no word on many pages: a ruling) */
+#define DOTS_GAP_MINIMUM_U 4.0f
+static void page_dots(struct ae_density const *density, float center_x, float y, const char *page_title,
+	short count, short current, unsigned int current_color, short hit_id, float max_width)
 {
 	float dot = units(density, DOT_U), dot_gap = units(density, DOT_GAP_U), pill = units(density, PILL_U);
 	float glyph = ae_size_glyph(density), title = floored_minor(density, density->metrics->tab_text);
-	float row_center, width, dot_x, end_gap = units(density, DOTS_END_GAP_U), left_end, right_end;
+	float row_center, width, dot_x, end_gap = units(density, DOTS_END_GAP_U), left_end, right_end, ends;
 	short index;
+	int counter = 0;
+	char text[32];
 
 	if (page_title && *page_title)
 	{
 		ae_draw_text(AE_FONT_ROW, title, center_x, y, AE_ALIGN_CENTER, AE_COLOR_TITLE, page_title);
 		y += ae_draw_cap_height(AE_FONT_ROW, title) + units(density, DOTS_TITLE_GAP_U);
 	}
-	row_center = y + glyph * 0.5f;
-	width = count > 0 ? (float)(count - 1) * (dot + dot_gap) + (current >= 0 && current < count ? pill : dot) : 0.0f;
-	dot_x = center_x - width * 0.5f;
-	for (index = 0; index < count; index++)
-	{
-		float item = index == current ? pill : dot;
-
-		ae_draw_rect(dot_x, row_center - dot * 0.5f, item, dot, dot * 0.5f, index == current ? current_color : AE_COLOR_DOT);
-		/* (clickable: a hit as tall as the row, over the dot and half the gaps; none without a hit id) */
-		if (hit_id >= 0)
-			ae_hit_add(dot_x - dot_gap * 0.5f, row_center - glyph * 0.5f, item + dot_gap, glyph, hit_id, AE_PART_DOT, index);
-		dot_x += item + dot_gap;
-	}
-	/* LB / RB (Q / E) at the ends */
+	/* (the row's middle half the taller end down: a grown key cap stays inside the row) */
+	row_center = y + (end_height(density, glyph) > glyph ? end_height(density, glyph) : glyph) * 0.5f;
 	left_end = end_glyph(density, 0, row_center, glyph, 1, 0);
 	right_end = end_glyph(density, 0, row_center, glyph, 0, 0);
+	ends = left_end + right_end + 2.0f * end_gap;
+	width = count > 0 ? (float)(count - 1) * (dot + dot_gap) + (current >= 0 && current < count ? pill : dot) : 0.0f;
+	if (max_width > 0.0f && width + ends > max_width && count > 1)
+	{
+		/* (the gaps shrink first) */
+		dot_gap = (max_width - ends - (float)(count - 1) * dot - pill) / (float)(count - 1);
+		if (dot_gap < units(density, DOTS_GAP_MINIMUM_U))
+		{
+			counter = 1;
+			snprintf(text, sizeof(text), ae_string(AE_STR_COUNT), current + 1, count);
+			width = ae_draw_text_width(AE_FONT_ROW, floored_minor(density, density->metrics->minor), text);
+		}
+		else
+			width = (float)(count - 1) * (dot + dot_gap) + pill;
+	}
+	dot_x = center_x - width * 0.5f;
+	if (counter)
+	{
+		float size = floored_minor(density, density->metrics->minor);
+
+		ae_draw_text(AE_FONT_ROW, size, center_x, text_top(AE_FONT_ROW, size, row_center), AE_ALIGN_CENTER, current_color,
+			text);
+	}
+	else
+	{
+		for (index = 0; index < count; index++)
+		{
+			float item = index == current ? pill : dot;
+
+			ae_draw_rect(dot_x, row_center - dot * 0.5f, item, dot, dot * 0.5f, index == current ? current_color :
+				AE_COLOR_DOT);
+			/* (clickable: a hit as tall as the row, over the dot and half the gaps; none without a hit id) */
+			if (hit_id >= 0)
+				ae_hit_add(dot_x - dot_gap * 0.5f, row_center - glyph * 0.5f, item + dot_gap, glyph, hit_id, AE_PART_DOT,
+					index);
+			dot_x += item + dot_gap;
+		}
+	}
+	/* LB / RB (Q / E) at the ends */
 	end_glyph(density, center_x - width * 0.5f - end_gap - left_end, row_center, glyph, 1, 1);
 	end_glyph(density, center_x + width * 0.5f + end_gap, row_center, glyph, 0, 1);
 	if (hit_id >= 0)
@@ -385,6 +433,12 @@ void ae_widget_page_dots(struct ae_density const *density, float center_x, float
 		ae_hit_add(center_x + width * 0.5f + end_gap, row_center - glyph * 0.5f, right_end, glyph, hit_id,
 			AE_PART_ARROW_RIGHT, -1);
 	}
+}
+
+void ae_widget_page_dots(struct ae_density const *density, float center_x, float y, const char *page_title,
+	short count, short current, unsigned int current_color, short hit_id)
+{
+	page_dots(density, center_x, y, page_title, count, current, current_color, hit_id, 0.0f);
 }
 
 /* ---------- prompts */
@@ -603,7 +657,7 @@ static void panel_layout(struct ae_density const *density, float view_width, flo
 	struct ae_rect panel;
 	float glyph = ae_size_glyph(density), stripe = units(density, PANEL_STRIPE_U);
 	float body = floored_minor(density, density->metrics->body), line = units(density, density->metrics->body_line);
-	float prompts_height, base_scale = ae_view_scale(view_width, view_height, 1.0f);
+	float prompts_height, button, base_scale = ae_view_scale(view_width, view_height, 1.0f);
 
 	/* (the density's s is the view's scale times UI SCALE: UI SCALE is their ratio; the panel's window pixels from
 	the view's top left, to the view's own units) */
@@ -618,11 +672,14 @@ static void panel_layout(struct ae_density const *density, float view_width, flo
 	l->emblem = l->header_size * 1.3f;
 	l->header_center = l->rect.y + stripe + l->pad + l->emblem * 0.5f;
 	l->dots_y = l->header_center + l->emblem * 0.5f + l->pad * 0.5f;
-	l->content_top = l->dots_y + glyph + l->pad * 0.5f;
+	/* (the rows sized by what they really hold: a key cap grown at VIEW, a keyboard prompt's button around one; the
+	content gives up the room) */
+	l->content_top = l->dots_y + dots_row_height(density) + l->pad * 0.5f;
 	/* the footer, from the bottom: the prompts row, a rule over it, the help strip's two lines */
 	if (line < body * 1.4f)
 		line = body * 1.4f;
-	prompts_height = glyph + 2.0f * units(density, density->metrics->gap) + l->pad * 0.5f;
+	button = cap_height(density, glyph) * (1.0f + 2.0f * BUTTON_PAD_Y);
+	prompts_height = (button > glyph ? button : glyph) + 2.0f * units(density, density->metrics->gap);
 	l->prompts_center = l->rect.y + l->rect.height - l->pad - prompts_height * 0.5f;
 	l->rule_y = l->rect.y + l->rect.height - l->pad - prompts_height;
 	l->help_height = 2.0f * line;
@@ -664,7 +721,8 @@ void ae_widget_view_panel(struct ae_density const *density, float view_width, fl
 			l.header_center), AE_ALIGN_RIGHT, AE_COLOR_TEXT, page_name);
 	/* the page dots, the current one in the player's colour (always beside "PLAYER n") */
 	if (page_count > 0)
-		ae_widget_page_dots(density, l.rect.x + l.rect.width * 0.5f, l.dots_y, NULL, page_count, page, player_color, -1);
+		page_dots(density, l.rect.x + l.rect.width * 0.5f, l.dots_y, NULL, page_count, page, player_color, -1,
+			l.rect.width - 2.0f * l.pad);
 	/* the rule over the prompts */
 	ae_draw_rect(l.rect.x + l.pad, l.rule_y, l.rect.width - 2.0f * l.pad, units(density, RULE_U), 0.0f, AE_COLOR_RULE);
 	if (content)

@@ -500,13 +500,20 @@ static void fixes(void)
 	ae_widget_prompts(&d, content.x, prompts_y, three, 3, "Changes apply as you make them", content.x + content.width,
 		-1, 9);
 	CHECK(text_call("Changes apply as you make them") == NULL);
+	n = 0;
 	for (index = 0; index < ae_stub_count(); index++)
 	{
 		struct ae_stub_call const *any = ae_stub_get(index);
 
 		if (any->kind == AE_STUB_OUTLINE)
+		{
 			CHECK(any->x + any->width <= content.x + content.width + 0.01f);
+			n++;
+		}
 	}
+	/* (N4: every prompt still there, each with its cap) */
+	CHECK(n == 3 && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 3 && text_call("Enter") && text_call("Esc") &&
+		text_call("Q"));
 
 	/* I3: tabs and page dots in a right-hand view: hits in layout units */
 	use_device(AE_DEVICE_XBOX);
@@ -605,6 +612,115 @@ static void fixes(void)
 	CHECK(!ae_stub_overflowed());
 }
 
+/* fix round 2: in a VIEW panel with the keyboard's grown caps, nothing leaves its row (N1); many pages fit (N2); a
+strip drawn at rest slides at its first change (N3) */
+static void rows_hold(void)
+{
+	static const struct ae_prompt three[3] =
+	{
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_B, "Resume", NULL, AE_ACTION_BACK },
+		{ AE_BUTTON_LEFT_SHOULDER, "Pages", NULL, AE_ACTION_TAB_PREVIOUS },
+	};
+	static const struct ae_tab eight[8] =
+	{
+		{ "PLAYER", 0, 0, NULL }, { "WEAPONS", 0, 0, NULL }, { "ITEMS", 0, 0, NULL }, { "VEHICLES", 0, 0, NULL },
+		{ "INDICATORS", 0, 0, NULL }, { "TEAMS", 0, 0, NULL }, { "ARENA", 0, 0, NULL },
+		{ "TRAINING OPTIONS", 0, 0, NULL },
+	};
+	static const struct { float window_height, view_width, view_height; } views[2] =
+	{
+		{ 720, 640, 360 }, { 1080, 960, 540 },
+	};
+	const unsigned int color = 0x4FB04FFFu;
+	struct ae_density d;
+	struct ae_rect content, panel = { 0, 0, 0, 0 }, emblem = { 0, 0, 0, 0 }, box;
+	struct ae_tabs strip;
+	float help_y, prompts_y, rule_y = -1;
+	int n, index, caps;
+	char counter[16];
+
+	use_device(AE_DEVICE_KEYBOARD_MOUSE);
+	for (n = 0; n < 2; n++)
+	{
+		ae_stub_reset(1920, views[n].window_height);
+		ae_draw_view(0, 0, 960, 540);
+		ae_density_view(views[n].view_width, views[n].view_height, 1.0f, &d);
+		ae_widget_view_panel(&d, views[n].view_width, views[n].view_height, 1, color, "GAME", 2, 6, &content);
+		ae_view_panel_footer(&d, views[n].view_width, views[n].view_height, &help_y, &prompts_y);
+		ae_widget_help_strip(&d, content.x, help_y, content.width,
+			"A help text long enough to fill both of the strip's lines and then some more, so the second one is cut.");
+		ae_widget_prompts(&d, content.x, prompts_y, three, 3, NULL, content.x + content.width, -1, 12);
+		caps = 0;
+		for (index = 0; index < ae_stub_count(); index++)
+		{
+			struct ae_stub_call const *call = ae_stub_get(index);
+
+			if (call->kind == AE_STUB_RECT && call->rgba == AE_COLOR_VIEW_PANEL)
+				panel = pixels_of(call);
+			if (call->kind == AE_STUB_RECT && call->rgba == color && near(call->width, call->height, 0.01f) &&
+				call->width > 8 * d.unit)
+				emblem = pixels_of(call);
+			if (call->kind == AE_STUB_RECT && call->rgba == AE_COLOR_RULE)
+				rule_y = pixels_of(call).y;
+		}
+		CHECK(panel.width > 0 && emblem.width > 0 && rule_y > 0);
+		for (index = 0; index < ae_stub_count(); index++)
+		{
+			struct ae_stub_call const *call = ae_stub_get(index);
+
+			box = pixels_of(call);
+			/* the prompts' buttons: under the rule, inside the panel */
+			if (call->kind == AE_STUB_OUTLINE)
+				CHECK(box.y >= rule_y + 0.99f && box.y + box.height <= panel.y + panel.height + 0.01f);
+			/* the help strip's lines: above the rule */
+			if (call->kind == AE_STUB_TEXT && call->font == AE_FONT_BODY && call->rgba == AE_COLOR_MUTED)
+				CHECK(box.y + box.height <= rule_y + 0.01f && box.y >= content.y * views[n].window_height / 1080.0f - 0.01f);
+			/* the dots' Q / E caps: under the header's emblem, above the content */
+			if (call->kind == AE_STUB_RECT && call->rgba == AE_COLOR_KEY_CAP && box.y < (panel.y + rule_y) * 0.5f)
+			{
+				CHECK(box.y >= emblem.y + emblem.height - 0.01f &&
+					box.y + box.height <= content.y * views[n].window_height / 1080.0f + 0.01f);
+				caps++;
+			}
+		}
+		CHECK(caps == 2);
+		/* N2: 12 pages fit the panel (gaps shrunk); 30 give way to a counter */
+		ae_stub_reset(1920, views[n].window_height);
+		ae_draw_view(0, 0, 960, 540);
+		ae_widget_view_panel(&d, views[n].view_width, views[n].view_height, 1, color, "GAME", 4, 12, &content);
+		CHECK(count_calls(AE_STUB_RECT, AE_COLOR_DOT) == 11);
+		for (index = 0; index < ae_stub_count(); index++)
+		{
+			struct ae_stub_call const *call = ae_stub_get(index);
+
+			box = pixels_of(call);
+			if (call->kind == AE_STUB_RECT && (call->rgba == AE_COLOR_DOT || call->rgba == AE_COLOR_KEY_CAP))
+				CHECK(box.x >= panel.x - 0.01f && box.x + box.width <= panel.x + panel.width + 0.01f);
+		}
+		ae_stub_reset(1920, views[n].window_height);
+		ae_draw_view(0, 0, 960, 540);
+		ae_widget_view_panel(&d, views[n].view_width, views[n].view_height, 1, color, "GAME", 2, 30, &content);
+		snprintf(counter, sizeof(counter), "%d / %d", 3, 30);
+		CHECK(count_calls(AE_STUB_RECT, AE_COLOR_DOT) == 0 && text_call(counter) && text_call(counter)->rgba == color);
+	}
+	/* N3: a strip drawn at rest (its target 0), then the last tab: it slides */
+	ae_motion_set_reduced(0);
+	ae_motion_set_now(30000);
+	ae_stub_reset(1440, 1080);
+	ae_density_full(1080, 1.3f, &d);
+	memset(&strip, 0, sizeof(strip));
+	strip.tabs = eight;
+	strip.count = 8;
+	strip.hover = -1;
+	ae_widget_tabs(&d, &strip, 72, 100, 1296, 2);
+	CHECK(!ae_motion_running(&strip.strip) && strip.drawn);
+	strip.active = 7;
+	ae_widget_tabs(&d, &strip, 72, 100, 1296, 2);
+	CHECK(ae_motion_running(&strip.strip));
+	ae_motion_set_reduced(1);
+	CHECK(!ae_stub_overflowed());
+}
+
 int main(void)
 {
 	tabs();
@@ -612,6 +728,7 @@ int main(void)
 	prompts();
 	panel();
 	fixes();
+	rows_hold();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

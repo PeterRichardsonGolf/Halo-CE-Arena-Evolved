@@ -123,7 +123,8 @@ short ae_list_view_pointer(struct ae_list_view *view, struct ae_pointer const *p
 /* ---------- navigation (ae_widgets_nav.c, spec 4.4, 4.10, 4.13, 6) */
 
 struct ae_tab { const char *label; int changed; int disabled; const char *disabled_reason; };
-struct ae_tabs { struct ae_tab const *tabs; short count, active, hover; struct ae_motion strip; };
+struct ae_tabs { struct ae_tab const *tabs; short count, active, hover; struct ae_motion strip;
+	int drawn;   /* (M2) set at the first draw: a strip starts where it belongs, later changes slide */ };
 /* draws the strip (LB / RB glyphs or Q / E caps at its ends), records hits; returns its height */
 float ae_widget_tabs(struct ae_density const *density, struct ae_tabs *tabs, float x, float y, float width,
 	short hit_id);
