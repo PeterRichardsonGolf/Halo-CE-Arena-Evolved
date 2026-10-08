@@ -583,7 +583,7 @@ STRING_OVERRIDES.update({
         "The map's weapons appear where its designers\\nplaced them.",
         "No weapons appear on the map: with a loadout of\\nNONE and NONE, melee and grenades only.",
         "The weapons follow the weapon set above.",
-        "Everyone starts with the primary and secondary\\nweapons below; the map's weapons follow the\\nweapon set above.",
+        "Everyone starts with the primary and secondary\\nweapons below; the map's weapons are its own\\n(in AE's gametypes, the weapon set's).",
         *LOADOUT_HELPS("primary"),
         *LOADOUT_HELPS("secondary"),
     ],

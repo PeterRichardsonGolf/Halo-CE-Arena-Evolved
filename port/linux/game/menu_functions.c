@@ -6175,8 +6175,10 @@ static void gametype_option_help(struct widget_instance *list)
 	{
 		boolean custom = named(list, "loadout_spinner", 0)->parameters.list.selected_index == _loadout_custom;
 
-		/* (WEAPON SET, the map's weapons, with either loadout:
-		game_engine_remap_weapon) */
+		/* (WEAPON SET, the map's weapons: with a custom loadout only in AE's
+		gametypes, game_engine_remap_weapon) */
+		visible_set(named(list, "op_weapon_set", 0),
+			!custom || arena_gametype_has_ae_rules(edit_variant()->human_readable_game_description));
 		visible_set(named(list, "op_primary_weapon", 0), custom);
 		visible_set(named(list, "op_secondary_weapon", 0), custom);
 	}

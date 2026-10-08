@@ -516,7 +516,7 @@
 		<string text="The map's weapons appear where its designers\nplaced them."/>
 		<string text="No weapons appear on the map: with a loadout of\nNONE and NONE, melee and grenades only."/>
 		<string text="The weapons follow the weapon set above."/>
-		<string text="Everyone starts with the primary and secondary\nweapons below; the map's weapons follow the\nweapon set above."/>
+		<string text="Everyone starts with the primary and secondary\nweapons below; the map's weapons are its own\n(in AE's gametypes, the weapon set's)."/>
 		<string text="No primary weapon."/>
 		<string text="A random primary weapon, of those the map has,\neach time you spawn."/>
 		<string text="Everyone spawns with a assault rifle as their primary\nweapon (where the map has one)."/>

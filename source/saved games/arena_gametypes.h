@@ -55,6 +55,12 @@ void arena_gametype_display_name(
 	wchar_t const *stored_name,
 	wchar_t *display_name,
 	short size);
+/* whether stored_name is one of the table's gametypes on AE's rules (the
+AE, AE COMP and TRAINING sets; not an old name, not Halo 1: NHE's set):
+the one marker of AE's gametypes (game_engine.c's weapon set with a custom
+loadout); a player's own gametype only by taking a seed's name */
+boolean arena_gametype_has_ae_rules(
+	wchar_t const *stored_name);
 /* "AE", "AE COMP", "NHE", "TRAINING"; "" for none */
 char const *arena_gametype_set_name(
 	short set);

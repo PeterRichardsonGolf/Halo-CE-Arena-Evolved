@@ -299,6 +299,18 @@ static void arena_gametype_info_fill(
 
 /* ---------- public code */
 
+boolean arena_gametype_has_ae_rules(
+	wchar_t const *stored_name)
+{
+	short name_index = stored_name ? arena_gametype_name_index(stored_name) : NONE;
+	short set;
+
+	if (name_index == NONE)
+		return FALSE;
+	set = arena_gametype_names[name_index].set;
+	return set == _arena_gametype_set_ae || set == _arena_gametype_set_ae_comp || set == _arena_gametype_set_training;
+}
+
 boolean arena_gametype_info(
 	wchar_t const *stored_name,
 	struct arena_gametype_info *info)
