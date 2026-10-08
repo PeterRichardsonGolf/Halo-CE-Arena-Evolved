@@ -161,7 +161,9 @@ play:
 - Settings > Game Options > MOD picks a folder in `mods/`; its `maps` are
   played over the game's own, and the game restarts into it.
 - Halo 1: NHE's maps play as a mod (`mods/NHE`), with its timer, training and
-  modes working. NHE's files are not included: use your own download.
+  modes working. NHE's files are not included: get Halo 1: NHE 1.0 and its
+  gametypes pack from the NHE team's site, [halo1nhe.com](https://halo1nhe.com/#download),
+  and put its maps in `mods/NHE/maps`.
 - Xbox community maps (the v5 map pack format) and Halo PC (Custom Edition)
   maps, with the Custom Edition shared files from your own Halo PC install or
   from Halo: The Master Chief Collection on Steam (`halo1/maps/custom_edition`).
@@ -277,9 +279,10 @@ Re-run `configure.py` when source files or the menus are added.
   contributors.
 - [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce): Milenko and
   contributors, and the contributors credited there and in each commit.
-- Halo 1: Neutral Host Edition (NHE), the Xbox competitive mod whose rules
-  Arena Evolved reimplements: the NHE team. Arena Evolved's versions are its
-  own code; it is not made or endorsed by the NHE team.
+- [Halo 1: Neutral Host Edition (NHE)](https://halo1nhe.com/), the Xbox
+  competitive mod whose rules inspired Arena Evolved: the NHE team. Arena
+  Evolved's versions are its own code; it is not made or endorsed by the NHE
+  team. Download NHE itself from [halo1nhe.com](https://halo1nhe.com/#download).
 - Fonts: [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
   [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
 - Libraries: SDL3, stb, Mbed TLS, miniupnpc, KCP, tomlc17, musl's maths,
