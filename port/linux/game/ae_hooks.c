@@ -8,12 +8,15 @@ screen is open.
 */
 
 #include "cseries.h"
+#include "cseries/cseries_windows.h"
 #include "../src/ae_draw.h"
 #include "../src/ae_platform.h"
 #include "interface/event_manager.h"
 #include "ae_hooks.h"
 #include "ae_input.h"
+#include "ae_motion.h"
 #include "ae_screen_test.h"
+#include "ae_sound.h"
 #include "ae_style.h"
 #include "ae_ui.h"
 
@@ -152,7 +155,8 @@ float ae_settings_menu_volume(
 }
 
 /* before each screen draws (ae_ui.h): the whole frame as the view, no clip, opaque, so nothing a screen set leaks
-into the next (M1 review M3); the motion (offset, alpha, scale) is applied from Task 5 */
+into the next (M1 review M3); then its motion: a sliding screen's view moved by its offset (u: layout units at UI
+SCALE), a popover's scaled about the frame's centre, and its alpha */
 static void before_draw(
 	struct ae_screen const *screen,
 	int index,
@@ -162,11 +166,19 @@ static void before_draw(
 {
 	(void)screen;
 	(void)index;
-	(void)offset_x_u;
-	(void)alpha;
-	(void)scale;
 	ae_draw_view_full();
-	ae_draw_set_alpha(1.0f);
+	if (offset_x_u != 0.0f || scale != 1.0f)
+	{
+		struct ae_layout layout;
+		float width, height;
+
+		ae_draw_current_layout(&layout);
+		width = layout.width * scale;
+		height = layout.height * scale;
+		ae_draw_view((layout.width - width) * 0.5f + offset_x_u * ae_settings_ui_scale(), (layout.height - height) * 0.5f,
+			width, height);
+	}
+	ae_draw_set_alpha(alpha);
 }
 
 boolean ae_ui_process(
@@ -176,8 +188,14 @@ boolean ae_ui_process(
 	/* a screen was up last frame */
 	static boolean was_up = FALSE;
 
+	unsigned long now;
+
 	if (!ae_menus_active())
 		return FALSE;
+	/* (the frame's clock and REDUCE MOTION, before anything opens, moves or draws) */
+	now = system_milliseconds();
+	ae_motion_set_now(now);
+	ae_motion_set_reduced(ae_settings_reduce_motion());
 	/* debug.ae_test_screen: the test screen, once, as the main menu first shows */
 	if (!test_screen_checked && ae_draw_available() && main_menu_is_active())
 	{
@@ -203,6 +221,8 @@ boolean ae_ui_process(
 		ae_platform_arm_tab_presses(TRUE);
 		ae_ui_update();
 		ae_input_poll();
+		/* (the frame's one sound: ae_sound.h) */
+		ae_glue_sound_play(ae_sound_take(now));
 		was_up = ae_ui_depth() != 0;
 		if (!was_up)
 			ae_input_hold_begin();

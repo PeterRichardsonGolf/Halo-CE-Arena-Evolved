@@ -159,6 +159,9 @@ def test_test_screen_draws_and_takes_input(cfg):
     focus = focus_lines(text)
     assert focus and focus[-1] == 12, f"12 downs: focus {focus}"
     assert focus == list(range(1, 13)), f"one step a press: {focus}"
+    # CE's menu sounds (ae_sound.h): a cursor for each focus step, at most one sound a frame
+    sounds = [line.rsplit(" ", 1)[1] for line in text.splitlines() if "ae sound: " in line]
+    assert sounds == ["cursor"] * 12, f"12 downs: sounds {sounds}"
     assert len(pngs) >= 10, "too few screenshots"
 
     # the swatch (white, alpha 0.25) is one blend over the picture, early and late: no build-up in the back
@@ -212,6 +215,7 @@ def test_input_does_not_reach_the_menus_behind(cfg):
     assert "ae menus: button X" in text and "ae menus: button Y" in text
     assert "ae menus: button TAB_NEXT" in text and "ae menus: button TAB_PREVIOUS" in text
     assert "ae menus: test screen closed" in text
+    assert "ae sound: back" in text, "the B that closed the screen played no back sound"
     control = play(cfg, out, "control", views=0, shots=120)
     pressed = play(cfg, out, "pressed", views=0, test_input=menu_input(*presses), shots=120)
     for r in (control[0], pressed[0]):
@@ -235,6 +239,7 @@ def test_menus_closed_keys_still_work(cfg):
     assert "ae menus: replaced the game's menus" in text
     assert focus_lines(text) == [1, 2]
     assert "ae menus: accept 2" in text
+    assert "ae sound: forward" in text, "the accept played no forward sound"
     assert "ae menus: settings: scale 1.00, reduce motion 0, volume 1.00" in text
 
 

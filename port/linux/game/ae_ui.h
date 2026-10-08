@@ -33,7 +33,8 @@ enum ae_action { AE_ACTION_NONE, AE_ACTION_UP, AE_ACTION_DOWN, AE_ACTION_LEFT, A
 	AE_ACTION_SELECT, AE_ACTION_PAGE_UP, AE_ACTION_PAGE_DOWN, AE_NUMBER_OF_ACTIONS };
 enum ae_device { AE_DEVICE_KEYBOARD_MOUSE, AE_DEVICE_XBOX, AE_DEVICE_PLAYSTATION, AE_DEVICE_NINTENDO };
 enum { AE_OWNER_ANY = -1, AE_PLAYER_NONE = -2, AE_MAXIMUM_PLAYERS = 4, AE_MAXIMUM_SCREENS = 16 };
-struct ae_event { short player; unsigned char action; unsigned char device; };
+/* repeat: a held direction's repeat step (not its press): the cursor sound plays at most every 80 ms for those */
+struct ae_event { short player; unsigned char action; unsigned char device; unsigned char repeat; };
 /* the pointer this frame, in layout units of the whole frame (ae_layout.h) */
 struct ae_pointer { float x, y; unsigned char moved, left_clicks, right_clicks, touch; signed char wheel_steps;
 	short player; };

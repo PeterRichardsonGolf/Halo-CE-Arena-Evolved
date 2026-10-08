@@ -108,16 +108,26 @@ static short player_of(
 	return ae_input_player_of_controller(controller, bindings);
 }
 
-static void send_action(
+/* (repeat: a held direction's repeat step, not its press) */
+static void send_step(
 	short controller,
-	int action)
+	int action,
+	int repeat)
 {
 	struct ae_event event;
 
 	event.player = player_of(controller);
 	event.action = (unsigned char)action;
 	event.device = device_of(controller);
+	event.repeat = (unsigned char)(repeat != 0);
 	ae_ui_dispatch(&event);
+}
+
+static void send_action(
+	short controller,
+	int action)
+{
+	send_step(controller, action, 0);
 }
 
 /* a pressed button's action (the d-pad's come from the held directions) */
@@ -293,8 +303,9 @@ void ae_input_poll(
 		{
 			struct ae_repeat *repeat = &ae_input.repeats[controller][direction];
 
+			/* (a step whose press began now is the press, any later one a repeat) */
 			if (ae_input_direction_step(repeat, held[direction], now, opening, stalled))
-				send_action(controller, direction_actions[direction]);
+				send_step(controller, direction_actions[direction], repeat->since != now);
 		}
 	}
 	/* (whatever is left, as when a screen closed partway: the menus behind take none of it) */
@@ -335,6 +346,7 @@ void ae_input_pointer(
 		event.player = player;
 		event.action = AE_ACTION_BACK;
 		event.device = (unsigned char)(pointer->touch ? device_of(0) : AE_DEVICE_KEYBOARD_MOUSE);
+		event.repeat = 0;
 		ae_ui_dispatch(&event);
 	}
 }
