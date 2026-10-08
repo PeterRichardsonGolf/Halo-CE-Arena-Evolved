@@ -52,14 +52,15 @@ int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char
 	return count;
 }
 
-int ae_input_key_translate(int keys, int action, int keyboard)
+int ae_input_key_translate(int keys, int previous_keys, int action, int keyboard)
 {
 	if (action == AE_ACTION_X && (keys & AE_KEY_E))
 		return AE_ACTION_NONE;
 	if (action == AE_ACTION_Y && (keys & AE_KEY_TAB))
 		return AE_ACTION_NONE;
-	if (action == AE_ACTION_Y && keyboard)
-		return keys & AE_KEY_SHIFT ? AE_ACTION_UP : AE_ACTION_DOWN;
+	/* (Tab let go of since the last poll: the Y its press made is its step) */
+	if (action == AE_ACTION_Y && keyboard && (previous_keys & AE_KEY_TAB))
+		return (keys | previous_keys) & AE_KEY_SHIFT ? AE_ACTION_UP : AE_ACTION_DOWN;
 	return action;
 }
 

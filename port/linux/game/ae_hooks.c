@@ -14,16 +14,24 @@ screen is open.
 #include "ae_hooks.h"
 #include "ae_input.h"
 #include "ae_screen_test.h"
+#include "ae_style.h"
 #include "ae_ui.h"
 
 /* port_config.c (declared here as the game's other port units do: its header
 is the platform side's) */
 int config_boolean(char const *name);
 long config_integer(char const *name);
+double config_real(char const *name);
 void platform_log(char const *format, ...);
 /* interface/virtual_keyboard.c and ui_widget.c (their headers need the game's math types first) */
 boolean virtual_keyboard_active(void);
 boolean main_menu_is_active(void);
+void ui_widgets_close_all(void);
+#ifdef HALO_GAME_BROWSER
+/* port/linux/game/browser_screen.c: upstream's server browser (only with the game browser; ui_widget.c declares it
+the same way) */
+boolean browser_screen_active(void);
+#endif
 
 boolean ae_menus_active(
 	void)
@@ -40,12 +48,120 @@ boolean ae_menus_active(
 	return cached != 0;
 }
 
-/* whether AE's screens are up: the flag, a screen open, and a renderer to
-draw them (without one, the game's own menus stay) */
+/* whether upstream's server browser is up (it wins while it is: AE's stack waits under it and returns when it
+closes; M1 review M8) */
+static boolean server_browser_up(
+	void)
+{
+#ifdef HALO_GAME_BROWSER
+	return browser_screen_active();
+#else
+	return FALSE;
+#endif
+}
+
+/* whether AE's screens are up: the flag, a screen open, a renderer to draw
+them (without one, the game's own menus stay), and no server browser over
+them */
 static boolean ae_ui_up(
 	void)
 {
-	return ae_menus_active() && ae_ui_depth() && ae_draw_available();
+	static boolean waiting = FALSE;
+
+	if (!ae_menus_active() || !ae_ui_depth() || !ae_draw_available())
+		return FALSE;
+	if (server_browser_up())
+	{
+		if (!waiting)
+			platform_log("ae menus: the server browser is up: AE waits");
+		waiting = TRUE;
+		return FALSE;
+	}
+	waiting = FALSE;
+	return TRUE;
+}
+
+boolean ae_ui_takes_pointer(
+	void)
+{
+	return ae_ui_up();
+}
+
+void ae_ui_replace_menus(
+	void)
+{
+	ui_widgets_close_all();
+	platform_log("ae menus: replaced the game's menus");
+}
+
+/* ---------- the settings the widgets read */
+
+static struct
+{
+	boolean read;
+	float ui_scale;
+	boolean reduce_motion;
+	float menu_volume;
+} ae_settings;
+
+void ae_settings_refresh(
+	void)
+{
+	double volume = config_real("audio.arena_menus_volume");
+
+	/* (UI SCALE snapped to its steps, 90 / 100 / 115 / 130: ae_style.c, preflight P27) */
+	ae_settings.ui_scale = ae_ui_scale_from_percent((int)config_integer("display.arena_menus_scale"));
+	ae_settings.reduce_motion = config_boolean("display.arena_menus_reduce_motion") ? TRUE : FALSE;
+	ae_settings.menu_volume = volume < 0.0 ? 0.0f : volume > 1.0 ? 1.0f : (float)volume;
+	ae_settings.read = TRUE;
+	platform_log("ae menus: settings: scale %.2f, reduce motion %d, volume %.2f", ae_settings.ui_scale,
+		ae_settings.reduce_motion ? 1 : 0, ae_settings.menu_volume);
+}
+
+static void settings_read(
+	void)
+{
+	if (!ae_settings.read)
+		ae_settings_refresh();
+}
+
+float ae_settings_ui_scale(
+	void)
+{
+	settings_read();
+	return ae_settings.ui_scale;
+}
+
+boolean ae_settings_reduce_motion(
+	void)
+{
+	settings_read();
+	return ae_settings.reduce_motion;
+}
+
+float ae_settings_menu_volume(
+	void)
+{
+	settings_read();
+	return ae_settings.menu_volume;
+}
+
+/* before each screen draws (ae_ui.h): the whole frame as the view, no clip, opaque, so nothing a screen set leaks
+into the next (M1 review M3); the motion (offset, alpha, scale) is applied from Task 5 */
+static void before_draw(
+	struct ae_screen const *screen,
+	int index,
+	float offset_x_u,
+	float alpha,
+	float scale)
+{
+	(void)screen;
+	(void)index;
+	(void)offset_x_u;
+	(void)alpha;
+	(void)scale;
+	ae_draw_view_full();
+	ae_draw_set_alpha(1.0f);
 }
 
 boolean ae_ui_process(
@@ -75,6 +191,7 @@ boolean ae_ui_process(
 		if (!was_up)
 			ae_input_screen_opened();
 		ae_platform_arm_back_presses(TRUE);
+		ae_ui_update();
 		ae_input_poll();
 		was_up = ae_ui_depth() != 0;
 		if (!was_up)
@@ -125,6 +242,7 @@ void ae_ui_render(
 		return;
 	drawn = TRUE;
 	drawn_frame = frame;
+	ae_ui_set_before_draw(before_draw);
 	ae_ui_draw();
 }
 

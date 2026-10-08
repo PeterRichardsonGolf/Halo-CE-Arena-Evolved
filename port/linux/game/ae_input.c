@@ -12,8 +12,9 @@ Space are A, Escape and Backspace are B, Delete (and E) X, Tab Y, C the black
 button. AE's own keys are read from the platform (ae_platform.c): Q and E are
 the tabs, Page Up and Page Down page, Tab and Shift+Tab step the focus as the
 d-pad does; while E or Tab is held, the first controller's X or Y (their
-game mapping) is dropped, and a keyboard Y with Tab not held (a tap between
-two polls) is Tab's focus step. Mouse button 4 is BACK: while the menus have
+game mapping) is dropped, and a keyboard Y with Tab let go of since the
+previous poll is Tab's focus step (any other Y is a Y: a pad's, after the
+keyboard was used). Mouse button 4 is BACK: while the menus have
 the pointer, sdl_platform.c keeps it from the controller and counts it for AE,
 while an AE screen is open (ae_hooks.c arms the count).
 
@@ -233,6 +234,7 @@ void ae_input_poll(
 	struct event_record event;
 	unsigned long now = system_milliseconds();
 	int keys = ae_platform_keys();
+	int previous_keys;
 	unsigned char actions[MAXIMUM_ACTIONS];
 	int action_count, index, back_presses;
 	short controller;
@@ -242,8 +244,9 @@ void ae_input_poll(
 	boolean stalled = now - ae_input.last_poll > AE_POLL_GAP_MS;
 
 	ae_input.opening = 0;
+	previous_keys = opening ? keys : ae_input.keys;
 	back_presses = ae_platform_take_back_presses();
-	action_count = ae_input_key_actions(keys, opening ? keys : ae_input.keys, opening ? 0 : back_presses,
+	action_count = ae_input_key_actions(keys, previous_keys, opening ? 0 : back_presses,
 		actions, MAXIMUM_ACTIONS);
 	ae_input.polled = 1;
 	ae_input.last_poll = now;
@@ -260,7 +263,7 @@ void ae_input_poll(
 		}
 		action = button_action(event.data.button.index);
 		if (event.controller_index == 0)
-			action = ae_input_key_translate(keys, action, device_of(0) == AE_DEVICE_KEYBOARD_MOUSE);
+			action = ae_input_key_translate(keys, previous_keys, action, device_of(0) == AE_DEVICE_KEYBOARD_MOUSE);
 		if (action != AE_ACTION_NONE)
 			send_action(event.controller_index, action);
 	}

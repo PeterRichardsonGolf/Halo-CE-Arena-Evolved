@@ -224,6 +224,40 @@ def test_input_does_not_reach_the_menus_behind(cfg):
     assert checks["screen"][0], f"the menu behind took input meant for the screen: {checks['screen']}"
 
 
+def test_menus_closed_keys_still_work(cfg):
+    """debug.ae_test_screen 9: the test screen with upstream's widgets closed (ui_widgets_close_all, as AE's own
+    screens that replace the menus do): the keyboard still drives AE (early check A: without the ui_widget.c pointer
+    hook the game takes the keys back for play once no widget is up); the menu settings at their defaults"""
+    out = out_dir(cfg, "closed")
+    result, text, pngs = play(cfg, out, "closed", views=9,
+                              test_input=menu_input("key:Down", "key:Down", "key:Return"))
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: replaced the game's menus" in text
+    assert focus_lines(text) == [1, 2]
+    assert "ae menus: accept 2" in text
+    assert "ae menus: settings: scale 1.00, reduce motion 0, volume 1.00" in text
+
+
+def test_pad_y_after_keyboard(cfg):
+    """a pad's Y on the first controller after keyboard use is a Y, not Tab's focus step (M1 review M2)"""
+    out = out_dir(cfg, "pad-y")
+    result, text, pngs = play(cfg, out, "pad-y", test_input=menu_input("key:Down", "y"))
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: button Y" in text
+    assert focus_lines(text) == [1]
+
+
+def test_settings_keys(cfg):
+    """display.arena_menus_scale (snapped to 90 / 100 / 115 / 130), display.arena_menus_reduce_motion and
+    audio.arena_menus_volume reach the menus' settings cache (ae_settings_*)"""
+    out = out_dir(cfg, "settings")
+    result, text, pngs = play(cfg, out, "settings", env={"HALO_ARENA_MENUS_SCALE": "120",
+                                                          "HALO_ARENA_MENUS_REDUCE_MOTION": "true",
+                                                          "HALO_ARENA_MENUS_VOLUME": "0.5"}, exit_after=24)
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: settings: scale 1.15, reduce motion 1, volume 0.50" in text
+
+
 def contact_sheet(cfg, out):
     """the test screen in each SHEET_CASES case; full-size frames and sheet.png in out"""
     frames = []

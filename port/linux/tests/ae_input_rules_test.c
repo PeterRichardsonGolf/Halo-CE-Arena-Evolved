@@ -49,16 +49,23 @@ int main(void)
 	CHECK(ae_input_key_actions(AE_KEY_TAB | AE_KEY_SHIFT, 0, 0, actions, 8) == 0); /* Tab is a direction */
 
 	/* the game's menu-key mapping's X (E) and Y (Tab) are dropped while those keys are held */
-	CHECK(ae_input_key_translate(AE_KEY_E, AE_ACTION_X, 1) == AE_ACTION_NONE);
-	CHECK(ae_input_key_translate(0, AE_ACTION_X, 1) == AE_ACTION_X);
-	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_NONE);
-	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_ACTION_X, 1) == AE_ACTION_X);
-	CHECK(ae_input_key_translate(AE_KEY_E | AE_KEY_TAB, AE_ACTION_ACCEPT, 1) == AE_ACTION_ACCEPT);
-	/* a Tab tapped and let go of between two polls: not held, but its Y comes from the keyboard: Tab's step */
-	CHECK(ae_input_key_translate(0, AE_ACTION_Y, 1) == AE_ACTION_DOWN);
-	CHECK(ae_input_key_translate(AE_KEY_SHIFT, AE_ACTION_Y, 1) == AE_ACTION_UP);
+	CHECK(ae_input_key_translate(AE_KEY_E, 0, AE_ACTION_X, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(0, 0, AE_ACTION_X, 1) == AE_ACTION_X);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, 0, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, 0, AE_ACTION_X, 1) == AE_ACTION_X);
+	CHECK(ae_input_key_translate(AE_KEY_E | AE_KEY_TAB, 0, AE_ACTION_ACCEPT, 1) == AE_ACTION_ACCEPT);
+	/* a Tab let go of since the previous poll: its Y is Tab's step (down, up with Shift) */
+	CHECK(ae_input_key_translate(0, AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_DOWN);
+	CHECK(ae_input_key_translate(0, AE_KEY_TAB | AE_KEY_SHIFT, AE_ACTION_Y, 1) == AE_ACTION_UP);
+	CHECK(ae_input_key_translate(AE_KEY_SHIFT, AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_UP);
+	/* no Tab now or before: a real Y, from a pad on the first controller after keyboard or mouse use (M1 review M2:
+	this was a focus step) */
+	CHECK(ae_input_key_translate(0, 0, AE_ACTION_Y, 1) == AE_ACTION_Y);
+	CHECK(ae_input_key_translate(AE_KEY_SHIFT, AE_KEY_SHIFT, AE_ACTION_Y, 1) == AE_ACTION_Y);
 	/* a pad's Y is Y */
-	CHECK(ae_input_key_translate(0, AE_ACTION_Y, 0) == AE_ACTION_Y);
+	CHECK(ae_input_key_translate(0, 0, AE_ACTION_Y, 0) == AE_ACTION_Y);
+	CHECK(ae_input_key_translate(0, AE_KEY_TAB, AE_ACTION_Y, 0) == AE_ACTION_Y);
 
 	/* mouse button 4: counted only while armed (an AE screen open); disarming drops the count */
 	CHECK(ae_platform_take_back_presses() == 0);

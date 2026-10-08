@@ -50,6 +50,11 @@ struct ae_screen_class
 	int start_from_anyone;
 	/* the pointer (hover, clicks, wheel); NULL: the screen takes none */
 	void (*pointer)(struct ae_screen *screen, struct ae_pointer const *pointer);
+	/* (M2; appended: initialisers that stop earlier zero them) nonzero: a popover (dialog, picker, keyboard): fades
+	and scales over the screens under it, which keep drawing; else a screen (slides) */
+	int popover;
+	/* (M2) once a frame for the top screen, before input (text fields); NULL: none */
+	void (*update)(struct ae_screen *screen);
 };
 struct ae_screen { struct ae_screen_class const *screen_class; short owner; short focus; void *data; };
 
@@ -67,6 +72,14 @@ void ae_ui_dispatch(struct ae_event const *event);
 void ae_ui_dispatch_pointer(struct ae_pointer const *pointer);
 /* draws every screen, bottom to top */
 void ae_ui_draw(void);
+/* called before each screen's draw (M1 review M3: no view, clip or alpha leaks between screens): the hooks set
+it to reset the view to the whole frame and apply the screen's motion (offset_x_u, alpha, scale: 0, 1, 1 until
+Task 5's motion); NULL: none */
+typedef void (*ae_ui_before_draw)(struct ae_screen const *screen, int index, float offset_x_u, float alpha,
+	float scale);
+void ae_ui_set_before_draw(ae_ui_before_draw before);
+/* the top screen's update (ae_hooks calls it before ae_input_poll) */
+void ae_ui_update(void);
 enum ae_device ae_ui_last_device(void);
 /* key repeat: steps due now for a held direction (400 ms, then 80 ms, 40 ms after 1 s held) */
 struct ae_repeat { unsigned long since, next; int held; };

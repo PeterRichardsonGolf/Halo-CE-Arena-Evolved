@@ -6967,6 +6967,8 @@ static boolean ui_mouse_menus_active(
 {
 	if (widget_globals.initialization_thread || progress_bar_is_active())
 		return FALSE;
+	if (ae_ui_takes_pointer()) /* AE hook */
+		return TRUE;
 
 	/* (and the scores after a game, which take A and B like the menus:
 	game_engine_update_non_deterministic) */

@@ -17,6 +17,7 @@ enum
 static struct ae_screen stack[AE_MAXIMUM_SCREENS];
 static int depth;
 static enum ae_device last_device = AE_DEVICE_XBOX;
+static ae_ui_before_draw before_draw;
 
 void ae_ui_reset(void)
 {
@@ -98,13 +99,31 @@ void ae_ui_dispatch_pointer(struct ae_pointer const *pointer)
 		screen->screen_class->pointer(screen, pointer);
 }
 
+void ae_ui_set_before_draw(ae_ui_before_draw before)
+{
+	before_draw = before;
+}
+
 void ae_ui_draw(void)
 {
 	int index;
 
 	for (index = 0; index < depth; index++)
-		if (stack[index].screen_class->draw)
-			stack[index].screen_class->draw(&stack[index]);
+	{
+		if (!stack[index].screen_class->draw)
+			continue;
+		if (before_draw)
+			before_draw(&stack[index], index, 0.0f, 1.0f, 1.0f);
+		stack[index].screen_class->draw(&stack[index]);
+	}
+}
+
+void ae_ui_update(void)
+{
+	struct ae_screen *screen = ae_ui_top();
+
+	if (screen && screen->screen_class->update)
+		screen->screen_class->update(screen);
 }
 
 int ae_repeat_update(struct ae_repeat *repeat, int held, unsigned long now_ms)

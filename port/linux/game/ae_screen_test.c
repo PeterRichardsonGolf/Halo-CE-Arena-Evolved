@@ -21,6 +21,7 @@ blend over the picture, not built up over frames in the back buffer.
 
 #include "cseries.h"
 #include "../src/ae_draw.h"
+#include "ae_hooks.h"
 #include "ae_list.h"
 #include "ae_screen_test.h"
 #include "ae_ui.h"
@@ -130,6 +131,8 @@ static void enter(
 	/* (focus memory: the row it was left on) */
 	ae_list_set_focus(&test_screen.list, screen->focus);
 	platform_log("ae menus: test screen (views %d)", test_screen.views);
+	/* (the settings the widgets read: their first use logs them, for the tests) */
+	(void)ae_settings_ui_scale();
 }
 
 static void leave(
@@ -347,6 +350,12 @@ static struct ae_screen_class const test_screen_class =
 int ae_screen_test_open(
 	int views)
 {
+	int opened;
+
 	test_screen.views = views == 2 || views == 4 ? views : 1;
-	return ae_ui_push(&test_screen_class, AE_OWNER_ANY, &test_screen);
+	opened = ae_ui_push(&test_screen_class, AE_OWNER_ANY, &test_screen);
+	/* 9: with upstream's widgets closed, as AE's own screens that replace the menus have them (early check A) */
+	if (opened && views == 9)
+		ae_ui_replace_menus();
+	return opened;
 }

@@ -173,6 +173,13 @@ static const struct config_setting config_settings[] =
 		"Arena Evolved's own menus (experimental, not finished): true shows\n"
 		"them in place of the game's; false keeps the menus display.menus\n"
 		"picks. Read at start-up." },
+	{ "display.arena_menus_scale", _config_integer, "100", "HALO_ARENA_MENUS_SCALE", _environment_value, /* AE hook */
+		_platform_all,
+		"Arena Evolved's menus: their size, 90, 100, 115 or 130 (percent)." },
+	{ "display.arena_menus_reduce_motion", _config_boolean, "false", "HALO_ARENA_MENUS_REDUCE_MOTION", _environment_value, /* AE hook */
+		_platform_all,
+		"Arena Evolved's menus: true draws every change at once (no sliding\n"
+		"or fading; the text caret stays on)." },
 	{ "display.enemy_name_color", _config_string, "\"classic\"", "HALO_ENEMY_NAME_COLOR", _environment_value,
 		_platform_all,
 		"Enemies' names (anyone's in a free for all), the one under your\n"
@@ -270,6 +277,9 @@ static const struct config_setting config_settings[] =
 	{ "audio.effects_volume", _config_real, "1.0", "HALO_EFFECTS_VOLUME", _environment_value, _platform_all,
 		"The volume of every other sound (effects and speech), 0.0 to 1.0 (of\n"
 		"audio.volume)." },
+	{ "audio.arena_menus_volume", _config_real, "1.0", "HALO_ARENA_MENUS_VOLUME", _environment_value, /* AE hook */
+		_platform_all,
+		"Arena Evolved's menus: their sounds' volume, 0.0 to 1.0." },
 	{ "audio.buffer_frames", _config_integer, DEFAULT_AUDIO_BUFFER_FRAMES, "HALO_AUDIO_BUFFER_FRAMES", _environment_value,
 		_platform_all,
 		"The audio device's buffer, in sample frames at 48 kHz (64 to 8192): larger\n"
@@ -682,9 +692,14 @@ static const struct config_setting config_settings[] =
 		"menu, a player profile being edited; empty for the main menu." },
 	{ "debug.ae_test_screen", _config_integer, "0", "HALO_AE_TEST_SCREEN", _environment_value, /* AE hook */
 		_platform_all,
-		"With display.arena_menus: open Arena Evolved's test screen at the main\n"
-		"menu (for the automated tests). 0: no; 1: over the whole screen; 2 or 4:\n"
-		"drawn into that many split-screen views." },
+		"With display.arena_menus: open Arena Evolved's debug screens at the main\n"
+		"menu (for the automated tests). 0: none; 1, 2 or 4: the test screen over\n"
+		"the whole screen or drawn into that many split-screen views; 9: the test\n"
+		"screen with the game's menus closed; 11 to 15: the widget gallery's page\n"
+		"1 to 5; 21, 23: the gallery in 2 views (pages 1-2, 3-4); 41: the gallery\n"
+		"in 4 views (pages 1-4); 90: host a LAN game (with bots); 91: join the\n"
+		"first LAN game, then leave; 92: host a LAN game for one AE player, end it,\n"
+		"back; 93: host a local game; 94: the profiles." },
 	{ "debug.gpu_flush_draws", _config_integer, "-1", "HALO_GPU_FLUSH_DRAWS", _environment_value, _platform_desktop,
 		"Flush the GPU's pipeline every this many draws: -1 for every 3 on Intel\n"
 		"graphics with Mesa's driver (which can hang without), 0 never." },
