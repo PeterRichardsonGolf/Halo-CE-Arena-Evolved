@@ -2418,9 +2418,11 @@ boolean network_game_server_add_player_to_game(
 				}
 			}
 			player->team_index = player_count_by_team[1] < player_count_by_team[0] ? 1 : 0;
-			/* port: NHE EXTRAS (the host's gametype): everyone joins red, as
-			on Halo 1: NHE; auto balance, when on, still moves players */
-			if (TEST_FLAG(server->game.variant.universal_variant.flags, _game_variant_nhe_extras_bit))
+			/* port: NHE EXTRAS (the host's gametype, a team one): everyone
+			joins red, as on Halo 1: NHE; auto balance, when on, still moves
+			players */
+			if (server->game.variant.universal_variant.teams &&
+				TEST_FLAG(server->game.variant.universal_variant.flags, _game_variant_nhe_extras_bit))
 			{
 				player->team_index = _team_red;
 				network_event("NHE EXTRAS: a joining player starts on red");
