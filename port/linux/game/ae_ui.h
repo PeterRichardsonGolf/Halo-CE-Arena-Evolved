@@ -68,7 +68,9 @@ void ae_ui_reset(void);
 int ae_ui_add_reset_hook(void (*hook)(void));
 /* pushes a screen (focus 0) and calls its enter; 0 when the stack is full */
 int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *data);
-/* calls the top screen's leave and removes it */
+/* calls the top screen's leave and removes it; its close motion then draws its ghost (its draw, after its leave) for
+up to 200 ms, until any input, push or pop: the screen's data must stay drawable that long (use ae_ui_remove to
+free it at once) */
 void ae_ui_pop(void);
 struct ae_screen *ae_ui_top(void);
 /* (M2) while a screen draws (its draw may read these): whether it is a closing screen's ghost (drawn after its leave,
@@ -76,8 +78,8 @@ going out: it takes no hits), and the alpha and scale its motion gives it (ae_ui
 int ae_ui_drawing_ghost(void);
 float ae_ui_drawing_alpha(void);
 float ae_ui_drawing_scale(void);
-/* (M2) removes the topmost screen with this data wherever it is (the top: as ae_ui_pop; under others: its leave, gone
-at once); 0 when none has it */
+/* (M2) removes the topmost screen with this data wherever it is, at once with no close motion (the top: its leave, as
+ae_ui_pop, but no ghost; under others: its leave): its data may be freed or reused right after; 0 when none has it */
 int ae_ui_remove(void const *data);
 int ae_ui_depth(void);
 /* (M2) whether a screen on the stack has this data (a widget's state: open or left behind by a reset) */

@@ -203,9 +203,11 @@ int ae_ui_remove(void const *data)
 			break;
 	if (index < 0)
 		return 0;
+	/* (the top: popped, but instant: no ghost, so the caller may free or reuse its data at once) */
 	if (index == depth - 1)
 	{
 		ae_ui_pop();
+		transition_finish();
 		return 1;
 	}
 	/* (under others: gone at once, nothing moves) */

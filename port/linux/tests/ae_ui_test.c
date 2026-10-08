@@ -255,6 +255,17 @@ int main(void)
 		CHECK(handled == 1 && ae_ui_top()->focus == 22);
 		ordered = befores = ghost_draws = 0; ae_ui_draw();
 		CHECK(befores == 1 && ghost_draws == 0 && before_motions[0][0] == 0.0f && before_motions[0][1] == 1.0f);
+		/* ae_ui_remove of the top screen is instant: no ghost (its data free at once) */
+		{
+			static int removable;
+
+			ae_ui_push(&noting, 0, &removable);
+			ae_motion_set_now(5500);
+			ae_ui_remove(&removable);
+			ae_motion_set_now(5510);
+			ordered = befores = ghost_draws = 0; ae_ui_draw();
+			CHECK(ghost_draws == 0 && befores == 1);
+		}
 		/* REDUCE MOTION: every transition instant */
 		ae_motion_set_reduced(1);
 		ae_ui_push(&plain, 0, NULL);
