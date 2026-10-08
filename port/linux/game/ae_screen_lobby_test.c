@@ -1,12 +1,15 @@
 /*
 AE_SCREEN_LOBBY_TEST.C
 
-The lobby drive (ae_screen_lobby_test.h), debug.ae_test_screen 90: AE's lobby
-glue (ae_glue_lobby.h) end to end with no upstream widget, for
-tools/test_ae_lobby.py. It replaces the game's menus, hosts a LAN game, adds
+The lobby drives (ae_screen_lobby_test.h), debug.ae_test_screen 90-95: AE's
+lobby glue (ae_glue_lobby.h) end to end with no upstream widget, for
+tools/test_ae_lobby.py. 90 replaces the game's menus, hosts a LAN game, adds
 controller 1's player, waits for 4 players (system-link bots) or 30 s, sets
 Blood Gulch and slayer, starts, ends the game 8 s in, goes back to the lobby 4 s
-into the post-game, and logs the roster once it is back. Its screen draws the
+into the post-game, and logs the roster once it is back. 92 does the same for 2
+players and then logs the roster as it changes; 91 joins the first LAN game,
+waits for 2 players, and once back from the host's game leaves; 93 hosts LOCAL
+and 95 ONLINE, logging the roster as it changes. Its screen draws the
 roster as roster cards and the map and gametype as rows (FULL density); it is
 off the stack while the game plays, and the post-game take-over
 (ae_lobby_take_pregame_ui) puts it back.
@@ -33,15 +36,16 @@ void platform_log(char const *format, ...);
 
 enum
 {
-	DRIVE_IDLE, DRIVE_HOST, DRIVE_ADD_PLAYER, DRIVE_WAIT_PLAYERS, DRIVE_IN_GAME, DRIVE_POSTGAME, DRIVE_BACK, DRIVE_DONE,
-	WAIT_PLAYERS_MS = 30000, GAME_MS = 8000, POSTGAME_MS = 4000, PLAYERS = 4
+	DRIVE_IDLE, DRIVE_HOST, DRIVE_JOIN, DRIVE_JOINING, DRIVE_ADD_PLAYER, DRIVE_WAIT_PLAYERS, DRIVE_IN_GAME,
+	DRIVE_POSTGAME, DRIVE_BACK, DRIVE_WATCH, DRIVE_CLIENT_GAME, DRIVE_CLIENT_BACK, DRIVE_DONE,
+	WAIT_PLAYERS_MS = 30000, GAME_MS = 8000, POSTGAME_MS = 4000
 };
 
 static struct
 {
-	int step;
+	int value, step;
 	unsigned long since;          /* the step's start (or the game's, in DRIVE_IN_GAME once it plays) */
-	int playing;
+	int playing, players, logged_count, have_roster;
 	struct ae_lobby_roster roster;
 } drive;
 
@@ -59,6 +63,40 @@ static boolean in_game(void)
 	return game_engine_running() && !main_menu_is_active() && !game_engine_showing_postgame();
 }
 
+/* the roster's players, logged with what the glue says of them (this machine's, the host's) */
+static void log_players(void)
+{
+	short index;
+
+	for (index = 0; index < drive.roster.count; index++)
+		platform_log("ae lobby: player %d '%s' local %d host %d", drive.roster.players[index].slot,
+			drive.roster.players[index].name, drive.roster.players[index].local, drive.roster.players[index].host);
+}
+
+/* the roster now, read only while AE's session is there (the glue logs a failure: not every frame) */
+static boolean read_roster(void)
+{
+	drive.have_roster = ae_lobby_owns_session() && ae_lobby_roster(&drive.roster).ok;
+	return drive.have_roster;
+}
+
+static int host_kind(void)
+{
+	return drive.value == 93 ? AE_LOBBY_LOCAL : drive.value == 95 ? AE_LOBBY_ONLINE : AE_LOBBY_LAN;
+}
+
+/* (the start: Blood Gulch slayer; off the stack while the game plays, the take-over puts it back) */
+static void start_game(unsigned long now)
+{
+	if (ae_lobby_set_map("bloodgulch").ok && ae_lobby_set_gametype("slayer").ok && ae_lobby_start().ok)
+	{
+		ae_ui_remove(&drive);
+		step_to(DRIVE_IN_GAME, now);
+	}
+	else
+		step_to(DRIVE_DONE, now);
+}
+
 void ae_screen_lobby_test_tick(unsigned long now)
 {
 	switch (drive.step)
@@ -66,31 +104,50 @@ void ae_screen_lobby_test_tick(unsigned long now)
 	case DRIVE_HOST:
 		/* (the game's menus closed: an AE screen that replaces them) */
 		ae_ui_replace_menus();
-		step_to(ae_lobby_host(AE_LOBBY_LAN).ok ? DRIVE_ADD_PLAYER : DRIVE_DONE, now);
+		step_to(ae_lobby_host(host_kind()).ok ? DRIVE_ADD_PLAYER : DRIVE_DONE, now);
 		break;
+	case DRIVE_JOIN:
+		ae_ui_replace_menus();
+		step_to(ae_lobby_join_first_available().ok ? DRIVE_JOINING : DRIVE_DONE, now);
+		break;
+	case DRIVE_JOINING:
+	{
+		int state = ae_lobby_join_state(NULL);
+
+		if (state > 0)
+			step_to(DRIVE_ADD_PLAYER, now);
+		else if (state < 0)
+			step_to(DRIVE_DONE, now);
+		break;
+	}
 	case DRIVE_ADD_PLAYER:
-		/* controller 1's player, once this machine has joined its own game (or 10 s) */
-		if (!ae_lobby_roster(&drive.roster).ok || (!drive.roster.joined && now - drive.since < 10000))
+		/* controller 1's player, once this machine has joined (its own game, or the host's; or 10 s) */
+		if (!read_roster() || (!drive.roster.joined && now - drive.since < 10000))
 			break;
-		step_to(ae_lobby_add_local_player(0).ok ? DRIVE_WAIT_PLAYERS : DRIVE_DONE, now);
+		if (!ae_lobby_add_local_player(0).ok)
+			step_to(DRIVE_DONE, now);
+		/* (LOCAL and ONLINE hosts: the roster watched from here) */
+		else if (drive.value == 93 || drive.value == 95)
+			step_to(DRIVE_WATCH, now);
+		else
+			step_to(DRIVE_WAIT_PLAYERS, now);
 		break;
 	case DRIVE_WAIT_PLAYERS:
-		if (!ae_lobby_roster(&drive.roster).ok)
+		if (!read_roster())
 		{
 			step_to(DRIVE_DONE, now);
 			break;
 		}
-		if (drive.roster.count >= PLAYERS || now - drive.since >= WAIT_PLAYERS_MS)
+		if (drive.roster.count >= drive.players || now - drive.since >= WAIT_PLAYERS_MS)
 		{
 			platform_log("ae lobby: roster %d", drive.roster.count);
-			if (ae_lobby_set_map("bloodgulch").ok && ae_lobby_set_gametype("slayer").ok && ae_lobby_start().ok)
-			{
-				/* (off the stack while the game plays: the take-over puts it back) */
-				ae_ui_remove(&drive);
-				step_to(DRIVE_IN_GAME, now);
-			}
+			log_players();
+			drive.logged_count = drive.roster.count;
+			/* (a joiner waits for the host's game) */
+			if (drive.value == 91)
+				step_to(DRIVE_CLIENT_GAME, now);
 			else
-				step_to(DRIVE_DONE, now);
+				start_game(now);
 		}
 		break;
 	case DRIVE_IN_GAME:
@@ -111,11 +168,35 @@ void ae_screen_lobby_test_tick(unsigned long now)
 		break;
 	case DRIVE_BACK:
 		/* back at the menus with AE's screen shown (the take-over): the roster */
-		if (main_menu_is_active() && ae_ui_holds(&drive) && ae_lobby_roster(&drive.roster).ok)
+		if (main_menu_is_active() && ae_ui_holds(&drive) && read_roster())
 		{
 			platform_log("ae lobby: back in the lobby, roster %d", drive.roster.count);
-			step_to(DRIVE_DONE, now);
+			drive.logged_count = drive.roster.count;
+			step_to(drive.value == 92 ? DRIVE_WATCH : DRIVE_DONE, now);
 		}
+		break;
+	case DRIVE_WATCH:
+		/* the roster as it changes (players joining and leaving), first as it is */
+		if (read_roster() && (drive.roster.count != drive.logged_count || drive.logged_count < 0))
+		{
+			platform_log("ae lobby: roster %d", drive.roster.count);
+			drive.logged_count = drive.roster.count;
+		}
+		break;
+	case DRIVE_CLIENT_GAME:
+		/* a joiner: off the stack while the host's game plays */
+		if (in_game())
+		{
+			ae_ui_remove(&drive);
+			step_to(DRIVE_CLIENT_BACK, now);
+		}
+		break;
+	case DRIVE_CLIENT_BACK:
+		/* back in the lobby with AE's screen (the client's take-over): leave, a second later */
+		if (!(main_menu_is_active() && ae_ui_holds(&drive)))
+			drive.since = now;
+		else if (now - drive.since >= 1000)
+			step_to(ae_lobby_leave().ok ? DRIVE_DONE : DRIVE_DONE, now);
 		break;
 	default:
 		break;
@@ -139,8 +220,7 @@ static void lobby_draw(struct ae_screen *screen)
 	ae_draw_current_layout(&layout);
 	ae_density_full(layout.height * layout.scale, scale, &d);
 	ae_frame_compute(layout.width, scale, &frame);
-	/* (the roster as the glue has it now) */
-	ae_lobby_roster(&drive.roster);
+	/* (the roster as the tick last read it: drawing logs nothing) */
 	x = frame.rect.x + frame.margin;
 	y = 70.0f;
 	title = 60.0f * frame.unit;
@@ -194,13 +274,16 @@ static struct ae_screen_class const lobby_class =
 
 int ae_screen_lobby_test_open(int value)
 {
-	if (value != 90)
+	if (value != 90 && value != 91 && value != 92 && value != 93 && value != 95)
 		return 0;
 	memset(&drive, 0, sizeof(drive));
+	drive.value = value;
+	drive.players = value == 90 ? 4 : 2;
+	drive.logged_count = -1;
 	ae_lobby_set_pregame_screen(&lobby_class, &drive);
 	if (!ae_ui_push(&lobby_class, AE_OWNER_ANY, &drive))
 		return 0;
 	platform_log("ae lobby: drive (value %d)", value);
-	step_to(DRIVE_HOST, 0);
+	step_to(value == 91 ? DRIVE_JOIN : DRIVE_HOST, 0);
 	return 1;
 }

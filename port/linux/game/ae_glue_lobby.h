@@ -36,8 +36,26 @@ struct ae_result ae_lobby_start(void);
 struct ae_result ae_lobby_end_game(void);
 /* the host, after the post-game: everyone back to the lobby */
 struct ae_result ae_lobby_back_to_pregame(void);
-/* whether AE's glue hosted (or, Task 13, joined) the session there is now */
+/* whether AE's glue hosted or joined the session there is now (checked each frame: a session disposed by anything
+else is not AE's) */
 int ae_lobby_owns_session(void);
+/* (Task 13) joining: this machine searches the LAN and joins the first game it can (network_test.c's join path
+without its widget); ok means searching. ae_lobby_update goes on with it each frame; ae_lobby_join_state says how it
+went: 1 joined ("ae lobby: joined"), 0 still going, -1 failed (the reason: no game found after 10 s, a host on
+another network version with both numbers, the lobby full or closed to this machine) */
+struct ae_result ae_lobby_join_first_available(void);
+/* the game an invite link or code leads to, as upstream's Direct Link (menu_functions.c direct_link_from_clipboard,
+p2p_join_invite): the invite reached, its game is joined as the first available. (Not a bare IP address: upstream
+joins by invite only) */
+struct ae_result ae_lobby_join_address(const char *address);
+int ae_lobby_join_state(struct ae_result *failure);
+/* leaves (client) or closes (host) the session: client and server disposed, connection local, AE's session over;
+upstream's menus are not reopened (the caller shows the next AE screen); logs "ae lobby: left" / "closed" */
+struct ae_result ae_lobby_leave(void);
+/* once a frame (ae_hooks, in the menus and in the game): the join going on, the session's owner checked */
+void ae_lobby_update(unsigned long now_ms);
+/* (the advertisement hook, network_client_manager.c) a host advertising on the LAN, and its network version */
+void ae_lobby_advertised(unsigned short version);
 /* the screen AE shows for its session's pregame (M2: the lobby test screen; M4: the Custom Games lobby) */
 void ae_lobby_set_pregame_screen(struct ae_screen_class const *screen_class, void *data);
 

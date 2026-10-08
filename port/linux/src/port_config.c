@@ -699,7 +699,8 @@ static const struct config_setting config_settings[] =
 		"1 to 5; 21, 23: the gallery in 2 views (pages 1-2, 3-4); 41: the gallery\n"
 		"in 4 views (pages 1-4); 90: host a LAN game (with bots); 91: join the\n"
 		"first LAN game, then leave; 92: host a LAN game for one AE player, end it,\n"
-		"back; 93: host a local game; 94: the profiles." },
+		"back; 93: host a local game; 94: the profiles; 95: host an internet\n"
+		"game." },
 	{ "debug.gpu_flush_draws", _config_integer, "-1", "HALO_GPU_FLUSH_DRAWS", _environment_value, _platform_desktop,
 		"Flush the GPU's pipeline every this many draws: -1 for every 3 on Intel\n"
 		"graphics with Mesa's driver (which can hang without), 0 never." },

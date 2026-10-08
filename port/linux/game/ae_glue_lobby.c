@@ -28,6 +28,7 @@ there (ae_lobby_take_pregame_ui) shows AE's pregame screen instead.
 #include "networking/network_game_manager.h"
 #include "networking/network_server_manager.h"
 #include "../src/p2p.h"
+#include "halo_port_limits.h"
 #include "ae_glue_lobby.h"
 #include "ae_hooks.h"
 #include "ae_strings.h"
@@ -43,12 +44,23 @@ enum { AE_CLIENT_STATE_PREGAME = 2 };
 
 typedef char ae_lobby_players_match[AE_LOBBY_MAXIMUM_PLAYERS == HALO_PORT_MAXIMUM_NETWORK_PLAYERS ? 1 : -1];
 
+/* how long a join searches the LAN before it gives up */
+enum { JOIN_SEARCH_MS = 10000, JOIN_CONNECT_MS = 15000 };
+enum { JOIN_NONE, JOIN_SEARCHING, JOIN_CONNECTING, JOIN_JOINED, JOIN_FAILED };
+
 static struct
 {
-	/* AE's glue made the session there is now (hosted it; Task 13: joined it) */
+	/* AE's glue made the session there is now (hosted or joined it) */
 	boolean owns;
 	struct ae_screen_class const *pregame_screen;
 	void *pregame_data;
+	/* a join: its state, since when, its failure; the hosts heard advertising (their network versions, through
+	the advertisement hook) */
+	int join;
+	unsigned long join_since, now;
+	struct ae_result join_failure;
+	int heard_host;
+	unsigned short heard_version;
 } lobby;
 
 static struct ae_result succeeded(void)
@@ -60,7 +72,7 @@ static struct ae_result succeeded(void)
 	return result;
 }
 
-/* a failure: its reason (a string, formatted with argument when it has a %s or %d) logged with the call */
+/* a failure: its reason (a string, formatted with argument when it has a %s) logged with the call */
 static struct ae_result failed(const char *call, int reason, const char *argument)
 {
 	struct ae_result result;
@@ -82,6 +94,23 @@ static const char *kind_name(int kind)
 	case AE_LOBBY_ONLINE: return "ONLINE";
 	default: return "LAN";
 	}
+}
+
+/* a failure with no argument, logged */
+static struct ae_result failed_result(const char *call, int reason)
+{
+	return failed(call, reason, NULL);
+}
+
+/* a host on another network version: "Host is on version %d, you're on %d" */
+static struct ae_result failed_version(const char *call, int theirs, int ours)
+{
+	struct ae_result result;
+
+	result.ok = 0;
+	snprintf(result.reason, sizeof(result.reason), ae_string(AE_STR_ERR_VERSION), theirs, ours);
+	platform_log("ae lobby: %s: %s", call, result.reason);
+	return result;
 }
 
 int ae_lobby_owns_session(void)
@@ -157,7 +186,7 @@ static const char *file_name(const char *path)
 struct ae_result ae_lobby_roster(struct ae_lobby_roster *roster)
 {
 	struct network_game *game = network_game_get_game();
-	short index;
+	short index, local_machine = network_game_client_get_local_machine_index();
 
 	if (!roster)
 		return failed("roster", AE_STR_ERR_NO_GAME, NULL);
@@ -175,9 +204,10 @@ struct ae_result ae_lobby_roster(struct ae_lobby_roster *roster)
 		player->team = source->team_index;
 		player->machine = source->machine_index;
 		player->controller = source->controller_index;
-		/* (the host's machine is the first: the server's own) */
-		player->host = source->machine_index == 0;
-		player->local = global_network_game_server_get() ? source->machine_index == 0 : 0;
+		/* (this machine's players: the client's machine index; the host's machine: this one when it hosts, else
+		the first machine, the server's own (an assumption: a joining client has no other word for it)) */
+		player->local = local_machine != NONE && source->machine_index == local_machine;
+		player->host = global_network_game_server_get() ? player->local : source->machine_index == 0;
 	}
 	roster->machines = game->machine_count;
 	roster->joined = global_network_game_client_get() &&
@@ -256,6 +286,151 @@ struct ae_result ae_lobby_back_to_pregame(void)
 	network_game_server_reset_to_pregame(global_network_game_server_get());
 	platform_log("ae lobby: back to pregame");
 	return succeeded();
+}
+
+/* ---------- joining and leaving (Task 13) */
+
+/* the client for a join: this machine searching the LAN, AE's session from now (network_test.c's join path) */
+static boolean join_client(void)
+{
+	ui_widgets_close_all();
+	dispose_global_network_game_client();
+	dispose_global_network_game_server();
+	network_game_accept_remote_connections(FALSE);
+	p2p_set_hosting_allowed(FALSE);
+	p2p_set_hosting_public(FALSE);
+	if (!create_global_network_game_client())
+		return FALSE;
+	game_connection_set(_game_connection_network_client);
+	lobby.owns = TRUE;
+	lobby.join = JOIN_SEARCHING;
+	lobby.join_since = lobby.now;
+	lobby.heard_host = FALSE;
+	return TRUE;
+}
+
+struct ae_result ae_lobby_join_first_available(void)
+{
+	if (!main_menu_is_active())
+		return failed("join", AE_STR_ERR_IN_GAME, NULL);
+	if (!join_client())
+		return failed("join", AE_STR_ERR_NO_GAME, NULL);
+	platform_log("ae lobby: searching the LAN");
+	return succeeded();
+}
+
+struct ae_result ae_lobby_join_address(const char *address)
+{
+	if (!main_menu_is_active())
+		return failed("join", AE_STR_ERR_IN_GAME, NULL);
+	if (!address || !*address || !join_client())
+		return failed("join", AE_STR_ERR_NO_GAME, NULL);
+	/* as upstream's Direct Link (menu_functions.c direct_link_from_clipboard): the invite reached makes its game one
+	of the client's games, which the search then joins as the first available */
+	if (!p2p_join_invite(address))
+	{
+		dispose_global_network_game_client();
+		game_connection_set(_game_connection_local);
+		lobby.owns = FALSE;
+		lobby.join = JOIN_NONE;
+		return failed("join", AE_STR_ERR_NO_GAME, NULL);
+	}
+	platform_log("ae lobby: searching for the invite's game");
+	return succeeded();
+}
+
+int ae_lobby_join_state(struct ae_result *failure)
+{
+	if (failure)
+		*failure = lobby.join_failure;
+	switch (lobby.join)
+	{
+	case JOIN_JOINED: return 1;
+	case JOIN_FAILED: return -1;
+	case JOIN_SEARCHING: case JOIN_CONNECTING: return 0;
+	default: return -1;
+	}
+}
+
+/* a join that failed: the client gone, nothing AE's */
+static void join_failed(struct ae_result result)
+{
+	dispose_global_network_game_client();
+	game_connection_set(_game_connection_local);
+	lobby.owns = FALSE;
+	lobby.join = JOIN_FAILED;
+	lobby.join_failure = result;
+}
+
+struct ae_result ae_lobby_leave(void)
+{
+	boolean hosting = global_network_game_server_get() != NULL;
+
+	if (!global_network_game_server_get() && !global_network_game_client_get())
+		return failed("leave", AE_STR_ERR_NO_GAME, NULL);
+	if (!main_menu_is_active())
+		return failed("leave", AE_STR_ERR_IN_GAME, NULL);
+	/* (the client, then the server: a host closes its session, a client leaves it; no upstream menu reopened) */
+	dispose_global_network_game_client();
+	dispose_global_network_game_server();
+	network_game_accept_remote_connections(FALSE);
+	p2p_set_hosting_allowed(FALSE);
+	p2p_set_hosting_public(FALSE);
+	game_connection_set(_game_connection_local);
+	lobby.owns = FALSE;
+	lobby.join = JOIN_NONE;
+	platform_log(hosting ? "ae lobby: closed" : "ae lobby: left");
+	return succeeded();
+}
+
+void ae_lobby_advertised(unsigned short version)
+{
+	lobby.heard_host = TRUE;
+	lobby.heard_version = version;
+}
+
+void ae_lobby_update(unsigned long now)
+{
+	struct network_game_client *client = global_network_game_client_get();
+
+	lobby.now = now;
+	/* (the session gone, by whatever means: not AE's any more; checked each frame) */
+	ae_lobby_owns_session();
+	if (lobby.join == JOIN_SEARCHING)
+	{
+		if (!client)
+			join_failed(failed_result("join", AE_STR_ERR_NO_GAME));
+		else if (network_game_client_join_first_available_game())
+		{
+			lobby.join = JOIN_CONNECTING;
+			lobby.join_since = now;
+			platform_log("ae lobby: joining");
+		}
+		else if (now - lobby.join_since >= JOIN_SEARCH_MS)
+		{
+			int ours = delta_legacy_announce();
+
+			/* (a host heard on another network version: that; else nothing heard) */
+			if (lobby.heard_host && lobby.heard_version != (unsigned short)ours &&
+				!((int)lobby.heard_version >= delta_legacy_minimum() && (int)lobby.heard_version <= delta_legacy_maximum()))
+				join_failed(failed_version("join", lobby.heard_version, ours));
+			else if (lobby.heard_host)
+				join_failed(failed_result("join", AE_STR_ERR_LOBBY_FULL));
+			else
+				join_failed(failed_result("join", AE_STR_ERR_NO_GAME));
+		}
+	}
+	else if (lobby.join == JOIN_CONNECTING)
+	{
+		if (client && network_game_client_get_state(client, NULL) >= AE_CLIENT_STATE_PREGAME)
+		{
+			lobby.join = JOIN_JOINED;
+			platform_log("ae lobby: joined");
+		}
+		/* (refused: the host's lobby full, or closed to this machine) */
+		else if (!client || network_game_client_get_error(client) || now - lobby.join_since >= JOIN_CONNECT_MS)
+			join_failed(failed_result("join", AE_STR_ERR_LOBBY_FULL));
+	}
 }
 
 boolean ae_lobby_take_pregame_ui(

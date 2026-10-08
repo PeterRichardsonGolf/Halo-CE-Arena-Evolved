@@ -4,13 +4,17 @@
   Blood Gulch and slayer, starts, ends the game, goes back to the lobby, and AE takes the pregame UI (the game's own
   SELECT MAP screen is never loaded);
 - with display.arena_menus on but a session AE didn't make (network_test's host), the game's own pregame UI runs
-  as before and the hook says it left it to the game.
+  as before and the hook says it left it to the game;
+- (Task 13) an AE joiner (91) joins an AE host (92) on loopback, plays its game, takes the client's pregame UI after
+  it, and leaves; a LOCAL host (93) refuses a bot; an ONLINE host (95) with internet play off lists nothing; a join
+  with no host gives its reason.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config, as test_ae_menus.py); about 90 s a game:
 
     AE_MENUS_BUILD=$PWD/build/linux64 python3 -m pytest -q tools/test_ae_lobby.py
 """
 import importlib.util
+import shutil
 from pathlib import Path
 
 import pytest
@@ -79,3 +83,99 @@ def test_not_ae_session_left_to_the_game(cfg):
     assert "ae lobby: pregame UI left to the game (not AE's session)" in text
     assert "ae lobby: took the pregame UI" not in text
     assert SELECT_MAP_FAILED not in text
+
+
+HOST = "127.0.0.200"
+CLIENT = "127.0.0.201"
+
+
+def play_pair(cfg, out, name, host_env, client_env, seconds=100, join_delay=6):
+    """two machines in one network namespace (tools/ae_test/handshake.py's way, with AE's drives instead of
+    network_test): (host result, client result, host text, client text)"""
+    harness = menus.harness
+    host = harness.parse_spec({"name": "host", "build": menus.build(), "address": HOST, "broadcast": CLIENT,
+                               "exit_after": seconds, "window": "1280x720", "screenshots": 300, "env": host_env,
+                               "expect": {"ticks": 0}})
+    client = harness.parse_spec({"name": "client", "build": menus.build(), "address": CLIENT, "broadcast": HOST,
+                                 "exit_after": seconds - join_delay, "delay": join_delay, "window": "1280x720",
+                                 "screenshots": 300, "env": client_env, "expect": {"ticks": 0}})
+    pdir = out / name
+    work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
+    harness.OWN_WORK.add(work)
+    build = harness.resolve_build(cfg, menus.build())
+    prepared = [harness.prepare_game(cfg, sp, build, work / sp["name"], pdir / sp["name"]) for sp in (host, client)]
+    inner = harness.run_group(cfg, prepared, None, work)
+    results = [harness.collect_game(sp, pr, i, pdir / sp["name"]) for sp, pr, i in zip((host, client), prepared, inner)]
+    shutil.rmtree(work, ignore_errors=True)
+    texts = [(pdir / sp["name"] / "debug.txt").read_text(errors="replace") if (pdir / sp["name"] / "debug.txt").exists()
+             else "" for sp in (host, client)]
+    return results[0], results[1], texts[0], texts[1]
+
+
+def roster_players(text):
+    """the drive's player lines: (slot, name, local, host)"""
+    import re
+    return [(int(m[1]), m[2], int(m[3]), int(m[4]))
+            for m in re.finditer(r"ae lobby: player (\d+) '([^']*)' local (\d) host (\d)", text)]
+
+
+def test_join_and_leave(cfg):
+    """an AE host (92) and an AE joiner (91): the joiner joins, both see 2 players (the joiner's own player local, the
+    host's the host: from the real machine index), the host plays and ends a game, both come back to AE's lobby (the
+    client's take-over), the joiner leaves and the host's roster goes back to 1"""
+    out = menus.out_dir(cfg, "lobby-join")
+    host_r, client_r, host, client = play_pair(cfg, out, "pair",
+                                               {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "92"},
+                                               {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "91"})
+    for side, r in (("host", host_r), ("client", client_r)):
+        assert r.get("status") == "PASS", (side, r.get("why"))
+    in_order(client, ["ae lobby: joined", "ae lobby: roster 2", "ae lobby: took the pregame UI", "ae lobby: left"])
+    in_order(host, ["ae lobby: hosting (LAN)", "ae lobby: roster 2", "ae lobby: took the pregame UI",
+                    "ae lobby: back in the lobby, roster 2", "ae lobby: roster 1"])
+    assert SELECT_MAP_FAILED not in host and SELECT_MAP_FAILED not in client
+    # (from the client's side: one local player, its own, not the host; the host's player is the host, not local)
+    players = roster_players(client)
+    assert len(players) == 2, players
+    assert len([p for p in players if p[2]]) == 1, players
+    assert all(not (p[2] and p[3]) for p in players) and len([p for p in players if p[3]]) == 1, players
+    host_players = roster_players(host)
+    assert any(p[2] and p[3] for p in host_players), host_players
+
+
+def test_local_refuses(cfg):
+    """a LOCAL host (93) with a bot: nobody joins (the roster stays 1, the bot tool joins nothing)"""
+    out = menus.out_dir(cfg, "lobby-local")
+    result, text, pngs = play(cfg, out, "local", {
+        "exit_after": 45, "bots": 1,
+        "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "93"}, "expect": {"ticks": 0}})
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae lobby: hosting (LOCAL)" in text
+    rosters = [line.rsplit(" ", 1)[1] for line in text.splitlines() if "ae lobby: roster " in line]
+    assert rosters and rosters[-1] == "1", rosters
+    bots = (out / "local" / "bots.log")
+    bot_log = bots.read_text(errors="replace") if bots.exists() else ""
+    # (system_link_bots.py logs "all N machines are in the lobby" once they joined)
+    assert bot_log and "in the lobby" not in bot_log, bot_log[-800:]
+
+
+def test_online_lists_only_when_allowed(cfg):
+    """preflight P21: value 95 hosts ONLINE; with internet play off (HALO_NET_ONLINE=false) nothing is hosted for the
+    internet and nothing listed: no invite, no game-list line"""
+    out = menus.out_dir(cfg, "lobby-online")
+    result, text, pngs = play(cfg, out, "online", {
+        "exit_after": 35, "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "95", "HALO_NET_ONLINE": "false"},
+        "expect": {"ticks": 0}})
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae lobby: hosting (ONLINE)" in text
+    assert "Internet play: hosting" not in text and "Game list: the game is listed" not in text
+
+
+def test_join_reason_no_game(cfg):
+    """a join with no host: "No game found on the LAN" within 15 s, no assert"""
+    out = menus.out_dir(cfg, "lobby-no-game")
+    result, text, pngs = play(cfg, out, "no-game", {
+        "exit_after": 35, "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "91"}, "expect": {"ticks": 0}})
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae lobby: join: No game found on the LAN" in text
+    searching = text.index("ae lobby: searching the LAN")
+    assert "ae lobby: join: No game found on the LAN" in text[searching:]
