@@ -609,6 +609,9 @@ static void fixes(void)
 	strip.active = -1;
 	CHECK(ae_tabs_step(&strip, 1) == 1 && ae_tabs_step(&strip, -1) == 2);
 	CHECK(ae_page_step(5, -1, 1) == 0 && ae_page_step(5, 9, -1) == 4);
+	/* (the value picker's in-place step: the same helper, no wrapping) */
+	CHECK(ae_value_step(5, 4, 1) == 4 && ae_value_step(5, 0, -1) == 0 && ae_value_step(5, 2, 1) == 3 &&
+		ae_value_step(5, 2, -1) == 1 && ae_value_step(0, 0, 1) == 0);
 	CHECK(!ae_stub_overflowed());
 }
 
@@ -703,6 +706,33 @@ static void rows_hold(void)
 		snprintf(counter, sizeof(counter), "%d / %d", 3, 30);
 		CHECK(count_calls(AE_STUB_RECT, AE_COLOR_DOT) == 0 && text_call(counter) && text_call(counter)->rgba == color);
 	}
+	/* (Task 7 re-review 2: the Q / E end caps' hits are as tall as the grown caps, in tabs and page dots) */
+	ae_stub_reset(1920, 720);
+	ae_hits_clear();
+	ae_draw_view(0, 0, 960, 540);
+	ae_density_view(640, 360, 1.0f, &d);
+	memset(&strip, 0, sizeof(strip));
+	strip.tabs = eight;
+	strip.count = 3;
+	strip.hover = -1;
+	ae_widget_tabs(&d, &strip, 30, 30, 1700, 21);
+	ae_widget_page_dots(&d, 960, 400, NULL, 6, 1, AE_COLOR_ACCENT, 22);
+	caps = 0;
+	for (index = 0; index < ae_stub_count(); index++)
+	{
+		struct ae_stub_call const *call = ae_stub_get(index);
+		struct ae_hit hit;
+		float px, py;
+
+		if (call->kind != AE_STUB_RECT || call->rgba != AE_COLOR_KEY_CAP)
+			continue;
+		box = pixels_of(call);
+		middle_of(call, &px, &py, 720);
+		CHECK(ae_hit_at(px, py, 0, &hit) && (hit.part == AE_PART_ARROW_LEFT || hit.part == AE_PART_ARROW_RIGHT));
+		CHECK(near(hit.rect.height, box.height * 1080.0f / 720.0f, 0.05f));
+		caps++;
+	}
+	CHECK(caps == 4);
 	/* N3: a strip drawn at rest (its target 0), then the last tab: it slides */
 	ae_motion_set_reduced(0);
 	ae_motion_set_now(30000);

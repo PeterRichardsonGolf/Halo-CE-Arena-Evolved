@@ -137,6 +137,8 @@ int ae_tabs_pointer(struct ae_tabs *tabs, struct ae_pointer const *pointer, shor
 void ae_widget_page_dots(struct ae_density const *density, float center_x, float y, const char *page_title,
 	short count, short current, unsigned int current_color, short hit_id);
 short ae_page_step(short count, short current, short direction);   /* wraps */
+/* in place (left / right on a row): the new index, wrapping off; the caller starts the value tick */
+short ae_value_step(short count, short current, short direction);
 
 struct ae_prompt { int button; const char *label; const char *key; /* NULL: ae_prompt_key(button) */ int action; };
 const char *ae_prompt_key(int button);      /* A Enter, B Esc, X Ctrl+F, Y R, LB Q, RB E, LT PgUp, RT PgDn,

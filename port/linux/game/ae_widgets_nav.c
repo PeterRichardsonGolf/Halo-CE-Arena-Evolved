@@ -77,10 +77,11 @@ static void hit_between(float x, float y, float width, float height, float left,
 		ae_hit_add(x0, y, x1 - x0, height, id, part, index);
 }
 
-/* the one step through a ring of count (direction -1 / 1): wrapping, passing over what skip refuses (NULL: none);
-current when nothing else can be chosen. Tabs, page dots and the value picker step through it (preflight P31) */
-static short step(short count, short current, short direction, int (*skip)(void const *context, short index),
-	void const *context)
+/* the one step through count items (direction -1 / 1): wrapping (or stopping at the ends), passing over what skip
+refuses (NULL: none); current when nothing else can be chosen. Tabs, page dots and the value picker's in-place step
+go through it (preflight P31) */
+static short step(short count, short current, short direction, int wrap,
+	int (*skip)(void const *context, short index), void const *context)
 {
 	short index = current, tries;
 
@@ -97,6 +98,9 @@ static short step(short count, short current, short direction, int (*skip)(void 
 	}
 	for (tries = 0; tries < count; tries++)
 	{
+		/* (no wrapping: an end stays the end) */
+		if (!wrap && (index + direction < 0 || index + direction >= count))
+			break;
 		index = (short)((index + direction + count) % count);
 		if (index == current)
 			break;
@@ -171,6 +175,12 @@ static float end_glyph(struct ae_density const *density, float x, float center_y
 	return ae_draw_button(font, button, height, x, center_y - height * 0.5f, ae_prompt_tint(device, button));
 }
 
+/* the height an end of a strip takes: its glyph's, or its key cap's (grown at VIEW to hold its words) */
+static float end_height(struct ae_density const *density, float glyph)
+{
+	return ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE ? cap_height(density, glyph) : glyph;
+}
+
 /* ---------- tabs */
 
 static int tab_disabled(void const *context, short index)
@@ -182,7 +192,7 @@ static int tab_disabled(void const *context, short index)
 
 short ae_tabs_step(struct ae_tabs const *tabs, short direction)
 {
-	return step(tabs->count, tabs->active, direction, tab_disabled, tabs);
+	return step(tabs->count, tabs->active, direction, 1, tab_disabled, tabs);
 }
 
 /* (a horizontal fade: strips of falling alpha, opaque at the cut edge; to_right: the edge is on the left) */
@@ -215,8 +225,11 @@ float ae_widget_tabs(struct ae_density const *density, struct ae_tabs *tabs, flo
 	right_end = end_glyph(density, x, center_y, glyph, 0, 0);
 	end_glyph(density, x, center_y, glyph, 1, 1);
 	end_glyph(density, x + width - right_end, center_y, glyph, 0, 1);
-	ae_hit_add(x, center_y - glyph * 0.5f, left_end, glyph, hit_id, AE_PART_ARROW_LEFT, -1);
-	ae_hit_add(x + width - right_end, center_y - glyph * 0.5f, right_end, glyph, hit_id, AE_PART_ARROW_RIGHT, -1);
+	/* (the ends' hits as tall as what is drawn: a key cap grown at VIEW) */
+	ae_hit_add(x, center_y - end_height(density, glyph) * 0.5f, left_end, end_height(density, glyph), hit_id,
+		AE_PART_ARROW_LEFT, -1);
+	ae_hit_add(x + width - right_end, center_y - end_height(density, glyph) * 0.5f, right_end, end_height(density, glyph),
+		hit_id, AE_PART_ARROW_RIGHT, -1);
 	area_x = x + left_end + end_gap;
 	area_width = width - left_end - right_end - 2.0f * end_gap;
 	for (index = 0; index < count; index++)
@@ -345,13 +358,12 @@ int ae_tabs_pointer(struct ae_tabs *tabs, struct ae_pointer const *pointer, shor
 
 short ae_page_step(short count, short current, short direction)
 {
-	return step(count, current, direction, NULL, NULL);
+	return step(count, current, direction, 1, NULL, NULL);
 }
 
-/* the height an end of a strip takes: its glyph's, or its key cap's (grown at VIEW to hold its words) */
-static float end_height(struct ae_density const *density, float glyph)
+short ae_value_step(short count, short current, short direction)
 {
-	return ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE ? cap_height(density, glyph) : glyph;
+	return step(count, current, direction, 0, NULL, NULL);
 }
 
 /* the dots' row's height (its ends included), for the panel's layout */
@@ -428,9 +440,11 @@ static void page_dots(struct ae_density const *density, float center_x, float y,
 	end_glyph(density, center_x + width * 0.5f + end_gap, row_center, glyph, 0, 1);
 	if (hit_id >= 0)
 	{
-		ae_hit_add(center_x - width * 0.5f - end_gap - left_end, row_center - glyph * 0.5f, left_end, glyph, hit_id,
+		float end = end_height(density, glyph);
+
+		ae_hit_add(center_x - width * 0.5f - end_gap - left_end, row_center - end * 0.5f, left_end, end, hit_id,
 			AE_PART_ARROW_LEFT, -1);
-		ae_hit_add(center_x + width * 0.5f + end_gap, row_center - glyph * 0.5f, right_end, glyph, hit_id,
+		ae_hit_add(center_x + width * 0.5f + end_gap, row_center - end * 0.5f, right_end, end, hit_id,
 			AE_PART_ARROW_RIGHT, -1);
 	}
 }
