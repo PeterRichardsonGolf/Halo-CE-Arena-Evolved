@@ -160,30 +160,62 @@ float ae_widget_key_cap(struct ae_density const *density, float x, float y, floa
 	return width;
 }
 
-/* an end of a strip (tabs, page dots): the LB / RB glyph (Q / E cap on the keyboard), height tall, centred on
-center_y with its left at x; previous: LB / Q; returns its width (measure only when draw is 0) */
-static float end_glyph(struct ae_density const *density, float x, float center_y, float height, int previous, int draw)
+/* a pad's shoulders and triggers as their family names them: drawn caps (Kenney's glyphs for them fill a third of
+their square: unreadable, mockups 04, 06, 21); PlayStation's START / BACK are its OPTIONS / CREATE caps; NULL: the
+button's glyph */
+static const char *pad_cap_words(int device, int button)
 {
-	int device = ae_ui_last_device(), font = device_font(device);
-	int button = previous ? AE_BUTTON_LEFT_SHOULDER : AE_BUTTON_RIGHT_SHOULDER;
+	int playstation = device == AE_DEVICE_PLAYSTATION, nintendo = device == AE_DEVICE_NINTENDO;
 
-	if (font < 0)
+	switch (button)
 	{
-		const char *key = ae_prompt_key(button);
+	case AE_BUTTON_LEFT_SHOULDER: return playstation ? "L1" : nintendo ? "L" : "LB";
+	case AE_BUTTON_RIGHT_SHOULDER: return playstation ? "R1" : nintendo ? "R" : "RB";
+	case AE_BUTTON_LEFT_TRIGGER: return playstation ? "L2" : nintendo ? "ZL" : "LT";
+	case AE_BUTTON_RIGHT_TRIGGER: return playstation ? "R2" : nintendo ? "ZR" : "RT";
+	case AE_BUTTON_START: return playstation ? ae_string(AE_STR_CAP_OPTIONS) : NULL;
+	case AE_BUTTON_BACK: return playstation ? ae_string(AE_STR_CAP_CREATE) : NULL;
+	default: return NULL;
+	}
+}
 
+/* a button's mark for the device (pads: a glyph or a drawn cap; the keyboard: its key's cap), height tall, centred on
+center_y with its left at x; its width (measure only when draw is 0) */
+static float button_mark(struct ae_density const *density, int device, int button, const char *key, float x,
+	float center_y, float height, int draw)
+{
+	int font = device_font(device);
+	const char *words = font < 0 ? (key ? key : ae_prompt_key(button)) : pad_cap_words(device, button);
+
+	if (words)
+	{
 		if (!draw)
-			return key_cap_width(density, height, key);
-		return ae_widget_key_cap(density, x, center_y - height * 0.5f, height, key);
+			return key_cap_width(density, height, words);
+		return ae_widget_key_cap(density, x, center_y - height * 0.5f, height, words);
 	}
 	if (!draw)
 		return ae_draw_button_width(font, button, height);
 	return ae_draw_button(font, button, height, x, center_y - height * 0.5f, ae_prompt_tint(device, button));
 }
 
-/* the height an end of a strip takes: its glyph's, or its key cap's (grown at VIEW to hold its words) */
+/* the height a mark takes: a cap's grows at VIEW to hold its words */
+static float mark_height(struct ae_density const *density, int device, int button, float glyph)
+{
+	return device_font(device) < 0 || pad_cap_words(device, button) ? cap_height(density, glyph) : glyph;
+}
+
+/* an end of a strip (tabs, page dots): LB / RB (Q / E on the keyboard), height tall, centred on center_y with its
+left at x; previous: LB / Q; returns its width (measure only when draw is 0) */
+static float end_glyph(struct ae_density const *density, float x, float center_y, float height, int previous, int draw)
+{
+	return button_mark(density, ae_ui_last_device(), previous ? AE_BUTTON_LEFT_SHOULDER : AE_BUTTON_RIGHT_SHOULDER, NULL,
+		x, center_y, height, draw);
+}
+
+/* the height an end of a strip takes: its cap's (grown at VIEW to hold its words) */
 static float end_height(struct ae_density const *density, float glyph)
 {
-	return ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE ? cap_height(density, glyph) : glyph;
+	return mark_height(density, ae_ui_last_device(), AE_BUTTON_LEFT_SHOULDER, glyph);
 }
 
 /* ---------- tabs */
@@ -522,7 +554,10 @@ static float prompt_parts(struct ae_density const *density, int device, struct a
 		struct ae_prompt const *prompt = &prompts[index];
 		struct prompt_parts *part = &parts[index];
 
-		if (label_room > 0.0f)
+		/* (label_room < 0: no labels, the marks alone) */
+		if (label_room < 0.0f)
+			part->label[0] = 0;
+		else if (label_room > 0.0f)
 			ae_fit_text(AE_FONT_BODY, label_size, prompt->label ? prompt->label : "", label_room, part->label,
 				sizeof(part->label));
 		else
@@ -539,12 +574,8 @@ static float prompt_parts(struct ae_density const *density, int device, struct a
 		}
 		else
 		{
-			if (device == AE_DEVICE_PLAYSTATION && (prompt->button == AE_BUTTON_START || prompt->button == AE_BUTTON_BACK))
-				part->mark = key_cap_width(density, glyph,
-					ae_string(prompt->button == AE_BUTTON_START ? AE_STR_CAP_OPTIONS : AE_STR_CAP_CREATE));
-			else
-				part->mark = ae_draw_button_width(font, prompt->button, glyph);
-			part->width = part->mark + glyph * GLYPH_GAP + part->label_width;
+			part->mark = button_mark(density, device, prompt->button, NULL, 0.0f, 0.0f, glyph, 0);
+			part->width = part->mark + (part->label[0] ? glyph * GLYPH_GAP + part->label_width : 0.0f);
 		}
 		total += part->width + (index + 1 < count ? gap : 0.0f);
 	}
@@ -563,31 +594,13 @@ void ae_widget_prompts(struct ae_density const *density, float x, float center_y
 
 	if (count > 16)
 		count = 16;
-	/* room: right_x is the row's right end (the status's too). Short of it the status goes first, then the labels
-	are shortened alike with "…" */
+	/* room: right_x is the row's right end (the status's too). Short of it the status goes first, then every label:
+	the marks alone (a word is never cut) */
 	total = prompt_parts(density, device, prompts, count, 0.0f, parts);
 	if (status_width > 0.0f && total + gap + status_width > room)
 		status_width = 0.0f;
 	if (total > room && count > 0)
-	{
-		/* (the widest label room that fits, by halving: every label at most that wide) */
-		float low = 0.0f, high = 0.0f;
-		int round;
-
-		for (index = 0; index < count; index++)
-			high = parts[index].label_width > high ? parts[index].label_width : high;
-		for (round = 0; round < 16; round++)
-		{
-			float middle = (low + high) * 0.5f;
-
-			if (prompt_parts(density, device, prompts, count, middle, parts) <= room)
-				low = middle;
-			else
-				high = middle;
-		}
-		/* (even no labels short of room: the caps alone, as they are) */
-		total = prompt_parts(density, device, prompts, count, low > 0.0f ? low : 0.001f, parts);
-	}
+		total = prompt_parts(density, device, prompts, count, -1.0f, parts);
 	for (index = 0; index < count; index++)
 	{
 		struct ae_prompt const *prompt = &prompts[index];
@@ -613,12 +626,9 @@ void ae_widget_prompts(struct ae_density const *density, float x, float center_y
 		}
 		else
 		{
-			/* a pad: its glyph (face buttons tinted), or PlayStation's drawn OPTIONS / CREATE caps */
-			if (device == AE_DEVICE_PLAYSTATION && (prompt->button == AE_BUTTON_START || prompt->button == AE_BUTTON_BACK))
-				ae_widget_key_cap(density, pen, center_y - glyph * 0.5f, glyph,
-					ae_string(prompt->button == AE_BUTTON_START ? AE_STR_CAP_OPTIONS : AE_STR_CAP_CREATE));
-			else
-				ae_draw_button(font, prompt->button, glyph, pen, center_y - glyph * 0.5f, ae_prompt_tint(device, prompt->button));
+			/* a pad: its glyph (face buttons tinted), or a drawn cap (shoulders, triggers, PlayStation's OPTIONS /
+			CREATE) */
+			button_mark(density, device, prompt->button, NULL, pen, center_y, glyph, 1);
 			if (part->label[0])
 				ae_draw_text(AE_FONT_BODY, label_size, pen + part->mark + glyph * GLYPH_GAP, text_top(AE_FONT_BODY, label_size,
 					center_y), AE_ALIGN_LEFT, AE_COLOR_TEXT, part->label);

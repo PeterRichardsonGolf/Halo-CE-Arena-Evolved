@@ -365,8 +365,9 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 		right -= layout->arrow_cell;
 		layout->arrow_right_x = right;
 	}
+	/* (a disabled row's reason at the minor size, as the mockups: 04, 25) */
 	if (shown)
-		layout->value_width = ae_draw_text_width(AE_FONT_ROW, text, shown);
+		layout->value_width = ae_draw_text_width(AE_FONT_ROW, disabled ? minor_size(density) : text, shown);
 	layout->value_x = right - layout->value_width;
 	right = layout->value_x;
 	if (arrows)
@@ -530,6 +531,9 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 			ae_draw_text(AE_FONT_ROW, text, right + units(density, new_x), text_top(AE_FONT_ROW, text, center_y),
 				AE_ALIGN_RIGHT, scaled_alpha(color, new_alpha), shown);
 		}
+		else if (disabled)
+			ae_draw_text(AE_FONT_ROW, minor_size(density), right, text_top(AE_FONT_ROW, minor_size(density), center_y),
+				AE_ALIGN_RIGHT, color, shown);
 		else
 			ae_draw_text(AE_FONT_ROW, text, right, text_top(AE_FONT_ROW, text, center_y), AE_ALIGN_RIGHT, color, shown);
 	}
@@ -599,7 +603,9 @@ void ae_list_view_init(struct ae_list_view *view, short count, short rows)
 short ae_list_view_rows(struct ae_density const *density, float height)
 {
 	float pitch = ae_size_row(density) + units(density, density->metrics->gap);
-	float usable = height - 2.0f * more_line(density) + units(density, density->metrics->gap);
+	/* (one "N more" line under the rows; the "▲ N more" line over them only while items are above: ae_widget_list
+	shows a row less then) */
+	float usable = height - more_line(density) + units(density, density->metrics->gap);
 	int rows = pitch > 0.0f ? (int)(usable / pitch) : 1;
 
 	return (short)(rows < 1 ? 1 : rows);
@@ -658,10 +664,16 @@ void ae_widget_list(struct ae_density const *density, struct ae_list_view *view,
 	struct ae_list *list = &view->list;
 	float row = ae_size_row(density), gap = units(density, density->metrics->gap), pitch = row + gap;
 	float strip = units(density, TRACK_STRIP_U), allowance = CLIP_ALLOWANCE_PIXELS * density->pixel;
-	float rows_top = y + more_line(density), rows_width = width - strip, rows_height, first, bar;
+	float rows_top = y, rows_width = width - strip, rows_height, first, bar;
 	short rows = ae_list_view_rows(density, height), item, last;
 	int bar_moving;
 
+	/* (the "▲ N more" line only while items are above: then it takes the top, and a row less shows) */
+	if (list->first > 0 && rows > 1)
+	{
+		rows--;
+		rows_top += more_line(density);
+	}
 	if (list->rows != rows)
 	{
 		/* (the visible rows changed: the window follows the focus again) */

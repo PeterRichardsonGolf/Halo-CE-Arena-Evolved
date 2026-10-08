@@ -131,10 +131,13 @@ def test_gallery_sheets(gallery):
 def test_view_density_numbers(gallery):
     out, runs = gallery
     two = view_lines(runs["2p-100-a"][1])
+    assert sorted(two) == [1, 2], two
     assert two[1][1] == "VIEW" and two[1][2] == 1.00 and (two[1][3], two[1][4]) == (470, 464), two
     four = view_lines(runs["4p-100"][1])
-    assert (four[1][3], four[1][4]) == (442, 464), four
+    assert sorted(four) == [1, 2, 3, 4], four
+    assert all((line[3], line[4]) == (442, 464) for line in four.values()), four
     small = view_lines(runs["4p-720-100"][1])
+    assert sorted(small) == [1, 2, 3, 4], small
     for view, line in small.items():
         assert line[5] >= 16.0 and line[6] >= 14.0 and line[7] >= 26.6, (view, line)
     big = view_lines(runs["4p-130"][1])
@@ -165,14 +168,21 @@ def test_gallery_typing(cfg):
     harness's pads count as the keyboard's on the first) opens AE's keyboard, right and A type a key, B closes it"""
     out = menus.out_dir(cfg, "gallery-typing")
     presses = ("key:Return", "key:A", "key:E", "key:Backspace", "key:B", "key:Return", "down", "2:a", "2:right", "2:a",
-               "2:b")
+               "2:start", "2:a", "2:b")
     result, text, pngs = play(cfg, out, "typing", 13, presses)
     assert result.get("status") == "PASS", result.get("why")
-    assert "ae gallery: field 'AB'" in text, [line for line in text.splitlines() if "ae gallery" in line]
-    assert "ae gallery: keyboard open" in text and "ae gallery: keyboard closed" in text
-    # (the keyboard opening (forward), right (cursor), a key typed (forward), B closing it (back): one a press)
+    lines = [line for line in text.splitlines() if "ae gallery" in line]
+    assert "ae gallery: field 'AB'" in text, lines
+    # (AE's keyboard: right to W, A types it (the mixed-case field: w) at the caret, the end; START keeps it; opened
+    # again, B closes it unchanged)
+    assert text.count("ae gallery: keyboard open") == 2 and text.count("ae gallery: keyboard closed") == 2, lines
+    assert "ae gallery: field 'Team AE Pro Slayerw'" in text, lines
+    after = text.split("ae gallery: field 'Team AE Pro Slayerw'", 1)[1]
+    assert "ae gallery: field 'Team AE Pro Slayerw'" in after, lines
+    # (the keyboard opening (forward), right (cursor), a key typed (forward), START (forward); opening (forward), B
+    # (back): one a press)
     after_open = text.split("ae gallery: keyboard open", 1)[1]
-    assert sounds(after_open)[:4] == ["forward", "cursor", "forward", "back"], sounds(after_open)
+    assert sounds(after_open)[:6] == ["forward", "cursor", "forward", "forward", "forward", "back"], sounds(after_open)
 
 
 def accent_pixels(image, box):
@@ -185,19 +195,26 @@ def accent_pixels(image, box):
     return n
 
 
-def test_reduce_motion(cfg):
-    """REDUCE MOTION: the caret never blinks: two screenshots ~265 ms apart (16 frames) both show it (accent pixels
-    inside the first field's well, its accent ring left out)"""
-    out = menus.out_dir(cfg, "gallery-reduce")
-    result, text, pngs = play(cfg, out, "reduce", 13, env={"HALO_ARENA_MENUS_REDUCE_MOTION": "1"}, shots=16)
-    assert result.get("status") == "PASS", result.get("why")
+def caret_counts(cfg, out, name, env, shots=7, last=10):
+    """the accent pixels inside the first field's well (its accent ring left out) in the last screenshots"""
+    result, text, pngs = play(cfg, out, name, 13, env=env, shots=shots)
+    assert result.get("status") == "PASS", (name, result.get("why"))
     m = re.search(r"ae gallery: field 1 at (\d+),(\d+) (\d+)x(\d+)", text)
     assert m, "no field position logged"
     x, y, w, h = (int(v) for v in m.groups())
     box = (x + 6, y + 6, x + w - 6, y + h - 6)
-    assert len(pngs) >= 2
-    counts = [accent_pixels(menus.harness.read_png(p), box) for p in pngs[-2:]]
-    assert all(c >= 20 for c in counts), counts
+    assert len(pngs) >= last, (name, len(pngs))
+    return [accent_pixels(menus.harness.read_png(p), box) for p in pngs[-last:]]
+
+
+def test_reduce_motion(cfg):
+    """REDUCE MOTION: the caret never blinks: screenshots every 7 frames (about 115 ms, against the blink's 530 ms
+    on and off) all show it; the control game without REDUCE MOTION catches it off in at least one"""
+    out = menus.out_dir(cfg, "gallery-reduce")
+    steady = caret_counts(cfg, out, "reduce", {"HALO_ARENA_MENUS_REDUCE_MOTION": "1"})
+    assert all(c >= 20 for c in steady), steady
+    blinking = caret_counts(cfg, out, "control", {})
+    assert any(c < 20 for c in blinking) and any(c >= 20 for c in blinking), blinking
 
 
 if __name__ == "__main__":

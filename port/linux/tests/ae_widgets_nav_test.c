@@ -118,8 +118,9 @@ static void tabs(void)
 	CHECK(right_fades > 0 && ae_stub_find_text("\xE2\x80\xBA", 0) >= 0);
 	/* (the active underline, 4 u accent) */
 	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_ACCENT) >= 1);
-	/* LB / RB glyphs at the ends (Xbox) */
-	CHECK(count_calls(AE_STUB_BUTTON, AE_COLOR_KEY_CAP) == 2);
+	/* LB / RB at the ends (Xbox): drawn caps with their names (readable, mockup 04), no glyphs */
+	CHECK(count_calls(AE_STUB_BUTTON, AE_COLOR_KEY_CAP) == 0 && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 2 &&
+		text_call("LB") && text_call("RB") && text_call("LB")->rgba == AE_COLOR_KEY_CAP_TEXT);
 	/* the last tab active: the strip scrolls to its end, no fade on the right */
 	strip.active = 7;
 	ae_stub_reset(1440, 1080);
@@ -215,8 +216,9 @@ static void dots(void)
 	CHECK(near((dot_right[0] - 8 + dot_right[4]) * 0.5f, 960, .01f));
 	CHECK(ae_page_step(6, 5, 1) == 0 && ae_page_step(6, 0, -1) == 5 && ae_page_step(6, 2, 1) == 3 &&
 		ae_page_step(0, 0, 1) == 0 && ae_page_step(1, 0, 1) == 0);
-	/* LB / RB glyphs at the ends */
-	CHECK(count_calls(AE_STUB_BUTTON, AE_COLOR_KEY_CAP) == 2);
+	/* LB / RB caps at the ends */
+	CHECK(count_calls(AE_STUB_BUTTON, AE_COLOR_KEY_CAP) == 0 && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 2 &&
+		text_call("LB") && text_call("RB"));
 }
 
 static void prompts(void)
@@ -487,8 +489,8 @@ static void fixes(void)
 	for (index = 0; index < ae_stub_count(); index++)
 		if (ae_stub_get(index)->kind == AE_STUB_BUTTON)
 			CHECK(ae_stub_text_em_pixels(ae_stub_get(index)) >= 18.0f - 0.01f);
-	/* M2: three keyboard prompts in a 720p quarter's panel: the row stays left of right_x (labels shortened), the
-	status dropped first */
+	/* M2: three keyboard prompts in a 720p quarter's panel: the row stays left of right_x (the status dropped first,
+	then the labels all go: the caps alone; a word is never cut) */
 	use_device(AE_DEVICE_KEYBOARD_MOUSE);
 	ae_stub_reset(1920, 720);
 	ae_hits_clear();
@@ -514,6 +516,9 @@ static void fixes(void)
 	/* (N4: every prompt still there, each with its cap) */
 	CHECK(n == 3 && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 3 && text_call("Enter") && text_call("Esc") &&
 		text_call("Q"));
+	for (index = 0; index < ae_stub_count(); index++)
+		if (ae_stub_get(index)->kind == AE_STUB_TEXT)
+			CHECK(!strstr(ae_stub_get(index)->text, "\xE2\x80\xA6"));
 
 	/* I3: tabs and page dots in a right-hand view: hits in layout units */
 	use_device(AE_DEVICE_XBOX);
@@ -751,6 +756,86 @@ static void rows_hold(void)
 	CHECK(!ae_stub_overflowed());
 }
 
+/* mockup 04: Settings' seven tabs fit at 1920x1080 100 % with their LB / RB caps in 52 % of the frame: no fades, no
+‹ ›; every label whole between the caps */
+static void settings_tabs_fit(void)
+{
+	static struct ae_tab const seven[] =
+	{
+		{ "GAME", 1, 0, NULL }, { "HUD", 0, 0, NULL }, { "VIDEO", 1, 0, NULL }, { "AUDIO", 0, 0, NULL },
+		{ "CONTROLS", 0, 0, NULL }, { "NETWORK", 0, 0, NULL }, { "PROFILE", 0, 0, NULL },
+	};
+	struct ae_density d;
+	struct ae_tabs strip;
+	struct ae_rect lb, rb, word;
+	int index;
+
+	ae_density_full(1080, 1.0f, &d);
+	use_device(AE_DEVICE_XBOX);
+	ae_stub_reset(1920, 1080);
+	memset(&strip, 0, sizeof(strip));
+	strip.tabs = seven;
+	strip.count = 7;
+	strip.active = 2;
+	strip.hover = -1;
+	ae_widget_tabs(&d, &strip, 96, 148, 1920.0f * 0.52f, 2);
+	CHECK(ae_stub_find_text("\xE2\x80\xB9", 0) < 0 && ae_stub_find_text("\xE2\x80\xBA", 0) < 0);
+	CHECK(text_call("LB") && text_call("RB"));
+	ae_stub_pixels(text_call("LB"), &lb);
+	ae_stub_pixels(text_call("RB"), &rb);
+	for (index = 0; index < 7; index++)
+	{
+		CHECK(text_call(seven[index].label) != NULL);
+		if (!text_call(seven[index].label))
+			continue;
+		ae_stub_pixels(text_call(seven[index].label), &word);
+		CHECK(word.x > lb.x + lb.width && word.x + word.width < rb.x);
+	}
+	for (index = 0; index < ae_stub_count(); index++)
+		CHECK(!(ae_stub_get(index)->kind == AE_STUB_RECT && (ae_stub_get(index)->rgba & 0xFFFFFF00u) ==
+			(AE_COLOR_FADE & 0xFFFFFF00u)));
+}
+
+/* the shoulders and triggers as drawn caps with their family's names (Kenney's glyphs for them are unreadable); face
+buttons stay glyphs; at VIEW the caps' words keep the 14 px floor */
+static void shoulder_caps(void)
+{
+	static struct ae_prompt const prompts[3] =
+	{
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_LEFT_SHOULDER, "Move caret", NULL, AE_ACTION_TAB_PREVIOUS },
+		{ AE_BUTTON_LEFT_TRIGGER, "Shift", NULL, AE_ACTION_PAGE_UP },
+	};
+	struct ae_density d;
+	int index;
+
+	ae_density_full(1080, 1.0f, &d);
+	use_device(AE_DEVICE_XBOX);
+	ae_stub_reset(1920, 1080);
+	ae_widget_prompts(&d, 100, 900, prompts, 3, NULL, 1800, -1, 3);
+	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 2 && text_call("LB") && text_call("LT") &&
+		text_call("Move caret") && text_call("Shift"));
+	CHECK(ae_stub_count() > 0);
+	for (index = 0; index < ae_stub_count(); index++)
+		if (ae_stub_get(index)->kind == AE_STUB_BUTTON)
+			CHECK(ae_stub_get(index)->align == AE_BUTTON_A);
+	use_device(AE_DEVICE_PLAYSTATION);
+	ae_stub_reset(1920, 1080);
+	ae_widget_prompts(&d, 100, 900, prompts, 3, NULL, 1800, -1, 3);
+	CHECK(text_call("L1") && text_call("L2"));
+	use_device(AE_DEVICE_NINTENDO);
+	ae_stub_reset(1920, 1080);
+	ae_widget_prompts(&d, 100, 900, prompts, 3, NULL, 1800, -1, 3);
+	CHECK(text_call("L") && text_call("ZL"));
+	/* (a 720p quarter: the caps' words at 14 px at least) */
+	use_device(AE_DEVICE_XBOX);
+	ae_stub_reset(1920, 720);
+	ae_draw_view(960, 0, 960, 540);
+	ae_density_view(640, 360, 1.0f, &d);
+	ae_widget_prompts(&d, 30, 900, prompts, 3, NULL, 1800, -1, 3);
+	CHECK(text_call("LB") && ae_stub_text_em_pixels(text_call("LB")) >= 14.0f - 0.01f);
+	use_device(AE_DEVICE_XBOX);
+}
+
 int main(void)
 {
 	tabs();
@@ -759,6 +844,8 @@ int main(void)
 	panel();
 	fixes();
 	rows_hold();
+	shoulder_caps();
+	settings_tabs_fit();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

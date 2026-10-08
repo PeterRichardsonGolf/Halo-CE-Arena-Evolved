@@ -56,7 +56,7 @@ enum
 #define TABS_Y (148.0f / 1080.0f)
 #define CONTENT_Y (232.0f / 1080.0f)
 #define LIST_WIDTH 0.52f
-#define LIST_BOTTOM (970.0f / 1080.0f)
+#define LIST_BOTTOM (995.0f / 1080.0f)   /* the list's "N more" line just above the footer, as 04 */
 #define HELP_X (1143.0f / 1920.0f)
 #define HELP_BOTTOM (958.0f / 1080.0f)
 #define FOOTER_ABOVE_U 62.0f
@@ -825,7 +825,7 @@ static void dialog_open_full(void)
 	spec.choices[1] = "SAVE AS NEW";
 	spec.choices[2] = "DISCARD CHANGES";
 	spec.choice_count = 3;
-	/* (the safe choice SAVE AS NEW, as the mockup; B picks it too: the dialog has no choice-less close) */
+	/* (the safe choice SAVE AS NEW, as the mockup; B / Esc, the cancel choice, picks it: the dialog ruling) */
 	spec.safe_choice = 1;
 	spec.cancel_choice = 1;
 	spec.density = gallery.density;
@@ -1073,7 +1073,10 @@ static void view_popover(int view)
 		spec.choices[1] = ae_string(AE_STR_LEAVE);
 		spec.choice_count = 2;
 		spec.density = v->density;
+		/* (the panel under its header: the page it hides, mockup 25) */
 		spec.bounds = v->panel;
+		spec.bounds.y = v->content.y;
+		spec.bounds.height = v->panel.y + v->panel.height - v->content.y;
 		spec.view = v->view;
 		spec.picked = dialog_picked;
 		ae_dialog_open(&spec, (short)view);
@@ -1378,8 +1381,9 @@ int ae_screen_gallery_open(int value)
 		v->page = value == 23 ? view + 3 : view + 1;
 		v->logged_width = -1.0f;
 		ae_list_view_init(&v->list, (short)(sizeof(settings_view_rows) / sizeof(settings_view_rows[0])), 6);
-		ae_list_set_focus(&v->list.list, 4);
-		v->list.previous_focus = 4;
+		/* (the focus on LOOK SENSITIVITY, as mockup 26: the list at its top) */
+		ae_list_set_focus(&v->list.list, 1);
+		v->list.previous_focus = 1;
 		ae_text_init(&v->text, "PRO HUD", 11, 1);
 	}
 	if (!ae_ui_push(&gallery_class, AE_OWNER_ANY, &gallery))

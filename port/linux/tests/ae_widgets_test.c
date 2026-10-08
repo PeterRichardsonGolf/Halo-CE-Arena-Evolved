@@ -170,6 +170,8 @@ static void rows(struct density_case const *c)
 	ae_widget_row(&d, 0, 0, width, &row, 1, 0);
 	call = text_call("Needs FULLSCREEN");
 	CHECK(call && call->rgba == AE_COLOR_WARNING && call->align == AE_ALIGN_RIGHT);
+	/* (at the minor size, as the mockups) */
+	CHECK(call && near(call->size, ae_size_minor(&d), 0.01f));
 	CHECK(ae_stub_find_text("ON", 0) < 0);
 	call = text_call("V-SYNC");
 	CHECK(call && call->rgba == AE_COLOR_DISABLED_TEXT);
@@ -372,16 +374,18 @@ static void lists(struct density_case const *c)
 		if (c->view)
 			ae_draw_view(0, 0, 960, 540);
 		ae_widget_list(&d, &view, 0, 0, width, height, draw_item, &context, 9);
-		CHECK(ae_hit_at(pointer.x, pointer.y, 0, &hit) && hit.index == 6);
+		/* (scrolled: the "▲ N more" line takes the top, so the rows sit a line lower: the row under the pointer is
+		item 5 now, the 4th row's place less that line) */
+		CHECK(ae_hit_at(pointer.x, pointer.y, 0, &hit) && hit.index == 5);
 		pointer.wheel_steps = 0;
 		pointer.moved = 1;
 		ae_list_view_pointer(&view, &pointer, 9);
-		CHECK(view.list.focus == 6 && view.hover == 6 && view.mouse == 1 && view.list.first == 3);
+		CHECK(view.list.focus == 5 && view.hover == 5 && view.mouse == 1 && view.list.first == 3);
 		/* a click: the item, the forward sound */
 		pointer.moved = 0;
 		pointer.left_clicks = 1;
 		ae_sound_reset();
-		CHECK(ae_list_view_pointer(&view, &pointer, 9) == 6 && ae_sound_take(0) == AE_SOUND_FORWARD);
+		CHECK(ae_list_view_pointer(&view, &pointer, 9) == 5 && ae_sound_take(0) == AE_SOUND_FORWARD);
 	}
 	/* hits are layout units even inside a right-hand view */
 	ae_stub_reset(1920, c->window_height);
@@ -527,7 +531,7 @@ static void thumbs(void)
 		pointer.moved = 1;
 		pointer.y += right.track_height;
 		ae_list_view_pointer(&right, &pointer, 4);
-		CHECK(right.list.first == 35);
+		CHECK(right.list.first == 40 - right.list.rows);
 		pointer.left_held = 0;
 		pointer.moved = 0;
 		ae_list_view_pointer(&right, &pointer, 4);
@@ -637,6 +641,37 @@ static void list_edges(void)
 	ae_hits_clear();
 	ae_list_view_init(&view, 40, rows);
 	ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+	/* (at the top nothing is above: the rows start at the list's top, no "▲" line kept; scrolled, the "▲ N more" line
+	takes the top and a row less shows) */
+	{
+		struct ae_rect first_row;
+
+		/* (the focused first row: the selection bar) */
+		ae_stub_pixels(ae_stub_get(find_call(AE_STUB_RECT, AE_COLOR_SELECTION)), &first_row);
+		CHECK(near(first_row.y, 100, 0.01f));
+		CHECK(text_call("\xE2\x96\xB2 1 more") == NULL);
+		view.list.first = 3;
+		view.list.focus = 3;
+		ae_motion_finish(&view.scroll);
+		ae_stub_reset(1920, 1080);
+		ae_hits_clear();
+		ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+		snprintf(more, sizeof(more), "\xE2\x96\xB2 %d more", view.list.first);
+		CHECK(text_call(more) && text_call(more)->y < 100 + ae_size_row(&d) && view.list.rows == rows - 1);
+		{
+			struct ae_rect more_box, row_box;
+
+			ae_stub_pixels(text_call(more), &more_box);
+			ae_stub_pixels(text_call("ROW 4") ? text_call("ROW 4") : text_call("ROW 5"), &row_box);
+			/* (the line clear of the first row shown: nothing drawn over a label) */
+			CHECK(more_box.y + more_box.height <= row_box.y);
+		}
+		/* (back to the list at rest for what follows) */
+		ae_list_view_init(&view, 40, rows);
+		ae_stub_reset(1920, 1080);
+		ae_hits_clear();
+		ae_widget_list(&d, &view, 100, 100, width, height, draw_item, &context, 5);
+	}
 	snprintf(more, sizeof(more), "\xE2\x96\xBC %d more", 40 - rows);
 	index = ae_stub_find_text(more, 0);
 	CHECK(index >= 0);

@@ -344,6 +344,11 @@ static void dialog_draw(struct ae_screen *screen)
 	box.y = (state->box.y - view.y) / view.scale;
 	box.width = l.width;
 	box.height = l.height;
+	/* (VIEW: what is under it in its bounds, the panel's page, hidden by the view panel's fill: nothing peeks out
+	around a dialog smaller than the page, mockup 25) */
+	if (density->kind == AE_DENSITY_VIEW)
+		ae_draw_rect((spec->bounds.x - view.x) / view.scale, (spec->bounds.y - view.y) / view.scale,
+			spec->bounds.width / view.scale, spec->bounds.height / view.scale, 0.0f, AE_COLOR_VIEW_PANEL);
 	ae_draw_rect(box.x, box.y, box.width, box.height, units(density, density->metrics->corner), AE_COLOR_POPOVER);
 	ae_hit_add(box.x, box.y, box.width, box.height, id, AE_PART_CARD, -1);
 	ae_draw_rect(box.x, box.y, box.width, units(density, DIALOG_STRIPE_U), 0.0f, error ? AE_COLOR_WARNING : AE_COLOR_ACCENT);
@@ -494,6 +499,15 @@ static void dialog_reset(void)
 	for (slot = 0; slot < DIALOG_SLOTS; slot++)
 		if (picks[slot].picked)
 			picks[slot].picked(picks[slot].choice, picks[slot].context);
+}
+
+void ae_dialog_menus_off(unsigned long now_ms)
+{
+	/* (the clock moved only for an open timed revert: nothing else of AE's runs with its menus off) */
+	if (!ae_dialog_timed_open())
+		return;
+	ae_motion_set_now(now_ms);
+	ae_dialog_tick();
 }
 
 int ae_dialog_timed_open(void)

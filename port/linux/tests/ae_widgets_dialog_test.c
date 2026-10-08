@@ -193,6 +193,14 @@ static void confirm(void)
 	dispatch(0, AE_ACTION_BACK);
 	CHECK(picked_choice == 1 && picked_count == 1 && ae_ui_depth() == 1 && ae_ui_top()->focus == 2 &&
 		ae_sound_take(0) == AE_SOUND_BACK);
+	/* (no cancel choice set, AE_DIALOG_NONE: B does nothing, the dialog stays; set: B picks it, as above) */
+	spec.cancel_choice = AE_DIALOG_NONE;
+	CHECK(ae_dialog_open(&spec, AE_OWNER_ANY));
+	ae_sound_reset();
+	dispatch(0, AE_ACTION_BACK);
+	CHECK(picked_count == 1 && ae_ui_depth() == 2 && ae_sound_take(0) == AE_SOUND_NONE);
+	ae_ui_pop();
+	spec.cancel_choice = 1;
 	/* A picks the focused one (forward) */
 	CHECK(ae_dialog_open(&spec, AE_OWNER_ANY));
 	dispatch(0, AE_ACTION_DOWN);
@@ -378,6 +386,19 @@ static void timed_revert(void)
 	CHECK(picked_count == 4 && picked_choice == 1 && !ae_dialog_timed_open() && ae_ui_depth() == 1);
 	picked_count = 3;
 	ae_ui_reset();
+	/* (the hooks' branch with AE's menus off, ae_dialog_menus_off: no revert open, the clock left alone; one open,
+	reverted at 10 s on the clock given) */
+	ae_motion_set_now(370000);
+	ae_dialog_menus_off(999999);
+	CHECK(ae_motion_now() == 370000);
+	ae_ui_push(&base, AE_OWNER_ANY, NULL);
+	CHECK(ae_dialog_open(&spec, AE_OWNER_ANY));
+	ae_dialog_menus_off(379999);
+	CHECK(picked_count == 3 && ae_dialog_timed_open() && ae_motion_now() == 379999);
+	ae_dialog_menus_off(380000);
+	CHECK(picked_count == 4 && picked_choice == 1 && !ae_dialog_timed_open());
+	picked_count = 3;
+	ae_ui_reset();
 	/* the clock gone back before the opening (M4): the whole 10 s left, nothing picked */
 	ae_ui_push(&base, AE_OWNER_ANY, NULL);
 	ae_motion_set_now(400000);
@@ -561,6 +582,10 @@ static void view_dialogs(void)
 	}
 	/* (the scrim covers the player's view only) */
 	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_SCRIM, &box) && near(box.x, 640.0f, 0.5f) && near(box.width, 640.0f, 0.5f));
+	/* (what is under it in its bounds is hidden: the view panel's fill over the whole of them, under the box) */
+	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_VIEW_PANEL, &box) && near(box.x, panel_pixels.x, 0.5f) &&
+		near(box.y, panel_pixels.y, 0.5f) && near(box.width, panel_pixels.width, 0.5f) &&
+		near(box.height, panel_pixels.height, 0.5f));
 	/* player 1's B picks player 1's cancel */
 	picked_choice = -1;
 	dispatch(1, AE_ACTION_BACK);

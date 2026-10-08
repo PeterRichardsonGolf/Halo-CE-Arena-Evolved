@@ -315,17 +315,18 @@ FULL). The dialog copies its strings (the caller's need not outlive the call). O
 owner's is open); an error then is logged and fails at once and waits, shown when the slot frees (a newer error
 replaces a waiting one; a reset drops it) */
 enum { AE_DIALOG_CONFIRM, AE_DIALOG_TIMED_REVERT, AE_DIALOG_ERROR };
-enum { AE_DIALOG_CHOICES = 4, AE_DIALOG_REVERT_MS = 10000 };
+enum { AE_DIALOG_CHOICES = 4, AE_DIALOG_REVERT_MS = 10000, AE_DIALOG_NONE = -1 };
 struct ae_dialog_spec
 {
 	short kind;
 	const char *title, *body;
 	const char *choices[AE_DIALOG_CHOICES]; short choice_count;
 	short safe_choice;            /* the first focus (CANCEL on quit, KEEP after a display change, BACK on an error) */
-	short cancel_choice;          /* B / Esc */
+	short cancel_choice;          /* B / Esc picks it (normally the safe choice); AE_DIALOG_NONE: B does nothing */
 	short timeout_choice;         /* timed revert: picked at 0 (REVERT); 10 s */
 	struct ae_density density;
-	struct ae_rect bounds;        /* FULL: the frame; VIEW: the panel (the dialog draws inside it, at its width) */
+	struct ae_rect bounds;        /* FULL: the frame; VIEW: the panel or its page (the dialog draws inside it, at its
+	                                 width, and hides what is under it there) */
 	void (*picked)(short choice, void *context); void *context;
 	struct ae_rect view;          /* (P12) */
 };
@@ -335,6 +336,9 @@ on the stack; a waiting error opens once its slot is free */
 void ae_dialog_tick(void);
 /* (M2) a timed revert is open: the hooks tick it even with AE's menus off */
 int ae_dialog_timed_open(void);
+/* (M2) the hooks' frame with AE's menus off: an open timed revert counts down (the clock set to now_ms) and reverts
+at 10 s; nothing else happens (the clock left alone without one) */
+void ae_dialog_menus_off(unsigned long now_ms);
 /* the dialog's box (layout units): 720 u wide (the body wrapped in it), up to 840 u for a wide title or choice,
 centred in the bounds; under 720 u only when the room forces it: VIEW (preflight P14) at most the bounds' width less
 a pad each side */
