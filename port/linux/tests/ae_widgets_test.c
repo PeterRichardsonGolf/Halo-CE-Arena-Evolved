@@ -671,6 +671,26 @@ static void list_edges(void)
 		ae_list_view_pointer(&view, &pointer, 5);
 		CHECK(view.list.first == 0);
 	}
+	/* (Task 7 M5: not under a popover: a hit of a higher layer over the list keeps the wheel from it) */
+	if (index >= 0)
+	{
+		memset(&pointer, 0, sizeof(pointer));
+		pointer.x = 140;
+		pointer.y = 300;
+		ae_hits_layer(1);
+		ae_hit_add(120, 250, 200, 100, 77, AE_PART_OUTSIDE, -1);
+		pointer.wheel_steps = -1;
+		ae_list_view_pointer(&view, &pointer, 5);
+		CHECK(view.list.first == 0);
+		ae_hits_layer(0);
+		pointer.x = 600;
+		ae_list_view_pointer(&view, &pointer, 5);
+		CHECK(view.list.first == 3);
+		pointer.wheel_steps = 1;
+		ae_list_view_pointer(&view, &pointer, 5);
+		CHECK(view.list.first == 0);
+		ae_hits_clear();
+	}
 	/* M2: the wheel scrolls the list only with the pointer over it */
 	memset(&pointer, 0, sizeof(pointer));
 	pointer.x = 1500;

@@ -18,7 +18,7 @@ middle; clips allow 2 window pixels of horizontal ink. */
 #define TAB_UNDERLINE_U 4.0f
 #define TAB_DOT_U 8.0f
 #define TAB_FADE_U 70.0f
-#define TAB_FADE_STRIPS 7
+#define TAB_FADE_STRIPS 14
 #define TAB_END_GAP_U 12.0f
 #define TAB_HEIGHT_LINES 2.0f          /* the strip: twice its text size tall */
 #define DOT_U 8.0f
@@ -86,9 +86,15 @@ static short step(short count, short current, short direction, int (*skip)(void 
 
 	if (count <= 0)
 		return current;
-	if (index < 0 || index >= count)
-		index = 0;
 	direction = (short)(direction < 0 ? -1 : 1);
+	/* (no valid current: the first that can be chosen, from the end the direction starts at) */
+	if (index < 0 || index >= count)
+	{
+		for (tries = 0, index = (short)(direction > 0 ? 0 : count - 1); tries < count; tries++, index = (short)(index + direction))
+			if (!skip || !skip(context, index))
+				return index;
+		return current;
+	}
 	for (tries = 0; tries < count; tries++)
 	{
 		index = (short)((index + direction + count) % count);
@@ -114,17 +120,30 @@ static int device_font(int device)
 
 /* ---------- key caps and end glyphs */
 
-static float key_cap_width(float height, const char *words)
+/* a cap's height for a nominal one: its words half its height, never below VIEW's 14 px minor floor; when the floor
+binds the cap grows to hold them (never clips them) */
+static float cap_height(struct ae_density const *density, float height)
 {
-	float width = ae_draw_text_width(AE_FONT_ROW, height * CAP_TEXT, words ? words : "") + 2.0f * CAP_SIDE * height;
+	float floor = density->kind == AE_DENSITY_VIEW ? MINOR_FLOOR_PIXELS * density->pixel : 0.0f;
 
-	return width > height ? width : height;
+	return height * CAP_TEXT < floor ? floor / CAP_TEXT : height;
+}
+
+static float key_cap_width(struct ae_density const *density, float height, const char *words)
+{
+	float cap = cap_height(density, height);
+	float width = ae_draw_text_width(AE_FONT_ROW, cap * CAP_TEXT, words ? words : "") + 2.0f * CAP_SIDE * cap;
+
+	return width > cap ? width : cap;
 }
 
 float ae_widget_key_cap(struct ae_density const *density, float x, float y, float height, const char *words)
 {
-	float width = key_cap_width(height, words), size = height * CAP_TEXT;
+	float cap = cap_height(density, height), width = key_cap_width(density, height, words), size = cap * CAP_TEXT;
 
+	/* (a grown cap keeps the nominal one's middle) */
+	y -= (cap - height) * 0.5f;
+	height = cap;
 	ae_draw_rect(x, y, width, height, units(density, KEY_CAP_CORNER_U), AE_COLOR_KEY_CAP);
 	if (words && *words)
 		ae_draw_text(AE_FONT_ROW, size, x + width * 0.5f, text_top(AE_FONT_ROW, size, y + height * 0.5f), AE_ALIGN_CENTER,
@@ -144,7 +163,7 @@ static float end_glyph(struct ae_density const *density, float x, float center_y
 		const char *key = ae_prompt_key(button);
 
 		if (!draw)
-			return key_cap_width(height, key);
+			return key_cap_width(density, height, key);
 		return ae_widget_key_cap(density, x, center_y - height * 0.5f, height, key);
 	}
 	if (!draw)
@@ -222,6 +241,9 @@ float ae_widget_tabs(struct ae_density const *density, struct ae_tabs *tabs, flo
 		if (target > total - area_width)
 			target = total - area_width;
 	}
+	/* (a strip never drawn, all zero, starts where it belongs: no slide as its screen opens) */
+	if (!tabs->strip.start && !tabs->strip.duration && tabs->strip.from == 0.0f && tabs->strip.to == 0.0f)
+		tabs->strip.from = tabs->strip.to = target;
 	if (tabs->strip.to != target)
 		ae_motion_start(&tabs->strip, tabs->strip.to, target, AE_MOTION_SCROLL_MS);
 	offset = ae_motion_value(&tabs->strip);
@@ -346,8 +368,9 @@ void ae_widget_page_dots(struct ae_density const *density, float center_x, float
 		float item = index == current ? pill : dot;
 
 		ae_draw_rect(dot_x, row_center - dot * 0.5f, item, dot, dot * 0.5f, index == current ? current_color : AE_COLOR_DOT);
-		/* (clickable: a hit as tall as the row, over the dot and half the gaps) */
-		ae_hit_add(dot_x - dot_gap * 0.5f, row_center - glyph * 0.5f, item + dot_gap, glyph, hit_id, AE_PART_DOT, index);
+		/* (clickable: a hit as tall as the row, over the dot and half the gaps; none without a hit id) */
+		if (hit_id >= 0)
+			ae_hit_add(dot_x - dot_gap * 0.5f, row_center - glyph * 0.5f, item + dot_gap, glyph, hit_id, AE_PART_DOT, index);
 		dot_x += item + dot_gap;
 	}
 	/* LB / RB (Q / E) at the ends */
@@ -355,10 +378,13 @@ void ae_widget_page_dots(struct ae_density const *density, float center_x, float
 	right_end = end_glyph(density, 0, row_center, glyph, 0, 0);
 	end_glyph(density, center_x - width * 0.5f - end_gap - left_end, row_center, glyph, 1, 1);
 	end_glyph(density, center_x + width * 0.5f + end_gap, row_center, glyph, 0, 1);
-	ae_hit_add(center_x - width * 0.5f - end_gap - left_end, row_center - glyph * 0.5f, left_end, glyph, hit_id,
-		AE_PART_ARROW_LEFT, -1);
-	ae_hit_add(center_x + width * 0.5f + end_gap, row_center - glyph * 0.5f, right_end, glyph, hit_id, AE_PART_ARROW_RIGHT,
-		-1);
+	if (hit_id >= 0)
+	{
+		ae_hit_add(center_x - width * 0.5f - end_gap - left_end, row_center - glyph * 0.5f, left_end, glyph, hit_id,
+			AE_PART_ARROW_LEFT, -1);
+		ae_hit_add(center_x + width * 0.5f + end_gap, row_center - glyph * 0.5f, right_end, glyph, hit_id,
+			AE_PART_ARROW_RIGHT, -1);
+	}
 }
 
 /* ---------- prompts */
@@ -401,58 +427,133 @@ unsigned int ae_prompt_tint(int device, int button)
 /* the prompt under the pointer after its last move, per footer (hit id): the hover wash */
 static short prompt_hover_id = -1, prompt_hover_index = -1;
 
-void ae_widget_prompts(struct ae_density const *density, float x, float center_y, struct ae_prompt const *prompts,
-	short count, const char *status, float right_x, short pressed, short hit_id)
+/* a prompt's parts (drawing units): its mark (glyph or cap) and label widths, its label as drawn */
+struct prompt_parts
 {
-	int device = ae_ui_last_device(), font = device_font(device);
+	float mark, label_width, width;
+	const char *key;
+	char label[160];
+};
+
+/* the prompts' parts for a device, labels shortened to label_room each (0: whole); their total width with the gaps */
+static float prompt_parts(struct ae_density const *density, int device, struct ae_prompt const *prompts, short count,
+	float label_room, struct prompt_parts *parts)
+{
+	int font = device_font(device);
 	float glyph = ae_size_glyph(density), label_size = floored_minor(density, density->metrics->footer);
-	float gap = units(density, PROMPT_GAP_U), rule = units(density, RULE_U), pen = x;
+	float gap = units(density, PROMPT_GAP_U), total = 0.0f;
 	short index;
 
 	for (index = 0; index < count; index++)
 	{
 		struct ae_prompt const *prompt = &prompts[index];
-		const char *label = prompt->label ? prompt->label : "";
-		float label_width = ae_draw_text_width(AE_FONT_BODY, label_size, label), width;
+		struct prompt_parts *part = &parts[index];
+
+		if (label_room > 0.0f)
+			ae_fit_text(AE_FONT_BODY, label_size, prompt->label ? prompt->label : "", label_room, part->label,
+				sizeof(part->label));
+		else
+			snprintf(part->label, sizeof(part->label), "%s", prompt->label ? prompt->label : "");
+		part->label_width = part->label[0] ? ae_draw_text_width(AE_FONT_BODY, label_size, part->label) : 0.0f;
+		part->key = NULL;
+		if (font < 0)
+		{
+			float cap = cap_height(density, glyph), pad_x = cap * BUTTON_PAD_X;
+
+			part->key = prompt->key ? prompt->key : ae_prompt_key(prompt->button);
+			part->mark = part->key ? key_cap_width(density, glyph, part->key) : 0.0f;
+			part->width = pad_x + (part->key ? part->mark + pad_x : 0.0f) + part->label_width + pad_x;
+		}
+		else
+		{
+			if (device == AE_DEVICE_PLAYSTATION && (prompt->button == AE_BUTTON_START || prompt->button == AE_BUTTON_BACK))
+				part->mark = key_cap_width(density, glyph,
+					ae_string(prompt->button == AE_BUTTON_START ? AE_STR_CAP_OPTIONS : AE_STR_CAP_CREATE));
+			else
+				part->mark = ae_draw_button_width(font, prompt->button, glyph);
+			part->width = part->mark + glyph * GLYPH_GAP + part->label_width;
+		}
+		total += part->width + (index + 1 < count ? gap : 0.0f);
+	}
+	return total;
+}
+
+void ae_widget_prompts(struct ae_density const *density, float x, float center_y, struct ae_prompt const *prompts,
+	short count, const char *status, float right_x, short pressed, short hit_id)
+{
+	static struct prompt_parts parts[16];
+	int device = ae_ui_last_device(), font = device_font(device);
+	float glyph = ae_size_glyph(density), label_size = floored_minor(density, density->metrics->footer);
+	float gap = units(density, PROMPT_GAP_U), rule = units(density, RULE_U), pen = x, total, room = right_x - x;
+	float status_width = status && *status ? ae_draw_text_width(AE_FONT_BODY, label_size, status) : 0.0f;
+	short index;
+
+	if (count > 16)
+		count = 16;
+	/* room: right_x is the row's right end (the status's too). Short of it the status goes first, then the labels
+	are shortened alike with "…" */
+	total = prompt_parts(density, device, prompts, count, 0.0f, parts);
+	if (status_width > 0.0f && total + gap + status_width > room)
+		status_width = 0.0f;
+	if (total > room && count > 0)
+	{
+		/* (the widest label room that fits, by halving: every label at most that wide) */
+		float low = 0.0f, high = 0.0f;
+		int round;
+
+		for (index = 0; index < count; index++)
+			high = parts[index].label_width > high ? parts[index].label_width : high;
+		for (round = 0; round < 16; round++)
+		{
+			float middle = (low + high) * 0.5f;
+
+			if (prompt_parts(density, device, prompts, count, middle, parts) <= room)
+				low = middle;
+			else
+				high = middle;
+		}
+		/* (even no labels short of room: the caps alone, as they are) */
+		total = prompt_parts(density, device, prompts, count, low > 0.0f ? low : 0.001f, parts);
+	}
+	for (index = 0; index < count; index++)
+	{
+		struct ae_prompt const *prompt = &prompts[index];
+		struct prompt_parts const *part = &parts[index];
 
 		if (font < 0)
 		{
 			/* the keyboard: one button, a rule outline around a drawn key cap and the label */
-			const char *key = prompt->key ? prompt->key : ae_prompt_key(prompt->button);
-			float pad_x = glyph * BUTTON_PAD_X, height = glyph * (1.0f + 2.0f * BUTTON_PAD_Y);
-			float cap = key ? key_cap_width(glyph, key) : 0.0f, top = center_y - height * 0.5f;
+			float cap = cap_height(density, glyph), pad_x = cap * BUTTON_PAD_X;
+			float height = cap * (1.0f + 2.0f * BUTTON_PAD_Y), top = center_y - height * 0.5f;
 
-			width = pad_x + (key ? cap + pad_x : 0.0f) + label_width + pad_x;
 			if (index == pressed)
-				ae_draw_rect(pen, top, width, height, 0.0f, AE_COLOR_PRESSED);
+				ae_draw_rect(pen, top, part->width, height, 0.0f, AE_COLOR_PRESSED);
 			else if (hit_id == prompt_hover_id && index == prompt_hover_index)
-				ae_draw_rect(pen, top, width, height, 0.0f, AE_COLOR_HOVER);
-			ae_draw_outline(pen, top, width, height, 0.0f, rule, index == pressed ? AE_COLOR_ACCENT : AE_COLOR_RULE);
-			if (key)
-				ae_widget_key_cap(density, pen + pad_x, center_y - glyph * 0.5f, glyph, key);
-			ae_draw_text(AE_FONT_BODY, label_size, pen + pad_x + (key ? cap + pad_x : 0.0f),
-				text_top(AE_FONT_BODY, label_size, center_y), AE_ALIGN_LEFT, AE_COLOR_TEXT, label);
-			ae_hit_add(pen, top, width, height, hit_id, AE_PART_PROMPT, index);
+				ae_draw_rect(pen, top, part->width, height, 0.0f, AE_COLOR_HOVER);
+			ae_draw_outline(pen, top, part->width, height, 0.0f, rule, index == pressed ? AE_COLOR_ACCENT : AE_COLOR_RULE);
+			if (part->key)
+				ae_widget_key_cap(density, pen + pad_x, center_y - glyph * 0.5f, glyph, part->key);
+			if (part->label[0])
+				ae_draw_text(AE_FONT_BODY, label_size, pen + pad_x + (part->key ? part->mark + pad_x : 0.0f),
+					text_top(AE_FONT_BODY, label_size, center_y), AE_ALIGN_LEFT, AE_COLOR_TEXT, part->label);
+			ae_hit_add(pen, top, part->width, height, hit_id, AE_PART_PROMPT, index);
 		}
 		else
 		{
 			/* a pad: its glyph (face buttons tinted), or PlayStation's drawn OPTIONS / CREATE caps */
-			float mark;
-
 			if (device == AE_DEVICE_PLAYSTATION && (prompt->button == AE_BUTTON_START || prompt->button == AE_BUTTON_BACK))
-				mark = ae_widget_key_cap(density, pen, center_y - glyph * 0.5f, glyph,
+				ae_widget_key_cap(density, pen, center_y - glyph * 0.5f, glyph,
 					ae_string(prompt->button == AE_BUTTON_START ? AE_STR_CAP_OPTIONS : AE_STR_CAP_CREATE));
 			else
-				mark = ae_draw_button(font, prompt->button, glyph, pen, center_y - glyph * 0.5f,
-					ae_prompt_tint(device, prompt->button));
-			width = mark + glyph * GLYPH_GAP + label_width;
-			ae_draw_text(AE_FONT_BODY, label_size, pen + mark + glyph * GLYPH_GAP, text_top(AE_FONT_BODY, label_size, center_y),
-				AE_ALIGN_LEFT, AE_COLOR_TEXT, label);
-			ae_hit_add(pen, center_y - glyph * 0.5f, width, glyph, hit_id, AE_PART_PROMPT, index);
+				ae_draw_button(font, prompt->button, glyph, pen, center_y - glyph * 0.5f, ae_prompt_tint(device, prompt->button));
+			if (part->label[0])
+				ae_draw_text(AE_FONT_BODY, label_size, pen + part->mark + glyph * GLYPH_GAP, text_top(AE_FONT_BODY, label_size,
+					center_y), AE_ALIGN_LEFT, AE_COLOR_TEXT, part->label);
+			ae_hit_add(pen, center_y - glyph * 0.5f, part->width, glyph, hit_id, AE_PART_PROMPT, index);
 		}
-		pen += width + gap;
+		pen += part->width + gap;
 	}
-	if (status && *status)
+	if (status_width > 0.0f)
 		ae_draw_text(AE_FONT_BODY, label_size, right_x, text_top(AE_FONT_BODY, label_size, center_y), AE_ALIGN_RIGHT,
 			AE_COLOR_MUTED, status);
 }
@@ -467,10 +568,16 @@ int ae_prompts_pointer(struct ae_prompt const *prompts, short count, struct ae_p
 		return 0;
 	over = ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == hit_id && hit.part == AE_PART_PROMPT &&
 		hit.index >= 0 && hit.index < count;
+	/* (the hover is this footer's only while over it: another footer's move never clears it) */
 	if (pointer->moved)
 	{
-		prompt_hover_id = over ? hit_id : -1;
-		prompt_hover_index = over ? hit.index : -1;
+		if (over)
+		{
+			prompt_hover_id = hit_id;
+			prompt_hover_index = hit.index;
+		}
+		else if (prompt_hover_id == hit_id)
+			prompt_hover_id = prompt_hover_index = -1;
 	}
 	if (!pointer->left_clicks || !over)
 		return 0;
@@ -520,6 +627,13 @@ static void panel_layout(struct ae_density const *density, float view_width, flo
 	l->rule_y = l->rect.y + l->rect.height - l->pad - prompts_height;
 	l->help_height = 2.0f * line;
 	l->help_y = l->rule_y - units(density, density->metrics->gap) - l->help_height;
+	/* (a view too small for it all: the footer starts under the dots, never over the header) */
+	if (l->help_y < l->content_top)
+	{
+		l->help_y = l->content_top;
+		l->rule_y = l->help_y + l->help_height + units(density, density->metrics->gap);
+		l->prompts_center = l->rule_y + prompts_height * 0.5f;
+	}
 }
 
 void ae_widget_view_panel(struct ae_density const *density, float view_width, float view_height, short player,

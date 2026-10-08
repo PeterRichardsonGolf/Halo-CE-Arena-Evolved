@@ -366,12 +366,252 @@ static void panel(void)
 	CHECK(!ae_stub_overflowed());
 }
 
+/* a call's pixel box */
+static struct ae_rect pixels_of(struct ae_stub_call const *call)
+{
+	struct ae_rect pixels;
+
+	ae_stub_pixels(call, &pixels);
+	return pixels;
+}
+
+/* the fix round's checks: footers side by side, VIEW footers and caps, right-hand views, more panel sizes, tiny views,
+the first draw of a scrolled strip, steps from no current */
+static void fixes(void)
+{
+	static const struct ae_prompt pair[2] =
+	{
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_B, "Back", NULL, AE_ACTION_BACK },
+	};
+	static const struct ae_prompt three[3] =
+	{
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_B, "Resume", NULL, AE_ACTION_BACK },
+		{ AE_BUTTON_LEFT_SHOULDER, "Pages", NULL, AE_ACTION_TAB_PREVIOUS },
+	};
+	static const struct ae_tab eight[8] =
+	{
+		{ "PLAYER", 0, 0, NULL }, { "WEAPONS", 0, 0, NULL }, { "ITEMS", 0, 0, NULL }, { "VEHICLES", 0, 0, NULL },
+		{ "INDICATORS", 0, 0, NULL }, { "TEAMS", 0, 0, NULL }, { "ARENA", 0, 0, NULL },
+		{ "TRAINING OPTIONS", 0, 0, NULL },
+	};
+	static const struct ae_tab gated[4] =
+	{
+		{ "A", 0, 1, NULL }, { "B", 0, 0, NULL }, { "C", 0, 0, NULL }, { "D", 0, 1, NULL },
+	};
+	static const struct { float window_height, view_x, view_width_layout, view_height_layout, view_width, view_height;
+		float panel_width, panel_height; } panels[4] =
+	{
+		{ 720, 960, 960, 540, 640, 360, 294.4f, 309.6f },     /* 720p quarter (right) */
+		{ 1080, 960, 960, 540, 960, 540, 441.6f, 464.4f },    /* 1080p quarter */
+		{ 1440, 0, 960, 540, 1280, 720, 588.8f, 619.2f },     /* a 1280x720 view (1440p quarter) */
+		{ 1080, 0, 1920, 540, 1920, 540, 470.0f, 464.4f },    /* 1080p 2p: a 1920 x 540 half */
+	};
+	struct ae_density d;
+	struct ae_pointer pointer;
+	struct ae_event event;
+	struct ae_tabs strip;
+	struct ae_hit hit;
+	struct ae_stub_call const *call;
+	struct ae_rect content, box, cap;
+	float help_y, prompts_y;
+	int index, n;
+
+	/* I1: two footers; a move over the first's prompt, then the second's pointer call (not over it): the first keeps
+	its hover */
+	use_device(AE_DEVICE_KEYBOARD_MOUSE);
+	ae_stub_reset(1920, 1080);
+	ae_hits_clear();
+	ae_density_full(1080, 1.0f, &d);
+	ae_widget_prompts(&d, 96, 500, pair, 2, NULL, 900, -1, 6);
+	ae_widget_prompts(&d, 1000, 500, pair, 2, NULL, 1800, -1, 7);
+	memset(&pointer, 0, sizeof(pointer));
+	call = text_call("Select");
+	CHECK(call != NULL);
+	middle_of(call, &pointer.x, &pointer.y, 1080);
+	pointer.moved = 1;
+	ae_prompts_pointer(pair, 2, &pointer, 6, &event);
+	ae_prompts_pointer(pair, 2, &pointer, 7, &event);
+	ae_stub_reset(1920, 1080);
+	ae_widget_prompts(&d, 96, 500, pair, 2, NULL, 900, -1, 6);
+	ae_widget_prompts(&d, 1000, 500, pair, 2, NULL, 1800, -1, 7);
+	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_HOVER) == 1);
+	for (index = 0; index < ae_stub_count(); index++)
+		if (ae_stub_get(index)->kind == AE_STUB_RECT && ae_stub_get(index)->rgba == AE_COLOR_HOVER)
+			CHECK(ae_stub_get(index)->x < 900);
+	/* (moved off the first footer: its own call clears it) */
+	pointer.x = 5;
+	ae_prompts_pointer(pair, 2, &pointer, 6, &event);
+	ae_stub_reset(1920, 1080);
+	ae_widget_prompts(&d, 96, 500, pair, 2, NULL, 900, -1, 6);
+	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_HOVER) == 0);
+
+	/* I2 / I3: a VIEW footer at a 720p quarter: key words at the 14 px floor, the cap grown to hold them (never
+	clipped), labels 14 px; pads' glyphs 18 px */
+	ae_stub_reset(1920, 720);
+	ae_hits_clear();
+	ae_draw_view(960, 0, 960, 540);
+	ae_density_view(640, 360, 1.0f, &d);
+	ae_widget_prompts(&d, 30, 900, pair, 2, NULL, 900, -1, 8);
+	call = text_call("Esc");
+	CHECK(call && ae_stub_text_em_pixels(call) >= 14.0f - 0.01f);
+	CHECK(text_call("Back") && ae_stub_text_em_pixels(text_call("Back")) >= 14.0f - 0.01f);
+	n = 0;
+	for (index = 0; index < ae_stub_count(); index++)
+	{
+		struct ae_stub_call const *rect = ae_stub_get(index);
+
+		if (rect->kind != AE_STUB_RECT || rect->rgba != AE_COLOR_KEY_CAP)
+			continue;
+		cap = pixels_of(rect);
+		/* (each cap holds its words: the text box inside the cap, 2 px of ink allowed at the sides) */
+		call = ae_stub_get(index + 1);
+		CHECK(call->kind == AE_STUB_TEXT);
+		box = pixels_of(call);
+		CHECK(box.x >= cap.x - 2 && box.x + box.width <= cap.x + cap.width + 2 && box.y >= cap.y - 0.5f &&
+			box.y + box.height <= cap.y + cap.height + 0.5f);
+		CHECK(cap.height >= ae_stub_text_em_pixels(call) / 0.5f - 0.01f);
+		n++;
+	}
+	CHECK(n == 2);
+	/* (and a hit in this right-hand view: layout units, past the view's left) */
+	middle_of(text_call("Back"), &pointer.x, &pointer.y, 720);
+	CHECK(ae_hit_at(pointer.x, pointer.y, 0, &hit) && hit.id == 8 && hit.part == AE_PART_PROMPT && hit.index == 1 &&
+		hit.rect.x >= 960);
+	pointer.left_clicks = 1;
+	CHECK(ae_prompts_pointer(pair, 2, &pointer, 8, &event) == 1 && event.action == AE_ACTION_BACK);
+	pointer.left_clicks = 0;
+	use_device(AE_DEVICE_XBOX);
+	ae_stub_reset(1920, 720);
+	ae_draw_view(960, 0, 960, 540);
+	ae_widget_prompts(&d, 30, 900, pair, 2, NULL, 900, -1, 8);
+	for (index = 0; index < ae_stub_count(); index++)
+		if (ae_stub_get(index)->kind == AE_STUB_BUTTON)
+			CHECK(ae_stub_text_em_pixels(ae_stub_get(index)) >= 18.0f - 0.01f);
+	/* M2: three keyboard prompts in a 720p quarter's panel: the row stays left of right_x (labels shortened), the
+	status dropped first */
+	use_device(AE_DEVICE_KEYBOARD_MOUSE);
+	ae_stub_reset(1920, 720);
+	ae_hits_clear();
+	ae_draw_view(960, 0, 960, 540);
+	ae_widget_view_panel(&d, 640, 360, 0, 0xD94B4BFFu, "GAME", 0, 6, &content);
+	ae_view_panel_footer(&d, 640, 360, &help_y, &prompts_y);
+	ae_stub_reset(1920, 720);
+	ae_draw_view(960, 0, 960, 540);
+	ae_widget_prompts(&d, content.x, prompts_y, three, 3, "Changes apply as you make them", content.x + content.width,
+		-1, 9);
+	CHECK(text_call("Changes apply as you make them") == NULL);
+	for (index = 0; index < ae_stub_count(); index++)
+	{
+		struct ae_stub_call const *any = ae_stub_get(index);
+
+		if (any->kind == AE_STUB_OUTLINE)
+			CHECK(any->x + any->width <= content.x + content.width + 0.01f);
+	}
+
+	/* I3: tabs and page dots in a right-hand view: hits in layout units */
+	use_device(AE_DEVICE_XBOX);
+	ae_stub_reset(1920, 1080);
+	ae_hits_clear();
+	ae_draw_view(960, 0, 960, 540);
+	ae_density_view(960, 540, 1.0f, &d);
+	memset(&strip, 0, sizeof(strip));
+	strip.tabs = eight;
+	strip.count = 3;
+	strip.hover = -1;
+	ae_widget_tabs(&d, &strip, 30, 30, 1800, 10);
+	ae_widget_page_dots(&d, 960, 300, "MATCH", 6, 1, AE_COLOR_ACCENT, 11);
+	middle_of(text_call("ITEMS"), &pointer.x, &pointer.y, 1080);
+	CHECK(ae_hit_at(pointer.x, pointer.y, 0, &hit) && hit.id == 10 && hit.part == AE_PART_TAB && hit.index == 2 &&
+		hit.rect.x >= 960);
+	for (index = 0; index < ae_stub_count(); index++)
+	{
+		struct ae_stub_call const *pill = ae_stub_get(index);
+
+		if (pill->kind == AE_STUB_RECT && pill->rgba == AE_COLOR_ACCENT && near(pill->width, 22 * d.unit, 0.01f))
+		{
+			middle_of(pill, &pointer.x, &pointer.y, 1080);
+			CHECK(ae_hit_at(pointer.x, pointer.y, 0, &hit) && hit.id == 11 && hit.part == AE_PART_DOT && hit.index == 1 &&
+				hit.rect.x >= 960);
+		}
+	}
+
+	/* I3: the panel at more sizes (spec 6's table), its pill 22 u in the player colour; M1: its dots add no hits */
+	for (n = 0; n < 4; n++)
+	{
+		int panel_found = 0, pill_found = 0;
+
+		ae_stub_reset(1920, panels[n].window_height);
+		ae_hits_clear();
+		ae_draw_view(panels[n].view_x, 0, panels[n].view_width_layout, panels[n].view_height_layout);
+		ae_density_view(panels[n].view_width, panels[n].view_height, 1.0f, &d);
+		ae_widget_view_panel(&d, panels[n].view_width, panels[n].view_height, 3, 0xE0B020FFu, "TRAINING", 2, 6, &content);
+		for (index = 0; index < ae_stub_count(); index++)
+		{
+			struct ae_stub_call const *rect = ae_stub_get(index);
+			float view_left = panels[n].view_x * panels[n].window_height / 1080.0f;
+
+			if (rect->kind != AE_STUB_RECT)
+				continue;
+			box = pixels_of(rect);
+			if (rect->rgba == AE_COLOR_VIEW_PANEL)
+			{
+				panel_found = 1;
+				CHECK(near(box.width, panels[n].panel_width, .6f) && near(box.height, panels[n].panel_height, .6f));
+				CHECK(box.x >= view_left && box.x + box.width < view_left + panels[n].view_width * 0.5f);
+				CHECK(box.y + box.height <= panels[n].view_height);
+			}
+			if (rect->rgba == 0xE0B020FFu && near(rect->width, 22 * d.unit, 0.01f) && near(rect->height, 8 * d.unit, 0.01f))
+			{
+				pill_found = 1;
+				middle_of(rect, &pointer.x, &pointer.y, panels[n].window_height);
+				CHECK(!ae_hit_at(pointer.x, pointer.y, 0, &hit));
+			}
+		}
+		CHECK(panel_found && pill_found);
+		CHECK(text_call("PLAYER 4") && ae_stub_text_em_pixels(text_call("PLAYER 4")) >= 16.0f - 0.01f);
+		ae_view_panel_footer(&d, panels[n].view_width, panels[n].view_height, &help_y, &prompts_y);
+		CHECK(content.height > 0 && content.y + content.height <= help_y + 0.01f && help_y < prompts_y);
+	}
+	/* M3: a tiny view: the footer starts under the dots, never over the header */
+	ae_stub_reset(1920, 1080);
+	ae_draw_view(0, 0, 320, 180);
+	ae_density_view(320, 180, 1.0f, &d);
+	ae_widget_view_panel(&d, 320, 180, 0, 0xD94B4BFFu, "GAME", 0, 6, &content);
+	ae_view_panel_footer(&d, 320, 180, &help_y, &prompts_y);
+	CHECK(content.height >= 0 && help_y >= content.y - 0.01f && prompts_y > help_y);
+
+	/* M4: a strip never drawn, the last tab active: drawn already scrolled, no slide in */
+	ae_motion_set_reduced(0);
+	ae_motion_set_now(20000);
+	ae_stub_reset(1440, 1080);
+	ae_density_full(1080, 1.3f, &d);
+	memset(&strip, 0, sizeof(strip));
+	strip.tabs = eight;
+	strip.count = 8;
+	strip.active = 7;
+	strip.hover = -1;
+	ae_widget_tabs(&d, &strip, 72, 100, 1296, 2);
+	call = text_call("TRAINING OPTIONS");
+	CHECK(call && call->x + call->width <= 72 + 1296 && !ae_motion_running(&strip.strip));
+	ae_motion_set_reduced(1);
+
+	/* M6: a step with no valid current: the first that can be chosen from the direction's end */
+	memset(&strip, 0, sizeof(strip));
+	strip.tabs = gated;
+	strip.count = 4;
+	strip.active = -1;
+	CHECK(ae_tabs_step(&strip, 1) == 1 && ae_tabs_step(&strip, -1) == 2);
+	CHECK(ae_page_step(5, -1, 1) == 0 && ae_page_step(5, 9, -1) == 4);
+	CHECK(!ae_stub_overflowed());
+}
+
 int main(void)
 {
 	tabs();
 	dots();
 	prompts();
 	panel();
+	fixes();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

@@ -761,6 +761,7 @@ void ae_widget_list(struct ae_density const *density, struct ae_list_view *view,
 	view->area.y = current.y + y * current.scale;
 	view->area.width = width * current.scale;
 	view->area.height = height * current.scale;
+	view->layer = hit_layer;
 	view->track_height = view->thumb_height = 0.0f;
 	if (list->count > rows)
 	{
@@ -838,7 +839,8 @@ short ae_list_view_pointer(struct ae_list_view *view, struct ae_pointer const *p
 	/* the wheel anywhere over the list: 3 rows a notch (away from the user: up); the focus moves only if it leaves the
 	window */
 	if (pointer->wheel_steps && pointer->x >= view->area.x && pointer->y >= view->area.y &&
-		pointer->x < view->area.x + view->area.width && pointer->y < view->area.y + view->area.height)
+		pointer->x < view->area.x + view->area.width && pointer->y < view->area.y + view->area.height &&
+		!ae_hit_at(pointer->x, pointer->y, (short)(view->layer + 1), NULL))
 		ae_list_scroll(list, (short)(-WHEEL_ROWS * pointer->wheel_steps));
 	/* hover focuses only when the pointer moves (scrolling never steals the focus), and never scrolls */
 	if (pointer->moved)
