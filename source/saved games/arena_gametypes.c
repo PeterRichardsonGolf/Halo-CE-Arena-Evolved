@@ -1049,6 +1049,7 @@ static void arena_gametype_log(
 	struct game_variant_options const *options);
 
 const char *config_string(const char *name);
+int config_boolean(const char *name);
 
 /* ---------- public code */
 
