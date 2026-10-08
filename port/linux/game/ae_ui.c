@@ -66,11 +66,20 @@ static int screen_below(int index)
 	return -1;
 }
 
+static void (*reset_hook)(void);
+
+void ae_ui_set_reset_hook(void (*hook)(void))
+{
+	reset_hook = hook;
+}
+
 void ae_ui_reset(void)
 {
 	depth = 0;
 	last_device = AE_DEVICE_XBOX;
 	transition_finish();
+	if (reset_hook)
+		reset_hook();
 }
 
 int ae_ui_depth(void)

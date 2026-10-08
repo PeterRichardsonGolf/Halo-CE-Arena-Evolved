@@ -80,6 +80,60 @@ int main(void)
 	ae_text_init(&t, "abcdef", 3, 0);
 	CHECK(!strcmp(t.text, "abc") && t.caret == 3);
 	CHECK(ae_text_insert(&t, NULL) == 1);
+	/* every caret position: an insert, a backspace and a delete there, against the same edit done by hand */
+	for (index = 0; index <= 6; index++)
+	{
+		char expected[16];
+
+		ae_text_init(&t, "ABCDEF", 20, 0);
+		ae_text_home(&t, 0);
+		ae_text_move(&t, (short)index, 0);
+		CHECK(t.caret == index);
+		ae_text_insert(&t, "x");
+		snprintf(expected, sizeof(expected), "%.*sx%s", index, "ABCDEF", "ABCDEF" + index);
+		CHECK(!strcmp(t.text, expected) && t.caret == index + 1 && t.length == 7);
+		ae_text_init(&t, "ABCDEF", 20, 0);
+		ae_text_home(&t, 0);
+		ae_text_move(&t, (short)index, 0);
+		ae_text_backspace(&t);
+		if (index > 0)
+			snprintf(expected, sizeof(expected), "%.*s%s", index - 1, "ABCDEF", "ABCDEF" + index);
+		else
+			snprintf(expected, sizeof(expected), "ABCDEF");
+		CHECK(!strcmp(t.text, expected) && t.caret == (index > 0 ? index - 1 : 0));
+		ae_text_init(&t, "ABCDEF", 20, 0);
+		ae_text_home(&t, 0);
+		ae_text_move(&t, (short)index, 0);
+		ae_text_delete(&t);
+		if (index < 6)
+			snprintf(expected, sizeof(expected), "%.*s%s", index, "ABCDEF", "ABCDEF" + index + 1);
+		else
+			snprintf(expected, sizeof(expected), "ABCDEF");
+		CHECK(!strcmp(t.text, expected) && t.caret == index && (short)strlen(t.text) == t.length);
+	}
+	/* a selection in the middle (BCD): insert replaces it, backspace and delete remove it */
+	ae_text_init(&t, "ABCDEF", 20, 0);
+	ae_text_home(&t, 0);
+	ae_text_move(&t, 1, 0);
+	ae_text_move(&t, 3, 1);
+	CHECK(ae_text_selection(&t, &from, &to) && from == 1 && to == 4);
+	CHECK(ae_text_insert(&t, "xy") && !strcmp(t.text, "AxyEF") && t.caret == 3);
+	ae_text_init(&t, "ABCDEF", 20, 0);
+	ae_text_move(&t, -2, 0);
+	ae_text_move(&t, -3, 1);
+	CHECK(ae_text_selection(&t, &from, &to) && from == 1 && to == 4);
+	ae_text_backspace(&t);
+	CHECK(!strcmp(t.text, "AEF") && t.caret == 1);
+	ae_text_init(&t, "ABCDEF", 20, 0);
+	ae_text_move(&t, -5, 0);
+	ae_text_move(&t, 3, 1);
+	ae_text_delete(&t);
+	CHECK(!strcmp(t.text, "AEF") && t.caret == 1);
+	/* a selection with a full field: the insert fills only what the selection frees */
+	ae_text_init(&t, "ABCDEF", 6, 0);
+	ae_text_home(&t, 0);
+	ae_text_move(&t, 2, 1);
+	CHECK(ae_text_insert(&t, "xyz") == 0 && !strcmp(t.text, "xyCDEF"));
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

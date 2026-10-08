@@ -50,7 +50,7 @@ static void middle_of(struct ae_stub_call const *call, float *x, float *y, float
 /* the test's host (P13): typed keys queued here, a clipboard, typing mode counted */
 static struct ae_text_key queued[16];
 static int queued_count, typing_begun, typing_ended;
-static char clipboard[256];
+static char clipboard[1024];
 static void test_begin(void) { typing_begun++; }
 static void test_end(void) { typing_ended++; }
 static int test_keys(struct ae_text_key *keys, int maximum)
@@ -189,6 +189,20 @@ static void fields(void)
 	key(AE_TEXT_KEY_DELETE, 0);
 	ae_field_type(&text, queued, queued_count);
 	CHECK(text.length == 0);
+	/* a paste longer than the clipboard buffer (600 characters): cut at the limit, refused (0), nothing overrun */
+	ae_text_init(&text, "", AE_TEXT_MAXIMUM - 1, 0);
+	memset(clipboard, 'a', 600);
+	clipboard[600] = 0;
+	queued_count = 0;
+	key(AE_TEXT_KEY_PASTE, 0);
+	CHECK(ae_field_type(&text, queued, queued_count) == 0 && text.length == AE_TEXT_MAXIMUM - 1 &&
+		(short)strlen(text.text) == text.length && text.text[0] == 'a' && text.text[text.length - 1] == 'a');
+	/* a non-ASCII paste ("e", e acute, "z"): the ASCII kept (upper case here), the rest dropped, refused (0) */
+	ae_text_init(&text, "", 11, 1);
+	snprintf(clipboard, sizeof(clipboard), "e\xC3\xA9z");
+	queued_count = 0;
+	key(AE_TEXT_KEY_PASTE, 0);
+	CHECK(ae_field_type(&text, queued, queued_count) == 0 && !strcmp(text.text, "EZ"));
 	queued_count = 0;
 	ae_host_set(NULL);
 	/* (with no host: nothing read, nothing breaks) */
@@ -330,28 +344,194 @@ static void keyboards(void)
 	CHECK(!ae_stub_overflowed());
 }
 
-/* the keyboard in a 720p quarter: inside the panel's content, key text at least 16 px, key words 14 px */
-static void keyboard_view(void)
+/* an edit's own done: which edit heard which end */
+static int edit_dones[2], edit_keeps[2];
+static void edit_done(int keep, void *context)
+{
+	int which = *(int const *)context;
+
+	edit_dones[which]++;
+	edit_keeps[which] = keep;
+}
+
+/* typing never left on (I1) and one typing owner (I2) */
+static void typing_owners(void)
+{
+	static int const zero = 0, one = 1;
+	struct ae_text text, other;
+	struct ae_field_edit edit, second;
+	int screen_data;
+
+	memset(edit_dones, 0, sizeof(edit_dones));
+	memset(&edit, 0, sizeof(edit));
+	memset(&second, 0, sizeof(second));
+	edit.done = edit_done;
+	edit.context = (void *)&zero;
+	second.done = edit_done;
+	second.context = (void *)&one;
+	queued_count = 0;
+	/* a reset stack mid-edit: typing mode ends, the text from before, done(0) */
+	ae_ui_reset();
+	ae_ui_push(&base, AE_OWNER_ANY, &screen_data);
+	ae_text_init(&text, "BEFORE", 11, 1);
+	typing_begun = typing_ended = 0;
+	ae_field_edit_begin(&edit, &text);
+	ae_text_insert(&text, "X");
+	CHECK(typing_begun == 1 && ae_field_edit_live());
+	ae_ui_reset();
+	CHECK(typing_ended == 1 && !edit.active && !ae_field_edit_live() && !strcmp(text.text, "BEFORE") &&
+		edit_dones[0] == 1 && edit_keeps[0] == 0);
+	/* the edit's screen popped (its holder gone): the frame's guard ends it the same way */
+	ae_ui_push(&base, AE_OWNER_ANY, NULL);
+	ae_ui_push(&base, AE_OWNER_ANY, &screen_data);
+	edit.holder = &screen_data;
+	ae_field_edit_begin(&edit, &text);
+	ae_text_insert(&text, "Y");
+	ae_field_edit_guard();
+	CHECK(typing_ended == 1 && edit.active);   /* (still on the stack: nothing) */
+	ae_ui_pop();
+	ae_field_edit_guard();
+	CHECK(typing_ended == 2 && !edit.active && !strcmp(text.text, "BEFORE") && edit_dones[0] == 2);
+	/* the flag going off (or AE's menus gone) mid-edit: abort ends it */
+	edit.holder = NULL;
+	ae_field_edit_begin(&edit, &text);
+	ae_field_edit_abort();
+	CHECK(typing_begun == 3 && typing_ended == 3 && !edit.active && !ae_field_edit_live() && edit_dones[0] == 3);
+	ae_field_edit_abort();
+	CHECK(typing_ended == 3 && edit_dones[0] == 3);   /* (nothing left to end) */
+	/* two views: P1 editing, then P2 begins: P1 committed (kept, done(1)), typing mode stays on; P2 types; P1's end
+	does nothing to P2; P2's end turns typing off */
+	memset(edit_dones, 0, sizeof(edit_dones));
+	ae_text_init(&text, "ONE", 11, 1);
+	ae_text_init(&other, "TWO", 11, 1);
+	typing_begun = typing_ended = 0;
+	ae_field_edit_begin(&edit, &text);
+	key(AE_TEXT_KEY_CHAR, 'a');
+	ae_field_edit_keys(&edit);
+	CHECK(!strcmp(text.text, "ONEA"));
+	ae_field_edit_begin(&second, &other);
+	CHECK(typing_begun == 1 && typing_ended == 0 && !edit.active && second.active && edit_dones[0] == 1 &&
+		edit_keeps[0] == 1 && !strcmp(text.text, "ONEA"));
+	key(AE_TEXT_KEY_CHAR, 'b');
+	CHECK(ae_field_edit_keys(&edit) == 1 && queued_count == 1);   /* (not the owner: reads nothing) */
+	ae_field_edit_keys(&second);
+	CHECK(!strcmp(other.text, "TWOB") && !strcmp(text.text, "ONEA"));
+	ae_field_edit_end(&edit, 0);
+	CHECK(typing_ended == 0 && second.active && ae_field_edit_live() && !strcmp(text.text, "ONEA") &&
+		edit_dones[1] == 0);
+	ae_field_edit_end(&second, 1);
+	CHECK(typing_ended == 1 && !ae_field_edit_live() && !strcmp(other.text, "TWOB") && edit_dones[1] == 0);
+	queued_count = 0;
+	ae_ui_reset();
+}
+
+/* the on-screen keyboard and a physical keyboard: a typed printable key closes it (kept) and typing goes on into the
+field through its edit, that key inserted first; a pop by anything else than its own keys cancels it (done(0)) */
+static void keyboard_typing(void)
+{
+	static int const zero = 0;
+	struct ae_density d;
+	struct ae_keyboard_spec spec;
+	struct ae_text text;
+	struct ae_field_edit edit;
+
+	ae_motion_set_reduced(1);
+	ae_ui_reset();
+	ae_ui_set_before_draw(NULL);
+	ae_ui_push(&base, AE_OWNER_ANY, NULL);
+	ae_density_full(1080, 1.0f, &d);
+	ae_text_init(&text, "SLAY", 11, 1);
+	memset(&edit, 0, sizeof(edit));
+	memset(edit_dones, 0, sizeof(edit_dones));
+	edit.done = edit_done;
+	edit.context = (void *)&zero;
+	memset(&spec, 0, sizeof(spec));
+	spec.text = &text;
+	spec.field.x = 96; spec.field.y = 300; spec.field.width = 600; spec.field.height = 65;
+	spec.bounds.width = 1920; spec.bounds.height = 1080;
+	spec.density = d;
+	spec.done = done;
+	spec.edit = &edit;
+	queued_count = 0;
+	typing_begun = typing_ended = 0;
+	done_keep = -1;
+	/* open: the keyboard owns the keys (typing mode on) */
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 1 && ae_field_edit_live());
+	/* a Backspace typed: edited in place, the keyboard stays */
+	key(AE_TEXT_KEY_BACKSPACE, 0);
+	ae_ui_update();
+	CHECK(!strcmp(text.text, "SLA") && ae_ui_depth() == 2 && done_keep == -1);
+	/* "y", "e" typed: closed kept (done(1)), the field's edit owns the keys, typing still on; both inserted */
+	key(AE_TEXT_KEY_CHAR, 'y');
+	key(AE_TEXT_KEY_CHAR, 'e');
+	ae_ui_update();
+	CHECK(done_keep == 1 && ae_ui_depth() == 1 && edit.active && ae_field_edit_live() && typing_ended == 0 &&
+		typing_begun == 1 && !strcmp(text.text, "SLAYE") && edit_dones[0] == 0);
+	/* typing goes on through the field's edit; its end turns typing off */
+	key(AE_TEXT_KEY_CHAR, 'r');
+	ae_field_edit_keys(&edit);
+	CHECK(!strcmp(text.text, "SLAYER"));
+	ae_field_edit_end(&edit, 1);
+	CHECK(typing_ended == 1 && !ae_field_edit_live());
+	/* no field edit given: the key inserted, the keyboard closed, typing ends */
+	spec.edit = NULL;
+	done_keep = -1;
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 2);
+	key(AE_TEXT_KEY_CHAR, 's');
+	ae_ui_update();
+	CHECK(done_keep == 1 && ae_ui_depth() == 1 && !strcmp(text.text, "SLAYERS") && typing_ended == 2 &&
+		!ae_field_edit_live());
+	/* popped by something else (not B / START / DONE): the text from before, done(0), typing off */
+	done_keep = -1;
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 3);
+	key(AE_TEXT_KEY_BACKSPACE, 0);
+	ae_ui_update();
+	CHECK(!strcmp(text.text, "SLAYER"));
+	ae_ui_pop();
+	CHECK(done_keep == 0 && !strcmp(text.text, "SLAYERS") && typing_ended == 3 && !ae_field_edit_live() &&
+		ae_ui_depth() == 1);
+	/* a reset with the keyboard open: typing off, and the slot opens again */
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY) && typing_begun == 4);
+	ae_ui_reset();
+	CHECK(typing_ended == 4 && !ae_field_edit_live() && !strcmp(text.text, "SLAYERS"));
+	ae_ui_push(&base, AE_OWNER_ANY, NULL);
+	CHECK(ae_keyboard_open(&spec, AE_OWNER_ANY));
+	ae_ui_reset();
+	queued_count = 0;
+}
+
+/* inside, with 2 px of horizontal ink allowed (the clip / box tests' rule) */
+static int inside_ink(struct ae_rect const *a, struct ae_rect const *b)
+{
+	return inside(a, b, 0.05f) || (a->y >= b->y - 0.05f && a->y + a->height <= b->y + b->height + 0.05f &&
+		a->x >= b->x - 2.0f && a->x + a->width <= b->x + b->width + 2.0f);
+}
+
+/* the keyboard in a player's quarter (640x360 in a 720p window, 960x540 in 1080p): the whole popover inside the
+panel's content, every key inside, key text at least 16 px, key words 14 px and each inside its own key */
+static void keyboard_view(float window_height)
 {
 	struct ae_density d;
 	struct ae_keyboard_spec spec;
 	struct ae_text text;
-	struct ae_rect content, content_pixels, key, field;
+	struct ae_rect content, content_pixels, field, pop = { 0, 0, 0, 0 };
+	struct ae_rect key_rects[64];
 	struct ae_event event;
-	int index, keys = 0;
+	float pixels = window_height / 1080.0f;
+	int index, keys = 0, words = 0;
 
 	ae_ui_reset();
 	ae_ui_set_before_draw(NULL);
 	ae_ui_push(&base, AE_OWNER_ANY, NULL);
-	ae_stub_reset(1920, 720);
+	ae_stub_reset(1920, (int)window_height);
 	ae_draw_view(960, 0, 960, 540);
-	ae_density_view(640, 360, 1.0f, &d);
-	ae_widget_view_panel(&d, 640, 360, 1, 0x3B8ED8FFu, "PROFILE", 1, 4, &content);
+	ae_density_view(960.0f * pixels, 540.0f * pixels, 1.0f, &d);
+	ae_widget_view_panel(&d, 960.0f * pixels, 540.0f * pixels, 1, 0x3B8ED8FFu, "PROFILE", 1, 4, &content);
 	/* (the content in layout units: the view's drawing units x 0.5, from its corner) */
-	content_pixels.x = (960 + content.x * 0.5f) * 720.0f / 1080.0f;
-	content_pixels.y = content.y * 0.5f * 720.0f / 1080.0f;
-	content_pixels.width = content.width * 0.5f * 720.0f / 1080.0f;
-	content_pixels.height = content.height * 0.5f * 720.0f / 1080.0f;
+	content_pixels.x = (960 + content.x * 0.5f) * pixels;
+	content_pixels.y = content.y * 0.5f * pixels;
+	content_pixels.width = content.width * 0.5f * pixels;
+	content_pixels.height = content.height * 0.5f * pixels;
 	ae_text_init(&text, "PLAYER", 11, 1);
 	memset(&spec, 0, sizeof(spec));
 	spec.text = &text;
@@ -364,32 +544,55 @@ static void keyboard_view(void)
 	field.height = 40;
 	spec.field = field;
 	CHECK(ae_keyboard_open(&spec, 1));
-	ae_stub_reset(1920, 720);
+	ae_stub_reset(1920, (int)window_height);
 	ae_hits_clear();
 	ae_ui_draw();
 	for (index = 0; index < ae_stub_count(); index++)
 	{
 		struct ae_stub_call const *call = ae_stub_get(index);
 
-		if (call->kind == AE_STUB_RECT && (call->rgba == AE_COLOR_ROW || call->rgba == AE_COLOR_SELECTION))
+		if (call->kind == AE_STUB_RECT && call->rgba == AE_COLOR_POPOVER)
+			ae_stub_pixels(call, &pop);
+		if (call->kind == AE_STUB_RECT && (call->rgba == AE_COLOR_ROW || call->rgba == AE_COLOR_SELECTION) &&
+			keys < 64)
 		{
-			ae_stub_pixels(call, &key);
-			CHECK(inside(&key, &content_pixels, 0.05f));
+			ae_stub_pixels(call, &key_rects[keys]);
+			CHECK(inside(&key_rects[keys], &content_pixels, 0.05f));
 			keys++;
 		}
 		if (call->kind == AE_STUB_TEXT && strlen(call->text) == 1)
 			CHECK(ae_stub_text_em_pixels(call) >= 16.0f - 0.01f);
-		if (call->kind == AE_STUB_TEXT && (!strcmp(call->text, "SHIFT") || !strcmp(call->text, "DONE")))
-		{
-			struct ae_rect word;
-
-			CHECK(ae_stub_text_em_pixels(call) >= 14.0f - 0.01f);
-			/* (each word inside its key: the narrow keyboard's DONE takes two) */
-			ae_stub_pixels(call, &word);
-			CHECK(word.width <= 2 * (content_pixels.width - 9 * 5 * 2.0f / 3.0f) / 10.0f + 3.34f + 4.0f);
-		}
 	}
 	CHECK(keys == 46);
+	CHECK(pop.width > 0 && inside(&pop, &content_pixels, 0.05f));
+	if (!inside(&pop, &content_pixels, 0.05f))
+		printf("  popover %.2f %.2f %.2f %.2f content %.2f %.2f %.2f %.2f; window %.0f\n", pop.x, pop.y, pop.width,
+			pop.height, content_pixels.x, content_pixels.y, content_pixels.width, content_pixels.height, window_height);
+	/* (each key word inside the key under its middle: the narrow keyboard's DONE takes two) */
+	for (index = 0; index < ae_stub_count(); index++)
+	{
+		struct ae_stub_call const *call = ae_stub_get(index);
+		struct ae_rect word;
+		float middle_x, middle_y;
+		int which, found = -1;
+
+		if (call->kind != AE_STUB_TEXT || (strcmp(call->text, "SHIFT") && strcmp(call->text, "DONE") &&
+			strcmp(call->text, "SPACE") && strcmp(call->text, "#+=")))
+			continue;
+		CHECK(ae_stub_text_em_pixels(call) >= 14.0f - 0.01f);
+		ae_stub_pixels(call, &word);
+		middle_x = word.x + word.width * 0.5f;
+		middle_y = word.y + word.height * 0.5f;
+		for (which = 0; which < keys; which++)
+			if (middle_x >= key_rects[which].x && middle_x <= key_rects[which].x + key_rects[which].width &&
+				middle_y >= key_rects[which].y && middle_y <= key_rects[which].y + key_rects[which].height)
+				found = which;
+		CHECK(found >= 0 && inside_ink(&word, &key_rects[found]));
+		if (found < 0 || !inside_ink(&word, &key_rects[found]))
+			printf("  %s at %.0f wide %.1f; window %.0f\n", call->text, word.x, word.width, window_height);
+		words++;
+	}
+	CHECK(words == 4);
 	event.player = 1; event.device = AE_DEVICE_XBOX; event.repeat = 0; event.action = AE_ACTION_BACK;
 	ae_ui_dispatch(&event);
 	CHECK(ae_ui_depth() == 1);
@@ -401,7 +604,10 @@ int main(void)
 	fields();
 	keyboard_layout();
 	keyboards();
-	keyboard_view();
+	keyboard_view(720.0f);
+	keyboard_view(1080.0f);
+	typing_owners();
+	keyboard_typing();
 	if (failures)
 		printf("%d failures\n", failures);
 	return failures ? 1 : 0;

@@ -61,8 +61,10 @@ struct ae_screen_class
 };
 struct ae_screen { struct ae_screen_class const *screen_class; short owner; short focus; void *data; };
 
-/* empties the stack (no leave calls) and forgets the last device */
+/* empties the stack (no leave calls) and forgets the last device; then the reset hook, if any (M2: text editing's,
+which ends typing mode) */
 void ae_ui_reset(void);
+void ae_ui_set_reset_hook(void (*hook)(void));
 /* pushes a screen (focus 0) and calls its enter; 0 when the stack is full */
 int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *data);
 /* calls the top screen's leave and removes it */

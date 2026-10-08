@@ -260,17 +260,31 @@ AE's keyboard instead): begin keeps the text to restore on cancel and starts the
 keys applies this frame's typed keys; end keeps the text or restores it. ae_field_type applies keys to a text (pure):
 typing, Backspace, Delete, Home, End, Ctrl+A / C / V; 0 when something was refused (the limit, a character fields
 don't take): the caller plays failure once */
-struct ae_field_edit { struct ae_text *text; struct ae_text before; int active; };
+/* One physical keyboard: one typing OWNER at a time (an edit), never two fields receiving keys. A begin from another
+edit commits the owner's (keeps its text, as Enter would; its done(1)) and takes the keys; only the owner's end turns
+typing mode off. An edit whose screen is gone (holder no longer on the stack: ae_field_edit_guard, once a frame),
+a reset stack (ae_ui_reset) or menus going away (ae_field_edit_abort) is cancelled (its text restored, done(0)) and
+typing mode ends. done (optional) hears an end it didn't call itself; holder (optional) is its screen's data */
+struct ae_field_edit { struct ae_text *text; struct ae_text before; int active;
+	void (*done)(int keep, void *context); void *context; void const *holder; };
 void ae_field_edit_begin(struct ae_field_edit *edit, struct ae_text *text);
 int ae_field_edit_keys(struct ae_field_edit *edit);
 void ae_field_edit_end(struct ae_field_edit *edit, int keep);
 int ae_field_type(struct ae_text *text, struct ae_text_key const *keys, int count);
+/* (M2) the owner's safety nets: guard ends an edit whose holder left the stack; abort ends any; live: an edit owns
+the keys now */
+void ae_field_edit_guard(void);
+void ae_field_edit_abort(void);
+int ae_field_edit_live(void);
 /* opens AE's keyboard (a popover) for a field: only after a pad's A on the field; a keyboard types into the field
 whenever it is editing, keyboard shown or not. Its rects are layout units, view the player's view it draws in
 (preflight P12: zero size for the whole frame); one per owner at a time (0 when the owner's is open) */
 struct ae_keyboard_spec { struct ae_text *text; struct ae_rect field; struct ae_rect bounds; struct ae_density density;
 	void (*done)(int keep, void *context); void *context;
-	struct ae_rect view;         /* (M2, P12) */ };
+	struct ae_rect view;         /* (M2, P12) */
+	/* (M2) the field's edit: a printable key typed on a physical keyboard while this keyboard is open closes it (kept)
+	and goes on typing into the field through it, the first key inserted; NULL: the key is inserted, typing ends */
+	struct ae_field_edit *edit; };
 int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner);
 /* the keyboard's keys: rects (drawing units, relative to the popover) for a page (0 letters, 1 symbols) */
 short ae_keyboard_layout(struct ae_density const *density, float content_width, int page, struct ae_rect *keys,

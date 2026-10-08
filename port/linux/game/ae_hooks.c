@@ -187,6 +187,23 @@ static void before_draw(
 	ae_draw_set_alpha(alpha);
 }
 
+/* typing mode left on: an edit whose screen left the stack is cancelled (ae_field_edit_guard); typing mode on with no
+edit owning it (the game's typing mode, ae_glue_text.c) is turned off, logged once */
+static void typing_guard(
+	void)
+{
+	static boolean logged = FALSE;
+
+	ae_field_edit_guard();
+	if (ae_glue_text_typing() && !ae_field_edit_live())
+	{
+		ae_glue_text_end();
+		if (!logged)
+			platform_log("ae menus: typing mode was on with no field: turned off");
+		logged = TRUE;
+	}
+}
+
 boolean ae_ui_process(
 	void)
 {
@@ -229,6 +246,8 @@ boolean ae_ui_process(
 		}
 		ae_platform_arm_back_presses(TRUE);
 		ae_platform_arm_tab_presses(TRUE);
+		/* (an edit whose screen left the stack ends; typing mode on with no edit owning it is turned off) */
+		typing_guard();
 		ae_ui_update();
 		ae_input_poll();
 		/* (the frame's one sound: ae_sound.h) */
@@ -240,6 +259,9 @@ boolean ae_ui_process(
 		ae_platform_arm_tab_presses(was_up);
 		return TRUE;
 	}
+	/* (AE's screens gone: nothing is being typed into) */
+	ae_field_edit_abort();
+	typing_guard();
 	/* (the last screen closed by the pointer before this frame's input: its BACK plays now; else nothing is kept) */
 	ae_glue_sound_play(ae_sound_end_frame(was_up, FALSE, now));
 	was_up = FALSE;

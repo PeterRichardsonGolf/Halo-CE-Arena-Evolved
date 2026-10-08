@@ -145,11 +145,66 @@ int ae_field_type(struct ae_text *text, struct ae_text_key const *keys, int coun
 	return whole;
 }
 
+/* the edit that owns the physical keyboard now (one: two fields never both receive keys) */
+static struct ae_field_edit *typing_owner;
+
+/* an edit ends: its text kept or restored, the owner let go of (typing mode off) when it was; told when asked */
+static void edit_finish(struct ae_field_edit *edit, int keep, int tell)
+{
+	if (!edit->active)
+		return;
+	/* (cancel: the text from before editing) */
+	if (!keep && edit->text)
+		*edit->text = edit->before;
+	edit->active = 0;
+	if (typing_owner == edit)
+	{
+		typing_owner = NULL;
+		ae_host_text_end();
+	}
+	if (tell && edit->done)
+		edit->done(keep, edit->context);
+}
+
+void ae_field_edit_abort(void)
+{
+	if (typing_owner)
+		edit_finish(typing_owner, 0, 1);
+}
+
+void ae_field_edit_guard(void)
+{
+	/* (the owner's screen left the stack without ending it: a pop, a reset) */
+	if (typing_owner && typing_owner->holder && !ae_ui_holds(typing_owner->holder))
+		edit_finish(typing_owner, 0, 1);
+}
+
+int ae_field_edit_live(void)
+{
+	return typing_owner != NULL && typing_owner->active;
+}
+
 void ae_field_edit_begin(struct ae_field_edit *edit, struct ae_text *text)
 {
+	/* (a reset stack ends whatever was being typed: ae_ui_reset calls it) */
+	ae_ui_set_reset_hook(ae_field_edit_abort);
 	edit->text = text;
 	edit->before = *text;
 	edit->active = 1;
+	if (typing_owner == edit)
+		return;
+	if (typing_owner)
+	{
+		/* another field had the keys: committed, as Enter would; typing mode stays on for this one */
+		struct ae_field_edit *previous = typing_owner;
+
+		typing_owner = edit;
+		previous->active = 0;
+		if (previous->done)
+			previous->done(1, previous->context);
+		return;
+	}
+	typing_owner = edit;
 	ae_host_text_begin();
 }
 
@@ -158,7 +213,8 @@ int ae_field_edit_keys(struct ae_field_edit *edit)
 	struct ae_text_key keys[32];
 	int count;
 
-	if (!edit->active || !edit->text)
+	/* (only the owner reads the keys) */
+	if (!edit->active || !edit->text || edit != typing_owner)
 		return 1;
 	count = ae_host_text_keys(keys, 32);
 	return count > 0 ? ae_field_type(edit->text, keys, count) : 1;
@@ -166,13 +222,7 @@ int ae_field_edit_keys(struct ae_field_edit *edit)
 
 void ae_field_edit_end(struct ae_field_edit *edit, int keep)
 {
-	if (!edit->active)
-		return;
-	/* (cancel: the text from before editing) */
-	if (!keep && edit->text)
-		*edit->text = edit->before;
-	edit->active = 0;
-	ae_host_text_end();
+	edit_finish(edit, keep, 0);
 }
 
 /* ---------- the field */
@@ -305,6 +355,9 @@ static void key_size(struct ae_density const *density, float content_width, floa
 		*width = (content_width - 9.0f * *gap) / 10.0f;
 		if (*width > units(density, KEY_VIEW_WIDTH_U))
 			*width = units(density, KEY_VIEW_WIDTH_U);
+		/* (a view too narrow for ten: the keys a pixel at least, never inverted) */
+		if (*width < density->pixel)
+			*width = density->pixel;
 		*height = *width * KEY_HEIGHT_U / KEY_WIDTH_U;
 	}
 	else
@@ -339,8 +392,10 @@ short ae_keyboard_layout(struct ae_density const *density, float content_width, 
 	}
 	for (index = 0; index < 40 && count < maximum; index++, count++)
 	{
-		keys[count].x = (float)(index % 10) * (width + gap);
-		keys[count].y = (float)(index / 10) * (height + gap);
+		short row = (short)(index / 10), column_in_row = (short)(index % 10);
+
+		keys[count].x = (float)column_in_row * (width + gap);
+		keys[count].y = (float)row * (height + gap);
 		keys[count].width = width;
 		keys[count].height = height;
 		if (labels)
@@ -380,6 +435,9 @@ struct keyboard_state
 	short focus, hover;
 	struct ae_rect popover;        /* layout units */
 	float content;                 /* the keys' width to fit (drawing units of its view) */
+	/* (its own typing: while it is open it owns the physical keyboard, so a typed key reaches it) */
+	struct ae_field_edit edit;
+	int closing;
 };
 static struct keyboard_state keyboards[KEYBOARD_SLOTS];
 
@@ -436,6 +494,9 @@ static void keyboard_close(struct keyboard_state *state, int keep)
 	void (*done)(int, void *) = state->spec.done;
 	void *context = state->spec.context;
 
+	state->closing = 1;
+	/* (its typing ends: kept, or the text from before) */
+	ae_field_edit_end(&state->edit, keep);
 	if (!keep && state->spec.text)
 		*state->spec.text = state->before;
 	ae_sound_request(keep ? AE_SOUND_FORWARD : AE_SOUND_BACK, 0);
@@ -501,6 +562,47 @@ static void keyboard_leave(struct ae_screen *screen)
 	struct keyboard_state *state = screen->data;
 
 	state->open = 0;
+	/* (popped by something else than its own B / START / DONE: cancelled, the text from before, done(0)) */
+	if (!state->closing)
+	{
+		ae_field_edit_end(&state->edit, 0);
+		if (state->spec.text)
+			*state->spec.text = state->before;
+		if (state->spec.done)
+			state->spec.done(0, state->spec.context);
+	}
+}
+
+/* keys typed on a physical keyboard while it is open: a printable one closes it (kept) and goes on as typing into the
+field (its edit, the owner path), itself inserted first; the editing keys (Backspace, Delete...) edit in place */
+static void keyboard_update(struct ae_screen *screen)
+{
+	struct keyboard_state *state = screen->data;
+	struct ae_text_key keys[32];
+	struct ae_text *text = state->spec.text;
+	struct ae_field_edit *field = state->spec.edit;
+	int count, index;
+
+	if (!state->edit.active || !text)
+		return;
+	/* (only while it owns the keys) */
+	count = typing_owner == &state->edit ? ae_host_text_keys(keys, 32) : 0;
+	for (index = 0; index < count; index++)
+	{
+		if (keys[index].kind != AE_TEXT_KEY_CHAR)
+		{
+			if (!ae_field_type(text, &keys[index], 1))
+				ae_sound_request(AE_SOUND_FAILURE, 0);
+			continue;
+		}
+		/* (the field's edit takes the keys first, so typing mode stays on; then this keyboard closes, kept) */
+		if (field)
+			ae_field_edit_begin(field, text);
+		keyboard_close(state, 1);
+		if (!ae_field_type(text, &keys[index], count - index))
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
 }
 
 static void keyboard_draw(struct ae_screen *screen)
@@ -667,7 +769,7 @@ static void keyboard_pointer(struct ae_screen *screen, struct ae_pointer const *
 static struct ae_screen_class const keyboard_class =
 {
 	.name = "keyboard", .enter = keyboard_enter, .leave = keyboard_leave, .handle = keyboard_handle,
-	.draw = keyboard_draw, .pointer = keyboard_pointer, .popover = 1,
+	.draw = keyboard_draw, .pointer = keyboard_pointer, .popover = 1, .update = keyboard_update,
 };
 
 int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
@@ -682,6 +784,8 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
 	state = &keyboards[slot];
 	if (state->open && ae_ui_holds(state))
 		return 0;
+	/* (a keyboard of this slot gone from the stack without closing still owning the keys: ended before reuse) */
+	ae_field_edit_guard();
 	memset(state, 0, sizeof(*state));
 	state->slot = slot;
 	state->spec = *spec;
@@ -694,8 +798,19 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
 	bounds = &spec->bounds;
 	/* the size: the keys (VIEW: shrunk to the bounds' width), the padding, the strip; layout units */
 	content = bounds->width / scale - 2.0f * units(&spec->density, KEYBOARD_PAD_U);
-	state->content = content;
 	keyboard_parts(&spec->density, content, &pad, &keys_width, &keys_height, &strip);
+	/* (VIEW: too tall for the bounds, a short quarter: the keys shrunk to the height as well, their shape kept) */
+	if (spec->density.kind == AE_DENSITY_VIEW && (keys_height + 2.0f * pad + strip) * scale > bounds->height)
+	{
+		float key_gap = units(&spec->density, KEY_VIEW_GAP_U);
+		float key_height = ((bounds->height / scale - 2.0f * pad - strip) - 4.0f * key_gap) / 5.0f;
+		float fit = 10.0f * (key_height * KEY_WIDTH_U / KEY_HEIGHT_U) + 9.0f * key_gap;
+
+		if (fit < content)
+			content = fit;
+		keyboard_parts(&spec->density, content, &pad, &keys_width, &keys_height, &strip);
+	}
+	state->content = content;
 	width = (keys_width + 2.0f * pad) * scale;
 	height = (keys_height + 2.0f * pad + strip) * scale;
 	gap = units(&spec->density, KEYBOARD_GAP_U) * scale;
@@ -725,5 +840,8 @@ int ae_keyboard_open(struct ae_keyboard_spec const *spec, short owner)
 	if (!ae_ui_push(&keyboard_class, owner, state))
 		return 0;
 	state->open = 1;
+	/* (it owns the physical keyboard while open: typing mode, its keys to keyboard_update) */
+	state->edit.holder = state;
+	ae_field_edit_begin(&state->edit, spec->text);
 	return 1;
 }
