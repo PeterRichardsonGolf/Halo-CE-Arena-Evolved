@@ -167,6 +167,12 @@ int ae_font_has(int face, unsigned int codepoint)
 	return info && codepoint <= 0x10FFFF && stbtt_FindGlyphIndex(info, (int)codepoint) != 0;
 }
 
+/* a code point as stb takes it (an int): past U+10FFFF, U+FFFD (a huge unsigned would turn negative) */
+static int stb_codepoint(unsigned int codepoint)
+{
+	return codepoint <= 0x10FFFF ? (int)codepoint : 0xFFFD;
+}
+
 /* font units to pixels at an em size */
 static float scale_of(stbtt_fontinfo const *info, float em)
 {
@@ -185,9 +191,9 @@ static int advance_units(stbtt_fontinfo const *info, unsigned int codepoint, uns
 {
 	int advance = 0, bearing = 0;
 
-	stbtt_GetCodepointHMetrics(info, (int)codepoint, &advance, &bearing);
+	stbtt_GetCodepointHMetrics(info, stb_codepoint(codepoint), &advance, &bearing);
 	if (previous)
-		advance += stbtt_GetCodepointKernAdvance(info, (int)previous, (int)codepoint);
+		advance += stbtt_GetCodepointKernAdvance(info, stb_codepoint(previous), stb_codepoint(codepoint));
 	return advance;
 }
 
@@ -260,7 +266,7 @@ float ae_font_measure(int face, float em, float tracking_em, const char *utf8, f
 	while (utf8 && (codepoint = ae_font_utf8_next(&cursor)) != 0)
 	{
 		units += advance_units(info, codepoint, previous);
-		if (stbtt_GetCodepointBox(info, (int)codepoint, &x0, &y0, &x1, &y1))
+		if (stbtt_GetCodepointBox(info, stb_codepoint(codepoint), &x0, &y0, &x1, &y1))
 		{
 			if (y1 > ink_top)
 				ink_top = y1;
@@ -288,7 +294,7 @@ unsigned char *ae_font_glyph(int face, float em, unsigned int codepoint, int *wi
 	if (!info || !(em > 0.0f) || em > MAXIMUM_EM)
 		return NULL;
 	scale = scale_of(info, em);
-	return stbtt_GetCodepointBitmap(info, scale, scale, (int)codepoint, width, height, x_offset, y_offset);
+	return stbtt_GetCodepointBitmap(info, scale, scale, stb_codepoint(codepoint), width, height, x_offset, y_offset);
 }
 
 void ae_font_free(unsigned char *bitmap)

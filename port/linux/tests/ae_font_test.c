@@ -128,6 +128,22 @@ int main(void)
 	CHECK(ae_font_utf8_next(&c) == 0x2026);
 	CHECK(ae_font_utf8_next(&c) == 0xFFFD && ae_font_utf8_next(&c) == 0xFFFD);   /* overlong: each byte */
 	CHECK(ae_font_utf8_next(&c) == 'Z' && ae_font_utf8_next(&c) == 0 && *c == 0);
+	/* a surrogate (ED A0 80), an overlong 3-byte form (E0 80 80), past U+10FFFF (F4 90 80 80, F5): U+FFFD for each
+	byte, as the lead's second byte already rules them out; a valid 4-byte sequence (U+1F600) whole */
+	for (c = "\xED\xA0\x80" "\xE0\x80\x80" "\xF4\x90\x80\x80" "\xF5", index = 0; *c; index++)
+		CHECK(ae_font_utf8_next(&c) == 0xFFFD);
+	CHECK(index == 11);
+	c = "\xF0\x9F\x98\x80" "\xF4\x8F\xBF\xBF" "\xEF\xBF\xBD" "\xDF\xBF";
+	CHECK(ae_font_utf8_next(&c) == 0x1F600 && ae_font_utf8_next(&c) == 0x10FFFF);
+	CHECK(ae_font_utf8_next(&c) == 0xFFFD && ae_font_utf8_next(&c) == 0x7FF && *c == 0);
+	/* (a code point past U+10FFFF handed in directly reads as U+FFFD, never as a negative int) */
+	CHECK(near(ae_font_advance(AE_FACE_OVERPASS_900, 20.0f, 0x80000000u, 0),
+		ae_font_advance(AE_FACE_OVERPASS_900, 20.0f, 0xFFFD, 0), 0.001f));
+	CHECK(near(ae_font_advance(AE_FACE_OVERPASS_900, 20.0f, 'A', 0xFFFFFFFFu),
+		ae_font_advance(AE_FACE_OVERPASS_900, 20.0f, 'A', 0xFFFD), 0.001f));
+	CHECK(!ae_font_has(AE_FACE_OVERPASS_900, 0x110000));
+	bitmap = ae_font_glyph(AE_FACE_OVERPASS_900, 20.0f, 0xFFFFFFFFu, &w, &h, &xo, &yo);
+	ae_font_free(bitmap);
 
 	/* garbage and truncated data: refused, nothing crashes (built with the sanitizers) */
 	memset(garbage, 0xFF, sizeof(garbage));
