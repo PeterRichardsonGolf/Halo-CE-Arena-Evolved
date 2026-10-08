@@ -397,6 +397,25 @@ def test_callouts_plan(tmp_path):
     assert "PASS" in result.stdout
 
 
+def test_arena_gametype_names(tmp_path):
+    """the seeded gametypes' names table (source/saved games/arena_gametype_names.c,
+    tools/arena_gametype_names_check.c): stored names at most 11 ASCII
+    characters and unique, display names at most 31 and unique, every alias's
+    successor there and its info its successor's place with its own name,
+    the sets' counts and orders, lookups letters' case aside, unknown names
+    shown as they are; built with the flags ninja gives the game's code"""
+    if not shutil.which("clang") or not shutil.which("ninja") or not Path("build.ninja").is_file():
+        pytest.skip("needs clang, ninja and a configured build")
+    flags = _ninja_compile_flags("build/linux/obj/source/saved games/arena_gametype_names.o")
+    program = tmp_path / "arena_gametype_names_check"
+    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-o", str(program),
+                            "tools/arena_gametype_names_check.c"], capture_output=True, text=True)
+    assert built.returncode == 0, built.stderr[-4000:]
+    result = subprocess.run([str(program)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout[-4000:]
+    assert "PASS" in result.stdout
+
+
 def build_spawn_heat_check(tmp_path: Path, game_engine: str = "source/game/game_engine.c",
                            base: bool = False) -> Path:
     """tools/spawn_heat_check.c with source/game/spawn_heat.c, game_engine.c

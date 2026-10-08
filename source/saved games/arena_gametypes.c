@@ -19,7 +19,8 @@ changed is left as it is and the new one written beside it; one the player
 deleted stays deleted.
 
 The gametype lists show the custom gametypes in order
-(arena_gametypes_sort): the AE set, Halo 1: NHE's, then the player's own.
+(arena_gametypes_sort): by set (AE, AE COMP, Halo 1: NHE's, TRAINING:
+arena_gametype_names.c), each in its table's order, then the player's own.
 */
 
 /* ---------- headers */
@@ -53,13 +54,6 @@ enum
 	ARENA_GAMETYPES_MAXIMUM_SAVED = 128,
 };
 
-/* the gametype lists' groups of custom gametypes, in their order */
-enum
-{
-	_arena_group_ae,
-	_arena_group_nhe,
-	_arena_group_player,
-};
 
 /* what every AE gametype adds to its stock one: AE's rules (NO SPREAD FULL,
 the PRE-GAME COUNTDOWN), no landing damage, HALO 2 health (health back as
@@ -295,8 +289,6 @@ static void arena_gametypes_rename(
 	unsigned long *record_length,
 	boolean *record_changed,
 	boolean *written);
-static short arena_gametype_group(
-	wchar_t const *name);
 static int arena_gametype_name_compare(
 	wchar_t const *a,
 	wchar_t const *b);
@@ -380,9 +372,11 @@ boolean arena_gametypes_seed(
 }
 
 /* the custom gametypes among count gametypes (playlist_profile.c's list, the
-built-in ones read only) in order: the AE set, Halo 1: NHE's, then the
-player's own, each alphabetical (case aside); they take the places the
-custom ones had, so the built-in ones keep theirs and their order */
+built-in ones read only) in order: the seeded ones by set (AE, AE COMP,
+Halo 1: NHE's, TRAINING), each in the names table's order (an old name
+beside its successor), then the player's own, alphabetical (case aside);
+they take the places the custom ones had, so the built-in ones keep theirs
+and their order */
 void arena_gametypes_sort(
 	word count,
 	long *indices)
@@ -391,6 +385,7 @@ void arena_gametypes_sort(
 	{
 		long index;
 		short group;
+		short order;
 		wchar_t name[ARENA_GAMETYPE_NAME_LENGTH * 2];
 	};
 	/* (static, not on the stack: one list is sorted at a time, the
@@ -412,7 +407,21 @@ void arena_gametypes_sort(
 		ustrncpy(entry->name, display_name, NUMBEROF(entry->name) - 1);
 		entry->name[NUMBEROF(entry->name) - 1] = 0;
 		entry->index = indices[index];
-		entry->group = arena_gametype_group(entry->name);
+		{
+			struct arena_gametype_info info;
+
+			/* (the sets in their order, then the player's own) */
+			if (arena_gametype_info(entry->name, &info))
+			{
+				entry->group = info.set;
+				entry->order = info.order;
+			}
+			else
+			{
+				entry->group = NUMBER_OF_ARENA_GAMETYPE_SETS;
+				entry->order = 0;
+			}
+		}
 		places[entry_count++] = index;
 	}
 
@@ -424,7 +433,8 @@ void arena_gametypes_sort(
 
 		while (other > 0 &&
 			(entries[other - 1].group > entry.group ||
-			(entries[other - 1].group == entry.group &&
+			(entries[other - 1].group == entry.group && entries[other - 1].order > entry.order) ||
+			(entries[other - 1].group == entry.group && entries[other - 1].order == entry.order &&
 			arena_gametype_name_compare(entries[other - 1].name, entry.name) > 0)))
 		{
 			entries[other] = entries[other - 1];
@@ -437,6 +447,49 @@ void arena_gametypes_sort(
 		indices[places[index]] = entries[index].index;
 
 	return;
+}
+
+/* the seeded gametype of that stored name still exactly as this build seeds
+it: its file's variant and PC options (FALSE: edited, not on disk, or not
+one of this build's seeds) */
+boolean arena_gametype_as_seeded(
+	wchar_t const *stored_name)
+{
+	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
+	word saved_count = NUMBEROF(saved);
+	struct arena_gametype const *gametype = NULL;
+	wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH];
+	short index;
+
+	if (!stored_name)
+		return FALSE;
+	for (index = 0; index < NUMBEROF(arena_gametypes) && !gametype; index++)
+	{
+		arena_gametype_wide_name(arena_gametypes[index].name, wide_name);
+		if (!arena_gametype_name_compare(stored_name, wide_name))
+			gametype = &arena_gametypes[index];
+	}
+	if (!gametype)
+		return FALSE;
+	saved_game_files_enumerate_available_to_local_player_index(NONE,
+		_saved_game_file_type_game_variant, &saved_count, saved, FALSE);
+	for (index = 0; index < (short)saved_count; index++)
+	{
+		wchar_t display_name[MAX_GAMENAME];
+		struct game_variant variant;
+		struct game_variant_options options;
+
+		display_name[0] = 0;
+		if (!playlist_profile_get_display_name(saved[index], display_name) ||
+			arena_gametype_name_compare(display_name, wide_name))
+		{
+			continue;
+		}
+		/* (the name as seeded: NUL-filled) */
+		arena_gametype_build(gametype, wide_name, &variant, &options);
+		return playlist_profile_matches(saved[index], &variant, &options);
+	}
+	return FALSE;
 }
 
 /* ---------- private code */
@@ -593,32 +646,6 @@ static void arena_gametypes_rename(
 	}
 
 	return;
-}
-
-/* a gametype's group in the lists: the AE set (and AE names of before),
-Halo 1: NHE's, else the player's own */
-static short arena_gametype_group(
-	wchar_t const *name)
-{
-	short index;
-
-	for (index = 0; index < NUMBEROF(arena_gametypes); index++)
-	{
-		wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH];
-
-		arena_gametype_wide_name(arena_gametypes[index].name, wide_name);
-		if (!arena_gametype_name_compare(name, wide_name))
-			return strncmp(arena_gametypes[index].name, "AE ", 3) ? _arena_group_nhe : _arena_group_ae;
-	}
-	for (index = 0; index < NUMBEROF(arena_gametype_renames); index++)
-	{
-		wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH];
-
-		arena_gametype_wide_name(arena_gametype_renames[index].old_name, wide_name);
-		if (!arena_gametype_name_compare(name, wide_name))
-			return _arena_group_ae;
-	}
-	return _arena_group_player;
 }
 
 /* names compared as the lists sort them: letters' case aside */

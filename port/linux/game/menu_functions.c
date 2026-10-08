@@ -80,6 +80,7 @@ their handlers open opens.
 #include "tag_files/tag_groups.h"
 #include "text/text_group.h"
 #include "text/unicode.h"
+#include "saved games/arena_gametypes.h"
 
 #include "halo_menus.h"
 #include "halo_custom_maps.h"
@@ -3032,7 +3033,8 @@ static boolean gametype_list_initialize(struct widget_instance *list)
 }
 
 /* a gametype's name, in a row's text (the name's own buffer is longer:
-playlist_profile_get_display_name fills MAX_GAMENAME characters) */
+playlist_profile_get_display_name fills MAX_GAMENAME characters): a seeded
+one's display name (arena_gametype_names.c), else its stored name */
 static void gametype_display_name(long profile_index, wchar_t *text)
 {
 	wchar_t name[MAX_GAMENAME];
@@ -3040,9 +3042,41 @@ static void gametype_display_name(long profile_index, wchar_t *text)
 	text[0] = 0;
 	if (playlist_profile_get_display_name(profile_index, name))
 	{
-		ustrncpy(text, name, ROW_TEXT_LENGTH - 1);
-		text[ROW_TEXT_LENGTH - 1] = 0;
+		name[MAX_GAMENAME - 1] = 0;
+		if (arena_gametype_info(name, NULL))
+			arena_gametype_display_name(name, text, ROW_TEXT_LENGTH);
+		else
+		{
+			ustrncpy(text, name, ROW_TEXT_LENGTH - 1);
+			text[ROW_TEXT_LENGTH - 1] = 0;
+		}
 	}
+}
+
+/* a gametype's name in a narrow panel (the gametype lists' and the
+lobby's, 146 wide in small_ui): a display name too long for a line is
+broken at its last space that leaves the first line at most
+GAMETYPE_PANEL_LINE characters ("TEAM NHE CTF 3 7.5S" / "RADAR") */
+#define GAMETYPE_PANEL_LINE 19
+static void gametype_panel_name(wchar_t *text, size_t size)
+{
+	size_t length = ustrlen(text);
+	size_t index;
+	size_t space = 0;
+
+	if (length <= GAMETYPE_PANEL_LINE || length + 2 >= size)
+		return;
+	for (index = 1; index <= GAMETYPE_PANEL_LINE; index++)
+	{
+		if (text[index] == ' ')
+			space = index;
+	}
+	if (!space)
+		return;
+	/* (the space becomes the line break's "\r\n") */
+	memmove(text + space + 2, text + space + 1, (length - space) * sizeof(wchar_t));
+	text[space] = '\r';
+	text[space + 1] = '\n';
 }
 
 static void gametype_name(short item, wchar_t *text)
@@ -3109,6 +3143,7 @@ static void gametype_list_update(struct widget_instance *list)
 		wchar_t text[ROW_TEXT_LENGTH * 2];
 
 		gametype_name(multiplayer.gametype_chosen, text);
+		gametype_panel_name(text, NUMBEROF(text));
 		text_set(named(description, "gametype_right_name", 0), text);
 		if (playlist_profile_get(multiplayer.gametypes[multiplayer.bank[multiplayer.gametype_chosen]], &variant))
 		{
@@ -5285,10 +5320,15 @@ static void lobby_update(struct widget_instance *list)
 	{
 		short seconds = network_game_client_get_seconds_to_game_start(client);
 		char link[TEXT_FIELD_LENGTH];
-		wchar_t gametype[NUMBEROF(game->variant.human_readable_game_description) + 1];
+		wchar_t stored_name[NUMBEROF(game->variant.human_readable_game_description) + 1];
+		/* (a seeded gametype's display name: the network game has its
+		stored name, arena_gametype_names.c) */
+		wchar_t gametype[40];
 
-		ustrncpy(gametype, game->variant.human_readable_game_description, NUMBEROF(gametype) - 1);
-		gametype[NUMBEROF(gametype) - 1] = 0;
+		ustrncpy(stored_name, game->variant.human_readable_game_description, NUMBEROF(stored_name) - 1);
+		stored_name[NUMBEROF(stored_name) - 1] = 0;
+		arena_gametype_display_name(stored_name, gametype, NUMBEROF(gametype));
+		gametype_panel_name(gametype, NUMBEROF(gametype));
 		usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\n%d of %d players\r\n\r\n%s", gametype,
 			engine_names[PIN(game->variant.game_engine_index, 0, 5)], lobby_player_count, game->maximum_players,
 			/* (a host starts with its own players alone: one is enough) */
@@ -5941,12 +5981,21 @@ static boolean gametype_setup_apply(void)
 static void gametype_setup_type(wchar_t *text)
 {
 	wchar_t name[NUMBEROF(gametype_edit.setup_variant.human_readable_game_description) + 1];
+	struct arena_gametype_info info;
 
 	text[0] = 0;
 	if (!gametype_edit.setup)
 		return;
 	ustrncpy(name, gametype_edit.setup_variant.human_readable_game_description, NUMBEROF(name) - 1);
 	name[NUMBEROF(name) - 1] = 0;
+	/* (a seeded gametype's display name, which says TEAM or FFA and the
+	mode: arena_gametype_names.c; an old name of one, an alias, has no
+	description and shows as before) */
+	if (arena_gametype_info(name, &info) && info.description)
+	{
+		arena_gametype_display_name(name, text, ROW_TEXT_LENGTH);
+		return;
+	}
 	usnprintf(text, ROW_TEXT_LENGTH - 1, L"%s (%s%s)", name,
 		engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 5)],
 		gametype_edit.setup_variant.universal_variant.teams ? L", TEAMS" : L"");
@@ -6014,6 +6063,7 @@ static void gametype_edit_list_update(struct widget_instance *list)
 		visible_set(named(description, "locked_gametype_icon", 0),
 			((unsigned long)profile_index & PLAYLIST_READ_ONLY_BIT) != 0);
 		gametype_display_name(profile_index, text);
+		gametype_panel_name(text, NUMBEROF(text));
 		text_set(named(description, "gametype_right_name", 0), text);
 		if (playlist_profile_get(profile_index, &variant))
 		{

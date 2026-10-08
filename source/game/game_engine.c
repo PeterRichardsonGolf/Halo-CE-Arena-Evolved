@@ -585,6 +585,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "rasterizer/rasterizer_console_vars.h"
 #include "render/render.h"
 #include "saved games/player_profile.h"
+#include "saved games/arena_gametypes.h"
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
 #include "sound/sound_classes.h"
@@ -1476,6 +1477,32 @@ static void rasterize_in_game_score_layout(
 	return;
 }
 
+/* port: the in-game score's rows drawn without the tab stops: the title's,
+and the gametype's display name's under it when it has one
+(game_engine_rasterize_in_game_score) */
+static long rasterize_in_game_score_untabbed_rows = 1;
+
+/* port: a seeded gametype's display name (arena_gametype_names.c), for the
+scoreboards' line under their title: "TEAM AE SLAYER"; FALSE for any other
+gametype, which has no such line */
+static boolean game_engine_scoreboard_gametype_name(
+	wchar_t *text,
+	short size)
+{
+	wchar_t stored_name[NUMBEROF(global_variant.human_readable_game_description) + 1];
+
+	text[0] = 0;
+	if (!game_engine)
+		return FALSE;
+	csmemcpy(stored_name, global_variant.human_readable_game_description,
+		sizeof(global_variant.human_readable_game_description));
+	stored_name[NUMBEROF(stored_name) - 1] = 0;
+	if (!arena_gametype_info(stored_name, NULL))
+		return FALSE;
+	arena_gametype_display_name(stored_name, text, size);
+	return TRUE;
+}
+
 static void rasterize_in_game_score_draw_line(
 	wchar_t const *string,
 	boolean brighten,
@@ -1490,7 +1517,7 @@ static void rasterize_in_game_score_draw_line(
 	splitscreen = local_player_count() > 1;
 	font_index = hud_get_font_index();
 	rasterize_in_game_score_layout(&bounds, tab_stops);
-	if (row_index > 0)
+	if (row_index >= rasterize_in_game_score_untabbed_rows)
 		draw_string_set_tab_stops(tab_stops, 3);
 	else
 		draw_string_set_tab_stops(NULL, 0);
@@ -1962,6 +1989,9 @@ static void game_engine_rasterize_scoreboard(
 	wchar_t score_string[256];
 	wchar_t title_string[80];
 	wchar_t ping_string[16];
+	/* port: the gametype's display name under the title (a row more) */
+	wchar_t gametype_string[40];
+	long gametype_rows;
 	real_argb_color text_color;
 	real_argb_color team_colors[2];
 	real_argb_color color;
@@ -2001,8 +2031,9 @@ static void game_engine_rasterize_scoreboard(
 	/* (laid out at full size, then drawn scaled about the title's top left:
 	the screen holds 1/SCOREBOARD_SCALE as much) */
 	width = (short)((bounds.x1 - bounds.x0) / SCOREBOARD_SCALE);
+	gametype_rows = !campaign && game_engine_scoreboard_gametype_name(gametype_string, NUMBEROF(gametype_string)) ? 1 : 0;
 	rows = (long)((bounds.y1 - SCOREBOARD_LAYOUT_TOP_ROWS * line_height) / SCOREBOARD_SCALE / line_height) - 2 -
-		SCOREBOARD_BOTTOM_ROWS;
+		gametype_rows - SCOREBOARD_BOTTOM_ROWS;
 	rows = MAX(rows, 1);
 	if (campaign)
 	{
@@ -2073,7 +2104,7 @@ static void game_engine_rasterize_scoreboard(
 	if (total > page)
 		shown_rows++;
 	{
-		real height = (2 + shown_rows) * line_height * SCOREBOARD_SCALE;
+		real height = (2 + gametype_rows + shown_rows) * line_height * SCOREBOARD_SCALE;
 
 		top = (short)(bounds.y0 + ((bounds.y1 - bounds.y0) - height) / 2);
 		top = MAX(top, (short)(SCOREBOARD_MINIMUM_TOP_ROWS * line_height));
@@ -2111,6 +2142,11 @@ static void game_engine_rasterize_scoreboard(
 	color.alpha = alpha;
 	color.red = color.green = color.blue = 0.7f;
 	scoreboard_draw_row(title_string, FALSE, &color, 0, top, left, FALSE);
+	if (gametype_rows)
+	{
+		color.red = color.green = color.blue = 0.55f;
+		scoreboard_draw_row(gametype_string, FALSE, &color, 1, top, left, FALSE);
+	}
 
 	string_list_index = tag_loaded('ustr', "ui\\multiplayer_game_text");
 	column_name = string_list_index != NONE && !campaign ? unicode_string_list_get_string(string_list_index, 0x43) : L"";
@@ -2137,7 +2173,7 @@ static void game_engine_rasterize_scoreboard(
 				color.alpha = alpha;
 				color.red = color.green = color.blue = 0.5f;
 			}
-			scoreboard_draw_row(row_string, FALSE, &color, 1, top,
+			scoreboard_draw_row(row_string, FALSE, &color, 1 + gametype_rows, top,
 				(short)(left + column * (SCOREBOARD_COLUMN_WIDTH + SCOREBOARD_COLUMN_GAP)), TRUE);
 		}
 	}
@@ -2197,7 +2233,7 @@ static void game_engine_rasterize_scoreboard(
 			row_string,
 			player_index == entry->player_index,
 			row_color,
-			2 + row,
+			2 + gametype_rows + row,
 			top,
 			(short)(left + column * (SCOREBOARD_COLUMN_WIDTH + SCOREBOARD_COLUMN_GAP)),
 			TRUE);
@@ -2211,7 +2247,7 @@ static void game_engine_rasterize_scoreboard(
 		color.alpha = alpha;
 		color.red = color.green = color.blue = 0.6f;
 		usprintf(row_string, L"%ld-%ld of %ld   (Page Up / Page Down, mouse wheel)", first, last, total);
-		scoreboard_draw_row(row_string, FALSE, &color, 2 + rows, top, left, FALSE);
+		scoreboard_draw_row(row_string, FALSE, &color, 2 + gametype_rows + rows, top, left, FALSE);
 	}
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 
@@ -2226,6 +2262,9 @@ static void game_engine_rasterize_in_game_score(
 	wchar_t score_string[256];
 	struct statistic_buffer entries[6];
 	wchar_t title_string[80];
+	/* port: the gametype's display name under the title (a row more) */
+	wchar_t gametype_string[40];
+	long gametype_rows;
 	real_argb_color text_color;
 	real_argb_color team_colors[2];
 	real_argb_color color;
@@ -2258,6 +2297,13 @@ static void game_engine_rasterize_in_game_score(
 	color.green = 0.7f;
 	color.blue = 0.7f;
 	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0);
+	gametype_rows = game_engine_scoreboard_gametype_name(gametype_string, NUMBEROF(gametype_string)) ? 1 : 0;
+	rasterize_in_game_score_untabbed_rows = 1 + gametype_rows;
+	if (gametype_rows)
+	{
+		color.red = color.green = color.blue = 0.55f;
+		rasterize_in_game_score_draw_line(gametype_string, FALSE, &color, 1);
+	}
 
 	color.red = 0.5f;
 	color.green = 0.5f;
@@ -2278,7 +2324,7 @@ static void game_engine_rasterize_in_game_score(
 
 	game_engine->format_score_name(score_string);
 	usprintf(row_string, L"\t%s\t%s\t%s", column_name, score_name, score_string);
-	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1);
+	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1 + gametype_rows);
 
 	for (entry_index = 0; entry_index < entry_count; entry_index++)
 	{
@@ -2350,9 +2396,10 @@ static void game_engine_rasterize_in_game_score(
 				row_string,
 				is_current_player,
 				row_color,
-				entry_index + 2);
+				entry_index + 2 + gametype_rows);
 		}
 	}
+	rasterize_in_game_score_untabbed_rows = 1;
 
 	return;
 }
