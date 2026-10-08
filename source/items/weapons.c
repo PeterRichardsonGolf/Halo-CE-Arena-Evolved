@@ -221,6 +221,7 @@ symbols in this file:
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/players.h"
+#include "physics/collisions.h"
 #include "interface/first_person_weapons.h"
 #include "math/periodic_functions.h"
 #include "models/model_animation_definitions.h"
@@ -2642,6 +2643,30 @@ static void trigger_create_projectiles(
 				if (inside_bsp)
 				{
 					SET_FLAG(data.flags, _new_object_never_automatically_delete_bit, TRUE);
+				}
+
+				/* port: point blank. A player's projectile starts ahead of the
+				camera (the weapon's origin), which at point blank lies inside or
+				past a unit touching the player; object_force_inside_bsp then pulls
+				it back onto that unit's surface, and its first collision line,
+				starting on or inside the unit, often misses it (a point-blank
+				headshot that does not register). With the gametype's NO SPREAD on
+				(NHE or FULL), a unit between the camera and the origin starts the
+				projectile at the camera, so it reaches the unit from outside. NO
+				SPREAD OFF keeps CE's behaviour. The host decides hits, so it holds
+				in any game an AE build hosts */
+				if (inside_bsp && game_engine_no_spread() != _no_spread_off)
+				{
+					real_point3d camera_position;
+					struct collision_result collision;
+
+					unit_get_camera_position(owner_object_index, &camera_position);
+					if (collision_test_line(_collision_test_for_projectiles_flags, &camera_position, &data.position,
+							owner_object_index, &collision) &&
+						collision.type == _collision_result_object)
+					{
+						data.position= camera_position;
+					}
 				}
 
 				projectile_object_index= object_new(&data);

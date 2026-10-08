@@ -274,6 +274,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   host 18).
 
 ### Fixed
+- Point-blank shots register with NO SPREAD on (NHE or FULL): a shot from
+  touching range (a sniper rifle's unzoomed headshot, say) started inside or
+  past the target and often missed it; it now starts at the player's eye
+  when a unit is in the way. NO SPREAD OFF keeps CE's behaviour.
 - Linux: Alt+F4 quits, as closing the window does (a fullscreen game's
   keyboard grab kept the desktop's shortcut from reaching it).
 - No red "event handler function failed" line after saving SETTINGS.
