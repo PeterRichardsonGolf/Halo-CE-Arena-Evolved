@@ -2590,6 +2590,29 @@ static void trigger_create_projectiles(
 			long projectile_owner_object_index= weapon_get_projectile_owner_object_index(weapon_index);
 			real_vector3d first_projectile_forward;
 			short projectile_index;
+			/* port: point blank. A player's projectile starts ahead of the
+			camera (the weapon's origin), which at point blank lies inside or
+			past whatever the player touches; object_force_inside_bsp then
+			pulls it back onto that object's surface, and its first collision
+			line, starting on or inside the object, often misses it (a
+			point-blank headshot that does not register). With the gametype's
+			NO SPREAD on (NHE or FULL), an object between the camera and the
+			origin (not the player's own unit or what it rides in) starts every
+			projectile of the shot at the camera, so it reaches the object from
+			outside. NO SPREAD OFF keeps CE's behaviour. The host decides hits,
+			so it holds in any game an AE build hosts */
+			boolean start_at_camera= FALSE;
+			real_point3d start_camera_position;
+
+			if (unit && unit->unit.player_index!=NONE && game_engine_no_spread() != _no_spread_off)
+			{
+				struct collision_result collision;
+
+				unit_get_camera_position(owner_object_index, &start_camera_position);
+				start_at_camera= collision_test_line(_collision_test_for_projectiles_flags, &start_camera_position, &origin,
+						object_get_ultimate_parent(owner_object_index), &collision) &&
+					collision.type == _collision_result_object;
+			}
 
 			for (projectile_index= 0; projectile_index<projectile_count; projectile_index++)
 			{
@@ -2645,28 +2668,10 @@ static void trigger_create_projectiles(
 					SET_FLAG(data.flags, _new_object_never_automatically_delete_bit, TRUE);
 				}
 
-				/* port: point blank. A player's projectile starts ahead of the
-				camera (the weapon's origin), which at point blank lies inside or
-				past a unit touching the player; object_force_inside_bsp then pulls
-				it back onto that unit's surface, and its first collision line,
-				starting on or inside the unit, often misses it (a point-blank
-				headshot that does not register). With the gametype's NO SPREAD on
-				(NHE or FULL), a unit between the camera and the origin starts the
-				projectile at the camera, so it reaches the unit from outside. NO
-				SPREAD OFF keeps CE's behaviour. The host decides hits, so it holds
-				in any game an AE build hosts */
-				if (inside_bsp && game_engine_no_spread() != _no_spread_off)
+				/* port: point blank (see start_at_camera above) */
+				if (start_at_camera)
 				{
-					real_point3d camera_position;
-					struct collision_result collision;
-
-					unit_get_camera_position(owner_object_index, &camera_position);
-					if (collision_test_line(_collision_test_for_projectiles_flags, &camera_position, &data.position,
-							owner_object_index, &collision) &&
-						collision.type == _collision_result_object)
-					{
-						data.position= camera_position;
-					}
+					data.position= start_camera_position;
 				}
 
 				projectile_object_index= object_new(&data);
