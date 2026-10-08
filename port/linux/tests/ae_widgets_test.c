@@ -658,6 +658,19 @@ static void list_edges(void)
 		snprintf(more, sizeof(more), "ROW %d", rows + 1);
 		CHECK(ae_stub_find_text(more, 0) < 0);
 	}
+	/* N1: the wheel scrolls the list anywhere over its rectangle: on the "▼ N more" line (no hit there) too */
+	if (index >= 0)
+	{
+		memset(&pointer, 0, sizeof(pointer));
+		pointer.x = 100 + 40;
+		pointer.y = ae_stub_get(index)->y + 2;
+		pointer.wheel_steps = -1;
+		ae_list_view_pointer(&view, &pointer, 5);
+		CHECK(view.list.first == 3);
+		pointer.wheel_steps = 1;
+		ae_list_view_pointer(&view, &pointer, 5);
+		CHECK(view.list.first == 0);
+	}
 	/* M2: the wheel scrolls the list only with the pointer over it */
 	memset(&pointer, 0, sizeof(pointer));
 	pointer.x = 1500;

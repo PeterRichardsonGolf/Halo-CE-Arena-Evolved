@@ -755,6 +755,12 @@ void ae_widget_list(struct ae_density const *density, struct ae_list_view *view,
 	}
 
 	/* the scrollbar, in the list's own coordinates (its track from rows_top): the same in every view */
+	/* (the list's rectangle, for the wheel: anywhere over it, gaps, fades and "N more" lines included) */
+	ae_draw_current_view(&current);
+	view->area.x = current.x + x * current.scale;
+	view->area.y = current.y + y * current.scale;
+	view->area.width = width * current.scale;
+	view->area.height = height * current.scale;
 	view->track_height = view->thumb_height = 0.0f;
 	if (list->count > rows)
 	{
@@ -829,8 +835,10 @@ short ae_list_view_pointer(struct ae_list_view *view, struct ae_pointer const *p
 		}
 		return -1;
 	}
-	/* the wheel over the list: 3 rows a notch (away from the user: up); the focus moves only if it leaves the window */
-	if (pointer->wheel_steps && over)
+	/* the wheel anywhere over the list: 3 rows a notch (away from the user: up); the focus moves only if it leaves the
+	window */
+	if (pointer->wheel_steps && pointer->x >= view->area.x && pointer->y >= view->area.y &&
+		pointer->x < view->area.x + view->area.width && pointer->y < view->area.y + view->area.height)
 		ae_list_scroll(list, (short)(-WHEEL_ROWS * pointer->wheel_steps));
 	/* hover focuses only when the pointer moves (scrolling never steals the focus), and never scrolls */
 	if (pointer->moved)

@@ -95,6 +95,8 @@ struct ae_list_view
 	float drag_grab;                /* where in the thumb it was grabbed */
 	/* (as last drawn, layout units: the scrollbar's track and thumb, for the pointer) */
 	float track_top, track_height, thumb_height;
+	/* (as last drawn, layout units: the list's whole rectangle, the wheel's target) */
+	struct ae_rect area;
 };
 /* a list of count items in rows rows: the focus on the first, no motion running, nothing hovered */
 void ae_list_view_init(struct ae_list_view *view, short count, short rows);
