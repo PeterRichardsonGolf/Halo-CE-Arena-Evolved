@@ -615,6 +615,18 @@ void game_engine_initialize_for_new_map(
 /* port: the game's rules in the log, after the scripts' setup (game.c) */
 void game_engine_log_rules(
 	void);
+/* port: NHE MODE (universal_variant.nhe_mode) applied for the new map, once
+its scripts are known (game.c), and the vehicles placed then, in the log;
+the vehicle sets the game plays by (NHE MODE's on Halo 1: NHE's maps, else
+the gametype's) */
+void game_engine_apply_nhe_mode(
+	void);
+void game_engine_log_vehicles_placed(
+	void);
+long game_engine_effective_vehicle_set(
+	void);
+byte game_engine_effective_team_vehicle_set(
+	short side);
 void game_engine_player_added(
 	long player_index);
 

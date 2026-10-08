@@ -21,6 +21,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" x="54" y="163"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" x="54" y="193"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_practice" x="54" y="223"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_nhe_mode" x="54" y="253"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_help" type="text" controller="1" left="68" top="321" width="482" height="79" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options" font="ui\large_ui" color="#FFFFFFFF">
@@ -41,7 +42,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_time_limit_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_time_limit_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_arena_time_limit" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_time_limit_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_arena_time_limit" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_arena_time_limit">
@@ -70,7 +71,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_falling_damage" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/falling_damage_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_falling_damage" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_falling_damage">
@@ -83,7 +84,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_health_regeneration" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/health_regeneration_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_health_regeneration" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_health_regeneration">
@@ -98,7 +99,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_no_spread" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_no_spread" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_no_spread">
@@ -112,7 +113,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_pregame_countdown" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_pregame_countdown" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_pregame_countdown">
@@ -125,12 +126,29 @@
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_spinner" type="spinner" left="2" top="2" width="148" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_practice" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_practice" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_practice">
 		<string text="OFF"/>
 		<string text="ON"/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_nhe_mode" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/nhe_mode_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/nhe_mode_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/nhe_mode_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/nhe_mode_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_nhe_mode" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_nhe_mode">
+		<string text="BY VEHICLE SET"/>
+		<string text="VANILLA"/>
+		<string text="TIMER ONLY"/>
+		<string text="NHE &amp; TIMER"/>
+		<string text="NHE &amp; POWERUPS"/>
+		<string text="TRAINING"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels">
 		<string text="TIME LIMIT:"/>
@@ -139,6 +157,7 @@
 		<string text="NO SPREAD:"/>
 		<string text="PRE-GAME COUNTDOWN:"/>
 		<string text="PRACTICE MODE:"/>
+		<string text="NHE MODE:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options">
 		<string text="No time limit: the game ends only when someone\nreaches the score to win."/>
@@ -172,5 +191,11 @@
 		<string text="A 3-2-1 countdown on a black screen starts the\ngame, so everyone sees the map at the same time."/>
 		<string text="Weapons and powerups respawn as the map sets."/>
 		<string text="Every weapon and powerup respawns every 30\nseconds, for practising grenade tricks."/>
+		<string text="Halo 1: NHE's maps only: the vehicle set picks\nNHE's mode, as NHE did. On other maps the\ngametype's vehicles apply."/>
+		<string text="On Halo 1: NHE's maps: no timers, as retail\nwith NHE's messages. On other maps the\ngametype's vehicles apply."/>
+		<string text="On Halo 1: NHE's maps: NHE's talking and\non-screen timers. On other maps the\ngametype's vehicles apply."/>
+		<string text="On Halo 1: NHE's maps: NHE's timers, as NHE &amp;\nTIMER. On other maps the gametype's vehicles\napply."/>
+		<string text="On Halo 1: NHE's maps: NHE's timers and its\npowerup calls. On other maps the gametype's\nvehicles apply."/>
+		<string text="On Halo 1: NHE's maps: NHE's training: the\ncountdown, spawn markers, randoms and waypoints.\nOther maps: the gametype's vehicles."/>
 	</strings>
 </menus>

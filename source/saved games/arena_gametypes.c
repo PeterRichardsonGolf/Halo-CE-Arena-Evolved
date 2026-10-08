@@ -61,7 +61,7 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations) */
-	ARENA_GAMETYPES_REVISION = 2,
+	ARENA_GAMETYPES_REVISION = 3,
 	/* a memory unit holds at most 100 saved games (saved_game_files.c):
 	the self-check warns past this many */
 	ARENA_GAMETYPES_SAVED_WARNING = 90,
@@ -173,6 +173,12 @@ row its predecessor seeded): ARENA_GAMETYPE_FLAGS (no landing damage, HALO
 COUNTDOWN) and ARENA_CASUAL_FLAGS (TIMERS) */
 #define ARENA_REV1_GAMETYPE_FLAGS 0x01790020UL
 #define ARENA_REV1_CASUAL_FLAGS 0x00020000UL
+/* (and the NHE seeds' as revisions 1-2 have them: the generic starting
+equipment, then NHE_RULES_FLAGS (NO SPREAD NHE, the PRE-GAME COUNTDOWN), and
+PRACTICE's NO SPREAD NHE and PRACTICE MODE) */
+#define ARENA_REV1_NHE_FLAGS 0x00000020UL
+#define ARENA_REV1_NHE_RULES_FLAGS 0x00600020UL
+#define ARENA_REV1_NHE_PRACTICE_FLAGS 0x00A00020UL
 
 /* the seed fields whose 0 means the stock gametype's (or AE's default):
 a value is given as value + 1 */
@@ -298,36 +304,38 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_VEHICLES_STOCK, TRUE },
 	/* Halo 1: NHE's competitive play (the mods/NHE maps): stock rules (fall
 	damage, classic health) with NHE's NO SPREAD and PRE-GAME COUNTDOWN, its
-	mode from the vehicle set; on stock maps the set only picks the
-	vehicles. 1V1, 2V2 TS, CTF and POWERUP are Beach LAN 15's (5 second
+	mode NHE MODE's (revision 3; before, the vehicle set's), with no vehicles
+	on other maps. 1V1, 2V2 TS, CTF and POWERUP are Beach LAN 15's (5 second
 	respawn and suicide penalty, no motion sensor, no time limit: NHE's
 	timer counts up instead) with NHE & TIMER, POWERUP NHE & POWERUPS.
 	PRACTICE is race, which NHE's maps turn into practice (every weapon and
-	powerup each 30 seconds). */
+	powerup each 30 seconds), on TRAINING as NHE's TS PRACTICE. */
 	{ "NHE 1V1", build_game_variant_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
 		ARENA_FFA_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_WARTHOG, FALSE },
+		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
 	{ "NHE 2V2 TS", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_WARTHOG, FALSE },
+		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
 	{ "NHE CTF", build_game_variant_ctf, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
 		ARENA_CTF_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_WARTHOG, FALSE },
+		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
 	{ "NHE POWERUP", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_TANK, FALSE },
+		ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_nhe_and_powerups },
 	{ "NHE VANILLA", build_game_variant_team_slayer, NHE_GAMETYPE_FLAGS,
-		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE },
+		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_vanilla },
 	{ "NHE TRAIN", build_game_variant_slayer, NHE_GAMETYPE_FLAGS | NHE_RULES_FLAGS,
-		ARENA_TRAINING_SCORE_TO_WIN, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_DEFAULT, FALSE },
+		ARENA_TRAINING_SCORE_TO_WIN, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE,
+		.nhe_mode = _nhe_mode_training },
 	{ "PRACTICE", build_game_variant_race,
 		NHE_GAMETYPE_FLAGS | GAME_VARIANT_NO_SPREAD_NHE | FLAG(_game_variant_practice_bit),
-		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_GHOST, FALSE },
+		0, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_NONE, FALSE, .nhe_mode = _nhe_mode_training },
 };
 
 /* the seeds' migrations, by revision (the record's "#revision N": each
 above it runs once). Revision 1: the free for all ones whose names did not
-say so; revision 2: AE PRO -> AE COMP (values unchanged). A row whose old
+say so; revision 2: AE PRO -> AE COMP (values unchanged); revision 3: the
+NHE seeds' mode from NHE MODE, no vehicles (on stock maps). A row whose old
 and new names are the same is a value update (in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
@@ -389,6 +397,62 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.score_to_win = 5, .time_limit = 15, .respawn_time = 150, .suicide_penalty = 150,
 			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE },
 		.old_block_hash = "e0a3e990e36fff499fc569206556e70b3b4d0eb6" },
+	{ .revision = 3,
+		.old_row = { .name = "NHE 1V1", .build = build_game_variant_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 25, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_WARTHOG, .custom_loadout = FALSE },
+		.new_row = { .name = "NHE 1V1", .build = build_game_variant_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 25, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
+		.old_block_hash = "e24634c5390238a33b15d1dea6b4c38f035d969c" },
+	{ .revision = 3,
+		.old_row = { .name = "NHE 2V2 TS", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 50, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_WARTHOG, .custom_loadout = FALSE },
+		.new_row = { .name = "NHE 2V2 TS", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 50, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
+		.old_block_hash = "a5f393f3d148e662420562af940168ff3093ab13" },
+	{ .revision = 3,
+		.old_row = { .name = "NHE CTF", .build = build_game_variant_ctf, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 3, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_WARTHOG, .custom_loadout = FALSE },
+		.new_row = { .name = "NHE CTF", .build = build_game_variant_ctf, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 3, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_timer },
+		.old_block_hash = "9cccce809aeb47880add40b50f94580ddb727c4b" },
+	{ .revision = 3,
+		.old_row = { .name = "NHE POWERUP", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 50, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_TANK, .custom_loadout = FALSE },
+		.new_row = { .name = "NHE POWERUP", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 50, .time_limit = 0, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_nhe_and_powerups },
+		.old_block_hash = "bd92053b4e25991b354b9b3c49eefe35b2a4009d" },
+	{ .revision = 3,
+		.old_row = { .name = "NHE VANILLA", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_FLAGS,
+			.score_to_win = 0, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE },
+		.new_row = { .name = "NHE VANILLA", .build = build_game_variant_team_slayer, .flags = ARENA_REV1_NHE_FLAGS,
+			.score_to_win = 0, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_vanilla },
+		.old_block_hash = "00db29a1cca5ffcbd2c4e240a01c61a297794d74" },
+	{ .revision = 3,
+		.old_row = { .name = "NHE TRAIN", .build = build_game_variant_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 500, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_DEFAULT, .custom_loadout = FALSE },
+		.new_row = { .name = "NHE TRAIN", .build = build_game_variant_slayer, .flags = ARENA_REV1_NHE_RULES_FLAGS,
+			.score_to_win = 500, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_training },
+		.old_block_hash = "fd45a0a441d073d759a839090232cbbee4bc2d18" },
+	{ .revision = 3,
+		.old_row = { .name = "PRACTICE", .build = build_game_variant_race, .flags = ARENA_REV1_NHE_PRACTICE_FLAGS,
+			.score_to_win = 0, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_GHOST, .custom_loadout = FALSE },
+		.new_row = { .name = "PRACTICE", .build = build_game_variant_race, .flags = ARENA_REV1_NHE_PRACTICE_FLAGS,
+			.score_to_win = 0, .time_limit = 0, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = FALSE, .nhe_mode = _nhe_mode_training },
+		.old_block_hash = "bbdd586bb412eb7b7be0300deaf43d3da25b3ae6" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -1730,7 +1794,7 @@ static void arena_gametype_log(
 	error(_error_silent, "seeded arena gametype '%s': %s%s, score to win %ld, time limit %d min, "
 		"respawn %ld s, suicide penalty %ld s, motion sensor %s, vehicle set %ld, loadout %s, "
 		"equipment %s, health %s, fall damage %s, no spread %s, pre-game countdown %s, timers %s, "
-		"training %s, practice %s",
+		"training %s, practice %s, nhe mode %s",
 		gametype->name,
 		engine >= 0 && engine < (long)NUMBEROF(engines) ? engines[engine] : "?",
 		universal->teams ? " (teams)" : "",
@@ -1748,7 +1812,8 @@ static void arena_gametype_log(
 		TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "on" : "off",
 		TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
 		TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
-		TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off");
+		TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off",
+		game_variant_nhe_mode_name(universal->nhe_mode));
 
 	return;
 }

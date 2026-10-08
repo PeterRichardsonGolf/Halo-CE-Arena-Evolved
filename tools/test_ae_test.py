@@ -453,6 +453,15 @@ class Handshake(unittest.TestCase):
         self.assertEqual((ce["HALO_NET_ADDRESS"], ce["HALO_NET_BROADCAST"]), ("127.0.0.201", "127.0.0.200"))
         self.assertEqual(client["delay"], 12)
         self.assertEqual(client["exit_after"], 78)
+        # (a mod's map and the host's saved gametype)
+        host, client = handshake.pair_specs("ae", "old", 90, 12, map_name="bloodgulch", mod="NHE",
+                                            saved_gametype="NHE 2V2 TS", save_from="~/roots/x")
+        he = harness.spec_env(host, "/r", "/s")
+        ce = harness.spec_env(client, "/r", "/s")
+        self.assertEqual((he["HALO_MOD"], ce["HALO_MOD"]), ("NHE", "NHE"))
+        self.assertEqual(he["HALO_NETWORK_TEST_GAMETYPE"], "NHE 2V2 TS")
+        self.assertNotIn("HALO_NETWORK_TEST_GAMETYPE", ce)
+        self.assertEqual((host["save_from"], client.get("save_from")), ("~/roots/x", None))
 
     def test_compare_and_judge(self):
         host = DEBUG_MP

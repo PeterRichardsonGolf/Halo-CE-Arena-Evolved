@@ -671,12 +671,15 @@ void game_initialize_for_new_map(
 	cinematic_initialize_for_new_map();
 	hs_initialize_for_new_map();
 	/* port: (hs_scenario_is_nhe is this map's from here) */
+	game_engine_apply_nhe_mode();
 	game_engine_log_rules();
 	recorded_animations_initialize_for_new_map();
 	cheats_initialize_for_new_map();
 
 	game_globals->active = TRUE;
 	objects_place();
+	/* port: (NHE MODE's or the gametype's vehicles: game_engine_apply_nhe_mode) */
+	game_engine_log_vehicles_placed();
 	if (!game_in_editor())
 		ai_place();
 	/* (the map's objects, placed as on the host: a distributed client's own

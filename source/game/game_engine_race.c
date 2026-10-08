@@ -385,7 +385,7 @@ static long race_get_vehicle_to_spawn(
 		struct game_globals_vehicle);
 	long vehicle_definition_index = NONE;
 
-	switch (game_engine_get_variant()->universal_variant.vehicle_set)
+	switch (game_engine_effective_vehicle_set())
 	{
 	case _game_engine_vehicles_default:
 		if (vehicle_number == 0)
@@ -1441,7 +1441,7 @@ static void race_engine_update(
 
 		if (vehicles_added)
 		{
-			switch (game_engine_get_variant()->universal_variant.vehicle_set)
+			switch (game_engine_effective_vehicle_set())
 			{
 			case _game_engine_vehicles_default:
 				game_engine_play_multiplayer_sound(_multiplayer_sound_warthog);

@@ -5548,7 +5548,8 @@ enum
 	_option_short,		/* a short of the options */
 	_option_option_byte,	/* a byte of the options */
 	_option_radar,		/* the options' radar players, and the variant's flag */
-	_option_flags		/* bits of the variant's flags (argument: their mask), set to the value */
+	_option_flags,		/* bits of the variant's flags (argument: their mask), set to the value */
+	_option_nhe_mode	/* the variant's NHE MODE byte, its value (past TRAINING: BY VEHICLE SET) */
 };
 
 struct gametype_option
@@ -5595,6 +5596,10 @@ static struct gametype_option const gametype_options[] =
 		{ 0, GAME_VARIANT_NO_SPREAD_NHE, GAME_VARIANT_NO_SPREAD_FULL } },
 	{ "pregame_countdown_spinner", _option_flag, 0, FLAG(_game_variant_pregame_countdown_bit), 2, { 0, 1 } },
 	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
+	/* (NHE MODE: enum nhe_mode, in the row's order) */
+	{ "nhe_mode_spinner", _option_nhe_mode, 0, 0, NUMBER_OF_NHE_MODES,
+		{ _nhe_mode_by_vehicles, _nhe_mode_vanilla, _nhe_mode_timer_only, _nhe_mode_nhe_and_timer,
+		_nhe_mode_nhe_and_powerups, _nhe_mode_training } },
 	/* item options (weapon sets: the PC's list, then the Xbox's NO GRENADES) */
 	{ "item_options_infinite_grenades_spinner", _option_flag, 0, FLAG(_game_variant_infinite_grenades_bit), 2,
 		{ 1, 0 } },
@@ -5709,6 +5714,7 @@ static long gametype_option_value(struct gametype_option const *option, struct g
 	case _option_short: return *(short *)(o + option->offset);
 	case _option_option_byte: return o[option->offset];
 	case _option_radar: return options->radar_players;
+	case _option_nhe_mode: return game_variant_nhe_mode(variant->universal_variant.nhe_mode);
 	}
 	return 0;
 }
@@ -5736,6 +5742,7 @@ static void gametype_option_value_set(struct gametype_option const *option, long
 	case _option_health: variant->universal_variant.health = (real)value / 10.0f; break;
 	case _option_short: *(short *)(o + option->offset) = (short)value; break;
 	case _option_option_byte: o[option->offset] = (byte)value; break;
+	case _option_nhe_mode: variant->universal_variant.nhe_mode = (byte)value; break;
 	case _option_radar:
 		/* (and the Xbox's flag: other players on the tracker or not) */
 		options->radar_players = (byte)value;

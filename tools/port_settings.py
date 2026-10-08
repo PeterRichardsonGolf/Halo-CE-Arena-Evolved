@@ -1341,6 +1341,16 @@ ARENA_ROWS = [
         "Weapons and powerups respawn as the map sets.",
         "Every weapon and powerup respawns every 30\\nseconds, for practising grenade tricks.",
     ]),
+    # (game_engine.h's enum nhe_mode, in its order; only on Halo 1: NHE's
+    # maps, where it picks the vehicle set their scripts read)
+    ("nhe_mode", "NHE MODE:", ["BY VEHICLE SET", "VANILLA", "TIMER ONLY", "NHE & TIMER", "NHE & POWERUPS", "TRAINING"], [
+        "Halo 1: NHE's maps only: the vehicle set picks\\nNHE's mode, as NHE did. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: no timers, as retail\\nwith NHE's messages. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: NHE's timers, as NHE &\\nTIMER. On other maps the gametype's vehicles\\napply.",
+        "On Halo 1: NHE's maps: NHE's timers and its\\npowerup calls. On other maps the gametype's\\nvehicles apply.",
+        "On Halo 1: NHE's maps: NHE's training: the\\ncountdown, spawn markers, randoms and waypoints.\\nOther maps: the gametype's vehicles.",
+    ]),
 ]
 
 
@@ -1398,13 +1408,13 @@ def _arena_options() -> list:
                           ("string_list", f"{base}/arena_options_labels"), ("string_index", index or None),
                           ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
         lines += _widget(f"{base}/{key}_spinner",
-                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 148), ("height", 20),
+                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 176), ("height", 20),
                           ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
                           ("string_list", f"{base}/var_{key}"), ("font", "ui\\large_ui"),
                           ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4),
                           ("list_flags", "items_from_strings"),
                           ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
+                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 178 19 184")],
                          ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
         lines += _strings(f"{base}/var_{key}", values)
     lines += _strings(f"{base}/arena_options_labels", [label for _, label, _, _ in ARENA_ROWS])

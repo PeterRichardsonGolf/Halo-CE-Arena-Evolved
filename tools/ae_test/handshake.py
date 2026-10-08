@@ -29,15 +29,22 @@ HOST = "127.0.0.200"
 CLIENT = "127.0.0.201"
 
 
-def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch"):
+def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch", mod="",
+               saved_gametype=None, save_from=None):
+    """the host's and the client's specs: both on the map (and the mod's maps); the host's gametype a saved one of
+    its save root (save_from copied as it) when given"""
     common = {"HALO_NETWORK_TEST_START": "20", "HALO_NETWORK_TEST_SHOOT": "3", "HALO_NETWORK_TEST_KILL": "20"}
     common.update(env or {})
-    host = harness.parse_spec({"name": "host", "build": host_build, "network_test": f"host:{map_name}",
-                               "address": HOST, "broadcast": CLIENT, "exit_after": seconds, "env": common, "mod": ""})
+    host = {"name": "host", "build": host_build, "network_test": f"host:{map_name}",
+            "address": HOST, "broadcast": CLIENT, "exit_after": seconds, "env": common, "mod": mod}
+    if saved_gametype:
+        host["saved_gametype"] = saved_gametype
+    if save_from:
+        host["save_from"] = save_from
     client = harness.parse_spec({"name": "client", "build": client_build, "network_test": "join",
                                  "address": CLIENT, "broadcast": HOST, "exit_after": seconds - join_delay,
-                                 "delay": join_delay, "env": common, "mod": ""})
-    return host, client
+                                 "delay": join_delay, "env": common, "mod": mod})
+    return harness.parse_spec(host), client
 
 
 def judge(host_r, client_r, tracks, max_median=0.5):
@@ -63,7 +70,8 @@ def judge(host_r, client_r, tracks, max_median=0.5):
 
 
 def run_pair(cfg, name, host_build, client_build, out, a, slots):
-    host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay)
+    host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay, map_name=a.map, mod=a.mod,
+                              saved_gametype=a.saved_gametype, save_from=a.save_from)
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
     harness.OWN_WORK.add(work)
@@ -116,6 +124,10 @@ def main(argv):
     p.add_argument("--seconds", type=int, default=90)
     p.add_argument("--join-delay", type=int, default=12)
     p.add_argument("--max-median", type=float, default=0.5)
+    p.add_argument("--map", default="bloodgulch", help="the map both play (default bloodgulch)")
+    p.add_argument("--mod", default="", help="HALO_MOD for both (e.g. NHE: its maps)")
+    p.add_argument("--saved-gametype", help="the host's gametype: a saved one of its save root, by stored name")
+    p.add_argument("--save-from", help="a folder copied as the host's save root (never under /tmp)")
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)
     if a.box:

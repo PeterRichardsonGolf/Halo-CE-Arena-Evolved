@@ -4009,7 +4009,7 @@ static void game_engine_build_lighting(
 			player_count++;
 	}
 
-	if (global_variant.universal_variant.vehicle_set != _game_engine_vehicles_none)
+	if (game_engine_effective_vehicle_set() != _game_engine_vehicles_none)
 	{
 		if (global_variant.game_engine_index == game_engine_race)
 		{
@@ -7557,6 +7557,86 @@ void game_engine_variant_cleanup(
 	return;
 }
 
+/* port: NHE MODE's vehicle set this map (game_engine_apply_nhe_mode): on
+Halo 1: NHE's map with a mode other than BY VEHICLES, the mode's set, both
+teams'; NONE: the gametype's own sets. Each machine works it out the same
+from the variant and the map: nothing saved or sent changes */
+static long game_engine_nhe_vehicle_set = NONE;
+
+/* port: the vehicle set a mode is on NHE's maps (NHE's README: the set
+picks the mode) */
+static long game_engine_nhe_mode_vehicle_set(
+	short mode)
+{
+	switch (mode)
+	{
+	case _nhe_mode_vanilla: return _game_engine_vehicles_none;
+	case _nhe_mode_timer_only: return _game_engine_vehicles_ghost;
+	case _nhe_mode_nhe_and_timer: return _game_engine_vehicles_warthog;
+	case _nhe_mode_nhe_and_powerups: return _game_engine_vehicles_tank;
+	case _nhe_mode_training: return _game_engine_vehicles_default;
+	}
+	return NONE;
+}
+
+/* port: the vehicle set the game plays by: NHE MODE's on NHE's maps, else
+the variant's */
+long game_engine_effective_vehicle_set(
+	void)
+{
+	return game_engine_nhe_vehicle_set != NONE ? game_engine_nhe_vehicle_set :
+		global_variant.universal_variant.vehicle_set;
+}
+
+/* port: a team's vehicle set the game plays by (red 0, blue 1): NHE MODE's
+on NHE's maps, else the PC options' */
+byte game_engine_effective_team_vehicle_set(
+	short side)
+{
+	return game_engine_nhe_vehicle_set != NONE ? (byte)game_engine_nhe_vehicle_set :
+		game_variant_options_get()->vehicle_set[side ? 1 : 0];
+}
+
+/* port: NHE MODE applied for this map, once its scripts are known
+(hs_scenario_is_nhe: game.c, before the map's objects are placed) */
+void game_engine_apply_nhe_mode(
+	void)
+{
+	short mode;
+
+	game_engine_nhe_vehicle_set = NONE;
+	if (!game_engine)
+		return;
+	mode = game_engine_nhe_mode();
+	if (hs_scenario_is_nhe() && mode != _nhe_mode_by_vehicles)
+	{
+		game_engine_nhe_vehicle_set = game_engine_nhe_mode_vehicle_set(mode);
+		error(_error_silent, "vehicle set %ld (NHE MODE %s)", game_engine_nhe_vehicle_set,
+			game_variant_nhe_mode_name((byte)mode));
+	}
+	else
+	{
+		error(_error_silent, "vehicle set %ld (the gametype's%s)", global_variant.universal_variant.vehicle_set,
+			hs_scenario_is_nhe() ? ", NHE MODE by vehicles" : mode != _nhe_mode_by_vehicles ?
+				"; NHE MODE only on Halo 1: NHE's maps" : "");
+	}
+}
+
+/* port: the vehicles the map placed, in the log (after objects_place) */
+void game_engine_log_vehicles_placed(
+	void)
+{
+	struct object_iterator iterator;
+	long count = 0;
+
+	if (!game_engine)
+		return;
+	object_iterator_new(&iterator, _object_mask_vehicle, 0);
+	while (object_iterator_next(&iterator))
+		count++;
+	error(_error_silent, "vehicles placed: %ld", count);
+}
+
 static void game_engine_predict_resources(
 	void)
 {
@@ -7576,7 +7656,7 @@ static void game_engine_predict_resources(
 	globals always have; a Halo Custom Edition map's can have fewer, and then
 	gets no vehicle predicted (port/linux/game/custom_edition_cache.c) */
 	if (multiplayer_information->vehicles.count >= 3)
-	switch (global_variant.universal_variant.vehicle_set)
+	switch (game_engine_effective_vehicle_set())
 	{
 	case _game_engine_vehicles_warthog:
 		vehicle = TAG_BLOCK_GET_ELEMENT(
@@ -7682,6 +7762,8 @@ void game_engine_initialize_for_new_map(
 		game_engine_globals.next_team_index = 0;
 		csmemset(game_engine_betrayal_penalty, 0, sizeof(game_engine_betrayal_penalty));
 		game_engine_vehicle_home_count = NONE;
+		/* port: (NHE MODE's set is applied once the map's scripts are known) */
+		game_engine_nhe_vehicle_set = NONE;
 		timeout_for_endgame_sound = 0;
 		game_engine_network_state_read = FALSE;
 
@@ -8240,7 +8322,7 @@ boolean game_engine_vehicle_placement_allowed(
 	if (!game_engine || placement->palette_entry_index == NONE)
 		return TRUE;
 	side = global_variant.universal_variant.teams ? game_engine_nearest_team(&placement->position) : 0;
-	set = options->vehicle_set[side];
+	set = game_engine_effective_team_vehicle_set(side);
 	type = game_engine_variant_vehicle_type(TAG_BLOCK_GET_ELEMENT(palette, placement->palette_entry_index,
 		struct scenario_object_palette_entry)->reference.index);
 	/* (the map's own: the multiplayer ones of the globals, as the Xbox
@@ -8368,8 +8450,8 @@ long game_engine_remap_vehicle(
 		if (result != vehicle0->vehicle.index &&
 			result != vehicle1->vehicle.index &&
 			result != vehicle2->vehicle.index &&
-			((game_variant_options_get()->vehicle_set[0] == _game_engine_vehicles_default &&
-				game_variant_options_get()->vehicle_set[1] == _game_engine_vehicles_default) ||
+			((game_engine_effective_team_vehicle_set(0) == _game_engine_vehicles_default &&
+				game_engine_effective_team_vehicle_set(1) == _game_engine_vehicles_default) ||
 				game_engine_variant_vehicle_type(result) == NONE))
 		{
 			result = NONE;
@@ -8377,8 +8459,8 @@ long game_engine_remap_vehicle(
 
 		/* port: the per-team sets decide at placement
 		(game_engine_vehicle_placement_allowed) */
-		switch (game_variant_options_get()->vehicle_set[0] == game_variant_options_get()->vehicle_set[1] ?
-			global_variant.universal_variant.vehicle_set : _game_engine_vehicles_default)
+		switch (game_engine_effective_team_vehicle_set(0) == game_engine_effective_team_vehicle_set(1) ?
+			game_engine_effective_vehicle_set() : _game_engine_vehicles_default)
 		{
 		case _game_engine_vehicles_none:
 			result = NONE;
