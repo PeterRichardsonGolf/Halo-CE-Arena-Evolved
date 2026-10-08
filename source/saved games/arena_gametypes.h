@@ -40,6 +40,8 @@ struct arena_gametype_info
 	char const *description;        /* one or two sentences for the panel, or NULL */
 };
 
+struct game_variant;
+
 /* ---------- prototypes/ARENA_GAMETYPE_NAMES.C */
 
 /* TRUE, and *info, when stored_name (game_variant's 11-character name) is a
@@ -80,9 +82,12 @@ boolean arena_gametype_own_display_name(
 	wchar_t *display_name,
 	short size);
 /* the same by stored name (the network game's, a lobby's, the scoreboard's):
-the saved gametype of that name, remembered until a gametype file changes */
+the saved gametype of that name, only when its file holds exactly the variant in play (a joiner's
+own gametype of the same name but other rules is not the host's); remembered until the variant or a
+gametype file changes */
 boolean arena_gametype_own_display_name_for_stored_name(
 	wchar_t const *stored_name,
+	struct game_variant const *variant,
 	wchar_t *display_name,
 	short size);
 /* debug.set_display_name: see arena_gametypes.c; once at the start */

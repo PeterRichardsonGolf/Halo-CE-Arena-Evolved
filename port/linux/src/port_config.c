@@ -646,6 +646,11 @@ static const struct config_setting config_settings[] =
 		"For the automated tests of own gametypes' display names: \"STORED=DISPLAY\"\n"
 		"gives the saved gametype of that stored name that display name, once at the\n"
 		"start (logged). Empty: nothing. Never on a real save root." },
+	{ "debug.display_name_log", _config_boolean, "false", "HALO_DISPLAY_NAME_LOG", _environment_value,
+		_platform_all,
+		"For the automated tests of own gametypes' display names: a log line each time a\n"
+		"gametype file is read for one, and at the start of a game the name the\n"
+		"lobby and scoreboard show for its gametype." },
 	{ "debug.arena_test_migration", _config_integer, "0", "HALO_ARENA_TEST_MIGRATION", _environment_value,
 		_platform_all,
 		"For the automated tests of the seeded gametypes' migrations: 1 adds a\n"

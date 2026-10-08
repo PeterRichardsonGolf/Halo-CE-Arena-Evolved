@@ -871,9 +871,8 @@ void item_timers_update(
 	for (index = 0; (find_spawned || find_taken) && index < count; index++)
 	{
 		struct item_timer const *timer = &item_timers[index];
-		long spawn;
-
 		boolean mixed = item_timer_mixed(timer);
+		long spawn;
 
 		if (!mixed && !find_taken)
 			continue;
@@ -912,8 +911,7 @@ void item_timers_update(
 				for (character_index = 0; character_index < (short)sizeof(text) - 1 && name[character_index]; character_index++)
 					text[character_index] = (char)name[character_index];
 				text[character_index] = 0;
-				platform_log("item timers: %d spawned %s at tick %ld (seen at tick %ld)", index, text, spawn,
-					game_time_get());
+				platform_log("item timers: %d spawned %s at tick %ld", index, text, spawn);
 			}
 		}
 		else if (item_timer_spawned[index].timer_class == NONE)

@@ -212,6 +212,9 @@ static struct game_variant_options playlist_profile_write_options;
 display name set, a delete): what a lookup by stored name caches against */
 static volatile long playlist_profile_content_generation = 0;
 
+/* port: gametype files read whole (the tests count them: a list up must not read a file a frame) */
+static long playlist_profile_block_reads = 0;
+
 static struct playlist_profile_runtime_globals_prefix playlist_profile_globals = { 0 };
 static struct playlist_profile_data playlist_profile_default_data =
 {
@@ -623,6 +626,27 @@ boolean playlist_profile_get_own_display_name(
 	return playlist_display_name_from_block(block, name);
 }
 
+/* port: the same, only when the file's variant (its first sizeof(struct game_variant) bytes) is
+exactly the variant given: the one in play (a joiner's gametype of the same stored name, but other
+rules, is not the host's) */
+boolean playlist_profile_get_own_display_name_for_variant(
+	long playlist_profile_index,
+	struct game_variant const *variant,
+	wchar_t *name)
+{
+	byte block[SAVED_GAME_FILE_BLOCK_SIZE];
+
+	name[0] = 0;
+	if (playlist_profile_index == NONE ||
+		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
+		!playlist_profile_read_block(playlist_profile_index, block) ||
+		csmemcmp(block, variant, sizeof(struct game_variant)))
+	{
+		return FALSE;
+	}
+	return playlist_display_name_from_block(block, name);
+}
+
 /* port: a gametype's own display name set (cut at 31 characters); empty or
 NULL takes it away. Only that block of the file is written; the rest is as
 it was. TRUE when written */
@@ -634,8 +658,10 @@ boolean playlist_profile_set_own_display_name(
 	struct file_reference file;
 	boolean success = FALSE;
 
+	/* (a built-in default is read-only: no display name there) */
 	if (playlist_profile_index == NONE ||
-		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit))
+		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
+		TEST_FLAG(playlist_profile_index, _saved_game_file_index_read_only_bit))
 	{
 		return FALSE;
 	}
@@ -655,6 +681,18 @@ boolean playlist_profile_set_own_display_name(
 	}
 	playlist_profile_content_generation++;
 	return success;
+}
+
+void playlist_profile_content_changed(
+	void)
+{
+	playlist_profile_content_generation++;
+}
+
+long playlist_profile_block_reads_get(
+	void)
+{
+	return playlist_profile_block_reads;
 }
 
 long playlist_profile_content_generation_get(
@@ -1024,6 +1062,7 @@ static boolean playlist_profile_read_block(
 		dispose_thread(playlist_profile_globals.thread);
 		playlist_profile_globals.thread = NULL;
 	}
+	playlist_profile_block_reads++;
 	if (saved_game_files_take_mutex())
 	{
 		if (saved_game_file_open(&file, playlist_profile_index))
@@ -1110,6 +1149,11 @@ static void playlist_profile_block_build(
 	playlist_profile_options_to_block(block, options);
 }
 
+/* (the display name block starts after GPVO's end: upstream's options struct growing would run
+into it) */
+typedef char verify_playlist_profile_options_end_before_display_name[
+	PLAYLIST_PROFILE_OPTIONS_OFFSET + sizeof(struct playlist_profile_options_header) +
+		sizeof(struct game_variant_options) + sizeof(XCALCSIG_SIGNATURE) <= PLAYLIST_DISPLAY_NAME_OFFSET ? 1 : -1];
 typedef char verify_playlist_profile_options_fit[
 	PLAYLIST_PROFILE_OPTIONS_OFFSET + sizeof(struct playlist_profile_options_header) +
 		sizeof(struct game_variant_options) + sizeof(XCALCSIG_SIGNATURE) <= SAVED_GAME_FILE_BLOCK_SIZE ? 1 : -1];

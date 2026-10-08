@@ -70,6 +70,17 @@ that block. TRUE when written */
 boolean playlist_profile_set_own_display_name(
 	long playlist_profile_index,
 	wchar_t const *name);
+/* port: the own display name only when the file's variant is exactly this one (the one in play) */
+boolean playlist_profile_get_own_display_name_for_variant(
+	long playlist_profile_index,
+	struct game_variant const *variant,
+	wchar_t *name);
+/* port: a file changed outside playlist_profile.c (a seed's update in place) */
+void playlist_profile_content_changed(
+	void);
+/* port: gametype files read whole so far (the tests' count) */
+long playlist_profile_block_reads_get(
+	void);
 /* port: counts the changes of gametype files' content */
 long playlist_profile_content_generation_get(
 	void);

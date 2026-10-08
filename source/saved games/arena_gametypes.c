@@ -1245,9 +1245,11 @@ boolean arena_gametype_as_seeded(
 	return FALSE;
 }
 
-/* a saved gametype by its stored name: its profile index, else NONE */
+/* a saved gametype by its stored name (letters' case aside): its profile index, else NONE; the
+nth match when the names are the same but for case (the save directories tell them apart) */
 static long arena_gametype_saved_by_name(
-	wchar_t const *stored_name)
+	wchar_t const *stored_name,
+	short nth)
 {
 	long saved[ARENA_GAMETYPES_MAXIMUM_SAVED];
 	word saved_count = NUMBEROF(saved);
@@ -1261,7 +1263,7 @@ static long arena_gametype_saved_by_name(
 
 		display_name[0] = 0;
 		if (playlist_profile_get_display_name(saved[index], display_name) &&
-			!arena_gametype_name_compare(display_name, stored_name))
+			!arena_gametype_name_compare(display_name, stored_name) && nth-- == 0)
 		{
 			return saved[index];
 		}
@@ -1269,32 +1271,78 @@ static long arena_gametype_saved_by_name(
 	return NONE;
 }
 
+/* debug.display_name_log: a line each time a gametype file is read for an own display name */
+static void arena_gametype_own_name_log(
+	char const *what,
+	long profile_index)
+{
+	if (config_boolean("debug.display_name_log"))
+	{
+		error(_error_silent, "arena gametypes: own display name read (%s, profile 0x%lX): file read %ld",
+			what, profile_index, playlist_profile_block_reads_get());
+	}
+}
+
 boolean arena_gametype_own_display_name(
 	long profile_index,
 	wchar_t *display_name,
 	short size)
 {
-	wchar_t name[PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1];
+	/* (the lists ask for every row every frame: what a file held is kept until a gametype file changes) */
+	enum { CACHE_SIZE = 128 };
+	static struct
+	{
+		long profile_index;
+		boolean found;
+		wchar_t name[PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1];
+	} cache[CACHE_SIZE];
+	static short cache_count = 0;
+	static long cache_generation = -1;
+	wchar_t stored_name[MAX_GAMENAME];
+	short entry;
 	short index;
 
 	if (!display_name || size <= 0)
 		return FALSE;
 	display_name[0] = 0;
-	if (!playlist_profile_get_own_display_name(profile_index, name))
+	/* (a seeded gametype has none: its file is never read) */
+	if (!playlist_profile_get_display_name(profile_index, stored_name) || arena_gametype_info(stored_name, NULL))
 		return FALSE;
-	for (index = 0; index < size - 1 && name[index]; index++)
-		display_name[index] = name[index];
+	if (cache_generation != playlist_profile_content_generation_get())
+	{
+		cache_generation = playlist_profile_content_generation_get();
+		cache_count = 0;
+	}
+	for (entry = 0; entry < cache_count && cache[entry].profile_index != profile_index; entry++)
+		;
+	if (entry == cache_count)
+	{
+		if (cache_count == CACHE_SIZE)
+			cache_count = 0;
+		entry = cache_count++;
+		cache[entry].profile_index = profile_index;
+		cache[entry].name[0] = 0;
+		arena_gametype_own_name_log("list", profile_index);
+		cache[entry].found = playlist_profile_get_own_display_name(profile_index, cache[entry].name);
+	}
+	if (!cache[entry].found)
+		return FALSE;
+	for (index = 0; index < size - 1 && cache[entry].name[index]; index++)
+		display_name[index] = cache[entry].name[index];
 	display_name[index] = 0;
 	return index > 0;
 }
 
 boolean arena_gametype_own_display_name_for_stored_name(
 	wchar_t const *stored_name,
+	struct game_variant const *variant,
 	wchar_t *display_name,
 	short size)
 {
-	/* (the last one asked: a lobby or a scoreboard asks every frame) */
+	/* (the last one asked: a lobby or a scoreboard asks every frame; it holds while the variant is the same
+	bytes and no gametype file changed) */
 	static wchar_t memo_stored[ARENA_GAMETYPE_NAME_LENGTH];
+	static byte memo_variant[sizeof(struct game_variant)];
 	static wchar_t memo_name[PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1];
 	static boolean memo_found = FALSE;
 	static long memo_generation = -1;
@@ -1305,27 +1353,35 @@ boolean arena_gametype_own_display_name_for_stored_name(
 	if (!display_name || size <= 0)
 		return FALSE;
 	display_name[0] = 0;
-	if (!stored_name || !stored_name[0])
+	if (!stored_name || !stored_name[0] || !variant)
 		return FALSE;
 	csmemset(key, 0, sizeof(key));
 	for (index = 0; index < ARENA_GAMETYPE_NAME_LENGTH - 1 && stored_name[index]; index++)
 		key[index] = stored_name[index];
 	if (!memo_valid || memo_generation != playlist_profile_content_generation_get() ||
-		arena_gametype_name_compare(memo_stored, key))
+		arena_gametype_name_compare(memo_stored, key) || csmemcmp(memo_variant, variant, sizeof(memo_variant)))
 	{
-		long profile_index;
+		short nth;
 
 		memo_generation = playlist_profile_content_generation_get();
 		csmemcpy(memo_stored, key, sizeof(memo_stored));
+		csmemcpy(memo_variant, variant, sizeof(memo_variant));
 		memo_name[0] = 0;
 		memo_found = FALSE;
 		memo_valid = TRUE;
-		/* (a seeded gametype has none) */
+		/* (a seeded gametype has none; an own one counts only when its file is the variant in play:
+		a joiner's gametype of the same name but other rules is not the host's) */
 		if (!arena_gametype_info(key, NULL))
 		{
-			profile_index = arena_gametype_saved_by_name(key);
-			if (profile_index != NONE)
-				memo_found = playlist_profile_get_own_display_name(profile_index, memo_name);
+			for (nth = 0; !memo_found; nth++)
+			{
+				long profile_index = arena_gametype_saved_by_name(key, nth);
+
+				if (profile_index == NONE)
+					break;
+				arena_gametype_own_name_log("stored name", profile_index);
+				memo_found = playlist_profile_get_own_display_name_for_variant(profile_index, variant, memo_name);
+			}
 		}
 	}
 	if (!memo_found)
@@ -1372,7 +1428,7 @@ void arena_gametypes_debug_set_display_name(
 	csmemset(display_name, 0, sizeof(display_name));
 	for (index = 0; index < PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH && equals[1 + index]; index++)
 		display_name[index] = (wchar_t)(unsigned char)equals[1 + index];
-	profile_index = arena_gametype_saved_by_name(stored_name);
+	profile_index = arena_gametype_saved_by_name(stored_name, 0);
 	if (profile_index == NONE)
 	{
 		error(_error_silent, "arena gametypes: debug.set_display_name: no saved gametype '%.*s'",
@@ -1896,6 +1952,8 @@ static boolean arena_gametype_update_in_place(
 		written = FALSE;
 	}
 	success = written && platform_replace_file(new_path, path);
+	if (success)
+		playlist_profile_content_changed();
 	if (!success && file_reference_create_from_path(&file, new_path, FALSE) && file_exists(&file))
 		file_delete(&file);
 	saved_game_files_release_mutex();

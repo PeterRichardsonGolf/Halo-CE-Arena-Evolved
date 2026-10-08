@@ -426,7 +426,7 @@ def test_playlist_display_name(tmp_path):
         pytest.skip("needs clang, ninja and a configured build")
     flags = _ninja_compile_flags("build/linux/obj/source/saved games/arena_gametype_names.o")
     program = tmp_path / "playlist_display_name_check"
-    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-Wl,--unresolved-symbols=ignore-all", "-o",
+    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-o",
                             str(program), "tools/playlist_display_name_check.c"], capture_output=True, text=True)
     assert built.returncode == 0, built.stderr[-4000:]
     result = subprocess.run([str(program)], capture_output=True, text=True, timeout=60)

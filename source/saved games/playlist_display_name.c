@@ -29,6 +29,15 @@ typedef char verify_playlist_display_name_header_size[
 
 #define UNITS (PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1)
 
+/* a unit that ends a name: a control character (C0, DEL, C1), a surrogate (the
+block holds 16-bit units, which would be cut apart) or a non-character */
+static boolean playlist_display_name_unit_ends_name(
+	unsigned long unit)
+{
+	return unit < 0x20 || (unit >= 0x7F && unit <= 0x9F) || (unit >= 0xD800 && unit <= 0xDFFF) ||
+		unit == 0xFFFE || unit == 0xFFFF;
+}
+
 boolean playlist_display_name_from_block(
 	byte const *block,
 	wchar_t *name)
@@ -50,11 +59,12 @@ boolean playlist_display_name_from_block(
 	saved_game_file_generate_checksum((byte *)data, (word)size, &checksum);
 	if (csmemcmp(&checksum, data + size, sizeof(checksum)))
 		return FALSE;
-	for (index = 0; index < UNITS; index++)
+	/* (at most 31 characters, whatever the block holds: the caller's buffer has 31 and the NUL) */
+	for (index = 0; index < PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH; index++)
 	{
 		word unit = (word)(data[sizeof(header) + 2 * index] | (data[sizeof(header) + 2 * index + 1] << 8));
 
-		if (unit < 0x20)
+		if (playlist_display_name_unit_ends_name(unit))
 			break;
 		name[length++] = (wchar_t)unit;
 	}
@@ -72,13 +82,14 @@ void playlist_display_name_to_block(
 	short index;
 
 	csmemset(data, 0, PLAYLIST_DISPLAY_NAME_BLOCK_SIZE);
-	if (!name || name[0] < 0x20)
+	if (!name || playlist_display_name_unit_ends_name((unsigned long)name[0]))
 		return;
 	header.magic = PLAYLIST_DISPLAY_NAME_MAGIC;
 	header.version = PLAYLIST_DISPLAY_NAME_VERSION;
 	header.size = 2 * UNITS;
 	csmemcpy(data, &header, sizeof(header));
-	for (index = 0; index < PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH && name[index] >= 0x20; index++)
+	for (index = 0; index < PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH &&
+		!playlist_display_name_unit_ends_name((unsigned long)name[index]); index++)
 	{
 		/* (16 bits: a character past them is a question mark) */
 		word unit = (unsigned long)name[index] > 0xFFFF ? (word)'?' : (word)name[index];

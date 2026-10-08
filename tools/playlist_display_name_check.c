@@ -15,6 +15,8 @@ signature (the real one, a SHA-1, is tested through the game's own files):
 - writing the block changes only its own bytes (0x140 .. 0x19B): the
   variant's 0..0x67, its signature, and the PC options' 'GPVO' block
   (0x100 .. 0x137) and the rest are untouched, and it ends inside the 512;
+- a foreign block with 32 filled units (valid signature) reads as 31 characters and a NUL, nothing written
+  past them; DEL, a C1 control and a surrogate end a name;
 - carrying: a whole block of the old bytes arrives in the new; none, a torn
   one and an empty one carry nothing, and the new bytes outside the block
   are untouched.
@@ -240,6 +242,47 @@ int main(void)
 		accent[2] = 0;
 		playlist_display_name_to_block(block, accent);
 		check(playlist_display_name_from_block(block, name) && name[0] == 0x00E9 && name[1] == 0x4E2D, "16-bit characters kept");
+	}
+
+	/* a foreign block with all 32 units filled (a valid signature proves nothing): never more than 31 characters
+	and the NUL, nothing written past them */
+	{
+		byte *data = block + PLAYLIST_DISPLAY_NAME_OFFSET;
+		wchar_t guarded[PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 2];
+		int unit;
+
+		memset(block, 0, sizeof(block));
+		memcpy(data, "AEDN", 4);
+		data[4] = 1;
+		data[6] = 64;
+		for (unit = 0; unit < 32; unit++)
+		{
+			data[8 + 2 * unit] = (byte)('A' + unit % 26);
+			data[9 + 2 * unit] = 0;
+		}
+		saved_game_file_generate_checksum(data, 72, (struct _XCALCSIG_SIGNATURE *)(data + 72));
+		for (unit = 0; unit < PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 2; unit++)
+			guarded[unit] = (wchar_t)0x5A5A;
+		check(playlist_display_name_from_block(block, guarded) && wlen(guarded) == 31 &&
+			guarded[31] == 0 && guarded[32] == (wchar_t)0x5A5A, "32 filled units: 31 characters, a NUL, nothing past");
+	}
+
+	/* DEL, a C1 control and a surrogate end a name */
+	{
+		wchar_t odd[4];
+
+		odd[0] = L'A';
+		odd[1] = (wchar_t)0x7F;
+		odd[2] = L'B';
+		odd[3] = 0;
+		playlist_display_name_to_block(block, odd);
+		check(playlist_display_name_from_block(block, name) && wsame(name, L"A"), "DEL ends the name");
+		odd[1] = (wchar_t)0x85;
+		playlist_display_name_to_block(block, odd);
+		check(playlist_display_name_from_block(block, name) && wsame(name, L"A"), "a C1 control ends the name");
+		odd[1] = (wchar_t)0xD83D;
+		playlist_display_name_to_block(block, odd);
+		check(playlist_display_name_from_block(block, name) && wsame(name, L"A"), "a surrogate ends the name");
 	}
 
 	/* carrying */

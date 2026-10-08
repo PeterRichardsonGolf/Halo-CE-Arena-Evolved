@@ -1482,9 +1482,9 @@ and the gametype's display name's under it when it has one
 (game_engine_rasterize_in_game_score) */
 static long rasterize_in_game_score_untabbed_rows = 1;
 
-/* port: a seeded gametype's display name (arena_gametype_names.c), or a
-player's own gametype's longer one, for the scoreboards' line under their title: "TEAM AE SLAYER"; FALSE for any other
-gametype, which has no such line, an old name (an alias, which has no
+/* port: a seeded gametype's display name (arena_gametype_names.c), or a player's own
+gametype's longer one, for the scoreboards' line under their title: "TEAM AE SLAYER"; FALSE
+for any other gametype, which has no such line, an old name (an alias, which has no
 description and would only repeat the stored name) too */
 static boolean game_engine_scoreboard_gametype_name(
 	wchar_t *text,
@@ -1500,7 +1500,7 @@ static boolean game_engine_scoreboard_gametype_name(
 		sizeof(global_variant.human_readable_game_description));
 	stored_name[NUMBEROF(stored_name) - 1] = 0;
 	/* (a player's own gametype's longer display name, if it has one) */
-	if (arena_gametype_own_display_name_for_stored_name(stored_name, text, size))
+	if (arena_gametype_own_display_name_for_stored_name(stored_name, &global_variant, text, size))
 		return TRUE;
 	if (!arena_gametype_info(stored_name, &info) || !info.description)
 		return FALSE;
@@ -8144,6 +8144,13 @@ void game_engine_log_rules(
 			break;
 		}
 		error(_error_silent, "%s", line);
+		if (config_boolean("debug.display_name_log"))
+		{
+			wchar_t shown[40];
+
+			error(_error_silent, "game type name: %s", game_engine_scoreboard_gametype_name(shown, NUMBEROF(shown)) ?
+				"shown by its display name" : "shown by its stored name");
+		}
 		/* (the AE gametype options, a line of their own so that the first
 		line's length never cuts them off: game_engine.h, bits 25-30 and
 		nhe_mode) */

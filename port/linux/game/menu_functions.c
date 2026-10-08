@@ -5330,7 +5330,7 @@ static void lobby_update(struct widget_instance *list)
 
 		ustrncpy(stored_name, game->variant.human_readable_game_description, NUMBEROF(stored_name) - 1);
 		stored_name[NUMBEROF(stored_name) - 1] = 0;
-		if (!arena_gametype_own_display_name_for_stored_name(stored_name, gametype, NUMBEROF(gametype)))
+		if (!arena_gametype_own_display_name_for_stored_name(stored_name, &game->variant, gametype, NUMBEROF(gametype)))
 			arena_gametype_display_name(stored_name, gametype, NUMBEROF(gametype));
 		gametype_panel_name(gametype, NUMBEROF(gametype));
 		usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\n%d of %d players\r\n\r\n%s", gametype,
@@ -6019,7 +6019,6 @@ static void gametype_setup_type(wchar_t *text)
 {
 	wchar_t name[NUMBEROF(gametype_edit.setup_variant.human_readable_game_description) + 1];
 	wchar_t own_name[40];
-	wchar_t const *shown;
 	struct arena_gametype_info info;
 
 	text[0] = 0;
@@ -6037,8 +6036,15 @@ static void gametype_setup_type(wchar_t *text)
 	}
 	/* (a player's own gametype's longer display name, if it has one, for
 	its stored name) */
-	shown = arena_gametype_own_display_name_for_stored_name(name, own_name, NUMBEROF(own_name)) ? own_name : name;
-	usnprintf(text, ROW_TEXT_LENGTH - 1, L"%s (%s%s)", shown,
+	/* (its name alone: the engine's name would be cut off the long row) */
+	if (arena_gametype_own_display_name_for_stored_name(name, &gametype_edit.setup_variant, own_name,
+		NUMBEROF(own_name)))
+	{
+		ustrncpy(text, own_name, ROW_TEXT_LENGTH - 1);
+		text[ROW_TEXT_LENGTH - 1] = 0;
+		return;
+	}
+	usnprintf(text, ROW_TEXT_LENGTH - 1, L"%s (%s%s)", name,
 		engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 5)],
 		gametype_edit.setup_variant.universal_variant.teams ? L", TEAMS" : L"");
 	text[ROW_TEXT_LENGTH - 1] = 0;
