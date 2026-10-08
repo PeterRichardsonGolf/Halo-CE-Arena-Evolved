@@ -30,6 +30,12 @@ void ae_input_key_directions(int keys, int held[4])
 	held[3] = (keys & AE_KEY_RIGHT) != 0;
 }
 
+void ae_input_poll_keys(int raw, int typing, int stored_raw, int opening, int *keys, int *previous_keys)
+{
+	*keys = typing ? 0 : raw;
+	*previous_keys = opening ? *keys : stored_raw;
+}
+
 int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char actions[], int maximum)
 {
 	static struct { int key; unsigned char action; } const presses[] =

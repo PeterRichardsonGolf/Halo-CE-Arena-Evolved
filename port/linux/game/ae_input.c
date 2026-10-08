@@ -78,6 +78,7 @@ static struct
 	unsigned long last_poll;
 	int polled;
 	int keys;
+	int was_typing;
 	int opening;
 	struct ae_hold hold;
 } ae_input;
@@ -247,8 +248,9 @@ void ae_input_poll(
 	struct event_record event;
 	unsigned long now = system_milliseconds();
 	/* (a field being typed into takes the keys: AE's own Q, E, Tab, Page Up / Down stand aside) */
-	int keys = ae_glue_text_typing() ? 0 : ae_platform_keys();
-	int previous_keys, tab_forward, tab_backward, tab_ignored, tab_down, tab_up;
+	int typing = ae_glue_text_typing();
+	int raw_keys = ae_platform_keys();
+	int keys, previous_keys, tab_forward, tab_backward, tab_ignored, tab_down, tab_up;
 	unsigned char actions[MAXIMUM_ACTIONS];
 	int action_count, index, back_presses;
 	short controller;
@@ -256,9 +258,12 @@ void ae_input_poll(
 	a low frame rate, drops no press: only directions held through it wait for a new press) */
 	boolean opening = ae_input.opening || !ae_input.polled;
 	boolean stalled = now - ae_input.last_poll > AE_POLL_GAP_MS;
+	/* (the first poll after typing ended: keys still held from the typing are not pressed now, I1 of the M2 final review) */
+	boolean typing_ended = ae_input.was_typing && !typing;
 
 	ae_input.opening = 0;
-	previous_keys = opening ? keys : ae_input.keys;
+	ae_input_poll_keys(raw_keys, typing, ae_input.keys, opening, &keys, &previous_keys);
+	ae_input.was_typing = typing != 0;
 	/* (Tab's presses since the last poll; a screen just opened takes none from before) */
 	ae_platform_take_tab_presses(&tab_forward, &tab_backward, &tab_ignored);
 	if (opening || ae_glue_text_typing())
@@ -268,7 +273,8 @@ void ae_input_poll(
 		actions, MAXIMUM_ACTIONS);
 	ae_input.polled = 1;
 	ae_input.last_poll = now;
-	ae_input.keys = keys;
+	/* (the raw keys, typing or not: what is held through typing is then not a new press) */
+	ae_input.keys = raw_keys;
 
 	while (ae_ui_depth() && get_next_event(&event, NONE))
 	{
@@ -306,7 +312,7 @@ void ae_input_poll(
 			struct ae_repeat *repeat = &ae_input.repeats[controller][direction];
 
 			/* (a step whose press began now is the press, any later one a repeat) */
-			if (ae_input_direction_step(repeat, held[direction], now, opening, stalled))
+			if (ae_input_direction_step(repeat, held[direction], now, opening || typing_ended, stalled))
 				send_step(controller, direction_actions[direction], repeat->since != now);
 		}
 	}

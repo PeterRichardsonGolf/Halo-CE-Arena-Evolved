@@ -4,7 +4,8 @@ engine includes.
 Spec 4.11 (dialog), 4.12 (roster card). A dialog's spec is in layout units of the whole frame, with the view it draws
 in (preflight P12: a VIEW dialog draws in the player's own view, inside its panel, at most the panel's width less a
 pad each side: preflight P14). Its open motion is its own (ae_motion_dialog over 150 ms, finished by any input); its
-close is instant (preflight P7: the owner decides at the design gate). Text is placed by its capitals' middle; 2 px of
+close is its ghost's fade and scale out over 100 ms (the owner's ruling over preflight P7; only a timed revert's
+ae_ui_remove is instant), so a popped dialog's data lives that long. Text is placed by its capitals' middle; 2 px of
 horizontal ink are allowed. */
 
 #include <math.h>
@@ -285,7 +286,7 @@ static void dialog_leave(struct ae_screen *screen)
 	state->open = 0;
 }
 
-/* picks a choice: its sound, closed (instant), then the callback (which may open another) */
+/* picks a choice: its sound, closed (its ghost fades out), then the callback (which may open another) */
 static void dialog_pick(struct dialog_state *state, short choice, int sound)
 {
 	void (*picked)(short, void *) = state->spec.picked;
@@ -609,6 +610,9 @@ int ae_dialog_open(struct ae_dialog_spec const *spec, short owner)
 		pending[slot].waiting = 1;
 		pending[slot].owner = owner;
 		dialog_copy(&pending[slot].spec, &pending[slot].text, spec);
+		/* (shown later, maybe after its opener left: an error's choice only closes it, so no callback of the opener's) */
+		pending[slot].spec.picked = NULL;
+		pending[slot].spec.context = NULL;
 		return 0;
 	}
 	memset(state, 0, sizeof(*state));

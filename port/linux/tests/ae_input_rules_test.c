@@ -24,6 +24,31 @@ int main(void)
 	CHECK(ae_input_player_of_controller(-1, none) == AE_PLAYER_NONE);
 	CHECK(ae_input_player_of_controller(4, none) == AE_PLAYER_NONE);
 
+	/* I1: typing a name ends with Enter while Q / E / Page Down / Tab is still held: no tab switch, no page, no step */
+	{
+		int keyset[4] = { AE_KEY_Q, AE_KEY_E, AE_KEY_PAGE_DOWN, AE_KEY_TAB };
+		int i, k, previous, down, up, stored = 0;
+
+		for (i = 0; i < 4; i++)
+		{
+			/* a poll while typing (the key goes down during the typing), then the first poll after it */
+			ae_input_poll_keys(keyset[i], 1, stored, 0, &k, &previous);
+			CHECK(k == 0 && ae_input_key_actions(k, previous, 0, actions, 8) == 0);
+			stored = keyset[i];
+			ae_input_poll_keys(keyset[i], 0, stored, 0, &k, &previous);
+			CHECK(k == keyset[i] && previous == keyset[i]);
+			CHECK(ae_input_key_actions(k, previous, 0, actions, 8) == 0);
+			ae_input_tab_steps(0, 0, k, previous, &down, &up);
+			CHECK(down == 0 && up == 0);
+			stored = 0;
+		}
+		/* a real press after typing still acts; an opening poll takes what is held as held */
+		ae_input_poll_keys(AE_KEY_E, 0, 0, 0, &k, &previous);
+		CHECK(ae_input_key_actions(k, previous, 0, actions, 8) == 1 && actions[0] == AE_ACTION_TAB_NEXT);
+		ae_input_poll_keys(AE_KEY_E, 0, 0, 1, &k, &previous);
+		CHECK(ae_input_key_actions(k, previous, 0, actions, 8) == 0);
+	}
+
 	/* Tab steps down, Shift+Tab up; Shift alone nothing */
 	ae_input_key_directions(AE_KEY_TAB, held);
 	CHECK(!held[0] && held[1] && !held[2] && !held[3]);

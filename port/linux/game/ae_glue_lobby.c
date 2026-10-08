@@ -519,8 +519,8 @@ void ae_lobby_update(unsigned long now)
 		else if (lobby.heard_incompatible && !lobby.heard_compatible && now - lobby.join_since >= JOIN_VERSION_MS)
 			search_failed(now, AE_STR_ERR_VERSION);
 		else if (now - lobby.join_since >= JOIN_SEARCH_MS)
-			search_failed(now, lobby.heard_incompatible ? AE_STR_ERR_VERSION : lobby.heard_compatible ?
-				AE_STR_ERR_LOBBY_FULL : AE_STR_ERR_NO_GAME);
+			search_failed(now, lobby.heard_compatible ? AE_STR_ERR_LOBBY_FULL : lobby.heard_incompatible ?
+				AE_STR_ERR_VERSION : AE_STR_ERR_NO_GAME);
 	}
 	else if (lobby.join == JOIN_INVITE)
 	{
@@ -567,12 +567,22 @@ boolean ae_lobby_take_pregame_ui(
 		platform_log("ae lobby: pregame UI left to the game (not AE's session)");
 		return FALSE;
 	}
+	/* (no pregame screen set, or one that can't be pushed: the game loads its own, so the player is never left with
+	no menu at all; M2 final review m1) */
+	if (!lobby.pregame_screen)
+	{
+		platform_log("ae lobby: pregame UI left to the game (no pregame screen set)");
+		return FALSE;
+	}
+	if (!ae_ui_holds(lobby.pregame_data) && !ae_ui_push(lobby.pregame_screen, AE_OWNER_ANY, lobby.pregame_data))
+	{
+		platform_log("ae lobby: pregame UI left to the game (the screen could not be pushed)");
+		return FALSE;
+	}
 	/* what upstream's branch does besides loading its widget: the host's countdown held (ui_widget.c
-	network_game_reset_to_pregame_ui); then AE's pregame screen, once */
+	network_game_reset_to_pregame_ui); AE's pregame screen is up */
 	if (global_network_game_server_get())
 		network_game_server_pause_countdown(global_network_game_server_get(), TRUE);
-	if (lobby.pregame_screen && !ae_ui_holds(lobby.pregame_data))
-		ae_ui_push(lobby.pregame_screen, AE_OWNER_ANY, lobby.pregame_data);
 	platform_log("ae lobby: took the pregame UI (the game's SELECT MAP not loaded)");
 	return TRUE;
 }

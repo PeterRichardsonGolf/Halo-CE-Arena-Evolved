@@ -193,6 +193,9 @@ struct ae_picker_spec
 	void (*picked)(short index, void *context); void *context;
 	struct ae_rect view;         /* (M2, P12) layout units; zero size: the whole frame */
 };
+/* The spec is copied, but `values` and its strings are NOT: they are read by every draw of the open picker and by
+its close ghost for up to 100 ms after the pick, so they must outlive both (static or screen data, never a stack
+buffer). */
 int ae_picker_open(struct ae_picker_spec const *spec, short owner);
 /* (M2) the open list drawn as a picture, not a screen (the gallery's open-state sample): placed for row in bounds
 (drawing units of the current view), the current value checked, the focus on focus */
@@ -305,7 +308,7 @@ short ae_keyboard_layout(struct ae_density const *density, float content_width, 
 
 /* ---------- (M2, ae_widgets_dialog.c) the dialog and the roster cards (spec 4.11, 4.12) */
 
-/* A dialog: a popover over the scrim (its open motion: ae_motion_dialog; its close is instant, preflight P7), a 4 u top
+/* A dialog: a popover over the scrim (its open motion: ae_motion_dialog; its close is a 100 ms fade out of its ghost, the owner's ruling over preflight P7), a 4 u top
 stripe (accent; an error's warning, with a warning title), the title (Overpass 900 32 u), the body (22 u on 32 u
 lines), the choices as ordinary rows and its prompts inside it. The first focus is the safe choice; A / Enter picks
 the focused choice, B / Esc the cancel choice; a click outside does nothing; the opener's focus is untouched (focus

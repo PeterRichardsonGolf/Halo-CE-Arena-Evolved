@@ -38,6 +38,10 @@ void ae_input_key_directions(int keys, int held[4]);
 /* the actions of the keys pressed since previous (Q, E: tabs; Page Up, Page Down) and of mouse button 4's presses
 (BACK); the count written, at most maximum */
 int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char actions[], int maximum);
+/* the keys this poll acts on and the keys it compares them with. raw: AE's keys held now; typing: a field is being
+typed into (it takes the keys, so the acted-on keys are none); stored_raw: the raw keys of the last poll (kept raw
+even while typing, so a key still held when typing ends is not a new press); opening: the first poll of a screen */
+void ae_input_poll_keys(int raw, int typing, int stored_raw, int opening, int *keys, int *previous_keys);
 /* the action to send for a first-controller button's action, given AE's keys held now, the Tab presses counted since
 the last poll (ae_platform_take_tab_presses: key downs, so a tap let go of within one frame counts too) and whether
 the keyboard is the device last used: while E is held, its X (E drives X in the game's menu keys) is none; Tab drives
