@@ -30,7 +30,7 @@ CLIENT = "127.0.0.201"
 
 
 def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch", mod="",
-               saved_gametype=None, save_from=None):
+               saved_gametype=None, save_from=None, client_save_from=None):
     """the host's and the client's specs: both on the map (and the mod's maps); the host's gametype a saved one of
     its save root (save_from copied as it) when given"""
     common = {"HALO_NETWORK_TEST_START": "20", "HALO_NETWORK_TEST_SHOOT": "3", "HALO_NETWORK_TEST_KILL": "20"}
@@ -41,9 +41,12 @@ def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, ma
         host["saved_gametype"] = saved_gametype
     if save_from:
         host["save_from"] = save_from
-    client = harness.parse_spec({"name": "client", "build": client_build, "network_test": "join",
-                                 "address": CLIENT, "broadcast": HOST, "exit_after": seconds - join_delay,
-                                 "delay": join_delay, "env": common, "mod": mod})
+    client = {"name": "client", "build": client_build, "network_test": "join",
+              "address": CLIENT, "broadcast": HOST, "exit_after": seconds - join_delay,
+              "delay": join_delay, "env": common, "mod": mod}
+    if client_save_from:
+        client["save_from"] = client_save_from
+    client = harness.parse_spec(client)
     return harness.parse_spec(host), client
 
 
@@ -72,7 +75,8 @@ def judge(host_r, client_r, tracks, max_median=0.5):
 def run_pair(cfg, name, host_build, client_build, out, a, slots):
     env = dict(e.split("=", 1) for e in (getattr(a, "env", None) or []))
     host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay, env=env, map_name=a.map, mod=a.mod,
-                              saved_gametype=a.saved_gametype, save_from=a.save_from)
+                              saved_gametype=a.saved_gametype, save_from=a.save_from,
+                              client_save_from=getattr(a, "client_save_from", None))
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
     harness.OWN_WORK.add(work)
@@ -131,6 +135,7 @@ def main(argv):
                    "Without --one-way the reverse pair hosts it (and --save-from) on the other build, which may "
                    "seed or migrate that root by its own rules or not know the setting")
     p.add_argument("--save-from", help="a folder copied as the host's save root (never under /tmp)")
+    p.add_argument("--client-save-from", help="a folder copied as the joining machine's save root (never under /tmp)")
     p.add_argument("--env", action="append", default=[], help="NAME=value for both machines (repeat)")
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)
