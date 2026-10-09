@@ -23,6 +23,7 @@ profile drive's: "ae profiles: ..." (below and the glue's).
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cseries.h"
@@ -92,10 +93,15 @@ static int host_kind(void)
 	return drive.value == 93 ? AE_LOBBY_LOCAL : drive.value == 95 ? AE_LOBBY_ONLINE : AE_LOBBY_LAN;
 }
 
-/* (the start: Blood Gulch slayer; off the stack while the game plays, the take-over puts it back) */
+/* (the start: Blood Gulch slayer, or the saved gametype named by HALO_AE_TEST_GAMETYPE: the test of an AE gametype
+picked through the glue; off the stack while the game plays, the take-over puts it back) */
 static void start_game(unsigned long now)
 {
-	if (ae_lobby_set_map("bloodgulch").ok && ae_lobby_set_gametype("slayer").ok && ae_lobby_start().ok)
+	const char *gametype = getenv("HALO_AE_TEST_GAMETYPE");
+
+	if (!gametype || !*gametype)
+		gametype = "slayer";
+	if (ae_lobby_set_map("bloodgulch").ok && ae_lobby_set_gametype(gametype).ok && ae_lobby_start().ok)
 	{
 		/* (what the lobby reads once set, to compare with what it reads after the round; the built-in slayer has no
 		description text, so its gametype reads empty both times) */
