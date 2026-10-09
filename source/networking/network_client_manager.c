@@ -3160,12 +3160,30 @@ boolean network_game_client_advertised_game_compatible(
 	unsigned int theirs;
 	boolean distributed;
 	char message[400];
+	/* AE: no host below this machine's own network version (24) is joined, whatever
+	the range above: older AE hosts lack the grenade/teleporter netcode fixes */
+	unsigned int ae_floor = (unsigned int)HALO_PORT_NETWORK_VERSION;
 
 	if (game_index < 0 || game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES)
 		return FALSE;
 	theirs = network_game_client_advertised_versions[game_index].version;
 	distributed = (network_game_client_advertised_versions[game_index].flags &
 		HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG) != 0;
+	if (theirs < ae_floor) /* AE */
+	{
+		csprintf(message,
+			"The host is using an older version of the network code than this game accepts.\n\n"
+			"You are on version %u. The host is on version %u.\n\n"
+			"The host needs to update the game to version %u or newer.",
+			ours, theirs, ae_floor);
+		if (tell)
+		{
+			network_event("not joining a host of network version %u: AE needs a host of version %u or newer (this machine's is %u); the host needs to update",
+				theirs, ae_floor, ours);
+			platform_show_message("Halo: cannot join this game", message);
+		}
+		return FALSE;
+	}
 	if (theirs >= (unsigned int)delta_legacy_minimum() && theirs <= (unsigned int)delta_legacy_maximum() && distributed)
 	{
 		network_event("joining a host of network version %u (this machine's is %u)", theirs, ours);

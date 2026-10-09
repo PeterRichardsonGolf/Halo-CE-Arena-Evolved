@@ -62,12 +62,18 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   power items" in ten / are up, "and", "in ten" and "powerup is up".
 
 ### Changed
+- Taken from open OpenCE pull requests #209 (a client's grenade shock waves
+  are no longer refused: about half its grenade damage), #211 (a client no
+  longer throws grenades it does not have right after spawning) and #210 (a
+  player who used a teleporter no longer appears stuck on the pad they
+  left); the next upstream merge already has them.
 - Merged ChupathingyCE 0.7.1d and OpenCE build-157.
   - Network version 24 (announced; hosts of 11 to 24 are joined): Arena
     Evolved plays with ChupathingyCE 0.7.1 and OpenCE build-149 and later
     both ways. Builds of an older version, Arena Evolved 0.1.0-beta among
     them, no longer join its games (their players are told the host is
-    newer); it still joins theirs. Its wire ID is `ae-24a`.
+    newer). It does not join their games either: a host below network
+    version 24 is refused with "the host needs to update the game". Its wire ID is `ae-24a`.
   - Halo PC maps have folders of their own beside `maps`: `maps_ce` (Custom
     Edition), `maps_md` (HaloMD) and `maps_pc` (your Halo PC disc's, new).
     `maps/ce`, `md_maps` and OpenCE's `custom_maps` still play; the game
