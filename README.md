@@ -45,6 +45,7 @@ editor and in Server Setup)
 | NO SPREAD | OFF (stock), NHE (the pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as Halo 1: NHE has them) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
 | PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. A weapon switch (Y) pressed during it is kept and taken as it ends, as in Halo 1: NHE; any other button pressed during it does nothing until you let go of it, so nothing fires, zooms, reloads or picks up the moment it ends. The host holds every player to it, including players on builds without it. |
+| BALL MELEE | Oddball gametypes only. STOCK (the ball's melee takes the shield and a little health, and kills from behind) or LETHAL (the ball carrier's melee kills in one hit, shields and overshield included, as in Halo 3: same reach, no hits through walls, friendly fire as the gametype sets it). |
 
 Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
 TIMERS shows the power list only: the next spawns of the rockets, sniper
@@ -89,10 +90,10 @@ up to their build.
 play:
 - **Arena Evolved (casual):** FFA AE SLAYER (25 kills), TEAM AE SLAYER (50),
   TEAM AE CTF (3 captures), TEAM AE KING, FFA AE ODDBALL and TEAM AE ODDBALL
-  (5 minutes held), each with a 15-minute time limit, the motion sensor, the
+  (5 minutes held; the ball carrier's melee kills in one hit, BALL MELEE LETHAL), each with a 15-minute time limit, the motion sensor, the
   stock respawns, item TIMERS with waypoints, and both weapons dropped on death
   (DROP SECONDARY ALWAYS). The 2V2 ones (TEAM AE 2V2 SLAYER to 25, CTF, KING
-  and ODDBALL) play the same rules; the player limit of 4 is the host's setting.
+  and ODDBALL, with the lethal ball) play the same rules; the player limit of 4 is the host's setting.
   FFA AE PRACTICE: every weapon and powerup each 30 seconds, 500 kills, no time
   limit, the map's vehicles. TEAM AE VANILLA and TEAM AE POWERUPS: team slayer
   that plays Halo 1: NHE's VANILLA and NHE & POWERUPS modes on NHE's maps.
@@ -103,7 +104,7 @@ play:
   vehicles).
 - **Arena Evolved COMP** (modern NHE): FFA AE COMP SLAYER (25 kills), TEAM AE
   COMP SLAYER (50), TEAM AE COMP CTF (3 captures), TEAM AE COMP KING and TEAM
-  AE COMP ODDBALL (5 minutes held). 5-second respawn and suicide penalty, 2
+  AE COMP ODDBALL (5 minutes held, with the lethal ball). 5-second respawn and suicide penalty, 2
   frag grenades, no motion sensor, no vehicles, item TIMERS only in line of
   sight (no list, no item calls), the objective only in line of sight, both
   weapons dropped; the slayers have no time limit, the others 15 minutes.

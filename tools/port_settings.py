@@ -1377,6 +1377,12 @@ ARENA_ROWS = [
         "Stock teams and camera.",
         "As Halo 1: NHE: everyone joins red and keeps their\\ncolour between games, the dead camera stays on you,\\nand the match clock counts up.",
     ]),
+    # (universal_variant.ball_melee; Oddball only: the row is hidden for the
+    # other gametype types, menu_functions.c gametype_option_help)
+    ("ball_melee", "BALL MELEE:", ["STOCK", "LETHAL"], [
+        "Oddball only: the ball carrier's melee is as in\\nHalo CE: it takes the shield and a little health,\\nand kills from behind.",
+        "Oddball only: the ball carrier's melee kills in\\none hit, shields and all, as in Halo 3. Same\\nreach, no hits through walls.",
+    ]),
 ]
 
 
@@ -1407,7 +1413,7 @@ def _arena_options() -> list:
                       ("description", f"{base}/arena_options_help")],
                      ['<data input="game settings lists text update"/>',
                       '<on event="created" run="mp profile init player opts"/>',
-                      *[f'<child widget="{base}/op_{key}" x="54" y="{73 + 28 * index}"/>'
+                      *[f'<child widget="{base}/op_{key}" x="54" y="{68 + 26 * index}"/>'
                         for index, (key, *_) in enumerate(ARENA_ROWS)],
                       f'<child widget="{base}/arena_button_bar" y="414"/>'])
     lines += _widget(f"{base}/arena_options_help",

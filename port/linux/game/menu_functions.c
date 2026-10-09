@@ -5605,6 +5605,8 @@ static struct gametype_option const gametype_options[] =
 	{ "pregame_countdown_spinner", _option_flag, 0, FLAG(_game_variant_pregame_countdown_bit), 2, { 0, 1 } },
 	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
 	{ "nhe_extras_spinner", _option_flag, 0, FLAG(_game_variant_nhe_extras_bit), 2, { 0, 1 } },
+	/* (BALL MELEE: universal_variant.ball_melee, STOCK or LETHAL; Oddball only) */
+	{ "ball_melee_spinner", _option_byte, VARIANT_FIELD(universal_variant.ball_melee), 0, 2, { 0, 1 } },
 	/* (DROP SECONDARY: bits 29-30, enum drop_secondary; a stored 3 shows as
 	EXCEPT POWER, the nearest, as the engine reads it) */
 	{ "drop_secondary_spinner", _option_flags, 0, GAME_VARIANT_DROP_SECONDARY_MASK, 3,
@@ -6197,6 +6199,9 @@ static void gametype_option_help(struct widget_instance *list)
 		visible_set(named(list, "op_primary_weapon", 0), custom);
 		visible_set(named(list, "op_secondary_weapon", 0), custom);
 	}
+	/* (ARENA OPTIONS: BALL MELEE is Oddball's alone) */
+	if (named(list, "ball_melee_spinner", 0))
+		visible_set(named(list, "op_ball_melee", 0), edit_variant()->game_engine_index == game_engine_oddball);
 	/* (the server browser's filters, hidden: their helps are fewer than
 	their values) */
 	if (!description || !list->focused_child || !strncmp(list->name, "filters", 7))
