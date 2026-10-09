@@ -1468,7 +1468,7 @@ short draw_unicode_string_capital_middle(
 	capital = font_get_character_by_ascii_code(font, 'H');
 	for (row = 0; capital && row < capital->bitmap_height; row++)
 	{
-		byte const *pixels = (byte const *)font->pixels.address + capital->pixels_offset + row * capital->bitmap_width;
+		byte const *pixels = (byte const *)xbox_pointer(font->pixels.address) + capital->pixels_offset + row * capital->bitmap_width;
 		short column;
 
 		for (column = 0; column < capital->bitmap_width; column++)
