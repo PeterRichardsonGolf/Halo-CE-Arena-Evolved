@@ -4,7 +4,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from test_sound_lifecycle import function
+from test_ae_sound_lifecycle import function
 
 ROOT = Path(__file__).resolve().parent.parent
 PRELUDE = r'''

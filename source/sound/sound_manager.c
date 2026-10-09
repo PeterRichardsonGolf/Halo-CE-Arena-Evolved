@@ -1560,7 +1560,7 @@ static boolean sound_set_definition_end(
 		{
 			/* port: sound_find_like_channel excludes the current voice.
 			(AE: should it ever name this voice's own channel, the voice is
-			the one retired, and the caller is told so: test_sound_transition.py) */
+			the one retired, and the caller is told so: test_ae_sound_transition.py) */
 			long victim_sound_index = channel_get(channel_index)->sound_index;
 
 			sound_stop(victim_sound_index);
