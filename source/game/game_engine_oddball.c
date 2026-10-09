@@ -399,6 +399,20 @@ boolean player_has_ball(
 	return has_ball;
 }
 
+/* port: BALL MELEE LETHAL (universal_variant.ball_melee; ARENA OPTIONS): the
+melee blow of a player holding the ball kills (objects/damage.c asks, for a
+melee damage effect, host side) */
+boolean game_engine_ball_melee_lethal(
+	long damaging_player_index)
+{
+	struct game_variant const *variant = game_engine_get_variant();
+
+	return damaging_player_index != NONE &&
+		variant->game_engine_index == game_engine_oddball &&
+		variant->universal_variant.ball_melee == 1 &&
+		player_has_ball(damaging_player_index);
+}
+
 boolean ball_available(
 	void)
 {

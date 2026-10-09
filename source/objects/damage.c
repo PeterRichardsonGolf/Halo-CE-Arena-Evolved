@@ -1767,6 +1767,28 @@ void object_cause_damage(
 					damage->flags,
 					_damage_kill_instantly_bit);
 
+				/* port: BALL MELEE LETHAL (ARENA OPTIONS): the melee blow of a
+				player holding the ball kills a player's unit in one hit, shields
+				and all; reach, walls and friendly fire are the blow's own
+				(the force_kill rules below) */
+				if (!force_kill &&
+					damage_definition->category == _damage_category_melee &&
+					current_object->object.type == _object_type_biped &&
+					game_engine_running() &&
+					game_engine_ball_melee_lethal(damage->owner_player_index))
+				{
+					struct unit_datum const *victim = (struct unit_datum const *)current_object;
+
+					if (victim->unit.player_index != NONE)
+					{
+						force_kill = TRUE;
+						error(_error_silent, "ball melee lethal: player %ld's blow kills player %ld (shield %g, health %g)",
+							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(damage->owner_player_index),
+							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(victim->unit.player_index),
+							(double)current_object->object.shield_vitality, (double)current_object->object.body_vitality);
+					}
+				}
+
 				if (node_index >= 0 && node_index < collision_model->nodes.count)
 				{
 					struct collision_node const *collision_node =

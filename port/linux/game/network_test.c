@@ -149,6 +149,15 @@ static struct
 	real damage_last[3];
 	real quit_time;
 	boolean quit;
+	/* (debug.network_test_ball: "seconds[:shield[:offset]]": the host's first local
+	player takes a ball in hand at that game time, once; the last other player's
+	shields are set to shield (an overshield's, over 1) if given and is stood
+	offset (default 1.2) along x from them: that player looks along +x, so a
+	positive offset puts them with their back to the blow, a negative one facing it) */
+	real ball_time;
+	real ball_shield;
+	real ball_offset;
+	boolean ball_done;
 	unsigned long variant_flags;
 	/* (debug.network_test_gametype: a custom gametype's stored name, empty
 	for the built-in one) */
@@ -295,6 +304,20 @@ static void network_test_read_settings(
 	snprintf(network_test.damage_script, sizeof(network_test.damage_script), "%s",
 		config_string("debug.network_test_damage"));
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
+	network_test.ball_time = 0.0f;
+	network_test.ball_shield = 0.0f;
+	{
+		double ball_time = 0.0, ball_shield = 0.0, ball_offset = 1.2;
+		int fields = sscanf(config_string("debug.network_test_ball"), "%lf:%lf:%lf", &ball_time, &ball_shield,
+			&ball_offset);
+
+		network_test.ball_offset = (real)ball_offset;
+
+		if (fields >= 1)
+			network_test.ball_time = (real)ball_time;
+		if (fields >= 2)
+			network_test.ball_shield = (real)ball_shield;
+	}
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
 	snprintf(network_test.saved_gametype, sizeof(network_test.saved_gametype), "%s",
 		config_string("debug.network_test_gametype"));
@@ -615,7 +638,7 @@ static void network_test_shoot(
 			real dy = target_object->object.position.y - unit->object.position.y;
 			real dz = target_object->object.position.z - unit->object.position.z;
 
-			if (dx * dx + dy * dy + dz * dz > 1.5f * 1.5f)
+			if (dx * dx + dy * dy + dz * dz > 1.6f * 1.6f)
 				continue;
 		}
 		/* (a shot reaches no further than its projectile flies, with a margin
@@ -930,6 +953,57 @@ static void network_test_pickup(
 	}
 }
 
+/* debug.network_test_ball: the host's first local player takes a ball in hand
+(a ball pickup every machine sees; debug.network_test_shoot then has it strike
+the first other player with the ball's melee), and the last other player's
+shields are set, for tests of BALL MELEE */
+static void network_test_ball(
+	void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	struct player_datum *first = NULL;
+	struct player_datum *last = NULL;
+	struct object_iterator weapons;
+
+	data_iterator_new(&iterator, player_data);
+	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		if (player->unit_index == NONE)
+			continue;
+		if (!first && player->local_player_index != NONE)
+			first = player;
+		else
+			last = player;
+	}
+	if (!first || !last)
+		return;
+	object_iterator_new(&weapons, _object_mask_weapon, 0);
+	while (object_iterator_next(&weapons))
+	{
+		if (object_get(weapons.index)->object.parent_object_index == NONE && weapon_is_flag(weapons.index) &&
+			unit_add_weapon_to_inventory(first->unit_index, weapons.index, TRUE))
+		{
+			platform_log("network test: the first player takes the ball (%lx) at tick %ld", weapons.index,
+				game_time_get());
+			/* (and the last other player beside it, within a blow's reach) */
+			{
+				real_point3d position = object_get(first->unit_index)->object.position;
+
+				position.x += network_test.ball_offset;
+				object_set_position(last->unit_index, &position, NULL, NULL);
+			}
+			if (network_test.ball_shield > 0.0f)
+			{
+				object_get(last->unit_index)->object.shield_vitality = network_test.ball_shield;
+				platform_log("network test: the last player's shields set to %g", (double)network_test.ball_shield);
+			}
+			network_test.ball_done = TRUE;
+			return;
+		}
+	}
+}
+
 /* debug.network_test_damage: "seconds:scale,seconds:scale ...": at that game
 time the host's first player is hit by its weapon's bullet, its damage
 multiplied by the scale (a small one only the shields feel); every change of
@@ -1031,6 +1105,7 @@ void network_test_update(
 		{
 			/* (a new game: the script and the change log start over) */
 			network_test.damage_done = 0;
+			network_test.ball_done = FALSE;
 			network_test.damage_logged_time = 0;
 			network_test.damage_last[0] = network_test.damage_last[1] = network_test.damage_last[2] = -1.0f;
 		}
@@ -1058,6 +1133,11 @@ void network_test_update(
 			long vehicle_time = (long)(network_test.vehicle_time * TICKS_PER_SECOND);
 
 			network_test_gather(network_test.vehicle_time > 0.0f && game_time_get() >= vehicle_time - 2 * TICKS_PER_SECOND);
+		}
+		if (network_test.mode == _network_test_host && network_test.ball_time > 0.0f && !network_test.ball_done &&
+			game_time_get() >= (long)(network_test.ball_time * TICKS_PER_SECOND))
+		{
+			network_test_ball();
 		}
 		if (network_test.pickup_time > 0.0f)
 		{

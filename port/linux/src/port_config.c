@@ -612,6 +612,12 @@ static const struct config_setting config_settings[] =
 		"An automated test host hits its first player with its weapon's bullet at\n"
 		"given game times: \"seconds:scale,seconds:scale\" (the damage times the\n"
 		"scale), and logs every change of their health and shields with its tick." },
+	{ "debug.network_test_ball", _config_string, "\"\"", "HALO_NETWORK_TEST_BALL", _environment_value,
+		_platform_all,
+		"An automated test host puts a ball in its first local player's hand at a game\n"
+		"time, once: \"seconds[:shield[:offset]]\": the last other player's shields\n"
+		"set (3 is an overshield) and stood offset (default 1.2) along x from the\n"
+		"first (they look along +x: negative faces the blow). For BALL MELEE tests." },
 	{ "debug.network_test_flags", _config_integer, "0", "HALO_NETWORK_TEST_FLAGS", _environment_value,
 		_platform_all,
 		"Bits an automated test host sets in its game variant's flags (the port's\n"

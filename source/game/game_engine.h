@@ -206,7 +206,12 @@ struct universal_variant
 	map's own (custom) starting equipment's grenades. AE COMP's 2, AE SWAT's
 	none */
 	byte starting_frags;
-	byte pad2;
+	/* port: was pad2 (zero in every builder): BALL MELEE (ARENA OPTIONS), 1
+	LETHAL: in an oddball game a melee blow by a player holding the ball
+	kills (game_engine_ball_melee_lethal); 0 or anything else, STOCK. Older
+	builds ignore it (the byte travels with the variant, the file's and the
+	network variant's sizes are unchanged) */
+	byte ball_melee;
 	unsigned long flags;
 	long goal_radar;
 	boolean odd_man_out;
@@ -1029,6 +1034,11 @@ extern struct game_engine *game_engine;
 real game_engine_get_damage_multiplier(
 	long damaging_player_index,
 	long damaged_player_index);
+
+/* port: BALL MELEE LETHAL: TRUE when the game is oddball with the option on
+and the player (a player datum index) holds the ball (objects/damage.c) */
+boolean game_engine_ball_melee_lethal(
+	long damaging_player_index);
 
 #ifdef HALO_64BIT
 long game_engine_did_player_win_default(

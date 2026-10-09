@@ -8224,10 +8224,10 @@ void game_engine_log_rules(
 				"shown by its display name" : "shown by its stored name");
 		}
 		/* (the AE gametype options, a line of their own so that the first
-		line's length never cuts them off: game_engine.h, bits 25-30 and
-		nhe_mode) */
+		line's length never cuts them off: game_engine.h, bits 25-30,
+		nhe_mode, starting_frags and ball_melee) */
 		error(_error_silent, "AE rules: timers level %s, spawn heat %s, objective %s, nhe extras %s, "
-			"drop secondary %s, nhe mode %s, starting frags %s",
+			"drop secondary %s, nhe mode %s, starting frags %s, ball melee %s",
 			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) && universal->goal_radar == _radar_nav_point ?
@@ -8237,7 +8237,8 @@ void game_engine_log_rules(
 			game_variant_nhe_mode_name(universal->nhe_mode),
 			universal->starting_frags == STARTING_GRENADES_NONE ? "none" :
 				universal->starting_frags == 1 ? "1" : universal->starting_frags == 2 ? "2" :
-				universal->starting_frags == 3 ? "3" : universal->starting_frags == 4 ? "4" : "0");
+				universal->starting_frags == 3 ? "3" : universal->starting_frags == 4 ? "4" : "0",
+			universal->ball_melee == 1 ? "lethal" : "stock");
 		/* (and the players' rules the lines above leave out) */
 		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "
 			"friend indicators %s, auto team balance %s, friendly fire penalty %d s",
