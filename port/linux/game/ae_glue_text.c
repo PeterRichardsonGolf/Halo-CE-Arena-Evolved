@@ -29,7 +29,7 @@ AE's own keys (Q, E, Tab, Page Up / Down) stand aside while typing
 #include "ae_widgets.h"
 
 /* port/linux/src (declared here as the game's other port units do) */
-void platform_text_field(int typing);
+void platform_text_field(int typing, int password);
 int platform_clipboard_get(char *text, int size);
 void platform_clipboard_set(char const *text);
 void platform_log(char const *format, ...);
@@ -48,14 +48,14 @@ void ae_glue_text_begin(
 	/* (as text_field_begin: what was typed before is not this field's) */
 	while (input_get_key(&key))
 		;
-	platform_text_field(TRUE);
+	platform_text_field(TRUE, FALSE);
 	typing = 1;
 }
 
 void ae_glue_text_end(
 	void)
 {
-	platform_text_field(FALSE);
+	platform_text_field(FALSE, FALSE);
 	typing = 0;
 }
 

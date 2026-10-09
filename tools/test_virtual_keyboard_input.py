@@ -44,6 +44,8 @@ static long tag_loaded(int group,const char *name) {return keyboard_available?0:
 /* (virtual_keyboard.c's checks the keyboard's tags and its font in the cache
 file loaded now: here, the stubbed tag lookup's answer) */
 static boolean virtual_keyboard_available(void) {return tag_loaded(VIRTUAL_KEYBOARD_TAG,"ui\\english")!=NONE;}
+/* (sdl_platform.c's: the system's on-screen keyboard, Steam's) */
+static void platform_screen_keyboard(int show,int password) {}
 static void event_manager_flush(void) {}
 static void ui_play_audio_feedback_sound(int sound) {}
 static void display_error(int code,int controller,int a,int b) {}
@@ -118,9 +120,9 @@ int main(int argc,char **argv) {
     if(test==2) virtual_keyboard_close();
     if(test==3) virtual_keyboard_dispose();
     if(test==5) {
-        platform_text_field(TRUE);virtual_keyboard_close();
+        platform_text_field(TRUE, FALSE);virtual_keyboard_close();
         assert(poll_key(key).wButtons&XINPUT_GAMEPAD_START);
-        platform_text_field(FALSE);
+        platform_text_field(FALSE, FALSE);
     }
     if(test==6) {
         name[0]=L'N';unique_name=0;action=1;virtual_keyboard_process();
