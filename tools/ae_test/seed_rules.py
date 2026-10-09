@@ -27,6 +27,7 @@ NHE_COMMON = {
     "friendly fire": "on", "shields": "on", "loadout": "category", "no map weapons": "off",
     "vehicle sets": "none (red none, blue none)",
     "timers level": "off", "spawn heat": "on", "objective": "normal", "nhe extras": "on", "drop secondary": "ce",
+    "ball melee": "stock",
     "lives": "0", "health%": "100%", "respawn growth": "0 ticks", "odd man out": "off", "friend indicators": "on",
     "auto team balance": "off", "friendly fire penalty": "0 s", "vehicles placed": "0",
 }
@@ -85,7 +86,7 @@ def fields(text):
         mm = re.search(rf", {re.escape(key)} ((?:[^,(]|\([^)]*\))*)", second)
         if mm: out[key] = mm[1].strip()
     m = re.search(r"AE rules: (.*)", text)
-    for key in ["timers level", "spawn heat", "objective", "nhe extras", "drop secondary", "nhe mode"]:
+    for key in ["timers level", "spawn heat", "objective", "nhe extras", "drop secondary", "nhe mode", "ball melee"]:
         mm = re.search(rf"(?:^|, ){re.escape(key)} ([^,]*)", m[1] if m else "")
         if mm: out[key] = mm[1].strip()
     m = re.search(r"player rules: (.*)", text)
@@ -104,7 +105,7 @@ AE = {"health": "halo 2", "fall damage": "off", "starting equipment": "generic",
       "pre-game countdown": "on", "friendly fire": "on", "shields": "on", "invisible": "off",
       "infinite grenades": "off", "no map weapons": "off", "nhe extras": "off", "drop secondary": "always",
       "lives": "0", "odd man out": "off", "friendly fire penalty": "0 s", "auto team balance": "off",
-      "spawn heat": "on", "nhe mode": "by vehicles"}
+      "spawn heat": "on", "nhe mode": "by vehicles", "ball melee": "stock"}
 CASUAL = dict(AE, **{"timers": "hud + waypoints", "timers level": "hud + waypoints", "training": "off",
                      "practice": "off", "time limit": "15 min", "radar players": "all", "objective": "normal",
                      "loadout": "pistol + assault rifle", "weapon set": "normal", "starting frags": "0"})
@@ -120,12 +121,12 @@ ROWS = {  # name: (fields, first-spawn weapons, frags at first spawn)
     "AE TEAM SLY": (dict(CASUAL, engine="slayer (teams)", **{"score to win": "50", "respawn": T(300), "suicide penalty": T(300), "vehicle set": "2"}), "pistol + assault rifle", 4),
     "AE CTF": (dict(CASUAL, engine="ctf (teams)", **{"score to win": "3", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "2", "goal radar": "nav points"}), "pistol + assault rifle", 4),
     "AE KING": (dict(CASUAL, engine="king (teams)", **{"score to win": "5", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "2", "goal radar": "nav points"}), "pistol + assault rifle", 4),
-    "AE FFA BALL": (dict(CASUAL, engine="oddball", **{"score to win": "5", "respawn": T(150), "suicide penalty": T(150), "vehicle set": "1", "goal radar": "nav points"}), "pistol + assault rifle", 4),
+    "AE FFA BALL": (dict(CASUAL, engine="oddball", **{"ball melee": "lethal", "score to win": "5", "respawn": T(150), "suicide penalty": T(150), "vehicle set": "1", "goal radar": "nav points"}), "pistol + assault rifle", 4),
     "AE 2V2 SLY": (dict(CASUAL, engine="slayer (teams)", **{"score to win": "25", "respawn": T(300), "suicide penalty": T(300), "vehicle set": "2"}), "pistol + assault rifle", 4),
     "AE 2V2 CTF": (dict(CASUAL, engine="ctf (teams)", **{"score to win": "3", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "2", "goal radar": "nav points"}), "pistol + assault rifle", 4),
     "AE 2V2 KING": (dict(CASUAL, engine="king (teams)", **{"score to win": "5", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "2", "goal radar": "nav points"}), "pistol + assault rifle", 4),
-    "AE 2V2 BALL": (dict(CASUAL, engine="oddball (teams)", **{"score to win": "5", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "1", "goal radar": "nav points"}), "pistol + assault rifle", 4),
-    "AE TEAM OB": (dict(CASUAL, engine="oddball (teams)", **{"score to win": "5", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "1", "goal radar": "nav points"}), "pistol + assault rifle", 4),
+    "AE 2V2 BALL": (dict(CASUAL, engine="oddball (teams)", **{"ball melee": "lethal", "score to win": "5", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "1", "goal radar": "nav points"}), "pistol + assault rifle", 4),
+    "AE TEAM OB": (dict(CASUAL, engine="oddball (teams)", **{"ball melee": "lethal", "score to win": "5", "respawn": T(300), "suicide penalty": T(150), "vehicle set": "1", "goal radar": "nav points"}), "pistol + assault rifle", 4),
     "AE PRACTICE": (dict(CASUAL, engine="slayer", **{"score to win": "500", "time limit": "none", "practice": "on", "respawn": T(0), "suicide penalty": T(300), "vehicle set": "0"}), "pistol + assault rifle", 4),
     "AE SNIPERS": (TSX(**{"score to win": "50", "radar players": "none", "weapon set": "sniping", "loadout": "sniper rifle + pistol"}), "sniper rifle + pistol", 4),
     "AE SHOTSNIP": (TSX(**{"score to win": "50", "radar players": "none", "no map weapons": "on", "loadout": "shotgun + sniper rifle"}), "shotgun + sniper rifle", 4),
@@ -138,7 +139,7 @@ ROWS = {  # name: (fields, first-spawn weapons, frags at first spawn)
     "AE COMP TS": (dict(COMP, engine="slayer (teams)", **{"score to win": "50", "time limit": "none", "objective": "normal"}), "pistol + assault rifle", 2),
     "AE COMP CTF": (dict(COMP, engine="ctf (teams)", **{"score to win": "3", "time limit": "15 min", "goal radar": "nav points", "objective": "line of sight"}), "pistol + assault rifle", 2),
     "AE COMP KOH": (dict(COMP, engine="king (teams)", **{"score to win": "5", "time limit": "15 min", "goal radar": "nav points", "objective": "line of sight"}), "pistol + assault rifle", 2),
-    "AE COMP OB": (dict(COMP, engine="oddball (teams)", **{"score to win": "5", "time limit": "15 min", "goal radar": "nav points", "objective": "line of sight"}), "pistol + assault rifle", 2),
+    "AE COMP OB": (dict(COMP, engine="oddball (teams)", **{"ball melee": "lethal", "score to win": "5", "time limit": "15 min", "goal radar": "nav points", "objective": "line of sight"}), "pistol + assault rifle", 2),
 }
 # the NHE set (Task 11's table, NHE_ROWS above), the auto balance test hook on in team ones (they start that way)
 for name, (engine, score, resp, suic, radar, goal, weapons, mode, extra) in NHE_ROWS.items():
@@ -149,6 +150,7 @@ for name, (engine, score, resp, suic, radar, goal, weapons, mode, extra) in NHE_
     if "teams" in engine:
         want["auto team balance"] = "on"
     ROWS[name] = (want, None, None)
+# revision 7: BALL MELEE LETHAL on AE FFA BALL, AE TEAM OB, AE 2V2 BALL and AE COMP OB (the other seeds STOCK)
 # revision 6: AE VANILLA / AE POWERUPS on the casual set's values with their NHE modes
 for n, mode in (("AE VANILLA", "vanilla"), ("AE POWERUPS", "nhe & powerups")):
     ROWS[n] = (dict(CASUAL, engine="slayer (teams)", **{"score to win": "50", "respawn": T(300), "suicide penalty": T(300), "vehicle set": "2", "nhe mode": mode}), "pistol + assault rifle", 4)

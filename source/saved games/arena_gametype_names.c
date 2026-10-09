@@ -70,9 +70,11 @@ static struct arena_gametype_name const arena_gametype_names[] =
 	{ "AE KING", "TEAM AE KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
 		"Team King of the Hill on AE's rules, with power item timers and waypoints and the motion tracker." },
 	{ "AE FFA BALL", "FFA AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, FALSE, FALSE,
-		"Free for all Oddball on AE's rules, with power item timers and waypoints and the motion tracker." },
+		"Free for all Oddball on AE's rules, with power item timers and waypoints and the motion tracker. "
+		"The ball carrier's melee kills in one hit." },
 	{ "AE TEAM OB", "TEAM AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
-		"Team Oddball on AE's rules, with power item timers and waypoints and the motion tracker." },
+		"Team Oddball on AE's rules, with power item timers and waypoints and the motion tracker. "
+		"The ball carrier's melee kills in one hit." },
 	{ "AE 2V2 SLY", "TEAM AE 2V2 SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
 		"Team slayer for two against two (split screen too), to 25 kills, on AE's rules." },
 	{ "AE 2V2 CTF", "TEAM AE 2V2 CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
@@ -80,7 +82,8 @@ static struct arena_gametype_name const arena_gametype_names[] =
 	{ "AE 2V2 KING", "TEAM AE 2V2 KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
 		"Team King of the Hill for two against two (split screen too), on AE's rules." },
 	{ "AE 2V2 BALL", "TEAM AE 2V2 ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
-		"Team Oddball for two against two (split screen too), on AE's rules." },
+		"Team Oddball for two against two (split screen too), on AE's rules. The ball carrier's melee kills in "
+		"one hit." },
 	{ "AE PRACTICE", "FFA AE PRACTICE", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
 		"Free for all practice: every weapon and powerup respawns every 30 seconds; 500 kills to win, no time limit, "
 		"the map's vehicles." },
@@ -119,7 +122,7 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"no vehicles; the hill shows only in line of sight." },
 	{ "AE COMP OB", "TEAM AE COMP ODDBALL", _arena_gametype_set_ae_comp, game_engine_oddball, TRUE, FALSE,
 		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns, 2 frags, no motion tracker, no "
-		"vehicles; the ball shows only in line of sight." },
+		"vehicles; the ball shows only in line of sight. The ball carrier's melee kills in one hit." },
 
 	/* Halo 1: NHE's 23 gametypes, in its own order (010 to 230) */
 	{ "TS 50", "TEAM NHE SLAYER 50", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,

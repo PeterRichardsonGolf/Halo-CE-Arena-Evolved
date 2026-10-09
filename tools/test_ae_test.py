@@ -323,19 +323,21 @@ class SeedCompare(unittest.TestCase):
         derived from a17102e2's AE FFA SLAY / AE FFA BALL under their old names), revision 4
         golden_seeds_rev3_083c49e9.json's (a root seeded at revision 3 by 083c49e9), revision 5
         golden_seeds_rev4_da271472.json's (a root seeded at revision 4 by da271472's tree), revision 6
-        golden_seeds_rev5_736ce3a7.json's (a root seeded at revision 5 by 736ce3a7's tree)"""
+        golden_seeds_rev5_736ce3a7.json's (a root seeded at revision 5 by 736ce3a7's tree), revision 7
+        golden_seeds_rev6_519ce8a3.json's (a root seeded at revision 6 by 519ce8a3's tree)"""
         import re
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
         table = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
         found = re.findall(r'\.revision = (\d+),\s*\.old_row = \{ \.name = "([^"]+)".*?\.old_block_hash = "([0-9a-f]{40})"',
                            table, re.S)
-        self.assertGreaterEqual(len(found), 37)
+        self.assertGreaterEqual(len(found), 41)
         golden = json.loads((HERE / "golden_seeds_a17102e2.json").read_text())
         golden_rev3 = json.loads((HERE / "golden_seeds_rev3_083c49e9.json").read_text())
         golden_rev4 = json.loads((HERE / "golden_seeds_rev4_da271472.json").read_text())
         golden_rev5 = json.loads((HERE / "golden_seeds_rev5_736ce3a7.json").read_text())
+        golden_rev6 = json.loads((HERE / "golden_seeds_rev6_519ce8a3.json").read_text())
         for revision, name, digest in found:
-            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5}.get(int(revision), golden)
+            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6}.get(int(revision), golden)
             self.assertEqual(g[name]["block"], digest, name)
 
 
@@ -533,8 +535,13 @@ class SeedRules(unittest.TestCase):
                 "radar players none, goal radar motion tracker, shields on, invisible off, infinite grenades off, "
                 "weapon set normal, loadout pistol + assault rifle, no map weapons off, vehicle sets none (red none, blue none)\n"
                 "x  AE rules: timers level line of sight, spawn heat on, objective normal, nhe extras off, "
-                "drop secondary always, nhe mode by vehicles, starting frags 2\n")
+                "drop secondary always, nhe mode by vehicles, starting frags 2, ball melee lethal\n")
         f = seed_rules.fields(text)
+        self.assertEqual(f["ball melee"], "lethal")
+        # (revision 7: LETHAL on the four AE oddball seeds, STOCK on every other)
+        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB"}
+        for name, (want, _, _) in seed_rules.ROWS.items():
+            self.assertEqual(want["ball melee"], "lethal" if name in lethal else "stock", name)
         self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),
                          ("slayer (teams)", "150 ticks (5 s)", "line of sight", "pistol + assault rifle", "always"))
 

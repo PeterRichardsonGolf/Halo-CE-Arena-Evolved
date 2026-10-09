@@ -66,7 +66,7 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations) */
-	ARENA_GAMETYPES_REVISION = 6,
+	ARENA_GAMETYPES_REVISION = 7,
 	/* a memory unit holds at most 100 saved games (saved_game_files.c):
 	the self-check warns past this many */
 	ARENA_GAMETYPES_SAVED_WARNING = 90,
@@ -259,6 +259,10 @@ DROP SECONDARY ALWAYS) and its objective games' (objective in sight)) */
 /* (revision 6's AE VANILLA and AE POWERUPS: the casual set's, as
 ARENA_REV5_CASUAL_FLAGS) */
 
+/* BALL MELEE LETHAL (universal_variant.ball_melee, revision 7): the AE
+oddball gametypes' (the NHE ones keep STOCK) */
+#define ARENA_BALL_MELEE_LETHAL 1
+
 /* the seed fields whose 0 means the stock gametype's (or AE's default):
 a value is given as value + 1 */
 #define ARENA_SET(value) ((value) + 1)
@@ -322,6 +326,9 @@ struct arena_gametype
 	/* the frag grenades each player starts with (universal_variant.
 	starting_frags; 0 the game's rule) */
 	byte starting_frags;
+	/* BALL MELEE (universal_variant.ball_melee; revision 7): 1 LETHAL, 0
+	STOCK */
+	byte ball_melee;
 	/* anything else, after the rest (a shipped one is never edited: a
 	changed one is a new function); NULL for none */
 	void (*adjust)(struct game_variant *variant, struct game_variant_options *options);
@@ -376,7 +383,7 @@ static struct arena_gametype const arena_gametypes[] =
 		.goal_radar = ARENA_GOAL_NAV_POINTS },
 	{ "AE FFA BALL", build_game_variant_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
-		.goal_radar = ARENA_GOAL_NAV_POINTS },
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL },
 	/* the casual set for two against two (split-screen on one machine):
 	the same rules; the host's player limit (4) is a server setting, not
 	the gametype's */
@@ -389,13 +396,13 @@ static struct arena_gametype const arena_gametypes[] =
 		.goal_radar = ARENA_GOAL_NAV_POINTS },
 	{ "AE 2V2 BALL", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
-		.goal_radar = ARENA_GOAL_NAV_POINTS },
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL },
 	/* the casual set's later ones (ARENA_LATER_FLAGS: TIMERS HUD +
 	WAYPOINTS, DROP SECONDARY ALWAYS), friendly fire on, the stock
 	respawns. Team Oddball, its objective shown by nav points */
 	{ "AE TEAM OB", build_game_variant_team_oddball, ARENA_LATER_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
-		.goal_radar = ARENA_GOAL_NAV_POINTS },
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL },
 	/* PRACTICE: free for all slayer with PRACTICE MODE (every weapon and
 	powerup each 30 seconds), no practical score limit, no time limit, the
 	map's vehicles */
@@ -459,7 +466,8 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_VEHICLES_NONE, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS },
 	{ "AE COMP OB", build_game_variant_team_oddball, ARENA_COMP_OBJECTIVE_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
-		ARENA_VEHICLES_NONE, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS },
+		ARENA_VEHICLES_NONE, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS,
+		.ball_melee = ARENA_BALL_MELEE_LETHAL },
 	/* Halo 1: NHE's own 23 gametypes (revision 4), in NHE's order: on its
 	maps (mods/NHE) each plays its NHE MODE; on other maps no vehicles.
 	Classic health, fall damage, shields, infinite lives, NHE_SET_FLAGS, the
@@ -958,6 +966,49 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.weapon_set = ARENA_SET(1), .loadout_primary = ARENA_SET(3), .loadout_secondary = ARENA_SET(0),
 			.starting_frags = 0xFF },
 		.old_block_hash = "55b0a0eee3f300a6789734e71851be8b4ac930df" },
+	/* revision 7: BALL MELEE LETHAL on the AE oddball gametypes (owner,
+	2026-10-08): value updates in place, under the same names. The old rows
+	are revision 6's seeds */
+	{ .revision = 7,
+		.old_row = { .name = "AE FFA BALL", .build = build_game_variant_oddball, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1) },
+		.new_row = { .name = "AE FFA BALL", .build = build_game_variant_oddball, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1 },
+		.old_block_hash = "86823ce86897b22dea5172ccbbaeed2696b60c45" },
+	{ .revision = 7,
+		.old_row = { .name = "AE TEAM OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1) },
+		.new_row = { .name = "AE TEAM OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1 },
+		.old_block_hash = "d4debbea4634ac09edea79335cf92d63f76a5fe6" },
+	{ .revision = 7,
+		.old_row = { .name = "AE 2V2 BALL", .build = build_game_variant_team_oddball, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1) },
+		.new_row = { .name = "AE 2V2 BALL", .build = build_game_variant_team_oddball, .flags = ARENA_REV5_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1 },
+		.old_block_hash = "5e81e8eac8afedb0f37fc959760c4b873e0fe067" },
+	{ .revision = 7,
+		.old_row = { .name = "AE COMP OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV5_COMP_OBJECTIVE_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .starting_frags = 2 },
+		.new_row = { .name = "AE COMP OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV5_COMP_OBJECTIVE_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = 150, .suicide_penalty = 150,
+			.radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .starting_frags = 2, .ball_melee = 1 },
+		.old_block_hash = "dc0fa67a5a5a21696160da34719edc16a32f670a" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -2488,6 +2539,8 @@ static void arena_gametype_build(
 		variant.universal_variant.nhe_mode = gametype->nhe_mode;
 	if (gametype->starting_frags)
 		variant.universal_variant.starting_frags = gametype->starting_frags;
+	if (gametype->ball_melee)
+		variant.universal_variant.ball_melee = gametype->ball_melee;
 	/* (the PC options a new custom gametype gets: both teams' vehicle sets
 	the variant's, RADAR PLAYERS from its motion sensor bit) */
 	game_variant_options_default(&variant, &options);
