@@ -1,6 +1,19 @@
-/* ae_ui.c: Arena Evolved menus, the UI core (see ae_ui.h). No engine includes. */
+/* ae_ui.c: Arena Evolved menus, the UI core (see ae_ui.h). No engine includes.
+
+Transitions (spec 7, ae_motion.h): pushing a screen slides it in from the right over the old one, which slides left
+and fades (200 ms); pushing a popover fades and scales it in (150 ms) over the screens under it, which draw as they
+are. Closing mirrors them (the owner's decision, superseding preflight P7): a popped screen's leave is called and it
+is off the stack at once, so input goes to the screen beneath it, but its last picture (a ghost: the screen as it
+was, drawn after its leave, taking no hits) slides out to the right and fades while the revealed screen slides in
+from the left (200 ms); a popped popover's ghost fades and scales out (100 ms). Once a slide is over, the screens
+under the top screen are not drawn (P7); popovers draw over the screens under them. One transition at a time: a new
+push or pop finishes the last, and so does any event or pointer that reaches a screen (the press acts on the screen
+now on top, the ghost gone: nothing waits on motion). REDUCE MOTION makes them instant. */
 
 #include <stddef.h>
+#include <string.h>
+#include "ae_motion.h"
+#include "ae_sound.h"
 #include "ae_ui.h"
 
 /* key repeat timings (spec "Input, focus, motion") */
@@ -17,16 +30,110 @@ enum
 static struct ae_screen stack[AE_MAXIMUM_SCREENS];
 static int depth;
 static enum ae_device last_device = AE_DEVICE_XBOX;
+static ae_ui_before_draw before_draw;
+
+enum { TRANSITION_NONE, TRANSITION_SCREEN, TRANSITION_DIALOG, TRANSITION_CLOSE };
+/* the running transition: its screen (SCREEN: the one sliding in, the top screen; DIALOG: the popover), direction
+(SCREEN: 1 forward, -1 back) and progress 0 -> 1; a close's ghost (the popped screen, drawn as it goes: SCREEN back,
+or CLOSE for a popover) */
+static struct { int kind, direction, index; struct ae_motion motion; struct ae_screen ghost; int has_ghost; }
+	transition;
+/* while a screen draws: whether it is a ghost, and the alpha and scale its motion gives it */
+static int drawing_ghost;
+static float drawing_alpha = 1.0f, drawing_scale = 1.0f;
+
+static void transition_start(int kind, int direction, int index, unsigned short duration_ms)
+{
+	transition.kind = kind;
+	transition.direction = direction;
+	transition.index = index;
+	transition.has_ghost = 0;
+	transition.motion.duration = 0;
+	ae_motion_start(&transition.motion, 0.0f, 1.0f, duration_ms);
+}
+
+/* the transition, if one is still running (one over is forgotten) */
+static int transition_running(void)
+{
+	if (transition.kind != TRANSITION_NONE && !ae_motion_running(&transition.motion))
+		transition.kind = TRANSITION_NONE;
+	return transition.kind != TRANSITION_NONE;
+}
+
+static void transition_finish(void)
+{
+	transition.kind = TRANSITION_NONE;
+	transition.has_ghost = 0;
+}
+
+int ae_ui_drawing_ghost(void)
+{
+	return drawing_ghost;
+}
+
+float ae_ui_drawing_alpha(void)
+{
+	return drawing_alpha;
+}
+
+float ae_ui_drawing_scale(void)
+{
+	return drawing_scale;
+}
+
+/* the topmost screen that isn't a popover below index (index excluded), or -1 */
+static int screen_below(int index)
+{
+	while (--index >= 0)
+		if (!stack[index].screen_class->popover)
+			return index;
+	return -1;
+}
+
+enum { RESET_HOOKS = 4 };
+static void (*reset_hooks[RESET_HOOKS])(void);
+
+int ae_ui_add_reset_hook(void (*hook)(void))
+{
+	int index;
+
+	for (index = 0; index < RESET_HOOKS; index++)
+		if (reset_hooks[index] == hook)
+			return 1;
+	for (index = 0; index < RESET_HOOKS; index++)
+		if (!reset_hooks[index])
+		{
+			reset_hooks[index] = hook;
+			return 1;
+		}
+	return 0;
+}
 
 void ae_ui_reset(void)
 {
+	int index;
+
 	depth = 0;
 	last_device = AE_DEVICE_XBOX;
+	transition_finish();
+	for (index = 0; index < RESET_HOOKS; index++)
+		if (reset_hooks[index])
+			reset_hooks[index]();
 }
 
 int ae_ui_depth(void)
 {
 	return depth;
+}
+
+int ae_ui_holds(void const *data)
+{
+	int index;
+
+	for (index = 0; index < depth; index++)
+		if (stack[index].data == data)
+			return 1;
+	return 0;
 }
 
 struct ae_screen *ae_ui_top(void)
@@ -45,11 +152,16 @@ int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *da
 
 	if (!screen_class || depth >= AE_MAXIMUM_SCREENS)
 		return 0;
+	transition_finish();
 	screen = &stack[depth++];
 	screen->screen_class = screen_class;
 	screen->owner = owner;
 	screen->focus = 0;
 	screen->data = data;
+	if (screen_class->popover)
+		transition_start(TRANSITION_DIALOG, 1, depth - 1, AE_MOTION_DIALOG_OPEN_MS);
+	else
+		transition_start(TRANSITION_SCREEN, 1, depth - 1, AE_MOTION_SCREEN_MS);
 	if (screen_class->enter)
 		screen_class->enter(screen);
 	return 1;
@@ -58,12 +170,53 @@ int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *da
 void ae_ui_pop(void)
 {
 	struct ae_screen *screen = ae_ui_top();
+	struct ae_screen ghost;
+	int revealed;
 
 	if (!screen)
 		return;
+	transition_finish();
+	ghost = *screen;
 	if (screen->screen_class->leave)
 		screen->screen_class->leave(screen);
 	depth--;
+	/* (off the stack at once: input goes to the screen beneath; its ghost goes out: a screen's slides right and fades
+	as the screen it reveals slides in from the left, a popover's fades and scales out) */
+	revealed = screen_below(depth);
+	if (!ghost.screen_class->popover && revealed >= 0)
+		transition_start(TRANSITION_SCREEN, -1, revealed, AE_MOTION_SCREEN_MS);
+	else if (ghost.screen_class->popover && depth > 0)
+		transition_start(TRANSITION_CLOSE, -1, depth, AE_MOTION_DIALOG_CLOSE_MS);
+	if (transition_running())
+	{
+		transition.ghost = ghost;
+		transition.has_ghost = 1;
+	}
+}
+
+int ae_ui_remove(void const *data)
+{
+	int index;
+
+	for (index = depth - 1; index >= 0; index--)
+		if (stack[index].data == data)
+			break;
+	if (index < 0)
+		return 0;
+	/* (the top: popped, but instant: no ghost, so the caller may free or reuse its data at once) */
+	if (index == depth - 1)
+	{
+		ae_ui_pop();
+		transition_finish();
+		return 1;
+	}
+	/* (under others: gone at once, nothing moves) */
+	transition_finish();
+	if (stack[index].screen_class->leave)
+		stack[index].screen_class->leave(&stack[index]);
+	memmove(&stack[index], &stack[index + 1], sizeof(stack[0]) * (size_t)(depth - index - 1));
+	depth--;
+	return 1;
 }
 
 void ae_ui_dispatch(struct ae_event const *event)
@@ -76,13 +229,17 @@ void ae_ui_dispatch(struct ae_event const *event)
 	owned = screen->owner == AE_OWNER_ANY || screen->owner == event->player;
 	if (!owned && !(event->action == AE_ACTION_START && screen->screen_class->start_from_anyone))
 		return;
-	/* only input that reaches a screen picks the prompts' glyphs */
+	/* only input that reaches a screen picks the prompts' glyphs; it lands on the new screen: the transition ends */
 	last_device = (enum ae_device)event->device;
+	transition_finish();
 	if (screen->screen_class->handle && screen->screen_class->handle(screen, event))
 		return;
 	/* pop only the screen that saw the BACK (handle may have changed the stack) */
 	if (event->action == AE_ACTION_BACK && owned && ae_ui_top() == screen)
+	{
+		ae_sound_request(AE_SOUND_BACK, 0);
 		ae_ui_pop();
+	}
 }
 
 void ae_ui_dispatch_pointer(struct ae_pointer const *pointer)
@@ -91,6 +248,7 @@ void ae_ui_dispatch_pointer(struct ae_pointer const *pointer)
 
 	if (!screen || !pointer || (screen->owner != AE_OWNER_ANY && screen->owner != pointer->player))
 		return;
+	transition_finish();
 	/* (a touch keeps the prompts: a touchscreen has no keys to show) */
 	if (!pointer->touch && (pointer->moved || pointer->left_clicks || pointer->right_clicks || pointer->wheel_steps))
 		last_device = AE_DEVICE_KEYBOARD_MOUSE;
@@ -98,13 +256,93 @@ void ae_ui_dispatch_pointer(struct ae_pointer const *pointer)
 		screen->screen_class->pointer(screen, pointer);
 }
 
+void ae_ui_set_before_draw(ae_ui_before_draw before)
+{
+	before_draw = before;
+}
+
 void ae_ui_draw(void)
 {
-	int index;
+	/* the top screen (and the popovers over it draw too); during a forward slide, the old screen and its popovers
+	under it */
+	int base = screen_below(depth), under = -1, index;
+	int running = transition_running();
+	float t = running ? ae_motion_progress(&transition.motion) : 1.0f;
+	float old_x = 0.0f, old_alpha = 1.0f, new_x = 0.0f, new_alpha = 1.0f, scrim, scale = 1.0f, alpha = 1.0f;
 
+	if (base < 0)
+		base = 0;
+	if (running && transition.kind == TRANSITION_SCREEN)
+	{
+		ae_motion_screen(t, transition.direction, &old_x, &old_alpha, &new_x, &new_alpha);
+		if (transition.direction > 0 && transition.index == base && base > 0)
+		{
+			under = screen_below(base);
+			if (under < 0)
+				under = 0;
+		}
+	}
+	else if (running && transition.kind == TRANSITION_DIALOG)
+		ae_motion_dialog(t, 1, &scrim, &scale, &alpha);
 	for (index = 0; index < depth; index++)
-		if (stack[index].screen_class->draw)
-			stack[index].screen_class->draw(&stack[index]);
+	{
+		float offset_x_u = 0.0f, screen_alpha = 1.0f, screen_scale = 1.0f;
+
+		if (index < base)
+		{
+			/* (under the top screen: drawn only as the old screen of a forward slide) */
+			if (under < 0 || index < under)
+				continue;
+			offset_x_u = old_x;
+			screen_alpha = old_alpha;
+		}
+		else if (running && transition.index == index)
+		{
+			if (transition.kind == TRANSITION_SCREEN)
+			{
+				offset_x_u = new_x;
+				screen_alpha = new_alpha;
+			}
+			else
+			{
+				screen_alpha = alpha;
+				screen_scale = scale;
+			}
+		}
+		if (!stack[index].screen_class->draw)
+			continue;
+		if (before_draw)
+			before_draw(&stack[index], index, offset_x_u, screen_alpha, screen_scale);
+		drawing_alpha = screen_alpha;
+		drawing_scale = screen_scale;
+		stack[index].screen_class->draw(&stack[index]);
+	}
+	/* a close's ghost over them: a screen's out to the right, fading; a popover's fading and scaling out */
+	if (running && transition.has_ghost && transition.ghost.screen_class->draw)
+	{
+		float offset_x_u = 0.0f, ghost_alpha = old_alpha, ghost_scale = 1.0f;
+
+		if (transition.kind == TRANSITION_SCREEN)
+			offset_x_u = old_x;
+		else
+			ae_motion_dialog(t, 0, &scrim, &ghost_scale, &ghost_alpha);
+		if (before_draw)
+			before_draw(&transition.ghost, depth, offset_x_u, ghost_alpha, ghost_scale);
+		drawing_ghost = 1;
+		drawing_alpha = ghost_alpha;
+		drawing_scale = ghost_scale;
+		transition.ghost.screen_class->draw(&transition.ghost);
+		drawing_ghost = 0;
+	}
+	drawing_alpha = drawing_scale = 1.0f;
+}
+
+void ae_ui_update(void)
+{
+	struct ae_screen *screen = ae_ui_top();
+
+	if (screen && screen->screen_class->update)
+		screen->screen_class->update(screen);
 }
 
 int ae_repeat_update(struct ae_repeat *repeat, int held, unsigned long now_ms)

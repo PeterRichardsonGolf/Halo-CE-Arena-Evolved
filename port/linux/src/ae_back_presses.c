@@ -13,6 +13,16 @@ Present.
 
 #include "ae_platform.h"
 
+int ae_platform_tab_press_kind(int key_repeat, int shift, int alt, int gui)
+{
+	/* (the key's own repeats are AE's repeat's business; Alt+Tab and Super+Tab are the desktop's) */
+	if (key_repeat)
+		return AE_TAB_PRESS_NONE;
+	if (alt || gui)
+		return AE_TAB_PRESS_IGNORED;
+	return shift ? AE_TAB_PRESS_BACKWARD : AE_TAB_PRESS_FORWARD;
+}
+
 static int back_presses_armed;
 static int back_presses;
 

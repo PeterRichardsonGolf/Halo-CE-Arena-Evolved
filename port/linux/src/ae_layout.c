@@ -76,3 +76,32 @@ void ae_layout_to_menu_point(float x, float y, int screen_width, float layout_wi
 	*menu_x = x * width / layout_width - (width - (float)MENU_WIDTH) * 0.5f;
 	*menu_y = y * (float)MENU_HEIGHT / (float)AE_LAYOUT_HEIGHT;
 }
+
+short ae_prompts_fit(float const *widths, short const *rank, short count, float gap, float room, unsigned char *keep)
+{
+	short index, kept = 0;
+	float total = 0.0f;
+
+	for (index = 0; index < count; index++)
+	{
+		keep[index] = 1;
+		total += widths[index] + (kept > 0 ? gap : 0.0f);
+		kept++;
+	}
+	/* (the lowest priority goes first, the later of equals) */
+	while (kept > 0 && total > room)
+	{
+		short drop = -1, other = 0;
+
+		for (index = 0; index < count; index++)
+			if (keep[index] && (drop < 0 || rank[index] >= rank[drop]))
+				drop = index;
+		keep[drop] = 0;
+		kept--;
+		total = 0.0f;
+		for (index = 0; index < count; index++)
+			if (keep[index])
+				total += widths[index] + (other++ > 0 ? gap : 0.0f);
+	}
+	return kept;
+}

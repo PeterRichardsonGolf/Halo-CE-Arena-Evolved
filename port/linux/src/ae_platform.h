@@ -36,8 +36,28 @@ starts over); disarming drops what was counted */
 void ae_platform_count_back_press(void);
 void ae_platform_arm_back_presses(int armed);
 int ae_platform_take_back_presses(void);
+/* Tab's presses for AE's menus (Tab and Shift+Tab step the focus): key downs, not the key's own repeats, counted as
+SDL queues them (an event watch, ae_platform.c), so a Tab tapped and let go of within one frame still counts, where
+the held keys (ae_platform_keys) never see it. forward: without Shift, backward: Shift held at the press. Counted only
+while armed (the game's side arms it with the back presses, while an AE screen is open; installed at the first arming,
+never with display.arena_menus off); disarming drops the count. Taking them starts the count over. None on the
+dedicated server and Android (no SDL event watch there) */
+void ae_platform_arm_tab_presses(int armed);
+/* what a Tab key down counts as (ae_back_presses.c, pure): nothing for the key's own repeat; with Alt or the GUI key
+held (Alt+Tab and Super+Tab switch windows) a press that steps nothing (AE_TAB_PRESS_IGNORED: its keyboard Y is still
+dropped, ae_input_key_translate); else AE_TAB_PRESS_FORWARD, or AE_TAB_PRESS_BACKWARD with Shift */
+enum { AE_TAB_PRESS_NONE, AE_TAB_PRESS_FORWARD, AE_TAB_PRESS_BACKWARD, AE_TAB_PRESS_IGNORED };
+int ae_platform_tab_press_kind(int key_repeat, int shift, int alt, int gui);
+/* the presses since the last take, each kind (ignored: with Alt or the GUI key) */
+void ae_platform_take_tab_presses(int *forward, int *backward, int *ignored);
+/* whether the mouse's left button is held now (a scrollbar thumb's drag; the menus' pointer reports presses only);
+0 on the dedicated server and Android */
+int ae_platform_mouse_left_held(void);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */
 int ae_platform_input_scheme(void);
+/* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
+as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
+void ae_platform_test_keystroke(int scancode);
 
 #endif

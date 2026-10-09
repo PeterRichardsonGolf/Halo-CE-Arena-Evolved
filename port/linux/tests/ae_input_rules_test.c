@@ -24,6 +24,31 @@ int main(void)
 	CHECK(ae_input_player_of_controller(-1, none) == AE_PLAYER_NONE);
 	CHECK(ae_input_player_of_controller(4, none) == AE_PLAYER_NONE);
 
+	/* I1: typing a name ends with Enter while Q / E / Page Down / Tab is still held: no tab switch, no page, no step */
+	{
+		int keyset[4] = { AE_KEY_Q, AE_KEY_E, AE_KEY_PAGE_DOWN, AE_KEY_TAB };
+		int i, k, previous, down, up, stored = 0;
+
+		for (i = 0; i < 4; i++)
+		{
+			/* a poll while typing (the key goes down during the typing), then the first poll after it */
+			ae_input_poll_keys(keyset[i], 1, stored, 0, &k, &previous);
+			CHECK(k == 0 && ae_input_key_actions(k, previous, 0, actions, 8) == 0);
+			stored = keyset[i];
+			ae_input_poll_keys(keyset[i], 0, stored, 0, &k, &previous);
+			CHECK(k == keyset[i] && previous == keyset[i]);
+			CHECK(ae_input_key_actions(k, previous, 0, actions, 8) == 0);
+			ae_input_tab_steps(0, 0, k, previous, &down, &up);
+			CHECK(down == 0 && up == 0);
+			stored = 0;
+		}
+		/* a real press after typing still acts; an opening poll takes what is held as held */
+		ae_input_poll_keys(AE_KEY_E, 0, 0, 0, &k, &previous);
+		CHECK(ae_input_key_actions(k, previous, 0, actions, 8) == 1 && actions[0] == AE_ACTION_TAB_NEXT);
+		ae_input_poll_keys(AE_KEY_E, 0, 0, 1, &k, &previous);
+		CHECK(ae_input_key_actions(k, previous, 0, actions, 8) == 0);
+	}
+
 	/* Tab steps down, Shift+Tab up; Shift alone nothing */
 	ae_input_key_directions(AE_KEY_TAB, held);
 	CHECK(!held[0] && held[1] && !held[2] && !held[3]);
@@ -49,16 +74,73 @@ int main(void)
 	CHECK(ae_input_key_actions(AE_KEY_TAB | AE_KEY_SHIFT, 0, 0, actions, 8) == 0); /* Tab is a direction */
 
 	/* the game's menu-key mapping's X (E) and Y (Tab) are dropped while those keys are held */
-	CHECK(ae_input_key_translate(AE_KEY_E, AE_ACTION_X, 1) == AE_ACTION_NONE);
-	CHECK(ae_input_key_translate(0, AE_ACTION_X, 1) == AE_ACTION_X);
-	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_ACTION_Y, 1) == AE_ACTION_NONE);
-	CHECK(ae_input_key_translate(AE_KEY_TAB, AE_ACTION_X, 1) == AE_ACTION_X);
-	CHECK(ae_input_key_translate(AE_KEY_E | AE_KEY_TAB, AE_ACTION_ACCEPT, 1) == AE_ACTION_ACCEPT);
-	/* a Tab tapped and let go of between two polls: not held, but its Y comes from the keyboard: Tab's step */
-	CHECK(ae_input_key_translate(0, AE_ACTION_Y, 1) == AE_ACTION_DOWN);
-	CHECK(ae_input_key_translate(AE_KEY_SHIFT, AE_ACTION_Y, 1) == AE_ACTION_UP);
-	/* a pad's Y is Y */
-	CHECK(ae_input_key_translate(0, AE_ACTION_Y, 0) == AE_ACTION_Y);
+	CHECK(ae_input_key_translate(AE_KEY_E, 0, AE_ACTION_X, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(0, 0, AE_ACTION_X, 1) == AE_ACTION_X);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, 0, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, 1, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_TAB, 0, AE_ACTION_X, 1) == AE_ACTION_X);
+	CHECK(ae_input_key_translate(AE_KEY_E | AE_KEY_TAB, 0, AE_ACTION_ACCEPT, 1) == AE_ACTION_ACCEPT);
+	/* a Tab press counted since the last poll (an SDL key down, so a tap let go of within one frame counts): the
+	keyboard Y it made is dropped, its step comes from the count (ae_input_tab_steps) */
+	CHECK(ae_input_key_translate(0, 1, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	CHECK(ae_input_key_translate(AE_KEY_SHIFT, 2, AE_ACTION_Y, 1) == AE_ACTION_NONE);
+	/* no Tab press and none held: a real Y (a pad on the first controller after keyboard use, a touch Y; M1 review
+	M2: this was a focus step) */
+	CHECK(ae_input_key_translate(0, 0, AE_ACTION_Y, 1) == AE_ACTION_Y);
+	CHECK(ae_input_key_translate(AE_KEY_SHIFT, 0, AE_ACTION_Y, 1) == AE_ACTION_Y);
+	/* a pad's Y is Y, even in a frame with a Tab press */
+	CHECK(ae_input_key_translate(0, 0, AE_ACTION_Y, 0) == AE_ACTION_Y);
+	CHECK(ae_input_key_translate(0, 1, AE_ACTION_Y, 0) == AE_ACTION_Y);
+
+	/* Tab's steps from its counted presses, beyond the step the held direction gives a press it sees */
+	{
+		int down, up;
+
+		/* a sub-frame tap (pressed and let go of between two polls): one step; with Shift at the press, back */
+		ae_input_tab_steps(1, 0, 0, 0, &down, &up); CHECK(down == 1 && up == 0);
+		ae_input_tab_steps(0, 1, 0, 0, &down, &up); CHECK(down == 0 && up == 1);
+		/* two taps in one frame: two steps (each press counted); mixed Shift: one each way */
+		ae_input_tab_steps(2, 0, 0, 0, &down, &up); CHECK(down == 2 && up == 0);
+		ae_input_tab_steps(1, 1, 0, 0, &down, &up); CHECK(down == 1 && up == 1);
+		/* a press still held at the poll: the held direction steps for it (and repeats), the count adds nothing */
+		ae_input_tab_steps(1, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 0 && up == 0);
+		ae_input_tab_steps(0, 1, AE_KEY_TAB | AE_KEY_SHIFT, 0, &down, &up); CHECK(down == 0 && up == 0);
+		/* a tap, then a press still held: the tap steps, the held press is the direction's */
+		ae_input_tab_steps(2, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 1 && up == 0);
+		/* held through the poll before, let go of and pressed again in between: the direction saw no new press */
+		ae_input_tab_steps(1, 0, AE_KEY_TAB, AE_KEY_TAB, &down, &up); CHECK(down == 1 && up == 0);
+		/* nothing counted: nothing */
+		ae_input_tab_steps(0, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 0 && up == 0);
+		ae_input_tab_steps(-3, 0, 0, 0, &down, &up); CHECK(down == 0 && up == 0);
+		/* a stall's pile of presses: at most AE_INPUT_TAB_STEPS_MAXIMUM (4) steps a poll, forward first */
+		ae_input_tab_steps(9, 0, 0, 0, &down, &up); CHECK(down == 4 && up == 0);
+		ae_input_tab_steps(3, 5, 0, 0, &down, &up); CHECK(down == 3 && up == 1);
+		ae_input_tab_steps(0, 7, 0, 0, &down, &up); CHECK(down == 0 && up == 4);
+		ae_input_tab_steps(5, 0, AE_KEY_TAB, 0, &down, &up); CHECK(down == 4 && up == 0);
+		CHECK(AE_INPUT_TAB_STEPS_MAXIMUM == 4);
+		/* which Tab key downs count: not the key's own repeats, never with Alt or the GUI key (Alt+Tab, Super+Tab
+		switch windows), backward with Shift */
+		CHECK(ae_platform_tab_press_kind(0, 0, 0, 0) == AE_TAB_PRESS_FORWARD);
+		CHECK(ae_platform_tab_press_kind(0, 1, 0, 0) == AE_TAB_PRESS_BACKWARD);
+		CHECK(ae_platform_tab_press_kind(1, 0, 0, 0) == AE_TAB_PRESS_NONE);
+		CHECK(ae_platform_tab_press_kind(1, 0, 1, 0) == AE_TAB_PRESS_NONE);
+		CHECK(ae_platform_tab_press_kind(0, 0, 1, 0) == AE_TAB_PRESS_IGNORED);
+		CHECK(ae_platform_tab_press_kind(0, 1, 1, 0) == AE_TAB_PRESS_IGNORED);
+		CHECK(ae_platform_tab_press_kind(0, 0, 0, 1) == AE_TAB_PRESS_IGNORED);
+	}
+	/* a held Tab: one step at its press (the count adds none), then the direction's repeat as before */
+	{
+		struct ae_repeat repeat = { 0, 0, 0 };
+		int held[4], down, up;
+
+		ae_input_key_directions(AE_KEY_TAB, held);
+		ae_input_tab_steps(1, 0, AE_KEY_TAB, 0, &down, &up);
+		CHECK(held[1] && ae_input_direction_step(&repeat, held[1], 1000, 0, 0) == 1 && down == 0);
+		ae_input_tab_steps(0, 0, AE_KEY_TAB, AE_KEY_TAB, &down, &up);
+		CHECK(ae_input_direction_step(&repeat, held[1], 1100, 0, 0) == 0 && down == 0);
+		CHECK(ae_input_direction_step(&repeat, held[1], 1400, 0, 0) == 1);
+		CHECK(ae_input_direction_step(&repeat, held[1], 1480, 0, 0) == 1);
+	}
 
 	/* mouse button 4: counted only while armed (an AE screen open); disarming drops the count */
 	CHECK(ae_platform_take_back_presses() == 0);

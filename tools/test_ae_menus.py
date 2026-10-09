@@ -159,15 +159,26 @@ def test_test_screen_draws_and_takes_input(cfg):
     focus = focus_lines(text)
     assert focus and focus[-1] == 12, f"12 downs: focus {focus}"
     assert focus == list(range(1, 13)), f"one step a press: {focus}"
+    # CE's menu sounds (ae_sound.h): a cursor for each focus step, at most one sound a frame
+    sounds = [line.rsplit(" ", 1)[1] for line in text.splitlines() if "ae sound: " in line]
+    assert sounds == ["cursor"] * 12, f"12 downs: sounds {sounds}"
     assert len(pngs) >= 10, "too few screenshots"
 
     # the swatch (white, alpha 0.25) is one blend over the picture, early and late: no build-up in the back
     # buffer the game keeps from frame to frame (over a background b, one blend is 0.75 b + 64, two 0.56 b + 112)
     late = harness.read_png(pngs[-1])
-    early = harness.read_png(pngs[-10])
     assert late[0] == 1920 and late[1] == 1080, "the picture is not 1920x1080"
     inner = (SWATCH[0] + 4, SWATCH[1] + 4, SWATCH[2] - 4, SWATCH[3] - 4)
     ring = (SWATCH[0] - 12, SWATCH[1] - 12, SWATCH[2] + 12, SWATCH[3] + 12)
+    # (early: about 10 shots before the last, but never one taken before the first frame was drawn: on a loaded box
+    # the run takes only ~10 shots and the 10th from the end is the black frame 0)
+    early = None
+    for path in pngs[max(0, len(pngs) - 10):-1]:
+        image = harness.read_png(path)
+        if brightness_median(image, SWATCH, ring) > 0:
+            early = image
+            break
+    assert early is not None, "no drawn picture before the last"
     blends = []
     for image in (early, late):
         swatch = brightness_median(image, inner)
@@ -175,8 +186,10 @@ def test_test_screen_draws_and_takes_input(cfg):
         residual = swatch - (background * 0.75 + 64)
         blends.append((swatch, background, residual))
         assert abs(residual) <= 20, f"swatch {swatch} over {background}: not one blend"
-    # (the menu's picture moves behind it, so early and late compare as blends: the same, not built up)
-    assert abs(blends[0][2] - blends[1][2]) <= 16, f"the swatch's blend changed from {blends[0]} to {blends[1]}"
+    # (the menu's picture moves behind it between the two screenshots, so early and late compare as blends; the
+    # residuals carry the moving texture's noise, hence 24: the per-image residual check above is the real guard
+    # against a double blend, which would read about +30 to +40 over these backgrounds)
+    assert abs(blends[0][2] - blends[1][2]) <= 24, f"the swatch's blend changed from {blends[0]} to {blends[1]}"
 
 
 # the PC main menu's first and third items at 1920x1080: the focused one is drawn white, the others blue
@@ -212,6 +225,7 @@ def test_input_does_not_reach_the_menus_behind(cfg):
     assert "ae menus: button X" in text and "ae menus: button Y" in text
     assert "ae menus: button TAB_NEXT" in text and "ae menus: button TAB_PREVIOUS" in text
     assert "ae menus: test screen closed" in text
+    assert "ae sound: back" in text, "the B that closed the screen played no back sound"
     control = play(cfg, out, "control", views=0, shots=120)
     pressed = play(cfg, out, "pressed", views=0, test_input=menu_input(*presses), shots=120)
     for r in (control[0], pressed[0]):
@@ -222,6 +236,45 @@ def test_input_does_not_reach_the_menus_behind(cfg):
     assert checks["control"][0], f"the control game's main menu is not as expected: {checks['control']}"
     assert not checks["pressed"][0], f"the presses with no screen left the menu as it was: {checks['pressed']}"
     assert checks["screen"][0], f"the menu behind took input meant for the screen: {checks['screen']}"
+
+
+def test_menus_closed_keys_still_work(cfg):
+    """debug.ae_test_screen 9: the test screen with upstream's widgets closed (ui_widgets_close_all, as AE's own
+    screens that replace the menus do): the keyboard still drives AE (early check A: without the ui_widget.c pointer
+    hook the game takes the keys back for play once no widget is up); the menu settings at their defaults"""
+    out = out_dir(cfg, "closed")
+    result, text, pngs = play(cfg, out, "closed", views=9,
+                              test_input=menu_input("key:Down", "key:Down", "key:Return"))
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: replaced the game's menus" in text
+    assert focus_lines(text) == [1, 2]
+    assert "ae menus: accept 2" in text
+    assert "ae sound: forward" in text, "the accept played no forward sound"
+    assert "ae menus: settings: scale 1.00, reduce motion 0, volume 1.00" in text
+
+
+def test_pad_y_after_keyboard(cfg):
+    """a Y on the first controller after keyboard use, with no Tab pressed, is a Y, not Tab's focus step (M1 review
+    M2). The harness's injected pad leaves platform_input_scheme on the keyboard (a real SDL pad sets it to the pad
+    in the read that makes its Y), so this stands in for the scheme-less cases: a touch overlay's Y on Android
+    without a pad, and such injected pads. (A Tab tapped within one frame can't be injected: the harness's key:
+    tokens go into the controller's read only, never as SDL key events; ae_input_rules_test.c pins that rule.)"""
+    out = out_dir(cfg, "pad-y")
+    result, text, pngs = play(cfg, out, "pad-y", test_input=menu_input("key:Down", "y"))
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: button Y" in text
+    assert focus_lines(text) == [1]
+
+
+def test_settings_keys(cfg):
+    """display.arena_menus_scale (snapped to 90 / 100 / 115 / 130), display.arena_menus_reduce_motion and
+    audio.arena_menus_volume reach the menus' settings cache (ae_settings_*)"""
+    out = out_dir(cfg, "settings")
+    result, text, pngs = play(cfg, out, "settings", env={"HALO_ARENA_MENUS_SCALE": "120",
+                                                          "HALO_ARENA_MENUS_REDUCE_MOTION": "true",
+                                                          "HALO_ARENA_MENUS_VOLUME": "0.5"}, exit_after=24)
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: settings: scale 1.15, reduce motion 1, volume 0.50" in text
 
 
 def contact_sheet(cfg, out):

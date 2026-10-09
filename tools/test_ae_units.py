@@ -21,14 +21,62 @@ UNITS = {
     # (the catalog's readers take any text: under the sanitizers)
     "ae_catalog_test.c": ([UI / "ae_catalog.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_draw_layout_test.c": ([SRC / "ae_layout.c"], [], []),
-    "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", SRC / "ae_back_presses.c"], [], []),
+    # (AE's faces with stb_truetype; under the sanitizers, as it is handed garbage and truncated fonts)
+    "ae_font_test.c": ([SRC / "ae_font.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (ae_ui.c starts motions and asks for sounds: ae_motion.c and ae_sound.c with it, P5)
+    "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", UI / "ae_motion.c", UI / "ae_sound.c",
+                               SRC / "ae_back_presses.c"], [], []),
     "ae_list_test.c": ([UI / "ae_list.c"], [], []),
+    # (the look's tokens, frame and densities, with the recording ae_draw stub that measures with the real fonts)
+    "ae_style_test.c": ([UI / "ae_style.c", TESTS / "ae_draw_stub.c", SRC / "ae_font.c", SRC / "ae_layout.c"],
+                        [f"-I{SRC}", f"-I{TESTS}"], []),
     # (the map reader with the system's zlib; under the sanitizers, as it reads corrupt files: the maps it writes
     # itself here, the stock maps in test_mapinfo_stock_maps)
     "ae_mapinfo_test.c": ([UI / "ae_mapinfo.c"],
                           ["-DAE_MAPINFO_SYSTEM_ZLIB", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                           ["-lz"]),
-    "ae_ui_test.c": ([UI / "ae_ui.c"], [], []),
+    "ae_motion_test.c": ([UI / "ae_motion.c"], [], []),
+    "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
+    # (editing a field's text: under the sanitizers, as it takes pasted text)
+    "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    "ae_ui_test.c": ([UI / "ae_ui.c", UI / "ae_motion.c", UI / "ae_sound.c"], [], []),
+    # (the texts, checked against Overpass 900)
+    "ae_strings_test.c": ([UI / "ae_strings.c", SRC / "ae_font.c"], [f"-I{SRC}"], []),
+    # (the widget core with the recording ae_draw stub and the real fonts; under the sanitizers)
+    # (tabs, page dots, prompts, the in-view panel: the widget core with them, the stub, the real fonts)
+    "ae_widgets_nav_test.c": ([UI / "ae_widgets_nav.c", UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c",
+                               UI / "ae_motion.c", UI / "ae_sound.c", UI / "ae_strings.c", UI / "ae_ui.c",
+                               TESTS / "ae_draw_stub.c", SRC / "ae_font.c", SRC / "ae_layout.c"],
+                              [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                              []),
+    # (the value picker, chips, the help panel: the widget core and navigation with them)
+    "ae_widgets_pick_test.c": ([UI / "ae_widgets_pick.c", UI / "ae_widgets_nav.c", UI / "ae_widgets.c",
+                                UI / "ae_style.c", UI / "ae_list.c", UI / "ae_motion.c", UI / "ae_sound.c",
+                                UI / "ae_strings.c", UI / "ae_ui.c", TESTS / "ae_draw_stub.c", SRC / "ae_font.c",
+                                SRC / "ae_layout.c"],
+                               [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                               []),
+    # (the text field, typing, AE's keyboard)
+    "ae_widgets_text_test.c": ([UI / "ae_widgets_text.c", UI / "ae_text_edit.c", UI / "ae_widgets_nav.c",
+                                UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c", UI / "ae_motion.c",
+                                UI / "ae_sound.c", UI / "ae_strings.c", UI / "ae_ui.c", TESTS / "ae_draw_stub.c",
+                                SRC / "ae_font.c", SRC / "ae_layout.c"],
+                               [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                               []),
+    # (the lobby's roster order and names, preflight P18)
+    "ae_lobby_roster_test.c": ([UI / "ae_lobby_roster.c"], [f"-I{UI}", "-fsanitize=address,undefined",
+                                                              "-fno-sanitize-recover=all"], []),
+    # (the dialog, roster cards)
+    "ae_widgets_dialog_test.c": ([UI / "ae_widgets_dialog.c", UI / "ae_widgets_text.c", UI / "ae_text_edit.c",
+                                  UI / "ae_widgets_nav.c", UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c",
+                                  UI / "ae_motion.c", UI / "ae_sound.c", UI / "ae_strings.c", UI / "ae_ui.c",
+                                  TESTS / "ae_draw_stub.c", SRC / "ae_font.c", SRC / "ae_layout.c"],
+                                 [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                                 []),
+    "ae_widgets_test.c": ([UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c", UI / "ae_motion.c",
+                           UI / "ae_sound.c", UI / "ae_strings.c", UI / "ae_ui.c", TESTS / "ae_draw_stub.c",
+                           SRC / "ae_font.c", SRC / "ae_layout.c"],
+                          [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
 }
 # a test's exit code for "nothing to check here" (the real maps missing): pytest.skip
 SKIPPED = 77

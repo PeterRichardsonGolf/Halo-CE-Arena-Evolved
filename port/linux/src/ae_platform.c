@@ -3,8 +3,9 @@ AE_PLATFORM.C
 
 What AE's menus read from the platform layer (ae_platform.h): the keys the
 game's menu keys leave out or use otherwise (Q and E for tabs, Tab and
-Shift+Tab as focus steps, Page Up and Page Down), mouse button 4's presses,
-and the device the player last used. It reads the state sdl_platform.c
+Shift+Tab as focus steps, Page Up and Page Down), Tab's presses (counted by
+an SDL event watch, so a tap within one frame counts), mouse button 4's
+presses, and the device the player last used. It reads the state sdl_platform.c
 already keeps (platform_input_read, without taking the mouse's motion) and
 xinput_sdl.c's platform_input_scheme. (Button 4's count is ae_back_presses.c,
 pure, so the unit tests build it.)
@@ -13,9 +14,14 @@ pure, so the unit tests build it.)
 #include "platform.h"
 #include "sdl_platform.h"
 #include "ae_platform.h"
+#include "port_config.h"
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+#include <SDL3/SDL_atomic.h>
+#include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_mouse.h>
+#include <SDL3/SDL_timer.h>
 #endif
 
 #ifdef HALO_GAME_BROWSER
@@ -82,11 +88,118 @@ int ae_platform_keys(void)
 	return keys | keypad_keys(input.keys, num_lock());
 }
 
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+/* (atomics: SDL may call a watch from the thread that queues the event; the game's thread pumps them here) */
+static SDL_AtomicInt tab_armed, tab_forward, tab_backward, tab_ignored;
+
+static bool SDLCALL tab_watch(
+	void *userdata,
+	SDL_Event *event)
+{
+	(void)userdata;
+	/* (Alt is either Alt key: right Alt+Tab switches windows on most desktops too; an AltGr that SDL reports as
+	right Alt (some layouts) is taken as Alt, AltGr+Tab then stepping nothing, which costs nothing real) */
+	if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_TAB && SDL_GetAtomicInt(&tab_armed))
+	{
+		switch (ae_platform_tab_press_kind(event->key.repeat, (event->key.mod & SDL_KMOD_SHIFT) != 0,
+			(event->key.mod & SDL_KMOD_ALT) != 0, (event->key.mod & SDL_KMOD_GUI) != 0))
+		{
+		case AE_TAB_PRESS_FORWARD: SDL_AddAtomicInt(&tab_forward, 1); break;
+		case AE_TAB_PRESS_BACKWARD: SDL_AddAtomicInt(&tab_backward, 1); break;
+		case AE_TAB_PRESS_IGNORED: SDL_AddAtomicInt(&tab_ignored, 1); break;
+		}
+	}
+	/* (a watch's answer is ignored: the event is queued as ever) */
+	return true;
+}
+
+void ae_platform_arm_tab_presses(
+	int armed)
+{
+	static int watching;
+
+	if (armed && !watching)
+		watching = SDL_AddEventWatch(tab_watch, NULL) ? 1 : 0;
+	SDL_SetAtomicInt(&tab_armed, armed != 0);
+	if (!armed)
+	{
+		SDL_SetAtomicInt(&tab_forward, 0);
+		SDL_SetAtomicInt(&tab_backward, 0);
+		SDL_SetAtomicInt(&tab_ignored, 0);
+	}
+}
+
+void ae_platform_take_tab_presses(
+	int *forward,
+	int *backward,
+	int *ignored)
+{
+	*forward = SDL_SetAtomicInt(&tab_forward, 0);
+	*backward = SDL_SetAtomicInt(&tab_backward, 0);
+	*ignored = SDL_SetAtomicInt(&tab_ignored, 0);
+}
+#else
+void ae_platform_arm_tab_presses(
+	int armed)
+{
+	(void)armed;
+}
+
+void ae_platform_take_tab_presses(
+	int *forward,
+	int *backward,
+	int *ignored)
+{
+	*forward = *backward = *ignored = 0;
+}
+#endif
+
+int ae_platform_mouse_left_held(void)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	return (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LMASK) != 0;
+#else
+	return 0;
+#endif
+}
+
 int ae_platform_input_scheme(void)
 {
 #ifdef HALO_GAME_BROWSER
 	return platform_input_scheme();
 #else
 	return 1;
+#endif
+}
+
+void ae_platform_test_keystroke(
+	int scancode)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	static Uint64 last[SDL_SCANCODE_COUNT];
+	Uint64 now = SDL_GetTicks();
+	SDL_Event event;
+
+	if (scancode <= SDL_SCANCODE_UNKNOWN || scancode >= SDL_SCANCODE_COUNT || !config_boolean("display.arena_menus"))
+		return;
+	/* (a token is held for the first 250 ms of its second: one keystroke for it, the next a second later) */
+	if (last[scancode] && now - last[scancode] < 500)
+	{
+		last[scancode] = now;
+		return;
+	}
+	last[scancode] = now;
+	SDL_zero(event);
+	event.type = SDL_EVENT_KEY_DOWN;
+	event.key.scancode = (SDL_Scancode)scancode;
+	event.key.key = SDL_GetKeyFromScancode((SDL_Scancode)scancode, SDL_KMOD_NONE, false);
+	event.key.down = true;
+	event.key.timestamp = SDL_GetTicksNS();
+	SDL_PushEvent(&event);
+	event.type = SDL_EVENT_KEY_UP;
+	event.key.down = false;
+	SDL_PushEvent(&event);
+#else
+	(void)scancode;
 #endif
 }

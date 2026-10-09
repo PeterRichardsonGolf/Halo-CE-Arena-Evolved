@@ -4929,6 +4929,8 @@ void network_game_reset_to_pregame_ui(
 	void)
 {
 	ui_widgets_close_all();
+	if (ae_lobby_take_pregame_ui()) /* AE hook */
+		return;
 	if (network_game_is_splitscreen_local())
 	{
 		if (network_game_is_quickstart_local())
@@ -6972,6 +6974,8 @@ static boolean ui_mouse_menus_active(
 {
 	if (widget_globals.initialization_thread || progress_bar_is_active())
 		return FALSE;
+	if (ae_ui_takes_pointer()) /* AE hook */
+		return TRUE;
 
 	/* (and the scores after a game, which take A and B like the menus:
 	game_engine_update_non_deterministic) */

@@ -10,7 +10,9 @@ AE_OWNER_ANY); BACK closes it and hands control back to the game's menus.
 It logs to debug.txt for the tests (tools/test_ae_menus.py): "ae menus: test
 screen" when it opens, "ae menus: focus N" (the item's index from 0) when the
 focus moves, "ae menus: accept N", "ae menus: button NAME" and "ae menus:
-test screen closed".
+test screen closed". Its sounds (M2): the cursor when a key or button moves
+the focus (not the pointer's hover), forward on accept (a click too), back
+when it closes (ae_ui's BACK).
 
 In the top right corner of the whole frame (one view only) it draws a white
 square at alpha 0.25 over the game's picture: the tests check that it is one
@@ -21,8 +23,10 @@ blend over the picture, not built up over frames in the back buffer.
 
 #include "cseries.h"
 #include "../src/ae_draw.h"
+#include "ae_hooks.h"
 #include "ae_list.h"
 #include "ae_screen_test.h"
+#include "ae_sound.h"
 #include "ae_ui.h"
 
 void platform_log(char const *format, ...);
@@ -79,6 +83,15 @@ static void log_focus(
 		platform_log("ae menus: focus %d", test_screen.list.focus);
 }
 
+/* the cursor sound for a focus moved by a key or button (repeat: a held direction's repeat step) */
+static void cursor_sound(
+	short before,
+	int repeat)
+{
+	if (test_screen.list.focus != before)
+		ae_sound_request(AE_SOUND_CURSOR, repeat);
+}
+
 /* a view's rectangle in layout units: one, two (above and below) or four (quarters) */
 static void view_rectangle(
 	int view,
@@ -130,6 +143,8 @@ static void enter(
 	/* (focus memory: the row it was left on) */
 	ae_list_set_focus(&test_screen.list, screen->focus);
 	platform_log("ae menus: test screen (views %d)", test_screen.views);
+	/* (the settings the widgets read: their first use logs them, for the tests) */
+	(void)ae_settings_ui_scale();
 }
 
 static void leave(
@@ -152,7 +167,10 @@ static int handle(
 	case AE_ACTION_DOWN: ae_list_move(&test_screen.list, 1, FALSE); break;
 	case AE_ACTION_PAGE_UP: ae_list_page(&test_screen.list, -1); break;
 	case AE_ACTION_PAGE_DOWN: ae_list_page(&test_screen.list, 1); break;
-	case AE_ACTION_ACCEPT: platform_log("ae menus: accept %d", test_screen.list.focus); break;
+	case AE_ACTION_ACCEPT:
+		platform_log("ae menus: accept %d", test_screen.list.focus);
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
 	case AE_ACTION_BACK: return 0;
 	case AE_ACTION_LEFT: platform_log("ae menus: button LEFT"); break;
 	case AE_ACTION_RIGHT: platform_log("ae menus: button RIGHT"); break;
@@ -164,6 +182,7 @@ static int handle(
 	case AE_ACTION_SELECT: platform_log("ae menus: button SELECT"); break;
 	default: return 0;
 	}
+	cursor_sound(before, event->repeat);
 	log_focus(before);
 	return 1;
 }
@@ -205,6 +224,7 @@ static void pointer(
 	{
 		ae_list_set_focus(&test_screen.list, item);
 		platform_log("ae menus: accept %d", item);
+		ae_sound_request(AE_SOUND_FORWARD, 0);
 	}
 	log_focus(before);
 }
@@ -341,12 +361,18 @@ static void draw(
 
 static struct ae_screen_class const test_screen_class =
 {
-	"test", enter, leave, handle, draw, FALSE, pointer
+	.name = "test", .enter = enter, .leave = leave, .handle = handle, .draw = draw, .pointer = pointer
 };
 
 int ae_screen_test_open(
 	int views)
 {
+	int opened;
+
 	test_screen.views = views == 2 || views == 4 ? views : 1;
-	return ae_ui_push(&test_screen_class, AE_OWNER_ANY, &test_screen);
+	opened = ae_ui_push(&test_screen_class, AE_OWNER_ANY, &test_screen);
+	/* 9: with upstream's widgets closed, as AE's own screens that replace the menus have them (early check A) */
+	if (opened && views == 9)
+		ae_ui_replace_menus();
+	return opened;
 }

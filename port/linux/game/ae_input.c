@@ -12,8 +12,11 @@ Space are A, Escape and Backspace are B, Delete (and E) X, Tab Y, C the black
 button. AE's own keys are read from the platform (ae_platform.c): Q and E are
 the tabs, Page Up and Page Down page, Tab and Shift+Tab step the focus as the
 d-pad does; while E or Tab is held, the first controller's X or Y (their
-game mapping) is dropped, and a keyboard Y with Tab not held (a tap between
-two polls) is Tab's focus step. Mouse button 4 is BACK: while the menus have
+game mapping) is dropped. Tab's presses are counted as SDL queues them
+(ae_platform.c), so a tap let go of within one frame is a step too: a
+keyboard Y with a Tab press counted is dropped, and each counted press the
+held directions didn't see steps (ae_input_tab_steps); any other Y is a Y (a
+pad's after the keyboard was used, a touch Y). Mouse button 4 is BACK: while the menus have
 the pointer, sdl_platform.c keeps it from the controller and counts it for AE,
 while an AE screen is open (ae_hooks.c arms the count).
 
@@ -49,6 +52,7 @@ are held back until each is let go of, for at most 2 s (ae_hooks.c).
 #include "../src/ae_platform.h"
 #include "ae_input.h"
 #include "ae_input_rules.h"
+#include "ae_widgets.h"
 #include "ae_ui.h"
 
 /* interface/player_ui.c: the controller a local player plays with (NONE: none) */
@@ -74,6 +78,7 @@ static struct
 	unsigned long last_poll;
 	int polled;
 	int keys;
+	int was_typing;
 	int opening;
 	struct ae_hold hold;
 } ae_input;
@@ -105,16 +110,26 @@ static short player_of(
 	return ae_input_player_of_controller(controller, bindings);
 }
 
-static void send_action(
+/* (repeat: a held direction's repeat step, not its press) */
+static void send_step(
 	short controller,
-	int action)
+	int action,
+	int repeat)
 {
 	struct ae_event event;
 
 	event.player = player_of(controller);
 	event.action = (unsigned char)action;
 	event.device = device_of(controller);
+	event.repeat = (unsigned char)(repeat != 0);
 	ae_ui_dispatch(&event);
+}
+
+static void send_action(
+	short controller,
+	int action)
+{
+	send_step(controller, action, 0);
 }
 
 /* a pressed button's action (the d-pad's come from the held directions) */
@@ -232,7 +247,10 @@ void ae_input_poll(
 {
 	struct event_record event;
 	unsigned long now = system_milliseconds();
-	int keys = ae_platform_keys();
+	/* (a field being typed into takes the keys: AE's own Q, E, Tab, Page Up / Down stand aside) */
+	int typing = ae_glue_text_typing();
+	int raw_keys = ae_platform_keys();
+	int keys, previous_keys, tab_forward, tab_backward, tab_ignored, tab_down, tab_up;
 	unsigned char actions[MAXIMUM_ACTIONS];
 	int action_count, index, back_presses;
 	short controller;
@@ -240,14 +258,23 @@ void ae_input_poll(
 	a low frame rate, drops no press: only directions held through it wait for a new press) */
 	boolean opening = ae_input.opening || !ae_input.polled;
 	boolean stalled = now - ae_input.last_poll > AE_POLL_GAP_MS;
+	/* (the first poll after typing ended: keys still held from the typing are not pressed now, I1 of the M2 final review) */
+	boolean typing_ended = ae_input.was_typing && !typing;
 
 	ae_input.opening = 0;
+	ae_input_poll_keys(raw_keys, typing, ae_input.keys, opening, &keys, &previous_keys);
+	ae_input.was_typing = typing != 0;
+	/* (Tab's presses since the last poll; a screen just opened takes none from before) */
+	ae_platform_take_tab_presses(&tab_forward, &tab_backward, &tab_ignored);
+	if (opening || ae_glue_text_typing())
+		tab_forward = tab_backward = tab_ignored = 0;
 	back_presses = ae_platform_take_back_presses();
-	action_count = ae_input_key_actions(keys, opening ? keys : ae_input.keys, opening ? 0 : back_presses,
+	action_count = ae_input_key_actions(keys, previous_keys, opening ? 0 : back_presses,
 		actions, MAXIMUM_ACTIONS);
 	ae_input.polled = 1;
 	ae_input.last_poll = now;
-	ae_input.keys = keys;
+	/* (the raw keys, typing or not: what is held through typing is then not a new press) */
+	ae_input.keys = raw_keys;
 
 	while (ae_ui_depth() && get_next_event(&event, NONE))
 	{
@@ -260,12 +287,20 @@ void ae_input_poll(
 		}
 		action = button_action(event.data.button.index);
 		if (event.controller_index == 0)
-			action = ae_input_key_translate(keys, action, device_of(0) == AE_DEVICE_KEYBOARD_MOUSE);
+			/* (an Alt+Tab steps nothing, but its Y is dropped as well) */
+			action = ae_input_key_translate(keys, tab_forward + tab_backward + tab_ignored, action,
+				device_of(0) == AE_DEVICE_KEYBOARD_MOUSE);
 		if (action != AE_ACTION_NONE)
 			send_action(event.controller_index, action);
 	}
 	for (index = 0; index < action_count && ae_ui_depth(); index++)
 		send_action(0, actions[index]);
+	/* (Tab's taps the held directions below don't see: one step each) */
+	ae_input_tab_steps(tab_forward, tab_backward, keys, previous_keys, &tab_down, &tab_up);
+	for (index = 0; index < tab_down && ae_ui_depth(); index++)
+		send_action(0, AE_ACTION_DOWN);
+	for (index = 0; index < tab_up && ae_ui_depth(); index++)
+		send_action(0, AE_ACTION_UP);
 	for (controller = 0; controller < AE_INPUT_CONTROLLERS && ae_ui_depth(); controller++)
 	{
 		int held[NUMBER_OF_DIRECTIONS];
@@ -276,8 +311,9 @@ void ae_input_poll(
 		{
 			struct ae_repeat *repeat = &ae_input.repeats[controller][direction];
 
-			if (ae_input_direction_step(repeat, held[direction], now, opening, stalled))
-				send_action(controller, direction_actions[direction]);
+			/* (a step whose press began now is the press, any later one a repeat) */
+			if (ae_input_direction_step(repeat, held[direction], now, opening || typing_ended, stalled))
+				send_step(controller, direction_actions[direction], repeat->since != now);
 		}
 	}
 	/* (whatever is left, as when a screen closed partway: the menus behind take none of it) */
@@ -287,12 +323,15 @@ void ae_input_poll(
 void ae_input_pointer(
 	struct halo_ui_pointer const *pointer)
 {
+	static unsigned char was_held;
 	struct ae_pointer moved, clicked;
 	short player = player_of(0);
+	/* (the left button held: a scrollbar thumb's drag; a mouse's only) */
+	unsigned char held = (unsigned char)(!pointer || pointer->touch ? 0 : ae_platform_mouse_left_held() != 0);
 
 	if (!pointer)
 		return;
-	if (pointer->moved || pointer->wheel_steps)
+	if (pointer->moved || pointer->wheel_steps || held != was_held)
 	{
 		memset(&moved, 0, sizeof(moved));
 		ae_draw_pointer_to_layout(pointer->x, pointer->y, &moved.x, &moved.y);
@@ -300,8 +339,10 @@ void ae_input_pointer(
 		moved.wheel_steps = pointer->wheel_steps;
 		moved.touch = pointer->touch;
 		moved.player = player;
+		moved.left_held = held;
 		ae_ui_dispatch_pointer(&moved);
 	}
+	was_held = held;
 	if (pointer->left_clicks && ae_ui_depth())
 	{
 		memset(&clicked, 0, sizeof(clicked));
@@ -309,6 +350,7 @@ void ae_input_pointer(
 		clicked.left_clicks = pointer->left_clicks;
 		clicked.touch = pointer->touch;
 		clicked.player = player;
+		clicked.left_held = held;
 		ae_ui_dispatch_pointer(&clicked);
 	}
 	if (pointer->right_clicks && ae_ui_depth())
@@ -318,6 +360,7 @@ void ae_input_pointer(
 		event.player = player;
 		event.action = AE_ACTION_BACK;
 		event.device = (unsigned char)(pointer->touch ? device_of(0) : AE_DEVICE_KEYBOARD_MOUSE);
+		event.repeat = 0;
 		ae_ui_dispatch(&event);
 	}
 }

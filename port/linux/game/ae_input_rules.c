@@ -30,6 +30,12 @@ void ae_input_key_directions(int keys, int held[4])
 	held[3] = (keys & AE_KEY_RIGHT) != 0;
 }
 
+void ae_input_poll_keys(int raw, int typing, int stored_raw, int opening, int *keys, int *previous_keys)
+{
+	*keys = typing ? 0 : raw;
+	*previous_keys = opening ? *keys : stored_raw;
+}
+
 int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char actions[], int maximum)
 {
 	static struct { int key; unsigned char action; } const presses[] =
@@ -52,15 +58,35 @@ int ae_input_key_actions(int keys, int previous, int back_presses, unsigned char
 	return count;
 }
 
-int ae_input_key_translate(int keys, int action, int keyboard)
+int ae_input_key_translate(int keys, int tab_presses, int action, int keyboard)
 {
 	if (action == AE_ACTION_X && (keys & AE_KEY_E))
 		return AE_ACTION_NONE;
 	if (action == AE_ACTION_Y && (keys & AE_KEY_TAB))
 		return AE_ACTION_NONE;
-	if (action == AE_ACTION_Y && keyboard)
-		return keys & AE_KEY_SHIFT ? AE_ACTION_UP : AE_ACTION_DOWN;
+	/* (the Y a counted Tab press made: its step is ae_input_tab_steps's) */
+	if (action == AE_ACTION_Y && keyboard && tab_presses > 0)
+		return AE_ACTION_NONE;
 	return action;
+}
+
+void ae_input_tab_steps(int forward, int backward, int keys, int previous_keys, int *down, int *up)
+{
+	*down = forward > 0 ? forward : 0;
+	*up = backward > 0 ? backward : 0;
+	/* (a press the held directions see as new steps there, its way by the Shift held now) */
+	if ((keys & AE_KEY_TAB) && !(previous_keys & AE_KEY_TAB))
+	{
+		int *direction = keys & AE_KEY_SHIFT ? up : down;
+
+		if (*direction > 0)
+			(*direction)--;
+	}
+	/* (at most a few a poll: presses piled up in a stall don't come out as a burst) */
+	if (*down > AE_INPUT_TAB_STEPS_MAXIMUM)
+		*down = AE_INPUT_TAB_STEPS_MAXIMUM;
+	if (*up > AE_INPUT_TAB_STEPS_MAXIMUM - *down)
+		*up = AE_INPUT_TAB_STEPS_MAXIMUM - *down;
 }
 
 int ae_input_direction_step(struct ae_repeat *repeat, int held, unsigned long now_ms, int opening, int stalled)

@@ -395,6 +395,7 @@ symbols in this file:
 #endif
 #include "text/unicode.h"
 #include "halo_map_families.h" /* port: map_family_from_wire_name */
+#include "ae_hooks.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -2559,6 +2560,7 @@ static boolean add_advertised_game(
 				(advertisement->__unknown5A[HALO_PORT_ADVERTISED_VERSION_OFFSET + 1] << 8));
 			network_game_client_advertised_versions[game_index].flags =
 				advertisement->__unknown5A[HALO_PORT_ADVERTISED_FLAGS_OFFSET];
+			ae_lobby_advertised(network_game_client_advertised_versions[game_index].version, network_game_client_advertised_versions[game_index].flags); /* AE hook */
 		}
 
 		if (advertisement->game_name[0] != L'\0')

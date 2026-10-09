@@ -33,10 +33,13 @@ enum ae_action { AE_ACTION_NONE, AE_ACTION_UP, AE_ACTION_DOWN, AE_ACTION_LEFT, A
 	AE_ACTION_SELECT, AE_ACTION_PAGE_UP, AE_ACTION_PAGE_DOWN, AE_NUMBER_OF_ACTIONS };
 enum ae_device { AE_DEVICE_KEYBOARD_MOUSE, AE_DEVICE_XBOX, AE_DEVICE_PLAYSTATION, AE_DEVICE_NINTENDO };
 enum { AE_OWNER_ANY = -1, AE_PLAYER_NONE = -2, AE_MAXIMUM_PLAYERS = 4, AE_MAXIMUM_SCREENS = 16 };
-struct ae_event { short player; unsigned char action; unsigned char device; };
+/* repeat: a held direction's repeat step (not its press): the cursor sound plays at most every 80 ms for those */
+struct ae_event { short player; unsigned char action; unsigned char device; unsigned char repeat; };
 /* the pointer this frame, in layout units of the whole frame (ae_layout.h) */
 struct ae_pointer { float x, y; unsigned char moved, left_clicks, right_clicks, touch; signed char wheel_steps;
-	short player; };
+	short player;
+	/* (M2) the left button held now (a thumb drag); a change of it is an event of its own */
+	unsigned char left_held; };
 struct ae_screen;
 struct ae_screen_class
 {
@@ -50,23 +53,51 @@ struct ae_screen_class
 	int start_from_anyone;
 	/* the pointer (hover, clicks, wheel); NULL: the screen takes none */
 	void (*pointer)(struct ae_screen *screen, struct ae_pointer const *pointer);
+	/* (M2; appended: initialisers that stop earlier zero them) nonzero: a popover (dialog, picker, keyboard): fades
+	and scales over the screens under it, which keep drawing; else a screen (slides) */
+	int popover;
+	/* (M2) once a frame for the top screen, before input (text fields); NULL: none */
+	void (*update)(struct ae_screen *screen);
 };
 struct ae_screen { struct ae_screen_class const *screen_class; short owner; short focus; void *data; };
 
-/* empties the stack (no leave calls) and forgets the last device */
+/* empties the stack (no leave calls) and forgets the last device; then the reset hooks (M2: text editing's, which
+ends typing mode; the dialogs', which revert a timed revert) */
 void ae_ui_reset(void);
+/* (M2) adds a reset hook (once; at most 4): 0 when full */
+int ae_ui_add_reset_hook(void (*hook)(void));
 /* pushes a screen (focus 0) and calls its enter; 0 when the stack is full */
 int ae_ui_push(struct ae_screen_class const *screen_class, short owner, void *data);
-/* calls the top screen's leave and removes it */
+/* calls the top screen's leave and removes it; its close motion then draws its ghost (its draw, after its leave) for
+up to 200 ms, until any input, push or pop: the screen's data must stay drawable that long (use ae_ui_remove to
+free it at once) */
 void ae_ui_pop(void);
 struct ae_screen *ae_ui_top(void);
+/* (M2) while a screen draws (its draw may read these): whether it is a closing screen's ghost (drawn after its leave,
+going out: it takes no hits), and the alpha and scale its motion gives it (ae_ui_draw passes them to before_draw too) */
+int ae_ui_drawing_ghost(void);
+float ae_ui_drawing_alpha(void);
+float ae_ui_drawing_scale(void);
+/* (M2) removes the topmost screen with this data wherever it is, at once with no close motion (the top: its leave, as
+ae_ui_pop, but no ghost; under others: its leave): its data may be freed or reused right after; 0 when none has it */
+int ae_ui_remove(void const *data);
 int ae_ui_depth(void);
+/* (M2) whether a screen on the stack has this data (a widget's state: open or left behind by a reset) */
+int ae_ui_holds(void const *data);
 /* routes one event to the top screen (owner filter, START from anyone, BACK pops) */
 void ae_ui_dispatch(struct ae_event const *event);
 /* routes the pointer to the top screen, if it is the pointer's player's or anyone's */
 void ae_ui_dispatch_pointer(struct ae_pointer const *pointer);
 /* draws every screen, bottom to top */
 void ae_ui_draw(void);
+/* called before each screen's draw (M1 review M3: no view, clip or alpha leaks between screens): the hooks set
+it to reset the view to the whole frame and apply the screen's motion (offset_x_u, alpha, scale: 0, 1, 1 until
+Task 5's motion); NULL: none */
+typedef void (*ae_ui_before_draw)(struct ae_screen const *screen, int index, float offset_x_u, float alpha,
+	float scale);
+void ae_ui_set_before_draw(ae_ui_before_draw before);
+/* the top screen's update (ae_hooks calls it before ae_input_poll) */
+void ae_ui_update(void);
 enum ae_device ae_ui_last_device(void);
 /* key repeat: steps due now for a held direction (400 ms, then 80 ms, 40 ms after 1 s held) */
 struct ae_repeat { unsigned long since, next; int held; };

@@ -3,6 +3,9 @@
 # lines must follow each other. tools/test_ae_hooks.py checks every hook is present, and every line marked
 # AE hook upstream is a line of one listed here.
 port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "display.arena_menus_scale", _config_integer, "100", "HALO_ARENA_MENUS_SCALE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "display.arena_menus_reduce_motion", _config_boolean, "false", "HALO_ARENA_MENUS_REDUCE_MOTION", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "audio.arena_menus_volume", _config_real, "1.0", "HALO_ARENA_MENUS_VOLUME", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.ae_test_screen", _config_integer, "0", "HALO_AE_TEST_SCREEN", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/sdl_platform.c	#include "ae_platform.h" /* AE hook */
 port/linux/src/sdl_platform.c	if (input_state.ui_pointer)\n{\nif (event.button.down && event.button.button == SDL_BUTTON_X1) ae_platform_count_back_press(); /* AE hook */\nif (event.button.down && event.button.button == SDL_BUTTON_LEFT)
@@ -12,3 +15,9 @@ source/interface/ui_widget.c	#include "ae_hooks.h" /* AE hook */
 source/interface/ui_widget.c	if (ae_ui_process()) /* AE hook */\nreturn;
 source/interface/ui_widget.c	ae_ui_render(local_player_index, window_bounds); /* AE hook */
 source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */\npointer_active = FALSE;
+source/interface/ui_widget.c	if (ae_ui_takes_pointer()) /* AE hook */\nreturn TRUE;
+port/linux/src/xinput_sdl.c	#include "ae_platform.h" /* AE hook */
+port/linux/src/xinput_sdl.c	if (scancode != SDL_SCANCODE_UNKNOWN && text_typing) ae_platform_test_keystroke((int)scancode); /* AE hook */
+source/interface/ui_widget.c	if (ae_lobby_take_pregame_ui()) /* AE hook */\nreturn;
+source/networking/network_client_manager.c	#include "ae_hooks.h" /* AE hook */
+source/networking/network_client_manager.c	ae_lobby_advertised(network_game_client_advertised_versions[game_index].version, network_game_client_advertised_versions[game_index].flags); /* AE hook */
