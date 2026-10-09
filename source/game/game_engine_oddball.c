@@ -399,6 +399,23 @@ boolean player_has_ball(
 	return has_ball;
 }
 
+/* port: the player's current weapon is a ball (with REVERSE TAG and
+JUGGERNAUT the one who is "it" has no ball and ordinary weapons) */
+static boolean player_holds_ball_in_hand(
+	long player_index)
+{
+	struct player_datum *player = player_try_and_get(player_index);
+	struct unit_datum *unit;
+
+	if (!player || player->unit_index == NONE)
+		return FALSE;
+	unit = unit_get(player->unit_index);
+	if (unit->unit.current_weapon_index == NONE)
+		return FALSE;
+	return unit->unit.weapon_object_indices[unit->unit.current_weapon_index] != NONE &&
+		weapon_is_flag(unit->unit.weapon_object_indices[unit->unit.current_weapon_index]);
+}
+
 /* port: BALL MELEE LETHAL (universal_variant.ball_melee; ARENA OPTIONS): the
 melee blow of a player holding the ball kills (objects/damage.c asks, for a
 melee damage effect, host side) */
@@ -410,7 +427,8 @@ boolean game_engine_ball_melee_lethal(
 	return damaging_player_index != NONE &&
 		variant->game_engine_index == game_engine_oddball &&
 		variant->universal_variant.ball_melee == 1 &&
-		player_has_ball(damaging_player_index);
+		player_has_ball(damaging_player_index) &&
+		player_holds_ball_in_hand(damaging_player_index);
 }
 
 boolean ball_available(

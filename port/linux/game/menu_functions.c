@@ -5554,6 +5554,7 @@ enum
 	_option_radar,		/* the options' radar players, and the variant's flag */
 	_option_flags,		/* bits of the variant's flags (argument: their mask), set to the value */
 	_option_nhe_mode,	/* the variant's NHE MODE byte, its value (past TRAINING: BY VEHICLE SET) */
+	_option_ball_melee,	/* a byte of the variant, LETHAL (1) or else STOCK, as the engine reads it */
 	_option_goal_radar	/* the variant's goal radar, 3: nav points in line of sight (bit 27) */
 };
 
@@ -5606,7 +5607,7 @@ static struct gametype_option const gametype_options[] =
 	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
 	{ "nhe_extras_spinner", _option_flag, 0, FLAG(_game_variant_nhe_extras_bit), 2, { 0, 1 } },
 	/* (BALL MELEE: universal_variant.ball_melee, STOCK or LETHAL; Oddball only) */
-	{ "ball_melee_spinner", _option_byte, VARIANT_FIELD(universal_variant.ball_melee), 0, 2, { 0, 1 } },
+	{ "ball_melee_spinner", _option_ball_melee, VARIANT_FIELD(universal_variant.ball_melee), 0, 2, { 0, 1 } },
 	/* (DROP SECONDARY: bits 29-30, enum drop_secondary; a stored 3 shows as
 	EXCEPT POWER, the nearest, as the engine reads it) */
 	{ "drop_secondary_spinner", _option_flags, 0, GAME_VARIANT_DROP_SECONDARY_MASK, 3,
@@ -5735,6 +5736,7 @@ static long gametype_option_value(struct gametype_option const *option, struct g
 	case _option_short: return *(short *)(o + option->offset);
 	case _option_option_byte: return o[option->offset];
 	case _option_radar: return options->radar_players;
+	case _option_ball_melee: return v[option->offset] == 1;
 	case _option_nhe_mode: return game_variant_nhe_mode(variant->universal_variant.nhe_mode);
 	case _option_goal_radar:
 		return variant->universal_variant.goal_radar == 1 &&
@@ -5768,6 +5770,7 @@ static void gametype_option_value_set(struct gametype_option const *option, long
 	case _option_short: *(short *)(o + option->offset) = (short)value; break;
 	case _option_option_byte: o[option->offset] = (byte)value; break;
 	case _option_nhe_mode: variant->universal_variant.nhe_mode = (byte)value; break;
+	case _option_ball_melee: v[option->offset] = (byte)value; break;
 	case _option_goal_radar:
 		/* (LINE OF SIGHT: nav points, in sight only) */
 		variant->universal_variant.goal_radar = value == 3 ? 1 : value;

@@ -159,6 +159,8 @@ static struct
 	real ball_offset;
 	boolean ball_done;
 	unsigned long variant_flags;
+	/* (debug.network_test_ball_melee: the host's gametype gets BALL MELEE LETHAL) */
+	boolean ball_melee;
 	/* (debug.network_test_gametype: a custom gametype's stored name, empty
 	for the built-in one) */
 	char saved_gametype[64];
@@ -319,6 +321,7 @@ static void network_test_read_settings(
 			network_test.ball_shield = (real)ball_shield;
 	}
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
+	network_test.ball_melee = config_boolean("debug.network_test_ball_melee") != 0;
 	snprintf(network_test.saved_gametype, sizeof(network_test.saved_gametype), "%s",
 		config_string("debug.network_test_gametype"));
 	network_test.local_players = (short)PIN(config_integer("debug.network_test_local_players"), 1, MAXIMUM_LOCAL_PLAYERS);
@@ -638,6 +641,7 @@ static void network_test_shoot(
 			real dy = target_object->object.position.y - unit->object.position.y;
 			real dz = target_object->object.position.z - unit->object.position.z;
 
+			/* (1.6, not the 1.5 gather leaves players apart: rounding missed it) */
 			if (dx * dx + dy * dy + dz * dz > 1.6f * 1.6f)
 				continue;
 		}
@@ -1470,6 +1474,8 @@ void network_test_update(
 						variant.universal_variant.score_to_win = network_test.score_to_win;
 					/* debug.network_test_flags: the port's gametype options */
 					variant.universal_variant.flags |= network_test.variant_flags;
+					if (network_test.ball_melee)
+						variant.universal_variant.ball_melee = 1;
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */

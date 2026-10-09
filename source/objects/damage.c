@@ -1766,6 +1766,7 @@ void object_cause_damage(
 				boolean force_kill = TEST_FLAG(
 					damage->flags,
 					_damage_kill_instantly_bit);
+				boolean ball_melee_blow = FALSE;
 
 				/* port: BALL MELEE LETHAL (ARENA OPTIONS): the melee blow of a
 				player holding the ball kills a player's unit in one hit, shields
@@ -1774,19 +1775,13 @@ void object_cause_damage(
 				if (!force_kill &&
 					damage_definition->category == _damage_category_melee &&
 					current_object->object.type == _object_type_biped &&
+					!TEST_FLAG(current_object->object.damage_flags, _object_cannot_take_damage_bit) &&
 					game_engine_running() &&
-					game_engine_ball_melee_lethal(damage->owner_player_index))
+					game_engine_ball_melee_lethal(damage->owner_player_index) &&
+					((struct unit_datum const *)current_object)->unit.player_index != NONE)
 				{
-					struct unit_datum const *victim = (struct unit_datum const *)current_object;
-
-					if (victim->unit.player_index != NONE)
-					{
-						force_kill = TRUE;
-						error(_error_silent, "ball melee lethal: player %ld's blow kills player %ld (shield %g, health %g)",
-							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(damage->owner_player_index),
-							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(victim->unit.player_index),
-							(double)current_object->object.shield_vitality, (double)current_object->object.body_vitality);
-					}
+					force_kill = TRUE;
+					ball_melee_blow = TRUE;
 				}
 
 				if (node_index >= 0 && node_index < collision_model->nodes.count)
@@ -1869,6 +1864,11 @@ void object_cause_damage(
 					(friendly_damage == _friendly_damage_all || distributed_damage_authorized) &&
 					!TEST_FLAG(current_object->object.damage_flags, _object_dead_bit))
 				{
+					if (ball_melee_blow)
+						error(_error_silent, "ball melee lethal: player %ld's blow kills player %ld (shield %g, health %g)",
+							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(damage->owner_player_index),
+							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(((struct unit_datum const *)current_object)->unit.player_index),
+							(double)current_object->object.shield_vitality, (double)current_object->object.body_vitality);
 					current_object->object.body_vitality = 0.f;
 					object_deplete_body(current_object_index);
 					SET_FLAG(
