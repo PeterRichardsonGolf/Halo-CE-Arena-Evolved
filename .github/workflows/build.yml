@@ -103,6 +103,7 @@ jobs:
           python tools/test_ae_sound_lifecycle.py
           python tools/test_ae_sound_transition.py
           python -m unittest tools.test_custom_maps tools.test_virtual_keyboard_input
+          python -m unittest tools.test_halo_mcp
           python tools/test_light_storage.py
 
       - name: Compile cache
