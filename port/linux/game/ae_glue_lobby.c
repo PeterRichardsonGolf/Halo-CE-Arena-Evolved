@@ -111,13 +111,18 @@ static struct ae_result failed_result(const char *call, int reason)
 	return failed(call, reason, NULL);
 }
 
-/* a host on another network version: "Host is on version %d, you're on %d" */
+/* a host on another network version: "Host is on version %d, you're on %d"; one below this build's floor must update:
+"Host is on version %d and needs to update to %d or newer" */
 static struct ae_result failed_version(const char *call, int theirs, int ours)
 {
 	struct ae_result result;
 
 	result.ok = 0;
-	snprintf(result.reason, sizeof(result.reason), ae_string(AE_STR_ERR_VERSION), theirs, ours);
+	if (theirs < HALO_PORT_NETWORK_VERSION)
+		snprintf(result.reason, sizeof(result.reason), ae_string(AE_STR_ERR_HOST_UPDATE), theirs,
+			HALO_PORT_NETWORK_VERSION);
+	else
+		snprintf(result.reason, sizeof(result.reason), ae_string(AE_STR_ERR_VERSION), theirs, ours);
 	platform_log("ae lobby: %s: %s", call, result.reason);
 	return result;
 }
@@ -480,12 +485,10 @@ struct ae_result ae_lobby_leave(void)
 
 void ae_lobby_advertised(unsigned short version, unsigned char flags)
 {
-	int theirs = version, compatible = theirs >= delta_legacy_minimum() && theirs <= delta_legacy_maximum() &&
-		(flags & HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG) != 0;
-
-	/* (as network_client_manager.c's compatibility check: a version in the legal range on the distributed netcode;
-	an incompatible one is kept until the search ends, whichever host advertised last) */
-	if (compatible)
+	/* (the join's own test, halo_port_advertised_joinable: the network version floor, the legal range, the distributed
+	netcode; an incompatible host is kept until the search ends, whichever host advertised last) */
+	if (halo_port_advertised_joinable(version, flags, (unsigned int)delta_legacy_minimum(),
+		(unsigned int)delta_legacy_maximum()))
 		lobby.heard_compatible = TRUE;
 	else
 	{

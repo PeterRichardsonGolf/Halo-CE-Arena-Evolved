@@ -84,6 +84,7 @@ static const char *const strings[AE_NUMBER_OF_STRINGS] =
 	"Lobby full",
 	"No game found on the LAN",
 	"Host is on version %d, you're on %d",
+	"Host is on version %d and needs to update to %d or newer",
 	"Map not installed: %s",
 	"Game type not found: %s",
 	"Could not host the game",

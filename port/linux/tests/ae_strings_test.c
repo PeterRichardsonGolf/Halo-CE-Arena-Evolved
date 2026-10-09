@@ -11,7 +11,7 @@ static int failures;
 static const struct { int id, d, s; } formats[] =
 {
 	{ AE_STR_MORE, 1, 0 }, { AE_STR_DEFAULT, 0, 1 }, { AE_STR_CHANGED_FROM, 0, 1 }, { AE_STR_COUNT, 2, 0 },
-	{ AE_STR_REVERTING, 1, 0 }, { AE_STR_CONTROLLER_N, 1, 0 }, { AE_STR_PLAYER_N, 1, 0 }, { AE_STR_ERR_VERSION, 2, 0 },
+	{ AE_STR_REVERTING, 1, 0 }, { AE_STR_CONTROLLER_N, 1, 0 }, { AE_STR_PLAYER_N, 1, 0 }, { AE_STR_ERR_VERSION, 2, 0 }, { AE_STR_ERR_HOST_UPDATE, 2, 0 },
 	{ AE_STR_ERR_MAP, 0, 1 }, { AE_STR_ERR_GAMETYPE, 0, 1 }, { AE_STR_ERR_PROFILE_EDITING, 1, 0 },
 	{ AE_STR_GUEST_NAME, 1, 0 },
 };

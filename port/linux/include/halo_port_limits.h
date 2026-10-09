@@ -89,6 +89,17 @@ then flags */
 /* ... the host plays the distributed netcode (always, since the lockstep
 netcode was removed; hosts of version 4 built before then may not) */
 #define HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG 0x01
+/* ... whether a client joins a host that advertises this version and these flags: at least this build's own
+network version (no older host, whatever the wider range above: the range is what the other machines' messages
+leave out, the floor is what this build refuses), inside minimum..maximum (delta_legacy_minimum/maximum), and on the
+distributed netcode. The one test: the join (network_client_manager.c) and AE's lobby (ae_glue_lobby.c) both ask it,
+and port/linux/tests/ae_lobby_compat_test.c checks it. */
+static inline int halo_port_advertised_joinable(unsigned int theirs, unsigned int flags, unsigned int minimum,
+	unsigned int maximum)
+{
+	return theirs >= (unsigned int)HALO_PORT_NETWORK_VERSION && theirs >= minimum && theirs <= maximum &&
+		(flags & HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG) != 0;
+}
 /* ... the game is under way (loading, playing or over), not in its lobby:
 the menus show it before joining it (hosts built before then never set it) */
 #define HALO_PORT_ADVERTISED_IN_PROGRESS_FLAG 0x02

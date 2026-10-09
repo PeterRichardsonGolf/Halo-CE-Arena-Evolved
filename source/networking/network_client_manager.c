@@ -3187,7 +3187,8 @@ boolean network_game_client_advertised_game_compatible(
 		}
 		return FALSE;
 	}
-	if (theirs >= (unsigned int)delta_legacy_minimum() && theirs <= (unsigned int)delta_legacy_maximum() && distributed)
+	if (halo_port_advertised_joinable(theirs, distributed ? HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG : 0,
+		(unsigned int)delta_legacy_minimum(), (unsigned int)delta_legacy_maximum())) /* AE: the one test */
 	{
 		network_event("joining a host of network version %u (this machine's is %u)", theirs, ours);
 		return TRUE;
