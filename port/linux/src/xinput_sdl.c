@@ -657,6 +657,10 @@ int halo_push_to_talk_held(void)
 	struct platform_input_state input;
 	int slot;
 
+	/* (AE: not while a name or other text is typed, into the on-screen
+	keyboard or a menu's text field: its letters are not a wish to talk) */
+	if (text_typing)
+		return 0;
 	/* (the window losing the focus lets every key go: sdl_platform.c) */
 	bindings_read();
 	platform_input_read(&input, FALSE);
