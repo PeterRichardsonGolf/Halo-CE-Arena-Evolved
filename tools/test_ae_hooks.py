@@ -20,9 +20,15 @@ def normalised(text):
     return "\n".join(line.strip() for line in text.splitlines())
 
 
+# upstream's visibility batch copy, which may stand between a hook and the line before it
+BATCH_COPY = "#ifndef HALO_ANDROID\nvisibility_copy_batch();\n#endif\n"
+
+
 def present(needle, text):
-    """Whether the hook's lines are whole lines of the text, following each other (indentation aside)."""
-    return "\n" + "\n".join(hook_lines(needle)) + "\n" in "\n" + normalised(text) + "\n"
+    """Whether the hook's lines are whole lines of the text, following each other (indentation aside;
+    the batch copy of the present function is not counted)."""
+    text = normalised(text).replace(BATCH_COPY, "")
+    return "\n" + "\n".join(hook_lines(needle)) + "\n" in "\n" + text + "\n"
 
 
 def hooks():
@@ -54,6 +60,8 @@ def test_hook_lines_must_follow_each_other():
     # a merge that kept the if but lost (or moved) its body
     assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n#ifdef HALO_GAME_BROWSER\n\t\treturn;\n")
     assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n")
+    present_hook = "render_target_resolve(&t);\\nae_draw_present(); /* AE hook */"
+    assert present(present_hook, "\trender_target_resolve(&t);\n#ifndef HALO_ANDROID\n\tvisibility_copy_batch();\n#endif\n\tae_draw_present(); /* AE hook */\n")
     # whole lines only: not the end of a longer first line, nor the start of a longer last one
     assert not present(hook, "\t/* if (ae_ui_process()) /* AE hook */\n\t\treturn;\n")
     assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n\t\treturn; /* and more */\n")
