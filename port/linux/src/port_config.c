@@ -1180,6 +1180,15 @@ static const struct config_setting config_settings[] =
 		"screenshot shortly after (screenshots/, a \"test capture\" line in the log):\n"
 		"hud (a HUD message), start, pickup, kill, death, postgame. A kind may need a\n"
 		"text: hud:Spree." },
+	{ "debug.test_verdict_file", _config_string, "\"\"", "HALO_TEST_VERDICT_FILE", _environment_value, _platform_all,
+		"Test hook, off while empty: F7 (PASS) and F8 (FAIL) append a line \"<date> <time>\n"
+		"<test name> PASS|FAIL\" to this file and quit the game (the batch runner then\n"
+		"starts the next test); the name is debug.test_name." },
+	{ "debug.test_verdict_auto", _config_string, "\"\"", "HALO_TEST_VERDICT_AUTO", _environment_value, _platform_all,
+		"With debug.test_verdict_file: \"PASS:30\" or \"FAIL:30\" writes that verdict by itself\n"
+		"30 seconds after the start (the batch runner's own checks, no key to press)." },
+	{ "debug.test_name", _config_string, "\"\"", "HALO_TEST_NAME", _environment_value, _platform_all,
+		"The test's name in the line debug.test_verdict_file's keys write." },
 	{ "debug.network_test_quit", _config_real, "0.0", "HALO_NETWORK_TEST_QUIT", _environment_value, _platform_all,
 		"This many seconds into an automated test game controller 1's player\n"
 		"quits, as their pause menu's QUIT does (split screen: the others stay); 0 never." },

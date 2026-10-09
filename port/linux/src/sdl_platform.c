@@ -26,6 +26,7 @@ and the debug keyboard that the game's console reads.
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #if !defined(_WIN32) && !defined(HALO_ANDROID)
@@ -1748,6 +1749,23 @@ void platform_screenshot_request(void)
 #endif
 }
 
+/* the test hook debug.test_verdict_file: the verdict line, then the game quits */
+static void test_verdict(int pass)
+{
+	FILE *file = fopen(config_string("debug.test_verdict_file"), "a");
+	time_t now = time(NULL);
+	char stamp[32];
+
+	strftime(stamp, sizeof(stamp), "%Y-%m-%d %H:%M", localtime(&now));
+	if (file)
+	{
+		fprintf(file, "%s %s %s\n", stamp, config_string("debug.test_name"), pass ? "PASS" : "FAIL");
+		fclose(file);
+	}
+	platform_log("test verdict: %s %s", config_string("debug.test_name"), pass ? "PASS" : "FAIL");
+	platform_request_quit();
+}
+
 void platform_pump_events(void)
 {
 	/* debug.exit_after (seconds) ends the game that long after the window
@@ -1783,6 +1801,29 @@ void platform_pump_events(void)
 	{
 		platform_log("exiting after debug.exit_after");
 		exit(EXIT_SUCCESS);
+	}
+	{
+		/* the test hook debug.test_verdict_auto "PASS:30" / "FAIL:30": the verdict by itself that many
+		seconds on (for the batch runner's own checks, where no key can be pressed) */
+		static Uint64 auto_ticks = (Uint64)-1;
+		static int auto_pass;
+
+		if (auto_ticks == (Uint64)-1)
+		{
+			const char *text = config_string("debug.test_verdict_auto");
+
+			auto_ticks = 0;
+			if (*text && *config_string("debug.test_verdict_file") && (!strncmp(text, "PASS:", 5) || !strncmp(text, "FAIL:", 5)))
+			{
+				auto_pass = text[0] == 'P';
+				auto_ticks = SDL_GetTicks() + (Uint64)(atof(text + 5) * 1000.0);
+			}
+		}
+		if (auto_ticks && SDL_GetTicks() >= auto_ticks)
+		{
+			auto_ticks = 0;
+			test_verdict(auto_pass);
+		}
 	}
 	platform_show_pending_message();
 #ifdef HALO_GAME_BROWSER
@@ -1877,6 +1918,15 @@ void platform_pump_events(void)
 				break;
 			}
 #endif
+			/* the test hook debug.test_verdict_file: F7 PASS, F8 FAIL, then the game quits (off by
+			default; the keys are the game's own while it is empty) */
+			if (event.key.down && !event.key.repeat &&
+				(event.key.scancode == SDL_SCANCODE_F7 || event.key.scancode == SDL_SCANCODE_F8) &&
+				*config_string("debug.test_verdict_file"))
+			{
+				test_verdict(event.key.scancode == SDL_SCANCODE_F7);
+				break;
+			}
 			if (binding_capture == _binding_capture_waiting && event.key.down && !event.key.repeat &&
 				event.key.scancode != SDL_SCANCODE_F11 && event.key.scancode != SDL_SCANCODE_F12 &&
 				event.key.scancode != CAPTURE_RECORD_KEY)
