@@ -8,7 +8,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ### Added
 - AE MENUS (`display.arena_menus`, off by default; `HALO_ARENA_MENUS`): a Reach-style front end of our own, kept apart
-  from the PC menus in `port/linux/game/ae_ui/` and `ae_draw.c`. With the
+  from the PC menus in `port/linux/game/ae_*.c` and `port/linux/src/ae_*.c`. With the
   flag off nothing changes. This first part holds the widgets (panels,
   rows, dialogs, pager, keyboard), their layout for one to four local
   players at 720p to 4K, button prompts that drop words before they run past
@@ -31,7 +31,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   red, no team swap, the dead camera on you, the clock counting up), SPAWN
   HEAT allowed per gametype, and BALL MELEE (oddball: LETHAL, the carrier's
   melee kills in one hit). They travel in the gametype's flag bits and spare
-  bytes: no network change; stock joiners play the host's rules.
+  bytes: no network change; stock joiners play the host's rules (the indicators, such as
+  timer waypoints, line-of-sight marks and the NHE EXTRAS camera and clock, need Arena Evolved on the
+  joining machine).
 - HALO 2 health uses Halo 2's timers: shields recharge 5 s after the last
   shield damage and fill in 2 s (never under fire); health refills in 5 s,
   starting 10 s after the last damage that reached it.
