@@ -332,6 +332,8 @@ struct ae_dialog_spec
 	struct ae_density density;
 	struct ae_rect bounds;        /* FULL: the frame; VIEW: the panel or its page (the dialog draws inside it, at its
 	                                 width, and hides what is under it there) */
+	struct ae_rect dim;           /* (task 17) the panel that goes dim behind it, when that is more than bounds (VIEW: the
+	                                 whole panel, header included); zero width: the bounds */
 	void (*picked)(short choice, void *context); void *context;
 	struct ae_rect view;          /* (P12) */
 	int has_cancel;               /* 0 (a zeroed spec): B / Esc does nothing; else B / Esc picks cancel_choice */

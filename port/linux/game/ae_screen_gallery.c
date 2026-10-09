@@ -1081,6 +1081,8 @@ static void view_popover(int view)
 		spec.bounds = v->panel;
 		spec.bounds.y = v->content.y;
 		spec.bounds.height = v->panel.y + v->panel.height - v->content.y;
+		/* (the whole panel goes dim, its header and page dots too: task 17) */
+		spec.dim = v->panel;
 		spec.view = v->view;
 		spec.picked = dialog_picked;
 		ae_dialog_open(&spec, (short)view);

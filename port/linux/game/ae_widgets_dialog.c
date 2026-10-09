@@ -339,19 +339,19 @@ static void dialog_draw(struct ae_screen *screen)
 	another player's view; clicks outside the dialog are still taken over the whole view */
 	{
 		struct ae_view frame_view;
+		struct ae_rect dim = spec->dim.width > 0.0f && spec->dim.height > 0.0f ? spec->dim : spec->bounds;
 
 		ae_draw_current_view(&frame_view);
 		ae_draw_set_alpha(scrim);
 		/* (no bounds given: the whole view, as it can be nothing else) */
-		if (spec->bounds.width <= 0.0f || spec->bounds.height <= 0.0f)
+		if (dim.width <= 0.0f || dim.height <= 0.0f)
 		{
 			ae_draw_rect(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, 0.0f, AE_COLOR_SCRIM);
 		}
 		else
 		{
-			ae_draw_rect((spec->bounds.x - frame_view.x) / frame_view.scale,
-				(spec->bounds.y - frame_view.y) / frame_view.scale, spec->bounds.width / frame_view.scale,
-				spec->bounds.height / frame_view.scale, 0.0f, AE_COLOR_SCRIM);
+			ae_draw_rect((dim.x - frame_view.x) / frame_view.scale, (dim.y - frame_view.y) / frame_view.scale,
+				dim.width / frame_view.scale, dim.height / frame_view.scale, 0.0f, AE_COLOR_SCRIM);
 		}
 	}
 	ae_hit_add(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, id, AE_PART_OUTSIDE, -1);

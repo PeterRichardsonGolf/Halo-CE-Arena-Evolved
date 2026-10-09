@@ -605,6 +605,10 @@ static void view_dialogs(void)
 	CHECK(ae_dialog_open(&spec, 1));
 	spec.view.x = 0;
 	spec.bounds.x -= 960;
+	/* (task 17: the dim may be more than the bounds, the panel with its header: 20 u higher here) */
+	spec.dim = spec.bounds;
+	spec.dim.y -= 20.0f;
+	spec.dim.height += 20.0f;
 	CHECK(ae_dialog_open(&spec, 0) && ae_ui_depth() == 3);
 	ae_ui_pop();
 	ae_stub_reset(1920, 720);
@@ -628,8 +632,8 @@ static void view_dialogs(void)
 	}
 	/* (task 17: the scrim dims only the panel the dialog opened over, not the rest of the player's view) */
 	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_SCRIM, &box) && near(box.x, panel_pixels.x, 0.5f) &&
-		near(box.y, panel_pixels.y, 0.5f) && near(box.width, panel_pixels.width, 0.5f) &&
-		near(box.height, panel_pixels.height, 0.5f));
+		near(box.y, panel_pixels.y - 20.0f * to_pixels, 0.5f) && near(box.width, panel_pixels.width, 0.5f) &&
+		near(box.height, panel_pixels.height + 20.0f * to_pixels, 0.5f));
 	/* (VIEW: the panel's page stays under the scrim, visibly dimmed: no opaque fill over it) */
 	CHECK(!find_rect(AE_STUB_RECT, AE_COLOR_VIEW_PANEL, &box));
 	/* player 1's B picks player 1's cancel */
