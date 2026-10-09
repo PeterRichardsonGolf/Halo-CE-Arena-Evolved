@@ -602,13 +602,14 @@ static void view_dialogs(void)
 	panel_pixels.height = spec.bounds.height * to_pixels;
 	ae_dialog_place(&spec, &placed);
 	CHECK(placed.width <= spec.bounds.width - 2.0f * 14.0f * d.unit * scale + 0.01f);
-	CHECK(ae_dialog_open(&spec, 1));
-	spec.view.x = 0;
-	spec.bounds.x -= 960;
 	/* (task 17: the dim may be more than the bounds, the panel with its header: 20 u higher here) */
 	spec.dim = spec.bounds;
 	spec.dim.y -= 20.0f;
 	spec.dim.height += 20.0f;
+	CHECK(ae_dialog_open(&spec, 1));
+	spec.view.x = 0;
+	spec.bounds.x -= 960;
+	spec.dim.x -= 960;
 	CHECK(ae_dialog_open(&spec, 0) && ae_ui_depth() == 3);
 	ae_ui_pop();
 	ae_stub_reset(1920, 720);
