@@ -93,6 +93,12 @@ void test_input_hold_action(int hold)
 	(void)hold;
 }
 
+/* (voice chat's push to talk: the server has no keys, and no microphone) */
+int halo_push_to_talk_held(void)
+{
+	return 0;
+}
+
 /* ---------- XAPI */
 
 VOID WINAPI XInitDevices(DWORD preallocation_type_count, PXDEVICE_PREALLOC_TYPE preallocation_types)

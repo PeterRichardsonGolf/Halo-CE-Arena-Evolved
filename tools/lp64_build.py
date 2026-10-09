@@ -33,6 +33,9 @@ from .linux_build import (
     MBEDTLS_DIR,
     MINIUPNPC_DEFINES,
     MINIUPNPC_DIR,
+    OPUS_DIR,
+    opus_cflags,
+    opus_sources,
     MONOCYPHER_DIR,
     MUSL_MATH_DIR,
     OPTIMISATION,
@@ -295,6 +298,11 @@ class Lp64Build:
             f"-I{EXPAT_DIR}",
             # (Link Profile's QR encoder's, likewise)
             f"-I{QRCODEGEN_DIR}",
+            # (voice chat's codec's, likewise: voice_audio.c names opus.h by
+            # its path from port/linux/src, "../../third_party/opus/include",
+            # which from Opus's folder is the same file; the rewritten tree
+            # has no copy of it)
+            f"-I{OPUS_DIR}",
             # (public games' signatures', likewise)
             f"-I{MONOCYPHER_DIR}",
             # (the port's zlib's, likewise: its API is its own types)
@@ -353,6 +361,11 @@ class Lp64Build:
         # Link Profile's QR encoder (port/third_party/qrcodegen; browser.c),
         # with the host's ABI too: its long is the host's (LONG_MAX)
         add(QRCODEGEN_DIR / "qrcodegen.c", " ".join(native_third_party), native=True)
+        # voice chat's codec (port/third_party/opus; voice_audio.c), with the
+        # host's ABI too: its API is its own types (opus_int32, opus.h, which
+        # voice_audio.c includes unrewritten)
+        for source in opus_sources():
+            add(source, opus_cflags(" ".join([*host.target_flags, "-g", *host.third_party_flags])), native=True)
         # public games' signatures (port/third_party/monocypher; p2p_crypto.c),
         # with the host's ABI: its API is bytes and size_t
         for name in ("monocypher.c", "monocypher-ed25519.c"):

@@ -24,6 +24,7 @@ never hosts.
 #include "platform.h"
 #include "halo_product.h"
 #include "sdl_platform.h"
+#include "voice_audio.h"
 #include "port_config.h"
 #include "posix.h"
 #include "browser.h"
@@ -355,6 +356,101 @@ void platform_input_read(struct platform_input_state *state, BOOL consume_motion
 {
 	(void)consume_motion;
 	memset(state, 0, sizeof(*state));
+}
+
+/* (no scoreboard is drawn: its pointer, which picks a player to kick or
+mute, is never offered) */
+BOOL platform_scoreboard_pointer(BOOL offered, struct platform_ui_pointer *pointer)
+{
+	(void)offered;
+	memset(pointer, 0, sizeof(*pointer));
+	return FALSE;
+}
+
+/* ---------- audio devices and voice chat's sound
+
+The server plays and records nothing: it has no devices to choose
+(Settings > Audio), and voice chat's sound (port/linux/src/voice_audio.c,
+left out: tools/server_build.py) is silent here. The game's side of voice
+chat (port/linux/game/network_voice.c) still passes the players' packets on
+as a host does. */
+int platform_audio_devices(int recording, char (*names)[PLATFORM_AUDIO_DEVICE_NAME_SIZE], int maximum)
+{
+	(void)recording;
+	(void)names;
+	(void)maximum;
+	return 0;
+}
+
+SDL_AudioDeviceID platform_audio_device(int recording, const char *name)
+{
+	(void)recording;
+	(void)name;
+	return 0;
+}
+
+int voice_audio_microphone(int open)
+{
+	(void)open;
+	return 0;
+}
+
+int voice_audio_read_frame(float *frame)
+{
+	(void)frame;
+	return 0;
+}
+
+float voice_audio_level(const float *frame)
+{
+	(void)frame;
+	return 0.0f;
+}
+
+int voice_audio_encode(const float *frame, int bitrate, unsigned char *packet, int maximum)
+{
+	(void)frame;
+	(void)bitrate;
+	(void)packet;
+	(void)maximum;
+	return 0;
+}
+
+void voice_audio_play(int speaker, unsigned short sequence, const unsigned char *packet, int length, float gain,
+	float pan)
+{
+	(void)speaker;
+	(void)sequence;
+	(void)packet;
+	(void)length;
+	(void)gain;
+	(void)pan;
+}
+
+void voice_audio_forget(int speaker)
+{
+	(void)speaker;
+}
+
+void voice_audio_forget_all(void)
+{
+}
+
+int voice_audio_speaking(int speaker)
+{
+	(void)speaker;
+	return 0;
+}
+
+void voice_audio_set_volume(float volume)
+{
+	(void)volume;
+}
+
+void voice_audio_mix(float *output, unsigned long frames)
+{
+	(void)output;
+	(void)frames;
 }
 
 /* ---------- events */
