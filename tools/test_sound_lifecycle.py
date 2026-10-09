@@ -37,6 +37,7 @@ PRELUDE = r'''
 typedef float real;
 typedef int boolean;
 #define NONE (-1)
+#define NUMBEROF(array) (sizeof(array) / sizeof((array)[0]))
 #define TRUE 1
 #define FALSE 0
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -285,12 +286,12 @@ def main():
         unit = path / "sound_lifecycle.c"
         executable = path / "sound_lifecycle.exe"
         unit.write_text(PRELUDE + "\n".join(function(source, name) for name in names) + TESTS, encoding="utf-8")
-        subprocess.run([*compiler, str(unit), "-o", str(executable)], check=True)
+        subprocess.run([*compiler, str(unit), "-o", str(executable), *([] if sys.platform == "win32" else ["-lm"])], check=True)
         subprocess.run([str(executable)], check=True)
         backend = args.backend_source.read_text(encoding="utf-8")
         unit.write_text(BACKEND_PRELUDE + function(backend, "dsound_channel_callback") +
                         function(backend, "channel_stop") + BACKEND_TESTS, encoding="utf-8")
-        subprocess.run([*compiler, str(unit), "-o", str(executable)], check=True)
+        subprocess.run([*compiler, str(unit), "-o", str(executable), *([] if sys.platform == "win32" else ["-lm"])], check=True)
         subprocess.run([str(executable)], check=True)
 
 
