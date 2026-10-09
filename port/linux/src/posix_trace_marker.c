@@ -19,6 +19,8 @@ HALO_GPU_TRACE_MARKERS=1 lets the driver open it, to capture with gpuvis.
 Built with the host ABI.
 */
 
+#ifdef __linux__
+
 /* open and open64 as two functions, not open as glibc's open64 */
 #undef _FILE_OFFSET_BITS
 #include <dlfcn.h>
@@ -27,6 +29,8 @@ Built with the host ABI.
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 typedef int (*open_function)(const char *path, int flags, ...);
 typedef int (*openat_function)(int directory, const char *path, int flags, ...);
@@ -71,6 +75,8 @@ opened without a mode has) */
 			return -1; \
 		if (!real) \
 			real = (open_function)dlsym(RTLD_NEXT, #name); \
+		if (!real) \
+			return (int)syscall(SYS_openat, AT_FDCWD, path, flags, mode); \
 		return real(path, flags, mode); \
 	}
 
@@ -84,6 +90,8 @@ opened without a mode has) */
 			return -1; \
 		if (!real) \
 			real = (openat_function)dlsym(RTLD_NEXT, #name); \
+		if (!real) \
+			return (int)syscall(SYS_openat, directory, path, flags, mode); \
 		return real(directory, path, flags, mode); \
 	}
 
@@ -91,3 +99,5 @@ OPEN(open)
 OPEN(open64)
 OPENAT(openat)
 OPENAT(openat64)
+
+#endif /* __linux__ */
