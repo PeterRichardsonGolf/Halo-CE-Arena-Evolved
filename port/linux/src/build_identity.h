@@ -16,8 +16,8 @@ standard error, debug.txt; Arena Evolved's) */
 #define PLATFORM_LOG_PREFIX "arena-evolved: "
 
 /* "Halo CE: Arena Evolved 0.1.0-beta (release, release config, commit
-4f878c8e, built 2026-10-07) Linux x64; ChupathingyCE 0.7.0b, OpenCE
-build-145" (HALO_PRODUCT_NAME, and HALO_UPSTREAM_BASE after it) */
+4f878c8e, built 2026-10-07) Linux x64; ChupathingyCE 0.7.1d, OpenCE
+build-157" (HALO_PRODUCT_NAME, and HALO_UPSTREAM_BASE after it) */
 const char *build_identity(void);
 
 /* the User-Agent of this build's own requests: "ArenaEvolved/0.1.0-beta
