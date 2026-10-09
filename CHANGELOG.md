@@ -66,9 +66,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   are no longer refused: about half its grenade damage), #211 (a client no
   longer throws grenades it does not have right after spawning) and #210 (a
   player who used a teleporter no longer appears stuck on the pad they
-  left); the next upstream merge already has them.
+  left); the next upstream merge already has them. AE tightened #209: the
+  host takes a grenade's shock-wave report only after a real explosion of
+  that same grenade type (an explosion paid as a rocket's or another
+  weapon's licenses none).
 - Merged ChupathingyCE 0.7.1d and OpenCE build-157.
-  - Network version 24 (announced; hosts of 11 to 24 are joined): Arena
+  - Network version 24 (announced; hosts of 24 are joined): Arena
     Evolved plays with ChupathingyCE 0.7.1 and OpenCE build-149 and later
     both ways. Builds of an older version, Arena Evolved 0.1.0-beta among
     them, no longer join its games (their players are told the host is

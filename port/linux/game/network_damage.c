@@ -385,6 +385,8 @@ static struct
 		long definition_index;
 		real_point3d epicenter;
 		long object_index;
+		/* AE: the grenade type it was paid as (NONE: not a grenade's) */
+		short grenade_type;
 	} explosions[MAXIMUM_EXPLOSIONS_PER_TICK];
 } damage_explosions[MAXIMUM_TRACKED_PLAYERS];
 /* ... where each player's unit and vehicle were at each of the last ticks
@@ -1165,7 +1167,8 @@ static short distributed_grenade_throw(
 }
 
 /* whether an explosion of the type of grenade is among the player's this
-tick (distributed_report_paid), of any damage the grenade deals (one
+tick (distributed_report_paid) that was paid as that type's (AE: not a
+rocket's or another weapon's, which licenses no grenade damage), of any damage the grenade deals (one
 explosion deals more than one, each reported: a frag grenade's explosion
 and its shock wave): at the epicenter, or (NULL) anywhere */
 static boolean distributed_explosion_this_tick(
@@ -1184,7 +1187,8 @@ static boolean distributed_explosion_this_tick(
 		byte kinds;
 		struct damage_reach reach;
 
-		if (distributed_source_deals(grenade->projectile.index,
+		if (damage_explosions[player_index].explosions[index].grenade_type == grenade_type && /* AE */
+			distributed_source_deals(grenade->projectile.index,
 				damage_explosions[player_index].explosions[index].definition_index, TRUE, &kinds, &reach) > 0.0f &&
 			(!epicenter || (damage_explosions[player_index].explosions[index].epicenter.x == epicenter->x &&
 				damage_explosions[player_index].explosions[index].epicenter.y == epicenter->y &&
@@ -1681,7 +1685,8 @@ static boolean distributed_report_paid(
 	struct distributed_hit_report const *report,
 	real rate,
 	boolean explosion,
-	boolean reach)
+	boolean reach,
+	short grenade_type) /* AE: the grenade type the report is paid as, or NONE */
 {
 	real *hit_seconds = &damage_players[player_index].hit_seconds;
 	long elapsed = game_time_get() - damage_players[player_index].hit_seconds_time;
@@ -1727,6 +1732,7 @@ static boolean distributed_report_paid(
 		damage_explosions[player_index].explosions[count].definition_index = report->damage.definition_index;
 		damage_explosions[player_index].explosions[count].epicenter = report->damage.epicenter;
 		damage_explosions[player_index].explosions[count].object_index = report->object_index;
+		damage_explosions[player_index].explosions[count].grenade_type = grenade_type; /* AE */
 	}
 	return TRUE;
 }
@@ -1861,7 +1867,7 @@ static boolean distributed_report_valid(
 	}
 	/* no more than the weapon fires */
 	if (!distributed_report_paid(player_index, report, rate, area && !melee && !collision,
-		definition->cutoff_radius > 0.0f))
+		definition->cutoff_radius > 0.0f, grenade_type))
 	{
 		return FALSE;
 	}

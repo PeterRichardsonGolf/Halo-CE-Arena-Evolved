@@ -3146,8 +3146,9 @@ the system link list does (network_game_join_game_from_server_list) */
 void platform_show_message(char const *title, char const *message);
 
 /* whether this client can join the advertised game: its host's network
-version is one this machine plays with (HALO_PORT_NETWORK_VERSION_MINIMUM
-to HALO_PORT_NETWORK_VERSION_MAXIMUM), and it plays the distributed netcode (a host of this version built before the lockstep
+version is one this machine plays with (AE: this machine's own or newer, no
+older: HALO_PORT_NETWORK_VERSION_MINIMUM..MAXIMUM is the wider range of
+upstream), and it plays the distributed netcode (a host of this version built before the lockstep
 netcode was removed may play that). If not the player is told why (when
 tell), and nothing is joined. */
 boolean network_game_client_advertised_game_compatible(

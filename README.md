@@ -274,7 +274,8 @@ Re-run `configure.py` when source files or the menus are added.
 - Fixes to the shared game code are offered back upstream.
 - Online, Arena Evolved plays with ChupathingyCE 0.7.1 and OpenCE build-149
   and later (network version 24), both ways, and joins games hosted on
-  network versions 11 to 24. Builds of an older version (ChupathingyCE
+  network version 24 or newer (a host below 24 is refused: the host needs to
+  update). Builds of an older version (ChupathingyCE
   0.7.0b, OpenCE before build-149, Arena Evolved 0.1.0-beta) don't join
   Arena Evolved's games, which say 24: their players are told the host is
   newer. A game on a Custom Edition map is named as OpenCE names it, so

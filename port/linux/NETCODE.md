@@ -185,10 +185,10 @@ put it; version 24 sends the gametype's PC vehicle set, with which every
 machine places all of the map's vehicles.
 
 Arena Evolved announces 24, the table's newest (`delta.h`), and joins hosts
-of 11 to 24, as ChupathingyCE 0.7.1d does: it plays with ChupathingyCE 0.7.1
+of 24 (a host below 24 is refused, though ChupathingyCE 0.7.1d would join it): it plays with ChupathingyCE 0.7.1
 and OpenCE build-149 and later both ways (OpenCE's clients join only their
-own version, 24). Hosts of an older version are joined (ChupathingyCE
-0.7.0b's and Arena Evolved 0.1.0-beta's 20 among them); their clients do
+own version, 24). Hosts of an older version are refused (ChupathingyCE
+0.7.0b's and Arena Evolved 0.1.0-beta's 20 among them), and their clients do
 not join Arena Evolved's games, and are told the host is newer. Its wire ID
 is its own (`ae-24a`, `delta.h`), so ChupathingyCE's signed legacy tables
 (Delta, `docs/delta.md`), which have no row for it, neither change these

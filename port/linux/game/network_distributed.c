@@ -2271,12 +2271,12 @@ static void distributed_handle_unit_state(
 			distributed_apply_state(unit_index, state, &state->position, REMOTE_CORRECTION_TOLERANCE,
 				REMOTE_BLEND_DISTANCE, 0.0f, 0.0f);
 		}
-		/* moved further than a step at once (the host's teleporter sent
-		it): on the teleporter it lands on, as a teleporter leaves the
+		/* a remote player moved further than a step at once (more than 1
+		world unit; the host's teleporter sent it): on the teleporter it lands on, as a teleporter leaves the
 		player it sends, so that this machine's does not send it back each
 		time the host's word puts it there until it steps off
 		(game_engine_update_teleporter) */
-		if (distance_squared3d(&before, &object_get(unit_index)->object.position) > 1.0f)
+		if (!local && distance_squared3d(&before, &object_get(unit_index)->object.position) > 1.0f)
 		{
 			player->teleporter_index = find_netgame_flag(&object_get(unit_index)->object.position, 1.0f, 0.0f,
 				_netgame_flag_teleporter_source, NONE);
