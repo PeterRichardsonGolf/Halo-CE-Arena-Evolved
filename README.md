@@ -164,15 +164,24 @@ play:
   modes working. NHE's files are not included: get Halo 1: NHE 1.0 and its
   gametypes pack from the NHE team's site, [halo1nhe.com](https://halo1nhe.com/#download),
   and put its maps in `mods/NHE/maps`.
-- Xbox community maps (the v5 map pack format) and Halo PC (Custom Edition)
-  maps, with the Custom Edition shared files from your own Halo PC install or
-  from Halo: The Master Chief Collection on Steam (`halo1/maps/custom_edition`).
+- Xbox community maps (the v5 map pack format) and Halo PC maps, each kind
+  in a folder beside `maps`: Custom Edition maps in `maps_ce` (with the
+  Custom Edition shared files, `bitmaps.map`, `sounds.map` and `loc.map`,
+  from your own Halo PC install or from Halo: The Master Chief Collection on
+  Steam, `halo1/maps/custom_edition`), HaloMD maps in `maps_md` and your
+  Halo PC disc's maps in `maps_pc`. The older `maps/ce` and `md_maps`, and
+  OpenCE's `custom_maps`, still play from where they are; at its first
+  start the game offers to move the first two (`game.move_old_map_folders`).
 
 **Privacy**
 - Internet games you host start PUBLIC, as upstream's do: they show in the
   in-game Server Browser unless you set LISTING to PRIVATE in Server Setup.
-  Listing them on the website game list, and reporting the games you join to a
-  stats site, stay off unless you turn them on (Settings > Network).
+  Listing them on the website game list, reporting the games you join to a
+  stats site, and Delta Stats (what happens in the games you host: kills
+  with positions, accuracy, medals, sent to that site; on by default in
+  ChupathingyCE) stay off unless you turn them on (Settings > Network).
+- Crash reports, which ChupathingyCE's releases send to its site, are off in
+  every Arena Evolved build: nothing is written to send and nothing is asked.
 - The game does not fetch ChupathingyCE's signed table of network versions
   (Delta) unless you turn `network.legacy_table_fetch` on (it would change
   nothing: Arena Evolved has its own wire ID). In a game, machines that speak
@@ -262,14 +271,13 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, Arena Evolved plays with ChupathingyCE 0.7.0b and OpenCE build-133
-  to build-140 (network version 20), both ways, and joins games hosted on
-  network versions 11 to 22, OpenCE build-141 and later's (21, 22)
-  included, on the game's own maps (OpenCE's Custom Edition maps are named
-  otherwise); those builds don't join Arena Evolved's games, which say 20. Older
-  builds' hosts (network version 10) can't be joined, and ChupathingyCE
-  0.6.8b and OpenCE build-129 to build-131 (version 18) don't join Arena
-  Evolved's games.
+- Online, Arena Evolved plays with ChupathingyCE 0.7.1 and OpenCE build-149
+  and later (network version 24), both ways, and joins games hosted on
+  network versions 11 to 24. Builds of an older version (ChupathingyCE
+  0.7.0b, OpenCE before build-149, Arena Evolved 0.1.0-beta) don't join
+  Arena Evolved's games, which say 24: their players are told the host is
+  newer. A game on a Custom Edition map is named as OpenCE names it, so
+  OpenCE and ChupathingyCE players with the map join it too.
 
 ## Credits
 

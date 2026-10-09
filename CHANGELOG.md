@@ -62,6 +62,42 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   power items" in ten / are up, "and", "in ten" and "powerup is up".
 
 ### Changed
+- Merged ChupathingyCE 0.7.1d and OpenCE build-157.
+  - Network version 24 (announced; hosts of 11 to 24 are joined): Arena
+    Evolved plays with ChupathingyCE 0.7.1 and OpenCE build-149 and later
+    both ways. Builds of an older version, Arena Evolved 0.1.0-beta among
+    them, no longer join its games (their players are told the host is
+    newer); it still joins theirs. Its wire ID is `ae-24a`.
+  - Halo PC maps have folders of their own beside `maps`: `maps_ce` (Custom
+    Edition), `maps_md` (HaloMD) and `maps_pc` (your Halo PC disc's, new).
+    `maps/ce`, `md_maps` and OpenCE's `custom_maps` still play; the game
+    offers once to move the first two (`game.move_old_map_folders`). A game
+    on a Custom Edition map is named as OpenCE names it, so OpenCE players
+    with the map join it.
+  - Security (ChupathingyCE 0.7.1d): a downloaded map's scripts may call and
+    set less, map strings are bounded and never a format string, a host's
+    map name may not be a Windows device, a map's widgets may not run the
+    menus' profile and settings functions, the Ogg Vorbis decoder hardened.
+  - Delta Stats (the games you host sent to halo.milenko.org: kills with
+    positions, accuracy, medals), on by default in ChupathingyCE, is OFF by
+    default here: Settings > Network, SHARE HOSTED STATS
+    (`network.report_events`). Crash reports, which ChupathingyCE's releases
+    send, are off in every Arena Evolved build.
+  - One player alone starts a system link, internet or split screen game as
+    upstream has it; Arena Evolved's own rule is kept for the host's
+    machine alone with several local players.
+  - From OpenCE build-146 to build-157: the PC vehicle set (every vehicle
+    the map places), oddball on maps with no ball spawn, every placed
+    vehicle coming back, Server Setup starting at the most players, co-op's
+    bringto bringing every player, stereo world sounds panned and
+    reverberated, a 16 MB sound cache, sound tags from files
+    (`audio.loose_sounds`, for those who make sounds), the weapon HUD's
+    secondary magazine, exact health thresholds, hosting on machines up for
+    more than 24.8 days, finer mouse sensitivity steps, recent errors on
+    the halt screen.
+  - OpenCE's own Custom Edition loader is no longer in the tree (as in
+    ChupathingyCE 0.7.1): Custom Edition, HaloMD and Halo PC maps are
+    ChupathingyCE's loader's, as before.
 - TRAINING's waypoints: an item a map has twice on one side (or twice in
   the middle) is numbered, RED ROCKETS 1 and RED ROCKETS 2 on Boarding
   Action, in its label and in the power column when it spawns alone; and

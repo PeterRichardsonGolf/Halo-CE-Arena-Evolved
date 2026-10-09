@@ -182,6 +182,23 @@ client without the map it names is told which map it misses and where to
 put it; version 24 sends the gametype's PC vehicle set, with which every
 machine places all of the map's vehicles.
 
+Arena Evolved announces 24, the table's newest (`delta.h`), and joins hosts
+of 11 to 24, as ChupathingyCE 0.7.1d does: it plays with ChupathingyCE 0.7.1
+and OpenCE build-149 and later both ways (OpenCE's clients join only their
+own version, 24). Hosts of an older version are joined (ChupathingyCE
+0.7.0b's and Arena Evolved 0.1.0-beta's 20 among them); their clients do
+not join Arena Evolved's games, and are told the host is newer. Its wire ID
+is its own (`ae-24a`, `delta.h`), so ChupathingyCE's signed legacy tables
+(Delta, `docs/delta.md`), which have no row for it, neither change these
+numbers nor turn off its Delta capabilities, and they are not fetched unless
+`network.legacy_table_fetch` is on (off by default). The game's messages are
+ChupathingyCE 0.7.1d's and OpenCE build-157's unchanged: Arena Evolved's own
+rules travel in the gametype's flags, which every host of 11 to 24 sends
+and a client that does not know a bit leaves alone. Arena Evolved's own
+rule on top: a game with a password never has its invite sent to the game
+list's site (`browser.c`: not listed, not claimed, not reported, hosted or
+joined through the password).
+
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. That
 is its own, or one of a range (HALO_PORT_NETWORK_VERSION_MINIMUM to

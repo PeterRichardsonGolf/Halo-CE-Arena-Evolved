@@ -65,8 +65,8 @@ It is the 64-bit build of the other systems (`HALO_64BIT`: see
 - It is not optimized with a profile. The committed profiles are those of
   the 32-bit builds.
 
-It plays the Custom Edition maps of Halo PC (`maps/ce/`) and HaloMD's maps
-(`md_maps/`), it plays with the
+It plays the Custom Edition maps of Halo PC (`maps_ce/`), HaloMD's maps
+(`maps_md/`) and Halo PC's own (`maps_pc/`), it plays with the
 32-bit builds and the other ports over the network, and it is a dedicated
 server too (`server/README.md`). Its releases are a separate download,
 `arena-evolved-windows64-release.zip`.
@@ -161,10 +161,10 @@ to the ChupathingyCE site (`network.browser_url`, `POST /v1/crash`), which
 groups the crashes and tells the developers:
 
 (Arena Evolved: its builds send no crash reports and write no minidumps:
-`crash_reports_enabled()` in `src/win32_crash.c` is always false, also with
-`HALO_CRASH_REPORTS_ANY_BUILD`, and `crash_reports.upload` has no effect.
-The rest of this section describes OpenCE's builds. A crash's lines still go
-to `debug.txt`.)
+`crash_reports_armed()` in `port/linux/src/crash_report.c` is always false,
+also with `HALO_CRASH_REPORTS_ANY_BUILD`, and `crash_reports.upload` has no
+effect. The rest of this section describes ChupathingyCE's builds. A crash's
+lines still go to `debug.txt`.)
 
 1. The game starts a second copy of `halo.exe` (`halo.exe --crash-report`).
    This copy writes a minidump of the game to `crashes\` next to

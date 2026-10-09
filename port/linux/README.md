@@ -47,8 +47,8 @@ sound libraries to start. An SDL3 built by hand is found through
 `LIBRARY_PATH` when linking and `LD_LIBRARY_PATH` when starting. It is not
 optimised with a profile (the committed profiles are the 32-bit build's).
 Its releases are their own download, `arena-evolved-linux64-release.zip`.
-It plays Halo PC's Custom Edition maps
-(`maps/ce/`) and plays with the 32-bit builds and the other ports over the
+It plays Halo PC's maps (`maps_ce/`, `maps_md/`, `maps_pc/`) and plays with
+the 32-bit builds and the other ports over the
 network, and it is a dedicated server too (`server/README.md`).
 
 ## Start the game
@@ -135,6 +135,11 @@ backtrace to the standard error. To find the function at the address, enter
 `addr2line -e build/linux/halo <address>`.
 
 ### Crash reports
+
+(Arena Evolved: none. Its builds write no crash report, ask nothing and send
+nothing, whatever `crash_reports.upload` says: `crash_reports_armed` in
+`src/crash_report.c` is always false. This section describes
+ChupathingyCE's builds. A crash's lines still go to `debug.txt`.)
 
 Releases and nightlies on Linux and macOS also write a crash report when
 the game stops because of `SIGSEGV`, `SIGBUS`, `SIGILL`, `SIGFPE` or
@@ -445,6 +450,8 @@ the setting for one start of the game. It has priority over the file.
 | `network.brokers_file` | `"brokers.txt"` | `HALO_NET_BROKERS_FILE` | The file of the public MQTT brokers that let the machines of an invite find each other, and that carry the listings of the server browser: next to `config.toml`, unless a full path. One `host:port` on each line, up to 4; `#` starts a comment. |
 | `network.stun_servers` | Google and Cloudflare | `HALO_NET_STUN` | The public STUN servers (`host:port`, with commas between them) that give the internet address of a machine. |
 | `network.legacy_table_fetch` | `false` | `HALO_LEGACY_TABLE_FETCH` | Arena Evolved. `true`: at start and every few hours the game fetches ChupathingyCE's signed legacy table from `network.browser_url` (else GitHub). It changes nothing in Arena Evolved, whose wire ID (`ae-20a`) those tables have no row for. `false`: no fetch. |
+| `network.report_events` | `false` | `HALO_NET_REPORT_EVENTS` | Delta Stats. `true`: the games this machine hosts are recorded (kills with weapons and positions, accuracy, medals, objectives, vehicles, pickups, positions a few seconds apart; players' names and a hash of their hardware ID, never an address) and sent to `network.browser_url` when each ends, for its match pages, heatmaps and leaderboards. `false` (Arena Evolved's default, an opt-in: Settings > Network, SHARE HOSTED STATS; ChupathingyCE's is `true`): nothing is recorded or sent. `network.events_token`, `network.events_positions`, `network.events_limit`, `network.events_part_minutes` and `network.events_folder` tune it (`port_config.c`). |
+| `game.move_old_map_folders` | `"ask"` | `HALO_MOVE_OLD_MAP_FOLDERS` | Halo PC maps' folders are `maps_ce`, `maps_md` and `maps_pc`, beside `maps`; the older `maps/ce` and `md_maps` still play. `"ask"`: the game offers once to move them (each folder whole, never copied); `"yes"`: moved without asking; `"no"`: left where they are. |
 | `network.legacy_table` | `""` | `HALO_LEGACY_TABLE` | For testing, and for admins: a legacy table file, not signed, next to `config.toml` unless a full path. Its row for the wire of the build sets the OpenCE network versions that the game announces and joins, in place of the signed tables. The log shows a warning at start. Refer to `docs/delta.md`. Empty: none. |
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
@@ -1014,24 +1021,24 @@ In Arena Evolved:
   four players whatever `player_spawn_count` says. The main menu's
   scripts (a main menu scenario in ui.map) may also call `map_name`,
   `texture_cache_flush` and `sound_cache_flush` (CE+ X's menu does).
-- Custom Edition and HaloMD maps are ChupathingyCE's (`ce_*.c`,
-  `map_families.c`: `<file>@ce`, `<file>@md`), not OpenCE build-145's
-  loader, whose files (`custom_edition_*.c`, `cache_file_formats.c`,
-  `bmp_files.c`, `stb_vorbis.c`) stay in the tree but in no build of the
-  game (`tools/linux_build.py`, `OPENCE_CUSTOM_EDITION_SOURCES`;
-  `game/ae_opence_custom_edition_off.c` answers the game's calls into them
-  with no such map). The `game.custom_edition` setting and the
-  `custom_maps` folder are OpenCE's and not used; `paths.custom_edition`
-  does nothing here. `map_validate` alone builds `cache_file_formats.c`,
-  so that it checks a Custom Edition map as OpenCE's loader reads it, which
-  is not how the game reads it.
-- A network game's map name, which a client checks (build-140), may end in
-  a map family's suffix (`<file>@ce`, `<file>@md`: `halo_map_families.h`),
-  so that games of Custom Edition and HaloMD maps join.
-- A Custom Edition map's structure bsps get only ChupathingyCE's checks
-  (`ce_map_checks.c`'s `ce_bsp_check`, before the map opens), not
-  build-139's schema, since ChupathingyCE 0.7.0b has none for them; to
-  revisit when ChupathingyCE merges build-139.
+- Custom Edition, HaloMD and Halo PC retail maps are ChupathingyCE's
+  (`ce_*.c`, `map_families.c`: `<file>@ce`, `<file>@md`, `<file>@pc`, from
+  `maps_ce`, `maps_md` and `maps_pc`, and the older `maps/ce`, `md_maps`
+  and OpenCE's `custom_maps`). OpenCE's own Custom Edition loader
+  (`custom_edition_*.c`, `cache_file_formats.c`) is not in the tree, as in
+  ChupathingyCE 0.7.1; `map_validate` reads only the Xbox's format.
+- Upstream's sounds of tag files (`audio.loose_sounds`, `loose_sounds.c`)
+  take their encoder from `game/loose_sounds_encode.c`: OpenCE's, out of
+  its Custom Edition sound unit, with ChupathingyCE's Ogg Vorbis decoder.
+- A network game's map name is checked as ChupathingyCE 0.7.1d checks it
+  (`network_game_client_map_name_is_valid`: '@' and Custom Edition names'
+  punctuation taken, Windows's device names refused).
+- A downloaded map's scripts (`game.downloaded_maps`) are held to
+  ChupathingyCE 0.7.1d's tighter list on top of the above; a mod's maps
+  are not downloaded maps.
+- Delta Stats (`network.report_events`) and crash reports
+  (`crash_reports.upload`) are off: the first an opt-in, the second never
+  sent (`crash_reports_armed` in `src/crash_report.c` is always false).
 
 ## What operates
 
