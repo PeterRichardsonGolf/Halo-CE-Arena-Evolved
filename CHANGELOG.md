@@ -7,6 +7,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
+- AE MENUS (`display.arena_menus`, off by default; `HALO_ARENA_MENUS`): a Reach-style front end of our own, kept apart
+  from the PC menus in `port/linux/game/ae_ui/` and `ae_draw.c`. With the
+  flag off nothing changes. This first part holds the widgets (panels,
+  rows, dialogs, pager, keyboard), their layout for one to four local
+  players at 720p to 4K, button prompts that drop words before they run past
+  the panel, the profile screens, a gallery of test screens, and the lobby
+  (roster, MAP and GAME TYPE picks that carry into the match). Not yet a
+  full replacement for the PC menus; try it with the flag on.
 - Gametype tiers: the Arena Evolved casual set (with 2V2, PRACTICE,
   VANILLA and POWERUPS), special modes (SNIPERS, SHOTTY SNIPERS, SWAT,
   ROCKETS, SHOTGUNS, HEAVIES), AE COMP, FFA AE TRAINING and Halo 1: NHE's
