@@ -1248,14 +1248,14 @@ void network_test_update(
 					struct object_iterator weapons;
 					long before = 0, after = 0;
 
-					object_iterator_new(&weapons, _object_mask_weapon, 0);
+					object_iterator_new(&weapons, _object_mask_weapon | _object_mask_equipment, 0);
 					while (object_iterator_next(&weapons))
 						before++;
 					cheat_all_weapons();
-					object_iterator_new(&weapons, _object_mask_weapon, 0);
+					object_iterator_new(&weapons, _object_mask_weapon | _object_mask_equipment, 0);
 					while (object_iterator_next(&weapons))
 						after++;
-					platform_log("network test: cheat_all_weapons created %ld weapon objects (%ld before, %ld after)",
+					platform_log("network test: cheat_all_weapons created %ld weapon and equipment objects (%ld before, %ld after)",
 						after - before, before, after);
 				}
 			}
