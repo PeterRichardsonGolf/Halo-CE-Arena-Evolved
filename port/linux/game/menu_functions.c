@@ -3058,23 +3058,45 @@ static void gametype_display_name(long profile_index, wchar_t *text)
 
 /* a gametype's name in a narrow panel (the gametype lists' and the
 lobby's, 146 wide in small_ui): a display name too long for a line is
-broken at its last space that leaves the first line at most
-GAMETYPE_PANEL_LINE characters ("TEAM NHE CTF 3 7.5S" / "RADAR") */
-#define GAMETYPE_PANEL_LINE 19
+broken at its last space that leaves the first line within the panel's
+width. The width is estimated per character (the panel clips text, so an
+estimate that errs wide cuts a glyph: "TEAM NHE SLAYER 10" is the longest
+that shows at all, so the budget stays under it): narrow glyphs count half,
+M and W more, a space between. "TEAM NHE SLAYER 100" / "TEAM NHE CTF 3 7.5S"
+break before their last word or two */
+#define GAMETYPE_PANEL_WIDTH 15.5f
+static real gametype_panel_char_width(wchar_t c)
+{
+	switch (c)
+	{
+	case 'I': case '1': case '.': case ':': case '\'': case '!': case '|':
+		return 0.5f;
+	case ' ': case '-':
+		return 0.6f;
+	case 'M': case 'W':
+		return 1.3f;
+	}
+	return 1.0f;
+}
+
 static void gametype_panel_name(wchar_t *text, size_t size)
 {
 	size_t length = ustrlen(text);
 	size_t index;
 	size_t space = 0;
+	real width = 0.0f;
 
-	if (length <= GAMETYPE_PANEL_LINE || length + 2 >= size)
+	if (length + 2 >= size)
 		return;
-	for (index = 1; index <= GAMETYPE_PANEL_LINE; index++)
+	for (index = 0; index < length; index++)
 	{
+		width += gametype_panel_char_width(text[index]);
+		if (width > GAMETYPE_PANEL_WIDTH)
+			break;
 		if (text[index] == ' ')
 			space = index;
 	}
-	if (!space)
+	if (index >= length || !space)
 		return;
 	/* (the space becomes the line break's "\r\n") */
 	memmove(text + space + 2, text + space + 1, (length - space) * sizeof(wchar_t));

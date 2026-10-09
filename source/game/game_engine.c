@@ -6311,6 +6311,15 @@ void game_engine_render_nav_points(
 								&head_position,
 								&global_goal[goal_index].position,
 								NONE);
+							/* (the log, for the stock path too: what the game
+							draws for the goal each second) */
+							if (hud_debug_flag(_hud_debug_waypoint_log) && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+								game_engine_goal_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND)
+							{
+								platform_log("objective: view %d goal %ld (carrier %s): stock nav point, render type %d",
+									(int)local_player_index, goal_index,
+									global_goal[goal_index].ignore_player_index != NONE ? "yes" : "no", (int)render_type);
+							}
 						}
 
 						custom_render_nav_point(
