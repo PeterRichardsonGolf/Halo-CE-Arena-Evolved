@@ -38,4 +38,11 @@ drags go to the menus while menus_active); returns nonzero while menus are
 active and the pointer could be read */
 int halo_ui_pointer_update(int menus_active, struct halo_ui_pointer *pointer);
 
+/* the open scoreboard's pointer (game_engine.c), offered (a network game's)
+or not: 1 while a right click has freed it, with where it is and what it
+did since the last call, in the screen's coordinates (the game's drawing,
+not the menus' centered 640); 0 while it is not; -1 where there is none
+(Android) */
+int halo_scoreboard_pointer_update(int offered, struct halo_ui_pointer *pointer);
+
 #endif

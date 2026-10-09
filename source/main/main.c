@@ -381,6 +381,7 @@ symbols in this file:
 #include "networking/network_game_manager.h"
 #include "networking/network_server_manager.h" /* port: a co-op game's level won */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "network_voice.h" /* port: port/linux/game/network_voice.c */
 #include "camera/director.h"
 #include "camera/observer.h"
 #include "cutscene/cinematics.h"
@@ -3698,6 +3699,8 @@ void main_loop(
 
 			/* automated system link tests (port/linux/game/network_test.c) */
 			network_test_update(main_globals.main_menu_scenario_loaded, main_globals.seconds_elapsed);
+			/* port: voice chat, in the lobby and in game (port/linux/game/network_voice.c) */
+			network_voice_update();
 			connection = main_globals.connection;
 			if (connection==_game_connection_network_client)
 			{
@@ -3749,7 +3752,11 @@ void main_loop(
 #endif
 			bink_playback_update();
 
-			if ((!game_in_editor() && (input_key_is_down(_key_end) || input_key_is_down(_key_escape))) || editor_should_exit())
+			/* port: not the Xbox debug keyboard's End and Escape, which stop
+			the movie and restart the map: this keyboard reaches the game only
+			through the console and the menus' text boxes, whose End and Escape
+			they are (port/linux/src/xinput_sdl.c) */
+			if (editor_should_exit())
 			{
 				main_movie_stop();
 

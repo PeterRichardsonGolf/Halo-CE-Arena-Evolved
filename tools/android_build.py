@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional
 from .linux_build import (CUSTOM_EDITION_DEFINES, LINUX_PROFILE, MBEDTLS_DIR, MINIUPNPC_DEFINES, MINIUPNPC_DIR, MUSL_MATH_DIR, STB_DIR,
                           XDK_INCLUDE, compile_launcher, game_browser_defines, game_defines_and_includes, game_sources, miniupnpc_sources,
                           port_game_sources,
-                          musl_math_sources, pgo_mode, pgo_profile,
+                          musl_math_sources, opus_cflags, opus_sources, pgo_mode, pgo_profile,
                           profile_use_flags, updater_defines, xdk_headers)
 from .embed_assets import hud_assets_build, hud_configure_inputs, ui_fonts_build
 from .ninja_syntax import Writer
@@ -59,6 +59,7 @@ MUSL_DIR = THIRD_PARTY / f"musl-{MUSL_VERSION}"
 MUSL_URL = f"https://musl.libc.org/releases/musl-{MUSL_VERSION}.tar.gz"
 # (the download's SHA-256, and the tag's commit, when they were pinned)
 MUSL_SHA256 = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4"
+# (as tools/windows_build.py's and tools/linux_sysroot.py's SDL_VERSION)
 SDL_TAG = "release-3.4.16"
 SDL_COMMIT = "fa2c02bb6e21974a89ea9824bc53c9932abe5f9c"
 SDL_DIR = THIRD_PARTY / "SDL3"
@@ -515,6 +516,10 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     objects.append(guest_object(KCP_DIR / "ikcp.c", platform_cflags))
     # Link Profile's QR code (port/third_party/qrcodegen; browser.c)
     objects.append(guest_object(QRCODEGEN_DIR / "qrcodegen.c", platform_cflags))
+    # voice chat's codec (port/third_party/opus), with the guest's ABI and C
+    # library
+    for source in opus_sources():
+        objects.append(guest_object(source, " ".join([opus_cflags(guest_abi), *libc_includes])))
     # internet play's signatures, for public games' listings
     # (port/third_party/monocypher; p2p_crypto.c)
     for name in ("monocypher.c", "monocypher-ed25519.c"):

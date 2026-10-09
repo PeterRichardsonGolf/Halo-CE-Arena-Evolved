@@ -1715,9 +1715,9 @@ void hud_messaging_update(
 								}
 								else
 								{
-									/* Help text has no custom icons. Leave this one out.
-									The button icon list is the wrong list, and its index
-									is still NONE. */
+									/* port: help text has no custom icons: this one
+									is left out (the button icons' list is not
+									theirs, and its index is still NONE) */
 									static boolean help_custom_icon_reported = FALSE;
 
 									if (!help_custom_icon_reported)
@@ -1918,7 +1918,10 @@ void hud_messaging_update(
 					/* port: the item's text (the map's) is the format: as
 					one only if it takes the count alone, and bounded */
 					if (item_text && ustring_format_takes(item_text, "d"))
+					{
 						usnprintf(formatted, NUMBEROF(formatted), item_text, message->quantity / value_scale);
+						formatted[NUMBEROF(formatted) - 1] = 0;
+					}
 					else
 						ustrncpy_terminated(formatted, item_text, NUMBEROF(formatted));
 					rasterizer_draw_unicode_string(

@@ -34,7 +34,8 @@ from .version import VERSION_SOURCES, identity_defines, release_build, version
 from .voice_assets import voices_build
 from .linux_build import (CUSTOM_EDITION_DEFINES, LINUX_PROFILE, MBEDTLS_DIR, MINIUPNPC_DIR, OPTIMISATION, STB_DIR, WINDOWS_PROFILE,
                           XDK_INCLUDE, game_browser_defines, lto_mode, march_flag, miniupnpc_sources, pgo_mode, compile_launcher, game_defines_and_includes,
-                          game_sources, musl_math_cflags, musl_math_sources, pgo_profile, port_game_sources, profile_use_flags,
+                          game_sources, musl_math_cflags, musl_math_sources, opus_cflags, opus_sources, pgo_profile, port_game_sources,
+                          profile_use_flags,
                           xdk_headers)
 from .lp64_build import lp64_excluded
 from .embed_assets import hud_assets_build, hud_configure_inputs, ui_fonts_build
@@ -45,6 +46,7 @@ PORT_DIR = Path("port/windows")
 PORT_CONFIG = PORT_DIR / "port.json"
 BUILD = Path("build/windows")
 
+# (as tools/android_build.py's SDL_TAG and tools/linux_sysroot.py's SDL_VERSION)
 SDL_VERSION = "3.4.16"
 SDL_URL = (
     f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL_VERSION}/"
@@ -310,6 +312,15 @@ PROFILE_RUNTIME_HEADERS = [
 ]
 
 
+def windows_rc(cc: str) -> str:
+    """LLVM's resource compiler of the clang named cc: beside it, where cc is
+    a path, else the one on the PATH"""
+    path = Path(cc)
+    if path.parent == Path("."):
+        return "llvm-rc"
+    return str(path.with_name("llvm-rc" + path.suffix))
+
+
 def clang_release(cc: str) -> Optional[str]:
     """the release (22.1.0) of the clang named cc, or None"""
     try:
@@ -431,6 +442,17 @@ def generate_windows_target(n: Writer, sln: Any, target: WindowsTarget) -> None:
         rspfile="$out.rsp",
         rspfile_content="$in_newline",
     )
+    # the executable's resources (port/windows/halo.rc: its icon), compiled
+    # by LLVM's resource compiler, beside the clang that builds the game
+    # (AE: each of the two targets has its own rule and output)
+    n.variable(f"{prefix}_rc", windows_rc(cc))
+    n.rule(
+        name=f"{prefix}_rc",
+        command=f"${prefix}_rc /no-preprocess /FO $out $in",
+        description=f"{label} RC $out",
+    )
+    resources = build / "halo.res"
+    n.build(outputs=resources, rule=f"{prefix}_rc", inputs=PORT_DIR / "halo.rc", implicit=[PORT_DIR / "opence-icon.ico"])
     n.rule(
         name=f"{prefix}_copy",
         command="$python -c \"import shutil,sys; shutil.copyfile(sys.argv[1], sys.argv[2])\" $in $out",
@@ -586,6 +608,9 @@ def generate_windows_target(n: Writer, sln: Any, target: WindowsTarget) -> None:
         add_object(KCP_DIR / "ikcp.c", " ".join([abi, "-std=gnu11", "-w"]))
         # Link Profile's QR code (port/third_party/qrcodegen; browser.c)
         add_object(QRCODEGEN_DIR / "qrcodegen.c", " ".join([abi, "-std=gnu11", "-w"]))
+        # voice chat's codec (port/third_party/opus)
+        for source in opus_sources():
+            add_object(source, opus_cflags(abi))
         # internet play's signatures, for public games' listings
         # (port/third_party/monocypher; p2p_crypto.c)
         for name in ("monocypher.c", "monocypher-ed25519.c"):
@@ -601,7 +626,7 @@ def generate_windows_target(n: Writer, sln: Any, target: WindowsTarget) -> None:
         n.build(
             outputs=output,
             rule=f"{prefix}_link",
-            inputs=objects + extra_objects,
+            inputs=objects + extra_objects + [resources],
             variables={"ldflags": " ".join(base_ldflags + extra_ldflags), "libs": libs},
         )
 

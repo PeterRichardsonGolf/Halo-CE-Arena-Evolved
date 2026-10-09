@@ -9,6 +9,7 @@ controller emulation (see sdl_platform.c).
 #define __HALO_LINUX_SDL_PLATFORM_H
 
 #include <SDL3/SDL_scancode.h>
+#include <SDL3/SDL_audio.h>
 #include <stddef.h>
 
 #define PLATFORM_MOUSE_BUTTON_COUNT 8
@@ -74,6 +75,14 @@ int platform_display_resolutions(long *widths, long *heights, int maximum);
 that fit the desktop, and display.window_size's; how many. None on
 Android. */
 int platform_window_sizes(long *widths, long *heights, int maximum);
+/* Settings > Audio's devices (port/linux/game/menu_tags.c): the names of
+the output (or, recording, input) devices SDL finds; how many. None on
+Android, which plays and records with the system's. */
+#define PLATFORM_AUDIO_DEVICE_NAME_SIZE 128
+int platform_audio_devices(int recording, char (*names)[PLATFORM_AUDIO_DEVICE_NAME_SIZE], int maximum);
+/* ... the device of a name (audio.output_device, audio.input_device):
+the system's default for "default", or one not found */
+SDL_AudioDeviceID platform_audio_device(int recording, const char *name);
 void platform_video_drawable_size(int *width, int *height);
 /* the window's mode and size and V-Sync, from config.toml as Settings has
 just written it (the main thread's) */
@@ -89,6 +98,8 @@ elsewhere; on Android this is where finger events reach touch_input.c, which
 is why that module's state is only touched from the main thread */
 void platform_pump_events(void);
 void platform_show_message(const char *title, const char *message);
+/* the bound Screenshot action: AE's screenshot (capture.c) at the next frame */
+void platform_screenshot_request(void);
 /* a snapshot of the input state; consume_motion resets the mouse deltas */
 void platform_input_read(struct platform_input_state *state, BOOL consume_motion);
 /* the pointer in the menus (d3d8_gl.c, halo_ui_pointer_update) */
@@ -116,10 +127,17 @@ void platform_ui_pointer_set_active(BOOL active);
 /* pointer receives what the pointer did since the last call; returns
 nonzero while a menu is up (platform_ui_pointer_set_active) */
 BOOL platform_ui_pointer_read(struct platform_ui_pointer *pointer);
+/* the open scoreboard's pointer, offered (a network game's) or not: TRUE
+while a right click has freed it, with what it did since the last call */
+BOOL platform_scoreboard_pointer(BOOL offered, struct platform_ui_pointer *pointer);
 
 /* returns the window's size in the units that pointer positions come in,
 which differ from the drawable's pixels on displays that scale */
 void platform_video_window_size(int *width, int *height);
+/* a menu's text field typed into or not (a password's or not): the system's
+on-screen keyboard up while it is, where there is one that text input shows
+(Steam's); each field begun brings it up again */
+void platform_screen_keyboard(BOOL show, BOOL password);
 BOOL platform_next_keystroke(struct platform_keystroke *keystroke);
 /* the multiplayer scoreboard (game_engine.c) open or not: while it is, the
 mouse wheel and Page Up/Down scroll it instead of switching weapons; how

@@ -82,21 +82,38 @@ static Uint64 scoreboard_open_until_ms;
 static float scoreboard_wheel;
 static long scoreboard_notches;
 static long scoreboard_pages;
+#ifndef HALO_ANDROID
+/* the scoreboard's pointer (platform_scoreboard_pointer): while the game
+offers it (a network game's scoreboard is open), a right click frees the
+mouse, whose pointer then picks a player; its motion and clicks go to it,
+not to the aim and the triggers. Another right click, or the scoreboard
+closing, takes the mouse back for the aim. */
+static BOOL scoreboard_pointer_offered;
+static struct platform_ui_pointer scoreboard_pointer;
+#endif
+static BOOL scoreboard_pointer_active;
 
 /* debug keyboard queue */
 #define KEYSTROKE_QUEUE_SIZE 64
 
-/* the capture's keys (capture.c): never a binding, never the game's */
-#define CAPTURE_SCREENSHOT_KEY SDL_SCANCODE_F9
-#define CAPTURE_RECORD_KEY SDL_SCANCODE_F10
+/* the recording's key (capture.c): never a binding, never the game's. (The
+screenshot's is the Screenshot action's, controls.screenshot, F10 unless
+rebound: platform_screenshot_request) */
+#define CAPTURE_RECORD_KEY SDL_SCANCODE_F9
 
 static struct platform_keystroke keystroke_queue[KEYSTROKE_QUEUE_SIZE];
 static unsigned long keystroke_head, keystroke_count;
 
 #ifndef HALO_ANDROID
+/* dsound_sdl.c's: the output device followed */
+void dsound_sdl_output_device_check(void);
 /* updater.c's: the desktop self-updater */
 void updater_start(void);
 void updater_poll(SDL_Window *window);
+static void screen_keyboard_update(void);
+/* the windows' icon, a PNG (tools/embed_assets.py, from port/assets/icon) */
+extern const unsigned int platform_window_icon[];
+extern const unsigned long platform_window_icon_size;
 #endif
 /* (and the version, for the window's title) */
 const char *updater_version(void);
@@ -903,6 +920,73 @@ int platform_window_sizes(long *widths, long *heights, int maximum)
 }
 
 #endif
+
+/* ---------- audio devices (Settings > Audio: audio.output_device,
+audio.input_device) */
+
+#ifndef HALO_ANDROID
+int platform_audio_devices(int recording, char (*names)[PLATFORM_AUDIO_DEVICE_NAME_SIZE], int maximum)
+{
+	SDL_AudioDeviceID *devices;
+	int device_count = 0, count = 0, index;
+
+	if (maximum < 1 || !platform_sdl_initialize())
+		return 0;
+	devices = recording ? SDL_GetAudioRecordingDevices(&device_count) : SDL_GetAudioPlaybackDevices(&device_count);
+	for (index = 0; devices && index < device_count && count < maximum; index++)
+	{
+		const char *name = SDL_GetAudioDeviceName(devices[index]);
+
+		/* (a name a setting can hold, and a menu show: no "|", which
+		separates a spinner's values) */
+		if (!name || !name[0] || strchr(name, '|') || strlen(name) >= PLATFORM_AUDIO_DEVICE_NAME_SIZE)
+			continue;
+		snprintf(names[count++], PLATFORM_AUDIO_DEVICE_NAME_SIZE, "%s", name);
+	}
+	SDL_free(devices);
+	return count;
+}
+
+SDL_AudioDeviceID platform_audio_device(int recording, const char *name)
+{
+	SDL_AudioDeviceID *devices;
+	SDL_AudioDeviceID found = recording ? SDL_AUDIO_DEVICE_DEFAULT_RECORDING : SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
+	int device_count = 0, index;
+
+	if (!name || !name[0] || !strcmp(name, "default"))
+		return found;
+	devices = recording ? SDL_GetAudioRecordingDevices(&device_count) : SDL_GetAudioPlaybackDevices(&device_count);
+	for (index = 0; devices && index < device_count; index++)
+	{
+		const char *device_name = SDL_GetAudioDeviceName(devices[index]);
+
+		if (device_name && !strcmp(device_name, name))
+		{
+			found = devices[index];
+			break;
+		}
+	}
+	SDL_free(devices);
+	if (found == (recording ? SDL_AUDIO_DEVICE_DEFAULT_RECORDING : SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK))
+		platform_log("audio: no %s device named \"%s\": the system's default", recording ? "input" : "output", name);
+	return found;
+}
+#else
+int platform_audio_devices(int recording, char (*names)[PLATFORM_AUDIO_DEVICE_NAME_SIZE], int maximum)
+{
+	(void)recording;
+	(void)names;
+	(void)maximum;
+	return 0;
+}
+
+SDL_AudioDeviceID platform_audio_device(int recording, const char *name)
+{
+	(void)name;
+	return recording ? SDL_AUDIO_DEVICE_DEFAULT_RECORDING : SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
+}
+#endif
+
 #ifndef HALO_ANDROID
 /* the window's size (platform_window_size_setting), as the window was made
 or last resized: platform_display_apply */
@@ -987,6 +1071,16 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 		return FALSE;
 	}
 #ifndef HALO_ANDROID
+	/* the game's icon, which the desktop shows for the window (on Windows
+	also halo.exe's own, port/windows/halo.rc) */
+	if (platform_window_icon_size)
+	{
+		SDL_Surface *icon = SDL_LoadPNG_IO(SDL_IOFromConstMem(platform_window_icon, platform_window_icon_size), true);
+
+		if (!icon || !SDL_SetWindowIcon(platform_window, icon))
+			platform_log("cannot set the window's icon: %s", SDL_GetError());
+		SDL_DestroySurface(icon);
+	}
 	platform_fullscreen_requested = platform_fullscreen_setting();
 	platform_fullscreen_kind_apply();
 #endif
@@ -1510,7 +1604,10 @@ static void platform_quit_notice(const char *text)
 
 void platform_request_quit(void)
 {
-#ifndef HALO_ANDROID
+#ifdef HALO_ANDROID
+	/* (the guest has no SDL_PushEvent: exit ends the process, host_exit) */
+	exit(EXIT_SUCCESS);
+#else
 	SDL_Event event;
 
 #ifdef __APPLE__
@@ -1521,6 +1618,52 @@ void platform_request_quit(void)
 	SDL_PushEvent(&event);
 #endif
 }
+
+#ifndef HALO_ANDROID
+/* (under input_lock, on the event thread) the scoreboard's pointer on: the
+mouse freed, at the window's middle, and nothing held for the triggers */
+static void scoreboard_pointer_start(void)
+{
+	int width, height;
+
+	scoreboard_pointer_active = TRUE;
+	memset(&scoreboard_pointer, 0, sizeof(scoreboard_pointer));
+	memset(input_state.mouse_buttons, 0, sizeof(input_state.mouse_buttons));
+	memset(mouse_buttons_pressed, 0, sizeof(mouse_buttons_pressed));
+	input_state.mouse_dx = input_state.mouse_dy = 0.0f;
+	platform_mouse_capture(FALSE);
+	SDL_GetWindowSize(platform_window, &width, &height);
+	SDL_WarpMouseInWindow(platform_window, width * 0.5f, height * 0.5f);
+	scoreboard_pointer.x = width * 0.5f;
+	scoreboard_pointer.y = height * 0.5f;
+}
+
+/* ... off: the mouse the aim's again (unless freed: F12, or the menus) */
+static void scoreboard_pointer_stop(void)
+{
+	if (!scoreboard_pointer_active)
+		return;
+	scoreboard_pointer_active = FALSE;
+	memset(&scoreboard_pointer, 0, sizeof(scoreboard_pointer));
+	platform_mouse_capture(!input_state.mouse_released && !input_state.ui_pointer);
+}
+
+BOOL platform_scoreboard_pointer(BOOL offered, struct platform_ui_pointer *pointer)
+{
+	BOOL active;
+
+	pthread_mutex_lock(&input_lock);
+	scoreboard_pointer_offered = offered;
+	active = scoreboard_pointer_active && offered;
+	*pointer = scoreboard_pointer;
+	scoreboard_pointer.moved = FALSE;
+	scoreboard_pointer.left_clicks = 0;
+	scoreboard_pointer.right_clicks = 0;
+	scoreboard_pointer.wheel_steps = 0;
+	pthread_mutex_unlock(&input_lock);
+	return active;
+}
+#endif
 
 void platform_scoreboard_scroll(int open, long *notches, long *pages)
 {
@@ -1534,6 +1677,10 @@ void platform_scoreboard_scroll(int open, long *notches, long *pages)
 		scoreboard_pages = 0;
 	}
 	scoreboard_open_until_ms = open ? now + SCOREBOARD_OPEN_MS : 0;
+#ifndef HALO_ANDROID
+	if (!open)
+		scoreboard_pointer_offered = FALSE;
+#endif
 	if (notches)
 		*notches = scoreboard_notches;
 	if (pages)
@@ -1541,6 +1688,15 @@ void platform_scoreboard_scroll(int open, long *notches, long *pages)
 	scoreboard_notches = 0;
 	scoreboard_pages = 0;
 	pthread_mutex_unlock(&input_lock);
+}
+
+/* the bound Screenshot action (xinput_sdl.c): AE's screenshot, a PNG at the
+next presentation (capture.c) */
+void platform_screenshot_request(void)
+{
+#ifndef HALO_ANDROID
+	capture_request_screenshot();
+#endif
 }
 
 void platform_pump_events(void)
@@ -1585,8 +1741,19 @@ void platform_pump_events(void)
 #endif
 #ifndef HALO_ANDROID
 	updater_poll(platform_window);
+	/* (Settings > Audio's output device, as it changes: dsound_sdl.c) */
+	dsound_sdl_output_device_check();
+	screen_keyboard_update();
 #endif
 	pthread_mutex_lock(&input_lock);
+#ifndef HALO_ANDROID
+	/* (the scoreboard closed, or no longer offering it: the pointer goes) */
+	if (scoreboard_pointer_active && (SDL_GetTicks() >= scoreboard_open_until_ms || !scoreboard_pointer_offered ||
+		input_state.ui_pointer))
+	{
+		scoreboard_pointer_stop();
+	}
+#endif
 	while (SDL_PollEvent(&event))
 	{
 		switch (event.type)
@@ -1628,19 +1795,14 @@ void platform_pump_events(void)
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
 #ifndef HALO_ANDROID
-			/* F9 takes a screenshot and F10 starts or stops a recording
-			(capture.c), always: never held for the game's controls (a
-			binding to them from before is not pressed), never a binding,
-			never the game's keystrokes (its debug keys have F9) */
-			if (event.key.scancode == CAPTURE_SCREENSHOT_KEY || event.key.scancode == CAPTURE_RECORD_KEY)
+			/* F9 starts or stops a recording (capture.c), always: never held
+			for the game's controls (a binding to it from before is not
+			pressed), never a binding, never the game's keystrokes (its
+			debug keys have F9) */
+			if (event.key.scancode == CAPTURE_RECORD_KEY)
 			{
 				if (event.key.down && !event.key.repeat)
-				{
-					if (event.key.scancode == CAPTURE_SCREENSHOT_KEY)
-						capture_request_screenshot();
-					else
-						capture_request_recording_toggle();
-				}
+					capture_request_recording_toggle();
 				break;
 			}
 #endif
@@ -1687,7 +1849,8 @@ void platform_pump_events(void)
 			if (event.key.down && !event.key.repeat && event.key.scancode == SDL_SCANCODE_F12)
 			{
 				input_state.mouse_released = !input_state.mouse_released;
-				platform_mouse_capture(!input_state.mouse_released && !input_state.ui_pointer);
+				platform_mouse_capture(!input_state.mouse_released && !input_state.ui_pointer &&
+					!scoreboard_pointer_active);
 				/* (the pointer shows while released, hidden again in play) */
 				show_pointer(input_state.mouse_released || input_state.ui_pointer);
 			}
@@ -1702,6 +1865,13 @@ void platform_pump_events(void)
 			break;
 		case SDL_EVENT_MOUSE_MOTION:
 #ifndef HALO_ANDROID
+			if (scoreboard_pointer_active)
+			{
+				scoreboard_pointer.x = event.motion.x;
+				scoreboard_pointer.y = event.motion.y;
+				scoreboard_pointer.moved = TRUE;
+				break;
+			}
 			/* in the menus the mouse moves the pointer, not the view */
 			if (input_state.ui_pointer)
 			{
@@ -1733,6 +1903,26 @@ void platform_pump_events(void)
 				break;
 			}
 #ifndef HALO_ANDROID
+			/* the open scoreboard's pointer: a right click frees it (and
+			fires nothing), and another takes it back; its clicks pick */
+			if (!input_state.ui_pointer && SDL_GetTicks() < scoreboard_open_until_ms && scoreboard_pointer_offered &&
+				(scoreboard_pointer_active || (event.button.down && event.button.button == SDL_BUTTON_RIGHT)))
+			{
+				if (event.button.down && event.button.button == SDL_BUTTON_RIGHT)
+				{
+					if (scoreboard_pointer_active)
+						scoreboard_pointer_stop();
+					else
+						scoreboard_pointer_start();
+				}
+				else if (event.button.down && event.button.button == SDL_BUTTON_LEFT)
+				{
+					scoreboard_pointer.left_clicks++;
+					scoreboard_pointer.click_x = event.button.x;
+					scoreboard_pointer.click_y = event.button.y;
+				}
+				break;
+			}
 			/* clicks in the menus go to the pointer; a button held down
 			when the menu closes stays up until pressed again, so the click
 			that resumes the game does not also fire */
@@ -1812,12 +2002,15 @@ void platform_pump_events(void)
 #ifdef HALO_ANDROID
 			touch_input_cancel();
 #endif
+			/* (the scoreboard's pointer goes; the mouse is taken back for
+			the aim as the window has the focus again) */
+			scoreboard_pointer_active = FALSE;
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_GAINED:
 			input_state.focused = TRUE;
 			look_at_clipboard = TRUE;
 #ifndef HALO_ANDROID
-			if (!input_state.mouse_released && !input_state.ui_pointer)
+			if (!input_state.mouse_released && !input_state.ui_pointer && !scoreboard_pointer_active)
 				platform_mouse_capture(TRUE);
 #endif
 			break;
@@ -1830,7 +2023,24 @@ void platform_pump_events(void)
 			break;
 #endif
 		case SDL_EVENT_GAMEPAD_ADDED:
+#ifdef HALO_ANDROID
+			/* (the guest reaches SDL only through host_imports.list, which
+			has no SDL_GetGamepadName) */
 			SDL_OpenGamepad(event.gdevice.which);
+#else
+			{
+				SDL_Gamepad *gamepad = SDL_OpenGamepad(event.gdevice.which);
+
+				/* (which pads the game drives: under Steam Input, Steam's
+				virtual ones, named for the controllers behind them) */
+				if (gamepad)
+				{
+					const char *name = SDL_GetGamepadName(gamepad);
+
+					platform_log("gamepad: %s", name ? name : "(unnamed)");
+				}
+			}
+#endif
 			break;
 #ifdef __APPLE__
 		case SDL_EVENT_DROP_FILE:
@@ -1953,6 +2163,83 @@ BOOL platform_ui_pointer_read(struct platform_ui_pointer *pointer)
 void platform_video_window_size(int *width, int *height)
 {
 	SDL_GetWindowSize(platform_window, width, height);
+}
+
+/* ---------- the system's on-screen keyboard */
+
+/* A menu's text field is typed into (platform_text_field, xinput_sdl.c).
+Where Steam's on-screen keyboard is there to bring up (in Big Picture and in
+the Steam Deck's Game Mode, which ask for it with
+SDL_ENABLE_STEAM_SCREEN_KEYBOARD), SDL's text input runs while the field is
+typed into: the keyboard comes up with the field and goes with it, and what
+it types arrives as keys. Elsewhere text input stays off, as before, so that
+no input method takes the keys the field reads: a Wayland touch screen's
+keyboard (text-input-v3) would type text events, which the field does not
+read. */
+static SDL_AtomicInt screen_keyboard_wanted;
+/* (each field begun, which brings the keyboard up again: Steam does not say
+when its keyboard goes, by its own Enter or closed by hand, so SDL holds it
+to be up still; after a field ended and another begun in the same frame, as
+the password screen's is after a wrong password, it would not come back) */
+static SDL_AtomicInt screen_keyboard_requests;
+
+void platform_screen_keyboard(BOOL show, BOOL password)
+{
+	SDL_SetAtomicInt(&screen_keyboard_wanted, !show ? 0 : password ? 2 : 1);
+	if (show)
+		SDL_AddAtomicInt(&screen_keyboard_requests, 1);
+}
+
+/* (on the window's thread, as SDL asks: platform_pump_events) */
+static void screen_keyboard_update(void)
+{
+	/* (a keyboard shown again is closed first, as SDL opens none that it
+	holds to be up, and opened a moment later: Steam takes each as a URL,
+	steam://close/keyboard then steam://open/keyboard, which must not
+	arrive the other way round) */
+	enum { REOPEN_DELAY_MS = 500 };
+	static int requests_handled;
+	static Uint64 open_time;
+	int requests = SDL_GetAtomicInt(&screen_keyboard_requests);
+	int wanted = SDL_GetAtomicInt(&screen_keyboard_wanted);
+
+	if (!wanted)
+	{
+		open_time = 0;
+		if (SDL_TextInputActive(platform_window))
+			SDL_StopTextInput(platform_window);
+		return;
+	}
+	if (requests != requests_handled)
+	{
+		requests_handled = requests;
+		if (!SDL_HasScreenKeyboardSupport() ||
+			!SDL_GetHintBoolean(SDL_HINT_ENABLE_STEAM_SCREEN_KEYBOARD, false))
+		{
+			return;
+		}
+		open_time = SDL_GetTicks();
+		if (SDL_TextInputActive(platform_window))
+		{
+			SDL_StopTextInput(platform_window);
+			open_time += REOPEN_DELAY_MS;
+		}
+	}
+	if (open_time && SDL_GetTicks() >= open_time)
+	{
+		/* one line: the keyboard's Enter ends the field (and Steam's
+		keyboard goes with it); a password's, for the keyboards that hide
+		what is typed into one */
+		SDL_PropertiesID properties = SDL_CreateProperties();
+
+		open_time = 0;
+		platform_log("text field: showing the on-screen keyboard");
+		SDL_SetBooleanProperty(properties, SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN, false);
+		SDL_SetNumberProperty(properties, SDL_PROP_TEXTINPUT_TYPE_NUMBER,
+			wanted == 2 ? SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_HIDDEN : SDL_TEXTINPUT_TYPE_TEXT);
+		SDL_StartTextInputWithProperties(platform_window, properties);
+		SDL_DestroyProperties(properties);
+	}
 }
 
 #else

@@ -52,7 +52,9 @@ from tools.version import base_version, commit, release_build, version  # noqa: 
 
 # what each port's build leaves, and what goes into dist/
 OUTPUTS = {
-    "linux": ["build/linux/halo"],
+    # (and the SDL3 the portable build brings, tools/linux_build.py, with its
+    # zlib license, as the release carries the other libraries')
+    "linux": ["build/linux/halo", "build/linux/libSDL3.so.0", "build/linux/SDL3-LICENSE.txt"],
     # the native 64-bit build (ninja linux64; tools/linux64_build.py)
     "linux64": ["build/linux64/halo"],
     "windows": ["build/windows/halo.exe", "build/windows/SDL3.dll"],
@@ -195,6 +197,12 @@ def main() -> int:
     # the menus' XML parser (port/third_party/expat), in every build, whose
     # MIT license asks copies to carry its notice
     shutil.copy2(ROOT / "port/third_party/expat/COPYING", dist / "expat-COPYING.txt")
+    # voice chat's codec (port/third_party/opus), in every build, whose BSD
+    # license asks binaries to carry its notice
+    shutil.copy2(ROOT / "port/third_party/opus/COPYING", dist / "opus-COPYING.txt")
+    # voice chat's speaker icons (port/assets/icons/lucide, drawn into the
+    # menus' bitmaps), whose ISC license asks copies to carry its notice
+    shutil.copy2(ROOT / "port/assets/icons/lucide/LICENSE", dist / "lucide-LICENSE.txt")
     # internet play's MQTT brokers, a file beside the game (network.brokers_file;
     # Android's APK has its own copy)
     if args.platform != "android":

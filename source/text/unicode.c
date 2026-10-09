@@ -1360,6 +1360,7 @@ int ustring_format_takes(
 	while (*format)
 	{
 		char kind;
+		short digits;
 
 		if (*format++ != L'%')
 			continue;
@@ -1368,10 +1369,21 @@ int ustring_format_takes(
 			format++;
 			continue;
 		}
-		while (*format == L'-' || *format == L'+' || *format == L' ' || *format == L'#' || *format == L'.' ||
-			(*format >= L'0' && *format <= L'9'))
+		while (*format == L'-' || *format == L'+' || *format == L' ' || *format == L'#' || *format == L'0')
+			format++;
+		/* (a width, then a precision, of a few digits: the game's are, and
+		Windows's printf refuses what is not a conversion) */
+		for (digits = 0; *format >= L'0' && *format <= L'9'; digits++)
+			format++;
+		if (digits > 3)
+			return FALSE;
+		if (*format == L'.')
 		{
 			format++;
+			for (digits = 0; *format >= L'0' && *format <= L'9'; digits++)
+				format++;
+			if (digits > 3)
+				return FALSE;
 		}
 		/* (the size prefixes the game's own formats use) */
 		if (*format == L'h' || *format == L'l' || *format == L'w')

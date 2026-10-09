@@ -646,6 +646,7 @@ static long looping_sound_new(
 	long definition_index,
 	long identifier,
 	struct sound_source const *source);
+/* port: report whether instance limiting leaves this voice alive. */
 static boolean sound_set_definition_end(
 	long sound_index);
 static long update_potentially_audible_looping_sound(
@@ -1557,13 +1558,13 @@ static boolean sound_set_definition_end(
 
 		if (channel_index != NONE)
 		{
-			long victim_sound_index = channel_get(channel_index)->sound_index;
-			sound_stop(victim_sound_index);
-			return victim_sound_index != sound_index;
+			/* port: sound_find_like_channel excludes the current voice. */
+			sound_stop(channel_get(channel_index)->sound_index);
+			return TRUE;
 		}
 
-		/* Instance limiting may retire this very voice. Its caller must not
-		   queue another permutation through the now-unowned channel. */
+		/* port: no other voice can be preempted; tell the caller this one
+		was retired before it writes to the freed channel. */
 		sound_stop(sound_index);
 		return FALSE;
 	}
@@ -1921,8 +1922,7 @@ static void sound_start_fade(
 	return;
 }
 
-/* The primary handle changes on restart and crossfade. Cancellation belongs
-   to the loop and track, including voices still waiting for a cache/channel. */
+/* port: retire every owned intro/loop voice when the primary handle changes. */
 static void sound_fade_looping_track_components(
 	long looping_sound_index,
 	short track_index,
@@ -2718,6 +2718,7 @@ boolean sound_refresh_looping(
 
 					if (refresh_state == _looping_sound_refresh_start)
 					{
+						/* port: a restart must retire the old primary and pending components. */
 						if (track->start_sound.index != NONE ||
 							TEST_FLAG(track->flags, _fade_in_at_start_bit))
 						{
@@ -2820,6 +2821,7 @@ boolean sound_refresh_looping(
 					}
 					else if (loop->state != _looping_sound_refresh_stop)
 					{
+						/* port: stopping the loop also stops its other owned components. */
 						if (fade_time != 0.f ||
 							TEST_FLAG(track->flags, _fade_out_at_stop_bit) ||
 							(track->stop_sound.index == NONE &&
@@ -3038,6 +3040,7 @@ static void update_channel_for_looping_sound(
 					(!channel->playing_permutation ||
 						channel->playing_permutation->next_permutation_index == NONE))
 				{
+					/* port: a definition transition can retire its own voice. */
 					if (!sound_set_definition_end(channel->sound_index))
 					{
 						return;

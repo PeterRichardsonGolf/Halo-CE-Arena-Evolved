@@ -1243,12 +1243,12 @@ static int vorbis_validate(uint8 *data)
 static int lookup1_values(int entries, int dim)
 {
    int r;
-   // ChupathingyCE: a code book of no dimensions or entries has no values
-   // (a stream's, which may be anyone's: the division below is by zero)
+   // port: a code book of no dimensions or entries has no values (the
+   // division below is by zero)
    if (dim <= 0 || entries <= 0) return -1;
    r = (int) floor(exp((float) log((float) entries) / dim));
-   // ChupathingyCE: the powers compared as they are, not cast to int first
-   // (a large dim's are past an int, where the cast is undefined)
+   // port: the powers compared as they are, not cast to int first (a large
+   // dim's are past an int, where the cast is undefined)
    if (floor(pow((float) r+1, dim)) <= entries)
       ++r;
    if (pow((float) r+1, dim) <= entries)

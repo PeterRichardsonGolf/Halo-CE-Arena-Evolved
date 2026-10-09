@@ -3,7 +3,7 @@ CAPTURE.C
 
 Screenshots and video recording (capture.h), on the desktop builds.
 
-A screenshot (F9) reads the back buffer at the next present, before the red
+A screenshot (the Screenshot action, F10 unless rebound) reads the back buffer at the next present, before the red
 dot is drawn over the window. The game thread makes its file at once, a
 name nothing else has (screenshots/<date>_<time>_<map>.png beside
 config.toml, made empty with an exclusive create), and the screenshot
@@ -12,7 +12,7 @@ with the fixed Huffman codes) and writes it. The debug screenshots
 (debug.screenshot_format = "png") go through the same thread; none is ever
 encoded on the game thread.
 
-A recording (F10) pipes raw frames to an ffmpeg child (capture_child.h)
+A recording (F9) pipes raw frames to an ffmpeg child (capture_child.h)
 that encodes H.264 into recordings/<name>.video.mp4, at a fixed rate
 (capture.record_fps, 30 or 60): each present, the frames due by the wall
 clock since the start are counted, and the picture is read once for all of
@@ -989,7 +989,7 @@ struct shot_job
 	unsigned char *pixels;
 	int width;
 	int height;
-	/* F9's: its file was made (capture_name_reserve), and a notice tells how
+	/* the Screenshot action's: its file was made (capture_name_reserve), and a notice tells how
 	it went */
 	int reserved;
 	char path[PATH_SIZE];

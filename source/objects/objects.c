@@ -560,7 +560,7 @@ void object_pvs_set_camera_point(
 void objects_port_set_activating_cluster(
 	short cluster_index)
 {
-	/* (a co-op host's, from the network: only one of the BSP's clusters is taken) */
+	/* (port: a co-op host sends it, so any index outside the BSP's clusters is none) */
 	if (cluster_index < 0 || cluster_index >= global_structure_bsp_get()->clusters.count)
 	{
 		object_globals->pvs_activation_type = _pvs_activation_normal;

@@ -1,8 +1,9 @@
 /*
 CAPTURE.H
 
-Screenshots and video recording (capture.c): F9 writes the whole frame as a
-PNG to screenshots/ beside config.toml; F10 starts and stops a recording,
+Screenshots and video recording (capture.c): the Screenshot action
+(controls.screenshot, F10 unless rebound) writes the whole frame as a
+PNG to screenshots/ beside config.toml; F9 starts and stops a recording,
 the frames and the game's sound piped to ffmpeg (not bundled: on the PATH,
 beside the game, or capture.ffmpeg_path) into recordings/<time>.mp4. The
 desktop builds only; the dedicated server and Android have the calls, which

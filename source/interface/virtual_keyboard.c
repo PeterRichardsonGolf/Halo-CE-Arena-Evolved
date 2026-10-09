@@ -335,8 +335,9 @@ static rectangle2d keyboard_rect[NUMBER_OF_VIRTUAL_KEYS] =
 
 static struct virtual_keyboard_globals virtual_keyboard_globals= {0};
 
-/* Keep the computer keyboard's input mode in sync with every open/close
-   path. The UI stops processing the virtual keyboard once it is inactive. */
+/* port: the computer's keyboard types into the keyboard while it is up
+(port/linux/src/xinput_sdl.c), set as it opens and closes: it is processed
+only while it is up, so its processing cannot end the typing */
 static void virtual_keyboard_set_active(boolean active)
 {
 	extern void platform_text_typing(int typing);

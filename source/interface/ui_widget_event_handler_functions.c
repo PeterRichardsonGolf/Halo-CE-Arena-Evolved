@@ -3514,13 +3514,13 @@ static boolean multiplayer_profiles_list_initialize(
 
 /* port: whether a widget of a map's may not run an event handler's function.
 A widget's handlers name the functions they run by their index in the
-function table, which nothing checks: any map's widget could run any of the
+function table, which nothing checks, so a game map's widget could run the
 main menu's functions (deleting player and playlist profiles, saving them,
 running the demos) and the port's own (writing config.toml, quitting,
 connecting), on its created event too, as its screen opens. The shipped
-game maps' widgets (their pause screens) run none of these: those of the
-port's own menus' tags (pc_menu_tag) may run the port's, and the main menu's
-map (ui.map) the main menu's. Each refusal is logged once */
+game maps' widgets (their pause screens) run none of these: the port's own
+menus' tags (pc_menu_tag) may run the port's, and the main menu (ui.map)
+the main menu's. Logged once */
 static boolean ui_widget_function_denied(
 	struct widget_instance *widget,
 	word function_index)
@@ -3536,7 +3536,6 @@ static boolean ui_widget_function_denied(
 		86, 87, /* the demos */
 	};
 	static boolean logged = FALSE;
-	char const *map_name = cache_file_loaded_map_name();
 	boolean denied = FALSE;
 	short index;
 
@@ -3546,7 +3545,7 @@ static boolean ui_widget_function_denied(
 	{
 		denied = TRUE;
 	}
-	else if (map_name && csstrcmp(map_name, "ui"))
+	else if (!main_menu_is_active())
 	{
 		for (index = 0; index < (short)NUMBEROF(main_menu_functions); index++)
 		{
@@ -3557,8 +3556,8 @@ static boolean ui_widget_function_denied(
 	if (denied && !logged)
 	{
 		logged = TRUE;
-		error(_error_silent, "the map %s's widget may not run event handler function %d; it is skipped",
-			map_name ? map_name : "", function_index);
+		error(_error_silent, "a map's widget may not run event handler function %d; it is skipped",
+			function_index);
 	}
 
 	return denied;
@@ -3576,9 +3575,11 @@ boolean ui_widget_event_handler_function_invoke(
 		widget != NULL && widget_deleted != NULL,
 		"(widget != NULL) && (widget_deleted != NULL)");
 	/* port: a map's own widgets (not the menus' tags the port adds) may not
-	run what changes the player's files or settings: ui_widget_function_denied */
+	run what changes the player's files or settings: ui_widget_function_denied
+	(failed, as an invalid function is, so the handler opens and closes no
+	screens after it) */
 	if (ui_widget_function_denied(widget, function_index))
-		return TRUE;
+		return FALSE;
 	/* port: the menus' own functions (port/linux/game/menu_functions.c) */
 	if (function_index >= PC_MENU_FUNCTION_BASE && function_index < 0x8000)
 	{
