@@ -530,7 +530,7 @@ static void draw_lobby(void)
 			AE_ALIGN_RIGHT, AE_COLOR_MUTED, "LB / RB on your pad: team");
 	}
 	memset(cards, 0, sizeof(cards));
-	cards[0].name = "Peter"; cards[0].slot = 1; cards[0].color = RED; cards[0].sub_line = "Keyboard and mouse \xE2\x80\xA2 this PC";
+	cards[0].name = "Player 1"; cards[0].slot = 1; cards[0].color = RED; cards[0].sub_line = "Keyboard and mouse \xE2\x80\xA2 this PC";
 	cards[0].team_name = "RED"; cards[0].team_color = RED; cards[0].flags = AE_CARD_TEAM | AE_CARD_HOST;
 	cards[1].name = "Player 2"; cards[1].slot = 2; cards[1].color = BLUE;
 	cards[1].sub_line = "Controller 2 \xE2\x80\xA2 editing Your Settings";
@@ -900,7 +900,7 @@ static void draw_main_menu(void)
 	ae_draw_rect(x, rows_y + u(4.0f), panel_width - 2.0f * pad, u(RULE_U), 0.0f, AE_COLOR_RULE);
 	rows_y += u(14.0f);
 	memset(&card, 0, sizeof(card));
-	card.name = "Peter";
+	card.name = "Player 1";
 	card.slot = 1;
 	card.color = RED;
 	card.sub_line = "Profile \xE2\x80\xA2 Keyboard and mouse";

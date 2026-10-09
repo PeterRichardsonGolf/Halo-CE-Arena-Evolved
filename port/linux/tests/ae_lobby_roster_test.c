@@ -31,12 +31,12 @@ int main(void)
 	add("Bot A", 2, 0, 0, 0);
 	add("Bot B", 1, 0, 0, 0);
 	add("Bot C", 3, 0, 0, 0);
-	add("Peter", 0, 0, 1, 1);
+	add("Player 1", 0, 0, 1, 1);
 	add("Guest", 0, 1, 1, 1);
 	add("Bot D", 1, 0, 0, 0);
 	ae_lobby_roster_order(&roster);
 	CHECK(roster.count == 6);
-	CHECK(!strcmp(roster.players[0].name, "Peter") && !strcmp(roster.players[1].name, "Guest"));
+	CHECK(!strcmp(roster.players[0].name, "Player 1") && !strcmp(roster.players[1].name, "Guest"));
 	CHECK(!strcmp(roster.players[2].name, "Bot B") && !strcmp(roster.players[3].name, "Bot D"));
 	CHECK(!strcmp(roster.players[4].name, "Bot A") && !strcmp(roster.players[5].name, "Bot C"));
 	for (index = 0; index < 6; index++)
@@ -44,10 +44,10 @@ int main(void)
 	/* shrinking from 6 to 2: slots 1-2, contiguous */
 	memset(&roster, 0, sizeof(roster));
 	add("Bot B", 1, 0, 0, 0);
-	add("Peter", 0, 0, 1, 1);
+	add("Player 1", 0, 0, 1, 1);
 	ae_lobby_roster_order(&roster);
 	CHECK(roster.count == 2 && roster.players[0].slot == 1 && roster.players[1].slot == 2 &&
-		!strcmp(roster.players[0].name, "Peter"));
+		!strcmp(roster.players[0].name, "Player 1"));
 	/* (an empty roster, a count out of range) */
 	memset(&roster, 0, sizeof(roster));
 	ae_lobby_roster_order(&roster);
