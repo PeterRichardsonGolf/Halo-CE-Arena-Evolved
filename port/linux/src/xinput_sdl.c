@@ -562,6 +562,10 @@ static void bindings_read(void)
 			bindings[action][slot] = halo_input_from_name(name);
 			if (bindings[action][slot] < 0)
 				platform_log("controls: %s has no key or button named \"%s\"", binding_settings[action], name);
+			/* (AE: F9 starts and stops a recording, sdl_platform.c, and
+			never reaches the bindings) */
+			if (bindings[action][slot] == SDL_SCANCODE_F9)
+				platform_log("controls: %s names F9, the recording's key: it does nothing there", binding_settings[action]);
 			text += length;
 		}
 	}
@@ -598,6 +602,28 @@ static unsigned long keyboard_bound_actions(const struct platform_input_state *i
 		}
 	}
 	return held;
+}
+
+/* (AE) whether the Screenshot action is held with the console open, where
+the other actions are not read: by a key that types nothing (a function key
+or Print Screen), so that a screenshot of the console can be taken and no
+letter typed into it takes one */
+static BOOL keyboard_screenshot_in_console(const struct platform_input_state *input)
+{
+	int slot;
+
+	bindings_read();
+	for (slot = 0; slot < MAXIMUM_BINDINGS; slot++)
+	{
+		int code = bindings[HALO_KEYBOARD_SCREENSHOT][slot];
+
+		if (((code >= SDL_SCANCODE_F1 && code <= SDL_SCANCODE_F12) || code == SDL_SCANCODE_PRINTSCREEN) &&
+			input_held(input, code))
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
 }
 
 /* One capture per press, regardless of how long the binding is held. */
@@ -1179,7 +1205,8 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 		test_input_menu_keys(&input);
 		console_active = console_is_active();
 		held = console_active ? 0 : keyboard_bound_actions(&input);
-		keyboard_screenshot(held);
+		keyboard_screenshot(console_active && keyboard_screenshot_in_console(&input) ?
+			1UL << HALO_KEYBOARD_SCREENSHOT : held);
 		if (!console_active)
 		{
 			if (input.menus)
