@@ -8071,6 +8071,8 @@ static char const *game_engine_log_vehicle_set(
 
 	if (vehicle_set == VARIANT_VEHICLE_SET_CUSTOM)
 		return "custom";
+	if (vehicle_set == VARIANT_VEHICLE_SET_PC)
+		return "pc";
 	return vehicle_set >= 0 && vehicle_set < (long)NUMBEROF(vehicle_sets) ? vehicle_sets[vehicle_set] : "?";
 }
 
