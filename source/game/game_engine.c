@@ -599,9 +599,9 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
+#include "../../port/linux/src/capture.h" /* port: the test hook debug.capture_on_event (a stub on the server and Android) */
 #ifdef HALO_GAME_BROWSER
 #include "../../port/linux/src/browser.h"
-#include "../../port/linux/src/capture.h" /* port: the test hook debug.capture_on_event */
 /* port/linux/game/game_stats.c's */
 void game_stats_player_killed(long killing_player_index, long dead_player_index, boolean friendly_fire);
 void game_stats_player_extra(long player_index, char *text, long size, short *multikills);

@@ -84,11 +84,12 @@ def postgame_shown(lines, params):
 
 
 def ball_melee_lethal(lines, params):
-    """the game rules line says the ball's melee is lethal and the run had a kill"""
-    rules = [l for l in lines if "game rules:" in l]
-    lethal = any("ball melee lethal" in l for l in rules)
+    """the "AE rules:" line (game_engine.c, ends "ball melee lethal|stock") says the ball's melee is lethal and the run
+    had a kill"""
+    rules = [l for l in lines if "AE rules:" in l]
+    lethal = any(re.search(r"ball melee lethal\s*$", l) for l in rules)
     kills = sum(1 for l in lines if "test capture: kill" in l)
-    return lethal and kills > 0, f"game rules lethal: {lethal}, kills seen: {kills}"
+    return lethal and kills > 0, f"AE rules lethal: {lethal}, kills seen: {kills}"
 
 
 def drop_except_power(lines, params):

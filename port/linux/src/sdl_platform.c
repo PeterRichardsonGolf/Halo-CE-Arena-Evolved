@@ -1421,17 +1421,28 @@ void platform_scoreboard_scroll(int open, long *notches, long *pages)
 /* the test hook debug.test_verdict_file: the verdict line, then the game quits */
 static void test_verdict(int pass)
 {
-	FILE *file = fopen(config_string("debug.test_verdict_file"), "a");
+	static int done; /* one verdict line per run: a key held down repeats before the quit takes effect */
+	FILE *file;
 	time_t now = time(NULL);
-	char stamp[32];
+	char stamp[32], name[96];
+	int i;
 
+	if (done)
+		return;
+	done = 1;
+	/* (the name goes in a "<date> <time> <name> PASS|FAIL" line the batch parses: no spaces or control characters) */
+	SDL_strlcpy(name, config_string("debug.test_name"), sizeof(name));
+	for (i = 0; name[i]; i++)
+		if ((unsigned char)name[i] <= ' ' || name[i] == 0x7f)
+			name[i] = '_';
+	file = fopen(config_string("debug.test_verdict_file"), "a");
 	strftime(stamp, sizeof(stamp), "%Y-%m-%d %H:%M", localtime(&now));
 	if (file)
 	{
-		fprintf(file, "%s %s %s\n", stamp, config_string("debug.test_name"), pass ? "PASS" : "FAIL");
+		fprintf(file, "%s %s %s\n", stamp, name, pass ? "PASS" : "FAIL");
 		fclose(file);
 	}
-	platform_log("test verdict: %s %s", config_string("debug.test_name"), pass ? "PASS" : "FAIL");
+	platform_log("test verdict: %s %s", name, pass ? "PASS" : "FAIL");
 	platform_request_quit();
 }
 
@@ -1484,8 +1495,13 @@ void platform_pump_events(void)
 			auto_ticks = 0;
 			if (*text && *config_string("debug.test_verdict_file") && (!strncmp(text, "PASS:", 5) || !strncmp(text, "FAIL:", 5)))
 			{
-				auto_pass = text[0] == 'P';
-				auto_ticks = SDL_GetTicks() + (Uint64)(atof(text + 5) * 1000.0);
+				double seconds = atof(text + 5);
+
+				if (seconds > 0.0) /* (a malformed value would give 0 s: a verdict at once) */
+				{
+					auto_pass = text[0] == 'P';
+					auto_ticks = SDL_GetTicks() + (Uint64)(seconds * 1000.0);
+				}
 			}
 		}
 		if (auto_ticks && SDL_GetTicks() >= auto_ticks)

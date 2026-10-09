@@ -34,8 +34,8 @@ class HealthCheck(unittest.TestCase):
             if m and 150 < int(m.group(1)) < 290 and "hit" not in l:
                 l = l.replace("tick %s " % m.group(1), "tick %d " % (int(m.group(1)) - 90))
             out.append(l)
-        res = by_id(health_check.check(out))
-        self.assertFalse(all(ok for ok, _ in res.values()))
+        res = by_id(health_check.check(out, need_body=True))
+        self.assertFalse(res["shield_delay"][0])
 
     def test_body_recovery_too_soon_fails(self):
         out = []
@@ -89,9 +89,12 @@ class LogChecks(unittest.TestCase):
         self.assertFalse(self.run_check("start_text", cap, start_text="TEAM AE SLAYER")[0])
         self.assertFalse(self.run_check("postgame_report", cap)[0])
         self.assertTrue(self.run_check("postgame_report", cap + ["arena-evolved: test capture: postgame"])[0])
-        rules = ["game rules: health halo 2, drop secondary ce, ball melee lethal"]
+        # (the engine's own format, game_engine.c's "AE rules:" error() line, as written to debug.txt)
+        rules = ["10.09.26 03:35:14  AE rules: timers level line of sight, spawn heat on, objective normal, nhe extras off, "
+                 "drop secondary always, nhe mode by vehicles, starting frags 2, ball melee lethal"]
         self.assertTrue(self.run_check("ball_melee_lethal", rules + cap)[0])
-        self.assertFalse(self.run_check("ball_melee_lethal", ["game rules: ball melee stock"] + cap)[0])
+        self.assertFalse(self.run_check("ball_melee_lethal", [rules[0].replace("lethal", "stock")] + cap)[0])
+        self.assertFalse(self.run_check("ball_melee_lethal", cap)[0])
 
     def test_unknown_check(self):
         self.assertFalse(self.run_check("nope", [])[0])

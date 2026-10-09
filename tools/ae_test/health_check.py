@@ -77,7 +77,8 @@ def check(lines, tol=4, need_body=False):
         return [("hits", False, "no scripted hit in the log (HALO_NETWORK_TEST_DAMAGE set? a hosted game?)")]
     out.append(("hits", True, f"{len(hits)} scripted hits at ticks {[h[0] for h in hits]}"))
     # the stun a hit leaves: 5 s
-    shield_hits = [h for h in hits if h[3] > 0]
+    # (every hit that left the shield standing or took it down; a hit with no stun is a failure, not skipped)
+    shield_hits = [h for h in hits if h[2] < 1.0 - 1e-4]
     out.append(("stun_set", bool(shield_hits) and all(abs(h[3] - SHIELD_STUN) <= 2 for h in shield_hits),
                 f"shield stun right after the hits: {[h[3] for h in hits]} (want {SHIELD_STUN})"))
     # never under fire: no rise of the shield between a hit and its stun's end, nor before the next hit + 5 s
