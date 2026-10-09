@@ -324,6 +324,8 @@ F9 starts a recording and F9 again stops it: a video with the game's
 sound, `recordings/<date>_<time>_<map>.mp4` next to `config.toml`
 (`capture.record_directory`). A red dot shows at the top right while
 recording (`capture.record_indicator`); the dot is never in the video.
+The sound of the video is the sound that you hear: it includes the voices
+of the other players in voice chat, but not your microphone.
 Recordings need [ffmpeg](https://ffmpeg.org), which the game does not ship:
 put `ffmpeg` (`ffmpeg.exe` on Windows) next to the game or on the `PATH`,
 or set `capture.ffmpeg_path` (its path, or a name to look for on the
