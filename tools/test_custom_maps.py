@@ -485,9 +485,6 @@ def fixture_sources():
     # (the map lists' kinds, the Map screen's steps and its state, as declared)
     functions.append(menu[menu.index("enum\n{\n\tMAP_KIND_SINGLEPLAYER,"):menu.index("static void visible_set(struct widget_instance *widget, boolean visible);")])
     functions.append(menu[menu.index("enum\n{\n\tMAP_STEP_MAPS,"):menu.index("} map_list;") + len("} map_list;\n")])
-    # (the map kinds' helpers, OpenCE build-145's)
-    for name in ("map_kind_singleplayer", "xbox_multiplayer_map_count", "map_kind_count", "map_kind_display_index"):
-        functions.append(function(menu, name))
     for name in ("descendant", "named", "text_set_length", "text_set", "string_get", "focused_row", "focus_row",
                  "visible_set", "map_kind_shown", "map_kind_set", "map_kind_first", "map_kind_focus",
                  "map_kind_rows_update", "map_name_text", "map_row_string", "map_caption_set", "multiplayer_map_text",

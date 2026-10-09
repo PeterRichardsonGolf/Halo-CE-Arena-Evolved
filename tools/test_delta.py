@@ -51,15 +51,8 @@ def test_limits_follow_the_table():
     table = rows()
     newest = table[-1][0]
     last_breaking = max(number for number, _, kind in table if kind == "breaking")
-    announce = define(limits, "HALO_PORT_NETWORK_VERSION")
-    # (Arena Evolved announces 20, ChupathingyCE 0.7.0b's, below the newest:
-    # a version a row of the table, every one above it additive, so a client
-    # of the announced version plays with this build's hosts)
-    assert announce in [number for number, _, _ in table], \
-        "hosts must announce a version of the table"
-    assert all(kind == "additive" for number, _, kind in table if number > announce), \
-        "hosts may announce below the newest version only past additive ones"
-    assert announce == 20, "Arena Evolved announces ChupathingyCE 0.7.0b's version"
+    assert define(limits, "HALO_PORT_NETWORK_VERSION") == newest, \
+        "hosts must announce the table's newest version"
     assert define(limits, "HALO_PORT_NETWORK_VERSION_MAXIMUM") == newest, \
         "clients must join hosts up to the table's newest version"
     assert define(limits, "HALO_PORT_NETWORK_VERSION_MINIMUM") == last_breaking, \

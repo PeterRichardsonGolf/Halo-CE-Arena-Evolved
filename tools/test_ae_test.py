@@ -15,6 +15,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent / "ae_test"
 sys.path.insert(0, str(HERE))
+# (OpenCE's asset-free tests, tools/harness, are a package of the same name,
+# imported by it too: ours while these tools are imported, then the name is
+# theirs again, whichever tests one pytest run collects first)
+_other_harness = sys.modules.pop("harness", None)
 
 import harness  # noqa: E402
 import handshake  # noqa: E402
@@ -23,6 +27,10 @@ import run  # noqa: E402
 import sheet  # noqa: E402
 import smoke  # noqa: E402
 import windows  # noqa: E402
+
+del sys.modules["harness"]
+if _other_harness is not None:
+    sys.modules["harness"] = _other_harness
 
 DEBUG_MP = """\
 arena-evolved: Halo CE: Arena Evolved 0.1.0-beta-dev (dev, release config, commit 623d8f22) Linux x64
