@@ -65,7 +65,7 @@ Abbreviations:
 | Hardware id (host bans) | yes | yes | yes | yes | **none** before (fixed) | yes | yes | yes |
 | Halo PC / HaloMD maps | yes (0.7.0b) | yes | yes | yes | yes | yes (0.7.0b) | yes | yes |
 | Halo PC maps' folders (0.7.1b: `maps_ce`, `maps_md`, `maps_pc`; the older `maps/ce`, `md_maps`, OpenCE's `custom_maps` read) | yes | yes | yes | yes | yes | yes | yes | yes |
-| Moving the older map folders (`game.move_old_map_folders`) | asked once (message box) | same | same | same | same | moved without asking (c: the app's own storage, no message box there yet) | same as Linux | never unless set (c: read-only volumes, nobody to ask) |
+| Moving the older map folders (`game.move_old_map_folders`) | never by default (`"no"`); `"ask"` asks once (message box) | same | same | same | same | `"yes"` moves without asking (c: the app's own storage, no message box there yet) | same as Linux | never unless set (c: read-only volumes, nobody to ask) |
 | Custom Edition maps with OpenCE build-147 (`custom_maps\<name>`, vehicles by spawn flags, map version) and the missing-map message | yes | yes | yes | yes | yes | yes | yes | yes |
 | Delta Peer map identity (name and hash, `ce_maps`) | yes | yes | yes | yes | yes | yes | yes | yes |
 | PC menus or Xbox menus (`display.menus`) | both | both | both | both | both | both; Quit does nothing (a) | both | n/a |

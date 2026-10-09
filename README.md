@@ -171,7 +171,8 @@ play:
   Steam, `halo1/maps/custom_edition`), HaloMD maps in `maps_md` and your
   Halo PC disc's maps in `maps_pc`. The older `maps/ce` and `md_maps`, and
   OpenCE's `custom_maps`, still play from where they are; at its first
-  start the game offers to move the first two (`game.move_old_map_folders`).
+  start nothing is moved; `game.move_old_map_folders = "ask"` offers to move
+  the first two, `"yes"` moves them.
 
 **Privacy**
 - Internet games you host start PUBLIC, as upstream's do: they show in the

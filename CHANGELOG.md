@@ -71,7 +71,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   - Halo PC maps have folders of their own beside `maps`: `maps_ce` (Custom
     Edition), `maps_md` (HaloMD) and `maps_pc` (your Halo PC disc's, new).
     `maps/ce`, `md_maps` and OpenCE's `custom_maps` still play; the game
-    offers once to move the first two (`game.move_old_map_folders`). A game
+    moves nothing by default (`game.move_old_map_folders` is `"no"`; `"ask"`
+    offers once to move the first two). A game
     on a Custom Edition map is named as OpenCE names it, so OpenCE players
     with the map join it.
   - Security (ChupathingyCE 0.7.1d): a downloaded map's scripts may call and

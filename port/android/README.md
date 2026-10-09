@@ -84,9 +84,9 @@ builds do: refer to "Halo PC maps" in the main
 [README](../../README.md#halo-pc-maps). Copy the files from a computer, for
 example
 `adb push <folder>/. /sdcard/Android/data/dev.horrible.chupathingyce/files/maps_ce/`.
-The older `maps/ce` and `md_maps` of earlier versions are moved into
-`maps_ce` and `maps_md` when the game starts (unless
-`game.move_old_map_folders` is `"no"`).
+The older `maps/ce` and `md_maps` of earlier versions stay where they
+are (`game.move_old_map_folders` is `"no"`; `"yes"` moves them into `maps_ce`
+and `maps_md` when the game starts).
 Refer to "Limits".
 
 ## Controls
