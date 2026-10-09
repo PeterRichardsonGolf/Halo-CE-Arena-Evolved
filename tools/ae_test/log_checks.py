@@ -103,7 +103,7 @@ def all_weapons_created(lines, params):
     listed = sum(1 for l in lines if re.search(r"network test:   weapon \d+: ", l))
     want = int(params.get("min_weapons", 1))
     n = int(m.group(1)) if m else 0
-    made = [int(x.group(1)) for x in (re.search(r"created (\d+) weapon objects", l) for l in lines) if x]
+    made = [int(x.group(1)) for x in (re.search(r"created (\d+) weapon and equipment objects", l) for l in lines) if x]
     ok = bool(m) and n >= want and listed == n and bool(made) and all(c == n for c in made)
     return ok, f"list of {n} weapons, {listed} named in the log, objects created per spawn {made} (want {n} each)"
 

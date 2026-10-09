@@ -69,7 +69,7 @@ def value_at(states, key, tick, default):
     return value
 
 
-def check(lines, tol=4):
+def check(lines, tol=4, need_body=False):
     """-> [(id, ok, message)]"""
     hits, states = parse(lines)
     out = []
@@ -100,15 +100,25 @@ def check(lines, tol=4):
             want_full = start + round((1.0 - last[2]) * SHIELD_RECHARGE_TICKS)
             out.append(("shield_full", full is not None and abs(full - want_full) <= tol + 2,
                         f"shield full at {full} (want about {want_full}: {(1.0 - last[2]) * 2:.2f} s after it began)"))
-    # body: 10 s without damage, then 5 s
-    if last[1] < 1.0 - 1e-4:
-        begin = first_rise(states, 1, last[0], None, above=last[1])
-        want = last[0] + BODY_QUIET
+    # body: 10 s without damage, then 5 s. The last body damage is the last tick the health FELL (a scripted hit
+    # that got through, or the hurt hook, HALO_NETWORK_TEST_HURT, which leaves 40%)
+    fall = None
+    prev = 1.0
+    for st in states:
+        if st[1] < prev - 1e-4:
+            fall = st
+        prev = st[1]
+    if fall is None:
+        out.append(("body", not need_body, "no body damage in the log" + (" (needed: use HALO_NETWORK_TEST_HURT)" if need_body else "")))
+    else:
+        damage = fall[0]
+        begin = first_rise(states, 1, damage, None, above=fall[1])
+        want = damage + BODY_QUIET
         out.append(("body_delay", begin is not None and abs(begin - want) <= tol + 1,
-                    f"last damage at {last[0]}: body recovery begins at {begin} (want about {want})"))
+                    f"last body damage at {damage} (health {fall[1]:.2f}): recovery begins at {begin} (want about {want})"))
         if begin is not None:
             full = next((st[0] for st in states if st[0] > begin and st[1] >= 1.0 - 1e-4), None)
-            want_full = begin + round((1.0 - last[1]) * BODY_RECHARGE_TICKS)
+            want_full = begin + round((1.0 - fall[1]) * BODY_RECHARGE_TICKS)
             out.append(("body_full", full is not None and abs(full - want_full) <= tol + 3,
                         f"health full at {full} (want about {want_full})"))
     return out
@@ -118,8 +128,9 @@ def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("log")
     p.add_argument("--tolerance", type=int, default=4, help="ticks")
+    p.add_argument("--need-body", action="store_true", help="fail when the log has no body damage")
     a = p.parse_args(argv)
-    results = check(Path(a.log).read_text(errors="replace").splitlines(), a.tolerance)
+    results = check(Path(a.log).read_text(errors="replace").splitlines(), a.tolerance, a.need_body)
     for ident, ok, msg in results:
         print(f"{'PASS' if ok else 'FAIL'}  {ident}: {msg}")
     return 0 if all(ok for _, ok, _ in results) else 1
