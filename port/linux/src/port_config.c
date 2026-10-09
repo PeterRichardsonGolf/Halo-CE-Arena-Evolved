@@ -622,6 +622,10 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"An automated test host's gametype gets BALL MELEE LETHAL (for built-in\n"
 		"gametypes, such as a juggernaut game)." },
+	{ "debug.network_test_melee", _config_boolean, "false", "HALO_NETWORK_TEST_MELEE", _environment_value,
+		_platform_all,
+		"With debug.network_test_shoot, each player strikes with the weapon's melee\n"
+		"blow instead of its projectile." },
 	{ "debug.network_test_flags", _config_integer, "0", "HALO_NETWORK_TEST_FLAGS", _environment_value,
 		_platform_all,
 		"Bits an automated test host sets in its game variant's flags (the port's\n"

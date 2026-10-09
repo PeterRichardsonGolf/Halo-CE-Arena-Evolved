@@ -161,6 +161,8 @@ static struct
 	unsigned long variant_flags;
 	/* (debug.network_test_ball_melee: the host's gametype gets BALL MELEE LETHAL) */
 	boolean ball_melee;
+	/* (debug.network_test_melee: network_test_shoot strikes with the weapon's melee) */
+	boolean shoot_melee;
 	/* (debug.network_test_gametype: a custom gametype's stored name, empty
 	for the built-in one) */
 	char saved_gametype[64];
@@ -322,6 +324,7 @@ static void network_test_read_settings(
 	}
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
 	network_test.ball_melee = config_boolean("debug.network_test_ball_melee") != 0;
+	network_test.shoot_melee = config_boolean("debug.network_test_melee") != 0;
 	snprintf(network_test.saved_gametype, sizeof(network_test.saved_gametype), "%s",
 		config_string("debug.network_test_gametype"));
 	network_test.local_players = (short)PIN(config_integer("debug.network_test_local_players"), 1, MAXIMUM_LOCAL_PLAYERS);
@@ -628,7 +631,7 @@ static void network_test_shoot(
 		}
 		/* (else its melee: a blow's epicenter is its striker's, as
 		unit_cause_player_melee_damage has it) */
-		melee = damage_index == NONE;
+		melee = damage_index == NONE || network_test.shoot_melee;
 		if (melee)
 			damage_index = weapon->weapon.melee_attack_damage.index;
 		if (damage_index == NONE)
