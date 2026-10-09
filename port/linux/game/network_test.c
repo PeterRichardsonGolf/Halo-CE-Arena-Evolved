@@ -50,6 +50,8 @@ Called from the main loop every frame (main.c).
 #include "networking/network_game_globals.h"
 #include "networking/network_client_manager.h"
 #include "networking/network_server_manager.h"
+#include "game/cheats.h"
+#include "game/game_globals.h"
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/players.h"
@@ -138,6 +140,11 @@ static struct
 	player stands on in its inventory two seconds on, a pickup every machine
 	sees; the weapon, NONE for none) */
 	boolean pickup_give;
+	/* (debug.network_test_all_weapons: cheat_all_weapons for the host's first local player a
+	second after each spawn; the unit it was done for) */
+	boolean all_weapons;
+	long all_weapons_unit;
+	long all_weapons_tick;
 	long pickup_weapon_index;
 	real hurt_time;
 	boolean hurt;
@@ -283,6 +290,8 @@ static void network_test_read_settings(
 	network_test.vehicle_time = (real)config_real("debug.network_test_vehicle");
 	network_test.pickup_time = (real)config_real("debug.network_test_pickup");
 	network_test.pickup_give = config_boolean("debug.network_test_pickup_give") != 0;
+	network_test.all_weapons = config_boolean("debug.network_test_all_weapons") != 0;
+	network_test.all_weapons_unit = NONE;
 	network_test.pickup_weapon_index = NONE;
 	snprintf(network_test.pickup_weapon, sizeof(network_test.pickup_weapon), "%s",
 		config_string("debug.network_test_pickup_weapon"));
@@ -1117,6 +1126,48 @@ void network_test_update(
 			network_test.damage_last[0] = network_test.damage_last[1] = network_test.damage_last[2] = -1.0f;
 		}
 		network_test_damage_script();
+	}
+	/* debug.network_test_all_weapons: a new unit for the host's player: the map's weapons around it a
+	second on (init.txt runs before any player exists) */
+	if (network_test.all_weapons && network_test.mode == _network_test_host && game_in_progress() && !main_menu_loaded)
+	{
+		struct data_iterator iterator;
+		struct player_datum *player;
+
+		data_iterator_new(&iterator, player_data);
+		while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+		{
+			if (player->local_player_index == NONE)
+				continue;
+			if (player->unit_index == NONE)
+			{
+				network_test.all_weapons_unit = NONE;
+			}
+			else if (player->unit_index != network_test.all_weapons_unit)
+			{
+				network_test.all_weapons_unit = player->unit_index;
+				network_test.all_weapons_tick = game_time_get() + TICKS_PER_SECOND;
+			}
+			else if (network_test.all_weapons_tick && game_time_get() >= network_test.all_weapons_tick)
+			{
+				struct game_globals *globals = scenario_get_game_globals();
+				long index;
+
+				network_test.all_weapons_tick = 0;
+				platform_log("network test: cheat_all_weapons at tick %ld: the map's list has %ld weapons",
+					game_time_get(), (long)globals->weapon_list.count);
+				for (index = 0; index < (long)globals->weapon_list.count && globals->weapon_list.address &&
+					index < 64; index++)
+				{
+					struct tag_reference *reference = TAG_BLOCK_GET_ELEMENT(&globals->weapon_list, index, struct tag_reference);
+
+					platform_log("network test:   weapon %ld: %s", index,
+						reference->index != NONE ? tag_get_name(reference->index) : "(none)");
+				}
+				cheat_all_weapons();
+			}
+			break;
+		}
 	}
 	/* the game running: report (from the start of each game: the next
 	game's time starts over) */

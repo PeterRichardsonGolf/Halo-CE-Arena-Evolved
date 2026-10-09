@@ -704,6 +704,10 @@ static const struct config_setting config_settings[] =
 		"30 seconds after the start (the batch runner's own checks, no key to press)." },
 	{ "debug.test_name", _config_string, "\"\"", "HALO_TEST_NAME", _environment_value, _platform_all,
 		"The test's name in the line debug.test_verdict_file's keys write." },
+	{ "debug.network_test_all_weapons", _config_boolean, "false", "HALO_NETWORK_TEST_ALL_WEAPONS", _environment_value,
+		_platform_all,
+		"An automated test host runs cheat_all_weapons for its first local player a second after\n"
+		"each spawn (the map's weapon list around them), and logs the list." },
 	{ "debug.network_test_quit", _config_real, "0.0", "HALO_NETWORK_TEST_QUIT", _environment_value, _platform_all,
 		"This many seconds into an automated test game controller 1's player\n"
 		"quits, as their pause menu's QUIT does (split screen: the others stay); 0 never." },
