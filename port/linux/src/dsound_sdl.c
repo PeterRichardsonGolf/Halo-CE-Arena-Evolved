@@ -816,12 +816,13 @@ static void mix_voice(struct sdl_stream *stream, float *output, float *send, uns
 		}
 		else if (resampling_linear)
 		{
-			const float *a = stream->history[stream->center % RESAMPLER_HISTORY];
-			const float *b = stream->history[(stream->center + 1) % RESAMPLER_HISTORY];
+			/* (the history is each channel's apart, each frame twice: the
+			frame after the ring's last is beside it) */
+			unsigned long at = stream->center % RESAMPLER_HISTORY;
 			float fraction = (float)stream->phase;
 
-			sample_left = a[0] + (b[0] - a[0]) * fraction;
-			sample_right = a[1] + (b[1] - a[1]) * fraction;
+			sample_left = stream->history[0][at] + (stream->history[0][at + 1] - stream->history[0][at]) * fraction;
+			sample_right = stream->history[1][at] + (stream->history[1][at + 1] - stream->history[1][at]) * fraction;
 		}
 		else if (scale == 1.0f)
 		{
