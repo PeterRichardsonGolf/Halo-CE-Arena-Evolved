@@ -121,8 +121,8 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Competitive team King of the Hill: 5 minutes in the hill, 5 second respawns, 2 frags, no motion tracker, "
 		"no vehicles; the hill shows only in line of sight." },
 	{ "AE COMP OB", "TEAM AE COMP ODDBALL", _arena_gametype_set_ae_comp, game_engine_oddball, TRUE, FALSE,
-		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns, 2 frags, no motion tracker, no "
-		"vehicles; the ball shows only in line of sight. The ball carrier's melee kills in one hit." },
+		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns, 2 frags, no motion tracker or "
+		"vehicles, the ball in line of sight only, lethal ball melee." },
 
 	/* Halo 1: NHE's 23 gametypes, in its own order (010 to 230) */
 	{ "TS 50", "TEAM NHE SLAYER 50", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,
