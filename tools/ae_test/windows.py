@@ -4,6 +4,8 @@
     python3 tools/ae_test/windows.py [--artifact arena-evolved-windows64-release [--ci-run ID] | --build-dir SHA12|latest]
         [--map bloodgulch | --init 'map_name levels\\test\\bloodgulch\\bloodgulch'] [--exit-after 60] [--shots 900]
         [--env NAME=value ...] [--label x] [--dry-run]
+        [--branch-build SHA12 | --exe C:\\halo-test\\builds\\v0.1.0-beta\\halo.exe | --artifact NAME --branch ci/x --ci-run ID]
+        [--isolation host|sandbox [--network] [--gpu software]] [--save-from FOLDER] [--keep-save]
 
 The Windows box is a shared family PC: its runner (C:\\halo-test\\runner) decides whether a test may start
 (idle rules) and stops ours at any input. This tool only ever:
@@ -108,15 +110,78 @@ def ps_str(s):
     return "'" + str(s).replace("'", "''") + "'"
 
 
-def make_request(run_id, exe, workdir, env, timeout_s=120, args=()):
-    return {"run_id": run_id, "exe": exe, "workdir": workdir, "args": list(args), "env": env, "timeout_s": timeout_s}
+def make_request(run_id, exe, workdir, env, timeout_s=120, args=(), isolation=None, network=False, gpu=None):
+    """the runner's request.json; isolation/network/gpu are its documented optional fields (sandbox only)"""
+    req = {"run_id": run_id, "exe": exe, "workdir": workdir, "args": list(args), "env": env, "timeout_s": timeout_s}
+    if isolation:
+        req["isolation"] = isolation
+    if network:
+        req["network"] = True
+    if gpu:
+        req["gpu"] = gpu
+    return req
+
+
+def check_isolation(a):
+    """--isolation host|sandbox; --network and --gpu only mean something in the sandbox"""
+    iso = getattr(a, "isolation", None)
+    if iso not in (None, "host", "sandbox"):
+        raise SystemExit(f"ae_test windows: --isolation {iso!r}: host or sandbox")
+    if iso != "sandbox" and (getattr(a, "network", False) or getattr(a, "gpu", None)):
+        raise SystemExit("ae_test windows: --network and --gpu need --isolation sandbox")
+    if getattr(a, "gpu", None) not in (None, "software"):
+        raise SystemExit(f"ae_test windows: --gpu {a.gpu!r}: only 'software' (the default is the vGPU)")
+    return iso
+
+
+def branch_build_exe(root, sha12):
+    """--branch-build: C:\\halo-test\\branches\\<sha12>\\halo.exe (a folder name, like --build-dir)"""
+    v = str(sha12)
+    if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z._-]*", v) or ".." in v:
+        raise SystemExit(f"ae_test windows: --branch-build {v!r}: a folder name under {root}\\branches")
+    path = ntpath.join(root, "branches", v)
+    if not inside(path, ntpath.join(root, "branches")):
+        raise SystemExit(f"ae_test windows: --branch-build {v!r} is not under {root}\\branches")
+    return ntpath.normpath(path)
+
+
+def check_exe(root, exe, isolation):
+    """--exe: a halo.exe inside builds or branches (untrusted only with --isolation sandbox)"""
+    e = str(exe).replace("/", "\\")
+    if ntpath.basename(e).lower() != "halo.exe":
+        raise SystemExit(f"ae_test windows: --exe {exe!r}: must be a halo.exe")
+    allowed = ["builds", "branches"] + (["untrusted"] if isolation == "sandbox" else [])
+    if not any(inside(e, ntpath.join(root, d)) for d in allowed):
+        raise SystemExit(f"ae_test windows: --exe {exe!r} is not under {root}\\{{{','.join(allowed)}}}")
+    return ntpath.normpath(e)
+
+
+def uses_run_save(a):
+    """a save root that lives inside the run's folder: pre-placed (--save-from) or read back (--keep-save)"""
+    return bool(getattr(a, "save_from", None) or getattr(a, "keep_save", False))
+
+
+def save_root(root, run_id, a):
+    if uses_run_save(a):
+        return f"{root}\\runs\\{run_id}\\save"
+    return f"{root}\\saves\\{run_id}"
+
+
+def check_save_from(folder):
+    """--save-from: an existing local folder (copied into the run; never a symlink, never under /tmp)"""
+    f = Path(folder).expanduser()
+    if not f.is_dir() or f.is_symlink():
+        raise SystemExit(f"ae_test windows: --save-from {folder!r}: not a folder")
+    if str(f.resolve()) == "/tmp" or str(f.resolve()).startswith("/tmp/"):
+        raise SystemExit("ae_test windows: --save-from may not be under /tmp (RAM)")
+    return f.resolve()
 
 
 def game_env(root, run_id, a):
     run = f"{root}\\runs\\{run_id}"
     env = {
         "HALO_DATA_ROOT": f"{run}\\data",
-        "HALO_SAVE_ROOT": f"{root}\\saves\\{run_id}",
+        "HALO_SAVE_ROOT": save_root(root, run_id, a),
         "HALO_DISPLAY_MODE": "windowed",
         "HALO_WINDOW_SIZE": a.window,
         "SDL_AUDIO_DRIVER": "dummy",
@@ -142,13 +207,14 @@ def init_lines(a):
     return ["game_variant slayer", "map_name levels\\test\\bloodgulch\\bloodgulch"]
 
 
-def prepare_script(root, run_id, init, request):
+def prepare_script(root, run_id, init, request, save_in_run=False):
     run = f"{root}\\runs\\{run_id}"
     lines = [
         "$ErrorActionPreference = 'Stop'",
         f"New-Item -ItemType Directory -Force {ps_str(run + chr(92) + 'data')} | Out-Null",
         f"New-Item -ItemType Directory -Force {ps_str(run + chr(92) + 'shots')} | Out-Null",
-        f"New-Item -ItemType Directory -Force {ps_str(root + chr(92) + 'saves' + chr(92) + run_id)} | Out-Null",
+        *([] if save_in_run else
+          [f"New-Item -ItemType Directory -Force {ps_str(root + chr(92) + 'saves' + chr(92) + run_id)} | Out-Null"]),
         f"if (-not (Test-Path {ps_str(run + chr(92) + 'data' + chr(92) + 'maps')})) "
         f"{{ New-Item -ItemType Junction -Path {ps_str(run + chr(92) + 'data' + chr(92) + 'maps')} "
         f"-Target {ps_str(root + chr(92) + 'maps')} | Out-Null }}",
@@ -181,6 +247,28 @@ def parse_start(code, output):
     return "error", f"start-test.ps1 exit {code}: {first}"
 
 
+def upload_save(cfg, root, run_id, folder):
+    """copy a local save folder to C:\\halo-test\\runs\\<id>\\save (the run's folder is created by the prepare step)"""
+    host = cfg["windows"]["ssh"]
+    dst = f"{host}:{root}\\runs\\{run_id}\\save".replace("\\", "/")
+    r = subprocess.run(["scp", "-q", "-r", str(folder), dst], capture_output=True, text=True)
+    return r.returncode == 0, r.stderr.strip()[-300:]
+
+
+def fetch_save(cfg, root, run_id, local, big=16 * 1024 * 1024):
+    """--keep-save: the run's save root back to <local>/save; files over 16 MB (map caches) are deleted here"""
+    host = cfg["windows"]["ssh"]
+    run = f"{root}\\runs\\{run_id}".replace("\\", "/")
+    r = subprocess.run(["scp", "-q", "-r", f"{host}:{run}/save", str(local)], capture_output=True)
+    dropped = []
+    if r.returncode == 0:
+        for f in sorted((local / "save").rglob("*")):
+            if f.is_file() and f.stat().st_size > big:
+                dropped.append(str(f.relative_to(local)))
+                f.unlink()
+    return r.returncode == 0, dropped
+
+
 def fetch(cfg, root, run_id, local):
     """copy the run's files back (never the maps junction): scp of each file and the shots folder"""
     host = cfg["windows"]["ssh"]
@@ -201,6 +289,7 @@ def cleanup_script(root, run_id):
     run = f"{root}\\runs\\{run_id}"
     return "\n".join([
         f"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue {ps_str(root + chr(92) + 'saves' + chr(92) + run_id)}",
+        f"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue {ps_str(run + chr(92) + 'save')}",
         f"Remove-Item -Force -ErrorAction SilentlyContinue {ps_str(run + chr(92) + 'shots' + chr(92) + '*.bmp')}",
     ])
 
@@ -211,6 +300,18 @@ def main(argv):
     p.add_argument("--out-name")
     p.add_argument("--artifact", help="fetch this CI artifact first (e.g. arena-evolved-windows64-release)")
     p.add_argument("--ci-run", help="the CI run id (default: the newest successful main push run)")
+    p.add_argument("--branch", help="with --artifact: the own-repo branch whose push run to fetch "
+                   "(fetch-build.ps1 -Branch; lands in C:\\halo-test\\branches\\<sha12>)")
+    p.add_argument("--branch-build", metavar="SHA12", help="run C:\\halo-test\\branches\\<sha12>\\halo.exe")
+    p.add_argument("--exe", help="run this halo.exe (under C:\\halo-test\\builds or branches), e.g. the old release "
+                   "C:\\halo-test\\builds\\v0.1.0-beta\\halo.exe")
+    p.add_argument("--isolation", choices=["host", "sandbox"], help="the runner's isolation (default host)")
+    p.add_argument("--network", action="store_true", help="sandbox networking on (sandbox only; default off)")
+    p.add_argument("--gpu", choices=["software"], help="sandbox: software rendering instead of the vGPU")
+    p.add_argument("--save-from", metavar="FOLDER", help="copy this local folder to the run's save root "
+                   "(runs\\<id>\\save) and play on it")
+    p.add_argument("--keep-save", action="store_true", help="play on runs\\<id>\\save and copy it back to <out>/save "
+                   "(files over 16 MB dropped)")
     p.add_argument("--build-dir", default="latest", help="a folder under C:\\halo-test\\builds (sha12), or latest")
     p.add_argument("--map", help="host this multiplayer map (network test) instead of the init.txt Blood Gulch")
     p.add_argument("--init", action="append", help="init.txt line (repeat)")
@@ -230,25 +331,39 @@ def main(argv):
     out = harness.new_out_dir(cfg, "windows", None, a.out_name or run_id)
     result = {"run_id": run_id, "status": None, "reason": None}
 
+    iso = check_isolation(a)
+    if sum(bool(x) for x in (a.exe, a.branch_build, a.artifact)) > 1:
+        raise SystemExit("ae_test windows: use only one of --exe, --branch-build, --artifact")
+    if a.branch and not a.artifact:
+        raise SystemExit("ae_test windows: --branch goes with --artifact")
+    save_from = check_save_from(a.save_from) if a.save_from else None
+    exe = None
     # the build
-    if a.artifact:
+    if a.exe:
+        exe = check_exe(root, a.exe, iso)
+        build_dir = ntpath.dirname(exe)
+    elif a.branch_build:
+        build_dir = branch_build_exe(root, a.branch_build)
+    elif a.artifact:
         if a.dry_run:
             build_dir = f"{root}\\builds\\<fetched>"
         else:
             script = (f"& powershell -NoProfile -ExecutionPolicy Bypass -File "
                       f"{ps_str(root + chr(92) + 'runner' + chr(92) + 'fetch-build.ps1')} "
                       f"-Artifact {ps_str(a.artifact)}" + (f" -RunId {int(a.ci_run)}" if a.ci_run else "") +
+                      (f" -Branch {ps_str(a.branch)}" if a.branch else "") +
                       "; Write-Output \"AE_EXIT=$LASTEXITCODE\"")
             code, outp = ps(cfg, script, timeout=1800)
-            paths = [l.strip() for l in outp.splitlines() if l.strip().lower().startswith(root.lower() + "\\builds")]
+            paths = [l.strip() for l in outp.splitlines()
+                     if any(l.strip().lower().startswith((root + "\\" + d).lower()) for d in ("builds", "branches"))]
             if not paths:
                 result.update(status="no-build", reason="fetch-build.ps1: " + " | ".join(outp.strip().splitlines()[-3:]))
                 harness.write_json(out / "result.json", result)
                 print(json.dumps(result, indent=2))
                 return 2
             build_dir = paths[-1]
-            if not inside(build_dir, ntpath.join(root, "builds")):
-                raise SystemExit(f"ae_test windows: fetch-build.ps1 gave {build_dir!r}, not under {root}\\builds")
+            if not any(inside(build_dir, ntpath.join(root, d)) for d in ("builds", "branches")):
+                raise SystemExit(f"ae_test windows: fetch-build.ps1 gave {build_dir!r}, not under {root}\\builds or branches")
     elif a.build_dir == "latest":
         code, outp = ps(cfg, f"(Get-ChildItem {ps_str(root + chr(92) + 'builds')} -Directory | Sort-Object LastWriteTime "
                              f"| Select-Object -Last 1).FullName")
@@ -259,20 +374,22 @@ def main(argv):
             raise SystemExit(f"ae_test windows: {build_dir!r} is not under {root}\\builds")
     else:
         build_dir = build_dir_path(root, a.build_dir)
-    exe = f"{build_dir}\\halo.exe"
-    if not a.dry_run:
-        code, outp = ps(cfg, f"(Get-ChildItem {ps_str(build_dir)} -Recurse -Filter halo.exe | Select-Object -First 1).FullName")
-        found = outp.strip().splitlines()[-1] if outp.strip() else ""
-        if not found:
-            raise SystemExit(f"ae_test windows: no halo.exe under {build_dir}")
-        exe = found
+    if exe is None:
+        exe = f"{build_dir}\\halo.exe"
+        if not a.dry_run:
+            code, outp = ps(cfg, f"(Get-ChildItem {ps_str(build_dir)} -Recurse -Filter halo.exe | Select-Object -First 1).FullName")
+            found = outp.strip().splitlines()[-1] if outp.strip() else ""
+            if not found:
+                raise SystemExit(f"ae_test windows: no halo.exe under {build_dir}")
+            exe = found
     workdir = ntpath.dirname(exe)
-    builds = ntpath.join(root, "builds")
-    if not inside(exe, builds) or not inside(workdir, builds):
-        raise SystemExit(f"ae_test windows: exe and workdir must be under {builds}")
+    ok = [ntpath.join(root, d) for d in ("builds", "branches") + (("untrusted",) if iso == "sandbox" else ())]
+    if not any(inside(exe, d) and inside(workdir, d) for d in ok):
+        raise SystemExit(f"ae_test windows: exe and workdir must be under one of {ok}")
     env = game_env(root, run_id, a)
-    request = make_request(run_id, exe, workdir, env, a.timeout)
-    prep = prepare_script(root, run_id, init_lines(a), request)
+    request = make_request(run_id, exe, workdir, env, a.timeout, isolation=iso,
+                           network=a.network, gpu=a.gpu)
+    prep = prepare_script(root, run_id, init_lines(a), request, save_in_run=uses_run_save(a))
     result.update(build=build_dir, exe=exe, request=request)
     if a.dry_run:
         print(json.dumps(request, indent=2))
@@ -285,6 +402,14 @@ def main(argv):
         harness.write_json(out / "result.json", result)
         print(json.dumps(result, indent=2))
         return 2
+    if save_from:
+        good, why = upload_save(cfg, root, run_id, save_from)
+        if not good:
+            ps(cfg, f"Remove-Item -Force -ErrorAction SilentlyContinue {ps_str(root + chr(92) + 'runner' + chr(92) + 'request.json')}")
+            result.update(status="error", reason=f"save upload failed: {why}")
+            harness.write_json(out / "result.json", result)
+            print(json.dumps(result, indent=2))
+            return 2
     start = (f"& powershell -NoProfile -ExecutionPolicy Bypass -File "
              f"{ps_str(root + chr(92) + 'runner' + chr(92) + 'start-test.ps1')} -Wait; "
              "Write-Output \"AE_EXIT=$LASTEXITCODE\"")
@@ -299,10 +424,16 @@ def main(argv):
         got, pngs = fetch(cfg, root, run_id, out)
         result["files"] = got
         result["shots"] = [str(p.relative_to(out)) for p in pngs]
+        if getattr(a, "keep_save", False):
+            good, dropped = fetch_save(cfg, root, run_id, out)
+            result["save"] = {"fetched": good, "dropped_big": dropped}
         if (out / "result.json").exists():
             runner = json.loads((out / "result.json").read_text(encoding="utf-8-sig"))
             (out / "runner-result.json").write_text(json.dumps(runner, indent=2))
             result["runner"] = runner
+            result["isolation"] = runner.get("isolation", iso or "host")
+            if runner.get("sandbox") is not None:
+                result["sandbox"] = runner["sandbox"]  # {vgpu, network, gpu_seen, boot_s}
             result["exit_code"] = runner.get("exit_code")  # (null on some runner versions: not a failure by itself)
             result["seconds"] = runner.get("seconds")
         if (out / "debug.txt").exists():
@@ -311,6 +442,7 @@ def main(argv):
     harness.write_json(out / "result.json", result)
     d = result.get("debug") or {}
     line = (f"windows {run_id}: {status}" + (f" ({reason})" if reason else "") +
+            (f", {result['isolation']}" if result.get("isolation") == "sandbox" else "") +
             (f", {result.get('seconds')} s, exit {result.get('exit_code')}, asserts {d.get('asserts')} "
              f"exc {d.get('exceptions')}, {len(result.get('shots', []))} png" if status != "not-started" else ""))
     (out / "summary.txt").write_text(line + "\n")

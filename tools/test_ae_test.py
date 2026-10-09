@@ -838,6 +838,63 @@ class Windows(unittest.TestCase):
                     self.assertIn("C:\\halo-test", line)
         self.assertIn("C:\\halo-test\\saves\\ae-1", windows.cleanup_script("C:\\halo-test", "ae-1"))
 
+    def _ns(self, **kw):
+        base = dict(window="1280x720", exit_after=60, shots=900, map=None, env=None, init=None,
+                    isolation=None, network=False, gpu=None, save_from=None, keep_save=False)
+        base.update(kw)
+        return windows.argparse.Namespace(**base)
+
+    def test_sandbox_fields_in_request(self):
+        root, exe = "C:\\halo-test", "C:\\halo-test\\branches\\abc\\halo.exe"
+        req = windows.make_request("r", exe, "C:\\halo-test\\branches\\abc", {}, isolation="sandbox",
+                                   network=True, gpu="software")
+        self.assertEqual((req["isolation"], req["network"], req["gpu"]), ("sandbox", True, "software"))
+        plain = windows.make_request("r", exe, "w", {})
+        for k in ("isolation", "network", "gpu"):
+            self.assertNotIn(k, plain)
+        self.assertEqual(windows.check_isolation(self._ns(isolation="sandbox", network=True)), "sandbox")
+        for bad in (dict(network=True), dict(gpu="software"), dict(isolation="vm"),
+                    dict(isolation="sandbox", gpu="hardware")):
+            with self.assertRaises(SystemExit, msg=str(bad)):
+                windows.check_isolation(self._ns(**bad))
+
+    def test_branch_build_and_exe(self):
+        root = "C:\\halo-test"
+        self.assertEqual(windows.branch_build_exe(root, "0233e03e1234"), "C:\\halo-test\\branches\\0233e03e1234")
+        for bad in ("..\\x", "a\\b", "C:\\x", "", "..", "a/../b"):
+            with self.assertRaises(SystemExit, msg=bad):
+                windows.branch_build_exe(root, bad)
+        old = "C:\\halo-test\\builds\\v0.1.0-beta\\halo.exe"
+        self.assertEqual(windows.check_exe(root, old, "host"), old)
+        self.assertEqual(windows.check_exe(root, "C:/halo-test/branches/x/halo.exe", None),
+                         "C:\\halo-test\\branches\\x\\halo.exe")
+        u = "C:\\halo-test\\untrusted\\f\\halo.exe"
+        self.assertEqual(windows.check_exe(root, u, "sandbox"), u)
+        for bad, iso in ((u, "host"), ("C:\\Windows\\halo.exe", "host"), ("C:\\halo-test\\builds\\x\\calc.exe", "host"),
+                         ("C:\\halo-test\\builds\\..\\..\\x\\halo.exe", "host"), ("halo.exe", "host")):
+            with self.assertRaises(SystemExit, msg=bad):
+                windows.check_exe(root, bad, iso)
+
+    def test_save_from_places_the_save_in_the_run(self):
+        import tempfile
+        a = self._ns(save_from="x")
+        env = windows.game_env("C:\\halo-test", "ae-1", a)
+        self.assertEqual(env["HALO_SAVE_ROOT"], "C:\\halo-test\\runs\\ae-1\\save")
+        self.assertEqual(windows.game_env("C:\\halo-test", "ae-1", self._ns())["HALO_SAVE_ROOT"],
+                         "C:\\halo-test\\saves\\ae-1")
+        self.assertEqual(windows.game_env("C:\\halo-test", "ae-1", self._ns(keep_save=True))["HALO_SAVE_ROOT"],
+                         "C:\\halo-test\\runs\\ae-1\\save")
+        req = windows.make_request("ae-1", "C:\\halo-test\\builds\\b\\halo.exe", "C:\\halo-test\\builds\\b", env)
+        script = windows.prepare_script("C:\\halo-test", "ae-1", [], req, save_in_run=True)
+        self.assertNotIn("C:\\halo-test\\saves", script)
+        self.assertIn("C:\\halo-test\\saves\\ae-1", windows.prepare_script("C:\\halo-test", "ae-1", [], req))
+        self.assertIn("C:\\halo-test\\runs\\ae-1\\save", windows.cleanup_script("C:\\halo-test", "ae-1"))
+        with tempfile.TemporaryDirectory(dir=str(Path(__file__).resolve().parent)) as d:
+            self.assertEqual(windows.check_save_from(d), Path(d).resolve())
+        for bad in ("/nonexistent-folder", "/tmp"):
+            with self.assertRaises(SystemExit, msg=bad):
+                windows.check_save_from(bad)
+
     def test_encoded_command(self):
         import base64
         self.assertEqual(base64.b64decode(windows.ps_encode("Write-Output 'a'")).decode("utf-16-le"),
