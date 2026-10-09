@@ -13577,7 +13577,7 @@ static short hs_syntax_node_refusal(
 		if ((designator & 0x8000) &&
 			!hs_external_global_settable_by_maps(designator & 0x7FFF)
 #ifdef HALO_CUSTOM_EDITION
-			&& !(cache_file_tags_are_ce() && hs_external_global_settable_by_ce_maps(designator & 0x7FFF))
+			&& !(cache_file_tags_are_ce() && !hs_scenario_downloaded && hs_external_global_settable_by_ce_maps(designator & 0x7FFF))
 #endif
 			)
 		{
