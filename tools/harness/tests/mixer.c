@@ -53,6 +53,22 @@ static void voice_audio_mix(float *output, unsigned long frames)
 	(void)frames;
 }
 
+/* Arena Evolved's mixer also taps the output for recordings (capture.c) and
+reads the effects' volume: neither here */
+static void capture_audio(const float *output, unsigned int frames, int channels, int rate)
+{
+	(void)output;
+	(void)frames;
+	(void)channels;
+	(void)rate;
+}
+
+static double config_real(const char *name)
+{
+	(void)name;
+	return 1.0;
+}
+
 #include "under_test.inc"
 
 #define PI 3.14159265358979323846
