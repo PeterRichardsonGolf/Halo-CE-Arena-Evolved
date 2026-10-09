@@ -15,8 +15,9 @@ port of the Halo: Combat Evolved decompilation, by way of
 [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce), and follows
 both closely.
 
-> **Status: early and in active development.** The first pre-release is
-> 0.1.0-beta (below). The Linux 64-bit build is the one played and tested;
+> **Status: early and in active development.** The current pre-release is
+> 0.2.0-beta (below). The Linux 64-bit build is the one played and tested;
+> the Windows 64-bit build passes an automated start-up and gametype check;
 > the other platforms build from the same code but are untested here.
 
 What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
@@ -218,10 +219,13 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.1.0-beta, built on ChupathingyCE 0.7.0b and OpenCE build-139, is
-the first, a pre-release (2026-10-06). Each platform is a zip of its own,
-`arena-evolved-<platform>-release.zip`; `arena-evolved-linux64-release.zip`
-(Linux, 64-bit) is the one played and tested. The dedicated server keeps
+page: 0.2.0-beta, built on ChupathingyCE 0.7.1d and OpenCE build-157
+(network version 24), is the current one, a pre-release (2026-10-09); it
+does not play online with 0.1.0-beta, so everyone updates. Each platform is
+a zip of its own, `arena-evolved-<platform>-release.zip`: Windows and Linux
+as 64-bit builds only, plus macOS and Android;
+`arena-evolved-linux64-release.zip` (Linux, 64-bit) is the one played and
+tested. The dedicated server keeps
 its own name, `chupathingyce-server-linux-<arch>`
 ([server/README.md](server/README.md)).
 

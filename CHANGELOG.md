@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.2.0-beta - 2026-10-09
+
+Built on ChupathingyCE 0.7.1d and OpenCE build-157 (network version 24). It
+does not play online with 0.1.0-beta (network version 20): everyone updates.
+Windows and Linux are offered as 64-bit builds only.
+
 ### Added
 - AE MENUS (`display.arena_menus`, off by default; `HALO_ARENA_MENUS`): a Reach-style front end of our own, kept apart
   from the PC menus in `port/linux/game/ae_*.c` and `port/linux/src/ae_*.c`. With the
