@@ -1830,7 +1830,7 @@ void platform_pump_events(void)
 #endif
 			if (binding_capture == _binding_capture_waiting && event.key.down && !event.key.repeat &&
 				event.key.scancode != SDL_SCANCODE_F11 && event.key.scancode != SDL_SCANCODE_F12 &&
-				event.key.scancode != CAPTURE_SCREENSHOT_KEY && event.key.scancode != CAPTURE_RECORD_KEY)
+				event.key.scancode != CAPTURE_RECORD_KEY)
 			{
 				binding_capture = _binding_capture_taken;
 				binding_taken_ms = SDL_GetTicks();
