@@ -342,6 +342,15 @@ static void dialog_draw(struct ae_screen *screen)
 		struct ae_rect dim = spec->dim.width > 0.0f && spec->dim.height > 0.0f ? spec->dim : spec->bounds;
 
 		ae_draw_current_view(&frame_view);
+		/* (VIEW: the page under the header, in the dialog's bounds, is hidden, so no row of it is cut by the box
+		(owner, fix round 2: only whole rows show around a dialog); the scrim below still dims the whole panel) */
+		if (density->kind == AE_DENSITY_VIEW && spec->bounds.width > 0.0f && spec->bounds.height > 0.0f)
+		{
+			ae_draw_set_alpha(scrim);
+			ae_draw_rect((spec->bounds.x - frame_view.x) / frame_view.scale,
+				(spec->bounds.y - frame_view.y) / frame_view.scale, spec->bounds.width / frame_view.scale,
+				spec->bounds.height / frame_view.scale, 0.0f, AE_COLOR_VIEW_PANEL);
+		}
 		ae_draw_set_alpha(scrim);
 		/* (no bounds given: the whole view, as it can be nothing else) */
 		if (dim.width <= 0.0f || dim.height <= 0.0f)
