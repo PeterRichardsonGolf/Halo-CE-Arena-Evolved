@@ -18,6 +18,6 @@ builds rely on.
 #define HALO_PRODUCT_SHORT_NAME "Arena Evolved"
 /* what this version is built on (README, "How it relates to OpenCE and
 ChupathingyCE"); kept in step with tools/version.py's UPSTREAM_BASE */
-#define HALO_UPSTREAM_BASE "ChupathingyCE 0.7.1d, OpenCE build-157"
+#define HALO_UPSTREAM_BASE "ChupathingyCE 0.7.1d, OpenCE build-167"
 
 #endif
