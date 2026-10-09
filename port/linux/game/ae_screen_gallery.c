@@ -397,7 +397,7 @@ static void draw_lists(void)
 	struct ae_prompt prompts[4];
 	float left = left_x(), width = gallery.frame.rect.width * LIST_WIDTH, y, top = frame_y(CONTENT_Y), tabs_height;
 
-	page_title("SETTINGS", "PROFILE: PETER");
+	page_title("SETTINGS", "PROFILE: PLAYER 1");
 	gallery.tabs.tabs = settings_tabs;
 	gallery.tabs.count = (short)(sizeof(settings_tabs) / sizeof(settings_tabs[0]));
 	tabs_height = ae_widget_tabs(d, &gallery.tabs, left, frame_y(TABS_Y), width, GALLERY_HIT + HIT_TABS);
