@@ -99,7 +99,7 @@ jobs:
           # sources alone, as OpenCE's tree has them; where Arena Evolved's
           # sources differ, each test file has stand-ins of its own. All harness
           # tests run, and our own two sound tests, which are programs, run below)
-          python -m pytest -q tools/harness tools/test_linux_port.py tools/test_host_watch_hash.py tools/test_touch_menu.py tools/test_server_control.py tools/test_delta.py tools/test_delta_peer.py tools/test_ae_test.py tools/test_ae_units.py tools/test_ae_hooks.py tools/test_ae_fonts.py tools/test_ae_title_font.py tools/test_ae_lp64_literals.py tools/test_ae_saved_limits.py tools/test_ae_mixer_linear.py tools/test_profile.py tools/test_weapon_pack_format.py tools/test_weapon_pack_build.py tools/test_weapon_pack_tools.py tools/test_p2p_copies.py
+          python -m pytest -q tools/harness tools/test_linux_port.py tools/test_host_watch_hash.py tools/test_touch_menu.py tools/test_server_control.py tools/test_delta.py tools/test_delta_peer.py tools/test_ae_test.py tools/test_ae_units.py tools/test_ae_hooks.py tools/test_ae_fonts.py tools/test_ae_title_font.py tools/test_ae_lp64_literals.py tools/test_ae_saved_limits.py tools/test_ae_mixer_linear.py tools/test_profile.py tools/test_weapon_pack_format.py tools/test_weapon_pack_build.py tools/test_weapon_pack_tools.py tools/test_p2p_copies.py tools/test_ae_checks.py
           python tools/test_ae_sound_lifecycle.py
           python tools/test_ae_sound_transition.py
           python -m unittest tools.test_custom_maps tools.test_virtual_keyboard_input

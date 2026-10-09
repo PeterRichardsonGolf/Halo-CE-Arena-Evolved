@@ -1,0 +1,8 @@
+arena-evolved: test capture: hud: Welcome Player
+arena-evolved: test capture: start
+arena-evolved: test capture: kill
+arena-evolved: test capture: hud: You killed bot1 (1)
+arena-evolved: test capture: kill
+arena-evolved: test capture: hud: Double Kill! (2)
+arena-evolved: test capture: kill
+arena-evolved: test capture: hud: Triple Kill! (3)
