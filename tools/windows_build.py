@@ -452,7 +452,7 @@ def generate_windows_target(n: Writer, sln: Any, target: WindowsTarget) -> None:
         description=f"{label} RC $out",
     )
     resources = build / "halo.res"
-    n.build(outputs=resources, rule=f"{prefix}_rc", inputs=PORT_DIR / "halo.rc", implicit=[PORT_DIR / "opence-icon.ico"])
+    n.build(outputs=resources, rule=f"{prefix}_rc", inputs=PORT_DIR / "halo.rc", implicit=[PORT_DIR / "ae-icon.ico"])
     n.rule(
         name=f"{prefix}_copy",
         command="$python -c \"import shutil,sys; shutil.copyfile(sys.argv[1], sys.argv[2])\" $in $out",
