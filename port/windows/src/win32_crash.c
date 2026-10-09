@@ -720,6 +720,9 @@ static void crash_reporter(DWORD process_id, DWORD thread_id, ULONG_PTR exceptio
 	BOOL dumped;
 	int answer;
 
+	/* (nothing is reported or sent while crash reports are not armed) */
+	if (!crash_reports_armed())
+		return;
 	if (!crash_folder(folder, PATH_SIZE))
 		return;
 	CreateDirectoryW(folder, NULL);
@@ -807,6 +810,8 @@ static void crash_uploader(void)
 	const char *consent;
 	int count, index;
 
+	if (!crash_reports_armed())
+		return;
 	if (!crash_folder(folder, PATH_SIZE))
 		return;
 	crash_reporter_log(folder);
