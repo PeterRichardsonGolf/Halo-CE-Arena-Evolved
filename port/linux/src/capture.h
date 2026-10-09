@@ -18,6 +18,14 @@ or off at the next frame */
 void capture_request_screenshot(void);
 void capture_request_recording_toggle(void);
 
+/* the test hook debug.capture_on_event (OFF by default: the call does nothing
+while it is empty): a game event of this kind ("hud", "pickup", "kill",
+"death", "start", "postgame") with its text, a screenshot delay_ms later.
+The setting is a comma list of kinds, a kind optionally followed by ":text"
+to need that text in the event's ("hud:Spree"); each capture is a line in the
+log ("test capture: ...") and a PNG in screenshots/ */
+void capture_test_event(const char *kind, const char *detail, int delay_ms);
+
 /* D3DDevice_Present (d3d8_gl.c), once a frame: the picture is the back
 buffer's framebuffer, width by height, its row 0 the top; before the
 red dot (capture_present_overlay) is drawn */
