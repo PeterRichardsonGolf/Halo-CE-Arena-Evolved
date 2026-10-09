@@ -97,6 +97,10 @@ static void start_game(unsigned long now)
 {
 	if (ae_lobby_set_map("bloodgulch").ok && ae_lobby_set_gametype("slayer").ok && ae_lobby_start().ok)
 	{
+		/* (what the lobby reads once set, to compare with what it reads after the round; the built-in slayer has no
+		description text, so its gametype reads empty both times) */
+		if (read_roster())
+			platform_log("ae lobby: set, roster map '%s' gametype '%s'", drive.roster.map, drive.roster.gametype);
 		ae_ui_remove(&drive);
 		step_to(DRIVE_IN_GAME, now);
 	}
@@ -249,7 +253,8 @@ void ae_screen_lobby_test_tick(unsigned long now)
 		/* back at the menus with AE's screen shown (the take-over): the roster */
 		if (main_menu_is_active() && ae_ui_holds(&drive) && read_roster())
 		{
-			platform_log("ae lobby: back in the lobby, roster %d", drive.roster.count);
+			platform_log("ae lobby: back in the lobby, roster %d map '%s' gametype '%s'", drive.roster.count,
+				drive.roster.map, drive.roster.gametype);
 			drive.logged_count = drive.roster.count;
 			step_to(drive.value == 92 ? DRIVE_WATCH : DRIVE_DONE, now);
 		}

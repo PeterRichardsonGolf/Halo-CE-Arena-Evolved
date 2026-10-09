@@ -513,9 +513,36 @@ static void fixes(void)
 			n++;
 		}
 	}
-	/* (N4: every prompt still there, each with its cap) */
-	CHECK(n == 3 && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 3 && text_call("Enter") && text_call("Esc") &&
-		text_call("Q"));
+	/* (task 17: a prompt is whole, its cap and its label, or it is not shown; dropped by priority: Q's Pages first,
+	then Esc's Resume; Enter's Select stays) */
+	CHECK(n >= 1 && n <= 3 && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == n && text_call("Enter") && text_call("Select"));
+	CHECK((text_call("Pages") != NULL) == (n == 3) && (text_call("Resume") != NULL) == (n >= 2));
+	CHECK((text_call("Esc") != NULL) == (n >= 2) && (text_call("Q") != NULL) == (n == 3));
+	/* a row narrower still: only the confirming prompt, inside the row; narrower than that, nothing past the edge */
+	{
+		float widths_room[3] = { 0.0f, 0.0f, 0.0f };
+		int pass;
+
+		(void)widths_room;
+		for (pass = 0; pass < 2; pass++)
+		{
+			float room = pass == 0 ? 190.0f : 40.0f;
+
+			ae_stub_reset(1920, 720);
+			ae_draw_view(960, 0, 960, 540);
+			ae_widget_prompts(&d, content.x, prompts_y, three, 3, NULL, content.x + room, -1, 9);
+			for (index = 0; index < ae_stub_count(); index++)
+			{
+				struct ae_stub_call const *any = ae_stub_get(index);
+
+				if (any->kind == AE_STUB_OUTLINE)
+					CHECK(any->x + any->width <= content.x + room + 0.01f);
+			}
+			CHECK(text_call("Esc") == NULL && text_call("Q") == NULL);
+			if (pass == 1)
+				CHECK(count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 0 || text_call("Enter"));
+		}
+	}
 	for (index = 0; index < ae_stub_count(); index++)
 		if (ae_stub_get(index)->kind == AE_STUB_TEXT)
 			CHECK(!strstr(ae_stub_get(index)->text, "\xE2\x80\xA6"));

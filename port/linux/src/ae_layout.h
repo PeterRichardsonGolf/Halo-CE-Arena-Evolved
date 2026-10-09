@@ -41,4 +41,10 @@ in a picture screen_width wide) to layout units of a layout layout_width wide (a
 void ae_layout_from_menu_point(short menu_x, short menu_y, int screen_width, float layout_width, float *x, float *y);
 void ae_layout_to_menu_point(float x, float y, int screen_width, float layout_width, float *menu_x, float *menu_y);
 
+/* a footer's prompts that fit a row: widths[i] is prompt i's whole width (its cap and its label), rank[i] its priority
+(0 the highest; ties: the earlier one is the higher), gap between the kept ones, room the row's width. Marks keep[i] 1
+for what stays; prompts are dropped lowest priority first until the rest fit (never a label alone shortened, never a
+cap alone); returns how many stay (0 when not even the highest fits: the caller then shortens its label) */
+short ae_prompts_fit(float const *widths, short const *rank, short count, float gap, float room, unsigned char *keep);
+
 #endif

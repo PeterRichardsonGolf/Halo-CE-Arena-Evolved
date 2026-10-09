@@ -9,6 +9,7 @@ middle; clips allow 2 window pixels of horizontal ink. */
 #include <string.h>
 
 #include "../src/ae_draw.h"
+#include "../src/ae_layout.h"
 #include "ae_sound.h"
 #include "ae_strings.h"
 #include "ae_widgets.h"
@@ -582,30 +583,67 @@ static float prompt_parts(struct ae_density const *density, int device, struct a
 	return total;
 }
 
+/* a prompt's priority when the row is short (0 the highest; ties: the earlier is higher): the confirming one (A / Enter,
+START), then the cancelling one (B / Esc), then the rest in the order given, the last given going first. A prompt is
+always whole (its cap and its label) or not shown at all */
+static short prompt_rank(struct ae_prompt const *prompt, short index)
+{
+	if (prompt->action == AE_ACTION_ACCEPT || prompt->action == AE_ACTION_START)
+		return 0;
+	if (prompt->action == AE_ACTION_BACK)
+		return 1;
+	return (short)(2 + index);
+}
+
 void ae_widget_prompts(struct ae_density const *density, float x, float center_y, struct ae_prompt const *prompts,
 	short count, const char *status, float right_x, short pressed, short hit_id)
 {
 	static struct prompt_parts parts[16];
+	static unsigned char keep[16];
 	int device = ae_ui_last_device(), font = device_font(device);
 	float glyph = ae_size_glyph(density), label_size = floored_minor(density, density->metrics->footer);
 	float gap = units(density, PROMPT_GAP_U), rule = units(density, RULE_U), pen = x, total, room = right_x - x;
 	float status_width = status && *status ? ae_draw_text_width(AE_FONT_BODY, label_size, status) : 0.0f;
-	short index;
+	float widths[16];
+	short ranks[16];
+	short index, kept;
 
 	if (count > 16)
 		count = 16;
-	/* room: right_x is the row's right end (the status's too). Short of it the status goes first, then every label:
-	the marks alone (a word is never cut) */
+	/* room: right_x is the row's right end (the status's too). Short of it the status goes first, then the prompts by
+	priority (prompt_rank) until the rest fit whole inside the row; one that is left alone and still too wide has its
+	label cut with "…" (a cap is never shown without its label, nor past the row) */
 	total = prompt_parts(density, device, prompts, count, 0.0f, parts);
 	if (status_width > 0.0f && total + gap + status_width > room)
 		status_width = 0.0f;
-	if (total > room && count > 0)
-		total = prompt_parts(density, device, prompts, count, -1.0f, parts);
+	for (index = 0; index < count; index++)
+	{
+		widths[index] = parts[index].width;
+		ranks[index] = prompt_rank(&prompts[index], index);
+	}
+	kept = ae_prompts_fit(widths, ranks, count, gap, room, keep);
+	if (kept == 0 && count > 0)
+	{
+		short best = 0;
+		float label_room;
+
+		for (index = 1; index < count; index++)
+			if (ranks[index] < ranks[best])
+				best = index;
+		label_room = room - (parts[best].width - parts[best].label_width);
+		if (label_room > label_size * 2.0f)
+		{
+			prompt_parts(density, device, &prompts[best], 1, label_room, &parts[best]);
+			keep[best] = 1;
+		}
+	}
 	for (index = 0; index < count; index++)
 	{
 		struct ae_prompt const *prompt = &prompts[index];
 		struct prompt_parts const *part = &parts[index];
 
+		if (!keep[index])
+			continue;
 		if (font < 0)
 		{
 			/* the keyboard: one button, a rule outline around a drawn key cap and the label */

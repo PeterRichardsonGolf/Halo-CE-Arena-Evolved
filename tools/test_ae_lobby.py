@@ -16,6 +16,7 @@ Runs only when asked ($AE_MENUS_BUILD and the harness's config, as test_ae_menus
     AE_MENUS_BUILD=$PWD/build/linux64 python3 -m pytest -q tools/test_ae_lobby.py
 """
 import importlib.util
+import re
 import shutil
 from pathlib import Path
 
@@ -70,6 +71,12 @@ def test_host_bots_round_trip(cfg):
                     "ae lobby: back in the lobby, roster 4"])
     assert SELECT_MAP_FAILED not in text
     assert "pregame UI left to the game" not in text
+    # (task 17: the lobby keeps what was set across the round: the map and a gametype, not the playlist's defaults)
+    back = re.search(r"ae lobby: back in the lobby, roster 4 map '([^']*)' gametype '([^']*)'", text)
+    assert back and back.group(1) == "bloodgulch", back
+    # (the built-in slayer carries no description text: it reads the same before the game and after the round)
+    before = re.search(r"ae lobby: set, roster map '([^']*)' gametype '([^']*)'", text)
+    assert before and before.groups() == back.groups(), (before, back)
     assert pngs, "no screenshots"
     (out / "back-in-the-lobby.png").write_bytes(pngs[-1].read_bytes())
 

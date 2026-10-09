@@ -626,8 +626,10 @@ static void view_dialogs(void)
 		if (!strcmp(call->text, "QUIT") || !strcmp(call->text, "Quit Arena Evolved?"))
 			CHECK(ae_stub_text_em_pixels(call) >= 16.0f - 0.01f);
 	}
-	/* (the scrim covers the player's view only) */
-	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_SCRIM, &box) && near(box.x, 640.0f, 0.5f) && near(box.width, 640.0f, 0.5f));
+	/* (task 17: the scrim dims only the panel the dialog opened over, not the rest of the player's view) */
+	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_SCRIM, &box) && near(box.x, panel_pixels.x, 0.5f) &&
+		near(box.y, panel_pixels.y, 0.5f) && near(box.width, panel_pixels.width, 0.5f) &&
+		near(box.height, panel_pixels.height, 0.5f));
 	/* (what is under it in its bounds is hidden: the view panel's fill over the whole of them, under the box) */
 	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_VIEW_PANEL, &box) && near(box.x, panel_pixels.x, 0.5f) &&
 		near(box.y, panel_pixels.y, 0.5f) && near(box.width, panel_pixels.width, 0.5f) &&

@@ -27,6 +27,30 @@ static void pointer_round_trip(int screen_width, float layout_width)
 		}
 }
 
+/* the footer's fit rule: lowest priority dropped first, never past the room */
+static void prompts_fit(void)
+{
+	float widths[4] = { 100, 80, 60, 90 };
+	short rank[4] = { 0, 1, 2, 3 };
+	unsigned char keep[4];
+
+	CHECK(ae_prompts_fit(widths, rank, 4, 10, 1000, keep) == 4 && keep[0] && keep[1] && keep[2] && keep[3]);
+	/* 100+80+60+90 + 30 = 360: exactly the room fits; a unit less drops the lowest (rank 3) */
+	CHECK(ae_prompts_fit(widths, rank, 4, 10, 360, keep) == 4);
+	CHECK(ae_prompts_fit(widths, rank, 4, 10, 359, keep) == 3 && keep[0] && keep[1] && keep[2] && !keep[3]);
+	CHECK(ae_prompts_fit(widths, rank, 4, 10, 250, keep) == 2 && keep[0] && keep[1] && !keep[2] && !keep[3]);
+	CHECK(ae_prompts_fit(widths, rank, 4, 10, 100, keep) == 1 && keep[0]);
+	/* not even the highest fits: none, and the caller shortens it */
+	CHECK(ae_prompts_fit(widths, rank, 4, 10, 99, keep) == 0 && !keep[0] && !keep[1] && !keep[2] && !keep[3]);
+	/* the priority is not the order: rank 0 on the last one keeps it over the earlier ones */
+	{
+		short ranks[4] = { 2, 1, 3, 0 };
+
+		CHECK(ae_prompts_fit(widths, ranks, 4, 10, 190, keep) == 2 && keep[3] && keep[1] && !keep[0] && !keep[2]);
+	}
+	CHECK(ae_prompts_fit(widths, rank, 0, 10, 0, keep) == 0);
+}
+
 int main(void)
 {
 	struct ae_layout l;
@@ -90,6 +114,7 @@ int main(void)
 	pointer_round_trip(1120, 2520);
 	pointer_round_trip(800, 1800);                            /* 16:10 */
 	pointer_round_trip(1280, 2880);                           /* 32:9 */
+	prompts_fit();
 	if (failures)
 		return 1;
 	printf("ae_draw_layout: ok\n");

@@ -245,6 +245,10 @@ struct ae_result ae_lobby_set_map(const char *map_file)
 		return failed("map", AE_STR_ERR_MAP, map_file ? map_file : "");
 	snprintf(path, sizeof(path), "levels\\test\\%s\\%s", map_file, map_file);
 	network_game_server_change_map_name(global_network_game_server_get(), path);
+	/* the game's own "current stage" too (as the PC menus' map pick does): after every round the server sets the next
+	game up from it, so without it the lobby came back on the default map (carousel) */
+	main_set_multiplayer_map_name(path);
+	game_engine_override_map_name(path);
 	platform_log("ae lobby: map %s", map_file);
 	return succeeded();
 }
@@ -263,6 +267,8 @@ struct ae_result ae_lobby_set_gametype(const char *stored_name)
 		return failed("gametype", AE_STR_ERR_GAMETYPE, stored_name);
 	player_ui_set_game_variant(&variant);
 	network_game_server_change_game_variant(global_network_game_server_get(), &variant);
+	/* (the current stage's gametype, for the next round's lobby: it came back with no gametype) */
+	game_engine_override_game_variant(&variant);
 	platform_log("ae lobby: gametype %s", stored_name);
 	return succeeded();
 }

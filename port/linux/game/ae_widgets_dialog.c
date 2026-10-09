@@ -335,8 +335,20 @@ static void dialog_draw(struct ae_screen *screen)
 		frame.width = layout.width;
 		frame.height = layout.height;
 	}
-	ae_draw_set_alpha(scrim);
-	ae_draw_rect(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, 0.0f, AE_COLOR_SCRIM);
+	/* the scrim dims only the panel the dialog opened over (its bounds), in every density: not the rest of the view, nor
+	another player's view; clicks outside the dialog are still taken over the whole view */
+	{
+		struct ae_view frame_view;
+
+		ae_draw_current_view(&frame_view);
+		ae_draw_set_alpha(scrim);
+		/* (no bounds given: the whole view, as it can be nothing else) */
+		if (spec->bounds.width <= 0.0f || spec->bounds.height <= 0.0f)
+			ae_draw_rect(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, 0.0f, AE_COLOR_SCRIM);
+		else
+		ae_draw_rect((spec->bounds.x - frame_view.x) / frame_view.scale, (spec->bounds.y - frame_view.y) / frame_view.scale,
+			spec->bounds.width / frame_view.scale, spec->bounds.height / frame_view.scale, 0.0f, AE_COLOR_SCRIM);
+	}
 	ae_hit_add(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, id, AE_PART_OUTSIDE, -1);
 	/* the dialog: scaled about its view's middle as it opens, faded in */
 	if (scale != 1.0f)
