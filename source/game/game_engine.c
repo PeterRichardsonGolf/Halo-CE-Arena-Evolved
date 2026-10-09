@@ -601,6 +601,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #endif
 #ifdef HALO_GAME_BROWSER
 #include "../../port/linux/src/browser.h"
+#include "../../port/linux/src/capture.h" /* port: the test hook debug.capture_on_event */
 /* port/linux/game/game_stats.c's */
 void game_stats_player_killed(long killing_player_index, long dead_player_index, boolean friendly_fire);
 void game_stats_player_extra(long player_index, char *text, long size, short *multikills);
@@ -4662,6 +4663,7 @@ static void game_engine_update_start_text(
 		return;
 	}
 	shown = TRUE;
+	capture_test_event("start", "", 700); /* port: debug.capture_on_event */
 	{
 		/* (40 wide as the scoreboard's: a display name is longer than the stored one) */
 		wchar_t name[40];
@@ -4922,6 +4924,20 @@ void game_engine_player_killed(
 		dead_player->quit_out_of_game = TRUE;
 	}
 	dead_player->death_time = game_time_get();
+	{
+		/* port: debug.capture_on_event (off: nothing) */
+		short local_index;
+
+		for (local_index = 0; local_index < MAXIMUM_LOCAL_PLAYERS; local_index++)
+		{
+			long local_player = local_player_get_player_index(local_index);
+
+			if (local_player != NONE && local_player == dead_player_index)
+				capture_test_event("death", "", 800);
+			else if (local_player != NONE && local_player == killing_player_index)
+				capture_test_event("kill", "", 300);
+		}
+	}
 	if (game_engine->player_killed_player)
 	{
 		game_engine->player_killed_player(
@@ -5929,6 +5945,8 @@ void game_engine_switch_to_postgame(
 {
 	if (game_engine_globals.postgame_state==game_engine_mode_active)
 	{
+		/* port: debug.capture_on_event (the report comes after the delay) */
+		capture_test_event("postgame", "", global_network_game_server_get() ? 9000 : 2000);
 		if (global_network_game_server_get())
 		{
 			game_engine_globals.postgame_state = game_engine_mode_postgame_delay;

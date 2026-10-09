@@ -71,6 +71,13 @@ void capture_request_recording_toggle(void)
 {
 }
 
+void capture_test_event(const char *kind, const char *detail, int delay_ms)
+{
+	(void)kind;
+	(void)detail;
+	(void)delay_ms;
+}
+
 void capture_frame(unsigned int framebuffer, int width, int height)
 {
 	(void)framebuffer;
@@ -1270,6 +1277,65 @@ void capture_request_screenshot(void)
 	SDL_SetAtomicInt(&screenshot_requested, 1);
 }
 
+/* ---------- the test hook debug.capture_on_event */
+
+static void screenshot_take(unsigned int framebuffer, int width, int height);
+
+#define TEST_CAPTURE_PENDING_MAXIMUM 8
+static struct { Uint64 due; char what[96]; } test_capture_pending[TEST_CAPTURE_PENDING_MAXIMUM];
+static int test_capture_count;
+
+void capture_test_event(const char *kind, const char *detail, int delay_ms)
+{
+	const char *list = config_string("debug.capture_on_event");
+	size_t kind_length = strlen(kind);
+
+	if (!list || !*list || test_capture_count >= TEST_CAPTURE_PENDING_MAXIMUM)
+		return;
+	while (*list)
+	{
+		const char *end = strchr(list, ',');
+		size_t length = end ? (size_t)(end - list) : strlen(list);
+
+		if (length >= kind_length && !strncmp(list, kind, kind_length) &&
+			(length == kind_length || list[kind_length] == ':'))
+		{
+			char need[64] = "";
+
+			if (length > kind_length + 1)
+				SDL_strlcpy(need, list + kind_length + 1, (length - kind_length < sizeof(need) ? length - kind_length : sizeof(need)));
+			if (!need[0] || (detail && strstr(detail, need)))
+			{
+				SDL_snprintf(test_capture_pending[test_capture_count].what, sizeof(test_capture_pending[0].what),
+					"%s%s%s", kind, detail && *detail ? ": " : "", detail ? detail : "");
+				test_capture_pending[test_capture_count++].due = SDL_GetTicks() + (delay_ms > 0 ? delay_ms : 0);
+				return;
+			}
+		}
+		list = end ? end + 1 : list + length;
+	}
+}
+
+/* (capture_frame) the captures whose time has come */
+static void test_capture_due(unsigned int framebuffer, int width, int height)
+{
+	int index = 0;
+
+	while (index < test_capture_count)
+	{
+		if (SDL_GetTicks() >= test_capture_pending[index].due)
+		{
+			platform_log("test capture: %s", test_capture_pending[index].what);
+			screenshot_take(framebuffer, width, height);
+			test_capture_pending[index] = test_capture_pending[--test_capture_count];
+		}
+		else
+		{
+			index++;
+		}
+	}
+}
+
 static void screenshot_take(unsigned int framebuffer, int width, int height)
 {
 	static const char *const extension[1] = { ".png" };
@@ -2295,6 +2361,8 @@ void capture_frame(unsigned int framebuffer, int width, int height)
 		SDL_SetAtomicInt(&screenshot_requested, 0);
 		screenshot_take(framebuffer, width, height);
 	}
+	if (test_capture_count)
+		test_capture_due(framebuffer, width, height);
 	/* ffmpeg failed or died: the recording stops now (the dot with it) */
 	if (capture.active && SDL_GetAtomicInt(&capture.active->failed))
 	{

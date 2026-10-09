@@ -149,6 +149,7 @@ symbols in this file:
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 
 #include <stddef.h>
+#include "../../port/linux/src/capture.h" /* port: the test hook debug.capture_on_event */
 #ifdef HALO_64BIT
 #include "memory/data.h"
 #endif
@@ -1242,6 +1243,16 @@ void hud_print_message(
 		message->valid = TRUE;
 		message->magic_number = hud_messaging_globals->magic_number++;
 		datum->leave_first_line_blank = FALSE;
+		{
+			/* port: debug.capture_on_event (off: nothing) */
+			char ascii[64];
+			long i;
+
+			for (i = 0; i < (long)sizeof(ascii) - 1 && message_text[i]; i++)
+				ascii[i] = message_text[i] > 0 && message_text[i] < 128 ? (char)message_text[i] : '?';
+			ascii[i] = 0;
+			capture_test_event("hud", ascii, 600);
+		}
 	}
 
 	return;
@@ -1271,6 +1282,7 @@ void hud_add_item_message(
 		message->valid = TRUE;
 		message->magic_number = hud_messaging_globals->magic_number++;
 		datum->leave_first_line_blank = FALSE;
+		capture_test_event("pickup", "", 500); /* port: debug.capture_on_event */
 	}
 
 	return;

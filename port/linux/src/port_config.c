@@ -690,6 +690,11 @@ static const struct config_setting config_settings[] =
 		"An automated test host's local players play with a profile, as a lobby's\n"
 		"do: player 1's last used, else the first saved; false: with none (the\n"
 		"default profile's settings, players 2-4 with no profile of their own)." },
+	{ "debug.capture_on_event", _config_string, "\"\"", "HALO_CAPTURE_ON_EVENT", _environment_value, _platform_all,
+		"Test hook, off while empty: a comma list of game events that each save a\n"
+		"screenshot shortly after (screenshots/, a \"test capture\" line in the log):\n"
+		"hud (a HUD message), start, pickup, kill, death, postgame. A kind may need a\n"
+		"text: hud:Spree." },
 	{ "debug.network_test_quit", _config_real, "0.0", "HALO_NETWORK_TEST_QUIT", _environment_value, _platform_all,
 		"This many seconds into an automated test game controller 1's player\n"
 		"quits, as their pause menu's QUIT does (split screen: the others stay); 0 never." },
