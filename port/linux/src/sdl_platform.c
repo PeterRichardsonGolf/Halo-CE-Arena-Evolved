@@ -114,7 +114,7 @@ static void old_map_folders_offer(BOOL quiet)
 	const char *setting = config_string("game.move_old_map_folders");
 	char moves[256];
 	char text[1024];
-	SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, NULL, "ChupathingyCE: map folders", text, 2,
+	SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, NULL, HALO_PRODUCT_NAME ": map folders", text, 2,
 		buttons, NULL };
 	int answer = 0;
 
@@ -231,14 +231,14 @@ static void crash_reports_start(void)
 		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" },
 	};
 	static const char text[] =
-		"ChupathingyCE crashed the last time it ran.\n\n"
+		HALO_PRODUCT_NAME " crashed the last time it ran.\n\n"
 		"Do you want to send crash reports to the developers? They help us find and fix crashes.\n\n"
 		"A report holds the game's version, where in the game it crashed and the calls that led there, and the "
 		"end of its log, debug.txt, with IP addresses taken out. Reports go to the ChupathingyCE site "
 		"(network.browser_url) and its developers.\n\n"
 		"The answer is kept in config.toml (crash_reports.upload): Yes sends the report of this crash and of "
 		"every later one, No never sends one.";
-	SDL_MessageBoxData question = { SDL_MESSAGEBOX_WARNING, NULL, "ChupathingyCE crashed", text, 2, buttons, NULL };
+	SDL_MessageBoxData question = { SDL_MESSAGEBOX_WARNING, NULL, HALO_PRODUCT_NAME " crashed", text, 2, buttons, NULL };
 	char folder[1024], log[1024];
 	const char *consent;
 	int pending, answer = 0;
