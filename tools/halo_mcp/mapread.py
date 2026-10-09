@@ -26,13 +26,15 @@ class Layouts:
         self._cache = {}
         for p in HEADERS:
             self._load(p)
-        t = open(self.src + 'game/game_globals.h').read()
+        with open(self.src + 'game/game_globals.h') as fh:
+            t = fh.read()
         a = t.index('_material_dirt = 0')
         b = t.index('NUMBER_OF_MATERIAL_TYPES')
         self.materials = [x.replace('_material_', '') for x in re.findall(r'_material_\w+', t[a:b])]
 
     def _load(self, path):
-        t = open(self.src + path).read()
+        with open(self.src + path) as fh:
+            t = fh.read()
         t = re.sub(r'/\*.*?\*/', '', t, flags=re.S)
         t = re.sub(r'//.*', '', t)
         for m in re.finditer(r'struct (\w+)\s*\{(.*?)\n\};', t, re.S):
@@ -42,6 +44,8 @@ class Layouts:
                 if not line:
                     continue
                 mm = re.match(r'(.+?)\s+(\w+)(?:\[(\w+)(?:\+(\d+))?\])?$', line)
+                if not mm:  # bitfields, unions and the like: say so rather than shift every later offset
+                    raise ValueError('cannot parse the field %r in struct %s of %s' % (line, m.group(1), path))
                 fields.append((mm.group(1).strip(), mm.group(2), mm.group(3), mm.group(4)))
             self.structs[m.group(1)] = fields
 
@@ -76,10 +80,15 @@ class Layouts:
 class CacheMap:
     BASE = 0x803A6000
 
-    def __init__(self, path):
-        raw = open(path, 'rb').read()
+    def __init__(self, path, max_bytes=512 * 1024 * 1024):
+        with open(path, 'rb') as fh:
+            raw = fh.read()
         hdr = raw[:2048]
-        self.full = hdr + zlib.decompress(raw[2048:])
+        d = zlib.decompressobj()
+        body = d.decompress(raw[2048:], max_bytes)  # (a size cap: a hostile map must not inflate without bound)
+        if d.unconsumed_tail:
+            raise ValueError('cache file inflates beyond %d bytes' % max_bytes)
+        self.full = hdr + body
         _ver, flen, _, self.toff, _tsz = struct.unpack_from('<iiiii', hdr, 4)
         if len(self.full) != flen:
             raise ValueError('not an Xbox-format cache file (length mismatch)')
@@ -119,8 +128,8 @@ def weapon_numbers(cm, lay, weapon):
     if key not in cm.by:
         raise KeyError('weapon tag not in map: ' + weapon)
     W = lay.layout('weapon_definition')[0]
-    T = lay.layout('weapon_trigger_definition')[0]
-    M = lay.layout('weapon_magazine_definition')[0]
+    M, MS = lay.layout('weapon_magazine_definition')
+    T, TS = lay.layout('weapon_trigger_definition')
     P = lay.layout('projectile_definition')[0]
     D = lay.layout('damage_effect_definition')[0]
     ba = cm.by[key][1]
@@ -132,7 +141,7 @@ def weapon_numbers(cm, lay, weapon):
            'magazines': [], 'triggers': []}
     mc, ma = cm.block(ba, W['weapon.magazines'])
     for i in range(mc):
-        b = ma + i * 0x70
+        b = ma + i * MS
         d = {k: cm.f(b, M[k], 'h') for k in ['rounds_total_initial', 'rounds_total_maximum',
                                               'rounds_loaded_maximum', 'rounds_recharged_per_second']}
         d['reload_time'] = _r(cm.f(b, M['reload_time'], 'f'))
@@ -140,7 +149,7 @@ def weapon_numbers(cm, lay, weapon):
     proj = None
     tc, ta = cm.block(ba, W['weapon.triggers'])
     for i in range(tc):
-        b = ta + i * 0x114
+        b = ta + i * TS
 
         def g(k, f='f'):
             return cm.f(b, T[k], f)

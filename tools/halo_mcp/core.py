@@ -5,19 +5,29 @@ output is parsed here. Nothing of it is imported, linked or copied.
 """
 import os
 import re
+import struct
 import subprocess
+import tempfile
+import zlib
 from pathlib import Path
 
 HOME = Path(os.path.expanduser('~'))
 INVADER_DIR = Path(os.environ.get('HALO_MCP_INVADER', HOME / 'tools/invader-0.44.0/build'))
 SRC_DIR = Path(os.environ.get('HALO_MCP_SRC', HOME / 'ae/source'))
+# Environment (all optional; the defaults are folders under the home directory):
+#   HALO_MCP_INVADER      folder holding the invader-* programs   (default ~/tools/invader-0.44.0/build)
+#   HALO_MCP_SRC          the engine's source/ folder (struct layouts for weapon_numbers)   (default ~/ae/source)
+#   HALO_MCP_ROOTS        ':'-separated folders the tools may read   (default ~/halo-test:~/halo-data:~/tools)
+#   HALO_MCP_WRITE_ROOTS  ':'-separated folders the tools may write (default ~/halo-test/mcp-out)
+#   HALO_MCP_TIMEOUT      seconds a single Invader call may run   (default 900)
 # Readable roots; writes are allowed only below WRITE_ROOTS.
 READ_ROOTS = [Path(p).resolve() for p in
               os.environ.get('HALO_MCP_ROOTS', ':'.join(str(HOME / d) for d in ('halo-test', 'halo-data', 'tools'))).split(':') if p]
 WRITE_ROOTS = [Path(p).resolve() for p in
-               os.environ.get('HALO_MCP_WRITE_ROOTS', str(HOME / 'halo-test')).split(':') if p]
+               os.environ.get('HALO_MCP_WRITE_ROOTS', str(HOME / 'halo-test' / 'mcp-out')).split(':') if p]
 TIMEOUT = int(os.environ.get('HALO_MCP_TIMEOUT', '900'))
 MAX_CHARS = 60000
+MAX_MAP_BYTES = 512 * 1024 * 1024  # a decompressed Xbox cache file is far smaller
 ENGINES = ('xbox-2276', 'pc-custom', 'pc-retail', 'pc-demo', 'native')
 
 
@@ -35,6 +45,8 @@ def safe_path(p, write=False, must_exist=True):
         raise ToolError('path must be a non-empty string')
     rp = Path(p).expanduser().resolve()
     roots = WRITE_ROOTS if write else READ_ROOTS
+    if not roots:
+        raise ToolError('no %s roots are configured (HALO_MCP_%sROOTS)' % ('write' if write else 'read', 'WRITE_' if write else ''))
     if not _inside(rp, roots):
         raise ToolError('path %s is outside the allowed %s roots: %s' %
                         (rp, 'write' if write else 'read', ', '.join(map(str, roots))))
@@ -94,8 +106,12 @@ def list_tags(map=None, tags_dir=None, group=None, contains=None, limit=500):
     rows = []
     if map:
         m = safe_path(map)
-        tmp = WRITE_ROOTS[0] / '.halo_mcp_index.txt'
-        tmp.parent.mkdir(parents=True, exist_ok=True)
+        if not WRITE_ROOTS:
+            raise ToolError('no write root is configured (HALO_MCP_WRITE_ROOTS): the index needs a scratch file')
+        WRITE_ROOTS[0].mkdir(parents=True, exist_ok=True)
+        fd, name = tempfile.mkstemp(prefix='.halo_mcp_index_', suffix='.txt', dir=str(WRITE_ROOTS[0]))
+        os.close(fd)
+        tmp = Path(name)
         rc, out, err = run('invader-index', [m, tmp])
         _need_ok('invader-index', rc, out, err)
         try:
@@ -111,6 +127,7 @@ def list_tags(map=None, tags_dir=None, group=None, contains=None, limit=500):
     if contains:
         rows = [r for r in rows if contains.lower() in r.lower()]
     total = len(rows)
+    limit = max(1, min(int(limit), 5000))
     return {'total': total, 'shown': min(total, limit), 'tags': rows[:limit]}
 
 
@@ -118,7 +135,8 @@ def tag_info(tags_dir, tag, key=None, list_values=False):
     """Read a tag with invader-edit: one key, or the whole field list (with values)."""
     td = safe_path(tags_dir)
     t = safe_tag(tag)
-    if not (td / t).is_file():
+    tp = (td / t).resolve()  # a symlink inside the tags folder must not lead out of it
+    if not _inside(tp, [td]) or not tp.is_file():
         raise ToolError('no such tag in %s: %s' % (td, t))
     if key:
         args = ['-G', safe_word(key, 'key')]
@@ -146,8 +164,13 @@ def extract_tags(map, search, out_dir, recursive=False, overwrite=False):
         args.append('-r')
     if overwrite:
         args.append('-O')
+    before = {p for p in od.rglob('*')}
     rc, out, err = run('invader-extract', args + [m])
     _need_ok('invader-extract', rc, out, err)
+    # tag names come from the map: nothing may have been written outside the folder
+    stray = [str(p) for p in od.rglob('*') if p not in before and not _inside(p.resolve(), [od])]
+    if stray:
+        raise ToolError('extraction wrote outside %s: %s' % (od, ', '.join(stray[:5])))
     n = sum(1 for p in od.rglob('*') if p.is_file())
     return {'output': _clip(out.strip()), 'files_in_out_dir': n}
 
@@ -212,7 +235,7 @@ def weapon_numbers(map, weapon):
             raise ToolError('engine headers not found at %s (set HALO_MCP_SRC)' % SRC_DIR)
         _layouts = mapread.Layouts(str(SRC_DIR))
     try:
-        cm = mapread.CacheMap(str(m))
+        cm = mapread.CacheMap(str(m), max_bytes=MAX_MAP_BYTES)
     except Exception as e:
         raise ToolError('cannot read %s as an Xbox cache file: %s' % (m, e))
     w = weapon.replace('/', '\\')
@@ -221,5 +244,9 @@ def weapon_numbers(map, weapon):
     try:
         return mapread.weapon_numbers(cm, _layouts, w)
     except KeyError as e:
+        if not str(e.args[0]).startswith('weapon tag not in map'):
+            raise ToolError('layout problem (the engine headers may have changed): %s' % (e.args[0],))
         names = sorted(v[1] for v in cm.tags.values() if v[0] == 'weap')
         raise ToolError('%s. Weapons in this map: %s' % (e.args[0], ', '.join(names)))
+    except (struct.error, ValueError, IndexError, UnicodeDecodeError) as e:
+        raise ToolError('%s is not a readable Xbox cache file for this weapon: %s' % (m, e))
