@@ -11,10 +11,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   has VOICE CHAT, VOICE VOLUME and the output and input devices; the
   microphone stays closed until you first talk), votes to kick a player
   (right-click a player on the scoreboard; the host also gets Kick and Ban
-  there), co-op's Server Setup options in screens of their own, finer
-  mouse sensitivity steps, Steam Deck support in the portable Linux build,
-  audio mixer and looping-sound fixes, glass and overshield drawing fixes
-  and optional enhanced animations (`game.enhanced_animations`). The
+  there), co-op's Server Setup options in screens of their own, Steam Deck
+  support in the portable Linux build, audio mixer and looping-sound
+  fixes, glass and overshield drawing fixes and optional enhanced animations (`game.enhanced_animations`). The
   Screenshot key can now be rebound (Controls Setup > Actions) and its
   default is F10; recording moves to F9. Screenshots are still Arena
   Evolved's (PNG in `screenshots/`, every split-screen view).
