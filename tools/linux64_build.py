@@ -101,7 +101,10 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
             # (not position-independent, as the 32-bit build: the addresses
             # of a crash report's calls, in debug.txt, are the executable's
             # own, the same from run to run)
-            "ldflags": " ".join([LINUX64_TARGET, "-g", "-no-pie", *lto_ldflags]),
+            "ldflags": " ".join([LINUX64_TARGET, "-g", "-no-pie", *lto_ldflags,
+                                     # (posix_trace_marker.c's, which the GPU driver's calls must reach)
+                                     *(f"-Wl,--export-dynamic-symbol={name}"
+                                       for name in ("open", "open64", "openat", "openat64"))]),
             "libs": " ".join(f"-l{lib}" for lib in config.get("libraries", [])),
         },
         implicit=[Path("tools/linux_link_check.py")],
