@@ -7,6 +7,28 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 ### Added
+- Gametype tiers: the Arena Evolved casual set (with 2V2, PRACTICE,
+  VANILLA and POWERUPS), special modes (SNIPERS, SHOTTY SNIPERS, SWAT,
+  ROCKETS, SHOTGUNS, HEAVIES), AE COMP, FFA AE TRAINING and Halo 1: NHE's
+  own 23 gametypes, seeded the first time you play. The lists, lobby and
+  scoreboard show display names (TEAM AE SLAYER over the stored AE TEAM
+  SLY), and your own gametypes may have a longer one. Seeded gametypes from
+  earlier builds are updated in place (seed revision 7); ones you edited are
+  kept as you made them, and each change is backed up first
+  (`saved/playlists_backup`).
+- Gametype options: item TIMERS levels (HUD, HUD + WAYPOINTS, LINE OF
+  SIGHT; an item's waypoint goes off once it is picked up), the objective
+  only in line of sight, DROP SECONDARY (CE / ALWAYS / ALWAYS EXCEPT POWER),
+  NHE MODE (the mode a Halo 1: NHE map plays), NHE EXTRAS (everyone joins
+  red, no team swap, the dead camera on you, the clock counting up), SPAWN
+  HEAT allowed per gametype, and BALL MELEE (oddball: LETHAL, the carrier's
+  melee kills in one hit). They travel in the gametype's flag bits and spare
+  bytes: no network change; stock joiners play the host's rules.
+- HALO 2 health uses Halo 2's timers: shields recharge 5 s after the last
+  shield damage and fill in 2 s (never under fire); health refills in 5 s,
+  starting 10 s after the last damage that reached it.
+- Game start text (the gametype's name over the mode line), short spree
+  messages, and the map's name on the post-game report.
 - MATCH CLOCK LABELS (`display.match_clock_labels`, `HALO_MATCH_CLOCK_LABELS`;
   off by default, config only for now): a small heading over each line of
   the corner clock, TIME LEFT or ELAPSED (with BOTH, each line its own),
