@@ -1296,8 +1296,20 @@ void capture_test_event(const char *kind, const char *detail, int delay_ms)
 	const char *list = config_string("debug.capture_on_event");
 	size_t kind_length = strlen(kind);
 
-	if (!list || !*list || test_capture_count >= TEST_CAPTURE_PENDING_MAXIMUM)
+	/* (the events and capture_frame() are all on the main thread: no lock) */
+	if (!list || !*list)
 		return;
+	if (test_capture_count >= TEST_CAPTURE_PENDING_MAXIMUM)
+	{
+		static int told;
+
+		if (!told)
+		{
+			told = 1;
+			platform_log("test capture: queue full, later events are dropped until a capture is taken");
+		}
+		return;
+	}
 	while (*list)
 	{
 		const char *end = strchr(list, ',');
