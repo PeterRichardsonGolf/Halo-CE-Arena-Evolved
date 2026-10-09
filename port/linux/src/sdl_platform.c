@@ -1636,6 +1636,10 @@ static void scoreboard_pointer_start(void)
 	SDL_WarpMouseInWindow(platform_window, width * 0.5f, height * 0.5f);
 	scoreboard_pointer.x = width * 0.5f;
 	scoreboard_pointer.y = height * 0.5f;
+	/* (AE: the system's pointer, which is hidden in play, shows while it
+	picks a player) */
+	show_pointer(TRUE);
+	platform_log("scoreboard pointer: on (cursor %s)", SDL_CursorVisible() ? "shown" : "hidden");
 }
 
 /* ... off: the mouse the aim's again (unless freed: F12, or the menus) */
@@ -1646,6 +1650,9 @@ static void scoreboard_pointer_stop(void)
 	scoreboard_pointer_active = FALSE;
 	memset(&scoreboard_pointer, 0, sizeof(scoreboard_pointer));
 	platform_mouse_capture(!input_state.mouse_released && !input_state.ui_pointer);
+	/* (AE: hidden again in play, unless F12 or a menu has it shown) */
+	show_pointer(input_state.mouse_released || input_state.ui_pointer);
+	platform_log("scoreboard pointer: off (cursor %s)", SDL_CursorVisible() ? "shown" : "hidden");
 }
 
 BOOL platform_scoreboard_pointer(BOOL offered, struct platform_ui_pointer *pointer)
@@ -1852,7 +1859,7 @@ void platform_pump_events(void)
 				platform_mouse_capture(!input_state.mouse_released && !input_state.ui_pointer &&
 					!scoreboard_pointer_active);
 				/* (the pointer shows while released, hidden again in play) */
-				show_pointer(input_state.mouse_released || input_state.ui_pointer);
+				show_pointer(input_state.mouse_released || input_state.ui_pointer || scoreboard_pointer_active);
 			}
 #ifndef HALO_ANDROID
 			/* F11 switches between fullscreen and the window (SDL keeps the
@@ -2005,6 +2012,7 @@ void platform_pump_events(void)
 			/* (the scoreboard's pointer goes; the mouse is taken back for
 			the aim as the window has the focus again) */
 			scoreboard_pointer_active = FALSE;
+			show_pointer(input_state.mouse_released || input_state.ui_pointer);
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_GAINED:
 			input_state.focused = TRUE;
