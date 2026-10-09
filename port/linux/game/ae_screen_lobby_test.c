@@ -93,8 +93,10 @@ static int host_kind(void)
 	return drive.value == 93 ? AE_LOBBY_LOCAL : drive.value == 95 ? AE_LOBBY_ONLINE : AE_LOBBY_LAN;
 }
 
-/* (the start: Blood Gulch slayer, or the saved gametype named by HALO_AE_TEST_GAMETYPE: the test of an AE gametype
-picked through the glue; off the stack while the game plays, the take-over puts it back) */
+/* (the start: Blood Gulch slayer, or the built-in gametype named by HALO_AE_TEST_GAMETYPE, e.g. "oddball": the glue's
+ae_lobby_set_gametype takes built-in names only (game_engine_get_variant_by_name), so a saved gametype such as
+"AE FFA BALL" is not found here; that picker is a later milestone's; off the stack while the game plays, the take-over
+puts it back) */
 static void start_game(unsigned long now)
 {
 	const char *gametype = getenv("HALO_AE_TEST_GAMETYPE");
