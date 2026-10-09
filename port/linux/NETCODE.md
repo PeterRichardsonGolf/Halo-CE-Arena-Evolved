@@ -194,7 +194,8 @@ is its own (`ae-24a`, `delta.h`), so ChupathingyCE's signed legacy tables
 (Delta, `docs/delta.md`), which have no row for it, neither change these
 numbers nor turn off its Delta capabilities, and they are not fetched unless
 `network.legacy_table_fetch` is on (off by default). The game's messages are
-ChupathingyCE 0.7.1d's and OpenCE build-157's unchanged: Arena Evolved's own
+ChupathingyCE 0.7.1d's and OpenCE build-167's unchanged (build-167's voice chat
+and votes to kick are among them; Arena Evolved adds none): Arena Evolved's own
 rules travel in the gametype's flags, which every host of 11 to 24 sends
 and a client that does not know a bit leaves alone. Arena Evolved's own
 rule on top: a game with a password never has its invite sent to the game
