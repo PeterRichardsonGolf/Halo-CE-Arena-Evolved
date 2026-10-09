@@ -83,6 +83,7 @@ symbols in this file:
 #include "cseries/errors.h"
 #include "text/unicode.h"
 #include "saved games/saved_game_files.h"
+#include "saved games/playlist_display_name.h"
 #include "tag_files/files.h"
 #include "game/game_engine_playlist.h"
 #include "text/text_group.h"
@@ -207,6 +208,13 @@ static void playlist_profile_block_build(
 the file's own when the saver gave none */
 static struct game_variant_options playlist_profile_write_options;
 
+/* port: counts the changes of any gametype file's content (a write, an own
+display name set, a delete): what a lookup by stored name caches against */
+static volatile long playlist_profile_content_generation = 0;
+
+/* port: gametype files read whole (the tests count them: a list up must not read a file a frame) */
+static long playlist_profile_block_reads = 0;
+
 static struct playlist_profile_runtime_globals_prefix playlist_profile_globals = { 0 };
 static struct playlist_profile_data playlist_profile_default_data =
 {
@@ -281,6 +289,7 @@ void playlist_profiles_dispose(
 void playlist_profile_delete(
 	long playlist_profile_index)
 {
+	playlist_profile_content_generation++;
 	if (playlist_profile_index != NONE &&
 		!delete_enumerated_saved_game_file(playlist_profile_index))
 	{
@@ -317,6 +326,7 @@ void playlist_profiles_enumerate_available_to_local_player_index(
 			playlist_profile_wait_for_write();
 			saved_game_files_notify_memory_units_changed();
 		}
+		arena_gametypes_debug_set_display_name();
 	}
 
 	saved_game_files_enumerate_available_to_local_player_index(
@@ -573,7 +583,6 @@ boolean playlist_profile_matches(
 {
 	byte expected[SAVED_GAME_FILE_BLOCK_SIZE];
 	byte block[SAVED_GAME_FILE_BLOCK_SIZE];
-	struct game_variant saved = *variant;
 
 	if (playlist_profile_index == NONE ||
 		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
@@ -581,10 +590,115 @@ boolean playlist_profile_matches(
 	{
 		return FALSE;
 	}
+	playlist_profile_expected_block(variant, options, expected);
+	return !csmemcmp(expected, block, sizeof(block));
+}
+
+/* port: the block a save of this variant and options writes */
+void playlist_profile_expected_block(
+	struct game_variant const *variant,
+	struct game_variant_options const *options,
+	unsigned char *block)
+{
+	struct game_variant saved = *variant;
+
 	/* (as a save cleans it up before it is written) */
 	game_engine_variant_cleanup(&saved);
-	playlist_profile_block_build(expected, &saved, options);
-	return !csmemcmp(expected, block, sizeof(block));
+	playlist_profile_block_build(block, &saved, options);
+}
+
+/* port: a gametype's own display name (the 'AEDN' block): TRUE, and the name
+(PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH + 1 characters at least), when its
+file holds a whole one */
+boolean playlist_profile_get_own_display_name(
+	long playlist_profile_index,
+	wchar_t *name)
+{
+	byte block[SAVED_GAME_FILE_BLOCK_SIZE];
+
+	name[0] = 0;
+	if (playlist_profile_index == NONE ||
+		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
+		!playlist_profile_read_block(playlist_profile_index, block))
+	{
+		return FALSE;
+	}
+	return playlist_display_name_from_block(block, name);
+}
+
+/* port: the same, only when the file's variant (its first sizeof(struct game_variant) bytes) is
+exactly the variant given: the one in play (a joiner's gametype of the same stored name, but other
+rules, is not the host's) */
+boolean playlist_profile_get_own_display_name_for_variant(
+	long playlist_profile_index,
+	struct game_variant const *variant,
+	wchar_t *name)
+{
+	byte block[SAVED_GAME_FILE_BLOCK_SIZE];
+
+	name[0] = 0;
+	if (playlist_profile_index == NONE ||
+		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
+		!playlist_profile_read_block(playlist_profile_index, block) ||
+		csmemcmp(block, variant, sizeof(struct game_variant)))
+	{
+		return FALSE;
+	}
+	return playlist_display_name_from_block(block, name);
+}
+
+/* port: a gametype's own display name set (cut at 31 characters); empty or
+NULL takes it away. Only that block of the file is written; the rest is as
+it was. TRUE when written */
+boolean playlist_profile_set_own_display_name(
+	long playlist_profile_index,
+	wchar_t const *name)
+{
+	byte block[SAVED_GAME_FILE_BLOCK_SIZE];
+	struct file_reference file;
+	boolean success = FALSE;
+
+	/* (a built-in default is read-only: no display name there) */
+	if (playlist_profile_index == NONE ||
+		!TEST_FLAG(playlist_profile_index, _saved_game_file_index_valid_bit) ||
+		TEST_FLAG(playlist_profile_index, _saved_game_file_index_read_only_bit))
+	{
+		return FALSE;
+	}
+	playlist_profile_wait_for_write();
+	if (saved_game_files_take_mutex())
+	{
+		if (saved_game_file_open(&file, playlist_profile_index))
+		{
+			if (file_set_position(&file, 0) && file_read(&file, sizeof(block), block))
+			{
+				playlist_display_name_to_block(block, name);
+				success = file_set_position(&file, 0) && file_write(&file, sizeof(block), block);
+			}
+			saved_game_file_close(&file, playlist_profile_index);
+		}
+		saved_game_files_release_mutex();
+	}
+	playlist_profile_content_generation++;
+	return success;
+}
+
+void playlist_profile_content_changed(
+	void)
+{
+	playlist_profile_content_generation++;
+}
+
+long playlist_profile_block_reads_get(
+	void)
+{
+	return playlist_profile_block_reads;
+}
+
+long playlist_profile_content_generation_get(
+	void)
+{
+	return playlist_profile_content_generation;
 }
 
 /* port: the asynchronous write finished (as playlist_profile_read waits) */
@@ -835,6 +949,17 @@ static unsigned long __stdcall playlist_profile_write_thread_proc(
 			/* port: the block cleared (the Xbox game wrote its stack's bytes
 			after the signature), and the PC options after it */
 			playlist_profile_block_build(block, variant, &playlist_profile_write_options);
+			/* port: the file's own display name block (a player's own
+			gametype, 'AEDN') carried over: no save drops it */
+			{
+				byte old_block[SAVED_GAME_FILE_BLOCK_SIZE];
+
+				if (file_set_position(&file, 0) &&
+					file_read(&file, sizeof(old_block), old_block))
+				{
+					playlist_display_name_carry(block, old_block);
+				}
+			}
 
 			if (!file_set_position(&file, 0) ||
 				!file_write(&file, sizeof(block), block))
@@ -845,6 +970,7 @@ static unsigned long __stdcall playlist_profile_write_thread_proc(
 				failed = TRUE;
 			}
 
+			playlist_profile_content_generation++;
 			if (saved_game_file_close(&file, playlist_profile_index) &&
 				!synchronize_metadata_display_name_with_profile_name(
 					playlist_profile_index,
@@ -936,6 +1062,7 @@ static boolean playlist_profile_read_block(
 		dispose_thread(playlist_profile_globals.thread);
 		playlist_profile_globals.thread = NULL;
 	}
+	playlist_profile_block_reads++;
 	if (saved_game_files_take_mutex())
 	{
 		if (saved_game_file_open(&file, playlist_profile_index))
@@ -1022,6 +1149,11 @@ static void playlist_profile_block_build(
 	playlist_profile_options_to_block(block, options);
 }
 
+/* (the display name block starts after GPVO's end: upstream's options struct growing would run
+into it) */
+typedef char verify_playlist_profile_options_end_before_display_name[
+	PLAYLIST_PROFILE_OPTIONS_OFFSET + sizeof(struct playlist_profile_options_header) +
+		sizeof(struct game_variant_options) + sizeof(XCALCSIG_SIGNATURE) <= PLAYLIST_DISPLAY_NAME_OFFSET ? 1 : -1];
 typedef char verify_playlist_profile_options_fit[
 	PLAYLIST_PROFILE_OPTIONS_OFFSET + sizeof(struct playlist_profile_options_header) +
 		sizeof(struct game_variant_options) + sizeof(XCALCSIG_SIGNATURE) <= SAVED_GAME_FILE_BLOCK_SIZE ? 1 : -1];

@@ -451,15 +451,20 @@
 		<string text="The game's objectives (hills, flags, balls and the like)\nwill appear in your Motion Tracker."/>
 		<string text="The game's objectives will have special markers\ndisplayed over them on screen."/>
 		<string text="The game's objectives will not be visible in your\nMotion Tracker or on screen."/>
+		<string text="The game's objectives will have special markers\ndisplayed over them on screen, only while you\ncan see them."/>
 		<string text="All other players in the game will show up on your \nMotion Tracker when mobile."/>
 		<string text="Other friendly players in the game will show up on \nyour Motion Tracker when mobile."/>
 		<string text="Other players in the game will never show up on your\nMotion Tracker."/>
 		<string text="Green triangles will appear over the heads of your\nteammates as a reminder that you should not shoot\nthem."/>
 		<string text="Your teammates will only be denoted by the color of\ntheir armor."/>
 		<string text="No timers: learn the spawns the hard way."/>
-		<string text="When and where the rockets, sniper, overshield\nand camo spawn, for everyone."/>
+		<string text="When the power items (rockets, sniper, shotgun,\novershield, camo) spawn, in a list for\neveryone."/>
+		<string text="The power items' list, and waypoints over\ntheir spots from 10 seconds before they\nspawn, seen through walls."/>
+		<string text="Waypoints over the power items' spots only\nwhile you can see them, from 10 seconds before\nthey spawn. No list, no item calls."/>
 		<string text="No training aids."/>
 		<string text="Waypoints over the power items as they come up,\nand the player spawns. For learning a map."/>
+		<string text="Spawn markers show where players are likely\nto spawn next (with TRAINING). Each player picks\nMINE or ENEMY in Settings."/>
+		<string text="Plain spawn markers for everyone."/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_labels">
 		<string text="OBJECTIVES INDICATOR:"/>
@@ -468,6 +473,7 @@
 		<string text="FRIEND INDICATORS ON SCREEN:"/>
 		<string text="TIMERS:"/>
 		<string text="TRAINING:"/>
+		<string text="SPAWN HEAT:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_friends_on_screen">
 		<string text="YES"/>
@@ -486,6 +492,7 @@
 		<string text="MOTION TRACKER"/>
 		<string text="NAV POINTS"/>
 		<string text="NONE"/>
+		<string text="LINE OF SIGHT"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/item_options_edit/cap_item_options">
 		<string text="Everyone has a limitless supply of grenades, which\nmakes for loud, explosive and occasionally messy fun."/>
@@ -509,7 +516,7 @@
 		<string text="The map's weapons appear where its designers\nplaced them."/>
 		<string text="No weapons appear on the map: with a loadout of\nNONE and NONE, melee and grenades only."/>
 		<string text="The weapons follow the weapon set above."/>
-		<string text="Everyone starts with the primary and secondary\nweapons below; the map's weapons are its own."/>
+		<string text="Everyone starts with the primary and secondary\nweapons below; the map's weapons are its own\n(in AE's gametypes, the weapon set's)."/>
 		<string text="No primary weapon."/>
 		<string text="A random primary weapon, of those the map has,\neach time you spawn."/>
 		<string text="Everyone spawns with a assault rifle as their primary\nweapon (where the map has one)."/>
@@ -581,6 +588,7 @@
 		<string text="The shields on your battle suit will not work, making\nit much easier for everyone to perish."/>
 		<string text="After you die, you'll be able to respawn immediately."/>
 		<string text="When you die, there will be a five-second wait before\nyou can rejoin the game."/>
+		<string text="When you die, there will be a seven and a half\nsecond wait before you can rejoin the game, as in\nHalo 1: NHE's objective gametypes."/>
 		<string text="You'll wait ten seconds after you perish before you\ncan return to the game."/>
 		<string text="When you die, you must wait fifteen seconds before\nyou can respawn. This will give you an idea of what\neternity is like."/>
 		<string text="Respawn time will always remain at its initial\nsetting."/>
@@ -631,6 +639,7 @@
 	<strings name="main_menu/settings_select/multiplayer_setup/player_options_edit/var_respawn_time">
 		<string text="INSTANT"/>
 		<string text="5 SECONDS"/>
+		<string text="7.5 SECONDS"/>
 		<string text="10 SECONDS"/>
 		<string text="15 SECONDS"/>
 	</strings>

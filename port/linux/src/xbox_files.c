@@ -1025,6 +1025,23 @@ BOOL WINAPI MoveFileA(LPCSTR existing_file_name, LPCSTR new_file_name)
 	return TRUE;
 }
 
+/* port: an Xbox path's file put in another's place in one step, the
+other replaced (the seeded gametypes' record: source/saved games/
+arena_gametypes.c) */
+int platform_replace_file(char const *path, char const *new_path)
+{
+	char from[1024], to[1024];
+
+	platform_translate_path(path, from, sizeof(from));
+	platform_translate_path(new_path, to, sizeof(to));
+	if (posix_replace_file(from, to) != 0)
+	{
+		platform_set_last_error_from_errno(errno);
+		return 0;
+	}
+	return 1;
+}
+
 BOOL WINAPI CopyFileA(LPCSTR existing_file_name, LPCSTR new_file_name, BOOL fail_if_exists)
 {
 	char from[1024], to[1024];

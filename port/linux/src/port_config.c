@@ -258,6 +258,10 @@ static const struct config_setting config_settings[] =
 		"hot orange-red the likeliest; dark red with a cross can't be picked\n"
 		"now (an enemy within 6 m, a vehicle on it); a flash where a player\n"
 		"really spawns." },
+	{ "display.short_messages", _config_boolean, "false", "HALO_SHORT_MESSAGES", _environment_value, _platform_all,
+		"Shorter game messages, as Halo 1: NHE's: a killing spree reads\n"
+		"\"Killing Spree!\" (with the count, if there is one). false keeps the\n"
+		"game's own text." },
 	{ "display.per_pixel_lighting", _config_boolean, "false", "HALO_PER_PIXEL_LIGHTING", _environment_value,
 		_platform_all,
 		"Light the models (characters, weapons, vehicles, scenery) for each\n"
@@ -396,8 +400,9 @@ static const struct config_setting config_settings[] =
 	{ "game.health", _config_string, "\"classic\"", "HALO_HEALTH", _environment_value, _platform_all,
 		"How players' health comes back in the campaign: \"classic\" only from\n"
 		"health packs; \"reach\" once the shields are full, to the top of the third\n"
-		"it is in; \"halo3\" once the shields are full, all of it; \"halo2\" all of\n"
-		"it as the shields recharge. Multiplayer goes by the gametype's HEALTH." },
+		"it is in; \"halo3\" once the shields are full, all of it; \"halo2\" Halo 2's\n"
+		"timers (shields 5 s then 2 s; health 10 s after the last body damage, then\n"
+		"5 s). Multiplayer goes by the gametype's HEALTH." },
 	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
 		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
 		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"
@@ -631,7 +636,8 @@ static const struct config_setting config_settings[] =
 	{ "debug.network_test_start", _config_real, "15.0", "HALO_NETWORK_TEST_START", _environment_value, _platform_all,
 		"Seconds after hosting that an automated test game starts." },
 	{ "debug.network_test_kill", _config_real, "0.0", "HALO_NETWORK_TEST_KILL", _environment_value, _platform_all,
-		"Every this many seconds an automated test host kills its last player; 0 never." },
+		"Every this many seconds an automated test host's own player (else the first)\n"
+		"kills the last other player; 0 never." },
 	{ "debug.network_test_score", _config_integer, "0", "HALO_NETWORK_TEST_SCORE", _environment_value, _platform_all,
 		"The score an automated test host's game type plays to (a short game, to\n"
 		"test the next); 0 the game type's own." },
@@ -652,11 +658,80 @@ static const struct config_setting config_settings[] =
 	{ "debug.network_test_hurt", _config_real, "0.0", "HALO_NETWORK_TEST_HURT", _environment_value, _platform_all,
 		"An automated test host leaves the first player 40% of their health, shields\n"
 		"full, this many seconds into the game; 0 never." },
+	{ "debug.network_test_damage", _config_string, "\"\"", "HALO_NETWORK_TEST_DAMAGE", _environment_value,
+		_platform_all,
+		"An automated test host hits its first player with its weapon's bullet at\n"
+		"given game times: \"seconds:scale,seconds:scale\" (the damage times the\n"
+		"scale), and logs every change of their health and shields with its tick." },
+	{ "debug.network_test_ball", _config_string, "\"\"", "HALO_NETWORK_TEST_BALL", _environment_value,
+		_platform_all,
+		"An automated test host puts a ball in its first local player's hand at a game\n"
+		"time, once: \"seconds[:shield[:offset]]\": the last other player's shields\n"
+		"set (3 is an overshield) and stood offset (default 1.2) along x from the\n"
+		"first (they look along +x: negative faces the blow). For BALL MELEE tests." },
+	{ "debug.network_test_ball_melee", _config_boolean, "false", "HALO_NETWORK_TEST_BALL_MELEE", _environment_value,
+		_platform_all,
+		"An automated test host's gametype gets BALL MELEE LETHAL (for built-in\n"
+		"gametypes, such as a juggernaut game)." },
+	{ "debug.network_test_melee", _config_boolean, "false", "HALO_NETWORK_TEST_MELEE", _environment_value,
+		_platform_all,
+		"With debug.network_test_shoot, each player strikes with the weapon's melee\n"
+		"blow instead of its projectile." },
 	{ "debug.network_test_flags", _config_integer, "0", "HALO_NETWORK_TEST_FLAGS", _environment_value,
 		_platform_all,
 		"Bits an automated test host sets in its game variant's flags (the port's\n"
 		"gametype options, game_engine.h: 65536 no fall damage; health 524288 REACH,\n"
 		"1048576 HALO 3, 1572864 HALO 2)." },
+	{ "debug.network_test_gametype", _config_string, "\"\"", "HALO_NETWORK_TEST_GAMETYPE", _environment_value,
+		_platform_all,
+		"An automated test host's gametype: a custom one of the save root, by its\n"
+		"stored name (with its PC options, as picking it in the menus does), in\n"
+		"place of the built-in one; not found, the built-in one. Empty for none.\n"
+		"(Looking seeds the Arena Evolved gametypes into the save root in use:\n"
+		"set HALO_SAVE_ROOT for tests.)" },
+	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
+		"For the automated tests of the power items' waypoints: each second, per\n"
+		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"
+		"ray, and whether it is drawn; and each item call muted at LINE OF SIGHT." },
+	{ "debug.network_test_loadout", _config_string, "\"\"", "HALO_NETWORK_TEST_LOADOUT", _environment_value,
+		_platform_all,
+		"An automated test host's custom loadout: \"primary,secondary\" as the\n"
+		"gametype editor's weapon numbers (0 none, 2 assault rifle, 3 pistol, 4\n"
+		"shotgun, 5 sniper rifle, 6 rocket launcher...); empty: the gametype's." },
+	{ "debug.network_test_auto_balance", _config_boolean, "false", "HALO_NETWORK_TEST_AUTO_BALANCE",
+		_environment_value, _platform_all,
+		"An automated test host turns its gametype's AUTO TEAM BALANCE on (a team\n"
+		"game whose players all joined red, NHE EXTRAS, then starts)." },
+	{ "debug.network_test_pickup_give", _config_boolean, "false", "HALO_NETWORK_TEST_PICKUP_GIVE",
+		_environment_value, _platform_all,
+		"With debug.network_test_pickup, an automated test host puts the weapon the\n"
+		"last player stands on in its inventory two seconds on (a host pickup)." },
+	{ "debug.network_test_kill_host", _config_boolean, "false", "HALO_NETWORK_TEST_KILL_HOST", _environment_value,
+		_platform_all,
+		"An automated test host's kill (debug.network_test_kill) kills its local player\n"
+		"1 instead, by another of its local players (split screen)." },
+	{ "debug.item_log", _config_boolean, "false", "HALO_ITEM_LOG", _environment_value, _platform_all,
+		"For the automated tests of DROP SECONDARY: each item a unit drops (its\n"
+		"owned time, the rule) and each item the 30 second purge deletes." },
+	{ "debug.los_test_blink", _config_boolean, "false", "HALO_LOS_TEST_BLINK", _environment_value, _platform_all,
+		"For the automated tests of LINE OF SIGHT: every other second of game time\n"
+		"nothing counts as in sight, so the logs show the 0.3 s hold ending." },
+	{ "debug.set_display_name", _config_string, "\"\"", "HALO_DEBUG_SET_DISPLAY_NAME", _environment_value,
+		_platform_all,
+		"For the automated tests of own gametypes' display names: \"STORED=DISPLAY\"\n"
+		"gives the saved gametype of that stored name that display name, once at the\n"
+		"start (logged). Empty: nothing. Never on a real save root." },
+	{ "debug.display_name_log", _config_boolean, "false", "HALO_DISPLAY_NAME_LOG", _environment_value,
+		_platform_all,
+		"For the automated tests of own gametypes' display names: a log line each time a\n"
+		"gametype file is read for one, and at the start of a game the name the\n"
+		"lobby and scoreboard show for its gametype." },
+	{ "debug.arena_test_migration", _config_integer, "0", "HALO_ARENA_TEST_MIGRATION", _environment_value,
+		_platform_all,
+		"For the automated tests of the seeded gametypes' migrations: 1 adds a\n"
+		"value update after the last revision (AE TEAM SLY's score 50 -> 51, in\n"
+		"place); 2 the same, its write failing on purpose. 0: none. Never on a\n"
+		"real save root." },
 	{ "debug.network_test_local_players", _config_integer, "1", "HALO_NETWORK_TEST_LOCAL_PLAYERS", _environment_value,
 		_platform_all,
 		"The players an automated test host has on its own machine (split screen,\n"

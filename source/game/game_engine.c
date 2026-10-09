@@ -585,6 +585,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "rasterizer/rasterizer_console_vars.h"
 #include "render/render.h"
 #include "saved games/player_profile.h"
+#include "saved games/arena_gametypes.h"
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
 #include "sound/sound_classes.h"
@@ -594,6 +595,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "text/unicode.h"
 #include "units/bipeds.h"
 #include "units/units.h"
+#include <stdarg.h> /* port: game_engine_log_append */
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
@@ -1480,6 +1482,37 @@ static void rasterize_in_game_score_layout(
 	return;
 }
 
+/* port: the in-game score's rows drawn without the tab stops: the title's,
+and the gametype's display name's under it when it has one
+(game_engine_rasterize_in_game_score) */
+static long rasterize_in_game_score_untabbed_rows = 1;
+
+/* port: a seeded gametype's display name (arena_gametype_names.c), or a player's own
+gametype's longer one, for the scoreboards' line under their title: "TEAM AE SLAYER"; FALSE
+for any other gametype, which has no such line, an old name (an alias, which has no
+description and would only repeat the stored name) too */
+static boolean game_engine_scoreboard_gametype_name(
+	wchar_t *text,
+	short size)
+{
+	wchar_t stored_name[NUMBEROF(global_variant.human_readable_game_description) + 1];
+	struct arena_gametype_info info;
+
+	text[0] = 0;
+	if (!game_engine)
+		return FALSE;
+	csmemcpy(stored_name, global_variant.human_readable_game_description,
+		sizeof(global_variant.human_readable_game_description));
+	stored_name[NUMBEROF(stored_name) - 1] = 0;
+	/* (a player's own gametype's longer display name, if it has one) */
+	if (arena_gametype_own_display_name_for_stored_name(stored_name, &global_variant, text, size))
+		return TRUE;
+	if (!arena_gametype_info(stored_name, &info) || !info.description)
+		return FALSE;
+	arena_gametype_display_name(stored_name, text, size);
+	return TRUE;
+}
+
 static void rasterize_in_game_score_draw_line(
 	wchar_t const *string,
 	boolean brighten,
@@ -1494,7 +1527,7 @@ static void rasterize_in_game_score_draw_line(
 	splitscreen = local_player_count() > 1;
 	font_index = hud_get_font_index();
 	rasterize_in_game_score_layout(&bounds, tab_stops);
-	if (row_index > 0)
+	if (row_index >= rasterize_in_game_score_untabbed_rows)
 		draw_string_set_tab_stops(tab_stops, 3);
 	else
 		draw_string_set_tab_stops(NULL, 0);
@@ -1966,6 +1999,9 @@ static void game_engine_rasterize_scoreboard(
 	wchar_t score_string[256];
 	wchar_t title_string[80];
 	wchar_t ping_string[16];
+	/* port: the gametype's display name under the title (a row more) */
+	wchar_t gametype_string[40];
+	long gametype_rows;
 	real_argb_color text_color;
 	real_argb_color team_colors[2];
 	real_argb_color color;
@@ -2005,8 +2041,9 @@ static void game_engine_rasterize_scoreboard(
 	/* (laid out at full size, then drawn scaled about the title's top left:
 	the screen holds 1/SCOREBOARD_SCALE as much) */
 	width = (short)((bounds.x1 - bounds.x0) / SCOREBOARD_SCALE);
+	gametype_rows = !campaign && game_engine_scoreboard_gametype_name(gametype_string, NUMBEROF(gametype_string)) ? 1 : 0;
 	rows = (long)((bounds.y1 - SCOREBOARD_LAYOUT_TOP_ROWS * line_height) / SCOREBOARD_SCALE / line_height) - 2 -
-		SCOREBOARD_BOTTOM_ROWS;
+		gametype_rows - SCOREBOARD_BOTTOM_ROWS;
 	rows = MAX(rows, 1);
 	if (campaign)
 	{
@@ -2077,7 +2114,7 @@ static void game_engine_rasterize_scoreboard(
 	if (total > page)
 		shown_rows++;
 	{
-		real height = (2 + shown_rows) * line_height * SCOREBOARD_SCALE;
+		real height = (2 + gametype_rows + shown_rows) * line_height * SCOREBOARD_SCALE;
 
 		top = (short)(bounds.y0 + ((bounds.y1 - bounds.y0) - height) / 2);
 		top = MAX(top, (short)(SCOREBOARD_MINIMUM_TOP_ROWS * line_height));
@@ -2115,6 +2152,11 @@ static void game_engine_rasterize_scoreboard(
 	color.alpha = alpha;
 	color.red = color.green = color.blue = 0.7f;
 	scoreboard_draw_row(title_string, FALSE, &color, 0, top, left, FALSE);
+	if (gametype_rows)
+	{
+		color.red = color.green = color.blue = 0.55f;
+		scoreboard_draw_row(gametype_string, FALSE, &color, 1, top, left, FALSE);
+	}
 
 	string_list_index = tag_loaded('ustr', "ui\\multiplayer_game_text");
 	column_name = string_list_index != NONE && !campaign ? unicode_string_list_get_string(string_list_index, 0x43) : L"";
@@ -2143,7 +2185,7 @@ static void game_engine_rasterize_scoreboard(
 				color.alpha = alpha;
 				color.red = color.green = color.blue = 0.5f;
 			}
-			scoreboard_draw_row(row_string, FALSE, &color, 1, top,
+			scoreboard_draw_row(row_string, FALSE, &color, 1 + gametype_rows, top,
 				(short)(left + column * (SCOREBOARD_COLUMN_WIDTH + SCOREBOARD_COLUMN_GAP)), TRUE);
 		}
 	}
@@ -2204,7 +2246,7 @@ static void game_engine_rasterize_scoreboard(
 			row_string,
 			player_index == entry->player_index,
 			row_color,
-			2 + row,
+			2 + gametype_rows + row,
 			top,
 			(short)(left + column * (SCOREBOARD_COLUMN_WIDTH + SCOREBOARD_COLUMN_GAP)),
 			TRUE);
@@ -2218,7 +2260,7 @@ static void game_engine_rasterize_scoreboard(
 		color.alpha = alpha;
 		color.red = color.green = color.blue = 0.6f;
 		usprintf(row_string, L"%ld-%ld of %ld   (Page Up / Page Down, mouse wheel)", first, last, total);
-		scoreboard_draw_row(row_string, FALSE, &color, 2 + rows, top, left, FALSE);
+		scoreboard_draw_row(row_string, FALSE, &color, 2 + gametype_rows + rows, top, left, FALSE);
 	}
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 
@@ -2233,6 +2275,9 @@ static void game_engine_rasterize_in_game_score(
 	wchar_t score_string[256];
 	struct statistic_buffer entries[6];
 	wchar_t title_string[80];
+	/* port: the gametype's display name under the title (a row more) */
+	wchar_t gametype_string[40];
+	long gametype_rows;
 	real_argb_color text_color;
 	real_argb_color team_colors[2];
 	real_argb_color color;
@@ -2265,6 +2310,13 @@ static void game_engine_rasterize_in_game_score(
 	color.green = 0.7f;
 	color.blue = 0.7f;
 	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0);
+	gametype_rows = game_engine_scoreboard_gametype_name(gametype_string, NUMBEROF(gametype_string)) ? 1 : 0;
+	rasterize_in_game_score_untabbed_rows = 1 + gametype_rows;
+	if (gametype_rows)
+	{
+		color.red = color.green = color.blue = 0.55f;
+		rasterize_in_game_score_draw_line(gametype_string, FALSE, &color, 1);
+	}
 
 	color.red = 0.5f;
 	color.green = 0.5f;
@@ -2285,7 +2337,7 @@ static void game_engine_rasterize_in_game_score(
 
 	game_engine->format_score_name(score_string);
 	usnprintf(row_string, NUMBEROF(row_string), L"\t%s\t%s\t%s", column_name, score_name, score_string);
-	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1);
+	rasterize_in_game_score_draw_line(row_string, FALSE, &color, 1 + gametype_rows);
 
 	for (entry_index = 0; entry_index < entry_count; entry_index++)
 	{
@@ -2358,9 +2410,10 @@ static void game_engine_rasterize_in_game_score(
 				row_string,
 				is_current_player,
 				row_color,
-				entry_index + 2);
+				entry_index + 2 + gametype_rows);
 		}
 	}
+	rasterize_in_game_score_untabbed_rows = 1;
 
 	return;
 }
@@ -3368,6 +3421,9 @@ static boolean find_closest_player_callback(
 	return result;
 }
 
+void platform_log(char const *format, ...);
+static boolean game_engine_item_log_on(void);
+
 static void game_engine_update_purge(
 	void)
 {
@@ -3389,7 +3445,16 @@ static void game_engine_update_purge(
 			{
 				long item_index = item_iterator.index;
 				if (can_delete_item(item_index))
+				{
+					/* port: debug.item_log */
+					if (game_engine_item_log_on())
+					{
+						platform_log("items: purged %s (%lx) at tick %ld, owned at tick %ld (%ld ticks before)",
+							tag_get_name(item->definition_index), item_index, game_time_get(),
+							item->item.last_owned_time, game_time_get() - item->item.last_owned_time);
+					}
 					object_delete(item_iterator.index);
+				}
 			}
 		}
 	}
@@ -3968,7 +4033,7 @@ static void game_engine_build_lighting(
 			player_count++;
 	}
 
-	if (global_variant.universal_variant.vehicle_set != _game_engine_vehicles_none)
+	if (game_engine_effective_vehicle_set() != _game_engine_vehicles_none)
 	{
 		if (global_variant.game_engine_index == game_engine_race)
 		{
@@ -4584,6 +4649,77 @@ static void game_engine_update_pregame_countdown_sound(
 	return;
 }
 
+/* port: the gametype's name, then "Training Mode!" with TRAINING and
+"Practice Mode!" with PRACTICE MODE, as HUD messages for each local player
+as the game starts (after the pre-game countdown when it has one; not on
+NHE's maps, whose scripts show theirs; not for a machine joining later than
+a few seconds in). The gametype's display name is the scoreboard's, else the
+stored one. */
+static void game_engine_update_start_text(
+	void)
+{
+	static long last_tick = NONE;
+	static boolean shown = FALSE;
+	long now = game_time_get();
+	long start = game_engine_pregame_countdown() ? PREGAME_COUNTDOWN_TICKS : 0;
+
+	if (last_tick == NONE || now < last_tick || now < start)
+		shown = FALSE;
+	last_tick = now;
+	if (shown || now < start || now >= start + 4 * TICKS_PER_SECOND ||
+		game_engine_globals.postgame_state != game_engine_mode_active ||
+		hs_scenario_is_nhe() || local_player_count() <= 0)
+	{
+		return;
+	}
+	shown = TRUE;
+	{
+		/* (40 wide as the scoreboard's: a display name is longer than the stored one) */
+		wchar_t name[40];
+		char name_ascii[NUMBEROF(name)];
+		wchar_t const *mode = NULL;
+		short local_player_index;
+		long index;
+
+		if (!game_engine_scoreboard_gametype_name(name, NUMBEROF(name)))
+		{
+			csmemset(name, 0, sizeof(name));
+			csmemcpy(name, global_variant.human_readable_game_description,
+				sizeof(global_variant.human_readable_game_description));
+			name[NUMBEROF(name) - 1] = 0;
+		}
+		if (game_engine_practice())
+			mode = L"Practice Mode!";
+		else if (game_engine_training())
+			mode = L"Training Mode!";
+		for (local_player_index = 0; local_player_index < MAXIMUM_LOCAL_PLAYERS; local_player_index++)
+		{
+			if (local_player_get_player_index(local_player_index) != NONE)
+			{
+				/* (the newest message is drawn first: the name on top) */
+				if (mode)
+					hud_print_message(local_player_index, mode);
+				/* (a built-in gametype of the tests has no name) */
+				if (name[0])
+					hud_print_message(local_player_index, name);
+			}
+		}
+		name_ascii[0] = 0;
+		for (index = 0; index < (long)NUMBEROF(name); index++)
+		{
+			name_ascii[index] = name[index] > 0 && name[index] < 128 ? (char)name[index] : '?';
+			if (!name[index])
+			{
+				name_ascii[index] = 0;
+				break;
+			}
+		}
+		name_ascii[NUMBEROF(name_ascii) - 1] = 0;
+		error(_error_silent, "game start text: %s%s", name_ascii,
+			!mode ? "" : game_engine_practice() ? ", Practice Mode!" : ", Training Mode!");
+	}
+}
+
 void game_engine_update(
 	void)
 {
@@ -4591,6 +4727,7 @@ void game_engine_update(
 	{
 		game_engine_update_multiplayer_sound();
 		game_engine_update_pregame_countdown_sound();
+		game_engine_update_start_text();
 		game_engine_update_purge();
 		game_engine_update_weapons();
 		game_engine_update_item_spawn();
@@ -5074,12 +5211,23 @@ boolean game_engine_no_falling_damage(
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_falling_damage_bit);
 }
 
-/* port: the gametype's TIMERS (TRAINING has them too) */
+/* port: the gametype's TIMERS' strip (TRAINING has it too, but on Halo 1:
+NHE's maps, whose TRAINING mode shows its own timers: NHE's TS TRAINING) */
 boolean game_engine_item_timers(
 	void)
 {
 	return game_engine_running() &&
 		(TEST_FLAG(global_variant.universal_variant.flags, _game_variant_item_timers_bit) ||
+		(TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit) && !hs_scenario_is_nhe()));
+}
+
+/* port: item_timers.c's spawns followed: any TIMERS level (LINE OF SIGHT
+too, which has no strip) or TRAINING */
+boolean game_engine_item_timers_active(
+	void)
+{
+	return game_engine_running() &&
+		(game_variant_timers_level(global_variant.universal_variant.flags) != _timers_off ||
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit));
 }
 
@@ -5089,6 +5237,112 @@ boolean game_engine_training(
 {
 	return game_engine_running() &&
 		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_training_bit);
+}
+
+/* port: a gametype's TIMERS level from its flags (bits 17 and 26) */
+short game_variant_timers_level(
+	unsigned long flags)
+{
+	boolean hud = TEST_FLAG(flags, _game_variant_item_timers_bit);
+	boolean waypoints = TEST_FLAG(flags, _game_variant_item_waypoints_bit);
+
+	if (hud)
+		return waypoints ? _timers_hud_waypoints : _timers_hud;
+	return waypoints ? _timers_line_of_sight : _timers_off;
+}
+
+/* port: a gametype's DROP SECONDARY from its flags (bits 29-30; 3 is
+EXCEPT POWER, as the editor shows it) */
+short game_variant_drop_secondary(
+	unsigned long flags)
+{
+	unsigned long value = (flags & GAME_VARIANT_DROP_SECONDARY_MASK) >> _game_variant_drop_secondary_first_bit;
+
+	return value >= _drop_secondary_always_except_power ? _drop_secondary_always_except_power : (short)value;
+}
+
+/* port: a gametype's NHE MODE from its byte (past TRAINING: BY VEHICLES) */
+short game_variant_nhe_mode(
+	byte nhe_mode)
+{
+	return nhe_mode < NUMBER_OF_NHE_MODES ? (short)nhe_mode : _nhe_mode_by_vehicles;
+}
+
+char const *game_variant_timers_name(
+	unsigned long flags)
+{
+	static char const *const levels[] = { "off", "hud", "hud + waypoints", "line of sight" };
+	typedef char verify_timers_level_names[NUMBEROF(levels) == NUMBER_OF_TIMERS_LEVELS ? 1 : -1];
+
+	return levels[game_variant_timers_level(flags)];
+}
+
+char const *game_variant_drop_secondary_name(
+	unsigned long flags)
+{
+	static char const *const values[] = { "ce", "always", "except power" };
+	typedef char verify_drop_secondary_names[NUMBEROF(values) == NUMBER_OF_DROP_SECONDARY_VALUES ? 1 : -1];
+
+	return values[game_variant_drop_secondary(flags)];
+}
+
+char const *game_variant_nhe_mode_name(
+	byte nhe_mode)
+{
+	static char const *const modes[] =
+	{
+		"by vehicles", "vanilla", "timer only", "nhe & timer", "nhe & powerups", "training"
+	};
+	typedef char verify_nhe_mode_names[NUMBEROF(modes) == NUMBER_OF_NHE_MODES ? 1 : -1];
+
+	return modes[game_variant_nhe_mode(nhe_mode)];
+}
+
+/* port: the running game's TIMERS level (OFF with no game) */
+short game_engine_timers_level(
+	void)
+{
+	return game_engine_running() ? game_variant_timers_level(global_variant.universal_variant.flags) : _timers_off;
+}
+
+/* port: the host's SPAWN HEAT allowed (bit 25 inverted: clear is ON) */
+boolean game_engine_spawn_heat_allowed(
+	void)
+{
+	return game_engine_running() &&
+		!TEST_FLAG(global_variant.universal_variant.flags, _game_variant_no_spawn_heat_bit);
+}
+
+/* port: the objective's indicator only in line of sight */
+boolean game_engine_objective_in_sight(
+	void)
+{
+	return game_engine_running() && global_variant.universal_variant.goal_radar == _radar_nav_point &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_objective_in_sight_bit);
+}
+
+/* port: NHE EXTRAS */
+boolean game_engine_nhe_extras(
+	void)
+{
+	return game_engine_running() &&
+		TEST_FLAG(global_variant.universal_variant.flags, _game_variant_nhe_extras_bit);
+}
+
+/* port: the running game's DROP SECONDARY (CE with no game) */
+short game_engine_drop_secondary(
+	void)
+{
+	return game_engine_running() ? game_variant_drop_secondary(global_variant.universal_variant.flags) :
+		_drop_secondary_ce;
+}
+
+/* port: the running game's NHE MODE (BY VEHICLES with no game) */
+short game_engine_nhe_mode(
+	void)
+{
+	return game_engine_running() ? game_variant_nhe_mode(global_variant.universal_variant.nhe_mode) :
+		_nhe_mode_by_vehicles;
 }
 
 /* port: the gametype's NO SPREAD level (enum no_spread_level): NHE, the
@@ -5204,6 +5458,10 @@ short game_engine_match_clock_setting(
 			setting = _match_clock_down;
 	}
 
+	/* port: NHE EXTRAS: the clock counts up, as on Halo 1: NHE (COUNT DOWN
+	and BOTH read as COUNT UP; OFF stays off) */
+	if (setting != _match_clock_off && game_engine_nhe_extras())
+		return _match_clock_up;
 	return setting;
 }
 
@@ -5575,13 +5833,37 @@ void game_engine_playlist_next(
 	return;
 }
 
+/* port: whether any player is still in the game (not quit) */
+static boolean game_engine_any_player_in_game(
+	void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+
+	data_iterator_new(&iterator, player_data);
+	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		if (!player->quit_out_of_game)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 boolean game_engine_should_end_game(
 	void)
 {
 	boolean should_end_game = FALSE;
 
-	if (game_engine && !multiple_teams_alive())
+	/* port: under PRACTICE MODE players leaving never end the game (one
+	team, or one player, left): it runs until the host ends it or its time
+	limit, which is also all that advances a dedicated server's playlist;
+	but when no player at all is left it ends (a dedicated server does not
+	sit in an empty practice game) */
+	if (game_engine && !multiple_teams_alive() &&
+		(!game_engine_practice() || !game_engine_any_player_in_game()))
+	{
 		should_end_game = TRUE;
+	}
 	/* port: the gametype's time limit (game_variant_options) */
 	if (game_engine && game_variant_options_get()->time_limit > 0 &&
 		game_time_get() >= game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND)
@@ -5908,6 +6190,63 @@ short game_engine_player_get_custom_motion_sensor_positions(
 	return count;
 }
 
+/* port: the objective's indicator in line of sight
+(_game_variant_objective_in_sight_bit): per view and goal, the game tick it
+was last seen (NONE: not yet); a goal is drawn while seen within
+GOAL_IN_SIGHT_HOLD_TICKS, and the log (debug.waypoint_log) says so each
+second */
+#define GOAL_IN_SIGHT_HOLD_TICKS ((long)(0.3f * TICKS_PER_SECOND))
+static long game_engine_goal_seen_at[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal)];
+/* (whether each was drawn last frame: the log tells when a hold ends) */
+static boolean game_engine_goal_drawn[MAXIMUM_LOCAL_PLAYERS][NUMBEROF(global_goal)];
+static long game_engine_goal_logged_at[MAXIMUM_LOCAL_PLAYERS];
+
+/* a new map: no goal seen yet */
+static void game_engine_goals_in_sight_reset(
+	void)
+{
+	short local;
+	short goal;
+
+	for (local = 0; local < MAXIMUM_LOCAL_PLAYERS; local++)
+	{
+		game_engine_goal_logged_at[local] = NONE;
+		for (goal = 0; goal < (short)NUMBEROF(global_goal); goal++)
+		{
+			game_engine_goal_seen_at[local][goal] = NONE;
+			game_engine_goal_drawn[local][goal] = FALSE;
+		}
+	}
+}
+
+/* LINE OF SIGHT: whether the goal counts as seen in this view now. Its one
+ray (as the stock render type's): the viewer and its vehicle seen through,
+a hit on the goal's carrier (the player it ignores: a flag's or ball's) or
+the vehicle the carrier is in counting as seen */
+static boolean game_engine_goal_in_sight(
+	short local_player_index,
+	long goal_index,
+	real_point3d const *head_position,
+	boolean *ray_seen)
+{
+	long now = game_time_get();
+	long reference = NONE;
+	long *seen_at = &game_engine_goal_seen_at[PIN(local_player_index, 0, MAXIMUM_LOCAL_PLAYERS - 1)][goal_index];
+
+	if (global_goal[goal_index].ignore_player_index != NONE)
+	{
+		struct player_datum *carrier = (struct player_datum *)datum_try_and_get(player_data,
+			global_goal[goal_index].ignore_player_index);
+
+		if (carrier)
+			reference = carrier->unit_index;
+	}
+	*ray_seen = hud_nav_point_in_sight(local_player_index, head_position, &global_goal[goal_index].position, reference);
+	if (*ray_seen)
+		*seen_at = now;
+	return *seen_at != NONE && now >= *seen_at && now - *seen_at < GOAL_IN_SIGHT_HOLD_TICKS;
+}
+
 void game_engine_render_nav_points(
 	short local_player_index)
 {
@@ -5930,13 +6269,69 @@ void game_engine_render_nav_points(
 		/* port: every goal, one per player in the native builds' sessions */
 		for (goal_index = 0; goal_index < (long)NUMBEROF(global_goal); goal_index++)
 				{
+					/* (a goal not shown in sight this frame: not drawn, for the
+					log's hold ends) */
+					if (local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+						(!goal_matches_player(player, player_index, goal_index) || !game_engine_objective_in_sight()))
+					{
+						game_engine_goal_drawn[local_player_index][goal_index] = FALSE;
+					}
 					if (goal_matches_player(player, player_index, goal_index))
 					{
-						short render_type = hud_get_nav_point_render_type(
-							local_player_index,
-							&head_position,
-							&global_goal[goal_index].position,
-							NONE);
+						short render_type;
+
+						/* port: LINE OF SIGHT (AE COMP): drawn only while seen,
+						held 0.3 s; else the stock nav point, through walls */
+						if (game_engine_objective_in_sight())
+						{
+							boolean ray_seen = FALSE;
+							boolean seen = game_engine_goal_in_sight(local_player_index, goal_index, &head_position,
+								&ray_seen);
+
+							if (hud_debug_flag(_hud_debug_waypoint_log) && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+								game_engine_goal_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND)
+							{
+								platform_log("objective: view %d goal %ld (carrier %s): ray %s, drawn %s",
+									(int)local_player_index, goal_index,
+									global_goal[goal_index].ignore_player_index != NONE ? "yes" : "no",
+									ray_seen ? "seen" : "blocked", seen ? "yes" : "no");
+							}
+							/* (the hold's end, in the log: when it was last seen) */
+							if (local_player_index < MAXIMUM_LOCAL_PLAYERS)
+							{
+								boolean *drawn = &game_engine_goal_drawn[local_player_index][goal_index];
+
+								if (*drawn && !seen && hud_debug_flag(_hud_debug_waypoint_log))
+								{
+									long seen_at = game_engine_goal_seen_at[local_player_index][goal_index];
+
+									platform_log("objective: view %d goal %ld hidden at tick %ld, last seen at tick %ld "
+										"(held %ld ticks)", (int)local_player_index, goal_index, game_time_get(), seen_at,
+										game_time_get() - seen_at);
+								}
+								*drawn = seen;
+							}
+							if (!seen)
+								continue;
+							render_type = 0;
+						}
+						else
+						{
+							render_type = hud_get_nav_point_render_type(
+								local_player_index,
+								&head_position,
+								&global_goal[goal_index].position,
+								NONE);
+							/* (the log, for the stock path too: what the game
+							draws for the goal each second) */
+							if (hud_debug_flag(_hud_debug_waypoint_log) && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+								game_engine_goal_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND)
+							{
+								platform_log("objective: view %d goal %ld (carrier %s): stock nav point, render type %d",
+									(int)local_player_index, goal_index,
+									global_goal[goal_index].ignore_player_index != NONE ? "yes" : "no", (int)render_type);
+							}
+						}
 
 						custom_render_nav_point(
 							local_player_index,
@@ -5945,6 +6340,8 @@ void game_engine_render_nav_points(
 							render_type);
 					}
 				}
+				if (hud_debug_flag(_hud_debug_waypoint_log) && local_player_index < MAXIMUM_LOCAL_PLAYERS)
+					game_engine_goal_logged_at[local_player_index] = game_time_get() / TICKS_PER_SECOND;
 			}
 		}
 	}
@@ -7402,6 +7799,86 @@ void game_engine_variant_cleanup(
 	return;
 }
 
+/* port: NHE MODE's vehicle set this map (game_engine_apply_nhe_mode): on
+Halo 1: NHE's map with a mode other than BY VEHICLES, the mode's set, both
+teams'; NONE: the gametype's own sets. Each machine works it out the same
+from the variant and the map: nothing saved or sent changes */
+static long game_engine_nhe_vehicle_set = NONE;
+
+/* port: the vehicle set a mode is on NHE's maps (NHE's README: the set
+picks the mode) */
+static long game_engine_nhe_mode_vehicle_set(
+	short mode)
+{
+	switch (mode)
+	{
+	case _nhe_mode_vanilla: return _game_engine_vehicles_none;
+	case _nhe_mode_timer_only: return _game_engine_vehicles_ghost;
+	case _nhe_mode_nhe_and_timer: return _game_engine_vehicles_warthog;
+	case _nhe_mode_nhe_and_powerups: return _game_engine_vehicles_tank;
+	case _nhe_mode_training: return _game_engine_vehicles_default;
+	}
+	return NONE;
+}
+
+/* port: the vehicle set the game plays by: NHE MODE's on NHE's maps, else
+the variant's */
+long game_engine_effective_vehicle_set(
+	void)
+{
+	return game_engine_nhe_vehicle_set != NONE ? game_engine_nhe_vehicle_set :
+		global_variant.universal_variant.vehicle_set;
+}
+
+/* port: a team's vehicle set the game plays by (red 0, blue 1): NHE MODE's
+on NHE's maps, else the PC options' */
+byte game_engine_effective_team_vehicle_set(
+	short side)
+{
+	return game_engine_nhe_vehicle_set != NONE ? (byte)game_engine_nhe_vehicle_set :
+		game_variant_options_get()->vehicle_set[side ? 1 : 0];
+}
+
+/* port: NHE MODE applied for this map, once its scripts are known
+(hs_scenario_is_nhe: game.c, before the map's objects are placed) */
+void game_engine_apply_nhe_mode(
+	void)
+{
+	short mode;
+
+	game_engine_nhe_vehicle_set = NONE;
+	if (!game_engine)
+		return;
+	mode = game_engine_nhe_mode();
+	if (hs_scenario_is_nhe() && mode != _nhe_mode_by_vehicles)
+	{
+		game_engine_nhe_vehicle_set = game_engine_nhe_mode_vehicle_set(mode);
+		error(_error_silent, "vehicle set %ld (NHE MODE %s)", game_engine_nhe_vehicle_set,
+			game_variant_nhe_mode_name((byte)mode));
+	}
+	else
+	{
+		error(_error_silent, "vehicle set %ld (the gametype's%s)", global_variant.universal_variant.vehicle_set,
+			hs_scenario_is_nhe() ? ", NHE MODE by vehicles" : mode != _nhe_mode_by_vehicles ?
+				"; NHE MODE only on Halo 1: NHE's maps" : "");
+	}
+}
+
+/* port: the vehicles the map placed, in the log (after objects_place) */
+void game_engine_log_vehicles_placed(
+	void)
+{
+	struct object_iterator iterator;
+	long count = 0;
+
+	if (!game_engine)
+		return;
+	object_iterator_new(&iterator, _object_mask_vehicle, 0);
+	while (object_iterator_next(&iterator))
+		count++;
+	error(_error_silent, "vehicles placed: %ld", count);
+}
+
 /* port: one of the globals' three multiplayer vehicles (0 warthog, 1 ghost,
 2 scorpion), or NONE for one the map's globals lack: a Custom Edition map's
 may have fewer, which the original read past the end of */
@@ -7437,7 +7914,10 @@ static void game_engine_predict_resources(
 	long weapon_indices[10];
 	long weapon_index;
 
-	switch (global_variant.universal_variant.vehicle_set)
+	/* port: the vehicle set the game plays by (NHE MODE's on NHE's maps); a
+	vehicle the map's globals lack is not predicted
+	(game_engine_multiplayer_vehicle) */
+	switch (game_engine_effective_vehicle_set())
 	{
 	case _game_engine_vehicles_warthog:
 		game_engine_predict_multiplayer_vehicle(0);
@@ -7515,6 +7995,10 @@ void game_engine_initialize_for_new_map(
 		game_engine_globals.next_team_index = 0;
 		csmemset(game_engine_betrayal_penalty, 0, sizeof(game_engine_betrayal_penalty));
 		game_engine_vehicle_home_count = NONE;
+		/* port: (NHE MODE's set is applied once the map's scripts are known) */
+		game_engine_nhe_vehicle_set = NONE;
+		/* port: (LINE OF SIGHT's objective: nothing seen yet) */
+		game_engine_goals_in_sight_reset();
 		timeout_for_endgame_sound = 0;
 		game_engine_network_state_read = FALSE;
 
@@ -7547,38 +8031,281 @@ void game_engine_initialize_for_new_map(
 	return;
 }
 
+/* port: appends to a log line, cut short when it is full */
+static void game_engine_log_append(
+	char *line,
+	size_t size,
+	char const *format,
+	...)
+{
+	size_t length = strlen(line);
+	va_list arguments;
+
+	if (length + 1 >= size)
+		return;
+	va_start(arguments, format);
+	vsnprintf(line + length, size - length, format, arguments);
+	va_end(arguments);
+	line[size - 1] = 0;
+
+	return;
+}
+
+/* port: "N ticks (S s)", so 225 ticks shows as 7.5 s */
+static char const *game_engine_log_ticks(
+	char *string,
+	size_t size,
+	long ticks)
+{
+	_snprintf(string, size - 1, "%ld ticks (%g s)", ticks, (double)ticks / TICKS_PER_SECOND);
+	string[size - 1] = 0;
+
+	return string;
+}
+
+/* port: a vehicle set's name (universal_variant's, a team's PC option's) */
+static char const *game_engine_log_vehicle_set(
+	long vehicle_set)
+{
+	static char const *const vehicle_sets[] = { "default", "none", "warthogs", "ghosts", "scorpions" };
+
+	if (vehicle_set == VARIANT_VEHICLE_SET_CUSTOM)
+		return "custom";
+	return vehicle_set >= 0 && vehicle_set < (long)NUMBEROF(vehicle_sets) ? vehicle_sets[vehicle_set] : "?";
+}
+
+/* port: a custom loadout's weapon's name (game_engine.h's _loadout_weapon_*) */
+static char const *game_engine_log_loadout_weapon(
+	byte weapon)
+{
+	static char const *const weapons[] =
+	{
+		"none", "random", "assault rifle", "pistol", "shotgun", "sniper rifle", "rocket launcher",
+		"plasma pistol", "plasma rifle", "needler"
+	};
+
+	return weapon < NUMBEROF(weapons) ? weapons[weapon] : "?";
+}
+
+/* port: whether this game's first spawned player's weapons and grenades
+are in the log (game_engine_postspawn_player_update); a new map's game logs
+them again */
+static boolean game_engine_first_spawn_logged = FALSE;
+
 /* port: the rules this game plays by, in the log (the gametype's port
 options and starting equipment, its time limit, its vehicle set: Halo 1:
-NHE's mode). After the scripts are set up for the new map (game.c), so that
-hs_scenario_is_nhe is this map's */
+NHE's mode; and the variant's own rules: score, respawn, the weapon set,
+the PC options, the game engine's options). After the scripts are set up
+for the new map (game.c), so that hs_scenario_is_nhe is this map's */
 void game_engine_log_rules(
 	void)
 {
+	game_engine_first_spawn_logged = FALSE;
 	if (game_engine)
 	{
-		unsigned long flags = global_variant.universal_variant.flags;
-		long time_limit = game_variant_options_get()->time_limit;
+		static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };
+		static char const *const friendly_fire[] = { "on", "off", "shields only", "explosives only" };
+		static char const *const radar_players[] = { "all", "friends", "none" };
+		static char const *const goal_radar[] = { "motion tracker", "nav points", "none" };
+		static char const *const weapon_sets[] =
+		{
+			"normal", "pistols", "assault rifles", "plasma", "sniping", "no sniping", "rocket launchers",
+			"shotguns", "short range", "human", "no grenades", "covenant", "classic", "heavy"
+		};
+		static char const *const speeds[] = { "slow", "normal", "faster" };
+		static char const *const traits[] = { "none", "invisible", "extra damage", "damage resistant" };
+		static char const *const ball_types[] = { "normal", "magic", "terminator" };
+		static char const *const race_types[] = { "normal", "any order", "rally" };
+		static char const *const team_scoring[] = { "minimum", "maximum", "sum" };
+		struct universal_variant const *universal = &global_variant.universal_variant;
+		union game_engine_variant const *engine_variant = &global_variant.game_engine_variant;
+		struct game_variant_options const *options = game_variant_options_get();
+		unsigned long flags = universal->flags;
+		long time_limit = options->time_limit;
+		long engine = global_variant.game_engine_index;
 		char time_limit_string[32];
+		char respawn[48];
+		char suicide[48];
+		char line[896]; /* (under error()'s 1024, with room for its time stamp) */
 
 		if (time_limit > 0)
 			_snprintf(time_limit_string, sizeof(time_limit_string) - 1, "%ld min", time_limit);
 		else
 			_snprintf(time_limit_string, sizeof(time_limit_string) - 1, "none");
 		time_limit_string[sizeof(time_limit_string) - 1] = 0;
-		error(_error_silent, "game rules: health %s, fall damage %s, starting equipment %s, vehicle set %ld, "
-			"time limit %s, timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
+		line[0] = 0;
+		game_engine_log_append(line, sizeof(line), "game rules: health %s, fall damage %s, starting equipment %s, "
+			"vehicle set %ld, time limit %s, timers %s, training %s, no spread %s, pre-game countdown %s, practice %s",
 			game_variant_health_style_name(flags),
 			TEST_FLAG(flags, _game_variant_no_falling_damage_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_generic_starting_equipment_bit) ? "generic" : "the map's",
-			global_variant.universal_variant.vehicle_set,
+			universal->vehicle_set,
 			time_limit_string,
-			TEST_FLAG(flags, _game_variant_item_timers_bit) ? "on" : "off",
+			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_training_bit) ? "on" : "off",
 			game_variant_no_spread_name(flags),
 			!TEST_FLAG(flags, _game_variant_pregame_countdown_bit) ? "off" :
 				hs_scenario_is_nhe() ? "on (Halo 1: NHE's map: its scripts')" : "on",
 			TEST_FLAG(flags, _game_variant_practice_bit) ? "on" : "off");
+		game_engine_log_append(line, sizeof(line), "; %s%s, score to win %ld, respawn %s, suicide penalty %s, "
+			"friendly fire %s, radar players %s, goal radar %s, shields %s, invisible %s, infinite grenades %s, "
+			"weapon set %s",
+			engine >= 0 && engine < (long)NUMBEROF(engines) ? engines[engine] : "?",
+			universal->teams ? " (teams)" : "",
+			universal->score_to_win,
+			game_engine_log_ticks(respawn, sizeof(respawn), universal->respawn_time),
+			game_engine_log_ticks(suicide, sizeof(suicide), universal->suicide_penalty),
+			options->friendly_fire >= 0 && options->friendly_fire < (short)NUMBEROF(friendly_fire) ?
+				friendly_fire[options->friendly_fire] : "?",
+			options->radar_players < NUMBEROF(radar_players) ? radar_players[options->radar_players] : "?",
+			universal->goal_radar >= 0 && universal->goal_radar < (long)NUMBEROF(goal_radar) ?
+				goal_radar[universal->goal_radar] : "?",
+			TEST_FLAG(flags, _game_variant_no_shields_bit) ? "off" : "on",
+			TEST_FLAG(flags, _game_variant_always_invisible_bit) ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_infinite_grenades_bit) ? "on" : "off",
+			universal->weapon_set >= 0 && universal->weapon_set < (long)NUMBEROF(weapon_sets) ?
+				weapon_sets[universal->weapon_set] : "?");
+		if (options->loadout == _loadout_custom)
+			game_engine_log_append(line, sizeof(line), ", loadout %s + %s",
+				game_engine_log_loadout_weapon(options->primary_weapon),
+				game_engine_log_loadout_weapon(options->secondary_weapon));
+		else
+			game_engine_log_append(line, sizeof(line), ", loadout category");
+		game_engine_log_append(line, sizeof(line), ", no map weapons %s, vehicle sets %s (red %s, blue %s)",
+			options->no_map_weapons ? "on" : "off",
+			game_engine_log_vehicle_set(universal->vehicle_set),
+			game_engine_log_vehicle_set(options->vehicle_set[0]),
+			game_engine_log_vehicle_set(options->vehicle_set[1]));
+		switch (engine)
+		{
+		case game_engine_slayer:
+			game_engine_log_append(line, sizeof(line), ", death bonus %s, kill penalty %s, kill in order %s",
+				engine_variant->slayer.no_death_bonus ? "off" : "on",
+				engine_variant->slayer.no_kill_penalty ? "off" : "on",
+				engine_variant->slayer.kill_in_order ? "on" : "off");
+			break;
+		case game_engine_ctf:
+		{
+			char single_flag[48];
+
+			game_engine_log_append(line, sizeof(line), ", flag at home to score %s, assault %s, single flag %s",
+				engine_variant->ctf.flag_at_home_to_score ? "on" : "off",
+				engine_variant->ctf.assault ? "on" : "off",
+				engine_variant->ctf.single_flag_time > 0 ?
+					game_engine_log_ticks(single_flag, sizeof(single_flag), engine_variant->ctf.single_flag_time) : "off");
+			break;
+		}
+		case game_engine_king:
+			game_engine_log_append(line, sizeof(line), ", moving hill %s",
+				engine_variant->king.moving_hill ? "on" : "off");
+			break;
+		case game_engine_oddball:
+		{
+			struct oddball_variant const *oddball = &engine_variant->oddball;
+
+			game_engine_log_append(line, sizeof(line), ", ball %s, balls %ld, speed with ball %s, "
+				"with ball %s, without ball %s, random start %s",
+				oddball->oddball_ball_type >= 0 && oddball->oddball_ball_type < (long)NUMBEROF(ball_types) ?
+					ball_types[oddball->oddball_ball_type] : "?",
+				oddball->ball_spawn_count,
+				oddball->speed_with_ball >= 0 && oddball->speed_with_ball < (long)NUMBEROF(speeds) ?
+					speeds[oddball->speed_with_ball] : "?",
+				oddball->trait_with_ball >= 0 && oddball->trait_with_ball < (long)NUMBEROF(traits) ?
+					traits[oddball->trait_with_ball] : "?",
+				oddball->trait_without_ball >= 0 && oddball->trait_without_ball < (long)NUMBEROF(traits) ?
+					traits[oddball->trait_without_ball] : "?",
+				oddball->random_start ? "on" : "off");
+			break;
+		}
+		case game_engine_race:
+			game_engine_log_append(line, sizeof(line), ", race %s, team scoring %s",
+				engine_variant->race.race_type >= 0 && engine_variant->race.race_type < (long)NUMBEROF(race_types) ?
+					race_types[engine_variant->race.race_type] : "?",
+				engine_variant->race.team_scoring >= 0 &&
+					engine_variant->race.team_scoring < (long)NUMBEROF(team_scoring) ?
+					team_scoring[engine_variant->race.team_scoring] : "?");
+			break;
+		}
+		error(_error_silent, "%s", line);
+		if (config_boolean("debug.display_name_log"))
+		{
+			wchar_t shown[40];
+
+			error(_error_silent, "game type name: %s", game_engine_scoreboard_gametype_name(shown, NUMBEROF(shown)) ?
+				"shown by its display name" : "shown by its stored name");
+		}
+		/* (the AE gametype options, a line of their own so that the first
+		line's length never cuts them off: game_engine.h, bits 25-30,
+		nhe_mode, starting_frags and ball_melee) */
+		error(_error_silent, "AE rules: timers level %s, spawn heat %s, objective %s, nhe extras %s, "
+			"drop secondary %s, nhe mode %s, starting frags %s, ball melee %s",
+			game_variant_timers_name(flags),
+			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
+			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) && universal->goal_radar == _radar_nav_point ?
+				"line of sight" : "normal",
+			TEST_FLAG(flags, _game_variant_nhe_extras_bit) ? "on" : "off",
+			game_variant_drop_secondary_name(flags),
+			game_variant_nhe_mode_name(universal->nhe_mode),
+			universal->starting_frags == STARTING_GRENADES_NONE ? "none" :
+				universal->starting_frags == 1 ? "1" : universal->starting_frags == 2 ? "2" :
+				universal->starting_frags == 3 ? "3" : universal->starting_frags == 4 ? "4" : "0",
+			universal->ball_melee == 1 ? "lethal" : "stock");
+		/* (and the players' rules the lines above leave out) */
+		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "
+			"friend indicators %s, auto team balance %s, friendly fire penalty %d s",
+			universal->lives,
+			(double)universal->health * 100.0,
+			universal->respawn_time_growth,
+			universal->odd_man_out ? "on" : "off",
+			TEST_FLAG(flags, _game_variant_allow_friendly_navpoints_bit) ? "on" : "off",
+			options->auto_team_balance ? "on" : "off",
+			(int)options->friendly_fire_penalty);
 	}
+
+	return;
+}
+
+/* port: this game's first spawned player's weapons and grenades, in the log
+(once a game: game_engine_log_rules starts it over), with the player count's
+grenade rule (game_engine_postspawn_player_update) */
+static void game_engine_log_first_spawn(
+	long unit_index,
+	long most_fragmentation_grenades,
+	long most_plasma_grenades)
+{
+	struct unit_datum *unit;
+	char line[512];
+	short index;
+	boolean any = FALSE;
+
+	if (game_engine_first_spawn_logged || unit_index == NONE)
+		return;
+	game_engine_first_spawn_logged = TRUE;
+	unit = object_get_and_verify_type(unit_index, _object_mask_unit);
+	line[0] = 0;
+	game_engine_log_append(line, sizeof(line), "first spawn: ");
+	for (index = 0; index < MAXIMUM_WEAPONS_PER_UNIT; index++)
+	{
+		long weapon_index = unit->unit.weapon_object_indices[index];
+		char const *name;
+		char const *last;
+
+		if (weapon_index == NONE)
+			continue;
+		name = tag_get_name(object_get(weapon_index)->definition_index);
+		last = name ? strrchr(name, '\\') : NULL;
+		game_engine_log_append(line, sizeof(line), "%s%s", any ? " + " : "", last ? last + 1 : name ? name : "?");
+		any = TRUE;
+	}
+	game_engine_log_append(line, sizeof(line), "%s, %d frag, %d plasma (%s players; the most %ld frag, %ld plasma)",
+		any ? "" : "no weapons",
+		(int)unit->unit.grenade_counts[_unit_grenade_human_fragmentation],
+		(int)unit->unit.grenade_counts[_unit_grenade_covenant_plasma],
+		TEST_FLAG(game_engine_globals.flags, _game_engine_9_or_more_players_bit) ? "9 or more" :
+			TEST_FLAG(game_engine_globals.flags, _game_engine_5_or_more_players_bit) ? "5 to 8" : "under 5",
+		most_fragmentation_grenades,
+		most_plasma_grenades);
+	error(_error_silent, "%s", line);
 
 	return;
 }
@@ -7876,7 +8603,9 @@ boolean game_engine_ce_vehicles_by_placement(
 	extern boolean cache_file_tags_are_ce(void);
 
 	return game_engine && cache_file_tags_are_ce() &&
-		global_variant.universal_variant.vehicle_set != _game_engine_vehicles_none &&
+		/* (port: the vehicle set the game plays by,
+		game_engine_effective_vehicle_set) */
+		game_engine_effective_vehicle_set() != _game_engine_vehicles_none &&
 		game_engine_ce_vehicle_default_bit() != NONE;
 }
 
@@ -7903,7 +8632,9 @@ boolean game_engine_vehicle_placement_allowed(
 	if (!game_engine || placement->palette_entry_index == NONE)
 		return TRUE;
 	side = global_variant.universal_variant.teams ? game_engine_nearest_team(&placement->position) : 0;
-	set = options->vehicle_set[side];
+	/* (port: NHE MODE's set on NHE's maps, else the options': the PC set
+	keeps every vehicle the map places) */
+	set = game_engine_effective_team_vehicle_set(side);
 	if (set == VARIANT_VEHICLE_SET_PC)
 		return TRUE;
 	type = game_engine_variant_vehicle_type(TAG_BLOCK_GET_ELEMENT(palette, placement->palette_entry_index,
@@ -8007,9 +8738,10 @@ long game_engine_remap_vehicle(
 		return result;
 #endif
 	/* port: and the PC vehicle set's are every one the map places
-	(game_engine_vehicle_placement_allowed) */
-	if (game_engine && (game_variant_options_get()->vehicle_set[0] == VARIANT_VEHICLE_SET_PC ||
-		game_variant_options_get()->vehicle_set[1] == VARIANT_VEHICLE_SET_PC))
+	(game_engine_vehicle_placement_allowed; NHE MODE's set wins on NHE's
+	maps) */
+	if (game_engine && (game_engine_effective_team_vehicle_set(0) == VARIANT_VEHICLE_SET_PC ||
+		game_engine_effective_team_vehicle_set(1) == VARIANT_VEHICLE_SET_PC))
 	{
 		return result;
 	}
@@ -8025,8 +8757,8 @@ long game_engine_remap_vehicle(
 		if (result != vehicle0 &&
 			result != vehicle1 &&
 			result != vehicle2 &&
-			((game_variant_options_get()->vehicle_set[0] == _game_engine_vehicles_default &&
-				game_variant_options_get()->vehicle_set[1] == _game_engine_vehicles_default) ||
+			((game_engine_effective_team_vehicle_set(0) == _game_engine_vehicles_default &&
+				game_engine_effective_team_vehicle_set(1) == _game_engine_vehicles_default) ||
 				game_engine_variant_vehicle_type(result) == NONE))
 		{
 			result = NONE;
@@ -8034,8 +8766,8 @@ long game_engine_remap_vehicle(
 
 		/* port: the per-team sets decide at placement
 		(game_engine_vehicle_placement_allowed) */
-		switch (game_variant_options_get()->vehicle_set[0] == game_variant_options_get()->vehicle_set[1] ?
-			global_variant.universal_variant.vehicle_set : _game_engine_vehicles_default)
+		switch (game_engine_effective_team_vehicle_set(0) == game_engine_effective_team_vehicle_set(1) ?
+			game_engine_effective_vehicle_set() : _game_engine_vehicles_default)
 		{
 		case _game_engine_vehicles_none:
 			result = NONE;
@@ -8061,6 +8793,10 @@ long game_engine_remap_vehicle(
 	return result;
 }
 
+/* port: while game_engine_give_loadout makes a custom loadout's weapons,
+which stay as chosen (in AE's gametypes the weapon set is the map's) */
+static boolean game_engine_giving_loadout = FALSE;
+
 long game_engine_remap_weapon(
 	long weapon_definition_index)
 {
@@ -8079,9 +8815,17 @@ long game_engine_remap_weapon(
 	if (weapon_list_index == _weapon_list_flamethrower || weapon_list_index == _weapon_list_gravity_rifle)
 		weapon_list_index = _weapon_list_rocket_launcher;
 
-	/* port: a custom loadout (game_variant_options) has no weapon set */
-	if (game_variant_options_get()->loadout == _loadout_custom)
+	/* port: a custom loadout (game_variant_options) has no weapon set; but
+	in AE's gametypes (arena_gametype_has_ae_rules, by the variant's stored
+	name: its special modes, a sniper rifle and a pistol each with the
+	sniping set's weapons on the map) only the loadout's own weapons are as
+	chosen, and the map's follow the weapon set */
+	if (game_variant_options_get()->loadout == _loadout_custom &&
+		(game_engine_giving_loadout ||
+		!arena_gametype_has_ae_rules(global_variant.human_readable_game_description)))
+	{
 		return list_index_to_weapon_definition_index(weapon_list_index);
+	}
 
 	switch (global_variant.universal_variant.weapon_set)
 	{
@@ -8262,6 +9006,89 @@ long game_engine_remap_item_definition(
 	*seed = saved_seed;
 
 	return result;
+}
+
+/* port: debug.item_log, read again only when the settings change */
+static boolean game_engine_item_log_on(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean on = FALSE;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		on = config_boolean("debug.item_log") != 0;
+	}
+	return on;
+}
+
+/* port: DROP SECONDARY's power weapons, which EXCEPT POWER leaves
+to CE's rule: the rocket launcher, the sniper rifle and the shotgun. A
+host's gameplay rule, so a fixed set every machine agrees on: not
+item_timers_shotgun_is_power(), which follows display.shotgun_power, each
+player's own display setting (owner, 2026-10-07: the shotgun counts).
+Only the globals' weapons match: a weapon outside that list (a custom map's
+own sniper rifle or rocket launcher, say) counts as a normal weapon and
+gets ALWAYS's rule */
+static boolean game_engine_drop_secondary_power_weapon(
+	long definition_index)
+{
+	return game_engine_weapon_is_rocket_launcher(definition_index) ||
+		game_engine_weapon_is_sniper_rifle(definition_index) ||
+		game_engine_weapon_is_shotgun(definition_index);
+}
+
+/* port: DROP SECONDARY (items.c's item_in_unit_inventory, an item leaving a
+unit's inventory): its owned time from now on, which game_engine_update_purge
+counts 30 seconds from. The host's (it alone purges); never the CTF flag's
+or the oddball's (can_delete_item's flag weapons: their return timers count
+from their owned time, as stock). CE: as it is (stock: a holstered weapon
+is updated only once it has been put away after a swap, so a spawn's
+second weapon that was never in hand vanishes at once, one put away from
+hand lies 30 seconds); ALWAYS: now, every drop lies 30 seconds; EXCEPT POWER
+(a stored 3 too): now, but a power weapon a dying unit had holstered is
+made 30 seconds old, so the next purge takes it (the one in hand lies 30
+seconds) */
+long game_engine_drop_owned_time(
+	long item_index,
+	long owned_time)
+{
+	struct object_datum *item;
+
+	if (!game_engine_running() || network_game_distributed_client())
+		return owned_time;
+	if (weapon_try_and_get(item_index) && weapon_is_flag(item_index))
+		return owned_time;
+	switch (game_engine_drop_secondary())
+	{
+	case _drop_secondary_always:
+		return game_time_get();
+	case _drop_secondary_always_except_power:
+		item = object_get(item_index);
+		if (item->object.type == _object_type_weapon &&
+			game_engine_drop_secondary_power_weapon(item->definition_index) &&
+			unit_dropping_holstered_weapons_at_death())
+		{
+			return game_time_get() - 30 * TICKS_PER_SECOND - 1;
+		}
+		return game_time_get();
+	}
+	return owned_time;
+}
+
+/* port: debug.item_log: an item a unit dropped */
+void game_engine_log_item_dropped(
+	long item_index,
+	long owned_before,
+	long owned_now)
+{
+	if (!game_engine_item_log_on() || !game_engine_running() || network_game_distributed_client())
+		return;
+	platform_log("items: dropped %s (%lx) at tick %ld, owned at tick %ld%s (drop secondary %s)",
+		tag_get_name(object_get(item_index)->definition_index), item_index, game_time_get(), owned_before,
+		owned_now >= game_time_get() ? ", now" : owned_now != owned_before ? ", gone" : "",
+		game_variant_drop_secondary_name(global_variant.universal_variant.flags));
 }
 
 /* port: whether a weapon definition is the globals' rocket launcher,
@@ -9434,7 +10261,10 @@ static void game_engine_give_loadout(
 		if (definition_index == NONE)
 			continue;
 		object_placement_data_new(&placement_data, definition_index, NONE);
+		/* (not the weapon set's: game_engine_remap_weapon) */
+		game_engine_giving_loadout = TRUE;
 		weapon_index = object_new(&placement_data);
+		game_engine_giving_loadout = FALSE;
 		if (weapon_index == NONE)
 			continue;
 		if (!first && unit_has_weapon_definition_index(unit_index, definition_index))
@@ -9507,6 +10337,20 @@ void game_engine_postspawn_player_update(
 				&starting_plasma_grenade_count);
 		}
 
+		/* port: the gametype's starting grenades (universal_variant.
+		starting_frags: 1-4 frags, the MIN below keeping the player count's
+		rule; none at all; other values the game's rule) */
+		if (global_variant.universal_variant.starting_frags == STARTING_GRENADES_NONE)
+		{
+			starting_fragmentation_grenade_count = 0;
+			starting_plasma_grenade_count = 0;
+		}
+		else if (global_variant.universal_variant.starting_frags >= 1 &&
+			global_variant.universal_variant.starting_frags <= 4)
+		{
+			starting_fragmentation_grenade_count = global_variant.universal_variant.starting_frags;
+		}
+
 		if (game_engine_infinite_grenades_internal())
 		{
 			starting_plasma_grenade_count =
@@ -9555,6 +10399,8 @@ void game_engine_postspawn_player_update(
 				_unit_grenade_covenant_plasma] =
 				(char)starting_plasma_grenade_count;
 		}
+		/* port: the game's first spawn's weapons and grenades, in the log */
+		game_engine_log_first_spawn(unit_index, fragmentation_grenade_count, plasma_grenade_count);
 	}
 
 	return;

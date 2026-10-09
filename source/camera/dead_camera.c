@@ -171,7 +171,8 @@ void dead_camera_update(
 		0.f,
 		camera->switch_timer - controls->seconds_elapsed);
 
-	if (0.f == camera->switch_timer && !game_time_get_paused())
+	/* port: NHE EXTRAS: the dead camera stays on the player's own body */
+	if (0.f == camera->switch_timer && !game_time_get_paused() && !game_engine_nhe_extras())
 	{
 		long next_player_index;
 		long next_unit_index;

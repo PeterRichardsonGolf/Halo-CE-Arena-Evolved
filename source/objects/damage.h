@@ -102,6 +102,8 @@ void object_damage_update(
 	long object_index);
 void object_destroy(
 	long object_index);
+/* port: after a saved game is loaded or reverted (game_state.c) */
+void damage_game_state_loaded(void);
 void damage_data_new(struct damage_data *damage_data, long definition_index);
 boolean object_restore_body(long object_index);
 boolean object_double_charge_shield(long object_index);

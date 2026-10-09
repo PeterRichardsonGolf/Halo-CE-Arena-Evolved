@@ -119,6 +119,7 @@ one list beside them.
 #include "main/main.h"
 #include "rasterizer/rasterizer.h"
 #include "render/render.h"
+#include "render/render_camera_projection.h"
 #include "text/draw_string.h"
 #include "text/font_group.h"
 #include "text/unicode.h"
@@ -2255,9 +2256,83 @@ static void hud_waypoint_draw_labels(
 	}
 }
 
-/* TRAINING's waypoints over the power entries, in this local player's
-view (from hud_draw_screen, where the game's nav points are drawn): every
-arrow first, then their labels (hud_waypoint_draw_labels) clear of them */
+/* LINE OF SIGHT (item_timers_waypoints_in_sight_only): per view and entry,
+when the spot was last tested and last seen (game ticks; NONE: never). A
+waypoint shows only while its spot is on screen and was seen within
+HUD_ITEM_WAYPOINT_SEEN_TICKS; the spot is tested (one ray from the view's
+head, the viewer's unit left out, to ITEM_TIMER_SIGHT_HEIGHT over the spawn
+point: walls, vehicles, scenery and machines block it, items do not) at
+most every HUD_ITEM_WAYPOINT_TEST_TICKS, and only while on screen */
+#define HUD_ITEM_WAYPOINT_TEST_TICKS 3
+#define HUD_ITEM_WAYPOINT_SEEN_TICKS ((long)(0.3f * TICKS_PER_SECOND))
+#define ITEM_TIMER_SIGHT_HEIGHT 0.25f
+static struct
+{
+	long tested_at;
+	long seen_at;
+	/* (drawn last frame: the log tells when a hold ends) */
+	boolean drawn;
+} hud_item_waypoint_sight[MAXIMUM_LOCAL_PLAYERS][HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+/* (debug.waypoint_log: the second each view last logged) */
+static long hud_item_waypoint_logged_at[MAXIMUM_LOCAL_PLAYERS];
+
+int config_boolean(char const *name);
+unsigned long config_changes(void);
+void platform_log(char const *format, ...);
+
+/* whether a point is in this view's picture (in front of the camera,
+within the viewport): the projection the waypoint arrow uses */
+static boolean hud_item_waypoint_on_screen(
+	real_point3d const *position)
+{
+	real_point3d view_point;
+	real_point2d screen_position;
+
+	matrix4x3_transform_point(&render.frustum.world_to_view, position, &view_point);
+	return render_camera_view_to_screen(&render.camera, &render.frustum, &view_point, &screen_position);
+}
+
+/* LINE OF SIGHT: whether the entry's spot counts as seen in this view now
+(on screen, and seen by a ray within the last 0.3 s); *ray_seen the last
+ray's answer */
+static boolean hud_item_waypoint_in_sight(
+	short local_player_index,
+	short entry_index,
+	struct item_timer const *timer,
+	real_point3d const *head_position,
+	boolean on_screen,
+	boolean *ray_seen)
+{
+	long now = game_time_get();
+	short local = (short)PIN(local_player_index, 0, MAXIMUM_LOCAL_PLAYERS - 1);
+	short entry = (short)PIN(entry_index, 0, HUD_ITEM_TIMERS_MAXIMUM_ENTRIES - 1);
+	long *tested_at = &hud_item_waypoint_sight[local][entry].tested_at;
+	long *seen_at = &hud_item_waypoint_sight[local][entry].seen_at;
+
+	*ray_seen = *seen_at != NONE && *seen_at == *tested_at;
+	if (!on_screen)
+		return FALSE;
+	/* (a new map's or game's clock: tested again) */
+	if (*tested_at == NONE || now < *tested_at || now - *tested_at >= HUD_ITEM_WAYPOINT_TEST_TICKS)
+	{
+		real_point3d spot = timer->position;
+
+		spot.z += ITEM_TIMER_SIGHT_HEIGHT;
+		*tested_at = now;
+		/* (hud_nav_points.c's: nothing in the way but the viewer and the
+		vehicle it is in) */
+		*ray_seen = hud_nav_point_in_sight(local_player_index, head_position, &spot, NONE);
+		if (*ray_seen)
+			*seen_at = now;
+	}
+	return *seen_at != NONE && now >= *seen_at && now - *seen_at < HUD_ITEM_WAYPOINT_SEEN_TICKS;
+}
+
+/* the waypoints over the power entries (TRAINING's, or the TIMERS level's:
+HUD + WAYPOINTS through walls, LINE OF SIGHT only while in view), in this
+local player's view (from hud_draw_screen, where the game's nav points are
+drawn): every arrow first, then their labels (hud_waypoint_draw_labels)
+clear of them */
 void hud_draw_item_waypoints(
 	short local_player_index)
 {
@@ -2269,6 +2344,8 @@ void hud_draw_item_waypoints(
 	long player_index;
 	long unit_index;
 	real_point3d head_position;
+	boolean in_sight_only;
+	boolean log_now;
 	short index;
 
 	if (!count || local_player_index == NONE || !hud_globals ||
@@ -2286,6 +2363,13 @@ void hud_draw_item_waypoints(
 	if (unit_index == NONE)
 		return;
 	unit_get_head_position(unit_index, &head_position);
+	in_sight_only = item_timers_waypoints_in_sight_only();
+	/* (debug.waypoint_log: each second, per view and entry in its window) */
+	log_now = hud_debug_flag(_hud_debug_waypoint_log) && local_player_index >= 0 &&
+		local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_waypoint_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND;
+	if (log_now)
+		hud_item_waypoint_logged_at[local_player_index] = game_time_get() / TICKS_PER_SECOND;
 
 	for (index = 0; index < count; index++)
 	{
@@ -2293,8 +2377,63 @@ void hud_draw_item_waypoints(
 		struct hud_waypoint_label *label = &labels[label_count];
 		real_point3d position;
 		short render_type;
+		boolean on_screen = FALSE;
+		boolean ray_seen = FALSE;
+		boolean in_sight = TRUE;
 
+		/* (an entry not drawn in sight this frame: not drawn, for the log's
+		hold ends) */
+		if ((!in_sight_only || !item_timer_waypoint_shown(timer)) && local_player_index >= 0 &&
+			local_player_index < MAXIMUM_LOCAL_PLAYERS && index < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+		{
+			hud_item_waypoint_sight[local_player_index][index].drawn = FALSE;
+		}
 		if (!item_timer_waypoint_shown(timer))
+			continue;
+		if (in_sight_only || log_now)
+		{
+			real_point3d spot = timer->position;
+
+			spot.z += ITEM_TIMER_SIGHT_HEIGHT;
+			on_screen = hud_item_waypoint_on_screen(&spot);
+		}
+		if (in_sight_only)
+		{
+			in_sight = hud_item_waypoint_in_sight(local_player_index, index, timer, &head_position, on_screen, &ray_seen);
+			if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS && index < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+			{
+				boolean *drawn = &hud_item_waypoint_sight[local_player_index][index].drawn;
+
+				/* (the hold's end, in the log: when it was last seen) */
+				if (*drawn && !in_sight && hud_debug_flag(_hud_debug_waypoint_log))
+				{
+					long seen_at = hud_item_waypoint_sight[local_player_index][index].seen_at;
+
+					platform_log("waypoint: view %d entry %d hidden at tick %ld, last seen at tick %ld (held %ld ticks)",
+						(int)local_player_index, (int)index, game_time_get(), seen_at, game_time_get() - seen_at);
+				}
+				*drawn = in_sight;
+			}
+		}
+		if (log_now)
+		{
+			char text[32];
+			wchar_t name[32];
+			short character;
+
+			item_timer_waypoint_name(timer, name, NUMBEROF(name));
+			for (character = 0; character < (short)sizeof(text) - 1 && name[character]; character++)
+				text[character] = (char)name[character];
+			text[character] = 0;
+			platform_log("waypoint: view %d entry %d %s: in window, on screen %s, %s, drawn %s", (int)local_player_index,
+				(int)index, text, on_screen ? "yes" : "no",
+				!in_sight_only ? "through walls" : !on_screen ? "no ray (off screen)" :
+					ray_seen ? "ray visible" : "ray blocked",
+				in_sight ? "yes" : "no");
+		}
+		/* (LINE OF SIGHT: hidden out of view, no arrow, label or edge
+		arrow) */
+		if (!in_sight)
 			continue;
 		/* (the arrow NHE's calls have on a stock map's HUD globals) */
 		if (nav_index == NONE)
@@ -2398,6 +2537,22 @@ void hud_item_timers_initialize_for_new_map(
 	csmemset(hud_item_timers_motion_sensors, 0, sizeof(hud_item_timers_motion_sensors));
 	csmemset(hud_item_timers_meters, 0, sizeof(hud_item_timers_meters));
 	csmemset(hud_item_timers_top_left, 0, sizeof(hud_item_timers_top_left));
+	/* (LINE OF SIGHT: nothing tested or seen yet) */
+	{
+		short local;
+		short entry;
+
+		for (local = 0; local < MAXIMUM_LOCAL_PLAYERS; local++)
+		{
+			hud_item_waypoint_logged_at[local] = NONE;
+			for (entry = 0; entry < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; entry++)
+			{
+				hud_item_waypoint_sight[local][entry].tested_at = NONE;
+				hud_item_waypoint_sight[local][entry].seen_at = NONE;
+				hud_item_waypoint_sight[local][entry].drawn = FALSE;
+			}
+		}
+	}
 	/* (and the meters' texels read for it) */
 	hud_element_bounds_new_map();
 	/* (our font's advances, laid out again on this map) */

@@ -651,6 +651,7 @@ struct widget_instance;
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
 #include "interface/hud_draw.h"
+#include "interface/hud_messaging.h"
 #include "bitmaps/bitmap_color_conversion.h"
 #include "interface/interface.h"
 #include "interface/player_ui.h"
@@ -7532,6 +7533,37 @@ static void widget_instance_render_recursive(
 	return;
 }
 
+#ifdef HALO_CUSTOM_EDITION
+/* AE: the map's name bottom left of the post-game report ("Battle Creek" for
+NHE's badcreek too). The report is one, the whole screen's, whatever the
+number of local players (render_ui_widgets_postgame is asked for each of the
+players, so this is drawn at the first); NHE's maps' own report has the map's
+name. */
+static void render_postgame_map_name(
+	short local_player_index)
+{
+	char const *map_name = main_get_multiplayer_map_name();
+	long font_index = hud_get_font_index();
+	wchar_t text[64];
+	rectangle2d bounds;
+	real_argb_color color = { 1.0f, 0.85f, 0.9f, 1.0f };
+
+	if (local_player_index != 0 || font_index == NONE || !map_name || !map_name[0] || hs_scenario_is_nhe())
+		return;
+	ui_map_list_lookup(map_name);
+	ui_map_list_caption(map_name, text, NUMBEROF(text));
+	if (!text[0])
+		return;
+	bounds.x0 = 16;
+	bounds.x1 = 624;
+	bounds.y1 = 472;
+	bounds.y0 = bounds.y1 - 24;
+	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
+	draw_string_set_tab_stops(NULL, 0);
+	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+}
+#endif
+
 void render_ui_widgets_postgame(
 	short local_player_index,
 	rectangle2d *window_bounds)
@@ -7598,6 +7630,9 @@ void render_ui_widgets_postgame(
 				FALSE);
 		}
 	}
+#ifdef HALO_CUSTOM_EDITION
+	render_postgame_map_name(local_player_index);
+#endif
 
 	return;
 }

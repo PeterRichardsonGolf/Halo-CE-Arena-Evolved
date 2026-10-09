@@ -41,10 +41,11 @@ editor and in Server Setup)
 | Option | What it does |
 | --- | --- |
 | FALL DAMAGE | Off: no landing damage from any height (pits and kill zones still kill). |
-| HEALTH | CLASSIC (stock: health packs only), REACH (health recovers to a third), HALO 2 (health refills with the shields), HALO 3 (health refills after the shields). Health packs still spawn. |
+| HEALTH | CLASSIC (stock: health packs only), REACH (health recovers to a third), HALO 2 (Halo 2's timers: shields recharge 5 s after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached it, shield hits do not count), HALO 3 (health refills after the shields). Health packs still spawn. |
 | NO SPREAD | OFF (stock), NHE (the pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as Halo 1: NHE has them) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
 | PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. A weapon switch (Y) pressed during it is kept and taken as it ends, as in Halo 1: NHE; any other button pressed during it does nothing until you let go of it, so nothing fires, zooms, reloads or picks up the moment it ends. The host holds every player to it, including players on builds without it. |
+| BALL MELEE | Oddball gametypes only. STOCK (the ball's melee takes the shield and a little health, and kills from behind) or LETHAL (the ball carrier's melee kills in one hit, shields and overshield included, as in Halo 3: same reach, no hits through walls, friendly fire as the gametype sets it). |
 
 Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
 TIMERS shows the power list only: the next spawns of the rockets, sniper
@@ -87,34 +88,43 @@ up to their build.
 
 **Arena Evolved gametypes**, ready in the gametype list the first time you
 play:
-- **Arena Evolved (casual):** AE FFA SLAY (free for all, 25 kills), AE TEAM
-  SLY (50), AE CTF (3 captures), AE KING (team king) and AE FFA BALL (free
-  for all oddball; both 5 minutes held), each with a 15-minute time limit,
-  the motion sensor, TIMERS and the stock respawns; and AE TRAINING (TIMERS
-  and TRAINING, plays to 500, no time limit).
-- **Arena Evolved 2V2** (casual rules for two against two): AE 2V2 SLY (25 kills),
-  AE 2V2 CTF (3 captures), AE 2V2 KING and AE 2V2 BALL (team king and team
-  oddball, 5 minutes held). The player limit of 4 is the host's setting.
-- **Arena Evolved PRO** (modern NHE): AE PRO FFA (25 kills), AE PRO TS (50),
-  AE PRO CTF (3 captures), AE PRO KING and AE PRO BALL (team games, 5 minutes
-  held). 5-second respawn and suicide penalty, no TIMERS, no motion sensor
-  (but in AE PRO FFA); the slayers have no time limit, the others 15 minutes.
-- Every Arena Evolved gametype has no fall damage, HALO 2 health, NO SPREAD
-  FULL, the PRE-GAME COUNTDOWN and generic starting equipment, with a pistol
-  in hand and an assault rifle.
-- **Halo 1: NHE-style:** NHE 1V1, NHE 2V2 TS, NHE CTF, NHE POWERUP, NHE
-  VANILLA, NHE TRAIN and PRACTICE. On Halo 1: NHE's maps their vehicle set
-  picks NHE's mode (NHE & Timer, NHE & Powerups, Vanilla, Training, Timer
-  Only). NHE 1V1 (25 kills), NHE 2V2 TS (50), NHE CTF (3 captures) and NHE
-  POWERUP (50) play Beach LAN 15's rules: NHE & Timer (NHE POWERUP: NHE &
-  Powerups), 5-second respawn and suicide penalty, no motion sensor, no time
-  limit, NO SPREAD NHE and the PRE-GAME COUNTDOWN. NHE TRAIN has NO SPREAD NHE
-  and the countdown; NHE VANILLA has neither. PRACTICE has NO SPREAD NHE and
-  PRACTICE MODE, without the countdown.
-- The free for all gametypes say FFA in their names (AE FFA SLAY, AE FFA
-  BALL, AE PRO FFA); the other Arena Evolved ones are team games. The
-  gametype lists show the Arena Evolved set first, then the NHE set, then
-  your own gametypes, each in alphabetical order, before the built-in ones.
+- **Arena Evolved (casual):** FFA AE SLAYER (25 kills), TEAM AE SLAYER (50),
+  TEAM AE CTF (3 captures), TEAM AE KING, FFA AE ODDBALL and TEAM AE ODDBALL
+  (5 minutes held; the ball carrier's melee kills in one hit, BALL MELEE LETHAL), each with a 15-minute time limit, the motion sensor, the
+  stock respawns, item TIMERS with waypoints, and both weapons dropped on death
+  (DROP SECONDARY ALWAYS). The 2V2 ones (TEAM AE 2V2 SLAYER to 25, CTF, KING
+  and ODDBALL, with the lethal ball) play the same rules; the player limit of 4 is the host's setting.
+  FFA AE PRACTICE: every weapon and powerup each 30 seconds, 500 kills, no time
+  limit, the map's vehicles. TEAM AE VANILLA and TEAM AE POWERUPS: team slayer
+  that plays Halo 1: NHE's VANILLA and NHE & POWERUPS modes on NHE's maps.
+- **Arena Evolved special modes** (team slayer to 50): SNIPERS (sniper rifle and
+  pistol, the sniping weapon set, no motion sensor), SHOTTY SNIPERS (shotgun
+  and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic
+  health, no grenades), ROCKETS, SHOTGUNS and HEAVIES (75 kills, the map's
+  vehicles).
+- **Arena Evolved COMP** (modern NHE): FFA AE COMP SLAYER (25 kills), TEAM AE
+  COMP SLAYER (50), TEAM AE COMP CTF (3 captures), TEAM AE COMP KING and TEAM
+  AE COMP ODDBALL (5 minutes held, with the lethal ball). 5-second respawn and suicide penalty, 2
+  frag grenades, no motion sensor, no vehicles, item TIMERS only in line of
+  sight (no list, no item calls), the objective only in line of sight, both
+  weapons dropped; the slayers have no time limit, the others 15 minutes.
+- **FFA AE TRAINING:** item TIMERS and TRAINING's markers, plays to 500, no
+  time limit.
+- Every Arena Evolved gametype has no fall damage, HALO 2 health (SWAT:
+  classic), NO SPREAD NHE, the PRE-GAME COUNTDOWN and generic starting
+  equipment, with a pistol in hand and an assault rifle unless its mode says
+  otherwise.
+- **Halo 1: NHE's own 23 gametypes** (TS 50, TS 100, TS ON-OFF, TS TRAINING,
+  TS PRACTICE, TS SNIPERS, FFA 50 NR/R, 1 V 1 NR/R, KOTH 5M 7S/10S, BALL 5M
+  7S/10S, eight CTFs and CTF WIZARD), with NHE's values: classic health, fall
+  damage, NO SPREAD NHE, the countdown, NHE EXTRAS (everyone joins red, no team
+  swap, the dead camera on you, the match clock counting up), no death bonus or
+  kill penalty in slayer. On Halo 1: NHE's maps each plays its NHE mode; on
+  other maps no vehicles.
+- The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY):
+  the Arena Evolved set, AE COMP, the NHE set, TRAINING, then your own
+  gametypes, before the built-in ones. Seeded gametypes you edit are kept as
+  you made them when a newer build updates the others.
 
 **Split screen**
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby

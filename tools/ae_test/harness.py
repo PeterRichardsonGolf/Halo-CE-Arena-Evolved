@@ -555,6 +555,8 @@ SPEC_KEYS = {
     "map": "multiplayer map (host:<map>; '<name>@ce' for Custom Edition) or a campaign scenario "
            "path with backslashes (levels\\a10\\a10, through init.txt)",
     "gametype": "variant for the hosted game (host:<map>:<gametype>)",
+    "saved_gametype": "a custom gametype of the save root, by its stored name, for the hosted game "
+                      "(HALO_NETWORK_TEST_GAMETYPE; not found: the built-in one, as without it)",
     "network_test": "raw HALO_NETWORK_TEST (overrides map: 'join' for a client)",
     "flags": "HALO_NETWORK_TEST_FLAGS (gametype option bits)",
     "start": "HALO_NETWORK_TEST_START seconds",
@@ -578,6 +580,9 @@ SPEC_KEYS = {
     "timeout_extra": "seconds past exit_after before the game is killed (default 150)",
     "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true}",
     "save": "a named save root shared by the cases of one run (default: the case's own)",
+    "save_from": "a folder (on the machine that plays) copied as the case's save root before the game (a "
+                 "shared one: once, when it is made; links copied as files); never under /tmp. A real save "
+                 "root may be the source: only the copy is played",
 }
 
 
@@ -636,6 +641,8 @@ def spec_env(spec, data_root, save_root, shots_dir=None):
         env["HALO_NETWORK_TEST_LOCAL_PLAYERS"] = str(spec["local_players"])
     if spec.get("flags") is not None:
         env["HALO_NETWORK_TEST_FLAGS"] = str(spec["flags"])
+    if spec.get("saved_gametype"):
+        env["HALO_NETWORK_TEST_GAMETYPE"] = spec["saved_gametype"]
     if spec.get("start") is not None:
         env["HALO_NETWORK_TEST_START"] = str(spec["start"])
     if spec.get("mod") is not None:
@@ -717,7 +724,8 @@ def parse_debug(text):
         if m:
             r["tick"] = int(m[1])
             players = RE_PLAYER.findall(m[2])
-            r["players"] = len(players)
+            # (players seen alive in any one status line: a player dead at the last line was seen)
+            r["players"] = max(r["players"] or 0, len(players))
             r["final"] = {int(p[0]): {"k": int(p[4]), "d": int(p[5])} for p in players}
             im = re.search(r"\| items (\d+)", m[2])
             if im:
@@ -774,9 +782,13 @@ def player_tracks(text):
     return d
 
 
-def compare_tracks(host_text, client_text, window=2):
+def compare_tracks(host_text, client_text, window=2, kd_window=45):
     """per player: samples, median and 90th percentile of the host-client distance at the same tick
-    (within `window` ticks), and both machines' last kills/deaths"""
+    (within `window` ticks), and both machines' kills/deaths at a common last tick: each one's latest sample at
+    or before the lower of the two machines' last ticks ("kd_tick"), so a kill in the last second before one
+    machine stops logging is not a difference. The machines log a second apart at their own ticks, and a kill
+    reaches a client a few ticks late, so "kd_match" holds when some host sample within `kd_window` ticks of the
+    client's has the client's kills/deaths"""
     import math
     h, c = player_tracks(host_text), player_tracks(client_text)
     out = {}
@@ -788,8 +800,12 @@ def compare_tracks(host_text, client_text, window=2):
                 u = min(near, key=lambda u: abs(u - t))
                 diffs.append(math.dist(v[:3], c[p][u][:3]))
         diffs.sort()
-        ht, ct = max(h[p]), max(c[p])
-        out[p] = {"samples": len(diffs),
+        common = min(max(h[p]), max(c[p]))
+        ht = max(t for t in h[p] if t <= common)
+        ct = max((t for t in c[p] if t <= common), default=min(c[p]))
+        kd_match = any(abs(t - ct) <= kd_window and [v[3], v[4]] == [c[p][ct][3], c[p][ct][4]]
+                       for t, v in h[p].items())
+        out[p] = {"samples": len(diffs), "kd_tick": common, "kd_match": kd_match,
                   "median_m": round(diffs[len(diffs) // 2], 3) if diffs else None,
                   "p90_m": round(diffs[int(len(diffs) * 0.9)], 3) if diffs else None,
                   "host_kd": [h[p][ht][3], h[p][ht][4]], "client_kd": [c[p][ct][3], c[p][ct][4]]}
@@ -1153,6 +1169,14 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
         save = (save_roots or {}).setdefault(spec["save"], work.parent / f"save-{safe_name(spec['save'])}")
     else:
         save = work / "save"
+    if spec.get("save_from"):
+        # (a save root to start from, e.g. one with saved gametypes: copied when the save root is made)
+        save_from = expand(spec["save_from"])
+        check_not_tmp(save_from, "save_from")
+        if not save_from.is_dir():
+            raise SystemExit(f"ae_test: save_from {save_from} is not a folder")
+        if not Path(save).exists():
+            shutil.copytree(save_from, save, symlinks=False)  # (links copied as files: none points out of the copy)
     Path(save).mkdir(parents=True, exist_ok=True)
     shots = out / "shots"
     if spec.get("screenshots"):

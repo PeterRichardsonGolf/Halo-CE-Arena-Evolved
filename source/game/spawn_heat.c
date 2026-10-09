@@ -135,7 +135,9 @@ short spawn_heat_setting(
 boolean spawn_heat_shown(
 	void)
 {
-	return spawn_heat_setting() != _spawn_heat_off && game_engine_running() && !cinematic_in_progress() &&
+	/* (the host's gametype allows it: SPAWN HEAT, INDICATOR OPTIONS; then
+	each player's own MINE / ENEMY / OFF) */
+	return spawn_heat_setting() != _spawn_heat_off && game_engine_spawn_heat_allowed() && !cinematic_in_progress() &&
 		item_timers_training_shown();
 }
 

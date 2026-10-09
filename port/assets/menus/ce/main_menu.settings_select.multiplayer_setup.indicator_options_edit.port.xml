@@ -3,16 +3,18 @@
 <menus>
 	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/op_item_timers" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/multiplayer_setup/indicator_options_edit/item_timers_label"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/indicator_options_edit/item_timers_spinner" x="366" y="1"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/indicator_options_edit/item_timers_spinner" x="301" y="1"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/item_timers_label" type="text" controller="1" width="320" height="22" string_list="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/item_timers_spinner" type="spinner" left="2" top="2" width="46" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_item_timers" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 48 19 54">
+	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/item_timers_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_item_timers" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_item_timers">
 		<string text="OFF"/>
-		<string text="ON"/>
+		<string text="HUD"/>
+		<string text="HUD + WAYPOINTS"/>
+		<string text="LINE OF SIGHT"/>
 	</strings>
 	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/op_training" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/multiplayer_setup/indicator_options_edit/training_label"/>
@@ -26,5 +28,18 @@
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_training">
 		<string text="OFF"/>
 		<string text="ON"/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/op_spawn_heat" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/indicator_options_edit/spawn_heat_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/indicator_options_edit/spawn_heat_spinner" x="366" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/spawn_heat_label" type="text" controller="1" width="320" height="22" string_list="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/spawn_heat_spinner" type="spinner" left="2" top="2" width="46" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_spawn_heat" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 48 19 54">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_spawn_heat">
+		<string text="ON"/>
+		<string text="OFF"/>
 	</strings>
 </menus>

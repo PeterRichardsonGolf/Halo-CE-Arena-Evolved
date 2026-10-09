@@ -46,6 +46,11 @@ map's spawns spread, tell no sides */
 #define ITEM_TIMER_SPAWNED_RADIUS 2.0f
 /* the most items of an entry's classes by its spawn point looked at */
 #define ITEM_TIMER_MAXIMUM_NEARBY 8
+/* the ticks after a spawn from which its item missing from its spot counts
+as picked up (item_timer_taken): the copy from before is purged the tick
+after the spawn, and a client has the host's new one a few ticks late */
+#define ITEM_TIMER_TAKEN_AFTER_TICKS TICKS_PER_SECOND
+#define ITEM_TIMER_TAKEN_SCAN_TICKS TICKS_PER_SECOND
 
 /* ---------- macros */
 
@@ -75,6 +80,10 @@ static struct
 	long before_spawn_tick;
 	short before_count;
 	long before[ITEM_TIMER_MAXIMUM_NEARBY];
+	/* (the spawn whose item has left its spot: picked up; item_timer_taken) */
+	long taken_spawn_tick;
+	/* (the tick of the last scan for it: once a second at most) */
+	long taken_scan_tick;
 } item_timer_spawned[MAXIMUM_ITEM_TIMERS];
 
 /* port_config.c's */
@@ -525,6 +534,8 @@ static short item_timer_find_spawned(
 	return NONE;
 }
 
+static boolean item_timer_taken(struct item_timer const *timer);
+
 /* an entry that can spawn more than one power class (OS/CAMO) */
 static boolean item_timer_mixed(
 	struct item_timer const *timer)
@@ -580,6 +591,8 @@ void item_timers_map_begin(
 		item_timer_spawned[index].timer_class = NONE;
 		item_timer_spawned[index].before_spawn_tick = NONE;
 		item_timer_spawned[index].before_count = 0;
+		item_timer_spawned[index].taken_spawn_tick = NONE;
+		item_timer_spawned[index].taken_scan_tick = NONE;
 	}
 	if (!game_engine_running())
 		return;
@@ -684,7 +697,30 @@ boolean item_timers_training_shown(
 		game_engine_pregame_countdown_ticks_left() <= 0;
 }
 
-/* TRAINING's waypoint over a power entry (hud_item_timers.c), as Halo 1:
+/* whether the power entries' waypoints may show now: TRAINING's, or a TIMERS
+level with waypoints (HUD + WAYPOINTS, LINE OF SIGHT), on a map not Halo 1:
+NHE's (their scripts draw their own), past the PRE-GAME COUNTDOWN and not
+over */
+boolean item_timers_waypoints_shown(
+	void)
+{
+	short level = game_engine_timers_level();
+
+	if (!game_engine_training() && level != _timers_hud_waypoints && level != _timers_line_of_sight)
+		return FALSE;
+	return !hs_scenario_is_nhe() && !game_engine_game_over() && game_engine_pregame_countdown_ticks_left() <= 0;
+}
+
+/* whether the waypoints show only while their spot is in view (LINE OF
+SIGHT, hud_item_timers.c); TRAINING's, through walls, win over it */
+boolean item_timers_waypoints_in_sight_only(
+	void)
+{
+	return !game_engine_training() && game_engine_timers_level() == _timers_line_of_sight;
+}
+
+/* the waypoint over a power entry (hud_item_timers.c): TRAINING's, or the
+TIMERS level's (HUD + WAYPOINTS, LINE OF SIGHT), as Halo 1:
 NHE's Training mode's (activate_*_waypoint with its call, about 10 s before
 the item's spawn; deactivate_powerup_waypoints at :20 of the spawn's
 minute), from the entry's own spawns rather than NHE's minutes: from
@@ -703,14 +739,30 @@ boolean item_timer_waypoint_shown(
 	{
 		return FALSE;
 	}
-	if (!item_timers_training_shown())
+	if (!item_timers_waypoints_shown())
 		return FALSE;
 
 	now = game_time_get();
 	if (item_timer_ticks_left(timer) <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)
 		return TRUE;
 
-	return now >= timer->period_ticks && now % timer->period_ticks < ITEM_TIMER_WAYPOINT_AFTER_TICKS;
+	return now >= timer->period_ticks && now % timer->period_ticks < ITEM_TIMER_WAYPOINT_AFTER_TICKS &&
+		!item_timer_taken(timer);
+}
+
+/* whether the item the entry spawned last has left its spot (picked up):
+TIMERS' waypoints (HUD + WAYPOINTS, LINE OF SIGHT) go off then; TRAINING's
+keep NHE's fixed window. Each machine's own view of the map
+(item_timers_update): a client's when the host's pickup reaches it */
+static boolean item_timer_taken(
+	struct item_timer const *timer)
+{
+	short index = (short)(timer - item_timers);
+	long now = game_time_get();
+
+	if (game_engine_training() || index < 0 || index >= item_timer_count || timer->period_ticks <= 0)
+		return FALSE;
+	return item_timer_spawned[index].taken_spawn_tick == now - now % timer->period_ticks;
 }
 
 /* whether the entry's last spawn after the game's start was under
@@ -808,20 +860,27 @@ void item_timers_update(
 	/* (the items by a mixed entry's spawn point looked for only when
 	TRAINING's waypoints or CALLOUTS name the item it spawned: no other game
 	walks the objects for them) */
-	boolean find_spawned = item_timers_training_shown() || callouts_items_called();
+	boolean find_spawned = item_timers_waypoints_shown() || callouts_items_called();
+	/* (and every entry's item while TIMERS' waypoints show, to take its
+	waypoint off once it is picked up) */
+	boolean find_taken = item_timers_waypoints_shown() && !game_engine_training();
 	short index;
 
 	/* (the item a mixed entry spawned, once it is on the map: a client
 	has it when the host's update reaches it) */
-	for (index = 0; find_spawned && index < count; index++)
+	for (index = 0; (find_spawned || find_taken) && index < count; index++)
 	{
 		struct item_timer const *timer = &item_timers[index];
+		boolean mixed = item_timer_mixed(timer);
 		long spawn;
 
-		if (!item_timer_mixed(timer))
+		if (!mixed && !find_taken)
 			continue;
-		/* (in the countdown to a spawn: the items there before it) */
-		if (item_timer_ticks_left(timer) < timer->period_ticks &&
+		if (timer->timer_class < 0 || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
+			continue;
+		/* (in the countdown to a spawn: the items there before it; only a
+		mixed entry needs them, to tell which item it spawned) */
+		if (mixed && item_timer_ticks_left(timer) < timer->period_ticks &&
 			item_timer_ticks_left(timer) <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)
 		{
 			short classes[ITEM_TIMER_MAXIMUM_NEARBY];
@@ -838,7 +897,24 @@ void item_timers_update(
 			item_timer_spawned[index].spawn_tick = spawn;
 			item_timer_spawned[index].timer_class = NONE;
 		}
-		if (item_timer_spawned[index].timer_class == NONE)
+		if (!mixed)
+		{
+			/* (its item is its class: nothing to find, and one line a spawn) */
+			if (item_timer_spawned[index].timer_class == NONE)
+			{
+				wchar_t name[32];
+				char text[32];
+				short character_index;
+
+				item_timer_spawned[index].timer_class = timer->timer_class;
+				item_timer_waypoint_name(timer, name, NUMBEROF(name));
+				for (character_index = 0; character_index < (short)sizeof(text) - 1 && name[character_index]; character_index++)
+					text[character_index] = (char)name[character_index];
+				text[character_index] = 0;
+				platform_log("item timers: %d spawned %s at tick %ld", index, text, spawn);
+			}
+		}
+		else if (item_timer_spawned[index].timer_class == NONE)
 		{
 			item_timer_spawned[index].timer_class = item_timer_find_spawned(timer, index, spawn);
 			if (item_timer_spawned[index].timer_class != NONE)
@@ -855,9 +931,30 @@ void item_timers_update(
 					game_time_get());
 			}
 		}
+		/* (picked up: from a second after the spawn, when the copy from
+		before is gone (purged the tick after it) and a client has the new
+		one, no item of its classes at its spot) */
+		if (find_taken && item_timer_spawned[index].taken_spawn_tick != spawn &&
+			game_time_get() - spawn >= ITEM_TIMER_TAKEN_AFTER_TICKS &&
+			/* (the scan of the objects once a second at most: what it
+			found stays until the next scan) */
+			(item_timer_spawned[index].taken_scan_tick == NONE ||
+			game_time_get() < item_timer_spawned[index].taken_scan_tick ||
+			game_time_get() - item_timer_spawned[index].taken_scan_tick >= ITEM_TIMER_TAKEN_SCAN_TICKS))
+		{
+			long indices[ITEM_TIMER_MAXIMUM_NEARBY];
+			short classes[ITEM_TIMER_MAXIMUM_NEARBY];
+
+			item_timer_spawned[index].taken_scan_tick = game_time_get();
+			if (!item_timer_nearby_items(timer, indices, classes, ITEM_TIMER_MAXIMUM_NEARBY))
+			{
+				item_timer_spawned[index].taken_spawn_tick = spawn;
+				platform_log("item timers: %d taken at tick %ld (spawn at tick %ld)", index, game_time_get(), spawn);
+			}
+		}
 	}
 
-	/* (TRAINING's waypoints going on and off, with the spawn they are
+	/* (the waypoints going on and off, with the spawn they are
 	for: the next one's going on, the last one's going off) */
 	for (index = 0; index < count; index++)
 	{

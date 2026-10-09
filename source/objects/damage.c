@@ -159,6 +159,68 @@ overcharge): not a client of the distributed netcode, which has the host's
 (damage_set_network_state) */
 #define objects_update_shields() (!network_game_distributed_client())
 
+/* port: HALO 2 health style (enum health_style), host side. The shields of
+players use Halo 2's timers instead of the biped tag's: recharge starts 5
+seconds after the last shield damage and refills in 2 seconds. The body has
+its own timer: 10 seconds after the last damage that reached it, then a
+refill in 5 seconds. The body's last-damage time is kept in a table of this
+machine (by object slot and identifier), not in the object: it is never
+saved or sent. */
+static short health_style_current(void);
+#define HALO2_SHIELD_STUN_TICKS (5 * TICKS_PER_SECOND)
+#define HALO2_SHIELD_RECHARGE_PER_TICK (1.f / (2.f * TICKS_PER_SECOND))
+#define HALO2_BODY_STUN_TICKS (10 * TICKS_PER_SECOND)
+#define HALO2_BODY_RECHARGE_PER_TICK (1.f / (5.f * TICKS_PER_SECOND))
+
+static struct
+{
+	long identifier;
+	long time;
+} halo2_body_damage_table[MAXIMUM_OBJECTS_PER_MAP];
+
+static boolean halo2_player_shields(long object_index)
+{
+	return health_style_current() == _health_style_halo2 &&
+		player_index_from_unit_index(object_index) != NONE;
+}
+
+static void halo2_body_damaged(long object_index)
+{
+	long slot = DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index);
+
+	/* (players only: no entries for AI or vehicles) */
+	if (slot < MAXIMUM_OBJECTS_PER_MAP && player_index_from_unit_index(object_index) != NONE)
+	{
+		halo2_body_damage_table[slot].identifier = DATUM_INDEX_TO_IDENTIFIER(object_index);
+		halo2_body_damage_table[slot].time = game_time_get();
+	}
+}
+
+/* ticks since the body's last damage; a unit never seen hurt (a loaded
+game, a health pack's partial fill) counts from now */
+static long halo2_body_quiet_ticks(long object_index)
+{
+	long slot = DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index);
+
+	if (slot >= MAXIMUM_OBJECTS_PER_MAP)
+		return 0;
+	if (halo2_body_damage_table[slot].identifier != DATUM_INDEX_TO_IDENTIFIER(object_index) ||
+		halo2_body_damage_table[slot].time > game_time_get())
+		halo2_body_damaged(object_index);
+	return game_time_get() - halo2_body_damage_table[slot].time;
+}
+
+/* a new map, a loaded or reverted saved game: the table starts empty */
+static void halo2_body_damage_table_reset(void)
+{
+	csmemset(halo2_body_damage_table, 0, sizeof(halo2_body_damage_table));
+}
+
+void damage_game_state_loaded(void)
+{
+	halo2_body_damage_table_reset();
+}
+
 /* ---------- constants */
 
 enum
@@ -398,6 +460,7 @@ void damage_dispose(void)
 void damage_initialize_for_new_map(void)
 {
 	global_debug_damage_object_index = NONE;
+	halo2_body_damage_table_reset();
 	return;
 }
 
@@ -1000,7 +1063,15 @@ static void object_damage_shield(
 		object->object.shield_vitality = 0.f;
 	}
 
-	if (shield_damage >= damage_resistance->minimum_shield_stun_damage ||
+	if (halo2_player_shields(object_index))
+	{
+		/* (HALO 2: any shield damage restarts the 5 seconds, depletion adds
+		none; damage reaching a player whose shield is already empty restarts
+		them too, so the shields never recharge under fire) */
+		if (shield_damage > 0.f || object->object.shield_vitality == 0.f)
+			object->object.shield_stun_ticks = HALO2_SHIELD_STUN_TICKS;
+	}
+	else if (shield_damage >= damage_resistance->minimum_shield_stun_damage ||
 		object->object.shield_vitality == 0.f)
 	{
 		object->object.shield_stun_ticks =
@@ -1288,6 +1359,8 @@ static void object_damage_body(
 	}
 
 	object->object.body_damage_decay_timer = 0;
+	if (actual_damage > 0.f && !TEST_FLAG(object->object.damage_flags, _object_cannot_take_damage_bit))
+		halo2_body_damaged(object_index);
 	object->object.current_body_damage += actual_damage;
 	object->object.recent_body_damage += actual_damage;
 	if (object->object.current_body_damage > 1.f)
@@ -1696,6 +1769,23 @@ void object_cause_damage(
 				boolean force_kill = TEST_FLAG(
 					damage->flags,
 					_damage_kill_instantly_bit);
+				boolean ball_melee_blow = FALSE;
+
+				/* port: BALL MELEE LETHAL (ARENA OPTIONS): the melee blow of a
+				player holding the ball kills a player's unit in one hit, shields
+				and all; reach, walls and friendly fire are the blow's own
+				(the force_kill rules below) */
+				if (!force_kill &&
+					damage_definition->category == _damage_category_melee &&
+					current_object->object.type == _object_type_biped &&
+					!TEST_FLAG(current_object->object.damage_flags, _object_cannot_take_damage_bit) &&
+					game_engine_running() &&
+					game_engine_ball_melee_lethal(damage->owner_player_index) &&
+					((struct unit_datum const *)current_object)->unit.player_index != NONE)
+				{
+					force_kill = TRUE;
+					ball_melee_blow = TRUE;
+				}
 
 				if (node_index >= 0 && node_index < collision_model->nodes.count)
 				{
@@ -1777,6 +1867,11 @@ void object_cause_damage(
 					(friendly_damage == _friendly_damage_all || distributed_damage_authorized) &&
 					!TEST_FLAG(current_object->object.damage_flags, _object_dead_bit))
 				{
+					if (ball_melee_blow)
+						error(_error_silent, "ball melee lethal: player %ld's blow kills player %ld (shield %g, health %g)",
+							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(damage->owner_player_index),
+							(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(((struct unit_datum const *)current_object)->unit.player_index),
+							(double)current_object->object.shield_vitality, (double)current_object->object.body_vitality);
 					current_object->object.body_vitality = 0.f;
 					object_deplete_body(current_object_index);
 					SET_FLAG(
@@ -1981,12 +2076,13 @@ void area_of_effect_cause_damage(
 the gametype's HEALTH (game_engine_health_style), in the campaign game.health.
 REACH and HALO 3: once the shields are full, a third every four seconds, up
 to the top of the third it is in (REACH: a health pack fills the rest) or all
-of it (HALO 3); HALO 2: all of it within a second as the shields start to
-recharge. With no shields, from five seconds after the body's last damage.
+of it (HALO 3); HALO 2: ten seconds after the body's last damage, then all of
+it in five seconds, shields or none (the shields' own timers: see above).
+With no shields, the others start five seconds after the body's last damage.
 The host runs it with the shields (objects_update_shields); clients have its
 health. */
 #define HEALTH_REGENERATION_PER_TICK (1.f / (3.f * 4.f * TICKS_PER_SECOND))
-#define HEALTH_REGENERATION_HALO2_PER_TICK (1.f / TICKS_PER_SECOND)
+#define HEALTH_REGENERATION_HALO2_PER_TICK HALO2_BODY_RECHARGE_PER_TICK
 #define HEALTH_REGENERATION_UNSHIELDED_DELAY (5 * TICKS_PER_SECOND)
 const char *config_string(const char *name);
 
@@ -2032,19 +2128,23 @@ static void object_regenerate_health(
 	{
 		return;
 	}
-	if (object->object.maximum_shield_vitality > 0.f)
+	if (player_index_from_unit_index(object_index) == NONE)
+		return;
+	if (style == _health_style_halo2)
 	{
-		/* (HALO 2: as soon as the shields recharge, not once they are full) */
-		ready = style == _health_style_halo2 ?
-			object->object.shield_stun_ticks == 0 :
-			object->object.shield_vitality >= 1.f;
+		/* (HALO 2: its own timer, shields or none) */
+		ready = halo2_body_quiet_ticks(object_index) >= HALO2_BODY_STUN_TICKS;
+	}
+	else if (object->object.maximum_shield_vitality > 0.f)
+	{
+		ready = object->object.shield_vitality >= 1.f;
 	}
 	else
 	{
 		ready = object->object.body_damage_decay_timer == NONE ||
 			object->object.body_damage_decay_timer >= HEALTH_REGENERATION_UNSHIELDED_DELAY;
 	}
-	if (!ready || player_index_from_unit_index(object_index) == NONE)
+	if (!ready)
 		return;
 	/* (REACH: the top of the third it is in; on a third's top, none) */
 	if (style == _health_style_reach)
@@ -2172,7 +2272,8 @@ void object_damage_update(
 		{
 			if (object->object.shield_stun_ticks == 0)
 			{
-				real shield_recharge =
+				real shield_recharge = halo2_player_shields(object_index) ?
+					HALO2_SHIELD_RECHARGE_PER_TICK :
 					collision_model->resistance.runtime_shield_recharge_velocity;
 
 				shield_recharge *= game_difficulty_get_team_value(

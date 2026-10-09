@@ -57,6 +57,71 @@ enum
 	_game_variant_no_spread_bit, so a build that knows only that bit plays
 	NHE's */
 	_game_variant_no_spread_full_bit = 24,
+	/* port: SPAWN HEAT allowed (the host's): inverted, so that every
+	TRAINING gametype from before keeps it (0, ON); each player's own MINE /
+	ENEMY / OFF still decides what they see (spawn_heat.c) */
+	_game_variant_no_spawn_heat_bit = 25,
+	/* port: TIMERS' second bit (enum timers_level, with
+	_game_variant_item_timers_bit): 17 alone HUD, 17 + 26 HUD + WAYPOINTS,
+	26 alone LINE OF SIGHT, so that older builds show a strip, or nothing */
+	_game_variant_item_waypoints_bit = 26,
+	/* port: the objective's indicator only in line of sight (AE COMP) */
+	_game_variant_objective_in_sight_bit = 27,
+	/* port: NHE EXTRAS: all players on red, no team swap after a game, no
+	bored camera, the match clock counting up (the Halo 1: NHE set) */
+	_game_variant_nhe_extras_bit = 28,
+	/* port: two bits, DROP SECONDARY (enum drop_secondary) */
+	_game_variant_drop_secondary_first_bit = 29,
+	_game_variant_drop_secondary_second_bit = 30,
+	/* (bit 31 reserved for WEAPON INDICATORS: write it as 0x80000000UL, not
+	FLAG(31), whose 1 << 31 on an int is undefined; never through
+	menu_functions.c's _option_flags, whose values are long) */
+};
+
+/* port: TIMERS' levels (game_variant_timers_level): OFF; HUD, the power
+items' strip; HUD + WAYPOINTS, the strip and their waypoints; LINE OF
+SIGHT, waypoints only while the spot is in view (no strip) */
+enum timers_level
+{
+	_timers_off = 0,
+	_timers_hud,
+	_timers_hud_waypoints,
+	_timers_line_of_sight,
+	NUMBER_OF_TIMERS_LEVELS
+};
+
+#define GAME_VARIANT_TIMERS_MASK \
+	(FLAG(_game_variant_item_timers_bit) | FLAG(_game_variant_item_waypoints_bit))
+
+/* port: DROP SECONDARY (game_variant_drop_secondary): CE, as the game
+does; ALWAYS, a dead player's second weapon always drops; ALWAYS EXCEPT
+POWER, unless it is a power weapon. The field's 3 reads as ALWAYS EXCEPT
+POWER, as the gametype editor shows it */
+enum drop_secondary
+{
+	_drop_secondary_ce = 0,
+	_drop_secondary_always,
+	_drop_secondary_always_except_power,
+	NUMBER_OF_DROP_SECONDARY_VALUES
+};
+
+#define GAME_VARIANT_DROP_SECONDARY_MASK \
+	(FLAG(_game_variant_drop_secondary_first_bit) | FLAG(_game_variant_drop_secondary_second_bit))
+
+/* port: NHE MODE (universal_variant.nhe_mode, a byte): on Halo 1: NHE's
+maps the mode their scripts play; BY VEHICLES, the vehicle set's (as
+before: none Vanilla, ghosts Timer Only, warthogs NHE & Timer, scorpions NHE
+& Powerups, all Training). Values past TRAINING read as BY VEHICLES
+(game_variant_nhe_mode) */
+enum nhe_mode
+{
+	_nhe_mode_by_vehicles = 0,
+	_nhe_mode_vanilla,
+	_nhe_mode_timer_only,
+	_nhe_mode_nhe_and_timer,
+	_nhe_mode_nhe_and_powerups,
+	_nhe_mode_training,
+	NUMBER_OF_NHE_MODES
 };
 
 /* port: NO SPREAD's levels (game_variant_no_spread_level): OFF, stock
@@ -79,8 +144,9 @@ enum no_spread_level
 /* port: how a player's health comes back (the gametype's HEALTH, the
 campaign's game.health): CLASSIC only from health packs; REACH, once the
 shields are full, up to the top of the third it is in; HALO 3, once the
-shields are full, all of it; HALO 2, all of it at once as the shields start
-to recharge (objects/damage.c) */
+shields are full, all of it; HALO 2, Halo 2's timers: shields recharge 5 s
+after the last shield damage and fill in 2 s, health refills in 5 s starting
+10 s after the last damage that reached the body (objects/damage.c) */
 enum health_style
 {
 	_health_style_classic = 0,
@@ -125,12 +191,27 @@ union real_point2d;
 union real_point3d;
 union real_rgb_color;
 
+/* port: universal_variant.starting_frags' "no grenades" */
+#define STARTING_GRENADES_NONE 0xFF
+
 struct universal_variant
 {
 	boolean teams;
-	byte pad0;
-	byte pad1;
-	byte pad2;
+	byte nhe_mode; /* port: was pad0 (zero in every builder): enum nhe_mode */
+	/* port: was pad1 (zero in every builder): the frag grenades each player
+	starts with, 1-4 (no more than the game's rule for the player count
+	allows: 1 with 9 or more players, 2 with 5 or more); STARTING_GRENADES_NONE,
+	no grenades at all (frag or plasma); 0 or anything else, the game's rule
+	(the globals' most, 4, under 5 players). 1-4 and none also override a
+	map's own (custom) starting equipment's grenades. AE COMP's 2, AE SWAT's
+	none */
+	byte starting_frags;
+	/* port: was pad2 (zero in every builder): BALL MELEE (ARENA OPTIONS), 1
+	LETHAL: in an oddball game a melee blow by a player holding the ball
+	kills (game_engine_ball_melee_lethal); 0 or anything else, STOCK. Older
+	builds ignore it (the byte travels with the variant, the file's and the
+	network variant's sizes are unchanged) */
+	byte ball_melee;
 	unsigned long flags;
 	long goal_radar;
 	boolean odd_man_out;
@@ -558,6 +639,27 @@ void game_engine_initialize_for_new_map(
 /* port: the game's rules in the log, after the scripts' setup (game.c) */
 void game_engine_log_rules(
 	void);
+/* port: NHE MODE (universal_variant.nhe_mode) applied for the new map, once
+its scripts are known (game.c), and the vehicles placed then, in the log;
+the vehicle sets the game plays by (NHE MODE's on Halo 1: NHE's maps, else
+the gametype's) */
+void game_engine_apply_nhe_mode(
+	void);
+void game_engine_log_vehicles_placed(
+	void);
+/* port: DROP SECONDARY: whether an item leaving a unit's inventory is owned
+until now (items.c), and the drop in the log (debug.item_log) */
+long game_engine_drop_owned_time(
+	long item_index,
+	long owned_time);
+void game_engine_log_item_dropped(
+	long item_index,
+	long owned_before,
+	long owned_now);
+long game_engine_effective_vehicle_set(
+	void);
+byte game_engine_effective_team_vehicle_set(
+	short side);
 void game_engine_player_added(
 	long player_index);
 
@@ -686,6 +788,36 @@ char const *game_variant_no_spread_name(
 char const *game_variant_health_style_name(
 	unsigned long flags);
 
+/* port: the AE gametype options from a variant's flags / its nhe_mode byte
+(enum timers_level, drop_secondary, nhe_mode), and their names for the logs */
+short game_variant_timers_level(
+	unsigned long flags);
+short game_variant_drop_secondary(
+	unsigned long flags);
+short game_variant_nhe_mode(
+	byte nhe_mode);
+char const *game_variant_timers_name(
+	unsigned long flags);
+char const *game_variant_drop_secondary_name(
+	unsigned long flags);
+char const *game_variant_nhe_mode_name(
+	byte nhe_mode);
+
+/* port: the running game's: TIMERS' level, SPAWN HEAT allowed, the
+objective in line of sight, NHE EXTRAS, DROP SECONDARY, NHE MODE */
+short game_engine_timers_level(
+	void);
+boolean game_engine_spawn_heat_allowed(
+	void);
+boolean game_engine_objective_in_sight(
+	void);
+boolean game_engine_nhe_extras(
+	void);
+short game_engine_drop_secondary(
+	void);
+short game_engine_nhe_mode(
+	void);
+
 boolean game_engine_practice(
 	void);
 
@@ -751,7 +883,12 @@ struct scenario_netgame_equipment;
 long game_engine_item_respawn_period(
 	struct scenario_netgame_equipment const *equipment);
 
+/* port: the power items' strip: TIMERS (bit 17: HUD, HUD + WAYPOINTS) or
+TRAINING */
 boolean game_engine_item_timers(
+	void);
+/* port: item_timers.c runs: any TIMERS level (LINE OF SIGHT too) or TRAINING */
+boolean game_engine_item_timers_active(
 	void);
 
 boolean game_engine_training(
@@ -905,6 +1042,11 @@ extern struct game_engine *game_engine;
 real game_engine_get_damage_multiplier(
 	long damaging_player_index,
 	long damaged_player_index);
+
+/* port: BALL MELEE LETHAL: TRUE when the game is oddball with the option on
+and the player (a player datum index) holds the ball (objects/damage.c) */
+boolean game_engine_ball_melee_lethal(
+	long damaging_player_index);
 
 #ifdef HALO_64BIT
 long game_engine_did_player_win_default(

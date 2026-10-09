@@ -141,6 +141,12 @@ int posix_rename_directory(const char *from, const char *to)
 	return rename(from, to);
 }
 
+/* (rename(2): atomic, the target replaced) */
+int posix_replace_file(const char *path, const char *new_path)
+{
+	return rename(path, new_path);
+}
+
 int posix_make_directory(const char *path)
 {
 #ifdef __ANDROID__

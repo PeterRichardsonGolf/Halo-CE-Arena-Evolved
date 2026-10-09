@@ -80,6 +80,7 @@ their handlers open opens.
 #include "tag_files/tag_groups.h"
 #include "text/text_group.h"
 #include "text/unicode.h"
+#include "saved games/arena_gametypes.h"
 
 #include "halo_menus.h"
 #include "halo_custom_maps.h"
@@ -2900,7 +2901,8 @@ static boolean gametype_list_initialize(struct widget_instance *list)
 }
 
 /* a gametype's name, in a row's text (the name's own buffer is longer:
-playlist_profile_get_display_name fills MAX_GAMENAME characters) */
+playlist_profile_get_display_name fills MAX_GAMENAME characters): a seeded
+one's display name (arena_gametype_names.c), else its stored name */
 static void gametype_display_name(long profile_index, wchar_t *text)
 {
 	wchar_t name[MAX_GAMENAME];
@@ -2908,9 +2910,66 @@ static void gametype_display_name(long profile_index, wchar_t *text)
 	text[0] = 0;
 	if (playlist_profile_get_display_name(profile_index, name))
 	{
-		ustrncpy(text, name, ROW_TEXT_LENGTH - 1);
-		text[ROW_TEXT_LENGTH - 1] = 0;
+		name[MAX_GAMENAME - 1] = 0;
+		/* (a player's own gametype's longer display name, if it has one) */
+		if (arena_gametype_own_display_name(profile_index, text, ROW_TEXT_LENGTH))
+			return;
+		if (arena_gametype_info(name, NULL))
+			arena_gametype_display_name(name, text, ROW_TEXT_LENGTH);
+		else
+		{
+			ustrncpy(text, name, ROW_TEXT_LENGTH - 1);
+			text[ROW_TEXT_LENGTH - 1] = 0;
+		}
 	}
+}
+
+/* a gametype's name in a narrow panel (the gametype lists' and the
+lobby's, 146 wide in small_ui): a display name too long for a line is
+broken at its last space that leaves the first line within the panel's
+width. The width is estimated per character (the panel clips text, so an
+estimate that errs wide cuts a glyph: "TEAM NHE SLAYER 10" is the longest
+that shows at all, so the budget stays under it): narrow glyphs count half,
+M and W more, a space between. "TEAM NHE SLAYER 100" / "TEAM NHE CTF 3 7.5S"
+break before their last word or two */
+#define GAMETYPE_PANEL_WIDTH 15.5f
+static real gametype_panel_char_width(wchar_t c)
+{
+	switch (c)
+	{
+	case 'I': case '1': case '.': case ':': case '\'': case '!': case '|':
+		return 0.5f;
+	case ' ': case '-':
+		return 0.6f;
+	case 'M': case 'W':
+		return 1.3f;
+	}
+	return 1.0f;
+}
+
+static void gametype_panel_name(wchar_t *text, size_t size)
+{
+	size_t length = ustrlen(text);
+	size_t index;
+	size_t space = 0;
+	real width = 0.0f;
+
+	if (length + 2 >= size)
+		return;
+	for (index = 0; index < length; index++)
+	{
+		width += gametype_panel_char_width(text[index]);
+		if (width > GAMETYPE_PANEL_WIDTH)
+			break;
+		if (text[index] == ' ')
+			space = index;
+	}
+	if (index >= length || !space)
+		return;
+	/* (the space becomes the line break's "\r\n") */
+	memmove(text + space + 2, text + space + 1, (length - space) * sizeof(wchar_t));
+	text[space] = '\r';
+	text[space + 1] = '\n';
 }
 
 static void gametype_name(short item, wchar_t *text)
@@ -2977,6 +3036,7 @@ static void gametype_list_update(struct widget_instance *list)
 		wchar_t text[ROW_TEXT_LENGTH * 2];
 
 		gametype_name(multiplayer.gametype_chosen, text);
+		gametype_panel_name(text, NUMBEROF(text));
 		text_set(named(description, "gametype_right_name", 0), text);
 		if (playlist_profile_get(multiplayer.gametypes[multiplayer.bank[multiplayer.gametype_chosen]], &variant))
 		{
@@ -5171,10 +5231,16 @@ static void lobby_update(struct widget_instance *list)
 	{
 		short seconds = network_game_client_get_seconds_to_game_start(client);
 		char link[TEXT_FIELD_LENGTH];
-		wchar_t gametype[NUMBEROF(game->variant.human_readable_game_description) + 1];
+		wchar_t stored_name[NUMBEROF(game->variant.human_readable_game_description) + 1];
+		/* (a seeded gametype's display name: the network game has its
+		stored name, arena_gametype_names.c) */
+		wchar_t gametype[40];
 
-		ustrncpy(gametype, game->variant.human_readable_game_description, NUMBEROF(gametype) - 1);
-		gametype[NUMBEROF(gametype) - 1] = 0;
+		ustrncpy(stored_name, game->variant.human_readable_game_description, NUMBEROF(stored_name) - 1);
+		stored_name[NUMBEROF(stored_name) - 1] = 0;
+		if (!arena_gametype_own_display_name_for_stored_name(stored_name, &game->variant, gametype, NUMBEROF(gametype)))
+			arena_gametype_display_name(stored_name, gametype, NUMBEROF(gametype));
+		gametype_panel_name(gametype, NUMBEROF(gametype));
 		usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\n%d of %d players\r\n\r\n%s", gametype,
 			engine_names[PIN(game->variant.game_engine_index, 0, 5)], lobby_player_count, game->maximum_players,
 			/* (a host starts with its own players alone: one is enough) */
@@ -5394,7 +5460,10 @@ enum
 	_option_short,		/* a short of the options */
 	_option_option_byte,	/* a byte of the options */
 	_option_radar,		/* the options' radar players, and the variant's flag */
-	_option_flags		/* bits of the variant's flags (argument: their mask), set to the value */
+	_option_flags,		/* bits of the variant's flags (argument: their mask), set to the value */
+	_option_nhe_mode,	/* the variant's NHE MODE byte, its value (past TRAINING: BY VEHICLE SET) */
+	_option_ball_melee,	/* a byte of the variant, LETHAL (1) or else STOCK, as the engine reads it */
+	_option_goal_radar	/* the variant's goal radar, 3: nav points in line of sight (bit 27) */
 };
 
 struct gametype_option
@@ -5419,7 +5488,10 @@ static struct gametype_option const gametype_options[] =
 	{ "number_of_lives_spinner", _option_long, VARIANT_FIELD(universal_variant.lives), 0, 4, { 0, 1, 3, 5 } },
 	{ "maximum_health_spinner", _option_health, 0, 0, 6, { 5, 10, 15, 20, 30, 40 } },
 	{ "shields_spinner", _option_flag, 0, FLAG(_game_variant_no_shields_bit), 2, { 0, 1 } },
-	{ "respawn_time_spinner", _option_long, VARIANT_FIELD(universal_variant.respawn_time), 0, 4, { 0, 150, 300, 450 } },
+	/* (and Halo 1: NHE's 7.5 seconds, 225 ticks, so its objective gametypes
+	keep them through the editor) */
+	{ "respawn_time_spinner", _option_long, VARIANT_FIELD(universal_variant.respawn_time), 0, 5,
+		{ 0, 150, 225, 300, 450 } },
 	{ "respawn_time_growth_spinner", _option_long, VARIANT_FIELD(universal_variant.respawn_time_growth), 0, 4,
 		{ 0, 150, 300, 450 } },
 	{ "odd_man_out_spinner", _option_byte, VARIANT_FIELD(universal_variant.odd_man_out), 0, 2, { 1, 0 } },
@@ -5441,6 +5513,18 @@ static struct gametype_option const gametype_options[] =
 		{ 0, GAME_VARIANT_NO_SPREAD_NHE, GAME_VARIANT_NO_SPREAD_FULL } },
 	{ "pregame_countdown_spinner", _option_flag, 0, FLAG(_game_variant_pregame_countdown_bit), 2, { 0, 1 } },
 	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
+	{ "nhe_extras_spinner", _option_flag, 0, FLAG(_game_variant_nhe_extras_bit), 2, { 0, 1 } },
+	/* (BALL MELEE: universal_variant.ball_melee, STOCK or LETHAL; Oddball only) */
+	{ "ball_melee_spinner", _option_ball_melee, VARIANT_FIELD(universal_variant.ball_melee), 0, 2, { 0, 1 } },
+	/* (DROP SECONDARY: bits 29-30, enum drop_secondary; a stored 3 shows as
+	EXCEPT POWER, the nearest, as the engine reads it) */
+	{ "drop_secondary_spinner", _option_flags, 0, GAME_VARIANT_DROP_SECONDARY_MASK, 3,
+		{ 0, _drop_secondary_always << _game_variant_drop_secondary_first_bit,
+		_drop_secondary_always_except_power << _game_variant_drop_secondary_first_bit } },
+	/* (NHE MODE: enum nhe_mode, in the row's order) */
+	{ "nhe_mode_spinner", _option_nhe_mode, 0, 0, NUMBER_OF_NHE_MODES,
+		{ _nhe_mode_by_vehicles, _nhe_mode_vanilla, _nhe_mode_timer_only, _nhe_mode_nhe_and_timer,
+		_nhe_mode_nhe_and_powerups, _nhe_mode_training } },
 	/* item options (weapon sets: the PC's list, then the Xbox's NO GRENADES) */
 	{ "item_options_infinite_grenades_spinner", _option_flag, 0, FLAG(_game_variant_infinite_grenades_bit), 2,
 		{ 1, 0 } },
@@ -5456,15 +5540,22 @@ static struct gametype_option const gametype_options[] =
 	{ "secondary_weapon_spinner", _option_option_byte, OPTIONS_FIELD(secondary_weapon), 0, NUMBER_OF_LOADOUT_WEAPONS,
 		{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 } },
 	/* indicator options */
-	{ "indicator_options_radar display_spinner", _option_long, VARIANT_FIELD(universal_variant.goal_radar), 0, 3,
-		{ 0, 1, 2 } },
+	/* (the objectives indicator: MOTION TRACKER, NAV POINTS, NONE, and LINE OF
+	SIGHT: nav points with _game_variant_objective_in_sight_bit) */
+	{ "indicator_options_radar display_spinner", _option_goal_radar, 0, 0, 4, { 0, 1, 2, 3 } },
 	{ "indicator_options_players_on_radar_spinner", _option_radar, OPTIONS_FIELD(radar_players), 0, 3,
 		{ _radar_players_all, _radar_players_friends, _radar_players_none } },
 	{ "indicator_options_friends_on_screen_spinner", _option_flag, 0, FLAG(_game_variant_allow_friendly_navpoints_bit),
 		2, { 1, 0 } },
 	/* (port: TIMERS and TRAINING, OFF or ON) */
-	{ "item_timers_spinner", _option_flag, 0, FLAG(_game_variant_item_timers_bit), 2, { 0, 1 } },
+	/* (TIMERS' levels: bits 17 and 26, game_engine.h's enum timers_level) */
+	{ "item_timers_spinner", _option_flags, 0, GAME_VARIANT_TIMERS_MASK, 4,
+		{ 0, FLAG(_game_variant_item_timers_bit),
+		FLAG(_game_variant_item_timers_bit) | FLAG(_game_variant_item_waypoints_bit),
+		FLAG(_game_variant_item_waypoints_bit) } },
 	{ "training_spinner", _option_flag, 0, FLAG(_game_variant_training_bit), 2, { 0, 1 } },
+	/* (SPAWN HEAT: ON is the bit clear, game_engine.h) */
+	{ "spawn_heat_spinner", _option_flag, 0, FLAG(_game_variant_no_spawn_heat_bit), 2, { 0, 1 } },
 	/* capture the flag */
 	{ "assault_spinner", _option_byte, VARIANT_FIELD(game_engine_variant.ctf.assault), 0, 2, { 1, 0 } },
 	{ "single_flag_spinner", _option_long, VARIANT_FIELD(game_engine_variant.ctf.single_flag_time), 0, 6,
@@ -5553,6 +5644,12 @@ static long gametype_option_value(struct gametype_option const *option, struct g
 	case _option_short: return *(short *)(o + option->offset);
 	case _option_option_byte: return o[option->offset];
 	case _option_radar: return options->radar_players;
+	case _option_ball_melee: return v[option->offset] == 1;
+	case _option_nhe_mode: return game_variant_nhe_mode(variant->universal_variant.nhe_mode);
+	case _option_goal_radar:
+		return variant->universal_variant.goal_radar == 1 &&
+			TEST_FLAG(variant->universal_variant.flags, _game_variant_objective_in_sight_bit) ? 3 :
+			variant->universal_variant.goal_radar;
 	}
 	return 0;
 }
@@ -5580,6 +5677,13 @@ static void gametype_option_value_set(struct gametype_option const *option, long
 	case _option_health: variant->universal_variant.health = (real)value / 10.0f; break;
 	case _option_short: *(short *)(o + option->offset) = (short)value; break;
 	case _option_option_byte: o[option->offset] = (byte)value; break;
+	case _option_nhe_mode: variant->universal_variant.nhe_mode = (byte)value; break;
+	case _option_ball_melee: v[option->offset] = (byte)value; break;
+	case _option_goal_radar:
+		/* (LINE OF SIGHT: nav points, in sight only) */
+		variant->universal_variant.goal_radar = value == 3 ? 1 : value;
+		SET_FLAG(variant->universal_variant.flags, _game_variant_objective_in_sight_bit, value == 3);
+		break;
 	case _option_radar:
 		/* (and the Xbox's flag: other players on the tracker or not) */
 		options->radar_players = (byte)value;
@@ -5830,12 +5934,32 @@ static boolean gametype_setup_apply(void)
 static void gametype_setup_type(wchar_t *text)
 {
 	wchar_t name[NUMBEROF(gametype_edit.setup_variant.human_readable_game_description) + 1];
+	wchar_t own_name[40];
+	struct arena_gametype_info info;
 
 	text[0] = 0;
 	if (!gametype_edit.setup)
 		return;
 	ustrncpy(name, gametype_edit.setup_variant.human_readable_game_description, NUMBEROF(name) - 1);
 	name[NUMBEROF(name) - 1] = 0;
+	/* (a seeded gametype's display name, which says TEAM or FFA and the
+	mode: arena_gametype_names.c; an old name of one, an alias, has no
+	description and shows as before) */
+	if (arena_gametype_info(name, &info) && info.description)
+	{
+		arena_gametype_display_name(name, text, ROW_TEXT_LENGTH);
+		return;
+	}
+	/* (a player's own gametype's longer display name, if it has one, for
+	its stored name) */
+	/* (its name alone: the engine's name would be cut off the long row) */
+	if (arena_gametype_own_display_name_for_stored_name(name, &gametype_edit.setup_variant, own_name,
+		NUMBEROF(own_name)))
+	{
+		ustrncpy(text, own_name, ROW_TEXT_LENGTH - 1);
+		text[ROW_TEXT_LENGTH - 1] = 0;
+		return;
+	}
 	usnprintf(text, ROW_TEXT_LENGTH - 1, L"%s (%s%s)", name,
 		engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 5)],
 		gametype_edit.setup_variant.universal_variant.teams ? L", TEAMS" : L"");
@@ -5903,6 +6027,7 @@ static void gametype_edit_list_update(struct widget_instance *list)
 		visible_set(named(description, "locked_gametype_icon", 0),
 			((unsigned long)profile_index & PLAYLIST_READ_ONLY_BIT) != 0);
 		gametype_display_name(profile_index, text);
+		gametype_panel_name(text, NUMBEROF(text));
 		text_set(named(description, "gametype_right_name", 0), text);
 		if (playlist_profile_get(profile_index, &variant))
 		{
@@ -5981,10 +6106,16 @@ static void gametype_option_help(struct widget_instance *list)
 	{
 		boolean custom = named(list, "loadout_spinner", 0)->parameters.list.selected_index == _loadout_custom;
 
-		visible_set(named(list, "op_weapon_set", 0), !custom);
+		/* (WEAPON SET, the map's weapons: with a custom loadout only in AE's
+		gametypes, game_engine_remap_weapon) */
+		visible_set(named(list, "op_weapon_set", 0),
+			!custom || arena_gametype_has_ae_rules(edit_variant()->human_readable_game_description));
 		visible_set(named(list, "op_primary_weapon", 0), custom);
 		visible_set(named(list, "op_secondary_weapon", 0), custom);
 	}
+	/* (ARENA OPTIONS: BALL MELEE is Oddball's alone) */
+	if (named(list, "ball_melee_spinner", 0))
+		visible_set(named(list, "op_ball_melee", 0), edit_variant()->game_engine_index == game_engine_oddball);
 	/* (the server browser's filters, hidden: their helps are fewer than
 	their values) */
 	if (!description || !list->focused_child || !strncmp(list->name, "filters", 7))

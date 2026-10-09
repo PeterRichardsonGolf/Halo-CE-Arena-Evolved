@@ -27,6 +27,8 @@ import run  # noqa: E402
 import sheet  # noqa: E402
 import smoke  # noqa: E402
 import windows  # noqa: E402
+import gametype_file  # noqa: E402
+import seed_compare  # noqa: E402
 
 del sys.modules["harness"]
 if _other_harness is not None:
@@ -152,11 +154,199 @@ class Specs(unittest.TestCase):
         self.assertEqual(s["env"], {"A": "1"})
         self.assertEqual(s["local_players"], 2)
 
+    def test_saved_gametype_env(self):
+        s = harness.parse_spec({"map": "bloodgulch", "saved_gametype": "AE PRO TS"})
+        self.assertEqual(harness.spec_env(s, "/r", "/s")["HALO_NETWORK_TEST_GAMETYPE"], "AE PRO TS")
+        self.assertNotIn("HALO_NETWORK_TEST_GAMETYPE", harness.spec_env(harness.parse_spec({"map": "x"}), "/r", "/s"))
+        a = run.parser().parse_args(["--build", "abc", "--map", "bloodgulch", "--saved-gametype", "NHE 1V1",
+                                     "--save-from", "~/saves"])
+        s = run.spec_from_args(a)
+        self.assertEqual(s["saved_gametype"], "NHE 1V1")
+        self.assertEqual(s["save_from"], "~/saves")
+
+    def test_save_from_copied(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            d = Path(d)
+            (d / "data" / "maps").mkdir(parents=True)
+            src = d / "from"
+            (src / "UDATA" / "x").mkdir(parents=True)
+            (src / "UDATA" / "x" / "blam.lst").write_text("seed")
+            (src / "link.txt").symlink_to(src / "UDATA" / "x" / "blam.lst")
+            b = d / "b"
+            b.mkdir()
+            (b / "halo").write_bytes(b"x")
+            build = {"dir": str(b), "binary": str(b / "halo"), "env": {}}
+            cfg = dict(harness.DEFAULTS, data_dir=str(d / "data"))
+            spec = harness.parse_spec({"name": "g", "map": "bloodgulch", "save_from": str(src)})
+            prep = harness.prepare_game(cfg, spec, build, d / "work" / "g", d / "out" / "g")
+            self.assertEqual((Path(prep["save"]) / "UDATA" / "x" / "blam.lst").read_text(), "seed")
+            # (links are copied as files: nothing in the copy points back into the source)
+            self.assertFalse((Path(prep["save"]) / "link.txt").is_symlink())
+            self.assertEqual((Path(prep["save"]) / "link.txt").read_text(), "seed")
+            # (a shared save root is copied into once, when it is made: the next case keeps what the first left)
+            spec = harness.parse_spec({"name": "h", "map": "bloodgulch", "save_from": str(src), "save": "s"})
+            roots = {}
+            prep = harness.prepare_game(cfg, spec, build, d / "work" / "h", d / "out" / "h", roots)
+            (Path(prep["save"]) / "UDATA" / "x" / "blam.lst").write_text("played")
+            prep = harness.prepare_game(cfg, spec, build, d / "work" / "i", d / "out" / "i", roots)
+            self.assertEqual((Path(prep["save"]) / "UDATA" / "x" / "blam.lst").read_text(), "played")
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "t", "map": "x", "save_from": "/tmp/saves"}),
+                                     build, d / "work" / "t", d / "out" / "t")
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "m", "map": "x", "save_from": str(d / "no")}),
+                                     build, d / "work" / "m", d / "out" / "m")
+
     def test_run_dry_run(self):
         buf = io.StringIO()
         with redirect_stdout(buf):
             run.main(["--build", "abc", "--map", "damnation", "--dry-run"])
         self.assertEqual(json.loads(buf.getvalue())["env"]["HALO_NETWORK_TEST"], "host:damnation")
+
+
+class GametypeFile(unittest.TestCase):
+    """a saved gametype file's variant bytes patched and signed again (the signature over its first 0x68 bytes)"""
+
+    def make(self, root, name, folder="ABCDEF012345"):
+        block = bytearray(512)
+        block[:24] = name.encode("utf-16-le").ljust(24, b"\0")
+        block[0x1C] = 1
+        f = Path(root) / "u" / "UDATA" / folder / "blam.lst"
+        f.parent.mkdir(parents=True)
+        f.write_bytes(gametype_file.sign(bytes(block)))
+        return f
+
+    def test_sign_and_patch(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            src = Path(d) / "from"
+            f = self.make(src, "NHE 1V1")
+            self.make(src, "AE PRO TS", "000000000001")
+            original = f.read_bytes()
+            self.assertTrue(gametype_file.signed(original))
+            self.assertEqual(gametype_file.find(src, "nhe 1v1"), f)
+            self.assertIsNone(gametype_file.find(src, "NHE 2V2"))
+            # (copy first: the source is never written; the copy patched and signed again)
+            to = Path(d) / "to"
+            g = gametype_file.copy_and_patch(src, to, "NHE 1V1", {0x1D: 3})
+            self.assertEqual(f.read_bytes(), original)
+            self.assertTrue(str(g).startswith(str(to)))
+            b = g.read_bytes()
+            self.assertEqual((b[0x1C], b[0x1D], len(b)), (1, 3, 512))
+            self.assertTrue(gametype_file.signed(b))
+            self.assertTrue(gametype_file.find(to, "AE PRO TS"))
+            # (a --to that exists, /tmp, real save roots and Quiver installs are refused)
+            for frm, dst in ((src, to), (src, "/tmp/ae-to"), ("/tmp/ae-from", Path(d) / "t2"),
+                             (Path.home() / ".local/share/halo-linux-x", Path(d) / "t3"),
+                             (src, Path.home() / ".local/share/halo-linux-x/copy"),
+                             (Path(d) / "Quiver Launcher" / "Apps" / "halo", Path(d) / "t4")):
+                with self.assertRaises(SystemExit, msg=f"{frm} -> {dst}"):
+                    gametype_file.copy_and_patch(frm, dst, "NHE 1V1", {0x1D: 3})
+            # (only the variant's bytes, only byte values, and a signed file with a unique name)
+            for values in ({0x68: 1}, {0x1D: 256}, {0x1D: -1}):
+                with self.assertRaises(SystemExit):
+                    gametype_file.copy_and_patch(src, Path(d) / "v", "NHE 1V1", values)
+                self.assertFalse((Path(d) / "v").exists())
+            self.make(src, "nhe 1v1", "000000000002")
+            with self.assertRaises(SystemExit):
+                gametype_file.find(src, "NHE 1V1")
+            (src / "u" / "UDATA" / "000000000002" / "blam.lst").unlink()
+            f.write_bytes(original[:0x30] + b"x" + original[0x31:])
+            with self.assertRaises(SystemExit):
+                gametype_file.copy_and_patch(src, Path(d) / "w", "NHE 1V1", {0x1D: 4})
+            f.write_bytes(original)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(gametype_file.main(["--from", str(src), "--to", str(Path(d) / "m"),
+                                                     "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
+            self.assertEqual(gametype_file.find(Path(d) / "m", "AE PRO TS").read_bytes()[0x1D], 5)
+
+    def test_own_copy(self):
+        """--own: a player's own gametype of a seed's name, in the folder the game keeps that name in"""
+        # (folders a seeded root has: xbox_xapi.c's save_name_hash)
+        self.assertEqual(gametype_file.save_folder_name("AE TEAM SLY"), "04B847B13D90")
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            src = Path(d) / "from"
+            f = self.make(src, "AE TEAM SLY", gametype_file.save_folder_name("AE TEAM SLY"))
+            g = gametype_file.copy_and_patch(src, Path(d) / "to", "AE TEAM SLY", {0x40: 33}, own_name="TS 50")
+            self.assertEqual(g.parent.name, gametype_file.save_folder_name("TS 50"))
+            b = g.read_bytes()
+            self.assertEqual((gametype_file.name_of(b), b[0x40]), ("TS 50", 33))
+            self.assertTrue(gametype_file.signed(b))
+            self.assertEqual((g.parent / "SaveMeta.xbx").read_bytes(), "TS 50".encode("utf-16-le"))
+            # (the original stays, unpatched)
+            self.assertEqual(gametype_file.find(Path(d) / "to", "AE TEAM SLY").read_bytes(), f.read_bytes())
+            # (a name in use, or too long, is refused)
+            for own in ("AE TEAM SLY", "TWELVE CHARS"):
+                with self.assertRaises(SystemExit):
+                    gametype_file.copy_and_patch(src, Path(d) / own.replace(" ", "_"), "AE TEAM SLY", {}, own_name=own)
+
+
+class SeedCompare(unittest.TestCase):
+    """saved gametypes' hashes by stored name: content (after the name) and whole file"""
+
+    def make(self, root, name, folder, value=1):
+        block = bytearray(512)
+        block[:24] = name.encode("utf-16-le").ljust(24, b"\0")
+        block[0x40] = value
+        block[0x100:0x104] = b"GPVO"
+        f = Path(root) / "u" / "UDATA" / folder / "blam.lst"
+        f.parent.mkdir(parents=True)
+        f.write_bytes(gametype_file.sign(bytes(block)))
+
+    def test_golden_rename_and_same_as(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            a, b = Path(d) / "a", Path(d) / "b"
+            self.make(a, "AE PRO TS", "01")
+            self.make(a, "TS 50", "02")
+            self.make(b, "AE COMP TS", "01")
+            self.make(b, "TS 50", "02")
+            golden = seed_compare.gametype_hashes(a)
+            hb = seed_compare.gametype_hashes(b)
+            # (a rename keeps the content: found under the new name)
+            self.assertEqual(seed_compare.compare_golden(hb, golden, {"AE PRO TS": "AE COMP TS"}), [])
+            self.assertEqual(seed_compare.compare_golden(hb, golden), ["AE PRO TS: missing"])
+            self.assertEqual(seed_compare.compare_roots(hb, golden, ["AE PRO TS"]), [])
+            self.assertEqual(seed_compare.compare_roots(hb, golden), ["AE PRO TS: missing"])
+            # (a changed value: content and file differ)
+            c = Path(d) / "c"
+            self.make(c, "TS 50", "02", value=2)
+            hc = seed_compare.gametype_hashes(c)
+            self.assertEqual(seed_compare.compare_golden(hc, golden, only=["TS 50"]),
+                             ["TS 50: content differs from golden TS 50"])
+            self.assertEqual(seed_compare.compare_roots(hc, golden, ["AE PRO TS"]), ["TS 50: not byte-identical (or moved)"])
+            self.make(c, "ts 50", "03")
+            with self.assertRaises(SystemExit):
+                seed_compare.gametype_hashes(c)
+            # (content covers the bytes past the options block too: matches compares all 512)
+            e = Path(d) / "e"
+            self.make(e, "TS 50", "02")
+            f = e / "u" / "UDATA" / "02" / "blam.lst"
+            raw = bytearray(f.read_bytes())
+            raw[0x150] = 7
+            f.write_bytes(bytes(raw))
+            self.assertNotEqual(seed_compare.gametype_hashes(e)["TS 50"]["content"], golden["TS 50"]["content"])
+
+    def test_migrations_old_block_hashes_are_golden(self):
+        """each migration's old_block_hash (arena_gametypes.c) is the golden hash of the file the builds before
+        seeded under the old name: revisions 1-3 golden_seeds_a17102e2.json's "block" (AE SLAYER / AE ODDBALL
+        derived from a17102e2's AE FFA SLAY / AE FFA BALL under their old names), revision 4
+        golden_seeds_rev3_083c49e9.json's (a root seeded at revision 3 by 083c49e9), revision 5
+        golden_seeds_rev4_da271472.json's (a root seeded at revision 4 by da271472's tree), revision 6
+        golden_seeds_rev5_736ce3a7.json's (a root seeded at revision 5 by 736ce3a7's tree), revision 7
+        golden_seeds_rev6_519ce8a3.json's (a root seeded at revision 6 by 519ce8a3's tree)"""
+        import re
+        source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
+        table = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
+        found = re.findall(r'\.revision = (\d+),\s*\.old_row = \{ \.name = "([^"]+)".*?\.old_block_hash = "([0-9a-f]{40})"',
+                           table, re.S)
+        self.assertGreaterEqual(len(found), 41)
+        golden = json.loads((HERE / "golden_seeds_a17102e2.json").read_text())
+        golden_rev3 = json.loads((HERE / "golden_seeds_rev3_083c49e9.json").read_text())
+        golden_rev4 = json.loads((HERE / "golden_seeds_rev4_da271472.json").read_text())
+        golden_rev5 = json.loads((HERE / "golden_seeds_rev5_736ce3a7.json").read_text())
+        golden_rev6 = json.loads((HERE / "golden_seeds_rev6_519ce8a3.json").read_text())
+        for revision, name, digest in found:
+            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6}.get(int(revision), golden)
+            self.assertEqual(g[name]["block"], digest, name)
 
 
 class Debug(unittest.TestCase):
@@ -301,6 +491,15 @@ class Handshake(unittest.TestCase):
         self.assertEqual((ce["HALO_NET_ADDRESS"], ce["HALO_NET_BROADCAST"]), ("127.0.0.201", "127.0.0.200"))
         self.assertEqual(client["delay"], 12)
         self.assertEqual(client["exit_after"], 78)
+        # (a mod's map and the host's saved gametype)
+        host, client = handshake.pair_specs("ae", "old", 90, 12, map_name="bloodgulch", mod="NHE",
+                                            saved_gametype="NHE 2V2 TS", save_from="~/roots/x")
+        he = harness.spec_env(host, "/r", "/s")
+        ce = harness.spec_env(client, "/r", "/s")
+        self.assertEqual((he["HALO_MOD"], ce["HALO_MOD"]), ("NHE", "NHE"))
+        self.assertEqual(he["HALO_NETWORK_TEST_GAMETYPE"], "NHE 2V2 TS")
+        self.assertNotIn("HALO_NETWORK_TEST_GAMETYPE", ce)
+        self.assertEqual((host["save_from"], client.get("save_from")), ("~/roots/x", None))
 
     def test_compare_and_judge(self):
         host = DEBUG_MP
@@ -312,6 +511,47 @@ class Handshake(unittest.TestCase):
         r = {"debug": clean}
         self.assertEqual(handshake.judge(r, r, tracks)[0], "PASS")
         self.assertEqual(handshake.judge(r, {"debug": dict(clean, joined=None)}, tracks)[0], "FAIL")
+
+    def test_kd_at_a_common_tick(self):
+        """kills/deaths compared at the lower of the two machines' last ticks: a kill the host logs after the
+        client's last line is not a difference; one at or before it is"""
+        line = "x: network test: tick {t} player 0: (1.0 2.0 3.0) s0 k{k} d0 f0 t0 m0 player 1: (4.0 5.0 6.0) s0 k0 d{k} f0 t1 m1 | items 1"
+        host = "\n".join(line.format(t=t, k=k) for t, k in ((100, 0), (130, 0), (160, 1)))
+        client = "\n".join(line.format(t=t, k=k) for t, k in ((101, 0), (131, 0)))
+        tracks = harness.compare_tracks(host, client)
+        self.assertEqual((tracks[0]["kd_tick"], tracks[0]["host_kd"], tracks[0]["client_kd"]), (131, [0, 0], [0, 0]))
+        self.assertTrue(tracks[0]["kd_match"])
+        # (a kill the client logs a few ticks before the host's next line: matched within the window)
+        host = "\n".join(line.format(t=t, k=k) for t, k in ((100, 0), (130, 0), (160, 1), (190, 1)))
+        client = "\n".join(line.format(t=t, k=k) for t, k in ((101, 0), (131, 0), (150, 1)))
+        self.assertTrue(harness.compare_tracks(host, client)[0]["kd_match"])
+        # (a difference that lasts is one)
+        client = "\n".join(line.format(t=t, k=k) for t, k in ((101, 0), (131, 2), (161, 2), (189, 2)))
+        self.assertFalse(harness.compare_tracks(host, client)[0]["kd_match"])
+
+
+class SeedRules(unittest.TestCase):
+    def test_table_and_parse(self):
+        """seed_rules.py: the 48 seeds, and a run's rules lines read back field by field"""
+        import seed_rules
+        self.assertEqual(len(seed_rules.ROWS), 48)
+        for name in seed_rules.ROWS:
+            self.assertLessEqual(len(name), 11, name)
+        text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
+                "time limit none, timers line of sight, training off, no spread nhe, pre-game countdown on, practice off; "
+                "slayer (teams), score to win 50, respawn 150 ticks (5 s), suicide penalty 150 ticks (5 s), friendly fire on, "
+                "radar players none, goal radar motion tracker, shields on, invisible off, infinite grenades off, "
+                "weapon set normal, loadout pistol + assault rifle, no map weapons off, vehicle sets none (red none, blue none)\n"
+                "x  AE rules: timers level line of sight, spawn heat on, objective normal, nhe extras off, "
+                "drop secondary always, nhe mode by vehicles, starting frags 2, ball melee lethal\n")
+        f = seed_rules.fields(text)
+        self.assertEqual(f["ball melee"], "lethal")
+        # (revision 7: LETHAL on the four AE oddball seeds, STOCK on every other)
+        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB"}
+        for name, (want, _, _) in seed_rules.ROWS.items():
+            self.assertEqual(want["ball melee"], "lethal" if name in lethal else "stock", name)
+        self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),
+                         ("slayer (teams)", "150 ticks (5 s)", "line of sight", "pistol + assault rifle", "always"))
 
 
 class Windows(unittest.TestCase):

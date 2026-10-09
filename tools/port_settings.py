@@ -107,10 +107,10 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (24, not 30: twelve rows, with the help line as low as
-        # video_settings' (and 2 lower: the last row ends at 365))
-        "spacing": 24,
-        "help_top": 366,
+        # (20, not 24: thirteen rows, with the help line where
+        # video_settings' is, as its fourteen at 20)
+        "spacing": 20,
+        "help_top": 364,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -153,6 +153,8 @@ SCREENS = {
              ["TRAINING's spawn markers stay plain green.",
               "TRAINING's spawn markers glow where you would\nspawn next: hot is likely, dark red can't.",
               "TRAINING's spawn markers glow where the other\nteam would spawn next (in team games)."], None),
+            ("SHORT MESSAGES:", "display.short_messages", ON_OFF,
+             "Shorter game messages, as Halo 1: NHE's: a\nkilling spree reads Killing Spree!", None),
         ],
     },
     "mouse_settings": {
@@ -487,8 +489,15 @@ SLAYER_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit/slayer_
 PLAYLIST_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit"
 ARENA_OPTIONS = "main_menu/settings_select/multiplayer_setup/arena_options_edit"
 INDICATOR_OPTIONS = "main_menu/settings_select/multiplayer_setup/indicator_options_edit"
+PLAYER_OPTIONS = "main_menu/settings_select/multiplayer_setup/player_options_edit"
 
 STRING_INSERTS = {
+    # (Player Options' RESPAWN TIME: Halo 1: NHE's 7.5 seconds, 225 ticks, after
+    # 5 SECONDS, its help after that one's: menu_functions.c's respawn_time_spinner)
+    f"{PLAYER_OPTIONS}/var_respawn_time": [(2, ["7.5 SECONDS"])],
+    f"{PLAYER_OPTIONS}/cap_player_options": [(14, [
+        "When you die, there will be a seven and a half\\nsecond wait before you can rejoin the game, as in\\nHalo 1: NHE's objective gametypes.",
+    ])],
     f"{SLAYER_EDIT}/var_kills_to_win": [(5, ["75", "100", "150", "200", "250", "500"])],
     f"{SLAYER_EDIT}/cap_slayer": [(11, [
         "Seventy-five kills to win. Settle in for a long\\nfight.",
@@ -505,14 +514,22 @@ STRING_INSERTS = {
     f"{PLAYLIST_EDIT}/playlist_edit_list_extended_dsc_text": [(7, [
         "Time limit, fall damage, health\\nand Halo 1: NHE's competitive\\noptions for this gametype.\\nThis gametype:",
     ])],
-    # (Indicator Options' TIMERS and TRAINING, after FRIEND INDICATORS ON
-    # SCREEN: _indicator_options_extras)
-    f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:"])],
-    f"{INDICATOR_OPTIONS}/cap_indicator_options": [(8, [
+    # (Indicator Options' TIMERS, TRAINING and SPAWN HEAT, after FRIEND
+    # INDICATORS ON SCREEN: _indicator_options_extras)
+    f"{INDICATOR_OPTIONS}/indicator_options_labels": [(4, ["TIMERS:", "TRAINING:", "SPAWN HEAT:"])],
+    # (the objectives indicator's LINE OF SIGHT, after NONE: _option_goal_radar)
+    f"{INDICATOR_OPTIONS}/var_radar display": [(3, ["LINE OF SIGHT"])],
+    f"{INDICATOR_OPTIONS}/cap_indicator_options": [(3, [
+        "The game's objectives will have special markers\\ndisplayed over them on screen, only while you\\ncan see them.",
+    ]), (9, [
         "No timers: learn the spawns the hard way.",
-        "When and where the rockets, sniper, overshield\\nand camo spawn, for everyone.",
+        "When the power items (rockets, sniper, shotgun,\\novershield, camo) spawn, in a list for\\neveryone.",
+        "The power items' list, and waypoints over\\ntheir spots from 10 seconds before they\\nspawn, seen through walls.",
+        "Waypoints over the power items' spots only\\nwhile you can see them, from 10 seconds before\\nthey spawn. No list, no item calls.",
         "No training aids.",
         "Waypoints over the power items as they come up,\\nand the player spawns. For learning a map.",
+        "Spawn markers show where players are likely\\nto spawn next (with TRAINING). Each player picks\\nMINE or ENEMY in Settings.",
+        "Plain spawn markers for everyone.",
     ])],
 }
 
@@ -572,7 +589,7 @@ STRING_OVERRIDES.update({
         "The map's weapons appear where its designers\\nplaced them.",
         "No weapons appear on the map: with a loadout of\\nNONE and NONE, melee and grenades only.",
         "The weapons follow the weapon set above.",
-        "Everyone starts with the primary and secondary\\nweapons below; the map's weapons are its own.",
+        "Everyone starts with the primary and secondary\\nweapons below; the map's weapons are its own\\n(in AE's gametypes, the weapon set's).",
         *LOADOUT_HELPS("primary"),
         *LOADOUT_HELPS("secondary"),
     ],
@@ -663,11 +680,13 @@ WIDGET_PATCHES = {
     f"{PLAYLIST_EDIT}/edit_playlist_select_list": {"insert_before": {
         f"{PLAYLIST_EDIT}/playlist_edit_button_bar": [f'<child widget="{PLAYLIST_EDIT}/playlist_edit_arena_item"/>'],
     }},
-    # (Indicator Options' TIMERS and TRAINING rows, over its buttons, 30 apart)
+    # (Indicator Options' TIMERS, TRAINING and SPAWN HEAT rows, over its
+    # buttons, 30 apart)
     f"{INDICATOR_OPTIONS}/indicator_options_menu": {"insert_before": {
         f"{INDICATOR_OPTIONS}/indicator_button_bar": [
             f'<child widget="{INDICATOR_OPTIONS}/op_item_timers" x="54" y="163"/>',
             f'<child widget="{INDICATOR_OPTIONS}/op_training" x="54" y="193"/>',
+            f'<child widget="{INDICATOR_OPTIONS}/op_spawn_heat" x="54" y="223"/>',
         ]}},
     # (the PC's Vehicles row's Start opened Item Options)
     "main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_vehicles_list_item": {"handlers": [
@@ -1340,6 +1359,33 @@ ARENA_ROWS = [
         "Weapons and powerups respawn as the map sets.",
         "Every weapon and powerup respawns every 30\\nseconds, for practising grenade tricks.",
     ]),
+    # (game_engine.h's enum nhe_mode, in its order; only on Halo 1: NHE's
+    # maps, where it picks the vehicle set their scripts read)
+    ("nhe_mode", "NHE MODE:", ["BY VEHICLE SET", "VANILLA", "TIMER ONLY", "NHE & TIMER", "NHE & POWERUPS", "TRAINING"], [
+        "Halo 1: NHE's maps only: the vehicle set picks\\nNHE's mode, as NHE did. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: no timers, as retail\\nwith NHE's messages. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers (its host teleport stays off:\\nAE hosts neutrally). Other maps: the gametype's.",
+        "On Halo 1: NHE's maps: NHE's timers and its\\npowerup calls. On other maps the gametype's\\nvehicles apply.",
+        "On Halo 1: NHE's maps: NHE's training: the\\ncountdown, spawn markers, randoms and waypoints.\\nOther maps: the gametype's vehicles.",
+    ]),
+    # (game_engine.h's enum drop_secondary: bits 29-30; the host's rule)
+    ("drop_secondary", "DROP SECONDARY:", ["CE", "ALWAYS", "EXCEPT POWER"], [
+        "As Halo CE: your spawn's second weapon vanishes\\nwhen you die; one you put away from hand stays\\n30 seconds.",
+        "Both your weapons drop when you die, and stay\\n30 seconds.",
+        "Both drop and stay 30 seconds, but a holstered\\nrocket launcher, sniper rifle or shotgun vanishes.",
+    ]),
+    # (_game_variant_nhe_extras_bit, 28)
+    ("nhe_extras", "NHE EXTRAS:", ["OFF", "ON"], [
+        "Stock teams and camera.",
+        "As Halo 1: NHE: everyone joins red and keeps their\\ncolour between games, the dead camera stays on you,\\nand the match clock counts up.",
+    ]),
+    # (universal_variant.ball_melee; Oddball only: the row is hidden for the
+    # other gametype types, menu_functions.c gametype_option_help)
+    ("ball_melee", "BALL MELEE:", ["STOCK", "LETHAL"], [
+        "Oddball only: the ball carrier's melee is as in\\nHalo CE: it takes the shield and a little health,\\nand kills from behind.",
+        "Oddball only: the ball carrier's melee kills in\\none hit, shields and all, as in Halo 3. Same\\nreach, no hits through walls.",
+    ]),
 ]
 
 
@@ -1370,11 +1416,11 @@ def _arena_options() -> list:
                       ("description", f"{base}/arena_options_help")],
                      ['<data input="game settings lists text update"/>',
                       '<on event="created" run="mp profile init player opts"/>',
-                      *[f'<child widget="{base}/op_{key}" x="54" y="{73 + 30 * index}"/>'
+                      *[f'<child widget="{base}/op_{key}" x="54" y="{68 + 26 * index}"/>'
                         for index, (key, *_) in enumerate(ARENA_ROWS)],
                       f'<child widget="{base}/arena_button_bar" y="414"/>'])
     lines += _widget(f"{base}/arena_options_help",
-                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 321), ("width", 482), ("height", 79),
+                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 331), ("width", 482), ("height", 79),
                       ("string_list", f"{base}/cap_arena_options"), ("font", "ui\\large_ui"),
                       ("color", "#FFFFFFFF")], [])
     lines += _widget(f"{base}/arena_button_bar",
@@ -1397,13 +1443,13 @@ def _arena_options() -> list:
                           ("string_list", f"{base}/arena_options_labels"), ("string_index", index or None),
                           ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
         lines += _widget(f"{base}/{key}_spinner",
-                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 148), ("height", 20),
+                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 176), ("height", 20),
                           ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
                           ("string_list", f"{base}/var_{key}"), ("font", "ui\\large_ui"),
                           ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4),
                           ("list_flags", "items_from_strings"),
                           ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
+                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 178 19 184")],
                          ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
         lines += _strings(f"{base}/var_{key}", values)
     lines += _strings(f"{base}/arena_options_labels", [label for _, label, _, _ in ARENA_ROWS])
@@ -1411,36 +1457,42 @@ def _arena_options() -> list:
     return lines
 
 
-def _indicator_options_row(key: str, label: int) -> list:
-    """an Indicator Options row of the port's, OFF or ON: its label (the
-    labels' string label) and its spinner (strings var_KEY)"""
+def _indicator_options_row(key: str, label: int, width: int = 46) -> list:
+    """an Indicator Options row of the port's: its label (the labels' string
+    label) and its spinner (strings var_KEY), 46 wide for OFF or ON, wider
+    for longer values (centred where the narrow ones are)"""
     lines = _widget(f"{INDICATOR_OPTIONS}/op_{key}",
                     [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                      ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
                     [f'<child widget="{INDICATOR_OPTIONS}/{key}_label"/>',
-                     f'<child widget="{INDICATOR_OPTIONS}/{key}_spinner" x="366" y="1"/>'])
+                     f'<child widget="{INDICATOR_OPTIONS}/{key}_spinner" x="{366 - (width - 46) // 2}" y="1"/>'])
     lines += _widget(f"{INDICATOR_OPTIONS}/{key}_label",
                      [("type", "text"), ("controller", 1), ("width", 320), ("height", 22),
                       ("string_list", f"{INDICATOR_OPTIONS}/indicator_options_labels"), ("string_index", label),
                       ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
     lines += _widget(f"{INDICATOR_OPTIONS}/{key}_spinner",
-                     [("type", "spinner"), ("left", 2), ("top", 2), ("width", 46), ("height", 20),
+                     [("type", "spinner"), ("left", 2), ("top", 2), ("width", width), ("height", 20),
                       ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
                       ("string_list", f"{INDICATOR_OPTIONS}/var_{key}"), ("font", "ui\\large_ui"),
                       ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4), ("list_flags", "items_from_strings"),
                       ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 48 19 54")],
+                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", f"7 {width + 2} 19 {width + 8}")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     return lines
 
 
 def _indicator_options_extras() -> list:
-    """Indicator Options' rows of the port's: TIMERS and TRAINING, OFF or ON
-    (the gametype's _game_variant_item_timers_bit and _training_bit)"""
-    lines = _indicator_options_row("item_timers", 4)
-    lines += _strings(f"{INDICATOR_OPTIONS}/var_item_timers", ["OFF", "ON"])
+    """Indicator Options' rows of the port's: TIMERS, OFF / HUD / HUD +
+    WAYPOINTS / LINE OF SIGHT (the gametype's bits 17 and 26), TRAINING, OFF
+    or ON (_game_variant_training_bit), and
+    SPAWN HEAT, ON or OFF (_game_variant_no_spawn_heat_bit, inverted: clear
+    is ON)"""
+    lines = _indicator_options_row("item_timers", 4, 176)
+    lines += _strings(f"{INDICATOR_OPTIONS}/var_item_timers", ["OFF", "HUD", "HUD + WAYPOINTS", "LINE OF SIGHT"])
     lines += _indicator_options_row("training", 5)
     lines += _strings(f"{INDICATOR_OPTIONS}/var_training", ["OFF", "ON"])
+    lines += _indicator_options_row("spawn_heat", 6)
+    lines += _strings(f"{INDICATOR_OPTIONS}/var_spawn_heat", ["ON", "OFF"])
     return lines
 
 

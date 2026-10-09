@@ -118,6 +118,7 @@ symbols in this file:
 #include "director.h"
 #include "hud_messaging.h"
 #include "hud_item_timers.h"
+#include "objects/damage.h"
 #include "crc.h"
 #include "data.h"
 #include "lruv_cache.h"
@@ -210,7 +211,9 @@ static game_state_after_load_proc after_load_procs[] =
 	director_initialize_for_saved_game,
 	scripted_hud_messages_clear,
 	/* port: CAMPAIGN TIMER, from a resumed saved game's time */
-	hud_campaign_timer_game_state_loaded
+	hud_campaign_timer_game_state_loaded,
+	/* port: HALO 2 health's body-damage times */
+	damage_game_state_loaded
 };
 
 /* ---------- public code */

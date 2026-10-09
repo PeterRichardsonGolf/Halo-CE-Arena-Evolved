@@ -126,6 +126,24 @@ short hud_get_nav_point_render_type(
 	union real_point3d const *head,
 	union real_point3d const *position,
 	long reference_object_index);
+/* port: the debug settings the HUD's tests read, cached (hud_nav_points.c) */
+enum hud_debug_flag
+{
+	_hud_debug_waypoint_log = 0,	/* debug.waypoint_log */
+	_hud_debug_los_test_blink,	/* debug.los_test_blink */
+	NUMBER_OF_HUD_DEBUG_FLAGS
+};
+boolean hud_debug_flag(
+	short flag);
+/* port: LINE OF SIGHT's test (the power items' waypoints, the objective's
+nav points): nothing between the head and the position, the viewer's unit
+and the vehicle it is in seen through, a hit on the reference object (or
+the vehicle it is in) counting as seen */
+boolean hud_nav_point_in_sight(
+	short local_player_index,
+	union real_point3d const *head,
+	union real_point3d const *position,
+	long reference_object_index);
 void custom_render_nav_point(
 	short local_player_index,
 	union real_point3d const *position,

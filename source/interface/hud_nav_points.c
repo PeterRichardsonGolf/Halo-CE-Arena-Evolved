@@ -103,6 +103,7 @@ symbols in this file:
 #include "game_state.h"
 #include "game/game_engine.h"
 #include "game/players.h"
+#include "game/game.h"
 #include "networking/network_connection.h"
 #include "memory/data.h"
 #include "physics/collisions.h"
@@ -701,6 +702,90 @@ short hud_get_nav_point_render_type(
 	--global_current_collision_user_depth;
 
 	return render_type;
+}
+
+int config_boolean(char const *name);
+unsigned long config_changes(void);
+
+/* port: the debug settings the HUD's tests read (enum hud_debug_flag), each
+read again only when the settings change */
+boolean hud_debug_flag(
+	short flag)
+{
+	static char const *const names[NUMBER_OF_HUD_DEBUG_FLAGS] = { "debug.waypoint_log", "debug.los_test_blink" };
+	static unsigned long read_at[NUMBER_OF_HUD_DEBUG_FLAGS] = { (unsigned long)-1, (unsigned long)-1 };
+	static boolean on[NUMBER_OF_HUD_DEBUG_FLAGS];
+
+	if (flag < 0 || flag >= NUMBER_OF_HUD_DEBUG_FLAGS)
+		return FALSE;
+	if (read_at[flag] != config_changes())
+	{
+		read_at[flag] = config_changes();
+		on[flag] = config_boolean(names[flag]) != 0;
+	}
+	return on[flag];
+}
+
+boolean hud_nav_point_in_sight(
+	short local_player_index,
+	real_point3d const *head,
+	real_point3d const *position,
+	long reference_object_index)
+{
+	long player_index = local_player_get_player_index(local_player_index);
+	long unit_index = player_index == NONE ? NONE : player_get(player_index)->unit_index;
+	long vehicle_index = unit_index == NONE ? NONE : object_get(unit_index)->object.parent_object_index;
+	long reference_vehicle_index = reference_object_index == NONE ? NONE :
+		object_get(reference_object_index)->object.parent_object_index;
+	real_point3d start = *head;
+	boolean seen = FALSE;
+	short pass;
+
+	/* (debug.los_test_blink: every other second nothing is in sight, so the
+	automated tests see LINE OF SIGHT's hold end) */
+	if (hud_debug_flag(_hud_debug_los_test_blink) && (game_time_get() / TICKS_PER_SECOND) % 2)
+		return FALSE;
+
+	match_assert("c:\\halo\\SOURCE\\interface\\hud_nav_points.c", 510, global_current_collision_user_depth < MAXIMUM_COLLISION_USER_STACK_DEPTH);
+	global_current_collision_users[global_current_collision_user_depth++] = 20;
+	/* (the viewer's own vehicle seen through: from just past each hit on
+	it, a few at most) */
+	for (pass = 0; pass < 3; pass++)
+	{
+		struct collision_result result;
+		real_vector3d vector;
+		real length;
+
+		vector.i = position->x - start.x;
+		vector.j = position->y - start.y;
+		vector.k = position->z - start.z;
+		if (!collision_test_vector(_collision_test_for_line_of_sight_flags, &start, &vector, unit_index, &result))
+		{
+			seen = TRUE;
+			break;
+		}
+		if (result.type == _collision_result_object && reference_object_index != NONE &&
+			(result.object_index == reference_object_index || result.object_index == reference_vehicle_index))
+		{
+			seen = TRUE;
+			break;
+		}
+		if (result.type != _collision_result_object || vehicle_index == NONE || result.object_index != vehicle_index)
+			break;
+		length = square_root(vector.i * vector.i + vector.j * vector.j + vector.k * vector.k);
+		if (length <= 0.0f)
+		{
+			seen = TRUE;
+			break;
+		}
+		start.x = result.point.x + vector.i / length * 0.05f;
+		start.y = result.point.y + vector.j / length * 0.05f;
+		start.z = result.point.z + vector.k / length * 0.05f;
+	}
+	match_assert("c:\\halo\\SOURCE\\interface\\hud_nav_points.c", 528, global_current_collision_user_depth > 1);
+	--global_current_collision_user_depth;
+
+	return seen;
 }
 
 void custom_render_nav_point(

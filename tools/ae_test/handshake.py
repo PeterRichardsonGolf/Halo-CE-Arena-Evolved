@@ -10,8 +10,8 @@ For each other build, two pairs: AE hosts and the other joins, then the other ho
 Checked per pair, from both debug.txt files: the client joined (its "joining a host of network version"
 line), both builds' versions and network versions, the Delta Peer agreement lines, refusals, asserts;
 the players' positions at the same tick on host and client (median and 90th percentile distance) and
-both machines' final kills/deaths. PASS: joined, two players seen on both, every player's median
-distance under --max-median metres (default 0.5) and the same final kills/deaths, no asserts/exceptions.
+both machines' kills/deaths at a common last tick (the lower of their last samples). PASS: joined, two players seen on both, every player's median
+distance under --max-median metres (default 0.5) and the same kills/deaths at that tick, no asserts/exceptions.
 
 A named build can carry its own environment in the config, e.g. a 32-bit stock OpenCE build:
 "opence": {"dir": ".../build/linux", "env": {"LIBGL_ALWAYS_SOFTWARE": "1"}}.
@@ -29,15 +29,25 @@ HOST = "127.0.0.200"
 CLIENT = "127.0.0.201"
 
 
-def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch"):
+def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch", mod="",
+               saved_gametype=None, save_from=None, client_save_from=None):
+    """the host's and the client's specs: both on the map (and the mod's maps); the host's gametype a saved one of
+    its save root (save_from copied as it) when given"""
     common = {"HALO_NETWORK_TEST_START": "20", "HALO_NETWORK_TEST_SHOOT": "3", "HALO_NETWORK_TEST_KILL": "20"}
     common.update(env or {})
-    host = harness.parse_spec({"name": "host", "build": host_build, "network_test": f"host:{map_name}",
-                               "address": HOST, "broadcast": CLIENT, "exit_after": seconds, "env": common, "mod": ""})
-    client = harness.parse_spec({"name": "client", "build": client_build, "network_test": "join",
-                                 "address": CLIENT, "broadcast": HOST, "exit_after": seconds - join_delay,
-                                 "delay": join_delay, "env": common, "mod": ""})
-    return host, client
+    host = {"name": "host", "build": host_build, "network_test": f"host:{map_name}",
+            "address": HOST, "broadcast": CLIENT, "exit_after": seconds, "env": common, "mod": mod}
+    if saved_gametype:
+        host["saved_gametype"] = saved_gametype
+    if save_from:
+        host["save_from"] = save_from
+    client = {"name": "client", "build": client_build, "network_test": "join",
+              "address": CLIENT, "broadcast": HOST, "exit_after": seconds - join_delay,
+              "delay": join_delay, "env": common, "mod": mod}
+    if client_save_from:
+        client["save_from"] = client_save_from
+    client = harness.parse_spec(client)
+    return harness.parse_spec(host), client
 
 
 def judge(host_r, client_r, tracks, max_median=0.5):
@@ -57,13 +67,16 @@ def judge(host_r, client_r, tracks, max_median=0.5):
     for p, t in tracks.items():
         if t["median_m"] is None or t["median_m"] > max_median:
             why.append(f"player {p}: median {t['median_m']} m")
-        if t["host_kd"] != t["client_kd"]:
+        if not t.get("kd_match", t["host_kd"] == t["client_kd"]):
             why.append(f"player {p}: k/d host {t['host_kd']} client {t['client_kd']}")
     return ("FAIL" if why else "PASS"), why
 
 
 def run_pair(cfg, name, host_build, client_build, out, a, slots):
-    host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay)
+    env = dict(e.split("=", 1) for e in (getattr(a, "env", None) or []))
+    host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay, env=env, map_name=a.map, mod=a.mod,
+                              saved_gametype=a.saved_gametype, save_from=a.save_from,
+                              client_save_from=getattr(a, "client_save_from", None))
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
     harness.OWN_WORK.add(work)
@@ -116,6 +129,14 @@ def main(argv):
     p.add_argument("--seconds", type=int, default=90)
     p.add_argument("--join-delay", type=int, default=12)
     p.add_argument("--max-median", type=float, default=0.5)
+    p.add_argument("--map", default="bloodgulch", help="the map both play (default bloodgulch)")
+    p.add_argument("--mod", default="", help="HALO_MOD for both (e.g. NHE: its maps)")
+    p.add_argument("--saved-gametype", help="the host's gametype: a saved one of its save root, by stored name. "
+                   "Without --one-way the reverse pair hosts it (and --save-from) on the other build, which may "
+                   "seed or migrate that root by its own rules or not know the setting")
+    p.add_argument("--save-from", help="a folder copied as the host's save root (never under /tmp)")
+    p.add_argument("--client-save-from", help="a folder copied as the joining machine's save root (never under /tmp)")
+    p.add_argument("--env", action="append", default=[], help="NAME=value for both machines (repeat)")
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)
     if a.box:

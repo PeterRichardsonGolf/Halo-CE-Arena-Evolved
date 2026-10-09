@@ -20,7 +20,8 @@ Once the game runs, every second each machine logs where every player's
 unit is, so the machines' views of the game can be compared.
 
 Scripted play for the netcode's parts the bots' wandering does not reach:
-debug.network_test_kill (the host kills the last player every so often),
+debug.network_test_kill (the host's player, else the first, kills the last
+other player every so often),
 debug.network_test_shoot (every so often each machine's player hits the
 next with their weapon's projectile: a client's through its report to the
 host) and debug.network_test_vehicle (the host seats the last player as a
@@ -35,6 +36,8 @@ seconds in, as the port's health regeneration starts from).
 
 debug.network_test_flags sets bits of the host's game variant's flags (the
 port's gametype options: game_engine.h's _game_variant_..._bit).
+debug.network_test_gametype: the host plays a custom gametype of the save
+root (by its stored name, with its PC options) in place of the built-in one.
 
 Called from the main loop every frame (main.c).
 */
@@ -63,6 +66,9 @@ Called from the main loop every frame (main.c).
 #include "camera/observer.h"
 #include "saved games/player_profile.h"
 #include "saved games/saved_game_files.h"
+#include "saved games/playlist_profile.h"
+#include "saved games/arena_gametypes.h"
+#include <xtl.h> /* (MAX_GAMENAME) */
 
 #include <math.h>
 #include <stdarg.h>
@@ -89,6 +95,8 @@ void network_distributed_item_statistics(long *creates, long *deletes, long *fai
 void network_damage_statistics(long *sent_reports, long *dealt_reports, long *rejected_reports, long *replayed_events);
 /* xinput_sdl.c's */
 void test_input_hold_action(int hold);
+/* ui_widget_event_handler_functions.c's (the PC menus' gametype list) */
+short ui_widget_port_gametypes(long *indices, short maximum, short *last_used);
 
 enum
 {
@@ -126,13 +134,51 @@ static struct
 	real vehicle_time;
 	real pickup_time;
 	char pickup_weapon[64];
+	/* (debug.network_test_pickup_give: the host puts the weapon the last
+	player stands on in its inventory two seconds on, a pickup every machine
+	sees; the weapon, NONE for none) */
+	boolean pickup_give;
+	long pickup_weapon_index;
 	real hurt_time;
 	boolean hurt;
+	/* (debug.network_test_damage: "seconds:scale" hits on the host's first
+	player, by its weapon's bullet; applied once each) */
+	char damage_script[128];
+	long damage_done;
+	long damage_logged_time;
+	real damage_last[3];
 	real quit_time;
 	boolean quit;
+	/* (debug.network_test_ball: "seconds[:shield[:offset]]": the host's first local
+	player takes a ball in hand at that game time, once; the last other player's
+	shields are set to shield (an overshield's, over 1) if given and is stood
+	offset (default 1.2) along x from them: that player looks along +x, so a
+	positive offset puts them with their back to the blow, a negative one facing it) */
+	real ball_time;
+	real ball_shield;
+	real ball_offset;
+	boolean ball_done;
 	unsigned long variant_flags;
+	/* (debug.network_test_ball_melee: the host's gametype gets BALL MELEE LETHAL) */
+	boolean ball_melee;
+	/* (debug.network_test_melee: network_test_shoot strikes with the weapon's melee) */
+	boolean shoot_melee;
+	/* (debug.network_test_gametype: a custom gametype's stored name, empty
+	for the built-in one) */
+	char saved_gametype[64];
 	long score_to_win;
 	long time_limit;	/* (debug.network_test_time_limit: minutes, 0 the variant's) */
+	/* (debug.network_test_loadout: a custom loadout's weapons, game_engine.h's
+	_loadout_weapon_* values; NONE: the gametype's loadout) */
+	long loadout_primary;
+	long loadout_secondary;
+	/* (debug.network_test_auto_balance: the gametype's AUTO TEAM BALANCE on,
+	so a team game whose players all joined one team (NHE EXTRAS) starts) */
+	boolean auto_balance;
+	/* (debug.network_test_kill_host: the kill hook's victim is the host's own
+	player, killed by another of this machine's players: a local player's
+	death, its input from debug.test_input) */
+	boolean kill_host;
 	long logged_time;
 } network_test;
 
@@ -236,16 +282,130 @@ static void network_test_read_settings(
 	network_test.shoot_interval = (real)config_real("debug.network_test_shoot");
 	network_test.vehicle_time = (real)config_real("debug.network_test_vehicle");
 	network_test.pickup_time = (real)config_real("debug.network_test_pickup");
+	network_test.pickup_give = config_boolean("debug.network_test_pickup_give") != 0;
+	network_test.pickup_weapon_index = NONE;
 	snprintf(network_test.pickup_weapon, sizeof(network_test.pickup_weapon), "%s",
 		config_string("debug.network_test_pickup_weapon"));
 	network_test.score_to_win = (long)config_integer("debug.network_test_score");
 	network_test.time_limit = (long)config_integer("debug.network_test_time_limit");
+	network_test.loadout_primary = NONE;
+	network_test.loadout_secondary = NONE;
+	if (sscanf(config_string("debug.network_test_loadout"), "%ld,%ld", &network_test.loadout_primary,
+		&network_test.loadout_secondary) != 2 ||
+		network_test.loadout_primary < _loadout_weapon_none || network_test.loadout_primary >= NUMBER_OF_LOADOUT_WEAPONS ||
+		network_test.loadout_secondary < _loadout_weapon_none ||
+		network_test.loadout_secondary >= NUMBER_OF_LOADOUT_WEAPONS)
+	{
+		if (config_string("debug.network_test_loadout")[0])
+			platform_log("network test: debug.network_test_loadout '%s' is not two weapon numbers 0..%d: ignored",
+				config_string("debug.network_test_loadout"), NUMBER_OF_LOADOUT_WEAPONS - 1);
+		network_test.loadout_primary = NONE;
+		network_test.loadout_secondary = NONE;
+	}
+	network_test.auto_balance = config_boolean("debug.network_test_auto_balance") != 0;
+	network_test.kill_host = config_boolean("debug.network_test_kill_host") != 0;
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
+	snprintf(network_test.damage_script, sizeof(network_test.damage_script), "%s",
+		config_string("debug.network_test_damage"));
 	network_test.quit_time = (real)config_real("debug.network_test_quit");
+	network_test.ball_time = 0.0f;
+	network_test.ball_shield = 0.0f;
+	{
+		double ball_time = 0.0, ball_shield = 0.0, ball_offset = 1.2;
+		int fields = sscanf(config_string("debug.network_test_ball"), "%lf:%lf:%lf", &ball_time, &ball_shield,
+			&ball_offset);
+
+		network_test.ball_offset = (real)ball_offset;
+
+		if (fields >= 1)
+			network_test.ball_time = (real)ball_time;
+		if (fields >= 2)
+			network_test.ball_shield = (real)ball_shield;
+	}
 	network_test.variant_flags = (unsigned long)config_integer("debug.network_test_flags");
+	network_test.ball_melee = config_boolean("debug.network_test_ball_melee") != 0;
+	network_test.shoot_melee = config_boolean("debug.network_test_melee") != 0;
+	snprintf(network_test.saved_gametype, sizeof(network_test.saved_gametype), "%s",
+		config_string("debug.network_test_gametype"));
 	network_test.local_players = (short)PIN(config_integer("debug.network_test_local_players"), 1, MAXIMUM_LOCAL_PLAYERS);
 	if (network_test.mode != _network_test_off)
 		platform_log("network test: %s", setting);
+}
+
+static boolean network_test_gametype_named(long profile_index, char const *wanted);
+
+/* debug.network_test_gametype: the save root's custom gametype of that
+stored name (letters' case aside, as the lists sort them), its variant and
+PC options, as the menus' gametype list has them (the Arena Evolved
+gametypes seeded first); an old name of a seeded one (its migrations: "AE
+PRO TS") finds it under its name now; FALSE when there is none */
+static boolean network_test_saved_gametype(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	/* (at most 100 saved gametypes a memory unit, saved_game_files.c, and
+	the built-in ones) */
+	long indices[256];
+	short last_used;
+	short count;
+	short attempt;
+
+	if (!network_test.saved_gametype[0])
+		return FALSE;
+	count = ui_widget_port_gametypes(indices, (short)NUMBEROF(indices), &last_used);
+	if (count >= (short)NUMBEROF(indices))
+		platform_log("network test: the first %d gametypes searched (the list is longer)", (int)count);
+	for (attempt = 0; attempt < 2; attempt++)
+	{
+		char const *wanted = attempt ? arena_gametypes_migrated_name(network_test.saved_gametype) :
+			network_test.saved_gametype;
+		short index;
+
+		if (attempt && wanted == network_test.saved_gametype)
+			break;
+		for (index = 0; index < count; index++)
+		{
+			if (network_test_gametype_named(indices[index], wanted) && playlist_profile_get(indices[index], variant))
+			{
+				playlist_profile_get_options(indices[index], options);
+				if (attempt)
+					platform_log("network test: gametype '%s' (once '%s') from the save root", wanted,
+						network_test.saved_gametype);
+				else
+					platform_log("network test: gametype '%s' from the save root", wanted);
+				return TRUE;
+			}
+		}
+	}
+	platform_log("network test: gametype '%s' not found in the save root", network_test.saved_gametype);
+	return FALSE;
+}
+
+/* whether a gametype of the list is a saved one of that stored name
+(letters' case aside) */
+static boolean network_test_gametype_named(
+	long profile_index,
+	char const *wanted)
+{
+	wchar_t name[MAX_GAMENAME];
+	short character;
+
+	/* (the saved ones: the built-in ones have no stored name) */
+	if (!(profile_index & 0x80000000) || !playlist_profile_get_display_name(profile_index, name))
+		return FALSE;
+	for (character = 0; character < MAX_GAMENAME; character++)
+	{
+		wchar_t a = name[character];
+		wchar_t b = (wchar_t)(unsigned char)wanted[character];
+
+		if (a >= 'a' && a <= 'z')
+			a = (wchar_t)(a - 'a' + 'A');
+		if (b >= 'a' && b <= 'z')
+			b = (wchar_t)(b - 'a' + 'A');
+		if (a != b || !a)
+			break;
+	}
+	return !(character < MAX_GAMENAME && (name[character] || wanted[character]));
 }
 
 /* appends to a line, cut short when it is full */
@@ -471,7 +631,7 @@ static void network_test_shoot(
 		}
 		/* (else its melee: a blow's epicenter is its striker's, as
 		unit_cause_player_melee_damage has it) */
-		melee = damage_index == NONE;
+		melee = damage_index == NONE || network_test.shoot_melee;
 		if (melee)
 			damage_index = weapon->weapon.melee_attack_damage.index;
 		if (damage_index == NONE)
@@ -484,7 +644,8 @@ static void network_test_shoot(
 			real dy = target_object->object.position.y - unit->object.position.y;
 			real dz = target_object->object.position.z - unit->object.position.z;
 
-			if (dx * dx + dy * dy + dz * dz > 1.5f * 1.5f)
+			/* (1.6, not the 1.5 gather leaves players apart: rounding missed it) */
+			if (dx * dx + dy * dy + dz * dz > 1.6f * 1.6f)
 				continue;
 		}
 		/* (a shot reaches no further than its projectile flies, with a margin
@@ -793,8 +954,145 @@ static void network_test_pickup(
 
 		position.z += 0.1f;
 		object_set_position(last->unit_index, &position, NULL, NULL);
+		network_test.pickup_weapon_index = nearest_index;
 		platform_log("network test: the last player stands on weapon %lx (%lx)", nearest_index,
 			object_get(nearest_index)->definition_index);
+	}
+}
+
+/* debug.network_test_ball: the host's first local player takes a ball in hand
+(a ball pickup every machine sees; debug.network_test_shoot then has it strike
+the first other player with the ball's melee), and the last other player's
+shields are set, for tests of BALL MELEE */
+static void network_test_ball(
+	void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	struct player_datum *first = NULL;
+	struct player_datum *last = NULL;
+	struct object_iterator weapons;
+
+	data_iterator_new(&iterator, player_data);
+	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		if (player->unit_index == NONE)
+			continue;
+		if (!first && player->local_player_index != NONE)
+			first = player;
+		else
+			last = player;
+	}
+	if (!first || !last)
+		return;
+	object_iterator_new(&weapons, _object_mask_weapon, 0);
+	while (object_iterator_next(&weapons))
+	{
+		if (object_get(weapons.index)->object.parent_object_index == NONE && weapon_is_flag(weapons.index) &&
+			unit_add_weapon_to_inventory(first->unit_index, weapons.index, TRUE))
+		{
+			platform_log("network test: the first player takes the ball (%lx) at tick %ld", weapons.index,
+				game_time_get());
+			/* (and the last other player beside it, within a blow's reach) */
+			{
+				real_point3d position = object_get(first->unit_index)->object.position;
+
+				position.x += network_test.ball_offset;
+				object_set_position(last->unit_index, &position, NULL, NULL);
+			}
+			if (network_test.ball_shield > 0.0f)
+			{
+				object_get(last->unit_index)->object.shield_vitality = network_test.ball_shield;
+				platform_log("network test: the last player's shields set to %g", (double)network_test.ball_shield);
+			}
+			network_test.ball_done = TRUE;
+			return;
+		}
+	}
+}
+
+/* debug.network_test_damage: "seconds:scale,seconds:scale ...": at that game
+time the host's first player is hit by its weapon's bullet, its damage
+multiplied by the scale (a small one only the shields feel); every change of
+the player's health, shields or shield stun is logged with its tick. */
+static void network_test_damage_script(
+	void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	struct object_datum *object;
+	char const *cursor = network_test.damage_script;
+	long entry = 0;
+
+	if (!network_test.damage_script[0])
+		return;
+	data_iterator_new(&iterator, player_data);
+	player = (struct player_datum *)data_iterator_next(&iterator);
+	if (!player || player->unit_index == NONE)
+		return;
+	object = object_get(player->unit_index);
+	while (*cursor)
+	{
+		char *end;
+		double seconds = strtod(cursor, &end);
+		double scale;
+
+		if (end == cursor || *end != ':')
+			break;
+		scale = strtod(end + 1, &end);
+		if (entry == network_test.damage_done && game_time_get() >= (long)(seconds * TICKS_PER_SECOND))
+		{
+			struct unit_datum *unit = unit_get(player->unit_index);
+			long weapon_index = unit->unit.current_weapon_index == NONE ? NONE :
+				unit->unit.weapon_object_indices[unit->unit.current_weapon_index];
+
+			network_test.damage_done++;
+			if (weapon_index != NONE)
+			{
+				struct weapon_definition *weapon = weapon_definition_get(object_get(weapon_index)->definition_index);
+
+				if (weapon->weapon.triggers.count > 0)
+				{
+					struct weapon_trigger_definition *trigger =
+						TAG_BLOCK_GET_ELEMENT(&weapon->weapon.triggers, 0, struct weapon_trigger_definition);
+
+					if (trigger->projectile.index != NONE)
+					{
+						struct damage_data damage;
+
+						damage_data_new(&damage, projectile_definition_get(trigger->projectile.index)->projectile.impact_damage.index);
+						damage.owner_player_index = NONE;
+						damage.owner_object_index = NONE;
+						damage.owner_team_index = NONE;
+						damage.origin = object->object.position;
+						damage.epicenter = object->object.position;
+						damage.direction.i = 1.0f;
+						damage.direction.j = 0.0f;
+						damage.direction.k = 0.0f;
+						damage.scale = (real)scale;
+						scenario_location_from_point(&damage.location, &damage.epicenter);
+						object_cause_damage(&damage, player->unit_index, NONE, NONE, NONE, NULL);
+						platform_log("network test: tick %ld hit x%.1f: health %.4f shield %.4f stun %d", game_time_get(),
+							scale, object->object.body_vitality, object->object.shield_vitality,
+							(int)object->object.shield_stun_ticks);
+					}
+				}
+			}
+		}
+		entry++;
+		cursor = *end == ',' ? end + 1 : end;
+	}
+	if (network_test.damage_logged_time != game_time_get() && (
+		network_test.damage_last[0] != object->object.body_vitality ||
+		network_test.damage_last[1] != object->object.shield_vitality ||
+		network_test.damage_last[2] != (real)object->object.shield_stun_ticks))
+	{
+		network_test.damage_logged_time = game_time_get();
+		network_test.damage_last[0] = object->object.body_vitality;
+		network_test.damage_last[1] = object->object.shield_vitality;
+		network_test.damage_last[2] = (real)object->object.shield_stun_ticks;
+		platform_log("network test: tick %ld health %.4f shield %.4f stun %d", game_time_get(),
+			object->object.body_vitality, object->object.shield_vitality, (int)object->object.shield_stun_ticks);
 	}
 }
 
@@ -807,6 +1105,19 @@ void network_test_update(
 	if (network_test.mode == _network_test_off)
 		return;
 
+	/* (per frame, not per second: ticks matter) */
+	if (game_in_progress() && !main_menu_loaded && network_test.mode == _network_test_host)
+	{
+		if (game_time_get() < network_test.damage_logged_time)
+		{
+			/* (a new game: the script and the change log start over) */
+			network_test.damage_done = 0;
+			network_test.ball_done = FALSE;
+			network_test.damage_logged_time = 0;
+			network_test.damage_last[0] = network_test.damage_last[1] = network_test.damage_last[2] = -1.0f;
+		}
+		network_test_damage_script();
+	}
 	/* the game running: report (from the start of each game: the next
 	game's time starts over) */
 	if (game_in_progress() && game_time_get() < network_test.logged_time)
@@ -830,6 +1141,11 @@ void network_test_update(
 
 			network_test_gather(network_test.vehicle_time > 0.0f && game_time_get() >= vehicle_time - 2 * TICKS_PER_SECOND);
 		}
+		if (network_test.mode == _network_test_host && network_test.ball_time > 0.0f && !network_test.ball_done &&
+			game_time_get() >= (long)(network_test.ball_time * TICKS_PER_SECOND))
+		{
+			network_test_ball();
+		}
 		if (network_test.pickup_time > 0.0f)
 		{
 			long pickup_time = (long)(network_test.pickup_time * TICKS_PER_SECOND);
@@ -844,6 +1160,27 @@ void network_test_update(
 			if (game_time_get() >= pickup_time && game_time_get() - pickup_time < TICKS_PER_SECOND)
 			{
 				network_test_pickup();
+			}
+			/* (debug.network_test_pickup_give: the host's pickup for the last
+			player, two seconds on) */
+			if (network_test.mode == _network_test_host && network_test.pickup_give &&
+				network_test.pickup_weapon_index != NONE && game_time_get() >= pickup_time + 2 * TICKS_PER_SECOND)
+			{
+				struct data_iterator iterator;
+				struct player_datum *player;
+				struct player_datum *last = NULL;
+				struct weapon_datum *weapon = weapon_try_and_get(network_test.pickup_weapon_index);
+
+				data_iterator_new(&iterator, player_data);
+				while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+					last = player;
+				if (last && last->unit_index != NONE && weapon && weapon->object.parent_object_index == NONE &&
+					unit_add_weapon_to_inventory(last->unit_index, network_test.pickup_weapon_index, TRUE))
+				{
+					platform_log("network test: the host gives the last player weapon %lx at tick %ld",
+						network_test.pickup_weapon_index, game_time_get());
+				}
+				network_test.pickup_weapon_index = NONE;
 			}
 			/* (standing there for four seconds, the button held from a second
 			on) */
@@ -910,7 +1247,7 @@ void network_test_update(
 				platform_log("network test: the first player hurt to 40%%");
 			}
 		}
-		/* debug.network_test_kill: the host kills the last player every so
+		/* debug.network_test_kill: the host kills the last other player every so
 		often, to test deaths and respawns reaching the clients */
 		if (network_test.mode == _network_test_host && network_test.kill_interval > 0.0f &&
 			game_time_get() % MAX(1, (long)(network_test.kill_interval * TICKS_PER_SECOND)) < TICKS_PER_SECOND)
@@ -922,20 +1259,57 @@ void network_test_update(
 			struct player_datum *first = NULL;
 			long first_index = NONE;
 
+			/* (the killer is the host's own player when it has one, else the
+			first: the host deals no damage a remote player owns, which that
+			player's machine reports, network_damage_deals; the victim the last
+			other player) */
 			data_iterator_new(&iterator, player_data);
 			while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 			{
-				if (!first)
+				if (!first || (player->local_player_index != NONE && first->local_player_index == NONE))
 				{
 					first = player;
 					first_index = iterator.datum_index;
 				}
-				last = player;
 			}
-			if (last && last != first && last->unit_index != NONE && first->unit_index != NONE)
+			data_iterator_new(&iterator, player_data);
+			while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+			{
+				if (player != first)
+					last = player;
+			}
+			/* (debug.network_test_kill_host: the other way round, the host's
+			player killed by the last other of this machine's players) */
+			if (network_test.kill_host)
+			{
+				struct player_datum *victim = NULL;
+				struct player_datum *killer = NULL;
+				long killer_index = NONE;
+
+				/* (the victim local player 1: controller 1, whose presses
+				debug.test_input makes) */
+				data_iterator_new(&iterator, player_data);
+				while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+				{
+					if (player->local_player_index == 0)
+						victim = player;
+					else if (player->local_player_index != NONE)
+					{
+						killer = player;
+						killer_index = iterator.datum_index;
+					}
+				}
+				if (killer && victim && killer->unit_index != NONE && victim->unit_index != NONE)
+				{
+					platform_log("network test: another of the host's players kills local player 1");
+					damage_kill_object_for_player(victim->unit_index, killer_index);
+				}
+				last = NULL;
+			}
+			if (last && first && last->unit_index != NONE && first->unit_index != NONE)
 			{
 				/* killed by the first player: a kill that scores */
-				platform_log("network test: the first player kills the last");
+				platform_log("network test: the host's player (else the first) kills the last other");
 				damage_kill_object_for_player(last->unit_index, first_index);
 				/* and picks up a weapon lying about, and two grenades of each kind */
 				{
@@ -1087,24 +1461,44 @@ void network_test_update(
 				}
 				else
 				{
+					struct game_variant_options options;
+					/* debug.network_test_gametype: a saved gametype and its PC
+					options, as picking it in the menus does; else (and when it
+					is not there) the variant, as picking the game settings does */
+					boolean saved = network_test_saved_gametype(&variant, &options);
+
 					network_game_server_change_map_name(global_network_game_server_get(), path);
-					/* the variant, as picking the game settings does */
-					variant = *game_engine_get_variant_by_name(&variant, variant_name);
-					platform_log("network test: game %d, %s", network_test.variant_index + 1, variant_name);
+					if (!saved)
+						variant = *game_engine_get_variant_by_name(&variant, variant_name);
+					platform_log("network test: game %d, %s", network_test.variant_index + 1,
+						saved ? network_test.saved_gametype : variant_name);
 					/* debug.network_test_score: a short game, to test the next */
 					if (network_test.score_to_win > 0)
 						variant.universal_variant.score_to_win = network_test.score_to_win;
 					/* debug.network_test_flags: the port's gametype options */
 					variant.universal_variant.flags |= network_test.variant_flags;
+					if (network_test.ball_melee)
+						variant.universal_variant.ball_melee = 1;
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */
-					if (network_test.time_limit > 0)
+					if (saved || network_test.time_limit > 0 || network_test.loadout_primary != NONE ||
+						network_test.auto_balance)
 					{
-						struct game_variant_options options;
-
-						game_variant_options_default(&variant, &options);
-						options.time_limit = (short)network_test.time_limit;
+						if (!saved)
+							game_variant_options_default(&variant, &options);
+						if (network_test.time_limit > 0)
+							options.time_limit = (short)network_test.time_limit;
+						/* debug.network_test_loadout: a custom loadout */
+						if (network_test.loadout_primary != NONE)
+						{
+							options.loadout = _loadout_custom;
+							options.primary_weapon = (byte)network_test.loadout_primary;
+							options.secondary_weapon = (byte)network_test.loadout_secondary;
+						}
+						/* debug.network_test_auto_balance */
+						if (network_test.auto_balance)
+							options.auto_team_balance = TRUE;
 						player_ui_set_game_variant_options(&options);
 					}
 					network_game_server_change_game_variant(global_network_game_server_get(), &variant);
