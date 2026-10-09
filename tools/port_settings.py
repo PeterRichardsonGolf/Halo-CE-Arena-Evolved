@@ -188,8 +188,9 @@ SCREENS = {
     "network_setup": {
         "screen": "network_settings_screen",
         "header": ("header_profile_network_settings", f"{PE}/network_setup/header_profile_network_settings"),
-        # (24, not 30: eleven rows, above the help line, as mods_setup's)
+        # (24, not 30: twelve rows, with the help line as low as mods_setup's)
         "spacing": 24,
+        "help_top": 366,
         "rows": [
             ("INTERNET PLAY:", "network.online", ON_OFF,
              "Host and join games over the internet by invite\nlinks; off keeps to the local network.", None),
@@ -198,6 +199,9 @@ SCREENS = {
              "Show the internet games you host on the public\nlist at halo.milenko.org, for anyone to join.", None),
             ("SHARE GAME STATS:", "network.report_joined_games", ON_OFF,
              "Send the scores of internet games you join to\nhalo.milenko.org, with your player ID.", None),
+            # (Delta Stats, ChupathingyCE 0.7.1's: on by default there)
+            ("SHARE HOSTED STATS:", "network.report_events", ON_OFF,
+             "Send the games you host (kills, positions, medals)\nto halo.milenko.org, for its match pages.", None),
             ("UPNP PORT FORWARDING:", "network.allow_upnp", ON_OFF,
              "Let internet play ask the router to forward its\nport, for networks that stop connections.", None),
             ("JOIN FROM CLIPBOARD:", "network.join_from_clipboard", ON_OFF,
