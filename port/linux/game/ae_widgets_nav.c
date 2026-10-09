@@ -585,7 +585,9 @@ static float prompt_parts(struct ae_density const *density, int device, struct a
 
 /* a prompt's priority when the row is short (0 the highest; ties: the earlier is higher): the confirming one (A / Enter,
 START), then the cancelling one (B / Esc), then the rest in the order given, the last given going first. A prompt is
-always whole (its cap and its label) or not shown at all */
+always whole (its cap and its label) or not shown at all. The priority reads the prompt's action: callers must set it
+(AE_ACTION_ACCEPT / START for the confirming one, AE_ACTION_BACK for the cancelling one), or the prompt ranks as "the
+rest" */
 static short prompt_rank(struct ae_prompt const *prompt, short index)
 {
 	if (prompt->action == AE_ACTION_ACCEPT || prompt->action == AE_ACTION_START)
@@ -634,7 +636,8 @@ void ae_widget_prompts(struct ae_density const *density, float x, float center_y
 		if (label_room > label_size * 2.0f)
 		{
 			prompt_parts(density, device, &prompts[best], 1, label_room, &parts[best]);
-			keep[best] = 1;
+			/* (a label cut to nothing but the ellipsis is no label: the prompt is left out) */
+			keep[best] = (unsigned char)(strcmp(parts[best].label, "\xE2\x80\xA6") != 0 && parts[best].label[0] != 0);
 		}
 	}
 	for (index = 0; index < count; index++)

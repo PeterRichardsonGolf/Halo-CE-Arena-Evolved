@@ -518,15 +518,13 @@ static void fixes(void)
 	CHECK(n >= 1 && n <= 3 && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == n && text_call("Enter") && text_call("Select"));
 	CHECK((text_call("Pages") != NULL) == (n == 3) && (text_call("Resume") != NULL) == (n >= 2));
 	CHECK((text_call("Esc") != NULL) == (n >= 2) && (text_call("Q") != NULL) == (n == 3));
-	/* a row narrower still: only the confirming prompt, inside the row; narrower than that, nothing past the edge */
+	/* a row narrower still (400 u: the confirming prompt's cap and label, and no more); narrower than that, nothing past the edge */
 	{
-		float widths_room[3] = { 0.0f, 0.0f, 0.0f };
 		int pass;
 
-		(void)widths_room;
 		for (pass = 0; pass < 2; pass++)
 		{
-			float room = pass == 0 ? 190.0f : 40.0f;
+			float room = pass == 0 ? 400.0f : 40.0f;
 
 			ae_stub_reset(1920, 720);
 			ae_draw_view(960, 0, 960, 540);
@@ -539,8 +537,11 @@ static void fixes(void)
 					CHECK(any->x + any->width <= content.x + room + 0.01f);
 			}
 			CHECK(text_call("Esc") == NULL && text_call("Q") == NULL);
-			if (pass == 1)
-				CHECK(count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 0 || text_call("Enter"));
+			/* (the confirming prompt whole in the room that holds it; in the room too small for any, no cap alone) */
+			if (pass == 0)
+				CHECK(text_call("Enter") && text_call("Select") && count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 1);
+			else
+				CHECK(count_calls(AE_STUB_RECT, AE_COLOR_KEY_CAP) == 0 && text_call("Enter") == NULL);
 		}
 	}
 	for (index = 0; index < ae_stub_count(); index++)

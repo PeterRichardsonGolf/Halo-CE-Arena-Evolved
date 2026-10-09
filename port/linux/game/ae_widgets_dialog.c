@@ -344,10 +344,15 @@ static void dialog_draw(struct ae_screen *screen)
 		ae_draw_set_alpha(scrim);
 		/* (no bounds given: the whole view, as it can be nothing else) */
 		if (spec->bounds.width <= 0.0f || spec->bounds.height <= 0.0f)
+		{
 			ae_draw_rect(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, 0.0f, AE_COLOR_SCRIM);
+		}
 		else
-		ae_draw_rect((spec->bounds.x - frame_view.x) / frame_view.scale, (spec->bounds.y - frame_view.y) / frame_view.scale,
-			spec->bounds.width / frame_view.scale, spec->bounds.height / frame_view.scale, 0.0f, AE_COLOR_SCRIM);
+		{
+			ae_draw_rect((spec->bounds.x - frame_view.x) / frame_view.scale,
+				(spec->bounds.y - frame_view.y) / frame_view.scale, spec->bounds.width / frame_view.scale,
+				spec->bounds.height / frame_view.scale, 0.0f, AE_COLOR_SCRIM);
+		}
 	}
 	ae_hit_add(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, id, AE_PART_OUTSIDE, -1);
 	/* the dialog: scaled about its view's middle as it opens, faded in */
@@ -364,11 +369,8 @@ static void dialog_draw(struct ae_screen *screen)
 	box.y = (state->box.y - view.y) / view.scale;
 	box.width = l.width;
 	box.height = l.height;
-	/* (VIEW: what is under it in its bounds, the panel's page, hidden by the view panel's fill: nothing peeks out
-	around a dialog smaller than the page, mockup 25) */
-	if (density->kind == AE_DENSITY_VIEW)
-		ae_draw_rect((spec->bounds.x - view.x) / view.scale, (spec->bounds.y - view.y) / view.scale,
-			spec->bounds.width / view.scale, spec->bounds.height / view.scale, 0.0f, AE_COLOR_VIEW_PANEL);
+	/* (VIEW too: the panel's page stays under the scrim, visibly dimmed; task 17, owner ruling: only the panel behind
+	the dialog dims) */
 	ae_draw_rect(box.x, box.y, box.width, box.height, units(density, density->metrics->corner), AE_COLOR_POPOVER);
 	ae_hit_add(box.x, box.y, box.width, box.height, id, AE_PART_CARD, -1);
 	ae_draw_rect(box.x, box.y, box.width, units(density, DIALOG_STRIPE_U), 0.0f, error ? AE_COLOR_WARNING : AE_COLOR_ACCENT);

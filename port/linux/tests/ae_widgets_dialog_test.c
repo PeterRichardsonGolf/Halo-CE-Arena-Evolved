@@ -630,10 +630,8 @@ static void view_dialogs(void)
 	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_SCRIM, &box) && near(box.x, panel_pixels.x, 0.5f) &&
 		near(box.y, panel_pixels.y, 0.5f) && near(box.width, panel_pixels.width, 0.5f) &&
 		near(box.height, panel_pixels.height, 0.5f));
-	/* (what is under it in its bounds is hidden: the view panel's fill over the whole of them, under the box) */
-	CHECK(find_rect(AE_STUB_RECT, AE_COLOR_VIEW_PANEL, &box) && near(box.x, panel_pixels.x, 0.5f) &&
-		near(box.y, panel_pixels.y, 0.5f) && near(box.width, panel_pixels.width, 0.5f) &&
-		near(box.height, panel_pixels.height, 0.5f));
+	/* (VIEW: the panel's page stays under the scrim, visibly dimmed: no opaque fill over it) */
+	CHECK(!find_rect(AE_STUB_RECT, AE_COLOR_VIEW_PANEL, &box));
 	/* player 1's B picks player 1's cancel */
 	picked_choice = -1;
 	dispatch(1, AE_ACTION_BACK);
