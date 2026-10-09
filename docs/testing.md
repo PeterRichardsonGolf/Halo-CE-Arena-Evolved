@@ -99,7 +99,7 @@ setup, outside this repository):
 
 ## Recording
 
-The game records itself: F9 saves a screenshot and F10 starts/stops a recording in play, and for tests
+The game records itself: F10 (the Screenshot action, rebindable) saves a screenshot and F9 starts/stops a recording in play, and for tests
 `HALO_RECORD_SECONDS=N` records N seconds from the first frame of play into `HALO_RECORD_DIR` (H.264 at the
 `capture.record_fps` rate, 60 by default, with AAC sound, muxed by ffmpeg). `record.py --seconds N` / `run.py
 --record N` set both, so give the game an exit-after past its start plus N. The clips are listed in result.json

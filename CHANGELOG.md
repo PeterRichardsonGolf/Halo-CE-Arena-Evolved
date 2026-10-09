@@ -6,6 +6,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Merged OpenCE build-167 (network version still 24, so it plays with
+  0.2.0-beta). From upstream: voice chat (hold V to talk; Settings > Audio
+  has VOICE CHAT, VOICE VOLUME and the output and input devices; the
+  microphone stays closed until you first talk), votes to kick a player
+  (right-click a player on the scoreboard; the host also gets Kick and Ban
+  there), co-op's Server Setup options in screens of their own, finer
+  mouse sensitivity steps, Steam Deck support in the portable Linux build,
+  audio mixer and looping-sound fixes, glass and overshield drawing fixes
+  and optional enhanced animations (`game.enhanced_animations`). The
+  Screenshot key can now be rebound (Controls Setup > Actions) and its
+  default is F10; recording moves to F9. Screenshots are still Arena
+  Evolved's (PNG in `screenshots/`, every split-screen view).
+
 ## 0.2.0-beta - 2026-10-09
 
 Built on ChupathingyCE 0.7.1d and OpenCE build-157 (network version 24). It
