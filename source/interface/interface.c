@@ -574,6 +574,9 @@ void interface_draw_bitmap_modulated(
 	return;
 }
 
+/* port: (port/linux/game/menu_functions.c) */
+boolean pc_menu_settings_hide_hud(short local_player);
+
 void interface_draw_screen(
 	void)
 {
@@ -728,7 +731,9 @@ void interface_draw_screen(
 	}
 
 	/* port: the HUD and the game engine's (the scoreboard, its messages) in
-	HUD AREA's part of the view (hud_draw.c) */
+	HUD AREA's part of the view (hud_draw.c); none under the player's
+	SETTINGS opened from the campaign's pause menu (menu_functions.c) */
+	if (!pc_menu_settings_hide_hud(render.local_player_index))
 	{
 		rectangle2d window_bounds;
 

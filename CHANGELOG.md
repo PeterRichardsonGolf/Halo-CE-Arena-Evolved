@@ -69,6 +69,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     of the screen (and of a split-screen view). The scope's screen effect
     never drew the first row and column of pixels above 640x480; an old bug,
     in 0.2.0-beta and upstream too.
+  - The campaign pause menu's SETTINGS screens no longer show the HUD (the
+    ammo and shields) beside their titles: while they are up, that player's
+    view draws no HUD (split screen: only their own view). The pause menu
+    itself and a multiplayer game's pause keep the HUD.
 
 ## 0.2.0-beta - 2026-10-09
 

@@ -569,6 +569,20 @@ boolean pc_menu_settings_in_match(void)
 	return settings_in_match();
 }
 
+/* (interface.c's) the local player's SETTINGS (the profile edit and the
+screens it opens) up over a game its pause has stopped (the campaign's
+pause menu): their view draws no HUD under it. Those screens' gradient
+leaves the top of the view clear, where the ammo and shields drew beside
+the screen's title; at the main menu nothing is under them. A match (not
+stopped) keeps its HUD, which updates as it draws */
+boolean pc_menu_settings_hide_hud(short local_player)
+{
+	extern boolean game_time_get_paused(void);
+
+	return game_time_get_paused() && settings_in_match() &&
+		ui_widget_port_local_player_screen_in(local_player, "\\player_profile_edit\\");
+}
+
 /* (ui_widget.c's: the player's history disposed) */
 void pc_menu_settings_history_cleared(short local_player)
 {
