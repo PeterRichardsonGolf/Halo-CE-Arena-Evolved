@@ -65,6 +65,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     launcher's and the sniper rifle's (its 2x and 10x included); Android:
     the game starts on more devices whose Java runtime covers the memory
     it needs, and `memory_map.txt` says why when it cannot.
+  - Zooming in no longer leaves colour noise along the top and left edges
+    of the screen (and of a split-screen view). The scope's screen effect
+    never drew the first row and column of pixels above 640x480; an old bug,
+    in 0.2.0-beta and upstream too.
 
 ## 0.2.0-beta - 2026-10-09
 

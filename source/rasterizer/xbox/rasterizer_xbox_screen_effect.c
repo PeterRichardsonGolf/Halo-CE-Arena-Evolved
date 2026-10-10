@@ -1030,6 +1030,22 @@ void _rasterizer_screen_effect(
 				vertex_bounds.x1 = vertex_bounds.y0 = 1.0f;
 			}
 
+			/* port: this quad, unlike the game's other screen quads (the
+			screen flash's -1 - 1 / width), is not moved half a pixel up and
+			left. On the Xbox, with pixel centres on whole coordinates, its
+			edges ran through the first row's and column's centres, which were
+			drawn; with OpenGL's centres half a pixel on (nv2a_vsh.c), its top
+			and left edges lie half a pixel inside the view, and on the native
+			builds' larger targets (halo_screen_scale) more than the first
+			pixels' centres. No pass drew those pixels: the view kept its
+			unfiltered first row and column, and the screen effect target's
+			were never written, which the zoom's warp, sampling past the edge
+			(clamped), spread over the next few rows and columns as colour
+			noise. The quad reaches one pixel further up and left, its texture
+			coordinates with it: the same picture, covering the view. */
+			vertex_bounds.x0 -= (vertex_bounds.x1 - vertex_bounds.x0) / (real)viewport_width;
+			vertex_bounds.y0 += (vertex_bounds.y0 - vertex_bounds.y1) / (real)viewport_height;
+
 			if (IDirect3DDevice8_Begin(
 				global_d3d_device,
 				D3DPT_TRIANGLEFAN) >= 0 && success)
@@ -1047,7 +1063,7 @@ void _rasterizer_screen_effect(
 			if (IDirect3DDevice8_SetVertexData2s(
 				global_d3d_device,
 				4,
-				0,
+				-1,
 				viewport_height) >= 0 && success)
 			{
 				success = TRUE;
@@ -1112,7 +1128,7 @@ void _rasterizer_screen_effect(
 				global_d3d_device,
 				4,
 				viewport_width,
-				0) >= 0 && success)
+				-1) >= 0 && success)
 			{
 				success = TRUE;
 			}
@@ -1143,8 +1159,8 @@ void _rasterizer_screen_effect(
 			if (IDirect3DDevice8_SetVertexData2s(
 				global_d3d_device,
 				4,
-				0,
-				0) >= 0 && success)
+				-1,
+				-1) >= 0 && success)
 			{
 				success = TRUE;
 			}
