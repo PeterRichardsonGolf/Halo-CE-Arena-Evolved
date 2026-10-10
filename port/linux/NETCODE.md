@@ -197,7 +197,7 @@ newer. Its wire ID is its own (`ae-25a`, `delta.h`), so ChupathingyCE's signed l
 (Delta, `docs/delta.md`), which have no row for it, neither change these
 numbers nor turn off its Delta capabilities, and they are not fetched unless
 `network.legacy_table_fetch` is on (off by default). The game's messages are
-OpenCE build-174's unchanged (build-167's voice chat and votes to kick and
+OpenCE build-177's unchanged (build-167's voice chat and votes to kick and
 build-169's lights are among them; Arena Evolved adds none): Arena Evolved's own
 rules travel in the gametype's flags, which every host of 11 to 25 sends
 and a client that does not know a bit leaves alone. Arena Evolved's own

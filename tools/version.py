@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # start-up ("Halo CE: Arena Evolved 0.1.0-beta (ChupathingyCE 0.7.1d, OpenCE
 # build-157)"); kept in step with port/linux/include/halo_product.h's
 # HALO_UPSTREAM_BASE when an upstream release is merged
-UPSTREAM_BASE = "ChupathingyCE 0.7.1e, OpenCE build-174"
+UPSTREAM_BASE = "ChupathingyCE 0.7.1e, OpenCE build-177"
 
 
 def base_version() -> str:
