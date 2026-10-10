@@ -6,8 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-- Merged upstream: OpenCE build-167, ChupathingyCE 0.7.1e and OpenCE
-  build-170 (network version 25).
+- Merged upstream: OpenCE build-167, ChupathingyCE 0.7.1e, OpenCE
+  build-170 (network version 25) and OpenCE build-174.
   - OpenCE build-167 (network version 24; the build-170 merge raises it to
     25). From upstream: voice chat (hold V to talk; Settings > Audio has
     VOICE CHAT, VOICE VOLUME and the output and input devices; the
@@ -37,6 +37,20 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     longer changes its value (the mouse clicks the labels and values where
     CE's menus have them); a tap of a finger on the label still reaches the
     value.
+  - OpenCE build-174 (network version still 25). From upstream: field of
+    view and viewmodel settings (Settings > Video Setup > FOV AND
+    VIEWMODELS: `display.fov`, `display.viewmodel_fov`,
+    `display.viewmodel_visible`; the defaults keep the stock view), Video
+    Setup's graphics rows on a GRAPHICS screen of their own (PERFORMANCE
+    and POSITION stay on Video Setup), high-res controller button icons in
+    the menus, any controller drives the menus while one person plays, a
+    saved profile's controls apply at once to the player using it, up to
+    32768 structure triangles a frame, co-op respawns beside the largest
+    group of teammates, a profiling build (`configure.py --profile`). The
+    campaign's pause SETTINGS is now upstream's code, with Arena Evolved's
+    split-screen and co-op lists on top: SETTINGS sits before REVERT TO
+    SAVED, its settings show only Controls, Gamepads, Mouse, Audio and Video
+    Setup, and Gamepads' OK saves the profile at once.
 
 ## 0.2.0-beta - 2026-10-09
 
