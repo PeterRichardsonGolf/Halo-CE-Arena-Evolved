@@ -10,8 +10,9 @@ int main(void)
 	unsigned int minimum = HALO_PORT_NETWORK_VERSION_MINIMUM, maximum = HALO_PORT_NETWORK_VERSION_MAXIMUM;
 	unsigned int floor = HALO_PORT_NETWORK_VERSION, version;
 
-	/* a host below this build's version (the published 0.1.0-beta is 20) is refused, though inside the range */
-	CHECK(floor == 24 && minimum <= 20 && 20 <= maximum);
+	/* a host below this build's version (the published 0.2.0-beta and ChupathingyCE 0.7.1e are 24, 0.1.0-beta
+	20) is refused, though inside the range */
+	CHECK(floor == 25 && minimum <= 20 && 24 <= maximum);
 	for (version = 0; version < floor; version++)
 		CHECK(!halo_port_advertised_joinable(version, flag, minimum, maximum));
 	/* this build's own version and a newer one inside the range: joined; beyond the range, or off the distributed

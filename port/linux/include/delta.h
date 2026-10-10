@@ -159,13 +159,13 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one.
-(Arena Evolved: its own, "ae-24a", so that ChupathingyCE's signed tables,
+(Arena Evolved: its own, "ae-25a", so that ChupathingyCE's signed tables,
 whose rows are for ChupathingyCE's wires, never set Arena Evolved's numbers
-or turn off its capabilities: it plays its built-in 24 / 11..24. The wire
-ID is never sent; the game protocol is chupa-24a's, OpenCE build-149's:
-its hosts announce 24, the table's newest, as ChupathingyCE 0.7.1d's and
-OpenCE build-149's and later's do) */
-#define DELTA_WIRE "ae-24a"
+or turn off its capabilities: it plays its built-in 25 / 11..25, and joins
+no host below its own 25 (halo_port_advertised_joinable). The wire ID is
+never sent; the game protocol is OpenCE build-169's: its hosts announce 25,
+the table's newest, as OpenCE build-169's and later's do) */
+#define DELTA_WIRE "ae-25a"
 
 /* OpenCE's network versions (HALO_PORT_NETWORK_VERSION in its builds), the
 first of its releases with each, and whether the version's change is one the
@@ -192,7 +192,8 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(21, "build-141", additive) /* killing blows and resting bodies resent, co-op BSP switches by the host's crossing */ \
 	X(22, "build-145", additive) /* a Custom Edition map named custom_maps\\<name> in the game's settings */ \
 	X(23, "build-147", additive) /* a Custom Edition map's blocks past the Xbox tools' limits kept, its version in the game's settings; Xbox maps as 22 */ \
-	X(24, "build-149", additive) /* the gametype's PC vehicle set: every vehicle the map places */
+	X(24, "build-149", additive) /* the gametype's PC vehicle set: every vehicle the map places */ \
+	X(25, "build-169", additive) /* units' integrated lights in the object states (two flag bits an older machine leaves 0) */
 
 /* ---------- the legacy table (port/linux/src/delta.c)
 

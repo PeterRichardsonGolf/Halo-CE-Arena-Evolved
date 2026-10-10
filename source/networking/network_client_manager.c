@@ -3163,8 +3163,9 @@ boolean network_game_client_advertised_game_compatible(
 	unsigned int theirs;
 	boolean distributed;
 	char message[400];
-	/* AE: no host below this machine's own network version (24) is joined, whatever
-	the range above: older AE hosts lack the grenade/teleporter netcode fixes */
+	/* AE: no host below this machine's own network version (25) is joined, whatever
+	the range above: older AE hosts lack the grenade/teleporter netcode fixes, and
+	hosts of 24 do not send units' integrated lights */
 	unsigned int ae_floor = (unsigned int)HALO_PORT_NETWORK_VERSION;
 
 	if (game_index < 0 || game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES)
