@@ -21,7 +21,7 @@ port of the Halo: Combat Evolved decompilation, by way of
 both closely.
 
 > **Status: early and in active development.** The current pre-release is
-> 0.2.0-beta (below). The Linux 64-bit build is the one played and tested;
+> 0.2.1-beta (below). The Linux 64-bit build is the one played and tested;
 > the Windows 64-bit build passes an automated start-up and gametype check;
 > the other platforms build from the same code but are untested here.
 
@@ -225,9 +225,9 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.2.0-beta, built on ChupathingyCE 0.7.1d and OpenCE build-157
-(network version 24), is the current one, a pre-release (2026-10-09); it
-does not play online with 0.1.0-beta, so everyone updates. Each platform is
+page: 0.2.1-beta, built on ChupathingyCE 0.7.1e and OpenCE build-177
+(network version 25), is the current one, a pre-release (2026-10-10); it
+does not play online with 0.2.0-beta or earlier, so everyone updates. Each platform is
 a zip of its own, `arena-evolved-<platform>-release.zip`: Windows and Linux
 as 64-bit builds only, plus macOS and Android;
 `arena-evolved-linux64-release.zip` (Linux, 64-bit) is the one played and
@@ -298,7 +298,7 @@ Re-run `configure.py` when source files or the menus are added.
   update). Builds of an older version (ChupathingyCE 0.7.1e and earlier,
   OpenCE before build-169, Arena Evolved 0.2.0-beta and 0.1.0-beta) don't
   join its games, which say 25: their players are told the host is newer.
-  The published 0.2.0-beta is network version 24: it plays with
+  0.2.0-beta is network version 24: it plays with
   ChupathingyCE 0.7.1 and OpenCE build-149 to build-168. A game on a Custom Edition map is named as OpenCE names it, so
   OpenCE and ChupathingyCE players with the map join it too.
 

@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.2.1-beta - 2026-10-10
+
+Built on ChupathingyCE 0.7.1e and OpenCE build-177 (network version 25). It
+does not play online with 0.2.0-beta (network version 24): everyone updates.
+Windows and Linux are offered as 64-bit builds only.
+
 - Merged upstream: OpenCE build-167, ChupathingyCE 0.7.1e, OpenCE
   build-170 (network version 25), OpenCE build-174 and OpenCE build-177.
   - OpenCE build-167 (network version 24; the build-170 merge raises it to
