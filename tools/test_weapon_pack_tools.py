@@ -1497,7 +1497,9 @@ def test_run_pack_is_its_donors_bytes_tags_resources_and_geometry():
     parsed = aepack.read(pack)
     report = pack_compare.compare_pack(pack, donor_map.MapFile(WORK / "donor" / "donor.map"))
     assert report["problems"] == [] and report["own"] == recipe()["expected"]["own_tags"]
-    assert report["compared_bytes"] + report["masked_bytes"] == len(parsed.sections[aepack.TAG_BYTES])
+    # every byte of every own tag is either compared or of a counted class
+    assert report["compared_bytes"] + report["masked_bytes"] == sum(
+        tag[10] for tag in parsed.tags if tag[4] == aepack.OWN)
     assert report["resources"] == len(parsed.resources) and report["parts"] == len(parsed.parts)
     assert report["resource_bytes"] == sum(resource[2] for resource in parsed.resources) > 16000000
     assert report["geometry_bytes"] == len(parsed.sections[aepack.GEOMETRY])
