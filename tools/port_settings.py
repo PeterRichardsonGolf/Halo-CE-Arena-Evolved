@@ -166,6 +166,7 @@ SCREENS = {
         "spacing": 30,
         # (MOUSE STYLE's help is three lines)
         "help_top": 333,
+        "help_height": 72,
         "rows": [
             # (a help for each value)
             ("MOUSE STYLE:", "input.mouse_style", MOUSE_STYLES,
@@ -411,7 +412,7 @@ def _screen(folder: str, spec: dict, rows: list, list_inputs: list, list_handler
     lines += _widget(f"{base}/{header}", header_pairs, [])
     lines += _widget(f"{base}/help", [("type", "text"), ("controller", 1), ("left", 68),
                                       ("top", spec.get("help_top", 350)), ("width", 482),
-                                      ("height", 60), ("string_list", f"{base}/help_strings"),
+                                      ("height", spec.get("help_height", 60)), ("string_list", f"{base}/help_strings"),
                                       ("font", "ui\\large_ui"), ("color", "#FFFFFFFF")], [])
     children = [f'<data input="{name}"/>' for name in list_inputs] + list_handlers
     # (each row: its widget, platform, and the place it is in, else the next)
