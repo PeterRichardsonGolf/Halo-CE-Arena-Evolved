@@ -17,6 +17,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   Screenshot key can now be rebound (Controls Setup > Actions) and its
   default is F10; recording moves to F9. Screenshots are still Arena
   Evolved's (PNG in `screenshots/`, every split-screen view).
+- Merged ChupathingyCE 0.7.1e: Custom Edition maps made with MCC's tools
+  whose bitmaps use its high-quality compression (BC7) now load and draw
+  instead of being refused.
 
 ## 0.2.0-beta - 2026-10-09
 
