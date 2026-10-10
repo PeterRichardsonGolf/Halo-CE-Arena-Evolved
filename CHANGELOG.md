@@ -44,8 +44,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     Setup's graphics rows on a GRAPHICS screen of their own (PERFORMANCE
     and POSITION stay on Video Setup), high-res controller button icons in
     the menus, any controller drives the menus while one person plays, a
-    saved profile's controls apply at once to the player using it, up to
-    32768 structure triangles a frame, co-op respawns beside the largest
+    saved profile, controls and all, is copied at once into every local
+    player using it (split-screen players sharing a profile get each
+    other's changes immediately), up to 32768 structure triangles a frame, co-op respawns beside the largest
     group of teammates, a profiling build (`configure.py --profile`). The
     campaign's pause SETTINGS is now upstream's code, with Arena Evolved's
     split-screen and co-op lists on top: SETTINGS sits before REVERT TO
