@@ -1488,6 +1488,43 @@ static unsigned int string_add(
 	return table->size - length;
 }
 
+int ae_pack_replace_file(
+	char const *temporary,
+	char const *path,
+	int (*move)(char const *from, char const *to))
+{
+	unsigned int length;
+	char *old;
+	int result;
+
+	if (move(temporary, path) == 0)
+		return 1;
+	/* (where a rename does not replace a file, Windows': the old pack is moved aside, the new one put in place,
+	and the old one deleted only then, or put back) */
+	length = (unsigned int)strlen(path);
+	old = (char *)malloc(length + 5);
+	if (!old)
+		return 0;
+	memcpy(old, path, length);
+	memcpy(old + length, ".old", 5);
+	remove(old);
+	result = 0;
+	if (move(path, old) == 0)
+	{
+		if (move(temporary, path) == 0)
+		{
+			remove(old);
+			result = 1;
+		}
+		else
+		{
+			move(old, path);
+		}
+	}
+	free(old);
+	return result;
+}
+
 /* fixup records in a total order: by offset, then kind, value, pad */
 static int fixup_compare(
 	void const *a,
@@ -1778,7 +1815,8 @@ int ae_pack_write(
 		}
 	}
 
-	/* written to <path>.tmp, then renamed over path: a failed write leaves any pack at path as it was */
+	/* written to <path>.tmp, then put in place (ae_pack_replace_file): a failed write leaves any pack at path as
+	it was */
 	{
 		unsigned int length = (unsigned int)strlen(path);
 		char *temporary = (char *)malloc(length + 5);
@@ -1801,9 +1839,8 @@ int ae_pack_write(
 		result = fwrite(image.data, 1, image.size, file) == image.size;
 		if (fclose(file) != 0)
 			result = 0;
-		/* (where rename does not replace a file, Windows', the old pack goes only once the new one is whole) */
-		if (result && rename(temporary, path) != 0)
-			result = !remove(path) && !rename(temporary, path);
+		if (result)
+			result = ae_pack_replace_file(temporary, path, rename);
 		if (!result)
 		{
 			remove(temporary);

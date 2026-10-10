@@ -8,8 +8,10 @@ A pack is untrusted data (players download them): ae_pack_open checks every
 length, offset, count and string against the file and the format's limits,
 and the SHA-256 of the whole file, before anything is handed out. What it
 checks is the CONTAINERS: every tag's bytes, fixups, parts and resources lie
-where they claim and alias nothing (no two own tags share bytes, no two
-fixups or parts overlap), every fixup lies inside its tag's bytes and names
+where they claim, no two own tags' bytes, no two of a tag's fixups and no
+two of its parts' structs overlap (the parts' vertices and indices in
+GEOMETRY and the resources' bytes in RESOURCE_DATA may: they are only
+read, and each lies inside its section), every fixup lies inside its tag's bytes and names
 a valid target, every string is terminated, the pickup texts are safe
 formats. It does NOT check the structure inside a tag's bytes (block counts
 and element sizes behind POINTER fixups, data sizes, a model part's own
@@ -416,5 +418,11 @@ void ae_pack_close(struct ae_pack *pack);
 the same bytes), every section and resource stored (R2); the pack is checked as ae_pack_open checks one before
 anything is written: nonzero if written, zero and the reason in problem if not */
 int ae_pack_write(char const *path, struct ae_pack_build_data const *data, struct ae_pack_problem *problem);
+
+/* ae_pack_write's last step: the whole file at temporary put at path by move (the C library's rename: 0 if moved).
+Where move does not replace an existing file (Windows), the old file is moved to <path>.old first and deleted only
+once the new one is in place, or moved back: nonzero if the new file is at path; if not, path holds what it held
+(the temporary is the caller's to remove). Exposed for its test (tools/ae_pack_check.c --writer-check). */
+int ae_pack_replace_file(char const *temporary, char const *path, int (*move)(char const *from, char const *to));
 
 #endif

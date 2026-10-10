@@ -199,6 +199,23 @@ def test_valid_pack_is_accepted_and_printed(checker, tmp_path):
     assert f"sha256 {hashlib.sha256(image[:0x5C] + bytes(32) + image[0x7C:]).hexdigest()}" in text
 
 
+@pytest.mark.parametrize("weapon_text, ammo_text", [
+    ("Fusil de combat ramassé", "Ramassé %d balles pour le fusil"),
+    ("ライフルを拾った", "弾%d発"),
+    ("Picked up a battle rifle", "%dé"),
+    (None, None),
+])
+def test_pickup_texts_accepted(checker, tmp_path, weapon_text, ammo_text):
+    """pickup texts with multibyte UTF-8 right before or after the "%d", and none (the engine's own)"""
+    pack = sample_pack()
+    pack.weapons[0].weapon_pickup_text = weapon_text
+    pack.weapons[0].ammo_pickup_text = ammo_text
+    image = aepack.build(pack)
+    accepted, lines = check_one(checker, tmp_path, image)
+    assert accepted, lines[-1]
+    assert lines == aepack.check(image, str(tmp_path / "pack.aepack"))[1]
+
+
 def test_compressed_sections_are_read(checker, tmp_path):
     """format v1 readers take zlib sections (the v1 writer writes none, R2)"""
     image = aepack.build(sample_pack(compressed_sections=(aepack.STRINGS, aepack.TAGS, aepack.TAG_BYTES,
@@ -414,6 +431,10 @@ REFUSALS = {
     "ammo pickup text with a precision": (_texts(None, "Picked up %.5d rounds"), "ammo pickup"),
     "ammo pickup text with a lone %": (_texts(None, "Picked up %d rounds %"), "ammo pickup"),
     "ammo pickup text without %d": (_texts(None, "Picked up rounds"), "ammo pickup"),
+    "ammo pickup text with %ld": (_texts(None, "Picked up %ld rounds"), "ammo pickup"),
+    "ammo pickup text with %d%": (_texts(None, "Picked up %d%"), "ammo pickup"),
+    "ammo pickup text with %5d": (_texts(None, "Picked up %5d rounds"), "ammo pickup"),
+    "ammo pickup text with multibyte and %%d": (_texts(None, "Ramassé %%d balles"), "ammo pickup"),
 }
 
 

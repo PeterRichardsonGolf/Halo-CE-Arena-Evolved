@@ -19,7 +19,9 @@ the reader that the game and the tools use is `port/linux/game/ae_pack_format.c`
                                                   build data refused, a failed write leaving the old pack
 
 **What the reader does not check.** It checks the containers: every tag's bytes, fixups, parts, resources and
-strings lie where they claim and alias nothing, every fixup names a valid target. It does NOT check the
+strings lie where they claim, no two own tags' bytes, no two of a tag's fixups and no two of its parts' structs
+overlap, and every fixup names a valid target. (The parts' vertices and indices in GEOMETRY and the resources'
+bytes in RESOURCE_DATA may overlap each other: they are only read, and each lies inside its section.) It does NOT check the
 structure inside a tag's bytes (block counts and element sizes behind POINTER fixups, data sizes, a model
 part's own fields against its PARTS record, pointers no fixup covers). The engine must run a pack's tags
 through the tag validator (`tag_validate.c`) once they are relocated into the map, as it does a map's own tags,
@@ -194,8 +196,9 @@ would break "same inputs, same bytes"). Readers take zlib for later versions' wr
 - A tag's records follow the previous tag's: `first` is the running count, for every tag. A tag's fixups are
   sorted by offset (then kind, value); its parts are written in the order given, which must be by offset.
 - An external tag given bytes is refused, never written without them.
-- The file is written as `<path>.tmp` and renamed over `<path>`: a write that fails leaves any pack already at
-  `<path>` as it was.
+- The file is written as `<path>.tmp` and renamed over `<path>`. Where a rename does not replace a file
+  (Windows), the old pack is first renamed to `<path>.old`, deleted only once the new one is in place, and renamed
+  back if that fails: a write that fails leaves any pack already at `<path>` as it was.
 - Tags in breadth-first order from the weapon roots as the pack builder's schema walk meets them; no
   timestamps anywhere.
 

@@ -393,6 +393,28 @@ done:
 	return result ? 0 : 1;
 }
 
+/* (ae_pack_replace_file's moves, failing on the calls whose bits are set: 1 the first) */
+static unsigned int move_calls, move_failing;
+
+static int scripted_move(char const *from, char const *to)
+{
+	move_calls++;
+	if (move_calls < 32 && (move_failing & (1u << move_calls)))
+		return -1;
+	return rename(from, to);
+}
+
+static void file_write(char const *path, char const *text)
+{
+	FILE *file = fopen(path, "wb");
+
+	if (file)
+	{
+		fputs(text, file);
+		fclose(file);
+	}
+}
+
 static int file_exists(char const *path)
 {
 	FILE *file = fopen(path, "rb");
@@ -588,6 +610,44 @@ static int writer_check(char const *out)
 		}
 		free(before);
 		free(after);
+	}
+
+	/* ae_pack_replace_file where a rename does not replace a file (the first move fails), and its later moves
+	failing too: the new file in place, or the old one left */
+	{
+		static struct { char const *what; unsigned int failing; int placed; } const cases[] =
+		{
+			{ "a rename that does not replace", 1u << 1, 1 },
+			{ "the old pack not moved aside", (1u << 1) | (1u << 2), 0 },
+			{ "the new pack not put in place", (1u << 1) | (1u << 3), 0 },
+		};
+		char path[4096], old[4096];
+		unsigned int case_index;
+
+		snprintf(path, sizeof(path), "%s.replace", out);
+		snprintf(old, sizeof(old), "%s.replace.old", out);
+		for (case_index = 0; case_index < sizeof(cases) / sizeof(cases[0]); case_index++)
+		{
+			unsigned int size;
+			unsigned char *now;
+			int placed;
+
+			file_write(path, "old pack");
+			file_write(temporary, "new pack");
+			move_calls = 0;
+			move_failing = cases[case_index].failing;
+			placed = ae_pack_replace_file(temporary, path, scripted_move);
+			now = file_read(path, &size);
+			if (placed != cases[case_index].placed || !now ||
+				size != 8 || memcmp(now, placed ? "new pack" : "old pack", 8) || file_exists(old))
+			{
+				printf("FAIL: replace (%s)\n", cases[case_index].what);
+				failures++;
+			}
+			free(now);
+			remove(temporary);
+			remove(path);
+		}
 	}
 
 	/* the same data, the same bytes */
