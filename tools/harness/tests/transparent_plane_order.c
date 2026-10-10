@@ -17,6 +17,14 @@ typedef struct { real_vector3d n; real d; } real_plane3d;
 #define PIN(x, a, b) MIN(MAX(x, a), b)
 #define D3DLOCK_READONLY 16
 #define __cdecl
+/* Arena Evolved keeps the Xbox's pointer fields in its 64-bit builds (XPTR,
+read through XBOX_POINTER: source/cseries/xbox_address.h); this 32-bit
+harness takes that file's 32-bit forms, plain pointers, and the vertex
+buffer type the transparent queue names in them */
+#define XPTR(type) type *
+#define xbox_pointer(address) ((void *)(address))
+#define XBOX_POINTER(type, address) ((type *)xbox_pointer(address))
+typedef void IDirect3DVertexBuffer8;
 #include "types.inc"
 typedef struct real_matrix4x3 real_matrix4x3;
 

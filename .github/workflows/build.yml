@@ -85,10 +85,9 @@ jobs:
         run: |
           # (OpenCE build-167's new unit tests compile pieces of the game's
           # sources alone, as OpenCE's tree has them; where Arena Evolved's
-          # sources differ, each test file has stand-ins of its own. Still left
-          # out, a job still to do: transparent_plane_order. The other harness
+          # sources differ, each test file has stand-ins of its own. All harness
           # tests run, and our own two sound tests, which are programs, run below)
-          python -m pytest -q tools/harness --ignore=tools/harness/tests/test_transparent_plane_order.py tools/test_linux_port.py tools/test_host_watch_hash.py tools/test_touch_menu.py tools/test_server_control.py tools/test_delta.py tools/test_delta_peer.py tools/test_ae_test.py tools/test_ae_units.py tools/test_ae_hooks.py tools/test_ae_fonts.py tools/test_ae_title_font.py tools/test_ae_lp64_literals.py tools/test_ae_mixer_linear.py
+          python -m pytest -q tools/harness tools/test_linux_port.py tools/test_host_watch_hash.py tools/test_touch_menu.py tools/test_server_control.py tools/test_delta.py tools/test_delta_peer.py tools/test_ae_test.py tools/test_ae_units.py tools/test_ae_hooks.py tools/test_ae_fonts.py tools/test_ae_title_font.py tools/test_ae_lp64_literals.py tools/test_ae_mixer_linear.py
           python tools/test_ae_sound_lifecycle.py
           python tools/test_ae_sound_transition.py
           python -m unittest tools.test_custom_maps tools.test_virtual_keyboard_input
