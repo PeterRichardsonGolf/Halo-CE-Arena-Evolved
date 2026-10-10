@@ -73,6 +73,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     ammo and shields) beside their titles: while they are up, that player's
     view draws no HUD (split screen: only their own view). The pause menu
     itself and a multiplayer game's pause keep the HUD.
+- New logo, ORBIT (a band ring seen at an angle, amber and burnt orange),
+  Arena Evolved's own drawing: it replaces the helmet as `halo.exe`'s icon,
+  the window's icon, the macOS and Android app icons (Android's an adaptive
+  icon with a themed, one-colour layer), and heads the README. On Windows
+  the window now shows `halo.exe`'s own icon, with its small sizes drawn
+  for them. The Linux download carries the icon as `arena-evolved.png`.
+  Sources and exports: `port/assets/branding`, `tools/ae_logo.py`. The
+  logo is not CC0 like the code: see `port/assets/branding/LICENSE.md`.
 
 ## 0.2.0-beta - 2026-10-09
 

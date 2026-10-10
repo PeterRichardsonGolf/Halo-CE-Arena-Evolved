@@ -215,6 +215,10 @@ def main() -> int:
         shutil.copy2(ROOT / "port/assets/network/brokers.txt", dist / "brokers.txt")
         # the built-in callout voices, a folder beside the game
         shutil.copytree(ROOT / "port/assets/voices", dist / "voices")
+    if args.platform in ("linux", "linux64"):
+        # (AE) the game's icon, for a launcher or desktop entry to point at
+        # (Windows' is in halo.exe, macOS's in the bundle; tools/ae_logo.py)
+        shutil.copy2(ROOT / "port/assets/icon/ae-icon-256.png", dist / "arena-evolved.png")
     return 0
 
 

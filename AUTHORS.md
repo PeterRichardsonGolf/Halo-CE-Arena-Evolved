@@ -2,8 +2,13 @@
 
 ## Art
 
-- **The game's icon** (the Android app's launcher icon, `halo.exe`'s icon
-  and the desktop windows' icon): by ORION (`port/assets/icon`).
+- **Arena Evolved's logo and icon**, ORBIT (`halo.exe`'s icon, the desktop
+  windows' icon, the macOS and Android app icons, and the README's banner):
+  Arena Evolved's own drawing, with no third-party art
+  (`port/assets/branding`, made by `tools/ae_logo.py`). Its wordmark is set
+  in Overpass (`port/assets/fonts`, SIL Open Font License).
+- **OpenCE's icon** (upstream's builds; `port/assets/icon/opence-icon*`): by
+  ORION.
 - **The controller's A, B, X and Y buttons** (the menus' button icons and
   the HUD messages'): redraws by saulob (`port/assets/buttons`).
 - **The high-res HUD** (its meters, icons, scopes and messages, and the

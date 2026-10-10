@@ -1,4 +1,9 @@
-<h1 align="center">Halo CE: Arena Evolved</h1>
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="port/assets/branding/readme-banner-light-1280x320.png">
+    <img src="port/assets/branding/readme-banner-1280x320.png" alt="Halo CE: Arena Evolved" width="100%">
+  </picture>
+</h1>
 
 <p align="center"><b>Competitive Halo: Combat Evolved, easy to pick up, on any PC.</b></p>
 
@@ -309,8 +314,13 @@ Re-run `configure.py` when source files or the menus are added.
   competitive mod whose rules inspired Arena Evolved: the NHE team. Arena
   Evolved's versions are its own code; it is not made or endorsed by the NHE
   team. Download NHE itself from [halo1nhe.com](https://halo1nhe.com/#download).
-- Fonts: [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
+- Fonts: [Overpass](https://fonts.google.com/specimen/Overpass) (SIL OFL; the
+  game's text and the logo's wordmark),
+  [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
   [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
+- The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
+  made by `tools/ae_logo.py`); it uses no third-party art. It is not CC0
+  (see below).
 - Libraries: SDL3, stb, Mbed TLS, miniupnpc, KCP, tomlc17, musl's maths,
   extract-xiso, Expat, Monocypher, zlib, SMAA, and Project Nayuki's QR Code
   generator. Their licenses are
@@ -326,3 +336,9 @@ The code is released under [CC0](LICENSE.md), as OpenCE's and ChupathingyCE's
 are, so upstream and the community are free to use and improve it. If you use
 it, a credit is appreciated: "Halo CE: Arena Evolved by PeterRichardsonGolf",
 with a link to this repository.
+
+The logo is the exception: the ORBIT mark, the ARENA EVOLVED wordmark and the
+app icons made from them are all rights reserved by the project. You may use
+them unmodified to refer or link to Arena Evolved (in articles, videos, server
+lists), but not as another project's branding. The files and terms:
+[port/assets/branding/LICENSE.md](port/assets/branding/LICENSE.md).

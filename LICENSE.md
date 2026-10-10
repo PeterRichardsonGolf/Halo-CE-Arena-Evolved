@@ -1,3 +1,10 @@
+Halo CE: Arena Evolved's code is released under CC0 1.0 (below). Arena
+Evolved's logo (the ORBIT mark and the ARENA EVOLVED wordmark, and the app
+icons made from them) is not: see port/assets/branding/LICENSE.md for the
+files and their terms.
+
+---
+
 Creative Commons Legal Code
 
 CC0 1.0 Universal

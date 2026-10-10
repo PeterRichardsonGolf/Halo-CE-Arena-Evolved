@@ -1,5 +1,5 @@
 /* halo.exe's resources (tools/windows_build.py): its icon, which Explorer and
 the taskbar show and SDL's windows take, as the first icon of the executable.
-Arena Evolved's own (tools/ae_app_icon.py), not OpenCE's opence-icon.ico
+Arena Evolved's own logo (tools/ae_logo.py), not OpenCE's opence-icon.ico
 (tools/app_icon.py) */
 1 ICON "ae-icon.ico"

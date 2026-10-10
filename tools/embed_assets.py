@@ -50,7 +50,7 @@ SMAA_ASSETS = Path("port/third_party/smaa")
 SMAA_FILES = (("SMAA.hlsl", "xgpu_smaa_shader"), ("area_tex.zlib", "xgpu_smaa_area_texture"),
               ("search_tex.zlib", "xgpu_smaa_search_texture"))
 # the desktop windows' icon (port/linux/src/sdl_platform.c): Arena Evolved's
-# own (tools/ae_app_icon.py), not OpenCE's opence-icon-256.png (tools/app_icon.py)
+# own logo (tools/ae_logo.py), not OpenCE's opence-icon-256.png (tools/app_icon.py)
 WINDOW_ICON = Path("port/assets/icon/ae-icon-256.png")
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 # the overlay's fonts (the game browser's; posix_ui_font.c), in its order
