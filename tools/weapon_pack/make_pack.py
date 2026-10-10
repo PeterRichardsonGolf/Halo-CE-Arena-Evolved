@@ -135,8 +135,8 @@ def unknown_scripts(recipe):
 
 def check_recipe(recipe):
     """the recipe's own rules, before anything is run"""
-    for key in ("pack", "source", "stock_map", "tools", "layers", "steps", "art", "art_scripts", "art_inputs",
-                "expected", "reference"):
+    for key in ("pack", "source", "stock_map", "tools", "donor", "layers", "steps", "art", "art_scripts",
+                "art_inputs", "art_settings", "expected", "reference"):
         if key not in recipe:
             raise Refused("the recipe has no %s" % key)
     made = set()
