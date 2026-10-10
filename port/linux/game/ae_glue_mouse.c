@@ -115,7 +115,7 @@ void ae_mouse_scale_look(float *yaw, float *pitch, int zoomed, int in_vehicle)
 void ae_mouse_log_settings(void)
 {
 	mouse_read();
-	platform_log("mouse: style %s, sensitivity %.1f, zoom scale %.1f, vehicle scale %.1f",
+	platform_log("mouse: style %s, sensitivity %g, zoom scale %g, vehicle scale %g",
 		mouse.style == AE_MOUSE_MCC ? "mcc" : "classic",
 		(double)(mouse.style == AE_MOUSE_MCC ? mouse.sensitivity : (float)config_real("input.mouse_sensitivity")),
 		(double)mouse.zoom_scale, (double)mouse.vehicle_scale);
