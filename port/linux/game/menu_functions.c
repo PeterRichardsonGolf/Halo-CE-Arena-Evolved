@@ -540,10 +540,8 @@ boolean game_in_progress(void);
 in a game, the pause menu's SETTINGS edits the active profile of the player
 whose pause menu it is (split screen: each their own), which campaign_profile
 cannot find there (it reads the profiles' files by string lists a game's map
-has not); its OK puts the controller settings into the game's copy of the
-profile too (profile_save_changes) */
-static long pause_profile_edited = NONE;
-static short pause_profile_player = 0;
+has not); saving it gives it to each local player playing with it
+(player_ui_save_profile, OpenCE's #227) */
 /* port: in a match, player_ui's one profile edit is one player's at a time
 (two split-screen players' SETTINGS would edit, show and save each other's):
 the local player whose SETTINGS has it (NONE: nobody's in a match). A
@@ -711,15 +709,12 @@ boolean pc_menu_profile_edit_begin(short local_player)
 			return TRUE;
 		}
 	}
-	pause_profile_edited = NONE;
 	pause_profile_owner = NONE;
 	if (game_in_progress() && active != NONE)
 	{
 		player_ui_begin_editing_profile(active);
 		if (!player_ui_get_edit_player_profile())
 			return FALSE;
-		pause_profile_edited = active;
-		pause_profile_player = local_player;
 		if (match)
 			pause_profile_owner = local_player;
 		return TRUE;
@@ -4776,30 +4771,13 @@ static boolean profile_save_changes(struct widget_instance *widget, boolean *wid
 	}
 	if (player_ui_edit_profile_is_dirty())
 	{
-		struct player_profile *edited = player_ui_get_edit_player_profile();
-		struct player_profile_controller_settings controls;
-		long applied = pause_profile_edited;
-
-		if (edited)
-			controls = edited->controller_settings;
-		pause_profile_edited = NONE;
+		/* (in a game, each local player playing with the profile takes the
+		saved one at once: player_ui_save_profile) */
 		if (player_ui_save_profile())
 		{
 			if (pause_profile_owner == local_player)
 				pause_profile_owner = NONE;
 			settings_saved[local_player] = TRUE;
-			/* (in a game: the game's copy of the profile, which the save does
-			not touch, gets the controller settings now, as #67's) */
-			if (edited && applied != NONE &&
-				player_ui_get_active_player_profile_index(pause_profile_player) == applied)
-			{
-				struct player_profile active;
-
-				player_ui_get_active_player_profile(pause_profile_player, &active);
-				active.controller_settings = controls;
-				player_ui_set_active_player_profile(pause_profile_player, applied, &active);
-				platform_log("menus: the profile's controller settings applied in the game");
-			}
 			return TRUE;
 		}
 		platform_log("menus: could not save the profile's changes");
@@ -4822,8 +4800,16 @@ is edited again from what was saved, for Settings to go on with */
 static boolean profile_settings_save(struct widget_instance *widget)
 {
 	long index = player_ui_get_edit_profile_index();
+	short local_player = controller_of(widget);
 
 	settings_each(screen_of(widget), setting_changed_save);
+	/* (port: a player's settings without their profile: the edit, if any, is
+	another player's, saved by them) */
+	if (pc_menu_settings_without_profile(local_player) ||
+		(settings_in_match() && pause_profile_owner != NONE && pause_profile_owner != local_player))
+	{
+		return TRUE;
+	}
 	if (!player_ui_get_edit_player_profile() || !player_ui_edit_profile_is_dirty())
 		return TRUE;
 	if (!player_ui_save_profile())
