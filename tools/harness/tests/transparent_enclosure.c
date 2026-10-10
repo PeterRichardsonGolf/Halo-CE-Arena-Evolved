@@ -11,6 +11,15 @@ typedef void real_matrix4x3;
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define VALID_INDEX(i,n) ((i) >= 0 && (i) < (n))
 #define square_root sqrt
+/* Arena Evolved keeps the Xbox's pointer fields in its 64-bit builds (XPTR,
+read through XBOX_POINTER: source/cseries/xbox_address.h); this 32-bit
+harness takes that file's 32-bit forms, plain pointers, and the vertex and
+index buffers models.c names in them */
+#define XPTR(type) type *
+#define xbox_pointer(address) ((void *)(address))
+#define XBOX_POINTER(type, address) ((type *)xbox_pointer(address))
+typedef void IDirect3DVertexBuffer8;
+typedef void IDirect3DIndexBuffer8;
 #include "types.inc"
 
 static struct model model;
