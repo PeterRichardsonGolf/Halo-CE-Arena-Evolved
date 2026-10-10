@@ -47,6 +47,12 @@ def port_game_sources(config: Dict[str, Any]) -> List[Path]:
     return sorted(Path(config["game_sources"]).glob("*.c"))
 
 
+def pack_checker(validator: Path) -> Path:
+    """(Arena Evolved) the weapon pack checker ninja linux builds beside the
+    tag validator (tools/ae_pack_check.c)"""
+    return validator.parent / "ae_pack_check"
+
+
 def game_defines_and_includes(config: Dict[str, Any]) -> str:
     """the game sources' defines and include directories (port.json "game")"""
     game = config["game"]
@@ -769,6 +775,26 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
                 variables={"ldflags": " ".join(["--target=i686-linux-gnu", "-m32", "-no-pie", "-g", *sysroot_ldflags,
                                                 *extra_ldflags])},
             )
+            # (Arena Evolved) the weapon pack checker beside it: the game's
+            # object of the pack reader (port/linux/game/ae_pack_format.c)
+            # and a program that prints a pack (tools/ae_pack_check.c)
+            pack_tool = Path("tools/ae_pack_check.c")
+            pack_tool_object = obj_dir / pack_tool.with_suffix(".o")
+            n.build(
+                outputs=pack_tool_object,
+                rule="linux_cc",
+                inputs=pack_tool,
+                implicit=sysroot_inputs,
+                variables={"cflags": " ".join([posix_cflags, f"-I{game_dir}", posix_extra])},
+            )
+            n.build(
+                outputs=pack_checker(validator),
+                rule="linux_tool_link",
+                inputs=[pack_tool_object, obj_dir / (game_dir / "ae_pack_format.o"),
+                        *(obj_dir / (ZLIB_DIR / name).with_suffix(".o") for name in ZLIB_SOURCES)],
+                variables={"ldflags": " ".join(["--target=i686-linux-gnu", "-m32", "-no-pie", "-g", *sysroot_ldflags,
+                                                *extra_ldflags])},
+            )
 
     # Profile-guided optimisation: with the committed profile, or with
     # --pgo=train one that an instrumented build records while playing
@@ -796,5 +822,6 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
     brokers = build_dir / "brokers.txt"
     n.build(outputs=brokers, rule="linux_copy", inputs=Path("port/assets/network/brokers.txt"))
     voices = voices_build(n, "linux_copy", build_dir)
-    n.build(outputs="linux", rule="phony", inputs=[output, brokers, validator, *voices, *sdl_outputs])
+    n.build(outputs="linux", rule="phony", inputs=[output, brokers, validator, pack_checker(validator), *voices,
+                                                   *sdl_outputs])
     n.newline()
