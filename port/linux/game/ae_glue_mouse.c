@@ -93,12 +93,16 @@ void ae_mouse_look_override(float x, float y, int invert, float *yaw, float *pit
 		ae_mouse_mcc_look(mouse.sensitivity, x, y, invert, yaw, pitch);
 }
 
-void ae_mouse_test_buttons(unsigned short *buttons)
+void ae_mouse_test_buttons(unsigned short *buttons, unsigned char *action)
 {
 	mouse_read();
-	/* (the right stick's click: the default zoom button; the zoom level cycles on a press, so held = one press) */
 	if (mouse.test && mouse.test_zoom)
+	{
+		/* (the right stick's click: the default zoom button; the zoom level cycles on a press, so held = one press;
+		and the action button, which picks up the weapon the test stands the player on) */
 		*buttons |= 0x0080;
+		*action = 255;
+	}
 }
 
 void ae_mouse_scale_look(float *yaw, float *pitch, long unit_index, short zoom_level)

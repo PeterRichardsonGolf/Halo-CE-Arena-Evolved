@@ -35,4 +35,4 @@ port/linux/game/menu_functions.c	#define MAXIMUM_STRINGS 128 /* AE hook */
 port/linux/game/menu_tags.c	#define MAXIMUM_STRINGS 128 /* AE hook */
 port/linux/src/xinput_sdl.c	ae_mouse_test_counts(&x, &y); /* AE hook */
 port/linux/src/xinput_sdl.c	ae_mouse_look_override(x, y, invert, yaw, pitch); /* AE hook */
-port/linux/src/xinput_sdl.c	ae_mouse_test_buttons(&pad->wButtons); /* AE hook */
+port/linux/src/xinput_sdl.c	ae_mouse_test_buttons(&pad->wButtons, &pad->bAnalogButtons[XINPUT_GAMEPAD_X]); /* AE hook */
