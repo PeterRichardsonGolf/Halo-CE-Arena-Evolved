@@ -74,7 +74,8 @@ def sample_pack(**changes):
     ]
     weapons = [aepack.Weapon("battle_rifle", 0, "h_br", "BATTLE RIFLE", item_collection_tag=6, behaviour=1,
                              fallback_labels=("ar", None),
-                             pickup_texts=("Hold %s to pick up the battle rifle", None),
+                             weapon_pickup_text="Picked up a battle rifle",
+                             ammo_pickup_text="Picked up %d rounds for battle rifle",
                              icon_bitmap_tag=5, icon_sequence=0, replaces=2, power=0)]
     pack = aepack.Pack("ae_test_rifle", 1, "TEST RIFLE", tags, weapons, credits="Format test pack.\nNo art.\n")
     for name, value in changes.items():
@@ -192,6 +193,7 @@ def test_valid_pack_is_accepted_and_printed(checker, tmp_path):
     assert "flags smooth bytes" in text and "flags smooth,coverage bytes" in text
     assert " external required 1 flags - " in text
     assert "weapon 0 key battle_rifle root 0 items 6 behaviour 1 label h_br fallbacks ar,- menu \"BATTLE RIFLE\"" in text
+    assert "pickup \"Picked up a battle rifle\" ammo \"Picked up %d rounds for battle rifle\" icon 5:0" in text
     assert "icon 5:0 replaces 2 power 0" in text
     assert "resources 2 of 5300 bytes" in text
     assert f"sha256 {hashlib.sha256(image[:0x5C] + bytes(32) + image[0x7C:]).hexdigest()}" in text
@@ -301,6 +303,54 @@ def _duplicate_tag(image):
     return aepack.build(pack)
 
 
+def _swapped_fixups(image):
+    """tag 0's first two fixups in the wrong order"""
+    data = bytearray(image)
+    first = record_offset(image, aepack.FIXUPS, 0, aepack.FIXUP_RECORD)
+    second = first + aepack.FIXUP_RECORD.size
+    data[first:second], data[second:second + aepack.FIXUP_RECORD.size] = (
+        data[second:second + aepack.FIXUP_RECORD.size], data[first:second])
+    aepack.rehash(data)
+    return bytes(data)
+
+
+def _overlapping_parts(image):
+    """a second part 0x67 bytes after the first"""
+    pack = sample_pack()
+    strip = struct.pack("<4H", 0, 1, 2, 3)
+    pack.tags[1].bytes = bytes(0x200)
+    pack.tags[1].parts = [aepack.Part(0, 5, aepack.STRIP, 4, 2, bytes(128), strip),
+                          aepack.Part(0x67, 5, aepack.STRIP, 4, 2, bytes(128), strip)]
+    return aepack.build(pack)
+
+
+def _part_vertex_type(vertex_type):
+    def change(image):
+        pack = sample_pack()
+        part = pack.tags[1].parts[0]
+        part.vertex_type = vertex_type
+        part.vertices = bytes(4 * aepack.VERTEX_SIZES[vertex_type])
+        return aepack.build(pack)
+    return change
+
+
+def _external_with_bytes(image):
+    pack = sample_pack()
+    pack.tags[4].bytes = b"\1\2\3\4"
+    return aepack.build(pack)
+
+
+def _texts(weapon_text, ammo_text):
+    def change(image):
+        pack = sample_pack()
+        if weapon_text is not None:
+            pack.weapons[0].weapon_pickup_text = weapon_text
+        if ammo_text is not None:
+            pack.weapons[0].ammo_pickup_text = ammo_text
+        return aepack.build(pack)
+    return change
+
+
 REFUSALS = {
     "truncated header": (_cut(0x80, False), "truncated"),
     "truncated table": (_cut(0x110, True), "truncated"),
@@ -347,6 +397,23 @@ REFUSALS = {
     "weapon replaces random": (_weapon_field(12, 1), "replaces"),
     "weapon icon not a bitmap": (_weapon_field(10, 4), "icon"),
     "weapon item collection not one": (_weapon_field(2, 0), "item collection"),
+    "own tags' bytes overlap": (_tag_field(1, 24, "<I", 0), "overlap"),
+    "fixups overlap": (_fixup_field(1, 0, "<I", 0x12), "overlap"),
+    "fixups out of order": (_swapped_fixups, "out of order"),
+    "parts overlap": (_overlapping_parts, "overlap"),
+    "part not of a model's vertex type": (_part_vertex_type(0), "part type"),
+    "external tag with bytes (written)": (_external_with_bytes, "external"),
+    "weapon pickup text with %": (_texts("Picked up 100% of a rifle", None), "weapon pickup"),
+    "weapon pickup text with %%": (_texts("Picked up 100%% of a rifle", None), "weapon pickup"),
+    "weapon pickup text with %d": (_texts("Picked up %d rifles", None), "weapon pickup"),
+    "ammo pickup text with %s": (_texts(None, "Picked up %s rounds"), "ammo pickup"),
+    "ammo pickup text with %n": (_texts(None, "Picked up %d rounds%n"), "ammo pickup"),
+    "ammo pickup text with %%d": (_texts(None, "Picked up %%d rounds"), "ammo pickup"),
+    "ammo pickup text with two %d": (_texts(None, "Picked up %d of %d rounds"), "ammo pickup"),
+    "ammo pickup text with a width": (_texts(None, "Picked up %999d rounds"), "ammo pickup"),
+    "ammo pickup text with a precision": (_texts(None, "Picked up %.5d rounds"), "ammo pickup"),
+    "ammo pickup text with a lone %": (_texts(None, "Picked up %d rounds %"), "ammo pickup"),
+    "ammo pickup text without %d": (_texts(None, "Picked up rounds"), "ammo pickup"),
 }
 
 
@@ -389,7 +456,9 @@ def _tag_size(size):
 
 def _fixups(count):
     pack = sample_pack()
-    pack.tags[6].fixups = [aepack.Fixup(0, aepack.FIXUP_POINTER, 4)] * (count - 4)
+    # (pointers 4 bytes apart: a tag's fixups may not overlap)
+    pack.tags[6].bytes = bytes(4 * (count - 4))
+    pack.tags[6].fixups = [aepack.Fixup(4 * index, aepack.FIXUP_POINTER, 0) for index in range(count - 4)]
     return pack
 
 
@@ -431,8 +500,10 @@ def _weapons(count):
 def _parts(count):
     pack = sample_pack()
     strip = struct.pack("<4H", 0, 1, 2, 3)
-    pack.tags[1].bytes = bytes(0x68 + count)
-    pack.tags[1].parts = [aepack.Part(index, 5, aepack.STRIP, 4, 2, bytes(4 * 32), strip) for index in range(count)]
+    # (parts 0x68 bytes apart: they may not overlap)
+    pack.tags[1].bytes = bytes(0x68 * count)
+    pack.tags[1].parts = [aepack.Part(index * 0x68, 5, aepack.STRIP, 4, 2, bytes(4 * 32), strip)
+                          for index in range(count)]
     return pack
 
 
@@ -511,16 +582,32 @@ def test_file_size_limit(checker, tmp_path):
 
 # ---------- byte flips
 
-def _mutants(base, count, seed):
+def _mutants(bases, count, seed):
+    """count packs from the bases (the first three times as often as the others), each with a few bytes changed or
+    (one in ten) its length cut or grown"""
     rng = random.Random(seed)
-    structural = [range(0, aepack.HEADER_SIZE + 10 * aepack.SECTION_ENTRY_SIZE)]
-    for kind, offset, stored, _, _ in aepack.section_entries(base):
-        if kind not in (aepack.RESOURCE_DATA, aepack.TAG_BYTES, aepack.GEOMETRY) and stored:
-            structural.append(range(offset, offset + stored))
-    interesting = [0, 1, 2, 3, 4, 0x10, 0x68, 0x7F, 0x80, 0xFF, 0x100, 0xFFFF, 0x10000, 0x7FFFFFFF, 0x80000000,
-                   0xFFFFFFFE, 0xFFFFFFFF, len(base), len(base) - 16]
+    regions = []
+    for base in bases:
+        structural = [range(0, aepack.HEADER_SIZE + 10 * aepack.SECTION_ENTRY_SIZE)]
+        for kind, offset, stored, _, _ in aepack.section_entries(base):
+            if kind not in (aepack.RESOURCE_DATA, aepack.TAG_BYTES, aepack.GEOMETRY) and stored:
+                structural.append(range(offset, offset + stored))
+        regions.append(structural)
     for _ in range(count):
+        which = 0 if rng.random() < 0.75 else rng.randrange(1, len(bases))
+        base, structural = bases[which], regions[which]
+        interesting = [0, 1, 2, 3, 4, 0x10, 0x68, 0x7F, 0x80, 0xFF, 0x100, 0xFFFF, 0x10000, 0x7FFFFFFF, 0x80000000,
+                       0xFFFFFFFE, 0xFFFFFFFF, len(base), len(base) - 16]
         data = bytearray(base)
+        if rng.random() < 0.1:
+            if rng.random() < 0.5:
+                del data[rng.randrange(aepack.HEADER_SIZE // 2, len(data)):]
+            else:
+                data += bytes(rng.randrange(256) for _ in range(rng.randint(1, 64)))
+            if rng.random() < 0.9 and len(data) >= 0x7C:
+                aepack.rehash(data)
+            yield bytes(data)
+            continue
         for _ in range(rng.randint(1, 3)):
             region = rng.choice(structural) if rng.random() < 0.7 else range(len(data))
             position = rng.choice(region)
@@ -543,11 +630,14 @@ def _mutants(base, count, seed):
 def test_byte_flip_fuzz(checker, tmp_path):
     """2,000 packs with a few bytes changed (most hashed again, so the checks past the hash are reached): the tool
     never crashes or hangs, refuses what aepack.py refuses and prints what it prints for anything it accepts"""
-    base = aepack.build(sample_pack())
+    bases = [aepack.build(sample_pack()),
+             aepack.build(sample_pack(compressed_sections=(aepack.STRINGS, aepack.TAGS, aepack.TAG_BYTES,
+                                                           aepack.FIXUPS, aepack.PARTS, aepack.GEOMETRY,
+                                                           aepack.RESOURCES, aepack.WEAPONS, aepack.CREDITS)))]
     accepted_count = 0
     batch = []
     images = {}
-    for index, image in enumerate(_mutants(base, FUZZ_ITERATIONS, 20261010)):
+    for index, image in enumerate(_mutants(bases, FUZZ_ITERATIONS, 20261010)):
         path = tmp_path / f"m{index:04d}.aepack"
         path.write_bytes(image)
         images[str(path)] = image

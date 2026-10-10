@@ -23,10 +23,16 @@ layer's POSIX flags, against the game's object of ae_pack_format.c (whose
 functions take and return the same types in both ABIs; as map_validate).
 */
 
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "ae_pack_format.h"
 
@@ -34,6 +40,7 @@ functions take and return the same types in both ABIs; as map_validate).
 
 FILE *halo_linux_fopen(char const *path, char const *mode);
 int halo_linux_remove(char const *path);
+int halo_linux_rename(char const *old_path, char const *new_path);
 int halo_linux_vsnprintf(char *buffer, size_t count, char const *format, va_list arguments);
 int halo_linux_snprintf(char *buffer, size_t count, char const *format, ...);
 
@@ -45,6 +52,11 @@ FILE *halo_linux_fopen(char const *path, char const *mode)
 int halo_linux_remove(char const *path)
 {
 	return remove(path);
+}
+
+int halo_linux_rename(char const *old_path, char const *new_path)
+{
+	return rename(old_path, new_path);
 }
 
 int halo_linux_vsnprintf(char *buffer, size_t count, char const *format, va_list arguments)
@@ -153,10 +165,10 @@ static void describe(struct ae_pack const *pack)
 		else
 			sprintf(icon, "%u:%u", weapon->icon_bitmap_tag, weapon->icon_sequence);
 		printf("weapon %u key %s root %u items %s behaviour %u label %s fallbacks %s,%s menu \"%s\" pickup \"%s\" "
-			"swap \"%s\" icon %s replaces %u power %u\n", index, text(pack, weapon->key), weapon->root_tag, items,
+			"ammo \"%s\" icon %s replaces %u power %u\n", index, text(pack, weapon->key), weapon->root_tag, items,
 			weapon->behaviour, text(pack, weapon->label), text(pack, weapon->fallback_labels[0]),
-			text(pack, weapon->fallback_labels[1]), text(pack, weapon->menu_name), text(pack, weapon->pickup_texts[0]),
-			text(pack, weapon->pickup_texts[1]), icon, weapon->replaces, weapon->power);
+			text(pack, weapon->fallback_labels[1]), text(pack, weapon->menu_name),
+			text(pack, weapon->weapon_pickup_text), text(pack, weapon->ammo_pickup_text), icon, weapon->replaces, weapon->power);
 	}
 	printf("credits %u bytes\n", pack->credits_size);
 	printf("resources %u of %u bytes\n", pack->resource_count, pack->resources_size);
@@ -344,8 +356,9 @@ static int rewrite(char const *in, char const *out)
 		for (k = 0; k < 2; k++)
 		{
 			weapons[index].fallback_labels[k] = ae_pack_string(pack, weapon->fallback_labels[k]);
-			weapons[index].pickup_texts[k] = ae_pack_string(pack, weapon->pickup_texts[k]);
 		}
+		weapons[index].weapon_pickup_text = ae_pack_string(pack, weapon->weapon_pickup_text);
+		weapons[index].ammo_pickup_text = ae_pack_string(pack, weapon->ammo_pickup_text);
 		weapons[index].menu_name = ae_pack_string(pack, weapon->menu_name);
 		weapons[index].icon_bitmap_tag = weapon->icon_bitmap_tag;
 		weapons[index].icon_sequence = weapon->icon_sequence;
@@ -402,18 +415,20 @@ static int writer_check(char const *out)
 	struct ae_pack_problem problem;
 	struct ae_pack *pack;
 	unsigned char read_back[40];
+	char temporary[4096];
 	int failures = 0;
 	unsigned int index;
 
 	for (index = 0; index < sizeof(pixels); index++)
 		pixels[index] = (unsigned char)(index * 3);
 	memset(fixups, 0, sizeof(fixups));
-	fixups[0].offset = 0;
-	fixups[0].kind = AE_PACK_FIXUP_POINTER;
-	fixups[0].value = 8;
-	fixups[1].offset = 16;
-	fixups[1].kind = AE_PACK_FIXUP_REFERENCE;
-	fixups[1].value = 1;
+	/* (out of offset order: the writer sorts them) */
+	fixups[0].offset = 16;
+	fixups[0].kind = AE_PACK_FIXUP_REFERENCE;
+	fixups[0].value = 1;
+	fixups[1].offset = 0;
+	fixups[1].kind = AE_PACK_FIXUP_POINTER;
+	fixups[1].value = 8;
 	resource.map_offset = 0x4000;
 	resource.data = pixels;
 	resource.size = sizeof(pixels);
@@ -446,6 +461,8 @@ static int writer_check(char const *out)
 	weapon.label = "h_br";
 	weapon.fallback_labels[0] = "ar";
 	weapon.menu_name = "BATTLE RIFLE";
+	weapon.weapon_pickup_text = "Picked up a battle rifle";
+	weapon.ammo_pickup_text = "Picked up %d rounds for battle rifle";
 	weapon.icon_bitmap_tag = 1;
 	weapon.replaces = AE_PACK_REPLACES_ASSAULT_RIFLE;
 	memset(&data, 0, sizeof(data));
@@ -472,7 +489,9 @@ static int writer_check(char const *out)
 	if (pack->tag_count != 2 || pack->own_tag_count != 2 || pack->weapon_count != 1 || pack->fixup_count != 2 ||
 		pack->resource_count != 1 || pack->tags[1].flags != 3 || pack->header.pack_revision != 3 ||
 		strcmp(ae_pack_string(pack, pack->weapons[0].key), "battle_rifle") ||
-		strcmp(pack->credits, "made by the check") || ae_pack_string(pack, pack->weapons[0].pickup_texts[0]))
+		strcmp(pack->credits, "made by the check") ||
+		strcmp(ae_pack_string(pack, pack->weapons[0].ammo_pickup_text), "Picked up %d rounds for battle rifle") ||
+		pack->fixups[0].offset != 0 || pack->fixups[1].offset != 16)
 	{
 		printf("FAIL: the written pack does not hold what was written\n");
 		failures++;
@@ -488,7 +507,8 @@ static int writer_check(char const *out)
 	}
 	ae_pack_close(pack);
 
-	/* refused, nothing written */
+	/* refused, nothing written (nor its temporary file) */
+	snprintf(temporary, sizeof(temporary), "%s.tmp", out);
 #define REFUSED(what, change, undo) \
 	do { \
 		remove(out); \
@@ -498,7 +518,7 @@ static int writer_check(char const *out)
 			printf("FAIL: %s was written\n", what); \
 			failures++; \
 		} \
-		else if (file_exists(out)) \
+		else if (file_exists(out) || file_exists(temporary)) \
 		{ \
 			printf("FAIL: %s left a file\n", what); \
 			failures++; \
@@ -512,9 +532,19 @@ static int writer_check(char const *out)
 
 	REFUSED("an unknown flag bit", tags[1].flags = 4, tags[1].flags = 3);
 	REFUSED("a flag on the weapon", tags[0].flags = 1, tags[0].flags = 0);
-	REFUSED("a fixup past its tag", fixups[0].offset = 61, fixups[0].offset = 0);
-	REFUSED("a pointer target past its tag", fixups[0].value = 64, fixups[0].value = 8);
-	REFUSED("a reference past the tags", fixups[1].value = 2, fixups[1].value = 1);
+	REFUSED("a fixup past its tag", fixups[1].offset = 61, fixups[1].offset = 0);
+	REFUSED("a pointer target past its tag", fixups[1].value = 64, fixups[1].value = 8);
+	REFUSED("a reference past the tags", fixups[0].value = 2, fixups[0].value = 1);
+	REFUSED("overlapping fixups", fixups[1].offset = 14, fixups[1].offset = 0);
+	REFUSED("two fixups at one offset", fixups[1].offset = 16, fixups[1].offset = 0);
+	REFUSED("an external tag with bytes", tags[1].kind = AE_PACK_TAG_EXTERNAL; tags[1].flags = 0;
+		tags[1].resource_count = 0, tags[1].kind = AE_PACK_TAG_OWN; tags[1].flags = 3; tags[1].resource_count = 1);
+	REFUSED("a weapon pickup text with %", weapon.weapon_pickup_text = "Picked up 100% rifle",
+		weapon.weapon_pickup_text = "Picked up a battle rifle");
+	REFUSED("an ammo pickup text with %s", weapon.ammo_pickup_text = "Picked up %s rounds",
+		weapon.ammo_pickup_text = "Picked up %d rounds for battle rifle");
+	REFUSED("an ammo pickup text with two %d", weapon.ammo_pickup_text = "%d of %d rounds",
+		weapon.ammo_pickup_text = "Picked up %d rounds for battle rifle");
 	REFUSED("a second tag of the same name", tags[1].group = AE_PACK_GROUP_WEAPON;
 		tags[1].name = tags[0].name; tags[1].flags = 0,
 		tags[1].group = AE_PACK_GROUP_BITMAP; tags[1].name = "ae\\packs\\check\\meter"; tags[1].flags = 3);
@@ -529,6 +559,36 @@ static int writer_check(char const *out)
 	REFUSED("revision 0", data.pack_revision = 0, data.pack_revision = 3);
 	REFUSED("bad UTF-8 credits", data.credits = "\xC0\xAF", data.credits = "made by the check");
 #undef REFUSED
+
+	/* a write that fails (its temporary file cannot be made) leaves the pack already there as it was */
+	{
+		unsigned int before_size, after_size;
+		unsigned char *before, *after;
+
+		if (!ae_pack_write(out, &data, &problem))
+		{
+			printf("FAIL: not written: %s\n", problem.text);
+			return 1;
+		}
+		before = file_read(out, &before_size);
+		mkdir(temporary, 0700);
+		weapon.menu_name = "OTHER RIFLE";
+		if (ae_pack_write(out, &data, &problem))
+		{
+			printf("FAIL: written through a directory\n");
+			failures++;
+		}
+		weapon.menu_name = "BATTLE RIFLE";
+		rmdir(temporary);
+		after = file_read(out, &after_size);
+		if (!before || !after || before_size != after_size || memcmp(before, after, before_size))
+		{
+			printf("FAIL: a failed write changed the pack already there\n");
+			failures++;
+		}
+		free(before);
+		free(after);
+	}
 
 	/* the same data, the same bytes */
 	{

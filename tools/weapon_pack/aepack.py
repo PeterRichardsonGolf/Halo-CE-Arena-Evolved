@@ -97,6 +97,8 @@ SECTION_LIMITS = {
 MODEL_PART_SIZE = 0x68
 VERTEX_SIZES = (56, 32, 20, 8, 68, 32, 24, 36, 20, 16, 16, 8)
 TRIANGLES, STRIP = 0, 1
+# (a model part's vertices: model uncompressed or compressed)
+MODEL_VERTEX_TYPES = (4, 5)
 MAXIMUM_PART_COUNT = 0xFFFF
 
 GROUP_WEAPON = 0x77656170  # 'weap'
@@ -172,7 +174,9 @@ class Weapon:
     item_collection_tag: int = NONE
     behaviour: int = 0
     fallback_labels: Tuple[Optional[str], Optional[str]] = (None, None)
-    pickup_texts: Tuple[Optional[str], Optional[str]] = (None, None)
+    # the weapon picked up (no '%'), its ammo picked up (exactly one "%d", the engine's rounds)
+    weapon_pickup_text: Optional[str] = None
+    ammo_pickup_text: Optional[str] = None
     icon_bitmap_tag: int = NONE
     icon_sequence: int = 0
     replaces: int = 0
@@ -229,14 +233,16 @@ def build(pack: Pack) -> bytes:
     for weapon in pack.weapons:
         weapon_strings.append([strings.add(weapon.key), strings.add(weapon.label),
                                strings.add(weapon.fallback_labels[0]), strings.add(weapon.fallback_labels[1]),
-                               strings.add(weapon.menu_name), strings.add(weapon.pickup_texts[0]),
-                               strings.add(weapon.pickup_texts[1])])
+                               strings.add(weapon.menu_name), strings.add(weapon.weapon_pickup_text),
+                               strings.add(weapon.ammo_pickup_text)])
 
     tags, tag_bytes, fixups, parts, geometry, resources, resource_data = (bytearray() for _ in range(7))
     fixup_count = part_count = resource_count = 0
     for index, tag in enumerate(pack.tags):
-        bytes_offset = _place(tag_bytes, tag.bytes) if tag.kind == OWN and tag.bytes else 0
-        for fixup in tag.fixups:
+        # (an external tag's bytes are written too, never dropped: the reader refuses them)
+        bytes_offset = _place(tag_bytes, tag.bytes) if tag.bytes else 0
+        # (each tag's fixups by offset, as ae_pack_write sorts them)
+        for fixup in sorted(tag.fixups, key=lambda fixup: (fixup.offset, fixup.kind, fixup.value, fixup.pad)):
             fixups += FIXUP_RECORD.pack(fixup.offset, fixup.kind, fixup.pad, fixup.value)
         for part in tag.parts:
             vertices_offset = _place(geometry, part.vertices)
@@ -252,7 +258,7 @@ def build(pack: Pack) -> bytes:
                                               data_offset, len(stored), resource.compression)
         tags += TAG_RECORD.pack(tag.group, tag.parent_groups[0], tag.parent_groups[1], names[index][0], tag.kind,
                                 tag.required, tag.flags, tag.pad, names[index][1], bytes_offset,
-                                len(tag.bytes) if tag.kind == OWN else 0, fixup_count, len(tag.fixups), part_count,
+                                len(tag.bytes), fixup_count, len(tag.fixups), part_count,
                                 len(tag.parts), resource_count, len(tag.resources))
         fixup_count += len(tag.fixups)
         part_count += len(tag.parts)
@@ -379,6 +385,14 @@ def _check_padded(field_bytes: bytes, maximum: int, allowed, what: str) -> None:
         raise Refused(f"bad {what}")
 
 
+def _pickup_format(text: bytes, ammo: bool) -> bool:
+    """a pickup text the engine can fill safely: the weapon's has no "%"; the ammo's exactly one, a "%d" """
+    percents = [index for index, byte in enumerate(text) if byte == 0x25]
+    if any(text[index + 1:index + 2] != b"d" for index in percents):
+        return False
+    return len(percents) == (1 if ammo else 0)
+
+
 def _is_key_character(byte: int) -> bool:
     return 0x61 <= byte <= 0x7A or 0x30 <= byte <= 0x39 or byte == 0x5F
 
@@ -478,6 +492,7 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
         raise Refused("too many tags")
 
     own = 0
+    bytes_cursor = 0
     cursors = [0, 0, 0]
     sums = [0, 0, 0]
     totals = [len(fixups), len(parts), len(resources)]
@@ -507,6 +522,9 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
                 raise Refused(f"{what}: bad size")
             if bytes_offset > len(tag_bytes) or bytes_size > len(tag_bytes) - bytes_offset:
                 raise Refused(f"{what}: bytes past TAG_BYTES")
+            if bytes_offset < bytes_cursor:
+                raise Refused(f"{what}: bytes overlap the previous tag's")
+            bytes_cursor = bytes_offset + bytes_size
         else:
             if required not in (0, 1):
                 raise Refused(f"{what}: bad required")
@@ -539,6 +557,7 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
         size = tag[10]
         what = f"tag {index}"
         fixups_first, fixups_count, parts_first, parts_count, resources_first, resources_count = tag[11:17]
+        end = None
         for fixup in fixups[fixups_first:fixups_first + fixups_count]:
             offset, fixup_kind, pad, value = fixup
             if pad:
@@ -558,16 +577,19 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
                     raise Refused(f"{what}: tag index fixup past the tags")
             else:
                 raise Refused(f"{what}: unknown fixup kind")
+            if end is not None and offset < end:
+                raise Refused(f"{what}: fixups overlap or out of order")
+            end = offset + (TAG_REFERENCE_SIZE if fixup_kind == FIXUP_REFERENCE else 4)
         previous = None
         for part in parts[parts_first:parts_first + parts_count]:
             (offset, vertex_type, triangle_type, vertex_count, triangle_count, vertices_offset, vertices_size,
              indices_offset, indices_size) = part
             if size < MODEL_PART_SIZE or offset > size - MODEL_PART_SIZE:
                 raise Refused(f"{what}: part past its tag")
-            if previous is not None and offset <= previous:
-                raise Refused(f"{what}: parts out of order")
+            if previous is not None and offset < previous + MODEL_PART_SIZE:
+                raise Refused(f"{what}: parts overlap or out of order")
             previous = offset
-            if vertex_type >= len(VERTEX_SIZES) or triangle_type not in (TRIANGLES, STRIP):
+            if vertex_type not in MODEL_VERTEX_TYPES or triangle_type not in (TRIANGLES, STRIP):
                 raise Refused(f"{what}: bad part type")
             if not 1 <= vertex_count <= MAXIMUM_PART_COUNT or not 1 <= triangle_count <= MAXIMUM_PART_COUNT:
                 raise Refused(f"{what}: bad part count")
@@ -604,7 +626,7 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
 
     weapon_keys = set()
     for index, weapon in enumerate(weapons):
-        (key, root_tag, items, behaviour, label, fallback0, fallback1, menu_name, pickup, swap, icon, sequence,
+        (key, root_tag, items, behaviour, label, fallback0, fallback1, menu_name, pickup, ammo, icon, sequence,
          replaces, power) = weapon
         what = f"weapon {index}"
         key_text = _string(strings, key, what)
@@ -628,12 +650,12 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
         text = _string(strings, menu_name, what) if menu_name != NONE else b""
         if not 1 <= len(text) <= MAXIMUM_MENU_NAME or not _utf8(text):
             raise Refused(f"{what}: bad menu name")
-        for value in (pickup, swap):
+        for value, is_ammo in ((pickup, False), (ammo, True)):
             if value == NONE:
                 continue
             text = _string(strings, value, what)
-            if not 1 <= len(text) <= MAXIMUM_PICKUP_TEXT or not _utf8(text):
-                raise Refused(f"{what}: bad pickup text")
+            if not 1 <= len(text) <= MAXIMUM_PICKUP_TEXT or not _utf8(text) or not _pickup_format(text, is_ammo):
+                raise Refused(f"{what}: bad {'ammo' if is_ammo else 'weapon'} pickup text")
         if icon == NONE:
             if sequence:
                 raise Refused(f"{what}: an icon sequence without an icon")
@@ -703,7 +725,7 @@ def describe(parsed: Parsed) -> List[str]:
         icon = "NONE" if weapon[10] == NONE else f"{weapon[10]}:{weapon[11]}"
         lines.append(f"weapon {index} key {text(weapon[0])} root {weapon[1]} items {_index_text(weapon[2])} "
                      f"behaviour {weapon[3]} label {text(weapon[4])} fallbacks {text(weapon[5])},{text(weapon[6])} "
-                     f"menu \"{text(weapon[7])}\" pickup \"{text(weapon[8])}\" swap \"{text(weapon[9])}\" "
+                     f"menu \"{text(weapon[7])}\" pickup \"{text(weapon[8])}\" ammo \"{text(weapon[9])}\" "
                      f"icon {icon} replaces {weapon[12]} power {weapon[13]}")
     resources_size = sum(resource[2] for resource in parsed.resources)
     lines.append(f"credits {len(parsed.credits)} bytes")

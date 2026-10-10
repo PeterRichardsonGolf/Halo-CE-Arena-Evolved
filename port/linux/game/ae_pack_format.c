@@ -16,12 +16,16 @@ The reader trusts nothing it reads. In order:
 4. the resident sections read (a zlib one inflated to exactly its inflated
    size, the stream ended, nothing after it);
 5. what they hold: every string reference inside STRINGS (which ends with a
-   terminator), every tag's bytes inside TAG_BYTES and its fixups, parts and
-   resources inside their sections, in tag order without overlapping and
-   all of them owned; every fixup inside its tag's bytes, naming a target
-   in them or a pack tag; parts' sizes and indices against their vertices;
-   resources' sizes against the limits and RESOURCE_DATA; weapons' tags,
-   texts and values.
+   terminator), every tag's bytes inside TAG_BYTES (own tags' in tag order,
+   none overlapping another's) and its fixups, parts and resources inside
+   their sections, in tag order without overlapping and all of them owned;
+   every fixup inside its tag's bytes, by offset, none overlapping another,
+   naming a target in them or a pack tag; parts' sizes and indices against
+   their vertices, none overlapping another; resources' sizes against the
+   limits and RESOURCE_DATA; weapons' tags, texts (the pickup texts' formats)
+   and values.
+That is the containers only: the structure inside a tag's bytes is the tag
+validator's to check once the pack's tags are relocated (ae_pack_format.h).
 Every size is checked before anything is allocated or inflated for it, and
 every sum against its limit as it grows, so no count in a file makes the
 reader allocate or loop past the limits.
@@ -839,6 +843,7 @@ static int tags_check(
 {
 	unsigned int cursors[3] = { 0, 0, 0 };
 	unsigned int sums[3] = { 0, 0, 0 };
+	unsigned int bytes_cursor = 0;
 	unsigned int index, other;
 
 	if (pack->tag_count > AE_PACK_MAXIMUM_TAGS)
@@ -873,6 +878,10 @@ static int tags_check(
 				return refuse(problem, "tag %u: bad size %u", index, tag->bytes_size);
 			if (tag->bytes_offset > pack->tag_bytes_size || tag->bytes_size > pack->tag_bytes_size - tag->bytes_offset)
 				return refuse(problem, "tag %u: bytes past TAG_BYTES", index);
+			/* (own tags' bytes in tag order: no two share or overlap) */
+			if (tag->bytes_offset < bytes_cursor)
+				return refuse(problem, "tag %u: bytes overlap the previous tag's", index);
+			bytes_cursor = tag->bytes_offset + tag->bytes_size;
 		}
 		else
 		{
@@ -914,10 +923,12 @@ static int fixups_check(
 	struct ae_pack_tag_record const *tag = &pack->tags[index];
 	unsigned int size = tag->bytes_size;
 	unsigned int fixup_index;
+	unsigned int end = 0;
 
 	for (fixup_index = 0; fixup_index < tag->fixups_count; fixup_index++)
 	{
 		struct ae_pack_fixup_record const *fixup = &pack->fixups[tag->fixups_first + fixup_index];
+		unsigned int width = fixup->kind == AE_PACK_FIXUP_REFERENCE ? AE_PACK_TAG_REFERENCE_SIZE : 4;
 
 		if (fixup->pad)
 			return refuse(problem, "tag %u: bad fixup", index);
@@ -942,6 +953,10 @@ static int fixups_check(
 		default:
 			return refuse(problem, "tag %u: unknown fixup kind %u", index, (unsigned int)fixup->kind);
 		}
+		/* (a tag's fixups by offset, none overlapping another: no two write the same bytes) */
+		if (fixup_index && fixup->offset < end)
+			return refuse(problem, "tag %u: fixups overlap or out of order", index);
+		end = fixup->offset + width;
 	}
 	return 1;
 }
@@ -962,9 +977,10 @@ static int parts_check(
 
 		if (tag->bytes_size < AE_PACK_MODEL_PART_SIZE || part->offset > tag->bytes_size - AE_PACK_MODEL_PART_SIZE)
 			return refuse(problem, "tag %u: part past its tag", index);
-		if (part_index && part->offset <= pack->parts[tag->parts_first + part_index - 1].offset)
-			return refuse(problem, "tag %u: parts out of order", index);
-		if (part->vertex_type >= AE_PACK_VERTEX_TYPES ||
+		if (part_index && part->offset < pack->parts[tag->parts_first + part_index - 1].offset + AE_PACK_MODEL_PART_SIZE)
+			return refuse(problem, "tag %u: parts overlap or out of order", index);
+		if ((part->vertex_type != AE_PACK_VERTEX_MODEL_UNCOMPRESSED &&
+			part->vertex_type != AE_PACK_VERTEX_MODEL_COMPRESSED) ||
 			(part->triangle_type != AE_PACK_TRIANGLES && part->triangle_type != AE_PACK_TRIANGLE_STRIP))
 		{
 			return refuse(problem, "tag %u: bad part type", index);
@@ -1040,6 +1056,29 @@ static int resources_check(
 	return 1;
 }
 
+/* a pickup text: UTF-8, 1..127 bytes, and a format the engine can fill safely: the weapon's has no '%' at
+all; the ammo's exactly one, which is "%d" (no flags, width, precision or other conversion, no "%%") */
+static int pickup_text_valid(
+	struct ae_pack const *pack,
+	unsigned int offset,
+	int ammo)
+{
+	char const *text = string_at(pack, offset);
+	unsigned int percents = 0, index;
+
+	if (!text_valid(pack, offset, 1, AE_PACK_MAXIMUM_PICKUP_TEXT, 0))
+		return 0;
+	for (index = 0; text[index]; index++)
+	{
+		if (text[index] != '%')
+			continue;
+		percents++;
+		if (text[index + 1] != 'd')
+			return 0;
+	}
+	return ammo ? percents == 1 : percents == 0;
+}
+
 static int weapons_check(
 	struct ae_pack const *pack,
 	struct ae_pack_problem *problem)
@@ -1094,14 +1133,10 @@ static int weapons_check(
 		}
 		if (!text_valid(pack, weapon->menu_name, 1, AE_PACK_MAXIMUM_MENU_NAME, 0))
 			return refuse(problem, "weapon %u: bad menu name", index);
-		for (which = 0; which < 2; which++)
-		{
-			if (weapon->pickup_texts[which] != AE_PACK_NONE &&
-				!text_valid(pack, weapon->pickup_texts[which], 1, AE_PACK_MAXIMUM_PICKUP_TEXT, 0))
-			{
-				return refuse(problem, "weapon %u: bad pickup text", index);
-			}
-		}
+		if (weapon->weapon_pickup_text != AE_PACK_NONE && !pickup_text_valid(pack, weapon->weapon_pickup_text, 0))
+			return refuse(problem, "weapon %u: bad weapon pickup text", index);
+		if (weapon->ammo_pickup_text != AE_PACK_NONE && !pickup_text_valid(pack, weapon->ammo_pickup_text, 1))
+			return refuse(problem, "weapon %u: bad ammo pickup text", index);
 		if (weapon->icon_bitmap_tag == AE_PACK_NONE)
 		{
 			if (weapon->icon_sequence)
@@ -1453,6 +1488,25 @@ static unsigned int string_add(
 	return table->size - length;
 }
 
+/* fixup records in a total order: by offset, then kind, value, pad */
+static int fixup_compare(
+	void const *a,
+	void const *b)
+{
+	struct ae_pack_fixup_record const *first = (struct ae_pack_fixup_record const *)a;
+	struct ae_pack_fixup_record const *second = (struct ae_pack_fixup_record const *)b;
+
+	if (first->offset != second->offset)
+		return first->offset < second->offset ? -1 : 1;
+	if (first->kind != second->kind)
+		return first->kind < second->kind ? -1 : 1;
+	if (first->value != second->value)
+		return first->value < second->value ? -1 : 1;
+	if (first->pad != second->pad)
+		return first->pad < second->pad ? -1 : 1;
+	return 0;
+}
+
 /* a NUL-padded header field from text (cut at size bytes, as the Python writer cuts it) */
 static void header_text(
 	char *field,
@@ -1506,8 +1560,8 @@ int ae_pack_write(
 		string_add(&strings, weapon->fallback_labels[0]);
 		string_add(&strings, weapon->fallback_labels[1]);
 		string_add(&strings, weapon->menu_name);
-		string_add(&strings, weapon->pickup_texts[0]);
-		string_add(&strings, weapon->pickup_texts[1]);
+		string_add(&strings, weapon->weapon_pickup_text);
+		string_add(&strings, weapon->ammo_pickup_text);
 	}
 	if (strings.failed)
 	{
@@ -1528,6 +1582,12 @@ int ae_pack_write(
 			(tag->part_count && !tag->parts) || (tag->resource_count && !tag->resources))
 		{
 			result = refuse(problem, "tag %u: past the limits", index);
+			goto done;
+		}
+		/* (an external tag has no bytes: refused, never dropped) */
+		if (tag->kind != AE_PACK_TAG_OWN && tag->bytes_size)
+		{
+			result = refuse(problem, "tag %u: an external tag with bytes", index);
 			goto done;
 		}
 		memset(&record, 0, sizeof(record));
@@ -1553,6 +1613,12 @@ int ae_pack_write(
 		record.resources_count = tag->resource_count;
 		buffer_append(&sections[AE_PACK_SECTION_FIXUPS], tag->fixups,
 			tag->fixup_count * (unsigned int)sizeof(struct ae_pack_fixup_record));
+		/* (a tag's fixups by offset, as the reader wants them: the order the schema walk met them in is not) */
+		if (!sections[AE_PACK_SECTION_FIXUPS].failed && tag->fixup_count > 1)
+		{
+			qsort(sections[AE_PACK_SECTION_FIXUPS].data + fixup_count * sizeof(struct ae_pack_fixup_record),
+				tag->fixup_count, sizeof(struct ae_pack_fixup_record), fixup_compare);
+		}
 		for (k = 0; k < tag->part_count; k++)
 		{
 			struct ae_pack_build_part const *part = &tag->parts[k];
@@ -1620,8 +1686,8 @@ int ae_pack_write(
 		buffer_u32(weapons, string_add(&strings, weapon->fallback_labels[0]));
 		buffer_u32(weapons, string_add(&strings, weapon->fallback_labels[1]));
 		buffer_u32(weapons, string_add(&strings, weapon->menu_name));
-		buffer_u32(weapons, string_add(&strings, weapon->pickup_texts[0]));
-		buffer_u32(weapons, string_add(&strings, weapon->pickup_texts[1]));
+		buffer_u32(weapons, string_add(&strings, weapon->weapon_pickup_text));
+		buffer_u32(weapons, string_add(&strings, weapon->ammo_pickup_text));
 		buffer_u32(weapons, weapon->icon_bitmap_tag);
 		buffer_u32(weapons, weapon->icon_sequence);
 		buffer_u32(weapons, weapon->replaces);
@@ -1712,23 +1778,38 @@ int ae_pack_write(
 		}
 	}
 
-	/* written */
+	/* written to <path>.tmp, then renamed over path: a failed write leaves any pack at path as it was */
 	{
-		FILE *file = fopen(path, "wb");
+		unsigned int length = (unsigned int)strlen(path);
+		char *temporary = (char *)malloc(length + 5);
+		FILE *file;
 
+		if (!temporary)
+		{
+			result = refuse(problem, "out of memory");
+			goto done;
+		}
+		memcpy(temporary, path, length);
+		memcpy(temporary + length, ".tmp", 5);
+		file = fopen(temporary, "wb");
 		if (!file)
 		{
-			result = refuse(problem, "cannot write %s", path);
+			result = refuse(problem, "cannot write %s", temporary);
+			free(temporary);
 			goto done;
 		}
 		result = fwrite(image.data, 1, image.size, file) == image.size;
 		if (fclose(file) != 0)
 			result = 0;
+		/* (where rename does not replace a file, Windows', the old pack goes only once the new one is whole) */
+		if (result && rename(temporary, path) != 0)
+			result = !remove(path) && !rename(temporary, path);
 		if (!result)
 		{
-			remove(path);
+			remove(temporary);
 			refuse(problem, "cannot write %s", path);
 		}
+		free(temporary);
 	}
 
 done:

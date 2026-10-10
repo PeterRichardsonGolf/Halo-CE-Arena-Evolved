@@ -10,9 +10,20 @@ the reader that the game and the tools use is `port/linux/game/ae_pack_format.c`
 
 `build/linux/ae_pack_check` (built by `ninja linux`) checks packs as the game does and prints them:
 
-    build/linux/ae_pack_check pack.aepack...      header, sections, tags with flags, weapons; exit 1 if refused
+    build/linux/ae_pack_check [--no-resources] pack.aepack...
+                                                  header, sections, tags with flags, weapons; every resource
+                                                  read and inflated (unless --no-resources); exit 1 if refused
     build/linux/ae_pack_check --sha256 file...    our SHA-256 of files
     build/linux/ae_pack_check --rewrite in out    in written again by ae_pack_write
+    build/linux/ae_pack_check --writer-check out  ae_pack_write's own test: a pack written and read back, bad
+                                                  build data refused, a failed write leaving the old pack
+
+**What the reader does not check.** It checks the containers: every tag's bytes, fixups, parts, resources and
+strings lie where they claim and alias nothing, every fixup names a valid target. It does NOT check the
+structure inside a tag's bytes (block counts and element sizes behind POINTER fixups, data sizes, a model
+part's own fields against its PARTS record, pointers no fixup covers). The engine must run a pack's tags
+through the tag validator (`tag_validate.c`) once they are relocated into the map, as it does a map's own tags,
+before anything reads them.
 
 ## The file
 
@@ -70,16 +81,17 @@ A kind appears at most once; a kind not in the table is empty.
 
 - **TAG_BYTES**: each own tag's bytes, address-free: every pointer, tag reference and tag index in them is a
   fixup.
-- **FIXUPS**: 12-byte records {offset u32 (in the tag's bytes), kind u16, pad u16 (0), value u32}:
+- **FIXUPS**: 12-byte records {offset u32 (in the tag's bytes), kind u16, pad u16 (0), value u32}, a tag's in
+  offset order, none overlapping another:
   - kind 1 POINTER: a 4-byte Xbox address at offset becomes the tag's copy's base + value (value inside the
     tag's bytes);
   - kind 2 REFERENCE: a 16-byte tag reference at offset names pack tag value, or none (NONE);
   - kind 3 TAG_INDEX: a 4-byte tag index at offset names pack tag value.
 - **PARTS**: 32-byte records, a model part's geometry {offset u32 (its 0x68-byte model_geometry_part in the tag's
-  bytes), vertex_type u16 (0..11), triangle_type u16 (0 triangles, 1 strip), vertex_count u32, triangle_count u32
-  (each 1..65535), vertices offset u32 and size u32, indices offset u32 and size u32 (in GEOMETRY)}. The
-  vertices' size is the count times the type's size (rasterizer_geometry.c: 56, 32, 20, 8, 68, 32, 24, 36, 20,
-  16, 16, 8); the indices are 16-bit, 3 a triangle or count + 2 for a strip, each below the vertex count.
+  bytes; each at least 0x68 bytes after the previous), vertex_type u16 (4 model uncompressed, 5 model
+  compressed), triangle_type u16 (0 triangles, 1 strip), vertex_count u32, triangle_count u32 (each 1..65535),
+  vertices offset u32 and size u32, indices offset u32 and size u32 (in GEOMETRY)}. The vertices' size is the
+  count times the type's size (rasterizer_geometry.c: 68 for type 4, 32 for type 5); the indices are 16-bit, 3 a triangle or count + 2 for a strip, each below the vertex count.
 - **GEOMETRY**: the parts' vertices and indices.
 - **RESOURCES**: 24-byte records {tag u32, map_offset u32, size u32 (inflated, 1 byte to 8 MiB), data_offset u32,
   stored_size u32 (in RESOURCE_DATA), compression u32 (0 stored, 1 zlib)}: a bitmap's pixels or a sound's
@@ -99,7 +111,8 @@ A kind appears at most once; a kind not in the table is empty.
   | 0x10 | label, string | the animation label the player holds it by (`h_br`): printable ASCII, 1 to 31 |
   | 0x14 | fallback_labels, string[2] | tried in order when the map's biped lacks the label (`ar`), or NONE |
   | 0x1C | menu_name, string | UTF-8, 1 to 63 bytes (`BATTLE RIFLE`) |
-  | 0x20 | pickup_texts, string[2] | picking it up, swapping for it: UTF-8, 1 to 127 bytes, or NONE |
+  | 0x20 | weapon_pickup_text, string | the weapon picked up (`Picked up a battle rifle`): UTF-8, 1 to 127 bytes, **no `%` at all**; or NONE (the engine's own) |
+  | 0x24 | ammo_pickup_text, string | its ammo picked up (`Picked up %d rounds for battle rifle`; the engine fills in the rounds): UTF-8, 1 to 127 bytes, **exactly one `%`, which is `%d`** (no flags, width, precision, other conversion or `%%`); or NONE |
   | 0x28 | icon_bitmap_tag, u32 | the message icon: a `'bitm'` tag, or NONE (then icon_sequence 0) |
   | 0x2C | icon_sequence, u32 | 0 to 65535; its sequence 0 must have sprites (the builder and the engine check it) |
   | 0x30 | replaces, u32 | the stock loadout weapon whose map spawns it may replace: 0 none, 2 assault rifle ... 9 needler (tools/port_settings.py `LOADOUT_WEAPONS`; 1, random, is not one) |
@@ -144,16 +157,17 @@ In this order; the first failure refuses the pack, with its reason:
    after it); sizes are checked before anything is allocated or inflated.
 6. STRINGS ends with a terminator; at least one tag and one weapon.
 7. Each tag: its name and source path valid strings; its group not 0 or NONE; kind 0 or 1, pad 0; no unknown
-   flag bit, flags on own bitmaps only; an own tag not required, its bytes 1 byte to 4 MiB inside TAG_BYTES; an
-   external tag without bytes, fixups, parts or resources; its fixups, parts and resources inside their
+   flag bit, flags on own bitmaps only; an own tag not required, its bytes 1 byte to 4 MiB inside TAG_BYTES,
+   after the previous own tag's (no two own tags share or overlap bytes); an external tag without bytes, fixups, parts or resources; its fixups, parts and resources inside their
    sections and after the previous tag's (no two tags share a record); at most 512 own tags; every record
    owned by a tag; no two tags of the same group and name.
 8. Each own tag's fixups (inside its bytes; pointers to a target inside them; references to a pack tag or
-   NONE; tag indices to a pack tag), parts (inside its bytes, in increasing order; types, counts and sizes as
-   above; inside GEOMETRY; every index below the vertex count) and resources (its own; 1 byte to 8 MiB; the
+   NONE; tag indices to a pack tag; in offset order, none overlapping another: 4 bytes a pointer or tag index,
+   16 a reference), parts (inside its bytes, each at least 0x68 bytes after the previous; a model's vertex
+   type, 4 or 5; counts and sizes as above; inside GEOMETRY; every index below the vertex count) and resources (its own; 1 byte to 8 MiB; the
    offset plus size within 32 bits; stored sizes equal or a zlib stream not empty; inside RESOURCE_DATA; 48
    MiB in all).
-9. Each weapon as its table says.
+9. Each weapon as its table says (the pickup texts' `%` rules included: they are formats the engine fills).
 10. CREDITS: no NUL, valid UTF-8.
 
 `ae_pack_verify_resources` (the check tool always; the engine may once) also reads every resource and inflates
@@ -171,12 +185,17 @@ would break "same inputs, same bytes"). Readers take zlib for later versions' wr
 
 - The header, then a table of all ten kinds in kind order, then each section in kind order at the next
   16-aligned offset (zeros between), empty ones too (their offset where the next would start). The file ends
-  where the last section ends.
+  at the last section's end, or, when the last sections are empty, at their (aligned) offset: the padding up
+  to it is written.
 - STRINGS: each distinct string once, in the order they are first met: for each tag its name then its source
-  path; then for each weapon its key, label, fallback labels, menu name, pickup texts.
+  path; then for each weapon its key, label, fallback labels, menu name, weapon pickup text, ammo pickup text.
 - TAG_BYTES, GEOMETRY (each part's vertices then indices) and RESOURCE_DATA: each item at the next 16-aligned
   offset of its section, in tag order.
-- A tag's records follow the previous tag's: `first` is the running count, for every tag.
+- A tag's records follow the previous tag's: `first` is the running count, for every tag. A tag's fixups are
+  sorted by offset (then kind, value); its parts are written in the order given, which must be by offset.
+- An external tag given bytes is refused, never written without them.
+- The file is written as `<path>.tmp` and renamed over `<path>`: a write that fails leaves any pack already at
+  `<path>` as it was.
 - Tags in breadth-first order from the weapon roots as the pack builder's schema walk meets them; no
   timestamps anywhere.
 
@@ -187,4 +206,11 @@ before writing anything: it never writes a pack a reader would refuse.
 
 TAG_BYTES, FIXUPS, PARTS, GEOMETRY, STRINGS (and the small TAGS, RESOURCES, WEAPONS, CREDITS) are read at open:
 a few MB. RESOURCE_DATA stays in the file, read per request; a pack keeps its file open until
-`ae_pack_close`.
+`ae_pack_close`, and one thread at a time reads it (its reads share the file).
+
+The hash is checked once, at open, by a pass of its own: a file changed after (or while) it is opened is used
+with the identity it was opened with. Every read is still bounded by what open checked, and a resource read
+from a changed file fails if it is short or its stream lies, but nothing re-hashes it. Packs are not expected
+to change under a running game.
+
+A zlib resource (no v1 writer makes one) is inflated whole on every read, even of a part of it.

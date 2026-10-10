@@ -7,11 +7,17 @@ and validator, the writer, and the SHA-256 that names a pack.
 A pack is untrusted data (players download them): ae_pack_open checks every
 length, offset, count and string against the file and the format's limits,
 and the SHA-256 of the whole file, before anything is handed out. What it
-hands out is then safe to use as the format says, with no further bounds
-checks: every tag's bytes, fixups, parts and resources lie where they claim,
-every fixup lies inside its tag's bytes and names a valid target, every
-string is terminated. RESOURCE_DATA stays in the file: ae_pack_read_resource
-reads (and for zlib inflates) one resource when it is asked for.
+checks is the CONTAINERS: every tag's bytes, fixups, parts and resources lie
+where they claim and alias nothing (no two own tags share bytes, no two
+fixups or parts overlap), every fixup lies inside its tag's bytes and names
+a valid target, every string is terminated, the pickup texts are safe
+formats. It does NOT check the structure inside a tag's bytes (block counts
+and element sizes behind POINTER fixups, data sizes, a model part's own
+fields against its PARTS record, pointers no fixup covers): a pack's tags
+must go through the tag validator (tag_validate.c) once they are relocated,
+as a map's tags do, before the engine reads them. RESOURCE_DATA stays in
+the file: ae_pack_read_resource reads (and for zlib inflates) one resource
+when it is asked for.
 
 No global state: a pack is its own struct. A pack is read by one thread at a
 time (its resource reads share the file).
@@ -98,6 +104,9 @@ enum
 {
 	AE_PACK_MODEL_PART_SIZE = 0x68,
 	AE_PACK_VERTEX_TYPES = 12,
+	/* (a model part's vertices are one of these two) */
+	AE_PACK_VERTEX_MODEL_UNCOMPRESSED = 4,
+	AE_PACK_VERTEX_MODEL_COMPRESSED = 5,
 	AE_PACK_TRIANGLES = 0,
 	AE_PACK_TRIANGLE_STRIP = 1,
 	AE_PACK_MAXIMUM_PART_COUNT = 0xFFFF,
@@ -227,7 +236,11 @@ struct ae_pack_weapon_record
 	unsigned int label; /* STRINGS: the animation label the player holds it by ("h_br") */
 	unsigned int fallback_labels[2]; /* STRINGS or AE_PACK_NONE, in order ("ar") */
 	unsigned int menu_name; /* STRINGS: "BATTLE RIFLE" */
-	unsigned int pickup_texts[2]; /* STRINGS or AE_PACK_NONE: picking it up, swapping for it */
+	/* STRINGS or AE_PACK_NONE (the engine's own text): the weapon picked up ("Picked up a battle rifle": no
+	'%' at all), its ammo picked up ("Picked up %d rounds for battle rifle": exactly one "%d", no other '%';
+	the engine fills in the rounds) */
+	unsigned int weapon_pickup_text;
+	unsigned int ammo_pickup_text;
 	unsigned int icon_bitmap_tag; /* a 'bitm' tag or AE_PACK_NONE: the message icon (R10) */
 	unsigned int icon_sequence;
 	unsigned int replaces; /* AE_PACK_REPLACES_* */
@@ -338,7 +351,8 @@ struct ae_pack_build_weapon
 	char const *label;
 	char const *fallback_labels[2]; /* NULL: none */
 	char const *menu_name;
-	char const *pickup_texts[2]; /* NULL: none */
+	char const *weapon_pickup_text; /* NULL: none */
+	char const *ammo_pickup_text; /* NULL: none */
 	unsigned int icon_bitmap_tag;
 	unsigned int icon_sequence;
 	unsigned int replaces;
