@@ -227,6 +227,7 @@ starts on them turns the view instead.
 
 The app keeps the layout in its own preferences, not in `config.toml`.
 Removing the app's data or the app removes the layout.
+
 ## Settings
 
 The settings are in `config.toml` in the data folder of the app. To change

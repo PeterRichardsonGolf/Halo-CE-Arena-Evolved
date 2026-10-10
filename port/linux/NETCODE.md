@@ -206,15 +206,17 @@ list's site (`browser.c`: not listed, not claimed, not reported, hosted or
 joined through the password).
 
 A host never checks a joining client's version: the client reads the
-host's from its advertisement and joins only a version it plays with. That
-is its own, or one of a range (HALO_PORT_NETWORK_VERSION_MINIMUM to
-HALO_PORT_NETWORK_VERSION_MAXIMUM, halo_port_limits.h) of versions that
-differ from it only in messages the other machine drops, not knowing them:
-version 10 (OpenCE's build-73) adds the host's message of the players'
-pings, which a machine of version 9 drops. This build has version 10, as
-OpenCE's current builds (so their clients join its hosts), without that
-message (its hosts do not send it, its clients drop it), and joins hosts of
-9 and 10. The game browser lists the range's games.
+host's from its advertisement and joins only a version it plays with. The
+built-in range is HALO_PORT_NETWORK_VERSION_MINIMUM to
+HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 25): versions
+that differ from one another only in messages the other machine drops, not
+knowing them. The historical example is version 10 (OpenCE's build-73),
+which added the host's message of the players' pings, which a machine of
+version 9 drops. Today this build has version 25 (OpenCE build-169 and later), and
+the range's floor is the newest version that broke compatibility (11). Arena
+Evolved's own floor is higher than the range: it refuses hosts below 25
+and tells the player that the host needs to update (see above).
+The game browser lists the range's games.
 
 A client plays by its host's rules: in another's game (searching for it,
 in its lobby, or playing it) the developer console, the telnet console

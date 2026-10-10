@@ -6,28 +6,37 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-- Merged OpenCE build-167 (network version 24; the build-170 merge below
-  raises it to 25). From upstream: voice chat (hold V to talk; Settings > Audio
-  has VOICE CHAT, VOICE VOLUME and the output and input devices; the
-  microphone stays closed until you first talk), votes to kick a player
-  (right-click a player on the scoreboard; the host also gets Kick and Ban
-  there), co-op's Server Setup options in screens of their own, Steam's
-  on-screen keyboard for the menus' text fields, audio mixer and looping-sound
-  fixes, glass and overshield drawing fixes and optional enhanced animations (`game.enhanced_animations`). The
-  Screenshot key can now be rebound (Controls Setup > Actions) and its
-  default is F10; recording moves to F9. Screenshots are still Arena
-  Evolved's (PNG in `screenshots/`, every split-screen view).
-- Merged ChupathingyCE 0.7.1e: Custom Edition maps made with MCC's tools
-  whose bitmaps use its high-quality compression (BC7) now load and draw
-  instead of being refused.
-- Merged OpenCE build-170: **network version 25**. Plays with OpenCE
-  build-169 and later; no longer with ChupathingyCE 0.7.1e or Arena Evolved
-  0.2.0-beta (version 24: a host of 24 is refused with "the host needs to
-  update", and their players are told our host is newer). From upstream: a
-  joining player sees others' flashlights as the host has them, Android
-  touch controls with aim assist, a fix for starting on Windows 7, Custom Edition map
-  fixes (pause menu centred, fewer than three vehicles, HUD sounds, linear
-  bitmaps), memory leak fixes, and the decompiled code's latent-bug pass.
+- Merged upstream: OpenCE build-167, ChupathingyCE 0.7.1e and OpenCE
+  build-170 (network version 25).
+  - OpenCE build-167 (network version 24; the build-170 merge raises it to
+    25). From upstream: voice chat (hold V to talk; Settings > Audio has
+    VOICE CHAT, VOICE VOLUME and the output and input devices; the
+    microphone stays closed until you first talk), votes to kick a player
+    (right-click a player on the scoreboard; the host also gets Kick and Ban
+    there), co-op's Server Setup options in screens of their own, Steam's
+    on-screen keyboard for the menus' text fields, audio mixer and
+    looping-sound fixes, glass and overshield drawing fixes and optional
+    enhanced animations (`game.enhanced_animations`). The Screenshot key can
+    now be rebound (Controls Setup > Actions) and its default is F10;
+    recording moves to F9. Screenshots are still Arena Evolved's (PNG in
+    `screenshots/`, every split-screen view).
+  - ChupathingyCE 0.7.1e: Custom Edition maps made with MCC's tools whose
+    bitmaps use its high-quality compression (BC7) now load and draw instead
+    of being refused.
+  - OpenCE build-170: **network version 25**. Plays with OpenCE build-169
+    and later; no longer with ChupathingyCE 0.7.1e or Arena Evolved
+    0.2.0-beta (version 24: a host of 24 is refused with "the host needs to
+    update", and their players are told our host is newer). From upstream: a
+    joining player sees others' flashlights as the host has them, Android
+    touch controls with aim assist, a fix for starting on Windows 7, Custom
+    Edition map fixes (pause menu centred, fewer than three vehicles, HUD
+    sounds, linear bitmaps), memory leak fixes, and the decompiled code's
+    latent-bug pass.
+  - The PC menus' merged setting rows and widened values now apply to touch
+    only (upstream's #50): with a mouse, a click on a setting's label no
+    longer changes its value (the mouse clicks the labels and values where
+    CE's menus have them); a tap of a finger on the label still reaches the
+    value.
 
 ## 0.2.0-beta - 2026-10-09
 
