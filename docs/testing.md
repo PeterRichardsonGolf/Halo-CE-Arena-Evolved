@@ -17,6 +17,16 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 | A copy of a save root with a saved gametype's variant bytes patched and signed again (for `--save-from`; never in place, never a real save root) | `python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3` (on the machine that plays) |
 | A save root's seeded gametypes against golden hashes (`tools/ae_test/golden_seeds_a17102e2.json`, a17102e2's seeds; `--rename OLD=NEW` for migrated names) or against another root (byte-identical, `--same-as`) | `python3 tools/ae_test/seed_compare.py <save root> --golden tools/ae_test/golden_seeds_a17102e2.json` |
 
+Weapon pack tests (spec keys, or the same names as `run.py` options): `pack_loadout` (`primary`, `secondary`,
+`both`) and `pack_map_spawns` make the test host's gametype use the weapon pack (`HALO_NETWORK_TEST_PACK_LOADOUT`,
+`HALO_NETWORK_TEST_PACK_MAP_SPAWNS`; the stock loadout values stay the assault rifle / pistol fallbacks);
+`pack_file` is a pack read in place of `packs/ae_battle_rifle.aepack` (`HALO_WEAPON_PACK_FILE`); `packs_from`
+is a folder linked as the data root's `packs/` (default: the config's `data_dir/packs` when it exists). A saved
+gametype's pack bytes: `gametype_file.py --set weapon_pack=1 --set pack_loadout=1 --set pack_map_spawns=1`
+(offsets 0x29, 0x2a, 0x2b; `--set` takes field names too). `expect.lines` / `expect.no_lines` (`run.py
+--expect-line REGEX`, `--expect-no-line REGEX`) are regexes a line of the game's debug.txt must / must not match,
+e.g. the rules line: `weapon pack: none, pack loadout: primary stock, secondary stock, battle rifle on map: off`.
+
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists
 the spec keys; `run.py --spec game.json` takes a whole spec; `--dry-run` shows the game's environment.

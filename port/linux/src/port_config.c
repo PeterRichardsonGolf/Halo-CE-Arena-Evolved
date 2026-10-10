@@ -770,6 +770,15 @@ static const struct config_setting config_settings[] =
 		"place of the built-in one; not found, the built-in one. Empty for none.\n"
 		"(Looking seeds the Arena Evolved gametypes into the save root in use:\n"
 		"set HALO_SAVE_ROOT for tests.)" },
+	{ "debug.network_test_pack_loadout", _config_string, "\"\"", "HALO_NETWORK_TEST_PACK_LOADOUT", _environment_value, /* AE hook */
+		_platform_all,
+		"An automated test host's gametype uses the weapon pack in its custom\n"
+		"loadout: primary, secondary or both (the stock values stay an assault rifle\n"
+		"and a pistol, the fallbacks). Empty for none." },
+	{ "debug.network_test_pack_map_spawns", _config_boolean, "false", "HALO_NETWORK_TEST_PACK_MAP_SPAWNS", _environment_value, /* AE hook */
+		_platform_all,
+		"An automated test host's gametype uses the weapon pack and has BATTLE RIFLE\n"
+		"ON MAP (the map's assault rifles spawn the pack's weapon)." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

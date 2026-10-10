@@ -27,7 +27,8 @@ NHE_COMMON = {
     "friendly fire": "on", "shields": "on", "loadout": "category", "no map weapons": "off",
     "vehicle sets": "none (red none, blue none)",
     "timers level": "off", "spawn heat": "on", "objective": "normal", "nhe extras": "on", "drop secondary": "ce",
-    "ball melee": "stock",
+    "ball melee": "stock", "weapon pack": "none", "pack loadout primary": "stock", "pack loadout secondary": "stock",
+    "battle rifle on map": "off",
     "lives": "0", "health%": "100%", "respawn growth": "0 ticks", "odd man out": "off", "friend indicators": "on",
     "auto team balance": "off", "friendly fire penalty": "0 s", "vehicles placed": "0",
 }
@@ -89,6 +90,13 @@ def fields(text):
     for key in ["timers level", "spawn heat", "objective", "nhe extras", "drop secondary", "nhe mode", "ball melee"]:
         mm = re.search(rf"(?:^|, ){re.escape(key)} ([^,]*)", m[1] if m else "")
         if mm: out[key] = mm[1].strip()
+    # (the weapon pack's fields, written with colons: "weapon pack: none, pack loadout: primary stock, secondary
+    # stock, battle rifle on map: off")
+    for key, pattern in [("weapon pack", r"weapon pack: ([^,]*)"), ("pack loadout primary", r"pack loadout: primary ([^,]*)"),
+                         ("pack loadout secondary", r"pack loadout: primary [^,]*, secondary ([^,]*)"),
+                         ("battle rifle on map", r"battle rifle on map: ([^,]*)")]:
+        mm = re.search(pattern, m[1] if m else "")
+        if mm: out[key] = mm[1].strip()
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -105,7 +113,8 @@ AE = {"health": "halo 2", "fall damage": "off", "starting equipment": "generic",
       "pre-game countdown": "on", "friendly fire": "on", "shields": "on", "invisible": "off",
       "infinite grenades": "off", "no map weapons": "off", "nhe extras": "off", "drop secondary": "always",
       "lives": "0", "odd man out": "off", "friendly fire penalty": "0 s", "auto team balance": "off",
-      "spawn heat": "on", "nhe mode": "by vehicles", "ball melee": "stock"}
+      "spawn heat": "on", "nhe mode": "by vehicles", "ball melee": "stock", "weapon pack": "none",
+      "pack loadout primary": "stock", "pack loadout secondary": "stock", "battle rifle on map": "off"}
 CASUAL = dict(AE, **{"timers": "hud + waypoints", "timers level": "hud + waypoints", "training": "off",
                      "practice": "off", "time limit": "15 min", "radar players": "all", "objective": "normal",
                      "loadout": "pistol + assault rifle", "weapon set": "normal", "starting frags": "0"})

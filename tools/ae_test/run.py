@@ -28,7 +28,8 @@ def spec_from_args(a):
              "local_players": a.players, "bots": a.bots, "mod": a.mod, "menus": a.menus, "window": a.window,
              "exit_after": a.exit_after, "screenshots": a.shots, "test_input": a.test_input, "record": a.record,
              "target": a.target, "name": a.name, "network_test": a.network_test,
-             "saved_gametype": a.saved_gametype, "save_from": a.save_from}
+             "saved_gametype": a.saved_gametype, "save_from": a.save_from, "pack_loadout": a.pack_loadout,
+             "pack_file": a.pack_file, "packs_from": a.packs_from}
     for k, v in pairs.items():
         if v is not None:
             data[k] = v
@@ -36,6 +37,11 @@ def spec_from_args(a):
         data["bot_args"] = a.bot_args.split()
     if a.init:
         data["init"] = a.init
+    if a.pack_map_spawns:
+        data["pack_map_spawns"] = True
+    for flag, key in ((a.expect_line, "lines"), (a.expect_no_line, "no_lines")):
+        if flag:
+            data["expect"] = dict(data.get("expect", {}), **{key: list(data.get("expect", {}).get(key, [])) + flag})
     if a.env:
         env = dict(data.get("env", {}))
         for kv in a.env:
@@ -60,6 +66,12 @@ def parser():
     p.add_argument("--saved-gametype", help="a custom gametype of the save root, by its stored name")
     p.add_argument("--save-from", help="a folder copied as the game's save root first (never under /tmp)")
     p.add_argument("--network-test", help="raw HALO_NETWORK_TEST")
+    p.add_argument("--pack-loadout", help="primary | secondary | both (HALO_NETWORK_TEST_PACK_LOADOUT)")
+    p.add_argument("--pack-map-spawns", action="store_true", help="HALO_NETWORK_TEST_PACK_MAP_SPAWNS=1")
+    p.add_argument("--pack-file", help="a weapon pack file (HALO_WEAPON_PACK_FILE)")
+    p.add_argument("--packs-from", help="a folder linked as the data root's packs/")
+    p.add_argument("--expect-line", action="append", help="a regex a debug.txt line must match (repeat)")
+    p.add_argument("--expect-no-line", action="append", help="a regex no debug.txt line may match (repeat)")
     p.add_argument("--flags", type=int)
     p.add_argument("--start", type=float)
     p.add_argument("--players", type=int)

@@ -5802,6 +5802,67 @@ short game_engine_nhe_mode(
 		_nhe_mode_by_vehicles;
 }
 
+/* port: a gametype's WEAPON PACK from its byte (past the reserved range, none) */
+short game_variant_weapon_pack(
+	byte weapon_pack)
+{
+	return weapon_pack <= WEAPON_PACK_MAXIMUM ? (short)weapon_pack :
+		_weapon_pack_none;
+}
+
+/* port: weapon pack: TRUE when the pack_loadout byte takes the loadout slot's weapon from
+the pack (a slot past the two: no) */
+boolean game_variant_pack_loadout_slot(
+	byte pack_loadout,
+	short slot)
+{
+	return slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS &&
+		((pack_loadout >> PACK_LOADOUT_SLOT_SHIFT(slot)) & PACK_LOADOUT_SOURCE_MASK) == _pack_loadout_pack;
+}
+
+/* port: weapon pack: BATTLE RIFLE ON MAP from its byte */
+boolean game_variant_pack_map_spawns(
+	byte pack_map_spawns)
+{
+	return pack_map_spawns == 1;
+}
+
+/* port: weapon pack: its name for the rules log */
+char const *game_variant_weapon_pack_name(
+	byte weapon_pack)
+{
+	static char const *const packs[] = { "none", "battle rifle (slot 1)" };
+	typedef char verify_weapon_pack_names[NUMBEROF(packs) == _weapon_pack_battle_rifle + 1 ? 1 : -1];
+	short pack = game_variant_weapon_pack(weapon_pack);
+
+	return pack < (short)NUMBEROF(packs) ? packs[pack] : "reserved";
+}
+
+/* port: weapon pack: the running game's (none with no game) */
+short game_engine_weapon_pack(
+	void)
+{
+	return game_engine_running() ? game_variant_weapon_pack(global_variant.universal_variant.weapon_pack) :
+		_weapon_pack_none;
+}
+
+/* port: the running game's custom loadout takes slot's weapon from the weapon
+pack (with its weapon pack not none) */
+boolean game_engine_pack_loadout_slot(
+	short slot)
+{
+	return game_engine_weapon_pack() != _weapon_pack_none &&
+		game_variant_pack_loadout_slot(global_variant.universal_variant.pack_loadout, slot);
+}
+
+/* port: the running game's weapon pack's BATTLE RIFLE ON MAP (with its weapon
+pack not none) */
+boolean game_engine_pack_map_spawns(
+	void)
+{
+	return game_engine_weapon_pack() != _weapon_pack_none && game_variant_pack_map_spawns(global_variant.universal_variant.pack_map_spawns);
+}
+
 /* port: the gametype's NO SPREAD level (enum no_spread_level): NHE, the
 pistol's and the sniper rifle's shots as Halo 1: NHE's maps have them;
 FULL, both always exact (weapons.c weapon_trigger_error_angle_bounds) */
@@ -8695,9 +8756,15 @@ void game_engine_log_rules(
 		}
 		/* (the AE gametype options, a line of their own so that the first
 		line's length never cuts them off: game_engine.h, bits 25-30,
-		nhe_mode, starting_frags and ball_melee) */
+		nhe_mode, starting_frags, ball_melee and the weapon pack's fields) */
+		{
+		/* (port: the weapon pack's loadout and on-map fields read stock / off
+		while the gametype's weapon pack is none) */
+		boolean pack = game_variant_weapon_pack(universal->weapon_pack) != _weapon_pack_none;
+
 		error(_error_silent, "AE rules: timers level %s, spawn heat %s, objective %s, nhe extras %s, "
-			"drop secondary %s, nhe mode %s, starting frags %s, ball melee %s",
+			"drop secondary %s, nhe mode %s, starting frags %s, ball melee %s, "
+			"weapon pack: %s, pack loadout: primary %s, secondary %s, battle rifle on map: %s",
 			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) && universal->goal_radar == _radar_nav_point ?
@@ -8708,7 +8775,12 @@ void game_engine_log_rules(
 			universal->starting_frags == STARTING_GRENADES_NONE ? "none" :
 				universal->starting_frags == 1 ? "1" : universal->starting_frags == 2 ? "2" :
 				universal->starting_frags == 3 ? "3" : universal->starting_frags == 4 ? "4" : "0",
-			universal->ball_melee == 1 ? "lethal" : "stock");
+			universal->ball_melee == 1 ? "lethal" : "stock",
+			game_variant_weapon_pack_name(universal->weapon_pack),
+			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_primary) ? "pack" : "stock",
+			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_secondary) ? "pack" : "stock",
+			pack && game_variant_pack_map_spawns(universal->pack_map_spawns) ? "on" : "off");
+		}
 		/* (and the players' rules the lines above leave out) */
 		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "
 			"friend indicators %s, auto team balance %s, friendly fire penalty %d s",

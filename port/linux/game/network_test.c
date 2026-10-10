@@ -38,6 +38,10 @@ debug.network_test_flags sets bits of the host's game variant's flags (the
 port's gametype options: game_engine.h's _game_variant_..._bit).
 debug.network_test_gametype: the host plays a custom gametype of the save
 root (by its stored name, with its PC options) in place of the built-in one.
+debug.network_test_pack_loadout (primary, secondary or both) and
+debug.network_test_pack_map_spawns: the host's gametype uses the weapon pack
+(game_engine.h's weapon_pack, pack_loadout and pack_map_spawns), with a custom
+loadout whose stock values are the fallbacks (an assault rifle, a pistol).
 
 Called from the main loop every frame (main.c).
 */
@@ -172,6 +176,10 @@ static struct
 	_loadout_weapon_* values; NONE: the gametype's loadout) */
 	long loadout_primary;
 	long loadout_secondary;
+	/* (debug.network_test_pack_loadout: the variant's pack_loadout byte, 0 none;
+	debug.network_test_pack_map_spawns: its BATTLE RIFLE ON MAP) */
+	byte pack_loadout;
+	boolean pack_map_spawns;
 	/* (debug.network_test_auto_balance: the gametype's AUTO TEAM BALANCE on,
 	so a team game whose players all joined one team (NHE EXTRAS) starts) */
 	boolean auto_balance;
@@ -303,6 +311,19 @@ static void network_test_read_settings(
 		network_test.loadout_secondary = NONE;
 	}
 	network_test.auto_balance = config_boolean("debug.network_test_auto_balance") != 0;
+	network_test.pack_loadout = 0;
+	network_test.pack_map_spawns = config_boolean("debug.network_test_pack_map_spawns") != 0;
+	{
+		char const *pack_loadout = config_string("debug.network_test_pack_loadout");
+
+		if (!strcmp(pack_loadout, "primary") || !strcmp(pack_loadout, "both"))
+			network_test.pack_loadout |= (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary));
+		if (!strcmp(pack_loadout, "secondary") || !strcmp(pack_loadout, "both"))
+			network_test.pack_loadout |= (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary));
+		if (pack_loadout[0] && !network_test.pack_loadout)
+			platform_log("network test: debug.network_test_pack_loadout '%s' is not primary, secondary or both: ignored",
+				pack_loadout);
+	}
 	network_test.kill_host = config_boolean("debug.network_test_kill_host") != 0;
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	snprintf(network_test.damage_script, sizeof(network_test.damage_script), "%s",
@@ -1480,11 +1501,18 @@ void network_test_update(
 					variant.universal_variant.flags |= network_test.variant_flags;
 					if (network_test.ball_melee)
 						variant.universal_variant.ball_melee = 1;
+					/* debug.network_test_pack_loadout / _pack_map_spawns: the weapon pack */
+					if (network_test.pack_loadout || network_test.pack_map_spawns)
+					{
+						variant.universal_variant.weapon_pack = _weapon_pack_battle_rifle;
+						variant.universal_variant.pack_loadout = network_test.pack_loadout;
+						variant.universal_variant.pack_map_spawns = network_test.pack_map_spawns ? 1 : 0;
+					}
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */
 					if (saved || network_test.time_limit > 0 || network_test.loadout_primary != NONE ||
-						network_test.auto_balance)
+						network_test.auto_balance || network_test.pack_loadout)
 					{
 						if (!saved)
 							game_variant_options_default(&variant, &options);
@@ -1496,6 +1524,18 @@ void network_test_update(
 							options.loadout = _loadout_custom;
 							options.primary_weapon = (byte)network_test.loadout_primary;
 							options.secondary_weapon = (byte)network_test.loadout_secondary;
+						}
+						/* debug.network_test_pack_loadout: a custom loadout (the test
+						loadout's weapons, a saved gametype's own, else the fallbacks the stock
+						values hold) */
+						if (network_test.pack_loadout)
+						{
+							if (options.loadout != _loadout_custom && network_test.loadout_primary == NONE)
+							{
+								options.primary_weapon = _loadout_weapon_assault_rifle;
+								options.secondary_weapon = _loadout_weapon_pistol;
+							}
+							options.loadout = _loadout_custom;
 						}
 						/* debug.network_test_auto_balance */
 						if (network_test.auto_balance)
