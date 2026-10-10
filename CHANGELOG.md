@@ -7,7 +7,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 - Merged upstream: OpenCE build-167, ChupathingyCE 0.7.1e, OpenCE
-  build-170 (network version 25) and OpenCE build-174.
+  build-170 (network version 25), OpenCE build-174 and OpenCE build-177.
   - OpenCE build-167 (network version 24; the build-170 merge raises it to
     25). From upstream: voice chat (hold V to talk; Settings > Audio has
     VOICE CHAT, VOICE VOLUME and the output and input devices; the
@@ -59,6 +59,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     split-screen and co-op lists on top: SETTINGS sits before REVERT TO
     SAVED, its settings show only Controls, Gamepads, Mouse, Audio and Video
     Setup, and Gamepads' OK saves the profile at once.
+  - OpenCE build-177 (network version still 25). From upstream: the
+    high-res HUD draws the weapons' reticles from the PC HUD sheet's
+    drawings that match the Xbox's exactly, and now also the rocket
+    launcher's and the sniper rifle's (its 2x and 10x included); Android:
+    the game starts on more devices whose Java runtime covers the memory
+    it needs, and `memory_map.txt` says why when it cannot.
 
 ## 0.2.0-beta - 2026-10-09
 
