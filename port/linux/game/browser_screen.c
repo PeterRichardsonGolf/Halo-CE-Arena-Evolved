@@ -22,6 +22,12 @@ joined only with the map in its family's folders (and on a build with Halo
 PC map support, HALO_CUSTOM_EDITION): else its details say what is missing,
 and A says so rather than join.
 
+AE: a game whose host this build does not join (its network version under
+this build's, or newer than it: halo_port_limits.h's
+halo_port_advertised_join_state) stays listed, dimmed, after the others;
+the list's footer and its details' Status give the reason, and A says it
+(the join's own refusal message) rather than join.
+
 Start opens the player's profile page in the web browser; RB opens Link
 Profile over the list, for where no web browser opens: a code (and a QR
 code) to type at the game list's /connect page on another device, then the
@@ -58,6 +64,7 @@ the right button is B.
 #include "../src/ui_overlay.h"
 #include "halo_ui_map_list.h"
 #include "halo_ui_pointer.h"
+#include "halo_port_limits.h" /* AE */
 
 /* ---------- constants */
 
@@ -307,6 +314,33 @@ static void join_first_player(
 		player_ui_set_active_player_profile(0, profile_index, &profile);
 }
 
+/* AE: what the list says of a game's host (HALO_PORT_JOIN_*: joined, or why
+not), by the version the game list gives (a listed host plays the
+distributed netcode: the list has no word of another) */
+boolean network_game_client_version_compatible(unsigned int theirs, unsigned int flags, boolean tell);
+
+static short join_state(
+	struct browser_game const *game)
+{
+	return (short)halo_port_advertised_join_state(game->version, HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG,
+		(unsigned int)delta_legacy_minimum(), (unsigned int)delta_legacy_maximum());
+}
+
+/* AE: why a game's host is not joined, as its row's line says it
+(HOST NEEDS TO UPDATE (VERSION 24)), or NULL for one that is */
+static char const *version_blocker(
+	struct browser_game const *game,
+	char *text,
+	long size)
+{
+	char const *format = halo_port_join_reason_format(join_state(game));
+
+	if (!format)
+		return NULL;
+	snprintf(text, (size_t)size, format, (unsigned int)game->version);
+	return text;
+}
+
 /* a game picked: its invite joined (the tunnel to its host), then its game
 joined once advertised through it (browser_screen_process) */
 static void join_selected(
@@ -317,6 +351,26 @@ static void join_selected(
 	if (browser_screen.selected < 0 || browser_screen.selected >= browser_screen.count)
 		return;
 	game = &browser_screen.games[browser_screen.selected];
+	/* AE: a host this build does not join: the reason (as AE's lobby words
+	it, and the join's own message), no tunnel to it */
+	if (join_state(game) != HALO_PORT_JOIN_OK)
+	{
+		char text[96];
+
+		if (join_state(game) == HALO_PORT_JOIN_HOST_NEWER)
+		{
+			snprintf(text, sizeof(text), "Host is on version %u, you're on %u: update this game to join",
+				(unsigned int)game->version, (unsigned int)delta_legacy_announce());
+		}
+		else
+		{
+			snprintf(text, sizeof(text), "Host is on version %u and needs to update to %u or newer",
+				(unsigned int)game->version, (unsigned int)HALO_PORT_NETWORK_VERSION);
+		}
+		set_status(text);
+		network_game_client_version_compatible(game->version, HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG, TRUE);
+		return;
+	}
 	if (!game->open)
 	{
 		set_status("That game is not accepting players.");
@@ -401,6 +455,9 @@ static long compare_games(
 {
 	long order;
 
+	/* (AE: games whose host is not joined after all the others) */
+	if ((join_state(a) != HALO_PORT_JOIN_OK) != (join_state(b) != HALO_PORT_JOIN_OK))
+		return join_state(a) != HALO_PORT_JOIN_OK ? 1 : -1;
 	/* (closed games last, whatever the order) */
 	if (a->open != b->open)
 		return a->open ? -1 : 1;
@@ -474,6 +531,18 @@ static char const *ce_map_blocker(
 	default:
 		return NULL;
 	}
+}
+
+/* AE: what stops a game being joined here, for the list's footer: its host's
+network version first, then its map */
+static char const *join_blocker(
+	struct browser_game const *game,
+	char *text,
+	long size)
+{
+	char const *blocker = version_blocker(game, text, size);
+
+	return blocker ? blocker : ce_map_blocker(game, text, size);
 }
 
 /* RB: a Link Profile code, for the profile the screen's games are joined
@@ -707,6 +776,8 @@ enum
 	COLOR_PROMPT = 0x4AA3FFFF,
 	/* a prompt that does nothing for the selected game */
 	COLOR_PROMPT_OFF = 0x4A5E80FF,
+	/* AE: the row of a game whose host is not joined (dimmer than a closed one) */
+	COLOR_UNJOINABLE = 0x566A8CFF,
 	COLOR_BUTTON_OFF = 0xFFFFFF55,
 	/* Halo PC's maps: their badge, gold as the game list's web pages draw it */
 	COLOR_PC = 0xF2C14EFF,
@@ -1279,6 +1350,9 @@ void browser_screen_render(
 		if (page_first + row == browser_screen.selected)
 			ui_overlay_rect(LIST_X + 1, y, LIST_WIDTH - 2, LIST_ROW, 0, COLOR_ROW_SELECTED);
 		color = game->open ? COLOR_TEXT : COLOR_DIM;
+		/* AE: a game whose host is not joined: its whole row dimmed (less on the selected row's blue, to stay read) */
+		if (join_state(game) != HALO_PORT_JOIN_OK)
+			color = page_first + row == browser_screen.selected ? COLOR_DIM : COLOR_UNJOINABLE;
 		utf8_name(game->name, name, sizeof(name));
 		ui_overlay_text(UI_FONT_BOLD, 10.0f, COLUMN_NAME, y + 5, UI_ALIGN_LEFT, color, name);
 		/* (the host's platform, in the room before the name) */
@@ -1301,14 +1375,16 @@ void browser_screen_render(
 			ui_overlay_text(UI_FONT_BOLD, 10.0f, COLUMN_MAP, y + 5, UI_ALIGN_LEFT, color, map_name);
 		ui_overlay_text(UI_FONT_BOLD, 10.0f, COLUMN_TYPE, y + 5, UI_ALIGN_LEFT, color, type_name(game, text, sizeof(text)));
 		snprintf(text, sizeof(text), "%d/%d", game->players, game->maximum_players);
-		ui_overlay_text(UI_FONT_BOLD, 10.0f, COLUMN_PLAYERS, y + 5, UI_ALIGN_RIGHT, game->open ? color : COLOR_CLOSED, text);
+		ui_overlay_text(UI_FONT_BOLD, 10.0f, COLUMN_PLAYERS, y + 5, UI_ALIGN_RIGHT,
+			game->open || join_state(game) != HALO_PORT_JOIN_OK ? color : COLOR_CLOSED, text);
 		/* (no ping yet: the probe is to come) */
 		ui_overlay_text(UI_FONT_REGULAR, 10.0f, COLUMN_PING, y + 5, UI_ALIGN_RIGHT, COLOR_DIM, "\xE2\x80\x93");
 	}
 	{
 		float y = (float)(LIST_Y + LIST_HEAD + ROWS_PER_PAGE * LIST_ROW);
-		char blocker_text[BROWSER_MAP_LENGTH + 32];
-		char const *blocker = selected ? ce_map_blocker(selected, blocker_text, sizeof(blocker_text)) : NULL;
+		char blocker_text[BROWSER_MAP_LENGTH + 64];
+		/* (AE: or its host's network version, join_blocker) */
+		char const *blocker = selected ? join_blocker(selected, blocker_text, sizeof(blocker_text)) : NULL;
 
 		ui_overlay_rect(LIST_X + 1, y, LIST_WIDTH - 2, 0.75f, 0, COLOR_PANEL_EDGE);
 		/* (in the sort's place: a status message while it shows, else what the
@@ -1378,7 +1454,10 @@ void browser_screen_render(
 		x = 266 + ui_overlay_text(UI_FONT_REGULAR, 10.0f, 266, y, UI_ALIGN_LEFT, COLOR_LABEL, label) + 4; \
 		x += ui_overlay_text(UI_FONT_REGULAR, 10.0f, x, y, UI_ALIGN_LEFT, COLOR_TEXT, value); \
 		y += DETAIL_LINE_STEP;
-		DETAIL_LINE("Status:", selected->open ? "Accepting Players" : "In Progress");
+		/* (AE: a host that is not joined: why, in the status' place) */
+		DETAIL_LINE("Status:", join_state(selected) == HALO_PORT_JOIN_HOST_NEWER ? "Update this game to join" :
+			join_state(selected) != HALO_PORT_JOIN_OK ? "Host needs to update" :
+			selected->open ? "Accepting Players" : "In Progress");
 		DETAIL_LINE("Map:", map_display_name(selected->map, map_name, sizeof(map_name)));
 		if (ce_state != _ce_map_none)
 			draw_pc_badge(map_family(selected->map), BADGE_SIZE, x + 6, y - DETAIL_LINE_STEP, 10.0f);
@@ -1448,8 +1527,9 @@ void browser_screen_render(
 		prompt_width(UI_BUTTON_LEFT_TRIGGER, "") + prompt_width(UI_BUTTON_RIGHT_TRIGGER, "=SORT") +
 		prompt_width(UI_BUTTON_RIGHT_SHOULDER, "=LINK PROFILE") - 20 - 3;
 	x = 320 - width / 2;
-	/* (A greyed for a game on a Custom Edition map that can't be played here) */
-	if (selected && ce_map_state(selected, FALSE) >= _ce_map_missing)
+	/* (A greyed for a game on a Custom Edition map that can't be played here;
+	AE: and for one whose host is not joined) */
+	if (selected && (ce_map_state(selected, FALSE) >= _ce_map_missing || join_state(selected) != HALO_PORT_JOIN_OK))
 		x = prompt_off(UI_BUTTON_A, "=JOIN", x);
 	else
 		x = prompt(UI_BUTTON_A, "=JOIN", x);

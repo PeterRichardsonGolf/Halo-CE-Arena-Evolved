@@ -161,7 +161,9 @@ scheme), empty for none */
 void browser_server_name(char *text, int size);
 
 /* the listed games, asking the server for the list again if the last one
-is more than a few seconds old: those of this machine's network version,
+is more than a few seconds old: those not older than the network versions
+this machine's messages allow (AE: one this build does not join is listed
+too, its version for the lists to say why: halo_port_advertised_join_state),
 without this machine's own. Returns their count. */
 int browser_get_games(struct browser_game *games, int maximum_count);
 

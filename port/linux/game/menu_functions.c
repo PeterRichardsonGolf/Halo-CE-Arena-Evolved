@@ -95,6 +95,7 @@ their handlers open opens.
 /* (its games on Halo PC maps: server_browser.c) */
 #include "halo_map_families.h"
 #include "halo_server_browser.h"
+#include "halo_port_limits.h" /* AE: the game lists' rows (halo_port_advertised_join_state) */
 
 #include <stdlib.h>
 #include <string.h>
@@ -2473,6 +2474,11 @@ boolean ui_widget_port_host(struct widget_instance *widget, struct event_record 
 boolean ui_widget_port_browse(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted);
 boolean ui_widget_port_open(struct widget_instance *widget, char const *name, boolean *widget_deleted);
 boolean network_game_client_advertised_game_in_progress(void *client, struct advertised_game *game);
+/* AE: whether its host is joined (else why not, the player told: tell), and what the lists say of it */
+boolean network_game_client_advertised_game_compatible(void *client, struct advertised_game const *game, boolean tell);
+boolean network_game_client_version_compatible(unsigned int theirs, unsigned int flags, boolean tell);
+short network_game_client_advertised_game_join_state(void *client, struct advertised_game const *game,
+	unsigned int *version);
 boolean ui_widget_port_join(struct widget_instance *widget, void *advertised_game, char const *lobby_name,
 	boolean *widget_deleted);
 boolean ui_widget_port_multiplayer_player(short controller_index, long profile_index);
@@ -3395,6 +3401,52 @@ static boolean advertised_in_progress(struct advertised_game *game)
 	return network_game_client_advertised_game_in_progress(global_network_game_client_get(), game);
 }
 
+/* AE: a game whose host this build does not join (its network version under this build's, or newer than it) stays in
+the lists, dimmed, after the others; its row's last column has the host's version, the line under the list the reason,
+and A on it tells the reason (the join's own message) instead of joining. halo_port_limits.h's
+halo_port_advertised_join_state says which (HALO_PORT_JOIN_*). */
+static short advertised_join_state(struct advertised_game const *game, unsigned int *version)
+{
+	return network_game_client_advertised_game_join_state(global_network_game_client_get(), game, version);
+}
+
+/* ... the reason, as the row's line says it (HOST NEEDS TO UPDATE (VERSION 24)); FALSE for a host that is joined */
+static boolean join_reason_text(short state, unsigned int version, wchar_t *text, short size)
+{
+	char const *format = halo_port_join_reason_format(state);
+	char reason[ROW_TEXT_LENGTH];
+	short index;
+
+	if (!format)
+		return FALSE;
+	snprintf(reason, sizeof(reason), format, version);
+	for (index = 0; reason[index] && index < size - 1; index++)
+		text[index] = (wchar_t)(unsigned char)reason[index];
+	text[index] = 0;
+	return TRUE;
+}
+
+/* ... its row's texts dimmed (given each update: pc_menu_text_color), or as their definitions have them */
+static void text_color_set(struct widget_instance const *widget, real red, real green, real blue);
+static void text_color_clear(struct widget_instance const *widget);
+
+static void browser_row_dim(struct widget_instance *row, boolean dim)
+{
+	static char const *const texts[] =
+	{
+		"server_item_server_name", "server_item_map", "server_item_type", "server_item_players", "server_item_ping",
+	};
+	short index;
+
+	for (index = 0; index < NUMBEROF(texts); index++)
+	{
+		if (dim)
+			text_color_set(named(row, texts[index], 0), 0.34f, 0.42f, 0.55f);
+		else
+			text_color_clear(named(row, texts[index], 0));
+	}
+}
+
 static void browser_games_read(void)
 {
 	void *client = global_network_game_client_get();
@@ -3404,14 +3456,15 @@ static void browser_games_read(void)
 	multiplayer.game_count = 0;
 	if (!games || multiplayer.mode == _multiplayer_mode_server_browser)
 		return;
-	/* (the open games, then those under way) */
-	for (pass = 0; pass < 2; pass++)
+	/* (the open games, then those under way; AE: then those whose host is not joined) */
+	for (pass = 0; pass < 3; pass++)
 	{
 		for (index = 0; index < MAXIMUM_ADVERTISED_GAMES; index++)
 		{
 			struct advertised_game *game = &games[index];
 
-			if (network_game_client_advertised_game_is_valid(game) && !advertised_in_progress(game) == (pass == 0) &&
+			if (network_game_client_advertised_game_is_valid(game) &&
+				(advertised_join_state(game, NULL) != HALO_PORT_JOIN_OK ? 2 : advertised_in_progress(game) ? 1 : 0) == pass &&
 				game_from_peer(game) == (multiplayer.mode == _multiplayer_mode_direct_link))
 			{
 				multiplayer.games[multiplayer.game_count++] = game;
@@ -3978,6 +4031,27 @@ static struct browser_game const *lobby_browser_listed_game(struct p2p_listing c
 	return NULL;
 }
 
+/* AE: what the list says of a game's host (HALO_PORT_JOIN_*), and its network version: known for a game the game
+list has (shown as its own row or as a listing's), which gives it; a listing alone does not say, and is joined or
+refused once its host is reached (ui_widget_port_join) */
+static short lobby_browser_join_state(struct p2p_listing const *game, unsigned int *version)
+{
+	short index;
+
+	for (index = 0; index < lobby_browser_listed.count; index++)
+	{
+		if (lobby_browser_same_token(game->invite, lobby_browser_listed.games[index].invite))
+		{
+			*version = lobby_browser_listed.games[index].version;
+			/* (a listed host plays the distributed netcode: the list has no word of another) */
+			return (short)halo_port_advertised_join_state(*version, HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG,
+				(unsigned int)delta_legacy_minimum(), (unsigned int)delta_legacy_maximum());
+		}
+	}
+	*version = 0;
+	return HALO_PORT_JOIN_OK;
+}
+
 /* a game list's game's map: its scenario's name, a Halo PC map's @ce or
 @md kept (its file's name cut short, if it must be, to keep it) */
 static void lobby_browser_listed_map(struct browser_game const *game, char *map, short size)
@@ -4131,6 +4205,13 @@ static void lobby_browser_add_listed(void)
 {
 }
 
+static short lobby_browser_join_state(struct p2p_listing const *game, unsigned int *version)
+{
+	(void)game;
+	*version = 0;
+	return HALO_PORT_JOIN_OK;
+}
+
 static void lobby_browser_roster_text(struct p2p_listing const *game, wchar_t *text, short size)
 {
 	(void)game;
@@ -4151,6 +4232,28 @@ static void lobby_browser_host_text(struct p2p_listing const *game, wchar_t *tex
 	text[0] = 0;
 }
 #endif
+
+/* AE: the games whose host is not joined after the others, each part in the order it had (lobby_browser_sort's) */
+static void lobby_browser_unjoinable_last(void)
+{
+	static struct p2p_listing unjoinable[LOBBY_BROWSER_GAMES];
+	short index, kept = 0, moved = 0;
+	unsigned int version;
+
+	for (index = 0; index < lobby_browser.count; index++)
+	{
+		if (lobby_browser_join_state(&lobby_browser.games[index], &version) != HALO_PORT_JOIN_OK)
+			unjoinable[moved++] = lobby_browser.games[index];
+		else
+		{
+			if (kept != index)
+				lobby_browser.games[kept] = lobby_browser.games[index];
+			kept++;
+		}
+	}
+	for (index = 0; index < moved; index++)
+		lobby_browser.games[kept + index] = unjoinable[index];
+}
 
 /* a game's map as the menus show it, and its family (a Halo PC map's named
 as the menus' map list names it: server_browser.c) */
@@ -4216,6 +4319,7 @@ static void lobby_browser_update(struct widget_instance *list)
 		(short)p2p_lobby_games(lobby_browser.games, LOBBY_BROWSER_GAMES));
 	lobby_browser_add_listed();
 	lobby_browser_sort();
+	lobby_browser_unjoinable_last(); /* AE */
 	focused = lobby_browser_rows_place(list);
 	/* (the first game found takes the focus from the buttons, which had it
 	while there were none) */
@@ -4274,6 +4378,18 @@ static void lobby_browser_update(struct widget_instance *list)
 		/* (no ping yet: its host is reached only on joining) */
 		text_set(named(row, "server_item_ping", 0), game->failed ? L"FAILED" : !game->open ? L"CLOSED" :
 			game->in_progress ? L"LIVE" : L"-");
+		/* AE: a host that is not joined: its row dimmed, its version in the last column */
+		{
+			unsigned int version;
+			boolean unjoinable = lobby_browser_join_state(game, &version) != HALO_PORT_JOIN_OK;
+
+			if (unjoinable)
+			{
+				usnprintf(text, ROW_TEXT_LENGTH - 1, L"V%u", version);
+				text_set(named(row, "server_item_ping", 0), text);
+			}
+			browser_row_dim(row, unjoinable);
+		}
 		/* (the lock: a game with a password. Its bitmap's first frame is
 		empty, the PC version's for no lock; the next is the lock, in the
 		menus' blue) */
@@ -4335,6 +4451,7 @@ static void lobby_browser_update(struct widget_instance *list)
 	message in its place */
 	{
 		wchar_t name[P2P_LISTING_NAME_SIZE + 1];
+		unsigned int reason_version = 0; /* AE */
 
 		message = TRUE;
 		if (!config_boolean("network.online"))
@@ -4358,7 +4475,11 @@ static void lobby_browser_update(struct widget_instance *list)
 		}
 		else if (lobby_browser.message[0] && now - lobby_browser.message_time < LOBBY_BROWSER_MESSAGE_TIME)
 			usnprintf(text, NUMBEROF(text) - 1, L"%s", lobby_browser.message);
-		/* (what stops the chosen game being joined here: its Halo PC map) */
+		/* (what stops the chosen game being joined here: AE: its host's network version; its Halo PC map) */
+		else if (chosen < lobby_browser.count && join_reason_text(
+			lobby_browser_join_state(&lobby_browser.games[chosen], &reason_version), reason_version, text, NUMBEROF(text)))
+		{
+		}
 		else if (chosen < lobby_browser.count &&
 			server_browser_map_blocked(lobby_browser.games[chosen].map, text, NUMBEROF(text)))
 		{
@@ -4469,6 +4590,32 @@ static boolean lobby_browser_select(struct widget_instance *widget, short contro
 	if (index >= lobby_browser.count)
 		return campaign_fail();
 	game = &lobby_browser.games[index];
+	/* AE: a host that is not joined: the reason (as AE's lobby words it, and the join's own message), its host not
+	reached */
+	{
+		unsigned int version;
+		short state = lobby_browser_join_state(game, &version);
+
+		if (state != HALO_PORT_JOIN_OK)
+		{
+			wchar_t reason[ROW_TEXT_LENGTH * 2];
+
+			if (state == HALO_PORT_JOIN_HOST_NEWER)
+			{
+				usnprintf(reason, NUMBEROF(reason) - 1, L"Host is on version %u, you're on %u: update this game to join",
+					version, (unsigned int)delta_legacy_announce());
+			}
+			else
+			{
+				usnprintf(reason, NUMBEROF(reason) - 1, L"Host is on version %u and needs to update to %u or newer",
+					version, (unsigned int)HALO_PORT_NETWORK_VERSION);
+			}
+			reason[NUMBEROF(reason) - 1] = 0;
+			lobby_browser_message(reason);
+			network_game_client_version_compatible(version, HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG, TRUE);
+			return campaign_fail();
+		}
+	}
 	/* (a Halo PC map's game, only with the map: a join without it would
 	fail at its loading) */
 	{
@@ -4637,6 +4784,18 @@ static void browser_update(struct widget_instance *list)
 		usnprintf(text, ROW_TEXT_LENGTH - 1, L"%d/%d", game->player_count, game->maximum_player_count);
 		text_set(named(row, "server_item_players", 0), text);
 		text_set(named(row, "server_item_ping", 0), advertised_in_progress(game) ? L"LIVE" : L"");
+		/* AE: a host that is not joined: its row dimmed, its version in the last column */
+		{
+			unsigned int version;
+			boolean unjoinable = advertised_join_state(game, &version) != HALO_PORT_JOIN_OK;
+
+			if (unjoinable)
+			{
+				usnprintf(text, ROW_TEXT_LENGTH - 1, L"V%u", version);
+				text_set(named(row, "server_item_ping", 0), text);
+			}
+			browser_row_dim(row, unjoinable);
+		}
 		visible_set(named(row, "server_item_locked", 0), FALSE);
 		visible_set(named(row, "server_item_dedicated", 0), FALSE);
 		visible_set(named(row, "server_item_classic", 0), FALSE);
@@ -4661,7 +4820,16 @@ static void browser_update(struct widget_instance *list)
 		}
 		text[NUMBEROF(text) - 1] = 0;
 		text_set(named(list, "ticker_player_info", 0), text);
-		text_set(named(list, "ticker_rules_info", 0), L"");
+		/* AE: the chosen game's host is not joined: why, on the line below */
+		{
+			unsigned int version = 0;
+			short state = multiplayer.mode != _multiplayer_mode_server_browser && multiplayer.game_count ?
+				advertised_join_state(multiplayer.games[multiplayer.game_chosen], &version) : HALO_PORT_JOIN_OK;
+
+			if (!join_reason_text(state, version, text, ROW_TEXT_LENGTH))
+				text[0] = 0;
+			text_set(named(list, "ticker_rules_info", 0), text);
+		}
 	}
 	if (stats)
 	{
@@ -4731,6 +4899,14 @@ static boolean browser_select(struct widget_instance *widget, struct event_recor
 		multiplayer.game_chosen = row;
 	if (row != NONE || strstr(widget->name, "button_join"))
 	{
+		/* AE: a host that is not joined: the player told why (the join's own message), nothing opened */
+		if (multiplayer.game_chosen < multiplayer.game_count &&
+			advertised_join_state(multiplayer.games[multiplayer.game_chosen], NULL) != HALO_PORT_JOIN_OK)
+		{
+			network_game_client_advertised_game_compatible(global_network_game_client_get(),
+				multiplayer.games[multiplayer.game_chosen], TRUE);
+			return campaign_fail();
+		}
 		/* (a game under way: its lobby first, then JOIN GAME) */
 		if (multiplayer.game_chosen < multiplayer.game_count &&
 			advertised_in_progress(multiplayer.games[multiplayer.game_chosen]))
@@ -5065,7 +5241,8 @@ pc_menu_text_color), while the one who gave it keeps giving it (a widget
 is drawn each frame its screen is up, and a gone widget's place may come to
 hold another) */
 
-#define MAXIMUM_TEXT_COLORS 16
+/* (AE: room for the game lists' dimmed rows too, five texts each: browser_row_dim) */
+#define MAXIMUM_TEXT_COLORS 96
 /* a colour given this long ago is forgotten */
 #define TEXT_COLOR_LIFETIME 250
 

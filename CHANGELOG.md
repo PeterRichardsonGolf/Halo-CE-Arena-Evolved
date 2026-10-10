@@ -32,6 +32,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     Edition map fixes (pause menu centred, fewer than three vehicles, HUD
     sounds, linear bitmaps), memory leak fixes, and the decompiled code's
     latent-bug pass.
+  - The game lists keep a host this build does not join (network version
+    24, or one newer than this build) listed, dimmed, after the others:
+    Online Games, and the PC menus' Server Browser, LAN and Direct Link
+    lists. Its line says why (HOST NEEDS TO UPDATE (VERSION 24), or UPDATE
+    THIS GAME TO JOIN for a newer host), and A or Enter on it shows the
+    reason instead of trying to join. Online Games no longer hides hosts
+    newer than this build.
   - The PC menus' merged setting rows and widened values now apply to touch
     only (upstream's #50): with a mouse, a click on a setting's label no
     longer changes its value (the mouse clicks the labels and values where

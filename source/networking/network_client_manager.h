@@ -49,6 +49,16 @@ boolean network_game_client_advertised_game_compatible(
 	struct network_game_client *client,
 	struct network_advertised_game const *game,
 	boolean tell);
+/* AE: the same of a host's advertised version and flags alone, and what the
+game lists say of an advertised game (halo_port_limits.h's HALO_PORT_JOIN_*) */
+boolean network_game_client_version_compatible(
+	unsigned int theirs,
+	unsigned int flags,
+	boolean tell);
+short network_game_client_advertised_game_join_state(
+	struct network_game_client *client,
+	struct network_advertised_game const *game,
+	unsigned int *version);
 #ifdef HALO_GAME_BROWSER
 /* the advertisement of the game an invite's host advertises (the game
 list's probe, server/src/probe.c) */

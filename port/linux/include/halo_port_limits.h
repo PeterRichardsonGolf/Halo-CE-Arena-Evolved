@@ -92,13 +92,49 @@ netcode was removed; hosts of version 4 built before then may not) */
 /* ... whether a client joins a host that advertises this version and these flags: at least this build's own
 network version (no older host, whatever the wider range above: the range is what the other machines' messages
 leave out, the floor is what this build refuses), inside minimum..maximum (delta_legacy_minimum/maximum), and on the
-distributed netcode. The one test: the join (network_client_manager.c) and AE's lobby (ae_glue_lobby.c) both ask it,
+distributed netcode. The one test: the join (network_client_manager.c), AE's lobby (ae_glue_lobby.c) and the game
+lists' rows (halo_port_advertised_join_state, below) all ask it,
 and port/linux/tests/ae_lobby_compat_test.c checks it. */
 static inline int halo_port_advertised_joinable(unsigned int theirs, unsigned int flags, unsigned int minimum,
 	unsigned int maximum)
 {
 	return theirs >= (unsigned int)HALO_PORT_NETWORK_VERSION && theirs >= minimum && theirs <= maximum &&
 		(flags & HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG) != 0;
+}
+/* AE: what the game lists say of a host that advertises this version and these flags, which they keep listed, dimmed,
+when it is not joined (the Online Games screen browser_screen.c, the PC menus' lists menu_functions.c): joined (as the
+test above says, and only then), or why not. A host under this build's version must update (whatever the range); one
+over the maximum is newer than this game, which must; one inside both and off the distributed netcode plays the
+lockstep netcode this game no longer has. port/linux/tests/ae_lobby_compat_test.c checks it. */
+enum
+{
+	HALO_PORT_JOIN_OK,
+	HALO_PORT_JOIN_HOST_OLDER,
+	HALO_PORT_JOIN_HOST_NEWER,
+	HALO_PORT_JOIN_HOST_LOCKSTEP,
+};
+static inline int halo_port_advertised_join_state(unsigned int theirs, unsigned int flags, unsigned int minimum,
+	unsigned int maximum)
+{
+	if (halo_port_advertised_joinable(theirs, flags, minimum, maximum))
+		return HALO_PORT_JOIN_OK;
+	if (theirs > maximum)
+		return HALO_PORT_JOIN_HOST_NEWER;
+	if (theirs < (unsigned int)HALO_PORT_NETWORK_VERSION || theirs < minimum)
+		return HALO_PORT_JOIN_HOST_OLDER;
+	return HALO_PORT_JOIN_HOST_LOCKSTEP;
+}
+/* ... and the reason a list gives on the row's line, a format taking the host's version (NULL for a host that is
+joined) */
+static inline char const *halo_port_join_reason_format(int state)
+{
+	switch (state)
+	{
+	case HALO_PORT_JOIN_HOST_OLDER: return "HOST NEEDS TO UPDATE (VERSION %u)";
+	case HALO_PORT_JOIN_HOST_NEWER: return "UPDATE THIS GAME TO JOIN (HOST VERSION %u)";
+	case HALO_PORT_JOIN_HOST_LOCKSTEP: return "HOST NEEDS TO UPDATE (OLD NETCODE, VERSION %u)";
+	default: return (char const *)0;
+	}
 }
 /* ... the game is under way (loading, playing or over), not in its lobby:
 the menus show it before joining it (hosts built before then never set it) */

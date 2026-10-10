@@ -15,9 +15,11 @@ server forgets a game it is not told about for a while, so a copy of the
 game that quits without withdrawing drops off by itself.
 
 Browsing: browser_get_games asks for the list when the last one is more
-than LIST_INTERVAL old, and returns what it has meanwhile. Only games of
-this machine's network version are kept (the others could not be joined),
-and never this machine's own.
+than LIST_INTERVAL old, and returns what it has meanwhile. Games older than
+the oldest network version this machine's messages allow are dropped, and
+this machine's own. (AE: the others are kept, those it does not join too: a
+host under this build's version, or newer than it. The lists show them
+dimmed, with the reason: halo_port_advertised_join_state.)
 
 The requests (posix_browser.c) block, so they are made on a thread of this
 file's, which the first call starts; the game's threads only exchange state
@@ -1231,8 +1233,8 @@ static void update_list(void)
 				*next++ = 0;
 			if (!line[0])
 				continue;
+			/* (AE: a host newer than this build is kept, for the lists to say the game must update) */
 			if (parse_game(line, &games[count]) && games[count].version >= delta_legacy_minimum() &&
-				games[count].version <= delta_legacy_maximum() &&
 				strcmp(games[count].invite, own))
 			{
 				count++;

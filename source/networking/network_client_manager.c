@@ -3147,32 +3147,27 @@ the system link list does (network_game_join_game_from_server_list) */
 /* the platform layer's (sdl_platform.c) */
 void platform_show_message(char const *title, char const *message);
 
-/* whether this client can join the advertised game: its host's network
-version is one this machine plays with (AE: this machine's own or newer, no
+/* whether this machine joins a host that advertises this network version
+and these flags (HALO_PORT_ADVERTISED_*): the version is one this machine
+plays with (AE: this machine's own or newer, no
 older: HALO_PORT_NETWORK_VERSION_MINIMUM..MAXIMUM is the wider range of
 upstream), and it plays the distributed netcode (a host of this version built before the lockstep
 netcode was removed may play that). If not the player is told why (when
-tell), and nothing is joined. */
-boolean network_game_client_advertised_game_compatible(
-	struct network_game_client *client,
-	struct network_advertised_game const *game,
+tell), and nothing is joined. (AE: of the version alone, for the lists that
+know a host's before it is reached: browser_screen.c) */
+boolean network_game_client_version_compatible(
+	unsigned int theirs,
+	unsigned int flags,
 	boolean tell)
 {
-	long game_index = client ? game - client->available_games : NONE;
 	unsigned int ours = (unsigned int)delta_legacy_announce();
-	unsigned int theirs;
-	boolean distributed;
+	boolean distributed = (flags & HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG) != 0;
 	char message[400];
 	/* AE: no host below this machine's own network version (25) is joined, whatever
 	the range above: older AE hosts lack the grenade/teleporter netcode fixes, and
 	hosts of 24 do not send units' integrated lights */
 	unsigned int ae_floor = (unsigned int)HALO_PORT_NETWORK_VERSION;
 
-	if (game_index < 0 || game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES)
-		return FALSE;
-	theirs = network_game_client_advertised_versions[game_index].version;
-	distributed = (network_game_client_advertised_versions[game_index].flags &
-		HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG) != 0;
 	if (theirs < ae_floor) /* AE */
 	{
 		csprintf(message,
@@ -3223,6 +3218,45 @@ boolean network_game_client_advertised_game_compatible(
 		platform_show_message("Halo: cannot join this game", message);
 	}
 	return FALSE;
+}
+
+/* whether this client can join the advertised game (its host's network
+version and netcode: network_game_client_version_compatible, which tells
+the player why not, when tell) */
+boolean network_game_client_advertised_game_compatible(
+	struct network_game_client *client,
+	struct network_advertised_game const *game,
+	boolean tell)
+{
+	long game_index = client ? game - client->available_games : NONE;
+
+	if (game_index < 0 || game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES)
+		return FALSE;
+	return network_game_client_version_compatible(network_game_client_advertised_versions[game_index].version,
+		network_game_client_advertised_versions[game_index].flags, tell);
+}
+
+/* AE: what the game lists say of the advertised game (halo_port_limits.h's
+HALO_PORT_JOIN_*: joined, or why not; a game that is not the client's is
+HALO_PORT_JOIN_OK, its row left as it was), and its host's network version.
+They dim the row of one that is not joined and give the reason
+(menu_functions.c). */
+short network_game_client_advertised_game_join_state(
+	struct network_game_client *client,
+	struct network_advertised_game const *game,
+	unsigned int *version)
+{
+	long game_index = client && game ? game - client->available_games : NONE;
+
+	if (version)
+		*version = 0;
+	if (game_index < 0 || game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES)
+		return HALO_PORT_JOIN_OK;
+	if (version)
+		*version = network_game_client_advertised_versions[game_index].version;
+	return (short)halo_port_advertised_join_state(network_game_client_advertised_versions[game_index].version,
+		network_game_client_advertised_versions[game_index].flags, (unsigned int)delta_legacy_minimum(),
+		(unsigned int)delta_legacy_maximum());
 }
 
 /* port: whether the advertised game is under way (HALO_PORT_ADVERTISED_IN_PROGRESS_FLAG),
