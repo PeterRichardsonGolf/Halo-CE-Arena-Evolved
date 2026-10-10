@@ -45,11 +45,11 @@ enum
 
 /* ---------- globals */
 
-#if !defined(HALO_ANDROID) && !defined(__APPLE__) /* Mach-O section names differ; the default is .bss anyway */
+#if !defined(HALO_ARM64_GUEST) && !defined(__APPLE__) /* Mach-O section names differ; the default is .bss anyway */
 #pragma bss_seg(".bss")
 #endif
 boolean debug_material_effects;
-#if !defined(HALO_ANDROID) && !defined(__APPLE__)
+#if !defined(HALO_ARM64_GUEST) && !defined(__APPLE__)
 #pragma bss_seg()
 #endif
 

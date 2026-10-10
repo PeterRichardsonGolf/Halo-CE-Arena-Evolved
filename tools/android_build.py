@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .linux_build import (CUSTOM_EDITION_DEFINES, LINUX_PROFILE, MBEDTLS_DIR, MINIUPNPC_DEFINES, MINIUPNPC_DIR, MUSL_MATH_DIR, STB_DIR,
-                          XDK_INCLUDE, compile_launcher, game_browser_defines, game_defines_and_includes, game_sources, miniupnpc_sources,
+                          XDK_INCLUDE, compile_launcher, configuration_defines, game_browser_defines, game_defines_and_includes, game_sources, miniupnpc_sources,
                           port_game_sources,
                           musl_math_sources, opus_cflags, opus_sources, pgo_mode, pgo_profile,
                           profile_use_flags, updater_defines, xdk_headers)
@@ -78,6 +78,10 @@ GUEST_ABI_FLAGS = [
     "-fno-define-target-os-macros",
     "-D__linux__=1",
     "-D__unix__=1",
+    # the ILP32 guest's code paths, the OpenGL ES renderer's, and the app's
+    # (in the port's sources, each its own macro)
+    "-DHALO_ARM64_GUEST=1",
+    "-DHALO_GLES=1",
     "-DHALO_ANDROID=1",
     # ARMv8.0: nothing the emulator's binary translation or an older
     # device could lack (Darwin targets otherwise assume pointer
@@ -405,7 +409,7 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     # (the game browser, the game list and dedicated servers, as every other
     # build has them: HALO_GAME_BROWSER, configure.py; and Halo PC's Custom
     # Edition maps, linux_build.py CUSTOM_EDITION_DEFINES)
-    guest_abi = " ".join(GUEST_ABI_FLAGS + (["-DHALO_RELEASE"] if getattr(sln, "port_release", False) else [])
+    guest_abi = " ".join(GUEST_ABI_FLAGS + configuration_defines(sln)
                          + game_browser_defines(sln) + CUSTOM_EDITION_DEFINES)
     guest_code = " ".join(GUEST_CODE_FLAGS)
     tool_implicit = [Path("tools/android_asm_convert.py"), *generated_headers]

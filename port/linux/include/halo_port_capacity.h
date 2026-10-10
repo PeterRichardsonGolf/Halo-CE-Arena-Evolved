@@ -67,7 +67,7 @@ leaves about 15 MB free: Portent's busiest frames fit, Foundation's (66 MB)
 do not, and some of its surfaces can show the wrong pixels there. The Xbox
 builds (HALO_XBOX_CONSOLE) keep the Xbox's cache. */
 
-#if defined(HALO_ANDROID)
+#if defined(HALO_ARM64_GUEST)
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0xB00 /* (0x580) */
 #elif !defined(HALO_XBOX_CONSOLE) && defined(HALO_64BIT)
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x4000 /* (0x580) */
@@ -88,13 +88,14 @@ triangles a frame's draws take, the BSP's among them (rasterizer.h). The
 Xbox's maps fit the Xbox's 16384 surfaces; big community maps draw more
 (Halo PC's own engine stopped at 16384 too, and the PC community's tools
 for those maps raise it to 32767 surfaces with a 65536-triangle buffer).
-The desktop builds draw up to 32767 (the count is a short), with twice the
-dynamic triangles, so the BSP's do not leave the rest of a frame's draws
-none. Only what is drawn changes: nothing reaches the network or the game
+The desktop builds draw up to 32768 (OpenCE build-174's count, now held
+in a long: render.h), with twice the Xbox's dynamic triangles, so the BSP's
+leave the rest of a frame's draws as much room as the Xbox's did (OpenCE's
+own builds take 49152). Only what is drawn changes: nothing reaches the network or the game
 state. Android and the Xbox builds keep the Xbox's. */
 
 #if !defined(HALO_ANDROID) && !defined(HALO_XBOX_CONSOLE)
-#define HALO_PORT_MAXIMUM_RENDERED_ENVIRONMENT_SURFACES 32767 /* (16384) */
+#define HALO_PORT_MAXIMUM_RENDERED_ENVIRONMENT_SURFACES 32768 /* (16384) */
 #define HALO_PORT_MAXIMUM_DYNAMIC_TRIANGLES 65536 /* (32768) */
 #else
 #define HALO_PORT_MAXIMUM_RENDERED_ENVIRONMENT_SURFACES 16384 /* (16384) */
@@ -110,7 +111,7 @@ over a map's (loose_sounds.c), are longer than the Xbox maps' and fill it (a
 campaign map's dialogue and music did, "SOUND CACHE BLOWN" in debug.txt).
 The desktop builds' cache is 16 MB; Android's window keeps the Xbox's. */
 
-#ifdef HALO_ANDROID
+#ifdef HALO_ARM64_GUEST
 #define HALO_PORT_SOUND_CACHE_SIZE 0x400000 /* (0x400000) */
 #else
 #define HALO_PORT_SOUND_CACHE_SIZE 0x1000000 /* (0x400000) */

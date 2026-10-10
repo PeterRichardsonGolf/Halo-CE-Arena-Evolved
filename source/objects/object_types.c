@@ -476,11 +476,11 @@ struct object_type_definition *object_type_definitions[NUMBER_OF_OBJECT_TYPES] =
 
 struct object_type_definition *first_object_type_definition;
 /* VC7 otherwise emits this tentative definition as a common symbol. */
-#if !defined(HALO_ANDROID) && !defined(__APPLE__) /* Mach-O section names differ; the default is .bss anyway */
+#if !defined(HALO_ARM64_GUEST) && !defined(__APPLE__) /* Mach-O section names differ; the default is .bss anyway */
 #pragma bss_seg(".bss")
 #endif
 static word processed_bsp_flags;
-#if !defined(HALO_ANDROID) && !defined(__APPLE__)
+#if !defined(HALO_ARM64_GUEST) && !defined(__APPLE__)
 #pragma bss_seg()
 #endif
 

@@ -704,12 +704,12 @@ struct rasterizer_debug_options rasterizer_debug_options =
 	{ 0 }, /* pad8A[2] */
 };
 /* No PDB name survives for this target-owned BSS symbol. */
-#if !defined(HALO_ANDROID) && !defined(__APPLE__) /* Mach-O section names differ; the default is .bss anyway */
+#if !defined(HALO_ARM64_GUEST) && !defined(__APPLE__) /* Mach-O section names differ; the default is .bss anyway */
 #pragma bss_seg(".bss")
 #endif
 static long bss_004662ec;
 real_argb_color *global_rasterizer_model_ambient_reflection_tint;
-#if !defined(HALO_ANDROID) && !defined(__APPLE__)
+#if !defined(HALO_ARM64_GUEST) && !defined(__APPLE__)
 #pragma bss_seg()
 #endif
 

@@ -163,6 +163,25 @@ def updater_defines(release: bool) -> str:
     return (f'-DHALO_VERSION=\\"{version()}\\" -DHALO_RELEASE_BUILD={int(release_build())} '
             f'-DHALO_BUILD_FLAVOR=\\"{flavor}\\" {identity_defines()}')
 
+def configuration_defines(sln: Any) -> List[str]:
+    """what configure.py's options define for every unit of a native build:
+    --release (no assertions), --profile (the profiling build's recording,
+    port/linux/src/profile_trace.c)"""
+    defines = []
+    if getattr(sln, "port_release", False):
+        defines.append("-DHALO_RELEASE")
+    if getattr(sln, "port_profile", False):
+        defines.append("-DHALO_PROFILE")
+    return defines
+
+
+def check_profile_options(profile: bool, pgo: str) -> None:
+    """A profiling build is optimised with the committed profiles or none:
+    trained, a profile would record the profiling code's own paths."""
+    if profile and pgo == "train":
+        raise ValueError("--profile cannot be used with --pgo=train: train profiles with a normal build")
+
+
 PLATFORM_FLAGS = [
     "-std=gnu11",
     "-D_GNU_SOURCE",
@@ -471,8 +490,8 @@ def linux32_objects(n: Writer, units: Linux32Units, obj_dir: Path, extra_cflags:
     # overrun, as it stops at the first failed assertion; a release build
     # does not, so that an overrun nobody has met cannot end a game)
     target = [march_flag(sln), *units.sysroot_flags]
-    abi = " ".join(_retarget(LINUX_ABI_FLAGS, units.target_flags) + target
-                   + (["-DHALO_RELEASE"] if getattr(sln, "port_release", False) else ["-fstack-protector-strong"])
+    abi = " ".join(_retarget(LINUX_ABI_FLAGS, units.target_flags) + target + configuration_defines(sln)
+                   + ([] if getattr(sln, "port_release", False) else ["-fstack-protector-strong"])
                    + browser_defines + CUSTOM_EDITION_DEFINES + units.extra_flags)
     port_include = PORT_DIR / "include"
     sdk_flags = f"-idirafter {XDK_INCLUDE}"

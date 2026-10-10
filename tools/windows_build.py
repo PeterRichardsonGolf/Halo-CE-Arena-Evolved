@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional
 from .version import VERSION_SOURCES, identity_defines, release_build, version
 from .voice_assets import voices_build
 from .linux_build import (CUSTOM_EDITION_DEFINES, LINUX_PROFILE, MBEDTLS_DIR, MINIUPNPC_DIR, OPTIMISATION, STB_DIR, WINDOWS_PROFILE,
-                          XDK_INCLUDE, game_browser_defines, lto_mode, march_flag, miniupnpc_sources, pgo_mode, compile_launcher, game_defines_and_includes,
+                          XDK_INCLUDE, configuration_defines, game_browser_defines, lto_mode, march_flag, miniupnpc_sources, pgo_mode, compile_launcher, game_defines_and_includes,
                           game_sources, musl_math_cflags, musl_math_sources, opus_cflags, opus_sources, pgo_profile, port_game_sources,
                           profile_use_flags,
                           xdk_headers)
@@ -468,8 +468,8 @@ def generate_windows_target(n: Writer, sln: Any, target: WindowsTarget) -> None:
     # checks its stack frames (/GS), and stops at the first one overrun, as
     # at the first failed assertion; a release build does not, so that an
     # overrun nobody has met cannot end a game)
-    abi = " ".join(target.abi_flags + [march_flag(sln)] + (["-DHALO_RELEASE"] if getattr(sln, "port_release", False)
-                                                           else ["-fstack-protector-strong"])
+    abi = " ".join(target.abi_flags + [march_flag(sln)] + configuration_defines(sln)
+                   + ([] if getattr(sln, "port_release", False) else ["-fstack-protector-strong"])
                    + game_browser_defines(sln))
     sdl_include = SDL_DIR / "include"
     libs = " ".join(
