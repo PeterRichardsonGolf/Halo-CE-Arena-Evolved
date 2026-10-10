@@ -106,7 +106,33 @@ class PacksAtStart(unittest.TestCase):
                   "--expect-no-line", "weapon pack: '", refused=True)
 
     def test_no_packs_folder_logs_nothing(self):
-        self.play("nopacks", "--expect-no-line", ANY_PACK_LINE)
+        """--no-packs: the data root gets no packs/ even when the machine's data_dir has one (the real pack's)"""
+        self.play("nopacks", "--no-packs", "--expect-no-line", ANY_PACK_LINE)
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "no named pipes on this platform")
+    def test_named_pipe_refused_without_waiting(self):
+        """a named pipe where the pack should be (opening one waits for a writer for ever): refused by its size
+        before it is opened, and the game starts and plays"""
+        folder = self.packs("pipe", None)
+        os.mkfifo(folder / "ae_battle_rifle.aepack")
+        self.play("pipe", "--packs-from", str(folder),
+                  "--expect-line", refused_line(r"d:\\packs\\ae_battle_rifle\.aepack",
+                                                "it is no pack file \\(a folder, or smaller than a pack's header\\)"),
+                  refused=True)
+
+    def test_folder_as_the_pack_refused(self):
+        folder = self.packs("folder", None)
+        (folder / "ae_battle_rifle.aepack").mkdir()
+        self.play("folder", "--packs-from", str(folder),
+                  "--expect-line", refused_line(r"d:\\packs\\ae_battle_rifle\.aepack",
+                                                "it is no pack file \\(a folder, or smaller than a pack's header\\)"),
+                  refused=True)
+
+    def test_debug_file_on_another_drive_refused(self):
+        """debug.weapon_pack_file is an Xbox path under d:\\ (the data root); another drive letter would name (and
+        make) a folder of the save root: refused unopened"""
+        self.play("drive", "--no-packs", "--env", "HALO_WEAPON_PACK_FILE=z:\\x.aepack",
+                  "--expect-line", refused_line(r"z:\\x\.aepack", r"a test pack's path starts d:\\"), refused=True)
 
     def test_empty_packs_folder(self):
         self.play("empty", "--packs-from", str(self.packs("empty", None)),
@@ -141,9 +167,12 @@ class TestPack(unittest.TestCase):
         with self.assertRaises(aepack.Refused):
             aepack.read(image)
 
-    def test_sizes(self):
-        self.assertEqual(3 * 512 * 1024 + 5000, 1577864)
-        self.assertEqual((1577864 * 10 + 524288) // 1048576, 15)
+    def test_logged_megabytes(self):
+        """the line's "(1.5 MB)" is the pack's own resources' sizes, rounded to a tenth as the game does"""
+        parsed = aepack.read(make_pack())
+        total = sum(record[2] for record in parsed.resources)  # (tag, map offset, size, ...)
+        self.assertEqual((total * 10 + 524288) // 1048576, 15)
+        self.assertIn(r"\(1\.5 MB\)", accepted_line(make_pack()))
 
 
 if __name__ == "__main__":

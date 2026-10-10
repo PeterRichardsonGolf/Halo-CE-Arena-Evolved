@@ -782,8 +782,9 @@ static const struct config_setting config_settings[] =
 	{ "debug.weapon_pack_file", _config_string, "\"\"", "HALO_WEAPON_PACK_FILE", _environment_value, /* AE hook */
 		_platform_all,
 		"A weapon pack read in place of packs\\ae_battle_rifle.aepack (tests: variants\n"
-		"and refusals), as an Xbox path: d:\\ is the data root (d:\\pack_file\\x.aepack).\n"
-		"Its SHA-256 names it as any pack's does. Empty for the packs folder's." },
+		"and refusals). An Xbox path, not a path of this computer: it starts d:\\, the\n"
+		"data root (d:\\pack_file\\x.aepack is pack_file/x.aepack beside maps/). Its\n"
+		"SHA-256 names it as any pack's does. Empty for the packs folder's." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

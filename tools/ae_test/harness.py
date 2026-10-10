@@ -564,8 +564,8 @@ SPEC_KEYS = {
     "pack_map_spawns": "true: the hosted game's BATTLE RIFLE ON MAP (HALO_NETWORK_TEST_PACK_MAP_SPAWNS=1)",
     "pack_file": "a weapon pack file read in place of packs/ae_battle_rifle.aepack (linked as the data root's "
                  "pack_file/<name>; HALO_WEAPON_PACK_FILE=d:\\pack_file\\<name>)",
-    "packs_from": "a folder linked as the data root's packs/ (default: data_dir/packs when it exists); "
-                  "never under /tmp",
+    "packs_from": "a folder linked as the data root's packs/ (default: data_dir/packs when it exists), or "
+                  "\"none\" for no packs/ at all; never under /tmp",
     "start": "HALO_NETWORK_TEST_START seconds",
     "local_players": "split-screen players 1-4 (HALO_NETWORK_TEST_LOCAL_PLAYERS)",
     "bots": "system-link bots joining once the lobby listens (tools/system_link_bots.py)",
@@ -1204,6 +1204,8 @@ def use_xvfb(cfg):
 # the folder of the data root a spec's pack_file is linked into: the game opens debug.weapon_pack_file by Xbox path
 # (d:\ is the data root), as it opens its own files, so a file elsewhere on the machine is linked there
 PACK_FILE_FOLDER = "pack_file"
+# a spec's packs_from for a game with no packs/ folder (run.py --no-packs)
+NO_PACKS = "none"
 
 
 def pack_file_xbox_path(spec):
@@ -1212,7 +1214,10 @@ def pack_file_xbox_path(spec):
 
 
 def packs_folder(spec, data):
-    """the folder linked as the data root's packs/: the spec's packs_from, else data_dir/packs when there is one"""
+    """the folder linked as the data root's packs/: the spec's packs_from ("none": no folder, whatever the machine
+    has), else data_dir/packs when there is one"""
+    if spec.get("packs_from") == NO_PACKS:
+        return None
     if spec.get("packs_from"):
         packs = expand(spec["packs_from"])
         check_not_tmp(packs, "packs_from")
@@ -1259,6 +1264,8 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
     if spec.get("pack_file"):
         pack_file = expand(spec["pack_file"])
         check_not_tmp(pack_file, "pack_file")
+        if not pack_file.exists():
+            raise SystemExit(f"ae_test: pack_file {pack_file} does not exist")
         (root / PACK_FILE_FOLDER).mkdir()
         (root / PACK_FILE_FOLDER / pack_file.name).symlink_to(pack_file.resolve())
     voices = src / "voices" if (src / "voices").exists() else (data / "voices" if data and (data / "voices").exists() else None)

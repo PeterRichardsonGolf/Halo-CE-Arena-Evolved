@@ -9,8 +9,10 @@ tags hold is checked once they are placed on a map (tag_validate.c), not
 here: nothing is placed yet.
 
 Slot 1's pack is packs\ae_battle_rifle.aepack in the data root (d:\), or the
-file debug.weapon_pack_file names (an Xbox path: a test pack, read in its
-place; its hash travels like any pack's). A slot takes only its own pack:
+file debug.weapon_pack_file names (R31: an Xbox path under d:\, never a
+host path: a test pack, read in its place; its hash travels like any
+pack's). What is at the path is asked before it is opened: only a file at
+least a header long is. A slot takes only its own pack:
 another pack id in its file is refused.
 
 The spike's DONOR code (a map's weapon taken out of another map file at
@@ -65,10 +67,37 @@ static struct ae_pack *slot_pack(
 	return weapon_pack_globals.packs[slot - 1];
 }
 
-static boolean path_exists(
+enum
+{
+	_path_missing,
+	_path_pack_file,
+	_path_other,
+};
+
+/* what is at the path, asked without opening it: opening a named pipe would wait for a writer for ever, and a
+pack is a download's name away from being anything. A folder, or anything smaller than a pack's header (a pipe,
+a socket and a device all report no size), is no pack file */
+static short path_kind(
 	char const *path)
 {
-	return GetFileAttributesA(path) != (DWORD)-1;
+	WIN32_FILE_ATTRIBUTE_DATA data;
+
+	if (!GetFileAttributesExA(path, GetFileExInfoStandard, &data))
+		return _path_missing;
+	if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ||
+		(!data.nFileSizeHigh && data.nFileSizeLow < AE_PACK_HEADER_SIZE))
+	{
+		return _path_other;
+	}
+	return _path_pack_file;
+}
+
+/* whether a path names another drive than d: (the data root). Another letter is a folder of the save root, which
+asking about makes (the platform layer's path translation): a test pack is never looked for there */
+static boolean path_leaves_data_root(
+	char const *path)
+{
+	return path[0] && path[1] == ':' && path[0] != 'd' && path[0] != 'D';
 }
 
 /* "weapon pack: 'ae_battle_rifle' revision N (sha256 0123456789abcdef...), <own> own tags, <ext> external,
@@ -117,11 +146,22 @@ static struct ae_pack *slot_read(
 	struct ae_pack_problem problem;
 	char const *pack_id = slot_files[slot - 1].pack_id;
 
-	if (!asked_for && !path_exists(PACKS_FOLDER))
+	/* (R32: no packs folder is a game without packs, and silent; a packs folder without the slot's file is a
+	refusal. With a second slot, a folder holding only some slots' files would log one each start: decide then) */
+	if (!asked_for && path_kind(PACKS_FOLDER) == _path_missing)
 		return NULL;
-	if (!path_exists(path))
+	if (asked_for && path_leaves_data_root(path))
 	{
+		pack_refused(slot, path, "a test pack's path starts d:\\");
+		return NULL;
+	}
+	switch (path_kind(path))
+	{
+	case _path_missing:
 		pack_refused(slot, path, "there is no such file");
+		return NULL;
+	case _path_other:
+		pack_refused(slot, path, "it is no pack file (a folder, or smaller than a pack's header)");
 		return NULL;
 	}
 	if (!ae_pack_open(path, &pack, &problem))

@@ -4,6 +4,7 @@
     python3 tools/ae_test/run.py --build <rev|name|path> --map bloodgulch [--players 2] [--bots 3 --bot-args=--move]
         [--mod NHE] [--window 1920x1080] [--exit-after 40] [--shots 300] [--env HALO_MATCH_CLOCK=both ...]
         [--init 'map_name levels\\a10\\a10'] [--record 20] [--saved-gametype "AE PRO TS"] [--save-from DIR] [--box]
+        [--packs-from DIR | --no-packs] [--pack-file FILE]
     python3 tools/ae_test/run.py --spec game.json [--box]
 
 A spec file is a JSON object with the keys in harness.SPEC_KEYS (--list-keys prints them). The result
@@ -39,6 +40,8 @@ def spec_from_args(a):
         data["init"] = a.init
     if a.pack_map_spawns:
         data["pack_map_spawns"] = True
+    if a.no_packs:
+        data["packs_from"] = harness.NO_PACKS
     for flag, key in ((a.expect_line, "lines"), (a.expect_no_line, "no_lines")):
         if flag:
             data["expect"] = dict(data.get("expect", {}), **{key: list(data.get("expect", {}).get(key, [])) + flag})
@@ -69,7 +72,10 @@ def parser():
     p.add_argument("--pack-loadout", help="primary | secondary | both (HALO_NETWORK_TEST_PACK_LOADOUT)")
     p.add_argument("--pack-map-spawns", action="store_true", help="HALO_NETWORK_TEST_PACK_MAP_SPAWNS=1")
     p.add_argument("--pack-file", help="a weapon pack file (HALO_WEAPON_PACK_FILE)")
-    p.add_argument("--packs-from", help="a folder linked as the data root's packs/")
+    packs = p.add_mutually_exclusive_group()
+    packs.add_argument("--packs-from", help="a folder linked as the data root's packs/")
+    packs.add_argument("--no-packs", action="store_true",
+                       help="no packs/ in the data root, even when the config's data_dir has one")
     p.add_argument("--expect-line", action="append", help="a regex a debug.txt line must match (repeat)")
     p.add_argument("--expect-no-line", action="append", help="a regex no debug.txt line may match (repeat)")
     p.add_argument("--flags", type=int)

@@ -232,6 +232,20 @@ class Specs(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 harness.prepare_game(cfg, harness.parse_spec({"name": "g", "map": "x", "pack_file": "/tmp/p.aepack"}),
                                      build, d / "work" / "g", d / "out" / "g")
+            # (packs_from "none": no packs/ at all, whatever data_dir holds; run.py --no-packs)
+            prep = harness.prepare_game(cfg, harness.parse_spec({"name": "n", "map": "x", "packs_from": "none"}),
+                                        build, d / "work" / "n", d / "out" / "n")
+            self.assertTrue((d / "data" / "packs").is_dir())
+            self.assertFalse((Path(prep["root"]) / "packs").exists())
+            a = run.parser().parse_args(["--build", "abc", "--map", "x", "--no-packs"])
+            self.assertEqual(run.spec_from_args(a)["packs_from"], "none")
+            with self.assertRaises(SystemExit):
+                run.parser().parse_args(["--build", "abc", "--map", "x", "--no-packs", "--packs-from", "~/p"])
+            # (a pack_file that is not there: the harness says so, the game is not started)
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "h", "map": "x",
+                                                              "pack_file": str(d / "mine" / "typo.aepack")}),
+                                     build, d / "work" / "h", d / "out" / "h")
             # (no packs folder anywhere: none linked)
             (d / "data" / "packs").rmdir()
             prep = harness.prepare_game(cfg, harness.parse_spec({"name": "e", "map": "x"}), build,
