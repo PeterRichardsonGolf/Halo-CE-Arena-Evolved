@@ -98,7 +98,7 @@ BOOL nv2a_vertex_shader_lighting(const DWORD *instructions, unsigned long instru
 
 /* OpenGL ES and macOS's OpenGL 4.1 have no glClipControl: vertex shaders
 convert D3D's clip space themselves (nv2a_vsh.c) */
-#if defined(HALO_ANDROID) || defined(__APPLE__)
+#if defined(HALO_GLES) || defined(__APPLE__)
 #define HALO_GL_NO_CLIP_CONTROL 1
 #endif
 
