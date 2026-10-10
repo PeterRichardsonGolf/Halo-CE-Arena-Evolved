@@ -153,15 +153,10 @@ int halo_linux_mouse_look(short gamepad_index, float *yaw, float *pitch)
 	mouse_pending_y = 0.0f;
 	mouse_polls_unconsumed = 0;
 	pthread_mutex_unlock(&mouse_lock);
-#ifdef HALO_ANDROID
-	/* the touch controls' swipe; it is not the mouse's aiming
-	(halo_linux_mouse_aiming), so a thumb keeps the stick's magnetism */
-	touch_input_look(scale, yaw, pitch);
-#endif
 	if (x == 0.0f && y == 0.0f)
-		return *yaw != 0.0f || *pitch != 0.0f;
-	*yaw += -x * scale * mouse_sensitivity();
-	*pitch += (invert ? y : -y) * scale * vertical_sensitivity;
+		return FALSE;
+	*yaw = -x * scale * mouse_sensitivity();
+	*pitch = (invert ? y : -y) * scale * vertical_sensitivity;
 	return TRUE;
 }
 
