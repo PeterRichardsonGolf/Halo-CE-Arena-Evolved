@@ -477,11 +477,12 @@ static void network_test_log_players(
 			struct object_datum *placed = object->object.parent_object_index != NONE ?
 				object_get(object->object.parent_object_index) : object;
 
-			network_test_append(line, (int)sizeof(line), &length, " player %ld: (%.3f %.3f %.3f) h%.2f/%.2f%s%s g%d/%d w",
+			network_test_append(line, (int)sizeof(line), &length, " player %ld: (%.3f %.3f %.3f) h%.2f/%.2f%s%s%s g%d/%d w",
 				(long)DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.datum_index), placed->object.position.x,
 				placed->object.position.y, placed->object.position.z, object->object.body_vitality,
 				object->object.shield_vitality, placed != object ? " riding" : "",
 				TEST_FLAG(unit->unit.flags, _unit_active_camouflaged_bit) ? " camo" : "",
+				TEST_FLAG(unit->unit.flags, _unit_integrated_light_on_bit) ? " light" : "",
 				unit->unit.grenade_counts[0], unit->unit.grenade_counts[1]);
 			/* where it aims (yaw and pitch, degrees), its animation state and
 			how hard it is moving */
