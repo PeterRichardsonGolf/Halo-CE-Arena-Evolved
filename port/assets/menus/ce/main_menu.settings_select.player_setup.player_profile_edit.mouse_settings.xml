@@ -127,10 +127,10 @@
 		<string text="CLASSIC style only. How fast the view turns up and\ndown; Same turns it as fast as side to side."/>
 		<string text="MCC style only. Halo: MCC's number, for turning and\nlooking up and down alike."/>
 		<string text="MCC style only. A scale on the mouse while zoomed,\non top of the weapon's own zoom."/>
-		<string text="MCC style only. A scale on the mouse while you are\nin a vehicle's seat."/>
+		<string text="MCC style only. A scale on the mouse while seated\nin a vehicle (any seat)."/>
 		<string text="Moving the mouse forward looks down."/>
 		<string text="Slow and drag the view along with a target while\naiming with the mouse, as with a controller."/>
 		<string text="Classic: this port's own sensitivity numbers, the\nrows marked CLASSIC."/>
-		<string text="MCC: the sensitivity number matches Halo:\nThe Master Chief Collection and is within 1%\nof CS:GO and other Source games."/>
+		<string text="MCC: the sensitivity number of Halo: The Master\nChief Collection. 1.0 turns 1/45 degree a count,\nabout 1% more than CS:GO at sensitivity 1."/>
 	</strings>
 </menus>

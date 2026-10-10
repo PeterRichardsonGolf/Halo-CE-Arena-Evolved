@@ -65,5 +65,7 @@ void ae_platform_test_keystroke(int scancode);
 classic yaw and pitch with MCC style's when input.mouse_style is mcc (nothing in classic style) */
 void ae_mouse_test_counts(float *x, float *y);
 void ae_mouse_look_override(float x, float y, int invert, float *yaw, float *pitch);
+/* (test_input_gamepad) "mouse:<dx>,<dy>,zoom" holds the right stick's click, the default zoom button */
+void ae_mouse_test_buttons(unsigned short *buttons);
 
 #endif

@@ -11,6 +11,7 @@ static int failures;
 int main(void)
 {
 	float yaw, pitch, x, y;
+	int zoom;
 
 	/* the style text */
 	CHECK(ae_mouse_style_from_text("mcc") == AE_MOUSE_MCC);
@@ -48,6 +49,10 @@ int main(void)
 	CHECK(ae_mouse_clamp_scale(5.0f) == 2.0f);
 	CHECK(ae_mouse_clamp_scale(0.7f) == 0.7f);
 
+	/* NaN and infinity are pinned, not passed on */
+	CHECK(ae_mouse_clamp_sensitivity(NAN) == 0.1f && ae_mouse_clamp_sensitivity(INFINITY) == 10.0f);
+	CHECK(ae_mouse_clamp_scale(NAN) == 0.1f && ae_mouse_clamp_scale(INFINITY) == 2.0f);
+
 	/* the zoom and vehicle factors are 1 in classic style whatever the keys say */
 	CHECK(ae_mouse_zoom_factor(AE_MOUSE_CLASSIC, 0.5f, 1) == 1.0f);
 	CHECK(ae_mouse_zoom_factor(AE_MOUSE_CLASSIC, 2.0f, 1) == 1.0f);
@@ -76,13 +81,16 @@ int main(void)
 	CHECK(NEAR(-yaw, 10.0 * ae_mouse_mcc_radians(0.1f), 1e-9));
 
 	/* the test verb */
-	CHECK(ae_mouse_test_parse("mouse:100,0", &x, &y) && x == 100.0f && y == 0.0f);
-	CHECK(ae_mouse_test_parse("mouse:-40,12.5", &x, &y) && x == -40.0f && y == 12.5f);
-	CHECK(!ae_mouse_test_parse("mouse:100", &x, &y));
-	CHECK(!ae_mouse_test_parse("mouse:1,2x", &x, &y));
-	CHECK(!ae_mouse_test_parse("menu:a", &x, &y));
-	CHECK(!ae_mouse_test_parse("", &x, &y));
-	CHECK(!ae_mouse_test_parse(NULL, &x, &y));
+	CHECK(ae_mouse_test_parse("mouse:100,0", &x, &y, &zoom) && x == 100.0f && y == 0.0f);
+	CHECK(ae_mouse_test_parse("mouse:-40,12.5", &x, &y, &zoom) && x == -40.0f && y == 12.5f);
+	CHECK(ae_mouse_test_parse("mouse:100,40,zoom", &x, &y, &zoom) && x == 100.0f && y == 40.0f && zoom == 1);
+	CHECK(ae_mouse_test_parse("mouse:100,40", &x, &y, &zoom) && zoom == 0);
+	CHECK(!ae_mouse_test_parse("mouse:1,2,zoomx", &x, &y, &zoom));
+	CHECK(!ae_mouse_test_parse("mouse:100", &x, &y, &zoom));
+	CHECK(!ae_mouse_test_parse("mouse:1,2x", &x, &y, &zoom));
+	CHECK(!ae_mouse_test_parse("menu:a", &x, &y, &zoom));
+	CHECK(!ae_mouse_test_parse("", &x, &y, &zoom));
+	CHECK(!ae_mouse_test_parse(NULL, &x, &y, &zoom));
 
 	if (failures)
 		return 1;

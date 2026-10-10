@@ -81,14 +81,19 @@ void ae_mouse_mcc_look(float value, float x, float y, int invert, float *yaw, fl
 	*pitch = (invert ? y : -y) * radians;
 }
 
-int ae_mouse_test_parse(char const *setting, float *dx, float *dy)
+int ae_mouse_test_parse(char const *setting, float *dx, float *dy, int *zoom)
 {
 	float x, y;
 	int used = 0;
 
 	if (!setting || strncmp(setting, "mouse:", 6))
 		return 0;
-	if (sscanf(setting + 6, "%f,%f%n", &x, &y, &used) < 2 || setting[6 + used])
+	if (sscanf(setting + 6, "%f,%f%n", &x, &y, &used) < 2)
+		return 0;
+	*zoom = 0;
+	if (!strcmp(setting + 6 + used, ",zoom"))
+		*zoom = 1;
+	else if (setting[6 + used])
 		return 0;
 	*dx = x;
 	*dy = y;

@@ -10,9 +10,10 @@ Plain types only.
 #ifndef __AE_GLUE_MOUSE_H
 #define __AE_GLUE_MOUSE_H
 
-/* (player_control.c, after the zoom's division) the mouse look in radians scaled by the zoomed and vehicle
-sensitivity scales: MCC style only; classic leaves it as it is */
-void ae_mouse_scale_look(float *yaw, float *pitch, int zoomed, int in_vehicle);
+/* (player_control.c, after the zoom's division) the mouse look in radians scaled by the zoomed (a unit and a zoom
+level, as the division is guarded) and vehicle (the unit seated in any seat) sensitivity scales: MCC style only;
+classic leaves it as it is */
+void ae_mouse_scale_look(float *yaw, float *pitch, long unit_index, short zoom_level);
 /* (game_engine.c game_engine_log_rules, a match's start) logs "mouse: style ..., sensitivity ..., zoom scale ...,
 vehicle scale ..." */
 void ae_mouse_log_settings(void);

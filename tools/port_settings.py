@@ -170,7 +170,7 @@ SCREENS = {
             # (a help for each value)
             ("MOUSE STYLE:", "input.mouse_style", MOUSE_STYLES,
              ["Classic: this port's own sensitivity numbers, the\nrows marked CLASSIC.",
-              "MCC: the sensitivity number matches Halo:\nThe Master Chief Collection and is within 1%\nof CS:GO and other Source games."], None),
+              "MCC: the sensitivity number of Halo: The Master\nChief Collection. 1.0 turns 1/45 degree a count,\nabout 1% more than CS:GO at sensitivity 1."], None),
             ("HORIZONTAL SENSITIVITY:", "input.mouse_sensitivity", SENSITIVITIES,
              "CLASSIC style only. How fast the view turns side to\nside for the mouse's movement.", None),
             ("VERTICAL SENSITIVITY:", "input.mouse_vertical_sensitivity", [("SAME", "0")] + SENSITIVITIES,
@@ -180,7 +180,7 @@ SCREENS = {
             ("ZOOMED SENSITIVITY SCALE:", "input.mouse_zoom_scale", MCC_SCALES,
              "MCC style only. A scale on the mouse while zoomed,\non top of the weapon's own zoom.", None),
             ("VEHICLE SENSITIVITY SCALE:", "input.mouse_vehicle_scale", MCC_SCALES,
-             "MCC style only. A scale on the mouse while you are\nin a vehicle's seat.", None),
+             "MCC style only. A scale on the mouse while seated\nin a vehicle (any seat).", None),
             ("INVERT VERTICAL AXIS:", "input.invert_mouse", YES_NO,
              "Moving the mouse forward looks down.", None),
             ("AIM ASSIST:", "input.mouse_aim_assist", ON_OFF,

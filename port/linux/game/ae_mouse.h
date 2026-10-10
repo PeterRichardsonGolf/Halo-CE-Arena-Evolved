@@ -8,7 +8,7 @@ the platform layer and the player's control).
 
 CLASSIC is the port's own: 0.0022 radians per count times the multiplier.
 MCC is Halo: The Master Chief Collection's number: the sensitivity / 45
-degrees per count, the same for yaw and pitch, which puts 1.0 within 1% of
+degrees per count, the same for yaw and pitch, which puts 1.0 about 1% above
 CS:GO and other Source games (0.022 degrees per count).
 */
 
@@ -54,7 +54,8 @@ float ae_mouse_vehicle_factor(int style, float scale, int in_vehicle);
 sensitivity key is not read), pitch inverted when invert */
 void ae_mouse_mcc_look(float value, float x, float y, int invert, float *yaw, float *pitch);
 
-/* debug.test_input "mouse:<dx>,<dy>" (counts, may be fractions and negative): TRUE and the counts when it is one */
-int ae_mouse_test_parse(char const *setting, float *dx, float *dy);
+/* debug.test_input "mouse:<dx>,<dy>[,zoom]" (counts, may be fractions and negative; zoom holds the zoom button):
+TRUE, the counts and whether to zoom when it is one */
+int ae_mouse_test_parse(char const *setting, float *dx, float *dy, int *zoom);
 
 #endif
