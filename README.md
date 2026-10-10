@@ -139,8 +139,9 @@ play:
 - 14 controller layouts, including the Anniversary set and MCC's Universal
   Reclaimer, Zoom & Shoot, Bump & Jump and Green Fingers; layouts that put
   actions on the d-pad don't also move you with it.
-- A performance overlay in the HUD's style (Settings > Video > PERFORMANCE:
-  FPS, or FPS with frame times and draws; top left or top right).
+- A performance overlay in the HUD's style (Settings > Video > GRAPHICS >
+  PERFORMANCE: FPS, or FPS with frame times and draws; top left or top
+  right).
 - A match clock, as in the Master Chief Collection (Settings > Game Options >
   MULTIPLAYER GAME TIMER: OFF, TIME REMAINING, TIME ELAPSED or BOTH). TIME
   REMAINING shows the time left (counting up when there is no time limit),

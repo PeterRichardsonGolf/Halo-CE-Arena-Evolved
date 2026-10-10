@@ -40,10 +40,9 @@ SCREENS = {
     "video_settings": {
         "screen": "video_settings_screen",
         "header": ("header_profile_video_settings", f"{PE}/video_settings/header_profile_video_settings"),
-        # each platform packs its own rows, so a row hidden on this machine
-        # does not leave a gap. (24, not the other screens' 30: its eleven
-        # places, OpenCE's nine and PERFORMANCE and POSITION, above the help)
-        "spacing": 24,
+        # the other screens' 30px step. each platform packs its own rows, so
+        # a row hidden on this machine does not leave a gap
+        "spacing": 30,
         "help_top": 364,
         "platform_places": True,
         # (rows in the place of the row before them: Window Size in
@@ -271,8 +270,11 @@ SCREENS = {
 # Video Setup's categories open ordinary settings screens. Each has the same
 # pending edits, Defaults, OK and Cancel as the other settings screens.
 _video = SCREENS["video_settings"]
+# (Arena Evolved's PERFORMANCE and POSITION, the performance line's, go with
+# the graphics rows: seven places there, Video Setup's nine as OpenCE's)
 _graphics = {"display.high_res_hud", "display.high_res_text", "display.anti_aliasing",
-             "display.shadow_resolution", "display.per_pixel_lighting"}
+             "display.shadow_resolution", "display.per_pixel_lighting",
+             "display.performance", "display.performance_position"}
 SCREENS["video_settings/graphics"] = {
     "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 30,
     "same_place": ["anti_aliasing_android"],
@@ -280,7 +282,8 @@ SCREENS["video_settings/graphics"] = {
 }
 _video["rows"] = [row for row in _video["rows"] if row[1] not in _graphics]
 _video["categories"] = [
-    ("GRAPHICS:", "video_settings/graphics", "The HUD, text, anti-aliasing, shadows and\nlighting."),
+    ("GRAPHICS:", "video_settings/graphics",
+     "The HUD, text, anti-aliasing, shadows,\nlighting and the performance line."),
     ("FOV AND VIEWMODELS:", "video_settings/fov_viewmodels",
      "The field of view and the first-person\nweapon. Their defaults keep the stock view."),
 ]

@@ -49,7 +49,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     VIEWMODELS: `display.fov`, `display.viewmodel_fov`,
     `display.viewmodel_visible`; the defaults keep the stock view), Video
     Setup's graphics rows on a GRAPHICS screen of their own (PERFORMANCE
-    and POSITION stay on Video Setup), high-res controller button icons in
+    and POSITION are there too), high-res controller button icons in
     the menus, any controller drives the menus while one person plays, a
     saved profile, controls and all, is copied at once into every local
     player using it (split-screen players sharing a profile get each
