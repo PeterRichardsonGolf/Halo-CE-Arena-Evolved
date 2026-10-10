@@ -6,8 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-- Merged OpenCE build-167 (network version still 24, so it plays with
-  0.2.0-beta). From upstream: voice chat (hold V to talk; Settings > Audio
+- Merged OpenCE build-167 (network version 24; the build-170 merge below
+  raises it to 25). From upstream: voice chat (hold V to talk; Settings > Audio
   has VOICE CHAT, VOICE VOLUME and the output and input devices; the
   microphone stays closed until you first talk), votes to kick a player
   (right-click a player on the scoreboard; the host also gets Kick and Ban
@@ -20,6 +20,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Merged ChupathingyCE 0.7.1e: Custom Edition maps made with MCC's tools
   whose bitmaps use its high-quality compression (BC7) now load and draw
   instead of being refused.
+- Merged OpenCE build-170: **network version 25**. Plays with OpenCE
+  build-169 and later; no longer with ChupathingyCE 0.7.1e or Arena Evolved
+  0.2.0-beta (version 24: a host of 24 is refused with "the host needs to
+  update", and their players are told our host is newer). From upstream: a
+  joining player sees others' flashlights as the host has them, Android
+  touch controls with aim assist, a fix for starting on Windows 7, Custom Edition map
+  fixes (pause menu centred, fewer than three vehicles, HUD sounds, linear
+  bitmaps), memory leak fixes, and the decompiled code's latent-bug pass.
 
 ## 0.2.0-beta - 2026-10-09
 

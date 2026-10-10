@@ -182,21 +182,24 @@ and switches co-op's BSP on the host's crossing alone; version 22 names a
 Halo Custom Edition map `custom_maps\<name>` in the game's settings, and a
 client without the map it names is told which map it misses and where to
 put it; version 24 sends the gametype's PC vehicle set, with which every
-machine places all of the map's vehicles.
+machine places all of the map's vehicles; version 25 (OpenCE build-169)
+carries each unit's integrated light (flashlight) in the host's object
+states, with a bit saying it was sent, so a client that missed a press, or
+joined after it, shows the light as the host has it.
 
-Arena Evolved announces 24, the table's newest (`delta.h`), and joins hosts
-of 24 (a host below 24 is refused, though ChupathingyCE 0.7.1d would join it): it plays with ChupathingyCE 0.7.1
-and OpenCE build-149 and later both ways (OpenCE's clients join only their
-own version, 24). Hosts of an older version are refused (ChupathingyCE
-0.7.0b's and Arena Evolved 0.1.0-beta's 20 among them), and their clients do
-not join Arena Evolved's games, and are told the host is newer. Its wire ID
-is its own (`ae-24a`, `delta.h`), so ChupathingyCE's signed legacy tables
+Arena Evolved announces 25, the table's newest (`delta.h`), and joins hosts
+of 25 (a host below 25 is refused, though the table's range reaches back to
+11): it plays with OpenCE build-169 and later both ways (OpenCE's clients
+join only their own version, 25). Hosts of an older version are refused
+(ChupathingyCE 0.7.1e's and Arena Evolved 0.2.0-beta's 24 among them), and
+their clients do not join Arena Evolved's games, and are told the host is
+newer. Its wire ID is its own (`ae-25a`, `delta.h`), so ChupathingyCE's signed legacy tables
 (Delta, `docs/delta.md`), which have no row for it, neither change these
 numbers nor turn off its Delta capabilities, and they are not fetched unless
 `network.legacy_table_fetch` is on (off by default). The game's messages are
-ChupathingyCE 0.7.1d's and OpenCE build-167's unchanged (build-167's voice chat
-and votes to kick are among them; Arena Evolved adds none): Arena Evolved's own
-rules travel in the gametype's flags, which every host of 11 to 24 sends
+OpenCE build-170's unchanged (build-167's voice chat and votes to kick and
+build-169's lights are among them; Arena Evolved adds none): Arena Evolved's own
+rules travel in the gametype's flags, which every host of 11 to 25 sends
 and a client that does not know a bit leaves alone. Arena Evolved's own
 rule on top: a game with a password never has its invite sent to the game
 list's site (`browser.c`: not listed, not claimed, not reported, hosted or

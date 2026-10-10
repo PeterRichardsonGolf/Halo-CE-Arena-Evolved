@@ -286,13 +286,14 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, Arena Evolved plays with ChupathingyCE 0.7.1 and OpenCE build-149
-  and later (network version 24), both ways, and joins games hosted on
-  network version 24 or newer (a host below 24 is refused: the host needs to
-  update). Builds of an older version (ChupathingyCE
-  0.7.0b, OpenCE before build-149, Arena Evolved 0.1.0-beta) don't join
-  Arena Evolved's games, which say 24: their players are told the host is
-  newer. A game on a Custom Edition map is named as OpenCE names it, so
+- Online, the current code (not yet released) plays with OpenCE build-169
+  and later (network version 25), both ways, and joins games hosted on
+  network version 25 or newer (a host below 25 is refused: the host needs to
+  update). Builds of an older version (ChupathingyCE 0.7.1e and earlier,
+  OpenCE before build-169, Arena Evolved 0.2.0-beta and 0.1.0-beta) don't
+  join its games, which say 25: their players are told the host is newer.
+  The published 0.2.0-beta is network version 24: it plays with
+  ChupathingyCE 0.7.1 and OpenCE build-149 to build-168. A game on a Custom Edition map is named as OpenCE names it, so
   OpenCE and ChupathingyCE players with the map join it too.
 
 ## Credits
