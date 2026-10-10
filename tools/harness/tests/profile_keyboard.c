@@ -14,6 +14,9 @@ struct platform_input_state { unsigned char keys[TEST_SCANCODE_COUNT], mouse_but
 typedef struct { unsigned short wButtons; BYTE bAnalogButtons[8]; SHORT sThumbLX, sThumbLY; } XINPUT_GAMEPAD;
 #define SDL_BUTTON_X1 4
 static BOOL text_typing, text_typing_enter_armed, text_typing_keyboard, text_typing_field;
+/* Arena Evolved (from ChupathingyCE): the Enter that finished typing is held
+off the menu below until it is let go of (xinput_sdl.c) */
+static BOOL text_typing_enter_blocked;
 static struct { boolean active, shift_active, caps_active, symbols_active;
     void *keyboard; short row, column; word buffer_size; short last_event, last_key,
     number_of_event_repeats, caption_index; boolean last_exit_saved_text, first_key_replaces_buffer;
@@ -47,6 +50,13 @@ static int processed, errors;
 #define virtual_keyboard_get_current_character() L'a'
 static void virtual_keyboard_process_internal(void) { ++processed; }
 static boolean virtual_keyboard_cancel(void);
+/* Arena Evolved (from ChupathingyCE): virtual_keyboard.c looks the keyboard's
+tag up again before it is used (in a match the loaded map is not ui.map);
+here, as that does, whether the tag is loaded (keyboard_available) */
+static boolean virtual_keyboard_available(void)
+{
+    return tag_loaded(VIRTUAL_KEYBOARD_TAG, "ui\\english") != NONE;
+}
 #include "under_test.inc"
 
 static void launch(wchar_t *name)
@@ -70,6 +80,11 @@ static void ordinary_input(void)
     struct platform_input_state input = {0}; XINPUT_GAMEPAD pad = {0};
     CHECK(!virtual_keyboard_globals.active, "keyboard remained active");
     CHECK(!text_typing, "closed keyboard left typing mode enabled");
+    /* Arena Evolved (from ChupathingyCE): the Enter that closed the keyboard
+    counts on the menu below only once let go of (xinput_sdl.c's
+    text_typing_enter_blocked), so it is let go of first, as a player does */
+    keyboard_gamepad(&input, &pad);
+    memset(&pad, 0, sizeof(pad));
     input.keys[SDL_SCANCODE_RETURN] = 1;
     input.keys[SDL_SCANCODE_W] = 1;
     keyboard_gamepad(&input, &pad);
