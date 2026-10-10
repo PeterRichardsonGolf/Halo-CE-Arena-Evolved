@@ -41,6 +41,7 @@ host_sdl_gamepad_axis
 host_sdl_gamepad_button
 host_sdl_gamepad_type
 host_sdl_rumble_gamepad
+host_sdl_close_gamepad
 host_sdl_scancode_name
 host_sdl_scancode_from_name
 host_sdl_open_audio_stream
@@ -61,5 +62,6 @@ host_touch_read
 host_touch_look_read
 host_touch_rumble
 host_touch_scene
+host_touch_bindings
 
 host_errno

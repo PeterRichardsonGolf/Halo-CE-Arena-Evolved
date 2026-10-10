@@ -2465,24 +2465,16 @@ static void dsound_channel_set_properties(
 	boolean gain_only)
 {
 	struct sound_channel *channel= channel_get(channel_index);
-#if defined(HALO_64BIT) || defined(HALO_CUSTOM_EDITION)
-	/* port: a gain past 1 taken as 1, as a sound card plays it: a Halo PC
-	map's sound may have one (beavercreek_rev_beta's grenade throw has a gain
-	modifier of 1.4), which halted a debug build */
+	/* port: a Custom Edition map's sound can be louder than a channel plays
+	(foundation's Reach sniper rifle fire has a gain modifier of 1.5); played
+	at full gain, as Halo PC does, rather than halting */
 	real prop_gain = PIN(properties->gain, 0.f, 1.f);
 	real gain= dsound_globals.pause_gain*prop_gain;
-#else
-	real gain= dsound_globals.pause_gain*properties->gain;
-#endif
 
 	match_assert(
 		"c:\\halo\\SOURCE\\sound\\sound_dsound_xbox.c",
 		980,
-#if defined(HALO_64BIT) || defined(HALO_CUSTOM_EDITION)
 		prop_gain>=0.f && prop_gain<=1.f);
-#else
-		properties->gain>=0.f && properties->gain<=1.f);
-#endif
 	match_assert(
 		"c:\\halo\\SOURCE\\sound\\sound_dsound_xbox.c",
 		981,
@@ -2984,7 +2976,7 @@ static void dsound_error(
 			break;
 	}
 
-	error(_error_silent, "DirectSound:  '%s' (%s#%d)", message, result_name, result);
+	error(_error_silent, "DirectSound:  '%s' (%s#%d)", message, result_name, (int)result);
 
 	return;
 }

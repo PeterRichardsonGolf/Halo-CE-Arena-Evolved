@@ -2107,9 +2107,9 @@ boolean network_game_server_game_is_valid(
 }
 
 /* port: why network_game_server_accept_client_machine_into_game last
-refused a machine: a banned one's, or one dropped for cheating, is told it
-is kept out (_rejection_code_blacklisted_machine); any other, that the game
-is not open */
+refused a machine: a banned one's, one dropped for cheating, or one kicked
+by a vote, is told it is kept out (_rejection_code_blacklisted_machine); any
+other, that the game is not open */
 static short network_game_server_refusal_code = _rejection_code_game_is_closed;
 
 short network_game_server_last_refusal_code(
@@ -2169,7 +2169,6 @@ boolean network_game_server_accept_client_machine_into_game(
 					network_game_server_hardware_ids[machine_index] : ""))
 		{
 			network_event("refusing a machine @ %s: kicked by a vote", transport_address_to_string(&address));
-			/* (AE: told it is kept out, as the two above, not that the game is closed) */
 			network_game_server_refusal_code = _rejection_code_blacklisted_machine;
 			return FALSE;
 		}

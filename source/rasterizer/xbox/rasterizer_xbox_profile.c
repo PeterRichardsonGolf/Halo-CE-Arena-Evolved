@@ -632,10 +632,7 @@ static void profile_assert(
 		}
 		else
 		{
-			error(
-				_error_silent,
-				"### PROFILE: %s -- tell Bernie!",
-				message);
+			error(_error_silent, "### PROFILE: %s -- tell Bernie!", message);
 		}
 
 		rasterizer_profile_error_count++;

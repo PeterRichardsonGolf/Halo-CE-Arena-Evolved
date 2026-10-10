@@ -62,7 +62,7 @@ final class Updater {
     /** the logcat tag, the native side's (port/android/host/host.h) */
     private static final String LOG_TAG = "chupathingyce";
     private static final int TIMEOUT_MILLISECONDS = 20000;
-    /** the most a download (a release's zip, about 25 MB) or the app in it may be */
+    /** the most a download (a release's zip, about 35 MB) or the app in it may be */
     private static final long MAXIMUM_UPDATE_SIZE = 256L * 1024 * 1024;
 
     private Updater() {

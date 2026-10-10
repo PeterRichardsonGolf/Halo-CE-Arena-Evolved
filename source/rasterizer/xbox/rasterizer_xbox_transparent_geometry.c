@@ -2201,7 +2201,7 @@ void rasterizer_transparent_geometry_group_draw(
 								{
 									real vsh_constants__texscale[3][4];
 									short fade_source = shader_transparent_generic->generic.framebuffer_fade_source;
-									unsigned long combiner_constant;
+									unsigned long combiner_constant = 0;
 
 									vsh_constants__texscale[0][0] = 0.0f;
 									vsh_constants__texscale[0][1] = 0.0f;
@@ -2260,10 +2260,6 @@ void rasterizer_transparent_geometry_group_draw(
 											combiner_constant = 0x05;
 											break;
 
-										/* combiner_constant is left unassigned only by this default arm. Not reached unassigned: the
-										 * arm's assertion failure calls system_exit, which does not return in January
-										 * (0x47c960 jumps to halt_and_catch_fire 0x4f21c0, which loops or calls exit).
-										 * Source-policy approval pending (2026-09-27 audit). */
 										default:
 											match_vassert(
 												"c:\\halo\\SOURCE\\rasterizer\\xbox\\rasterizer_xbox_transparent_geometry.c",
@@ -2731,7 +2727,7 @@ void rasterizer_transparent_geometry_group_draw(
 								{
 									real vsh_constants__texscale[3][4];
 									short fade_source = shader_transparent_chicago->chicago.framebuffer_fade_source;
-									unsigned long combiner_constant;
+									unsigned long combiner_constant = 0;
 
 									vsh_constants__texscale[0][0] = 0.0f;
 									vsh_constants__texscale[0][1] = 0.0f;
@@ -2792,10 +2788,6 @@ void rasterizer_transparent_geometry_group_draw(
 											combiner_constant = 0x05;
 											break;
 
-										/* combiner_constant is left unassigned only by this default arm. Not reached unassigned: the
-										 * arm's assertion failure calls system_exit, which does not return in January
-										 * (0x47c960 jumps to halt_and_catch_fire 0x4f21c0, which loops or calls exit).
-										 * Source-policy approval pending (2026-09-27 audit). */
 										default:
 											match_vassert(
 												"c:\\halo\\SOURCE\\rasterizer\\xbox\\rasterizer_xbox_transparent_geometry.c",
