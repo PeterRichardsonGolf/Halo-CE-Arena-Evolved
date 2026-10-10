@@ -1,0 +1,18 @@
+AE BATTLE RIFLE (weapon pack ae_battle_rifle) - credits [DRAFT: Task 19 settles the final text]
+
+The rifle's model, textures, shaders, first-person animations, effects and sounds are the work of CMT (the Custom
+Mapping Team), from the source release of The Silent Cartographer: Evolved 1.4.1c (the Evolved team: Teh Lag,
+Ifafudafi, Siliconmaster and the contributors their credits.txt names). Sound design: Beaucephal and Xalener.
+They are used under the release's own terms ("Just don't take credit for things you didn't make") and are
+unchanged but for what an Xbox map needs: Open Sauce's extension blocks removed, the multipurpose maps' channels
+reordered, the Ogg Vorbis sounds encoded again as Xbox ADPCM, the models converted.
+
+Made for Arena Evolved (our own work, drawn or computed by the scripts in tools/weapon_pack/):
+- the lighting values and the brightened base map;
+- the gun screen's digits and compass;
+- the sharp scope: CMT's scope lines and ring redrawn four times as large, and the "[3x]" label;
+- the ammunition counter (2 rows of 18 rounds in groups of 3) and its low-ammo flash;
+- the swap and pickup prompts' picture of the rifle;
+- the Halo 2 burst behaviour, which is code in the game and no part of this pack.
+
+Thank you, CMT.

@@ -257,3 +257,36 @@ of a DONOR map, an Xbox map of the game's build:
 - The pack goes out through `ae_pack_write`; the same donor and arguments give the same bytes. The tool prints
   the counts (with `--verbose` every tag and the validator's corrections of the donor) and exits 0, or prints
   `ae_pack_build: refused: <reason>` and exits 1 with nothing written; bad arguments exit 2.
+
+## The battle rifle's recipe
+
+`tools/weapon_pack/make_pack.py` builds `ae_battle_rifle.aepack` from its recipe,
+`tools/weapon_pack/battle_rifle/recipe.json`: from CMT's source release (the zip as downloaded) and the player's
+own stock Blood Gulch to the donor map and the pack, with every input and result pinned by SHA-256.
+
+    python3 tools/weapon_pack/make_pack.py --recipe tools/weapon_pack/battle_rifle/recipe.json --work <folder>
+        --zip <tsce_1-4-1c_source_release.zip> --stock-map <bloodgulch.map> --invader <Invader 0.44.0's build folder>
+        --builder build/linux/ae_pack_build [--reference <folder of the prototype's fix folders>]
+        [--stage prepare|art|build|all]
+
+- **prepare**: the programs, the zip and the map are checked against the recipe; exactly the recipe's allowlist
+  (180 tag files) is unpacked from the zip by `extract_allowlist.py` (which refuses an empty list, and anything
+  under the release's `util` and `scripts` folders); the stock map's tags are extracted; what the art scripts read
+  goes to `art-in/`.
+- **art**: our own art is drawn (`screen_art.py` the gun screen's digits and compass, `scope_hd.py` and
+  `scope_label.py` the sharp scope and its "[3x]", `counter_art.py` the ammunition counter, `hud_sheet.py` the
+  prompts' picture of the rifle). These need numpy and Pillow; each file's SHA-256 must be the recipe's, so a
+  machine without them takes `art/` from one that has them (`--stage art` on a folder holding `art-in/`).
+- **build**: each of the recipe's 96 steps makes one tag of one layer (`os_strip.py`, `multipurpose_to_xbox.py`,
+  `dxt_lift.py`, `sound_oggs.py` with ffmpeg and Invader, `hud_hires_to_xbox.py`, `hud_tag.py`, `tag_fields.py`'s
+  field edits, Invader's model and bitmap compilers); with `--reference` each is compared with the prototype's tag
+  of that name (`fixes.tsv`). Invader builds the donor from the layers in the recipe's order; a donor whose
+  SHA-256 is not the recipe's (the approved one's) stops the run. `ae_pack_build` makes the pack; a donor the
+  validator corrected is refused. `audit.tsv` lists every own tag with where it came from (a file of the allowlist,
+  one of our scripts, or a stock tag the recipe names under `stock_derived`), `externals.tsv` every tag left to
+  the map: each must be the stock map's own tag, unchanged, and on all 13 stock multiplayer maps.
+  `pack_compare.py` then holds the pack's own tags to the donor's bytes (its header says what the builder blanks
+  and is therefore not compared). The pack's SHA-256 must be the recipe's recorded one.
+
+Nothing of CMT's, of the game's or made from them is in the repository: the work folder holds all of it, and
+`make_pack.py` refuses a work folder under `/tmp`. Invader (GPL-3) and ffmpeg are separate programs it runs.
