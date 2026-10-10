@@ -341,7 +341,10 @@ def test_p2p_signatures_and_listings(tmp_path):
         else:
             flags.append(word)
     program = tmp_path / "p2p_lobby_check"
-    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-Wl,--unresolved-symbols=ignore-all", "-o",
+    # (-pthread: the check starts a thread; with the portable build's system
+    # root, glibc 2.31, pthread_create is in libpthread, not libc, and an
+    # unresolved symbol is let through as a null call)
+    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-pthread", "-Wl,--unresolved-symbols=ignore-all", "-o",
                             str(program), "tools/p2p_lobby_check.c", "port/linux/src/p2p_crypto.c",
                             "port/linux/src/p2p_lobby.c", "port/third_party/monocypher/monocypher.c",
                             "port/third_party/monocypher/monocypher-ed25519.c"],
