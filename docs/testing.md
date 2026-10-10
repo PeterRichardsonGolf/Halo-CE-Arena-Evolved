@@ -97,6 +97,18 @@ setup, outside this repository):
   mode comes from `HALO_DISPLAY_MODE=windowed` (the runner cannot force a window).
 - CI builds: `fetch-build.ps1` takes only successful push runs on main.
 
+## Test input: the mouse
+
+`HALO_TEST_INPUT` (`debug.test_input`) is the platform's scripted player (`bot:<seed>`, `look:<seed>`, `menu:<buttons>`).
+`mouse:<dx>,<dy>` (for example `mouse:100,40`; counts may be negative or fractions) adds those mouse counts to the real
+ones on every 30th look of the game (about twice a second of play, for a one-player game) and, each time, logs the turn
+it gave the view: `mouse test: counts 100,40 turn yaw -12.60507 pitch -5.04203 degrees (style classic, zoomed 0,
+vehicle 0)`. That is the angle added to the player's facing, after the style's formula and the zoom and vehicle scales
+(not a read-back of the facing, which the harness cannot observe). Match start logs `mouse: style ..., sensitivity ...,
+zoom scale ..., vehicle scale ...`. `tools/test_ae_mouse.py` plays it (set `$AE_MOUSE_BUILD`, as `$AE_MENUS_BUILD` in
+`tools/test_ae_menus.py`): classic 1.0 turns 100 counts 12.60507 degrees, MCC 5.67 the same within 1%, MCC 1.4 turns
+1.4/45 degrees a count.
+
 ## Recording
 
 The game records itself: F10 (the Screenshot action, rebindable) saves a screenshot and F9 starts/stops a recording in play, and for tests

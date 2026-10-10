@@ -6,6 +6,16 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Mouse: a MOUSE STYLE row on the Mouse screen of Settings (`input.mouse_style`).
+  CLASSIC (the default) is as before. MCC uses Halo: The Master Chief
+  Collection's sensitivity number (0.1 to 10 in 0.1 steps; the view turns the
+  number / 45 degrees for each count of the mouse, for turning and looking up
+  and down alike, within 1% of CS:GO and other Source games) with a ZOOMED
+  SENSITIVITY SCALE and a VEHICLE SENSITIVITY SCALE (0.1 to 2). The first
+  switch to MCC keeps your feel (the classic number x 5.6723, so 1.0 becomes
+  5.7). The match start logs the style in `debug.txt`, and
+  `debug.test_input = "mouse:<dx>,<dy>"` injects mouse counts for tests.
+
 ## 0.2.1-beta - 2026-10-10
 
 Built on ChupathingyCE 0.7.1e and OpenCE build-177 (network version 25). It
