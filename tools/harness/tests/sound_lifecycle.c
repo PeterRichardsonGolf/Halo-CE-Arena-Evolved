@@ -1,5 +1,9 @@
 #include "harness.h"
 #include <math.h>
+/* Arena Evolved's tag blocks hold their pointers as XPTR fields (the 64-bit
+builds keep the Xbox's 32-bit layout: source/cseries/xbox_address.h); this
+32-bit harness takes that file's 32-bit form, plain pointers */
+#define XPTR(type) type *
 #include "types.inc"
 #define NUMBEROF(a) (sizeof(a)/sizeof((a)[0]))
 #define MAX(a,b) ((a)>(b)?(a):(b))
