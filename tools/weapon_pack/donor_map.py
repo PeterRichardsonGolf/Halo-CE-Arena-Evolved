@@ -22,8 +22,8 @@ class Refused(Exception):
     """not a map this reads, with the reason"""
 
 
-def read_map(path):
-    """the map's tag bytes (inflated when the file is as the disc has it)"""
+def read_whole_map(path):
+    """(the whole map as the game reads it: inflated when the file is as the disc has it; its tag bytes)"""
     with open(path, "rb") as file:
         disk = file.read(MAXIMUM_MAP_SIZE + 1)
     if len(disk) < MAP_HEADER_SIZE or len(disk) > MAXIMUM_MAP_SIZE:
@@ -46,7 +46,27 @@ def read_map(path):
     offset, size = struct.unpack_from("<II", whole, 0x10)
     if size < TAG_HEADER_SIZE or offset > length or size > length - offset:
         raise Refused("the map's tags are not in its file: %s" % path)
-    return whole[offset:offset + size]
+    return whole, whole[offset:offset + size]
+
+
+def read_map(path):
+    """the map's tag bytes"""
+    return read_whole_map(path)[1]
+
+
+class MapFile:
+    """a map: its tags, and the file's bytes by file offset (pixels and samples are there)"""
+
+    def __init__(self, path=None, whole=None, tag_data=None):
+        if path is not None:
+            whole, tag_data = read_whole_map(path)
+        self.whole = whole
+        self.tags = Tags(tag_data)
+
+    def file_bytes(self, offset, size):
+        if offset < 0 or size < 0 or offset + size > len(self.whole):
+            return None
+        return self.whole[offset:offset + size]
 
 
 class Tag:

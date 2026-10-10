@@ -23,13 +23,6 @@ def halved(text):
     return str((value if value else 1.0) * 0.5)
 
 
-def _count(editor, key):
-    try:
-        return editor.count(key)
-    except tag_fields.Failed:
-        return 0
-
-
 def _element(editor, key, done):
     if editor.get(key + FLAG) == "1":
         for scale in ("width_scale", "height_scale"):
@@ -42,10 +35,10 @@ def convert(editor):
     """the elements changed, in order"""
     done = []
     for block in ELEMENT_BLOCKS:
-        for index in range(_count(editor, block)):
+        for index in range(editor.count(block)):
             _element(editor, "%s[%d]" % (block, index), done)
     for block, inner in NESTED_BLOCKS:
-        for index in range(_count(editor, block)):
+        for index in range(editor.count(block)):
             for inner_index in range(editor.count("%s[%d].%s" % (block, index, inner))):
                 _element(editor, "%s[%d].%s[%d]" % (block, index, inner, inner_index), done)
     return done

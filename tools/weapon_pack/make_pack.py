@@ -3,24 +3,38 @@ to the donor map and the pack, every step scripted and checked.
 
     make_pack.py --recipe tools/weapon_pack/battle_rifle/recipe.json --work <folder> --zip <CMT's zip>
                  --stock-map <the stock map the donor's scenario starts from>
-                 [--invader <Invader's build folder>] [--library-path <folder>] [--ffmpeg <program>]
-                 [--builder <ae_pack_build>] [--stock-maps <folder of the stock multiplayer maps>]
-                 [--reference <folder>] [--stage prepare|art|build|all]
+                 [--stock-maps <folder of the 13 stock multiplayer maps>]   (default: --stock-map's folder)
+                 [--invader <Invader's build folder>] [--library-path <folder of the libraries Invader needs>]
+                 [--ffmpeg <program>] [--builder <ae_pack_build>]
+                 [--reference <folder of the prototype's fix folders>] [--approved-donor <the approved donor map>]
+                 [--stage prepare|art|build|all]
 
-What it does, all of it under --work (never /tmp, never the prototype's folders):
-  prepare  the programs, the zip and the stock map checked against the recipe's SHA-256s; exactly the recipe's
-           allowlist unpacked from the zip (cmt-tags/); the stock map's tags extracted (stock-tags/); what the art
-           scripts read written to art-in/
+What it does, all of it under --work (never /tmp, never the prototype's folders; a folder it made itself, which
+it marks, since it deletes and remakes the folders in it):
+  prepare  Invader's programs, the zip and the stock map checked against the recipe's SHA-256s; exactly the
+           recipe's allowlist unpacked from the zip (cmt-tags/); the stock map's tags extracted (stock-tags/);
+           what the art scripts read written to art-in/
   art      our own art drawn (art/): the gun screen's digits and compass, the sharp scope and its label, the
-           ammunition counter, the icon sheet; each file's SHA-256 must be the recipe's. The art scripts need numpy
-           and Pillow; on a machine without them, art-in/ is taken to one that has them, "--stage art" run there
-           on a folder holding it, and art/ brought back (the hashes make the files the same wherever drawn)
+           ammunition counter, the prompts' picture of the rifle. Each picture must be the recipe's: it is pinned
+           by its decoded pixels, mode and size, so the same picture from another library version or compression
+           is taken, and one differing pixel is refused. The art scripts need numpy and Pillow; on a machine
+           without them, art-in/ is taken to one that has them, "--stage art" run there on a folder holding it,
+           and art/ brought back. (The pixels depend on the libraries' arithmetic: another numpy or Pillow may
+           draw a pixel differently, and is then refused, not used.)
   build    every fix tag made by its step into its layer (layers/<name>/), each compared with the prototype's tag
-           of that name when --reference is given (fixes.tsv); the donor built by Invader from the layers in the
-           recipe's order (donor/donor.map), its SHA-256 the recipe's or nothing goes on; the stock maps' tag names
-           listed; the pack built by ae_pack_build (pack/<id>.aepack), a donor the validator corrected refused;
-           audit.tsv (every own tag: pack name, where it came from, group, size) and externals.tsv (every tag the
-           pack leaves to the map) written and their rules checked; the pack's tags compared with the donor's
+           of that name when --reference is given (fixes.tsv): all the same but the recipe's named departures;
+           the donor built by Invader from the layers in the recipe's order (donor/donor.map), its SHA-256 the
+           recipe's or nothing goes on; the stock maps' tag names listed; the pack built by ae_pack_build
+           (pack/<id>.aepack), a donor the validator corrected refused; audit.tsv (every own tag: pack name,
+           where it came from, group, size, everything its steps read) and externals.tsv (every tag the pack
+           leaves to the map) written and their rules checked; the pack compared with its donor (tags, pixels,
+           samples, vertices) and, with --approved-donor, with the approved donor, from which it may differ only
+           in the tags the recipe names (departures.tsv). A pack refused at any point is set aside as .refused
+
+Pinned by SHA-256: the zip, the stock map, Invader's programs, the art inputs, the donor, the pack; by pixels:
+the art. Not pinned, only recorded or logged: ffmpeg (its version is written to donor/build.log; a decoder that
+gave other samples changes the donor's hash), Python, numpy and Pillow (the art's pins catch them),
+ae_pack_build (this repository's own, built from the same commit).
 
 Invader (GPL-3), ffmpeg and ae_pack_build are separate programs run from here; nothing of CMT's, of the game's or
 built from them is written anywhere but --work.
@@ -33,9 +47,11 @@ import re
 import shutil
 import struct
 import sys
+import zipfile
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))    # (found when run with python -I, too)
+import aepack
 import donor_map
 import dxt_lift
 import extract_allowlist
@@ -45,6 +61,7 @@ import hud_tag
 import multipurpose_to_xbox
 import os_strip
 import pack_compare
+import png_pixels
 import sound_oggs
 import tag_fields
 
@@ -53,7 +70,10 @@ TEMPORARY_ROOTS = ("/tmp", "/var/tmp", "/dev/shm", "/run")
 # the prototype's folders (read-only references): <anything>/halo-test/<one of these>
 SPIKE_FOLDERS = ("wp2", "r5", "r6")
 OPERATIONS = ("copy", "os_strip", "multipurpose", "dxt_lift", "model", "sound", "edit", "hud_hires", "bitmap",
-              "icon_sheet", "alpha_sheet", "ammo_hud", "counter_hud")
+              "ammo_hud", "counter_hud")
+# a file make_pack.py puts in a work folder it made: it deletes folders only where this is
+MARKER = ".make_pack-work"
+ART_STAGE_FOLDERS = ("art-in", "art")
 INVADER_PROGRAMS = ("invader-build", "invader-extract", "invader-edit", "invader-bitmap", "invader-sound",
                     "invader-convert", "invader-bludgeon")
 STOCK_MULTIPLAYER_MAPS = ("beavercreek", "bloodgulch", "boardingaction", "carousel", "chillout", "damnation",
@@ -136,7 +156,7 @@ def unknown_scripts(recipe):
 def check_recipe(recipe):
     """the recipe's own rules, before anything is run"""
     for key in ("pack", "source", "stock_map", "tools", "donor", "layers", "steps", "art", "art_scripts",
-                "art_inputs", "art_settings", "expected", "reference"):
+                "art_inputs", "art_settings", "expected", "reference", "departures", "approved_reference"):
         if key not in recipe:
             raise Refused("the recipe has no %s" % key)
     made = set()
@@ -163,6 +183,12 @@ def check_recipe(recipe):
         raise Refused("the allowlist and what the recipe reads differ: %s" % ", ".join(sorted(used ^ listed)[:5]))
     if set(recipe["reference"]) != set(recipe["layers"]):
         raise Refused("the reference folders are not the layers'")
+    for name in recipe["departures"]:
+        if name.split("/", 1)[0] not in recipe["layers"]:
+            raise Refused("a departure in no layer: %s" % name)
+    for name, entry in recipe["art"].items():
+        if set(entry) != {"mode", "size", "pixels_sha256"}:
+            raise Refused("art pinned by something other than its pixels: %s" % name)
 
 
 def builder_arguments(recipe, donor, names, out, recipe_folder):
@@ -212,28 +238,141 @@ def require_no_corrections(text):
         raise Refused("the donor needed %d corrections by the tag validator: a corrected donor makes no pack" % count)
 
 
+def provenance(recipe, layer, tag):
+    """where a tag a step made came from: (source, inputs). The source is the allowlisted file of CMT's at the
+    start of the chain of steps, "stock <tag>" when the chain starts from a stock tag, or "AE script <name>" for
+    a bitmap compiled from our art. The inputs are EVERYTHING the chain read, each "cmt <file>", "stock <tag>" or
+    "art <file>": every step's own inputs (grafts too) and, for art, what the script that drew it read"""
+    steps = {(step["layer"], step["tag"]): step for step in recipe["steps"]}
+    if (layer, tag) not in steps:
+        raise Refused("no step makes %s/%s" % (layer, tag))
+    step = steps[(layer, tag)]
+    inputs = []
+    seen = set()
+
+    def note(kind, name):
+        text = "%s %s" % (kind, name)
+        if text not in inputs:
+            inputs.append(text)
+
+    def art_reads(name):
+        for entry in recipe["art_inputs"].values():
+            if recipe["art_scripts"].get(name) in entry["scripts"]:
+                note(entry["root"], entry["tag"])
+
+    while True:
+        if (step["layer"], step["tag"]) in seen:
+            raise Refused("a step reads itself: %s" % step["tag"])
+        seen.add((step["layer"], step["tag"]))
+        for kind, name in step_inputs(step):
+            if kind == "art":
+                note("art", name)
+                art_reads(name)
+            elif kind != "layer":
+                note(kind, name)
+        for kind, name in step_inputs(step):
+            # (a graft from another layer's tag brings that tag's own inputs with it)
+            if kind == "layer" and list(name) != list(step.get("from", ())):
+                for text in provenance(recipe, name[0], name[1])[1]:
+                    if text not in inputs:
+                        inputs.append(text)
+        if step["op"] == "bitmap":
+            return SCRIPT_PREFIX + recipe["art_scripts"][step["art"][0]], inputs
+        root, name = step["from"]
+        if root == "cmt":
+            return name, inputs
+        if root == "stock":
+            return STOCK_PREFIX + name, inputs
+        step = steps[(root, name)]
+
+
 def audit_problems(rows, allowlist, script_names, allowed_stock=()):
-    """the audit's rules over its rows ({"pack_name", "source", "group", "size"}): every own tag comes from an
-    allowlisted file of CMT's or from one of our scripts; every own sound from an allowlisted sound of CMT's; a
-    tag made from a stock tag only when the recipe names it (allowed_stock: pack names)"""
+    """the audit's rules over its rows ({"pack_name", "source", "group", "size", "inputs"}): every own tag comes
+    from an allowlisted file of CMT's or from one of our scripts; every own sound from an allowlisted sound of
+    CMT's. A tag is judged by its INPUTS, not by the name of what made it: one whose source or any input is a
+    stock tag (a script fed stock pixels, fields grafted from a stock tag) passes only when the recipe names it
+    (allowed_stock: pack names), and a sound never"""
     problems = []
     for row in rows:
         source = row["source"]
-        if source.startswith(SCRIPT_PREFIX):
+        stock = [text for text in [source] + list(row.get("inputs", ())) if text.startswith(STOCK_PREFIX)]
+        if stock and (row["pack_name"] not in allowed_stock or row["group"] == "snd!"):
+            problems.append("%s: made from a stock tag the recipe does not allow: %s" % (
+                row["pack_name"], "; ".join(sorted(set(stock)))))
+        elif source.startswith(SCRIPT_PREFIX):
             script = source[len(SCRIPT_PREFIX):].split(" ")[0]
             if row["group"] == "snd!":
                 problems.append("%s: a sound made by a script, not one of CMT's: %s" % (row["pack_name"], source))
             elif script not in script_names:
                 problems.append("%s: no such script: %s" % (row["pack_name"], source))
         elif source.startswith(STOCK_PREFIX):
-            if row["pack_name"] not in allowed_stock or row["group"] == "snd!":
-                problems.append("%s: made from a stock tag the recipe does not allow: %s" % (row["pack_name"],
-                                                                                             source))
+            pass
         elif source not in allowlist:
             problems.append("%s: not from the allowlist: %r" % (row["pack_name"], source))
         elif row["group"] == "snd!" and not source.endswith(".sound"):
             problems.append("%s: a sound not from a sound file: %s" % (row["pack_name"], source))
     return problems
+
+
+def departure_problems(rows, departures):
+    """fixes.tsv's rows against the recipe's named departures ("layer/tag": why): a tag that is not the
+    prototype's must be named, and a named one must really differ (a stale name is a problem too)"""
+    problems = []
+    named = set(departures)
+    for row in rows:
+        name = "%s/%s" % (row[0], row[1])
+        same = row[2] in ("byte-equal", "0 field differences")
+        if name in named:
+            named.discard(name)
+            if same:
+                problems.append("%s: named as a departure but it is the prototype's" % name)
+        elif not same:
+            problems.append("%s: %s, and the recipe names no departure there" % (name, row[2]))
+    problems += ["%s: named as a departure but neither made nor in the prototype" % name for name in sorted(named)]
+    return problems
+
+
+def pack_departure_problems(by_tag, departures):
+    """the differences of a pack from the approved donor (pack_compare's by_tag) against the recipe's named ones
+    (the donor's tag name, lower case: why): differences anywhere else are problems, and so is a named tag that
+    does not differ"""
+    problems = []
+    for name, texts in by_tag.items():
+        if name not in departures:
+            problems += ["%s: %s" % (name, text) for text in texts]
+    problems += ["%s: named as a departure from the approved donor but it is the same" % name
+                 for name in sorted(departures) if name not in by_tag]
+    return problems
+
+
+def claim_work_folder(path, stage):
+    """the work folder made ours: a new or empty one gets the marker; one that holds files without it is refused
+    (folders in it are deleted between runs, so it must be one this made), but for the art stage's folder that
+    holds only art-in/ brought from another machine"""
+    path = Path(path)
+    path.mkdir(parents=True, exist_ok=True)
+    names = {entry.name for entry in path.iterdir()}
+    if MARKER not in names:
+        if names and not (stage == "art" and names <= set(ART_STAGE_FOLDERS)):
+            raise Refused("the work folder holds files and is not one make_pack.py made (no %s in it): %s" % (
+                MARKER, path))
+        (path / MARKER).write_text("a work folder of tools/weapon_pack/make_pack.py: its folders are deleted "
+                                   "and made again by each run\n")
+
+
+def art_pin_problem(path, entry):
+    """why an art file is not the recipe's, or None: pinned by its pixels, mode and size, so that the same
+    picture written by another library or compression is taken and a different pixel is not"""
+    try:
+        have = png_pixels.pin(path)
+    except (OSError, png_pixels.Refused) as failure:
+        return "cannot be read: %s" % failure
+    if have["mode"] != entry["mode"] or have["size"] != list(entry["size"]):
+        return "is %s %dx%d, not %s %dx%d" % (have["mode"], have["size"][0], have["size"][1], entry["mode"],
+                                               entry["size"][0], entry["size"][1])
+    if have["pixels_sha256"] != entry["pixels_sha256"]:
+        return "has other pixels than the recipe's (SHA-256 of the decoded pixels)"
+    return None
 
 
 def external_problems(externals, donor, stock):
@@ -420,10 +559,6 @@ class Run:
             path = self.art_in / name
             if entry["kind"] == "tag":
                 shutil.copyfile(self.source((entry["root"], entry["tag"])), path)
-            elif entry["kind"] == "pixels":
-                with open(self.source((entry["root"], entry["tag"])), "rb") as file:
-                    tag = file.read()
-                path.write_bytes(hek.BitmapTag(tag).pixels(tag))
             elif entry["kind"] == "geometry":
                 path.write_text(self.geometry(entry))
             else:
@@ -450,6 +585,15 @@ class Run:
     # ---- art
 
     def make_art(self):
+        import scope_hd
+        import scope_label
+        import hud_sheet
+        try:
+            self.draw_art()
+        except (scope_hd.Refused, scope_label.Refused, hud_sheet.Refused) as refusal:
+            raise Refused("the art: %s" % refusal)
+
+    def draw_art(self):
         try:
             import numpy as np
             from PIL import Image
@@ -490,24 +634,21 @@ class Run:
         grey(mask).save(self.art / "br_scope_mask_noring.png")
         relabelled, _ = scope_label.relabel(lines, settings["scope_label_digit"])
         Image.fromarray(np.dstack([relabelled] * 4), "RGBA").save(self.art / "br_scope_details_3x.png")
-        sheet, rectangle = hud_sheet.icon_sheet((self.art_in / "ammo_meters.raw").read_bytes(),
-                                                (self.art_in / "br_geo.txt").read_text())
-        if list(rectangle) != settings["icon_rectangle"]:
-            raise Refused("the icon's rectangle is %r, not the recipe's" % (rectangle,))
-        (self.art / "br_sheet.raw").write_bytes(sheet)
-        (self.art / "br_alphas.raw").write_bytes(hud_sheet.alpha_sheet((self.art_in / "ammo_alphas.raw").read_bytes(),
-                                                                       sheet))
+        picture = hud_sheet.icon((self.art_in / "br_geo.txt").read_text())
+        if [picture.shape[1], picture.shape[0]] != settings["icon_size"]:
+            raise Refused("the icon is %d x %d, not the recipe's size" % (picture.shape[1], picture.shape[0]))
+        hud_sheet.plate(picture).save(self.art / "br_icon.png")
         self.check_art()
         log("art: %d files drawn in %s, each the recipe's" % (len(recipe["art"]), self.art))
 
     def check_art(self):
-        for name, digest in self.recipe["art"].items():
+        for name, entry in self.recipe["art"].items():
             path = self.art / name
             if not path.is_file():
                 raise Refused("art/%s is missing (the art stage makes it)" % name)
-            if sha256_file(path) != digest:
-                raise Refused("art/%s is not the recipe's (SHA-256): drawn by another version of the script or "
-                              "of its libraries" % name)
+            problem = art_pin_problem(path, entry)
+            if problem:
+                raise Refused("art/%s %s" % (name, problem))
 
     # ---- the steps
 
@@ -545,19 +686,17 @@ class Run:
             shutil.copyfile(self.art / step["art"][0], picture)
             self.programs.run("invader-bitmap", *step["arguments"], "-d", data, "-t", layer,
                               without_extension(step["tag"]))
-        elif operation in ("icon_sheet", "alpha_sheet"):
-            import hud_sheet
-            raw = (self.art / step["art"][0]).read_bytes()
-            out.write_bytes(hud_sheet.sheet_tag(self.source(step["from"]).read_bytes(), raw,
-                                                step.get("rectangle")))
+            if step.get("sprite") == "corner":
+                import hud_sheet
+                out.write_bytes(hud_sheet.place_by_corner(out.read_bytes()))
         else:
             raise Refused("no such step: %s" % operation)
         edits = list(step.get("edits", ()))
         if operation == "ammo_hud":
-            edits = hud_tag.base_edits(step["icon_sheet"], step["alphas"]) + edits
+            edits = hud_tag.base_edits(step["icon_sheet"]) + edits
         elif operation == "counter_hud":
             edits = hud_tag.counter_edits(step["alphas"], step["meter"], step["scale"], step["anchor"],
-                                          step["off_screen"]) + edits
+                                          step["off_screen"], step["icon_sequence"]) + edits
         if edits:
             try:
                 editor = self.programs.editor(layer, step["tag"])
@@ -601,11 +740,15 @@ class Run:
     def make_layers(self):
         recipe = self.recipe
         self.check_art()
+        try:
+            self.ffmpeg_version = self.programs.run(self.programs.ffmpeg, "-version").splitlines()[0]
+        except (Refused, IndexError):
+            raise Refused("no ffmpeg: %s" % self.programs.ffmpeg)
         # (nothing of an earlier build stays: a refused run leaves no donor, pack or table behind)
         for folder in (self.layers, self.data, self.work / "ogg", self.work / "donor", self.work / "pack"):
             if folder.exists():
                 shutil.rmtree(folder)
-        for name in ("fixes.tsv", "audit.tsv", "externals.tsv"):
+        for name in ("fixes.tsv", "audit.tsv", "externals.tsv", "departures.tsv"):
             if (self.work / name).exists():
                 (self.work / name).unlink()
         for index, step in enumerate(recipe["steps"]):
@@ -626,10 +769,14 @@ class Run:
         for row in rows:
             counts[row[2]] = counts.get(row[2], 0) + 1
         log("build: fixes.tsv: %s" % ", ".join("%d %s" % (count, result) for result, count in sorted(counts.items())))
-        bad = [row for row in rows if row[2] not in ("byte-equal", "0 field differences")]
-        if bad:
-            raise Refused("%d fix tags are not the prototype's (fixes.tsv): %s" % (
-                len(bad), ", ".join("%s/%s" % row[:2] for row in bad[:6])))
+        problems = departure_problems(rows, recipe["departures"])
+        if problems:
+            for problem in problems[:20]:
+                log("  " + problem)
+            raise Refused("%d fix tags are not the prototype's where the recipe says they are, or the other way "
+                          "(fixes.tsv)" % len(problems))
+        log("build: every fix tag is the prototype's but the recipe's %d named departures" % len(
+            recipe["departures"]))
 
     # ---- the donor and the pack
 
@@ -644,12 +791,15 @@ class Run:
             arguments += ["-t", self.layers / layer]
         arguments += ["-t", self.cmt, "-t", self.stock, "-o", donor, recipe["donor"]["scenario"]]
         output = self.programs.run("invader-build", *arguments)
-        (self.work / "donor" / "build.log").write_text(output)
+        (self.work / "donor" / "build.log").write_text("ffmpeg: %s\ninvader: %s\n%s" % (
+            self.ffmpeg_version, recipe["tools"]["invader"]["version"], output))
         digest = sha256_file(donor)
         log("build: donor %s, %d bytes, sha256 %s" % (donor, donor.stat().st_size, digest))
-        if digest != recipe["expected"]["donor_sha256"]:
+        if not recipe["expected"].get("donor_sha256"):
+            log("build: the recipe records no donor yet: record its sha256 and size in \"expected\"")
+        elif digest != recipe["expected"]["donor_sha256"]:
             donor.rename(donor.with_suffix(".refused"))
-            raise Refused("the donor is not the approved one (SHA-256 %s, not %s): no pack is built from it" % (
+            raise Refused("the donor is not the recipe's (SHA-256 %s, not %s): no pack is built from it" % (
                 digest, recipe["expected"]["donor_sha256"]))
         return donor
 
@@ -658,35 +808,6 @@ class Run:
         order = [(name, self.layers / name) for name in self.recipe["layers"]] + [("cmt", self.cmt),
                                                                                   ("stock", self.stock)]
         return resolve_sources(order), index_tags(self.stock)
-
-    def provenance(self, layer, tag):
-        """where a tag a step made came from: (source, what the script read)"""
-        steps = {(step["layer"], step["tag"]): step for step in self.recipe["steps"]}
-        step = steps[(layer, tag)]
-        inputs = []
-        seen = set()
-        while True:
-            if (step["layer"], step["tag"]) in seen:
-                raise Refused("a step reads itself: %s" % step["tag"])
-            seen.add((step["layer"], step["tag"]))
-            inputs += ["%s %s" % (kind, name if kind != "layer" else "/".join(name))
-                       for kind, name in step_inputs(step) if kind != "layer"]
-            if step["op"] == "bitmap":
-                script = self.recipe["art_scripts"][step["art"][0]]
-                return SCRIPT_PREFIX + script, inputs + self.art_reads(script)
-            if step["op"] in ("icon_sheet", "alpha_sheet"):
-                return STOCK_PREFIX + step["from"][1], inputs + ["%shud_sheet.py" % SCRIPT_PREFIX] + self.art_reads(
-                    "hud_sheet.py")
-            root, name = step["from"]
-            if root == "cmt":
-                return name, inputs
-            if root == "stock":
-                return STOCK_PREFIX + name, inputs
-            step = steps[(root, name)]
-
-    def art_reads(self, script):
-        return ["%s %s" % (entry["root"], entry["tag"]) for entry in self.recipe["art_inputs"].values()
-                if script in entry["scripts"]]
 
     def build_pack(self, donor):
         recipe, options = self.recipe, self.options
@@ -706,9 +827,19 @@ class Run:
         output = self.programs.run(self.programs.builder,
                                    *builder_arguments(recipe, donor, names, pack, self.recipe_folder))
         (self.work / "pack" / "build.log").write_text(output)
+        try:
+            self.check_pack(pack, donor, output, stock_maps)
+        except (Refused, aepack.Refused, donor_map.Refused):
+            # (whatever refuses it once the builder has written it: it does not stay under a pack's name)
+            if pack.exists():
+                pack.rename(pack.with_suffix(".refused"))
+            raise
+        return pack
+
+    def check_pack(self, pack, donor, output, stock_maps):
+        recipe = self.recipe
         require_no_corrections(output)
         image = pack.read_bytes()
-        import aepack
         parsed = aepack.read(image)
         strings = parsed.strings
 
@@ -731,14 +862,15 @@ class Run:
                 elif root == "stock":
                     source, inputs = STOCK_PREFIX + tag, []
                 else:
-                    source, inputs = self.provenance(root, tag)
+                    source, inputs = provenance(recipe, root, tag)
                 audit.append((text(record[3]), source, group, record[10], donor_name, root, "; ".join(inputs)))
             else:
                 externals.append((group, text(record[3]), record[5]))
         write_table(self.work / "audit.tsv", ("pack_name", "source", "group", "size", "donor_name", "layer",
                                               "inputs"), audit)
-        problems = audit_problems([{"pack_name": row[0], "source": row[1], "group": row[2], "size": row[3]}
-                                   for row in audit], set(recipe["source"]["allowlist"]), scripts(),
+        problems = audit_problems([{"pack_name": row[0], "source": row[1], "group": row[2], "size": row[3],
+                                    "inputs": row[6].split("; ") if row[6] else []} for row in audit],
+                                  set(recipe["source"]["allowlist"]), scripts(),
                                   set(recipe["pack"]["stock_derived"]))
         # externals: each the stock map's own tag, unchanged, and on every stock multiplayer map
         fingerprints = {key: sha256_file(path) for key, (_, path) in build.items()
@@ -762,18 +894,19 @@ class Run:
                 problems.append("%s %s: on %d of the %d stock multiplayer maps" % (group, name, count,
                                                                                     len(stock_maps)))
         write_table(self.work / "externals.tsv", ("group", "name", "required", "same_as_stock", "maps"), rows)
-        report = pack_compare.compare_pack(image, donor_map.read_map(donor))
+        report = pack_compare.compare_pack(image, donor_map.MapFile(donor))
         problems += report["problems"]
         digest = hashlib.sha256(image).hexdigest()
         log("build: pack %s, %d bytes, sha256 %s (the pack's own: %s): %d own tags, %d external" % (
             pack, len(image), digest, parsed.sha256.hex(), len(audit), len(externals)))
-        log("build: %d bytes of the pack's tags are the donor's; %d not compared (%s)" % (
-            report["compared_bytes"], report["masked_bytes"],
-            ", ".join("%s %d" % item for item in report["masked"].items())))
+        log("build: against its donor: " + pack_compare.summary(report))
+        log("build: not compared: " + ", ".join("%s %d" % item for item in report["masked"].items()))
+        if (report["resources"], report["parts"]) != (len(parsed.resources), len(parsed.parts)):
+            problems.append("not every resource and model part was compared")
+        problems += self.check_departures(image)
         if problems:
             for problem in problems[:40]:
                 log("  " + problem)
-            pack.rename(pack.with_suffix(".refused"))
             raise Refused("%d problems with the pack (above): it is set aside as %s" % (
                 len(problems), pack.with_suffix(".refused").name))
         expected = recipe["expected"]
@@ -786,7 +919,25 @@ class Run:
             log("build: the pack is the recipe's recorded one")
         else:
             log("build: the recipe records no pack yet: record sha256, size and tag counts in its \"expected\"")
-        return pack
+
+    def check_departures(self, image):
+        """the pack against the APPROVED donor (another build of it): it may differ only in the tags the recipe
+        names; departures.tsv lists every difference. Returns the problems"""
+        approved = self.recipe["approved_reference"]
+        if not self.options.approved_donor:
+            log("build: no --approved-donor: the pack is not compared with the approved donor")
+            return []
+        path = Path(self.options.approved_donor).expanduser()
+        if sha256_file(path) != approved["donor_sha256"]:
+            raise Refused("--approved-donor is not the approved donor (SHA-256): %s" % path)
+        report = pack_compare.compare_pack(image, donor_map.MapFile(path), same_file=False)
+        rows = [(name, "departure" if name in approved["pack_departures"] else "NOT NAMED", len(texts), text)
+                for name, texts in sorted(report["by_tag"].items()) for text in texts]
+        write_table(self.work / "departures.tsv", ("donor_tag", "named", "differences", "difference"), rows)
+        log("build: against the approved donor: " + pack_compare.summary(report))
+        log("build: %d tags differ from the approved donor's: %s" % (
+            len(report["by_tag"]), ", ".join(sorted(report["by_tag"]))))
+        return pack_departure_problems(report["by_tag"], approved["pack_departures"])
 
 
 def main(arguments):
@@ -801,6 +952,7 @@ def main(arguments):
     parser.add_argument("--ffmpeg", default="ffmpeg")
     parser.add_argument("--builder")
     parser.add_argument("--reference", help="the folder holding the prototype's fix folders (read only)")
+    parser.add_argument("--approved-donor", help="the approved donor map the recipe's departures are measured from")
     parser.add_argument("--stage", choices=("prepare", "art", "build", "all"), default="all")
     options = parser.parse_args(arguments)
     try:
@@ -811,7 +963,7 @@ def main(arguments):
         if options.stock_map and not options.stock_maps:
             options.stock_maps = str(Path(options.stock_map).expanduser().parent)
         run = Run(options, recipe)
-        run.work.mkdir(parents=True, exist_ok=True)
+        claim_work_folder(run.work, options.stage)
         if options.stage in ("prepare", "all"):
             run.prepare()
         if options.stage == "art" or (options.stage == "all" and not _art_ready(run)):
@@ -822,8 +974,15 @@ def main(arguments):
                 raise Refused("--stock-maps (or --stock-map) is needed")
             run.make_layers()
             run.build_pack(run.build_donor())
-    except (Refused, hek.Refused, extract_allowlist.Refused, donor_map.Refused, tag_fields.Failed) as refusal:
+    except (Refused, hek.Refused, extract_allowlist.Refused, donor_map.Refused, tag_fields.Failed, aepack.Refused,
+            png_pixels.Refused) as refusal:
         print("make_pack: refused: %s" % refusal, file=sys.stderr)
+        return 1
+    except KeyError as missing:
+        print("make_pack: refused: the recipe has no %s where one is needed" % missing, file=sys.stderr)
+        return 1
+    except (OSError, zipfile.BadZipFile, ValueError) as failure:
+        print("make_pack: refused: %s: %s" % (type(failure).__name__, failure), file=sys.stderr)
         return 1
     return 0
 

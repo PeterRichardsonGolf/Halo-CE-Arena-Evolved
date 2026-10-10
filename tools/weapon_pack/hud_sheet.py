@@ -1,17 +1,13 @@
-"""The rifle's icon sheet: the picture the "hold to swap for" and pickup prompts show, a side view of the rifle
-drawn from its model's geometry in the stock HUD's grey fill and light outline, on a copy of the stock ammunition
-meter sheet (A8Y8, 256 x 256: low byte the meter's fill threshold, high byte the shape).
+"""The picture of the rifle that the "hold to swap for" and pickup prompts show: a side view drawn from the model's
+geometry in the stock HUD's style (a grey fill, a light outline and inner lines), 86 texels wide.
 
-  - The stock sheet's sequence 1 area (0, 0)-(114, 27) is redrawn as 36 ticks, 12 groups of 3, in two rows (one
-    tick a round, tick n holding threshold 4 n). The approved rifle draws its rounds from counter_art.py's sharp
-    sheet instead; these ticks stay in the sheet as they were made.
-  - The icon goes in the free area below, and the sheet's first sprite (sequence 0's) is set to its rectangle.
+It is drawn from nothing but the model's vertices and triangles (CMT's battle rifle, read by make_pack.py through
+Invader's field editor as text: "part N", a position a line, "tris", three vertex indices a line): no pixel of the
+game's HUD is read or kept. The picture goes out as a colour plate (the sprite on the plate's blue, a pixel of it
+around) for the bitmap compiler, which makes a sprite sheet holding only it; the pack's weapon entry names that
+sheet's sequence 0.
 
-The stock sheet and the model's geometry are read from the player's own game files and CMT's model by
-make_pack.py (which asks Invader's field editor for the geometry as text: "part N", a position a line, "tris",
-three vertex indices a line); nothing of them is kept in this file.
-
-Usage: hud_sheet.py <stock sheet raw> <geometry text> <out raw>      prints the icon's rectangle
+Usage: hud_sheet.py <geometry text> <out png>      prints the picture's size
 """
 import os
 import struct
@@ -22,42 +18,13 @@ import hek
 
 
 class Refused(Exception):
-    """no sheet was made, with the reason"""
+    """no picture was made, with the reason"""
 
 
-SHEET = 256
-METER_AREA = (28, 116)                 # rows, columns of the stock meter's place
-TICK_PITCH, TICK_GAP = 5.0, 3.0
-TICK_LEFTS, TICK_TOPS = (8.0, 3.5), (2, 11)
 ICON_WIDTH, ICON_SAMPLES = 86, 6
-ICON_TOP, ICON_LEFT = 100, 2
-ALPHA_SHEET_SIZE = 22528               # the stock alpha sheet's pixel bytes
-ALPHA_PLATE = (2048, 32, 128)          # where its meter plate is: byte offset, rows, columns
-
-
-def _tick(thresholds, alpha, x_bottom_left, y_top, threshold):
-    """a slanted bar like the stock one: 7 rows high, 2.6 wide, leaning right 0.5 a row going up"""
-    import numpy as np
-    samples = 8
-    h, w, lean = 7, 2.6, 0.5
-    x0 = int(x_bottom_left) - 1
-    cover = np.zeros((h, 10))
-    for sy in range(h * samples):
-        yy = (sy + 0.5) / samples                     # 0 top .. 7 bottom
-        left = x_bottom_left + (h - yy) * lean
-        for sx in range(10 * samples):
-            xx = x0 + (sx + 0.5) / samples
-            if left <= xx < left + w:
-                cover[sy // samples, sx // samples] += 1
-    cover /= samples * samples
-    for r in range(h):
-        for c in range(10):
-            a = int(round(cover[r, c] * 255))
-            if a > 40:
-                y, x = y_top + r, x0 + c
-                if a > alpha[y, x]:
-                    alpha[y, x] = a
-                    thresholds[y, x] = threshold
+FILL, LINE = 100.0, 225.0              # the fill's and the lines' brightness
+DEPTH_STEP = 0.003                     # a step in depth this large between neighbours is an inner line
+BLUE = (0, 0, 255, 255)                # a colour plate's background
 
 
 def _parts(geometry):
@@ -81,130 +48,109 @@ def _parts(geometry):
     return parts
 
 
-def icon_sheet(stock, geometry):
-    """(the sheet's raw bytes, the icon's rectangle (left, top, right, bottom) in texels)"""
+def icon(geometry):
+    """the picture: rows x 86 bytes, 0 outside the rifle (the bitmap's colour and its alpha are both this)"""
     import numpy as np
-    if len(stock) != SHEET * SHEET * 2:
-        raise Refused("the stock sheet is not 256 x 256 A8Y8: %d bytes" % len(stock))
-    d = np.frombuffer(stock, dtype=np.uint8).reshape(SHEET, SHEET, 2).copy()
-    T, A = d[:, :, 0], d[:, :, 1]
-    # ---- the meter
-    T[0:METER_AREA[0], 0:METER_AREA[1]] = 0
-    A[0:METER_AREA[0], 0:METER_AREA[1]] = 0
-    for n in range(1, 37):
-        row, col = (n - 1) // 18, (n - 1) % 18
-        x = TICK_LEFTS[row] + col * TICK_PITCH + (col // 3) * TICK_GAP
-        _tick(T, A, x, TICK_TOPS[row], 4 * n)
-    # ---- the icon
     parts = _parts(geometry)
-    allv = np.array([v for p in parts for v in p["v"]])
-    xmin, xmax, zmin, zmax = allv[:, 0].min(), allv[:, 0].max(), allv[:, 2].min(), allv[:, 2].max()
-    W = ICON_WIDTH
-    S = ICON_SAMPLES
-    scale = (W - 4) * S / (xmax - xmin)
-    Hpx = int((zmax - zmin) * scale / S) + 5
-    depth = np.full((Hpx * S, W * S), 1e9)
-    ident = np.full((Hpx * S, W * S), -1)
-    for pi, p in enumerate(parts):
-        v = np.array(p["v"])
-        idx = [int(i) for t in p["t"] for i in t]
-        for k in range(len(idx) - 2):
-            a, b, c = idx[k], idx[k + 1], idx[k + 2]
+    every = np.array([v for p in parts for v in p["v"]])
+    xmin, xmax, zmin, zmax = every[:, 0].min(), every[:, 0].max(), every[:, 2].min(), every[:, 2].max()
+    width = ICON_WIDTH
+    samples = ICON_SAMPLES
+    scale = (width - 4) * samples / (xmax - xmin)
+    rows = int((zmax - zmin) * scale / samples) + 5
+    depth = np.full((rows * samples, width * samples), 1e9)
+    ident = np.full((rows * samples, width * samples), -1)
+    for part_index, part in enumerate(parts):
+        v = np.array(part["v"])
+        indices = [int(i) for triangle in part["t"] for i in triangle]
+        for k in range(len(indices) - 2):
+            a, b, c = indices[k], indices[k + 1], indices[k + 2]
             if max(a, b, c) >= len(v) or min(a, b, c) < 0 or a == b or b == c or a == c:
                 continue
-            P = np.array([[(v[i][0] - xmin) * scale + 2 * S, (zmax - v[i][2]) * scale + 2 * S, v[i][1]]
+            corners = np.array([[(v[i][0] - xmin) * scale + 2 * samples, (zmax - v[i][2]) * scale + 2 * samples,
+                                 v[i][1]]
                           for i in (a, b, c)])
-            x0, x1 = int(max(0, np.floor(P[:, 0].min()))), int(min(W * S - 1, np.ceil(P[:, 0].max())))
-            y0, y1 = int(max(0, np.floor(P[:, 1].min()))), int(min(Hpx * S - 1, np.ceil(P[:, 1].max())))
+            x0 = int(max(0, np.floor(corners[:, 0].min())))
+            x1 = int(min(width * samples - 1, np.ceil(corners[:, 0].max())))
+            y0 = int(max(0, np.floor(corners[:, 1].min())))
+            y1 = int(min(rows * samples - 1, np.ceil(corners[:, 1].max())))
             if x1 < x0 or y1 < y0:
                 continue
             xs, ys = np.meshgrid(np.arange(x0, x1 + 1) + 0.5, np.arange(y0, y1 + 1) + 0.5)
-            den = (P[1, 1] - P[2, 1]) * (P[0, 0] - P[2, 0]) + (P[2, 0] - P[1, 0]) * (P[0, 1] - P[2, 1])
-            if abs(den) < 1e-9:
+            area = (corners[1, 1] - corners[2, 1]) * (corners[0, 0] - corners[2, 0]) + \
+                (corners[2, 0] - corners[1, 0]) * (corners[0, 1] - corners[2, 1])
+            if abs(area) < 1e-9:
                 continue
-            w0 = ((P[1, 1] - P[2, 1]) * (xs - P[2, 0]) + (P[2, 0] - P[1, 0]) * (ys - P[2, 1])) / den
-            w1 = ((P[2, 1] - P[0, 1]) * (xs - P[2, 0]) + (P[0, 0] - P[2, 0]) * (ys - P[2, 1])) / den
+            w0 = ((corners[1, 1] - corners[2, 1]) * (xs - corners[2, 0]) +
+                  (corners[2, 0] - corners[1, 0]) * (ys - corners[2, 1])) / area
+            w1 = ((corners[2, 1] - corners[0, 1]) * (xs - corners[2, 0]) +
+                  (corners[0, 0] - corners[2, 0]) * (ys - corners[2, 1])) / area
             w2 = 1 - w0 - w1
             inside = (w0 >= -1e-6) & (w1 >= -1e-6) & (w2 >= -1e-6)
-            z = w0 * P[0, 2] + w1 * P[1, 2] + w2 * P[2, 2]
+            z = w0 * corners[0, 2] + w1 * corners[1, 2] + w2 * corners[2, 2]
             sub = depth[y0:y1 + 1, x0:x1 + 1]
             near = inside & (z < sub)
             sub[near] = z[near]
-            ident[y0:y1 + 1, x0:x1 + 1][near] = pi
+            ident[y0:y1 + 1, x0:x1 + 1][near] = part_index
     solid = ident >= 0
-    dd = np.where(solid, depth, 0.0)
+    depths = np.where(solid, depth, 0.0)
     edge = np.zeros_like(solid)
-    for ax in (0, 1):
-        for sh in (1, -1):
-            n_solid = np.roll(solid, sh, ax)
-            n_d = np.roll(dd, sh, ax)
-            edge |= solid & (~n_solid)                                   # the outline
-            edge |= solid & n_solid & (np.abs(dd - n_d) > 0.003)         # steps in depth: the inner lines
+    for axis in (0, 1):
+        for shift in (1, -1):
+            beside_solid = np.roll(solid, shift, axis)
+            beside_depth = np.roll(depths, shift, axis)
+            edge |= solid & (~beside_solid)                                   # the outline
+            edge |= solid & beside_solid & (np.abs(depths - beside_depth) > DEPTH_STEP)   # the inner lines
     thick = edge.copy()
-    for ax in (0, 1):
-        for sh in (1, -1, 2, -2):
-            thick |= np.roll(edge, sh, ax)
+    for axis in (0, 1):
+        for shift in (1, -1, 2, -2):
+            thick |= np.roll(edge, shift, axis)
     thick &= solid
-    val = np.where(thick, 225.0, np.where(solid, 100.0, 0.0))
-    icon = val.reshape(Hpx, S, W, S).mean(axis=(1, 3))
-    cov = solid.reshape(Hpx, S, W, S).mean(axis=(1, 3))
-    icon = np.where(cov > 0.05, icon / np.maximum(cov, 0.05) * np.minimum(1, cov * 1.3), 0).clip(0, 255).astype(
-        np.uint8)
-    IY, IX = ICON_TOP, ICON_LEFT
-    T[IY - 2:IY + Hpx + 2, 0:W + 6] = 0
-    A[IY - 2:IY + Hpx + 2, 0:W + 6] = 0
-    T[IY:IY + Hpx, IX:IX + W] = icon
-    A[IY:IY + Hpx, IX:IX + W] = icon
-    return d.tobytes(), (IX, IY, IX + W, IY + Hpx)
+    value = np.where(thick, LINE, np.where(solid, FILL, 0.0))
+    picture = value.reshape(rows, samples, width, samples).mean(axis=(1, 3))
+    cover = solid.reshape(rows, samples, width, samples).mean(axis=(1, 3))
+    picture = np.where(cover > 0.05, picture / np.maximum(cover, 0.05) * np.minimum(1, cover * 1.3), 0)
+    picture = picture.clip(0, 255).astype(np.uint8)
+    return picture
 
 
-def alpha_sheet(stock_alphas, sheet):
-    """the stock alpha sheet's pixel bytes with its meter plate redrawn as the sheet's ticks (the low-ammo flash's
-    shapes for the first HUD; the approved rifle flashes counter_art.py's instead)"""
+def plate(picture):
+    """the picture as a sprite on a colour plate: red, green, blue and alpha all the picture"""
     import numpy as np
-    if len(stock_alphas) != ALPHA_SHEET_SIZE or len(sheet) != SHEET * SHEET * 2:
-        raise Refused("not the stock alpha sheet's or the icon sheet's size")
-    al = np.frombuffer(stock_alphas, dtype=np.uint8).copy()
-    mine = np.frombuffer(sheet, dtype=np.uint8).reshape(SHEET, SHEET, 2)[:, :, 1]
-    offset, rows, columns = ALPHA_PLATE
-    n = np.zeros((rows, columns), np.uint8)
-    n[0:27, 0:115] = mine[1:28, 1:116]
-    al[offset:offset + rows * columns] = n.reshape(-1)
-    return al.tobytes()
+    from PIL import Image
+    rows, columns = picture.shape
+    image = Image.new("RGBA", (columns + 2, rows + 2), BLUE)
+    image.paste(Image.fromarray(np.dstack([picture] * 4), "RGBA"), (1, 1))
+    return image
 
 
-def sheet_tag(stock_tag, raw, rectangle=None):
-    """the stock bitmap tag with our pixels; with a rectangle (left, top, right, bottom in texels of a 256 sheet),
-    its first sprite set to it, its registration point 0 0"""
-    data = bytearray(stock_tag)
-    layout = hek.BitmapTag(stock_tag)
-    if layout.pixels_size != len(raw):
-        raise hek.Refused("the pixels are not the tag's size: %d, not %d" % (len(raw), layout.pixels_size))
-    data[layout.pixels_start:layout.pixels_start + layout.pixels_size] = raw
-    if rectangle is not None:
-        left, top, right, bottom = [float(value) / SHEET for value in rectangle]
-        sprite = layout.first_sprite_offset()
-        struct.pack_into(">4f", data, sprite + 8, left, right, top, bottom)
-        struct.pack_into(">2f", data, sprite + 24, 0.0, 0.0)
+def place_by_corner(tag):
+    """a sprite sheet tag (the bitmap compiler's, of one sequence with one sprite) with that sprite's registration
+    point set to its top left corner, as the prompts place their pictures; the compiler sets the sprite's middle
+    and Invader's field editor will not change it"""
+    layout = hek.BitmapTag(tag)
+    sprite = layout.first_sprite_offset()
+    if layout.sequence_count != 1 or sprite + hek.BITMAP_SPRITE_SIZE != len(tag) - layout.bitmap_count * \
+            hek.BITMAP_DATA_SIZE:
+        raise hek.Refused("not a sheet of one sequence with one sprite")
+    data = bytearray(tag)
+    struct.pack_into(">2f", data, sprite + 24, 0.0, 0.0)
     return bytes(data)
 
 
 def main(arguments):
-    if len(arguments) != 3:
+    if len(arguments) != 2:
         print(__doc__.strip().splitlines()[-1], file=sys.stderr)
         return 2
-    with open(arguments[0], "rb") as file:
-        stock = file.read()
-    with open(arguments[1]) as file:
+    with open(arguments[0]) as file:
         geometry = file.read()
     try:
-        raw, rectangle = icon_sheet(stock, geometry)
+        picture = icon(geometry)
     except Refused as refusal:
         print("hud_sheet: refused: %s" % refusal, file=sys.stderr)
         return 1
-    with open(arguments[2], "wb") as file:
-        file.write(raw)
-    print("icon rect %d %d %d %d" % rectangle)
+    plate(picture).save(arguments[1])
+    print("icon %d x %d" % (picture.shape[1], picture.shape[0]))
     return 0
 
 

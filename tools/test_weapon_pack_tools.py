@@ -5,14 +5,17 @@ Everywhere (CI): every script on bytes made here (no game file, no file of anyon
 from tag files, DXT1 / DXT5 / 32-bit channel moves, the brightening of DXT endpoints, high-resolution HUD scales
 halved, Ogg permutations cut out of a sound tag, the field edits' command lines and the copy of one part of a tag
 onto another, the allowlist extractor's refusals, the recipe's own rules (every fix tag one step, every input in
-the allowlist or made by a script here, no path of a machine), the audit's rules, the comparison of a pack's tags
-with a map's. The art scripts (the counter's rounds and their thresholds 4 n, the gun screen's digits and
-compass, the scope's label, the icon sheet) need numpy and Pillow and are skipped without them.
+the allowlist or made by a script here, no path of a machine, no pixel of the game's, the departures from the
+approved donor named), the audit's rules (a tag judged by what its steps read), art pinned by its pixels, the
+comparison of a pack's tags with a map's (each mask exactly the field the builder blanks). The art scripts (the
+counter's rounds and their thresholds 4 n, the gun screen's digits and compass, the scope's label, the prompts'
+icon) need numpy and Pillow and are skipped without them.
 
-On the build box (game files; skipped elsewhere): a finished run of make_pack.py is checked: fixes.tsv has no
-differing tag, the donor's SHA-256 is the recipe's (the approved v6e's), audit.tsv and externals.tsv hold their
-rules, every external name is on all 13 stock multiplayer maps, and the pack's own tags are the approved donor's
-bytes. Paths (each may be set in the environment):
+On the build box (game files; skipped elsewhere): a finished run of make_pack.py is checked: fixes.tsv differs
+from the prototype's tags only in the recipe's named departures, the donor's and the pack's SHA-256s are the
+recipe's, audit.tsv and externals.tsv hold their rules, every external name is on all 13 stock multiplayer maps,
+the pack is its donor's bytes (tags, resources, geometry), and it differs from the approved donor (v6e) only in
+the tags the recipe names. Paths (each may be set in the environment):
     AE_PACK_RECIPE_WORK  a finished make_pack.py work folder  (default ~/halo-test/weapon-pack/br)
     AE_PACK_STOCK_MAPS   the stock maps' folder                (default ~/halo-data/maps)
     AE_PACK_V6E_DONOR    the approved v6e donor     (default ~/halo-test/weapon-pack/donors/ae_cmt_br_v6e.map)
@@ -43,10 +46,12 @@ import make_pack  # noqa: E402
 import multipurpose_to_xbox  # noqa: E402
 import os_strip  # noqa: E402
 import pack_compare  # noqa: E402
+import png_pixels  # noqa: E402
 import sound_oggs  # noqa: E402
 import tag_fields  # noqa: E402
 
 RECIPE = TOOLS / "battle_rifle" / "recipe.json"
+# the donor the owner approved (v6e): the recipe departs from it in named tags only (R33)
 V6E_SHA256 = "0aa3ffcbb704e59407945cd5eece3aaf53740992a582e23fe61aec51dca36884"
 MULTIPLAYER_MAPS = ("beavercreek", "bloodgulch", "boardingaction", "carousel", "chillout", "damnation", "hangemhigh",
                     "longest", "prisoner", "putput", "ratrace", "sidewinder", "wizard")
@@ -280,7 +285,7 @@ class FakeEditor:
 
     def count(self, key):
         if key not in self.counts:
-            raise tag_fields.Failed("no such block: " + key)
+            raise tag_fields.Failed("the editor failed: " + key)
         return self.counts[key]
 
     def get(self, key):
@@ -320,9 +325,13 @@ def test_hud_hires_elements_halved_and_flag_cleared():
         ("crosshairs[1].crosshair_overlays[1]" + flag, "0")]
 
 
-def test_hud_hires_a_tag_without_a_block_is_left():
-    editor = FakeEditor({"static_elements": 0, "meter_elements": 0, "number_elements": 0}, {})
+def test_hud_hires_a_tag_with_empty_blocks_is_left_and_a_failing_editor_is_not_nothing_to_do():
+    empty = {"static_elements": 0, "meter_elements": 0, "number_elements": 0, "crosshairs": 0, "overlay_elements": 0}
+    editor = FakeEditor(empty, {})
     assert hud_hires_to_xbox.convert(editor) == [] and editor.sets == []
+    del empty["crosshairs"]
+    with pytest.raises(tag_fields.Failed):
+        hud_hires_to_xbox.convert(FakeEditor(empty, {}))
 
 
 # ---------- sound_oggs.py
@@ -465,7 +474,7 @@ def test_graft_grows_arrays_then_sets(tmp_path):
 def test_hud_tag_edits_put_the_icon_sheet_off_screen_and_the_counter_second():
     edits = hud_tag.counter_edits(alphas="ae_pack\\hud\\br_alphas_smooth.bitmap",
                                   meter="ae_pack\\hud\\br_meter_smooth.bitmap", scale=0.25, anchor=(-1, 20),
-                                  off_screen=(-3000, -3000))
+                                  off_screen=(-3000, -3000), icon_sequence=0)
     assert edits[0] == ["copy", "meter_elements[0]", "end"]
     sets = dict(edits[1][1])
     assert edits[1][0] == "sets"
@@ -473,7 +482,12 @@ def test_hud_tag_edits_put_the_icon_sheet_off_screen_and_the_counter_second():
     assert sets["meter_elements[1].width_scale"] == "0.25" and sets["static_elements[0].height_scale"] == "0.25"
     assert sets["static_elements[0].anchor_offset"] == "-1 20" and sets["meter_elements[1].sequence_index"] == "0"
     assert not any(key.startswith("meter_elements[0].") for key in sets)
-    assert edits[-1] == ["set", "meter_elements[0].anchor_offset", "-3000 -3000"]
+    # the icon sheet's element: off the screen, showing the sheet's one sequence
+    assert edits[2:] == [["set", "meter_elements[0].anchor_offset", "-3000 -3000"],
+                         ["set", "meter_elements[0].sequence_index", "0"]]
+    # the first HUD names our icon sheet and no other bitmap of ours
+    assert hud_tag.base_edits("ae_pack\\hud\\br_meter.bitmap") == [
+        ["erase", "crosshairs[*]"], ["set", "meter_elements[0].meter_bitmap", "ae_pack\\hud\\br_meter.bitmap"]]
 
 
 # ---------- extract_allowlist.py
@@ -647,46 +661,43 @@ def test_scope_label_parts_a_digit_that_touches_the_x():
     assert box["runs"] == 3 and box["x"] == 607 and 20 <= box["width"] <= 34
 
 
-def test_icon_sheet_ticks_and_icon():
+def test_icon_is_drawn_from_the_geometry_alone():
     numpy = pytest.importorskip("numpy")
     pytest.importorskip("PIL")
     import hud_sheet
-    stock = numpy.zeros((256, 256, 2), numpy.uint8)
-    stock[0:28, 0:116] = 7                                           # the stock meter's place: cleared
-    stock[200:210, 10:20] = (9, 200)                                 # something else on the sheet: kept
     geometry = "part 0\n0 0 0\n1 0 0\n1 0 0.3\n0 0 0.3\ntris\n0 1 2\n0 2 3\n"
-    raw, rect = hud_sheet.icon_sheet(stock.tobytes(), geometry)
-    sheet = numpy.frombuffer(raw, numpy.uint8).reshape(256, 256, 2)
-    thresholds, alpha = sheet[..., 0], sheet[..., 1]
-    ticks = alpha[0:28, 0:116] > 40
-    assert sorted(int(value) for value in numpy.unique(thresholds[0:28, 0:116][ticks])) == [
-        4 * number for number in range(1, 37)]
-    assert thresholds[:, :][0:10][alpha[0:10] > 40].max() <= 72 < thresholds[11:18][alpha[11:18] > 40].min()
-    assert (sheet[200:210, 10:20] == (9, 200)).all()
-    left, top, right, bottom = rect
-    assert (left, top) == (2, 100) and right - left == 86 and bottom > top
-    assert alpha[top:bottom, left:right].max() > 100 and alpha[top - 2:bottom + 2, right + 6:].max() == 0
-    alphas = hud_sheet.alpha_sheet(bytes(22528), raw)
-    plate = numpy.frombuffer(alphas, numpy.uint8)[2048:2048 + 4096].reshape(32, 128)
-    assert (plate[0:27, 0:115] == alpha[1:28, 1:116]).all() and plate[27:].max() == 0
+    picture = hud_sheet.icon(geometry)
+    assert picture.shape == (29, 86) and picture.dtype == numpy.uint8
+    # a rectangle seen from the side: a grey fill inside a lighter outline, nothing outside it
+    assert picture[:2].max() == 0 and picture[:, :1].max() == 0 and picture[-2:].max() == 0
+    assert picture[14, 43] == 100 and 150 < picture.max() <= 225 and picture[14, 2] > picture[14, 43]
+    plate = hud_sheet.plate(picture)
+    assert plate.size == (88, 31) and plate.mode == "RGBA"
+    assert plate.getpixel((0, 0)) == (0, 0, 255, 255) and plate.getpixel((87, 30)) == (0, 0, 255, 255)
+    assert plate.getpixel((44, 15)) == (100, 100, 100, 100)             # colour and alpha both the picture
+    inside = numpy.asarray(plate)[1:-1, 1:-1]
+    assert (inside[..., 0] == picture).all() and (inside[..., 3] == picture).all()
     with pytest.raises(hud_sheet.Refused):
-        hud_sheet.icon_sheet(bytes(100), geometry)
+        hud_sheet.icon("tris\n0 1 2\n")
+    with pytest.raises(hud_sheet.Refused):
+        hud_sheet.icon("")
 
 
-def test_icon_sheet_tag_keeps_the_stock_tag_but_for_pixels_and_sprite():
-    pytest.importorskip("numpy")
-    pytest.importorskip("PIL")
+def test_icon_sprite_is_placed_by_its_corner():
     import hud_sheet
-    stock = bitmap_tag([(2, 2, hek.FORMAT_A8Y8, 0, bytes(8))], sequences=2, sprites=2)
-    out = hud_sheet.sheet_tag(stock, bytes(range(8)), (2, 100, 88, 129))
-    layout = hek.BitmapTag(out)
-    assert layout.pixels(out) == bytes(range(8)) and len(out) == len(stock)
+    sheet = bitmap_tag([(2, 2, hek.FORMAT_A8R8G8B8, 0, bytes(16))], sequences=1, sprites=1)
+    layout = hek.BitmapTag(sheet)
     sprite = layout.first_sprite_offset()
-    assert struct.unpack_from(">4f", out, sprite + 8) == (2 / 256, 88 / 256, 100 / 256, 129 / 256)
+    made = bytearray(sheet)
+    struct.pack_into(">4f", made, sprite + 8, 0.25, 0.75, 0.25, 0.5)
+    struct.pack_into(">2f", made, sprite + 24, 0.5, 0.375)              # the compiler's: the sprite's middle
+    out = hud_sheet.place_by_corner(bytes(made))
     assert struct.unpack_from(">2f", out, sprite + 24) == (0.0, 0.0)
-    assert out[:layout.pixels_start] == stock[:layout.pixels_start] and out[sprite + 32:] == stock[sprite + 32:]
+    assert out[:sprite + 24] == bytes(made[:sprite + 24]) and out[sprite + 32:] == bytes(made[sprite + 32:])
+    with pytest.raises(hek.Refused):                                    # a sheet with more than the one sprite
+        hud_sheet.place_by_corner(bitmap_tag([(2, 2, hek.FORMAT_A8R8G8B8, 0, bytes(16))], sequences=2, sprites=2))
     with pytest.raises(hek.Refused):
-        hud_sheet.sheet_tag(stock, bytes(9), (0, 0, 1, 1))
+        hud_sheet.place_by_corner(bitmap_tag([(2, 2, hek.FORMAT_A8R8G8B8, 0, bytes(16))], sequences=1, sprites=3))
 
 
 def test_scope_redraw_keeps_the_ink_and_clears_the_ring_band():
@@ -728,12 +739,20 @@ def test_recipe_names_no_machine_and_pins_its_inputs():
     data = recipe()
     assert re.fullmatch(r"[0-9a-f]{64}", data["source"]["sha256"])
     assert re.fullmatch(r"[0-9a-f]{64}", data["stock_map"]["sha256"])
-    assert data["expected"]["donor_sha256"] == V6E_SHA256
+    # the approved donor stays named; the recipe's own donor departs from it (R33) and is pinned too
+    assert data["approved_reference"]["donor_sha256"] == V6E_SHA256
+    assert re.fullmatch(r"[0-9a-f]{64}", data["expected"]["donor_sha256"]) and data["expected"][
+        "donor_sha256"] != V6E_SHA256
+    assert re.fullmatch(r"[0-9a-f]{64}", data["expected"]["pack_sha256"])
+    assert re.fullmatch(r"[0-9a-f]{64}", data["expected"]["pack_own_sha256"])
     assert data["tools"]["invader"]["version"] == "0.44.0"
     for name in ("invader-build", "invader-extract", "invader-edit", "invader-bitmap", "invader-sound",
                  "invader-convert", "invader-bludgeon"):
         assert re.fullmatch(r"[0-9a-f]{64}", data["tools"]["invader"]["sha256"][name])
-    assert all(re.fullmatch(r"[0-9a-f]{64}", digest) for digest in data["art"].values())
+    # art is pinned by what is drawn (decoded pixels, mode, size), never by a file's bytes
+    assert all(set(entry) == {"mode", "size", "pixels_sha256"} and re.fullmatch(r"[0-9a-f]{64}",
+               entry["pixels_sha256"]) for entry in data["art"].values())
+    assert all(name.endswith(".png") for name in data["art"])
     make_pack.check_recipe(data)
 
 
@@ -744,11 +763,50 @@ def test_recipe_layers_are_v6es_folders_in_its_order():
     counts = {}
     for step in data["steps"]:
         counts[step["layer"]] = counts.get(step["layer"], 0) + 1
-    # one step a tag of each of the spike's fix folders
-    assert counts == {"fix2": 68, "fix-v3": 11, "fix-light": 2, "fix-col": 1, "fix-hud-hd": 1, "fix-scope-hd": 3,
+    # one step a tag of each of the spike's fix folders, less the two R33 does not make (the cube map's copy in
+    # fix2, the stock alpha sheet's in fix-v3)
+    assert counts == {"fix2": 67, "fix-v3": 10, "fix-light": 2, "fix-col": 1, "fix-hud-hd": 1, "fix-scope-hd": 3,
                       "fix-v6": 5, "fix-3x": 2, "fix-counter-e": 3}
     outputs = [(step["layer"], step["tag"]) for step in data["steps"]]
-    assert len(set(outputs)) == len(outputs) == 96
+    assert len(set(outputs)) == len(outputs) == 94
+
+
+def test_recipe_departures_from_the_approved_donor_are_named():
+    data = recipe()
+    made = {"%s/%s" % (step["layer"], step["tag"]) for step in data["steps"]}
+    departures = data["departures"]
+    assert len(departures) == 6 and all(len(reason) > 20 for reason in departures.values())
+    assert sorted(name for name in departures if name not in made) == [
+        "fix-v3/ae_pack/hud/br_alphas.bitmap", "fix2/levels/a10/bitmaps/cube map glass.bitmap"]     # not made
+    assert sorted(data["approved_reference"]["pack_departures"]) == [
+        "ae_pack\\hud\\br_ammo", "ae_pack\\hud\\br_meter",
+        "cmt\\weapons\\_shared\\smg\\shaders\\smg_attachments_silencer"]
+    assert list(data["approved_reference"]["absent"]) == ["levels\\a10\\bitmaps\\cube map glass"]
+
+
+def test_recipe_takes_no_pixel_of_the_games():
+    """R33: the stock map gives the donor its scaffolding (scenario, globals) and the ammunition HUD its structure;
+    no step copies a stock tag, no art script reads one, and the cube map is named, not carried"""
+    data = recipe()
+    stock = {}
+    for step in data["steps"]:
+        for kind, name in make_pack.step_inputs(step):
+            if kind == "stock":
+                stock.setdefault(name, []).append((step["op"], step["tag"]))
+    assert stock == {
+        "levels/test/bloodgulch/bloodgulch.scenario": [("edit", "ae_pack/donor/donor.scenario")],
+        "globals/globals.globals": [("edit", "globals/globals.globals")],
+        "weapons/assault rifle/assault rifle.weapon_hud_interface": [
+            ("ammo_hud", "ae_pack/hud/br_ammo.weapon_hud_interface")]}
+    assert all(entry["root"] == "cmt" for entry in data["art_inputs"].values())
+    assert not any(step["op"] == "copy" and step["from"][0] == "stock" for step in data["steps"])
+    silencer = [step for step in data["steps"] if step["tag"].endswith("smg_attachments_silencer.shader_model")]
+    assert len(silencer) == 1 and silencer[0]["edits"] == [
+        ["set", "reflection_cube_map", "characters\\cyborg\\bitmaps\\cubemap mirror surface.bitmap"]]
+    assert "rifle's own model" in silencer[0]["why"] and "glass impact" not in RECIPE.read_text()
+    sheet = [step for step in data["steps"] if step["tag"] == "ae_pack/hud/br_meter.bitmap"]
+    assert len(sheet) == 1 and sheet[0]["op"] == "bitmap" and sheet[0]["art"] == ["br_icon.png"]
+    assert "from" not in sheet[0] and data["art_scripts"]["br_icon.png"] == "hud_sheet.py"
 
 
 def test_recipe_allowlist_is_exact():
@@ -799,11 +857,9 @@ def test_recipe_steps_take_nothing_from_outside():
 
 def test_recipe_names_the_own_tags_made_from_stock_tags():
     data = recipe()["pack"]
-    # the approved donor has three: the icon's sheet, the ammunition HUD, a stand-in cube map (each a reason)
-    assert sorted(data["stock_derived"]) == [
-        "ae\\packs\\battle_rifle\\hud\\br_ammo", "ae\\packs\\battle_rifle\\hud\\br_meter",
-        "ae\\packs\\battle_rifle\\levels\\a10\\bitmaps\\cube map glass"]
-    assert all(name.startswith(data["prefix"]) and len(reason) > 20 for name, reason in data["stock_derived"].items())
+    # one is left (R33): the ammunition HUD, which is layout numbers in the stock HUD's structure, no art
+    assert list(data["stock_derived"]) == ["ae\\packs\\battle_rifle\\hud\\br_ammo"]
+    assert "layout numbers set by AE" in data["stock_derived"]["ae\\packs\\battle_rifle\\hud\\br_ammo"]
 
 
 def test_recipe_pack_arguments():
@@ -1029,6 +1085,333 @@ def test_tags_of_a_map_found_by_group_and_name_case_aside():
         donor_map.Tags(image[:20])
 
 
+def one_piece_tag(group, size):
+    """a map holding one tag of size bytes (each byte its offset, so that any byte can be told), and the tag"""
+    root = bytes(index & 0xFF for index in range(size))
+    image, _ = tiny_map([(group, "t\\one", root)])
+    tags = donor_map.Tags(image)
+    return root, tags, tags.find(group.decode(), "t\\one")
+
+
+def changed_bytes(root, fixups, parts, tags, tag, offsets):
+    """which of the offsets, each changed alone in the pack's copy, the comparison reports"""
+    reported = []
+    for offset in offsets:
+        copy = bytearray(root)
+        copy[offset] ^= 0xFF
+        if pack_compare.compare_tag(bytes(copy), fixups, parts, tags, tag):
+            reported.append(offset)
+    return reported
+
+
+def test_bitmap_mask_is_the_pixel_datas_address_and_definition_only():
+    # pixel data at 0x30: size, pad, file offset (0x38), address (0x3C), definition (0x40); the builder blanks
+    # the last two (ae_pack_build.c) and READS the file offset
+    root, tags, tag = one_piece_tag(b"bitm", 0x6C)
+    assert changed_bytes(root, [], [], tags, tag, range(0x30, 0x48)) == list(range(0x30, 0x3C)) + list(
+        range(0x44, 0x48))
+    counts = {}
+    assert pack_compare.compare_tag(root, [], [], tags, tag, counts=counts) == []
+    assert counts["bitmap_pixel_addresses"] == 8 and counts["masked"] == 8
+    # a tag of another group has no such mask
+    root, tags, tag = one_piece_tag(b"weap", 0x6C)
+    assert changed_bytes(root, [], [], tags, tag, range(0x38, 0x48)) == list(range(0x38, 0x48))
+
+
+def test_model_part_mask_is_its_two_buffer_structs_only():
+    root, tags, tag = one_piece_tag(b"mode", 0x20 + 0x68 + 8)
+    part = 0x20
+    reported = changed_bytes(root, [], [part], tags, tag, range(part, part + 0x68 + 8))
+    assert reported == list(range(part, part + 68)) + list(range(part + 104, part + 0x68 + 8))
+    counts = {}
+    pack_compare.compare_tag(root, [], [part], tags, tag, counts=counts)
+    assert counts["part_buffers"] == 36
+
+
+def test_tag_index_mask_is_its_four_bytes_only():
+    root, tags, tag = one_piece_tag(b"weap", 64)
+    fixups = [(20, aepack.FIXUP_TAG_INDEX, 0, 0)]
+    assert changed_bytes(root, fixups, [], tags, tag, range(16, 28)) == [16, 17, 18, 19, 24, 25, 26, 27]
+
+
+def test_pointer_and_reference_masks_cover_exactly_their_fields():
+    # a pointer's 8 bytes (address, definition): the count before it and the bytes after are compared
+    root = bytes(range(64))
+    image, _ = tiny_map([(b"weap", "t\\one", root + bytes(range(100, 108)))])
+    tags = donor_map.Tags(image)
+    tag = tags.find("weap", "t\\one")
+    patched = bytearray(image)
+    struct.pack_into("<I", patched, tag.address - BASE + 8, tag.address + 64)
+    tags = donor_map.Tags(bytes(patched))
+    tag = tags.find("weap", "t\\one")
+    copy = root + bytes(range(100, 108))
+    fixups = [(8, aepack.FIXUP_POINTER, 0, 64), (32, aepack.FIXUP_REFERENCE, 0, aepack.NONE)]
+    reported = changed_bytes(copy, fixups, [], tags, tag, range(0, 56))
+    assert reported == [index for index in range(56) if not (8 <= index < 16 or 36 <= index < 40 or
+                                                             44 <= index < 48)]
+
+
+def test_file_offsets_are_set_aside_only_against_another_build():
+    root, tags, tag = one_piece_tag(b"snd!", 64)
+    copy = bytearray(root)
+    copy[40:44] = b"\x01\x02\x03\x04"                        # a file offset that is another in this build
+    assert len(pack_compare.compare_tag(bytes(copy), [], [], tags, tag)) == 4
+    counts = {}
+    assert pack_compare.compare_tag(bytes(copy), [], [], tags, tag, counts=counts, file_offsets=[40]) == []
+    assert counts["file_offsets"] == 4
+
+
+def test_padding_is_counted():
+    # a data of 5 bytes at 32, padded to 40 by the builder: the word 12 bytes before its pointer is its size
+    root = bytearray(32)
+    struct.pack_into("<I", root, 0, 5)
+    image, _ = tiny_map([(b"weap", "t\\one", bytes(root) + b"DATA!xyz"), (b"bitm", "after", bytes(4))])
+    tags = donor_map.Tags(image)
+    tag = tags.find("weap", "t\\one")
+    patched = bytearray(image)
+    struct.pack_into("<I", patched, tag.address - BASE + 12, tag.address + 32)
+    tags = donor_map.Tags(bytes(patched))
+    tag = tags.find("weap", "t\\one")
+    copy = bytes(root) + b"DATA!\0\0\0"
+    counts = {}
+    assert pack_compare.compare_tag(copy, [(12, aepack.FIXUP_POINTER, 0, 32)], [], tags, tag, counts=counts) == []
+    assert counts["padding"] == 3 and counts["compared"] == 32 - 8 + 5
+
+
+def test_where_a_tags_bytes_hold_its_resources_offsets():
+    # a bitmap: pixel data's file offset at 0x38 (0 in a built map), each bitmap's own at 0x18 of its 48 bytes
+    root = bytearray(0x6C + 96)
+    struct.pack_into("<I", root, 0x38, 0)
+    struct.pack_into("<I", root, 0x60, 2)
+    struct.pack_into("<I", root, 0x6C + 0x18, 5000)
+    struct.pack_into("<I", root, 0x6C + 48 + 0x18, 9000)
+    fixups = [(0x64, aepack.FIXUP_POINTER, 0, 0x6C)]
+    resources = [(0, 9000, 16, 0, 16, 0), (0, 5000, 64, 16, 64, 0)]
+    assert pack_compare.resource_fields("bitm", bytes(root), fixups, resources) == {
+        1: (0x38, 0x6C + 0x18), 0: (0x38, 0x6C + 48 + 0x18)}
+    # a sound: the data field whose size and file offset are the resource's
+    sound = bytearray(200)
+    struct.pack_into("<III", sound, 120, 777, 0, 123456)
+    assert pack_compare.resource_fields("snd!", bytes(sound), [], [(0, 123456, 777, 0, 777, 0)]) == {0: (128,)}
+    assert pack_compare.resource_fields("snd!", bytes(sound), [], [(0, 123456, 778, 0, 778, 0)]) == {}
+
+
+def test_map_file_bytes_by_file_offset():
+    image, _ = tiny_map([(b"weap", "t\\one", bytes(8))])
+    whole = bytes(range(256)) * 9 + image
+    map_file = donor_map.MapFile(whole=whole, tag_data=image)
+    assert map_file.file_bytes(256, 4) == bytes((0, 1, 2, 3)) and map_file.file_bytes(len(whole) - 2, 4) is None
+    assert map_file.tags.find("weap", "t\\one") is not None
+
+
+# ---------- the audit judges a tag by what its steps read
+
+def synthetic_recipe(steps, art_inputs=None, art_scripts=None):
+    return {"steps": steps, "art_inputs": art_inputs or {}, "art_scripts": art_scripts or {},
+            "layers": ["a", "b"]}
+
+
+def test_provenance_follows_the_steps_and_collects_every_input():
+    data = synthetic_recipe([
+        {"layer": "b", "tag": "x.bitmap", "op": "multipurpose", "from": ["cmt", "cmt/x.bitmap"]},
+        {"layer": "a", "tag": "x.bitmap", "op": "edit", "from": ["b", "x.bitmap"], "edits": [["set", "k", "v"]]}])
+    assert make_pack.provenance(data, "a", "x.bitmap") == ("cmt/x.bitmap", ["cmt cmt/x.bitmap"])
+    with pytest.raises(make_pack.Refused):
+        make_pack.provenance(data, "a", "missing.bitmap")
+
+
+def test_an_art_script_fed_stock_pixels_is_stock_derived_whatever_made_the_tag():
+    data = synthetic_recipe(
+        [{"layer": "a", "tag": "hud/sheet.bitmap", "op": "bitmap", "art": ["sheet.png"], "arguments": []}],
+        art_inputs={"meters.raw": {"kind": "tag", "root": "stock", "tag": "ui/hud/meters.bitmap", "sha256": "0",
+                                   "scripts": ["sheet.py"]},
+                    "model.txt": {"kind": "geometry", "root": "cmt", "tag": "cmt/rifle.gbxmodel", "sha256": "0",
+                                  "scripts": ["sheet.py", "other.py"]}},
+        art_scripts={"sheet.png": "sheet.py"})
+    source, inputs = make_pack.provenance(data, "a", "hud/sheet.bitmap")
+    assert source == "AE script sheet.py"
+    assert inputs == ["art sheet.png", "stock ui/hud/meters.bitmap", "cmt cmt/rifle.gbxmodel"]
+    row = {"pack_name": "ae\\packs\\x\\hud\\sheet", "source": source, "group": "bitm", "size": 1, "inputs": inputs}
+    problems = make_pack.audit_problems([row], set(), {"sheet.py"})
+    assert len(problems) == 1 and "stock ui/hud/meters.bitmap" in problems[0]
+    assert make_pack.audit_problems([row], set(), {"sheet.py"}, {"ae\\packs\\x\\hud\\sheet"}) == []
+    # the same script fed CMT's model alone: ours
+    del data["art_inputs"]["meters.raw"]
+    source, inputs = make_pack.provenance(data, "a", "hud/sheet.bitmap")
+    row = {"pack_name": "ae\\packs\\x\\hud\\sheet", "source": source, "group": "bitm", "size": 1, "inputs": inputs}
+    assert make_pack.audit_problems([row], set(), {"sheet.py"}) == []
+
+
+def test_fields_grafted_from_a_stock_tag_make_a_tag_stock_derived():
+    hud = "cmt/hud.weapon_hud_interface"
+    data = synthetic_recipe([
+        {"layer": "a", "tag": hud, "op": "edit", "from": ["cmt", hud],
+         "edits": [["graft", "stock", "weapons/pistol/pistol.weapon_hud_interface", "crosshairs[1]",
+                    "crosshairs[0]"]]}])
+    source, inputs = make_pack.provenance(data, "a", hud)
+    assert source == hud
+    assert inputs == ["cmt " + hud, "stock weapons/pistol/pistol.weapon_hud_interface"]
+    row = {"pack_name": "ae\\packs\\x\\hud", "source": source, "group": "wphi", "size": 1, "inputs": inputs}
+    assert len(make_pack.audit_problems([row], {hud}, set())) == 1
+    assert make_pack.audit_problems([row], {hud}, set(), {"ae\\packs\\x\\hud"}) == []
+    # a graft from the tag itself reads nothing else
+    data["steps"][0]["edits"] = [["graft", "self", "", "crosshairs[0]", "crosshairs[4]"]]
+    assert make_pack.provenance(data, "a", hud)[1] == ["cmt " + hud]
+
+
+def test_a_graft_from_another_layers_tag_brings_that_tags_inputs():
+    hud = "cmt/hud.weapon_hud_interface"
+    data = synthetic_recipe([
+        {"layer": "b", "tag": "stockish.weapon_hud_interface", "op": "edit",
+         "from": ["stock", "weapons/ar/ar.weapon_hud_interface"], "edits": []},
+        {"layer": "a", "tag": hud, "op": "edit", "from": ["cmt", hud],
+         "edits": [["graft", "b", "stockish.weapon_hud_interface", "x", "y"]]}])
+    assert "stock weapons/ar/ar.weapon_hud_interface" in make_pack.provenance(data, "a", hud)[1]
+
+
+def test_a_sound_with_a_stock_input_is_refused_even_when_named():
+    row = {"pack_name": "ae\\packs\\x\\fire", "source": "stock sound/fire.sound", "group": "snd!", "size": 1,
+           "inputs": []}
+    assert len(make_pack.audit_problems([row], set(), set(), {"ae\\packs\\x\\fire"})) == 1
+    row = {"pack_name": "ae\\packs\\x\\fire", "source": "cmt/fire.sound", "group": "snd!", "size": 1,
+           "inputs": ["cmt cmt/fire.sound", "stock sound/fire.sound"]}
+    assert len(make_pack.audit_problems([row], {"cmt/fire.sound"}, set(), {"ae\\packs\\x\\fire"})) == 1
+
+
+# ---------- departures from the approved donor
+
+def test_fix_departures_must_be_named_and_real():
+    rows = [("fix2", "a.bitmap", "byte-equal", 1, 1, ""), ("fix2", "b.bitmap", "differs", 1, 1, "2 fields"),
+            ("fix-v3", "c.bitmap", "not made", 0, 1, ""), ("fix-v3", "d.bitmap", "0 field differences", 1, 1, "")]
+    named = {"fix2/b.bitmap": "why", "fix-v3/c.bitmap": "why"}
+    assert make_pack.departure_problems(rows, named) == []
+    assert len(make_pack.departure_problems(rows, {"fix2/b.bitmap": "why"})) == 1            # c is not named
+    problems = make_pack.departure_problems(rows, dict(named, **{"fix2/a.bitmap": "stale", "fix2/z.bitmap": "gone"}))
+    assert len(problems) == 2 and "it is the prototype's" in problems[0] and "neither made" in problems[1]
+
+
+def test_pack_departures_must_be_named_and_real():
+    by_tag = {"ae_pack\\hud\\br_meter": ["resource 0: 5 of its 9 bytes differ"], "cmt\\x": ["byte 1 of the root"]}
+    assert make_pack.pack_departure_problems(by_tag, {"ae_pack\\hud\\br_meter": "why", "cmt\\x": "why"}) == []
+    problems = make_pack.pack_departure_problems(by_tag, {"ae_pack\\hud\\br_meter": "why", "cmt\\y": "why"})
+    assert problems == ["cmt\\x: byte 1 of the root",
+                        "cmt\\y: named as a departure from the approved donor but it is the same"]
+
+
+# ---------- art pinned by its pixels
+
+def png_file(path, mode, size, pixels, level=6, filter_type=0):
+    """a PNG written here: 8 bits a channel, each row with the given filter (0 none, 1 sub, 2 up)"""
+    import zlib
+    channels = {"L": 1, "RGB": 3, "RGBA": 4}[mode]
+    width, height = size
+    stride = width * channels
+    raw = bytearray()
+    previous = bytes(stride)
+    for row in range(height):
+        line = pixels[row * stride:(row + 1) * stride]
+        raw.append(filter_type)
+        if filter_type == 1:
+            raw += bytes((line[index] - (line[index - channels] if index >= channels else 0)) & 255
+                         for index in range(stride))
+        elif filter_type == 2:
+            raw += bytes((line[index] - previous[index]) & 255 for index in range(stride))
+        else:
+            raw += line
+        previous = line
+
+    def chunk(kind, body):
+        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body))
+
+    colour = {"L": 0, "RGB": 2, "RGBA": 6}[mode]
+    header = chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, colour, 0, 0, 0))
+    path.write_bytes(png_pixels.SIGNATURE + header + chunk(b"IDAT", zlib.compress(bytes(raw), level)) +
+                     chunk(b"IEND", b""))
+
+
+def test_art_pin_takes_the_same_pixels_from_any_file_and_refuses_other_pixels(tmp_path):
+    pixels = bytes((index * 7) & 255 for index in range(8 * 4 * 4))
+    one, two, three = tmp_path / "one.png", tmp_path / "two.png", tmp_path / "three.png"
+    png_file(one, "RGBA", (8, 4), pixels, level=9, filter_type=0)
+    png_file(two, "RGBA", (8, 4), pixels, level=1, filter_type=1)
+    png_file(three, "RGBA", (8, 4), pixels, level=0, filter_type=2)
+    assert len({one.read_bytes(), two.read_bytes(), three.read_bytes()}) == 3       # three different files
+    pin = png_pixels.pin(one)
+    assert pin == {"mode": "RGBA", "size": [8, 4], "pixels_sha256": hashlib.sha256(pixels).hexdigest()}
+    assert png_pixels.pin(two) == pin and png_pixels.pin(three) == pin
+    assert make_pack.art_pin_problem(two, pin) is None and make_pack.art_pin_problem(three, pin) is None
+    changed = bytearray(pixels)
+    changed[50] ^= 1                                               # one channel of one pixel
+    png_file(two, "RGBA", (8, 4), bytes(changed))
+    assert "other pixels" in make_pack.art_pin_problem(two, pin)
+    png_file(two, "RGB", (8, 4), pixels[:96])
+    assert "RGB 8x4, not RGBA 8x4" in make_pack.art_pin_problem(two, pin)
+    png_file(two, "RGBA", (4, 8), pixels)                          # the same bytes as another shape
+    assert "4x8" in make_pack.art_pin_problem(two, pin)
+    two.write_bytes(b"not a picture")
+    assert "cannot be read" in make_pack.art_pin_problem(two, pin)
+    assert "cannot be read" in make_pack.art_pin_problem(tmp_path / "missing.png", pin)
+
+
+def test_png_reader_agrees_with_pillow_on_every_row_filter(tmp_path):
+    image_module = pytest.importorskip("PIL.Image")
+    pixels = bytes((index * 37 + index // 5) & 255 for index in range(33 * 9 * 4))
+    for mode, channels in (("RGBA", 4), ("RGB", 3), ("L", 1)):
+        image = image_module.frombytes(mode, (33, 9), pixels[:33 * 9 * channels])
+        image.save(tmp_path / "pillow.png")                        # Pillow chooses row filters of all kinds
+        assert png_pixels.read((tmp_path / "pillow.png").read_bytes()) == (mode, 33, 9, pixels[:33 * 9 * channels])
+    with pytest.raises(png_pixels.Refused):
+        png_pixels.read(b"\x89PNG\r\n\x1a\n" + bytes(20))
+
+
+# ---------- the recipe's own checks, and the work folder
+
+def test_check_recipe_refusals():
+    good = recipe()
+    make_pack.check_recipe(good)
+
+    def refused(change):
+        data = json.loads(json.dumps(good))
+        change(data)
+        with pytest.raises(make_pack.Refused) as refusal:
+            make_pack.check_recipe(data)
+        return str(refusal.value)
+
+    assert "no donor" in refused(lambda data: data.pop("donor"))
+    assert "no art_settings" in refused(lambda data: data.pop("art_settings"))
+    assert "made twice" in refused(lambda data: data["steps"].append(dict(data["steps"][5])))
+    assert "before it is made" in refused(lambda data: data["steps"].insert(0, data["steps"].pop()))
+    assert "allowlist" in refused(lambda data: data["source"]["allowlist"].pop())
+    assert "allowlist" in refused(lambda data: data["source"]["allowlist"].append("cmt/extra/unused.bitmap"))
+    assert "no such step" in refused(lambda data: data["steps"][3].update(op="copy_spike_tag"))
+    assert "in no layer" in refused(lambda data: data["steps"][3].update(layer="fix-other"))
+    assert "art the recipe does not list" in refused(lambda data: data["art"].pop("br_icon.png"))
+    assert "no script here" in refused(lambda data: data["art_scripts"].update({"digits.png": "elsewhere.py"}))
+    assert "departure in no layer" in refused(lambda data: data["departures"].update({"fix-x/a.bitmap": "why"}))
+    assert "other than its pixels" in refused(lambda data: data["art"].update({"digits.png": {"sha256": "0" * 64}}))
+
+
+def test_work_folder_must_be_one_make_pack_made(tmp_path):
+    new = tmp_path / "new"
+    make_pack.claim_work_folder(new, "all")
+    assert (new / make_pack.MARKER).is_file()
+    (new / "layers").mkdir()
+    make_pack.claim_work_folder(new, "build")                      # ours: taken again
+    other = tmp_path / "other"
+    (other / "layers").mkdir(parents=True)
+    (other / "layers" / "another's.bitmap").write_bytes(b"x")
+    with pytest.raises(make_pack.Refused):
+        make_pack.claim_work_folder(other, "build")
+    assert not (other / make_pack.MARKER).exists()
+    # the art stage on another machine: a folder that holds only what was brought to it
+    hop = tmp_path / "hop"
+    (hop / "art-in").mkdir(parents=True)
+    with pytest.raises(make_pack.Refused):
+        make_pack.claim_work_folder(hop, "build")
+    make_pack.claim_work_folder(hop, "art")
+    assert (hop / make_pack.MARKER).is_file()
+
+
 # ---------- on the build box: a finished run
 
 def finished_run():
@@ -1045,20 +1428,24 @@ def rows_of(path):
 
 
 @box
-def test_run_every_fix_tag_reproduced():
+def test_run_every_fix_tag_is_the_prototypes_but_the_named_departures():
     rows = rows_of(WORK / "fixes.tsv")
-    assert len(rows) == 96
-    assert {row["result"] for row in rows} <= {"byte-equal", "0 field differences"}, [
-        row for row in rows if row["result"] not in ("byte-equal", "0 field differences")]
+    assert len(rows) == 96                                          # the prototype's 96 fix tags, made or not
+    data = recipe()
+    plain = [(row["layer"], row["tag"], row["result"]) for row in rows]
+    assert make_pack.departure_problems(plain, data["departures"]) == []
+    departed = sorted("%s/%s" % (row["layer"], row["tag"]) for row in rows
+                      if row["result"] not in ("byte-equal", "0 field differences"))
+    assert departed == sorted(data["departures"]) and len(departed) == 6
+    assert sum(1 for row in rows if row["result"] == "byte-equal") == 90
 
 
 @box
-def test_run_donor_is_the_approved_one():
+def test_run_donor_is_the_recipes_and_not_the_approved_one():
     donor = WORK / "donor" / "donor.map"
     digest = hashlib.sha256(donor.read_bytes()).hexdigest()
-    assert digest == recipe()["expected"]["donor_sha256"] == V6E_SHA256
-    if V6E_DONOR.is_file():
-        assert donor.read_bytes() == V6E_DONOR.read_bytes()
+    assert digest == recipe()["expected"]["donor_sha256"] != V6E_SHA256
+    assert donor.stat().st_size == recipe()["expected"]["donor_size"]
 
 
 @box
@@ -1076,12 +1463,13 @@ def test_run_audit_and_externals():
     data = recipe()
     audit = rows_of(WORK / "audit.tsv")
     assert len(audit) == data["expected"]["own_tags"]
-    rows = [{"pack_name": row["pack_name"], "source": row["source"], "group": row["group"], "size": row["size"]}
-            for row in audit]
+    rows = [{"pack_name": row["pack_name"], "source": row["source"], "group": row["group"], "size": row["size"],
+             "inputs": row["inputs"].split("; ") if row["inputs"] else []} for row in audit]
     stock_derived = set(data["pack"]["stock_derived"])
     assert make_pack.audit_problems(rows, set(data["source"]["allowlist"]), make_pack.scripts(), stock_derived) == []
     # the own tags made from a stock tag are exactly the ones the recipe names, each with its reason
-    assert {row["pack_name"] for row in rows if row["source"].startswith(make_pack.STOCK_PREFIX)} == stock_derived
+    assert {row["pack_name"] for row in rows if any(text.startswith(make_pack.STOCK_PREFIX)
+                                                    for text in [row["source"]] + row["inputs"])} == stock_derived
     assert len(make_pack.audit_problems(rows, set(data["source"]["allowlist"]), make_pack.scripts())) == len(
         stock_derived)
     sounds = [row for row in rows if row["group"] == "snd!"]
@@ -1104,11 +1492,37 @@ def test_run_every_external_is_on_all_thirteen_stock_maps():
 
 
 @box
-def test_run_pack_tags_are_the_approved_donors_bytes():
+def test_run_pack_is_its_donors_bytes_tags_resources_and_geometry():
+    pack = (WORK / "pack" / "ae_battle_rifle.aepack").read_bytes()
+    parsed = aepack.read(pack)
+    report = pack_compare.compare_pack(pack, donor_map.MapFile(WORK / "donor" / "donor.map"))
+    assert report["problems"] == [] and report["own"] == recipe()["expected"]["own_tags"]
+    assert report["compared_bytes"] + report["masked_bytes"] == len(parsed.sections[aepack.TAG_BYTES])
+    assert report["resources"] == len(parsed.resources) and report["parts"] == len(parsed.parts)
+    assert report["resource_bytes"] == sum(resource[2] for resource in parsed.resources) > 16000000
+    assert report["geometry_bytes"] == len(parsed.sections[aepack.GEOMETRY])
+    assert report["masked"]["file_offsets"] == 0 and report["masked"]["padding"] == 0
+
+
+@box
+def test_run_pack_differs_from_the_approved_donor_only_where_the_recipe_says():
     if not V6E_DONOR.is_file():
         pytest.skip("the approved donor is not here")
+    assert hashlib.sha256(V6E_DONOR.read_bytes()).hexdigest() == V6E_SHA256
     pack = (WORK / "pack" / "ae_battle_rifle.aepack").read_bytes()
-    report = pack_compare.compare_pack(pack, donor_map.read_map(V6E_DONOR))
-    assert report["own"] == recipe()["expected"]["own_tags"]
-    assert report["problems"] == []
-    assert report["compared_bytes"] > 100000 and report["masked_bytes"] < report["compared_bytes"]
+    report = pack_compare.compare_pack(pack, donor_map.MapFile(V6E_DONOR), same_file=False)
+    named = recipe()["approved_reference"]["pack_departures"]
+    assert sorted(report["by_tag"]) == sorted(named)
+    assert make_pack.pack_departure_problems(report["by_tag"], named) == []
+    # the silencer shader: one reference and nothing else; the HUD: one byte; the sheet: its pixels and records
+    silencer = report["by_tag"]["cmt\\weapons\\_shared\\smg\\shaders\\smg_attachments_silencer"]
+    assert len(silencer) == 1 and "cubemap mirror surface" in silencer[0] and "cube map glass" in silencer[0]
+    assert report["by_tag"]["ae_pack\\hud\\br_ammo"] == ["byte 106 of the bytes at 560: pack 0x00, map 0x01"]
+    assert any(text.startswith("resource 0:") for text in report["by_tag"]["ae_pack\\hud\\br_meter"])
+    externals = {row["name"]: row for row in rows_of(WORK / "externals.tsv")}
+    cube = externals["characters\\cyborg\\bitmaps\\cubemap mirror surface"]
+    assert (cube["group"], cube["required"], cube["same_as_stock"], cube["maps"]) == ("bitm", "1", "yes", "13")
+    audit = {row["donor_name"]: row for row in rows_of(WORK / "audit.tsv")}
+    assert "levels\\a10\\bitmaps\\cube map glass" not in audit
+    assert audit["ae_pack\\hud\\br_meter"]["source"] == "AE script hud_sheet.py"
+    assert "stock" not in audit["ae_pack\\hud\\br_meter"]["inputs"]

@@ -19,9 +19,7 @@
    "ae_pack\\hud\\br_alphas_smooth"
   ],
   "stock_derived": {
-   "ae\\packs\\battle_rifle\\hud\\br_meter": "the stock ammunition meter sheet (ui\\hud\\bitmaps\\combined\\hud_ammo_meters) with the rifle's icon and ticks drawn into it by hud_sheet.py: the rest of the sheet is the game's own pixels",
-   "ae\\packs\\battle_rifle\\hud\\br_ammo": "the stock assault rifle's weapon HUD interface (its layout numbers) edited by hud_tag.py",
-   "ae\\packs\\battle_rifle\\levels\\a10\\bitmaps\\cube map glass": "a copy of the stock cyborg's mirror cube map, standing in for a campaign cube map one of CMT's glass impact effects names"
+   "ae\\packs\\battle_rifle\\hud\\br_ammo": "layout numbers set by AE, from the stock assault rifle HUD's structure: positions, sizes and references (hud_tag.py), no art"
   }
  },
  "source": {
@@ -350,7 +348,7 @@
    }
   },
   "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
-  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art whose SHA-256s are below"
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
  },
  "donor": {
   "scenario": "ae_pack\\donor\\donor"
@@ -397,24 +395,6 @@
     "scope_hd.py"
    ]
   },
-  "ammo_meters.raw": {
-   "kind": "pixels",
-   "root": "stock",
-   "tag": "ui/hud/bitmaps/combined/hud_ammo_meters.bitmap",
-   "sha256": "eedf825bf760abf1073e7d954156d302bb1c36aa72b98d4783b26ae0abd33ac9",
-   "scripts": [
-    "hud_sheet.py"
-   ]
-  },
-  "ammo_alphas.raw": {
-   "kind": "pixels",
-   "root": "stock",
-   "tag": "ui/hud/bitmaps/combined/hud_ammo_alphas.bitmap",
-   "sha256": "7c4d7c83f7d63c899f62bd7cf63a790067e7ca7e79ef0e6050583ac26d497910",
-   "scripts": [
-    "hud_sheet.py"
-   ]
-  },
   "br_geo.txt": {
    "kind": "geometry",
    "root": "cmt",
@@ -430,11 +410,9 @@
  "art_settings": {
   "scope_ink": "t2",
   "scope_label_digit": "3",
-  "icon_rectangle": [
-   2,
-   100,
-   88,
-   129
+  "icon_size": [
+   86,
+   29
   ]
  },
  "art_scripts": {
@@ -446,20 +424,81 @@
   "br_scope_ring_hd.png": "scope_hd.py",
   "br_scope_mask_noring.png": "scope_hd.py",
   "br_scope_details_3x.png": "scope_label.py",
-  "br_sheet.raw": "hud_sheet.py",
-  "br_alphas.raw": "hud_sheet.py"
+  "br_icon.png": "hud_sheet.py"
  },
  "art": {
-  "digits.png": "cc38abeeef9b7fb6b5e2460613147cbb8e88a9a7903bd268dce1883e3eb16d32",
-  "compass.png": "7fc93a18a272f92fed92d7947816853b3dfa980ffbd22555b4d4246b8c2fb3f1",
-  "br_meter_smooth.png": "98e72bb6e302f8ab365a1e1488c88ec0d007f18571fff9ba583bf991465872e6",
-  "br_alphas_smooth.png": "0215eaf7034c21d55d327c056a51e65a87d97f82151d993419a9839dbd2d40ff",
-  "br_scope_details_hd.png": "cf4a100809961e36eba38c2e2e4bf19a08437abd897ae2f1377d7d0bd2ebaf82",
-  "br_scope_ring_hd.png": "ace46a64be358338e622c1c218ef8469efeb47f97f36ef1f52044ba01ee7235f",
-  "br_scope_mask_noring.png": "38d62f0878a67297a62a06c47b302899ff70fed6a9929d858de467cd19d6d045",
-  "br_scope_details_3x.png": "ce0037ece7d1bda37f267bf8b49f8261fa5b86631bfa283b2dc4f0f4302e05ef",
-  "br_sheet.raw": "50737effee4b8716bab5d0e2ebfe06052fd8c248fbb636d7186d6a64c4079fe8",
-  "br_alphas.raw": "252070094a2e68870a7c31e6286abc3ca95709b4b76ea6ec73a6c6bfd71b8c4b"
+  "br_alphas_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "4d1999691f0b5481a62103db729682b5f16c580a2e3c698c3c21a9c695aa02ac"
+  },
+  "br_meter_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "bf10e5c30ba418774849a525f9ea782c87107b13e485ac5a973d39716b03ea22"
+  },
+  "br_scope_details_3x.png": {
+   "mode": "RGBA",
+   "size": [
+    1024,
+    1024
+   ],
+   "pixels_sha256": "6150392de50ae6bb8005faebe47369f9798209730597b2cf3477434fe5e4e4fb"
+  },
+  "br_scope_details_hd.png": {
+   "mode": "RGBA",
+   "size": [
+    1024,
+    1024
+   ],
+   "pixels_sha256": "822327a24de72a834c9c63702c408f282c4cf2aec959541aed633858d81e5107"
+  },
+  "br_scope_mask_noring.png": {
+   "mode": "RGBA",
+   "size": [
+    2048,
+    512
+   ],
+   "pixels_sha256": "fe44b5d0b0c13f042bbb43d102ed87f1c7d93fa9b877da324eb48837b4dfec53"
+  },
+  "br_scope_ring_hd.png": {
+   "mode": "RGBA",
+   "size": [
+    1024,
+    1024
+   ],
+   "pixels_sha256": "91aee0154588fc698e429ca482b2c75d2a4f4f3c2baee8ae780463edc3803c23"
+  },
+  "compass.png": {
+   "mode": "RGB",
+   "size": [
+    1033,
+    130
+   ],
+   "pixels_sha256": "d39df18dd5c9853d5b7a552c8b8f67f001cf1e92a50e656b695cac97b13ea0ae"
+  },
+  "digits.png": {
+   "mode": "RGB",
+   "size": [
+    1291,
+    130
+   ],
+   "pixels_sha256": "a2f307e790bbe0d737f840380c243a632190464a43a8761c6f7e5053ff811c16"
+  },
+  "br_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    88,
+    31
+   ],
+   "pixels_sha256": "fc6dab1882f60d8f84afcb84e511654a36c60bc4f4d985a50d964654824c750a"
+  }
  },
  "steps": [
   {"layer": "fix2", "tag": "ae_pack/donor/donor.scenario", "op": "edit", "from": ["stock", "levels/test/bloodgulch/bloodgulch.scenario"], "edits": [["erase", "vehicles[*]"], ["erase", "vehicle_palette[*]"], ["insert", "weapon_palette", 1, "end"], ["set", "weapon_palette[0].name", "cmt\\weapons\\evolved\\battle_rifle\\battle_rifle.weapon"]], "why": "the donor map: Blood Gulch's scenario without vehicles, the rifle in its weapon palette"},
@@ -510,9 +549,9 @@
   {"layer": "fix2", "tag": "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_rubber.shader_model", "op": "os_strip", "group": "shader_model", "from": ["cmt", "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_rubber.shader_model"]},
   {"layer": "fix2", "tag": "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_scope.shader_model", "op": "os_strip", "group": "shader_model", "from": ["cmt", "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_scope.shader_model"]},
   {"layer": "fix2", "tag": "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_display_main.shader_model", "op": "os_strip", "group": "shader_model", "from": ["cmt", "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_display_main.shader_model"]},
-  {"layer": "fix2", "tag": "cmt/weapons/_shared/smg/shaders/smg_attachments_silencer.shader_model", "op": "os_strip", "group": "shader_model", "from": ["cmt", "cmt/weapons/_shared/smg/shaders/smg_attachments_silencer.shader_model"]},
   {"layer": "fix2", "tag": "cmt/powerups/ammo_pack/shaders/ammo_pack_base.shader_model", "op": "os_strip", "group": "shader_model", "from": ["cmt", "cmt/powerups/ammo_pack/shaders/ammo_pack_base.shader_model"]},
   {"layer": "fix2", "tag": "cmt/powerups/ammo_pack/shaders/ammo_pack_base_twosided.shader_model", "op": "os_strip", "group": "shader_model", "from": ["cmt", "cmt/powerups/ammo_pack/shaders/ammo_pack_base_twosided.shader_model"]},
+  {"layer": "fix2", "tag": "cmt/weapons/_shared/smg/shaders/smg_attachments_silencer.shader_model", "op": "os_strip", "group": "shader_model", "from": ["cmt", "cmt/weapons/_shared/smg/shaders/smg_attachments_silencer.shader_model"], "edits": [["set", "reflection_cube_map", "characters\\cyborg\\bitmaps\\cubemap mirror surface.bitmap"]], "why": "a shader of the rifle's own model: its reflection cube map is a campaign map's (levels\\a10\\bitmaps\\cube map glass), which no multiplayer map has; it names the stock cyborg's mirror cube map instead, which every stock multiplayer map has, so the pack carries no cube map of the game's"},
   {"layer": "fix2", "tag": "cmt/weapons/_shared/battle_rifle/battle_rifle.model", "op": "model", "from": ["cmt", "cmt/weapons/_shared/battle_rifle/battle_rifle.gbxmodel"], "why": "the Xbox's model format (Invader's gbxmodel to model)"},
   {"layer": "fix2", "tag": "cmt/powerups/ammo_pack/ammo_pack.model", "op": "model", "bludgeon": ["missing-vertices"], "from": ["cmt", "cmt/powerups/ammo_pack/ammo_pack.gbxmodel"], "why": "the Xbox's model format; its parts had no compressed vertices, which the Xbox's build needs"},
   {"layer": "fix2", "tag": "cmt/weapons/_shared/battle_rifle/bitmaps/battle_rifle_body_multi.bitmap", "op": "multipurpose", "from": ["cmt", "cmt/weapons/_shared/battle_rifle/bitmaps/battle_rifle_body_multi.bitmap"]},
@@ -529,10 +568,8 @@
   {"layer": "fix2", "tag": "cmt/ui/hudv4.1/weapons/evolved/human/battle_rifle.weapon_hud_interface", "op": "hud_hires", "from": ["cmt", "cmt/ui/hudv4.1/weapons/evolved/human/battle_rifle.weapon_hud_interface"]},
   {"layer": "fix2", "tag": "cmt/powerups/ammo_pack/powerups/battle_rifle_ammo_pack.equipment", "op": "edit", "from": ["cmt", "cmt/powerups/ammo_pack/powerups/battle_rifle_ammo_pack.equipment"], "edits": [["set", "model", "cmt/powerups/ammo_pack/ammo_pack.model"]]},
   {"layer": "fix2", "tag": "cmt/weapons/evolved/battle_rifle/battle_rifle.weapon", "op": "edit", "from": ["cmt", "cmt/weapons/evolved/battle_rifle/battle_rifle.weapon"], "edits": [["set", "model", "cmt/weapons/_shared/battle_rifle/battle_rifle.model"], ["set", "first_person_model", "cmt/weapons/_shared/battle_rifle/battle_rifle.model"], ["set", "pickup_text_index", "4"], ["set", "hud_text_message_index", "0"]], "why": "the Xbox model; the pickup and HUD message indices the stock assault rifle's (CMT's point into CMT's own HUD texts)"},
-  {"layer": "fix2", "tag": "levels/a10/bitmaps/cube map glass.bitmap", "op": "copy", "from": ["stock", "characters/cyborg/bitmaps/cubemap mirror surface.bitmap"], "why": "a stock cube map one of CMT's glass impact effects names, which Blood Gulch does not have: the cyborg's mirror cube map stands in"},
-  {"layer": "fix-v3", "tag": "ae_pack/hud/br_meter.bitmap", "op": "icon_sheet", "art": ["br_sheet.raw"], "rectangle": [2, 100, 88, 129], "from": ["stock", "ui/hud/bitmaps/combined/hud_ammo_meters.bitmap"], "why": "the swap and pickup prompts' picture of the rifle, in a copy of the stock meter sheet"},
-  {"layer": "fix-v3", "tag": "ae_pack/hud/br_alphas.bitmap", "op": "alpha_sheet", "art": ["br_alphas.raw"], "from": ["stock", "ui/hud/bitmaps/combined/hud_ammo_alphas.bitmap"]},
-  {"layer": "fix-v3", "tag": "ae_pack/hud/br_ammo.weapon_hud_interface", "op": "ammo_hud", "icon_sheet": "ae_pack\\hud\\br_meter.bitmap", "alphas": "ae_pack\\hud\\br_alphas.bitmap", "from": ["stock", "weapons/assault rifle/assault rifle.weapon_hud_interface"]},
+  {"layer": "fix-v3", "tag": "ae_pack/hud/br_meter.bitmap", "op": "bitmap", "art": ["br_icon.png"], "arguments": ["-I", "-T", "sprites", "-F", "32-bit", "-M", "0", "-B", "128", "-C", "1"], "sprite": "corner", "why": "the swap and pickup prompts' picture of the rifle: a sprite sheet holding only our own drawing (hud_sheet.py), its one sequence and sprite written by the bitmap compiler; the sprite is placed by its top left corner"},
+  {"layer": "fix-v3", "tag": "ae_pack/hud/br_ammo.weapon_hud_interface", "op": "ammo_hud", "icon_sheet": "ae_pack\\hud\\br_meter.bitmap", "from": ["stock", "weapons/assault rifle/assault rifle.weapon_hud_interface"]},
   {"layer": "fix-v3", "tag": "cmt/textures/displays/shaders/cmt_unsc_display_numbers_100ct.shader_transparent_chicago", "op": "edit", "from": ["cmt", "cmt/textures/displays/shaders/cmt_unsc_display_numbers_100ct.shader_transparent_chicago"], "edits": [["set", "framebuffer_blend_function", "add"]]},
   {"layer": "fix-v3", "tag": "cmt/textures/displays/shaders/cmt_unsc_display_compass.shader_transparent_chicago", "op": "edit", "from": ["cmt", "cmt/textures/displays/shaders/cmt_unsc_display_compass.shader_transparent_chicago"], "edits": [["set", "framebuffer_blend_function", "add"]]},
   {"layer": "fix-v3", "tag": "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_display_bullet.shader_transparent_chicago", "op": "edit", "from": ["cmt", "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_display_bullet.shader_transparent_chicago"], "edits": [["set", "framebuffer_blend_function", "add"]]},
@@ -555,17 +592,39 @@
   {"layer": "fix-light", "tag": "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_rubber.shader_model", "op": "edit", "from": ["fix-v3", "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_rubber.shader_model"], "edits": [["set", "perpendicular_brightness", "0.51"], ["set", "parallel_brightness", "0.51"]]},
   {"layer": "fix-counter-e", "tag": "ae_pack/hud/br_meter_smooth.bitmap", "op": "bitmap", "art": ["br_meter_smooth.png"], "arguments": ["-I", "-T", "2d_textures", "-F", "32-bit"]},
   {"layer": "fix-counter-e", "tag": "ae_pack/hud/br_alphas_smooth.bitmap", "op": "bitmap", "art": ["br_alphas_smooth.png"], "arguments": ["-I", "-T", "2d_textures", "-F", "32-bit"]},
-  {"layer": "fix-counter-e", "tag": "ae_pack/hud/br_ammo.weapon_hud_interface", "op": "counter_hud", "alphas": "ae_pack\\hud\\br_alphas_smooth.bitmap", "meter": "ae_pack\\hud\\br_meter_smooth.bitmap", "scale": 0.25, "anchor": [-1, 20], "off_screen": [-3000, -3000], "from": ["fix-v3", "ae_pack/hud/br_ammo.weapon_hud_interface"]},
+  {"layer": "fix-counter-e", "tag": "ae_pack/hud/br_ammo.weapon_hud_interface", "op": "counter_hud", "alphas": "ae_pack\\hud\\br_alphas_smooth.bitmap", "meter": "ae_pack\\hud\\br_meter_smooth.bitmap", "scale": 0.25, "anchor": [-1, 20], "off_screen": [-3000, -3000], "icon_sequence": 0, "from": ["fix-v3", "ae_pack/hud/br_ammo.weapon_hud_interface"]},
   {"layer": "fix-3x", "tag": "ae_pack/scope/br_scope_details_hd.bitmap", "op": "bitmap", "art": ["br_scope_details_3x.png"], "arguments": ["-I", "-T", "2d_textures", "-F", "dxt5"]},
   {"layer": "fix-3x", "tag": "cmt/weapons/evolved/battle_rifle/battle_rifle.weapon", "op": "edit", "from": ["fix-col", "cmt/weapons/evolved/battle_rifle/battle_rifle.weapon"], "edits": [["set", "zoom_magnification_range", "3 3"]]}
  ],
- "expected": {
+ "departures": {
+  "fix2/levels/a10/bitmaps/cube map glass.bitmap": "R33: not made; the prototype's was a copy of the stock cyborg mirror cube map",
+  "fix2/cmt/weapons/_shared/smg/shaders/smg_attachments_silencer.shader_model": "R33: its reflection cube map names the stock cube map by its stock name",
+  "fix-v3/ae_pack/hud/br_meter.bitmap": "R33: a sprite sheet of our own icon only; the prototype's was the stock meter sheet with the icon drawn in",
+  "fix-v3/ae_pack/hud/br_alphas.bitmap": "R33: not made; the prototype's was the stock alpha sheet redrawn, and nothing in the donor used it",
+  "fix-v3/ae_pack/hud/br_ammo.weapon_hud_interface": "R33: its low-ammo element keeps the stock sheet's name (the prototype's named br_alphas); the counter's HUD, which the donor uses, replaces this tag",
+  "fix-counter-e/ae_pack/hud/br_ammo.weapon_hud_interface": "R33: the off-screen meter element shows sequence 0 of the icon sheet, which has one sequence (the prototype's showed the stock sheet's sequence 1)"
+ },
+ "approved_reference": {
+  "about": "the donor the owner approved (v6e): the build the departures are measured from. The pack is compared with it and may differ only in the tags named here (by the donor's tag names)",
   "donor_sha256": "0aa3ffcbb704e59407945cd5eece3aaf53740992a582e23fe61aec51dca36884",
   "donor_size": 22679552,
-  "pack_sha256": "fb815905b5b56d8a918151d6b3340c4196f331cab53746798c39558bbee8cce6",
-  "pack_own_sha256": "ee355e37c620a37b144268fc74a82be0985f1771a3a63dc53b6ea8d4b8aec10d",
-  "pack_size": 17688423,
-  "own_tags": 186,
-  "external_tags": 52
+  "pack_departures": {
+   "ae_pack\\hud\\br_meter": "R33: the sheet is our own icon only (pixels, size, format, sequence and sprite records)",
+   "cmt\\weapons\\_shared\\smg\\shaders\\smg_attachments_silencer": "R33: one reference, the reflection cube map, names the stock cube map instead of the copy",
+   "ae_pack\\hud\\br_ammo": "R33: one field, the off-screen meter element's sequence index (1 to 0)"
+  },
+  "absent": {
+   "levels\\a10\\bitmaps\\cube map glass": "R33: no longer a tag of the pack; the stock cube map it copied is an external"
+  }
+ },
+ "expected": {
+  "about": "re-pinned for R33 (still revision 1: the pack was never released); Task 19's final credits text changes the pack's hashes once more",
+  "donor_sha256": "de729747c7c80c7196216b44538b469304dca2c9abc456ed51fae52398cbce96",
+  "donor_size": 22663168,
+  "pack_sha256": "d87037cb71b8c502c3216c6c1707911ac18769aa40e16c76499c1fbad09f895e",
+  "pack_own_sha256": "fb5c71625afc68cbc979db30048c519ec96863d5c8e4737e67889e5c416e82c0",
+  "pack_size": 17605219,
+  "own_tags": 185,
+  "external_tags": 53
  }
 }
