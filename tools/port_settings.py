@@ -167,7 +167,7 @@ SCREENS = {
         "rows": [
             # (a help for each value)
             ("MOUSE STYLE:", "input.mouse_style", MOUSE_STYLES,
-             ["Classic: this port's own sensitivity numbers (the\nrows marked CLASSIC below).",
+             ["Classic: this port's own sensitivity numbers, the\nrows marked CLASSIC.",
               "MCC: the sensitivity number matches Halo: The Master\nChief Collection and is within 1% of CS:GO and other\nSource games."], None),
             ("HORIZONTAL SENSITIVITY:", "input.mouse_sensitivity", SENSITIVITIES,
              "CLASSIC style only. How fast the view turns side to\nside for the mouse's movement.", None),

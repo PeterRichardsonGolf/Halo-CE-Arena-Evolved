@@ -130,7 +130,7 @@
 		<string text="MCC style only. A scale on the mouse while you are\nin a vehicle's seat."/>
 		<string text="Moving the mouse forward looks down."/>
 		<string text="Slow and drag the view along with a target while\naiming with the mouse, as with a controller."/>
-		<string text="Classic: this port's own sensitivity numbers (the\nrows marked CLASSIC below)."/>
+		<string text="Classic: this port's own sensitivity numbers, the\nrows marked CLASSIC."/>
 		<string text="MCC: the sensitivity number matches Halo: The Master\nChief Collection and is within 1% of CS:GO and other\nSource games."/>
 	</strings>
 </menus>
