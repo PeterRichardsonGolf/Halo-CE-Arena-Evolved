@@ -402,6 +402,17 @@ static const struct config_setting config_settings[] =
 		"The MCC style's vehicle sensitivity scale, 0.1 to 2: multiplies the mouse\n"
 		"while seated in a vehicle (any seat: driver, gunner or passenger). Not\n"
 		"read in the classic style." },
+	{ "input.zoom_mode", _config_string, "\"toggle\"", "HALO_ZOOM_MODE", _environment_value, /* AE hook */
+		_platform_all,
+		"How the zoom action (a mouse button, a key or a controller button) works:\n"
+		"\"toggle\", each press steps the zoom level in, to the next level and out, as\n"
+		"Halo does; \"hold\", zoomed to the first level while it is held (no second\n"
+		"level); \"both\", a tap steps the level as toggle does and a hold zooms\n"
+		"while it is held, then returns to unzoomed." },
+	{ "input.zoom_hold_time", _config_real, "0.25", "HALO_ZOOM_HOLD_TIME", _environment_value, /* AE hook */
+		_platform_all,
+		"The most seconds a press of the zoom action lasts to be a tap in the\n"
+		"\"both\" mode, 0.1 to 1: held longer, it is a hold." },
 
 	/* the keyboard and mouse's own controls (port/linux/src/xinput_sdl.c) */
 	{ "controls.move_forward", _config_string, "\"W\"", "HALO_KEY_MOVE_FORWARD", _environment_value, _platform_all,

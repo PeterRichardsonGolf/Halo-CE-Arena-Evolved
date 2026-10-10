@@ -213,6 +213,7 @@ symbols in this file:
 #include "real_math.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_glue_mouse.h" /* AE hook */
+#include "ae_glue_zoom.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -659,6 +660,7 @@ static void handle_one_player_input(
 	{
 		csmemset(&input, 0, sizeof(input));
 	}
+	ae_zoom_filter_press(&input.player_control_flags, _player_control_input_zoom_bit); /* AE hook */
 
 	if (game_connection() == _game_connection_local)
 	{
@@ -750,6 +752,7 @@ static void handle_one_player_input(
 				current_weapon_index,
 				player->zoom_level);
 		}
+		player->zoom_level = ae_zoom_update(local_player_index, player->zoom_level, current_weapon_index, player_control_camera_control_is_active() && !cinematic_in_progress(), input.player_control_flags); /* AE hook */
 
 		if (!director_inhibited_facing(local_player_index))
 		{
@@ -1480,6 +1483,7 @@ static void get_local_player_input_blob(
 					input->player_control_flags,
 					_player_control_input_zoom_bit,
 					effective_buttons[_button_scope_zoom] == TRUE);
+				ae_zoom_note_held(&input->player_control_flags, effective_buttons[_button_scope_zoom] != 0); /* AE hook */
 				SET_FLAG(
 					input->unit_control_flags,
 					_unit_control_action_bit,
@@ -1603,6 +1607,7 @@ static void get_local_player_input_blob(
 					input->player_control_flags,
 					_player_control_input_zoom_bit,
 					input_key_is_down(_key_z) == TRUE);
+				ae_zoom_note_held(&input->player_control_flags, input_key_is_down(_key_z)); /* AE hook */
 				SET_FLAG(
 					input->player_control_flags,
 					_player_control_rotate_weapons_bit,

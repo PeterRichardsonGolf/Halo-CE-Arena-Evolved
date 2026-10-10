@@ -33,6 +33,8 @@ SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.1, 0.15, 0.25, 0.4
 MOUSE_STYLES = [("CLASSIC", "classic"), ("MCC", "mcc")]
 MCC_SENSITIVITIES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(1, 101)]
 MCC_SCALES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(1, 21)]
+# (the zoom action's modes: ae_zoom.c)
+ZOOM_MODES = [("TOGGLE", "toggle"), ("HOLD", "hold"), ("BOTH", "both")]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
 # each screen: its folder below PE, its screen's widget (the name the profile
@@ -158,6 +160,12 @@ SCREENS = {
               "TRAINING's spawn markers glow where the other\nteam would spawn next (in team games)."], None),
             ("SHORT MESSAGES:", "display.short_messages", ON_OFF,
              "Shorter game messages, as Halo 1: NHE's: a\nkilling spree reads Killing Spree!", None),
+            # (a help for each value; the mouse's and the controller's zoom alike)
+            ("ZOOM:", "input.zoom_mode", ZOOM_MODES,
+             ["Each press of the zoom button zooms in a level,\nthen out, as Halo does.",
+              "Zoomed while the button is held, to the first level\nonly: a second level is not reached.",
+              "Tap to toggle, hold to zoom while held: a hold\nzooms to the first level, and letting go zooms out."],
+             None),
         ],
     },
     "mouse_settings": {

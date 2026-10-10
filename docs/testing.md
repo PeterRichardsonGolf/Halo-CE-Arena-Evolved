@@ -113,6 +113,10 @@ be arranged headlessly (the zoom button pressed through the test input did not z
 covered by `ae_mouse_test.c` and the glue's `zoomed` rule by reading (`unit_index != NONE && zoom_level != NONE`, as the
 division by the weapon's magnification). The log's last field is the zoom level (-1 none).
 
+The zoom action's modes (`input.zoom_mode`, `ae_zoom.c`) have no game test either: the test input cannot hold a button, so the
+state machine is `ae_zoom_test.c`'s (every mode, both zoom-level counts, forced unzooms, the tap-time edge), and a game shows
+only the log line `zoom: mode ..., hold time ...` at the match start.
+
 ## Recording
 
 The game records itself: F10 (the Screenshot action, rebindable) saves a screenshot and F9 starts/stops a recording in play, and for tests

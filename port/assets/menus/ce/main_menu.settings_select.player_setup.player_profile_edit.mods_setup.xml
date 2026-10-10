@@ -26,6 +26,7 @@
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_voice" x="54" y="273"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_spawn_heat" x="54" y="293"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_short_messages" x="54" y="313"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_zoom_mode" x="54" y="333"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
@@ -150,6 +151,15 @@
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/short_messages_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="display.short_messages" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
 		<on event="created" run="port setting load"/>
 	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_zoom_mode" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="13" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="TOGGLE|HOLD|BOTH" setting="input.zoom_mode" values="toggle|hold|both" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_defaults" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="3" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
 		<on event="a" run="port settings defaults"/>
 		<on event="start" run="port settings defaults"/>
@@ -174,6 +184,7 @@
 		<string text="VOICE:"/>
 		<string text="SPAWN HEAT:"/>
 		<string text="SHORT MESSAGES:"/>
+		<string text="ZOOM:"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/help_strings">
 		<string text=""/>
@@ -181,15 +192,16 @@
 		<string text="Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options."/>
 		<string text="How health comes back in the campaign. Gametypes\nhave their own, in Arena Options."/>
 		<string text="A clock of the time played on the level, in the\ncampaign's corner by the motion sensor."/>
-		<string text="@14"/>
+		<string text="@15"/>
 		<string text="On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide."/>
 		<string text="With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages."/>
 		<string text="How fast the scoreboard fades in and out while\nBack (or Tab) is held."/>
 		<string text="Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too."/>
-		<string text="@18"/>
+		<string text="@19"/>
 		<string text="The callouts' voice: a folder of voices/, next\nto maps/."/>
-		<string text="@21"/>
+		<string text="@22"/>
 		<string text="Shorter game messages, as Halo 1: NHE's: a\nkilling spree reads Killing Spree!"/>
+		<string text="@25"/>
 		<string text="No clock in a multiplayer game's corner."/>
 		<string text="Display the time remaining until the game ends."/>
 		<string text="Display the time elapsed since the game started."/>
@@ -200,6 +212,9 @@
 		<string text="TRAINING's spawn markers stay plain green."/>
 		<string text="TRAINING's spawn markers glow where you would\nspawn next: hot is likely, dark red can't."/>
 		<string text="TRAINING's spawn markers glow where the other\nteam would spawn next (in team games)."/>
+		<string text="Each press of the zoom button zooms in a level,\nthen out, as Halo does."/>
+		<string text="Zoomed while the button is held, to the first level\nonly: a second level is not reached."/>
+		<string text="Tap to toggle, hold to zoom while held: a hold\nzooms to the first level, and letting go zooms out."/>
 	</strings>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_profile_item" type="text" left="51" top="309" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5" platform="desktop">
 		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/mods_settings_screen"/>

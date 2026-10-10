@@ -38,6 +38,8 @@ UNITS = {
     "ae_motion_test.c": ([UI / "ae_motion.c"], [], []),
     # (the MCC mouse style's pure functions)
     "ae_mouse_test.c": ([UI / "ae_mouse.c"], [], []),
+    # (the zoom action's hold mode: the state machine)
+    "ae_zoom_test.c": ([UI / "ae_zoom.c"], [], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
     # (editing a field's text: under the sanitizers, as it takes pasted text)
     "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

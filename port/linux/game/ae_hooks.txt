@@ -35,3 +35,12 @@ port/linux/game/menu_functions.c	#define MAXIMUM_STRINGS 128 /* AE hook */
 port/linux/game/menu_tags.c	#define MAXIMUM_STRINGS 128 /* AE hook */
 port/linux/src/xinput_sdl.c	ae_mouse_test_counts(&x, &y); /* AE hook */
 port/linux/src/xinput_sdl.c	ae_mouse_look_override(x, y, invert, yaw, pitch); /* AE hook */
+port/linux/src/port_config.c	{ "input.zoom_mode", _config_string, "\"toggle\"", "HALO_ZOOM_MODE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "input.zoom_hold_time", _config_real, "0.25", "HALO_ZOOM_HOLD_TIME", _environment_value, /* AE hook */\n_platform_all,
+source/game/player_control.c	#include "ae_glue_zoom.h" /* AE hook */
+source/game/player_control.c	ae_zoom_filter_press(&input.player_control_flags, _player_control_input_zoom_bit); /* AE hook */
+source/game/player_control.c	player->zoom_level = ae_zoom_update(local_player_index, player->zoom_level, current_weapon_index, player_control_camera_control_is_active() && !cinematic_in_progress(), input.player_control_flags); /* AE hook */
+source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, effective_buttons[_button_scope_zoom] != 0); /* AE hook */
+source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, input_key_is_down(_key_z)); /* AE hook */
+source/game/game_engine.c	#include "ae_glue_zoom.h" /* AE hook */
+source/game/game_engine.c	ae_zoom_log_settings(); /* AE hook */

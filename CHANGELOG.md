@@ -15,6 +15,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   switch to MCC keeps your feel (the classic number x 5.6723, so 1.0 becomes
   5.7). The match start logs the style in `debug.txt`, and
   `debug.test_input = "mouse:<dx>,<dy>"` injects mouse counts for tests.
+- Zoom: a ZOOM row on Settings > Game Options (`input.zoom_mode`), for the
+  mouse, the keyboard and the controller alike. TOGGLE (the default) is as
+  before: each press zooms in a level, then out. HOLD zooms to the first level
+  while the button is held (a second level is not reached). BOTH: a tap
+  (released within `input.zoom_hold_time`, 0.25 s) steps the level as toggle
+  does; a hold zooms to the first level and letting go zooms out (a hold begun
+  while already zoomed keeps the level). A weapon switch, a reload, a hit or
+  any other unzoom ends the press: its release does nothing. The match start
+  logs the mode in `debug.txt`. Nothing new goes over the network.
 
 ## 0.2.1-beta - 2026-10-10
 
