@@ -130,9 +130,9 @@ void ae_mouse_scale_look(float *yaw, float *pitch, long unit_index, short zoom_l
 	if (mouse.test_injected)
 	{
 		/* (the turn this frame gives the facing, in degrees: what the automated test reads) */
-		platform_log("mouse test: counts %g,%g turn yaw %.5f pitch %.5f degrees (style %s, zoomed %d, vehicle %d)",
+		platform_log("mouse test: counts %g,%g turn yaw %.5f pitch %.5f degrees (style %s, zoomed %d, vehicle %d, zoom level %d)",
 			(double)mouse.test_x, (double)mouse.test_y, (double)*yaw * 57.29577951308232,
-			(double)*pitch * 57.29577951308232, mouse.style == AE_MOUSE_MCC ? "mcc" : "classic", zoomed, in_vehicle);
+			(double)*pitch * 57.29577951308232, mouse.style == AE_MOUSE_MCC ? "mcc" : "classic", zoomed, in_vehicle, (int)zoom_level);
 		mouse.test_injected = 0;
 	}
 }
