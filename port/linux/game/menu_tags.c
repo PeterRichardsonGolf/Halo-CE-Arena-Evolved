@@ -1985,8 +1985,10 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 			first = rows[0].vertical_offset;
 			span = (short)(rows[list->child_widgets.count - 1].vertical_offset - first);
 			bottom = list->bounds.y1;
+			/* (port: a list that fails to patch leaves this screen alone; the
+			other screens still get SETTINGS) */
 			if (!pause_list_patch(instances, list, at, FALSE, &settings_tag, &grow))
-				return;
+				break;
 			/* (port: over the rows' own span whether the list grew or was
 			centred in its bounds) */
 			XBOX_POINTER(struct ui_widget_child_reference, list->child_widgets.address)[0].vertical_offset = first;
