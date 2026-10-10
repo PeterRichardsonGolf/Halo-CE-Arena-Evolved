@@ -1829,9 +1829,13 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 
 Its lists (one player's, split screen's: solo_pause_screens) get the same
 SETTINGS (pause_list_patch) before REVERT TO SAVED, a copy of it, or, where a
-list has none (co-op's), before its quit button; a list with room centres its
-rows (Halo PC's), and one that has none keeps its size, its rows closer, as
-its box beside the mission objectives' does. Settings there has only the
+list has none (co-op's), before its quit button. The list keeps its size,
+its rows closer over the span its own rows had (the first where the first
+was, the last where the last was), as its box beside the mission
+objectives' does: the Xbox's list of four (RESUME GAME, REVERT TO SAVED,
+RESTART LEVEL, SAVE AND QUIT) has room by its bounds for a fifth row
+centred, but its box's art has not, and SAVE AND QUIT then lay over the
+box's button line. Settings there has only the
 items that work in a game (pause_settings_patch), and Gamepads' OK saves the
 profile itself. Each player edits their own profile (menu_functions.c,
 pc_menu_profile_edit_begin). */
@@ -1948,7 +1952,7 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 		{
 			struct ui_widget_definition *list;
 			struct ui_widget_child_reference const *rows;
-			short span, grow, bottom;
+			short span, grow, bottom, first;
 			long at, index;
 
 			if (children[child].widget_tag.index == NONE)
@@ -1974,15 +1978,16 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 				at = pause_solo_quit_button(list);
 			if (at == NONE)
 				continue;
-			span = (short)(rows[list->child_widgets.count - 1].vertical_offset - rows[0].vertical_offset);
+			first = rows[0].vertical_offset;
+			span = (short)(rows[list->child_widgets.count - 1].vertical_offset - first);
 			bottom = list->bounds.y1;
 			if (!pause_list_patch(instances, list, at, FALSE, &settings_tag, &grow))
 				return;
-			if (grow)
-			{
-				pause_list_fit(list, span);
-				list->bounds.y1 = bottom;
-			}
+			/* (port: over the rows' own span whether the list grew or was
+			centred in its bounds) */
+			XBOX_POINTER(struct ui_widget_child_reference, list->child_widgets.address)[0].vertical_offset = first;
+			pause_list_fit(list, span);
+			list->bounds.y1 = bottom;
 			patched_lists[patched++] = children[child].widget_tag.index;
 			break;
 		}
