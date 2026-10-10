@@ -1,6 +1,10 @@
 /* Real manager structures and functions; only the cache/channel hardware is fake. */
 #include "harness.h"
 #include <float.h>
+/* Arena Evolved's tag blocks hold their pointers as XPTR fields (the 64-bit
+builds keep the Xbox's 32-bit layout: source/cseries/xbox_address.h); this
+32-bit harness takes that file's 32-bit form, plain pointers */
+#define XPTR(type) type *
 #include "types.inc"
 #define SET_FLAG(v,b,s) ((v)=(s)?((v)|FLAG(b)):((v)&~FLAG(b)))
 #define TAG_BLOCK_GET_ELEMENT(b,i,t) (&((t *)(b)->address)[i])
