@@ -32,6 +32,18 @@ gametype's pack bytes: `gametype_file.py --set weapon_pack=1 --set pack_loadout=
 --expect-line REGEX`, `--expect-no-line REGEX`) are regexes a line of the game's debug.txt must / must not match,
 e.g. the rules line: `weapon pack: none, pack loadout: primary stock, secondary stock, battle rifle on map: off`.
 
+The weapon pack on a map (tools/test_weapon_pack_add.py; `AE_TEST_PACK_BUILD`, and `AE_TEST_PACK_REAL` = a real
+pack's path for the cases that need one, `AE_TEST_PACK_ROTATION=1` for the four-game rotation): with `pack_loadout`
+set, each map logs `weapon pack: added to <map>: ... fingerprint <16 hex>`, the first player given the rifle
+`weapon pack: first spawn: the primary weapon is the pack's battle_rifle (...)`, and each map change `weapon pack:
+let go from <map>: ...` with the reads served from the pack; a pack a map cannot take logs `weapon pack: refused
+for <map>: <reason>; the game plays without it` (a refusal: such a case needs `expect.refusals_ok`). The test host
+changes map between games with `network_test: "host:<map>+<map>...:<gametype>,<gametype>..."`: game N plays the
+Nth map (the last one from then on), so the gametype list says how many games there are;
+`HALO_NETWORK_TEST_TIME_LIMIT=1` makes each a minute. `debug.weapon_pack_ground` / `HALO_WEAPON_PACK_GROUND=1` (for
+pictures; a host or no network game only, ignored on a client) lays one more of the pack's weapon two steps ahead
+of each local player who spawns with it.
+
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists
 the spec keys; `run.py --spec game.json` takes a whole spec; `--dry-run` shows the game's environment.

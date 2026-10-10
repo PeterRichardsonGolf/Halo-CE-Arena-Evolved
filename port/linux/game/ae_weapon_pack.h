@@ -12,6 +12,11 @@ empty, and the game plays without it. A game with no packs folder logs
 nothing. A loaded pack's file stays open (one handle) for its resources,
 which are read when a map asks for them.
 
+When a multiplayer map loads for a game whose gametype asks for a pack, the
+pack is added to the map's tags (ae_weapon_pack_tags_loaded), after its own
+tags have been checked as a map's are; a pack a map cannot take is refused
+for that map with one line, and the game plays the stock fallback weapons.
+
 Include after cseries.h.
 */
 
@@ -45,5 +50,34 @@ struct ae_pack_weapon_record const *ae_weapon_pack_weapon_entry(short slot, shor
 /* a string of the slot's pack (a weapon entry's key, label, menu name, ...): NULL for AE_PACK_NONE, an offset past
 its STRINGS or an empty slot */
 char const *ae_weapon_pack_string(short slot, unsigned int offset);
+
+/* ---------- the pack on the loaded map */
+
+enum
+{
+	AE_WEAPON_PACK_FINGERPRINT_SIZE = 8,
+};
+
+/* (scenario_tags_load) the pack the pending game's gametype asks for added to the multiplayer map whose tags
+have just loaded and been checked, or refused for it (one line); scenario_tag_index: the map's scenario */
+void ae_weapon_pack_tags_loaded(char const *map_name, long scenario_tag_index);
+/* (scenario_tags_unload) the pack's tags let go and the map's own table back */
+void ae_weapon_pack_tags_unloaded(void);
+/* (cache_file_read) a read of the "map file" for a tag: TRUE if the tag is a pack's own, and then buffer has
+size bytes from the pack (zeros for what it cannot give) and *complete is set */
+boolean ae_weapon_pack_read(long tag_index, long offset, long size, void *buffer, boolean *complete);
+
+/* the slot of the pack added to the loaded map, or 0: none was asked for, or it was refused (the fallback) */
+short ae_weapon_pack_added(void);
+/* the import fingerprint of the pack on this map (AE_WEAPON_PACK_FINGERPRINT_SIZE bytes: the first 8 of the
+SHA-256 of the pack's SHA-256, the map's name, the map's own tag count and each pack tag's tag index in pack
+order): FALSE (nothing written) when no pack is added */
+boolean ae_weapon_pack_fingerprint(unsigned char *fingerprint);
+/* the slot's pack's weapon's definition (its weapon tag) on the loaded map, or NONE: no such weapon, or the pack
+is not added to this map */
+long ae_weapon_pack_weapon_definition(short slot, short weapon);
+/* (game_engine_give_loadout) a player was given a pack weapon as the loadout's primary (0) or secondary (1):
+the first of each on a map is logged */
+void ae_weapon_pack_loadout_given(short loadout_slot, long definition_index);
 
 #endif

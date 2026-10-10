@@ -785,6 +785,11 @@ static const struct config_setting config_settings[] =
 		"and refusals). An Xbox path, not a path of this computer: it starts d:\\, the\n"
 		"data root (d:\\pack_file\\x.aepack is pack_file/x.aepack beside maps/). Its\n"
 		"SHA-256 names it as any pack's does. Empty for the packs folder's." },
+	{ "debug.weapon_pack_ground", _config_boolean, "false", "HALO_WEAPON_PACK_GROUND", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests' pictures: one more of the weapon pack's weapon lies a\n"
+		"step ahead of each local player who spawns with it. Only on a host or with\n"
+		"no network game; a client in another's game ignores it." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

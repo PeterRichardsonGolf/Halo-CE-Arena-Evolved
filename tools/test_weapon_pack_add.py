@@ -1,0 +1,297 @@
+"""A weapon pack added to the map a game loads (port/linux/game/ae_weapon_pack.c): the pack's tags added when the
+gametype asks for the pack, players starting with its weapon, the pack let go again as the map changes, and a
+pack whose tags cannot be trusted refused for the map while the game plays on with the stock weapons.
+
+Needs a game: AE_TEST_PACK_BUILD (a build for tools/ae_test/run.py) and a config for the machine that plays
+(docs/testing.md). The cases marked "real pack" also need AE_TEST_PACK_REAL, the path of a real battle rifle pack
+(tools/ae_pack_build's output: game art, never in this repository); its HOSTILE VARIANTS are made here in the
+test's own folder by changing a few bytes of a copy and signing it again, so each one passes the pack reader
+(the containers are sound) and must be caught when the pack is added to a map. Skipped otherwise."""
+import json
+import os
+import shutil
+import struct
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+TOOLS = Path(__file__).resolve().parent
+sys.path.insert(0, str(TOOLS / "ae_test"))
+sys.path.insert(0, str(TOOLS / "weapon_pack"))
+sys.path.insert(0, str(TOOLS))
+import aepack  # noqa: E402
+import run  # noqa: E402
+import test_weapon_pack_load as load  # noqa: E402
+
+BUILD = os.environ.get("AE_TEST_PACK_BUILD")
+REAL = os.environ.get("AE_TEST_PACK_REAL")
+# the rotation's games are a minute each: left out unless asked for (AE_TEST_PACK_ROTATION=1)
+ROTATION = os.environ.get("AE_TEST_PACK_ROTATION")
+
+ADDED = r"weapon pack: added to {map}: \d+ tags new \(\d+ bytes\), \d+ the map's own, \d+ optional ones the map " \
+        r"lacks, \d+ corrections; its tag table \d+ to \d+; fingerprint [0-9a-f]{{16}}\r?$"
+LET_GO = r"weapon pack: let go from {map}: \d+ tags; [1-9]\d* bitmap and \d+ sound reads \(\d+ bytes\) were " \
+         r"served from the pack, 0 could not be\r?$"
+FIRST_SPAWN = r"weapon pack: first spawn: the {slot} weapon is the pack's battle_rifle \("
+REFUSED = r"weapon pack: refused for bloodgulch: {reason}; the game plays without it\r?$"
+ANY_ADDED = r"weapon pack: added to "
+ANY_FIRST_SPAWN = r"weapon pack: first spawn"
+
+# TAGS record fields ("<4I4B9I")
+TAG_GROUP, TAG_NAME, TAG_KIND, TAG_REQUIRED = 0, 3, 4, 5
+TAG_BYTES_OFFSET, TAG_BYTES_SIZE, TAG_FIXUPS_FIRST, TAG_FIXUPS_COUNT = 9, 10, 11, 12
+TAG_PARTS_FIRST, TAG_PARTS_COUNT, TAG_RESOURCES_FIRST, TAG_RESOURCES_COUNT = 13, 14, 15, 16
+
+
+class Image:
+    """a pack's bytes, to change a few of (every section of a pack the builder writes is stored)"""
+
+    def __init__(self, data):
+        self.data = bytearray(data)
+        self.sections = {entry[0]: entry[1] for entry in aepack.section_entries(self.data)}
+        self.counts = {entry[0]: entry[3] for entry in aepack.section_entries(self.data)}
+        assert all(entry[4] == aepack.STORED for entry in aepack.section_entries(self.data))
+
+    def tag_count(self):
+        return self.counts[aepack.TAGS] // aepack.TAG_RECORD.size
+
+    def tag(self, index):
+        return aepack.TAG_RECORD.unpack_from(self.data, self.sections[aepack.TAGS] + index * aepack.TAG_RECORD.size)
+
+    def tag_set(self, index, field, value):
+        record = list(self.tag(index))
+        record[field] = value
+        aepack.TAG_RECORD.pack_into(self.data, self.sections[aepack.TAGS] + index * aepack.TAG_RECORD.size, *record)
+
+    def name(self, index):
+        start = self.sections[aepack.STRINGS] + self.tag(index)[TAG_NAME]
+        return bytes(self.data[start:self.data.index(b"\0", start)]).decode()
+
+    def fixup_offset(self, index):
+        return self.sections[aepack.FIXUPS] + index * aepack.FIXUP_RECORD.size
+
+    def fixup(self, index):
+        return aepack.FIXUP_RECORD.unpack_from(self.data, self.fixup_offset(index))
+
+    def weapon_root(self):
+        return aepack.WEAPON_RECORD.unpack_from(self.data, self.sections[aepack.WEAPONS])[1]
+
+    def signed(self):
+        aepack.rehash(self.data)
+        # (what the engine's reader takes: the change must be one only the add can catch)
+        aepack.read(bytes(self.data))
+        return bytes(self.data)
+
+
+def oversized_blocks(real):
+    """every block and data of the weapon tag claims 16 million elements or bytes: its count is the long before
+    each pointer the pack's fixups set (a block's count; a data's file offset, which nothing reads)"""
+    image = Image(real)
+    tag = image.tag(image.weapon_root())
+    tag_bytes = image.sections[aepack.TAG_BYTES] + tag[TAG_BYTES_OFFSET]
+    changed = 0
+    for index in range(tag[TAG_FIXUPS_FIRST], tag[TAG_FIXUPS_FIRST] + tag[TAG_FIXUPS_COUNT]):
+        offset, kind, _pad, _value = image.fixup(index)
+        if kind == aepack.FIXUP_POINTER and offset >= 4:
+            struct.pack_into("<I", image.data, tag_bytes + offset - 4, 0x00FFFFFF)
+            changed += 1
+    assert changed
+    return image.signed()
+
+
+def pointers_at_the_root(real):
+    """every pointer fixup of the weapon tag points at the tag's own first byte: its blocks would lie over its
+    root and over each other"""
+    image = Image(real)
+    tag = image.tag(image.weapon_root())
+    changed = 0
+    for index in range(tag[TAG_FIXUPS_FIRST], tag[TAG_FIXUPS_FIRST] + tag[TAG_FIXUPS_COUNT]):
+        offset, kind, pad, _value = image.fixup(index)
+        if kind == aepack.FIXUP_POINTER:
+            aepack.FIXUP_RECORD.pack_into(image.data, image.fixup_offset(index), offset, kind, pad, 0)
+            changed += 1
+    assert changed
+    return image.signed()
+
+
+def external_of_another_group(real):
+    """a required external tag is said to be of another group than the map's tag of that name is: (name, pack)"""
+    image = Image(real)
+    for index in range(image.tag_count()):
+        tag = image.tag(index)
+        if tag[TAG_KIND] == aepack.EXTERNAL and tag[TAG_REQUIRED] and tag[TAG_GROUP] != aepack.group("snd!"):
+            image.tag_set(index, TAG_GROUP, aepack.group("snd!"))
+            return image.name(index), image.signed()
+    raise AssertionError("the pack has no required external tag")
+
+
+def pixels_outside_the_pack(real):
+    """an own bitmap's first resource is said to hold another part of the "map file" than the bitmap reads"""
+    image = Image(real)
+    for index in range(image.tag_count()):
+        tag = image.tag(index)
+        if tag[TAG_KIND] == aepack.OWN and tag[TAG_GROUP] == aepack.GROUP_BITMAP and tag[TAG_RESOURCES_COUNT]:
+            for resource in range(tag[TAG_RESOURCES_FIRST], tag[TAG_RESOURCES_FIRST] + tag[TAG_RESOURCES_COUNT]):
+                at = image.sections[aepack.RESOURCES] + resource * aepack.RESOURCE_RECORD.size
+                record = list(aepack.RESOURCE_RECORD.unpack_from(image.data, at))
+                record[1] += 0x40000000
+                aepack.RESOURCE_RECORD.pack_into(image.data, at, *record)
+            return image.signed()
+    raise AssertionError("the pack has no own bitmap with pixels")
+
+
+def geometry_for_no_part(real):
+    """a model's first PARTS record names the tag's first byte (its root) as a model part"""
+    image = Image(real)
+    for index in range(image.tag_count()):
+        tag = image.tag(index)
+        if tag[TAG_PARTS_COUNT]:
+            at = image.sections[aepack.PARTS] + tag[TAG_PARTS_FIRST] * aepack.PART_RECORD.size
+            record = list(aepack.PART_RECORD.unpack_from(image.data, at))
+            if record[0] < aepack.MODEL_PART_SIZE:
+                continue
+            record[0] = 0
+            aepack.PART_RECORD.pack_into(image.data, at, *record)
+            return image.signed()
+    raise AssertionError("the pack has no model part")
+
+
+class Game(unittest.TestCase):
+    def setUp(self):
+        self.folder = Path(tempfile.mkdtemp(dir=Path.home(), prefix="packadd-"))
+        self.addCleanup(shutil.rmtree, self.folder, True)
+
+    def packs(self, name, image):
+        folder = self.folder / name
+        folder.mkdir()
+        (folder / "ae_battle_rifle.aepack").write_bytes(image)
+        return folder
+
+    def play(self, name, *arguments, refused=False, seconds=30, map_name="bloodgulch"):
+        spec = self.folder / f"{name}.json"
+        spec.write_text(json.dumps({"expect": {"refusals_ok": True}} if refused else {}))
+        rc = run.main(["--spec", str(spec), "--build", BUILD, "--exit-after", str(seconds), "--name", name,
+                       "--out-name", f"packadd-{name}", *(["--map", map_name] if map_name else []), *arguments])
+        self.assertEqual(rc, 0, name)
+
+    def refused(self, name, image, reason):
+        """a pack the reader takes is refused for the map with its reason; nothing is added, nobody is given the
+        pack's weapon (the stock fallback), and the game plays to its end (exit 0, ticks, no assert)"""
+        self.play(name, "--packs-from", str(self.packs(name, image)), "--pack-loadout", "primary",
+                  "--expect-line", r"weapon pack: 'ae_battle_rifle' revision ",
+                  "--expect-line", REFUSED.format(reason=reason),
+                  "--expect-no-line", ANY_ADDED, "--expect-no-line", ANY_FIRST_SPAWN, refused=True)
+
+
+@unittest.skipUnless(BUILD, "AE_TEST_PACK_BUILD not set (needs a game)")
+class SyntheticPack(Game):
+    """no game art: the load test's synthetic pack, whose tags are noise"""
+
+    def test_noise_tags_refused_for_the_map(self):
+        self.refused("noise", load.make_pack(), r"its tags failed the tag check \(the line before this one says which\)")
+
+    def test_not_asked_for_not_looked_at(self):
+        """the same pack in a game whose gametype asks for none: read at start, never added, no refusal"""
+        self.play("noise-unasked", "--packs-from", str(self.packs("noise", load.make_pack())),
+                  "--expect-line", r"weapon pack: 'ae_battle_rifle' revision ",
+                  "--expect-no-line", ANY_ADDED, "--expect-no-line", "weapon pack: refused for ")
+
+    def test_asked_for_with_no_pack(self):
+        self.play("asked-nopacks", "--no-packs", "--pack-loadout", "primary",
+                  "--expect-line", r"weapon pack: not added to bloodgulch: this game has no pack for slot 1\r?$",
+                  "--expect-no-line", ANY_ADDED, "--expect-no-line", ANY_FIRST_SPAWN)
+
+
+@unittest.skipUnless(BUILD and REAL, "AE_TEST_PACK_BUILD and AE_TEST_PACK_REAL not set (needs a game and a real pack)")
+class RealPack(Game):
+    def real(self):
+        return Path(REAL).expanduser().read_bytes()
+
+    def good(self):
+        return str(self.packs("good", self.real()))
+
+    def test_added_and_primary(self):
+        self.play("primary", "--packs-from", self.good(), "--pack-loadout", "primary",
+                  "--expect-line", ADDED.format(map="bloodgulch"),
+                  "--expect-line", FIRST_SPAWN.format(slot="primary"),
+                  "--expect-no-line", FIRST_SPAWN.format(slot="secondary"),
+                  "--expect-no-line", "weapon pack: .*could not be read")
+
+    def test_secondary(self):
+        self.play("secondary", "--packs-from", self.good(), "--pack-loadout", "secondary",
+                  "--expect-line", ADDED.format(map="bloodgulch"),
+                  "--expect-line", FIRST_SPAWN.format(slot="secondary"),
+                  "--expect-no-line", FIRST_SPAWN.format(slot="primary"))
+
+    def test_not_asked_for(self):
+        """pack_loadout unset: the pack is read at start and never added"""
+        self.play("unasked", "--packs-from", self.good(),
+                  "--expect-line", r"weapon pack: 'ae_battle_rifle' revision ",
+                  "--expect-no-line", ANY_ADDED, "--expect-no-line", ANY_FIRST_SPAWN)
+
+    def test_campaign_map_gets_none(self):
+        """a map loaded for no game (the campaign, through init.txt) never gets the pack, whatever the test
+        host's settings say"""
+        self.play("campaign", "--packs-from", self.good(), "--map", "levels\\a10\\a10",
+                  "--env", "HALO_NETWORK_TEST_PACK_LOADOUT=primary",
+                  "--expect-no-line", ANY_ADDED, map_name=None)
+
+    def test_oversized_block_counts_refused(self):
+        self.refused("blocks", oversized_blocks(self.real()),
+                     r"its tags failed the tag check \(the line before this one says which\)")
+
+    def test_pointers_over_the_root_refused(self):
+        self.refused("pointers", pointers_at_the_root(self.real()),
+                     r"its tags failed the tag check \(the line before this one says which\)")
+
+    def test_external_of_another_group_refused(self):
+        import re
+        name, image = external_of_another_group(self.real())
+        self.refused("group", image, "missing snd! " + re.escape(name))
+
+    def test_pixels_outside_the_pack_refused(self):
+        self.refused("pixels", pixels_outside_the_pack(self.real()), r".* reads pixels the pack does not hold")
+
+    def test_geometry_for_no_part_refused(self):
+        self.refused("parts", geometry_for_no_part(self.real()), r".* has geometry for what is no model part")
+
+    @unittest.skipUnless(ROTATION, "AE_TEST_PACK_ROTATION not set (four one-minute games)")
+    def test_rotation(self):
+        """one process, four games of a minute over three maps with three moving bots: the pack added to each
+        map and let go from it, resources read from the pack in every game, the rifle the primary each time"""
+        lines = []
+        for map_name in ("bloodgulch", "hangemhigh", "prisoner"):
+            lines += ["--expect-line", ADDED.format(map=map_name), "--expect-line", LET_GO.format(map=map_name)]
+        self.play("rotation", "--packs-from", self.good(), "--pack-loadout", "primary",
+                  "--network-test", "host:bloodgulch+hangemhigh+prisoner:slayer,slayer,slayer,slayer",
+                  "--env", "HALO_NETWORK_TEST_TIME_LIMIT=1", "--start", "10", "--bots", "3", "--bot-args=--move",
+                  "--expect-line", FIRST_SPAWN.format(slot="primary"),
+                  "--expect-line", r"network test: game 4 plays prisoner",
+                  "--expect-no-line", "weapon pack: refused", "--expect-no-line", "could not be read",
+                  *lines, seconds=360, map_name=None)
+
+
+class Variants(unittest.TestCase):
+    """the hostile variants themselves (no game): each is still a pack the reader takes"""
+
+    @unittest.skipUnless(REAL, "AE_TEST_PACK_REAL not set")
+    def test_variants_pass_the_reader(self):
+        real = Path(REAL).expanduser().read_bytes()
+        for make in (oversized_blocks, pointers_at_the_root, pixels_outside_the_pack, geometry_for_no_part):
+            self.assertNotEqual(make(real), real, make.__name__)
+        name, image = external_of_another_group(real)
+        self.assertTrue(name)
+        self.assertNotEqual(image, real)
+
+    def test_image_edits_a_synthetic_pack(self):
+        image = Image(load.make_pack())
+        self.assertEqual(image.tag_count(), 6)
+        self.assertEqual(image.weapon_root(), 0)
+        self.assertEqual(image.name(4), "ui\\hud\\bitmaps\\combined\\hud_msg_icons")
+        image.tag_set(4, TAG_REQUIRED, 0)
+        self.assertEqual(aepack.read(image.signed()).tags[4][TAG_REQUIRED], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

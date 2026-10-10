@@ -218,6 +218,49 @@ to change under a running game.
 
 A zlib resource (no v1 writer makes one) is inflated whole on every read, even of a part of it.
 
+## A pack on a map
+
+A pack is added to a map when the map's tags have loaded and been checked, if the game about to be played
+asks for it: the gametype's `weapon_pack` byte names its slot (the pending game variant, set by a network
+game's host and clients and by a split-screen game just before the map loads). The menus' map and the campaign
+have no game variant and never get a pack; nor does a map that is not a multiplayer map. The code is
+`port/linux/game/ae_weapon_pack.c` (`ae_weapon_pack_tags_loaded`); it runs before the menus' own tags are added.
+
+1. **External tags** are found on the map by group and name. A required one the map lacks refuses the pack for
+   this map; an optional one becomes no tag.
+2. **Own tags** each get a new place past the end of the map's tag table, in a grown copy of the table. An own
+   tag is never the map's tag of the same name. Their bytes are copied into memory of the pack's own, laid out
+   as a map's tags are (a tag header, the table, the names, the tags), and the fixups applied. Every fixup's
+   offset and value is checked against its tag's bytes and the pack's tags again.
+3. **The tag check.** Every own tag then goes through the tag validator's own walk, exactly as a map's tag
+   does and against the real table (the map's tags and the pack's): blocks and data must lie in the pack's
+   memory and overlap no other's, references must name tags of the right group, counts, indices and enums are
+   cut or corrected, and the checks between tags run (`port/linux/game/ae_tag_validate.h`, which is part of
+   `tag_validate.c`). A pointer no fixup set, a block count past its bytes or a block lying over another
+   fails here. Corrections are counted in the log line; a tag that fails refuses the pack.
+4. **What the schemas do not say** is checked by hand: every PARTS record must sit on a model part of a model
+   of the pack (only those get buffers), its sizes must be the ones the game draws its vertex type with, and
+   every run of pixels a bitmap reads and samples a sound reads must lie inside one of that tag's resources.
+5. The weapon is given a label the map's player can hold it by (the weapon entry's label, else its fallback
+   labels in order), model parts get vertex and index buffers of their own, and only then does the grown table
+   become the game's. Until that moment nothing of the map has changed.
+
+A refusal is one line, `weapon pack: refused for <map>: <reason>; the game plays without it`, and the game
+plays with the stock weapons (a loadout slot that asked for the pack keeps its stock value). When it is added:
+`weapon pack: added to <map>: N tags new (B bytes), E the map's own, M optional ones the map lacks, C
+corrections; its tag table X to Y; fingerprint <16 hex>`. The **fingerprint** is the first 8 bytes of the
+SHA-256 of: the pack's SHA-256, the map's name with its terminator, the map's own tag count (32 bits), and each
+pack tag's tag index on the map (32 bits each, in pack order; no tag is 0xFFFFFFFF). Machines that agree on it
+have the pack's tags at the same indices.
+
+**Resources at use time.** A bitmap's pixels and a sound's samples are read from the pack's open file when the
+texture and sound caches ask for them, by the tag index they ask with, only inside the tag's resource records
+(`ae_pack_read_resource`); anything else, or a read the file no longer gives, is zeros and one log line. The
+file is hashed once, at start: if it is rewritten while the game runs, later reads give whatever it then holds
+(wrong pixels or sound), but never more than the buffer asked for, and nothing of the tags, which are in
+memory. The reads are counted in the line logged when the map's tags are let go: `weapon pack: let go from
+<map>: N tags; B bitmap and S sound reads (bytes) were served from the pack, F could not be`.
+
 ## Building a pack
 
 `build/linux/ae_pack_build` (built by `ninja linux`; tools/ae_pack_build.c with the game's objects of the tag

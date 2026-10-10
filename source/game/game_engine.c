@@ -598,6 +598,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "units/bipeds.h"
 #include "units/units.h"
 #include <stdarg.h> /* port: game_engine_log_append */
+#include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
@@ -8465,6 +8466,11 @@ static void game_engine_predict_resources(
 	if (global_variant.game_engine_index == game_engine_ctf)
 		object_definition_predict(list_index_to_weapon_definition_index(_weapon_list_flag));
 
+	/* port: weapon pack: the pack's weapon, as the map's weapons below, where the gametype uses a pack and it
+	was added to this map (no definition otherwise: nothing predicted) */
+	if (game_engine_weapon_pack() != _weapon_pack_none)
+		object_definition_predict(ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0));
+
 	weapon_indices[0] = list_index_to_weapon_definition_index(0);
 	weapon_indices[1] = list_index_to_weapon_definition_index(1);
 	weapon_indices[2] = list_index_to_weapon_definition_index(2);
@@ -10775,6 +10781,8 @@ static void game_engine_give_loadout(
 	struct game_variant_options const *options = game_variant_options_get();
 	byte const weapons[2] = { options->primary_weapon, options->secondary_weapon };
 	boolean first = TRUE;
+	/* port: weapon pack: the pack's weapon this unit was given, if any (debug.weapon_pack_ground) */
+	long pack_definition_given = NONE;
 	short index;
 
 	unit_delete_all_weapons(unit_index);
@@ -10783,7 +10791,14 @@ static void game_engine_give_loadout(
 		long definition_index = game_engine_loadout_weapon_definition(weapons[index]);
 		struct object_placement_data placement_data;
 		long weapon_index;
+		/* port: weapon pack: a slot the gametype gives to the pack (pack_loadout) gets the pack's weapon 0
+		where the pack was added to this map; anywhere else its definition is NONE and the stock value above
+		stays: the fallback (an assault rifle, a pistol) */
+		long pack_definition_index = game_engine_pack_loadout_slot(index) ?
+			ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0) : NONE;
 
+		if (pack_definition_index != NONE)
+			definition_index = pack_definition_index;
 		if (definition_index == NONE)
 			continue;
 		object_placement_data_new(&placement_data, definition_index, NONE);
@@ -10796,9 +10811,37 @@ static void game_engine_give_loadout(
 		if (!first && unit_has_weapon_definition_index(unit_index, definition_index))
 			object_delete(weapon_index);
 		else if (unit_add_weapon_to_inventory(unit_index, weapon_index, first ? 2 : 0))
+		{
 			first = FALSE;
+			/* port: weapon pack: (the first of each slot on a map is logged) */
+			if (pack_definition_index != NONE)
+			{
+				ae_weapon_pack_loadout_given(index, definition_index);
+				pack_definition_given = definition_index;
+			}
+		}
 		else
 			object_delete(weapon_index);
+	}
+	/* port: weapon pack: debug.weapon_pack_ground (a test aid, for pictures): one more of the pack's weapon
+	lies two steps ahead of each local player given one. Only where this machine makes the game's objects (a host,
+	or no network game): ignored on a client */
+	if (pack_definition_given != NONE && config_boolean("debug.weapon_pack_ground") &&
+		game_connection() != _game_connection_network_client)
+	{
+		struct unit_datum const *unit = unit_get(unit_index);
+
+		if (unit->unit.player_index != NONE && player_get(unit->unit.player_index)->local_player_index != NONE)
+		{
+			struct object_placement_data placement_data;
+
+			object_placement_data_new(&placement_data, pack_definition_given, NONE);
+			placement_data.position = unit->object.position;
+			placement_data.position.x += 1.6f * unit->object.forward.i;
+			placement_data.position.y += 1.6f * unit->object.forward.j;
+			placement_data.position.z += 0.4f;
+			object_new(&placement_data);
+		}
 	}
 }
 
