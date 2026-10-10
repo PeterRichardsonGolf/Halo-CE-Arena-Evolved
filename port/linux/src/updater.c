@@ -74,9 +74,9 @@ looks for a new version and offers its download page) */
 #define HALO_BUILD_FLAVOR "release"
 #endif
 
-/* Arena Evolved's releases (unused while the updater is off, above; its
-signature key, update_key.h, is still ChupathingyCE's, so a download from
-here could not be installed either) */
+/* Arena Evolved's releases (unused while the updater is off, above); a
+download from here installs only with a signature by Arena Evolved's release
+key (update_key.h) */
 #define UPDATE_REPOSITORY "PeterRichardsonGolf/Halo-CE-Arena-Evolved"
 #if defined(_WIN32) && defined(HALO_64BIT)
 /* (the 64-bit Windows build's own download, ninja windows64: tools/ci_build.py) */

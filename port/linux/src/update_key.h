@@ -14,8 +14,9 @@ from then on must be signed with it.
 To rotate: add the new key beside the old one, release, sign with the new key
 from the next release on, and drop the old key a few releases later.
 
-The key below is a PLACEHOLDER (all zero): the owner replaces it with the
-release key's public half (tools/update_sign.py public <key.pem> prints it).
+The key below is Arena Evolved's release key's public half (made
+2026-10-10; tools/update_sign.py public <key.pem> prints it). Its private
+half stays with the project owner, outside every repository and CI.
 */
 
 #ifndef UPDATE_KEY_H
@@ -24,10 +25,10 @@ release key's public half (tools/update_sign.py public <key.pem> prints it).
 #ifndef HALO_UPDATE_TEST_KEY
 static const unsigned char update_public_keys[][32] =
 {
-	/* PLACEHOLDER: the release signing key's public half goes here */
+	/* Arena Evolved's release key */
 	{
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0xce, 0x75, 0xc7, 0x07, 0x3e, 0x39, 0xc5, 0xb1, 0x03, 0x9f, 0x01, 0x7b, 0x67, 0x60, 0xf5, 0x71,
+		0x1c, 0x7e, 0x9b, 0xd0, 0xe7, 0x74, 0x48, 0xc1, 0x3a, 0x1f, 0x63, 0x32, 0xd2, 0x9d, 0xbc, 0xf6,
 	},
 };
 #else
