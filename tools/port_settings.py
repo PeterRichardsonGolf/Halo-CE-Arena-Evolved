@@ -164,11 +164,13 @@ SCREENS = {
         "screen": "mouse_settings_screen",
         "header": ("header_profile_mouse_settings", f"{PE}/mouse_settings/header_profile_mouse_settings"),
         "spacing": 30,
+        # (MOUSE STYLE's help is three lines)
+        "help_top": 338,
         "rows": [
             # (a help for each value)
             ("MOUSE STYLE:", "input.mouse_style", MOUSE_STYLES,
              ["Classic: this port's own sensitivity numbers, the\nrows marked CLASSIC.",
-              "MCC: the sensitivity number matches Halo: The Master\nChief Collection and is within 1% of CS:GO and other\nSource games."], None),
+              "MCC: the sensitivity number matches Halo:\nThe Master Chief Collection and is within 1%\nof CS:GO and other Source games."], None),
             ("HORIZONTAL SENSITIVITY:", "input.mouse_sensitivity", SENSITIVITIES,
              "CLASSIC style only. How fast the view turns side to\nside for the mouse's movement.", None),
             ("VERTICAL SENSITIVITY:", "input.mouse_vertical_sensitivity", [("SAME", "0")] + SENSITIVITIES,
