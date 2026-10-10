@@ -1829,7 +1829,7 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 
 Its lists (one player's, split screen's: solo_pause_screens) get the same
 SETTINGS (pause_list_patch) before REVERT TO SAVED, a copy of it, or, where a
-list has none (co-op's), before its quit button. The list keeps its size,
+list has none, before its quit button. The list keeps its size,
 its rows closer over the span its own rows had (the first where the first
 was, the last where the last was), as its box beside the mission
 objectives' does: the Xbox's list of four (RESUME GAME, REVERT TO SAVED,
@@ -1968,11 +1968,15 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 			rows = xbox_pointer(list->child_widgets.address);
 			/* (REVERT TO SAVED, by its tag: it opens its confirmation rather
 			than running a function, and a map's list need not have it second;
-			else the quit button, by its name) */
+			split screen's list has its own, coop_restart_at_save_point_button.
+			Else the quit button, by its name) */
 			for (at = 0; at < list->child_widgets.count; at++)
 			{
-				if (tag_name_ends(rows[at].widget_tag.index, "\\restart_at_save_point_button"))
+				if (tag_name_ends(rows[at].widget_tag.index, "\\restart_at_save_point_button") ||
+					tag_name_ends(rows[at].widget_tag.index, "\\coop_restart_at_save_point_button"))
+				{
 					break;
+				}
 			}
 			if (at == list->child_widgets.count)
 				at = pause_solo_quit_button(list);

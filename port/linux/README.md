@@ -417,12 +417,12 @@ what is below its list moves down. The few pictures of the settings that
 come from the main menu's map are not drawn there.
 
 In the campaign (one player, split screen or co-op), the pause menu has
-SETTINGS too, before REVERT TO SAVED (in a list without it, co-op's, before
-its quit button), in the same box, which keeps its size: its rows move
-closer together. It opens the same settings with only Controls, Gamepads,
-Mouse, Audio and Video Setup; each split-screen player edits their own
-profile, and Gamepads' OK saves it at once. The game stays paused there,
-unless it is a network game.
+SETTINGS too, before REVERT TO SAVED (in a list without it, before its quit
+button), in the same box, which keeps its size: its rows move closer
+together. It opens the same settings with only Controls, Gamepads, Mouse,
+Audio and Video Setup; each split-screen player edits their own profile,
+and Gamepads' OK saves it at once. The game stays paused there, unless it
+is a network game.
 
 The menus are XML files in `port/assets/menus` (`tools/ce_menus.py` writes
 them from the PC version's tags), which the game contains. To change them,
