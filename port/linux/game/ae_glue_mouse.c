@@ -35,7 +35,6 @@ static struct
 	int test;
 	float test_x;
 	float test_y;
-	int test_zoom;
 	unsigned long test_calls;
 	/* whether the last look had the test's counts in it (the log line of its angle) */
 	int test_injected;
@@ -69,7 +68,7 @@ static void mouse_read(void)
 	}
 	mouse.sensitivity = ae_mouse_clamp_sensitivity(mouse.sensitivity);
 	test = config_string("debug.test_input");
-	mouse.test = ae_mouse_test_parse(test, &mouse.test_x, &mouse.test_y, &mouse.test_zoom);
+	mouse.test = ae_mouse_test_parse(test, &mouse.test_x, &mouse.test_y);
 }
 
 void ae_mouse_test_counts(float *x, float *y)
@@ -91,22 +90,6 @@ void ae_mouse_look_override(float x, float y, int invert, float *yaw, float *pit
 	mouse_read();
 	if (mouse.style == AE_MOUSE_MCC)
 		ae_mouse_mcc_look(mouse.sensitivity, x, y, invert, yaw, pitch);
-}
-
-void ae_mouse_test_buttons(unsigned short *buttons, unsigned char *action)
-{
-	static unsigned long calls;
-
-	mouse_read();
-	if (mouse.test && mouse.test_zoom)
-	{
-		/* (the right stick's click, the default zoom button, pressed for 10 polls of every 240: each press steps
-		the zoom level, and a button held from the start is no press; and the action button held, which picks
-		up the weapon the test stands the player on) */
-		if (calls++ % 240 >= 230)
-			*buttons |= 0x0080;
-		*action = 255;
-	}
 }
 
 void ae_mouse_scale_look(float *yaw, float *pitch, long unit_index, short zoom_level)

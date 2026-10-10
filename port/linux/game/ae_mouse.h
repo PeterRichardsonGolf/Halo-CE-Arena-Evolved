@@ -54,8 +54,7 @@ float ae_mouse_vehicle_factor(int style, float scale, int in_vehicle);
 sensitivity key is not read), pitch inverted when invert */
 void ae_mouse_mcc_look(float value, float x, float y, int invert, float *yaw, float *pitch);
 
-/* debug.test_input "mouse:<dx>,<dy>[,zoom]" (counts, may be fractions and negative; zoom holds the zoom button):
-TRUE, the counts and whether to zoom when it is one */
-int ae_mouse_test_parse(char const *setting, float *dx, float *dy, int *zoom);
+/* debug.test_input "mouse:<dx>,<dy>" (counts, may be fractions and negative): TRUE and the counts when it is one */
+int ae_mouse_test_parse(char const *setting, float *dx, float *dy);
 
 #endif

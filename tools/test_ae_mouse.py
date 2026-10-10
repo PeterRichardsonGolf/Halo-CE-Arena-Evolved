@@ -5,7 +5,8 @@
 - the config rows exist, with their defaults;
 - (a game, only when $AE_MOUSE_BUILD names one, as $AE_MENUS_BUILD does in test_ae_menus.py) 100 counts turn the view
   12.60507 degrees in classic 1.0, the same within 1% in MCC 5.67, and 1.4 / 45 degrees a count in MCC 1.4 (with the
-  vertical sensitivity ignored); the unset MCC value is seeded to 5.7 from classic 1.0.
+  vertical sensitivity ignored); with a seated player (HALO_NETWORK_TEST_VEHICLE) the vehicle scale 0.5 halves the
+  turns; the unset MCC value is seeded to 5.7 from classic 1.0.
 """
 import os
 import re
@@ -59,6 +60,8 @@ def test_config_rows():
 
 
 TURN = re.compile(r"mouse test: counts (\S+),(\S+) turn yaw (\S+) pitch (\S+) degrees")
+TURN_SEATED = re.compile(r"mouse test: counts (\S+),(\S+) turn yaw (\S+) pitch (\S+) degrees "
+                         r"\(style mcc, zoomed \d+, vehicle (\d), zoom level -?\d+\)")
 
 
 def game_turns(case, env, counts="100,40"):
@@ -96,6 +99,17 @@ def test_game_angles():
     assert yaw == pytest.approx(-100 * 1.4 / 45, abs=1e-3)
     assert pitch == pytest.approx(-40 * 1.4 / 45, abs=1e-3)
     # (unset, style mcc: seeded from classic 1.0)
+    # (the vehicle scale: the test seats the player as a vehicle's driver 5 s in, for 15 s; scale 0.5 halves
+    # the turns logged with "vehicle 1" and leaves the others)
+    vehicle = {"HALO_MOUSE_STYLE": "mcc", "HALO_MOUSE_MCC_SENSITIVITY": "1.0", "HALO_NETWORK_TEST_VEHICLE": "5"}
+    texts = []
+    for scale in ("1.0", "0.5"):
+        text, _, _ = game_turns("vehicle" + scale, dict(vehicle, HALO_MOUSE_VEHICLE_SCALE=scale))
+        texts.append({seated: {float(m.group(3)) for m in TURN_SEATED.finditer(text) if m.group(5) == seated}
+                      for seated in ("0", "1")})
+    assert texts[0]["1"] and all(v == pytest.approx(-100 / 45, abs=1e-4) for v in texts[0]["1"])
+    assert texts[1]["1"] and all(v == pytest.approx(-50 / 45, abs=1e-4) for v in texts[1]["1"])
+    assert all(v == pytest.approx(-100 / 45, abs=1e-4) for v in texts[1]["0"])
     text, yaw, pitch = game_turns("mccseed", {"HALO_MOUSE_STYLE": "mcc", "HALO_MOUSE_SENSITIVITY": "1.0"})
     assert "mouse: MCC sensitivity 5.7 from the classic one" in text
     assert yaw == pytest.approx(-100 * 5.7 / 45, abs=1e-3)

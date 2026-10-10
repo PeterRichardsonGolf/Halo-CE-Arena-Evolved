@@ -918,7 +918,6 @@ static void test_input_gamepad(XINPUT_GAMEPAD *pad)
 		test_input_menu_gamepad(pad, 0);
 		return;
 	}
-	ae_mouse_test_buttons(&pad->wButtons, &pad->bAnalogButtons[XINPUT_GAMEPAD_X]); /* AE hook */
 	if (seed < 0)
 		return;
 	if (test_input_holding_action)

@@ -107,7 +107,11 @@ vehicle 0)`. That is the angle added to the player's facing, after the style's f
 (not a read-back of the facing, which the harness cannot observe). Match start logs `mouse: style ..., sensitivity ...,
 zoom scale ..., vehicle scale ...`. `tools/test_ae_mouse.py` plays it (set `$AE_MOUSE_BUILD`, as `$AE_MENUS_BUILD` in
 `tools/test_ae_menus.py`): classic 1.0 turns 100 counts 12.60507 degrees, MCC 5.67 the same within 1%, MCC 1.4 turns
-1.4/45 degrees a count.
+1.4/45 degrees a count. With `HALO_NETWORK_TEST_VEHICLE=5` (the test seats the player as a vehicle's driver) the
+lines read `vehicle 1` and the vehicle scale 0.5 halves them. The zoom scale has no game test: a zoomed player could not
+be arranged headlessly (the zoom button pressed through the test input did not zoom the pistol), so its factor is
+covered by `ae_mouse_test.c` and the glue's `zoomed` rule by reading (`unit_index != NONE && zoom_level != NONE`, as the
+division by the weapon's magnification). The log's last field is the zoom level (-1 none).
 
 ## Recording
 

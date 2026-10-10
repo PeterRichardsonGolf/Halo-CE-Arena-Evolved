@@ -11,7 +11,6 @@ static int failures;
 int main(void)
 {
 	float yaw, pitch, x, y;
-	int zoom;
 
 	/* the style text */
 	CHECK(ae_mouse_style_from_text("mcc") == AE_MOUSE_MCC);
@@ -81,16 +80,13 @@ int main(void)
 	CHECK(NEAR(-yaw, 10.0 * ae_mouse_mcc_radians(0.1f), 1e-9));
 
 	/* the test verb */
-	CHECK(ae_mouse_test_parse("mouse:100,0", &x, &y, &zoom) && x == 100.0f && y == 0.0f);
-	CHECK(ae_mouse_test_parse("mouse:-40,12.5", &x, &y, &zoom) && x == -40.0f && y == 12.5f);
-	CHECK(ae_mouse_test_parse("mouse:100,40,zoom", &x, &y, &zoom) && x == 100.0f && y == 40.0f && zoom == 1);
-	CHECK(ae_mouse_test_parse("mouse:100,40", &x, &y, &zoom) && zoom == 0);
-	CHECK(!ae_mouse_test_parse("mouse:1,2,zoomx", &x, &y, &zoom));
-	CHECK(!ae_mouse_test_parse("mouse:100", &x, &y, &zoom));
-	CHECK(!ae_mouse_test_parse("mouse:1,2x", &x, &y, &zoom));
-	CHECK(!ae_mouse_test_parse("menu:a", &x, &y, &zoom));
-	CHECK(!ae_mouse_test_parse("", &x, &y, &zoom));
-	CHECK(!ae_mouse_test_parse(NULL, &x, &y, &zoom));
+	CHECK(ae_mouse_test_parse("mouse:100,0", &x, &y) && x == 100.0f && y == 0.0f);
+	CHECK(ae_mouse_test_parse("mouse:-40,12.5", &x, &y) && x == -40.0f && y == 12.5f);
+	CHECK(!ae_mouse_test_parse("mouse:100", &x, &y));
+	CHECK(!ae_mouse_test_parse("mouse:1,2x", &x, &y));
+	CHECK(!ae_mouse_test_parse("menu:a", &x, &y));
+	CHECK(!ae_mouse_test_parse("", &x, &y));
+	CHECK(!ae_mouse_test_parse(NULL, &x, &y));
 
 	if (failures)
 		return 1;
