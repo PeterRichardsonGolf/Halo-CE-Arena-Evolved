@@ -165,7 +165,7 @@ SCREENS = {
         "header": ("header_profile_mouse_settings", f"{PE}/mouse_settings/header_profile_mouse_settings"),
         "spacing": 30,
         # (MOUSE STYLE's help is three lines)
-        "help_top": 338,
+        "help_top": 333,
         "rows": [
             # (a help for each value)
             ("MOUSE STYLE:", "input.mouse_style", MOUSE_STYLES,
