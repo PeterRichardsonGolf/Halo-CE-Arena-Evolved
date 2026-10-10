@@ -116,7 +116,7 @@ A kind appears at most once; a kind not in the table is empty.
   | 0x20 | weapon_pickup_text, string | the weapon picked up (`Picked up a battle rifle`): UTF-8, 1 to 127 bytes, **no `%` at all**; or NONE (the engine's own) |
   | 0x24 | ammo_pickup_text, string | its ammo picked up (`Picked up %d rounds for battle rifle`; the engine fills in the rounds): UTF-8, 1 to 127 bytes, **exactly one `%`, which is `%d`** (no flags, width, precision, other conversion or `%%`); or NONE |
   | 0x28 | icon_bitmap_tag, u32 | the message icon: a `'bitm'` tag, or NONE (then icon_sequence 0) |
-  | 0x2C | icon_sequence, u32 | 0 to 65535; its sequence 0 must have sprites (the builder and the engine check it) |
+  | 0x2C | icon_sequence, u32 | 0 to 65535: the bitmap's sequence the icon is a sprite of, which must have sprites (a sheet drawn whole would cover the screen; the builder and the engine check it) |
   | 0x30 | replaces, u32 | the stock loadout weapon whose map spawns it may replace: 0 none, 2 assault rifle ... 9 needler (tools/port_settings.py `LOADOUT_WEAPONS`; 1, random, is not one) |
   | 0x34 | power, u32 | 0 or 1 (a power weapon) |
 
@@ -217,3 +217,43 @@ from a changed file fails if it is short or its stream lies, but nothing re-hash
 to change under a running game.
 
 A zlib resource (no v1 writer makes one) is inflated whole on every read, even of a part of it.
+
+## Building a pack
+
+`build/linux/ae_pack_build` (built by `ninja linux`; tools/ae_pack_build.c with the game's objects of the tag
+validator, the schema, the writer and port/linux/game/ae_pack_build.c, a unit no game links) takes a weapon out
+of a DONOR map, an Xbox map of the game's build:
+
+    build/linux/ae_pack_build --donor <map> --weapon <tag name> [--root <group>:<name>]...
+        --external-names <file> --prefix 'ae\packs\battle_rifle\' --id ae_battle_rifle --revision <n>
+        --display "BATTLE RIFLE" --weapon-key battle_rifle --labels h_br,ar [--behaviour 1] [--replaces 2]
+        [--texts <file>] [--icon <bitmap>:<sequence>] [--smooth <bitmap>[:coverage]]... [--credits <file>]
+        [--verbose] --out <pack>
+    build/linux/ae_pack_build --list-names [--out <file>] <map>...
+
+- The donor is read (at most 256 MiB, inflated as the game inflates a map, exactly its header's length) and its
+  tags are put where the game reads a map's and checked by the tag validator as a map's are (a mod's map may
+  share bytes); a donor the validator refuses is refused.
+- From the weapon (a `'weap'` tag of that name, ASCII case aside), then each `--root` in order, every tag they
+  lead to is walked through the schema, breadth-first: a tag's root, then its blocks and data, each pointer,
+  tag reference and tag index a fixup (the bytes keep no address and no tag index of the donor's: references'
+  names are 0 and their indices NONE, tag indices NONE, blocks' and data's addresses 0); a model part's
+  vertices and indices (types 4 and 5 only) from the donor's buffers, in offset order; a bitmap's pixels (as
+  many as the texture cache reads) and a sound's samples from the donor's file, each range once; a sound
+  permutation's two own tag indices. A scenario or structure bsp is refused. The first `'itmc'` root is the
+  weapon's item collection.
+- A tag whose group and name (ASCII case aside) are in the external names is EXTERNAL: its name only, nothing
+  below it walked; required, unless its group is one a map may lack (`'effe'`, `'snd!'`, `'deca'`, `'part'`,
+  `'ligh'`: every schema field naming one may be NONE; ae_pack_build.c `optional_external_groups`, held to the
+  schema by tools/test_weapon_pack_build.py). Every other tag is OWN, named `--prefix` + its donor name with a
+  leading `cmt\` or `ae_pack\` dropped (the source path keeps the donor name). Two tags of a group named alike
+  are refused.
+- `--smooth` sets an own bitmap's SMOOTH flag (and with `:coverage` METER COVERAGE), by its donor name.
+  `--icon` names an own bitmap and a sequence of it that has sprites; anything else is refused.
+- The texts file has lines `menu_name=`, `weapon_pickup=`, `ammo_pickup=` (each optional; the menu name is
+  `--display`'s without it; blank lines and `#` lines skipped). The weapon entry's power is 0.
+- The external names are lines `<group>\t<name>`; `--list-names` writes them for the given maps (every tag of
+  each, checked by the validator, one line a group and name, sorted by group then name).
+- The pack goes out through `ae_pack_write`; the same donor and arguments give the same bytes. The tool prints
+  the counts (with `--verbose` every tag and the validator's corrections of the donor) and exits 0, or prints
+  `ae_pack_build: refused: <reason>` and exits 1 with nothing written; bad arguments exit 2.
