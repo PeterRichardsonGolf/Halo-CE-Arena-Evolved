@@ -7,6 +7,8 @@ shape its user needs.
   which stay within 48.
 - halo.exe's icon has every size from 16 to 256; the small master is used up to 32 px; the macOS icon has its 11
   entries; the Android layers have each density's size (108 dp) and the adaptive icon names all three layers.
+- Every picture of the logo is listed in port/assets/branding/LICENSE.md (the logo is not CC0), and LICENSE.md
+  points there.
 
 Needs Pillow, fontTools and rsvg-convert (librsvg), as the generator does: skipped without them."""
 import io
@@ -101,7 +103,23 @@ def test_every_file_is_committed_and_current(fresh):
 def test_branding_folder_has_nothing_stale(fresh):
     made = {path.name for path in fresh if path.parent == ae_logo.BRANDING}
     there = {path.name for path in (ROOT / ae_logo.BRANDING).iterdir()}
-    assert there == made
+    assert there == made | {"LICENSE.md"}
+
+
+def test_every_logo_file_is_excluded_from_cc0(fresh):
+    """port/assets/branding/LICENSE.md lists every picture of the logo (the Android icon's XML is code)"""
+    terms = (ROOT / ae_logo.BRANDING / "LICENSE.md").read_text()
+    assert "LICENSE.md" in (ROOT / "LICENSE.md").read_text().split("Creative Commons Legal Code")[0]
+    for path in fresh:
+        if path.suffix == ".xml":
+            continue
+        if path.parent == ae_logo.BRANDING:
+            assert f"`{path.name}`" in terms, f"{path}: not in {ae_logo.BRANDING}/LICENSE.md"
+        elif ae_logo.RESOURCES in path.parents:
+            assert f"`{path.name}`" in terms and f"{path.parent.name}/" in terms, f"{path}: not in LICENSE.md"
+        else:
+            assert f"`{path.as_posix()}`" in terms, f"{path}: not in {ae_logo.BRANDING}/LICENSE.md"
+    assert "`arena-evolved.png`" in terms
 
 
 def test_windows_icon_sizes():

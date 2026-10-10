@@ -319,7 +319,8 @@ Re-run `configure.py` when source files or the menus are added.
   [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
   [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
 - The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
-  made by `tools/ae_logo.py`); it uses no third-party art.
+  made by `tools/ae_logo.py`); it uses no third-party art. It is not CC0
+  (see below).
 - Libraries: SDL3, stb, Mbed TLS, miniupnpc, KCP, tomlc17, musl's maths,
   extract-xiso, Expat, Monocypher, zlib, SMAA, and Project Nayuki's QR Code
   generator. Their licenses are
@@ -335,3 +336,9 @@ The code is released under [CC0](LICENSE.md), as OpenCE's and ChupathingyCE's
 are, so upstream and the community are free to use and improve it. If you use
 it, a credit is appreciated: "Halo CE: Arena Evolved by PeterRichardsonGolf",
 with a link to this repository.
+
+The logo is the exception: the ORBIT mark, the ARENA EVOLVED wordmark and the
+app icons made from them are all rights reserved by the project. You may use
+them unmodified to refer or link to Arena Evolved (in articles, videos, server
+lists), but not as another project's branding. The files and terms:
+[port/assets/branding/LICENSE.md](port/assets/branding/LICENSE.md).

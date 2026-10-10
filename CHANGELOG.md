@@ -71,7 +71,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   icon with a themed, one-colour layer), and heads the README. On Windows
   the window now shows `halo.exe`'s own icon, with its small sizes drawn
   for them. The Linux download carries the icon as `arena-evolved.png`.
-  Sources and exports: `port/assets/branding`, `tools/ae_logo.py`.
+  Sources and exports: `port/assets/branding`, `tools/ae_logo.py`. The
+  logo is not CC0 like the code: see `port/assets/branding/LICENSE.md`.
 
 ## 0.2.0-beta - 2026-10-09
 

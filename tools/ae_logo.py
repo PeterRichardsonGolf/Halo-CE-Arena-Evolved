@@ -31,7 +31,9 @@ this makes. Needs Pillow, fontTools and rsvg-convert (librsvg).
 The palette (hex): amber #FFA51F, signal #FF6A13, burnt #C2510E (the mark
 on light backgrounds), ember #5A2208, black #0A0A0B (the app tile), near
 #141417, graphite #2A2A2F, steel #8E8E96 ("HALO CE:"), bone #F3EFE7 (warm
-white). The mark is Arena Evolved's own work.
+white). The mark is Arena Evolved's own work. This script is CC0, as the
+code is; the logo it draws is not: port/assets/branding/LICENSE.md lists its
+files and terms (add any new picture there).
 """
 
 import argparse
