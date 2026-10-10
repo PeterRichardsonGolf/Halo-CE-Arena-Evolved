@@ -95,12 +95,16 @@ void ae_mouse_look_override(float x, float y, int invert, float *yaw, float *pit
 
 void ae_mouse_test_buttons(unsigned short *buttons, unsigned char *action)
 {
+	static unsigned long calls;
+
 	mouse_read();
 	if (mouse.test && mouse.test_zoom)
 	{
-		/* (the right stick's click: the default zoom button; the zoom level cycles on a press, so held = one press;
-		and the action button, which picks up the weapon the test stands the player on) */
-		*buttons |= 0x0080;
+		/* (the right stick's click, the default zoom button, pressed for 10 polls of every 240: each press steps
+		the zoom level, and a button held from the start is no press; and the action button held, which picks
+		up the weapon the test stands the player on) */
+		if (calls++ % 240 >= 230)
+			*buttons |= 0x0080;
 		*action = 255;
 	}
 }
