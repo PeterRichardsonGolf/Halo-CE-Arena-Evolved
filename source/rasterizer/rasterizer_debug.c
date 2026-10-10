@@ -732,7 +732,7 @@ void rasterizer_debug_draw_triangles_now(
 				vertices[index].color = colors[index];
 			}
 			rasterizer_dynamic_vertices_unlock(vertex_buffer_index);
-			rasterizer_debug_drawing_begin(FALSE, 0);
+			rasterizer_debug_drawing_begin(FALSE);
 			rasterizer_draw_dynamic_vertices(0, triangle_count, vertex_buffer_index,
 				NUMBER_OF_VERTICES_PER_TRIANGLE);
 			rasterizer_debug_drawing_end();
