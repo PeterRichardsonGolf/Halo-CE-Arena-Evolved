@@ -1502,7 +1502,7 @@ def test_run_pack_is_its_donors_bytes_tags_resources_and_geometry():
         tag[10] for tag in parsed.tags if tag[4] == aepack.OWN)
     assert report["resources"] == len(parsed.resources) and report["parts"] == len(parsed.parts)
     assert report["resource_bytes"] == sum(resource[2] for resource in parsed.resources) > 16000000
-    assert report["geometry_bytes"] == len(parsed.sections[aepack.GEOMETRY])
+    assert report["geometry_bytes"] == sum(part[6] + part[8] for part in parsed.parts)   # vertices and indices
     assert report["masked"]["file_offsets"] == 0 and report["masked"]["padding"] == 0
 
 
