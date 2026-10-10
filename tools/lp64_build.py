@@ -49,6 +49,7 @@ from .linux_build import (
     ZLIB_SOURCES,
     _quote,
     compile_launcher,
+    configuration_defines,
     game_sources,
     port_game_sources,
     game_browser_defines,
@@ -250,8 +251,7 @@ class Lp64Build:
         lp64 = self.lp64
         linux_config = load_json(LINUX_PORT_CONFIG)
         excluded = host.excluded
-        release = ["-DHALO_RELEASE"] if getattr(sln, "port_release", False) else []
-        abi = " ".join([*host.target_flags, *LP64_ABI_FLAGS, *release, *game_browser_defines(sln)])
+        abi = " ".join([*host.target_flags, *LP64_ABI_FLAGS, *configuration_defines(sln), *game_browser_defines(sln)])
         prefix_header = lp64(LINUX_PORT_DIR / "include" / "halo_linux_prefix.h")
         port_include = lp64(LINUX_PORT_DIR / "include")
         xdk = _quote(lp64(XDK_INCLUDE))
