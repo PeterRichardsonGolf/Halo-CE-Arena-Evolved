@@ -212,6 +212,7 @@ symbols in this file:
 
 #include "real_math.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "ae_glue_mouse.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1355,6 +1356,7 @@ static void get_local_player_input_blob(
 								mouse_yaw *= inverse_zoom;
 								mouse_pitch *= inverse_zoom;
 							}
+							ae_mouse_scale_look(&mouse_yaw, &mouse_pitch, control->zoom_level != NONE, player->unit_index != NONE && unit_get(player->unit_index)->object.parent_object_index != NONE && unit_get(player->unit_index)->unit.parent_seat_index != NONE); /* AE hook */
 							input->facing_delta.yaw += mouse_yaw;
 							input->facing_delta.pitch += mouse_pitch;
 						}

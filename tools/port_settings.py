@@ -29,6 +29,10 @@ CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
 SPAWN_HEATS = [("OFF", "off"), ("MINE", "mine"), ("ENEMY", "enemy")]
 CALLOUT_DETAILS = [("MINIMAL", "minimal"), ("STANDARD", "standard"), ("VERBOSE", "verbose")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
+# (the MCC mouse style: ae_mouse.c; the values 0.1 to 10 in 0.1 steps, the scales 0.1 to 2)
+MOUSE_STYLES = [("CLASSIC", "classic"), ("MCC", "mcc")]
+MCC_SENSITIVITIES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(1, 101)]
+MCC_SCALES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(1, 21)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
 # each screen: its folder below PE, its screen's widget (the name the profile
@@ -161,10 +165,20 @@ SCREENS = {
         "header": ("header_profile_mouse_settings", f"{PE}/mouse_settings/header_profile_mouse_settings"),
         "spacing": 30,
         "rows": [
+            # (a help for each value)
+            ("MOUSE STYLE:", "input.mouse_style", MOUSE_STYLES,
+             ["Classic: this port's own sensitivity numbers (the\nrows marked CLASSIC below).",
+              "MCC: the sensitivity number matches Halo: The Master\nChief Collection and is within 1% of CS:GO and other\nSource games."], None),
             ("HORIZONTAL SENSITIVITY:", "input.mouse_sensitivity", SENSITIVITIES,
-             "How fast the view turns side to side for the\nmouse's movement.", None),
+             "CLASSIC style only. How fast the view turns side to\nside for the mouse's movement.", None),
             ("VERTICAL SENSITIVITY:", "input.mouse_vertical_sensitivity", [("SAME", "0")] + SENSITIVITIES,
-             "How fast the view turns up and down; Same\nturns it as fast as side to side.", None),
+             "CLASSIC style only. How fast the view turns up and\ndown; Same turns it as fast as side to side.", None),
+            ("MOUSE SENSITIVITY:", "input.mouse_mcc_sensitivity", MCC_SENSITIVITIES,
+             "MCC style only. Halo: MCC's number, for turning and\nlooking up and down alike.", None),
+            ("ZOOMED SENSITIVITY SCALE:", "input.mouse_zoom_scale", MCC_SCALES,
+             "MCC style only. A scale on the mouse while zoomed,\non top of the weapon's own zoom.", None),
+            ("VEHICLE SENSITIVITY SCALE:", "input.mouse_vehicle_scale", MCC_SCALES,
+             "MCC style only. A scale on the mouse while you are\nin a vehicle's seat.", None),
             ("INVERT VERTICAL AXIS:", "input.invert_mouse", YES_NO,
              "Moving the mouse forward looks down.", None),
             ("AIM ASSIST:", "input.mouse_aim_assist", ON_OFF,

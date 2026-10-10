@@ -377,6 +377,30 @@ static const struct config_setting config_settings[] =
 		_platform_desktop,
 		"How far the view turns up and down for the mouse's movement; 0 for the\n"
 		"same as input.mouse_sensitivity." },
+	{ "input.mouse_style", _config_string, "\"classic\"", "HALO_MOUSE_STYLE", _environment_value, /* AE hook */
+		_platform_desktop,
+		"How the mouse's sensitivity numbers work: \"classic\" (this port's own\n"
+		"input.mouse_sensitivity and input.mouse_vertical_sensitivity) or \"mcc\",\n"
+		"where input.mouse_mcc_sensitivity matches Halo: The Master Chief\n"
+		"Collection's number (the same for turning and looking up and down) and\n"
+		"is within 1% of CS:GO and other Source games. Only the MCC style reads\n"
+		"input.mouse_zoom_scale and input.mouse_vehicle_scale." },
+	{ "input.mouse_mcc_sensitivity", _config_real, "0.0", "HALO_MOUSE_MCC_SENSITIVITY", _environment_value, /* AE hook */
+		_platform_desktop,
+		"The MCC style's sensitivity, 0.1 to 10: the view turns this / 45 degrees\n"
+		"for each count of the mouse. 0: not set yet; the first time the style is\n"
+		"mcc it becomes input.mouse_sensitivity x 5.6723 (one decimal), which keeps\n"
+		"the feel." },
+	{ "input.mouse_zoom_scale", _config_real, "1.0", "HALO_MOUSE_ZOOM_SCALE", _environment_value, /* AE hook */
+		_platform_desktop,
+		"The MCC style's zoomed sensitivity scale, 0.1 to 2: multiplies the mouse\n"
+		"while a weapon is zoomed, on top of the weapon's own magnification\n"
+		"(the view already turns slower the more it zooms). Not read in the\n"
+		"classic style." },
+	{ "input.mouse_vehicle_scale", _config_real, "1.0", "HALO_MOUSE_VEHICLE_SCALE", _environment_value, /* AE hook */
+		_platform_desktop,
+		"The MCC style's vehicle sensitivity scale, 0.1 to 2: multiplies the mouse\n"
+		"while the player is in a vehicle's seat. Not read in the classic style." },
 
 	/* the keyboard and mouse's own controls (port/linux/src/xinput_sdl.c) */
 	{ "controls.move_forward", _config_string, "\"W\"", "HALO_KEY_MOVE_FORWARD", _environment_value, _platform_all,

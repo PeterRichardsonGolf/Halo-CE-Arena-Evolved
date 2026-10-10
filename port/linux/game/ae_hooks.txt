@@ -21,3 +21,17 @@ port/linux/src/xinput_sdl.c	if (scancode != SDL_SCANCODE_UNKNOWN && text_typing)
 source/interface/ui_widget.c	if (ae_lobby_take_pregame_ui()) /* AE hook */\nreturn;
 source/networking/network_client_manager.c	#include "ae_hooks.h" /* AE hook */
 source/networking/network_client_manager.c	ae_lobby_advertised(network_game_client_advertised_versions[game_index].version, network_game_client_advertised_versions[game_index].flags); /* AE hook */
+port/linux/src/port_config.c	{ "input.mouse_style", _config_string, "\"classic\"", "HALO_MOUSE_STYLE", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "input.mouse_mcc_sensitivity", _config_real, "0.0", "HALO_MOUSE_MCC_SENSITIVITY", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "input.mouse_zoom_scale", _config_real, "1.0", "HALO_MOUSE_ZOOM_SCALE", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "input.mouse_vehicle_scale", _config_real, "1.0", "HALO_MOUSE_VEHICLE_SCALE", _environment_value, /* AE hook */\n_platform_desktop,
+source/game/player_control.c	#include "ae_glue_mouse.h" /* AE hook */
+source/game/player_control.c	ae_mouse_scale_look(&mouse_yaw, &mouse_pitch, control->zoom_level != NONE, player->unit_index != NONE && unit_get(player->unit_index)->object.parent_object_index != NONE && unit_get(player->unit_index)->unit.parent_seat_index != NONE); /* AE hook */
+source/game/game_engine.c	#include "ae_glue_mouse.h" /* AE hook */
+source/game/game_engine.c	ae_mouse_log_settings(); /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_glue_mouse.h" /* AE hook */
+port/linux/game/menu_functions.c	ae_mouse_menu_text(name, text, size, default_value); /* AE hook */
+port/linux/game/menu_functions.c	#define MAXIMUM_STRINGS 128 /* AE hook */
+port/linux/game/menu_tags.c	#define MAXIMUM_STRINGS 128 /* AE hook */
+port/linux/src/xinput_sdl.c	ae_mouse_test_counts(&x, &y); /* AE hook */
+port/linux/src/xinput_sdl.c	ae_mouse_look_override(x, y, invert, yaw, pitch); /* AE hook */

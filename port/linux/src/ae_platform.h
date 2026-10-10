@@ -60,4 +60,10 @@ int ae_platform_input_scheme(void);
 as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
 void ae_platform_test_keystroke(int scancode);
 
+/* the MCC mouse style (ae_glue_mouse.c, the game's side; xinput_sdl.c halo_linux_mouse_look): debug.test_input
+"mouse:<dx>,<dy>" adds those counts to the ones read, every 30th call; ae_mouse_look_override then replaces the
+classic yaw and pitch with MCC style's when input.mouse_style is mcc (nothing in classic style) */
+void ae_mouse_test_counts(float *x, float *y);
+void ae_mouse_look_override(float x, float y, int invert, float *yaw, float *pitch);
+
 #endif

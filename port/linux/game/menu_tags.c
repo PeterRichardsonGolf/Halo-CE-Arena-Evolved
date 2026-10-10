@@ -97,7 +97,7 @@ static char const *const solo_pause_screens[] =
 #define UNICODE_STRING_LIST_TAG 'ustr'
 #define FONT_TAG 'font'
 #define SOUND_TAG 'snd!'
-#define MAXIMUM_STRINGS 64
+#define MAXIMUM_STRINGS 128 /* AE hook */
 #define MAXIMUM_TEXT 2048
 /* the size of a menu bitmap's D3D texture, which only stands for its PNG */
 #define PLACEHOLDER_SIZE 4

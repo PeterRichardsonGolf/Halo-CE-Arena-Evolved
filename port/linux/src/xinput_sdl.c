@@ -153,10 +153,12 @@ int halo_linux_mouse_look(short gamepad_index, float *yaw, float *pitch)
 	mouse_pending_y = 0.0f;
 	mouse_polls_unconsumed = 0;
 	pthread_mutex_unlock(&mouse_lock);
+	ae_mouse_test_counts(&x, &y); /* AE hook */
 	if (x == 0.0f && y == 0.0f)
 		return FALSE;
 	*yaw = -x * scale * mouse_sensitivity();
 	*pitch = (invert ? y : -y) * scale * vertical_sensitivity;
+	ae_mouse_look_override(x, y, invert, yaw, pitch); /* AE hook */
 	return TRUE;
 }
 

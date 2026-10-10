@@ -36,6 +36,8 @@ UNITS = {
                           ["-DAE_MAPINFO_SYSTEM_ZLIB", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                           ["-lz"]),
     "ae_motion_test.c": ([UI / "ae_motion.c"], [], []),
+    # (the MCC mouse style's pure functions)
+    "ae_mouse_test.c": ([UI / "ae_mouse.c"], [], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
     # (editing a field's text: under the sanitizers, as it takes pasted text)
     "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

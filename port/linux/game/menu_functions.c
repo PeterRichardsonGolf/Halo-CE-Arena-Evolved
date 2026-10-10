@@ -148,7 +148,7 @@ void pc_menu_game_data_function_invoke(struct widget_instance *widget, long func
 
 /* ---------- constants */
 
-#define MAXIMUM_STRINGS 64
+#define MAXIMUM_STRINGS 128 /* AE hook */
 /* the PC version's custom activation event (this engine never sends it) */
 #define EVENT_CUSTOM_ACTIVATION 32
 #define BUTTON_A 0
@@ -169,6 +169,7 @@ enum
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
 #include "interface/ui_widget_instance.h"
+#include "ae_glue_mouse.h" /* AE hook */
 #else
 /* a widget, as ui_widget.c has it */
 struct widget_instance
@@ -350,6 +351,7 @@ static boolean setting_text(char const *name, char *text, unsigned int size, boo
 	{
 		if (!(default_value ? config_default(name, text, size) : config_text(name, text, size)))
 			return FALSE;
+		ae_mouse_menu_text(name, text, size, default_value); /* AE hook */
 		/* (display.mode empty: display.fullscreen's, as the window has it:
 		sdl_platform.c) */
 		if (!strcmp(name, "display.mode") && !text[0])
