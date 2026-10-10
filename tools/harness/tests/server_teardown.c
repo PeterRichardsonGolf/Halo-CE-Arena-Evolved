@@ -27,6 +27,10 @@ static struct
 	boolean quickstart_local, client_started;
 } bss_004566dc;
 static char network_game_server_cooperative_next_map[128];
+/* Arena Evolved (from ChupathingyCE): ui_widget_port_host marks the PC
+menus' hosting while it starts the new server (ui_widget_event_handler_
+functions.c), checked as it starts; its own global there */
+static boolean network_game_port_pc_menus_hosting;
 static boolean network_game_server_memory_do_not_use_directly_in_use;
 static struct network_message message;
 static struct network_game_server *disposing;
@@ -96,6 +100,7 @@ static void player_ui_clear_multiplayer_variant(void) { variants_cleared++; note
 static boolean network_game_start_new_server(struct widget_instance *widget, struct event_record *event, boolean *deleted)
 {
 	CHECK(!bss_004566dc.client && !bss_004566dc.server, "new host started before old host/client disposed");
+	CHECK(network_game_port_pc_menus_hosting, "new host started without the PC menus' hosting mark");
 	new_servers++; note('N'); return TRUE;
 }
 
