@@ -141,6 +141,25 @@ def pixels_outside_the_pack(real):
     raise AssertionError("the pack has no own bitmap with pixels")
 
 
+def bitmap_signature_broken(real):
+    """the first own bitmap's first bitmap no longer says 'bitm' (the tag validator leaves that to the game,
+    whose bitmap functions assert it): found by a byte-flip run of the add path"""
+    image = Image(real)
+    for index in range(image.tag_count()):
+        tag = image.tag(index)
+        if tag[TAG_KIND] != aepack.OWN or tag[TAG_GROUP] != aepack.GROUP_BITMAP:
+            continue
+        tag_bytes = image.sections[aepack.TAG_BYTES] + tag[TAG_BYTES_OFFSET]
+        for fixup in range(tag[TAG_FIXUPS_FIRST], tag[TAG_FIXUPS_FIRST] + tag[TAG_FIXUPS_COUNT]):
+            offset, kind, _pad, value = image.fixup(fixup)
+            # (the bitmaps block: its pointer at 0x64 of a bitmap group, its elements start with the signature)
+            if kind == aepack.FIXUP_POINTER and offset == 0x64 and \
+                    bytes(image.data[tag_bytes + value:tag_bytes + value + 4]) == b"mtib":
+                image.data[tag_bytes + value + 1] ^= 0x01
+                return image.signed()
+    raise AssertionError("the pack has no own bitmap with bitmaps")
+
+
 def geometry_for_no_part(real):
     """a model's first PARTS record names the tag's first byte (its root) as a model part"""
     image = Image(real)
@@ -253,6 +272,9 @@ class RealPack(Game):
     def test_pixels_outside_the_pack_refused(self):
         self.refused("pixels", pixels_outside_the_pack(self.real()), r".* reads pixels the pack does not hold")
 
+    def test_bitmap_signature_refused(self):
+        self.refused("signature", bitmap_signature_broken(self.real()), r".* has a bitmap the game cannot read")
+
     def test_geometry_for_no_part_refused(self):
         self.refused("parts", geometry_for_no_part(self.real()), r".* has geometry for what is no model part")
 
@@ -278,7 +300,8 @@ class Variants(unittest.TestCase):
     @unittest.skipUnless(REAL, "AE_TEST_PACK_REAL not set")
     def test_variants_pass_the_reader(self):
         real = Path(REAL).expanduser().read_bytes()
-        for make in (oversized_blocks, pointers_at_the_root, pixels_outside_the_pack, geometry_for_no_part):
+        for make in (oversized_blocks, pointers_at_the_root, pixels_outside_the_pack, geometry_for_no_part,
+                     bitmap_signature_broken):
             self.assertNotEqual(make(real), real, make.__name__)
         name, image = external_of_another_group(real)
         self.assertTrue(name)

@@ -574,8 +574,14 @@ static boolean placed_element_check(
 	{
 		struct bitmap_data *bitmap = (struct bitmap_data *)base;
 		struct bitmap_group const *group = (struct bitmap_group const *)root;
-		long size = bitmap_get_pixel_data_size(bitmap);
+		long size;
 
+		/* (what the game asks of every bitmap before it reads one: its signature, type, format, dimensions and
+		mipmaps. The tag validator leaves the signature to the game, and bitmap_get_pixel_data_size asserts
+		this) */
+		if (!bitmap_verify(bitmap, FALSE))
+			return placed_refuse("%s has a bitmap the game cannot read", placed.tag_names[pack_index]);
+		size = bitmap_get_pixel_data_size(bitmap);
 		if (bitmap->pixels_size > size)
 			size = bitmap->pixels_size;
 		if (size > 0 && (group->pixel_data.file_offset < 0 || bitmap->pixels_offset < 0 ||
