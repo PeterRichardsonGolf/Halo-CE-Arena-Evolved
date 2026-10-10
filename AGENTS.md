@@ -1,5 +1,37 @@
 # Notes for agents
 
+## Arena Evolved (this repository)
+
+This is Halo CE: Arena Evolved (AE), built on ChupathingyCE and OpenCE
+(`UPSTREAM_BASE` in `tools/version.py`). The upstream text below is kept as
+it is; where it differs from this section, this section is right for AE.
+
+- Targets: the vetted platforms are Linux and Windows 64-bit (`ninja linux64`,
+  the Windows 64-bit build). The 32-bit builds, macOS, Android and the
+  dedicated server must keep compiling but AE does not vet them.
+- `HALO_CUSTOM_EDITION` IS defined in AE's native builds
+  (`CUSTOM_EDITION_DEFINES` in `tools/linux_build.py`, also used by
+  `tools/windows_build.py`, `tools/lp64_build.py` and `tools/android_build.py`),
+  contrary to the Defines section below.
+- Network version: AE follows OpenCE's `HALO_PORT_NETWORK_VERSION` (now 25).
+  Never raise it on AE's own. AE's own data travels only through Delta
+  (`port/linux/include/delta.h`, `docs/delta.md`: the wire ID and the
+  capability table).
+- Menus: Xbox-mode menus are upstream's. The PC settings and multiplayer
+  screens come from `settings_files()` and `multiplayer_files()` in
+  `tools/port_settings.py` (written by `tools/ce_menus.py`; see
+  `port/assets/menus/README.md`). Other PC menu XML is written by
+  `tools/ce_menus.py`, which needs Halo PC's tags: edit its data and the
+  generated XML identically. AE's own menus (`display.arena_menus`) live in
+  `port/linux/game/ae_*` and `port/linux/src/ae_*`; upstream files carry only
+  `/* AE hook */` lines, listed in `port/linux/game/ae_hooks.txt` and checked
+  by `tools/test_ae_hooks.py`.
+- Maps: OpenCE's own Custom Edition loader (`custom_edition_*.c`,
+  `cache_file_formats.c`) is not in this tree. Custom Edition, HaloMD and
+  Halo PC maps are ChupathingyCE's (`ce_*.c`, `map_families.c`), read from
+  `maps_ce`, `maps_md` and `maps_pc` (and the older `maps/ce`, `md_maps`,
+  `custom_maps`), and a mod's from `mods/<mod>/maps`. See `port/linux/README.md`.
+
 This repository ports the Halo: Combat Evolved decompilation (Xbox build
 01.01.14.2342, `cachebeta.exe`) to Linux, Windows and Android. The game's C
 sources are the decompilation; the port adds a platform layer that
