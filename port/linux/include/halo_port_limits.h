@@ -125,16 +125,53 @@ static inline int halo_port_advertised_join_state(unsigned int theirs, unsigned 
 	return HALO_PORT_JOIN_HOST_LOCKSTEP;
 }
 /* ... and the reason a list gives on the row's line, a format taking the host's version (NULL for a host that is
-joined) */
-static inline char const *halo_port_join_reason_format(int state)
+joined). A host that advertises no version (0: built before there was one) has the reason without a number. */
+static inline char const *halo_port_join_reason_format(int state, unsigned int version)
 {
 	switch (state)
 	{
-	case HALO_PORT_JOIN_HOST_OLDER: return "HOST NEEDS TO UPDATE (VERSION %u)";
+	case HALO_PORT_JOIN_HOST_OLDER: return version ? "HOST NEEDS TO UPDATE (VERSION %u)" : "HOST NEEDS TO UPDATE";
 	case HALO_PORT_JOIN_HOST_NEWER: return "UPDATE THIS GAME TO JOIN (HOST VERSION %u)";
 	case HALO_PORT_JOIN_HOST_LOCKSTEP: return "HOST NEEDS TO UPDATE (OLD NETCODE, VERSION %u)";
 	default: return (char const *)0;
 	}
+}
+/* AE: a game list's version field (text, as the list server sends it) as a network version: digits only (spaces
+around them allowed), 0 to 65535; -1 for anything else (a sign, letters, a larger number), which is no version:
+never narrowed into one (browser.c drops the line) */
+static inline long halo_port_listed_version(char const *text)
+{
+	long version = 0;
+	int digits = 0;
+
+	while (*text == ' ' || *text == '\t')
+		text++;
+	for (; *text >= '0' && *text <= '9'; text++, digits++)
+	{
+		version = version * 10 + (*text - '0');
+		if (version > 0xFFFF)
+			return -1;
+	}
+	while (*text == ' ' || *text == '\t' || *text == '\r' || *text == '\n')
+		text++;
+	return digits && !*text ? version : -1;
+}
+/* AE: where a game list's next game goes in an array of maximum games, count of them kept (unjoinable[]: whether
+each kept one's host is not joined): the next place while there is room; in a full array a game whose host is joined
+takes the place of the last kept one whose host is not (hosts this build does not join never push out those it
+does); else -1, the game left out */
+static inline int halo_port_listed_place(unsigned char const *unjoinable, int count, int maximum, int joinable)
+{
+	int index;
+
+	if (count < maximum)
+		return count;
+	for (index = joinable ? count - 1 : -1; index >= 0; index--)
+	{
+		if (unjoinable[index])
+			return index;
+	}
+	return -1;
 }
 /* ... the game is under way (loading, playing or over), not in its lobby:
 the menus show it before joining it (hosts built before then never set it) */

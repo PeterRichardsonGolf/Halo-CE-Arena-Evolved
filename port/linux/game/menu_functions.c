@@ -3413,7 +3413,7 @@ static short advertised_join_state(struct advertised_game const *game, unsigned 
 /* ... the reason, as the row's line says it (HOST NEEDS TO UPDATE (VERSION 24)); FALSE for a host that is joined */
 static boolean join_reason_text(short state, unsigned int version, wchar_t *text, short size)
 {
-	char const *format = halo_port_join_reason_format(state);
+	char const *format = halo_port_join_reason_format(state, version);
 	char reason[ROW_TEXT_LENGTH];
 	short index;
 
@@ -4031,25 +4031,18 @@ static struct browser_game const *lobby_browser_listed_game(struct p2p_listing c
 	return NULL;
 }
 
-/* AE: what the list says of a game's host (HALO_PORT_JOIN_*), and its network version: known for a game the game
-list has (shown as its own row or as a listing's), which gives it; a listing alone does not say, and is joined or
-refused once its host is reached (ui_widget_port_join) */
+/* AE: what the list says of a game's host (HALO_PORT_JOIN_*), and its network version: known only for a row the game
+list itself added (lobby_browser_listed_game), by that list's own word of it. A peer's listing does not say (and is
+already one of a version this machine's messages allow): its row is never dimmed by a game list's entry of the same
+token, and is joined or refused once its host is reached (lobby_browser_select, ui_widget_port_join) */
 static short lobby_browser_join_state(struct p2p_listing const *game, unsigned int *version)
 {
-	short index;
+	struct browser_game const *listed = lobby_browser_listed_game(game);
 
-	for (index = 0; index < lobby_browser_listed.count; index++)
-	{
-		if (lobby_browser_same_token(game->invite, lobby_browser_listed.games[index].invite))
-		{
-			*version = lobby_browser_listed.games[index].version;
-			/* (a listed host plays the distributed netcode: the list has no word of another) */
-			return (short)halo_port_advertised_join_state(*version, HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG,
-				(unsigned int)delta_legacy_minimum(), (unsigned int)delta_legacy_maximum());
-		}
-	}
-	*version = 0;
-	return HALO_PORT_JOIN_OK;
+	*version = listed ? listed->version : 0;
+	/* (a listed host plays the distributed netcode: the list has no word of another) */
+	return !listed ? HALO_PORT_JOIN_OK : (short)halo_port_advertised_join_state(*version,
+		HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG, (unsigned int)delta_legacy_minimum(), (unsigned int)delta_legacy_maximum());
 }
 
 /* a game list's game's map: its scenario's name, a Halo PC map's @ce or
@@ -4560,6 +4553,13 @@ static boolean lobby_browser_select(struct widget_instance *widget, short contro
 		lobby_browser.joining = lobby_browser.ready = FALSE;
 		if (!found)
 			return campaign_fail();
+		/* AE: its host, now reached, is not joined: the player told why, before any lobby of it is shown (as the LAN
+		list's rows) */
+		if (advertised_join_state(found, NULL) != HALO_PORT_JOIN_OK)
+		{
+			network_game_client_advertised_game_compatible(global_network_game_client_get(), found, TRUE);
+			return campaign_fail();
+		}
 		if (advertised_in_progress(found))
 		{
 			/* (player 1 joining it: others join them there) */
@@ -4791,7 +4791,11 @@ static void browser_update(struct widget_instance *list)
 
 			if (unjoinable)
 			{
-				usnprintf(text, ROW_TEXT_LENGTH - 1, L"V%u", version);
+				/* (a host that advertises no version, built before there was one: no number) */
+				if (version)
+					usnprintf(text, ROW_TEXT_LENGTH - 1, L"V%u", version);
+				else
+					usnprintf(text, ROW_TEXT_LENGTH - 1, L"OLD");
 				text_set(named(row, "server_item_ping", 0), text);
 			}
 			browser_row_dim(row, unjoinable);
@@ -5256,13 +5260,14 @@ static struct
 static void text_color_set(struct widget_instance const *widget, real red, real green, real blue)
 {
 	short index, free_index = NONE;
+	unsigned long now = system_milliseconds(); /* (AE: read once, the table being longer) */
 
 	if (!widget)
 		return;
 	for (index = 0; index < MAXIMUM_TEXT_COLORS; index++)
 	{
 		if (text_colors[index].widget == widget ||
-			system_milliseconds() - text_colors[index].time > TEXT_COLOR_LIFETIME)
+			now - text_colors[index].time > TEXT_COLOR_LIFETIME)
 		{
 			free_index = index;
 			if (text_colors[index].widget == widget)
@@ -5275,7 +5280,7 @@ static void text_color_set(struct widget_instance const *widget, real red, real 
 	text_colors[free_index].rgb.red = red;
 	text_colors[free_index].rgb.green = green;
 	text_colors[free_index].rgb.blue = blue;
-	text_colors[free_index].time = system_milliseconds();
+	text_colors[free_index].time = now;
 }
 
 static void text_color_clear(struct widget_instance const *widget)

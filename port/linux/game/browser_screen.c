@@ -333,7 +333,7 @@ static char const *version_blocker(
 	char *text,
 	long size)
 {
-	char const *format = halo_port_join_reason_format(join_state(game));
+	char const *format = halo_port_join_reason_format(join_state(game), game->version);
 
 	if (!format)
 		return NULL;

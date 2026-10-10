@@ -1163,7 +1163,10 @@ static int parse_game(char *line, struct browser_game *game)
 	game->players = (short)atoi(fields[4]);
 	game->maximum_players = (short)atoi(fields[5]);
 	game->open = (unsigned char)(atoi(fields[6]) != 0);
-	game->version = (unsigned short)atoi(fields[7]);
+	/* (AE: a version that is none, a sign or more than 16 bits: the line dropped, not narrowed into one) */
+	if (halo_port_listed_version(fields[7]) < 0)
+		return 0;
+	game->version = (unsigned short)halo_port_listed_version(fields[7]);
 	/* (a server from before these: none) */
 	if (count >= 11)
 	{
@@ -1226,19 +1229,32 @@ static void update_list(void)
 		game's thread uses it too) */
 		char *next;
 
-		for (line = response; line && count < BROWSER_MAXIMUM_GAMES; line = next)
+		/* (AE: a host newer than this build is kept, for the lists to say the game must update; every line is read,
+		and in a full array a game whose host is joined takes the place of the last whose host is not:
+		halo_port_listed_place) */
+		static struct browser_game game;
+		unsigned char unjoinable[BROWSER_MAXIMUM_GAMES];
+
+		for (line = response; line; line = next)
 		{
+			int joinable, place;
+
 			next = strchr(line, '\n');
 			if (next)
 				*next++ = 0;
 			if (!line[0])
 				continue;
-			/* (AE: a host newer than this build is kept, for the lists to say the game must update) */
-			if (parse_game(line, &games[count]) && games[count].version >= delta_legacy_minimum() &&
-				strcmp(games[count].invite, own))
-			{
+			if (!parse_game(line, &game) || game.version < delta_legacy_minimum() || !strcmp(game.invite, own))
+				continue;
+			joinable = halo_port_advertised_joinable(game.version, HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG,
+				(unsigned int)delta_legacy_minimum(), (unsigned int)delta_legacy_maximum());
+			place = halo_port_listed_place(unjoinable, count, BROWSER_MAXIMUM_GAMES, joinable);
+			if (place < 0)
+				continue;
+			games[place] = game;
+			unjoinable[place] = (unsigned char)!joinable;
+			if (place == count)
 				count++;
-			}
 		}
 	}
 	else
