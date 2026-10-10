@@ -65,6 +65,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     launcher's and the sniper rifle's (its 2x and 10x included); Android:
     the game starts on more devices whose Java runtime covers the memory
     it needs, and `memory_map.txt` says why when it cannot.
+- New logo, ORBIT (a band ring seen at an angle, amber and burnt orange),
+  Arena Evolved's own drawing: it replaces the helmet as `halo.exe`'s icon,
+  the window's icon, the macOS and Android app icons (Android's an adaptive
+  icon with a themed, one-colour layer), and heads the README. On Windows
+  the window now shows `halo.exe`'s own icon, with its small sizes drawn
+  for them. The Linux download carries the icon as `arena-evolved.png`.
+  Sources and exports: `port/assets/branding`, `tools/ae_logo.py`.
 
 ## 0.2.0-beta - 2026-10-09
 
