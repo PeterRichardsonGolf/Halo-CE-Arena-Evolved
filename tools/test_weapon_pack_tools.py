@@ -797,6 +797,15 @@ def test_recipe_steps_take_nothing_from_outside():
     assert make_pack.unknown_scripts(data) == []
 
 
+def test_recipe_names_the_own_tags_made_from_stock_tags():
+    data = recipe()["pack"]
+    # the approved donor has three: the icon's sheet, the ammunition HUD, a stand-in cube map (each a reason)
+    assert sorted(data["stock_derived"]) == [
+        "ae\\packs\\battle_rifle\\hud\\br_ammo", "ae\\packs\\battle_rifle\\hud\\br_meter",
+        "ae\\packs\\battle_rifle\\levels\\a10\\bitmaps\\cube map glass"]
+    assert all(name.startswith(data["prefix"]) and len(reason) > 20 for name, reason in data["stock_derived"].items())
+
+
 def test_recipe_pack_arguments():
     data = recipe()["pack"]
     assert data["id"] == "ae_battle_rifle" and data["prefix"] == "ae\\packs\\battle_rifle\\"
@@ -1069,7 +1078,12 @@ def test_run_audit_and_externals():
     assert len(audit) == data["expected"]["own_tags"]
     rows = [{"pack_name": row["pack_name"], "source": row["source"], "group": row["group"], "size": row["size"]}
             for row in audit]
-    assert make_pack.audit_problems(rows, set(data["source"]["allowlist"]), make_pack.scripts()) == []
+    stock_derived = set(data["pack"]["stock_derived"])
+    assert make_pack.audit_problems(rows, set(data["source"]["allowlist"]), make_pack.scripts(), stock_derived) == []
+    # the own tags made from a stock tag are exactly the ones the recipe names, each with its reason
+    assert {row["pack_name"] for row in rows if row["source"].startswith(make_pack.STOCK_PREFIX)} == stock_derived
+    assert len(make_pack.audit_problems(rows, set(data["source"]["allowlist"]), make_pack.scripts())) == len(
+        stock_derived)
     sounds = [row for row in rows if row["group"] == "snd!"]
     assert sounds and all(row["source"].endswith(".sound") and row["source"] in data["source"]["allowlist"]
                           for row in sounds)
