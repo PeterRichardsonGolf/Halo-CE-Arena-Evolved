@@ -20,14 +20,17 @@ def normalised(text):
     return "\n".join(line.strip() for line in text.splitlines())
 
 
-# upstream's visibility batch copy, which may stand between a hook and the line before it
-BATCH_COPY = "#ifndef HALO_ANDROID\nvisibility_copy_batch();\n#endif\n"
+# upstream's visibility batch copy, which may stand between a hook and the line before it (its guard
+# HALO_ANDROID until OpenCE build-174, then the ES renderer's HALO_GLES)
+BATCH_COPIES = [f"#ifndef {guard}\nvisibility_copy_batch();\n#endif\n" for guard in ("HALO_ANDROID", "HALO_GLES")]
 
 
 def present(needle, text):
     """Whether the hook's lines are whole lines of the text, following each other (indentation aside;
     the batch copy of the present function is not counted)."""
-    text = normalised(text).replace(BATCH_COPY, "")
+    text = normalised(text)
+    for copy in BATCH_COPIES:
+        text = text.replace(copy, "")
     return "\n" + "\n".join(hook_lines(needle)) + "\n" in "\n" + text + "\n"
 
 
@@ -62,6 +65,7 @@ def test_hook_lines_must_follow_each_other():
     assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n")
     present_hook = "render_target_resolve(&t);\\nae_draw_present(); /* AE hook */"
     assert present(present_hook, "\trender_target_resolve(&t);\n#ifndef HALO_ANDROID\n\tvisibility_copy_batch();\n#endif\n\tae_draw_present(); /* AE hook */\n")
+    assert present(present_hook, "\trender_target_resolve(&t);\n#ifndef HALO_GLES\n\tvisibility_copy_batch();\n#endif\n\tae_draw_present(); /* AE hook */\n")
     # whole lines only: not the end of a longer first line, nor the start of a longer last one
     assert not present(hook, "\t/* if (ae_ui_process()) /* AE hook */\n\t\treturn;\n")
     assert not present(hook, "\tif (ae_ui_process()) /* AE hook */\n\t\treturn; /* and more */\n")
