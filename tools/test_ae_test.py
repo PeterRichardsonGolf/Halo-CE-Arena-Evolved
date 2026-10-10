@@ -170,8 +170,8 @@ class Specs(unittest.TestCase):
         e = harness.spec_env(s, "/r", "/s")
         self.assertEqual(e["HALO_NETWORK_TEST_PACK_LOADOUT"], "both")
         self.assertEqual(e["HALO_NETWORK_TEST_PACK_MAP_SPAWNS"], "1")
-        self.assertTrue(e["HALO_WEAPON_PACK_FILE"].endswith("packs/test.aepack"))
-        self.assertNotIn("~", e["HALO_WEAPON_PACK_FILE"])
+        # (the game opens it by Xbox path, as its own files: the harness links it into the data root)
+        self.assertEqual(e["HALO_WEAPON_PACK_FILE"], "d:\\pack_file\\test.aepack")
         plain = harness.spec_env(harness.parse_spec({"map": "bloodgulch"}), "/r", "/s")
         for k in ("HALO_NETWORK_TEST_PACK_LOADOUT", "HALO_NETWORK_TEST_PACK_MAP_SPAWNS", "HALO_WEAPON_PACK_FILE"):
             self.assertNotIn(k, plain)
@@ -221,6 +221,17 @@ class Specs(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 harness.prepare_game(cfg, harness.parse_spec({"name": "t", "map": "x", "packs_from": "/tmp/p"}),
                                      build, d / "work" / "t", d / "out" / "t")
+            # (a pack_file: linked as the data root's pack_file/<name>, beside any packs/)
+            (d / "mine" / "flipped.aepack").write_bytes(b"AEWPACK")
+            prep = harness.prepare_game(cfg, harness.parse_spec({"name": "f", "map": "x", "packs_from": str(d / "mine"),
+                                                                 "pack_file": str(d / "mine" / "flipped.aepack")}),
+                                        build, d / "work" / "f", d / "out" / "f")
+            linked = Path(prep["root"]) / "pack_file" / "flipped.aepack"
+            self.assertEqual(linked.resolve(), (d / "mine" / "flipped.aepack").resolve())
+            self.assertEqual(prep["env"]["HALO_WEAPON_PACK_FILE"], "d:\\pack_file\\flipped.aepack")
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "g", "map": "x", "pack_file": "/tmp/p.aepack"}),
+                                     build, d / "work" / "g", d / "out" / "g")
             # (no packs folder anywhere: none linked)
             (d / "data" / "packs").rmdir()
             prep = harness.prepare_game(cfg, harness.parse_spec({"name": "e", "map": "x"}), build,

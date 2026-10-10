@@ -23,3 +23,7 @@ source/networking/network_client_manager.c	#include "ae_hooks.h" /* AE hook */
 source/networking/network_client_manager.c	ae_lobby_advertised(network_game_client_advertised_versions[game_index].version, network_game_client_advertised_versions[game_index].flags); /* AE hook */
 port/linux/src/port_config.c	{ "debug.network_test_pack_loadout", _config_string, "\"\"", "HALO_NETWORK_TEST_PACK_LOADOUT", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.network_test_pack_map_spawns", _config_boolean, "false", "HALO_NETWORK_TEST_PACK_MAP_SPAWNS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.weapon_pack_file", _config_string, "\"\"", "HALO_WEAPON_PACK_FILE", _environment_value, /* AE hook */\n_platform_all,
+source/game/game.c	#include "ae_weapon_pack.h" /* AE hook */
+source/game/game.c	ae_weapon_pack_initialize(); /* AE hook */
+source/game/game.c	ae_weapon_pack_dispose(); /* AE hook */

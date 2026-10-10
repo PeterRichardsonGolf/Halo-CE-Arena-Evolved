@@ -20,8 +20,12 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 Weapon pack tests (spec keys, or the same names as `run.py` options): `pack_loadout` (`primary`, `secondary`,
 `both`) and `pack_map_spawns` make the test host's gametype use the weapon pack (`HALO_NETWORK_TEST_PACK_LOADOUT`,
 `HALO_NETWORK_TEST_PACK_MAP_SPAWNS`; the stock loadout values stay the assault rifle / pistol fallbacks);
-`pack_file` is a pack read in place of `packs/ae_battle_rifle.aepack` (`HALO_WEAPON_PACK_FILE`); `packs_from`
-is a folder linked as the data root's `packs/` (default: the config's `data_dir/packs` when it exists). A saved
+`pack_file` is a pack read in place of `packs/ae_battle_rifle.aepack` (linked as the data root's
+`pack_file/<name>`: the game opens `debug.weapon_pack_file` / `HALO_WEAPON_PACK_FILE` by Xbox path,
+`d:\pack_file\<name>`); `packs_from` is a folder linked as the data root's `packs/` (default: the config's
+`data_dir/packs` when it exists). At start the game logs slot 1's pack, `weapon pack: 'ae_battle_rifle' revision
+N (sha256 <16 hex>...), ...`, or `weapon pack: slot 1 (<path>) refused: <reason>; the game plays without it`;
+with no `packs/` (and no `pack_file`) nothing (tools/test_weapon_pack_load.py, synthetic packs). A saved
 gametype's pack bytes: `gametype_file.py --set weapon_pack=1 --set pack_loadout=1 --set pack_map_spawns=1`
 (offsets 0x29, 0x2a, 0x2b; `--set` takes field names too). `expect.lines` / `expect.no_lines` (`run.py
 --expect-line REGEX`, `--expect-no-line REGEX`) are regexes a line of the game's debug.txt must / must not match,

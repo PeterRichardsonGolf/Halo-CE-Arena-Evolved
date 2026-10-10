@@ -562,7 +562,8 @@ SPEC_KEYS = {
     "pack_loadout": "primary | secondary | both: the hosted game's custom loadout takes the weapon pack's weapon "
                     "in that slot (HALO_NETWORK_TEST_PACK_LOADOUT)",
     "pack_map_spawns": "true: the hosted game's BATTLE RIFLE ON MAP (HALO_NETWORK_TEST_PACK_MAP_SPAWNS=1)",
-    "pack_file": "a weapon pack file read in place of packs/ae_battle_rifle.aepack (HALO_WEAPON_PACK_FILE)",
+    "pack_file": "a weapon pack file read in place of packs/ae_battle_rifle.aepack (linked as the data root's "
+                 "pack_file/<name>; HALO_WEAPON_PACK_FILE=d:\\pack_file\\<name>)",
     "packs_from": "a folder linked as the data root's packs/ (default: data_dir/packs when it exists); "
                   "never under /tmp",
     "start": "HALO_NETWORK_TEST_START seconds",
@@ -674,7 +675,7 @@ def spec_env(spec, data_root, save_root, shots_dir=None):
     if pack_map_spawns_on(spec.get("pack_map_spawns")):
         env["HALO_NETWORK_TEST_PACK_MAP_SPAWNS"] = "1"
     if spec.get("pack_file"):
-        env["HALO_WEAPON_PACK_FILE"] = str(expand(spec["pack_file"]))
+        env["HALO_WEAPON_PACK_FILE"] = pack_file_xbox_path(spec)
     if spec.get("start") is not None:
         env["HALO_NETWORK_TEST_START"] = str(spec["start"])
     if spec.get("mod") is not None:
@@ -1200,6 +1201,16 @@ def use_xvfb(cfg):
     return bool(x)
 
 
+# the folder of the data root a spec's pack_file is linked into: the game opens debug.weapon_pack_file by Xbox path
+# (d:\ is the data root), as it opens its own files, so a file elsewhere on the machine is linked there
+PACK_FILE_FOLDER = "pack_file"
+
+
+def pack_file_xbox_path(spec):
+    """the Xbox path the game is given for the spec's pack_file (linked by prepare_game)"""
+    return f"d:\\{PACK_FILE_FOLDER}\\{expand(spec['pack_file']).name}"
+
+
 def packs_folder(spec, data):
     """the folder linked as the data root's packs/: the spec's packs_from, else data_dir/packs when there is one"""
     if spec.get("packs_from"):
@@ -1245,6 +1256,11 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
     packs = packs_folder(spec, data)
     if packs:
         (root / "packs").symlink_to(packs)
+    if spec.get("pack_file"):
+        pack_file = expand(spec["pack_file"])
+        check_not_tmp(pack_file, "pack_file")
+        (root / PACK_FILE_FOLDER).mkdir()
+        (root / PACK_FILE_FOLDER / pack_file.name).symlink_to(pack_file.resolve())
     voices = src / "voices" if (src / "voices").exists() else (data / "voices" if data and (data / "voices").exists() else None)
     if voices:
         (root / "voices").symlink_to(voices)
