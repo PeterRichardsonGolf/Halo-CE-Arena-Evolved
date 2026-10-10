@@ -117,3 +117,37 @@ short ae_zoom_step(struct ae_zoom_state *state, int mode, long hold_ms, int held
 	state->expected = level;
 	return level;
 }
+
+void ae_zoom_flags_note_held(unsigned long *flags, int held)
+{
+	if (held)
+		*flags |= 1ul << AE_ZOOM_HELD_BIT;
+	else
+		*flags &= ~(1ul << AE_ZOOM_HELD_BIT);
+}
+
+void ae_zoom_flags_filter_press(int mode, unsigned long *flags, int press_bit)
+{
+	if (mode != AE_ZOOM_TOGGLE)
+		*flags &= ~(1ul << press_bit);
+}
+
+void ae_zoom_bank_set_mode(struct ae_zoom_bank *bank, int mode)
+{
+	int index;
+
+	if (mode == bank->mode)
+		return;
+	bank->mode = mode;
+	for (index = 0; index < AE_ZOOM_PLAYERS; index++)
+		ae_zoom_reset(&bank->states[index]);
+}
+
+short ae_zoom_bank_step(struct ae_zoom_bank *bank, int player, long hold_ms, unsigned long flags, long now_ms,
+	short level, short count, int blocked)
+{
+	if (bank->mode == AE_ZOOM_TOGGLE || player < 0 || player >= AE_ZOOM_PLAYERS)
+		return level;
+	return ae_zoom_step(&bank->states[player], bank->mode, hold_ms, (int)((flags >> AE_ZOOM_HELD_BIT) & 1), now_ms,
+		level, count, blocked);
+}

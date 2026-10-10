@@ -46,6 +46,17 @@ struct ae_zoom_state
 	short expected;
 };
 
+/* a bit of the input blob's player control flags past the engine's (player_control.c uses 0 to 5): the zoom button is down */
+#define AE_ZOOM_HELD_BIT 12
+#define AE_ZOOM_PLAYERS 4
+
+/* a machine for each local player, and the mode they run in */
+struct ae_zoom_bank
+{
+	int mode;
+	struct ae_zoom_state states[AE_ZOOM_PLAYERS];
+};
+
 /* "toggle", "hold" or "both" (any case); anything else toggle */
 int ae_zoom_mode_from_text(char const *text);
 /* the hold time in seconds (0.1 to 1, 0.25 when not a number) as milliseconds */
@@ -59,5 +70,16 @@ weapon's zoom level count; blocked when a press cannot act now. Returns the leve
 press released after at most hold_ms milliseconds. */
 short ae_zoom_step(struct ae_zoom_state *state, int mode, long hold_ms, int held, long now_ms, short level,
 	short count, int blocked);
+
+/* the held bit in the flags, set or cleared */
+void ae_zoom_flags_note_held(unsigned long *flags, int held);
+/* in the HOLD and BOTH modes takes press_bit (the engine's own press) out of the flags; TOGGLE leaves them alone */
+void ae_zoom_flags_filter_press(int mode, unsigned long *flags, int press_bit);
+/* a mode change lets go of every player's press in progress; the same mode changes nothing */
+void ae_zoom_bank_set_mode(struct ae_zoom_bank *bank, int mode);
+/* ae_zoom_step for local player `player` with the held bit of the flags; the TOGGLE mode and a player out of range
+return the level untouched */
+short ae_zoom_bank_step(struct ae_zoom_bank *bank, int player, long hold_ms, unsigned long flags, long now_ms,
+	short level, short count, int blocked);
 
 #endif
