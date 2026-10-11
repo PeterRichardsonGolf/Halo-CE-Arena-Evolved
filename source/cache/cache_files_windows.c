@@ -487,7 +487,27 @@ static boolean ce_map_name_is(
 char const *cache_files_ce_map_loaded_path(
 	void)
 {
-	return ce_map_file.file ? ce_map_path : NULL;
+	extern boolean cache_file_tags_are_ce(void);
+
+	/* (open, and its tags the loaded map's: in use) */
+	return ce_map_file.file && cache_file_tags_are_ce() ? ce_map_path : NULL;
+}
+
+boolean cache_files_ce_map_release(
+	char const *path)
+{
+	extern boolean cache_file_tags_are_ce(void);
+
+	if (!ce_map_file.file || !path || _stricmp(ce_map_path, path))
+		return TRUE;
+	/* (the loaded map's: kept) */
+	if (cache_file_tags_are_ce())
+		return FALSE;
+	CloseHandle(ce_map_file.file);
+	ce_map_file.file = NULL;
+	memset(ce_map_name, 0, sizeof(ce_map_name));
+	memset(ce_map_path, 0, sizeof(ce_map_path));
+	return TRUE;
 }
 
 /* the map named <name>@ce, @md or @pc opened in its slot (once): FALSE if

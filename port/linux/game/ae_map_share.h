@@ -79,6 +79,11 @@ boolean custom_edition_cache_present(
 	unsigned long checksum,
 	char *message,
 	long message_size);
+/* the map file at path closed if the game has it open but not loaded
+(checked, or chosen in the lobby), so that it can be renamed; FALSE if it is
+the loaded map's */
+boolean map_share_release_map(
+	char const *path);
 /* the map lists read their folders again (Arena Evolved's do when shown) */
 void custom_edition_maps_look_again(
 	void);

@@ -248,6 +248,12 @@ char const *custom_edition_cache_loaded_path(
 	return cache_files_ce_map_loaded_path();
 }
 
+boolean map_share_release_map(
+	char const *path)
+{
+	return cache_files_ce_map_release(path);
+}
+
 boolean custom_edition_cache_present(
 	char const *level_name,
 	unsigned long checksum,
@@ -377,6 +383,7 @@ boolean custom_edition_cache_present(char const *level_name, unsigned long check
 	return FALSE;
 }
 void custom_edition_maps_look_again(void) {}
+boolean map_share_release_map(char const *path) { (void)path; return TRUE; }
 boolean halo_custom_edition_tag_cache(void) { return FALSE; }
 boolean map_share_resource_maps_missing(char const *level_name) { (void)level_name; return FALSE; }
 void map_share_folder_make(void) {}

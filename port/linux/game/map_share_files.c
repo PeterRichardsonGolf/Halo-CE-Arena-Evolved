@@ -590,9 +590,13 @@ static void naming_now(
 	if (csstrlen(folder) + csstrlen(name) + 4 >= sizeof(job.path))
 		return;
 	csprintf(job.path, "%s%s.map", folder, name);
-	/* (in use: named another time, not hashed for nothing now) */
-	if (custom_edition_cache_loaded_path() && !csstrcasecmp(custom_edition_cache_loaded_path(), job.path))
+	/* (in use: named another time, not hashed for nothing now; port: open
+	only to be checked or chosen, closed, as Windows renames no open file) */
+	if (!map_share_release_map(job.path) ||
+		(custom_edition_cache_loaded_path() && !csstrcasecmp(custom_edition_cache_loaded_path(), job.path)))
+	{
 		return;
+	}
 	hash_job_run(&job);
 	naming_finish(&naming, &job);
 	free(job.piece_hashes);

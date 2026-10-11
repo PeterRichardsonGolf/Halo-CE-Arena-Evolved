@@ -101,6 +101,11 @@ boolean cache_file_tags_are_ce(
 (map sharing: port/linux/game/ae_map_share.c) */
 char const *cache_files_ce_map_loaded_path(
 	void);
+/* port: the Custom Edition map file at path closed if it is open but not the
+loaded map's (opened to be checked or chosen), so that it can be renamed
+(Windows renames no open file); FALSE if it is the loaded map's */
+boolean cache_files_ce_map_release(
+	char const *path);
 #endif
 unsigned long cache_files_map_version(
 	char const *map_name);
