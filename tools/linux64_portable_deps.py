@@ -83,7 +83,9 @@ def main() -> int:
     run(["ninja", "-C", work / "libdecor-build", "install"])
 
     fetch(SDL_URLS, SDL_SHA256, work / "SDL3")
-    run(["cmake", "-S", work / "SDL3", "-B", work / "SDL3-build", "-G", "Ninja", "--fresh",
+    # (no --fresh: Ubuntu 22.04's CMake 3.22 predates it; a clean build folder instead)
+    shutil.rmtree(work / "SDL3-build", ignore_errors=True)
+    run(["cmake", "-S", work / "SDL3", "-B", work / "SDL3-build", "-G", "Ninja",
          f"-DCMAKE_INSTALL_PREFIX={prefix}", f"-DCMAKE_PREFIX_PATH={prefix}", "-DCMAKE_INSTALL_LIBDIR=lib",
          f"-DCMAKE_C_COMPILER={environment['CC']}", *SDL_OPTIONS], env=environment)
     run(["ninja", "-C", work / "SDL3-build", "install"])
