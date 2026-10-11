@@ -11,10 +11,14 @@ each goes). The state machine is ae_zoom.c's. Plain types only.
 
 /* (player_control.c, where the input blob's zoom bit is set) records whether the zoom action is down in a bit of the
 blob's player control flags that nothing else uses */
-void ae_zoom_note_held(unsigned long *player_control_flags, int held);
+void ae_zoom_note_held(unsigned long *player_control_flags, int held, short gamepad_index);
+/* (player_control.c, where the blob's integrated light bit is set) the same for the flashlight button */
+void ae_zoom_note_flash(unsigned long *player_control_flags, int down);
 /* (player_control.c, once the blob is final) in the HOLD and BOTH modes takes away the blob's press bit (zoom_bit,
-which the engine steps the level on), so that the level is ae_zoom_update's alone; the TOGGLE mode leaves it */
-void ae_zoom_filter_press(unsigned long *player_control_flags, int zoom_bit);
+which the engine steps the level on), so that the level is ae_zoom_update's alone; the TOGGLE mode leaves it. And, with
+the zoom held, takes the flashlight's press (light_bit of the unit control flags) for the zoom level for that player */
+void ae_zoom_filter_press(short local_player_index, unsigned long *player_control_flags, int zoom_bit,
+	unsigned long *unit_control_flags, int light_bit);
 /* (player_control.c, after the engine's own step of the level) the level to hold: unchanged in the TOGGLE mode. May
 act: whether the weapon can zoom now (a weapon in hand, camera control, no cinematic). */
 short ae_zoom_update(short local_player_index, short zoom_level, long weapon_index, int may_act,

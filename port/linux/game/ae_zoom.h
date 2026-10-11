@@ -44,17 +44,63 @@ struct ae_zoom_state
 	long press_ms;
 	short start_level;
 	short expected;
+	/* the press has been a hold from the start or has become one (a step, or the tap time gone) */
+	int promoted;
+	/* HOLD: a tap was released at tap_release_ms on the weapon tap_key (a double press follows it) */
+	int tap_valid;
+	long tap_release_ms;
+	long tap_key;
 };
 
-/* a bit of the input blob's player control flags past the engine's (player_control.c uses 0 to 5): the zoom button is down */
+/* input.zoom_reset: where a hold from unzoomed starts */
+enum
+{
+	AE_ZOOM_RESET_FIRST = 0,
+	AE_ZOOM_RESET_LAST = 1
+};
+
+/* what ae_zoom_step_ex looks at in one tick */
+struct ae_zoom_in
+{
+	int mode;
+	long hold_ms;
+	int held;
+	long now_ms;
+	short level;
+	short count;
+	int blocked;
+	/* the weapon in hand (any number that tells weapons apart), for a double press */
+	long key;
+	int reset;
+	/* the last level used on this weapon (-1 none) */
+	short remembered;
+	/* the zoom level input: the wheel up (+1) or down (-1) since the last tick, the flashlight pressed */
+	int wheel;
+	int flash;
+};
+
+/* bits of the input blob's player control flags past the engine's (player_control.c uses 0 to 5): the zoom button is
+down; the flashlight button is down */
 #define AE_ZOOM_HELD_BIT 12
+#define AE_ZOOM_FLASH_BIT 13
 #define AE_ZOOM_PLAYERS 4
 
 /* a machine for each local player, and the mode they run in */
+#define AE_ZOOM_MEMORY 4
 struct ae_zoom_bank
 {
 	int mode;
+	int reset;
 	struct ae_zoom_state states[AE_ZOOM_PLAYERS];
+	/* the last level used on each of a player's weapons (the weapon's object index: a new life has new objects, so what
+	is left of an old one never matches), the oldest replaced first */
+	long memory_weapon[AE_ZOOM_PLAYERS][AE_ZOOM_MEMORY];
+	short memory_level[AE_ZOOM_PLAYERS][AE_ZOOM_MEMORY];
+	int memory_next[AE_ZOOM_PLAYERS];
+	/* the flashlight press that the zoom took, down until the button is let go of; its step to be made */
+	int flash_latch[AE_ZOOM_PLAYERS];
+	int flash_pending[AE_ZOOM_PLAYERS];
+	int flash_was_down[AE_ZOOM_PLAYERS];
 };
 
 /* "toggle", "hold" or "both" (any case); anything else toggle */
@@ -81,5 +127,25 @@ void ae_zoom_bank_set_mode(struct ae_zoom_bank *bank, int mode);
 return the level untouched */
 short ae_zoom_bank_step(struct ae_zoom_bank *bank, int player, long hold_ms, unsigned long flags, long now_ms,
 	short level, short count, int blocked);
+
+/* "first" or "last" (any case); anything else first */
+int ae_zoom_reset_from_text(char const *text);
+/* a level pinned to the weapon's levels (0 to count - 1; -1 for a weapon that does not zoom) */
+short ae_zoom_clamp_level(short level, short count);
+/* ae_zoom_step with the zoom level input, the double press and the reset */
+short ae_zoom_step_ex(struct ae_zoom_state *state, struct ae_zoom_in const *in);
+
+/* the reset policy and the memory of the last level used on a weapon */
+void ae_zoom_bank_set_reset(struct ae_zoom_bank *bank, int reset);
+void ae_zoom_bank_remember(struct ae_zoom_bank *bank, int player, long weapon, short level);
+/* -1 when none */
+short ae_zoom_bank_recall(struct ae_zoom_bank const *bank, int player, long weapon);
+/* (before the step, in the same tick) the flashlight while zoom is held, in HOLD and BOTH: its press is the zoom's, not
+the light's: takes light_bit out of unit_flags for that player until the button is let go of, and queues the step */
+void ae_zoom_bank_filter_flash(struct ae_zoom_bank *bank, int player, unsigned long const *player_flags,
+	unsigned long *unit_flags, int light_bit);
+/* ae_zoom_bank_step with all of it: the wheel (+1, -1, 0) and the weapon in hand; remembers the level it ends on */
+short ae_zoom_bank_step_ex(struct ae_zoom_bank *bank, int player, long hold_ms, unsigned long flags, long now_ms,
+	short level, short count, int blocked, long weapon, int wheel);
 
 #endif

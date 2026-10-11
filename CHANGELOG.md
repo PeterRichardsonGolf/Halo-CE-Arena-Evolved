@@ -24,6 +24,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   while already zoomed keeps the level). A weapon switch, a reload, a hit or
   any other unzoom ends the press: its release does nothing. The match start
   logs the mode in `debug.txt`. Nothing new goes over the network.
+  While zoom is held (HOLD, and the hold of BOTH) the mouse wheel steps the
+  zoom level up and down (it does not switch weapons) and the flashlight
+  button steps to the next level and back to the first after the last (it
+  does not toggle the light); in HOLD, a tap and then a hold within the hold
+  time starts at the second level. `input.zoom_reset` (`first`, the default,
+  or `last`: the last level used on that weapon) sets where a hold starts.
 - Custom Edition maps can use the three files they need (`bitmaps.map`,
   `sounds.map`, `loc.map`) from your Steam install of Halo: The Master Chief
   Collection, read where they are (`halo1/maps/custom_edition`): AE never

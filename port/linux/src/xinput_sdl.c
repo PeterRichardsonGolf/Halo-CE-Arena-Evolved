@@ -655,6 +655,8 @@ static BOOL input_held(const struct platform_input_state *input, int code)
 		return input->keys[code] != 0;
 	if (code < INPUT_WHEEL)
 		return !input->mouse_released && input->mouse_buttons[code - INPUT_MOUSE];
+	if (ae_zoom_wheel_taken()) /* AE hook */
+		return FALSE;
 	if (code == INPUT_WHEEL)
 		return wheel;
 	return wheel && wheel_direction == (code == INPUT_WHEEL_UP ? 1 : -1);
@@ -956,6 +958,7 @@ static void wheel_update(void)
 		{
 			wheel_scrolling = TRUE;
 			wheel_direction = mouse_wheel_accumulated > 0.0f ? 1 : -1;
+			ae_zoom_wheel_scrolled(wheel_direction); /* AE hook */
 			wheel_press_until_ms = now + WHEEL_PRESS_MS;
 		}
 	}
