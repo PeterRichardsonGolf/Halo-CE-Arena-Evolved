@@ -168,10 +168,10 @@ enum
 
 /* ---------- structures */
 
+#include "ae_glue_mouse.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
 #include "interface/ui_widget_instance.h"
-#include "ae_glue_mouse.h" /* AE hook */
 #else
 /* a widget, as ui_widget.c has it */
 struct widget_instance
