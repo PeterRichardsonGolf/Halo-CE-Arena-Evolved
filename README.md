@@ -21,7 +21,7 @@ port of the Halo: Combat Evolved decompilation, by way of
 both closely.
 
 > **Status: early and in active development.** The current pre-release is
-> 0.2.1-beta (below). The Linux 64-bit build is the one played and tested;
+> 0.2.2-beta (below). The Linux 64-bit build is the one played and tested;
 > the Windows 64-bit build passes an automated start-up and gametype check;
 > the other platforms build from the same code but are untested here.
 
@@ -193,6 +193,13 @@ play:
   start nothing is moved; `game.move_old_map_folders = "ask"` offers to move
   the first two, `"yes"` moves them.
 
+- Controls: an MCC mouse style (Halo: The Master Chief Collection's
+  sensitivity number, with zoomed and vehicle scales) and hold to zoom (ZOOM:
+  TOGGLE / HOLD / BOTH; the wheel or the flashlight button steps the level
+  while zoom is held), both on Settings.
+- Item waypoints with pictures (Settings > HUD > WAYPOINTS: TEXT, ICONS or
+  BOTH).
+
 **Privacy**
 - Internet games you host start PUBLIC, as upstream's do: they show in the
   in-game Server Browser unless you set LISTING to PRIVATE in Server Setup.
@@ -227,9 +234,9 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.2.1-beta, built on ChupathingyCE 0.7.1e and OpenCE build-177
-(network version 25), is the current one, a pre-release (2026-10-10); it
-does not play online with 0.2.0-beta or earlier, so everyone updates. Each platform is
+page: 0.2.2-beta, built on ChupathingyCE 0.7.1e and OpenCE build-177
+(network version 25), is the current one, a pre-release (2026-10-11); it
+plays online with 0.2.1-beta, not with 0.2.0-beta or earlier. Each platform is
 a zip of its own, `arena-evolved-<platform>-release.zip`: Windows and Linux
 as 64-bit builds only, plus macOS and Android;
 `arena-evolved-linux64-release.zip` (Linux, 64-bit) is the one played and

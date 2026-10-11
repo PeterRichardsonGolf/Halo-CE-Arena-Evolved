@@ -6,73 +6,39 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-- Settings has a new HUD entry (after VIDEO SETUP) with its own screen. HUD
-  AREA, COMPACT HUD, SCOREBOARD FADE, CAMPAIGN TIMER, MULTIPLAYER GAME TIMER
-  and SHORT MESSAGES moved there from Game Options (the settings and their
-  values are unchanged), which is back to rows 30 px apart. The Settings list
-  has twelve entries, 27 px apart. Each entry now shows its own picture
-  whatever its place in the list (CHANGE COLOR showed CHANGE NAME's), and an
-  entry with no picture of its own shows none, with its description at the top
-  of the panel, instead of a "PLACE HOLDER" box.
-- Item waypoints can show pictures: WAYPOINTS on Settings > HUD
-  (`display.waypoint_style`): TEXT (as before, "RED SNIPER 0:07"), ICONS (the
-  item's picture, then the time in small text) or BOTH (the name and time,
-  then the picture), BOTH by default. A weapon's picture is the one the pickup
-  prompt shows, read from the map you are playing (nothing is shipped); a
-  weapon with none on that map (some Custom Edition maps and mods) shows its
-  text. The overshield and the active camouflage have Arena Evolved's own
-  glyphs (`tools/ae_waypoint_glyphs.py` draws them). Pictures take the label's
-  colour (red and blue by base). Labels that share a line stay text in BOTH.
-  This machine's display only: nothing new goes over the network.
-- Zoom: a ZOOM RESET row on Settings > Game Options, under ZOOM
-  (`input.zoom_reset`: FIRST LEVEL or LAST USED), and ZOOM's help says what
-  the wheel, the flashlight button and a tap then a hold do.
-- MAP FILES: the folder shown is cut at a folder's name ("...\common\Halo The
-  Master Chief Collection"), not mid-word, and a map refused for MCC's files
-  says "the main menu's Settings > MAP FILES" (a game's pause SETTINGS has no
-  MAP FILES).
-- Mouse: a MOUSE STYLE row on the Mouse screen of Settings (`input.mouse_style`).
-  CLASSIC (the default) is as before. MCC uses Halo: The Master Chief
-  Collection's sensitivity number (0.1 to 10 in 0.1 steps; the view turns the
-  number / 45 degrees for each count of the mouse, for turning and looking up
-  and down alike; 1.0 is about 1% above CS:GO at sensitivity 1) with a ZOOMED
-  SENSITIVITY SCALE and a VEHICLE SENSITIVITY SCALE (0.1 to 2; the vehicle one applies in any seat). The first
-  switch to MCC keeps your feel (the classic number x 5.6723, so 1.0 becomes
-  5.7). The match start logs the style in `debug.txt`, and
-  `debug.test_input = "mouse:<dx>,<dy>"` injects mouse counts for tests.
-- Zoom: a ZOOM row on Settings > Game Options (`input.zoom_mode`), for the
-  mouse, the keyboard and the controller alike. TOGGLE (the default) is as
-  before: each press zooms in a level, then out. HOLD zooms to the first level
-  while the button is held (a second level is not reached). BOTH: a tap
-  (released within `input.zoom_hold_time`, 0.25 s) steps the level as toggle
-  does; a hold zooms to the first level and letting go zooms out (a hold begun
-  while already zoomed keeps the level). A weapon switch, a reload, a hit or
-  any other unzoom ends the press: its release does nothing. The match start
-  logs the mode in `debug.txt`. Nothing new goes over the network.
-  While zoom is held (HOLD, and the hold of BOTH) the mouse wheel steps the
-  zoom level up and down (it does not switch weapons) and the flashlight
-  button steps to the next level and back to the first after the last (it
-  does not toggle the light); in HOLD, a tap and then a hold within the hold
-  time starts at the second level. `input.zoom_reset` (`first`, the default,
-  or `last`: the last level used on that weapon) sets where a hold starts.
-- Custom Edition maps can use the three files they need (`bitmaps.map`,
-  `sounds.map`, `loc.map`) from your Steam install of Halo: The Master Chief
-  Collection, read where they are (`halo1/maps/custom_edition`): AE never
-  copies or changes your MCC files. AE finds MCC in your Steam libraries
-  (Linux and Windows) the first time a Custom Edition map needs the files. When
-  you pick such a map and your own folders (`maps_ce`, `maps/ce`,
-  `custom_maps`) lack them, it asks: USE MCC FILES, NOT NOW or NEVER ASK AGAIN
-  (`game.mcc_use`: `ask`, `yes`, `no`). Files in your own folders always win.
-  Settings has a new MAP FILES entry (after GAME OPTIONS; the list's rows sit a
-  little closer): MCC FILES ASK / ON / OFF, the folder in use (or NOT FOUND) and
-  BROWSE, to pick the MCC folder yourself (`game.mcc_path`; `HALO_MCC_PATH`
-  names one for a run). An MCC that Steam lists but whose files are missing or
-  being updated is told in the map's refusal and on MAP FILES; a map refused
-  for these files while MCC has them says where to turn them on. With OFF,
-  Steam is looked in only when you open MAP FILES. On Windows a Steam or MCC folder whose path
+## 0.2.2-beta - 2026-10-11
+
+Built on ChupathingyCE 0.7.1e and OpenCE build-177 (network version 25), as
+0.2.1-beta: the two play online together. Nothing new goes over the network.
+
+- **Mouse: MCC style.** Settings > Mouse Setup > MOUSE STYLE: CLASSIC (the
+  default, as before) or MCC, which uses Halo: The Master Chief Collection's
+  sensitivity number (0.1 to 10; the view turns number / 45 degrees per mouse
+  count; 1.0 is about 1% above CS:GO at 1), with a ZOOMED and a VEHICLE
+  SENSITIVITY SCALE. The first switch to MCC keeps your feel.
+- **Hold to zoom.** Settings > Game Options > ZOOM: TOGGLE (the default, as
+  before), HOLD (zoomed while held) or BOTH (a tap steps the level, a hold
+  zooms until you let go). While zoom is held the mouse wheel steps the level
+  (it does not switch weapons) and the controller's flashlight button steps it
+  (it does not toggle the light); in HOLD a tap then a hold starts at the
+  second level. ZOOM RESET: FIRST LEVEL (default) or LAST USED on that weapon.
+- **Custom Edition maps with MCC's files.** Custom Edition maps need Halo PC's
+  `bitmaps.map`, `sounds.map` and `loc.map`. AE finds your Steam install of
+  Halo: The Master Chief Collection (Linux and Windows) and can read them from
+  `halo1/maps/custom_edition`, where they are: it never copies or changes your
+  MCC files. It asks the first time a map needs them (USE MCC FILES / NOT NOW /
+  NEVER ASK AGAIN). Settings > MAP FILES: ASK / ON / OFF, the folder in use and
+  BROWSE. Files in your own `maps_ce` folder always win. The folder stays on
+  your PC (config and `debug.txt` only). On Windows, a Steam folder whose path
   has characters outside the system's code page is not found.
-  The folder found is logged in `debug.txt`; it never goes over the network or
-  into saves.
+- **HUD settings and waypoint pictures.** Settings has a new HUD entry: HUD
+  AREA, COMPACT HUD, SCOREBOARD FADE, the timers and SHORT MESSAGES moved there
+  (your values are kept), plus WAYPOINTS: TEXT (as before), ICONS or BOTH (the
+  default). Weapons use the picture the map's pickup prompt shows (read from
+  your map, nothing shipped); the overshield and the active camouflage have
+  Arena Evolved's own glyphs. A weapon with no picture on that map shows text.
+  Each Settings entry now shows its own picture, or none (no more "PLACE
+  HOLDER" box).
 
 ## 0.2.1-beta - 2026-10-10
 
