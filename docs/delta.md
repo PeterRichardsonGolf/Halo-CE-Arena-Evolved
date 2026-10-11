@@ -508,7 +508,8 @@ breaking:
 	X(22, "build-145", additive) /* a Custom Edition map named custom_maps\\<name> in the game's settings */ \
 	X(23, "build-147", additive) /* a Custom Edition map's blocks past the Xbox tools' limits kept, its version in the game's settings; Xbox maps as 22 */ \
 	X(24, "build-149", additive) /* the gametype's PC vehicle set: every vehicle the map places */ \
-	X(25, "build-169", additive) /* units' integrated lights in the object states (two flag bits an older machine leaves 0) */
+	X(25, "build-169", additive) /* units' integrated lights in the object states; a banned machine told so */ \
+	X(26, "build-184", additive) /* internet play's signalling, version 4 (WebRTC, for browsers; p2p_signal.c reads 3 and 4); game messages as 25 */
 ```
 
 `tools/test_delta.py` (in CI) checks `halo_port_limits.h` against it: hosts
@@ -545,7 +546,8 @@ Known history, from `port/linux/NETCODE.md` and OpenCE's commits:
 | 22 | build-145 | a Custom Edition map named `custom_maps\<name>` in the game's settings (a joining machine without it is told which map it misses) | additive |
 | 23 | build-147 | a Custom Edition map's blocks past the Xbox tools' limits kept whole, its vehicles placed by their spawn flags, and its header checksum sent as the map's version (a client of another version leaves); Xbox maps play as 22 | additive |
 | 24 | build-149 | the gametype's PC vehicle set (0xFE), every vehicle the map places; on a Custom Edition map every placement whose spawn flags name the game type (a client of 23 places none of it) | additive |
-| 25 | build-169 | units' integrated lights in the host's object states, with a bit saying they were sent (a client of 24 leaves both bits alone and keeps a missed press's light) | additive |
+| 25 | build-169 | units' integrated lights (flashlights) in the host's object states, two bits of their flags (a client of 24 ignores them and keeps toggling a light on presses); a banned machine told it is kept out, an existing rejection code | additive |
+| 26 | build-184 | internet play's signalling (not the game's messages, which are 25's): JOIN and ACCEPT say each machine's WebRTC, for OpenCE's browsers, in signalling version 4, which OpenCE reads alone. A release, not a table row: `p2p_signal.c` reads and answers both 3 and 4, and asks in both until a host answers one (wire `chupa-26a`; no WebRTC, so browsers can't join our games) | additive |
 
 ### Automation
 
@@ -943,7 +945,7 @@ check it too):
 - **`serial`**: 1 to 4294967294 (0xFFFFFFFF says "takes no tables" on the wire); each table published gets a higher one.
   **`issued`**: when it was made (Unix seconds), for people; optional.
 - **Rows by wire, not by build.** Each build has a wire ID (`DELTA_WIRE` in
-  `delta.h`, `chupa-24a` today; `chupa-23a` was 0.7.1b's, `chupa-20a` 0.7.0b's): the revision of the game protocol it
+  `delta.h`, `chupa-26a` today; `chupa-24a` was 0.7.1e's, `chupa-23a` 0.7.1b's, `chupa-20a` 0.7.0b's): the revision of the game protocol it
   actually speaks. A row says which OpenCE numbers that wire was proven to
   play with: the number a host announces, and the range of hosts' numbers a
   client joins (each 1 to 65535, `minimum <= announce <= maximum`). An old
