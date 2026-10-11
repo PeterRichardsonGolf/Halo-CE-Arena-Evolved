@@ -42,6 +42,9 @@ CE_LINE = r"weapon pack: BATTLE RIFLE: not on Custom Edition maps yet\r?$"
 STOCK_FIRST_SPAWN = r"first spawn: assault rifle \+ pistol"
 PACK_FIRST_SPAWN = r"first spawn: battle_rifle \+ pistol"
 
+# (a game of a mod empties the map cache and fills it again before it starts)
+MOD_SECONDS = 120
+
 # WEAPONS record fields ("<14I")
 WEAPON_LABEL, WEAPON_FALLBACKS = 4, (5, 6)
 # animation_graph's nodes block (first_person_weapons.c: verify_animation_graph_nodes_offset): its pointer
@@ -238,7 +241,7 @@ class RealPackChecks(Checks):
         self.mod_map("NHE")
         self.play("nhe", "--packs-from", str(self.packs("nhe", self.real())), "--pack-loadout", "primary",
                   "--mod", "NHE", "--expect-line", ADDED.format(map="badcreek"), "--expect-line", PACK_FIRST_SPAWN,
-                  "--expect-no-line", "weapon pack: refused", refused=True, map_name="badcreek")
+                  "--expect-no-line", "weapon pack: refused", refused=True, map_name="badcreek", seconds=MOD_SECONDS)
 
     @unittest.skipUnless(ROTATION, "AE_TEST_PACK_ROTATION not set (the mods' maps)")
     def test_ceplusx_bloodgulch_beside_its_own_rifle(self):
@@ -249,7 +252,7 @@ class RealPackChecks(Checks):
                   "--mod", "CE+ X", "--expect-line", ADDED.format(map="bloodgulch"),
                   "--expect-line", r"weapon pack: map has its own battle rifle: left as the map made it \(bloodgulch's "
                   r"dw2\\weapons\\battle_rifle\\battle_rifle; the pack's is ae\\packs\\battle_rifle\\",
-                  "--expect-no-line", "weapon pack: refused", refused=True)
+                  "--expect-no-line", "weapon pack: refused", refused=True, seconds=MOD_SECONDS)
 
 
 class Variants(unittest.TestCase):

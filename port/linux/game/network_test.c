@@ -117,8 +117,10 @@ static struct
 {
 	boolean checked;
 	short mode;
-	char map_name[64];
-	char variant_name[64];
+	/* (port: weapon pack tests: room for a rotation of every stock map, "host:<map>+<map>...:<variant>,...",
+	which is read into map_name whole before its variants are cut off it) */
+	char map_name[384];
+	char variant_name[256];
 	/* ... the variant of this game, of variant_name's list; and the seconds
 	the last game's scores have been shown */
 	short variant_index;
