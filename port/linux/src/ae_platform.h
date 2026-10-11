@@ -66,4 +66,9 @@ classic yaw and pitch with MCC style's when input.mouse_style is mcc (nothing in
 void ae_mouse_test_counts(float *x, float *y);
 void ae_mouse_look_override(float x, float y, int invert, float *yaw, float *pitch);
 
+/* the zoom's modes (ae_glue_zoom.c; xinput_sdl.c): whether the wheel is the zoom level's now (the zoom held by the first
+controller's player in HOLD or BOTH: no action takes the wheel then), and a scroll of the wheel's start (+1 up, -1 down) */
+int ae_zoom_wheel_taken(void);
+void ae_zoom_wheel_scrolled(int direction);
+
 #endif

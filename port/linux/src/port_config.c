@@ -409,6 +409,15 @@ static const struct config_setting config_settings[] =
 		"Halo does; \"hold\", zoomed to the first level while it is held (no second\n"
 		"level); \"both\", a tap steps the level as toggle does and a hold zooms\n"
 		"while it is held, then returns to unzoomed." },
+	{ "input.zoom_reset", _config_string, "\"first\"", "HALO_ZOOM_RESET", _environment_value, /* AE hook */
+		_platform_all,
+		"Where a hold of the zoom action (the \"hold\" mode, and the hold of\n"
+		"\"both\") starts: \"first\", at the weapon's first zoom level; \"last\", at\n"
+		"the last level used on that weapon in hand, for each local player. While\n"
+		"zoom is held, the mouse wheel steps the level up and down (it does not\n"
+		"switch weapons) and the flashlight button steps to the next level, and\n"
+		"back to the first after the last. In \"hold\", a tap and then a hold\n"
+		"within the hold time starts at the second level." },
 	{ "input.zoom_hold_time", _config_real, "0.25", "HALO_ZOOM_HOLD_TIME", _environment_value, /* AE hook */
 		_platform_all,
 		"The most seconds a press of the zoom action lasts to be a tap in the\n"

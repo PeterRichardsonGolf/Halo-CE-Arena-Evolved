@@ -30,6 +30,7 @@ def test_zoom_untouched_screens_are_byte_identical():
 def test_config_rows():
     text = (ROOT / "port" / "linux" / "src" / "port_config.c").read_text()
     for key, kind, default, env in (("input.zoom_mode", "_config_string", r'"\\"toggle\\""', "HALO_ZOOM_MODE"),
-                                    ("input.zoom_hold_time", "_config_real", '"0.25"', "HALO_ZOOM_HOLD_TIME")):
+                                    ("input.zoom_hold_time", "_config_real", '"0.25"', "HALO_ZOOM_HOLD_TIME"),
+                                    ("input.zoom_reset", "_config_string", r'"\\"first\\""', "HALO_ZOOM_RESET")):
         assert re.search(rf'\{{ "{re.escape(key)}", {kind}, {default}, "{env}", _environment_value, /\* AE hook \*/',
                          text), key
