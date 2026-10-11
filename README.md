@@ -230,6 +230,24 @@ Next up: a side-by-side split-screen layout, a
 per-player in-game menu and HUD, and more of our own voice for the callouts
 (Cori, beta, ships now), calling every item.
 
+## System requirements
+
+| Download | Needs |
+| --- | --- |
+| Windows 10 or 11, 64-bit | A graphics card and driver with OpenGL 4.5 (core profile). Nothing to install: `halo.exe` imports only Windows' own DLLs (no Visual C++ runtime), and `SDL3.dll` is in the zip. |
+| Linux, any distribution (`-linux64.zip`) | 64-bit x86-64; glibc 2.35 or later (Ubuntu 22.04 and later, Zorin OS 17 and 18, Linux Mint 21 and 22, Pop!_OS, Debian 12 and similar; the build's CI starts it on Ubuntu 22.04 and 24.04 and Debian 12), a graphics driver with OpenGL 4.5 (Mesa or NVIDIA), and an X11 or Wayland desktop. SDL3 is included. Sound goes through PipeWire, PulseAudio or ALSA, whichever the system has; controllers need udev. |
+| Linux, Arch and other rolling distributions (`-linux64-arch.zip`) | The same, built on Arch Linux's glibc, so it needs a glibc as new as Arch's. SDL3 is the system's: `sdl3` on Arch (`pacman -S sdl3`; its dependencies bring the rest), or the distribution's own SDL3 package (Debian 13 and Ubuntu 25.04 have one). |
+| macOS 13 or later, Apple silicon | OpenGL 4.1 through Apple's Metal layer ([port/macos/README.md](port/macos/README.md)). Not tested by us. |
+| Android 9 or later, 64-bit ARM | OpenGL ES 3.0 ([port/android/README.md](port/android/README.md)). Not tested by us. |
+
+Every download also needs your own Halo: Combat Evolved (below). Playing
+Custom Edition maps needs three files of Halo PC or Custom Edition,
+`bitmaps.map`, `sounds.map` and `loc.map`, in `maps_ce`; if Halo: The Master
+Chief Collection is installed on Steam (Linux or Windows), the game finds them
+in its `halo1/maps/custom_edition` folder and asks before using them (it never
+copies or changes MCC's files). Versions and the build-time packages are in
+[docs/dependencies.md](docs/dependencies.md).
+
 ## Download
 
 Releases are on the
@@ -237,10 +255,18 @@ Releases are on the
 page: 0.2.2-beta, built on ChupathingyCE 0.7.1e and OpenCE build-177
 (network version 25), is the current one, a pre-release (2026-10-11); it
 plays online with 0.2.1-beta, not with 0.2.0-beta or earlier. Each platform is
-a zip of its own, `arena-evolved-<platform>-release.zip`: Windows and Linux
-as 64-bit builds only, plus macOS and Android;
-`arena-evolved-linux64-release.zip` (Linux, 64-bit) is the one played and
-tested. The dedicated server keeps
+a zip of its own: Windows and Linux as 64-bit builds only, plus macOS and
+Android. For Linux there are two, and the first is the one to take:
+
+- `arena-evolved-<version>-linux64.zip`: **Linux (any distro, SDL3
+  included).** It runs on Ubuntu 22.04 and newer and similar systems
+  (Zorin, Mint, Pop!_OS, Debian 12): it is built on an older base and brings
+  its own SDL3 (`libSDL3.so.0`, next to `halo`).
+- `arena-evolved-<version>-linux64-arch.zip`: **Linux, Arch / rolling
+  distros (uses the system's SDL3).** The build we play and test; it needs a
+  glibc and an SDL3 as new as Arch's.
+
+The dedicated server keeps
 its own name, `chupathingyce-server-linux-<arch>`
 ([server/README.md](server/README.md)).
 
@@ -274,14 +300,39 @@ setting listed and explained; see [port/linux/README.md](port/linux/README.md).
 
 ## Building it yourself
 
-You need Python 3, [ninja](https://ninja-build.org/) and clang (or gcc on
-Linux). The game supplies the Xbox SDK declarations it uses, so you don't need
-the SDK.
+You need Python 3, [ninja](https://ninja-build.org/), clang with lld (or gcc on
+Linux) and, on Linux and macOS, SDL3 development files. The game supplies the
+Xbox SDK declarations it uses, so you don't need the SDK.
 
 ```sh
 python3 configure.py --release
 ninja linux64        # build/linux64/halo
 ```
+
+Packages, as the CI installs them ([docs/dependencies.md](docs/dependencies.md)
+has versions and the other targets):
+
+- **Arch Linux** (the 64-bit build):
+  `pacman -S --needed git zstd python ninja ccache clang lld gcc sdl3`.
+  For the 32-bit build and the tests, enable `[multilib]` and add
+  `python-pytest lib32-glibc lib32-gcc-libs cmake pkgconf wayland`.
+- **Ubuntu 22.04 or later** (the portable download's build, which CI makes in
+  an Ubuntu 22.04 container): `apt install build-essential git python3 cmake
+  meson ninja-build pkg-config` and clang with lld from
+  [apt.llvm.org](https://apt.llvm.org/) (22; Ubuntu's own clang is older),
+  then SDL3 built from source, as `python3 tools/linux64_portable_deps.py
+  <folder>` does (it needs the X11, Wayland, PipeWire, PulseAudio, ALSA and
+  udev development packages listed in the script), and
+  `CPATH=<folder>/include LIBRARY_PATH=<folder>/lib` while you build. Ubuntu
+  25.04 and later have `libsdl3-dev`, and need none of that.
+- **Windows**: build on Windows, with Visual Studio's Build Tools (C++
+  workload, x64 libraries; the MSVC compiler itself is not used), LLVM, Python
+  and ninja (`scoop install llvm python ninja`); there is no cross-build from
+  Linux. `configure.py` downloads SDL3 for it. See
+  [port/windows/README.md](port/windows/README.md).
+- **macOS**: Xcode command line tools and `brew install sdl3 ffmpeg ninja`
+  ([port/macos/README.md](port/macos/README.md)). **Android**: the NDK, CMake
+  and a JDK 17 ([port/android/README.md](port/android/README.md)).
 
 | Target | Result | Instructions |
 | --- | --- | --- |

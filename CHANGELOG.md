@@ -11,6 +11,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 Built on ChupathingyCE 0.7.1e and OpenCE build-177 (network version 25), as
 0.2.1-beta: the two play online together. Nothing new goes over the network.
 
+- **Linux download for Ubuntu and friends.** The Linux download now runs on
+  Ubuntu-based distros (Ubuntu 22.04 and later, Zorin, Mint, Pop!_OS): it is
+  built on an older base and includes SDL3. The build made on Arch Linux stays,
+  as `-linux64-arch`, for Arch and other rolling distributions.
 - **Mouse: MCC style.** Settings > Mouse Setup > MOUSE STYLE: CLASSIC (the
   default, as before) or MCC, which uses Halo: The Master Chief Collection's
   sensitivity number (0.1 to 10; the view turns number / 45 degrees per mouse

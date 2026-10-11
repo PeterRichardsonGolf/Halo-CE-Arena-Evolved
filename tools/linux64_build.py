@@ -93,6 +93,12 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
     # objects)
     lto_cflags, lto_ldflags = lto_flags(sln, build_dir / "thinlto-cache")
     objects = lp64.objects(host, generated_sources, build_dir / "obj", lto_cflags)
+    # (AE) the portable build's libraries beside the executable, the SDL3 of
+    # the portable download (tools/ci_build.py, tools/linux64_portable_deps.py):
+    # DT_RPATH, not RUNPATH, so that it comes before a LD_LIBRARY_PATH, as
+    # the 32-bit portable build has it (tools/linux_build.py). Harmless
+    # where nothing is beside the executable: the system's SDL3 is used.
+    rpath = ["'-Wl,-rpath,$$ORIGIN'", "-Wl,--disable-new-dtags"] if getattr(sln, "port_portable", False) else []
     n.build(
         outputs=output,
         rule="linux64_link",
@@ -101,7 +107,7 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
             # (not position-independent, as the 32-bit build: the addresses
             # of a crash report's calls, in debug.txt, are the executable's
             # own, the same from run to run)
-            "ldflags": " ".join([LINUX64_TARGET, "-g", "-no-pie", *lto_ldflags,
+            "ldflags": " ".join([LINUX64_TARGET, "-g", "-no-pie", *lto_ldflags, *rpath,
                                      # (posix_trace_marker.c's, which the GPU driver's calls must reach)
                                      *(f"-Wl,--export-dynamic-symbol={name}"
                                        for name in ("open", "open64", "openat", "openat64"))]),
