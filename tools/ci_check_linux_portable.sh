@@ -22,7 +22,9 @@ ldd ./halo
 ldd ./libSDL3.so.0
 if ldd ./halo ./libSDL3.so.0 | grep -q "not found"; then fail "a library is not found"; fi
 # (SDL3 must be the one beside halo, not a system's)
-ldd ./halo | grep -q "libSDL3.so.0 => $PWD/libSDL3.so.0" || fail "halo does not load the SDL3 beside it"
+# (ldd prints $ORIGIN's path as written, e.g. ".../portable/./libSDL3.so.0": compare real paths)
+sdl_path=$(ldd ./halo | sed -n 's/.*libSDL3\.so\.0 => \([^ ]*\).*/\1/p')
+[ -n "$sdl_path" ] && [ "$(readlink -f "$sdl_path")" = "$(readlink -f ./libSDL3.so.0)" ] || fail "halo does not load the SDL3 beside it"
 
 echo "== libraries halo links to"
 readelf -d ./halo | grep -E "NEEDED|RPATH|RUNPATH"
