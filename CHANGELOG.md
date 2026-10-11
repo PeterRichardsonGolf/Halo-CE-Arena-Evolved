@@ -6,6 +6,31 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **Merged ChupathingyCE 0.7.3e and OpenCE build-190: network version 27.**
+  Plays online with OpenCE build-189 and later and ChupathingyCE 0.7.3e; hosts
+  of an older version (Arena Evolved 0.2.2-beta, DamnationCE 0.3.40) are
+  refused, and are told to update.
+  - **Custom Edition map sharing.** Join a game on a Custom Edition map you
+    don't have and it downloads from the game's players (the host and the
+    others, torrent-style), with the resource maps it needs, into `maps_ce`.
+    The host shares by default (Server Setup > MAP SHARING: SHARE MAPS on,
+    UPLOAD LIMIT 1 MB/s); every player helps by default (Settings > Network
+    Setup > MAP SHARING: DOWNLOAD MAPS on, HELP SEND MAPS on, UPLOAD LIMIT
+    256 KB/s). Shared maps in `maps_ce` and `custom_maps` are renamed for
+    their hash (`hugeass.map` becomes `hugeass_0e2b3ee4.map`); the menus show
+    the name without it. TCP port 5153 must be open on a LAN (README).
+  - **Shields.** Settings > Video > GRAPHICS: SHIELD GLOW (shields light their
+    surroundings as they flare) and GLOW INTENSITY; FOV AND VIEWMODELS: ARM
+    SHIELDS (the flare on your first-person arms), LEGS (your legs in first
+    person) and SHIELD COLOR (your flare in an armor color, only you see it).
+    All off / default, as upstream has them.
+  - The lobby countdown no longer starts over when a player joins or leaves.
+  - Campaign pause: the rows 30 px apart, the box grown for SETTINGS.
+  - Internet play with OpenCE's browser players (WebRTC); upstream's web
+    build is in the tree, not an Arena Evolved download.
+  - Fewer draws and GL calls; fixes (co-op stale players, vehicle homes,
+    custom HUD digits, co-op elevators).
+
 ## 0.2.2-beta - 2026-10-11
 
 Built on ChupathingyCE 0.7.1e and OpenCE build-177 (network version 25), as

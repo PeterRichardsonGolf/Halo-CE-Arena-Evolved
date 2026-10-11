@@ -303,20 +303,24 @@ setting listed and explained; see [port/linux/README.md](port/linux/README.md).
 Every computer must be on the same network: the same router or Wi-Fi, and not
 a guest Wi-Fi, which keeps devices apart. LAN games are found through the
 network's broadcasts and played over UDP ports **5150**, **5151** and **5160**,
-and every computer, host or not, needs them open.
+and every computer, host or not, needs them open. Custom Edition maps a player
+lacks are sent over TCP port **5153** (map sharing, below the game's own
+traffic), which every computer needs open too, to receive a map and to help
+send one.
 
 **Windows** asks the first time the game starts. Allow it, on private
 networks at least, and on public ones too if Windows calls your network public.
 
 **Linux has no such question.** If a firewall is turned on, it silently
-blocks LAN games: nobody sees your game, or you see nobody's. Open the three
-ports once on each Linux computer:
+blocks LAN games: nobody sees your game, or you see nobody's. Open the ports
+once on each Linux computer:
 
-- Ubuntu, Zorin OS, Linux Mint, Pop!_OS (ufw): `sudo ufw allow 5150:5151/udp`
-  and `sudo ufw allow 5160/udp`. Or, in the Firewall Configuration app (Gufw):
-  Rules, +, Advanced, protocol UDP, port `5150:5151`, then again for `5160`.
+- Ubuntu, Zorin OS, Linux Mint, Pop!_OS (ufw): `sudo ufw allow 5150:5151/udp`,
+  `sudo ufw allow 5160/udp` and `sudo ufw allow 5153/tcp`. Or, in the Firewall
+  Configuration app (Gufw): Rules, +, Advanced, protocol UDP, port `5150:5151`,
+  then again for `5160`, then protocol TCP, port `5153`.
 - Fedora and others with firewalld:
-  `sudo firewall-cmd --permanent --add-port=5150-5151/udp --add-port=5160/udp`
+  `sudo firewall-cmd --permanent --add-port=5150-5151/udp --add-port=5160/udp --add-port=5153/tcp`
   and then `sudo firewall-cmd --reload`.
 - Not sure whether a firewall is on? `sudo ufw status` says `inactive` when
   ufw is off; `systemctl is-active firewalld` says `inactive` when firewalld is.
@@ -379,15 +383,18 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, the current code (not yet released) plays with OpenCE build-169
-  and later (network version 25), both ways, and joins games hosted on
-  network version 25 or newer (a host below 25 is refused: the host needs to
-  update). Builds of an older version (ChupathingyCE 0.7.1e and earlier,
-  OpenCE before build-169, Arena Evolved 0.2.0-beta and 0.1.0-beta) don't
-  join its games, which say 25: their players are told the host is newer.
-  0.2.0-beta is network version 24: it plays with
-  ChupathingyCE 0.7.1 and OpenCE build-149 to build-168. A game on a Custom Edition map is named as OpenCE names it, so
-  OpenCE and ChupathingyCE players with the map join it too.
+- Online, the current code (not yet released) is network version 27: it
+  plays with OpenCE build-189 and later and ChupathingyCE 0.7.3e, both ways,
+  and joins only games hosted on version 27 (an older host is refused: the
+  host needs to update). Builds of an older version (Arena Evolved 0.2.2-beta
+  and 0.2.1-beta, which are 25, DamnationCE 0.3.40 (26), ChupathingyCE 0.7.2e
+  and earlier, OpenCE before build-189) don't join its games: their players
+  are told the host is newer. 0.2.2-beta (25) plays with OpenCE build-169 to
+  build-183. A game on a Custom Edition map is named as OpenCE names it, so
+  OpenCE and ChupathingyCE players with the map join it too; players without
+  it download it from the game's players when the host shares maps (OpenCE's
+  map sharing, Server Setup > MAP SHARING; port/linux/README.md, "Map
+  sharing").
 
 ## Credits
 

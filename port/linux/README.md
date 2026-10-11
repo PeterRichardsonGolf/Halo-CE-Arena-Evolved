@@ -589,7 +589,7 @@ the setting for one start of the game. It has priority over the file.
 | `network.coop_public` | `false` | `HALO_NET_COOP_PUBLIC` | `true`: an online co-op game (Create Game > Internet, a SINGLEPLAYER map) starts as PUBLIC. `false`: it starts as PRIVATE. LISTING in co-op's Server Setup writes its choice here. Refer to "Server browser". |
 | `network.brokers_file` | `"brokers.txt"` | `HALO_NET_BROKERS_FILE` | The file of the public MQTT brokers that let the machines of an invite find each other, and that carry the listings of the server browser: next to `config.toml`, unless a full path. One `host:port` on each line, up to 4; `#` starts a comment. |
 | `network.stun_servers` | Google and Cloudflare | `HALO_NET_STUN` | The public STUN servers (`host:port`, with commas between them) that give the internet address of a machine. |
-| `network.legacy_table_fetch` | `false` | `HALO_LEGACY_TABLE_FETCH` | Arena Evolved. `true`: at start and every few hours the game fetches ChupathingyCE's signed legacy table from `network.browser_url` (else GitHub). It changes nothing in Arena Evolved, whose wire ID (`ae-25a`) those tables have no row for. `false`: no fetch. |
+| `network.legacy_table_fetch` | `false` | `HALO_LEGACY_TABLE_FETCH` | Arena Evolved. `true`: at start and every few hours the game fetches ChupathingyCE's signed legacy table from `network.browser_url` (else GitHub). It changes nothing in Arena Evolved, whose wire ID (`ae-27a`) those tables have no row for. `false`: no fetch. |
 | `network.report_events` | `false` | `HALO_NET_REPORT_EVENTS` | Delta Stats. `true`: the games this machine hosts are recorded (kills with weapons and positions, accuracy, medals, objectives, vehicles, pickups, positions a few seconds apart; players' names and a hash of their hardware ID, never an address) and sent to `network.browser_url` when each ends, for its match pages, heatmaps and leaderboards. `false` (Arena Evolved's default, an opt-in: Settings > Network, SHARE HOSTED STATS; ChupathingyCE's is `true`): nothing is recorded or sent. `network.events_token`, `network.events_positions`, `network.events_limit`, `network.events_part_minutes` and `network.events_folder` tune it (`port_config.c`). |
 | `game.move_old_map_folders` | `"no"` | `HALO_MOVE_OLD_MAP_FOLDERS` | Halo PC maps' folders are `maps_ce`, `maps_md` and `maps_pc`, beside `maps`; the older `maps/ce` and `md_maps` still play. `"no"` (Arena Evolved's default): left where they are, so builds that know only `maps/ce` keep working; `"ask"`: the game offers once to move them (each folder whole, never copied); `"yes"`: moved without asking. |
 | `game.mcc_path` | `""` | (none; `HALO_MCC_PATH` names one for a run, looked at after this one) | The folder of Halo: The Master Chief Collection (the one holding `halo1`) whose Custom Edition files (`halo1/maps/custom_edition`: `bitmaps.map`, `sounds.map`, `loc.map`) Custom Edition maps read when `maps_ce`, `maps/ce` and `custom_maps` have none. Empty: found in Steam's libraries (Linux: `~/.local/share/Steam`, `~/.steam`, Flatpak, Snap; Windows: the registry's Steam folder). BROWSE on Settings > MAP FILES sets it. Windows: a path with characters outside the system's code page is not found. The files are only read, never changed or copied; the folder never goes over the network or into saves. |
@@ -1023,7 +1023,8 @@ ChupathingyCE's own parts of the server browser:
 ### Map sharing
 
 When you join a game on a Custom Edition map that you do not have, the game
-downloads the map from the players of the game, if the host shares its maps
+downloads the map from the players of the game (Arena Evolved, OpenCE build-189
+and later), if the host shares its maps
 (SHARE MAPS in Server Setup > Map Sharing, `network.map_share`, on by
 default). This operates on a local network and
 on the internet. It also downloads the resource maps that the map needs
@@ -1045,22 +1046,33 @@ UPLOAD LIMIT in Settings > Network Setup > Map Sharing). Set these lower on
 a slow connection. DOWNLOAD MAPS there (`network.map_download`) turns
 downloading off: you then leave a game whose map you do not have.
 
-The name of each map in `custom_maps` ends with the start of its hash: when
-the map lists find `hugeass.map`, the game renames it `hugeass_0e2b3ee4.map`
-(and its picture and description). Thus two versions of a map have different
-names, and a game always loads the version of the host. The menus show the
-map without the hash, and with it only when you have two versions of the
-map. The downloaded map has the same name. A download that stops leaves a
-`.part` file in `custom_maps`; the next download of that map continues from
-it. Maps in the folder of a Halo Custom Edition install
-(`paths.custom_edition`) keep their names, and the host does not share them.
-Copy a map to `custom_maps` to share it.
+The name of each shared map ends with the start of its hash. Arena Evolved
+names a map so when it hosts it, or when it joins a game on that version of
+it: `hugeass.map` in `maps_ce` (or OpenCE's `custom_maps`) becomes
+`hugeass_0e2b3ee4.map`, with its picture and description. Thus two versions
+of a map have different names, and a game always loads the version of the
+host. The menus show the map without the hash, and with it only when you have
+two versions of the map. A name without the hash (a playlist's, `hugeass@ce`)
+still finds the renamed map. A downloaded map goes into `maps_ce` with the same
+name, and the resource maps it needs into `maps_ce` too. A download that stops
+leaves a `.part` file there; the next download of that map continues from
+it. Maps elsewhere (`maps/ce`, or named `<name>@ce.map`) are played but not
+shared: move a map to `maps_ce` (as `<name>.map`) to share it. A map that is
+loaded is not renamed (on Windows a file in use cannot be): it is named the
+next time.
+
+(Arena Evolved) The resource maps a host or a helping player sends are the
+ones the game reads: `maps_ce` first, then its older places, then MCC's
+files read in place (`game.mcc_use`, Settings > MAP FILES). A downloaded map
+plays under the rules of a downloaded map for the rest of that run (its
+scripts may not change your settings).
 
 Over the internet, the players of a game connect only to the host. To send
 each other a map, a player answers the other players of the game (who have
 its invite) as the host does, and a player who downloads connects to them in
 the same way that it connected to the host. Map sharing uses port 5153 for
-its connections. Refer to `NETCODE.md`, "Map sharing".
+its connections (TCP: open it in a firewall, as the README's "Playing over
+LAN" says). Refer to `NETCODE.md`, "Map sharing".
 
 ### Security
 

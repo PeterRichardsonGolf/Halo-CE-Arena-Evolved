@@ -191,45 +191,47 @@ put it; version 24 sends the gametype's PC vehicle set, with which every
 machine places all of the map's vehicles; version 25 (OpenCE build-169)
 carries each unit's integrated light (flashlight) in the host's object
 states, with a bit saying it was sent, so a client that missed a press, or
-joined after it, shows the light as the host has it.
-
-Arena Evolved announces 25, the table's newest (`delta.h`), and joins hosts
-of 25 (a host below 25 is refused, though the table's range reaches back to
-11): it plays with OpenCE build-169 and later both ways (OpenCE's clients
-join only their own version, 25). Hosts of an older version are refused
-(ChupathingyCE 0.7.1e's and Arena Evolved 0.2.0-beta's 24 among them), and
-their clients do not join Arena Evolved's games, and are told the host is
-newer. Its wire ID is its own (`ae-25a`, `delta.h`), so ChupathingyCE's signed legacy tables
-(Delta, `docs/delta.md`), which have no row for it, neither change these
-numbers nor turn off its Delta capabilities, and they are not fetched unless
-`network.legacy_table_fetch` is on (off by default). The game's messages are
-OpenCE build-177's unchanged (build-167's voice chat and votes to kick and
-build-169's lights are among them; Arena Evolved adds none): Arena Evolved's own
-rules travel in the gametype's flags, which every host of 11 to 25 sends
-and a client that does not know a bit leaves alone. Arena Evolved's own
-rule on top: a game with a password never has its invite sent to the game
-list's site (`browser.c`: not listed, not claimed, not reported, hosted or
-joined through the password).
-
-A host never checks a joining client's version: the client reads the
-host's from its advertisement and joins only a version it plays with. The
-built-in range is HALO_PORT_NETWORK_VERSION_MINIMUM to
-HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 25): versions
-that differ from one another only in messages the other machine drops, not
-knowing them. The historical example is version 10 (OpenCE's build-73),
-which added the host's message of the players' pings, which a machine of
-version 9 drops. Today this build has version 25 (OpenCE build-169 and later), and
-the range's floor is the newest version that broke compatibility (11). Arena
-Evolved's own floor is higher than the range: it refuses hosts below 25
-and tells the player that the host needs to update (see above).
-The game browser lists the range's games.
-
-and switches co-op's BSP on the host's crossing alone; version 26 has each
+joined after it, shows the light as the host has it; version 26 has each
 machine say its WebRTC in internet play's signalling (a native build's
 certificate, a browser's ICE credentials too), so that browsers play
 (port/linux/README.md, "Browsers"); version 27 shares Custom Edition maps
 (below, "Map sharing"): a client asks the host for a map it lacks, and the
 game's players reach each other to send it.
+
+Arena Evolved announces 27, the table's newest (`delta.h`), and joins hosts
+of 27 alone (a host below 27 is refused, though the table's range reaches
+back to 11; the range's top is 27, as OpenCE's clients join only their own
+version, where ChupathingyCE 0.7.3e's reach 30): it plays with OpenCE
+build-189 and later and ChupathingyCE 0.7.3e both ways. Hosts of an older
+version are refused (Arena Evolved 0.2.2-beta's 25 and DamnationCE 0.3.40's
+26 among them), and their clients do not join Arena Evolved's games, and are
+told the host is newer. Its wire ID is its own (`ae-27a`, `delta.h`), so
+ChupathingyCE's signed legacy tables (Delta, `docs/delta.md`), which have no
+row for it, neither change these numbers nor turn off its Delta
+capabilities, and they are not fetched unless `network.legacy_table_fetch`
+is on (off by default). The game's messages are OpenCE build-190's unchanged
+(build-167's voice chat and votes to kick, build-169's lights and build-189's
+map sharing are among them; Arena Evolved adds none): Arena Evolved's own
+rules travel in the gametype's flags, which every host of 11 to 27 sends and
+a client that does not know a bit leaves alone. Internet play's signalling
+is OpenCE's version 4 alone (ChupathingyCE 0.7.3e also reads 3, which only
+hosts of 25 and below send). Arena Evolved's own rule on top: a game with a
+password never has its invite sent to the game list's site (`browser.c`:
+not listed, not claimed, not reported, hosted or joined through the
+password).
+
+A host never checks a joining client's version: the client reads the
+host's from its advertisement and joins only a version it plays with. The
+built-in range is HALO_PORT_NETWORK_VERSION_MINIMUM to
+HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 27): versions
+that differ from one another only in messages the other machine drops, not
+knowing them. The historical example is version 10 (OpenCE's build-73),
+which added the host's message of the players' pings, which a machine of
+version 9 drops. Today this build has version 27 (OpenCE build-189 and later), and
+the range's floor is the newest version that broke compatibility (11). Arena
+Evolved's own floor is higher than the range: it refuses hosts below 27
+and tells the player that the host needs to update (see above).
+The game browser lists the range's games.
 
 A client plays by its host's rules: in another's game (searching for it,
 in its lobby, or playing it) the developer console, the telnet console
@@ -430,6 +432,17 @@ a pregame keep-alive every five seconds from the host
 (`network_server_manager.c`, `network_server_message_handler.c`).
 
 ## Map sharing
+
+(Arena Evolved: OpenCE's map sharing, on ChupathingyCE's Custom Edition maps,
+`port/linux/game/ae_map_share.c`. The messages name a map as the game's
+settings do, `custom_maps\<name>_<hash>`, so Arena Evolved and OpenCE share
+with each other; the game itself names it `<name>_<hash>@ce`. The shared
+folders, renamed for the hash and written to, are `maps_ce` and `custom_maps`
+where OpenCE has `custom_maps` alone; downloads go to `maps_ce`. A machine
+names a map for its hash when it hosts it, or when it joins a game on that
+version of it, not as its map lists find it. The resource maps sent are the
+ones the game reads: `maps_ce` first, then its older places, then MCC's files
+in place.)
 
 A client may join a game on a Custom Edition map it does not have
 (`port/linux/game/map_share.c`, `map_share_files.c`). Every map in the
