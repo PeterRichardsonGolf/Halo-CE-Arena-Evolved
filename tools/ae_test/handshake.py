@@ -30,9 +30,10 @@ CLIENT = "127.0.0.201"
 
 
 def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch", mod="",
-               saved_gametype=None, save_from=None, client_save_from=None):
+               saved_gametype=None, save_from=None, client_save_from=None, packs_from=None):
     """the host's and the client's specs: both on the map (and the mod's maps); the host's gametype a saved one of
-    its save root (save_from copied as it) when given"""
+    its save root (save_from copied as it) when given; packs_from (a folder, or harness.NO_PACKS) both machines'
+    packs/"""
     common = {"HALO_NETWORK_TEST_START": "20", "HALO_NETWORK_TEST_SHOOT": "3", "HALO_NETWORK_TEST_KILL": "20"}
     common.update(env or {})
     host = {"name": "host", "build": host_build, "network_test": f"host:{map_name}",
@@ -46,6 +47,8 @@ def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, ma
               "delay": join_delay, "env": common, "mod": mod}
     if client_save_from:
         client["save_from"] = client_save_from
+    if packs_from:
+        host["packs_from"] = client["packs_from"] = packs_from
     client = harness.parse_spec(client)
     return harness.parse_spec(host), client
 
@@ -76,7 +79,8 @@ def run_pair(cfg, name, host_build, client_build, out, a, slots):
     env = dict(e.split("=", 1) for e in (getattr(a, "env", None) or []))
     host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay, env=env, map_name=a.map, mod=a.mod,
                               saved_gametype=a.saved_gametype, save_from=a.save_from,
-                              client_save_from=getattr(a, "client_save_from", None))
+                              client_save_from=getattr(a, "client_save_from", None),
+                              packs_from=getattr(a, "packs_from", None))
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
     harness.OWN_WORK.add(work)
@@ -137,6 +141,8 @@ def main(argv):
     p.add_argument("--save-from", help="a folder copied as the host's save root (never under /tmp)")
     p.add_argument("--client-save-from", help="a folder copied as the joining machine's save root (never under /tmp)")
     p.add_argument("--env", action="append", default=[], help="NAME=value for both machines (repeat)")
+    p.add_argument("--packs-from", help="a folder linked as both machines' packs/ (never under /tmp), or "
+                   f"'{harness.NO_PACKS}' for none (default: the config's data_dir/packs when it exists)")
     a = p.parse_args(argv)
     cfg = harness.load_config(a.config)
     if a.box:

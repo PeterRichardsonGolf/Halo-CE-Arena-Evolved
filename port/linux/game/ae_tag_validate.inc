@@ -1,13 +1,14 @@
 /*
-AE_TAG_VALIDATE.H
+AE_TAG_VALIDATE.INC
 
 port: weapon pack. Tags ADDED to a loaded map's (a weapon pack's own tags:
 ae_weapon_pack.c) checked exactly as the map's own were, by the same walk,
 before the game reads them.
 
-This file is included by tag_validate.c at its end and is part of it: it
-uses that file's walk, claims and messages as they are, and changes none of
-them. It is not a header for other files (they declare the one function).
+This file is included by tag_validate.c at its end, ONCE, and is part of
+it (hence .inc, not .h: it defines functions): it uses that file's walk,
+claims and messages as they are, and changes none of them. Other files
+declare the two functions they call.
 
 The map's tags have been checked (tag_validate_tags) and are in use. The
 added tags lie in a REGION of their own, outside the tag cache, laid out as

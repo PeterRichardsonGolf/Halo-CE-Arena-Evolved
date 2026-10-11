@@ -37,7 +37,7 @@ the slot's pack is ADDED to the map (ae_weapon_pack_tags_loaded):
    lies, references and tag indices to the tags they resolved to. Every
    offset and value is checked against the tag's bytes and the pack again
    here, whatever the reader checked.
-3. THE TAGS ARE CHECKED AS A MAP'S ARE (ae_tag_validate.h, the tag
+3. THE TAGS ARE CHECKED AS A MAP'S ARE (ae_tag_validate.inc, the tag
    validator's own walk): every block, data, reference, index and enum of
    every own tag, and the checks between tags, against the real table (the
    map's tags and the pack's). A tag that fails refuses the pack for this
@@ -173,7 +173,7 @@ char const *config_string(char const *name);
 /* cache_files.c's (port: the loaded tags' table, which a copy with more tags replaces, as the menus' do) */
 void *cache_files_tag_instances(long *count);
 void cache_files_set_tag_instances(void *instances, long count);
-/* tag_validate.c's (ae_tag_validate.h, which is part of it) */
+/* tag_validate.c's (ae_tag_validate.inc, which is part of it) */
 long ae_tag_validate_claim_words(long region_size);
 boolean ae_tag_validate_added_tags(void *region, long region_size, long first_index, long file_length,
 	char const *name, unsigned long *claims_scratch, long *corrections);
@@ -1073,7 +1073,10 @@ void ae_weapon_pack_dispose(
 	short slot;
 
 	/* (a map's tags are let go before the game is: scenario_tags_unload. Were they not, the pack's tags stay
-	as they are, in memory that is not given back, and no more is read from the pack) */
+	as they are, in memory that is not given back, and no more is read from the pack: said, as it should not be) */
+	if (placed.added)
+		error(_error_silent, "weapon pack: the game ends with the pack still on %s: its tags were never let go",
+			placed.map_name);
 	placed.added = FALSE;
 	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
 	{

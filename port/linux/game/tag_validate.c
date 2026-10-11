@@ -1785,4 +1785,4 @@ void *tag_validate_index_buffer_data(
 {
 	return buffer_data(validation->index_buffers, validation->index_buffer_count, buffer);
 }
-#include "ae_tag_validate.h" /* AE hook */
+#include "ae_tag_validate.inc" /* AE hook */

@@ -9,6 +9,7 @@ test's own folder by changing a few bytes of a copy and signing it again, so eac
 (the containers are sound) and must be caught when the pack is added to a map. Skipped otherwise."""
 import json
 import os
+import re
 import shutil
 import struct
 import sys
@@ -21,16 +22,21 @@ sys.path.insert(0, str(TOOLS / "ae_test"))
 sys.path.insert(0, str(TOOLS / "weapon_pack"))
 sys.path.insert(0, str(TOOLS))
 import aepack  # noqa: E402
+import handshake  # noqa: E402
+import harness  # noqa: E402
 import run  # noqa: E402
 import test_weapon_pack_load as load  # noqa: E402
 
 BUILD = os.environ.get("AE_TEST_PACK_BUILD")
 REAL = os.environ.get("AE_TEST_PACK_REAL")
-# the rotation's games are a minute each: left out unless asked for (AE_TEST_PACK_ROTATION=1)
+# the long cases (the rotation's four one-minute games; a host and a client playing two games): left out unless
+# asked for (AE_TEST_PACK_ROTATION=1)
 ROTATION = os.environ.get("AE_TEST_PACK_ROTATION")
 
 ADDED = r"weapon pack: added to {map}: \d+ tags new \(\d+ bytes\), \d+ the map's own, \d+ optional ones the map " \
-        r"lacks, \d+ corrections; its tag table \d+ to \d+; fingerprint [0-9a-f]{{16}}\r?$"
+        r"lacks, {corrections} corrections; its tag table \d+ to \d+; fingerprint (?P<fingerprint>[0-9a-f]{{16}})\r?$"
+# (the real pack's tags need no correction: one would silently cut a reference or a value of the rifle)
+NO_CORRECTIONS = "0"
 LET_GO = r"weapon pack: let go from {map}: \d+ tags; [1-9]\d* bitmap and \d+ sound reads \(\d+ bytes\) were " \
          r"served from the pack, 0 could not be\r?$"
 FIRST_SPAWN = r"weapon pack: first spawn: the {slot} weapon is the pack's battle_rifle \("
@@ -194,6 +200,12 @@ class Game(unittest.TestCase):
                        "--out-name", f"packadd-{name}", *(["--map", map_name] if map_name else []), *arguments])
         self.assertEqual(rc, 0, name)
 
+    def debug_lines(self, name):
+        """the debug.txt lines of a case played by play() (run.py's out folder for it)"""
+        cfg = harness.load_config(None)
+        path = harness.expand(cfg["out_dir"]) / "run" / f"packadd-{name}" / name / "debug.txt"
+        return path.read_text(errors="replace").splitlines()
+
     def refused(self, name, image, reason):
         """a pack the reader takes is refused for the map with its reason; nothing is added, nobody is given the
         pack's weapon (the stock fallback), and the game plays to its end (exit 0, ticks, no assert)"""
@@ -232,14 +244,14 @@ class RealPack(Game):
 
     def test_added_and_primary(self):
         self.play("primary", "--packs-from", self.good(), "--pack-loadout", "primary",
-                  "--expect-line", ADDED.format(map="bloodgulch"),
+                  "--expect-line", ADDED.format(map="bloodgulch", corrections=NO_CORRECTIONS),
                   "--expect-line", FIRST_SPAWN.format(slot="primary"),
                   "--expect-no-line", FIRST_SPAWN.format(slot="secondary"),
                   "--expect-no-line", "weapon pack: .*could not be read")
 
     def test_secondary(self):
         self.play("secondary", "--packs-from", self.good(), "--pack-loadout", "secondary",
-                  "--expect-line", ADDED.format(map="bloodgulch"),
+                  "--expect-line", ADDED.format(map="bloodgulch", corrections=NO_CORRECTIONS),
                   "--expect-line", FIRST_SPAWN.format(slot="secondary"),
                   "--expect-no-line", FIRST_SPAWN.format(slot="primary"))
 
@@ -249,9 +261,14 @@ class RealPack(Game):
                   "--expect-line", r"weapon pack: 'ae_battle_rifle' revision ",
                   "--expect-no-line", ANY_ADDED, "--expect-no-line", ANY_FIRST_SPAWN)
 
-    def test_campaign_map_gets_none(self):
-        """a map loaded for no game (the campaign, through init.txt) never gets the pack, whatever the test
-        host's settings say"""
+    def test_campaign_map_without_a_game_variant_gets_none(self):
+        """a smoke check only: a campaign map loaded through init.txt, with the test host's pack setting in the
+        environment, logs no "added". It cannot fail on the guards themselves: the test host applies the pack bytes
+        only when it hosts, so the pending game variant is all zero here and neither guard (no game variant; a
+        scenario that is not a multiplayer one) is reached. No route loads a campaign map with a pack variant
+        pending (network co-op and split-screen campaign games carry no pack bytes), so the scenario-type guard is
+        belt and braces, untested. The menus' map between games, with a pack variant pending until the variant is
+        cleared, is checked by the rotation (no "added to ui" / "refused for ui")."""
         self.play("campaign", "--packs-from", self.good(), "--map", "levels\\a10\\a10",
                   "--env", "HALO_NETWORK_TEST_PACK_LOADOUT=primary",
                   "--expect-no-line", ANY_ADDED, map_name=None)
@@ -265,7 +282,6 @@ class RealPack(Game):
                      r"its tags failed the tag check \(the line before this one says which\)")
 
     def test_external_of_another_group_refused(self):
-        import re
         name, image = external_of_another_group(self.real())
         self.refused("group", image, "missing snd! " + re.escape(name))
 
@@ -284,14 +300,51 @@ class RealPack(Game):
         map and let go from it, resources read from the pack in every game, the rifle the primary each time"""
         lines = []
         for map_name in ("bloodgulch", "hangemhigh", "prisoner"):
-            lines += ["--expect-line", ADDED.format(map=map_name), "--expect-line", LET_GO.format(map=map_name)]
+            lines += ["--expect-line", ADDED.format(map=map_name, corrections=NO_CORRECTIONS),
+                      "--expect-line", LET_GO.format(map=map_name)]
         self.play("rotation", "--packs-from", self.good(), "--pack-loadout", "primary",
                   "--network-test", "host:bloodgulch+hangemhigh+prisoner:slayer,slayer,slayer,slayer",
                   "--env", "HALO_NETWORK_TEST_TIME_LIMIT=1", "--start", "10", "--bots", "3", "--bot-args=--move",
-                  "--expect-line", FIRST_SPAWN.format(slot="primary"),
                   "--expect-line", r"network test: game 4 plays prisoner",
                   "--expect-no-line", "weapon pack: refused", "--expect-no-line", "could not be read",
+                  # (the menus' map, loaded between the games while the pack's variant is still pending)
+                  "--expect-no-line", "weapon pack: (added to|refused for) ui",
                   *lines, seconds=360, map_name=None)
+        # each game's map: its "added", then its own first spawn with the rifle, before the next map's
+        maps = ["bloodgulch", "hangemhigh", "prisoner", "prisoner"]
+        games, current = [], None
+        for line in self.debug_lines("rotation"):
+            added = re.search(r"weapon pack: added to (\w+):", line)
+            if added:
+                current = {"map": added.group(1), "first_spawn": False}
+                games.append(current)
+            elif current and re.search(FIRST_SPAWN.format(slot="primary"), line):
+                current["first_spawn"] = True
+        self.assertEqual([game["map"] for game in games], maps)
+        self.assertEqual([game["first_spawn"] for game in games], [True] * len(maps))
+
+    @unittest.skipUnless(ROTATION, "AE_TEST_PACK_ROTATION not set (two machines, two games)")
+    def test_host_and_client(self):
+        """an AE host and an AE client, both with the pack, two games of Blood Gulch (the first ends at a score of
+        1): each machine adds the pack to each game's map with the same fingerprint (its tags at the same tag
+        indices), and the client lets it go between the games, as the host does"""
+        cfg = harness.load_config(None)
+        out = harness.expand(cfg["out_dir"]) / "handshake" / "packadd-pair"
+        shutil.rmtree(out, ignore_errors=True)  # (no earlier run's pair is read)
+        rc = handshake.main(["--ae", BUILD, "--other", BUILD, "--one-way", "--seconds", "120",
+                             "--map", "bloodgulch:slayer,slayer", "--packs-from", self.good(),
+                             "--env", "HALO_NETWORK_TEST_PACK_LOADOUT=primary", "--env", "HALO_NETWORK_TEST_SCORE=1",
+                             "--out-name", "packadd-pair"])
+        self.assertEqual(rc, 0)
+        pair = next(out.glob("aehost-*"))
+        added = re.compile(ADDED.format(map="bloodgulch", corrections=NO_CORRECTIONS))
+        prints = {}
+        for side in ("host", "client"):
+            lines = (pair / side / "debug.txt").read_text(errors="replace").splitlines()
+            prints[side] = [m.group("fingerprint") for m in map(added.search, lines) if m]
+            self.assertEqual(len(prints[side]), 2, side)
+            self.assertTrue(any(re.search(LET_GO.format(map="bloodgulch"), line) for line in lines), side)
+        self.assertEqual(len(set(prints["host"] + prints["client"])), 1, prints)
 
 
 class Variants(unittest.TestCase):

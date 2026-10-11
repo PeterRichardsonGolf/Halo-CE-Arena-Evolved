@@ -33,4 +33,4 @@ source/cache/cache_files.c	cache_file_globals.tags_loaded = TRUE;\nae_weapon_pac
 source/cache/cache_files.c	menu_tags_unloaded();\n}\nae_weapon_pack_tags_unloaded(); /* AE hook */\ncache_file_close();
 source/cache/cache_files_windows.c	#include "ae_weapon_pack.h" /* AE hook */
 source/cache/cache_files_windows.c	if (ae_weapon_pack_read(tag_index, offset, size, buffer, completion_flag_reference)) return request_index; /* AE hook */\nif (size & (CACHE_FILE_SECTOR_SIZE - 1)
-port/linux/game/tag_validate.c	#include "ae_tag_validate.h" /* AE hook */
+port/linux/game/tag_validate.c	#include "ae_tag_validate.inc" /* AE hook */

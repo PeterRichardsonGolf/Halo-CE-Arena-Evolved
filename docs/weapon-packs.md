@@ -235,7 +235,7 @@ have no game variant and never get a pack; nor does a map that is not a multipla
 3. **The tag check.** Every own tag then goes through the tag validator's own walk, exactly as a map's tag
    does and against the real table (the map's tags and the pack's): blocks and data must lie in the pack's
    memory and overlap no other's, references must name tags of the right group, counts, indices and enums are
-   cut or corrected, and the checks between tags run (`port/linux/game/ae_tag_validate.h`, which is part of
+   cut or corrected, and the checks between tags run (`port/linux/game/ae_tag_validate.inc`, which is part of
    `tag_validate.c`). A pointer no fixup set, a block count past its bytes or a block lying over another
    fails here. Corrections are counted in the log line; a tag that fails refuses the pack.
 4. **What the schemas do not say** is checked by hand: every PARTS record must sit on a model part of a model

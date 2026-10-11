@@ -626,6 +626,12 @@ class Handshake(unittest.TestCase):
         self.assertEqual(he["HALO_NETWORK_TEST_GAMETYPE"], "NHE 2V2 TS")
         self.assertNotIn("HALO_NETWORK_TEST_GAMETYPE", ce)
         self.assertEqual((host["save_from"], client.get("save_from")), ("~/roots/x", None))
+        # (both machines' packs/: a folder, or none at all)
+        host, client = handshake.pair_specs("ae", "ae", 90, 12, packs_from="~/packs-x")
+        self.assertEqual((host["packs_from"], client["packs_from"]), ("~/packs-x", "~/packs-x"))
+        host, client = handshake.pair_specs("ae", "ae", 90, 12)
+        self.assertNotIn("packs_from", host)
+        self.assertNotIn("packs_from", client)
 
     def test_compare_and_judge(self):
         host = DEBUG_MP
