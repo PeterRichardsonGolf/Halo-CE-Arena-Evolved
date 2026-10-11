@@ -217,14 +217,16 @@ class RealPackChecks(Checks):
                   "--expect-line", rf"network test: game {len(maps)} plays {maps[-1]}",
                   "--expect-no-line", "weapon pack: refused", "--expect-no-line", "BATTLE RIFLE unavailable",
                   "--expect-no-line", "could not be read", *lines, seconds=90 * len(maps), map_name=None)
-        games, current = [], None
+        # (each map's label line comes before its "added" line, its first spawn after it)
+        games, current, held = [], None, False
         for line in self.lines("stock13"):
             found = re.search(r"weapon pack: added to (\w+):", line)
             if found:
-                current = {"map": found.group(1), "held": False, "first_spawn": False}
+                current = {"map": found.group(1), "held": held, "first_spawn": False}
                 games.append(current)
-            elif current and re.search(HELD, line):
-                current["held"] = True
+                held = False
+            elif re.search(HELD, line):
+                held = True
             elif current and re.search(PACK_FIRST_SPAWN, line):
                 current["first_spawn"] = True
         self.assertEqual([game["map"] for game in games], maps)
