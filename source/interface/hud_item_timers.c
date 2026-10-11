@@ -105,10 +105,10 @@ timer, centred (hud_waypoint_line, by
 ae_waypoint_icons.c's rules). A weapon's picture is the pickup prompt's
 (its HUD interface's messaging icon, a sprite of the map's own hud_msg_icons
 sheet: nothing is shipped), every index and size checked before it is drawn,
-drawn alone 2.2 capitals high; a weapon with none (a Custom Edition map, a
+drawn alone 1.4 capitals high and no wider than its name; a weapon with none (a Custom Edition map, a
 mod) shows Arena Evolved's burst in an outlined hexagon; the overshield's and
 the camouflage's are Arena Evolved's own glyphs (hud_waypoint_glyph_bitmap),
-dark on a filled hexagon. All in the label's colour, at the view's text scale
+dark on a filled hexagon 1.8 capitals high. All in the label's colour, at the view's text scale
 as the text.
 */
 
@@ -378,6 +378,29 @@ static long hud_item_timers_line_width_scaled(
 		return 0;
 
 	return (long)((text_bounds.x1 - text_bounds.x0) * scale + 0.5f);
+}
+
+/* where a line's first ink is from the x it is drawn from, at a scale (the
+font's leading: the width above is the ink's alone) */
+static long hud_item_timers_ink_offset_scaled(
+	long font_index,
+	wchar_t const *text,
+	real scale)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = (short)hud_item_timers_line_height(font_index);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+	if (text_bounds.x1 <= text_bounds.x0)
+		return 0;
+
+	return (long)((text_bounds.x0 - bounds.x0) * scale + 0.5f);
 }
 
 /* a character's height over the baseline (its glyph's top: a capital's or
@@ -1765,8 +1788,7 @@ static boolean hud_waypoint_stock_sprite(
 }
 
 /* an entry's picture: a weapon's the map's pickup sprite, drawn alone, as
-high as a badge (2.2 capitals) and no wider than max_width (about 1.5 times its
-name); one without one (a map, a mod) our burst in an outlined badge; the
+high as 1.4 capitals and no wider than max_width (its name); one without one (a map, a mod) our burst in an outlined badge; the
 overshield's shield and the camouflage's struck eye ours, dark on a filled
 badge; source AE_WAYPOINT_ICON_NONE: none, its text. width and badge_width are
 what the picture's slot in the row takes */
@@ -1939,9 +1961,6 @@ static long hud_item_timers_text_advance(
 	return (long)((cursor_bounds.x0 - bounds.x0) * hud_item_timers_text_scale() + 0.5f);
 }
 
-/* a respawning item's distance and badge: this much as strong */
-#define HUD_WAYPOINT_DIM 0.5f
-
 /* a stack's rows (WAYPOINTS BOTH and ICONS), top to bottom: the distance, the
 name, the pictures, the respawn timer; PLAIN is a text line's own */
 enum
@@ -1952,8 +1971,28 @@ enum
 	HUD_WAYPOINT_ROW_TIMER
 };
 
+/* a respawning item's colour faded (ae_waypoint_fade) */
+static void hud_waypoint_fade_color(
+	int part,
+	real_argb_color *color)
+{
+	float in[4];
+	float out[4];
+
+	in[0] = color->red;
+	in[1] = color->green;
+	in[2] = color->blue;
+	in[3] = color->alpha;
+	ae_waypoint_fade(part, in, out);
+	color->red = out[0];
+	color->green = out[1];
+	color->blue = out[2];
+	color->alpha = out[3];
+}
+
 /* a label's colour (every part of a stack and a plain line alike): its base's
-(red, blue), else the HUD's text; a respawning item's distance is dimmed */
+(red, blue), else the HUD's text; a respawning item's distance faded toward grey,
+its name a little fainter, its timer as it is */
 static void hud_waypoint_label_color(
 	struct item_timer const *timer,
 	short row_kind,
@@ -1961,8 +2000,10 @@ static void hud_waypoint_label_color(
 	real_argb_color *color)
 {
 	hud_item_timers_side_color(timer ? timer->side : _item_timer_side_middle, HUD_ITEM_TIMERS_LABEL_ALPHA, color);
-	if (row_kind == HUD_WAYPOINT_ROW_DISTANCE && respawning)
-		color->alpha *= HUD_WAYPOINT_DIM;
+	if (respawning && row_kind == HUD_WAYPOINT_ROW_DISTANCE)
+		hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, color);
+	else if (respawning && row_kind == HUD_WAYPOINT_ROW_NAME)
+		hud_waypoint_fade_color(AE_WAYPOINT_FADE_NAME, color);
 }
 
 /* a label's text line's height in this view, and its pictures' row's (every
@@ -1978,14 +2019,6 @@ static long hud_waypoint_cap_height(
 	long font_index)
 {
 	return hud_waypoint_text_height(font_index) * 7 / 10;
-}
-
-/* the pictures' row: a badge's height, 1.6 capitals */
-static long hud_waypoint_row_height(
-	long font_index)
-{
-	return hud_waypoint_style() == AE_WAYPOINT_TEXT ? hud_waypoint_text_height(font_index) :
-		(long)ae_waypoint_badge_height((int)hud_waypoint_cap_height(font_index));
 }
 
 /* the gap between a stack's rows: about 2 pixels at 1080p, by the view's text size */
@@ -2136,6 +2169,8 @@ struct hud_waypoint_text_row
 	real scale;	/* of the view's text scale */
 	short kind;	/* HUD_WAYPOINT_ROW_ */
 	boolean respawning;
+	long ink_offset;	/* a stack's rows: where its first ink is from its origin, */
+	long y_offset;	/* its capitals' top below its line's top (so drawn this much higher) */
 };
 
 struct hud_waypoint_line_layout
@@ -2146,6 +2181,7 @@ struct hud_waypoint_line_layout
 	short icons;	/* how many pictures */
 	struct hud_waypoint_picture pictures[HUD_WAYPOINT_MAXIMUM_PARTS];
 	long row_width;	/* the pictures' row */
+	long picture_height;	/* its height: its tallest picture's (a badge 1.8 capitals, a weapon's own 1.4) */
 	long width;	/* the widest row */
 	long height;	/* the rows' */
 };
@@ -2175,6 +2211,19 @@ static void hud_waypoint_text_row_build(
 	row->scale = row_kind == HUD_WAYPOINT_ROW_DISTANCE ? HUD_WAYPOINT_DISTANCE_SCALE :
 		row_kind == HUD_WAYPOINT_ROW_TIMER ? HUD_WAYPOINT_TIMER_SCALE : 1.0f;
 	row->height = (long)(hud_waypoint_text_height(font_index) * row->scale + 0.5f);
+	row->ink_offset = 0;
+	row->y_offset = 0;
+	if (row_kind != HUD_WAYPOINT_ROW_PLAIN)
+	{
+		/* (a stack's rows are as high as their capitals, drawn up by the room over them) */
+		int top, ink;
+
+		ae_waypoint_row_ink(font_definition_get(font_index)->ascending_height,
+			(int)(hud_item_timers_cap_height(font_index, L'H') + 0.5f),
+			hud_item_timers_text_scale() * row->scale, &top, &ink);
+		row->y_offset = top;
+		row->height = ink;
+	}
 	for (index = 0; index < part_count; index++)
 	{
 		struct hud_waypoint_piece *piece = &row->pieces[row->count];
@@ -2215,6 +2264,8 @@ static void hud_waypoint_text_row_build(
 	}
 	row->width = row->text[0] ?
 		hud_item_timers_line_width_scaled(font_index, row->text, hud_item_timers_text_scale() * row->scale) : 0;
+	if (row_kind != HUD_WAYPOINT_ROW_PLAIN && row->text[0])
+		row->ink_offset = hud_item_timers_ink_offset_scaled(font_index, row->text, hud_item_timers_text_scale() * row->scale);
 }
 
 static long hud_waypoint_line(
@@ -2241,6 +2292,7 @@ static long hud_waypoint_line(
 	layout->icons = 0;
 	layout->width = 0;
 	layout->row_width = 0;
+	layout->picture_height = 0;
 	layout->height = 0;
 	for (index = 0; index < label_count; index++)
 	{
@@ -2304,6 +2356,12 @@ static long hud_waypoint_line(
 		for (index = 0; index < layout->icons; index++)
 			layout->pictures[index].start = picture_starts[index];
 		layout->row_width = picture_row_width;
+		for (index = 0; index < layout->icons; index++)
+		{
+			struct hud_waypoint_icon const *icon = &labels[layout->pictures[index].label].icon;
+
+			layout->picture_height = MAX(layout->picture_height, icon->badge_height > 0 ? icon->badge_height : icon->height);
+		}
 	}
 	layout->width = layout->row_width;
 	/* (the rows a gap apart) */
@@ -2314,7 +2372,7 @@ static long hud_waypoint_line(
 		layout->height += layout->rows[index].height;
 	}
 	if (layout->icons)
-		layout->height += hud_waypoint_row_height(font_index);
+		layout->height += layout->picture_height;
 	if (rows > 1)
 		layout->height += (rows - 1) * hud_waypoint_row_gap(font_index);
 
@@ -2861,7 +2919,7 @@ static void hud_waypoint_draw_labels(
 				/* (the pictures' row where the rows over it end) */
 				if (layout.icons && row == layout.rows_above)
 				{
-					long picture_row = hud_waypoint_row_height(font_index);
+					long picture_row = layout.picture_height;
 					long row_x = x + (width - layout.row_width) / 2;
 					boolean respawning = layout.row_count > 0 && layout.rows[layout.row_count - 1].kind == HUD_WAYPOINT_ROW_TIMER;
 
@@ -2875,7 +2933,6 @@ static void hud_waypoint_draw_labels(
 						struct bitmap_data const *fill;
 						struct bitmap_data const *outline;
 						real_rectangle2d clip;
-						real dim = respawning ? HUD_WAYPOINT_DIM : 1.0f;
 						boolean badge = icon->badge_height > 0;
 						boolean powerup = badge && icon->sequence != AE_WAYPOINT_GLYPH_POWER_WEAPON;
 						long left = row_x + layout.pictures[part].start;
@@ -2899,11 +2956,14 @@ static void hud_waypoint_draw_labels(
 								shade.green = 0.0f;
 								shade.blue = 0.0f;
 							}
-							shade.alpha = color.alpha * (powerup ? 0.95f : 0.55f) * dim;
+							shade.alpha = color.alpha * (powerup ? 0.95f : 0.55f);
+							if (respawning)
+								hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, &shade);
 							hud_draw_bitmap_direct(fill, _hud_anchor_center, &point, &clip, 1.0f, 0.0f,
 								real_argb_color_to_pixel32(&shade), FALSE);
 							shade = color;
-							shade.alpha = color.alpha * dim;
+							if (respawning)
+								hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, &shade);
 							hud_draw_bitmap_direct(outline, _hud_anchor_center, &point, &clip, 1.0f, 0.0f,
 								real_argb_color_to_pixel32(&shade), FALSE);
 						}
@@ -2913,7 +2973,8 @@ static void hud_waypoint_draw_labels(
 							color.green = 0.08f;
 							color.blue = 0.05f;
 						}
-						color.alpha *= dim;
+						if (respawning)
+							hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, &color);
 						hud_draw_bitmap_direct(icon->bitmap, _hud_anchor_center, &point, &icon->clip, icon->scale, 0.0f,
 							real_argb_color_to_pixel32(&color), FALSE);
 					}
@@ -2923,7 +2984,7 @@ static void hud_waypoint_draw_labels(
 					break;
 				{
 					real row_scale = hud_item_timers_text_scale() * text_row->scale;
-					long text_x = x + (width - text_row->width) / 2;
+					long text_x = x + ae_waypoint_row_origin((int)width, (int)text_row->width, (int)text_row->ink_offset);
 
 					for (part = 0; part < text_row->count; part++)
 					{
@@ -2940,9 +3001,9 @@ static void hud_waypoint_draw_labels(
 						/* (laid out at full size from its left, drawn at the
 						view's text scale about its top left corner) */
 						bounds.x0 = (short)(text_x + piece->start);
-						bounds.y0 = (short)row_top;
+						bounds.y0 = (short)(row_top - text_row->y_offset);
 						bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, text, row_scale) / row_scale + 8);
-						bounds.y1 = (short)(row_top + hud_item_timers_line_height(font_index));
+						bounds.y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index));
 						draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
 						rasterizer_text_set_scale(row_scale, (real)bounds.x0, (real)bounds.y0);
 						rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
@@ -3203,7 +3264,7 @@ void hud_draw_item_waypoints(
 		if (hud_waypoint_style() != AE_WAYPOINT_TEXT)
 		{
 			hud_waypoint_icon_get(timer, hud_waypoint_cap_height(font_index),
-				hud_item_timers_line_width_scaled(font_index, label->name, hud_item_timers_text_scale()) * 3 / 2,
+				hud_item_timers_line_width_scaled(font_index, label->name, hud_item_timers_text_scale()),
 				&label->icon);
 			if (log_now && label->icon.source == AE_WAYPOINT_ICON_NONE)
 			{

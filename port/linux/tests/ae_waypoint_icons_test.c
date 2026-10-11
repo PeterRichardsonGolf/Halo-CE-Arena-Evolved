@@ -101,12 +101,13 @@ static void stock_layout_tests(void)
 	int width, height;
 	float scale;
 
-	/* the sniper's 123 by 27 at a cap of 10: 22 high, its width following; capped it is smaller, its shape kept */
-	CHECK(ae_waypoint_stock_layout(10, 123, 27, 0, &width, &height, &scale) && height == 22 && width == 100);
-	CHECK(scale > 0.81f && scale < 0.82f);
-	CHECK(ae_waypoint_stock_layout(10, 123, 27, 60, &width, &height, &scale) && width == 60 && height == 13);
-	CHECK(ae_waypoint_stock_layout(10, 101, 33, 150, &width, &height, NULL) && height == 22 && width == 67);
-	CHECK(ae_waypoint_stock_layout(10, 5, 5, 0, &width, &height, NULL) && width == 22 && height == 22);
+	/* the sniper's 123 by 27 at a cap of 10: 14 high (1.4 capitals), its width following; capped it is smaller */
+	CHECK(ae_waypoint_stock_height(10) == 14 && ae_waypoint_stock_height(0) == 0);
+	CHECK(ae_waypoint_stock_layout(10, 123, 27, 0, &width, &height, &scale) && height == 14 && width == 64);
+	CHECK(scale > 0.51f && scale < 0.53f);
+	CHECK(ae_waypoint_stock_layout(10, 123, 27, 40, &width, &height, &scale) && width == 40 && height == 9);
+	CHECK(ae_waypoint_stock_layout(10, 101, 33, 150, &width, &height, NULL) && height == 14 && width == 43);
+	CHECK(ae_waypoint_stock_layout(10, 5, 5, 0, &width, &height, NULL) && width == 14 && height == 14);
 	CHECK(!ae_waypoint_stock_layout(10, 0, 5, 0, &width, &height, NULL) && !ae_waypoint_stock_layout(0, 5, 5, 0, &width, &height, NULL));
 }
 
@@ -233,21 +234,21 @@ static void badge_tests(void)
 	unsigned char fill[52 * 60], line[52 * 60];
 	int x, y, ring = 0, inside = 0;
 
-	CHECK(ae_waypoint_badge_height(10) == 22 && ae_waypoint_badge_height(0) == 0);
+	CHECK(ae_waypoint_badge_height(10) == 18 && ae_waypoint_badge_height(0) == 0);
 	/* a regular hexagon: its width is 0.866 of its height */
-	CHECK(ae_waypoint_badge_layout(10, 64, 64, &b) && b.badge_height == 22 && b.badge_width == 19);
+	CHECK(ae_waypoint_badge_layout(10, 64, 64, &b) && b.badge_height == 18 && b.badge_width == 16);
 	/* a square glyph fills the hexagon's inside: about half its height, never past it */
-	CHECK(b.icon_width == b.icon_height && b.icon_height >= 22 * 45 / 100 && b.icon_height <= 22 * 62 / 100);
+	CHECK(b.icon_width == b.icon_height && b.icon_height >= 18 * 45 / 100 && b.icon_height <= 18 * 62 / 100);
 	/* a view twice the size: the glyph twice as large */
 	{
 		struct ae_waypoint_badge big;
 
 		CHECK(ae_waypoint_badge_layout(20, 64, 64, &big) && big.icon_height >= 2 * b.icon_height - 1);
-		CHECK(big.badge_height == 44);
+		CHECK(big.badge_height == 36);
 	}
 	/* a wide sprite is small, its shape kept; a tall one fitted by its height */
 	CHECK(ae_waypoint_badge_layout(10, 70, 15, &b) && b.icon_width <= b.badge_width - 2 && b.icon_height < b.icon_width / 3);
-	CHECK(ae_waypoint_badge_layout(10, 10, 30, &b) && b.icon_height <= 22 && b.icon_width < b.icon_height);
+	CHECK(ae_waypoint_badge_layout(10, 10, 30, &b) && b.icon_height <= 18 && b.icon_width < b.icon_height);
 	CHECK(!ae_waypoint_badge_layout(10, 0, 15, &b) && !ae_waypoint_badge_layout(0, 70, 15, &b));
 	CHECK(!ae_waypoint_badge_layout(10, 70, 15, NULL) && !ae_waypoint_badge_layout(1, 70, 15, &b));
 	/* the coverage: filled in the middle, clear at the corners, flat at the sides, pointed at the top and bottom */
@@ -271,6 +272,41 @@ static void badge_tests(void)
 
 /* (the glyphs are drawn on a 32 grid) */
 #define K (AE_WAYPOINT_GLYPH_SIZE / 32)
+
+static void centring_tests(void)
+{
+	int top, height, i;
+	float in[4] = { 1.0f, 0.3f, 0.3f, 0.8f }, out[4];
+	/* rows of different widths and ink offsets (the font's leading, scaled with each row): every row's ink centre is
+	the line's centre */
+	int widths[4] = { 120, 62, 31, 40 };
+	int offsets[4] = { 7, 6, 5, 6 };
+
+	for (i = 0; i < 4; i++)
+	{
+		int origin = ae_waypoint_row_origin(120, widths[i], offsets[i]);
+		int ink_left = origin + offsets[i];
+		int ink_right = ink_left + widths[i];
+
+		CHECK(ink_left + ink_right >= 119 && ink_left + ink_right <= 121);
+	}
+	CHECK(ae_waypoint_row_origin(100, 100, 0) == 0 && ae_waypoint_row_origin(101, 50, 3) == 22);
+	/* a row's ink: capitals start below the line's top and the row is as high as they are */
+	ae_waypoint_row_ink(14, 10, 1.0f, &top, &height);
+	CHECK(top == 4 && height == 11);
+	ae_waypoint_row_ink(14, 10, 0.8f, &top, &height);
+	CHECK(top == 3 && height == 9);
+	ae_waypoint_row_ink(8, 12, 1.0f, &top, &height);
+	CHECK(top == 0 && height == 13);
+	/* a respawning item: the mark much fainter and grey, the name at 85%, same colour */
+	ae_waypoint_fade(AE_WAYPOINT_FADE_MARK, in, out);
+	CHECK(out[3] > 0.31f && out[3] < 0.33f && out[0] < in[0] && out[1] > in[1] && out[2] > in[2]);
+	CHECK(out[0] > 0.7f && out[0] < 0.75f && out[1] > 0.4f && out[1] < 0.5f);
+	ae_waypoint_fade(AE_WAYPOINT_FADE_NAME, in, out);
+	CHECK(out[0] == in[0] && out[1] == in[1] && out[3] > 0.67f && out[3] < 0.69f);
+	ae_waypoint_fade(AE_WAYPOINT_FADE_MARK, in, in);
+	CHECK(in[3] < 0.33f);
+}
 
 static void glyph_tests(void)
 {
@@ -326,6 +362,7 @@ int main(void)
 	line_tests();
 	picture_row_tests();
 	badge_tests();
+	centring_tests();
 	glyph_tests();
 	if (failures)
 	{

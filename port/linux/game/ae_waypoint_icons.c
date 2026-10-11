@@ -218,10 +218,15 @@ int ae_waypoint_sprite_size(int bitmap_width, int bitmap_height, float x0, float
 	return 1;
 }
 
+int ae_waypoint_stock_height(int cap_height)
+{
+	return cap_height > 0 ? (cap_height * 14 + 5) / 10 : 0;
+}
+
 int ae_waypoint_stock_layout(int cap_height, int sprite_width, int sprite_height, int max_width, int *width, int *height,
 	float *scale)
 {
-	int drawn_height = ae_waypoint_badge_height(cap_height);
+	int drawn_height = ae_waypoint_stock_height(cap_height);
 	int drawn_width;
 
 	if (sprite_width <= 0 || sprite_height <= 0 || drawn_height < 1)
@@ -248,7 +253,7 @@ int ae_waypoint_stock_layout(int cap_height, int sprite_width, int sprite_height
 
 int ae_waypoint_badge_height(int cap_height)
 {
-	return cap_height > 0 ? (cap_height * 22 + 5) / 10 : 0;
+	return cap_height > 0 ? (cap_height * 18 + 5) / 10 : 0;
 }
 
 int ae_waypoint_badge_layout(int cap_height, int sprite_width, int sprite_height, struct ae_waypoint_badge *badge)
@@ -321,4 +326,38 @@ void ae_waypoint_badge_coverage(int width, int height, int outline, unsigned cha
 			coverage[y * width + x] = (unsigned char)(value * 255.0f + 0.5f);
 		}
 	}
+}
+
+int ae_waypoint_row_origin(int line_width, int row_width, int ink_offset)
+{
+	return (line_width - row_width) / 2 - ink_offset;
+}
+
+void ae_waypoint_row_ink(int ascent, int cap_height, float scale, int *top_offset, int *height)
+{
+	int top = (int)((float)(ascent - cap_height) * scale + 0.5f);
+	int ink = (int)((float)cap_height * scale + 0.5f) + 1;
+
+	if (top_offset)
+		*top_offset = top < 0 ? 0 : top;
+	if (height)
+		*height = ink < 1 ? 1 : ink;
+}
+
+void ae_waypoint_fade(int part, const float *in, float *out)
+{
+	int index;
+
+	if (!in || !out)
+		return;
+	if (part == AE_WAYPOINT_FADE_MARK)
+	{
+		for (index = 0; index < 3; index++)
+			out[index] = in[index] * 0.4f + 0.55f * 0.6f;
+		out[3] = in[3] * 0.4f;
+		return;
+	}
+	for (index = 0; index < 3; index++)
+		out[index] = in[index];
+	out[3] = in[3] * 0.85f;
 }

@@ -94,8 +94,27 @@ its size in texels (at least 2 each way) when it can be drawn, else 0 */
 int ae_waypoint_sprite_size(int bitmap_width, int bitmap_height, float x0, float x1, float y0, float y1,
 	int *width, int *height);
 
-/* a weapon's sprite drawn alone: as high as a badge (2.2 capitals), its shape kept and its width following, or
-smaller still to max_width (about 1.5 times the name's width; none when 0). *scale from its texels to that size.
+/* Centring and tight rows (a stack's rows centre on one axis; each row's ink, not its text box, is what is placed):
+a text row drawn from x0 shows its first ink ink_offset to the right of x0 (the font's leading), so its origin is
+the line's centre less half its ink width less ink_offset */
+int ae_waypoint_row_origin(int line_width, int row_width, int ink_offset);
+/* a text row's ink at a scale: its capitals' top below its line's top (ascent less cap_height) and its height (cap_height,
+and a texel under the baseline), both in the view's pixels */
+void ae_waypoint_row_ink(int ascent, int cap_height, float scale, int *top_offset, int *height);
+
+/* A respawning item's faded colours (part AE_WAYPOINT_FADE_MARK: the distance and the picture; AE_WAYPOINT_FADE_NAME:
+the name): the mark's colour blended 60% toward a neutral grey and 40% as opaque, the name's as it was at 85%;
+the timer is not faded. in and out are r, g, b, a in 0..1 (may be the same) */
+enum
+{
+	AE_WAYPOINT_FADE_MARK,
+	AE_WAYPOINT_FADE_NAME
+};
+void ae_waypoint_fade(int part, const float *in, float *out);
+
+int ae_waypoint_stock_height(int cap_height);
+/* a weapon's sprite drawn alone: 1.4 capitals high, its shape kept and its width following, or
+smaller still to max_width (the name's width; none when 0). *scale from its texels to that size.
 0 for a sprite of no size */
 int ae_waypoint_stock_layout(int cap_height, int sprite_width, int sprite_height, int max_width, int *width,
 	int *height, float *scale);
