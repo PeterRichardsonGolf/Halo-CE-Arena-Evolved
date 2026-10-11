@@ -1368,6 +1368,7 @@
 		<string text="Adjust the mouse's sensitivity\nand aiming.\n\nProfile:"/>
 		<string text="Adjust the volume of the music\nand of everything else.\n\nProfile:"/>
 		<string text="Choose a window or the full\nscreen, the frame rate and more.\n\nProfile:"/>
+		<string text="The HUD's area, clocks and\nmessages, and the waypoints.\n\nProfile:"/>
 		<string text="Internet play, updates and the\nmultiplayer HUD.\n\nProfile:"/>
 		<string text="Mods, and how the game plays:\nfall damage and more.\n\nProfile:"/>
 		<string text="Custom Edition maps' files,\nread from Halo: The Master\nChief Collection's folder.\nProfile:"/>
@@ -1387,6 +1388,7 @@
 		<string text="ABOUT"/>
 		<string text="GAME OPTIONS"/>
 		<string text="MAP FILES"/>
+		<string text="HUD"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/cap_video_settings_strings">
 		<string text="Select a display resolution."/>

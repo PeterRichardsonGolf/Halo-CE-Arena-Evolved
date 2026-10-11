@@ -277,6 +277,16 @@ static const struct config_setting config_settings[] =
 		"hot orange-red the likeliest; dark red with a cross can't be picked\n"
 		"now (an enemy within 6 m, a vehicle on it); a flash where a player\n"
 		"really spawns." },
+	{ "display.waypoint_style", _config_string, "\"both\"", "HALO_WAYPOINT_STYLE", _environment_value, /* AE hook */
+		_platform_all,
+		"What the gametype's item waypoints (TIMERS with waypoints, TRAINING) show\n"
+		"by their arrows: \"text\", the item's name and the time to its spawn;\n"
+		"\"icons\", the item's picture with the time in small text beside it;\n"
+		"\"both\", the name and time, then the picture. A weapon's picture is\n"
+		"the pickup prompt's, read from the map being played (a map or mod that\n"
+		"has none shows that item's text); the overshield's and the active\n"
+		"camouflage's are Arena Evolved's own. A setting of this machine's\n"
+		"display only: nothing goes over the network." },
 	{ "display.short_messages", _config_boolean, "false", "HALO_SHORT_MESSAGES", _environment_value, _platform_all,
 		"Shorter game messages, as Halo 1: NHE's: a killing spree reads\n"
 		"\"Killing Spree!\" (with the count, if there is one). false keeps the\n"
@@ -829,6 +839,13 @@ static const struct config_setting config_settings[] =
 		"place of the built-in one; not found, the built-in one. Empty for none.\n"
 		"(Looking seeds the Arena Evolved gametypes into the save root in use:\n"
 		"set HALO_SAVE_ROOT for tests.)" },
+	{ "debug.waypoint_icons", _config_string, "\"\"", "HALO_WAYPOINT_ICONS", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the item waypoints' pictures\n"
+		"(display.waypoint_style): \"no_sheet\" plays as a map whose HUD has no\n"
+		"messaging icons, \"bad_sequence\" as one whose weapons name a picture\n"
+		"its sheet has not: every weapon's waypoint shows its text. Empty for\n"
+		"the map's own." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

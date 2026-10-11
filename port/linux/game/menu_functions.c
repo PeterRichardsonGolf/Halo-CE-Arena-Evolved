@@ -95,6 +95,7 @@ their handlers open opens.
 /* (its games on Halo PC maps: server_browser.c) */
 #include "halo_map_families.h"
 #include "ae_glue_mcc.h" /* AE hook */
+#include "ae_glue_settings.h" /* AE hook */
 #include "halo_server_browser.h"
 #include "halo_port_limits.h" /* AE: the game lists' rows (halo_port_advertised_join_state) */
 
@@ -1874,6 +1875,7 @@ static void profile_gamepad_layout(struct widget_instance *picture)
 	{
 		picture->animation.current_frame_index = (short)(row % PROFILE_FIRST_LAYOUT_FRAME);
 	}
+	ae_settings_profile_picture(picture); /* AE hook */
 }
 
 /* ---------- Profiles: the player profiles, and a row to make one (as the
@@ -6956,6 +6958,8 @@ void pc_menu_game_data_function_invoke(
 		return;
 	if (!strcmp(name, "ae mcc status")) /* AE hook */
 		text_set_length(widget, (wchar_t const *)ae_mcc_status_wide(), 200);
+	if (!strcmp(name, "ae profile picture")) /* AE hook */
+		ae_settings_profile_list(widget);
 	/* (a text field whose screen has gone: let go of) */
 	if (text_field.row && system_milliseconds() - text_field_shown_time > 500)
 		text_field_end(FALSE);

@@ -51,7 +51,7 @@ def test_map_files_screen():
 
 
 def test_profile_menu_item():
-    """MAP FILES is the profile menu's own item, after GAME OPTIONS; the rows are 30 px apart and end above the
+    """MAP FILES is the profile menu's own item, after GAME OPTIONS; the rows end above the
     buttons; the hand-edited files (tools/ce_menus.py's) agree with the generator's data"""
     rows = port_settings.PROFILE_ROWS
     assert rows.index("map_files_profile_item") == rows.index("mods_profile_item") + 1
@@ -60,7 +60,8 @@ def test_profile_menu_item():
     menu = (CE / PROFILE_MENU).read_text()
     order = re.findall(rf'<child widget="{PE}/(\w+)"', menu.split(f'name="{PE}/profile_edit_select_list"')[1])
     assert order[:len(rows)] == rows
-    files = {MAP_FILES: "map_files_profile_item", GAME_OPTIONS: "mods_profile_item"}
+    files = {MAP_FILES: "map_files_profile_item", GAME_OPTIONS: "mods_profile_item",
+             GAME_OPTIONS.replace("mods_setup", "hud_setup"): "hud_profile_item"}
     for item, top in zip(rows, tops):
         text = (CE / next((name for name, own in files.items() if own == item), PROFILE_MENU)).read_text()
         (widget,) = re.findall(rf'<widget name="{PE}/{item}"[^>]*>', text)
@@ -71,14 +72,14 @@ def test_profile_menu_item():
                             .split("</strings>")[0])
         assert listed == [text.replace("'", "'") for text in port_settings.STRING_OVERRIDES[f"{PE}/{name}"]]
     # (the descriptions go by the items' places)
-    assert "Custom Edition maps' files" in port_settings.STRING_OVERRIDES[f"{PE}/profile_edit_descriptions"][8]
+    assert "Custom Edition maps' files" in port_settings.STRING_OVERRIDES[f"{PE}/profile_edit_descriptions"][
+        rows.index("map_files_profile_item")]
     tags = (ROOT / "port" / "linux" / "game" / "menu_tags.c").read_text()
     assert f'"{PE}/map_files_profile_item", /* AE hook */' in tags
 
 
-def test_game_options_is_as_it_was():
+def test_game_options_has_no_map_files():
     spec = port_settings.SCREENS["mods_setup"]
-    assert len(spec["rows"]) == 14 and spec["spacing"] == 20 and spec["help_top"] == 364
     assert "categories" not in spec and "map_files" not in (CE / GAME_OPTIONS).read_text().replace(
         "map_files_profile_item", "")
 
@@ -182,8 +183,8 @@ def test_game_ask_is_no_outside_the_menus(tmp_path):
     _, mcc, _ = _games()
     debug, _ = _game(tmp_path, "ask", 15, {"HALO_MCC_PATH": mcc, "HALO_NETWORK_TEST": "host:homobox@ce"})
     assert debug.count('game.mcc_use is "ask"') == 1
-    assert re.search(r"homobox@ce refused: there is no d:\\maps_ce\\bitmaps\.map\. MCC found: turn on Settings > "
-                     r"MAP FILES to use its files\.\r?$", debug, re.M)
+    assert re.search(r"homobox@ce refused: there is no d:\\maps_ce\\bitmaps\.map\. MCC found: turn on the main menu's "
+                     r"Settings > MAP FILES to use its files\.\r?$", debug, re.M)
 
 
 def test_game_no_reads_nothing_of_steam(tmp_path):

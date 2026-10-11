@@ -416,6 +416,7 @@ static char const *const port_game_data_input_names[] =
 	on Gamepad Setup's row) */
 	"port gamepad layout preview",
 	"ae mcc status", /* AE hook */
+	"ae profile picture", /* AE hook */
 };
 
 static struct

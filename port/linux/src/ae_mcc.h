@@ -150,6 +150,10 @@ int ae_mcc_state_flags_installed(long state_flags);
 /* whether two paths name one folder: exactly; or, on Windows (windows not
 0), case-blind, / and \ alike, a trailing separator ignored */
 int ae_mcc_same_folder(const char *a, const char *b, int windows);
+/* a path for one line of at most `most` characters: as it is when it fits, else its end from a path separator
+(/ or \) on, after "..." ("...\common\Halo The Master Chief Collection"); with no separator in that end (a last
+folder longer than the line), its last most - 3 characters after "..." */
+void ae_mcc_short_path(const char *path, char *out, size_t size, size_t most);
 /* the engine's name of one of MCC's files, "mcc:\<name>.map" (either
 separator, any case): the resource's type (0 to 2); AE_MCC_VIRTUAL_INVALID
 for any other "mcc:\..." path (a folder, .., ui.map, a long name), which

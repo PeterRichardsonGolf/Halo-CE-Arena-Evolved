@@ -53,6 +53,7 @@ struct item_timer
 	boolean side_prefix;	/* RED / BLUE before its name: the same item is at the other base */
 	wchar_t label[16];	/* the power list's: "SNIPER", "RED ROCKETS", "OS/CAMO", "SHOTGUN" */
 	short number;	/* 1, 2, ... among power entries of the same label (two RED ROCKETS), else 0 */
+	long definition_index;	/* the item of its class (as the gametype remaps it), NONE for no power class */
 };
 
 /* ---------- prototypes/ITEM_TIMERS.C */
@@ -69,6 +70,7 @@ boolean item_timer_waypoint_shown(struct item_timer const *timer);	/* the waypoi
 boolean item_timer_on_map(struct item_timer const *timer);	/* its last spawn was under 20 s ago */
 short item_timer_spawned_class(struct item_timer const *timer);	/* the item on the map's class, else NONE */
 void item_timer_waypoint_name(struct item_timer const *timer, wchar_t *name, short size);	/* "RED OVERSHIELD" */
+short item_timer_waypoint_class(struct item_timer const *timer);	/* the class its waypoint's name is of, else NONE */
 void item_timers_update(void);	/* per tick: logs TRAINING's waypoints going on and off */
 
 #endif // __ITEM_TIMERS_H

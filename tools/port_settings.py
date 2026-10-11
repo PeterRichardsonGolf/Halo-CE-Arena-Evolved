@@ -35,6 +35,9 @@ MCC_SENSITIVITIES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(
 MCC_SCALES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(1, 21)]
 # (the zoom action's modes: ae_zoom.c)
 ZOOM_MODES = [("TOGGLE", "toggle"), ("HOLD", "hold"), ("BOTH", "both")]
+ZOOM_RESETS = [("FIRST LEVEL", "first"), ("LAST USED", "last")]
+# (the item waypoints' labels: hud_item_timers.c, ae_waypoint_icons.c)
+WAYPOINT_STYLES = [("TEXT", "text"), ("ICONS", "icons"), ("BOTH", "both")]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
 # each screen: its folder below PE, its screen's widget (the name the profile
@@ -112,10 +115,8 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (20, not 24: thirteen rows, with the help line where
-        # video_settings' is, as its fourteen at 20)
-        "spacing": 20,
-        "help_top": 364,
+        # (nine rows, the other screens' 30 px apart: the HUD's rows are the HUD screen's, hud_setup)
+        "spacing": 30,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -126,20 +127,6 @@ SCREENS = {
              "Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options.", None),
             ("CAMPAIGN HEALTH:", "game.health", HEALTH_STYLES,
              "How health comes back in the campaign. Gametypes\nhave their own, in Arena Options.", None),
-            ("CAMPAIGN TIMER:", "display.campaign_timer", ON_OFF,
-             "A clock of the time played on the level, in the\ncampaign's corner by the motion sensor.", None),
-            # (a help for each value, as the Master Chief Collection's)
-            ("MULTIPLAYER GAME TIMER:", "display.match_clock", MATCH_CLOCKS,
-             ["No clock in a multiplayer game's corner.",
-              "Display the time remaining until the game ends.",
-              "Display the time elapsed since the game started.",
-              "Display the time remaining, with the time\nelapsed above it."], None),
-            ("HUD AREA:", "display.hud_area", HUD_AREAS,
-             "On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide.", None),
-            ("COMPACT HUD:", "display.compact_hud", ON_OFF,
-             "With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages.", None),
-            ("SCOREBOARD FADE:", "display.scoreboard_fade", SCOREBOARD_FADES,
-             "How fast the scoreboard fades in and out while\nBack (or Tab) is held.", None),
             ("CALLOUTS:", "game.callouts", CALLOUTS,
              "Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too.", None),
             # (a help for each value)
@@ -158,14 +145,49 @@ SCREENS = {
              ["TRAINING's spawn markers stay plain green.",
               "TRAINING's spawn markers glow where you would\nspawn next: hot is likely, dark red can't.",
               "TRAINING's spawn markers glow where the other\nteam would spawn next (in team games)."], None),
-            ("SHORT MESSAGES:", "display.short_messages", ON_OFF,
-             "Shorter game messages, as Halo 1: NHE's: a\nkilling spree reads Killing Spree!", None),
             # (a help for each value; the mouse's and the controller's zoom alike)
             ("ZOOM:", "input.zoom_mode", ZOOM_MODES,
              ["Each press of the zoom button zooms in a level,\nthen out, as Halo does.",
-              "Zoomed while the button is held, to the first level\nonly: a second level is not reached.",
-              "Tap to toggle, hold to zoom while held: a hold\nzooms to the first level, and letting go zooms out."],
+              "Zoomed while held: the wheel or the flashlight steps\nthe level; a tap then a hold starts at the second.",
+              "Tap to toggle, hold to zoom while held: the wheel or\nthe flashlight steps the level of a hold."],
              None),
+            # (a help for each value: where a hold starts, ae_zoom.c)
+            ("ZOOM RESET:", "input.zoom_reset", ZOOM_RESETS,
+             ["A hold of the zoom button starts at the weapon's\nfirst zoom level.",
+              "A hold of the zoom button starts at the level you\nlast used on that weapon."],
+             None),
+        ],
+    },
+    # (the HUD's own screen, the profile menu's HUD after VIDEO SETUP: _hud_item. Its rows were Game Options')
+    "hud_setup": {
+        "screen": "hud_settings_screen",
+        "header": ("header_hud", None),
+        "title": "HUD",
+        "spacing": 30,
+        # (the spinners wider, from further left: "TIME REMAINING")
+        "spinner": (300, 187),
+        "rows": [
+            ("HUD AREA:", "display.hud_area", HUD_AREAS,
+             "On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide.", None),
+            ("COMPACT HUD:", "display.compact_hud", ON_OFF,
+             "With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages.", None),
+            ("SCOREBOARD FADE:", "display.scoreboard_fade", SCOREBOARD_FADES,
+             "How fast the scoreboard fades in and out while\nBack (or Tab) is held.", None),
+            ("CAMPAIGN TIMER:", "display.campaign_timer", ON_OFF,
+             "A clock of the time played on the level, in the\ncampaign's corner by the motion sensor.", None),
+            # (a help for each value, as the Master Chief Collection's)
+            ("MULTIPLAYER GAME TIMER:", "display.match_clock", MATCH_CLOCKS,
+             ["No clock in a multiplayer game's corner.",
+              "Display the time remaining until the game ends.",
+              "Display the time elapsed since the game started.",
+              "Display the time remaining, with the time\nelapsed above it."], None),
+            ("SHORT MESSAGES:", "display.short_messages", ON_OFF,
+             "Shorter game messages, as Halo 1: NHE's: a\nkilling spree reads Killing Spree!", None),
+            # (the gametype's item waypoints' labels: a help for each value)
+            ("WAYPOINTS:", "display.waypoint_style", WAYPOINT_STYLES,
+             ["Item waypoints show the item's name and the time\nto its spawn.",
+              "Item waypoints show the item's picture, with the\ntime to its spawn in small text beside it.",
+              "Item waypoints show the item's name and time,\nthen its picture."], None),
         ],
     },
     # (MCC's Custom Edition files, read in place: port/linux/src/ae_mcc_platform.c; the profile menu's MAP FILES,
@@ -388,7 +410,7 @@ TEAMPLAY_ROWS = [
 STRING_OVERRIDES = {
     f"{PE}/profile_edit_options": ["CHANGE NAME", "CONTROLS SETUP", "GAMEPADS", "MOUSE SETUP", "AUDIO SETUP",
                                    "VIDEO SETUP", "CHANGE COLOR", "SAVE CHANGES ", "NETWORK SETUP ", "ABOUT",
-                                   "GAME OPTIONS", "MAP FILES"],
+                                   "GAME OPTIONS", "MAP FILES", "HUD"],
     f"{PE}/profile_edit_descriptions": [
         "Rename this profile.\\n\\n\\nProfile:",
         "Choose the keys and mouse\\nbuttons for each action.\\n\\nProfile:",
@@ -396,6 +418,7 @@ STRING_OVERRIDES = {
         "Adjust the mouse's sensitivity\\nand aiming.\\n\\nProfile:",
         "Adjust the volume of the music\\nand of everything else.\\n\\nProfile:",
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
+        "The HUD's area, clocks and\\nmessages, and the waypoints.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Mods, and how the game plays:\\nfall damage and more.\\n\\nProfile:",
         "Custom Edition maps' files,\\nread from Halo: The Master\\nChief Collection's folder.\\nProfile:",
@@ -648,18 +671,22 @@ def _mods_item() -> list:
                     ("height", PROFILE_ROW_HEIGHT),
                     ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PE}/profile_edit_options"),
                     ("string_index", 10), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
-                    ("text_y", 5), ("platform", "desktop")],
+                    ("text_y", PROFILE_ROW_TEXT_Y), ("platform", "desktop")],
                    [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
                     '<on event="left_mouse" run="mouse emit accept event"/>'])
 
 
-# the profile menu's rows (PROFILE_ROWS, top to bottom), 30 px apart from 78 so that MAP FILES, after GAME
-# OPTIONS, fits above the buttons (the PC version's were 33 px apart; WIDGET_PATCHES sets their tops)
+# the profile menu's rows (PROFILE_ROWS, top to bottom), 27 px apart from 78 so that its twelve (MAP FILES after
+# GAME OPTIONS, HUD after VIDEO SETUP) fit above the buttons (the PC version's nine were 33 px apart;
+# WIDGET_PATCHES sets their tops, heights and their text's place). A row's description is the string at its
+# place here (profile_edit_descriptions); its picture goes by its name (ae_glue_settings.c)
 PROFILE_ROWS = ["name_profile_item", "controller_setup_profile_item", "gamepads_profile_item",
                 "mouse_settings_profile_item", "audio_settings_profile_item", "video_settings_profile_item",
-                "network_settings_profile_item", "mods_profile_item", "map_files_profile_item", "color_profile_item",
-                "about_item"]
-PROFILE_ROW_TOP, PROFILE_ROW_STEP, PROFILE_ROW_HEIGHT = 78, 30, 30
+                "hud_profile_item", "network_settings_profile_item", "mods_profile_item", "map_files_profile_item",
+                "color_profile_item", "about_item"]
+PROFILE_ROW_TOP, PROFILE_ROW_STEP, PROFILE_ROW_HEIGHT, PROFILE_ROW_TEXT_Y = 78, 27, 27, 4
+# (the rows this port adds, each a function's below)
+PROFILE_OWN_ROWS = ("mods_profile_item", "map_files_profile_item", "hud_profile_item")
 
 
 def _profile_row_top(item: str) -> int:
@@ -674,7 +701,20 @@ def _map_files_item() -> list:
                     ("width", 232), ("height", PROFILE_ROW_HEIGHT),
                     ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PE}/profile_edit_options"),
                     ("string_index", 11), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
-                    ("text_y", 5), ("platform", "desktop")],
+                    ("text_y", PROFILE_ROW_TEXT_Y), ("platform", "desktop")],
+                   [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>'])
+
+
+def _hud_item() -> list:
+    """the profile menu's HUD, after VIDEO SETUP (WIDGET_PATCHES), opening the HUD screen"""
+    screen = f"{PE}/hud_setup/hud_settings_screen"
+    return _widget(f"{PE}/hud_profile_item",
+                   [("type", "text"), ("left", 51), ("top", _profile_row_top("hud_profile_item")),
+                    ("width", 232), ("height", PROFILE_ROW_HEIGHT),
+                    ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PE}/profile_edit_options"),
+                    ("string_index", 12), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                    ("text_y", PROFILE_ROW_TEXT_Y), ("platform", "desktop")],
                    [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
                     '<on event="left_mouse" run="mouse emit accept event"/>'])
 
@@ -684,7 +724,8 @@ def settings_files() -> dict:
     files = {}
     for folder, spec in SCREENS.items():
         files[f"{PE}/{folder}".replace("/", ".") + ".xml"] = _setting_screen(folder, spec) + (
-            _mods_item() if folder == "mods_setup" else _map_files_item() if folder == "map_files" else [])
+            _mods_item() if folder == "mods_setup" else _map_files_item() if folder == "map_files" else
+            _hud_item() if folder == "hud_setup" else [])
     files[f"{PE}/controls_setup".replace("/", ".") + ".xml"] = _controls_screen()
     return {name: ['<?xml version="1.0" encoding="UTF-8"?>',
                    "<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->",
@@ -833,12 +874,17 @@ WIDGET_PATCHES = {
     # (Mods, after Network Setup: _mods_item; Change Color and About a row down,
     # ce_menus.CHILD_OFFSETS)
     f"{PE}/profile_edit_select_list": {"insert_before": {
+        f"{PE}/network_settings_profile_item": [f'<child widget="{PE}/hud_profile_item"/>'],
         f"{PE}/color_profile_item": [f'<child widget="{PE}/mods_profile_item"/>',
                                      f'<child widget="{PE}/map_files_profile_item"/>'],
-    }},
-    # (the rows 30 px apart, for MAP FILES: PROFILE_ROWS)
-    **{f"{PE}/{item}": {"set": {"top": _profile_row_top(item), "height": PROFILE_ROW_HEIGHT}}
-       for item in PROFILE_ROWS if item not in ("mods_profile_item", "map_files_profile_item")},
+    },
+        # (each row's picture by the row's name, none for a row with no picture of its own:
+        # port/linux/game/ae_glue_settings.c)
+        "inputs": ["ae profile picture"]},
+    # (the rows 27 px apart, for MAP FILES and HUD: PROFILE_ROWS)
+    **{f"{PE}/{item}": {"set": {"text_y": PROFILE_ROW_TEXT_Y, "top": _profile_row_top(item),
+                                "height": PROFILE_ROW_HEIGHT}}
+       for item in PROFILE_ROWS if item not in PROFILE_OWN_ROWS},
     # (the profile settings' picture: on Gamepad Setup's row, the profile's
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)

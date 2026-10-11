@@ -135,11 +135,13 @@ static short item_timer_definition_class(
 items; the heaviest permutation names the entry, and *classes has a bit
 for each class it can spawn. FALSE when the gametype spawns none of them
 (no shields: no overshield, always invisible: no camo, no weapons on the
-map: no weapons) */
+map: no weapons). *class_definition is the item of that class (NONE for
+other): its picture is the waypoint's */
 static boolean item_timer_classify(
 	long collection_index,
 	short *timer_class,
 	long *heaviest_definition,
+	long *class_definition,
 	unsigned short *classes)
 {
 	struct item_collection_definition *collection;
@@ -149,6 +151,7 @@ static boolean item_timer_classify(
 
 	*timer_class = _item_timer_other;
 	*heaviest_definition = NONE;
+	*class_definition = NONE;
 	*classes = 0;
 	if (collection_index == NONE)
 		return FALSE;
@@ -182,7 +185,10 @@ static boolean item_timer_classify(
 		permutation_class = item_timer_definition_class(definition_index);
 		SET_FLAG(*classes, permutation_class, TRUE);
 		if (permutation_class < *timer_class)
+		{
 			*timer_class = permutation_class;
+			*class_definition = definition_index;
+		}
 		if (permutation->weight > heaviest_weight)
 		{
 			heaviest_weight = permutation->weight;
@@ -610,9 +616,11 @@ void item_timers_map_begin(
 		short timer_class;
 		unsigned short classes;
 		long definition_index;
+		long class_definition_index;
 
 		if (!game_engine_matches_game_type(equipment->game_type) ||
-			!item_timer_classify(equipment->item_collection.index, &timer_class, &definition_index, &classes))
+			!item_timer_classify(equipment->item_collection.index, &timer_class, &definition_index,
+				&class_definition_index, &classes))
 		{
 			continue;
 		}
@@ -628,6 +636,7 @@ void item_timers_map_begin(
 		timer->period_ticks = game_engine_item_respawn_period(equipment);
 		timer->timer_class = timer_class;
 		timer->classes = classes;
+		timer->definition_index = class_definition_index;
 		item_timer_count++;
 	}
 
@@ -798,6 +807,17 @@ short item_timer_spawned_class(
 	}
 
 	return item_timer_spawned[index].timer_class;
+}
+
+/* the power class the waypoint's name is of (item_timer_waypoint_name: a
+mixed entry's once the item it spawned is seen on the map), else NONE: the
+class its picture is of (display.waypoint_style, hud_item_timers.c) */
+short item_timer_waypoint_class(
+	struct item_timer const *timer)
+{
+	short timer_class = item_timer_mixed(timer) ? item_timer_spawned_class(timer) : timer->timer_class;
+
+	return timer_class >= 0 && timer_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES ? timer_class : NONE;
 }
 
 /* the name over TRAINING's waypoint: RED / BLUE as the power list has it,

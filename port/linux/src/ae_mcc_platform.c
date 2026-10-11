@@ -236,7 +236,7 @@ const char *ae_mcc_refusal_note(void)
 		return ". MCC found, but its Custom Edition files are missing. Check the install in Steam.";
 	case AE_MCC_FOUND:
 		/* (a load outside the menus' question: a game joined, the Xbox menus, a test host) */
-		return ae_mcc_use() == AE_MCC_USE_ASK ? ". MCC found: turn on Settings > MAP FILES to use its files." : "";
+		return ae_mcc_use() == AE_MCC_USE_ASK ? ". MCC found: turn on the main menu's Settings > MAP FILES to use its files." : "";
 	default:
 		return "";
 	}
@@ -391,17 +391,6 @@ void ae_mcc_browse(void)
 #endif
 }
 
-/* the path, shortened from its start to fit the line */
-static void shortened(const char *path, char *out, size_t size, size_t most)
-{
-	size_t length = strlen(path);
-
-	if (length <= most)
-		snprintf(out, size, "%s", path);
-	else
-		snprintf(out, size, "...%s", path + length - (most - 3));
-}
-
 const char *ae_mcc_status_text(void)
 {
 	char path[128];
@@ -425,7 +414,7 @@ const char *ae_mcc_status_text(void)
 		snprintf(mcc.status, sizeof(mcc.status), "%s", mcc.browse_message);
 	else if (mcc.result.state == AE_MCC_FOUND)
 	{
-		shortened(mcc.result.root, path, sizeof(path), 48);
+		ae_mcc_short_path(mcc.result.root, path, sizeof(path), 48);
 		snprintf(mcc.status, sizeof(mcc.status), "%s\n%s",
 			ae_mcc_use() == AE_MCC_USE_YES ? "IN USE:" : "FOUND (SET MCC FILES TO ON TO USE IT):", path);
 	}

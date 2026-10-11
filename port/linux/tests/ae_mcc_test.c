@@ -387,7 +387,30 @@ static void header_tests(void)
 static void small_tests(void)
 {
 	char roots[8][AE_MCC_PATH_SIZE];
+	char shown[64];
 	int count;
+
+	/* (the status line's path: whole when it fits, else cut at a separator after "...", never mid-word) */
+	ae_mcc_short_path("/games/MCC", shown, sizeof(shown), 48);
+	CHECK(!strcmp(shown, "/games/MCC"));
+	ae_mcc_short_path("/games/player/.local/share/Steam/steamapps/common/Halo The Master Chief Collection", shown,
+		sizeof(shown), 48);
+	CHECK(!strcmp(shown, ".../common/Halo The Master Chief Collection"));
+	ae_mcc_short_path("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Halo The Master Chief Collection", shown,
+		sizeof(shown), 48);
+	CHECK(!strcmp(shown, "...\\common\\Halo The Master Chief Collection"));
+	/* (48 characters exactly fits; one more is cut) */
+	ae_mcc_short_path("/aaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbb", shown, sizeof(shown), 48);
+	CHECK(strlen(shown) == 48 && shown[0] == '/');
+	ae_mcc_short_path("/aaaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbb", shown, sizeof(shown), 48);
+	CHECK(!strcmp(shown, ".../bbbbbbbbbbbbbbbbbbbbbbbb"));
+	/* (a last folder longer than the line, or a trailing separator alone: its end, as much as fits) */
+	ae_mcc_short_path("/x/abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij", shown, sizeof(shown), 20);
+	CHECK(!strcmp(shown, "...tuvwxyzabcdefghij"));
+	ae_mcc_short_path("/x/abcdefghijklmnopqrstuvwxyz/", shown, sizeof(shown), 20);
+	CHECK(strlen(shown) == 20 && !strncmp(shown, "...", 3));
+	ae_mcc_short_path("/a/long/path/that/does/not/fit", shown, 8, 20);
+	CHECK(strlen(shown) == 7);
 
 	CHECK(ae_mcc_use_from_text("yes") == AE_MCC_USE_YES && ae_mcc_use_from_text("NO") == AE_MCC_USE_NO);
 	CHECK(ae_mcc_use_from_text("ask") == AE_MCC_USE_ASK && ae_mcc_use_from_text("maybe") == AE_MCC_USE_ASK &&

@@ -65,3 +65,9 @@ port/linux/game/menu_tags.c	"ae mcc use", "ae mcc not now", "ae mcc never ask", 
 port/linux/game/menu_tags.c	"ae mcc status", /* AE hook */
 port/linux/game/menu_tags.c	"main_menu/settings_select/player_setup/player_profile_edit/map_files_profile_item", /* AE hook */
 tools/tests/map_fuzz.c	char const *ae_mcc_refusal_note(void) { return ""; } /* AE hook */
+port/linux/src/port_config.c	{ "display.waypoint_style", _config_string, "\"both\"", "HALO_WAYPOINT_STYLE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/game/menu_functions.c	#include "ae_glue_settings.h" /* AE hook */
+port/linux/game/menu_functions.c	ae_settings_profile_picture(picture); /* AE hook */
+port/linux/game/menu_functions.c	if (!strcmp(name, "ae profile picture")) /* AE hook */\nae_settings_profile_list(widget);
+port/linux/game/menu_tags.c	"ae profile picture", /* AE hook */
+port/linux/src/port_config.c	{ "debug.waypoint_icons", _config_string, "\"\"", "HALO_WAYPOINT_ICONS", _environment_value, /* AE hook */\n_platform_all,

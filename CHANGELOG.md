@@ -6,6 +6,31 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Settings has a new HUD entry (after VIDEO SETUP) with its own screen. HUD
+  AREA, COMPACT HUD, SCOREBOARD FADE, CAMPAIGN TIMER, MULTIPLAYER GAME TIMER
+  and SHORT MESSAGES moved there from Game Options (the settings and their
+  values are unchanged), which is back to rows 30 px apart. The Settings list
+  has twelve entries, 27 px apart. Each entry now shows its own picture
+  whatever its place in the list (CHANGE COLOR showed CHANGE NAME's), and an
+  entry with no picture of its own shows none, with its description at the top
+  of the panel, instead of a "PLACE HOLDER" box.
+- Item waypoints can show pictures: WAYPOINTS on Settings > HUD
+  (`display.waypoint_style`): TEXT (as before, "RED SNIPER 0:07"), ICONS (the
+  item's picture, then the time in small text) or BOTH (the name and time,
+  then the picture), BOTH by default. A weapon's picture is the one the pickup
+  prompt shows, read from the map you are playing (nothing is shipped); a
+  weapon with none on that map (some Custom Edition maps and mods) shows its
+  text. The overshield and the active camouflage have Arena Evolved's own
+  glyphs (`tools/ae_waypoint_glyphs.py` draws them). Pictures take the label's
+  colour (red and blue by base). Labels that share a line stay text in BOTH.
+  This machine's display only: nothing new goes over the network.
+- Zoom: a ZOOM RESET row on Settings > Game Options, under ZOOM
+  (`input.zoom_reset`: FIRST LEVEL or LAST USED), and ZOOM's help says what
+  the wheel, the flashlight button and a tap then a hold do.
+- MAP FILES: the folder shown is cut at a folder's name ("...\common\Halo The
+  Master Chief Collection"), not mid-word, and a map refused for MCC's files
+  says "the main menu's Settings > MAP FILES" (a game's pause SETTINGS has no
+  MAP FILES).
 - Mouse: a MOUSE STYLE row on the Mouse screen of Settings (`input.mouse_style`).
   CLASSIC (the default) is as before. MCC uses Halo: The Master Chief
   Collection's sensitivity number (0.1 to 10 in 0.1 steps; the view turns the

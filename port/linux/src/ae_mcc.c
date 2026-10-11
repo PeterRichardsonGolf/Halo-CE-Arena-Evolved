@@ -793,3 +793,24 @@ int ae_mcc_detect(const struct ae_mcc_inputs *inputs, struct ae_mcc_result *resu
 	result_set(result, AE_MCC_NOT_FOUND, AE_MCC_SOURCE_NONE, "", reason);
 	return AE_MCC_NOT_FOUND;
 }
+
+void ae_mcc_short_path(const char *path, char *out, size_t size, size_t most)
+{
+	size_t length = strlen(path);
+	size_t from;
+
+	if (!size)
+		return;
+	if (length <= most || most <= 3)
+	{
+		snprintf(out, size, "%s", path);
+		return;
+	}
+	/* (the longest end that fits, then on to its first separator) */
+	for (from = length - (most - 3); from < length && path[from] != '/' && path[from] != '\\'; from++)
+		;
+	/* (none, or only the path's own last character: cut where it fits) */
+	if (from + 1 >= length)
+		from = length - (most - 3);
+	snprintf(out, size, "...%s", path + from);
+}

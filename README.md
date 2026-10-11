@@ -147,15 +147,15 @@ play:
 - A performance overlay in the HUD's style (Settings > Video > GRAPHICS >
   PERFORMANCE: FPS, or FPS with frame times and draws; top left or top
   right).
-- A match clock, as in the Master Chief Collection (Settings > Game Options >
+- A match clock, as in the Master Chief Collection (Settings > HUD >
   MULTIPLAYER GAME TIMER: OFF, TIME REMAINING, TIME ELAPSED or BOTH). TIME
   REMAINING shows the time left (counting up when there is no time limit),
   TIME ELAPSED the time played, and BOTH the time left with the time played
   smaller above it (the time played alone with no time limit). It sits in
   the bottom right corner of each view, lined up with the motion sensor.
   On Halo 1: NHE's maps it replaces their own clock.
-- A campaign timer, as in the Master Chief Collection (Settings > Game Options
-  > CAMPAIGN TIMER: OFF or ON, off by default): the time played on the level,
+- A campaign timer, as in the Master Chief Collection (Settings > HUD >
+  CAMPAIGN TIMER: OFF or ON, off by default): the time played on the level,
   in the same corner as the match clock. It counts game time, so it stops in
   the pause menu; cutscenes count. Reverting to a checkpoint does not take
   time back, and starting the level again starts it at 0:00.
@@ -252,7 +252,8 @@ folder (about 2 GB) out of it.
 1. Start the game and point it at your Halo disc image (see above).
 2. The menus are the PC version's (`display.menus` in `config.toml`):
    that's where Arena Evolved's settings live: Settings > Game Options
-   (callouts, voice, mods, campaign rules, the match clock, HUD area),
+   (callouts, voice, mods, campaign rules, zoom), Settings > HUD (the match
+   clock, HUD area, the item waypoints' pictures),
    Settings > Video (the performance overlay), and in a gametype's options,
    ARENA OPTIONS and INDICATOR OPTIONS.
 3. Multiplayer > Create Game > LAN, pick a map and one of the AE gametypes
