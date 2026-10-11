@@ -1483,7 +1483,7 @@ static void get_local_player_input_blob(
 					input->player_control_flags,
 					_player_control_input_zoom_bit,
 					effective_buttons[_button_scope_zoom] == TRUE);
-				ae_zoom_note_held(&input->player_control_flags, effective_buttons[_button_scope_zoom] != 0, gamepad_index); /* AE hook */
+				ae_zoom_note_held(&input->player_control_flags, effective_buttons[_button_scope_zoom] != 0); /* AE hook */
 				SET_FLAG(
 					input->unit_control_flags,
 					_unit_control_action_bit,
@@ -1511,7 +1511,7 @@ static void get_local_player_input_blob(
 					input->unit_control_flags,
 					_unit_control_integrated_light_bit,
 					effective_buttons[_button_flashlight]);
-				ae_zoom_note_flash(&input->player_control_flags, effective_buttons[_button_flashlight] != 0); /* AE hook */
+				ae_zoom_note_flash(&input->player_control_flags, effective_buttons[_button_flashlight] != 0, gamepad_index); /* AE hook */
 				SET_FLAG(
 					input->unit_control_flags,
 					_unit_control_jump_bit,
@@ -1592,7 +1592,6 @@ static void get_local_player_input_blob(
 					input->unit_control_flags,
 					_unit_control_integrated_light_bit,
 					input_key_is_down(_key_x));
-				ae_zoom_note_flash(&input->player_control_flags, input_key_is_down(_key_x)); /* AE hook */
 				SET_FLAG(
 					input->unit_control_flags,
 					_unit_control_weapon_reload_bit,
@@ -1609,7 +1608,7 @@ static void get_local_player_input_blob(
 					input->player_control_flags,
 					_player_control_input_zoom_bit,
 					input_key_is_down(_key_z) == TRUE);
-				ae_zoom_note_held(&input->player_control_flags, input_key_is_down(_key_z), gamepad_index); /* AE hook */
+				ae_zoom_note_held(&input->player_control_flags, input_key_is_down(_key_z)); /* AE hook */
 				SET_FLAG(
 					input->player_control_flags,
 					_player_control_rotate_weapons_bit,

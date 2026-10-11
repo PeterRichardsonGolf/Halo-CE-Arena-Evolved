@@ -148,4 +148,10 @@ void ae_zoom_bank_filter_flash(struct ae_zoom_bank *bank, int player, unsigned l
 short ae_zoom_bank_step_ex(struct ae_zoom_bank *bank, int player, long hold_ms, unsigned long flags, long now_ms,
 	short level, short count, int blocked, long weapon, int wheel);
 
+/* whether the wheel is the zoom's now: HOLD or BOTH, the zoom held in the final blob, a weapon that zooms, not blocked, and
+zoomed (else the wheel does what it always did) */
+int ae_zoom_wheel_wanted(int mode, unsigned long flags, short count, int blocked, short level);
+/* a new game: the levels remembered, the presses and the flashlight latches forgotten (the mode and reset stay) */
+void ae_zoom_bank_forget(struct ae_zoom_bank *bank);
+
 #endif
