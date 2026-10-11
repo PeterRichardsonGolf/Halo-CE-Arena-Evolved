@@ -1370,6 +1370,7 @@
 		<string text="Choose a window or the full\nscreen, the frame rate and more.\n\nProfile:"/>
 		<string text="Internet play, updates and the\nmultiplayer HUD.\n\nProfile:"/>
 		<string text="Mods, and how the game plays:\nfall damage and more.\n\nProfile:"/>
+		<string text="Custom Edition maps' files,\nread from Halo: The Master\nChief Collection's folder.\nProfile:"/>
 		<string text="Free-for-all color; in a match,\nfrom the next game you join.\n\nProfile:"/>
 		<string text="Halo: Combat Evolved, the Xbox\ngame, on this computer.\n\nProfile:"/>
 	</strings>
@@ -1385,6 +1386,7 @@
 		<string text="NETWORK SETUP "/>
 		<string text="ABOUT"/>
 		<string text="GAME OPTIONS"/>
+		<string text="MAP FILES"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/cap_video_settings_strings">
 		<string text="Select a display resolution."/>

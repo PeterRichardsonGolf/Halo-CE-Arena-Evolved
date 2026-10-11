@@ -500,14 +500,15 @@ static const struct config_setting config_settings[] =
 		"The folder of Halo: The Master Chief Collection (the one holding halo1/)\n"
 		"whose Custom Edition files (halo1/maps/custom_edition: bitmaps.map,\n"
 		"sounds.map, loc.map) Custom Edition maps read when maps_ce has none; empty:\n"
-		"found in Steam's libraries. Settings > Game Options > MAP FILES' BROWSE\n"
+		"found in Steam's libraries. Settings > MAP FILES' BROWSE\n"
 		"sets it. HALO_MCC_PATH names one for a run (after this one). The files\n"
 		"are only read, never changed or copied." },
 	{ "game.mcc_use", _config_string, "\"ask\"", "HALO_MCC_USE", _environment_value, /* AE hook */
 		_platform_desktop,
 		"Whether Custom Edition maps read MCC's Custom Edition files (game.mcc_path)\n"
 		"when maps_ce, maps/ce and custom_maps lack them: \"yes\"; \"no\"; \"ask\" (the\n"
-		"menus ask the first time such a map is picked; elsewhere it counts as no)." },
+		"menus ask when such a map is picked; elsewhere it counts as no). With \"no\"\n"
+		"Steam's folders are looked in only by Settings > MAP FILES." },
 	{ "game.callouts", _config_string, "\"off\"", "HALO_CALLOUTS", _environment_value, _platform_all,
 		"Spoken callouts in multiplayer, in game.callout_voice's voice, on this\n"
 		"machine only, in any gametype: \"items\" each power item's call 10\n"

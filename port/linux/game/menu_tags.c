@@ -1853,6 +1853,7 @@ static char const *const pause_settings_hidden_items[] =
 	"main_menu/settings_select/player_setup/player_profile_edit/network_settings_profile_item",
 	"main_menu/settings_select/player_setup/player_profile_edit/color_profile_item",
 	"main_menu/settings_select/player_setup/player_profile_edit/about_item",
+	"main_menu/settings_select/player_setup/player_profile_edit/map_files_profile_item", /* AE hook */
 };
 
 /* the list's rows spaced evenly over the span its rows had (a list that grew

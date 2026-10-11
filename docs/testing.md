@@ -129,11 +129,13 @@ library, hostile VDF files). For games: `HALO_MCC_PATH` names the folder for a r
 `HOME`, at a fake Steam tree), `HALO_MCC_USE=yes|no|ask`, and `HALO_MCC_BROWSE_RESULT=<folder>` answers Settings'
 BROWSE instead of the system's folder dialog. `HALO_MENU_OPEN` opens the Map screen
 (`main_menu/multiplayer_type_select/mp_map_select/mp_map_select_screen`) or MAP FILES
-(`main_menu/settings_select/player_setup/player_profile_edit/mods_setup/map_files/map_files_screen`) directly.
+(`main_menu/settings_select/player_setup/player_profile_edit/map_files/map_files_screen`) directly.
 `tools/test_ae_mcc.py` plays the reads, the question and NEVER ASK AGAIN across a restart with `$AE_MCC_BUILD` (a
 build folder: its `config.toml` is removed before each game), `$AE_MCC_PATH` (a folder with the real files) and
 `$AE_MCC_DATA` (a data root with homobox in `maps_ce` and no resource maps). The real files are the player's:
-never copy them into the repository.
+never copy them into the repository. Known limit on Windows: the detection opens files with the ANSI C runtime, as
+the port's other file calls do, so an MCC folder or Steam library whose path has characters outside the system's
+code page is not found (BROWSE does not help there; `maps_ce` does).
 
 ## Recording
 

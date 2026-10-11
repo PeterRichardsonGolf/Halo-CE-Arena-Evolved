@@ -353,7 +353,6 @@ static boolean setting_text(char const *name, char *text, unsigned int size, boo
 		if (!(default_value ? config_default(name, text, size) : config_text(name, text, size)))
 			return FALSE;
 		ae_mouse_menu_text(name, text, size, default_value); /* AE hook */
-		ae_mcc_menu_text(name, text, size, default_value); /* AE hook */
 		/* (display.mode empty: display.fullscreen's, as the window has it:
 		sdl_platform.c) */
 		if (!strcmp(name, "display.mode") && !text[0])

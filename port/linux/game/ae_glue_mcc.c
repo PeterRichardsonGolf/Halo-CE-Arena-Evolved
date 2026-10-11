@@ -4,8 +4,7 @@ AE_GLUE_MCC.C
 The PC menus' side of MCC's Custom Edition files (ae_glue_mcc.h): the
 question when a Halo PC map is picked and MCC has the files the player's own
 folders lack (main_menu/multiplayer_type_select/mp_map_select/mcc_found_modal,
-tools/port_settings.py), its answers, and Settings > Game Options > MAP
-FILES' BROWSE. The detection, the settings and the reads are
+tools/port_settings.py), its answers, and Settings > MAP FILES' BROWSE. The detection, the settings and the reads are
 port/linux/src/ae_mcc_platform.c's.
 */
 
@@ -32,17 +31,18 @@ static char question_map[256];
 
 int ae_mcc_own_files_present(void)
 {
-	int type;
+	int type, present = 1;
 
-	/* (asked only while game.mcc_use is not "yes": map_family_resource's MCC place is not taken then) */
-	for (type = 0; ae_mcc_resource_name(type); type++)
+	/* (map_family_resource's own places only: its MCC place gives nothing, and logs nothing, meanwhile) */
+	ae_mcc_probe_own_files(1);
+	for (type = 0; present && ae_mcc_resource_name(type); type++)
 	{
 		char path[256];
 
-		if (!map_family_resource(ae_mcc_resource_name(type), path, sizeof(path)))
-			return 0;
+		present = map_family_resource(ae_mcc_resource_name(type), path, sizeof(path)) != 0;
 	}
-	return 1;
+	ae_mcc_probe_own_files(0);
+	return present;
 }
 
 int ae_mcc_map_chosen(char const *map_name, short chosen, struct widget_instance *list, unsigned char *widget_deleted)

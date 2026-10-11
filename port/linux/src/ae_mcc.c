@@ -27,9 +27,21 @@ enum
 	RESOURCE_HEADER_WORDS = 4,
 	RESOURCE_ENTRY_SIZE = 12,
 	RESOURCE_MAXIMUM_ELEMENTS = 0x10000,
-	/* (Steam's state of an app fully installed) */
+	/* Steam's StateFlags, a bit field: fully installed, and the bits that
+	say its files are missing or changing now (files missing, files corrupt,
+	update running, paused or started, uninstalling, validating,
+	downloading, staging, committing). An update only queued (2, with 4: 6)
+	leaves the files whole */
 	STEAM_STATE_FULLY_INSTALLED = 4,
+	STEAM_STATE_FILES_CHANGING = 32 | 128 | 256 | 512 | 1024 | 2048 | 131072 | 1048576 | 2097152 | 4194304,
 };
+
+/* (Windows' folder names are case-blind, with either separator: ae_mcc_same_folder) */
+#ifdef _WIN32
+#define HOST_IS_WINDOWS 1
+#else
+#define HOST_IS_WINDOWS 0
+#endif
 
 static const char *const resource_names[] = { "bitmaps", "sounds", "loc" };
 
@@ -158,7 +170,9 @@ int ae_mcc_resource_file_valid(const char *path, int type, char *reason, size_t 
 	fclose(file);
 	for (index = 0; index < RESOURCE_HEADER_WORDS; index++)
 		header[index] = little_endian(bytes + index * 4);
-	/* (as ce_resource_map_open: its type, its paths before its table, the table in the file) */
+	/* (ce_resources.c's ce_resource_map_open's check, mirrored: its type, at most 0x10000 resources, its paths
+	before its table, the table in the file, under 2 GB. That one is the engine's and the real gate when the file
+	is opened; if its rules change, change these and ae_mcc_test.c's header_tests, which lists the verdicts) */
 	if (header[0] != (unsigned long)(type + 1) || header[3] > RESOURCE_MAXIMUM_ELEMENTS || header[1] > header[2] ||
 		header[2] > (unsigned long)size || header[3] * RESOURCE_ENTRY_SIZE > (unsigned long)size - header[2] ||
 		(unsigned long)size > 0x7fffffffUL)
@@ -254,6 +268,8 @@ static int vdf_token(struct vdf_reader *reader, char *token, size_t size)
 			{
 				char escaped = reader->text[reader->at++];
 
+				if (!escaped)
+					return VDF_ERROR;
 				character = escaped == 'n' ? '\n' : escaped == 't' ? '\t' : escaped;
 			}
 			if (length + 1 >= size)
@@ -374,7 +390,7 @@ static int library_add(struct library_context *context, const char *path)
 		return -1;
 	for (index = 0; index < context->count; index++)
 	{
-		if (!strcmp(context->libraries[index].path, path))
+		if (ae_mcc_same_folder(context->libraries[index].path, path, HOST_IS_WINDOWS))
 			return index;
 	}
 	if (context->count >= context->maximum)
@@ -525,6 +541,56 @@ int ae_mcc_linux_steam_roots(const char *xdg_data_home, const char *home, char (
 
 /* ---------- the detection */
 
+int ae_mcc_state_flags_installed(long state_flags)
+{
+	return state_flags >= 0 && (state_flags & STEAM_STATE_FULLY_INSTALLED) &&
+		!(state_flags & STEAM_STATE_FILES_CHANGING);
+}
+
+int ae_mcc_same_folder(const char *a, const char *b, int windows)
+{
+	if (!windows)
+		return !strcmp(a, b);
+	for (;; a++, b++)
+	{
+		int x = *a == '/' ? '\\' : lower((unsigned char)*a);
+		int y = *b == '/' ? '\\' : lower((unsigned char)*b);
+
+		/* (a trailing separator on either is no difference) */
+		if (!x || !y)
+			return (!x && (!y || (y == '\\' && !b[1]))) || (!y && x == '\\' && !a[1]);
+		if (x != y)
+			return 0;
+	}
+}
+
+int ae_mcc_virtual_path_type(const char *xbox_path)
+{
+	static const char prefix[] = "mcc:";
+	char name[16];
+	const char *rest;
+	size_t length, index;
+
+	if (!xbox_path)
+		return AE_MCC_VIRTUAL_NOT;
+	for (index = 0; prefix[index]; index++)
+	{
+		if (lower((unsigned char)xbox_path[index]) != prefix[index])
+			return AE_MCC_VIRTUAL_NOT;
+	}
+	if (xbox_path[index] != '\\' && xbox_path[index] != '/')
+		return AE_MCC_VIRTUAL_NOT;
+	rest = xbox_path + index + 1;
+	length = strlen(rest);
+	/* (only "<name>.map" of the three names: no folder, no .., nothing else of MCC's is ever named) */
+	if (length < 5 || length - 4 >= sizeof(name) || !same_text(rest + length - 4, ".map"))
+		return AE_MCC_VIRTUAL_INVALID;
+	memcpy(name, rest, length - 4);
+	name[length - 4] = 0;
+	index = (size_t)ae_mcc_resource_type(name);
+	return (int)index >= 0 ? (int)index : AE_MCC_VIRTUAL_INVALID;
+}
+
 int ae_mcc_use_from_text(const char *text)
 {
 	if (text && same_text(text, "yes"))
@@ -580,7 +646,7 @@ static int library_scan(const struct ae_mcc_library *library, int (*directory_ex
 			copy(install_dir, sizeof(install_dir), named);
 		free(text);
 		join(root, sizeof(root), common, install_dir);
-		if (state_flags != STEAM_STATE_FULLY_INSTALLED)
+		if (!ae_mcc_state_flags_installed(state_flags))
 		{
 			snprintf(reason, sizeof(reason), "Steam's manifest %.400s says MCC is not fully installed (StateFlags %ld): "
 				"being updated or downloaded", manifest_path, state_flags);
@@ -633,7 +699,7 @@ int ae_mcc_scan_steam_root(const char *steam_root, int (*directory_exists)(const
 		free(text);
 	}
 	/* (the root is a library too, listed or not) */
-	for (index = 0; index < count && strcmp(libraries[index].path, steam_root); index++)
+	for (index = 0; index < count && !ae_mcc_same_folder(libraries[index].path, steam_root, HOST_IS_WINDOWS); index++)
 		;
 	if (index == count)
 	{

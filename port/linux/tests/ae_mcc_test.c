@@ -262,6 +262,13 @@ static void vdf_tests(void)
 		CHECK(!parse(big, &c));
 		free(big);
 	}
+	/* (an escaped NUL in a string: broken, not a shorter string) */
+	{
+		static const char text[] = "\"a\" \"b\\\0c\"";
+
+		memset(&c, 0, sizeof(c));
+		CHECK(!ae_vdf_parse(text, sizeof(text) - 1, collect, &c) && c.pairs == 0);
+	}
 	/* (a NUL inside: the text ends there, the open block is broken) */
 	{
 		static const char text[] = "\"a\" { \"b\" \"c\" \0 }";
@@ -310,6 +317,73 @@ static void library_tests(void)
 	CHECK(!ae_mcc_parse_manifest("\"AppState\" { \"StateFlags\" \"4\"", 1000, &flags, dir, sizeof(dir)));
 }
 
+/* a resource map's header and size, written to a file */
+static void write_header(const char *path, unsigned long type, unsigned long paths, unsigned long table,
+	unsigned long count, size_t size)
+{
+	unsigned char *data = calloc(1, size ? size : 1);
+
+	CHECK(data != NULL);
+	if (!data)
+		return;
+	if (size >= 16)
+	{
+		put_word(data, type);
+		put_word(data + 4, paths);
+		put_word(data + 8, table);
+		put_word(data + 12, count);
+	}
+	write_file(path, data, size);
+	free(data);
+}
+
+/* the verdicts of ce_resources.c's ce_resource_map_open's check (header[0] != type + 1, header[3] >
+CE_MAXIMUM_ELEMENTS (0x10000), header[1] > header[2], the table of header[3] * 12 bytes at header[2] not within the
+file: refused), which ae_mcc_resource_file_valid mirrors: the same headers, the same answers. If that check
+changes, these lines change with it */
+static void header_tests(void)
+{
+	char path[AE_MCC_PATH_SIZE], reason[512];
+
+	at(path, sizeof(path), "headers/file.map");
+	/* good: type 1 (bitmaps), paths at 16, table at 32, 2 resources, 56 bytes */
+	write_header(path, 1, 16, 32, 2, 56);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* (no resources at all is still a resource map) */
+	write_header(path, 1, 16, 16, 0, 16);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* wrong type for the slot */
+	write_header(path, 2, 16, 32, 2, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	CHECK(ae_mcc_resource_file_valid(path, 1, reason, sizeof(reason)));
+	write_header(path, 0, 16, 32, 2, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* cut short: the table one byte past the end */
+	write_header(path, 1, 16, 32, 2, 55);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* the table's offset past the end */
+	write_header(path, 1, 16, 57, 0, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	write_header(path, 1, 16, 56, 0, 56);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* too many resources: 0x10001 (0x10000 is the most, when the file holds their table) */
+	write_header(path, 1, 16, 16, 0x10001, 16 + 0x10001 * 12);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	write_header(path, 1, 16, 16, 0x10000, 16 + 0x10000 * 12);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* the paths after the table */
+	write_header(path, 1, 40, 32, 2, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* huge offsets and counts (no wrap) */
+	write_header(path, 1, 16, 0xfffffff0UL, 0xffffffffUL, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* under a header's size, and no file */
+	write_header(path, 1, 16, 16, 0, 15);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	at(path, sizeof(path), "headers/none.map");
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+}
+
 static void small_tests(void)
 {
 	char roots[8][AE_MCC_PATH_SIZE];
@@ -330,6 +404,34 @@ static void small_tests(void)
 	/* (XDG_DATA_HOME at its default is looked in once; relative values are not used) */
 	CHECK(ae_mcc_linux_steam_roots("/users/p/.local/share", "/users/p", roots, 8) == 5);
 	CHECK(ae_mcc_linux_steam_roots("relative", NULL, roots, 8) == 0);
+	/* Steam's StateFlags: fully installed, and nothing changing (6: an update queued) */
+	CHECK(ae_mcc_state_flags_installed(4) && ae_mcc_state_flags_installed(6) && ae_mcc_state_flags_installed(68));
+	CHECK(!ae_mcc_state_flags_installed(1030) && !ae_mcc_state_flags_installed(1026) &&
+		!ae_mcc_state_flags_installed(2) && !ae_mcc_state_flags_installed(0) && !ae_mcc_state_flags_installed(-1));
+	CHECK(!ae_mcc_state_flags_installed(4 | 32) && !ae_mcc_state_flags_installed(4 | 128) &&
+		!ae_mcc_state_flags_installed(4 | 256) && !ae_mcc_state_flags_installed(4 | 512) &&
+		!ae_mcc_state_flags_installed(4 | 2048) && !ae_mcc_state_flags_installed(4 | 131072) &&
+		!ae_mcc_state_flags_installed(4 | 1048576) && !ae_mcc_state_flags_installed(4 | 2097152) &&
+		!ae_mcc_state_flags_installed(4 | 4194304));
+	/* one folder, as Windows spells it (the registry's SteamPath and libraryfolders.vdf's path) */
+	CHECK(ae_mcc_same_folder("c:/program files (x86)/steam", "C:\\Program Files (x86)\\Steam", 1));
+	CHECK(ae_mcc_same_folder("C:\\Steam\\", "c:/steam", 1) && ae_mcc_same_folder("c:/steam", "C:\\Steam\\", 1));
+	CHECK(!ae_mcc_same_folder("c:/steam", "c:/steam2", 1) && !ae_mcc_same_folder("c:/steam/x", "c:/steam", 1));
+	CHECK(!ae_mcc_same_folder("/a/Steam", "/a/steam", 0) && ae_mcc_same_folder("/a/Steam", "/a/Steam", 0));
+	/* the engine's names of MCC's files: only the three, nothing else of the folder */
+	CHECK(ae_mcc_virtual_path_type("mcc:\\bitmaps.map") == 0 && ae_mcc_virtual_path_type("mcc:\\sounds.map") == 1 &&
+		ae_mcc_virtual_path_type("mcc:\\loc.map") == 2 && ae_mcc_virtual_path_type("MCC:/BITMAPS.MAP") == 0);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\ui.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\..\\x.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\halo1\\maps\\bitmaps.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\bitmaps.map\\") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\bitmaps") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("d:\\maps_ce\\bitmaps.map") == AE_MCC_VIRTUAL_NOT);
+	CHECK(ae_mcc_virtual_path_type("mcc:bitmaps.map") == AE_MCC_VIRTUAL_NOT);
+	CHECK(ae_mcc_virtual_path_type("mcc") == AE_MCC_VIRTUAL_NOT && ae_mcc_virtual_path_type("") == AE_MCC_VIRTUAL_NOT &&
+		ae_mcc_virtual_path_type(NULL) == AE_MCC_VIRTUAL_NOT);
 }
 
 int main(void)
@@ -339,11 +441,18 @@ int main(void)
 	const char *scratch_env = getenv("AE_TEST_SCRATCH");
 	char reason[512];
 
-	snprintf(scratch, sizeof(scratch), "%s/ae_mcc", scratch_env && *scratch_env ? scratch_env : "/tmp");
+	/* (the trees go where the test is told: never a guess at a temporary folder) */
+	if (!scratch_env || !*scratch_env)
+	{
+		printf("AE_TEST_SCRATCH names no folder for the fake Steam trees\n");
+		return 77;
+	}
+	snprintf(scratch, sizeof(scratch), "%s/ae_mcc", scratch_env);
 	make_folders(scratch);
 	vdf_tests();
 	library_tests();
 	small_tests();
+	header_tests();
 
 	/* (a) a normal install: the Steam root's own library */
 	at(steam, sizeof(steam), "a/Steam");
@@ -385,7 +494,8 @@ int main(void)
 	CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE);
 	CHECK(strstr(result.reason, "lists MCC") != NULL);
 
-	/* (d) a manifest of an update under way (StateFlags 6), the files there */
+	/* (d) a manifest of an update under way (StateFlags 1030: installed, update required, update started), the
+	files there: not read while they change. An update only queued (6) leaves them whole: found */
 	at(steam, sizeof(steam), "d/Steam");
 	{
 		const char *paths[] = { steam };
@@ -393,10 +503,12 @@ int main(void)
 
 		library_folders(steam, paths, lists, 1);
 	}
-	manifest(steam, 6, AE_MCC_DEFAULT_INSTALL_DIR);
+	manifest(steam, 1030, AE_MCC_DEFAULT_INSTALL_DIR);
 	snprintf(install, sizeof(install), "%s/steamapps/common/%s", steam, AE_MCC_DEFAULT_INSTALL_DIR);
 	make_install(install, 0);
-	CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE && strstr(result.reason, "StateFlags 6"));
+	CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE && strstr(result.reason, "StateFlags 1030"));
+	manifest(steam, 6, AE_MCC_DEFAULT_INSTALL_DIR);
+	CHECK(detect_one(steam, &result) == AE_MCC_FOUND && !strcmp(result.root, install));
 
 	/* (e) an empty shell: Engine/ and MCC/Binaries/Win64 only (listed: incomplete; unlisted, its folder seen:
 	incomplete; with nothing to tell folders: not found) */

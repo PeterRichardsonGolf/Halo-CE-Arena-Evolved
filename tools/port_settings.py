@@ -112,10 +112,10 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (19, not 24: fourteen rows and MAP FILES, with the help line
-        # under them)
-        "spacing": 19,
-        "help_top": 368,
+        # (20, not 24: thirteen rows, with the help line where
+        # video_settings' is, as its fourteen at 20)
+        "spacing": 20,
+        "help_top": 364,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -167,28 +167,26 @@ SCREENS = {
               "Tap to toggle, hold to zoom while held: a hold\nzooms to the first level, and letting go zooms out."],
              None),
         ],
-        # (MCC's Custom Edition files: ae_mcc.c)
-        "categories": [
-            ("MAP FILES:", "mods_setup/map_files",
-             "Custom Edition maps' files from Halo: The Master\nChief Collection, read from its folder."),
-        ],
     },
-    # (MCC's Custom Edition files, read in place: port/linux/src/ae_mcc_platform.c. BROWSE runs "ae mcc
-    # browse"; the status line under the rows is "ae mcc status"'s)
-    "mods_setup/map_files": {
+    # (MCC's Custom Edition files, read in place: port/linux/src/ae_mcc_platform.c; the profile menu's MAP FILES,
+    # after GAME OPTIONS: _map_files_item. BROWSE runs "ae mcc browse"; the status line under the rows is "ae mcc
+    # status"'s)
+    "map_files": {
         "screen": "map_files_screen",
         "header": ("header_map_files", None),
         "title": "MAP FILES",
         "spacing": 30,
         "rows": [
-            ("MCC FILES:", "game.mcc_use", [("ON", "yes"), ("OFF", "no")],
-             ["Custom Edition maps read their bitmaps, sounds\nand text from your MCC folder; never changed.",
-              "MCC's files are not read. Custom Edition maps\nneed bitmaps.map, sounds.map and loc.map in maps_ce."],
+            # (a help for each value; ASK is the default: DEFAULTS goes back to it)
+            ("MCC FILES:", "game.mcc_use", [("ASK", "ask"), ("ON", "yes"), ("OFF", "no")],
+             ["AE asks before it reads MCC's files, when you\npick a Custom Edition map that needs them.",
+              "Custom Edition maps read their bitmaps, sounds\nand text from your MCC folder; never changed.",
+              "MCC's files are not read, and no map looks for\nthem. Custom Edition maps need their files in maps_ce."],
              None),
         ],
         "actions": [
             ("BROWSE FOR THE MCC FOLDER", "ae mcc browse",
-             "Choose the Halo: The Master Chief Collection\nfolder yourself (any Steam library or a copy)."),
+             "Choose the Halo: The Master Chief Collection\nfolder yourself. The folder is kept at once."),
         ],
         "status": {"name": "mcc_status", "input": "ae mcc status", "left": 68, "top": 150, "width": 540,
                    "height": 80},
@@ -390,7 +388,7 @@ TEAMPLAY_ROWS = [
 STRING_OVERRIDES = {
     f"{PE}/profile_edit_options": ["CHANGE NAME", "CONTROLS SETUP", "GAMEPADS", "MOUSE SETUP", "AUDIO SETUP",
                                    "VIDEO SETUP", "CHANGE COLOR", "SAVE CHANGES ", "NETWORK SETUP ", "ABOUT",
-                                   "GAME OPTIONS"],
+                                   "GAME OPTIONS", "MAP FILES"],
     f"{PE}/profile_edit_descriptions": [
         "Rename this profile.\\n\\n\\nProfile:",
         "Choose the keys and mouse\\nbuttons for each action.\\n\\nProfile:",
@@ -400,6 +398,7 @@ STRING_OVERRIDES = {
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Mods, and how the game plays:\\nfall damage and more.\\n\\nProfile:",
+        "Custom Edition maps' files,\\nread from Halo: The Master\\nChief Collection's folder.\\nProfile:",
         "Free-for-all color; in a match,\\nfrom the next game you join.\\n\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
     ],
@@ -645,9 +644,36 @@ def _mods_item() -> list:
     the Mods screen"""
     screen = f"{PE}/mods_setup/mods_settings_screen"
     return _widget(f"{PE}/mods_profile_item",
-                   [("type", "text"), ("left", 51), ("top", 309), ("width", 232), ("height", 32),
+                   [("type", "text"), ("left", 51), ("top", _profile_row_top("mods_profile_item")), ("width", 232),
+                    ("height", PROFILE_ROW_HEIGHT),
                     ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PE}/profile_edit_options"),
                     ("string_index", 10), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                    ("text_y", 5), ("platform", "desktop")],
+                   [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>'])
+
+
+# the profile menu's rows (PROFILE_ROWS, top to bottom), 30 px apart from 78 so that MAP FILES, after GAME
+# OPTIONS, fits above the buttons (the PC version's were 33 px apart; WIDGET_PATCHES sets their tops)
+PROFILE_ROWS = ["name_profile_item", "controller_setup_profile_item", "gamepads_profile_item",
+                "mouse_settings_profile_item", "audio_settings_profile_item", "video_settings_profile_item",
+                "network_settings_profile_item", "mods_profile_item", "map_files_profile_item", "color_profile_item",
+                "about_item"]
+PROFILE_ROW_TOP, PROFILE_ROW_STEP, PROFILE_ROW_HEIGHT = 78, 30, 30
+
+
+def _profile_row_top(item: str) -> int:
+    return PROFILE_ROW_TOP + PROFILE_ROWS.index(item) * PROFILE_ROW_STEP
+
+
+def _map_files_item() -> list:
+    """the profile menu's MAP FILES, after GAME OPTIONS (WIDGET_PATCHES), opening the MAP FILES screen"""
+    screen = f"{PE}/map_files/map_files_screen"
+    return _widget(f"{PE}/map_files_profile_item",
+                   [("type", "text"), ("left", 51), ("top", _profile_row_top("map_files_profile_item")),
+                    ("width", 232), ("height", PROFILE_ROW_HEIGHT),
+                    ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PE}/profile_edit_options"),
+                    ("string_index", 11), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
                     ("text_y", 5), ("platform", "desktop")],
                    [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
                     '<on event="left_mouse" run="mouse emit accept event"/>'])
@@ -658,7 +684,7 @@ def settings_files() -> dict:
     files = {}
     for folder, spec in SCREENS.items():
         files[f"{PE}/{folder}".replace("/", ".") + ".xml"] = _setting_screen(folder, spec) + (
-            _mods_item() if folder == "mods_setup" else [])
+            _mods_item() if folder == "mods_setup" else _map_files_item() if folder == "map_files" else [])
     files[f"{PE}/controls_setup".replace("/", ".") + ".xml"] = _controls_screen()
     return {name: ['<?xml version="1.0" encoding="UTF-8"?>',
                    "<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->",
@@ -807,8 +833,12 @@ WIDGET_PATCHES = {
     # (Mods, after Network Setup: _mods_item; Change Color and About a row down,
     # ce_menus.CHILD_OFFSETS)
     f"{PE}/profile_edit_select_list": {"insert_before": {
-        f"{PE}/color_profile_item": [f'<child widget="{PE}/mods_profile_item"/>'],
+        f"{PE}/color_profile_item": [f'<child widget="{PE}/mods_profile_item"/>',
+                                     f'<child widget="{PE}/map_files_profile_item"/>'],
     }},
+    # (the rows 30 px apart, for MAP FILES: PROFILE_ROWS)
+    **{f"{PE}/{item}": {"set": {"top": _profile_row_top(item), "height": PROFILE_ROW_HEIGHT}}
+       for item in PROFILE_ROWS if item not in ("mods_profile_item", "map_files_profile_item")},
     # (the profile settings' picture: on Gamepad Setup's row, the profile's
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)

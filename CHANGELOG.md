@@ -32,10 +32,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   you pick such a map and your own folders (`maps_ce`, `maps/ce`,
   `custom_maps`) lack them, it asks: USE MCC FILES, NOT NOW or NEVER ASK AGAIN
   (`game.mcc_use`: `ask`, `yes`, `no`). Files in your own folders always win.
-  Settings > Game Options > MAP FILES has MCC FILES ON / OFF, the folder in use
-  (or NOT FOUND) and BROWSE, to pick the MCC folder yourself (`game.mcc_path`;
-  `HALO_MCC_PATH` names one for a run). An MCC that Steam lists but whose files
-  are missing or being updated is told in the map's refusal and on MAP FILES.
+  Settings has a new MAP FILES entry (after GAME OPTIONS; the list's rows sit a
+  little closer): MCC FILES ASK / ON / OFF, the folder in use (or NOT FOUND) and
+  BROWSE, to pick the MCC folder yourself (`game.mcc_path`; `HALO_MCC_PATH`
+  names one for a run). An MCC that Steam lists but whose files are missing or
+  being updated is told in the map's refusal and on MAP FILES; a map refused
+  for these files while MCC has them says where to turn them on. With OFF,
+  Steam is looked in only when you open MAP FILES. On Windows a Steam or MCC folder whose path
+  has characters outside the system's code page is not found.
   The folder found is logged in `debug.txt`; it never goes over the network or
   into saves.
 

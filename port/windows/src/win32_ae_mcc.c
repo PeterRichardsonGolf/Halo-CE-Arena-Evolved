@@ -10,7 +10,6 @@ paths are the ANSI code page's, as the port's other Windows file calls are.
 */
 
 #include <windows.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -27,25 +26,10 @@ static int registry_string(HKEY base, const char *subkey, const char *value, REG
 		return 0;
 	result = RegQueryValueExA(key, value, NULL, &type, (BYTE *)text, &length);
 	RegCloseKey(key);
-	if (result != ERROR_SUCCESS || (type != REG_SZ && type != REG_EXPAND_SZ) || !length)
+	if (result != ERROR_SUCCESS || type != REG_SZ || !length)
 		return 0;
 	text[length < size ? length : size - 1] = 0;
 	return text[0] != 0;
-}
-
-/* whether two paths name one folder: case-blind, / and \\ alike, a trailing separator ignored */
-static int same_folder(const char *a, const char *b)
-{
-	for (;; a++, b++)
-	{
-		char x = *a == '/' ? '\\' : (char)tolower((unsigned char)*a);
-		char y = *b == '/' ? '\\' : (char)tolower((unsigned char)*b);
-
-		if (!x || !y)
-			return (!x && (!y || (y == '\\' && !b[1]))) || (!y && x == '\\' && !a[1]);
-		if (x != y)
-			return 0;
-	}
 }
 
 static int add_root(char (*roots)[AE_MCC_PATH_SIZE], int count, int maximum, const char *path)
@@ -57,7 +41,7 @@ static int add_root(char (*roots)[AE_MCC_PATH_SIZE], int count, int maximum, con
 	/* (the same folder spelled by another source: once; Windows' names are case-blind) */
 	for (index = 0; index < count; index++)
 	{
-		if (same_folder(roots[index], path))
+		if (ae_mcc_same_folder(roots[index], path, 1))
 			return count;
 	}
 	snprintf(roots[count], AE_MCC_PATH_SIZE, "%s", path);

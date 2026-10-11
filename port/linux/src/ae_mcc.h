@@ -141,6 +141,21 @@ root); the state, result filled when FOUND or INCOMPLETE */
 int ae_mcc_scan_steam_root(const char *steam_root, int (*directory_exists)(const char *path),
 	struct ae_mcc_result *result);
 
+/* whether a manifest's StateFlags (Steam's bit field) say MCC's files are
+whole: fully installed (4) set, and none of the bits for files missing,
+corrupt or changing now (32, 128, an update running, paused or started 256,
+512, 1024, uninstalling 2048, validating, downloading, staging, committing).
+An update only queued (6) passes; the files' own check is the real gate */
+int ae_mcc_state_flags_installed(long state_flags);
+/* whether two paths name one folder: exactly; or, on Windows (windows not
+0), case-blind, / and \ alike, a trailing separator ignored */
+int ae_mcc_same_folder(const char *a, const char *b, int windows);
+/* the engine's name of one of MCC's files, "mcc:\<name>.map" (either
+separator, any case): the resource's type (0 to 2); AE_MCC_VIRTUAL_INVALID
+for any other "mcc:\..." path (a folder, .., ui.map, a long name), which
+opens nothing; AE_MCC_VIRTUAL_NOT for a path that is not one */
+enum { AE_MCC_VIRTUAL_NOT = -2, AE_MCC_VIRTUAL_INVALID = -1 };
+int ae_mcc_virtual_path_type(const char *xbox_path);
 /* game.mcc_use's text as its value (anything else is ask) */
 int ae_mcc_use_from_text(const char *text);
 /* whether a path is one the settings can keep: not empty, under 256
@@ -151,8 +166,15 @@ int ae_mcc_path_storable(const char *path);
 
 /* the validated MCC folder, or NULL (detected the first time asked, then
 kept for the process; roadmap 61's later features read MCC's other files
-from here) */
+from here). The game's main thread only: Settings' BROWSE, on that thread,
+may change it (another thread copies it: ae_mcc_copy_root) */
 const char *ae_mcc_root(void);
+/* the same, copied under the detection's lock, for any thread; 0 for none */
+int ae_mcc_copy_root(char *root, size_t size);
+/* map_family_resource asked only for the player's own folders (the menus'
+question, ae_glue_mcc.c): while on, ae_mcc_resource gives nothing and logs
+nothing */
+void ae_mcc_probe_own_files(int on);
 /* the detection's state (detected the first time asked) */
 int ae_mcc_state(void);
 /* game.mcc_use */
@@ -169,16 +191,15 @@ host's file in MCC's folder; 0 for any other path */
 int ae_mcc_translate_path(const char *xbox_path, char *host_path, unsigned long size);
 /* ce_resources.c's refusal of a missing resource map (an AE hook): ". MCC
 found, but its Custom Edition files are missing. Check the install in
-Steam." when Steam has an incomplete MCC, else "" */
+Steam." when Steam has an incomplete MCC; ". MCC found: turn on Settings >
+MAP FILES to use its files." when MCC has them and game.mcc_use is "ask";
+else "" (and with "no", nothing of Steam's is read for it) */
 const char *ae_mcc_refusal_note(void);
 /* the question's answers: USE MCC FILES (game.mcc_use "yes", game.mcc_path
 the folder), NEVER ASK AGAIN ("no"); NOT NOW changes nothing */
 void ae_mcc_answer_use(void);
 void ae_mcc_answer_never(void);
 void ae_mcc_answer_not_now(void);
-/* Settings' MCC FILES row: game.mcc_use shown as ON ("yes") or OFF ("no";
-"ask" shows as OFF, and stays ask unless the row is changed) */
-void ae_mcc_menu_text(const char *name, char *text, size_t size, int default_value);
 /* Settings' BROWSE: the system's folder dialog (SDL_ShowOpenFolderDialog;
 debug: HALO_MCC_BROWSE_RESULT names the folder chosen instead). The folder
 chosen is checked and, if it is MCC's, kept in game.mcc_path */

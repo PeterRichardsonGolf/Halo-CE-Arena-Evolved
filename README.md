@@ -186,8 +186,8 @@ play:
   Custom Edition shared files, `bitmaps.map`, `sounds.map` and `loc.map`,
   from your own Halo PC install or from Halo: The Master Chief Collection on
   Steam, `halo1/maps/custom_edition`, which AE finds and can read in place:
-  it asks the first time such a map needs them, and Settings > Game Options >
-  MAP FILES sets it), HaloMD maps in `maps_md` and your
+  it asks the first time such a map needs them, and Settings > MAP FILES sets
+  it), HaloMD maps in `maps_md` and your
   Halo PC disc's maps in `maps_pc`. The older `maps/ce` and `md_maps`, and
   OpenCE's `custom_maps`, still play from where they are; at its first
   start nothing is moved; `game.move_old_map_folders = "ask"` offers to move

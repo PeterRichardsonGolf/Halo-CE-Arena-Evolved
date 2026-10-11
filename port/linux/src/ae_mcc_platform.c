@@ -37,7 +37,7 @@ int ae_mcc_windows_steam_roots(char (*roots)[AE_MCC_PATH_SIZE], int maximum);
 #endif
 
 /* the prefix of the paths the engine opens MCC's files by */
-#define MCC_PREFIX "mcc:\\"
+#define MCC_PREFIX "mcc:\\" /* (ae_mcc.c's ae_mcc_virtual_path_type reads it back) */
 
 static pthread_mutex_t mcc_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -45,6 +45,8 @@ static struct
 {
 	int detected;
 	struct ae_mcc_result result;
+	/* map_family_resource asked for the player's own folders only */
+	int probing;
 	/* the log's lines said once */
 	int ask_logged;
 	int read_logged[3];
@@ -145,6 +147,23 @@ const char *ae_mcc_root(void)
 	return mcc.result.state == AE_MCC_FOUND ? mcc.result.root : NULL;
 }
 
+int ae_mcc_copy_root(char *root, size_t size)
+{
+	int found;
+
+	pthread_mutex_lock(&mcc_lock);
+	detect_locked();
+	found = mcc.result.state == AE_MCC_FOUND;
+	snprintf(root, size, "%s", found ? mcc.result.root : "");
+	pthread_mutex_unlock(&mcc_lock);
+	return found;
+}
+
+void ae_mcc_probe_own_files(int on)
+{
+	mcc.probing = on;
+}
+
 int ae_mcc_state(void)
 {
 	detect();
@@ -162,12 +181,11 @@ int ae_mcc_resource(const char *name, char *path, long size)
 {
 	int type = ae_mcc_resource_type(name);
 
-	if (type < 0 || size <= 0 || ae_mcc_state() != AE_MCC_FOUND)
+	/* (with "no" nothing of Steam's is read for a map: no detection; only Settings' MAP FILES looks) */
+	if (type < 0 || size <= 0 || mcc.probing || ae_mcc_use() == AE_MCC_USE_NO || ae_mcc_state() != AE_MCC_FOUND)
 		return 0;
 	switch (ae_mcc_use())
 	{
-	case AE_MCC_USE_NO:
-		return 0;
 	case AE_MCC_USE_ASK:
 		/* (outside the menus' question: a test host, a joined game; ask counts as no) */
 		pthread_mutex_lock(&mcc_lock);
@@ -193,46 +211,35 @@ int ae_mcc_resource(const char *name, char *path, long size)
 	return 1;
 }
 
-static int prefix_is(const char *text, const char *prefix)
-{
-	for (; *prefix; text++, prefix++)
-	{
-		char a = *text >= 'A' && *text <= 'Z' ? (char)(*text + 32) : *text;
-
-		if (a != *prefix && !(*prefix == '\\' && a == '/'))
-			return 0;
-	}
-	return 1;
-}
-
 int ae_mcc_translate_path(const char *xbox_path, char *host_path, unsigned long size)
 {
-	char name[16];
-	const char *rest;
-	size_t length;
-	int type;
+	char root[AE_MCC_PATH_SIZE];
+	int type = ae_mcc_virtual_path_type(xbox_path);
 
-	if (!xbox_path || !prefix_is(xbox_path, MCC_PREFIX))
+	if (type == AE_MCC_VIRTUAL_NOT)
 		return 0;
-	rest = xbox_path + strlen(MCC_PREFIX);
-	length = strlen(rest);
 	if (size)
 		host_path[0] = 0;
-	/* (only the three files, by name: nothing else of the folder is ever opened) */
-	if (length < 5 || length - 4 >= sizeof(name) || !prefix_is(rest + length - 4, ".map"))
-		return 1;
-	memcpy(name, rest, length - 4);
-	name[length - 4] = 0;
-	type = ae_mcc_resource_type(name);
-	if (type >= 0 && ae_mcc_root())
-		ae_mcc_resource_path(ae_mcc_root(), ae_mcc_resource_name(type), host_path, size);
+	/* (any thread opens files: the folder copied under the lock, which BROWSE writes it under) */
+	if (type >= 0 && ae_mcc_copy_root(root, sizeof(root)))
+		ae_mcc_resource_path(root, ae_mcc_resource_name(type), host_path, size);
 	return 1;
 }
 
 const char *ae_mcc_refusal_note(void)
 {
-	return ae_mcc_state() == AE_MCC_INCOMPLETE ?
-		". MCC found, but its Custom Edition files are missing. Check the install in Steam." : "";
+	if (ae_mcc_use() == AE_MCC_USE_NO)
+		return "";
+	switch (ae_mcc_state())
+	{
+	case AE_MCC_INCOMPLETE:
+		return ". MCC found, but its Custom Edition files are missing. Check the install in Steam.";
+	case AE_MCC_FOUND:
+		/* (a load outside the menus' question: a game joined, the Xbox menus, a test host) */
+		return ae_mcc_use() == AE_MCC_USE_ASK ? ". MCC found: turn on Settings > MAP FILES to use its files." : "";
+	default:
+		return "";
+	}
 }
 
 /* ---------- the menus */
@@ -244,8 +251,12 @@ void ae_mcc_answer_use(void)
 	if (!root)
 		return;
 	config_write("game.mcc_use", "yes");
-	if (ae_mcc_path_storable(root) && strcmp(config_string("game.mcc_path"), root))
+	/* (HALO_MCC_PATH's folder is one run's: not kept) */
+	if (mcc.result.source != AE_MCC_SOURCE_ENVIRONMENT && ae_mcc_path_storable(root) &&
+		strcmp(config_string("game.mcc_path"), root))
+	{
 		config_write("game.mcc_path", root);
+	}
 	platform_log("mcc: USE MCC FILES: game.mcc_use = \"yes\", reading from %s", root);
 }
 
@@ -258,13 +269,6 @@ void ae_mcc_answer_never(void)
 void ae_mcc_answer_not_now(void)
 {
 	platform_log("mcc: NOT NOW: game.mcc_use stays \"%s\"", config_string("game.mcc_use"));
-}
-
-void ae_mcc_menu_text(const char *name, char *text, size_t size, int default_value)
-{
-	(void)default_value;
-	if (!strcmp(name, "game.mcc_use") && ae_mcc_use_from_text(text) == AE_MCC_USE_ASK)
-		snprintf(text, size, "no");
 }
 
 /* the folder BROWSE chose, or one of its own folders' parents: the MCC folder
@@ -423,7 +427,7 @@ const char *ae_mcc_status_text(void)
 	{
 		shortened(mcc.result.root, path, sizeof(path), 48);
 		snprintf(mcc.status, sizeof(mcc.status), "%s\n%s",
-			ae_mcc_use() == AE_MCC_USE_YES ? "IN USE:" : "FOUND (SET MCC FILES ON TO USE IT):", path);
+			ae_mcc_use() == AE_MCC_USE_YES ? "IN USE:" : "FOUND (SET MCC FILES TO ON TO USE IT):", path);
 	}
 	else if (mcc.result.state == AE_MCC_INCOMPLETE)
 		snprintf(mcc.status, sizeof(mcc.status), "MCC FOUND, BUT ITS CUSTOM EDITION FILES ARE\nMISSING. CHECK THE INSTALL IN STEAM.");
