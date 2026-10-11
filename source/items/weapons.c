@@ -231,6 +231,7 @@ symbols in this file:
 #include "sound/sound_definitions.h"
 #include "units/unit_definitions.h"
 #include "units/units.h"
+#include "ae_burst_rifle.h" /* AE hook */
 
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "bitmaps/bitmap_group.h"
@@ -568,6 +569,7 @@ void weapons_initialize_for_new_map(
 			}
 		}
 	}
+	ae_burst_rifle_new_map(); /* AE hook */
 
 	return;
 }
@@ -2938,6 +2940,7 @@ static void weapon_trigger_fire(
 			}
 		}
 
+		damage_effect_index= ae_burst_rifle_kick(weapon->definition_index, trigger_index, damage_effect_index); /* AE hook */
 		if (owner_object_index!=NONE && damage_effect_index!=NONE)
 		{
 			struct unit_datum *unit= unit_get(owner_object_index);
@@ -2961,6 +2964,7 @@ static void weapon_trigger_fire(
 	{
 		weapon_detonate(weapon_index);
 	}
+	ae_burst_rifle_round(weapon_index, trigger_index, fired); /* AE hook */
 
 	if (!fired)
 	{
@@ -3375,6 +3379,7 @@ boolean weapon_update(
 		{
 			SET_FLAG(trigger->flags, _weapon_trigger_released_since_last_shot_bit, TRUE);
 		}
+		ae_burst_rifle_trigger(weapon_index, trigger_index, &triggers_down[trigger_index]); /* AE hook */
 
 		if (trigger->ejection_port_position>0.0f)
 		{

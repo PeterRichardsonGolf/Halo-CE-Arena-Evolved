@@ -55,6 +55,19 @@ fallback), the console's `weapon pack: BATTLE RIFLE unavailable on <map>: <reaso
 its end. The long cases: all 13 Xbox multiplayer maps in one rotation (a minute each, about 20 minutes), Halo 1:
 NHE's badcreek (`mods/NHE`) and CE+ X's Blood Gulch beside its own rifle (`mods/CE+ X`).
 
+The battle rifle's behaviour (tools/test_weapon_pack_rifle.py, port/linux/game/ae_burst_rifle.c; the same three
+variables, the CE+ X case with the rotation's): the set-up lines (`ae burst rifle: zoom 1 level 2.563x ...`, spread,
+magazine, bullet, damage, aim assist), the cadence with `debug.burst_autofire` / `HALO_BURST_AUTOFIRE=1` (the
+holder pulls again as soon as the rifle allows; a host or no network game only, a client ignores it and logs so),
+250 ms pulls with `debug.test_input` (`HALO_KEY_FIRE=K`, `key:K`) firing three rounds each, the reserve topped at
+108 by a second rifle (`HALO_WEAPON_PACK_GROUND=1` and a few steps), the zoomed view's angle with `HALO_FOV=100`,
+and network_test head and body hits (`debug.network_test_damage`'s `seconds:scaleh` hits the head, its collision
+model's head material). `debug.weapon_log` / `HALO_WEAPON_LOG=1` logs each round (`ae burst rifle: tick N, round
+r of 3 fired, L loaded, R in reserve, recovery T`), each burst's distance from the last and the zoomed view's
+angle; `debug.weapon_hit_log` / `HALO_WEAPON_HIT_LOG=1` logs each of this machine's players' rifle rounds that hits
+an object (`ae rifle hit: ... head h | shield a -> b body c -> d dead x`). All three are for automated tests,
+default off.
+
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists
 the spec keys; `run.py --spec game.json` takes a whole spec; `--dry-run` shows the game's environment.

@@ -76,6 +76,7 @@ Called from the main loop every frame (main.c).
 #include "saved games/saved_game_files.h"
 #include "saved games/playlist_profile.h"
 #include "saved games/arena_gametypes.h"
+#include "ae_burst_rifle.h" /* AE hook */
 #include <xtl.h> /* (MAX_GAMENAME) */
 
 #include <math.h>
@@ -153,7 +154,7 @@ static struct
 	boolean hurt;
 	/* (debug.network_test_damage: "seconds:scale" hits on the host's first
 	player, by its weapon's bullet; applied once each) */
-	char damage_script[128];
+	char damage_script[512]; /* (port: weapon pack tests: room for the battle rifle's 25-hit scripts) */
 	long damage_done;
 	long damage_logged_time;
 	real damage_last[3];
@@ -1080,10 +1081,16 @@ static void network_test_damage_script(
 		char *end;
 		double seconds = strtod(cursor, &end);
 		double scale;
+		boolean head;
 
 		if (end == cursor || *end != ':')
 			break;
 		scale = strtod(end + 1, &end);
+		/* (port: weapon pack tests: "seconds:scaleh" hits the head, its collision model's head material, for the
+		battle rifle's headshot counts) */
+		head = *end == 'h';
+		if (head)
+			end++;
 		if (entry == network_test.damage_done && game_time_get() >= (long)(seconds * TICKS_PER_SECOND))
 		{
 			struct unit_datum *unit = unit_get(player->unit_index);
@@ -1115,10 +1122,12 @@ static void network_test_damage_script(
 						damage.direction.k = 0.0f;
 						damage.scale = (real)scale;
 						scenario_location_from_point(&damage.location, &damage.epicenter);
-						object_cause_damage(&damage, player->unit_index, NONE, NONE, NONE, NULL);
-						platform_log("network test: tick %ld hit x%.1f: health %.4f shield %.4f stun %d", game_time_get(),
-							scale, object->object.body_vitality, object->object.shield_vitality,
-							(int)object->object.shield_stun_ticks);
+						object_cause_damage(&damage, player->unit_index, NONE, NONE,
+							head ? ae_damage_head_material_index(player->unit_index) : NONE, NULL);
+						platform_log("network test: tick %ld hit x%.1f%s: health %.4f shield %.4f stun %d dead %d",
+							game_time_get(), scale, head ? " head" : "", object->object.body_vitality,
+							object->object.shield_vitality, (int)object->object.shield_stun_ticks,
+							TEST_FLAG(object->object.damage_flags, _object_dead_bit) ? 1 : 0);
 					}
 				}
 			}

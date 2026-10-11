@@ -795,6 +795,21 @@ static const struct config_setting config_settings[] =
 		"For automated tests of a full tag table: the most tags a map and a weapon\n"
 		"pack's own may have together, below the built-in 49152 (0xC000); a map\n"
 		"past it refuses the pack. 0 for the built-in limit." },
+	{ "debug.weapon_log", _config_boolean, "false", "HALO_WEAPON_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of the battle rifle (ae_burst_rifle.c): each round it\n"
+		"fires (its burst, the tick, the magazine), each burst's distance from the\n"
+		"last, and the zoomed view's angle. Any machine; only this machine's log." },
+	{ "debug.burst_autofire", _config_boolean, "false", "HALO_BURST_AUTOFIRE", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of the battle rifle's cadence: a local player holding\n"
+		"it pulls the trigger again as soon as the rifle allows. Only on a host or\n"
+		"with no network game; a client in another's game ignores it (logged)." },
+	{ "debug.weapon_hit_log", _config_boolean, "false", "HALO_WEAPON_HIT_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of the battle rifle's damage: each round of this\n"
+		"machine's players that hits an object (head or not, shield and body\n"
+		"before and after, dead). Any machine; only this machine's log." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

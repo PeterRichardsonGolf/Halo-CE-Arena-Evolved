@@ -38,3 +38,17 @@ source/cache/cache_files.c	ae_weapon_pack_tags_refused_ce(cache_file_globals.hea
 port/linux/src/port_config.c	{ "debug.weapon_pack_table_limit", _config_integer, "0", "HALO_WEAPON_PACK_TABLE_LIMIT", _environment_value, /* AE hook */\n_platform_all,
 port/linux/game/menu_functions.c	#include "ae_weapon_pack.h" /* AE hook */
 port/linux/game/menu_functions.c	if (global_network_game_server_get()) ae_weapon_pack_lobby_line(text, NUMBEROF(text), game->map.name, &game->variant); /* AE hook */\ntext_set_length(named(description, "lobby_game_data", 0), text, LOBBY_TEXT_LENGTH);
+port/linux/src/port_config.c	{ "debug.weapon_log", _config_boolean, "false", "HALO_WEAPON_LOG", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.burst_autofire", _config_boolean, "false", "HALO_BURST_AUTOFIRE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.weapon_hit_log", _config_boolean, "false", "HALO_WEAPON_HIT_LOG", _environment_value, /* AE hook */\n_platform_all,
+source/items/weapons.c	#include "ae_burst_rifle.h" /* AE hook */
+source/items/weapons.c	ae_burst_rifle_new_map(); /* AE hook */
+source/items/weapons.c	damage_effect_index= ae_burst_rifle_kick(weapon->definition_index, trigger_index, damage_effect_index); /* AE hook */
+source/items/weapons.c	ae_burst_rifle_round(weapon_index, trigger_index, fired); /* AE hook */
+source/items/weapons.c	ae_burst_rifle_trigger(weapon_index, trigger_index, &triggers_down[trigger_index]); /* AE hook */
+source/game/aim_assist.c	#include "ae_burst_rifle.h" /* AE hook */
+source/game/aim_assist.c	ae_burst_rifle_zoomed_assist(weapon->definition_index, zoom_level, &parameters->autoaim_distance, &parameters->magnetism_distance); /* AE hook */
+source/items/projectiles.c	#include "ae_burst_rifle.h" /* AE hook */
+source/items/projectiles.c	ae_burst_rifle_hit_before(projectile_index, collision->object_index); /* AE hook */
+source/items/projectiles.c	ae_burst_rifle_hit_after(projectile_index, collision->object_index, collision->material_index); /* AE hook */
+port/linux/game/network_test.c	#include "ae_burst_rifle.h" /* AE hook */

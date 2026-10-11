@@ -141,6 +141,7 @@ symbols in this file:
 #include "sound/sound_definitions.h"
 #include "units/bipeds.h"
 #include "units/units.h"
+#include "ae_burst_rifle.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1562,6 +1563,7 @@ static void projectile_collision(
 		damage.origin = collision->point;
 		damage.direction = *new_velocity;
 		normalize3d(&damage.direction);
+		ae_burst_rifle_hit_before(projectile_index, collision->object_index); /* AE hook */
 		object_cause_damage(
 			&damage,
 			collision->object_index,
@@ -1569,6 +1571,7 @@ static void projectile_collision(
 			collision->region_index,
 			collision->material_index,
 			&collision->plane.n);
+		ae_burst_rifle_hit_after(projectile_index, collision->object_index, collision->material_index); /* AE hook */
 
 		if (damage.material_type != NONE)
 			material_type = damage.material_type;
