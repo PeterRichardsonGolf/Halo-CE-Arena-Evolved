@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Builds one native port in one configuration, as the GitHub workflow does
+"""Builds one port in one configuration, as the GitHub workflow does
 (.github/workflows/build.yml), and collects what it built into dist/:
 
     python tools/ci_build.py linux debug
     python tools/ci_build.py android release
     python tools/ci_build.py server-x64 release --alpine
     python tools/ci_build.py linux profile
+    python tools/ci_build.py web release
 
 Builds are portable (any x86-64 processor; for the arm64 server, any
 64-bit ARM), so they run on other computers. Debug builds skip link-time and profile-guided optimisation,
@@ -42,6 +43,10 @@ an x86-64 machine, an arm64 one on an arm64 machine); it goes into
 dist/chupathingyce-server-linux-<arch> (-debug for a debug build), with
 its README and playlists. A release's server there is stripped of its debug
 information; a debug build's keeps it.
+
+The web build (port/web/README.md, upstream's) needs Emscripten (emcc on
+the PATH, as emsdk_env.sh puts it); dist/halo-web-<config>/ is the whole
+site, which a static host serves as it is.
 """
 
 import argparse
@@ -73,6 +78,7 @@ OUTPUTS = {
     "server-x86": ["build/server-x86/chupathingyce-server"],
     "server-x64": ["build/server-x64/chupathingyce-server"],
     "server-arm64": ["build/server-arm64/chupathingyce-server"],
+    "web": [],  # the site, below
 }
 # the servers' Alpine Linux (--alpine), and Docker's name for each one's
 # architecture
@@ -126,6 +132,15 @@ def main() -> int:
     print(f"version {version()}{' (a release)' if release_build() else ''}", flush=True)
     run(configure)
 
+    if args.platform == "web":
+        # the whole site (tools/web_build.py), its licences in licenses.txt
+        run(["ninja", "web"])
+        dist = ROOT / "dist" / f"halo-web-{args.config}"
+        if dist.exists():
+            shutil.rmtree(dist)
+        shutil.copytree(ROOT / "build/web/site", dist)
+        print(f"build/web/site -> {dist.relative_to(ROOT)}", flush=True)
+        return 0
     apk_names = {}
     if args.platform == "android":
         # the native part, then the app around it (Gradle's variant of the
@@ -189,9 +204,11 @@ def main() -> int:
     # XisoExtractor.java) follow extract-xiso, whose license asks binaries
     # to carry its notice
     shutil.copy2(ROOT / "port/third_party/extract-xiso/LICENSE.TXT", dist / "extract-xiso-LICENSE.txt")
-    # the game list's and the self-updater's TLS (port/third_party/mbedtls),
-    # in every build (HALO_GAME_BROWSER), whose Apache license asks the same
-    shutil.copy2(ROOT / "port/third_party/mbedtls/LICENSE", dist / "mbedtls-LICENSE.txt")
+    if args.platform != "web":
+        # the game list's and the self-updater's TLS and internet play's DTLS
+        # with browsers (port/third_party/mbedtls), in every native build,
+        # whose Apache license asks the same
+        shutil.copy2(ROOT / "port/third_party/mbedtls/LICENSE", dist / "mbedtls-LICENSE.txt")
     # internet play's UPnP (port/third_party/miniupnpc), in every build,
     # whose BSD license asks binaries to carry its notice
     shutil.copy2(ROOT / "port/third_party/miniupnpc/LICENSE", dist / "miniupnpc-LICENSE.txt")

@@ -90,7 +90,9 @@ void rasterizer_set_target_as_texture(
 	boolean filtered);
 #endif
 
-void rasterizer_set_texture_bitmap_data(
+/* port: the definition's type (rasterizer_xbox.h), which WebAssembly calls
+it by */
+boolean rasterizer_set_texture_bitmap_data(
 	short stage,
 	struct bitmap_data const *bitmap);
 

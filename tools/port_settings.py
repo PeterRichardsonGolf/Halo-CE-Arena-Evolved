@@ -28,6 +28,9 @@ SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal
 CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
 SPAWN_HEATS = [("OFF", "off"), ("MINE", "mine"), ("ENEMY", "enemy")]
 CALLOUT_DETAILS = [("MINIMAL", "minimal"), ("STANDARD", "standard"), ("VERBOSE", "verbose")]
+# the multiplayer armor colors, in the profile's order (player_profile.c)
+SHIELD_COLORS = ["white", "black", "red", "blue", "gray", "yellow", "green", "pink", "purple", "cyan", "cobalt",
+                 "orange", "teal", "sage", "brown", "tan", "maroon", "salmon"]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 # (the MCC mouse style: ae_mouse.c; the values 0.1 to 10 in 0.1 steps, the scales 0.1 to 2)
 MOUSE_STYLES = [("CLASSIC", "classic"), ("MCC", "mcc")]
@@ -42,9 +45,11 @@ VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
 # each screen: its folder below PE, its screen's widget (the name the profile
 # menu opens), its header (widget, bitmap), the row spacing, and its rows:
-# (label, setting, [(shown, value)], help, platform[, key]): key names the
-# row's widgets where two rows set one setting (one for each platform), else
-# the setting's name does
+# (label, setting, [(shown, value)], help, platform[, key]): platform is None
+# for every platform, else the platforms the row is for, separated by spaces
+# ("desktop", "android", "web": the menus' platform attribute,
+# port/linux/src/menu_files.c); key names the row's widgets where two rows set
+# one setting (one for each platform), else the setting's name does
 SCREENS = {
     "video_settings": {
         "screen": "video_settings_screen",
@@ -72,17 +77,17 @@ SCREENS = {
             ("WINDOW SIZE:", "display.window_size", [("1280 x 960", "1280x960")],
              "The window's size: 4:3, then 16:10, 16:9 and 21:9\n(its edges can also be dragged).", "desktop"),
             ("RESOLUTION SCALING:", "display.resolution_scaling", [("NATIVE", "native"), ("ORIGINAL", "original")],
-             "Native draws at the resolution; Original draws\nthe Xbox's 640x480 and scales it up.", "desktop"),
+             "Native draws at the resolution; Original draws\nthe Xbox's 640x480 and scales it up.", "desktop web"),
             ("V-SYNC:", "display.vsync", ON_OFF,
              "Wait for the display between frames, so that the\npicture never tears.", None),
             ("FRAME RATE LIMIT:", "display.max_fps",
              [("AUTO", "0"), ("30", "30"), ("60", "60"), ("120", "120"), ("144", "144"), ("165", "165"),
               ("240", "240"), ("NONE", "-1")],
-             "With V-Sync off, the most frames a second. Auto:\ntwice the display's refresh rate.", "desktop"),
+             "With V-Sync off, the most frames a second. Auto:\ntwice the display's refresh rate.", "desktop web"),
             ("SMOOTH MOTION:", "display.interpolation", ON_OFF,
              "Draw a frame for every display refresh, blending\nbetween the game's 30 ticks a second.", None),
             ("INSTANT AIM:", "display.direct_camera", ON_OFF,
-             "In first person, turn the view the moment the\nmouse moves, not up to two ticks later.", "desktop"),
+             "In first person, turn the view the moment the\nmouse moves, not up to two ticks later.", "desktop web"),
             ("HIGH-RES HUD:", "display.high_res_hud", ON_OFF,
              "Draw the HUD from the high-res redraws; off\ndraws the game's own pictures.", None),
             ("HIGH-RES TEXT:", "display.high_res_text", ON_OFF,
@@ -95,7 +100,7 @@ SCREENS = {
             ("ANTI-ALIASING:", "display.anti_aliasing",
              [("OFF", "off"), ("FXAA", "fxaa"), ("MSAA 2X", "msaa2x"), ("MSAA 4X", "msaa4x")],
              "Smooth jagged edges, which the Xbox did not. FXAA\nis cheap; MSAA is sharper.",
-             "android", "anti_aliasing_android"),
+             "android web", "anti_aliasing_android"),
             ("SHADOW RESOLUTION:", "display.shadow_resolution",
              [("128", "128"), ("256", "256"), ("512", "512"), ("1024", "1024")],
              "The size objects' shadows are drawn at: 128 as on\nthe Xbox; larger for smoother, as soft, edges.",
@@ -107,6 +112,10 @@ SCREENS = {
              None),
             ("POSITION:", "display.performance_position", CORNERS,
              "The corner the performance line is drawn in,\nabove the HUD.", None),
+            ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
+             "Shields light their surroundings as they flare,\nin the shield's own color.", None),
+            ("GLOW INTENSITY:", "display.shield_glow_intensity", [("DEFAULT", "default"), ("LIGHT SHOW", "light_show")],
+             "Light Show: the shield glow three times as far,\nat full from a third of the flare.", None),
         ],
     },
     # (Mods: its title text, not a picture; the spinner's mods are the data
@@ -271,12 +280,17 @@ SCREENS = {
     "network_setup": {
         "screen": "network_settings_screen",
         "header": ("header_profile_network_settings", f"{PE}/network_setup/header_profile_network_settings"),
-        # (24, not 30: twelve rows, with the help line as low as mods_setup's)
-        "spacing": 24,
-        "help_top": 366,
+        # (22, not 30: twelve rows and MAP SHARING, with the help line as low
+        # as mods_setup's)
+        "spacing": 22,
+        "help_top": 368,
+        # (the router, the clipboard and the updates, which the web build
+        # has not: the other rows from the top there)
+        "platform_places": True,
         "rows": [
             ("INTERNET PLAY:", "network.online", ON_OFF,
-             "Host and join games over the internet by invite\nlinks; off keeps to the local network.", None),
+             "Host and join games over the internet by invite\nlinks; off keeps to the local network.",
+             "desktop android web"),
             # (opt-ins, off by default in this build: port_config.c)
             ("LIST HOSTED GAMES:", "network.list_hosted_games", ON_OFF,
              "Show the internet games you host on the public\nlist at halo.milenko.org, for anyone to join.", None),
@@ -286,11 +300,12 @@ SCREENS = {
             ("SHARE HOSTED STATS:", "network.report_events", ON_OFF,
              "Send the games you host (kills, positions, medals)\nto halo.milenko.org, for its match pages.", None),
             ("UPNP PORT FORWARDING:", "network.allow_upnp", ON_OFF,
-             "Let internet play ask the router to forward its\nport, for networks that stop connections.", None),
+             "Let internet play ask the router to forward its\nport, for networks that stop connections.",
+             "desktop android"),
             ("JOIN FROM CLIPBOARD:", "network.join_from_clipboard", ON_OFF,
-             "Join the game of an invite link copied before\nswitching to the game.", None),
+             "Join the game of an invite link copied before\nswitching to the game.", "desktop android"),
             ("CHECK FOR UPDATES:", "update.auto", ON_OFF,
-             "Look for a new version when the game starts.", None),
+             "Look for a new version when the game starts.", "desktop android"),
             ("PLAYER NAMES:", "display.player_names",
              [("ALL", "all"), ("ALLIES", "allies"), ("ENEMIES", "enemies"), ("NONE", "none")],
              "In multiplayer, whose names are drawn above their\nheads.", None),
@@ -341,10 +356,12 @@ SCREENS = {
 # pending edits, Defaults, OK and Cancel as the other settings screens.
 _video = SCREENS["video_settings"]
 # (Arena Evolved's PERFORMANCE and POSITION, the performance line's, go with
-# the graphics rows: seven places there, Video Setup's nine as OpenCE's)
+# the graphics rows, with upstream's shield glow: nine places there, Video
+# Setup's nine as OpenCE's)
 _graphics = {"display.high_res_hud", "display.high_res_text", "display.anti_aliasing",
              "display.shadow_resolution", "display.per_pixel_lighting",
-             "display.performance", "display.performance_position"}
+             "display.performance", "display.performance_position",
+             "display.shield_glow", "display.shield_glow_intensity"}
 SCREENS["video_settings/graphics"] = {
     "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 30,
     "same_place": ["anti_aliasing_android"],
@@ -366,6 +383,35 @@ SCREENS["video_settings/fov_viewmodels"] = {
          "The weapon and hands, horizontal at 16:9.\nDefault keeps the weapon's stock view.", None),
         ("VIEWMODELS:", "display.viewmodel_visible", ON_OFF,
          "Draw first-person weapons, hands and attached\nvisuals. Gameplay and sound continue when off.", None),
+        ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
+         "The energy shield's flare on your first-person\narms too, as on your body.", None),
+        ("LEGS:", "display.first_person_legs", ON_OFF,
+         "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
+        ("SHIELD COLOR:", "display.shield_color", [("DEFAULT", "default")] + [(c.upper(), c) for c in SHIELD_COLORS],
+         "Your shield's flare in an armor color, whatever\nyour armor. Only you see it. Default: its own.", None),
+    ],
+}
+
+# Network Setup's map sharing (port/linux/game/map_share.c): this machine's
+# part in another's game, a screen of its own (a category, as Video Setup's)
+SEED_UPLOADS = (64, 128, 256, 512, 1024, 2048)
+_network = SCREENS["network_setup"]
+_network["categories"] = [
+    ("MAP SHARING:", "network_setup/map_sharing",
+     "Downloading Custom Edition maps you do not have,\nand helping send them to other players.",
+     "desktop android"),
+]
+SCREENS["network_setup/map_sharing"] = {
+    "screen": "map_sharing_settings_screen", "header": _network["header"], "spacing": 30,
+    "rows": [
+        ("DOWNLOAD MAPS:", "network.map_download", ON_OFF,
+         "Joining a game on a Custom Edition map you do not\nhave: download it from the players (if shared).",
+         None),
+        ("HELP SEND MAPS:", "network.map_seed", ON_OFF,
+         "In another's game, send its map to players who\njoin without it, as a torrent's peers do.", None),
+        ("UPLOAD LIMIT:", "network.map_seed_upload",
+         [(f"{kb} KB/S" if kb < 1024 else f"{kb // 1024} MB/S", str(kb)) for kb in SEED_UPLOADS],
+         "The most you send of maps to other players, so\nthat the game keeps the rest of your upload.", None),
     ],
 }
 
@@ -490,6 +536,18 @@ def _screen(folder: str, spec: dict, rows: list, list_inputs: list, list_handler
     return lines
 
 
+def _placed(row: str, platform, members: list, places: dict) -> list:
+    """a row's children (row, platform, place): one for its platforms where
+    they have it in the same place, else one for each place, with the
+    platforms whose place it is"""
+    groups = {}
+    for name in members:
+        groups.setdefault(places[name], []).append(name)
+    if len(groups) == 1:
+        return [(row, platform, places[members[0]])]
+    return [(row, " ".join(names) if len(names) < len(places) else None, place) for place, names in groups.items()]
+
+
 def _setting_screen(folder: str, spec: dict) -> list:
     base = f"{PE}/{folder}"
     rows, extra = [], []
@@ -498,20 +556,19 @@ def _setting_screen(folder: str, spec: dict) -> list:
     # their ends)
     spinner_x, spinner_width = spec.get("spinner", (320, 147))
     # (platform_places: each platform's rows in places of their own, with
-    # no gap where the other's are; a row for both, a child for each)
-    places = {"desktop": -1, "android": -1}
+    # no gap where the others' are; a row in one place for all its
+    # platforms, else a child for each place)
+    places = {"desktop": -1, "android": -1, "web": -1}
     for index, (label, setting, choices, _, platform, *named) in enumerate(spec["rows"]):
         key = named[0] if named else setting.split(".", 1)[1]
         row = f"{base}/op_{key}"
         shares = setting in spec.get("same_place", ()) or key in spec.get("same_place", ())
         if spec.get("platform_places"):
-            for name in places:
-                if platform in (None, name) and not shares:
+            members = platform.split() if platform else list(places)
+            for name in members:
+                if not shares:
                     places[name] += 1
-            if platform or places["desktop"] == places["android"]:
-                rows.append((row, platform, places[platform or "desktop"]))
-            else:
-                rows += [(row, name, places[name]) for name in places]
+            rows += _placed(row, platform, members, places)
         else:
             if setting not in spec.get("same_place", ()) and key not in spec.get("same_place", ()):
                 place += 1
@@ -539,21 +596,22 @@ def _setting_screen(folder: str, spec: dict) -> list:
                           ("footer_bounds", "7 208 19 214" if wide
                            else f"7 {spinner_width + 3} 19 {spinner_width + 9}")],
                          ['<on event="created" run="port setting load"/>'])
-    for index, (label, category_folder, _) in enumerate(spec.get("categories", ())):
+    # (each category's row: its label, the screen it opens, its help, and the
+    # platforms it is for, as a row's: every one's when it names none)
+    for index, (label, category_folder, _, *category_platform) in enumerate(spec.get("categories", ())):
         key = category_folder.rsplit("/", 1)[-1]
         row = f"{base}/op_{key}"
         target = f"{PE}/{category_folder}/{SCREENS[category_folder]['screen']}"
+        platform = category_platform[0] if category_platform else None
         if spec.get("platform_places"):
-            for name in places:
+            members = platform.split() if platform else list(places)
+            for name in members:
                 places[name] += 1
-            if places["desktop"] == places["android"]:
-                rows.append((row, None, places["desktop"]))
-            else:
-                rows += [(row, name, places[name]) for name in ("desktop", "android")]
+            rows += _placed(row, platform, members, places)
         else:
-            rows.append((row, None, place + 1 + index))
+            rows.append((row, platform, place + 1 + index))
         extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
-                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF"), ("platform", platform)],
                          [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>',
                           f'<child widget="{base}/{key}_label"/>'])
@@ -605,7 +663,7 @@ def _setting_screen(folder: str, spec: dict) -> list:
             value_helps += help_text
         else:
             helps.append(help_text)
-    helps += [help_text for _, _, help_text in categories]
+    helps += [help_text for _, _, help_text, *_ in categories]
     helps += [help_text for _, _, help_text in actions]
     extra += _strings(f"{base}/help_strings", [text.replace("\n", "\\n") for text in helps + value_helps])
     return _screen(folder, spec, rows, ["port settings help"], [], extra)
@@ -1032,6 +1090,10 @@ def title_backdrop(width: float) -> str:
 # hold each number of buttons, one frame each (the Xbox's 2-button box is
 # 159 units high, and each button 35 more)
 PAUSE_BOX_BUTTONS = [3, 4]
+# the campaign pause box, tall enough for five rows at the PC version's pause
+# menu's pitch (30) with the prompts still under the last row: the stock box
+# is 159, and those rows need 36 more
+PAUSE_BOX_EXTRA_HEIGHTS = [195]
 
 
 def pause_box_height(buttons: int) -> int:
@@ -1149,9 +1211,9 @@ def _server_settings() -> list:
     whether the server browser lists it (PUBLIC or PRIVATE: an internet
     game's)"""
     base = f"{MT}/server_settings"
-    # (twelve rows, with ARENA OPTIONS and PASSWORD: closer together, the help
-    # lower, as video_settings)
-    spec = {"screen": "server_settings_screen", "spacing": 23, "help_top": 360,
+    # (thirteen rows, with ARENA OPTIONS, PASSWORD and MAP SHARING: closer
+    # together, the help lower, as video_settings)
+    spec = {"screen": "server_settings_screen", "spacing": 22, "help_top": 368,
             "header": ("header_server_settings", f"{base}/header_server_settings")}
     rows, extra = [], []
     extra += _value_row(base, "server_name", 0, "ss edit server name")
@@ -1199,6 +1261,23 @@ def _server_settings() -> list:
     # (AE: one past upstream's, after ARENA OPTIONS' label)
     extra += _value_row(base, "password", 11 + len(COOP_SETUP_SCREENS), "ss edit server password")
     rows.append((f"{base}/op_password", None))
+    # MAP SHARING (map_share.c), a screen of its own as co-op's options are,
+    # for any game: SETUP_OPTIONS_PLACE below it
+    key, _, _, _ = MAP_SHARE_SETUP
+    target = f"{base}/{key}/{key}_screen"
+    extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
+                                         ("flags", "pass_unhandled_to_focused_child"),
+                                         ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                     [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
+                      '<on event="left_mouse" run="mouse emit accept event"/>',
+                      f'<child widget="{base}/{key}_label"/>'])
+    extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
+                                             ("string_list", f"{base}/labels"),
+                                             # (AE: one past upstream's, after ARENA OPTIONS' label)
+                                             ("string_index", 12 + len(COOP_SETUP_SCREENS)),
+                                             ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                                             ("text_y", 4)], [])
+    rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE - 1))
     # co-op's options, in the place of the gametype's rows, which co-op hides
     # as multiplayer hides co-op's (menu_functions.c's server_settings_update):
     # rows opening their screens, as the gametype's options' do
@@ -1215,7 +1294,7 @@ def _server_settings() -> list:
                                                  ("string_list", f"{base}/labels"), ("string_index", 11 + index),
                                                  ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
                                                  ("text_y", 4)], [])
-        rows.append((f"{base}/op_{key}", None, 5 + index))
+        rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE + index))
     # the gametype's options for this game (the gametype editor's screens,
     # editing a copy of the gametype chosen: "port setup edit")
     for index, (key, screen) in enumerate(SETUP_OPTION_SCREENS):
@@ -1234,7 +1313,7 @@ def _server_settings() -> list:
         extra += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 280), ("height", 22),
                                                  ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("align", "center"),
                                                  ("text_y", 5), ("text_flags", "no_focus_test")], [])
-        rows.append((f"{base}/op_{key}", None, 5 + index))
+        rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE + index))
     extra += _button(f"{base}/button_defaults", 3, [])
     extra += _widget(f"{base}/button_ok", [("type", "text"), ("width", 128), ("height", 24),
                                            ("bitmap", "bitmaps/text_button_background"), ("text", "START GAME"),
@@ -1246,7 +1325,8 @@ def _server_settings() -> list:
     extra += _strings(f"{base}/labels", ["GAME NAME:", "MAXIMUM PLAYERS:", "INVITE LINK:", "GAME TYPE:",
                                          "PLAYER OPTIONS:", "ITEM OPTIONS:", "VEHICLE OPTIONS:", "INDICATOR OPTIONS:",
                                          "TEAMPLAY OPTIONS:", "ARENA OPTIONS:", "LISTING:",
-                                         *(f"{title}:" for _, title, _, _ in COOP_SETUP_SCREENS), "PASSWORD:"])
+                                         *(f"{title}:" for _, title, _, _ in COOP_SETUP_SCREENS), "PASSWORD:",
+                                         f"{MAP_SHARE_SETUP[1]}:"])
     extra += _strings(f"{base}/help_strings", [
         "",
         "The name the game shows in the lists of games.\\nEnter changes it.",
@@ -1266,11 +1346,13 @@ def _server_settings() -> list:
         *(help_text for _, _, help_text, _ in COOP_SETUP_SCREENS),
         # (PASSWORD's)
         "Players from the Server Browser must type it to\\njoin (an invite link needs none). Enter sets it.",
+        # (MAP SHARING's)
+        MAP_SHARE_SETUP[2],
     ])
     lines = _screen(base, spec, rows, ["server settings update"],
                     ['<on event="created" run="server settings init"/>'], extra)
-    # (co-op's options' screens)
-    for key, title, _, screen_rows in COOP_SETUP_SCREENS:
+    # (co-op's options' screens, and map sharing's)
+    for key, title, _, screen_rows in [*COOP_SETUP_SCREENS, MAP_SHARE_SETUP]:
         lines += _setup_option_screen(f"{base}/{key}", key, screen_rows)
     # (no Defaults: the bar is START and CANCEL; B cancels the name's edit
     # first)
@@ -1316,8 +1398,26 @@ COOP_SETUP_SCREENS = [
     ]),
     ("voice_options", "VOICE AND VOTING", "Voice chat and votes to kick a player, for this\\ngame.", TEAMPLAY_ROWS),
 ]
+# Server Setup's map sharing (port/linux/game/map_share.c), for any game,
+# laid out as co-op's options are (its key, its title, its row's help and
+# its rows: menu_functions.c's gametype_options give their settings' values)
+MAP_SHARE_UPLOADS = (256, 512, 1024, 2048, 4096, 8192)
+MAP_SHARE_SETUP = ("map_share_options", "MAP SHARING",
+                   "Sending players who join without the game's\\nCustom Edition map the map, and how fast.", [
+    ("map_share", "SHARE MAPS:", ["ON", "OFF"], [
+        "Players who join without the map download it\\nfrom you and the other players.",
+        "Players who join without the map cannot play.",
+    ]),
+    ("map_share_upload", "UPLOAD LIMIT:", [f"{kb} KB/S" if kb < 1024 else f"{kb // 1024} MB/S"
+                                           for kb in MAP_SHARE_UPLOADS],
+     ["The most you send of maps, so that the game\\nkeeps the rest of your upload."] * len(MAP_SHARE_UPLOADS)),
+])
+# (Server Setup's place of its options' rows, co-op's or the gametype's: after
+# MAP SHARING's)
+SETUP_OPTIONS_PLACE = 6
 # (their screens' titles)
-TITLES.update({f"{MT}/server_settings/{key}/header_{key}": title for key, title, _, _ in COOP_SETUP_SCREENS})
+TITLES.update({f"{MT}/server_settings/{key}/header_{key}": title
+               for key, title, _, _ in [*COOP_SETUP_SCREENS, MAP_SHARE_SETUP]})
 # (the rows of a co-op options screen in one place, the one shown: PER
 # PLAYER's and MULTIPLIER's, by EXTRA ENEMIES')
 SETUP_OPTION_SAME_PLACE = {"coop_enemies_multiplier"}

@@ -396,6 +396,7 @@ symbols in this file:
 #include "text/unicode.h"
 #include "halo_map_families.h" /* port: map_family_from_wire_name */
 #include "ae_hooks.h" /* AE hook */
+#include "map_share.h" /* port: port/linux/game/map_share.c */
 
 /* ---------- constants */
 
@@ -1536,6 +1537,11 @@ boolean network_game_client_add_player(
 	  if (dedicated_server_active())
 		return TRUE; }
 #endif
+	/* port: not until the host's settings name the game's map, and a game
+	in progress whose map is being downloaded not until it is (map sharing:
+	port/linux/game/map_share.c); asked again each frame */
+	if (map_share_holds_players())
+		return TRUE;
 
 	/* port: the pregame screen asks each frame until the host's settings
 	have the player: once every half second, not each frame (the host

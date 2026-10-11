@@ -111,9 +111,11 @@ void dsound_sdl_output_device_check(void);
 void updater_start(void);
 void updater_poll(SDL_Window *window);
 static void screen_keyboard_update(void);
+#ifndef HALO_GLES
 /* the windows' icon, a PNG (tools/embed_assets.py, from port/assets/icon) */
 extern const unsigned int platform_window_icon[];
 extern const unsigned long platform_window_icon_size;
+#endif
 #endif
 /* (and the version, for the window's title) */
 const char *updater_version(void);
@@ -379,9 +381,10 @@ static void show_pointer(BOOL shown)
 #endif
 }
 
-#ifndef HALO_ANDROID
+#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 
-/* ---------- first start without game data (xbox_files.c) */
+/* ---------- first start without game data (xbox_files.c; the web page
+imports it itself) */
 
 struct data_extraction
 {
@@ -1023,6 +1026,12 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+#ifdef HALO_WEB
+	/* an opaque canvas: the game keeps scratch values in destination alpha,
+	which a page would otherwise blend the picture by (black, or the page's
+	colours through it) */
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+#endif
 	if (config_boolean("debug.gl_debug"))
 	{
 		int flags = 0;
@@ -1075,8 +1084,9 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 	Windows: there the window already has halo.exe's own (port/windows/halo.rc;
 	SDL's window class takes the executable's first icon), with every size
 	and the logo's small master for 32 px and below, where SDL_SetWindowIcon
-	would give it this one 256 px picture, shrunk, for every size */
-#ifndef _WIN32
+	would give it this one 256 px picture, shrunk, for every size; a web page
+has its own) */
+#if !defined(_WIN32) && !defined(HALO_GLES)
 	if (platform_window_icon_size)
 	{
 		SDL_Surface *icon = SDL_LoadPNG_IO(SDL_IOFromConstMem(platform_window_icon, platform_window_icon_size), true);
@@ -1210,6 +1220,15 @@ static Uint64 frame_interval_ns(void)
 }
 
 #endif
+#ifdef HALO_WEB
+#include "web_shared.h"
+
+/* port/web/src/web_main.c's: the frames shown, which the page reads; and
+web_library.js's: a line for the page (2: an invite link to offer) */
+void web_frame_shown(void);
+void web_js_post(int kind, const char *text);
+#endif
+
 void platform_video_swap(void)
 {
 #ifndef HALO_ANDROID
@@ -1218,6 +1237,9 @@ void platform_video_swap(void)
 
 #endif
 	SDL_GL_SwapWindow(platform_window);
+#ifdef HALO_WEB
+	web_frame_shown();
+#endif
 #ifndef HALO_ANDROID
 	interval = frame_interval_ns();
 	if (!interval)
@@ -1235,6 +1257,11 @@ void platform_video_swap(void)
 
 void platform_mouse_capture(BOOL capture)
 {
+#ifdef HALO_WEB
+	/* (for the page, which takes the pointer lock back on a click:
+	web_shared.h) */
+	__atomic_store_n(&web_shared[_web_mouse_wanted], capture ? 1 : 0, __ATOMIC_RELAXED);
+#endif
 	if (platform_window)
 		SDL_SetWindowRelativeMouseMode(platform_window, capture ? true : false);
 }
@@ -1443,9 +1470,15 @@ static void platform_invite_clipboard(BOOL look)
 #endif
 	if (invite)
 	{
+#ifdef HALO_WEB
+		/* (a page may write the clipboard only when it is clicked: the page
+		shows the link, with a button that copies it) */
+		web_js_post(2, invite);
+#else
 		SDL_SetClipboardText(invite);
 		snprintf(seen, sizeof(seen), "%s", invite);
 		platform_log("Internet play: the invite link is on the clipboard");
+#endif
 #ifdef HALO_ANDROID
 		SDL_ShowAndroidToast("Hosting: the invite link is on the clipboard", 1, -1, 0, 0);
 #endif

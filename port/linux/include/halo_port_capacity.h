@@ -65,10 +65,13 @@ texture cache, Portent and Foundation take about 23 MB of that in a game
 the Xbox's, 44 MB (ChupathingyCE's; OpenCE's Android keeps the Xbox's), and
 leaves about 15 MB free: Portent's busiest frames fit, Foundation's (66 MB)
 do not, and some of its surfaces can show the wrong pixels there. The Xbox
-builds (HALO_XBOX_CONSOLE) keep the Xbox's cache. */
+builds (HALO_XBOX_CONSOLE) and the web build (HALO_WEB: its window is 128 MB,
+as Android's) keep the Xbox's cache. */
 
 #if defined(HALO_ARM64_GUEST)
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0xB00 /* (0x580) */
+#elif defined(HALO_WEB)
+#define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x580 /* (0x580) */
 #elif !defined(HALO_XBOX_CONSOLE) && defined(HALO_64BIT)
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x4000 /* (0x580) */
 #elif !defined(HALO_XBOX_CONSOLE)
@@ -109,9 +112,10 @@ the Xbox. Halo Custom Edition maps' sounds, converted when they load
 (port/linux/game/custom_edition_sounds.c), and those of sound tags loaded
 over a map's (loose_sounds.c), are longer than the Xbox maps' and fill it (a
 campaign map's dialogue and music did, "SOUND CACHE BLOWN" in debug.txt).
-The desktop builds' cache is 16 MB; Android's window keeps the Xbox's. */
+The desktop builds' cache is 16 MB; Android's and the web build's windows keep
+the Xbox's. */
 
-#ifdef HALO_ARM64_GUEST
+#if defined(HALO_ARM64_GUEST) || defined(HALO_WEB)
 #define HALO_PORT_SOUND_CACHE_SIZE 0x400000 /* (0x400000) */
 #else
 #define HALO_PORT_SOUND_CACHE_SIZE 0x1000000 /* (0x400000) */

@@ -1455,6 +1455,7 @@ static void audio_start(void)
 		spec.format = SDL_AUDIO_F32;
 		spec.channels = OUTPUT_CHANNELS;
 		spec.freq = OUTPUT_RATE;
+#ifndef HALO_WEB
 		/* audio.buffer_frames: the device's buffer (port_config.c) */
 		buffer_frames = config_integer("audio.buffer_frames");
 		if (buffer_frames < 64)
@@ -1463,6 +1464,7 @@ static void audio_start(void)
 			buffer_frames = 8192;
 		snprintf(frames, sizeof(frames), "%ld", buffer_frames);
 		SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames);
+#endif
 		snprintf(audio_device_name, sizeof(audio_device_name), "%s", audio_device_setting());
 		audio_device_read_at = config_changes();
 		audio_stream = SDL_OpenAudioDeviceStream(platform_audio_device(FALSE, audio_device_name), &spec,

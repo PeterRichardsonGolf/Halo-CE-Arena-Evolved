@@ -137,6 +137,7 @@ symbols in this file:
 #include "tag_schema.h"
 #include "halo_map_families.h"
 #include "models/models.h"
+#include "map_share.h" /* port: port/linux/game/map_share.c */
 
 /* ---------- constants */
 
@@ -1246,7 +1247,10 @@ next, rather than the damaged disc error that precaching a map that is not
 there gives (cache_files_give_time_to_precache). A Halo PC map (<file>@ce,
 @pc or @md) is looked for in its family's folders (halo_map_families.h), an
 Xbox map in maps. (After OpenCE's build-145, which tells its players so.) A Halo PC map must be the host's version
-(version, cache_files_map_version's on the host; 0 for any). */
+(version, cache_files_map_version's on the host; 0 for any). A Custom
+Edition map this machine lacks (or has another version of) is asked of the
+host instead, if it may be (map sharing: port/linux/game/map_share.c): it is
+taken as present, and downloaded before it is precached. */
 boolean cache_files_map_present(
 	char const *map_name,
 	unsigned long version)
@@ -1284,6 +1288,9 @@ boolean cache_files_map_present(
 			snprintf(message, sizeof(message), "You don't have the %s map %.63s. If you have it, copy %.63s.map into %s.",
 				map_family_badge(family), file, file, map_family_folder(family));
 		}
+		/* port: asked of the host instead (map sharing), a Custom Edition map's */
+		if (family == _map_family_custom_edition && map_share_download_begin(map_name, version, message))
+			return TRUE;
 	}
 	else
 #endif
@@ -1345,6 +1352,10 @@ boolean cache_files_give_time_to_precache(
 	the main menu and three multiplayer maps played) matched none, so was
 	taken for a map missing from the disc (the damaged disc error) */
 	if (!map_name || !map_name[0])
+		return FALSE;
+	/* port: a map being downloaded (port/linux/game/map_share.c) is not
+	there yet: precached once it is */
+	if (map_share_downloading(map_name))
 		return FALSE;
 	if (cache_files_precache_map_loaded(map_name))
 	{
