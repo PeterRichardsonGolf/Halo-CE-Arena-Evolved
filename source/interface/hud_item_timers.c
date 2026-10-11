@@ -99,8 +99,8 @@ and power list and each other, arrows together at the view's edge sharing
 one list beside them.
 
 WAYPOINTS (display.waypoint_style, this machine's display only) is what a
-label shows: TEXT as above; ICONS the item's picture, then the time; BOTH
-the name and time, then the picture (hud_waypoint_line, by
+label shows: TEXT as above; ICONS the time over the item's picture; BOTH
+the time over the name over the picture, centred (hud_waypoint_line, by
 ae_waypoint_icons.c's rules). A weapon's picture is the pickup prompt's
 (its HUD interface's messaging icon, a sprite of the map's own
 hud_msg_icons sheet: nothing is shipped), every index and size checked
@@ -1857,6 +1857,7 @@ struct hud_waypoint_block
 	short horizontal;	/* -1 its lines' left at its left, 1 right at its right, 0 centred */
 	short vertical;	/* -1 the first line at its bottom (the rest above), 1 at its top */
 	long width;
+	long height;	/* its lines' (a line with pictures is taller) */
 	rectangle2d arrows;	/* around its labels' arrows */
 	rectangle2d bounds;	/* where it is drawn (the view's coordinates) */
 	boolean placed;
@@ -1916,30 +1917,124 @@ static void hud_waypoint_label_color(
 	hud_item_timers_side_color(timer ? timer->side : _item_timer_side_middle, HUD_ITEM_TIMERS_LABEL_ALPHA, color);
 }
 
-/* a block's line, as ae_waypoint_line_parts orders it for the style: one
-label's "NAME 0:07" (or its name), several sharing a time "0:07 A · B" (or
-"A · B"); BOTH's one label with its picture after it, ICONS' pictures and
-then the time. Each piece is some of the line's text or a label's picture,
-with its colour's entry (the time's and the separators' the HUD's) and where
-it starts. Returns the line's width and fills the layout */
+/* a label's text line's height in this view, and its pictures' row's (every
+picture row of the view alike: WAYPOINTS ICONS and BOTH) */
+static long hud_waypoint_text_height(
+	long font_index)
+{
+	return (long)(hud_item_timers_line_height(font_index) * hud_item_timers_text_scale() + 0.5f);
+}
+
+static long hud_waypoint_row_height(
+	long font_index)
+{
+	long text_height = hud_waypoint_text_height(font_index);
+
+	return hud_waypoint_style() == AE_WAYPOINT_TEXT ? text_height :
+		MAX(text_height, (long)ae_waypoint_row_height((int)text_height));
+}
+
+/* a block's line, as ae_waypoint_line_plan lays it out for the style: TEXT
+one row, one label's "NAME 0:07" (or its name), several sharing a time
+"0:07 A · B"; BOTH and ICONS (where a label has a picture) stacked and
+centred, top to bottom: the time, the names, the pictures side by side
+(Infinite's order). Each piece is some of a text row's characters, with its
+colour's entry (the time's and the separators' the HUD's) and where it starts
+in the row; each picture is a label's with where it starts in its row.
+Returns the line's width and fills the layout */
 #define HUD_WAYPOINT_MAXIMUM_PARTS 16
 struct hud_waypoint_piece
 {
-	short begin;	/* its characters of the line's text (none: a picture) */
+	short begin;	/* its characters of the row's text */
 	short end;
-	short label;	/* the label whose picture it is, else NONE */
 	struct item_timer const *timer;
-	long start;	/* from the line's left */
+	long start;	/* from the row's left */
+};
+
+struct hud_waypoint_picture
+{
+	short label;	/* the label whose picture it is */
+	long start;	/* from the picture row's left */
+};
+
+struct hud_waypoint_text_row
+{
+	wchar_t text[HUD_ITEM_TIMERS_LINE_LENGTH];
+	short count;
+	struct hud_waypoint_piece pieces[HUD_WAYPOINT_MAXIMUM_PARTS];
+	long width;
 };
 
 struct hud_waypoint_line_layout
 {
-	wchar_t text[HUD_ITEM_TIMERS_LINE_LENGTH];	/* (the line's text, without its pictures) */
-	short count;
-	struct hud_waypoint_piece pieces[HUD_WAYPOINT_MAXIMUM_PARTS];
-	short icons;	/* how many pictures */
-	long width;
+	short row_count;	/* text rows: 0 to 2 */
+	struct hud_waypoint_text_row rows[2];
+	short icons;	/* how many pictures (in the row under the text) */
+	struct hud_waypoint_picture pictures[HUD_WAYPOINT_MAXIMUM_PARTS];
+	long row_width;	/* the pictures' row */
+	long width;	/* the widest row */
+	long height;	/* the rows' */
 };
+
+/* a text row of these parts */
+static void hud_waypoint_text_row_build(
+	long font_index,
+	struct hud_waypoint_label const *labels,
+	short const *member_labels,
+	short members,
+	wchar_t const *time,
+	struct ae_waypoint_part const *parts,
+	int part_count,
+	struct hud_waypoint_text_row *row)
+{
+	wchar_t const *separator = hud_waypoint_separator(font_index);
+	short text_size = (short)NUMBEROF(row->text);
+	int index;
+
+	row->text[0] = 0;
+	row->count = 0;
+	row->width = 0;
+	for (index = 0; index < part_count; index++)
+	{
+		struct hud_waypoint_piece *piece = &row->pieces[row->count];
+		short used = (short)ustrlen(row->text);
+		short member = parts[index].member;
+		wchar_t before[HUD_ITEM_TIMERS_LINE_LENGTH];
+
+		if (member < 0 || member >= members || row->count >= HUD_WAYPOINT_MAXIMUM_PARTS)
+			continue;
+		piece->begin = used;
+		piece->timer = NULL;
+		/* (where it starts: the advance of the text before it) */
+		ustrncpy(before, row->text, used);
+		before[used] = 0;
+		piece->start = hud_item_timers_text_advance(font_index, before);
+		switch (parts[index].kind)
+		{
+		case AE_WAYPOINT_PART_NAME:
+			usnprintf(row->text + used, text_size - used, L"%s", labels[member_labels[member]].name);
+			piece->timer = labels[member_labels[member]].timer;
+			break;
+
+		case AE_WAYPOINT_PART_TIME:
+			usnprintf(row->text + used, text_size - used, L"%s", time);
+			break;
+
+		case AE_WAYPOINT_PART_SEPARATOR:
+			usnprintf(row->text + used, text_size - used, L"%s", separator);
+			break;
+
+		default:
+			usnprintf(row->text + used, text_size - used, L" ");
+			break;
+		}
+		row->text[text_size - 1] = 0;
+		piece->end = (short)ustrlen(row->text);
+		row->count++;
+	}
+	row->width = row->text[0] ?
+		hud_item_timers_line_width_scaled(font_index, row->text, hud_item_timers_text_scale()) : 0;
+}
 
 static long hud_waypoint_line(
 	long font_index,
@@ -1949,21 +2044,22 @@ static long hud_waypoint_line(
 	short line,
 	struct hud_waypoint_line_layout *layout)
 {
-	wchar_t const *separator = hud_waypoint_separator(font_index);
 	short member_labels[HUD_WAYPOINT_MAXIMUM_PARTS];
 	int member_icons[HUD_WAYPOINT_MAXIMUM_PARTS];
 	struct ae_waypoint_part parts[HUD_WAYPOINT_MAXIMUM_PARTS];
+	struct ae_waypoint_plan plan;
 	short members = 0;
 	short index;
-	int part_count;
 	wchar_t const *time = L"";
-	long icons_width = 0;
-	short text_size = (short)NUMBEROF(layout->text);
+	int picture_widths[HUD_WAYPOINT_MAXIMUM_PARTS];
+	int picture_starts[HUD_WAYPOINT_MAXIMUM_PARTS];
+	int picture_row_width = 0;
 
-	layout->text[0] = 0;
-	layout->count = 0;
+	layout->row_count = 0;
 	layout->icons = 0;
 	layout->width = 0;
+	layout->row_width = 0;
+	layout->height = 0;
 	for (index = 0; index < label_count; index++)
 	{
 		if (labels[index].block == block && labels[index].line == line)
@@ -1977,67 +2073,49 @@ static long hud_waypoint_line(
 			}
 		}
 	}
-	part_count = ae_waypoint_line_parts(hud_waypoint_style(), members, member_icons, time[0] != 0, parts,
-		HUD_WAYPOINT_MAXIMUM_PARTS);
-	for (index = 0; index < part_count; index++)
+	ae_waypoint_line_plan(hud_waypoint_style(), members, member_icons, time[0] != 0, &plan);
+	if (!plan.stacked)
 	{
-		struct hud_waypoint_piece *piece = &layout->pieces[layout->count];
-		short used = (short)ustrlen(layout->text);
-		short member = parts[index].member;
-		wchar_t before[HUD_ITEM_TIMERS_LINE_LENGTH];
-
-		if (member < 0 || member >= members)
-			continue;
-		piece->begin = used;
-		piece->label = NONE;
-		piece->timer = NULL;
-		/* (where it starts: the advance of the text before it, and the
-		pictures before it) */
-		ustrncpy(before, layout->text, used);
-		before[used] = 0;
-		piece->start = hud_item_timers_text_advance(font_index, before) + icons_width;
-		switch (parts[index].kind)
-		{
-		case AE_WAYPOINT_PART_NAME:
-			usnprintf(layout->text + used, text_size - used, L"%s", labels[member_labels[member]].name);
-			piece->timer = labels[member_labels[member]].timer;
-			break;
-
-		case AE_WAYPOINT_PART_TIME:
-			usnprintf(layout->text + used, text_size - used, L"%s", time);
-			break;
-
-		case AE_WAYPOINT_PART_SEPARATOR:
-			usnprintf(layout->text + used, text_size - used, L"%s", separator);
-			break;
-
-		case AE_WAYPOINT_PART_ICON:
-			piece->label = member_labels[member];
-			piece->timer = labels[member_labels[member]].timer;
-			icons_width += labels[member_labels[member]].icon.width;
-			layout->icons++;
-			break;
-
-		default:
-			/* (a space; by a picture two, as its sprite has no room of its
-			own about it) */
-			usnprintf(layout->text + used, text_size - used,
-				(index > 0 && parts[index - 1].kind == AE_WAYPOINT_PART_ICON) ||
-				(index + 1 < part_count && parts[index + 1].kind == AE_WAYPOINT_PART_ICON) ? L"  " : L" ");
-			break;
-		}
-		layout->text[text_size - 1] = 0;
-		piece->end = (short)ustrlen(layout->text);
-		layout->count++;
+		hud_waypoint_text_row_build(font_index, labels, member_labels, members, time, parts,
+			ae_waypoint_line_parts(members, time[0] != 0, parts, HUD_WAYPOINT_MAXIMUM_PARTS), &layout->rows[0]);
+		layout->row_count = 1;
 	}
-
-	/* (text alone: as wide as it is drawn, as before pictures; with
-	pictures: the advance of its text, whose spaces by a picture count, and
-	the pictures) */
-	if (layout->icons)
-		layout->width = hud_item_timers_text_advance(font_index, layout->text) + icons_width;
 	else
-		layout->width = hud_item_timers_line_width_scaled(font_index, layout->text, hud_item_timers_text_scale());
+	{
+		if (plan.time_row)
+		{
+			parts[0].kind = AE_WAYPOINT_PART_TIME;
+			parts[0].member = 0;
+			hud_waypoint_text_row_build(font_index, labels, member_labels, members, time, parts, 1,
+				&layout->rows[layout->row_count++]);
+		}
+		if (plan.name_count)
+		{
+			hud_waypoint_text_row_build(font_index, labels, member_labels, members, time, parts,
+				ae_waypoint_name_parts(plan.name_count, plan.names, parts, HUD_WAYPOINT_MAXIMUM_PARTS),
+				&layout->rows[layout->row_count++]);
+		}
+		/* (the pictures side by side, a space apart) */
+		layout->icons = (short)plan.picture_count;
+		for (index = 0; index < layout->icons; index++)
+		{
+			layout->pictures[index].label = member_labels[plan.pictures[index]];
+			picture_widths[index] = labels[member_labels[plan.pictures[index]]].icon.width;
+		}
+		ae_waypoint_picture_row(layout->icons, picture_widths, (int)hud_item_timers_text_advance(font_index, L" "),
+			picture_starts, &picture_row_width);
+		for (index = 0; index < layout->icons; index++)
+			layout->pictures[index].start = picture_starts[index];
+		layout->row_width = picture_row_width;
+	}
+	layout->width = layout->row_width;
+	for (index = 0; index < layout->row_count; index++)
+	{
+		layout->width = MAX(layout->width, layout->rows[index].width);
+		layout->height += hud_waypoint_text_height(font_index);
+	}
+	if (layout->icons)
+		layout->height += hud_waypoint_row_height(font_index);
 
 	return layout->width;
 }
@@ -2062,6 +2140,29 @@ static long hud_waypoint_block_width(
 	}
 
 	return width;
+}
+
+/* a block's lines' height, lines from..to-1 (line_count of them: all) */
+static long hud_waypoint_lines_height(
+	long font_index,
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	short block,
+	short from,
+	short to)
+{
+	long height = 0;
+	short line;
+
+	for (line = from; line < to; line++)
+	{
+		struct hud_waypoint_line_layout layout;
+
+		hud_waypoint_line(font_index, labels, label_count, block, line, &layout);
+		height += layout.height;
+	}
+
+	return height;
 }
 
 /* whether a rectangle meets another, the second widened by margin across */
@@ -2129,7 +2230,7 @@ static boolean hud_waypoint_block_bounds(
 	rectangle2d const *room,
 	rectangle2d *bounds)
 {
-	long height = block->line_count * line_height;
+	long height = block->height;
 	long gap = HUD_ITEM_TIMERS_LABEL_GAP;
 	long x0;
 	long y0;
@@ -2189,6 +2290,7 @@ static boolean hud_waypoint_place_block(
 
 	*obstacle = NONE;
 	self->width = hud_waypoint_block_width(font_index, labels, label_count, blocks, block);
+	self->height = hud_waypoint_lines_height(font_index, labels, label_count, block, 0, self->line_count);
 	for (side = 0; side < 2; side++)
 	{
 		/* (an arrow in sight's: over it, else under it; at the edge, moved
@@ -2221,23 +2323,6 @@ static boolean hud_waypoint_place_block(
 	return FALSE;
 }
 
-/* a label's text line's height in this view, and its row's: with pictures
-(WAYPOINTS ICONS and BOTH) the pictures' row, every row of the view alike */
-static long hud_waypoint_text_height(
-	long font_index)
-{
-	return (long)(hud_item_timers_line_height(font_index) * hud_item_timers_text_scale() + 0.5f);
-}
-
-static long hud_waypoint_row_height(
-	long font_index)
-{
-	long text_height = hud_waypoint_text_height(font_index);
-
-	return hud_waypoint_style() == AE_WAYPOINT_TEXT ? text_height :
-		MAX(text_height, (long)ae_waypoint_row_height((int)text_height));
-}
-
 /* (debug.waypoint_log: this view's lines are logged this frame) */
 static boolean hud_waypoint_log_lines = FALSE;
 
@@ -2256,10 +2341,10 @@ static void hud_waypoint_draw_labels(
 {
 	struct hud_waypoint_block blocks[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 	short block_count = 0;
-	/* (a row: a text line, or with pictures the pictures' row, the text in
-	its middle) */
+	/* (the unit a block is moved by: a text line; a line with pictures has
+	their row over its text) */
 	long text_height = hud_waypoint_text_height(font_index);
-	long line_height = hud_waypoint_row_height(font_index);
+	long line_height = text_height;
 	long gap = hud_item_timers_text_advance(font_index, L" ");
 	rectangle2d view;
 	rectangle2d area;
@@ -2498,6 +2583,7 @@ static void hud_waypoint_draw_labels(
 		if (block->placed)
 			continue;
 		block->width = hud_waypoint_block_width(font_index, labels, label_count, blocks, index);
+		block->height = hud_waypoint_lines_height(font_index, labels, label_count, index, 0, block->line_count);
 		for (other = 0; other < label_count; other++)
 		{
 			if (labels[other].block == index && labels[other].line >= block->line_count)
@@ -2557,59 +2643,89 @@ static void hud_waypoint_draw_labels(
 			long x = block->horizontal < 0 ? block->bounds.x0 :
 				block->horizontal > 0 ? block->bounds.x1 - width :
 				block->bounds.x0 + (block->width - width) / 2;
-			long top = block->vertical > 0 ? block->bounds.y0 + line * line_height :
-				block->bounds.y1 - (line + 1) * line_height;
-			/* (the text in the row's middle) */
-			long text_top = top + (line_height - text_height) / 2;
+			long top = block->vertical > 0 ?
+				block->bounds.y0 + hud_waypoint_lines_height(font_index, labels, label_count, index, 0, line) :
+				block->bounds.y1 - hud_waypoint_lines_height(font_index, labels, label_count, index, 0, line + 1);
+			/* (top to bottom: the text rows, then the pictures' row, each centred
+			in the line) */
+			long row_top = top;
+			short row;
 			short part;
 
-			for (part = 0; part < layout.count; part++)
+			for (row = 0; row < layout.row_count; row++)
 			{
-				struct hud_waypoint_piece const *piece = &layout.pieces[part];
-				wchar_t text[HUD_ITEM_TIMERS_LINE_LENGTH];
-				real_argb_color color;
-				rectangle2d bounds;
+				struct hud_waypoint_text_row const *text_row = &layout.rows[row];
+				long text_x = x + (width - text_row->width) / 2;
 
-				hud_waypoint_label_color(piece->timer, &color);
-				if (piece->label != NONE)
+				for (part = 0; part < text_row->count; part++)
 				{
-					/* (its picture, in the row's middle, in its label's colour) */
-					struct hud_waypoint_icon const *icon = &labels[piece->label].icon;
+					struct hud_waypoint_piece const *piece = &text_row->pieces[part];
+					wchar_t text[HUD_ITEM_TIMERS_LINE_LENGTH];
+					real_argb_color color;
+					rectangle2d bounds;
+
+					if (piece->end <= piece->begin)
+						continue;
+					hud_waypoint_label_color(piece->timer, &color);
+					ustrncpy(text, text_row->text + piece->begin, piece->end - piece->begin);
+					text[piece->end - piece->begin] = 0;
+					/* (laid out at full size from its left, drawn at the
+					view's text scale about its top left corner) */
+					bounds.x0 = (short)(text_x + piece->start);
+					bounds.y0 = (short)row_top;
+					bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, text, hud_item_timers_text_scale()) / hud_item_timers_text_scale() + 8);
+					bounds.y1 = (short)(row_top + hud_item_timers_line_height(font_index));
+					draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
+					rasterizer_text_set_scale(hud_item_timers_text_scale(), (real)bounds.x0, (real)bounds.y0);
+					rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+					rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+				}
+				row_top += text_height;
+			}
+			if (layout.icons)
+			{
+				long picture_row = hud_waypoint_row_height(font_index);
+				long row_x = x + (width - layout.row_width) / 2;
+
+				for (part = 0; part < layout.icons; part++)
+				{
+					struct hud_waypoint_icon const *icon = &labels[layout.pictures[part].label].icon;
+					real_argb_color color;
 					point2d point;
 
-					point.x = (short)(x + piece->start + icon->width / 2);
-					point.y = (short)(top + line_height / 2);
+					hud_waypoint_label_color(labels[layout.pictures[part].label].timer, &color);
+					point.x = (short)(row_x + layout.pictures[part].start + icon->width / 2);
+					point.y = (short)(row_top + picture_row / 2);
 					hud_draw_bitmap_direct(icon->bitmap, _hud_anchor_center, &point, &icon->clip, icon->scale, 0.0f,
 						real_argb_color_to_pixel32(&color), FALSE);
-					continue;
 				}
-				if (piece->end <= piece->begin)
-					continue;
-				ustrncpy(text, layout.text + piece->begin, piece->end - piece->begin);
-				text[piece->end - piece->begin] = 0;
-				/* (laid out at full size from its left, drawn at the
-				view's text scale about its top left corner) */
-				bounds.x0 = (short)(x + piece->start);
-				bounds.y0 = (short)text_top;
-				bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, text, hud_item_timers_text_scale()) / hud_item_timers_text_scale() + 8);
-				bounds.y1 = (short)(text_top + hud_item_timers_line_height(font_index));
-				draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
-				rasterizer_text_set_scale(hud_item_timers_text_scale(), (real)bounds.x0, (real)bounds.y0);
-				rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
-				rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 			}
 			/* (debug.waypoint_log: what each line showed) */
 			if (hud_waypoint_log_lines)
 			{
-				char shown[HUD_ITEM_TIMERS_LINE_LENGTH];
+				char shown[2 * HUD_ITEM_TIMERS_LINE_LENGTH];
 				short character;
 
-				for (character = 0; character < (short)sizeof(shown) - 1 && layout.text[character]; character++)
-					shown[character] = layout.text[character] < 0x80 ? (char)layout.text[character] : '.';
+				short row;
+
+				shown[0] = 0;
+				/* (the rows' text, a bar between rows) */
+				for (row = 0, character = 0; row < layout.row_count; row++)
+				{
+					short at;
+
+					if (row && character < (short)sizeof(shown) - 1)
+						shown[character++] = '|';
+					for (at = 0; at < HUD_ITEM_TIMERS_LINE_LENGTH && layout.rows[row].text[at] &&
+						character < (short)sizeof(shown) - 1; at++)
+					{
+						shown[character++] = layout.rows[row].text[at] < 0x80 ? (char)layout.rows[row].text[at] : '.';
+					}
+				}
 				shown[character] = 0;
 				platform_log("waypoint: view %d line \"%s\" style %s: %d picture%s, %ld by %ld at %ld,%ld",
 					(int)render.local_player_index, shown, ae_waypoint_style_name(hud_waypoint_style()),
-					(int)layout.icons, layout.icons == 1 ? "" : "s", width, line_height, x, top);
+					(int)layout.icons, layout.icons == 1 ? "" : "s", width, layout.height, x, top);
 			}
 		}
 	}

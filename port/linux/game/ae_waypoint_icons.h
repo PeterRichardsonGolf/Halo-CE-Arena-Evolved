@@ -18,9 +18,10 @@ overshield's and the active camouflage's are Arena Evolved's own glyphs
 
 enum
 {
+	AE_WAYPOINT_MAXIMUM_MEMBERS = 16,	/* (members of a line looked at) */
 	AE_WAYPOINT_TEXT,	/* "RED SNIPER 0:07" */
-	AE_WAYPOINT_ICONS,	/* the picture, then the time */
-	AE_WAYPOINT_BOTH,	/* "RED SNIPER 0:07", then the picture */
+	AE_WAYPOINT_ICONS,	/* the time over the picture */
+	AE_WAYPOINT_BOTH,	/* the time, "RED SNIPER", the picture: stacked */
 	AE_WAYPOINT_STYLE_COUNT
 };
 
@@ -56,7 +57,6 @@ extern const unsigned char ae_waypoint_glyphs[AE_WAYPOINT_GLYPH_COUNT][AE_WAYPOI
 enum
 {
 	AE_WAYPOINT_PART_NAME,	/* a member's name */
-	AE_WAYPOINT_PART_ICON,	/* a member's picture */
 	AE_WAYPOINT_PART_TIME,	/* the line's time */
 	AE_WAYPOINT_PART_SPACE,	/* a space */
 	AE_WAYPOINT_PART_SEPARATOR	/* between two names (" · ") */
@@ -65,7 +65,7 @@ enum
 struct ae_waypoint_part
 {
 	short kind;
-	short member;	/* a name's or a picture's: which of the line's members */
+	short member;	/* a name's: which of the line's members */
 };
 
 /* display.waypoint_style's value: "text", "icons" or "both" (any case); anything else is the default, BOTH */
@@ -97,13 +97,29 @@ high (wider: made lower, to that width); *scale (may be NULL) from its texels to
 no size */
 int ae_waypoint_icon_size(int sprite_width, int sprite_height, int row_height, int *width, int *height, float *scale);
 
-/* the parts of a label's line, in order, for a line of `members` labels (at one time when more than one), each
-with a picture or not, and a time or none:
-  TEXT   one "NAME 0:07"; several "0:07 A · B" (as before pictures)
-  BOTH   one "NAME 0:07 [picture]"; several as TEXT's (too wide with a picture each)
-  ICONS  "[picture] 0:07", every member its picture (its name where it has none), the time last
-Returns the count (at most max_parts; members that do not fit are left out, the time never) */
-int ae_waypoint_line_parts(int style, int members, const int *member_has_icon, int has_time,
-	struct ae_waypoint_part *parts, int max_parts);
+/* How a line of labels is laid out, centred, top to bottom (Infinite's): the time, the name(s), the pictures
+side by side. BOTH: always stacked (a time over the names, over the pictures of the members that have one); ICONS:
+the time over the pictures, and the names of the members with no picture between; TEXT, and ICONS where no member
+has a picture: one line of text ("RED SNIPER 0:07", several "0:07 A · B"), not stacked. */
+struct ae_waypoint_plan
+{
+	int stacked;
+	int time_row;	/* a row of the time (when it has one) */
+	int name_count;	/* the names row's members (none: no row) */
+	int names[AE_WAYPOINT_MAXIMUM_MEMBERS];
+	int picture_count;	/* the pictures row's members (none: no row) */
+	int pictures[AE_WAYPOINT_MAXIMUM_MEMBERS];
+};
+/* returns plan->stacked (members beyond AE_WAYPOINT_MAXIMUM_MEMBERS are left out) */
+int ae_waypoint_line_plan(int style, int members, const int *member_has_icon, int has_time,
+	struct ae_waypoint_plan *plan);
+/* the row of pictures of these widths, `gap` apart: each one's offset from the row's left, and the row's width.
+Returns count */
+int ae_waypoint_picture_row(int count, const int *widths, int gap, int *offsets, int *total);
+/* the names row's parts: the members' names, a separator between */
+int ae_waypoint_name_parts(int count, const int *names, struct ae_waypoint_part *parts, int max_parts);
+/* the unstacked line's parts: one "NAME 0:07"; several "0:07 A · B"; at most max_parts (members that do not fit
+are left out, the time never) */
+int ae_waypoint_line_parts(int members, int has_time, struct ae_waypoint_part *parts, int max_parts);
 
 #endif

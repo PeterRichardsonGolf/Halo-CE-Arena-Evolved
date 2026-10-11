@@ -34,7 +34,8 @@ Built on ChupathingyCE 0.7.1e and OpenCE build-177 (network version 25), as
 - **HUD settings and waypoint pictures.** Settings has a new HUD entry: HUD
   AREA, COMPACT HUD, SCOREBOARD FADE, the timers and SHORT MESSAGES moved there
   (your values are kept), plus WAYPOINTS: TEXT (as before), ICONS or BOTH (the
-  default). Weapons use the picture the map's pickup prompt shows (read from
+  default). The label is a centred stack, as in Halo Infinite: the time, the name,
+  the picture under them (ICONS: the time over the picture). Weapons use the picture the map's pickup prompt shows (read from
   your map, nothing shipped); the overshield and the active camouflage have
   Arena Evolved's own glyphs. A weapon with no picture on that map shows text.
   Each Settings entry now shows its own picture, or none (no more "PLACE

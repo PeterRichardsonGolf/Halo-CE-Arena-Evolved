@@ -15,29 +15,6 @@ map's sprite checked, the size drawn, a line's parts, and the glyphs' tables.
 static int failures;
 #define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
 
-/* a line's parts as text: N name, I picture, T time, _ space, + separator, each member's number after N and I */
-static const char *line(int style, int members, const int *icons, int has_time, int max_parts)
-{
-	static char text[128];
-	struct ae_waypoint_part parts[32];
-	int count = ae_waypoint_line_parts(style, members, icons, has_time, parts, max_parts);
-	int index, used = 0;
-
-	for (index = 0; index < count; index++)
-	{
-		switch (parts[index].kind)
-		{
-		case AE_WAYPOINT_PART_NAME: used += sprintf(text + used, "N%d", parts[index].member); break;
-		case AE_WAYPOINT_PART_ICON: used += sprintf(text + used, "I%d", parts[index].member); break;
-		case AE_WAYPOINT_PART_TIME: used += sprintf(text + used, "T"); break;
-		case AE_WAYPOINT_PART_SPACE: used += sprintf(text + used, "_"); break;
-		case AE_WAYPOINT_PART_SEPARATOR: used += sprintf(text + used, "+"); break;
-		default: used += sprintf(text + used, "?"); break;
-		}
-	}
-	text[used] = 0;
-	return text;
-}
 
 static void style_tests(void)
 {
@@ -148,6 +125,52 @@ static void size_tests(void)
 	CHECK(!ae_waypoint_icon_size(123, 27, 0, NULL, NULL, NULL) && !ae_waypoint_icon_size(-1, -1, -1, NULL, NULL, NULL));
 }
 
+/* parts as text: N name, T time, _ space, + separator, each name's member number after N */
+static const char *parts_text(const struct ae_waypoint_part *parts, int count)
+{
+	static char text[128];
+	int index, used = 0;
+
+	for (index = 0; index < count; index++)
+	{
+		switch (parts[index].kind)
+		{
+		case AE_WAYPOINT_PART_NAME: used += sprintf(text + used, "N%d", parts[index].member); break;
+		case AE_WAYPOINT_PART_TIME: used += sprintf(text + used, "T"); break;
+		case AE_WAYPOINT_PART_SPACE: used += sprintf(text + used, "_"); break;
+		case AE_WAYPOINT_PART_SEPARATOR: used += sprintf(text + used, "+"); break;
+		default: used += sprintf(text + used, "?"); break;
+		}
+	}
+	text[used] = 0;
+	return text;
+}
+
+static const char *line(int members, int has_time, int max_parts)
+{
+	struct ae_waypoint_part parts[32];
+
+	return parts_text(parts, ae_waypoint_line_parts(members, has_time, parts, max_parts));
+}
+
+/* a plan as text: S stacked or L line; T time row; n<members> names; p<members> pictures */
+static const char *plan_text(int style, int members, const int *icons, int has_time)
+{
+	static char text[128];
+	struct ae_waypoint_plan plan;
+	int index, used;
+
+	ae_waypoint_line_plan(style, members, icons, has_time, &plan);
+	used = sprintf(text, "%c", plan.stacked ? 'S' : 'L');
+	if (plan.time_row)
+		used += sprintf(text + used, "T");
+	for (index = 0; index < plan.name_count; index++)
+		used += sprintf(text + used, "n%d", plan.names[index]);
+	for (index = 0; index < plan.picture_count; index++)
+		used += sprintf(text + used, "p%d", plan.pictures[index]);
+	return text;
+}
+
 static void line_tests(void)
 {
 	static const int none[4] = { 0, 0, 0, 0 };
@@ -155,85 +178,66 @@ static void line_tests(void)
 	static const int second[4] = { 0, 1, 0, 0 };
 	static const int first_two[4] = { 1, 1, 0, 0 };
 	struct ae_waypoint_part parts[4];
+	struct ae_waypoint_plan plan;
+	int names[3] = { 0, 2, 3 };
 	int many[40];
 	int index;
 
-	/* TEXT: as before pictures, whatever pictures there are */
-	CHECK(!strcmp(line(AE_WAYPOINT_TEXT, 1, all, 1, 32), "N0_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_TEXT, 1, all, 0, 32), "N0"));
-	CHECK(!strcmp(line(AE_WAYPOINT_TEXT, 3, all, 1, 32), "T_N0+N1+N2"));
-	CHECK(!strcmp(line(AE_WAYPOINT_TEXT, 2, none, 0, 32), "N0+N1"));
-	CHECK(!strcmp(line(AE_WAYPOINT_TEXT, 1, NULL, 1, 32), "N0_T"));
-	/* BOTH: the name and time, then the picture; no picture: the text alone; several: TEXT's line */
-	CHECK(!strcmp(line(AE_WAYPOINT_BOTH, 1, all, 1, 32), "N0_T_I0"));
-	CHECK(!strcmp(line(AE_WAYPOINT_BOTH, 1, all, 0, 32), "N0_I0"));
-	CHECK(!strcmp(line(AE_WAYPOINT_BOTH, 1, none, 1, 32), "N0_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_BOTH, 1, NULL, 0, 32), "N0"));
-	CHECK(!strcmp(line(AE_WAYPOINT_BOTH, 2, all, 1, 32), "T_N0+N1"));
-	CHECK(!strcmp(line(AE_WAYPOINT_BOTH, 2, all, 0, 32), "N0+N1"));
-	/* ICONS: the picture, then the time; an item with no picture is never an empty marker: its name */
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 1, all, 1, 32), "I0_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 1, all, 0, 32), "I0"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 1, none, 1, 32), "N0_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 1, none, 0, 32), "N0"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 1, NULL, 1, 32), "N0_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 3, all, 1, 32), "I0_I1_I2_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 3, second, 1, 32), "N0+I1+N2_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 3, first_two, 0, 32), "I0_I1+N2"));
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 2, none, 1, 32), "N0+N1_T"));
-	/* (every line names every member once, and has the time once when there is one) */
+	/* the unstacked line */
+	CHECK(!strcmp(line(1, 1, 32), "N0_T"));
+	CHECK(!strcmp(line(1, 0, 32), "N0"));
+	CHECK(!strcmp(line(3, 1, 32), "T_N0+N1+N2"));
+	CHECK(!strcmp(line(2, 0, 32), "N0+N1"));
+	CHECK(!strcmp(line(40, 1, 8), "T_N0+N1+N2"));
+	CHECK(!strcmp(line(40, 0, 7), "N0+N1+N2+N3"));
+	memset(parts, 0x55, sizeof(parts));
+	CHECK(ae_waypoint_line_parts(1, 1, parts, 3) == 3 && parts[3].kind == 0x5555);
+	CHECK(ae_waypoint_line_parts(1, 1, parts, 2) == 2);
+	CHECK(ae_waypoint_line_parts(0, 1, parts, 4) == 0 && ae_waypoint_line_parts(2, 1, NULL, 4) == 0);
+	CHECK(ae_waypoint_line_parts(2, 1, parts, 0) == 0);
+	/* the names row */
+	memset(parts, 0, sizeof(parts));
+	CHECK(!strcmp(parts_text(parts, ae_waypoint_name_parts(3, names, parts, 4)), "N0+N2"));
+	CHECK(ae_waypoint_name_parts(0, names, parts, 4) == 0 && ae_waypoint_name_parts(1, names, NULL, 4) == 0);
+	/* TEXT: never stacked, whatever pictures there are */
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_TEXT, 1, all, 1), "L"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_TEXT, 3, all, 0), "L"));
+	/* BOTH: time over name over picture; no picture: time over name; several: names on one row, pictures side by side */
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, all, 1), "STn0p0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, all, 0), "Sn0p0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, none, 1), "STn0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, NULL, 1), "STn0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 2, all, 1), "STn0n1p0p1"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 3, second, 1), "STn0n1n2p1"));
+	/* ICONS: time over the pictures; the names of members with no picture between; no picture at all: the line */
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, all, 1), "STp0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, all, 0), "Sp0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 3, all, 1), "STp0p1p2"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 3, first_two, 1), "STn2p0p1"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, none, 1), "L"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 2, NULL, 0), "L"));
+	/* (the plan: always every picture member in the row; a member with no picture named once, in BOTH all are) */
 	for (index = 0; index < 40; index++)
 		many[index] = index % 3 == 0;
-	{
-		int style, members, has_time;
+	ae_waypoint_line_plan(AE_WAYPOINT_BOTH, 40, many, 1, &plan);
+	CHECK(plan.name_count == AE_WAYPOINT_MAXIMUM_MEMBERS && plan.picture_count == 6);
+	ae_waypoint_line_plan(AE_WAYPOINT_ICONS, 40, many, 1, &plan);
+	CHECK(plan.picture_count == 6 && plan.name_count == AE_WAYPOINT_MAXIMUM_MEMBERS - 6);
+	CHECK(ae_waypoint_line_plan(AE_WAYPOINT_BOTH, 0, all, 1, &plan) == 0 && !plan.stacked);
+	CHECK(ae_waypoint_line_plan(AE_WAYPOINT_BOTH, 1, all, 1, NULL) == 0);
+}
 
-		for (style = 0; style < AE_WAYPOINT_STYLE_COUNT; style++)
-		{
-			for (members = 1; members <= 5; members++)
-			{
-				for (has_time = 0; has_time < 2; has_time++)
-				{
-					struct ae_waypoint_part all_parts[32];
-					int count = ae_waypoint_line_parts(style, members, many, has_time, all_parts, 32);
-					int seen[5] = { 0, 0, 0, 0, 0 };
-					int times = 0;
+static void picture_row_tests(void)
+{
+	int offsets[4];
+	int widths[3] = { 20, 30, 10 };
+	int total;
 
-					for (index = 0; index < count; index++)
-					{
-						if (all_parts[index].kind == AE_WAYPOINT_PART_NAME || all_parts[index].kind == AE_WAYPOINT_PART_ICON)
-						{
-							CHECK(all_parts[index].member >= 0 && all_parts[index].member < members);
-							/* (a picture only where the member has one, and the style draws them) */
-							if (all_parts[index].kind == AE_WAYPOINT_PART_ICON)
-								CHECK(style != AE_WAYPOINT_TEXT && many[all_parts[index].member]);
-							/* (BOTH's one label has its name and its picture) */
-							if (!(style == AE_WAYPOINT_BOTH && members == 1 && all_parts[index].kind == AE_WAYPOINT_PART_ICON))
-								seen[all_parts[index].member]++;
-						}
-						times += all_parts[index].kind == AE_WAYPOINT_PART_TIME;
-					}
-					for (index = 0; index < members; index++)
-						CHECK(seen[index] == 1);
-					CHECK(times == has_time);
-					/* (never a space or a separator first or last) */
-					CHECK(count > 0 && all_parts[0].kind != AE_WAYPOINT_PART_SPACE && all_parts[0].kind != AE_WAYPOINT_PART_SEPARATOR);
-					CHECK(all_parts[count - 1].kind != AE_WAYPOINT_PART_SPACE && all_parts[count - 1].kind != AE_WAYPOINT_PART_SEPARATOR);
-				}
-			}
-		}
-	}
-	/* (no room for every member: the last are left out, the time stays, nothing is written past the room) */
-	CHECK(!strcmp(line(AE_WAYPOINT_ICONS, 40, many, 1, 8), "I0+N1+N2_T"));
-	CHECK(!strcmp(line(AE_WAYPOINT_TEXT, 40, many, 1, 8), "T_N0+N1+N2"));
-	CHECK(!strcmp(line(AE_WAYPOINT_TEXT, 40, many, 0, 7), "N0+N1+N2+N3"));
-	memset(parts, 0x55, sizeof(parts));
-	CHECK(ae_waypoint_line_parts(AE_WAYPOINT_BOTH, 1, all, 1, parts, 3) == 3);
-	CHECK(parts[3].kind == 0x5555 && parts[3].member == 0x5555);
-	CHECK(ae_waypoint_line_parts(AE_WAYPOINT_ICONS, 3, all, 1, parts, 3) == 3 && parts[3].kind == 0x5555);
-	CHECK(parts[0].kind == AE_WAYPOINT_PART_ICON && parts[2].kind == AE_WAYPOINT_PART_TIME);
-	CHECK(ae_waypoint_line_parts(AE_WAYPOINT_ICONS, 0, all, 1, parts, 4) == 0);
-	CHECK(ae_waypoint_line_parts(AE_WAYPOINT_ICONS, 2, all, 1, NULL, 4) == 0);
-	CHECK(ae_waypoint_line_parts(AE_WAYPOINT_ICONS, 2, all, 1, parts, 0) == 0);
+	CHECK(ae_waypoint_picture_row(3, widths, 4, offsets, &total) == 3);
+	CHECK(offsets[0] == 0 && offsets[1] == 24 && offsets[2] == 58 && total == 68);
+	CHECK(ae_waypoint_picture_row(1, widths, 4, offsets, &total) == 1 && offsets[0] == 0 && total == 20);
+	CHECK(ae_waypoint_picture_row(0, widths, 4, offsets, &total) == 0 && total == 0);
+	CHECK(ae_waypoint_picture_row(2, widths, -3, offsets, &total) == 2 && offsets[1] == 20 && total == 50);
 }
 
 static void glyph_tests(void)
@@ -288,6 +292,7 @@ int main(void)
 	sprite_tests();
 	size_tests();
 	line_tests();
+	picture_row_tests();
 	glyph_tests();
 	if (failures)
 	{

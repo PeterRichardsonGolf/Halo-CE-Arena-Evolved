@@ -5,6 +5,7 @@ The item waypoints' pictures: the rules with no game types (ae_waypoint_icons.h)
 */
 
 #include <stddef.h>
+#include <string.h>
 
 #include "ae_waypoint_icons.h"
 
@@ -136,71 +137,110 @@ static int part_add(struct ae_waypoint_part *parts, int count, int max_parts, in
 	return count;
 }
 
-int ae_waypoint_line_parts(int style, int members, const int *member_has_icon, int has_time,
-	struct ae_waypoint_part *parts, int max_parts)
+int ae_waypoint_line_plan(int style, int members, const int *member_has_icon, int has_time,
+	struct ae_waypoint_plan *plan)
+{
+	int member;
+
+	if (!plan)
+		return 0;
+	memset(plan, 0, sizeof(*plan));
+	if (members <= 0)
+		return 0;
+	if (members > AE_WAYPOINT_MAXIMUM_MEMBERS)
+		members = AE_WAYPOINT_MAXIMUM_MEMBERS;
+	for (member = 0; member < members; member++)
+	{
+		if (style != AE_WAYPOINT_TEXT && member_has_icon && member_has_icon[member])
+			plan->pictures[plan->picture_count++] = member;
+	}
+	/* (TEXT, and ICONS with no picture to show: one line of text, as before pictures) */
+	if (style == AE_WAYPOINT_TEXT || (style == AE_WAYPOINT_ICONS && !plan->picture_count))
+	{
+		plan->picture_count = 0;
+		return 0;
+	}
+	plan->stacked = 1;
+	plan->time_row = has_time ? 1 : 0;
+	for (member = 0; member < members; member++)
+	{
+		if (style == AE_WAYPOINT_BOTH || !(member_has_icon && member_has_icon[member]))
+			plan->names[plan->name_count++] = member;
+	}
+	return 1;
+}
+
+int ae_waypoint_picture_row(int count, const int *widths, int gap, int *offsets, int *total)
+{
+	int index;
+	int x = 0;
+
+	if (total)
+		*total = 0;
+	if (count <= 0 || !widths)
+		return 0;
+	for (index = 0; index < count; index++)
+	{
+		if (index)
+			x += gap > 0 ? gap : 0;
+		if (offsets)
+			offsets[index] = x;
+		x += widths[index] > 0 ? widths[index] : 0;
+	}
+	if (total)
+		*total = x;
+	return count;
+}
+
+int ae_waypoint_name_parts(int count, const int *names, struct ae_waypoint_part *parts, int max_parts)
+{
+	int used = 0;
+	int index;
+
+	if (!parts || !names || max_parts <= 0)
+		return 0;
+	for (index = 0; index < count; index++)
+	{
+		if (used + (index ? 2 : 1) > max_parts)
+			break;
+		if (index)
+			used = part_add(parts, used, max_parts, AE_WAYPOINT_PART_SEPARATOR, 0);
+		used = part_add(parts, used, max_parts, AE_WAYPOINT_PART_NAME, names[index]);
+	}
+	return used;
+}
+
+int ae_waypoint_line_parts(int members, int has_time, struct ae_waypoint_part *parts, int max_parts)
 {
 	int count = 0;
-	int member;
-	/* (the room the time after the members takes: a space and it) */
-	int after;
+	int index;
 
 	if (!parts || max_parts <= 0 || members <= 0)
 		return 0;
-	if (style == AE_WAYPOINT_ICONS)
-	{
-		int previous_icon = 0;
-
-		after = has_time ? 2 : 0;
-		for (member = 0; member < members; member++)
-		{
-			int icon = member_has_icon && member_has_icon[member];
-
-			/* (a member takes a part between and itself) */
-			if (count + (member ? 2 : 1) + after > max_parts)
-				break;
-			if (member)
-				count = part_add(parts, count, max_parts, previous_icon && icon ? AE_WAYPOINT_PART_SPACE :
-					AE_WAYPOINT_PART_SEPARATOR, 0);
-			count = part_add(parts, count, max_parts, icon ? AE_WAYPOINT_PART_ICON : AE_WAYPOINT_PART_NAME, member);
-			previous_icon = icon;
-		}
-		if (has_time)
-		{
-			count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_SPACE, 0);
-			count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_TIME, 0);
-		}
-		return count;
-	}
 	if (members == 1)
 	{
-		int icon = style == AE_WAYPOINT_BOTH && member_has_icon && member_has_icon[0];
-
+		/* (one label: its name, then the time) */
 		count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_NAME, 0);
 		if (has_time)
 		{
 			count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_SPACE, 0);
 			count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_TIME, 0);
 		}
-		if (icon)
-		{
-			count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_SPACE, 0);
-			count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_ICON, 0);
-		}
 		return count;
 	}
-	/* (several, in text: the time first) */
+	/* (several: the time first) */
 	if (has_time)
 	{
 		count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_TIME, 0);
 		count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_SPACE, 0);
 	}
-	for (member = 0; member < members; member++)
+	for (index = 0; index < members; index++)
 	{
-		if (count + (member ? 2 : 1) > max_parts)
+		if (count + (index ? 2 : 1) > max_parts)
 			break;
-		if (member)
+		if (index)
 			count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_SEPARATOR, 0);
-		count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_NAME, member);
+		count = part_add(parts, count, max_parts, AE_WAYPOINT_PART_NAME, index);
 	}
 	return count;
 }

@@ -240,21 +240,24 @@ def test_game_default_style_is_both(tmp_path):
     assert any("picture Arena Evolved's glyph 0," in line for line in pictures)
     assert any("picture Arena Evolved's glyph 1," in line for line in pictures)
     assert not [line for line in pictures if "picture none" in line and "not loaded" not in line]
-    # (a label's name and time, then its picture)
-    assert any(re.match(r'view 0 line "(RED|BLUE) SNIPER 0:\d\d  " style both: 1 picture,', line) for line in lines)
-    assert any(re.match(r'view 0 line "OVERSHIELD(  | 0:\d\d  )" style both: 1 picture,', line) for line in lines)
-    # (several on one line: text only)
+    # (a label is the time, the name, then the picture: the logged rows are bar-separated)
+    assert any(re.match(r'view 0 line "0:\d\d\|(RED|BLUE) SNIPER" style both: 1 picture,', line) for line in lines)
+    assert any(re.match(r'view 0 line "(0:\d\d\|)?OVERSHIELD" style both: 1 picture,', line) for line in lines)
+    # (a line's height is its text's and, with pictures, their row over it: the logged "W by H")
+    heights = {}
     for line in lines:
-        if " . " in line or " + " in line:
-            assert "0 pictures" in line, line
+        match = re.search(r'line "[^"]*" style both: (\d+) picture.*?, \d+ by (\d+) at', line)
+        if match:
+            heights.setdefault(int(match.group(1)) > 0, set()).add(int(match.group(2)))
+    assert heights.get(True) and heights.get(False, {0}) and min(heights[True]) > max(heights.get(False, {0}))
 
 
 def test_game_icons_style(tmp_path):
     log = _game(tmp_path, "icons", "prisoner", 50, {"HALO_WAYPOINT_STYLE": "icons"})
     lines = _lines(log)
     assert lines and all("style icons" in line for line in lines)
-    # (the picture, then the time in text: no name)
-    assert any(re.match(r'view 0 line "  0:\d\d" style icons: 1 picture,', line) for line in lines)
+    # (the picture over the time in text: no name)
+    assert any(re.match(r'view 0 line "0:\d\d" style icons: 1 picture,', line) for line in lines)
     assert any(re.match(r'view 0 line "" style icons: 1 picture,', line) for line in lines)
     assert not any("SNIPER" in line or "OVERSHIELD" in line or "CAMO" in line
                    for line in lines if "0 pictures" not in line and " . " not in line and " + " not in line)
