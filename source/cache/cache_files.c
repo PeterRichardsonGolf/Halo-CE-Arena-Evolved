@@ -1520,6 +1520,7 @@ long scenario_tags_load(
 
 				ce_hud_tags_loaded(global_tag_instances, ce_header->tag_count);
 			}
+			ae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 			return ce_header->scenario_tag_index;
 		}
 #endif

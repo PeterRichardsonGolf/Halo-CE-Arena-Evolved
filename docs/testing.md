@@ -46,6 +46,15 @@ pictures; a host or no network game only, ignored on a client) lays one more of 
 of each local player who spawns with it. `handshake.py --packs-from <folder>` links that folder as both machines'
 `packs/` (`none`: no packs at all).
 
+The pack's checks against the map and the fallback (tools/test_weapon_pack_checks.py; the same three variables):
+forced-failure packs made from the real one (labels `zz`, a required and an optional external renamed, the
+weapon renamed to a stock weapon's name, a first-person animation node renamed), a full tag table
+(`debug.weapon_pack_table_limit` / `HALO_WEAPON_PACK_TABLE_LIMIT=<tags>`, tests only), a Custom Edition map
+(`homobox@ce`) and no pack at all: each refused with its reason, `first spawn: assault rifle + pistol` (the stock
+fallback), the console's `weapon pack: BATTLE RIFLE unavailable on <map>: <reason>` line, and the game played to
+its end. The long cases: all 13 Xbox multiplayer maps in one rotation (a minute each, about 20 minutes), Halo 1:
+NHE's badcreek (`mods/NHE`) and CE+ X's Blood Gulch beside its own rifle (`mods/CE+ X`).
+
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists
 the spec keys; `run.py --spec game.json` takes a whole spec; `--dry-run` shows the game's environment.

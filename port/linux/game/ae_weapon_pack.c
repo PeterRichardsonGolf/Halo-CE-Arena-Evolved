@@ -46,7 +46,29 @@ the slot's pack is ADDED to the map (ae_weapon_pack_tags_loaded):
    pack gives geometry for is a part of a model of the pack, and every run
    of pixels and samples its bitmaps and sounds read lies in the pack's
    resources. Model parts then get vertex and index buffers of their own.
-5. Only then is the grown table made the game's.
+5. THE CHECKS AGAINST THE TARGET MAP (each marked CHECK below; a failure is
+   the refusal line with its reason): the map's build is one the engine
+   plays ("build <b>"); the table has room ("tag table full"); no own tag's
+   group and name is already the map's ("name collision"); every required
+   external is there ("missing <group> <name>"; optional ones become no tag,
+   one line); the pack's tags and geometry fit PLACED_MEMORY_MAXIMUM and
+   their buffers are made ("no memory"); the map's player holds the weapon
+   by one of its labels in every seat it holds weapons in ("the player
+   cannot hold it"); the weapon's first-person animations move the map's
+   hands and the weapon's model ("first-person arms do not match"). A map's
+   own battle rifle (CE+ X's) is left alone and logged. A Custom Edition
+   map (or Halo PC's, HaloMD's) never gets the pack (R34: its branch of
+   scenario_tags_load returns before the add; ae_weapon_pack_tags_refused_ce
+   says so).
+6. Only then is the grown table made the game's.
+
+THE FALLBACK (decision 10). A map the pack was not added to plays the stock
+weapons: ae_weapon_pack_added() is 0 and ae_weapon_pack_weapon_definition()
+NONE, so the loadout keeps its stock value (an assault rifle, a pistol) and
+BATTLE RIFLE ON MAP replaces nothing. At game start every machine's console
+says why (ae_weapon_pack_unavailable_line); the host's PC lobby says so
+before the game where it already knows (ae_weapon_pack_lobby_line: the
+map's family, no pack here, an earlier refusal for that map).
 
 A bitmap's pixels and a sound's samples are read from the pack's file when
 the texture and sound caches ask for them (ae_weapon_pack_read, from
@@ -77,6 +99,7 @@ A refusal is one "weapon pack: refused for <map>: <reason>" line.
 #include "items/weapon_definitions.h"
 #include "models/model_animation_definitions.h"
 #include "tag_schema.h"
+#include "halo_map_families.h"
 
 #include "ae_pack_format.h"
 #include "ae_weapon_pack.h"
@@ -113,7 +136,16 @@ enum
 	PLACED_FILE_LENGTH = 0x7fffffff,
 	PLACED_FINGERPRINT_SIZE = AE_WEAPON_PACK_FINGERPRINT_SIZE,
 	PLACED_STRUCTURE_BSP_GROUP = 0x73627370, /* 'sbsp' */
+	/* the memory a pack may take on a map: its own tags' bytes and its model parts' vertices and indices */
+	PLACED_MEMORY_MAXIMUM = 8 * 1024 * 1024,
+	/* maps an earlier refusal is remembered for (the lobby's line) */
+	REFUSED_MAPS_MAXIMUM = 16,
+	MAP_NAME_SIZE = 33,
+	REASON_SIZE = 200,
 };
+
+/* what a Custom Edition map (and Halo PC's, HaloMD's) is told (R34) */
+#define NOT_ON_CUSTOM_EDITION "not on Custom Edition maps yet"
 
 /* ---------- structures */
 
@@ -161,6 +193,15 @@ struct placed_model_part
 	struct vertex_buffer vertex_buffer;
 };
 
+/* first_person_weapons.c's (and model_animations.c's) struct animation_graph_node: an animation graph's node,
+its name first (tag_schema: animation_graph_node, 0x40 bytes) */
+struct placed_animation_graph_node
+{
+	char name[TAG_STRING_LENGTH + 1];
+	byte unused[0x20];
+};
+
+typedef char verify_placed_animation_graph_node_size[sizeof(struct placed_animation_graph_node) == 0x40 ? 1 : -1];
 typedef char verify_placed_tag_instance_size[sizeof(struct placed_tag_instance) == 0x20 ? 1 : -1];
 typedef char verify_placed_tag_header_size[sizeof(struct placed_tag_header) == 0x24 ? 1 : -1];
 typedef char verify_placed_model_part_size[sizeof(struct placed_model_part) == AE_PACK_MODEL_PART_SIZE ? 1 : -1];
@@ -170,6 +211,10 @@ typedef char verify_placed_reference_size[sizeof(struct tag_reference) == AE_PAC
 
 /* the platform layer's (port/linux/src) */
 char const *config_string(char const *name);
+long config_integer(char const *name);
+/* cache_files.c's: the loaded map's build's region if the engine plays multiplayer on its maps (NTSC 2276, NHE's
+2300, PAL 2342 through pal_tags.c, ...), else NULL; build gets the build */
+char const *cache_files_multiplayer_region(char build[0x20]);
 /* cache_files.c's (port: the loaded tags' table, which a copy with more tags replaces, as the menus' do) */
 void *cache_files_tag_instances(long *count);
 void cache_files_set_tag_instances(void *instances, long count);
@@ -227,8 +272,25 @@ static struct
 	long failed_reads;
 	unsigned long read_bytes;
 	boolean loadout_logged[2];
-	char problem[200];
+	char problem[REASON_SIZE];
 } placed;
+
+/* the last map a game asked the pack for, and why it did not get it (the fallback's line at game start) */
+static struct
+{
+	boolean asked;
+	char map_name[MAP_NAME_SIZE];
+	char reason[REASON_SIZE];
+} refusal;
+
+/* the maps the pack was refused for since the start, and why (the lobby's line): the pack and the maps do not
+change while the game runs, so a map refused once is refused again */
+static struct
+{
+	char map_name[MAP_NAME_SIZE];
+	char reason[REASON_SIZE];
+} refused_maps[REFUSED_MAPS_MAXIMUM];
+static short refused_maps_next;
 
 /* ---------- private code */
 
@@ -666,7 +728,8 @@ static boolean placed_fixups_apply(
 /* the model parts' vertices and indices copied (the buffers name them as their data), every PARTS record a
 model part of its tag, of the size the rasterizer takes its type's vertices to be */
 static boolean placed_geometry_copy(
-	struct ae_pack const *pack)
+	struct ae_pack const *pack,
+	unsigned long bytes_size)
 {
 	unsigned long size = 0;
 	unsigned int index, part_index;
@@ -697,6 +760,15 @@ static boolean placed_geometry_copy(
 				return placed_refuse("%s: the pack's geometry is more than a pack holds", placed.tag_names[index]);
 		}
 	}
+	/* CHECK: the pack's own tags' bytes and its geometry within PLACED_MEMORY_MAXIMUM */
+	if (size > PLACED_MEMORY_MAXIMUM || bytes_size > PLACED_MEMORY_MAXIMUM - size)
+	{
+		char detail[96];
+
+		snprintf(detail, sizeof(detail), "%lu bytes of tags and geometry, at most %d", bytes_size + size,
+			(int)PLACED_MEMORY_MAXIMUM);
+		return placed_refuse("no memory: %s", detail);
+	}
 	placed.geometry = placed_allocate(size);
 	if (!placed.geometry)
 		return FALSE;
@@ -705,9 +777,9 @@ static boolean placed_geometry_copy(
 }
 
 /* the model parts' buffers, from the pack's vertices and indices (a fresh one each: the tags carry none). The
-last step: nothing fails after it. A part whose buffers cannot be made is not drawn (the draw takes none); a
-game with no device (a dedicated server) makes none */
-static void placed_buffers_make(
+last step before the table is the game's. CHECK: every part's buffers made, else refused "no memory" (those made
+are let go with the rest, placed_free); a game with no device (a dedicated server) makes none and draws nothing */
+static boolean placed_buffers_make(
 	struct ae_pack const *pack)
 {
 	unsigned long cursor = 0;
@@ -748,49 +820,94 @@ static void placed_buffers_make(
 		}
 	}
 	if (undrawn)
-		error(_error_silent, "weapon pack: %d model parts have no buffers: not drawn", (int)undrawn);
+	{
+		char detail[64];
+
+		snprintf(detail, sizeof(detail), "%d model parts got no vertex or index buffers", (int)undrawn);
+		return placed_refuse("no memory: %s", detail);
+	}
+
+	return TRUE;
 }
 
-/* whether the graph has a weapon type of the label, in any seat and class (units.c,
-unit_set_or_test_seat_and_weapon_label, which a unit holds a weapon by) */
-static boolean graph_has_weapon_label(
+/* a tag's definition while the pack is being added (before the grown table is the game's): an own tag of the
+pack its placed copy, any other the map's (tag_get, which asserts its group); NULL for NONE */
+static void *placed_definition(
+	struct ae_pack const *pack,
+	unsigned long group_tag,
+	long tag_index)
+{
+	unsigned int index;
+
+	if (tag_index == NONE)
+		return NULL;
+	for (index = 0; index < pack->tag_count; index++)
+	{
+		if (placed.tag_data[index] && placed.tag_indices[index] == tag_index)
+			return pack->tags[index].group == group_tag ? placed.tag_data[index] : NULL;
+	}
+	if ((tag_index & 0xffff) >= placed.original_count)
+		return NULL;
+
+	return tag_get((long)group_tag, tag_index);
+}
+
+/* the seats of the graph that hold weapons and have no weapon type of the label: how many, the first of them in
+seat_label (its label), and in holding how many seats hold weapons at all. unit_set_or_test_seat_and_weapon_label
+(units.c) looks for a weapon's label among the weapon types of the classes of the unit's seat. A seat HOLDS
+WEAPONS when one of its weapon types has a label: a seat whose classes have only the unarmed type (the empty
+label: the stock Spartan's 13 driver's and gunner's seats, where no weapon is held and the assault rifle's label
+is not found either) holds none and is not counted */
+static short graph_seats_without_weapon_label(
 	struct animation_graph *graph,
-	char const *label)
+	char const *label,
+	char const **seat_label,
+	short *holding)
 {
 	short seat_index, class_index, type_index;
+	short missing = 0;
 
+	*seat_label = NULL;
+	*holding = 0;
 	for (seat_index = 0; seat_index < graph->unit_seats.count; seat_index++)
 	{
 		struct animation_graph_unit_seat *seat =
 			TAG_BLOCK_GET_ELEMENT(&graph->unit_seats, seat_index, struct animation_graph_unit_seat);
+		boolean found = FALSE, holds = FALSE;
 
-		for (class_index = 0; class_index < seat->weapon_classes.count; class_index++)
+		for (class_index = 0; !found && class_index < seat->weapon_classes.count; class_index++)
 		{
 			struct animation_graph_weapon_class *weapon_class =
 				TAG_BLOCK_GET_ELEMENT(&seat->weapon_classes, class_index, struct animation_graph_weapon_class);
 
-			for (type_index = 0; type_index < weapon_class->weapon_types.count; type_index++)
+			for (type_index = 0; !found && type_index < weapon_class->weapon_types.count; type_index++)
 			{
 				struct animation_graph_weapon_type *type =
 					TAG_BLOCK_GET_ELEMENT(&weapon_class->weapon_types, type_index, struct animation_graph_weapon_type);
 
-				if (!_stricmp(type->label, label))
-					return TRUE;
+				if (type->label[0])
+					holds = TRUE;
+				found = !_stricmp(type->label, label);
 			}
+		}
+		if (!holds && !found)
+			continue;
+		(*holding)++;
+		if (!found)
+		{
+			if (!missing)
+				*seat_label = seat->label;
+			missing++;
 		}
 	}
 
-	return FALSE;
+	return missing;
 }
 
-/* each of the pack's weapons held by a label the map's player has animations for, or no player could be given
-it (unit_add_weapon_to_inventory refuses a weapon whose label the unit's graph lacks): the weapon entry's label,
-else its fallback labels in order ("h_br", which only a map with that biped knows, then "ar", the assault
-rifle's, which the stock Spartan holds a rifle by), written into the weapon's copy. The player is the map's
-globals' multiplayer unit. Where none fits, the label stays as the pack has it and a line says so: what such a
-map gets is the target-map checks' to decide (they come with the fallback rules), not this function's */
-static void placed_weapon_labels(
-	struct ae_pack const *pack)
+/* the map's player: its globals' multiplayer unit's animation graph (globals\globals: multiplayer_information[0]
+.unit; the unit's object.animation_graph), or NULL */
+static struct animation_graph *map_player_graph(
+	void)
 {
 	long globals_index = tag_loaded(GAME_GLOBALS_TAG, "globals\\globals");
 	struct game_globals *globals = globals_index == NONE ? NULL : game_globals_definition_get(globals_index);
@@ -799,7 +916,20 @@ static void placed_weapon_labels(
 	long unit_index = information ? information->unit.index : NONE;
 	long graph_index = unit_index == NONE ? NONE :
 		object_definition_get(unit_index)->object.animation_graph.index;
-	struct animation_graph *graph = graph_index == NONE ? NULL : animation_graph_definition_get(graph_index);
+
+	return graph_index == NONE ? NULL : animation_graph_definition_get(graph_index);
+}
+
+/* CHECK: each of the pack's weapons held by a label the map's player can hold it by in EVERY seat it holds
+weapons in (graph_seats_without_weapon_label; unit_add_weapon_to_inventory refuses a weapon whose label the
+unit's seat lacks: a seat without it would leave the player unable to take the rifle there): the weapon entry's label, else its fallback labels in
+order ("h_br", which only a map with that biped knows, then "ar", the assault rifle's), the first one the graph
+has in every such seat, written into the weapon's copy (weapon.label). None: refused "the player cannot hold it",
+and nothing of the map is changed yet */
+static boolean placed_weapon_labels(
+	struct ae_pack const *pack)
+{
+	struct animation_graph *graph = map_player_graph();
 	unsigned int index;
 
 	for (index = 0; index < pack->weapon_count; index++)
@@ -809,28 +939,163 @@ static void placed_weapon_labels(
 		char const *key = ae_pack_string(pack, entry->key);
 		char const *labels[3];
 		char const *chosen = NULL;
-		short label_index;
+		char const *seat_label = NULL;
+		char tried[3 * (sizeof(weapon->weapon.label) + 2)];
+		short label_index, missing = 0, holding = 0;
 
 		labels[0] = ae_pack_string(pack, entry->label);
 		labels[1] = ae_pack_string(pack, entry->fallback_labels[0]);
 		labels[2] = ae_pack_string(pack, entry->fallback_labels[1]);
+		tried[0] = 0;
 		for (label_index = 0; graph && !chosen && label_index < 3; label_index++)
 		{
-			if (labels[label_index] && strlen(labels[label_index]) < sizeof(weapon->weapon.label) &&
-				graph_has_weapon_label(graph, labels[label_index]))
+			char const *seat = NULL;
+			short seats, seats_holding;
+			size_t used = strlen(tried);
+
+			if (!labels[label_index] || !labels[label_index][0] ||
+				strlen(labels[label_index]) >= sizeof(weapon->weapon.label))
 			{
+				continue;
+			}
+			snprintf(tried + used, sizeof(tried) - used, "%s%s", used ? ", " : "", labels[label_index]);
+			seats = graph_seats_without_weapon_label(graph, labels[label_index], &seat, &seats_holding);
+			holding = seats_holding;
+			if (!seats && seats_holding)
 				chosen = labels[label_index];
+			else if (!seat_label || seats < missing)
+			{
+				/* (what the refusal tells: the label the fewest seats lack) */
+				seat_label = seat;
+				missing = seats;
 			}
 		}
 		if (!chosen)
 		{
-			error(_error_silent, "weapon pack: the map's player has none of %s's labels: it cannot be held",
-				key ? key : "?");
-			continue;
+			char detail[REASON_SIZE];
+
+			if (!graph)
+				snprintf(detail, sizeof(detail), "the map's player has no animation graph");
+			else
+			{
+				snprintf(detail, sizeof(detail), "the map's player has none of %s's labels (%s) in every seat it holds "
+					"weapons in: at best %d of %d lack one, '%.32s' first", key ? key : "?", tried[0] ? tried : "none",
+					(int)missing, (int)holding, seat_label ? seat_label : "");
+			}
+			return placed_refuse("the player cannot hold it: %s", detail);
 		}
 		memset(weapon->weapon.label, 0, sizeof(weapon->weapon.label));
 		memcpy(weapon->weapon.label, chosen, strlen(chosen));
 		error(_error_silent, "weapon pack: %s is held by the label '%s'", key ? key : "?", chosen);
+	}
+
+	return TRUE;
+}
+
+/* whether every node of the model has a node of the same name in the graph, as first_person_weapons.c binds
+a first-person model to a weapon's first-person animations (model_build_remapping_table_for_animation_graph: the
+model's first MAXIMUM_NODES_PER_ANIMATION nodes, each found by name among as many of the graph's; a node not found
+makes the weapon's first person never shown). FALSE and the first node not found in node_name */
+static boolean model_nodes_in_graph(
+	struct model *model,
+	struct animation_graph *graph,
+	char const **node_name)
+{
+	short model_node_index, node_index;
+
+	for (model_node_index = 0; model_node_index < MIN(model->nodes.count, MAXIMUM_NODES_PER_ANIMATION); model_node_index++)
+	{
+		struct model_node *model_node = TAG_BLOCK_GET_ELEMENT(&model->nodes, model_node_index, struct model_node);
+		boolean found = FALSE;
+
+		for (node_index = 0; !found && node_index < MIN(graph->nodes.count, MAXIMUM_NODES_PER_ANIMATION); node_index++)
+		{
+			struct placed_animation_graph_node *graph_node =
+				TAG_BLOCK_GET_ELEMENT(&graph->nodes, node_index, struct placed_animation_graph_node);
+
+			found = !strncmp(model_node->name, graph_node->name, sizeof(model_node->name));
+		}
+		if (!found)
+		{
+			*node_name = model_node->name;
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+/* CHECK: each of the pack's weapons' first-person animations (weapon.interface_definition.first_person_animations)
+move the map's first-person hands (globals' first_person_interface[0].hands) and the weapon's own first-person
+model (first_person_model), node by node as first_person_weapons.c binds them (first_person_weapon_ready: both
+remapping tables must be valid, else the weapon is never shown in first person): else refused "first-person arms
+do not match" */
+static boolean placed_first_person_check(
+	struct ae_pack const *pack)
+{
+	long globals_index = tag_loaded(GAME_GLOBALS_TAG, "globals\\globals");
+	struct game_globals *globals = globals_index == NONE ? NULL : game_globals_definition_get(globals_index);
+	struct game_globals_first_person_interface *first_person = globals && globals->first_person_interface.count > 0 ?
+		TAG_BLOCK_GET_ELEMENT(&globals->first_person_interface, 0, struct game_globals_first_person_interface) : NULL;
+	struct model *hands = first_person ? placed_definition(pack, MODELS_GROUP_TAG, first_person->hands.index) : NULL;
+	unsigned int index;
+
+	for (index = 0; index < pack->weapon_count; index++)
+	{
+		struct weapon_definition *weapon = (struct weapon_definition *)placed.tag_data[pack->weapons[index].root_tag];
+		struct weapon_interface_definition const *interface = &weapon->weapon.interface_definition;
+		struct animation_graph *graph = placed_definition(pack, ANIMATION_GRAPH_TAG, interface->first_person_animations.index);
+		struct model *model = placed_definition(pack, MODELS_GROUP_TAG, interface->first_person_model.index);
+		char const *node_name = NULL;
+		char detail[REASON_SIZE];
+
+		if (!graph || !model)
+		{
+			snprintf(detail, sizeof(detail), "the weapon has no first-person %s", !graph ? "animations" : "model");
+			return placed_refuse("first-person arms do not match: %s", detail);
+		}
+		if (!hands)
+			return placed_refuse("first-person arms do not match: %s", "the map has no first-person hands");
+		if (!model_nodes_in_graph(hands, graph, &node_name))
+		{
+			snprintf(detail, sizeof(detail), "the map's hands' node '%.32s' is not in the weapon's animations", node_name);
+			return placed_refuse("first-person arms do not match: %s", detail);
+		}
+		if (!model_nodes_in_graph(model, graph, &node_name))
+		{
+			snprintf(detail, sizeof(detail), "the weapon's model's node '%.32s' is not in its animations", node_name);
+			return placed_refuse("first-person arms do not match: %s", detail);
+		}
+	}
+
+	return TRUE;
+}
+
+/* a map's own battle rifle (CE+ X's dw2\weapons\battle_rifle\battle_rifle): a weapon tag of the map whose name
+says so. Left as the map made it (decision 5), the pack's added beside it: logged with both names */
+static void placed_own_rifle_log(
+	struct ae_pack const *pack,
+	struct placed_tag_instance const *instances,
+	long count,
+	char const *map_name)
+{
+	long index;
+
+	for (index = 0; index < count; index++)
+	{
+		char const *name = xbox_pointer(instances[index].name);
+		char lowered[AE_PACK_MAXIMUM_NAME + 1];
+		size_t length;
+
+		if (instances[index].group_tag != AE_PACK_GROUP_WEAPON || !name)
+			continue;
+		for (length = 0; name[length] && length < AE_PACK_MAXIMUM_NAME; length++)
+			lowered[length] = (char)(name[length] >= 'A' && name[length] <= 'Z' ? name[length] + 32 : name[length]);
+		lowered[length] = 0;
+		if (!strstr(lowered, "battle_rifle") && !strstr(lowered, "battle rifle"))
+			continue;
+		error(_error_silent, "weapon pack: map has its own battle rifle: left as the map made it (%s's %s; the pack's "
+			"is %s)", map_name, name, pack->weapon_count ? placed.tag_names[pack->weapons[0].root_tag] : "?");
 	}
 }
 
@@ -850,6 +1115,7 @@ static boolean placed_add(
 	unsigned char digest[AE_PACK_SHA256_SIZE];
 	char check_name[64];
 	char text[5];
+	unsigned int first_missing = 0;
 	boolean valid;
 
 	instances = cache_files_tag_instances(&existing);
@@ -862,11 +1128,23 @@ static boolean placed_add(
 		if (instance_salt > salt)
 			salt = instance_salt;
 	}
-	if (existing + (long)pack->own_tag_count > PLACED_TABLE_TAGS_MAXIMUM ||
-		salt + (long)pack->own_tag_count > PLACED_SALT_MAXIMUM)
+	/* CHECK: the map's tags and the pack's own within PLACED_TABLE_TAGS_MAXIMUM (or the test-only
+	debug.weapon_pack_table_limit, when above 0 and below it), the salts within PLACED_SALT_MAXIMUM (R16) */
 	{
-		return placed_refuse("tag table full", NULL);
+		long limit = config_integer("debug.weapon_pack_table_limit");
+
+		if (limit <= 0 || limit > PLACED_TABLE_TAGS_MAXIMUM)
+			limit = PLACED_TABLE_TAGS_MAXIMUM;
+		if (existing + (long)pack->own_tag_count > limit || salt + (long)pack->own_tag_count > PLACED_SALT_MAXIMUM)
+		{
+			char detail[96];
+
+			snprintf(detail, sizeof(detail), "%ld of the map's and %u of the pack's, at most %ld", existing,
+				pack->own_tag_count, limit);
+			return placed_refuse("tag table full: %s", detail);
+		}
 	}
+	placed.original_count = existing;
 
 	placed.tag_indices = placed_allocate(pack->tag_count * sizeof(*placed.tag_indices));
 	placed.tag_names = placed_allocate(pack->tag_count * sizeof(*placed.tag_names));
@@ -895,7 +1173,9 @@ static boolean placed_add(
 				snprintf(placed.problem, sizeof(placed.problem), "missing %s %s", group_text(tag->group, text), name);
 				return FALSE;
 			}
-			placed.missing_count++;
+			/* (an optional one: no tag; the first logged, with how many at the end of the walk) */
+			if (!placed.missing_count++)
+				first_missing = index;
 		}
 		else if (tag->kind == AE_PACK_TAG_OWN)
 		{
@@ -908,6 +1188,14 @@ static boolean placed_add(
 			{
 				return placed_refuse("%s lies past the pack's tags", name);
 			}
+			/* CHECK: no tag of the map has an own tag's group and name (tag_loaded finds a tag by both: the first of
+			two would be found by every lookup by name) */
+			if (tag_loaded((long)tag->group, name) != NONE)
+			{
+				snprintf(placed.problem, sizeof(placed.problem), "name collision: the map has %s %s",
+					group_text(tag->group, text), name);
+				return FALSE;
+			}
 			placed.tag_indices[index] = (long)(((unsigned long)(salt + 1 + next) << 16) | (unsigned long)(existing + next));
 			next++;
 			bytes_size += ((unsigned long)tag->bytes_size + PLACED_ALIGNMENT - 1) & ~(unsigned long)(PLACED_ALIGNMENT - 1);
@@ -917,6 +1205,12 @@ static boolean placed_add(
 	}
 	if (!next || (unsigned int)next != pack->own_tag_count || bytes_size > AE_PACK_MAXIMUM_TAG_BYTES + PLACED_ALIGNMENT * (unsigned long)next)
 		return placed_refuse("the pack's own tags are not as its header says", NULL);
+	if (placed.missing_count)
+	{
+		error(_error_silent, "weapon pack: %s lacks %d optional tags of the pack, first %s %s: they are no tag there",
+			map_name, (int)placed.missing_count, group_text(pack->tags[first_missing].group, text),
+			ae_pack_string(pack, pack->tags[first_missing].name));
+	}
 
 	/* the pack's memory, laid out as a map's tags are: a tag header, the table (the map's tags, then the
 	pack's), the names, the tags */
@@ -1004,7 +1298,10 @@ static boolean placed_add(
 			return placed_refuse("a weapon of the pack is no weapon tag", NULL);
 		}
 	}
-	if (!placed_geometry_copy(pack))
+	if (!placed_geometry_copy(pack, bytes_size))
+		return FALSE;
+	/* the checks against what the map gives the pack's weapons: a player who can hold them, hands they fit */
+	if (!placed_weapon_labels(pack) || !placed_first_person_check(pack))
 		return FALSE;
 
 	/* what every machine must agree on to play this pack on this map: the pack, the map, and where each of
@@ -1026,10 +1323,10 @@ static boolean placed_add(
 	ae_pack_sha256_end(&hash, digest);
 	memcpy(placed.fingerprint, digest, sizeof(placed.fingerprint));
 
-	placed_weapon_labels(pack);
-	placed_buffers_make(pack);
+	if (!placed_buffers_make(pack))
+		return FALSE;
+	placed_own_rifle_log(pack, instances, existing, map_name);
 	placed.original_instances = instances;
-	placed.original_count = existing;
 	placed.own_count = next;
 	cache_files_set_tag_instances(table, existing + next);
 	{
@@ -1043,6 +1340,107 @@ static boolean placed_add(
 			pack->tag_count - pack->own_tag_count - (unsigned int)placed.missing_count, (int)placed.missing_count,
 			(int)corrections, (int)existing, (int)(existing + next), fingerprint);
 	}
+
+	return TRUE;
+}
+
+/* ---------- private code: the fallback */
+
+/* the map's file name's last part (a scenario's name or a header's: "bloodgulch") */
+static char const *map_base_name(
+	char const *map_name)
+{
+	char const *base = map_name, *cursor;
+
+	for (cursor = map_name; *cursor; cursor++)
+	{
+		if (*cursor == '\\' || *cursor == '/')
+			base = cursor + 1;
+	}
+
+	return base;
+}
+
+static char const *refused_map_reason(
+	char const *map_name)
+{
+	short index;
+
+	map_name = map_base_name(map_name);
+	for (index = 0; index < REFUSED_MAPS_MAXIMUM; index++)
+	{
+		if (refused_maps[index].map_name[0] && !_stricmp(refused_maps[index].map_name, map_name))
+			return refused_maps[index].reason;
+	}
+
+	return NULL;
+}
+
+static void refused_map_forget(
+	char const *map_name)
+{
+	short index;
+
+	map_name = map_base_name(map_name);
+	for (index = 0; index < REFUSED_MAPS_MAXIMUM; index++)
+	{
+		if (!_stricmp(refused_maps[index].map_name, map_name))
+			memset(&refused_maps[index], 0, sizeof(refused_maps[index]));
+	}
+}
+
+/* why the pack is not on this map: for the line at game start, and (remembered) for the lobby's */
+static void refusal_note(
+	char const *map_name,
+	char const *reason,
+	boolean remembered)
+{
+	snprintf(refusal.reason, sizeof(refusal.reason), "%s", reason);
+	if (remembered)
+	{
+		refused_map_forget(map_name);
+		snprintf(refused_maps[refused_maps_next].map_name, sizeof(refused_maps[0].map_name), "%s",
+			map_base_name(map_name));
+		snprintf(refused_maps[refused_maps_next].reason, sizeof(refused_maps[0].reason), "%s", reason);
+		refused_maps_next = (short)((refused_maps_next + 1) % REFUSED_MAPS_MAXIMUM);
+	}
+}
+
+/* the add stopped (placed.problem says why): everything let go, one line, the reason kept */
+static void refusal_refused(
+	struct ae_pack *pack,
+	char const *map_name)
+{
+	char problem[sizeof(placed.problem)];
+
+	snprintf(problem, sizeof(problem), "%s", placed.problem);
+	placed_free(pack);
+	error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", map_name, problem);
+	refusal_note(map_name, problem, TRUE);
+}
+
+/* whether the game about to be played on the map whose tags have just loaded asks for a pack (its slot in slot):
+the pending game variant's weapon_pack (game_variant_global, which a network game's host and clients, the test
+host and a split-screen game all set just before the map loads; the menus' map and the campaign have none), and a
+multiplayer scenario. Each map starts with no refusal */
+static boolean refusal_asked(
+	char const *map_name,
+	long scenario_tag_index,
+	short *slot)
+{
+	struct game_variant const *variant = &game_variant_global;
+
+	memset(&refusal, 0, sizeof(refusal));
+	snprintf(refusal.map_name, sizeof(refusal.map_name), "%s", map_name);
+	*slot = _weapon_pack_none;
+	if (!variant->game_engine_index)
+		return FALSE;
+	*slot = game_variant_weapon_pack(variant->universal_variant.weapon_pack);
+	if (*slot == _weapon_pack_none)
+		return FALSE;
+	if (scenario_tag_index == NONE || scenario_definition_get(scenario_tag_index)->type != _scenario_type_multiplayer)
+		return FALSE;
+	refusal.asked = TRUE;
 
 	return TRUE;
 }
@@ -1143,40 +1541,116 @@ void ae_weapon_pack_tags_loaded(
 	char const *map_name,
 	long scenario_tag_index)
 {
-	struct game_variant const *variant = &game_variant_global;
 	struct ae_pack *pack;
 	/* (the map's header's name: 32 bytes, its terminator the header's to keep) */
-	char name[33];
+	char name[MAP_NAME_SIZE];
 	short slot;
 
-	if (placed.added || !variant->game_engine_index || !map_name)
+	if (placed.added || !map_name)
 		return;
 	snprintf(name, sizeof(name), "%.32s", map_name);
 	map_name = name;
-	slot = game_variant_weapon_pack(variant->universal_variant.weapon_pack);
-	if (slot == _weapon_pack_none)
-		return;
-	if (scenario_tag_index == NONE || scenario_definition_get(scenario_tag_index)->type != _scenario_type_multiplayer)
+	if (!refusal_asked(map_name, scenario_tag_index, &slot))
 		return;
 	pack = slot_pack(slot);
 	memset(&placed, 0, sizeof(placed));
 	if (!pack)
 	{
 		error(_error_silent, "weapon pack: not added to %s: this game has no pack for slot %d", map_name, (int)slot);
+		refusal_note(map_name, "this machine has no battle rifle pack", FALSE);
 		return;
+	}
+	/* CHECK: the map's tags are laid out as the engine's: a build it plays multiplayer on (2276, NHE's 2300,
+	PAL's through pal_tags.c: cache_files.c's list) */
+	{
+		char build[0x20];
+
+		if (!cache_files_multiplayer_region(build))
+		{
+			snprintf(placed.problem, sizeof(placed.problem), "build %.31s", build);
+			refusal_refused(pack, map_name);
+			return;
+		}
 	}
 	if (!placed_add(pack, map_name))
 	{
-		char problem[sizeof(placed.problem)];
-
-		snprintf(problem, sizeof(problem), "%s", placed.problem);
-		placed_free(pack);
-		error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", map_name, problem);
+		refusal_refused(pack, map_name);
 		return;
 	}
 	placed.added = TRUE;
 	placed.slot = slot;
 	snprintf(placed.map_name, sizeof(placed.map_name), "%s", map_name);
+	refused_map_forget(map_name);
+}
+
+/* the Custom Edition branch of scenario_tags_load: no pack on such a map (R34: the pack's tags would be read
+through the Custom Edition tag cache's bounds, and its bitmaps uploaded in Halo PC's layout); said once a map */
+void ae_weapon_pack_tags_refused_ce(
+	char const *map_name,
+	long scenario_tag_index)
+{
+	char name[MAP_NAME_SIZE];
+	short slot;
+
+	if (placed.added || !map_name)
+		return;
+	snprintf(name, sizeof(name), "%.32s", map_name);
+	if (!refusal_asked(name, scenario_tag_index, &slot))
+		return;
+	error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", name, NOT_ON_CUSTOM_EDITION);
+	refusal_note(name, NOT_ON_CUSTOM_EDITION, TRUE);
+}
+
+boolean ae_weapon_pack_unavailable_line(
+	char *line,
+	long size)
+{
+	if (!line || size <= 0 || !refusal.asked || placed.added)
+		return FALSE;
+	if (!strcmp(refusal.reason, NOT_ON_CUSTOM_EDITION))
+		snprintf(line, (size_t)size, "BATTLE RIFLE: %s", NOT_ON_CUSTOM_EDITION);
+	else
+	{
+		snprintf(line, (size_t)size, "BATTLE RIFLE unavailable on %s: %s", refusal.map_name,
+			refusal.reason[0] ? refusal.reason : "not added");
+	}
+
+	return TRUE;
+}
+
+void ae_weapon_pack_lobby_line(
+	wchar_t *text,
+	long count,
+	char const *map_name,
+	struct game_variant const *variant)
+{
+	char file[MAP_NAME_SIZE + 8];
+	char line[96];
+	short slot, index;
+	size_t length;
+
+	if (!text || count <= 0 || !map_name || !map_name[0] || !variant)
+		return;
+	slot = game_variant_weapon_pack(variant->universal_variant.weapon_pack);
+	if (slot == _weapon_pack_none)
+		return;
+	/* (the pre-game check on the map's family, R34: before any map is loaded) */
+	if (map_family_parse(map_name, file, sizeof(file)) != _map_family_xbox)
+		snprintf(line, sizeof(line), "BATTLE RIFLE: %s", NOT_ON_CUSTOM_EDITION);
+	else if (!slot_pack(slot) || refused_map_reason(file))
+		snprintf(line, sizeof(line), "BATTLE RIFLE unavailable on %.40s", file);
+	else
+		return;
+	length = 0;
+	while (length < (size_t)count && text[length])
+		length++;
+	if (length + 2 + strlen(line) + 1 > (size_t)count)
+		return;
+	text[length++] = '\r';
+	text[length++] = '\n';
+	for (index = 0; line[index]; index++)
+		text[length++] = (wchar_t)(unsigned char)line[index];
+	text[length] = 0;
 }
 
 /* as a map's tags are let go (scenario_tags_unload: after the texture and sound caches closed and the menus'

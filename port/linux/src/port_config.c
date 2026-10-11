@@ -790,6 +790,11 @@ static const struct config_setting config_settings[] =
 		"For automated tests' pictures: one more of the weapon pack's weapon lies a\n"
 		"step ahead of each local player who spawns with it. Only on a host or with\n"
 		"no network game; a client in another's game ignores it." },
+	{ "debug.weapon_pack_table_limit", _config_integer, "0", "HALO_WEAPON_PACK_TABLE_LIMIT", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of a full tag table: the most tags a map and a weapon\n"
+		"pack's own may have together, below the built-in 49152 (0xC000); a map\n"
+		"past it refuses the pack. 0 for the built-in limit." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

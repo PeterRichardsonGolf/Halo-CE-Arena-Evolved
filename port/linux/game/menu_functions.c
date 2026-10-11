@@ -81,6 +81,7 @@ their handlers open opens.
 #include "text/text_group.h"
 #include "text/unicode.h"
 #include "saved games/arena_gametypes.h"
+#include "ae_weapon_pack.h" /* AE hook */
 
 #include "halo_menus.h"
 #include "halo_custom_maps.h"
@@ -5513,6 +5514,7 @@ static void lobby_update(struct widget_instance *list)
 
 			usnprintf(text + length, NUMBEROF(text) - 1 - length, L"\r\n\r\nInvite link copied:\r\npaste it to friends");
 		}
+		if (global_network_game_server_get()) ae_weapon_pack_lobby_line(text, NUMBEROF(text), game->map.name, &game->variant); /* AE hook */
 		text_set_length(named(description, "lobby_game_data", 0), text, LOBBY_TEXT_LENGTH);
 	}
 	profile_name_show(description);

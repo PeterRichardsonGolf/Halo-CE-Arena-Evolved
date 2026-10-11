@@ -241,9 +241,41 @@ have no game variant and never get a pack; nor does a map that is not a multipla
 4. **What the schemas do not say** is checked by hand: every PARTS record must sit on a model part of a model
    of the pack (only those get buffers), its sizes must be the ones the game draws its vertex type with, and
    every run of pixels a bitmap reads and samples a sound reads must lie inside one of that tag's resources.
-5. The weapon is given a label the map's player can hold it by (the weapon entry's label, else its fallback
-   labels in order), model parts get vertex and index buffers of their own, and only then does the grown table
-   become the game's. Until that moment nothing of the map has changed.
+5. **The checks against the map** (below), model parts get vertex and index buffers of their own, and only then
+   does the grown table become the game's. Until that moment nothing of the map has changed.
+
+### The checks against the map, and the fallback
+
+Each failure is the refusal line with the reason shown; nothing of the map is changed.
+
+| Check | Reason in the refusal line |
+|---|---|
+| the map's build is one the engine plays multiplayer on (2276, Halo 1: NHE's 2300, PAL's) | `build <b>` |
+| the map's tags and the pack's own fit the table (49152 tags, salts to 0xfffe; tests: `debug.weapon_pack_table_limit`) | `tag table full: ...` |
+| no own tag's group and name is already a tag of the map | `name collision: the map has <group> <name>` |
+| every required external tag is on the map, by group and name | `missing <group> <name>` |
+| the pack's own tag bytes and geometry are within 8 MiB, the memory is there, every model part gets its buffers | `no memory: ...` |
+| the map's player (the globals' multiplayer unit's animation graph) has one of the weapon's labels, in order (`h_br`, `ar`), in every seat it holds weapons in | `the player cannot hold it: ...` |
+| the weapon's first-person animations have every node of the map's first-person hands and of the weapon's first-person model | `first-person arms do not match: ...` |
+
+A seat *holds weapons* when one of its weapon types has a label: the stock Spartan's driver's and gunner's seats
+have only the unarmed type and are not counted (no weapon's label is found there, the assault rifle's neither).
+The label chosen is written into the weapon's copy and logged (`weapon pack: battle_rifle is held by the label
+'ar'`). Optional external tags the map lacks are no tag, with one line (`weapon pack: <map> lacks N optional tags
+of the pack, first <group> <name>: they are no tag there`). A map's own battle rifle (CE+ X's) is left as the map
+made it and the pack's is added beside it (`weapon pack: map has its own battle rifle: left as the map made it
+(...)`).
+
+**Custom Edition maps** (and Halo PC's and HaloMD's: every map family but the Xbox's) never get a pack yet:
+`weapon pack: refused for <map>: not on Custom Edition maps yet; the game plays without it`. A protected map is
+one of them and is refused the same way.
+
+**The fallback.** On a map the pack was not added to, the loadout gives its stock value (an assault rifle for a
+battle rifle primary, a pistol for a secondary) and BATTLE RIFLE ON MAP replaces nothing. Every machine says so
+at game start, on the console and in the log: `BATTLE RIFLE unavailable on <map>: <reason>`, or `BATTLE RIFLE:
+not on Custom Edition maps yet`. The host's PC lobby adds a line to its panel before the game where it already
+knows: on a map of another family, with no pack on this machine, or after the pack was refused for that map
+earlier in this run (`BATTLE RIFLE unavailable on <map>`).
 
 A refusal is one line, `weapon pack: refused for <map>: <reason>; the game plays without it`, and the game
 plays with the stock weapons (a loadout slot that asked for the pack keeps its stock value). When it is added:

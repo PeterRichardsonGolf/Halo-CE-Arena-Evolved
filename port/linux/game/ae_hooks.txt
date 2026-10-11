@@ -34,3 +34,7 @@ source/cache/cache_files.c	menu_tags_unloaded();\n}\nae_weapon_pack_tags_unloade
 source/cache/cache_files_windows.c	#include "ae_weapon_pack.h" /* AE hook */
 source/cache/cache_files_windows.c	if (ae_weapon_pack_read(tag_index, offset, size, buffer, completion_flag_reference)) return request_index; /* AE hook */\nif (size & (CACHE_FILE_SECTOR_SIZE - 1)
 port/linux/game/tag_validate.c	#include "ae_tag_validate.inc" /* AE hook */
+source/cache/cache_files.c	ae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */\nreturn ce_header->scenario_tag_index;
+port/linux/src/port_config.c	{ "debug.weapon_pack_table_limit", _config_integer, "0", "HALO_WEAPON_PACK_TABLE_LIMIT", _environment_value, /* AE hook */\n_platform_all,
+port/linux/game/menu_functions.c	#include "ae_weapon_pack.h" /* AE hook */
+port/linux/game/menu_functions.c	if (global_network_game_server_get()) ae_weapon_pack_lobby_line(text, NUMBEROF(text), game->map.name, &game->variant); /* AE hook */\ntext_set_length(named(description, "lobby_game_data", 0), text, LOBBY_TEXT_LENGTH);

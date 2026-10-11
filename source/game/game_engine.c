@@ -8786,6 +8786,19 @@ void game_engine_log_rules(
 			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_primary) ? "pack" : "stock",
 			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_secondary) ? "pack" : "stock",
 			pack && game_variant_pack_map_spawns(universal->pack_map_spawns) ? "on" : "off");
+		/* port: weapon pack: the fallback said on every machine (decision 10): a gametype that uses the pack on
+		a map that did not get it (refused there, a Custom Edition map, no pack here) plays the stock weapons
+		(the loadout's assault rifle or pistol; BATTLE RIFLE ON MAP replaces nothing), and the console says why */
+		if (pack)
+		{
+			char unavailable[256];
+
+			if (ae_weapon_pack_unavailable_line(unavailable, sizeof(unavailable)))
+			{
+				error(_error_silent, "weapon pack: %s", unavailable);
+				console_printf(FALSE, "%s", unavailable);
+			}
+		}
 		}
 		/* (and the players' rules the lines above leave out) */
 		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "

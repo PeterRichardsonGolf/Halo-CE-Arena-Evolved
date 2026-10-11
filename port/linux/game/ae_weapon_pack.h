@@ -67,7 +67,8 @@ void ae_weapon_pack_tags_unloaded(void);
 size bytes from the pack (zeros for what it cannot give) and *complete is set */
 boolean ae_weapon_pack_read(long tag_index, long offset, long size, void *buffer, boolean *complete);
 
-/* the slot of the pack added to the loaded map, or 0: none was asked for, or it was refused (the fallback) */
+/* the slot of the pack added to the loaded map, or 0: none was asked for, or it was refused (the fallback: what
+the loadout, BATTLE RIFLE ON MAP and the network's pack report key on) */
 short ae_weapon_pack_added(void);
 /* the import fingerprint of the pack on this map (AE_WEAPON_PACK_FINGERPRINT_SIZE bytes: the first 8 of the
 SHA-256 of the pack's SHA-256, the map's name, the map's own tag count and each pack tag's tag index in pack
@@ -79,5 +80,22 @@ long ae_weapon_pack_weapon_definition(short slot, short weapon);
 /* (game_engine_give_loadout) a player was given a pack weapon as the loadout's primary (0) or secondary (1):
 the first of each on a map is logged */
 void ae_weapon_pack_loadout_given(short loadout_slot, long definition_index);
+
+/* ---------- the fallback: a map the pack is not added to */
+
+struct game_variant;
+
+/* (scenario_tags_load, its Custom Edition branch, which returns before ae_weapon_pack_tags_loaded is reached) a
+Custom Edition map (or Halo PC's, HaloMD's) gets no pack: one refusal line when the pending game asks for one */
+void ae_weapon_pack_tags_refused_ce(char const *map_name, long scenario_tag_index);
+/* (game_engine_log_rules: every machine, at game start) the line the console and the log give when the game's
+gametype uses a pack the loaded map did not get ("BATTLE RIFLE unavailable on <map>: <reason>", or "BATTLE RIFLE:
+not on Custom Edition maps yet"): TRUE and line written, or FALSE (the pack is on the map, or none is asked for) */
+boolean ae_weapon_pack_unavailable_line(char *line, long size);
+/* (the PC lobby, on the host) appended to the lobby's panel text (count characters) as a line of its own, for a
+game of this variant on this map before it starts: "BATTLE RIFLE: not on Custom Edition maps yet" on a map of
+another family than the Xbox's; "BATTLE RIFLE unavailable on <map>" where this machine knows the pack cannot be
+added (no pack in the slot here, or the pack was refused for that map before); nothing otherwise */
+void ae_weapon_pack_lobby_line(wchar_t *text, long count, char const *map_name, struct game_variant const *variant);
 
 #endif
