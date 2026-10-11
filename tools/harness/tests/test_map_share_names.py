@@ -9,7 +9,9 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from harness import CHECK_FAILED, build, constant, function, mutated, read, run  # noqa: E402
 
-CASES = ["hashed-names", "safe-names", "base-length", "digits", "pieces", "display-names"]
+# (Arena Evolved: no "display-names": its menus' names are ui_map_list.c's, not OpenCE's custom_edition_maps.c,
+# which it does not have)
+CASES = ["hashed-names", "safe-names", "base-length", "digits", "pieces"]
 
 # a fault in map_share_files.c, the function it is in, and the case that must catch it
 NEGATIVE_CONTROLS = {
@@ -23,10 +25,6 @@ NEGATIVE_CONTROLS = {
                              "map_share_name_base_length", "base-length"),
     "nibbles-swapped": (("hex[hash[index] >> 4]", "hex[hash[index] & 15]"), "map_share_hash_digits", "digits"),
     "pieces-rounded-down": (("(size + MAP_SHARE_PIECE_BYTES - 1)", "(size)"), "map_share_piece_count", "pieces"),
-    "shows-the-hash": (("map_share_name_base_length(name)", "(short)csstrlen(name)"), "display_name_make",
-                       "display-names"),
-    "stock-by-whole-name": (("map_share_name_base_length(name)", "(short)csstrlen(name)"), "stock_map_index",
-                            "display-names"),
 }
 
 
@@ -43,15 +41,8 @@ def generated(fault=None, faulty_function=None):
         if fault and name == faulty_function:
             code = mutated(code, *fault)
         text += code + "\n"
-    # the menus' names (custom_edition_maps.c): Halo PC's own maps, and the rest
-    maps = read("port/linux/game/custom_edition_maps.c")
-    start = maps.index("static struct\n{\n\tchar const *file;")
-    text += maps[start:maps.index("};", start) + 2] + "\n"
-    for name in ("stock_map_index", "display_name_make"):
-        code = function(maps, name)
-        if fault and name == faulty_function:
-            code = mutated(code, *fault)
-        text += code + "\n"
+    # (Arena Evolved: no menus' names, custom_edition_maps.c's in OpenCE)
+    config += "#define MAP_SHARE_NO_MENU_NAMES 1\n"
     return (("config.inc", config), ("under_test.inc", text))
 
 

@@ -21,6 +21,7 @@ constants (config.inc) and the code (under_test.inc).
 
 #include "under_test.inc"
 
+#ifndef MAP_SHARE_NO_MENU_NAMES
 /* the menus' name of a map file's name (custom_edition_maps.c) */
 static char const *menu_name(char const *name, boolean hash)
 {
@@ -34,6 +35,7 @@ static char const *menu_name(char const *name, boolean hash)
 	text[index] = 0;
 	return text;
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -103,6 +105,7 @@ int main(int argc, char **argv)
 	}
 	/* the menus show a map without its hash, unless asked to tell versions
 	apart (Halo PC's own maps by their names) */
+#ifndef MAP_SHARE_NO_MENU_NAMES
 	CASE("display-names")
 	{
 		CHECK(!strcmp(menu_name("the_bay_of_pigs_0c7e7075", FALSE), "The Bay Of Pigs"), "made %s",
@@ -115,6 +118,7 @@ int main(int argc, char **argv)
 			menu_name("hugeass_0e2b3ee4", TRUE));
 		return 0;
 	}
+#endif
 	fprintf(stderr, "unknown case: %s\n", case_name);
 	return 2;
 }
