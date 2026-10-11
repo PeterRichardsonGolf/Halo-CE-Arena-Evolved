@@ -160,6 +160,121 @@ jobs:
           path: dist/arena-evolved-linux64-release
           retention-days: 3
 
+  linux64-portable:
+    # (AE) The 64-bit Linux download for every distribution: the linux64 job
+    # above is built on Arch Linux, whose glibc is the newest there is
+    # (GLIBC_2.43), and links the system's SDL3, which Ubuntu, Zorin, Mint,
+    # Pop!_OS and Debian 12 do not have. This one is built in Ubuntu 22.04's
+    # container, so that it asks for glibc 2.35 at most (Ubuntu 22.04 and
+    # everything since: Zorin 17 and 18, Mint 21 and 22, Pop!_OS, Debian 12),
+    # with a clang from apt.llvm.org (22, as the Arch job's) and the SDL3 of
+    # the other ports built from source (tools/linux64_portable_deps.py: the
+    # same release and options as the 32-bit build's), which goes into the
+    # zip beside halo (rpath $ORIGIN). Chosen over the Steam Runtime
+    # "sniper" SDK, which is Debian 11 and also a Docker image but one that
+    # needs registry access and a clang of our own inside it: a plain Ubuntu
+    # container is the system most of the players have. The release build
+    # only; the Arch job keeps both configurations, for the Arch download.
+    runs-on: ubuntu-24.04
+    container: ubuntu:22.04
+    timeout-minutes: 60
+    env:
+      LLVM: "22"
+      PORTABLE_SDL3: ${{ github.workspace }}/.portable-sdl3
+    steps:
+      - name: Install the toolchain
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl gnupg git zstd python3 \
+            build-essential cmake meson ninja-build pkg-config ccache
+          # clang and lld, pinned to one release of apt.llvm.org's
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /usr/share/keyrings/apt.llvm.org.gpg
+          echo "deb [signed-by=/usr/share/keyrings/apt.llvm.org.gpg] https://apt.llvm.org/jammy/ llvm-toolchain-jammy-$LLVM main" \
+            > /etc/apt/sources.list.d/llvm.list
+          apt-get update
+          apt-get install -y --no-install-recommends clang-$LLVM lld-$LLVM llvm-$LLVM
+          echo "/usr/lib/llvm-$LLVM/bin" >> "$GITHUB_PATH"
+          # SDL3's build: the headers of what it loads when it starts (X11,
+          # Wayland, PipeWire, PulseAudio, ALSA, udev, D-Bus), and what
+          # libdecor's build asks for
+          apt-get install -y --no-install-recommends wayland-protocols libwayland-dev libxkbcommon-dev \
+            libx11-dev libxext-dev libxcursor-dev libxi-dev libxfixes-dev libxrandr-dev libxrender-dev \
+            libxss-dev libgl-dev libegl-dev libpipewire-0.3-dev libpulse-dev libasound2-dev libudev-dev \
+            libdbus-1-dev libcairo2-dev libpango1.0-dev
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-linux64-portable-${{ github.sha }}
+          restore-keys: ccache-linux64-portable-
+
+      # SDL3 and libdecor, built once
+      - uses: actions/cache@v4
+        with:
+          path: .portable-sdl3
+          key: portable-sdl3-${{ hashFiles('tools/linux64_portable_deps.py', 'tools/linux_sysroot.py', 'tools/linux_build.py') }}
+
+      - name: Build SDL3
+        run: python3 tools/linux64_portable_deps.py "$PORTABLE_SDL3"
+
+      - name: Release
+        env:
+          # (the SDL3 just built: its headers and library for the compile,
+          # and its library and license into the zip)
+          CPATH: ${{ github.workspace }}/.portable-sdl3/include
+          LIBRARY_PATH: ${{ github.workspace }}/.portable-sdl3/lib
+          HALO_BUNDLE_SDL3: ${{ github.workspace }}/.portable-sdl3
+        run: |
+          python3 tools/ci_build.py linux64 release
+          mv dist/arena-evolved-linux64-release dist/arena-evolved-linux64-portable-release
+          ls -l dist/arena-evolved-linux64-portable-release
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-linux64-portable-release
+          path: dist/arena-evolved-linux64-portable-release
+          retention-days: 3
+
+  linux64-portable-check:
+    # (AE) The portable download, as a player gets it, on the systems it is
+    # for and nothing installed for it: unpacked, its libraries all found (the
+    # SDL3 beside it), no symbol asking for a glibc after 2.35, and halo
+    # starts (tools/ci_check_linux_portable.sh). Ubuntu 22.04 is the oldest,
+    # 24.04 the Zorin 18 one, Debian 12 the stable one.
+    needs: linux64-portable
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["ubuntu:22.04", "ubuntu:24.04", "debian:12"]
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    timeout-minutes: 15
+    steps:
+      - name: Install the tools of the check (not the game's libraries)
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git binutils
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: arena-evolved-linux64-portable-release
+          path: portable
+
+      - name: Check it
+        run: |
+          # (an artifact loses the executable bit)
+          chmod +x portable/halo
+          sh tools/ci_check_linux_portable.sh portable
+
   server:
     # The dedicated server (tools/server_build.py): one static program for
     # each architecture, built against musl in Alpine Linux's container of

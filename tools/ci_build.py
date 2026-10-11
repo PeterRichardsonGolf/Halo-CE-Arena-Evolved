@@ -14,6 +14,9 @@ release build does (profile-guided optimisation needs clang 22 or later,
 and is skipped with an older one). A profile build is a debug build with
 configure.py --profile, so that the profiling build is built too.
 CI_COMPILER_LAUNCHER (ccache, say) is passed on as --compiler-launcher.
+(AE) HALO_BUNDLE_SDL3=<folder> puts that folder's libSDL3.so.0 and SDL3
+license into the linux64 download (the portable one: the workflow's
+linux64-portable job).
 
 The version comes from the environment (tools/version.py), which a
 release workflow sets: HALO_VERSION (0.1.0-beta, or
@@ -215,6 +218,15 @@ def main() -> int:
         shutil.copy2(ROOT / "port/assets/network/brokers.txt", dist / "brokers.txt")
         # the built-in callout voices, a folder beside the game
         shutil.copytree(ROOT / "port/assets/voices", dist / "voices")
+    bundle_sdl3 = os.environ.get("HALO_BUNDLE_SDL3")
+    if args.platform == "linux64" and bundle_sdl3:
+        # (AE) the portable download brings its SDL3 beside halo (the
+        # executable's rpath is $ORIGIN), built by
+        # tools/linux64_portable_deps.py in the folder this names, with its
+        # zlib license; the Arch build uses the system's
+        prefix = Path(bundle_sdl3)
+        shutil.copy2(prefix / "lib" / "libSDL3.so.0", dist / "libSDL3.so.0")
+        shutil.copy2(prefix / "SDL3-LICENSE.txt", dist / "SDL3-LICENSE.txt")
     if args.platform in ("linux", "linux64"):
         # (AE) the game's icon, for a launcher or desktop entry to point at
         # (Windows' is in halo.exe, macOS's in the bundle; tools/ae_logo.py)

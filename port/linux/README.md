@@ -98,7 +98,10 @@ Ubuntu 25.04 or later) instead of the 32-bit ones, and the 64-bit OpenGL and
 sound libraries to start. An SDL3 built by hand is found through
 `LIBRARY_PATH` when linking and `LD_LIBRARY_PATH` when starting. It is not
 optimised with a profile (the committed profiles are the 32-bit build's).
-Its releases are their own download, `arena-evolved-linux64-release.zip`.
+Its releases are their own downloads: `-linux64.zip`, built on Ubuntu 22.04 with
+its own SDL3 beside `halo` (any distribution with glibc 2.35 or later), and
+`-linux64-arch.zip`, built on Arch Linux with the system's SDL3
+(`docs/dependencies.md`).
 It plays Halo PC's maps (`maps_ce/`, `maps_md/`, `maps_pc/`) and plays with
 the 32-bit builds and the other ports over the
 network, and it is a dedicated server too (`server/README.md`).
