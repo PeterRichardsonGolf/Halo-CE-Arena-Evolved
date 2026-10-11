@@ -154,14 +154,14 @@ static boolean object_mesh_add_part(
 	if (mesh->vertex_count + vertex_buffer->count > OBJECT_MESH_MAXIMUM_VERTICES)
 		return FALSE;
 
-	IDirect3DVertexBuffer8_Lock((IDirect3DVertexBuffer8 *)vertex_buffer->hardware_format, 0, 0, &vertices, D3DLOCK_READONLY);
-	IDirect3DIndexBuffer8_Lock((IDirect3DIndexBuffer8 *)triangle_buffer->hardware_format, 0, 0, &indices, D3DLOCK_READONLY);
+	IDirect3DVertexBuffer8_Lock(XBOX_POINTER(IDirect3DVertexBuffer8, vertex_buffer->hardware_format), 0, 0, &vertices, D3DLOCK_READONLY);
+	IDirect3DIndexBuffer8_Lock(XBOX_POINTER(IDirect3DIndexBuffer8, triangle_buffer->hardware_format), 0, 0, &indices, D3DLOCK_READONLY);
 	if (!vertices || !indices)
 	{
 		if (vertices)
-			IDirect3DVertexBuffer8_Unlock((IDirect3DVertexBuffer8 *)vertex_buffer->hardware_format);
+			IDirect3DVertexBuffer8_Unlock(XBOX_POINTER(IDirect3DVertexBuffer8, vertex_buffer->hardware_format));
 		if (indices)
-			IDirect3DIndexBuffer8_Unlock((IDirect3DIndexBuffer8 *)triangle_buffer->hardware_format);
+			IDirect3DIndexBuffer8_Unlock(XBOX_POINTER(IDirect3DIndexBuffer8, triangle_buffer->hardware_format));
 		return TRUE;
 	}
 
@@ -247,8 +247,8 @@ static boolean object_mesh_add_part(
 		}
 	}
 
-	IDirect3DVertexBuffer8_Unlock((IDirect3DVertexBuffer8 *)vertex_buffer->hardware_format);
-	IDirect3DIndexBuffer8_Unlock((IDirect3DIndexBuffer8 *)triangle_buffer->hardware_format);
+	IDirect3DVertexBuffer8_Unlock(XBOX_POINTER(IDirect3DVertexBuffer8, vertex_buffer->hardware_format));
+	IDirect3DIndexBuffer8_Unlock(XBOX_POINTER(IDirect3DIndexBuffer8, triangle_buffer->hardware_format));
 	return TRUE;
 }
 

@@ -69,7 +69,8 @@ shader's names: its permutation index is the bitmap sequence index, and its
 animation field carries the runtime parameters */
 struct rasterizer_transparent_geometry_group_plasma
 {
-	byte reserved00[offsetof(struct transparent_geometry_group, shader)];
+	unsigned int geometry_flags; /* port: (the first-person bit) */
+	byte reserved04[offsetof(struct transparent_geometry_group, shader) - sizeof(unsigned int)];
 	struct shader *shader;
 	short bitmap_sequence_index;
 	byte reserved12[offsetof(struct transparent_geometry_group, animation) -
@@ -77,6 +78,9 @@ struct rasterizer_transparent_geometry_group_plasma
 	struct plasma_runtime_parameters const *runtime_parameters;
 };
 
+typedef char plasma_group_flags_offset_assert[
+	offsetof(struct rasterizer_transparent_geometry_group_plasma, geometry_flags) ==
+		offsetof(struct transparent_geometry_group, geometry_flags) ? 1 : -1];
 typedef char plasma_group_shader_offset_assert[
 	offsetof(struct rasterizer_transparent_geometry_group_plasma, shader) ==
 		offsetof(struct transparent_geometry_group, shader) ? 1 : -1];

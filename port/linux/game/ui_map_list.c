@@ -48,6 +48,7 @@ asks whether the map is in its family's folders (ui_map_list_family_present).
 #include "halo_ui_map_list.h"
 #include "halomd_map_names.h"
 #include "halo_custom_maps.h"
+#include "map_share.h" /* port: a map named for its hash (map sharing) */
 
 #include "bitmaps/bitmap_group.h"
 #include "tag_files/tag_groups.h"
@@ -706,11 +707,16 @@ static void add_entry(
 }
 
 /* a Custom Edition or HaloMD map's row: its file's name (without its
-suffix or .map) */
+suffix or .map). (port: a Custom Edition map named for its hash, map
+sharing's hugeass_1a2b3c4d, is shown and known by its name without the
+hash, hugeass, unless show_hash: another version of it is listed too) */
 static void add_pc_entry(
 	short family,
-	char const *file)
+	char const *file,
+	boolean show_hash)
 {
+	char base[MAP_NAME_LENGTH];
+	char const *full_file = file;
 	char map_name[MAP_NAME_LENGTH];
 	wchar_t name[DISPLAY_NAME_LENGTH];
 	wchar_t display_name[DISPLAY_NAME_LENGTH];
@@ -723,6 +729,9 @@ static void add_pc_entry(
 	short known;
 
 	name[0] = 0;
+	snprintf(base, sizeof(base), "%.*s", (int)(family == _map_family_custom_edition && !show_hash ?
+		map_share_name_base_length(file) : (short)strlen(file)), file);
+	file = base;
 	if (family == _map_family_halomd)
 	{
 		wchar_t const *known_name = halomd_map_name(file);
@@ -777,7 +786,7 @@ static void add_pc_entry(
 	wide_append(display_name, DISPLAY_NAME_LENGTH, L"\r\n[");
 	wide_append(display_name, DISPLAY_NAME_LENGTH, mark);
 	wide_append(display_name, DISPLAY_NAME_LENGTH, L"]");
-	snprintf(map_name, sizeof(map_name), "%s%s", file, map_family_suffix(family));
+	snprintf(map_name, sizeof(map_name), "%s%s", full_file, map_family_suffix(family));
 	add_entry(map_name, display_name, lobby_name, description, NONE, picture_index, picture_map);
 }
 
@@ -863,7 +872,20 @@ void ui_map_list_refresh(
 		/* (in the order of their names, as the list shows them) */
 		qsort(found.names, found.count, MAP_NAME_LENGTH, (int (*)(void const *, void const *))_stricmp);
 		for (file = 0; file < found.count; file++)
-			add_pc_entry(family, found.names[file]);
+		{
+			/* (port: the hash of a map named for it shown only where another
+			version of it is listed: map sharing) */
+			short base_length = map_share_name_base_length(found.names[file]);
+			boolean show_hash = FALSE;
+			long other;
+
+			for (other = 0; family == _map_family_custom_edition && other < found.count && !show_hash; other++)
+			{
+				show_hash = other != file && map_share_name_base_length(found.names[other]) == base_length &&
+					!_strnicmp(found.names[other], found.names[file], base_length);
+			}
+			add_pc_entry(family, found.names[file], show_hash);
+		}
 		counts[family] = found.count;
 	}
 	if (memcmp(counts, logged_counts, sizeof(counts)))

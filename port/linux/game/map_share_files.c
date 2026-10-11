@@ -18,10 +18,12 @@ pieces' hashes any player sends it, and each piece as it arrives.
 #include "errors.h"
 #include "tag_files/tag_files.h"
 #include "bungie_net/common/thread.h"
-#include "cache_file_formats.h"
-#include "custom_edition_cache.h"
-#include "custom_edition_maps.h"
 #include "map_share.h"
+/* (port: Arena Evolved's Custom Edition maps, ChupathingyCE's, in place of
+OpenCE's custom_edition_cache.h, custom_edition_maps.h and
+cache_file_formats.h) */
+#include "ae_map_share.h"
+#include "halo_map_families.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -489,8 +491,9 @@ void map_share_name_map(
 	short index;
 
 	/* (the custom_maps folder's alone: an install of Custom Edition is
-	left as it is, for Custom Edition) */
-	if (csstrcasecmp(folder, CUSTOM_EDITION_MAP_DIRECTORY) || map_share_name_hashed(name) || naming_known(key))
+	left as it is, for Custom Edition. Port: maps_ce's and custom_maps's,
+	map_share_folder_shared) */
+	if (!map_share_folder_shared(folder) || map_share_name_hashed(name) || naming_known(key))
 		return;
 	for (index = 0; index < globals->naming_count; index++)
 	{
@@ -571,51 +574,89 @@ static void naming_finish(
 	custom_edition_maps_look_again();
 }
 
+/* the map <folder><name>.map hashed here and named for its hash, unless it
+is loaded (a map's hash takes a fraction of a second to work out) */
+static void naming_now(
+	char const *folder,
+	char const *name)
+{
+	struct naming naming;
+	struct hash_job job;
+
+	csmemset(&naming, 0, sizeof(naming));
+	csmemset(&job, 0, sizeof(job));
+	csstrncpy(naming.folder, folder, sizeof(naming.folder) - 1);
+	csstrncpy(naming.name, name, sizeof(naming.name) - 1);
+	if (csstrlen(folder) + csstrlen(name) + 4 >= sizeof(job.path))
+		return;
+	csprintf(job.path, "%s%s.map", folder, name);
+	/* (in use: named another time, not hashed for nothing now) */
+	if (custom_edition_cache_loaded_path() && !csstrcasecmp(custom_edition_cache_loaded_path(), job.path))
+		return;
+	hash_job_run(&job);
+	naming_finish(&naming, &job);
+	free(job.piece_hashes);
+}
+
+boolean map_share_name_now(
+	char const *folder,
+	char const *name)
+{
+	if (!map_share_folder_shared(folder) || map_share_name_hashed(name) || naming_known(naming_key(folder, name)))
+		return FALSE;
+	naming_now(folder, name);
+	return TRUE;
+}
+
+/* (port: the level names are the game's, <name>@ce, and the shared folders
+maps_ce and custom_maps: ae_map_share.h) */
 void map_share_level_name_hash(
 	char *level_name,
 	long size)
 {
-	struct naming naming;
-	struct hash_job job;
 	char path[MAP_SHARE_PATH_SIZE];
+	char folder[MAP_SHARE_PATH_SIZE];
 	char const *name;
 	char const *hashed;
+	char const *suffix = map_family_suffix(_map_family_custom_edition);
 
 	if (!level_name || !custom_edition_level_name(level_name))
 		return;
-	name = tag_name_strip_path(level_name);
+	name = map_share_level_file(level_name);
 	if (map_share_name_hashed(name) || !custom_edition_map_file_path(level_name, path))
 		return;
-	/* (the file's own name, which may have its hash already) */
+	/* (the file's own name, which may have its hash already, in a shared
+	folder) */
 	hashed = tag_name_strip_path(path);
-	if (_strnicmp(path, CUSTOM_EDITION_MAP_DIRECTORY, csstrlen(CUSTOM_EDITION_MAP_DIRECTORY)) ||
-		strchr(path + csstrlen(CUSTOM_EDITION_MAP_DIRECTORY), '\\'))
-	{
+	csmemset(folder, 0, sizeof(folder));
+	csstrncpy(folder, path, (unsigned long)(hashed - path));
+	if (!map_share_folder_shared(folder))
 		return;
-	}
 	if (!map_share_name_hashed(name) && csstrlen(hashed) > 4 && csstrlen(hashed) - 4 == csstrlen(name) &&
 		!_strnicmp(hashed, name, csstrlen(name)))
 	{
-		/* named now: hashed here (a map's hash takes a fraction of a second
-		to work out) and renamed, unless it is loaded */
-		csmemset(&naming, 0, sizeof(naming));
-		csmemset(&job, 0, sizeof(job));
-		csstrncpy(naming.folder, CUSTOM_EDITION_MAP_DIRECTORY, sizeof(naming.folder) - 1);
-		csstrncpy(naming.name, name, sizeof(naming.name) - 1);
-		csstrncpy(job.path, path, sizeof(job.path) - 1);
-		hash_job_run(&job);
-		naming_finish(&naming, &job);
-		free(job.piece_hashes);
+		/* named now: hashed here and renamed, unless it is loaded */
+		naming_now(folder, name);
 		if (!custom_edition_map_file_path(level_name, path))
 			return;
 		hashed = tag_name_strip_path(path);
 	}
-	/* the level name of the file found: custom_maps\<name>_<hash> */
-	if (csstrlen(hashed) <= 4 || csstrlen(CUSTOM_EDITION_LEVEL_NAME_PREFIX) + csstrlen(hashed) - 4 >= (unsigned long)size)
+	/* the level name of the file found: <name>_<hash>@ce (custom_maps\<name>_<hash>
+	in the protocol), short enough for the protocol's */
+	if (csstrlen(hashed) <= 4 || csstrlen(CUSTOM_EDITION_LEVEL_NAME_PREFIX) + csstrlen(hashed) - 4 >=
+		(unsigned long)CUSTOM_EDITION_MAXIMUM_LEVEL_NAME_LENGTH + 1 ||
+		csstrlen(hashed) - 4 + csstrlen(suffix) >= (unsigned long)size)
+	{
 		return;
-	csprintf(level_name, "%s%.*s", CUSTOM_EDITION_LEVEL_NAME_PREFIX, (int)(csstrlen(hashed) - 4), hashed);
-	if (!map_share_name_hashed(tag_name_strip_path(level_name)))
-		return;
+	}
+	{
+		char file[MAP_SHARE_PATH_SIZE];
+
+		csprintf(file, "%.*s", (int)(csstrlen(hashed) - 4), hashed);
+		if (!map_share_name_hashed(file))
+			return;
+		csprintf(level_name, "%s%s", file, suffix);
+	}
 	error(_error_silent, "map sharing: the game's map is %s", level_name);
 }
 

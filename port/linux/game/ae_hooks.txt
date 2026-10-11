@@ -52,6 +52,9 @@ port/linux/src/port_config.c	{ "game.mcc_path", _config_string, "\"\"", NULL, _e
 port/linux/src/port_config.c	{ "game.mcc_use", _config_string, "\"ask\"", "HALO_MCC_USE", _environment_value, /* AE hook */\n_platform_desktop,
 port/linux/game/map_families.c	#include "ae_glue_mcc.h" /* AE hook */
 port/linux/game/map_families.c	if (ae_mcc_resource(name, path, size)) /* AE hook */\nreturn TRUE;
+# map sharing (OpenCE build-190) on AE's Custom Edition maps: port/linux/game/ae_map_share.c
+port/linux/game/map_families.c	#include "ae_map_share.h" /* AE hook */
+port/linux/game/map_families.c	if (ae_map_share_find(family, file, path, size)) /* AE hook */\nreturn TRUE;
 port/linux/game/ce_resources.c	#include "ae_glue_mcc.h" /* AE hook */
 port/linux/game/ce_resources.c	return ce_refuse("there is no %s%s", path, ae_mcc_refusal_note()); /* AE hook */
 port/linux/src/xbox_files.c	#include "ae_mcc.h" /* AE hook */

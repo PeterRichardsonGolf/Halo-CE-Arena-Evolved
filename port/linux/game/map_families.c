@@ -12,6 +12,7 @@ play it); the files are looked for only on the builds that play such maps
 #include "cseries/cseries_windows.h"
 #include "halo_map_families.h"
 #include "ae_glue_mcc.h" /* AE hook */
+#include "ae_map_share.h" /* AE hook */
 
 #include <stdio.h>
 #include <string.h>
@@ -369,6 +370,8 @@ boolean map_family_find(
 		if (cache_file_is(path, family_cache_version(family), FALSE))
 			return TRUE;
 	}
+	if (ae_map_share_find(family, file, path, size)) /* AE hook */
+		return TRUE;
 	path[0] = 0;
 	return FALSE;
 }

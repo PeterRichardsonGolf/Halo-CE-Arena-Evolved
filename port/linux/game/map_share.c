@@ -31,7 +31,9 @@ session as it asked the host (p2p.c: a player answers holders of the invite
 it joined with while it may share). Each downloaded file is written beside
 the others as <name>.part and renamed when whole (a .part found again is
 checked piece by piece and taken up where it was), into custom_maps under
-the map's own name, which is its hash's.
+the map's own name, which is its hash's. (Arena Evolved: into maps_ce, its
+Custom Edition maps' folder; its level names are the game's, <name>@ce, and
+its messages' the protocol's, custom_maps\<name>: ae_map_share.h.)
 
 A machine still downloading does not hold the lobby: the machines that
 have the map start, and it joins the game in progress once the download is
@@ -59,10 +61,11 @@ done. The host does not drop a machine that says it is downloading.
 #include "text/font_group.h"
 #include "rasterizer/rasterizer.h"
 #include "network_distributed.h"
-#include "cache_file_formats.h"
-#include "custom_edition_cache.h"
-#include "custom_edition_maps.h"
 #include "map_share.h"
+/* (port: Arena Evolved's Custom Edition maps, ChupathingyCE's, in place of
+OpenCE's custom_edition_cache.h and cache_file_formats.h) */
+#include "ae_map_share.h"
+#include "halo_map_families.h"
 #include "../src/p2p.h"
 
 #include <stdio.h>
@@ -1207,7 +1210,8 @@ static void download_ask(
 
 	csmemset(&message, 0, sizeof(message));
 	map_share_fill_header(&message.header, _distributed_message_map_share_request, (word)sizeof(message));
-	level_name_copy(message.request.level_name, download->level_name);
+	/* (port: as the protocol names it) */
+	map_share_level_to_wire(message.request.level_name, download->level_name);
 	message.request.version = download->version;
 	message.request.wanted = download->wanted;
 	network_distributed_client_send_reliably(&message, (word)sizeof(message));
@@ -1252,7 +1256,7 @@ boolean map_share_download_begin(
 			return TRUE;
 		download_end(FALSE);
 	}
-	name = tag_name_strip_path(level_name);
+	name = map_share_level_file(level_name);
 	wanted = files_wanted(level_name);
 	/* (the map named for its hash, so that the download is the host's
 	version under its own name, a file of custom_maps alone, whatever the
@@ -1359,7 +1363,7 @@ static void download_offered(
 	struct distributed_map_share_offer_file const *files)
 {
 	struct download *download = &map_share_globals.download;
-	char const *name = tag_name_strip_path(download->level_name);
+	char const *name = map_share_level_file(download->level_name);
 	byte offered = 0;
 	short index;
 
@@ -1377,6 +1381,8 @@ static void download_offered(
 	}
 	download->in_progress = TEST_FLAG(offer->flags, _offer_in_progress_bit);
 	download->file_count = offer->file_count;
+	/* (port: maps_ce, which a new install has not made yet) */
+	map_share_folder_make();
 	for (index = 0; index < download->file_count; index++)
 	{
 		struct download_file *file = &download->files[index];
@@ -1623,7 +1629,7 @@ static void download_finish(
 		}
 		if (!MoveFileA(file->part_path, file->final_path))
 		{
-			download_fail("The downloaded map could not be put in custom_maps (a file of its name is there).");
+			download_fail("The downloaded map could not be put in maps_ce (a file of its name is there).");
 			return;
 		}
 	}
@@ -1635,6 +1641,9 @@ static void download_finish(
 		return;
 	}
 	error(_error_silent, "map sharing: downloaded %s (%lu bytes)", download->level_name, download->done_bytes);
+	/* (port: its scripts held to a downloaded map's rules this run:
+	halo_map_families.h, map_is_downloaded) */
+	map_downloaded_mark(download->level_name);
 	download_report(_progress_done);
 	/* (sent on to the others from here, without hashing them again) */
 	for (index = 0; index < download->file_count; index++)
@@ -2116,7 +2125,7 @@ static void frame_hashes(
 	file->piece_hashes = file->hashes_coming;
 	file->hashes_coming = NULL;
 	if (!download_file_open(file, connection->download_file[body[0]]))
-		download_fail("The map could not be written to custom_maps.");
+		download_fail("The map could not be written to maps_ce.");
 }
 
 /* the frames read in, handled */
@@ -2579,7 +2588,7 @@ static void download_update(
 			/* (unreadable, or changed meanwhile: made anew) */
 			else if (!download_file_create(file))
 			{
-				download_fail("The map could not be written to custom_maps.");
+				download_fail("The map could not be written to maps_ce.");
 				return;
 			}
 			download->progress_at = now;
@@ -2683,7 +2692,8 @@ static void host_offer(
 
 	csmemset(&message, 0, sizeof(message));
 	map_share_fill_header(&message.header, _distributed_message_map_share_offer, size);
-	csmemcpy(message.offer.level_name, machine->request.level_name, LEVEL_NAME_BYTES);
+	/* (port: as the protocol names it) */
+	map_share_level_to_wire(message.offer.level_name, machine->request.level_name);
 	message.offer.result = result;
 	message.offer.file_count = (byte)count;
 	message.offer.flags = host_in_game() ? FLAG(_offer_in_progress_bit) : 0;
@@ -2772,7 +2782,7 @@ static void host_request(
 	}
 	/* (the game's map alone, a Custom Edition map's, named for its hash if
 	it is asked for) */
-	name = tag_name_strip_path(request->level_name);
+	name = map_share_level_file(request->level_name);
 	if (!game || csstrcmp(game->map.name, request->level_name) || !custom_edition_level_name(request->level_name) ||
 		!custom_edition_map_file_path(request->level_name, path) ||
 		(TEST_FLAG(request->wanted, _map_share_file_map) && !map_share_name_hashed(name)))
@@ -2856,7 +2866,7 @@ static void host_update(
 			for (file_index = 0; file_index < machine->file_count; file_index++)
 			{
 				struct map_share_file *file = map_share_file_get(machine->catalog_files[file_index]);
-				char const *name = tag_name_strip_path(machine->request.level_name);
+				char const *name = map_share_level_file(machine->request.level_name);
 				char digits[MAP_SHARE_NAME_DIGITS + 1];
 
 				map_share_hash_digits(file->hash, digits);
@@ -2950,6 +2960,8 @@ void map_share_handle_message(
 		csmemcpy(&request, entries, sizeof(request));
 		if (!level_name_valid(request.level_name))
 			return;
+		/* (port: as the game names it) */
+		map_share_level_from_wire(request.level_name);
 		host_request(machine_index, &request);
 		break;
 	}
@@ -2980,6 +2992,8 @@ void map_share_handle_message(
 			return;
 		}
 		csmemcpy(files, entries + sizeof(offer), offer.file_count * sizeof(files[0]));
+		/* (port: as the game names it) */
+		map_share_level_from_wire(offer.level_name);
 		download_offered(&offer, files);
 		break;
 	}
@@ -3061,7 +3075,7 @@ void map_share_render(
 	font_tag_index = interface_get_tag_index(_interface_font_terminal);
 	if (font_tag_index == NONE)
 		return;
-	name = tag_name_strip_path(download->level_name);
+	name = map_share_level_file(download->level_name);
 	base_length = map_share_name_base_length(name);
 	if (download->state == _download_asking)
 	{

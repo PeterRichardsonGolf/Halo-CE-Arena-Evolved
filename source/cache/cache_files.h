@@ -97,6 +97,10 @@ void cache_files_show_multiplayer_unavailable(
 tags are in: cache_files_tag_cache) */
 boolean cache_file_tags_are_ce(
 	void);
+/* port: the Custom Edition map file open (loaded, or last loaded), or NULL
+(map sharing: port/linux/game/ae_map_share.c) */
+char const *cache_files_ce_map_loaded_path(
+	void);
 #endif
 unsigned long cache_files_map_version(
 	char const *map_name);

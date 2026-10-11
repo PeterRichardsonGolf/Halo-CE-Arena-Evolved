@@ -3169,9 +3169,10 @@ boolean network_game_client_version_compatible(
 	unsigned int ours = (unsigned int)delta_legacy_announce();
 	boolean distributed = (flags & HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG) != 0;
 	char message[400];
-	/* AE: no host below this machine's own network version (25) is joined, whatever
-	the range above: older AE hosts lack the grenade/teleporter netcode fixes, and
-	hosts of 24 do not send units' integrated lights */
+	/* AE: no host below this machine's own network version (27) is joined, whatever
+	the range above: older AE hosts lack the grenade/teleporter netcode fixes, hosts
+	of 24 do not send units' integrated lights, and hosts of 25 and 26 (Arena
+	Evolved 0.2.2-beta, DamnationCE 0.3.40) do not share Custom Edition maps */
 	unsigned int ae_floor = (unsigned int)HALO_PORT_NETWORK_VERSION;
 
 	if (theirs < ae_floor) /* AE */

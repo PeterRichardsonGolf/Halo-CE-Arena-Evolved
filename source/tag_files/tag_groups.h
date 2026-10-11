@@ -35,8 +35,12 @@ enum tag_field_type
 
 /* ---------- macros */
 
-/* port: tag_block_get_element_fast (below) */
-#define TAG_BLOCK_GET_ELEMENT(block_address, index, type) ((type *)tag_block_get_element_fast((block_address), (index), sizeof(type)))
+/* port: every element through tag_block_get_element_with_size (Arena
+Evolved: not upstream's tag_block_get_element_fast, which reads the block's
+definition and address as host pointers: a Custom Edition map's blocks keep
+Halo PC's definitions' addresses and go through ce_tags_pointer, and the
+64-bit build's are Xbox addresses) */
+#define TAG_BLOCK_GET_ELEMENT(block_address, index, type) ((type *)tag_block_get_element_with_size((block_address), (index), sizeof(type)))
 
 /* ---------- structures */
 
@@ -149,24 +153,6 @@ address space, as tag_empty_data's bytes are) */
 char const *tag_empty_string(void);
 void *tag_data_get_pointer(struct tag_data const *data, long offset, long size);
 void *tag_block_get_element_with_size(struct tag_block const *block, long index, long element_size);
-
-/* port: tag_block_get_element_with_size without a call where all it checks
-holds (the game's most frequent call: a fortieth of the web build's frame),
-and that function where something does not, which notes and handles it
-(__inline__: msvc_comdat.c makes __inline weak, which a static function
-cannot be) */
-static __inline__ void *tag_block_get_element_fast(
-	struct tag_block const *block,
-	long index,
-	long element_size)
-{
-	if (block && index >= 0 && index < block->count && block->address &&
-		(!block->definition || block->definition->element_size == element_size))
-	{
-		return (char *)block->address + index * element_size;
-	}
-	return tag_block_get_element_with_size(block, index, element_size);
-}
 
 /* ---------- prototypes/CACHE_FILES.C */
 

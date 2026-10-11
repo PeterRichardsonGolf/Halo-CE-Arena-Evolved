@@ -462,6 +462,9 @@ platform.h) */
 
 static struct cached_map_file ce_map_file;
 static char ce_map_name[64];
+/* port: its file (map sharing does not rename a map in use:
+cache_files_ce_map_loaded_path) */
+static char ce_map_path[256];
 /* each request's file, if not the map's: a Custom Edition map's resource
 map, for its indexed tags' pixels and samples (port/linux/game/ce_resources.c) */
 static HANDLE ce_request_files[MAXIMUM_SIMULTANEOUS_CACHE_REQUESTS];
@@ -479,6 +482,12 @@ static boolean ce_map_name_is(
 	const char *map_name)
 {
 	return map_family_parse(map_name, NULL, 0) != _map_family_xbox;
+}
+
+char const *cache_files_ce_map_loaded_path(
+	void)
+{
+	return ce_map_file.file ? ce_map_path : NULL;
 }
 
 /* the map named <name>@ce, @md or @pc opened in its slot (once): FALSE if
@@ -550,6 +559,7 @@ static boolean ce_map_open(
 		ce_map_file.header = header;
 		memset(ce_map_name, 0, sizeof(ce_map_name));
 		strncpy(ce_map_name, map_name, sizeof(ce_map_name) - 1);
+		snprintf(ce_map_path, sizeof(ce_map_path), "%s", path);
 		error(_error_silent, "%s map %s: %s, build %.32s", map_family_kind(family), map_name, path,
 			ce_map_file.header.build);
 		return TRUE;

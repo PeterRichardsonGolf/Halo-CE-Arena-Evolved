@@ -693,8 +693,8 @@ static const struct config_setting config_settings[] =
 		"1440)." },
 	{ "network.map_share", _config_boolean, "true", "HALO_NET_MAP_SHARE", _environment_value, _platform_all,
 		"Hosting: send a player who joins without the game's Custom Edition map\n"
-		"the map (from custom_maps), and the resource maps it needs that the\n"
-		"player lacks (bitmaps.map, sounds.map, loc.map). The game's other\n"
+		"the map (from maps_ce or custom_maps), and the resource maps it needs\n"
+		"that the player lacks (bitmaps.map, sounds.map, loc.map). The game's other\n"
 		"players help (network.map_seed)." },
 	{ "network.map_share_upload", _config_integer, "1024", "HALO_NET_MAP_SHARE_UPLOAD", _environment_value,
 		_platform_all,
@@ -711,7 +711,7 @@ static const struct config_setting config_settings[] =
 	{ "network.map_download", _config_boolean, "true", "HALO_NET_MAP_DOWNLOAD", _environment_value, _platform_all,
 		"Joining a game on a Custom Edition map this machine does not have:\n"
 		"download it (and the resource maps it needs) from the game's players\n"
-		"into custom_maps, if its host shares it (network.map_share); false\n"
+		"into maps_ce, if its host shares it (network.map_share); false\n"
 		"leaves the game, saying which map is missing." },
 	{ "network.coop_public", _config_boolean, "false", "HALO_NET_COOP_PUBLIC", _environment_value, _platform_all,
 		"Whether an online co-op game (Create Game > Internet, a SINGLEPLAYER\n"

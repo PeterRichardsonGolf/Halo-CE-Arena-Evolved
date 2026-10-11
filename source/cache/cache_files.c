@@ -138,6 +138,7 @@ symbols in this file:
 #include "halo_map_families.h"
 #include "models/models.h"
 #include "map_share.h" /* port: port/linux/game/map_share.c */
+#include "ae_map_share.h" /* port: map sharing on Arena Evolved's Custom Edition maps */
 
 /* ---------- constants */
 
@@ -1275,9 +1276,21 @@ boolean cache_files_map_present(
 		{
 			unsigned long own = cache_files_map_version(map_name);
 
-			/* (the host's version of it, when the host says which) */
+			/* (the host's version of it, when the host says which; port: a
+			Custom Edition map whose resource maps are not here asks the host
+			for them, map sharing, else plays as before, its load telling
+			what is missing) */
 			if (!version || own == version)
+			{
+				if (family == _map_family_custom_edition && map_share_resource_maps_missing(map_name))
+				{
+					snprintf(message, sizeof(message),
+						"The %s map %.63s needs Custom Edition's bitmaps.map, sounds.map and loc.map in %s.",
+						map_family_badge(family), file, map_family_folder(family));
+					map_share_download_begin(map_name, version, message);
+				}
 				return TRUE;
+			}
 			platform_log("map version: %s is %08lx here, %08lx on the host", map_name, own, version);
 			snprintf(message, sizeof(message),
 				"Your %s map %.63s is another version than the host's. Copy the host's %.63s.map into %s.",
