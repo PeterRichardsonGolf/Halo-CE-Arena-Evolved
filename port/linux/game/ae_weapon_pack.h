@@ -77,6 +77,9 @@ boolean ae_weapon_pack_fingerprint(unsigned char *fingerprint);
 /* the slot's pack's weapon's definition (its weapon tag) on the loaded map, or NONE: no such weapon, or the pack
 is not added to this map */
 long ae_weapon_pack_weapon_definition(short slot, short weapon);
+/* whether a tag of the loaded map is one of the pack's own (added with it), not the map's: what may be retuned
+for the pack's weapons without touching the map's (ae_burst_rifle.c) */
+boolean ae_weapon_pack_tag_is_own(long tag_index);
 /* (game_engine_give_loadout) a player was given a pack weapon as the loadout's primary (0) or secondary (1):
 the first of each on a map is logged */
 void ae_weapon_pack_loadout_given(short loadout_slot, long definition_index);

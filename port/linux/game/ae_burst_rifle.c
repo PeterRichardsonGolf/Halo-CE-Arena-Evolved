@@ -60,6 +60,7 @@ machine's players' rounds that hits an object).
 #include "ae_burst_rifle.h"
 
 int config_boolean(const char *name);
+long config_integer(const char *name);
 double config_real(const char *name);
 
 /* ---------- the numbers */
@@ -133,6 +134,11 @@ is seen as 2 atan(0.85 tan(F/2)): CE needs F = 2 atan(tan(23.3 / 2) / 0.85) = 27
 typedef char verify_weapon_magazines_maximum[
 	sizeof(((struct weapon_datum *)0)->weapon.magazines) / sizeof(struct weapon_magazine) == WEAPON_MAGAZINES_MAXIMUM ? 1 : -1];
 
+/* (debug.burst_autofire 2) the pull in the recovery: with this many of its ticks left (the recoveries are 5 and
+6 ticks); and the next pull this many ticks after the recovery */
+#define AUTOFIRE_EARLY_PAUSE_TICKS 3
+#define AUTOFIRE_LATE_TICKS 15
+
 /* the burst rifles one map may hold (one pack, its weapons) */
 #define BURST_RIFLES_MAXIMUM 4
 
@@ -143,9 +149,14 @@ static struct
 	short count;
 	long weapon_definitions[BURST_RIFLES_MAXIMUM];
 	long projectile_definitions[BURST_RIFLES_MAXIMUM];
-	/* (debug.weapon_log, test aids: once a map) */
+	/* the test aids' settings, read once a map (debug.weapon_log, debug.burst_autofire, debug.weapon_hit_log) */
+	boolean weapon_log;
+	long autofire;
+	boolean hit_log;
+	/* (test aids: once a map) */
 	boolean zoomed_assist_logged;
 	boolean autofire_logged;
+	boolean kick_logged;
 	short zoomed_view_ticks[MAXIMUM_LOCAL_PLAYERS];
 	/* (debug.weapon_log: bursts started on this map, by anyone) */
 	long bursts_started;
@@ -164,6 +175,8 @@ static struct burst_state
 	real recovery_carry;
 	/* (debug.weapon_log: the tick of the last burst's first round) */
 	long burst_start_tick;
+	/* (debug.burst_autofire 2: the ticks the rifle has been ready since its recovery ended) */
+	long autofire_idle_ticks;
 } burst_states[MAXIMUM_OBJECTS_PER_MAP];
 
 /* (the hit log: the victim before the damage) */
@@ -194,6 +207,7 @@ static struct burst_state *burst_state_get(
 		state->trigger_was_down = TRUE;
 		state->recovery_carry = 0.0f;
 		state->burst_start_tick = NONE;
+		state->autofire_idle_ticks = 0;
 	}
 	return state;
 }
@@ -242,6 +256,7 @@ static void burst_rifle_setup(
 	char const *name = tag_get_name(weapon_definition_index);
 	struct weapon_trigger_definition *trigger_definition;
 	long projectile_definition_index = NONE;
+	char const *name_of_tag;
 
 	if (weapon_definition->weapon.triggers.count < 1 || burst_rifles.count >= BURST_RIFLES_MAXIMUM)
 	{
@@ -311,7 +326,16 @@ static void burst_rifle_setup(
 	}
 
 	projectile_definition_index = trigger_definition->projectile.index;
-	if (projectile_definition_index != NONE)
+	/* (only the pack's own tags are retuned: a bullet or damage effect the pack shares with the map is the map's
+	weapons' too) */
+	if (projectile_definition_index != NONE && !ae_weapon_pack_tag_is_own(projectile_definition_index))
+	{
+		name_of_tag = tag_get_name(projectile_definition_index);
+		error(_error_silent, "ae burst rifle: the bullet '%s' is the map's, not the pack's: left as it is",
+			name_of_tag ? name_of_tag : "?");
+	projectile_definition_index = NONE;
+	}
+	else if (projectile_definition_index != NONE)
 	{
 		struct projectile_definition *projectile = projectile_definition_get(projectile_definition_index);
 
@@ -325,7 +349,14 @@ static void burst_rifle_setup(
 		error(_error_silent, "ae burst rifle: bullet now %g wu a second, range %g wu, gravity 0",
 			(double)(projectile->projectile.initial_velocity * TICKS_PER_SECOND), (double)projectile->projectile.maximum_range);
 
-		if (projectile->projectile.impact_damage.index != NONE)
+		if (projectile->projectile.impact_damage.index != NONE &&
+			!ae_weapon_pack_tag_is_own(projectile->projectile.impact_damage.index))
+		{
+			name_of_tag = tag_get_name(projectile->projectile.impact_damage.index);
+			error(_error_silent, "ae burst rifle: the bullet's damage '%s' is the map's, not the pack's: left as it is",
+				name_of_tag ? name_of_tag : "?");
+		}
+		else if (projectile->projectile.impact_damage.index != NONE)
 		{
 			struct damage_effect_definition *damage = damage_effect_definition_get(projectile->projectile.impact_damage.index);
 
@@ -419,6 +450,9 @@ void ae_burst_rifle_new_map(
 	memset(&burst_rifles, 0, sizeof(burst_rifles));
 	memset(burst_states, 0, sizeof(burst_states));
 	hit_before.projectile_index = NONE;
+	burst_rifles.weapon_log = config_boolean("debug.weapon_log") ? TRUE : FALSE;
+	burst_rifles.autofire = config_integer("debug.burst_autofire");
+	burst_rifles.hit_log = config_boolean("debug.weapon_hit_log") ? TRUE : FALSE;
 	if (!slot)
 		return;
 	for (weapon = 0; weapon < ae_weapon_pack_weapon_count(slot); weapon++)
@@ -450,7 +484,16 @@ long ae_burst_rifle_kick(
 	short trigger_index,
 	long damage_effect_index)
 {
-	return trigger_index == 0 && ae_burst_rifle_definition(weapon_definition_index) ? NONE : damage_effect_index;
+	if (trigger_index != 0 || !ae_burst_rifle_definition(weapon_definition_index))
+		return damage_effect_index;
+	if (damage_effect_index != NONE && burst_rifles.weapon_log && !burst_rifles.kick_logged)
+	{
+		char const *name = tag_get_name(damage_effect_index);
+
+		burst_rifles.kick_logged = TRUE;
+		error(_error_silent, "ae burst rifle: the firer's kick '%s' removed", name ? name : "?");
+	}
+	return NONE;
 }
 
 void ae_burst_rifle_round(
@@ -469,8 +512,13 @@ void ae_burst_rifle_round(
 	burst->rounds_remaining = fired ? burst->rounds_remaining - 1 : 0;
 	if (burst->rounds_remaining == 0)
 		burst->pause_ticks = burst_recovery_ticks(burst);
-	if (config_boolean("debug.weapon_log"))
+	if (burst_rifles.weapon_log)
 	{
+		struct weapon_definition const *weapon_definition = weapon_definition_get(weapon->definition_index);
+		struct weapon_trigger_definition const *trigger_definition =
+			TAG_BLOCK_GET_ELEMENT(&weapon_definition->weapon.triggers, 0, struct weapon_trigger_definition);
+		struct weapon_magazine const *magazine = magazine_index_valid(weapon_definition, trigger_definition->magazine_index) ?
+			&weapon->weapon.magazines[trigger_definition->magazine_index] : NULL;
 		long tick = (long)game_time_get();
 		short round = (short)(BURST_ROUNDS - burst->rounds_remaining);
 
@@ -480,9 +528,10 @@ void ae_burst_rifle_round(
 				tick, burst->burst_start_tick == NONE ? -1L : tick - burst->burst_start_tick);
 			burst->burst_start_tick = tick;
 		}
-		error(_error_silent, "ae burst rifle: tick %ld, round %d of %d %s, %d loaded, %d in reserve, recovery %d",
-			tick, (int)round, BURST_ROUNDS, fired ? "fired" : "not fired", (int)weapon->weapon.magazines[0].rounds_loaded,
-			(int)weapon->weapon.magazines[0].rounds_total, burst->rounds_remaining == 0 ? (int)burst->pause_ticks : 0);
+		error(_error_silent, "ae burst rifle: tick %ld, round %d of %d %s, %d loaded, %d in reserve, recovery %d, firing effect %d of %d",
+			tick, (int)round, BURST_ROUNDS, fired ? "fired" : "not fired", magazine ? (int)magazine->rounds_loaded : 0,
+			magazine ? (int)magazine->rounds_total : 0, burst->rounds_remaining == 0 ? (int)burst->pause_ticks : 0,
+			(int)weapon->weapon.triggers[0].firing_effect_index, (int)trigger_definition->firing_effects.count);
 	}
 }
 
@@ -514,20 +563,36 @@ void ae_burst_rifle_trigger(
 
 	pulled = *trigger_down && !burst->trigger_was_down;
 	burst->trigger_was_down = *trigger_down ? TRUE : FALSE;
-	/* (debug.burst_autofire: a local player holding the rifle pulls again as soon as it may, to measure the
-	fastest cadence; only where this machine makes the game, a host or no network game) */
-	if (!pulled && burst->rounds_remaining == 0 && burst->pause_ticks == 0 && local_player_unit(weapon->object.parent_object_index) &&
-		config_boolean("debug.burst_autofire"))
+	/* (debug.burst_autofire, a test aid, for a local player holding the rifle, only where this machine makes the
+	game, a host or no network game: 1 pulls again as soon as the rifle allows, the fastest cadence; 2 pulls once in
+	the middle of each recovery, which must be lost, and again AUTOFIRE_LATE_TICKS after the recovery) */
+	if (!pulled && burst_rifles.autofire && burst->rounds_remaining == 0 && local_player_unit(weapon->object.parent_object_index))
 	{
 		boolean honoured = game_connection() != _game_connection_network_client;
+		boolean pull = FALSE;
 
 		if (!burst_rifles.autofire_logged)
 		{
 			burst_rifles.autofire_logged = TRUE;
-			error(_error_silent, honoured ? "ae burst rifle: debug.burst_autofire on" :
-				"ae burst rifle: debug.burst_autofire ignored: a client in another's game");
+			error(_error_silent, honoured ? "ae burst rifle: debug.burst_autofire %ld on" :
+				"ae burst rifle: debug.burst_autofire %ld ignored: a client in another's game", burst_rifles.autofire);
 		}
-		if (honoured)
+		if (burst->pause_ticks > 0)
+		{
+			burst->autofire_idle_ticks = 0;
+			if (burst_rifles.autofire == 2 && burst->pause_ticks == AUTOFIRE_EARLY_PAUSE_TICKS)
+			{
+				pull = TRUE;
+				if (burst_rifles.weapon_log)
+					error(_error_silent, "ae burst rifle: tick %ld, a pull during the recovery (%d ticks left)",
+						(long)game_time_get(), (int)burst->pause_ticks);
+			}
+		}
+		else
+		{
+			pull = burst_rifles.autofire != 2 || ++burst->autofire_idle_ticks > AUTOFIRE_LATE_TICKS;
+		}
+		if (honoured && pull)
 		{
 			pulled = TRUE;
 			*trigger_down = TRUE;
@@ -570,7 +635,7 @@ void ae_burst_rifle_trigger(
 	if (*trigger_down)
 		SET_FLAG(trigger->flags, TRIGGER_RELEASED_SINCE_LAST_SHOT_BIT, TRUE);
 
-	if (config_boolean("debug.weapon_log") && local_player_unit(weapon->object.parent_object_index))
+	if (burst_rifles.weapon_log && local_player_unit(weapon->object.parent_object_index))
 		zoomed_view_log(weapon_index, weapon->object.parent_object_index);
 }
 
@@ -600,7 +665,7 @@ void ae_burst_rifle_hit_before(
 	struct object_datum const *victim;
 
 	hit_before.projectile_index = NONE;
-	if (!burst_rifles.count || object_index == NONE || !config_boolean("debug.weapon_hit_log"))
+	if (!burst_rifles.count || object_index == NONE || !burst_rifles.hit_log)
 		return;
 	projectile = object_get(projectile_index);
 	if (!burst_rifle_projectile(projectile->definition_index) || projectile->object.owner_player_index == NONE ||

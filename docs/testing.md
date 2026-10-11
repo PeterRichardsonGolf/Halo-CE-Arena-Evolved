@@ -58,15 +58,19 @@ NHE's badcreek (`mods/NHE`) and CE+ X's Blood Gulch beside its own rifle (`mods/
 The battle rifle's behaviour (tools/test_weapon_pack_rifle.py, port/linux/game/ae_burst_rifle.c; the same three
 variables, the CE+ X case with the rotation's): the set-up lines (`ae burst rifle: zoom 1 level 2.563x ...`, spread,
 magazine, bullet, damage, aim assist), the cadence with `debug.burst_autofire` / `HALO_BURST_AUTOFIRE=1` (the
-holder pulls again as soon as the rifle allows; a host or no network game only, a client ignores it and logs so),
+holder pulls again as soon as the rifle allows; `2`: one pull in the middle of each recovery, which is lost, and
+another half a second after it; a host or no network game only, a client ignores it and logs so; the pulls are made
+in the host's weapon update, not its player's input, so other machines of a network game do not see these bursts),
 250 ms pulls with `debug.test_input` (`HALO_KEY_FIRE=K`, `key:K`) firing three rounds each, the reserve topped at
 108 by a second rifle (`HALO_WEAPON_PACK_GROUND=1` and a few steps), the zoomed view's angle with `HALO_FOV=100`,
-and network_test head and body hits (`debug.network_test_damage`'s `seconds:scaleh` hits the head, its collision
+a zoom-and-fire game that ends its map (its `let go` line must count no failed read; every rifle case forbids
+`could not be read from the pack`), and network_test head and body hits (`debug.network_test_damage`'s `seconds:scaleh` hits the head, its collision
 model's head material). `debug.weapon_log` / `HALO_WEAPON_LOG=1` logs each round (`ae burst rifle: tick N, round
 r of 3 fired, L loaded, R in reserve, recovery T`), each burst's distance from the last and the zoomed view's
-angle; `debug.weapon_hit_log` / `HALO_WEAPON_HIT_LOG=1` logs each of this machine's players' rifle rounds that hits
-an object (`ae rifle hit: ... head h | shield a -> b body c -> d dead x`). All three are for automated tests,
-default off.
+angle, the firing effect of each round and the removed kick; `debug.weapon_hit_log` / `HALO_WEAPON_HIT_LOG=1` logs
+each of this machine's players' rifle rounds that hits an object (`ae rifle hit: ... head h | shield a -> b body c
+-> d dead x`; the numbers are a host's or a game without network: a client deals no damage). All three are for
+automated tests, default off.
 
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists

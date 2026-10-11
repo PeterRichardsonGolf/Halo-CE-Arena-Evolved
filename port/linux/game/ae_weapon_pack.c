@@ -108,6 +108,9 @@ A refusal is one "weapon pack: refused for <map>: <reason>" line.
 
 #define PACKS_FOLDER "d:\\packs"
 
+/* the failed resource reads a map logs, each on its own line (the "let go" line counts them all) */
+#define FAILED_READS_LOGGED 32
+
 /* each slot's file in the packs folder, and the pack id it takes */
 static struct
 {
@@ -212,6 +215,10 @@ typedef char verify_placed_reference_size[sizeof(struct tag_reference) == AE_PAC
 /* the platform layer's (port/linux/src) */
 char const *config_string(char const *name);
 long config_integer(char const *name);
+/* (platform.h, xbox_memory.c: guest memory in the Xbox contiguous window, and a write into it that the renderer's
+page protection does not stop; platform.h's BOOL is an int) */
+int platform_is_contiguous(const void *address);
+void platform_contiguous_write(void *destination, const void *source, size_t size);
 /* cache_files.c's: the loaded map's build's region if the engine plays multiplayer on its maps (NTSC 2276, NHE's
 2300, PAL 2342 through pal_tags.c, ...), else NULL; build gets the build */
 char const *cache_files_multiplayer_region(char build[0x20]);
@@ -1670,6 +1677,63 @@ void ae_weapon_pack_tags_unloaded(
 /* a read of the map file for tag tag_index (cache_file_read: a bitmap's pixels, a sound's samples): TRUE if the
 tag is one of the pack's own on this map, and then buffer has its size bytes from the pack's file, read now (zeros
 for any the pack does not hold or its file no longer gives) and the read is complete */
+/* guest memory written as DMA writes it: the renderer write-protects the texture cache pages it has uploaded
+(memory_watch.c), and this write marks such a texture stale so that it is uploaded again (xbox_files.c's
+read_at does the same) */
+static void guest_write(
+	void *destination,
+	void const *source,
+	size_t size)
+{
+#ifdef HALO_64BIT
+	platform_contiguous_write(destination, source, size);
+#else
+	memcpy(destination, source, size);
+#endif
+}
+
+/* a pack resource read into the caller's buffer: TRUE, or FALSE and the buffer zeros. A buffer in guest memory
+(the texture and sound caches') is never handed to the file read: the kernel fails a read() into a page the
+renderer protects (EFAULT) instead of faulting into its watch, so the bytes go through a host buffer first, as
+xbox_files.c's read_at does (no read is larger than a resource, AE_PACK_MAXIMUM_RESOURCE_SIZE) */
+static boolean resource_read_into(
+	struct ae_pack *pack,
+	unsigned int tag,
+	unsigned int offset,
+	unsigned int size,
+	void *buffer)
+{
+	boolean guest = platform_is_contiguous(buffer) || platform_is_contiguous((char *)buffer + size - 1);
+	char *staging;
+	boolean read;
+
+	if (!guest)
+	{
+		read = ae_pack_read_resource(pack, tag, offset, size, buffer);
+		if (!read)
+			memset(buffer, 0, size);
+		return read;
+	}
+	staging = size <= AE_PACK_MAXIMUM_RESOURCE_SIZE ? malloc(size) : NULL;
+	read = staging && ae_pack_read_resource(pack, tag, offset, size, staging);
+	if (staging)
+	{
+		if (!read)
+			memset(staging, 0, size);
+		guest_write(buffer, staging, size);
+		free(staging);
+	}
+	else
+	{
+		static char const zeros[0x1000];
+		unsigned int done;
+
+		for (done = 0; done < size; done += sizeof(zeros))
+			guest_write((char *)buffer + done, zeros, MIN(size - done, (unsigned int)sizeof(zeros)));
+	}
+	return read;
+}
+
 boolean ae_weapon_pack_read(
 	long tag_index,
 	long offset,
@@ -1691,13 +1755,18 @@ boolean ae_weapon_pack_read(
 	{
 		if (!placed.tag_data[index] || placed.tag_indices[index] != tag_index)
 			continue;
-		if (size && !ae_pack_read_resource(pack, index, (unsigned int)offset, (unsigned int)size, buffer))
+		if (size && !resource_read_into(pack, index, (unsigned int)offset, (unsigned int)size, buffer))
 		{
-			memset(buffer, 0, (size_t)size);
-			if (!placed.failed_reads++)
+			/* (each failure its own line, up to a bound a map) */
+			if (placed.failed_reads++ < FAILED_READS_LOGGED)
 			{
 				error(_error_silent, "weapon pack: %s: %d bytes at %08x could not be read from the pack: zeros",
 					placed.tag_names[index], (int)size, (unsigned int)offset);
+			}
+			else if (placed.failed_reads == FAILED_READS_LOGGED + 1)
+			{
+				error(_error_silent, "weapon pack: more reads could not be read from the pack; the count is in the "
+					"\"let go\" line");
 			}
 		}
 		else
@@ -1729,6 +1798,26 @@ boolean ae_weapon_pack_fingerprint(
 	memcpy(fingerprint, placed.fingerprint, PLACED_FINGERPRINT_SIZE);
 
 	return TRUE;
+}
+
+boolean ae_weapon_pack_tag_is_own(
+	long tag_index)
+{
+	struct ae_pack const *pack = slot_pack(placed.slot);
+	long absolute_index = tag_index & 0xffff;
+	unsigned int index;
+
+	if (!placed.added || !pack || tag_index == NONE || absolute_index < placed.original_count ||
+		absolute_index >= placed.original_count + placed.own_count)
+	{
+		return FALSE;
+	}
+	for (index = 0; index < pack->tag_count; index++)
+	{
+		if (placed.tag_data[index] && placed.tag_indices[index] == tag_index)
+			return TRUE;
+	}
+	return FALSE;
 }
 
 long ae_weapon_pack_weapon_definition(

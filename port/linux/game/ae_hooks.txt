@@ -39,7 +39,7 @@ port/linux/src/port_config.c	{ "debug.weapon_pack_table_limit", _config_integer,
 port/linux/game/menu_functions.c	#include "ae_weapon_pack.h" /* AE hook */
 port/linux/game/menu_functions.c	if (global_network_game_server_get()) ae_weapon_pack_lobby_line(text, NUMBEROF(text), game->map.name, &game->variant); /* AE hook */\ntext_set_length(named(description, "lobby_game_data", 0), text, LOBBY_TEXT_LENGTH);
 port/linux/src/port_config.c	{ "debug.weapon_log", _config_boolean, "false", "HALO_WEAPON_LOG", _environment_value, /* AE hook */\n_platform_all,
-port/linux/src/port_config.c	{ "debug.burst_autofire", _config_boolean, "false", "HALO_BURST_AUTOFIRE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.burst_autofire", _config_integer, "0", "HALO_BURST_AUTOFIRE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.weapon_hit_log", _config_boolean, "false", "HALO_WEAPON_HIT_LOG", _environment_value, /* AE hook */\n_platform_all,
 source/items/weapons.c	#include "ae_burst_rifle.h" /* AE hook */
 source/items/weapons.c	ae_burst_rifle_new_map(); /* AE hook */

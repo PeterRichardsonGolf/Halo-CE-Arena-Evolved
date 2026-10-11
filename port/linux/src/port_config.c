@@ -800,16 +800,20 @@ static const struct config_setting config_settings[] =
 		"For automated tests of the battle rifle (ae_burst_rifle.c): each round it\n"
 		"fires (its burst, the tick, the magazine), each burst's distance from the\n"
 		"last, and the zoomed view's angle. Any machine; only this machine's log." },
-	{ "debug.burst_autofire", _config_boolean, "false", "HALO_BURST_AUTOFIRE", _environment_value, /* AE hook */
+	{ "debug.burst_autofire", _config_integer, "0", "HALO_BURST_AUTOFIRE", _environment_value, /* AE hook */
 		_platform_all,
 		"For automated tests of the battle rifle's cadence: a local player holding\n"
-		"it pulls the trigger again as soon as the rifle allows. Only on a host or\n"
-		"with no network game; a client in another's game ignores it (logged)." },
+		"it pulls the trigger by itself, 1 again as soon as the rifle allows, 2 once\n"
+		"in the middle of each recovery (lost) and again half a second after it.\n"
+		"Only on a host or with no network game; a client in another's game ignores\n"
+		"it (logged). The pulls are the host's own, not its player's input: other\n"
+		"machines in a network game do not see these bursts. 0 off." },
 	{ "debug.weapon_hit_log", _config_boolean, "false", "HALO_WEAPON_HIT_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For automated tests of the battle rifle's damage: each round of this\n"
 		"machine's players that hits an object (head or not, shield and body\n"
-		"before and after, dead). Any machine; only this machine's log." },
+		"before and after, dead). Any machine; only this machine's log. The\n"
+		"numbers are a host's or a game without network: a client deals no damage." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

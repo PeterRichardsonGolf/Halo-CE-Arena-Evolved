@@ -20,7 +20,10 @@ BUILD = add.BUILD
 REAL = add.REAL
 ROTATION = add.ROTATION
 
-ROUND = re.compile(r"ae burst rifle: tick (\d+), round (\d) of 3 (fired|not fired), (\d+) loaded, (\d+) in reserve")
+ROUND = re.compile(r"ae burst rifle: tick (\d+), round (\d) of 3 (fired|not fired), (\d+) loaded, (\d+) in reserve, "
+                   r"recovery \d+, firing effect (-?\d+) of (\d+)")
+# (a pack bitmap read as zeros: the scope's mask, smoke, impacts; reads into guest memory go through a host buffer)
+UNREAD = "could not be read from the pack"
 SET_UP = r"ae burst rifle: '[^']+' set up \(3 rounds a pull, 15 a second, recovery 0\.15 s, damage 6\.5\)"
 SETUP_LINES = (
     r"ae burst rifle: zoom 1 level 2\.563x \(Halo 2's 3\.00x as seen\)",
@@ -42,7 +45,8 @@ def bursts(lines):
         match = ROUND.search(line)
         if not match:
             continue
-        entry = (int(match[1]), int(match[2]), match[3] == "fired", int(match[4]), int(match[5]))
+        entry = (int(match[1]), int(match[2]), match[3] == "fired", int(match[4]), int(match[5]), int(match[6]),
+                 int(match[7]))
         if entry[1] == 1 or not result:
             result.append([])
         result[-1].append(entry)
@@ -66,16 +70,18 @@ class Rifle(add.Game):
         return str(self.packs("good", Path(REAL).expanduser().read_bytes()))
 
     def rifle(self, name, *arguments, seconds=40, map_name="bloodgulch"):
-        self.play(name, "--packs-from", self.good(), "--pack-loadout", "primary", "--start", "5", *arguments,
-                  seconds=seconds, map_name=map_name)
+        self.play(name, "--packs-from", self.good(), "--pack-loadout", "primary", "--start", "5",
+                  "--expect-no-line", UNREAD, *arguments, seconds=seconds, map_name=map_name)
         return self.debug_lines(name)
 
     def test_setup_and_cadence(self):
         """the numbers set up once; held fire (debug.burst_autofire): rounds at t, t+2, t+4 and bursts 10 and 11
-        ticks apart in turn; a fresh rifle 36 + 72; the zoomed aim assist cap never met unzoomed"""
+        ticks apart in turn; a fresh rifle 36 + 72; the zoomed aim assist cap never met unzoomed; no kick; each
+        burst plays the trigger's firing effects from the first"""
         lines = self.rifle("cadence", "--env", "HALO_WEAPON_LOG=1", "--env", "HALO_BURST_AUTOFIRE=1",
                            *[argument for line in SETUP_LINES for argument in ("--expect-line", line)],
-                           "--expect-line", r"ae burst rifle: debug\.burst_autofire on",
+                           "--expect-line", r"ae burst rifle: debug\.burst_autofire 1 on",
+                           "--expect-line", r"ae burst rifle: the firer's kick '[^']+' removed",
                            "--expect-no-line", ZOOMED_CAP)
         self.assertEqual(sum(bool(re.search(SET_UP, line)) for line in lines), 1)
         burst_list = bursts(lines)
@@ -83,12 +89,46 @@ class Rifle(add.Game):
         for burst in burst_list:
             self.assertEqual([entry[0] - burst[0][0] for entry in burst], [0, 2, 4])
             self.assertTrue(all(entry[2] for entry in burst))
-        self.assertEqual(burst_list[0][0][3:], (35, 72))
+        self.assertEqual(burst_list[0][0][3:5], (35, 72))
         magazines = gaps_in_magazines(burst_list)
         self.assertGreaterEqual(sum(map(len, magazines)), 20)
         for gaps in magazines:
             # (10 and 11 in turn: the recovery's half tick carried)
             self.assertTrue(set(gaps) <= {10, 11} and all(a != b for a, b in zip(gaps, gaps[1:])), gaps)
+        # (the firing effects: the same ones in the same order in every burst, the first effect first)
+        effects = Counter(tuple(entry[5] for entry in burst) for burst in burst_list)
+        self.assertEqual(len(effects), 1, effects)
+        self.assertEqual(next(iter(effects))[0], 0)
+        self.assertGreater(burst_list[0][0][6], 0)
+
+    def test_pull_during_recovery_lost(self):
+        """debug.burst_autofire 2: a pull in the middle of each recovery, then another half a second after it: the
+        early pulls are lost (no burst starts when the recovery ends), so bursts come only from the late pulls"""
+        lines = self.rifle("recovery", "--env", "HALO_WEAPON_LOG=1", "--env", "HALO_BURST_AUTOFIRE=2",
+                           "--expect-line", r"ae burst rifle: debug\.burst_autofire 2 on")
+        early = [line for line in lines if "a pull during the recovery" in line]
+        burst_list = bursts(lines)
+        self.assertGreaterEqual(len(burst_list), 10)
+        self.assertGreaterEqual(len(early), len(burst_list) - 1)
+        for burst in burst_list:
+            self.assertEqual([entry[0] - burst[0][0] for entry in burst], [0, 2, 4])
+        gaps = [gap for magazine in gaps_in_magazines(burst_list) for gap in magazine]
+        self.assertGreaterEqual(len(gaps), 8)
+        # (a kept pull would start the next burst 10 or 11 ticks after the last, as at the fastest cadence; the late
+        # pull comes AUTOFIRE_LATE_TICKS, 15, later: 25 or 26)
+        self.assertEqual(set(gaps), {25, 26}, gaps)
+
+    def test_zoom_and_fire_then_next_map(self):
+        """zoomed and firing (the scope's mask, smoke and impact bitmaps are read from the pack while the renderer
+        holds the texture cache), then the map ends: its "let go" line counts no failed read"""
+        presses = " ".join(["wait"] * 12 + ["key:Z", "wait", "wait", "key:Z", "key:Z", "wait", "key:Z"] * 3)
+        self.play("zoomfire", "--packs-from", self.good(), "--pack-loadout", "primary",
+                  "--network-test", "host:bloodgulch+prisoner:slayer,slayer",
+                  "--env", "HALO_NETWORK_TEST_TIME_LIMIT=1", "--start", "5", "--env", "HALO_BURST_AUTOFIRE=1",
+                  "--test-input", "menu:" + presses,
+                  "--expect-line", add.LET_GO.format(map="bloodgulch"),
+                  "--expect-line", r"network test: game 2 plays prisoner",
+                  "--expect-no-line", UNREAD, seconds=150, map_name=None)
 
     def test_presses_zoom_and_reserve(self):
         """a pull of 250 ms (debug.test_input) fires exactly three rounds; walking over a second rifle tops the
