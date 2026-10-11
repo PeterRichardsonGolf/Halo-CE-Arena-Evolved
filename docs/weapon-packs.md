@@ -116,7 +116,7 @@ A kind appears at most once; a kind not in the table is empty.
   | 0x20 | weapon_pickup_text, string | the weapon picked up (`Picked up a battle rifle`): UTF-8, 1 to 127 bytes, **no `%` at all**; or NONE (the engine's own) |
   | 0x24 | ammo_pickup_text, string | its ammo picked up (`Picked up %d rounds for battle rifle`; the engine fills in the rounds): UTF-8, 1 to 127 bytes, **exactly one `%`, which is `%d`** (no flags, width, precision, other conversion or `%%`); or NONE |
   | 0x28 | icon_bitmap_tag, u32 | the message icon: a `'bitm'` tag, or NONE (then icon_sequence 0) |
-  | 0x2C | icon_sequence, u32 | 0 to 65535: the bitmap's sequence the icon is a sprite of, which must have sprites (a sheet drawn whole would cover the screen; the builder and the engine check it) |
+  | 0x2C | icon_sequence, u32 | 0 to 65535: the bitmap's sequence the icon is a sprite of, which must have sprites (a sheet drawn whole would cover the screen): the builder refuses the pack; the engine refuses the icon for that map with one log line and draws the weapon HUD's own messaging icon |
   | 0x30 | replaces, u32 | the stock loadout weapon whose map spawns it may replace: 0 none, 2 assault rifle ... 9 needler (tools/port_settings.py `LOADOUT_WEAPONS`; 1, random, is not one) |
   | 0x34 | power, u32 | 0 or 1 (a power weapon) |
 

@@ -44,10 +44,19 @@ burst rifle's round fired by a local player of this machine */
 void ae_burst_rifle_hit_before(long projectile_index, long object_index);
 void ae_burst_rifle_hit_after(long projectile_index, long object_index, short material_index);
 
-/* ---------- the zoomed view (render_particles.c, Task 9) */
+/* ---------- the zoomed view (render_particles.c) */
+
+struct particle_datum;
 
 /* the burst rifle the local player is zoomed in with (and its holder in *unit_index), or NONE */
 long ae_burst_rifle_local_player_zoomed(short local_player_index, long *unit_index);
+/* (render_particles, before its particles are gathered) the view being drawn: local_player_index the local player
+seen in first person, or another value (MAXIMUM_LOCAL_PLAYERS, NONE) for none */
+void ae_burst_rifle_particles_begin(short local_player_index);
+/* (render_particles, each particle) TRUE when the particle is left out of the view: zoomed in with a burst rifle,
+its holder sees no particle on the rifle or on himself, nor his own first-person ones (the muzzle flash, which
+would stand in front of the scope: Halo 2 shows none while zoomed) */
+boolean ae_burst_rifle_particle_hidden(struct particle_datum const *particle, boolean owned_by_local_player);
 
 /* ---------- a collision model's head (the hit log, network_test.c's head hits) */
 

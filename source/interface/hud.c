@@ -111,6 +111,7 @@ symbols in this file:
 #include "text/draw_string.h"
 #include "coop_spectate.h" /* port: port/linux/game/coop_spectate.c */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "ae_weapon_pack.h" /* AE hook */
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "units/unit_definitions.h"
@@ -729,6 +730,8 @@ wchar_t const *hud_get_item_string(
 	long string_list_index = hud_globals->messaging.hud_item_messages.index;
 	wchar_t const *string = default_string;
 
+	if (ae_weapon_pack_item_string(&string_index, &string)) /* AE hook */
+		return string;
 	if (string_list_index != NONE)
 	{
 		struct string_list const *string_list =

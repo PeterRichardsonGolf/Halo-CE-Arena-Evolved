@@ -97,6 +97,8 @@ A refusal is one "weapon pack: refused for <map>: <reason>" line.
 #include "game/game_globals.h"
 #include "objects/object_definitions.h"
 #include "items/weapon_definitions.h"
+#include "interface/hud_definitions.h"
+#include "interface/weapon_hud_interface_definition.h"
 #include "models/model_animation_definitions.h"
 #include "tag_schema.h"
 #include "halo_map_families.h"
@@ -110,6 +112,14 @@ A refusal is one "weapon pack: refused for <map>: <reason>" line.
 
 /* the failed resource reads a map logs, each on its own line (the "let go" line counts them all) */
 #define FAILED_READS_LOGGED 32
+
+/* the item message strings of the pack's weapons (hud_get_item_string): weapon n's pickup text is this plus 2n,
+its ammo text the one after: far past any map's own list (the stock maps' hold a few dozen; the prototype's
+number) */
+#define ITEM_STRING_INDEX_FIRST 0x7F00
+
+/* a weapon HUD interface tag's group (hud.c's weapon_hud_interface_definition_get) */
+#define WEAPON_HUD_INTERFACE_TAG 0x77706869 /* 'wphi' */
 
 /* each slot's file in the packs folder, and the pack id it takes */
 static struct
@@ -280,6 +290,21 @@ static struct
 	unsigned long read_bytes;
 	boolean loadout_logged[2];
 	char problem[REASON_SIZE];
+	/* the look of each of the pack's weapons on this map: its pickup texts (empty: the engine's own) and the
+	item message index its tag had; the messaging icon of its HUD and the icon its entry names for it (bitmap
+	NONE: none, or refused) */
+	struct
+	{
+		wchar_t texts[2][AE_PACK_MAXIMUM_PICKUP_TEXT + 1];
+		short message_index;
+		boolean texts_set;
+		boolean texts_shown[2];
+		struct icon_hud_element_definition const *messaging_icon;
+		long icon_bitmap;
+		short icon_sequence;
+	} looks[AE_PACK_MAXIMUM_WEAPONS];
+	/* (each SMOOTH bitmap tag's first upload on this map is logged) */
+	byte smooth_logged[AE_PACK_MAXIMUM_TAGS];
 } placed;
 
 /* the last map a game asked the pack for, and why it did not get it (the fallback's line at game start) */
@@ -1541,6 +1566,128 @@ char const *ae_weapon_pack_string(
 	return pack ? ae_pack_string(pack, offset) : NULL;
 }
 
+/* ---------- private code: the look of the pack's weapons */
+
+/* a pack string (UTF-8, checked by the reader) as the game's wide text, at most count - 1 characters: a character
+past 16 bits, or a broken sequence, becomes '?' */
+static void text_widen(
+	wchar_t *text,
+	size_t count,
+	char const *utf8)
+{
+	unsigned char const *in = (unsigned char const *)utf8;
+	size_t length = 0;
+
+	while (in && *in && length + 1 < count)
+	{
+		unsigned long character = *in++;
+
+		if (character >= 0xC0 && character < 0xE0 && (in[0] & 0xC0) == 0x80)
+			character = ((character & 0x1F) << 6) | (in++[0] & 0x3F);
+		else if (character >= 0xE0 && character < 0xF0 && (in[0] & 0xC0) == 0x80 && (in[1] & 0xC0) == 0x80)
+		{
+			character = ((character & 0x0F) << 12) | ((unsigned long)(in[0] & 0x3F) << 6) | (in[1] & 0x3F);
+			in += 2;
+		}
+		else if (character >= 0x80)
+		{
+			character = '?';
+			while ((*in & 0xC0) == 0x80)
+				in++;
+		}
+		text[length++] = (wchar_t)character;
+	}
+	text[length] = 0;
+}
+
+/* the look of each of the pack's weapons on the map it was just added to (its grown table is the game's): the
+pickup texts its entry names replace its item messages (its hud_message_index then points at the pack's strings,
+ITEM_STRING_INDEX_FIRST); the icon its entry names stands for its HUD's messaging icon in the swap and pickup
+prompts. An icon whose bitmap is none, or whose stored sequence holds no sprites (R10, R30: a sheet drawn whole
+would cover the screen, round 6b's bug), is refused for the map with one line: the HUD's own icon is drawn */
+static void placed_looks_set(
+	struct ae_pack const *pack)
+{
+	unsigned int index;
+
+	for (index = 0; index < pack->weapon_count && index < AE_PACK_MAXIMUM_WEAPONS; index++)
+	{
+		struct ae_pack_weapon_record const *record = &pack->weapons[index];
+		struct weapon_definition *weapon = (struct weapon_definition *)placed.tag_data[record->root_tag];
+		char const *key = ae_pack_string(pack, record->key);
+		char const *texts[2];
+		char icon_text[160];
+		long hud_index;
+		short which;
+
+		placed.looks[index].icon_bitmap = NONE;
+		placed.looks[index].messaging_icon = NULL;
+		if (!weapon)
+			continue;
+		texts[0] = ae_pack_string(pack, record->weapon_pickup_text);
+		texts[1] = ae_pack_string(pack, record->ammo_pickup_text);
+		for (which = 0; which < 2; which++)
+		{
+			if (texts[which] && texts[which][0])
+			{
+				text_widen(placed.looks[index].texts[which], NUMBEROF(placed.looks[index].texts[which]), texts[which]);
+				placed.looks[index].texts_set = TRUE;
+			}
+		}
+		if (placed.looks[index].texts_set)
+		{
+			placed.looks[index].message_index = weapon->item.hud_message_index;
+			weapon->item.hud_message_index = (short)(ITEM_STRING_INDEX_FIRST + 2 * index);
+		}
+
+		hud_index = weapon->weapon.interface_definition.hud_interface.index;
+		if (hud_index != NONE)
+		{
+			placed.looks[index].messaging_icon = &((struct weapon_hud_interface_definition *)
+				tag_get(WEAPON_HUD_INTERFACE_TAG, hud_index))->messaging_icon;
+		}
+		snprintf(icon_text, sizeof(icon_text), "none");
+		if (record->icon_bitmap_tag != AE_PACK_NONE)
+		{
+			long bitmap_index = record->icon_bitmap_tag < pack->tag_count ?
+				placed.tag_indices[record->icon_bitmap_tag] : NONE;
+			char const *bitmap_name = record->icon_bitmap_tag < pack->tag_count ?
+				placed.tag_names[record->icon_bitmap_tag] : NULL;
+			struct bitmap_group *group = bitmap_index != NONE &&
+				pack->tags[record->icon_bitmap_tag].group == AE_PACK_GROUP_BITMAP ? bitmap_group_get(bitmap_index) : NULL;
+			long sprites = group && record->icon_sequence < (unsigned int)group->sequences.count ?
+				TAG_BLOCK_GET_ELEMENT(&group->sequences, record->icon_sequence, struct bitmap_group_sequence)->sprites.count :
+				0;
+
+			if (!group)
+			{
+				error(_error_silent, "weapon pack: %s's message icon refused for %s: its bitmap is not on the map; the "
+					"HUD's own icon is drawn", key ? key : "?", placed.map_name[0] ? placed.map_name : "the map");
+			}
+			else if (sprites <= 0)
+			{
+				error(_error_silent, "weapon pack: %s's message icon refused for %s: sequence %u of %s has no sprites; "
+					"the HUD's own icon is drawn", key ? key : "?", placed.map_name[0] ? placed.map_name : "the map",
+					record->icon_sequence, bitmap_name ? bitmap_name : "?");
+			}
+			else if (!placed.looks[index].messaging_icon)
+			{
+				error(_error_silent, "weapon pack: %s's message icon refused: the weapon has no HUD", key ? key : "?");
+			}
+			else
+			{
+				placed.looks[index].icon_bitmap = bitmap_index;
+				placed.looks[index].icon_sequence = (short)record->icon_sequence;
+				snprintf(icon_text, sizeof(icon_text), "%s sequence %u (%ld sprites)", bitmap_name ? bitmap_name : "?",
+					record->icon_sequence, sprites);
+			}
+		}
+		error(_error_silent, "weapon pack: %s's look: pickup texts \"%s\" / \"%s\", message icon %s; its HUD's icon "
+			"sequence %d", key ? key : "?", texts[0] ? texts[0] : "(the engine's)", texts[1] ? texts[1] : "(the engine's)",
+			icon_text, placed.looks[index].messaging_icon ? (int)placed.looks[index].messaging_icon->sequence_index : -1);
+	}
+}
+
 /* once a map's tags are read and checked (scenario_tags_load), before anything else adds to its tag table: the
 pack the game about to be played asks for is added to a multiplayer map. A map loaded for no game (the menus',
 the campaign: no pending game variant) gets none */
@@ -1588,6 +1735,7 @@ void ae_weapon_pack_tags_loaded(
 	placed.slot = slot;
 	snprintf(placed.map_name, sizeof(placed.map_name), "%s", map_name);
 	refused_map_forget(map_name);
+	placed_looks_set(pack);
 }
 
 /* the Custom Edition branch of scenario_tags_load: no pack on such a map (R34: the pack's tags would be read
@@ -1853,4 +2001,104 @@ void ae_weapon_pack_loadout_given(
 			(unsigned int)definition_index);
 		return;
 	}
+}
+
+boolean ae_weapon_pack_item_string(
+	long *string_index,
+	wchar_t const **string)
+{
+	long relative = *string_index - ITEM_STRING_INDEX_FIRST;
+	short weapon, which;
+
+	if (!placed.added || relative < 0 || relative >= 2 * AE_PACK_MAXIMUM_WEAPONS)
+		return FALSE;
+	weapon = (short)(relative / 2);
+	which = (short)(relative % 2);
+	if (!placed.looks[weapon].texts_set)
+		return FALSE;
+	if (!placed.looks[weapon].texts[which][0])
+	{
+		/* (a text the entry does not name: the weapon's own, as its tag had it) */
+		*string_index = placed.looks[weapon].message_index + which;
+		return FALSE;
+	}
+	if (!placed.looks[weapon].texts_shown[which])
+	{
+		struct ae_pack const *pack = slot_pack(placed.slot);
+		char const *text = pack && (unsigned int)weapon < pack->weapon_count ? ae_pack_string(pack,
+			which ? pack->weapons[weapon].ammo_pickup_text : pack->weapons[weapon].weapon_pickup_text) : NULL;
+
+		placed.looks[weapon].texts_shown[which] = TRUE;
+		error(_error_silent, "weapon pack: item message \"%s\" shown (its weapon entry's %s pickup text)",
+			text ? text : "?", which ? "ammo" : "weapon");
+	}
+	*string = placed.looks[weapon].texts[which];
+	return TRUE;
+}
+
+struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
+	struct icon_hud_element_definition const *icon,
+	long *bitmap_group_index)
+{
+	/* (the prompt draws one icon at a time, and keeps nothing of it) */
+	static struct icon_hud_element_definition substitute;
+	short index;
+
+	if (!placed.added || !icon)
+		return icon;
+	for (index = 0; index < AE_PACK_MAXIMUM_WEAPONS; index++)
+	{
+		if (placed.looks[index].icon_bitmap == NONE || placed.looks[index].messaging_icon != icon)
+			continue;
+		substitute = *icon;
+		substitute.sequence_index = placed.looks[index].icon_sequence;
+		*bitmap_group_index = placed.looks[index].icon_bitmap;
+		return &substitute;
+	}
+	return icon;
+}
+
+/* (the texture cache asks as it uploads a texture's pixels; the high-res HUD's textures are found the same way:
+hud_hires_tags.c's hud_hires_asset_at) */
+long ae_weapon_pack_smooth_bitmap_at(
+	unsigned long address,
+	long width,
+	long height)
+{
+	struct ae_pack const *pack = slot_pack(placed.slot);
+	unsigned int index;
+	long bitmap_index;
+
+	if (!placed.added || !pack)
+		return 0;
+	for (index = 0; index < pack->tag_count; index++)
+	{
+		struct bitmap_group *group;
+
+		if (!(pack->tags[index].flags & AE_PACK_TAG_FLAG_SMOOTH) || pack->tags[index].group != AE_PACK_GROUP_BITMAP ||
+			!placed.tag_data[index])
+		{
+			continue;
+		}
+		group = (struct bitmap_group *)placed.tag_data[index];
+		for (bitmap_index = 0; bitmap_index < group->bitmaps.count; bitmap_index++)
+		{
+			struct bitmap_data const *bitmap = TAG_BLOCK_GET_ELEMENT(&group->bitmaps, bitmap_index, struct bitmap_data);
+			boolean coverage = (pack->tags[index].flags & AE_PACK_TAG_FLAG_METER_COVERAGE) != 0;
+
+			if (bitmap->cache_block_index == NONE || (unsigned long)bitmap->base_address != address ||
+				bitmap->width != width || bitmap->height != height)
+			{
+				continue;
+			}
+			if (index < AE_PACK_MAXIMUM_TAGS && !placed.smooth_logged[index])
+			{
+				placed.smooth_logged[index] = TRUE;
+				error(_error_silent, "weapon pack: %s drawn smooth (%ldx%ld, linear with its mips%s)",
+					placed.tag_names[index], width, height, coverage ? ", its green its coverage" : "");
+			}
+			return coverage ? 2 : 1;
+		}
+	}
+	return 0;
 }

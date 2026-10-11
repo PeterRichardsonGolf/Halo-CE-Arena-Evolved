@@ -1,0 +1,122 @@
+"""The look of the pack's weapons (port/linux/game/ae_weapon_pack.c and ae_burst_rifle.c, Task 9): the pickup texts
+and the swap / pickup icon come from the pack's weapon entry; an icon whose sequence has no sprites (round 6b's bug:
+a sheet drawn whole over the view) is refused; the bitmaps the pack flags SMOOTH are sampled smooth; zoomed in with
+the rifle, its holder sees none of its particles. The pictures against the parity reference (halo-pack5f + v6e) are
+the task report's; these cases check what the log and the frames can tell alone.
+
+Needs a game and the real pack: AE_TEST_PACK_BUILD and AE_TEST_PACK_REAL (tools/test_weapon_pack_add.py)."""
+import re
+import sys
+import unittest
+from pathlib import Path
+
+TOOLS = Path(__file__).resolve().parent
+sys.path.insert(0, str(TOOLS))
+import test_weapon_pack_add as add  # noqa: E402
+
+aepack = add.aepack
+harness = add.harness
+
+BUILD = add.BUILD
+REAL = add.REAL
+
+LOOK = (r"weapon pack: battle_rifle's look: pickup texts \"Picked up a battle rifle\" / \"Picked up %d rounds for "
+        r"battle rifle\", message icon ae\\packs\\battle_rifle\\hud\\br_meter sequence 0 \([1-9]\d* sprites\); its "
+        r"HUD's icon sequence \d+")
+SMOOTH = r"weapon pack: ae\\packs\\battle_rifle\\hud\\br_alphas_smooth drawn smooth \(512x128, linear with its mips\)"
+SMOOTH_METER = (r"weapon pack: ae\\packs\\battle_rifle\\hud\\br_meter_smooth drawn smooth \(512x128, linear with its "
+                r"mips, its green its coverage\)")
+WEAPON_TEXT = r"weapon pack: item message \"Picked up a battle rifle\" shown \(its weapon entry's weapon pickup text\)"
+AMMO_TEXT = (r"weapon pack: item message \"Picked up %d rounds for battle rifle\" shown \(its weapon entry's ammo "
+             r"pickup text\)")
+ICON_REFUSED = r"weapon pack: battle_rifle's message icon refused for bloodgulch: sequence 0 of [^ ]+br_meter_smooth " \
+               r"has no sprites; the HUD's own icon is drawn"
+HIDDEN = r"ae burst rifle: tick \d+, zoomed: local player 0 sees no particle of the rifle or its holder"
+UNREAD = "could not be read from the pack"
+# (the swap prompt: in game from about 10 s; X held at 22 s takes the rifle at the feet, Y at 26 s brings the
+# stock weapon out again with the rifle holstered)
+SWAP_INPUT = "menu:" + " ".join(["wait"] * 22 + ["x", "x", "wait", "wait", "y"])
+# (WEAPONS record fields, "<14I": the message icon's bitmap tag and sequence)
+WEAPON_ICON_TAG = 10
+
+
+def stray_texels(path):
+    """round 6b's matrix measure: magenta and bright green texels in the upper half of a frame (the meter sheet
+    drawn whole)"""
+    width, height, rgb = harness.read_png(path)
+    count = 0
+    for offset in range(0, width * (height // 2) * 3, 3):
+        r, g, b = rgb[offset], rgb[offset + 1], rgb[offset + 2]
+        if (r > 140 and b > 140 and g < r - 50 and g < b - 50) or (g > 200 and r < 140 and b < 160):
+            count += 1
+    return count
+
+
+def icon_on_the_counter_sheet(real):
+    """the weapon entry's icon is the HUD counter's sheet (br_meter_smooth), whose sequence 0 has no sprites: the
+    picture round 6b drew whole over the view"""
+    image = add.Image(real)
+    for index in range(image.tag_count()):
+        if image.name(index).endswith("\\br_meter_smooth"):
+            offset = image.sections[aepack.WEAPONS]
+            record = list(aepack.WEAPON_RECORD.unpack_from(image.data, offset))
+            record[WEAPON_ICON_TAG] = index
+            aepack.WEAPON_RECORD.pack_into(image.data, offset, *record)
+            return image.signed()
+    raise AssertionError("the pack has no br_meter_smooth")
+
+
+@unittest.skipUnless(BUILD and REAL, "AE_TEST_PACK_BUILD and AE_TEST_PACK_REAL not set (needs a game and a real pack)")
+class Look(add.Game):
+    def good(self):
+        return str(self.packs("good", Path(REAL).expanduser().read_bytes()))
+
+    def shots(self, name):
+        cfg = harness.load_config(None)
+        return sorted((harness.expand(cfg["out_dir"]) / "run" / f"packadd-{name}" / name / "shots").glob("*.png"))
+
+    def test_look_and_ammo_text(self):
+        """the look line (texts and icon from the weapon entry), the two SMOOTH bitmaps sampled smooth as they are
+        drawn, and walking over a second rifle (debug.weapon_pack_ground) shows the entry's ammo text"""
+        presses = " ".join(["wait"] * 14 + ["key:W"] * 3 + ["wait"] * 3)
+        self.play("look", "--packs-from", self.good(), "--pack-loadout", "primary", "--start", "5",
+                  "--env", "HALO_WEAPON_PACK_GROUND=1", "--test-input", "menu:" + presses,
+                  "--expect-line", LOOK, "--expect-line", SMOOTH, "--expect-line", SMOOTH_METER,
+                  "--expect-line", AMMO_TEXT, "--expect-no-line", UNREAD, seconds=30)
+
+    def test_swap_prompt_and_weapon_text(self):
+        """a stock weapon held (the pack asked for by BATTLE RIFLE ON MAP only), the rifle at the feet: the swap
+        prompt, then the rifle taken shows the entry's pickup text; no frame shows the counter's sheet"""
+        name = "swap"
+        self.play(name, "--packs-from", self.good(), "--pack-map-spawns", "--start", "5",
+                  "--env", "HALO_NETWORK_TEST_LOADOUT=2,3", "--env", "HALO_WEAPON_PACK_GROUND=1",
+                  "--window", "800x600", "--shots", "16", "--test-input", SWAP_INPUT,
+                  "--expect-line", LOOK, "--expect-line", WEAPON_TEXT, "--expect-no-line", UNREAD, seconds=34)
+        frames = self.shots(name)
+        self.assertGreaterEqual(len(frames), 10)
+        self.assertEqual(max(stray_texels(frame) for frame in frames), 0)
+
+    def test_icon_without_sprites_refused(self):
+        """an entry whose icon is a sequence without sprites (the counter's sheet) has its icon refused for the map
+        with one line: the HUD's own icon is drawn in the prompt, never the sheet, and the game plays on"""
+        name = "icon"
+        image = icon_on_the_counter_sheet(Path(REAL).expanduser().read_bytes())
+        self.play(name, "--packs-from", str(self.packs(name, image)), "--pack-map-spawns", "--start", "5",
+                  "--env", "HALO_NETWORK_TEST_LOADOUT=2,3", "--env", "HALO_WEAPON_PACK_GROUND=1",
+                  "--window", "800x600", "--shots", "16", "--test-input", SWAP_INPUT,
+                  "--expect-line", ICON_REFUSED, "--expect-line", add.ADDED.format(map="bloodgulch", corrections="0"),
+                  "--expect-line", WEAPON_TEXT, refused=True, seconds=34)
+        self.assertEqual(max(stray_texels(frame) for frame in self.shots(name)), 0)
+
+    def test_zoomed_particles_hidden(self):
+        """firing zoomed in (debug.burst_autofire, Z pressed), the holder sees none of the rifle's particles"""
+        presses = " ".join(["wait"] * 14 + ["key:Z"] + ["wait"] * 4)
+        self.play("zoomed", "--packs-from", self.good(), "--pack-loadout", "primary", "--start", "5",
+                  "--env", "HALO_WEAPON_LOG=1", "--env", "HALO_BURST_AUTOFIRE=1", "--test-input", "menu:" + presses,
+                  "--expect-line", HIDDEN, "--expect-no-line", UNREAD, seconds=30)
+        lines = self.debug_lines("zoomed")
+        self.assertLessEqual(sum(bool(re.search(HIDDEN, line)) for line in lines), 16)
+
+
+if __name__ == "__main__":
+    unittest.main()

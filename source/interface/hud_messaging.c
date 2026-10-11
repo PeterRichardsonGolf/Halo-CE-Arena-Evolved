@@ -147,6 +147,7 @@ symbols in this file:
 #include "text/text_group.h"
 #include "text/unicode.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "ae_weapon_pack.h" /* AE hook */
 
 #include <stddef.h>
 #ifdef HALO_64BIT
@@ -536,6 +537,7 @@ static void render_state_bitmap(
 
 	if (icon->frame_rate)
 		frame_index = game_time_get() / icon->frame_rate;
+	icon = ae_weapon_pack_message_icon(icon, &bitmap_group_index); /* AE hook */
 	hud_retrieve_bitmap_and_bounding_rect(
 		bitmap_group_index,
 		icon->sequence_index,

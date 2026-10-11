@@ -84,6 +84,25 @@ boolean ae_weapon_pack_tag_is_own(long tag_index);
 the first of each on a map is logged */
 void ae_weapon_pack_loadout_given(short loadout_slot, long definition_index);
 
+/* ---------- the look of the pack's weapons on the loaded map (hud.c, hud_messaging.c, xbox_textures.c) */
+
+struct icon_hud_element_definition;
+
+/* (hud_get_item_string) the item message string *string_index names: TRUE and *string set when it is a pack
+weapon's pickup text (its weapon entry's: the weapon's hud_message_index was pointed past every map's list as
+the pack was added); FALSE otherwise, and then *string_index the weapon's own index again where its entry names
+no such text (the engine's own) */
+boolean ae_weapon_pack_item_string(long *string_index, wchar_t const **string);
+/* (render_state_bitmap) the swap / pickup prompt's icon: for a pack weapon's messaging icon, the icon its weapon
+entry names (a bitmap and a sequence of sprites, R10 / R30; one without sprites is refused for the map with one
+line), *bitmap_group_index set to that bitmap; any other icon is returned as it is */
+struct icon_hud_element_definition const *ae_weapon_pack_message_icon(struct icon_hud_element_definition const *icon,
+	long *bitmap_group_index);
+/* (the platform layer's texture cache, port/linux/src/ae_pack_textures.h) whether the pixels at address are a
+bitmap of a pack tag flagged SMOOTH (R9): 1 (sampled linear with its mips, as the high-res HUD's textures), 2
+(and METER COVERAGE: its green is its shapes' coverage), 0 not one */
+long ae_weapon_pack_smooth_bitmap_at(unsigned long address, long width, long height);
+
 /* ---------- the fallback: a map the pack is not added to */
 
 struct game_variant;

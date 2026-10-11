@@ -30,6 +30,7 @@ symbols in this file:
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "view_fov.h" /* port: port/linux/game/view_fov.c */
+#include "ae_burst_rifle.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -152,6 +153,7 @@ void render_particles(
 			local_player_index = MAXIMUM_LOCAL_PLAYERS;
 		}
 
+		ae_burst_rifle_particles_begin(local_player_index); /* AE hook */
 		for (particle_index = data_next_index(particle_data, NONE);
 			particle_index != NONE;
 			particle_index = data_next_index(particle_data, particle_index))
@@ -160,6 +162,8 @@ void render_particles(
 			boolean owned_by_local_player =
 				particle->local_player_index == local_player_index;
 
+			if (ae_burst_rifle_particle_hidden(particle, owned_by_local_player)) /* AE hook */
+				continue;
 			/* port: not the first-person weapon's with it hidden (view_fov.c) */
 			if (render_location_visible(&particle->location) &&
 				viewmodel_draws_geometry(owned_by_local_player &&

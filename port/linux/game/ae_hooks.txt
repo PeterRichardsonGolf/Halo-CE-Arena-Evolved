@@ -52,3 +52,14 @@ source/items/projectiles.c	#include "ae_burst_rifle.h" /* AE hook */
 source/items/projectiles.c	ae_burst_rifle_hit_before(projectile_index, collision->object_index); /* AE hook */
 source/items/projectiles.c	ae_burst_rifle_hit_after(projectile_index, collision->object_index, collision->material_index); /* AE hook */
 port/linux/game/network_test.c	#include "ae_burst_rifle.h" /* AE hook */
+port/linux/src/xbox_textures.c	#include "ae_pack_textures.h" /* AE hook */
+port/linux/src/xbox_textures.c	long pack_smooth; /* AE hook */
+port/linux/src/xbox_textures.c	description->hires |= entry->pack_smooth != 0; /* AE hook */\ndescription->hires_coverage |= entry->pack_smooth == 2; /* AE hook */\nif (entry->override >= 0)
+port/linux/src/xbox_textures.c	entry->pack_smooth = entry->size && !palettized && !entry->description.cube_map && entry->description.depth == 1 ? ae_weapon_pack_smooth_bitmap_at(entry->address, (long)entry->description.width, (long)entry->description.height) : 0; /* AE hook */
+source/interface/hud.c	#include "ae_weapon_pack.h" /* AE hook */
+source/interface/hud.c	if (ae_weapon_pack_item_string(&string_index, &string)) /* AE hook */\nreturn string;
+source/interface/hud_messaging.c	#include "ae_weapon_pack.h" /* AE hook */
+source/interface/hud_messaging.c	icon = ae_weapon_pack_message_icon(icon, &bitmap_group_index); /* AE hook */\nhud_retrieve_bitmap_and_bounding_rect(
+source/render/render_particles.c	#include "ae_burst_rifle.h" /* AE hook */
+source/render/render_particles.c	ae_burst_rifle_particles_begin(local_player_index); /* AE hook */\nfor (particle_index = data_next_index(particle_data, NONE);
+source/render/render_particles.c	if (ae_burst_rifle_particle_hidden(particle, owned_by_local_player)) /* AE hook */\ncontinue;

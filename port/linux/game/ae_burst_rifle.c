@@ -51,6 +51,7 @@ machine's players' rounds that hits an object).
 #include "objects/objects.h"
 #include "physics/collision_model_definitions.h"
 #include "camera/observer.h"
+#include "effects/particles.h"
 #include "render/render_cameras.h"
 #include "units/units.h"
 #include "view_fov.h"
@@ -178,6 +179,17 @@ static struct burst_state
 	/* (debug.burst_autofire 2: the ticks the rifle has been ready since its recovery ended) */
 	long autofire_idle_ticks;
 } burst_states[MAXIMUM_OBJECTS_PER_MAP];
+
+/* (render_particles: the view being drawn, zoomed in with a burst rifle or not) */
+static struct
+{
+	short local_player_index;
+	long weapon_index;
+	long unit_index;
+	/* (debug.weapon_log: each zoom's first particle left out is logged, a few a map) */
+	boolean logged[MAXIMUM_LOCAL_PLAYERS];
+	short logged_count;
+} zoomed_particles = { NONE, NONE, NONE };
 
 /* (the hit log: the victim before the damage) */
 static struct
@@ -449,6 +461,10 @@ void ae_burst_rifle_new_map(
 
 	memset(&burst_rifles, 0, sizeof(burst_rifles));
 	memset(burst_states, 0, sizeof(burst_states));
+	memset(&zoomed_particles, 0, sizeof(zoomed_particles));
+	zoomed_particles.local_player_index = NONE;
+	zoomed_particles.weapon_index = NONE;
+	zoomed_particles.unit_index = NONE;
 	hit_before.projectile_index = NONE;
 	burst_rifles.weapon_log = config_boolean("debug.weapon_log") ? TRUE : FALSE;
 	burst_rifles.autofire = config_integer("debug.burst_autofire");
@@ -728,6 +744,49 @@ long ae_burst_rifle_local_player_zoomed(
 	*unit_index = player->unit_index;
 
 	return weapon_index;
+}
+
+/* the particle rule while zoomed (86ecf3cb): the prototype's, by the rifle the view's player is zoomed in with */
+void ae_burst_rifle_particles_begin(
+	short local_player_index)
+{
+	zoomed_particles.local_player_index = local_player_index;
+	zoomed_particles.weapon_index = NONE;
+	zoomed_particles.unit_index = NONE;
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || !burst_rifles.count)
+		return;
+	zoomed_particles.weapon_index = ae_burst_rifle_local_player_zoomed(local_player_index, &zoomed_particles.unit_index);
+	/* (a zoom ended: the next one's first hidden particle is logged again) */
+	if (zoomed_particles.weapon_index == NONE)
+		zoomed_particles.logged[local_player_index] = FALSE;
+}
+
+boolean ae_burst_rifle_particle_hidden(
+	struct particle_datum const *particle,
+	boolean owned_by_local_player)
+{
+	short local_player_index = zoomed_particles.local_player_index;
+
+	if (zoomed_particles.weapon_index == NONE)
+		return FALSE;
+	if (particle->object_index != zoomed_particles.weapon_index && particle->object_index != zoomed_particles.unit_index &&
+		!(owned_by_local_player && (TEST_FLAG(particle->flags, _particle_datum_dont_draw_third_person_bit) ||
+			TEST_FLAG(particle->flags, _particle_datum_attached_to_local_player_bit))))
+	{
+		return FALSE;
+	}
+	/* (debug.weapon_log: the first of each zoom, up to 16 a map) */
+	if (burst_rifles.weapon_log && !zoomed_particles.logged[local_player_index] && zoomed_particles.logged_count < 16)
+	{
+		struct particle_definition const *definition = particle_definition_get(particle->definition_index);
+		char const *name = definition && definition->bitmap.index != NONE ? tag_get_name(definition->bitmap.index) : NULL;
+
+		zoomed_particles.logged[local_player_index] = TRUE;
+		zoomed_particles.logged_count++;
+		error(_error_silent, "ae burst rifle: tick %ld, zoomed: local player %d sees no particle of the rifle or its "
+			"holder ('%s' left out)", (long)game_time_get(), (int)local_player_index, name ? name : "?");
+	}
+	return TRUE;
 }
 
 /* (damage.c's _damage_material_head_bit: a collision material's flag 0) */

@@ -788,8 +788,10 @@ static const struct config_setting config_settings[] =
 	{ "debug.weapon_pack_ground", _config_boolean, "false", "HALO_WEAPON_PACK_GROUND", _environment_value, /* AE hook */
 		_platform_all,
 		"For automated tests' pictures: one more of the weapon pack's weapon lies a\n"
-		"step ahead of each local player who spawns with it. Only on a host or with\n"
-		"no network game; a client in another's game ignores it." },
+		"step ahead of each local player who spawns with it; one who spawns without\n"
+		"it in a game that asks for the pack (BATTLE RIFLE ON MAP) finds one at his\n"
+		"feet, for the swap prompt. Only on a host or with no network game; a client\n"
+		"in another's game ignores it." },
 	{ "debug.weapon_pack_table_limit", _config_integer, "0", "HALO_WEAPON_PACK_TABLE_LIMIT", _environment_value, /* AE hook */
 		_platform_all,
 		"For automated tests of a full tag table: the most tags a map and a weapon\n"
