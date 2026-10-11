@@ -7,10 +7,10 @@ has, whether a map's sprite can be drawn, how large a picture is drawn and
 what a label's line is made of. source/interface/hud_item_timers.c draws by
 these. Unit tested in port/linux/tests/ae_waypoint_icons_test.c.
 
-A weapon's picture is the pickup prompt's, a sprite of the map being played
-(nothing is shipped); a map or mod without one shows that item's text. The
-overshield's and the active camouflage's are Arena Evolved's own glyphs
-(ae_waypoint_glyphs.c, drawn by tools/ae_waypoint_glyphs.py).
+A power weapon's picture is the pickup prompt's, a sprite of the map being played (nothing is shipped), drawn
+alone; a map or mod without one shows Arena Evolved's burst in an outlined badge instead. The overshield's and the
+active camouflage's are Arena Evolved's own glyphs, dark on a filled badge (ae_waypoint_glyphs.c, drawn by
+tools/ae_waypoint_glyphs.py).
 */
 
 #ifndef __AE_WAYPOINT_ICONS_H
@@ -18,10 +18,14 @@ overshield's and the active camouflage's are Arena Evolved's own glyphs
 
 enum
 {
-	AE_WAYPOINT_MAXIMUM_MEMBERS = 16,	/* (members of a line looked at) */
+	AE_WAYPOINT_MAXIMUM_MEMBERS = 16	/* (members of a line looked at) */
+};
+
+enum
+{
 	AE_WAYPOINT_TEXT,	/* "RED SNIPER 0:07" */
-	AE_WAYPOINT_ICONS,	/* the time over the picture */
-	AE_WAYPOINT_BOTH,	/* the time, "RED SNIPER", the picture: stacked */
+	AE_WAYPOINT_ICONS,	/* the distance, the picture, the timer */
+	AE_WAYPOINT_BOTH,	/* the distance, "RED SNIPER", the picture, the timer: stacked */
 	AE_WAYPOINT_STYLE_COUNT
 };
 
@@ -38,7 +42,7 @@ enum
 enum
 {
 	AE_WAYPOINT_ICON_NONE,	/* no picture: its text */
-	AE_WAYPOINT_ICON_STOCK,	/* the map's own sprite */
+	AE_WAYPOINT_ICON_STOCK,	/* the map's own sprite (a weapon's) */
 	AE_WAYPOINT_ICON_GLYPH	/* one of ours */
 };
 
@@ -46,8 +50,9 @@ enum
 {
 	AE_WAYPOINT_GLYPH_OVERSHIELD,
 	AE_WAYPOINT_GLYPH_CAMO,
+	AE_WAYPOINT_GLYPH_POWER_WEAPON,	/* the burst of every power weapon */
 	AE_WAYPOINT_GLYPH_COUNT,
-	AE_WAYPOINT_GLYPH_SIZE = 32
+	AE_WAYPOINT_GLYPH_SIZE = 64
 };
 
 /* the glyphs' coverage, row by row from the top (ae_waypoint_glyphs.c) */
@@ -72,9 +77,9 @@ struct ae_waypoint_part
 int ae_waypoint_style_from_text(char const *text);
 char const *ae_waypoint_style_name(int style);
 
-/* the picture of an item of a class: ours for the overshield and the camouflage (while they can be drawn), the
-map's sprite for a weapon that has a drawable one, else none (also any other class: a mixed entry not seen yet).
-*glyph (may be NULL) is set to which of ours */
+/* the picture of an item of a class: for a weapon the map's sprite while it can be drawn, else (a map or mod
+without one) our burst (*glyph); for the overshield and the camouflage ours (*glyph, may be NULL, says which), while
+they can be drawn; else none (also any other class: a mixed entry not seen yet) */
 int ae_waypoint_icon_source(int item_class, int stock_sprite_drawable, int glyphs_drawable, int *glyph);
 
 /* the item a waypoint's picture is of: an entry's item of each class (a NONE where it has none, count of them), and
@@ -89,22 +94,22 @@ its size in texels (at least 2 each way) when it can be drawn, else 0 */
 int ae_waypoint_sprite_size(int bitmap_width, int bitmap_height, float x0, float x1, float y0, float y1,
 	int *width, int *height);
 
-/* a row's height where pictures may be drawn: a text line's and a tenth (the line has its own room over and under
-its letters: a picture as high as that row is about one and a half times the capitals) */
-int ae_waypoint_row_height(int text_line_height);
-/* the size a picture is drawn at in a row: as high as the row, its own shape kept, at most six times as wide as
-high (wider: made lower, to that width); *scale (may be NULL) from its texels to that size. 0 for a sprite or row of
-no size */
-int ae_waypoint_icon_size(int sprite_width, int sprite_height, int row_height, int *width, int *height, float *scale);
+/* a weapon's sprite drawn alone: as high as a badge (2.2 capitals), its shape kept and its width following, or
+smaller still to max_width (about 1.5 times the name's width; none when 0). *scale from its texels to that size.
+0 for a sprite of no size */
+int ae_waypoint_stock_layout(int cap_height, int sprite_width, int sprite_height, int max_width, int *width,
+	int *height, float *scale);
 
-/* How a line of labels is laid out, centred, top to bottom (Infinite's): the time, the name(s), the pictures
-side by side. BOTH: always stacked (a time over the names, over the pictures of the members that have one); ICONS:
-the time over the pictures, and the names of the members with no picture between; TEXT, and ICONS where no member
-has a picture: one line of text ("RED SNIPER 0:07", several "0:07 A · B"), not stacked. */
+/* How a line of labels is laid out, centred, top to bottom (Infinite's): the distance, the name(s), the
+pictures side by side, the respawn timer. BOTH: always stacked (a distance row, the names, the pictures of the members
+that have one, the timer row while there is a time); ICONS: the same without the names of the members that have a
+picture; TEXT, and ICONS where no member has a picture: one line of text ("RED SNIPER 0:07", several "0:07 A · B"),
+not stacked. */
 struct ae_waypoint_plan
 {
 	int stacked;
-	int time_row;	/* a row of the time (when it has one) */
+	int distance_row;	/* the top row: the distance (stacked lines always have it) */
+	int time_row;	/* the bottom row: the respawn timer (when the line has a time) */
 	int name_count;	/* the names row's members (none: no row) */
 	int names[AE_WAYPOINT_MAXIMUM_MEMBERS];
 	int picture_count;	/* the pictures row's members (none: no row) */
@@ -121,5 +126,25 @@ int ae_waypoint_name_parts(int count, const int *names, struct ae_waypoint_part 
 /* the unstacked line's parts: one "NAME 0:07"; several "0:07 A · B"; at most max_parts (members that do not fit
 are left out, the time never) */
 int ae_waypoint_line_parts(int members, int has_time, struct ae_waypoint_part *parts, int max_parts);
+
+/* A picture's badge (Infinite's): a regular hexagon, flat at its left and right, pointed at the top and bottom;
+a weapon's dark and translucent with a thin light outline and a light picture, a powerup's filled gold with a dark
+picture and a lighter rim. Its height is 2.2 times the name's capital height (cap_height, the view's pixels), its
+width 0.866 of that; the picture is fitted into the hexagon (a padding of a tenth of its height all round), its own
+shape kept, as large as fits: a wide sprite becomes small, a square one about 0.5 of the badge's height.
+1 when it can be drawn (a sprite and cap_height of some size) */
+struct ae_waypoint_badge
+{
+	int badge_width;
+	int badge_height;
+	int icon_width;
+	int icon_height;
+	float scale;	/* from the sprite's texels to the icon's size */
+};
+int ae_waypoint_badge_height(int cap_height);
+int ae_waypoint_badge_layout(int cap_height, int sprite_width, int sprite_height, struct ae_waypoint_badge *badge);
+/* the badge's coverage, width by height texels, row by row from the top: outline 0 the filled shape, 1 its
+outline alone (a line of badge_height / 12 texels, at least one), both anti-aliased about their edge */
+void ae_waypoint_badge_coverage(int width, int height, int outline, unsigned char *coverage);
 
 #endif

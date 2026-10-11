@@ -196,7 +196,7 @@ def _game(tmp_path, case, game_map, seconds, env):
                    HALO_HIDDEN_WINDOW="1", HALO_EXIT_AFTER=str(seconds), HOME=str(out),
                    HALO_NETWORK_TEST=f"host:{game_map}:slayer", HALO_NETWORK_TEST_FLAGS=TRAINING_FLAGS,
                    HALO_NETWORK_TEST_START="3", HALO_WAYPOINT_LOG="1")
-    for name in ("XDG_DATA_HOME", "HALO_MCC_PATH", "HALO_MCC_USE", "HALO_WAYPOINT_STYLE", "HALO_WAYPOINT_ICONS"):
+    for name in ("XDG_DATA_HOME", "HALO_MCC_PATH", "HALO_MCC_USE", "HALO_WAYPOINT_STYLE"):
         run_env.pop(name, None)
     run_env.update(env)
     done = subprocess.run(["timeout", str(seconds + 60), "xvfb-run", "-a", "./halo"], cwd=copy, env=run_env,
@@ -239,10 +239,12 @@ def test_game_default_style_is_both(tmp_path):
                for line in pictures)
     assert any("picture Arena Evolved's glyph 0," in line for line in pictures)
     assert any("picture Arena Evolved's glyph 1," in line for line in pictures)
+    assert not any("glyph 2," in line for line in pictures)
     assert not [line for line in pictures if "picture none" in line and "not loaded" not in line]
     # (a label is the time, the name, then the picture: the logged rows are bar-separated)
-    assert any(re.match(r'view 0 line "0:\d\d\|(RED|BLUE) SNIPER" style both: 1 picture,', line) for line in lines)
-    assert any(re.match(r'view 0 line "(0:\d\d\|)?OVERSHIELD" style both: 1 picture,', line) for line in lines)
+    assert any(re.match(r'view 0 line "\d+\.\dm\|(RED|BLUE) SNIPER" style both: 1 picture,', line) for line in lines)
+    assert any(re.match(r'view 0 line "\d+\.\dm\|(RED|BLUE) SNIPER\|0:\d\d" style both: 1 picture,', line) for line in lines)
+    assert any(re.match(r'view 0 line "\d+\.\dm\|OVERSHIELD(\|0:\d\d)?" style both: 1 picture,', line) for line in lines)
     # (a line's height is its text's and, with pictures, their row over it: the logged "W by H")
     heights = {}
     for line in lines:
@@ -256,45 +258,43 @@ def test_game_icons_style(tmp_path):
     log = _game(tmp_path, "icons", "prisoner", 50, {"HALO_WAYPOINT_STYLE": "icons"})
     lines = _lines(log)
     assert lines and all("style icons" in line for line in lines)
-    # (the picture over the time in text: no name)
-    assert any(re.match(r'view 0 line "0:\d\d" style icons: 1 picture,', line) for line in lines)
-    assert any(re.match(r'view 0 line "" style icons: 1 picture,', line) for line in lines)
+    # (the distance over the picture, the timer under it while respawning: no name)
+    assert any(re.match(r'view 0 line "\d+\.\dm" style icons: 1 picture,', line) for line in lines)
+    assert any(re.match(r'view 0 line "\d+\.\dm\|0:\d\d" style icons: 1 picture,', line) for line in lines)
     assert not any("SNIPER" in line or "OVERSHIELD" in line or "CAMO" in line
                    for line in lines if "0 pictures" not in line and " . " not in line and " + " not in line)
 
 
-@pytest.mark.parametrize("knob,why", [("no_sheet", "the map's HUD has no messaging icons"),
-                                      ("bad_sequence", "the messaging icons have no such sequence")])
-def test_game_weapon_without_a_picture_shows_its_text(tmp_path, knob, why):
-    """a map without the sheet, and one whose weapon names a picture its sheet has not: in ICONS the weapons show
-    their text (never an empty marker), and the powerups still their glyphs"""
+@pytest.mark.parametrize("knob", ["no_sheet", "bad_sequence"])
+def test_game_weapon_without_a_picture_shows_our_burst(tmp_path, knob):
+    """a map without the sheet, and one whose weapon names a picture its sheet has not: the weapons show our burst
+    in an outlined badge (never an empty row), and the powerups still their glyphs"""
     log = _game(tmp_path, knob, "prisoner", POWERUPS, {"HALO_WAYPOINT_STYLE": "icons", "HALO_WAYPOINT_ICONS": knob})
     lines, pictures = _lines(log), _pictures(log)
-    assert any(f"picture none ({why}): its text" in line for line in pictures)
     assert not any("picture the map's sequence" in line for line in pictures)
-    assert any("picture Arena Evolved's glyph" in line for line in pictures)
-    assert any(re.match(r'view 0 line "(RED|BLUE) SNIPER 0:\d\d" style icons: 0 pictures,', line) for line in lines)
-    assert any(re.match(r'view 0 line "(RED|BLUE) SNIPER" style icons: 0 pictures,', line) for line in lines)
-    # (no line is empty with no picture)
-    assert not any(re.match(r'view \d+ line " *" style icons: 0 pictures', line) for line in lines)
+    assert any("picture Arena Evolved's glyph 2," in line for line in pictures)
+    assert any("picture Arena Evolved's glyph 0," in line or "picture Arena Evolved's glyph 1," in line for line in pictures)
+    assert lines and all("1 picture," in line for line in lines if "SNIPER" not in line)
+    # (every line has its picture: none is a bare text line)
+    assert not any(re.match(r'view \d+ line "[^"]*" style icons: 0 pictures', line) for line in lines)
 
 
 def test_game_split_screen(tmp_path):
     log = _game(tmp_path, "split", "prisoner", 50, {"HALO_NETWORK_TEST_LOCAL_PLAYERS": "2"})
     for view in (0, 1):
-        assert any(re.match(rf"view {view} entry \d+ picture the map's sequence", line) for line in log), view
+        assert any(re.match(rf"view {view} entry \d+ picture ", line) for line in log), view
         assert any(re.match(rf'view {view} line "[^"]+" style both: 1 picture,', line) for line in log), view
 
 
 def test_game_custom_edition_map(tmp_path):
     """a Custom Edition map's HUD (the PC version's sheet): played to the end, each weapon's picture checked
-    before it is drawn, or its text"""
+    before it is drawn, or our burst"""
     _games(mcc=True)
     log = _game(tmp_path, "ce", "homobox@ce", 50, {"HALO_WAYPOINT_STYLE": "icons", "HALO_MCC_USE": "yes",
                                                      "HALO_MCC_PATH": os.environ["AE_MCC_PATH"]})
     lines, pictures = _lines(log), _pictures(log)
     assert lines and pictures
     for line in pictures:
-        assert re.search(r"picture (the map's sequence \d+, drawn \d+ by \d+|Arena Evolved's glyph [01], drawn \d+ by "
-                         r"\d+|none \([^)]+\): its text)$", line), line
+        assert re.search(r"picture (the map's sequence \d+, drawn \d+ by \d+|Arena Evolved's glyph [012], drawn \d+ by "
+                         r"\d+)$", line), line
     assert not any(re.match(r'view \d+ line " *" style icons: 0 pictures', line) for line in lines)

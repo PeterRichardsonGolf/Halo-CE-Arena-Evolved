@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Arena Evolved's own waypoint glyphs: the overshield's and the active camouflage's, for the item waypoints'
+"""Arena Evolved's own waypoint glyphs: the overshield's, the active camouflage's and the power weapons' mark, for the item waypoints'
 ICONS and BOTH styles (display.waypoint_style; source/interface/hud_item_timers.c draws them). The stock
 maps have no picture of either (their hud_msg_icons sheet has weapons and buttons only).
 
-Each glyph is drawn here from plain geometry (no picture of any game is read or traced): 32 by 32, flat, one
+Each glyph is drawn here from plain geometry (no picture of any game is read or traced): drawn on a 32 by 32 grid and sampled at 64 by 64, flat, one
 colour, its coverage as alpha. The game tints it as it tints its label.
 
     python3 tools/ae_waypoint_glyphs.py            writes port/linux/game/ae_waypoint_glyphs.c and the PNGs in
@@ -19,7 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "port" / "linux" / "game" / "ae_waypoint_glyphs.c"
 PICTURES = ROOT / "port" / "assets" / "waypoints"
-SIZE = 32
+SIZE = 64
+UNITS = 32  # (the shapes are drawn on a 32 by 32 grid, sampled at SIZE)
 SAMPLES = 4  # by 4, in each texel
 
 
@@ -76,7 +77,22 @@ def camo(px, py):
     return edge < 2.6 or math.hypot(px - 16.0, py - 16.0) < 4.8
 
 
-GLYPHS = [("overshield", overshield), ("camo", camo)]
+def power_weapon(px, py):
+    """Infinite's power weapon mark, our own: an eight-point burst, four strokes through the middle (the straight
+    ones longer than the diagonal ones) round a small solid centre"""
+    centre = math.hypot(px - 16.0, py - 16.0)
+    if centre < 3.4:
+        return True
+    for angle, length in ((0, 13.5), (90, 13.5), (45, 10.5), (135, 10.5)):
+        dx, dy = math.cos(math.radians(angle)) * length, math.sin(math.radians(angle)) * length
+        # (a stroke thinning to its tips)
+        reach = _segment_distance(px, py, 16.0 - dx, 16.0 - dy, 16.0 + dx, 16.0 + dy)
+        if reach < 1.7 * max(0.25, 1.0 - centre / (length * 1.15)) + 0.35:
+            return True
+    return False
+
+
+GLYPHS = [("overshield", overshield), ("camo", camo), ("power_weapon", power_weapon)]
 
 
 def coverage(shape):
@@ -84,7 +100,7 @@ def coverage(shape):
     for y in range(SIZE):
         row = []
         for x in range(SIZE):
-            hits = sum(shape(x + (i + 0.5) / SAMPLES, y + (j + 0.5) / SAMPLES)
+            hits = sum(shape((x + (i + 0.5) / SAMPLES) * UNITS / SIZE, (y + (j + 0.5) / SAMPLES) * UNITS / SIZE)
                        for j in range(SAMPLES) for i in range(SAMPLES))
             row.append(round(255 * hits / (SAMPLES * SAMPLES)))
         rows.append(row)
@@ -102,7 +118,7 @@ def png(rows):
 
 def source(tables):
     lines = ["/*", "AE_WAYPOINT_GLYPHS.C", "",
-             "Arena Evolved's own waypoint glyphs (ae_waypoint_icons.h): each 32 by 32, its coverage",
+             "Arena Evolved's own waypoint glyphs (ae_waypoint_icons.h): each 64 by 64, its coverage",
              "as alpha, row by row from the top. Written by tools/ae_waypoint_glyphs.py, which draws",
              "them from plain geometry: change that, not this (tools/test_ae_hud_settings.py checks).",
              "*/", "", '#include "ae_waypoint_icons.h"', "",
@@ -124,11 +140,34 @@ def files():
     return out
 
 
+def _same(path, data):
+    """the file is what was drawn: a PNG by its header and its decompressed pixels (another zlib may compress the same
+    pixels to other bytes), anything else byte for byte"""
+    if not path.is_file():
+        return False
+    have = path.read_bytes()
+    if path.suffix != ".png":
+        return have == data
+
+    def pixels(png):
+        chunks, at = [], 8
+        while at < len(png):
+            size = struct.unpack(">I", png[at:at + 4])[0]
+            chunks.append((png[at + 4:at + 8], png[at + 8:at + 8 + size]))
+            at += 12 + size
+        return ([body for kind, body in chunks if kind == b"IHDR"],
+                zlib.decompress(b"".join(body for kind, body in chunks if kind == b"IDAT")))
+    try:
+        return have[:8] == data[:8] and pixels(have) == pixels(data)
+    except (struct.error, zlib.error):
+        return False
+
+
 def main(argv):
     stale = []
     for path, data in files().items():
         if "--check" in argv:
-            if not path.is_file() or path.read_bytes() != data:
+            if not _same(path, data):
                 stale.append(str(path.relative_to(ROOT)))
         else:
             path.parent.mkdir(parents=True, exist_ok=True)

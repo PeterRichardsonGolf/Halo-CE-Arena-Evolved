@@ -33,18 +33,18 @@ static void source_tests(void)
 {
 	int glyph = -1;
 
-	/* (the weapons: the map's sprite, or none: text) */
+	/* (the weapons: the map's sprite, else our burst, else none) */
 	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_ROCKETS, 1, 1, &glyph) == AE_WAYPOINT_ICON_STOCK && glyph == -1);
 	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_SNIPER, 1, 0, NULL) == AE_WAYPOINT_ICON_STOCK);
 	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_SHOTGUN, 1, 1, NULL) == AE_WAYPOINT_ICON_STOCK);
-	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_SNIPER, 0, 1, NULL) == AE_WAYPOINT_ICON_NONE);
+	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_SNIPER, 0, 1, &glyph) == AE_WAYPOINT_ICON_GLYPH &&
+		glyph == AE_WAYPOINT_GLYPH_POWER_WEAPON);
 	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_ROCKETS, 0, 0, NULL) == AE_WAYPOINT_ICON_NONE);
-	/* (ours, whatever the map has; none with no renderer to draw them) */
+	/* (ours for the powerups, whatever the map has; none with no renderer to draw them) */
 	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_OVERSHIELD, 0, 1, &glyph) == AE_WAYPOINT_ICON_GLYPH &&
 		glyph == AE_WAYPOINT_GLYPH_OVERSHIELD);
 	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_CAMO, 1, 1, &glyph) == AE_WAYPOINT_ICON_GLYPH && glyph == AE_WAYPOINT_GLYPH_CAMO);
 	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_CAMO, 1, 0, &glyph) == AE_WAYPOINT_ICON_NONE);
-	CHECK(ae_waypoint_icon_source(AE_WAYPOINT_OVERSHIELD, 1, 1, NULL) == AE_WAYPOINT_ICON_GLYPH);
 	/* (a mixed entry not seen yet, another item, a bad class) */
 	CHECK(ae_waypoint_icon_source(-1, 1, 1, NULL) == AE_WAYPOINT_ICON_NONE);
 	CHECK(ae_waypoint_icon_source(5, 1, 1, NULL) == AE_WAYPOINT_ICON_NONE && ae_waypoint_icon_source(1000, 1, 1, NULL) == AE_WAYPOINT_ICON_NONE);
@@ -96,33 +96,18 @@ static void sprite_tests(void)
 	CHECK(!ae_waypoint_sprite_size(1, 1, 0.0f, 1.0f, 0.0f, 1.0f, NULL, NULL));
 }
 
-static void size_tests(void)
+static void stock_layout_tests(void)
 {
-	int width = 0, height = 0;
-	float scale = 0.0f;
+	int width, height;
+	float scale;
 
-	/* (a row: a text line and a tenth; one view's 14, a half screen's 12, a quarter's 11) */
-	CHECK(ae_waypoint_row_height(14) == 15 && ae_waypoint_row_height(12) == 13 && ae_waypoint_row_height(11) == 12);
-	CHECK(ae_waypoint_row_height(10) == 11 && ae_waypoint_row_height(1) == 1);
-	CHECK(ae_waypoint_row_height(0) == 0 && ae_waypoint_row_height(-5) == 0);
-	/* (as high as the row, its shape kept: the sniper rifle 123 by 27 in a row of 15) */
-	CHECK(ae_waypoint_icon_size(123, 27, 15, &width, &height, &scale) && width == 68 && height == 15);
-	CHECK(fabsf(scale - 15.0f / 27.0f) < 0.0001f);
-	/* (the rocket launcher 101 by 33, the shotgun 123 by 27, a glyph 32 by 32) */
-	CHECK(ae_waypoint_icon_size(101, 33, 15, &width, &height, &scale) && width == 46 && height == 15);
-	CHECK(ae_waypoint_icon_size(32, 32, 15, &width, &height, &scale) && width == 15 && height == 15);
-	CHECK(fabsf(scale - 15.0f / 32.0f) < 0.0001f);
-	/* (a smaller view's row) */
-	CHECK(ae_waypoint_icon_size(123, 27, 11, &width, &height, NULL) && width == 50 && height == 11);
-	/* (wider than six times its height: made lower to that width) */
-	CHECK(ae_waypoint_icon_size(400, 20, 15, &width, &height, &scale) && width == 90 && height == 5);
-	CHECK(fabsf(scale - 90.0f / 400.0f) < 0.0001f);
-	CHECK(ae_waypoint_icon_size(4000, 2, 15, &width, &height, &scale) && width == 90 && height == 1);
-	/* (a tall one: never under a unit wide) */
-	CHECK(ae_waypoint_icon_size(2, 4000, 15, &width, &height, NULL) && width == 1 && height == 15);
-	/* (nothing to draw) */
-	CHECK(!ae_waypoint_icon_size(0, 27, 15, &width, &height, &scale) && !ae_waypoint_icon_size(123, 0, 15, NULL, NULL, NULL));
-	CHECK(!ae_waypoint_icon_size(123, 27, 0, NULL, NULL, NULL) && !ae_waypoint_icon_size(-1, -1, -1, NULL, NULL, NULL));
+	/* the sniper's 123 by 27 at a cap of 10: 22 high, its width following; capped it is smaller, its shape kept */
+	CHECK(ae_waypoint_stock_layout(10, 123, 27, 0, &width, &height, &scale) && height == 22 && width == 100);
+	CHECK(scale > 0.81f && scale < 0.82f);
+	CHECK(ae_waypoint_stock_layout(10, 123, 27, 60, &width, &height, &scale) && width == 60 && height == 13);
+	CHECK(ae_waypoint_stock_layout(10, 101, 33, 150, &width, &height, NULL) && height == 22 && width == 67);
+	CHECK(ae_waypoint_stock_layout(10, 5, 5, 0, &width, &height, NULL) && width == 22 && height == 22);
+	CHECK(!ae_waypoint_stock_layout(10, 0, 5, 0, &width, &height, NULL) && !ae_waypoint_stock_layout(0, 5, 5, 0, &width, &height, NULL));
 }
 
 /* parts as text: N name, T time, _ space, + separator, each name's member number after N */
@@ -162,12 +147,14 @@ static const char *plan_text(int style, int members, const int *icons, int has_t
 
 	ae_waypoint_line_plan(style, members, icons, has_time, &plan);
 	used = sprintf(text, "%c", plan.stacked ? 'S' : 'L');
-	if (plan.time_row)
-		used += sprintf(text + used, "T");
+	if (plan.distance_row)
+		used += sprintf(text + used, "d");
 	for (index = 0; index < plan.name_count; index++)
 		used += sprintf(text + used, "n%d", plan.names[index]);
 	for (index = 0; index < plan.picture_count; index++)
 		used += sprintf(text + used, "p%d", plan.pictures[index]);
+	if (plan.time_row)
+		used += sprintf(text + used, "T");
 	return text;
 }
 
@@ -202,18 +189,18 @@ static void line_tests(void)
 	/* TEXT: never stacked, whatever pictures there are */
 	CHECK(!strcmp(plan_text(AE_WAYPOINT_TEXT, 1, all, 1), "L"));
 	CHECK(!strcmp(plan_text(AE_WAYPOINT_TEXT, 3, all, 0), "L"));
-	/* BOTH: time over name over picture; no picture: time over name; several: names on one row, pictures side by side */
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, all, 1), "STn0p0"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, all, 0), "Sn0p0"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, none, 1), "STn0"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, NULL, 1), "STn0"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 2, all, 1), "STn0n1p0p1"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 3, second, 1), "STn0n1n2p1"));
-	/* ICONS: time over the pictures; the names of members with no picture between; no picture at all: the line */
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, all, 1), "STp0"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, all, 0), "Sp0"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 3, all, 1), "STp0p1p2"));
-	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 3, first_two, 1), "STn2p0p1"));
+	/* BOTH: distance, name, picture, timer (while there is a time); no picture: no picture row; several: names on one row, pictures side by side */
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, all, 1), "Sdn0p0T"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, all, 0), "Sdn0p0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, none, 1), "Sdn0T"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 1, NULL, 1), "Sdn0T"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 2, all, 1), "Sdn0n1p0p1T"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_BOTH, 3, second, 1), "Sdn0n1n2p1T"));
+	/* ICONS: no name for a member with a picture; the names of members with no picture between; no picture at all: the line */
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, all, 1), "Sdp0T"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, all, 0), "Sdp0"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 3, all, 1), "Sdp0p1p2T"));
+	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 3, first_two, 1), "Sdn2p0p1T"));
 	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 1, none, 1), "L"));
 	CHECK(!strcmp(plan_text(AE_WAYPOINT_ICONS, 2, NULL, 0), "L"));
 	/* (the plan: always every picture member in the row; a member with no picture named once, in BOTH all are) */
@@ -239,6 +226,51 @@ static void picture_row_tests(void)
 	CHECK(ae_waypoint_picture_row(0, widths, 4, offsets, &total) == 0 && total == 0);
 	CHECK(ae_waypoint_picture_row(2, widths, -3, offsets, &total) == 2 && offsets[1] == 20 && total == 50);
 }
+
+static void badge_tests(void)
+{
+	struct ae_waypoint_badge b;
+	unsigned char fill[52 * 60], line[52 * 60];
+	int x, y, ring = 0, inside = 0;
+
+	CHECK(ae_waypoint_badge_height(10) == 22 && ae_waypoint_badge_height(0) == 0);
+	/* a regular hexagon: its width is 0.866 of its height */
+	CHECK(ae_waypoint_badge_layout(10, 64, 64, &b) && b.badge_height == 22 && b.badge_width == 19);
+	/* a square glyph fills the hexagon's inside: about half its height, never past it */
+	CHECK(b.icon_width == b.icon_height && b.icon_height >= 22 * 45 / 100 && b.icon_height <= 22 * 62 / 100);
+	/* a view twice the size: the glyph twice as large */
+	{
+		struct ae_waypoint_badge big;
+
+		CHECK(ae_waypoint_badge_layout(20, 64, 64, &big) && big.icon_height >= 2 * b.icon_height - 1);
+		CHECK(big.badge_height == 44);
+	}
+	/* a wide sprite is small, its shape kept; a tall one fitted by its height */
+	CHECK(ae_waypoint_badge_layout(10, 70, 15, &b) && b.icon_width <= b.badge_width - 2 && b.icon_height < b.icon_width / 3);
+	CHECK(ae_waypoint_badge_layout(10, 10, 30, &b) && b.icon_height <= 22 && b.icon_width < b.icon_height);
+	CHECK(!ae_waypoint_badge_layout(10, 0, 15, &b) && !ae_waypoint_badge_layout(0, 70, 15, &b));
+	CHECK(!ae_waypoint_badge_layout(10, 70, 15, NULL) && !ae_waypoint_badge_layout(1, 70, 15, &b));
+	/* the coverage: filled in the middle, clear at the corners, flat at the sides, pointed at the top and bottom */
+	ae_waypoint_badge_coverage(52, 60, 0, fill);
+	ae_waypoint_badge_coverage(52, 60, 1, line);
+	CHECK(fill[30 * 52 + 26] == 255 && fill[0] == 0 && fill[59 * 52 + 51] == 0 && fill[51] == 0);
+	CHECK(fill[30 * 52 + 1] == 255 && fill[0 * 52 + 26] > 0 && fill[5 * 52 + 2] == 0);
+	CHECK(line[30 * 52 + 26] == 0 && line[30 * 52 + 0] > 0 && line[0 * 52 + 26] > 0);
+	for (y = 0; y < 60; y++)
+	{
+		for (x = 0; x < 26; x++)
+		{
+			CHECK(fill[y * 52 + x] == fill[y * 52 + 51 - x] && fill[y * 52 + x] == fill[(59 - y) * 52 + x]);
+			ring += line[y * 52 + x] > 0;
+			inside += fill[y * 52 + x] == 255;
+			CHECK(line[y * 52 + x] <= fill[y * 52 + x]);
+		}
+	}
+	CHECK(ring > 0 && inside > 2 * ring);
+}
+
+/* (the glyphs are drawn on a 32 grid) */
+#define K (AE_WAYPOINT_GLYPH_SIZE / 32)
 
 static void glyph_tests(void)
 {
@@ -266,8 +298,8 @@ static void glyph_tests(void)
 			}
 		}
 		/* (a drawing, not an empty or a full square: it fills most of its width, and has solid texels) */
-		CHECK(covered > 150 && covered < 700 && solid > 60);
-		CHECK(right - left >= 20 && bottom - top >= 16 && left >= 1 && right <= 30 && top >= 1 && bottom <= 30);
+		CHECK(covered > 120 * K * K && covered < 700 * K * K && solid > 40 * K * K);
+		CHECK(right - left >= 20 * K && bottom - top >= 16 * K && left >= K && right <= 31 * K - 1 && top >= K && bottom <= 31 * K - 1);
 	}
 	/* (the shield is the same on both sides) */
 	for (y = 0; y < AE_WAYPOINT_GLYPH_SIZE; y++)
@@ -290,9 +322,10 @@ int main(void)
 	source_tests();
 	class_definition_tests();
 	sprite_tests();
-	size_tests();
+	stock_layout_tests();
 	line_tests();
 	picture_row_tests();
+	badge_tests();
 	glyph_tests();
 	if (failures)
 	{
