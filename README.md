@@ -298,6 +298,32 @@ executable, and the saves in `~/.local/share/halo-linux`. Everything the port
 adds is in `config.toml`, written the first time the game starts with every
 setting listed and explained; see [port/linux/README.md](port/linux/README.md).
 
+## Playing over LAN
+
+Every computer must be on the same network: the same router or Wi-Fi, and not
+a guest Wi-Fi, which keeps devices apart. LAN games are found through the
+network's broadcasts and played over UDP ports **5150**, **5151** and **5160**,
+and every computer, host or not, needs them open.
+
+**Windows** asks the first time the game starts. Allow it, on private
+networks at least, and on public ones too if Windows calls your network public.
+
+**Linux has no such question.** If a firewall is turned on, it silently
+blocks LAN games: nobody sees your game, or you see nobody's. Open the three
+ports once on each Linux computer:
+
+- Ubuntu, Zorin OS, Linux Mint, Pop!_OS (ufw): `sudo ufw allow 5150:5151/udp`
+  and `sudo ufw allow 5160/udp`. Or, in the Firewall Configuration app (Gufw):
+  Rules, +, Advanced, protocol UDP, port `5150:5151`, then again for `5160`.
+- Fedora and others with firewalld:
+  `sudo firewall-cmd --permanent --add-port=5150-5151/udp --add-port=5160/udp`
+  and then `sudo firewall-cmd --reload`.
+- Not sure whether a firewall is on? `sudo ufw status` says `inactive` when
+  ufw is off; `systemctl is-active firewalld` says `inactive` when firewalld is.
+
+Turning the firewall off also works, but opening the ports keeps it on for
+everything else.
+
 ## Building it yourself
 
 You need Python 3, [ninja](https://ninja-build.org/), clang with lld (or gcc on
