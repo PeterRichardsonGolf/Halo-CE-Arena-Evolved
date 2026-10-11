@@ -123,7 +123,7 @@ static boolean find_hashed(
 			found++;
 		}
 		while (FindNextFileA(find, &data));
-		FindClose(find);
+		CloseHandle(find);
 		if (found == 1)
 			return TRUE;
 		if (found > 1)
