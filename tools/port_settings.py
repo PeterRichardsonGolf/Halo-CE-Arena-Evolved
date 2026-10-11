@@ -421,7 +421,7 @@ STRING_OVERRIDES = {
         "The HUD's area, clocks and\\nmessages, and the waypoints.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Mods, and how the game plays:\\nfall damage and more.\\n\\nProfile:",
-        "Custom Edition maps' files,\\nread from Halo: The Master\\nChief Collection's folder.\\nProfile:",
+        "Custom Edition maps' files,\\nread from the MCC folder.\\n\\nProfile:",
         "Free-for-all color; in a match,\\nfrom the next game you join.\\n\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
     ],

@@ -1371,7 +1371,7 @@
 		<string text="The HUD's area, clocks and\nmessages, and the waypoints.\n\nProfile:"/>
 		<string text="Internet play, updates and the\nmultiplayer HUD.\n\nProfile:"/>
 		<string text="Mods, and how the game plays:\nfall damage and more.\n\nProfile:"/>
-		<string text="Custom Edition maps' files,\nread from Halo: The Master\nChief Collection's folder.\nProfile:"/>
+		<string text="Custom Edition maps' files,\nread from the MCC folder.\n\nProfile:"/>
 		<string text="Free-for-all color; in a match,\nfrom the next game you join.\n\nProfile:"/>
 		<string text="Halo: Combat Evolved, the Xbox\ngame, on this computer.\n\nProfile:"/>
 	</strings>

@@ -3,7 +3,7 @@ AE_WAYPOINT_GLYPHS.C
 
 Arena Evolved's own waypoint glyphs (ae_waypoint_icons.h): each 32 by 32, its coverage
 as alpha, row by row from the top. Written by tools/ae_waypoint_glyphs.py, which draws
-them from plain geometry: change that, not this (tools/test_ae_waypoint_icons.py checks).
+them from plain geometry: change that, not this (tools/test_ae_hud_settings.py checks).
 */
 
 #include "ae_waypoint_icons.h"

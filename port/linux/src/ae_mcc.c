@@ -811,6 +811,11 @@ void ae_mcc_short_path(const char *path, char *out, size_t size, size_t most)
 		;
 	/* (none, or only the path's own last character: cut where it fits) */
 	if (from + 1 >= length)
+	{
 		from = length - (most - 3);
+		/* (not inside a UTF-8 character: on to its next lead byte) */
+		while (from < length && ((unsigned char)path[from] & 0xC0) == 0x80)
+			from++;
+	}
 	snprintf(out, size, "...%s", path + from);
 }

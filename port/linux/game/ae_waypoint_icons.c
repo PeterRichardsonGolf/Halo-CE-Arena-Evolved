@@ -59,6 +59,13 @@ int ae_waypoint_icon_source(int item_class, int stock_sprite_drawable, int glyph
 	return AE_WAYPOINT_ICON_NONE;
 }
 
+long ae_waypoint_class_definition(const long *class_definitions, int count, int item_class)
+{
+	if (!class_definitions || item_class < 0 || item_class >= count)
+		return -1;
+	return class_definitions[item_class];
+}
+
 int ae_waypoint_sprite_size(int bitmap_width, int bitmap_height, float x0, float x1, float y0, float y1,
 	int *width, int *height)
 {

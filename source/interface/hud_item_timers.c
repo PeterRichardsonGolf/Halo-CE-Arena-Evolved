@@ -1703,7 +1703,7 @@ static boolean hud_waypoint_stock_sprite(
 	long *sprite_height)
 {
 	long group_index = hud_globals->messaging.messaging_icons.index;
-	long definition_index = timer->definition_index;
+	long definition_index = item_timer_waypoint_definition(timer);
 	char const *test = hud_waypoint_icons_test();
 	long hud_interface_index;
 	struct bitmap_group *group;
@@ -1718,7 +1718,7 @@ static boolean hud_waypoint_stock_sprite(
 		return FALSE;
 	icon->why_none = "the weapon has no HUD interface";
 	hud_interface_index = weapon_definition_get(definition_index)->weapon.interface_definition.hud_interface.index;
-	if (hud_interface_index == NONE)
+	if (hud_interface_index == NONE || tag_get_group_tag(hud_interface_index) != 'wphi')
 		return FALSE;
 	icon->why_none = "the weapon's HUD interface has no messaging icon";
 	sequence_index = weapon_hud_interface_definition_get(hud_interface_index)->messaging_icon.sequence_index;

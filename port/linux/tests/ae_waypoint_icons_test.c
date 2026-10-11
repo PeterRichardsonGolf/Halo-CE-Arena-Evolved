@@ -73,6 +73,20 @@ static void source_tests(void)
 	CHECK(ae_waypoint_icon_source(5, 1, 1, NULL) == AE_WAYPOINT_ICON_NONE && ae_waypoint_icon_source(1000, 1, 1, NULL) == AE_WAYPOINT_ICON_NONE);
 }
 
+static void class_definition_tests(void)
+{
+	/* (a mixed weapon entry: rockets and a sniper rifle, no other class) */
+	static const long mixed[5] = { 101, 202, -1, -1, -1 };
+
+	CHECK(ae_waypoint_class_definition(mixed, 5, AE_WAYPOINT_ROCKETS) == 101);
+	/* (the rifle spawned: the rifle's item, not the rocket launcher's) */
+	CHECK(ae_waypoint_class_definition(mixed, 5, AE_WAYPOINT_SNIPER) == 202);
+	CHECK(ae_waypoint_class_definition(mixed, 5, AE_WAYPOINT_SHOTGUN) == -1);
+	/* (not seen yet, out of range, no table) */
+	CHECK(ae_waypoint_class_definition(mixed, 5, -1) == -1 && ae_waypoint_class_definition(mixed, 5, 5) == -1);
+	CHECK(ae_waypoint_class_definition(NULL, 5, 1) == -1);
+}
+
 static void sprite_tests(void)
 {
 	int width = -1, height = -1;
@@ -270,6 +284,7 @@ int main(void)
 {
 	style_tests();
 	source_tests();
+	class_definition_tests();
 	sprite_tests();
 	size_tests();
 	line_tests();

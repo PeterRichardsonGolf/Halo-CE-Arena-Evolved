@@ -17,6 +17,7 @@ time alone (a client has the host's: game_time_set_distributed).
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/item_timers.h"
+#include "ae_waypoint_icons.h"
 #include "hs/hs.h"
 #include "items/equipment_definitions.h"
 #include "items/item_definitions.h"
@@ -135,23 +136,26 @@ static short item_timer_definition_class(
 items; the heaviest permutation names the entry, and *classes has a bit
 for each class it can spawn. FALSE when the gametype spawns none of them
 (no shields: no overshield, always invisible: no camo, no weapons on the
-map: no weapons). *class_definition is the item of that class (NONE for
-other): its picture is the waypoint's */
+map: no weapons). class_definitions[] has the item of each power class it
+can spawn (the first seen; NONE for a class it cannot): the waypoint's
+picture is that of the class the entry spawned */
 static boolean item_timer_classify(
 	long collection_index,
 	short *timer_class,
 	long *heaviest_definition,
-	long *class_definition,
+	long *class_definitions,
 	unsigned short *classes)
 {
 	struct item_collection_definition *collection;
 	struct item_permutation_definition const *permutations;
 	long permutation_index;
+	short permutation_class;
 	real heaviest_weight = -1.0f;
 
 	*timer_class = _item_timer_other;
 	*heaviest_definition = NONE;
-	*class_definition = NONE;
+	for (permutation_class = 0; permutation_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES; permutation_class++)
+		class_definitions[permutation_class] = NONE;
 	*classes = 0;
 	if (collection_index == NONE)
 		return FALSE;
@@ -164,7 +168,6 @@ static boolean item_timer_classify(
 	{
 		struct item_permutation_definition const *permutation = &permutations[permutation_index];
 		long definition_index = permutation->item.index;
-		short permutation_class;
 
 		/* (random_item never picks an item of no weight) */
 		if (definition_index == NONE || permutation->weight <= 0.0f)
@@ -184,11 +187,10 @@ static boolean item_timer_classify(
 
 		permutation_class = item_timer_definition_class(definition_index);
 		SET_FLAG(*classes, permutation_class, TRUE);
+		if (permutation_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES && class_definitions[permutation_class] == NONE)
+			class_definitions[permutation_class] = definition_index;
 		if (permutation_class < *timer_class)
-		{
 			*timer_class = permutation_class;
-			*class_definition = definition_index;
-		}
 		if (permutation->weight > heaviest_weight)
 		{
 			heaviest_weight = permutation->weight;
@@ -616,11 +618,11 @@ void item_timers_map_begin(
 		short timer_class;
 		unsigned short classes;
 		long definition_index;
-		long class_definition_index;
+		long class_definitions[NUMBER_OF_ITEM_TIMER_POWER_CLASSES];
 
 		if (!game_engine_matches_game_type(equipment->game_type) ||
 			!item_timer_classify(equipment->item_collection.index, &timer_class, &definition_index,
-				&class_definition_index, &classes))
+				class_definitions, &classes))
 		{
 			continue;
 		}
@@ -636,7 +638,7 @@ void item_timers_map_begin(
 		timer->period_ticks = game_engine_item_respawn_period(equipment);
 		timer->timer_class = timer_class;
 		timer->classes = classes;
-		timer->definition_index = class_definition_index;
+		csmemcpy(timer->class_definitions, class_definitions, sizeof(timer->class_definitions));
 		item_timer_count++;
 	}
 
@@ -818,6 +820,15 @@ short item_timer_waypoint_class(
 	short timer_class = item_timer_mixed(timer) ? item_timer_spawned_class(timer) : timer->timer_class;
 
 	return timer_class >= 0 && timer_class < NUMBER_OF_ITEM_TIMER_POWER_CLASSES ? timer_class : NONE;
+}
+
+/* the item of the class item_timer_waypoint_class names (a mixed entry's:
+of the class it spawned, never another class's item), else NONE */
+long item_timer_waypoint_definition(
+	struct item_timer const *timer)
+{
+	return ae_waypoint_class_definition(timer->class_definitions, NUMBER_OF_ITEM_TIMER_POWER_CLASSES,
+		item_timer_waypoint_class(timer));
 }
 
 /* the name over TRAINING's waypoint: RED / BLUE as the power list has it,

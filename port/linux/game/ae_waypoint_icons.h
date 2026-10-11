@@ -77,6 +77,12 @@ map's sprite for a weapon that has a drawable one, else none (also any other cla
 *glyph (may be NULL) is set to which of ours */
 int ae_waypoint_icon_source(int item_class, int stock_sprite_drawable, int glyphs_drawable, int *glyph);
 
+/* the item a waypoint's picture is of: an entry's item of each class (a NONE where it has none, count of them), and
+the class its waypoint names (a mixed entry's: the class it spawned, else NONE); none_value where that class has
+none, -1 (NONE) when the class is out of range: never another class's item (a collection of rockets and a sniper rifle that spawned the
+rifle shows the rifle) */
+long ae_waypoint_class_definition(const long *class_definitions, int count, int item_class);
+
 /* a map's sprite, checked before anything is drawn from it (a Custom Edition map's or a mod's sheet may be
 anything): its bitmap's size, and its bounds as fractions of the bitmap (x0 < x1, y0 < y1, all in 0..1). 1 with
 its size in texels (at least 2 each way) when it can be drawn, else 0 */

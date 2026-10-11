@@ -409,6 +409,9 @@ static void small_tests(void)
 	CHECK(!strcmp(shown, "...tuvwxyzabcdefghij"));
 	ae_mcc_short_path("/x/abcdefghijklmnopqrstuvwxyz/", shown, sizeof(shown), 20);
 	CHECK(strlen(shown) == 20 && !strncmp(shown, "...", 3));
+	/* (a non-ASCII last folder longer than the line: never cut inside a character; "\xc3\xa9" is one) */
+	ae_mcc_short_path("/x/\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9", shown, sizeof(shown), 8);
+	CHECK(!strncmp(shown, "...", 3) && ((unsigned char)shown[3] & 0xC0) != 0x80);
 	ae_mcc_short_path("/a/long/path/that/does/not/fit", shown, 8, 20);
 	CHECK(strlen(shown) == 7);
 

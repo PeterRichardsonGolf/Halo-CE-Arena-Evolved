@@ -80,6 +80,9 @@ def test_profile_menu_item():
 
 def test_game_options_has_no_map_files():
     spec = port_settings.SCREENS["mods_setup"]
+    # (nine rows 30 px apart since the HUD's rows moved to the HUD screen; the help line under them)
+    assert len(spec["rows"]) == 9 and spec["spacing"] == 30 and "help_top" not in spec
+    assert 73 + len(spec["rows"]) * spec["spacing"] <= 350
     assert "categories" not in spec and "map_files" not in (CE / GAME_OPTIONS).read_text().replace(
         "map_files_profile_item", "")
 
