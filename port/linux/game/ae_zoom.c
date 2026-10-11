@@ -233,6 +233,7 @@ void ae_zoom_bank_set_mode(struct ae_zoom_bank *bank, int mode)
 		ae_zoom_reset(&bank->states[index]);
 		bank->flash_latch[index] = 0;
 		bank->flash_pending[index] = 0;
+		bank->flash_was_down[index] = 0;
 	}
 }
 
@@ -338,4 +339,30 @@ short ae_zoom_bank_step(struct ae_zoom_bank *bank, int player, long hold_ms, uns
 		return level;
 	return ae_zoom_step(&bank->states[player], bank->mode, hold_ms, (int)((flags >> AE_ZOOM_HELD_BIT) & 1), now_ms,
 		level, count, blocked);
+}
+
+int ae_zoom_wheel_wanted(int mode, unsigned long flags, short count, int blocked, short level)
+{
+	return mode != AE_ZOOM_TOGGLE && ((flags >> AE_ZOOM_HELD_BIT) & 1) && count > 0 && !blocked && level >= 0;
+}
+
+void ae_zoom_bank_forget(struct ae_zoom_bank *bank)
+{
+	int index;
+
+	for (index = 0; index < AE_ZOOM_PLAYERS; index++)
+	{
+		int slot;
+
+		ae_zoom_reset(&bank->states[index]);
+		bank->flash_latch[index] = 0;
+		bank->flash_pending[index] = 0;
+		bank->flash_was_down[index] = 0;
+		bank->memory_next[index] = 0;
+		for (slot = 0; slot < AE_ZOOM_MEMORY; slot++)
+		{
+			bank->memory_weapon[index][slot] = 0;
+			bank->memory_level[index][slot] = 0;
+		}
+	}
 }

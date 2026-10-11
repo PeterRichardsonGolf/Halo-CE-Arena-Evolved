@@ -504,6 +504,39 @@ int main(void)
 		CHECK(bank.flash_pending[0] == 0 && (unit & light));
 	}
 
+	/* the wheel is the zoom's only while a held zoom can act (a menu's zeroed blob, no zoomable weapon, reloading, TOGGLE) */
+	{
+		unsigned long down = 1ul << AE_ZOOM_HELD_BIT;
+
+		CHECK(ae_zoom_wheel_wanted(AE_ZOOM_HOLD, down, 2, 0, 0) && ae_zoom_wheel_wanted(AE_ZOOM_BOTH, down, 1, 0, 0));
+		CHECK(!ae_zoom_wheel_wanted(AE_ZOOM_HOLD, 0, 2, 0, 0)); /* a pause menu zeroed the blob */
+		CHECK(!ae_zoom_wheel_wanted(AE_ZOOM_HOLD, down, 0, 0, -1)); /* a weapon that does not zoom */
+		CHECK(!ae_zoom_wheel_wanted(AE_ZOOM_HOLD, down, 2, 1, 0)); /* reloading or zoom blocked */
+		CHECK(!ae_zoom_wheel_wanted(AE_ZOOM_HOLD, down, 2, 0, -1)); /* not zoomed (taken off by the game) */
+		CHECK(!ae_zoom_wheel_wanted(AE_ZOOM_TOGGLE, down, 2, 0, 0));
+	}
+	/* a new game forgets the last levels, the presses and the latches, and keeps the mode and the reset */
+	{
+		struct ae_zoom_bank bank;
+		unsigned long held = 1ul << AE_ZOOM_HELD_BIT;
+
+		memset(&bank, 0, sizeof(bank));
+		ae_zoom_bank_set_mode(&bank, AE_ZOOM_HOLD);
+		ae_zoom_bank_set_reset(&bank, AE_ZOOM_RESET_LAST);
+		ae_zoom_bank_remember(&bank, 0, 100, 1);
+		ae_zoom_bank_remember(&bank, 2, 100, 1);
+		ae_zoom_bank_step_ex(&bank, 0, HOLD_MS, held, 0, -1, 2, 0, 100, 0);
+		CHECK(bank.states[0].was_held == 1);
+		ae_zoom_bank_forget(&bank);
+		CHECK(ae_zoom_bank_recall(&bank, 0, 100) == -1 && ae_zoom_bank_recall(&bank, 2, 100) == -1);
+		CHECK(bank.states[0].was_held == 0 && bank.mode == AE_ZOOM_HOLD && bank.reset == AE_ZOOM_RESET_LAST);
+		/* the first weapon of the new game (the same object index) starts at the first level */
+		CHECK(ae_zoom_bank_step_ex(&bank, 0, HOLD_MS, held, 100, -1, 2, 0, 100, 0) == 0);
+		/* a mode change with the flashlight down: the next tick's press is not seen as new */
+		ae_zoom_bank_set_mode(&bank, AE_ZOOM_BOTH);
+		CHECK(bank.flash_was_down[0] == 0);
+	}
+
 	/* the text */
 	CHECK(ae_zoom_mode_from_text("toggle") == AE_ZOOM_TOGGLE);
 	CHECK(ae_zoom_mode_from_text("hold") == AE_ZOOM_HOLD);

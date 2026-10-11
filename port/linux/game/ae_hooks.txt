@@ -41,12 +41,11 @@ port/linux/src/port_config.c	{ "input.zoom_hold_time", _config_real, "0.25", "HA
 source/game/player_control.c	#include "ae_glue_zoom.h" /* AE hook */
 source/game/player_control.c	ae_zoom_filter_press(local_player_index, &input.player_control_flags, _player_control_input_zoom_bit, &input.unit_control_flags, _unit_control_integrated_light_bit); /* AE hook */
 source/game/player_control.c	player->zoom_level = ae_zoom_update(local_player_index, player->zoom_level, current_weapon_index, player_control_camera_control_is_active() && !cinematic_in_progress(), input.player_control_flags); /* AE hook */
-source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, effective_buttons[_button_scope_zoom] != 0, gamepad_index); /* AE hook */
-source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, input_key_is_down(_key_z), gamepad_index); /* AE hook */
+source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, effective_buttons[_button_scope_zoom] != 0); /* AE hook */
+source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, input_key_is_down(_key_z)); /* AE hook */
 source/game/game_engine.c	#include "ae_glue_zoom.h" /* AE hook */
 source/game/game_engine.c	ae_zoom_log_settings(); /* AE hook */
-source/game/player_control.c	ae_zoom_note_flash(&input->player_control_flags, effective_buttons[_button_flashlight] != 0); /* AE hook */
-source/game/player_control.c	ae_zoom_note_flash(&input->player_control_flags, input_key_is_down(_key_x)); /* AE hook */
+source/game/player_control.c	ae_zoom_note_flash(&input->player_control_flags, effective_buttons[_button_flashlight] != 0, gamepad_index); /* AE hook */
 port/linux/src/xinput_sdl.c	if (ae_zoom_wheel_taken()) /* AE hook */\nreturn FALSE;
 port/linux/src/xinput_sdl.c	ae_zoom_wheel_scrolled(wheel_direction); /* AE hook */
 port/linux/src/port_config.c	{ "game.mcc_path", _config_string, "\"\"", NULL, _environment_value, /* AE hook */\n_platform_desktop,
