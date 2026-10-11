@@ -393,6 +393,7 @@ static char const *const port_function_names[] =
 	"port password init", "port password edit", "port password join", "port password back",
 	/* (Gamepads' OK in a single-player campaign: pause_settings_patch) */
 	"port profile settings save",
+	"ae mcc use", "ae mcc not now", "ae mcc never ask", "ae mcc browse", /* AE hook */
 };
 
 /* the PC version's game data functions that the Xbox's have not, from
@@ -414,6 +415,7 @@ static char const *const port_game_data_input_names[] =
 	/* (the profile settings' picture: the Xbox's of the button settings,
 	on Gamepad Setup's row) */
 	"port gamepad layout preview",
+	"ae mcc status", /* AE hook */
 };
 
 static struct

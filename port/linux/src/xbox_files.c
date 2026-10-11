@@ -16,6 +16,7 @@ matched case-insensitively, like the Xbox's FATX volumes.
 #include "platform.h"
 #include "posix.h"
 #include "port_config.h"
+#include "ae_mcc.h" /* AE hook */
 
 #include <ctype.h>
 #include <errno.h>
@@ -247,6 +248,8 @@ void platform_translate_path(const char *xbox_path, char *host_path, unsigned lo
 	const char *cursor = xbox_path;
 	unsigned long length;
 
+	if (ae_mcc_translate_path(xbox_path, host_path, host_path_size)) /* AE hook */
+		return;
 	snprintf(resolved, sizeof(resolved), "%s", platform_data_root());
 	if (((cursor[0] >= 'a' && cursor[0] <= 'z') || (cursor[0] >= 'A' && cursor[0] <= 'Z')) && cursor[1] == ':')
 	{

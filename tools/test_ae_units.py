@@ -38,6 +38,8 @@ UNITS = {
     "ae_motion_test.c": ([UI / "ae_motion.c"], [], []),
     # (the MCC mouse style's pure functions)
     "ae_mouse_test.c": ([UI / "ae_mouse.c"], [], []),
+    # (the MCC files' detection over fake Steam trees; under the sanitizers, as Steam's files are untrusted text)
+    "ae_mcc_test.c": ([SRC / "ae_mcc.c"], [f"-I{SRC}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (the zoom action's hold mode: the state machine)
     "ae_zoom_test.c": ([UI / "ae_zoom.c"], [], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),

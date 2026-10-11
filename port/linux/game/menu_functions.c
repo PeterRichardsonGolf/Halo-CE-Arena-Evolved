@@ -94,6 +94,7 @@ their handlers open opens.
 #endif
 /* (its games on Halo PC maps: server_browser.c) */
 #include "halo_map_families.h"
+#include "ae_glue_mcc.h" /* AE hook */
 #include "halo_server_browser.h"
 #include "halo_port_limits.h" /* AE: the game lists' rows (halo_port_advertised_join_state) */
 
@@ -352,6 +353,7 @@ static boolean setting_text(char const *name, char *text, unsigned int size, boo
 		if (!(default_value ? config_default(name, text, size) : config_text(name, text, size)))
 			return FALSE;
 		ae_mouse_menu_text(name, text, size, default_value); /* AE hook */
+		ae_mcc_menu_text(name, text, size, default_value); /* AE hook */
 		/* (display.mode empty: display.fullscreen's, as the window has it:
 		sdl_platform.c) */
 		if (!strcmp(name, "display.mode") && !text[0])
@@ -2868,6 +2870,8 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 			return campaign_fail();
 		return ui_widget_port_open(list, SERVER_SETUP_NAME, widget_deleted);
 	}
+	if (map_list.kind == MAP_KIND_MULTIPLAYER && ae_mcc_map_chosen(multiplayer_map_names[chosen], chosen, list, widget_deleted)) /* AE hook */
+		return TRUE;
 	if (map_list.kind == MAP_KIND_MULTIPLAYER)
 		return ui_widget_port_multiplayer_map_choose(chosen);
 	ui_play_audio_feedback_sound(SOUND_FORWARD);
@@ -6593,6 +6597,8 @@ boolean pc_menu_event_function_invoke(
 
 		if (!name)
 			return FALSE;
+		if (!strncmp(name, "ae mcc ", 7)) /* AE hook */
+			return ae_mcc_menu_event(name, controller);
 		if (!strcmp(name, "main menu quit game"))
 		{
 			platform_request_quit();
@@ -6949,6 +6955,8 @@ void pc_menu_game_data_function_invoke(
 
 	if (!name)
 		return;
+	if (!strcmp(name, "ae mcc status")) /* AE hook */
+		text_set_length(widget, (wchar_t const *)ae_mcc_status_wide(), 200);
 	/* (a text field whose screen has gone: let go of) */
 	if (text_field.row && system_milliseconds() - text_field_shown_time > 500)
 		text_field_end(FALSE);

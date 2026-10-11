@@ -11,6 +11,7 @@ play it); the files are looked for only on the builds that play such maps
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
 #include "halo_map_families.h"
+#include "ae_glue_mcc.h" /* AE hook */
 
 #include <stdio.h>
 #include <string.h>
@@ -338,6 +339,8 @@ boolean map_family_resource(
 			return TRUE;
 		}
 	}
+	if (ae_mcc_resource(name, path, size)) /* AE hook */
+		return TRUE;
 	/* (where it goes: the first place) */
 	snprintf(path, (size_t)size, "d:\\%s%s.map", resource_places[0].folder, name);
 	return FALSE;

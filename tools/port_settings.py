@@ -112,10 +112,10 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (20, not 24: thirteen rows, with the help line where
-        # video_settings' is, as its fourteen at 20)
-        "spacing": 20,
-        "help_top": 364,
+        # (19, not 24: fourteen rows and MAP FILES, with the help line
+        # under them)
+        "spacing": 19,
+        "help_top": 368,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -167,6 +167,31 @@ SCREENS = {
               "Tap to toggle, hold to zoom while held: a hold\nzooms to the first level, and letting go zooms out."],
              None),
         ],
+        # (MCC's Custom Edition files: ae_mcc.c)
+        "categories": [
+            ("MAP FILES:", "mods_setup/map_files",
+             "Custom Edition maps' files from Halo: The Master\nChief Collection, read from its folder."),
+        ],
+    },
+    # (MCC's Custom Edition files, read in place: port/linux/src/ae_mcc_platform.c. BROWSE runs "ae mcc
+    # browse"; the status line under the rows is "ae mcc status"'s)
+    "mods_setup/map_files": {
+        "screen": "map_files_screen",
+        "header": ("header_map_files", None),
+        "title": "MAP FILES",
+        "spacing": 30,
+        "rows": [
+            ("MCC FILES:", "game.mcc_use", [("ON", "yes"), ("OFF", "no")],
+             ["Custom Edition maps read their bitmaps, sounds\nand text from your MCC folder; never changed.",
+              "MCC's files are not read. Custom Edition maps\nneed bitmaps.map, sounds.map and loc.map in maps_ce."],
+             None),
+        ],
+        "actions": [
+            ("BROWSE FOR THE MCC FOLDER", "ae mcc browse",
+             "Choose the Halo: The Master Chief Collection\nfolder yourself (any Steam library or a copy)."),
+        ],
+        "status": {"name": "mcc_status", "input": "ae mcc status", "left": 68, "top": 150, "width": 540,
+                   "height": 80},
     },
     "mouse_settings": {
         "screen": "mouse_settings_screen",
@@ -412,7 +437,8 @@ def _screen(folder: str, spec: dict, rows: list, list_inputs: list, list_handler
                       ("bitmap", "bitmaps/gradient")],
                      ['<on event="b" back="true"/>', '<on event="back" back="true"/>',
                       f'<child{attributes([("widget", f"{base}/{header}")])}/>',
-                      f'<child{attributes([("widget", f"{base}/options_menu")])}/>'])
+                      f'<child{attributes([("widget", f"{base}/options_menu")])}/>',
+                      *spec.get("screen_children", [])])
     header_pairs = [("controller", 1), ("left", 35), ("top", 11), ("width", 605), ("height", 59)]
     # (a screen with no title picture: its title in text)
     header_pairs += ([("type", "text"), ("text", spec["title"]), ("font", "ui\\large_ui"), ("color", "#FFFFFFFF"),
@@ -513,12 +539,38 @@ def _setting_screen(folder: str, spec: dict) -> list:
                          [("type", "text"), ("controller", 1), ("width", 512), ("height", 22),
                           ("string_list", f"{base}/labels"), ("string_index", len(spec["rows"]) + index),
                           ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    # (rows that run a function: a label, as a category's, after the categories)
+    actions = spec.get("actions", ())
+    for index, (label, run, _) in enumerate(actions):
+        key = run.replace(" ", "_")
+        row = f"{base}/op_{key}"
+        rows.append((row, None, place + 1 + len(spec.get("categories", ())) + index))
+        extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                         [f'<on event="a" run="{run}"/>', f'<on event="start" run="{run}"/>',
+                          '<on event="left_mouse" run="mouse emit accept event"/>',
+                          f'<child widget="{base}/{key}_label"/>'])
+        extra += _widget(f"{base}/{key}_label",
+                         [("type", "text"), ("controller", 1), ("width", 512), ("height", 22),
+                          ("string_list", f"{base}/labels"),
+                          ("string_index", len(spec["rows"]) + len(spec.get("categories", ())) + index),
+                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    # (a line of text the game fills each frame, under the rows: its game data input's)
+    status = spec.get("status")
+    if status:
+        extra += _widget(f"{base}/{status['name']}",
+                         [("type", "text"), ("controller", 1), ("left", status["left"]), ("top", status["top"]),
+                          ("width", status["width"]), ("height", status["height"]), ("font", "ui\\large_ui"),
+                          ("color", "#FFFFFFFF"), ("text_flags", "no_focus_test")],
+                         [f'<data input="{status["input"]}"/>'])
+        spec = dict(spec, screen_children=[f'<child widget="{base}/{status["name"]}"/>'])
     extra += _button(f"{base}/button_defaults", 3, ['<on event="a" run="port settings defaults"/>',
                                                     '<on event="start" run="port settings defaults"/>'])
     extra += _button(f"{base}/button_ok", 1, ['<on event="a" run="port settings save" back="true"/>',
                                               '<on event="start" run="port settings save" back="true"/>'])
     categories = spec.get("categories", ())
-    extra += _strings(f"{base}/labels", [label for label, *_ in spec["rows"]] + [label for label, *_ in categories])
+    extra += _strings(f"{base}/labels", [label for label, *_ in spec["rows"]] + [label for label, *_ in categories] +
+                      [label for label, *_ in actions])
     # (the help of the row whose label is string n is n + 1: the buttons' is
     # 0, and a category's follows the rows'. A row with a help for each value
     # has "@first" there, the string its first value's is, after the rows'
@@ -527,11 +579,12 @@ def _setting_screen(folder: str, spec: dict) -> list:
     for _, _, choices, help_text, *_ in spec["rows"]:
         if isinstance(help_text, list):
             assert len(help_text) == len(choices)
-            helps.append(f"@{1 + len(spec['rows']) + len(categories) + len(value_helps)}")
+            helps.append(f"@{1 + len(spec['rows']) + len(categories) + len(actions) + len(value_helps)}")
             value_helps += help_text
         else:
             helps.append(help_text)
     helps += [help_text for _, _, help_text in categories]
+    helps += [help_text for _, _, help_text in actions]
     extra += _strings(f"{base}/help_strings", [text.replace("\n", "\\n") for text in helps + value_helps])
     return _screen(folder, spec, rows, ["port settings help"], [], extra)
 
@@ -1727,6 +1780,50 @@ def _map_kind() -> list:
     return lines
 
 
+# MCC's Custom Edition files (port/linux/game/ae_glue_mcc.c): the question a Halo PC map's pick asks when the
+# player's folders lack the resource maps and MCC has them, in the Map screen's place (B is NOT NOW)
+MCC_QUESTION = f"{MT}/mp_map_select/mcc_found_modal"
+MCC_QUESTION_TEXT = ("Custom Edition maps need three files from Halo: The\\nMaster Chief Collection. AE can read them "
+                     "from your\\nMCC folder. It only reads them and never changes\\nyour MCC files.")
+MCC_QUESTION_BUTTONS = [("use", "USE MCC FILES", "ae mcc use"), ("not_now", "NOT NOW", "ae mcc not now"),
+                        ("never", "NEVER ASK AGAIN", "ae mcc never ask")]
+
+
+def _mcc_question() -> list:
+    base = f"{MT}/mp_map_select"
+    # (no_history: what USE MCC FILES opens, the gametypes, goes back to the Map screen, not to the question)
+    lines = _widget(MCC_QUESTION, [("width", 640), ("height", 480), ("flags", "pass_unhandled_to_focused_child no_history"),
+                                   ("bitmap", "bitmaps/gradient")],
+                    ['<on event="b" run="ae mcc not now" back="true"/>',
+                     '<on event="back" run="ae mcc not now" back="true"/>',
+                     f'<child widget="{base}/mcc_found_title"/>',
+                     f'<child widget="{base}/mcc_found_text"/>',
+                     f'<child widget="{base}/mcc_found_button_bar" y="414"/>'])
+    lines += _widget(f"{base}/mcc_found_title",
+                     [("type", "text"), ("controller", 1), ("left", 35), ("top", 11), ("width", 605), ("height", 59),
+                      ("text", "HALO MASTER CHIEF COLLECTION FOUND"), ("font", "ui\\large_ui"),
+                      ("color", "#FFFFFFFF"), ("text_x", 30), ("text_y", 20)], [])
+    lines += _widget(f"{base}/mcc_found_text",
+                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 120), ("width", 504),
+                      ("height", 120), ("text", MCC_QUESTION_TEXT), ("font", "ui\\large_ui"),
+                      ("color", "#FF2896FF"), ("text_flags", "no_focus_test")], [])
+    lines += _widget(f"{base}/mcc_found_button_bar",
+                     [("type", "column_list"), ("width", 640), ("height", 28),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
+                     [f'<child widget="{base}/mcc_found_{key}" x="{160 + 160 * index}" y="1"/>'
+                      for index, (key, _, _) in enumerate(MCC_QUESTION_BUTTONS)])
+    for key, caption, run in MCC_QUESTION_BUTTONS:
+        # (USE MCC FILES picks the map, as the Map screen's OK does, and opens what that opens)
+        then = (f'open="{MT}/connected/gametype_select_screen_wrapper"' if key == "use" else 'back="true"')
+        lines += _widget(f"{base}/mcc_found_{key}",
+                         [("type", "text"), ("width", 150), ("height", 24), ("bitmap", "bitmaps/text_button_background"),
+                          ("text", caption), ("font", "ui\\small_ui"), ("color", "#FFFFFFFF"), ("align", "center"),
+                          ("text_y", 2)],
+                         [f'<on event="a" run="{run}" {then}/>', f'<on event="start" run="{run}" {then}/>',
+                          '<on event="left_mouse" run="mouse emit accept event"/>'])
+    return lines
+
+
 def multiplayer_files() -> dict:
     """the port's multiplayer widgets: the browser's additions, the server
     settings, the lobby"""
@@ -1742,6 +1839,7 @@ def multiplayer_files() -> dict:
         "main_menu/new_select".replace("/", ".") + ".port.xml": head + _map_kind() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/item_options_edit".replace("/", ".") + ".port.xml": head + _item_options_extras() + ["</menus>", ""],
         TEAMPLAY_EDIT.replace("/", ".") + ".port.xml": head + _teamplay_options_extras() + ["</menus>", ""],
+        f"{MT}/mp_map_select".replace("/", ".") + ".port.xml": head + _mcc_question() + ["</menus>", ""],
     }
 
 

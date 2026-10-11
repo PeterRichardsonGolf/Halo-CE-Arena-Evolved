@@ -40,6 +40,7 @@ by their tags' paths (below).
 #include "bitmaps/bitmaps.h"
 #include "ce_map_checks.h"
 #include "halo_map_families.h"
+#include "ae_glue_mcc.h" /* AE hook */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -182,7 +183,7 @@ static boolean ce_resource_map_open(
 	map_family_resource(ce_resource_map_names[type], path, sizeof(path));
 	file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (file == INVALID_HANDLE_VALUE)
-		return ce_refuse("there is no %s", path);
+		return ce_refuse("there is no %s%s", path, ae_mcc_refusal_note()); /* AE hook */
 	file_size = GetFileSize(file, &file_size_high);
 	/* (its type, its paths before its resources' table, the table in the
 	file) */

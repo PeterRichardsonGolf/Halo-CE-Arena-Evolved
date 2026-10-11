@@ -117,6 +117,24 @@ The zoom action's modes (`input.zoom_mode`, `ae_zoom.c`) have no game test eithe
 state machine is `ae_zoom_test.c`'s (every mode, both zoom-level counts, forced unzooms, the tap-time edge), and a game shows
 only the log line `zoom: mode ..., hold time ...` at the match start.
 
+## MCC's Custom Edition files
+
+`port/linux/src/ae_mcc.c` finds an MCC folder (`game.mcc_path`, then `HALO_MCC_PATH`, then Steam: Linux's
+`$XDG_DATA_HOME/Steam`, `~/.local/share/Steam`, `~/.steam/steam`, `~/.steam/root`, Flatpak's and Snap's; Windows'
+registry `SteamPath`, then `InstallPath`, then `C:\Program Files (x86)\Steam`), each root's `libraryfolders.vdf` and
+`appmanifest_976730.acf`. `debug.txt` says `mcc: detected: ...` (found, from where; MCC found but incomplete, why; or
+not found). Its unit test, `port/linux/tests/ae_mcc_test.c`, builds fake Steam trees (normal, second library, listed
+without a manifest, an update under way, an empty shell, Flatpak, quotes and backslashes, a cut bitmaps.map, a moved
+library, hostile VDF files). For games: `HALO_MCC_PATH` names the folder for a run (or point `XDG_DATA_HOME`, or
+`HOME`, at a fake Steam tree), `HALO_MCC_USE=yes|no|ask`, and `HALO_MCC_BROWSE_RESULT=<folder>` answers Settings'
+BROWSE instead of the system's folder dialog. `HALO_MENU_OPEN` opens the Map screen
+(`main_menu/multiplayer_type_select/mp_map_select/mp_map_select_screen`) or MAP FILES
+(`main_menu/settings_select/player_setup/player_profile_edit/mods_setup/map_files/map_files_screen`) directly.
+`tools/test_ae_mcc.py` plays the reads, the question and NEVER ASK AGAIN across a restart with `$AE_MCC_BUILD` (a
+build folder: its `config.toml` is removed before each game), `$AE_MCC_PATH` (a folder with the real files) and
+`$AE_MCC_DATA` (a data root with homobox in `maps_ce` and no resource maps). The real files are the player's:
+never copy them into the repository.
+
 ## Recording
 
 The game records itself: F10 (the Screenshot action, rebindable) saves a screenshot and F9 starts/stops a recording in play, and for tests

@@ -452,6 +452,12 @@ boolean map_family_resource(char const *name, char *path, long size)
 	return TRUE;
 }
 
+/* (AE's MCC files: ce_resources.c's refusal of a missing resource map adds nothing here) */
+char const *ae_mcc_refusal_note(void)
+{
+	return "";
+}
+
 /* (tag_groups.c's, as the game reads a block's element: a Custom Edition
 map's through ce_tags_pointer) */
 void *ce_tags_pointer(unsigned long address, long size);

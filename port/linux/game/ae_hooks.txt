@@ -44,3 +44,18 @@ source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, eff
 source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, input_key_is_down(_key_z)); /* AE hook */
 source/game/game_engine.c	#include "ae_glue_zoom.h" /* AE hook */
 source/game/game_engine.c	ae_zoom_log_settings(); /* AE hook */
+port/linux/src/port_config.c	{ "game.mcc_path", _config_string, "\"\"", NULL, _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "game.mcc_use", _config_string, "\"ask\"", "HALO_MCC_USE", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/game/map_families.c	#include "ae_glue_mcc.h" /* AE hook */
+port/linux/game/map_families.c	if (ae_mcc_resource(name, path, size)) /* AE hook */\nreturn TRUE;
+port/linux/game/ce_resources.c	#include "ae_glue_mcc.h" /* AE hook */
+port/linux/game/ce_resources.c	return ce_refuse("there is no %s%s", path, ae_mcc_refusal_note()); /* AE hook */
+port/linux/src/xbox_files.c	#include "ae_mcc.h" /* AE hook */
+port/linux/src/xbox_files.c	if (ae_mcc_translate_path(xbox_path, host_path, host_path_size)) /* AE hook */\nreturn;
+port/linux/game/menu_functions.c	#include "ae_glue_mcc.h" /* AE hook */
+port/linux/game/menu_functions.c	ae_mcc_menu_text(name, text, size, default_value); /* AE hook */
+port/linux/game/menu_functions.c	if (map_list.kind == MAP_KIND_MULTIPLAYER && ae_mcc_map_chosen(multiplayer_map_names[chosen], chosen, list, widget_deleted)) /* AE hook */\nreturn TRUE;
+port/linux/game/menu_functions.c	if (!strncmp(name, "ae mcc ", 7)) /* AE hook */\nreturn ae_mcc_menu_event(name, controller);
+port/linux/game/menu_functions.c	if (!strcmp(name, "ae mcc status")) /* AE hook */\ntext_set_length(widget, (wchar_t const *)ae_mcc_status_wide(), 200);
+port/linux/game/menu_tags.c	"ae mcc use", "ae mcc not now", "ae mcc never ask", "ae mcc browse", /* AE hook */
+port/linux/game/menu_tags.c	"ae mcc status", /* AE hook */

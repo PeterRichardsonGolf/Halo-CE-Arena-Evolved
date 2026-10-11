@@ -24,6 +24,20 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   while already zoomed keeps the level). A weapon switch, a reload, a hit or
   any other unzoom ends the press: its release does nothing. The match start
   logs the mode in `debug.txt`. Nothing new goes over the network.
+- Custom Edition maps can use the three files they need (`bitmaps.map`,
+  `sounds.map`, `loc.map`) from your Steam install of Halo: The Master Chief
+  Collection, read where they are (`halo1/maps/custom_edition`): AE never
+  copies or changes your MCC files. AE finds MCC in your Steam libraries
+  (Linux and Windows) the first time a Custom Edition map needs the files. When
+  you pick such a map and your own folders (`maps_ce`, `maps/ce`,
+  `custom_maps`) lack them, it asks: USE MCC FILES, NOT NOW or NEVER ASK AGAIN
+  (`game.mcc_use`: `ask`, `yes`, `no`). Files in your own folders always win.
+  Settings > Game Options > MAP FILES has MCC FILES ON / OFF, the folder in use
+  (or NOT FOUND) and BROWSE, to pick the MCC folder yourself (`game.mcc_path`;
+  `HALO_MCC_PATH` names one for a run). An MCC that Steam lists but whose files
+  are missing or being updated is told in the map's refusal and on MAP FILES.
+  The folder found is logged in `debug.txt`; it never goes over the network or
+  into saves.
 
 ## 0.2.1-beta - 2026-10-10
 
