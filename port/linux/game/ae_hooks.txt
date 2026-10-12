@@ -76,3 +76,5 @@ port/linux/game/menu_tags.c	"ae profile picture", /* AE hook */
 port/linux/src/port_config.c	{ "debug.waypoint_icons", _config_string, "\"\"", "HALO_WAYPOINT_ICONS", _environment_value, /* AE hook */\n_platform_all,
 source/interface/hud.c	hud_item_timers_name_tag_note(&bounds, name, x, y, hud_player_name_scale()); /* AE hook */
 source/interface/hud.c	hud_item_timers_name_tags_begin(); /* AE hook */
+port/linux/src/xinput_sdl.c	if (test_input_menu[0]) { size_t ae_length = 0; const char *ae_token = test_input_menu_token(&ae_length); ae_platform_test_pad_press(ae_token, (int)ae_length); } /* AE hook */
+port/linux/game/menu_functions.c	if (lobby_controller_playing(1) || lobby_controller_playing(2) || lobby_controller_playing(3)) /* AE hook */\nreturn TRUE; /* (AE: player 1 left, a player of a later controller stays: the lone pad stays theirs, else its port goes and their "Please reconnect #2 controller" never ends) */

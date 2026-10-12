@@ -59,6 +59,10 @@ int ae_platform_input_scheme(void);
 /* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
 as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
 void ae_platform_test_keystroke(int scancode);
+/* (debug.test_input "menu:" with "pad:<button>" tokens, xinput_sdl.c's poll, each call) the token pressed now (NULL:
+none) and its length: a virtual SDL gamepad, attached at the first call, gets its button (pad:b, pad:start, ...), so
+the presses of a real lone gamepad are tested, through the game's own mapping of pads to ports (ae_platform.c) */
+void ae_platform_test_pad_press(char const *token, int length);
 
 /* the MCC mouse style (ae_glue_mouse.c, the game's side; xinput_sdl.c halo_linux_mouse_look): debug.test_input
 "mouse:<dx>,<dy>" adds those counts to the ones read, every 30th call; ae_mouse_look_override then replaces the

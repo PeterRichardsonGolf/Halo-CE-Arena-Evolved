@@ -16,9 +16,15 @@ pure, so the unit tests build it.)
 #include "ae_platform.h"
 #include "port_config.h"
 
+#include <string.h>
+
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
 #include <SDL3/SDL_atomic.h>
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_joystick.h>
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_timer.h>
@@ -201,5 +207,81 @@ void ae_platform_test_keystroke(
 	SDL_PushEvent(&event);
 #else
 	(void)scancode;
+#endif
+}
+
+/* debug.test_input's "pad:<button>" presses: one virtual SDL gamepad, attached at the first poll when the setting has
+any, so the game finds it as a real gamepad (SDL_EVENT_GAMEPAD_ADDED: sdl_platform.c opens it) and its buttons go
+through xinput_sdl.c's own mapping of pads to ports (port_gamepad: a lone pad shares port 0 with the keyboard, or is
+port 1's while there are two players). Each call sets every button: the token's down (it is a pad's: "pad:b"), the
+others up; SDL applies the state at the next pump of events */
+void ae_platform_test_pad_press(
+	char const *token,
+	int length)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	static const struct
+	{
+		char const *name;
+		SDL_GamepadButton button;
+	} buttons[] =
+	{
+		{ "a", SDL_GAMEPAD_BUTTON_SOUTH }, { "b", SDL_GAMEPAD_BUTTON_EAST }, { "x", SDL_GAMEPAD_BUTTON_WEST },
+		{ "y", SDL_GAMEPAD_BUTTON_NORTH }, { "back", SDL_GAMEPAD_BUTTON_BACK }, { "start", SDL_GAMEPAD_BUTTON_START },
+		{ "lb", SDL_GAMEPAD_BUTTON_LEFT_SHOULDER }, { "rb", SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER },
+		{ "up", SDL_GAMEPAD_BUTTON_DPAD_UP }, { "down", SDL_GAMEPAD_BUTTON_DPAD_DOWN },
+		{ "left", SDL_GAMEPAD_BUTTON_DPAD_LEFT }, { "right", SDL_GAMEPAD_BUTTON_DPAD_RIGHT },
+	};
+	/* (0: not looked at yet; 1: attached; -1: none wanted, or SDL refused it) */
+	static int state;
+	static SDL_Joystick *joystick;
+	int pressed = -1;
+	unsigned int index;
+
+	if (!state)
+	{
+		char const *setting = config_string("debug.test_input");
+		SDL_VirtualJoystickDesc desc;
+		SDL_JoystickID id;
+
+		state = -1;
+		if (strncmp(setting, "menu:", 5) || !strstr(setting, "pad:"))
+			return;
+		/* (SDL drops a pad's input while no window of the game has the focus, as the test's hidden window has not) */
+		SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+		SDL_INIT_INTERFACE(&desc);
+		desc.type = SDL_JOYSTICK_TYPE_GAMEPAD;
+		/* (the buttons and axes numbered as SDL_GamepadButton and SDL_GamepadAxis have them: the first of each) */
+		desc.nbuttons = SDL_GAMEPAD_BUTTON_DPAD_RIGHT + 1;
+		desc.button_mask = (1u << desc.nbuttons) - 1;
+		desc.naxes = SDL_GAMEPAD_AXIS_COUNT;
+		desc.axis_mask = (1u << desc.naxes) - 1;
+		desc.name = "AE test pad";
+		id = SDL_AttachVirtualJoystick(&desc);
+		joystick = id ? SDL_OpenJoystick(id) : NULL;
+		platform_log("test input: virtual gamepad %s", joystick ? "attached" : SDL_GetError());
+		if (!joystick)
+			return;
+		/* (the triggers at rest: SDL maps a virtual pad's trigger from the axis's whole range, so 0 would read as half
+		pulled, and xinput_sdl.c's port_gamepad moves a pad between ports only at rest) */
+		SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, SDL_JOYSTICK_AXIS_MIN);
+		SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, SDL_JOYSTICK_AXIS_MIN);
+		state = 1;
+	}
+	if (state < 0)
+		return;
+	if (token && length > 4 && !strncmp(token, "pad:", 4))
+	{
+		for (index = 0; index < sizeof(buttons) / sizeof(buttons[0]); index++)
+		{
+			if ((int)strlen(buttons[index].name) == length - 4 && !strncmp(token + 4, buttons[index].name, length - 4))
+				pressed = buttons[index].button;
+		}
+	}
+	for (index = 0; index < sizeof(buttons) / sizeof(buttons[0]); index++)
+		SDL_SetJoystickVirtualButton(joystick, buttons[index].button, buttons[index].button == pressed);
+#else
+	(void)token;
+	(void)length;
 #endif
 }

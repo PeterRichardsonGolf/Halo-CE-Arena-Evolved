@@ -5138,6 +5138,8 @@ screen until the game ends). Then one gamepad is its own controller, not
 sharing player 1's with the keyboard */
 unsigned char pc_menu_split_players(void)
 {
+	if (lobby_controller_playing(1) || lobby_controller_playing(2) || lobby_controller_playing(3)) /* AE hook */
+		return TRUE; /* (AE: player 1 left, a player of a later controller stays: the lone pad stays theirs, else its port goes and their "Please reconnect #2 controller" never ends) */
 	return player_spawn_count >= 2 || lobby_join.adding || lobby_join.controller != NONE ||
 		lobby_local_player_count() >= 2 || players_port_local_player_count() >= 2;
 }

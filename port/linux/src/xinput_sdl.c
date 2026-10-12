@@ -1279,6 +1279,7 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 	memset(state, 0, sizeof(*state));
 	if (port < 0)
 		return ERROR_DEVICE_NOT_CONNECTED;
+	if (test_input_menu[0]) { size_t ae_length = 0; const char *ae_token = test_input_menu_token(&ae_length); ae_platform_test_pad_press(ae_token, (int)ae_length); } /* AE hook */
 	platform_pump_events();
 	count = sdl_gamepads(gamepads);
 	if (port == 0)
