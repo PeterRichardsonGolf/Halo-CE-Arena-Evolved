@@ -112,7 +112,7 @@ def _game(tmp_path, case, seconds, test_input, env=None):
 def _common(log):
     assert re.search(r"Custom Edition map: the pause list's row \S+\\change_settings_button runs a function this "
                      r"game has not: taken out", log)
-    assert re.search(r"menus: the pause menu has SETTINGS( and END GAME)?\n", log)
+    assert "menus: the pause menu has SETTINGS and END GAME\n" in log
     assert "Custom Edition map: 2 split-screen pause screens laid out as the one player's" in log
     assert "outside them (read as zeroes)" not in log
     assert "pause menu's widgets are not whole" not in log
@@ -129,6 +129,11 @@ def test_one_player_pause_settings_and_hud(tmp_path):
     _common(log)
     # (SETTINGS opened the profile's settings: the throwaway save root has no profile, so one is made)
     assert "menus: made a player profile for Settings" in log
+
+
+def test_xbox_menus_pause_settings_and_end_game(tmp_path):
+    log = _game(tmp_path, "xbox", 40, ["start", "wait", "wait"], {"HALO_MENUS": "xbox"})
+    _common(log)
 
 
 def test_split_screen_pause(tmp_path):

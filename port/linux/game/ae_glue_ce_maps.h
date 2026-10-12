@@ -15,6 +15,10 @@ map's did not: the menus' tags (the pause menu's SETTINGS) and the high-res
 HUD's bitmaps */
 void ae_ce_map_tags_loaded(char const *map_name, long scenario_tag_index);
 
+/* (menu_tags_loaded) whether it is making a validated Custom Edition map's
+pause support, rather than ui.map's or an Xbox map's tags */
+int ae_ce_map_building_menu_tags(void);
+
 /* (menu_tags.c's allocate) a block of the menus' tags, size bytes, which the
 game reads as tags: noted only while a Custom Edition map's are made;
 (menu_tags_release) all of them let go */

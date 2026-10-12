@@ -64,6 +64,7 @@ Three things stood in the way, all handled here:
 void menu_tags_loaded(char const *map_name);
 void hud_hires_tags_loaded(long scenario_index);
 void platform_log(char const *format, ...);
+long halo_screen_width(void);
 char const *ui_widget_event_handler_function_name(long function_index);
 char *tag_get_name(long tag_index);
 void *cache_files_tag_instances(long *count);
@@ -361,7 +362,8 @@ static void ce_pause_split_layout(struct split_template const *template)
 	references = xbox_pointer(screens->address);
 	for (screen = 0; screen < screens->count; screen++)
 	{
-		struct ce_widget_definition const *definition, *list_definition, *last_row;
+		struct ce_widget_definition *definition;
+		struct ce_widget_definition const *list_definition, *last_row;
 		struct ce_widget_child *children;
 		struct ce_widget_child const *rows;
 		long list, box = NONE, child;
@@ -374,6 +376,14 @@ static void ce_pause_split_layout(struct split_template const *template)
 		list = ce_screen_list(definition);
 		if (list == NONE || height >= FULL_SCREEN_HEIGHT || height <= 0)
 			continue;
+		/* Its 640-wide dim is otherwise centred in a wide split-screen view. */
+		if (halo_screen_width() > 640 && definition->bounds.x0 == 0 && definition->bounds.x1 == 640)
+		{
+			short extra = (short)((halo_screen_width() - 640) / 2);
+
+			definition->bounds.x0 = (short)-extra;
+			definition->bounds.x1 = (short)(640 + extra);
+		}
 		children = xbox_pointer(definition->child_widgets.address);
 		for (child = 0; child < definition->child_widgets.count; child++)
 		{
@@ -488,6 +498,11 @@ void ae_ce_map_tags_loaded(char const *map_name, long scenario_tag_index)
 		platform_log("Custom Edition map: its pause menu's widgets are not whole (%s): no SETTINGS on this map", why);
 	}
 	hud_hires_tags_loaded(scenario_tag_index);
+}
+
+int ae_ce_map_building_menu_tags(void)
+{
+	return menu_memory.collecting;
 }
 
 void ae_ce_map_menu_block(void const *block, long size)
