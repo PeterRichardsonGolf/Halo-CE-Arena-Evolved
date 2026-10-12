@@ -139,6 +139,7 @@ symbols in this file:
 #include "models/models.h"
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 #include "ae_map_share.h" /* port: map sharing on Arena Evolved's Custom Edition maps */
+#include "ae_glue_ce_maps.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1542,6 +1543,7 @@ long scenario_tags_load(
 
 				ce_hud_tags_loaded(global_tag_instances, ce_header->tag_count);
 			}
+			ae_ce_map_tags_loaded(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 			return ce_header->scenario_tag_index;
 		}
 #endif

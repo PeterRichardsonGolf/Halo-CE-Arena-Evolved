@@ -76,3 +76,13 @@ port/linux/game/menu_tags.c	"ae profile picture", /* AE hook */
 port/linux/src/port_config.c	{ "debug.waypoint_icons", _config_string, "\"\"", "HALO_WAYPOINT_ICONS", _environment_value, /* AE hook */\n_platform_all,
 source/interface/hud.c	hud_item_timers_name_tag_note(&bounds, name, x, y, hud_player_name_scale()); /* AE hook */
 source/interface/hud.c	hud_item_timers_name_tags_begin(); /* AE hook */
+# Custom Edition maps get the menus' tags (pause SETTINGS) and the high-res HUD (item 79): ae_glue_ce_maps.c, ae_ce_hud.c
+source/cache/cache_files.c	#include "ae_glue_ce_maps.h" /* AE hook */
+source/cache/cache_files.c	ae_ce_map_tags_loaded(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
+port/linux/src/hud_hires.c	#include "ae_ce_hud.h" /* AE hook */
+port/linux/src/hud_hires.c	if (ae_ce_hud_pixels(hud_hires_embedded[asset].tag, hud_hires_embedded[asset].bitmap, address, level0_size)) /* AE hook */\nreturn asset;
+port/linux/game/menu_tags.c	#include "ae_glue_ce_maps.h" /* AE hook */
+port/linux/game/menu_tags.c	ae_ce_map_menu_block(block, size > 0 ? size : 1); /* AE hook */
+port/linux/game/menu_tags.c	ae_ce_map_menu_blocks_forget(); /* AE hook */
+port/linux/game/ce_map_checks.c	#include "ae_glue_ce_maps.h" /* AE hook */
+port/linux/game/ce_map_checks.c	if (ae_ce_map_menu_memory(address, size)) /* AE hook */\nreturn xbox_pointer(address);

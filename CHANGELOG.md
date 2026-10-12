@@ -6,6 +6,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **Custom Edition maps get the pause menu's SETTINGS and the high-res HUD.**
+  Their pause menu has SETTINGS (and END GAME for the host) as the Xbox maps'
+  does, in place of Halo PC's CHANGE SETTINGS, which did nothing here. In split
+  screen their pause box now fits each player's view. The high-res HUD draws on
+  them where the map uses the stock HUD art (ammo, grenades, reticles, scopes,
+  motion sensor); the few pieces Halo PC laid out differently (the shield and
+  health meters, the ammo meters) keep the map's own.
 - **WAYPOINT SIZE** (Settings > HUD): the item waypoints' size, 50% to 100% in
   steps of 5, default 70%. In split screen it shrinks with the view; far items
   shrink gently (to 75% at 60 m). The distance is white in a dark outline and

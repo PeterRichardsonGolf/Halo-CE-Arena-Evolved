@@ -27,6 +27,7 @@ zlib (port/third_party/zlib).
 #include "platform.h"
 #include "port_config.h"
 #include "xgpu.h"
+#include "ae_ce_hud.h" /* AE hook */
 
 #include "zlib_prefixed.h"
 
@@ -118,6 +119,8 @@ long hud_hires_override_find(unsigned long address, unsigned long width, unsigne
 		return -1;
 	if (!(hud_hires_embedded[asset].title ? titles_enabled : hud_enabled))
 		return -1;
+	if (ae_ce_hud_pixels(hud_hires_embedded[asset].tag, hud_hires_embedded[asset].bitmap, address, level0_size)) /* AE hook */
+		return asset;
 #ifdef HALO_64BIT
 	/* (an Xbox address: the texture's pixels in the contiguous memory) */
 	if (crc32(0L, (const Bytef *)xbox_pointer(address), (uInt)level0_size) != hud_hires_embedded[asset].crc)
