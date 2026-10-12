@@ -76,6 +76,9 @@ unsigned long ce_resources_free_mark(void);
 void ce_resources_free_to(unsigned long mark);
 void rasterizer_geometry_compress_vertices(short type, long count, void *compressed, long compressed_size,
 	void *uncompressed, long uncompressed_size);
+/* (ce_models.c: the room for vertices and strips, up to its limit) */
+boolean ce_geometry_bytes_add(unsigned long *bytes, unsigned long vertex_count, unsigned long vertex_size,
+	unsigned long index_count);
 
 /* ---------- globals */
 
@@ -146,6 +149,9 @@ boolean ce_bsp_check(
 	unsigned long words[6];
 	byte *structure, *lightmaps;
 	long lightmap_count, lightmap_index;
+	/* (the compressed vertices ce_bsp_loaded makes of every material, which
+	may all name the same data: ce_geometry_bytes_add's limit) */
+	unsigned long geometry = 0;
 
 	*bytes = 0;
 	if (!header)
@@ -224,6 +230,11 @@ than sphere_intersects_cluster_portal projects into an array on the stack */
 			}
 			if (!vertex_count)
 				continue;
+			if (!ce_geometry_bytes_add(&geometry, (unsigned long)vertex_count, ENVIRONMENT_VERTEX_COMPRESSED_SIZE, 0) ||
+				!ce_geometry_bytes_add(&geometry, (unsigned long)lightmap_vertex_count, LIGHTMAP_VERTEX_COMPRESSED_SIZE, 0))
+			{
+				return ce_refuse("a structure BSP's materials take more than 0x8000000 bytes of vertices");
+			}
 			if (material->vertices.type != _rasterizer_vertex_type_environment_uncompressed)
 				return ce_refuse("a structure BSP's material's vertices are of type %d", material->vertices.type);
 			if (!ce_image_data(image, &material->uncompressed_vertex_data, "a structure BSP's material's vertices",

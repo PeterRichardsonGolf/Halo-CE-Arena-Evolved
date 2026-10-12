@@ -79,8 +79,15 @@ of your own fit before the built-in ones at the end of the list are cut.
   - **From build-201:** a player still downloading a Custom Edition map is held
     out of the game (not spawned, not counted) until the download is done,
     then joins with the same checks as any late joiner; a machine that goes
-    silent while downloading times out. A multiplayer map's first scripted
-    BSP switch is kept (the host's game type picks the sky, no level reload). The flashlight and dynamic
+    silent while downloading times out. Map sharing is hardened (OpenCE's
+    hardening, taken ahead of its release): LAN players are reached only at
+    addresses of the host's kind, the host takes map connections only from
+    its game's machines, Windows device names are refused as map names, a
+    download's part file grows piece by piece (an empty one is deleted), a
+    player that only says it is downloading is not held for long, and a
+    Custom Edition map whose models or structure take more than 128 MB of
+    vertices is refused. A multiplayer map's first scripted BSP switch is
+    kept (the host's game type picks the sky, no level reload). The flashlight and dynamic
     lights stay on in big matches (the Xbox turned them off past 4 / 13
     players or a few vehicles). A second weapon picked up while firing is
     readied. Bodies the host moves are no longer drawn floating or in walls.

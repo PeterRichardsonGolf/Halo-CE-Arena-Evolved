@@ -152,4 +152,5 @@ port/linux/game/menu_functions.c	if (!unjoinable && ae_browser_ping_rgb(ping, 0,
 #   port/linux/README.md (the PING paragraph).
 # - 335c6522e "Server browser: pings coloured": AE's own colours instead (ae_net_pings.h, the hooks above).
 # - 8192f36fc "PlayStation controllers: their buttons on the button icons": AE's own files (ae_buttons*), hooks above.
-# - OpenCE's 67f221421, baab0780f, 05dd9ccde: taken unchanged (upstream code, byte-identical to OpenCE main).
+# - OpenCE's 67f221421, baab0780f, 05dd9ccde: now in history through the OpenCE build-201 merge (its held players
+#   join through the late-join queue, 5a7c655a6).
