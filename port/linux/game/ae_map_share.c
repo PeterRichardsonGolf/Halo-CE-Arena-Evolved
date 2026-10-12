@@ -7,10 +7,12 @@ Custom Edition maps (ae_map_share.h).
 
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
+#include "cseries/errors.h"
 #include "cache/cache_files.h"
 #include "halo_map_families.h"
 #include "map_share.h"
 #include "ae_map_share.h"
+#include "ae_map_share_rules.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -397,6 +399,41 @@ boolean ae_map_share_find(short family, char const *file, char *path, long size)
 }
 
 #endif
+
+/* ---------- map sharing's safety rules (DamnationCE v0.3.41, CC0) */
+
+boolean ae_map_share_source_allowed(
+	boolean internet,
+	unsigned long address)
+{
+	if (internet || ae_map_share_address_local(address))
+		return TRUE;
+	error(_error_silent, "map sharing: the host named a LAN source at %lu.%lu.%lu.%lu, not a local address: not reached",
+		(address >> 24) & 0xFF, (address >> 16) & 0xFF, (address >> 8) & 0xFF, address & 0xFF);
+	return FALSE;
+}
+
+static int discard_delete(
+	char const *path,
+	void *context)
+{
+	(void)context;
+	/* (the game may hold it open from the check: let go first) */
+	map_share_release_map(path);
+	return DeleteFileA(path) != 0;
+}
+
+void ae_map_share_discard_failed(
+	char const *path)
+{
+	char const *paths[1];
+
+	paths[0] = path;
+	if (ae_map_share_discard(paths, 1, CUSTOM_EDITION_MAP_DIRECTORY, discard_delete, NULL))
+		error(_error_silent, "map sharing: removed %s, which failed its check", path);
+	else
+		error(_error_silent, "map sharing: did not remove %s (not a downloaded map, or already gone)", path ? path : "");
+}
 
 char const *map_share_level_file(
 	char const *level_name)

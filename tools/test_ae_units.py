@@ -40,6 +40,10 @@ UNITS = {
     "ae_mouse_test.c": ([UI / "ae_mouse.c"], [], []),
     # (the MCC files' detection over fake Steam trees; under the sanitizers, as Steam's files are untrusted text)
     "ae_mcc_test.c": ([SRC / "ae_mcc.c"], [f"-I{SRC}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (map sharing's safety rules: LAN sources at local addresses only, a failed download's files removed and
+    # nothing outside the downloads' folder; under the sanitizers, as the paths and addresses are a host's)
+    "ae_map_share_rules_test.c": ([UI / "ae_map_share_rules.c"], ["-fsanitize=address,undefined",
+                                                                   "-fno-sanitize-recover=all"], []),
     # (the Settings list's pictures by entry)
     "ae_settings_test.c": ([UI / "ae_settings.c"], [], []),
     # (the item waypoints' pictures: the style, the fallback to text, a map's sprite checked, the sizes, a line's

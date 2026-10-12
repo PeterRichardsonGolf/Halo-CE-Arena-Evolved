@@ -86,3 +86,8 @@ port/linux/game/menu_tags.c	ae_ce_map_menu_block(block, size > 0 ? size : 1); /*
 port/linux/game/menu_tags.c	ae_ce_map_menu_blocks_forget(); /* AE hook */
 port/linux/game/ce_map_checks.c	#include "ae_glue_ce_maps.h" /* AE hook */
 port/linux/game/ce_map_checks.c	if (ae_ce_map_menu_memory(address, size)) /* AE hook */\nreturn xbox_pointer(address);
+# map sharing's safety rules (DamnationCE v0.3.41, CC0): port/linux/game/ae_map_share_rules.c
+port/linux/game/map_share.c	if (!ae_map_share_source_allowed(TEST_FLAG(entry->flags, _source_internet_bit), entry->address)) /* AE hook */\ncontinue;
+port/linux/game/map_share.c	for (index = 0; index < download->file_count; index++) ae_map_share_discard_failed(download->files[index].final_path); /* AE hook */
+# held players (OpenCE's) back in the pregame after a game whose map download they did not finish (DamnationCE v0.3.41)
+source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */\nnetwork_game_server_restore_held_players(server); /* AE hook */

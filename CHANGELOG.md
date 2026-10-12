@@ -6,6 +6,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **Map sharing, safer** (from DamnationCE 0.3.41). A LAN game's other players
+  are only downloaded from at local network addresses, so a host can't send
+  your game to connect anywhere on the internet. A downloaded map that fails
+  its check (another version, a broken file) is deleted instead of staying in
+  `maps_ce` under the map's name. A player still downloading the map when a
+  game starts doesn't spawn until the map is in (OpenCE's), and comes back to
+  the lobby with everyone else if the game ends first. A missing `custom_maps`
+  folder is made at startup (OpenCE's).
 - **Custom Edition maps get the pause menu's SETTINGS and the high-res HUD.**
   Their pause menu has SETTINGS (and END GAME for the host) as the Xbox maps'
   does, in place of Halo PC's CHANGE SETTINGS, which did nothing here. In split
