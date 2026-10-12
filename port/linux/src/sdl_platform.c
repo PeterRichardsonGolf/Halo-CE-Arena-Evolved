@@ -13,6 +13,7 @@ and the debug keyboard that the game's console reads.
 #include "halo_product.h"
 #include "sdl_platform.h"
 #include "ae_platform.h" /* AE hook */
+#include "ae_gamepads.h" /* AE hook */
 #include "gl.h"
 #include "port_config.h"
 #include "p2p.h"
@@ -332,6 +333,7 @@ BOOL platform_sdl_initialize(void)
 	controller emulation in xinput_sdl.c) */
 	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 #endif
+	ae_gamepads_hints(); /* AE hook */
 #ifdef HALO_GAME_BROWSER
 	/* the dedicated server and a probe play no sound and need no display
 	(server/src) */
@@ -2084,6 +2086,7 @@ void platform_pump_events(void)
 					const char *name = SDL_GetGamepadName(gamepad);
 
 					platform_log("gamepad: %s", name ? name : "(unnamed)");
+					ae_gamepads_log(gamepad); /* AE hook */
 				}
 			}
 #endif

@@ -95,3 +95,8 @@ source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHI
 # (port/linux/game/hud_hires_tags.c, DamnationCE v0.3.41)
 source/interface/hud_messaging.c	struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */
 source/interface/hud_messaging.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
+# gamepads (DamnationCE v0.3.41): Linux PlayStation pads through the kernel's driver, each pad's kind in debug.txt
+# (port/linux/src/ae_gamepads.c)
+port/linux/src/sdl_platform.c	#include "ae_gamepads.h" /* AE hook */
+port/linux/src/sdl_platform.c	ae_gamepads_hints(); /* AE hook */
+port/linux/src/sdl_platform.c	ae_gamepads_log(gamepad); /* AE hook */

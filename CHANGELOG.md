@@ -6,6 +6,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **Linux: PlayStation controllers without Steam** (from DamnationCE 0.3.41).
+  A DualSense or DualShock 4 now goes through the kernel's own driver
+  (Linux 5.12 and later), so it works without Steam's udev rules (before, it
+  was not found at all without them). `debug.txt` names each controller's
+  kind and device when it connects.
 - **PlayStation button icons** (from DamnationCE 0.3.41). While a
   PlayStation controller (DualShock 4, DualSense) is the one you last used,
   the game's button pictures show its buttons: cross, circle, square and

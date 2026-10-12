@@ -268,6 +268,15 @@ controller 1. The gamepad changes controller only when none of its buttons
 is held. The profile's button layout (Settings > Gamepads) is the
 gamepads' only.
 
+On Linux a PlayStation controller (DualSense, DualShock 4) goes through the
+kernel's driver of it (`hid-playstation` since Linux 5.12, `hid-sony`):
+the buttons, sticks, triggers and rumble, with no setup. An older kernel
+leaves it to SDL's own driver, which needs access to the controller's
+`/dev/hidraw` device: Steam's udev rules give it (`steam-devices`, or
+Steam installed). Each gamepad found has a line in `debug.txt`
+(`gamepad: <name> is a <kind> pad, read through <device>`). (From
+DamnationCE.)
+
 | Action | Keys and buttons (default) |
 | --- | --- |
 | move | W, A, S, D |
