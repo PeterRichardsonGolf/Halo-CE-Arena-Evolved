@@ -105,13 +105,22 @@ void ae_buttons_uploaded(unsigned long data, unsigned long address, unsigned lon
 	{
 		/* (forgotten: another bitmap's pixels now) */
 		if (index < upload_count)
-			uploads[index] = uploads[--upload_count];
+		{
+			memmove(&uploads[index], &uploads[index + 1], (size_t)(upload_count - index - 1) * sizeof(uploads[0]));
+			upload_count--;
+		}
 		return;
 	}
 	if (index == upload_count)
 	{
 		if (upload_count >= MAXIMUM_UPLOADS)
-			return;
+		{
+			/* (full: the oldest goes. The table is in upload order, and
+			earlier maps' textures that nothing reused would otherwise fill
+			it for good) */
+			memmove(&uploads[0], &uploads[1], (size_t)(MAXIMUM_UPLOADS - 1) * sizeof(uploads[0]));
+			index = --upload_count;
+		}
 		upload_count++;
 	}
 	uploads[index].data = data;
