@@ -97,6 +97,15 @@ setup, outside this repository):
   mode comes from `HALO_DISPLAY_MODE=windowed` (the runner cannot force a window).
 - CI builds: `fetch-build.ps1` takes only successful push runs on main.
 
+## Test input: one real gamepad
+
+In `menu:` presses, `pad:<button>` (`pad:a`, `pad:b`, `pad:start`, `pad:up`, ...) presses a button of a virtual SDL
+gamepad (`ae_platform.c`), attached at the start when the setting has any `pad:` press. The game finds it as a real
+pad, so its presses go through the game's own mapping of pads to ports: a lone pad shares port 0 with the keyboard,
+and is port 1's while there are two players (`xinput_sdl.c` port_gamepad). The plain presses stay the keyboard's
+(port 0), and `2:b` still presses port 1 directly, whatever the mapping. `debug.txt` says `test input: virtual gamepad
+attached`. `tools/test_ae_lan_lobby.py` uses it for split screen on one gamepad and the keyboard.
+
 ## Test input: the mouse
 
 `HALO_TEST_INPUT` (`debug.test_input`) is the platform's scripted player (`bot:<seed>`, `look:<seed>`, `menu:<buttons>`).

@@ -322,8 +322,9 @@ send one.
 networks at least, and on public ones too if Windows calls your network public.
 
 **Linux has no such question.** If a firewall is turned on, it silently
-blocks LAN games: nobody sees your game, or you see nobody's. Open the ports
-once on each Linux computer:
+blocks LAN games: nobody sees your game, or you see nobody's (Join Game > LAN
+says so when it has found nothing for 10 seconds and finds ufw or firewalld
+on). Open the ports once on each Linux computer:
 
 - Ubuntu, Zorin OS, Linux Mint, Pop!_OS (ufw): `sudo ufw allow 5150:5151/udp`,
   `sudo ufw allow 5160/udp` and `sudo ufw allow 5153/tcp`. Or, in the Firewall

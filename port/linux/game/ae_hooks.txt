@@ -86,3 +86,10 @@ port/linux/game/menu_tags.c	ae_ce_map_menu_block(block, size > 0 ? size : 1); /*
 port/linux/game/menu_tags.c	ae_ce_map_menu_blocks_forget(); /* AE hook */
 port/linux/game/ce_map_checks.c	#include "ae_glue_ce_maps.h" /* AE hook */
 port/linux/game/ce_map_checks.c	if (ae_ce_map_menu_memory(address, size)) /* AE hook */\nreturn xbox_pointer(address);
+port/linux/src/xinput_sdl.c	if (test_input_menu[0]) { size_t ae_length = 0; const char *ae_token = test_input_menu_token(&ae_length); ae_platform_test_pad_press(ae_token, (int)ae_length); } /* AE hook */
+port/linux/game/menu_functions.c	if (lobby_controller_playing(1) || lobby_controller_playing(2) || lobby_controller_playing(3)) /* AE hook */\nreturn TRUE; /* (AE: player 1 left, a player of a later controller stays: the lone pad stays theirs, else its port goes and their "Please reconnect #2 controller" never ends) */
+port/linux/game/menu_functions.c	if (multiplayer.mode == _multiplayer_mode_lan) ae_lan_hint_line(0, !multiplayer.game_count, text, ROW_TEXT_LENGTH); /* AE hook */
+port/linux/game/menu_functions.c	if (multiplayer.mode == _multiplayer_mode_lan) ae_lan_hint_line(1, !multiplayer.game_count, text, ROW_TEXT_LENGTH); /* AE hook */
+port/linux/game/menu_functions.c	if (multiplayer.mode == _multiplayer_mode_lan) ae_lan_hint_label(named(list, "ticker_rules_info_label", 0)); /* AE hook */
+port/linux/game/menu_functions.c	ae_lan_hint_begin(); /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_glue_lan.h" /* AE hook */

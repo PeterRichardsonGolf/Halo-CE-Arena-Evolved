@@ -97,6 +97,7 @@ their handlers open opens.
 #include "halo_map_families.h"
 #include "ae_glue_mcc.h" /* AE hook */
 #include "ae_glue_settings.h" /* AE hook */
+#include "ae_glue_lan.h" /* AE hook */
 #include "halo_server_browser.h"
 #include "halo_port_limits.h" /* AE: the game lists' rows (halo_port_advertised_join_state) */
 
@@ -3645,6 +3646,7 @@ static boolean browser_initialize(struct widget_instance *screen, struct event_r
 	for (index = 0; named(screen, "header_sort_arrows", index); index++)
 		visible_set(named(screen, "header_sort_arrows", index), FALSE);
 	multiplayer.game_chosen = 0;
+	ae_lan_hint_begin(); /* AE hook */
 	/* (the server browser's games are internet play's listings; joining
 	one reaches its host, whose game the client then finds as Direct Link's) */
 	if (multiplayer.mode == _multiplayer_mode_server_browser)
@@ -4883,6 +4885,7 @@ static void browser_update(struct widget_instance *list)
 				game->maximum_player_count, game->machine_count, advertised_in_progress(game) ? L": under way" : L"");
 		}
 		text[NUMBEROF(text) - 1] = 0;
+		if (multiplayer.mode == _multiplayer_mode_lan) ae_lan_hint_line(0, !multiplayer.game_count, text, ROW_TEXT_LENGTH); /* AE hook */
 		text_set(named(list, "ticker_player_info", 0), text);
 		/* AE: the chosen game's host is not joined: why, on the line below */
 		{
@@ -4892,7 +4895,9 @@ static void browser_update(struct widget_instance *list)
 
 			if (!join_reason_text(state, version, text, ROW_TEXT_LENGTH))
 				text[0] = 0;
+			if (multiplayer.mode == _multiplayer_mode_lan) ae_lan_hint_line(1, !multiplayer.game_count, text, ROW_TEXT_LENGTH); /* AE hook */
 			text_set(named(list, "ticker_rules_info", 0), text);
+			if (multiplayer.mode == _multiplayer_mode_lan) ae_lan_hint_label(named(list, "ticker_rules_info_label", 0)); /* AE hook */
 		}
 	}
 	if (stats)
@@ -5138,6 +5143,8 @@ screen until the game ends). Then one gamepad is its own controller, not
 sharing player 1's with the keyboard */
 unsigned char pc_menu_split_players(void)
 {
+	if (lobby_controller_playing(1) || lobby_controller_playing(2) || lobby_controller_playing(3)) /* AE hook */
+		return TRUE; /* (AE: player 1 left, a player of a later controller stays: the lone pad stays theirs, else its port goes and their "Please reconnect #2 controller" never ends) */
 	return player_spawn_count >= 2 || lobby_join.adding || lobby_join.controller != NONE ||
 		lobby_local_player_count() >= 2 || players_port_local_player_count() >= 2;
 }
