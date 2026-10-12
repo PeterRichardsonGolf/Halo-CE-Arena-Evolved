@@ -109,8 +109,10 @@ play:
   ELIMINATION (one life), PHANTOMS (invisible), ENDURANCE (5 lives), ROCKETS,
   SNIPERS, JUGGERNAUT, REVERSE TAG, ACCUMULATION, STALKER, KING, CRAZY KING
   (the hill moves), RACE and RALLY (these two need a map with race flags).
-  The ball carrier's melee kills in one hit in JUGGERNAUT, ACCUMULATION and
-  STALKER (not REVERSE TAG, where you don't want the ball).
+  They keep the stock ball melee (the ball in these modes is never held in
+  hand, so BALL MELEE LETHAL has nothing to act on) and their own motion
+  sensor, so FFA AE ROCKETS, SNIPERS, PHANTOMS, REVERSE TAG, ACCUMULATION and
+  STALKER have none.
 - **Arena Evolved special modes** (team slayer to 50): SNIPERS (sniper rifle and
   pistol, the sniping weapon set, no motion sensor), SHOTTY SNIPERS (shotgun
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic

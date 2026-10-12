@@ -10,7 +10,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   ROCKETS, SNIPERS, JUGGERNAUT, REVERSE TAG, ACCUMULATION, STALKER, KING, CRAZY
   KING, RACE and RALLY: Halo's stock free for all modes on Arena Evolved's casual
   rules. They are added to your gametype list on the next start; gametypes you
-  made or changed are left alone.
+  made or changed are left alone. The gametype lists (PC and Xbox menus) now
+hold 128 entries instead of 100, so the 61 seeded gametypes, your own and the
+built-in ones all show; the game itself still stops at 99 saved gametypes and
+profiles in all.
 - **Merged ChupathingyCE 0.7.3e and OpenCE build-190: network version 27.**
   Plays online with OpenCE build-189 and later and ChupathingyCE 0.7.3e; hosts
   of an older version (Arena Evolved 0.2.2-beta, DamnationCE 0.3.40) are

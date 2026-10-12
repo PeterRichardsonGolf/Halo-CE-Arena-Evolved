@@ -546,8 +546,8 @@ class SeedRules(unittest.TestCase):
                 "drop secondary always, nhe mode by vehicles, starting frags 2, ball melee lethal\n")
         f = seed_rules.fields(text)
         self.assertEqual(f["ball melee"], "lethal")
-        # (revision 7: LETHAL on the four AE oddball seeds, revision 8: and three of the free for all ones; STOCK on every other)
-        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB", "AE JUGGER", "AE ACCUM", "AE STALKER"}
+        # (revision 7: LETHAL on the four AE oddball seeds, STOCK on every other)
+        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB"}
         for name, (want, _, _) in seed_rules.ROWS.items():
             self.assertEqual(want["ball melee"], "lethal" if name in lethal else "stock", name)
         self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),

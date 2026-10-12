@@ -174,12 +174,12 @@ ROWS["AE FFA ROCK"] = FFAX("slayer", 25, 0, 300, 2, "none", "nav points", "rocke
                            **{"weapon set": "rocket launchers", "loadout": "rocket launcher + none"}, **_SL)
 ROWS["AE FFA SNPR"] = FFAX("slayer", 15, 0, 300, 2, "none", "nav points", "sniper rifle + pistol",
                            **{"weapon set": "sniping", "loadout": "sniper rifle + pistol", "respawn growth": "150 ticks"}, **_SL)
-ROWS["AE JUGGER"] = FFAX("oddball", 10, 150, 150, 2, "all", "nav points", **{"ball melee": "lethal", "ball": "terminator",
+ROWS["AE JUGGER"] = FFAX("oddball", 10, 150, 150, 2, "all", "nav points", **{"ball": "terminator",
                          **_BALL, "with ball": "extra damage"})
 ROWS["AE REV TAG"] = FFAX("oddball", 2, 150, 150, 1, "none", "nav points", **{"ball": "magic", **_BALL})
-ROWS["AE ACCUM"] = FFAX("oddball", 5, 150, 150, 1, "none", "none", **{"ball melee": "lethal", "ball": "magic", **_BALL,
+ROWS["AE ACCUM"] = FFAX("oddball", 5, 150, 150, 1, "none", "none", **{"ball": "magic", **_BALL,
                         "balls": "16"})
-ROWS["AE STALKER"] = FFAX("oddball", 10, 150, 150, 2, "none", "motion tracker", **{"ball melee": "lethal",
+ROWS["AE STALKER"] = FFAX("oddball", 10, 150, 150, 2, "none", "motion tracker", **{
                           "ball": "terminator", **_BALL, "speed with ball": "faster", "with ball": "invisible",
                           "without ball": "damage resistant"})
 ROWS["AE FFA KING"] = FFAX("king", 2, 150, 150, 2, "all", "nav points", **{"moving hill": "off"})

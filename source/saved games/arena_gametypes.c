@@ -440,9 +440,9 @@ static struct arena_gametype const arena_gametypes[] =
 	owner, 2026-10-11): each keeps its own score, lives, ball or hill, weapon
 	set, vehicles and motion sensor (the ARENA_*_STOCK values), and adds the
 	casual set's: 15 minutes, TIMERS HUD + WAYPOINTS, DROP SECONDARY ALWAYS,
-	AE's rules. The lethal ball melee goes on the Oddball ones where the
-	carrier is the one who scores or hunts (not REVERSE TAG, whose carrier
-	is the one to leave alone) */
+	AE's rules. The Oddball ones keep the stock ball melee: BALL MELEE
+	LETHAL needs a ball in hand, which these ball types (magic, terminator)
+	never create (owner, 2026-10-11) */
 	{ "AE ELIM", build_game_variant_elimination, ARENA_LATER_FLAGS,
 		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE PHANTOMS", build_game_variant_phantoms, ARENA_LATER_FLAGS,
@@ -458,16 +458,13 @@ static struct arena_gametype const arena_gametypes[] =
 		.loadout_primary = ARENA_SET(_loadout_weapon_sniper_rifle),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_pistol) },
 	{ "AE JUGGER", build_game_variant_juggernaut, ARENA_LATER_FLAGS,
-		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
-		.ball_melee = ARENA_BALL_MELEE_LETHAL },
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE REV TAG", build_game_variant_reverse_tag, ARENA_LATER_FLAGS,
 		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE ACCUM", build_game_variant_accumulation, ARENA_LATER_FLAGS,
-		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
-		.ball_melee = ARENA_BALL_MELEE_LETHAL },
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE STALKER", build_game_variant_stalker, ARENA_LATER_FLAGS,
-		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
-		.ball_melee = ARENA_BALL_MELEE_LETHAL },
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE FFA KING", build_game_variant_king, ARENA_LATER_FLAGS,
 		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
 	{ "AE CRAZYKNG", build_game_variant_crazy_king, ARENA_LATER_FLAGS,
@@ -606,8 +603,9 @@ above it runs once). Revision 1: the free for all ones whose names did not
 say so; revision 2: AE PRO -> AE COMP (values unchanged); revision 3: the
 NHE seeds' mode from NHE MODE, no vehicles (on stock maps); revision 4:
 Halo 1: NHE's own set (NHE 2V2 TS -> TS 50, NHE 1V1 -> 1 V 1 NR, NHE CTF ->
-CTF 3C 7S, PRACTICE -> TS PRACTICE, with NHE's values). A row whose old
-and new names are the same is a value update (in place, under its name).
+CTF 3C 7S, PRACTICE -> TS PRACTICE, with NHE's values). Revision 8 has no
+migration (it only added the 13 free for all gametypes): the next migration is
+revision 9. A row whose old and new names are the same is a value update (in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =
@@ -2537,6 +2535,13 @@ static boolean arena_gametype_write(
 	resets without taking its mutex; a player saving gametypes is never
 	that quick) */
 	playlist_profile_wait_for_write();
+	/* (a failed write deletes the new file: not seeded, so not recorded;
+	tried again next start) */
+	if (saved_game_file_name_unique(name))
+	{
+		error(_error_silent, "failed to write arena gametype '%s'; tried again next start", gametype->name);
+		return FALSE;
+	}
 	*written = TRUE;
 	arena_gametype_log(gametype, &variant, &options);
 

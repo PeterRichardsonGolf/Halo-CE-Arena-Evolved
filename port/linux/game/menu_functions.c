@@ -2454,7 +2454,9 @@ Xbox's networking, run by the engine's port entry points
 
 #define MAXIMUM_ADVERTISED_GAMES 9
 #define GAMETYPE_ROWS 10
-#define MAXIMUM_GAMETYPES 100
+/* (128: the memory unit's saved games, at most 100, and the 26 built-in
+gametypes after them) */
+#define MAXIMUM_GAMETYPES 128
 #define BROWSER_ROWS 15
 #define LOBBY_ROWS 11
 #define TEXT_FIELD_LENGTH 128
