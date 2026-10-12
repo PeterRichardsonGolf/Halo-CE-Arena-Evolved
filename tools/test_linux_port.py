@@ -1,5 +1,6 @@
 """Tests for the native Linux build tooling (port/linux, tools/linux_*.py)."""
 
+import os
 import re
 import shutil
 import subprocess
@@ -525,6 +526,18 @@ def test_config_has_each_section_once(tmp_path):
     (stubs / "SDL3").mkdir(parents=True)
     (stubs / "SDL3" / "SDL.h").write_text("")
     (stubs / "platform.h").write_text("void platform_log(const char *format, ...);\n")
+    # (Arena Evolved's port_config.c also lists folders, posix.h, and pauses the capture for its restart,
+    # capture.h: none of it runs here)
+    (stubs / "posix.h").write_text(
+        "enum { _posix_file_is_directory = 1 << 0 };\n"
+        "struct posix_file_information { unsigned long flags; };\n"
+        "static int posix_stat(const char *path, struct posix_file_information *information)\n"
+        "{ (void)path; (void)information; return -1; }\n"
+        "static void *posix_directory_open(const char *path) { (void)path; return 0; }\n"
+        "static int posix_directory_next(void *directory, char *name, unsigned long size)\n"
+        "{ (void)directory; (void)name; (void)size; return 0; }\n"
+        "static void posix_directory_close(void *directory) { (void)directory; }\n")
+    (stubs / "capture.h").write_text("static void capture_shutdown(void) {}\nstatic void capture_resume(void) {}\n")
     # (beside the stubs, which it then includes instead of the platform layer's)
     for name in ("port_config.c", "port_config.h"):
         shutil.copy(root / "port/linux/src" / name, stubs / name)

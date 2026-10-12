@@ -107,6 +107,20 @@ static char const *tag_name_strip_path(char const *name)
 	return slash ? slash + 1 : name;
 }
 
+/* (Arena Evolved: the game's level names are its own, <name>@ce, and the
+messages carry the protocol's, ae_map_share.c; this test's are the
+protocol's already) */
+static char const *map_share_level_file(char const *level_name)
+{
+	return tag_name_strip_path(level_name);
+}
+
+static void map_share_level_to_wire(char *wire, char const *level_name)
+{
+	strncpy(wire, level_name, LEVEL_NAME_BYTES - 1);
+	wire[LEVEL_NAME_BYTES - 1] = 0;
+}
+
 #define config_boolean(name) 1
 #define custom_edition_level_name(level_name) (!strncmp(level_name, "custom_maps\\", 12))
 #define custom_edition_map_file_path(level_name, path) (strcpy(path, "d:\\custom_maps\\hugeass_0e2b3ee4.map"), 1)
@@ -221,6 +235,10 @@ static void host_wait(unsigned long time, unsigned long done)
 int main(int argc, char **argv)
 {
 	char const *case_name = argc > 1 ? argv[1] : "";
+
+	/* (what the code under test did, which no case here reads) */
+	(void)fake_failed;
+	(void)fake_closed;
 
 	/* a LAN host names its players' private addresses alone, and never
 	this machine's, nor 0.0.0.0, multicast or internet play's */

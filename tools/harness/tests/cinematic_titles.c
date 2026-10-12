@@ -84,6 +84,16 @@ static void rasterizer_text_set_shadow_color(pixel32 color) { shadow = color; }
 static short halo_screen_width(void) { return 640; }
 #define rasterizer_draw_unicode_string(bounds, style, color, flags, string) (draws++, drawn_shadow = shadow)
 
+/* (Arena Evolved's additions to cinematic_render: titles cleared at the
+postgame, Halo 1: NHE's clock pieces; neither in play here) */
+#define NUMBEROF(array) (sizeof(array) / sizeof(array[0]))
+enum { _text_justification_left, _text_justification_right, _text_justification_center };
+static boolean game_engine_running(void) { return FALSE; }
+static boolean game_engine_showing_postgame(void) { return FALSE; }
+static boolean cinematic_title_is_hidden_nhe_clock(short title_index) { (void)title_index; return FALSE; }
+static boolean hs_scenario_is_nhe(void) { return FALSE; }
+static short local_player_count(void) { return 1; }
+
 #include "under_test.inc"
 
 /* the title in its slot, at its start: up for up_time ticks, then fading out for fade_out_time */

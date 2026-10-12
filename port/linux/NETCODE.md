@@ -205,7 +205,12 @@ limits, and readies a second weapon picked up while firing.
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the
 sources' messages, kinds, bits, structs sent whole or the sizes of their
-arrays differ from it.
+arrays differ from it. (Arena Evolved's record differs from OpenCE's in
+three items that send the same bytes: ChupathingyCE's packet table puts the
+begin-game and keep-alive field lists under their own messages
+(`network_messages.c`: the Xbox table had each on its neighbour's, so the
+wire's begin game is a short and padding, its keep-alive a long), and
+`network_distributed.c`'s `DISTRIBUTED_TIME_WINDOW_TICKS` is a local check.)
 
 Arena Evolved announces 28, the table's newest (`delta.h`), and joins hosts
 of 28 alone (a host below 28 is refused, though the table's range reaches
