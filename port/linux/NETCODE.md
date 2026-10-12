@@ -196,23 +196,35 @@ machine say its WebRTC in internet play's signalling (a native build's
 certificate, a browser's ICE credentials too), so that browsers play
 (port/linux/README.md, "Browsers"); version 27 shares Custom Edition maps
 (below, "Map sharing"): a client asks the host for a map it lacks, and the
-game's players reach each other to send it.
+game's players reach each other to send it; version 28 (OpenCE build-201)
+holds the players of a machine still downloading the map out of the game
+until it has the map, keeps a multiplayer map's first scripted BSP, leaves
+dynamic lights and the flashlight on past the Xbox game's player and vehicle
+limits, and readies a second weapon picked up while firing.
 
-Arena Evolved announces 27, the table's newest (`delta.h`), and joins hosts
-of 27 alone (a host below 27 is refused, though the table's range reaches
-back to 11; the range's top is 27, as OpenCE's clients join only their own
+`port/linux/network_format.txt` records the wire format of the current
+version (`tools/network_format.py`): `test_linux_port.py` fails when the
+sources' messages, kinds, bits, structs sent whole or the sizes of their
+arrays differ from it.
+
+Arena Evolved announces 28, the table's newest (`delta.h`), and joins hosts
+of 28 alone (a host below 28 is refused, though the table's range reaches
+back to 11; the range's top is 28, as OpenCE's clients join only their own
 version, where ChupathingyCE 0.7.3e's reach 30): it plays with OpenCE
-build-189 and later and ChupathingyCE 0.7.3e both ways. Hosts of an older
-version are refused (Arena Evolved 0.2.2-beta's 25 and DamnationCE 0.3.40's
-26 among them), and their clients do not join Arena Evolved's games, and are
-told the host is newer. Its wire ID is its own (`ae-27a`, `delta.h`), so
+build-201 and later both ways, and ChupathingyCE 0.7.3e (27) joins its games
+(Arena Evolved does not join ChupathingyCE 0.7.3e's: 27 is below its floor).
+Hosts of an older version are refused (Arena Evolved 0.2.2-beta's 25,
+DamnationCE 0.3.41's and OpenCE build-189 to 200's 27 among them), and
+clients that join their own version alone (OpenCE build-200 and earlier,
+DamnationCE 0.3.41, whose top is 27) do not join Arena Evolved's games, and
+are told the host is newer. Its wire ID is its own (`ae-28a`, `delta.h`), so
 ChupathingyCE's signed legacy tables (Delta, `docs/delta.md`), which have no
 row for it, neither change these numbers nor turn off its Delta
 capabilities, and they are not fetched unless `network.legacy_table_fetch`
-is on (off by default). The game's messages are OpenCE build-190's unchanged
+is on (off by default). The game's messages are OpenCE build-201's unchanged
 (build-167's voice chat and votes to kick, build-169's lights and build-189's
 map sharing are among them; Arena Evolved adds none): Arena Evolved's own
-rules travel in the gametype's flags, which every host of 11 to 27 sends and
+rules travel in the gametype's flags, which every host of 11 to 28 sends and
 a client that does not know a bit leaves alone. Internet play's signalling
 is OpenCE's version 4 alone (ChupathingyCE 0.7.3e also reads 3, which only
 hosts of 25 and below send). Arena Evolved's own rule on top: a game with a
@@ -223,13 +235,13 @@ password).
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. The
 built-in range is HALO_PORT_NETWORK_VERSION_MINIMUM to
-HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 27): versions
+HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 28): versions
 that differ from one another only in messages the other machine drops, not
 knowing them. The historical example is version 10 (OpenCE's build-73),
 which added the host's message of the players' pings, which a machine of
-version 9 drops. Today this build has version 27 (OpenCE build-189 and later), and
+version 9 drops. Today this build has version 28 (OpenCE build-201 and later), and
 the range's floor is the newest version that broke compatibility (11). Arena
-Evolved's own floor is higher than the range: it refuses hosts below 27
+Evolved's own floor is higher than the range: it refuses hosts below 28
 and tells the player that the host needs to update (see above).
 The game browser lists the range's games.
 
@@ -582,7 +594,11 @@ menus show a map without its hash, unless two versions are listed.
    would leave a falling body hanging until its turn round all of them),
    and a few of those at rest, round them all. A client takes the host's
    word on whether each is at rest even when its copy is close enough to
-   leave where it is. A client puts its copies there, and the difference is
+   leave where it is. A body's pose goes with it: one lying limp that the
+   host moves stops lying limp (the blast that moved the host's reaches
+   only the machines that see the body's player), and one the host has at
+   rest is on the ground, so it lies limp again where it stops instead of
+   keeping the pose of its fall in the air. A client puts its copies there, and the difference is
    drawn fading over a few ticks (`render_interpolation.c`) instead of a
    jump. A client drives its own player's vehicle and sends where it is,
    which the host takes within a tolerance, as it does its own player's
