@@ -43,9 +43,9 @@ changes map between games with `network_test: "host:<map>+<map>...:<gametype>,<g
 Nth map (the last one from then on), so the gametype list says how many games there are;
 `HALO_NETWORK_TEST_TIME_LIMIT=1` makes each a minute. `debug.weapon_pack_ground` / `HALO_WEAPON_PACK_GROUND=1` (for
 pictures; a host or no network game only, ignored on a client) lays one more of the pack's weapon two steps ahead
-of each local player who spawns with it, and one at the feet of a local player who spawns without it in a game that
-asks for the pack only for BATTLE RIFLE ON MAP (`--pack-map-spawns` with `HALO_NETWORK_TEST_LOADOUT=<w>,<s>`: the
-swap prompt). `handshake.py --packs-from <folder>` links that folder as both machines'
+of each local player who spawns with it, and of one who spawns without it in a game that asks for the pack only for
+BATTLE RIFLE ON MAP (`--pack-map-spawns` with `HALO_NETWORK_TEST_LOADOUT=<w>,<s>`: a few steps onto it show the swap
+prompt, or with `<w>,0` pick it up). `handshake.py --packs-from <folder>` links that folder as both machines'
 `packs/` (`none`: no packs at all).
 
 The pack's checks against the map and the fallback (tools/test_weapon_pack_checks.py; the same three variables):
@@ -77,8 +77,9 @@ automated tests, default off.
 The look of the pack's weapons (tools/test_weapon_pack_look.py; the same variables): the `weapon pack: battle_rifle's
 look:` line (the pickup texts and the message icon its weapon entry names), the two SMOOTH bitmaps' `drawn smooth`
 lines, the ammo text shown after walking over a second rifle, the swap prompt (`--pack-map-spawns`, a stock loadout,
-`HALO_WEAPON_PACK_GROUND=1`, X held) and the weapon text once the rifle is taken, with no frame showing the counter's
-sheet (magenta or bright green texels in the upper half), a variant pack whose icon is the counter's sheet (its icon
+`HALO_WEAPON_PACK_GROUND=1`, a few steps) drawing the entry's icon with no frame showing the counter's
+sheet (magenta or bright green texels in the upper half), the weapon text when the rifle is picked up with one weapon
+held, a variant pack whose icon is the counter's sheet (its icon
 refused for the map, the HUD's own drawn), and firing zoomed in (`debug.weapon_log`: `zoomed: local player 0 sees no
 particle of the rifle or its holder`).
 

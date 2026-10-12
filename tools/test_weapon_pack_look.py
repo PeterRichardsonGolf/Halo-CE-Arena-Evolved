@@ -31,11 +31,13 @@ AMMO_TEXT = (r"weapon pack: item message \"Picked up %d rounds for battle rifle\
              r"pickup text\)")
 ICON_REFUSED = r"weapon pack: battle_rifle's message icon refused for bloodgulch: sequence 0 of [^ ]+br_meter_smooth " \
                r"has no sprites; the HUD's own icon is drawn"
+ICON_SHOWN = r"weapon pack: battle_rifle's message icon shown in a prompt \(sequence 0 of its entry's bitmap\)"
 HIDDEN = r"ae burst rifle: tick \d+, zoomed: local player 0 sees no particle of the rifle or its holder"
 UNREAD = "could not be read from the pack"
-# (the swap prompt: in game from about 10 s; X held at 22 s takes the rifle at the feet, Y at 26 s brings the
-# stock weapon out again with the rifle holstered)
-SWAP_INPUT = "menu:" + " ".join(["wait"] * 22 + ["x", "x", "wait", "wait", "y"])
+# (in game from about 10 s; the rifle lies two steps ahead (debug.weapon_pack_ground): three steps onto it. With two
+# stock weapons held: the swap prompt (nothing pressed: a held X takes the rifle only where the frames are quick
+# enough); with one: it is picked up)
+WALK_ONTO = "menu:" + " ".join(["wait"] * 14 + ["key:W"] * 3 + ["wait"] * 8)
 # (WEAPONS record fields, "<14I": the message icon's bitmap tag and sequence)
 WEAPON_ICON_TAG = 10
 
@@ -78,42 +80,51 @@ class Look(add.Game):
     def test_look_and_ammo_text(self):
         """the look line (texts and icon from the weapon entry), the two SMOOTH bitmaps sampled smooth as they are
         drawn, and walking over a second rifle (debug.weapon_pack_ground) shows the entry's ammo text"""
-        presses = " ".join(["wait"] * 14 + ["key:W"] * 3 + ["wait"] * 3)
+        presses = " ".join(["wait"] * 14 + ["key:W"] * 5 + ["wait"] * 3)
         self.play("look", "--packs-from", self.good(), "--pack-loadout", "primary", "--start", "5",
                   "--env", "HALO_WEAPON_PACK_GROUND=1", "--test-input", "menu:" + presses,
                   "--expect-line", LOOK, "--expect-line", SMOOTH, "--expect-line", SMOOTH_METER,
                   "--expect-line", AMMO_TEXT, "--expect-no-line", UNREAD, seconds=30)
 
-    def test_swap_prompt_and_weapon_text(self):
-        """a stock weapon held (the pack asked for by BATTLE RIFLE ON MAP only), the rifle at the feet: the swap
-        prompt, then the rifle taken shows the entry's pickup text; no frame shows the counter's sheet"""
+    def test_swap_prompt(self):
+        """two stock weapons held (the pack asked for by BATTLE RIFLE ON MAP only), walked onto the rifle: the swap
+        prompt draws the entry's icon; no frame shows the counter's sheet"""
         name = "swap"
         self.play(name, "--packs-from", self.good(), "--pack-map-spawns", "--start", "5",
                   "--env", "HALO_NETWORK_TEST_LOADOUT=2,3", "--env", "HALO_WEAPON_PACK_GROUND=1",
-                  "--window", "800x600", "--shots", "16", "--test-input", SWAP_INPUT,
-                  "--expect-line", LOOK, "--expect-line", WEAPON_TEXT, "--expect-no-line", UNREAD, seconds=34)
+                  "--window", "800x600", "--shots", "16", "--test-input", WALK_ONTO,
+                  "--expect-line", LOOK, "--expect-line", ICON_SHOWN, "--expect-no-line", UNREAD, seconds=30)
         frames = self.shots(name)
         self.assertGreaterEqual(len(frames), 10)
         self.assertEqual(max(stray_texels(frame) for frame in frames), 0)
 
+    def test_weapon_text(self):
+        """one stock weapon held, the rifle two steps ahead: walked onto, it is picked up, and the pickup message is
+        the entry's text"""
+        self.play("pickup", "--packs-from", self.good(), "--pack-map-spawns", "--start", "5",
+                  "--env", "HALO_NETWORK_TEST_LOADOUT=2,0", "--env", "HALO_WEAPON_PACK_GROUND=1",
+                  "--test-input", WALK_ONTO, "--expect-line", WEAPON_TEXT, "--expect-no-line", UNREAD, seconds=25)
+
     def test_icon_without_sprites_refused(self):
         """an entry whose icon is a sequence without sprites (the counter's sheet) has its icon refused for the map
-        with one line: the HUD's own icon is drawn in the prompt, never the sheet, and the game plays on"""
+        with one line: the HUD's own icon is drawn in the prompt (the pack's never is), never the sheet, and the game
+        plays on"""
         name = "icon"
         image = icon_on_the_counter_sheet(Path(REAL).expanduser().read_bytes())
         self.play(name, "--packs-from", str(self.packs(name, image)), "--pack-map-spawns", "--start", "5",
                   "--env", "HALO_NETWORK_TEST_LOADOUT=2,3", "--env", "HALO_WEAPON_PACK_GROUND=1",
-                  "--window", "800x600", "--shots", "16", "--test-input", SWAP_INPUT,
+                  "--window", "800x600", "--shots", "16", "--test-input", WALK_ONTO,
                   "--expect-line", ICON_REFUSED, "--expect-line", add.ADDED.format(map="bloodgulch", corrections="0"),
-                  "--expect-line", WEAPON_TEXT, refused=True, seconds=34)
+                  "--expect-no-line", ICON_SHOWN, refused=True, seconds=30)
         self.assertEqual(max(stray_texels(frame) for frame in self.shots(name)), 0)
 
     def test_zoomed_particles_hidden(self):
-        """firing zoomed in (debug.burst_autofire, Z pressed), the holder sees none of the rifle's particles"""
-        presses = " ".join(["wait"] * 14 + ["key:Z"] + ["wait"] * 4)
+        """firing zoomed in (debug.burst_autofire; Z pressed every three seconds: a reload ends a zoom, and a press in
+        a slow frame can go unseen), the holder sees none of the rifle's particles"""
+        presses = " ".join(["wait"] * 14 + ["key:Z", "wait", "wait"] * 5)
         self.play("zoomed", "--packs-from", self.good(), "--pack-loadout", "primary", "--start", "5",
                   "--env", "HALO_WEAPON_LOG=1", "--env", "HALO_BURST_AUTOFIRE=1", "--test-input", "menu:" + presses,
-                  "--expect-line", HIDDEN, "--expect-no-line", UNREAD, seconds=30)
+                  "--expect-line", HIDDEN, "--expect-no-line", UNREAD, seconds=34)
         lines = self.debug_lines("zoomed")
         self.assertLessEqual(sum(bool(re.search(HIDDEN, line)) for line in lines), 16)
 

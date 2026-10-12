@@ -302,6 +302,7 @@ static struct
 		struct icon_hud_element_definition const *messaging_icon;
 		long icon_bitmap;
 		short icon_sequence;
+		boolean icon_shown;
 	} looks[AE_PACK_MAXIMUM_WEAPONS];
 	/* (each SMOOTH bitmap tag's first upload on this map is logged) */
 	byte smooth_logged[AE_PACK_MAXIMUM_TAGS];
@@ -2053,6 +2054,17 @@ struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
 		substitute = *icon;
 		substitute.sequence_index = placed.looks[index].icon_sequence;
 		*bitmap_group_index = placed.looks[index].icon_bitmap;
+		/* (its first prompt on a map is logged) */
+		if (!placed.looks[index].icon_shown)
+		{
+			struct ae_pack const *pack = slot_pack(placed.slot);
+			char const *key = pack && (unsigned int)index < pack->weapon_count ?
+				ae_pack_string(pack, pack->weapons[index].key) : NULL;
+
+			placed.looks[index].icon_shown = TRUE;
+			error(_error_silent, "weapon pack: %s's message icon shown in a prompt (sequence %d of its entry's bitmap)",
+				key ? key : "?", (int)placed.looks[index].icon_sequence);
+		}
 		return &substitute;
 	}
 	return icon;

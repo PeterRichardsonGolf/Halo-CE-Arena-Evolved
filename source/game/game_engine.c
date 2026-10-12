@@ -10837,15 +10837,14 @@ static void game_engine_give_loadout(
 			object_delete(weapon_index);
 	}
 	/* port: weapon pack: debug.weapon_pack_ground (a test aid, for pictures): one more of the pack's weapon
-	lies two steps ahead of each local player given one; a local player given none (a game asking for the pack
-	without giving it: BATTLE RIFLE ON MAP) finds one at his feet, for the swap prompt. Only where this machine
-	makes the game's objects (a host, or no network game): ignored on a client */
+	lies two steps ahead of each local player given one, and of each given none in a game asking for the pack
+	without giving it (BATTLE RIFLE ON MAP): a few steps onto it show the swap prompt (two weapons held) or pick it
+	up (one). Only where this machine makes the game's objects (a host, or no network game): ignored on a client */
 	if (config_boolean("debug.weapon_pack_ground") && game_connection() != _game_connection_network_client)
 	{
 		struct unit_datum const *unit = unit_get(unit_index);
 		long ground_definition_index = pack_definition_given != NONE ? pack_definition_given :
 			ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0);
-		real ahead = pack_definition_given != NONE ? 1.6f : 0.3f;
 
 		if (ground_definition_index != NONE && unit->unit.player_index != NONE &&
 			player_get(unit->unit.player_index)->local_player_index != NONE)
@@ -10854,9 +10853,9 @@ static void game_engine_give_loadout(
 
 			object_placement_data_new(&placement_data, ground_definition_index, NONE);
 			placement_data.position = unit->object.position;
-			placement_data.position.x += ahead * unit->object.forward.i;
-			placement_data.position.y += ahead * unit->object.forward.j;
-			placement_data.position.z += pack_definition_given != NONE ? 0.4f : 0.3f;
+			placement_data.position.x += 1.6f * unit->object.forward.i;
+			placement_data.position.y += 1.6f * unit->object.forward.j;
+			placement_data.position.z += 0.4f;
 			object_new(&placement_data);
 		}
 	}
