@@ -16,18 +16,21 @@
 		<data input="game settings lists text update"/>
 		<on event="created" run="mp profile init player opts"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_arena_time_limit" x="54" y="68"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_falling_damage" x="54" y="94"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_health_regeneration" x="54" y="120"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" x="54" y="146"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" x="54" y="172"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_practice" x="54" y="198"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_nhe_mode" x="54" y="224"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_drop_secondary" x="54" y="250"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_nhe_extras" x="54" y="276"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" x="54" y="302"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_falling_damage" x="54" y="88"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_health_regeneration" x="54" y="108"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" x="54" y="128"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" x="54" y="148"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_practice" x="54" y="168"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_nhe_mode" x="54" y="188"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_drop_secondary" x="54" y="208"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_nhe_extras" x="54" y="228"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_sound_preset" x="54" y="248"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_movement" x="54" y="268"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_weapons" x="54" y="288"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" x="54" y="308"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_button_bar" y="414"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_help" type="text" controller="1" left="68" top="331" width="482" height="79" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options" font="ui\large_ui" color="#FFFFFFFF">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_help" type="text" controller="1" left="68" top="334" width="482" height="66" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options" font="ui\large_ui" color="#FFFFFFFF">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
 		<data input="common button bar update"/>
@@ -180,11 +183,52 @@
 		<string text="OFF"/>
 		<string text="ON"/>
 	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_sound_preset" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_sound_preset" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_sound_preset">
+		<string text="CUSTOM"/>
+		<string text="SPLIT SCREEN"/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_movement" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_silent_movement" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_silent_movement">
+		<string text="NORMAL"/>
+		<string text="JUST ME"/>
+		<string text="SILENT"/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_weapons" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="11" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_silent_weapons" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_silent_weapons">
+		<string text="NORMAL"/>
+		<string text="JUST ME"/>
+		<string text="SILENT"/>
+	</strings>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="12" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_ball_melee" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -203,6 +247,9 @@
 		<string text="NHE MODE:"/>
 		<string text="DROP SECONDARY:"/>
 		<string text="NHE EXTRAS:"/>
+		<string text="SOUND PRESET:"/>
+		<string text="SILENT MOVEMENT:"/>
+		<string text="SILENT WEAPONS:"/>
 		<string text="BALL MELEE:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options">
@@ -248,6 +295,14 @@
 		<string text="Both drop and stay 30 seconds, but a holstered\nrocket launcher, sniper rifle or shotgun vanishes."/>
 		<string text="Stock teams and camera."/>
 		<string text="As Halo 1: NHE: everyone joins red and keeps their\ncolour between games, the dead camera stays on you,\nand the match clock counts up."/>
+		<string text="SILENT MOVEMENT and SILENT WEAPONS as set\nbelow."/>
+		<string text="For players sharing speakers: SILENT MOVEMENT\nand SILENT WEAPONS both SILENT, so nobody\nhears the other side's steps or weapon swaps."/>
+		<string text="Footsteps, jumps and landings sound as in Halo CE."/>
+		<string text="You hear your own footsteps, jumps and landings;\neveryone else moves silently. Only Arena Evolved\nplayers can join."/>
+		<string text="Nobody's footsteps, jumps or landings make a\nsound, yours included. Only Arena Evolved\nplayers can join."/>
+		<string text="Readying and putting away weapons sound as in\nHalo CE."/>
+		<string text="You hear your own weapon swaps; everyone else's\nare silent (firing and reloading still sound).\nOnly Arena Evolved players can join."/>
+		<string text="Nobody's weapon swaps make a sound, yours\nincluded (firing and reloading still sound).\nOnly Arena Evolved players can join."/>
 		<string text="Oddball only: the ball carrier's melee is as in\nHalo CE: it takes the shield and a little health,\nand kills from behind."/>
 		<string text="Oddball only: the ball carrier's melee kills in\none hit, shields and all, as in Halo 3. Same\nreach, no hits through walls."/>
 	</strings>

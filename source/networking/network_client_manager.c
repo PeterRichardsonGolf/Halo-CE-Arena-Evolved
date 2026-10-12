@@ -396,6 +396,7 @@ symbols in this file:
 #include "text/unicode.h"
 #include "halo_map_families.h" /* port: map_family_from_wire_name */
 #include "ae_hooks.h" /* AE hook */
+#include "ae_silent.h" /* AE hook */
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 
 /* ---------- constants */
@@ -2390,6 +2391,7 @@ void network_game_client_rejected_by_game(
 	refused a game in progress, network_game_server_refuse_late_joiner, is in
 	it): with no game behind it, it is left for the main menu, which says
 	why, rather than sitting in a lobby that will never start */
+	ae_silent_join_rejected(rejection_code); /* AE hook */
 	display_error_when_main_menu_loaded(
 		rejection_code == _rejection_code_game_is_full || rejection_code == _rejection_code_game_is_closed ?
 			_error_network_join_game_closed :
@@ -2899,6 +2901,7 @@ static boolean network_game_client_idle_joining(
 					p2p_hardware_id(hardware_id, sizeof(hardware_id));
 					csmemcpy(join_game_request.hardware_id, hardware_id, csstrlen(hardware_id));
 				}
+				ae_silent_join_request_mark(join_game_request.machine_name, MAXIMUM_MACHINE_NAME_LENGTH); /* AE hook */
 
 				message = create_network_game_message(
 					_message_client_join_game_request,

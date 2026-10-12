@@ -888,6 +888,11 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"An automated test host's gametype gets BALL MELEE LETHAL (for built-in\n"
 		"gametypes, such as a juggernaut game)." },
+	{ "debug.network_test_silent", _config_string, "\"\"", "HALO_NETWORK_TEST_SILENT", _environment_value, /* AE hook */
+		_platform_all,
+		"An automated test host's gametype's SILENT MOVEMENT and SILENT WEAPONS:\n"
+		"\"MOVEMENT,WEAPONS\" or one for both, each normal, just_me or silent;\n"
+		"empty leaves the gametype's (the muted counts are logged as they grow)." },
 	{ "debug.network_test_melee", _config_boolean, "false", "HALO_NETWORK_TEST_MELEE", _environment_value,
 		_platform_all,
 		"With debug.network_test_shoot, each player strikes with the weapon's melee\n"

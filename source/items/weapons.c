@@ -236,6 +236,7 @@ symbols in this file:
 #include "bitmaps/bitmap_group.h"
 #include "cache/texture_cache.h"
 #include "effects/contrail_definitions.h"
+#include "ae_silent.h" /* AE hook */
 #endif
 
 /* port/linux/game/pal_tags.c's */
@@ -673,7 +674,9 @@ void weapon_ready(
 	weapon_reset(weapon_index);
 	weapon_set_state(weapon_index, _weapon_state_ready, TRUE);
 	first_person_weapon_message_from_weapon(weapon_index, _first_person_weapon_message_ready);
+	ae_silent_weapon_scope_begin(weapon_index, TRUE); /* AE hook */
 	weapon_effect_new(weapon_index, weapon_definition->weapon.ready_effect.index, 0.f, 0.f);
+	ae_silent_scope_end(); /* AE hook */
 	weapon->weapon.state_timer = weapon_get_first_person_animation_time(weapon_index, 0, _first_person_weapon_animation_ready, NONE);
 
 	return;

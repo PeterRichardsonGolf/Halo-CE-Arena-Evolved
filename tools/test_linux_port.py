@@ -541,6 +541,26 @@ def _retail_maps():
     return maps
 
 
+def test_system_link_bots_ae_silent_mark():
+    """--ae-silent marks a stand-in machine's join request as port/linux/game/ae_silent_rules.c does (the
+    name's last character after its end: the mark and the capability); without it the name's tail is zeros, as
+    a stock machine's"""
+    import struct
+    from tools import system_link_bots as bots
+
+    root = Path(__file__).resolve().parents[1]
+    rules = (root / "port/linux/game/ae_silent_rules.h").read_text()
+    assert int(re.search(r"#define AE_SILENT_JOIN_MARK (0x[0-9A-Fa-f]+)u", rules)[1], 16) == bots.AE_SILENT_JOIN_MARK
+    assert int(re.search(r"#define AE_SILENT_CAPABILITY (\d+)", rules)[1]) == bots.AE_SILENT_CAPABILITY
+    marked = struct.unpack(">32H", bots.machine_name("bot1", True))
+    assert marked[:5] == (ord("b"), ord("o"), ord("t"), ord("1"), 0)
+    assert marked[30] == 0 and marked[31] == bots.AE_SILENT_JOIN_MARK | bots.AE_SILENT_CAPABILITY
+    plain = struct.unpack(">32H", bots.machine_name("bot1", False))
+    assert plain[4:] == (0,) * 28
+    long_name = struct.unpack(">32H", bots.machine_name("x" * 40, True))
+    assert long_name[29] == ord("x") and long_name[30] == 0
+
+
 def test_retail_maps_need_no_corrections():
     """every retail map in assets/maps passes the tag validator, each of its
     structure bsps too, with no correction: the schemas (tag_schema_*.c)

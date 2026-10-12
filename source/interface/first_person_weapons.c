@@ -130,6 +130,7 @@ symbols in this file:
 #include "view_fov.h" /* port: port/linux/game/view_fov.c */
 #include "shaders/shader_definitions.h" /* port: (the shield's flare on the arms) */
 #include "shaders/shaders.h"
+#include "ae_silent.h" /* AE hook */
 /* port: port/linux/game/shield_color.c */
 real_rgb_color const *shield_color_colors(long unit_index, real_rgb_color const *colors);
 
@@ -1884,6 +1885,7 @@ static void first_person_weapon_update(
 		if (sound_definition_index!=NONE &&
 			director_get_perspective(local_player_index)==_director_perspective_first_person)
 		{
+			ae_silent_weapon_scope_begin(first_person_weapon->weapon_index, first_person_weapon->state==_first_person_weapon_state_ready || first_person_weapon->state==_first_person_weapon_state_put_away); /* AE hook */
 			first_person_weapon->current_sound_index= object_impulse_sound_new(
 				first_person_weapon->weapon_index,
 				sound_definition_index,
@@ -1891,6 +1893,7 @@ static void first_person_weapon_update(
 				global_origin3d,
 				global_forward3d,
 				1.0f);
+			ae_silent_scope_end(); /* AE hook */
 			first_person_weapon->current_sound_state= first_person_weapon->state;
 		}
 
@@ -2222,6 +2225,7 @@ static void weapon_play_first_person_weapon_sound(
 
 							if (definition_index!=NONE)
 							{
+								ae_silent_weapon_scope_begin(weapon_index, state==_first_person_weapon_state_ready || state==_first_person_weapon_state_put_away); /* AE hook */
 								object_impulse_sound_new(
 									weapon_index,
 									definition_index,
@@ -2229,6 +2233,7 @@ static void weapon_play_first_person_weapon_sound(
 									global_origin3d,
 									global_forward3d,
 									1.0f);
+								ae_silent_scope_end(); /* AE hook */
 							}
 						}
 					}

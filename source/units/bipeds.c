@@ -276,6 +276,7 @@ symbols in this file:
 #include "scenario/scenario.h"
 #include "structures/structure_bsp_definitions.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "ae_silent.h" /* AE hook */
 
 /* port: port/linux/game/network_objects.c's (a client deletes the host's
 objects on the host's word alone) */
@@ -2012,11 +2013,13 @@ static void biped_make_footstep(
 
 		if (object_get_marker_by_name(biped_index, contact_point->marker_name, &marker, 1))
 		{
+			ae_silent_scope_begin(AE_SILENT_ROLE_MOVEMENT, biped->unit.player_index); /* AE hook */
 			material_effect_new_from_point(
 				definition->biped.material_effects.index,
 				event_index,
 				&marker.matrix.position,
 				0.f);
+			ae_silent_scope_end(); /* AE hook */
 		}
 	}
 
