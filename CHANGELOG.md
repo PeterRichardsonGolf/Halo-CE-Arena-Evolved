@@ -6,6 +6,18 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **MENUS on the main menu: switch between the PC and Xbox menus without
+  leaving the game.** It sits above QUIT in the PC menus (the other rows move
+  up a little to make room) and under SETTINGS in the Xbox menus. Pick it and
+  the main menu's rows turn into PC and XBOX, drawn like the rows around them,
+  with the style you are using focused and marked with a dot. Pick the other
+  one and the menus switch at once with a short fade (a cut with REDUCE
+  MOTION), the main menu music keeps playing, and you land on MENUS again, so
+  switching back is two presses. B, Esc, BACK or the BACK row returns to the
+  main menu. The choice is saved (`display.menus` in `config.toml`). MENUS is
+  only on the main menu, never in a lobby or a game. If you use your own
+  `menus/main_menu.xml`, it has no MENUS unless you add the row
+  (`port/assets/menus/README.md`).
 - **Linux: PlayStation controllers without Steam** (from DamnationCE 0.3.41).
   A DualSense or DualShock 4 now goes through the kernel's own driver
   (Linux 5.12 and later), so it should work without Steam's udev rules

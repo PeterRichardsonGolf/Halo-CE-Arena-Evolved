@@ -97,6 +97,7 @@ their handlers open opens.
 /* (its games on Halo PC maps: server_browser.c) */
 #include "halo_map_families.h"
 #include "ae_glue_mcc.h" /* AE hook */
+#include "ae_menus_swap.h" /* AE hook */
 #include "ae_glue_settings.h" /* AE hook */
 #include "ae_glue_lan.h" /* AE hook */
 #include "halo_server_browser.h"
@@ -6661,6 +6662,8 @@ boolean pc_menu_event_function_invoke(
 			return FALSE;
 		if (!strncmp(name, "ae mcc ", 7)) /* AE hook */
 			return ae_mcc_menu_event(name, controller);
+		if (!strncmp(name, "ae menus ", 9)) /* AE hook */
+			return ae_menus_swap_event(name, widget, controller, widget_deleted);
 		if (!strcmp(name, "main menu quit game"))
 		{
 			platform_request_quit();

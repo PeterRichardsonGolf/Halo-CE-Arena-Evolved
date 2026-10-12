@@ -30,6 +30,14 @@ file, the line and the problem, and the game uses the Xbox's menus. The
 setting `display.menus = "xbox"` also uses them. `debug.menu_open` starts on
 one screen (by its name, `main_menu/settings_select/...`), for looking at it.
 
+The main menu's MENUS switches between these menus and the Xbox's while the
+game runs (`port/linux/game/ae_menus_swap.c`). It is a row of `ce/main_menu.xml`,
+and the styles it shows are `ce/main_menu.menus_select.xml`. A `menus`
+folder's own `main_menu.xml` replaces ours whole, so a main menu without that
+row has no MENUS in these menus: that is accepted, not added back by the game.
+The Xbox's menus always have MENUS (it is not a menu file), so a player can
+switch back there, or set `display.menus` in `config.toml`.
+
 ## Writing them again
 
 `tools/ce_menus.py` writes every file in `ce/` and `menus.json` again,
@@ -204,3 +212,10 @@ map=...>`), else a placeholder, placed where the PC version's picture is in
 its frame (`--pictures`: only where, not the picture, is read);
 `NON_HANDDRAWN.md` lists both. It needs `rsvg-convert`, Pillow, NumPy and
 SciPy.
+
+The main menu's own rows (MENUS, and the menu styles it shows: PC, XBOX,
+ARENA EVOLVED, BACK) are `tools/menu_row_art.py`'s, which `ce_menus.py` runs
+too, and which can run alone: it sets the text in OpenCE as the stock rows
+are, matched to each style's SETTINGS picture (`ce/port/main_menu/` for these
+menus, `ce/port/main_menu/xbox_style/` for the Xbox's). It needs Pillow, NumPy
+and SciPy.

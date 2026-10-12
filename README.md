@@ -297,7 +297,8 @@ folder (about 2 GB) out of it.
 ## Getting started
 
 1. Start the game and point it at your Halo disc image (see above).
-2. The menus are the PC version's (`display.menus` in `config.toml`):
+2. The menus are the PC version's (`display.menus` in `config.toml`;
+   MENUS on the main menu switches to the Xbox's and back):
    that's where Arena Evolved's settings live: Settings > Game Options
    (callouts, voice, mods, campaign rules, zoom), Settings > HUD (the match
    clock, HUD area, the item waypoints' pictures),

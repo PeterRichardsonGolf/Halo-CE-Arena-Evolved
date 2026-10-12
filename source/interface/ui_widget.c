@@ -690,6 +690,7 @@ struct widget_instance;
 #include "halo_ui_map_list.h"
 #endif
 #include "ae_hooks.h" /* AE hook */
+#include "ae_menus_swap.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 /* the in-game server browser (port/linux/game/browser_screen.c): a screen of
 code over the widgets, as the virtual keyboard is */
@@ -9084,6 +9085,7 @@ void process_ui_widgets(
 		event_manager_post_button(ui_widget_port_press_controller, ui_widget_port_press_button);
 		ui_widget_port_press_controller = NONE;
 	}
+	ae_menus_swap_update(); /* AE hook */
 	if (widget_globals.initialization_thread)
 	{
 		if (!thread_has_exited(widget_globals.initialization_thread))
