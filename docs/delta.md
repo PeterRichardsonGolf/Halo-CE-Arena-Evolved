@@ -510,7 +510,8 @@ breaking:
 	X(24, "build-149", additive) /* the gametype's PC vehicle set: every vehicle the map places */ \
 	X(25, "build-169", additive) /* units' integrated lights in the object states; a banned machine told so */ \
 	X(26, "build-184", additive) /* internet play's signalling, version 4 (WebRTC, for browsers; ChupathingyCE's p2p_signal.c reads 3 and 4, Arena Evolved's, OpenCE's, 4); game messages as 25 */ \
-	X(27, "build-189", additive) /* followed from OpenCE: additive */
+	X(27, "build-189", additive) /* followed from OpenCE: additive */ \
+	X(28, "build-201", additive) /* followed from OpenCE: 27's messages; the host holds a downloading machine's players out, keeps a map's first scripted BSP, lights past the Xbox limits, a second weapon readied (a 27 machine disagrees: Arena Evolved's floor joins 28 alone) */
 ```
 
 `tools/test_delta.py` (in CI) checks `halo_port_limits.h` against it: hosts
@@ -548,8 +549,9 @@ Known history, from `port/linux/NETCODE.md` and OpenCE's commits:
 | 23 | build-147 | a Custom Edition map's blocks past the Xbox tools' limits kept whole, its vehicles placed by their spawn flags, and its header checksum sent as the map's version (a client of another version leaves); Xbox maps play as 22 | additive |
 | 24 | build-149 | the gametype's PC vehicle set (0xFE), every vehicle the map places; on a Custom Edition map every placement whose spawn flags name the game type (a client of 23 places none of it) | additive |
 | 25 | build-169 | units' integrated lights (flashlights) in the host's object states, two bits of their flags (a client of 24 ignores them and keeps toggling a light on presses); a banned machine told it is kept out, an existing rejection code | additive |
-| 26 | build-184 | internet play's signalling (not the game's messages, which are 25's): JOIN and ACCEPT say each machine's WebRTC, for OpenCE's browsers, in signalling version 4, which OpenCE reads alone. A release, not a table row: `p2p_signal.c` reads and answers both 3 and 4, and asks in both until a host answers one (wire `chupa-26a`; no WebRTC, so browsers can't join our games). (Arena Evolved, from OpenCE build-190: OpenCE's `p2p_signal.c`, version 4 alone, with WebRTC, so browsers can join; wire `ae-27a`) | additive |
+| 26 | build-184 | internet play's signalling (not the game's messages, which are 25's): JOIN and ACCEPT say each machine's WebRTC, for OpenCE's browsers, in signalling version 4, which OpenCE reads alone. A release, not a table row: `p2p_signal.c` reads and answers both 3 and 4, and asks in both until a host answers one (wire `chupa-26a`; no WebRTC, so browsers can't join our games). (Arena Evolved, from OpenCE build-190: OpenCE's `p2p_signal.c`, version 4 alone, with WebRTC, so browsers can join; wire `ae-27a`, `ae-28a` from build-201) | additive |
 | 27 | build-189 | Custom Edition map sharing: new distributed messages (request, offer, sources, progress), which a machine of 26 drops, and connections of their own on port 5153; players of an internet game reach each other (`p2p.c`) | additive |
+| 28 | build-201 | the game's messages are 27's; what the host decides changes: a machine still downloading a Custom Edition map has its players held out of the game (not spawned, not counted) until it has the map, then they join through the late-join queue; a multiplayer map's first scripted BSP switch is kept (the sky the game type picks); dynamic lights and the flashlight stay on past the Xbox player and vehicle limits; a second weapon picked up while firing is readied. A machine of 27 disagrees on these (OpenCE joins its own version alone; Arena Evolved, wire `ae-28a`, joins 28 alone) | additive |
 
 ### Automation
 
