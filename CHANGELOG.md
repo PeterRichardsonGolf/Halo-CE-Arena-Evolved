@@ -25,6 +25,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   lobby when the gametype changed. Their own game can only say it could not
   join (a host has no way to show other builds a message of its own). With
   both options NORMAL, everyone joins as before.
+- **Fixed:** a fully charged weapon trigger with no magazine (none of the
+  stock weapons has one; a custom map's weapon can) read the memory just
+  before the weapon's magazines to decide whether to fire at once. It now
+  reads no magazine, as an uncharged trigger already did.
 - **MENUS on the main menu: switch between the PC and Xbox menus without
   leaving the game.** It sits above QUIT in the PC menus (the other rows move
   up a little to make room) and under SETTINGS in the Xbox menus. Pick it and

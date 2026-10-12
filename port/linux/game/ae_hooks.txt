@@ -201,3 +201,6 @@ source/units/bipeds.c	#include "ae_silent.h" /* AE hook */
 source/units/bipeds.c	ae_silent_scope_begin(AE_SILENT_ROLE_MOVEMENT, biped->unit.player_index); /* AE hook */\nmaterial_effect_new_from_point(\ndefinition->biped.material_effects.index,\nevent_index,\n&marker.matrix.position,\n0.f);\nae_silent_scope_end(); /* AE hook */
 source/units/units.c	#include "ae_silent.h" /* AE hook */
 source/units/units.c	ae_silent_unit_action_scope_begin(unit_index, unit->unit.animation.action); /* AE hook */\nanimation_update_result = unit_animation_update(\nunit_index,\nunit_definition->object.animation_graph.index,\n&unit->unit.animation.action_animation);\nae_silent_scope_end(); /* AE hook */
+# a charged trigger with no magazine (NONE) reads none, not magazines[NONE] (0.2.3; port/linux/game/ae_weapon_rules.h)
+source/items/weapons.c	#include "ae_weapon_rules.h" /* AE hook */
+source/items/weapons.c	short magazine_index= ae_weapon_charged_magazine_index(trigger_definition->magazine_index, weapon_magazine_count(weapon_definition)); /* AE hook */\nstruct weapon_magazine *magazine= magazine_index!=NONE ? weapon_magazine_get(weapon, magazine_index) : NULL; /* AE hook */
