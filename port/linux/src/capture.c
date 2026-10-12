@@ -121,6 +121,11 @@ int halo_capture_notice(char *text, int size)
 #else
 
 #include "gl.h"
+/* the web build's WebGL 2 has no BGRA readback enum (its reads are of a
+build not vetted by AE; the screenshot and recording paths still compile) */
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
 #include "zlib_prefixed.h"
 #include "capture_child.h"
 

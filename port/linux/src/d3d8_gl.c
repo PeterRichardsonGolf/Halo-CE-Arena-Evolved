@@ -4540,8 +4540,9 @@ static void stream_reserve(unsigned long size)
 
 static unsigned long stream_upload(const void *data, unsigned long size);
 
-#ifdef HALO_GLES
-/* stream_upload, at a multiple of alignment into the buffer */
+#if defined(HALO_GLES) || defined(HALO_GL_LEGACY_BINDING)
+/* stream_upload, at a multiple of alignment into the buffer (GLES's and the
+legacy-binding path's immediate vertices) */
 static unsigned long stream_upload_aligned(const void *data, unsigned long size, unsigned long alignment)
 {
 	stream_reserve(((size + 15) & ~15UL) + alignment);
