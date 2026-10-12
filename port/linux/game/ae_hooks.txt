@@ -86,6 +86,7 @@ source/cache/cache_files.c	ae_ce_map_tags_loaded(cache_file_globals.header.name,
 port/linux/src/hud_hires.c	#include "ae_ce_hud.h" /* AE hook */
 port/linux/src/hud_hires.c	if (ae_ce_hud_pixels(hud_hires_embedded[asset].tag, hud_hires_embedded[asset].bitmap, address, level0_size)) /* AE hook */\nreturn asset;
 port/linux/game/menu_tags.c	#include "ae_glue_ce_maps.h" /* AE hook */
+port/linux/game/menu_tags.c	if ((game_map && !network_map && !campaign_map) || (!menus_pc_chosen() && !ae_ce_map_building_menu_tags())) /* AE hook */
 port/linux/game/menu_tags.c	ae_ce_map_menu_block(block, size > 0 ? size : 1); /* AE hook */
 port/linux/game/menu_tags.c	ae_ce_map_menu_blocks_forget(); /* AE hook */
 port/linux/game/ce_map_checks.c	#include "ae_glue_ce_maps.h" /* AE hook */

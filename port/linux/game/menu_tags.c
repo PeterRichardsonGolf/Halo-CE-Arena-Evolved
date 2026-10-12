@@ -2200,7 +2200,7 @@ void menu_tags_loaded(
 	boolean campaign = campaign_map && campaign_played_here();
 
 	/* (ui.map, and a game map: its pause menu's SETTINGS) */
-	if ((game_map && !network_map && !campaign_map) || !menus_pc_chosen())
+	if ((game_map && !network_map && !campaign_map) || (!menus_pc_chosen() && !ae_ce_map_building_menu_tags())) /* AE hook */
 	{
 		return;
 	}
