@@ -80,7 +80,7 @@ lines, the ammo text shown after walking over a second rifle, the swap prompt (`
 `HALO_WEAPON_PACK_GROUND=1`, a few steps) drawing the entry's icon with no frame showing the counter's
 sheet (magenta or bright green texels in the upper half), the weapon text when the rifle is picked up with one weapon
 held, a variant pack whose icon is the counter's sheet (its icon
-refused for the map, the HUD's own drawn), and firing zoomed in (`debug.weapon_log`: `zoomed: local player 0 sees no
+refused for the map, the prompt drawn with no icon; also an icon whose optional external bitmap the map lacks), and firing zoomed in (`debug.weapon_log`: `zoomed: local player 0 sees no
 particle of the rifle or its holder`).
 
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),

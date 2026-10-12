@@ -302,6 +302,8 @@ static struct
 		struct icon_hud_element_definition const *messaging_icon;
 		long icon_bitmap;
 		short icon_sequence;
+		/* (the entry's icon refused for this map: the HUD's own is not drawn in its place either, no icon is) */
+		boolean icon_refused;
 		boolean icon_shown;
 	} looks[AE_PACK_MAXIMUM_WEAPONS];
 	/* (each SMOOTH bitmap tag's first upload on this map is logged) */
@@ -1605,7 +1607,8 @@ static void text_widen(
 pickup texts its entry names replace its item messages (its hud_message_index then points at the pack's strings,
 ITEM_STRING_INDEX_FIRST); the icon its entry names stands for its HUD's messaging icon in the swap and pickup
 prompts. An icon whose bitmap is none, or whose stored sequence holds no sprites (R10, R30: a sheet drawn whole
-would cover the screen, round 6b's bug), is refused for the map with one line: the HUD's own icon is drawn */
+would cover the screen, round 6b's bug), is refused for the map with one line, and the prompt then draws no icon.
+Only the pack's own weapon HUD is keyed on: a HUD tag shared with the map is its weapons' too (their icon stays) */
 static void placed_looks_set(
 	struct ae_pack const *pack)
 {
@@ -1641,8 +1644,10 @@ static void placed_looks_set(
 			weapon->item.hud_message_index = (short)(ITEM_STRING_INDEX_FIRST + 2 * index);
 		}
 
+		/* (only the pack's own HUD: a HUD tag the pack shares with the map is the map's weapons' too, and they keep
+		their icon) */
 		hud_index = weapon->weapon.interface_definition.hud_interface.index;
-		if (hud_index != NONE)
+		if (hud_index != NONE && ae_weapon_pack_tag_is_own(hud_index))
 		{
 			placed.looks[index].messaging_icon = &((struct weapon_hud_interface_definition *)
 				tag_get(WEAPON_HUD_INTERFACE_TAG, hud_index))->messaging_icon;
@@ -1650,6 +1655,7 @@ static void placed_looks_set(
 		snprintf(icon_text, sizeof(icon_text), "none");
 		if (record->icon_bitmap_tag != AE_PACK_NONE)
 		{
+			char const *map_name = placed.map_name[0] ? placed.map_name : "the map";
 			long bitmap_index = record->icon_bitmap_tag < pack->tag_count ?
 				placed.tag_indices[record->icon_bitmap_tag] : NONE;
 			char const *bitmap_name = record->icon_bitmap_tag < pack->tag_count ?
@@ -1660,20 +1666,22 @@ static void placed_looks_set(
 				TAG_BLOCK_GET_ELEMENT(&group->sequences, record->icon_sequence, struct bitmap_group_sequence)->sprites.count :
 				0;
 
-			if (!group)
+			if (hud_index == NONE)
+				error(_error_silent, "weapon pack: %s's message icon refused: the weapon has no HUD", key ? key : "?");
+			else if (!placed.looks[index].messaging_icon)
 			{
-				error(_error_silent, "weapon pack: %s's message icon refused for %s: its bitmap is not on the map; the "
-					"HUD's own icon is drawn", key ? key : "?", placed.map_name[0] ? placed.map_name : "the map");
+				error(_error_silent, "weapon pack: %s's message icon refused for %s: its HUD is the map's; the map's "
+					"weapons keep their icon", key ? key : "?", map_name);
+			}
+			else if (!group)
+			{
+				error(_error_silent, "weapon pack: %s's message icon refused for %s: its bitmap is not on the map; no "
+					"icon is drawn", key ? key : "?", map_name);
 			}
 			else if (sprites <= 0)
 			{
 				error(_error_silent, "weapon pack: %s's message icon refused for %s: sequence %u of %s has no sprites; "
-					"the HUD's own icon is drawn", key ? key : "?", placed.map_name[0] ? placed.map_name : "the map",
-					record->icon_sequence, bitmap_name ? bitmap_name : "?");
-			}
-			else if (!placed.looks[index].messaging_icon)
-			{
-				error(_error_silent, "weapon pack: %s's message icon refused: the weapon has no HUD", key ? key : "?");
+					"no icon is drawn", key ? key : "?", map_name, record->icon_sequence, bitmap_name ? bitmap_name : "?");
 			}
 			else
 			{
@@ -1682,6 +1690,9 @@ static void placed_looks_set(
 				snprintf(icon_text, sizeof(icon_text), "%s sequence %u (%ld sprites)", bitmap_name ? bitmap_name : "?",
 					record->icon_sequence, sprites);
 			}
+			/* (refused with the pack's own HUD: its messaging icon is not drawn in the entry's place, which would be
+			a sprite of the map's sheet that means something else) */
+			placed.looks[index].icon_refused = placed.looks[index].messaging_icon && placed.looks[index].icon_bitmap == NONE;
 		}
 		error(_error_silent, "weapon pack: %s's look: pickup texts \"%s\" / \"%s\", message icon %s; its HUD's icon "
 			"sequence %d", key ? key : "?", texts[0] ? texts[0] : "(the engine's)", texts[1] ? texts[1] : "(the engine's)",
@@ -2049,11 +2060,16 @@ struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
 		return icon;
 	for (index = 0; index < AE_PACK_MAXIMUM_WEAPONS; index++)
 	{
-		if (placed.looks[index].icon_bitmap == NONE || placed.looks[index].messaging_icon != icon)
+		if (!placed.looks[index].messaging_icon || placed.looks[index].messaging_icon != icon ||
+			(placed.looks[index].icon_bitmap == NONE && !placed.looks[index].icon_refused))
+		{
 			continue;
+		}
 		substitute = *icon;
-		substitute.sequence_index = placed.looks[index].icon_sequence;
-		*bitmap_group_index = placed.looks[index].icon_bitmap;
+		/* (a refused icon: sequence NONE, which hud_retrieve_bitmap_and_bounding_rect skips: none is drawn) */
+		substitute.sequence_index = placed.looks[index].icon_refused ? (short)NONE : placed.looks[index].icon_sequence;
+		if (!placed.looks[index].icon_refused)
+			*bitmap_group_index = placed.looks[index].icon_bitmap;
 		/* (its first prompt on a map is logged) */
 		if (!placed.looks[index].icon_shown)
 		{
@@ -2062,8 +2078,13 @@ struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
 				ae_pack_string(pack, pack->weapons[index].key) : NULL;
 
 			placed.looks[index].icon_shown = TRUE;
-			error(_error_silent, "weapon pack: %s's message icon shown in a prompt (sequence %d of its entry's bitmap)",
-				key ? key : "?", (int)placed.looks[index].icon_sequence);
+			if (placed.looks[index].icon_refused)
+				error(_error_silent, "weapon pack: %s's prompt drawn with no icon (its icon was refused)", key ? key : "?");
+			else
+			{
+				error(_error_silent, "weapon pack: %s's message icon shown in a prompt (sequence %d of its entry's bitmap)",
+					key ? key : "?", (int)placed.looks[index].icon_sequence);
+			}
 		}
 		return &substitute;
 	}

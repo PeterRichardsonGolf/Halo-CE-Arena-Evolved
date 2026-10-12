@@ -6,6 +6,7 @@ the task report's; these cases check what the log and the frames can tell alone.
 
 Needs a game and the real pack: AE_TEST_PACK_BUILD and AE_TEST_PACK_REAL (tools/test_weapon_pack_add.py)."""
 import re
+import shutil
 import sys
 import unittest
 from pathlib import Path
@@ -30,7 +31,10 @@ WEAPON_TEXT = r"weapon pack: item message \"Picked up a battle rifle\" shown \(i
 AMMO_TEXT = (r"weapon pack: item message \"Picked up %d rounds for battle rifle\" shown \(its weapon entry's ammo "
              r"pickup text\)")
 ICON_REFUSED = r"weapon pack: battle_rifle's message icon refused for bloodgulch: sequence 0 of [^ ]+br_meter_smooth " \
-               r"has no sprites; the HUD's own icon is drawn"
+               r"has no sprites; no icon is drawn"
+ICON_MISSING = r"weapon pack: battle_rifle's message icon refused for bloodgulch: its bitmap is not on the map; no icon " \
+               r"is drawn"
+NO_ICON = r"weapon pack: battle_rifle's prompt drawn with no icon \(its icon was refused\)"
 ICON_SHOWN = r"weapon pack: battle_rifle's message icon shown in a prompt \(sequence 0 of its entry's bitmap\)"
 HIDDEN = r"ae burst rifle: tick \d+, zoomed: local player 0 sees no particle of the rifle or its holder"
 UNREAD = "could not be read from the pack"
@@ -40,6 +44,8 @@ UNREAD = "could not be read from the pack"
 WALK_ONTO = "menu:" + " ".join(["wait"] * 14 + ["key:W"] * 3 + ["wait"] * 8)
 # (WEAPONS record fields, "<14I": the message icon's bitmap tag and sequence)
 WEAPON_ICON_TAG = 10
+# (an external bitmap the icon may name in the missing-bitmap case: a lens flare's, which may be NONE)
+OPTIONAL_ICON_DONOR = "effects\\particles\\lens flare\\bitmaps\\flares_generic2"
 
 
 def stray_texels(path):
@@ -68,14 +74,41 @@ def icon_on_the_counter_sheet(real):
     raise AssertionError("the pack has no br_meter_smooth")
 
 
+def icon_bitmap_missing(real):
+    """the weapon entry's icon is an OPTIONAL external bitmap that no map has (a lens flare's bitmap made optional and
+    renamed): a valid pack whose icon the map cannot give"""
+    image = add.Image(real)
+    for index in range(image.tag_count()):
+        tag = image.tag(index)
+        if tag[add.TAG_KIND] == aepack.EXTERNAL and image.name(index) == OPTIONAL_ICON_DONOR:
+            image.tag_set(index, add.TAG_REQUIRED, 0)
+            start = image.sections[aepack.STRINGS] + tag[add.TAG_NAME]
+            image.data[start] = ord("#")
+            offset = image.sections[aepack.WEAPONS]
+            record = list(aepack.WEAPON_RECORD.unpack_from(image.data, offset))
+            record[WEAPON_ICON_TAG] = index
+            aepack.WEAPON_RECORD.pack_into(image.data, offset, *record)
+            return image.signed()
+    raise AssertionError("the pack has no external " + OPTIONAL_ICON_DONOR)
+
+
 @unittest.skipUnless(BUILD and REAL, "AE_TEST_PACK_BUILD and AE_TEST_PACK_REAL not set (needs a game and a real pack)")
 class Look(add.Game):
     def good(self):
         return str(self.packs("good", Path(REAL).expanduser().read_bytes()))
 
-    def shots(self, name):
+    def shots_folder(self, name):
         cfg = harness.load_config(None)
-        return sorted((harness.expand(cfg["out_dir"]) / "run" / f"packadd-{name}" / name / "shots").glob("*.png"))
+        return harness.expand(cfg["out_dir"]) / "run" / f"packadd-{name}" / name / "shots"
+
+    def shots(self, name):
+        return sorted(self.shots_folder(name).glob("*.png"))
+
+    def play_with_shots(self, name, *arguments, **keywords):
+        """play() with the case's earlier frames gone first (the harness writes over the folder, but keeps a longer
+        earlier run's later frames)"""
+        shutil.rmtree(self.shots_folder(name), ignore_errors=True)
+        self.play(name, *arguments, **keywords)
 
     def test_look_and_ammo_text(self):
         """the look line (texts and icon from the weapon entry), the two SMOOTH bitmaps sampled smooth as they are
@@ -90,7 +123,7 @@ class Look(add.Game):
         """two stock weapons held (the pack asked for by BATTLE RIFLE ON MAP only), walked onto the rifle: the swap
         prompt draws the entry's icon; no frame shows the counter's sheet"""
         name = "swap"
-        self.play(name, "--packs-from", self.good(), "--pack-map-spawns", "--start", "5",
+        self.play_with_shots(name, "--packs-from", self.good(), "--pack-map-spawns", "--start", "5",
                   "--env", "HALO_NETWORK_TEST_LOADOUT=2,3", "--env", "HALO_WEAPON_PACK_GROUND=1",
                   "--window", "800x600", "--shots", "16", "--test-input", WALK_ONTO,
                   "--expect-line", LOOK, "--expect-line", ICON_SHOWN, "--expect-no-line", UNREAD, seconds=30)
@@ -105,18 +138,23 @@ class Look(add.Game):
                   "--env", "HALO_NETWORK_TEST_LOADOUT=2,0", "--env", "HALO_WEAPON_PACK_GROUND=1",
                   "--test-input", WALK_ONTO, "--expect-line", WEAPON_TEXT, "--expect-no-line", UNREAD, seconds=25)
 
-    def test_icon_without_sprites_refused(self):
-        """an entry whose icon is a sequence without sprites (the counter's sheet) has its icon refused for the map
-        with one line: the HUD's own icon is drawn in the prompt (the pack's never is), never the sheet, and the game
-        plays on"""
-        name = "icon"
-        image = icon_on_the_counter_sheet(Path(REAL).expanduser().read_bytes())
-        self.play(name, "--packs-from", str(self.packs(name, image)), "--pack-map-spawns", "--start", "5",
+    def refused_icon(self, name, image, line):
+        """the icon refused for the map with its line; the swap prompt is drawn with no icon (not the HUD's own, a
+        sprite of the map's sheet that means something else), never the sheet, and the game plays on"""
+        self.play_with_shots(name, "--packs-from", str(self.packs(name, image)), "--pack-map-spawns", "--start", "5",
                   "--env", "HALO_NETWORK_TEST_LOADOUT=2,3", "--env", "HALO_WEAPON_PACK_GROUND=1",
                   "--window", "800x600", "--shots", "16", "--test-input", WALK_ONTO,
-                  "--expect-line", ICON_REFUSED, "--expect-line", add.ADDED.format(map="bloodgulch", corrections="0"),
-                  "--expect-no-line", ICON_SHOWN, refused=True, seconds=30)
+                  "--expect-line", line, "--expect-line", add.ADDED.format(map="bloodgulch", corrections="0"),
+                  "--expect-line", NO_ICON, "--expect-no-line", ICON_SHOWN, refused=True, seconds=30)
         self.assertEqual(max(stray_texels(frame) for frame in self.shots(name)), 0)
+
+    def test_icon_without_sprites_refused(self):
+        """the entry's icon is the counter's sheet, whose sequence has no sprites"""
+        self.refused_icon("icon", icon_on_the_counter_sheet(Path(REAL).expanduser().read_bytes()), ICON_REFUSED)
+
+    def test_icon_bitmap_missing_refused(self):
+        """the entry's icon is an optional external bitmap the map lacks (a valid pack)"""
+        self.refused_icon("iconmissing", icon_bitmap_missing(Path(REAL).expanduser().read_bytes()), ICON_MISSING)
 
     def test_zoomed_particles_hidden(self):
         """firing zoomed in (debug.burst_autofire; Z pressed every three seconds: a reload ends a zoom, and a press in

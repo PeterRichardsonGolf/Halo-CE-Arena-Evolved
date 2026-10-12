@@ -94,8 +94,9 @@ the pack was added); FALSE otherwise, and then *string_index the weapon's own in
 no such text (the engine's own) */
 boolean ae_weapon_pack_item_string(long *string_index, wchar_t const **string);
 /* (render_state_bitmap) the swap / pickup prompt's icon: for a pack weapon's messaging icon, the icon its weapon
-entry names (a bitmap and a sequence of sprites, R10 / R30; one without sprites is refused for the map with one
-line), *bitmap_group_index set to that bitmap; any other icon is returned as it is */
+entry names (a bitmap and a sequence of sprites, R10 / R30), *bitmap_group_index set to that bitmap; an icon refused
+for the map (one line) comes back with sequence NONE: none is drawn. Only a pack weapon whose HUD is the pack's own
+tag; any other icon is returned as it is */
 struct icon_hud_element_definition const *ae_weapon_pack_message_icon(struct icon_hud_element_definition const *icon,
 	long *bitmap_group_index);
 /* (the platform layer's texture cache, port/linux/src/ae_pack_textures.h) whether the pixels at address are a
