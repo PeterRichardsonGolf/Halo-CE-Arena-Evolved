@@ -75,6 +75,10 @@ UNITS = {
                                 SRC / "ae_font.c", SRC / "ae_layout.c"],
                                [f"-I{SRC}", f"-I{TESTS}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                                []),
+    # (a Custom Edition map's pause widgets checked before they are patched; under the sanitizers, as the map is
+    # anyone's: broken counts, addresses, indices and loops)
+    "ae_ce_ui_check_test.c": ([UI / "ae_ce_ui_check.c"], [f"-I{UI}", "-fsanitize=address,undefined",
+                                                          "-fno-sanitize-recover=all"], []),
     # (the lobby's roster order and names, preflight P18)
     "ae_lobby_roster_test.c": ([UI / "ae_lobby_roster.c"], [f"-I{UI}", "-fsanitize=address,undefined",
                                                               "-fno-sanitize-recover=all"], []),

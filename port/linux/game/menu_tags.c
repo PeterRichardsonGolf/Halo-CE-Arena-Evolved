@@ -42,6 +42,7 @@ when it is played on this machine alone (not a network game).
 #include "rasterizer/xbox/rasterizer_xbox_hardware_bitmaps.h"
 
 #include "halo_menus.h"
+#include "ae_glue_ce_maps.h" /* AE hook */
 
 #include <stdlib.h>
 #include <string.h>
@@ -492,6 +493,7 @@ static void *allocate(long size)
 		menu_tags.blocks = blocks;
 	}
 	menu_tags.blocks[menu_tags.block_count++] = block;
+	ae_ce_map_menu_block(block, size > 0 ? size : 1); /* AE hook */
 	return block;
 }
 
@@ -1464,6 +1466,7 @@ static void menu_tags_release(void)
 	if (menu_tags.original_instances)
 		cache_files_set_tag_instances(menu_tags.original_instances, menu_tags.original_count);
 	/* (the game's free takes no NULL: settings is, with no setting spinners) */
+	ae_ce_map_menu_blocks_forget(); /* AE hook */
 	for (index = 0; index < menu_tags.block_count; index++)
 		free(menu_tags.blocks[index]);
 	if (menu_tags.blocks)

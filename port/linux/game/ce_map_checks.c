@@ -57,6 +57,7 @@ rest of a map's tags as it reads the Xbox's maps, trusting them.
 #include "errors.h"
 #include "main/console.h"
 #include "ce_map_checks.h"
+#include "ae_glue_ce_maps.h" /* AE hook */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -673,6 +674,8 @@ void *ce_tags_pointer(
 	{
 		return xbox_pointer(address);
 	}
+	if (ae_ce_map_menu_memory(address, size)) /* AE hook */
+		return xbox_pointer(address);
 	if (misses < 16)
 	{
 		misses++;

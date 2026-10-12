@@ -452,6 +452,7 @@ boolean map_family_resource(char const *name, char *path, long size)
 	return TRUE;
 }
 char const *ae_mcc_refusal_note(void) { return ""; } /* AE hook */
+int ae_ce_map_menu_memory(unsigned long address, long size) { (void)address; (void)size; return 0; } /* AE hook: ce_map_checks.c (no menus here) */
 
 /* (tag_groups.c's, as the game reads a block's element: a Custom Edition
 map's through ce_tags_pointer) */

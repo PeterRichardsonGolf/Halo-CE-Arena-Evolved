@@ -137,6 +137,17 @@ never copy them into the repository. Known limit on Windows: the detection opens
 the port's other file calls do, so an MCC folder or Steam library whose path has characters outside the system's
 code page is not found (BROWSE does not help there; `maps_ce` does).
 
+## Custom Edition maps: pause SETTINGS and the high-res HUD
+
+A Custom Edition map's load logs, after `Custom Edition map <name>@ce: ... tags`, the pause list's dead Halo PC row
+taken out (`... change_settings_button runs a function this game has not: taken out`), `menus: the pause menu has
+SETTINGS`, `Custom Edition map: 2 split-screen pause screens laid out as the one player's` and `high-res hud: N of
+... bitmaps in this map`. `tools/test_ae_ce_maps.py` plays homobox@ce paused (SETTINGS opened) and in two-player
+split screen with `$AE_CE_BUILD` (a linux64 build folder) and `$AE_CE_DATA` (a data root whose `maps/ce` has
+homobox and the three resource maps; the player's own files). Its table check runs without them. The Halo PC HUD
+bitmaps the high-res textures stand for are `port/linux/src/ae_ce_hud_table.c`, written by `tools/ae_ce_hud.py`
+(from an Xbox map and Custom Edition's bitmaps.map; run it again when `port/assets/hud/layout.json` changes).
+
 ## Recording
 
 The game records itself: F10 (the Screenshot action, rebindable) saves a screenshot and F9 starts/stops a recording in play, and for tests
