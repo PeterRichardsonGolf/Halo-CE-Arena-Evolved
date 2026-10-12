@@ -198,7 +198,7 @@ play:
   TOGGLE / HOLD / BOTH; the wheel or the flashlight button steps the level
   while zoom is held), both on Settings.
 - Item waypoints with pictures (Settings > HUD > WAYPOINTS: TEXT, ICONS or
-  BOTH).
+  BOTH), their size set by WAYPOINT SIZE (50% to 100%).
 
 **Privacy**
 - Internet games you host start PUBLIC, as upstream's do: they show in the

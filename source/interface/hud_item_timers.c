@@ -110,6 +110,17 @@ mod) shows Arena Evolved's burst in an outlined hexagon; the overshield's and
 the camouflage's are Arena Evolved's own glyphs (hud_waypoint_glyph_bitmap),
 dark on a filled hexagon 1.8 capitals high. All in the label's colour, at the view's text scale
 as the text.
+
+WAYPOINT SIZE (display.waypoint_size, 50 to 100 percent, default 70; Settings > HUD) is the whole stack's size (the
+text, the picture and the gaps; the arrow, the power list, the clock and the overlay keep theirs): each label's text
+scale is the size times the view's factor (hud_item_timers_view_factor_for: a half screen 0.85, a quarter 0.75) times
+a gentle distance factor (whole to 15 m, a line down to three quarters at 60 m, never below), and a block of labels
+is laid out and drawn at its first label's (hud_waypoint_block_scale_set). No text is smaller than
+HUD_WAYPOINT_MINIMUM_CAP screen pixels in its capitals (hud_waypoint_floor_scale). The distance row is near white
+and whole, outlined, as the timer; the name is the item's (SHOTGUN, in the base's colour: no RED or BLUE, a number
+only where the map has another of the item at the base within ten metres: hud_waypoint_name), the power list's
+names kept. The names over players' heads (hud.c, drawn before the waypoints) are noted per view
+(hud_item_timers_name_tag_note): a label steps aside from them, and is faded where it cannot.
 */
 
 /* ---------- headers */
@@ -166,6 +177,10 @@ as the text.
 #define HUD_ITEM_TIMERS_LINE_LENGTH 160
 #define HUD_ITEM_TIMERS_LABEL_ALPHA 0.9f	/* (a waypoint's label, over the world) */
 #define HUD_ITEM_TIMERS_LABEL_GAP 2	/* (between a waypoint's arrow and its label) */
+#define HUD_WAYPOINT_NEAR_METRES 15.0f
+#define HUD_WAYPOINT_FAR_METRES 60.0f
+#define HUD_WAYPOINT_FAR_FACTOR 0.75f
+#define HUD_WAYPOINT_MINIMUM_CAP 9.0f	/* (waypoint text's smallest capital height, in screen pixels) */
 #define HUD_WAYPOINT_MERGE_DISTANCE 24	/* (arrows this near each other share their labels) */
 #define HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE 0.4f	/* (the smallest it is made to fit) */
 #define HUD_ITEM_TIMERS_POWER_WIDTH 0.5f	/* (the most of the view's width it takes in its top left corner) */
@@ -269,9 +284,17 @@ static real hud_item_timers_view_factor(
 
 /* this view's text scale (the power list's before it is made smaller to
 fit, the waypoints' labels', BOTH's time played's) and its clock's */
+/* WAYPOINT SIZE (display.waypoint_size): while the waypoints' labels are laid out and drawn, their text scale is
+this block's (hud_waypoint_block_scale_set: the size times the view's factor times the distance's), the power list, the
+clock and the overlay keeping the view's alone */
+static boolean hud_waypoint_scale_active = FALSE;
+static real hud_waypoint_scale = 1.0f;
+
 static real hud_item_timers_text_scale(
 	void)
 {
+	if (hud_waypoint_scale_active)
+		return HUD_ITEM_TIMERS_TEXT_SCALE * hud_waypoint_scale;
 	return HUD_ITEM_TIMERS_TEXT_SCALE * hud_item_timers_view_factor();
 }
 
@@ -1893,6 +1916,7 @@ struct hud_waypoint_label
 	wchar_t name[24];
 	wchar_t time[12];
 	wchar_t distance_text[12];	/* "6.9m" (a stack's top row) */
+	real scale;	/* of the text scale of one view: WAYPOINT SIZE, the view's and the distance's factors */
 	struct hud_waypoint_icon icon;	/* its picture (WAYPOINTS ICONS and BOTH), else none */
 	short block;	/* NONE: not drawn (the same as one by it, or no room) */
 	short line;	/* its line in the block */
@@ -1971,6 +1995,11 @@ enum
 	HUD_WAYPOINT_ROW_TIMER
 };
 
+/* a block's colours' alpha, 1 but where it gives way to a player's name over their head */
+static real hud_waypoint_block_fade = 1.0f;
+#define HUD_WAYPOINT_DISTANCE_WHITE 0.96f
+#define HUD_WAYPOINT_TAG_FADE 0.3f	/* (a block's alpha where a name over a head is behind it) */
+
 /* a respawning item's colour faded (ae_waypoint_fade) */
 static void hud_waypoint_fade_color(
 	int part,
@@ -2000,10 +2029,24 @@ static void hud_waypoint_label_color(
 	real_argb_color *color)
 {
 	hud_item_timers_side_color(timer ? timer->side : _item_timer_side_middle, HUD_ITEM_TIMERS_LABEL_ALPHA, color);
-	if (respawning && row_kind == HUD_WAYPOINT_ROW_DISTANCE)
-		hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, color);
+	color->alpha *= hud_waypoint_block_fade;
+	if (row_kind == HUD_WAYPOINT_ROW_DISTANCE)
+	{
+		/* (near white and whole, in its outline: it was grey on grey, hard to read far away, and stays so
+		while the item respawns) */
+		color->red = HUD_WAYPOINT_DISTANCE_WHITE;
+		color->green = HUD_WAYPOINT_DISTANCE_WHITE;
+		color->blue = HUD_WAYPOINT_DISTANCE_WHITE;
+		color->alpha = hud_waypoint_block_fade;
+	}
+	else if (row_kind == HUD_WAYPOINT_ROW_TIMER)
+	{
+		color->alpha = hud_waypoint_block_fade;
+	}
 	else if (respawning && row_kind == HUD_WAYPOINT_ROW_NAME)
+	{
 		hud_waypoint_fade_color(AE_WAYPOINT_FADE_NAME, color);
+	}
 }
 
 /* a label's text line's height in this view, and its pictures' row's (every
@@ -2026,6 +2069,86 @@ static long hud_waypoint_row_gap(
 	long font_index)
 {
 	return MAX(1, hud_waypoint_text_height(font_index) / 7);
+}
+
+/* WAYPOINT SIZE (display.waypoint_size, 50 to 100 percent), read again when a setting has been written */
+double config_real(char const *name);
+
+static real hud_waypoint_size(
+	void)
+{
+	static boolean read = FALSE;
+	static unsigned long read_at;
+	static real size = 0.7f;
+
+	if (!read || read_at != config_changes())
+	{
+		read = TRUE;
+		read_at = config_changes();
+		size = PIN((real)config_real("display.waypoint_size"), 50.0f, 100.0f) / 100.0f;
+	}
+
+	return size;
+}
+
+/* the distance's factor (gentle): whole to 15 m, shrinking in a line to three quarters at 60 m, not below */
+static real hud_waypoint_distance_factor(
+	real world_units)
+{
+	real metres = world_units * 3.048f;
+
+	if (metres <= HUD_WAYPOINT_NEAR_METRES)
+		return 1.0f;
+	if (metres >= HUD_WAYPOINT_FAR_METRES)
+		return HUD_WAYPOINT_FAR_FACTOR;
+
+	return 1.0f - (1.0f - HUD_WAYPOINT_FAR_FACTOR) * (metres - HUD_WAYPOINT_NEAR_METRES) /
+		(HUD_WAYPOINT_FAR_METRES - HUD_WAYPOINT_NEAR_METRES);
+}
+
+/* the text scale of the block whose first label this is, from here on */
+static void hud_waypoint_block_scale_set(
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	short block)
+{
+	short index;
+
+	for (index = 0; index < label_count; index++)
+	{
+		if (labels[index].block == block)
+		{
+			hud_waypoint_scale = labels[index].scale;
+			return;
+		}
+	}
+}
+
+/* the text scale (of the font's own size) under which no waypoint text is drawn: its capitals are at least
+HUD_WAYPOINT_MINIMUM_CAP screen pixels high. A view is 480 units high on the screen (the drawable's height in
+pixels), so a unit is that many divided by 480 pixels */
+void platform_video_drawable_size(int *width, int *height);
+
+static real hud_waypoint_floor_scale(
+	long font_index)
+{
+	int width = 0;
+	int height = 0;
+	real pixels_per_unit;
+
+	platform_video_drawable_size(&width, &height);
+	pixels_per_unit = height > 0 ? (real)height / 480.0f : 1080.0f / 480.0f;
+
+	return HUD_WAYPOINT_MINIMUM_CAP / pixels_per_unit / MAX(hud_item_timers_cap_height(font_index, L'H'), 1.0f);
+}
+
+/* where the scale's origin is moved to draw a text a part of a view unit aside (the text moves the part of what
+the origin does that the scale leaves: one minus the scale) */
+#define HUD_WAYPOINT_OUTLINE 0.6f
+static real hud_waypoint_outline_step(
+	real row_scale)
+{
+	return HUD_WAYPOINT_OUTLINE / MAX(1.0f - row_scale, 0.3f);
 }
 
 /* a stack's distance row is small (4/5 of the name's), its timer 9/10 */
@@ -2210,6 +2333,9 @@ static void hud_waypoint_text_row_build(
 	row->respawning = respawning;
 	row->scale = row_kind == HUD_WAYPOINT_ROW_DISTANCE ? HUD_WAYPOINT_DISTANCE_SCALE :
 		row_kind == HUD_WAYPOINT_ROW_TIMER ? HUD_WAYPOINT_TIMER_SCALE : 1.0f;
+	/* (the readability floor: never smaller than the minimum capital height, whatever the size, the split
+	view and the distance make of the text scale) */
+	row->scale = MAX(row->scale, hud_waypoint_floor_scale(font_index) / hud_item_timers_text_scale());
 	row->height = (long)(hud_waypoint_text_height(font_index) * row->scale + 0.5f);
 	row->ink_offset = 0;
 	row->y_offset = 0;
@@ -2238,7 +2364,7 @@ static void hud_waypoint_text_row_build(
 		/* (where it starts: the advance of the text before it) */
 		ustrncpy(before, row->text, used);
 		before[used] = 0;
-		piece->start = hud_item_timers_text_advance(font_index, before);
+		piece->start = (long)(hud_item_timers_text_advance(font_index, before) * row->scale + 0.5f);
 		switch (parts[index].kind)
 		{
 		case AE_WAYPOINT_PART_NAME:
@@ -2288,6 +2414,7 @@ static long hud_waypoint_line(
 	int picture_row_width = 0;
 	short rows;
 
+	hud_waypoint_block_scale_set(labels, label_count, block);
 	layout->row_count = 0;
 	layout->icons = 0;
 	layout->width = 0;
@@ -2424,6 +2551,68 @@ static long hud_waypoint_lines_height(
 	return height;
 }
 
+/* the names over heads this view drew this frame (hud.c's hud_draw_player_names, before the waypoints), which the
+waypoints' labels keep clear of, or fade under */
+#define HUD_WAYPOINT_MAXIMUM_TAGS 32
+static struct
+{
+	short count;
+	rectangle2d bounds[HUD_WAYPOINT_MAXIMUM_TAGS];
+} hud_waypoint_name_tags[MAXIMUM_LOCAL_PLAYERS];
+
+void hud_item_timers_name_tags_begin(
+	void)
+{
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
+		hud_waypoint_name_tags[render.local_player_index].count = 0;
+}
+
+void hud_item_timers_name_tag_note(
+	rectangle2d const *bounds,
+	wchar_t const *name,
+	short x,
+	short y,
+	real scale)
+{
+	rectangle2d text;
+	rectangle2d cursor;
+	rectangle2d *tag;
+
+	if (render.local_player_index < 0 || render.local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
+		hud_waypoint_name_tags[render.local_player_index].count >= HUD_WAYPOINT_MAXIMUM_TAGS)
+	{
+		return;
+	}
+	draw_unicode_string_compute_bounds(bounds, name, &text, &cursor);
+	if (text.x1 <= text.x0)
+		return;
+	/* (scaled about its bottom's middle, a margin round it) */
+	tag = &hud_waypoint_name_tags[render.local_player_index].bounds[hud_waypoint_name_tags[render.local_player_index].count++];
+	tag->x0 = (short)(x + (text.x0 - x) * scale - 2.0f);
+	tag->x1 = (short)(x + (text.x1 - x) * scale + 2.0f);
+	tag->y0 = (short)(y + (text.y0 - y) * scale - 2.0f);
+	tag->y1 = (short)(y + 2.0f);
+}
+
+/* whether a rectangle meets a name over a head drawn in this view */
+static boolean hud_waypoint_meets_name_tag(
+	rectangle2d const *bounds)
+{
+	short index;
+
+	if (render.local_player_index < 0 || render.local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return FALSE;
+	for (index = 0; index < hud_waypoint_name_tags[render.local_player_index].count; index++)
+	{
+		rectangle2d const *tag = &hud_waypoint_name_tags[render.local_player_index].bounds[index];
+
+		if (bounds->x0 < tag->x1 && tag->x0 < bounds->x1 && bounds->y0 < tag->y1 && tag->y0 < bounds->y1)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 /* whether a rectangle meets another, the second widened by margin across */
 static boolean hud_waypoint_rectangles_meet(
 	rectangle2d const *a,
@@ -2461,6 +2650,9 @@ static short hud_waypoint_obstacle(
 		if (labels[index].arrow.number && hud_waypoint_rectangles_meet(bounds, &labels[index].arrow.number_bounds, 1))
 			return -2;
 	}
+	/* (a name over a head: the label steps aside) */
+	if (hud_waypoint_meets_name_tag(bounds))
+		return -2;
 	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
 	{
 		for (index = 0; index < hud_item_timers_lines[render.local_player_index].count; index++)
@@ -2601,15 +2793,20 @@ static void hud_waypoint_draw_labels(
 	struct hud_waypoint_block blocks[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
 	short block_count = 0;
 	/* (the unit a block is moved by: a text line; a line with pictures has
-	their row over its text) */
-	long text_height = hud_waypoint_text_height(font_index);
-	long line_height = text_height;
-	long gap = hud_item_timers_text_advance(font_index, L" ");
+	their row over its text; at the size and the view's, not a distance's) */
+	long text_height;
+	long line_height;
+	long gap;
 	rectangle2d view;
 	rectangle2d area;
 	long middle_x;
 	long middle_y;
 	short index, other;
+
+	hud_waypoint_scale = hud_waypoint_size() * hud_item_timers_view_factor();
+	text_height = hud_waypoint_text_height(font_index);
+	line_height = text_height;
+	gap = hud_item_timers_text_advance(font_index, L" ");
 
 	view.x0 = 0;
 	view.y0 = 0;
@@ -2655,6 +2852,7 @@ static void hud_waypoint_draw_labels(
 		{
 			if (labels[other].block != NONE && labels[other].block != -3 &&
 				!ustrcmp(labels[other].name, labels[index].name) && !ustrcmp(labels[other].time, labels[index].time) &&
+				labels[other].timer->side == labels[index].timer->side &&
 				ABS(labels[other].arrow.x - labels[index].arrow.x) <= HUD_WAYPOINT_MERGE_DISTANCE &&
 				ABS(labels[other].arrow.y - labels[index].arrow.y) <= HUD_WAYPOINT_MERGE_DISTANCE)
 			{
@@ -2700,7 +2898,8 @@ static void hud_waypoint_draw_labels(
 					for (same = index; same < other; same++)
 					{
 						if (labels[same].block == block_count && !ustrcmp(labels[same].name, labels[other].name) &&
-							!ustrcmp(labels[same].time, labels[other].time))
+							!ustrcmp(labels[same].time, labels[other].time) &&
+							labels[same].timer->side == labels[other].timer->side)
 						{
 							break;
 						}
@@ -2895,6 +3094,10 @@ static void hud_waypoint_draw_labels(
 
 		if (!block->placed)
 			continue;
+		/* (this block's size; its colours whole, but faded where a name over a head is behind it, if it
+		could not step aside) */
+		hud_waypoint_block_scale_set(labels, label_count, index);
+		hud_waypoint_block_fade = hud_waypoint_meets_name_tag(&block->bounds) ? HUD_WAYPOINT_TAG_FADE : 1.0f;
 		for (line = 0; line < block->line_count; line++)
 		{
 			struct hud_waypoint_line_layout layout;
@@ -3004,6 +3207,27 @@ static void hud_waypoint_draw_labels(
 						bounds.y0 = (short)(row_top - text_row->y_offset);
 						bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, text, row_scale) / row_scale + 8);
 						bounds.y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index));
+						/* (the distance and the timer in a dark outline, to read over any world) */
+						if (text_row->kind == HUD_WAYPOINT_ROW_DISTANCE || text_row->kind == HUD_WAYPOINT_ROW_TIMER)
+						{
+							static short const outline[4][2] = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+							real_argb_color dark;
+							real step = hud_waypoint_outline_step(row_scale);
+							short side;
+
+							dark.alpha = color.alpha * 0.85f;
+							dark.red = 0.0f;
+							dark.green = 0.0f;
+							dark.blue = 0.0f;
+							draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &dark);
+							for (side = 0; side < 4; side++)
+							{
+								/* (the scale's origin moved: the text moves a part of it) */
+								rasterizer_text_set_scale(row_scale, (real)bounds.x0 + outline[side][0] * step,
+									(real)bounds.y0 + outline[side][1] * step);
+								rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+							}
+						}
 						draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
 						rasterizer_text_set_scale(row_scale, (real)bounds.x0, (real)bounds.y0);
 						rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
@@ -3120,7 +3344,71 @@ HUD + WAYPOINTS through walls, LINE OF SIGHT only while in view), in this
 local player's view (from hud_draw_screen, where the game's nav points are
 drawn): every arrow first, then their labels (hud_waypoint_draw_labels)
 clear of them */
+/* a waypoint's name: the item's (SNIPER, ROCKETS, OVERSHIELD), without RED / BLUE (its colour tells the base)
+and without a number, unless the map has another of the same item at the same base within HUD_WAYPOINT_NEAR_NUMBER
+world units of it (RED ROCKETS 2: the power list keeps its full names) */
+#define HUD_WAYPOINT_NEAR_NUMBER 3.28f	/* (ten metres) */
+
+static void hud_waypoint_name(
+	struct item_timer const *timer,
+	wchar_t *name,
+	short size)
+{
+	wchar_t full[32];
+	wchar_t const *from = full;
+	short length;
+	short index;
+	short count = item_timers_count();
+	boolean near_same = FALSE;
+
+	item_timer_waypoint_name(timer, full, NUMBEROF(full));
+	if (!ustrncmp(from, L"RED ", 4))
+		from += 4;
+	else if (!ustrncmp(from, L"BLUE ", 5))
+		from += 5;
+	ustrncpy(name, from, size);
+	name[size - 1] = 0;
+	length = (short)ustrlen(name);
+	/* (the number after it, " 2") */
+	for (index = length; index > 0 && name[index - 1] >= L'0' && name[index - 1] <= L'9'; index--)
+		;
+	if (index < length && index > 0 && name[index - 1] == L' ')
+	{
+		name[index - 1] = 0;
+		if (timer->number > 0)
+		{
+			for (index = 0; index < count; index++)
+			{
+				struct item_timer const *other = item_timers_get(index);
+
+				if (other != timer && other->side == timer->side && other->timer_class == timer->timer_class &&
+					distance3d(&other->position, &timer->position) <= HUD_WAYPOINT_NEAR_NUMBER)
+				{
+					near_same = TRUE;
+					break;
+				}
+			}
+		}
+		if (near_same)
+			usnprintf(name + ustrlen(name), size - (short)ustrlen(name), L" %d", (int)timer->number);
+	}
+}
+
+static void hud_draw_item_waypoints_inner(
+	short local_player_index);
+
 void hud_draw_item_waypoints(
+	short local_player_index)
+{
+	/* (WAYPOINT SIZE: the stack's text scale, the labels' own from here) */
+	hud_waypoint_scale = hud_waypoint_size() * hud_item_timers_view_factor();
+	hud_waypoint_scale_active = TRUE;
+	hud_draw_item_waypoints_inner(local_player_index);
+	hud_waypoint_scale_active = FALSE;
+	hud_waypoint_block_fade = 1.0f;
+}
+
+static void hud_draw_item_waypoints_inner(
 	short local_player_index)
 {
 	short count = item_timers_count();
@@ -3246,7 +3534,10 @@ void hud_draw_item_waypoints(
 		label->timer = timer;
 		label->ticks_left = item_timer_ticks_left(timer);
 		label->distance = distance3d(&render.camera.position, &position);
-		item_timer_waypoint_name(timer, label->name, NUMBEROF(label->name));
+		hud_waypoint_name(timer, label->name, NUMBEROF(label->name));
+		/* (WAYPOINT SIZE, the view's and the distance's factors: the stack's whole text scale) */
+		label->scale = hud_waypoint_size() * hud_item_timers_view_factor() * hud_waypoint_distance_factor(label->distance);
+		hud_waypoint_scale = label->scale;
 		label->time[0] = 0;
 		/* (the distance in metres, a world unit being ten feet, 3.048 metres: one decimal) */
 		{

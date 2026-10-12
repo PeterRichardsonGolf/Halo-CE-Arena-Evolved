@@ -1213,6 +1213,7 @@ static void hud_draw_player_name(
 	rasterizer_text_set_scale(hud_player_name_scale(), (real)x, (real)y);
 	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, name);
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+	hud_item_timers_name_tag_note(&bounds, name, x, y, hud_player_name_scale()); /* AE hook */
 	/* (talking in voice chat: the speaker just left of the name, centred on
 	its capitals, where they are drawn, scaled; fading with it) */
 	if (network_voice_machine_speaking(player->network_player_data.machine_index))
@@ -1247,6 +1248,7 @@ static void hud_draw_player_names(
 	long team_index;
 	real enemy_range;
 
+	hud_item_timers_name_tags_begin(); /* AE hook */
 	if (setting == _player_names_none || player_index == NONE)
 		return;
 	team_index = player_get(player_index)->team_index;

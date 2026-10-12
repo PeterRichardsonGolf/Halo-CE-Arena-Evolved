@@ -13,6 +13,10 @@ and TRAINING's waypoints (hud_item_timers.c).
 
 void hud_draw_item_timers(void);	/* for render.local_player_index, in render.camera */
 void hud_draw_item_waypoints(short local_player_index);	/* TRAINING's, in render.camera */
+/* the players' names over heads (hud.c) as the waypoints' labels are to keep clear of them: this view's list
+begins empty each frame, and each name drawn (its text drawn at x, y about its bottom middle at scale) is noted */
+void hud_item_timers_name_tags_begin(void);
+void hud_item_timers_name_tag_note(rectangle2d const *bounds, wchar_t const *name, short x, short y, real scale);
 /* where hud_unit.c drew the motion sensor's background (the view's
 coordinates), which MATCH CLOCK's corner lines up with */
 void hud_item_timers_set_motion_sensor(short local_player_index, rectangle2d const *bounds);
