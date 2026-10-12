@@ -2035,11 +2035,10 @@ def multiplayer_files() -> dict:
 # the rows' pictures are tools/menu_row_art.py's (bitmaps main_menu/menu_*), the style in use marked
 MENUS_SELECT = "main_menu/menus_select"
 MAIN_MENU_ROW_X, MAIN_MENU_FIRST_ROW, MAIN_MENU_ROW_SPACING = 192, 229, 36
-# the styles' rows: key, picture; BACK half a row below the last (ae_menus_swap.c takes ARENA EVOLVED out of a build
-# without AE menus, and BACK up into its place)
+# the styles' rows: key, picture; BACK straight under the last, at the same pitch (ae_menus_swap.c takes ARENA
+# EVOLVED out of a build without AE menus, and BACK up into its place)
 MENUS_STYLE_ROWS = [("pc", "main_menu/menu_style_pc_current"), ("xbox", "main_menu/menu_style_xbox"),
                     ("arena", "main_menu/menu_style_arena")]
-MENUS_BACK_GAP = 18
 
 
 def _main_menu_row(name: str, bitmap: str, handlers: list) -> list:
@@ -2050,13 +2049,15 @@ def _main_menu_row(name: str, bitmap: str, handlers: list) -> list:
 
 def _menus_select() -> list:
     """MENUS, and the screen it opens: the main menu again (its logo and build number where they are) with the
-    styles' rows where its own begin, the style in use focused ("ae menus focus"). A style's A switches to it
-    ("ae menus pick"; the one in use goes back), B, Esc, BACK and the BACK row go back, MENUS focused"""
+    styles' rows where its own begin, the style in use focused ("ae menus focus"). MENUS's A asks "ae menus open",
+    which opens the screen (its custom activation) or, away from the plain main menu, refuses quietly. A style's A
+    switches to it ("ae menus pick"; the one in use goes back), B, Esc, BACK and the BACK row go back, MENUS
+    focused"""
     screen = f"{MENUS_SELECT}/menus_screen"
     lines = _main_menu_row("main_menu/main_menu_item_menus", "main_menu/menu_menus", [
         '<on event="created" run="ae menus item"/>',
-        f'<on event="a" run="ae menus open" open="{screen}"/>',
-        f'<on event="start" run="ae menus open" open="{screen}"/>'])
+        '<on event="a" run="ae menus open"/>', '<on event="start" run="ae menus open"/>',
+        f'<on event="custom_activation" open="{screen}"/>'])
     lines += _widget(screen, [("width", 640), ("height", 480), ("flags", "pass_unhandled_to_focused_child")],
                      ['<on event="b" back="true"/>', '<on event="back" back="true"/>',
                       '<child widget="main_menu/halo_logo" y="28"/>',
@@ -2066,7 +2067,7 @@ def _menus_select() -> list:
             f'y="{MAIN_MENU_FIRST_ROW + MAIN_MENU_ROW_SPACING * index}"/>'
             for index, (key, _) in enumerate(MENUS_STYLE_ROWS)]
     rows.append(f'<child widget="{MENUS_SELECT}/menus_item_back" x="{MAIN_MENU_ROW_X}" '
-                f'y="{MAIN_MENU_FIRST_ROW + MAIN_MENU_ROW_SPACING * len(MENUS_STYLE_ROWS) + MENUS_BACK_GAP}"/>')
+                f'y="{MAIN_MENU_FIRST_ROW + MAIN_MENU_ROW_SPACING * len(MENUS_STYLE_ROWS)}"/>')
     lines += _widget(f"{MENUS_SELECT}/menus_select_list",
                      [("type", "column_list"), ("width", 640), ("height", 480),
                       ("flags", "pass_unhandled_to_focused_child up_down_tabs_items"),

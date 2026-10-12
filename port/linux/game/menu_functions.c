@@ -6663,7 +6663,7 @@ boolean pc_menu_event_function_invoke(
 		if (!strncmp(name, "ae mcc ", 7)) /* AE hook */
 			return ae_mcc_menu_event(name, controller);
 		if (!strncmp(name, "ae menus ", 9)) /* AE hook */
-			return ae_menus_swap_event(name, widget, controller);
+			return ae_menus_swap_event(name, widget, controller, widget_deleted);
 		if (!strcmp(name, "main menu quit game"))
 		{
 			platform_request_quit();

@@ -82,6 +82,8 @@ void menu_tags_loaded(char const *map_name);
 void menu_tags_unloaded(void);
 char const *pc_menu_function_name(long function_index);
 unsigned char pc_menu_split_players(void);
+boolean ui_widget_port_dispatch_event(struct widget_instance *widget, short event_type, short controller_index,
+	boolean *deleted);
 
 /* ---------- constants */
 
@@ -96,9 +98,8 @@ unsigned char pc_menu_split_players(void);
 #define PC_ARENA_ROW "pc\\main_menu\\menus_select\\menus_item_arena"
 /* the Xbox's rows' pictures (tools/menu_row_art.py) */
 #define XBOX_ART "ce/port/main_menu/xbox_style/"
-/* the main menu's rows' spacing; BACK half a row lower again */
+/* the main menu's rows' spacing (the styles' rows and BACK too) */
 #define ROW_SPACING 36
-#define BACK_GAP 18
 /* the fade each way (milliseconds) */
 #define FADE_TIME 250
 #define PLACEHOLDER_SIZE 4
@@ -110,6 +111,7 @@ enum
 	_event_start = 12,
 	_event_back = 13,
 	_event_created = 24,
+	_event_custom_activation = 32,
 };
 
 enum
@@ -294,13 +296,15 @@ enum
 static struct
 {
 	int state;
+	/* the style picked, and the one shown before (put back if the picked one's menus cannot be built) */
 	enum style style;
+	enum style previous;
 	unsigned long started;
 	/* MENUS's instance, as the main menu opened after a switch made it
 	("ae menus item"): focused there */
 	boolean noting;
 	struct widget_instance *menus_item;
-} swap = { SWITCH_NONE, STYLE_PC, 0, FALSE, NULL };
+} swap = { SWITCH_NONE, STYLE_PC, STYLE_PC, 0, FALSE, NULL };
 
 /* ---------- private code */
 
@@ -583,9 +587,9 @@ static void xbox_build(void)
 	if (swap_tags.failed)
 		goto failed;
 
-	/* MENUS: SETTINGS's look, its picture, A and Start opening the styles (refused away from the plain main
-	menu), its creation noted (focused after a switch) */
-	made[WIDGET_MENUS] = widget_copy(model, press, NUMBEROF(press), open_function, widgets[WIDGET_SCREEN]);
+	/* MENUS: SETTINGS's look, its picture, A and Start asking for the styles ("ae menus open": its custom activation
+	opens them, or it refuses quietly away from the plain main menu), its creation noted (focused after a switch) */
+	made[WIDGET_MENUS] = widget_copy(model, press, NUMBEROF(press), open_function, NONE);
 	/* the styles' rows (a style's A picks it; BACK's goes back), the list holding them focused on the style in use,
 	and the screen: the main menu with that list for its own */
 	made[WIDGET_PC] = widget_copy(model, press, NUMBEROF(press), pick_function, NONE);
@@ -600,9 +604,9 @@ static void xbox_build(void)
 			goto failed;
 	}
 	{
-		/* (MENUS's creation: a second handler) */
+		/* (MENUS's creation, and its custom activation opening the styles: two more handlers) */
 		struct ui_widget_event_handler_reference *handlers =
-			allocate(3 * (long)sizeof(struct ui_widget_event_handler_reference));
+			allocate(4 * (long)sizeof(struct ui_widget_event_handler_reference));
 
 		if (!handlers)
 			goto failed;
@@ -611,8 +615,12 @@ static void xbox_build(void)
 		handlers[2].event_type = _event_created;
 		handlers[2].function = item_function;
 		handlers[2].flags = FLAG(_handler_run_function_bit);
-		reference_set(&handlers[2].widget_tag, UI_WIDGET_DEFINITION_TAG, NONE);
-		made[WIDGET_MENUS]->event_handlers.count = 3;
+		handlers[3] = handlers[0];
+		handlers[3].event_type = _event_custom_activation;
+		handlers[3].function = 0;
+		handlers[3].flags = FLAG(_handler_open_widget_bit);
+		reference_set(&handlers[3].widget_tag, UI_WIDGET_DEFINITION_TAG, widgets[WIDGET_SCREEN]);
+		made[WIDGET_MENUS]->event_handlers.count = 4;
 		made[WIDGET_MENUS]->event_handlers.address = XBOX_ADDRESS(handlers);
 	}
 	reference_set(&made[WIDGET_MENUS]->background_bitmap, BITMAP_GROUP_TAG, art[ART_MENUS]);
@@ -627,7 +635,7 @@ static void xbox_build(void)
 		if (index != WIDGET_LIST)
 			made[index]->game_data_inputs.count = 0;
 	}
-	/* the rows, where the main menu's own begin, at their spacing; BACK half a row further */
+	/* the rows, where the main menu's own begin, at their spacing, BACK straight under the last */
 	row_count = AE_MENUS_SWAP_ARENA ? 4 : 3;
 	rows = allocate(row_count * (long)sizeof(*rows));
 	if (!rows)
@@ -643,8 +651,7 @@ static void xbox_build(void)
 			rows[row] = children[1];
 			reference_set(&rows[row].widget_tag, UI_WIDGET_DEFINITION_TAG, widgets[widget]);
 			snprintf(rows[row].name, sizeof(rows[row].name), "%s", widget_names[widget]);
-			rows[row].vertical_offset = (short)(children[0].vertical_offset + row * ROW_SPACING +
-				(widget == WIDGET_BACK ? BACK_GAP : 0));
+			rows[row].vertical_offset = (short)(children[0].vertical_offset + row * ROW_SPACING);
 		}
 	}
 	made[WIDGET_LIST]->child_widgets.count = row_count;
@@ -736,17 +743,24 @@ static char const *refusal(void)
 	return NULL;
 }
 
-static boolean menus_open(void)
+/* MENUS's A: the styles opened (its custom activation's handler opens them, so the history goes back to MENUS),
+or refused quietly (the failure sound and a line of the log; a handler that fails would log the engine's error too) */
+static boolean menus_open(struct widget_instance *item, short controller, boolean *widget_deleted)
 {
 	char const *why = refusal();
+	boolean deleted = FALSE;
 
 	if (why)
 	{
 		platform_log("menus: MENUS refused: %s", why);
 		ui_play_audio_feedback_sound(_feedback_failure);
-		return FALSE;
+		return TRUE;
 	}
 	platform_log("menus: MENUS opened");
+	ui_widget_port_dispatch_event(item, _event_custom_activation, controller, &deleted);
+	/* (the open plays the forward sound) */
+	if (deleted)
+		*widget_deleted = TRUE;
 	return TRUE;
 }
 
@@ -763,44 +777,55 @@ static enum style row_style(struct widget_instance const *row)
 	return NUMBER_OF_STYLES;
 }
 
+/* the style written to config.toml (memory first, then the file: a crash after it keeps the choice). PC and XBOX
+also turn AE's menus off in a build that has them: only when they are on, and first, so that the file between the
+two writes is a whole earlier choice (the old style without AE's menus), never the new style with AE's still on */
+static void style_write(enum style style)
+{
+	int written;
+
+	if (style == STYLE_ARENA)
+	{
+		written = config_write("display.arena_menus", "true");
+	}
+	else
+	{
+		written = 1;
+		if (AE_MENUS_SWAP_ARENA && config_boolean("display.arena_menus"))
+			written = config_write("display.arena_menus", "false");
+		written = config_write("display.menus", style_names[style]) && written;
+	}
+	if (!written)
+		platform_log("menus: the style could not be written to config.toml (it applies until the game closes)");
+}
+
+/* a style's row's A: the switch started (the style in use goes back, as B) */
 static boolean menus_pick(struct widget_instance *row, short controller)
 {
 	enum style style = row_style(row);
 	char const *why;
-	int written;
 
 	if (style == NUMBER_OF_STYLES)
 		return FALSE;
-	/* (the style in use: back to the main menu, as B) */
 	if (style == style_shown())
 	{
 		event_manager_post_button(controller, 1);
 		return TRUE;
 	}
+	/* (refused quietly, as MENUS) */
 	why = refusal();
 	if (why)
 	{
 		platform_log("menus: switch refused: %s", why);
 		ui_play_audio_feedback_sound(_feedback_failure);
-		return FALSE;
+		return TRUE;
 	}
 	ui_play_audio_feedback_sound(_feedback_forward);
-	/* (written first: a crash keeps the choice) */
-	if (style == STYLE_ARENA)
-	{
-		written = config_write("display.arena_menus", "true");
-		platform_log("menus: switching to arena (display.arena_menus), rebuilding");
-	}
-	else
-	{
-		written = config_write("display.menus", style_names[style]);
-		if (AE_MENUS_SWAP_ARENA)
-			written = config_write("display.arena_menus", "false") && written;
-		platform_log("menus: switching to %s (display.menus), rebuilding", style_names[style]);
-	}
-	if (!written)
-		platform_log("menus: the style could not be written to config.toml (it applies until the game closes)");
+	style_write(style);
+	platform_log("menus: switching to %s (%s), rebuilding", style_names[style],
+		style == STYLE_ARENA ? "display.arena_menus" : "display.menus");
 	swap.style = style;
+	swap.previous = style_shown();
 	swap.state = SWITCH_FADING_OUT;
 	swap.started = system_milliseconds();
 	/* (nothing more is taken until the main menu is back: a second press cannot switch twice) */
@@ -827,16 +852,41 @@ static boolean menus_focus(struct widget_instance *list)
 	return TRUE;
 }
 
+/* the menus' tags let go and made again for the style in config.toml */
+static void tags_build(void)
+{
+	menu_tags_unloaded();
+	menu_tags_loaded("ui");
+	ae_menus_swap_tags_loaded("ui");
+}
+
+/* whether the style's menus are up (the PC version's main menu's tag made; the Xbox's MENUS made) */
+static boolean style_built(enum style style)
+{
+	if (style == STYLE_XBOX)
+		return swap_tags.built;
+	if (style == STYLE_PC)
+		return tag_loaded(UI_WIDGET_DEFINITION_TAG, "pc\\main_menu\\main_menu") != NONE;
+	return TRUE;
+}
+
 /* the menus built again in the style picked (the screen black): every screen closed, the texture cache flushed
 (its textures point at the menus' bitmaps, which go), the tags let go and made again, the main menu opened again
-with MENUS focused */
+with MENUS focused. Menus that cannot be built put the style shown before back, once (written back too): the PC
+version's falling back to the Xbox's as they always do, the Xbox's MENUS failing to the PC version's */
 static void rebuild(void)
 {
 	ui_widgets_close_all();
 	texture_cache_flush();
-	menu_tags_unloaded();
-	menu_tags_loaded("ui");
-	ae_menus_swap_tags_loaded("ui");
+	tags_build();
+	if (swap.style != STYLE_ARENA && !style_built(swap.style))
+	{
+		platform_log("menus: the %s menus could not be built: back to %s", style_names[swap.style],
+			style_names[swap.previous]);
+		style_write(swap.previous);
+		if (!style_built(swap.previous))
+			tags_build();
+	}
 	swap.noting = TRUE;
 	swap.menus_item = NULL;
 	main_screen_shell_load();
@@ -898,10 +948,11 @@ boolean ae_menus_swap_tag(
 boolean ae_menus_swap_event(
 	char const *name,
 	struct widget_instance *widget,
-	short controller)
+	short controller,
+	boolean *widget_deleted)
 {
 	if (!strcmp(name, "ae menus open"))
-		return menus_open();
+		return menus_open(widget, controller, widget_deleted);
 	if (!strcmp(name, "ae menus pick"))
 		return menus_pick(widget, controller);
 	if (!strcmp(name, "ae menus focus"))
@@ -919,10 +970,11 @@ void ae_menus_swap_update(
 	void)
 {
 	unsigned long now, elapsed;
-	boolean cut = config_boolean("display.arena_menus_reduce_motion") != 0;
+	boolean cut;
 
 	if (swap.state == SWITCH_NONE)
 		return;
+	cut = config_boolean("display.arena_menus_reduce_motion") != 0;
 	now = system_milliseconds();
 	elapsed = now - swap.started;
 	if (swap.state == SWITCH_FADING_OUT)

@@ -3,8 +3,9 @@
 <menus>
 	<widget name="main_menu/main_menu_item_menus" type="text" width="256" height="33" bitmap="main_menu/menu_menus">
 		<on event="created" run="ae menus item"/>
-		<on event="a" run="ae menus open" open="main_menu/menus_select/menus_screen"/>
-		<on event="start" run="ae menus open" open="main_menu/menus_select/menus_screen"/>
+		<on event="a" run="ae menus open"/>
+		<on event="start" run="ae menus open"/>
+		<on event="custom_activation" open="main_menu/menus_select/menus_screen"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
 	<widget name="main_menu/menus_select/menus_screen" width="640" height="480" flags="pass_unhandled_to_focused_child">
@@ -20,7 +21,7 @@
 		<child widget="main_menu/menus_select/menus_item_pc" x="192" y="229"/>
 		<child widget="main_menu/menus_select/menus_item_xbox" x="192" y="265"/>
 		<child widget="main_menu/menus_select/menus_item_arena" x="192" y="301"/>
-		<child widget="main_menu/menus_select/menus_item_back" x="192" y="355"/>
+		<child widget="main_menu/menus_select/menus_item_back" x="192" y="337"/>
 	</widget>
 	<widget name="main_menu/menus_select/menus_item_pc" type="text" width="256" height="33" bitmap="main_menu/menu_style_pc_current">
 		<on event="a" run="ae menus pick"/>

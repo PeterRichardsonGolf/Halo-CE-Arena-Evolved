@@ -9079,13 +9079,13 @@ void process_ui_widgets(
 		644,
 		widget_globals.initialized);
 	widget_globals.current_system_milliseconds = system_milliseconds();
-	ae_menus_swap_update(); /* AE hook */
 	ui_widgets_process_mouse();
 	if (ui_widget_port_press_controller != NONE)
 	{
 		event_manager_post_button(ui_widget_port_press_controller, ui_widget_port_press_button);
 		ui_widget_port_press_controller = NONE;
 	}
+	ae_menus_swap_update(); /* AE hook */
 	if (widget_globals.initialization_thread)
 	{
 		if (!thread_has_exited(widget_globals.initialization_thread))

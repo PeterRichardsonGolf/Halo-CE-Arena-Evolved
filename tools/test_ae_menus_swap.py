@@ -101,9 +101,17 @@ def test_styles_screen_is_the_main_menu_with_the_styles_in_place():
     rows = _children(xml, "main_menu/menus_select/menus_select_list")
     assert [name.rsplit("/", 1)[1] for name, _, _ in rows] == ["menus_item_pc", "menus_item_xbox", "menus_item_arena",
                                                               "menus_item_back"]
-    assert [y for _, _, y in rows] == [229, 265, 301, 355]
+    # (BACK straight under the last style, at the rows' pitch: no gap; the C takes ARENA EVOLVED out of a build
+    # without AE menus and moves BACK up a row, as the Xbox's list has it)
+    assert [y for _, _, y in rows] == [229, 265, 301, 337]
+    assert "BACK_GAP" not in SWAP_C.read_text()
     assert '<on event="b" back="true"/>' in xml and '<on event="back" back="true"/>' in xml
     assert xml.count('run="ae menus pick"') == 6
+    # (MENUS's A opens nothing itself: "ae menus open" opens the styles through the custom activation, or refuses
+    # quietly; a handler that failed would log the engine's "event handler function ... failed")
+    item = re.search(r'<widget name="main_menu/main_menu_item_menus".*?</widget>', xml, re.S).group(0)
+    assert '<on event="a" run="ae menus open"/>' in item and '<on event="start" run="ae menus open"/>' in item
+    assert '<on event="custom_activation" open="main_menu/menus_select/menus_screen"/>' in item
     # (MENUS only on the main menu: no other file names it)
     for path in CE.glob("*.xml"):
         if path.name not in ("main_menu.xml", "main_menu.menus_select.xml"):
@@ -139,6 +147,40 @@ def test_functions_are_named():
         assert f'"{name}"' in source, name
 
 
+def test_refusals_never_fail_their_handler():
+    """a refused MENUS or switch returns TRUE (the failure sound and our own log line), so the engine logs no error"""
+    source = SWAP_C.read_text()
+    for function in ("menus_open", "menus_pick"):
+        body = re.search(r"static boolean %s\(.*?\n}\n" % function, source, re.S).group(0)
+        refused = body[body.index("if (why)"):]
+        refused = refused[:refused.index("}")]
+        assert "return TRUE;" in refused and "return FALSE;" not in refused, function
+
+
+def _process_ui_widgets():
+    source = (ROOT / "source" / "interface" / "ui_widget.c").read_text()
+    start = source.index("\nvoid process_ui_widgets(")
+    return source, source[start:source.index("\n}\n", start)]
+
+
+def test_switch_runs_after_the_pointer_lets_its_targets_go():
+    """the pointer's targets point at the widgets drawn last frame; ui_widgets_process_mouse lets them all go at its
+    end, whatever happened. The switch's rebuild deletes every widget, so it must run after that, in the same frame:
+    else a pointer moved or clicked on the rebuild's frame would reach deleted widgets (review C1)"""
+    source, body = _process_ui_widgets()
+    mouse = body.index("\tui_widgets_process_mouse();")
+    swap = body.index("\tae_menus_swap_update(); /* AE hook */")
+    assert mouse < swap
+    # (nothing between them reads the targets: only the port's queued press)
+    between = body[mouse:swap]
+    assert "ui_mouse_" not in between.replace("ui_widgets_process_mouse", "")
+    start = source.index("\nstatic void ui_widgets_process_mouse(\n")
+    mouse_body = source[start:source.index("\n}\n", start)]
+    # (the targets forgotten unconditionally, at the function's end, at its outermost level)
+    assert mouse_body.rstrip().endswith("\tui_mouse_target_count = 0;\n\tui_mouse_targets_settled = FALSE;\n\n\treturn;")
+    assert mouse_body.count("return;") == 1
+
+
 # ---------- the game
 
 
@@ -159,7 +201,7 @@ def _lit(png, y, x0=300, x1=344):
     return white / (len(xs) * len(ys))
 
 
-def _game(tmp_path, case, size, seconds, presses, menus, env=None):
+def _game(tmp_path, case, size, seconds, presses, menus, env=None, menus_files=None):
     names = ("AE_MENUS_SWAP_BUILD", "AE_MENUS_SWAP_DATA")
     if not all(os.environ.get(name) for name in names):
         pytest.skip("$AE_MENUS_SWAP_BUILD and $AE_MENUS_SWAP_DATA name no build and data root")
@@ -173,6 +215,10 @@ def _game(tmp_path, case, size, seconds, presses, menus, env=None):
     (out / "data").mkdir()
     (out / "data" / "maps").symlink_to(data / "maps")
     (out / "save").mkdir()
+    # (a menus folder beside config.toml: the player's own files)
+    for name, text in (menus_files or {}).items():
+        (copy / "menus").mkdir(exist_ok=True)
+        (copy / "menus" / name).write_text(text)
     run_env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(out), "HALO_DATA_ROOT": str(out / "data"),
                "HALO_SAVE_ROOT": str(out / "save"), "HALO_NET_ONLINE": "false", "HALO_NET_ADDRESS": "127.0.0.1",
                "SDL_AUDIO_DRIVER": "dummy", "HALO_HIDDEN_WINDOW": "1", "HALO_UPDATE_AUTO": "false",
@@ -278,3 +324,128 @@ def test_no_menus_in_a_lobby(tmp_path):
     _in_order(in_lobby[1], ["menus: MENUS opened", "menus: the styles shown, pc focused"])
     assert len(shots) == 3
     assert _lit(shots[2], FIRST_ROW) > 0.08
+
+
+def test_pc_menus_that_cannot_be_built_put_the_xbox_menus_back(tmp_path):
+    """a menus folder whose file is broken: the PC version's menus cannot be built (the game's own Xbox menus, which
+    still have MENUS); picking PC writes it, finds it cannot be built, and puts XBOX back, once, MENUS focused"""
+    presses = ["up", "a", "wait", "up", "a", "wait", "wait", "wait", SHOT]
+    debug, shots, config = _game(tmp_path, "pc-broken", "1280x720", 34, presses, "xbox",
+                                 menus_files={"broken.xml": "<menus><widget name=\"broken\">\n"})
+    _in_order(debug, ["menus: the Xbox's main menu has MENUS", "menus: MENUS opened",
+                      "menus: the styles shown, xbox focused", "menus: switching to pc (display.menus), rebuilding",
+                      "menus: the pc menus could not be built: back to xbox", "menus: MENUS focused (row 4)",
+                      "menus: the Xbox's menus are up"])
+    assert debug.count("could not be built") == 1
+    assert re.search(r'^menus = "xbox"$', config, re.M), "display.menus not put back"
+    assert "event handler function" not in debug
+    assert _lit(shots[-1], XBOX_FIRST_ROW + 3 * SPACING) > 0.08
+
+
+def _xtest(display):
+    """the X server's test extension (libXtst, as tools' xkeys did): the pointer moved and clicked"""
+    import ctypes
+    x11, xtst = ctypes.CDLL("libX11.so.6"), ctypes.CDLL("libXtst.so.6")
+    x11.XOpenDisplay.restype = ctypes.c_void_p
+    x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
+    x11.XFlush.argtypes = [ctypes.c_void_p]
+    xtst.XTestFakeMotionEvent.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_ulong]
+    xtst.XTestFakeButtonEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_int, ctypes.c_ulong]
+    handle = x11.XOpenDisplay(display.encode())
+    assert handle, f"no display {display}"
+
+    def move(x, y):
+        xtst.XTestFakeMotionEvent(handle, -1, int(x), int(y), 0)
+        x11.XFlush(handle)
+
+    def click():
+        for down in (1, 0):
+            xtst.XTestFakeButtonEvent(handle, 1, down, 0)
+            x11.XFlush(handle)
+    return move, click
+
+
+def test_pointer_moving_and_clicking_through_the_switch(tmp_path):
+    """the pointer starts the switch (a click on MENUS, a click on XBOX) and keeps moving and clicking, every 10 ms,
+    through the fade, the rebuild's frame and the fade in: the switch completes, MENUS focused, nothing breaks. A
+    software renderer's frame is long, so many pointer events land in the rebuild's frame (review C1)"""
+    import random
+    import time
+    names = ("AE_MENUS_SWAP_BUILD", "AE_MENUS_SWAP_DATA")
+    if not all(os.environ.get(name) for name in names) or not shutil.which("Xvfb"):
+        pytest.skip("$AE_MENUS_SWAP_BUILD and $AE_MENUS_SWAP_DATA (and Xvfb) needed")
+    build, data = Path(os.environ["AE_MENUS_SWAP_BUILD"]), Path(os.environ["AE_MENUS_SWAP_DATA"]).expanduser()
+    out = tmp_path / "pointer"
+    copy = out / "run"
+    copy.mkdir(parents=True)
+    shutil.copy2(build / "halo", copy / "halo")
+    (out / "data").mkdir()
+    (out / "data" / "maps").symlink_to(data / "maps")
+    (out / "save").mkdir()
+    number = next(n for n in range(80 + random.randrange(10), 140) if not Path(f"/tmp/.X11-unix/X{n}").exists())
+    display = f":{number}"
+    xvfb = subprocess.Popen(["Xvfb", display, "-screen", "0", "1280x720x24", "-nolisten", "tcp"],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    game = None
+    try:
+        time.sleep(1.5)
+        env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(out), "DISPLAY": display,
+               "HALO_DATA_ROOT": str(out / "data"), "HALO_SAVE_ROOT": str(out / "save"), "HALO_NET_ONLINE": "false",
+               "HALO_NET_ADDRESS": "127.0.0.1", "SDL_AUDIO_DRIVER": "dummy", "HALO_UPDATE_AUTO": "false",
+               "SDL_GAMECONTROLLER_IGNORE_DEVICES": "all", "HALO_EXIT_AFTER": "40", "HALO_DISPLAY_MODE": "windowed",
+               "HALO_WINDOW_SIZE": "1280x720", "HALO_MENUS": "pc"}
+        game = subprocess.Popen(["timeout", "130", "./halo"], cwd=copy, env=env, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+        debug_path = out / "data" / "debug.txt"
+
+        def log():
+            return debug_path.read_text(errors="replace") if debug_path.exists() else ""
+
+        def wait_for(line, seconds):
+            end = time.time() + seconds
+            while time.time() < end:
+                if line in log():
+                    return True
+                time.sleep(0.1)
+            return False
+
+        assert wait_for("starting main menu music", 60), "the main menu did not come up"
+        time.sleep(2)
+        move, click = _xtest(display)
+        scale, left = 720 / 480, (1280 - 640 * 720 / 480) / 2
+
+        def row(y):
+            return left + 320 * scale, (y + 16) * scale
+
+        move(*row(FIRST_ROW + 4 * SPACING))
+        time.sleep(0.5)
+        click()
+        assert wait_for("menus: MENUS opened", 10), "a click on MENUS did not open the styles"
+        time.sleep(1)
+        move(*row(FIRST_ROW + SPACING))
+        time.sleep(0.5)
+        click()
+        assert wait_for("menus: switching to xbox", 10), "a click on XBOX did not switch"
+        # (moving over the rows and clicking empty space, through the fade, the rebuild and the fade in)
+        end = time.time() + 3
+        step = 0
+        while time.time() < end:
+            x, y = row(FIRST_ROW + (step % 6) * SPACING)
+            move(x + (step % 7) * 9, y)
+            if step % 15 == 0:
+                move(40, 40)
+                click()
+            step += 1
+            time.sleep(0.01)
+        assert wait_for("menus: the Xbox's menus are up", 10)
+        assert game.wait(timeout=120) == 0
+    finally:
+        if game and game.poll() is None:
+            game.kill()
+        xvfb.terminate()
+        xvfb.wait()
+    debug = log()
+    assert "exiting after debug.exit_after" in debug
+    assert "EXCEPTION" not in debug and "### ASSERT" not in debug
+    _in_order(debug, ["menus: switching to xbox (display.menus), rebuilding", "menus: MENUS focused (row 4)",
+                      "menus: the Xbox's menus are up"])

@@ -19,8 +19,8 @@ blue (the unselected text's colour and opacity; the glow's blue, solid, when
 selected).
 
 Writes port/assets/menus/ce/port/main_menu/ (the PC rows, named in
-bitmaps.xml) and its xbox_style/ folder (the Xbox's rows, which menu_tags' Xbox
-build (port/linux/game/ae_menus_swap.c) names). tools/ce_menus.py calls
+bitmaps.xml) and its xbox_style/ folder (the Xbox's rows, which
+port/linux/game/ae_menus_swap.c names). tools/ce_menus.py calls
 draw_all() too, after it clears ce/. Needs Pillow, NumPy and SciPy.
 """
 

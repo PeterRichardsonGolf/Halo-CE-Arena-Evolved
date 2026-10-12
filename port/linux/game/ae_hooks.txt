@@ -143,9 +143,11 @@ port/linux/game/menu_tags.c	"ae menus open", "ae menus pick", "ae menus focus", 
 port/linux/game/menu_tags.c	{\nae_menus_swap_tags_unloaded(); /* AE hook */\nif (menu_tags.loaded || menu_tags.block_count)
 port/linux/game/menu_tags.c	if (ae_menus_swap_tag(tag_index)) /* AE hook */\nreturn TRUE;
 port/linux/game/menu_functions.c	#include "ae_menus_swap.h" /* AE hook */
-port/linux/game/menu_functions.c	if (!strncmp(name, "ae menus ", 9)) /* AE hook */\nreturn ae_menus_swap_event(name, widget, controller);
+port/linux/game/menu_functions.c	if (!strncmp(name, "ae menus ", 9)) /* AE hook */\nreturn ae_menus_swap_event(name, widget, controller, widget_deleted);
 source/interface/ui_widget.c	#include "ae_menus_swap.h" /* AE hook */
-source/interface/ui_widget.c	widget_globals.current_system_milliseconds = system_milliseconds();\nae_menus_swap_update(); /* AE hook */\nui_widgets_process_mouse();
+# (after the pointer's targets are let go, which ui_widgets_process_mouse does at its end: the rebuild deletes the
+# widgets they point at)
+source/interface/ui_widget.c	ui_widget_port_press_controller = NONE;\n}\nae_menus_swap_update(); /* AE hook */\nif (widget_globals.initialization_thread)
 #
 # CARRIED PATCHES (not hooks: verbatim DamnationCE v0.3.41 code in upstream files, CC0). Whoever merges OpenCE or
 # ChupathingyCE next re-checks these by hand (or drops them if upstream takes DamnationCE's own):
