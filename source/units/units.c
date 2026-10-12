@@ -695,6 +695,7 @@ symbols in this file:
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "coop_scripts.h" /* port: port/linux/game/coop_scripts.c */
 #include "coop_enemies.h" /* port: port/linux/game/coop_enemies.c */
+#include "ae_silent.h" /* AE hook */
 
 /* port: the control and animation impulses the host's actors give their
 units go to the clients' copies (port/linux/game/network_actors.c) */
@@ -10460,10 +10461,12 @@ short unit_update_animation(
 
 	if (unit->unit.animation.action_animation.index!=NONE)
 	{
+		ae_silent_unit_action_scope_begin(unit_index, unit->unit.animation.action); /* AE hook */
 		animation_update_result = unit_animation_update(
 			unit_index,
 			unit_definition->object.animation_graph.index,
 			&unit->unit.animation.action_animation);
+		ae_silent_scope_end(); /* AE hook */
 		if (animation_update_result==2)
 		{
 			struct unit_datum *interpolated_unit;

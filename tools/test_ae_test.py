@@ -384,6 +384,28 @@ class Debug(unittest.TestCase):
         self.assertEqual(harness.evaluate(camp, dict(r, debug=dict(clean, tick=None)))[0], "PASS")
         self.assertEqual(harness.evaluate(camp, dict(r, debug=dict(clean, tick=None, scenario_scripts=None)))[0], "FAIL")
 
+    def test_cache_overflow_fails(self):
+        """a game whose texture or sound cache overflowed fails (the engine's own lines, verbatim); the same log
+        without them passes (the negative control), and a spec may allow them"""
+        s = harness.parse_spec({"map": "bloodgulch"})
+        clean_text = DEBUG_MP.replace("EXCEPTION assert", "note").replace("2 scripts won't", "ok")
+        clean = harness.parse_debug(clean_text)
+        self.assertEqual(clean["cache_overflows"], 0)
+        r = {"exit_code": 0, "timed_out": False, "debug_found": True, "debug": clean}
+        self.assertEqual(harness.evaluate(s, r), ("PASS", []))
+        for line in ('10.12.26 01:02:03  YOU GOT STABBED!!!! double-click "GETSTABBED.BAT" on your PC now!!!',
+                     '10.12.26 01:02:03  SOUND CACHE BLOWN!!!! double-click "GETSTABBED.BAT" on your PC now!!!'):
+            bad = harness.parse_debug(clean_text + "\n" + line + "\n")
+            self.assertEqual(bad["cache_overflows"], 1)
+            status, why = harness.evaluate(s, dict(r, debug=bad))
+            self.assertEqual(status, "FAIL")
+            self.assertTrue(any("cache overflows" in w for w in why), why)
+            self.assertIn("cache overflows 1", harness.one_line("case", dict(r, status=status, seconds=1, debug=bad)))
+            allowed = harness.parse_spec({"map": "bloodgulch", "expect": {"cache_overflow_ok": True}})
+            self.assertEqual(harness.evaluate(allowed, dict(r, debug=bad))[0], "PASS")
+        both = harness.parse_debug(clean_text + "\nYOU GOT STABBED!!!!\nSOUND CACHE BLOWN!!!!\nYOU GOT STABBED!!!!\n")
+        self.assertEqual(both["cache_overflows"], 3)
+
     def test_one_line(self):
         r = {"status": "PASS", "exit_code": 0, "seconds": 35.2, "debug": harness.parse_debug(DEBUG_MP), "shots": ["a"]}
         line = harness.one_line("stock_bloodgulch", r)

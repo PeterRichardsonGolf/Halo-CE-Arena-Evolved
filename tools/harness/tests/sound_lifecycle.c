@@ -49,6 +49,9 @@ static struct sound_datum *checked_sound(long index) {
 #define render_debug_looping_sound(...) ((void)0)
 #define player_effect_continuous_refresh(...) ((void)0)
 #define csmemcpy memcpy
+/* (AE's SILENT MOVEMENT / SILENT WEAPONS hooks, port/linux/game/ae_silent.c: a sound made untagged, heard) */
+#define ae_silent_sound_created(...) ((void)0)
+#define ae_silent_gain(...) 1.f
 static int _sound_cache_sound_request(struct sound_permutation *p,int a,int b,int c) {
  (void)p;(void)a;(void)b;(void)c;return TRUE;
 }

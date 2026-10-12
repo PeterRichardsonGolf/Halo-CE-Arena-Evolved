@@ -174,6 +174,7 @@ enum
 /* ---------- structures */
 
 #include "ae_glue_mouse.h" /* AE hook */
+#include "ae_silent.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
 #include "interface/ui_widget_instance.h"
@@ -6156,6 +6157,7 @@ static void gametype_options_each(struct widget_instance *list, boolean save)
 					gametype_option_index(option, gametype_option_value(option, variant, options));
 		}
 	}
+	ae_silent_menu_rows(list, variant, save); /* AE hook */
 }
 
 /* each of a screen's rows of the host's own settings (_option_setting:
@@ -6544,9 +6546,11 @@ static void gametype_option_help(struct widget_instance *list)
 		visible_set(named(list, "op_primary_weapon", 0), custom);
 		visible_set(named(list, "op_secondary_weapon", 0), custom);
 	}
-	/* (ARENA OPTIONS: BALL MELEE is Oddball's alone) */
+	/* (ARENA OPTIONS: BALL MELEE is Oddball's alone; no gametype edited, as
+	debug.menu_open opens the screen, none) */
 	if (named(list, "ball_melee_spinner", 0))
-		visible_set(named(list, "op_ball_melee", 0), edit_variant()->game_engine_index == game_engine_oddball);
+		visible_set(named(list, "op_ball_melee", 0), edit_variant() && edit_variant()->game_engine_index == game_engine_oddball);
+	ae_silent_menu_update(list); /* AE hook */
 	/* (CO-OP OPTIONS: the row of the amount of the extra enemies chosen,
 	PER PLAYER's or MULTIPLIER's, in the one place) */
 	if (named(list, "coop_extra_enemies_spinner", 0))

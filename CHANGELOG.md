@@ -6,6 +6,29 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **SILENT MOVEMENT and SILENT WEAPONS** (gametype options, ARENA OPTIONS).
+  SILENT MOVEMENT covers footsteps, jumps, landings and slides; SILENT
+  WEAPONS covers readying and putting away a weapon (the weapon-switch
+  sounds), in first and third person. Each is NORMAL (as Halo CE), JUST ME
+  (you hear your own, nobody else's) or SILENT (nobody's, not even your
+  own). Firing, reloading, melee and pickup sounds (the overshield's too)
+  always play. The host's choice counts for everyone in the game; every
+  gametype, including the seeded ones, starts with both NORMAL.
+- **SOUND PRESET: SPLIT SCREEN**, on the same screen: one pick sets both
+  options to SILENT, for players sharing speakers on one screen (with JUST ME
+  the others' sounds would still come out of the same speakers). Change
+  either row and it shows CUSTOM again.
+- **Only Arena Evolved joins while those options are on.** A player on
+  another build (stock OpenCE or ChupathingyCE, or Arena Evolved before
+  0.2.3) would still hear every footstep, so a host with SILENT MOVEMENT or
+  SILENT WEAPONS on turns them away, and removes one that was already in the
+  lobby when the gametype changed. Their own game can only say it could not
+  join (a host has no way to show other builds a message of its own). With
+  both options NORMAL, everyone joins as before.
+- **Fixed:** a fully charged weapon trigger with no magazine (none of the
+  stock weapons has one; a custom map's weapon can) read the memory just
+  before the weapon's magazines to decide whether to fire at once. It now
+  reads no magazine, as an uncharged trigger already did.
 - **MENUS on the main menu: switch between the PC and Xbox menus without
   leaving the game.** It sits above QUIT in the PC menus (the other rows move
   up a little to make room) and under SETTINGS in the Xbox menus. Pick it and

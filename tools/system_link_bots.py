@@ -142,6 +142,24 @@ def wide(text, count):
     return struct.pack(">%dH" % count, *units)
 
 
+# Arena Evolved's SILENT options' capability in a join request (port/linux/game/ae_silent_rules.h): the machine
+# name's last character, after the name's end; --ae-silent sends it (the bots stand in for Arena Evolved 0.2.3+
+# machines), without it they are stock OpenCE / ChupathingyCE machines, which a host with the options on refuses
+AE_SILENT_JOIN_MARK = 0xAE50
+AE_SILENT_CAPABILITY = 1
+
+
+def machine_name(text, ae_silent):
+    """a join request's machine name (32 wide characters), marked as Arena Evolved's when ae_silent"""
+    name = wide(text, 32)
+    if not ae_silent:
+        return name
+    units = list(struct.unpack(">32H", name))
+    units[30] = 0
+    units[31] = AE_SILENT_JOIN_MARK | AE_SILENT_CAPABILITY
+    return struct.pack(">32H", *units)
+
+
 def message(packet_type, payload):
     packet = bytes([PACKET_VERSION]) + payload + bytes([packet_type])
     length = len(packet) + 2
@@ -301,6 +319,7 @@ class Machine:
         self.host = host
         self.log = log
         self.name = "bot%d" % index
+        self.ae_silent = False
         self.state = "connecting"
         self.machine_index = None
         self.buffer = b""
@@ -381,7 +400,7 @@ class Machine:
         # the name, the token, and (since the bans: network_messages.c) the
         # machine's hardware id, 0x20 bytes of hex, one of its own per bot
         hardware_id = ("%032x" % (0xB07 << 64 | self.index)).encode("ascii")
-        self.send(message(CLIENT_JOIN_GAME_REQUEST, wide(self.name, 32) + JOIN_TOKEN + hardware_id))
+        self.send(message(CLIENT_JOIN_GAME_REQUEST, machine_name(self.name, self.ae_silent) + JOIN_TOKEN + hardware_id))
         self.state = "joining"
 
     def receive(self):
@@ -588,6 +607,9 @@ def main():
                              "turn, jump and crouch")
     parser.add_argument("--fire", action="store_true", help="(--move) hold the trigger in bursts too")
     parser.add_argument("--seed", type=int, default=1, help="(--move) the bots' patterns' seed")
+    parser.add_argument("--ae-silent", action="store_true",
+                        help="join as Arena Evolved 0.2.3+ machines (the SILENT options' capability in the join "
+                             "request); without it a host with SILENT MOVEMENT / SILENT WEAPONS on refuses them")
     parser.add_argument("--join-delay", type=float, default=0.0,
                         help="seconds to wait before the first machine connects (after a host's game setup)")
     options = parser.parse_args()
@@ -614,6 +636,7 @@ def main():
         machine = Machine(index + 1, address, options.host, log)
         machine.state = "waiting"
         machine.load_seconds = options.load_seconds
+        machine.ae_silent = options.ae_silent
         if options.move:
             machine.mover = Mover(options.seed * 7919 + machine.index, options.fire)
         machines.append(machine)

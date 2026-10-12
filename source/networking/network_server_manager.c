@@ -478,6 +478,7 @@ symbols in this file:
 #include "interface/player_ui.h"
 #include "tag_files/tag_files.h"
 #include "map_share.h" /* port: port/linux/game/map_share.c */
+#include "ae_silent.h" /* AE hook */
 
 /* port: internet play's Discord presence (port/linux/src/p2p.c), and the
 server browser's listing of a public game (p2p_lobby.c) */
@@ -2224,6 +2225,8 @@ boolean network_game_server_accept_client_machine_into_game(
 			network_game_server_refusal_code = _rejection_code_blacklisted_machine;
 			return FALSE;
 		}
+		if (!network_game_server_client_machine_is_local(server, machine) && ae_silent_join_refused_now(machine, machine_index, &server->game.variant, &network_game_server_refusal_code)) /* AE hook */
+			return FALSE;
 	}
 	/* (a kick asked for the slot's machine before is not this one's) */
 	if (VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT))
@@ -4802,6 +4805,7 @@ static boolean network_game_server_handle_client_machines(
 
 		if (client_machine->machine_index == NONE)
 			continue;
+		ae_silent_host_machine(client_machine->machine_index, network_game_server_client_machine_is_joined_to_game(server, client_machine) && !network_game_server_client_machine_is_local(server, client_machine), &server->game.variant); /* AE hook */
 
 		if (!network_connection_active(client_machine->connection))
 		{

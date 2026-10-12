@@ -51,7 +51,16 @@ editor and in Server Setup)
 | NO SPREAD | OFF (stock), NHE (the pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as Halo 1: NHE has them) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
 | PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. A weapon switch (Y) pressed during it is kept and taken as it ends, as in Halo 1: NHE; any other button pressed during it does nothing until you let go of it, so nothing fires, zooms, reloads or picks up the moment it ends. The host holds every player to it, including players on builds without it. |
+| SILENT MOVEMENT | NORMAL (stock), JUST ME (you hear your own footsteps, jumps, landings and slides; everyone else's make no sound for you) or SILENT (nobody's, yours included). |
+| SILENT WEAPONS | The same three for readying and putting away a weapon (the weapon-switch sounds), first and third person. Firing, reloading, melee and pickup sounds (the overshield's too) always play. |
+| SOUND PRESET | SPLIT SCREEN sets SILENT MOVEMENT and SILENT WEAPONS both to SILENT, for players sharing one set of speakers (JUST ME can't tell whose ears a sound is for there); CUSTOM leaves the two rows as you set them. |
 | BALL MELEE | Oddball gametypes only. STOCK (the ball's melee takes the shield and a little health, and kills from behind) or LETHAL (the ball carrier's melee kills in one hit, shields and overshield included, as in Halo 3: same reach, no hits through walls, friendly fire as the gametype sets it). |
+
+While SILENT MOVEMENT or SILENT WEAPONS is not NORMAL, only Arena Evolved (0.2.3 or later) can join the game: a
+machine without the options would still hear the sounds, so the host turns it away (one already in the lobby when
+the gametype is switched on is removed). With both NORMAL, everyone joins as before. Every gametype, the seeded ones
+included, starts with both NORMAL. The options are only how a sound plays on each machine; the game itself is the
+same.
 
 Plus, in the gametype's indicator options: **TIMERS** and **TRAINING**.
 TIMERS shows the power list only: the next spawns of the rockets, sniper

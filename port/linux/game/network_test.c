@@ -72,6 +72,7 @@ Called from the main loop every frame (main.c).
 #include "saved games/saved_game_files.h"
 #include "saved games/playlist_profile.h"
 #include "saved games/arena_gametypes.h"
+#include "ae_silent.h" /* AE hook */
 #include <xtl.h> /* (MAX_GAMENAME) */
 
 #include "../src/p2p.h" /* port: port/linux/src/p2p.c, p2p_lobby.c */
@@ -1547,6 +1548,7 @@ void network_test_update(
 					variant.universal_variant.flags |= network_test.variant_flags;
 					if (network_test.ball_melee)
 						variant.universal_variant.ball_melee = 1;
+					ae_silent_network_test(&variant); /* AE hook */
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */

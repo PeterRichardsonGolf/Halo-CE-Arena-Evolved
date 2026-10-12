@@ -236,6 +236,8 @@ symbols in this file:
 #include "bitmaps/bitmap_group.h"
 #include "cache/texture_cache.h"
 #include "effects/contrail_definitions.h"
+#include "ae_silent.h" /* AE hook */
+#include "ae_weapon_rules.h" /* AE hook */
 #endif
 
 /* port/linux/game/pal_tags.c's */
@@ -673,7 +675,9 @@ void weapon_ready(
 	weapon_reset(weapon_index);
 	weapon_set_state(weapon_index, _weapon_state_ready, TRUE);
 	first_person_weapon_message_from_weapon(weapon_index, _first_person_weapon_message_ready);
+	ae_silent_weapon_scope_begin(weapon_index, TRUE); /* AE hook */
 	weapon_effect_new(weapon_index, weapon_definition->weapon.ready_effect.index, 0.f, 0.f);
+	ae_silent_scope_end(); /* AE hook */
 	weapon->weapon.state_timer = weapon_get_first_person_animation_time(weapon_index, 0, _first_person_weapon_animation_ready, NONE);
 
 	return;
@@ -3478,14 +3482,12 @@ boolean weapon_update(
 				weapon->weapon.overcharged= 1.0f-(trigger->state_timer*(1.0f/TICKS_PER_SECOND))/trigger_definition->charged_time;
 				if (trigger->state_timer)
 				{
-					/* port: this never checked for no magazine. With none (NONE) it
-					reads the slot just before the magazines, which is still in
-					the weapon, so that is kept as it was. Any other index must
-					be a magazine the weapon has. */
-					struct weapon_magazine *magazine= trigger_definition->magazine_index==NONE ?
-						&weapon->weapon.magazines[trigger_definition->magazine_index] :
-						weapon_trigger_magazine_valid(weapon_definition, trigger_definition) ?
-							weapon_magazine_get(weapon, trigger_definition->magazine_index) : NULL;
+					/* port: this never checked for no magazine. Any index must
+					be a magazine the weapon has; none (NONE) is no magazine, no
+					rounds to run out of, as the idle state reads it (the Xbox
+					game read magazines[NONE], out of bounds) */
+					short magazine_index= ae_weapon_charged_magazine_index(trigger_definition->magazine_index, weapon_magazine_count(weapon_definition)); /* AE hook */
+					struct weapon_magazine *magazine= magazine_index!=NONE ? weapon_magazine_get(weapon, magazine_index) : NULL; /* AE hook */
 
 					if (magazine &&
 						magazine->rounds_loaded<trigger_definition->rounds_per_shot && !TEST_FLAG(trigger_definition->flags, _weapon_trigger_can_fire_with_partial_ammunition_bit))

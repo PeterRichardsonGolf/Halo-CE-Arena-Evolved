@@ -578,7 +578,8 @@ SPEC_KEYS = {
     "broadcast": "HALO_NET_BROADCAST",
     "delay": "seconds after the first game of a group before this one starts",
     "timeout_extra": "seconds past exit_after before the game is killed (default 150)",
-    "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true}",
+    "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true} (and the allowances "
+              "'refusals_ok', 'lost_ok', 'cache_overflow_ok': a texture / sound cache overflow fails a game otherwise)",
     "save": "a named save root shared by the cases of one run (default: the case's own)",
     "save_from": "a folder (on the machine that plays) copied as the case's save root before the game (a "
                  "shared one: once, when it is made; links copied as files); never under /tmp. A real save "
@@ -698,6 +699,9 @@ def map_available(cfg, spec):
 # ---------------------------------------------------------------------------------------------- debug.txt
 
 RE_TICK = re.compile(r"network test: tick (\d+) (.*)")
+# the texture and sound caches overflowing (xbox_texture_cache.c "YOU GOT STABBED", xbox_sound_cache.c "SOUND CACHE
+# BLOWN"): a map too big for the caches, pictures in the wrong format and sounds that never play; a test fails on one
+RE_CACHE_OVERFLOW = re.compile(r"YOU GOT STABBED|SOUND CACHE BLOWN")
 RE_PLAYER = re.compile(r"player (\d+): \(([-\d.]+) ([-\d.]+) ([-\d.]+)\)[^|]*? k(-?\d+) d(-?\d+)")
 
 
@@ -707,7 +711,7 @@ def parse_debug(text):
     r = {"version": "", "network_version": None, "joined": None, "delta": [], "tick": None, "players": 0,
          "items": None, "asserts": 0, "exceptions": 0, "refusals": 0, "lost_scripts": 0, "lost_lines": [],
          "scenario_scripts": None, "corrected": 0, "clean_exit": False, "problems": [], "final": {},
-         "shots_skipped": 0, "record_dropped": None}
+         "shots_skipped": 0, "record_dropped": None, "cache_overflows": 0}
     for line in lines:
         s = line.strip()
         if not r["version"] and re.match(r"^[\w-]+: (Halo CE|ChupathingyCE|OpenCE|halo)", s, re.I) and \
@@ -731,6 +735,10 @@ def parse_debug(text):
             if im:
                 r["items"] = int(im[1])
             continue
+        if RE_CACHE_OVERFLOW.search(s):
+            r["cache_overflows"] += 1
+            if len(r["problems"]) < 20:
+                r["problems"].append(s[:220])
         low = s.lower()
         if re.search(r"\bassert", low):
             r["asserts"] += 1
@@ -838,6 +846,8 @@ def evaluate(spec, result):
             why.append(f"{d['refusals']} refusals")
         if d.get("lost_scripts") and not exp.get("lost_ok"):
             why.append(f"{d['lost_scripts']} lost scripts")
+        if d.get("cache_overflows") and not exp.get("cache_overflow_ok"):
+            why.append(f"{d['cache_overflows']} cache overflows (YOU GOT STABBED / SOUND CACHE BLOWN)")
         kind = spec_kind(spec)
         min_tick = exp.get("ticks", 150 if kind in ("mp", "join") else None)
         if min_tick and (d.get("tick") or 0) < min_tick:
@@ -871,6 +881,8 @@ def one_line(name, result):
         bits.append(f"scripts {d['scenario_scripts']}")
     bits.append(f"asserts {d.get('asserts', '-')} exc {d.get('exceptions', '-')} "
                 f"refused {d.get('refusals', '-')} lost {d.get('lost_scripts', '-')}")
+    if d.get("cache_overflows"):
+        bits.append(f"cache overflows {d['cache_overflows']}")
     if result.get("shots"):
         bits.append(f"{len(result['shots'])} png")
     if d.get("shots_skipped"):

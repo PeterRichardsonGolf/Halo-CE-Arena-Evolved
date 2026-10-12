@@ -265,6 +265,7 @@ symbols in this file:
 #include "text/unicode.h"
 /* system_milliseconds(), for the settings update interval */
 #include "cseries/cseries_windows.h"
+#include "ae_silent.h" /* AE hook */
 
 /* port/linux/game/network_distributed.c's */
 void network_distributed_handle_message(long machine_index, word const *message, word size);
@@ -1977,6 +1978,7 @@ static boolean network_game_server_handle_message_client_join_game_request(
 			}
 			/* (the name comes from the wire, and need not end, nor be text
 			that draws: kept to what does; then in ASCII, for the log) */
+			ae_silent_join_request_heard(server_client_machine, join_game_request.machine_name, MAXIMUM_MACHINE_NAME_LENGTH); /* AE hook */
 			network_game_server_clean_name(join_game_request.machine_name, MAXIMUM_MACHINE_NAME_LENGTH, L"Machine");
 			csmemcpy(machine_name, join_game_request.machine_name, sizeof(machine_name));
 			wide_to_ascii(

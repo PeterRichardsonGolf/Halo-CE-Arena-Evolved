@@ -172,6 +172,7 @@ symbols in this file:
 #include "tag_files/tag_groups.h"
 #include "units/bipeds.h"
 #include "units/units.h"
+#include "ae_silent.h" /* AE hook */
 #undef real_local_random
 
 /* ---------- constants */
@@ -1559,6 +1560,7 @@ static long effect_allocate(
 				effect->header.flags = 0;
 
 				effect_set_event(effect_index, 0);
+				ae_silent_effect_created(effect_index); /* AE hook */
 			}
 		}
 	}
@@ -2472,8 +2474,10 @@ static void effect_update(
 				}
 			}
 
+			ae_silent_effect_scope_begin(effect_index); /* AE hook */
 			if (!TEST_FLAG(effect->header.flags, _effect_invisible_bit))
 				effect_generate_parts(effect);
+			ae_silent_scope_end(); /* AE hook */
 		}
 	}
 

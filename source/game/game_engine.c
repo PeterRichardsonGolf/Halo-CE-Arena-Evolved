@@ -600,6 +600,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include <stdarg.h> /* port: game_engine_log_append */
 #include "ae_glue_mouse.h" /* AE hook */
 #include "ae_glue_zoom.h" /* AE hook */
+#include "ae_silent.h" /* AE hook */
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
@@ -4508,6 +4509,7 @@ static void game_engine_build_lighting(
 void game_engine_dispose_from_old_map(
 	void)
 {
+	ae_silent_log_counts(); /* AE hook */
 	if (game_engine && game_engine->dispose_from_old_map)
 		game_engine->dispose_from_old_map();
 
@@ -8637,6 +8639,7 @@ void game_engine_log_rules(
 	game_engine_first_spawn_logged = FALSE;
 	ae_mouse_log_settings(); /* AE hook */
 	ae_zoom_log_settings(); /* AE hook */
+	ae_silent_log_rules(); /* AE hook */
 	if (game_engine)
 	{
 		static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };

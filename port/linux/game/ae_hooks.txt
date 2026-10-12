@@ -167,3 +167,41 @@ source/interface/ui_widget.c	ui_widget_port_press_controller = NONE;\n}\nae_menu
 # - 8192f36fc "PlayStation controllers: their buttons on the button icons": AE's own files (ae_buttons*), hooks above.
 # - OpenCE's 67f221421, baab0780f, 05dd9ccde: now in history through the OpenCE build-201 merge (its held players
 #   join through the late-join queue, 5a7c655a6).
+# SILENT MOVEMENT / SILENT WEAPONS (0.2.3): port/linux/game/ae_silent.c (rules ae_silent_rules.c). Scopes tag the
+# sounds and effects made at their creation sites, the impulse sound's gain mutes at the listener, the join request
+# carries the capability (its machine name's last character) and the host refuses / drops a machine without it
+port/linux/game/menu_functions.c	#include "ae_silent.h" /* AE hook */
+port/linux/game/menu_functions.c	ae_silent_menu_rows(list, variant, save); /* AE hook */
+port/linux/game/menu_functions.c	ae_silent_menu_update(list); /* AE hook */
+port/linux/game/network_test.c	#include "ae_silent.h" /* AE hook */
+port/linux/game/network_test.c	ae_silent_network_test(&variant); /* AE hook */
+port/linux/src/port_config.c	{ "debug.network_test_silent", _config_string, "\"\"", "HALO_NETWORK_TEST_SILENT", _environment_value, /* AE hook */\n_platform_all,
+source/effects/effects.c	#include "ae_silent.h" /* AE hook */
+source/effects/effects.c	ae_silent_effect_created(effect_index); /* AE hook */
+source/effects/effects.c	ae_silent_effect_scope_begin(effect_index); /* AE hook */\nif (!TEST_FLAG(effect->header.flags, _effect_invisible_bit))\neffect_generate_parts(effect);\nae_silent_scope_end(); /* AE hook */
+source/game/game_engine.c	#include "ae_silent.h" /* AE hook */
+source/game/game_engine.c	ae_silent_log_counts(); /* AE hook */
+source/game/game_engine.c	ae_silent_log_rules(); /* AE hook */
+source/interface/first_person_weapons.c	#include "ae_silent.h" /* AE hook */
+source/interface/first_person_weapons.c	ae_silent_weapon_scope_begin(first_person_weapon->weapon_index, first_person_weapon->state==_first_person_weapon_state_ready || first_person_weapon->state==_first_person_weapon_state_put_away); /* AE hook */\nfirst_person_weapon->current_sound_index= object_impulse_sound_new(\nfirst_person_weapon->weapon_index,\nsound_definition_index,\nNONE,\nglobal_origin3d,\nglobal_forward3d,\n1.0f);\nae_silent_scope_end(); /* AE hook */
+source/interface/first_person_weapons.c	ae_silent_weapon_scope_begin(weapon_index, state==_first_person_weapon_state_ready || state==_first_person_weapon_state_put_away); /* AE hook */\nobject_impulse_sound_new(\nweapon_index,\ndefinition_index,\nNONE,\nglobal_origin3d,\nglobal_forward3d,\n1.0f);\nae_silent_scope_end(); /* AE hook */
+source/items/weapons.c	#include "ae_silent.h" /* AE hook */
+source/items/weapons.c	ae_silent_weapon_scope_begin(weapon_index, TRUE); /* AE hook */\nweapon_effect_new(weapon_index, weapon_definition->weapon.ready_effect.index, 0.f, 0.f);\nae_silent_scope_end(); /* AE hook */
+source/networking/network_client_manager.c	#include "ae_silent.h" /* AE hook */
+source/networking/network_client_manager.c	ae_silent_join_rejected(rejection_code); /* AE hook */
+source/networking/network_client_manager.c	ae_silent_join_request_mark(join_game_request.machine_name, MAXIMUM_MACHINE_NAME_LENGTH); /* AE hook */
+source/networking/network_server_manager.c	#include "ae_silent.h" /* AE hook */
+source/networking/network_server_manager.c	if (!network_game_server_client_machine_is_local(server, machine) && ae_silent_join_refused_now(machine, machine_index, &server->game.variant, &network_game_server_refusal_code)) /* AE hook */\nreturn FALSE;
+source/networking/network_server_manager.c	ae_silent_host_machine(client_machine->machine_index, network_game_server_client_machine_is_joined_to_game(server, client_machine) && !network_game_server_client_machine_is_local(server, client_machine), &server->game.variant); /* AE hook */
+source/networking/network_server_message_handler.c	#include "ae_silent.h" /* AE hook */
+source/networking/network_server_message_handler.c	ae_silent_join_request_heard(server_client_machine, join_game_request.machine_name, MAXIMUM_MACHINE_NAME_LENGTH); /* AE hook */
+source/sound/sound_manager.c	#include "ae_silent.h" /* AE hook */
+source/sound/sound_manager.c	gain *= ae_silent_gain(channel->sound_index, sound->listener_index, sound->playing_channel_index == NONE); /* AE hook */
+source/sound/sound_manager.c	ae_silent_sound_created(sound_index); /* AE hook */
+source/units/bipeds.c	#include "ae_silent.h" /* AE hook */
+source/units/bipeds.c	ae_silent_scope_begin(AE_SILENT_ROLE_MOVEMENT, biped->unit.player_index); /* AE hook */\nmaterial_effect_new_from_point(\ndefinition->biped.material_effects.index,\nevent_index,\n&marker.matrix.position,\n0.f);\nae_silent_scope_end(); /* AE hook */
+source/units/units.c	#include "ae_silent.h" /* AE hook */
+source/units/units.c	ae_silent_unit_action_scope_begin(unit_index, unit->unit.animation.action); /* AE hook */\nanimation_update_result = unit_animation_update(\nunit_index,\nunit_definition->object.animation_graph.index,\n&unit->unit.animation.action_animation);\nae_silent_scope_end(); /* AE hook */
+# a charged trigger with no magazine (NONE) reads none, not magazines[NONE] (0.2.3; port/linux/game/ae_weapon_rules.h)
+source/items/weapons.c	#include "ae_weapon_rules.h" /* AE hook */
+source/items/weapons.c	short magazine_index= ae_weapon_charged_magazine_index(trigger_definition->magazine_index, weapon_magazine_count(weapon_definition)); /* AE hook */\nstruct weapon_magazine *magazine= magazine_index!=NONE ? weapon_magazine_get(weapon, magazine_index) : NULL; /* AE hook */

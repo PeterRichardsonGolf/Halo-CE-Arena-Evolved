@@ -1751,6 +1751,10 @@ def _item_options_extras() -> list:
 # for every gametype, in finer steps and to an hour (menu_functions.c's
 # ARENA_TIME_LIMITS, minutes)
 ARENA_TIME_LIMITS = [*range(1, 11), 12, 15, 20, 25, 30, 45, 60]
+# (the rows' pitch and the help's top: 26 for the ten rows before the sound
+# options; 20 for thirteen, as the network settings' thirteen, the help just
+# under the last row and its third line clear of the buttons' bar)
+ARENA_ROW_TOP, ARENA_ROW_PITCH, ARENA_HELP_TOP, ARENA_HELP_HEIGHT = 68, 20, 334, 66
 ARENA_ROWS = [
     ("arena_time_limit", "TIME LIMIT:",
      ["NONE", *[f"{minutes} MINUTE{'' if minutes == 1 else 'S'}" for minutes in ARENA_TIME_LIMITS]], [
@@ -1802,6 +1806,25 @@ ARENA_ROWS = [
         "Stock teams and camera.",
         "As Halo 1: NHE: everyone joins red and keeps their\\ncolour between games, the dead camera stays on you,\\nand the match clock counts up.",
     ]),
+    # (SILENT MOVEMENT and SILENT WEAPONS: the variant's pad5 high nibble,
+    # port/linux/game/ae_silent.c's ae_silent_menu_rows; not in
+    # menu_functions.c's table. SOUND PRESET is not kept: it shows SPLIT
+    # SCREEN while both are SILENT, and picking it sets both, as the vehicle
+    # screen's PRESET row picks a set (ae_silent_menu_update))
+    ("sound_preset", "SOUND PRESET:", ["CUSTOM", "SPLIT SCREEN"], [
+        "SILENT MOVEMENT and SILENT WEAPONS as set\\nbelow.",
+        "For players sharing speakers: SILENT MOVEMENT\\nand SILENT WEAPONS both SILENT, so nobody\\nhears the other side's steps or weapon swaps.",
+    ]),
+    ("silent_movement", "SILENT MOVEMENT:", ["NORMAL", "JUST ME", "SILENT"], [
+        "Footsteps, jumps and landings sound as in Halo CE.",
+        "You hear your own footsteps, jumps and landings;\\neveryone else moves silently. Only Arena Evolved\\nplayers can join.",
+        "Nobody's footsteps, jumps or landings make a\\nsound, yours included. Only Arena Evolved\\nplayers can join.",
+    ]),
+    ("silent_weapons", "SILENT WEAPONS:", ["NORMAL", "JUST ME", "SILENT"], [
+        "Readying and putting away weapons sound as in\\nHalo CE.",
+        "You hear your own weapon swaps; everyone else's\\nare silent (firing and reloading still sound).\\nOnly Arena Evolved players can join.",
+        "Nobody's weapon swaps make a sound, yours\\nincluded (firing and reloading still sound).\\nOnly Arena Evolved players can join.",
+    ]),
     # (universal_variant.ball_melee; Oddball only: the row is hidden for the
     # other gametype types, menu_functions.c gametype_option_help)
     ("ball_melee", "BALL MELEE:", ["STOCK", "LETHAL"], [
@@ -1838,12 +1861,12 @@ def _arena_options() -> list:
                       ("description", f"{base}/arena_options_help")],
                      ['<data input="game settings lists text update"/>',
                       '<on event="created" run="mp profile init player opts"/>',
-                      *[f'<child widget="{base}/op_{key}" x="54" y="{68 + 26 * index}"/>'
+                      *[f'<child widget="{base}/op_{key}" x="54" y="{ARENA_ROW_TOP + ARENA_ROW_PITCH * index}"/>'
                         for index, (key, *_) in enumerate(ARENA_ROWS)],
                       f'<child widget="{base}/arena_button_bar" y="414"/>'])
     lines += _widget(f"{base}/arena_options_help",
-                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 331), ("width", 482), ("height", 79),
-                      ("string_list", f"{base}/cap_arena_options"), ("font", "ui\\large_ui"),
+                     [("type", "text"), ("controller", 1), ("left", 68), ("top", ARENA_HELP_TOP), ("width", 482),
+                      ("height", ARENA_HELP_HEIGHT), ("string_list", f"{base}/cap_arena_options"), ("font", "ui\\large_ui"),
                       ("color", "#FFFFFFFF")], [])
     lines += _widget(f"{base}/arena_button_bar",
                      [("type", "column_list"), ("width", 640), ("height", 28),
