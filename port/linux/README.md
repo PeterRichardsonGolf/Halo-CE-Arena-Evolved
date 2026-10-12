@@ -268,6 +268,17 @@ controller 1. The gamepad changes controller only when none of its buttons
 is held. The profile's button layout (Settings > Gamepads) is the
 gamepads' only.
 
+On Linux a PlayStation controller (DualSense, DualShock 4) goes through the
+kernel's driver of it (`hid-playstation` since Linux 5.12, which also drives
+the DualShock 4 since 6.2; `hid-sony`): the buttons, sticks, triggers and
+rumble should work with no setup (not yet confirmed on real hardware). An older kernel
+leaves it to SDL's own driver, which needs access to the controller's
+`/dev/hidraw` device: Steam's udev rules give it (`steam-devices`, or
+Steam installed). Each gamepad found has a line in `debug.txt`
+(`gamepad: <name> is a <kind> pad, read through <device>`), and one line
+says which driver reads PlayStation pads. (From
+DamnationCE.)
+
 | Action | Keys and buttons (default) |
 | --- | --- |
 | move | W, A, S, D |
@@ -947,9 +958,22 @@ runs.
 
 In the Server Browser, select a game to join it. The game joins the invite
 of the game, as for a link. When it reaches the host, it opens the lobby.
-If it cannot reach the host in 30 seconds, it marks the game FAILED. A game
-that is full or starting shows CLOSED. REFRESH asks the hosts for their
-listings again.
+If it cannot reach the host in 30 seconds, it marks the game FAILED.
+
+With SERVER PINGS on (Settings > Network; Arena Evolved: off by default,
+`network.browser_pings`) the PING column shows the round trip to each host
+in milliseconds. Timing it makes the same connection a join makes, so each
+listed host sees this machine's address; off, no host is contacted until
+you join one, and the column shows CLOSED, LIVE or nothing as before. The
+browser times it as a join would reach the host: it makes the tunnel with
+the listing's invite, keeps the shortest of three pings, and closes the
+tunnel again. It times a few hosts at once, each again every two minutes
+and on REFRESH (Arena Evolved: not a host timed in the last 30 seconds). Joining a host whose tunnel is open uses that tunnel. A
+game with a password, whose invite the listing hides, shows no ping, nor
+does a host not reached; a game that is full or starting shows CLOSED
+(Arena Evolved: whatever its ping). REFRESH also asks the hosts for their listings again. A ping is
+green under 80 ms, yellow under 160 and red above (from DamnationCE). In
+Direct Link the PING column shows the open tunnel's ping to each host.
 
 How it operates (`src/p2p_lobby.c`):
 
@@ -1046,6 +1070,14 @@ Sharing) and each other player at most `network.map_seed_upload` (256 KB/s:
 UPLOAD LIMIT in Settings > Network Setup > Map Sharing). Set these lower on
 a slow connection. DOWNLOAD MAPS there (`network.map_download`) turns
 downloading off: you then leave a game whose map you do not have.
+
+On a local network (Arena Evolved, from DamnationCE), the other players are
+asked for pieces only at local network addresses (10.x, 172.16-31.x,
+192.168.x, 169.254.x, 127.x): the host cannot send your game to connect
+anywhere on the internet. A "LAN" made by a VPN that uses public-range
+addresses (Hamachi's 25.x, Radmin VPN's 26.x) still works, but the map then
+comes from the host alone, which can be slower. A downloaded map that fails
+its check (another version, a broken file) is deleted from `maps_ce`.
 
 The name of each shared map ends with the start of its hash. Arena Evolved
 names a map so when it hosts it, or when it joins a game on that version of

@@ -217,6 +217,10 @@ play:
   stats site, and Delta Stats (what happens in the games you host: kills
   with positions, accuracy, medals, sent to that site; on by default in
   ChupathingyCE) stay off unless you turn them on (Settings > Network).
+- SERVER PINGS (Settings > Network, off by default): the Server Browser
+  shows each listed game's ping. Timing a ping makes the same connection a
+  join makes, so every host in the list sees your address. Off, no host is
+  contacted until you join one.
 - Crash reports, which ChupathingyCE's releases send to its site, are off in
   every Arena Evolved build: nothing is written to send and nothing is asked.
 - The game does not fetch ChupathingyCE's signed table of network versions
@@ -245,7 +249,7 @@ per-player in-game menu and HUD, and more of our own voice for the callouts
 | Download | Needs |
 | --- | --- |
 | Windows 10 or 11, 64-bit | A graphics card and driver with OpenGL 4.5 (core profile). Nothing to install: `halo.exe` imports only Windows' own DLLs (no Visual C++ runtime), and `SDL3.dll` is in the zip. |
-| Linux, any distribution (`-linux64.zip`) | 64-bit x86-64; glibc 2.35 or later (Ubuntu 22.04 and later, Zorin OS 17 and 18, Linux Mint 21 and 22, Pop!_OS, Debian 12 and similar; the build's CI starts it on Ubuntu 22.04 and 24.04 and Debian 12), a graphics driver with OpenGL 4.5 (Mesa or NVIDIA), and an X11 or Wayland desktop. SDL3 is included. Sound goes through PipeWire, PulseAudio or ALSA, whichever the system has; controllers need udev. |
+| Linux, any distribution (`-linux64.zip`) | 64-bit x86-64; glibc 2.35 or later (Ubuntu 22.04 and later, Zorin OS 17 and 18, Linux Mint 21 and 22, Pop!_OS, Debian 12 and similar; the build's CI starts it on Ubuntu 22.04 and 24.04 and Debian 12), a graphics driver with OpenGL 4.5 (Mesa or NVIDIA), and an X11 or Wayland desktop. SDL3 is included. Sound goes through PipeWire, PulseAudio or ALSA, whichever the system has; controllers need udev. A PlayStation controller (DualSense, DualShock 4) should work without Steam's udev rules on Linux 5.12 and later (not yet confirmed on real hardware). |
 | Linux, Arch and other rolling distributions (`-linux64-arch.zip`) | The same, built on Arch Linux's glibc, so it needs a glibc as new as Arch's. SDL3 is the system's: `sdl3` on Arch (`pacman -S sdl3`; its dependencies bring the rest), or the distribution's own SDL3 package (Debian 13 and Ubuntu 25.04 have one). |
 | macOS 13 or later, Apple silicon | OpenGL 4.1 through Apple's Metal layer ([port/macos/README.md](port/macos/README.md)). Not tested by us. |
 | Android 9 or later, 64-bit ARM | OpenGL ES 3.0 ([port/android/README.md](port/android/README.md)). Not tested by us. |

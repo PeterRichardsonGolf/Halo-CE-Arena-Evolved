@@ -6,6 +6,39 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **Linux: PlayStation controllers without Steam** (from DamnationCE 0.3.41).
+  A DualSense or DualShock 4 now goes through the kernel's own driver
+  (Linux 5.12 and later), so it should work without Steam's udev rules
+  (before, it was not found at all without them; not yet confirmed on real
+  hardware). `debug.txt` names each controller's
+  kind and device when it connects.
+- **PlayStation button icons** (from DamnationCE 0.3.41). While a
+  PlayStation controller (DualShock 4, DualSense) is the one you last used,
+  the game's button pictures show its buttons: cross, circle, square and
+  triangle for A, B, X and Y, in the Xbox-style menus' footers (SELECT, BACK),
+  the icons inside menu text and the in-game prompts ("Hold X to pick up").
+  Touching the keyboard, mouse or an Xbox pad brings the Xbox letters back.
+- **Server browser pings** (from DamnationCE 0.3.41), an opt-in: Settings >
+  Network > SERVER PINGS, **off by default**. Timing a ping makes the same
+  connection a join makes, so every host in the list sees your address; off,
+  no host is contacted until you join one. On, the PC menus' Server Browser
+  shows each internet game's ping in milliseconds, coloured green (under 80),
+  yellow (under 160) or red. It is timed the way a join reaches the host (the
+  tunnel made with the game's invite, the best of three pings, then closed),
+  a few hosts at a time, again every two minutes and on REFRESH (not a host
+  timed in the last 30 seconds); a game with a password shows none, a full or
+  starting game still shows CLOSED. Joining a host whose ping is being timed
+  uses that connection. Direct Link shows the open tunnel's ping.
+- **Map sharing, safer** (from DamnationCE 0.3.41). A LAN game's other players
+  are only downloaded from at local network addresses, so a host can't send
+  your game to connect anywhere on the internet (on a VPN "LAN" with
+  public-range addresses, such as Hamachi or Radmin VPN, the map comes from
+  the host alone). A downloaded map that fails
+  its check (another version, a broken file) is deleted instead of staying in
+  `maps_ce` under the map's name. A player still downloading the map when a
+  game starts doesn't spawn until the map is in (OpenCE's), and comes back to
+  the lobby with everyone else if the game ends first. A missing `custom_maps`
+  folder is made at startup (OpenCE's).
 - **Custom Edition maps get the pause menu's SETTINGS and the high-res HUD.**
   Their pause menu has SETTINGS (and END GAME for the host) as the Xbox maps'
   does, in place of Halo PC's CHANGE SETTINGS, which did nothing here. In split

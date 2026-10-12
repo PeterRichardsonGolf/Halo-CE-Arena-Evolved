@@ -7,10 +7,12 @@ Custom Edition maps (ae_map_share.h).
 
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
+#include "cseries/errors.h"
 #include "cache/cache_files.h"
 #include "halo_map_families.h"
 #include "map_share.h"
 #include "ae_map_share.h"
+#include "ae_map_share_rules.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -397,6 +399,65 @@ boolean ae_map_share_find(short family, char const *file, char *path, long size)
 }
 
 #endif
+
+/* ---------- map sharing's safety rules (DamnationCE v0.3.41, CC0) */
+
+boolean ae_map_share_source_allowed(
+	boolean internet,
+	unsigned long address,
+	long download)
+{
+	/* (each address refused said once per download: the host sends its
+	sources every few seconds) */
+	static unsigned long logged[16];
+	static long logged_count;
+	static long logged_download;
+	long index;
+
+	if (internet || ae_map_share_address_local(address))
+		return TRUE;
+	if (download != logged_download)
+	{
+		logged_download = download;
+		logged_count = 0;
+	}
+	for (index = 0; index < logged_count && logged[index] != address; index++)
+		;
+	if (index == logged_count && logged_count < (long)NUMBEROF(logged))
+	{
+		logged[logged_count++] = address;
+		error(_error_silent, "map sharing: the host named a LAN source at %lu.%lu.%lu.%lu, not a local address: "
+			"not reached (the map comes from the host and the local players)",
+			(address >> 24) & 0xFF, (address >> 16) & 0xFF, (address >> 8) & 0xFF, address & 0xFF);
+	}
+	return FALSE;
+}
+
+static int discard_delete(
+	char const *path,
+	void *context)
+{
+	(void)context;
+	/* (the game may hold it open from the check: let go first) */
+	map_share_release_map(path);
+	return DeleteFileA(path) != 0;
+}
+
+void ae_map_share_discard_failed(
+	char const *path)
+{
+	char const *paths[1];
+
+	paths[0] = path;
+	if (ae_map_share_discard(paths, 1, CUSTOM_EDITION_MAP_DIRECTORY, discard_delete, NULL))
+		error(_error_silent, "map sharing: removed %s, which failed its check", path);
+	else if (!ae_map_share_path_in_folder(path, CUSTOM_EDITION_MAP_DIRECTORY))
+		error(_error_silent, "map sharing: did not remove %s: not a file of %s", path ? path : "",
+			CUSTOM_EDITION_MAP_DIRECTORY);
+	else
+		error(_error_silent, "map sharing: could not remove %s, which failed its check (error %lu)", path,
+			(unsigned long)GetLastError());
+}
 
 char const *map_share_level_file(
 	char const *level_name)

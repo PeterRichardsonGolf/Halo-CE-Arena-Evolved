@@ -665,6 +665,13 @@ static const struct config_setting config_settings[] =
 		"The server browser: public games are listed through the signalling\n"
 		"brokers, and Join Game > Server Browser shows them. False lists no\n"
 		"game of this machine's and shows none." },
+	{ "network.browser_pings", _config_boolean, "false", "HALO_NET_BROWSER_PINGS", _environment_value, /* AE hook */
+		_platform_all,
+		"Arena Evolved (DamnationCE's): the Server Browser times each public\n"
+		"game's ping and shows it, coloured. Timing it makes the same\n"
+		"connection a join makes, so each listed host sees this machine's\n"
+		"address. False (the default: an opt-in, Settings > Network SERVER\n"
+		"PINGS) contacts no host until you join one." },
 	{ "network.host_public", _config_boolean, "true", "HALO_NET_HOST_PUBLIC", _environment_value, _platform_all,
 		"Whether a new game of Create Game > Internet starts as PUBLIC (listed\n"
 		"in everyone's server browser: anyone can see and join it) or, false,\n"

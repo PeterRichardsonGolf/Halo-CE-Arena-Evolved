@@ -1465,6 +1465,8 @@ static void download_sources(
 
 		if (entry->machine_index == network_game_client_get_local_machine_index())
 			continue;
+		if (!ae_map_share_source_allowed(TEST_FLAG(entry->flags, _source_internet_bit), entry->address, download->serial)) /* AE hook */
+			continue;
 		for (known = 1; known < download->source_count; known++)
 		{
 			if (download->sources[known].machine_index == entry->machine_index &&
@@ -1636,6 +1638,7 @@ static void download_finish(
 	custom_edition_maps_look_again();
 	if (!custom_edition_cache_present(download->level_name, download->version, message, sizeof(message)))
 	{
+		for (index = 0; index < download->file_count; index++) ae_map_share_discard_failed(download->files[index].final_path); /* AE hook */
 		csstrncpy(download->message, message, sizeof(download->message) - 1);
 		download_fail("The map was downloaded, but cannot be played.");
 		return;

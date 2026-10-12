@@ -34,6 +34,8 @@ import sys
 from pathlib import Path
 from typing import Any, List
 
+sys.path.insert(0, str(Path(__file__).resolve().parent)); import ae_button_glyphs  # AE hook
+
 ROOT = Path(__file__).resolve().parent.parent
 HUD_ASSETS = Path("port/assets/hud")
 LAYOUT = HUD_ASSETS / "layout.json"
@@ -96,6 +98,7 @@ def hud_asset_inputs() -> List[Path]:
     inputs = [listing for listing in (LAYOUT, TITLE_LIST, BUTTON_LIST, FONT_LIST, MENU_LIST)
               if (ROOT / listing).is_file()]
     return [*inputs, *(folder / f"{asset['name']}.png" for folder, asset, _ in textures()),
+            *ae_button_glyphs.inputs(),  # AE hook
             *(FONT_ASSETS / name for name in font_files()), *(MENU_ASSETS / name for name in menu_files()),
             *(SMAA_ASSETS / name for name, _ in smaa_files()),
             *([WINDOW_ICON] if (ROOT / WINDOW_ICON).is_file() else [])]
@@ -112,6 +115,7 @@ def hud_configure_inputs() -> List[Path]:
             inputs += [folder, listing]
     if (ROOT / SMAA_ASSETS).is_dir():
         inputs.append(SMAA_ASSETS)
+    inputs += ae_button_glyphs.configure_inputs()  # AE hook
     return inputs
 
 
@@ -230,6 +234,7 @@ def main() -> None:
     lines.append("};")
     lines.append(f"const unsigned int hud_hires_embedded_count = {len(table)};")
     lines.append("")
+    lines.extend(ae_button_glyphs.embedded_lines(words, png_size))  # AE hook
     # the fonts, and which draws each font tag (text_hires.h)
     lines.append('#include "text_hires.h"')
     lines.append("")

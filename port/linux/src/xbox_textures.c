@@ -18,6 +18,7 @@ memory_watch.c detects that by write-protecting the pages.
 #include "hud_hires.h"
 #include "menu_files.h"
 #include "text_hires.h"
+#include "ae_buttons.h" /* AE hook */
 #include "port_config.h"
 
 #include <stdio.h>
@@ -1152,6 +1153,8 @@ static GLuint texture_entry_result(struct texture_entry *entry, GLenum *target,
 {
 	*target = entry->target;
 	*description = entry->description;
+	if (ae_buttons_drawn(entry->data)) /* AE hook */
+		return ae_buttons_entry_texture(entry->data, description);
 	/* (the high-res text's atlas, for its placeholder bitmap: text_hires.h) */
 	{
 		GLuint atlas = text_hires_atlas_texture(entry->data);
@@ -1325,6 +1328,7 @@ GLuint xgpu_texture_get(const DWORD *resource, const D3DCOLOR *palette, GLenum *
 			if (entry->override >= 0 && !hud_hires_override_texture(entry->override, &levels))
 				entry->override = -1;
 		}
+		ae_buttons_uploaded(entry->data, entry->address, entry->description.width, entry->description.height, entry->description.levels > 1 ? xgpu_texture_level_offset(&entry->description, 1) : xgpu_texture_face_size(&entry->description)); /* AE hook */
 #ifdef HALO_64BIT
 		if (entry->override < 0 && entry->size && platform_is_contiguous(xbox_pointer(entry->address)) &&
 			platform_is_contiguous(xbox_pointer(entry->address + entry->size - 1)))
