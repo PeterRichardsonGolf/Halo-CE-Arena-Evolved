@@ -6,6 +6,19 @@
 static int failures;
 #define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
 
+static short test_controllers[4];
+static int test_layout;
+static int test_stick;
+static int test_dpad_moves[4];
+
+static void apply_test_profile(short player)
+{
+	short controller = test_controllers[player] >= 0 ? test_controllers[player] : player;
+
+	(void)test_stick;
+	test_dpad_moves[controller] = test_layout < 10;
+}
+
 int main(void)
 {
 	short none[4] = { -1, -1, -1, -1 };
@@ -23,6 +36,36 @@ int main(void)
 	CHECK(ae_input_player_of_controller(1, split) == AE_PLAYER_NONE);
 	CHECK(ae_input_player_of_controller(-1, none) == AE_PLAYER_NONE);
 	CHECK(ae_input_player_of_controller(4, none) == AE_PLAYER_NONE);
+
+	/* every layout and stick preset reaches the assigned controller, whichever order profile and assignment use */
+	{
+		int before[4], after[4];
+		int layout, stick;
+
+		for (layout = 0; layout < 14; layout++)
+		{
+			for (stick = 0; stick < 4; stick++)
+			{
+				memset(test_controllers, -1, sizeof(test_controllers));
+				memset(test_dpad_moves, -1, sizeof(test_dpad_moves));
+				test_layout = layout;
+				test_stick = stick;
+				apply_test_profile(0);
+				test_controllers[0] = 2;
+				ae_input_apply_assigned_profile(0, apply_test_profile);
+				memcpy(before, test_dpad_moves, sizeof(before));
+
+				memset(test_controllers, -1, sizeof(test_controllers));
+				memset(test_dpad_moves, -1, sizeof(test_dpad_moves));
+				test_controllers[0] = 2;
+				apply_test_profile(0);
+				memcpy(after, test_dpad_moves, sizeof(after));
+
+				CHECK(before[2] == (layout < 10));
+				CHECK(before[2] == after[2]);
+			}
+		}
+	}
 
 	/* I1: typing a name ends with Enter while Q / E / Page Down / Tab is still held: no tab switch, no page, no step */
 	{

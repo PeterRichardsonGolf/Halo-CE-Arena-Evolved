@@ -12,6 +12,9 @@ unit tests.
 
 struct halo_ui_pointer;
 
+/* a controller was assigned to a local player: install that player's active profile on it */
+void ae_input_controller_assigned(short local_player);
+
 /* a screen opened over none (ae_hooks.c): the next poll takes nothing held then as a press */
 void ae_input_screen_opened(void);
 /* reads this frame's input, dispatches it to the top screen, and leaves the

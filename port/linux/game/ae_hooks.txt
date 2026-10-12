@@ -2,6 +2,10 @@
 # A hook of several lines writes them joined by \n: each line is matched with its indentation trimmed, and the
 # lines must follow each other. tools/test_ae_hooks.py checks every hook is present, and every line marked
 # AE hook upstream is a line of one listed here.
+# a controller assigned to a local player takes that player's active profile (0.2.3; ae_input.c): a layout's
+# d-pad rule follows the player whatever the order of profile and controller
+source/interface/player_ui.c	#include "ae_input.h" /* AE hook */
+source/interface/player_ui.c	ae_input_controller_assigned(local_player_index); /* AE hook */
 port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.arena_menus_scale", _config_integer, "100", "HALO_ARENA_MENUS_SCALE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.arena_menus_reduce_motion", _config_boolean, "false", "HALO_ARENA_MENUS_REDUCE_MOTION", _environment_value, /* AE hook */\n_platform_all,
