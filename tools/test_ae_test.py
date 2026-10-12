@@ -532,9 +532,9 @@ class Handshake(unittest.TestCase):
 
 class SeedRules(unittest.TestCase):
     def test_table_and_parse(self):
-        """seed_rules.py: the 48 seeds, and a run's rules lines read back field by field"""
+        """seed_rules.py: the 61 seeds, and a run's rules lines read back field by field"""
         import seed_rules
-        self.assertEqual(len(seed_rules.ROWS), 48)
+        self.assertEqual(len(seed_rules.ROWS), 61)
         for name in seed_rules.ROWS:
             self.assertLessEqual(len(name), 11, name)
         text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
@@ -546,8 +546,8 @@ class SeedRules(unittest.TestCase):
                 "drop secondary always, nhe mode by vehicles, starting frags 2, ball melee lethal\n")
         f = seed_rules.fields(text)
         self.assertEqual(f["ball melee"], "lethal")
-        # (revision 7: LETHAL on the four AE oddball seeds, STOCK on every other)
-        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB"}
+        # (revision 7: LETHAL on the four AE oddball seeds, revision 8: and three of the free for all ones; STOCK on every other)
+        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB", "AE JUGGER", "AE ACCUM", "AE STALKER"}
         for name, (want, _, _) in seed_rules.ROWS.items():
             self.assertEqual(want["ball melee"], "lethal" if name in lethal else "stock", name)
         self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),

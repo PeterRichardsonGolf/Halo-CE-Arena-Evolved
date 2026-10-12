@@ -103,6 +103,14 @@ play:
   FFA AE PRACTICE: every weapon and powerup each 30 seconds, 500 kills, no time
   limit, the map's vehicles. TEAM AE VANILLA and TEAM AE POWERUPS: team slayer
   that plays Halo 1: NHE's VANILLA and NHE & POWERUPS modes on NHE's maps.
+- **Arena Evolved free for all variants** (the stock free for all gametypes on
+  the casual rules, 15 minutes, item TIMERS with waypoints, both weapons
+  dropped; each keeps its own score, lives, ball, hill and vehicles): FFA AE
+  ELIMINATION (one life), PHANTOMS (invisible), ENDURANCE (5 lives), ROCKETS,
+  SNIPERS, JUGGERNAUT, REVERSE TAG, ACCUMULATION, STALKER, KING, CRAZY KING
+  (the hill moves), RACE and RALLY (these two need a map with race flags).
+  The ball carrier's melee kills in one hit in JUGGERNAUT, ACCUMULATION and
+  STALKER (not REVERSE TAG, where you don't want the ball).
 - **Arena Evolved special modes** (team slayer to 50): SNIPERS (sniper rifle and
   pistol, the sniping weapon set, no motion sensor), SHOTTY SNIPERS (shotgun
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic

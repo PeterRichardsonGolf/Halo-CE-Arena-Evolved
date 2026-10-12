@@ -6,6 +6,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **13 free for all gametypes.** FFA AE ELIMINATION, PHANTOMS, ENDURANCE,
+  ROCKETS, SNIPERS, JUGGERNAUT, REVERSE TAG, ACCUMULATION, STALKER, KING, CRAZY
+  KING, RACE and RALLY: Halo's stock free for all modes on Arena Evolved's casual
+  rules. They are added to your gametype list on the next start; gametypes you
+  made or changed are left alone.
 - **Merged ChupathingyCE 0.7.3e and OpenCE build-190: network version 27.**
   Plays online with OpenCE build-189 and later and ChupathingyCE 0.7.3e; hosts
   of an older version (Arena Evolved 0.2.2-beta, DamnationCE 0.3.40) are
