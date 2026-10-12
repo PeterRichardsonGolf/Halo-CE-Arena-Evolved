@@ -27,6 +27,7 @@ When the texture cannot be drawn, the sprites are drawn from their bitmap.
 #include "rasterizer/xbox/rasterizer_xbox_hardware_bitmaps.h"
 #include "tag_files/tag_groups.h"
 #include "scenario/scenario_definitions.h"
+#include "ae_buttons_tags.h" /* AE hook */
 
 /* the platform layer's (port/linux/src) */
 void platform_log(char const *format, ...);
@@ -39,7 +40,6 @@ void hud_hires_map_loaded(const long *assets, long count);
 void hud_hires_map_unloaded(void);
 unsigned long hud_hires_asset_sprites(long asset);
 int hud_hires_sprites_drawable(long asset, unsigned long address, unsigned long level0_size);
-int hud_hires_sprites_drawn(long asset);
 void hud_hires_register_placeholder(long asset, unsigned long const *texture);
 
 void hud_hires_tags_loaded(long scenario_index);
@@ -111,6 +111,7 @@ void hud_hires_tags_loaded(
 
 	hires_bitmap_count = 0;
 	hud_hires_sprite_bitmaps_forget();
+	ae_buttons_tags_loaded(); /* AE hook */
 	for (asset = 0; asset < asset_count && hires_bitmap_count < MAXIMUM_HIRES_BITMAPS; asset++)
 	{
 		long group_index = tag_loaded(BITMAP_GROUP_TAG, hud_hires_asset_tag(asset));
@@ -168,6 +169,7 @@ void hud_hires_tags_unloaded(
 	hires_bitmap_count = 0;
 	hud_hires_map_unloaded();
 	hud_hires_sprite_bitmaps_forget();
+	ae_buttons_tags_unloaded(); /* AE hook */
 
 	return;
 }
@@ -178,6 +180,7 @@ struct bitmap_data const *hud_hires_sprite_bitmap(
 {
 	long index;
 
+	{ struct bitmap_data const *ae_sprite = ae_buttons_sprite_bitmap(bitmap, sequence_index); if (ae_sprite) return ae_sprite; } /* AE hook */
 	for (index = 0; index < hires_sprite_bitmap_count; index++)
 	{
 		struct bitmap_data *sprite_bitmap = hires_sprite_bitmaps[index].bitmap;
@@ -231,13 +234,8 @@ struct bitmap_data const *hud_hires_sprite_bitmap(
 			}
 			hires_sprite_bitmaps[index].placeholder = placeholder;
 		}
-		/* (a texture of them for the controller last used: a PlayStation
-		one's may be all they have; DamnationCE v0.3.41) */
-		if (hires_sprite_bitmaps[index].drawable && hires_sprite_bitmaps[index].placeholder &&
-			hud_hires_sprites_drawn(hires_sprite_bitmaps[index].asset))
-		{
+		if (hires_sprite_bitmaps[index].drawable && hires_sprite_bitmaps[index].placeholder)
 			return hires_sprite_bitmaps[index].placeholder;
-		}
 		break;
 	}
 

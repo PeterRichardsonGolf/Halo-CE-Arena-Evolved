@@ -91,10 +91,21 @@ port/linux/game/map_share.c	if (!ae_map_share_source_allowed(TEST_FLAG(entry->fl
 port/linux/game/map_share.c	for (index = 0; index < download->file_count; index++) ae_map_share_discard_failed(download->files[index].final_path); /* AE hook */
 # held players (OpenCE's) back in the pregame after a game whose map download they did not finish (DamnationCE v0.3.41)
 source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */\nnetwork_game_server_restore_held_players(server); /* AE hook */
-# PlayStation button icons in the in-game messages ("Hold X to pick up"): their sprites from a texture of their own
-# (port/linux/game/hud_hires_tags.c, DamnationCE v0.3.41)
+# PlayStation button icons (DamnationCE v0.3.41): AE's own textures and placeholders (port/linux/src/ae_buttons.c,
+# port/linux/game/ae_buttons_tags.c, tools/ae_button_glyphs.py); upstream's high-res HUD table and code untouched
 source/interface/hud_messaging.c	struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */
 source/interface/hud_messaging.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
+port/linux/game/hud_hires_tags.c	#include "ae_buttons_tags.h" /* AE hook */
+port/linux/game/hud_hires_tags.c	hud_hires_sprite_bitmaps_forget();\nae_buttons_tags_loaded(); /* AE hook */
+port/linux/game/hud_hires_tags.c	ae_buttons_tags_unloaded(); /* AE hook */
+port/linux/game/hud_hires_tags.c	{ struct bitmap_data const *ae_sprite = ae_buttons_sprite_bitmap(bitmap, sequence_index); if (ae_sprite) return ae_sprite; } /* AE hook */
+port/linux/src/xbox_textures.c	#include "ae_buttons.h" /* AE hook */
+port/linux/src/xbox_textures.c	if (ae_buttons_drawn(entry->data)) /* AE hook */\nreturn ae_buttons_entry_texture(entry->data, description);
+port/linux/src/xbox_textures.c	ae_buttons_uploaded(entry->data, entry->address, entry->description.width, entry->description.height, entry->description.levels > 1 ? xgpu_texture_level_offset(&entry->description, 1) : xgpu_texture_face_size(&entry->description)); /* AE hook */
+tools/embed_assets.py	sys.path.insert(0, str(Path(__file__).resolve().parent)); import ae_button_glyphs  # AE hook
+tools/embed_assets.py	*ae_button_glyphs.inputs(),  # AE hook
+tools/embed_assets.py	inputs += ae_button_glyphs.configure_inputs()  # AE hook
+tools/embed_assets.py	lines.extend(ae_button_glyphs.embedded_lines(words, png_size))  # AE hook
 # gamepads (DamnationCE v0.3.41): Linux PlayStation pads through the kernel's driver, each pad's kind in debug.txt
 # (port/linux/src/ae_gamepads.c)
 port/linux/src/sdl_platform.c	#include "ae_gamepads.h" /* AE hook */
