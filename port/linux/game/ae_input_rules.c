@@ -19,6 +19,11 @@ short ae_input_player_of_controller(short controller, short const bindings[AE_MA
 	return any ? AE_PLAYER_NONE : controller;
 }
 
+void ae_input_apply_assigned_profile(short local_player, void (*apply_profile)(short))
+{
+	apply_profile(local_player);
+}
+
 void ae_input_key_directions(int keys, int held[4])
 {
 	int tab = (keys & AE_KEY_TAB) != 0;

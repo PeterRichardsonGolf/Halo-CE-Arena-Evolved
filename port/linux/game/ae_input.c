@@ -47,6 +47,8 @@ are held back until each is let go of, for at most 2 s (ae_hooks.c).
 #include "cseries/cseries_windows.h"
 #include "input/input.h"
 #include "interface/event_manager.h"
+#include "interface/player_ui.h"
+#include "saved games/player_profile.h"
 #include "halo_ui_pointer.h"
 #include "../src/ae_draw.h"
 #include "../src/ae_platform.h"
@@ -87,6 +89,20 @@ static unsigned char const direction_actions[NUMBER_OF_DIRECTIONS] =
 {
 	AE_ACTION_UP, AE_ACTION_DOWN, AE_ACTION_LEFT, AE_ACTION_RIGHT
 };
+
+static void apply_active_profile(short local_player)
+{
+	struct player_profile profile;
+	long profile_index = player_ui_get_active_player_profile_index(local_player);
+
+	player_ui_get_active_player_profile(local_player, &profile);
+	player_ui_set_active_player_profile(local_player, profile_index, &profile);
+}
+
+void ae_input_controller_assigned(short local_player)
+{
+	ae_input_apply_assigned_profile(local_player, apply_active_profile);
+}
 
 /* the device of a controller's input: the first is the keyboard's too */
 static unsigned char device_of(

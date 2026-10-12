@@ -32,6 +32,9 @@ single-player controllers; negative: none). A controller no player has is AE_PLA
 any controller (the menus before anyone is bound), when controller c is player c. */
 short ae_input_player_of_controller(short controller, short const bindings[AE_MAXIMUM_PLAYERS]);
 
+/* a controller was assigned to a local player: install that player's active profile on it */
+void ae_input_apply_assigned_profile(short local_player, void (*apply_profile)(short));
+
 /* AE's own keys (ae_platform.h AE_KEY_*) as directions held, up, down, left, right: Tab steps down, Shift+Tab up;
 the keypad's arrows (Num Lock off) as the arrows */
 void ae_input_key_directions(int keys, int held[4]);
