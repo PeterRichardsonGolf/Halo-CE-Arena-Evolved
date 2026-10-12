@@ -13,7 +13,7 @@ lp64 = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(lp64)
 
 # a printf-style call: its name, then an open parenthesis, before the literal in the same statement
-PRINTF_CALL = re.compile(r"\b\w*(?:printf|_log)\s*\([^;{}]*$")
+PRINTF_CALL = re.compile(r"\b(?:\w*(?:printf|scanf|_log)|error)\s*\([^;{}]*$")
 
 
 def ae_sources():
@@ -43,7 +43,9 @@ def test_ae_literals_survive_the_lp64_rewrite():
 
 def test_the_guard_sees_the_case():
     """the case that bit the gallery: text, not a call; and a real format in a call, which passes"""
-    text = 'draw("165 FPS 1% low 142");\nplatform_log("%ld items", count);\n'
+    text = ('draw("165 FPS 1% low 142");\nplatform_log("%ld items", count);\n'
+            'error(_error_silent, "error %lu", value);\nfscanf(file, "%ld", &value);\n')
     found = list(changed_literals(text))
-    assert len(found) == 2
-    assert not PRINTF_CALL.search(found[0][1]) and PRINTF_CALL.search(found[1][1])
+    assert len(found) == 4
+    assert not PRINTF_CALL.search(found[0][1])
+    assert all(PRINTF_CALL.search(before) for literal, before in found[1:])
