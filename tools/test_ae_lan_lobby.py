@@ -1,5 +1,6 @@
 """Item 73 (LAN party 2026-10-11) in real games, headless through the ae_test harness, PC menus: leaving a LAN lobby
-with split-screen players on one gamepad and the keyboard ("two times it froze when I backed out to the main menu").
+with split-screen players on one gamepad and the keyboard ("two times it froze when I backed out to the main menu"),
+and Join Game > LAN's firewall hint on Linux.
 
 Leaving. One gamepad and the keyboard: the pad shares port 0 with the keyboard, and is port 1's while there are two
 players (xinput_sdl.c port_gamepad, menu_functions.c pc_menu_split_players). The test input's "pad:<button>" presses
@@ -11,6 +12,10 @@ player 2 (controller 2); then they leave in turn, and B goes back to Multiplayer
 - player 1 (the keyboard) leaves first: player 2's pad must stay port 1's. Before the fix it went back to port 0, port
   1 was unplugged, and "Please reconnect #2 controller." stood over the lobby for ever: no B or anything else left it;
 - player 2 (the pad) leaves first, then player 1: as before.
+
+The hint. Join Game > LAN with no game to find: after 10 s, with a firewall on (a fake system tree with ufw's
+ENABLED=yes, $AE_TEST_FIREWALL_ROOT), debug.txt says so once; with none (this system, the box has no firewall),
+nothing. The two lines themselves are in the screenshots (the hint's own cases are ae_lan_hint_test.c's).
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config, as tools/test_ae_menus.py); 30 to 95 s a game:
 
@@ -87,3 +92,31 @@ def test_player_2_leaves_first(cfg):
     rest = after(rest, "requesting a player removal (controller index #0)")
     after(rest, "network server disposed")
 
+
+# the main menu's MULTIPLAYER (a new profile's name screen, its Done), then Join Game > LAN
+TO_LAN_LIST = "down a a wait wait down a".split()
+HINT_LOG = "lan: no games found in 10 s and a firewall is on (ufw): No games found. On Linux a firewall can hide LAN games:"
+
+
+def test_lan_hint_with_a_firewall(cfg):
+    """ufw on (a fake /etc/ufw/ufw.conf): the hint after 10 s with nothing found, said once in debug.txt"""
+    out = menus.out_dir(cfg, "lan-hint")
+    # (beside the results, not under /tmp: each game has a /tmp of its own)
+    root = out / "system"
+    (root / "etc" / "ufw").mkdir(parents=True)
+    (root / "etc" / "ufw" / "ufw.conf").write_text("# Set to yes to start on boot.\nENABLED=yes\nLOGLEVEL=low\n")
+    result, text = play(cfg, out, "firewall", ["wait"] * 20, lead=TO_LAN_LIST, exit_after=45,
+                        env={"AE_TEST_FIREWALL_ROOT": str(root)})
+    assert result.get("status") == "PASS", result.get("why")
+    assert text.count(HINT_LOG) == 1, [line for line in text.splitlines() if "lan:" in line]
+
+
+def test_lan_hint_without_a_firewall(cfg):
+    """no firewall (an empty fake tree): the list only looks, nothing in debug.txt"""
+    out = menus.out_dir(cfg, "lan-hint")
+    root = out / "system"
+    root.mkdir()
+    result, text = play(cfg, out, "none", ["wait"] * 20, lead=TO_LAN_LIST, exit_after=45,
+                        env={"AE_TEST_FIREWALL_ROOT": str(root)})
+    assert result.get("status") == "PASS", result.get("why")
+    assert "lan: no games found" not in text

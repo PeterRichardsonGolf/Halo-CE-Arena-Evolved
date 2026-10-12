@@ -46,6 +46,10 @@ UNITS = {
     # parts, the glyphs' tables; under the sanitizers, as a map's sprite bounds are untrusted)
     "ae_waypoint_icons_test.c": ([UI / "ae_waypoint_icons.c", UI / "ae_waypoint_glyphs.c"],
                                  ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
+    # (the LAN list's firewall hint: when it is due, and ufw and firewalld found in fake system trees; under the
+    # sanitizers, as it reads the system's files)
+    "ae_lan_hint_test.c": ([SRC / "ae_lan_hint.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
+                                                    "-fno-sanitize-recover=all"], []),
     # (the zoom action's hold mode: the state machine)
     "ae_zoom_test.c": ([UI / "ae_zoom.c"], [], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),

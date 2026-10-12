@@ -11,6 +11,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   gamepad went back to player 1's place, and "Please reconnect #2 controller."
   stayed over the lobby for good: nothing could leave it. The gamepad now stays
   player 2's while player 2 is in the game, so their B leaves too.
+- **Linux: a hint when Join Game > LAN finds nothing.** After 10 seconds with no
+  game found, if a firewall is on (ufw, or firewalld), the list says that a
+  firewall can hide LAN games and which ports README's "Playing over LAN" opens.
 - **WAYPOINT SIZE** (Settings > HUD): the item waypoints' size, 50% to 100% in
   steps of 5, default 70%. In split screen it shrinks with the view; far items
   shrink gently (to 75% at 60 m). The distance is white in a dark outline and
