@@ -274,6 +274,7 @@ void network_voice_handle_message(long machine_index, word const *message, word 
 /* port/linux/game/map_share.c's: map sharing, in the lobby too */
 boolean map_share_handles_message(word const *message, word size);
 void map_share_handle_message(long machine_index, word const *message, word size, boolean from_stream);
+boolean map_share_machine_needs_map(long machine_index);
 void network_distributed_handle_stream_message(long machine_index, word const *message, word size);
 
 /* ---------- constants */
@@ -1701,6 +1702,15 @@ static void network_game_server_queue_client_player(
 		network_event("client machine #%ld tried to add a player of another machine", machine_index);
 		return;
 	}
+	/* port: not while the machine is still downloading the game's map. A
+	machine of the lobby's whose download had not finished when the game
+	started has its players held (network_game_server_release_map_fetchers
+	queues them once it has the map), but its pregame screen asks again for
+	its players, which the host's settings no longer have: queued now, they
+	were added and the machine started, and it stopped to load a map it did
+	not have, its download with it. It asks again until they are in */
+	if (map_share_machine_needs_map(machine_index))
+		return;
 	network_game_server_clean_player_name(server, player, NONE);
 	network_game_server_queue_player_for_addition(server, player);
 }
