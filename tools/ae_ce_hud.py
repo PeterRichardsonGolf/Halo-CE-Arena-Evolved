@@ -103,6 +103,10 @@ def reduced(image: np.ndarray, factor: int) -> np.ndarray:
 
 def verdict(asset: dict, xbox: dict, pc: dict):
     """(None, (crc, difference)) when the texture stands for the PC bitmap, else (why not, None)"""
+    # (a texture drawn for some of a bitmap's sprites, through a placeholder: hud_hires_sprites_drawable takes no
+    # Custom Edition rows; layout.json has none, the buttons' sheet is port/assets/buttons')
+    if asset.get("sprites"):
+        return "drawn for some of its sprites", None
     if any(cell.get("kind") == "meter" or cell.get("thresholds") for cell in asset.get("cells", [])):
         return "a meter's (sampled in Halo PC's channels)", None
     index = asset["bitmap"]

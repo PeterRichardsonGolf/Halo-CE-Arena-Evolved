@@ -46,6 +46,32 @@ def test_table_names_only_the_textures_bitmaps_once_and_no_meter():
         assert crc != asset["crc"], f"{tag} {bitmap}: the Xbox's CRC"
 
 
+def test_no_table_row_is_a_sprite_texture():
+    """hud_hires_sprites_drawable (the textures drawn for some of a bitmap's sprites, through a placeholder) has no
+    Custom Edition hook: the table comes from layout.json only, whose textures stand for whole bitmaps (the sprite
+    ones are port/assets/buttons')."""
+    assets = json.loads(LAYOUT.read_text())["assets"]
+    assert not any(asset.get("sprites") for asset in assets)
+    assert 'json.loads(LAYOUT.read_text())["assets"]' in (ROOT / "tools" / "ae_ce_hud.py").read_text()
+
+
+def test_engine_function_table_has_no_unnamed_entry():
+    """ae_glue_ce_maps.c takes a pause row out only when its function index is past the engine's table, which it
+    counts by name (ui_widget_event_handler_function_name: NULL past the last): the table must have a name for
+    each function, as many as the dispatcher runs, so that no function the engine has reads as missing."""
+    source = (ROOT / "source" / "interface" / "ui_widget_event_handler_functions.c").read_text()
+    size = int(re.search(r"char const \*names\[(\d+)\];", source).group(1))
+    assert re.search(r"ui_widget_event_handler_function functions\[%d\];" % size, source)
+    table = source[source.index("event_handler_function_list =\n"):]
+    names = table[table.index('\t{\n\t\t"NULL",'):]
+    names = names[:names.index("\n\t}")]
+    entries = [line.strip() for line in names.splitlines()[1:] if line.strip()]
+    assert len(entries) == size
+    assert all(re.fullmatch(r'"[^"]+",?', entry) for entry in entries)
+    assert "function_index < %d)" % size in source
+    assert re.search(r"struct event_handler_globals event_handler_functions =\n\{\n\t%d," % size, source)
+
+
 def _game(tmp_path, case, seconds, test_input, env=None):
     names = ("AE_CE_BUILD", "AE_CE_DATA")
     if not all(os.environ.get(name) for name in names):
@@ -89,6 +115,7 @@ def _common(log):
     assert re.search(r"menus: the pause menu has SETTINGS( and END GAME)?\n", log)
     assert "Custom Edition map: 2 split-screen pause screens laid out as the one player's" in log
     assert "outside them (read as zeroes)" not in log
+    assert "pause menu's widgets are not whole" not in log
     assert "event handler function 137" not in log
     loaded = re.search(r"high-res hud: (\d+) of \d+ bitmaps in this map", log)
     assert loaded and int(loaded.group(1)) > 0
