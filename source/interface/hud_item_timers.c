@@ -2058,10 +2058,16 @@ static long hud_waypoint_text_height(
 }
 
 /* the name's capital height, about seven tenths of its line */
+static real hud_waypoint_floor_scale(
+	long font_index);
+
 static long hud_waypoint_cap_height(
 	long font_index)
 {
-	return hud_waypoint_text_height(font_index) * 7 / 10;
+	/* (the pictures follow the capitals, with the same readability floor as the text) */
+	long floor_cap = (long)(hud_waypoint_floor_scale(font_index) * hud_item_timers_cap_height(font_index, L'H') + 0.5f);
+
+	return MAX(hud_waypoint_text_height(font_index) * 7 / 10, floor_cap);
 }
 
 /* the gap between a stack's rows: about 2 pixels at 1080p, by the view's text size */
@@ -2114,6 +2120,8 @@ static void hud_waypoint_block_scale_set(
 {
 	short index;
 
+	/* (a block with no label: the size's and the view's, never a stale scale) */
+	hud_waypoint_scale = hud_waypoint_size() * hud_item_timers_view_factor();
 	for (index = 0; index < label_count; index++)
 	{
 		if (labels[index].block == block)
@@ -2129,26 +2137,32 @@ HUD_WAYPOINT_MINIMUM_CAP screen pixels high. A view is 480 units high on the scr
 pixels), so a unit is that many divided by 480 pixels */
 void platform_video_drawable_size(int *width, int *height);
 
-static real hud_waypoint_floor_scale(
-	long font_index)
+static real hud_waypoint_pixels_per_unit(
+	void)
 {
 	int width = 0;
 	int height = 0;
-	real pixels_per_unit;
 
 	platform_video_drawable_size(&width, &height);
-	pixels_per_unit = height > 0 ? (real)height / 480.0f : 1080.0f / 480.0f;
 
-	return HUD_WAYPOINT_MINIMUM_CAP / pixels_per_unit / MAX(hud_item_timers_cap_height(font_index, L'H'), 1.0f);
+	return height > 0 ? (real)height / 480.0f : 1080.0f / 480.0f;
+}
+
+static real hud_waypoint_floor_scale(
+	long font_index)
+{
+	return HUD_WAYPOINT_MINIMUM_CAP / hud_waypoint_pixels_per_unit() /
+		MAX(hud_item_timers_cap_height(font_index, L'H'), 1.0f);
 }
 
 /* where the scale's origin is moved to draw a text a part of a view unit aside (the text moves the part of what
 the origin does that the scale leaves: one minus the scale) */
-#define HUD_WAYPOINT_OUTLINE 0.6f
+#define HUD_WAYPOINT_OUTLINE 1.0f	/* (screen pixels) */
 static real hud_waypoint_outline_step(
 	real row_scale)
 {
-	return HUD_WAYPOINT_OUTLINE / MAX(1.0f - row_scale, 0.3f);
+	/* (one screen pixel is 480 / the drawable's height units; the origin moves 1 / (1 - scale) of it) */
+	return HUD_WAYPOINT_OUTLINE / hud_waypoint_pixels_per_unit() / MAX(1.0f - row_scale, 0.05f);
 }
 
 /* a stack's distance row is small (4/5 of the name's), its timer 9/10 */
@@ -3555,7 +3569,8 @@ static void hud_draw_item_waypoints_inner(
 		if (hud_waypoint_style() != AE_WAYPOINT_TEXT)
 		{
 			hud_waypoint_icon_get(timer, hud_waypoint_cap_height(font_index),
-				hud_item_timers_line_width_scaled(font_index, label->name, hud_item_timers_text_scale()),
+				hud_item_timers_line_width_scaled(font_index, label->name,
+					MAX(hud_item_timers_text_scale(), hud_waypoint_floor_scale(font_index))),
 				&label->icon);
 			if (log_now && label->icon.source == AE_WAYPOINT_ICON_NONE)
 			{
