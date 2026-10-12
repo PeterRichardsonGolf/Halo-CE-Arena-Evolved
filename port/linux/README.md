@@ -1088,8 +1088,9 @@ host. The menus show the map without the hash, and with it only when you have
 two versions of the map. A name without the hash (a playlist's, `hugeass@ce`)
 still finds the renamed map. A downloaded map goes into `maps_ce` with the same
 name, and the resource maps it needs into `maps_ce` too. A download that stops
-leaves a `.part` file there; the next download of that map continues from
-it. Maps elsewhere (`maps/ce`, or named `<name>@ce.map`) are played but not
+leaves a `.part` file there (only of the last map whose download stopped, and
+only if it holds part of the map); the next download of that map continues
+from it. Maps elsewhere (`maps/ce`, or named `<name>@ce.map`) are played but not
 shared: move a map to `maps_ce` (as `<name>.map`) to share it. A map that is
 loaded is not renamed (on Windows a file in use cannot be): it is named the
 next time.
