@@ -1322,14 +1322,22 @@ GLuint xgpu_texture_get(const DWORD *resource, const D3DCOLOR *palette, GLenum *
 			entry->override = hud_hires_override_find(entry->address, entry->description.width,
 				entry->description.height, entry->description.levels > 1 ?
 				xgpu_texture_level_offset(&entry->description, 1) : xgpu_texture_face_size(&entry->description));
-			if (entry->override >= 0 && !hud_hires_override_texture(entry->override, &levels))
+			if (entry->override >= 0 && !hud_hires_override_texture(entry->override, &levels) &&
+				!hud_hires_override_switches(entry->override))
+			{
 				entry->override = -1;
+			}
 		}
+		/* (the pixels too of one whose texture depends on the controller,
+		for when it draws none: a PlayStation controller's buttons;
+		DamnationCE v0.3.41) */
 #ifdef HALO_64BIT
-		if (entry->override < 0 && entry->size && platform_is_contiguous(xbox_pointer(entry->address)) &&
+		if ((entry->override < 0 || hud_hires_override_switches(entry->override)) && entry->size &&
+			platform_is_contiguous(xbox_pointer(entry->address)) &&
 			platform_is_contiguous(xbox_pointer(entry->address + entry->size - 1)))
 #else
-		if (entry->override < 0 && entry->size && platform_is_contiguous((void *)entry->address) &&
+		if ((entry->override < 0 || hud_hires_override_switches(entry->override)) && entry->size &&
+			platform_is_contiguous((void *)entry->address) &&
 			platform_is_contiguous((void *)(entry->address + entry->size - 1)))
 #endif
 		{

@@ -17,6 +17,11 @@ is let go when the map is unloaded.
 They are drawn with linear filtering and their mip levels (d3d8_gl.c,
 configure_sampler), as they are larger than they appear.
 
+A button icon may have a second texture, of a PlayStation controller's
+buttons, drawn instead while one is the controller last used
+(platform_input_scheme), whatever display.high_res_text says; one that has
+only that is drawn only then (DamnationCE v0.3.41's).
+
 The embedded PNGs are the ones tools/hud_assets.py, title_assets.py and
 button_assets.py write. A menus folder's PNGs can be anyone's. Only 8-bit
 RGBA, non-interlaced PNGs are read, with their data inflated by the port's
@@ -34,6 +39,14 @@ zlib (port/third_party/zlib).
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* xinput_sdl.c's: the controller last used (2: a PlayStation one), which it
+keeps with the game browser (every build but --no-game-browser's) */
+#ifdef HALO_GAME_BROWSER
+int platform_input_scheme(void);
+#else
+#define platform_input_scheme() 1
+#endif
 
 /* the game's (port/linux/game/hud_hires_tags.c) */
 long hud_hires_asset_at(unsigned long address, long width, long height);
@@ -64,6 +77,10 @@ static struct
 	int decode_state;
 	unsigned char *pixels;
 	unsigned long width, height;
+	/* its PlayStation texture's, decoded on first use (DamnationCE v0.3.41) */
+	unsigned int playstation_texture;
+	unsigned long playstation_levels;
+	int playstation_failed;
 } textures[MAXIMUM_TEXTURES];
 
 /* (the thread, detached, is waited for by its decode_running) */
@@ -73,6 +90,7 @@ static int decode_running, decode_stopping;
 
 static unsigned char *png_decode(const unsigned char *data, unsigned long size, unsigned long *png_width,
 	unsigned long *png_height);
+static unsigned int own_texture(long asset, unsigned long *levels);
 
 long hud_hires_asset_count(void)
 {
@@ -99,12 +117,12 @@ long hud_hires_asset_fits(long asset, long width, long height)
 		embedded->width / width == embedded->height / height && embedded->width / width > 1;
 }
 
-long hud_hires_override_find(unsigned long address, unsigned long width, unsigned long height,
-	unsigned long level0_size)
+/* whether the asset's own texture is drawn: its setting (display.high_res_hud,
+or display.high_res_text for the menus') on */
+static int setting_on(const struct hud_hires_embedded *embedded)
 {
 	static int hud_enabled, titles_enabled;
 	static unsigned long read_at = (unsigned long)-1;
-	long asset;
 
 	if (read_at != config_changes())
 	{
@@ -112,12 +130,52 @@ long hud_hires_override_find(unsigned long address, unsigned long width, unsigne
 		hud_enabled = config_boolean("display.high_res_hud");
 		titles_enabled = config_boolean("display.high_res_text");
 	}
-	if (!hud_enabled && !titles_enabled)
-		return -1;
+	return embedded->title ? titles_enabled : hud_enabled;
+}
+
+/* whether the asset is drawn now: its PlayStation texture (a PlayStation
+controller the last used), else its own (its setting on); DamnationCE
+v0.3.41 */
+static int drawn_now(const struct hud_hires_embedded *embedded, int *playstation)
+{
+	*playstation = embedded->png_playstation && platform_input_scheme() == 2;
+	return *playstation || (embedded->png && setting_on(embedded));
+}
+
+/* its PlayStation texture, decoded on first use */
+static unsigned int playstation_texture(long asset, unsigned long *levels)
+{
+	const struct hud_hires_embedded *embedded = &hud_hires_embedded[asset];
+
+	if (!embedded->png_playstation || textures[asset].playstation_failed)
+		return 0;
+	if (!textures[asset].playstation_texture)
+	{
+		textures[asset].playstation_texture = hud_hires_png_texture(embedded->png_playstation,
+			embedded->png_playstation_size, &textures[asset].playstation_levels);
+		if (!textures[asset].playstation_texture)
+		{
+			platform_log("high-res hud: could not decode the PlayStation texture for %s bitmap %d", embedded->tag,
+				embedded->bitmap);
+			textures[asset].playstation_failed = 1;
+			return 0;
+		}
+	}
+	*levels = textures[asset].playstation_levels;
+	return textures[asset].playstation_texture;
+}
+
+long hud_hires_override_find(unsigned long address, unsigned long width, unsigned long height,
+	unsigned long level0_size)
+{
+	long asset;
+
 	asset = hud_hires_asset_at(address, (long)width, (long)height);
 	if (asset < 0 || asset >= hud_hires_asset_count())
 		return -1;
-	if (!(hud_hires_embedded[asset].title ? titles_enabled : hud_enabled))
+	/* (one with a PlayStation texture whatever its setting: which is drawn
+	is chosen as it is drawn, hud_hires_override_texture) */
+	if (!setting_on(&hud_hires_embedded[asset]) && !hud_hires_embedded[asset].png_playstation)
 		return -1;
 	if (ae_ce_hud_pixels(hud_hires_embedded[asset].tag, hud_hires_embedded[asset].bitmap, address, level0_size)) /* AE hook */
 		return asset;
@@ -145,6 +203,11 @@ int hud_hires_override_coverage(long asset)
 	return asset >= 0 && asset < hud_hires_asset_count() && hud_hires_embedded[asset].coverage;
 }
 
+int hud_hires_override_switches(long asset)
+{
+	return asset >= 0 && asset < hud_hires_asset_count() && hud_hires_embedded[asset].png_playstation;
+}
+
 /* ---------- sprites */
 
 /* the placeholders of the textures drawn for some of a bitmap's sprites
@@ -166,25 +229,20 @@ unsigned long hud_hires_asset_sprites(long asset)
 
 /* whether the texture drawn for some of a bitmap's sprites can be drawn for
 the bitmap whose pixels are at address (guest virtual; its first mip level
-level0_size bytes): its setting on, the pixels those it was drawn for, and
-the texture decoded */
+level0_size bytes): its setting on (or a PlayStation texture, whatever it
+says), the pixels those it was drawn for, and a texture of it decoded.
+Which is drawn, if either, is chosen as the sprites are
+(hud_hires_sprites_drawn) */
 int hud_hires_sprites_drawable(long asset, unsigned long address, unsigned long level0_size)
 {
-	static int hud_enabled, titles_enabled;
-	static unsigned long read_at = (unsigned long)-1;
+	const struct hud_hires_embedded *embedded;
 	unsigned long levels;
 
-	if (read_at != config_changes())
-	{
-		read_at = config_changes();
-		hud_enabled = config_boolean("display.high_res_hud");
-		titles_enabled = config_boolean("display.high_res_text");
-	}
-	if (asset < 0 || asset >= hud_hires_asset_count() || !hud_hires_embedded[asset].sprites ||
-		!(hud_hires_embedded[asset].title ? titles_enabled : hud_enabled))
-	{
+	if (asset < 0 || asset >= hud_hires_asset_count() || !hud_hires_embedded[asset].sprites)
 		return 0;
-	}
+	embedded = &hud_hires_embedded[asset];
+	if (!(embedded->png && setting_on(embedded)) && !embedded->png_playstation)
+		return 0;
 #ifdef HALO_64BIT
 	/* (an Xbox address, as hud_hires_override_find's) */
 	if (crc32(0L, (const Bytef *)xbox_pointer(address), (uInt)level0_size) != hud_hires_embedded[asset].crc)
@@ -201,6 +259,16 @@ int hud_hires_sprites_drawable(long asset, unsigned long address, unsigned long 
 		}
 		return 0;
 	}
+	return embedded->png && setting_on(embedded) ? own_texture(asset, &levels) != 0 :
+		playstation_texture(asset, &levels) != 0;
+}
+
+/* whether the texture's sprites are drawn now (a texture of it for the
+controller last used), not the bitmap's own */
+int hud_hires_sprites_drawn(long asset)
+{
+	unsigned long levels;
+
 	return hud_hires_override_texture(asset, &levels) != 0;
 }
 
@@ -400,9 +468,19 @@ unsigned int hud_hires_png_texture(const void *png, unsigned long size, unsigned
 
 unsigned int hud_hires_override_texture(long asset, unsigned long *levels)
 {
+	int playstation;
+
+	if (asset < 0 || asset >= hud_hires_asset_count() || !drawn_now(&hud_hires_embedded[asset], &playstation))
+		return 0;
+	return playstation ? playstation_texture(asset, levels) : own_texture(asset, levels);
+}
+
+/* its own texture (its PNG decoded as the map loaded, or now) */
+static unsigned int own_texture(long asset, unsigned long *levels)
+{
 	const struct hud_hires_embedded *embedded;
 
-	if (asset < 0 || asset >= hud_hires_asset_count() || textures[asset].failed)
+	if (asset < 0 || asset >= hud_hires_asset_count() || textures[asset].failed || !hud_hires_embedded[asset].png)
 		return 0;
 	if (textures[asset].texture)
 	{
@@ -462,7 +540,7 @@ static void *decode_thread_main(void *unused)
 			pthread_mutex_unlock(&decode_lock);
 			break;
 		}
-		if (textures[asset].decode_state != _decode_queued)
+		if (textures[asset].decode_state != _decode_queued || !embedded->png)
 		{
 			pthread_mutex_unlock(&decode_lock);
 			continue;
@@ -525,6 +603,7 @@ void hud_hires_map_loaded(const long *assets, long count)
 		long asset = assets[index];
 
 		if (asset >= 0 && asset < hud_hires_asset_count() && !hud_hires_embedded[asset].title &&
+			hud_hires_embedded[asset].png &&
 			!textures[asset].texture && !textures[asset].failed)
 		{
 			textures[asset].decode_state = _decode_queued;

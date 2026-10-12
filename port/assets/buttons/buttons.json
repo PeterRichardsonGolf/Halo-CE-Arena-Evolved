@@ -18,7 +18,8 @@
    "letter": [
     -0.006,
     0.0
-   ]
+   ],
+   "playstation": "a_butn__0_playstation"
   },
   {
    "name": "b_butn__0",
@@ -38,7 +39,8 @@
    "letter": [
     0.001,
     0.002
-   ]
+   ],
+   "playstation": "b_butn__0_playstation"
   },
   {
    "name": "x_butn__0",
@@ -58,7 +60,8 @@
    "letter": [
     -0.002,
     -0.008
-   ]
+   ],
+   "playstation": "x_butn__0_playstation"
   },
   {
    "name": "y_butn__0",
@@ -78,7 +81,8 @@
    "letter": [
     -0.009,
     0.028
-   ]
+   ],
+   "playstation": "y_butn__0_playstation"
   },
   {
    "name": "a_butn_sm__0",
@@ -98,7 +102,8 @@
    "letter": [
     0.014,
     0.071
-   ]
+   ],
+   "playstation": "a_butn_sm__0_playstation"
   },
   {
    "name": "b_butn_sm__0",
@@ -118,7 +123,8 @@
    "letter": [
     -0.054,
     0.062
-   ]
+   ],
+   "playstation": "b_butn_sm__0_playstation"
   },
   {
    "name": "hud_msg_icons_sm__0",
@@ -206,7 +212,58 @@
       1.601
      ]
     }
-   ]
+   ],
+   "playstation": "hud_msg_icons_sm__0_playstation"
+  },
+  {
+   "name": "hud_msg_icons__0",
+   "tag": "ui\\hud\\bitmaps\\combined\\hud_msg_icons",
+   "bitmap": 0,
+   "width": 128,
+   "height": 128,
+   "format": "a8y8",
+   "scale": 8,
+   "crc": 1457896459,
+   "own": false,
+   "sprites": [
+    {
+     "sequence": 0,
+     "cell": [
+      48,
+      72,
+      72,
+      101
+     ]
+    },
+    {
+     "sequence": 1,
+     "cell": [
+      0,
+      72,
+      24,
+      102
+     ]
+    },
+    {
+     "sequence": 2,
+     "cell": [
+      100,
+      40,
+      124,
+      70
+     ]
+    },
+    {
+     "sequence": 3,
+     "cell": [
+      24,
+      72,
+      48,
+      101
+     ]
+    }
+   ],
+   "playstation": "hud_msg_icons__0_playstation"
   }
  ]
 }

@@ -91,3 +91,7 @@ port/linux/game/map_share.c	if (!ae_map_share_source_allowed(TEST_FLAG(entry->fl
 port/linux/game/map_share.c	for (index = 0; index < download->file_count; index++) ae_map_share_discard_failed(download->files[index].final_path); /* AE hook */
 # held players (OpenCE's) back in the pregame after a game whose map download they did not finish (DamnationCE v0.3.41)
 source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */\nnetwork_game_server_restore_held_players(server); /* AE hook */
+# PlayStation button icons in the in-game messages ("Hold X to pick up"): their sprites from a texture of their own
+# (port/linux/game/hud_hires_tags.c, DamnationCE v0.3.41)
+source/interface/hud_messaging.c	struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */
+source/interface/hud_messaging.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */

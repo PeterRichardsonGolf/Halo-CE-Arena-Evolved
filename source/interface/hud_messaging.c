@@ -458,6 +458,8 @@ typedef char hud_globals_timer_definition_offset_assert[
 
 /* ---------- prototypes */
 
+struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */
+
 static struct hud_message_definition *find_free_hud_message(
 	struct hud_messaging_datum_definition *datum,
 	long item_definition_index,
@@ -545,6 +547,7 @@ static void render_state_bitmap(
 	if (bitmap && _texture_cache_bitmap_get_hardware_format(
 		(struct bitmap_data *)bitmap, FALSE, TRUE))
 	{
+		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
 		scale = hud_split_screen_layout() ? 0.75f : 1.0f;
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0);
 		point.y = (short)(cursor_bounds->y1 - icon->offset.y * scale);

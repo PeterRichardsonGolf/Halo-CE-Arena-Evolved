@@ -47,8 +47,17 @@ build: renders the redraws as buttons.json places them into
     tools/embed_assets.py).
 check: compares each PNG, reduced to its bitmap's size, with the map's
     bitmap and writes side-by-side images into --out.
+playstation: draws each icon's PlayStation texture (A, B, X and Y as
+    cross, circle, square and triangle; port/linux/src/hud_hires.c draws it
+    while a PlayStation controller is the one last used), and the in-game
+    message icons' (--game-map's combined hud_msg_icons, whose buttons have
+    no texture of their own), into buttons.json and port/assets/buttons
+    (*_playstation.png). Each is a round button where the map's art is, of
+    its area and about its centre: an icon dark with its symbol in its
+    colour, a message icon a white disc with its symbol cut out (the game
+    tints them). Run it after layout.
 
-Needs rsvg-convert, Pillow, NumPy and SciPy.
+Needs rsvg-convert, Pillow, NumPy and SciPy (playstation: Pillow and NumPy).
 """
 
 import argparse
@@ -87,6 +96,18 @@ BUTTONS = {
 # sequence of its sprite (on the sheet's first bitmap)
 MESSAGE_ICONS = "ui\\hud\\bitmaps\\hud_msg_icons_sm"
 MESSAGE_BUTTONS = {0: "a_butn.svg", 1: "b_butn.svg", 2: "x_butn.svg", 3: "y_butn.svg"}
+
+
+# the in-game message icons (each map's), whose A, B, X and Y have only a
+# PlayStation texture; and the symbol of each button, by its redraw
+GAME_MESSAGE_ICONS = "ui\\hud\\bitmaps\\combined\\hud_msg_icons"
+PLAYSTATION_SYMBOLS = {"a_butn.svg": "cross", "b_butn.svg": "circle", "x_butn.svg": "square",
+                       "y_butn.svg": "triangle"}
+# each symbol's colour, as PlayStation controllers have them
+PLAYSTATION_COLOURS = {"cross": (110, 156, 226), "circle": (232, 86, 86), "square": (216, 132, 198),
+                       "triangle": (66, 212, 170)}
+# drawn at this many times the texture's size, then reduced (its edges)
+SUPERSAMPLE = 4
 
 
 def document(width: int, height: int, body: str) -> str:
@@ -301,11 +322,14 @@ def layout(arguments) -> None:
 
 def build(arguments) -> None:
     description = json.loads(LIST.read_text())
-    names = {f"{entry['name']}.png" for entry in description["assets"]}
+    names = {f"{entry['name']}.png" for entry in description["assets"]} | \
+        {f"{entry['playstation']}.png" for entry in description["assets"] if "playstation" in entry}
     for stale in ASSETS.glob("*.png"):
         if stale.name not in names:
             stale.unlink()
     for entry in description["assets"]:
+        if not entry.get("own", True):
+            continue
         if "sprites" in entry:
             body = "\n".join(stencil(sprite["svg"], sprite["cell"], sprite["place"], index,
                                      sprite.get("letter", (0, 0)))
@@ -328,6 +352,8 @@ def check(arguments) -> None:
     output = Path(arguments.out)
     output.mkdir(parents=True, exist_ok=True)
     for entry in json.loads(LIST.read_text())["assets"]:
+        if not entry.get("own", True):
+            continue
         if ("bitm", entry["tag"]) not in xbox_map.tags:
             print(f"{entry['name']}: not in this map")
             continue
@@ -357,6 +383,138 @@ def check(arguments) -> None:
             sheet.save(output / f"{name}.png")
 
 
+def symbol_shapes(draw, symbol: str, x: float, y: float, radius: float, width: float, fill) -> None:
+    """A PlayStation symbol about x, y on a button of radius, its lines width
+    wide."""
+    if symbol == "cross":
+        arm = 0.36 * radius
+        for sign in (1, -1):
+            draw.line([(x - arm, y - sign * arm), (x + arm, y + sign * arm)], fill=fill, width=round(width))
+    elif symbol == "circle":
+        ring = 0.40 * radius
+        draw.ellipse([x - ring, y - ring, x + ring, y + ring], outline=fill, width=round(width))
+    elif symbol == "square":
+        half = 0.34 * radius
+        draw.rectangle([x - half, y - half, x + half, y + half], outline=fill, width=round(width))
+    else:
+        # (its centroid a little low, as the symbol sits on the button)
+        size = 0.46 * radius
+        centre = y + 0.06 * radius
+        corners = [(x, centre - size), (x + size * 0.866, centre + size / 2), (x - size * 0.866, centre + size / 2)]
+        draw.line(corners + [corners[0], corners[1]], fill=fill, width=round(width), joint="curve")
+
+
+def playstation_icon(width: int, height: int, circle: tuple, symbol: str) -> np.ndarray:
+    """An icon's PlayStation texture: a round dark button, rimmed, its
+    symbol in its colour; circle (texels: centre x, y and radius)."""
+    from PIL import ImageDraw
+
+    factor = SCALE * SUPERSAMPLE
+    image = Image.new("RGBA", (width * factor, height * factor), (0, 0, 0, 0))
+    x, y, radius = (value * factor for value in circle)
+    # (the body darker downward, as the Xbox icons' ovals are lit from above)
+    shade = np.linspace(64, 16, image.size[1]).astype(np.uint8)
+    body_pixels = np.zeros((image.size[1], image.size[0], 4), np.uint8)
+    body_pixels[..., 0] = body_pixels[..., 1] = shade[:, None]
+    body_pixels[..., 2] = (shade[:, None] * 1.08).clip(0, 255).astype(np.uint8)
+    body_pixels[..., 3] = 255
+    body = Image.fromarray(body_pixels, "RGBA")
+    mask = Image.new("L", image.size, 0)
+    ImageDraw.Draw(mask).ellipse([x - radius, y - radius, x + radius, y + radius], fill=255)
+    image.paste(body, (0, 0), mask)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([x - radius, y - radius, x + radius, y + radius], outline=(150, 152, 158, 255),
+                 width=max(1, round(0.08 * radius)))
+    symbol_shapes(draw, symbol, x, y, radius, 0.14 * radius, PLAYSTATION_COLOURS[symbol] + (255,))
+    return np.asarray(image.resize((width * SCALE, height * SCALE), Image.LANCZOS))
+
+
+def playstation_stencils(width: int, height: int, circles: list) -> np.ndarray:
+    """A message icons' sheet's PlayStation texture: each button a white disc
+    with its symbol cut out (circles: texels' centre x, y, radius, and the
+    symbol), grey the same as alpha, as the sheet's."""
+    from PIL import ImageDraw
+
+    factor = SCALE * SUPERSAMPLE
+    mask = Image.new("L", (width * factor, height * factor), 0)
+    draw = ImageDraw.Draw(mask)
+    for x, y, radius, symbol in circles:
+        x, y, radius = x * factor, y * factor, radius * factor
+        draw.ellipse([x - radius, y - radius, x + radius, y + radius], fill=255)
+        symbol_shapes(draw, symbol, x, y, radius, 0.17 * radius, 0)
+    alpha = np.asarray(mask.resize((width * SCALE, height * SCALE), Image.LANCZOS))
+    return np.dstack([alpha, alpha, alpha, alpha])
+
+
+def circle_of(alpha: np.ndarray) -> tuple:
+    """The round button of a shape's area about its centre (texels)."""
+    area, x, y = shape(alpha)
+    return x, y, (area / np.pi) ** 0.5
+
+
+def sheet_circles(group: dict, sprites: list) -> list:
+    """Each button sprite's circle on its sheet's first bitmap."""
+    bitmap = group["bitmaps"][0]
+    alpha = decode_bitmap(bitmap)[..., 3]
+    circles = []
+    for sprite in sprites:
+        left, top, right, bottom = sprite["cell"]
+        x, y, radius = circle_of(alpha[top:bottom, left:right])
+        circles.append((left + x, top + y, radius, PLAYSTATION_SYMBOLS[MESSAGE_BUTTONS[sprite["sequence"]]]))
+    return circles
+
+
+def playstation(arguments) -> None:
+    ui_map, game_map = XboxMap(Path(arguments.map)), XboxMap(Path(arguments.game_map))
+    description = json.loads(LIST.read_text())
+    entries = [entry for entry in description["assets"] if entry["tag"] != GAME_MESSAGE_ICONS]
+    for entry in entries:
+        name = entry["name"] + "_playstation"
+        if "sprites" in entry:
+            image = playstation_stencils(entry["width"], entry["height"],
+                                         sheet_circles(ui_map.bitmap_group(entry["tag"]), entry["sprites"]))
+        else:
+            circle = circle_of(decode_bitmap(icon(ui_map, entry["tag"]))[..., 3])
+            image = bleed(playstation_icon(entry["width"], entry["height"], circle,
+                                           PLAYSTATION_SYMBOLS[entry["svg"]]))
+        Image.fromarray(image, "RGBA").save(ASSETS / f"{name}.png", optimize=True)
+        entry["playstation"] = name
+        print(f"{name}.png: {image.shape[1]}x{image.shape[0]}")
+    # the in-game message icons: their A, B, X and Y, a sprite each of the
+    # sheet's first bitmap, as the menus' sheet's
+    if ("bitm", GAME_MESSAGE_ICONS) not in game_map.tags:
+        sys.exit(f"{GAME_MESSAGE_ICONS}: not in {arguments.game_map}")
+    group = game_map.bitmap_group(GAME_MESSAGE_ICONS)
+    bitmap = group["bitmaps"][0]
+    width, height = bitmap["width"], bitmap["height"]
+    sprites = []
+    for sequence in MESSAGE_BUTTONS:
+        cells = group["sequences"][sequence]
+        if len(cells) != 1 or cells[0][0] != 0:
+            sys.exit(f"{GAME_MESSAGE_ICONS}: sequence {sequence} is not one sprite of its first bitmap")
+        sprites.append({"sequence": sequence, "cell": pixel_rectangle(cells[0], width, height)})
+    name = GAME_MESSAGE_ICONS.split("\\")[-1] + "__0"
+    image = playstation_stencils(width, height, sheet_circles(group, sprites))
+    Image.fromarray(image, "RGBA").save(ASSETS / f"{name}_playstation.png", optimize=True)
+    print(f"{name}_playstation.png: {image.shape[1]}x{image.shape[0]}")
+    entries.append({
+        "name": name,
+        "tag": GAME_MESSAGE_ICONS,
+        "bitmap": 0,
+        "width": width,
+        "height": height,
+        "format": FORMATS[bitmap["format"]],
+        "scale": SCALE,
+        "crc": zlib.crc32(bitmap["pixels"][:level0_size(bitmap)]),
+        # (no texture of its own: its buttons are the map's but with a
+        # PlayStation controller)
+        "own": False,
+        "sprites": sprites,
+        "playstation": f"{name}_playstation",
+    })
+    LIST.write_text(json.dumps({"assets": entries}, indent=1) + "\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -366,8 +524,11 @@ def main() -> None:
     command = commands.add_parser("check")
     command.add_argument("--map", required=True)
     command.add_argument("--out", required=True)
+    command = commands.add_parser("playstation")
+    command.add_argument("--map", required=True)
+    command.add_argument("--game-map", required=True)
     arguments = parser.parse_args()
-    {"layout": layout, "build": build, "check": check}[arguments.command](arguments)
+    {"layout": layout, "build": build, "check": check, "playstation": playstation}[arguments.command](arguments)
 
 
 if __name__ == "__main__":

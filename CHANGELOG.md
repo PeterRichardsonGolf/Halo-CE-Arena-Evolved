@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **PlayStation button icons** (from DamnationCE 0.3.41). While a
+  PlayStation controller (DualShock 4, DualSense) is the one you last used,
+  the game's button pictures show its buttons: cross, circle, square and
+  triangle for A, B, X and Y, in the Xbox-style menus' footers (SELECT, BACK),
+  the icons inside menu text and the in-game prompts ("Hold X to pick up").
+  Touching the keyboard, mouse or an Xbox pad brings the Xbox letters back.
 - **Server browser pings** (from DamnationCE 0.3.41). The PC menus' Server
   Browser shows each internet game's ping in milliseconds, coloured green
   (under 80), yellow (under 160) or red. It is timed the way a join reaches

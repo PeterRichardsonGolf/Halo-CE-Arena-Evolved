@@ -79,6 +79,14 @@ def textures() -> List[tuple]:
     return result
 
 
+def texture_pngs(asset: dict) -> List[str]:
+    """A texture's PNGs: its own (none for an entry with "own": false), then
+    its PlayStation one's, if it has one (port/assets/buttons; DamnationCE
+    v0.3.41)."""
+    return ([f"{asset['name']}.png"] if asset.get("own", True) else []) + \
+        ([f"{asset['playstation']}.png"] if "playstation" in asset else [])
+
+
 def menu_files() -> List[str]:
     """The menus' files menus.json lists, relative to their folder."""
     if not (ROOT / MENU_LIST).is_file():
@@ -95,7 +103,7 @@ def hud_asset_inputs() -> List[Path]:
     """The files the generated source is made from."""
     inputs = [listing for listing in (LAYOUT, TITLE_LIST, BUTTON_LIST, FONT_LIST, MENU_LIST)
               if (ROOT / listing).is_file()]
-    return [*inputs, *(folder / f"{asset['name']}.png" for folder, asset, _ in textures()),
+    return [*inputs, *(folder / name for folder, asset, _ in textures() for name in texture_pngs(asset)),
             *(FONT_ASSETS / name for name in font_files()), *(MENU_ASSETS / name for name in menu_files()),
             *(SMAA_ASSETS / name for name, _ in smaa_files()),
             *([WINDOW_ICON] if (ROOT / WINDOW_ICON).is_file() else [])]
@@ -202,16 +210,25 @@ def main() -> None:
     ]
     table = []
     for index, (folder, asset, title) in enumerate(textures()):
-        name = f"{asset['name']}.png"
-        data = (ROOT / folder / name).read_bytes()
-        width, height = png_size(data, name)
-        scale = asset["scale"]
-        if (width, height) != (asset["width"] * scale, asset["height"] * scale):
-            sys.exit(f"{name}: {width}x{height}, not {scale}x its bitmap's {asset['width']}x{asset['height']}")
-        lines.append(f"static const unsigned int asset{index}[] = {{")
-        lines.extend(words(data))
-        lines.append("};")
-        lines.append("")
+        # (its own PNG and its PlayStation one, either missing: NULL)
+        pngs = []
+        for kind, name in (("", f"{asset['name']}.png" if asset.get("own", True) else None),
+                           ("_playstation", f"{asset['playstation']}.png" if "playstation" in asset else None)):
+            if not name:
+                pngs.append("NULL, 0")
+                continue
+            data = (ROOT / folder / name).read_bytes()
+            width, height = png_size(data, name)
+            scale = asset["scale"]
+            if (width, height) != (asset["width"] * scale, asset["height"] * scale):
+                sys.exit(f"{name}: {width}x{height}, not {scale}x its bitmap's {asset['width']}x{asset['height']}")
+            lines.append(f"static const unsigned int asset{index}{kind}[] = {{")
+            lines.extend(words(data))
+            lines.append("};")
+            lines.append("")
+            pngs.append(f"asset{index}{kind}, {len(data)}")
+        if pngs == ["NULL, 0", "NULL, 0"]:
+            sys.exit(f"{asset['name']}: no PNG")
         tag = asset["tag"].replace("\\", "\\\\")
         coverage = int(any(cell["kind"] == "meter" for cell in asset.get("cells", [])))
         point_threshold = int(any(cell.get("thresholds") for cell in asset.get("cells", [])))
@@ -221,7 +238,7 @@ def main() -> None:
             sys.exit(f"{name}: sprite sequences must be 0 to 31 (hud_hires.h: sprites)")
         sprites = sum(1 << sequence for sequence in sequences)
         table.append(f'\t{{ "{tag}", {asset["bitmap"]}, {width}, {height}, 0x{asset["crc"]:08x}u, {coverage}, '
-                     f'{point_threshold}, {int(title)}, 0x{sprites:x}u, asset{index}, {len(data)} }},')
+                     f'{point_threshold}, {int(title)}, 0x{sprites:x}u, {pngs[0]}, {pngs[1]} }},')
     lines.append("const struct hud_hires_embedded hud_hires_embedded[] =")
     lines.append("{")
     lines.extend(table)
