@@ -50,7 +50,9 @@ static boolean machine_needs_map[MAXIMUM_NETWORK_MACHINE_COUNT];
 #define network_player_is_valid(player) ((player)->valid)
 #define network_game_server_client_machine_is_joined_to_game(server, machine) ((machine)->joined)
 
-static boolean network_game_remove_player(struct network_game *game, struct network_player const *player)
+/* (as network_game_manager.c's: a player is in the slot its player_list_index
+names, and a requested slot must be free; NONE takes the first free one) */
+static boolean network_game_remove_player(struct network_game *game, struct network_player *player)
 {
 	int index;
 
@@ -59,6 +61,7 @@ static boolean network_game_remove_player(struct network_game *game, struct netw
 		if (game->players[index].valid && game->players[index].identity == player->identity)
 		{
 			memset(&game->players[index], 0, sizeof(game->players[index]));
+			game->players[index].player_list_index = NONE;
 			game->player_count--;
 			return TRUE;
 		}
@@ -66,21 +69,26 @@ static boolean network_game_remove_player(struct network_game *game, struct netw
 	return FALSE;
 }
 
-static boolean network_game_add_player(struct network_game *game, struct network_player const *player)
+static boolean network_game_add_player(struct network_game *game, struct network_player *player)
 {
+	int slot = player->player_list_index;
 	int index;
 
-	for (index = 0; index < MAXIMUM_NETWORK_PLAYER_COUNT; index++)
+	if (slot == NONE)
 	{
-		if (!game->players[index].valid)
+		for (index = 0; index < MAXIMUM_NETWORK_PLAYER_COUNT && slot == NONE; index++)
 		{
-			game->players[index] = *player;
-			game->players[index].valid = TRUE;
-			game->player_count++;
-			return TRUE;
+			if (!game->players[index].valid)
+				slot = index;
 		}
 	}
-	return FALSE;
+	if (slot < 0 || slot >= MAXIMUM_NETWORK_PLAYER_COUNT || game->players[slot].valid)
+		return FALSE;
+	game->players[slot] = *player;
+	game->players[slot].player_list_index = (short)slot;
+	game->players[slot].valid = TRUE;
+	game->player_count++;
+	return TRUE;
 }
 
 static struct network_player network_game_server_held_players[MAXIMUM_NETWORK_PLAYER_COUNT];
@@ -110,6 +118,8 @@ static void setup(void)
 	memset(&server, 0, sizeof(server));
 	memset(machine_needs_map, 0, sizeof(machine_needs_map));
 	network_game_server_held_player_count = 0;
+	for (index = 0; index < MAXIMUM_NETWORK_PLAYER_COUNT; index++)
+		server.game.players[index].player_list_index = NONE;
 	for (index = 0; index < MAXIMUM_NETWORK_MACHINE_COUNT; index++)
 	{
 		server.client_machines[index].machine_index = index;
@@ -167,6 +177,22 @@ int main(int argc, char **argv)
 			server.game.player_count);
 		CHECK(!in_game(104) && !in_game(105), "a gone machine's player is in the pregame");
 		CHECK(in_game(101) && in_game(103), "the others were touched");
+		return 0;
+	}
+	/* a late joiner took a held player's slot in the game: the held player still comes back, in a free slot */
+	CASE("slot-taken")
+	{
+		struct network_player late = { 1, 3, TRUE, 201 };
+
+		setup();
+		machine_needs_map[2] = TRUE;
+		network_game_server_hold_map_fetcher_players(&server);
+		CHECK(!server.game.players[3].valid, "the held player's slot is not free in the game");
+		CHECK(network_game_add_player(&server.game, &late), "the late joiner did not get slot 3");
+		reset_to_pregame(&server);
+		CHECK(server.game.player_count == 6, "a held player whose slot was taken was dropped (%d players)",
+			server.game.player_count);
+		CHECK(in_game(104) && in_game(105) && in_game(201), "a player is missing after the reset");
 		return 0;
 	}
 	/* nobody held: the reset changes nothing */

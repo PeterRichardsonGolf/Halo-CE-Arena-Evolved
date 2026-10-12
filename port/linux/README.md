@@ -269,12 +269,14 @@ is held. The profile's button layout (Settings > Gamepads) is the
 gamepads' only.
 
 On Linux a PlayStation controller (DualSense, DualShock 4) goes through the
-kernel's driver of it (`hid-playstation` since Linux 5.12, `hid-sony`):
-the buttons, sticks, triggers and rumble, with no setup. An older kernel
+kernel's driver of it (`hid-playstation` since Linux 5.12, which also drives
+the DualShock 4 since 6.2; `hid-sony`): the buttons, sticks, triggers and
+rumble should work with no setup (not yet confirmed on real hardware). An older kernel
 leaves it to SDL's own driver, which needs access to the controller's
 `/dev/hidraw` device: Steam's udev rules give it (`steam-devices`, or
 Steam installed). Each gamepad found has a line in `debug.txt`
-(`gamepad: <name> is a <kind> pad, read through <device>`). (From
+(`gamepad: <name> is a <kind> pad, read through <device>`), and one line
+says which driver reads PlayStation pads. (From
 DamnationCE.)
 
 | Action | Keys and buttons (default) |
@@ -1068,6 +1070,14 @@ Sharing) and each other player at most `network.map_seed_upload` (256 KB/s:
 UPLOAD LIMIT in Settings > Network Setup > Map Sharing). Set these lower on
 a slow connection. DOWNLOAD MAPS there (`network.map_download`) turns
 downloading off: you then leave a game whose map you do not have.
+
+On a local network (Arena Evolved, from DamnationCE), the other players are
+asked for pieces only at local network addresses (10.x, 172.16-31.x,
+192.168.x, 169.254.x, 127.x): the host cannot send your game to connect
+anywhere on the internet. A "LAN" made by a VPN that uses public-range
+addresses (Hamachi's 25.x, Radmin VPN's 26.x) still works, but the map then
+comes from the host alone, which can be slower. A downloaded map that fails
+its check (another version, a broken file) is deleted from `maps_ce`.
 
 The name of each shared map ends with the start of its hash. Arena Evolved
 names a map so when it hosts it, or when it joins a game on that version of

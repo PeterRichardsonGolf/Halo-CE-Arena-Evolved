@@ -25,33 +25,15 @@ static char drivers[160];
 
 #if defined(__linux__) && !defined(HALO_SERVER) && !defined(HALO_ANDROID)
 /* whether the kernel has a HID driver: loaded (its sysfs folder), or a module
-it loads when the pad is plugged in, or built in (this kernel's
-modules.dep, modules.builtin). (AE: DamnationCE looked for a loaded driver
+it loads when the pad is plugged in, or built in (this kernel's modules.dep,
+modules.builtin, each read once). (AE: DamnationCE looked for a loaded driver
 alone, which a pad not yet plugged in at the start has not made load) */
-static int kernel_driver(const char *driver, const char *module)
+static int kernel_driver(const char *driver, const char *module, const char *modules_dep, const char *modules_builtin)
 {
 	char path[256];
-	char file[64];
-	struct utsname system;
-	int found = 0;
-	int index;
 
 	SDL_snprintf(path, sizeof(path), "/sys/bus/hid/drivers/%s", driver);
-	if (SDL_GetPathInfo(path, NULL))
-		return 1;
-	if (uname(&system) != 0)
-		return 0;
-	SDL_snprintf(file, sizeof(file), "/%s.ko", module);
-	for (index = 0; index < 2 && !found; index++)
-	{
-		char *text;
-
-		SDL_snprintf(path, sizeof(path), "/lib/modules/%s/%s", system.release, index ? "modules.builtin" : "modules.dep");
-		text = SDL_LoadFile(path, NULL);
-		found = text && SDL_strstr(text, file);
-		SDL_free(text);
-	}
-	return found;
+	return SDL_GetPathInfo(path, NULL) || ae_gamepads_kernel_has(modules_dep, modules_builtin, module);
 }
 #endif
 
@@ -59,18 +41,35 @@ void ae_gamepads_hints(
 	void)
 {
 #if defined(__linux__) && !defined(HALO_SERVER) && !defined(HALO_ANDROID)
-	int playstation = kernel_driver("playstation", "hid-playstation");
-	int sony = kernel_driver("sony", "hid-sony");
+	struct utsname system;
+	char path[256];
+	char *modules_dep = NULL;
+	char *modules_builtin = NULL;
+	int playstation, sony;
 
+	if (uname(&system) == 0)
+	{
+		SDL_snprintf(path, sizeof(path), "/lib/modules/%s/modules.dep", system.release);
+		modules_dep = SDL_LoadFile(path, NULL);
+		SDL_snprintf(path, sizeof(path), "/lib/modules/%s/modules.builtin", system.release);
+		modules_builtin = SDL_LoadFile(path, NULL);
+	}
+	playstation = kernel_driver("playstation", "hid-playstation", modules_dep, modules_builtin);
+	sony = kernel_driver("sony", "hid-sony", modules_dep, modules_builtin);
+	SDL_free(modules_dep);
+	SDL_free(modules_builtin);
 	/* (a PlayStation pad through the kernel's driver of it where the kernel
-	has one: SDL's own reads its hidraw node, which only udev rules open) */
+	has one: SDL's own reads its hidraw node, which only udev rules open.
+	hid-playstation drives the DualShock 4 too, since Linux 6.2) */
 	if (playstation)
 		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "0");
-	if (sony)
+	if (playstation || sony)
 		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "0");
-	SDL_snprintf(drivers, sizeof(drivers), "gamepads: PlayStation pads through %s (DualSense), %s (DualShock 4)",
-		playstation ? "the kernel's hid-playstation" : "SDL's own driver",
-		sony ? "the kernel's hid-sony" : "SDL's own driver");
+	SDL_snprintf(drivers, sizeof(drivers), "gamepads: DualSense through %s, DualShock 4 through %s",
+		playstation ? "the kernel's driver (hid-playstation)" : "SDL's own driver",
+		playstation && sony ? "the kernel's driver (hid-playstation or hid-sony)" :
+		playstation ? "the kernel's driver (hid-playstation)" : sony ? "the kernel's driver (hid-sony)" :
+		"SDL's own driver");
 	platform_log("%s", drivers);
 #endif
 }

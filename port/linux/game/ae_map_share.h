@@ -135,10 +135,12 @@ boolean map_share_name_now(
 /* map sharing's safety rules (ae_map_share_rules.h; DamnationCE v0.3.41, CC0) */
 
 /* whether the host's source is one to reach: internet play's always (by its
-key), a LAN player's only at a local network's address (host byte order) */
+key), a LAN player's only at a local network's address (host byte order);
+each address refused logged once per download (its serial) */
 boolean ae_map_share_source_allowed(
 	boolean internet,
-	unsigned long address);
+	unsigned long address,
+	long download);
 /* a finished download that failed its check: its file at path (a downloads'
 folder file, nothing else) removed, so that it is never kept or loadable */
 void ae_map_share_discard_failed(

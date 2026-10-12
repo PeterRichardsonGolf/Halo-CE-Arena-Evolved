@@ -87,10 +87,11 @@ port/linux/game/menu_tags.c	ae_ce_map_menu_blocks_forget(); /* AE hook */
 port/linux/game/ce_map_checks.c	#include "ae_glue_ce_maps.h" /* AE hook */
 port/linux/game/ce_map_checks.c	if (ae_ce_map_menu_memory(address, size)) /* AE hook */\nreturn xbox_pointer(address);
 # map sharing's safety rules (DamnationCE v0.3.41, CC0): port/linux/game/ae_map_share_rules.c
-port/linux/game/map_share.c	if (!ae_map_share_source_allowed(TEST_FLAG(entry->flags, _source_internet_bit), entry->address)) /* AE hook */\ncontinue;
+port/linux/game/map_share.c	if (!ae_map_share_source_allowed(TEST_FLAG(entry->flags, _source_internet_bit), entry->address, download->serial)) /* AE hook */\ncontinue;
 port/linux/game/map_share.c	for (index = 0; index < download->file_count; index++) ae_map_share_discard_failed(download->files[index].final_path); /* AE hook */
-# held players (OpenCE's) back in the pregame after a game whose map download they did not finish (DamnationCE v0.3.41)
-source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */\nnetwork_game_server_restore_held_players(server); /* AE hook */
+# held players (OpenCE's) back in the pregame after a game whose map download they did not finish (DamnationCE v0.3.41;
+# AE: a gone machine's let go first, and one whose slot a late joiner took put in any free slot)
+source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */\nfor (i = 0; i < network_game_server_held_player_count; i++) /* AE hook */\nif (!network_game_add_player(&server->game, &network_game_server_held_players[i]) && ((network_game_server_held_players[i].player_list_index = NONE), !network_game_add_player(&server->game, &network_game_server_held_players[i]))) network_event("failed to put back a player held for a map download"); /* AE hook */
 # PlayStation button icons (DamnationCE v0.3.41): AE's own textures and placeholders (port/linux/src/ae_buttons.c,
 # port/linux/game/ae_buttons_tags.c, tools/ae_button_glyphs.py); upstream's high-res HUD table and code untouched
 source/interface/hud_messaging.c	struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */

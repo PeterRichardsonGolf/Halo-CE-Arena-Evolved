@@ -10,14 +10,17 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from harness import CHECK_FAILED, build, constant, function, mutated, read, run  # noqa: E402
 
-CASES = ["held-back", "gone-machine", "none-held"]
+CASES = ["held-back", "gone-machine", "none-held", "slot-taken"]
 
 SOURCE = "source/networking/network_server_manager.c"
-RESTORE = "network_game_server_restore_held_players(server); /* AE hook */"
+RESTORE = "for (i = 0; i < network_game_server_held_player_count; i++) /* AE hook */"
+RETRY = "((network_game_server_held_players[i].player_list_index = NONE), "
 
 # a fault in the hook, and the case that must catch it
 NEGATIVE_CONTROLS = {
-    "held-dropped": ((RESTORE, ""), "held-back"),
+    "held-dropped": ((RESTORE, "if (0)"), "held-back"),
+    # (no second try in any free slot: the player whose slot was taken is dropped)
+    "slot-retry-dropped": ((RETRY, "(0 && "), "slot-taken"),
     "gone-kept": (("if (!network_game_server_client_machine_is_joined_to_game", "if (0 && !network_game_server_client_machine_is_joined_to_game"),
                   "gone-machine"),
 }
@@ -26,7 +29,7 @@ NEGATIVE_CONTROLS = {
 def hook_lines(source):
     """The AE hook's lines in network_game_server_reset_to_pregame."""
     reset = function(source, "network_game_server_reset_to_pregame")
-    lines = [line.strip() for line in reset.splitlines() if "/* AE hook */" in line and "held_players" in line]
+    lines = [line.strip() for line in reset.splitlines() if "/* AE hook */" in line and "held_player" in line]
     if RESTORE not in lines:
         raise LookupError("the held players' AE hook is not in network_game_server_reset_to_pregame")
     return "\n".join(lines) + "\n"

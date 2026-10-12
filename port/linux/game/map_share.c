@@ -1465,7 +1465,7 @@ static void download_sources(
 
 		if (entry->machine_index == network_game_client_get_local_machine_index())
 			continue;
-		if (!ae_map_share_source_allowed(TEST_FLAG(entry->flags, _source_internet_bit), entry->address)) /* AE hook */
+		if (!ae_map_share_source_allowed(TEST_FLAG(entry->flags, _source_internet_bit), entry->address, download->serial)) /* AE hook */
 			continue;
 		for (known = 1; known < download->source_count; known++)
 		{

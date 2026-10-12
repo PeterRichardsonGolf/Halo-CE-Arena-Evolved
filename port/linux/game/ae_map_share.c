@@ -404,12 +404,32 @@ boolean ae_map_share_find(short family, char const *file, char *path, long size)
 
 boolean ae_map_share_source_allowed(
 	boolean internet,
-	unsigned long address)
+	unsigned long address,
+	long download)
 {
+	/* (each address refused said once per download: the host sends its
+	sources every few seconds) */
+	static unsigned long logged[16];
+	static long logged_count;
+	static long logged_download;
+	long index;
+
 	if (internet || ae_map_share_address_local(address))
 		return TRUE;
-	error(_error_silent, "map sharing: the host named a LAN source at %lu.%lu.%lu.%lu, not a local address: not reached",
-		(address >> 24) & 0xFF, (address >> 16) & 0xFF, (address >> 8) & 0xFF, address & 0xFF);
+	if (download != logged_download)
+	{
+		logged_download = download;
+		logged_count = 0;
+	}
+	for (index = 0; index < logged_count && logged[index] != address; index++)
+		;
+	if (index == logged_count && logged_count < (long)NUMBEROF(logged))
+	{
+		logged[logged_count++] = address;
+		error(_error_silent, "map sharing: the host named a LAN source at %lu.%lu.%lu.%lu, not a local address: "
+			"not reached (the map comes from the host and the local players)",
+			(address >> 24) & 0xFF, (address >> 16) & 0xFF, (address >> 8) & 0xFF, address & 0xFF);
+	}
 	return FALSE;
 }
 
@@ -431,8 +451,12 @@ void ae_map_share_discard_failed(
 	paths[0] = path;
 	if (ae_map_share_discard(paths, 1, CUSTOM_EDITION_MAP_DIRECTORY, discard_delete, NULL))
 		error(_error_silent, "map sharing: removed %s, which failed its check", path);
+	else if (!ae_map_share_path_in_folder(path, CUSTOM_EDITION_MAP_DIRECTORY))
+		error(_error_silent, "map sharing: did not remove %s: not a file of %s", path ? path : "",
+			CUSTOM_EDITION_MAP_DIRECTORY);
 	else
-		error(_error_silent, "map sharing: did not remove %s (not a downloaded map, or already gone)", path ? path : "");
+		error(_error_silent, "map sharing: could not remove %s, which failed its check (error %lu)", path,
+			(unsigned long)GetLastError());
 }
 
 char const *map_share_level_file(

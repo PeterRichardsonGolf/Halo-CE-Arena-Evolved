@@ -8,8 +8,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 - **Linux: PlayStation controllers without Steam** (from DamnationCE 0.3.41).
   A DualSense or DualShock 4 now goes through the kernel's own driver
-  (Linux 5.12 and later), so it works without Steam's udev rules (before, it
-  was not found at all without them). `debug.txt` names each controller's
+  (Linux 5.12 and later), so it should work without Steam's udev rules
+  (before, it was not found at all without them; not yet confirmed on real
+  hardware). `debug.txt` names each controller's
   kind and device when it connects.
 - **PlayStation button icons** (from DamnationCE 0.3.41). While a
   PlayStation controller (DualShock 4, DualSense) is the one you last used,
@@ -30,7 +31,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   uses that connection. Direct Link shows the open tunnel's ping.
 - **Map sharing, safer** (from DamnationCE 0.3.41). A LAN game's other players
   are only downloaded from at local network addresses, so a host can't send
-  your game to connect anywhere on the internet. A downloaded map that fails
+  your game to connect anywhere on the internet (on a VPN "LAN" with
+  public-range addresses, such as Hamachi or Radmin VPN, the map comes from
+  the host alone). A downloaded map that fails
   its check (another version, a broken file) is deleted instead of staying in
   `maps_ce` under the map's name. A player still downloading the map when a
   game starts doesn't spawn until the map is in (OpenCE's), and comes back to

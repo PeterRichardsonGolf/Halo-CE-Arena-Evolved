@@ -5298,7 +5298,8 @@ boolean network_game_server_reset_to_pregame(
 
 	csmemset(&server->countdown_state, 0, sizeof(server->countdown_state));
 	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */
-	network_game_server_restore_held_players(server); /* AE hook */
+	for (i = 0; i < network_game_server_held_player_count; i++) /* AE hook */
+		if (!network_game_add_player(&server->game, &network_game_server_held_players[i]) && ((network_game_server_held_players[i].player_list_index = NONE), !network_game_add_player(&server->game, &network_game_server_held_players[i]))) network_event("failed to put back a player held for a map download"); /* AE hook */
 	csmemset(network_game_server_map_pending, 0, sizeof(network_game_server_map_pending));
 	csmemset(network_game_server_held_players, 0, sizeof(network_game_server_held_players));
 	network_game_server_held_player_count = 0;
