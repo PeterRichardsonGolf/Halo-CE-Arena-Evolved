@@ -82,10 +82,32 @@ have room for 128 entries instead of 100. The game's own limit is unchanged:
 it keeps 100 saved files in all (gametypes, profiles) together with the 26
 built-in gametypes in one list, so with the 61 seeded ones about 10 gametypes
 of your own fit before the built-in ones at the end of the list are cut.
-- **Merged ChupathingyCE 0.7.3e and OpenCE build-190: network version 27.**
-  Plays online with OpenCE build-189 and later and ChupathingyCE 0.7.3e; hosts
-  of an older version (Arena Evolved 0.2.2-beta, DamnationCE 0.3.40) are
-  refused, and are told to update.
+- **Merged ChupathingyCE 0.7.3e, OpenCE build-190 and OpenCE build-201:
+  network version 28.** Plays online with OpenCE builds on network 28 (build-201 onward), both
+  ways; ChupathingyCE 0.7.3e players join Arena Evolved's games (Arena Evolved
+  does not join theirs). Hosts of an older version (OpenCE build-200 and
+  earlier, DamnationCE 0.3.41 and 0.3.40, Arena Evolved 0.2.2-beta) are
+  refused, and are told to update; their players are told the host is newer.
+  - **From build-201:** a player still downloading a Custom Edition map is held
+    out of the game (not spawned, not counted) until the download is done,
+    then joins with the same checks as any late joiner; a machine that goes
+    silent while downloading times out. Map sharing is hardened (OpenCE's
+    hardening, taken ahead of its release): LAN players are reached only at
+    addresses of the host's kind, the host takes map connections only from
+    its game's machines, Windows device names are refused as map names, a
+    download's part file grows piece by piece (an empty one is deleted), a
+    player that only says it is downloading is not held for long, and a
+    Custom Edition map whose models or structure take more than 128 MB of
+    vertices is refused. A multiplayer map's first scripted BSP switch is
+    kept (the host's game type picks the sky, no level reload). The flashlight and dynamic
+    lights stay on in big matches (the Xbox turned them off past 4 / 13
+    players or a few vehicles). A second weapon picked up while firing is
+    readied. Bodies the host moves are no longer drawn floating or in walls.
+    An overshield's drain no longer flashes as a hit. A `config.toml` with a
+    section twice (which made the whole file unread) is joined and read again.
+    Co-op: a large fight respawns you beside the group after 10 s. Higher
+    limits for see-through surfaces, faster draws; Custom Edition text fits
+    its letters.
   - **Custom Edition map sharing.** Join a game on a Custom Edition map you
     don't have and it downloads from the game's players (the host and the
     others, torrent-style), with the resource maps it needs, into `maps_ce`.

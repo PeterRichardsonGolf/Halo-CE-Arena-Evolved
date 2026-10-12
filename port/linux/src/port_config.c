@@ -1399,22 +1399,36 @@ static char *config_default_text(void)
 		"# named with it, which wins over this file.\n"
 		CONFIG_VERSION_TEXT);
 #endif
+	/* each section once, where its first setting is, with all of its
+	settings: TOML refuses a section twice, and the whole file would go
+	unread (config_join_sections) */
 	for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS; index++)
 	{
 		const struct config_setting *setting = &config_settings[index];
 		const char *dot = strchr(setting->name, '.');
+		size_t length, other;
 		char buffer[64];
 
 		if (!(setting->platforms & CONFIG_PLATFORM) || !dot)
 			continue;
-		if (strncmp(section, setting->name, (size_t)(dot - setting->name)) ||
-			section[dot - setting->name] != 0)
+		length = (size_t)(dot - setting->name);
+		for (other = 0; other < index; other++)
 		{
-			snprintf(section, sizeof(section), "%.*s", (int)(dot - setting->name), setting->name);
-			snprintf(buffer, sizeof(buffer), "\n[%s]\n", section);
-			config_append(&text, buffer);
+			if ((config_settings[other].platforms & CONFIG_PLATFORM) &&
+				!strncmp(config_settings[other].name, setting->name, length + 1))
+				break;
 		}
-		config_append_setting(&text, setting);
+		if (other < index)
+			continue;
+		snprintf(section, sizeof(section), "%.*s", (int)length, setting->name);
+		snprintf(buffer, sizeof(buffer), "\n[%s]\n", section);
+		config_append(&text, buffer);
+		for (other = index; other < NUMBER_OF_CONFIG_SETTINGS; other++)
+		{
+			if ((config_settings[other].platforms & CONFIG_PLATFORM) &&
+				!strncmp(config_settings[other].name, setting->name, length + 1))
+				config_append_setting(&text, &config_settings[other]);
+		}
 	}
 	return text.buffer;
 }
@@ -1522,6 +1536,89 @@ static char *config_add_missing(const char *text, toml_datum_t table)
 		}
 	}
 	return result;
+}
+
+static int config_line_section(const char *line, const char *end, char *section, size_t size);
+
+/* text from start to end, appended */
+static void config_append_range(struct config_text *text, const char *start, const char *end)
+{
+	char *copy = config_copy(start, (size_t)(end - start));
+
+	if (copy)
+		config_append(text, copy);
+	free(copy);
+}
+
+/* a file with a section twice, which TOML refuses (the defaults of the
+versions from 2026-10-10 had a second [display] after [game]): each
+section's later parts moved to the end of its first, the rest kept as it
+is. Returns the new text, or NULL if no section is there twice */
+static char *config_join_sections(const char *text)
+{
+	enum { PARTS_MAXIMUM = 64 };
+	struct
+	{
+		char name[64];
+		const char *start, *end;
+	} parts[PARTS_MAXIMUM];
+	struct config_text joined = { NULL, 0, 0 };
+	const char *line;
+	const char *first_part = NULL;
+	int count = 0, repeated = 0, index, other;
+
+	/* the parts, each from its section's line to the next one's */
+	for (line = text; *line; )
+	{
+		size_t length = strcspn(line, "\n");
+		char name[64];
+
+		if (config_line_section(line, line + length, name, sizeof(name)))
+		{
+			if (count == PARTS_MAXIMUM)
+				return NULL;
+			if (count)
+				parts[count - 1].end = line;
+			else
+				first_part = line;
+			for (other = 0; other < count; other++)
+				repeated |= !strcmp(parts[other].name, name);
+			strcpy(parts[count].name, name);
+			parts[count].start = line;
+			count++;
+		}
+		line += length;
+		if (*line)
+			line++;
+	}
+	if (!repeated)
+		return NULL;
+	parts[count - 1].end = line;
+
+	config_append_range(&joined, text, first_part);
+	for (index = 0; index < count; index++)
+	{
+		for (other = 0; other < index && strcmp(parts[other].name, parts[index].name); other++)
+			;
+		if (other < index)
+			continue;
+		config_append_range(&joined, parts[index].start, parts[index].end);
+		for (other = index + 1; other < count; other++)
+		{
+			const char *body;
+
+			if (strcmp(parts[other].name, parts[index].name))
+				continue;
+			/* (its settings, without its section's line) */
+			body = memchr(parts[other].start, '\n', (size_t)(parts[other].end - parts[other].start));
+			if (!body)
+				continue;
+			if (joined.length && joined.buffer[joined.length - 1] != '\n')
+				config_append(&joined, "\n");
+			config_append_range(&joined, body + 1, parts[other].end);
+		}
+	}
+	return joined.buffer;
 }
 
 /* ---------- values */
@@ -1966,8 +2063,18 @@ static void config_load(void)
 	text = config_read_file(path, &size);
 	if (text)
 	{
-		toml_result_t result = toml_parse(text, (int)size);
+		char *joined = config_join_sections(text);
+		/* (a file with a section twice is written back joined, below) */
+		int sections_joined = joined != NULL;
+		toml_result_t result;
 
+		if (joined)
+		{
+			free(text);
+			text = joined;
+			size = strlen(text);
+		}
+		result = toml_parse(text, (int)size);
 		if (result.ok)
 		{
 			char *updated = config_update_layout(text, result.toptab);
@@ -1997,8 +2104,10 @@ static void config_load(void)
 			config_report_unknown_keys(result.toptab);
 			platform_log("settings: %s", path);
 			completed = config_add_missing(text, result.toptab);
-			if ((completed || updated) && !config_write_file(path, completed ? completed : text))
+			if ((completed || updated || sections_joined) && !config_write_file(path, completed ? completed : text))
 				platform_log("settings: cannot write %s", path);
+			else if (sections_joined)
+				platform_log("settings: joined the sections %s had twice", path);
 			free(completed);
 		}
 		else

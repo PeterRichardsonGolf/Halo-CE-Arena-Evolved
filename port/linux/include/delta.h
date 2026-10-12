@@ -159,13 +159,13 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one.
-(Arena Evolved: its own, "ae-27a", so that ChupathingyCE's signed tables,
+(Arena Evolved: its own, "ae-28a", so that ChupathingyCE's signed tables,
 whose rows are for ChupathingyCE's wires, never set Arena Evolved's numbers
-or turn off its capabilities: it plays its built-in 27 / 11..27, and joins
-no host below its own 27 (halo_port_advertised_joinable). The wire ID is
-never sent; the game protocol is OpenCE build-189's: its hosts announce 27,
-the table's newest, as OpenCE build-189's and later's do) */
-#define DELTA_WIRE "ae-27a"
+or turn off its capabilities: it plays its built-in 28 / 11..28, and joins
+no host below its own 28 (halo_port_advertised_joinable). The wire ID is
+never sent; the game protocol is OpenCE build-201's: its hosts announce 28,
+the table's newest, as OpenCE build-201's and later's do) */
+#define DELTA_WIRE "ae-28a"
 
 /* OpenCE's network versions (HALO_PORT_NETWORK_VERSION in its builds), the
 first of its releases with each, and whether the version's change is one the
@@ -195,7 +195,8 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(24, "build-149", additive) /* the gametype's PC vehicle set: every vehicle the map places */ \
 	X(25, "build-169", additive) /* units' integrated lights in the object states; a banned machine told so */ \
 	X(26, "build-184", additive) /* internet play's signalling, version 4 (WebRTC, for browsers; ChupathingyCE's p2p_signal.c reads 3 and 4, Arena Evolved's, OpenCE's, 4); game messages as 25 */ \
-	X(27, "build-189", additive) /* followed from OpenCE: additive */
+	X(27, "build-189", additive) /* followed from OpenCE: additive */ \
+	X(28, "build-201", additive) /* followed from OpenCE: 27's messages; the host holds a downloading machine's players out, keeps a map's first scripted BSP, lights past the Xbox limits, a second weapon readied (a 27 machine disagrees: Arena Evolved's floor joins 28 alone) */
 
 /* ---------- the legacy table (port/linux/src/delta.c)
 

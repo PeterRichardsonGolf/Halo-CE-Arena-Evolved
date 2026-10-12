@@ -262,6 +262,8 @@ struct retired_session
 {
 	unsigned char secret[P2P_SHA256_SIZE];
 	unsigned long virtual_address;
+	/* the machine whose it was */
+	unsigned char identifier[P2P_IDENTIFIER_SIZE];
 };
 
 /* a TCP stand-in for one port of a peer: takes the game's connections */
@@ -814,7 +816,24 @@ static int is_virtual_address(unsigned long address)
 	return (network_long(address) & 0xFFC00000) == 0x64400000;
 }
 
-/* an address in 100.64.0.0/10 from the identifier, not one another peer has */
+/* whether address was another machine's than the identifier's, recently: the
+game may still have traffic for that machine, which a new peer at the
+address would take (and whose traffic would seem to come from it) */
+static int address_retired_by_another(unsigned long address, const unsigned char *peer_identifier)
+{
+	int index;
+
+	for (index = 0; index < MAXIMUM_RETIRED_SESSIONS; index++)
+	{
+		if (p2p.retired[index].virtual_address == address &&
+			memcmp(p2p.retired[index].identifier, peer_identifier, P2P_IDENTIFIER_SIZE))
+			return 1;
+	}
+	return 0;
+}
+
+/* an address in 100.64.0.0/10 from the identifier, not one another peer has
+or had lately (the same machine reached again has its own back) */
 static unsigned long virtual_address_for(const unsigned char *peer_identifier)
 {
 	unsigned char digest[P2P_SHA256_SIZE];
@@ -827,7 +846,8 @@ static unsigned long virtual_address_for(const unsigned char *peer_identifier)
 		unsigned long address = 0x64400000 | (value & 0x3FFFFF);
 
 		/* no .0 or .255, which look like network and broadcast addresses */
-		if ((address & 255) != 0 && (address & 255) != 255 && !find_peer_by_address(network_long(address)))
+		if ((address & 255) != 0 && (address & 255) != 255 && !find_peer_by_address(network_long(address)) &&
+			!address_retired_by_another(network_long(address), peer_identifier))
 			return network_long(address);
 		value++;
 	}
@@ -978,6 +998,7 @@ static void drop_peer(struct peer *peer, const char *reason)
 
 		memcpy(retired->secret, peer->secret, P2P_SHA256_SIZE);
 		retired->virtual_address = peer->virtual_address;
+		memcpy(retired->identifier, peer->identifier, P2P_IDENTIFIER_SIZE);
 	}
 	memset(peer, 0, sizeof(*peer));
 	/* still joining: a new request, with a nonce of its own (the host
@@ -1492,6 +1513,26 @@ static int stun_settled(void)
 			return 0;
 	}
 	return 1;
+}
+
+/* the p2p thread was stopped for longer than a peer lasts: the process was
+suspended (a phone app in the background) or the machine slept (a laptop).
+The NAT's mapping of the tunnel may have lapsed, so this machine's public
+address is asked again before an offer names it, and the brokers'
+connections, which the network may have dropped, are made anew rather than
+at their silence timeout */
+static void network_resumed(unsigned long stopped)
+{
+	int index;
+
+	for (index = 0; index < p2p.stun_count; index++)
+	{
+		p2p.stun[index].has_mapped = 0;
+		p2p.stun[index].attempts = 0;
+	}
+	p2p_signal_reconnect();
+	platform_log("Internet play: the game was stopped for %lu seconds; its public address is asked again and "
+		"the brokers reconnected", stopped / 1000);
 }
 
 /* ---------- stand-ins for peers' ports */
@@ -3513,6 +3554,7 @@ static void *p2p_thread(void *unused)
 		streams; otherwise the thread can sleep longer */
 		int wait = webrtc_busy ? LOOP_INTERVAL : LOOP_INTERVAL * 5;
 		int index, asked;
+		unsigned long waited;
 
 		/* what to wait for */
 		read_owners[read_count] = _owner_tunnel;
@@ -3573,6 +3615,7 @@ static void *p2p_thread(void *unused)
 		memcpy(asked_write, write, sizeof(*write) * (size_t)write_count);
 
 		pthread_mutex_unlock(&p2p_lock);
+		waited = p2p_now();
 		if (posix_socket_select(read, &read_count, write, &write_count, NULL, &error_count, 0,
 			wait * 1000, 0) < 0)
 		{
@@ -3582,6 +3625,13 @@ static void *p2p_thread(void *unused)
 #ifdef HALO_PROFILE
 		profile_trace_begin(p2p_profile_names.pass);
 #endif
+		/* the wait lasted far longer than asked (the process was suspended
+		or the machine slept): what the sockets report is stale */
+		if (elapsed(waited, (unsigned long)wait + PEER_TIMEOUT))
+		{
+			network_resumed(p2p_now() - waited);
+			read_count = write_count = 0;
+		}
 
 		/* what is ready (the lists now hold only ready sockets, in the order
 		asked, so each one's owner is found going along both); a socket

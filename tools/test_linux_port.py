@@ -1,5 +1,6 @@
 """Tests for the native Linux build tooling (port/linux, tools/linux_*.py)."""
 
+import os
 import re
 import shutil
 import subprocess
@@ -482,6 +483,99 @@ def test_spawn_heat(tmp_path):
     assert result.returncode == 0, result.stdout[-4000:]
     assert "PASS" in result.stdout
 
+# port_config.c on its own, with the app's file paths (HALO_DATA_ROOT) and C
+# library calls: "get <setting>" prints it, "write <setting> <value>" sets it
+CONFIG_PROGRAM = r"""
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+#include "port_config.h"
+
+void platform_log(const char *format, ...)
+{
+    va_list arguments;
+
+    va_start(arguments, format);
+    vfprintf(stderr, format, arguments);
+    va_end(arguments);
+    fputc('\n', stderr);
+}
+
+int main(int argc, char **argv)
+{
+    char text[256];
+
+    if (argc == 3 && !strcmp(argv[1], "get") && config_text(argv[2], text, sizeof(text)))
+        return puts(text) < 0;
+    if (argc == 4 && !strcmp(argv[1], "write"))
+        return !config_write(argv[2], argv[3]);
+    return 1;
+}
+"""
+
+
+def test_config_has_each_section_once(tmp_path):
+    """config.toml names each section once, as TOML asks: the defaults the
+    game writes, and a file an older version wrote with [display] twice
+    (which went unread), joined"""
+    compiler = shutil.which("clang") or shutil.which("cc")
+    if not compiler:
+        pytest.skip("needs a C compiler")
+    root = Path(__file__).resolve().parent.parent
+    stubs = tmp_path / "stubs"
+    (stubs / "SDL3").mkdir(parents=True)
+    (stubs / "SDL3" / "SDL.h").write_text("")
+    (stubs / "platform.h").write_text("void platform_log(const char *format, ...);\n")
+    # (Arena Evolved's port_config.c also lists folders, posix.h, and pauses the capture for its restart,
+    # capture.h: none of it runs here)
+    (stubs / "posix.h").write_text(
+        "enum { _posix_file_is_directory = 1 << 0 };\n"
+        "struct posix_file_information { unsigned long flags; };\n"
+        "static int posix_stat(const char *path, struct posix_file_information *information)\n"
+        "{ (void)path; (void)information; return -1; }\n"
+        "static void *posix_directory_open(const char *path) { (void)path; return 0; }\n"
+        "static int posix_directory_next(void *directory, char *name, unsigned long size)\n"
+        "{ (void)directory; (void)name; (void)size; return 0; }\n"
+        "static void posix_directory_close(void *directory) { (void)directory; }\n")
+    (stubs / "capture.h").write_text("static void capture_shutdown(void) {}\nstatic void capture_resume(void) {}\n")
+    # (beside the stubs, which it then includes instead of the platform layer's)
+    for name in ("port_config.c", "port_config.h"):
+        shutil.copy(root / "port/linux/src" / name, stubs / name)
+    (tmp_path / "main.c").write_text(CONFIG_PROGRAM)
+    program = tmp_path / "config_program"
+    subprocess.run([compiler, "-DHALO_ANDROID=1", "-DHALO_ARM64_GUEST=1", f"-I{stubs}",
+                    f"-I{root}/port/third_party/tomlc17", "-o", str(program),
+                    str(tmp_path / "main.c"), str(stubs / "port_config.c"),
+                    str(root / "port/third_party/tomlc17/tomlc17.c"), "-lpthread"], check=True)
+    data = tmp_path / "data"
+    data.mkdir()
+    config = data / "config.toml"
+
+    def run(*command):
+        result = subprocess.run([str(program), *command], capture_output=True, text=True,
+                                env={**os.environ, "HALO_DATA_ROOT": str(data)})
+        assert result.returncode == 0, result.stderr
+        assert "using the defaults" not in result.stderr, result.stderr
+        return result.stdout.strip(), result.stderr
+
+    def sections():
+        return re.findall(r"^\[(\w+)\]$", config.read_text(), re.M)
+
+    # the defaults
+    assert run("get", "display.first_person_legs")[0] == "false"
+    assert len(sections()) == len(set(sections())), sections()
+    run("write", "display.first_person_legs", "true")
+    assert run("get", "display.first_person_legs")[0] == "true"
+
+    # an older version's
+    config.write_text("[display]\nvsync = false\n\n[game]\nconsole_log = \"all\"\n\n"
+                      "[display]\nfirst_person_legs = true\n")
+    value, log = run("get", "display.first_person_legs")
+    assert value == "true" and "joined" in log
+    assert sections().count("display") == 1
+    assert run("get", "display.vsync")[0] == "false"
+    assert run("get", "game.console_log")[0] == "all"
+
 
 # ---------- system link's stand-in machines (tools/system_link_bots.py)
 
@@ -526,6 +620,19 @@ def test_system_link_bots_messages_are_the_games():
     for data in sent:
         name = names[data[-1]]
         assert len(data) - 4 == sizes[name], name
+
+
+# ---------- the wire format (tools/network_format.py)
+
+
+def test_network_format_is_the_recorded_one():
+    """what the machines send each other is what port/linux/network_format.txt
+    records for HALO_PORT_NETWORK_VERSION, and NETCODE.md says what that
+    version changed"""
+    from tools import network_format
+
+    problems = network_format.check()
+    assert not problems, "\n".join(problems)
 
 
 # ---------- the tag validator (port/linux/game/tag_validate.c)

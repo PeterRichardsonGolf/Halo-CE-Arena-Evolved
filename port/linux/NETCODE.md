@@ -196,23 +196,40 @@ machine say its WebRTC in internet play's signalling (a native build's
 certificate, a browser's ICE credentials too), so that browsers play
 (port/linux/README.md, "Browsers"); version 27 shares Custom Edition maps
 (below, "Map sharing"): a client asks the host for a map it lacks, and the
-game's players reach each other to send it.
+game's players reach each other to send it; version 28 (OpenCE build-201)
+holds the players of a machine still downloading the map out of the game
+until it has the map, keeps a multiplayer map's first scripted BSP, leaves
+dynamic lights and the flashlight on past the Xbox game's player and vehicle
+limits, and readies a second weapon picked up while firing.
 
-Arena Evolved announces 27, the table's newest (`delta.h`), and joins hosts
-of 27 alone (a host below 27 is refused, though the table's range reaches
-back to 11; the range's top is 27, as OpenCE's clients join only their own
+`port/linux/network_format.txt` records the wire format of the current
+version (`tools/network_format.py`): `test_linux_port.py` fails when the
+sources' messages, kinds, bits, structs sent whole or the sizes of their
+arrays differ from it. (Arena Evolved's record differs from OpenCE's in
+three items that send the same bytes: ChupathingyCE's packet table puts the
+begin-game and keep-alive field lists under their own messages
+(`network_messages.c`: the Xbox table had each on its neighbour's, so the
+wire's begin game is a short and padding, its keep-alive a long), and
+`network_distributed.c`'s `DISTRIBUTED_TIME_WINDOW_TICKS` is a local check.)
+
+Arena Evolved announces 28, the table's newest (`delta.h`), and joins hosts
+of 28 alone (a host below 28 is refused, though the table's range reaches
+back to 11; the range's top is 28, as OpenCE's clients join only their own
 version, where ChupathingyCE 0.7.3e's reach 30): it plays with OpenCE
-build-189 and later and ChupathingyCE 0.7.3e both ways. Hosts of an older
-version are refused (Arena Evolved 0.2.2-beta's 25 and DamnationCE 0.3.40's
-26 among them), and their clients do not join Arena Evolved's games, and are
-told the host is newer. Its wire ID is its own (`ae-27a`, `delta.h`), so
+build-201 onward, while they stay on network 28, both ways, and ChupathingyCE 0.7.3e (27) joins its games
+(Arena Evolved does not join ChupathingyCE 0.7.3e's: 27 is below its floor).
+Hosts of an older version are refused (Arena Evolved 0.2.2-beta's 25,
+DamnationCE 0.3.41's and OpenCE build-189 to 200's 27 among them), and
+clients that join their own version alone (OpenCE build-200 and earlier,
+DamnationCE 0.3.41, whose top is 27) do not join Arena Evolved's games, and
+are told the host is newer. Its wire ID is its own (`ae-28a`, `delta.h`), so
 ChupathingyCE's signed legacy tables (Delta, `docs/delta.md`), which have no
 row for it, neither change these numbers nor turn off its Delta
 capabilities, and they are not fetched unless `network.legacy_table_fetch`
-is on (off by default). The game's messages are OpenCE build-190's unchanged
+is on (off by default). The game's messages are OpenCE build-201's unchanged
 (build-167's voice chat and votes to kick, build-169's lights and build-189's
 map sharing are among them; Arena Evolved adds none): Arena Evolved's own
-rules travel in the gametype's flags, which every host of 11 to 27 sends and
+rules travel in the gametype's flags, which every host of 11 to 28 sends and
 a client that does not know a bit leaves alone. Internet play's signalling
 is OpenCE's version 4 alone (ChupathingyCE 0.7.3e also reads 3, which only
 hosts of 25 and below send). Arena Evolved's own rule on top: a game with a
@@ -223,13 +240,13 @@ password).
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. The
 built-in range is HALO_PORT_NETWORK_VERSION_MINIMUM to
-HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 27): versions
+HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 28): versions
 that differ from one another only in messages the other machine drops, not
 knowing them. The historical example is version 10 (OpenCE's build-73),
 which added the host's message of the players' pings, which a machine of
-version 9 drops. Today this build has version 27 (OpenCE build-189 and later), and
+version 9 drops. Today this build has version 28 (OpenCE build-201 onward, while OpenCE stays on 28), and
 the range's floor is the newest version that broke compatibility (11). Arena
-Evolved's own floor is higher than the range: it refuses hosts below 27
+Evolved's own floor is higher than the range: it refuses hosts below 28
 and tells the player that the host needs to update (see above).
 The game browser lists the range's games.
 
@@ -473,22 +490,36 @@ menus show a map without its hash, unless two versions are listed.
   have them (`_sources`: an address on a LAN, internet play's key hash on the
   internet), again every ten seconds. A map whose hash is not its name's is
   not offered. The client checks that the map's hash is its name's, and
-  that no file is larger than the cache loader takes.
+  that no file is larger than the cache loader takes, and refuses a map
+  name Windows takes for a device (`CON`, `NUL`, `COM1` and the like,
+  before the first dot). It connects to a LAN machine the host names only
+  at an address of the host's kind (a private network's if the host's is,
+  loopback only if the host's is; never 0.0.0.0, multicast or internet
+  play's), so that a host cannot send its players anywhere.
 - **The swarm.** The client connects to the host and up to eight of the
   others on port 5153 (of two downloading, the one of the lower machine
   connects). Each end says which files it has, whole or by piece, and tells
   the other of each piece it gets; the client asks for the rarest pieces
   first (from a random place, so that clients ask for different pieces), two
   at a time from each connection, sixteen in all, and the last few again of
-  whoever is quicker. The pieces' hashes come from any end that has them,
-  checked against the file's hash; each piece is checked against its own as
-  it arrives, and an end that sends a wrong one is not asked again. A machine
+  whoever is quicker. The pieces' hashes come from the host (from the
+  others it named after ten seconds without them, and from the connections
+  other machines made after thirty), all of them within a minute, checked
+  against the file's hash; a frame of none is refused. Each piece is
+  checked against its own as it arrives, and an end that sends a wrong one
+  is not asked again. A machine
   sends of the game's files (its map, the resource maps the map needs, a
   download's pieces) no faster than `network.map_share_upload` (the host,
   1024 KB/s) or `network.map_seed_upload` (a player, 256 KB/s), round all
   its connections a 16 KiB block at a time, so that the game's own traffic
   keeps the rest of the upload; `network.map_seed = false` sends none. A
   player that has downloaded the map sends it on at once.
+- **Connections.** A machine takes up to 24 connections, of which 15 others
+  made (the rest are kept for its own download's), four from one address,
+  eight at once that have not said hello (the oldest makes way); a
+  connection says hello within ten seconds, and one that sends no whole
+  frame for 30 seconds is closed. The host takes connections only from its
+  game's machines' addresses.
 - **Internet play.** The players of an internet game reach its host alone.
   A player that shares answers the holders of the invite it joined with as
   its host does (`p2p_set_answering_players`), and a downloading client asks
@@ -497,13 +528,20 @@ menus show a map without its hash, unless two versions are listed.
   the host, in one topic of the invite's token). Its map sharing connection
   then goes through their tunnel, as the game's connections go.
 - **Writing.** A download is written to `<file>.part` beside its file in
-  custom_maps, and renamed when every piece is had. A part file found again
-  is checked piece by piece on the hashing thread and taken up where it was.
+  maps_ce, each piece at its place as it comes (the file is not made its
+  size at once), and renamed when every piece is had. A part file found
+  again is checked piece by piece on the hashing thread and taken up where
+  it was. A download that stops deletes a part file that holds none of its
+  file, and keeps one map's part file at most (the one kept before is
+  deleted), so that a host cannot fill a disk with offers.
   The client checks the map again once it has it (`custom_edition_cache_present`),
   and tells the host its progress every two seconds (`_progress`); the host
   does not drop a machine downloading (and for 20 seconds after) for adding
-  no players or loading slowly. A download that brings nothing for a minute,
-  or a host that does not answer in 30 seconds, leaves the game, saying why.
+  no players or loading slowly, while what it says it has grew by a piece
+  (or to the whole, and no more than the files offered) in the last 80
+  seconds, counted from the first offer however often it asks again. A
+  download that brings nothing for a minute, or a host that does not answer
+  in 30 seconds, leaves the game, saying why.
 - The download's progress is drawn at the top of the screen.
 
 ## Stages
@@ -582,7 +620,11 @@ menus show a map without its hash, unless two versions are listed.
    would leave a falling body hanging until its turn round all of them),
    and a few of those at rest, round them all. A client takes the host's
    word on whether each is at rest even when its copy is close enough to
-   leave where it is. A client puts its copies there, and the difference is
+   leave where it is. A body's pose goes with it: one lying limp that the
+   host moves stops lying limp (the blast that moved the host's reaches
+   only the machines that see the body's player), and one the host has at
+   rest is on the ground, so it lies limp again where it stops instead of
+   keeping the pose of its fall in the air. A client puts its copies there, and the difference is
    drawn fading over a few ticks (`render_interpolation.c`) instead of a
    jump. A client drives its own player's vehicle and sends where it is,
    which the host takes within a tolerance, as it does its own player's

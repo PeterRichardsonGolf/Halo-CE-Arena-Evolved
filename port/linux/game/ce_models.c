@@ -618,6 +618,41 @@ enum
 
 #define CE_ALIGNED(size) (((size) + 15) & ~15UL)
 
+/* the most room a map's models, or a structure BSP (ce_bsp.c), are given
+for their vertices and strip indices: several times what the largest maps
+take, and far less than the 4 GB past which the sizes would wrap. Parts and
+materials may name the same vertices, each checked alone, so the file's
+size does not bound what they add up to (from OpenCE 52e33a391, "Harden map
+sharing and Custom Edition map loading": a map downloaded from another
+player is a stranger's file) */
+#define MAXIMUM_GEOMETRY_BYTES 0x8000000
+
+/* Adds to `bytes` the room for `vertex_count` vertices of `vertex_size`
+bytes and `index_count` strip indices, unless the total would pass
+MAXIMUM_GEOMETRY_BYTES (OpenCE's geometry_bytes_add; ce_bsp.c too). */
+boolean ce_geometry_bytes_add(
+	unsigned long *bytes,
+	unsigned long vertex_count,
+	unsigned long vertex_size,
+	unsigned long index_count)
+{
+	unsigned long added;
+
+	if (vertex_count > MAXIMUM_GEOMETRY_BYTES / vertex_size ||
+		index_count > MAXIMUM_GEOMETRY_BYTES / sizeof(word))
+	{
+		return FALSE;
+	}
+	added = vertex_count * vertex_size + index_count * sizeof(word);
+	if (added > MAXIMUM_GEOMETRY_BYTES - *bytes)
+	{
+		return FALSE;
+	}
+	*bytes += added;
+
+	return TRUE;
+}
+
 static long ce_read_long32(
 	byte const *at)
 {
@@ -696,7 +731,8 @@ static boolean ce_model_nodes_check(
 vertices, each vertex's nodes the model's and among those the renderer skins
 (a model of more nodes, a first-person weapon's with the arms' and its own,
 is drawn with its first CE_MAXIMUM_SKINNED_NODES: models.c); the room its
-conversion takes */
+conversion takes, of the tag cache (bytes) and of the models' vertices and
+strips (geometry, ce_geometry_bytes_add) */
 static boolean ce_part_check(
 	byte const *part,
 	char const *name,
@@ -704,7 +740,8 @@ static boolean ce_part_check(
 	byte const *model_data,
 	unsigned long model_data_size,
 	unsigned long vertex_data_size,
-	unsigned long *bytes)
+	unsigned long *bytes,
+	unsigned long *geometry)
 {
 	short triangle_type = ce_read_short(part + PART_TRIANGLE_BUFFER_OFFSET);
 	long triangle_count = ce_read_long32(part + PART_TRIANGLE_BUFFER_OFFSET + 4);
@@ -731,6 +768,11 @@ static boolean ce_part_check(
 		!ce_range_within(triangle_offset, index_count * sizeof(word), model_data_size - vertex_data_size))
 	{
 		return ce_refuse("model %s: a part's vertices or strip are not in the model data", name);
+	}
+	if (!ce_geometry_bytes_add(geometry, (unsigned long)vertex_count, XBOX_VERTEX_SIZE, index_count))
+	{
+		return ce_refuse("model %s: the models' parts, to this one, take more than 0x%X bytes of geometry", name,
+			MAXIMUM_GEOMETRY_BYTES);
 	}
 	if (local_nodes && local_node_count > CE_PART_MAXIMUM_LOCAL_NODES)
 		return ce_refuse("model %s: a part has %d local nodes", name, local_node_count);
@@ -792,6 +834,8 @@ boolean ce_models_check(
 	unsigned long vertex_data_size,
 	unsigned long *bytes)
 {
+	/* (every model's parts' vertices and strips together) */
+	unsigned long geometry = 0;
 	long index;
 
 	*bytes = 0;
@@ -911,7 +955,8 @@ boolean ce_models_check(
 				}
 				if (primary < 0 || primary >= node_count || secondary < 0 || secondary >= node_count)
 					return ce_refuse("model %s: a part's centroid is on nodes %d and %d", name, primary, secondary);
-				if (!ce_part_check(at, name, node_count, model_data, model_data_size, vertex_data_size, bytes))
+				if (!ce_part_check(at, name, node_count, model_data, model_data_size, vertex_data_size, bytes,
+					&geometry))
 					return FALSE;
 			}
 		}
