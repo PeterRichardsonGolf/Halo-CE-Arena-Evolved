@@ -140,6 +140,7 @@ symbols in this file:
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 #include "ae_map_share.h" /* port: map sharing on Arena Evolved's Custom Edition maps */
 #include "ae_glue_ce_maps.h" /* AE hook */
+#include "ae_menus_swap.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1642,6 +1643,7 @@ long scenario_tags_load(
 				extern void menu_tags_loaded(char const *map_name);
 
 				menu_tags_loaded(cache_file_globals.header.name);
+				ae_menus_swap_tags_loaded(cache_file_globals.header.name); /* AE hook */
 			}
 			/* port: the bitmaps the high-res HUD stands for (port/linux/game/hud_hires_tags.c) */
 			{

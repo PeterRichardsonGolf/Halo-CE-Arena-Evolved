@@ -135,6 +135,17 @@ port/linux/game/menu_functions.c	if (!unjoinable && ae_browser_ping_rgb(game->pi
 port/linux/game/menu_functions.c	int ping; /* AE hook */
 port/linux/game/menu_functions.c	ping = multiplayer.mode == _multiplayer_mode_direct_link ? p2p_peer_ping(game->xnaddr + 2) : -1; /* AE hook */\nif (ae_browser_ping_text(ping, 0, text, ROW_TEXT_LENGTH)) text_set(named(row, "server_item_ping", 0), text); /* AE hook */
 port/linux/game/menu_functions.c	if (!unjoinable && ae_browser_ping_rgb(ping, 0, ae_rgb)) text_color_set(named(row, "server_item_ping", 0), ae_rgb[0], ae_rgb[1], ae_rgb[2]); /* AE hook */
+# MENUS on the main menu, the menu style switched live (item 81): port/linux/game/ae_menus_swap.c
+source/cache/cache_files.c	#include "ae_menus_swap.h" /* AE hook */
+source/cache/cache_files.c	menu_tags_loaded(cache_file_globals.header.name);\nae_menus_swap_tags_loaded(cache_file_globals.header.name); /* AE hook */
+port/linux/game/menu_tags.c	#include "ae_menus_swap.h" /* AE hook */
+port/linux/game/menu_tags.c	"ae menus open", "ae menus pick", "ae menus focus", "ae menus item", /* AE hook */
+port/linux/game/menu_tags.c	{\nae_menus_swap_tags_unloaded(); /* AE hook */\nif (menu_tags.loaded || menu_tags.block_count)
+port/linux/game/menu_tags.c	if (ae_menus_swap_tag(tag_index)) /* AE hook */\nreturn TRUE;
+port/linux/game/menu_functions.c	#include "ae_menus_swap.h" /* AE hook */
+port/linux/game/menu_functions.c	if (!strncmp(name, "ae menus ", 9)) /* AE hook */\nreturn ae_menus_swap_event(name, widget, controller);
+source/interface/ui_widget.c	#include "ae_menus_swap.h" /* AE hook */
+source/interface/ui_widget.c	widget_globals.current_system_milliseconds = system_milliseconds();\nae_menus_swap_update(); /* AE hook */\nui_widgets_process_mouse();
 #
 # CARRIED PATCHES (not hooks: verbatim DamnationCE v0.3.41 code in upstream files, CC0). Whoever merges OpenCE or
 # ChupathingyCE next re-checks these by hand (or drops them if upstream takes DamnationCE's own):

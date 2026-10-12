@@ -50,6 +50,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hud_assets import bleed, render_svg  # noqa: E402
 import port_settings  # noqa: E402
+import menu_row_art  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 MENUS = ROOT / "port/assets/menus"
@@ -73,7 +74,12 @@ LEFT_OUT = {
 # Credits' place; Multiplayer's Edit Gametypes and its line down a row, for
 # Co-op (port_settings.WIDGET_PATCHES)
 CHILD_OFFSETS = {
-    ("ui\\shell\\main_menu\\main_menu_select_list", "ui\\shell\\main_menu\\main_menu_item_quit_game"): (192, 391),
+    # (the main menu's column 18 up, for MENUS above QUIT: port_settings.WIDGET_PATCHES, _menus_select; its build
+    # number stays beside QUIT, 9 below its top)
+    **{("ui\\shell\\main_menu\\main_menu_select_list", f"ui\\shell\\main_menu\\main_menu_item_{item}"): place
+       for item, place in (("load_camp", (194, 229)), ("multiplayer", (192, 265)), ("profile", (192, 301)),
+                           ("settings", (192, 337)), ("quit_game", (192, 409)))},
+    ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 418),
     ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
      "ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_gametypes_item"): (0, 375),
     ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_screen",
@@ -602,7 +608,8 @@ def main() -> None:
             lines += widget_xml(tag, widgets[tag], tags, functions, inputs, fonts, {})
         lines.append("</menus>")
         (CE / f"{folder.replace('/', '.')}.xml").write_text("\n".join(lines) + "\n")
-    for name, lines in [*port_settings.settings_files().items(), *port_settings.multiplayer_files().items()]:
+    for name, lines in [*port_settings.settings_files().items(), *port_settings.multiplayer_files().items(),
+                        *port_settings.main_menu_files().items()]:
         (CE / name).write_text("\n".join(lines))
     # their strings
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -623,6 +630,9 @@ def main() -> None:
              " (NON_HANDDRAWN.md; tools/ce_menus.py) -->", "<menus>"]
     lines += [art.bitmap(tag) for tag in sorted(bitmaps)]
     lines += [art.title(name, text) for name, text in sorted(port_settings.TITLES.items())]
+    # (the main menu's MENUS and its styles' rows, each style's own: tools/menu_row_art.py)
+    art.pngs += menu_row_art.draw_all(MENUS)
+    lines += menu_row_art.bitmaps_xml()
     # (the in-game pause menu's taller box: menu_tags.c's pause_patch)
     for piece in ("left", "center", "right"):
         heights = [port_settings.pause_box_height(buttons) for buttons in port_settings.PAUSE_BOX_BUTTONS]

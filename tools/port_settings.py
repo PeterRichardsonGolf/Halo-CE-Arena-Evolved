@@ -936,6 +936,10 @@ MAP_KIND_CHOOSER = "main_menu/new_select/list_item_0_map_kind"
 # changes to the PC version's widgets (by our names): attributes set, all
 # their handlers replaced, children added, game data inputs added
 WIDGET_PATCHES = {
+    # (MENUS, above QUIT: _menus_select; the column up 18, ce_menus.CHILD_OFFSETS)
+    "main_menu/main_menu_select_list": {"insert_before": {
+        "main_menu/main_menu_item_quit_game": ['<child widget="main_menu/main_menu_item_menus" x="192" y="373"/>'],
+    }},
     # (Mods, after Network Setup: _mods_item; Change Color and About a row down,
     # ce_menus.CHILD_OFFSETS)
     f"{PE}/profile_edit_select_list": {"insert_before": {
@@ -2024,6 +2028,63 @@ def multiplayer_files() -> dict:
         TEAMPLAY_EDIT.replace("/", ".") + ".port.xml": head + _teamplay_options_extras() + ["</menus>", ""],
         f"{MT}/mp_map_select".replace("/", ".") + ".port.xml": head + _mcc_question() + ["</menus>", ""],
     }
+
+
+# MENUS (item 81): a row of the main menu above QUIT that turns the main menu's rows, in place, into the menu
+# styles (port/linux/game/ae_menus_swap.c). The main menu's column moves up 18 to make room (ce_menus.CHILD_OFFSETS);
+# the rows' pictures are tools/menu_row_art.py's (bitmaps main_menu/menu_*), the style in use marked
+MENUS_SELECT = "main_menu/menus_select"
+MAIN_MENU_ROW_X, MAIN_MENU_FIRST_ROW, MAIN_MENU_ROW_SPACING = 192, 229, 36
+# the styles' rows: key, picture; BACK half a row below the last (ae_menus_swap.c takes ARENA EVOLVED out of a build
+# without AE menus, and BACK up into its place)
+MENUS_STYLE_ROWS = [("pc", "main_menu/menu_style_pc_current"), ("xbox", "main_menu/menu_style_xbox"),
+                    ("arena", "main_menu/menu_style_arena")]
+MENUS_BACK_GAP = 18
+
+
+def _main_menu_row(name: str, bitmap: str, handlers: list) -> list:
+    """a row as the main menu's own: a picture of its text, 256 by 33"""
+    return _widget(name, [("type", "text"), ("width", 256), ("height", 33), ("bitmap", bitmap)],
+                   handlers + ['<on event="left_mouse" run="mouse emit accept event"/>'])
+
+
+def _menus_select() -> list:
+    """MENUS, and the screen it opens: the main menu again (its logo and build number where they are) with the
+    styles' rows where its own begin, the style in use focused ("ae menus focus"). A style's A switches to it
+    ("ae menus pick"; the one in use goes back), B, Esc, BACK and the BACK row go back, MENUS focused"""
+    screen = f"{MENUS_SELECT}/menus_screen"
+    lines = _main_menu_row("main_menu/main_menu_item_menus", "main_menu/menu_menus", [
+        '<on event="created" run="ae menus item"/>',
+        f'<on event="a" run="ae menus open" open="{screen}"/>',
+        f'<on event="start" run="ae menus open" open="{screen}"/>'])
+    lines += _widget(screen, [("width", 640), ("height", 480), ("flags", "pass_unhandled_to_focused_child")],
+                     ['<on event="b" back="true"/>', '<on event="back" back="true"/>',
+                      '<child widget="main_menu/halo_logo" y="28"/>',
+                      f'<child widget="{MENUS_SELECT}/menus_select_list"/>',
+                      '<child widget="main_menu/build_number" x="450" y="418"/>'])
+    rows = [f'<child widget="{MENUS_SELECT}/menus_item_{key}" x="{MAIN_MENU_ROW_X}" '
+            f'y="{MAIN_MENU_FIRST_ROW + MAIN_MENU_ROW_SPACING * index}"/>'
+            for index, (key, _) in enumerate(MENUS_STYLE_ROWS)]
+    rows.append(f'<child widget="{MENUS_SELECT}/menus_item_back" x="{MAIN_MENU_ROW_X}" '
+                f'y="{MAIN_MENU_FIRST_ROW + MAIN_MENU_ROW_SPACING * len(MENUS_STYLE_ROWS) + MENUS_BACK_GAP}"/>')
+    lines += _widget(f"{MENUS_SELECT}/menus_select_list",
+                     [("type", "column_list"), ("width", 640), ("height", 480),
+                      ("flags", "pass_unhandled_to_focused_child up_down_tabs_items"),
+                      ("description", "main_menu/main_menu_list_ext_desc")],
+                     ['<data input="main menu fake animate"/>', '<on event="created" run="ae menus focus"/>', *rows])
+    for key, bitmap in MENUS_STYLE_ROWS:
+        lines += _main_menu_row(f"{MENUS_SELECT}/menus_item_{key}", bitmap, [
+            '<on event="a" run="ae menus pick"/>', '<on event="start" run="ae menus pick"/>'])
+    lines += _main_menu_row(f"{MENUS_SELECT}/menus_item_back", "main_menu/menu_back", [
+        '<on event="a" run="mouse emit back event"/>', '<on event="start" run="mouse emit back event"/>'])
+    return lines
+
+
+def main_menu_files() -> dict:
+    """the port's own widgets of the main menu: MENUS and its styles"""
+    head = ['<?xml version="1.0" encoding="UTF-8"?>',
+            "<!-- The main menu's MENUS, in the PC version's style (tools/port_settings.py) -->", "<menus>"]
+    return {MENUS_SELECT.replace("/", ".") + ".xml": head + _menus_select() + ["</menus>", ""]}
 
 
 REPLACED_FOLDERS = [f"{MT}/server_settings"]

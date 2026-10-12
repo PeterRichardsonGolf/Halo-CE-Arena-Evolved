@@ -43,6 +43,7 @@ when it is played on this machine alone (not a network game).
 
 #include "halo_menus.h"
 #include "ae_glue_ce_maps.h" /* AE hook */
+#include "ae_menus_swap.h" /* AE hook */
 
 #include <stdlib.h>
 #include <string.h>
@@ -395,6 +396,7 @@ static char const *const port_function_names[] =
 	/* (Gamepads' OK in a single-player campaign: pause_settings_patch) */
 	"port profile settings save",
 	"ae mcc use", "ae mcc not now", "ae mcc never ask", "ae mcc browse", /* AE hook */
+	"ae menus open", "ae menus pick", "ae menus focus", "ae menus item", /* AE hook */
 	/* (a new profile's screens: Settings' is then being edited, which the
 	Xbox's leaves to its own screens) */
 	"new campaign decision",
@@ -2338,6 +2340,7 @@ done:
 void menu_tags_unloaded(
 	void)
 {
+	ae_menus_swap_tags_unloaded(); /* AE hook */
 	if (menu_tags.loaded || menu_tags.block_count)
 		menu_tags_release();
 }
@@ -2375,6 +2378,8 @@ char const *pc_menus_root_name(
 boolean pc_menu_tag(
 	long tag_index)
 {
+	if (ae_menus_swap_tag(tag_index)) /* AE hook */
+		return TRUE;
 	return menu_tags.loaded && tag_index != NONE &&
 		DATUM_INDEX_TO_ABSOLUTE_INDEX(tag_index) >= menu_tags.original_count;
 }
