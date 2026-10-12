@@ -6,6 +6,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **Server browser pings** (from DamnationCE 0.3.41). The PC menus' Server
+  Browser shows each internet game's ping in milliseconds, coloured green
+  (under 80), yellow (under 160) or red. It is timed the way a join reaches
+  the host (the tunnel made with the game's invite, the best of three pings,
+  then closed), a few hosts at a time, again every two minutes and on
+  REFRESH; a game with a password shows none. Joining a host whose ping is
+  being timed uses that connection. Direct Link shows the open tunnel's ping.
 - **Map sharing, safer** (from DamnationCE 0.3.41). A LAN game's other players
   are only downloaded from at local network addresses, so a host can't send
   your game to connect anywhere on the internet. A downloaded map that fails
