@@ -13,6 +13,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   Waypoint names are short (SHOTGUN, in the base's colour; a number only where
   the map has two of the item within 10 m; the power list keeps full names),
   and a waypoint steps aside, or fades, where a player's name is over a head.
+- **13 free for all gametypes.** FFA AE ELIMINATION, PHANTOMS, ENDURANCE,
+  ROCKETS, SNIPERS, JUGGERNAUT, REVERSE TAG, ACCUMULATION, STALKER, KING, CRAZY
+  KING, RACE and RALLY: Halo's stock free for all modes on Arena Evolved's casual
+  rules. They are added to your gametype list on the next start; gametypes you
+  made or changed are left alone. The gametype lists (PC and Xbox menus) now
+have room for 128 entries instead of 100. The game's own limit is unchanged:
+it keeps 100 saved files in all (gametypes, profiles) together with the 26
+built-in gametypes in one list, so with the 61 seeded ones about 10 gametypes
+of your own fit before the built-in ones at the end of the list are cut.
 - **Merged ChupathingyCE 0.7.3e and OpenCE build-190: network version 27.**
   Plays online with OpenCE build-189 and later and ChupathingyCE 0.7.3e; hosts
   of an older version (Arena Evolved 0.2.2-beta, DamnationCE 0.3.40) are

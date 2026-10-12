@@ -155,6 +155,38 @@ for name, (engine, score, resp, suic, radar, goal, weapons, mode, extra) in NHE_
 for n, mode in (("AE VANILLA", "vanilla"), ("AE POWERUPS", "nhe & powerups")):
     ROWS[n] = (dict(CASUAL, engine="slayer (teams)", **{"score to win": "50", "respawn": T(300), "suicide penalty": T(300), "vehicle set": "2", "nhe mode": mode}), "pistol + assault rifle", 4)
 
+# revision 8: the 13 free for all gametypes made from the stock ones (casual set's rules; each keeps its stock mode's
+# score, lives, ball or hill, weapon set, vehicles and motion sensor). Expected values are the stock builders' own
+# (game_engine.c build_game_variant_*), typed in here
+def FFAX(engine, score, resp, suicide, vehicles, radar, goal, spawn="pistol + assault rifle", **k):
+    d = dict(CASUAL, engine=engine, **{"score to win": str(score), "respawn": T(resp), "suicide penalty": T(suicide),
+             "vehicle set": str(vehicles), "radar players": radar, "goal radar": goal})
+    d.update(k)
+    return (d, spawn, 4)
+_SL = {"death bonus": "on", "kill penalty": "on", "kill in order": "off"}
+_BALL = {"balls": "1", "speed with ball": "slow", "with ball": "none", "without ball": "none", "random start": "off"}
+ROWS["AE ELIM"] = FFAX("slayer", 25, 0, 300, 2, "all", "motion tracker", lives="1", **_SL)
+ROWS["AE PHANTOMS"] = FFAX("slayer", 10, 150, 150, 2, "none", "nav points", invisible="on",
+                           **{"death bonus": "off", "kill penalty": "off", "kill in order": "on"})
+ROWS["AE ENDURE"] = FFAX("slayer", 10, 0, 300, 2, "all", "motion tracker", lives="5", **_SL,
+                         **{"respawn growth": "300 ticks", "odd man out": "on"})
+ROWS["AE FFA ROCK"] = FFAX("slayer", 25, 0, 300, 2, "none", "nav points", "rocket launcher",
+                           **{"weapon set": "rocket launchers", "loadout": "rocket launcher + none"}, **_SL)
+ROWS["AE FFA SNPR"] = FFAX("slayer", 15, 0, 300, 2, "none", "nav points", "sniper rifle + pistol",
+                           **{"weapon set": "sniping", "loadout": "sniper rifle + pistol", "respawn growth": "150 ticks"}, **_SL)
+ROWS["AE JUGGER"] = FFAX("oddball", 10, 150, 150, 2, "all", "nav points", **{"ball": "terminator",
+                         **_BALL, "with ball": "extra damage"})
+ROWS["AE REV TAG"] = FFAX("oddball", 2, 150, 150, 1, "none", "nav points", **{"ball": "magic", **_BALL})
+ROWS["AE ACCUM"] = FFAX("oddball", 5, 150, 150, 1, "none", "none", **{"ball": "magic", **_BALL,
+                        "balls": "16"})
+ROWS["AE STALKER"] = FFAX("oddball", 10, 150, 150, 2, "none", "motion tracker", **{
+                          "ball": "terminator", **_BALL, "speed with ball": "faster", "with ball": "invisible",
+                          "without ball": "damage resistant"})
+ROWS["AE FFA KING"] = FFAX("king", 2, 150, 150, 2, "all", "nav points", **{"moving hill": "off"})
+ROWS["AE CRAZYKNG"] = FFAX("king", 2, 0, 150, 2, "all", "nav points", **{"moving hill": "on"})
+ROWS["AE RACE"] = FFAX("race", 3, 0, 300, 2, "all", "nav points", **{"race": "normal", "team scoring": "minimum"})
+ROWS["AE RALLY"] = FFAX("race", 15, 0, 300, 2, "all", "nav points", **{"race": "rally", "team scoring": "minimum"})
+
 
 def check(runs, prefix):
     """{name: (passed, problems)} for every seed run under runs/<prefix><name, spaces as _>/*/debug.txt"""
