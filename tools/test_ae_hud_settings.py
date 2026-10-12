@@ -30,7 +30,7 @@ GAME_OPTIONS = "main_menu.settings_select.player_setup.player_profile_edit.mods_
 HUD = "main_menu.settings_select.player_setup.player_profile_edit.hud_setup.xml"
 PROFILE_MENU = "main_menu.settings_select.player_setup.player_profile_edit.xml"
 HUD_SETTINGS = ["display.hud_area", "display.compact_hud", "display.scoreboard_fade", "display.campaign_timer",
-                "display.match_clock", "display.short_messages", "display.waypoint_style"]
+                "display.match_clock", "display.short_messages", "display.waypoint_style", "display.waypoint_size"]
 GAME_SETTINGS = ["game.mod", "game.fall_damage", "game.health", "game.callouts", "game.callout_detail",
                  "game.callout_voice", "display.spawn_heat", "input.zoom_mode", "input.zoom_reset"]
 
@@ -48,11 +48,16 @@ def test_hud_screen():
     assert _settings("hud_setup") == HUD_SETTINGS
     spec = port_settings.SCREENS["hud_setup"]
     assert spec["title"] == "HUD" and spec["screen"] == "hud_settings_screen"
-    row = spec["rows"][-1]
+    row = spec["rows"][-2]
     assert row[0] == "WAYPOINTS:" and row[2] == [("TEXT", "text"), ("ICONS", "icons"), ("BOTH", "both")]
     assert len(row[3]) == 3 and all(len(text.split("\n")) <= 2 for text in row[3])
     text = (CE / HUD).read_text()
     assert 'setting="display.waypoint_style" values="text|icons|both"' in text
+    # (WAYPOINT SIZE: 50 to 100 percent in steps of 5, after WAYPOINTS)
+    size = spec["rows"][-1]
+    assert size[0] == "WAYPOINT SIZE:" and size[1] == "display.waypoint_size"
+    assert [value for _, value in size[2]] == [str(n) for n in range(50, 101, 5)] and size[2][4] == ("70%", "70")
+    assert 'setting="display.waypoint_size" values="50|55|60|65|70|75|80|85|90|95|100"' in text
     for setting in HUD_SETTINGS:
         assert f'setting="{setting}"' in text, setting
     # (its rows and its help line stay above the buttons)

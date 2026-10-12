@@ -6,6 +6,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **WAYPOINT SIZE** (Settings > HUD): the item waypoints' size, 50% to 100% in
+  steps of 5, default 70%. In split screen it shrinks with the view; far items
+  shrink gently (to 75% at 60 m). The distance is white in a dark outline and
+  the timer outlined, neither smaller than 9 screen pixels at any size.
+  Waypoint names are short (SHOTGUN, in the base's colour; a number only where
+  the map has two of the item within 10 m; the power list keeps full names),
+  and a waypoint steps aside, or fades, where a player's name is over a head.
 - **Merged ChupathingyCE 0.7.3e and OpenCE build-190: network version 27.**
   Plays online with OpenCE build-189 and later and ChupathingyCE 0.7.3e; hosts
   of an older version (Arena Evolved 0.2.2-beta, DamnationCE 0.3.40) are

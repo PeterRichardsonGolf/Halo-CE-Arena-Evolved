@@ -41,6 +41,7 @@ ZOOM_MODES = [("TOGGLE", "toggle"), ("HOLD", "hold"), ("BOTH", "both")]
 ZOOM_RESETS = [("FIRST LEVEL", "first"), ("LAST USED", "last")]
 # (the item waypoints' labels: hud_item_timers.c, ae_waypoint_icons.c)
 WAYPOINT_STYLES = [("TEXT", "text"), ("ICONS", "icons"), ("BOTH", "both")]
+WAYPOINT_SIZES = [(f"{n}%", str(n)) for n in range(50, 101, 5)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
 # each screen: its folder below PE, its screen's widget (the name the profile
@@ -197,6 +198,9 @@ SCREENS = {
              ["Item waypoints show the item's name and the time\nto its spawn.",
               "Item waypoints show the item's picture, with the\ntime to its spawn in small text beside it.",
               "Item waypoints show the item's name and time,\nthen its picture."], None),
+            # (the labels' size: split screen smaller still, far items gently smaller)
+            ("WAYPOINT SIZE:", "display.waypoint_size", WAYPOINT_SIZES,
+             "How large the item waypoints' text and pictures are.\nSplit screen is smaller still; far items gently so.", None),
         ],
     },
     # (MCC's Custom Edition files, read in place: port/linux/src/ae_mcc_platform.c; the profile menu's MAP FILES,

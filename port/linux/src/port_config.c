@@ -297,6 +297,14 @@ static const struct config_setting config_settings[] =
 		"has none shows that item's text); the overshield's and the active\n"
 		"camouflage's are Arena Evolved's own. A setting of this machine's\n"
 		"display only: nothing goes over the network." },
+	{ "display.waypoint_size", _config_real, "70.0", "HALO_WAYPOINT_SIZE", _environment_value, /* AE hook */
+		_platform_all,
+		"The size of the gametype's item waypoints' labels (their name, distance,\n"
+		"timer and picture), in percent of the full size: 50 to 100, in steps of 5.\n"
+		"In split screen the size is smaller still, by the view's size; far items\n"
+		"shrink gently (to three quarters of it at 60 metres). The power list,\n"
+		"the clock and the overlay keep their sizes. A setting of this machine's\n"
+		"display only: nothing goes over the network." },
 	{ "display.short_messages", _config_boolean, "false", "HALO_SHORT_MESSAGES", _environment_value, _platform_all,
 		"Shorter game messages, as Halo 1: NHE's: a killing spree reads\n"
 		"\"Killing Spree!\" (with the count, if there is one). false keeps the\n"
