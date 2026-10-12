@@ -65,8 +65,10 @@ enum
 	ARENA_GAMETYPES_RECORD_OLD_LIMIT = 1000,
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
-	/* the seeds' revision now (the last of arena_gametype_migrations) */
-	ARENA_GAMETYPES_REVISION = 7,
+	/* the seeds' revision now (the last of arena_gametype_migrations, or
+	this when a revision only adds gametypes: 8, the 13 free for all
+	ones; a root below it is brought up and gains them, nothing migrated) */
+	ARENA_GAMETYPES_REVISION = 8,
 	/* a memory unit holds at most 100 saved games (saved_game_files.c):
 	the self-check warns past this many */
 	ARENA_GAMETYPES_SAVED_WARNING = 90,
@@ -434,6 +436,46 @@ static struct arena_gametype const arena_gametypes[] =
 		75, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_DEFAULT, TRUE,
 		.weapon_set = ARENA_WEAPONS_HEAVY, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_assault_rifle) },
+	/* the stock free for all gametypes on the casual set's rules (revision 8;
+	owner, 2026-10-11): each keeps its own score, lives, ball or hill, weapon
+	set, vehicles and motion sensor (the ARENA_*_STOCK values), and adds the
+	casual set's: 15 minutes, TIMERS HUD + WAYPOINTS, DROP SECONDARY ALWAYS,
+	AE's rules. The lethal ball melee goes on the Oddball ones where the
+	carrier is the one who scores or hunts (not REVERSE TAG, whose carrier
+	is the one to leave alone) */
+	{ "AE ELIM", build_game_variant_elimination, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
+	{ "AE PHANTOMS", build_game_variant_phantoms, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
+	{ "AE ENDURE", build_game_variant_endurance, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
+	{ "AE FFA ROCK", build_game_variant_rockets, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
+		.loadout_secondary = ARENA_SET(_loadout_weapon_none) },
+	{ "AE FFA SNPR", build_game_variant_snipers, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.loadout_primary = ARENA_SET(_loadout_weapon_sniper_rifle),
+		.loadout_secondary = ARENA_SET(_loadout_weapon_pistol) },
+	{ "AE JUGGER", build_game_variant_juggernaut, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.ball_melee = ARENA_BALL_MELEE_LETHAL },
+	{ "AE REV TAG", build_game_variant_reverse_tag, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
+	{ "AE ACCUM", build_game_variant_accumulation, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.ball_melee = ARENA_BALL_MELEE_LETHAL },
+	{ "AE STALKER", build_game_variant_stalker, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.ball_melee = ARENA_BALL_MELEE_LETHAL },
+	{ "AE FFA KING", build_game_variant_king, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
+	{ "AE CRAZYKNG", build_game_variant_crazy_king, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
+	{ "AE RACE", build_game_variant_race, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
+	{ "AE RALLY", build_game_variant_rally, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE },
 	/* the casual set on Halo 1: NHE's maps' own modes (revision 6; NHE
 	VANILLA and NHE POWERUP before): team slayer on the casual set's values,
 	NHE's VANILLA and NHE & POWERUPS modes on its maps */
@@ -1904,11 +1946,13 @@ static struct arena_gametype_migration const *arena_gametypes_migration(
 		&arena_gametype_test_migration;
 }
 
-/* the seeds' revision now: the last migration's */
+/* the seeds' revision now: the last migration's, or ARENA_GAMETYPES_REVISION */
 static short arena_gametypes_revision(
 	void)
 {
-	return arena_gametypes_migration(arena_gametypes_migration_count() - 1)->revision;
+	short revision = arena_gametypes_migration(arena_gametypes_migration_count() - 1)->revision;
+
+	return MAX(revision, (short)ARENA_GAMETYPES_REVISION);
 }
 
 /* a row's mark that a start began rewriting it (after its backup, before
