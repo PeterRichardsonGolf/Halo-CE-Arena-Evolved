@@ -97,6 +97,7 @@ UNITS = {
                                                               "-fno-sanitize-recover=all"], []),
     # (the lobby's host compatibility: the join's own test, halo_port_limits.h)
     "ae_lobby_compat_test.c": ([], [], []),
+    "ae_updater_pick_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (the dialog, roster cards)
     "ae_widgets_dialog_test.c": ([UI / "ae_widgets_dialog.c", UI / "ae_widgets_text.c", UI / "ae_text_edit.c",
                                   UI / "ae_widgets_nav.c", UI / "ae_widgets.c", UI / "ae_style.c", UI / "ae_list.c",

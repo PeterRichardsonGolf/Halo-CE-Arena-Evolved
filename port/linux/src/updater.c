@@ -30,6 +30,10 @@ The system side (the HTTPS download, the files, starting the new game) is
 update.h's: posix_update.c on Linux, win32_update.c on Windows.
 */
 
+#ifdef AE_UPDATER_PICK_TEST
+#include <stdlib.h>
+#include <string.h>
+#else
 #include "platform.h"
 #include "halo_product.h"
 #include "port_config.h"
@@ -68,8 +72,9 @@ looks for a new version and offers its download page) */
 #else
 #define UPDATER_DOWNLOAD_PAGE_ONLY 0
 #endif
-/* the latest release's page, where the macOS application is downloaded */
-#define UPDATE_RELEASE_PAGE "https://github.com/" UPDATE_REPOSITORY "/releases/latest"
+/* the chosen release's page (followed by its version), where the macOS
+application is downloaded */
+#define UPDATE_RELEASE_PAGE "https://github.com/" UPDATE_REPOSITORY "/releases/tag/v"
 #ifndef HALO_BUILD_FLAVOR
 #define HALO_BUILD_FLAVOR "release"
 #endif
@@ -99,9 +104,9 @@ key (update_key.h) */
 #define UPDATE_ASSET "arena-evolved-" UPDATE_PLATFORM "-" HALO_BUILD_FLAVOR ".zip"
 #define UPDATE_DIRECTORY "update.partial"
 #define MAXIMUM_UPDATE_FILES 32
-/* the most a download may be: GitHub's answer about the latest release, a
+/* the most a download may be: GitHub's answer about 30 releases, a
 release's zip (about 30 MB), its signature */
-#define MAXIMUM_CHECK_SIZE (1024ULL * 1024)
+#define MAXIMUM_CHECK_SIZE (8ULL * 1024 * 1024)
 #define MAXIMUM_UPDATE_SIZE (256ULL * 1024 * 1024)
 #define MAXIMUM_SIGNATURE_SIZE 4096ULL
 
@@ -377,7 +382,10 @@ done:
 }
 
 /* ---------- checking */
+#endif
+#endif /* AE_UPDATER_PICK_TEST */
 
+#if defined(AE_UPDATER_PICK_TEST) || (!defined(HALO_ANDROID) && !defined(HALO_WEB))
 /* a version's numbers and pre-release suffix: [v]<major>.<minor>.<patch>
 followed by a suffix (0.5.0b, 1.0.0rc1) or nothing; 0 if it is not one */
 static int updater_parse_version(const char *text, long numbers[3], const char **suffix)
@@ -401,28 +409,91 @@ static int updater_parse_version(const char *text, long numbers[3], const char *
 	return 1;
 }
 
+static int updater_version_compare(const char *left, const char *right)
+{
+	long left_numbers[3], right_numbers[3];
+	const char *left_suffix, *right_suffix;
+	int part;
+
+	if (!updater_parse_version(left, left_numbers, &left_suffix) ||
+		!updater_parse_version(right, right_numbers, &right_suffix))
+		return 0;
+	for (part = 0; part < 3; part++)
+		if (left_numbers[part] != right_numbers[part])
+			return left_numbers[part] > right_numbers[part] ? 1 : -1;
+	if (!*left_suffix || !*right_suffix)
+		return !*left_suffix ? (*right_suffix ? 1 : 0) : -1;
+	return strcmp(left_suffix, right_suffix);
+}
+
+/* the newest version among the v* tags of GitHub's releases list (drafts
+skipped, pre-releases counted: the map pack's own release is never picked),
+into version; 0 if there is none */
+static int updater_pick_release(const char *json, char *version, size_t size)
+{
+	const char *tag;
+	int found = 0;
+
+	if (!json || !version || !size)
+		return 0;
+	version[0] = 0;
+	tag = json;
+	while ((tag = strstr(tag, "\"tag_name\"")))
+	{
+		const char *next = strstr(tag + 10, "\"tag_name\"");
+		const char *draft = strstr(tag + 10, "\"draft\"");
+		const char *value = strchr(tag + 10, ':');
+		const char *end, *suffix;
+		char candidate[32];
+		long numbers[3];
+		size_t length;
+		int is_draft = 0;
+
+		if (!value || (next && value > next))
+			break;
+		while (*++value == ' ' || *value == '\t' || *value == '\r' || *value == '\n')
+			;
+		end = *value == '"' ? strchr(value + 1, '"') : NULL;
+		if (draft && (!next || draft < next))
+		{
+			draft = strchr(draft + 7, ':');
+			if (draft && (!next || draft < next))
+			{
+				while (*++draft == ' ' || *draft == '\t' || *draft == '\r' || *draft == '\n')
+					;
+				is_draft = !strncmp(draft, "true", 4);
+			}
+		}
+		if (end && value[1] == 'v' && !is_draft)
+		{
+			length = (size_t)(end - value - 2);
+			if (length && length < sizeof(candidate) && length < size)
+			{
+				memcpy(candidate, value + 2, length);
+				candidate[length] = 0;
+				if (updater_parse_version(candidate, numbers, &suffix) && (!found ||
+					updater_version_compare(candidate, version) > 0))
+				{
+					memcpy(version, candidate, length + 1);
+					found = 1;
+				}
+			}
+		}
+		tag = next ? next : tag + 10;
+	}
+	return found;
+}
+#endif
+
+#ifndef AE_UPDATER_PICK_TEST
+#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
+
 /* whether version is newer than this build's: by its numbers, then a
 version without a suffix comes after the ones with (0.5.0b, then 0.5.0),
 and suffixes in order (a, b, rc1) */
 static int updater_newer(const char *version)
 {
-	long latest[3], current[3];
-	const char *latest_suffix, *current_suffix;
-	int part;
-
-	if (!updater_parse_version(version, latest, &latest_suffix) ||
-		!updater_parse_version(HALO_VERSION, current, &current_suffix))
-	{
-		return 0;
-	}
-	for (part = 0; part < 3; part++)
-	{
-		if (latest[part] != current[part])
-			return latest[part] > current[part];
-	}
-	if (!*latest_suffix || !*current_suffix)
-		return !*latest_suffix && *current_suffix;
-	return strcmp(latest_suffix, current_suffix) > 0;
+	return updater_version_compare(version, HALO_VERSION) > 0;
 }
 
 /* GitHub's latest release's version (its tag, without the v), into version;
@@ -433,11 +504,10 @@ static int updater_latest_release(char *version, size_t size)
 	char error[512] = "";
 	size_t length = 0;
 	char *text;
-	const char *tag;
 	int found = 0;
 
 	updater_path(path, sizeof(path), "update-check.json");
-	if (!update_download("https://api.github.com/repos/" UPDATE_REPOSITORY "/releases/latest", path,
+	if (!update_download("https://api.github.com/repos/" UPDATE_REPOSITORY "/releases?per_page=30", path,
 		MAXIMUM_CHECK_SIZE, NULL, NULL, error, sizeof(error)))
 	{
 		platform_log("update: could not check for a new version: %s", error);
@@ -447,25 +517,10 @@ static int updater_latest_release(char *version, size_t size)
 	update_delete_file(path);
 	if (!text)
 		return 0;
-	/* "tag_name": "v<version>" */
-	tag = strstr(text, "\"tag_name\"");
-	if (tag)
-	{
-		tag = strchr(tag + 10, '"');
-		if (tag && !strncmp(tag, "\"v", 2))
-		{
-			size_t end = strcspn(tag + 2, "\"");
-
-			if (end > 0 && end < size)
-			{
-				memcpy(version, tag + 2, end);
-				version[end] = 0;
-				/* (a version goes into the download's address: letters,
-				digits and . _ + - only) */
-				found = zip_name_allowed(version);
-			}
-		}
-	}
+	found = updater_pick_release(text, version, size);
+	/* (a version goes into the download's address: letters, digits and
+	. _ + - only) */
+	found = found && zip_name_allowed(version);
 	SDL_free(text);
 	return found;
 }
@@ -853,6 +908,7 @@ void updater_poll(SDL_Window *window)
 		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" },
 	};
 	char message[400];
+	char release_page[512];
 	int answer = 0;
 	int fullscreen;
 	const char *test_answer = config_string("debug.update_answer");
@@ -860,12 +916,14 @@ void updater_poll(SDL_Window *window)
 	if (SDL_GetAtomicInt(&updater_state) != _updater_available)
 		return;
 	SDL_SetAtomicInt(&updater_state, _updater_handled);
+	/* (the chosen release's own page) */
+	snprintf(release_page, sizeof(release_page), UPDATE_RELEASE_PAGE "%s", updater_latest_version);
 	/* (an automated test's answer: debug.update_answer) */
 	if (test_answer[0])
 	{
 		platform_log("update: answering %s (debug.update_answer)", test_answer);
 		if (!strcmp(test_answer, "yes") && UPDATER_DOWNLOAD_PAGE_ONLY)
-			platform_log("update: would open " UPDATE_RELEASE_PAGE);
+			platform_log("update: would open %s", release_page);
 		else if (!strcmp(test_answer, "yes"))
 			updater_update();
 		else if (!strcmp(test_answer, "never"))
@@ -923,8 +981,8 @@ void updater_poll(SDL_Window *window)
 	}
 	else if (answer == 1 && UPDATER_DOWNLOAD_PAGE_ONLY)
 	{
-		platform_log("update: opening " UPDATE_RELEASE_PAGE);
-		if (!SDL_OpenURL(UPDATE_RELEASE_PAGE))
+		platform_log("update: opening %s", release_page);
+		if (!SDL_OpenURL(release_page))
 			platform_log("update: could not open the download page: %s", SDL_GetError());
 	}
 	else if (answer == 1)
@@ -959,3 +1017,5 @@ const char *updater_version(void)
 {
 	return HALO_VERSION;
 }
+
+#endif /* AE_UPDATER_PICK_TEST */
