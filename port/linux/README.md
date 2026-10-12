@@ -958,14 +958,18 @@ In the Server Browser, select a game to join it. The game joins the invite
 of the game, as for a link. When it reaches the host, it opens the lobby.
 If it cannot reach the host in 30 seconds, it marks the game FAILED.
 
-The PING column shows the round trip to each host in milliseconds. The
+With SERVER PINGS on (Settings > Network; Arena Evolved: off by default,
+`network.browser_pings`) the PING column shows the round trip to each host
+in milliseconds. Timing it makes the same connection a join makes, so each
+listed host sees this machine's address; off, no host is contacted until
+you join one, and the column shows CLOSED, LIVE or nothing as before. The
 browser times it as a join would reach the host: it makes the tunnel with
 the listing's invite, keeps the shortest of three pings, and closes the
 tunnel again. It times a few hosts at once, each again every two minutes
-and on REFRESH. Joining a host whose tunnel is open uses that tunnel. A
+and on REFRESH (Arena Evolved: not a host timed in the last 30 seconds). Joining a host whose tunnel is open uses that tunnel. A
 game with a password, whose invite the listing hides, shows no ping, nor
-does a host not reached; a game that is full or starting then shows
-CLOSED. REFRESH also asks the hosts for their listings again. A ping is
+does a host not reached; a game that is full or starting shows CLOSED
+(Arena Evolved: whatever its ping). REFRESH also asks the hosts for their listings again. A ping is
 green under 80 ms, yellow under 160 and red above (from DamnationCE). In
 Direct Link the PING column shows the open tunnel's ping to each host.
 

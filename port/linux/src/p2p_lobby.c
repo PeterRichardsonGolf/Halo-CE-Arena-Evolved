@@ -65,6 +65,7 @@ game with a password is not: its token is sealed.
 #include "port_config.h"
 #include "p2p_internal.h"
 #include "halo_port_limits.h"
+#include "ae_net_pings.h" /* AE hook */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -676,6 +677,8 @@ static void update_probes(void)
 	int refused = 0;
 	int index;
 
+	if (!ae_browser_pings_on()) /* AE hook */
+		return;
 	for (index = 0; index < MAXIMUM_GAMES && refused < P2P_MAXIMUM_PROBES; index++)
 	{
 		struct game *game = &lobby.games[index];
@@ -912,10 +915,10 @@ void p2p_lobby_refresh(void)
 	pthread_mutex_lock(&p2p_lock);
 	if (lobby.browsing)
 		lobby.query_wanted = 1;
-	/* (the pings timed again) */
+	/* (the pings timed again; AE: not a host's probed in the last 30 s) */
 	for (index = 0; index < MAXIMUM_GAMES; index++)
 	{
-		if (!lobby.games[index].probing)
+		if (!lobby.games[index].probing && ae_browser_probe_refresh_due(lobby.games[index].probed_time, p2p_now())) /* AE hook */
 			lobby.games[index].probed_time = 0;
 	}
 	pthread_mutex_unlock(&p2p_lock);

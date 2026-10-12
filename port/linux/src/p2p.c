@@ -1835,7 +1835,7 @@ int p2p_broadcast_datagram(unsigned short source_port, unsigned short port, cons
 	for (index = 0; index < P2P_MAXIMUM_PEERS; index++)
 	{
 		/* (AE: not a probe's peer, which is none of the game's) */
-		if (p2p.peers[index].used && p2p.peers[index].connected && !p2p.peers[index].probe)
+		if (p2p.peers[index].used && p2p.peers[index].connected && !p2p.peers[index].probe) /* AE hook */
 		{
 			datagram_send(&p2p.peers[index], source_port, port, data, size);
 			count++;
@@ -2871,6 +2871,7 @@ static struct peer *joined_host(void)
 {
 	struct peer *peer = find_peer(p2p.join_host);
 
+	if (peer && peer->probe) peer = NULL; /* AE hook */
 	return peer && peer->connected && peer->is_host && !peer->is_player ? peer : NULL;
 }
 
@@ -3124,6 +3125,7 @@ int p2p_peer_reached(const unsigned char *peer_identifier, unsigned long *addres
 		return 0;
 	pthread_mutex_lock(&p2p_lock);
 	peer = find_peer(peer_identifier);
+	if (peer && peer->probe) peer = NULL; /* AE hook */
 	if (peer && peer->connected)
 	{
 		*address = peer->virtual_address;

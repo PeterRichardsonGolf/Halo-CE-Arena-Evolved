@@ -111,3 +111,37 @@ tools/embed_assets.py	lines.extend(ae_button_glyphs.embedded_lines(words, png_si
 port/linux/src/sdl_platform.c	#include "ae_gamepads.h" /* AE hook */
 port/linux/src/sdl_platform.c	ae_gamepads_hints(); /* AE hook */
 port/linux/src/sdl_platform.c	ae_gamepads_log(gamepad); /* AE hook */
+# server browser pings (DamnationCE v0.3.41, carried in p2p.c / p2p_lobby.c / p2p_signal.c): AE's rules
+# (port/linux/src/ae_net_pings.h): SERVER PINGS opt-in, REFRESH limit, colours, probe peers kept from the game
+port/linux/src/port_config.c	{ "network.browser_pings", _config_boolean, "false", "HALO_NET_BROWSER_PINGS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/p2p_lobby.c	#include "ae_net_pings.h" /* AE hook */
+port/linux/src/p2p_lobby.c	if (!ae_browser_pings_on()) /* AE hook */\nreturn;
+port/linux/src/p2p_lobby.c	if (!lobby.games[index].probing && ae_browser_probe_refresh_due(lobby.games[index].probed_time, p2p_now())) /* AE hook */\nlobby.games[index].probed_time = 0;
+port/linux/src/p2p.c	struct peer *peer = find_peer(p2p.join_host);\n\nif (peer && peer->probe) peer = NULL; /* AE hook */
+port/linux/src/p2p.c	peer = find_peer(peer_identifier);\nif (peer && peer->probe) peer = NULL; /* AE hook */
+port/linux/src/p2p.c	if (p2p.peers[index].used && p2p.peers[index].connected && !p2p.peers[index].probe) /* AE hook */\n{\ndatagram_send(&p2p.peers[index], source_port, port, data, size);
+port/linux/game/menu_functions.c	#include "../src/ae_net_pings.h" /* AE hook */
+port/linux/game/menu_functions.c	if (ae_browser_ping_text(game->ping, game->failed || !game->open, text, ROW_TEXT_LENGTH)) text_set(named(row, "server_item_ping", 0), text); /* AE hook */
+port/linux/game/menu_functions.c	float ae_rgb[3]; /* AE hook */
+port/linux/game/menu_functions.c	if (!unjoinable && ae_browser_ping_rgb(game->ping, game->failed || !game->open, ae_rgb)) text_color_set(named(row, "server_item_ping", 0), ae_rgb[0], ae_rgb[1], ae_rgb[2]); /* AE hook */
+port/linux/game/menu_functions.c	int ping; /* AE hook */
+port/linux/game/menu_functions.c	ping = multiplayer.mode == _multiplayer_mode_direct_link ? p2p_peer_ping(game->xnaddr + 2) : -1; /* AE hook */\nif (ae_browser_ping_text(ping, 0, text, ROW_TEXT_LENGTH)) text_set(named(row, "server_item_ping", 0), text); /* AE hook */
+port/linux/game/menu_functions.c	if (!unjoinable && ae_browser_ping_rgb(ping, 0, ae_rgb)) text_color_set(named(row, "server_item_ping", 0), ae_rgb[0], ae_rgb[1], ae_rgb[2]); /* AE hook */
+#
+# CARRIED PATCHES (not hooks: verbatim DamnationCE v0.3.41 code in upstream files, CC0). Whoever merges OpenCE or
+# ChupathingyCE next re-checks these by hand (or drops them if upstream takes DamnationCE's own):
+# - 98889fc72 "Server browser: each host's ping, timed over the tunnel to it":
+#   port/linux/src/p2p.c (struct peer probe / pongs / shortest_round_trip, p2p.probes[], find_peer_by_address,
+#     drop_peer, p2p_peer_offered, peer_heard, p2p_broadcast_targets, p2p_peer_address, p2p_peer_ping,
+#     datagram_received, stream_received, tunnel_received's pong, probe_index, probe_end, p2p_probe_start,
+#     update_probes, probe_taken_up, join_invite, upnp_needed, p2p_thread's update_probes call);
+#   port/linux/src/p2p_lobby.c (struct game token / ping / probing / probed_time, listing_take, update_probes,
+#     update_browsing, p2p_lobby_probed, p2p_lobby_refresh, p2p_lobby_games);
+#   port/linux/src/p2p_signal.c (_topic_probe / NUMBER_OF_TOPICS, struct probe, signalling.probes, broker_sync_topics,
+#     join_probe, send_join, join_start's token, accept_received, publish_received, p2p_signal_update,
+#     p2p_signal_probe, p2p_signal_stop_probe); port/linux/src/p2p_internal.h (P2P_MAXIMUM_PROBES,
+#     _p2p_offered_probe, prototypes); port/linux/src/p2p.h (p2p_peer_ping); tools/p2p_lobby_check.c (the probe checks);
+#   port/linux/README.md (the PING paragraph).
+# - 335c6522e "Server browser: pings coloured": AE's own colours instead (ae_net_pings.h, the hooks above).
+# - 8192f36fc "PlayStation controllers: their buttons on the button icons": AE's own files (ae_buttons*), hooks above.
+# - OpenCE's 67f221421, baab0780f, 05dd9ccde: taken unchanged (upstream code, byte-identical to OpenCE main).

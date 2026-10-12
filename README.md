@@ -217,6 +217,10 @@ play:
   stats site, and Delta Stats (what happens in the games you host: kills
   with positions, accuracy, medals, sent to that site; on by default in
   ChupathingyCE) stay off unless you turn them on (Settings > Network).
+- SERVER PINGS (Settings > Network, off by default): the Server Browser
+  shows each listed game's ping. Timing a ping makes the same connection a
+  join makes, so every host in the list sees your address. Off, no host is
+  contacted until you join one.
 - Crash reports, which ChupathingyCE's releases send to its site, are off in
   every Arena Evolved build: nothing is written to send and nothing is asked.
 - The game does not fetch ChupathingyCE's signed table of network versions

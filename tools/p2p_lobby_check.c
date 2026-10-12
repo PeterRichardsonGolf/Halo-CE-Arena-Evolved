@@ -39,6 +39,9 @@ static const unsigned char *hosting_token;
 void posix_random_bytes(void *buffer, unsigned long size) { memset(buffer, 0x5a, size); }
 unsigned long p2p_now(void) { return clock_now; }
 int config_boolean(const char *name) { (void)name; return 1; }
+/* (AE: SERVER PINGS, network.browser_pings: ae_net_pings.c's) */
+static int pings_on = 1;
+int ae_browser_pings_on(void) { return pings_on; }
 void platform_log(const char *format, ...) { (void)format; }
 /* (delta.c's legacy number: the built-in one) */
 int delta_legacy_announce(void) { return HALO_PORT_NETWORK_VERSION; }
@@ -336,10 +339,24 @@ static void lobby_checks(void)
 	hear(published, published_size, 0, NULL);
 	check(games(&listing) == 1 && listing.in_progress, "the browser takes the newer listing");
 	check(listing.ping == 42 && probe_count == 1, "the ping is kept, and not timed again soon");
+	/* (AE: not again within 30 s of the last probe, Refresh or not) */
+	p2p_lobby_refresh();
+	lobby_update(token, 3, 16);
+	check(probe_count == 1, "Refresh does not time a host probed in the last 30 s again");
+	clock_now += 30000;
+	hear(published, published_size, 0, NULL);
 	p2p_lobby_refresh();
 	lobby_update(token, 3, 16);
 	check(probe_count == 2 && games(&listing) == 1 && listing.ping == 42,
 		"Refresh times the ping again; one not reached keeps the last");
+	/* (AE: SERVER PINGS off: no host probed, whatever Refresh says) */
+	pings_on = 0;
+	clock_now += 30000;
+	hear(published, published_size, 0, NULL);
+	p2p_lobby_refresh();
+	lobby_update(token, 3, 16);
+	check(probe_count == 2, "with SERVER PINGS off no host is probed");
+	pings_on = 1;
 	/* the older one again: no change */
 	hear(first, first_size, 0, NULL);
 	check(games(&listing) == 1 && listing.in_progress, "an older listing is ignored");

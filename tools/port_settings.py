@@ -285,8 +285,8 @@ SCREENS = {
         "screen": "network_settings_screen",
         "header": ("header_profile_network_settings", f"{PE}/network_setup/header_profile_network_settings"),
         # (22, not 30: twelve rows and MAP SHARING, with the help line as low
-        # as mods_setup's)
-        "spacing": 22,
+        # as mods_setup's; AE: 20, thirteen with SERVER PINGS)
+        "spacing": 20,
         "help_top": 368,
         # (the router, the clipboard and the updates, which the web build
         # has not: the other rows from the top there)
@@ -300,6 +300,9 @@ SCREENS = {
              "Show the internet games you host on the public\nlist at halo.milenko.org, for anyone to join.", None),
             ("SHARE GAME STATS:", "network.report_joined_games", ON_OFF,
              "Send the scores of internet games you join to\nhalo.milenko.org, with your player ID.", None),
+            # (AE: DamnationCE's pings, an opt-in, off by default: ae_net_pings.h)
+            ("SERVER PINGS:", "network.browser_pings", ON_OFF,
+             "Time each Server Browser game's ping (each\nlisted host then sees your address).", None),
             # (Delta Stats, ChupathingyCE 0.7.1's: on by default there)
             ("SHARE HOSTED STATS:", "network.report_events", ON_OFF,
              "Send the games you host (kills, positions, medals)\nto halo.milenko.org, for its match pages.", None),

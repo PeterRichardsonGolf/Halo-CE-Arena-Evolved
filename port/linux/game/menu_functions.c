@@ -90,6 +90,7 @@ their handlers open opens.
 #include "text/draw_string.h"
 /* (internet play's server browser: the platform layer's) */
 #include "../src/p2p.h"
+#include "../src/ae_net_pings.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 #include "../src/browser.h"
 #endif
@@ -3490,34 +3491,6 @@ static boolean join_reason_text(short state, unsigned int version, wchar_t *text
 static void text_color_set(struct widget_instance const *widget, real red, real green, real blue);
 static void text_color_clear(struct widget_instance const *widget);
 
-/* (DamnationCE v0.3.41) a row's ping in a colour by how good it is: green
-under 80 ms, yellow under 160, red above, as its Online Games browser has
-them; none (-1, a host not timed or failed) as the row's own */
-enum
-{
-	BROWSER_PING_GOOD = 80,
-	BROWSER_PING_FAIR = 160,
-	BROWSER_PING_COLOR_GOOD = 0x5ED38C,
-	BROWSER_PING_COLOR_FAIR = 0xE8C547,
-	BROWSER_PING_COLOR_POOR = 0xE86A5A,
-};
-
-static void browser_ping_color(struct widget_instance *row, int ping)
-{
-	struct widget_instance *text = named(row, "server_item_ping", 0);
-	unsigned long rgb;
-
-	if (ping < 0)
-	{
-		text_color_clear(text);
-		return;
-	}
-	rgb = ping < BROWSER_PING_GOOD ? BROWSER_PING_COLOR_GOOD : ping < BROWSER_PING_FAIR ? BROWSER_PING_COLOR_FAIR :
-		BROWSER_PING_COLOR_POOR;
-	text_color_set(text, (real)((rgb >> 16) & 0xFF) / 255.0f, (real)((rgb >> 8) & 0xFF) / 255.0f,
-		(real)(rgb & 0xFF) / 255.0f);
-}
-
 static void browser_row_dim(struct widget_instance *row, boolean dim)
 {
 	static char const *const texts[] =
@@ -4456,13 +4429,14 @@ static void lobby_browser_update(struct widget_instance *list)
 		text_set(named(row, "server_item_type", 0), game_type_name(game->engine_type));
 		usnprintf(text, ROW_TEXT_LENGTH - 1, L"%d/%d", game->player_count, game->maximum_player_count);
 		text_set(named(row, "server_item_players", 0), text);
-		/* (its host's ping, once probed: p2p_lobby.c; DamnationCE v0.3.41) */
-		usnprintf(text, ROW_TEXT_LENGTH - 1, L"%d", game->ping);
-		text_set(named(row, "server_item_ping", 0), game->failed ? L"FAILED" : game->ping >= 0 ? text :
-			!game->open ? L"CLOSED" : game->in_progress ? L"LIVE" : L"-");
+		/* (no ping yet: its host is reached only on joining) */
+		text_set(named(row, "server_item_ping", 0), game->failed ? L"FAILED" : !game->open ? L"CLOSED" :
+			game->in_progress ? L"LIVE" : L"-");
+		if (ae_browser_ping_text(game->ping, game->failed || !game->open, text, ROW_TEXT_LENGTH)) text_set(named(row, "server_item_ping", 0), text); /* AE hook */
 		/* AE: a host that is not joined: its row dimmed, its version in the last column */
 		{
 			unsigned int version;
+			float ae_rgb[3]; /* AE hook */
 			boolean unjoinable = lobby_browser_join_state(game, &version) != HALO_PORT_JOIN_OK;
 
 			if (unjoinable)
@@ -4471,9 +4445,7 @@ static void lobby_browser_update(struct widget_instance *list)
 				text_set(named(row, "server_item_ping", 0), text);
 			}
 			browser_row_dim(row, unjoinable);
-			/* (the ping coloured, DamnationCE v0.3.41: a dimmed row keeps its dim) */
-			if (!unjoinable)
-				browser_ping_color(row, game->failed ? -1 : game->ping);
+			if (!unjoinable && ae_browser_ping_rgb(game->ping, game->failed || !game->open, ae_rgb)) text_color_set(named(row, "server_item_ping", 0), ae_rgb[0], ae_rgb[1], ae_rgb[2]); /* AE hook */
 		}
 		/* (the lock: a game with a password. Its bitmap's first frame is
 		empty, the PC version's for no lock; the next is the lock, in the
@@ -4860,7 +4832,7 @@ static void browser_update(struct widget_instance *list)
 		short index = browser_row_index(row);
 		struct advertised_game *game;
 		wchar_t text[ROW_TEXT_LENGTH];
-		int ping;
+		int ping; /* AE hook */
 
 		if (index == NONE)
 			continue;
@@ -4876,13 +4848,13 @@ static void browser_update(struct widget_instance *list)
 		text_set(named(row, "server_item_type", 0), game_type_name(game->engine_type));
 		usnprintf(text, ROW_TEXT_LENGTH - 1, L"%d/%d", game->player_count, game->maximum_player_count);
 		text_set(named(row, "server_item_players", 0), text);
-		/* (a Direct Link game's host: the tunnel's ping; DamnationCE v0.3.41) */
-		ping = multiplayer.mode == _multiplayer_mode_direct_link ? p2p_peer_ping(game->xnaddr + 2) : -1;
-		usnprintf(text, ROW_TEXT_LENGTH - 1, L"%d", ping);
-		text_set(named(row, "server_item_ping", 0), ping >= 0 ? text : advertised_in_progress(game) ? L"LIVE" : L"");
+		text_set(named(row, "server_item_ping", 0), advertised_in_progress(game) ? L"LIVE" : L"");
+		ping = multiplayer.mode == _multiplayer_mode_direct_link ? p2p_peer_ping(game->xnaddr + 2) : -1; /* AE hook */
+		if (ae_browser_ping_text(ping, 0, text, ROW_TEXT_LENGTH)) text_set(named(row, "server_item_ping", 0), text); /* AE hook */
 		/* AE: a host that is not joined: its row dimmed, its version in the last column */
 		{
 			unsigned int version;
+			float ae_rgb[3]; /* AE hook */
 			boolean unjoinable = advertised_join_state(game, &version) != HALO_PORT_JOIN_OK;
 
 			if (unjoinable)
@@ -4895,9 +4867,7 @@ static void browser_update(struct widget_instance *list)
 				text_set(named(row, "server_item_ping", 0), text);
 			}
 			browser_row_dim(row, unjoinable);
-			/* (the ping coloured, DamnationCE v0.3.41: a dimmed row keeps its dim) */
-			if (!unjoinable)
-				browser_ping_color(row, ping);
+			if (!unjoinable && ae_browser_ping_rgb(ping, 0, ae_rgb)) text_color_set(named(row, "server_item_ping", 0), ae_rgb[0], ae_rgb[1], ae_rgb[2]); /* AE hook */
 		}
 		visible_set(named(row, "server_item_locked", 0), FALSE);
 		visible_set(named(row, "server_item_dedicated", 0), FALSE);
@@ -5344,7 +5314,8 @@ pc_menu_text_color), while the one who gave it keeps giving it (a widget
 is drawn each frame its screen is up, and a gone widget's place may come to
 hold another) */
 
-/* (AE: room for the game lists' dimmed rows too, five texts each: browser_row_dim) */
+/* (AE: room for the game lists' dimmed rows too, five texts each: browser_row_dim, and a ping each on the rows
+not dimmed: 15 x 5 + 15 = 90) */
 #define MAXIMUM_TEXT_COLORS 96
 /* a colour given this long ago is forgotten */
 #define TEXT_COLOR_LIFETIME 250

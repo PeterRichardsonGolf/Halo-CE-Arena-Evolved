@@ -17,13 +17,17 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   triangle for A, B, X and Y, in the Xbox-style menus' footers (SELECT, BACK),
   the icons inside menu text and the in-game prompts ("Hold X to pick up").
   Touching the keyboard, mouse or an Xbox pad brings the Xbox letters back.
-- **Server browser pings** (from DamnationCE 0.3.41). The PC menus' Server
-  Browser shows each internet game's ping in milliseconds, coloured green
-  (under 80), yellow (under 160) or red. It is timed the way a join reaches
-  the host (the tunnel made with the game's invite, the best of three pings,
-  then closed), a few hosts at a time, again every two minutes and on
-  REFRESH; a game with a password shows none. Joining a host whose ping is
-  being timed uses that connection. Direct Link shows the open tunnel's ping.
+- **Server browser pings** (from DamnationCE 0.3.41), an opt-in: Settings >
+  Network > SERVER PINGS, **off by default**. Timing a ping makes the same
+  connection a join makes, so every host in the list sees your address; off,
+  no host is contacted until you join one. On, the PC menus' Server Browser
+  shows each internet game's ping in milliseconds, coloured green (under 80),
+  yellow (under 160) or red. It is timed the way a join reaches the host (the
+  tunnel made with the game's invite, the best of three pings, then closed),
+  a few hosts at a time, again every two minutes and on REFRESH (not a host
+  timed in the last 30 seconds); a game with a password shows none, a full or
+  starting game still shows CLOSED. Joining a host whose ping is being timed
+  uses that connection. Direct Link shows the open tunnel's ping.
 - **Map sharing, safer** (from DamnationCE 0.3.41). A LAN game's other players
   are only downloaded from at local network addresses, so a host can't send
   your game to connect anywhere on the internet. A downloaded map that fails
