@@ -156,7 +156,8 @@ def machine_name(text, ae_silent):
         return name
     units = list(struct.unpack(">32H", name))
     units[30] = 0
-    units[31] = AE_SILENT_JOIN_MARK | AE_SILENT_CAPABILITY
+    # (True: the SILENT options' capability, 1; 2: and the battle rifle's pack, --ae-rifle)
+    units[31] = AE_SILENT_JOIN_MARK | (AE_SILENT_CAPABILITY if ae_silent is True else int(ae_silent))
     return struct.pack(">32H", *units)
 
 
@@ -607,6 +608,9 @@ def main():
                              "turn, jump and crouch")
     parser.add_argument("--fire", action="store_true", help="(--move) hold the trigger in bursts too")
     parser.add_argument("--seed", type=int, default=1, help="(--move) the bots' patterns' seed")
+    parser.add_argument("--ae-rifle", action="store_true",
+                        help="the bots tell the host they have the battle rifle's weapon pack (and the SILENT options): "
+                             "a host whose gametype uses the pack refuses machines that do not")
     parser.add_argument("--ae-silent", action="store_true",
                         help="join as Arena Evolved 0.2.3+ machines (the SILENT options' capability in the join "
                              "request); without it a host with SILENT MOVEMENT / SILENT WEAPONS on refuses them")
@@ -636,7 +640,7 @@ def main():
         machine = Machine(index + 1, address, options.host, log)
         machine.state = "waiting"
         machine.load_seconds = options.load_seconds
-        machine.ae_silent = options.ae_silent
+        machine.ae_silent = 2 if options.ae_rifle else options.ae_silent
         if options.move:
             machine.mover = Mover(options.seed * 7919 + machine.index, options.fire)
         machines.append(machine)
