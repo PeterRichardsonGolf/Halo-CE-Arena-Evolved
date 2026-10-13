@@ -21,8 +21,9 @@ port of the Halo: Combat Evolved decompilation, by way of
 both closely.
 
 > **Status: early and in active development.** The current pre-release is
-> 0.2.2-beta (below). The Linux 64-bit build is the one played and tested;
-> the Windows 64-bit build passes an automated start-up and gametype check;
+> 0.2.3-beta (below). The Linux 64-bit build is the one played and tested;
+> the Windows 64-bit build is built by the same automated checks but this
+> release's was not test-played before it went up;
 > the other platforms build from the same code but are untested here.
 
 What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
@@ -275,9 +276,10 @@ copies or changes MCC's files). Versions and the build-time packages are in
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.2.2-beta, built on ChupathingyCE 0.7.1e and OpenCE build-177
-(network version 25), is the current one, a pre-release (2026-10-11); it
-plays online with 0.2.1-beta, not with 0.2.0-beta or earlier. Each platform is
+page: 0.2.3-beta, built on ChupathingyCE 0.7.3e and OpenCE build-201
+(network version 28), is the current one, a pre-release (2026-10-13); it
+plays online with OpenCE build-201 and later, not with 0.2.2-beta or earlier.
+Each platform is
 a zip of its own: Windows and Linux as 64-bit builds only, plus macOS and
 Android. For Linux there are two, and the first is the one to take:
 
@@ -425,7 +427,7 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, the current code (not yet released) is network version 28: it
+- Online, 0.2.3-beta is network version 28: it
   plays with OpenCE builds on network 28 (build-201 onward, until OpenCE
   changes its network version), both ways, and joins only games
   hosted on version 28 (an older host is refused: the host needs to update).

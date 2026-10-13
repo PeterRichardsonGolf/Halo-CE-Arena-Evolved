@@ -6,6 +6,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.2.3-beta - 2026-10-13
+
+Built on ChupathingyCE 0.7.3e and OpenCE build-201: **network version 28**.
+It plays online with OpenCE build-201 and later, not with 0.2.2-beta or
+earlier (details in the merge entry below). The Linux 64-bit build is the one
+played; this Windows build was not test-played before release.
+
 - **Map sharing for every map that is not the game's own.** A host now sends
   community maps in the Xbox's format (those in its `maps` folder and those of
   its active mod) as well as Custom Edition maps. Join a game on a map you
@@ -109,6 +116,16 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   them where the map uses the stock HUD art (ammo, grenades, reticles, scopes,
   motion sensor); the few pieces Halo PC laid out differently (the shield and
   health meters, the ammo meters) keep the map's own.
+- **Custom Edition maps: GAME OPTIONS in the pause menu works.** RESTART GAME
+  restarts the same map and gametype, CHOOSE TEAM changes the pausing
+  player's team, and in split screen the screens it opens are fitted and
+  centred in the pausing player's own view. The NEW GAME row, which dropped
+  the host out of the game, is gone.
+- **Fixed: a controller layout could be applied to the wrong controller in
+  the PC menus.** When player 1's profile was loaded before their controller
+  was assigned, a layout with the d-pad bound (Universal Reclaimer) kept the
+  stock d-pad movement, and a stock layout could lose it. The layout now
+  follows the player whichever comes first.
 - **Fixed: leaving a LAN lobby with two players on one gamepad and the
   keyboard could lock the game.** When the keyboard's player 1 left first, the
   gamepad went back to player 1's place, and "Please reconnect #2 controller."
@@ -128,7 +145,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   ROCKETS, SNIPERS, JUGGERNAUT, REVERSE TAG, ACCUMULATION, STALKER, KING, CRAZY
   KING, RACE and RALLY: Halo's stock free for all modes on Arena Evolved's casual
   rules. They are added to your gametype list on the next start; gametypes you
-  made or changed are left alone. The gametype lists (PC and Xbox menus) now
+  made or changed are left alone. Arena Evolved's gametypes are listed free
+  for all first, then team. The gametype lists (PC and Xbox menus) now
 have room for 128 entries instead of 100. The game's own limit is unchanged:
 it keeps 100 saved files in all (gametypes, profiles) together with the 26
 built-in gametypes in one list, so with the 61 seeded ones about 10 gametypes
