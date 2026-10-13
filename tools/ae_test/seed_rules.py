@@ -23,7 +23,7 @@ T = lambda s: f"{s} ticks ({s / 30:g} s)"
 
 NHE_COMMON = {
     "health": "classic", "fall damage": "on", "starting equipment": "generic", "vehicle set": "1",
-    "time limit": "none", "timers": "off", "no spread": "nhe", "pre-game countdown": "on",
+    "time limit": "none", "timers": "off", "no spread": "first shot", "pre-game countdown": "on",
     "friendly fire": "on", "shields": "on", "loadout": "category", "no map weapons": "off",
     "vehicle sets": "none (red none, blue none)",
     "timers level": "off", "spawn heat": "on", "objective": "normal", "nhe extras": "on", "drop secondary": "ce",
@@ -101,7 +101,7 @@ def fields(text):
 
 
 
-AE = {"health": "halo 2", "fall damage": "off", "starting equipment": "generic", "no spread": "nhe",
+AE = {"health": "halo 2", "fall damage": "off", "starting equipment": "generic", "no spread": "first shot",
       "pre-game countdown": "on", "friendly fire": "on", "shields": "on", "invisible": "off",
       "infinite grenades": "off", "no map weapons": "off", "nhe extras": "off", "drop secondary": "always",
       "lives": "0", "odd man out": "off", "friendly fire penalty": "0 s", "auto team balance": "off",

@@ -560,7 +560,7 @@ class SeedRules(unittest.TestCase):
         for name in seed_rules.ROWS:
             self.assertLessEqual(len(name), 11, name)
         text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
-                "time limit none, timers line of sight, training off, no spread nhe, pre-game countdown on, practice off; "
+                "time limit none, timers line of sight, training off, no spread first shot, pre-game countdown on, practice off; "
                 "slayer (teams), score to win 50, respawn 150 ticks (5 s), suicide penalty 150 ticks (5 s), friendly fire on, "
                 "radar players none, goal radar motion tracker, shields on, invisible off, infinite grenades off, "
                 "weapon set normal, loadout pistol + assault rifle, no map weapons off, vehicle sets none (red none, blue none)\n"

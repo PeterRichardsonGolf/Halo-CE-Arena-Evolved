@@ -5905,7 +5905,7 @@ short game_variant_no_spread_level(
 char const *game_variant_no_spread_name(
 	unsigned long flags)
 {
-	static char const *const no_spread_levels[] = { "off", "nhe", "full" };
+	static char const *const no_spread_levels[] = { "off", "first shot", "full" };
 
 	return no_spread_levels[game_variant_no_spread_level(flags)];
 }
