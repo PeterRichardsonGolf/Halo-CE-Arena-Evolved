@@ -131,6 +131,7 @@ symbols in this file:
 #include "shaders/shader_definitions.h" /* port: (the shield's flare on the arms) */
 #include "shaders/shaders.h"
 #include "ae_silent.h" /* AE hook */
+#include "ae_shield_fx.h" /* AE hook */
 /* port: port/linux/game/shield_color.c */
 real_rgb_color const *shield_color_colors(long unit_index, real_rgb_color const *colors);
 
@@ -572,7 +573,7 @@ void first_person_weapon_draw(
 								model_effect.modifier_shader= modifier_shader;
 								model_effect.modifier_animation.colors= shield_color_colors(unit_index,
 									unit->object.outgoing_change_colors);
-								model_effect.modifier_animation.values= unit->object.outgoing_function_values;
+								model_effect.modifier_animation.values= ae_shield_fx_values(unit_index, unit->object.outgoing_function_values, TRUE); /* AE hook */
 							}
 						}
 					}

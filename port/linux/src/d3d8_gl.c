@@ -35,6 +35,7 @@ Conventions carried over from the Xbox:
 #include <string.h>
 #include <time.h>
 #include "ae_draw.h" /* AE hook */
+#include "ae_height_fade.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 #include "browser.h"
 #include "ui_overlay.h"
@@ -393,6 +394,7 @@ struct draw_uniforms
 	float texture_scale[4][4];
 	float screen_offset;
 	float texture_lod_bias[4];
+	float ae_height_fade[4]; float ae_height_band; /* AE hook */
 };
 
 struct program_entry
@@ -410,6 +412,7 @@ struct program_entry
 	GLint bump_matrix, bump_luminance, texture_scale;
 	GLint texture_lod_bias;
 	GLint screen_offset;
+	GLint ae_height_fade, ae_height_band; /* AE hook */
 	/* nv2a_pixel_shader_key's source_blend's color, and what it last had */
 	GLint blend_constant;
 	float blend_constant_value[4];
@@ -3015,6 +3018,7 @@ static struct program_entry *program_entry_add(GLuint vertex_shader, GLuint frag
 	entry->texture_scale = glGetUniformLocation(entry->program, "texture_scale");
 	entry->texture_lod_bias = glGetUniformLocation(entry->program, "texture_lod_bias");
 	entry->screen_offset = glGetUniformLocation(entry->program, "screen_offset");
+	entry->ae_height_fade = glGetUniformLocation(entry->program, "ae_height_fade"); entry->ae_height_band = glGetUniformLocation(entry->program, "ae_height_band"); /* AE hook */
 	entry->blend_constant = glGetUniformLocation(entry->program, "blend_constant");
 	entry->model_lights = glGetUniformLocation(entry->program, "model_lights");
 	for (stage = 0; stage < D3DTSS_MAXSTAGES; stage++)
@@ -3811,7 +3815,7 @@ static void gl_check_errors(const char *where)
 
 /* the uniforms of the latest draws, converted from these inputs; the serial
 counts the conversions */
-#define DRAW_UNIFORM_INPUT_COUNT (4 + 4 + 16 + 1 + 16 + 2 + 4 + 1 + 1 + 7 * D3DTSS_MAXSTAGES)
+#define DRAW_UNIFORM_INPUT_COUNT (4 + 4 + 16 + 1 + 16 + 2 + 4 + 1 + 1 + 7 * D3DTSS_MAXSTAGES + 5) /* AE hook */
 
 static DWORD draw_uniform_inputs[DRAW_UNIFORM_INPUT_COUNT];
 static struct draw_uniforms draw_uniforms;
@@ -4106,6 +4110,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 			inputs[count++] = state[D3DTSS_BUMPENVLOFFSET];
 			inputs[count++] = state[D3DTSS_MIPMAPLODBIAS];
 		}
+		memcpy(&inputs[count], ae_height_fade_value, sizeof(ae_height_fade_value)); count += 5; /* AE hook */
 		if (!draw_uniforms_serial || !words_equal(inputs, draw_uniform_inputs, sizeof(inputs)))
 		{
 			struct draw_uniforms *converted = &draw_uniforms;
@@ -4144,6 +4149,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 				converted->texture_lod_bias[stage] = dword_to_float(state[D3DTSS_MIPMAPLODBIAS]);
 			}
 			converted->screen_offset = (float)UI_OFFSET;
+			memcpy(converted->ae_height_fade, ae_height_fade_value, sizeof(converted->ae_height_fade)); converted->ae_height_band = ae_height_fade_value[4]; /* AE hook */
 		}
 	}
 	/* and a program that has had them since needs none of them */
@@ -4165,6 +4171,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 	uniform_vec4(entry->texture_scale, entry->uniforms.texture_scale[0], draw_uniforms.texture_scale[0], 4);
 	uniform_float(entry->screen_offset, &entry->uniforms.screen_offset, draw_uniforms.screen_offset);
 	uniform_vec4(entry->texture_lod_bias, entry->uniforms.texture_lod_bias, draw_uniforms.texture_lod_bias, 1);
+	uniform_vec4(entry->ae_height_fade, entry->uniforms.ae_height_fade, draw_uniforms.ae_height_fade, 1); uniform_float(entry->ae_height_band, &entry->uniforms.ae_height_band, draw_uniforms.ae_height_band); /* AE hook */
 	return entry;
 }
 

@@ -47,6 +47,7 @@ unsigned long config_changes(void);
 /* object_lights.c (port) */
 long light_port_glow_definition_get(void);
 boolean light_port_glow_set(long light_index, long object_index, real_rgb_color const *color, real radius);
+#include "ae_shield_fx.h" /* AE hook */
 
 enum
 {
@@ -165,11 +166,13 @@ static real shield_glow_flare(
 	if (source < 1 || source > 4)
 		return 0.f;
 	value = object->object.outgoing_function_values[source - 1];
+	value = ae_shield_fx_glow_value(unit_index, value); /* AE hook */
 	if (!(value > 0.f))
 		return 0.f;
 	value = (real)pow((double)value, (double)plasma->intensity_exponent);
 
 	*color = plasma->perpendicular_color;
+	ae_shield_fx_glow_color(unit_index, color); /* AE hook */
 	peak = MAX(color->red, MAX(color->green, color->blue));
 	if (!(peak > 0.f))
 		return 0.f;
@@ -249,7 +252,7 @@ void shield_glow_update(
 			if (glow->light_index != NONE &&
 				light_port_glow_set(glow->light_index, iterator.index, &color,
 					(SHIELD_GLOW_RADIUS_MINIMUM + (SHIELD_GLOW_RADIUS_MAXIMUM - SHIELD_GLOW_RADIUS_MINIMUM) * flare) *
-						shield_glow_scale))
+						shield_glow_scale * ae_shield_fx_glow_reach(iterator.index))) /* AE hook */
 			{
 				glow->frame = shield_glow_frame;
 			}

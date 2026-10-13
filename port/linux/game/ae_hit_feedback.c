@@ -25,8 +25,10 @@ boolean ae_hit_feedback_active(void)
 {
 	struct game_variant const *variant = game_engine_running() ? game_engine_get_variant() : NULL;
 
+	/* (debug.hit_feedback: on in every multiplayer game, for tests) */
 	return variant && variant->game_engine_index &&
-		ae_hit_feedback_value((unsigned char)AE_HIT_FEEDBACK_VARIANT_BYTE(variant)) == AE_HIT_FEEDBACK_ARENA;
+		(ae_hit_feedback_value((unsigned char)AE_HIT_FEEDBACK_VARIANT_BYTE(variant)) == AE_HIT_FEEDBACK_ARENA ||
+			config_boolean("debug.hit_feedback") != 0);
 }
 
 void ae_hit_feedback_log_rules(void)

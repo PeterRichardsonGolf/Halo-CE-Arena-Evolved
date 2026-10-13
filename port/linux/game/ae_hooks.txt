@@ -263,3 +263,41 @@ port/linux/game/menu_functions.c	#include "ae_hit_feedback.h" /* AE hook */
 port/linux/game/menu_functions.c	ae_hit_feedback_menu_rows(list, variant, save); /* AE hook */
 source/game/game_engine.c	#include "ae_hit_feedback.h" /* AE hook */
 source/game/game_engine.c	ae_hit_feedback_log_rules(); /* AE hook */
+# HIT FEEDBACK's effects: port/linux/game/ae_shield_fx.c (the pop, the flicker, the recharge band, the bloodshot),
+# drawn through a fade by height on the model (port/linux/src/ae_height_fade.h: two uniforms in every program, a few
+# lines in every vertex shader). Four of these are UPSTREAM'S OWN LINE WITH AN AE TERM: render_objects.c's and
+# first_person_weapons.c's "modifier_animation.values =" (was: object->object.outgoing_function_values /
+# unit->object.outgoing_function_values), rasterizer_xbox_plasma_energy.c's "if (shield_color_override(runtime ?
+# runtime->colors : NULL, &chosen))", shield_glow.c's "shield_glow_scale))", d3d8_gl.c's DRAW_UNIFORM_INPUT_COUNT
+# (was: ... + 7 * D3DTSS_MAXSTAGES)
+port/linux/src/d3d8_gl.c	float ae_height_fade[4]; float ae_height_band; /* AE hook */
+port/linux/src/d3d8_gl.c	GLint ae_height_fade, ae_height_band; /* AE hook */
+port/linux/src/d3d8_gl.c	entry->ae_height_fade = glGetUniformLocation(entry->program, "ae_height_fade"); entry->ae_height_band = glGetUniformLocation(entry->program, "ae_height_band"); /* AE hook */
+port/linux/src/d3d8_gl.c	#define DRAW_UNIFORM_INPUT_COUNT (4 + 4 + 16 + 1 + 16 + 2 + 4 + 1 + 1 + 7 * D3DTSS_MAXSTAGES + 5) /* AE hook */
+port/linux/src/d3d8_gl.c	memcpy(&inputs[count], ae_height_fade_value, sizeof(ae_height_fade_value)); count += 5; /* AE hook */
+port/linux/src/d3d8_gl.c	memcpy(converted->ae_height_fade, ae_height_fade_value, sizeof(converted->ae_height_fade)); converted->ae_height_band = ae_height_fade_value[4]; /* AE hook */
+port/linux/src/d3d8_gl.c	uniform_vec4(entry->ae_height_fade, entry->uniforms.ae_height_fade, draw_uniforms.ae_height_fade, 1); uniform_float(entry->ae_height_band, &entry->uniforms.ae_height_band, draw_uniforms.ae_height_band); /* AE hook */
+port/linux/src/d3d8_gl.c	#include "ae_height_fade.h" /* AE hook */
+port/linux/src/nv2a_vsh.c	AE_HEIGHT_FADE_UNIFORMS /* AE hook */
+port/linux/src/nv2a_vsh.c	xgpu_text_append(&text, AE_HEIGHT_FADE_GLSL); /* AE hook */
+port/linux/src/nv2a_vsh.c	#include "ae_height_fade.h" /* AE hook */
+source/objects/damage.c	#include "ae_shield_fx.h" /* AE hook */
+source/objects/damage.c	if (!ae_shield_fx_no_burst(object_index)) /* AE hook */
+source/objects/damage.c	ae_shield_fx_depleted(object_index); /* AE hook */
+source/objects/damage.c	ae_shield_fx_shield_damaged(object_index, damage_resistance->shield_depleted_effect.index, being_damaged_flags); /* AE hook */
+source/objects/damage.c	if (ae_shield_fx_early_pop_taken()) object->object.current_shield_damage = 0.f; /* AE hook */
+source/objects/damage.c	else if (ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index, damage_resistance->localized_damage_effect.index, damage_amount, *being_damaged_flags)) damage_effect_new_at_location(ae_shield_fx_blood_effect(damage_resistance->localized_damage_effect.index), object_index, NONE, &damage->epicenter, &damage->direction, object_normal); /* AE hook */
+source/objects/damage.c	ae_shield_fx_recharging(object_index, shield_recharge); /* AE hook */
+source/render/render_objects.c	#include "ae_shield_fx.h" /* AE hook */
+source/render/render_objects.c	model_effect.modifier_animation.values = TEST_FLAG(_object_mask_unit, object->object.type) ? ae_shield_fx_values(object_index, object->object.outgoing_function_values, FALSE) : object->object.outgoing_function_values; /* AE hook */
+source/interface/first_person_weapons.c	#include "ae_shield_fx.h" /* AE hook */
+source/interface/first_person_weapons.c	model_effect.modifier_animation.values= ae_shield_fx_values(unit_index, unit->object.outgoing_function_values, TRUE); /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	#include "ae_shield_fx.h" /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	if ((runtime && ae_shield_fx_color(runtime->exponents, &chosen)) || shield_color_override(runtime ? runtime->colors : NULL, &chosen)) /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	ae_shield_fx_draw_begin(runtime ? runtime->exponents : NULL, vertex_constants[2][3], primary_scale); /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	ae_shield_fx_draw_end(); /* AE hook */
+port/linux/game/shield_glow.c	#include "ae_shield_fx.h" /* AE hook */
+port/linux/game/shield_glow.c	value = ae_shield_fx_glow_value(unit_index, value); /* AE hook */
+port/linux/game/shield_glow.c	ae_shield_fx_glow_color(unit_index, color); /* AE hook */
+port/linux/game/shield_glow.c	shield_glow_scale * ae_shield_fx_glow_reach(iterator.index))) /* AE hook */
+port/linux/src/port_config.c	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */

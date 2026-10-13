@@ -910,6 +910,9 @@ static const struct config_setting config_settings[] =
 		"An automated test host's gametype's SILENT MOVEMENT and SILENT WEAPONS:\n"
 		"\"MOVEMENT,WEAPONS\" or one for both, each normal, just_me or silent;\n"
 		"empty leaves the gametype's (the muted counts are logged as they grow)." },
+	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */
+		"For tests and quick launches: every multiplayer game plays HIT FEEDBACK:\n"
+		"ARENA EVOLVED, whatever its gametype says (this machine's drawing only)." },
 	{ "debug.network_test_melee", _config_boolean, "false", "HALO_NETWORK_TEST_MELEE", _environment_value,
 		_platform_all,
 		"With debug.network_test_shoot, each player strikes with the weapon's melee\n"

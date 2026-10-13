@@ -182,6 +182,7 @@ void rasterizer_set_pixel_shader(
 /* port: port/linux/game/shield_color.c */
 boolean shield_color_override(real_rgb_color const *colors, real_rgb_color *chosen);
 void shield_color_apply(real_rgb_color const *chosen, real_rgb_color const *original, real_rgb_color *result);
+#include "ae_shield_fx.h" /* AE hook */
 
 /* ---------- globals */
 
@@ -260,7 +261,7 @@ void rasterizer_plasma_energy_draw(
 		(port/linux/game/shield_color.c) */
 		perpendicular_color = plasma->perpendicular_color;
 		parallel_color = plasma->parallel_color;
-		if (shield_color_override(runtime ? runtime->colors : NULL, &chosen))
+		if ((runtime && ae_shield_fx_color(runtime->exponents, &chosen)) || shield_color_override(runtime ? runtime->colors : NULL, &chosen)) /* AE hook */
 		{
 			shield_color_apply(&chosen, &plasma->perpendicular_color, &perpendicular_color);
 			shield_color_apply(&chosen, &plasma->parallel_color, &parallel_color);
@@ -381,9 +382,11 @@ void rasterizer_plasma_energy_draw(
 		pixel_shader.final_combiner_inputs_abcd = 0x0C0F0000;
 		pixel_shader.final_combiner_inputs_efg = 0x1C1C1400;
 		rasterizer_set_pixel_shader(&pixel_shader);
+		ae_shield_fx_draw_begin(runtime ? runtime->exponents : NULL, vertex_constants[2][3], primary_scale); /* AE hook */
 		rasterizer_transparent_geometry_group_draw__internal(
 			(struct transparent_geometry_group const *)group,
 			FALSE);
+		ae_shield_fx_draw_end(); /* AE hook */
 	}
 	return;
 }

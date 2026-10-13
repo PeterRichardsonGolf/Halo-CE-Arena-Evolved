@@ -133,6 +133,7 @@ symbols in this file:
 #include "render/render.h"
 #include "scenario/scenario.h"
 #include "tag_files/tag_files.h"
+#include "ae_shield_fx.h" /* AE hook */
 #include "text/draw_string.h"
 #include "units/unit_definitions.h"
 #include "units/bipeds.h"
@@ -727,6 +728,7 @@ void object_deplete_shield(
 			struct collision_model *collision_model =
 				collision_model_definition_get(collision_model_index);
 
+			if (!ae_shield_fx_no_burst(object_index)) /* AE hook */
 			damage_effect_new_on_object(
 				collision_model->resistance.shield_depleted_effect.index,
 				object_index);
@@ -735,6 +737,7 @@ void object_deplete_shield(
 		object->object.current_shield_damage = 0.f;
 		SET_FLAG(object->object.damage_flags, _object_shield_depleted_bit, TRUE);
 		object_permutation_shield_regions(object_index, FALSE);
+		ae_shield_fx_depleted(object_index); /* AE hook */
 	}
 
 	return;
@@ -1019,6 +1022,7 @@ static void object_damage_shield(
 				{
 					object->object.shield_vitality -= normalized_shield_damage;
 				}
+				ae_shield_fx_shield_damaged(object_index, damage_resistance->shield_depleted_effect.index, being_damaged_flags); /* AE hook */
 
 				if (!TEST_FLAG(
 						object->object.damage_flags,
@@ -1050,6 +1054,7 @@ static void object_damage_shield(
 			{
 				object->object.current_shield_damage = 1.f;
 			}
+			if (ae_shield_fx_early_pop_taken()) object->object.current_shield_damage = 0.f; /* AE hook */
 			object->object.recent_shield_damage += normalized_damage;
 			if (object->object.current_shield_damage > 1.f)
 				object->object.current_shield_damage = 1.f;
@@ -1473,6 +1478,7 @@ static void object_damage_body(
 			&damage->direction,
 			object_normal);
 	}
+	else if (ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index, damage_resistance->localized_damage_effect.index, damage_amount, *being_damaged_flags)) damage_effect_new_at_location(ae_shield_fx_blood_effect(damage_resistance->localized_damage_effect.index), object_index, NONE, &damage->epicenter, &damage->direction, object_normal); /* AE hook */
 
 	if (TEST_FLAG(damage->flags, _damage_area_of_effect_bit) &&
 		damage_amount > damage_resistance->area_damage_effect_threshold &&
@@ -2318,6 +2324,7 @@ void object_damage_update(
 				shield_recharge += object->object.shield_vitality;
 				damage_flags = object->object.damage_flags;
 				object->object.shield_vitality = shield_recharge;
+				ae_shield_fx_recharging(object_index, shield_recharge); /* AE hook */
 				if (shield_recharge > 1.f)
 				{
 					SET_FLAG(

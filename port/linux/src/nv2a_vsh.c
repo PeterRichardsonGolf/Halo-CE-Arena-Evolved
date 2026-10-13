@@ -19,6 +19,7 @@ transform.
 */
 
 #include "xgpu.h"
+#include "ae_height_fade.h" /* AE hook */
 
 #include <stdlib.h>
 
@@ -345,6 +346,7 @@ static const char shader_prologue[] =
 	"uniform float point_size;\n"
 	/* columns the menus shift by to center on a wide screen (d3d8_gl.c) */
 	"uniform float screen_offset;\n"
+	AE_HEIGHT_FADE_UNIFORMS /* AE hook */
 	"out vec4 xD0;\n"
 	"out vec4 xD1;\n"
 	"out vec4 xB0;\n"
@@ -533,6 +535,7 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 			break;
 	}
 
+	xgpu_text_append(&text, AE_HEIGHT_FADE_GLSL); /* AE hook */
 	xgpu_text_append(&text,
 		"\t/* undo the screen-space conversion done with c[-38] and c[-37] */\n"
 		"\tvec3 scale = vec3(viewport_scale.x != 0.0 ? viewport_scale.x : 1.0,\n"
