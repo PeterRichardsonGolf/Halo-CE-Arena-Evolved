@@ -192,6 +192,7 @@ static void data_check_maps(void)
 #ifdef HALO_GAME_BROWSER
 	quiet = quiet || browser_headless();
 #endif
+	if (AE_PLATFORM_MAPS_FROM_PAGE) return; /* AE hook */
 	platform_maps_folder_check(&maps);
 	snprintf(where, sizeof(where),
 		"Put the Xbox maps from your Halo: Combat Evolved disc image in %s/maps. Halo PC "

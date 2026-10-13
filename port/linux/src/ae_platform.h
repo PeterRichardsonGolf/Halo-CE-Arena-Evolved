@@ -77,4 +77,12 @@ controller's player in HOLD or BOTH: no action takes the wheel then), and a scro
 int ae_zoom_wheel_taken(void);
 void ae_zoom_wheel_scrolled(int direction);
 
+/* the web build: the page hands the game its maps (the disc image the player chose), and a game with none goes on
+to say so through the page; the desktop's own check of the maps folder, with its message box, is not made there */
+#ifdef __EMSCRIPTEN__
+#define AE_PLATFORM_MAPS_FROM_PAGE 1
+#else
+#define AE_PLATFORM_MAPS_FROM_PAGE 0
+#endif
+
 #endif
