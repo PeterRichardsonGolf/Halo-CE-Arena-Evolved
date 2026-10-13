@@ -6,6 +6,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.2.4-beta - 2026-10-13
+
+A testing release. Built on ChupathingyCE 0.7.3e and OpenCE build-201 as
+0.2.3-beta: **network version 28**, so it plays online with 0.2.3-beta and
+OpenCE build-201 and later. The Linux 64-bit build is the one played (the
+host's view and split screen); the Windows build and a joined machine's view
+were not test-played before release.
+
 - **COMBAT FEEDBACK: ARENA EVOLVED** (a gametype option, ARENA OPTIONS; HALO CE
   is the default and is the game as it was). What a fight has come to is shown
   on the player's body, for every player and in every split-screen view:
