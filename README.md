@@ -47,9 +47,17 @@ What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
 - **The later games' features in CE:** options and quality-of-life from Halo
   2, Halo 3, Reach, Halo 4 and Infinite, and from the Master Chief
   Collection.
+- **Competitive split screen on PC, natively:** up to four players on one
+  PC, in local games, on a LAN and online, with each player's own profile,
+  controller layout and settings.
 - **The ultimate CE LAN package:** one download for a LAN night: split screen,
   LAN and online play, map sharing between players, community and Custom
   Edition maps, and gametypes ready to play.
+- **Every platform upstream builds:** not PC alone. Arena Evolved builds for
+  each platform OpenCE and ChupathingyCE do (Windows, Linux, macOS, Android,
+  the dedicated server). Linux and Windows 64-bit are the ones played and
+  tested here; the others are upstream's work carried along as it is, until
+  the project has the community and interest to give them their own care.
 - **Close to OpenCE:** merge its releases and offer fixes to the shared code
   back upstream.
 
