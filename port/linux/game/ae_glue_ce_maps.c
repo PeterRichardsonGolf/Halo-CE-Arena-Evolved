@@ -41,14 +41,22 @@ Three things stood in the way, all handled here:
 - Halo PC never had split screen: its 2p and 4p pause screens are its one
   player's box and list moved down, run past the bottom of a half or quarter
   view (the list's last rows, and the button prompts drawn over its rows), and
-  more so with the rows the menus add. Once the rows are added, each pause
-  screen shorter than a full screen gets the one player screen's layout: its
-  box with the list as far into it as there, the prompts under the box's
-  frame, the whole kept clear of the view's bottom (ce_pause_split_layout).
+  more so with the rows the menus add. Their GAME OPTIONS targets are full
+  screen and force player one. Once the rows are added, the split pauses and
+  every screen their rows open inherit the pausing player and fit that view
+  (ce_pause_split_layout).
 */
 
 #include "cseries.h"
+#include "game/game_engine.h"
+#include "interface/event_manager.h"
+#include "interface/ui_widget_event_handler_functions.h"
+#include "main/main.h"
 #include "math/integer_math.h"
+#include "networking/network_client_manager.h"
+#include "networking/network_game_globals.h"
+#include "networking/network_game_manager.h"
+#include "networking/network_server_manager.h"
 #include "tag_files/tag_groups.h"
 #include "halo_menus.h"
 #include "ae_glue_ce_maps.h"
@@ -64,7 +72,6 @@ Three things stood in the way, all handled here:
 void menu_tags_loaded(char const *map_name);
 void hud_hires_tags_loaded(long scenario_index);
 void platform_log(char const *format, ...);
-long halo_screen_width(void);
 char const *ui_widget_event_handler_function_name(long function_index);
 char *tag_get_name(long tag_index);
 void *cache_files_tag_instances(long *count);
@@ -85,11 +92,23 @@ static char const *const solo_pause_screens[] =
 
 enum
 {
+	_widget_type_container = 0,
 	_widget_type_column_list = 3,
 	/* (menu_tags.c's: the controller's A, and an event handler's flag) */
 	_event_a = 0,
+	_event_handler_open_widget_bit = 3,
 	_event_handler_run_function_bit = 7,
-	MAXIMUM_LISTS = 8,
+	_widget_always_use_tag_controller_index_bit = 12,
+	_widget_controller_any = 4,
+	MAXIMUM_LISTS = 32,
+	MAXIMUM_PAUSE_WIDGETS = 512,
+	MAXIMUM_SPLIT_SCREENS = 64,
+	PC_FUNCTION_PAUSE_LIST_INITIALIZE = 155,
+	PC_FUNCTION_GAME_OPTIONS_INITIALIZE = 156,
+	PC_FUNCTION_CHOOSE_TEAM = 157,
+	PC_FUNCTION_RESTART_GAME = 163,
+	XBOX_FUNCTION_SWAP_TEAM = 32,
+	AE_CLIENT_STATE_PREGAME = 2,
 	/* a full screen's height, in the menus' units (a split-screen view's
 	screens are shorter) */
 	FULL_SCREEN_HEIGHT = 480,
@@ -107,7 +126,8 @@ struct ce_widget_event_handler
 	long flags;
 	short event_type;
 	short function;
-	byte unknown008[0x48 - 0x08];
+	struct tag_reference widget_tag;
+	byte unknown018[0x48 - 0x18];
 };
 
 struct ce_widget_child
@@ -124,7 +144,8 @@ struct ce_widget_definition
 	short controller_index;
 	char name[32];
 	rectangle2d bounds;
-	byte unknown02C[0x54 - 0x2C];
+	long flags;
+	byte unknown030[0x54 - 0x30];
 	struct tag_block event_handlers;
 	byte unknown060[0x3E0 - 0x60];
 	struct tag_block child_widgets;
@@ -160,7 +181,107 @@ static struct
 	boolean active;
 } menu_memory;
 
+static boolean ce_pause_active;
+static short restart_state;
+
+typedef boolean (*ce_pc_function)(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted);
+
+static boolean ce_list_initialize(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted);
+static boolean ce_choose_team(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted);
+static boolean ce_restart_game(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted);
+
+static struct
+{
+	short pc_function;
+	ce_pc_function function;
+} const ce_pc_functions[] =
+{
+	{ PC_FUNCTION_PAUSE_LIST_INITIALIZE, ce_list_initialize },
+	{ PC_FUNCTION_GAME_OPTIONS_INITIALIZE, ce_list_initialize },
+	{ PC_FUNCTION_CHOOSE_TEAM, ce_choose_team },
+	{ PC_FUNCTION_RESTART_GAME, ce_restart_game },
+};
+
+struct split_screen
+{
+	long tag;
+	short height;
+	/* the screen's own width before it was laid out: the width it is centred as */
+	short design_width;
+	boolean pause;
+};
+
+static struct
+{
+	struct split_screen screens[MAXIMUM_SPLIT_SCREENS];
+	long count;
+} split_screens;
+
 /* ---------- private code */
+
+static boolean ce_list_initialize(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted)
+{
+	(void)widget;
+	(void)event;
+	(void)widget_deleted;
+	return TRUE;
+}
+
+/* The Xbox pause menu's function 32 finds this machine's player by the
+event's controller, changes its team, and sends the same client update. */
+static boolean ce_choose_team(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted)
+{
+	boolean result = ui_widget_event_handler_function_invoke(widget, event, XBOX_FUNCTION_SWAP_TEAM, widget_deleted);
+
+	if (result)
+		platform_log("Custom Edition map: controller %d changed team from CHOOSE TEAM",
+			(int)event->controller_index + 1);
+	return result;
+}
+
+static boolean ce_restart_game(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted)
+{
+	(void)widget;
+	(void)event;
+	(void)widget_deleted;
+	if (!global_network_game_server_get() || !game_engine_running() || game_engine_showing_postgame())
+		return FALSE;
+	/* (the lobby the server returns to is set up from the game's "current stage": this game's map and gametype,
+	not the menu background's) */
+	{
+		struct network_game const *game = network_game_get_game();
+
+		if (game)
+		{
+			main_set_multiplayer_map_name(game->map.name);
+			game_engine_override_map_name(game->map.name);
+			game_engine_override_game_variant(&game->variant);
+		}
+	}
+	restart_state = 1;
+	game_engine_end_game();
+	platform_log("Custom Edition map: restarting the current game");
+	return TRUE;
+}
+
+static boolean ce_pc_function_supported(long function)
+{
+	long index;
+
+	for (index = 0; index < (long)NUMBEROF(ce_pc_functions); index++)
+	{
+		if (ce_pc_functions[index].pc_function == function)
+			return TRUE;
+	}
+	return FALSE;
+}
 
 /* how many event handler functions this engine has: its table's names run
 without a gap to the first NULL (ui_widget_event_handler_function_name: NULL
@@ -198,7 +319,7 @@ static boolean ce_button_dead(long button_tag)
 			TEST_FLAG(handlers[handler].flags, _event_handler_run_function_bit) &&
 			function >= ce_engine_function_count() && function < PC_MENU_FUNCTION_BASE)
 		{
-			return TRUE;
+			return !ce_pc_function_supported(function);
 		}
 	}
 	return FALSE;
@@ -206,64 +327,107 @@ static boolean ce_button_dead(long button_tag)
 
 /* the multiplayer pause lists' rows whose A does nothing here, taken out: the
 rows below each move up into its place */
+static char const *ce_pause_row_remove_reason(long row_tag, boolean host, boolean teams)
+{
+	char const *name = row_tag != NONE ? tag_get_name(row_tag) : NULL;
+
+	if (!name)
+		return NULL;
+	if (strstr(name, "\\new_game_button"))
+		return "its PC lobby widget is not safe in this engine";
+	if (!host && strstr(name, "\\restart_game_button"))
+		return "only the host may restart the game";
+	if (!teams && strstr(name, "\\choose_team_button"))
+		return "there are no teams in this game";
+	return NULL;
+}
+
+/* whether a widget opened by a handler belongs to the map's multiplayer pause family (the screens under
+multiplayer_game): its handlers also reach the settings screens and the main menu, whose rows are not the pause's */
+static boolean ce_pause_family(long tag)
+{
+	char const *name = tag != NONE ? tag_get_name(tag) : NULL;
+
+	return name && strstr(name, "ui\\shell\\multiplayer_game\\") == name;
+}
+
+static void ce_pause_lists_collect(long tag, long *lists, long *list_count, long *widgets, long *widget_count)
+{
+	struct ce_widget_definition const *definition;
+	struct ce_widget_event_handler const *handlers;
+	struct ce_widget_child const *children;
+	long index;
+
+	if (tag == NONE)
+		return;
+	for (index = 0; index < *widget_count; index++)
+	{
+		if (widgets[index] == tag)
+			return;
+	}
+	if (*widget_count >= MAXIMUM_PAUSE_WIDGETS)
+		return;
+	widgets[(*widget_count)++] = tag;
+	definition = tag_get(UI_WIDGET_DEFINITION_TAG, tag);
+	if (definition->type == _widget_type_column_list && *list_count < MAXIMUM_LISTS)
+		lists[(*list_count)++] = tag;
+	handlers = xbox_pointer(definition->event_handlers.address);
+	for (index = 0; index < definition->event_handlers.count; index++)
+	{
+		if (TEST_FLAG(handlers[index].flags, _event_handler_open_widget_bit) &&
+			ce_pause_family(handlers[index].widget_tag.index))
+			ce_pause_lists_collect(handlers[index].widget_tag.index, lists, list_count, widgets, widget_count);
+	}
+	children = xbox_pointer(definition->child_widgets.address);
+	for (index = 0; index < definition->child_widgets.count; index++)
+		ce_pause_lists_collect(children[index].widget_tag.index, lists, list_count, widgets, widget_count);
+}
+
 static void ce_pause_dead_rows_remove(void)
 {
 	long collection = tag_loaded(UI_WIDGET_COLLECTION_TAG, MULTIPLAYER_COLLECTION);
-	long lists[MAXIMUM_LISTS], list_count = 0;
+	long lists[MAXIMUM_LISTS], list_count = 0, widgets[MAXIMUM_PAUSE_WIDGETS], widget_count = 0;
 	struct tag_block const *screens;
-	long screen;
+	struct network_game const *game = network_game_get_game();
+	boolean host = global_network_game_server_get() != NULL;
+	boolean teams = game && game->variant.universal_variant.teams;
+	long screen, list_index;
 
 	if (collection == NONE)
 		return;
 	screens = tag_get(UI_WIDGET_COLLECTION_TAG, collection);
 	for (screen = 0; screen < screens->count; screen++)
+		ce_pause_lists_collect(XBOX_POINTER(struct tag_reference const, screens->address)[screen].index,
+			lists, &list_count, widgets, &widget_count);
+	for (list_index = 0; list_index < list_count; list_index++)
 	{
-		long screen_tag = XBOX_POINTER(struct tag_reference const, screens->address)[screen].index;
-		struct ce_widget_definition const *definition;
-		struct ce_widget_child const *children;
-		long child;
+		struct ce_widget_definition *list = tag_get(UI_WIDGET_DEFINITION_TAG, lists[list_index]);
+		struct ce_widget_child *rows = xbox_pointer(list->child_widgets.address);
+		long row;
 
-		if (screen_tag == NONE)
-			continue;
-		definition = tag_get(UI_WIDGET_DEFINITION_TAG, screen_tag);
-		children = xbox_pointer(definition->child_widgets.address);
-		for (child = 0; child < definition->child_widgets.count; child++)
+		for (row = 0; row < list->child_widgets.count; row++)
 		{
-			long list_tag = children[child].widget_tag.index, seen, row;
-			struct ce_widget_definition *list;
-			struct ce_widget_child *rows;
+			char const *reason = ce_pause_row_remove_reason(rows[row].widget_tag.index, host, teams);
+			long below;
+			short spacing;
 
-			if (list_tag == NONE)
+			if (!reason && !ce_button_dead(rows[row].widget_tag.index))
 				continue;
-			list = tag_get(UI_WIDGET_DEFINITION_TAG, list_tag);
-			if (list->type != _widget_type_column_list)
-				continue;
-			/* (the screens share their list: once each) */
-			for (seen = 0; seen < list_count && lists[seen] != list_tag; seen++)
-				;
-			if (seen < list_count || list_count == MAXIMUM_LISTS)
-				continue;
-			lists[list_count++] = list_tag;
-			rows = xbox_pointer(list->child_widgets.address);
-			for (row = 0; row < list->child_widgets.count; row++)
-			{
-				long below;
-				short spacing;
-
-				if (!ce_button_dead(rows[row].widget_tag.index))
-					continue;
+			if (reason)
+				platform_log("Custom Edition map: the pause list's row %s taken out: %s",
+					tag_get_name(rows[row].widget_tag.index), reason);
+			else
 				platform_log("Custom Edition map: the pause list's row %s runs a function this game has not: "
 					"taken out", tag_get_name(rows[row].widget_tag.index));
-				spacing = row + 1 < list->child_widgets.count ?
-					(short)(rows[row + 1].vertical_offset - rows[row].vertical_offset) : 0;
-				for (below = row; below + 1 < list->child_widgets.count; below++)
-				{
-					rows[below] = rows[below + 1];
-					rows[below].vertical_offset = (short)(rows[below].vertical_offset - spacing);
-				}
-				list->child_widgets.count--;
-				row--;
+			spacing = row + 1 < list->child_widgets.count ?
+				(short)(rows[row + 1].vertical_offset - rows[row].vertical_offset) : 0;
+			for (below = row; below + 1 < list->child_widgets.count; below++)
+			{
+				rows[below] = rows[below + 1];
+				rows[below].vertical_offset = (short)(rows[below].vertical_offset - spacing);
 			}
+			list->child_widgets.count--;
+			row--;
 		}
 	}
 }
@@ -284,6 +448,61 @@ static long ce_screen_list(struct ce_widget_definition const *screen)
 		}
 	}
 	return NONE;
+}
+
+static void ce_split_screen_add(long tag, short height, boolean pause)
+{
+	long screen;
+
+	if (tag == NONE)
+		return;
+	for (screen = 0; screen < split_screens.count; screen++)
+	{
+		if (split_screens.screens[screen].tag == tag)
+		{
+			if (pause)
+				split_screens.screens[screen].pause = TRUE;
+			return;
+		}
+	}
+	if (split_screens.count < MAXIMUM_SPLIT_SCREENS)
+	{
+		split_screens.screens[split_screens.count].tag = tag;
+		split_screens.screens[split_screens.count].height = height;
+		split_screens.screens[split_screens.count].pause = pause;
+		split_screens.count++;
+	}
+}
+
+/* screens opened from a split pause, including handlers on its rows */
+static void ce_split_screens_collect(long tag, short height, boolean screen, boolean pause)
+{
+	struct ce_widget_definition const *definition;
+	struct ce_widget_event_handler const *handlers;
+	struct ce_widget_child const *children;
+	long handler, child;
+
+	if (tag == NONE)
+		return;
+	if (screen)
+	{
+		long before = split_screens.count;
+
+		ce_split_screen_add(tag, height, pause);
+		if (before == split_screens.count)
+			return;
+	}
+	definition = tag_get(UI_WIDGET_DEFINITION_TAG, tag);
+	handlers = xbox_pointer(definition->event_handlers.address);
+	for (handler = 0; handler < definition->event_handlers.count; handler++)
+	{
+		if (TEST_FLAG(handlers[handler].flags, _event_handler_open_widget_bit) &&
+			ce_pause_family(handlers[handler].widget_tag.index))
+			ce_split_screens_collect(handlers[handler].widget_tag.index, height, TRUE, FALSE);
+	}
+	children = xbox_pointer(definition->child_widgets.address);
+	for (child = 0; child < definition->child_widgets.count; child++)
+		ce_split_screens_collect(children[child].widget_tag.index, height, FALSE, FALSE);
 }
 
 /* the one player's pause screen, measured before the menus' rows are added:
@@ -348,47 +567,86 @@ static boolean ce_pause_split_template(struct split_template *template)
 	return template->box_tag != NONE;
 }
 
-/* the split-screen pause screens laid out as the one player's (above) */
+/* the split-screen pause screens and the screens they open, fitted to a view */
 static void ce_pause_split_layout(struct split_template const *template)
 {
 	long collection = tag_loaded(UI_WIDGET_COLLECTION_TAG, MULTIPLAYER_COLLECTION);
 	struct tag_block const *screens;
 	struct tag_reference const *references;
-	long screen, laid_out = 0;
+	long screen, laid_out = 0, children_laid_out = 0;
 
 	if (collection == NONE || template->box_tag == NONE)
 		return;
 	screens = tag_get(UI_WIDGET_COLLECTION_TAG, collection);
 	references = xbox_pointer(screens->address);
+	memset(&split_screens, 0, sizeof(split_screens));
 	for (screen = 0; screen < screens->count; screen++)
+	{
+		struct ce_widget_definition const *definition;
+		struct ce_widget_child const *children;
+		long child;
+		short height;
+		boolean pause_screen = FALSE;
+
+		if (references[screen].index == NONE)
+			continue;
+		definition = tag_get(UI_WIDGET_DEFINITION_TAG, references[screen].index);
+		height = (short)(definition->bounds.y1 - definition->bounds.y0);
+		children = xbox_pointer(definition->child_widgets.address);
+		for (child = 0; child < definition->child_widgets.count; child++)
+		{
+			if (children[child].widget_tag.index == template->box_tag)
+				pause_screen = TRUE;
+		}
+		if (pause_screen && height > 0 && height < FULL_SCREEN_HEIGHT && ce_screen_list(definition) != NONE)
+			ce_split_screens_collect(references[screen].index, height, TRUE, TRUE);
+	}
+	for (screen = 0; screen < split_screens.count; screen++)
 	{
 		struct ce_widget_definition *definition;
 		struct ce_widget_definition const *list_definition, *last_row;
 		struct ce_widget_child *children;
 		struct ce_widget_child const *rows;
 		long list, box = NONE, child;
-		short height, column, top, prompts, prompts_at, content, bottom_margin;
+		short box_top, list_top, height, column, top, prompts, prompts_at, content, bottom_margin, box_to_list, box_height;
+		boolean pause_screen;
 
-		if (references[screen].index == NONE)
-			continue;
-		definition = tag_get(UI_WIDGET_DEFINITION_TAG, references[screen].index);
-		height = (short)(definition->bounds.y1 - definition->bounds.y0);
+		definition = tag_get(UI_WIDGET_DEFINITION_TAG, split_screens.screens[screen].tag);
+		height = split_screens.screens[screen].height;
 		list = ce_screen_list(definition);
-		if (list == NONE || height >= FULL_SCREEN_HEIGHT || height <= 0)
+		split_screens.screens[screen].design_width = (short)(definition->bounds.x1 - definition->bounds.x0);
+		definition->controller_index = _widget_controller_any;
+		SET_FLAG(definition->flags, _widget_always_use_tag_controller_index_bit, FALSE);
+		if (list == NONE)
 			continue;
-		/* Its 640-wide dim is otherwise centred in a wide split-screen view. */
-		if (halo_screen_width() > 640 && definition->bounds.x0 == 0 && definition->bounds.x1 == 640)
-		{
-			short extra = (short)((halo_screen_width() - 640) / 2);
-
-			definition->bounds.x0 = (short)-extra;
-			definition->bounds.x1 = (short)(640 + extra);
-		}
 		children = xbox_pointer(definition->child_widgets.address);
-		for (child = 0; child < definition->child_widgets.count; child++)
+		pause_screen = split_screens.screens[screen].pause;
+		for (child = 0; pause_screen && child < definition->child_widgets.count; child++)
 		{
 			if (children[child].widget_tag.index == template->box_tag)
 				box = child;
+		}
+		if (box == NONE)
+		{
+			/* (the frame: the biggest background above the list; a title or text over it is not) */
+			short biggest = 0;
+
+			for (child = 0; child < definition->child_widgets.count; child++)
+			{
+				if (child != list && children[child].widget_tag.index != NONE &&
+					children[child].vertical_offset <= children[list].vertical_offset)
+				{
+					struct ce_widget_definition const *candidate =
+						tag_get(UI_WIDGET_DEFINITION_TAG, children[child].widget_tag.index);
+					short size = (short)(candidate->bounds.y1 - candidate->bounds.y0);
+
+					if (candidate->type == _widget_type_container && size > biggest)
+					{
+						box = child;
+						biggest = size;
+					}
+				}
+			}
 		}
 		list_definition = tag_get(UI_WIDGET_DEFINITION_TAG, children[list].widget_tag.index);
 		rows = xbox_pointer(list_definition->child_widgets.address);
@@ -397,6 +655,10 @@ static void ce_pause_split_layout(struct split_template const *template)
 		{
 			continue;
 		}
+		box_to_list = pause_screen ? template->box_to_list :
+			(short)(children[list].vertical_offset - children[box].vertical_offset);
+		box_height = pause_screen ? template->box_height :
+			(short)(2 * box_to_list + list_definition->bounds.y1 - list_definition->bounds.y0);
 		/* (the list's rows from its top to the last one's bottom) */
 		last_row = tag_get(UI_WIDGET_DEFINITION_TAG, rows[list_definition->child_widgets.count - 1].widget_tag.index);
 		column = (short)(rows[list_definition->child_widgets.count - 1].vertical_offset +
@@ -419,26 +681,50 @@ static void ce_pause_split_layout(struct split_template const *template)
 		they run past it); the whole as far from the view's bottom as the one
 		player's box is from the screen's, at the view's scale, as far as the
 		view has room for, and no closer to its top than SPLIT_MARGIN */
-		prompts_at = (short)(MAX(template->box_height, template->box_to_list + column) + PROMPT_GAP);
+		prompts_at = (short)(MAX(box_height, box_to_list + column) + PROMPT_GAP);
 		content = (short)(prompts_at + prompts);
-		bottom_margin = (short)(template->bottom_margin * height / FULL_SCREEN_HEIGHT);
+		bottom_margin = pause_screen ? (short)(template->bottom_margin * height / FULL_SCREEN_HEIGHT) : SPLIT_MARGIN;
 		top = (short)MAX(SPLIT_MARGIN, MIN((height - content) / 2, height - content - bottom_margin));
+		box_top = children[box].vertical_offset;
+		list_top = children[list].vertical_offset;
 		for (child = 0; child < definition->child_widgets.count; child++)
 		{
 			if (child == box)
 				children[child].vertical_offset = top;
+			else if (child != list && children[child].widget_tag.index != NONE &&
+				children[child].vertical_offset <= list_top)
+			{
+				/* (a title over the frame keeps its place in it) */
+				children[child].vertical_offset = (short)(top + children[child].vertical_offset - box_top);
+			}
 			else if (child == list)
-				children[child].vertical_offset = (short)(top + template->box_to_list);
+				children[child].vertical_offset = (short)(top + box_to_list);
 			else if (children[child].widget_tag.index != NONE &&
-				children[child].vertical_offset > children[list].vertical_offset)
+				children[child].vertical_offset > list_top)
 			{
 				children[child].vertical_offset = (short)(top + prompts_at);
 			}
 		}
-		laid_out++;
+		/* A 640x480 flat background takes the renderer's whole-screen path,
+		which widens its bounds and clip around the menu centering. */
+		if (definition->bounds.x0 == 0 && (definition->bounds.x1 == 640 || definition->bounds.x1 == 320))
+		{
+			/* (a quarter-screen pause screen too: its dim must cover the whole view; its centring in the view
+			is by its own width: ae_ce_map_view_offset) */
+			definition->bounds.x1 = 640;
+			definition->bounds.y0 = 0;
+			definition->bounds.y1 = FULL_SCREEN_HEIGHT;
+		}
+		if (pause_screen)
+			laid_out++;
+		else
+			children_laid_out++;
 	}
 	if (laid_out)
 		platform_log("Custom Edition map: %ld split-screen pause screens laid out as the one player's", laid_out);
+	if (children_laid_out)
+		platform_log("Custom Edition map: %ld screens opened from a split-screen pause fitted to its player's view",
+			children_laid_out);
 }
 
 /* whether the pause widgets the menus' tags and this file patch are whole in
@@ -492,6 +778,7 @@ void ae_ce_map_tags_loaded(char const *map_name, long scenario_tag_index)
 		menu_memory.collecting = FALSE;
 		menu_memory.active = menu_memory.count > 0;
 		ce_pause_split_layout(&template);
+		ce_pause_active = TRUE;
 	}
 	else
 	{
@@ -503,6 +790,108 @@ void ae_ce_map_tags_loaded(char const *map_name, long scenario_tag_index)
 int ae_ce_map_building_menu_tags(void)
 {
 	return menu_memory.collecting;
+}
+
+int ae_ce_map_event_function(struct widget_instance *widget, struct event_record *event,
+	word function_index, boolean *widget_deleted, boolean *result)
+{
+	long index;
+
+	if (!ce_pause_active)
+		return 0;
+	for (index = 0; index < (long)NUMBEROF(ce_pc_functions); index++)
+	{
+		if ((word)ce_pc_functions[index].pc_function == function_index)
+		{
+			*result = ce_pc_functions[index].function(widget, event, widget_deleted);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void ae_ce_map_update(void)
+{
+	struct network_game_server *server;
+	struct network_game_client *client;
+
+	if (!restart_state)
+		return;
+	server = global_network_game_server_get();
+	client = global_network_game_client_get();
+	if (!server || !client)
+	{
+		platform_log("Custom Edition map: restart stopped because the network game ended");
+		restart_state = 0;
+		return;
+	}
+	if (restart_state == 1 && game_engine_showing_postgame())
+	{
+		if (network_game_server_reset_to_pregame(server))
+		{
+			restart_state = 2;
+			platform_log("Custom Edition map: restart returned the server to the lobby");
+		}
+	}
+	else if (restart_state == 2 && network_game_client_get_state(client, NULL) == AE_CLIENT_STATE_PREGAME)
+	{
+		/* (the postgame's map choice held the countdown, as network_test.c's next game frees it) */
+		network_game_server_pause_countdown(server, FALSE);
+		network_game_client_request_immediate_start();
+		restart_state = 3;
+		platform_log("Custom Edition map: restart requested START");
+	}
+	else if (restart_state == 3 && network_game_client_get_state(client, NULL) > AE_CLIENT_STATE_PREGAME &&
+		game_engine_can_score())
+	{
+		restart_state = 0;
+		platform_log("Custom Edition map: current game restarted");
+	}
+}
+
+/* the menus add (screen width - 640) / 2 to a widget's place; a native screen of its own width in a view of
+less than the screen is centred in the view instead: the view's width, less the screen's, halved. */
+void ae_ce_map_view_place(long tag_index, rectangle2d const *window_bounds, point2d *offset, rectangle2d *bounds)
+{
+	long screen;
+
+	if (!ce_pause_active || !window_bounds)
+		return;
+	for (screen = 0; screen < split_screens.count; screen++)
+	{
+		if (split_screens.screens[screen].tag == tag_index)
+		{
+			/* (the view's bounds are in the menus' units already) */
+			long units = window_bounds->x1 - window_bounds->x0;
+			short shift;
+
+			if (units <= 0)
+				return;
+			shift = (short)((units - split_screens.screens[screen].design_width) / 2 - (halo_screen_width() - 640) / 2);
+			offset->x = (short)(offset->x + shift);
+			/* (the bitmaps' clip is the bounds moved with the offset: opened out by the shift, it ends where the view does) */
+			if (shift < 0)
+				bounds->x1 = (short)(bounds->x1 - shift);
+			else
+				bounds->x0 = (short)(bounds->x0 - shift);
+			return;
+		}
+	}
+}
+
+void ae_ce_map_widget_opened(long tag_index, short local_player_index)
+{
+	long screen;
+
+	for (screen = 0; screen < split_screens.count; screen++)
+	{
+		if (split_screens.screens[screen].tag == tag_index)
+		{
+			platform_log("Custom Edition map: split-pause screen %s opened for local player %d",
+				tag_get_name(tag_index), (int)local_player_index + 1);
+			return;
+		}
+	}
 }
 
 void ae_ce_map_menu_block(void const *block, long size)
@@ -532,6 +921,8 @@ void ae_ce_map_menu_blocks_forget(void)
 	if (menu_memory.blocks)
 		free(menu_memory.blocks);
 	memset(&menu_memory, 0, sizeof(menu_memory));
+	memset(&split_screens, 0, sizeof(split_screens));
+	ce_pause_active = FALSE;
 }
 
 int ae_ce_map_menu_memory(unsigned long address, long size)

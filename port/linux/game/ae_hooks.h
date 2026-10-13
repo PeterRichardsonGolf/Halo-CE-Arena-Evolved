@@ -9,7 +9,10 @@ notes/ae-hooks.md says where each goes). Included after cseries.h (boolean).
 #define __AE_HOOKS_H
 
 struct halo_ui_pointer;
+struct event_record;
+struct widget_instance;
 union rectangle2d;
+union point2d;
 
 /* display.arena_menus (HALO_ARENA_MENUS), read once */
 boolean ae_menus_active(void);
@@ -35,5 +38,14 @@ float ae_settings_ui_scale(void);
 boolean ae_settings_reduce_motion(void);
 float ae_settings_menu_volume(void);
 void ae_settings_refresh(void);
+/* a validated CE split-pause screen opened, for its regression log */
+void ae_ce_map_widget_opened(long tag_index, short local_player_index);
+/* a CE split-pause screen's centring in its view: its offset moved by the view's centring less the one the menus
+add, its clip (the bounds) opened out by it (any other widget: nothing) */
+void ae_ce_map_view_place(long tag_index, union rectangle2d const *window_bounds, union point2d *offset,
+	union rectangle2d *bounds);
+/* a validated CE pause tag's Halo PC-only function, before the Xbox table */
+int ae_ce_map_event_function(struct widget_instance *widget, struct event_record *event,
+	word function_index, boolean *widget_deleted, boolean *result);
 
 #endif

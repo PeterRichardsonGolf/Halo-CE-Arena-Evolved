@@ -16,6 +16,7 @@ screen is open.
 #include "ae_input.h"
 #include "ae_motion.h"
 #include "ae_screen_gallery.h"
+#include "ae_glue_ce_maps.h"
 #include "ae_glue_lobby.h"
 #include "ae_screen_lobby_test.h"
 #include "ae_screen_test.h"
@@ -216,6 +217,7 @@ boolean ae_ui_process(
 
 	unsigned long now;
 
+	ae_ce_map_update();
 	if (!ae_menus_active())
 	{
 		/* (a timed revert left open as AE's menus went off still reverts at 10 s) */

@@ -4279,6 +4279,7 @@ struct widget_instance *ui_widget_load_by_name_or_tag(
 				tag_index,
 				local_player_index,
 				widget_stack);
+			ae_ce_map_widget_opened(tag_index, local_player_index); /* AE hook */
 		}
 		else
 		{
@@ -7919,6 +7920,7 @@ void render_ui_widgets(
 				bounds.y1 = window_bounds->y1 - window_bounds->y0;
 				offset.x = 0;
 				offset.y = 0;
+				ae_ce_map_view_place(widget->definition_tag_index, window_bounds, &offset, &bounds); /* AE hook */
 				/* port: or smaller, to fit the view */
 				if (layout == _split_screen_menu_scaled)
 				{

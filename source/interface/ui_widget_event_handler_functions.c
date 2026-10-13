@@ -936,6 +936,7 @@ boolean playlist_profile_get_options(long playlist_profile_index, struct game_va
 #endif
 #include "text/unicode.h"
 #include "halo_menus.h" /* port: PC_MENU_FUNCTION_BASE */
+#include "ae_hooks.h" /* AE hook */
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "halo_custom_maps.h"
 #endif
@@ -3575,6 +3576,8 @@ boolean ui_widget_event_handler_function_invoke(
 	match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 478,
 		widget != NULL && widget_deleted != NULL,
 		"(widget != NULL) && (widget_deleted != NULL)");
+	if (ae_ce_map_event_function(widget, event, function_index, widget_deleted, &result)) /* AE hook */
+		return result;
 	/* port: a map's own widgets (not the menus' tags the port adds) may not
 	run what changes the player's files or settings: ui_widget_function_denied
 	(failed, as an invalid function is, so the handler opens and closes no

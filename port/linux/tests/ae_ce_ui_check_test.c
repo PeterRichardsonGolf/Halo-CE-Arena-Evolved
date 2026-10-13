@@ -73,6 +73,8 @@ static void widget(struct rig *r, int index, int handler_count, const int *child
 	instance(r, index, DELA, definition);
 	put32(at(r, definition + 0x54), (uint32_t)handler_count);
 	put32(at(r, definition + 0x58), handlers);
+	if (handler_count)
+		memset(at(r, handlers), 0, (size_t)handler_count * 0x48);
 	put32(at(r, definition + 0x3E0), (uint32_t)child_count);
 	put32(at(r, definition + 0x3E4), references);
 	for (child = 0; child < child_count; child++)
@@ -189,8 +191,28 @@ int main(void)
 			put32(at(&r, row + 0x3E4), loop);
 			memset(at(&r, loop), 0, 0x50);
 			put32(at(&r, loop + 0x0C), (uint32_t)tag(LIST));
-			refused(&r, "nested too deep");
+			/* screens link to each other: a loop is whole, each widget checked once */
+			CHECK(checked(&r, why));
+			rig_build(&r);
 		}
+	}
+	/* open-widget handlers: one opening its own screen or the list's parent is a cycle and whole; one with garbage
+	in its target but not the open bit is not followed; one that opens a bad index is refused */
+	{
+		uint32_t handler = (uint32_t)(at(&r, r.data[ROW_A] + 0x58)[0] | at(&r, r.data[ROW_A] + 0x58)[1] << 8 |
+			at(&r, r.data[ROW_A] + 0x58)[2] << 16 | (uint32_t)at(&r, r.data[ROW_A] + 0x58)[3] << 24);
+
+		put32(at(&r, handler), 1u << 3);
+		put32(at(&r, handler + 0x14), (uint32_t)tag(SCREEN));
+		CHECK(checked(&r, why));
+		put32(at(&r, handler + 0x14), (uint32_t)tag(ROW_A));
+		CHECK(checked(&r, why));
+		put32(at(&r, handler + 0x14), 0xE8CE0000u | 0x7FFF);
+		refused(&r, "past the tag table");
+		put32(at(&r, handler), 0);
+		put32(at(&r, handler + 0x14), 0xE8CE0000u | 0x7FFF);
+		CHECK(checked(&r, why));
+		rig_build(&r);
 	}
 	put32(r.instances + ROW_A * 0x20 + 0x14, 0x20000000);
 	refused(&r, "tag lies outside the tags");
