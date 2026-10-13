@@ -1,7 +1,8 @@
 /*
 AE_HIT_FEEDBACK_RULES.H
 
-HIT FEEDBACK (ARENA OPTIONS): HALO CE (AE_HIT_FEEDBACK_CLASSIC), shields and hits look as in Halo CE;
+COMBAT FEEDBACK (ARENA OPTIONS; "hit feedback" in the code): HALO CE (AE_HIT_FEEDBACK_CLASSIC), shields and hits
+look as in Halo CE;
 ARENA EVOLVED, a player's shield shows its state:
 
 - a hit's flare is a short pulse, so quick hits read as a flicker;
@@ -17,7 +18,7 @@ Looks only: no damage changes, and nothing new goes over the network (every
 machine draws from the shield's level and flags it already has).
 
 The rules here are pure (no engine includes): numbers in, numbers out. The
-gametype keeps the option in bit 0 of the byte the Xbox game left as its
+gametype keeps the option in bits 0-1 of the byte the Xbox game left as its
 universal variant's pad5 (the high nibble is SILENT MOVEMENT's and SILENT
 WEAPONS', ae_silent_rules.h). Every gametype from before has 0: CLASSIC.
 */
@@ -32,7 +33,9 @@ enum
 	NUMBER_OF_AE_HIT_FEEDBACK_VALUES
 };
 
-#define AE_HIT_FEEDBACK_BYTE_MASK 0x01u
+/* two bits: 0 HALO CE, 1 ARENA EVOLVED; 2 and 3 are kept for the looks of Halo 2 and Halo 3 (not built: a gametype
+that has one plays ARENA EVOLVED) */
+#define AE_HIT_FEEDBACK_BYTE_MASK 0x03u
 
 /* the option of a variant's byte, and the byte with the option set (its other bits kept) */
 int ae_hit_feedback_value(unsigned char byte);

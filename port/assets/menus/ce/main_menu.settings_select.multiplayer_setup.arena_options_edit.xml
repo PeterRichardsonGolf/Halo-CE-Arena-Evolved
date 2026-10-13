@@ -255,7 +255,7 @@
 		<string text="TIME LIMIT:"/>
 		<string text="FALL DAMAGE:"/>
 		<string text="HEALTH:"/>
-		<string text="HIT FEEDBACK:"/>
+		<string text="COMBAT FEEDBACK:"/>
 		<string text="NO SPREAD:"/>
 		<string text="PRE-GAME COUNTDOWN:"/>
 		<string text="PRACTICE MODE:"/>
@@ -293,7 +293,7 @@
 		<string text="Your shields are all that matter: your health\ncomes back as soon as they start to recharge."/>
 		<string text="Once your shields are full, all your health\ncomes back."/>
 		<string text="Shields and hits look as in Halo CE."/>
-		<string text="Shields show their state: a white pop when one\nheadshot will finish, a flicker while down, a\nsweep as they recharge. No damage change."/>
+		<string text="Shields show their state: a pop when one headshot\nwill finish, a flicker while down, a sweep as they\nrecharge; a blood pop on the kill. No damage change."/>
 		<string text="The pistol and sniper rifle spread as in stock Halo."/>
 		<string text="The pistol's first shot from rest, and every\nunzoomed sniper rifle shot, go exactly where\nyou aim. Held pistol fire still spreads."/>
 		<string text="Every pistol and sniper rifle shot goes exactly\nwhere you aim, held fire too: no spread and no\nbloom. Other weapons are unchanged."/>

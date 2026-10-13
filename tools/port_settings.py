@@ -1778,11 +1778,11 @@ ARENA_ROWS = [
         "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
         "Once your shields are full, all your health\\ncomes back.",
     ]),
-    # (HIT FEEDBACK: bit 0 of the variant's pad5, port/linux/game/ae_hit_feedback.c's
+    # (COMBAT FEEDBACK: bits 0-1 of the variant's pad5, port/linux/game/ae_hit_feedback.c's
     # ae_hit_feedback_menu_rows; not in menu_functions.c's table)
-    ("hit_feedback", "HIT FEEDBACK:", ["HALO CE", "ARENA EVOLVED"], [
+    ("hit_feedback", "COMBAT FEEDBACK:", ["HALO CE", "ARENA EVOLVED"], [
         "Shields and hits look as in Halo CE.",
-        "Shields show their state: a white pop when one\\nheadshot will finish, a flicker while down, a\\nsweep as they recharge. No damage change.",
+        "Shields show their state: a pop when one headshot\\nwill finish, a flicker while down, a sweep as they\\nrecharge; a blood pop on the kill. No damage change.",
     ]),
     ("no_spread", "NO SPREAD:", ["OFF", "FIRST SHOT", "FULL"], [
         "The pistol and sniper rifle spread as in stock Halo.",

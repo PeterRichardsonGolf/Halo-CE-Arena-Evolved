@@ -19,8 +19,10 @@ static void test_byte(void)
 		unsigned char off = ae_hit_feedback_byte_set((unsigned char)byte, AE_HIT_FEEDBACK_CLASSIC);
 
 		CHECK(ae_hit_feedback_value(on) == AE_HIT_FEEDBACK_ARENA);
-		CHECK(ae_hit_feedback_value(off) == AE_HIT_FEEDBACK_CLASSIC);
-		CHECK((on & 0xFE) == (byte & 0xFE) && (off & 0xFE) == (byte & 0xFE));
+		CHECK(ae_hit_feedback_value(off) == AE_HIT_FEEDBACK_CLASSIC && (off & 3) == 0 && (on & 3) == 1);
+		/* (the two values kept for later looks play ARENA EVOLVED meanwhile) */
+		CHECK(ae_hit_feedback_value((unsigned char)((byte & 0xFC) | 2)) == AE_HIT_FEEDBACK_ARENA);
+		CHECK((on & 0xFC) == (byte & 0xFC) && (off & 0xFC) == (byte & 0xFC));
 		CHECK(ae_silent_mode(on, AE_SILENT_ROLE_MOVEMENT) == ae_silent_mode((unsigned char)byte, AE_SILENT_ROLE_MOVEMENT));
 		CHECK(ae_silent_mode(on, AE_SILENT_ROLE_WEAPON) == ae_silent_mode((unsigned char)byte, AE_SILENT_ROLE_WEAPON));
 		CHECK(ae_hit_feedback_value(ae_silent_byte_set(on, AE_SILENT_ROLE_MOVEMENT, AE_SILENT_SILENT)) ==
