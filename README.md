@@ -69,7 +69,7 @@ editor and in Server Setup)
 | Option | What it does |
 | --- | --- |
 | FALL DAMAGE | Off: no landing damage from any height (pits and kill zones still kill). |
-| HEALTH | CLASSIC (stock: health packs only), REACH (health recovers to a third), HALO 2 (Halo 2's timers: shields recharge 5 s after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached it, shield hits do not count), HALO 3 (health refills after the shields). Health packs still spawn. |
+| HEALTH | HALO CE (stock: health packs only), REACH (health recovers to a third), HALO 2 (Halo 2's timers: shields recharge 5 s after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached it, shield hits do not count), HALO 3 (health refills after the shields). Health packs still spawn. |
 | NO SPREAD | OFF (stock), FIRST SHOT (the pistol's first shot from rest and the sniper rifle's unzoomed shots go exactly where you aim; held pistol fire still spreads) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
 | PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. A weapon switch (Y) pressed during it is kept and taken as it ends, as in Halo 1: NHE; any other button pressed during it does nothing until you let go of it, so nothing fires, zooms, reloads or picks up the moment it ends. The host holds every player to it, including players on builds without it. |
@@ -158,12 +158,12 @@ play:
 - **FFA AE TRAINING:** item TIMERS and TRAINING's markers, plays to 500, no
   time limit.
 - Every Arena Evolved gametype has no fall damage, HALO 2 health (SWAT:
-  classic), NO SPREAD FIRST SHOT, the PRE-GAME COUNTDOWN and generic starting
+  Halo CE), NO SPREAD FIRST SHOT, the PRE-GAME COUNTDOWN and generic starting
   equipment, with a pistol in hand and an assault rifle unless its mode says
   otherwise.
 - **Halo 1: NHE's own 23 gametypes** (TS 50, TS 100, TS ON-OFF, TS TRAINING,
   TS PRACTICE, TS SNIPERS, FFA 50 NR/R, 1 V 1 NR/R, KOTH 5M 7S/10S, BALL 5M
-  7S/10S, eight CTFs and CTF WIZARD), with NHE's values: classic health, fall
+  7S/10S, eight CTFs and CTF WIZARD), with NHE's values: Halo CE health, fall
   damage, NO SPREAD FIRST SHOT, the countdown, NHE EXTRAS (everyone joins red, no team
   swap, the dead camera on you, the match clock counting up), no death bonus or
   kill penalty in slayer. On Halo 1: NHE's maps each plays its NHE mode; on

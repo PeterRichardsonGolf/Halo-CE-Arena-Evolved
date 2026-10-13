@@ -21,7 +21,7 @@ ON_OFF = [("ON", "true"), ("OFF", "false")]
 # (display.performance's levels: main.c's performance_level_names)
 PERFORMANCE_LEVELS = [("OFF", "off"), ("FPS", "fps"), ("MINIMAL", "minimal"), ("FULL", "full")]
 CORNERS = [("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
-HEALTH_STYLES = [("CLASSIC", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
+HEALTH_STYLES = [("HALO CE", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
 MATCH_CLOCKS = [("OFF", "off"), ("TIME REMAINING", "down"), ("TIME ELAPSED", "up"), ("BOTH", "both")]
 HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
 SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
@@ -1772,7 +1772,7 @@ ARENA_ROWS = [
         "A hard landing hurts, and a long enough fall kills.",
         "Landings never hurt, from any height. Pits and\\nleaving the map still kill.",
     ]),
-    ("health_regeneration", "HEALTH:", ["CLASSIC", "REACH", "HALO 2", "HALO 3"], [
+    ("health_regeneration", "HEALTH:", ["HALO CE", "REACH", "HALO 2", "HALO 3"], [
         "Your health only comes back with a health pack.",
         "Once your shields are full, your health comes\\nback to the top of the third it is in. Health\\npacks fill the rest.",
         "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
