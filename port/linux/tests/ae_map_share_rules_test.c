@@ -374,6 +374,71 @@ static void share_all_tests(void)
 	CHECK(count == 2 && over == 2);
 	CHECK(ae_map_share_plan(NULL, lacks_all, NULL, 4096, 0, indices, 2, &total, &over) == 0);
 
+	/* M1: a file counted before is charged its growth when it is offered again larger (a host that lists a map
+	small, then large), never nothing; the same size or a smaller one adds nothing; a key the table lost is charged
+	whole again; the cap then refuses what the growth would pass */
+	{
+		static struct ae_map_share_charges charges;
+		unsigned long long taken = 0;
+		unsigned long long growth;
+		char key[32];
+
+		memset(&charges, 0, sizeof(charges));
+		growth = ae_map_share_charge_growth(&charges, "0:foo", 4096);
+		CHECK(growth == 4096 && ae_map_share_cap_allows(taken, growth, 100));
+		ae_map_share_charge_set(&charges, "0:foo", 4096);
+		taken += growth;
+		CHECK(ae_map_share_charge_growth(&charges, "0:foo", 4096) == 0);
+		CHECK(ae_map_share_charge_growth(&charges, "0:FOO", 4096) == 0);
+		CHECK(ae_map_share_charge_growth(&charges, "0:foo", 100) == 0);
+		CHECK(ae_map_share_charge_growth(&charges, "1:foo", 4096) == 4096);
+		/* (the same level listed again at 128 MiB: all of the growth counts, and a 100 MB cap refuses it) */
+		growth = ae_map_share_charge_growth(&charges, "0:foo", 128ULL << 20);
+		CHECK(growth == (128ULL << 20) - 4096);
+		CHECK(!ae_map_share_cap_allows(taken, growth, 100));
+		CHECK(ae_map_share_cap_allows(taken, growth, 4096));
+		ae_map_share_charge_set(&charges, "0:foo", 128ULL << 20);
+		taken += growth;
+		CHECK(taken == (128ULL << 20));
+		/* (set smaller: the largest is kept) */
+		ae_map_share_charge_set(&charges, "0:foo", 5);
+		CHECK(ae_map_share_charge_growth(&charges, "0:foo", 128ULL << 20) == 0);
+		/* (pushed out of the table by 96 others: whole again) */
+		for (count = 0; count < AE_MAP_SHARE_CHARGES; count++)
+		{
+			snprintf(key, sizeof(key), "0:map%d", count);
+			ae_map_share_charge_set(&charges, key, 10);
+		}
+		CHECK(ae_map_share_charge_growth(&charges, "0:foo", 128ULL << 20) == (128ULL << 20));
+		CHECK(ae_map_share_charge_growth(&charges, "0:map95", 10) == 0);
+		CHECK(ae_map_share_charge_growth(NULL, "0:foo", 7) == 7 && ae_map_share_charge_growth(&charges, NULL, 7) == 7);
+	}
+	/* M1: an offer's files are checked against the disk together (768 + 3 x 512 MiB do not fit a disk with 1 GiB
+	free, though each alone would), and a disk whose free space is not known (0) takes nothing */
+	{
+		unsigned long long free_bytes = 1ULL << 30;
+		unsigned long long sum = 0;
+		unsigned long long sizes[4] = { 768ULL << 20, 512ULL << 20, 512ULL << 20, 512ULL << 20 };
+		int taken_files = 0;
+
+		for (count = 0; count < 4; count++)
+		{
+			CHECK(ae_map_share_disk_allows(free_bytes, sizes[count]) == (count == 0 ? 1 : 1));
+			if (ae_map_share_disk_allows(free_bytes, sum + sizes[count]))
+			{
+				sum += sizes[count];
+				taken_files++;
+			}
+		}
+		CHECK(taken_files == 1);
+		CHECK(!ae_map_share_disk_allows(0, 1));
+	}
+	/* L6: a yes covers the amount it was given for, no more */
+	CHECK(ae_map_share_grant_covers(1000, 0, 1000) && !ae_map_share_grant_covers(1000, 0, 1001) &&
+		ae_map_share_grant_covers(1000, 400, 600) && !ae_map_share_grant_covers(1000, 400, 601) &&
+		!ae_map_share_grant_covers(1000, 1001, 0) && !ae_map_share_grant_covers(0, 0, 1) &&
+		!ae_map_share_grant_covers(1000, 0, ~0ULL));
+
 	/* overwrite refusal's path rule is the downloads' folder's own (above): a download's file is a plain name of
 	maps_shared, nothing else */
 	CHECK(ae_map_share_path_in_folder("d:\\maps_shared\\badcreek_1a2b3c4d.map", "d:\\maps_shared\\"));

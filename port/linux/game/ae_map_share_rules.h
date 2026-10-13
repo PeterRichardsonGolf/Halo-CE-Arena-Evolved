@@ -172,6 +172,32 @@ int ae_map_share_cap_allows(unsigned long long taken, unsigned long long size, l
 /* whether a disk with free bytes takes size more and keeps the margin */
 int ae_map_share_disk_allows(unsigned long long free_bytes, unsigned long long size);
 
+/* what was counted toward a host's total, by file (a key: its kind and level): a file offered again (a download taken
+up again, or a host that lists it again at another size) is charged its growth over what it was charged, never
+nothing for more bytes. The table is small: a key pushed out by newer ones is charged whole again */
+enum
+{
+	AE_MAP_SHARE_CHARGES = 96,
+	AE_MAP_SHARE_CHARGE_KEY_BYTES = 72,
+};
+struct ae_map_share_charges
+{
+	struct
+	{
+		char key[AE_MAP_SHARE_CHARGE_KEY_BYTES];
+		unsigned long long size;
+	} items[AE_MAP_SHARE_CHARGES];
+	int next;
+};
+/* the bytes to count for a file of size under key: size less what the key was charged (0 if no more) */
+unsigned long long ae_map_share_charge_growth(struct ae_map_share_charges const *charges, char const *key,
+	unsigned long long size);
+/* the key charged size (its largest so far kept) */
+void ae_map_share_charge_set(struct ae_map_share_charges *charges, char const *key, unsigned long long size);
+
+/* whether a yes given for granted bytes, of which used were taken since, covers more bytes */
+int ae_map_share_grant_covers(unsigned long long granted, unsigned long long used, unsigned long long more);
+
 /* whether maps are shared (a host's setting) or downloaded (a guest's) with a machine: the setting on, and the
 machine on the local network (ae_map_share_address_local of its address) or the internet's setting on too */
 int ae_map_share_policy_allows(int local, int setting, int internet_setting);

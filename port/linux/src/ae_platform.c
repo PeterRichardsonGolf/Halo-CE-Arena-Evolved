@@ -169,31 +169,15 @@ int ae_platform_mouse_left_held(void)
 #endif
 }
 
-/* map sharing's key (ae_map_share_all.c): F6, or a click of any pad's left stick, held now; 0 on the dedicated
-server and Android */
+/* map sharing's key (ae_map_share_all.c): F6 held now (no button a game uses: the key also answers a question);
+0 on the dedicated server and Android */
 int ae_platform_map_share_key(void)
 {
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
 	struct platform_input_state input;
-	SDL_JoystickID *ids;
-	int count = 0;
-	int held = 0;
-	int index;
 
 	platform_input_read(&input, FALSE);
-	if (!input.focused)
-		return 0;
-	if (input.keys[SDL_SCANCODE_F6])
-		return 1;
-	ids = SDL_GetGamepads(&count);
-	for (index = 0; ids && index < count && !held; index++)
-	{
-		SDL_Gamepad *gamepad = SDL_GetGamepadFromID(ids[index]);
-
-		held = gamepad && SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_STICK);
-	}
-	SDL_free(ids);
-	return held;
+	return input.focused && input.keys[SDL_SCANCODE_F6];
 #else
 	return 0;
 #endif

@@ -743,7 +743,8 @@ static const struct config_setting config_settings[] =
 		"\"yes\", \"no\", \"all\" (yes, and all of the host's maps fetched in the\n"
 		"lobby), \"internet\" (as all, the host taken for an internet one). A host's:\n"
 		"\"lie-size\", \"lie-hash\" (its list is not what it offers), \"lie-map\" (it\n"
-		"lists files whose headers are not their names')." },
+		"lists files whose headers are not their names'). Read only in a network\n"
+		"test (debug.network_test)." },
 	{ "network.coop_public", _config_boolean, "false", "HALO_NET_COOP_PUBLIC", _environment_value, _platform_all,
 		"Whether an online co-op game (Create Game > Internet, a SINGLEPLAYER\n"
 		"map) starts as PUBLIC or, false, PRIVATE: Server Setup's LISTING in\n"

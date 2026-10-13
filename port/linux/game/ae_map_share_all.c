@@ -13,7 +13,7 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
   it (an offer of more files than there are kinds).
 - THE PLAYED MAP. A guest without the game's map asks for it as Custom Edition maps are asked for: a community map
   too, into maps_shared, where the game then finds it.
-- GET ALL. In the lobby, F6 (or a click of a pad's left stick) fetches every listed map the guest lacks, one after
+- GET ALL. In the lobby, F6 fetches every listed map the guest lacks, one after
   another; the same again stops it. The game's own map goes first; a game that starts stops the rest until the
   lobby is back.
 - CONSENT AND LIMITS. Nothing is asked of a host before the player said yes, once per host; a size over the
@@ -97,7 +97,16 @@ enum
 	/* a map of the queue is tried this often (the game's own map takes its place meanwhile) */
 	QUEUE_ATTEMPTS = 3,
 	REMEMBERED_HOSTS = 8,
-	COUNTED_FILES = 96,
+	/* listed files that are not the game's sent at once (one a machine); with the game's own 4 and the 3 resource
+	maps they stay under map sharing's 16 hashed files */
+	FLIGHTS = 6,
+	FLIGHT_TIMEOUT = 45000,
+	RATES = 64,
+	/* the question must have been shown this long before a yes is taken, and shown this lately */
+	QUESTION_MINIMUM_TIME = 1000,
+	QUESTION_SHOWN_LATELY = 500,
+	/* GET ALL waits this long after a host said it does not share (asked too often) */
+	QUEUE_PAUSE = 10000,
 	_text_centered = 2,
 };
 
@@ -120,6 +129,29 @@ struct host_entry
 	char path[PATH_BYTES];
 	unsigned long modified;
 	boolean hashed;
+	/* its pieces' hashes, kept from the list's hashing: handed to map sharing when the file is asked for, so that
+	it is not read and hashed a second time (NULL: a resource map, which map sharing hashes itself) */
+	byte *pieces;
+	long piece_count;
+};
+
+/* a listed file that is not the game's, being sent to a machine: map sharing's catalogue of hashed files (16
+places, replaced in turn) keeps its place while it is (map_share_files.c's hook, ae_map_share_file_kept) */
+struct host_flight
+{
+	char path[PATH_BYTES];
+	unsigned long address;
+	long machine_index;
+	unsigned long asked_at;
+	boolean custom_edition;
+};
+
+/* a machine's requests counted by its address, which outlives its place in the game (leaving and joining again
+does not start the count over) */
+struct host_rate
+{
+	unsigned long address;
+	struct ae_map_share_rate rate;
 };
 
 struct host_peer
@@ -131,14 +163,12 @@ struct host_peer
 	boolean listed;
 	/* which list it was sent (the host's lists are numbered) */
 	long list_serial;
-	struct ae_map_share_rate rate;
 	char requested[LEVEL_BYTES];
 };
 
 struct remembered_host
 {
 	unsigned long address;
-	int consent;
 	unsigned long long taken;
 };
 
@@ -160,6 +190,10 @@ struct share_globals
 	long hash_piece;
 	long hash_piece_count;
 	struct host_peer peers[MACHINES];
+	struct host_flight flights[FLIGHTS];
+	struct host_rate rates[RATES];
+	long rates_next;
+	boolean choosing_place;
 
 	/* the guest's: its host, what the host said, and the player's answer */
 	unsigned long host_address;
@@ -171,8 +205,19 @@ struct share_globals
 	struct ae_map_share_catalogue catalogue;
 	int consent;
 	unsigned long long taken;
-	char counted[COUNTED_FILES][LEVEL_BYTES + 4];
-	long counted_next;
+	struct ae_map_share_charges charges;
+	/* the yes: the bytes it was given for and what had been taken when it was; the offer being taken's files' sum
+	(the disk must hold them together) */
+	unsigned long long granted;
+	unsigned long long grant_base;
+	unsigned long long offer_bytes;
+	/* the question: the game's map's size if the list has it; when it was first and last shown this time (0: not
+	shown), and whether the key was seen up since */
+	unsigned long long played_bytes;
+	unsigned long question_first_shown;
+	unsigned long question_last_shown;
+	boolean question_key_clear;
+	unsigned long queue_pause_until;
 	struct remembered_host remembered[REMEMBERED_HOSTS];
 	long remembered_next;
 	/* the plan: what GET ALL would fetch */
@@ -295,6 +340,21 @@ static boolean xbox_level_file(
 		!ae_map_share_stock_name(file) && map_share_name_safe(file);
 }
 
+/* whether an Xbox map's file is no longer than its header's length allows. The header's length is the map's
+UNPACKED size (the file is its header and then the rest compressed: Blood Gulch is 22.5 MB of file for a header
+that says 44.3 MB), so the two are not equal; but a file cannot be longer than what it unpacks to, but for the
+compression's own few bytes and the padding to a disc sector: a file with megabytes of anything after a small
+map's data is refused */
+static boolean xbox_length_fits(
+	unsigned char const *header,
+	unsigned long size)
+{
+	unsigned long length = (unsigned long)header[8] | (unsigned long)header[9] << 8 | (unsigned long)header[10] << 16 |
+		(unsigned long)header[11] << 24;
+
+	return size <= length || size - length <= 0x10000;
+}
+
 static boolean same_level(
 	char const *a,
 	char const *b)
@@ -342,8 +402,10 @@ static boolean test_mode(
 	char const *mode)
 {
 	char const *setting = config_string("debug.map_share_test");
+	char const *network_test = config_string("debug.network_test");
 
-	return setting && !strcmp(setting, mode);
+	/* (only in an automated network test, debug.network_test: never a way to play with no question) */
+	return setting && network_test && network_test[0] && !strcmp(setting, mode);
 }
 
 static boolean host_policy(
@@ -381,6 +443,26 @@ static void host_hash_end(
 	free(share.hash_pieces);
 	share.hash_pieces = NULL;
 	share.hashing = NONE;
+}
+
+/* a listed file's hashes handed to map sharing's catalogue as they are, if the file is still the one hashed: it is
+not read again when a machine asks for it */
+static void host_seed(
+	struct host_entry const *entry)
+{
+	unsigned long size;
+	unsigned long modified;
+
+	/* (never from inside the catalogue's own choice of a place: ae_map_share_file_kept) */
+	if (share.choosing_place || !entry->hashed || !entry->pieces || !file_stamp(entry->path, &size, &modified) ||
+		size != entry->entry.size || modified != entry->modified)
+	{
+		return;
+	}
+	if (map_share_file_find(entry->entry.hash) != NONE)
+		return;
+	map_share_file_hashed(entry->path, _map_share_file_map, entry->entry.size, entry->pieces, entry->piece_count,
+		entry->entry.hash);
 }
 
 static void host_add(
@@ -425,10 +507,13 @@ static void host_add(
 	{
 		struct host_entry const *before = &share.previous[index];
 
-		if (before->hashed && before->entry.size == size && before->modified == modified &&
+		if (before->hashed && before->pieces && before->entry.size == size && before->modified == modified &&
 			!_stricmp(before->path, path))
 		{
 			csmemcpy(entry->entry.hash, before->entry.hash, sizeof(entry->entry.hash));
+			entry->pieces = before->pieces;
+			entry->piece_count = before->piece_count;
+			share.previous[index].pieces = NULL;
 			entry->hashed = TRUE;
 			break;
 		}
@@ -483,9 +568,13 @@ static void host_scan_xbox(
 				host_add(path, name, kind);
 			continue;
 		}
-		/* (version 5, a build the game plays multiplayer with, its header's name its file's) */
-		if (!native_map_header_valid(header, data.cFileName))
+		/* (version 5, a build the game plays multiplayer with, its header's name its file's, and no longer than
+		its header says: what a guest checks of what it downloaded) */
+		if (!native_map_header_valid(header, data.cFileName) || data.nFileSizeHigh ||
+			!xbox_length_fits(header, data.nFileSizeLow))
+		{
 			continue;
+		}
 		csmemcpy(name, header + 0x20, HALO_CUSTOM_MAP_NAME_SIZE);
 		name[HALO_CUSTOM_MAP_NAME_SIZE] = 0;
 		if (ae_map_share_stock_name(name))
@@ -537,6 +626,8 @@ static void host_scan(
 	long index;
 
 	host_hash_end();
+	for (index = 0; index < share.previous_count; index++)
+		free(share.previous[index].pieces);
 	csmemcpy(share.previous, share.entries, sizeof(share.previous));
 	share.previous_count = share.entry_count;
 	share.entry_count = 0;
@@ -663,6 +754,9 @@ static void host_hash_update(
 		else
 		{
 			entry->hashed = TRUE;
+			entry->pieces = share.hash_pieces;
+			entry->piece_count = share.hash_piece_count;
+			share.hash_pieces = NULL;
 			host_hash_end();
 		}
 		budget--;
@@ -799,6 +893,103 @@ static void host_update(
 
 /* ---------- the host's hooks */
 
+static struct ae_map_share_rate *host_rate_of(
+	unsigned long address)
+{
+	long index;
+
+	for (index = 0; index < RATES; index++)
+	{
+		if (share.rates[index].address == address)
+			return &share.rates[index].rate;
+	}
+	index = share.rates_next++ % RATES;
+	csmemset(&share.rates[index], 0, sizeof(share.rates[index]));
+	share.rates[index].address = address;
+	return &share.rates[index].rate;
+}
+
+/* whether a flight is still one: its machine is the one that asked, and it asked lately or is still downloading */
+static boolean flight_live(
+	struct host_flight const *flight,
+	unsigned long now)
+{
+	return flight->path[0] && flight->address &&
+		network_game_server_machine_address(flight->machine_index) == flight->address &&
+		(!elapsed(flight->asked_at, now, FLIGHT_TIMEOUT) || map_share_machine_downloading(flight->machine_index));
+}
+
+/* a machine asks for a listed file that is not the game's: its one flight (the one before it is let go); FALSE if
+as many other machines' are in flight as there is room for */
+static boolean flight_take(
+	long machine_index,
+	struct host_entry const *entry)
+{
+	unsigned long now = system_milliseconds();
+	unsigned long address = network_game_server_machine_address(machine_index);
+	struct host_flight *mine = NULL;
+	struct host_flight *spare = NULL;
+	long index;
+
+	for (index = 0; index < FLIGHTS; index++)
+	{
+		struct host_flight *flight = &share.flights[index];
+
+		if (flight->path[0] && flight->machine_index == machine_index && flight->address == address)
+			mine = flight;
+		else if (!flight_live(flight, now))
+		{
+			csmemset(flight, 0, sizeof(*flight));
+			spare = flight;
+		}
+	}
+	if (!mine)
+		mine = spare;
+	if (!mine || !address)
+		return FALSE;
+	csmemset(mine, 0, sizeof(*mine));
+	csstrncpy(mine->path, entry->path, sizeof(mine->path) - 1);
+	mine->address = address;
+	mine->machine_index = machine_index;
+	mine->asked_at = now;
+	mine->custom_edition = entry->entry.kind == AE_MAP_SHARE_KIND_CE;
+	return TRUE;
+}
+
+boolean ae_map_share_file_kept(
+	char const *path)
+{
+	struct network_game *game = client_game();
+	unsigned long now = system_milliseconds();
+	boolean custom_edition = game && map_family_parse(game->map.name, NULL, 0) == _map_family_custom_edition;
+	char other[PATH_BYTES];
+	long index;
+	short type;
+
+	boolean kept = FALSE;
+
+	if (!path || !path[0] || !is_host() || share.choosing_place)
+		return FALSE;
+	share.choosing_place = TRUE;
+	for (index = 0; index < FLIGHTS; index++)
+	{
+		if (!flight_live(&share.flights[index], now))
+			continue;
+		kept |= !_stricmp(share.flights[index].path, path);
+		custom_edition |= share.flights[index].custom_edition;
+	}
+	/* (the game's own map, and the resource maps while a Custom Edition map is played or sent) */
+	if (!kept && game && game->map.name[0] && custom_edition_level_name(game->map.name) &&
+		custom_edition_map_file_path(game->map.name, other) && !_stricmp(other, path))
+	{
+		kept = TRUE;
+	}
+	for (type = _resource_map_bitmaps; !kept && custom_edition && type < NUMBER_OF_RESOURCE_MAP_TYPES; type++)
+		kept = custom_edition_resource_map_file_path(type, other) && !_stricmp(other, path);
+	share.choosing_place = FALSE;
+	return kept;
+}
+
 boolean ae_map_share_host_allowed(
 	long machine_index,
 	char const *level_name)
@@ -810,7 +1001,8 @@ boolean ae_map_share_host_allowed(
 	peer = &share.peers[machine_index];
 	csstrncpy(peer->requested, level_name ? level_name : "", sizeof(peer->requested) - 1);
 	peer->requested[sizeof(peer->requested) - 1] = 0;
-	if (!ae_map_share_rate_allow(&peer->rate, system_milliseconds(), REQUEST_BURST, REQUEST_REFILL))
+	if (!ae_map_share_rate_allow(host_rate_of(network_game_server_machine_address(machine_index)),
+		system_milliseconds(), REQUEST_BURST, REQUEST_REFILL))
 	{
 		error(_error_silent, "map sharing: machine #%ld asks too often: not answered with a map", machine_index);
 		return FALSE;
@@ -830,6 +1022,7 @@ boolean ae_map_share_host_lists(
 {
 	char file[LEVEL_BYTES];
 	short level_family;
+	long index;
 
 	if (machine_index < 0 || machine_index >= MACHINES || !is_host() || !share.ready ||
 		!share.peers[machine_index].listed || !ae_peer_is_ae(machine_index) || !level_name ||
@@ -839,8 +1032,20 @@ boolean ae_map_share_host_lists(
 	}
 	level_family = map_family_parse(level_name, file, sizeof(file));
 	if (level_family == _map_family_custom_edition)
-		return host_find(file, TRUE) != NONE;
-	return xbox_level_file(level_name, file, sizeof(file)) && host_find(file, FALSE) != NONE;
+		index = host_find(file, TRUE);
+	else
+		index = xbox_level_file(level_name, file, sizeof(file)) ? host_find(file, FALSE) : NONE;
+	if (index == NONE)
+		return FALSE;
+	/* (one listed file in flight a machine, and only so many in all: the catalogue keeps their places) */
+	if (!flight_take(machine_index, &share.entries[index]))
+	{
+		error(_error_silent, "map sharing: machine #%ld is not sent %s yet: too many of this host's maps are being "
+			"sent at once", machine_index, level_name);
+		return FALSE;
+	}
+	host_seed(&share.entries[index]);
+	return TRUE;
 }
 
 boolean ae_map_share_host_serving(
@@ -859,13 +1064,22 @@ boolean ae_map_share_host_serving(
 }
 
 short ae_map_share_host_file(
-	byte const *hash)
+	short found,
+	byte const *hash,
+	unsigned long address)
 {
 	short catalog_file;
 	struct map_share_file *file;
+	boolean listed = FALSE;
 	long index;
 
-	if (!ae_map_share_host_serving() || !share.ready)
+	/* (map sharing's own answer, the game's file, stands; else a file of the list, for a machine this host
+	shares with and sent its list to, by its connection's address) */
+	if (found != NONE || !ae_map_share_host_serving() || !share.ready || !address || !host_policy(address))
+		return found;
+	for (index = 0; index < MACHINES; index++)
+		listed |= share.peers[index].listed && share.peers[index].address == address;
+	if (!listed)
 		return NONE;
 	catalog_file = map_share_file_find(hash);
 	file = map_share_file_get(catalog_file);
@@ -921,6 +1135,8 @@ boolean ae_map_share_xbox_file_path(
 		return FALSE;
 	csstrncpy(path, share.entries[index].path, PATH_BYTES - 1);
 	path[PATH_BYTES - 1] = 0;
+	/* (its hashes are known: map sharing does not read the file again to answer for it) */
+	host_seed(&share.entries[index]);
 	return TRUE;
 }
 
@@ -1002,9 +1218,10 @@ boolean ae_map_share_xbox_present(
 			read = 0;
 		CloseHandle(handle);
 	}
+	/* (and no longer than its header says it is once unpacked) */
 	if (read != sizeof(header) || !native_map_header_valid(header, final_name) ||
 		ae_map_share_stock_name((char const *)header + 0x20) || !file_stamp(hashed_path, &size, &modified) ||
-		!ae_map_share_size_allowed(AE_MAP_SHARE_KIND_XBOX, size))
+		!ae_map_share_size_allowed(AE_MAP_SHARE_KIND_XBOX, size) || !xbox_length_fits(header, size))
 	{
 		snprintf(message, (size_t)message_size, "The downloaded map %.40s is not a map this game plays.", file);
 		return FALSE;
@@ -1075,8 +1292,6 @@ static void guest_remember(
 	if (index == REMEMBERED_HOSTS)
 		index = share.remembered_next++ % REMEMBERED_HOSTS;
 	share.remembered[index].address = share.host_address;
-	share.remembered[index].consent = share.consent == AE_MAP_SHARE_CONSENT_ASKING ? AE_MAP_SHARE_CONSENT_UNASKED :
-		share.consent;
 	share.remembered[index].taken = share.taken;
 }
 
@@ -1095,7 +1310,14 @@ static void guest_host_changed(
 	ae_map_share_catalogue_begin(&share.catalogue, 0);
 	share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_HOST);
 	share.taken = 0;
-	csmemset(share.counted, 0, sizeof(share.counted));
+	csmemset(&share.charges, 0, sizeof(share.charges));
+	share.granted = 0;
+	share.grant_base = 0;
+	share.offer_bytes = 0;
+	share.played_bytes = 0;
+	share.question_first_shown = 0;
+	share.question_last_shown = 0;
+	share.queue_pause_until = 0;
 	share.plan_count = 0;
 	share.plan_bytes = 0;
 	share.plan_over = 0;
@@ -1112,7 +1334,6 @@ static void guest_host_changed(
 	{
 		if (share.remembered[index].address == address && ae_map_share_address_local(address))
 		{
-			share.consent = share.remembered[index].consent;
 			share.taken = share.remembered[index].taken;
 		}
 	}
@@ -1169,32 +1390,34 @@ static unsigned long long disk_free(
 	ULARGE_INTEGER available;
 
 	available.QuadPart = 0;
+	/* (not known: nothing fits) */
 	if (!GetDiskFreeSpaceExA("d:\\", &available, NULL, NULL))
-		return ~0ULL;
+		return 0;
 	return available.QuadPart;
 }
 
-/* whether a file of the level was counted toward this host's total already (a download taken up again) */
-static boolean guest_counted(
+/* a file's key in what was counted toward this host's total (ae_map_share_charges): its kind and its level */
+static void charge_key(
+	char *key,
 	char const *level_name,
-	short kind,
-	boolean count)
+	short kind)
 {
-	char key[LEVEL_BYTES + 4];
-	long index;
+	snprintf(key, AE_MAP_SHARE_CHARGE_KEY_BYTES, "%d:%s", (int)kind, level_name);
+}
 
-	snprintf(key, sizeof(key), "%d:%s", (int)kind, level_name);
-	for (index = 0; index < COUNTED_FILES; index++)
-	{
-		if (!_stricmp(share.counted[index], key))
-			return TRUE;
-	}
-	if (count)
-	{
-		csstrncpy(share.counted[share.counted_next % COUNTED_FILES], key, sizeof(share.counted[0]) - 1);
-		share.counted_next++;
-	}
-	return FALSE;
+/* the question's amount: what the host has that this machine lacks, the game's map at least (0: not known) */
+static unsigned long long question_bytes(
+	void)
+{
+	return MAX(share.plan_bytes, share.played_bytes);
+}
+
+/* whether the yes given covers more bytes on top of what was taken since */
+static boolean grant_covers(
+	unsigned long long more)
+{
+	return ae_map_share_consent_writes(share.consent) &&
+		ae_map_share_grant_covers(share.granted, share.taken - share.grant_base, more) != 0;
 }
 
 static void refuse(
@@ -1290,9 +1513,22 @@ int ae_map_share_download_gate(
 		if (index >= 0 && share.catalogue.entries[index].kind == AE_MAP_SHARE_KIND_CE)
 			entry = &share.catalogue.entries[index];
 	}
-	if (entry && !guest_counted(level_name, _map_share_file_map, FALSE))
+	if (entry)
 	{
-		if (!ae_map_share_cap_allows(share.taken, entry->size, guest_cap()))
+		char key[AE_MAP_SHARE_CHARGE_KEY_BYTES];
+		unsigned long long growth;
+
+		/* (what it adds to this host's total: all of it, or its growth over what was counted for it before) */
+		charge_key(key, level_name, _map_share_file_map);
+		growth = ae_map_share_charge_growth(&share.charges, key, entry->size);
+		if (!same_level(share.active_level, level_name))
+		{
+			share.played_bytes = growth;
+			/* (more than the yes was given for: asked again, with the new amount) */
+			if (ae_map_share_consent_writes(share.consent) && !grant_covers(growth))
+				share.consent = AE_MAP_SHARE_CONSENT_UNASKED;
+		}
+		if (!ae_map_share_cap_allows(share.taken, growth, guest_cap()))
 		{
 			refuse("The map is %ld MB: over the %ld MB you take from one host (network.map_download_limit).",
 				megabytes(entry->size), guest_cap());
@@ -1307,6 +1543,8 @@ int ae_map_share_download_gate(
 	share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_NEED);
 	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
 	{
+		if (!share.played_asking)
+			error(_error_silent, "map sharing: the player is asked whether to download from this host");
 		share.played_asking = TRUE;
 		if (!share.planned_at || elapsed(share.planned_at, now, 2000))
 			guest_plan();
@@ -1329,6 +1567,8 @@ boolean ae_map_share_download_begun(
 	share.refusal[0] = 0;
 	share.pending_at = system_milliseconds();
 	share.folder_xbox = FALSE;
+	share.offer_bytes = 0;
+	share.played_bytes = 0;
 	return ae_map_share_download_gate(level_name, TRUE) == 2;
 }
 
@@ -1340,6 +1580,11 @@ boolean ae_map_share_download_failed(
 		return FALSE;
 	/* (a map of GET ALL: the game is not left for it; one that failed, not merely stopped, is not tried again) */
 	share.active_failed = !share.active_stopped;
+	if (reason && !strncmp(reason, "The host does not share", 23))
+	{
+		share.active_failed = FALSE;
+		share.queue_pause_until = system_milliseconds() + QUEUE_PAUSE;
+	}
 	error(_error_silent, "map sharing: %s of the host's maps is not fetched: %s", level_name, reason ? reason : "");
 	return TRUE;
 }
@@ -1415,20 +1660,36 @@ boolean ae_map_share_offer_allowed(
 		refuse("The map's resource map is larger than the game takes (%ld MB).", megabytes(size));
 		return FALSE;
 	}
-	if (!guest_counted(level_name, kind, FALSE))
 	{
-		if (!ae_map_share_cap_allows(share.taken, size, guest_cap()))
+		char key[AE_MAP_SHARE_CHARGE_KEY_BYTES];
+		unsigned long long growth;
+
+		/* (counted toward this host's total: all of it, or its growth over what was counted for this file before,
+		whatever size it had then) */
+		charge_key(key, level_name, kind);
+		growth = ae_map_share_charge_growth(&share.charges, key, size);
+		if (!ae_map_share_cap_allows(share.taken, growth, guest_cap()))
 		{
 			refuse("This would be over the %ld MB you take from one host (network.map_download_limit).", guest_cap());
 			return FALSE;
 		}
-		if (!ae_map_share_disk_allows(disk_free(), size))
+		/* (no more than the player's yes was given for: asked again next time) */
+		if (!grant_covers(growth))
 		{
-			refuse("There is not enough free disk space to download the map (%ld MB).", megabytes(size));
+			share.consent = AE_MAP_SHARE_CONSENT_UNASKED;
+			refuse("The host offers more than you said yes to.");
 			return FALSE;
 		}
-		guest_counted(level_name, kind, TRUE);
-		share.taken += size;
+		/* (every offer, and its files together: the disk keeps its margin after all of them) */
+		if (!ae_map_share_disk_allows(disk_free(), share.offer_bytes + size))
+		{
+			refuse("There is not enough free disk space to download the map (%ld MB).",
+				megabytes(share.offer_bytes + size));
+			return FALSE;
+		}
+		share.offer_bytes += size;
+		ae_map_share_charge_set(&share.charges, key, size);
+		share.taken += growth;
 	}
 	share.folder_xbox = level_family == _map_family_xbox;
 	return TRUE;
@@ -1484,8 +1745,19 @@ boolean ae_map_share_handle_message(
 			" and does not share its maps with this machine");
 		return TRUE;
 	}
-	if (!share.host_is_ae || !share.host_shares)
+	/* (no list is kept of a host this machine does not download from) */
+	if (!share.host_is_ae || !share.host_shares || !guest_policy())
 		return TRUE;
+	/* (a name a file system takes for a device is no map's: left out, as any entry that is not valid) */
+	{
+		int entry_index;
+
+		for (entry_index = 0; entry_index < frame.count; entry_index++)
+		{
+			if (!map_share_name_safe(frame.entries[entry_index].name))
+				frame.entries[entry_index].kind = AE_MAP_SHARE_KIND_NONE;
+		}
+	}
 	if (frame.first == 0)
 	{
 		/* (a list while one is being fetched from is not taken: its entries are what the downloads are checked
@@ -1587,6 +1859,9 @@ static void all_update(
 	/* (only in the lobby, and never while the game's own map is coming) */
 	if (!game || !main_menu_is_active() || (game->map.name[0] && map_share_downloading(game->map.name)))
 		return;
+	if (share.queue_pause_until && !elapsed(share.queue_pause_until, system_milliseconds(), 0))
+		return;
+	share.queue_pause_until = 0;
 	if (share.queue_next >= share.queue_count)
 	{
 		all_stop("is done");
@@ -1616,6 +1891,96 @@ static void all_update(
 	}
 }
 
+/* ---------- the guest: the question and its answers (the interface a dialog calls; the F6 key is one caller) */
+
+boolean ae_map_share_consent_question(
+	struct ae_map_share_question *question)
+{
+	if (is_host() || !share.host_address || share.consent != AE_MAP_SHARE_CONSENT_ASKING)
+		return FALSE;
+	if (question)
+	{
+		question->host = share.host_address;
+		question->maps = share.plan_count;
+		question->bytes = question_bytes();
+		question->limit_megabytes = guest_cap();
+		question->needed_to_play = share.played_asking;
+	}
+	return TRUE;
+}
+
+void ae_map_share_consent_shown(
+	void)
+{
+	unsigned long now = system_milliseconds();
+
+	if (share.consent != AE_MAP_SHARE_CONSENT_ASKING)
+		return;
+	/* (shown anew: its time starts, and the key must be let go of before it answers) */
+	if (!share.question_first_shown || elapsed(share.question_last_shown, now, QUESTION_SHOWN_LATELY))
+	{
+		share.question_first_shown = now | 1;
+		share.question_key_clear = FALSE;
+	}
+	share.question_last_shown = now;
+}
+
+/* whether an answer is taken now: the question is the one asked, on the screen (shown lately, and for long enough
+to be read), in the lobby or the menus (never in a game) */
+static boolean consent_answerable(
+	unsigned long host)
+{
+	unsigned long now = system_milliseconds();
+
+	return share.consent == AE_MAP_SHARE_CONSENT_ASKING && host && host == share.host_address &&
+		main_menu_is_active() && share.question_first_shown &&
+		!elapsed(share.question_last_shown, now, QUESTION_SHOWN_LATELY) &&
+		elapsed(share.question_first_shown, now, QUESTION_MINIMUM_TIME);
+}
+
+boolean ae_map_share_consent_yes(
+	unsigned long host,
+	unsigned long long bytes)
+{
+	/* (for the host and the amount that are shown now, no other) */
+	if (!consent_answerable(host) || bytes != question_bytes())
+		return FALSE;
+	share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_YES);
+	/* (the yes is for that amount: more is asked for again; an amount not known is the limit's) */
+	share.granted = bytes ? bytes : (unsigned long long)guest_cap() << 20;
+	share.grant_base = share.taken;
+	share.played_asking = FALSE;
+	share.question_first_shown = 0;
+	error(_error_silent, "map sharing: the player said yes to downloading from this host (%ld MB)",
+		megabytes(share.granted));
+	if (share.all_wanted)
+	{
+		share.all_wanted = FALSE;
+		all_start();
+	}
+	return TRUE;
+}
+
+boolean ae_map_share_consent_no(
+	unsigned long host)
+{
+	if (share.consent != AE_MAP_SHARE_CONSENT_ASKING || !host || host != share.host_address)
+		return FALSE;
+	/* (no to GET ALL alone is not a no to the host: it may be asked again; no to the game's map is) */
+	share.consent = share.played_asking ? ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_NO) :
+		AE_MAP_SHARE_CONSENT_UNASKED;
+	share.all_wanted = FALSE;
+	share.played_asking = FALSE;
+	share.question_first_shown = 0;
+	return TRUE;
+}
+
+boolean ae_map_share_download_may_write(
+	void)
+{
+	return !is_host() && ae_map_share_consent_writes(share.consent) != 0;
+}
+
 static void guest_update(
 	void)
 {
@@ -1630,61 +1995,53 @@ static void guest_update(
 		guest_host_changed(address);
 	if (!address)
 		return;
-	/* (debug.map_share_test: the player's answers, for the tests) */
 	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
 	{
+		/* (the key answers only once it was seen up while the question was shown) */
+		if (!key && share.question_first_shown)
+			share.question_key_clear = TRUE;
+		/* (debug.map_share_test, in a network test alone: the player's answers, through the same functions) */
 		if (test_mode("yes") || test_mode("all") || test_mode("internet"))
-			pressed = TRUE;
+			ae_map_share_consent_yes(address, question_bytes());
 		else if (test_mode("no"))
 		{
-			share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_NO);
-			share.all_wanted = FALSE;
-			share.played_asking = FALSE;
+			share.played_asking = TRUE;
+			ae_map_share_consent_no(address);
 		}
-	}
-	else if ((test_mode("all") || test_mode("internet")) && !share.test_all_done && lobby && share.plan_count &&
-		!share.all_active)
-	{
-		share.test_all_done = TRUE;
-		pressed = TRUE;
-	}
-	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
-	{
-		if (pressed)
-		{
-			share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_YES);
-			share.played_asking = FALSE;
-			error(_error_silent, "map sharing: the player said yes to downloading from this host");
-			if (share.all_wanted)
-			{
-				share.all_wanted = FALSE;
-				all_start();
-			}
-		}
+		else if (pressed && share.question_key_clear)
+			ae_map_share_consent_yes(address, question_bytes());
 		/* (asked for GET ALL alone, and not answered: not asked any more, and may be asked again) */
 		else if (share.all_wanted && !share.played_asking && elapsed(share.all_asked_at, now, PROMPT_TIME))
+			ae_map_share_consent_no(address);
+	}
+	else
+	{
+		if ((test_mode("all") || test_mode("internet")) && !share.test_all_done && lobby && share.plan_count &&
+			!share.all_active)
 		{
-			share.all_wanted = FALSE;
-			share.consent = AE_MAP_SHARE_CONSENT_UNASKED;
+			share.test_all_done = TRUE;
+			pressed = TRUE;
 		}
-	}
-	else if (pressed && share.all_active)
-	{
-		all_stop("was stopped");
-	}
-	else if (pressed && lobby && guest_policy() && share.host_shares)
-	{
-		guest_plan();
-		if (!share.plan_count)
-			notice_set(share.plan_over ? "The host's other maps are over what you take from one host." :
-				"You have all of the host's maps.");
-		else if (ae_map_share_consent_writes(share.consent))
-			all_start();
-		else if (share.consent == AE_MAP_SHARE_CONSENT_UNASKED)
+		if (pressed && share.all_active)
 		{
-			share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_NEED);
-			share.all_wanted = TRUE;
-			share.all_asked_at = now;
+			all_stop("was stopped");
+		}
+		else if (pressed && lobby && guest_policy() && share.host_shares)
+		{
+			guest_plan();
+			if (!share.plan_count)
+				notice_set(share.plan_over ? "The host's other maps are over what you take from one host." :
+					"You have all of the host's maps.");
+			/* (the yes given covers them: fetched; else asked, with their amount) */
+			else if (grant_covers(share.plan_bytes))
+				all_start();
+			else if (share.consent != AE_MAP_SHARE_CONSENT_NO)
+			{
+				share.consent = ae_map_share_consent_step(AE_MAP_SHARE_CONSENT_UNASKED, AE_MAP_SHARE_CONSENT_EVENT_NEED);
+				share.all_wanted = TRUE;
+				share.all_asked_at = now;
+				error(_error_silent, "map sharing: the player is asked whether to download from this host");
+			}
 		}
 	}
 	all_update();
@@ -1724,19 +2081,18 @@ void ae_map_share_all_render(
 		if (share.plan_count)
 		{
 			snprintf(text, sizeof(text), "The host has %ld map%s you lack, %ld MB (you take %ld MB at most). "
-				"Download from this host? F6 or left stick click: yes%s", share.plan_count,
-				share.plan_count == 1 ? "" : "s", megabytes(share.plan_bytes), guest_cap(),
+				"Download from this host? F6: yes%s", share.plan_count,
+				share.plan_count == 1 ? "" : "s", megabytes(question_bytes()), guest_cap(),
 				share.played_asking ? " - B or Esc: leave" : "");
 		}
 		else
 		{
-			snprintf(text, sizeof(text), "Download this game's map from the host? F6 or left stick click: yes - "
-				"B or Esc: leave");
+			snprintf(text, sizeof(text), "Download this game's map from the host? F6: yes - B or Esc: leave");
 		}
 	}
 	else if (share.all_active)
 	{
-		snprintf(text, sizeof(text), "Getting the host's maps: %ld of %ld - F6 or left stick click stops",
+		snprintf(text, sizeof(text), "Getting the host's maps: %ld of %ld - F6 stops",
 			MIN(share.queue_next + 1, share.queue_count), share.queue_count);
 	}
 	else if (share.notice[0] && !elapsed(share.notice_until, now, 0))
@@ -1745,7 +2101,7 @@ void ae_map_share_all_render(
 	}
 	else if (main_menu_is_active() && share.host_shares && share.plan_count && guest_policy())
 	{
-		snprintf(text, sizeof(text), "The host has %ld map%s you lack (%ld MB): F6 or left stick click gets them all",
+		snprintf(text, sizeof(text), "The host has %ld map%s you lack (%ld MB): F6 gets them all",
 			share.plan_count, share.plan_count == 1 ? "" : "s", megabytes(share.plan_bytes));
 	}
 	if (!text[0])
@@ -1760,4 +2116,7 @@ void ae_map_share_all_render(
 	bounds.y1 = 42;
 	draw_string_set_draw_mode(font_tag_index, NONE, _text_centered, 0, &color);
 	rasterizer_draw_string(&bounds, NULL, NULL, 0, text);
+	/* (the question was really drawn: only then, and only after a while, is an answer taken) */
+	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
+		ae_map_share_consent_shown();
 }

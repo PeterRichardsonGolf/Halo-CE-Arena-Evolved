@@ -215,9 +215,48 @@ boolean ae_map_share_host_lists(
 boolean ae_map_share_host_serving(
 	void);
 short ae_map_share_host_file(
-	byte const *hash);
+	short found,
+	byte const *hash,
+	unsigned long address);
+/* (map_share_files.c's: whether the hashed file at path keeps its place in the catalogue: the game's own, or one
+being sent to a machine) */
+boolean ae_map_share_file_kept(
+	char const *path);
 boolean ae_map_share_host_extra(
 	long machine_index);
+/* THE QUESTION ("download from this host?") AND ITS ANSWERS: what a menu's dialog calls (the F6 key and the text
+line of ae_map_share_all.c are one caller, until there is one).
+- ae_map_share_consent_question: TRUE while the question is open, with what to show: the host (its address, host
+  byte order), how many maps this machine lacks, their bytes (0: not known), the most megabytes taken from one host,
+  and whether the game cannot be played without a yes (then "no" means leaving).
+- ae_map_share_consent_shown: called each frame the question is really on the screen. An answer is taken only if
+  it was shown within the last half second and for at least a second, and only in the lobby or the menus.
+- ae_map_share_consent_yes: the player's yes, for that host and that amount. FALSE (nothing changes) if the
+  question is not open, was not shown long enough, or is now for another host or another amount: show it again.
+  The yes covers that many bytes from that host; more is asked for again.
+- ae_map_share_consent_no: the player's no. To the game's map it stands for this host (the download is refused and
+  the game left); to GET ALL alone it only closes the question. */
+struct ae_map_share_question
+{
+	unsigned long host;
+	long maps;
+	unsigned long long bytes;
+	long limit_megabytes;
+	boolean needed_to_play;
+};
+boolean ae_map_share_consent_question(
+	struct ae_map_share_question *question);
+void ae_map_share_consent_shown(
+	void);
+boolean ae_map_share_consent_yes(
+	unsigned long host,
+	unsigned long long bytes);
+boolean ae_map_share_consent_no(
+	unsigned long host);
+/* whether the player said yes to this host (files and folders may be made) */
+boolean ae_map_share_download_may_write(
+	void);
+
 /* ... both: a frame of the list (TRUE: it was one, handled or dropped); every frame; the screen's line */
 boolean ae_map_share_handle_message(
 	long machine_index,

@@ -374,6 +374,7 @@ short map_share_file_hash(
 			if (globals->job_type == _hash_job_file && globals->job_owner == index)
 				index = (short)((index + 1) % MAXIMUM_SHARE_FILES);
 			globals->next_file = (short)((index + 1) % MAXIMUM_SHARE_FILES);
+			{ short ae_turn; for (ae_turn = 0; ae_turn < MAXIMUM_SHARE_FILES && (ae_map_share_file_kept(globals->files[index].path) || (globals->job_type == _hash_job_file && globals->job_owner == index)); ae_turn++) index = (short)((index + 1) % MAXIMUM_SHARE_FILES); globals->next_file = (short)((index + 1) % MAXIMUM_SHARE_FILES); } /* AE hook */
 			free(globals->files[index].piece_hashes);
 		}
 		file = &globals->files[index];

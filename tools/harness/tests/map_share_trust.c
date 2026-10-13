@@ -123,15 +123,7 @@ static void map_share_level_to_wire(char *wire, char const *level_name)
 
 #define config_boolean(name) 1
 #define custom_edition_level_name(level_name) (!strncmp(level_name, "custom_maps\\", 12))
-/* (Arena Evolved's sharing of every map, ae_map_share_all.c: none of it here: every machine is allowed its
-requests, no level but the game's is listed, no download is one of GET ALL's) */
-#define ae_map_share_host_allowed(machine_index, level_name) (TRUE)
-#define ae_map_share_host_lists(machine_index, level_name) (FALSE)
-#define ae_map_share_host_extra(machine_index) (FALSE)
-#define ae_map_share_host_serving() (FALSE)
-#define ae_map_share_host_file(hash) (NONE)
-#define ae_map_share_download_extra(level_name) (FALSE)
-#define ae_map_share_download_host_only(level_name) (FALSE)
+#include "ae_map_share_stubs.h" /* AE hook */
 #define custom_edition_map_file_path(level_name, path) (strcpy(path, "d:\\custom_maps\\hugeass_0e2b3ee4.map"), 1)
 #define custom_edition_resource_map_file_path(kind, path) 0
 #define custom_edition_map_resource_maps_needed(level_name) 0UL

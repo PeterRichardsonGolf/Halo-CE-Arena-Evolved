@@ -344,8 +344,12 @@ boolean map_share_resource_maps_missing(
 void map_share_folder_make(
 	void)
 {
-	CreateDirectoryA("d:\\maps_ce\\", NULL);
-	CreateDirectoryA(ae_map_share_xbox_folder(), NULL);
+	/* (not before the player's yes: nothing is made for an offer nobody agreed to) */
+	if (ae_map_share_download_may_write())
+	{
+		CreateDirectoryA("d:\\maps_ce\\", NULL);
+		CreateDirectoryA(ae_map_share_xbox_folder(), NULL);
+	}
 }
 
 boolean ae_map_share_find(

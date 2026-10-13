@@ -740,7 +740,7 @@ static short current_file_with_hash(
 		if (file && file->ready && !csmemcmp(file->hash, hash, MAP_SHARE_HASH_BYTES))
 			return globals->current_files[kind];
 	}
-	return ae_map_share_host_file(hash); /* AE hook */
+	return NONE;
 }
 
 /* the download's file with this hash, or NONE */
@@ -880,7 +880,7 @@ static void connection_match_files(
 
 	for (index = 0; index < connection->file_count; index++)
 	{
-		short catalog_file = current_file_with_hash(connection->file_hashes[index]);
+		short catalog_file = ae_map_share_host_file(current_file_with_hash(connection->file_hashes[index]), connection->file_hashes[index], connection->address); /* AE hook */
 
 		connection->download_file[index] = download_file_with_hash(connection->file_hashes[index]);
 		if (catalog_file != connection->catalog_file[index] && map_share_sending())

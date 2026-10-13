@@ -26,7 +26,7 @@ BUILD = os.environ.get("AE_SHARE_BUILD")
 DATA = os.environ.get("AE_SHARE_DATA")
 WORK = os.environ.get("AE_SHARE_WORK")
 HERE = Path(__file__).resolve().parent
-HOST, GUEST, BOT = "127.0.0.200", "127.0.0.201", "127.0.0.210"
+HOST, GUEST, GUEST2, BOT = "127.0.0.200", "127.0.0.201", "127.0.0.202", "127.0.0.210"
 PIECE = 0x40000
 STOCK = ("beavercreek sidewinder damnation ratrace prisoner hangemhigh chillout carousel boardingaction bloodgulch "
          "wizard putput longest a10 ui").split()
@@ -48,10 +48,24 @@ def xbox_map_named(source, name):
     return bytes(data)
 
 
-def small_map(name):
-    """the start of an Xbox map under a name: a file the game lists (its header is whole) and never loads; a
-    headless game sends a quarter megabyte a second, so the cases that only fetch use these"""
-    return xbox_map_named(xbox_source(), name)[:2 * PIECE + 1234]
+def small_map(name, size=300000):
+    """a small file with an Xbox map's header under a name: one the game lists (its header is a map's, of this
+    file's own length) and never loads; a headless game sends a quarter megabyte a second, so the cases that only
+    fetch use these. Each name's bytes are its own"""
+    header = bytearray(xbox_source().read_bytes()[:2048])
+    header[0x20:0x40] = name.encode().ljust(32, b"\0")
+    header[8:12] = struct.pack("<I", size)
+    header[0x10:0x14] = struct.pack("<I", 2048)
+    header[0x14:0x18] = struct.pack("<I", 0x1000)
+    body = hashlib.blake2b(name.encode(), digest_size=32).digest()
+    return (bytes(header) + body * ((size - 2048) // 32 + 1))[:size]
+
+
+def seconds_of(text, line):
+    """the time of day (seconds) of the first log line that holds `line`"""
+    found = next(row for row in text.splitlines() if line in row)
+    hours, minutes, seconds = (int(part) for part in found.split()[1].split(":"))
+    return hours * 3600 + minutes * 60 + seconds
 
 
 def xbox_source():
@@ -118,7 +132,7 @@ INNER = textwrap.dedent("""
 
 
 def run_pair(name, host_root, guest_root, host_env=None, guest_env=None, seconds=55, level="bloodgulch", start=600,
-             join_delay=8, bot=None, guest=True):
+             join_delay=8, bot=None, guest=True, second=None):
     """the host (network_test host:<level>, started after `start` seconds) and the guest (network_test join) played
     together; (host debug.txt, guest debug.txt). bot: arguments of tools/system_link_bots.py run beside them"""
     import json
@@ -127,7 +141,7 @@ def run_pair(name, host_root, guest_root, host_env=None, guest_env=None, seconds
     binary = str(Path(BUILD).expanduser() / "halo")
     xvfb = ["xvfb-run", "-a", "-s", "-screen 0 1280x720x24"] if shutil.which("xvfb-run") else []
     games = [{"delay": 0, "cwd": str(host_root), "log": str(host_root / "halo.log"), "command": xvfb + [binary],
-              "env": game_env(host_root, HOST, GUEST, seconds, {"HALO_NETWORK_TEST": f"host:{level}",
+              "env": game_env(host_root, HOST, f"{GUEST},{GUEST2}" if second is not None else GUEST, seconds, {"HALO_NETWORK_TEST": f"host:{level}",
                                                                  "HALO_NETWORK_TEST_START": str(start),
                                                                  "HALO_NET_MAP_SHARE_UPLOAD": "65536",
                                                                  **(host_env or {})})}]
@@ -136,6 +150,11 @@ def run_pair(name, host_root, guest_root, host_env=None, guest_env=None, seconds
                       "command": xvfb + [binary],
                       "env": game_env(guest_root, GUEST, HOST, seconds - join_delay,
                                       {"HALO_NETWORK_TEST": "join", **(guest_env or {})})})
+    if second is not None:
+        # (a second guest: (its data root, its environment), on an address of its own)
+        games.append({"delay": 2, "cwd": str(second[0]), "log": str(second[0] / "halo.log"), "command": xvfb + [binary],
+                      "env": game_env(second[0], GUEST2, HOST, seconds - join_delay - 2,
+                                      {"HALO_NETWORK_TEST": "join", **second[1]})})
     if bot is not None:
         games.append({"delay": 0 if guest else join_delay, "cwd": str(work), "log": str(work / f"{name}-bot.log"),
                       "env": {}, "command": [sys.executable, str(HERE / "system_link_bots.py"), "--host", HOST,
@@ -144,7 +163,7 @@ def run_pair(name, host_root, guest_root, host_env=None, guest_env=None, seconds
     plan = work / f"{name}-plan.json"
     inner = work / "inner.py"
     inner.write_text(INNER)
-    plan.write_text(json.dumps({"addresses": [HOST, GUEST, BOT], "games": games, "seconds": seconds}))
+    plan.write_text(json.dumps({"addresses": [HOST, GUEST, GUEST2, BOT], "games": games, "seconds": seconds}))
     subprocess.run(["unshare", "-rnm", "--pid", "--fork", "--mount-proc", sys.executable, str(inner), str(plan)],
                    check=False, timeout=seconds + 120)
     texts = [(root / "debug.txt").read_text(errors="replace") if (root / "debug.txt").exists() else ""
@@ -159,11 +178,11 @@ def run_pair(name, host_root, guest_root, host_env=None, guest_env=None, seconds
 def roots():
     work = Path(WORK).expanduser()
     work.mkdir(parents=True, exist_ok=True)
-    for old in ("host", "guest"):
+    for old in ("host", "guest", "guest2"):
         shutil.rmtree(work / old, ignore_errors=True)
     yield work / "host", work / "guest"
     if not os.environ.get("AE_SHARE_KEEP"):
-        for old in ("host", "guest"):
+        for old in ("host", "guest", "guest2"):
             shutil.rmtree(work / old, ignore_errors=True)
 
 
@@ -242,6 +261,8 @@ def test_get_all(roots):
     assert (guest / "maps_shared/modcreek.map").read_bytes() == mod["modcreek"]
     assert (guest / "maps_ce" / next(iter(ce))).read_bytes() == next(iter(ce.values()))
     assert "is done: 3 of 3 fetched" in guest_text, share_lines(guest_text)
+    # (M3: the yes is taken only once the question has been on the screen for a second)
+    assert seconds_of(guest_text, "the player said yes") - seconds_of(guest_text, "the player is asked") >= 1
     for stock in STOCK:
         assert not (guest / "maps_shared" / f"{stock}.map").exists()
 
@@ -267,7 +288,9 @@ def test_internet_without_opt_in(roots):
     make_root(guest)
     host_text, guest_text = run_pair("internet-guest", host, guest, guest_env={"HALO_MAP_SHARE_TEST": "internet"},
                                      seconds=40)
-    assert "this machine lacks 1 of them (1 MB); downloads are off for this host" in guest_text, share_lines(guest_text)
+    # (it knows the host runs this game, and keeps no list of it)
+    assert "the host runs this game" in guest_text, share_lines(guest_text)
+    assert "the host lists" not in guest_text, share_lines(guest_text)
     assert "asks for" not in share_lines(host_text)
     assert not (guest / "maps_shared").exists() or not list((guest / "maps_shared").iterdir())
 
@@ -357,6 +380,46 @@ def test_lying_map_is_deleted(roots):
     assert guest_text.count("removed d:\\maps_shared\\fakecreek_") == 1, share_lines(guest_text)
     assert "is done: 0 of 1 fetched, some could not be" in guest_text, share_lines(guest_text)
     assert not list((guest / "maps_shared").glob("*")), list((guest / "maps_shared").glob("*"))
+
+
+def test_long_map_is_deleted(roots):
+    """L3: a downloaded file far longer than its header says the map is (megabytes of anything after a small map's
+    header) is not kept; an honest host does not list one"""
+    host, guest = roots
+    long_map = small_map("longcreek") + b"x" * 400000
+    make_root(host, xbox={"longcreek": long_map})
+    make_root(guest)
+    honest, guest_text = run_pair("long-honest", host, guest, guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=30)
+    assert "this host lists 0 maps" in honest, share_lines(honest)
+    shutil.rmtree(guest)
+    make_root(guest)
+    host_text, guest_text = run_pair("long-map", host, guest, host_env={"HALO_MAP_SHARE_TEST": "lie-map"},
+                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=50)
+    assert guest_text.count("removed d:\\maps_shared\\longcreek_") == 1, share_lines(guest_text)
+    assert not list((guest / "maps_shared").glob("*")), list((guest / "maps_shared").glob("*"))
+
+
+def test_many_maps_do_not_stall_the_played_map(roots):
+    """M2: a host with more listed files than map sharing's catalogue of hashed files holds (16). One guest fetches
+    them all, one after another, while another guest downloads the game's own map: both end with what they asked
+    for. (A regression case: the rule itself, a file in use keeps its place, is proved with negative controls in
+    tools/harness/tests/test_ae_map_share_kept.py; with the rule off these games still ended well, as map sharing
+    hashes the game's own file again when it has lost its place)"""
+    host, guest = roots
+    second = guest.parent / "guest2"
+    played = xbox_map_named(xbox_source(), "sharecreek")
+    many = {f"extra{number:02d}": small_map(f"extra{number:02d}") for number in range(20)}
+    make_root(host, xbox={"sharecreek": played, **many})
+    make_root(guest)
+    make_root(second, xbox={"sharecreek": played})
+    host_text, guest_text = run_pair("many", host, guest, guest_env=YES, level="sharecreek", seconds=200,
+                                     second=(second, {"HALO_MAP_SHARE_TEST": "all"}))
+    second_text = (second / "debug.txt").read_text(errors="replace")
+    assert "this host lists 21 maps" in host_text, share_lines(host_text)
+    assert "is done: 20 of 20 fetched" in second_text, share_lines(second_text)[-3000:]
+    assert len(list((second / "maps_shared").glob("extra*.map"))) == 20
+    assert (guest / "maps_shared/sharecreek.map").read_bytes() == played, share_lines(guest_text)[-3000:]
+    assert "failed" not in share_lines(guest_text)
 
 
 def test_never_overwrites(roots):

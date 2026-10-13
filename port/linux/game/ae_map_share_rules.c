@@ -402,6 +402,60 @@ int ae_map_share_disk_allows(
 	return free_bytes >= AE_MAP_SHARE_DISK_MARGIN_BYTES && size <= free_bytes - AE_MAP_SHARE_DISK_MARGIN_BYTES;
 }
 
+static int charge_find(
+	struct ae_map_share_charges const *charges,
+	char const *key)
+{
+	int index;
+
+	for (index = 0; charges && key && key[0] && index < AE_MAP_SHARE_CHARGES; index++)
+	{
+		if (same_name(charges->items[index].key, key))
+			return index;
+	}
+	return -1;
+}
+
+unsigned long long ae_map_share_charge_growth(
+	struct ae_map_share_charges const *charges,
+	char const *key,
+	unsigned long long size)
+{
+	int index = charge_find(charges, key);
+
+	if (index < 0)
+		return size;
+	return size > charges->items[index].size ? size - charges->items[index].size : 0;
+}
+
+void ae_map_share_charge_set(
+	struct ae_map_share_charges *charges,
+	char const *key,
+	unsigned long long size)
+{
+	int index = charge_find(charges, key);
+
+	if (!charges || !key || !key[0] || name_length(key, AE_MAP_SHARE_CHARGE_KEY_BYTES) >= AE_MAP_SHARE_CHARGE_KEY_BYTES)
+		return;
+	if (index < 0)
+	{
+		index = charges->next;
+		charges->next = (charges->next + 1) % AE_MAP_SHARE_CHARGES;
+		memset(&charges->items[index], 0, sizeof(charges->items[index]));
+		strcpy(charges->items[index].key, key);
+	}
+	if (size > charges->items[index].size)
+		charges->items[index].size = size;
+}
+
+int ae_map_share_grant_covers(
+	unsigned long long granted,
+	unsigned long long used,
+	unsigned long long more)
+{
+	return used <= granted && more <= granted - used;
+}
+
 int ae_map_share_policy_allows(
 	int local,
 	int setting,

@@ -214,8 +214,18 @@ source/items/weapons.c	short magazine_index= ae_weapon_charged_magazine_index(tr
 # OpenCE's map sharing carries the files; these let it take a host's listed maps (community Xbox maps, a mod's, any
 # Custom Edition map), hold a request until the player said yes, check an offer against the list and the limits, and
 # keep a lobby fetch apart from the game's own map. maps_shared (the Xbox maps' downloads) is read by the game.
+# SIX of map_share.c's lines below are UPSTREAM'S OWN LINE WITH AN AE TERM ADDED, not a line of ours beside it. A merge
+# that changes one of these upstream must be compared with the original, given here (the test only sees our text):
+#   map_share_sending:          if (!game || !custom_edition_level_name(game->map.name) || network_game_client_get_local_machine_index() == NONE)
+#   connection_match_files:     short catalog_file = current_file_with_hash(connection->file_hashes[index]);
+#   map_share_download_begin:   download_ask();
+#   download_update:            if (!game || csstrcmp(game->map.name, download->level_name))
+#   map_share_machine_needs_map: return machine && !machine->downloaded && host_machine_downloading(machine);
+#   host_request:               if (!game || csstrcmp(game->map.name, request->level_name) || !custom_edition_level_name(request->level_name) ||
+#                               (upstream wraps this condition after the third term; ours keeps the three on one line)
+# The other ten in map_share.c, and those in the other files, are lines of ours added beside upstream's.
 port/linux/game/map_share.c	if (!game || (!custom_edition_level_name(game->map.name) && !ae_map_share_host_serving()) || network_game_client_get_local_machine_index() == NONE) /* AE hook */\nreturn FALSE;
-port/linux/game/map_share.c	return ae_map_share_host_file(hash); /* AE hook */
+port/linux/game/map_share.c	short catalog_file = ae_map_share_host_file(current_file_with_hash(connection->file_hashes[index]), connection->file_hashes[index], connection->address); /* AE hook */
 port/linux/game/map_share.c	if (ae_map_share_download_failed(download->level_name, reason)) { download_report(_progress_failed); download_end(FALSE); return; } /* AE hook */
 port/linux/game/map_share.c	if (level_name && !ae_map_share_download_permitted(level_name)) return FALSE; /* AE hook */
 port/linux/game/map_share.c	if (ae_map_share_download_begun(level_name)) download_ask(); /* AE hook */
@@ -238,3 +248,6 @@ port/linux/src/port_config.c	{ "network.map_share_internet", _config_boolean, "f
 port/linux/src/port_config.c	{ "network.map_download_internet", _config_boolean, "false", "HALO_NET_MAP_DOWNLOAD_INTERNET", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "network.map_download_limit", _config_integer, "4096", "HALO_NET_MAP_DOWNLOAD_LIMIT", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "debug.map_share_test", _config_string, "\"\"", "HALO_MAP_SHARE_TEST", _environment_value, _platform_all, /* AE hook */
+port/linux/game/map_share_files.c	{ short ae_turn; for (ae_turn = 0; ae_turn < MAXIMUM_SHARE_FILES && (ae_map_share_file_kept(globals->files[index].path) || (globals->job_type == _hash_job_file && globals->job_owner == index)); ae_turn++) index = (short)((index + 1) % MAXIMUM_SHARE_FILES); globals->next_file = (short)((index + 1) % MAXIMUM_SHARE_FILES); } /* AE hook */
+# upstream's own test of map sharing (it compiles map_share.c's functions) sees none of the above: its stand-ins are ours
+tools/harness/tests/map_share_trust.c	#include "ae_map_share_stubs.h" /* AE hook */
