@@ -257,3 +257,5 @@ port/linux/src/port_config.c	{ "debug.map_share_test", _config_string, "\"\"", "
 port/linux/game/map_share_files.c	{ short ae_turn; for (ae_turn = 0; ae_turn < MAXIMUM_SHARE_FILES && (ae_map_share_file_kept(globals->files[index].path) || (globals->job_type == _hash_job_file && globals->job_owner == index)); ae_turn++) index = (short)((index + 1) % MAXIMUM_SHARE_FILES); globals->next_file = (short)((index + 1) % MAXIMUM_SHARE_FILES); } /* AE hook */
 # upstream's own test of map sharing (it compiles map_share.c's functions) sees none of the above: its stand-ins are ours
 tools/harness/tests/map_share_trust.c	#include "ae_map_share_stubs.h" /* AE hook */
+# the web build: no desktop check of the maps folder (the page supplies the maps): ae_platform.h
+port/linux/src/sdl_platform.c	if (AE_PLATFORM_MAPS_FROM_PAGE) return; /* AE hook */
