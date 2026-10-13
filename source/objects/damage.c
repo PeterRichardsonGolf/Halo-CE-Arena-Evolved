@@ -134,6 +134,7 @@ symbols in this file:
 #include "scenario/scenario.h"
 #include "tag_files/tag_files.h"
 #include "ae_shield_fx.h" /* AE hook */
+static short ae_blood; /* AE hook */
 #include "text/draw_string.h"
 #include "units/unit_definitions.h"
 #include "units/bipeds.h"
@@ -1478,7 +1479,7 @@ static void object_damage_body(
 			&damage->direction,
 			object_normal);
 	}
-	else if (ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index, damage_resistance->localized_damage_effect.index, damage_amount, *being_damaged_flags)) damage_effect_new_at_location(ae_shield_fx_blood_effect(damage_resistance->localized_damage_effect.index), object_index, NONE, &damage->epicenter, &damage->direction, object_normal); /* AE hook */
+	else for (ae_blood = ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index, damage_resistance->localized_damage_effect.index, damage_amount, *being_damaged_flags); ae_blood > 0; ae_blood--) damage_effect_new_at_location(ae_shield_fx_blood_effect(damage_resistance->localized_damage_effect.index), object_index, NONE, &damage->epicenter, ae_shield_fx_blood_direction(&damage->direction, ae_blood), object_normal); /* AE hook */
 
 	if (TEST_FLAG(damage->flags, _damage_area_of_effect_bit) &&
 		damage_amount > damage_resistance->area_damage_effect_threshold &&

@@ -286,7 +286,7 @@ source/objects/damage.c	if (!ae_shield_fx_no_burst(object_index)) /* AE hook */
 source/objects/damage.c	ae_shield_fx_depleted(object_index); /* AE hook */
 source/objects/damage.c	ae_shield_fx_shield_damaged(object_index, damage_resistance->shield_depleted_effect.index, being_damaged_flags); /* AE hook */
 source/objects/damage.c	if (ae_shield_fx_early_pop_taken()) object->object.current_shield_damage = 0.f; /* AE hook */
-source/objects/damage.c	else if (ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index, damage_resistance->localized_damage_effect.index, damage_amount, *being_damaged_flags)) damage_effect_new_at_location(ae_shield_fx_blood_effect(damage_resistance->localized_damage_effect.index), object_index, NONE, &damage->epicenter, &damage->direction, object_normal); /* AE hook */
+source/objects/damage.c	else for (ae_blood = ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index, damage_resistance->localized_damage_effect.index, damage_amount, *being_damaged_flags); ae_blood > 0; ae_blood--) damage_effect_new_at_location(ae_shield_fx_blood_effect(damage_resistance->localized_damage_effect.index), object_index, NONE, &damage->epicenter, ae_shield_fx_blood_direction(&damage->direction, ae_blood), object_normal); /* AE hook */
 source/objects/damage.c	ae_shield_fx_recharging(object_index, shield_recharge); /* AE hook */
 source/render/render_objects.c	#include "ae_shield_fx.h" /* AE hook */
 source/render/render_objects.c	model_effect.modifier_animation.values = TEST_FLAG(_object_mask_unit, object->object.type) ? ae_shield_fx_values(object_index, object->object.outgoing_function_values, FALSE) : object->object.outgoing_function_values; /* AE hook */
@@ -301,3 +301,5 @@ port/linux/game/shield_glow.c	value = ae_shield_fx_glow_value(unit_index, value)
 port/linux/game/shield_glow.c	ae_shield_fx_glow_color(unit_index, color); /* AE hook */
 port/linux/game/shield_glow.c	shield_glow_scale * ae_shield_fx_glow_reach(iterator.index))) /* AE hook */
 port/linux/src/port_config.c	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */
+source/objects/damage.c	static short ae_blood; /* AE hook */
+port/linux/src/port_config.c	{ "debug.hit_feedback_blood", _config_integer, "1", "HALO_HIT_FEEDBACK_BLOOD", _environment_value, _platform_all, /* AE hook */

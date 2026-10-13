@@ -10,6 +10,7 @@ Each does nothing unless the game's gametype has HIT FEEDBACK: ARENA EVOLVED.
 #define __AE_SHIELD_FX_H
 
 union real_rgb_color;
+union real_vector3d;
 
 /* ---- drawing (render_objects.c, first_person_weapons.c, rasterizer_xbox_plasma_energy.c) */
 
@@ -40,9 +41,12 @@ void ae_shield_fx_shield_damaged(long object_index, long burst_effect_index, uns
 boolean ae_shield_fx_early_pop_taken(void);
 /* a shield recharges, at this level now: the pop armed again */
 void ae_shield_fx_recharging(long object_index, real shield);
-/* whether a hit that reached a body shows the body's hit effect though the game would not (the bloodshot) */
-boolean ae_shield_fx_bloodshot(long object_index, unsigned long damage_flags, long owner_object_index,
+/* whether a hit that reached a body shows the body's hit effect though the game would not (the bloodshot)
+(0: no; else how many bursts of it: 1, or debug.hit_feedback_blood's) */
+short ae_shield_fx_bloodshot(long object_index, unsigned long damage_flags, long owner_object_index,
 	long hit_effect_index, real body_damage, unsigned long being_damaged_flags);
+/* the direction of the bloodshot's burst number (1: the hit's own; the others thrown a little apart) */
+union real_vector3d const *ae_shield_fx_blood_direction(union real_vector3d const *direction, short burst);
 /* the effect a bloodshot shows, given the body's own */
 long ae_shield_fx_blood_effect(long hit_effect_index);
 

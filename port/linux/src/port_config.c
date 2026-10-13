@@ -913,6 +913,9 @@ static const struct config_setting config_settings[] =
 	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */
 		"For tests and quick launches: every multiplayer game plays HIT FEEDBACK:\n"
 		"ARENA EVOLVED, whatever its gametype says (this machine's drawing only)." },
+	{ "debug.hit_feedback_blood", _config_integer, "1", "HALO_HIT_FEEDBACK_BLOOD", _environment_value, _platform_all, /* AE hook */
+		"PROTOTYPE. A bloodshot made of this many bursts of the body's own blood (1 to 6),\n"
+		"each thrown a little apart: a bigger hit with the game's own art alone." },
 	{ "debug.network_test_melee", _config_boolean, "false", "HALO_NETWORK_TEST_MELEE", _environment_value,
 		_platform_all,
 		"With debug.network_test_shoot, each player strikes with the weapon's melee\n"

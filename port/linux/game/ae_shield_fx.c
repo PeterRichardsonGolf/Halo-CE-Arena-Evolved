@@ -130,6 +130,7 @@ static short ae_shield_fx_next_model = 0;
 
 /* port/linux/src/port_config.c */
 int config_boolean(const char *name);
+long config_integer(const char *name);
 unsigned long config_changes(void);
 
 /* (the overshield's own rise is not Arena Evolved's: never on here) */
@@ -1129,7 +1130,7 @@ void ae_shield_fx_recharging(
 		ae_shield_fx_pop_rearm(object_index);
 }
 
-boolean ae_shield_fx_bloodshot(
+short ae_shield_fx_bloodshot(
 	long object_index,
 	unsigned long damage_flags,
 	long owner_object_index,
@@ -1147,11 +1148,38 @@ boolean ae_shield_fx_bloodshot(
 		!TEST_FLAG(being_damaged_flags, _object_being_damaged_shield_depleted_bit) ||
 		TEST_FLAG(damage_flags, _damage_area_of_effect_bit) || owner_object_index == NONE)
 	{
-		return FALSE;
+		return 0;
 	}
 	error(_error_silent, "hit feedback: bloodshot, unit %08x, body damage %.3f", (unsigned int)object_index,
 		(double)body_damage);
-	return TRUE;
+	{
+		long bursts = config_integer("debug.hit_feedback_blood");
+
+		return (short)(bursts < 1 ? 1 : bursts > 6 ? 6 : bursts);
+	}
+}
+
+real_vector3d const *ae_shield_fx_blood_direction(
+	real_vector3d const *direction,
+	short burst)
+{
+	static real_vector3d thrown;
+	static unsigned long seed = 0x2F6E2B1ul;
+	real length;
+
+	if (burst <= 1 || !direction)
+		return direction;
+	/* (a cone about the hit's own direction, each burst its own way) */
+	thrown = *direction;
+	seed = (seed * 1664525ul + 1013904223ul) & 0xFFFFFFFFul;
+	thrown.i += ((real)((seed >> 8) & 0xFF) / 127.5f - 1.f) * 0.45f;
+	thrown.j += ((real)((seed >> 16) & 0xFF) / 127.5f - 1.f) * 0.45f;
+	thrown.k += ((real)((seed >> 24) & 0xFF) / 127.5f - 1.f) * 0.3f + 0.1f;
+	length = (real)sqrt((double)(thrown.i * thrown.i + thrown.j * thrown.j + thrown.k * thrown.k));
+	if (!(length > 0.001f))
+		return direction;
+	thrown.i /= length; thrown.j /= length; thrown.k /= length;
+	return &thrown;
 }
 
 long ae_shield_fx_blood_effect(
