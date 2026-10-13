@@ -822,6 +822,7 @@ MT = "main_menu/multiplayer_type_select"
 SLAYER_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit/slayer_edit"
 PLAYLIST_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit"
 ARENA_OPTIONS = "main_menu/settings_select/multiplayer_setup/arena_options_edit"
+NHE_OPTIONS = "main_menu/settings_select/multiplayer_setup/nhe_options_edit"
 INDICATOR_OPTIONS = "main_menu/settings_select/multiplayer_setup/indicator_options_edit"
 PLAYER_OPTIONS = "main_menu/settings_select/multiplayer_setup/player_options_edit"
 
@@ -848,9 +849,10 @@ STRING_INSERTS = {
     # (the gametype editor's ARENA OPTIONS, after TEAMPLAY OPTIONS: its
     # item's caption, and its description before SAVE CHANGES' (the list's
     # descriptions go by the items' places): _arena_options)
-    f"{PLAYLIST_EDIT}/playlist_edit_options": [(8, ["ARENA OPTIONS"])],
+    f"{PLAYLIST_EDIT}/playlist_edit_options": [(8, ["ARENA OPTIONS", "NHE OPTIONS"])],
     f"{PLAYLIST_EDIT}/playlist_edit_list_extended_dsc_text": [(7, [
-        "Time limit, fall damage, health\\nand Halo 1: NHE's competitive\\noptions for this gametype.\\nThis gametype:",
+        "Time limit, fall damage, health\\nand Arena Evolved's competitive\\noptions for this gametype.\\nThis gametype:",
+        "Halo 1: NHE's map mode and\\ncompetitive extras for this\\ngametype.\\nThis gametype:",
     ])],
     # (Indicator Options' TIMERS, TRAINING and SPAWN HEAT, after FRIEND
     # INDICATORS ON SCREEN: _indicator_options_extras)
@@ -1029,7 +1031,8 @@ WIDGET_PATCHES = {
     # (the gametype editor's ARENA OPTIONS, after TEAMPLAY OPTIONS, over its
     # buttons: _arena_options)
     f"{PLAYLIST_EDIT}/edit_playlist_select_list": {"insert_before": {
-        f"{PLAYLIST_EDIT}/playlist_edit_button_bar": [f'<child widget="{PLAYLIST_EDIT}/playlist_edit_arena_item"/>'],
+        f"{PLAYLIST_EDIT}/playlist_edit_button_bar": [f'<child widget="{PLAYLIST_EDIT}/playlist_edit_arena_item"/>',
+                                                        f'<child widget="{PLAYLIST_EDIT}/playlist_edit_nhe_item"/>'],
     }},
     # (Indicator Options' TIMERS, TRAINING and SPAWN HEAT rows, over its
     # buttons, 30 apart)
@@ -1082,6 +1085,7 @@ TITLES = {
     f"{MT}/coop/header_player_2": "PLAYER 2 PROFILE",
     f"{MT}/lobby/header_add_player": "ADD PLAYER",
     f"{ARENA_OPTIONS}/header_arena_options": "ARENA OPTIONS",
+    f"{NHE_OPTIONS}/header_nhe_options": "NHE OPTIONS",
 }
 
 
@@ -1757,10 +1761,9 @@ def _item_options_extras() -> list:
 # for every gametype, in finer steps and to an hour (menu_functions.c's
 # ARENA_TIME_LIMITS, minutes)
 ARENA_TIME_LIMITS = [*range(1, 11), 12, 15, 20, 25, 30, 45, 60]
-# (the rows' pitch and the help's top: 26 for the ten rows before the sound
-# options; 20 for thirteen, as the network settings' thirteen, the help just
-# under the last row and its third line clear of the buttons' bar)
-ARENA_ROW_TOP, ARENA_ROW_PITCH, ARENA_HELP_TOP, ARENA_HELP_HEIGHT = 68, 19, 340, 66
+# (the rows' pitch and the help's top: 20 for twelve, the help just under the
+# last row and its third line clear of the buttons' bar)
+ARENA_ROW_TOP, ARENA_ROW_PITCH, ARENA_HELP_TOP, ARENA_HELP_HEIGHT = 68, 20, 340, 66
 ARENA_ROWS = [
     ("arena_time_limit", "TIME LIMIT:",
      ["NONE", *[f"{minutes} MINUTE{'' if minutes == 1 else 'S'}" for minutes in ARENA_TIME_LIMITS]], [
@@ -1797,26 +1800,11 @@ ARENA_ROWS = [
         "Weapons and powerups respawn as the map sets.",
         "Every weapon and powerup respawns every 30\\nseconds, for practising grenade tricks.",
     ]),
-    # (game_engine.h's enum nhe_mode, in its order; only on Halo 1: NHE's
-    # maps, where it picks the vehicle set their scripts read)
-    ("nhe_mode", "NHE MODE:", ["BY VEHICLE SET", "VANILLA", "TIMER ONLY", "NHE & TIMER", "NHE & POWERUPS", "TRAINING"], [
-        "Halo 1: NHE's maps only: the vehicle set picks\\nNHE's mode, as NHE did. On other maps the\\ngametype's vehicles apply.",
-        "On Halo 1: NHE's maps: no timers, as retail\\nwith NHE's messages. On other maps the\\ngametype's vehicles apply.",
-        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers. On other maps the\\ngametype's vehicles apply.",
-        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers (its host teleport stays off:\\nAE hosts neutrally). Other maps: the gametype's.",
-        "On Halo 1: NHE's maps: NHE's timers and its\\npowerup calls. On other maps the gametype's\\nvehicles apply.",
-        "On Halo 1: NHE's maps: NHE's training: the\\ncountdown, spawn markers, randoms and waypoints.\\nOther maps: the gametype's vehicles.",
-    ]),
     # (game_engine.h's enum drop_secondary: bits 29-30; the host's rule)
     ("drop_secondary", "DROP SECONDARY:", ["HALO CE", "ALWAYS", "EXCEPT POWER"], [
         "As Halo CE: your spawn's second weapon vanishes\\nwhen you die; one you put away from hand stays\\n30 seconds.",
         "Both your weapons drop when you die, and stay\\n30 seconds.",
         "Both drop and stay 30 seconds, but a holstered\\nrocket launcher, sniper rifle or shotgun vanishes.",
-    ]),
-    # (_game_variant_nhe_extras_bit, 28)
-    ("nhe_extras", "NHE EXTRAS:", ["OFF", "ON"], [
-        "Stock teams and camera.",
-        "As Halo 1: NHE: everyone joins red and keeps their\\ncolour between games, the dead camera stays on you,\\nand the match clock counts up.",
     ]),
     # (SILENT MOVEMENT and SILENT WEAPONS: the variant's pad5 high nibble,
     # port/linux/game/ae_silent.c's ae_silent_menu_rows; not in
@@ -1842,6 +1830,27 @@ ARENA_ROWS = [
     ("ball_melee", "BALL MELEE:", ["STOCK", "LETHAL"], [
         "Oddball only: the ball carrier's melee is as in\\nHalo CE: it takes the shield and a little health,\\nand kills from behind.",
         "Oddball only: the ball carrier's melee kills in\\none hit, shields and all, as in Halo 3. Same\\nreach, no hits through walls.",
+    ]),
+]
+
+# NHE OPTIONS' rows, moved from ARENA OPTIONS. Their spinner names and help
+# stay unchanged, so menu_functions.c's generic gametype option loader and
+# saver read and write the same fields.
+NHE_ROWS = [
+    # (game_engine.h's enum nhe_mode, in its order; only on Halo 1: NHE's
+    # maps, where it picks the vehicle set their scripts read)
+    ("nhe_mode", "NHE MODE:", ["BY VEHICLE SET", "VANILLA", "TIMER ONLY", "NHE & TIMER", "NHE & POWERUPS", "TRAINING"], [
+        "Halo 1: NHE's maps only: the vehicle set picks\\nNHE's mode, as NHE did. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: no timers, as retail\\nwith NHE's messages. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers. On other maps the\\ngametype's vehicles apply.",
+        "On Halo 1: NHE's maps: NHE's talking and\\non-screen timers (its host teleport stays off:\\nAE hosts neutrally). Other maps: the gametype's.",
+        "On Halo 1: NHE's maps: NHE's timers and its\\npowerup calls. On other maps the gametype's\\nvehicles apply.",
+        "On Halo 1: NHE's maps: NHE's training: the\\ncountdown, spawn markers, randoms and waypoints.\\nOther maps: the gametype's vehicles.",
+    ]),
+    # (_game_variant_nhe_extras_bit, 28)
+    ("nhe_extras", "NHE EXTRAS:", ["OFF", "ON"], [
+        "Stock teams and camera.",
+        "As Halo 1: NHE: everyone joins red and keeps their\\ncolour between games, the dead camera stays on you,\\nand the match clock counts up.",
     ]),
 ]
 
@@ -1911,6 +1920,69 @@ def _arena_options() -> list:
         lines += _strings(f"{base}/var_{key}", values)
     lines += _strings(f"{base}/arena_options_labels", [label for _, label, _, _ in ARENA_ROWS])
     lines += _strings(f"{base}/cap_arena_options", [text for *_, helps in ARENA_ROWS for text in helps])
+    return lines
+
+
+def _nhe_options() -> list:
+    """NHE OPTIONS, the gametype editor's Halo 1: NHE settings, loaded
+    and saved by the same spinner-name functions as ARENA OPTIONS."""
+    base = NHE_OPTIONS
+    screen = f"{base}/nhe_options_screen"
+    lines = _widget(f"{PLAYLIST_EDIT}/playlist_edit_nhe_item",
+                    [("type", "text"), ("left", 51), ("top", 342), ("width", 232), ("height", 32),
+                     ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PLAYLIST_EDIT}/playlist_edit_options"),
+                     ("string_index", 9), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                     ("text_y", 5)],
+                    [f'<on event="a" open="{screen}"/>', f'<on event="start" open="{screen}"/>',
+                     '<on event="left_mouse" run="mouse emit accept event"/>'])
+    lines += _widget(screen, [("width", 640), ("height", 480), ("flags", "pass_unhandled_to_focused_child"),
+                              ("bitmap", "bitmaps/gradient")],
+                     [f'<child widget="{base}/header_nhe_options"/>', f'<child widget="{base}/nhe_options_menu"/>'])
+    lines += _header(f"{base}/header_nhe_options", f"{base}/header_nhe_options")
+    lines += _widget(f"{base}/nhe_options_menu",
+                     [("type", "column_list"), ("width", 640), ("height", 480),
+                      ("flags", "pass_unhandled_to_focused_child up_down_tabs_children"),
+                      ("description", f"{base}/nhe_options_help")],
+                     ['<data input="game settings lists text update"/>',
+                      '<on event="created" run="mp profile init player opts"/>',
+                      *[f'<child widget="{base}/op_{key}" x="54" y="{73 + 30 * index}"/>'
+                        for index, (key, *_) in enumerate(NHE_ROWS)],
+                      f'<child widget="{base}/nhe_button_bar" y="414"/>'])
+    lines += _widget(f"{base}/nhe_options_help",
+                     [("type", "text"), ("controller", 1), ("left", 68), ("top", 321), ("width", 482),
+                      ("height", 79), ("string_list", f"{base}/cap_nhe_options"), ("font", "ui\\large_ui"),
+                      ("color", "#FFFFFFFF")], [])
+    lines += _widget(f"{base}/nhe_button_bar",
+                     [("type", "column_list"), ("width", 640), ("height", 28),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
+                     ['<data input="common button bar update"/>',
+                      f'<child widget="{base}/nhe_button_ok" x="380" y="1"/>',
+                      '<child widget="common_button_cancel" x="510" y="1"/>'])
+    lines += _button(f"{base}/nhe_button_ok", 1,
+                     ['<on event="a" run="mp profile set player options" back="true"/>',
+                      '<on event="start" run="mp profile set player options" back="true"/>'])
+    for index, (key, _, values, _) in enumerate(NHE_ROWS):
+        lines += _widget(f"{base}/op_{key}",
+                         [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                          ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                         [f'<child widget="{base}/{key}_label"/>',
+                          f'<child widget="{base}/{key}_spinner" x="320" y="1"/>'])
+        lines += _widget(f"{base}/{key}_label",
+                         [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
+                          ("string_list", f"{base}/nhe_options_labels"), ("string_index", index or None),
+                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+        lines += _widget(f"{base}/{key}_spinner",
+                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 176), ("height", 20),
+                          ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                          ("string_list", f"{base}/var_{key}"), ("font", "ui\\large_ui"),
+                          ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4),
+                          ("list_flags", "items_from_strings"),
+                          ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 178 19 184")],
+                         ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+        lines += _strings(f"{base}/var_{key}", values)
+    lines += _strings(f"{base}/nhe_options_labels", [label for _, label, _, _ in NHE_ROWS])
+    lines += _strings(f"{base}/cap_nhe_options", [text for *_, helps in NHE_ROWS for text in helps])
     return lines
 
 
@@ -2057,6 +2129,7 @@ def multiplayer_files() -> dict:
         f"{MT}/lobby".replace("/", ".") + ".xml": head + _lobby() + ["</menus>", ""],
         f"{MT}/coop".replace("/", ".") + ".xml": head + _coop() + ["</menus>", ""],
         ARENA_OPTIONS.replace("/", ".") + ".xml": head + _arena_options() + ["</menus>", ""],
+        NHE_OPTIONS.replace("/", ".") + ".xml": head + _nhe_options() + ["</menus>", ""],
         INDICATOR_OPTIONS.replace("/", ".") + ".port.xml": head + _indicator_options_extras() + ["</menus>", ""],
         "main_menu/new_select".replace("/", ".") + ".port.xml": head + _map_kind() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/item_options_edit".replace("/", ".") + ".port.xml": head + _item_options_extras() + ["</menus>", ""],
