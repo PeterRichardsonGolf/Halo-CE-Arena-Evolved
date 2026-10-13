@@ -59,48 +59,10 @@ struct arena_gametype_alias
 /* the sets in the lists' order, each in its own order */
 static struct arena_gametype_name const arena_gametype_names[] =
 {
-	/* AE casual */
+	/* AE casual: free for all, slayer first, then the ball, the hill and the race */
 	{ "AE FFA SLAY", "FFA AE SLAYER", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
 		"Free for all slayer on AE's rules: Halo 2 health, no fall damage, NHE's no spread, a countdown, "
 		"both weapons dropped, power item timers and waypoints." },
-	{ "AE TEAM SLY", "TEAM AE SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
-		"Team slayer on AE's rules, with power item timers and waypoints and the motion tracker." },
-	{ "AE CTF", "TEAM AE CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
-		"Capture the flag on AE's rules, with power item timers and waypoints and the motion tracker." },
-	{ "AE KING", "TEAM AE KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
-		"Team King of the Hill on AE's rules, with power item timers and waypoints and the motion tracker." },
-	{ "AE FFA BALL", "FFA AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, FALSE, FALSE,
-		"Free for all Oddball on AE's rules, with power item timers and waypoints and the motion tracker. "
-		"The ball carrier's melee kills in one hit." },
-	{ "AE TEAM OB", "TEAM AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
-		"Team Oddball on AE's rules, with power item timers and waypoints and the motion tracker. "
-		"The ball carrier's melee kills in one hit." },
-	{ "AE 2V2 SLY", "TEAM AE 2V2 SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
-		"Team slayer for two against two (split screen too), to 25 kills, on AE's rules." },
-	{ "AE 2V2 CTF", "TEAM AE 2V2 CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
-		"Capture the flag for two against two (split screen too), on AE's rules." },
-	{ "AE 2V2 KING", "TEAM AE 2V2 KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
-		"Team King of the Hill for two against two (split screen too), on AE's rules." },
-	{ "AE 2V2 BALL", "TEAM AE 2V2 ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
-		"Team Oddball for two against two (split screen too), on AE's rules. The ball carrier's melee kills in "
-		"one hit." },
-	{ "AE PRACTICE", "FFA AE PRACTICE", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
-		"Free for all practice: every weapon and powerup respawns every 30 seconds; 500 kills to win, no time limit, "
-		"the map's vehicles." },
-	/* AE casual's special team modes */
-	{ "AE SNIPERS", "TEAM AE SNIPERS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
-		"Team slayer with sniper rifles and pistols, sniper ammo on the map, no motion tracker." },
-	{ "AE SHOTSNIP", "TEAM AE SHOTTY SNIPERS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
-		"Team slayer with a shotgun and a sniper rifle each and no weapons on the map, no motion tracker." },
-	{ "AE SWAT", "TEAM AE SWAT", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
-		"Team slayer with pistols, no shields and classic health: a headshot kills. No grenades, no motion tracker." },
-	{ "AE ROCKETS", "TEAM AE ROCKETS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
-		"Team slayer with rocket launchers." },
-	{ "AE SHOTGUNS", "TEAM AE SHOTGUNS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
-		"Team slayer with shotguns and pistols." },
-	{ "AE HEAVIES", "TEAM AE HEAVIES", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
-		"Team slayer with rocket launchers, assault rifles, the heavy weapons and the map's vehicles, to 75 kills." },
-	/* AE casual: the stock free for all gametypes (revision 8) */
 	{ "AE ELIM", "FFA AE ELIMINATION", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
 		"Free for all Elimination on AE's rules: one life each, last standing; power item timers and waypoints, 15 minutes." },
 	{ "AE PHANTOMS", "FFA AE PHANTOMS", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
@@ -111,6 +73,9 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Free for all slayer with rocket launchers on AE's rules, with power item timers and waypoints; 15 minutes." },
 	{ "AE FFA SNPR", "FFA AE SNIPERS", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
 		"Free for all slayer with sniper rifles and pistols on AE's rules, with power item timers and waypoints; 15 minutes." },
+	{ "AE FFA BALL", "FFA AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, FALSE, FALSE,
+		"Free for all Oddball on AE's rules, with power item timers and waypoints and the motion tracker. "
+		"The ball carrier's melee kills in one hit." },
 	{ "AE JUGGER", "FFA AE JUGGERNAUT", _arena_gametype_set_ae, game_engine_oddball, FALSE, FALSE,
 		"Free for all Juggernaut on AE's rules; the carrier does extra damage. Power item timers and waypoints; 15 minutes." },
 	{ "AE REV TAG", "FFA AE REVERSE TAG", _arena_gametype_set_ae, game_engine_oddball, FALSE, FALSE,
@@ -127,13 +92,47 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Free for all Race on AE's rules, in the map's vehicles; needs a map with race flags. Power item timers and waypoints." },
 	{ "AE RALLY", "FFA AE RALLY", _arena_gametype_set_ae, game_engine_race, FALSE, FALSE,
 		"Free for all Rally (flag rally) on AE's rules, in the map's vehicles; needs a map with race flags." },
+	{ "AE PRACTICE", "FFA AE PRACTICE", _arena_gametype_set_ae, game_engine_slayer, FALSE, FALSE,
+		"Free for all practice: every weapon and powerup respawns every 30 seconds; 500 kills to win, no time limit, "
+		"the map's vehicles." },
+	/* AE casual: teams */
+	{ "AE TEAM SLY", "TEAM AE SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
+		"Team slayer on AE's rules, with power item timers and waypoints and the motion tracker." },
+	{ "AE CTF", "TEAM AE CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
+		"Capture the flag on AE's rules, with power item timers and waypoints and the motion tracker." },
+	{ "AE KING", "TEAM AE KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
+		"Team King of the Hill on AE's rules, with power item timers and waypoints and the motion tracker." },
+	{ "AE TEAM OB", "TEAM AE ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
+		"Team Oddball on AE's rules, with power item timers and waypoints and the motion tracker. "
+		"The ball carrier's melee kills in one hit." },
+	{ "AE 2V2 SLY", "TEAM AE 2V2 SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
+		"Team slayer for two against two (split screen too), to 25 kills, on AE's rules." },
+	{ "AE 2V2 CTF", "TEAM AE 2V2 CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
+		"Capture the flag for two against two (split screen too), on AE's rules." },
+	{ "AE 2V2 KING", "TEAM AE 2V2 KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
+		"Team King of the Hill for two against two (split screen too), on AE's rules." },
+	{ "AE 2V2 BALL", "TEAM AE 2V2 ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
+		"Team Oddball for two against two (split screen too), on AE's rules. The ball carrier's melee kills in "
+		"one hit." },
+	/* AE casual's special team modes */
+	{ "AE SNIPERS", "TEAM AE SNIPERS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
+		"Team slayer with sniper rifles and pistols, sniper ammo on the map, no motion tracker." },
+	{ "AE SHOTSNIP", "TEAM AE SHOTTY SNIPERS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
+		"Team slayer with a shotgun and a sniper rifle each and no weapons on the map, no motion tracker." },
+	{ "AE SWAT", "TEAM AE SWAT", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
+		"Team slayer with pistols, no shields and classic health: a headshot kills. No grenades, no motion tracker." },
+	{ "AE ROCKETS", "TEAM AE ROCKETS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
+		"Team slayer with rocket launchers." },
+	{ "AE SHOTGUNS", "TEAM AE SHOTGUNS", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
+		"Team slayer with shotguns and pistols." },
+	{ "AE HEAVIES", "TEAM AE HEAVIES", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
+		"Team slayer with rocket launchers, assault rifles, the heavy weapons and the map's vehicles, to 75 kills." },
 	/* AE casual on Halo 1: NHE's maps' own modes */
 	{ "AE VANILLA", "TEAM AE VANILLA", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
 		"Team slayer on AE's rules with power item timers and waypoints. On Halo 1: NHE's maps, NHE's VANILLA mode "
 		"(no NHE timers, no countdown)." },
 	{ "AE POWERUPS", "TEAM AE POWERUPS", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
 		"Team slayer on AE's rules with power item timers and waypoints. On Halo 1: NHE's maps, NHE & POWERUPS." },
-
 	/* AE COMP */
 	{ "AE COMP FFA", "FFA AE COMP SLAYER", _arena_gametype_set_ae_comp, game_engine_slayer, FALSE, FALSE,
 		"Competitive free for all: 5 second respawns, 2 frag grenades, no motion tracker, no vehicles, power item "
