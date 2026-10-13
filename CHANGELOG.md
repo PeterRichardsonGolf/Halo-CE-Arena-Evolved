@@ -11,6 +11,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   rifle's unzoomed shots go exactly where you aim); your gametypes keep it.
 - **HEALTH: CLASSIC is now HEALTH: HALO CE** (gametypes and CAMPAIGN HEALTH),
   beside REACH, HALO 2 and HALO 3. The same rule; nothing changes in play.
+  DROP SECONDARY's CE value reads HALO CE too.
 
 ## 0.2.3-beta - 2026-10-13
 

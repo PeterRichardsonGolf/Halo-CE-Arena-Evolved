@@ -166,7 +166,7 @@
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_drop_secondary">
-		<string text="CE"/>
+		<string text="HALO CE"/>
 		<string text="ALWAYS"/>
 		<string text="EXCEPT POWER"/>
 	</strings>
