@@ -6,6 +6,22 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **COMBAT FEEDBACK: ARENA EVOLVED** (a gametype option, ARENA OPTIONS; HALO CE
+  is the default and is the game as it was). What a fight has come to is shown
+  on the player's body, for every player and in every split-screen view:
+  - **The shield pop.** A shield that one more headshot would finish bursts
+    white over the whole body, then drains away.
+  - **Shield down.** A broken shield flickers in thin bands until it recharges.
+  - **The recharge.** The shield comes back as a band that climbs the body,
+    as far up as the shield is full; your own arms show it in first person.
+  - **The blood pop.** The shot that goes through the last of a shield and
+    finishes the player throws blood where it struck, in the world, so a kill
+    is seen from across the map.
+  It is drawing only: no damage value changes, nothing is added to the HUD
+  and no hit markers. Multiplayer only. Players on OpenCE or ChupathingyCE
+  can still join; they see the game's own effects. Seen so far on the host's
+  machine; on a joined machine the pop and the flicker show, the blood pop
+  not yet.
 - **NO SPREAD: NHE is now NO SPREAD: FIRST SHOT.** The same rule under a name
   that says what it does (the pistol's first shot from rest and the sniper
   rifle's unzoomed shots go exactly where you aim); your gametypes keep it.
