@@ -15,8 +15,10 @@ modded Xbox, and adds the quality-of-life features later Halo games made
 standard: item timers, a match clock, training aids, regenerating health
 styles and more.
 
-It is an evolution of the classic with the modern: inspired by the grassroots
-Halo CE competitive community's rules, MLG's rules and the HCS's rules.
+It is an evolution of the classic with the modern, not only the old-school
+way: inspired by the grassroots Halo CE competitive community's rules and
+MLG's rules, by today's HCS settings and the features of the newer Halo games,
+with ideas of its own on top.
 [Halo 1: NHE](https://halo1nhe.com/)'s own maps and gametypes stay supported
 as an option.
 
@@ -35,14 +37,19 @@ What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
 
 ## Goals
 
+- **Bring new players in:** introduce new players to classic Halo and to
+  arena shooters in general. An arena shooter asks a lot of a newcomer (item
+  timing, spawns, map control) compared with most modern shooters; item
+  timers, training aids and indicators teach it in the game.
 - **Competitive rules in the engine:** the rules competitive Halo grew up on
-  (grassroots CE, MLG, HCS), built natively,
+  (grassroots CE, MLG) and the ones it plays today (HCS), built natively,
   so they work on every map, on any PC, without modded maps or a modded Xbox.
 - **The later games' features in CE:** options and quality-of-life from Halo
   2, Halo 3, Reach, Halo 4 and Infinite, and from the Master Chief
   Collection.
-- **Easy to learn:** item timers, training aids and indicators that make CE's
-  competitive play approachable for new players.
+- **The ultimate CE LAN package:** one download for a LAN night: split screen,
+  LAN and online play, map sharing between players, community and Custom
+  Edition maps, and gametypes ready to play.
 - **Close to OpenCE:** merge its releases and offer fixes to the shared code
   back upstream.
 
