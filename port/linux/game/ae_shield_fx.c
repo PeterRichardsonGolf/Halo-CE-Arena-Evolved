@@ -54,6 +54,8 @@ magnum's, typed in: to be read from the map's weapons).
 #include "tag_files/tag_files.h"
 #include "cseries/errors.h"
 
+#include "networking/network_game_globals.h"
+
 #include "ae_hit_feedback.h"
 #include "ae_shield_fx.h"
 #include "../src/ae_height_fade.h"
@@ -302,9 +304,16 @@ weapon: the pistol's), or as it dies or its shield truly falls */
 #include "render/render.h"
 #include "game/players.h"
 #include "tag_files/tag_files.h"
+/* a machine that is not the host: no damage is dealt here (the host deals it and sends each unit's shield), so the
+pop and the shield-down flicker are read from the shield's level as it arrives, each view's own */
+static boolean guest_machine(void)
+{
+	return global_network_game_server_get() == NULL;
+}
+
 static boolean shield_pop_viewer_mode(void)
 {
-	return recharge_band_enabled() && tuning("POP_VIEWER", 0.f) != 0.f;
+	return recharge_band_enabled() && (tuning("POP_VIEWER", 0.f) != 0.f || guest_machine());
 }
 
 static real shield_pop_viewer_finisher(
@@ -318,6 +327,11 @@ static real shield_pop_viewer_finisher(
 	long weapon_index;
 	struct object_datum *weapon;
 	char const *name;
+
+	/* (a guest: the one finishing hit for every view, as the host reckons it, with room for the rounding of the
+	shield it was sent) */
+	if (tuning("POP_VIEWER", 0.f) == 0.f)
+		return pistol + 0.02f;
 
 	if (viewer_unit_index == NONE || viewer_unit_index == target_unit_index)
 		return pistol;
