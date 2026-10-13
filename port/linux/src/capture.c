@@ -59,7 +59,8 @@ recorded then; the red dot is not.
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(HALO_SERVER) || defined(HALO_ANDROID)
+/* (a browser has no process to hand the frames to, and WebGL no mapped buffers: no capture there either) */
+#if defined(HALO_SERVER) || defined(HALO_ANDROID) || defined(__EMSCRIPTEN__)
 
 /* ---------- no capture */
 
