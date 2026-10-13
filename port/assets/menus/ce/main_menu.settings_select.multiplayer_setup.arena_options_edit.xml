@@ -95,7 +95,7 @@
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_health_regeneration">
-		<string text="CLASSIC"/>
+		<string text="HALO CE"/>
 		<string text="REACH"/>
 		<string text="HALO 2"/>
 		<string text="HALO 3"/>

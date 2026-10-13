@@ -9,6 +9,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - **NO SPREAD: NHE is now NO SPREAD: FIRST SHOT.** The same rule under a name
   that says what it does (the pistol's first shot from rest and the sniper
   rifle's unzoomed shots go exactly where you aim); your gametypes keep it.
+- **HEALTH: CLASSIC is now HEALTH: HALO CE** (gametypes and CAMPAIGN HEALTH),
+  beside REACH, HALO 2 and HALO 3. The same rule; nothing changes in play.
 
 ## 0.2.3-beta - 2026-10-13
 
