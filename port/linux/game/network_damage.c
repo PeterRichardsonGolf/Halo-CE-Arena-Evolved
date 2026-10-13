@@ -57,6 +57,7 @@ being hit looks and feels like on the clients).
 #include "scenario/scenario.h"
 #include "units/units.h"
 #include "network_distributed.h"
+#include "ae_shield_fx.h" /* AE hook */
 
 #include <math.h>
 
@@ -2224,6 +2225,7 @@ void network_damage_handle_events(
 				object_try_and_get_and_verify_type(event->object_index, _object_mask_unit))
 			{
 				/* (what harm it did the units' states bring: no death from here) */
+				ae_shield_fx_guest_hit(event->being_damaged_flags, event->body_damage); /* AE hook */
 				damage_replay_aftermath(event->object_index, &damage,
 					event->being_damaged_flags &
 						~(FLAG(_object_being_damaged_body_depleted_bit) | FLAG(_object_being_damaged_killed_instantly_bit)),

@@ -49,5 +49,12 @@ short ae_shield_fx_bloodshot(long object_index, unsigned long damage_flags, long
 union real_vector3d const *ae_shield_fx_blood_direction(union real_vector3d const *direction, short burst);
 /* the effect a bloodshot shows, given the body's own */
 long ae_shield_fx_blood_effect(long hit_effect_index);
+/* a machine that is not the host: a hit's result as the host sent it (before its replay) */
+void ae_shield_fx_guest_hit(unsigned long being_damaged_flags, float body_damage);
+/* the body's own hit effect (NONE: none) */
+long ae_shield_fx_hit_effect(long object_index);
+/* the blood pop's bursts for the hit just handed over, replayed on this object (0: none) */
+struct damage_data;
+short ae_shield_fx_guest_blood_pop(long object_index, struct damage_data const *damage);
 
 #endif /* __AE_SHIELD_FX_H */

@@ -50,6 +50,7 @@ magnum's, typed in: to be read from the map's weapons).
 #include "objects/light_definitions.h"
 #include "objects/damage.h"
 #include "effects/effects.h"
+#include "physics/collision_model_definitions.h"
 #include "game/game_engine.h"
 #include "tag_files/tag_files.h"
 #include "cseries/errors.h"
@@ -1193,6 +1194,48 @@ real_vector3d const *ae_shield_fx_blood_direction(
 		return direction;
 	thrown.i /= length; thrown.j /= length; thrown.k /= length;
 	return &thrown;
+}
+
+/* ---------- the blood pop on a machine that is not the host
+
+No damage is dealt there: the host sends what each hit did (network_damage.c's aftermath events: the flags, the body's
+damage, where and from where), so the blood pop is shown from that, by the same test as the host's */
+
+static unsigned long guest_hit_flags = 0;
+static real guest_hit_body_damage = 0.f;
+static boolean guest_hit_arrived = FALSE;
+
+/* a hit's result as the host sent it, whole (the replay is handed the flags without the kill's) */
+void ae_shield_fx_guest_hit(
+	unsigned long being_damaged_flags,
+	real body_damage)
+{
+	guest_hit_flags = being_damaged_flags;
+	guest_hit_body_damage = body_damage;
+	guest_hit_arrived = TRUE;
+}
+
+/* the body's own hit effect (its collision model's; NONE: none) */
+long ae_shield_fx_hit_effect(
+	long object_index)
+{
+	struct object_datum *object = object_try_and_get(object_index);
+	long collision_model_index = object ? object_definition_get(object->definition_index)->object.collision_model.index : NONE;
+
+	return collision_model_index != NONE ?
+		collision_model_definition_get(collision_model_index)->resistance.localized_damage_effect.index : NONE;
+}
+
+/* the bursts of the blood pop for the hit just handed over, replayed on this object (0: none); once a hit */
+short ae_shield_fx_guest_blood_pop(
+	long object_index,
+	struct damage_data const *damage)
+{
+	if (!guest_hit_arrived)
+		return 0;
+	guest_hit_arrived = FALSE;
+	return ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index,
+		ae_shield_fx_hit_effect(object_index), guest_hit_body_damage, guest_hit_flags);
 }
 
 long ae_shield_fx_blood_effect(

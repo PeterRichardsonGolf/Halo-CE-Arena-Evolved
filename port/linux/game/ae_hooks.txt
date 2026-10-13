@@ -296,6 +296,9 @@ source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	#include "ae_shield_fx.h"
 source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	if ((runtime && ae_shield_fx_color(runtime->exponents, &chosen)) || shield_color_override(runtime ? runtime->colors : NULL, &chosen)) /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	ae_shield_fx_draw_begin(runtime ? runtime->exponents : NULL, vertex_constants[2][3], primary_scale); /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	ae_shield_fx_draw_end(); /* AE hook */
+source/objects/damage.c	for (ae_blood = ae_shield_fx_guest_blood_pop(object_index, damage); ae_blood > 0; ae_blood--) damage_effect_new_at_location(ae_shield_fx_blood_effect(ae_shield_fx_hit_effect(object_index)), object_index, NONE, &damage->epicenter, ae_shield_fx_blood_direction(&damage->direction, ae_blood), NULL); /* AE hook */
+port/linux/game/network_damage.c	#include "ae_shield_fx.h" /* AE hook */
+port/linux/game/network_damage.c	ae_shield_fx_guest_hit(event->being_damaged_flags, event->body_damage); /* AE hook */
 port/linux/game/shield_glow.c	#include "ae_shield_fx.h" /* AE hook */
 port/linux/game/shield_glow.c	value = ae_shield_fx_glow_value(unit_index, value); /* AE hook */
 port/linux/game/shield_glow.c	ae_shield_fx_glow_color(unit_index, color); /* AE hook */

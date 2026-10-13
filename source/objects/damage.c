@@ -2958,6 +2958,7 @@ void damage_replay_aftermath(
 	the player's suicide: the damage it records the host's statistics
 	overwrite, and no kill, without the body depleted) */
 	SET_FLAG(damage->flags, _damage_no_statistics_bit, FALSE);
+	for (ae_blood = ae_shield_fx_guest_blood_pop(object_index, damage); ae_blood > 0; ae_blood--) damage_effect_new_at_location(ae_shield_fx_blood_effect(ae_shield_fx_hit_effect(object_index)), object_index, NONE, &damage->epicenter, ae_shield_fx_blood_direction(&damage->direction, ae_blood), NULL); /* AE hook */
 	object_damage_aftermath(object_index, damage, being_damaged_flags & ~FLAG(_object_being_damaged_body_depleted_bit),
 		shield_damage, body_damage, body_damage_multiplier, body_part);
 }
