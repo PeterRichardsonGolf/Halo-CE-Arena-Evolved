@@ -128,7 +128,7 @@ play:
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic
   health, no grenades), ROCKETS, SHOTGUNS and HEAVIES (75 kills, the map's
   vehicles).
-- **Arena Evolved COMP** (modern NHE): FFA AE COMP SLAYER (25 kills), TEAM AE
+- **Arena Evolved COMP**: FFA AE COMP SLAYER (25 kills), TEAM AE
   COMP SLAYER (50), TEAM AE COMP CTF (3 captures), TEAM AE COMP KING and TEAM
   AE COMP ODDBALL (5 minutes held, with the lethal ball). 5-second respawn and suicide penalty, 2
   frag grenades, no motion sensor, no vehicles, item TIMERS only in line of
