@@ -335,7 +335,7 @@ send one.
 **What is shared.** A host sends the maps you lack: Custom Edition maps, and
 (between Arena Evolved players) community maps in the Xbox's format, from its
 `maps` folder or its active mod. You get the map the game is on when you join,
-and in the lobby **F6** (or a click of a gamepad's left stick) gets all of the
+and in the lobby **F6** gets all of the
 host's maps you lack; press it again to stop. The game asks you once per host,
 with the number of maps and their size, before anything is downloaded.
 Community maps go to `maps_shared`, Custom Edition maps to `maps_ce`.

@@ -598,6 +598,25 @@ that name is there (it is kept, and the download removed). The game loads a
 map from `maps_shared` only when no other folder has it, and holds its scripts
 to a downloaded map's rules in every run.
 
+**The yes and the totals.** The yes is given for the amount the question
+shows (the bytes of the maps the guest lacks) and for the host of that
+connection; it is not kept for a later join. A file offered again is counted
+by its growth over what was counted for it, so a host that lists a map small
+and then large is charged the difference; an offer's files must fit the disk
+together; a disk whose free space cannot be read takes nothing. An offer
+beyond the yes is refused and the question is asked again with the new amount.
+A downloaded Xbox map's header must also give the file's own length.
+
+**The host's hashed files.** Map sharing keeps 16 hashed files and replaces
+them in turn. Arena Evolved keeps the pieces' hashes of its list and hands
+them over when a listed map is asked for (no second read of the file), lets a
+machine have one listed map that is not the game's in flight at a time, at most
+6 machines' at once, and keeps the places of those and of the game's own map
+and resource maps (`ae_map_share_file_kept`, one hook in `map_share_files.c`):
+one guest cycling through the list cannot push another guest's file out. A
+connection on TCP 5153 is answered for a listed file only from the address of
+a machine the host shares with and sent its list to.
+
 **Internet.** A machine is local if its address is private, link-local or
 loopback (`ae_map_share_address_local`). A host shares with a machine that is
 not local only with `network.map_share_internet`; a guest asks a host that is
