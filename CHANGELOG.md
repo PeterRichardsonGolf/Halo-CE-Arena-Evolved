@@ -6,6 +6,29 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **Map sharing for every map that is not the game's own.** A host now sends
+  community maps in the Xbox's format (those in its `maps` folder and those of
+  its active mod) as well as Custom Edition maps. Join a game on a map you
+  lack and it is downloaded from the host; in the lobby, **F6** (or a click of
+  a gamepad's left stick) gets every map the host has that you lack, one after
+  another, and the same again stops it. The line at the top of the screen
+  shows what the host has and how far the download is. Community maps land in
+  a new `maps_shared` folder, Custom Edition maps in `maps_ce` as before.
+- **You are asked first, once per host.** The question says how many maps
+  you lack and how big they are; nothing is downloaded before you answer yes
+  (F6 or the left stick's click). The stock maps (the game's own multiplayer
+  and campaign maps and its menus) are never sent or replaced, a download
+  never replaces a file you have, and one host can give you 4 GB at most
+  (`network.map_download_limit`).
+- **Internet games share maps only when both sides allow it.** Settings >
+  Network Setup > Map Sharing has two new rows, both OFF at first: INTERNET
+  DOWNLOADS (you, joining) and INTERNET SHARING (you, hosting). Games on your
+  local network share as DOWNLOAD MAPS and Server Setup's SHARE MAPS say. This
+  goes for Custom Edition maps too, which until now were also shared over the
+  internet by default.
+- Maps you downloaded this way show in your own map lists from the next start
+  of the game. Players on other builds (OpenCE, ChupathingyCE) get Custom
+  Edition maps from an Arena Evolved host as before, and nothing else.
 - **SILENT MOVEMENT and SILENT WEAPONS** (gametype options, ARENA OPTIONS).
   SILENT MOVEMENT covers footsteps, jumps, landings and slides; SILENT
   WEAPONS covers readying and putting away a weapon (the weapon-switch
