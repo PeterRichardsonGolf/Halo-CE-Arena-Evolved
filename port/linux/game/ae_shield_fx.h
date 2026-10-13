@@ -41,8 +41,8 @@ void ae_shield_fx_shield_damaged(long object_index, long burst_effect_index, uns
 boolean ae_shield_fx_early_pop_taken(void);
 /* a shield recharges, at this level now: the pop armed again */
 void ae_shield_fx_recharging(long object_index, real shield);
-/* whether a hit that reached a body shows the body's hit effect though the game would not (the bloodshot)
-(0: no; else how many bursts of it: 1, or debug.hit_feedback_blood's) */
+/* whether a hit that reached a body shows the body's hit effect though the game would not (the blood pop)
+(0: no; else how many bursts of it) */
 short ae_shield_fx_bloodshot(long object_index, unsigned long damage_flags, long owner_object_index,
 	long hit_effect_index, real body_damage, unsigned long being_damaged_flags);
 /* the direction of the bloodshot's burst number (1: the hit's own; the others thrown a little apart) */

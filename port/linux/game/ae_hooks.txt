@@ -302,6 +302,5 @@ port/linux/game/shield_glow.c	ae_shield_fx_glow_color(unit_index, color); /* AE 
 port/linux/game/shield_glow.c	shield_glow_scale * ae_shield_fx_glow_reach(iterator.index))) /* AE hook */
 port/linux/src/port_config.c	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */
 source/objects/damage.c	static short ae_blood; /* AE hook */
-port/linux/src/port_config.c	{ "debug.hit_feedback_blood", _config_integer, "3", "HALO_HIT_FEEDBACK_BLOOD", _environment_value, _platform_all, /* AE hook */
 # the web build: no desktop check of the maps folder (the page supplies the maps): ae_platform.h
 port/linux/src/sdl_platform.c	if (AE_PLATFORM_MAPS_FROM_PAGE) return; /* AE hook */

@@ -132,7 +132,6 @@ static short ae_shield_fx_next_model = 0;
 
 /* port/linux/src/port_config.c */
 int config_boolean(const char *name);
-long config_integer(const char *name);
 unsigned long config_changes(void);
 
 /* (the overshield's own rise is not Arena Evolved's: never on here) */
@@ -1144,6 +1143,10 @@ void ae_shield_fx_recharging(
 		ae_shield_fx_pop_rearm(object_index);
 }
 
+/* the blood pop is this many bursts of the body's hit effect, each thrown a little apart (the game's single one
+is hard to see; played at 1, 3 and 5: 3 reads on every finishing shot, 5 is too much) */
+#define BLOOD_POP_BURSTS 3
+
 short ae_shield_fx_bloodshot(
 	long object_index,
 	unsigned long damage_flags,
@@ -1164,13 +1167,9 @@ short ae_shield_fx_bloodshot(
 	{
 		return 0;
 	}
-	error(_error_silent, "hit feedback: bloodshot, unit %08x, body damage %.3f", (unsigned int)object_index,
+	error(_error_silent, "hit feedback: blood pop, unit %08x, body damage %.3f", (unsigned int)object_index,
 		(double)body_damage);
-	{
-		long bursts = config_integer("debug.hit_feedback_blood");
-
-		return (short)(bursts < 1 ? 1 : bursts > 6 ? 6 : bursts);
-	}
+	return BLOOD_POP_BURSTS;
 }
 
 real_vector3d const *ae_shield_fx_blood_direction(
