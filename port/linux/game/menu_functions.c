@@ -175,6 +175,7 @@ enum
 
 #include "ae_glue_mouse.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
+#include "ae_input.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
 #include "interface/ui_widget_instance.h"
@@ -996,6 +997,7 @@ static boolean campaign_profile(short controller, struct player_profile *profile
 	player_ui_set_active_player_profile(0, profile_index, profile);
 	if (player_spawn_count < 2)
 		player_ui_set_single_player_local_player_controller(0, controller);
+	ae_input_controller_assigned(0); /* AE hook */
 	return TRUE;
 }
 
@@ -1040,6 +1042,7 @@ static void campaign_start(char const *map_name, short difficulty, short control
 {
 	if (player_spawn_count < 2)
 		player_ui_set_single_player_local_player_controller(0, controller);
+	ae_input_controller_assigned(0); /* AE hook */
 	main_set_map_name(map_name);
 	main_set_difficulty(difficulty);
 	game_connection_set(0);
@@ -2071,6 +2074,7 @@ static boolean profile_choose(short controller)
 	}
 	player_ui_set_active_player_profile(0, profile_list.indices[profile_list.chosen], &profile);
 	player_ui_set_single_player_local_player_controller(0, controller);
+	ae_input_controller_assigned(0); /* AE hook */
 	player_ui_remember_player1_profile(TRUE);
 	return TRUE;
 }
