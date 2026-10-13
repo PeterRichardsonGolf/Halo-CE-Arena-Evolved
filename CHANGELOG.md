@@ -19,9 +19,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     is seen from across the map.
   It is drawing only: no damage value changes, nothing is added to the HUD
   and no hit markers. Multiplayer only. Players on OpenCE or ChupathingyCE
-  can still join; they see the game's own effects. Seen so far on the host's
-  machine; on a joined machine the pop and the flicker show, the blood pop
-  not yet.
+  can still join; they see the game's own effects. Played so far on the
+  host's machine and in split screen; a joined machine draws the same from
+  what the host sends (not yet played between two machines), but for the
+  small burst the map adds to the shield pop.
+- **All of Arena Evolved's seeded gametypes play COMBAT FEEDBACK: ARENA
+  EVOLVED** from this release (casual, free for all, AE COMP and AE TRAINING).
+  A gametype you changed yourself is left as it is; Halo 1: NHE's set stays
+  on HALO CE.
+- **NHE OPTIONS**, a new screen in the gametype editor: NHE MODE and NHE
+  EXTRAS moved there from ARENA OPTIONS, which is back to twelve roomier rows.
+- **TEAM AE VANILLA and TEAM AE POWERUPS are now TEAM NHE VANILLA and TEAM NHE
+  POWERUPS**, listed with Halo 1: NHE's set. Their rules do not change; a copy
+  you edited keeps its name.
 - **NO SPREAD: NHE is now NO SPREAD: FIRST SHOT.** The same rule under a name
   that says what it does (the pistol's first shot from rest and the sniper
   rifle's unzoomed shots go exactly where you aim); your gametypes keep it.

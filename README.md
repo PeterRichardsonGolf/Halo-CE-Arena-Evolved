@@ -133,8 +133,8 @@ play:
   (DROP SECONDARY ALWAYS). The 2V2 ones (TEAM AE 2V2 SLAYER to 25, CTF, KING
   and ODDBALL, with the lethal ball) play the same rules; the player limit of 4 is the host's setting.
   FFA AE PRACTICE: every weapon and powerup each 30 seconds, 500 kills, no time
-  limit, the map's vehicles. TEAM AE VANILLA and TEAM AE POWERUPS: team slayer
-  that plays Halo 1: NHE's VANILLA and NHE & POWERUPS modes on NHE's maps.
+  limit, the map's vehicles. All of Arena Evolved's gametypes play COMBAT
+  FEEDBACK: ARENA EVOLVED.
 - **Arena Evolved free for all variants** (the stock free for all gametypes on
   the casual rules, 15 minutes, item TIMERS with waypoints, both weapons
   dropped; each keeps its own score, lives, ball, hill and vehicles): FFA AE
@@ -169,6 +169,10 @@ play:
   swap, the dead camera on you, the match clock counting up), no death bonus or
   kill penalty in slayer. On Halo 1: NHE's maps each plays its NHE mode; on
   other maps no vehicles.
+  With them, TEAM NHE VANILLA and TEAM NHE POWERUPS: team slayer on Arena
+  Evolved's casual values that plays Halo 1: NHE's VANILLA and NHE & POWERUPS
+  modes on NHE's maps. NHE MODE and NHE EXTRAS are on a gametype's **NHE
+  OPTIONS** screen.
 - The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY):
   the Arena Evolved set, AE COMP, the NHE set, TRAINING, then your own
   gametypes, before the built-in ones. Seeded gametypes you edit are kept as
