@@ -332,6 +332,23 @@ lacks are sent over TCP port **5153** (map sharing, below the game's own
 traffic), which every computer needs open too, to receive a map and to help
 send one.
 
+**What is shared.** A host sends the maps you lack: Custom Edition maps, and
+(between Arena Evolved players) community maps in the Xbox's format, from its
+`maps` folder or its active mod. You get the map the game is on when you join,
+and in the lobby **F6** gets all of the
+host's maps you lack; press it again to stop. The game asks you once per host,
+with the number of maps and their size, before anything is downloaded.
+Community maps go to `maps_shared`, Custom Edition maps to `maps_ce`.
+
+**What is never shared.** The game's own maps (its 13 multiplayer maps, the
+campaign and the menus): they are never sent, and a download never replaces
+them or any other file you have. One host can give you 4 GB at most.
+
+**Internet games.** Maps are shared over the internet only when both switches
+are on, and both are off at first: the host's INTERNET SHARING and the
+joining player's INTERNET DOWNLOADS (Settings > Network Setup > Map Sharing).
+On a local network, sharing is on by default.
+
 **Windows** asks the first time the game starts. Allow it, on private
 networks at least, and on public ones too if Windows calls your network public.
 

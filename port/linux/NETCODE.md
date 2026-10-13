@@ -544,6 +544,102 @@ menus show a map without its hash, unless two versions are listed.
   in 30 seconds, leaves the game, saying why.
 - The download's progress is drawn at the top of the screen.
 
+### Arena Evolved: every map but the game's own
+
+Arena Evolved (0.2.3) extends map sharing between its own machines. The
+network version, the messages' numbers and the transfer (connections, pieces,
+hashes) are unchanged; a machine of another build sees nothing new.
+`port/linux/game/ae_map_share_all.c` holds the code, `ae_map_share_rules.c`
+its rules (unit-tested), and the hooks are in `ae_hooks.txt`.
+
+**Who is Arena Evolved.** A guest marks its join request (the machine name's
+last character, `ae_silent_rules.h`); the host reads it (`ae_peer_is_ae`).
+A host tells a marked guest that it runs Arena Evolved with a *hello* frame.
+A guest sends nothing new to any host: it asks for maps with the request
+message (83) only.
+
+**Frames.** A frame is an offer message (84) whose level name is
+`\x7F` + `AE maps` (no map's name), result `0xAE`, file count `0xFF`. After
+the offer's 68 bytes: type (1 hello, 2 list), flags (1: shared with you),
+expected entries (word), first entry (word), count (byte), one unused byte,
+then `count` entries of 92 bytes: name (52, ended), kind (1 Xbox map, 2 mod's
+map, 3 Custom Edition map, 4 resource map), 3 unused, size (4), hash (32, map
+sharing's hash of the file). A host sends frames only to marked guests, over
+their connections. A machine without this code that got one would drop it: its
+file count is over the 4 an offer may have.
+
+**The list.** A host lists every map that is not a stock one: Xbox-format
+maps the game itself would list (version 5, a build of the supported list in
+`cache_files.c`, the header's name equal to the file's name, at most 128 MiB)
+from the active mod's `maps`, the `maps` folder and `maps_shared`; Custom
+Edition maps named for their hashes in `maps_ce` and `custom_maps`; and the
+three resource maps, for their sizes alone. A stock map is one whose name (the
+header's, which must be the file's) is one of the 13 multiplayer maps, the 10
+campaign maps, `ui`, or `bitmaps`, `sounds`, `loc`: never listed, never taken
+by a guest. At most 512 entries. The host hashes the list once, a megabyte a
+frame, when the first marked guest it shares with joins.
+
+**Asking.** A guest asks for a listed map by its level name with message 83.
+For a level that is not the game's map, the host answers only a marked guest
+it sent the list to, and only for a listed map. An Xbox map is offered as a
+Custom Edition map is (its size and hash); the guest takes the offer only if
+both are the list's. Requests are limited per machine (24 at once, then one
+every 2.5 seconds); beyond that the host answers "not shared".
+
+**The guest's rules.** Nothing is asked before the player's yes (once per
+host). A file is refused before a byte is stored if it is over the engine's
+limit for its kind (128 MiB an Xbox map, 768 MiB a Custom Edition map, 512 MiB
+a resource map), if the host's total would pass `network.map_download_limit`,
+or if the disk would be left with under 256 MiB. Xbox maps come from the host
+alone, never from the other players, into `maps_shared` under
+`<name>_<hash>.map`; once whole and checked the file's header is checked as
+the game's lists check a map, then it is renamed `<name>.map`, unless a file of
+that name is there (it is kept, and the download removed). The game loads a
+map from `maps_shared` only when no other folder has it, and holds its scripts
+to a downloaded map's rules in every run.
+
+**The yes and the totals.** The yes is given for the amount the question
+shows (the bytes of the maps the guest lacks) and for the host of that
+connection; it is not kept for a later join. A file offered again is counted
+by its growth over what was counted for it, so a host that lists a map small
+and then large is charged the difference; an offer's files must fit the disk
+together; a disk whose free space cannot be read takes nothing. An offer
+beyond the yes is refused and the question is asked again with the new amount.
+A downloaded Xbox map's header must also give the file's own length.
+
+**The host's hashed files.** Map sharing keeps 16 hashed files and replaces
+them in turn. Arena Evolved keeps the pieces' hashes of its list and hands
+them over when a listed map is asked for (no second read of the file), lets a
+machine have one listed map that is not the game's in flight at a time, at most
+6 machines' at once, and keeps the places of those and of the game's own map
+and resource maps (`ae_map_share_file_kept`, one hook in `map_share_files.c`):
+one guest cycling through the list cannot push another guest's file out. A
+connection on TCP 5153 is answered for a listed file only from the address of
+a machine the host shares with and sent its list to.
+
+**Internet.** A machine is local if its address is private, link-local or
+loopback (`ae_map_share_address_local`). A host shares with a machine that is
+not local only with `network.map_share_internet`; a guest asks a host that is
+not local only with `network.map_download_internet`. Both are off by default,
+and both hold for Custom Edition maps and for machines of other builds too: a
+stock guest of an Arena Evolved internet host is answered "not shared" until
+the host turns INTERNET SHARING on.
+
+**Getting all maps.** In the lobby the guest fetches the listed maps it lacks
+one after another, each as a download of its own. Such a download does not
+hold the guest's players, and the host does not hold the machine out of a game
+that starts (`map_share_machine_needs_map` is for the game's own map). When
+the game starts, or the game's own map must be fetched, the guest stops the
+map it was on (its part file is kept) and goes on once it is back in the
+lobby.
+
+**What a stock machine sees.** A stock guest of an Arena Evolved host: no
+frame; Custom Edition maps as before (on a LAN; over the internet only with
+the host's switch on). A stock host of an Arena Evolved guest: requests for
+Custom Edition maps as before, sent after the player's yes (and over the
+internet only with the guest's switch on); a guest that lacks an Xbox map
+waits 5 seconds for a hello, then leaves as it did before.
+
 ## Stages
 
 1. (Done) Decoupled ticks: clients tick on their own clock with local input

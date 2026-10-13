@@ -405,20 +405,26 @@ SEED_UPLOADS = (64, 128, 256, 512, 1024, 2048)
 _network = SCREENS["network_setup"]
 _network["categories"] = [
     ("MAP SHARING:", "network_setup/map_sharing",
-     "Downloading Custom Edition maps you do not have,\nand helping send them to other players.",
+     "Downloading maps you do not have from a host,\nand sending yours to other players.",
      "desktop android"),
 ]
 SCREENS["network_setup/map_sharing"] = {
     "screen": "map_sharing_settings_screen", "header": _network["header"], "spacing": 30,
     "rows": [
         ("DOWNLOAD MAPS:", "network.map_download", ON_OFF,
-         "Joining a game on a Custom Edition map you do not\nhave: download it from the players (if shared).",
+         "Joining a game on a map you do not have: download\nit from its host (if shared). You are asked first.",
          None),
         ("HELP SEND MAPS:", "network.map_seed", ON_OFF,
          "In another's game, send its map to players who\njoin without it, as a torrent's peers do.", None),
         ("UPLOAD LIMIT:", "network.map_seed_upload",
          [(f"{kb} KB/S" if kb < 1024 else f"{kb // 1024} MB/S", str(kb)) for kb in SEED_UPLOADS],
          "The most you send of maps to other players, so\nthat the game keeps the rest of your upload.", None),
+        # (Arena Evolved: internet games share and download maps only with both switches on, the host's and the
+        # player's; ae_map_share_all.c)
+        ("INTERNET DOWNLOADS:", "network.map_download_internet", ON_OFF,
+         "Also download maps from a host that is not on\nyour local network (an internet game).", None),
+        ("INTERNET SHARING:", "network.map_share_internet", ON_OFF,
+         "Hosting: also send your maps to players who are\nnot on your local network (an internet game).", None),
     ],
 }
 

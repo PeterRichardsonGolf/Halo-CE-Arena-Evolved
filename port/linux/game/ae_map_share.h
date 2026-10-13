@@ -27,7 +27,10 @@ Arena Evolved's answers, and the names on the wire.
 /* ---------- constants */
 
 /* where downloads go (a path of the platform's) */
-#define CUSTOM_EDITION_MAP_DIRECTORY "d:\\maps_ce\\"
+#define CUSTOM_EDITION_MAP_DIRECTORY ae_map_share_download_folder()
+/* (the download being offered's folder: maps_ce, or an Xbox map's maps_shared; ae_map_share_all.c) */
+char const *ae_map_share_download_folder(
+	void);
 /* a Custom Edition map's level name in the game's protocol, and its longest */
 #define CUSTOM_EDITION_LEVEL_NAME_PREFIX "custom_maps\\"
 #define CUSTOM_EDITION_MAXIMUM_LEVEL_NAME_LENGTH 63
@@ -145,5 +148,139 @@ boolean ae_map_share_source_allowed(
 folder file, nothing else) removed, so that it is never kept or loadable */
 void ae_map_share_discard_failed(
 	char const *path);
+
+/* ---------- sharing every map but the game's own (0.2.3): ae_map_share_all.c, its rules ae_map_share_rules.c */
+
+/* whether a machine of this host's game runs this game (its join request's mark): ae_silent.c */
+boolean ae_peer_is_ae(
+	long machine_index);
+
+/* the adapters above, for a community map in the Xbox's format: whether the level is one that is shared (a host:
+of its list; a guest: of its host's list, or the game's map waited for), a host's file of it, its file's name with
+its hash (<name>_<8 digits>), and a download of it checked and given its own name in maps_shared */
+boolean ae_map_share_xbox_level(
+	char const *level_name);
+boolean ae_map_share_xbox_file_path(
+	char const *level_name,
+	char *path);
+boolean ae_map_share_xbox_level_file(
+	char const *level_name,
+	char *name,
+	long size);
+boolean ae_map_share_xbox_present(
+	char const *level_name,
+	char *message,
+	long message_size);
+char const *ae_map_share_xbox_folder(
+	void);
+
+/* map_share.c's hooks, a guest's: whether a download may be asked for at all (the settings, the internet's);
+whether its request goes out now (begun), and each frame what holds it: 0 nothing, 1 it waits (the host's list, the
+player's answer), 2 the request goes out now, 3 it is refused (ae_map_share_refusal says why); whether a failed
+download was one of GET ALL's (the game is not left); whether a download is GET ALL's (it holds no players, and is
+kept while the game is on another map); whether an offered file is taken (the list's size and hash, the limits, the
+player's yes) */
+boolean ae_map_share_download_permitted(
+	char const *level_name);
+boolean ae_map_share_download_begun(
+	char const *level_name);
+int ae_map_share_download_gate(
+	char const *level_name,
+	boolean asking);
+char const *ae_map_share_refusal(
+	void);
+boolean ae_map_share_download_failed(
+	char const *level_name,
+	char const *reason);
+boolean ae_map_share_download_extra(
+	char const *level_name);
+/* (... and whether a download comes from the host alone, never the game's other players: an Xbox map's, GET ALL's) */
+boolean ae_map_share_download_host_only(
+	char const *level_name);
+boolean ae_map_share_offer_allowed(
+	char const *level_name,
+	short kind,
+	unsigned long size,
+	byte const *hash);
+/* ... a host's: whether a machine's request is answered (its rate, the internet's switch); whether a level that
+is not the game's is of the list the machine was sent; whether this host sends its list's files; the hashed file of
+the list with this hash (or NONE); whether a machine's download is not of the game's map (it is not held out of a
+game that starts) */
+boolean ae_map_share_host_allowed(
+	long machine_index,
+	char const *level_name);
+boolean ae_map_share_host_lists(
+	long machine_index,
+	char const *level_name);
+boolean ae_map_share_host_serving(
+	void);
+short ae_map_share_host_file(
+	short found,
+	byte const *hash,
+	unsigned long address);
+/* (map_share_files.c's: whether the hashed file at path keeps its place in the catalogue: the game's own, or one
+being sent to a machine) */
+boolean ae_map_share_file_kept(
+	char const *path);
+boolean ae_map_share_host_extra(
+	long machine_index);
+/* THE QUESTION ("download from this host?") AND ITS ANSWERS: what a menu's dialog calls (the F6 key and the text
+line of ae_map_share_all.c are one caller, until there is one).
+- ae_map_share_consent_question: TRUE while the question is open, with what to show: the host (its address, host
+  byte order), how many maps this machine lacks, their bytes (0: not known), the most megabytes taken from one host,
+  and whether the game cannot be played without a yes (then "no" means leaving).
+- ae_map_share_consent_shown: called each frame the question is really on the screen. An answer is taken only if
+  it was shown within the last half second and for at least a second, and only in the lobby or the menus.
+- ae_map_share_consent_yes: the player's yes, for that host and that amount. FALSE (nothing changes) if the
+  question is not open, was not shown long enough, or is now for another host or another amount: show it again.
+  The yes covers that many bytes from that host; more is asked for again.
+- ae_map_share_consent_no: the player's no. To the game's map it stands for this host (the download is refused and
+  the game left); to GET ALL alone it only closes the question. */
+struct ae_map_share_question
+{
+	unsigned long host;
+	long maps;
+	unsigned long long bytes;
+	long limit_megabytes;
+	boolean needed_to_play;
+};
+boolean ae_map_share_consent_question(
+	struct ae_map_share_question *question);
+void ae_map_share_consent_shown(
+	void);
+boolean ae_map_share_consent_yes(
+	unsigned long host,
+	unsigned long long bytes);
+boolean ae_map_share_consent_no(
+	unsigned long host);
+/* whether the player said yes to this host (files and folders may be made) */
+boolean ae_map_share_download_may_write(
+	void);
+
+/* ... both: a frame of the list (TRUE: it was one, handled or dropped); every frame; the screen's line */
+boolean ae_map_share_handle_message(
+	long machine_index,
+	word const *message,
+	word size,
+	boolean from_stream);
+void ae_map_share_all_update(
+	void);
+void ae_map_share_all_render(
+	void);
+
+/* cache_files.c's: a guest without the game's Xbox map asks its host for it (TRUE: taken as present, downloaded
+before it is precached); a map's file is maps_shared's if no other folder has it */
+boolean ae_map_share_played_map(
+	char const *map_name);
+void ae_map_share_xbox_path(
+	char const *map_name,
+	char *path,
+	long size);
+/* map_families.c's: a map loaded from maps_shared is a downloaded one (its scripts' tighter rules), in any run */
+boolean ae_map_share_xbox_downloaded(
+	char const *map_name);
+/* custom_maps.c's: maps_shared's maps listed with the maps folder's */
+void ae_map_share_scan_downloads(
+	void (*scan)(char const *directory));
 
 #endif

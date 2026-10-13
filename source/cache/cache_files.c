@@ -721,6 +721,7 @@ void cache_files_map_file_path(
 		error(_error_silent, "map path for '%.64s' is too long", map_name);
 		path[0] = 0;
 	}
+	ae_map_share_xbox_path(map_name, path, size); /* AE hook */
 }
 
 void scenario_tags_unload(
@@ -1330,6 +1331,7 @@ boolean cache_files_map_present(
 				CloseHandle(handle);
 				return TRUE;
 			}
+			if (ae_map_share_played_map(map_name)) return TRUE; /* AE hook */
 #ifdef HALO_CUSTOM_EDITION
 			/* (a host that names a Halo PC map as the game's own maps are
 			named: OpenCE's builds before build-145) */

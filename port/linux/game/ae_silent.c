@@ -266,6 +266,13 @@ static int machine_capability(long machine_index)
 	return machine_index >= 0 && machine_index < AE_SILENT_MACHINES ? silent.capability[machine_index] : 0;
 }
 
+/* whether a machine of this host's game runs this game: its join request was marked (map sharing's list goes to
+those alone: ae_map_share_all.c) */
+boolean ae_peer_is_ae(long machine_index)
+{
+	return machine_capability(machine_index) > 0;
+}
+
 boolean ae_silent_join_refused_now(void const *client_machine, long machine_index, struct game_variant const *variant,
 	short *refusal_code)
 {

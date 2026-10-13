@@ -123,6 +123,7 @@ static void map_share_level_to_wire(char *wire, char const *level_name)
 
 #define config_boolean(name) 1
 #define custom_edition_level_name(level_name) (!strncmp(level_name, "custom_maps\\", 12))
+#include "ae_map_share_stubs.h" /* AE hook */
 #define custom_edition_map_file_path(level_name, path) (strcpy(path, "d:\\custom_maps\\hugeass_0e2b3ee4.map"), 1)
 #define custom_edition_resource_map_file_path(kind, path) 0
 #define custom_edition_map_resource_maps_needed(level_name) 0UL

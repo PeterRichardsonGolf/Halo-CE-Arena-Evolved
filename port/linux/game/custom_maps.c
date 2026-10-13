@@ -164,6 +164,7 @@ char **native_multiplayer_map_list(char **stock, short stock_count, short *count
             map_folder_scan(directory);
         }
         map_folder_scan(cache_files_map_directory());
+        { void ae_map_share_scan_downloads(void (*scan)(char const *directory)); ae_map_share_scan_downloads(map_folder_scan); } /* AE hook */
         qsort(map_list + stock_count, map_count - stock_count, sizeof(map_list[0]), map_compare);
         fprintf(stderr, "[maps] %d stock and %d custom multiplayer maps%s%s%s\n", stock_count,
             map_count - stock_count, mod ? " (mod " : "", mod ? mod : "", mod ? ")" : "");

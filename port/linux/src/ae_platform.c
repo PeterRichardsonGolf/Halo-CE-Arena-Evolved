@@ -169,6 +169,20 @@ int ae_platform_mouse_left_held(void)
 #endif
 }
 
+/* map sharing's key (ae_map_share_all.c): F6 held now (no button a game uses: the key also answers a question);
+0 on the dedicated server and Android */
+int ae_platform_map_share_key(void)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	struct platform_input_state input;
+
+	platform_input_read(&input, FALSE);
+	return input.focused && input.keys[SDL_SCANCODE_F6];
+#else
+	return 0;
+#endif
+}
+
 int ae_platform_input_scheme(void)
 {
 #ifdef HALO_GAME_BROWSER
