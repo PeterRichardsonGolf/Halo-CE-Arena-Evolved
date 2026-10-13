@@ -13,9 +13,12 @@ the competitive rules the Xbox community played for years
 into the game itself, so they work on every map without modded maps or a
 modded Xbox, and adds the quality-of-life features later Halo games made
 standard: item timers, a match clock, training aids, regenerating health
-styles and more. Competitive Halo CE and [Halo 1: NHE](https://halo1nhe.com/)
-inspired the project; NHE's own maps and gametypes stay supported as an
-option.
+styles and more.
+
+It is an evolution of the classic with the modern: inspired by the grassroots
+Halo CE competitive community's rules, MLG's rules and the HCS's rules.
+[Halo 1: NHE](https://halo1nhe.com/)'s own maps and gametypes stay supported
+as an option.
 
 It is built on [OpenCE](https://github.com/OpenCommunityEdition/OpenCE), the
 port of the Halo: Combat Evolved decompilation, by way of
@@ -32,7 +35,8 @@ What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
 
 ## Goals
 
-- **Competitive rules in the engine:** the community's competitive rules, built natively,
+- **Competitive rules in the engine:** the rules competitive Halo grew up on
+  (grassroots CE, MLG, HCS), built natively,
   so they work on every map, on any PC, without modded maps or a modded Xbox.
 - **The later games' features in CE:** options and quality-of-life from Halo
   2, Halo 3, Reach, Halo 4 and Infinite, and from the Master Chief
