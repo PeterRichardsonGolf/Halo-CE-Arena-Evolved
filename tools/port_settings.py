@@ -1787,6 +1787,11 @@ ARENA_ROWS = [
         "Shields and hits look as in Halo CE.",
         "Shields show their state: a pop when one headshot\\nwill finish, a flicker while down, a sweep as they\\nrecharge; a blood pop on the kill. No damage change.",
     ]),
+    # (the weapon pack's battle rifle in the custom loadout: ae_rifle_menu.c)
+    ("battle_rifle", "BATTLE RIFLE:", ["OFF", "STARTING WEAPON"], [
+        "Players start with the gametype's own weapons.",
+        "Players start with a battle rifle in place of the\\nassault rifle: three-round bursts, a 3x scope.\\nOnly Arena Evolved players with the rifle can join.",
+    ]),
     ("no_spread", "NO SPREAD:", ["OFF", "FIRST SHOT", "FULL"], [
         "The pistol and sniper rifle spread as in stock Halo.",
         "The pistol's first shot from rest, and every\\nunzoomed sniper rifle shot, go exactly where\\nyou aim. Held pistol fire still spreads.",

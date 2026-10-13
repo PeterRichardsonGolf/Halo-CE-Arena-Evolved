@@ -177,6 +177,7 @@ enum
 #include "ae_glue_mouse.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
+#include "ae_rifle_menu.h" /* AE hook */
 #include "ae_input.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
@@ -6166,6 +6167,7 @@ static void gametype_options_each(struct widget_instance *list, boolean save)
 	}
 	ae_silent_menu_rows(list, variant, save); /* AE hook */
 	ae_hit_feedback_menu_rows(list, variant, save); /* AE hook */
+	ae_rifle_menu_rows(list, variant, options, save); /* AE hook */
 }
 
 /* each of a screen's rows of the host's own settings (_option_setting:

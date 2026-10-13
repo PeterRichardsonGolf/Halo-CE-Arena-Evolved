@@ -31,6 +31,7 @@ random number stay the same.
 
 #include "ae_silent.h"
 #include "ae_silent_rules.h"
+#include "ae_weapon_pack.h"
 
 void platform_log(char const *format, ...);
 
@@ -229,6 +230,17 @@ void ae_silent_log_counts(void)
 void ae_silent_join_request_mark(wchar_t *machine_name, short length)
 {
 	ae_silent_join_mark((unsigned short *)machine_name, length);
+	/* (and that this machine has the battle rifle's pack: AE_RIFLE_CAPABILITY in the same place; a host of
+	before reads any capability over 0 as the SILENT options') */
+	if (machine_name && length >= 3 && ae_weapon_pack_slot_loaded(_weapon_pack_battle_rifle))
+		((unsigned short *)machine_name)[length - 1] = (unsigned short)(AE_SILENT_JOIN_MARK | AE_RIFLE_CAPABILITY);
+}
+
+/* the game's gametype uses the battle rifle's pack and the machine has not said it has it: on a machine without
+the pack's tags the rifle is an object of no definition */
+static boolean rifle_join_refused(struct game_variant const *variant, int capability)
+{
+	return variant && variant->universal_variant.weapon_pack == _weapon_pack_battle_rifle && capability < AE_RIFLE_CAPABILITY;
 }
 
 /* the record's place in the heard table: its own, else a free one, else NONE */
@@ -285,6 +297,14 @@ boolean ae_silent_join_refused_now(void const *client_machine, long machine_inde
 		silent.capability[machine_index] = slot != NONE ? silent.heard_capability[slot] : 0;
 		silent.dropped[machine_index] = FALSE;
 	}
+	if (rifle_join_refused(variant, machine_capability(machine_index)))
+	{
+		platform_log("weapon pack: refusing machine #%d: it has not the battle rifle's pack, which the game's "
+			"gametype uses", (int)machine_index);
+		if (refusal_code)
+			*refusal_code = AE_RIFLE_REJECTION_CODE;
+		return TRUE;
+	}
 	if (!ae_silent_join_refused(byte, machine_capability(machine_index), 0))
 		return FALSE;
 	platform_log("silent sounds: refusing machine #%d: it has not Arena Evolved's SILENT options (the game's "
@@ -300,11 +320,21 @@ void ae_silent_host_machine(long machine_index, boolean remote_joined, struct ga
 {
 	unsigned char byte = variant_byte(variant);
 
-	if (!remote_joined || machine_index < 0 || machine_index >= AE_SILENT_MACHINES || silent.dropped[machine_index] ||
-		!ae_silent_join_refused(byte, machine_capability(machine_index), 0))
+	if (!remote_joined || machine_index < 0 || machine_index >= AE_SILENT_MACHINES || silent.dropped[machine_index])
+		return;
+	/* (the gametype changed in the lobby to one with the battle rifle) */
+	if (rifle_join_refused(variant, machine_capability(machine_index)))
 	{
+		if (network_game_server_drop_machine(machine_index, AE_RIFLE_REJECTION_CODE))
+		{
+			silent.dropped[machine_index] = TRUE;
+			platform_log("weapon pack: dropping machine #%d: it has not the battle rifle's pack, which the game's "
+				"gametype now uses", (int)machine_index);
+		}
 		return;
 	}
+	if (!ae_silent_join_refused(byte, machine_capability(machine_index), 0))
+		return;
 	if (network_game_server_drop_machine(machine_index, AE_SILENT_REJECTION_CODE))
 	{
 		silent.dropped[machine_index] = TRUE;
@@ -318,6 +348,15 @@ void ae_silent_join_rejected(word rejection_code)
 	static wchar_t const text[] = L"This game uses Arena Evolved's SILENT options: join with Arena Evolved "
 		L"(version 0.2.3 or later).";
 
+	if (rejection_code == AE_RIFLE_REJECTION_CODE)
+	{
+		static wchar_t const rifle_text[] = L"This game uses Arena Evolved's battle rifle: join with Arena Evolved "
+			L"0.2.5 or later, with its packs folder beside the game.";
+
+		platform_log("weapon pack: the host refused this machine: its game uses the battle rifle's pack");
+		display_error_text_when_main_menu_loaded(rifle_text);
+		return;
+	}
 	if (rejection_code != AE_SILENT_REJECTION_CODE)
 		return;
 	platform_log("silent sounds: the host refused this machine: its game has Arena Evolved's SILENT options on");
