@@ -13,9 +13,9 @@ tables):
 - every alias's successor in the table; an alias's info its successor's set,
   order, team and engine, its own stored name as display_name, no
   description, not special;
-- the sets: AE 32, AE COMP 5, NHE 23, TRAINING 1 (61), each set's orders
-  0..n-1 in the table's order, NHE's in its own order (TS 50 first,
-  CTF WIZARD last), and the set names;
+- the sets: AE 30, AE COMP 5, NHE 25, TRAINING 1 (61), each set's orders
+  0..n-1 in the table's order, NHE's own set after VANILLA and POWERUPS
+  (TS 50 first, CTF WIZARD last), and the set names;
 - lookups letters' case aside; an unknown name FALSE, displayed as it is;
   display names cut to the buffer given.
 
@@ -99,7 +99,7 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 32, 5, 23, 1 };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 5, 25, 1 };
 	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] = { "", "AE", "AE COMP", "NHE", "TRAINING" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
 	short index;
@@ -172,10 +172,10 @@ int main(void)
 	if (strcmp(arena_gametype_set_name(-1), "") || strcmp(arena_gametype_set_name(NUMBER_OF_ARENA_GAMETYPE_SETS), ""))
 		fail("set name out of range", "");
 	wide("TS 50", name);
-	if (!arena_gametype_info(name, &info) || info.set != _arena_gametype_set_nhe || info.order != 0)
-		fail("NHE's order starts at TS 50", "");
+	if (!arena_gametype_info(name, &info) || info.set != _arena_gametype_set_nhe || info.order != 2)
+		fail("NHE's own order starts at TS 50 after VANILLA and POWERUPS", "");
 	wide("CTF WIZARD", name);
-	if (!arena_gametype_info(name, &info) || info.order != 22)
+	if (!arena_gametype_info(name, &info) || info.order != 24)
 		fail("NHE's order ends at CTF WIZARD", "");
 
 	/* the aliases */

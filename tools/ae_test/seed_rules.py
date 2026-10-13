@@ -151,8 +151,9 @@ for name, (engine, score, resp, suic, radar, goal, weapons, mode, extra) in NHE_
         want["auto team balance"] = "on"
     ROWS[name] = (want, None, None)
 # revision 7: BALL MELEE LETHAL on AE FFA BALL, AE TEAM OB, AE 2V2 BALL and AE COMP OB (the other seeds STOCK)
-# revision 6: AE VANILLA / AE POWERUPS on the casual set's values with their NHE modes
-for n, mode in (("AE VANILLA", "vanilla"), ("AE POWERUPS", "nhe & powerups")):
+# revision 9: AE VANILLA / AE POWERUPS renamed to the NHE set's stored names; their values stay revision 6's and
+# COMBAT FEEDBACK stays HALO CE
+for n, mode in (("NHE TS VAN", "vanilla"), ("NHE TS POW", "nhe & powerups")):
     ROWS[n] = (dict(CASUAL, engine="slayer (teams)", **{"score to win": "50", "respawn": T(300), "suicide penalty": T(300), "vehicle set": "2", "nhe mode": mode}), "pistol + assault rifle", 4)
 
 # revision 8: the 13 free for all gametypes made from the stock ones (casual set's rules; each keeps its stock mode's

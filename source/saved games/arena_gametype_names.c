@@ -127,12 +127,6 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Team slayer with shotguns and pistols." },
 	{ "AE HEAVIES", "TEAM AE HEAVIES", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
 		"Team slayer with rocket launchers, assault rifles, the heavy weapons and the map's vehicles, to 75 kills." },
-	/* AE casual on Halo 1: NHE's maps' own modes */
-	{ "AE VANILLA", "TEAM AE VANILLA", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
-		"Team slayer on AE's rules with power item timers and waypoints. On Halo 1: NHE's maps, NHE's VANILLA mode "
-		"(no NHE timers, no countdown)." },
-	{ "AE POWERUPS", "TEAM AE POWERUPS", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
-		"Team slayer on AE's rules with power item timers and waypoints. On Halo 1: NHE's maps, NHE & POWERUPS." },
 	/* AE COMP */
 	{ "AE COMP FFA", "FFA AE COMP SLAYER", _arena_gametype_set_ae_comp, game_engine_slayer, FALSE, FALSE,
 		"Competitive free for all: 5 second respawns, 2 frag grenades, no motion tracker, no vehicles, power item "
@@ -150,6 +144,12 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns, 2 frags, no motion tracker or "
 		"vehicles, the ball in line of sight only, lethal ball melee." },
 
+	/* the casual set's values with Halo 1: NHE's own modes */
+	{ "NHE TS VAN", "TEAM NHE VANILLA", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,
+		"Team slayer on AE's rules with power item timers and waypoints. On Halo 1: NHE's maps, NHE's VANILLA mode "
+		"(no NHE timers, no countdown)." },
+	{ "NHE TS POW", "TEAM NHE POWERUPS", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,
+		"Team slayer on AE's rules with power item timers and waypoints. On Halo 1: NHE's maps, NHE & POWERUPS." },
 	/* Halo 1: NHE's 23 gametypes, in its own order (010 to 230) */
 	{ "TS 50", "TEAM NHE SLAYER 50", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,
 		"NHE's TS 50: 50 kills, 5 second respawns, no motion tracker. On Halo 1: NHE's maps, NHE & TIMER." },
@@ -233,8 +233,11 @@ static struct arena_gametype_alias const arena_gametype_aliases[] =
 	{ "NHE 2V2 TS", "TS 50" },
 	{ "NHE CTF", "CTF 3C 7S" },
 	{ "PRACTICE", "TS PRACTICE" },
-	{ "NHE VANILLA", "AE VANILLA" },
-	{ "NHE POWERUP", "AE POWERUPS" },
+	{ "AE VANILLA", "NHE TS VAN" },
+	{ "AE POWERUPS", "NHE TS POW" },
+	/* (a file kept under the names of before revision 6: the same two) */
+	{ "NHE VANILLA", "NHE TS VAN" },
+	{ "NHE POWERUP", "NHE TS POW" },
 	{ "NHE TRAIN", "AE TRAINING" },
 };
 
