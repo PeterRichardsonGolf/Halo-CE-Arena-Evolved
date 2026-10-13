@@ -78,7 +78,7 @@ def test_the_game_is_compiled_as_the_web_port():
     # the link (no link-time optimisation: tools/web_build.py)
     assert "HALO_ANDROID" not in text
     assert "-flto" not in text
-    assert "-DHALO_RELEASE" not in flags
+    assert "-DHALO_RELEASE" not in flags.split()  # (the whole flag: AE also passes -DHALO_RELEASE_BUILD=0)
     assert "-Dmain=halo_game_main" in compile_flags(text, "source/shell/shell_xbox.c")
     assert "halo_android_variadic_prototypes.h" in compile_flags(text, "source/hs/hs.c")
     assert "-include time.h" in compile_flags(text, "source/bungie_net/common/random_numbers.c")
@@ -104,7 +104,7 @@ def test_the_link_makes_the_memory_the_window_needs():
         assert flag in flags, flag
     assert f"-sINITIAL_MEMORY={0x88000000}" in flags
     release = graph(release=True)
-    assert "-DHALO_RELEASE" in compile_flags(release, "source/main/main.c")
+    assert "-DHALO_RELEASE" in compile_flags(release, "source/main/main.c").split()
     assert "-sASSERTIONS=0" in link_flags(release).split()
 
 
