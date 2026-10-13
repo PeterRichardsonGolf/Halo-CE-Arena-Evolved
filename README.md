@@ -265,11 +265,12 @@ play:
 
 Three rulesets under one roof:
 
-1. **NHE**: the Xbox competitive rules, faithfully.
-2. **Casual**: those rules with timers, training aids and the quality-of-life
-   options on.
-3. **Hardcore**: closer to Halo Infinite's competitive settings, researched
-   rather than guessed.
+1. **AE Casual**: Arena Evolved's rules with item timers, training aids and
+   the quality-of-life options on.
+2. **AE Comp**: modern competitive settings, closer to today's HCS,
+   researched rather than guessed.
+3. **Classic Comp (NHE)**: the Xbox competitive rules, faithfully, with
+   Halo 1: NHE's own maps and gametypes as an option.
 
 Next up: a side-by-side split-screen layout, a
 per-player in-game menu and HUD, and more of our own voice for the callouts
