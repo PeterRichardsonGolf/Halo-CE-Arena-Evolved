@@ -27,7 +27,8 @@ struct universal_variant;
 struct widget_instance;
 
 /* the gametype's byte: the high nibble of universal_variant's pad5 (a branch
-naming that byte for another use must name it here too; ae_silent_rules.h) */
+naming that byte for another use must name it here too; ae_silent_rules.h).
+Bit 0 is HIT FEEDBACK's (ae_hit_feedback_rules.h) */
 #define AE_SILENT_VARIANT_BYTE(variant) ((variant)->universal_variant.pad5)
 
 /* ---- tagging the sounds */

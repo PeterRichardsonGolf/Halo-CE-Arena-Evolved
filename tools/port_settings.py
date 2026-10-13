@@ -1760,7 +1760,7 @@ ARENA_TIME_LIMITS = [*range(1, 11), 12, 15, 20, 25, 30, 45, 60]
 # (the rows' pitch and the help's top: 26 for the ten rows before the sound
 # options; 20 for thirteen, as the network settings' thirteen, the help just
 # under the last row and its third line clear of the buttons' bar)
-ARENA_ROW_TOP, ARENA_ROW_PITCH, ARENA_HELP_TOP, ARENA_HELP_HEIGHT = 68, 20, 334, 66
+ARENA_ROW_TOP, ARENA_ROW_PITCH, ARENA_HELP_TOP, ARENA_HELP_HEIGHT = 68, 19, 340, 66
 ARENA_ROWS = [
     ("arena_time_limit", "TIME LIMIT:",
      ["NONE", *[f"{minutes} MINUTE{'' if minutes == 1 else 'S'}" for minutes in ARENA_TIME_LIMITS]], [
@@ -1777,6 +1777,12 @@ ARENA_ROWS = [
         "Once your shields are full, your health comes\\nback to the top of the third it is in. Health\\npacks fill the rest.",
         "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
         "Once your shields are full, all your health\\ncomes back.",
+    ]),
+    # (HIT FEEDBACK: bit 0 of the variant's pad5, port/linux/game/ae_hit_feedback.c's
+    # ae_hit_feedback_menu_rows; not in menu_functions.c's table)
+    ("hit_feedback", "HIT FEEDBACK:", ["CLASSIC", "ARENA EVOLVED"], [
+        "Shields and hits look as in Halo CE.",
+        "Shields show their state: a white pop when one\\nheadshot will finish, a flicker while down, a\\nsweep as they recharge. No damage change.",
     ]),
     ("no_spread", "NO SPREAD:", ["OFF", "NHE", "FULL"], [
         "The pistol and sniper rifle spread as in stock Halo.",

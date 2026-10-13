@@ -257,3 +257,9 @@ port/linux/src/port_config.c	{ "debug.map_share_test", _config_string, "\"\"", "
 port/linux/game/map_share_files.c	{ short ae_turn; for (ae_turn = 0; ae_turn < MAXIMUM_SHARE_FILES && (ae_map_share_file_kept(globals->files[index].path) || (globals->job_type == _hash_job_file && globals->job_owner == index)); ae_turn++) index = (short)((index + 1) % MAXIMUM_SHARE_FILES); globals->next_file = (short)((index + 1) % MAXIMUM_SHARE_FILES); } /* AE hook */
 # upstream's own test of map sharing (it compiles map_share.c's functions) sees none of the above: its stand-ins are ours
 tools/harness/tests/map_share_trust.c	#include "ae_map_share_stubs.h" /* AE hook */
+# HIT FEEDBACK (ARENA OPTIONS: CLASSIC / ARENA EVOLVED): port/linux/game/ae_hit_feedback.c (rules
+# ae_hit_feedback_rules.c). The option is bit 0 of the variant's pad5; looks only, nothing over the network
+port/linux/game/menu_functions.c	#include "ae_hit_feedback.h" /* AE hook */
+port/linux/game/menu_functions.c	ae_hit_feedback_menu_rows(list, variant, save); /* AE hook */
+source/game/game_engine.c	#include "ae_hit_feedback.h" /* AE hook */
+source/game/game_engine.c	ae_hit_feedback_log_rules(); /* AE hook */

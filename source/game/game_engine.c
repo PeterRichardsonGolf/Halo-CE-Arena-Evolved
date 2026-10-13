@@ -601,6 +601,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_glue_mouse.h" /* AE hook */
 #include "ae_glue_zoom.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
+#include "ae_hit_feedback.h" /* AE hook */
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
@@ -8640,6 +8641,7 @@ void game_engine_log_rules(
 	ae_mouse_log_settings(); /* AE hook */
 	ae_zoom_log_settings(); /* AE hook */
 	ae_silent_log_rules(); /* AE hook */
+	ae_hit_feedback_log_rules(); /* AE hook */
 	if (game_engine)
 	{
 		static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };
