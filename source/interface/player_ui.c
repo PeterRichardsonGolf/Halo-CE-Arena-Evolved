@@ -162,7 +162,6 @@ symbols in this file:
 #include "main/main.h"
 #include "tag_files/tag_groups.h"
 #include "player_ui.h"
-#include "ae_input.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -633,7 +632,6 @@ void player_ui_set_single_player_local_player_controller(
 		"invalid controller index");
 
 	player_ui_globals.single_player_controller[local_player_index] = controller_index;
-	ae_input_controller_assigned(local_player_index); /* AE hook */
 	return;
 }
 
