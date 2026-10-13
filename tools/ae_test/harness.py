@@ -559,6 +559,13 @@ SPEC_KEYS = {
                       "(HALO_NETWORK_TEST_GAMETYPE; not found: the built-in one, as without it)",
     "network_test": "raw HALO_NETWORK_TEST (overrides map: 'join' for a client)",
     "flags": "HALO_NETWORK_TEST_FLAGS (gametype option bits)",
+    "pack_loadout": "primary | secondary | both: the hosted game's custom loadout takes the weapon pack's weapon "
+                    "in that slot (HALO_NETWORK_TEST_PACK_LOADOUT)",
+    "pack_map_spawns": "true: the hosted game's BATTLE RIFLE ON MAP (HALO_NETWORK_TEST_PACK_MAP_SPAWNS=1)",
+    "pack_file": "a weapon pack file read in place of packs/ae_battle_rifle.aepack (linked as the data root's "
+                 "pack_file/<name>; HALO_WEAPON_PACK_FILE=d:\\pack_file\\<name>)",
+    "packs_from": "a folder linked as the data root's packs/ (default: data_dir/packs when it exists), or "
+                  "\"none\" for no packs/ at all; never under /tmp",
     "start": "HALO_NETWORK_TEST_START seconds",
     "local_players": "split-screen players 1-4 (HALO_NETWORK_TEST_LOCAL_PLAYERS)",
     "bots": "system-link bots joining once the lobby listens (tools/system_link_bots.py)",
@@ -578,13 +585,22 @@ SPEC_KEYS = {
     "broadcast": "HALO_NET_BROADCAST",
     "delay": "seconds after the first game of a group before this one starts",
     "timeout_extra": "seconds past exit_after before the game is killed (default 150)",
-    "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true} (and the allowances "
+    "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true, 'lines': [regex, ...] each "
+              "must match a line of debug.txt, 'no_lines': [regex, ...] none may} (and the allowances "
               "'refusals_ok', 'lost_ok', 'cache_overflow_ok': a texture / sound cache overflow fails a game otherwise)",
     "save": "a named save root shared by the cases of one run (default: the case's own)",
     "save_from": "a folder (on the machine that plays) copied as the case's save root before the game (a "
                  "shared one: once, when it is made; links copied as files); never under /tmp. A real save "
                  "root may be the source: only the copy is played",
 }
+
+
+PACK_LOADOUTS = ("primary", "secondary", "both")
+
+
+def pack_map_spawns_on(value):
+    """pack_map_spawns is on for exactly 1, true or "on" / "1" / "true" (a string "false" is not on)"""
+    return value is True or value == 1 or (isinstance(value, str) and value.lower() in ("1", "true", "on"))
 
 
 def parse_spec(data):
@@ -600,6 +616,17 @@ def parse_spec(data):
     spec.update(data)
     if isinstance(spec["init"], str):
         spec["init"] = [spec["init"]]
+    if "pack_map_spawns" in spec and not (isinstance(spec["pack_map_spawns"], (bool, int)) or
+                                         spec["pack_map_spawns"] in ("1", "true", "on", "0", "false", "off")):
+        raise ValueError("pack_map_spawns is true / false (or 1 / 0, on / off)")
+    if "pack_loadout" in spec and spec["pack_loadout"] not in PACK_LOADOUTS:
+        raise ValueError(f"pack_loadout is one of {', '.join(PACK_LOADOUTS)}")
+    for key in ("lines", "no_lines"):
+        patterns = spec["expect"].get(key, [])
+        if not isinstance(patterns, list) or not all(isinstance(p, str) for p in patterns):
+            raise ValueError(f"expect.{key} is a list of regex strings")
+        for pattern in patterns:
+            re.compile(pattern)  # (a bad regex stops the run here, not after the game)
     lp = int(spec["local_players"])
     if not 1 <= lp <= 4:
         raise ValueError("local_players is 1-4")
@@ -644,6 +671,12 @@ def spec_env(spec, data_root, save_root, shots_dir=None):
         env["HALO_NETWORK_TEST_FLAGS"] = str(spec["flags"])
     if spec.get("saved_gametype"):
         env["HALO_NETWORK_TEST_GAMETYPE"] = spec["saved_gametype"]
+    if spec.get("pack_loadout"):
+        env["HALO_NETWORK_TEST_PACK_LOADOUT"] = spec["pack_loadout"]
+    if pack_map_spawns_on(spec.get("pack_map_spawns")):
+        env["HALO_NETWORK_TEST_PACK_MAP_SPAWNS"] = "1"
+    if spec.get("pack_file"):
+        env["HALO_WEAPON_PACK_FILE"] = pack_file_xbox_path(spec)
     if spec.get("start") is not None:
         env["HALO_NETWORK_TEST_START"] = str(spec["start"])
     if spec.get("mod") is not None:
@@ -820,8 +853,9 @@ def compare_tracks(host_text, client_text, window=2, kd_window=45):
     return out
 
 
-def evaluate(spec, result):
-    """PASS / FAIL with reasons, from the run and its debug.txt"""
+def evaluate(spec, result, text=None):
+    """PASS / FAIL with reasons, from the run and its debug.txt (text: its contents, for expect.lines and
+    expect.no_lines: regexes that must / must not match a line)"""
     why = []
     d = result.get("debug") or {}
     exp = spec.get("expect", {})
@@ -854,6 +888,17 @@ def evaluate(spec, result):
             why.append(f"tick {d.get('tick')} < {min_tick}")
         if exp.get("scripts", kind == "campaign") and not d.get("scenario_scripts"):
             why.append("no scenario scripts line")
+        wanted, unwanted = exp.get("lines", []), exp.get("no_lines", [])
+        if (wanted or unwanted) and text is None:
+            why.append("expect.lines asked for, no debug.txt text to look in")
+        else:
+            for pattern in wanted:
+                if not re.search(pattern, text, re.M):
+                    why.append(f"expected line not in debug.txt: {pattern}")
+            for pattern in unwanted:
+                m = re.search(pattern, text, re.M)
+                if m:
+                    why.append(f"unexpected line in debug.txt: {m.group(0)[:160]}")
     if str(result.get("record") or "").startswith("recording") and not result.get("recordings"):
         why.append("recording asked, no mp4")
     return ("FAIL" if why else "PASS"), why
@@ -1168,6 +1213,34 @@ def use_xvfb(cfg):
     return bool(x)
 
 
+# the folder of the data root a spec's pack_file is linked into: the game opens debug.weapon_pack_file by Xbox path
+# (d:\ is the data root), as it opens its own files, so a file elsewhere on the machine is linked there
+PACK_FILE_FOLDER = "pack_file"
+# a spec's packs_from for a game with no packs/ folder (run.py --no-packs)
+NO_PACKS = "none"
+
+
+def pack_file_xbox_path(spec):
+    """the Xbox path the game is given for the spec's pack_file (linked by prepare_game)"""
+    return f"d:\\{PACK_FILE_FOLDER}\\{expand(spec['pack_file']).name}"
+
+
+def packs_folder(spec, data):
+    """the folder linked as the data root's packs/: the spec's packs_from ("none": no folder, whatever the machine
+    has), else data_dir/packs when there is one"""
+    if spec.get("packs_from") == NO_PACKS:
+        return None
+    if spec.get("packs_from"):
+        packs = expand(spec["packs_from"])
+        check_not_tmp(packs, "packs_from")
+        if not packs.is_dir():
+            raise SystemExit(f"ae_test: packs_from {packs} is not a folder")
+        return packs
+    if data and (data / "packs").is_dir():
+        return data / "packs"
+    return None
+
+
 def prepare_game(cfg, spec, build, work, out, save_roots=None):
     """the folders and launch description of one game: work/{root,bin,save}, out/shots"""
     check_not_tmp(work, "work folder")
@@ -1197,6 +1270,16 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
     for d in ("maps", "mods"):
         if data and (data / d).exists():
             (root / d).symlink_to(data / d)
+    packs = packs_folder(spec, data)
+    if packs:
+        (root / "packs").symlink_to(packs)
+    if spec.get("pack_file"):
+        pack_file = expand(spec["pack_file"])
+        check_not_tmp(pack_file, "pack_file")
+        if not pack_file.exists():
+            raise SystemExit(f"ae_test: pack_file {pack_file} does not exist")
+        (root / PACK_FILE_FOLDER).mkdir()
+        (root / PACK_FILE_FOLDER / pack_file.name).symlink_to(pack_file.resolve())
     voices = src / "voices" if (src / "voices").exists() else (data / "voices" if data and (data / "voices").exists() else None)
     if voices:
         (root / "voices").symlink_to(voices)
@@ -1518,7 +1601,7 @@ def collect_game(spec, prepared, inner, out, keep_work=False):
               "record": (prepared.get("record") or {}).get("status"),
               "display": inner.get("display"), "error": inner.get("error"), "notes": inner.get("notes", []),
               "recordings": [str(p.relative_to(out)) for p in recordings]}
-    status, why = evaluate(spec, result)
+    status, why = evaluate(spec, result, text if found else None)
     result["status"], result["why"] = status, why
     write_json(out / "result.json", result)
     if not keep_work:

@@ -193,6 +193,7 @@ symbols in this file:
 #include "tag_files/tag_files.h"
 #include "scenario/scenario_definitions.h"
 #include "rasterizer/rasterizer.h"
+#include "ae_weapon_pack.h" /* AE hook */
 
 #include <xtl.h>
 
@@ -1075,6 +1076,7 @@ short cache_file_read(
 
 		return NONE;
 	}
+	if (ae_weapon_pack_read(tag_index, offset, size, buffer, completion_flag_reference)) return request_index; /* AE hook */
 	if (size & (CACHE_FILE_SECTOR_SIZE - 1)
 #ifdef HALO_CUSTOM_EDITION
 		/* (a Custom Edition map is read as it is, to its end, not in the

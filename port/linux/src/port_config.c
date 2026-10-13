@@ -936,6 +936,52 @@ static const struct config_setting config_settings[] =
 		"messaging icons, \"bad_sequence\" as one whose weapons name a picture\n"
 		"its sheet has not: every weapon's waypoint shows its text. Empty for\n"
 		"the map's own." },
+	{ "debug.network_test_pack_loadout", _config_string, "\"\"", "HALO_NETWORK_TEST_PACK_LOADOUT", _environment_value, /* AE hook */
+		_platform_all,
+		"An automated test host's gametype uses the weapon pack in its custom\n"
+		"loadout: primary, secondary or both (the stock values stay an assault rifle\n"
+		"and a pistol, the fallbacks). Empty for none." },
+	{ "debug.network_test_pack_map_spawns", _config_boolean, "false", "HALO_NETWORK_TEST_PACK_MAP_SPAWNS", _environment_value, /* AE hook */
+		_platform_all,
+		"An automated test host's gametype uses the weapon pack and has BATTLE RIFLE\n"
+		"ON MAP (the map's assault rifles spawn the pack's weapon)." },
+	{ "debug.weapon_pack_file", _config_string, "\"\"", "HALO_WEAPON_PACK_FILE", _environment_value, /* AE hook */
+		_platform_all,
+		"A weapon pack read in place of packs\\ae_battle_rifle.aepack (tests: variants\n"
+		"and refusals). An Xbox path, not a path of this computer: it starts d:\\, the\n"
+		"data root (d:\\pack_file\\x.aepack is pack_file/x.aepack beside maps/). Its\n"
+		"SHA-256 names it as any pack's does. Empty for the packs folder's." },
+	{ "debug.weapon_pack_ground", _config_boolean, "false", "HALO_WEAPON_PACK_GROUND", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests' pictures: one more of the weapon pack's weapon lies a\n"
+		"step ahead of each local player who spawns with it, and of one who spawns\n"
+		"without it in a game that asks for the pack (BATTLE RIFLE ON MAP: the swap\n"
+		"prompt, or a pickup). Only on a host or with no network game; a client in\n"
+		"another's game ignores it." },
+	{ "debug.weapon_pack_table_limit", _config_integer, "0", "HALO_WEAPON_PACK_TABLE_LIMIT", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of a full tag table: the most tags a map and a weapon\n"
+		"pack's own may have together, below the built-in 49152 (0xC000); a map\n"
+		"past it refuses the pack. 0 for the built-in limit." },
+	{ "debug.weapon_log", _config_boolean, "false", "HALO_WEAPON_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of the battle rifle (ae_burst_rifle.c): each round it\n"
+		"fires (its burst, the tick, the magazine), each burst's distance from the\n"
+		"last, and the zoomed view's angle. Any machine; only this machine's log." },
+	{ "debug.burst_autofire", _config_integer, "0", "HALO_BURST_AUTOFIRE", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of the battle rifle's cadence: a local player holding\n"
+		"it pulls the trigger by itself, 1 again as soon as the rifle allows, 2 once\n"
+		"in the middle of each recovery (lost) and again half a second after it.\n"
+		"Only on a host or with no network game; a client in another's game ignores\n"
+		"it (logged). The pulls are the host's own, not its player's input: other\n"
+		"machines in a network game do not see these bursts. 0 off." },
+	{ "debug.weapon_hit_log", _config_boolean, "false", "HALO_WEAPON_HIT_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For automated tests of the battle rifle's damage: each round of this\n"
+		"machine's players that hits an object (head or not, shield and body\n"
+		"before and after, dead). Any machine; only this machine's log. The\n"
+		"numbers are a host's or a game without network: a client deals no damage." },
 	{ "debug.waypoint_log", _config_boolean, "false", "HALO_WAYPOINT_LOG", _environment_value, _platform_all,
 		"For the automated tests of the power items' waypoints: each second, per\n"
 		"view and entry in its window, whether it is on screen, LINE OF SIGHT's\n"

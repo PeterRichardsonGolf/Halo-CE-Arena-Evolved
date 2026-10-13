@@ -164,6 +164,94 @@ class Specs(unittest.TestCase):
         self.assertEqual(s["saved_gametype"], "NHE 1V1")
         self.assertEqual(s["save_from"], "~/saves")
 
+    def test_pack_env(self):
+        s = harness.parse_spec({"map": "bloodgulch", "pack_loadout": "both", "pack_map_spawns": True,
+                                "pack_file": "~/packs/test.aepack"})
+        e = harness.spec_env(s, "/r", "/s")
+        self.assertEqual(e["HALO_NETWORK_TEST_PACK_LOADOUT"], "both")
+        self.assertEqual(e["HALO_NETWORK_TEST_PACK_MAP_SPAWNS"], "1")
+        # (the game opens it by Xbox path, as its own files: the harness links it into the data root)
+        self.assertEqual(e["HALO_WEAPON_PACK_FILE"], "d:\\pack_file\\test.aepack")
+        plain = harness.spec_env(harness.parse_spec({"map": "bloodgulch"}), "/r", "/s")
+        for k in ("HALO_NETWORK_TEST_PACK_LOADOUT", "HALO_NETWORK_TEST_PACK_MAP_SPAWNS", "HALO_WEAPON_PACK_FILE"):
+            self.assertNotIn(k, plain)
+        off = harness.spec_env(harness.parse_spec({"map": "bloodgulch", "pack_map_spawns": False}), "/r", "/s")
+        self.assertNotIn("HALO_NETWORK_TEST_PACK_MAP_SPAWNS", off)
+        for text in ("false", "off", "0", 0):
+            self.assertNotIn("HALO_NETWORK_TEST_PACK_MAP_SPAWNS", harness.spec_env(
+                harness.parse_spec({"map": "bloodgulch", "pack_map_spawns": text}), "/r", "/s"))
+        for text in ("true", "on", "1", 1):
+            self.assertEqual(harness.spec_env(harness.parse_spec({"map": "bloodgulch", "pack_map_spawns": text}),
+                                              "/r", "/s")["HALO_NETWORK_TEST_PACK_MAP_SPAWNS"], "1")
+        with self.assertRaises(ValueError):
+            harness.parse_spec({"map": "bloodgulch", "pack_map_spawns": "maybe"})
+        for bad_expect in ({"lines": "weapon pack"}, {"no_lines": "x"}, {"lines": [3]}):
+            with self.assertRaises(ValueError):
+                harness.parse_spec({"map": "bloodgulch", "expect": bad_expect})
+        for bad in ("secondry", "", 3):
+            with self.assertRaises(ValueError):
+                harness.parse_spec({"map": "bloodgulch", "pack_loadout": bad})
+        a = run.parser().parse_args(["--build", "abc", "--map", "bloodgulch", "--pack-loadout", "primary",
+                                     "--pack-map-spawns", "--packs-from", "~/p", "--expect-line", "a b",
+                                     "--expect-no-line", "c"])
+        s = run.spec_from_args(a)
+        self.assertEqual((s["pack_loadout"], s["pack_map_spawns"], s["packs_from"]), ("primary", True, "~/p"))
+        self.assertEqual(s["expect"], {"lines": ["a b"], "no_lines": ["c"]})
+
+    def test_packs_linked(self):
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            d = Path(d)
+            (d / "data" / "maps").mkdir(parents=True)
+            (d / "data" / "packs").mkdir()
+            (d / "mine").mkdir()
+            b = d / "b"
+            b.mkdir()
+            (b / "halo").write_bytes(b"x")
+            build = {"dir": str(b), "binary": str(b / "halo"), "env": {}}
+            cfg = dict(harness.DEFAULTS, data_dir=str(d / "data"))
+            prep = harness.prepare_game(cfg, harness.parse_spec({"name": "a", "map": "x"}), build,
+                                        d / "work" / "a", d / "out" / "a")
+            self.assertEqual((Path(prep["root"]) / "packs").resolve(), (d / "data" / "packs").resolve())
+            prep = harness.prepare_game(cfg, harness.parse_spec({"name": "b", "map": "x", "packs_from": str(d / "mine")}),
+                                        build, d / "work" / "b", d / "out" / "b")
+            self.assertEqual((Path(prep["root"]) / "packs").resolve(), (d / "mine").resolve())
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "c", "map": "x", "packs_from": str(d / "no")}),
+                                     build, d / "work" / "c", d / "out" / "c")
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "t", "map": "x", "packs_from": "/tmp/p"}),
+                                     build, d / "work" / "t", d / "out" / "t")
+            # (a pack_file: linked as the data root's pack_file/<name>, beside any packs/)
+            (d / "mine" / "flipped.aepack").write_bytes(b"AEWPACK")
+            prep = harness.prepare_game(cfg, harness.parse_spec({"name": "f", "map": "x", "packs_from": str(d / "mine"),
+                                                                 "pack_file": str(d / "mine" / "flipped.aepack")}),
+                                        build, d / "work" / "f", d / "out" / "f")
+            linked = Path(prep["root"]) / "pack_file" / "flipped.aepack"
+            self.assertEqual(linked.resolve(), (d / "mine" / "flipped.aepack").resolve())
+            self.assertEqual(prep["env"]["HALO_WEAPON_PACK_FILE"], "d:\\pack_file\\flipped.aepack")
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "g", "map": "x", "pack_file": "/tmp/p.aepack"}),
+                                     build, d / "work" / "g", d / "out" / "g")
+            # (packs_from "none": no packs/ at all, whatever data_dir holds; run.py --no-packs)
+            prep = harness.prepare_game(cfg, harness.parse_spec({"name": "n", "map": "x", "packs_from": "none"}),
+                                        build, d / "work" / "n", d / "out" / "n")
+            self.assertTrue((d / "data" / "packs").is_dir())
+            self.assertFalse((Path(prep["root"]) / "packs").exists())
+            a = run.parser().parse_args(["--build", "abc", "--map", "x", "--no-packs"])
+            self.assertEqual(run.spec_from_args(a)["packs_from"], "none")
+            with self.assertRaises(SystemExit):
+                run.parser().parse_args(["--build", "abc", "--map", "x", "--no-packs", "--packs-from", "~/p"])
+            # (a pack_file that is not there: the harness says so, the game is not started)
+            with self.assertRaises(SystemExit):
+                harness.prepare_game(cfg, harness.parse_spec({"name": "h", "map": "x",
+                                                              "pack_file": str(d / "mine" / "typo.aepack")}),
+                                     build, d / "work" / "h", d / "out" / "h")
+            # (no packs folder anywhere: none linked)
+            (d / "data" / "packs").rmdir()
+            prep = harness.prepare_game(cfg, harness.parse_spec({"name": "e", "map": "x"}), build,
+                                        d / "work" / "e", d / "out" / "e")
+            self.assertFalse((Path(prep["root"]) / "packs").exists())
+
     def test_save_from_copied(self):
         with tempfile.TemporaryDirectory(dir=Path.home()) as d:
             d = Path(d)
@@ -258,6 +346,26 @@ class GametypeFile(unittest.TestCase):
                 self.assertEqual(gametype_file.main(["--from", str(src), "--to", str(Path(d) / "m"),
                                                      "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
             self.assertEqual(gametype_file.find(Path(d) / "m", "AE PRO TS").read_bytes()[0x1D], 5)
+
+    def test_named_offsets(self):
+        self.assertEqual(gametype_file.NAMED["weapon_pack"], 0x29)
+        self.assertEqual(gametype_file.NAMED["pack_loadout"], 0x2A)
+        self.assertEqual(gametype_file.NAMED["pack_map_spawns"], 0x2B)
+        self.assertEqual(gametype_file.NAMED["nhe_mode"], 0x1D)
+        self.assertEqual(gametype_file.parse_set("weapon_pack=1"), (0x29, 1))
+        self.assertEqual(gametype_file.parse_set("0x2a=5"), (0x2A, 5))
+        with self.assertRaises(SystemExit):
+            gametype_file.parse_set("weapon_pak=1")
+        with tempfile.TemporaryDirectory(dir=Path.home()) as d:
+            src = Path(d) / "src"
+            self.make(src, "AE PRO TS", "AAAAAAAAAAAA")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(gametype_file.main(["--from", str(src), "--to", str(Path(d) / "n"), "--name",
+                                                     "AE PRO TS", "--set", "weapon_pack=1", "--set", "0x2a=1",
+                                                     "--set", "pack_map_spawns=1"]), 0)
+            b = gametype_file.find(Path(d) / "n", "AE PRO TS").read_bytes()
+            self.assertEqual(list(b[0x29:0x2C]), [1, 1, 1])
+            self.assertTrue(gametype_file.signed(b))
 
     def test_own_copy(self):
         """--own: a player's own gametype of a seed's name, in the folder the game keeps that name in"""
@@ -405,6 +513,23 @@ class Debug(unittest.TestCase):
             self.assertEqual(harness.evaluate(allowed, dict(r, debug=bad))[0], "PASS")
         both = harness.parse_debug(clean_text + "\nYOU GOT STABBED!!!!\nSOUND CACHE BLOWN!!!!\nYOU GOT STABBED!!!!\n")
         self.assertEqual(both["cache_overflows"], 3)
+    def test_expect_lines(self):
+        s = harness.parse_spec({"map": "bloodgulch", "expect": {"lines": [r"weapon pack: none, pack loadout: primary \w+"],
+                                                                "no_lines": [r"weapon pack: refused"]}})
+        clean = harness.parse_debug(DEBUG_MP.replace("EXCEPTION assert", "note").replace("2 scripts won't", "ok"))
+        r = {"exit_code": 0, "timed_out": False, "debug_found": True, "debug": clean}
+        text = "a\nAE rules: x, weapon pack: none, pack loadout: primary stock, secondary stock\nb\n"
+        self.assertEqual(harness.evaluate(s, r, text), ("PASS", []))
+        status, why = harness.evaluate(s, r, "nothing here\n")
+        self.assertEqual(status, "FAIL")
+        self.assertTrue(any("expected line" in w for w in why))
+        status, why = harness.evaluate(s, r, text + "weapon pack: refused it\n")
+        self.assertEqual(status, "FAIL")
+        self.assertTrue(any("unexpected line" in w for w in why))
+        # (rules asked for, no text to look in: a failure, not a pass)
+        self.assertEqual(harness.evaluate(s, r)[0], "FAIL")
+        # (no rules: the text is not needed)
+        self.assertEqual(harness.evaluate(harness.parse_spec({"map": "bloodgulch"}), r), ("PASS", []))
 
     def test_one_line(self):
         r = {"status": "PASS", "exit_code": 0, "seconds": 35.2, "debug": harness.parse_debug(DEBUG_MP), "shots": ["a"]}
@@ -522,6 +647,12 @@ class Handshake(unittest.TestCase):
         self.assertEqual(he["HALO_NETWORK_TEST_GAMETYPE"], "NHE 2V2 TS")
         self.assertNotIn("HALO_NETWORK_TEST_GAMETYPE", ce)
         self.assertEqual((host["save_from"], client.get("save_from")), ("~/roots/x", None))
+        # (both machines' packs/: a folder, or none at all)
+        host, client = handshake.pair_specs("ae", "ae", 90, 12, packs_from="~/packs-x")
+        self.assertEqual((host["packs_from"], client["packs_from"]), ("~/packs-x", "~/packs-x"))
+        host, client = handshake.pair_specs("ae", "ae", 90, 12)
+        self.assertNotIn("packs_from", host)
+        self.assertNotIn("packs_from", client)
 
     def test_compare_and_judge(self):
         host = DEBUG_MP
@@ -574,6 +705,15 @@ class SeedRules(unittest.TestCase):
             self.assertEqual(want["ball melee"], "lethal" if name in lethal else "stock", name)
         self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),
                          ("slayer (teams)", "150 ticks (5 s)", "line of sight", "pistol + assault rifle", "always"))
+        # (the weapon pack's fields: every seed expects none / stock / stock / off)
+        self.assertNotIn("weapon pack", f)
+        f = seed_rules.fields(text.replace("ball melee lethal", "ball melee stock, weapon pack: battle rifle (slot 1), "
+                                           "pack loadout: primary pack, secondary stock, battle rifle on map: on"))
+        self.assertEqual((f["ball melee"], f["weapon pack"], f["pack loadout primary"], f["pack loadout secondary"],
+                          f["battle rifle on map"]), ("stock", "battle rifle (slot 1)", "pack", "stock", "on"))
+        for name, (want, _, _) in seed_rules.ROWS.items():
+            self.assertEqual((want["weapon pack"], want["pack loadout primary"], want["pack loadout secondary"],
+                              want["battle rifle on map"]), ("none", "stock", "stock", "off"), name)
 
 
 class Windows(unittest.TestCase):

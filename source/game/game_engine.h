@@ -191,6 +191,31 @@ union real_point2d;
 union real_point3d;
 union real_rgb_color;
 
+/* port: universal_variant.weapon_pack */
+enum weapon_pack
+{
+	_weapon_pack_none = 0,
+	_weapon_pack_battle_rifle, /* packs/ae_battle_rifle.aepack, slot 1 */
+	WEAPON_PACK_MAXIMUM = 127 /* (reserved up to here; a larger byte reads as none) */
+};
+
+/* port: weapon pack: universal_variant.pack_loadout, the two slots' two bits */
+enum pack_loadout_slot
+{
+	_pack_loadout_primary = 0,
+	_pack_loadout_secondary,
+	NUMBER_OF_PACK_LOADOUT_SLOTS
+};
+
+enum pack_loadout_source
+{
+	_pack_loadout_stock = 0,
+	_pack_loadout_pack
+};
+
+#define PACK_LOADOUT_SLOT_SHIFT(slot) ((slot) * 2)
+#define PACK_LOADOUT_SOURCE_MASK 3
+
 /* port: universal_variant.starting_frags' "no grenades" */
 #define STARTING_GRENADES_NONE 0xFF
 
@@ -215,9 +240,25 @@ struct universal_variant
 	unsigned long flags;
 	long goal_radar;
 	boolean odd_man_out;
-	byte pad4;
+	/* port: was pad4 (zero in every builder): the WEAPON PACK the game uses
+	(enum weapon_pack): 0 none, 1 the AE battle rifle pack; 2-127 reserved for
+	later packs; 128 and over, none. Older builds ignore it (the byte travels
+	with the variant, the file's and the network variant's sizes are
+	unchanged) */
+	byte weapon_pack;
+	/* port: pad5 as before: COMBAT FEEDBACK in bits 0-1 and the SILENT options in the high nibble
+	(port/linux/game/ae_hit_feedback.h, ae_silent.h) */
 	byte pad5;
-	byte pad6;
+	/* port: was pad6 (zero in every builder): the weapon pack's use. With a custom loadout, where
+	each slot's weapon comes from (enums pack_loadout_slot, pack_loadout_source): bits 0-1 the PRIMARY
+	slot's source, bits 2-3 the SECONDARY's, 0 the stock value
+	(game_variant_options.primary_weapon / secondary_weapon, which then holds
+	ASSAULT RIFLE / PISTOL for the pack's rifle: older builds, and maps
+	without the pack, play that), 1 the pack's weapon 0; anything else the
+	stock value. Bit 4 (PACK_MAP_SPAWNS_BIT): BATTLE RIFLE ON MAP, every
+	map item the gametype would spawn as an assault rifle spawns the pack's
+	weapon 0 */
+	byte pack_loadout;
 	long respawn_time_growth;
 	long respawn_time;
 	long suicide_penalty;
@@ -816,6 +857,32 @@ boolean game_engine_nhe_extras(
 short game_engine_drop_secondary(
 	void);
 short game_engine_nhe_mode(
+	void);
+
+/* port: the WEAPON PACK gametype fields. game_variant_weapon_pack: a
+gametype's pack from its byte (enum weapon_pack: values past the reserved range
+read as none); game_variant_pack_loadout_slot: where its custom loadout's
+slot (enum pack_loadout_slot) comes from (TRUE: the pack's weapon 0, else the
+stock value named in game_variant_options) and game_variant_pack_map_spawns:
+BATTLE RIFLE ON MAP, both from their own bytes alone (the caller checks the
+pack), for a variant not yet the running game's. The game_engine_ ones read
+the running game's variant and need its weapon pack not none: with no game, or
+the pack none, they read stock / off */
+short game_variant_weapon_pack(
+	byte weapon_pack);
+boolean game_variant_pack_loadout_slot(
+	byte pack_loadout,
+	short slot);
+#define PACK_MAP_SPAWNS_BIT 0x10
+boolean game_variant_pack_map_spawns(
+	byte pack_loadout);
+char const *game_variant_weapon_pack_name(
+	byte weapon_pack);
+short game_engine_weapon_pack(
+	void);
+boolean game_engine_pack_loadout_slot(
+	short slot);
+boolean game_engine_pack_map_spawns(
 	void);
 
 boolean game_engine_practice(

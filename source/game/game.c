@@ -189,6 +189,7 @@ struct game_options;
 #include "profile_console.h" /* port: port/linux/game/profile_console.c */
 #endif
 #include "profile_sections.h" /* port: port/linux/include/profile_sections.h */
+#include "ae_weapon_pack.h" /* AE hook */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -326,6 +327,7 @@ void game_initialize(
 	player_ui_initialize();
 	bink_playback_initialize();
 	progress_bar_initialize();
+	ae_weapon_pack_initialize(); /* AE hook */
 
 	return;
 }
@@ -812,6 +814,7 @@ void game_dispose(
 	transport_dispose();
 	bink_playback_dispose();
 	progress_bar_dispose();
+	ae_weapon_pack_dispose(); /* AE hook */
 
 	return;
 }

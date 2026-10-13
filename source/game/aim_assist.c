@@ -65,6 +65,7 @@ symbols in this file:
 #include "units/bipeds.h"
 #include "units/unit_definitions.h"
 #include "units/units.h"
+#include "ae_burst_rifle.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -193,6 +194,7 @@ static boolean unit_get_aim_assist_parameters(
 				parameters->magnetism_distance= weapon_definition->weapon.aim_assist_parameters.magnetism_distance*magnification;
 				parameters->deviation_angle= MAX(weapon_definition->weapon.aim_assist_parameters.deviation_angle,
 					weapon_definition->weapon.aim_assist_parameters.autoaim_angle)*inverse_magnification;
+				ae_burst_rifle_zoomed_assist(weapon->definition_index, zoom_level, &parameters->autoaim_distance, &parameters->magnetism_distance); /* AE hook */
 
 				return TRUE;
 			}
