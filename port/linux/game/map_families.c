@@ -488,6 +488,7 @@ boolean map_is_downloaded(
 
 	if (!map_name || !*map_name)
 		return FALSE;
+	if (ae_map_share_xbox_downloaded(map_name)) return TRUE; /* AE hook */
 	for (index = 0; index < map_downloaded_count; index++)
 	{
 		if (map_downloaded_name_is(map_downloaded_names[index], (long)strlen(map_downloaded_names[index]), map_name))

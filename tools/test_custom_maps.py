@@ -464,7 +464,7 @@ def fixture_sources():
     table = cache[cache.index("static struct\n{\n\tchar const *build;"):cache.index("/* the region of a build")]
     region = ("static struct {struct {char build[32];} header;} cache_file_globals;\n" +
               table + function(cache, "cache_files_build_region"))
-    common = '#include "cseries.h"\n#include "xtl.h"\n#include "halo_port_capacity.h"\n' + region + FILES + '\n#include "custom_maps.c"\n'
+    common = '#include "cseries.h"\n#include "xtl.h"\n#include "halo_port_capacity.h"\n' + region + FILES + '\nvoid ae_map_share_scan_downloads(void (*scan)(char const *directory)) { (void)scan; } /* AE hook */\n#include "custom_maps.c"\n'
     menu = (ROOT / "port/linux/game/menu_functions.c").read_text()
     events = (ROOT / "source/interface/ui_widget_event_handler_functions.c").read_text()
     data = (ROOT / "source/interface/ui_widget_game_data_input_functions.c").read_text()

@@ -210,3 +210,31 @@ source/units/units.c	ae_silent_unit_action_scope_begin(unit_index, unit->unit.an
 # a charged trigger with no magazine (NONE) reads none, not magazines[NONE] (0.2.3; port/linux/game/ae_weapon_rules.h)
 source/items/weapons.c	#include "ae_weapon_rules.h" /* AE hook */
 source/items/weapons.c	short magazine_index= ae_weapon_charged_magazine_index(trigger_definition->magazine_index, weapon_magazine_count(weapon_definition)); /* AE hook */\nstruct weapon_magazine *magazine= magazine_index!=NONE ? weapon_magazine_get(weapon, magazine_index) : NULL; /* AE hook */
+# map sharing for every map but the game's own (0.2.3): port/linux/game/ae_map_share_all.c (rules ae_map_share_rules.c).
+# OpenCE's map sharing carries the files; these let it take a host's listed maps (community Xbox maps, a mod's, any
+# Custom Edition map), hold a request until the player said yes, check an offer against the list and the limits, and
+# keep a lobby fetch apart from the game's own map. maps_shared (the Xbox maps' downloads) is read by the game.
+port/linux/game/map_share.c	if (!game || (!custom_edition_level_name(game->map.name) && !ae_map_share_host_serving()) || network_game_client_get_local_machine_index() == NONE) /* AE hook */\nreturn FALSE;
+port/linux/game/map_share.c	return ae_map_share_host_file(hash); /* AE hook */
+port/linux/game/map_share.c	if (ae_map_share_download_failed(download->level_name, reason)) { download_report(_progress_failed); download_end(FALSE); return; } /* AE hook */
+port/linux/game/map_share.c	if (level_name && !ae_map_share_download_permitted(level_name)) return FALSE; /* AE hook */
+port/linux/game/map_share.c	if (ae_map_share_download_begun(level_name)) download_ask(); /* AE hook */
+port/linux/game/map_share.c	if (ae_map_share_download_extra(download->level_name)) return FALSE; /* AE hook */
+port/linux/game/map_share.c	if (!ae_map_share_offer_allowed(download->level_name, files[index].kind, files[index].size, files[index].hash)) { download->file_count = index; download_fail(ae_map_share_refusal()); return; } /* AE hook */
+port/linux/game/map_share.c	if (ae_map_share_download_host_only(download->level_name)) break; /* AE hook */
+port/linux/game/map_share.c	if (!game || (csstrcmp(game->map.name, download->level_name) && !ae_map_share_download_extra(download->level_name))) /* AE hook */\n{
+port/linux/game/map_share.c	switch (ae_map_share_download_gate(download->level_name, download->state == _download_asking)) { case 1: download->asked_at = now; return; case 2: download->asked_at = now; download_ask(); break; case 3: download_fail(ae_map_share_refusal()); return; default: break; } /* AE hook */
+port/linux/game/map_share.c	return machine && !machine->downloaded && host_machine_downloading(machine) && !ae_map_share_host_extra(machine_index); /* AE hook */
+port/linux/game/map_share.c	if (!ae_map_share_host_allowed(machine_index, request->level_name)) { host_offer(machine_index, _offer_off); return; } /* AE hook */
+port/linux/game/map_share.c	if (!game || (csstrcmp(game->map.name, request->level_name) && !ae_map_share_host_lists(machine_index, request->level_name)) || !custom_edition_level_name(request->level_name) || /* AE hook */
+port/linux/game/map_share.c	if (ae_map_share_handle_message(machine_index, message, size, from_stream)) return; /* AE hook */
+port/linux/game/map_share.c	ae_map_share_all_update(); /* AE hook */
+port/linux/game/map_share.c	ae_map_share_all_render(); /* AE hook */
+source/cache/cache_files.c	ae_map_share_xbox_path(map_name, path, size); /* AE hook */
+source/cache/cache_files.c	if (ae_map_share_played_map(map_name)) return TRUE; /* AE hook */
+port/linux/game/map_families.c	if (ae_map_share_xbox_downloaded(map_name)) return TRUE; /* AE hook */
+port/linux/game/custom_maps.c	{ void ae_map_share_scan_downloads(void (*scan)(char const *directory)); ae_map_share_scan_downloads(map_folder_scan); } /* AE hook */
+port/linux/src/port_config.c	{ "network.map_share_internet", _config_boolean, "false", "HALO_NET_MAP_SHARE_INTERNET", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "network.map_download_internet", _config_boolean, "false", "HALO_NET_MAP_DOWNLOAD_INTERNET", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "network.map_download_limit", _config_integer, "4096", "HALO_NET_MAP_DOWNLOAD_LIMIT", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "debug.map_share_test", _config_string, "\"\"", "HALO_MAP_SHARE_TEST", _environment_value, _platform_all, /* AE hook */

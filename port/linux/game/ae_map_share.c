@@ -145,7 +145,9 @@ char const *resource_map_type_describe(
 boolean custom_edition_level_name(
 	char const *level_name)
 {
-	return level_name && map_family_parse(level_name, NULL, 0) == _map_family_custom_edition;
+	/* (and a community map in the Xbox's format that is shared: ae_map_share_all.c) */
+	return level_name && (map_family_parse(level_name, NULL, 0) == _map_family_custom_edition ||
+		ae_map_share_xbox_level(level_name));
 }
 
 #ifdef HALO_CUSTOM_EDITION
@@ -156,6 +158,8 @@ boolean custom_edition_map_file_path(
 {
 	char file[LEVEL_FILE_BYTES];
 
+	if (ae_map_share_xbox_level(level_name))
+		return ae_map_share_xbox_file_path(level_name, path);
 	if (!custom_edition_level_name(level_name))
 		return FALSE;
 	map_family_parse(level_name, file, sizeof(file));
@@ -185,8 +189,12 @@ unsigned long custom_edition_map_resource_maps_needed(
 	unsigned long tag_data_offset, tag_data_size, address, count, tag;
 	FILE *stream;
 
-	if (!custom_edition_map_file_path(level_name, path) || !(stream = fopen(path, "rb")))
+	/* (an Xbox map needs none) */
+	if (ae_map_share_xbox_level(level_name) || !custom_edition_map_file_path(level_name, path) ||
+		!(stream = fopen(path, "rb")))
+	{
 		return 0;
+	}
 	if (fread(header, 1, sizeof(header), stream) != sizeof(header))
 		goto done;
 	tag_data_offset = little_long(header + CE_HEADER_TAG_DATA_OFFSET);
@@ -241,7 +249,8 @@ done:
 unsigned long custom_edition_map_checksum(
 	char const *level_name)
 {
-	return custom_edition_level_name(level_name) ? cache_files_map_version(level_name) : 0;
+	return custom_edition_level_name(level_name) && !ae_map_share_xbox_level(level_name) ?
+		cache_files_map_version(level_name) : 0;
 }
 
 char const *custom_edition_cache_loaded_path(
@@ -267,6 +276,8 @@ boolean custom_edition_cache_present(
 	unsigned long needed;
 	short type;
 
+	if (ae_map_share_xbox_level(level_name))
+		return ae_map_share_xbox_present(level_name, message, message_size);
 	if (!halo_custom_edition_tag_cache())
 	{
 		snprintf(message, (size_t)message_size, "Custom Edition maps cannot be played on this computer.");
@@ -333,7 +344,8 @@ boolean map_share_resource_maps_missing(
 void map_share_folder_make(
 	void)
 {
-	CreateDirectoryA(CUSTOM_EDITION_MAP_DIRECTORY, NULL);
+	CreateDirectoryA("d:\\maps_ce\\", NULL);
+	CreateDirectoryA(ae_map_share_xbox_folder(), NULL);
 }
 
 boolean ae_map_share_find(
@@ -447,13 +459,15 @@ void ae_map_share_discard_failed(
 	char const *path)
 {
 	char const *paths[1];
+	/* (the downloads' folders: maps_ce, or an Xbox map's maps_shared) */
+	char const *folder = ae_map_share_path_in_folder(path, ae_map_share_xbox_folder()) ? ae_map_share_xbox_folder() :
+		"d:\\maps_ce\\";
 
 	paths[0] = path;
-	if (ae_map_share_discard(paths, 1, CUSTOM_EDITION_MAP_DIRECTORY, discard_delete, NULL))
+	if (ae_map_share_discard(paths, 1, folder, discard_delete, NULL))
 		error(_error_silent, "map sharing: removed %s, which failed its check", path);
-	else if (!ae_map_share_path_in_folder(path, CUSTOM_EDITION_MAP_DIRECTORY))
-		error(_error_silent, "map sharing: did not remove %s: not a file of %s", path ? path : "",
-			CUSTOM_EDITION_MAP_DIRECTORY);
+	else if (!ae_map_share_path_in_folder(path, folder))
+		error(_error_silent, "map sharing: did not remove %s: not a file of %s", path ? path : "", folder);
 	else
 		error(_error_silent, "map sharing: could not remove %s, which failed its check (error %lu)", path,
 			(unsigned long)GetLastError());
@@ -467,6 +481,12 @@ char const *map_share_level_file(
 	char *buffer = buffers[next++ % LEVEL_FILE_BUFFERS];
 
 	buffer[0] = 0;
+	/* (an Xbox map's with its hash, as a Custom Edition map's file is named: map sharing checks the name's) */
+	if (level_name && ae_map_share_xbox_level(level_name) &&
+		ae_map_share_xbox_level_file(level_name, buffer, LEVEL_FILE_BYTES))
+	{
+		return buffer;
+	}
 	if (level_name)
 		map_family_parse(level_name, buffer, LEVEL_FILE_BYTES);
 	return buffer;

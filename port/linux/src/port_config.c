@@ -728,6 +728,22 @@ static const struct config_setting config_settings[] =
 		"download it (and the resource maps it needs) from the game's players\n"
 		"into maps_ce, if its host shares it (network.map_share); false\n"
 		"leaves the game, saying which map is missing." },
+	{ "network.map_share_internet", _config_boolean, "false", "HALO_NET_MAP_SHARE_INTERNET", _environment_value, _platform_all, /* AE hook */
+		"Hosting: also send maps to players who are not on the local network\n"
+		"(an internet game's). Off, they get no map from this host; players on\n"
+		"the local network get them as network.map_share says." },
+	{ "network.map_download_internet", _config_boolean, "false", "HALO_NET_MAP_DOWNLOAD_INTERNET", _environment_value, _platform_all, /* AE hook */
+		"Joining: also download maps from a host that is not on the local\n"
+		"network (an internet game's). Off, only a host on the local network is\n"
+		"asked for maps (network.map_download)." },
+	{ "network.map_download_limit", _config_integer, "4096", "HALO_NET_MAP_DOWNLOAD_LIMIT", _environment_value, _platform_all, /* AE hook */
+		"Joining: the most megabytes of maps taken from one host (0 to 65536)." },
+	{ "debug.map_share_test", _config_string, "\"\"", "HALO_MAP_SHARE_TEST", _environment_value, _platform_all, /* AE hook */
+		"Tests: the player's answer to map sharing's question, given at once:\n"
+		"\"yes\", \"no\", \"all\" (yes, and all of the host's maps fetched in the\n"
+		"lobby), \"internet\" (as all, the host taken for an internet one). A host's:\n"
+		"\"lie-size\", \"lie-hash\" (its list is not what it offers), \"lie-map\" (it\n"
+		"lists files whose headers are not their names')." },
 	{ "network.coop_public", _config_boolean, "false", "HALO_NET_COOP_PUBLIC", _environment_value, _platform_all,
 		"Whether an online co-op game (Create Game > Internet, a SINGLEPLAYER\n"
 		"map) starts as PUBLIC or, false, PRIVATE: Server Setup's LISTING in\n"

@@ -644,7 +644,7 @@ static boolean map_share_sending(
 {
 	struct network_game *game = map_share_network_game();
 
-	if (!game || !custom_edition_level_name(game->map.name) || network_game_client_get_local_machine_index() == NONE)
+	if (!game || (!custom_edition_level_name(game->map.name) && !ae_map_share_host_serving()) || network_game_client_get_local_machine_index() == NONE) /* AE hook */
 		return FALSE;
 	return map_share_host() ? config_boolean("network.map_share") != 0 : config_boolean("network.map_seed") != 0;
 }
@@ -740,7 +740,7 @@ static short current_file_with_hash(
 		if (file && file->ready && !csmemcmp(file->hash, hash, MAP_SHARE_HASH_BYTES))
 			return globals->current_files[kind];
 	}
-	return NONE;
+	return ae_map_share_host_file(hash); /* AE hook */
 }
 
 /* the download's file with this hash, or NONE */
@@ -1302,6 +1302,7 @@ static void download_fail(
 	char message[512];
 	short index;
 
+	if (ae_map_share_download_failed(download->level_name, reason)) { download_report(_progress_failed); download_end(FALSE); return; } /* AE hook */
 	error(_error_silent, "map sharing: the download of %s failed: %s", download->level_name, reason);
 	snprintf(message, sizeof(message), "%s\r\n\r\n%s", download->message, reason);
 	for (index = 0; message[index] && index < NUMBEROF(text) - 1; index++)
@@ -1379,6 +1380,7 @@ boolean map_share_download_begin(
 	char const *name;
 	byte wanted;
 
+	if (level_name && !ae_map_share_download_permitted(level_name)) return FALSE; /* AE hook */
 	if (!level_name || !custom_edition_level_name(level_name) || csstrlen(level_name) >= LEVEL_NAME_BYTES ||
 		!config_boolean("network.map_download") || map_share_host() || !global_network_game_client_get() ||
 		!halo_custom_edition_tag_cache())
@@ -1417,7 +1419,7 @@ boolean map_share_download_begin(
 	download->asked_at = system_milliseconds();
 	download->progress_at = download->asked_at;
 	error(_error_silent, "map sharing: asking the host for %s (files 0x%X)", level_name, (unsigned)wanted);
-	download_ask();
+	if (ae_map_share_download_begun(level_name)) download_ask(); /* AE hook */
 	return TRUE;
 }
 
@@ -1441,6 +1443,7 @@ boolean map_share_holds_players(
 	once. Asking: whether the game is in progress is not known yet) */
 	if (!map_share_host() && game && !game->map.name[0])
 		return TRUE;
+	if (ae_map_share_download_extra(download->level_name)) return FALSE; /* AE hook */
 	/* (failed: the game is being left) */
 	return download->state == _download_asking || download->state == _download_failed ||
 		(download->state == _download_transferring && download->in_progress);
@@ -1520,6 +1523,7 @@ static void download_offered(
 		struct download_file *file = &download->files[index];
 		char digits[MAP_SHARE_NAME_DIGITS + 1];
 
+		if (!ae_map_share_offer_allowed(download->level_name, files[index].kind, files[index].size, files[index].hash)) { download->file_count = index; download_fail(ae_map_share_refusal()); return; } /* AE hook */
 		csmemset(file, 0, sizeof(*file));
 		file->kind = files[index].kind;
 		file->size = files[index].size;
@@ -1596,6 +1600,7 @@ static void download_sources(
 		struct source *source = NULL;
 		short known;
 
+		if (ae_map_share_download_host_only(download->level_name)) break; /* AE hook */
 		if (entry->machine_index == network_game_client_get_local_machine_index() ||
 			(!TEST_FLAG(entry->flags, _source_internet_bit) &&
 			!source_address_allowed(entry->address, download->sources[0].address)))
@@ -2710,13 +2715,14 @@ static void download_update(
 	if (download->state != _download_asking && download->state != _download_transferring)
 		return;
 	/* (the game left, or its map changed) */
-	if (!game || csstrcmp(game->map.name, download->level_name))
+	if (!game || (csstrcmp(game->map.name, download->level_name) && !ae_map_share_download_extra(download->level_name))) /* AE hook */
 	{
 		error(_error_silent, "map sharing: the download of %s stopped: the game is on another map now",
 			download->level_name);
 		download_end(FALSE);
 		return;
 	}
+	switch (ae_map_share_download_gate(download->level_name, download->state == _download_asking)) { case 1: download->asked_at = now; return; case 2: download->asked_at = now; download_ask(); break; case 3: download_fail(ae_map_share_refusal()); return; default: break; } /* AE hook */
 	if (download->state == _download_asking)
 	{
 		if (elapsed(download->asked_at, now, OFFER_TIMEOUT))
@@ -2847,7 +2853,7 @@ boolean map_share_machine_needs_map(
 	struct host_machine const *machine = host_machine_valid(machine_index) ?
 		&map_share_globals.machines[machine_index] : NULL;
 
-	return machine && !machine->downloaded && host_machine_downloading(machine);
+	return machine && !machine->downloaded && host_machine_downloading(machine) && !ae_map_share_host_extra(machine_index); /* AE hook */
 }
 
 static boolean host_in_game(
@@ -2976,6 +2982,7 @@ static void host_request(
 	machine->address = network_game_server_machine_address(machine_index);
 	machine->advanced_at = advanced_at;
 	machine->advanced_done = advanced_done;
+	if (!ae_map_share_host_allowed(machine_index, request->level_name)) { host_offer(machine_index, _offer_off); return; } /* AE hook */
 	if (!config_boolean("network.map_share"))
 	{
 		host_offer(machine_index, _offer_off);
@@ -2984,7 +2991,7 @@ static void host_request(
 	/* (the game's map alone, a Custom Edition map's, named for its hash if
 	it is asked for) */
 	name = map_share_level_file(request->level_name);
-	if (!game || csstrcmp(game->map.name, request->level_name) || !custom_edition_level_name(request->level_name) ||
+	if (!game || (csstrcmp(game->map.name, request->level_name) && !ae_map_share_host_lists(machine_index, request->level_name)) || !custom_edition_level_name(request->level_name) || /* AE hook */
 		!custom_edition_map_file_path(request->level_name, path) ||
 		(TEST_FLAG(request->wanted, _map_share_file_map) && !map_share_name_hashed(name)))
 	{
@@ -3151,6 +3158,7 @@ void map_share_handle_message(
 	byte const *entries = (byte const *)message + sizeof(header);
 	long length = (long)size - (long)sizeof(header);
 
+	if (ae_map_share_handle_message(machine_index, message, size, from_stream)) return; /* AE hook */
 	/* (over the sender's connection alone: a datagram can be sent as from
 	anyone) */
 	if (!map_share_handles_message(message, size) || !from_stream)
@@ -3238,6 +3246,7 @@ void map_share_update(
 	short index;
 
 	map_share_files_update();
+	ae_map_share_all_update(); /* AE hook */
 	/* (internet play: a player that shares answers the others, who reach it
 	by its key hash) */
 	p2p_set_answering_players(!map_share_host() && address_internet(host_address) && map_share_sending());
@@ -3280,6 +3289,7 @@ void map_share_render(
 	short base_length;
 	long percent;
 
+	ae_map_share_all_render(); /* AE hook */
 	if (download->state != _download_asking && download->state != _download_transferring)
 		return;
 	font_tag_index = interface_get_tag_index(_interface_font_terminal);
