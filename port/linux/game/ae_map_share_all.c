@@ -1420,7 +1420,7 @@ static boolean grant_covers(
 		ae_map_share_grant_covers(share.granted, share.taken - share.grant_base, more) != 0;
 }
 
-static void refuse(
+static void refuse_printf(
 	char const *format,
 	...)
 {
@@ -1466,7 +1466,7 @@ int ae_map_share_download_gate(
 	{
 		if (share.active_cancel || !main_menu_is_active() || !ae_map_share_consent_writes(share.consent))
 		{
-			refuse("Getting the host's maps was stopped.");
+			refuse_printf("Getting the host's maps was stopped.");
 			share.active_stopped = TRUE;
 			return 3;
 		}
@@ -1483,25 +1483,25 @@ int ae_map_share_download_gate(
 		{
 			if (!elapsed(share.pending_at, now, HELLO_WAIT))
 				return 1;
-			refuse("The host does not share this map.");
+			refuse_printf("The host does not share this map.");
 			return 3;
 		}
 		if (!share.host_shares)
 		{
-			refuse("The host does not share its maps.");
+			refuse_printf("The host does not share its maps.");
 			return 3;
 		}
 		if (!share.catalogue_begun || !ae_map_share_catalogue_complete(&share.catalogue))
 		{
 			if (!elapsed(share.pending_at, now, CATALOGUE_WAIT))
 				return 1;
-			refuse("The host did not send its list of maps.");
+			refuse_printf("The host did not send its list of maps.");
 			return 3;
 		}
 		index = ae_map_share_catalogue_find(&share.catalogue, file, FALSE);
 		if (index < 0 || share.catalogue.entries[index].kind == AE_MAP_SHARE_KIND_CE)
 		{
-			refuse("The host's list of maps does not have this map.");
+			refuse_printf("The host's list of maps does not have this map.");
 			return 3;
 		}
 		entry = &share.catalogue.entries[index];
@@ -1530,13 +1530,13 @@ int ae_map_share_download_gate(
 		}
 		if (!ae_map_share_cap_allows(share.taken, growth, guest_cap()))
 		{
-			refuse("The map is %ld MB: over the %ld MB you take from one host (network.map_download_limit).",
+			refuse_printf("The map is %ld MB: over the %ld MB you take from one host (network.map_download_limit).",
 				megabytes(entry->size), guest_cap());
 			return 3;
 		}
 		if (!ae_map_share_disk_allows(disk_free(), entry->size))
 		{
-			refuse("There is not enough free disk space to download the map (%ld MB).", megabytes(entry->size));
+			refuse_printf("There is not enough free disk space to download the map (%ld MB).", megabytes(entry->size));
 			return 3;
 		}
 	}
@@ -1552,7 +1552,7 @@ int ae_map_share_download_gate(
 	}
 	if (!ae_map_share_consent_writes(share.consent))
 	{
-		refuse("You chose not to download maps from this host.");
+		refuse_printf("You chose not to download maps from this host.");
 		return 3;
 	}
 	csstrncpy(share.released_level, level_name, sizeof(share.released_level) - 1);
@@ -1617,7 +1617,7 @@ boolean ae_map_share_offer_allowed(
 	/* (nothing is written without the player's yes) */
 	if (!ae_map_share_consent_writes(share.consent))
 	{
-		refuse("You did not say yes to downloading from this host.");
+		refuse_printf("You did not say yes to downloading from this host.");
 		return FALSE;
 	}
 	level_family = map_family_parse(level_name, file, sizeof(file));
@@ -1633,31 +1633,31 @@ boolean ae_map_share_offer_allowed(
 		/* (an Xbox map: the map alone, and only what the list said) */
 		if (kind != _map_share_file_map || !entry || !xbox_level_file(level_name, file, sizeof(file)))
 		{
-			refuse("The host offered a file its list of maps does not have.");
+			refuse_printf("The host offered a file its list of maps does not have.");
 			return FALSE;
 		}
 	}
 	else if (level_family != _map_family_custom_edition)
 	{
-		refuse("The host offered a map of a kind that is not downloaded.");
+		refuse_printf("The host offered a map of a kind that is not downloaded.");
 		return FALSE;
 	}
 	if (kind == _map_share_file_map)
 	{
 		if (entry && !ae_map_share_offer_matches(entry, size, hash))
 		{
-			refuse("The host's offer is not the map of its list (another size or hash).");
+			refuse_printf("The host's offer is not the map of its list (another size or hash).");
 			return FALSE;
 		}
 		if (!ae_map_share_size_allowed(level_family == _map_family_xbox ? AE_MAP_SHARE_KIND_XBOX : AE_MAP_SHARE_KIND_CE, size))
 		{
-			refuse("The map is larger than the game takes (%ld MB).", megabytes(size));
+			refuse_printf("The map is larger than the game takes (%ld MB).", megabytes(size));
 			return FALSE;
 		}
 	}
 	else if (!ae_map_share_size_allowed(AE_MAP_SHARE_KIND_RESOURCE, size))
 	{
-		refuse("The map's resource map is larger than the game takes (%ld MB).", megabytes(size));
+		refuse_printf("The map's resource map is larger than the game takes (%ld MB).", megabytes(size));
 		return FALSE;
 	}
 	{
@@ -1670,20 +1670,20 @@ boolean ae_map_share_offer_allowed(
 		growth = ae_map_share_charge_growth(&share.charges, key, size);
 		if (!ae_map_share_cap_allows(share.taken, growth, guest_cap()))
 		{
-			refuse("This would be over the %ld MB you take from one host (network.map_download_limit).", guest_cap());
+			refuse_printf("This would be over the %ld MB you take from one host (network.map_download_limit).", guest_cap());
 			return FALSE;
 		}
 		/* (no more than the player's yes was given for: asked again next time) */
 		if (!grant_covers(growth))
 		{
 			share.consent = AE_MAP_SHARE_CONSENT_UNASKED;
-			refuse("The host offers more than you said yes to.");
+			refuse_printf("The host offers more than you said yes to.");
 			return FALSE;
 		}
 		/* (every offer, and its files together: the disk keeps its margin after all of them) */
 		if (!ae_map_share_disk_allows(disk_free(), share.offer_bytes + size))
 		{
-			refuse("There is not enough free disk space to download the map (%ld MB).",
+			refuse_printf("There is not enough free disk space to download the map (%ld MB).",
 				megabytes(share.offer_bytes + size));
 			return FALSE;
 		}
