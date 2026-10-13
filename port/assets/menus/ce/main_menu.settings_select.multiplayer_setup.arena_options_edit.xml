@@ -124,7 +124,7 @@
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_no_spread">
 		<string text="OFF"/>
-		<string text="NHE"/>
+		<string text="FIRST SHOT"/>
 		<string text="FULL"/>
 	</strings>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
@@ -295,7 +295,7 @@
 		<string text="Shields and hits look as in Halo CE."/>
 		<string text="Shields show their state: a white pop when one\nheadshot will finish, a flicker while down, a\nsweep as they recharge. No damage change."/>
 		<string text="The pistol and sniper rifle spread as in stock Halo."/>
-		<string text="The pistol's first shot from rest, and every\nunzoomed sniper rifle shot, go exactly where\nyou aim, as in Halo 1: NHE."/>
+		<string text="The pistol's first shot from rest, and every\nunzoomed sniper rifle shot, go exactly where\nyou aim. Held pistol fire still spreads."/>
 		<string text="Every pistol and sniper rifle shot goes exactly\nwhere you aim, held fire too: no spread and no\nbloom. Other weapons are unchanged."/>
 		<string text="The game starts at once."/>
 		<string text="A 3-2-1 countdown on a black screen starts the\ngame, so everyone sees the map at the same time."/>

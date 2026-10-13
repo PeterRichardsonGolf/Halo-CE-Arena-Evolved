@@ -9,11 +9,18 @@
 
 Arena Evolved (AE) is a build of Halo: Combat Evolved's Xbox engine, running
 natively on modern computers, made for competitive and arena play. It brings
-the competitive rules the Xbox community played for years (as in Halo 1: NHE)
+the competitive rules the Xbox community played for years
 into the game itself, so they work on every map without modded maps or a
 modded Xbox, and adds the quality-of-life features later Halo games made
 standard: item timers, a match clock, training aids, regenerating health
 styles and more.
+
+It is an evolution of the classic with the modern, not only the old-school
+way: inspired by the grassroots Halo CE competitive community's rules and
+MLG's rules, by today's HCS settings and the features of the newer Halo games,
+with ideas of its own on top.
+[Halo 1: NHE](https://halo1nhe.com/)'s own maps and gametypes stay supported
+as an option.
 
 It is built on [OpenCE](https://github.com/OpenCommunityEdition/OpenCE), the
 port of the Halo: Combat Evolved decompilation, by way of
@@ -30,13 +37,27 @@ What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
 
 ## Goals
 
-- **Competitive rules in the engine:** Halo 1: NHE's rules, built natively,
+- **Bring new players in:** introduce new players to classic Halo and to
+  arena shooters in general. An arena shooter asks a lot of a newcomer (item
+  timing, spawns, map control) compared with most modern shooters; item
+  timers, training aids and indicators teach it in the game.
+- **Competitive rules in the engine:** the rules competitive Halo grew up on
+  (grassroots CE, MLG) and the ones it plays today (HCS), built natively,
   so they work on every map, on any PC, without modded maps or a modded Xbox.
 - **The later games' features in CE:** options and quality-of-life from Halo
   2, Halo 3, Reach, Halo 4 and Infinite, and from the Master Chief
   Collection.
-- **Easy to learn:** item timers, training aids and indicators that make CE's
-  competitive play approachable for new players.
+- **Competitive split screen on PC, natively:** up to four players on one
+  PC, in local games, on a LAN and online, with each player's own profile,
+  controller layout and settings.
+- **The ultimate CE LAN package:** one download for a LAN night: split screen,
+  LAN and online play, map sharing between players, community and Custom
+  Edition maps, and gametypes ready to play.
+- **Every platform upstream builds:** not PC alone. Arena Evolved builds for
+  each platform OpenCE and ChupathingyCE do (Windows, Linux, macOS, Android,
+  the dedicated server). Linux and Windows 64-bit are the ones played and
+  tested here; the others are upstream's work carried along as it is, until
+  the project has the community and interest to give them their own care.
 - **Close to OpenCE:** merge its releases and offer fixes to the shared code
   back upstream.
 
@@ -49,7 +70,7 @@ editor and in Server Setup)
 | --- | --- |
 | FALL DAMAGE | Off: no landing damage from any height (pits and kill zones still kill). |
 | HEALTH | CLASSIC (stock: health packs only), REACH (health recovers to a third), HALO 2 (Halo 2's timers: shields recharge 5 s after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached it, shield hits do not count), HALO 3 (health refills after the shields). Health packs still spawn. |
-| NO SPREAD | OFF (stock), NHE (the pistol's first shot and the sniper rifle's unzoomed shots go exactly where you aim, as Halo 1: NHE has them) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
+| NO SPREAD | OFF (stock), FIRST SHOT (the pistol's first shot from rest and the sniper rifle's unzoomed shots go exactly where you aim; held pistol fire still spreads) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
 | PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. A weapon switch (Y) pressed during it is kept and taken as it ends, as in Halo 1: NHE; any other button pressed during it does nothing until you let go of it, so nothing fires, zooms, reloads or picks up the moment it ends. The host holds every player to it, including players on builds without it. |
 | SILENT MOVEMENT | NORMAL (stock), JUST ME (you hear your own footsteps, jumps, landings and slides; everyone else's make no sound for you) or SILENT (nobody's, yours included). |
@@ -137,13 +158,13 @@ play:
 - **FFA AE TRAINING:** item TIMERS and TRAINING's markers, plays to 500, no
   time limit.
 - Every Arena Evolved gametype has no fall damage, HALO 2 health (SWAT:
-  classic), NO SPREAD NHE, the PRE-GAME COUNTDOWN and generic starting
+  classic), NO SPREAD FIRST SHOT, the PRE-GAME COUNTDOWN and generic starting
   equipment, with a pistol in hand and an assault rifle unless its mode says
   otherwise.
 - **Halo 1: NHE's own 23 gametypes** (TS 50, TS 100, TS ON-OFF, TS TRAINING,
   TS PRACTICE, TS SNIPERS, FFA 50 NR/R, 1 V 1 NR/R, KOTH 5M 7S/10S, BALL 5M
   7S/10S, eight CTFs and CTF WIZARD), with NHE's values: classic health, fall
-  damage, NO SPREAD NHE, the countdown, NHE EXTRAS (everyone joins red, no team
+  damage, NO SPREAD FIRST SHOT, the countdown, NHE EXTRAS (everyone joins red, no team
   swap, the dead camera on you, the match clock counting up), no death bonus or
   kill penalty in slayer. On Halo 1: NHE's maps each plays its NHE mode; on
   other maps no vehicles.

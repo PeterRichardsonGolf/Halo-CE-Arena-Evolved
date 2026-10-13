@@ -23,7 +23,7 @@ engine, the netcode, the saves and the map cache see only "mcc:\<name>.map".
 #include <stdlib.h>
 #include <string.h>
 
-#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID) && !defined(__EMSCRIPTEN__)
 #include <SDL3/SDL_dialog.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_keyboard.h>

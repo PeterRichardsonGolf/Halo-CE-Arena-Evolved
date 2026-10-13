@@ -6,6 +6,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **NO SPREAD: NHE is now NO SPREAD: FIRST SHOT.** The same rule under a name
+  that says what it does (the pistol's first shot from rest and the sniper
+  rifle's unzoomed shots go exactly where you aim); your gametypes keep it.
+
 ## 0.2.3-beta - 2026-10-13
 
 Built on ChupathingyCE 0.7.3e and OpenCE build-201: **network version 28**.
