@@ -127,6 +127,12 @@ int main(void)
 			fail("display name does not say TEAM or FFA as the entry", entry->display_name);
 		if (entry->special && entry->set != _arena_gametype_set_ae)
 			fail("special outside AE", entry->stored_name);
+		/* AE's sets list free for all first, then teams (Halo 1: NHE's keeps its own order) */
+		if (index > 0 && !entry->team && entry->set != _arena_gametype_set_nhe &&
+			arena_gametype_names[index - 1].set == entry->set && arena_gametype_names[index - 1].team)
+		{
+			fail("free for all after a team gametype in its set", entry->stored_name);
+		}
 		if (arena_gametype_catalog_stored_name(index) != entry->stored_name)
 			fail("catalog stored name", entry->stored_name);
 		for (other = 0; other < index; other++)
