@@ -9,6 +9,9 @@ tag reads. Plain types only.
 #ifndef __AE_GLUE_CE_MAPS_H
 #define __AE_GLUE_CE_MAPS_H
 
+struct event_record;
+struct widget_instance;
+
 /* (scenario_tags_load, a Custom Edition map's tags loaded and repaired, just
 before it returns) what an Xbox map's tags get there and a Custom Edition
 map's did not: the menus' tags (the pause menu's SETTINGS) and the high-res
@@ -18,6 +21,14 @@ void ae_ce_map_tags_loaded(char const *map_name, long scenario_tag_index);
 /* (menu_tags_loaded) whether it is making a validated Custom Edition map's
 pause support, rather than ui.map's or an Xbox map's tags */
 int ae_ce_map_building_menu_tags(void);
+
+/* (ui_widget_event_handler_function_invoke) the few Halo PC pause functions
+this engine can perform correctly; 1 when handled, with result set */
+int ae_ce_map_event_function(struct widget_instance *widget, struct event_record *event,
+	word function_index, boolean *widget_deleted, boolean *result);
+/* (ae_hooks.h) ae_ce_map_view_place is defined here */
+/* advances RESTART GAME through postgame, the lobby and START */
+void ae_ce_map_update(void);
 
 /* (menu_tags.c's allocate) a block of the menus' tags, size bytes, which the
 game reads as tags: noted only while a Custom Edition map's are made;

@@ -117,6 +117,10 @@ def _common(log):
     assert "outside them (read as zeroes)" not in log
     assert "pause menu's widgets are not whole" not in log
     assert "event handler function 137" not in log
+    assert not re.search(r"event handler function 1(?:5\d|6\d)", log)
+    assert "invalid event_handler_function" not in log
+    # (only the pause family's rows: handlers also lead to the settings screens and the main menu, whose rows stay)
+    assert not re.search(r"the pause list's row ui\\shell\\main_menu\\\S+ (?:runs|taken)", log)
     loaded = re.search(r"high-res hud: (\d+) of \d+ bitmaps in this map", log)
     assert loaded and int(loaded.group(1)) > 0
     # (each bitmap the table names, drawn, is stood for: none logged as other pixels)
@@ -137,6 +141,32 @@ def test_xbox_menus_pause_settings_and_end_game(tmp_path):
 
 
 def test_split_screen_pause(tmp_path):
-    log = _game(tmp_path, "split", 40, ["2:start", "wait", "wait"], {"HALO_NETWORK_TEST_LOCAL_PLAYERS": "2"})
+    log = _game(tmp_path, "split", 40, ["2:start", "wait", "2:down", "wait", "2:a", "wait", "wait"],
+                {"HALO_NETWORK_TEST_LOCAL_PLAYERS": "2"})
     _common(log)
-    assert "event handler function 155" in log, "player 2's pause did not open"
+    assert re.search(r"Custom Edition map: \d+ screens opened from a split-screen pause fitted to its player's view",
+                     log)
+    assert re.search(r"Custom Edition map: split-pause screen .*game.options.* opened for local player 2", log)
+
+
+def test_ffa_restart_and_unsafe_rows(tmp_path):
+    log = _game(tmp_path, "restart", 65,
+                ["start", "wait", "down", "wait", "a", "wait", "a", "wait", "wait", "wait"])
+    _common(log)
+    assert "\\choose_team_button taken out: there are no teams in this game" in log
+    assert "\\new_game_button taken out: its PC lobby widget is not safe in this engine" in log
+    assert "Custom Edition map: current game restarted" in log
+    assert log.count("game rules:") >= 2
+    # (the same map again, not the menu background's)
+    assert len(re.findall(r"Custom Edition map homobox@ce: \d+ tags", log)) >= 2
+    assert "failed to spawn widget" not in log
+    assert "the game host went down" not in log
+
+
+def test_split_screen_choose_team(tmp_path):
+    log = _game(tmp_path, "team", 45,
+                ["2:start", "wait", "2:down", "wait", "2:a", "wait", "2:a", "wait", "2:a", "wait"],
+                {"HALO_NETWORK_TEST": f"host:{CE_MAP}:ctf", "HALO_NETWORK_TEST_LOCAL_PLAYERS": "2"})
+    _common(log)
+    assert "\\new_game_button taken out: its PC lobby widget is not safe in this engine" in log
+    assert "Custom Edition map: controller 2 changed team from CHOOSE TEAM" in log

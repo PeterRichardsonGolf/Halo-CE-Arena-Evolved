@@ -31,9 +31,9 @@ enum
 {
 	AE_CE_UI_NONE = -1,
 	/* the most screens, children or event handlers of one block, the deepest
-	widget tree (a deeper one is a loop) and the most widgets visited */
+	walk (widgets are checked once, so a loop ends there) and the most widgets visited */
 	AE_CE_UI_MAXIMUM_BLOCK_COUNT = 256,
-	AE_CE_UI_MAXIMUM_DEPTH = 12,
+	AE_CE_UI_MAXIMUM_DEPTH = 64,
 	AE_CE_UI_MAXIMUM_VISITS = 8192,
 };
 

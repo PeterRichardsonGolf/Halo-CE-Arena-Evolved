@@ -3,7 +3,7 @@ AE_CE_UI_CHECK.C
 
 The check of a Custom Edition map's pause menu widgets (ae_ce_ui_check.h).
 Each widget definition ('DeLa', 0x3EC bytes) is read for its event handlers
-(a block of 0x48-byte elements at 0x54) and its children (a block of
+(a block of 0x48-byte elements at 0x54, including widgets they open) and its children (a block of
 0x50-byte references at 0x3E0, each naming a widget at 0x0C), and each child
 is checked in turn; a collection ('Soul') names its screens in a block of
 tag references (0x10 bytes, the index at 0x0C) at its start. A tag block is
@@ -29,6 +29,9 @@ enum
 	DEFINITION_EVENT_HANDLERS = 0x54,
 	DEFINITION_CHILDREN = 0x3E0,
 	EVENT_HANDLER_SIZE = 0x48,
+	EVENT_HANDLER_FLAGS = 0x00,
+	EVENT_HANDLER_WIDGET_INDEX = 0x14,
+	EVENT_HANDLER_OPEN_WIDGET_BIT = 3,
 	CHILD_SIZE = 0x50,
 	CHILD_WIDGET_INDEX = 0x0C,
 	COLLECTION_SIZE = 0x0C,
@@ -42,6 +45,10 @@ struct walk
 {
 	const struct ae_ce_ui_image *image;
 	long visits;
+	/* the widgets entered so far, by the low 16 bits of the tag index (the
+	table index): screens link to each other (a child's handler may open its
+	parent), so a widget is checked once and a second arrival is not a loop */
+	unsigned char entered[65536 / 8];
 	char *why;
 	size_t why_size;
 };
@@ -122,21 +129,48 @@ static int block_whole(struct walk *walk, const unsigned char *block, uint32_t e
 static int widget_whole(struct walk *walk, int32_t tag_index, int depth)
 {
 	const unsigned char *definition, *handlers, *children;
-	int32_t handler_count, child_count, child;
+	int32_t handler_count, child_count, handler, child;
 
 	if (tag_index == AE_CE_UI_NONE)
 		return 1;
+	{
+		uint32_t slot = (uint32_t)tag_index & 0xFFFF;
+
+		/* (a tag index that is not its tag's is refused by tag_data below,
+		before anything is read through it; mark only after it passes) */
+		if (walk->entered[slot >> 3] & (1u << (slot & 7)))
+		{
+			const struct ae_ce_ui_image *image = walk->image;
+
+			if (slot < (uint32_t)image->instance_count &&
+				(int32_t)read32(image->instances + slot * INSTANCE_SIZE + INSTANCE_INDEX) == tag_index)
+			{
+				return 1;
+			}
+		}
+	}
 	if (++walk->visits > AE_CE_UI_MAXIMUM_VISITS)
 		return fail(walk, "too many widgets", walk->visits);
 	if (depth > AE_CE_UI_MAXIMUM_DEPTH)
-		return fail(walk, "widgets nested too deep (a loop)", (long)tag_index);
+		return fail(walk, "widgets nested too deep", (long)tag_index);
 	definition = tag_data(walk, tag_index, GROUP_WIDGET_DEFINITION, DEFINITION_SIZE);
 	if (!definition)
 		return 0;
+	walk->entered[((uint32_t)tag_index & 0xFFFF) >> 3] |= (unsigned char)(1u << (((uint32_t)tag_index & 0xFFFF) & 7));
 	if (!block_whole(walk, definition + DEFINITION_EVENT_HANDLERS, EVENT_HANDLER_SIZE, &handler_count, &handlers) ||
 		!block_whole(walk, definition + DEFINITION_CHILDREN, CHILD_SIZE, &child_count, &children))
 	{
 		return 0;
+	}
+	for (handler = 0; handler < handler_count; handler++)
+	{
+		const unsigned char *event = handlers + handler * EVENT_HANDLER_SIZE;
+
+		if ((read32(event + EVENT_HANDLER_FLAGS) & (1u << EVENT_HANDLER_OPEN_WIDGET_BIT)) &&
+			!widget_whole(walk, (int32_t)read32(event + EVENT_HANDLER_WIDGET_INDEX), depth + 1))
+		{
+			return 0;
+		}
 	}
 	for (child = 0; child < child_count; child++)
 	{

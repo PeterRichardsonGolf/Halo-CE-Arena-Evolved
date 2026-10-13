@@ -18,9 +18,13 @@ port/linux/src/sdl_platform.c	if (input_state.ui_pointer)\n{\nif (event.button.d
 port/linux/src/d3d8_gl.c	#include "ae_draw.h" /* AE hook */
 port/linux/src/d3d8_gl.c	render_target_resolve(&back_buffer->target);\nae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */\nif (screenshot_every > 0 && device.frame % (unsigned long)screenshot_every == 0)
 source/interface/ui_widget.c	#include "ae_hooks.h" /* AE hook */
+source/interface/ui_widget.c	ae_ce_map_widget_opened(tag_index, local_player_index); /* AE hook */
+source/interface/ui_widget.c	ae_ce_map_view_place(widget->definition_tag_index, window_bounds, &offset, &bounds); /* AE hook */
 source/interface/ui_widget.c	if (ae_ui_process()) /* AE hook */\nreturn;
 source/interface/ui_widget.c	ae_ui_render(local_player_index, window_bounds); /* AE hook */
 source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */\npointer_active = FALSE;
+source/interface/ui_widget_event_handler_functions.c	#include "ae_hooks.h" /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	if (ae_ce_map_event_function(widget, event, function_index, widget_deleted, &result)) /* AE hook */\nreturn result;
 source/interface/ui_widget.c	if (ae_ui_takes_pointer()) /* AE hook */\nreturn TRUE;
 port/linux/src/xinput_sdl.c	#include "ae_platform.h" /* AE hook */
 port/linux/src/xinput_sdl.c	if (scancode != SDL_SCANCODE_UNKNOWN && text_typing) ae_platform_test_keystroke((int)scancode); /* AE hook */
