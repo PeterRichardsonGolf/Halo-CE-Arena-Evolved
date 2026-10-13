@@ -1780,7 +1780,7 @@ ARENA_ROWS = [
     ]),
     # (HIT FEEDBACK: bit 0 of the variant's pad5, port/linux/game/ae_hit_feedback.c's
     # ae_hit_feedback_menu_rows; not in menu_functions.c's table)
-    ("hit_feedback", "HIT FEEDBACK:", ["CLASSIC", "ARENA EVOLVED"], [
+    ("hit_feedback", "HIT FEEDBACK:", ["HALO CE", "ARENA EVOLVED"], [
         "Shields and hits look as in Halo CE.",
         "Shields show their state: a white pop when one\\nheadshot will finish, a flicker while down, a\\nsweep as they recharge. No damage change.",
     ]),

@@ -27,7 +27,7 @@ unsigned char ae_hit_feedback_byte_set(unsigned char byte, int value)
 
 char const *ae_hit_feedback_name(int value)
 {
-	return value == AE_HIT_FEEDBACK_ARENA ? "arena evolved" : "classic";
+	return value == AE_HIT_FEEDBACK_ARENA ? "arena evolved" : "halo ce";
 }
 
 int ae_hit_feedback_pop_due(float shield_points_left, float finisher_points)

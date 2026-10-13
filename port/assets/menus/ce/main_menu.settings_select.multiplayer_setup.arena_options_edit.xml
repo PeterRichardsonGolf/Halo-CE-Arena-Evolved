@@ -110,7 +110,7 @@
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_hit_feedback">
-		<string text="CLASSIC"/>
+		<string text="HALO CE"/>
 		<string text="ARENA EVOLVED"/>
 	</strings>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">

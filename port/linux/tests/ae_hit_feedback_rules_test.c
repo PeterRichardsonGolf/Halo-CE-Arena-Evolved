@@ -29,7 +29,7 @@ static void test_byte(void)
 	/* (a value that is not one of the two is CLASSIC) */
 	CHECK(ae_hit_feedback_value(ae_hit_feedback_byte_set(1, 7)) == AE_HIT_FEEDBACK_CLASSIC);
 	CHECK(!strcmp(ae_hit_feedback_name(AE_HIT_FEEDBACK_ARENA), "arena evolved"));
-	CHECK(!strcmp(ae_hit_feedback_name(AE_HIT_FEEDBACK_CLASSIC), "classic"));
+	CHECK(!strcmp(ae_hit_feedback_name(AE_HIT_FEEDBACK_CLASSIC), "halo ce"));
 }
 
 /* the cases found in play: a 75 point shield, the magnum's 25 against it as the finisher */

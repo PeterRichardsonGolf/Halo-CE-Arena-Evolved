@@ -1,7 +1,7 @@
 /*
 AE_HIT_FEEDBACK_RULES.H
 
-HIT FEEDBACK (ARENA OPTIONS): CLASSIC, shields and hits look as in Halo CE;
+HIT FEEDBACK (ARENA OPTIONS): HALO CE (AE_HIT_FEEDBACK_CLASSIC), shields and hits look as in Halo CE;
 ARENA EVOLVED, a player's shield shows its state:
 
 - a hit's flare is a short pulse, so quick hits read as a flicker;
