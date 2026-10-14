@@ -764,11 +764,12 @@ def test_recipe_layers_are_v6es_folders_in_its_order():
     for step in data["steps"]:
         counts[step["layer"]] = counts.get(step["layer"], 0) + 1
     # one step a tag of each of the spike's fix folders, less the two R33 does not make (the cube map's copy in
-    # fix2, the stock alpha sheet's in fix-v3)
-    assert counts == {"fix2": 67, "fix-v3": 10, "fix-light": 2, "fix-col": 1, "fix-hud-hd": 1, "fix-scope-hd": 3,
+    # fix2, the stock alpha sheet's in fix-v3); and the owner's changes of 2026-10-13: the three firing effects'
+    # smaller flash (fix-light) and the aiming reticle's bitmap (fix-scope-hd)
+    assert counts == {"fix2": 67, "fix-v3": 10, "fix-light": 5, "fix-col": 1, "fix-hud-hd": 1, "fix-scope-hd": 4,
                       "fix-v6": 5, "fix-3x": 2, "fix-counter-e": 3}
     outputs = [(step["layer"], step["tag"]) for step in data["steps"]]
-    assert len(set(outputs)) == len(outputs) == 94
+    assert len(set(outputs)) == len(outputs) == 98
 
 
 def test_recipe_departures_from_the_approved_donor_are_named():
