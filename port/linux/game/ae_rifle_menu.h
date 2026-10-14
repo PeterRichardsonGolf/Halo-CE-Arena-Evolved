@@ -1,7 +1,7 @@
 /*
 AE_RIFLE_MENU.H
 
-BATTLE RIFLE, the gametype editor's ARENA OPTIONS row (the weapon pack's storage: game_engine.h's
+BATTLE RIFLE, a choice of the gametype editor's ITEM OPTIONS starting weapons (the weapon pack's storage: game_engine.h's
 universal_variant.weapon_pack and pack_loadout). Included after cseries.h.
 */
 
@@ -12,7 +12,8 @@ struct game_variant;
 struct game_variant_options;
 struct widget_instance;
 
-/* the row's spinner shown from the gametype, or (save) written to it */
+/* the two starting weapon rows' spinners shown from the gametype, or (save) written to it; called after the
+screen's own rows are */
 void ae_rifle_menu_rows(struct widget_instance *list, struct game_variant *variant, struct game_variant_options *options,
 	boolean save);
 

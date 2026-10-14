@@ -12,17 +12,18 @@ A testing release: the battle rifle. Built on ChupathingyCE 0.7.3e and OpenCE bu
 version 28**. The Linux 64-bit build is the one played (as the host, one machine); the Windows build, and the rifle
 between two machines, were not test-played before release.
 
-- **BATTLE RIFLE** (a gametype option, ARENA OPTIONS: OFF / STARTING WEAPON). Players start with a battle rifle in
-  place of the assault rifle: three-round bursts, a 3x scope with black markings, one reticle zoomed and unzoomed,
+- **BATTLE RIFLE**, a new starting weapon: in a gametype's ITEM OPTIONS, with STARTING WEAPONS on CUSTOM, it is the
+  last choice of PRIMARY and SECONDARY. What it is: three-round bursts, a 3x scope with black markings, one reticle zoomed and unzoomed,
   an ammunition counter of its own. Its rules are Arena Evolved's code; its model, textures, animations and sounds
   are CMT's (The Silent Cartographer: Evolved, used with credit), and its reticle follows a crosshair of Kenney's
   (CC0).
   - It comes as a **weapon pack**: the `packs` folder in the Windows and Linux 64-bit downloads. Keep that folder
-    beside the game. Without it the option does nothing and the assault rifle is played.
+    beside the game's `maps`. Without it the slot plays an assault rifle.
+  - **Settings > Game Options > WEAPON PACKS** (ON / OFF) turns packs off on a machine, from the next start.
   - **Joining:** while a game's gametype has the rifle on, only Arena Evolved 0.2.5 or later with the pack can
     join; anyone else is told why. Games without it are joined as before, by 0.2.3, 0.2.4 and OpenCE alike.
   - On Custom Edition maps the rifle is not added (the assault rifle is played).
-  - No seeded gametype turns it on: set it in a gametype of your own.
+  - No seeded gametype gives it: set it in a gametype of your own (Edit Gametypes > ITEM OPTIONS).
 
 ## 0.2.4-beta - 2026-10-13
 

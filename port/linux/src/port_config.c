@@ -522,6 +522,11 @@ static const struct config_setting config_settings[] =
 		"In the campaign, players hurt by falls; false: landings never hurt, from\n"
 		"any height (a pit and the map's kill volumes still kill). Multiplayer\n"
 		"goes by the gametype's FALL DAMAGE (Arena Options) instead." },
+	{ "game.weapon_packs", _config_boolean, "true", "HALO_WEAPON_PACKS", _environment_value, _platform_all, /* AE hook */
+		"Weapon packs (the packs folder beside maps: the battle rifle) read when the\n"
+		"game starts. false: none is read: a gametype that gives a pack's weapon\n"
+		"plays its stock weapon here, and this machine cannot join a game that\n"
+		"uses one. A change applies from the next start." },
 	{ "game.health", _config_string, "\"classic\"", "HALO_HEALTH", _environment_value, _platform_all,
 		"How players' health comes back in the campaign: \"classic\" only from\n"
 		"health packs; \"reach\" once the shields are full, to the top of the third\n"

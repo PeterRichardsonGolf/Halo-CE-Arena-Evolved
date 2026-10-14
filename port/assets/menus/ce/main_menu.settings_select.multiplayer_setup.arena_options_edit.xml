@@ -19,15 +19,14 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_falling_damage" x="54" y="88"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_health_regeneration" x="54" y="108"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_hit_feedback" x="54" y="128"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_battle_rifle" x="54" y="148"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" x="54" y="168"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" x="54" y="188"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_practice" x="54" y="208"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_drop_secondary" x="54" y="228"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_sound_preset" x="54" y="248"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_movement" x="54" y="268"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_weapons" x="54" y="288"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" x="54" y="308"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" x="54" y="148"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_pregame_countdown" x="54" y="168"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_practice" x="54" y="188"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_drop_secondary" x="54" y="208"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_sound_preset" x="54" y="228"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_movement" x="54" y="248"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_weapons" x="54" y="268"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" x="54" y="288"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_help" type="text" controller="1" left="68" top="340" width="482" height="66" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options" font="ui\large_ui" color="#FFFFFFFF">
@@ -112,24 +111,11 @@
 		<string text="HALO CE"/>
 		<string text="ARENA EVOLVED"/>
 	</strings>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_battle_rifle" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/battle_rifle_label"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/battle_rifle_spinner" x="320" y="1"/>
-	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/battle_rifle_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
-	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/battle_rifle_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_battle_rifle" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
-		<on event="left_mouse" run="mouse spinner 1wide click"/>
-	</widget>
-	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_battle_rifle">
-		<string text="OFF"/>
-		<string text="STARTING WEAPON"/>
-	</strings>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_no_spread" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/no_spread_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_no_spread" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -143,7 +129,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/pregame_countdown_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_pregame_countdown" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -156,7 +142,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="7" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/practice_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_practice" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -169,7 +155,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/drop_secondary_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/drop_secondary_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/drop_secondary_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="8" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/drop_secondary_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="7" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/drop_secondary_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_drop_secondary" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -183,7 +169,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="8" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/sound_preset_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_sound_preset" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -196,7 +182,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_movement_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_silent_movement" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -210,7 +196,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="11" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/silent_weapons_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_silent_weapons" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -224,7 +210,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="12" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="11" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_ball_melee" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -238,7 +224,6 @@
 		<string text="FALL DAMAGE:"/>
 		<string text="HEALTH:"/>
 		<string text="COMBAT FEEDBACK:"/>
-		<string text="BATTLE RIFLE:"/>
 		<string text="NO SPREAD:"/>
 		<string text="PRE-GAME COUNTDOWN:"/>
 		<string text="PRACTICE MODE:"/>
@@ -275,8 +260,6 @@
 		<string text="Once your shields are full, all your health\ncomes back."/>
 		<string text="Shields and hits look as in Halo CE."/>
 		<string text="Shields show their state: a pop when one headshot\nwill finish, a flicker while down, a sweep as they\nrecharge; a blood pop on the kill. No damage change."/>
-		<string text="Players start with the gametype's own weapons."/>
-		<string text="Players start with a battle rifle in place of the\nassault rifle: three-round bursts, a 3x scope.\nOnly Arena Evolved players with the rifle can join."/>
 		<string text="The pistol and sniper rifle spread as in stock Halo."/>
 		<string text="The pistol's first shot from rest, and every\nunzoomed sniper rifle shot, go exactly where\nyou aim. Held pistol fire still spreads."/>
 		<string text="Every pistol and sniper rifle shot goes exactly\nwhere you aim, held fire too: no spread and no\nbloom. Other weapons are unchanged."/>

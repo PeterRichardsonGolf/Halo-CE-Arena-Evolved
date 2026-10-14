@@ -224,6 +224,8 @@ typedef char verify_placed_reference_size[sizeof(struct tag_reference) == AE_PAC
 
 /* the platform layer's (port/linux/src) */
 char const *config_string(char const *name);
+int config_boolean(const char *name);
+void platform_log(char const *format, ...);
 long config_integer(char const *name);
 /* (platform.h, xbox_memory.c: guest memory in the Xbox contiguous window, and a write into it that the renderer's
 page protection does not stop; platform.h's BOOL is an int) */
@@ -1491,6 +1493,12 @@ void ae_weapon_pack_initialize(
 	if (weapon_pack_globals.initialized)
 		return;
 	weapon_pack_globals.initialized = TRUE;
+	/* (Settings > Game Options, WEAPON PACKS: OFF: none is read, as with an empty packs folder) */
+	if (!config_boolean("game.weapon_packs"))
+	{
+		platform_log("weapon pack: none read (game.weapon_packs is false)");
+		return;
+	}
 	debug_file = config_string("debug.weapon_pack_file");
 	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
 	{

@@ -261,6 +261,7 @@ tools/harness/tests/map_share_trust.c	#include "ae_map_share_stubs.h" /* AE hook
 # ae_hit_feedback_rules.c). The option is bit 0 of the variant's pad5; looks only, nothing over the network
 port/linux/game/menu_functions.c	#include "ae_hit_feedback.h" /* AE hook */
 port/linux/game/menu_functions.c	ae_hit_feedback_menu_rows(list, variant, save); /* AE hook */
+port/linux/src/port_config.c	{ "game.weapon_packs", _config_boolean, "true", "HALO_WEAPON_PACKS", _environment_value, _platform_all, /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_rifle_menu.h" /* AE hook */
 port/linux/game/menu_functions.c	ae_rifle_menu_rows(list, variant, options, save); /* AE hook */
 source/game/game_engine.c	#include "ae_hit_feedback.h" /* AE hook */

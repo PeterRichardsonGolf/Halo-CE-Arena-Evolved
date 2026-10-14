@@ -1,9 +1,10 @@
 /*
 AE_RIFLE_MENU.C
 
-BATTLE RIFLE (ae_rifle_menu.h): OFF, or STARTING WEAPON: players start with the weapon pack's battle rifle in place
-of the assault rifle. Stored as the gametype's weapon pack and which slot of its custom loadout the pack fills; the
-slot keeps its stock weapon as the fallback (a map the pack cannot be added to plays that).
+BATTLE RIFLE in the gametype editor (ae_rifle_menu.h): the last choice of ITEM OPTIONS' PRIMARY and SECONDARY
+starting weapons (a custom loadout). Stored as the gametype's weapon pack and which loadout slots the pack fills; a
+slot the pack fills keeps an assault rifle as its own weapon, the one played where the pack is not (a machine with
+WEAPON PACKS off, a map the pack cannot be added to).
 */
 
 #include <string.h>
@@ -18,7 +19,10 @@ slot keeps its stock weapon as the fallback (a map the pack cannot be added to p
 
 void platform_log(char const *format, ...);
 
-#define SPINNER_BATTLE_RIFLE "battle_rifle_spinner"
+/* ITEM OPTIONS' two rows of a custom loadout; BATTLE RIFLE is the choice after the game's own weapons */
+#define SPINNER_PRIMARY "primary_weapon_spinner"
+#define SPINNER_SECONDARY "secondary_weapon_spinner"
+#define PACK_CHOICE NUMBER_OF_LOADOUT_WEAPONS
 /* (pack_loadout's bits: two a slot, game_engine.h) */
 #define SLOT_PACK(slot) ((byte)(_pack_loadout_pack << ((slot) * 2)))
 #define SLOTS_MASK 0x0F
@@ -40,45 +44,48 @@ static struct widget_instance *spinner_named(struct widget_instance *list, char 
 	return NULL;
 }
 
+/* one slot's row: shown from the gametype, or (save) written to it; the row's own code has run before this (it
+knows the game's weapons only: the pack's choice it took for the last of them) */
+static void slot_row(struct widget_instance *spinner, struct universal_variant *universal, byte *weapon, short slot,
+	boolean custom, boolean save)
+{
+	if (!spinner)
+		return;
+	if (!save)
+	{
+		if (universal->weapon_pack == _weapon_pack_battle_rifle && (universal->pack_loadout & SLOT_PACK(slot)))
+			spinner->parameters.list.selected_index = PACK_CHOICE;
+		return;
+	}
+	universal->pack_loadout &= (byte)~(0x3 << (slot * 2));
+	if (custom && spinner->parameters.list.selected_index == PACK_CHOICE)
+	{
+		/* (the slot's own weapon is what is played where the pack is not: an assault rifle) */
+		*weapon = _loadout_weapon_assault_rifle;
+		universal->pack_loadout |= SLOT_PACK(slot);
+	}
+}
+
 void ae_rifle_menu_rows(struct widget_instance *list, struct game_variant *variant, struct game_variant_options *options,
 	boolean save)
 {
-	struct widget_instance *spinner = spinner_named(list, SPINNER_BATTLE_RIFLE);
+	struct widget_instance *primary = spinner_named(list, SPINNER_PRIMARY);
+	struct widget_instance *secondary = spinner_named(list, SPINNER_SECONDARY);
 	struct universal_variant *universal = variant ? &variant->universal_variant : NULL;
-	boolean on;
+	boolean custom;
 
-	if (!universal || !options || !spinner)
+	/* (only the screen with the loadout's rows: ITEM OPTIONS) */
+	if (!universal || !options || (!primary && !secondary))
 		return;
-	on = universal->weapon_pack == _weapon_pack_battle_rifle && (universal->pack_loadout & SLOTS_MASK) != 0;
+	custom = options->loadout == _loadout_custom;
+	slot_row(primary, universal, &options->primary_weapon, _pack_loadout_primary, custom, save);
+	slot_row(secondary, universal, &options->secondary_weapon, _pack_loadout_secondary, custom, save);
 	if (!save)
-	{
-		spinner->parameters.list.selected_index = on ? 1 : 0;
 		return;
-	}
-	/* (left as it was: a gametype made elsewhere with both slots, say, is not rewritten by an OK) */
-	if ((spinner->parameters.list.selected_index == 1) == on)
-		return;
-	universal->pack_loadout &= (byte)~SLOTS_MASK;
-	if (spinner->parameters.list.selected_index != 1)
-	{
-		universal->weapon_pack = _weapon_pack_none;
-		platform_log("menus: the gametype's battle rifle off");
-		return;
-	}
-	/* (the pack fills a custom loadout's slot: a gametype on the weapon set's own starts with an assault
-	rifle and a pistol, the fallbacks) */
-	if (options->loadout != _loadout_custom)
-	{
-		options->loadout = _loadout_custom;
-		options->primary_weapon = _loadout_weapon_assault_rifle;
-		options->secondary_weapon = _loadout_weapon_pistol;
-	}
-	universal->weapon_pack = _weapon_pack_battle_rifle;
-	/* (in place of the assault rifle, wherever the loadout has it; with none, the first slot) */
-	if (options->secondary_weapon == _loadout_weapon_assault_rifle && options->primary_weapon != _loadout_weapon_assault_rifle)
-		universal->pack_loadout |= SLOT_PACK(_pack_loadout_secondary);
-	else
-		universal->pack_loadout |= SLOT_PACK(_pack_loadout_primary);
-	platform_log("menus: the gametype's battle rifle on (the %s slot)",
-		(universal->pack_loadout & SLOT_PACK(_pack_loadout_secondary)) ? "second" : "first");
+	/* (the gametype uses the pack while a slot, or the map's spawns, take its weapon) */
+	universal->weapon_pack = (universal->pack_loadout & (SLOTS_MASK | PACK_MAP_SPAWNS_BIT)) ?
+		_weapon_pack_battle_rifle : _weapon_pack_none;
+	platform_log("menus: the gametype's battle rifle: primary %s, secondary %s",
+		(universal->pack_loadout & SLOT_PACK(_pack_loadout_primary)) ? "pack" : "stock",
+		(universal->pack_loadout & SLOT_PACK(_pack_loadout_secondary)) ? "pack" : "stock");
 }
