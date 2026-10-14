@@ -7,6 +7,8 @@ overlay's scale, so a 4x bitmap at a quarter of the scale is the same size on sc
       the lines carry the same ink as the chosen thickness step: sharp edges a texel wide at 4x instead of a soft
       halo, so the lines read by brightness, not width. Grey lines on black, alpha the same (the HUD's colour
       tints them). Steps: t1 = CMT's line width, t2 = the middle (the approved one), t3 = a pixel wider each side.
+      "bold" = the solid scope: main lines a pixel wider each side at full ink, the faint arcs left out, and the
+      ring one solid band (drawn black by the HUD: the recipe's colour).
   br_scope_ring_hd.png     1024 x 1024: the ring of CMT's scope mask (battle_rifle_scope_mask: two thin circles
       joined by four ticks) redrawn as geometry at the measured centre and radii, 3.7 texels to the mask's one.
   br_scope_mask_noring.png 2048 x 512: CMT's mask with the ring's band cleared (its soft vignette stays as it
@@ -28,6 +30,10 @@ class Refused(Exception):
 SCALE = 4
 RING_SPAN = 280.0            # mask texels the ring's texture covers
 RING_SIZE = 1024
+# the bold ring's width in mask texels (one is 2.25 px on a 1080-line screen): the pistol scope's circle, measured
+# in the game at 2.7 px on 864 lines = 3.4 px on 1080
+BOLD_RING = 1.5
+BOLD_KEEP = 0.5             # the "bold" step keeps art at least this strong (lifted, x1.4): the main lines
 
 
 def load_alpha(path):
@@ -52,6 +58,11 @@ def details(alpha, ink):
     thick = np.array(Image.fromarray((lift * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(3))).astype(
         np.float32) / 255.0
     steps = {"t1": lift, "t2": np.maximum(lift, thick * 0.45), "t3": np.maximum(lift, thick * 0.85)}
+    # "bold" (the solid black scope): the main lines a pixel wider each side and at full ink, the faint arcs and
+    # inner circles left out, so the lines are either there, crisp and whole, or not there
+    main_lines = (np.array(Image.fromarray((lift * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5))).astype(
+        np.float32) / 255.0 * 1.4) > BOLD_KEEP
+    steps["bold"] = np.maximum(lift, thick) * main_lines
     if ink not in steps:
         raise Refused("no such thickness step: %s" % ink)
     want = steps[ink].sum() * 16.0                    # the step's ink, in 4x texels
@@ -66,6 +77,9 @@ def details(alpha, ink):
     strength = np.clip(up(np.array(Image.fromarray((lift * 255).astype(np.uint8)).filter(
         ImageFilter.MaxFilter(5))).astype(np.float32) / 255.0) * 1.4, 0, 1)
 
+    if ink == "bold":
+        strength = (strength > BOLD_KEEP).astype(np.float32)
+
     def cut(level, soft=0.06):
         x = np.clip((big - (level - soft)) / (2 * soft), 0, 1)
         return x * x * (3 - 2 * x) * strength
@@ -78,10 +92,47 @@ def details(alpha, ink):
         else:
             hi = mid
     det = cut((lo + hi) / 2)
+    if ink == "bold":
+        det = bold_label(det, BOLD_LABEL)
     return (det * 255).astype(np.uint8), (lo + hi) / 2, float(det.sum()), float(want)
 
 
-def ring_and_mask(alpha):
+BOLD_LABEL = "3"            # the zoom the bold scope's label reads: "[3x]"
+
+
+def bold_label(det, digit):
+    """the bold sheet (1024 x 1024, 0..1) with CMT's zoom label and its "1x" small print cleared and our own
+    "[3x]" drawn in the label's place: thickened, CMT's small lettering runs together, so the bold scope's is drawn
+    here as strokes of a round pen (brackets, a 3 with a flat top, a slope and a bowl, an x)"""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    if digit != "3":
+        raise Refused("only the 3 is drawn")
+    det = np.array(det, dtype=np.float32, copy=True)
+    det[680:790, 570:724] = 0.0                  # "[2x]"
+    det[905:962, 592:652] = 0.0                  # "1x"
+    X0, Y0, W, H, SS, PEN = 570, 680, 154, 110, 4, 9.0
+    image = Image.new("L", (W * SS, H * SS), 0)
+    draw = ImageDraw.Draw(image)
+
+    def stroke(points):
+        scaled = [((x - X0) * SS, (y - Y0) * SS) for x, y in points]
+        draw.line(scaled, fill=255, width=int(PEN * SS), joint="curve")
+        r = PEN * SS / 2
+        for x, y in scaled:                      # round ends and joints
+            draw.ellipse((x - r, y - r, x + r, y + r), fill=255)
+
+    stroke([(600, 700), (588, 700), (588, 770), (600, 770)])                                  # [
+    stroke([(612, 704), (646, 704), (627, 730), (640, 733), (647, 748), (640, 762), (625, 767), (611, 761)])  # 3
+    stroke([(658, 732), (686, 766)])                                                          # x
+    stroke([(686, 732), (658, 766)])
+    stroke([(698, 700), (710, 700), (710, 770), (698, 770)])                                  # ]
+    label = np.array(image.resize((W, H), Image.LANCZOS)).astype(np.float32) / 255.0
+    det[Y0:Y0 + H, X0:X0 + W] = np.maximum(det[Y0:Y0 + H, X0:X0 + W], label)
+    return np.clip(det, 0.0, 1.0)
+
+
+def ring_and_mask(alpha, bold=False):
     """(the ring's texture as bytes, the mask without its ring at twice the width, what was measured) from the
     mask's alpha"""
     import numpy as np
@@ -119,8 +170,9 @@ def ring_and_mask(alpha):
         return np.clip((r - r0) / aa + 0.5, 0, 1) * np.clip((r1 - r) / aa + 0.5, 0, 1)
 
     ri = r_in
-    ring = np.maximum(band(ri, ri + 1.1), band(ri + 3.0, ri + 4.1))
-    for t0 in (0, np.pi / 2, np.pi, -np.pi / 2):
+    # (bold: one solid circle of the pistol scope's weight, in place of two thin circles and their ticks)
+    ring = band(ri, ri + BOLD_RING) if bold else np.maximum(band(ri, ri + 1.1), band(ri + 3.0, ri + 4.1))
+    for t0 in (() if bold else (0, np.pi / 2, np.pi, -np.pi / 2)):
         d = np.abs(np.angle(np.exp(1j * (th - t0)))) * r
         ring = np.maximum(ring, np.clip((0.55 - d) / aa + 0.5, 0, 1) * band(ri, ri + 4.1))
     g = (ring * 255).astype(np.uint8)
@@ -143,7 +195,7 @@ def main(arguments):
     ink = arguments[3] if len(arguments) > 3 else "t2"
     try:
         v, level, drawn, wanted = details(load_alpha(details_tag), ink)
-        g, mask, measured = ring_and_mask(load_alpha(mask_tag))
+        g, mask, measured = ring_and_mask(load_alpha(mask_tag), ink == "bold")
     except (Refused, hek.Refused) as refusal:
         print("scope_hd: refused: %s" % refusal, file=sys.stderr)
         return 1

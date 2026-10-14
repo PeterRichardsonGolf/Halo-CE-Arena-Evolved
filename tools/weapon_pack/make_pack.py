@@ -621,7 +621,8 @@ class Run:
         Image.fromarray(alphas, "RGBA").save(self.art / "br_alphas_smooth.png")
         lines, _, _, _ = scope_hd.details(scope_hd.load_alpha(self.art_in / "scope_details.bitmap"),
                                           settings["scope_ink"])
-        ring, mask, _ = scope_hd.ring_and_mask(scope_hd.load_alpha(self.art_in / "scope_mask.bitmap"))
+        ring, mask, _ = scope_hd.ring_and_mask(scope_hd.load_alpha(self.art_in / "scope_mask.bitmap"),
+                                               settings["scope_ink"] == "bold")
 
         def grey(alpha, white=False):
             image = np.zeros(alpha.shape + (4,), np.uint8)
@@ -632,7 +633,13 @@ class Run:
         grey(lines).save(self.art / "br_scope_details_hd.png")
         grey(ring, white=True).save(self.art / "br_scope_ring_hd.png")
         grey(mask).save(self.art / "br_scope_mask_noring.png")
-        relabelled, _ = scope_label.relabel(lines, settings["scope_label_digit"])
+        # (the bold scope draws its own label: scope_hd.bold_label)
+        if settings["scope_ink"] == "bold":
+            if settings["scope_label_digit"] != scope_hd.BOLD_LABEL:
+                raise Refused("the bold scope's label is drawn for %sx only" % scope_hd.BOLD_LABEL)
+            relabelled = lines
+        else:
+            relabelled, _ = scope_label.relabel(lines, settings["scope_label_digit"])
         Image.fromarray(np.dstack([relabelled] * 4), "RGBA").save(self.art / "br_scope_details_3x.png")
         picture = hud_sheet.icon((self.art_in / "br_geo.txt").read_text())
         if [picture.shape[1], picture.shape[0]] != settings["icon_size"]:
