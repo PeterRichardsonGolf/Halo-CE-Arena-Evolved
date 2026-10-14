@@ -989,6 +989,7 @@ static void object_damage_shield(
 			{
 				damage_material_type_error(damage_resistance->shield_material_type);
 			}
+			actual_shield_damage = ae_shield_fx_rifle_finish(object_index, damage->definition_index, actual_shield_damage); /* AE hook */
 			if (actual_shield_damage < _real_epsilon)
 				negligible_damage = TRUE;
 

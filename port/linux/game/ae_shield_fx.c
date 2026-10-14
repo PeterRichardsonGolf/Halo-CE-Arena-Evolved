@@ -58,6 +58,7 @@ magnum's, typed in: to be read from the map's weapons).
 #include "networking/network_game_globals.h"
 
 #include "ae_hit_feedback.h"
+#include "ae_weapon_pack.h"
 #include "ae_shield_fx.h"
 #include "../src/ae_height_fade.h"
 
@@ -1075,6 +1076,26 @@ the head) */
 #define FINISHER_POINTS 25.f
 
 static boolean early_pop_now = FALSE;
+
+/* the owner's rule of 2026-10-12 ("what you built is the better way"): the pop says "one more headshot kills", and
+that holds for the rifle too. A magnum's pop leaves exactly its own 25 points; three of the rifle's rounds take 20.6,
+so a burst to the head would not finish. Against a shield whose pop was shown, a round of the pack's rifle takes a
+third of the finishing hit's points at least (and a hair, for the rounding). No other weapon and no unpopped shield
+is touched */
+real ae_shield_fx_rifle_finish(
+	long object_index,
+	long damage_definition_index,
+	real shield_damage)
+{
+	real least = FINISHER_POINTS / 3.f + 0.005f;
+
+	if (!recharge_band_enabled() || damage_definition_index == NONE || !ae_weapon_pack_tag_is_own(damage_definition_index) ||
+		!ae_shield_fx_pop_was_early(object_index))
+	{
+		return shield_damage;
+	}
+	return shield_damage < least ? least : shield_damage;
+}
 
 boolean ae_shield_fx_no_burst(
 	long object_index)

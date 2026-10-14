@@ -22,6 +22,8 @@ between two machines, were not test-played before release.
   - **Settings > Game Options > WEAPON PACKS** (ON / OFF) turns packs off on a machine, from the next start.
   - **Joining:** while a game's gametype has the rifle on, only Arena Evolved 0.2.5 or later with the pack can
     join; anyone else is told why. Games without it are joined as before, by 0.2.3, 0.2.4 and OpenCE alike.
+  - With COMBAT FEEDBACK: ARENA EVOLVED, a shield pop means one more headshot kills, and that holds for the rifle:
+    one burst to the head finishes a player whose pop has shown, whatever popped the shield.
   - On Custom Edition maps the rifle is not added (the assault rifle is played).
   - No seeded gametype gives it: set it in a gametype of your own (Edit Gametypes > ITEM OPTIONS).
 

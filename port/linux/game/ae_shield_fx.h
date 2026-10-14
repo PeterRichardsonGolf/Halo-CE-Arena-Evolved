@@ -49,6 +49,10 @@ short ae_shield_fx_bloodshot(long object_index, unsigned long damage_flags, long
 union real_vector3d const *ae_shield_fx_blood_direction(union real_vector3d const *direction, short burst);
 /* the effect a bloodshot shows, given the body's own */
 long ae_shield_fx_blood_effect(long hit_effect_index);
+/* the shield damage of a round, given what the game reckoned: the weapon pack's battle rifle against a shield whose
+pop was shown takes at least a third of the finishing hit's points, so one burst of three to the head finishes a
+popped player, whatever popped them (COMBAT FEEDBACK: ARENA EVOLVED only; the host's reckoning) */
+float ae_shield_fx_rifle_finish(long object_index, long damage_definition_index, float shield_damage);
 /* a machine that is not the host: a hit's result as the host sent it (before its replay) */
 void ae_shield_fx_guest_hit(unsigned long being_damaged_flags, float body_damage);
 /* the body's own hit effect (NONE: none) */
