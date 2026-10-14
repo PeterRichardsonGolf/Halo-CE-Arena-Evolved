@@ -73,10 +73,12 @@ double config_real(const char *name);
 /* 15 rounds a second inside a burst: one every second tick (Halo 2's battle rifle, shared.map barrel 0: rate of
 fire 15) */
 #define BURST_ROUNDS_PER_SECOND 15.0f
-/* the recovery after a burst, 0.15 s (the owner's "Test B" balance, 2026-10-10; Halo 2's fire recovery time is
-0.26 s, shared.map barrel 0, started by function_103e60): 4.5 ticks, so the first rounds of successive bursts come
-10 and 11 ticks apart */
-#define BURST_RECOVERY_SECONDS 0.15f
+/* the recovery after a burst, 0.20 s (the owner's choice in play, 2026-10-13: measured, a burst every 12 ticks): between his "Test B" balance of 2026-10-10,
+0.15 s, and Halo 2's fire recovery time, 0.26 s (shared.map barrel 0, started by function_103e60). The first rounds
+of successive bursts come 6 ticks plus the recovery apart (the burst's own 4, the tick the recovery starts on and the
+tick of the pull): 0.15 s is 4.5 ticks, 10 and 11 apart; 0.20 s is 6, 12 apart; 0.26 s is 7.8, 14 apart, 13 every
+fifth time */
+#define BURST_RECOVERY_SECONDS 0.20f
 /* a burst cut short (the rifle reloading, put away, dropped): this many ticks before the next pull counts (the
 prototype's) */
 #define BURST_CUT_PAUSE_TICKS 8
