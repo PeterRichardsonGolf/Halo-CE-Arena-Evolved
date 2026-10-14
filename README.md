@@ -28,7 +28,7 @@ port of the Halo: Combat Evolved decompilation, by way of
 both closely.
 
 > **Status: early and in active development.** The current pre-release is
-> 0.2.4-beta (below). The Linux 64-bit build is the one played and tested;
+> 0.2.5-beta (below). The Linux 64-bit build is the one played and tested;
 > the Windows 64-bit build is built by the same automated checks but this
 > release's was not test-played before it went up;
 > the other platforms build from the same code but are untested here.
@@ -71,6 +71,7 @@ editor and in Server Setup)
 | FALL DAMAGE | Off: no landing damage from any height (pits and kill zones still kill). |
 | HEALTH | HALO CE (stock: health packs only), REACH (health recovers to a third), HALO 2 (Halo 2's timers: shields recharge 5 s after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached it, shield hits do not count), HALO 3 (health refills after the shields). Health packs still spawn. |
 | COMBAT FEEDBACK | HALO CE (stock: the game's own shield flare) or ARENA EVOLVED, which shows on a player's body what the fight has come to: a shield about to fail bursts white, a broken shield flickers until it recharges, a recharge sweeps from feet to head, and the shot that finishes a player after breaking the shield throws a blood pop where it struck. Drawing only: no damage value changes, nothing new on the HUD, and stock players in the game are unaffected. Multiplayer only. |
+| BATTLE RIFLE | OFF, or STARTING WEAPON: players start with a battle rifle in place of the assault rifle: three-round bursts, a 3x scope, its own reticle. It comes as a weapon pack, the `packs` folder beside the game (in the Windows and Linux 64-bit downloads); a map the pack cannot be added to plays the assault rifle. While it is on, only Arena Evolved 0.2.5 or later with the pack can join the game. |
 | NO SPREAD | OFF (stock), FIRST SHOT (the pistol's first shot from rest and the sniper rifle's unzoomed shots go exactly where you aim; held pistol fire still spreads) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |
 | PRE-GAME COUNTDOWN | A 3-2-1 on a black screen before the game starts; you can look around but not move or shoot. A weapon switch (Y) pressed during it is kept and taken as it ends, as in Halo 1: NHE; any other button pressed during it does nothing until you let go of it, so nothing fires, zooms, reloads or picks up the moment it ends. The host holds every player to it, including players on builds without it. |
@@ -303,9 +304,9 @@ copies or changes MCC's files). Versions and the build-time packages are in
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.2.4-beta, built on ChupathingyCE 0.7.3e and OpenCE build-201
+page: 0.2.5-beta, built on ChupathingyCE 0.7.3e and OpenCE build-201
 (network version 28), is the current one, a pre-release (2026-10-13); it
-plays online with 0.2.3-beta and OpenCE build-201 and later, not with 0.2.2-beta or earlier.
+plays online with 0.2.3-beta, 0.2.4-beta and OpenCE build-201 and later, not with 0.2.2-beta or earlier.
 Each platform is
 a zip of its own: Windows and Linux as 64-bit builds only, plus macOS and
 Android. For Linux there are two, and the first is the one to take:
@@ -454,7 +455,7 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, 0.2.4-beta is network version 28: it
+- Online, 0.2.5-beta is network version 28: it
   plays with OpenCE builds on network 28 (build-201 onward, until OpenCE
   changes its network version), both ways, and joins only games
   hosted on version 28 (an older host is refused: the host needs to update).
@@ -486,6 +487,10 @@ Re-run `configure.py` when source files or the menus are added.
   game's text and the logo's wordmark),
   [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
   [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
+- The battle rifle's model, textures, animations and sounds are CMT's, from the source release of The Silent
+  Cartographer: Evolved (1.4.1c), used with credit; its scope and gun-screen art are redrawn here, and its aiming
+  reticle follows crosshair 033 of [Kenney's Crosshair Pack](https://kenney.nl/assets/crosshair-pack) (CC0). The
+  pack's own credits file is `packs/ae_battle_rifle.CREDITS.txt`.
 - The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
   made by `tools/ae_logo.py`); it uses no third-party art. It is not CC0
   (see below).
