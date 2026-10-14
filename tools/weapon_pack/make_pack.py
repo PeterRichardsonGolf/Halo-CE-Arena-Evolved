@@ -633,6 +633,10 @@ class Run:
         grey(lines).save(self.art / "br_scope_details_hd.png")
         grey(ring, white=True).save(self.art / "br_scope_ring_hd.png")
         grey(mask).save(self.art / "br_scope_mask_noring.png")
+        import reticle_art
+        # (grey, not white: an aiming reticle is drawn by its colour as well as its alpha (the crosshair's colour has
+        # no alpha of its own), so a white sheet shows as a filled square)
+        grey(reticle_art.zoom_reticle()).save(self.art / "br_zoom_reticle.png")
         # (the bold scope draws its own label: scope_hd.bold_label)
         if settings["scope_ink"] == "bold":
             if settings["scope_label_digit"] != scope_hd.BOLD_LABEL:
