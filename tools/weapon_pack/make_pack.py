@@ -636,7 +636,9 @@ class Run:
         import reticle_art
         # (grey, not white: an aiming reticle is drawn by its colour as well as its alpha (the crosshair's colour has
         # no alpha of its own), so a white sheet shows as a filled square)
-        grey(reticle_art.zoom_reticle()).save(self.art / "br_zoom_reticle.png")
+        picture = settings.get("reticle_picture")
+        grey(reticle_art.from_picture(self.recipe_folder / picture) if picture else
+             reticle_art.zoom_reticle()).save(self.art / "br_zoom_reticle.png")
         # (the bold scope draws its own label: scope_hd.bold_label)
         if settings["scope_ink"] == "bold":
             if settings["scope_label_digit"] != scope_hd.BOLD_LABEL:

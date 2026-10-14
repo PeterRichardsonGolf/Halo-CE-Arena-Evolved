@@ -16,7 +16,7 @@ RING_OUTER, RING_INNER = 200.0, 170.0
 GAP_DEGREES = 9.0            # each side of up, down, left and right, cut out of the ring
 EYE_OUTER, EYE_INNER = 88.0, 62.0
 HAIR_WIDTH, HAIR_END = 26.0, 250.0
-RETICLE_SCALE = 0.0533       # 400 texels of ring x this x 2.25 screen px a HUD unit (1080 lines) = 48 px
+RETICLE_SCALE = 0.0453       # the recipe's scale for both aim crosshairs: 500 texels x this x 2.25 = 51 px on 1080 lines
 
 
 def zoom_reticle():
@@ -46,6 +46,19 @@ def zoom_reticle():
     disc(EYE_OUTER, 255)
     disc(EYE_INNER, 0)
     return np.array(image.resize((SIZE, SIZE), Image.LANCZOS))
+
+
+def from_picture(path):
+    """a reticle kept as a picture beside the recipe (512 x 512, its alpha the shape), as bytes (a numpy array):
+    battle_rifle/reticle_kenney_033.png is crosshair 033 of Kenney's Crosshair Pack 1.1 (www.kenney.nl, CC0): its
+    vector file drawn large, fitted to 500 texels, and its lines brought to 22 texels wide by a round pen (2.24 px
+    on a 1080-line screen; 23 is the pistol reticle's line as measured in the game)"""
+    import numpy as np
+    from PIL import Image
+    image = Image.open(path).convert("RGBA")
+    if image.size != (SIZE, SIZE):
+        raise ValueError("the reticle's picture is %d x %d, not %d x %d" % (image.size + (SIZE, SIZE)))
+    return np.array(image.getchannel("A"))
 
 
 def main(arguments):

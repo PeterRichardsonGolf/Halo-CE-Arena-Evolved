@@ -33,6 +33,9 @@ RING_SIZE = 1024
 # the bold ring's width in mask texels (one is 2.25 px on a 1080-line screen): the pistol scope's circle, measured
 # in the game at 2.7 px on 864 lines = 3.4 px on 1080
 BOLD_RING = 1.5
+# how far the bold lines are widened toward a pixel each side (1: all of it; the owner asked for a bit thinner
+# than that for the markings inside the ring)
+BOLD_WIDEN = 0.45
 BOLD_KEEP = 0.5             # the "bold" step keeps art at least this strong (lifted, x1.4): the main lines
 
 
@@ -62,7 +65,7 @@ def details(alpha, ink):
     # inner circles left out, so the lines are either there, crisp and whole, or not there
     main_lines = (np.array(Image.fromarray((lift * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5))).astype(
         np.float32) / 255.0 * 1.4) > BOLD_KEEP
-    steps["bold"] = np.maximum(lift, thick) * main_lines
+    steps["bold"] = np.maximum(lift, thick * BOLD_WIDEN) * main_lines
     if ink not in steps:
         raise Refused("no such thickness step: %s" % ink)
     want = steps[ink].sum() * 16.0                    # the step's ink, in 4x texels
@@ -111,7 +114,7 @@ def bold_label(det, digit):
     det = np.array(det, dtype=np.float32, copy=True)
     det[680:790, 570:724] = 0.0                  # "[2x]"
     det[905:962, 592:652] = 0.0                  # "1x"
-    X0, Y0, W, H, SS, PEN = 570, 680, 154, 110, 4, 9.0
+    X0, Y0, W, H, SS, PEN = 570, 680, 154, 110, 4, 7.5
     image = Image.new("L", (W * SS, H * SS), 0)
     draw = ImageDraw.Draw(image)
 

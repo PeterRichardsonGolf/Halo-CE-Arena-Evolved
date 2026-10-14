@@ -409,6 +409,7 @@
  },
  "art_settings": {
   "scope_ink": "bold",
+  "reticle_picture": "reticle_kenney_033.png",
   "scope_label_digit": "3",
   "icon_size": [
    86,
@@ -450,7 +451,7 @@
     1024,
     1024
    ],
-   "pixels_sha256": "f9cc8f120ebc105e9d778db99e9d5819e23fd7d67bbd1cbe3a78d2f02d0013a6"
+   "pixels_sha256": "1e18d0cb08e9594c88cbd51cf252ba64542b7ced321bc9ccc694ff0f5a9498ad"
   },
   "br_scope_details_hd.png": {
    "mode": "RGBA",
@@ -458,7 +459,7 @@
     1024,
     1024
    ],
-   "pixels_sha256": "f9cc8f120ebc105e9d778db99e9d5819e23fd7d67bbd1cbe3a78d2f02d0013a6"
+   "pixels_sha256": "1e18d0cb08e9594c88cbd51cf252ba64542b7ced321bc9ccc694ff0f5a9498ad"
   },
   "br_scope_mask_noring.png": {
    "mode": "RGBA",
@@ -474,7 +475,7 @@
     512,
     512
    ],
-   "pixels_sha256": "5d00f3d905e679754f0eb6f6b7b1a79e581b2e2b5ba23ff294aa00bd08f820f1"
+   "pixels_sha256": "032f633d83ae76ab64966e120a7f2bd4dba6cb480ec37fd7c9c251e511c2840e"
   },
   "br_scope_ring_hd.png": {
    "mode": "RGBA",
@@ -596,7 +597,7 @@
   {"layer": "fix-scope-hd", "tag": "ae_pack/scope/br_scope_ring_hd.bitmap", "op": "bitmap", "art": ["br_scope_ring_hd.png"], "arguments": ["-T", "2d_textures", "-F", "dxt5"]},
   {"layer": "fix-scope-hd", "tag": "ae_pack/scope/br_zoom_reticle.bitmap", "op": "bitmap", "art": ["br_zoom_reticle.png"], "arguments": ["-T", "2d_textures", "-F", "dxt5"]},
   {"layer": "fix-scope-hd", "tag": "ae_pack/scope/br_scope_mask_noring.bitmap", "op": "bitmap", "art": ["br_scope_mask_noring.png"], "arguments": ["-T", "2d_textures", "-F", "dxt5", "-M", "0"]},
-  {"layer": "fix-hud-hd", "tag": "cmt/ui/hudv4.1/weapons/evolved/human/battle_rifle.weapon_hud_interface", "op": "edit", "from": ["fix-v3", "cmt/ui/hudv4.1/weapons/evolved/human/battle_rifle.weapon_hud_interface"], "edits": [["set", "crosshairs[2].crosshair_overlays[0].flashing_color", "0 255 0 0"], ["set", "crosshairs[2].crosshair_overlays[0].flash_period", "1"], ["set", "crosshairs[2].crosshair_overlays[0].flash_delay", "0"], ["set", "crosshairs[2].crosshair_overlays[0].number_of_flashes", "1"], ["set", "crosshairs[2].crosshair_overlays[0].flash_length", "1"], ["set", "crosshairs[2].crosshair_overlays[0].disabled_color", "0 0 0 0"], ["set", "crosshairs[3].crosshair_overlays[0].flashing_color", "0 255 0 0"], ["set", "crosshairs[3].crosshair_overlays[0].flash_period", "1"], ["set", "crosshairs[3].crosshair_overlays[0].flash_delay", "0"], ["set", "crosshairs[3].crosshair_overlays[0].number_of_flashes", "1"], ["set", "crosshairs[3].crosshair_overlays[0].flash_length", "1"], ["set", "crosshairs[3].crosshair_overlays[0].disabled_color", "0 0 0 0"], ["set", "crosshairs[3].crosshair_overlays[1].flashing_color", "0 255 0 0"], ["set", "crosshairs[3].crosshair_overlays[1].flash_period", "1"], ["set", "crosshairs[3].crosshair_overlays[1].flash_delay", "0"], ["set", "crosshairs[3].crosshair_overlays[1].number_of_flashes", "1"], ["set", "crosshairs[3].crosshair_overlays[1].flash_length", "1"], ["set", "crosshairs[3].crosshair_overlays[1].disabled_color", "0 0 0 0"], ["set", "crosshairs[3].crosshair_overlays[2].flashing_color", "0 255 0 0"], ["set", "crosshairs[3].crosshair_overlays[2].flash_period", "1"], ["set", "crosshairs[3].crosshair_overlays[2].flash_delay", "0"], ["set", "crosshairs[3].crosshair_overlays[2].number_of_flashes", "1"], ["set", "crosshairs[3].crosshair_overlays[2].flash_length", "1"], ["set", "crosshairs[3].crosshair_overlays[2].disabled_color", "0 0 0 0"], ["set", "crosshairs[2].crosshair_overlays[0].default_color", "0 40 150 255"], ["set", "crosshairs[3].crosshair_overlays[0].default_color", "0 40 150 255"], ["set", "crosshairs[3].crosshair_overlays[1].default_color", "0 40 150 255"], ["set", "crosshairs[2].crosshair_overlays[0].width_scale", "0.42"], ["set", "crosshairs[2].crosshair_overlays[0].height_scale", "0.42"], ["set", "crosshairs[1].crosshair_overlays[0].default_color", "255 0 0 0"], ["set", "crosshairs[1].crosshair_overlays[0].flashing_color", "120 255 0 0"], ["set", "crosshairs[1].crosshair_overlays[0].flash_period", "1"], ["set", "crosshairs[1].crosshair_overlays[0].flash_delay", "0"], ["set", "crosshairs[1].crosshair_overlays[0].number_of_flashes", "1"], ["set", "crosshairs[1].crosshair_overlays[0].flash_length", "1"], ["set", "crosshairs[1].crosshair_overlays[0].disabled_color", "0 0 0 0"], ["set", "crosshairs[1].crosshair_overlays[0].width_scale", "0.75"], ["set", "crosshairs[1].crosshair_overlays[0].height_scale", "0.75"], ["set", "crosshairs[0].crosshair_bitmap", "ae_pack\\scope\\br_scope_mask_noring.bitmap"], ["set", "crosshairs[1].crosshair_bitmap", "ae_pack\\scope\\br_scope_details_hd.bitmap"], ["set", "crosshairs[1].crosshair_overlays[0].flags.not_a_sprite", "1"], ["set", "crosshairs[1].crosshair_overlays[0].width_scale", "0.1875"], ["set", "crosshairs[1].crosshair_overlays[0].height_scale", "0.1875"], ["insert", "crosshairs", 1, "end"], ["graft", "self", "", "crosshairs[0]", "crosshairs[4]"], ["set", "crosshairs[4].crosshair_bitmap", "ae_pack\\scope\\br_scope_ring_hd.bitmap"], ["set", "crosshairs[4].crosshair_overlays[0].width_scale", "0.2734"], ["set", "crosshairs[4].crosshair_overlays[0].height_scale", "0.2734"], ["erase", "crosshairs[3].crosshair_overlays[2]"], ["erase", "crosshairs[3].crosshair_overlays[1]"], ["set", "crosshairs[3].crosshair_bitmap", "ae_pack\\scope\\br_zoom_reticle.bitmap"], ["set", "crosshairs[3].crosshair_overlays[0].flags.not_a_sprite", "1"], ["set", "crosshairs[3].crosshair_overlays[0].sequence_index", "0"], ["set", "crosshairs[3].crosshair_overlays[0].width_scale", "0.0533"], ["set", "crosshairs[3].crosshair_overlays[0].height_scale", "0.0533"]], "why": "the crosshair at 0.42 in CE's colour, red on target; the scope: our sharp lines, the mask without its ring, the ring its own item"},
+  {"layer": "fix-hud-hd", "tag": "cmt/ui/hudv4.1/weapons/evolved/human/battle_rifle.weapon_hud_interface", "op": "edit", "from": ["fix-v3", "cmt/ui/hudv4.1/weapons/evolved/human/battle_rifle.weapon_hud_interface"], "edits": [["set", "crosshairs[2].crosshair_overlays[0].flashing_color", "0 255 0 0"], ["set", "crosshairs[2].crosshair_overlays[0].flash_period", "1"], ["set", "crosshairs[2].crosshair_overlays[0].flash_delay", "0"], ["set", "crosshairs[2].crosshair_overlays[0].number_of_flashes", "1"], ["set", "crosshairs[2].crosshair_overlays[0].flash_length", "1"], ["set", "crosshairs[2].crosshair_overlays[0].disabled_color", "0 0 0 0"], ["set", "crosshairs[3].crosshair_overlays[0].flashing_color", "0 255 0 0"], ["set", "crosshairs[3].crosshair_overlays[0].flash_period", "1"], ["set", "crosshairs[3].crosshair_overlays[0].flash_delay", "0"], ["set", "crosshairs[3].crosshair_overlays[0].number_of_flashes", "1"], ["set", "crosshairs[3].crosshair_overlays[0].flash_length", "1"], ["set", "crosshairs[3].crosshair_overlays[0].disabled_color", "0 0 0 0"], ["set", "crosshairs[3].crosshair_overlays[1].flashing_color", "0 255 0 0"], ["set", "crosshairs[3].crosshair_overlays[1].flash_period", "1"], ["set", "crosshairs[3].crosshair_overlays[1].flash_delay", "0"], ["set", "crosshairs[3].crosshair_overlays[1].number_of_flashes", "1"], ["set", "crosshairs[3].crosshair_overlays[1].flash_length", "1"], ["set", "crosshairs[3].crosshair_overlays[1].disabled_color", "0 0 0 0"], ["set", "crosshairs[3].crosshair_overlays[2].flashing_color", "0 255 0 0"], ["set", "crosshairs[3].crosshair_overlays[2].flash_period", "1"], ["set", "crosshairs[3].crosshair_overlays[2].flash_delay", "0"], ["set", "crosshairs[3].crosshair_overlays[2].number_of_flashes", "1"], ["set", "crosshairs[3].crosshair_overlays[2].flash_length", "1"], ["set", "crosshairs[3].crosshair_overlays[2].disabled_color", "0 0 0 0"], ["set", "crosshairs[2].crosshair_overlays[0].default_color", "0 40 150 255"], ["set", "crosshairs[3].crosshair_overlays[0].default_color", "0 40 150 255"], ["set", "crosshairs[3].crosshair_overlays[1].default_color", "0 40 150 255"], ["set", "crosshairs[2].crosshair_overlays[0].width_scale", "0.42"], ["set", "crosshairs[2].crosshair_overlays[0].height_scale", "0.42"], ["set", "crosshairs[1].crosshair_overlays[0].default_color", "255 0 0 0"], ["set", "crosshairs[1].crosshair_overlays[0].flashing_color", "120 255 0 0"], ["set", "crosshairs[1].crosshair_overlays[0].flash_period", "1"], ["set", "crosshairs[1].crosshair_overlays[0].flash_delay", "0"], ["set", "crosshairs[1].crosshair_overlays[0].number_of_flashes", "1"], ["set", "crosshairs[1].crosshair_overlays[0].flash_length", "1"], ["set", "crosshairs[1].crosshair_overlays[0].disabled_color", "0 0 0 0"], ["set", "crosshairs[1].crosshair_overlays[0].width_scale", "0.75"], ["set", "crosshairs[1].crosshair_overlays[0].height_scale", "0.75"], ["set", "crosshairs[0].crosshair_bitmap", "ae_pack\\scope\\br_scope_mask_noring.bitmap"], ["set", "crosshairs[1].crosshair_bitmap", "ae_pack\\scope\\br_scope_details_hd.bitmap"], ["set", "crosshairs[1].crosshair_overlays[0].flags.not_a_sprite", "1"], ["set", "crosshairs[1].crosshair_overlays[0].width_scale", "0.1875"], ["set", "crosshairs[1].crosshair_overlays[0].height_scale", "0.1875"], ["insert", "crosshairs", 1, "end"], ["graft", "self", "", "crosshairs[0]", "crosshairs[4]"], ["set", "crosshairs[4].crosshair_bitmap", "ae_pack\\scope\\br_scope_ring_hd.bitmap"], ["set", "crosshairs[4].crosshair_overlays[0].width_scale", "0.2734"], ["set", "crosshairs[4].crosshair_overlays[0].height_scale", "0.2734"], ["erase", "crosshairs[3].crosshair_overlays[2]"], ["erase", "crosshairs[3].crosshair_overlays[1]"], ["set", "crosshairs[3].crosshair_bitmap", "ae_pack\\scope\\br_zoom_reticle.bitmap"], ["set", "crosshairs[3].crosshair_overlays[0].flags.not_a_sprite", "1"], ["set", "crosshairs[3].crosshair_overlays[0].sequence_index", "0"], ["set", "crosshairs[3].crosshair_overlays[0].width_scale", "0.0453"], ["set", "crosshairs[3].crosshair_overlays[0].height_scale", "0.0453"], ["set", "crosshairs[2].crosshair_bitmap", "ae_pack\\scope\\br_zoom_reticle.bitmap"], ["set", "crosshairs[2].crosshair_overlays[0].flags.not_a_sprite", "1"], ["set", "crosshairs[2].crosshair_overlays[0].sequence_index", "0"], ["set", "crosshairs[2].crosshair_overlays[0].width_scale", "0.0453"], ["set", "crosshairs[2].crosshair_overlays[0].height_scale", "0.0453"]], "why": "the crosshair at 0.42 in CE's colour, red on target; the scope: our sharp lines, the mask without its ring, the ring its own item"},
   {"layer": "fix-col", "tag": "cmt/weapons/evolved/battle_rifle/battle_rifle.weapon", "op": "edit", "from": ["fix2", "cmt/weapons/evolved/battle_rifle/battle_rifle.weapon"], "edits": [["set", "collision_model", "weapons\\assault rifle\\assault rifle.model_collision_geometry"]], "why": "the held rifle's collision is the stock assault rifle's"},
   {"layer": "fix-light", "tag": "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_metal.shader_model", "op": "edit", "from": ["fix-v3", "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_metal.shader_model"], "edits": [["set", "perpendicular_brightness", "0.85"], ["set", "parallel_brightness", "0.85"]]},
   {"layer": "fix-light", "tag": "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_rubber.shader_model", "op": "edit", "from": ["fix-v3", "cmt/weapons/_shared/battle_rifle/shaders/battle_rifle_body_rubber.shader_model"], "edits": [["set", "perpendicular_brightness", "0.51"], ["set", "parallel_brightness", "0.51"]]},
@@ -617,7 +618,7 @@
  "approved_reference": {
   "about": "the donor the owner approved (v6e): the build the departures are measured from. The pack is compared with it and may differ only in the tags named here (by the donor's tag names)",
   "donor_sha256": "0aa3ffcbb704e59407945cd5eece3aaf53740992a582e23fe61aec51dca36884",
-  "donor_size": 22650880,
+  "donor_size": 22552576,
   "pack_departures": {
    "ae_pack\\hud\\br_meter": "R33: the sheet is our own icon only (pixels, size, format, sequence and sprite records)",
    "cmt\\weapons\\_shared\\smg\\shaders\\smg_attachments_silencer": "R33: one reference, the reflection cube map, names the stock cube map instead of the copy",
@@ -629,12 +630,12 @@
  },
  "expected": {
   "about": "re-pinned for R33 (still revision 1: the pack was never released); Task 19's final credits text changes the pack's hashes once more",
-  "donor_sha256": "6c2295aaf356c4a58922c63715e160c41c368b38ec537c9e9420ddcea6825fb5",
-  "donor_size": 22650880,
-  "pack_sha256": "e18c0e24e69dbc49c8066d9b7104b2458a3c05d44b91f5b42c496de05ee7b964",
-  "pack_own_sha256": "07813ef873a37ad8dcc63b4f850ac9c6c6a97e8b9920aa8f7cf4c136dabc4178",
-  "pack_size": 17954979,
-  "own_tags": 186,
+  "donor_sha256": "b9f6afd984675eadf022d500c2e16cdcfaa879d839712734de209a802b0b390c",
+  "donor_size": 22552576,
+  "pack_sha256": "23b0d92289ba2ee833707464e68c42c2fbbfeceb54ec208f6439d7d693814716",
+  "pack_own_sha256": "6730f1e90073070444914f1f7dc19beeee99fa326243c337dc020deec7fbb979",
+  "pack_size": 15852626,
+  "own_tags": 185,
   "external_tags": 53
  }
 }

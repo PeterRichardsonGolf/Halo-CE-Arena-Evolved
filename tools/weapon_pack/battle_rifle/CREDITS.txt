@@ -20,4 +20,7 @@ Made for Arena Evolved (our own work, drawn or computed by the scripts in tools/
 The pack holds no pixel, sound or model of the game's own: what the rifle needs of the game (the stock HUD's
 numbers and frames, a reflection map, impact materials) it names, and the map the player owns provides.
 
+The aiming reticle follows crosshair 033 of Kenney's Crosshair Pack (www.kenney.nl), released under Creative
+Commons Zero. Thank you, Kenney.
+
 Thank you, CMT.
