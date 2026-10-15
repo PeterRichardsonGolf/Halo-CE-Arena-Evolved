@@ -161,6 +161,7 @@ names kept. The names over players' heads (hud.c, drawn before the waypoints) ar
 
 /* (the waypoints' pictures' rules and Arena Evolved's glyphs: port/linux/game) */
 #include "ae_waypoint_icons.h"
+#include "ae_power_list.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1510,6 +1511,7 @@ void hud_draw_item_timers(
 	if (font_index == NONE)
 		return;
 	/* (not over Halo 1: NHE's maps' countdown) */
+	if (!ae_power_list_hides_clock(render.local_player_index)) /* AE hook */
 	if (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
 	{
 		boolean has_elapsed = game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed));
@@ -1522,6 +1524,7 @@ void hud_draw_item_timers(
 	}
 	/* (the gametype's TIMERS and TRAINING; not once the game is over, over
 	the postgame's view, as the clock is not) */
+	if (!ae_power_list_draw(font_index)) /* AE hook */
 	if (game_engine_item_timers() && !game_engine_game_over())
 	{
 		if (local_player_count() <= 1 && hud_item_timers_power_list_top_left())
@@ -3690,3 +3693,5 @@ void hud_item_timers_initialize_for_new_map(
 }
 
 void hud_item_timers_ae_place(short *inset, long *baseline) { hud_item_timers_clock_place(inset, baseline); } /* AE hook */
+boolean hud_item_timers_ae_corner(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_top_left[v].valid) return FALSE; *b = hud_item_timers_top_left[v].bounds; return TRUE; } /* AE hook */
+void hud_item_timers_ae_record(real x0, real y0, real x1, real y1) { hud_item_timers_record(x0, y0, x1, y1); } /* AE hook */

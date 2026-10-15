@@ -9,7 +9,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - **HUD STYLE** (Settings > HUD, its first row): AE (the default) or CLASSIC, the HUD exactly as before. With AE, a
   **score strip** under the view in multiplayer: both sides' scores (my team or me on the left) with the clock between
   them, how close each side is to winning, and each gametype's own state (the flags in CTF, the ball's holder, the
-  hill, the race's place and lap, ...). In progress: the clock still shows in the corner too.
+  hill, the race's place and lap, ...). The clock is in the strip, no longer in the corner; the TIMERS list is in
+  the strip's style, its foot on the motion sensor's line.
 
 ## 0.2.5-beta - 2026-10-13
 

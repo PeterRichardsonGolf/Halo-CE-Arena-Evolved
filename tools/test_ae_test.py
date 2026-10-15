@@ -1382,3 +1382,10 @@ class StripChecks(unittest.TestCase):
         self.assertEqual(strip_checks.judge_states("classic", hidden, Path(".")), [])
         self.assertEqual(strip_checks.judge_states("classic", drawn, Path(".")), ["drawn with HUD STYLE CLASSIC"])
 
+    def test_clock_colours(self):
+        # (the old corner clock's HUD blue at 0.7 over a dark scene; the T1 list's white, grey and team blue are not)
+        self.assertTrue(strip_checks.old_clock_blue((90, 140, 185)))
+        for colour in ((229, 240, 255), (188, 198, 212), (89, 140, 255), (255, 77, 77), (40, 40, 40)):
+            self.assertFalse(strip_checks.old_clock_blue(colour), colour)
+        self.assertTrue(strip_checks.hud_colour((117, 186, 255)) and not strip_checks.hud_colour((120, 120, 120)))
+

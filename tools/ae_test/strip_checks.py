@@ -5,6 +5,7 @@
     python3 tools/ae_test/strip_checks.py pair --build <rev|path>
     python3 tools/ae_test/strip_checks.py digits --build <rev|path> [--maps prisoner,homobox@ce]
     python3 tools/ae_test/strip_checks.py states --build <rev|path>
+    python3 tools/ae_test/strip_checks.py clock --build <rev|path> --base <the pre-strip build's path>
 
 modes: one headless host per case, playing a seeded Arena Evolved gametype (HALO_NETWORK_TEST_GAMETYPE) with
 system-link bots and debug.score_strip_log (HALO_DEBUG_SCORE_STRIP_LOG=1). Every 5 seconds of game time the game
@@ -41,7 +42,9 @@ LINE = re.compile(r"score strip: tick (?P<tick>-?\d+) view (?P<view>\d+) mode=(?
                   r"left_sub=\"(?P<left_sub>[^\"]*)\" right_sub=\"(?P<right_sub>[^\"]*)\" bars=(?P<bars>\d) "
                   r"fill=(?P<lf>[\d.]+)/(?P<rf>[\d.]+) place=(?P<place>-?\d+) lead_me=(?P<lead_me>\d)"
                   r"(?: drawn=(?P<drawn>\d) alpha=(?P<alpha>[\d.]+) clock_box=(?P<clock_box>[-\d,]+) "
-                  r"score_box=(?P<score_box>[-\d,]+))?")
+                  r"score_box=(?P<score_box>[-\d,]+))?"
+                  r"(?: list=(?P<list>\d) list_foot=(?P<list_foot>[-\d.]+) list_left=(?P<list_left>[-\d.]+) "
+                  r"line=(?P<line>[-\d.]+) corner_clock=(?P<corner_clock>\d))?")
 
 # the host's player kills the last other player every 6 seconds (scores move); a ball in the host's player's hand at
 # 8 seconds (oddball's holder, juggernaut)
@@ -385,10 +388,107 @@ def run_states(cfg, a, out):
     return results
 
 
+# 1920x1080 single view: the HUD's corners (x0, y0, x1, y1)
+HUD_REGIONS = {"ammo": (140, 70, 430, 200), "shield": (1470, 70, 1780, 170), "sensor": (120, 800, 350, 1015),
+               "clock": (1590, 955, 1775, 1008)}
+
+
+def old_clock_blue(p):
+    """the old corner clock's colour: the HUD's blue at 0.7 over the scene"""
+    r, g, b = p
+    return 60 < r < 125 and 110 < g < 170 and 150 < b < 215 and 25 <= b - g <= 70 and r < g
+
+
+def hud_colour(p):
+    """the HUD's own blues (its panels' lines and numbers)"""
+    r, g, b = p
+    return b > 150 and b - r > 50 and g > 100
+
+
+def count_in(png, region, test):
+    w, h, rgb = harness.read_png(png)
+    x0, y0, x1, y1 = region
+    n = 0
+    for y in range(y0, min(y1, h)):
+        for x in range(x0, min(x1, w)):
+            i = (y * w + x) * 3
+            if test((rgb[i], rgb[i + 1], rgb[i + 2])):
+                n += 1
+    return n
+
+
+def judge_clock(results):
+    """results: name -> (debug text, [pngs taken while playing]); why list"""
+    why = []
+    ae_text, ae_pngs = results["ae"]
+    lines = [l for l in strip_lines(ae_text) if l["view"] == "0" and l.get("drawn") == "1"]
+    if not lines:
+        why.append("AE: no strip drawn")
+    for l in lines:
+        if l.get("corner_clock") != "0":
+            why.append(f"AE: the corner clock is on at tick {l['tick']}")
+            break
+        if l.get("list") != "1":
+            why.append(f"AE: no timers list at tick {l['tick']}")
+            break
+        if abs(float(l["list_foot"]) - float(l["line"])) > 3:
+            why.append(f"AE: the list's foot {l['list_foot']} is not on the line {l['line']}")
+            break
+    for png in ae_pngs[-2:]:
+        n = count_in(png, HUD_REGIONS["clock"], old_clock_blue)
+        if n > 15:
+            why.append(f"AE: {n} pixels of the old clock's blue in {png.name}")
+    classic_text, classic_pngs = results["classic"]
+    if any(l.get("drawn") == "1" for l in strip_lines(classic_text)):
+        why.append("CLASSIC: the strip was drawn")
+    base_text, base_pngs = results["base"]
+    if not classic_pngs or not base_pngs:
+        why.append("no pictures of play from CLASSIC or the pre-strip build")
+        return why
+    for name, region in HUD_REGIONS.items():
+        if name == "sensor":  # (its disc is see-through: its colour is the scene's as much as the HUD's)
+            continue
+        classic = count_in(classic_pngs[-1], region, hud_colour)
+        base = count_in(base_pngs[-1], region, hud_colour)
+        if abs(classic - base) > 0.25 * max(base, 40):
+            why.append(f"CLASSIC vs the pre-strip build: {name} has {classic} HUD pixels, not {base} (25 %)")
+    if count_in(classic_pngs[-1], HUD_REGIONS["clock"], old_clock_blue) < 60:
+        why.append("CLASSIC: the old corner clock is missing")
+    return why
+
+
+def run_clock(cfg, a, out):
+    if not a.base:
+        raise SystemExit("strip_checks clock: --base <the pre-strip build> is needed")
+    runs = {"ae": (a.build, "ae"), "classic": (a.build, "classic"), "base": (a.base, "classic")}
+    results = {}
+    statuses = []
+    for name, (build, style) in runs.items():
+        spec = harness.parse_spec({"name": "clock-" + name, "build": build, "map": "prisoner",
+                                   "saved_gametype": "AE TEAM SLY", "start": 3, "window": "1920x1080",
+                                   "exit_after": 40, "screenshots": 100,
+                                   "env": {"HALO_DEBUG_SCORE_STRIP_LOG": "1", "HALO_HUD_STYLE": style},
+                                   "expect": {"ticks": 300}})
+        r = harness.play(cfg, spec, out / spec["name"], None, a.keep_work, run_id=f"{out.name}-{name}")
+        statuses.append(r.get("status"))
+        debug = out / spec["name"] / "debug.txt"
+        text = debug.read_text(errors="replace") if debug.exists() else ""
+        pngs = [out / spec["name"] / s for s in r.get("shots", [])]
+        # (pictures of play: after the countdown, the HUD up)
+        playing = [p for p in pngs if count_in(p, HUD_REGIONS["shield"], hud_colour) > 200]
+        results[name] = (text, playing)
+    why = judge_clock(results) + [f"a game: {s}" for s in statuses if s != "PASS"]
+    status = "FAIL" if why else "PASS"
+    harness.log(f"  clock: {status}" + (f" ({'; '.join(why)})" if why else ""))
+    harness.write_json(out / "clock.json", {"status": status, "why": why})
+    return {"clock": {"status": status, "why": why}}
+
+
 def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     harness.add_common_args(p)
-    p.add_argument("what", choices=("modes", "pair", "digits", "states"))
+    p.add_argument("what", choices=("modes", "pair", "digits", "states", "clock"))
+    p.add_argument("--base", help="clock: the pre-strip build to compare CLASSIC with")
     p.add_argument("--build", required=True)
     p.add_argument("--cases", default=DEFAULT_CASES)
     p.add_argument("--seconds", type=int, default=45)
@@ -400,7 +500,8 @@ def main(argv):
         raise SystemExit("strip_checks: run it on the box itself (ssh halo-build), with --build a path or commit there")
     cfg = harness.load_config(a.config)
     out = harness.new_out_dir(cfg, "strip_checks", a.what, a.out_name)
-    results = {"modes": run_modes, "pair": run_pair, "digits": run_digits, "states": run_states}[a.what](cfg, a, out)
+    results = {"modes": run_modes, "pair": run_pair, "digits": run_digits, "states": run_states,
+               "clock": run_clock}[a.what](cfg, a, out)
     failed = [n for n, r in results.items() if r["status"] != "PASS"]
     harness.log(f"strip_checks {a.what}: {len(results) - len(failed)} passed, {len(failed)} failed; results in {out}")
     return 1 if failed else 0

@@ -35,6 +35,7 @@ second.
 #include "ae_hud_digits.h"
 #include "ae_hud_style.h"
 #include "ae_hud_text.h"
+#include "ae_power_list.h"
 #include "ae_score_strip.h"
 #include "ae_strip_engine.h"
 #include "ae_strip_layout.h"
@@ -100,6 +101,11 @@ boolean ae_score_strip_visible(short local_player_index)
 	return valid_view(local_player_index) && views[local_player_index].visible;
 }
 
+real ae_score_strip_last_line(short local_player_index)
+{
+	return valid_view(local_player_index) ? views[local_player_index].shared_line_y : 0.0f;
+}
+
 boolean ae_score_strip_last_drawn(short local_player_index, real *alpha, real clock[4], real left_score[4])
 {
 	struct strip_view const *state;
@@ -133,6 +139,14 @@ static real view_factor(void)
 	return 0.5f + 0.5f * (real)sqrt(share);
 }
 
+real ae_score_strip_view_scale(void)
+{
+	int drawable_width = 0, drawable_height = 0;
+
+	platform_video_drawable_size(&drawable_width, &drawable_height);
+	return view_factor() * (drawable_height > 0 ? (real)drawable_height / 1080.0f : 1.0f);
+}
+
 real ae_score_strip_shared_line_y(short local_player_index)
 {
 	short inset = 0;
@@ -146,27 +160,24 @@ real ae_score_strip_shared_line_y(short local_player_index)
 
 /* the geometry the layout takes, in the view's screen pixels: the HUD area's centre, the shared bottom line (the
 motion sensor's foot, 11.12), the right-hand column */
-static void view_geometry(struct ae_strip_geometry *geometry)
+static void view_geometry(short view, struct ae_strip_geometry *geometry)
 {
 	real ppu = ae_hud_pixels_per_unit();
 	short width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 	short height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
 	short area_left = 0, area_right = 0, inset = 0;
 	long baseline = 0;
-	int drawable_width = 0, drawable_height = 0;
 
-	platform_video_drawable_size(&drawable_width, &drawable_height);
 	hud_area_insets(&area_left, &area_right);
 	hud_item_timers_ae_place(&inset, &baseline);
 	geometry->view_left = 0.0f;
 	geometry->view_top = 0.0f;
 	geometry->view_width = (real)width * ppu;
 	geometry->view_height = (real)height * ppu;
-	geometry->s = view_factor() * (drawable_height > 0 ? (real)drawable_height / 1080.0f : 1.0f);
+	geometry->s = ae_score_strip_view_scale();
 	geometry->shared_line_y = (real)baseline * ppu;
-	/* (the timers list's left edge comes with the T1 list, plan Task 7: until then the right-hand column's edge,
-	the meters' right edge that the corner clock keeps to) */
-	geometry->list_left_x = (real)(width - inset) * ppu;
+	/* (the timers list's left edge, drawn just before the strip: ae_power_list.c; the view's right without one) */
+	geometry->list_left_x = ae_power_list_left_x(view);
 	geometry->centre_x = ((real)area_left + ((real)width - (real)area_right)) / 2.0f * ppu;
 }
 
@@ -643,7 +654,7 @@ static void draw_strip(short view)
 		return;
 	}
 	ae_strip_model_build(&snapshot, &model);
-	view_geometry(&geometry);
+	view_geometry(view, &geometry);
 	ae_strip_layout_compute(&model, &geometry, measure_digits, measure_text, &layout);
 	state->shared_line_y = geometry.shared_line_y;
 	k = layout.strip_scale;
