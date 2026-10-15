@@ -54,7 +54,7 @@ static void set_color(real const rgb[3], real alpha, real_argb_color *color)
 }
 
 /* the running game's header text */
-static void header_lines(struct ae_header_lines *lines)
+void ae_scoreboard_header_text(struct ae_header_lines *lines)
 {
 	struct game_variant *variant = game_engine_get_variant();
 	struct game_variant_options const *options = game_variant_options_get();
@@ -121,7 +121,7 @@ static void draw_header(real x, real bottom, real rule_right, real alpha)
 	real_argb_color color;
 	const wchar_t *separator = AE_HEADER_SEPARATOR;
 
-	header_lines(&lines);
+	ae_scoreboard_header_text(&lines);
 	cursor = x;
 	set_color(white_rgb, alpha, &color);
 	ae_hud_text_draw(view, cursor, line1, lines.mode, px1, &color, TRUE);

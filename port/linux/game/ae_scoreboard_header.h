@@ -17,6 +17,10 @@ rows. CLASSIC: nothing here draws; the gametype row stays.
 #include "ae_pure_types.h"
 
 union rectangle2d;
+struct ae_header_lines;
+
+/* the running game's header text (ae_header_lines.h): the countdown's lines too */
+void ae_scoreboard_header_text(struct ae_header_lines *lines);
 
 /* (game_engine.c) the scoreboard's gametype rows: 0 with AE (the header has the name), else as they are */
 long ae_scoreboard_header_rows(long gametype_rows);

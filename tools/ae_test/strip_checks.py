@@ -6,6 +6,7 @@
     python3 tools/ae_test/strip_checks.py digits --build <rev|path> [--maps prisoner,homobox@ce]
     python3 tools/ae_test/strip_checks.py states --build <rev|path>
     python3 tools/ae_test/strip_checks.py clock --build <rev|path> --base <the pre-strip build's path>
+    python3 tools/ae_test/strip_checks.py style --build <rev|path>
 
 modes: one headless host per case, playing a seeded Arena Evolved gametype (HALO_NETWORK_TEST_GAMETYPE) with
 system-link bots and debug.score_strip_log (HALO_DEBUG_SCORE_STRIP_LOG=1). Every 5 seconds of game time the game
@@ -19,7 +20,8 @@ held on at least one line (the rules that must hold on every line say so).
 
 pair: a host and a joined client (a second game instance, tools/ae_test/handshake.py's pair) playing AE TEAM SLY
 (--gametype) with a kill every 6 seconds; each client line's perspective-free signature (mode, goal, the two sides'
-scores and colours as a set) must equal one of the two host lines nearest its tick (Review Focus 2: a joiner's strip reads as the host's).
+scores and colours as a set) must equal one of the two host lines nearest its tick (Review Focus 2: a joiner's
+strip reads as the host's).
 
 digits: CE's counter digits (ae_hud_digits.c) drawn by debug.digits (HALO_DEBUG_DIGITS) in magenta at 24 px cap;
 in the screenshots, the magenta pixels' box must be 24 +- 1 px tall (cap top to baseline) and as wide as the ink the
@@ -484,10 +486,98 @@ def run_clock(cfg, a, out):
     return {"clock": {"status": status, "why": why}}
 
 
+WHITE = (229, 240, 255)
+
+
+def bright_mean(png, region, threshold=170):
+    """the mean colour of a region's bright pixels (any channel over threshold) and their count"""
+    w, h, rgb = harness.read_png(png)
+    x0, y0, x1, y1 = region
+    total, n = [0, 0, 0], 0
+    for y in range(max(0, y0), min(y1, h)):
+        for x in range(max(0, x0), min(x1, w)):
+            i = (y * w + x) * 3
+            p = rgb[i], rgb[i + 1], rgb[i + 2]
+            if max(p) > threshold:
+                for k in range(3):
+                    total[k] += p[k]
+                n += 1
+    return (tuple(v / n for v in total) if n else None), n
+
+
+def countdown_frames(pngs):
+    """the countdown's pictures: black round a big digit in the middle (1920x1080)"""
+    out = []
+    for png in pngs:
+        w, h, rgb = harness.read_png(png)
+        sampled = [(x, y) for y in range(0, h, 10) for x in range(0, w, 10)]
+        lit = sum(1 for x, y in sampled if max(rgb[(y * w + x) * 3:(y * w + x) * 3 + 3]) > 40)
+        mean, n = bright_mean(png, (860, 380, 1060, 620))
+        # (nearly all black but for the digit and its lines: not the menus, not play)
+        if sampled and lit < 0.08 * len(sampled) and n > 400:
+            out.append((png, mean))
+    return out
+
+
+def judge_countdown(frames, expected):
+    if not frames:
+        return ["no picture of the countdown"]
+    png, mean = frames[-1]
+    if any(abs(mean[k] - expected[k]) > 25 for k in range(3)):
+        return [f"the countdown's digit is {tuple(round(v) for v in mean)} in {png.name}, not {expected}"]
+    return []
+
+
+def run_style(cfg, a, out):
+    cases = {
+        "countdown-team": {"saved_gametype": "AE TEAM SLY", "env": {"HALO_NETWORK_TEST_AUTO_BALANCE": "1"}},
+        "countdown-ffa": {"saved_gametype": "AE FFA SLAY", "env": {}},
+        "overlay": {"saved_gametype": "AE FFA SLAY", "env": {"HALO_PERFORMANCE": "fps", "HALO_MAX_FPS": "25",
+                                                             "HALO_PERFORMANCE_POSITION": "top_left"}},
+    }
+    results = {}
+    for name, case in cases.items():
+        env = {"HALO_DEBUG_SCORE_STRIP_LOG": "1", **case["env"]}
+        spec = harness.parse_spec({"name": "style-" + name, "build": a.build, "map": "prisoner",
+                                   "saved_gametype": case["saved_gametype"], "start": 3, "window": "1920x1080",
+                                   "exit_after": 30, "screenshots": 8, "env": env, "expect": {"ticks": 200}})
+        r = harness.play(cfg, spec, out / spec["name"], None, a.keep_work, run_id=f"{out.name}-{name}")
+        debug = out / spec["name"] / "debug.txt"
+        text = debug.read_text(errors="replace") if debug.exists() else ""
+        pngs = [out / spec["name"] / s for s in r.get("shots", [])]
+        why = list(r.get("why") or [])
+        if name.startswith("countdown"):
+            lines = [l for l in strip_lines(text) if l["view"] == "0" and l.get("drawn") == "1"]
+            expected = WHITE if name == "countdown-ffa" else TEAM_RGB.get(lines[0]["lc"] if lines else "", None)
+            if expected is None:
+                why.append("no team from the log")
+            else:
+                why += judge_countdown(countdown_frames(pngs), expected)
+        else:
+            reds = whites = 0
+            for png in pngs[-3:]:
+                w, h, rgb = harness.read_png(png)
+                for y in range(0, 40):
+                    for x in range(0, 260):
+                        i = (y * w + x) * 3
+                        p = rgb[i], rgb[i + 1], rgb[i + 2]
+                        if p[0] > 130 and p[1] < 90 and p[2] < 90:
+                            reds += 1
+                        elif min(p) > 180:
+                            whites += 1
+            if reds < 30 or whites > reds // 4:
+                why.append(f"the performance line is not red as a whole ({reds} red, {whites} white pixels)")
+        status = "PASS" if r.get("status") == "PASS" and not why else "FAIL"
+        harness.log(f"  style {name}: {status}" + (f" ({'; '.join(why)})" if why else ""))
+        results[name] = {"status": status, "why": why}
+    harness.write_json(out / "style.json", results)
+    return results
+
+
 def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     harness.add_common_args(p)
-    p.add_argument("what", choices=("modes", "pair", "digits", "states", "clock"))
+    p.add_argument("what", choices=("modes", "pair", "digits", "states", "clock", "style"))
     p.add_argument("--base", help="clock: the pre-strip build to compare CLASSIC with")
     p.add_argument("--build", required=True)
     p.add_argument("--cases", default=DEFAULT_CASES)
@@ -501,7 +591,7 @@ def main(argv):
     cfg = harness.load_config(a.config)
     out = harness.new_out_dir(cfg, "strip_checks", a.what, a.out_name)
     results = {"modes": run_modes, "pair": run_pair, "digits": run_digits, "states": run_states,
-               "clock": run_clock}[a.what](cfg, a, out)
+               "clock": run_clock, "style": run_style}[a.what](cfg, a, out)
     failed = [n for n, r in results.items() if r["status"] != "PASS"]
     harness.log(f"strip_checks {a.what}: {len(results) - len(failed)} passed, {len(failed)} failed; results in {out}")
     return 1 if failed else 0

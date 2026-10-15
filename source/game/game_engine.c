@@ -604,6 +604,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_hit_feedback.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
 #include "ae_scoreboard_header.h" /* AE hook */
+#include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -4138,6 +4139,8 @@ static void game_engine_rasterize_voice_speakers(
 	short top;
 	struct player_datum *viewer;
 
+	if (ae_hud_style_voice_speakers()) /* AE hook */
+		return;
 	if (font_index == NONE || !network_voice_available())
 		return;
 	offset_rectangle2d(&bounds, -render.camera.viewport_bounds.x0, -render.camera.viewport_bounds.y0);
@@ -4619,6 +4622,8 @@ static void game_engine_rasterize_pregame_countdown(
 		draw_quad(&view, (pixel32)(long)(black * 255.0f + 0.5f) << 24);
 	}
 
+	if (ae_hud_style_countdown(ticks_left, view_width, view_height)) /* AE hook */
+		return;
 	font_index = hud_globals->messaging.single_player_font.index != NONE ?
 		hud_globals->messaging.single_player_font.index : hud_globals->messaging.multi_player_font.index;
 	if (font_index != NONE)

@@ -378,3 +378,14 @@ source/game/game_engine.c	#include "ae_scoreboard_header.h" /* AE hook */
 source/game/game_engine.c	gametype_rows = ae_scoreboard_header_rows(gametype_rows); /* AE hook */
 source/game/game_engine.c	ae_scoreboard_header_full(bounds.x0, left, top, block_width, line_height, SCOREBOARD_SCALE, SCOREBOARD_PING_ROOM, alpha); /* AE hook */
 source/game/game_engine.c	ae_scoreboard_header_row(row_index - row_offset, &bounds, color->alpha); /* AE hook */
+source/game/game_engine.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/game/game_engine.c	if (ae_hud_style_countdown(ticks_left, view_width, view_height)) /* AE hook */\nreturn;
+source/game/game_engine.c	if (ae_hud_style_voice_speakers()) /* AE hook */\nreturn;
+source/main/main.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/main/main.c	if (ae_hud_style_overlay(corner, color, text, &frame_statistics_drawn, &frame_statistics_extent)) /* AE hook */\nreturn;
+source/main/main.c	if (ae_hud_style_capture_notice(frame_statistics_drawn, &frame_statistics_extent, frame_statistics_corner() == _text_justification_right)) /* AE hook */\nreturn;
+source/interface/hud.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/interface/hud.c	if (ae_hud_style_name_color(ally, color)) /* AE hook */\nreturn;
+source/interface/hud.c	ae_hud_style_name_outline(font_index, &bounds, x, y, name, &color, hud_player_name_scale()); /* AE hook */
+port/linux/game/coop_spectate.c	#include "ae_hud_style_draw.h" /* AE hook */
+port/linux/game/coop_spectate.c	if (ae_hud_style_bottom_text(text)) /* AE hook */\nreturn;

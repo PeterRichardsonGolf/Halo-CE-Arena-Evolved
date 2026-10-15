@@ -407,6 +407,7 @@ symbols in this file:
 #include "interface/marketing_and_strategic_business_development.h"
 #endif
 #include "view_fov.h" /* port: display.fov, before the projection and culling */
+#include "ae_hud_style_draw.h" /* AE hook */
 
 #if defined(HALO_WINDOWS) || defined(HALO_ANDROID) || defined(__linux__) || defined(__APPLE__)
 #define HALO_NATIVE_BUILD_INFO 1
@@ -3161,6 +3162,8 @@ static void frame_statistics_draw(
 	hud_item_timers.c) */
 	real scale = hud_item_timers_overlay_text_scale();
 
+	if (ae_hud_style_overlay(corner, color, text, &frame_statistics_drawn, &frame_statistics_extent)) /* AE hook */
+		return;
 	bounds.y0 = (short)(bounds.y0 + 2);
 	bounds.y1 = (short)(bounds.y0 + line_height);
 	bounds.x0 = (short)(bounds.x0 + 4);
@@ -3205,6 +3208,8 @@ static void capture_notice_draw(
 	real scale;
 	union real_argb_color color;
 
+	if (ae_hud_style_capture_notice(frame_statistics_drawn, &frame_statistics_extent, frame_statistics_corner() == _text_justification_right)) /* AE hook */
+		return;
 	if (!kind)
 		return;
 	font = font_definition_get(font_tag_index);

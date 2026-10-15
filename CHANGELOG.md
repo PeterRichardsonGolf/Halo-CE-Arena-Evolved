@@ -13,6 +13,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   the strip's style, its foot on the motion sensor's line.
 - With HUD STYLE AE, a **header over the scoreboard** (Tab, and after the game): the mode, the map and the set
   ("TEAM CTF · BLOOD GULCH - NHE"), and the goal and time ("3 CAPTURES · 15:00"), in place of the gametype's row.
+- With HUD STYLE AE, the **PRE-GAME COUNTDOWN** is a large upright number (white, or your team's colour) with
+  the mode, map and goal under it; the performance line, the capture notice, the names over players, the voice
+  speakers' list and co-op's texts take the strip's look.
 
 ## 0.2.5-beta - 2026-10-13
 
