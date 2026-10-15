@@ -30,6 +30,7 @@ the flag's last owned time; a client's from when it saw the flag dropped).
 #include "tag_files/tag_groups.h"
 #include "units/units.h"
 
+#include "ae_panel_engine.h"
 #include "ae_power_list.h"
 #include "ae_score_strip.h"
 #include "ae_strip_engine.h"
@@ -555,6 +556,9 @@ void ae_strip_engine_debug_log(void)
 	static int enabled = -1;
 	long now;
 	short local;
+
+	/* (the AE panels' test controls, in the game's tick: seating a player draws the game's random numbers) */
+	ae_panel_engine_debug_tick();
 
 	/* (read once: a test's setting) */
 	if (enabled < 0)

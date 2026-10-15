@@ -162,6 +162,7 @@ names kept. The names over players' heads (hud.c, drawn before the waypoints) ar
 /* (the waypoints' pictures' rules and Arena Evolved's glyphs: port/linux/game) */
 #include "ae_waypoint_icons.h"
 #include "ae_power_list.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -3115,6 +3116,7 @@ static void hud_waypoint_draw_labels(
 		could not step aside) */
 		hud_waypoint_block_scale_set(labels, label_count, index);
 		hud_waypoint_block_fade = hud_waypoint_meets_name_tag(&block->bounds) ? HUD_WAYPOINT_TAG_FADE : 1.0f;
+		hud_waypoint_block_fade *= ae_panels_label_alpha(render.local_player_index, &block->bounds); /* AE hook */
 		for (line = 0; line < block->line_count; line++)
 		{
 			struct hud_waypoint_line_layout layout;
@@ -3695,3 +3697,4 @@ void hud_item_timers_initialize_for_new_map(
 void hud_item_timers_ae_place(short *inset, long *baseline) { hud_item_timers_clock_place(inset, baseline); } /* AE hook */
 boolean hud_item_timers_ae_corner(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_top_left[v].valid) return FALSE; *b = hud_item_timers_top_left[v].bounds; return TRUE; } /* AE hook */
 void hud_item_timers_ae_record(real x0, real y0, real x1, real y1) { hud_item_timers_record(x0, y0, x1, y1); } /* AE hook */
+boolean hud_item_timers_ae_meters(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_meters[v].valid) return FALSE; *b = hud_item_timers_meters[v].bounds; return TRUE; } /* AE hook */

@@ -27,8 +27,10 @@ list is drawn on the right */
 real ae_power_list_left_x(short local_player_index);
 /* the last frame's list: its foot row's baseline and left edge (screen px); FALSE when none was drawn */
 boolean ae_power_list_last(short local_player_index, real *foot_baseline, real *left_x);
+/* the list's last drawn extent in the view px: left, top, right, bottom */
+boolean ae_power_list_extent(short local_player_index, real extent[4]);
 /* the right-hand column's x in the view (screen px): the shield meter's right edge, where the timers list (and the
 own-buff rows of the AE panels) end (spec 14.15 part 3) */
-real ae_panel_right_column_x(short local_player_index);
+real ae_power_list_right_x(short local_player_index);
 
 #endif /* __AE_POWER_LIST_H */

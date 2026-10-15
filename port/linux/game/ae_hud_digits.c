@@ -55,14 +55,16 @@ boolean ae_hud_digits_ink_bounds(const wchar_t *text, real cap_px, real cell_px,
 	return ae_digits_ink_bounds_cells(text, cap_px, cell_px, FALSE, left, right);
 }
 
+/* (the HUD's blend for its sheets, alpha multiply add, adds the colour to what is under it by (1 - alpha): the
+colour goes in premultiplied by its alpha, or a translucent glyph is drawn too bright) */
 static pixel32 pixel(real_rgb_color const *rgb, real alpha)
 {
 	real_argb_color color;
 
 	color.alpha = alpha < 0.0f ? 0.0f : alpha > 1.0f ? 1.0f : alpha;
-	color.red = rgb->red;
-	color.green = rgb->green;
-	color.blue = rgb->blue;
+	color.red = rgb->red * color.alpha;
+	color.green = rgb->green * color.alpha;
+	color.blue = rgb->blue * color.alpha;
 	return real_argb_color_to_pixel32(&color);
 }
 

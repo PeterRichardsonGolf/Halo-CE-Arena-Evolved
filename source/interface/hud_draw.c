@@ -105,6 +105,7 @@ symbols in this file:
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "view_fov.h" /* port: port/linux/game/view_fov.c */
+#include "ae_panels.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -939,6 +940,7 @@ static void hud_draw_multitexture_overlay(
 		}
 	}
 
+	if (ae_panels_hiding_ce()) return; /* AE hook */
 	rasterizer_psuedo_dynamic_screen_quad_draw(&parameters, vertices);
 
 	match_assert_stack_frame("c:\\halo\\SOURCE\\interface\\hud_draw.c", 1372);
@@ -1704,6 +1706,7 @@ static void hud_draw_bitmap_internal(
 		_shader_framebuffer_blend_function_alpha_multiply_add;
 	parameters.map[0] = (struct bitmap_data *)bitmap;
 
+	if (ae_panels_hiding_ce()) return; /* AE hook */
 	rasterizer_psuedo_dynamic_screen_quad_draw(&parameters, vertices);
 
 	match_assert_stack_frame("c:\\halo\\SOURCE\\interface\\hud_draw.c", 985);

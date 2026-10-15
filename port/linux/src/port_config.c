@@ -1059,6 +1059,35 @@ static const struct config_setting config_settings[] =
 		"A DualSense's effects in debug.txt (ae_ds5.c): the bytes written, what\n"
 		"each player's triggers and lightbar are asked for as it changes, the\n"
 		"rumble, each weapon tag's kind once a map." },
+	{ "debug.ae_panel_primitives", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_PRIMITIVES", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_draw.c): one of each of\n"
+		"their primitives on a grey plate in the first view, and their places in the\n"
+		"log." },
+	{ "debug.ae_panel_log", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): every 2\n"
+		"seconds, one line per local player of what the ammo, grenade, shield and\n"
+		"health panels read from the game. Only this machine's log." },
+	{ "debug.ae_panel_powerups", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_POWERUPS", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): an automated\n"
+		"test host gives its first player the overshield or camo at these seconds of\n"
+		"game time (\"overshield:10,camo:20\"); empty never." },
+	{ "debug.ae_panel_state", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_STATE", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests and pictures of the AE panels (ae_panels.c): a\n"
+		"state drawn over the game's (low, empty, overheated, shield_low,\n"
+		"shield_down, overshield1, overshield2, camo, buffs, health_low)." },
+	{ "debug.ae_sensor_with_ce", _config_boolean, "false", "HALO_DEBUG_AE_SENSOR_WITH_CE", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE motion sensor (ae_sensor.c): CE's own\n"
+		"sensor drawn as well, so that AE's blips can be laid on CE's." },
+	{ "debug.ae_panel_seat", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_SEAT", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): an automated\n"
+		"test host seats its first player in a vehicle (\"ghost:driver:8\",\n"
+		"\"warthog:gunner:8\": the vehicle's tag, the seat, the second)." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"

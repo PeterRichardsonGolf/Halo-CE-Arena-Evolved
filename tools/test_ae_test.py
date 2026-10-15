@@ -30,6 +30,7 @@ import windows  # noqa: E402
 import gametype_file  # noqa: E402
 import seed_compare  # noqa: E402
 import strip_checks  # noqa: E402
+import panel_checks  # noqa: E402
 
 del sys.modules["harness"]
 if _other_harness is not None:
@@ -1386,6 +1387,45 @@ class Sheet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PanelChecks(unittest.TestCase):
+    """panel_checks.py: the edge measure and the primitives' judge on a drawn plate"""
+
+    def test_softness(self):
+        self.assertEqual(panel_checks.softness([102, 40, 200, 200, 40, 102]), 0)
+        self.assertEqual(panel_checks.softness([102, 40, 120, 200, 200, 120, 40, 102]), 1)
+        self.assertEqual(panel_checks.softness([102, 120, 140, 160, 200]), 0)   # no DARK keyline: not an edge
+        self.assertEqual(panel_checks.softness([30, 70, 100, 130, 160, 200]), 3)
+
+    LINE = ("arena-evolved: ae panel: tick 600 view 0 name=Player weapon=assault rifle kind=rounds loaded=42/60 "
+            "reserve=180 heat=0.00 battery=1.00 overheated=0 low=0 grenades=2/1 armed=frag shield=1.00 health=1.00 "
+            "camo=0 overshield=0.0 seat=none origin=150.0,83.0 right=1758.0,83.0 scale=1.00 placed=1")
+
+    def test_panel_line(self):
+        (line,) = panel_checks.panel_lines("noise\n" + self.LINE + "\n")
+        self.assertEqual((line["weapon"], line["loaded"], line["magazine"], line["frags"], line["armed"]),
+                         ("assault rifle", 42, 60, 2, "frag"))
+        self.assertEqual(panel_checks.panel_lines(self.LINE, "view 1"), [])
+
+    def test_never_rises(self):
+        lines = [{"tick": t, "camo": c} for t, c in ((0, 900), (60, 840), (120, 845), (180, 600))]
+        self.assertEqual(len(panel_checks.never_rises(lines, "camo", 1)), 1)
+
+    def test_compare_players(self):
+        host = self.LINE.replace("view 0", "player 1").replace(" origin=150.0,83.0 right=1758.0,83.0 scale=1.00 "
+                                                                 "placed=1", "")
+        why, matched = panel_checks.compare_players(host, self.LINE)
+        self.assertEqual((why, matched), ([], 1))
+        why, _ = panel_checks.compare_players(host.replace("loaded=42", "loaded=12"), self.LINE)
+        self.assertTrue(why)
+
+    def test_plate_missing(self):
+        w, h = 600, 340
+        rgb = bytearray([20] * (w * h * 3))
+        why, _ = panel_checks.judge_primitives(w, h, rgb)
+        self.assertTrue(any("plate" in reason for reason in why))
+        self.assertTrue(any("box" in reason for reason in why))
 
 
 class StripChecks(unittest.TestCase):

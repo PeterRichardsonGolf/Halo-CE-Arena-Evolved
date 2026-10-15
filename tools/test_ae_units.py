@@ -91,6 +91,16 @@ UNITS = {
     # (the score strip's layout: one bottom line, the gap rule, every mode's places; fake metrics)
     "ae_strip_layout_test.c": ([UI / "ae_strip_model.c", UI / "ae_strip_layout.c"],
                                ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (HUD STYLE AE's panels: what the ammo, grenade, shield and health panels say; under the sanitizers, as the
+    # numbers come from any map's or pack's weapon)
+    "ae_panel_model_test.c": ([UI / "ae_panel_model.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                              []),
+    # (HUD STYLE AE's panel layout: lean lines, boxes, cells, rounds, bars, the right column; CE's real digit ink)
+    "ae_panel_layout_test.c": ([UI / "ae_panel_model.c", UI / "ae_panel_layout.c", UI / "ae_hud_digit_cells.c"],
+                               ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
+    # (HUD STYLE AE's motion sensor: the view's wedge, the rings, CE's blips' places, the sweep, the label)
+    "ae_sensor_test.c": ([UI / "ae_sensor_geometry.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                         ["-lm"]),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
