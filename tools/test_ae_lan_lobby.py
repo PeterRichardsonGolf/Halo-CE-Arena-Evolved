@@ -93,6 +93,21 @@ def test_player_2_leaves_first(cfg):
     after(rest, "network server disposed")
 
 
+def test_b_from_a_controller_with_no_player(cfg):
+    """item 108: player 1 (the keyboard) leaves, then the keyboard's B again, its controller with no player now: the
+    whole machine leaves the lobby (player 2 too) and B goes back out. Before the fix that B did nothing ("port lobby
+    leave" failed) and the lobby stayed until every player pressed their own B"""
+    out = menus.out_dir(cfg, "lobby-leave")
+    result, text = play(cfg, out, "no-player-b", ["b", "wait", "wait", "wait", "b", "wait", "wait", "wait",
+                                                  *BACK_TO_MULTIPLAYER])
+    assert result.get("status") == "PASS", result.get("why")
+    rest = joined_two(text)
+    rest = after(rest, "requesting a player removal (controller index #0)")
+    rest = after(rest, "requesting a player removal (controller index #1)")
+    rest = after(rest, "ae lobby: B of controller #0 (no player of its own): this machine left the lobby (1 players)")
+    after(rest, "network server disposed")
+
+
 # the main menu's MULTIPLAYER (a new profile's name screen, its Done), then Join Game > LAN
 TO_LAN_LIST = "down a a wait wait down a".split()
 HINT_LOG = "lan: no games found in 10 s and a firewall is on (ufw): No games found. On Linux a firewall can hide LAN games:"

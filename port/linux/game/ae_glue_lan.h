@@ -22,5 +22,9 @@ int ae_lan_hint_line(int line, int empty, wchar_t *text, short size);
 /* (browser_update, LAN only, after the second line) the second line's label: MESSAGE under the hint, else RULES as
 the list has it */
 void ae_lan_hint_label(struct widget_instance *label);
+/* (the PC lobby's "port lobby leave", item 108) B from a pad with no player and no ADD PLAYER under way: every
+player of this machine leaves and the machine leaves the lobby, as its last player's B does; TRUE: back from the lobby,
+FALSE: not in a lobby's pregame (nothing done) */
+int ae_lobby_leave_all(short controller);
 
 #endif

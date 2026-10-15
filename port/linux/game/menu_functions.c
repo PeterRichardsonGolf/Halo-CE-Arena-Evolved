@@ -5228,6 +5228,8 @@ static boolean lobby_leave(struct widget_instance *widget, struct event_record *
 {
 	if (!lobby_controller_playing(controller))
 	{
+		if (!lobby_join.adding && lobby_join.controller == NONE) /* AE hook */
+			return ae_lobby_leave_all(controller); /* (AE: else a pad whose player had left did nothing and the lobby looked stuck: item 108) */
 		lobby_join_reset();
 		return FALSE;
 	}
