@@ -35,6 +35,9 @@ HUD globals' button icons at them; it tells AE where they start
 #include "tag_files/tag_groups.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "interface/hud_draw.h"
+#include "text/draw_string.h"
+#include "text/font_group.h"
 #include "ae_buttons_tags.h"
 
 #include "../src/ae_buttons.h"
@@ -43,6 +46,8 @@ HUD globals' button icons at them; it tells AE where they start
 void platform_log(char const *format, ...);
 /* cache_files.c's: the loaded map's tags are a Custom Edition map's */
 boolean cache_file_tags_are_ce(void);
+/* port_config.c's */
+char const *config_string(char const *name);
 
 /* ---------- constants */
 
@@ -57,6 +62,15 @@ enum
 message icons' (combined\hud_msg_icons, 24x30): a Custom Edition map's
 menus and carnage report draw the latter at the former's size */
 #define CE_MENU_ICON_SCALE (2.0f / 3.0f)
+
+/* the PC menus' text icons (owner 10-15: the carnage report's "=quit" / "=pick game" icons sat low beside their words):
+drawn as the HUD hints' (ae_hud_messages.c), a button MENU_ICON_HEIGHT times the line's capitals tall, a wide picture
+MENU_ICON_HEIGHT_WIDE, their middles on the capitals' middle; the capitals MENU_ICON_CAP of the font's ascent (Halo's
+menu fonts: Conduit's capitals are about seven tenths of its ascent) */
+#define MENU_ICON_HEIGHT 1.25f
+#define MENU_ICON_HEIGHT_WIDE 2.0f
+#define MENU_ICON_WIDE_ASPECT 2.0f
+#define MENU_ICON_CAP 0.70f
 
 /* ---------- globals */
 
@@ -313,4 +327,40 @@ struct bitmap_data const *ae_buttons_sprite_bitmap(
 		return loaded[glyph].placeholder;
 	}
 	return NULL;
+}
+
+boolean ae_buttons_menu_icon(
+	struct bitmap_data const *bitmap,
+	real_rectangle2d const *clip,
+	rectangle2d *cursor_bounds,
+	short width_offset,
+	pixel32 color)
+{
+	char const *menus = config_string("display.menus");
+	struct font_header const *font;
+	long font_index = draw_string_get_font();
+	real texels_wide, texels_high, cap, height, scale, baseline;
+	point2d point;
+
+	/* (only the PC menus' (display.menus "pc"): the Xbox menus are upstream's, as they were) */
+	if (!menus || _stricmp(menus, "pc") || !bitmap || font_index == NONE)
+		return FALSE;
+	font = font_definition_get(font_index);
+	if (!font || font->ascending_height <= 0)
+		return FALSE;
+	texels_wide = (clip ? clip->x1 - clip->x0 : 1.0f) * (real)bitmap->width;
+	texels_high = (clip ? clip->y1 - clip->y0 : 1.0f) * (real)bitmap->height;
+	if (texels_wide <= 0.0f || texels_high <= 0.0f)
+		return FALSE;
+	cap = MENU_ICON_CAP * (real)font->ascending_height;
+	height = cap * (texels_wide >= MENU_ICON_WIDE_ASPECT * texels_high ? MENU_ICON_HEIGHT_WIDE : MENU_ICON_HEIGHT);
+	scale = height / texels_high;
+	/* (the line's baseline: its bottom less the font's descent; the picture's bottom left there, its middle on the
+	capitals') */
+	baseline = (real)cursor_bounds->y1 - (real)font->descending_height;
+	point.x = (short)(cursor_bounds->x0 + 1);
+	point.y = (short)(baseline - cap / 2.0f + height / 2.0f + 0.5f);
+	hud_draw_bitmap_direct(bitmap, _hud_anchor_bottom_left, &point, clip, scale, 0.0f, color, FALSE);
+	cursor_bounds->x0 = (short)(point.x + texels_wide * scale + 0.5f) + width_offset;
+	return TRUE;
 }

@@ -422,6 +422,9 @@ port/linux/game/ce_hud.c	ae_buttons_ce_sheet(group, first_sequence, bitmap_count
 source/interface/ui_widget.c	#include "ae_buttons_tags.h" /* AE hook */
 source/interface/ui_widget.c	bitmap_group_index = ae_buttons_ce_menu_icons(bitmap_group_index); /* AE hook */
 source/interface/ui_widget.c	scale *= ae_buttons_ce_menu_icon_scale(bitmap_group_index); /* AE hook */
+# PC menus' text icons drawn as the HUD hints' (0.2.6, owner 10-15: the carnage report's "=quit" / "=pick game" icons
+# sat low beside their words): sized by the line's capitals and centred on them (ae_buttons_tags.c); Xbox menus as they were
+source/interface/ui_widget.c	if (ae_buttons_menu_icon(bitmap, clip, cursor_bounds, icon->width_offset, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
 # The carnage report's B asks first (0.2.6, owner 10-15: B dropped the player straight to the main menu, the next B
 # into "exit Halo?"): "LEAVE THE GAME?" over the report, A leaves as B did, B stays; only player 1's buttons count
 # there (owner: "p1/host only"), so AE takes the report's buttons whole (ae_postgame.c; PC and Xbox menus alike: one

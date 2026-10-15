@@ -27,5 +27,10 @@ have the Xbox's, that sheet (the globals' hud_msg_icons_sm is Halo PC's, without
 the scale its icons are drawn at there (two thirds: the small sheet's size), else 1 */
 long ae_buttons_ce_menu_icons(long bitmap_group_index);
 float ae_buttons_ce_menu_icon_scale(long bitmap_group_index);
+/* (ui_widget.c's render_state_bitmap, AE hook) a text icon in the PC menus (the carnage report's, the lobbies'),
+drawn as the HUD hints' are: sized by the line's font's capitals and centred on them, the cursor moved past it (TRUE);
+FALSE: not in the PC menus (the stock draw) */
+boolean ae_buttons_menu_icon(struct bitmap_data const *bitmap, union real_rectangle2d const *clip,
+	union rectangle2d *cursor_bounds, short width_offset, unsigned long color);
 
 #endif
