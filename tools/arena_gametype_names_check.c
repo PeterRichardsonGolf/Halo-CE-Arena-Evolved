@@ -253,6 +253,28 @@ int main(void)
 	if (!(_arena_gametype_set_ae < _arena_gametype_set_ae_br && _arena_gametype_set_ae_br < _arena_gametype_set_ae_comp))
 		fail("AE BR between AE and AE COMP", "");
 
+	/* the lists' blocks: FFA of AE, AE BR, AE COMP, then their TEAM rows, then NHE, TRAINING, unknown */
+	{
+
+		for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
+		{
+			struct arena_gametype_info own;
+			short block;
+
+			wide(arena_gametype_names[index].stored_name, name);
+			arena_gametype_info(name, &own);
+			block = arena_gametype_list_block(TRUE, &own);
+			if (own.set <= _arena_gametype_set_ae_comp && (block != (own.team ? own.set + 3 : own.set)))
+				fail("list block of an AE set", arena_gametype_names[index].stored_name);
+			if (own.set == _arena_gametype_set_nhe && block != 7)
+				fail("list block of NHE", arena_gametype_names[index].stored_name);
+			if (own.set == _arena_gametype_set_training && block != 8)
+				fail("list block of TRAINING", arena_gametype_names[index].stored_name);
+		}
+		if (arena_gametype_list_block(FALSE, NULL) != 9)
+			fail("list block of an unknown name", "");
+	}
+
 	if (failures)
 	{
 		printf("%d failures\n", failures);

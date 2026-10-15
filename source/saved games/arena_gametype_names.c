@@ -384,6 +384,26 @@ static void arena_gametype_info_fill(
 
 /* ---------- public code */
 
+short arena_gametype_list_block(
+	boolean known,
+	struct arena_gametype_info const *info)
+{
+	if (!known)
+		return 9;
+	switch (info->set)
+	{
+		case _arena_gametype_set_ae:
+		case _arena_gametype_set_ae_br:
+		case _arena_gametype_set_ae_comp:
+			/* (FFA 1..3 by set, TEAM 4..6) */
+			return (short)(info->set + (info->team ? 3 : 0));
+		case _arena_gametype_set_nhe:
+			return 7;
+		default:
+			return 8;
+	}
+}
+
 boolean arena_gametype_has_ae_rules(
 	wchar_t const *stored_name)
 {

@@ -29,6 +29,28 @@ def test_free_for_all_before_teams_in_each_ae_set():
         assert teams[0] is False and teams[-1] is True
 
 
+def list_order():
+    """the lists' order (owner 2026-10-15): one FFA block (AE, AE BR, AE COMP), one TEAM block, then NHE, TRAINING"""
+    key = {"ae": 1, "ae_br": 2, "ae_comp": 3}
+    rows = []
+    for i, (stored, _, st, team) in enumerate(ROWS):
+        block = key[st] + (3 if team else 0) if st in key else 7 if st == "nhe" else 8
+        rows.append((block, i, stored, st, team))
+    return sorted(rows)
+
+
+def test_one_ffa_block_then_one_team_block():
+    order = list_order()
+    ae = [(st, team) for _, _, _, st, team in order if st in ("ae", "ae_br", "ae_comp")]
+    flags = [t for _, t in ae]
+    assert flags == sorted(flags) and flags.count(False) == 30 and flags.count(True) == 30
+    sets = [s for s, t in ae if not t]
+    assert sets == sorted(sets, key=["ae", "ae_br", "ae_comp"].index)
+    assert [r[3] for r in order if r[3] in ("nhe", "training")] == [r[3] for r in order][-len([1 for r in order if r[3] in ("nhe", "training")]):]
+    # (the C code's key must be the same: the names check's "list block")
+    assert "arena_gametype_list_block" in (ROOT / "source/saved games/arena_gametypes.c").read_text(encoding="latin1")
+
+
 def test_display_names_say_what_the_table_says():
     for stored, display, st, team in ROWS:
         assert display.startswith("TEAM " if team else "FFA "), stored
