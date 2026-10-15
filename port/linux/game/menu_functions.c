@@ -180,6 +180,7 @@ enum
 #include "ae_hit_feedback.h" /* AE hook */
 #include "ae_rifle_menu.h" /* AE hook */
 #include "ae_input.h" /* AE hook */
+#include "ae_map_pictures.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
 #include "interface/ui_widget_instance.h"
@@ -5450,6 +5451,7 @@ static void lobby_map_show(struct widget_instance *description, char const *map_
 	if ((widget = named(description, "lobby_map_pic", 0)) != NULL)
 		widget->animation.current_frame_index =
 			ui_map_list_xbox_picture(strchr(map_name, '@') ? "" : map_name, NULL);
+	if ((widget = named(description, "lobby_map_pic", 0)) != NULL && ae_map_picture_frame(map_name) != NONE) widget->animation.current_frame_index = ae_map_picture_frame(map_name); /* AE hook */
 	if ((widget = named(description, "lobby_map_name", 0)) != NULL)
 	{
 		/* (upstream PR #63: a community map by its name; port: a Custom

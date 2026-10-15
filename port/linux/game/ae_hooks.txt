@@ -505,3 +505,5 @@ port/linux/game/ui_map_list.c	if (ae_map_picture_frame(ui_map_list[row].map_name
 port/linux/game/ui_map_list.c	if (ae_map_picture_bitmap(frame_index)) return ae_map_picture_bitmap(frame_index); /* AE hook */
 port/linux/src/menu_files.c	#include "../game/ae_map_pictures.h" /* AE hook */
 port/linux/src/menu_files.c	{ unsigned int ae_size = 0; const unsigned char *ae_picture = ae_map_picture_png(path, &ae_size); if (ae_picture) { *size = ae_size; return ae_picture; } } /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_map_pictures.h" /* AE hook */
+port/linux/game/menu_functions.c	if ((widget = named(description, "lobby_map_pic", 0)) != NULL && ae_map_picture_frame(map_name) != NONE) widget->animation.current_frame_index = ae_map_picture_frame(map_name); /* AE hook */

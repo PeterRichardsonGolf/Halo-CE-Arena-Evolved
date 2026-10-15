@@ -204,7 +204,9 @@ unsigned char const *ae_map_picture_png(char const *art, unsigned int *size)
 	index = strtol(art + prefix, &end, 10);
 	if (*end || index < 0 || index >= picture_count || !pictures[index].found)
 		return NULL;
-	free(png_data);
+	/* (the game's free takes no NULL: debug_memory.c asserts) */
+	if (png_data)
+		free(png_data);
 	png_data = NULL;
 	*size = 0;
 	file = CreateFileA(pictures[index].path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
