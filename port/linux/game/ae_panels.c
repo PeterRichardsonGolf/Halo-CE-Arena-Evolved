@@ -5,6 +5,7 @@ HUD STYLE AE's ammo + grenade group and shield + health group (ae_panels.h;
 spec 14.15).
 */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "cseries/cseries.h"
@@ -56,58 +57,78 @@ boolean ae_panels_hiding_ce(void)
 	return hiding;
 }
 
-/* debug.ae_panel_state: a state forced over the game's for the tests and the contact sheets (low, overheated,
-shield_low, shield_down, overshield1, overshield2, camo, buffs, health_low, empty) */
+/* debug.ae_panel_state: states forced over the game's for the tests and the contact sheets, a comma list of: low,
+empty, overheated, heat:<0..1>, grenades:<frags>/<plasmas>, plasma (armed), shield_low, shield_down, overshield1,
+overshield2, camo, buffs (both rows, the overshield's in its last 5 s), health_low */
 static void forced_state(struct ae_panel_snapshot *s)
 {
 	char const *state = config_string("debug.ae_panel_state");
+	char const *walk;
 
 	if (!state || !state[0])
 		return;
-	if (!strcmp(state, "low") && s->rounds_per_magazine > 0)
+	for (walk = state; walk && *walk; walk = strchr(walk, ','), walk = walk ? walk + 1 : NULL)
 	{
-		s->rounds_loaded = (short)(s->rounds_per_magazine / 6);
-		s->low_ammo_flash_on = (boolean)((game_time_get() / 15) % 2 == 0);
-	}
-	else if (!strcmp(state, "empty"))
-		s->rounds_loaded = 0;
-	else if (!strcmp(state, "overheated"))
-	{
-		s->heat = 1.0f;
-		s->overheated = TRUE;
-	}
-	else if (!strcmp(state, "shield_low"))
-	{
-		s->shield = 0.2f;
-		s->shield_low = TRUE;
-	}
-	else if (!strcmp(state, "shield_down"))
-	{
-		s->shield = 0.0f;
-		s->shield_down = TRUE;
-	}
-	else if (!strcmp(state, "overshield1"))
-	{
-		s->shield = 1.6f;
-		s->overshield_seconds = 44.2f;
-	}
-	else if (!strcmp(state, "overshield2"))
-	{
-		s->shield = 2.6f;
-		s->overshield_seconds = 81.0f;
-	}
-	else if (!strcmp(state, "camo"))
-		s->camo_ticks = 37 * 30;
-	else if (!strcmp(state, "buffs"))
-	{
-		s->shield = 2.6f;
-		s->overshield_seconds = 4.2f;
-		s->camo_ticks = 23 * 30;
-	}
-	else if (!strcmp(state, "health_low"))
-	{
-		s->health = 0.2f;
-		s->health_low = TRUE;
+		size_t length = strcspn(walk, ",");
+		int frags = 0, plasmas = 0;
+		double heat = 0.0;
+
+#define IS(word) (length == strlen(word) && !strncmp(walk, word, length))
+		if (IS("low") && s->rounds_per_magazine > 0)
+		{
+			s->rounds_loaded = (short)(s->rounds_per_magazine / 6);
+			s->low_ammo_flash_on = (boolean)((game_time_get() / 15) % 2 == 0);
+		}
+		else if (IS("empty"))
+			s->rounds_loaded = 0;
+		else if (IS("overheated"))
+		{
+			s->heat = 1.0f;
+			s->overheated = TRUE;
+		}
+		else if (!strncmp(walk, "heat:", 5) && sscanf(walk + 5, "%lf", &heat) == 1)
+			s->heat = (real)heat;
+		else if (!strncmp(walk, "grenades:", 9) && sscanf(walk + 9, "%d/%d", &frags, &plasmas) == 2)
+		{
+			s->grenades[0] = (short)frags;
+			s->grenades[1] = (short)plasmas;
+		}
+		else if (IS("plasma"))
+			s->armed_grenade = 1;
+		else if (IS("shield_low"))
+		{
+			s->shield = 0.2f;
+			s->shield_low = TRUE;
+		}
+		else if (IS("shield_down"))
+		{
+			s->shield = 0.0f;
+			s->shield_down = TRUE;
+		}
+		else if (IS("overshield1"))
+		{
+			s->shield = 1.6f;
+			s->overshield_seconds = 44.2f;
+		}
+		else if (IS("overshield2"))
+		{
+			s->shield = 2.6f;
+			s->overshield_seconds = 81.0f;
+		}
+		else if (IS("camo"))
+			s->camo_ticks = 37 * 30;
+		else if (IS("buffs"))
+		{
+			s->shield = 1.05f;
+			s->overshield_seconds = 4.2f;
+			s->camo_ticks = 23 * 30;
+		}
+		else if (IS("health_low"))
+		{
+			s->health = 0.2f;
+			s->health_low = TRUE;
+		}
+#undef IS
 	}
 }
 
@@ -378,4 +399,23 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 		return LABEL_FADE;
 	}
 	return 1.0f;
+}
+
+#define MESSAGE_GAP 6.0f    /* px under the ammo group */
+
+short ae_panels_message_top(short local_player_index, short line_top)
+{
+	real ppu = ae_hud_pixels_per_unit();
+	real bottom;
+
+	if (!ae_hud_style_is_ae() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
+		!last[local_player_index].valid || last[local_player_index].count < 2 || ppu <= 0.0f)
+	{
+		return line_top;
+	}
+	/* (the ammo group is the first rectangle when it is drawn) */
+	bottom = (last[local_player_index].rects[0].y1 + MESSAGE_GAP) / ppu;
+	if ((real)line_top >= bottom || (real)line_top * ppu < last[local_player_index].rects[0].y0)
+		return line_top;
+	return (short)(bottom + 0.5f);
 }

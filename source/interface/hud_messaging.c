@@ -152,6 +152,7 @@ symbols in this file:
 #include <stddef.h>
 #ifdef HALO_64BIT
 #include "memory/data.h"
+#include "ae_panels.h" /* AE hook */
 #endif
 
 /* ---------- constants */
@@ -1435,6 +1436,7 @@ void hud_messaging_update(
 				font->descending_height +
 				font->ascending_height;
 		}
+		line_top = ae_panels_message_top(local_player_index, line_top); /* AE hook */
 		first_line_height = line_height;
 		datum = &hud_messaging_globals->message_data[render.local_player_index];
 		maximum_message_count = 4 - split_screen;

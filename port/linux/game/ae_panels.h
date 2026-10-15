@@ -37,4 +37,8 @@ a panel grown by 8 px (the ammo group, the shield group with its rows, the senso
 strip: the panels' last drawn), else 1; 1 with CLASSIC */
 real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bounds);
 
+/* (hud_messaging.c) the HUD's messages' top line (HUD units of the view) moved under the AE ammo group where it
+would start inside it: the AE rounds stand taller than CE's split-screen panel (3p / 4p "Hold BACK for score") */
+short ae_panels_message_top(short local_player_index, short line_top);
+
 #endif /* __AE_PANELS_H */

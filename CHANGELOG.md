@@ -41,6 +41,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - With HUD STYLE AE, the **PRE-GAME COUNTDOWN** is a large upright number (white, or your team's colour) with
   the mode, map and goal under it; the performance line, the capture notice, the names over players, the voice
   speakers' list and co-op's texts take the strip's look.
+- With HUD STYLE AE, the **AE panels** take the place of CE's ammo, grenade, shield and health panels and the
+  motion sensor, in their places and at their sizes: the reserve over CE's own rounds (the battery and heat bar for
+  plasma weapons, a tank bar for the flamethrower, a vehicle seat's heat bars), both grenade types with the armed
+  one white, the shield bar with the overshield's two levels, eight health cells, OVERSHIELD and CAMO rows with the
+  time left, and a flat motion sensor with the half-range ring, bearing lines and a wedge that shows your field of
+  view (narrower when zoomed). CE's contacts, warnings and sounds are its own; CLASSIC is CE's HUD as before.
 
 ## 0.2.5-beta - 2026-10-13
 

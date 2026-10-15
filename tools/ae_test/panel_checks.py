@@ -324,7 +324,7 @@ def run_pair(cfg, a, out):
 
 
 LAYOUT_LINE = re.compile(
-    r"ae panels: tick (?P<tick>\d+) view (?P<view>\d+) state=(?P<state>\w+) "
+    r"ae panels: tick (?P<tick>\d+) view (?P<view>\d+) state=(?P<state>\S+) "
     r"number_box=(?P<nb>[-\d.,]+) grenade_box=(?P<gb>[-\d.,]+) baseline=(?P<baseline>[-\d.]+) cap=(?P<cap>[\d.]+) "
     r"rounds=(?P<rounds>\d+) round0=(?P<round0>[-\d.,]+) lit=(?P<lit>\d+) red=(?P<red>\d) bar=(?P<bar>[-\d.,]+) "
     r"shield_bar=(?P<sb>[-\d.,]+) icon=(?P<icon>[-\d.,]+) cell0=(?P<cells>[-\d.,]+) cross=(?P<cross>[-\d.,]+) "
@@ -474,11 +474,13 @@ def g_bright(line, frames):
         why.append(f"digits {c:.2f}:1 against the ground {ground}")
     if line["rounds"]:
         x, y, hh = line["round0"]
-        lit = max((rgb_at(rgb, w, xx, yy) for xx in range(int(x), int(x + 0.6 * hh)) for yy in range(int(y), int(y + hh))),
-                  key=relative_luminance)
-        # (against the ground round the whole magazine block: next to a round is another round)
+        # (against the ground round the whole magazine block: next to a round is another round; the round's pixels
+        # include its DARK keyline, which is what carries a HUD-blue round on pale ground: the fill alone measured
+        # 2.6-2.7 against Blood Gulch's sky)
         block = (x - 0.46 * 2 * (hh + 4), y, nb[0] + 301 + 20, y + 3 * hh + 8)
-        cr = contrast(lit, ring_median(rgb, w, h, block, 6, 6))
+        ground_rounds = ring_median(rgb, w, h, block, 6, 6)
+        cr = max(contrast(rgb_at(rgb, w, xx, yy), ground_rounds) for xx in range(int(x) - 1, int(x + 0.6 * hh) + 1)
+                 for yy in range(int(y) - 1, int(y + hh) + 1))
         if cr < 3.0:
             why.append(f"lit round {cr:.2f}:1")
     gb = line["gb"]
