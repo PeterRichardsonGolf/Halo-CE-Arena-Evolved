@@ -1,0 +1,56 @@
+/*
+AE_JUGGERNAUT_RULES.C
+
+Halo 2 JUGGERNAUT's rules (ae_juggernaut_rules.h): pure, no engine includes.
+The kill handler follows Halo 2's (the shared notes' halo2-juggernaut-2026-10-15.md,
+"Who becomes the juggernaut"), but its betrayal point loss and its allied
+hunters, which the owner left out of this first release.
+*/
+
+#include "ae_juggernaut_rules.h"
+
+int ae_juggernaut_h2(unsigned char byte)
+{
+	return (byte & AE_JUGGERNAUT_BYTE_BIT) != 0;
+}
+
+unsigned char ae_juggernaut_byte_set(unsigned char byte, int on)
+{
+	return (unsigned char)(on ? (byte | AE_JUGGERNAUT_BYTE_BIT) : (byte & ~AE_JUGGERNAUT_BYTE_BIT));
+}
+
+char const *ae_juggernaut_rules_name(int on)
+{
+	return on ? "halo 2" : "halo ce";
+}
+
+struct ae_juggernaut_kill ae_juggernaut_kill_decide(int killer_is_player, int suicide, int friendly_fire,
+	int killer_is_juggernaut, int victim_is_juggernaut, int killer_alive)
+{
+	struct ae_juggernaut_kill result = { 0, AE_JUGGERNAUT_KEEP };
+	int by_another = killer_is_player && !suicide;
+
+	if (victim_is_juggernaut)
+	{
+		/* (Halo 2: killer != victim, the killer takes it; but CE's juggernaut needs a body to carry it) */
+		result.succession = by_another && killer_alive ? AE_JUGGERNAUT_TO_KILLER : AE_JUGGERNAUT_TO_RANDOM;
+	}
+	else if (by_another && !friendly_fire && killer_is_juggernaut)
+	{
+		result.killer_scores = 1;
+	}
+
+	return result;
+}
+
+int ae_juggernaut_eligible(int present, int alive, int quit, int already_juggernaut, int excluded)
+{
+	return present && alive && !quit && !already_juggernaut && !excluded;
+}
+
+int ae_juggernaut_pick(int count, unsigned random)
+{
+	if (count <= 0)
+		return -1;
+	return (int)((random & 0xFFFFu) % (unsigned)count);
+}
