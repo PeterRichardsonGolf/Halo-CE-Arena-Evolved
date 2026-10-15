@@ -210,10 +210,10 @@ boolean ae_hud_messages_begin(short local_player_index, real left, real first_ca
 	if (pitch < block.px * LINE_PITCH / AE_STRIP_SUB_PX)
 		pitch = block.px * LINE_PITCH / AE_STRIP_SUB_PX; /* (the quarter views' floor: lines as far apart as the
 		                                                       text is big) */
-	/* the wrap: the view's width less the left margin (CE wraps at the view's edge); with "wrap2x", no wider than
-	twice the ammo group */
+	/* the wrap: no wider than twice the ammo group (owner 10-15: a block under the counter), never past the view's
+	edge */
 	right = view_width - left;
-	if (test_has("wrap2x") && group_width > 0.0f)
+	if (group_width > 0.0f && left + 2.0f * group_width < right)
 		right = left + 2.0f * group_width;
 	if (right < left + 8.0f * block.px)
 		right = left + 8.0f * block.px;
