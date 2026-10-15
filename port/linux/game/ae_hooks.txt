@@ -435,3 +435,16 @@ port/linux/game/menu_functions.c	#include "ae_saved_limits.h" /* AE hook */
 port/linux/game/menu_functions.c	#define MAXIMUM_GAMETYPES AE_SAVED_GAMES_MAXIMUM /* AE hook */
 port/linux/game/network_test.c	#include "ae_saved_limits.h" /* AE hook */
 port/linux/game/network_test.c	long indices[AE_SAVED_GAMES_MAXIMUM]; /* AE hook */
+# DualSense (0.3.0): adaptive triggers, lightbar and player lights (port/linux/src/ae_ds5.c, ae_ds5_rules.c,
+# port/linux/game/ae_ds5_game.c); Settings > Gamepads' ADAPTIVE TRIGGERS, TRIGGER STRENGTH, LIGHTBAR; debug.ds5_log
+port/linux/src/port_config.c	{ "input.adaptive_triggers", _config_boolean, "true", "HALO_ADAPTIVE_TRIGGERS", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "input.trigger_strength", _config_string, "\"normal\"", "HALO_TRIGGER_STRENGTH", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "input.lightbar", _config_string, "\"player_color\"", "HALO_LIGHTBAR", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "debug.ds5_log", _config_boolean, "false", "HALO_DEBUG_DS5_LOG", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/sdl_platform.c	#include "ae_ds5.h" /* AE hook */
+port/linux/src/sdl_platform.c	ae_ds5_removed(gamepad); /* AE hook */
+port/linux/src/sdl_platform.c	ae_ds5_frame(); /* AE hook */
+port/linux/src/xinput_sdl.c	#include "ae_ds5.h" /* AE hook */
+port/linux/src/xinput_sdl.c	ae_ds5_port(port, port_gamepad(gamepads, count, port), feedback->Rumble.wLeftMotorSpeed, feedback->Rumble.wRightMotorSpeed); /* AE hook */
+source/game/player_control.c	#include "ae_ds5_game.h" /* AE hook */
+source/game/player_control.c	ae_ds5_player(local_player_index, current_weapon_index, player->zoom_level); /* AE hook */

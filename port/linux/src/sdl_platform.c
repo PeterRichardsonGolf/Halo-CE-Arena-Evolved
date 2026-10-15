@@ -14,6 +14,7 @@ and the debug keyboard that the game's console reads.
 #include "sdl_platform.h"
 #include "ae_platform.h" /* AE hook */
 #include "ae_gamepads.h" /* AE hook */
+#include "ae_ds5.h" /* AE hook */
 #include "gl.h"
 #include "port_config.h"
 #include "p2p.h"
@@ -2120,6 +2121,7 @@ void platform_pump_events(void)
 			{
 				SDL_Gamepad *gamepad = SDL_GetGamepadFromID(event.gdevice.which);
 
+				ae_ds5_removed(gamepad); /* AE hook */
 				if (gamepad)
 					SDL_CloseGamepad(gamepad);
 			}
@@ -2129,6 +2131,7 @@ void platform_pump_events(void)
 		}
 	}
 	pthread_mutex_unlock(&input_lock);
+	ae_ds5_frame(); /* AE hook */
 	looked_at_clipboard = TRUE;
 	platform_invite_clipboard(look_at_clipboard);
 }

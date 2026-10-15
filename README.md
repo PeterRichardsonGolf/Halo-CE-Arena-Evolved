@@ -203,6 +203,23 @@ play:
 - The in-game scoreboard centred in each view.
 
 **Controls and display**
+- **PS5 DualSense: adaptive triggers and lightbar.** R2 has a feel for each
+  weapon and a kick at each shot: the pistol a click and a snap, the
+  assault rifle a pulse a round, the sniper rifle firm with a heavy thump,
+  the shotgun and rockets a heavy click and a big kick, the plasma rifle
+  stiffening with heat and locked while overheated, the plasma pistol
+  building with its charge, the needler a fast light buzz, the battle rifle
+  three pulses a burst. It goes free while you reload, switch weapons or
+  run dry, and in a vehicle seat without a gun; L2 is light while zoomed.
+  The lightbar takes your colour (your team's in a team game), pulses while
+  an overshield charges, dims with active camouflage and flashes when you
+  become the juggernaut; or, with LIGHTBAR on SHIELD, it shows your shield as
+  the HUD's meter does (blinking when low, red when down, the overshield's
+  colours). The player lights show your split-screen number.
+  Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER STRENGTH (LIGHT, NORMAL,
+  STRONG) and LIGHTBAR (OFF, PLAYER COLOR, SHIELD), on by default; other controllers are never touched.
+  On Linux without Steam, see [DualSense on Linux without
+  Steam](#dualsense-on-linux-without-steam).
 - 14 controller layouts, including the Anniversary set and MCC's Universal
   Reclaimer, Zoom & Shoot, Bump & Jump and Green Fingers; layouts that put
   actions on the d-pad don't also move you with it.
@@ -366,6 +383,21 @@ On Linux, the maps and settings (`config.toml`) go next to the `halo`
 executable, and the saves in `~/.local/share/halo-linux`. Everything the port
 adds is in `config.toml`, written the first time the game starts with every
 setting listed and explained; see [port/linux/README.md](port/linux/README.md).
+
+### DualSense on Linux without Steam
+
+On Linux the game writes a DualSense's trigger effects and lightbar to the
+controller's `/dev/hidraw` device. Steam's udev rules (Steam installed, or
+the `steam-devices` package) already let you; without them the Linux
+download's `70-ae-dualsense.rules` does. From the game's folder, once:
+
+```
+sudo cp 70-ae-dualsense.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+```
+
+then unplug the controller (or turn it off) and connect it again. The
+buttons and sticks work either way; only the effects need it. `debug.txt`
+says how each DualSense is driven, or why it is not.
 
 ## Playing over LAN
 

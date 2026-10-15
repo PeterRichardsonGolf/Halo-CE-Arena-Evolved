@@ -34,6 +34,9 @@ boolean ae_juggernaut_player_killed(long killing_player_index, long dead_player_
 to a random player who is alive */
 void ae_juggernaut_update(void);
 
+/* whether the player is the juggernaut now, in a game with Halo 2's rules (ae_ds5_game.c) */
+boolean ae_juggernaut_player_is(long player_index);
+
 /* the rules' name for the game's "game rules:" line: "halo 2" while active, else "halo ce" */
 char const *ae_juggernaut_log_name(void);
 

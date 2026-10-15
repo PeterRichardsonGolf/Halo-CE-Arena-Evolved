@@ -470,6 +470,23 @@ static const struct config_setting config_settings[] =
 		"Halo does; \"hold\", zoomed to the first level while it is held (no second\n"
 		"level); \"both\", a tap steps the level as toggle does and a hold zooms\n"
 		"while it is held, then returns to unzoomed." },
+	{ "input.adaptive_triggers", _config_boolean, "true", "HALO_ADAPTIVE_TRIGGERS", _environment_value, /* AE hook */
+		_platform_desktop,
+		"A PS5 DualSense's adaptive triggers (ae_ds5.c): R2 a feel for each\n"
+		"weapon and a kick at each shot, free while reloading, switching or\n"
+		"empty; L2 light while zoomed. Other pads are never touched. On Linux\n"
+		"it needs write access to the pad's hidraw node (Steam's udev rules,\n"
+		"or the download's 70-ae-dualsense.rules)." },
+	{ "input.trigger_strength", _config_string, "\"normal\"", "HALO_TRIGGER_STRENGTH", _environment_value, /* AE hook */
+		_platform_desktop,
+		"How strong a DualSense's trigger effects are: \"light\" (60%),\n"
+		"\"normal\", \"strong\" (140%)." },
+	{ "input.lightbar", _config_string, "\"player_color\"", "HALO_LIGHTBAR", _environment_value, /* AE hook */
+		_platform_desktop,
+		"A PS5 DualSense's lightbar and player lights: \"player_color\", the\n"
+		"lightbar in your color (your team's in a team game) with the powerups'\n"
+		"glows; \"shield\", the lightbar your shield as the HUD's meter shows it;\n"
+		"either way the player lights your split-screen number. \"off\": left alone." },
 	{ "input.zoom_reset", _config_string, "\"first\"", "HALO_ZOOM_RESET", _environment_value, /* AE hook */
 		_platform_all,
 		"Where a hold of the zoom action (the \"hold\" mode, and the hold of\n"
@@ -1026,6 +1043,11 @@ static const struct config_setting config_settings[] =
 		"For test launches (ae_platform.c): in split screen a lone gamepad stays\n"
 		"player 1's, with the keyboard, and player 2 stands with no input. Off:\n"
 		"the keyboard is player 1 and the lone gamepad player 2." },
+	{ "debug.ds5_log", _config_boolean, "false", "HALO_DEBUG_DS5_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"A DualSense's effects in debug.txt (ae_ds5.c): the bytes written, what\n"
+		"each player's triggers and lightbar are asked for as it changes, the\n"
+		"rumble, each weapon tag's kind once a map." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"

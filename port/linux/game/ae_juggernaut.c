@@ -307,3 +307,9 @@ void ae_juggernaut_update(void)
 
 	return;
 }
+
+/* (a DualSense's lightbar flash on becoming the juggernaut: ae_ds5_game.c) */
+boolean ae_juggernaut_player_is(long player_index)
+{
+	return ae_juggernaut_active() && ae_juggernaut_ball_of(player_index) != NONE;
+}

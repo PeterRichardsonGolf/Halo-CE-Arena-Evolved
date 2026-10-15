@@ -214,6 +214,7 @@ symbols in this file:
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_glue_mouse.h" /* AE hook */
 #include "ae_glue_zoom.h" /* AE hook */
+#include "ae_ds5_game.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -753,6 +754,7 @@ static void handle_one_player_input(
 				player->zoom_level);
 		}
 		player->zoom_level = ae_zoom_update(local_player_index, player->zoom_level, current_weapon_index, player_control_camera_control_is_active() && !cinematic_in_progress(), input.player_control_flags); /* AE hook */
+		ae_ds5_player(local_player_index, current_weapon_index, player->zoom_level); /* AE hook */
 
 		if (!director_inhibited_facing(local_player_index))
 		{

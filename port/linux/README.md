@@ -305,6 +305,27 @@ Steam installed). Each gamepad found has a line in `debug.txt`
 says which driver reads PlayStation pads. (From
 DamnationCE.)
 
+A PS5 DualSense (and DualSense Edge) gets **adaptive triggers**, its
+**lightbar** in the player's colour and its **player lights** showing the
+split-screen number (Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER
+STRENGTH, LIGHTBAR; all on by default, and no other pad is touched). R2 has
+a feel for each weapon (the pistol a click, the assault rifle a pulse a
+round, the sniper rifle firm, the plasma rifle stiffening with heat and
+locked while overheated, the plasma pistol building with its charge, the
+battle rifle three pulses a burst, ...) and a kick at each shot; it goes free
+while reloading, switching weapons or with an empty magazine, and in a
+vehicle seat without a gun. L2 has a light resistance while zoomed. The
+lightbar pulses while an overshield charges, dims with active camouflage
+and flashes when you become the juggernaut. On Windows and macOS SDL's own
+driver sends the effects. On Linux the kernel's driver keeps reading the
+pad and the game writes the effects to the pad's `/dev/hidraw` node, which
+Steam's udev rules open to the player; without Steam, the download's
+`70-ae-dualsense.rules` does (once:
+`sudo cp 70-ae-dualsense.rules /etc/udev/rules.d/ && sudo udevadm control --reload`,
+then plug the pad in again). `debug.txt` says how each DualSense is driven,
+or why it is not (with the rule's line); `debug.ds5_log` adds every effect
+written.
+
 | Action | Keys and buttons (default) |
 | --- | --- |
 | move | W, A, S, D |
@@ -588,6 +609,9 @@ the setting for one start of the game. It has priority over the file.
 | `input.mouse_zoom_scale` | `1.0` | `HALO_MOUSE_ZOOM_SCALE` | The MCC style's zoomed sensitivity scale, `0.1` to `2`: multiplies the mouse while a weapon is zoomed, on top of the weapon's own magnification. Not read in the classic style. |
 | `input.mouse_vehicle_scale` | `1.0` | `HALO_MOUSE_VEHICLE_SCALE` | The MCC style's vehicle sensitivity scale, `0.1` to `2`: multiplies the mouse while seated in a vehicle (any seat: driver, gunner or passenger). Not read in the classic style. |
 | `input.zoom_mode` | `"toggle"` | `HALO_ZOOM_MODE` | How the zoom action (a mouse button, a key or a controller button) works. `"toggle"`: each press steps the zoom level in, to the next level and out, as Halo does. `"hold"`: zoomed to the first level while it is held (no second level). `"both"`: a tap steps the level as toggle does; a hold zooms to the first level (or keeps the level it was zoomed to) and letting go zooms out. Anything that unzooms the weapon (a switch, a reload, a hit) ends the press. The ZOOM row of Settings > Game Options has it. |
+| `input.adaptive_triggers` | `true` | `HALO_ADAPTIVE_TRIGGERS` | A PS5 DualSense's adaptive triggers: R2 a feel for each weapon and a kick at each shot (free while reloading, switching or empty), L2 light while zoomed. No other pad is touched. On Linux it needs write access to the pad's hidraw node (Steam's udev rules, or the download's `70-ae-dualsense.rules`). ADAPTIVE TRIGGERS on Settings > Gamepads sets it. |
+| `input.trigger_strength` | `"normal"` | `HALO_TRIGGER_STRENGTH` | How strong a DualSense's trigger effects are: `"light"` (60%), `"normal"`, `"strong"` (140%). TRIGGER STRENGTH on Settings > Gamepads. |
+| `input.lightbar` | `"player_color"` | `HALO_LIGHTBAR` | A PS5 DualSense's lightbar and player lights: `"player_color"`, the lightbar in your colour (your team's in a team game; black armour shows a dim white) with the powerups' glows; `"shield"`, the lightbar your shield as the HUD's shield meter shows it (its colours from the HUD's own tag, dimmer as it drains, blinking when low, the empty colour when down, a white flash on the pop with COMBAT FEEDBACK ARENA EVOLVED, the overshield's layer colours, dark while dead); either way the player lights show your split-screen number; `"off"`, left alone. LIGHTBAR on Settings > Gamepads. |
 | `input.zoom_reset` | `"first"` | `HALO_ZOOM_RESET` | Where a hold of the zoom action (`"hold"`, and the hold of `"both"`) starts: `"first"`, the weapon's first zoom level; `"last"`, the last level used on that weapon in hand, for each local player. While zoom is held the mouse wheel steps the level up and down (the weapon is not switched) and the flashlight button steps to the next level, then back to the first. In `"hold"` a tap and then a hold within the hold time starts at the second level. ZOOM RESET on Settings > Game Options sets it. |
 | `input.zoom_hold_time` | `0.25` | `HALO_ZOOM_HOLD_TIME` | The most seconds a press lasts to be a tap in the `"both"` mode, 0.1 to 1: held longer, it is a hold. Not in the menus. |
 | `input.invert_mouse` | `false` | `HALO_MOUSE_INVERT=1` sets `true` | `true`: the vertical mouse aim is inverted. |
@@ -652,6 +676,7 @@ the setting for one start of the game. It has priority over the file.
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
+| `debug.ds5_log` | `false` | `HALO_DEBUG_DS5_LOG` | A DualSense's effects in `debug.txt`: the bytes written to the pad, what each player's triggers and lightbar are asked for as it changes, the game's rumble, and each weapon tag's kind once a map. |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
 | `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds. `0`: never. |
 | `debug.screenshot_directory`, `debug.screenshot_every`, `debug.screenshot_format` | `""`, `0`, `"bmp"` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY`, `HALO_SCREENSHOT_FORMAT` | The game writes each Nth frame to this folder as a BMP file, or a PNG file with `"png"`. |
