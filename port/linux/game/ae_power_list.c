@@ -68,7 +68,7 @@ boolean ae_power_list_hides_clock(short local_player_index)
 	return (boolean)(ae_hud_style_is_ae() && ae_strip_engine_snapshot(local_player_index, &snapshot));
 }
 
-real ae_panel_right_column_x(short local_player_index)
+real ae_power_list_right_x(short local_player_index)
 {
 	short inset = 0;
 	long baseline = 0;
@@ -288,7 +288,7 @@ static void draw_column(short view)
 	real name_px = ae_strip_text_px(AE_LIST_TEXT_PX, s, s);
 	real time_px = MAX(AE_LIST_TEXT_PX * s, AE_LIST_TIME_FLOOR);
 	real cell = digit_cell(time_px);
-	real right = ae_panel_right_column_x(view);
+	real right = ae_power_list_right_x(view);
 	real foot = ae_score_strip_shared_line_y(view);
 	real pitch = AE_LIST_PITCH * s;
 	real widest = 0.0f, name_right, left = right, top;

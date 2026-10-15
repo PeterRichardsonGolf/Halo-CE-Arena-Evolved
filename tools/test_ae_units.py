@@ -92,6 +92,9 @@ UNITS = {
     # numbers come from any map's or pack's weapon)
     "ae_panel_model_test.c": ([UI / "ae_panel_model.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                               []),
+    # (HUD STYLE AE's panel layout: lean lines, boxes, cells, rounds, bars, the right column; CE's real digit ink)
+    "ae_panel_layout_test.c": ([UI / "ae_panel_model.c", UI / "ae_panel_layout.c", UI / "ae_hud_digit_cells.c"],
+                               ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
