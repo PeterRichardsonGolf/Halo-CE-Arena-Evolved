@@ -254,8 +254,8 @@ static void read_weapon(long weapon_index, struct ae_panel_snapshot *out)
 	}
 }
 
-/* a vehicle's seat rows (14.15 part 2: Warthog gunner and Ghost a heat bar; Banshee bolts + bomb; Scorpion cannon +
-MG), by the vehicle's tag */
+/* a vehicle's seat rows (14.15 part 2: Warthog gunner and Ghost a heat bar; Banshee bolts + bomb; Scorpion the cannon),
+by the vehicle's tag */
 static void read_seat(long vehicle_index, long weapon_index, struct ae_panel_snapshot *out)
 {
 	struct unit_datum *vehicle = unit_get(vehicle_index);
@@ -278,12 +278,10 @@ static void read_seat(long vehicle_index, long weapon_index, struct ae_panel_sna
 	}
 	else if (name_has(name, "scorpion"))
 	{
+		/* (the cannon only: CE's machine gun has no heat and no ammo limit, so its bar never moved; owner 10-15) */
 		out->seat_rows[0].kind = _ae_seat_cannon;
 		out->seat_rows[0].fill = state.magazine_count > 0 && state.magazines[0].rounds_loaded > 0 ? 1.0f : 0.0f;
-		out->seat_rows[1].kind = _ae_seat_mg;
-		out->seat_rows[1].fill = state.heat;
-		out->seat_rows[1].overheated = state.overheated;
-		out->seat_row_count = 2;
+		out->seat_row_count = 1;
 	}
 	else
 	{
