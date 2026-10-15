@@ -72,6 +72,8 @@ void ae_panel_draw_line(real x0, real y0, real x1, real y1, real width, short to
 /* a filled circle / ring, keyline optional */
 void ae_panel_draw_disc(real cx, real cy, real radius, short tone, real alpha, boolean keyline);
 void ae_panel_draw_ring(real cx, real cy, real radius, real width, short tone, real alpha, boolean keyline);
+/* a filled circle in any colour (the sensor's blips), its edge 1 px soft */
+void ae_panel_fill_disc(real cx, real cy, real radius, const union real_argb_color *color);
 /* a filled convex polygon (screen px, clockwise or not) */
 void ae_panel_draw_polygon(const real (*points)[2], short count, short tone, real alpha);
 

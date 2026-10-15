@@ -149,36 +149,8 @@ static void blips(real cx, real cy, real r, real k)
 				color_of(_ae_tone_dark, 0.90f, &dark);
 				ae_panel_draw_disc(cx + dx, cy + dy, radius + 1.0f, _ae_tone_dark, 0.90f, FALSE);
 			}
-			{
-				real points[24][2];
-				short j;
-
-				for (j = 0; j < 24; j++)
-				{
-					real angle = 2.0f * AE_PI * (real)j / 24.0f;
-
-					points[j][0] = cx + dx + radius * (real)cos(angle);
-					points[j][1] = cy + dy + radius * (real)sin(angle);
-				}
-				/* (colour by its own rgb: the tokens hold no blip colours) */
-				{
-					real centre[2];
-
-					centre[0] = cx + dx;
-					centre[1] = cy + dy;
-					for (j = 0; j < 24; j++)
-					{
-						real quad[4][2];
-						short n = (short)((j + 1) % 24);
-
-						quad[0][0] = centre[0]; quad[0][1] = centre[1];
-						quad[1][0] = points[j][0]; quad[1][1] = points[j][1];
-						quad[2][0] = points[n][0]; quad[2][1] = points[n][1];
-						quad[3][0] = points[n][0]; quad[3][1] = points[n][1];
-						ae_hud_fill_quad_color(quad, &color);
-					}
-				}
-			}
+			/* (colour by its own rgb: the tokens hold no blip colours) */
+			ae_panel_fill_disc(cx + dx, cy + dy, radius, &color);
 		}
 	}
 }

@@ -43,6 +43,8 @@ void platform_log(char const *format, ...);
 #define BOX_FILL_BOTTOM 0.73f
 #define MAXIMUM_POINTS 64
 #define AE_PI 3.14159265f
+#define FEATHER 0.5f        /* half of the 1 px soft edge on every slanted or curved edge (no stair steps) */
+#define MAXIMUM_RING_STEPS 128
 
 static const real tones[NUMBER_OF_AE_TONES][3] = {
 	{ 229.0f, 240.0f, 255.0f }, { 178.0f, 224.0f, 255.0f }, { 188.0f, 198.0f, 212.0f }, { 6.0f, 10.0f, 18.0f },
@@ -108,6 +110,53 @@ static void fan(const real (*points)[2], short count, const real_argb_color *col
 		a[0] = points[i][0] + dx; a[1] = points[i][1] + dy;
 		b[0] = points[(i + 1) % count][0] + dx; b[1] = points[(i + 1) % count][1] + dy;
 		triangle(centre, a, b, color);
+	}
+}
+
+static void clear_of(const real_argb_color *color, real_argb_color *clear)
+{
+	*clear = *color;
+	clear->alpha = 0.0f;
+}
+
+/* a straight line with soft long sides: a solid core, then a 1 px ramp to nothing on each side (a line under 1 px:
+the two ramps alone, at a lower peak, so its weight stays) */
+static void line_soft(real x0, real y0, real x1, real y1, real width, const real_argb_color *color)
+{
+	real dx = x1 - x0, dy = y1 - y0, length = (real)sqrt(dx * dx + dy * dy);
+	real_argb_color peak = *color, clear, colors[4];
+	real nx, ny, core, outer;
+	short side, k;
+
+	if (length <= 0.0f || width <= 0.0f)
+		return;
+	nx = -dy / length;
+	ny = dx / length;
+	if (width >= 2.0f * FEATHER)
+	{
+		core = width / 2.0f - FEATHER;
+		outer = width / 2.0f + FEATHER;
+	}
+	else
+	{
+		core = 0.0f;
+		outer = width / 2.0f + FEATHER;
+		peak.alpha *= width / (2.0f * FEATHER);
+	}
+	clear_of(&peak, &clear);
+	if (core > 0.0f)
+		ae_hud_line(x0, y0, x1, y1, 2.0f * core, &peak);
+	for (side = -1; side <= 1; side += 2)
+	{
+		real points[4][2];
+
+		points[0][0] = x0 + nx * core * side; points[0][1] = y0 + ny * core * side;
+		points[1][0] = x1 + nx * core * side; points[1][1] = y1 + ny * core * side;
+		points[2][0] = x1 + nx * outer * side; points[2][1] = y1 + ny * outer * side;
+		points[3][0] = x0 + nx * outer * side; points[3][1] = y0 + ny * outer * side;
+		for (k = 0; k < 4; k++)
+			colors[k] = k < 2 ? peak : clear;
+		ae_hud_fill_quad(points, colors);
 	}
 }
 
@@ -191,8 +240,9 @@ static short rounded(const real corners[4][2], real radius, real d, real out[][2
 	return count;
 }
 
-/* the band between two offsets of the rounded box */
-static void rounded_band(const real corners[4][2], real radius, real d0, real d1, const real_argb_color *color)
+/* the band between two offsets of the rounded box, colour c0 at offset d0 shading to c1 at d1 */
+static void rounded_band_ramp(const real corners[4][2], real radius, real d0, real d1, const real_argb_color *c0,
+	const real_argb_color *c1)
 {
 	real a[MAXIMUM_POINTS][2], b[MAXIMUM_POINTS][2];
 	short count = rounded(corners, radius, d0, a), i;
@@ -201,20 +251,29 @@ static void rounded_band(const real corners[4][2], real radius, real d0, real d1
 	for (i = 0; i < count; i++)
 	{
 		real points[4][2];
+		real_argb_color colors[4];
 		short j = (short)((i + 1) % count);
 
 		points[0][0] = a[i][0]; points[0][1] = a[i][1];
 		points[1][0] = a[j][0]; points[1][1] = a[j][1];
 		points[2][0] = b[j][0]; points[2][1] = b[j][1];
 		points[3][0] = b[i][0]; points[3][1] = b[i][1];
-		ae_hud_fill_quad_color(points, color);
+		colors[0] = colors[1] = *c0;
+		colors[2] = colors[3] = *c1;
+		ae_hud_fill_quad(points, colors);
 	}
 }
 
-/* the outline rule: keyline outside, the line, keyline inside */
+static void rounded_band(const real corners[4][2], real radius, real d0, real d1, const real_argb_color *color)
+{
+	rounded_band_ramp(corners, radius, d0, d1, color, color);
+}
+
+/* the outline rule: keyline outside, the line, keyline inside; every edge 1 px soft (the keylines ramp out to nothing
+on their far side and run 0.5 px under the line, the line ramps into them) */
 static void outline(const real corners[4][2], real scale, short line_tone, real line_alpha)
 {
-	real_argb_color dark, line;
+	real_argb_color dark, line, dark_clear, line_clear;
 	real w = LINE_WIDTH * scale;
 	real radius = CORNER_RADIUS * scale;
 
@@ -222,9 +281,16 @@ static void outline(const real corners[4][2], real scale, short line_tone, real 
 		w = 1.0f;
 	tone_color(_ae_tone_dark, KEYLINE_ALPHA, &dark);
 	tone_color(line_tone, line_alpha, &line);
-	rounded_band(corners, radius, 0.0f, 1.0f, &dark);
-	rounded_band(corners, radius, -w - 1.0f, -w, &dark);
-	rounded_band(corners, radius, -w, 0.0f, &line);
+	clear_of(&dark, &dark_clear);
+	clear_of(&line, &line_clear);
+	rounded_band(corners, radius, -FEATHER, 1.0f - FEATHER, &dark);
+	rounded_band_ramp(corners, radius, 1.0f - FEATHER, 1.0f + FEATHER, &dark, &dark_clear);
+	rounded_band(corners, radius, -w - 1.0f + FEATHER, -w + FEATHER, &dark);
+	rounded_band_ramp(corners, radius, -w - 1.0f + FEATHER, -w - 1.0f - FEATHER, &dark, &dark_clear);
+	if (w > 2.0f * FEATHER)
+		rounded_band(corners, radius, -w + FEATHER, -FEATHER, &line);
+	rounded_band_ramp(corners, radius, -FEATHER, FEATHER, &line, &line_clear);
+	rounded_band_ramp(corners, radius, -w + FEATHER, -w - FEATHER, &line, &line_clear);
 }
 
 void ae_panel_draw_box(const struct ae_panel_para *box, real scale, real fill_alpha, short line_tone)
@@ -283,15 +349,28 @@ static void bar_band(const struct ae_panel_para *bar, real w, real f0, real f1, 
 	real top = bar->y0 + w, bottom = bar->y1 - w, height = bottom - top;
 	real y0 = top + height * t0, y1 = top + height * t1;
 	real points[4][2];
+	real_argb_color colors[4], clear;
 	real a = inner_x0 + inner_length * f0, b = inner_x0 + inner_length * f1;
+	/* the slanted leading edge's 1 px soft ramp, as an x offset: 0.5 px across the lean */
+	real soft = FEATHER * (real)sqrt(1.0f + bar->lean * bar->lean);
+	real solid_end = b - soft > a ? b - soft : a;
+	short k;
 
 	if (b - a < 0.3f || height <= 0.0f)
 		return;
 	points[0][0] = a + bar->lean * (bar->y1 - w - y1); points[0][1] = y1;
 	points[1][0] = a + bar->lean * (bar->y1 - w - y0); points[1][1] = y0;
-	points[2][0] = b + bar->lean * (bar->y1 - w - y0); points[2][1] = y0;
-	points[3][0] = b + bar->lean * (bar->y1 - w - y1); points[3][1] = y1;
-	ae_hud_fill_quad_color(points, color);
+	points[2][0] = solid_end + bar->lean * (bar->y1 - w - y0); points[2][1] = y0;
+	points[3][0] = solid_end + bar->lean * (bar->y1 - w - y1); points[3][1] = y1;
+	if (solid_end > a)
+		ae_hud_fill_quad_color(points, color);
+	points[0][0] = points[3][0]; points[1][0] = points[2][0];
+	points[2][0] = b + soft + bar->lean * (bar->y1 - w - y0);
+	points[3][0] = b + soft + bar->lean * (bar->y1 - w - y1);
+	clear_of(color, &clear);
+	for (k = 0; k < 4; k++)
+		colors[k] = k < 2 ? *color : clear;
+	ae_hud_fill_quad(points, colors);
 }
 
 void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
@@ -332,7 +411,7 @@ void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, s
 		real x = bar->x0 + w + inner_length * (real)cell / 5.0f;
 		real top = bar->y0 + w, bottom = bar->y1 - w;
 
-		ae_hud_line(x + bar->lean * (bottom - top), top, x, bottom, 1.0f, &dark);
+		line_soft(x + bar->lean * (bottom - top), top, x, bottom, 1.0f, &dark);
 	}
 	outline(corners, scale, line_tone, line_tone == _ae_tone_red ? 1.0f : LINE_ALPHA);
 }
@@ -649,9 +728,88 @@ static short circle(real cx, real cy, real radius, real points[][2], short steps
 	return steps;
 }
 
+/* enough segments that a circle's chords stay under a tenth of a pixel off the curve */
+static short ring_steps(real radius)
+{
+	short steps = (short)(radius * 0.75f);
+
+	return steps < 24 ? 24 : steps > MAXIMUM_RING_STEPS ? MAXIMUM_RING_STEPS : steps;
+}
+
+/* the band r0..r1 round (cx, cy), colour c0 at r0 shading to c1 at r1 */
+static void ring_band_ramp(real cx, real cy, real r0, real r1, const real_argb_color *c0, const real_argb_color *c1)
+{
+	real a[MAXIMUM_RING_STEPS][2], b[MAXIMUM_RING_STEPS][2];
+	short steps = ring_steps(r0 > r1 ? r0 : r1), count, i;
+
+	count = circle(cx, cy, r0 > 0.0f ? r0 : 0.0f, a, steps);
+	circle(cx, cy, r1 > 0.0f ? r1 : 0.0f, b, steps);
+	for (i = 0; i < count; i++)
+	{
+		real points[4][2];
+		real_argb_color colors[4];
+		short j = (short)((i + 1) % count);
+
+		points[0][0] = a[i][0]; points[0][1] = a[i][1];
+		points[1][0] = a[j][0]; points[1][1] = a[j][1];
+		points[2][0] = b[j][0]; points[2][1] = b[j][1];
+		points[3][0] = b[i][0]; points[3][1] = b[i][1];
+		colors[0] = colors[1] = *c0;
+		colors[2] = colors[3] = *c1;
+		ae_hud_fill_quad(points, colors);
+	}
+}
+
+/* the band r0..r1 with soft edges: solid inside, a 1 px ramp across each edge (a band under 1 px: the two ramps
+alone at a lower peak, so its weight stays) */
+static void ring_band(real cx, real cy, real r0, real r1, const real_argb_color *color)
+{
+	real_argb_color peak = *color, clear;
+	real w = r1 - r0;
+
+	if (w <= 0.0f)
+		return;
+	if (w >= 2.0f * FEATHER)
+	{
+		clear_of(color, &clear);
+		ring_band_ramp(cx, cy, r0 - FEATHER, r0 + FEATHER, &clear, color);
+		if (w > 2.0f * FEATHER)
+			ring_band_ramp(cx, cy, r0 + FEATHER, r1 - FEATHER, color, color);
+		ring_band_ramp(cx, cy, r1 - FEATHER, r1 + FEATHER, color, &clear);
+	}
+	else
+	{
+		real mid = (r0 + r1) / 2.0f, half = w / 2.0f + FEATHER;
+
+		peak.alpha *= w / (2.0f * FEATHER);
+		clear_of(&peak, &clear);
+		ring_band_ramp(cx, cy, mid - half, mid, &clear, &peak);
+		ring_band_ramp(cx, cy, mid, mid + half, &peak, &clear);
+	}
+}
+
+/* a filled circle with a soft 1 px edge */
+static void disc_soft(real cx, real cy, real radius, const real_argb_color *color)
+{
+	real points[MAXIMUM_RING_STEPS][2];
+	real_argb_color clear;
+	real inner = radius - FEATHER;
+
+	if (radius <= 0.0f)
+		return;
+	clear_of(color, &clear);
+	if (inner > 0.0f)
+		fan((const real (*)[2])points, circle(cx, cy, inner, points, ring_steps(radius)), color, 0.0f, 0.0f);
+	ring_band_ramp(cx, cy, inner > 0.0f ? inner : 0.0f, radius + FEATHER, color, &clear);
+}
+
+void ae_panel_fill_disc(real cx, real cy, real radius, const union real_argb_color *color)
+{
+	disc_soft(cx, cy, radius, color);
+}
+
 void ae_panel_draw_disc(real cx, real cy, real radius, short tone, real alpha, boolean keyline)
 {
-	real points[40][2];
 	real_argb_color color;
 
 	if (radius <= 0.0f)
@@ -659,29 +817,10 @@ void ae_panel_draw_disc(real cx, real cy, real radius, short tone, real alpha, b
 	if (keyline)
 	{
 		tone_color(_ae_tone_dark, KEYLINE_ALPHA, &color);
-		fan((const real (*)[2])points, circle(cx, cy, radius + 1.0f, points, 40), &color, 0.0f, 0.0f);
+		disc_soft(cx, cy, radius + 1.0f, &color);
 	}
 	tone_color(tone, alpha, &color);
-	fan((const real (*)[2])points, circle(cx, cy, radius, points, 40), &color, 0.0f, 0.0f);
-}
-
-static void ring_band(real cx, real cy, real r0, real r1, const real_argb_color *color)
-{
-	real a[48][2], b[48][2];
-	short count = circle(cx, cy, r0 > 0.0f ? r0 : 0.0f, a, 48), i;
-
-	circle(cx, cy, r1, b, 48);
-	for (i = 0; i < count; i++)
-	{
-		real points[4][2];
-		short j = (short)((i + 1) % count);
-
-		points[0][0] = a[i][0]; points[0][1] = a[i][1];
-		points[1][0] = a[j][0]; points[1][1] = a[j][1];
-		points[2][0] = b[j][0]; points[2][1] = b[j][1];
-		points[3][0] = b[i][0]; points[3][1] = b[i][1];
-		ae_hud_fill_quad_color(points, color);
-	}
+	disc_soft(cx, cy, radius, &color);
 }
 
 void ae_panel_draw_ring(real cx, real cy, real radius, real width, short tone, real alpha, boolean keyline)
@@ -717,10 +856,10 @@ void ae_panel_draw_line(real x0, real y0, real x1, real y1, real width, short to
 		real ux = length > 0.0f ? dx / length : 0.0f, uy = length > 0.0f ? dy / length : 0.0f;
 
 		tone_color(_ae_tone_dark, KEYLINE_ALPHA, &color);
-		ae_hud_line(x0 - ux, y0 - uy, x1 + ux, y1 + uy, width + 2.0f, &color);
+		line_soft(x0 - ux, y0 - uy, x1 + ux, y1 + uy, width + 2.0f, &color);
 	}
 	tone_color(tone, alpha, &color);
-	ae_hud_line(x0, y0, x1, y1, width, &color);
+	line_soft(x0, y0, x1, y1, width, &color);
 }
 
 void ae_panel_draw_x(real x, real baseline_y, real size, real scale, short tone)
@@ -742,14 +881,19 @@ void ae_panel_draw_cell(const struct ae_panel_para *cell, boolean lit, short ton
 {
 	real corners[4][2];
 	real alpha = lit ? LIT_ALPHA : CELL_LOST_ALPHA;
-	real_argb_color color;
+	real_argb_color color, clear;
+	real inner[MAXIMUM_POINTS][2];
 
 	para_corners(cell, corners);
-	/* the keyline (as the art's: weaker under a dim fill), the fill, a lost cell's 1 px rim */
+	/* the keyline (as the art's: weaker under a dim fill), the fill, a lost cell's 1 px rim; edges 1 px soft */
 	tone_color(_ae_tone_dark, KEYLINE_ALPHA * (alpha + 0.15f > 1.0f ? 1.0f : alpha + 0.15f), &color);
-	rounded_band(corners, 0.0f, -10.0f, 1.0f, &color);
+	clear_of(&color, &clear);
+	rounded_band(corners, 0.0f, -10.0f, 1.0f - FEATHER, &color);
+	rounded_band_ramp(corners, 0.0f, 1.0f - FEATHER, 1.0f + FEATHER, &color, &clear);
 	tone_color(lit ? tone : _ae_tone_blue, alpha, &color);
-	ae_hud_fill_quad_color(corners, &color);
+	clear_of(&color, &clear);
+	fan((const real (*)[2])inner, rounded(corners, 0.0f, -FEATHER, inner), &color, 0.0f, 0.0f);
+	rounded_band_ramp(corners, 0.0f, -FEATHER, FEATHER, &color, &clear);
 	if (!lit)
 	{
 		tone_color(_ae_tone_blue, CELL_RIM_ALPHA, &color);
