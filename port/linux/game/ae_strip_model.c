@@ -390,6 +390,7 @@ void ae_strip_model_build(const struct ae_strip_snapshot *snapshot, struct ae_st
 	switch (snapshot->mode)
 	{
 	case _ae_strip_ctf:
+		model->flag_glyphs = TRUE;
 		build_flag(&snapshot->me, right, &model->left_sub);
 		build_flag(&snapshot->other, left, &model->right_sub);
 		break;

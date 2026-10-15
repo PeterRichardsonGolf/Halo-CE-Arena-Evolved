@@ -13,6 +13,7 @@ keeps 48 x s from the timers list: the bars shrink toward 60 first, then the
 whole strip scales (never under half of s).
 */
 
+#include <math.h>
 #include <string.h>
 
 #include "ae_strip_layout.h"
@@ -143,6 +144,15 @@ static void measure_all(const struct measures *m, real bar, real k, struct exten
 	e->r.score = measure_score(m, &model->right_score, k);
 	e->l.sub = measure_text(m, &model->left_sub, AE_STRIP_SUB_PX, k);
 	e->r.sub = measure_text(m, &model->right_sub, AE_STRIP_SUB_PX, k);
+	if (model->flag_glyphs)
+	{
+		real glyph = (AE_STRIP_FLAG_GLYPH + AE_STRIP_FLAG_GAP) * ae_strip_text_px(AE_STRIP_SUB_PX, k, m->s);
+
+		if (e->l.sub > 0.0f)
+			e->l.sub += glyph;
+		if (e->r.sub > 0.0f)
+			e->r.sub += glyph;
+	}
 	e->l.alive = measure_text(m, &model->left_alive, AE_STRIP_ALIVE_PX, k);
 	e->r.alive = measure_text(m, &model->right_alive, AE_STRIP_ALIVE_PX, k);
 	e->l.cells = model->left_cells;
@@ -329,3 +339,94 @@ void ae_strip_layout_compute(const struct ae_strip_model *model, const struct ae
 	layout->backing_rx = e.half + 40.0f * k;
 	layout->backing_ry = 46.0f * k;
 }
+
+/* ---------- FFA's YOU colour */
+
+static real channel_linear(real c)
+{
+	return c <= 0.04045f ? c / 12.92f : (real)pow((c + 0.055f) / 1.055f, 2.4f);
+}
+
+static real relative_luminance(real r, real g, real b)
+{
+	return 0.2126f * channel_linear(r) + 0.7152f * channel_linear(g) + 0.0722f * channel_linear(b);
+}
+
+static real hue_channel(real p, real q, real t)
+{
+	if (t < 0.0f)
+		t += 1.0f;
+	if (t > 1.0f)
+		t -= 1.0f;
+	if (t < 1.0f / 6.0f)
+		return p + (q - p) * 6.0f * t;
+	if (t < 0.5f)
+		return q;
+	if (t < 2.0f / 3.0f)
+		return p + (q - p) * (2.0f / 3.0f - t) * 6.0f;
+	return p;
+}
+
+static void from_hsl(real h, real s, real l, struct ae_strip_rgb *out)
+{
+	real q = l < 0.5f ? l * (1.0f + s) : l + s - l * s;
+	real p = 2.0f * l - q;
+
+	out->red = hue_channel(p, q, h + 1.0f / 3.0f);
+	out->green = hue_channel(p, q, h);
+	out->blue = hue_channel(p, q, h - 1.0f / 3.0f);
+}
+
+boolean ae_score_strip_me_color(const struct ae_strip_rgb *armour, struct ae_strip_rgb *out)
+{
+	real r, g, b, high, low, l, s, h, d, low_l, high_l;
+	int step;
+
+	out->red = 229.0f / 255.0f;
+	out->green = 240.0f / 255.0f;
+	out->blue = 1.0f;
+	if (!armour)
+		return FALSE;
+	r = armour->red < 0.0f ? 0.0f : armour->red > 1.0f ? 1.0f : armour->red;
+	g = armour->green < 0.0f ? 0.0f : armour->green > 1.0f ? 1.0f : armour->green;
+	b = armour->blue < 0.0f ? 0.0f : armour->blue > 1.0f ? 1.0f : armour->blue;
+	high = r > g ? (r > b ? r : b) : (g > b ? g : b);
+	low = r < g ? (r < b ? r : b) : (g < b ? g : b);
+	l = (high + low) / 2.0f;
+	d = high - low;
+	s = d <= 0.0f ? 0.0f : d / (1.0f - fabsf(2.0f * l - 1.0f));
+	if (s < 0.2f || l < 0.08f || l > 0.9f)
+		return FALSE;
+	if (relative_luminance(r, g, b) >= 0.33f)
+	{
+		out->red = r;
+		out->green = g;
+		out->blue = b;
+		return TRUE;
+	}
+	if (high == r)
+		h = (g - b) / d / 6.0f;
+	else if (high == g)
+		h = ((b - r) / d + 2.0f) / 6.0f;
+	else
+		h = ((r - g) / d + 4.0f) / 6.0f;
+	if (h < 0.0f)
+		h += 1.0f;
+	/* (the lightness that just reaches the rule, no further than 0.9) */
+	low_l = l;
+	high_l = 0.9f;
+	for (step = 0; step < 24; step++)
+	{
+		struct ae_strip_rgb probe;
+		real middle = (low_l + high_l) / 2.0f;
+
+		from_hsl(h, s, middle, &probe);
+		if (relative_luminance(probe.red, probe.green, probe.blue) >= 0.33f)
+			high_l = middle;
+		else
+			low_l = middle;
+	}
+	from_hsl(h, s, high_l, out);
+	return TRUE;
+}
+

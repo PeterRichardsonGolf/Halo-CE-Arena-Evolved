@@ -225,6 +225,8 @@ static void test_one_baseline_g5(void)
 		AE_CHECK(NEAR(bottom(&l.goal), views[i].shared_line_y) && NEAR(bottom(&l.left_sub), views[i].shared_line_y) &&
 			NEAR(bottom(&l.right_sub), views[i].shared_line_y));
 		AE_CHECK(NEAR(l.score_baseline_y, views[i].shared_line_y - 22.0f * l.strip_scale));
+		/* (a flag line holds its glyph and a gap before the text) */
+		AE_CHECK(NEAR(l.left_sub.w, fake_text(L"DROPPED 0:18", l.left_sub.h) + 1.3f * l.left_sub.h));
 		/* (sub-lines from the scores' inner edges outward: never into the goal line) */
 		AE_CHECK(right(&l.left_sub) <= l.goal.x && l.right_sub.x >= right(&l.goal));
 	}
@@ -311,8 +313,55 @@ static void test_bad_input(void)
 	ae_strip_layout_compute(NULL, &g, fake_digits, fake_text, &l);
 }
 
+/* FFA's YOU colour (spec 11.4): my armour colour lifted to the tint rule, or white */
+static real luminance(const struct ae_strip_rgb *c)
+{
+	real channel[3] = { c->red, c->green, c->blue };
+	real linear[3];
+	int i;
+
+	for (i = 0; i < 3; i++)
+		linear[i] = channel[i] <= 0.04045f ? channel[i] / 12.92f : powf((channel[i] + 0.055f) / 1.055f, 2.4f);
+	return 0.2126f * linear[0] + 0.7152f * linear[1] + 0.0722f * linear[2];
+}
+
+static int is_white(const struct ae_strip_rgb *c)
+{
+	return NEAR(c->red, 229.0f / 255.0f) && NEAR(c->green, 240.0f / 255.0f) && NEAR(c->blue, 1.0f);
+}
+
+static void test_me_color(void)
+{
+	struct ae_strip_rgb in, out;
+	static const real whites[][3] = { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 0.5f },
+		{ 0.62f, 0.60f, 0.58f }, { 0.03f, 0.02f, 0.05f } };
+	unsigned i;
+
+	/* (white, black, grey, a near-grey, a colour too dark to lift: white) */
+	for (i = 0; i < sizeof(whites) / sizeof(whites[0]); i++)
+	{
+		in.red = whites[i][0]; in.green = whites[i][1]; in.blue = whites[i][2];
+		AE_CHECK(!ae_score_strip_me_color(&in, &out) && is_white(&out));
+	}
+	/* (a dark red armour: lifted, still red, light enough beside its outline) */
+	in.red = 0.55f; in.green = 0.05f; in.blue = 0.05f;
+	AE_CHECK(ae_score_strip_me_color(&in, &out));
+	AE_CHECK(luminance(&out) >= 0.33f - 0.01f && out.red > out.green && out.red > out.blue && !is_white(&out));
+	/* (a light colour already over the rule: kept) */
+	in.red = 1.0f; in.green = 0.85f; in.blue = 0.1f;
+	AE_CHECK(ae_score_strip_me_color(&in, &out) && NEAR(out.red, 1.0f) && NEAR(out.green, 0.85f) && NEAR(out.blue, 0.1f));
+	/* (a cobalt: lifted, its hue kept) */
+	in.red = 0.15f; in.green = 0.2f; in.blue = 0.6f;
+	AE_CHECK(ae_score_strip_me_color(&in, &out) && luminance(&out) >= 0.33f - 0.01f && out.blue > out.red);
+	/* (a near-white pastel: too close to white to stay distinct) */
+	in.red = 0.95f; in.green = 0.93f; in.blue = 1.0f;
+	AE_CHECK(!ae_score_strip_me_color(&in, &out) && is_white(&out));
+	AE_CHECK(!ae_score_strip_me_color(NULL, &out) && is_white(&out));
+}
+
 int main(void)
 {
+	test_me_color();
 	test_1p_team_slayer_on_shared_line();
 	test_4p_gap_shrinks_bars_then_scales();
 	test_gap_rule_steps();

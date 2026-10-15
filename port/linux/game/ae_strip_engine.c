@@ -30,6 +30,7 @@ the flag's last owned time; a client's from when it saw the flag dropped).
 #include "tag_files/tag_groups.h"
 #include "units/units.h"
 
+#include "ae_score_strip.h"
 #include "ae_strip_engine.h"
 
 void platform_log(char const *format, ...);
@@ -569,11 +570,16 @@ void ae_strip_engine_debug_log(void)
 		struct ae_strip_model model;
 		char left[48], right[48], clock[48], goal[48], lead[48], context[64], left_sub[64], right_sub[64];
 
+		real alpha = 0.0f, clock_box[4] = { 0 }, score_box[4] = { 0 };
+		boolean drawn;
+
 		if (!ae_strip_engine_snapshot(local, &snapshot))
 			continue;
 		ae_strip_model_build(&snapshot, &model);
+		drawn = ae_score_strip_last_drawn(local, &alpha, clock_box, score_box);
 		platform_log("score strip: tick %d view %d mode=%s teams=%d left=%s(%s) right=%s(%s) clock=%s up=%d goal=\"%s\" "
-			"lead=\"%s\" context=\"%s\" left_sub=\"%s\" right_sub=\"%s\" bars=%d fill=%.2f/%.2f place=%d lead_me=%d",
+			"lead=\"%s\" context=\"%s\" left_sub=\"%s\" right_sub=\"%s\" bars=%d fill=%.2f/%.2f place=%d lead_me=%d "
+			"drawn=%d alpha=%.2f clock_box=%.0f,%.0f,%.0f,%.0f score_box=%.0f,%.0f,%.0f,%.0f",
 			(int)now, (int)local, mode_name(snapshot.mode), (int)snapshot.teams,
 			ascii(&model.left_score, left, sizeof(left)), color_name(model.left_score.color),
 			ascii(&model.right_score, right, sizeof(right)), color_name(model.right_score.color),
@@ -581,6 +587,7 @@ void ae_strip_engine_debug_log(void)
 			ascii(&model.goal, goal, sizeof(goal)), ascii(&model.lead, lead, sizeof(lead)),
 			ascii(&model.context, context, sizeof(context)), ascii(&model.left_sub, left_sub, sizeof(left_sub)),
 			ascii(&model.right_sub, right_sub, sizeof(right_sub)), (int)model.bars, model.left_fill,
-			model.right_fill, (int)snapshot.me.place, (int)snapshot.i_lead);
+			model.right_fill, (int)snapshot.me.place, (int)snapshot.i_lead, (int)drawn, alpha, clock_box[0],
+			clock_box[1], clock_box[2], clock_box[3], score_box[0], score_box[1], score_box[2], score_box[3]);
 	}
 }

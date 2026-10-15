@@ -78,8 +78,44 @@ static void test_ink_bounds(void)
 	AE_CHECK(r1 - l1 < r0 - l0);
 }
 
+/* the clock's colon (spec 14.15 part 7, "even gaps like 4:12"): only the colon moves in its cell, by
+(CL[left digit] - CR[right digit]) / 2 x the cap height; the clock's width never changes */
+static void test_colon_shift(void)
+{
+	static const struct { const wchar_t *time; real shift; } cases[] = {
+		{ L"1:42", (0.081f - 0.375f) / 2.0f }, { L"4:12", (0.206f - 0.269f) / 2.0f },
+		{ L"0:07", (0.312f - 0.500f) / 2.0f }, { L"11:41", (0.081f - 0.375f) / 2.0f },
+		{ L"10:00", (0.312f - 0.500f) / 2.0f }, { L"0:11", (0.312f - 0.269f) / 2.0f } };
+	unsigned i;
+
+	for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+	{
+		const wchar_t *time = cases[i].time;
+		long colon = (long)(wcschr(time, L':') - time);
+		struct ae_digit_quad shifted, centred;
+		real left, right;
+
+		AE_CHECK(NEAR(ae_digits_colon_shift(time[colon - 1], time[colon + 1]), cases[i].shift));
+		/* (drawn: the colon's ink centre moved from its cell's centre by the shift x the cap; the digits before it
+		16 px each at 20 px cap, the colon's cell 10) */
+		ae_digit_quad(time, colon, 0.0f, 0.0f, 20.0f, 0.0f, FALSE, 1.5f, &shifted);
+		ae_digit_ink(L':', &left, &right);
+		AE_CHECK(NEAR(shifted.x0 + (shifted.x1 - shifted.x0) * (left + right) / 2.0f,
+			(real)colon * 16.0f + 5.0f + cases[i].shift * 20.0f));
+		/* (fixed cells: no shift) */
+		ae_digit_quad(time, colon, 0.0f, 0.0f, 20.0f, 16.0f, FALSE, 1.5f, &centred);
+		AE_CHECK(NEAR(centred.x0 + (centred.x1 - centred.x0) * (left + right) / 2.0f, (real)colon * 16.0f + 8.0f));
+	}
+	/* (every time of one length is as wide) */
+	AE_CHECK(NEAR(ae_digits_measure_cells(L"1:42", 20.0f, 0.0f), ae_digits_measure_cells(L"4:12", 20.0f, 0.0f)));
+	AE_CHECK(NEAR(ae_digits_measure_cells(L"11:41", 20.0f, 0.0f), ae_digits_measure_cells(L"10:00", 20.0f, 0.0f)));
+	/* (no shift beside a non-digit, nor in fixed cells) */
+	AE_CHECK(NEAR(ae_digits_colon_shift(L' ', L'1'), 0.0f));
+}
+
 int main(void)
 {
+	test_colon_shift();
 	test_frames();
 	test_advances_and_measure();
 	test_quads();

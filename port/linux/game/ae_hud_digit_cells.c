@@ -26,6 +26,18 @@ static const struct digit_glyph glyphs[] = {
 	{ L'-', 12, 0.2292f, 0.5903f, 1.5f },
 };
 
+/* the colon's table (spec 14.15 part 7): CL = the digit left of the colon's ink gap to the dots, CR = the right
+digit's, as shares of the digit height */
+static const real colon_left[10] = { 0.312f, 0.081f, 0.306f, 0.312f, 0.206f, 0.306f, 0.306f, 0.100f, 0.312f, 0.312f };
+static const real colon_right[10] = { 0.500f, 0.269f, 0.500f, 0.500f, 0.375f, 0.500f, 0.500f, 0.250f, 0.500f, 0.500f };
+
+real ae_digits_colon_shift(wchar_t left, wchar_t right)
+{
+	if (left < L'0' || left > L'9' || right < L'0' || right > L'9')
+		return 0.0f;
+	return (colon_left[left - L'0'] - colon_right[right - L'0']) / 2.0f;
+}
+
 static const struct digit_glyph *glyph_of(wchar_t character)
 {
 	unsigned i;
@@ -102,6 +114,8 @@ void ae_digit_quad(const wchar_t *text, long index, real x, real baseline_y, rea
 	width = height * (aspect > 0.0f ? aspect : glyph->aspect);
 	quad->x0 = ink_left ? cell_x - width * glyph->left :
 		cell_x + advance / 2.0f - width * (glyph->left + glyph->right) / 2.0f;
+	if (text[index] == L':' && cell_px <= 0.0f && index > 0 && !ink_left)
+		quad->x0 += ae_digits_colon_shift(text[index - 1], text[index + 1]) * cap_px;
 	quad->x1 = quad->x0 + width;
 	quad->y0 = baseline_y - cap_px - height * AE_DIGITS_CAP_TOP;
 	quad->y1 = quad->y0 + height;

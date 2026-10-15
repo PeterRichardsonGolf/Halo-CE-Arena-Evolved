@@ -4,6 +4,7 @@
     python3 tools/ae_test/strip_checks.py modes --build <rev|path> [--cases ctf,ffa_slay,...]
     python3 tools/ae_test/strip_checks.py pair --build <rev|path>
     python3 tools/ae_test/strip_checks.py digits --build <rev|path> [--maps prisoner,homobox@ce]
+    python3 tools/ae_test/strip_checks.py states --build <rev|path>
 
 modes: one headless host per case, playing a seeded Arena Evolved gametype (HALO_NETWORK_TEST_GAMETYPE) with
 system-link bots and debug.score_strip_log (HALO_DEBUG_SCORE_STRIP_LOG=1). Every 5 seconds of game time the game
@@ -16,8 +17,8 @@ context and sub-lines must read). A case PASSes when the game ran clean (the har
 held on at least one line (the rules that must hold on every line say so).
 
 pair: a host and a joined client (a second game instance, tools/ae_test/handshake.py's pair) playing AE TEAM SLY
-(--gametype) with a kill every 6 seconds; each client line's perspective-free signature (mode, goal, the two sides' scores and colours as a set)
-must equal one of the two host lines nearest its tick (Review Focus 2: a joiner's strip reads as the host's).
+(--gametype) with a kill every 6 seconds; each client line's perspective-free signature (mode, goal, the two sides'
+scores and colours as a set) must equal one of the two host lines nearest its tick (Review Focus 2: a joiner's strip reads as the host's).
 
 digits: CE's counter digits (ae_hud_digits.c) drawn by debug.digits (HALO_DEBUG_DIGITS) in magenta at 24 px cap;
 in the screenshots, the magenta pixels' box must be 24 +- 1 px tall (cap top to baseline) and as wide as the ink the
@@ -38,7 +39,9 @@ LINE = re.compile(r"score strip: tick (?P<tick>-?\d+) view (?P<view>\d+) mode=(?
                   r"left=(?P<left>.*?)\((?P<lc>\w+)\) right=(?P<right>.*?)\((?P<rc>\w+)\) clock=(?P<clock>\S+) "
                   r"up=(?P<up>\d) goal=\"(?P<goal>[^\"]*)\" lead=\"(?P<lead>[^\"]*)\" context=\"(?P<context>[^\"]*)\" "
                   r"left_sub=\"(?P<left_sub>[^\"]*)\" right_sub=\"(?P<right_sub>[^\"]*)\" bars=(?P<bars>\d) "
-                  r"fill=(?P<lf>[\d.]+)/(?P<rf>[\d.]+) place=(?P<place>-?\d+) lead_me=(?P<lead_me>\d)")
+                  r"fill=(?P<lf>[\d.]+)/(?P<rf>[\d.]+) place=(?P<place>-?\d+) lead_me=(?P<lead_me>\d)"
+                  r"(?: drawn=(?P<drawn>\d) alpha=(?P<alpha>[\d.]+) clock_box=(?P<clock_box>[-\d,]+) "
+                  r"score_box=(?P<score_box>[-\d,]+))?")
 
 # the host's player kills the last other player every 6 seconds (scores move); a ball in the host's player's hand at
 # 8 seconds (oddball's holder, juggernaut)
@@ -288,10 +291,103 @@ def run_digits(cfg, a, out):
     return results
 
 
+SHOT = re.compile(r"capture: screenshot (?P<path>\S+)")
+TEAM_RGB = {"blue": (89, 140, 255), "red": (255, 77, 77)}
+
+
+def shots_with_lines(text):
+    """(screenshot file name, the strip line of view 0 logged before it or None) in the order taken"""
+    last, out = None, []
+    for raw in text.splitlines():
+        m = LINE.search(raw)
+        if m and m["view"] == "0":
+            last = m.groupdict()
+            continue
+        s = SHOT.search(raw)
+        if s:
+            out.append((Path(s["path"]).name, last))
+    return out
+
+
+def box_pixels(w, h, rgb, box, pad=2):
+    x, y, bw, bh = [float(v) for v in box.split(",")]
+    for yy in range(max(0, int(y) - pad), min(h, int(y + bh) + pad)):
+        for xx in range(max(0, int(x) - pad), min(w, int(x + bw) + pad)):
+            i = (yy * w + xx) * 3
+            yield rgb[i], rgb[i + 1], rgb[i + 2]
+
+
+def strip_shown_in(png, line):
+    """why the strip does not show as its line says in this screenshot (empty: it does)"""
+    w, h, rgb = harness.read_png(png)
+    why = []
+    bright = sum(1 for r, g, b in box_pixels(w, h, rgb, line["clock_box"]) if r > 200 and g > 200 and b > 200)
+    if bright < 15:
+        why.append(f"{png.name}: {bright} bright pixels in the clock's box")
+    target = TEAM_RGB.get(line["lc"])
+    if target:
+        near = sum(1 for p in box_pixels(w, h, rgb, line["score_box"]) if all(abs(p[i] - target[i]) <= 40
+                                                                                for i in range(3)))
+        if near < 8:
+            why.append(f"{png.name}: {near} pixels of {line['lc']} in the left score's box")
+    return why
+
+
+def judge_states(case, text, out_dir):
+    lines = [l for l in strip_lines(text) if l["view"] == "0"]
+    if not lines or lines[0].get("drawn") is None:
+        return ["no score strip lines with the drawn state"]
+    why = []
+    if case == "classic":
+        if any(l["drawn"] == "1" for l in lines):
+            why.append("drawn with HUD STYLE CLASSIC")
+        return why
+    if not (int(lines[0]["tick"]) < 90 and lines[0]["drawn"] == "0"):
+        why.append(f"the first line (tick {lines[0]['tick']}) is not a hidden one in the countdown")
+    shown = [(name, l) for name, l in shots_with_lines(text) if l and l["drawn"] == "1"]
+    if not shown:
+        why.append("no screenshot while the strip was drawn")
+    for name, line in shown[-2:]:
+        why += strip_shown_in(out_dir / "shots" / name, line)
+    if case == "postgame":
+        drawn = [i for i, l in enumerate(lines) if l["drawn"] == "1"]
+        hidden_after = [i for i, l in enumerate(lines) if l["drawn"] == "0" and drawn and i > drawn[0]]
+        if not hidden_after:
+            why.append("never hidden after the game ended")
+        elif any(i > hidden_after[0] for i in drawn):
+            why.append("drawn again after the game ended")
+    return why
+
+
+def run_states(cfg, a, out):
+    cases = {
+        "shown": {},
+        "postgame": {"HALO_NETWORK_TEST_SCORE": "2", "HALO_NETWORK_TEST_KILL": "4"},
+        "classic": {"HALO_HUD_STYLE": "classic"},
+    }
+    results = {}
+    for name, extra in cases.items():
+        env = {"HALO_DEBUG_SCORE_STRIP_LOG": "1", "HALO_NETWORK_TEST_AUTO_BALANCE": "1", "HALO_NETWORK_TEST_KILL": "6",
+               **extra}
+        spec = harness.parse_spec({"name": "states-" + name, "build": a.build, "map": "prisoner",
+                                   "saved_gametype": "AE TEAM SLY", "start": 5, "bots": 3, "bot_args": ["--move"],
+                                   "window": "1920x1080", "exit_after": 45, "screenshots": 150, "env": env,
+                                   "expect": {"ticks": 300}})
+        r = harness.play(cfg, spec, out / spec["name"], None, a.keep_work, run_id=f"{out.name}-{name}")
+        debug = out / spec["name"] / "debug.txt"
+        why = judge_states(name, debug.read_text(errors="replace") if debug.exists() else "", out / spec["name"])
+        status = "PASS" if r.get("status") == "PASS" and not why else "FAIL"
+        why = (r.get("why") or []) + why
+        harness.log(f"  states {name}: {status}" + (f" ({'; '.join(why)})" if why else ""))
+        results[name] = {"status": status, "why": why}
+    harness.write_json(out / "states.json", results)
+    return results
+
+
 def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     harness.add_common_args(p)
-    p.add_argument("what", choices=("modes", "pair", "digits"))
+    p.add_argument("what", choices=("modes", "pair", "digits", "states"))
     p.add_argument("--build", required=True)
     p.add_argument("--cases", default=DEFAULT_CASES)
     p.add_argument("--seconds", type=int, default=45)
@@ -303,7 +399,7 @@ def main(argv):
         raise SystemExit("strip_checks: run it on the box itself (ssh halo-build), with --build a path or commit there")
     cfg = harness.load_config(a.config)
     out = harness.new_out_dir(cfg, "strip_checks", a.what, a.out_name)
-    results = {"modes": run_modes, "pair": run_pair, "digits": run_digits}[a.what](cfg, a, out)
+    results = {"modes": run_modes, "pair": run_pair, "digits": run_digits, "states": run_states}[a.what](cfg, a, out)
     failed = [n for n, r in results.items() if r["status"] != "PASS"]
     harness.log(f"strip_checks {a.what}: {len(results) - len(failed)} passed, {len(failed)} failed; results in {out}")
     return 1 if failed else 0

@@ -89,6 +89,8 @@ struct ae_strip_model {
 	struct ae_strip_text left_alive, right_alive;     /* "6 ALIVE" when > 4 per team (per match) */
 	long pips_total, left_pips_lit, right_pips_lit;   /* rounds to win */
 	boolean marker_left;                              /* my-side triangle over the left score */
+	/* (addition) CTF: each sub-line is a team's flag line, a flag glyph in that team's colour before its text */
+	boolean flag_glyphs;
 };
 void ae_strip_model_build(const struct ae_strip_snapshot *snapshot, struct ae_strip_model *model);
 void ae_strip_format_time(long seconds, wchar_t *out, long out_count);   /* "1:42", "12:05" */

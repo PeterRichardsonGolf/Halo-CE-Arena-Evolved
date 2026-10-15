@@ -6,6 +6,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **HUD STYLE** (Settings > HUD, its first row): AE (the default) or CLASSIC, the HUD exactly as before. With AE, a
+  **score strip** under the view in multiplayer: both sides' scores (my team or me on the left) with the clock between
+  them, how close each side is to winning, and each gametype's own state (the flags in CTF, the ball's holder, the
+  hill, the race's place and lap, ...). In progress: the clock still shows in the corner too.
+
 ## 0.2.5-beta - 2026-10-13
 
 A testing release: the battle rifle. Built on ChupathingyCE 0.7.3e and OpenCE build-201 as 0.2.4-beta: **network

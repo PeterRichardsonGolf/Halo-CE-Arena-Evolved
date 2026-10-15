@@ -38,10 +38,16 @@ real ae_digit_advance(wchar_t character, real cap_px, real cell_px);
 /* the text's width: the advances added up */
 real ae_digits_measure_cells(const wchar_t *text, real cap_px, real cell_px);
 
+/* the clock's colon (spec 14.15 part 7, owner: "even gaps like 4:12"): with the default advances only the
+colon moves inside its cell, by (CL[left digit] - CR[right digit]) / 2 x the cap height, so the mean ink gap
+over its two dots is the same on both sides; 0 beside anything but digits */
+real ae_digits_colon_shift(wchar_t left, wchar_t right);
+
 /* one glyph's quad on screen: the whole sprite cell, `aspect` its width over its height (from the sprite) */
 struct ae_digit_quad { real x0, y0, x1, y1; boolean visible; };
 /* the quad of a text's character `index`, drawn from x with its baseline at baseline_y; ink_left: the glyph's ink
-at its cell's left edge, else centred */
+at its cell's left edge, else centred (a colon between digits moved by ae_digits_colon_shift, with the default
+advances) */
 void ae_digit_quad(const wchar_t *text, long index, real x, real baseline_y, real cap_px, real cell_px,
 	boolean ink_left, real aspect, struct ae_digit_quad *quad);
 /* the text's ink from its first drawn glyph's left to its last's right, from x = 0; FALSE when nothing draws */

@@ -1459,6 +1459,7 @@ void hud_draw_screen(
 				hud_show_action_response(player_index);
 				hud_play_unit_sounds(player, hud_scripted_globals->show_hud);
 				hud_render_unit_interface(player);
+				ae_score_strip_unit_hud_drawn(render.local_player_index); /* AE hook */
 				hud_item_timers_set_top_left(render.local_player_index,
 					hud_top_left_extent_end(&top_left) ? &top_left : NULL);
 				hud_render_nav_points(render.local_player_index);

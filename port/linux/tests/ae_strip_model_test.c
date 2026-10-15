@@ -59,7 +59,7 @@ static void test_team_slayer_basic(void)
 	AE_CHECK(!m.clock_small && m.clock.color == _ae_strip_color_clock);
 	AE_CHECK(m.goal.color == _ae_strip_color_grey);
 	AE_CHECK_WSTR(m.context.text, L""); AE_CHECK_WSTR(m.left_sub.text, L""); AE_CHECK_WSTR(m.right_sub.text, L"");
-	AE_CHECK(!m.round_cells && m.pips_total == 0);
+	AE_CHECK(!m.round_cells && m.pips_total == 0 && !m.flag_glyphs);
 }
 
 static void test_team_colours_follow_the_team_index(void)
@@ -222,6 +222,7 @@ static void test_ctf_states(void)
 	s.me.flag = _ae_flag_home; s.other.flag = _ae_flag_carried; wcscpy(s.other.flag_carrier, L"bot5");
 	ae_strip_model_build(&s, &m);
 	AE_CHECK_WSTR(m.goal.text, L"TO 3"); AE_CHECK_WSTR(m.lead.text, L"+1");
+	AE_CHECK(m.flag_glyphs);
 	AE_CHECK_WSTR(m.left_sub.text, L"HOME"); AE_CHECK(m.left_sub.color == _ae_strip_color_grey);
 	/* (their flag carried by one of mine: the carrier's name in my team's colour) */
 	AE_CHECK_WSTR(m.right_sub.text, L"bot5"); AE_CHECK(m.right_sub.color == _ae_strip_color_team_blue);

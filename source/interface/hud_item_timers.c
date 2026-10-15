@@ -3688,3 +3688,5 @@ void hud_item_timers_initialize_for_new_map(
 	hud_campaign_timer_ticks = 0;
 	csmemset(hud_item_timers_lines, 0, sizeof(hud_item_timers_lines));
 }
+
+void hud_item_timers_ae_place(short *inset, long *baseline) { hud_item_timers_clock_place(inset, baseline); } /* AE hook */

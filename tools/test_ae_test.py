@@ -1371,3 +1371,14 @@ class StripChecks(unittest.TestCase):
         self.assertIsNone(strip_checks.magenta_box(w, h, rgb, 6, 0, 8, 6))
         self.assertEqual(strip_checks.judge_digits("nothing", [])[0], ["no 'hud digits:' line"])
 
+    def test_states_from_the_log(self):
+        drawn = self.LINE + " drawn=1 alpha=1.00 clock_box=900,950,60,20 score_box=820,955,30,24"
+        hidden = drawn.replace("drawn=1", "drawn=0").replace("tick 450", "tick 0")
+        text = "\n".join([hidden, "arena-evolved: capture: screenshot /x/shots/frame00000.png (1920x1080, 9 ms)", drawn,
+                          "arena-evolved: capture: screenshot /x/shots/frame00150.png (1920x1080, 9 ms)"])
+        pairs = strip_checks.shots_with_lines(text)
+        self.assertEqual([(name, line["drawn"]) for name, line in pairs],
+                         [("frame00000.png", "0"), ("frame00150.png", "1")])
+        self.assertEqual(strip_checks.judge_states("classic", hidden, Path(".")), [])
+        self.assertEqual(strip_checks.judge_states("classic", drawn, Path(".")), ["drawn with HUD STYLE CLASSIC"])
+

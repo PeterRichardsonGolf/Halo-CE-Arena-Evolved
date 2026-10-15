@@ -367,3 +367,5 @@ port/linux/src/port_config.c	{ "debug.score_strip_log", _config_boolean, "false"
 source/interface/hud.c	#include "ae_score_strip.h" /* AE hook */
 source/interface/hud.c	ae_score_strip_draw(render.local_player_index); /* AE hook */
 port/linux/src/port_config.c	{ "debug.digits", _config_string, "\"\"", "HALO_DEBUG_DIGITS", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud.c	ae_score_strip_unit_hud_drawn(render.local_player_index); /* AE hook */
+source/interface/hud_item_timers.c	void hud_item_timers_ae_place(short *inset, long *baseline) { hud_item_timers_clock_place(inset, baseline); } /* AE hook */

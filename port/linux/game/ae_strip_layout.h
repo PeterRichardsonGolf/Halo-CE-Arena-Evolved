@@ -11,6 +11,9 @@ Units: the view's pixels. Lengths in the spec are px at a 1080p single view
 rule shrinks the strip). Small text never goes under its floor on screen: 12 px,
 14 px in quarter views (s under 0.8); counter digits never under 12 px cap.
 
+CTF's flag lines: a sub-line's box holds the flag glyph (AE_STRIP_FLAG_GLYPH x
+its px) and a gap before its text, in reading order (the glyph first).
+
 A text's box: x, w its extent; y + h its BASELINE, h its size in px (Overpass
 px for text, cap height for counter digits), so the renderer draws at
 (x, y + h) at size h. Bars and cells: the box is the bottom edge's span; the
@@ -82,6 +85,15 @@ struct ae_strip_layout {
 #define AE_STRIP_QUARTER_VIEW_FACTOR 0.8f
 #define AE_STRIP_DIGITS_FLOOR 12.0f
 #define AE_STRIP_MINIMUM_SCALE 0.5f       /* the gap rule never scales the strip under half the view factor */
+#define AE_STRIP_FLAG_GLYPH 0.95f         /* CTF's flag glyph before a flag line, x the line's px (mock4.py) */
+#define AE_STRIP_FLAG_GAP 0.35f           /* and the room after it, x the line's px */
+
+/* FFA's YOU colour (spec 11.4): my armour colour lifted until its relative luminance is at least 0.33 (the tints'
+level beside the outline), its hue kept; WHITE (229,240,255) when the armour is white, black or grey (saturation
+under 0.2), too dark to lift (lightness under 0.08) or too close to white to stay distinct (lightness over 0.9).
+FALSE when it is white. (The renderer's colour helper; in this pure file to be unit-tested.) */
+struct ae_strip_rgb { real red, green, blue; };
+boolean ae_score_strip_me_color(const struct ae_strip_rgb *armour, struct ae_strip_rgb *out);
 
 void ae_strip_layout_compute(const struct ae_strip_model *model, const struct ae_strip_geometry *geometry,
 	real (*measure_digits)(const wchar_t *text, real cap_px), real (*measure_text)(const wchar_t *text, real px),
