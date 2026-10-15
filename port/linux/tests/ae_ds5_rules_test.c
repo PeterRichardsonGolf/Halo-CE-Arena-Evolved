@@ -519,6 +519,8 @@ int main(void)
 		powerups.juggernaut_ticks = -1;
 		ae_ds5_lightbar(rgb, red, &powerups, text, sizeof(text));
 		CHECK(rgb[0] == 200 && rgb[1] == 0 && rgb[2] == 0 && !strcmp(text, "colour"));
+		/* (black armour: the game shows the shield's colours instead; a dark colour only) */
+		CHECK(ae_ds5_lightbar_black(black) && !ae_ds5_lightbar_black(red));
 		ae_ds5_lightbar(rgb, black, &powerups, text, sizeof(text));
 		CHECK(rgb[0] == 48 && rgb[1] == 48 && rgb[2] == 48);
 		CHECK(!ae_ds5_left_powerup(effect, &powerups, 100, text, sizeof(text)));

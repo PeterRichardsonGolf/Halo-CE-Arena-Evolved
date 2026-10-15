@@ -446,7 +446,8 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	base[1] = channel(color.green);
 	base[2] = channel(color.blue);
 	powerup_state(gamepad_index, player_index, &powerups);
-	if (settings.shield)
+	/* (black armour: the shield's colours, as LIGHTBAR SHIELD; a dim white read as stuck, owner 10-15) */
+	if (settings.shield || ae_ds5_lightbar_black(base))
 		shield_lightbar(gamepad_index, player_index, lightbar, lightbar_text, sizeof(lightbar_text));
 	else
 		ae_ds5_lightbar(lightbar, base, &powerups, lightbar_text, sizeof(lightbar_text));

@@ -139,6 +139,9 @@ struct ae_ds5_powerups
 	long ticks;            /* the game time, for the pulses */
 };
 
+/* a colour too dark for the lightbar (black armour): the game shows the shield's colours instead (owner 10-15: the
+lightbar "stays white" with black armour's dim white; ae_ds5_lightbar keeps a dim white for it) */
+int ae_ds5_lightbar_black(unsigned char const base[3]);
 /* the lightbar from the player's colour and the powerups (black armour shows a dim white, as black is no light):
 becoming the juggernaut flashes white and fades back (0.67 s); an overshield charging pulses at 2 Hz (35-100 %);
 an overshield held breathes slowly (0.5 Hz, 70-100 %); active camouflage dims it (to 15 % fully cloaked). Steps are

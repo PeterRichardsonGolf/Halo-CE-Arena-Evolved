@@ -452,6 +452,11 @@ static float wave(long ticks, long period, int steps)
 	return (float)(int)(value * (float)steps + 0.5f) / (float)steps;
 }
 
+int ae_ds5_lightbar_black(unsigned char const base[3])
+{
+	return base[0] < 24 && base[1] < 24 && base[2] < 24;
+}
+
 void ae_ds5_lightbar(unsigned char rgb[3], unsigned char const base[3], struct ae_ds5_powerups const *powerups,
 	char *text, size_t text_size)
 {
@@ -461,7 +466,7 @@ void ae_ds5_lightbar(unsigned char rgb[3], unsigned char const base[3], struct a
 	int i;
 
 	memcpy(colour, base, 3);
-	if (colour[0] < 24 && colour[1] < 24 && colour[2] < 24)
+	if (ae_ds5_lightbar_black(base))
 	{
 		colour[0] = colour[1] = colour[2] = 48;
 		what = "dim white (black armour)";

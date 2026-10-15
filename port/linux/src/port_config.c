@@ -485,7 +485,8 @@ static const struct config_setting config_settings[] =
 		_platform_desktop,
 		"A PS5 DualSense's lightbar and player lights: \"player_color\", the\n"
 		"lightbar in your color (your team's in a team game) with the powerups'\n"
-		"glows; \"shield\", the lightbar your shield as the HUD's meter shows it;\n"
+		"glows (black armour: as \"shield\"); \"shield\", the lightbar your\n"
+		"shield as the HUD's meter shows it;\n"
 		"either way the player lights your split-screen number. \"off\": left alone." },
 	{ "input.zoom_reset", _config_string, "\"first\"", "HALO_ZOOM_RESET", _environment_value, /* AE hook */
 		_platform_all,
