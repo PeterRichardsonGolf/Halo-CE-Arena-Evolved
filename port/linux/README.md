@@ -326,9 +326,13 @@ pad and the game writes the effects to the pad's `/dev/hidraw` node, which
 Steam's udev rules open to the player; without Steam, the download's
 `70-ae-dualsense.rules` does (once:
 `sudo cp 70-ae-dualsense.rules /etc/udev/rules.d/ && sudo udevadm control --reload`,
-then plug the pad in again). `debug.txt` says how each DualSense is driven,
+then plug the pad in again). There the game's rumble goes in the game's own
+reports too (one writer a pad, not SDL's rumble through the kernel), and on
+Bluetooth a pad gets one report every 50 ms at most, the changes in between
+merged; a pad whose link drops is opened again when it is back, and gets
+everything again. `debug.txt` says how each DualSense is driven,
 or why it is not (with the rule's line); `debug.ds5_log` adds every effect
-written.
+written, and each minute a pad's reports written, merged, deferred and failed.
 
 | Action | Keys and buttons (default) |
 | --- | --- |
@@ -698,7 +702,7 @@ the setting for one start of the game. It has priority over the file.
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
-| `debug.ds5_log` | `false` | `HALO_DEBUG_DS5_LOG` | A DualSense's effects in `debug.txt`: the bytes written to the pad, what each player's triggers and lightbar are asked for as it changes, the game's rumble, and each weapon tag's kind once a map. |
+| `debug.ds5_log` | `false` | `HALO_DEBUG_DS5_LOG` | A DualSense's effects in `debug.txt`: the bytes written to the pad, what each player's triggers and lightbar are asked for as it changes, the game's rumble, each weapon tag's kind once a map, and each minute a pad's reports (`dualsense: port N: writes X, merged Y, deferred Z, errors E`). |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
 | `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds. `0`: never. |
 | `debug.screenshot_directory`, `debug.screenshot_every`, `debug.screenshot_format` | `""`, `0`, `"bmp"` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY`, `HALO_SCREENSHOT_FORMAT` | The game writes each Nth frame to this folder as a BMP file, or a PNG file with `"png"`. |

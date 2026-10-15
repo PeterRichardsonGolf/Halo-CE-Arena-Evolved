@@ -29,7 +29,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   SHIELD), on by default; no other controller is touched, and the triggers and lightbar are given back when you
   quit. Windows and macOS through SDL; on Linux the effects are written to the pad's hidraw device, which Steam's
   udev rules open, or the new `70-ae-dualsense.rules` in the Linux downloads (README: "DualSense on Linux without
-  Steam"). Bluetooth works; the DualSense Edge is handled but not yet tried on hardware.
+  Steam"). Bluetooth works; the DualSense Edge is handled but not yet tried on hardware. Over Bluetooth the pad gets
+  one report every 50 ms at most (changes in between are merged), and on Linux the rumble travels in the same
+  reports as the effects instead of a second stream from the kernel, so a busy Bluetooth radio (earbuds connected
+  too) no longer drops the pad mid-fight; a pad that drops anyway gets its effects back when it reconnects.
 - **Bots** in split screen Slayer games (from OpenCE pull request #367 by
   BirchWoodGod, the offline bots of the Halo CE for PS Vita port, an OpenCE
   derivative, contributed under CC0): Settings > Game Options > BOTS sets

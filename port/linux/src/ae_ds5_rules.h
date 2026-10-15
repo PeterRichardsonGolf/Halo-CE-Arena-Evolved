@@ -185,4 +185,92 @@ size, or 0 when `size` is too small */
 size_t ae_ds5_output_report(unsigned char *report, size_t size, int bluetooth, int sequence,
 	unsigned char const body[AE_DS5_BODY_SIZE]);
 
+/* ONE WRITER A PAD (0.3.0, the Bluetooth dropouts): a pad's link keeps the state it has from us and the state wanted,
+by field (the triggers, the rumble motors, the lightbar, the player lights). Each frame the wanted fields are set, then
+ae_ds5_link_due says what to write now: only the fields whose bytes differ from the pad's (or not sent yet, or asked
+again), all in one report. On Bluetooth at most one report every AE_DS5_BLUETOOTH_INTERVAL_MS: a change inside the
+window waits for it, later changes fold into the waiting one (the latest wins) and it goes out as the window opens.
+USB: one report a frame at most, at once. A report the pad's queue had no room for (busy) waits a window and is
+tried again; nothing is retried inside a frame */
+#define AE_DS5_BLUETOOTH_INTERVAL_MS 50
+/* (busy on USB: the next try this long after) */
+#define AE_DS5_BUSY_RETRY_MS 16
+
+#define AE_DS5_BODY_RUMBLE_RIGHT 2 /* the light (right) motor, 0-255 */
+#define AE_DS5_BODY_RUMBLE_LEFT 3  /* the heavy (left) motor */
+#define AE_DS5_BODY_ENABLE3 38
+/* the rumble's enable bits as the kernel's hid-playstation sends them: "haptics select" (classic rumble, the audio
+haptics off) and the compatible vibration, the first one (enable1 0x01) or, on firmware 2.21 and newer and the
+DualSense Edge, the second (enable3 0x04) */
+#define AE_DS5_ENABLE1_RUMBLE 0x01
+#define AE_DS5_ENABLE1_HAPTICS_SELECT 0x02
+#define AE_DS5_ENABLE3_RUMBLE_V2 0x04
+
+enum ae_ds5_field
+{
+	AE_DS5_FIELD_TRIGGERS = 1,
+	AE_DS5_FIELD_RUMBLE = 2,
+	AE_DS5_FIELD_LIGHTBAR = 4,
+	AE_DS5_FIELD_PLAYER_LIGHTS = 8,
+	AE_DS5_FIELDS = 15
+};
+
+/* a write's outcome: sent; busy (the queue full, try the next window); gone (the pad left: its node is closed, opened
+again when it is back, and everything sent again); refused (the pad is left alone) */
+enum ae_ds5_write_result
+{
+	AE_DS5_WRITE_SENT,
+	AE_DS5_WRITE_BUSY,
+	AE_DS5_WRITE_GONE,
+	AE_DS5_WRITE_REFUSED
+};
+/* a failed write's errno as an outcome */
+enum ae_ds5_write_result ae_ds5_write_result_of_errno(int error);
+
+struct ae_ds5_link
+{
+	int bluetooth;
+	int vibration_v2;
+	/* the wanted state (every field's bytes in a body), the fields wanted, the ones to send though unchanged */
+	unsigned char want[AE_DS5_BODY_SIZE];
+	int wanted;
+	int forced;
+	/* what the pad has from us, and which fields it has */
+	unsigned char sent[AE_DS5_BODY_SIZE];
+	int known;
+	/* when the window next opens (ms), whether a change waits for it, the last frame's wanted bytes (to count what
+	folds into a waiting report) */
+	unsigned long long open_ms;
+	int pending;
+	unsigned char last_want[AE_DS5_BODY_SIZE];
+	int last_dirty;
+	/* (debug.ds5_log's minute) reports written; wanted changes folded into a later report; changes that waited for
+	the window; failed writes (busy, gone, refused) */
+	unsigned long writes, merged, deferred, errors;
+};
+
+void ae_ds5_link_init(struct ae_ds5_link *link, int bluetooth, int vibration_v2);
+/* the pad has nothing from us (opened again after it left): everything wanted is sent again */
+void ae_ds5_link_forget(struct ae_ds5_link *link);
+/* this frame's wanted fields */
+void ae_ds5_link_want_triggers(struct ae_ds5_link *link, unsigned char const right[AE_DS5_EFFECT_SIZE],
+	unsigned char const left[AE_DS5_EFFECT_SIZE]);
+/* the motors 0-255: the heavy (left) and the light (right) */
+void ae_ds5_link_want_rumble(struct ae_ds5_link *link, int left, int right);
+void ae_ds5_link_want_lightbar(struct ae_ds5_link *link, int red, int green, int blue);
+void ae_ds5_link_want_player_lights(struct ae_ds5_link *link, unsigned char lights);
+/* the fields sent next time though unchanged (a refresh) */
+void ae_ds5_link_force(struct ae_ds5_link *link, int fields);
+/* the fields no longer driven (the pad keeps what it has) */
+void ae_ds5_link_drop(struct ae_ds5_link *link, int fields);
+/* the fields that differ from the pad's */
+int ae_ds5_link_dirty(struct ae_ds5_link const *link);
+/* once a frame: the fields to write now (0: none) with the body to send (their enable bits set, the other fields'
+bytes as wanted but not enabled); `now` in ms. Counts the waiting and the folded changes */
+int ae_ds5_link_due(struct ae_ds5_link *link, unsigned long long now, unsigned char body[AE_DS5_BODY_SIZE]);
+/* as ae_ds5_link_due, the window ignored (at exit, a reset) */
+int ae_ds5_link_due_now(struct ae_ds5_link *link, unsigned long long now, unsigned char body[AE_DS5_BODY_SIZE]);
+/* the outcome of writing what ae_ds5_link_due gave */
+void ae_ds5_link_result(struct ae_ds5_link *link, int fields, enum ae_ds5_write_result result, unsigned long long now);
+
 #endif

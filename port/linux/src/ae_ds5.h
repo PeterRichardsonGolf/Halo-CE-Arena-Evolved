@@ -11,13 +11,18 @@ split-screen number; shield, the lightbar the player's shield meter as the HUD d
 - Linux with the kernel's hid-playstation driver (AE's default, ae_gamepads.c): the input stays the kernel's, and
   the output reports are written to the pad's own /dev/hidraw node when this user may write it (udev rules: Steam's
   60-steam-input.rules, or the Linux downloads' 70-ae-dualsense.rules). Only the trigger, lightbar and player light
-  enable bits are set, so the kernel's own reports (rumble) and ours leave each other's fields alone.
+  enable bits are set, so the kernel's own reports and ours leave each other's fields alone; the game's rumble
+  goes in our reports too (ONE WRITER: SDL is given zeros for that pad, so the kernel sends no rumble reports).
+ONE WRITER, coalesced (ae_ds5_rules.h's link): a pad gets at most one report a frame, only of the fields that changed,
+and on Bluetooth at most one every 50 ms (the changes in between merged, the latest sent as the window opens). A pad
+whose hidraw node goes (ENODEV, EIO: the Bluetooth link lost) has it closed, looked for again each second and, back,
+everything sent again; a full queue (EAGAIN) keeps the report for the next window.
 A kick is a trigger's event shape (a round, the reload's magazine going in, the weapon readied, the shotgun's pump, a
 grenade's throw on L2) sent once, then the held one again after its time: two reports an event. An event's rumble
 pulse (human weapons the left motor, Covenant ones the right) goes into the game's own rumble. The
 triggers are sent again though unchanged, while both are up, after the game's rumble changes and once a second.
 debug.txt says how each DualSense is driven (or why not, with the udev rule's line); debug.ds5_log adds the bytes
-written and the effects' changes. The triggers are let go (and the lightbar given back) at exit, when a pad leaves
+written, the effects' changes and each minute a pad's reports written, merged, deferred and failed. The triggers are let go (and the lightbar given back) at exit, when a pad leaves
 and when a setting is turned off.
 */
 
@@ -70,8 +75,9 @@ int ae_ds5_port_active(int port);
 /* the game: controller port `port`'s player wants this (copied) */
 void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish);
 /* xinput_sdl.c XInputSetState: the SDL pad that drives controller port `port` (NULL: none), and the game's motors,
-which a DualSense's event pulse raises while it lasts (each motor the larger of the game's and the pulse's: the pad's
-rumble stays the game's own SDL_RumbleGamepad) */
+which a DualSense's event pulse raises while it lasts (each motor the larger of the game's and the pulse's). Through
+SDL's driver the pad's rumble stays the game's own SDL_RumbleGamepad; on the hidraw way the motors go in our reports
+and are given back zero, so SDL_RumbleGamepad sends nothing (one writer) */
 void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_motor, unsigned short *right_motor);
 /* sdl_platform.c: once a frame, after the events (sends what changed) */
 void ae_ds5_frame(void);

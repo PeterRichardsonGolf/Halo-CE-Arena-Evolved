@@ -6,6 +6,7 @@ John "Nielk1" Klein's TriggerEffectGenerator (MIT licence, 2021-2022); the body 
 SDL3's PS5 driver (zlib licence). Pure: no SDL, no game.
 */
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -699,4 +700,234 @@ size_t ae_ds5_output_report(unsigned char *report, size_t size, int bluetooth, i
 		report[77] = (unsigned char)((crc >> 24) & 0xff);
 		return AE_DS5_BLUETOOTH_REPORT_SIZE;
 	}
+}
+
+/* ---- one writer a pad (ae_ds5_rules.h: the link) ---- */
+
+/* a field's bytes in the body */
+struct field_span
+{
+	int field;
+	int at, size;
+};
+static struct field_span const field_spans[] =
+{
+	{ AE_DS5_FIELD_TRIGGERS, AE_DS5_BODY_RIGHT_TRIGGER, 2 * AE_DS5_EFFECT_SIZE },
+	{ AE_DS5_FIELD_RUMBLE, AE_DS5_BODY_RUMBLE_RIGHT, 2 },
+	{ AE_DS5_FIELD_LIGHTBAR, AE_DS5_BODY_RED, 3 },
+	{ AE_DS5_FIELD_PLAYER_LIGHTS, AE_DS5_BODY_PLAYER_LIGHTS, 1 }
+};
+#define FIELD_SPANS ((int)(sizeof(field_spans) / sizeof(field_spans[0])))
+
+enum ae_ds5_write_result ae_ds5_write_result_of_errno(int error)
+{
+	/* (the queue full, or a moment's shortage: the next window) */
+	if (error == EAGAIN || error == EINTR || error == ENOMEM)
+		return AE_DS5_WRITE_BUSY;
+#ifdef EWOULDBLOCK
+	if (error == EWOULDBLOCK)
+		return AE_DS5_WRITE_BUSY;
+#endif
+#ifdef ENOBUFS
+	if (error == ENOBUFS)
+		return AE_DS5_WRITE_BUSY;
+#endif
+#ifdef ETIMEDOUT
+	if (error == ETIMEDOUT)
+		return AE_DS5_WRITE_BUSY;
+#endif
+	/* (the device went: a Bluetooth link lost, the cable pulled) */
+	if (error == ENODEV || error == EIO || error == ENXIO || error == EPIPE)
+		return AE_DS5_WRITE_GONE;
+#ifdef ENOTCONN
+	if (error == ENOTCONN)
+		return AE_DS5_WRITE_GONE;
+#endif
+#ifdef ESHUTDOWN
+	if (error == ESHUTDOWN)
+		return AE_DS5_WRITE_GONE;
+#endif
+	return AE_DS5_WRITE_REFUSED;
+}
+
+void ae_ds5_link_init(struct ae_ds5_link *link, int bluetooth, int vibration_v2)
+{
+	memset(link, 0, sizeof(*link));
+	link->bluetooth = bluetooth != 0;
+	link->vibration_v2 = vibration_v2 != 0;
+}
+
+void ae_ds5_link_forget(struct ae_ds5_link *link)
+{
+	link->known = 0;
+	link->open_ms = 0;
+	link->pending = 0;
+}
+
+static void link_want(struct ae_ds5_link *link, int field, int at, unsigned char const *bytes, int size)
+{
+	memcpy(link->want + at, bytes, (size_t)size);
+	link->wanted |= field;
+}
+
+void ae_ds5_link_want_triggers(struct ae_ds5_link *link, unsigned char const right[AE_DS5_EFFECT_SIZE],
+	unsigned char const left[AE_DS5_EFFECT_SIZE])
+{
+	link_want(link, AE_DS5_FIELD_TRIGGERS, AE_DS5_BODY_RIGHT_TRIGGER, right, AE_DS5_EFFECT_SIZE);
+	link_want(link, AE_DS5_FIELD_TRIGGERS, AE_DS5_BODY_LEFT_TRIGGER, left, AE_DS5_EFFECT_SIZE);
+}
+
+void ae_ds5_link_want_rumble(struct ae_ds5_link *link, int left, int right)
+{
+	unsigned char motors[2];
+
+	motors[0] = (unsigned char)clamp(right, 0, 255);
+	motors[1] = (unsigned char)clamp(left, 0, 255);
+	link_want(link, AE_DS5_FIELD_RUMBLE, AE_DS5_BODY_RUMBLE_RIGHT, motors, 2);
+}
+
+void ae_ds5_link_want_lightbar(struct ae_ds5_link *link, int red, int green, int blue)
+{
+	unsigned char rgb[3];
+
+	rgb[0] = (unsigned char)clamp(red, 0, 255);
+	rgb[1] = (unsigned char)clamp(green, 0, 255);
+	rgb[2] = (unsigned char)clamp(blue, 0, 255);
+	link_want(link, AE_DS5_FIELD_LIGHTBAR, AE_DS5_BODY_RED, rgb, 3);
+}
+
+void ae_ds5_link_want_player_lights(struct ae_ds5_link *link, unsigned char lights)
+{
+	link_want(link, AE_DS5_FIELD_PLAYER_LIGHTS, AE_DS5_BODY_PLAYER_LIGHTS, &lights, 1);
+}
+
+void ae_ds5_link_force(struct ae_ds5_link *link, int fields)
+{
+	link->forced |= fields & AE_DS5_FIELDS;
+}
+
+void ae_ds5_link_drop(struct ae_ds5_link *link, int fields)
+{
+	link->wanted &= ~fields;
+	link->forced &= ~fields;
+}
+
+int ae_ds5_link_dirty(struct ae_ds5_link const *link)
+{
+	int dirty = link->wanted & (~link->known | link->forced);
+	int i;
+
+	for (i = 0; i < FIELD_SPANS; i++)
+	{
+		struct field_span const *span = &field_spans[i];
+
+		if ((link->wanted & span->field) && !(dirty & span->field) &&
+			memcmp(link->want + span->at, link->sent + span->at, (size_t)span->size))
+			dirty |= span->field;
+	}
+	return dirty & AE_DS5_FIELDS;
+}
+
+/* the body for these fields: their enable bits, the wanted bytes */
+static void link_body(struct ae_ds5_link const *link, int fields, unsigned char body[AE_DS5_BODY_SIZE])
+{
+	memcpy(body, link->want, AE_DS5_BODY_SIZE);
+	body[AE_DS5_BODY_ENABLE1] = 0;
+	body[AE_DS5_BODY_ENABLE2] = 0;
+	body[AE_DS5_BODY_ENABLE3] = 0;
+	if (fields & AE_DS5_FIELD_TRIGGERS)
+		body[AE_DS5_BODY_ENABLE1] |= AE_DS5_ENABLE1_RIGHT_TRIGGER | AE_DS5_ENABLE1_LEFT_TRIGGER;
+	if (fields & AE_DS5_FIELD_RUMBLE)
+	{
+		body[AE_DS5_BODY_ENABLE1] |= AE_DS5_ENABLE1_HAPTICS_SELECT;
+		if (link->vibration_v2)
+			body[AE_DS5_BODY_ENABLE3] |= AE_DS5_ENABLE3_RUMBLE_V2;
+		else
+			body[AE_DS5_BODY_ENABLE1] |= AE_DS5_ENABLE1_RUMBLE;
+	}
+	if (fields & AE_DS5_FIELD_LIGHTBAR)
+		body[AE_DS5_BODY_ENABLE2] |= AE_DS5_ENABLE2_LIGHTBAR;
+	if (fields & AE_DS5_FIELD_PLAYER_LIGHTS)
+		body[AE_DS5_BODY_ENABLE2] |= AE_DS5_ENABLE2_PLAYER_LIGHTS;
+}
+
+static int link_due(struct ae_ds5_link *link, unsigned long long now, unsigned char body[AE_DS5_BODY_SIZE], int window)
+{
+	int dirty = ae_ds5_link_dirty(link);
+
+	if (!dirty)
+	{
+		/* (what waited went back to what the pad has: folded away) */
+		if (link->pending)
+			link->merged++;
+		link->pending = 0;
+		link->last_dirty = 0;
+		return 0;
+	}
+	if (window && now < link->open_ms)
+	{
+		/* (waits for the window: a change of what waits since the last frame is a change folded in) */
+		if (!link->pending)
+		{
+			link->pending = 1;
+			link->deferred++;
+		}
+		else if (dirty != link->last_dirty || memcmp(link->want, link->last_want, AE_DS5_BODY_SIZE))
+			link->merged++;
+		memcpy(link->last_want, link->want, AE_DS5_BODY_SIZE);
+		link->last_dirty = dirty;
+		return 0;
+	}
+	link_body(link, dirty, body);
+	return dirty;
+}
+
+int ae_ds5_link_due(struct ae_ds5_link *link, unsigned long long now, unsigned char body[AE_DS5_BODY_SIZE])
+{
+	return link_due(link, now, body, 1);
+}
+
+int ae_ds5_link_due_now(struct ae_ds5_link *link, unsigned long long now, unsigned char body[AE_DS5_BODY_SIZE])
+{
+	return link_due(link, now, body, 0);
+}
+
+void ae_ds5_link_result(struct ae_ds5_link *link, int fields, enum ae_ds5_write_result result, unsigned long long now)
+{
+	int i;
+
+	fields &= AE_DS5_FIELDS;
+	if (result == AE_DS5_WRITE_SENT)
+	{
+		for (i = 0; i < FIELD_SPANS; i++)
+		{
+			struct field_span const *span = &field_spans[i];
+
+			if (fields & span->field)
+				memcpy(link->sent + span->at, link->want + span->at, (size_t)span->size);
+		}
+		link->known |= fields;
+		link->forced &= ~fields;
+		link->pending = 0;
+		link->last_dirty = 0;
+		link->writes++;
+		link->open_ms = now + (link->bluetooth ? AE_DS5_BLUETOOTH_INTERVAL_MS : 0);
+		return;
+	}
+	link->errors++;
+	if (result == AE_DS5_WRITE_BUSY)
+	{
+		/* (kept: tried again as the next window opens, never at once) */
+		link->open_ms = now + (link->bluetooth ? AE_DS5_BLUETOOTH_INTERVAL_MS : AE_DS5_BUSY_RETRY_MS);
+		if (!link->pending)
+		{
+			link->pending = 1;
+			link->deferred++;
+		}
+		memcpy(link->last_want, link->want, AE_DS5_BODY_SIZE);
+		link->last_dirty = fields;
+		return;
+	}
+	if (result == AE_DS5_WRITE_GONE)
+		ae_ds5_link_forget(link);
 }

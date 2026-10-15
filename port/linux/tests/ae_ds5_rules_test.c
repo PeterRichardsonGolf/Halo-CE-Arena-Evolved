@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include "ae_ds5_rules.h"
@@ -8,6 +9,212 @@ static int failures;
 static int same(unsigned char const *a, unsigned char const *b, size_t size)
 {
 	return memcmp(a, b, size) == 0;
+}
+
+/* ONE WRITER: the link's coalescing, the Bluetooth window, a busy queue, a pad that went */
+static void link_tests(void)
+{
+	struct ae_ds5_link link;
+	unsigned char body[AE_DS5_BODY_SIZE];
+	unsigned char held[AE_DS5_EFFECT_SIZE], kick[AE_DS5_EFFECT_SIZE], off[AE_DS5_EFFECT_SIZE];
+	int fields;
+
+	ae_ds5_effect_weapon(held, 4, 7, 6);
+	ae_ds5_effect_feedback(kick, 2, 8);
+	ae_ds5_effect_off(off);
+
+	/* errno as an outcome */
+	CHECK(ae_ds5_write_result_of_errno(EAGAIN) == AE_DS5_WRITE_BUSY);
+	CHECK(ae_ds5_write_result_of_errno(EINTR) == AE_DS5_WRITE_BUSY);
+	CHECK(ae_ds5_write_result_of_errno(ENODEV) == AE_DS5_WRITE_GONE);
+	CHECK(ae_ds5_write_result_of_errno(EIO) == AE_DS5_WRITE_GONE);
+	CHECK(ae_ds5_write_result_of_errno(EINVAL) == AE_DS5_WRITE_REFUSED);
+	CHECK(ae_ds5_write_result_of_errno(EACCES) == AE_DS5_WRITE_REFUSED);
+
+	/* USB: the same body twice is one write; nothing wanted, nothing written */
+	ae_ds5_link_init(&link, 0, 0);
+	CHECK(ae_ds5_link_due(&link, 0, body) == 0);
+	ae_ds5_link_want_triggers(&link, held, off);
+	fields = ae_ds5_link_due(&link, 0, body);
+	CHECK(fields == AE_DS5_FIELD_TRIGGERS);
+	CHECK(body[AE_DS5_BODY_ENABLE1] == (AE_DS5_ENABLE1_RIGHT_TRIGGER | AE_DS5_ENABLE1_LEFT_TRIGGER) &&
+		body[AE_DS5_BODY_ENABLE2] == 0 && body[AE_DS5_BODY_ENABLE3] == 0);
+	CHECK(same(body + AE_DS5_BODY_RIGHT_TRIGGER, held, sizeof(held)) && same(body + AE_DS5_BODY_LEFT_TRIGGER, off,
+		sizeof(off)));
+	ae_ds5_link_result(&link, fields, AE_DS5_WRITE_SENT, 0);
+	ae_ds5_link_want_triggers(&link, held, off);
+	CHECK(ae_ds5_link_due(&link, 1, body) == 0);
+	CHECK(ae_ds5_link_due(&link, 2, body) == 0);
+	CHECK(link.writes == 1 && link.deferred == 0 && link.merged == 0);
+	/* USB has no window: a change the next frame goes out at once */
+	ae_ds5_link_want_triggers(&link, kick, off);
+	CHECK(ae_ds5_link_due(&link, 3, body) == AE_DS5_FIELD_TRIGGERS);
+	ae_ds5_link_result(&link, AE_DS5_FIELD_TRIGGERS, AE_DS5_WRITE_SENT, 3);
+	/* all fields merged in one report; only the changed ones enabled */
+	ae_ds5_link_want_rumble(&link, 200, 40);
+	ae_ds5_link_want_lightbar(&link, 255, 0, 0);
+	ae_ds5_link_want_player_lights(&link, ae_ds5_player_lights(2));
+	fields = ae_ds5_link_due(&link, 4, body);
+	CHECK(fields == (AE_DS5_FIELD_RUMBLE | AE_DS5_FIELD_LIGHTBAR | AE_DS5_FIELD_PLAYER_LIGHTS));
+	CHECK(body[AE_DS5_BODY_ENABLE1] == (AE_DS5_ENABLE1_RUMBLE | AE_DS5_ENABLE1_HAPTICS_SELECT));
+	CHECK(body[AE_DS5_BODY_ENABLE2] == (AE_DS5_ENABLE2_LIGHTBAR | AE_DS5_ENABLE2_PLAYER_LIGHTS));
+	CHECK(body[AE_DS5_BODY_RUMBLE_LEFT] == 200 && body[AE_DS5_BODY_RUMBLE_RIGHT] == 40 && body[AE_DS5_BODY_RED] == 255 &&
+		body[AE_DS5_BODY_PLAYER_LIGHTS] == 0x2a);
+	ae_ds5_link_result(&link, fields, AE_DS5_WRITE_SENT, 4);
+	/* a refresh: unchanged, sent again once */
+	ae_ds5_link_force(&link, AE_DS5_FIELD_TRIGGERS);
+	CHECK(ae_ds5_link_due(&link, 5, body) == AE_DS5_FIELD_TRIGGERS);
+	ae_ds5_link_result(&link, AE_DS5_FIELD_TRIGGERS, AE_DS5_WRITE_SENT, 5);
+	CHECK(ae_ds5_link_due(&link, 6, body) == 0);
+	/* a field no longer driven is not sent */
+	ae_ds5_link_drop(&link, AE_DS5_FIELD_LIGHTBAR);
+	ae_ds5_link_want_rumble(&link, 0, 0);
+	CHECK(ae_ds5_link_due(&link, 7, body) == AE_DS5_FIELD_RUMBLE);
+	CHECK(body[AE_DS5_BODY_ENABLE2] == 0);
+	ae_ds5_link_result(&link, AE_DS5_FIELD_RUMBLE, AE_DS5_WRITE_SENT, 7);
+
+	/* the second compatible vibration: haptics select, enable3 0x04, not enable1 0x01 */
+	ae_ds5_link_init(&link, 0, 1);
+	ae_ds5_link_want_rumble(&link, 300, -5);
+	CHECK(ae_ds5_link_due(&link, 0, body) == AE_DS5_FIELD_RUMBLE);
+	CHECK(body[AE_DS5_BODY_ENABLE1] == AE_DS5_ENABLE1_HAPTICS_SELECT &&
+		body[AE_DS5_BODY_ENABLE3] == AE_DS5_ENABLE3_RUMBLE_V2);
+	CHECK(body[AE_DS5_BODY_RUMBLE_LEFT] == 255 && body[AE_DS5_BODY_RUMBLE_RIGHT] == 0);
+
+	/* Bluetooth: the first change goes at once; three changes inside the next 50 ms are one write, with the last,
+	as the window opens (nothing lost at the end of a burst: no new wish needed) */
+	ae_ds5_link_init(&link, 1, 1);
+	ae_ds5_link_want_lightbar(&link, 10, 10, 10);
+	CHECK(ae_ds5_link_due(&link, 1000, body) == AE_DS5_FIELD_LIGHTBAR);
+	ae_ds5_link_result(&link, AE_DS5_FIELD_LIGHTBAR, AE_DS5_WRITE_SENT, 1000);
+	ae_ds5_link_want_lightbar(&link, 20, 0, 0);
+	CHECK(ae_ds5_link_due(&link, 1010, body) == 0);
+	ae_ds5_link_want_lightbar(&link, 0, 30, 0);
+	CHECK(ae_ds5_link_due(&link, 1020, body) == 0);
+	ae_ds5_link_want_lightbar(&link, 0, 0, 40);
+	ae_ds5_link_want_triggers(&link, kick, off);
+	CHECK(ae_ds5_link_due(&link, 1030, body) == 0);
+	CHECK(ae_ds5_link_due(&link, 1049, body) == 0);
+	CHECK(link.writes == 1 && link.deferred == 1 && link.merged == 2);
+	fields = ae_ds5_link_due(&link, 1050, body);
+	CHECK(fields == (AE_DS5_FIELD_LIGHTBAR | AE_DS5_FIELD_TRIGGERS));
+	CHECK(body[AE_DS5_BODY_RED] == 0 && body[AE_DS5_BODY_GREEN] == 0 && body[AE_DS5_BODY_BLUE] == 40);
+	CHECK(same(body + AE_DS5_BODY_RIGHT_TRIGGER, kick, sizeof(kick)));
+	ae_ds5_link_result(&link, fields, AE_DS5_WRITE_SENT, 1050);
+	CHECK(link.writes == 2);
+	CHECK(ae_ds5_link_due(&link, 1200, body) == 0);
+	/* a change that goes back to what the pad has while it waits: no write, counted as folded */
+	ae_ds5_link_want_lightbar(&link, 1, 2, 3);
+	CHECK(ae_ds5_link_due(&link, 1210, body) == AE_DS5_FIELD_LIGHTBAR);
+	ae_ds5_link_result(&link, AE_DS5_FIELD_LIGHTBAR, AE_DS5_WRITE_SENT, 1210);
+	ae_ds5_link_want_lightbar(&link, 9, 9, 9);
+	CHECK(ae_ds5_link_due(&link, 1220, body) == 0);
+	ae_ds5_link_want_lightbar(&link, 1, 2, 3);
+	CHECK(ae_ds5_link_due(&link, 1230, body) == 0);
+	CHECK(ae_ds5_link_due(&link, 1300, body) == 0);
+	CHECK(link.writes == 3 && link.merged == 3);
+	/* the window ignored (a reset at exit) */
+	ae_ds5_link_want_lightbar(&link, 0, 0, 128);
+	CHECK(ae_ds5_link_due_now(&link, 1301, body) == AE_DS5_FIELD_LIGHTBAR);
+	ae_ds5_link_result(&link, AE_DS5_FIELD_LIGHTBAR, AE_DS5_WRITE_SENT, 1301);
+
+	/* busy (EAGAIN): kept, never tried again inside the window, then sent */
+	ae_ds5_link_want_lightbar(&link, 50, 60, 70);
+	fields = ae_ds5_link_due(&link, 2000, body);
+	CHECK(fields == AE_DS5_FIELD_LIGHTBAR);
+	ae_ds5_link_result(&link, fields, ae_ds5_write_result_of_errno(EAGAIN), 2000);
+	CHECK(link.errors == 1 && link.pending);
+	CHECK(ae_ds5_link_due(&link, 2001, body) == 0);
+	CHECK(ae_ds5_link_due(&link, 2049, body) == 0);
+	CHECK(ae_ds5_link_due(&link, 2050, body) == AE_DS5_FIELD_LIGHTBAR && body[AE_DS5_BODY_RED] == 50);
+	ae_ds5_link_result(&link, AE_DS5_FIELD_LIGHTBAR, AE_DS5_WRITE_SENT, 2050);
+	CHECK(!link.pending && ae_ds5_link_due(&link, 2200, body) == 0);
+	/* (USB busy: the next try AE_DS5_BUSY_RETRY_MS on) */
+	{
+		struct ae_ds5_link usb;
+
+		ae_ds5_link_init(&usb, 0, 0);
+		ae_ds5_link_want_lightbar(&usb, 1, 1, 1);
+		CHECK(ae_ds5_link_due(&usb, 100, body) == AE_DS5_FIELD_LIGHTBAR);
+		ae_ds5_link_result(&usb, AE_DS5_FIELD_LIGHTBAR, AE_DS5_WRITE_BUSY, 100);
+		CHECK(ae_ds5_link_due(&usb, 101, body) == 0);
+		CHECK(ae_ds5_link_due(&usb, 100 + AE_DS5_BUSY_RETRY_MS, body) == AE_DS5_FIELD_LIGHTBAR);
+	}
+
+	/* gone (ENODEV): the pad has nothing from us any more: opened again, everything wanted is sent at once */
+	ae_ds5_link_want_triggers(&link, held, off);
+	ae_ds5_link_want_rumble(&link, 0, 0);
+	fields = ae_ds5_link_due(&link, 3000, body);
+	CHECK(fields == (AE_DS5_FIELD_TRIGGERS | AE_DS5_FIELD_RUMBLE));
+	ae_ds5_link_result(&link, fields, AE_DS5_WRITE_SENT, 3000);
+	ae_ds5_link_want_lightbar(&link, 7, 7, 7);
+	fields = ae_ds5_link_due(&link, 3100, body);
+	ae_ds5_link_result(&link, fields, ae_ds5_write_result_of_errno(ENODEV), 3100);
+	CHECK(link.known == 0);
+	fields = ae_ds5_link_due(&link, 3101, body);
+	CHECK(fields == (AE_DS5_FIELD_TRIGGERS | AE_DS5_FIELD_RUMBLE | AE_DS5_FIELD_LIGHTBAR));
+	ae_ds5_link_result(&link, fields, AE_DS5_WRITE_SENT, 3101);
+	CHECK(ae_ds5_link_due(&link, 3300, body) == 0);
+}
+
+/* (printed for the hand-back) reports a second in a modelled fight: 4 s at 60 frames a second, the game's rumble set
+each 30 Hz tick (a fading pulse after each shotgun shot, 1.4 shots a second, and an assault rifle's buzz for 1.5 s),
+the shotgun's kick (130 ms) and the shield's lightbar stepping each 100 ms while it recharges (2 s). Before: our
+reports (a change of the triggers or the lightbar, a frame) plus the kernel's (each change of the game's motors,
+SDL_RumbleGamepad -> force feedback). After: one link, the rumble in our reports */
+static void write_rate_model(void)
+{
+	int bluetooth;
+
+	for (bluetooth = 0; bluetooth < 2; bluetooth++)
+	{
+		struct ae_ds5_link link;
+		unsigned char body[AE_DS5_BODY_SIZE];
+		unsigned char held[AE_DS5_EFFECT_SIZE], kick[AE_DS5_EFFECT_SIZE];
+		unsigned char last_right[AE_DS5_EFFECT_SIZE];
+		int last_rgb = -1, last_motor = -1, before = 0, frame, frames = 240;
+
+		ae_ds5_link_init(&link, bluetooth, 1);
+		ae_ds5_effect_weapon(held, 4, 7, 6);
+		ae_ds5_effect_feedback(kick, 2, 8);
+		memset(last_right, 0xff, sizeof(last_right));
+		for (frame = 0; frame < frames; frame++)
+		{
+			unsigned long long now = (unsigned long long)frame * 1000ull / 60ull;
+			long tick = (long)(now * 30ull / 1000ull);
+			long shot_ms = (long)(now % 700ull);
+			int motor = 0, rgb, fields;
+			unsigned char const *right = shot_ms < 130 ? kick : held;
+
+			/* the shotgun's pulse fades over 10 ticks; the rifle buzzes between 2 s and 3.5 s */
+			if (shot_ms < 333)
+				motor = 255 - (int)(shot_ms * 30 / 1000) * 25;
+			if (now >= 2000 && now < 3500)
+				motor = motor > (tick & 1 ? 180 : 120) ? motor : (tick & 1 ? 180 : 120);
+			rgb = now >= 1000 && now < 3000 ? (int)((now - 1000) / 100) * 12 : 240;
+			/* before */
+			if (memcmp(right, last_right, sizeof(last_right)) || rgb != last_rgb)
+				before++;
+			if (motor != last_motor)
+				before++;
+			memcpy(last_right, right, sizeof(last_right));
+			last_rgb = rgb;
+			last_motor = motor;
+			/* after */
+			ae_ds5_link_want_triggers(&link, right, held);
+			ae_ds5_link_want_rumble(&link, motor, 0);
+			ae_ds5_link_want_lightbar(&link, 0, rgb, 255);
+			fields = ae_ds5_link_due(&link, now, body);
+			if (fields)
+				ae_ds5_link_result(&link, fields, AE_DS5_WRITE_SENT, now);
+		}
+		printf("write rate model (%s): before %.1f reports/s (ours + the kernel's), after %.1f reports/s "
+			"(merged %lu, deferred %lu)\n", bluetooth ? "Bluetooth" : "USB", before / 4.0, link.writes / 4.0,
+			link.merged, link.deferred);
+		if (bluetooth)
+			CHECK(link.writes <= 4 * (1000 / AE_DS5_BLUETOOTH_INTERVAL_MS) + 1);
+		CHECK(link.writes <= (unsigned long)before);
+	}
 }
 
 int main(void)
@@ -518,6 +725,9 @@ int main(void)
 		report[3 + AE_DS5_BODY_RED] == 255);
 	/* (zlib.crc32(b"\xa2" + report[:74]) of this report) */
 	CHECK(report[74] == 0x09 && report[75] == 0xf2 && report[76] == 0x98 && report[77] == 0x6e);
+
+	link_tests();
+	write_rate_model();
 
 	if (failures)
 		return 1;
