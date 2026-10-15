@@ -345,7 +345,8 @@ def judge_states(case, text, out_dir):
     if not (int(lines[0]["tick"]) < 90 and lines[0]["drawn"] == "0"):
         why.append(f"the first line (tick {lines[0]['tick']}) is not a hidden one in the countdown")
     shown = [(name, l) for name, l in shots_with_lines(text) if l and l["drawn"] == "1"]
-    if not shown:
+    # (the short game's screenshots may all fall in its countdown and end: the shown case looks at pictures)
+    if not shown and case == "shown":
         why.append("no screenshot while the strip was drawn")
     for name, line in shown[-2:]:
         why += strip_shown_in(out_dir / "shots" / name, line)
