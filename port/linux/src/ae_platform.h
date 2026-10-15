@@ -65,6 +65,10 @@ void ae_platform_test_keystroke(int scancode);
 none) and its length: a virtual SDL gamepad, attached at the first call, gets its button (pad:b, pad:start, ...), so
 the presses of a real lone gamepad are tested, through the game's own mapping of pads to ports (ae_platform.c) */
 void ae_platform_test_pad_press(char const *token, int length);
+/* (debug.lone_pad_first, for test launches: xinput_sdl.c port_gamepad and connected_gamepads) a lone gamepad stays on
+port 0 with the keyboard in split screen, so it plays player 1, and port 1 is reported connected with no input
+(player 2 stands); off: upstream's rule, the lone pad is player 2's */
+int ae_platform_lone_pad_first(void);
 
 /* the MCC mouse style (ae_glue_mouse.c, the game's side; xinput_sdl.c halo_linux_mouse_look): debug.test_input
 "mouse:<dx>,<dy>" adds those counts to the ones read, every 30th call; ae_mouse_look_override then replaces the

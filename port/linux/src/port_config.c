@@ -1021,6 +1021,11 @@ static const struct config_setting config_settings[] =
 		"For the automated tests of the HUD's counter digits (ae_hud_digits.c): the\n"
 		"text (digits, \":\" and spaces) drawn in magenta at 24 px in the first view's\n"
 		"top left, and its measures in the log." },
+	{ "debug.lone_pad_first", _config_boolean, "false", "HALO_DEBUG_LONE_PAD_FIRST", _environment_value, /* AE hook */
+		_platform_all,
+		"For test launches (ae_platform.c): in split screen a lone gamepad stays\n"
+		"player 1's, with the keyboard, and player 2 stands with no input. Off:\n"
+		"the keyboard is player 1 and the lone gamepad player 2." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"

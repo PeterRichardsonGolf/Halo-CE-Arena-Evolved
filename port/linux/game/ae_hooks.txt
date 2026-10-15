@@ -405,3 +405,7 @@ source/interface/hud.c	if (ae_hud_style_name_color(ally, color)) /* AE hook */\n
 source/interface/hud.c	ae_hud_style_name_outline(font_index, &bounds, x, y, name, &color, hud_player_name_scale()); /* AE hook */
 port/linux/game/coop_spectate.c	#include "ae_hud_style_draw.h" /* AE hook */
 port/linux/game/coop_spectate.c	if (ae_hud_style_bottom_text(text)) /* AE hook */\nreturn;
+# debug.lone_pad_first (test launches): a lone gamepad stays player 1's in split screen, player 2 connected with no input
+port/linux/src/port_config.c	{ "debug.lone_pad_first", _config_boolean, "false", "HALO_DEBUG_LONE_PAD_FIRST", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/xinput_sdl.c	if (count == 1 && !ae_platform_lone_pad_first()) /* AE hook */
+port/linux/src/xinput_sdl.c	if (count == 1 && ae_platform_lone_pad_first() && pc_menu_split_players()) mask |= 1UL << 1; /* AE hook */

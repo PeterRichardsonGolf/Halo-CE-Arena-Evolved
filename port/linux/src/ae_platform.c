@@ -35,6 +35,18 @@ pure, so the unit tests build it.)
 int platform_input_scheme(void);
 #endif
 
+int ae_platform_lone_pad_first(void)
+{
+	static int read, value;
+
+	if (!read)
+	{
+		value = config_boolean("debug.lone_pad_first");
+		read = 1;
+	}
+	return value;
+}
+
 /* whether Num Lock is on. The dedicated server has no keyboard, and Android's guest has no SDL_GetModState (its SDL
 is port/android/guest/runtime/guest_sdl.c's few functions): on there, so the keypad is digits */
 static int num_lock(void)

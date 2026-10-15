@@ -1056,7 +1056,7 @@ a button held across the change would be pressed again on the other port
 (the B that leaves a profile screen leaving the game as player 1's) */
 static SDL_Gamepad *port_gamepad(SDL_Gamepad *gamepads[PORT_COUNT], int count, int port)
 {
-	if (count == 1)
+	if (count == 1 && !ae_platform_lone_pad_first()) /* AE hook */
 	{
 		BOOL split = pc_menu_split_players() != 0;
 
@@ -1200,6 +1200,7 @@ static DWORD connected_gamepads(void)
 		if (port_gamepad(gamepads, count, port))
 			mask |= 1UL << port;
 	}
+	if (count == 1 && ae_platform_lone_pad_first() && pc_menu_split_players()) mask |= 1UL << 1; /* AE hook */
 	return mask;
 }
 
