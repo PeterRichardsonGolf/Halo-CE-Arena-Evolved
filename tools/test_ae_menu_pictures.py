@@ -60,3 +60,34 @@ def test_no_placeholder_is_left_on_those_screens():
     report = (MENUS / "NON_HANDDRAWN.md").read_text()
     assert "mp_options__" not in report.split("## Placeholders")[1]
     assert "gametype_options__" not in report.split("## Placeholders")[1]
+
+
+def test_ink_is_each_drawing_s_measured_ink():
+    # (the frames place and size each drawing by its ink: a drawing changed without its INK row would sit wrong)
+    import shutil
+    import pytest
+    if not shutil.which("rsvg-convert"):
+        pytest.skip("needs rsvg-convert")
+    pytest.importorskip("PIL")
+    drawings = dict(ae_menu_pictures.MULTIPLAYER_ICONS) | dict(ae_menu_pictures.GAMETYPE_ICONS.values())
+    assert set(drawings) == set(ae_menu_pictures.INK)
+    for name, shapes in drawings.items():
+        measured = ae_menu_pictures.ink(shapes)
+        assert all(abs(a - b) <= 0.25 for a, b in zip(measured, ae_menu_pictures.INK[name])), (name, measured)
+
+
+
+def test_every_drawing_is_centred_in_its_zone_and_no_bigger_than_it():
+    # (owner 10-15: placement, sizing and padding alike on every entry: the ink's middle on the zone's, so the space
+    # above it is the space between it and the description's text)
+    for bitmap, names in ((ae_menu_pictures.MULTIPLAYER, [n for n, _ in ae_menu_pictures.MULTIPLAYER_ICONS]),
+                          (ae_menu_pictures.GAMETYPE, [n for n, _ in ae_menu_pictures.GAMETYPE_ICONS.values()])):
+        zone = ae_menu_pictures.ZONES[bitmap]
+        for name in names:
+            left, top, right, bottom = ae_menu_pictures.INK[name]
+            text = ae_menu_pictures.svg([], (left, top, right, bottom), zone)
+            x, y, scale = map(float, re.search(r"translate\(([-0-9.]+) ([-0-9.]+)\) scale\(([0-9.]+)\)", text).groups())
+            assert abs(x + scale * (left + right) / 2 - zone["centre"][0]) < 0.02, name
+            assert abs(y + scale * (top + bottom) / 2 - zone["centre"][1]) < 0.02, name
+            assert scale * (bottom - top) <= zone["height"] + 0.01 and scale * (right - left) <= zone["width"] + 0.01
+            assert scale * ((bottom - top) * (right - left)) ** 0.5 <= zone["mass"] + 0.01, name

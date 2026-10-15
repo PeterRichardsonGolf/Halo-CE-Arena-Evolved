@@ -24,14 +24,18 @@ from pathlib import Path
 
 BLUE = "#2896FF"
 RED = "#FF3A3A"
-# the logical frame (the PC version's: 512 by 256, of which the widget shows the top left, 307 by 244 on the
-# Multiplayer screen and 284 by 208 on Edit Gametype, the description's text from about 190 down) and the drawing's
-# size there (its 100 by 100 box), centred where the PC version's picture (and the placeholder) was
+# the logical frame (the PC version's: 512 by 256, of which the widget shows the top left; measured in game, a frame
+# texel is 1.84 screen pixels at 864 lines and the panel's inside is frame x 0 to about 298, its description's text
+# from frame y 240 down on the Multiplayer screen and from 198 down on Edit Gametype)
 FRAME = (512, 256)
-ICON_SIZE = 160
 MULTIPLAYER = "main_menu/multiplayer_type_select/mp_options"
 GAMETYPE = "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options"
-CENTRES = {MULTIPLAYER: (141, 96), GAMETYPE: (142, 90)}
+# where each screen's drawings go (owner 10-15: placement, sizing and padding alike on every entry): the drawing's ink
+# (INK) centred on the panel's middle above the text, the same space above it as between it and the text; scaled so
+# every drawing has about the same visual mass (the square root of its ink's area: MASS), no taller than HEIGHT and
+# no wider than WIDTH (frame texels)
+ZONES = {MULTIPLAYER: {"centre": (146, 120), "mass": 140, "height": 150, "width": 215},
+         GAMETYPE: {"centre": (144, 99), "mass": 116, "height": 128, "width": 200}}
 
 
 def _globe(cx, cy, r):
@@ -146,10 +150,14 @@ MULTIPLAYER_ICONS = [
      _link(30, 50, 60, 30, 9.5) + _link(70, 50, 60, 30, 9.5) + _link(30, 50, 60, 30, 9.5, "direct_link_over") + ["</g>"]),
     # INTERNET (create): the host broadcasting, the world behind it
     ("internet_host", _globe(64, 44, 32) + _rack(6, 44, 30, 48) + _waves(21, 38, (8, 16), toward=-105)),
-    # LAN (create): the host broadcasting, cabled to three screens
-    ("lan_host", _rack(37, 22, 26, 32, bays=3) + _waves(50, 18, (8, 16)) +
-     ['<path d="M50,54 V62 M16,62 H84 M16,62 V68 M50,62 V68 M84,62 V68" class="w"/>'] +
-     _monitor(2, 68, 28, 18) + _monitor(36, 68, 28, 18) + _monitor(70, 68, 28, 18)),
+    # LAN (create): the host's router broadcasting, at the top of a tree cabled to three screens (owner 10-15: a
+    # router there, not a server)
+    ("lan_host", ['<line x1="34" y1="32" x2="29" y2="12" class="w"/>', '<line x1="66" y1="32" x2="71" y2="12" class="w"/>',
+                  '<rect x="22" y="32" width="56" height="18" rx="4" class="b"/>'] +
+     [f'<line x1="{36 + i * 9}" y1="41" x2="{40 + i * 9}" y2="41" class="w"/>' for i in range(4)] +
+     _waves(50, 30, (9, 17)) +
+     ['<path d="M50,50 V57 M15,57 H85 M15,57 V65 M50,57 V65 M85,57 V65" class="w"/>'] +
+     _monitor(0, 65, 30, 21) + _monitor(35, 65, 30, 21) + _monitor(70, 65, 30, 21)),
     # CO-OP CAMPAIGN: one screen split in two, a player in each half
     ("coop", ['<clipPath id="coop_top"><rect x="12" y="14" width="76" height="30"/></clipPath>',
               '<clipPath id="coop_bottom"><rect x="12" y="46" width="76" height="28"/></clipPath>',
@@ -200,6 +208,24 @@ GAMETYPE_ICONS = {
                 '<path d="M50,56 V36" class="w"/>', '<circle cx="50" cy="56" r="4" class="f"/>']),
 }
 
+# each drawing's ink (ink(): left, top, right, bottom in its 100 by 100 box), measured once and kept here so the
+# frames can be written without rsvg-convert or Pillow; tools/test_ae_menu_pictures.py measures them again
+INK = {
+    "server_browser": (2.8, 8.8, 98.8, 96.8),
+    "lan_join": (2.8, 12.8, 97.2, 91.2),
+    "direct_link": (3.5, 16.2, 96.5, 83.8),
+    "internet_host": (4.8, 10.8, 97.2, 93.2),
+    "lan_host": (-1.2, 10.2, 101.2, 94.2),
+    "coop": (2.2, 6.8, 97.8, 91.2),
+    "edit_gametypes": (11.8, 2.2, 101.2, 91.8),
+    "name": (2.8, 22.8, 97.2, 95.2),
+    "items": (4.8, 28.8, 96.2, 87.2),
+    "vehicles": (2.8, 16.2, 98.2, 84.2),
+    "teams": (7.8, 12.8, 92.2, 87.2),
+    "arena": (6.2, 6.2, 93.8, 93.8),
+    "nhe": (9.8, 2.8, 90.2, 96.2),
+}
+
 STYLE = (f"<style>\n.b {{ fill:#000; stroke:{BLUE}; stroke-width:2.4; stroke-linejoin:round }}\n"
          f".l {{ fill:none; stroke:{BLUE}; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }}\n"
          f".w {{ fill:none; stroke:{BLUE}; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round }}\n"
@@ -207,10 +233,27 @@ STYLE = (f"<style>\n.b {{ fill:#000; stroke:{BLUE}; stroke-width:2.4; stroke-lin
          f".f {{ fill:{BLUE}; stroke:none }}\n.red {{ stroke:{RED} }}\n</style>")
 
 
-def svg(shapes, centre) -> str:
-    """an entry's frame: its drawing, glowing, where the PC version's picture was"""
-    scale = ICON_SIZE / 100
-    left, top = centre[0] - ICON_SIZE / 2, centre[1] - ICON_SIZE / 2
+def ink(shapes) -> tuple:
+    """a drawing's ink in its 100 by 100 box (left, top, right, bottom; its edges' strokes included), measured from
+    the drawing itself (rsvg-convert and Pillow: tools/test_ae_menu_pictures.py checks INK against it)"""
+    import io
+    from PIL import Image
+    clips = "".join(shape for shape in shapes if shape.startswith("<clipPath"))
+    body = "\n".join(shape for shape in shapes if not shape.startswith("<clipPath"))
+    text = (f'<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="-20 -20 140 140">{STYLE}'
+            f"<defs>{clips}</defs>{body}</svg>")
+    png = subprocess.run(["rsvg-convert", "-z", "8"], input=text.encode(), capture_output=True, check=True).stdout
+    alpha = Image.open(io.BytesIO(png)).getchannel("A").point(lambda value: 255 if value > 40 else 0)
+    return tuple(round(value / 8 - 20, 1) for value in alpha.getbbox())
+
+
+def svg(shapes, box, zone) -> str:
+    """an entry's frame: its drawing, glowing, its ink (box) placed and sized in its screen's zone"""
+    left, top, right, bottom = box
+    width, height = right - left, bottom - top
+    scale = min(zone["mass"] / (width * height) ** 0.5, zone["height"] / height, zone["width"] / width)
+    x = zone["centre"][0] - scale * (left + right) / 2
+    y = zone["centre"][1] - scale * (top + bottom) / 2
     # (a drawing's clip paths go in the defs, once: the body is drawn twice, glowing and sharp)
     clips = "".join(shape for shape in shapes if shape.startswith("<clipPath"))
     body = "\n".join(shape for shape in shapes if not shape.startswith("<clipPath"))
@@ -219,7 +262,7 @@ def svg(shapes, centre) -> str:
         f'viewBox="0 0 {FRAME[0]} {FRAME[1]}">', STYLE,
         f'<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%">'
         f'<feGaussianBlur stdDeviation="{2.4 / scale:.2f}"/></filter>{clips}</defs>',
-        f'<g transform="translate({left:g} {top:g}) scale({scale:g})">',
+        f'<g transform="translate({x:.2f} {y:.2f}) scale({scale:.4f})">',
         f'<g filter="url(#glow)" opacity="0.9">{body}</g>', body, "</g>", "</svg>", ""])
 
 
@@ -227,9 +270,10 @@ def own_frames() -> dict:
     """each bitmap's own frames, by frame number, as tools/ce_menus.py's Art.own_frame takes them: (SVG text,
     width, height); a number past the PC version's frames is added after them"""
     return {
-        MULTIPLAYER: {index: (svg(shapes, CENTRES[MULTIPLAYER]), *FRAME)
-                      for index, (_, shapes) in enumerate(MULTIPLAYER_ICONS)},
-        GAMETYPE: {index: (svg(shapes, CENTRES[GAMETYPE]), *FRAME) for index, (_, shapes) in GAMETYPE_ICONS.items()},
+        MULTIPLAYER: {index: (svg(shapes, INK[name], ZONES[MULTIPLAYER]), *FRAME)
+                      for index, (name, shapes) in enumerate(MULTIPLAYER_ICONS)},
+        GAMETYPE: {index: (svg(shapes, INK[name], ZONES[GAMETYPE]), *FRAME)
+                   for index, (name, shapes) in GAMETYPE_ICONS.items()},
     }
 
 

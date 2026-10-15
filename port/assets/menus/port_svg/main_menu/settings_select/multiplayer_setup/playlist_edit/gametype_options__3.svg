@@ -7,8 +7,8 @@
 .f { fill:#2896FF; stroke:none }
 .red { stroke:#FF3A3A }
 </style>
-<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.50"/></filter></defs>
-<g transform="translate(62 10) scale(1.6)">
+<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.51"/></filter></defs>
+<g transform="translate(63.82 6.91) scale(1.5877)">
 <g filter="url(#glow)" opacity="0.9"><path d="M6,86 V46 Q6,35 12.0,30 Q18,35 18,46 V86 Z" class="b"/>
 <line x1="8" y1="50" x2="16" y2="50" class="l"/>
 <path d="M22,86 V46 Q22,35 28.0,30 Q34,35 34,46 V86 Z" class="b"/>
