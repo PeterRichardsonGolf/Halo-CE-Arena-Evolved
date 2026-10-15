@@ -409,3 +409,5 @@ port/linux/game/coop_spectate.c	if (ae_hud_style_bottom_text(text)) /* AE hook *
 port/linux/src/port_config.c	{ "debug.lone_pad_first", _config_boolean, "false", "HALO_DEBUG_LONE_PAD_FIRST", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/xinput_sdl.c	if (count == 1 && !ae_platform_lone_pad_first()) /* AE hook */
 port/linux/src/xinput_sdl.c	if (count == 1 && ae_platform_lone_pad_first() && pc_menu_split_players()) mask |= 1UL << 1; /* AE hook */
+port/linux/src/port_config.c	{ "debug.ae_panel_primitives", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_PRIMITIVES", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.ae_panel_log", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_LOG", _environment_value, /* AE hook */\n_platform_all,

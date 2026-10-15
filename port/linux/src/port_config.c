@@ -1026,6 +1026,16 @@ static const struct config_setting config_settings[] =
 		"For test launches (ae_platform.c): in split screen a lone gamepad stays\n"
 		"player 1's, with the keyboard, and player 2 stands with no input. Off:\n"
 		"the keyboard is player 1 and the lone gamepad player 2." },
+	{ "debug.ae_panel_primitives", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_PRIMITIVES", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_draw.c): one of each of\n"
+		"their primitives on a grey plate in the first view, and their places in the\n"
+		"log." },
+	{ "debug.ae_panel_log", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): every 2\n"
+		"seconds, one line per local player of what the ammo, grenade, shield and\n"
+		"health panels read from the game. Only this machine's log." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"

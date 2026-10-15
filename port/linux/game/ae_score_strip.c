@@ -35,6 +35,7 @@ second.
 #include "ae_hud_digits.h"
 #include "ae_hud_style.h"
 #include "ae_hud_text.h"
+#include "ae_panel_draw.h"
 #include "ae_power_list.h"
 #include "ae_score_strip.h"
 #include "ae_strip_engine.h"
@@ -715,6 +716,7 @@ static void draw_strip(short view)
 void ae_score_strip_draw(short local_player_index)
 {
 	ae_hud_digits_debug_draw(local_player_index);
+	ae_panel_draw_debug(local_player_index);
 	if (valid_view(local_player_index))
 		draw_strip(local_player_index);
 }
