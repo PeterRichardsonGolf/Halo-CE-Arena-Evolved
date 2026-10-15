@@ -151,7 +151,10 @@ play:
   They keep the stock ball melee (the ball in these modes is never held in
   hand, so BALL MELEE LETHAL has nothing to act on) and their own motion
   sensor, so FFA AE ROCKETS, SNIPERS, PHANTOMS, REVERSE TAG, ACCUMULATION and
-  STALKER have none.
+  STALKER have none. FFA AE JUGGERNAUT plays Halo 2's rules: to 15, the
+  juggernaut with extra damage at normal speed, only the juggernaut's kills
+  score, his killer takes the role, and a random player gets it when he kills
+  himself or there is none.
 - **Arena Evolved special modes** (team slayer to 50): SNIPERS (sniper rifle and
   pistol, the sniping weapon set, no motion sensor), SHOTTY SNIPERS (shotgun
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic

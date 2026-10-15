@@ -6,6 +6,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **AE JUGGERNAUT plays like Halo 2's**: to 15; the juggernaut deals extra damage and moves at normal speed (stock CE:
+  slow). Only the juggernaut's kills score, one point each; killing the juggernaut makes you the juggernaut but scores
+  nothing. When the juggernaut kills himself or dies to the map, or there is none (the start, he quit), a random
+  player who is alive becomes the juggernaut. The host decides; the rule is part of the gametype (no row in the
+  editor). An AE JUGGERNAUT you never changed updates on the first start (backed up first); one you edited is kept
+  as it is.
+
 ## 0.2.5-beta - 2026-10-13
 
 A testing release: the battle rifle. Built on ChupathingyCE 0.7.3e and OpenCE build-201 as 0.2.4-beta: **network

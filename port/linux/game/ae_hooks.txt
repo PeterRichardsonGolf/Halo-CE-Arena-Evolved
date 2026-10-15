@@ -353,3 +353,12 @@ source/interface/hud_messaging.c	icon = ae_weapon_pack_message_icon(icon, &bitma
 source/render/render_particles.c	#include "ae_burst_rifle.h" /* AE hook */
 source/render/render_particles.c	ae_burst_rifle_particles_begin(local_player_index); /* AE hook */\nfor (particle_index = data_next_index(particle_data, NONE);
 source/render/render_particles.c	if (ae_burst_rifle_particle_hidden(particle, owned_by_local_player)) /* AE hook */\ncontinue;
+# Halo 2 JUGGERNAUT (AE JUGGER, seed revision 10; port/linux/game/ae_juggernaut.c, ae_juggernaut_rules.c): bit 2 of the
+# variant's pad5. Host-side only: only the juggernaut's kills score, his killer takes the role for nothing, and a suicide
+# or no juggernaut gives it to a random player who is alive. Nothing new over the network (the oddball state carries it).
+source/game/game_engine_oddball.c	#include "ae_juggernaut.h" /* AE hook */
+source/game/game_engine_oddball.c	ae_juggernaut_attach(oddball_globals.current_ball_owner, &oddball_events.transfers, &oddball_events.transfer_player, oddball_add_score); /* AE hook */
+source/game/game_engine_oddball.c	if (ae_juggernaut_player_killed(killing_player_index, dead_player_index, friendly_fire)) return; /* AE hook */
+source/game/game_engine_oddball.c	ae_juggernaut_update(); /* AE hook */
+source/game/game_engine.c	#include "ae_juggernaut.h" /* AE hook */
+source/game/game_engine.c	game_engine_log_append(line, sizeof(line), ", juggernaut rules %s", ae_juggernaut_log_name()); /* AE hook */

@@ -602,6 +602,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_glue_zoom.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
+#include "ae_juggernaut.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -8874,6 +8875,7 @@ void game_engine_log_rules(
 				oddball->trait_without_ball >= 0 && oddball->trait_without_ball < (long)NUMBEROF(traits) ?
 					traits[oddball->trait_without_ball] : "?",
 				oddball->random_start ? "on" : "off");
+			game_engine_log_append(line, sizeof(line), ", juggernaut rules %s", ae_juggernaut_log_name()); /* AE hook */
 			break;
 		}
 		case game_engine_race:

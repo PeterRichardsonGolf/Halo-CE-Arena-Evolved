@@ -35,7 +35,7 @@ NHE_COMMON = {
 SLAYER = {"death bonus": "off", "kill penalty": "off", "kill in order": "off"}
 CTF = {"flag at home to score": "on", "assault": "off", "single flag": "off"}
 BALL = {"ball": "normal", "balls": "1", "speed with ball": "slow", "with ball": "none", "without ball": "none",
-        "random start": "off"}
+        "random start": "off", "juggernaut rules": "halo ce"}
 # name: engine, score, respawn, suicide, radar players, goal radar, weapons, nhe mode, extras
 NHE_ROWS = {
     "TS 50": ("slayer (teams)", 50, 150, 150, "none", "none", "normal", "nhe & timer", SLAYER),
@@ -83,7 +83,8 @@ def fields(text):
     for key in ["score to win", "respawn", "suicide penalty", "friendly fire", "radar players", "goal radar", "shields",
                 "invisible", "infinite grenades", "weapon set", "loadout", "no map weapons", "vehicle sets", "death bonus",
                 "kill penalty", "kill in order", "flag at home to score", "assault", "single flag", "moving hill", "ball",
-                "balls", "speed with ball", "with ball", "without ball", "random start", "race", "team scoring"]:
+                "balls", "speed with ball", "with ball", "without ball", "random start", "juggernaut rules", "race",
+                "team scoring"]:
         mm = re.search(rf", {re.escape(key)} ((?:[^,(]|\([^)]*\))*)", second)
         if mm: out[key] = mm[1].strip()
     m = re.search(r"AE rules: (.*)", text)
@@ -174,7 +175,8 @@ def FFAX(engine, score, resp, suicide, vehicles, radar, goal, spawn="pistol + as
     d.update(k)
     return (d, spawn, 4)
 _SL = {"death bonus": "on", "kill penalty": "on", "kill in order": "off"}
-_BALL = {"balls": "1", "speed with ball": "slow", "with ball": "none", "without ball": "none", "random start": "off"}
+_BALL = {"balls": "1", "speed with ball": "slow", "with ball": "none", "without ball": "none", "random start": "off",
+         "juggernaut rules": "halo ce"}
 ROWS["AE ELIM"] = FFAX("slayer", 25, 0, 300, 2, "all", "motion tracker", lives="1", **_SL)
 ROWS["AE PHANTOMS"] = FFAX("slayer", 10, 150, 150, 2, "none", "nav points", invisible="on",
                            **{"death bonus": "off", "kill penalty": "off", "kill in order": "on"})
@@ -184,8 +186,10 @@ ROWS["AE FFA ROCK"] = FFAX("slayer", 25, 0, 300, 2, "none", "nav points", "rocke
                            **{"weapon set": "rocket launchers", "loadout": "rocket launcher + none"}, **_SL)
 ROWS["AE FFA SNPR"] = FFAX("slayer", 15, 0, 300, 2, "none", "nav points", "sniper rifle + pistol",
                            **{"weapon set": "sniping", "loadout": "sniper rifle + pistol", "respawn growth": "150 ticks"}, **_SL)
-ROWS["AE JUGGER"] = FFAX("oddball", 10, 150, 150, 2, "all", "nav points", **{"ball": "terminator",
-                         **_BALL, "with ball": "extra damage"})
+# (revision 10: Halo 2's Juggernaut: to 15, the juggernaut at normal speed, Halo 2's scoring and succession)
+ROWS["AE JUGGER"] = FFAX("oddball", 15, 150, 150, 2, "all", "nav points", **{"ball": "terminator",
+                         **_BALL, "with ball": "extra damage", "speed with ball": "normal",
+                         "juggernaut rules": "halo 2"})
 ROWS["AE REV TAG"] = FFAX("oddball", 2, 150, 150, 1, "none", "nav points", **{"ball": "magic", **_BALL})
 ROWS["AE ACCUM"] = FFAX("oddball", 5, 150, 150, 1, "none", "none", **{"ball": "magic", **_BALL,
                         "balls": "16"})
