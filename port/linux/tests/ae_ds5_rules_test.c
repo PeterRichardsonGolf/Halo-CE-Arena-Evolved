@@ -451,12 +451,13 @@ int main(void)
 		state.kind = AE_DS5_WEAPON_CHARGE;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 2 strength 4"));
+		/* (charging: the trigger is held down, so a hum rising with the charge, faster once charged) */
 		state.charge = 0.5f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "held: feedback from zone 2 strength 6"));
+		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 6 at 25 Hz"));
 		state.charge = 1.0f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "held: feedback from zone 2 strength 8"));
+		CHECK(!strcmp(text, "charged: vibration from zone 2 amplitude 8 at 40 Hz"));
 		/* (its battery spent: the dry click) */
 		state.empty = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
@@ -582,7 +583,7 @@ int main(void)
 		state.firing = 0;
 		state.charge = 0.75f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "held: feedback from zone 2 strength 7"));
+		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 7 at 25 Hz"));
 		state.charge = 0.0f;
 		state.overheated = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));

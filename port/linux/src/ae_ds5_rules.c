@@ -129,8 +129,8 @@ struct shape
 - firing: while a round went in the last ~170 ms (SAME: the held one), e.g. a vibration at the rate of fire, one
   pulse a round, timed by the pad itself (no report a round);
 - kick: a short shape sent at each round, then back to held/firing after kick_ms (two reports a round);
-- ramp: 1 heat, 2 charge: the held and firing shapes' b (strength / amplitude) goes from its table value at 0 to
-  ramp_to at 1;
+- ramp: 1 heat: the held and firing shapes' b (strength / amplitude) goes from its table value at 0 to ramp_to at
+  1; 2 charge: while charging, a hum from the held shape's zone whose amplitude goes so (the CHARGING HUM);
 - the family (the owner's language, 0.3.0): HUMAN weapons are mechanical, clicks and kicks, their rumble on the LEFT
   (heavy) motor; COVENANT weapons are energy, hum and resistance with heat or charge, their rumble on the RIGHT
   (light) motor. shot_rumble: that motor's pulse at each round (0-255) and how long (ms);
@@ -167,10 +167,11 @@ static struct profile
 	{ F(3, 2), V(3, 5, 0), NO, 0, 1, 0, 0, HUMAN, 90, 40, "light hold, a pulse a round", NO, 0, 0, 0, 0 },
 	/* sniper: firm, a heavy thump each shot (2 shots/s: 90 ms of 500), the left motor nearly full */
 	{ F(2, 6), SM, F(0, 8), 90, 0, 0, 0, HUMAN, 230, 130, "firm, heavy thump", NO, 0, 0, 0, 0 },
-	/* charge (plasma pistol): resistance from zone 2 building to full with the charge; each ordinary shot a powerful
+	/* charge (plasma pistol): a hold from zone 2; while it charges a hum from there rising to full (faster once
+	charged: ae_ds5_right_held's CHARGING HUM); each ordinary shot a powerful
 	pulse (a full 40 Hz jolt, 70 ms, the right motor); the overcharged release a big heavy kick, longer and lower than
 	the shotgun's (a full 15 Hz jolt, 240 ms), both motors */
-	{ F(2, 4), SM, V(0, 8, 40), 70, 0, 2, 8, COVENANT, 160, 60, "builds with charge, a pulse a shot, a blast charged",
+	{ F(2, 4), SM, V(0, 8, 40), 70, 0, 2, 8, COVENANT, 160, 60, "hums as it charges, a pulse a shot, a blast charged",
 		V(0, 8, 15), 240, 170, 255, 240 },
 	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67), a left pulse
 	a round */
@@ -186,6 +187,10 @@ static struct profile
 };
 #define THROB_TICKS 8
 #define THROB_ON_TICKS 2
+
+/* the charging hum's frequency (Hz), and the fully charged one's */
+#define CHARGING_HUM_HZ 25
+#define CHARGED_HUM_HZ 40
 
 static int ramped(int base, int to, float amount)
 {
@@ -289,8 +294,16 @@ void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_w
 	}
 	if (profile->ramp == 1)
 		shape.b = (unsigned char)ramped(shape.b, profile->ramp_to, state->heat);
-	else if (profile->ramp == 2)
-		shape.b = (unsigned char)ramped(shape.b, profile->ramp_to, state->charge);
+	else if (profile->ramp == 2 && state->charge > 0.0f)
+	{
+		/* CHARGING HUM (owner 10-15: "plasma pistol is missing a charge haptic": the trigger is held down while it
+		charges, so a resistance building with the charge was not felt): a vibration from the hold's zone, its
+		amplitude rising with the charge from the hold's strength to ramp_to, faster once fully charged */
+		shape = (struct shape)V(profile->held.a, 0, 0);
+		shape.b = (unsigned char)ramped(profile->held.b, profile->ramp_to, state->charge);
+		shape.c = (unsigned char)(state->charge >= 1.0f ? CHARGED_HUM_HZ : CHARGING_HUM_HZ);
+		why = state->charge >= 1.0f ? "charged" : "charging";
+	}
 	shape_effect(effect, shape, state->rate_of_fire, profile->per_round, strength, words, sizeof(words));
 	snprintf(text, text_size, "%s: %s", why, words);
 }
