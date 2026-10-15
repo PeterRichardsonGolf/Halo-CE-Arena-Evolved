@@ -2,11 +2,14 @@
 
 - B asks first: B on the carnage report puts "LEAVE THE GAME?" over it (port/linux/game/ae_postgame.c) instead of
   leaving to the main menu at once (where the next B opened "exit Halo?"); B on the confirm stays on the report, A on
-  it leaves as B did. The presses are the virtual pad's (player 2's, as the owner's lone pad was), on a two-player
-  split-screen host whose game a kill ends (score 1);
+  it leaves as B did. On a two-player split-screen host whose game a kill ends (score 1);
+- only player 1 controls the carnage report (owner: "p1/host only"): player 1 is the test input's own presses ("b",
+  "a": port 0, the keyboard's), player 2 the virtual pad ("pad:b": a lone pad is port 1's while two play); player 2's
+  B and A do nothing there;
 - Custom Edition maps' button icons: the report's "%b-button =quit    %a-button =pick game" drew no icon on homobox@ce
   (Halo PC's hud_msg_icons_sm has none of the Xbox's sequences); now from the message icons sheet upstream's ce_hud.c
-  gives the Xbox's icons (ae_buttons_tags.c), PlayStation's with a PlayStation pad ($AE_TEST_PAD_PLAYSTATION).
+  gives the Xbox's icons (ae_buttons_tags.c), PlayStation's with a PlayStation pad ($AE_TEST_PAD_PLAYSTATION), here
+  player 1's (debug.lone_pad_first).
 
 The screenshots of each game are in the harness's out folder (ae_menus/<stamp>-postgame/<case>/shots).
 
@@ -30,6 +33,7 @@ LEFT = "postgame: leaving the game (A on the confirm)"
 DISPOSED = "network server disposed"
 POSTGAME = "switching to postgame"
 CE_ICONS = "Custom Edition map: text icons (menus, carnage report) from the message icons' Xbox copy"
+PLAYER_1 = "postgame: the carnage report's buttons are player 1's (gamepad 0)"
 CE_PLAYSTATION = "PlayStation buttons: 1 sheets of the Xbox's icons ui.map gave this Custom Edition map"
 
 
@@ -63,18 +67,19 @@ def after(text, line):
 
 
 def test_b_asks_and_b_stays(cfg):
-    """B on the report asks; B on the confirm stays: the game is not left (its server stays up to the end)"""
-    result, text = play(cfg, "b-then-b", "wizard", ["pad:b", "wait", "wait", "pad:b", "wait", "wait"])
+    """player 1's B on the report asks; their B on the confirm stays: the game is not left (its server stays up)"""
+    result, text = play(cfg, "b-then-b", "wizard", ["b", "wait", "wait", "b", "wait", "wait"])
     assert result.get("status") == "PASS", result.get("why")
     rest = after(text, POSTGAME)
+    rest = after(rest, PLAYER_1)
     rest = after(rest, ASKED)
     after(rest, STAYED)
     assert DISPOSED not in text.split(POSTGAME, 1)[1], "the game was left"
 
 
 def test_b_asks_and_a_leaves(cfg):
-    """B on the report asks; A on the confirm leaves the game, as B alone did before"""
-    result, text = play(cfg, "b-then-a", "wizard", ["pad:b", "wait", "wait", "pad:a", "wait", "wait"])
+    """player 1's B on the report asks; their A on the confirm leaves the game, as B alone did before"""
+    result, text = play(cfg, "b-then-a", "wizard", ["b", "wait", "wait", "a", "wait", "wait"])
     assert result.get("status") == "PASS", result.get("why")
     rest = after(text, POSTGAME)
     rest = after(rest, ASKED)
@@ -83,11 +88,30 @@ def test_b_asks_and_a_leaves(cfg):
     assert STAYED not in text
 
 
+def test_player_2_does_nothing(cfg):
+    """player 2's (the pad's) B and A do nothing on the report or the confirm; player 1's B and A still do"""
+    result, text = play(cfg, "player-2", "wizard", ["pad:b", "wait", "wait", "pad:a", "wait", "wait", "b", "wait",
+                                                    "wait", "pad:a", "wait", "wait", "pad:b", "wait", "wait", "a",
+                                                    "wait", "wait"])
+    assert result.get("status") == "PASS", result.get("why")
+    rest = after(text, POSTGAME)
+    asked = rest.index(ASKED)
+    # (nothing from player 2 before player 1's B: no confirm, no leaving; and no pick game, or player 1's B would
+    # find no carnage report to ask over)
+    assert DISPOSED not in rest[:asked]
+    rest = rest[asked + len(ASKED):]
+    # (player 2's A and B on the confirm: it stays up; player 1's A leaves)
+    left = rest.index(LEFT)
+    assert STAYED not in rest[:left] and DISPOSED not in rest[:left]
+    after(rest[left:], DISPOSED)
+    assert text.count(ASKED) == 1
+
+
 def test_custom_edition_icons(cfg):
-    """homobox@ce with a PlayStation pad: the text icons come from the message icons' Xbox copy, whose PlayStation
-    sprites AE draws (the screenshots show the report's icons and the confirm's)"""
+    """homobox@ce with a PlayStation pad as player 1: the text icons come from the message icons' Xbox copy, whose
+    PlayStation sprites AE draws (the screenshots show the report's icons and the confirm's)"""
     result, text = play(cfg, "ce-icons", "homobox@ce", ["pad:b", "wait", "wait", "wait"], waits=40,
-                        env={"AE_TEST_PAD_PLAYSTATION": "1"})
+                        env={"AE_TEST_PAD_PLAYSTATION": "1", "HALO_DEBUG_LONE_PAD_FIRST": "true"})
     assert result.get("status") == "PASS", result.get("why")
     assert CE_PLAYSTATION in text
     # (said once, at the first text icon drawn: the in-game scoreboard prompt's, or the report's)

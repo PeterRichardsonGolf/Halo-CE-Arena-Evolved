@@ -5,8 +5,9 @@ Arena Evolved: a confirm over the carnage report (owner, 2026-10-15). On the
 Xbox (and upstream) B or BACK on the carnage report leaves the game at once
 (game_engine.c, network_game_abort): straight to the main menu, where the
 next B opens "exit Halo?". Here B first asks "LEAVE THE GAME?" over the
-carnage report: A leaves as B did, B stays on the carnage report. Any pad
-and the keyboard (Escape is B, xinput_sdl.c), as the stock code reads them.
+carnage report: A leaves as B did, B stays on the carnage report. Only
+player 1 controls the carnage report (its pad, or the keyboard: Escape is B,
+xinput_sdl.c); the other split-screen players' buttons do nothing there.
 The same game_engine.c code serves the PC and the Xbox menus: both get it.
 
 The decisions are ae_postgame_rules.c's (pure; tools/harness test_ae_postgame.py);
@@ -46,9 +47,10 @@ enum ae_postgame_action ae_postgame_confirm_step(struct ae_postgame_confirm *sta
 
 /* ---------- the game's side (ae_postgame.c) */
 
-/* game_engine.c's AE hook in game_engine_update_non_deterministic, the carnage report's buttons: TRUE when the
-confirm took them (the stock A and B code is skipped) */
-boolean ae_postgame_buttons(boolean accept_down, boolean back_down);
+/* game_engine.c's AE hook in game_engine_update_non_deterministic, the carnage report's buttons: player 1's only
+(this machine's first local player), the host's pick game on its A and the confirm on its B; TRUE: done (the stock
+code, which took any pad's, is skipped) */
+boolean ae_postgame_buttons(void);
 
 union rectangle2d;
 
