@@ -32,8 +32,8 @@ PROFILE_MENU = "main_menu.settings_select.player_setup.player_profile_edit.xml"
 HUD_SETTINGS = ["display.hud_style", "display.hud_area", "display.compact_hud", "display.scoreboard_fade",
                 "display.campaign_timer", "display.match_clock", "display.short_messages", "display.waypoint_style",
                 "display.waypoint_size"]
-GAME_SETTINGS = ["game.mod", "game.fall_damage", "game.health", "game.callouts", "game.callout_detail",
-                 "game.callout_voice", "display.spawn_heat", "input.zoom_mode", "input.zoom_reset"]
+GAME_SETTINGS = ["game.mod", "game.weapon_packs", "game.fall_damage", "game.health", "game.callouts",
+                 "game.callout_detail", "game.callout_voice", "display.spawn_heat", "input.zoom_mode", "input.zoom_reset"]
 
 
 def _settings(folder):
