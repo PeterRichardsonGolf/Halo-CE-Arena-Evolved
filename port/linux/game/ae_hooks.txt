@@ -530,3 +530,8 @@ port/linux/src/menu_files.c	#include "../game/ae_map_pictures.h" /* AE hook */
 port/linux/src/menu_files.c	{ unsigned int ae_size = 0; const unsigned char *ae_picture = ae_map_picture_png(path, &ae_size); if (ae_picture) { *size = ae_size; return ae_picture; } } /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_map_pictures.h" /* AE hook */
 port/linux/game/menu_functions.c	if ((widget = named(description, "lobby_map_pic", 0)) != NULL && ae_map_picture_frame(map_name) != NONE) widget->animation.current_frame_index = ae_map_picture_frame(map_name); /* AE hook */
+# the camouflaged first-person weapon in front of the world (ae_camo_viewmodel.c): its active camouflage passes are drawn
+# in the front of the depth range, as the uncamouflaged weapon is never covered by the world (stencil)
+source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c	#include "ae_camo_viewmodel.h" /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c	rasterizer_globals.first_person_weapon_far_clip_distance);\nae_camo_viewmodel_depth_begin(); /* AE hook */\n}
+source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c	rasterizer_set_frustum_z(0.0f, 0.0f);\nae_camo_viewmodel_depth_end(); /* AE hook */\n}
