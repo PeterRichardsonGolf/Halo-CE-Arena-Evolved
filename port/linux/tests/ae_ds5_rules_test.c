@@ -124,21 +124,32 @@ int main(void)
 			CHECK(same(effect, off, sizeof(off)));
 			CHECK(kind == AE_DS5_WEAPON_CARRY || !strcmp(text, "free (reloading)"));
 			state.reloading = 0;
+			/* DRY CLICK: a weak click at the bottom of the pull (zones 7-8, strength 2) */
 			state.empty = 1;
 			ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-			CHECK(same(effect, off, sizeof(off)));
-			CHECK(kind == AE_DS5_WEAPON_CARRY || !strcmp(text, "free (empty)"));
-			state.empty = 0;
-			state.overheated = 1;
-			ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-			if (kind == AE_DS5_WEAPON_PLASMA_HEAT)
-				CHECK(!strcmp(text, "locked (overheated): feedback from zone 0 strength 8"));
-			else
+			if (kind == AE_DS5_WEAPON_CARRY)
 				CHECK(same(effect, off, sizeof(off)));
-			/* (overheated and reloading at once: still locked, the heat speaks) */
-			state.reloading = 1;
+			else
+				CHECK(effect[0] == 0x25 && effect[1] == 0x80 && effect[2] == 0x01 && effect[3] == 1 &&
+					!strncmp(text, "dry click (empty)", 17));
+			state.empty = 0;
+			/* LOCKED + VENTING THROB: locked solid, a throb two ticks of eight */
+			state.overheated = 1;
+			state.ticks = 2;
 			ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-			CHECK(kind != AE_DS5_WEAPON_PLASMA_HEAT || effect[0] == 0x21);
+			if (kind == AE_DS5_WEAPON_CARRY)
+				CHECK(same(effect, off, sizeof(off)));
+			else
+			{
+				CHECK(effect[0] == 0x21 && effect[6] == 0x3f && !strcmp(text, "locked (overheated, venting throb)"));
+				state.ticks = 9;
+				ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
+				CHECK(effect[0] == 0x26 && effect[9] == 8 && !strcmp(text, "locked (overheated, venting throb)"));
+				/* (overheated and reloading or empty at once: the heat speaks) */
+				state.reloading = state.empty = 1;
+				ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
+				CHECK(!strcmp(text, "locked (overheated, venting throb)"));
+			}
 		}
 	}
 
@@ -148,13 +159,15 @@ int main(void)
 		static unsigned char const weapon_4_7_4[AE_DS5_EFFECT_SIZE] = { 0x25, 0x90, 0x00, 0x03 };
 		static unsigned char const weapon_4_7_6[AE_DS5_EFFECT_SIZE] = { 0x25, 0x90, 0x00, 0x05 };
 		struct ae_ds5_weapon_state state;
+		struct ae_ds5_rumble rumble;
 		char text[96];
 
 		memset(&state, 0, sizeof(state));
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(same(effect, off, sizeof(off)) && !strcmp(text, "off"));
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_NONE, 0, 100) == 0 && same(effect, off, sizeof(off)));
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_CARRY, 0, 100) == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NONE, AE_DS5_EVENT_SHOT, 100) == 0 &&
+			same(effect, off, sizeof(off)) && rumble.left == 0 && rumble.right == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_CARRY, AE_DS5_EVENT_SHOT, 100) == 0);
 
 		/* pistol: round 1's click, a full snap at each shot */
 		state.kind = AE_DS5_WEAPON_SEMI;
@@ -165,7 +178,10 @@ int main(void)
 		state.firing = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(same(effect, weapon_4_7_4, sizeof(weapon_4_7_4)));
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_SEMI, 0, 100) == 35 && same(effect, full_kick, sizeof(full_kick)));
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 100) == 35 &&
+			same(effect, full_kick, sizeof(full_kick)));
+		/* (human: the left motor) */
+		CHECK(rumble.left == 150 && rumble.right == 0 && rumble.ms == 60);
 
 		/* battle rifle: the pistol's zones at the shotgun's strength */
 		state.kind = AE_DS5_WEAPON_BURST;
@@ -191,7 +207,7 @@ int main(void)
 		state.rate_of_fire = 100.0f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(effect[9] == 60);
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_AUTOMATIC, 0, 100) == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_AUTOMATIC, AE_DS5_EVENT_SHOT, 100) == 0 && rumble.left == 90);
 
 		/* needler: twice the rate of fire, amplitude 3 */
 		state.kind = AE_DS5_WEAPON_NEEDLER;
@@ -219,8 +235,9 @@ int main(void)
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(!strcmp(text, "firing: vibration from zone 2 amplitude 5 at 10 Hz"));
 		state.overheated = 1;
+		state.ticks = 4;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(same(effect, full_kick, sizeof(full_kick)) && !strcmp(text, "locked (overheated): feedback from zone 0 strength 8"));
+		CHECK(same(effect, full_kick, sizeof(full_kick)) && !strcmp(text, "locked (overheated, venting throb)"));
 
 		/* plasma pistol: round 1's strength from zone 2, building to full with the charge */
 		memset(&state, 0, sizeof(state));
@@ -233,20 +250,51 @@ int main(void)
 		state.charge = 1.0f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 2 strength 8"));
-		/* (its battery spent) */
+		/* (its battery spent: the dry click) */
 		state.empty = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(same(effect, off, sizeof(off)));
+		CHECK(effect[0] == 0x25 && !strncmp(text, "dry click (empty)", 17));
 
 		/* the other kicks */
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_HEAVY, 0, 100) == 130 && effect[0] == 0x26 && effect[9] == 30);
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_SNIPER, 0, 100) == 90 && same(effect, full_kick, sizeof(full_kick)));
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_BURST, 0, 100) == 30 && effect[0] == 0x21 && effect[6] == 0x36);
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_CHARGE, 0, 100) == 70 && effect[0] == 0x26 && effect[9] == 40);
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_CHARGE, 1, 100) == 240 && effect[0] == 0x26 && effect[9] == 15);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_SHOT, 100) == 130 && effect[0] == 0x26 &&
+			effect[9] == 30 && rumble.left == 255);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SNIPER, AE_DS5_EVENT_SHOT, 100) == 90 &&
+			same(effect, full_kick, sizeof(full_kick)));
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_BURST, AE_DS5_EVENT_SHOT, 100) == 30 && effect[0] == 0x21 &&
+			effect[6] == 0x36);
+		/* the plasma pistol: a powerful pulse a shot (Covenant: the right motor), the overcharged blast both */
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_CHARGE, AE_DS5_EVENT_SHOT, 100) == 70 && effect[0] == 0x26 &&
+			effect[9] == 40 && rumble.right == 160 && rumble.left == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_CHARGE, AE_DS5_EVENT_SHOT_CHARGED, 100) == 240 &&
+			effect[0] == 0x26 && effect[9] == 15 && rumble.left == 170 && rumble.right == 255 && rumble.ms == 240);
 		/* (charged means nothing to a weapon with no charged kick) */
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_HEAVY, 1, 100) == 130);
-		CHECK(ae_ds5_right_kick(effect, AE_DS5_WEAPON_PLASMA_HEAT, 0, 100) == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_SHOT_CHARGED, 100) == 130);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_PLASMA_HEAT, AE_DS5_EVENT_SHOT, 100) == 0 &&
+			rumble.right == 80 && rumble.left == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NEEDLER, AE_DS5_EVENT_SHOT, 100) == 0 && rumble.right == 70);
+		/* the states' events: the seat bump, the settle, the pump; grenades */
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_AUTOMATIC, AE_DS5_EVENT_MAG_IN, 100) == 40 &&
+			effect[0] == 0x21 && rumble.left == 60);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SNIPER, AE_DS5_EVENT_SETTLE, 100) == 30 && effect[0] == 0x21 &&
+			rumble.left == 0 && rumble.right == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_CHAMBER, 100) == 45 && rumble.left == 120);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_FRAG, 100) == 80 &&
+			effect[0] == 0x26 && rumble.left == 140 && rumble.right == 0);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_PLASMA, 100) == 80 &&
+			effect[9] == 45 && rumble.right == 140 && rumble.left == 0);
+		/* the families */
+		CHECK(ae_ds5_kind_covenant(AE_DS5_WEAPON_CHARGE) && ae_ds5_kind_covenant(AE_DS5_WEAPON_NEEDLER) &&
+			ae_ds5_kind_covenant(AE_DS5_WEAPON_PLASMA_HEAT));
+		CHECK(!ae_ds5_kind_covenant(AE_DS5_WEAPON_SEMI) && !ae_ds5_kind_covenant(AE_DS5_WEAPON_FLAME) &&
+			!ae_ds5_kind_covenant(AE_DS5_WEAPON_BURST));
+		/* the overcharge's green flash */
+		{
+			unsigned char rgb[3];
+
+			CHECK(ae_ds5_overcharge_flash(rgb, 0) && rgb[1] == 255 && rgb[0] < rgb[1] && rgb[2] < rgb[1]);
+			CHECK(ae_ds5_overcharge_flash(rgb, 8) && rgb[1] == 85);
+			CHECK(!ae_ds5_overcharge_flash(rgb, 9) && !ae_ds5_overcharge_flash(rgb, -1));
+		}
 		CHECK(!strcmp(ae_ds5_profile_feel(AE_DS5_WEAPON_BURST), "click, three pulses a burst"));
 	}
 
@@ -303,10 +351,13 @@ int main(void)
 		CHECK(!strcmp(text, "overshield (slow breath)"));
 	}
 
-	ae_ds5_left_effect(effect, 1, 100);
-	CHECK(effect[0] == 0x21);
-	ae_ds5_left_effect(effect, 0, 100);
-	CHECK(same(effect, off, sizeof(off)));
+	/* L2: zoomed, a grenade wound up, grenades in hand, none (the dry click) */
+	CHECK(!strcmp(ae_ds5_left_effect(effect, 1, 0, 0, 100), "light resistance (zoomed)") && effect[0] == 0x21);
+	CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 2, 1, 100), "grenade wound up (feedback from zone 2)") &&
+		effect[3] == 0x00 && effect[4] == 0x49);
+	CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 2, 0, 100), "grenade ready (light hold)") && effect[1] == 0xf8);
+	CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 0, 0, 100), "no grenades (dry click)") && effect[0] == 0x25 &&
+		effect[1] == 0x80 && effect[2] == 0x01);
 
 	/* the energy weapons at rest, firing, charging, overheated, empty (the owner's round 2 log: the plasma pistol
 	read "overheated" and the plasma rifle "empty" at rest) */
@@ -328,11 +379,11 @@ int main(void)
 		state.charge = 0.0f;
 		state.overheated = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "free (overheated, venting)"));
+		CHECK(!strcmp(text, "locked (overheated, venting throb)"));
 		state.overheated = 0;
 		state.empty = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "free (empty)"));
+		CHECK(!strncmp(text, "dry click (empty)", 17));
 
 		memset(&state, 0, sizeof(state));
 		state.kind = AE_DS5_WEAPON_PLASMA_HEAT;
@@ -345,12 +396,12 @@ int main(void)
 		CHECK(!strcmp(text, "firing: vibration from zone 2 amplitude 4 at 10 Hz"));
 		state.overheated = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "locked (overheated): feedback from zone 0 strength 8"));
+		CHECK(!strcmp(text, "locked (overheated, venting throb)"));
 		state.overheated = 0;
 		state.firing = 0;
 		state.empty = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "free (empty)"));
+		CHECK(!strncmp(text, "dry click (empty)", 17));
 	}
 
 	/* LIGHTBAR SHIELD: the shield meter as the HUD draws it */
@@ -424,6 +475,7 @@ int main(void)
 	/* TRIGGER STRENGTH: every strength-like number scaled, kept 1-8; the player lights */
 	{
 		struct ae_ds5_weapon_state state;
+		struct ae_ds5_rumble rumble;
 		char text[96];
 
 		CHECK(ae_ds5_strength_percent("light") == 60 && ae_ds5_strength_percent("normal") == 100 &&
@@ -437,9 +489,9 @@ int main(void)
 		state.kind = AE_DS5_WEAPON_NEEDLER;
 		ae_ds5_right_held(effect, &state, 60, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 3 strength 1"));
-		ae_ds5_right_kick(effect, AE_DS5_WEAPON_SEMI, 0, 60);
+		ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 60);
 		CHECK(effect[0] == 0x21 && effect[3] == 0x24);
-		ae_ds5_left_effect(effect, 1, 140);
+		ae_ds5_left_effect(effect, 1, 0, 0, 140);
 		CHECK(effect[0] == 0x21 && effect[3] == 0x80);
 		CHECK(ae_ds5_player_lights(1) == 0x24 && ae_ds5_player_lights(2) == 0x2a && ae_ds5_player_lights(4) == 0x3b);
 		CHECK(ae_ds5_player_lights(0) == 0 && ae_ds5_player_lights(5) == 0);

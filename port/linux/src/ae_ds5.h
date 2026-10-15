@@ -12,7 +12,9 @@ split-screen number; shield, the lightbar the player's shield meter as the HUD d
   the output reports are written to the pad's own /dev/hidraw node when this user may write it (udev rules: Steam's
   60-steam-input.rules, or the Linux downloads' 70-ae-dualsense.rules). Only the trigger, lightbar and player light
   enable bits are set, so the kernel's own reports (rumble) and ours leave each other's fields alone.
-A kick is R2's profile shape sent at a round, then the held one again after its time: two reports a round. The
+A kick is a trigger's event shape (a round, the reload's magazine going in, the weapon readied, the shotgun's pump, a
+grenade's throw on L2) sent once, then the held one again after its time: two reports an event. An event's rumble
+pulse (human weapons the left motor, Covenant ones the right) goes into the game's own rumble. The
 triggers are sent again though unchanged, while both are up, after the game's rumble changes and once a second.
 debug.txt says how each DualSense is driven (or why not, with the udev rule's line); debug.ds5_log adds the bytes
 written and the effects' changes. The triggers are let go (and the lightbar given back) at exit, when a pad leaves
@@ -44,10 +46,16 @@ struct ae_ds5_wish
 	unsigned char player_lights;
 	unsigned char right[AE_DS5_EFFECT_SIZE];
 	unsigned char left[AE_DS5_EFFECT_SIZE];
-	/* R2's kick at each round (kick_ms 0: none), and the rounds fired so far (a change = a kick) */
-	unsigned char kick[AE_DS5_EFFECT_SIZE];
-	int kick_ms;
-	unsigned long shots;
+	/* each trigger's last event kick (ms 0: none) and its events so far (a change = a kick) */
+	unsigned char kick_right[AE_DS5_EFFECT_SIZE];
+	int kick_right_ms;
+	unsigned long kicks_right;
+	unsigned char kick_left[AE_DS5_EFFECT_SIZE];
+	int kick_left_ms;
+	unsigned long kicks_left;
+	/* the last event's rumble pulse (0-255 a motor; 0 ms none) and the pulses so far (a change = a pulse) */
+	struct ae_ds5_rumble rumble;
+	unsigned long rumbles;
 	/* for debug.ds5_log: the weapon and the effects in words */
 	char what[256];
 };
@@ -61,8 +69,10 @@ int ae_ds5_on(void);
 int ae_ds5_port_active(int port);
 /* the game: controller port `port`'s player wants this (copied) */
 void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish);
-/* xinput_sdl.c XInputSetState: the SDL pad that drives controller port `port` (NULL: none), and the game's motors */
-void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short left_motor, unsigned short right_motor);
+/* xinput_sdl.c XInputSetState: the SDL pad that drives controller port `port` (NULL: none), and the game's motors,
+which a DualSense's event pulse raises while it lasts (each motor the larger of the game's and the pulse's: the pad's
+rumble stays the game's own SDL_RumbleGamepad) */
+void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_motor, unsigned short *right_motor);
 /* sdl_platform.c: once a frame, after the events (sends what changed) */
 void ae_ds5_frame(void);
 /* sdl_platform.c: a pad is about to be closed (NULL: nothing) */

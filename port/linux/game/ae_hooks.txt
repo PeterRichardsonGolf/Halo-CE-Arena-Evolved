@@ -445,7 +445,7 @@ port/linux/src/sdl_platform.c	#include "ae_ds5.h" /* AE hook */
 port/linux/src/sdl_platform.c	ae_ds5_removed(gamepad); /* AE hook */
 port/linux/src/sdl_platform.c	ae_ds5_frame(); /* AE hook */
 port/linux/src/xinput_sdl.c	#include "ae_ds5.h" /* AE hook */
-port/linux/src/xinput_sdl.c	ae_ds5_port(port, port_gamepad(gamepads, count, port), feedback->Rumble.wLeftMotorSpeed, feedback->Rumble.wRightMotorSpeed); /* AE hook */
+port/linux/src/xinput_sdl.c	ae_ds5_port(port, port_gamepad(gamepads, count, port), &feedback->Rumble.wLeftMotorSpeed, &feedback->Rumble.wRightMotorSpeed); /* AE hook */
 source/game/player_control.c	#include "ae_ds5_game.h" /* AE hook */
 source/game/player_control.c	ae_ds5_player(local_player_index, current_weapon_index, player->zoom_level); /* AE hook */
 # Bots (OpenCE PR #367, port/linux/game/bots.c; ae_bots.c): the pack's battle rifle in a bot's hands (its value,

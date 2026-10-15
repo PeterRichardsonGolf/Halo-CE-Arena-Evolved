@@ -70,11 +70,11 @@ struct pad
 	unsigned char right[AE_DS5_EFFECT_SIZE];
 	unsigned char left[AE_DS5_EFFECT_SIZE];
 	int failed_logged;
-	/* the kick under way (until kick_until, SDL_GetTicks ms) and the shots seen */
-	int shots_known;
-	unsigned long shots;
-	Uint64 kick_until;
-	unsigned char kick[AE_DS5_EFFECT_SIZE];
+	/* each trigger's kick under way (until kick_until, SDL_GetTicks ms) and the events seen; the rumble pulses seen */
+	int events_known;
+	unsigned long kicks_right, kicks_left, rumbles;
+	Uint64 kick_until, kick_left_until;
+	unsigned char kick[AE_DS5_EFFECT_SIZE], kick_left[AE_DS5_EFFECT_SIZE];
 	/* the rumble seen, and when the triggers are next sent again though unchanged */
 	int rumbling;
 	unsigned short rumble_left, rumble_right;
@@ -98,6 +98,9 @@ static struct
 	unsigned short rumble_left[PORTS], rumble_right[PORTS];
 	/* whether the port's pad is a DualSense this machine drives (the game works out a wish for it only then) */
 	int active[PORTS];
+	/* the event rumble pulse under way on each port (0-255 a motor, until pulse_until, SDL_GetTicks ms) */
+	int pulse_left[PORTS], pulse_right[PORTS];
+	Uint64 pulse_until[PORTS];
 } shared;
 static struct pad pads[PADS];
 static int exit_registered;
@@ -176,14 +179,25 @@ void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish)
 	SDL_UnlockSpinlock(&shared_lock);
 }
 
-void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short left_motor, unsigned short right_motor)
+void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_motor, unsigned short *right_motor)
 {
-	if (port < 0 || port >= PORTS)
+	if (port < 0 || port >= PORTS || !left_motor || !right_motor)
 		return;
 	SDL_LockSpinlock(&shared_lock);
 	shared.bound[port] = gamepad ? SDL_GetGamepadID(gamepad) : 0;
-	shared.rumble_left[port] = left_motor;
-	shared.rumble_right[port] = right_motor;
+	/* (the game's own values, for the refresh after its rumble changes) */
+	shared.rumble_left[port] = *left_motor;
+	shared.rumble_right[port] = *right_motor;
+	if (shared.active[port] && SDL_GetTicks() < shared.pulse_until[port])
+	{
+		unsigned int left = (unsigned int)shared.pulse_left[port] * 257u;
+		unsigned int right = (unsigned int)shared.pulse_right[port] * 257u;
+
+		if (left > *left_motor)
+			*left_motor = (unsigned short)left;
+		if (right > *right_motor)
+			*right_motor = (unsigned short)right;
+	}
 	SDL_UnlockSpinlock(&shared_lock);
 }
 
@@ -470,22 +484,39 @@ static void pad_frame(struct pad *pad, SDL_Gamepad *gamepad, int port, struct ae
 	{
 		if (fresh)
 		{
-			/* a new round: the profile's kick now, the held shape again after its time */
-			if (pad->shots_known && wish->shots != pad->shots && wish->kick_ms > 0)
+			/* an event: its kick now, the held shape again after its time; its rumble pulse into the game's */
+			if (pad->events_known && wish->kicks_right != pad->kicks_right && wish->kick_right_ms > 0)
 			{
-				pad->kick_until = now + (Uint64)wish->kick_ms;
-				memcpy(pad->kick, wish->kick, sizeof(pad->kick));
+				pad->kick_until = now + (Uint64)wish->kick_right_ms;
+				memcpy(pad->kick, wish->kick_right, sizeof(pad->kick));
 			}
-			pad->shots = wish->shots;
-			pad->shots_known = 1;
-			kicking = now < pad->kick_until;
-			memcpy(right, kicking ? pad->kick : wish->right, sizeof(right));
-			memcpy(left, wish->left, sizeof(left));
+			if (pad->events_known && wish->kicks_left != pad->kicks_left && wish->kick_left_ms > 0)
+			{
+				pad->kick_left_until = now + (Uint64)wish->kick_left_ms;
+				memcpy(pad->kick_left, wish->kick_left, sizeof(pad->kick_left));
+			}
+			if (pad->events_known && wish->rumbles != pad->rumbles && wish->rumble.ms > 0)
+			{
+				SDL_LockSpinlock(&shared_lock);
+				shared.pulse_left[port] = wish->rumble.left;
+				shared.pulse_right[port] = wish->rumble.right;
+				shared.pulse_until[port] = now + (Uint64)wish->rumble.ms;
+				SDL_UnlockSpinlock(&shared_lock);
+				/* (the kernel's rumble reports for it: the triggers sent again after, once they are up) */
+				pad->refresh_at = now + (Uint64)wish->rumble.ms + REFRESH_AFTER_RUMBLE_MS;
+			}
+			pad->kicks_right = wish->kicks_right;
+			pad->kicks_left = wish->kicks_left;
+			pad->rumbles = wish->rumbles;
+			pad->events_known = 1;
+			kicking = now < pad->kick_until || now < pad->kick_left_until;
+			memcpy(right, now < pad->kick_until ? pad->kick : wish->right, sizeof(right));
+			memcpy(left, now < pad->kick_left_until ? pad->kick_left : wish->left, sizeof(left));
 		}
 		else
 		{
-			pad->kick_until = 0;
-			pad->shots_known = 0;
+			pad->kick_until = pad->kick_left_until = 0;
+			pad->events_known = 0;
 			ae_ds5_effect_off(right);
 			ae_ds5_effect_off(left);
 		}
@@ -744,7 +775,7 @@ void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish)
 	(void)wish;
 }
 
-void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short left_motor, unsigned short right_motor)
+void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_motor, unsigned short *right_motor)
 {
 	(void)port;
 	(void)gamepad;

@@ -75,6 +75,24 @@ struct ae_ds5_weapon_state
 	int reloading;
 	int empty;    /* the magazine has no round loaded, or a battery weapon's battery is spent */
 	int readying; /* switching weapons: readying or putting away */
+	long ticks;   /* the game time, for the overheat's throb */
+};
+
+/* the events a trigger feels once (a kick, then the held shape again) with a rumble pulse */
+enum ae_ds5_event
+{
+	AE_DS5_EVENT_SHOT,
+	AE_DS5_EVENT_SHOT_CHARGED, /* a fully charged shot (the plasma pistol's blast) */
+	AE_DS5_EVENT_MAG_IN,       /* the reload's magazine (or shell) going in */
+	AE_DS5_EVENT_SETTLE,       /* a weapon readied */
+	AE_DS5_EVENT_CHAMBER,      /* the weapon's own chambering after a shot (the shotgun's pump) */
+	AE_DS5_EVENT_GRENADE_FRAG, /* (L2) a grenade leaving the hand */
+	AE_DS5_EVENT_GRENADE_PLASMA
+};
+struct ae_ds5_rumble
+{
+	int left, right; /* 0-255: the heavy (left) and light (right) motors */
+	int ms;
 };
 char const *ae_ds5_weapon_kind_name(enum ae_ds5_weapon_kind kind);
 
@@ -88,18 +106,28 @@ void ae_ds5_effect_weapon(unsigned char effect[AE_DS5_EFFECT_SIZE], int start, i
 void ae_ds5_effect_vibration(unsigned char effect[AE_DS5_EFFECT_SIZE], int position, int amplitude, int frequency);
 
 /* the weapon profiles (ae_ds5_rules.c's table, one a kind). R2 as the trigger rests / is pulled now, by the weapon's
-state, first rule that applies: no weapon or a carried ball/flag: off; readying or putting away: off; overheated: the
-profile's locked shape (plasma rifle) or off (venting); reloading or empty: off; firing: the profile's firing shape;
-else its held shape; heat or charge ramps the strength where the profile says. Its words in text */
+state, first rule that applies (the owner's, 0.3.0): no weapon or a carried ball/flag: off; readying or putting away:
+free (QUICK SETTLE); overheated: LOCKED + VENTING THROB; reloading: SLACK (SEAT BUMP); empty: the DRY CLICK; firing:
+the profile's firing shape; else its held shape; heat or charge ramps the strength where the profile says. Its words
+in text */
 void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_weapon_state const *state, int strength,
 	char *text, size_t text_size);
-/* R2's short kick at each round, and how long it lasts (ms; 0: none, the profile's firing shape does it); charged: the
-round was a fully charged shot (the plasma pistol's blast) */
-int ae_ds5_right_kick(unsigned char effect[AE_DS5_EFFECT_SIZE], enum ae_ds5_weapon_kind kind, int charged, int strength);
+/* an event's kick on its trigger (R2, or L2 for a grenade) and how long it lasts (ms; 0: no kick, e.g. an automatic's
+shot, which its firing shape does), and its rumble pulse: a human weapon's on the left motor, a Covenant one's on the
+right */
+int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble *rumble, enum ae_ds5_weapon_kind kind,
+	enum ae_ds5_event event, int strength);
+/* whether the kind is a Covenant (energy) weapon's */
+int ae_ds5_kind_covenant(enum ae_ds5_weapon_kind kind);
+/* the plasma pistol's overcharged release on the lightbar: green, fading over 0.3 s; 0 when ticks (since the
+release, -1 none) are past it */
+int ae_ds5_overcharge_flash(unsigned char rgb[3], long ticks);
 /* the profile's feel in a few words */
 char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind);
-/* the L2 effect for zoomed or not; returns a short text for the log */
-char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int strength);
+/* L2: light while zoomed; a grenade wound up firmer; grenades in hand a light hold; none, the dry click. Returns a
+short text for the log */
+char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
+	int strength);
 
 /* the powerups on the player now (the game side reads them each frame) */
 struct ae_ds5_powerups

@@ -204,21 +204,25 @@ play:
 
 **Controls and display**
 - **PS5 DualSense: adaptive triggers and lightbar.** R2 has a feel for each
-  weapon and a kick at each shot: the pistol a click and a snap, the
-  assault rifle a pulse a round, the sniper rifle firm with a heavy thump,
-  the shotgun and rockets a heavy click and a big kick, the plasma rifle
-  stiffening with heat and locked while overheated, the plasma pistol
-  building with its charge, the needler a fast light buzz, the battle rifle
-  three pulses a burst. It goes free while you reload, switch weapons or
-  run dry, and in a vehicle seat without a gun; L2 is light while zoomed.
-  The lightbar takes your colour (your team's in a team game), pulses while
-  an overshield charges, dims with active camouflage and flashes when you
-  become the juggernaut; or, with LIGHTBAR on SHIELD, it shows your shield as
-  the HUD's meter does (blinking when low, red when down, the overshield's
-  colours). The player lights show your split-screen number.
-  Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER STRENGTH (LIGHT, NORMAL,
-  STRONG) and LIGHTBAR (OFF, PLAYER COLOR, SHIELD), on by default; other controllers are never touched.
-  On Linux without Steam, see [DualSense on Linux without
+  weapon and a kick at each shot, human weapons mechanical (clicks, kicks,
+  the heavy left rumble motor), Covenant weapons energy (resistance with
+  heat or charge, the light right motor): the pistol a click and a snap,
+  the assault rifle a pulse a round, the sniper rifle firm with a heavy
+  thump, the shotgun a big kick and its pump, the plasma rifle stiffening
+  with heat, the plasma pistol building with its charge and a blast on the
+  overcharged shot, the needler a fast light buzz, the battle rifle three
+  pulses a burst. The weapon's state comes first: a settle as it is ready,
+  slack with a bump as the magazine goes in, a dry click when empty, locked
+  with a throb while overheated. In a vehicle the seat that fires the gun
+  feels it. L2 is the grenades (a jolt as one is thrown, a dry click with
+  none), light while zoomed. The lightbar takes your colour (your team's in
+  a team game), pulses while an overshield charges, dims with active
+  camouflage and flashes when you become the juggernaut; or, with LIGHTBAR
+  on SHIELD, it shows your shield as the HUD's meter does. The player lights
+  show your split-screen number. Settings > Gamepads: ADAPTIVE TRIGGERS,
+  TRIGGER STRENGTH (LIGHT, NORMAL, STRONG) and LIGHTBAR (OFF, PLAYER COLOR,
+  SHIELD), on by default; other controllers are never touched. On Linux
+  without Steam, see [DualSense on Linux without
   Steam](#dualsense-on-linux-without-steam).
 - 14 controller layouts, including the Anniversary set and MCC's Universal
   Reclaimer, Zoom & Shoot, Bump & Jump and Green Fingers; layouts that put

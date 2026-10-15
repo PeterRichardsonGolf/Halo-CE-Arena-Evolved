@@ -309,12 +309,16 @@ A PS5 DualSense (and DualSense Edge) gets **adaptive triggers**, its
 **lightbar** in the player's colour and its **player lights** showing the
 split-screen number (Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER
 STRENGTH, LIGHTBAR; all on by default, and no other pad is touched). R2 has
-a feel for each weapon (the pistol a click, the assault rifle a pulse a
-round, the sniper rifle firm, the plasma rifle stiffening with heat and
-locked while overheated, the plasma pistol building with its charge, the
-battle rifle three pulses a burst, ...) and a kick at each shot; it goes free
-while reloading, switching weapons or with an empty magazine, and in a
-vehicle seat without a gun. L2 has a light resistance while zoomed. The
+a profile for each weapon (`port/linux/src/ae_ds5_rules.c`'s table: human
+weapons mechanical with a left-motor pulse at each shot, Covenant ones
+energy with a right-motor pulse) and the weapon's state first: free while
+drawn and a settle as it is ready, free while reloading with a bump as the
+magazine goes in, a dry click when empty, locked with a venting throb while
+overheated; the shotgun's pump at its recoil animation's key frame. In a
+vehicle the seat that fires the gun (the vehicle's gunner) feels it. L2 is
+the grenades (a hold, firmer wound up, a jolt at the throw, a dry click
+with none) and light while zoomed. The pulses go into the game's own rumble
+and follow the profile's VIBRATION. The
 lightbar pulses while an overshield charges, dims with active camouflage
 and flashes when you become the juggernaut. On Windows and macOS SDL's own
 driver sends the effects. On Linux the kernel's driver keeps reading the

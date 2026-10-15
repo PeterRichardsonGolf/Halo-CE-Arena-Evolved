@@ -7,24 +7,29 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 - **PS5 DualSense: adaptive triggers, lightbar and player lights.** R2 has a profile for each weapon, from the
-  weapon's own numbers (pistol, assault rifle, sniper rifle, shotgun, rocket launcher, plasma pistol, plasma rifle,
-  needler, flamethrower, battle rifle): a feel as you hold and pull it, a kick at each shot, and the weapon's state
-  first: free while reloading, switching weapons or empty, the plasma rifle locked while overheated, the plasma
-  pistol building with its charge, a powerful pulse at each shot and a big heavy kick as an overcharged shot goes. In
-  a vehicle a gunner's seat takes the vehicle's gun, any other seat none; a
-  carried ball or flag leaves R2 free. L2 is light while zoomed, and buzzes while an overshield charges or as you
-  become the juggernaut. The lightbar takes your colour (your team's in a team game; black armour shows a dim white),
+  weapon's own numbers, in two families: human weapons are mechanical (clicks and kicks, a pulse on the heavy left
+  rumble motor at each shot), Covenant weapons are energy (resistance building with heat or charge, a pulse on the
+  light right motor). The pistol clicks and snaps, the assault rifle pulses with each round, the sniper rifle is
+  firm with a heavy thump, the shotgun and rockets kick hard (the shotgun's pump clicks at its own animation's
+  moment), the battle rifle pulses three times a burst, the plasma rifle stiffens with heat, the plasma pistol
+  builds with its charge, pulses at each shot and kicks hard as an overcharged shot goes (with a green flash of the
+  lightbar), the needler buzzes. Every weapon's state comes first: free while it is drawn, then a small settle as it
+  is ready; free while reloading, with a bump as the magazine (or each shell) goes in; a dry click at the bottom of
+  the pull when empty; locked with a venting throb while overheated, until the game lets it fire. Vehicles: the
+  seat that fires the vehicle's gun (the ghost's driver, the warthog's gunner) feels that gun; other seats nothing.
+  L2 is the grenades: a light hold, firmer as one winds up, a jolt as it leaves the hand (frag left motor, plasma
+  right), a dry click with none; light while zoomed. It buzzes while an overshield charges or as you become the
+  juggernaut. The rumble pulses follow the profile's VIBRATION setting and go into the game's own rumble. The
+  lightbar takes your colour (your team's in a team game; black armour shows a dim white),
   pulses while an overshield charges, breathes while you have one, dims with active camouflage and flashes white as
   you become the juggernaut; LIGHTBAR SHIELD shows your shield instead, as the HUD's meter does (its own colours,
   dimmer as it drains, blinking when low, the empty colour when down, a white flash on the pop with COMBAT FEEDBACK
   ARENA EVOLVED, the overshield's layer colours, dark while dead). The player lights show your split-screen number.
   Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER STRENGTH (LIGHT, NORMAL, STRONG) and LIGHTBAR (OFF, PLAYER COLOR,
-  SHIELD), on by default; no other controller is touched,
-  and the triggers and lightbar are given back when you quit. Windows and macOS through SDL; on Linux the effects
-  are written to the pad's hidraw device, which Steam's udev rules open, or the new `70-ae-dualsense.rules` in the
-  Linux downloads (README: "DualSense on Linux without Steam"). Bluetooth and the DualSense Edge are handled but not
-  yet tried on hardware.
-
+  SHIELD), on by default; no other controller is touched, and the triggers and lightbar are given back when you
+  quit. Windows and macOS through SDL; on Linux the effects are written to the pad's hidraw device, which Steam's
+  udev rules open, or the new `70-ae-dualsense.rules` in the Linux downloads (README: "DualSense on Linux without
+  Steam"). Bluetooth works; the DualSense Edge is handled but not yet tried on hardware.
 - **Bots** in split screen Slayer games (from OpenCE pull request #367 by
   BirchWoodGod, the offline bots of the Halo CE for PS Vita port, an OpenCE
   derivative, contributed under CC0): Settings > Game Options > BOTS sets

@@ -37,6 +37,8 @@ rounds of each weapon.
 #include "interface/hud_draw.h"
 #include "interface/unit_hud_interface_definition.h"
 #include "ae_hit_feedback.h"
+#include "interface/player_ui.h"
+#include "models/model_animation_definitions.h"
 #include "ae_ds5_game.h"
 
 void platform_log(char const *format, ...);
@@ -55,20 +57,27 @@ static unsigned char channel(real value)
 /* a round in this many ticks counts as firing (the slowest automatic, 6 rounds a second, fires every 5) */
 #define FIRING_TICKS 5
 
-/* each controller port's last weapon and its last round's game time (a new round = a kick) */
+/* each controller port's memory of last frame: the weapon and its states, the grenade's throw; and each trigger's
+last event (its kick and count: the platform kicks on a change of the count) with the last rumble pulse */
 static struct
 {
 	long weapon_index;
 	long last_fired;
-	unsigned long shots;
 	int logged;
 	/* the charge last frame, and whether the last round was a fully charged one (the plasma pistol's blast: the
 	charge is gone by the frame its round is seen) */
 	float last_charge;
-	int charged_shot;
+	int rounds_loaded;
+	int reloading, readying, chambering;
+	char grenade_throw_state;
+	long overcharge_at;
+	unsigned char kick_right[AE_DS5_EFFECT_SIZE], kick_left[AE_DS5_EFFECT_SIZE];
+	int kick_right_ms, kick_left_ms;
+	unsigned long kicks_right, kicks_left, rumbles;
+	struct ae_ds5_rumble rumble;
 } rounds[MAXIMUM_LOCAL_PLAYERS];
 /* the first rounds of each weapon in hand are logged (to check the counting; the rest are counted by the platform) */
-#define ROUNDS_LOGGED 5
+#define ROUNDS_LOGGED 20
 
 /* a weapon definition's kind from its tag's numbers (and its first trigger, NULL: none) */
 static enum ae_ds5_weapon_kind definition_kind(long definition_index, float *rate_of_fire,
@@ -128,15 +137,19 @@ static void weapon_catalogue(void)
 		enum ae_ds5_weapon_kind kind = definition_kind(tag_index, &rate, &first);
 		char const *name = tag_get_name(tag_index);
 
-		int magazine = first && first->magazine_index >= 0 && first->magazine_index < definition->weapon.magazines.count ?
-			TAG_BLOCK_GET_ELEMENT(&definition->weapon.magazines, first->magazine_index,
-				struct weapon_magazine_definition)->rounds_loaded_maximum : -1;
+		struct weapon_magazine_definition const *magazine_definition = first && first->magazine_index >= 0 &&
+			first->magazine_index < definition->weapon.magazines.count ? TAG_BLOCK_GET_ELEMENT(
+				&definition->weapon.magazines, first->magazine_index, struct weapon_magazine_definition) : NULL;
+		int magazine = magazine_definition ? magazine_definition->rounds_loaded_maximum : -1;
 
 		platform_log("dualsense: weapon tag %s: triggers %d, rate %.2f/s, charging %.2f s, heat %.3f a round, "
-			"zoom levels %d, type %d, magazine holds %d -> %s (%s)", name ? name : "?",
+			"zoom levels %d, type %d, magazine holds %d (chamber %.2f s, reload %.2f s) -> %s (%s)", name ? name : "?",
 			(int)definition->weapon.triggers.count, (double)rate, first ? (double)first->charging_time : 0.0,
 			first ? (double)first->heat_generated_per_round : 0.0, (int)definition->weapon.zoom_level_count,
-			(int)definition->weapon.weapon_type, magazine, ae_ds5_weapon_kind_name(kind), ae_ds5_profile_feel(kind));
+			(int)definition->weapon.weapon_type, magazine,
+			magazine_definition ? (double)magazine_definition->chamber_time : 0.0,
+			magazine_definition ? (double)magazine_definition->reload_time : 0.0, ae_ds5_weapon_kind_name(kind),
+			ae_ds5_profile_feel(kind));
 	}
 }
 
@@ -303,27 +316,83 @@ static void shield_lightbar(short gamepad_index, long player_index, unsigned cha
 	ae_ds5_lightbar_shield(rgb, &shield, text, text_size);
 }
 
-/* the weapon the player fires: in a vehicle's seat, the vehicle's weapon for a gunner's seat (as the HUD's,
-hud_weapon.c), none for any other; on foot, the one in hand */
+/* the weapon the player fires: in a vehicle's seat, the vehicle's weapon when the vehicle says this unit is its
+gunner (its gunner_object_index: the ghost's driver, the warthog's gunner), none in any other seat; on foot, the one
+in hand */
 static long seated_weapon(long unit_index, long weapon_index)
 {
 	struct unit_datum *unit;
 	struct unit_datum *parent;
-	struct unit_seat *seat;
 
 	if (unit_index == NONE)
 		return weapon_index;
 	unit = unit_get(unit_index);
 	if (unit->object.parent_object_index == NONE || unit->unit.parent_seat_index == NONE)
 		return weapon_index;
-	parent = unit_get(unit->object.parent_object_index);
-	if (unit->unit.parent_seat_index >= unit_definition_get(parent->definition_index)->unit.seats.count)
-		return NONE;
-	seat = TAG_BLOCK_GET_ELEMENT(&unit_definition_get(parent->definition_index)->unit.seats,
-		unit->unit.parent_seat_index, struct unit_seat);
-	if (!TEST_FLAG(seat->flags, _unit_seat_gunner_bit))
+	parent = unit_try_and_get(unit->object.parent_object_index);
+	if (!parent || parent->unit.gunner_object_index != unit_index)
 		return NONE;
 	return unit_inventory_get_weapon(unit->object.parent_object_index, parent->unit.current_weapon_index);
+}
+
+/* the shotgun's pump: no chambering state of its own (its magazine's chamber time is 0), it is in the recoil animation;
+the pump is that animation's key frame (the frame the game's own key frame events fire on), or its end if the tag has
+no key frame. Only the shotgun's weapon type: the CE sniper rifle is no bolt rifle, and its tag has no chambering */
+static int pump_frame(struct weapon_datum const *weapon)
+{
+	struct weapon_definition *definition = weapon_definition_get(weapon->definition_index);
+	struct animation_graph *graph;
+	struct animation const *animation;
+	short key;
+
+	if (definition->weapon.weapon_type != _weapon_type_shotgun || weapon->weapon.state != _weapon_state_primary_recoil ||
+		definition->object.animation_graph.index == NONE || weapon->object.animation.state.index == NONE)
+		return 0;
+	graph = animation_graph_definition_get(definition->object.animation_graph.index);
+	if (weapon->object.animation.state.index < 0 || weapon->object.animation.state.index >= graph->animations.count)
+		return 0;
+	animation = TAG_BLOCK_GET_ELEMENT(&graph->animations, weapon->object.animation.state.index, struct animation);
+	key = animation->private_key_frame_index;
+	if (key <= 0 || key >= animation->frame_count)
+		key = animation->frame_count - 1;
+	return weapon->object.animation.state.frame_index >= key;
+}
+
+/* an event on a trigger (right 1, left 0): its kick and rumble kept until the next */
+static void event(short gamepad_index, int right, enum ae_ds5_weapon_kind kind, enum ae_ds5_event what, int strength,
+	int rumble_on, int log, char const *name)
+{
+	unsigned char effect[AE_DS5_EFFECT_SIZE];
+	struct ae_ds5_rumble rumble;
+	int ms = ae_ds5_event(effect, &rumble, kind, what, strength);
+
+	if (ms > 0)
+	{
+		if (right)
+		{
+			memcpy(rounds[gamepad_index].kick_right, effect, sizeof(effect));
+			rounds[gamepad_index].kick_right_ms = ms;
+			rounds[gamepad_index].kicks_right++;
+		}
+		else
+		{
+			memcpy(rounds[gamepad_index].kick_left, effect, sizeof(effect));
+			rounds[gamepad_index].kick_left_ms = ms;
+			rounds[gamepad_index].kicks_left++;
+		}
+	}
+	if (rumble_on && rumble.ms > 0 && (rumble.left || rumble.right))
+	{
+		rounds[gamepad_index].rumble = rumble;
+		rounds[gamepad_index].rumbles++;
+	}
+	if (log && rounds[gamepad_index].logged < ROUNDS_LOGGED)
+	{
+		rounds[gamepad_index].logged++;
+		platform_log("dualsense: port %d %s (%s): %s kick %d ms, rumble left %d right %d for %d ms", gamepad_index + 1,
+			name, ae_ds5_weapon_kind_name(kind), right ? "R2" : "L2", ms, rumble_on ? rumble.left : 0,
+			rumble_on ? rumble.right : 0, rumble_on ? rumble.ms : 0);
+	}
 }
 
 void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level)
@@ -344,6 +413,8 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	char const *left_text;
 
 	struct ae_ds5_settings settings;
+	long now = game_time_get();
+	int rumble_on, winding, grenades;
 
 	if (!ae_ds5_on())
 		return;
@@ -383,38 +454,92 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	wish.green = lightbar[1];
 	wish.blue = lightbar[2];
 	weapon_state(weapon_index, &state, &name);
+	state.ticks = now;
 	ae_ds5_right_held(wish.right, &state, settings.strength, right_text, sizeof(right_text));
-	/* (a round: the weapon's last-fired time moved, the weapon the same as last frame) */
+	/* the events, each at the game's own moment: a round (the weapon's last-fired time moved), the reload's magazine
+	(or shell) going in (rounds loaded rising while reloading), the weapon readied (its readying over), the post-shot
+	chambering (the shotgun's pump: the weapon's or its magazine's chambering state begun), a grenade leaving the hand
+	(its throw's ending begun). The same weapon as last frame for the weapon's; a switch is only a settle */
+	rumble_on = settings.triggers && !player_ui_rumble_disabled(local_player_index);
 	if (weapon_index != NONE)
 	{
-		long last_fired = weapon_get(weapon_index)->weapon.game_time_last_fired;
+		struct weapon_datum *weapon = weapon_get(weapon_index);
+		long last_fired = weapon->weapon.game_time_last_fired;
+		int chambering = weapon->weapon.state == _weapon_state_primary_chamber ||
+			weapon->weapon.state == _weapon_state_secondary_chamber ||
+			weapon->weapon.magazines[0].state == _magazine_chambering || pump_frame(weapon);
+		int rounds_loaded = weapon->weapon.magazines[0].rounds_loaded;
 
 		if (rounds[gamepad_index].weapon_index != weapon_index)
 		{
 			rounds[gamepad_index].logged = 0;
-			rounds[gamepad_index].charged_shot = 0;
+			rounds[gamepad_index].readying = 1;
 		}
-		else if (rounds[gamepad_index].last_fired != last_fired)
+		else
 		{
-			rounds[gamepad_index].shots++;
-			rounds[gamepad_index].charged_shot = rounds[gamepad_index].last_charge >= 0.95f;
-			if (settings.log && rounds[gamepad_index].logged < ROUNDS_LOGGED)
+			if (rounds[gamepad_index].last_fired != last_fired)
 			{
-				rounds[gamepad_index].logged++;
-				platform_log("dualsense: port %d round at tick %d (%s%s)", gamepad_index + 1, (int)last_fired,
-					ae_ds5_weapon_kind_name(state.kind), rounds[gamepad_index].charged_shot ? ", charged" : "");
+				int charged = rounds[gamepad_index].last_charge >= 0.95f;
+
+				event(gamepad_index, 1, state.kind, charged ? AE_DS5_EVENT_SHOT_CHARGED : AE_DS5_EVENT_SHOT,
+					settings.strength, rumble_on, settings.log, charged ? "charged round" : "round");
+				if (charged && ae_ds5_kind_covenant(state.kind))
+					rounds[gamepad_index].overcharge_at = now;
 			}
+			if ((state.reloading || rounds[gamepad_index].reloading) && rounds_loaded > rounds[gamepad_index].rounds_loaded)
+				event(gamepad_index, 1, state.kind, AE_DS5_EVENT_MAG_IN, settings.strength, rumble_on, settings.log,
+					"magazine in");
+			if (chambering && !rounds[gamepad_index].chambering)
+				event(gamepad_index, 1, state.kind, AE_DS5_EVENT_CHAMBER, settings.strength, rumble_on, settings.log,
+					"chambered");
+			if (rounds[gamepad_index].readying && !state.readying)
+				event(gamepad_index, 1, state.kind, AE_DS5_EVENT_SETTLE, settings.strength, rumble_on, settings.log,
+					"readied");
 		}
 		rounds[gamepad_index].last_fired = last_fired;
+		rounds[gamepad_index].rounds_loaded = rounds_loaded;
+		rounds[gamepad_index].chambering = chambering;
+		rounds[gamepad_index].reloading = state.reloading;
+		rounds[gamepad_index].readying = state.readying;
 	}
 	rounds[gamepad_index].weapon_index = weapon_index;
 	rounds[gamepad_index].last_charge = state.charge;
-	wish.shots = rounds[gamepad_index].shots;
-	wish.kick_ms = ae_ds5_right_kick(wish.kick, state.kind, rounds[gamepad_index].charged_shot, settings.strength);
+	/* L2: a grenade's throw, and whether there are grenades to throw */
+	{
+		long unit_index = player_get(player_index)->unit_index;
+		struct unit_datum *unit = unit_index != NONE ? unit_get(unit_index) : NULL;
+		char throw_state = unit ? unit->unit.grenade_throw_state : (char)_unit_grenade_throw_idle;
+		short grenade_type = unit ? (short)unit->unit.current_grenade_index : 0;
+
+		winding = throw_state == _unit_grenade_throw_wind_up || throw_state == _unit_grenade_throw_in_hand;
+		grenades = unit && grenade_type >= 0 ? unit_get_grenade_count(unit_index, grenade_type) : 0;
+		if (throw_state == _unit_grenade_throw_ending && rounds[gamepad_index].grenade_throw_state != throw_state)
+			event(gamepad_index, 0, state.kind, grenade_type == _unit_grenade_covenant_plasma ?
+				AE_DS5_EVENT_GRENADE_PLASMA : AE_DS5_EVENT_GRENADE_FRAG, settings.strength, rumble_on, settings.log,
+				"grenade thrown");
+		rounds[gamepad_index].grenade_throw_state = throw_state;
+	}
+	memcpy(wish.kick_right, rounds[gamepad_index].kick_right, sizeof(wish.kick_right));
+	wish.kick_right_ms = rounds[gamepad_index].kick_right_ms;
+	wish.kicks_right = rounds[gamepad_index].kicks_right;
+	memcpy(wish.kick_left, rounds[gamepad_index].kick_left, sizeof(wish.kick_left));
+	wish.kick_left_ms = rounds[gamepad_index].kick_left_ms;
+	wish.kicks_left = rounds[gamepad_index].kicks_left;
+	wish.rumble = rounds[gamepad_index].rumble;
+	wish.rumbles = rounds[gamepad_index].rumbles;
+	/* (the plasma pistol's overcharged release: the lightbar's green flash, its only Covenant colour) */
+	if (settings.lights && rounds[gamepad_index].overcharge_at > 0 &&
+		ae_ds5_overcharge_flash(lightbar, now - rounds[gamepad_index].overcharge_at))
+	{
+		wish.red = lightbar[0];
+		wish.green = lightbar[1];
+		wish.blue = lightbar[2];
+		snprintf(lightbar_text, sizeof(lightbar_text), "overcharge flash (green)");
+	}
 	if (ae_ds5_left_powerup(wish.left, &powerups, settings.strength, left_power, sizeof(left_power)))
 		left_text = left_power;
 	else
-		left_text = ae_ds5_left_effect(wish.left, zoom_level != NONE, settings.strength);
+		left_text = ae_ds5_left_effect(wish.left, zoom_level != NONE, grenades, winding, settings.strength);
 	if (!settings.log)
 	{
 		ae_ds5_wish_set(gamepad_index, &wish);

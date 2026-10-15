@@ -129,57 +129,62 @@ struct shape
   pulse a round, timed by the pad itself (no report a round);
 - kick: a short shape sent at each round, then back to held/firing after kick_ms (two reports a round);
 - ramp: 1 heat, 2 charge: the held and firing shapes' b (strength / amplitude) goes from its table value at 0 to
-  ramp_to at 1; locked: the shape while overheated;
-- the weapon's state comes first, for every kind (ae_ds5_right_held): readying, overheated without a locked shape,
-  reloading and empty let the trigger go. */
+  ramp_to at 1;
+- the family (the owner's language, 0.3.0): HUMAN weapons are mechanical, clicks and kicks, their rumble on the LEFT
+  (heavy) motor; COVENANT weapons are energy, hum and resistance with heat or charge, their rumble on the RIGHT
+  (light) motor. shot_rumble: that motor's pulse at each round (0-255) and how long (ms);
+- charged_kick / charged_rumble: a fully charged shot's instead (the plasma pistol's blast; it rumbles both motors);
+- the weapon's state comes first, for every kind (ae_ds5_right_held): readying, overheated, reloading, empty. */
 #define NO { OFF, 0, 0, 0 }
 #define SM { SAME, 0, 0, 0 }
 #define F(position, strength) { FEEDBACK, position, strength, 0 }
 #define W(start, end, strength) { WEAPON, start, strength, end }
 #define V(position, amplitude, frequency) { VIBRATION, position, amplitude, frequency }
+#define HUMAN 0
+#define COVENANT 1
 static struct profile
 {
-	struct shape held, firing, kick, locked;
+	struct shape held, firing, kick;
 	int kick_ms;
 	int per_round;
 	int ramp, ramp_to;
+	int family;
+	int shot_rumble, shot_rumble_ms;
 	char const *feel;
-	/* the kick of a fully charged shot (charged_kick_ms 0: the ordinary kick) */
 	struct shape charged_kick;
 	int charged_kick_ms;
+	int charged_rumble_left, charged_rumble_right, charged_rumble_ms;
 } const profiles[AE_DS5_WEAPON_KINDS] = {
-	/* none */ { NO, SM, NO, NO, 0, 0, 0, 0, "off", NO, 0 },
-	/* semi (pistol): its click, a sharp snap back each shot (3.5 shots/s: 35 ms of 285) */
-	{ W(4, 7, 4), SM, F(0, 8), NO, 35, 0, 0, 0, "click, snap a shot", NO, 0 },
-	/* heavy (shotgun, rockets): a heavy click, a big kick each shot (a 30 Hz full jolt, 130 ms of ~700) */
-	{ W(3, 7, 6), SM, V(0, 8, 30), NO, 130, 0, 0, 0, "heavy click, big kick", NO, 0 },
-	/* automatic (assault rifle): light hold; firing, round 1's buzz at 1x the rate of fire = a pulse a round */
-	{ F(3, 2), V(3, 5, 0), NO, NO, 0, 1, 0, 0, "light hold, a pulse a round", NO, 0 },
-	/* sniper: firm, a heavy thump each shot (2 shots/s: 90 ms of 500) */
-	{ F(2, 6), SM, F(0, 8), NO, 90, 0, 0, 0, "firm, heavy thump", NO, 0 },
-	/* charge (plasma pistol): resistance from zone 2 (round 1's zone 4 was not felt) building to full with the
-	charge; each ordinary shot a powerful pulse (a full 40 Hz jolt, 70 ms), the overcharged shot's release a big heavy
-	kick, longer and lower than the shotgun's (a full 15 Hz jolt, 240 ms) */
-	{ F(2, 4), SM, V(0, 8, 40), NO, 70, 0, 2, 8, "builds with charge, a pulse a shot, a blast charged",
-		V(0, 8, 15), 240 },
-	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67). Zones 4-7 (the
-	pistol's, felt in play) at strength 6 (the shotgun's, felt): round 1's zones 3-6 were not felt at all */
-	{ W(4, 7, 6), SM, F(0, 7), NO, 30, 0, 0, 0, "click, three pulses a burst", NO, 0 },
-	/* needler: barely there; firing, a fast light buzz (2x the rate of fire, amplitude 3) */
-	{ F(3, 1), V(3, 3, 0), NO, NO, 0, 2, 0, 0, "fast light buzz", NO, 0 },
-	/* plasma heat (plasma rifle): resistance and buzz rising with heat, locked when overheated */
-	{ F(2, 1), V(2, 3, 0), NO, F(0, 8), 0, 1, 1, 7, "rises with heat, locked overheated", NO, 0 },
+	/* none */ { NO, SM, NO, 0, 0, 0, 0, HUMAN, 0, 0, "off", NO, 0, 0, 0, 0 },
+	/* semi (pistol): its click, a sharp snap back each shot (3.5 shots/s: 35 ms of 285), a firm left pulse */
+	{ W(4, 7, 4), SM, F(0, 8), 35, 0, 0, 0, HUMAN, 150, 60, "click, snap a shot", NO, 0, 0, 0, 0 },
+	/* heavy (shotgun, rockets): a heavy click, a big kick each shot (a 30 Hz full jolt, 130 ms of ~700), the left
+	motor full */
+	{ W(3, 7, 6), SM, V(0, 8, 30), 130, 0, 0, 0, HUMAN, 255, 160, "heavy click, big kick", NO, 0, 0, 0, 0 },
+	/* automatic (assault rifle): light hold; firing, round 1's buzz at 1x the rate of fire = a pulse a round, a short
+	left pulse a round (40 ms of 67) */
+	{ F(3, 2), V(3, 5, 0), NO, 0, 1, 0, 0, HUMAN, 90, 40, "light hold, a pulse a round", NO, 0, 0, 0, 0 },
+	/* sniper: firm, a heavy thump each shot (2 shots/s: 90 ms of 500), the left motor nearly full */
+	{ F(2, 6), SM, F(0, 8), 90, 0, 0, 0, HUMAN, 230, 130, "firm, heavy thump", NO, 0, 0, 0, 0 },
+	/* charge (plasma pistol): resistance from zone 2 building to full with the charge; each ordinary shot a powerful
+	pulse (a full 40 Hz jolt, 70 ms, the right motor); the overcharged release a big heavy kick, longer and lower than
+	the shotgun's (a full 15 Hz jolt, 240 ms), both motors */
+	{ F(2, 4), SM, V(0, 8, 40), 70, 0, 2, 8, COVENANT, 160, 60, "builds with charge, a pulse a shot, a blast charged",
+		V(0, 8, 15), 240, 170, 255, 240 },
+	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67), a left pulse
+	a round */
+	{ W(4, 7, 6), SM, F(0, 7), 30, 0, 0, 0, HUMAN, 120, 40, "click, three pulses a burst", NO, 0, 0, 0, 0 },
+	/* needler: barely there; firing, a fast light buzz (2x the rate of fire, amplitude 3), a light right tick */
+	{ F(3, 1), V(3, 3, 0), NO, 0, 2, 0, 0, COVENANT, 70, 30, "fast light buzz", NO, 0, 0, 0, 0 },
+	/* plasma heat (plasma rifle): resistance and hum rising with heat (locked while overheated, as every weapon) */
+	{ F(2, 1), V(2, 3, 0), NO, 0, 1, 1, 7, COVENANT, 80, 40, "rises with heat, locked overheated", NO, 0, 0, 0, 0 },
 	/* carry (ball, flag: no projectile, R2 swings it): free, nothing to shoot (ruled off) */
-	{ NO, SM, NO, NO, 0, 0, 0, 0, "free (melee carry)", NO, 0 },
-	/* flame (flamethrower: heat a round, not the plasma rifle's weapon type): light hold; firing, a low 18 Hz roar
-	rising with heat */
-	{ F(3, 2), V(3, 3, 18), NO, NO, 0, 0, 1, 6, "light hold, a roar while it burns", NO, 0 },
+	{ NO, SM, NO, 0, 0, 0, 0, HUMAN, 0, 0, "free (melee carry)", NO, 0, 0, 0, 0 },
+	/* flame (flamethrower): light hold; firing, a low 18 Hz roar rising with heat, a low left rumble */
+	{ F(3, 2), V(3, 3, 18), NO, 0, 0, 1, 6, HUMAN, 60, 60, "light hold, a roar while it burns", NO, 0, 0, 0, 0 },
 };
-#undef NO
-#undef SM
-#undef F
-#undef W
-#undef V
+#define THROB_TICKS 8
+#define THROB_ON_TICKS 2
 
 static int ramped(int base, int to, float amount)
 {
@@ -236,62 +241,157 @@ void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_w
 	char words[80];
 	char const *why = "held";
 
-	char const *free_why = NULL;
-
 	if (shape.mode == OFF)
-		free_why = state->kind == AE_DS5_WEAPON_CARRY ? "free (carrying)" : "off";
-	else if (state->readying)
-		free_why = "free (readying)";
-	else if (state->overheated && profile->locked.mode == OFF)
-		free_why = "free (overheated, venting)";
-	else if (state->reloading && !state->overheated)
-		free_why = "free (reloading)";
-	else if (state->empty && !state->overheated)
-		free_why = "free (empty)";
-	if (free_why)
 	{
 		ae_ds5_effect_off(effect);
-		snprintf(text, text_size, "%s", free_why);
+		snprintf(text, text_size, "%s", state->kind == AE_DS5_WEAPON_CARRY ? "free (carrying)" : "off");
+		return;
+	}
+	/* (the weapon's state first, for every kind: the owner's rules, 0.3.0) */
+	if (state->readying)
+	{
+		/* QUICK SETTLE: free while the weapon comes up (its settle bump is an event) */
+		ae_ds5_effect_off(effect);
+		snprintf(text, text_size, "free (readying)");
 		return;
 	}
 	if (state->overheated)
 	{
-		shape = profile->locked;
-		why = "locked (overheated)";
+		/* LOCKED + VENTING THROB: locked solid, with a two-tick throb every eight, until the game lets it fire */
+		struct shape locked = F(0, 8), throb = V(0, 8, 8);
+
+		shape_effect(effect, state->ticks % THROB_TICKS < THROB_ON_TICKS ? throb : locked, 0.0f, 1, strength, words,
+			sizeof(words));
+		snprintf(text, text_size, "locked (overheated, venting throb)");
+		return;
 	}
-	else
+	if (state->reloading)
 	{
-		if (state->firing && profile->firing.mode != SAME)
-		{
-			shape = profile->firing;
-			why = "firing";
-		}
-		if (profile->ramp == 1)
-			shape.b = (unsigned char)ramped(shape.b, profile->ramp_to, state->heat);
-		else if (profile->ramp == 2)
-			shape.b = (unsigned char)ramped(shape.b, profile->ramp_to, state->charge);
+		/* SLACK (the seat bump at the magazine's going in is an event) */
+		ae_ds5_effect_off(effect);
+		snprintf(text, text_size, "free (reloading)");
+		return;
 	}
+	if (state->empty)
+	{
+		/* DRY CLICK: slack, then a weak hollow click at the bottom of the pull, once a pull (the weapon effect's own) */
+		struct shape dry = W(7, 8, 2);
+
+		shape_effect(effect, dry, 0.0f, 1, strength, words, sizeof(words));
+		snprintf(text, text_size, "dry click (empty): %s", words);
+		return;
+	}
+	if (state->firing && profile->firing.mode != SAME)
+	{
+		shape = profile->firing;
+		why = "firing";
+	}
+	if (profile->ramp == 1)
+		shape.b = (unsigned char)ramped(shape.b, profile->ramp_to, state->heat);
+	else if (profile->ramp == 2)
+		shape.b = (unsigned char)ramped(shape.b, profile->ramp_to, state->charge);
 	shape_effect(effect, shape, state->rate_of_fire, profile->per_round, strength, words, sizeof(words));
 	snprintf(text, text_size, "%s: %s", why, words);
 }
 
-int ae_ds5_right_kick(unsigned char effect[AE_DS5_EFFECT_SIZE], enum ae_ds5_weapon_kind kind, int charged, int strength)
+int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble *rumble, enum ae_ds5_weapon_kind kind,
+	enum ae_ds5_event event, int strength)
 {
 	struct profile const *profile = &profiles[kind >= 0 && kind < AE_DS5_WEAPON_KINDS ? kind : 0];
 	char words[80];
+	struct shape shape = NO;
+	int ms = 0;
 
-	if (charged && profile->charged_kick.mode != OFF && profile->charged_kick_ms > 0)
+	rumble->left = rumble->right = rumble->ms = 0;
+	switch (event)
 	{
-		shape_effect(effect, profile->charged_kick, 0.0f, 1, strength, words, sizeof(words));
-		return profile->charged_kick_ms;
+	case AE_DS5_EVENT_SHOT_CHARGED:
+		if (profile->charged_kick.mode != OFF && profile->charged_kick_ms > 0)
+		{
+			shape = profile->charged_kick;
+			ms = profile->charged_kick_ms;
+			rumble->left = profile->charged_rumble_left;
+			rumble->right = profile->charged_rumble_right;
+			rumble->ms = profile->charged_rumble_ms;
+			break;
+		}
+		/* (no charged kick: an ordinary shot) */
+		/* fall through */
+	case AE_DS5_EVENT_SHOT:
+		shape = profile->kick;
+		ms = profile->kick_ms;
+		if (profile->family == COVENANT)
+			rumble->right = profile->shot_rumble;
+		else
+			rumble->left = profile->shot_rumble;
+		rumble->ms = profile->shot_rumble_ms;
+		break;
+	case AE_DS5_EVENT_MAG_IN:
+	{
+		/* SEAT BUMP: the magazine (or a shotgun's shell) going in, at the reload animation's own moment */
+		struct shape bump = F(0, 5);
+
+		shape = bump;
+		ms = 40;
+		rumble->left = 60;
+		rumble->ms = 30;
+		break;
 	}
-	if (profile->kick.mode == OFF || profile->kick_ms <= 0)
+	case AE_DS5_EVENT_SETTLE:
+	{
+		/* QUICK SETTLE: the new weapon's feel arriving as it is ready */
+		struct shape settle = F(0, 3);
+
+		shape = settle;
+		ms = 30;
+		break;
+	}
+	case AE_DS5_EVENT_CHAMBER:
+	{
+		/* the post-shot action at the weapon's own chambering (the shotgun's pump): a mechanical click */
+		struct shape pump = F(0, 6);
+
+		shape = pump;
+		ms = 45;
+		rumble->left = 120;
+		rumble->ms = 50;
+		break;
+	}
+	case AE_DS5_EVENT_GRENADE_FRAG:
+	{
+		/* (L2) a frag grenade leaving the hand: a mechanical jolt, the left motor */
+		struct shape jolt = V(0, 7, 25);
+
+		shape = jolt;
+		ms = 80;
+		rumble->left = 140;
+		rumble->ms = 70;
+		break;
+	}
+	case AE_DS5_EVENT_GRENADE_PLASMA:
+	{
+		/* (L2) a plasma grenade leaving the hand: a lighter, faster buzz, the right motor */
+		struct shape buzz = V(0, 5, 45);
+
+		shape = buzz;
+		ms = 80;
+		rumble->right = 140;
+		rumble->ms = 70;
+		break;
+	}
+	}
+	if (shape.mode == OFF || ms <= 0)
 	{
 		ae_ds5_effect_off(effect);
 		return 0;
 	}
-	shape_effect(effect, profile->kick, 0.0f, 1, strength, words, sizeof(words));
-	return profile->kick_ms;
+	shape_effect(effect, shape, 0.0f, 1, strength, words, sizeof(words));
+	return ms;
+}
+
+int ae_ds5_kind_covenant(enum ae_ds5_weapon_kind kind)
+{
+	return profiles[kind >= 0 && kind < AE_DS5_WEAPON_KINDS ? kind : 0].family == COVENANT;
 }
 
 char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind)
@@ -299,17 +399,30 @@ char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind)
 	return profiles[kind >= 0 && kind < AE_DS5_WEAPON_KINDS ? kind : 0].feel;
 }
 
-char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int strength)
+char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
+	int strength)
 {
 	if (zoomed)
 	{
 		ae_ds5_effect_feedback(effect, 2, scaled(2, strength));
-		return "light resistance (from zone 2)";
+		return "light resistance (zoomed)";
 	}
-	ae_ds5_effect_off(effect);
-	return "off";
+	if (winding)
+	{
+		/* (a grenade wound up: the throw's held moment) */
+		ae_ds5_effect_feedback(effect, 2, scaled(5, strength));
+		return "grenade wound up (feedback from zone 2)";
+	}
+	if (grenades > 0)
+	{
+		ae_ds5_effect_feedback(effect, 3, scaled(2, strength));
+		return "grenade ready (light hold)";
+	}
+	ae_ds5_effect_weapon(effect, 7, 8, scaled(2, strength));
+	return "no grenades (dry click)";
 }
 
+#define OVERCHARGE_FLASH_TICKS 9
 #define JUGGERNAUT_FLASH_TICKS 20
 #define JUGGERNAUT_BUZZ_TICKS 12
 #define CHARGE_PULSE_TICKS 15
@@ -368,6 +481,20 @@ void ae_ds5_lightbar(unsigned char rgb[3], unsigned char const base[3], struct a
 		rgb[i] = (unsigned char)(value >= 255.0f ? 255 : value <= 0.0f ? 0 : (int)(value + 0.5f));
 	}
 	snprintf(text, text_size, "%s", what);
+}
+
+int ae_ds5_overcharge_flash(unsigned char rgb[3], long ticks)
+{
+	/* (the plasma pistol's overcharged release: green, fading over 0.3 s, in 3 steps) */
+	float amount;
+
+	if (ticks < 0 || ticks >= OVERCHARGE_FLASH_TICKS)
+		return 0;
+	amount = 1.0f - (float)(ticks / 3) / 3.0f;
+	rgb[0] = (unsigned char)(32.0f * amount + 0.5f);
+	rgb[1] = (unsigned char)(255.0f * amount + 0.5f);
+	rgb[2] = (unsigned char)(64.0f * amount + 0.5f);
+	return 1;
 }
 
 int ae_ds5_left_powerup(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_powerups const *powerups, int strength,
