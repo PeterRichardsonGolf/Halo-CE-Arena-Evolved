@@ -89,6 +89,7 @@ symbols in this file:
 #include "units/units.h"
 #include "ae_hud_style.h" /* AE hook */
 #include "ae_panels.h" /* AE hook */
+#include "ae_sensor.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1202,6 +1203,7 @@ void hud_render_unit_interface(
 					short draw_flags = 0;
 					point2d corner;
 
+					ae_panels_hide_ce(ae_sensor_takes_blips()); /* AE hook */
 					absolute_placement.corner = _hud_anchor_bottom_left;
 					SET_FLAG(
 						draw_flags,
@@ -1264,6 +1266,8 @@ void hud_render_unit_interface(
 						local_player_index,
 						hud_split_screen_layout(),
 						&corner);
+					ae_panels_hide_ce(FALSE); /* AE hook */
+					ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
 				}
 
 				{

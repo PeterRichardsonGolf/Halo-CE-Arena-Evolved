@@ -95,6 +95,9 @@ UNITS = {
     # (HUD STYLE AE's panel layout: lean lines, boxes, cells, rounds, bars, the right column; CE's real digit ink)
     "ae_panel_layout_test.c": ([UI / "ae_panel_model.c", UI / "ae_panel_layout.c", UI / "ae_hud_digit_cells.c"],
                                ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
+    # (HUD STYLE AE's motion sensor: the view's wedge, the rings, CE's blips' places, the sweep, the label)
+    "ae_sensor_test.c": ([UI / "ae_sensor_geometry.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                         ["-lm"]),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),

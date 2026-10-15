@@ -24,6 +24,7 @@ pair: a host and a joined second game instance; the host logs its joiner's panel
 joiner's own lines must match the host's for it (weapon, rounds, reserve, grenades) within 2 lines (Review Focus 8).
 """
 import argparse
+import math
 import re
 import sys
 from pathlib import Path
@@ -527,6 +528,131 @@ def run_groups(cfg, a, out):
     return results
 
 
+SENSOR_LINE = re.compile(
+    r"ae sensor: tick (?P<tick>\d+) view (?P<view>\d+) centre=(?P<cx>[-\d.]+),(?P<cy>[-\d.]+) r=(?P<r>[\d.]+) "
+    r"inner=(?P<inner>[\d.]+) half=(?P<half>[\d.]+) vfov=(?P<vfov>[\d.]+) view=(?P<vw>\d+)x(?P<vh>\d+) "
+    r"blips=(?P<blips>\d+) label=(?P<label>\S+) baseline=(?P<baseline>[-\d.]+)")
+
+
+def sensor_lines(text, view="0"):
+    out = []
+    for m in SENSOR_LINE.finditer(text):
+        if m["view"] == view:
+            line = {k: (v if k == "label" else float(v)) for k, v in m.groupdict().items()}
+            out.append(line)
+    return out
+
+
+def wedge_formula(vfov, w, h):
+    half = math.degrees(math.atan(math.tan(vfov / 2) * w / h))
+    return max(5.0, min(85.0, half))
+
+
+def s_base(line, frames):
+    """the rim at r and the inner ring at 0.616 r (sampled at 45 degrees below right, clear of the dividers and the
+    wedge), the wedge's edge at 0.8 r on the formula's angle, the label"""
+    why = []
+    cx, cy, r = line["cx"], line["cy"], line["r"]
+    if abs(line["inner"] / r - 0.616) > 0.01:
+        why.append(f"inner ring at {line['inner'] / r:.3f} r")
+    want = wedge_formula(line["vfov"], line["vw"], line["vh"])
+    if abs(line["half"] - want) > 1.0:
+        why.append(f"wedge half-angle {line['half']} against the formula's {want:.1f}")
+    c45 = math.cos(math.radians(45))
+    bluish = lambda c: c[2] > 150 and c[2] >= c[0] + 15
+    for name, rad in (("rim", r - 0.75), ("inner ring", line["inner"])):
+        x, y = cx + rad * c45, cy + rad * c45
+        if not any(any_near(rgb, w, h, x, y, bluish, 1) for w, h, rgb in frames):
+            why.append(f"no {name} at ({x:.0f}, {y:.0f})")
+    a = math.radians(-90 + line["half"])
+    x, y = cx + 0.8 * r * math.cos(a), cy + 0.8 * r * math.sin(a)
+    if not any(any_near(rgb, w, h, x, y, bluish, 2) for w, h, rgb in frames):
+        why.append(f"no wedge edge at ({x:.0f}, {y:.0f})")
+    if line["label"] != "15m":
+        why.append(f"label {line['label']}")
+    return why
+
+
+def s_blips(lines, frames):
+    """CE's colours (enemy red, friend yellow) inside the rim on some frame when CE had blips"""
+    if not any(l["blips"] for l in lines):
+        return ["CE handed over no blip"]
+    line = lines[-1]
+    cx, cy, r = line["cx"], line["cy"], line["r"]
+    blip = lambda c: (c[0] > 180 and c[1] < 90 and c[2] < 90) or (c[0] > 180 and c[1] > 180 and c[2] < 90)
+    for w, h, rgb in frames:
+        for y in range(int(cy - r), int(cy + r), 2):
+            for x in range(int(cx - r), int(cx + r), 2):
+                if (x - cx) ** 2 + (y - cy) ** 2 < r * r and blip(rgb_at(rgb, w, x, y)):
+                    return []
+    return ["no blip in CE's colours inside the rim"]
+
+
+def s_contrast(line, frames):
+    """G3 on lit ground: across the inner ring and across the behind divider, the pixel that stands out most (its
+    blue line or its DARK keyline) against the ground just beside, >= 1.6"""
+    w, h, rgb = frames[-1]
+    cx, cy, r, inner = line["cx"], line["cy"], line["r"], line["inner"]
+    why = []
+    c45 = math.cos(math.radians(45))
+    ground = rgb_at(rgb, w, cx + (inner - 7) * c45, cy + (inner - 7) * c45)
+    across = [rgb_at(rgb, w, cx + (inner + d) * c45, cy + (inner + d) * c45) for d in (-3, -2, -1, 0, 1, 2, 3)]
+    best = max(contrast(c, ground) for c in across)
+    if best < 1.6:
+        why.append(f"inner ring {best:.2f}:1")
+    mid = (inner + r) / 2
+    beside = rgb_at(rgb, w, cx - 7, cy + mid)
+    best = max(contrast(rgb_at(rgb, w, cx + d, cy + mid), beside) for d in (-2, -1, 0, 1, 2, 3))
+    if best < 1.6:
+        why.append(f"behind divider {best:.2f}:1")
+    return why
+
+
+ZOOM_INPUT = "menu:" + ",".join(["wait"] * 16 + ["key:Z"] + ["wait"] * 6 + ["key:Z"] + ["wait"] * 20)
+SENSOR_CASES = {
+    "fov70": ("prisoner", {"HALO_FOV": "70"}, [s_base]),
+    "fov110": ("prisoner", {"HALO_FOV": "110"}, [s_base]),
+    "scoped": ("prisoner", {"HALO_FOV": "70", "HALO_NETWORK_TEST_LOADOUT": "5,3", "HALO_TEST_INPUT": ZOOM_INPUT}, [s_base]),
+    "bright": ("bloodgulch", {}, [s_base, s_contrast]),
+}
+
+
+def run_sensor(cfg, a, out):
+    results = {}
+    cases = a.cases if a.cases != ",".join(ENGINE_CASES) else ",".join(SENSOR_CASES)
+    for case in cases.split(","):
+        map_name, env, judges = SENSOR_CASES[case]
+        name = "sensor-" + case
+        env = dict(env, HALO_DEBUG_AE_PANEL_LOG="1")
+        spec = harness.parse_spec({"name": name, "build": a.build, "map": map_name, "start": 3, "bots": 3,
+                                   "bot_args": ["--move"], "window": "1920x1080", "exit_after": 36, "screenshots": 25,
+                                   "env": env, "expect": {"ticks": 300}})
+        r = harness.play(cfg, spec, out / name, None, a.keep_work, run_id=f"{out.name}-{name}")
+        debug = out / name / "debug.txt"
+        lines = sensor_lines(debug.read_text(errors="replace") if debug.exists() else "")
+        why = list(r.get("why") or [])
+        frames = [harness.read_png(p) for p in [out / name / s for s in r.get("shots", [])][2:]]
+        info = {}
+        if not lines:
+            why.append("no 'ae sensor:' line")
+        elif not frames:
+            why.append("no screenshot")
+        else:
+            for judge in judges:
+                why += judge(lines[-1], frames)
+            if map_name == "prisoner":      # (Blood Gulch's bots are often out of range)
+                why += s_blips(lines, frames)
+            info = {"half": sorted({l["half"] for l in lines}), "vfov": sorted({l["vfov"] for l in lines}),
+                    "r": lines[-1]["r"], "centre": (lines[-1]["cx"], lines[-1]["cy"])}
+            if case == "scoped" and len(info["vfov"]) < 2:
+                why.append("the camera's field of view never changed when zoomed")
+        status = "PASS" if r.get("status") == "PASS" and not why else "FAIL"
+        harness.log(f"  {name}: {status} {info}" + (f" ({'; '.join(why)})" if why else ""))
+        results[name] = {"status": status, "why": why, "info": info}
+    harness.write_json(out / "sensor.json", results)
+    return results
+
+
 def run_primitives(cfg, a, out):
     results = {}
     for map_name in a.maps.split(","):
@@ -562,7 +688,7 @@ def run_primitives(cfg, a, out):
 def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     harness.add_common_args(p)
-    p.add_argument("what", choices=("primitives", "engine", "pair", "groups"))
+    p.add_argument("what", choices=("primitives", "engine", "pair", "groups", "sensor"))
     p.add_argument("--cases", default=",".join(ENGINE_CASES), help="engine: the cases")
     p.add_argument("--seconds", type=int, default=50)
     p.add_argument("--build", required=True)
@@ -573,7 +699,7 @@ def main(argv):
     cfg = harness.load_config(a.config)
     out = harness.new_out_dir(cfg, "panel_checks", a.what, a.out_name)
     results = {"primitives": run_primitives, "engine": run_engine, "pair": run_pair,
-               "groups": run_groups}[a.what](cfg, a, out)
+               "groups": run_groups, "sensor": run_sensor}[a.what](cfg, a, out)
     failed = [n for n, r in results.items() if r["status"] != "PASS"]
     harness.log(f"panel_checks {a.what}: {len(results) - len(failed)} passed, {len(failed)} failed; results in {out}")
     return 1 if failed else 0
