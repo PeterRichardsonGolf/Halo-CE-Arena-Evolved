@@ -1131,6 +1131,13 @@ BITMAP_FRAMES = {
     f"{PE}/profile_options": [(XBOX_CONTROLLER_PICTURES, 4 + preset, 279, 279, 0, 34) for preset in range(5)],
 }
 
+# (Arena Evolved) frames of our own drawing in place of the PC version's that were placeholders, by bitmap and frame
+# number (a number past the PC version's frames is added after them): the Multiplayer screen's every entry, the Edit
+# Gametype screen's CHANGE NAME, ITEM, VEHICLE, TEAMPLAY, ARENA and NHE OPTIONS (tools/ae_menu_pictures.py)
+def own_frames() -> dict:
+    import ae_menu_pictures
+    return ae_menu_pictures.own_frames()
+
 # the titles this port has that the PC version has not, set as its headers
 # are (port/assets/menus/port_svg): bitmap name, text
 TITLES = {

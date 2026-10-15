@@ -23,6 +23,7 @@ high-res HUD's are (hud_hires.c).
 #include "platform.h"
 #include "port_config.h"
 #include "xgpu.h"
+#include "../game/ae_map_pictures.h" /* AE hook */
 
 #include "expat.h"
 
@@ -225,6 +226,7 @@ menus folder's, else the embedded one */
 static const unsigned char *file_data(const char *path, unsigned long *size)
 {
 	long index;
+	{ unsigned int ae_size = 0; const unsigned char *ae_picture = ae_map_picture_png(path, &ae_size); if (ae_picture) { *size = ae_size; return ae_picture; } } /* AE hook */
 
 	if (!path_inside_folder(path))
 	{

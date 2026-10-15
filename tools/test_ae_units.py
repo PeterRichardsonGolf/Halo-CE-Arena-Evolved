@@ -52,6 +52,10 @@ UNITS = {
     # (the DualSense's profiles, weapon states, powerups, trigger effect bytes, report framing and CRC)
     "ae_ds5_rules_test.c": ([SRC / "ae_ds5_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                         "-fno-sanitize-recover=all"], []),
+    # (a map's own picture beside its file: its path, the PNGs drawn; under the sanitizers, as the names and files
+    # are a player's)
+    "ae_map_picture_rules_test.c": ([UI / "ae_map_picture_rules.c"], ["-fsanitize=address,undefined",
+                                                                       "-fno-sanitize-recover=all"], []),
     # (the Settings list's pictures by entry)
     "ae_settings_test.c": ([UI / "ae_settings.c"], [], []),
     # (the item waypoints' pictures: the style, the fallback to text, a map's sprite checked, the sizes, a line's
