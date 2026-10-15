@@ -25,7 +25,8 @@ is written through a temporary file, so a crash leaves the old one or the
 new one, never half of one.
 
 The gametype lists show the custom gametypes in order
-(arena_gametypes_sort): by set (AE, AE COMP, Halo 1: NHE's, TRAINING:
+(arena_gametypes_sort): by block (arena_gametype_list_block: the free for all gametypes of AE, AE BR
+and AE COMP, then their team ones, then Halo 1: NHE's, TRAINING:
 arena_gametype_names.c), each in its table's order, then the player's own.
 */
 
@@ -1857,16 +1858,10 @@ void arena_gametypes_sort(
 			struct arena_gametype_info info;
 
 			/* (the sets in their order, then the player's own) */
-			if (arena_gametype_info(entry->name, &info))
-			{
-				entry->group = info.set;
-				entry->order = info.order;
-			}
-			else
-			{
-				entry->group = NUMBER_OF_ARENA_GAMETYPE_SETS;
-				entry->order = 0;
-			}
+			boolean known = arena_gametype_info(entry->name, &info);
+
+			entry->group = arena_gametype_list_block(known, &info);
+			entry->order = known ? info.order : 0;
 		}
 		places[entry_count++] = index;
 	}

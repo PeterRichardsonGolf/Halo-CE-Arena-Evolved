@@ -62,6 +62,13 @@ void arena_gametype_display_name(
 AE, AE BR, AE COMP and TRAINING sets; not an old name, not Halo 1: NHE's set):
 the one marker of AE's gametypes (game_engine.c's weapon set with a custom
 loadout); a player's own gametype only by taking a seed's name */
+/* the lists' block of a gametype (owner 2026-10-15): AE's, AE BR's and AE
+COMP's free for all gametypes (each set in its own order), then their team
+gametypes, then Halo 1: NHE's, TRAINING and the player's own; the sort's key */
+short arena_gametype_list_block(
+	boolean known,
+	struct arena_gametype_info const *info);
+
 boolean arena_gametype_has_ae_rules(
 	wchar_t const *stored_name);
 /* "AE", "AE BR", "AE COMP", "NHE", "TRAINING"; "" for none */
