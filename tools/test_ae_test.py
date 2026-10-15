@@ -348,24 +348,52 @@ class GametypeFile(unittest.TestCase):
                                                      "--name", "AE PRO TS", "--set", "0x1d=5"]), 0)
             self.assertEqual(gametype_file.find(Path(d) / "m", "AE PRO TS").read_bytes()[0x1D], 5)
 
+    @staticmethod
+    def universal_variant_offsets():
+        """struct universal_variant's fields as game_engine.h declares them: {name: offset in the file's variant}
+        (its byte, boolean, long, unsigned long and real fields, in order, each at its natural alignment)"""
+        import re
+        header = (Path(__file__).resolve().parent.parent / "source" / "game" / "game_engine.h").read_text()
+        body = header[header.index("struct universal_variant\n{"):]
+        body = body[:body.index("};")]
+        body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
+        sizes = {"boolean": 1, "byte": 1, "long": 4, "unsigned long": 4, "real": 4}
+        offsets, at = {}, 0
+        for kind, name in re.findall(r"^\s*(unsigned long|boolean|byte|long|real)\s+(\w+);", body, flags=re.M):
+            size = sizes[kind]
+            at = (at + size - 1) // size * size
+            offsets[name] = gametype_file.UNIVERSAL_VARIANT_OFFSET + at
+            at += size
+        return offsets
+
     def test_named_offsets(self):
+        # (every NAMED field where game_engine.h has it: pad5 0x2a COMBAT FEEDBACK / SILENT, pack_loadout 0x2b)
+        fields = self.universal_variant_offsets()
+        self.assertEqual(fields["teams"], 0x1C)
+        for name, offset in gametype_file.NAMED.items():
+            self.assertEqual(fields.get(name), offset, name)
         self.assertEqual(gametype_file.NAMED["weapon_pack"], 0x29)
-        self.assertEqual(gametype_file.NAMED["pack_loadout"], 0x2A)
-        self.assertEqual(gametype_file.NAMED["pack_map_spawns"], 0x2B)
+        self.assertEqual(gametype_file.NAMED["pad5"], 0x2A)
+        self.assertEqual(gametype_file.NAMED["pack_loadout"], 0x2B)
+        self.assertNotIn("pack_map_spawns", gametype_file.NAMED)
         self.assertEqual(gametype_file.NAMED["nhe_mode"], 0x1D)
         self.assertEqual(gametype_file.parse_set("weapon_pack=1"), (0x29, 1))
+        self.assertEqual(gametype_file.parse_set("pack_loadout=17"), (0x2B, 17))
         self.assertEqual(gametype_file.parse_set("0x2a=5"), (0x2A, 5))
         with self.assertRaises(SystemExit):
             gametype_file.parse_set("weapon_pak=1")
+        with self.assertRaises(SystemExit):
+            gametype_file.parse_set("pack_map_spawns=1")
         with tempfile.TemporaryDirectory(dir=Path.home()) as d:
             src = Path(d) / "src"
             self.make(src, "AE PRO TS", "AAAAAAAAAAAA")
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(gametype_file.main(["--from", str(src), "--to", str(Path(d) / "n"), "--name",
-                                                     "AE PRO TS", "--set", "weapon_pack=1", "--set", "0x2a=1",
-                                                     "--set", "pack_map_spawns=1"]), 0)
+                                                     "AE PRO TS", "--set", "weapon_pack=1", "--set",
+                                                     f"pack_loadout={1 | gametype_file.PACK_MAP_SPAWNS_BIT}"]), 0)
             b = gametype_file.find(Path(d) / "n", "AE PRO TS").read_bytes()
-            self.assertEqual(list(b[0x29:0x2C]), [1, 1, 1])
+            # (pad5 left alone)
+            self.assertEqual(list(b[0x29:0x2C]), [1, 0, 0x11])
             self.assertTrue(gametype_file.signed(b))
 
     def test_own_copy(self):

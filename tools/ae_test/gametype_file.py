@@ -2,7 +2,7 @@
 """gametype_file: a COPY of a save root with a saved gametype's variant bytes patched and signed again, for tests.
 
     python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3
-        (--set takes an offset or a field name: --set weapon_pack=1 --set pack_loadout=1)
+        (--set takes an offset or a field name: --set weapon_pack=1 --set pack_loadout=1; 0x11 adds BATTLE RIFLE ON MAP)
     python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "AE TEAM SLY" --own "TS 50"
         (--own: the copy gets one more saved gametype, --name's file saved again under that name, as a player's
         own made in the editor would be: its folder is the one the game keeps that name in, xbox_xapi.c's
@@ -33,9 +33,13 @@ KEY = b"halo-linux content signature\0"
 VARIANT_SIZE = 0x68
 SIGNATURE_SIZE = 20
 NAME_SIZE = 24
-# the variant's bytes by their field names in game_engine.h (struct universal_variant at 0x1c), for --set
+# the variant's bytes by their field names in game_engine.h (struct universal_variant at 0x1c), for --set.
+# pad5 (0x2a) is COMBAT FEEDBACK / the juggernaut's / SILENT; pack_loadout (0x2b, the old pad6) holds the slots'
+# sources in bits 0-3 and BATTLE RIFLE ON MAP in bit 4 (PACK_MAP_SPAWNS_BIT 0x10: no byte of its own)
+UNIVERSAL_VARIANT_OFFSET = 0x1C
 NAMED = {"nhe_mode": 0x1D, "starting_frags": 0x1E, "ball_melee": 0x1F, "weapon_pack": 0x29,
-         "pack_loadout": 0x2A, "pack_map_spawns": 0x2B}
+         "pad5": 0x2A, "pack_loadout": 0x2B}
+PACK_MAP_SPAWNS_BIT = 0x10
 
 
 def parse_set(text):
@@ -173,7 +177,7 @@ def main(argv):
     p.add_argument("--to", dest="to_root", required=True, help="a new folder for the patched copy")
     p.add_argument("--name", required=True, help="the gametype's stored name")
     p.add_argument("--set", action="append", default=[], help="OFFSET=BYTE (e.g. 0x1d=3) or NAME=BYTE (nhe_mode=3, weapon_pack, "
-                   "pack_loadout, pack_map_spawns, ...); repeat")
+                   "pad5, pack_loadout, ...); repeat")
     p.add_argument("--own", help="save --name's file again as the player's own gametype of this name (--set "
                    "patches that one)")
     a = p.parse_args(argv)
