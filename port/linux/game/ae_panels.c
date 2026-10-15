@@ -184,7 +184,7 @@ static void backing(short view, const struct ae_panel_rect *r)
 		(r->y1 - r->y0) / 2.0f, BACKING_PEAK);
 }
 
-/* CE's counter digits in the panels' fixed cells, keylined (or a zero count's outline) */
+/* CE's counter digits in the panels' fixed cells with the strip's glow (or a zero count's outline) */
 static void digits(short view, real x, real baseline, const wchar_t *text, const struct ae_panel_layout *l,
 	real alpha, boolean outline)
 {
@@ -192,7 +192,8 @@ static void digits(short view, real x, real baseline, const wchar_t *text, const
 	real_argb_color white;
 
 	memset(&options, 0, sizeof(options));
-	options.style = outline ? _ae_digits_outline : _ae_digits_keyline;
+	options.style = outline ? _ae_digits_outline : _ae_digits_glow;   /* the strip's digits (owner 10-15) */
+	options.glow_alpha = 0.85f;
 	options.cell_px = l->digit_cell;
 	options.fill_alpha = alpha;
 	tone(outline ? _ae_tone_white : _ae_tone_white, 1.0f, &white);

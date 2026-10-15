@@ -38,6 +38,7 @@ long game_time_get(void);
 #define LABEL_LEFT_OF_CENTRE 1.033f     /* x r: the label's left edge (1p x 142 for a centre at 237, r 92) */
 #define MAXIMUM_TAKEN_BLIPS 512
 #define AE_PI 3.14159265f
+#define CHEVRON_PX 14.0f   /* the player's chevron, px at scale 1 (owner 10-15: rev13's 10 read as a speck in play) */
 
 struct taken_blip { real x, y, fade, size; real rgb[3]; boolean custom; };
 static struct { struct taken_blip blips[MAXIMUM_TAKEN_BLIPS]; long count; real sensor_scale; } taken;
@@ -166,7 +167,7 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	real view_h = (real)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0) * ppu;
 	real half = ae_sensor_wedge_half_angle(render.camera.vertical_field_of_view, view_w, view_h);
 	real inner = ae_sensor_inner_ring(r);
-	real line = 1.5f * (k > 0.67f ? k : 0.67f);
+	real line = 1.6f * (k > 0.75f ? k : 0.75f);   /* the strip's line (1.6 px x scale) */
 	real sweep_r, sweep_a, seconds = (real)game_time_get() / 30.0f;
 	real_argb_color color;
 	char label_ascii[8];
@@ -179,31 +180,31 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 		return;
 	}
 	ae_hud_backing_draw(local_player_index, cx, cy, 1.18f * r, 1.18f * r, 0.45f);
-	ae_panel_draw_disc(cx, cy, r, _ae_tone_blue, 0.08f, FALSE);
+	ae_panel_draw_disc(cx, cy, r, _ae_tone_blue, 0.08f, FALSE);   /* (light, as the draft: the lines' dark shows) */
 	/* the view's wedge: its fill, then its two edges from the centre to the rim */
 	wedge_fill(cx, cy, r, half, 0.10f);
-	/* the inner ring at half the range (G3: 1.5 px at 0.60, keylined) */
-	ae_panel_draw_ring(cx, cy, inner, line, _ae_tone_blue, 0.60f, TRUE);
-	/* the dividers from the inner ring to the rim: left, right, behind; blue at 0.50 and a 1 px DARK line at 0.60 on
-	the lower / right side (G3); left and right hidden past a 75 degree half-angle (G4) */
+	/* the inner ring at half the range: the strip's recipe, the line at 0.70 */
+	ae_panel_draw_ring(cx, cy, inner, line, _ae_tone_blue, 0.70f, TRUE);
+	/* the dividers from the inner ring to the rim: left, right, behind, in the strip's recipe at 3/4 of the line;
+	left and right hidden past a 75 degree half-angle (G4) */
 	for (i = 0; i < 3; i++)
 	{
 		real ux = i == 0 ? -1.0f : i == 1 ? 1.0f : 0.0f, uy = i == 2 ? 1.0f : 0.0f;
-		real ox = i == 2 ? 1.0f : 0.0f, oy = i == 2 ? 0.0f : 1.0f;
 
 		if (i < 2 && !ae_sensor_side_dividers_shown(half))
 			continue;
-		ae_panel_draw_line(cx + ux * inner + ox, cy + uy * inner + oy, cx + ux * r + ox, cy + uy * r + oy, 1.0f,
-			_ae_tone_dark, 0.60f, FALSE);
-		ae_panel_draw_line(cx + ux * inner, cy + uy * inner, cx + ux * r, cy + uy * r, 1.0f, _ae_tone_blue, 0.50f,
-			FALSE);
+		ae_panel_draw_line(cx + ux * inner, cy + uy * inner, cx + ux * r, cy + uy * r, line * 0.75f, _ae_tone_blue,
+			0.55f, TRUE);
 	}
 	for (i = 0; i < 2; i++)
 	{
 		real angle = (-90.0f + (i ? half : -half)) * AE_PI / 180.0f;
 
-		ae_panel_draw_line(cx, cy, cx + r * (real)cos(angle), cy + r * (real)sin(angle), line, _ae_tone_blue, 0.70f,
-			TRUE);
+		/* (from the chevron's shoulder out: the lines never run under it) */
+		real from = CHEVRON_PX * (k > 0.8f ? k : 0.8f) * 0.45f;
+
+		ae_panel_draw_line(cx + from * (real)cos(angle), cy + from * (real)sin(angle), cx + r * (real)cos(angle),
+			cy + r * (real)sin(angle), line, _ae_tone_blue, 0.85f, TRUE);
 	}
 	/* the rim: the outline rule (1.5 px at 0.85, keylined both sides) */
 	ae_panel_draw_ring(cx, cy, r - line / 2.0f, line, _ae_tone_blue, 0.85f, TRUE);
@@ -211,19 +212,18 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	ae_sensor_sweep(seconds, r, &sweep_r, &sweep_a);
 	if (sweep_r > 1.0f)
 		ae_panel_draw_ring(cx, cy, sweep_r, 1.0f, _ae_tone_blue, sweep_a, FALSE);
-	/* the player: a solid chevron pointing up, 10 tall, keylined, its TIP on the wedge's point so the wedge's lines
-	end there and never cross it (rev13; owner 10-15: it read as an "x") */
+	/* the player: a solid chevron pointing up, CHEVRON_PX tall, centred on the wedge's point and drawn over the wedge's lines
+	with a strong soft dark rim, so the lines end at its shoulders (rev13's drawing; owner 10-15) */
 	{
-		real h = 10.0f * k;
+		real h = CHEVRON_PX * (k > 0.8f ? k : 0.8f);
 		real chevron[4][2];
 
-		chevron[0][0] = cx; chevron[0][1] = cy;
-		chevron[1][0] = cx + 0.45f * h; chevron[1][1] = cy + h;
-		chevron[2][0] = cx; chevron[2][1] = cy + 0.7f * h;
-		chevron[3][0] = cx - 0.45f * h; chevron[3][1] = cy + h;
-		/* the keyline 1 px round it, then the shape; both with soft edges (filled as a fan from the tip) */
-		color_of(_ae_tone_dark, 0.90f, &color);
-		ae_panel_fill_polygon_soft((const real (*)[2])chevron, 4, 1.0f, &color);
+		chevron[0][0] = cx; chevron[0][1] = cy - 0.55f * h;
+		chevron[1][0] = cx + 0.42f * h; chevron[1][1] = cy + 0.45f * h;
+		chevron[2][0] = cx; chevron[2][1] = cy + 0.18f * h;
+		chevron[3][0] = cx - 0.42f * h; chevron[3][1] = cy + 0.45f * h;
+		color_of(_ae_tone_dark, 0.92f, &color);
+		ae_panel_fill_polygon_soft((const real (*)[2])chevron, 4, 2.0f, &color);
 		color_of(_ae_tone_blue, 1.0f, &color);
 		ae_panel_fill_polygon_soft((const real (*)[2])chevron, 4, 0.0f, &color);
 	}

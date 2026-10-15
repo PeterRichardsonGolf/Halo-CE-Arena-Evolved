@@ -32,17 +32,24 @@ void platform_log(char const *format, ...);
 #define AE_BITMAP_GROUP_INTERFACE 4    /* _bitmap_group_type_interface_bitmaps */
 #define KEYLINE_ALPHA 0.90f
 #define LINE_ALPHA 0.85f
-#define LINE_WIDTH 1.5f
 #define CORNER_RADIUS 3.0f
 #define CORNER_STEPS 4
 #define LIT_ALPHA 0.94f
 #define SPENT_ALPHA 0.28f
-#define CELL_LOST_ALPHA 0.22f
-#define CELL_RIM_ALPHA 0.50f
-#define DIVIDER_ALPHA 0.67f
-#define BOX_FILL_BOTTOM 0.73f
 #define MAXIMUM_POINTS 64
 #define AE_PI 3.14159265f
+/* the score strip's recipe (ae_score_strip.c outline4 / draw_bar), which every panel follows (owner 10-15: "match the
+rest to the strip") */
+#define STRIP_UNDER 3.6f        /* the dark under-stroke's width, px x scale */
+#define STRIP_UNDER_MINIMUM 2.4f
+#define STRIP_UNDER_ALPHA 0.78f
+#define STRIP_LINE 1.6f         /* the line's width, px x scale */
+#define STRIP_LINE_MINIMUM 1.2f
+#define TRACK_ALPHA 0.35f       /* the dark track under a bar, a box, a lost cell */
+#define FILL_ALPHA 0.92f
+#define STRIP_DIVIDER_ALPHA 0.59f
+#define HALO_OFFSET 1.5f        /* the strip digits' glow: 4 passes this far out at half alpha */
+#define HALO_ALPHA 0.45f
 #define FEATHER 0.5f        /* half of the 1 px soft edge on every slanted or curved edge (no stair steps) */
 #define MAXIMUM_RING_STEPS 128
 
@@ -202,9 +209,8 @@ void ae_panel_fill_polygon_soft(const real (*points)[2], short count, real grow,
 	offset_polygon(points, count, grow - FEATHER, inner);
 	offset_polygon(points, count, grow + FEATHER, outer);
 	clear_of(color, &clear);
-	/* the inner shape as a fan from its first corner, then a 1 px ramp across every edge */
-	for (i = 1; i + 1 < count; i++)
-		triangle(inner[0], inner[i], inner[i + 1], color);
+	/* the inner shape as a fan from its middle, then a 1 px ramp across every edge */
+	fan((const real (*)[2])inner, count, color, 0.0f, 0.0f);
 	for (i = 0; i < count; i++)
 	{
 		real quad[4][2];
@@ -229,17 +235,15 @@ void ae_panel_draw_polygon(const real (*points)[2], short count, short tone, rea
 	fan(points, count, &color, 0.0f, 0.0f);
 }
 
-/* a polygon with its keyline: 8 DARK passes 1 px out, then the fill */
+/* a polygon with the strip's halo (a soft dark rim 1.5 px out), then the fill; both with soft edges */
 static void polygon_keyed(const real (*points)[2], short count, short tone, real alpha)
 {
 	real_argb_color dark, fill;
-	short i;
 
-	tone_color(_ae_tone_dark, KEYLINE_ALPHA, &dark);
+	tone_color(_ae_tone_dark, 0.60f, &dark);
 	tone_color(tone, alpha, &fill);
-	for (i = 0; i < 8; i++)
-		fan(points, count, &dark, around[i][0], around[i][1]);
-	fan(points, count, &fill, 0.0f, 0.0f);
+	ae_panel_fill_polygon_soft(points, count, HALO_OFFSET, &dark);
+	ae_panel_fill_polygon_soft(points, count, 0.0f, &fill);
 }
 
 /* the corners of a leaning box, clockwise on the screen: bottom-left, top-left, top-right, bottom-right */
@@ -330,74 +334,61 @@ static void rounded_band(const real corners[4][2], real radius, real d0, real d1
 	rounded_band_ramp(corners, radius, d0, d1, color, color);
 }
 
-/* the outline rule: keyline outside, the line, keyline inside; every edge 1 px soft (the keylines ramp out to nothing
-on their far side and run 0.5 px under the line, the line ramps into them) */
+/* the band d0..d1 of the rounded box with soft edges: solid inside, a 1 px ramp across each edge */
+static void rounded_band_soft(const real corners[4][2], real radius, real d0, real d1, const real_argb_color *color)
+{
+	real_argb_color clear;
+
+	if (d1 - d0 <= 0.0f)
+		return;
+	clear_of(color, &clear);
+	rounded_band_ramp(corners, radius, d0 - FEATHER, d0 + FEATHER, &clear, color);
+	if (d1 - d0 > 2.0f * FEATHER)
+		rounded_band(corners, radius, d0 + FEATHER, d1 - FEATHER, color);
+	rounded_band_ramp(corners, radius, d1 - FEATHER, d1 + FEATHER, color, &clear);
+}
+
+/* the strip's line and its under-stroke widths at a scale */
+static void strip_widths(real scale, real *line, real *under)
+{
+	*line = STRIP_LINE * scale;
+	*under = STRIP_UNDER * scale;
+	if (*line < STRIP_LINE_MINIMUM)
+		*line = STRIP_LINE_MINIMUM;
+	if (*under < STRIP_UNDER_MINIMUM)
+		*under = STRIP_UNDER_MINIMUM;
+}
+
+/* the outline rule = the strip's outline4: a wide soft dark under-stroke, then the line over its middle; the line's
+outer edge on the shape's edge */
 static void outline(const real corners[4][2], real scale, short line_tone, real line_alpha)
 {
-	real_argb_color dark, line, dark_clear, line_clear;
-	real w = LINE_WIDTH * scale;
-	real radius = CORNER_RADIUS * scale;
+	real_argb_color dark, line;
+	real w, under, radius = CORNER_RADIUS * scale, centre;
 
-	if (w < 1.0f)
-		w = 1.0f;
-	tone_color(_ae_tone_dark, KEYLINE_ALPHA, &dark);
+	strip_widths(scale, &w, &under);
+	centre = -w / 2.0f;
+	tone_color(_ae_tone_dark, STRIP_UNDER_ALPHA, &dark);
 	tone_color(line_tone, line_alpha, &line);
-	clear_of(&dark, &dark_clear);
-	clear_of(&line, &line_clear);
-	rounded_band(corners, radius, -FEATHER, 1.0f - FEATHER, &dark);
-	rounded_band_ramp(corners, radius, 1.0f - FEATHER, 1.0f + FEATHER, &dark, &dark_clear);
-	rounded_band(corners, radius, -w - 1.0f + FEATHER, -w + FEATHER, &dark);
-	rounded_band_ramp(corners, radius, -w - 1.0f + FEATHER, -w - 1.0f - FEATHER, &dark, &dark_clear);
-	if (w > 2.0f * FEATHER)
-		rounded_band(corners, radius, -w + FEATHER, -FEATHER, &line);
-	rounded_band_ramp(corners, radius, -FEATHER, FEATHER, &line, &line_clear);
-	rounded_band_ramp(corners, radius, -w + FEATHER, -w - FEATHER, &line, &line_clear);
+	rounded_band_soft(corners, radius, centre - under / 2.0f, centre + under / 2.0f, &dark);
+	rounded_band_soft(corners, radius, centre - w / 2.0f, centre + w / 2.0f, &line);
 }
 
 void ae_panel_draw_box(const struct ae_panel_para *box, real scale, real fill_alpha, short line_tone)
 {
 	real corners[4][2];
-	real w = LINE_WIDTH * scale;
+	real w, under;
 
-	if (w < 1.0f)
-		w = 1.0f;
+	strip_widths(scale, &w, &under);
 	para_corners(box, corners);
 	if (fill_alpha > 0.0f)
 	{
-		/* the fill, inside the line: HUD blue at fill_alpha at the top, x 0.73 at the bottom */
+		/* the fill: the strip's dark track (any fill asked for draws it) */
 		real inner[MAXIMUM_POINTS][2];
-		short count = rounded(corners, CORNER_RADIUS * scale, -w, inner), i;
-		real_argb_color top, bottom;
-		real centre[2] = { 0.0f, 0.0f };
+		real_argb_color track;
 
-		tone_color(_ae_tone_blue, fill_alpha, &top);
-		tone_color(_ae_tone_blue, fill_alpha * BOX_FILL_BOTTOM, &bottom);
-		for (i = 0; i < count; i++)
-		{
-			centre[0] += inner[i][0];
-			centre[1] += inner[i][1];
-		}
-		centre[0] /= (real)count;
-		centre[1] /= (real)count;
-		for (i = 0; i < count; i++)
-		{
-			real points[4][2];
-			real_argb_color colors[4];
-			short j = (short)((i + 1) % count), k;
-
-			points[0][0] = centre[0]; points[0][1] = centre[1];
-			points[1][0] = inner[i][0]; points[1][1] = inner[i][1];
-			points[2][0] = inner[j][0]; points[2][1] = inner[j][1];
-			points[3][0] = inner[j][0]; points[3][1] = inner[j][1];
-			for (k = 0; k < 4; k++)
-			{
-				real t = (points[k][1] - box->y0) / (box->y1 - box->y0 > 0.0f ? box->y1 - box->y0 : 1.0f);
-
-				colors[k] = top;
-				colors[k].alpha = top.alpha + (bottom.alpha - top.alpha) * (t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t);
-			}
-			ae_hud_fill_quad(points, colors);
-		}
+		tone_color(_ae_tone_dark, TRACK_ALPHA, &track);
+		fan((const real (*)[2])inner, rounded(corners, CORNER_RADIUS * scale, -w, inner), &track, 0.0f, 0.0f);
 	}
 	outline(corners, scale, line_tone, line_tone == _ae_tone_red ? 1.0f : LINE_ALPHA);
 }
@@ -444,41 +435,43 @@ void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real f
 	real overshield1, real overshield2, real fade)
 {
 	real corners[4][2];
-	real w = LINE_WIDTH * scale;
+	real w, under;
 	real_argb_color color, dark;
 	short cell;
 
-	if (w < 1.0f)
-		w = 1.0f;
+	strip_widths(scale, &w, &under);
 	para_corners(bar, corners);
+	/* the strip's bar: the dark track, the fill, the dividers, the outline */
+	tone_color(_ae_tone_dark, TRACK_ALPHA, &color);
+	bar_band(bar, w, 0.0f, 1.0f, 0.0f, 1.0f, &color);
 	if (fill > 0.0f)
 	{
-		tone_color(fill_tone, 0.96f * fade, &color);
+		tone_color(fill_tone, FILL_ALPHA * fade, &color);
 		bar_band(bar, w, 0.0f, fill > 1.0f ? 1.0f : fill, 0.0f, 1.0f, &color);
 	}
 	if (overshield1 > 0.0f)
 	{
 		real height = (bar->y1 - bar->y0) - 2.0f * w;
 
-		tone_color(_ae_tone_green, 0.96f, &color);
+		tone_color(_ae_tone_green, FILL_ALPHA, &color);
 		bar_band(bar, w, 0.0f, overshield1, 0.0f, 1.0f, &color);
-		tone_color(_ae_tone_green_edge, 0.96f, &color);
+		tone_color(_ae_tone_green_edge, FILL_ALPHA, &color);
 		bar_band(bar, w, 0.0f, overshield1, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	if (overshield2 > 0.0f)
 	{
-		tone_color(_ae_tone_white, 0.96f, &color);
+		tone_color(_ae_tone_white, FILL_ALPHA, &color);
 		bar_band(bar, w, 0.0f, overshield2, 0.0f, 0.38f, &color);
 	}
 	/* the dividers between 5 cells */
-	tone_color(_ae_tone_dark, DIVIDER_ALPHA, &dark);
+	tone_color(_ae_tone_dark, STRIP_DIVIDER_ALPHA, &dark);
 	for (cell = 1; cell < 5; cell++)
 	{
 		real inner_length = (bar->x1 - bar->x0) - 2.0f * w;
 		real x = bar->x0 + w + inner_length * (real)cell / 5.0f;
 		real top = bar->y0 + w, bottom = bar->y1 - w;
 
-		line_soft(x + bar->lean * (bottom - top), top, x, bottom, 1.0f, &dark);
+		line_soft(x + bar->lean * (bottom - top), top, x, bottom, w, &dark);
 	}
 	outline(corners, scale, line_tone, (line_tone == _ae_tone_red ? 1.0f : LINE_ALPHA) * fade);
 }
@@ -671,7 +664,8 @@ static void sheet_piece(struct bitmap_data const *bitmap, const real_rectangle2d
 		pc_art_map(pc_sequence, uv);
 	if (keyline_alpha > 0.0f)
 	{
-		pixel32 dark = tone_pixel(_ae_tone_dark, keyline_alpha);
+		/* the strip digits' glow: a soft halo, 8 passes HALO_OFFSET out at a share of the keyline's alpha */
+		pixel32 dark = tone_pixel(_ae_tone_dark, keyline_alpha * HALO_ALPHA);
 
 		for (pass = 0; pass < 8; pass++)
 		{
@@ -679,8 +673,8 @@ static void sheet_piece(struct bitmap_data const *bitmap, const real_rectangle2d
 
 			for (i = 0; i < 4; i++)
 			{
-				moved[i][0] = points[i][0] + around[pass][0];
-				moved[i][1] = points[i][1] + around[pass][1];
+				moved[i][0] = points[i][0] + around[pass][0] * HALO_OFFSET;
+				moved[i][1] = points[i][1] + around[pass][1] * HALO_OFFSET;
 			}
 			sheet_quad(bitmap, clip, moved, uv, dark);
 		}
@@ -896,8 +890,11 @@ void ae_panel_draw_ring(real cx, real cy, real radius, real width, short tone, r
 
 	if (keyline)
 	{
-		tone_color(_ae_tone_dark, KEYLINE_ALPHA * (alpha < 0.6f ? 0.67f : 1.0f), &color);
-		ring_band(cx, cy, radius - width / 2.0f - 1.0f, radius + width / 2.0f + 1.0f, &color);
+		/* the strip's under-stroke: 2.25 x the line's width */
+		real under = width * STRIP_UNDER / STRIP_LINE;
+
+		tone_color(_ae_tone_dark, STRIP_UNDER_ALPHA, &color);
+		ring_band(cx, cy, radius - under / 2.0f, radius + under / 2.0f, &color);
 	}
 	tone_color(tone, alpha, &color);
 	ring_band(cx, cy, radius - width / 2.0f, radius + width / 2.0f, &color);
@@ -921,9 +918,10 @@ void ae_panel_draw_line(real x0, real y0, real x1, real y1, real width, short to
 	{
 		real dx = x1 - x0, dy = y1 - y0, length = (real)sqrt(dx * dx + dy * dy);
 		real ux = length > 0.0f ? dx / length : 0.0f, uy = length > 0.0f ? dy / length : 0.0f;
+		real under = width * STRIP_UNDER / STRIP_LINE, ends = (under - width) / 2.0f;
 
-		tone_color(_ae_tone_dark, KEYLINE_ALPHA, &color);
-		line_soft(x0 - ux, y0 - uy, x1 + ux, y1 + uy, width + 2.0f, &color);
+		tone_color(_ae_tone_dark, STRIP_UNDER_ALPHA, &color);
+		line_soft(x0 - ux * ends, y0 - uy * ends, x1 + ux * ends, y1 + uy * ends, under, &color);
 	}
 	tone_color(tone, alpha, &color);
 	line_soft(x0, y0, x1, y1, width, &color);
@@ -947,24 +945,27 @@ void ae_panel_draw_x(real x, real baseline_y, real size, real scale, short tone)
 void ae_panel_draw_cell(const struct ae_panel_para *cell, boolean lit, short tone)
 {
 	real corners[4][2];
-	real alpha = lit ? LIT_ALPHA : CELL_LOST_ALPHA;
 	real_argb_color color, clear;
 	real inner[MAXIMUM_POINTS][2];
+	real under = STRIP_UNDER * (cell->y1 - cell->y0) / 10.0f;   /* (a cell is 10 px tall at scale 1) */
 
 	para_corners(cell, corners);
-	/* the keyline (as the art's: weaker under a dim fill), the fill, a lost cell's 1 px rim; edges 1 px soft */
-	tone_color(_ae_tone_dark, KEYLINE_ALPHA * (alpha + 0.15f > 1.0f ? 1.0f : alpha + 0.15f), &color);
-	clear_of(&color, &clear);
-	rounded_band(corners, 0.0f, -10.0f, 1.0f - FEATHER, &color);
-	rounded_band_ramp(corners, 0.0f, 1.0f - FEATHER, 1.0f + FEATHER, &color, &clear);
-	tone_color(lit ? tone : _ae_tone_blue, alpha, &color);
+	/* as the strip's round-mode cells: lit = the fill, lost = the dark track; the soft dark under-stroke round it */
+	if (under < STRIP_UNDER_MINIMUM)
+		under = STRIP_UNDER_MINIMUM;
+	tone_color(_ae_tone_dark, STRIP_UNDER_ALPHA, &color);
+	rounded_band_soft(corners, 0.0f, -under / 2.0f, under / 2.0f, &color);
+	if (lit)
+		tone_color(tone, FILL_ALPHA, &color);
+	else
+		tone_color(_ae_tone_dark, TRACK_ALPHA, &color);
 	clear_of(&color, &clear);
 	fan((const real (*)[2])inner, rounded(corners, 0.0f, -FEATHER, inner), &color, 0.0f, 0.0f);
 	rounded_band_ramp(corners, 0.0f, -FEATHER, FEATHER, &color, &clear);
 	if (!lit)
 	{
-		tone_color(_ae_tone_blue, CELL_RIM_ALPHA, &color);
-		rounded_band(corners, 0.0f, -1.0f, 0.0f, &color);
+		tone_color(tone == _ae_tone_red ? _ae_tone_red : _ae_tone_blue, LINE_ALPHA, &color);
+		rounded_band_soft(corners, 0.0f, -1.0f, 0.0f, &color);
 	}
 }
 
