@@ -409,3 +409,18 @@ port/linux/game/coop_spectate.c	if (ae_hud_style_bottom_text(text)) /* AE hook *
 port/linux/src/port_config.c	{ "debug.lone_pad_first", _config_boolean, "false", "HALO_DEBUG_LONE_PAD_FIRST", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/xinput_sdl.c	if (count == 1 && !ae_platform_lone_pad_first()) /* AE hook */
 port/linux/src/xinput_sdl.c	if (count == 1 && ae_platform_lone_pad_first() && pc_menu_split_players()) mask |= 1UL << 1; /* AE hook */
+# Custom Edition maps' button icons (0.2.6, owner 10-15: the carnage report's "=quit" / "=pick game" had no icon on
+# homobox@ce): upstream's ce_hud.c gives the map's message icons sheet the Xbox's icons from ui.map; it tells AE where
+# (ae_buttons_tags.c), whose PlayStation sprites are then drawn over them, and the menus' text icons (globals'
+# hud_msg_icons_sm, Halo PC's, without the Xbox's sequences) come from that sheet at the small sheet's size
+port/linux/game/ce_hud.c	#include "ae_buttons_tags.h" /* AE hook */
+port/linux/game/ce_hud.c	ae_buttons_ce_sheet(group, first_sequence, bitmap_count); /* AE hook */
+source/interface/ui_widget.c	#include "ae_buttons_tags.h" /* AE hook */
+source/interface/ui_widget.c	bitmap_group_index = ae_buttons_ce_menu_icons(bitmap_group_index); /* AE hook */
+source/interface/ui_widget.c	scale *= ae_buttons_ce_menu_icon_scale(bitmap_group_index); /* AE hook */
+# The carnage report's B asks first (0.2.6, owner 10-15: B dropped the player straight to the main menu, the next B
+# into "exit Halo?"): "LEAVE THE GAME?" over the report, A leaves as B did, B stays (ae_postgame.c; PC and Xbox menus
+# alike: one code path)
+source/game/game_engine.c	#include "ae_postgame.h" /* AE hook */
+source/game/game_engine.c	if (ae_postgame_buttons(test_any_gamepad_button(0) || test_any_gamepad_button(12), test_any_gamepad_button(1) || test_any_gamepad_button(13))) /* AE hook */\nbreak;
+source/game/game_engine.c	if (ae_postgame_confirm_draw(&bounds)) /* AE hook */\nreturn;

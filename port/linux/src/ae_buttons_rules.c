@@ -34,3 +34,10 @@ int ae_buttons_sprite_wanted(int playstation_now, unsigned int sprites, int sequ
 		return 0;
 	return pixels_match != 0;
 }
+
+int ae_buttons_ce_sequence(int sequence_index, int first_sequence)
+{
+	if (first_sequence < 0 || sequence_index < first_sequence)
+		return -1;
+	return sequence_index - first_sequence;
+}

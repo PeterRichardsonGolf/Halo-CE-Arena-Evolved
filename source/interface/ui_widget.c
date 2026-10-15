@@ -690,6 +690,7 @@ struct widget_instance;
 #include "halo_ui_map_list.h"
 #endif
 #include "ae_hooks.h" /* AE hook */
+#include "ae_buttons_tags.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 /* the in-game server browser (port/linux/game/browser_screen.c): a screen of
@@ -4345,6 +4346,7 @@ static void render_state_bitmap(
 			struct game_globals_interface_tag_references)
 		: NULL;
 	bitmap_group_index = interface_tag_references->interface_tag_references[_interface_bitmap_iface_map2].index;
+	bitmap_group_index = ae_buttons_ce_menu_icons(bitmap_group_index); /* AE hook */
 	frame_index = 0;
 	bitmap = NULL;
 	clip = NULL;
@@ -4362,6 +4364,7 @@ static void render_state_bitmap(
 		/* port: the sprite from a high-res texture, if it has one */
 		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index);
 		scale = hud_globals_get_scale(local_player_count() > 1);
+		scale *= ae_buttons_ce_menu_icon_scale(bitmap_group_index); /* AE hook */
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0 + 1.0f);
 		point.y = (short)(cursor_bounds->y1 - icon->offset.y * scale - 2.0f);
 		hud_draw_bitmap_direct(

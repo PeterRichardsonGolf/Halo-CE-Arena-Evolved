@@ -49,6 +49,7 @@ hud_definitions.hpp agrees).
 #include "bitmaps/bitmaps.h"
 #include "rasterizer/rasterizer_swizzle.h"
 #include "rasterizer/xbox/rasterizer_xbox_hardware_bitmaps.h"
+#include "ae_buttons_tags.h" /* AE hook */
 
 /* (the port's zlib, as cache_files_decompress_windows.c inflates the maps with) */
 #include "../../port/third_party/zlib/zlib_prefixed.h"
@@ -738,6 +739,7 @@ static void ce_hud_button_icons(
 		ce_hud_button_icon_groups[ce_hud_button_icon_group_count].bitmap_group = group;
 		ce_hud_button_icon_groups[ce_hud_button_icon_group_count].first_sequence = first_sequence;
 		ce_hud_button_icon_group_count++;
+		ae_buttons_ce_sheet(group, first_sequence, bitmap_count); /* AE hook */
 	}
 	else
 	{

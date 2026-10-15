@@ -604,6 +604,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_hit_feedback.h" /* AE hook */
 #include "ae_juggernaut.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
+#include "ae_postgame.h" /* AE hook */
 #include "ae_scoreboard_header.h" /* AE hook */
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
@@ -3071,6 +3072,8 @@ void game_engine_post_rasterize_post_game(
 			-render.camera.viewport_bounds.y0);
 		draw_string_set_tab_stops(NULL, 0);
 		draw_string_set_color(&prompt_color);
+		if (ae_postgame_confirm_draw(&bounds)) /* AE hook */
+			return;
 
 		server = global_network_game_server_get();
 		if (server)
@@ -5752,6 +5755,8 @@ void game_engine_update_non_deterministic(
 			if (game_engine_globals.postgame_progress > 1.0f)
 				game_engine_globals.postgame_progress = 1.0f;
 
+			if (ae_postgame_buttons(test_any_gamepad_button(0) || test_any_gamepad_button(12), test_any_gamepad_button(1) || test_any_gamepad_button(13))) /* AE hook */
+				break;
 			if (test_any_gamepad_button(0) || test_any_gamepad_button(12))
 			{
 				if (global_network_game_server_get())

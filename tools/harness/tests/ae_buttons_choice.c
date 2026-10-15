@@ -61,6 +61,19 @@ int main(int argc, char **argv)
 		CHECK(!ae_buttons_sprite_wanted(1, 0xFFFFFFFFu, 32, 1), "a sequence past 31 taken");
 		return 0;
 	}
+	/* a Custom Edition map's message icons: the Xbox's sequences (from ui.map) after the map's own 20 */
+	CASE("ce_sequence")
+	{
+		CHECK(ae_buttons_ce_sequence(20, 20) == 0, "the first of the Xbox's sequences is not A's");
+		CHECK(ae_buttons_ce_sequence(23, 20) == 3, "the fourth of the Xbox's sequences is not Y's");
+		CHECK(ae_buttons_ce_sequence(1, 20) == -1, "one of the map's own sequences taken for the Xbox's");
+		CHECK(ae_buttons_ce_sequence(1, -1) == -1, "a sequence taken with no Xbox icons in the map");
+		CHECK(ae_buttons_sprite_wanted(1, 0xFu, ae_buttons_ce_sequence(21, 20), 1),
+			"B's sprite of the Xbox's copy not taken with a PlayStation pad");
+		CHECK(!ae_buttons_sprite_wanted(1, 0xFu, ae_buttons_ce_sequence(2, 20), 1),
+			"the map's own sequence 2 drawn as the PlayStation square");
+		return 0;
+	}
 	fprintf(stderr, "no case %s\n", case_name);
 	return 2;
 }
