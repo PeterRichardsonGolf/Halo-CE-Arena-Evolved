@@ -1,8 +1,9 @@
 /*
 AE_MAP_PICTURES.H
 
-A map's own picture on the map select screen, the lobby and the map lists
-(the rows of port/linux/game/ui_map_list.c): a PNG in a "previews" folder
+A map's own picture on the PC menus' (display.menus "pc") map select screen
+and lobby (port/linux/game/menu_functions.c; the Xbox menus are upstream's and
+keep theirs): a PNG in a "previews" folder
 beside the map's file (ae_map_picture_rules.h), shipped with the map, as AE's
 map pack ships its maps' pictures. A map past the Xbox's thirteen (an Xbox v5
 community map, a Custom Edition or HaloMD map) that has one shows it in place
@@ -23,7 +24,8 @@ a run, as the maps are.
 
 struct bitmap_data;
 
-/* the bitmap frame of a row's map's own picture (ui_map_list_picture_index), or NONE: none, or a stock map */
+/* the bitmap frame of a map's own picture (the PC menus' map select and lobby), or NONE: none, a stock map, or
+the Xbox menus (display.menus not "pc") */
 short ae_map_picture_frame(char const *map_name);
 
 /* the bitmap of a frame of ae_map_picture_frame's (ui_map_list_picture), or NULL for any other frame */

@@ -23,6 +23,7 @@ A map's own picture beside its file, on the map select screen (ae_map_pictures.h
 #include <string.h>
 
 void platform_log(char const *format, ...);
+char const *config_string(char const *name);
 
 enum
 {
@@ -173,6 +174,12 @@ short ae_map_picture_frame(char const *map_name)
 {
 	short index;
 
+	char const *menus = config_string("display.menus");
+
+	/* (only the PC menus' (display.menus "pc"): the Xbox menus are upstream's, as they were; the PC menus' code is
+	the only caller, this is the guard should one be added elsewhere) */
+	if (!menus || _stricmp(menus, "pc"))
+		return NONE;
 	/* (the stock maps: the loaded ui.map's own pictures) */
 	if (!map_name || !map_name[0] || (!strchr(map_name, '@') && !native_map_is_custom(map_name)))
 		return NONE;

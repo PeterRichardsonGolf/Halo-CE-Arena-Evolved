@@ -1350,6 +1350,7 @@ static void map_description_show(struct widget_instance *description, short leve
 		{
 #ifdef HALO_CUSTOM_EDITION
 			widget->animation.current_frame_index = ui_map_list_picture_index(map);
+			if (ae_map_picture_frame(multiplayer_map_names[map]) != NONE) widget->animation.current_frame_index = ae_map_picture_frame(multiplayer_map_names[map]); /* AE hook */
 #else
 			widget->animation.current_frame_index = ui_map_list_xbox_picture(multiplayer_map_names[map], NULL);
 #endif
