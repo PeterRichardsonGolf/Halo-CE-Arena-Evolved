@@ -79,6 +79,7 @@ struct ae_strip_layout {
 #define AE_STRIP_MARKER_WIDTH 13.0f
 #define AE_STRIP_MARKER_HEIGHT 6.76f      /* 13 x 0.52 */
 #define AE_STRIP_MARKER_RISE 31.0f        /* the marker's tip above the score baseline */
+#define AE_STRIP_MARKER_CLEAR 6.0f        /* a context / lead line wide enough to reach over the marker: this far above it */
 #define AE_STRIP_LEAN 0.46f
 #define AE_STRIP_TEXT_FLOOR 12.0f
 #define AE_STRIP_QUARTER_TEXT_FLOOR 14.0f /* quarter views (s under 0.8), 14.15 part 6 */

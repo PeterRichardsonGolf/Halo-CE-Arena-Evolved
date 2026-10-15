@@ -359,6 +359,25 @@ static void test_me_color(void)
 	AE_CHECK(!ae_score_strip_me_color(NULL, &out) && is_white(&out));
 }
 
+static void test_wide_context_clears_the_marker(void)
+{
+	struct ae_strip_snapshot s; struct ae_strip_model m; struct ae_strip_layout l;
+	struct ae_strip_geometry g = { 0, 0, 1920, 1080, 1.0f, 998.0f, 1600.0f, 960.0f };
+
+	/* ("YOU ARE THE JUGGERNAUT" reaches over my score: its foot 6 above the marker's top, not 40 above the baseline
+	and touching it) */
+	memset(&s, 0, sizeof(s));
+	s.mode = _ae_strip_juggernaut; s.score_to_win = 15; s.clock_seconds = 801; s.me.team_index = -1;
+	s.other.team_index = -1; s.me.place = 1; s.hill_move_seconds = -1; s.next_flag_meters = -1; s.respawns_left = -1;
+	s.context_side = _ae_strip_side_me; wcscpy(s.context_name, L"me");
+	lay(&s, &g, &m, &l);
+	AE_CHECK(l.marker.visible && l.context.visible);
+	AE_CHECK(l.context.x < right(&l.marker) && l.marker.x < right(&l.context));
+	AE_CHECK(NEAR(bottom(&l.context), l.marker.y - 6.0f));
+	AE_CHECK(bottom(&l.context) < 979.0f - 40.0f);
+	/* (a narrow line clear of the marker stays where it was: the team slayer test's lead at 939) */
+}
+
 int main(void)
 {
 	test_me_color();
@@ -374,6 +393,7 @@ int main(void)
 	test_quarter_view_floors_and_long_names();
 	test_clock_cell();
 	test_bad_input();
+	test_wide_context_clears_the_marker();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures != 0;
 }

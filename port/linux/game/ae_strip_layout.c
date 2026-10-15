@@ -229,6 +229,15 @@ static void span_box(struct ae_strip_box *box, real x, real bottom, real w, real
 	box->x = x; box->y = bottom - h; box->w = w; box->h = h; box->visible = visible;
 }
 
+static void lift_over_marker(struct ae_strip_box *line, const struct ae_strip_box *marker, real k)
+{
+	real lowest = marker->y - AE_STRIP_MARKER_CLEAR * k;
+
+	if (line->visible && marker->visible && line->x < marker->x + marker->w && marker->x < line->x + line->w &&
+		line->y + line->h > lowest)
+		line->y = lowest - line->h;
+}
+
 void ae_strip_layout_compute(const struct ae_strip_model *model, const struct ae_strip_geometry *geometry,
 	real (*measure_digits)(const wchar_t *text, real cap_px), real (*measure_text_function)(const wchar_t *text,
 	real px), struct ae_strip_layout *layout)
@@ -323,6 +332,10 @@ void ae_strip_layout_compute(const struct ae_strip_model *model, const struct ae
 	span_box(&layout->marker, layout->left_score.x + e.l.score / 2.0f - AE_STRIP_MARKER_WIDTH * k / 2.0f,
 		base - AE_STRIP_MARKER_RISE * k, AE_STRIP_MARKER_WIDTH * k, AE_STRIP_MARKER_HEIGHT * k,
 		(boolean)(model->marker_left && has_text(&model->left_score)));
+	/* a wide context / lead line ("YOU ARE THE JUGGERNAUT") reaches over the marker: lift it clear (the narrow ones
+	stay 40 above the baseline) */
+	lift_over_marker(&layout->context, &layout->marker, k);
+	lift_over_marker(&layout->lead, &layout->marker, k);
 
 	/* pips: rounds to win, centred under each score */
 	w = pips ? (AE_STRIP_PIP_PITCH * (real)(model->pips_total - 1) + AE_STRIP_PIP_WIDTH) * k : 0.0f;
