@@ -159,13 +159,13 @@ static void test_magazine_1p(void)
 		if (row)
 			AE_NEAR(l.round[row * 20].y - (l.round[row * 20 - 1].y + l.round[0].height), 4, 0.01);  /* rows 4 apart */
 		for (i = 0; i < 20; i++)
-			AE_CHECK(l.round[row * 20 + i].lit == (i < 3));                 /* 9 of 60: three columns */
+			AE_CHECK(l.round[row * 20 + i].lit == (row == 0 && i < 9));     /* 9 of 60: the top row's first 9 (CE's) */
 	}
 	/* sniper: lying, left-aligned, CE's spacing */
 	weapon(&m, _ae_hint_sniper, 4, 3, 8); ae_panel_layout_build(&m, &metrics, &v, &l);
 	AE_CHECK(l.round_count == 4); AE_CHECK(l.round[0].height <= 30.01f);
 	AE_NEAR(l.round[1].x - l.round[0].x, l.round_width * metrics.art[_ae_art_sniper].pitch, 0.01);
-	AE_CHECK(!l.round[1].lit && l.round[0].lit && l.round[2].lit && l.round[3].lit);
+	AE_CHECK(l.round[0].lit && l.round[1].lit && l.round[2].lit && !l.round[3].lit);   /* the bottom row's right */
 	AE_CHECK(l.round[1].x + l.round_width <= left_line(&l, l.round[1].y + l.round[1].height) + 301 +
 		AE_PANEL_LEAN * l.round[1].height + 0.01f);
 	/* rockets: 2 lying, left-aligned, never past the right line */

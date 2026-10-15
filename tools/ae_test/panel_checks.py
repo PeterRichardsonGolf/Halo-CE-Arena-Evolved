@@ -322,6 +322,211 @@ def run_pair(cfg, a, out):
     return {"pair": result}
 
 
+LAYOUT_LINE = re.compile(
+    r"ae panels: tick (?P<tick>\d+) view (?P<view>\d+) state=(?P<state>\w+) "
+    r"number_box=(?P<nb>[-\d.,]+) grenade_box=(?P<gb>[-\d.,]+) baseline=(?P<baseline>[-\d.]+) cap=(?P<cap>[\d.]+) "
+    r"rounds=(?P<rounds>\d+) round0=(?P<round0>[-\d.,]+) lit=(?P<lit>\d+) red=(?P<red>\d) bar=(?P<bar>[-\d.,]+) "
+    r"shield_bar=(?P<sb>[-\d.,]+) icon=(?P<icon>[-\d.,]+) cell0=(?P<cells>[-\d.,]+) cross=(?P<cross>[-\d.,]+) "
+    r"buffs=(?P<buffs>\d+) buff0=(?P<buff0>[-\d.,]+) shield_red=(?P<shield_red>\d) held=(?P<held>\d+)")
+
+
+def layout_lines(text, view="0"):
+    out = []
+    for m in LAYOUT_LINE.finditer(text):
+        if m["view"] != view:
+            continue
+        line = m.groupdict()
+        for key in ("nb", "gb", "round0", "bar", "sb", "icon", "cells", "cross", "buff0"):
+            line[key] = [float(v) for v in line[key].split(",")]
+        for key in ("tick", "rounds", "lit", "red", "buffs", "shield_red", "held"):
+            line[key] = int(line[key])
+        out.append(line)
+    return out
+
+
+def rgb_at(rgb, w, x, y):
+    i = (int(y) * w + int(x)) * 3
+    return rgb[i], rgb[i + 1], rgb[i + 2]
+
+
+def is_blue(c):
+    return c[2] > 190 and 120 < c[0] < 215 and c[1] > 170 and c[2] - c[0] > 25
+
+
+def is_red(c):
+    return c[0] > 190 and c[1] < 130 and c[2] < 130
+
+
+def is_green(c):
+    return c[1] > 190 and c[0] < 190 and c[1] - c[2] > 40
+
+
+def any_near(rgb, w, h, x, y, test, r=2):
+    return any(test(rgb_at(rgb, w, xx, yy)) for xx in range(int(x) - r, int(x) + r + 1)
+               for yy in range(int(y) - r, int(y) + r + 1) if 0 <= xx < w and 0 <= yy < h)
+
+
+def relative_luminance(c):
+    def ch(v):
+        v /= 255.0
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    return 0.2126 * ch(c[0]) + 0.7152 * ch(c[1]) + 0.0722 * ch(c[2])
+
+
+def contrast(a, b):
+    la, lb = sorted((relative_luminance(a), relative_luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def ring_median(rgb, w, h, box, gap=6, width=6):
+    """the median colour of a ring round a box (the local ground)"""
+    x0, y0, x1, y1 = box
+    px = []
+    for y in range(int(y0) - gap - width, int(y1) + gap + width):
+        for x in range(int(x0) - gap - width, int(x1) + gap + width):
+            inside = x0 - gap <= x <= x1 + gap and y0 - gap <= y <= y1 + gap
+            if not inside and 0 <= x < w and 0 <= y < h:
+                px.append(rgb_at(rgb, w, x, y))
+    px.sort(key=relative_luminance)
+    return px[len(px) // 2] if px else (0, 0, 0)
+
+
+def para_mid_left(box):
+    """a leaning box's left edge x at its middle row (box = x0, y0, x1, y1 with the bottom edge x0..x1)"""
+    x0, y0, x1, y1 = box
+    return x0 + 0.46 * (y1 - y0) / 2
+
+
+# the groups' cases: (map, env, judge(line, frames) -> why)
+def g_base(line, frames):
+    why = []
+    if line["held"] <= 0:
+        why.append("CE's own panels were not held back (held=0)")
+    nb = line["nb"]
+    if not any(any_near(rgb, w, h, para_mid_left(nb) + 0.7, (nb[1] + nb[3]) / 2, is_blue) for w, h, rgb in frames):
+        why.append(f"no HUD-blue outline at the number box's left edge ({para_mid_left(nb):.0f}, {(nb[1] + nb[3]) / 2:.0f})")
+    if line["rounds"]:
+        x, y, hh = line["round0"]
+        if not any(any_near(rgb, w, h, x + 0.3 * hh, y + hh / 2, lambda c: is_blue(c) or is_red(c), 2)
+                   for w, h, rgb in frames):
+            why.append("no round at the first round's place")
+    sb = line["sb"]
+    if not any(any_near(rgb, w, h, sb[0] + 30, (sb[1] + sb[3]) / 2, lambda c: is_blue(c) or is_green(c) or is_red(c), 2)
+               for w, h, rgb in frames):
+        why.append("no shield bar fill")
+    if line["buffs"] and abs(line["buff0"][0] - sb[2]) > 1:
+        why.append(f"the buff rows' right {line['buff0'][0]} is not the bar's {sb[2]}")
+    return why
+
+
+def g_low(line, frames):
+    x, y, hh = line["round0"]
+    reds = sum(1 for w, h, rgb in frames if any_near(rgb, w, h, x + 0.3 * hh, y + hh / 2, is_red, 2))
+    blues = sum(1 for w, h, rgb in frames if any_near(rgb, w, h, x + 0.3 * hh, y + hh / 2, is_blue, 2))
+    return [] if reds and blues else [f"low ammo: red on {reds} frames, blue on {blues} (want both)"]
+
+
+def g_hot(line, frames):
+    b = line["bar"]
+    if not b[0]:
+        return ["no heat bar"]
+    return [] if any(any_near(rgb, w, h, b[1] + 40, (b[2] + b[4]) / 2, is_red, 2) for w, h, rgb in frames) else \
+        ["the overheated bar is not red"]
+
+
+def g_shield_down(line, frames):
+    sb = line["sb"]
+    return [] if any(any_near(rgb, w, h, sb[2] - 0.46 * (sb[3] - sb[1]) / 2 - 0.7, (sb[1] + sb[3]) / 2, is_red, 2)
+                     for w, h, rgb in frames) else ["the empty shield's outline is never red"]
+
+
+def g_overshield(line, frames):
+    sb = line["sb"]
+    return [] if any(any_near(rgb, w, h, sb[0] + 60, (sb[1] + sb[3]) / 2 + 3, is_green, 2) for w, h, rgb in frames) \
+        else ["no green overshield fill"]
+
+
+def g_camo(line, frames):
+    if line["buffs"] < 1:
+        return ["no own-buff row"]
+    right, base, px = line["buff0"]
+    white = lambda c: min(c) > 200
+    return [] if any(any(white(rgb_at(rgb, w, x, y)) for x in range(int(right - 4 * px), int(right))
+                         for y in range(int(base - 0.7 * px), int(base))) for w, h, rgb in frames) else \
+        ["no white text in the own-buff row"]
+
+
+def g_bright(line, frames):
+    """Review Focus 9 on lit sand: the digits >= 4.5 and the lit rounds >= 3 against the local ground; the unarmed
+    pair's keyline present (G2)"""
+    why = []
+    w, h, rgb = frames[-1]
+    nb = line["nb"]
+    ground = ring_median(rgb, w, h, (nb[0], nb[1], nb[2] + 0.46 * (nb[3] - nb[1]), nb[3]))
+    digits = max((rgb_at(rgb, w, x, y) for x in range(int(nb[0]), int(nb[2])) for y in range(int(nb[1]), int(nb[3]))),
+                 key=relative_luminance)
+    c = contrast(digits, ground)
+    if c < 4.5:
+        why.append(f"digits {c:.2f}:1 against the ground {ground}")
+    if line["rounds"]:
+        x, y, hh = line["round0"]
+        lit = max((rgb_at(rgb, w, xx, yy) for xx in range(int(x), int(x + 0.6 * hh)) for yy in range(int(y), int(y + hh))),
+                  key=relative_luminance)
+        # (against the ground round the whole magazine block: next to a round is another round)
+        block = (x - 0.46 * 2 * (hh + 4), y, nb[0] + 301 + 20, y + 3 * hh + 8)
+        cr = contrast(lit, ring_median(rgb, w, h, block, 6, 6))
+        if cr < 3.0:
+            why.append(f"lit round {cr:.2f}:1")
+    gb = line["gb"]
+    darks = sum(1 for xx in range(int(gb[0] + 70), int(gb[2])) for yy in range(int(gb[1]), int(gb[3]))
+                if relative_luminance(rgb_at(rgb, w, xx, yy)) < 0.01)
+    if darks < 15:
+        why.append(f"the unarmed pair has no keyline ({darks} dark px)")
+    return why
+
+
+GROUP_CASES = {
+    "ar": ("prisoner", {"HALO_NETWORK_TEST_LOADOUT": "2,3"}, [g_base]),
+    "low": ("prisoner", {"HALO_NETWORK_TEST_LOADOUT": "2,3", "HALO_DEBUG_AE_PANEL_STATE": "low"}, [g_base, g_low]),
+    "hot": ("prisoner", {"HALO_NETWORK_TEST_LOADOUT": "8,7", "HALO_DEBUG_AE_PANEL_STATE": "overheated"},
+            [g_base, g_hot]),
+    "shield_down": ("prisoner", {"HALO_DEBUG_AE_PANEL_STATE": "shield_down"}, [g_shield_down]),
+    "overshield": ("prisoner", {"HALO_DEBUG_AE_PANEL_STATE": "overshield1"}, [g_base, g_overshield]),
+    "camo": ("prisoner", {"HALO_DEBUG_AE_PANEL_STATE": "camo"}, [g_base, g_camo]),
+    "bright": ("bloodgulch", {"HALO_NETWORK_TEST_LOADOUT": "2,3"}, [g_base, g_bright]),
+}
+
+
+def run_groups(cfg, a, out):
+    results = {}
+    cases = a.cases if a.cases != ",".join(ENGINE_CASES) else ",".join(GROUP_CASES)
+    for case in cases.split(","):
+        map_name, env, judges = GROUP_CASES[case]
+        name = "groups-" + case
+        env = dict(env, HALO_DEBUG_AE_PANEL_LOG="1")
+        spec = harness.parse_spec({"name": name, "build": a.build, "map": map_name, "start": 3, "bots": 1,
+                                   "window": "1920x1080", "exit_after": 32, "screenshots": 25, "env": env,
+                                   "expect": {"ticks": 300}})
+        r = harness.play(cfg, spec, out / name, None, a.keep_work, run_id=f"{out.name}-{name}")
+        debug = out / name / "debug.txt"
+        lines = layout_lines(debug.read_text(errors="replace") if debug.exists() else "")
+        why = list(r.get("why") or [])
+        pngs = [out / name / s for s in r.get("shots", [])][2:]
+        frames = [harness.read_png(p) for p in pngs]
+        if not lines:
+            why.append("no 'ae panels:' line")
+        elif not frames:
+            why.append("no screenshot")
+        else:
+            for judge in judges:
+                why += judge(lines[-1], frames)
+        status = "PASS" if r.get("status") == "PASS" and not why else "FAIL"
+        harness.log(f"  {name}: {status}" + (f" ({'; '.join(why)})" if why else ""))
+        results[name] = {"status": status, "why": why}
+    harness.write_json(out / "groups.json", results)
+    return results
+
+
 def run_primitives(cfg, a, out):
     results = {}
     for map_name in a.maps.split(","):
@@ -357,7 +562,7 @@ def run_primitives(cfg, a, out):
 def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     harness.add_common_args(p)
-    p.add_argument("what", choices=("primitives", "engine", "pair"))
+    p.add_argument("what", choices=("primitives", "engine", "pair", "groups"))
     p.add_argument("--cases", default=",".join(ENGINE_CASES), help="engine: the cases")
     p.add_argument("--seconds", type=int, default=50)
     p.add_argument("--build", required=True)
@@ -367,7 +572,8 @@ def main(argv):
         raise SystemExit("panel_checks: run it on the box itself (ssh halo-build), with --build a path or commit there")
     cfg = harness.load_config(a.config)
     out = harness.new_out_dir(cfg, "panel_checks", a.what, a.out_name)
-    results = {"primitives": run_primitives, "engine": run_engine, "pair": run_pair}[a.what](cfg, a, out)
+    results = {"primitives": run_primitives, "engine": run_engine, "pair": run_pair,
+               "groups": run_groups}[a.what](cfg, a, out)
     failed = [n for n, r in results.items() if r["status"] != "PASS"]
     harness.log(f"panel_checks {a.what}: {len(results) - len(failed)} passed, {len(failed)} failed; results in {out}")
     return 1 if failed else 0

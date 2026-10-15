@@ -416,3 +416,17 @@ source/interface/hud_unit.c	if (unit_count == 0 && !clock_shown && ae_hud_style_
 source/interface/hud_unit.c	if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->health_meter.meter, &hud_definition->health_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
 source/interface/hud_item_timers.c	boolean hud_item_timers_ae_meters(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_meters[v].valid) return FALSE; *b = hud_item_timers_meters[v].bounds; return TRUE; } /* AE hook */
 port/linux/src/port_config.c	{ "debug.ae_panel_powerups", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_POWERUPS", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud_draw.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_draw.c	if (ae_panels_hiding_ce()) return; /* AE hook */
+source/interface/hud_draw.c	if (ae_panels_hiding_ce()) return; /* AE hook */
+source/interface/hud_weapon.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(TRUE); /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(FALSE); /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(TRUE); /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(FALSE); /* AE hook */
+source/interface/hud_unit.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_unit.c	ae_panels_hide_ce(unit_count == 0 && hud_unit != NULL && unit_hud_indices[unit_count] != NONE); /* AE hook */
+source/interface/hud_unit.c	ae_panels_hide_ce(FALSE); /* AE hook */
+source/interface/hud.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud.c	ae_panels_draw(render.local_player_index); /* AE hook */
+port/linux/src/port_config.c	{ "debug.ae_panel_state", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_STATE", _environment_value, /* AE hook */\n_platform_all,

@@ -138,33 +138,21 @@ static short art_for_hint(short hint)
 
 void ae_panel_model_row_lit(const short *rows, short row_count, short lit, short out_lit[AE_PANEL_MAXIMUM_ROWS])
 {
-	short i, total = 0, spent, column, longest = 0;
+	short i, left = lit > 0 ? lit : 0;
 
 	for (i = 0; i < AE_PANEL_MAXIMUM_ROWS; i++)
 		out_lit[i] = 0;
-	if (row_count <= 0)
-		return;
 	if (row_count > AE_PANEL_MAXIMUM_ROWS)
 		row_count = AE_PANEL_MAXIMUM_ROWS;
+	/* CE's order (seen on its part-spent assault rifle, 2026-10-15): the rounds fill row by row from the TOP row's
+	left, so they go out from the BOTTOM row's right end, a row at a time */
 	for (i = 0; i < row_count; i++)
 	{
 		short n = rows[i] > 0 ? rows[i] : 0;
-		out_lit[i] = n;
-		total = (short)(total + n);
-		if (n > longest)
-			longest = n;
+
+		out_lit[i] = left < n ? left : n;
+		left = (short)(left - out_lit[i]);
 	}
-	if (lit >= total)
-		return;
-	spent = (short)(total - (lit > 0 ? lit : 0));
-	/* columns from the right; in a column, the top row first */
-	for (column = (short)(longest - 1); column >= 0 && spent > 0; column--)
-		for (i = 0; i < row_count && spent > 0; i++)
-			if (out_lit[i] > column)
-			{
-				out_lit[i] = column;
-				spent--;
-			}
 }
 
 static void build_ammo(const struct ae_panel_snapshot *in, struct ae_panel_model *out)

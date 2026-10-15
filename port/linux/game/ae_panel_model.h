@@ -129,8 +129,9 @@ struct ae_panel_model
 
 void ae_panel_model_build(const struct ae_panel_snapshot *in, struct ae_panel_model *out);
 
-/* spent rounds dim from the RIGHT by x across all rows together; on equal x the TOP row empties first. Rows start
-on the same left line and a round's column is its index in its row. out_lit[i] = lit rounds of row i. */
+/* the lit rounds of each row (out_lit[i]): CE's own order, as its meter draws a part-spent magazine (spec 14.15 part
+9's check: CE wins over the spec's "by x" rule): the rounds fill from the TOP row's left, so they go out from the
+BOTTOM row's right end, a row at a time */
 void ae_panel_model_row_lit(const short *rows, short row_count, short lit, short out_lit[AE_PANEL_MAXIMUM_ROWS]);
 
 /* the magazine's rows for a kind of art and a magazine size (the borrowing rule); returns the row count */

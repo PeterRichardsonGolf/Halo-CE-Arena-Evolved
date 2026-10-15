@@ -88,6 +88,7 @@ symbols in this file:
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "ae_hud_style.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -930,6 +931,7 @@ void hud_render_unit_interface(
 
 			unit_count--;
 			hud_unit = unit_try_and_get(unit_indices[unit_count]);
+			ae_panels_hide_ce(unit_count == 0 && hud_unit != NULL && unit_hud_indices[unit_count] != NONE); /* AE hook */
 
 			if (hud_unit && unit_hud_indices[unit_count] != NONE)
 			{
@@ -1189,6 +1191,7 @@ void hud_render_unit_interface(
 				if (meters_found)
 					hud_item_timers_set_meters(local_player_index, &meters_bounds);
 
+				ae_panels_hide_ce(FALSE); /* AE hook */
 				if (unit_count == 0 &&
 					!TEST_FLAG(
 						unit_hud_globals->script_flags,

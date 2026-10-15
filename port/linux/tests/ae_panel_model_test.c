@@ -336,22 +336,22 @@ static void test_seats(void)
 	AE_CHECK_WSTR(m.seat[0].label, L"HEAT");
 }
 
-/* spec 14.15: AR 9 of 60 = 3 leftmost columns lit; sniper 3 of 4; battle rifle 27 of 36 */
+/* CE's order (its part-spent assault rifle, seen in the CLASSIC frames): the top row fills first, the bottom row
+empties first, from its right */
 static void test_row_lit(void)
 {
 	short ar[3] = { 20, 20, 20 }, sniper[3] = { 2, 2, 0 }, br[3] = { 18, 18, 0 }, odd[3] = { 13, 12, 0 };
 	short out[3];
 
-	ae_panel_model_row_lit(ar, 3, 9, out); AE_CHECK(out[0] == 3 && out[1] == 3 && out[2] == 3);
+	ae_panel_model_row_lit(ar, 3, 9, out); AE_CHECK(out[0] == 9 && out[1] == 0 && out[2] == 0);
 	ae_panel_model_row_lit(ar, 3, 60, out); AE_CHECK(out[0] == 20 && out[1] == 20 && out[2] == 20);
-	ae_panel_model_row_lit(ar, 3, 59, out); AE_CHECK(out[0] == 19 && out[1] == 20 && out[2] == 20);
-	ae_panel_model_row_lit(ar, 3, 58, out); AE_CHECK(out[0] == 19 && out[1] == 19 && out[2] == 20);
+	ae_panel_model_row_lit(ar, 3, 59, out); AE_CHECK(out[0] == 20 && out[1] == 20 && out[2] == 19);
+	ae_panel_model_row_lit(ar, 3, 33, out); AE_CHECK(out[0] == 20 && out[1] == 13 && out[2] == 0);
 	ae_panel_model_row_lit(ar, 3, 0, out); AE_CHECK(out[0] == 0 && out[1] == 0 && out[2] == 0);
-	ae_panel_model_row_lit(ar, 3, 1, out); AE_CHECK(out[0] == 0 && out[1] == 0 && out[2] == 1);
-	ae_panel_model_row_lit(sniper, 2, 3, out); AE_CHECK(out[0] == 1 && out[1] == 2);
-	ae_panel_model_row_lit(br, 2, 27, out); AE_CHECK(out[0] == 13 && out[1] == 14);
-	ae_panel_model_row_lit(odd, 2, 24, out); AE_CHECK(out[0] == 12 && out[1] == 12);  /* the 13th has the far x */
-	ae_panel_model_row_lit(odd, 2, 12, out); AE_CHECK(out[0] == 6 && out[1] == 6);
+	ae_panel_model_row_lit(ar, 3, 1, out); AE_CHECK(out[0] == 1 && out[1] == 0 && out[2] == 0);
+	ae_panel_model_row_lit(sniper, 2, 3, out); AE_CHECK(out[0] == 2 && out[1] == 1);
+	ae_panel_model_row_lit(br, 2, 27, out); AE_CHECK(out[0] == 18 && out[1] == 9);
+	ae_panel_model_row_lit(odd, 2, 24, out); AE_CHECK(out[0] == 13 && out[1] == 11);
 	ae_panel_model_row_lit(ar, 3, 99, out); AE_CHECK(out[0] == 20 && out[1] == 20 && out[2] == 20);
 	ae_panel_model_row_lit(ar, 3, -2, out); AE_CHECK(out[0] == 0 && out[1] == 0 && out[2] == 0);
 	ae_panel_model_row_lit(ar, 0, 5, out); AE_CHECK(out[0] == 0 && out[1] == 0 && out[2] == 0);
@@ -360,7 +360,7 @@ static void test_row_lit(void)
 	{
 		struct ae_panel_snapshot s; struct ae_panel_model m;
 		base(&s, _ae_hint_battle_rifle, 36, 27, 108); ae_panel_model_build(&s, &m);
-		AE_CHECK(m.row_lit[0] == 13 && m.row_lit[1] == 14 && m.lit == 27);
+		AE_CHECK(m.row_lit[0] == 18 && m.row_lit[1] == 9 && m.lit == 27);
 	}
 }
 

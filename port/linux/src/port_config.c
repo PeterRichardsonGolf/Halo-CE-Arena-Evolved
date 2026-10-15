@@ -1041,6 +1041,11 @@ static const struct config_setting config_settings[] =
 		"For the automated tests of the AE panels (ae_panel_engine.c): an automated\n"
 		"test host gives its first player the overshield or camo at these seconds of\n"
 		"game time (\"overshield:10,camo:20\"); empty never." },
+	{ "debug.ae_panel_state", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_STATE", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests and pictures of the AE panels (ae_panels.c): a\n"
+		"state drawn over the game's (low, empty, overheated, shield_low,\n"
+		"shield_down, overshield1, overshield2, camo, buffs, health_low)." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"
