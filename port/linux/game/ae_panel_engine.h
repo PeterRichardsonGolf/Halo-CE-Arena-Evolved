@@ -42,5 +42,7 @@ boolean ae_panel_engine_view(short local_player_index, struct ae_panel_view *out
 const char *ae_panel_engine_weapon_name(short local_player_index);
 /* debug.ae_panel_log: every 2 s of game time one line per local player (call while the HUD draws each view) */
 void ae_panel_engine_debug_log(short local_player_index);
+/* (the game's tick, through ae_strip_engine_debug_log's hook) debug.ae_panel_powerups and debug.ae_panel_seat */
+void ae_panel_engine_debug_tick(void);
 
 #endif /* __AE_PANEL_ENGINE_H */

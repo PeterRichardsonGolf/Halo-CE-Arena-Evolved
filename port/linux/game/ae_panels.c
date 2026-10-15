@@ -21,6 +21,9 @@ spec 14.15).
 #include "ae_panel_layout.h"
 #include "ae_panel_model.h"
 #include "ae_panels.h"
+#include "ae_power_list.h"
+#include "ae_score_strip.h"
+#include "ae_sensor.h"
 
 long hud_unit_port_script_flags(void);
 const char *config_string(const char *name);
@@ -37,7 +40,8 @@ long game_time_get(void);
 #define UNARMED_COUNT_QUARTER 0.85f
 
 static boolean hiding;
-static long held_back;     /* CE's quads held back since the last AE draw (the log's "held") */
+static long held_back;
+static long faded_labels;  /* waypoint labels faded under a panel since the last log line */     /* CE's quads held back since the last AE draw (the log's "held") */
 static struct { boolean valid; struct ae_panel_rect rects[2]; short count; } last[MAXIMUM_LOCAL_PLAYERS];
 
 void ae_panels_hide_ce(boolean hide)
@@ -119,7 +123,7 @@ static void log_layout(short view, const struct ae_panel_model *m, const struct 
 	platform_log("ae panels: tick %ld view %d state=%s number_box=%.1f,%.1f,%.1f,%.1f grenade_box=%.1f,%.1f,%.1f,%.1f "
 		"baseline=%.1f cap=%.1f rounds=%d round0=%.1f,%.1f,%.1f lit=%d red=%d bar=%d,%.1f,%.1f,%.1f,%.1f,%d "
 		"shield_bar=%.1f,%.1f,%.1f,%.1f icon=%.1f,%.1f,%.1f cell0=%.1f,%.1f,%.1f,%.1f cross=%.0f,%.0f,%.0f "
-		"buffs=%d buff0=%.1f,%.1f,%.1f shield_red=%d held=%ld", tick / 60 * 60, view,
+		"buffs=%d buff0=%.1f,%.1f,%.1f shield_red=%d held=%ld faded=%ld", tick / 60 * 60, view,
 		state && state[0] ? state : "none", l->number_box.x0, l->number_box.y0, l->number_box.x1, l->number_box.y1,
 		l->grenade_box.x0, l->grenade_box.y0, l->grenade_box.x1, l->grenade_box.y1, l->digit_baseline_y, l->digit_cap,
 		l->round_count, l->round_count ? l->round[0].x : 0.0f, l->round_count ? l->round[0].y : 0.0f,
@@ -128,7 +132,8 @@ static void log_layout(short view, const struct ae_panel_model *m, const struct 
 		l->shield_icon_x, l->shield_icon_y, l->shield_icon_height, l->health_cell[0].x0, l->health_cell[0].y0,
 		l->health_cell[7].x1, l->health_cell[0].y1, l->cross_x, l->cross_y, l->cross_size, l->buff_count,
 		l->buff_count ? l->buff[0].time_right_x : 0.0f, l->buff_count ? l->buff[0].baseline_y : 0.0f,
-		l->buff_count ? l->buff[0].px : 0.0f, m->shield_red, held_back);
+		l->buff_count ? l->buff[0].px : 0.0f, m->shield_red, held_back, faded_labels);
+	faded_labels = 0;
 }
 
 void ae_panels_rectangles(short local_player_index, struct ae_panel_rect out[2], short *count)
@@ -326,4 +331,51 @@ boolean ae_panels_draw(short local_player_index)
 	log_layout(local_player_index, &model, &layout);
 	held_back = 0;
 	return TRUE;
+}
+
+#define LABEL_FADE 0.35f
+#define LABEL_FADE_GROW 8.0f
+
+static boolean overlaps(real ax0, real ay0, real ax1, real ay1, const real b[4], real grow)
+{
+	return (boolean)(ax1 > b[0] - grow && ax0 < b[2] + grow && ay1 > b[1] - grow && ay0 < b[3] + grow);
+}
+
+real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bounds)
+{
+	real ppu = ae_hud_pixels_per_unit();
+	real x0, y0, x1, y1, r[4];
+	short i;
+
+	if (!ae_hud_style_is_ae() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || !bounds)
+		return 1.0f;
+	x0 = (real)bounds->x0 * ppu; y0 = (real)bounds->y0 * ppu;
+	x1 = (real)bounds->x1 * ppu; y1 = (real)bounds->y1 * ppu;
+	if (last[local_player_index].valid)
+		for (i = 0; i < last[local_player_index].count; i++)
+		{
+			r[0] = last[local_player_index].rects[i].x0; r[1] = last[local_player_index].rects[i].y0;
+			r[2] = last[local_player_index].rects[i].x1; r[3] = last[local_player_index].rects[i].y1;
+			if (overlaps(x0, y0, x1, y1, r, LABEL_FADE_GROW))
+			{
+				faded_labels++;
+				return LABEL_FADE;
+			}
+		}
+	if (ae_sensor_rectangle(local_player_index, &r[0], &r[1], &r[2], &r[3]) && overlaps(x0, y0, x1, y1, r, LABEL_FADE_GROW))
+	{
+		faded_labels++;
+		return LABEL_FADE;
+	}
+	if (ae_power_list_extent(local_player_index, r) && overlaps(x0, y0, x1, y1, r, LABEL_FADE_GROW))
+	{
+		faded_labels++;
+		return LABEL_FADE;
+	}
+	if (ae_score_strip_extent(local_player_index, r) && overlaps(x0, y0, x1, y1, r, LABEL_FADE_GROW))
+	{
+		faded_labels++;
+		return LABEL_FADE;
+	}
+	return 1.0f;
 }

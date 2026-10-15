@@ -75,6 +75,7 @@ static struct strip_view
 	real shared_line_y;
 	real alpha;                 /* last drawn */
 	struct ae_strip_box clock, left_score; /* last drawn (the debug log's) */
+	real extent[4];             /* last drawn: left, top, right, bottom (the waypoints' fade) */
 	wchar_t scores[2][AE_STRIP_TEXT_LENGTH];
 	unsigned long score_pop[2];
 	real fill[2];
@@ -128,15 +129,18 @@ boolean ae_score_strip_last_drawn(short local_player_index, real *alpha, real cl
 half screen 0.85, a quarter 0.75) */
 static real view_factor(void)
 {
-	long screen_width = rasterizer_globals.reserved04.frame_bounds.x1 - rasterizer_globals.reserved04.frame_bounds.x0;
-	long screen_height = rasterizer_globals.reserved04.frame_bounds.y1 - rasterizer_globals.reserved04.frame_bounds.y0;
-	long width = render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0;
-	long height = render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0;
+	/* (the view's share of the drawable, both in screen pixels: the rasterizer's frame bounds read 0.70 of the
+	screen for a half view, which gave 2p 0.92 and 4p 0.79 where the spec's chain is 0.85 and 0.75) */
+	int drawable_width = 0, drawable_height = 0;
+	real ppu = ae_hud_pixels_per_unit();
+	real width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) * ppu;
+	real height = (real)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0) * ppu;
 	real share;
 
-	if (screen_width <= 0 || screen_height <= 0 || width <= 0 || height <= 0)
+	platform_video_drawable_size(&drawable_width, &drawable_height);
+	if (drawable_width <= 0 || drawable_height <= 0 || width <= 0.0f || height <= 0.0f)
 		return 1.0f;
-	share = ((real)width * (real)height) / ((real)screen_width * (real)screen_height);
+	share = (width * height) / ((real)drawable_width * (real)drawable_height);
 	share = share < 0.0f ? 0.0f : share > 1.0f ? 1.0f : share;
 	return 0.5f + 0.5f * (real)sqrt(share);
 }
@@ -711,7 +715,22 @@ static void draw_strip(short view)
 	state->alpha = alpha;
 	state->clock = layout.clock;
 	state->left_score = layout.left_score;
+	state->extent[0] = layout.left_end_x;
+	state->extent[1] = MIN(layout.clock.y, layout.left_score.y);
+	state->extent[2] = layout.right_end_x;
+	state->extent[3] = state->shared_line_y + 4.0f;
 	state->visible = TRUE;
+}
+
+boolean ae_score_strip_extent(short local_player_index, real extent[4])
+{
+	if (!valid_view(local_player_index) || !views[local_player_index].visible)
+		return FALSE;
+	extent[0] = views[local_player_index].extent[0];
+	extent[1] = views[local_player_index].extent[1];
+	extent[2] = views[local_player_index].extent[2];
+	extent[3] = views[local_player_index].extent[3];
+	return TRUE;
 }
 
 void ae_score_strip_draw(short local_player_index)

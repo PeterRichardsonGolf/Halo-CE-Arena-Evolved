@@ -1050,6 +1050,11 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"For the automated tests of the AE motion sensor (ae_sensor.c): CE's own\n"
 		"sensor drawn as well, so that AE's blips can be laid on CE's." },
+	{ "debug.ae_panel_seat", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_SEAT", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): an automated\n"
+		"test host seats its first player in a vehicle (\"ghost:driver:8\",\n"
+		"\"warthog:gunner:8\": the vehicle's tag, the seat, the second)." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"

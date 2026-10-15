@@ -31,4 +31,10 @@ boolean ae_panels_draw(short local_player_index);
 /* this view's panel rectangles (view px) from its last draw: the ammo group and the shield group with its rows */
 void ae_panels_rectangles(short local_player_index, struct ae_panel_rect out[2], short *count);
 
+union rectangle2d;
+/* (hud_item_timers.c) a waypoint or TRAINING label's alpha factor: 0.35 where its box (HUD units of the view) meets
+a panel grown by 8 px (the ammo group, the shield group with its rows, the sensor, the timers list, the score
+strip: the panels' last drawn), else 1; 1 with CLASSIC */
+real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bounds);
+
 #endif /* __AE_PANELS_H */

@@ -162,6 +162,7 @@ names kept. The names over players' heads (hud.c, drawn before the waypoints) ar
 /* (the waypoints' pictures' rules and Arena Evolved's glyphs: port/linux/game) */
 #include "ae_waypoint_icons.h"
 #include "ae_power_list.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -3115,6 +3116,7 @@ static void hud_waypoint_draw_labels(
 		could not step aside) */
 		hud_waypoint_block_scale_set(labels, label_count, index);
 		hud_waypoint_block_fade = hud_waypoint_meets_name_tag(&block->bounds) ? HUD_WAYPOINT_TAG_FADE : 1.0f;
+		hud_waypoint_block_fade *= ae_panels_label_alpha(render.local_player_index, &block->bounds); /* AE hook */
 		for (line = 0; line < block->line_count; line++)
 		{
 			struct hud_waypoint_line_layout layout;

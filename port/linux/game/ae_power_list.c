@@ -48,7 +48,7 @@ static const real grey_rgb[3] = { 188.0f / 255.0f, 198.0f / 255.0f, 212.0f / 255
 static const real red_rgb[3] = { 1.0f, 0.3f, 0.3f };       /* hud_item_timers_side_color */
 static const real blue_rgb[3] = { 0.35f, 0.55f, 1.0f };
 
-static struct { boolean drawn; real foot, left; } list_views[MAXIMUM_LOCAL_PLAYERS];
+static struct { boolean drawn; real foot, left, top, right; } list_views[MAXIMUM_LOCAL_PLAYERS];
 
 static boolean valid_view(short view)
 {
@@ -84,6 +84,17 @@ real ae_power_list_left_x(short local_player_index)
 	if (valid_view(local_player_index) && list_views[local_player_index].drawn)
 		return list_views[local_player_index].left;
 	return (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) * ae_hud_pixels_per_unit();
+}
+
+boolean ae_power_list_extent(short local_player_index, real extent[4])
+{
+	if (!valid_view(local_player_index) || !list_views[local_player_index].drawn)
+		return FALSE;
+	extent[0] = list_views[local_player_index].left;
+	extent[1] = list_views[local_player_index].top;
+	extent[2] = list_views[local_player_index].right;
+	extent[3] = list_views[local_player_index].foot + 2.0f;
+	return TRUE;
 }
 
 boolean ae_power_list_last(short local_player_index, real *foot_baseline, real *left_x)
@@ -332,6 +343,8 @@ static void draw_column(short view)
 	list_views[view].drawn = TRUE;
 	list_views[view].foot = foot;
 	list_views[view].left = left;
+	list_views[view].top = top;
+	list_views[view].right = right;
 	/* (for TRAINING's labels to keep clear of, in the HUD's units) */
 	hud_item_timers_ae_record(left / ppu, top / ppu, right / ppu, (foot + 2.0f) / ppu);
 }

@@ -439,3 +439,6 @@ source/interface/hud_unit.c	ae_panels_hide_ce(ae_sensor_takes_blips()); /* AE ho
 source/interface/hud_unit.c	ae_panels_hide_ce(FALSE); /* AE hook */
 source/interface/hud_unit.c	ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
 port/linux/src/port_config.c	{ "debug.ae_sensor_with_ce", _config_boolean, "false", "HALO_DEBUG_AE_SENSOR_WITH_CE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.ae_panel_seat", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_SEAT", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud_item_timers.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_item_timers.c	hud_waypoint_block_fade *= ae_panels_label_alpha(render.local_player_index, &block->bounds); /* AE hook */

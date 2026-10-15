@@ -474,6 +474,55 @@ static void debug_powerups(void)
 	given_through = now;
 }
 
+/* debug.ae_panel_seat ("ghost:driver:8", "warthog:gunner:8"): the host seats its first local player in the first
+vehicle whose tag has the name in it, in its first driver's (or gunner's) seat, at that second of game time; the
+vehicles the map has are logged */
+static void debug_seat(void)
+{
+	static boolean done = FALSE;
+	char const *setting = config_string("debug.ae_panel_seat");
+	char name[32];
+	char role[16];
+	double seconds = 0.0;
+	long player_index = view_player_index(0), unit_index = NONE;
+	struct player_datum *player = NULL;
+	struct object_iterator vehicles;
+
+	if (done || !setting || !setting[0] || network_game_distributed_client())
+		return;
+	if (sscanf(setting, "%31[^:]:%15[^:]:%lf", name, role, &seconds) != 3 ||
+		game_time_get() < (long)(seconds * TICKS_PER_SECOND) || !player_unit(player_index, &unit_index, &player))
+	{
+		return;
+	}
+	done = TRUE;
+	object_iterator_new(&vehicles, _object_mask_vehicle, 0);
+	while (object_iterator_next(&vehicles))
+	{
+		long vehicle_index = vehicles.index;
+		struct unit_definition *definition = unit_definition_get(object_get(vehicle_index)->definition_index);
+		char const *tag = tag_get_name(object_get(vehicle_index)->definition_index);
+		short seat_index;
+
+		platform_log("ae panel: debug vehicle %s", tag ? tag : "?");
+		if (!name_has(tag, name))
+			continue;
+		for (seat_index = 0; seat_index < definition->unit.seats.count; seat_index++)
+		{
+			struct unit_seat *seat = TAG_BLOCK_GET_ELEMENT(&definition->unit.seats, seat_index, struct unit_seat);
+			boolean wanted = (boolean)(strcmp(role, "gunner") ? TEST_FLAG(seat->flags, _unit_seat_driver_bit) :
+				TEST_FLAG(seat->flags, _unit_seat_gunner_bit) && !TEST_FLAG(seat->flags, _unit_seat_driver_bit));
+
+			if (wanted && unit_enter_seat(unit_index, vehicle_index, seat_index))
+			{
+				platform_log("ae panel: debug seated in %s seat %d (%s)", tag, seat_index, role);
+				return;
+			}
+		}
+	}
+	platform_log("ae panel: debug no %s seat in a %s", role, name);
+}
+
 static void log_line(long tick, char const *who, long player_index, struct ae_panel_snapshot const *snapshot,
 	char const *tail)
 {
@@ -501,6 +550,12 @@ static void log_line(long tick, char const *who, long player_index, struct ae_pa
 		snapshot->health, snapshot->camo_ticks, snapshot->overshield_seconds, seat, tail);
 }
 
+void ae_panel_engine_debug_tick(void)
+{
+	debug_powerups();
+	debug_seat();
+}
+
 void ae_panel_engine_debug_log(short local_player_index)
 {
 	static long logged_tick[MAXIMUM_LOCAL_PLAYERS] = { -1, -1, -1, -1 };
@@ -513,8 +568,7 @@ void ae_panel_engine_debug_log(short local_player_index)
 
 	if (player_index == NONE)
 		return;
-	if (local_player_index == 0)
-		debug_powerups();
+
 	/* (once in each 2 s of game time: the first frame drawn in it, as frames skip ticks) */
 	if (!config_boolean("debug.ae_panel_log") || tick < 0 || tick / 60 == logged_tick[local_player_index])
 		return;

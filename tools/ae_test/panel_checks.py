@@ -328,7 +328,8 @@ LAYOUT_LINE = re.compile(
     r"number_box=(?P<nb>[-\d.,]+) grenade_box=(?P<gb>[-\d.,]+) baseline=(?P<baseline>[-\d.]+) cap=(?P<cap>[\d.]+) "
     r"rounds=(?P<rounds>\d+) round0=(?P<round0>[-\d.,]+) lit=(?P<lit>\d+) red=(?P<red>\d) bar=(?P<bar>[-\d.,]+) "
     r"shield_bar=(?P<sb>[-\d.,]+) icon=(?P<icon>[-\d.,]+) cell0=(?P<cells>[-\d.,]+) cross=(?P<cross>[-\d.,]+) "
-    r"buffs=(?P<buffs>\d+) buff0=(?P<buff0>[-\d.,]+) shield_red=(?P<shield_red>\d) held=(?P<held>\d+)")
+    r"buffs=(?P<buffs>\d+) buff0=(?P<buff0>[-\d.,]+) shield_red=(?P<shield_red>\d) held=(?P<held>\d+)"
+    r"(?: faded=(?P<faded>\d+))?")
 
 
 def layout_lines(text, view="0"):
@@ -339,7 +340,9 @@ def layout_lines(text, view="0"):
         line = m.groupdict()
         for key in ("nb", "gb", "round0", "bar", "sb", "icon", "cells", "cross", "buff0"):
             line[key] = [float(v) for v in line[key].split(",")]
-        for key in ("tick", "rounds", "lit", "red", "buffs", "shield_red", "held"):
+        line["faded"] = line["faded"] or "0"
+        line["baseline"], line["cap"] = float(line["baseline"]), float(line["cap"])
+        for key in ("tick", "rounds", "lit", "red", "buffs", "shield_red", "held", "faded"):
             line[key] = int(line[key])
         out.append(line)
     return out
@@ -653,6 +656,104 @@ def run_sensor(cfg, a, out):
     return results
 
 
+def run_split(cfg, a, out):
+    """2p and 4p (and a seat case per vehicle): every panel inside its view, the floors (cross >= 9 px, digits >= 12 px
+    cap), the 4p AR block clear of the held scoreboard's moved header (its top at 137 of a 540 view) by >= 4 px"""
+    results = {}
+    cases = {
+        "2p": ("prisoner", 2, {"HALO_NETWORK_TEST_LOADOUT": "2,3"}),
+        "4p": ("prisoner", 4, {"HALO_NETWORK_TEST_LOADOUT": "2,3"}),
+    }
+    for case, (map_name, players, env) in cases.items():
+        name = "split-" + case
+        spec = harness.parse_spec({"name": name, "build": a.build, "map": map_name, "start": 10, "bots": 1,
+                                   "local_players": players, "window": "1920x1080", "exit_after": 40,
+                                   "screenshots": 30, "env": dict(env, HALO_DEBUG_AE_PANEL_LOG="1"),
+                                   "expect": {"ticks": 300}})
+        r = harness.play(cfg, spec, out / name, None, a.keep_work, run_id=f"{out.name}-{name}")
+        debug = out / name / "debug.txt"
+        text = debug.read_text(errors="replace") if debug.exists() else ""
+        why = list(r.get("why") or [])
+        views_seen = 0
+        for view in range(players):
+            lines = layout_lines(text, str(view))
+            sensors = sensor_lines(text, str(view))
+            if not lines or not sensors:
+                why.append(f"view {view}: no 'ae panels:' / 'ae sensor:' line")
+                continue
+            views_seen += 1
+            line, sensor = lines[-1], sensors[-1]
+            vw, vh = sensor["vw"], sensor["vh"]
+            boxes = [line["nb"], line["gb"], line["sb"], [line["cross"][0], line["cross"][1],
+                     line["cross"][0] + line["cross"][2], line["cross"][1] + line["cross"][2]]]
+            for box in boxes:
+                if box[0] < -0.5 or box[1] < -0.5 or box[2] + 0.46 * (box[3] - box[1]) > vw + 0.5 or box[3] > vh + 0.5:
+                    why.append(f"view {view}: {box} leaves the {vw:.0f}x{vh:.0f} view")
+            if line["cross"][2] < 9:
+                why.append(f"view {view}: cross {line['cross'][2]} px")
+            if line["cap"] < 12:
+                why.append(f"view {view}: digits {line['cap']} px cap")
+            if sensor["cx"] - sensor["r"] < 0 or sensor["cy"] + sensor["r"] > vh:
+                why.append(f"view {view}: the sensor leaves the view")
+            if players == 4 and line["rounds"]:
+                x, y, hh = line["round0"]
+                bottom = y + 3 * hh + 2 * 4 * 0.75
+                header_top = 137.0 * vh / 540.0
+                if header_top - bottom < 4:
+                    why.append(f"view {view}: the AR block ends at {bottom:.1f}, the header starts at {header_top:.1f}")
+        status = "PASS" if r.get("status") == "PASS" and not why and views_seen == players else "FAIL"
+        harness.log(f"  {name}: {status}, {views_seen} views" + (f" ({'; '.join(why[:6])})" if why else ""))
+        results[name] = {"status": status, "why": why}
+    seats = {"ghost": ("ghost:driver:6", "heat"), "warthog_gunner": ("warthog:gunner:6", "heat"),
+             "scorpion": ("scorpion:driver:6", "cannon"), "banshee": ("banshee:driver:6", "bolts")}
+    for case, (setting, kind) in seats.items():
+        name = "seat-" + case
+        spec = harness.parse_spec({"name": name, "build": a.build, "map": "bloodgulch", "start": 3, "bots": 1,
+                                   "saved_gametype": "AE PRACTICE", "window": "1920x1080", "exit_after": 26,
+                                   "screenshots": 30,
+                                   "env": {"HALO_DEBUG_AE_PANEL_LOG": "1", "HALO_DEBUG_AE_PANEL_SEAT": setting},
+                                   "expect": {"ticks": 300}})
+        r = harness.play(cfg, spec, out / name, None, a.keep_work, run_id=f"{out.name}-{name}")
+        debug = out / name / "debug.txt"
+        text = debug.read_text(errors="replace") if debug.exists() else ""
+        why = list(r.get("why") or [])
+        lines = panel_lines(text)
+        vehicles = sorted(set(re.findall(r"ae panel: debug vehicle (.+)", text)))
+        if "debug seated" not in text:
+            status = "NOT SEEN"
+            why.append(f"no such seat on the map (its vehicles: {', '.join(vehicles) or 'none'})")
+        else:
+            if not any(l["seat"].startswith(kind) for l in lines):
+                why.append(f"no line with a {kind} seat row ({sorted(set(l['seat'] for l in lines))})")
+            status = "PASS" if r.get("status") == "PASS" and not why else "FAIL"
+        harness.log(f"  {name}: {status}" + (f" ({'; '.join(why)})" if why else ""))
+        results[name] = {"status": status, "why": why}
+    harness.write_json(out / "split.json", results)
+    return results
+
+
+def run_waypoints(cfg, a, out):
+    """TRAINING's waypoint labels fade under the panels: the panels' log counts the labels faded (and the frames are
+    kept to look at)"""
+    name = "waypoints"
+    spec = harness.parse_spec({"name": name, "build": a.build, "map": "prisoner", "start": 3, "bots": 2,
+                               "bot_args": ["--move"], "saved_gametype": "AE TRAINING", "window": "1920x1080",
+                               "exit_after": 45, "screenshots": 25, "test_input": "look:7",
+                               "env": {"HALO_DEBUG_AE_PANEL_LOG": "1"}, "expect": {"ticks": 300}})
+    r = harness.play(cfg, spec, out / name, None, a.keep_work, run_id=f"{out.name}-{name}")
+    debug = out / name / "debug.txt"
+    lines = layout_lines(debug.read_text(errors="replace") if debug.exists() else "")
+    why = list(r.get("why") or [])
+    faded = sum(l["faded"] for l in lines)
+    if not faded:
+        why.append("no waypoint label met a panel (nothing faded)")
+    status = "PASS" if r.get("status") == "PASS" and not why else "FAIL"
+    harness.log(f"  {name}: {status}, {faded} labels faded" + (f" ({'; '.join(why)})" if why else ""))
+    result = {name: {"status": status, "why": why, "faded": faded}}
+    harness.write_json(out / "waypoints.json", result)
+    return result
+
+
 def run_primitives(cfg, a, out):
     results = {}
     for map_name in a.maps.split(","):
@@ -688,7 +789,7 @@ def run_primitives(cfg, a, out):
 def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     harness.add_common_args(p)
-    p.add_argument("what", choices=("primitives", "engine", "pair", "groups", "sensor"))
+    p.add_argument("what", choices=("primitives", "engine", "pair", "groups", "sensor", "split", "waypoints"))
     p.add_argument("--cases", default=",".join(ENGINE_CASES), help="engine: the cases")
     p.add_argument("--seconds", type=int, default=50)
     p.add_argument("--build", required=True)
@@ -699,8 +800,9 @@ def main(argv):
     cfg = harness.load_config(a.config)
     out = harness.new_out_dir(cfg, "panel_checks", a.what, a.out_name)
     results = {"primitives": run_primitives, "engine": run_engine, "pair": run_pair,
-               "groups": run_groups, "sensor": run_sensor}[a.what](cfg, a, out)
-    failed = [n for n, r in results.items() if r["status"] != "PASS"]
+               "groups": run_groups, "sensor": run_sensor, "split": run_split,
+               "waypoints": run_waypoints}[a.what](cfg, a, out)
+    failed = [n for n, r in results.items() if r["status"] not in ("PASS", "NOT SEEN")]
     harness.log(f"panel_checks {a.what}: {len(results) - len(failed)} passed, {len(failed)} failed; results in {out}")
     return 1 if failed else 0
 
