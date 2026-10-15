@@ -6,6 +6,25 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- **PS5 DualSense: adaptive triggers, lightbar and player lights.** R2 has a profile for each weapon, from the
+  weapon's own numbers (pistol, assault rifle, sniper rifle, shotgun, rocket launcher, plasma pistol, plasma rifle,
+  needler, flamethrower, battle rifle): a feel as you hold and pull it, a kick at each shot, and the weapon's state
+  first: free while reloading, switching weapons or empty, the plasma rifle locked while overheated, the plasma
+  pistol building with its charge, a powerful pulse at each shot and a big heavy kick as an overcharged shot goes. In
+  a vehicle a gunner's seat takes the vehicle's gun, any other seat none; a
+  carried ball or flag leaves R2 free. L2 is light while zoomed, and buzzes while an overshield charges or as you
+  become the juggernaut. The lightbar takes your colour (your team's in a team game; black armour shows a dim white),
+  pulses while an overshield charges, breathes while you have one, dims with active camouflage and flashes white as
+  you become the juggernaut; LIGHTBAR SHIELD shows your shield instead, as the HUD's meter does (its own colours,
+  dimmer as it drains, blinking when low, the empty colour when down, a white flash on the pop with COMBAT FEEDBACK
+  ARENA EVOLVED, the overshield's layer colours, dark while dead). The player lights show your split-screen number.
+  Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER STRENGTH (LIGHT, NORMAL, STRONG) and LIGHTBAR (OFF, PLAYER COLOR,
+  SHIELD), on by default; no other controller is touched,
+  and the triggers and lightbar are given back when you quit. Windows and macOS through SDL; on Linux the effects
+  are written to the pad's hidraw device, which Steam's udev rules open, or the new `70-ae-dualsense.rules` in the
+  Linux downloads (README: "DualSense on Linux without Steam"). Bluetooth and the DualSense Edge are handled but not
+  yet tried on hardware.
+
 - Built on ChupathingyCE 0.7.5b and OpenCE build-206: network version 29.
   Arena Evolved now plays with OpenCE build-206 and ChupathingyCE 0.7.5b
   (both ways), no longer with 0.2.5-beta and older or OpenCE build-205 and

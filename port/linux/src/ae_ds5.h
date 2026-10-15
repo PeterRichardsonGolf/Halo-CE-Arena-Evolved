@@ -1,0 +1,71 @@
+/*
+AE_DS5.H
+
+Arena Evolved: a PS5 DualSense's (and DualSense Edge's) adaptive triggers, lightbar and player lights, driven from the
+game (port/linux/game/ae_ds5_game.c says what each player wants: lightbar colour, player number, R2 and L2 effects).
+Settings > Gamepads: ADAPTIVE TRIGGERS (input.adaptive_triggers, on), TRIGGER STRENGTH (input.trigger_strength,
+normal) and LIGHTBAR (input.lightbar: player_color, the lightbar in the player's colour and the player lights the
+split-screen number; shield, the lightbar the player's shield meter as the HUD draws it; off). Other pads are never touched. Two ways to the pad:
+- SDL's own PS5 driver (Windows, macOS; Linux where SDL reads the pad's hidraw node): SDL_SendGamepadEffect with
+  the 47-byte effects body, SDL_SetGamepadLED, SDL_SetGamepadPlayerIndex.
+- Linux with the kernel's hid-playstation driver (AE's default, ae_gamepads.c): the input stays the kernel's, and
+  the output reports are written to the pad's own /dev/hidraw node when this user may write it (udev rules: Steam's
+  60-steam-input.rules, or the Linux downloads' 70-ae-dualsense.rules). Only the trigger, lightbar and player light
+  enable bits are set, so the kernel's own reports (rumble) and ours leave each other's fields alone.
+A kick is R2's profile shape sent at a round, then the held one again after its time: two reports a round. The
+triggers are sent again though unchanged, while both are up, after the game's rumble changes and once a second.
+debug.txt says how each DualSense is driven (or why not, with the udev rule's line); debug.ds5_log adds the bytes
+written and the effects' changes. The triggers are let go (and the lightbar given back) at exit, when a pad leaves
+and when a setting is turned off.
+*/
+
+#ifndef __AE_DS5_H
+#define __AE_DS5_H
+
+#include "ae_ds5_rules.h"
+
+struct SDL_Gamepad;
+
+/* the settings (read again when one was written) */
+struct ae_ds5_settings
+{
+	int triggers; /* ADAPTIVE TRIGGERS */
+	int strength; /* TRIGGER STRENGTH, percent (ae_ds5_strength_percent) */
+	int lights;   /* LIGHTBAR not OFF: the lightbar and the player lights */
+	int shield;   /* LIGHTBAR SHIELD: the lightbar the shield meter */
+	int log;      /* debug.ds5_log */
+};
+
+/* what one controller port's player wants on its pad (the game side, each frame it has a player) */
+struct ae_ds5_wish
+{
+	unsigned char red, green, blue;
+	/* the player lights' bits (ae_ds5_player_lights; 0: none) */
+	unsigned char player_lights;
+	unsigned char right[AE_DS5_EFFECT_SIZE];
+	unsigned char left[AE_DS5_EFFECT_SIZE];
+	/* R2's kick at each round (kick_ms 0: none), and the rounds fired so far (a change = a kick) */
+	unsigned char kick[AE_DS5_EFFECT_SIZE];
+	int kick_ms;
+	unsigned long shots;
+	/* for debug.ds5_log: the weapon and the effects in words */
+	char what[256];
+};
+
+struct ae_ds5_settings ae_ds5_settings_get(void);
+/* LIGHTBAR's mode in words, for debug.txt */
+char const *ae_ds5_lightbar_mode_name(struct ae_ds5_settings const *settings);
+/* whether either feature is on */
+int ae_ds5_on(void);
+/* whether controller port `port`'s pad is a DualSense this machine drives (the game works out a wish only then) */
+int ae_ds5_port_active(int port);
+/* the game: controller port `port`'s player wants this (copied) */
+void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish);
+/* xinput_sdl.c XInputSetState: the SDL pad that drives controller port `port` (NULL: none), and the game's motors */
+void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short left_motor, unsigned short right_motor);
+/* sdl_platform.c: once a frame, after the events (sends what changed) */
+void ae_ds5_frame(void);
+/* sdl_platform.c: a pad is about to be closed (NULL: nothing) */
+void ae_ds5_removed(struct SDL_Gamepad *gamepad);
+
+#endif

@@ -49,6 +49,9 @@ UNITS = {
     # (Linux PlayStation pads: whether the kernel has hid-playstation / hid-sony, from modules.dep and modules.builtin)
     "ae_gamepads_rules_test.c": ([SRC / "ae_gamepads_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                                   "-fno-sanitize-recover=all"], []),
+    # (the DualSense's profiles, weapon states, powerups, trigger effect bytes, report framing and CRC)
+    "ae_ds5_rules_test.c": ([SRC / "ae_ds5_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
+                                                        "-fno-sanitize-recover=all"], []),
     # (the Settings list's pictures by entry)
     "ae_settings_test.c": ([UI / "ae_settings.c"], [], []),
     # (the item waypoints' pictures: the style, the fallback to text, a map's sprite checked, the sizes, a line's

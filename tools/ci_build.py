@@ -248,6 +248,9 @@ def main() -> int:
         # (AE) the game's icon, for a launcher or desktop entry to point at
         # (Windows' is in halo.exe, macOS's in the bundle; tools/ae_logo.py)
         shutil.copy2(ROOT / "port/assets/icon/ae-icon-256.png", dist / "arena-evolved.png")
+        # (AE) the udev rule that lets a DualSense's adaptive triggers and lightbar work without Steam's rules
+        # (port/linux/src/ae_ds5.c; the README's "DualSense on Linux without Steam")
+        shutil.copy2(ROOT / "port/assets/udev/70-ae-dualsense.rules", dist / "70-ae-dualsense.rules")
     return 0
 
 

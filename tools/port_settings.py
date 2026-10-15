@@ -41,6 +41,9 @@ MCC_SCALES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(1, 21)]
 # (the zoom action's modes: ae_zoom.c)
 ZOOM_MODES = [("TOGGLE", "toggle"), ("HOLD", "hold"), ("BOTH", "both")]
 ZOOM_RESETS = [("FIRST LEVEL", "first"), ("LAST USED", "last")]
+# (a DualSense's trigger strength and lightbar: port/linux/src/ae_ds5_rules.c ae_ds5_strength_percent, ae_ds5.c)
+TRIGGER_STRENGTHS = [("LIGHT", "light"), ("NORMAL", "normal"), ("STRONG", "strong")]
+LIGHTBARS = [("OFF", "off"), ("PLAYER COLOR", "player_color"), ("SHIELD", "shield")]
 # (the item waypoints' labels: hud_item_timers.c, ae_waypoint_icons.c)
 WAYPOINT_STYLES = [("TEXT", "text"), ("ICONS", "icons"), ("BOTH", "both")]
 WAYPOINT_SIZES = [(f"{n}%", str(n)) for n in range(50, 101, 5)]
@@ -344,7 +347,8 @@ SCREENS = {
     "gamepad_setup": {
         "screen": "gamepad_setup_screen",
         "header": ("header_profile_controller_setting", f"{PE}/controller_edit/header_profile_controller_setting"),
-        "spacing": 30,
+        # (22, not 30: twelve rows with the DualSense's three, the help line where it was)
+        "spacing": 22,
         "rows": [
             ("LOOK SENSITIVITY:", "profile.look_sensitivity", [(str(step), str(step)) for step in range(1, 11)],
              "How fast the right stick turns the view.", None),
@@ -366,6 +370,17 @@ SCREENS = {
              "Which stick moves and which looks.", None),
             ("VIBRATION:", "profile.vibration", ON_OFF, "Rumble the controller.", None),
             ("IN-GAME HELP:", "profile.ingame_help", ON_OFF, "Show the game's hints about its controls.", None),
+            # (AE 0.3.0: a PS5 DualSense's, port/linux/src/ae_ds5.c; this machine's settings, every profile's)
+            ("ADAPTIVE TRIGGERS:", "input.adaptive_triggers", ON_OFF,
+             "A DualSense's triggers: a feel for each weapon\nand a kick at each shot. Other pads: nothing.",
+             "desktop"),
+            ("TRIGGER STRENGTH:", "input.trigger_strength", TRIGGER_STRENGTHS,
+             "How strong a DualSense's trigger effects are.", "desktop"),
+            ("LIGHTBAR:", "input.lightbar", LIGHTBARS,
+             ["A DualSense's lightbar and player lights are\nleft alone.",
+              "A DualSense's lightbar in your color, with the\npowerups' glows; its lights your player number.",
+              "A DualSense's lightbar shows your shield as the\nHUD's meter does; its lights your player number."],
+             "desktop"),
         ],
     },
 }
