@@ -602,6 +602,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_glue_zoom.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
+#include "ae_strip_engine.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -5670,6 +5671,7 @@ void game_engine_update_non_deterministic(
 	/* port: the callouts' clip stops while the game is paused or gone
 	(callouts.c) */
 	callouts_update_non_deterministic();
+	ae_strip_engine_debug_log(); /* AE hook */
 
 	if (game_engine)
 	{

@@ -355,3 +355,12 @@ source/interface/hud_messaging.c	icon = ae_weapon_pack_message_icon(icon, &bitma
 source/render/render_particles.c	#include "ae_burst_rifle.h" /* AE hook */
 source/render/render_particles.c	ae_burst_rifle_particles_begin(local_player_index); /* AE hook */\nfor (particle_index = data_next_index(particle_data, NONE);
 source/render/render_particles.c	if (ae_burst_rifle_particle_hidden(particle, owned_by_local_player)) /* AE hook */\ncontinue;
+source/game/game_engine_king.c	long ae_strip_king_hill_timer(void) { return king_globals.hill_timer; } /* AE hook */
+source/game/game_engine_king.c	boolean ae_strip_king_player_on_hill(long player_index) { return player_inside_hill(player_index); } /* AE hook */
+source/game/game_engine_oddball.c	long ae_strip_oddball_ball_count(long player_index) { return player_index == NONE ? 0 : player_ball_count(player_index); } /* AE hook */
+source/game/game_engine_race.c	long ae_strip_race_flags_touched(long player_index) { return player_index == NONE || DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) >= MULTIPLAYER_MAXIMUM_PLAYERS ? 0 : count_bits_32(race_globals.lap_bit_vector[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)]); } /* AE hook */
+source/game/game_engine_race.c	long ae_strip_race_flag_count(void) { return count_bits_32(race_globals.lap_completed_value); } /* AE hook */
+source/game/game_engine_race.c	long ae_strip_race_rally_flag(void) { return race_globals.rally_flag; } /* AE hook */
+source/game/game_engine.c	#include "ae_strip_engine.h" /* AE hook */
+source/game/game_engine.c	ae_strip_engine_debug_log(); /* AE hook */
+port/linux/src/port_config.c	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */\n_platform_all,

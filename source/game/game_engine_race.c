@@ -1699,3 +1699,7 @@ boolean game_engine_race_read_network_state(
 	csmemcpy(race_events.best_laps, state.best_laps, sizeof(race_events.best_laps));
 	return TRUE;
 }
+
+long ae_strip_race_flags_touched(long player_index) { return player_index == NONE || DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) >= MULTIPLAYER_MAXIMUM_PLAYERS ? 0 : count_bits_32(race_globals.lap_bit_vector[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)]); } /* AE hook */
+long ae_strip_race_flag_count(void) { return count_bits_32(race_globals.lap_completed_value); } /* AE hook */
+long ae_strip_race_rally_flag(void) { return race_globals.rally_flag; } /* AE hook */

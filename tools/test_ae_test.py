@@ -29,6 +29,7 @@ import smoke  # noqa: E402
 import windows  # noqa: E402
 import gametype_file  # noqa: E402
 import seed_compare  # noqa: E402
+import strip_checks  # noqa: E402
 
 del sys.modules["harness"]
 if _other_harness is not None:
@@ -1326,3 +1327,36 @@ class Sheet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StripChecks(unittest.TestCase):
+    """strip_checks.py: the score strip's log lines, the cases' rules, the host/client comparison"""
+    LINE = ('arena-evolved: score strip: tick 450 view 0 mode=ctf teams=1 left=2(blue) right=1(red) clock=4:12 up=0 '
+            'goal="TO 3" lead="+1" context="" left_sub="DROPPED 0:18" right_sub="bot5" bars=1 fill=0.67/0.33 place=0 '
+            'lead_me=1')
+
+    def test_line(self):
+        (line,) = strip_checks.strip_lines("noise\n" + self.LINE + "\n")
+        self.assertEqual((line["mode"], line["left"], line["lc"], line["right"], line["rc"]),
+                         ("ctf", "2", "blue", "1", "red"))
+        self.assertEqual((line["goal"], line["left_sub"], line["right_sub"], line["lf"]),
+                         ("TO 3", "DROPPED 0:18", "bot5", "0.67"))
+
+    def test_rules(self):
+        lines = strip_checks.strip_lines(self.LINE)
+        self.assertEqual(strip_checks.check_rules(lines, {"all:mode": "ctf", "left_sub": r"DROPPED \d+:\d\d"}), [])
+        self.assertEqual(len(strip_checks.check_rules(lines, {"all:goal": "TO 5"})), 1)
+        self.assertEqual(strip_checks.check_rules(lines, {"carried": "bot5"}), [])
+        self.assertEqual(strip_checks.check_rules([], {}), ["no score strip lines"])
+        for name in strip_checks.CASES:
+            spec = strip_checks.case_spec(name, "build")
+            self.assertEqual(spec["env"]["HALO_DEBUG_SCORE_STRIP_LOG"], "1")
+            self.assertTrue(spec["saved_gametype"])
+
+    def test_pair_is_perspective_free(self):
+        host = strip_checks.strip_lines(self.LINE)
+        client = strip_checks.strip_lines(self.LINE.replace("left=2(blue) right=1(red)", "left=1(red) right=2(blue)")
+                                          .replace("tick 450", "tick 452"))
+        self.assertEqual(strip_checks.compare_pair(host, client), [])
+        wrong = strip_checks.strip_lines(self.LINE.replace("left=2(blue)", "left=3(blue)"))
+        self.assertEqual(len(strip_checks.compare_pair(host, wrong)), 1)

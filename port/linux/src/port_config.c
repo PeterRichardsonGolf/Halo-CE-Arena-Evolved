@@ -973,6 +973,11 @@ static const struct config_setting config_settings[] =
 		"For automated tests of a full tag table: the most tags a map and a weapon\n"
 		"pack's own may have together, below the built-in 49152 (0xC000); a map\n"
 		"past it refuses the pack. 0 for the built-in limit." },
+	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"
+		"seconds of game time, one line per local player of what the strip says.\n"
+		"Any machine; only this machine's log." },
 	{ "debug.weapon_log", _config_boolean, "false", "HALO_WEAPON_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For automated tests of the battle rifle (ae_burst_rifle.c): each round it\n"

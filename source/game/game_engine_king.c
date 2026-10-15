@@ -1231,3 +1231,6 @@ boolean game_engine_king_read_network_state(
 	}
 	return TRUE;
 }
+
+long ae_strip_king_hill_timer(void) { return king_globals.hill_timer; } /* AE hook */
+boolean ae_strip_king_player_on_hill(long player_index) { return player_inside_hill(player_index); } /* AE hook */

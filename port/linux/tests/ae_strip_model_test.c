@@ -235,6 +235,10 @@ static void test_ctf_states(void)
 	s.me.flag = _ae_flag_carried; wcscpy(s.me.flag_carrier, L"bot9");
 	ae_strip_model_build(&s, &m);
 	AE_CHECK_WSTR(m.left_sub.text, L"bot9"); AE_CHECK(m.left_sub.color == _ae_strip_color_team_red);
+	/* (a team with no flag in play, single-flag CTF: no line) */
+	s.other.flag = _ae_flag_none;
+	ae_strip_model_build(&s, &m);
+	AE_CHECK_WSTR(m.right_sub.text, L"");
 	/* (a 15-character carrier fits) */
 	wcscpy(s.me.flag_carrier, L"averylongname15");
 	ae_strip_model_build(&s, &m);

@@ -26,7 +26,8 @@ enum ae_strip_mode { _ae_strip_slayer, _ae_strip_ctf, _ae_strip_oddball, _ae_str
 	_ae_strip_rounds };
 enum ae_strip_color { _ae_strip_color_white, _ae_strip_color_grey, _ae_strip_color_team_red,
 	_ae_strip_color_team_blue, _ae_strip_color_me, _ae_strip_color_clock };
-enum ae_strip_flag_state { _ae_flag_home, _ae_flag_carried, _ae_flag_dropped };
+enum ae_strip_flag_state { _ae_flag_home, _ae_flag_carried, _ae_flag_dropped,
+	_ae_flag_none /* (addition) the team has no flag in play: no flag line */ };
 enum ae_strip_hill_state { _ae_hill_empty, _ae_hill_yours, _ae_hill_contested, _ae_hill_theirs };
 /* whose the context line's player is (ball holder, juggernaut, IT, target): none or unknown reads as the other
 side's (white in FFA) */

@@ -191,7 +191,7 @@ static void build_flag(const struct ae_strip_side_snapshot *side, enum ae_strip_
 		put(text, L"DROPPED ", _ae_strip_color_grey);
 		put_time(text, side->flag_return_seconds, _ae_strip_color_white);
 	}
-	else
+	else if (side->flag == _ae_flag_home)
 		put(text, L"HOME", _ae_strip_color_grey);
 }
 
