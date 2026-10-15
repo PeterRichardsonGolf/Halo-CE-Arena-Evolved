@@ -4193,6 +4193,50 @@ static void game_engine_rasterize_voice_speakers(
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
 }
 
+/* port: display.match_timer (off by default, as the Xbox had none): a
+timed game's time left, at the top of each player's view, in the color of
+the game's messages */
+static void game_engine_rasterize_time_left(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean shown = FALSE;
+	rectangle2d bounds;
+	real_argb_color color;
+	wchar_t time_string[32];
+	long left;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		shown = config_boolean("display.match_timer") != 0;
+	}
+	if (!shown || !game_engine || game_variant_options_get()->time_limit <= 0 ||
+		game_engine_globals.postgame_state != game_engine_mode_active)
+	{
+		return;
+	}
+
+	left = game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
+	ticks_to_unicode_time_string(MAX(left, 0), NUMBEROF(time_string), time_string);
+
+	bounds = render.camera.window_bounds;
+	offset_rectangle2d(&bounds, -render.camera.viewport_bounds.x0, -render.camera.viewport_bounds.y0);
+	bounds.y0 += 8;
+	bounds.y1 = bounds.y0 + 15;
+
+	color.alpha = 1.0f;
+	color.red = 0.45882353f;
+	color.green = 0.7294118f;
+	color.blue = 1.0f;
+	draw_string_set_draw_mode(hud_globals->messaging.multi_player_font.index, NONE, 2, 0, &color);
+	draw_string_set_color(&color);
+	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, time_string);
+	draw_string_set_format(NONE, 0, 0);
+
+	return;
+}
+
 static void game_engine_post_rasterize_in_game(
 	void)
 {
@@ -4218,6 +4262,7 @@ static void game_engine_post_rasterize_in_game(
 
 	if (game_engine && player)
 		internal_rasterize_target_name(player_index);
+	game_engine_rasterize_time_left();
 
 	gamepad = input_get_gamepad_state(local_player_index);
 	fade = game_engine_globals.hud_message_timers[local_player_index];
@@ -5648,6 +5693,12 @@ void game_engine_player_killed(
 			message = _game_engine_message_double_kill;
 		else if (killing_player->statistics.kills_in_a_row == 5)
 			message = _game_engine_message_five_kills_in_row;
+		/* port: none in a row is no spree. A network client's copy of the
+		killer's statistics can have this kill credited to no one, or to
+		someone else, before the host's statistics come (the Xbox's credited
+		the killer here, so never had none): Running Riot was announced */
+		else if (killing_player->statistics.kills_in_a_row <= 0)
+			message = _game_engine_message_killed_enemy;
 		else
 		{
 			message = (killing_player->statistics.kills_in_a_row % 5)
@@ -7428,8 +7479,8 @@ struct game_variant *build_game_variant_oddball(
 struct game_variant *build_game_variant_team_oddball(
 	struct game_variant *variant)
 {
-	/* port: zeroed, as every other builder's: its flags' port bits (16 and
-	up), name and padding were the stack's */
+	/* port: cleared, as every other builder's is: only some of its fields
+	are set below, and the rest were the stack's */
 	struct game_variant result = { 0 };
 
 	SET_FLAG(result.universal_variant.flags, _game_variant_draw_object_in_motion_sensor_bit, TRUE);

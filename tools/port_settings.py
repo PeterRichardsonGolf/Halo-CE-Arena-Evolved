@@ -330,6 +330,8 @@ SCREENS = {
              "A team game's scoreboard: a column for each team,\nor every player in order of score.", None),
             ("SCOREBOARD PANEL:", "display.scoreboard_background", ON_OFF,
              "Draw a panel behind the scoreboard, for clearer\ntext.", None),
+            ("MAP DOWNLOADS:", "network.map_downloads", [("ASK", "ask"), ("ALWAYS", "always"), ("NEVER", "never")],
+             "A Custom Edition map a game needs, from the\ncommunity map repository: ask first, or not.", None),
         ],
     },
     "gamepad_setup": {

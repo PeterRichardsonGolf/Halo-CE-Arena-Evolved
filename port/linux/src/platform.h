@@ -177,7 +177,8 @@ the window (port/android/include/halo_android_abi.h), and the web build's
 WebAssembly memory ends with it (tools/web_build.py) */
 #define PLATFORM_CONTIGUOUS_SIZE 0x08000000U
 #else
-/* the desktop builds' (Linux, macOS, Windows): four times a 128 MB
+/* the desktop builds' (Linux, macOS, Windows) and the native 64-bit
+Android build's: four times a 128 MB
 development kit's, for their larger texture cache (halo_port_capacity.h);
 port/windows/src/win32_memory_watch.c has the same */
 #define PLATFORM_CONTIGUOUS_SIZE 0x20000000U

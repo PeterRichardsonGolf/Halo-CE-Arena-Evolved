@@ -103,6 +103,8 @@ their handlers open opens.
 #include "ae_glue_lan.h" /* AE hook */
 #include "halo_server_browser.h"
 #include "halo_port_limits.h" /* AE: the game lists' rows (halo_port_advertised_join_state) */
+/* (the multiplayer maps past the Xbox's: ui_map_list.c) */
+#include "halo_ui_map_list.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -1296,6 +1298,27 @@ static void map_caption_set(struct widget_instance *widget, wchar_t const *capti
 	widget->parameters.text_box.string_list_index = HALO_CUSTOM_MAP_TEXT;
 }
 
+/* a multiplayer map's string (_ui_map_list_string_*) and picture: the
+Xbox's thirteen their own, the Custom Edition maps after them the menus' map
+list's (ui_map_list.c), which ui_widget.c draws in their place */
+static short multiplayer_map_string(short map, short kind)
+{
+#ifdef HALO_CUSTOM_EDITION
+	return ui_map_list_string_index(map, kind);
+#else
+	return map;
+#endif
+}
+
+static short multiplayer_map_picture(short map)
+{
+#ifdef HALO_CUSTOM_EDITION
+	return ui_map_list_picture_index(map);
+#else
+	return map;
+#endif
+}
+
 static void multiplayer_map_text(short map, wchar_t *text)
 {
 	text[0] = 0;
@@ -1362,7 +1385,7 @@ static void map_description_show(struct widget_instance *description, short leve
 		widget->animation.current_frame_index = multiplayer_map_names ?
 			ui_map_list_xbox_picture(multiplayer_map_names[map], NULL) : map;
 	if ((widget = named(description, "mp_map_right_data", 0)) != NULL)
-		widget->parameters.text_box.string_list_index = map;
+		widget->parameters.text_box.string_list_index = multiplayer_map_string(map, _ui_map_list_string_description);
 }
 
 /* New Game's list: SINGLEPLAYER's levels, the profile's reached, or
@@ -4696,7 +4719,8 @@ static boolean lobby_browser_select(struct widget_instance *widget, short contro
 	{
 		wchar_t blocked[ROW_TEXT_LENGTH * 2];
 
-		if (server_browser_map_blocked(game->map, blocked, NUMBEROF(blocked)))
+		if (server_browser_map_blocked(game->map, blocked, NUMBEROF(blocked)) &&
+			!server_browser_map_downloadable(game->map))
 		{
 			lobby_browser_message(blocked);
 			return campaign_fail();

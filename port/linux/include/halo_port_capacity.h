@@ -58,8 +58,8 @@ whose pages are backed as they are used, and their cache 256 MB, half of it
 the 32-bit ones, whose process the window shares with everything else. Nothing of the
 cache's size reaches the network or the game state.
 
-Android's window stays the development kit's 128 MB (its guest image is
-linked just above it), 82 MB of it above the game state. Besides the
+Android's guest build keeps the development kit's 128 MB window (its
+guest image is linked just above it), 82 MB of it above the game state. Besides the
 texture cache, Portent and Foundation take about 23 MB of that in a game
 (the sound cache and Direct3D's resources), so Android's cache is twice
 the Xbox's, 44 MB (ChupathingyCE's; OpenCE's Android keeps the Xbox's), and
@@ -121,6 +121,30 @@ the Xbox's. */
 #define HALO_PORT_SOUND_CACHE_SIZE 0x1000000 /* (0x400000) */
 #endif
 
+/* ---------- transparent geometry, particles and lights a frame draws
+
+What one view draws in a frame, past which the rest is not drawn: its
+transparent geometry groups (each a projectile's or an effect's transparent
+model, glow, light volume or run of particles: a busy multiplayer fight
+spends the Xbox's 384, and plasma bolts, the plasma pistol's charge glow
+and the rest stop drawing), the runs of particles that share a definition,
+and the dynamic lights (an assault rifle's flashlight, each plasma bolt's
+light) found in the clusters it sees. The desktop builds draw several
+times as many. Only what is drawn changes: these are rebuilt every frame,
+outside the game state, and nothing of them reaches the network, so
+machines with other limits still play the same game. Android's guest build
+and the Xbox builds keep the Xbox's. */
+
+#if !(defined(HALO_ANDROID) && !defined(HALO_64BIT)) && !defined(HALO_XBOX_CONSOLE)
+#define HALO_PORT_MAXIMUM_TRANSPARENT_GEOMETRY_GROUPS 2048 /* (384) */
+#define HALO_PORT_MAXIMUM_RENDERED_PARTICLE_GROUPS 2048 /* (512) */
+#define HALO_PORT_MAXIMUM_RENDERED_LIGHTS 512 /* (128) */
+#else
+#define HALO_PORT_MAXIMUM_TRANSPARENT_GEOMETRY_GROUPS 384 /* (384) */
+#define HALO_PORT_MAXIMUM_RENDERED_PARTICLE_GROUPS 512 /* (512) */
+#define HALO_PORT_MAXIMUM_RENDERED_LIGHTS 128 /* (128) */
+#endif
+
 /* ---------- AI
 
 Network co-op adds enemies for its players (port/linux/game/coop_enemies.c):
@@ -167,16 +191,5 @@ without its widget */
 #define HALO_PORT_MAXIMUM_CONTRAIL_POINTS 8192 /* (1024) */
 #define HALO_PORT_MAXIMUM_LIGHTS_PER_MAP 4096 /* (896) */
 #define HALO_PORT_MAXIMUM_GAME_LOOPING_SOUNDS 4096 /* (1024) */
-
-/* ---------- rasterizer
-
-A frame's transparent geometry groups: each transparent part of a model drawn,
-each widget drawn (light volumes, antennas, flags, glows), each batch of
-dynamic geometry (particles, contrails), each transparent surface of the
-structure. A full pool draws the frame without the
-rest ("too many transparent geometry groups" in debug.txt): a b30 co-op game
-with eight times the enemies asked for 464 in a frame. Each group is 160
-bytes */
-#define HALO_PORT_MAXIMUM_TRANSPARENT_GEOMETRY_GROUPS 2048 /* (384) */
 
 #endif /* __HALO_PORT_CAPACITY_H */

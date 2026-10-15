@@ -311,6 +311,26 @@ def test_menu_settings_exist():
     assert controls == set(re.findall(r'\{ "(controls\.[a-z_]+)", L"', functions))
 
 
+def test_report_joined_games_stops_claims():
+    """network.report_joined_games = false stops both what a copy sends the
+    game list about a game it joined: its own report of the game
+    (browser_client_report) and the claim of its players' lines in the
+    host's report (browser_claim_game, /v1/claim). A game it hosts is
+    claimed either way."""
+    root = MENUS.parent.parent.parent
+    browser = (root / "port/linux/src/browser.c").read_text()
+    for function in ("browser_client_report", "browser_claim_game"):
+        body = re.search(r"^void " + function + r"\(.*?^\}", browser, re.M | re.S).group(0)
+        gate = re.search(r'!config_boolean\("network\.report_joined_games"\)\s*\|\|\s*'
+                         r'!p2p_joined_invite\(', body)
+        assert gate, function
+        # (before the request is queued; Arena Evolved returns earlier still, for a game with a password)
+        assert body.index("pthread_once(&browser_once") > gate.start(), function
+    readme = (root / "port/linux/README.md").read_text()
+    row = next(line for line in readme.splitlines() if line.startswith("| `network.report_joined_games`"))
+    assert "/v1/claim" in row
+
+
 def test_default_brokers_are_brokers_txt():
     """The brokers a game uses with no brokers.txt beside its config.toml
     (p2p_signal.c's DEFAULT_BROKERS) are port/assets/network/brokers.txt's."""
@@ -524,7 +544,7 @@ def test_config_has_each_section_once(tmp_path):
     root = Path(__file__).resolve().parent.parent
     stubs = tmp_path / "stubs"
     (stubs / "SDL3").mkdir(parents=True)
-    (stubs / "SDL3" / "SDL.h").write_text("")
+    (stubs / "SDL3" / "SDL.h").write_text("#include <strings.h>\n#define SDL_strncasecmp strncasecmp\n")
     (stubs / "platform.h").write_text("void platform_log(const char *format, ...);\n")
     # (Arena Evolved's port_config.c also lists folders, posix.h, and pauses the capture for its restart,
     # capture.h: none of it runs here)

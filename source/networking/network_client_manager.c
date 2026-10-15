@@ -820,6 +820,9 @@ static struct
 {
 	word version;
 	byte flags;
+	/* (and the advertisement's reserved bytes whole: the game wire a Delta
+	host plays after them, port/linux/include/delta.h) */
+	byte reserved[0x1A];
 } network_game_client_advertised_versions[MAXIMUM_NETWORK_ADVERTISED_GAMES];
 
 
@@ -827,6 +830,8 @@ static struct
 /* port: the joined game's advertisement's flags (HALO_PORT_ADVERTISED_FLAGS_OFFSET),
 for Delta Peer (network_game_client_delta_frame); 0 for the host's own game */
 static byte network_game_client_joined_flags;
+/* port: the joined game's host's identifier (its XNADDR's abEnet) */
+static byte network_game_client_joined_host[6];
 static void network_game_client_delta_frame(struct network_game_client *client);
 void delta_peer_game_stop(int host);
 #endif
@@ -2103,6 +2108,9 @@ boolean network_game_client_initiate_join_game(
 		network_game_client_joined_flags = game_index >= 0 && game_index < MAXIMUM_NETWORK_ADVERTISED_GAMES ?
 			network_game_client_advertised_versions[game_index].flags : 0;
 	}
+	/* (its host's identifier, its XNADDR's abEnet: the game joined again
+	once a map it needs is downloaded, browser_screen.c) */
+	csmemcpy(network_game_client_joined_host, game->xnaddr.data + 2, sizeof(network_game_client_joined_host));
 #endif
 
 	csmemcpy(
@@ -2569,6 +2577,9 @@ static boolean add_advertised_game(
 			network_game_client_advertised_versions[game_index].flags =
 				advertisement->__unknown5A[HALO_PORT_ADVERTISED_FLAGS_OFFSET];
 			ae_lobby_advertised(network_game_client_advertised_versions[game_index].version, network_game_client_advertised_versions[game_index].flags); /* AE hook */
+			csmemcpy(network_game_client_advertised_versions[game_index].reserved,
+				advertisement->__unknown5A,
+				sizeof(network_game_client_advertised_versions[game_index].reserved));
 		}
 
 		if (advertisement->game_name[0] != L'\0')
@@ -3198,7 +3209,14 @@ boolean network_game_client_version_compatible(
 	if (halo_port_advertised_joinable(theirs, distributed ? HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG : 0,
 		(unsigned int)delta_legacy_minimum(), (unsigned int)delta_legacy_maximum())) /* AE: the one test */
 	{
-		network_event("joining a host of network version %u (this machine's is %u)", theirs, ours);
+		if (theirs > (unsigned int)ours)
+		{
+			network_event("joining a host of network version %u, presumed additive (this machine's is %u)", theirs, ours);
+		}
+		else
+		{
+			network_event("joining a host of network version %u (this machine's is %u)", theirs, ours);
+		}
 		return TRUE;
 	}
 	if (theirs >= (unsigned int)delta_legacy_minimum() && theirs <= (unsigned int)delta_legacy_maximum())
@@ -3431,6 +3449,18 @@ long network_game_client_join_invite_host(
 	return 0;
 }
 
+void network_game_client_joined_host_identifier(
+	char *text,
+	long size)
+{
+	long index;
+
+	if (size < 13)
+		return;
+	for (index = 0; index < 6; index++)
+		snprintf(text + index * 2, 3, "%02x", network_game_client_joined_host[index]);
+}
+
 long network_game_client_invite_host_advertisement(
 	char const *invite,
 	struct network_invite_advertisement *advertisement)
@@ -3466,6 +3496,7 @@ long network_game_client_invite_host_advertisement(
 		/* (the advertisement's variant setting: the score to win) */
 		advertisement->score_limit = game->unknown100;
 		advertisement->in_progress = network_game_client_advertised_game_in_progress(client, game);
+		advertisement->map_version = (unsigned long)game->map.version;
 		return 1;
 	}
 	return 0;

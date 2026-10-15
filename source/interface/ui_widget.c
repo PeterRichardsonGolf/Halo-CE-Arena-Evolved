@@ -696,6 +696,7 @@ struct widget_instance;
 code over the widgets, as the virtual keyboard is */
 boolean browser_screen_active(void);
 void browser_screen_open(void);
+boolean browser_screen_open_map_offer(void);
 void browser_screen_process(void);
 void browser_screen_render(void);
 /* port: moderation on a dedicated server (port/linux/game/moderation_screen.c) */
@@ -1409,12 +1410,16 @@ boolean pc_menu_frame_placement(
 	short *x,
 	short *y,
 	short *width,
-	short *height);
+	short *height,
+	short *texel_y);
 /* port: the placeholder bitmap the menus draw a sprite of a high-res
 texture from, or the sheet if it has none (port/linux/game/hud_hires_tags.c) */
 struct bitmap_data const *hud_hires_sprite_bitmap(
 	struct bitmap_data const *sheet,
 	short sequence_index);
+/* port: the row of the bitmap draw_bitmap_in_rect starts from (a frame the
+menus place, pc_menu_frame_placement): 0 but while one is drawn */
+static short draw_bitmap_texel_y = 0;
 static void widget_instance_initialize(
 	struct widget_instance *widget,
 	struct widget_instance *parent,
@@ -1799,8 +1804,9 @@ void draw_bitmap_in_rect(
 			vertices[vertex_index].color = argb;
 			vertices[vertex_index].texture_coordinates.x =
 				(vertex_index % 3) ? texture_width : 0.0f;
-			vertices[vertex_index].texture_coordinates.y =
-				(vertex_index > 1) ? texture_height : 0.0f;
+			/* port: from the row the menus place it from (draw_bitmap_texel_y) */
+			vertices[vertex_index].texture_coordinates.y = draw_bitmap_texel_y / bitmap_height +
+				((vertex_index > 1) ? texture_height : 0.0f);
 			vertices[vertex_index].position = points[vertex_index];
 		}
 
@@ -5256,6 +5262,16 @@ void main_screen_shell_load(
 			if (!ui_widget_load_by_name_or_tag(pc_menus_root_name(), NONE, NULL, NONE, NONE, NONE, NONE))
 				error(_error_silent, "failed to load main screen shell window");
 		}
+#ifdef HALO_GAME_BROWSER
+		/* port: a join left for a Custom Edition map the player may
+		download: Online Games offers it, and joins the game again
+		(port/linux/game/browser_screen.c), in place of the map's error */
+		if (browser_screen_open_map_offer())
+		{
+			widget_globals.main_menu_deferred_error_code = NONE;
+			ui_widget_port_error_pending_text = NULL;
+		}
+#endif
 		if (widget_globals.main_menu_deferred_error_code != NONE)
 		{
 			display_error(widget_globals.main_menu_deferred_error_code, NONE, TRUE, FALSE);
@@ -7201,8 +7217,10 @@ static void ui_widgets_process_mouse(
 				ui_mouse_list_directions(widget, &back, &forward);
 			/* a sideways PC widget (typically a screen's button bar) steps
 			sideways only, and the d-pad's up and down pass over it to a widget
-			above it on the focus's way, so a touch drag leaves it the same way */
-			if (touch && widget && back == _widget_event_dpad_left && pc_menu_tag(widget->definition_tag_index) &&
+			above it on the focus's way, so a touch drag or the wheel leaves it
+			the same way (the wheel, past a list's last row onto the bar, went
+			back and forth between its buttons) */
+			if (widget && back == _widget_event_dpad_left && pc_menu_tag(widget->definition_tag_index) &&
 				ui_mouse_wheel_room(ui_mouse_menu(), _widget_event_dpad_up, FALSE) != NONE)
 			{
 				back = _widget_event_dpad_up;
@@ -7478,10 +7496,10 @@ static void widget_instance_render_recursive(
 			box): drawn at their size, from where they place it, in units of
 			that size rather than one to a texel */
 			rectangle2d texels = bounds;
-			short frame_x, frame_y, frame_width, frame_height;
+			short frame_x, frame_y, frame_width, frame_height, texel_y = 0;
 			boolean shown = TRUE;
 
-			if (pc_menu_frame_placement(bitmap, &frame_x, &frame_y, &frame_width, &frame_height))
+			if (pc_menu_frame_placement(bitmap, &frame_x, &frame_y, &frame_width, &frame_height, &texel_y))
 			{
 				bounds.x0 += frame_x;
 				bounds.y0 += frame_y;
@@ -7493,6 +7511,7 @@ static void widget_instance_render_recursive(
 			}
 			if (shown)
 			{
+				draw_bitmap_texel_y = texel_y;
 				draw_bitmap_in_rect(
 					bitmap,
 					&bounds,
@@ -7501,6 +7520,7 @@ static void widget_instance_render_recursive(
 					color,
 					&multitexture_params,
 					FALSE);
+				draw_bitmap_texel_y = 0;
 			}
 		}
 		if (use_nifty_plasma_fx)

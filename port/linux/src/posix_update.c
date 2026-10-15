@@ -18,6 +18,9 @@ Built with the host's ABI, as the other posix_*.c.
 
 #include "update.h"
 #include "build_identity.h"
+#ifdef HALO_GAME_BROWSER
+#include "browser_http.h"
+#endif
 
 #include "mbedtls/error.h"
 #include "mbedtls/net_sockets.h"
@@ -485,7 +488,7 @@ static int https_get(const char *url, struct download *download, char *location,
 	return status;
 }
 
-int update_download(const char *url, const char *path, unsigned long long maximum, update_progress_proc progress,
+static int download_file(const char *url, const char *path, unsigned long long maximum, update_progress_proc progress,
 	void *context, char *error, int error_size)
 {
 	char current[2048];
@@ -555,6 +558,24 @@ int update_download(const char *url, const char *path, unsigned long long maximu
 	fclose(download.file);
 	unlink(path);
 	return 0;
+}
+
+int update_download(const char *url, const char *path, unsigned long long maximum, update_progress_proc progress,
+	void *context, char *error, int error_size)
+{
+	int succeeded;
+
+	/* (in turn with the game list's requests, which use the same Mbed TLS:
+	it has no locks of its own, and two threads setting up its PSA crypto
+	or drawing on its random generator at once crash it) */
+#ifdef HALO_GAME_BROWSER
+	posix_browser_lock();
+#endif
+	succeeded = download_file(url, path, maximum, progress, context, error, error_size);
+#ifdef HALO_GAME_BROWSER
+	posix_browser_unlock();
+#endif
+	return succeeded;
 }
 
 /* ---------- files and processes */

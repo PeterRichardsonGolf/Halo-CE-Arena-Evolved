@@ -15,8 +15,15 @@ You do not need the Xbox SDK. The declarations that the game uses are in
 
 To build:
 
-- Python and ninja.
-- clang. The option `--linux-cc` of `configure.py` selects a different
+- Python and ninja (`python3` and `ninja-build` on Debian and Ubuntu,
+  `python` and `ninja` on Arch Linux).
+- clang and lld. A release build is optimised with the profiles in `pgo/`
+  only with clang 22, the version that wrote them; with an older clang it
+  is built without them. Debian and Ubuntu get clang 22 from
+  [apt.llvm.org](https://apt.llvm.org) (`clang-22`, `lld-22`, `llvm-22`);
+  put `/usr/lib/llvm-22/bin` first on `PATH`, or give `configure.py` the
+  compiler with `--linux-cc clang-22`. Arch Linux has it as `clang` and
+  `lld`. The option `--linux-cc` of `configure.py` selects a different
   compiler.
 - The 32-bit glibc development files: `lib32-glibc` on Arch Linux,
   `gcc-multilib` and `libc6-dev-i386` on Debian and Ubuntu.
@@ -83,9 +90,25 @@ To see the glibc version that a build needs, enter
 
 ## Build the game
 
-1. Go to the root folder of the repository.
-2. Enter `python configure.py`.
-3. Enter `ninja linux`.
+1. Install the tools. On Debian and Ubuntu, after adding apt.llvm.org's
+   `llvm-toolchain-<release>-22` repository (its instructions are at
+   [apt.llvm.org](https://apt.llvm.org); its script does it with
+   `sudo ./llvm.sh 22`), enter:
+
+   ```sh
+   sudo apt install clang-22 lld-22 llvm-22 gcc-multilib libc6-dev-i386 \
+     python3 ninja-build cmake pkg-config libwayland-bin
+   export PATH=/usr/lib/llvm-22/bin:$PATH
+   ```
+
+   On Arch Linux, enable the multilib repository and enter
+   `sudo pacman -S clang lld lib32-glibc python ninja cmake pkgconf wayland`.
+   GitHub Actions builds on Ubuntu 24.04 this way
+   (`.github/workflows/build.yml`).
+2. Go to the root folder of the repository.
+3. Enter `python3 configure.py` (with `--portable` for a build that
+   starts on other computers, as the releases are: "Portable build").
+4. Enter `ninja linux`.
 
 ### 64-bit
 
@@ -93,10 +116,13 @@ To see the glibc version that a build needs, enter
 `build/linux64/halo`, the way the macOS build does (the 64-bit build in
 [port/macos/README.md](../macos/README.md): `HALO_64BIT` and the `long`
 rewrite, `tools/lp64_build.py`). It needs the 64-bit glibc and SDL3
-development files (`sdl3` on Arch Linux, `libsdl3-dev` on Debian 13 and
-Ubuntu 25.04 or later) instead of the 32-bit ones, and the 64-bit OpenGL and
+development files (`libsdl3-dev` on Debian 13 and Ubuntu 25.04 or later,
+`sdl3` on Arch Linux) instead of the 32-bit ones, and the 64-bit OpenGL and
 sound libraries to start. An SDL3 built by hand is found through
-`LIBRARY_PATH` when linking and `LD_LIBRARY_PATH` when starting. It is not
+`LIBRARY_PATH` when linking and `LD_LIBRARY_PATH` when starting. With
+`--portable`, as the releases are built, it needs neither: it is built
+against Debian 11's 64-bit glibc 2.31 and brings its own SDL3, as the 32-bit
+portable build does (refer to "Portable build"). It is not
 optimised with a profile (the committed profiles are the 32-bit build's).
 Its releases are their own downloads: `-linux64.zip`, built on Ubuntu 22.04 with
 its own SDL3 beside `halo` (any distribution with glibc 2.35 or later), and
@@ -419,16 +445,17 @@ of the screen stays until the game ends. A game under way shows its own
 screen before JOIN GAME: players join there the same way, START or ADD
 PLAYER then START, and JOIN GAME brings them all into the game.
 
-In a multiplayer game, the pause menu (escape) has SETTINGS, which opens
-the profile's settings while the game goes on, and for the host END GAME.
-END GAME ends the game as its time limit does: the players stay, and after
-the carnage report the host picks the next map and gametype (PICK GAME).
-LEAVE GAME of the host still ends the game for everyone. The buttons go into
-the map's own pause menu, before LEAVE GAME, so the buttons of a custom map
-stay. The Xbox's pause box is drawn taller to hold them (a redraw,
-`port/assets/menus/port_svg/pause`); a custom map's box keeps its size, and
-what is below its list moves down. The few pictures of the settings that
-come from the main menu's map are not drawn there.
+With the PC menus, the pause menu (escape) has SETTINGS after RESUME GAME,
+which opens the profile's settings: in the campaign the game stays paused,
+in a multiplayer game it goes on. A multiplayer game's host also gets END
+GAME, which ends the game as its time limit does: the players stay, and
+after the carnage report the host picks the next map and gametype (PICK
+GAME). LEAVE GAME of the host still ends the game for everyone. The buttons
+go into the map's own pause menu, so the buttons of a custom map stay. The
+Xbox's pause box is drawn as it is, its middle longer to hold them; a custom
+map's box keeps its size, and what is below its list moves down. The few
+pictures of the settings that come from the main menu's map are not drawn
+there.
 
 In the campaign (one player, split screen or co-op), the pause menu has
 SETTINGS too, before REVERT TO SAVED (in a list without it, before its quit
@@ -465,9 +492,16 @@ the settings that you (or the Settings menu) change are lines without `#`;
 those stay as they are, also if a later version changes the default. To get
 the default values again, delete the file.
 
-The game reads the file at start-up. If a key is not correct, or a value
-has the wrong type, the game writes the line to the log and uses the default
-value. The Settings menu (Video, Mouse, Audio, Network and Controls Setup)
+The game reads the file once, when it starts: restart the game after you
+edit it. If a key is not correct, or a value has the wrong type, the game
+writes the line to the log and uses the default value. If a line has a
+mistake that TOML cannot read, such as a word without quotes (`menus = pc`
+for `menus = "pc"`) or `True` for `true`, the game skips that line, reads
+all of the others, and the log names the line and the likely fix. If you
+change the value of a line but do not remove its `# `, the line does
+nothing, and the log names it. Words such as `"borderless"` can be in any
+case; a word that a setting does not know is in the log, with what the game
+uses in its place. The Settings menu (Video, Mouse, Audio, Network and Controls Setup)
 changes the useful settings, writes them into the file (only their lines
 change: the line of a setting at its default loses its `#`) and applies
 them at once, but `audio.enabled`, and `display.menus` from the next main
@@ -485,8 +519,8 @@ the setting for one start of the game. It has priority over the file.
 
 | Setting | Default | Environment variable | Function |
 | --- | --- | --- | --- |
-| `display.mode` | `""` | `HALO_DISPLAY_MODE` | `"fullscreen"`: the display, taken at the mode of `display.resolution` (the nearest the display has), or at its desktop mode. `"borderless"`: a window over the whole desktop, whose mode does not change. `"windowed"`: a window of `display.window_size`. Empty: `display.fullscreen` decides (`true`: borderless). F11 changes between the window and the fullscreen mode. Video Setup sets it. |
-| `display.fullscreen` | `true` | `HALO_FULLSCREEN` | `true`: borderless, as `display.mode = "borderless"`. `false`: a window, as `display.mode = "windowed"`. Used when `display.mode` is empty. |
+| `display.mode` | `""` | `HALO_DISPLAY_MODE` | `"fullscreen"`: the display, taken at the mode of `display.resolution` (the nearest the display has), or at its desktop mode. `"borderless"`: a window over the whole desktop, whose mode does not change. `"windowed"`: a window of `display.window_size`. Empty: `display.fullscreen` decides (`true`: borderless). When it is set, `display.fullscreen` is ignored, and the log says so if both are set. F11 changes between the window and the fullscreen mode. Video Setup sets it. |
+| `display.fullscreen` | `true` | `HALO_FULLSCREEN` | `true`: borderless, as `display.mode = "borderless"`. `false`: a window, as `display.mode = "windowed"`. Used only when `display.mode` is empty. |
 | `display.resolution` | `"native"` | `HALO_RESOLUTION` | What fullscreen and borderless draw at: `"native"`, the display's own resolution, or `"<width>x<height>"`, such as `"1920x1080"`, 640x480 or more. Fullscreen sets the display to it. Borderless draws at it and scales the picture to the display, where the display has room for it. The picture has 480 lines of the game and the width of the resolution's shape. A window draws at its own size instead. Video Setup's Resolution sets it, from the display's modes; it shows with Fullscreen and Borderless. |
 | `display.resolution_scaling` | `"native"` | `HALO_RESOLUTION_SCALING` | `"native"`: the game draws at the resolution of the window, or of the display (or `display.resolution`) fullscreen. `"original"`: the game draws the 640x480 picture of the Xbox and scales it up to the window or the display, whatever `display.mode` is. Video Setup sets it. |
 | `display.window_size` | `""` | `HALO_WINDOW_SIZE` | The size of the window, as `"<width>x<height>"`, such as `"1920x1080"`, 640x480 or more. You can change the size of the window; the game's picture takes its shape. Empty: `display.window_scale` decides. Video Setup's Window Size sets it, from sizes of each shape (4:3, 16:10, 16:9 and 21:9) that fit the desktop; it shows with Windowed. |
@@ -573,6 +607,7 @@ the setting for one start of the game. It has priority over the file.
 | `network.broadcast` | `""` | `HALO_NET_BROADCAST` | IPv4 addresses, with commas between them, that get the broadcasts of the game. Empty: 255.255.255.255. |
 | `network.online` | `true` | `HALO_NET_ONLINE` | `true`: internet play. `false`: system link on the local network only. |
 | `network.join_from_clipboard` | `true` | `HALO_NET_JOIN_FROM_CLIPBOARD` | `true`: when the game comes to the front, it joins the game of an invite link on the clipboard. |
+| `network.map_downloads` | `"ask"` | `HALO_NET_MAP_DOWNLOADS` | A Custom Edition map a game you join needs and you don't have, from the community map repositories (maps.halonet.net and its mirrors, as Chimera downloads from them). `"ask"`: the Online Games screen offers to download it (Yes, No, Don't ask again, which writes `"always"` or `"never"` here). `"always"`: downloaded without asking. `"never"`: the game only says which map is missing. Network Settings in the PC menus. The map is checked before it goes in `maps_ce`: refer to "Halo PC maps" in the [README](../../README.md). Not on the dedicated server. |
 | `network.tunnel_port` | `0` | `HALO_NET_TUNNEL_PORT` | The UDP port for internet play. `0`: the game selects a port. Refer to "Internet play". |
 | `network.allow_upnp` | `true` | `HALO_NET_ALLOW_UPNP` | `true`: internet play can ask the router to forward its port (UPnP). `false`: the game does not ask. Refer to "Internet play". |
 | `network.protocol` | `"auto"` | `HALO_NET_PROTOCOL` | Delta Peer, the messages between ChupathingyCE machines beside OpenCE's protocol (UDP port 5160; `docs/delta.md`). `"auto"`: Delta with the machines that speak it, plain OpenCE with the others. `"opence"`: Delta off. `"delta"`: as `"auto"` for now. |
@@ -611,6 +646,9 @@ the setting for one start of the game. It has priority over the file.
 | `game.mcc_path` | `""` | (none; `HALO_MCC_PATH` names one for a run, looked at after this one) | The folder of Halo: The Master Chief Collection (the one holding `halo1`) whose Custom Edition files (`halo1/maps/custom_edition`: `bitmaps.map`, `sounds.map`, `loc.map`) Custom Edition maps read when `maps_ce`, `maps/ce` and `custom_maps` have none. Empty: found in Steam's libraries (Linux: `~/.local/share/Steam`, `~/.steam`, Flatpak, Snap; Windows: the registry's Steam folder). BROWSE on Settings > MAP FILES sets it. Windows: a path with characters outside the system's code page is not found. The files are only read, never changed or copied; the folder never goes over the network or into saves. |
 | `game.mcc_use` | `"ask"` | `HALO_MCC_USE` | Whether Custom Edition maps read MCC's Custom Edition files: `"yes"`, `"no"`, or `"ask"`: picking such a map in the menus asks (USE MCC FILES, NOT NOW, NEVER ASK AGAIN); elsewhere (a game joined, a test host) it counts as no, and the map's refusal says where to turn it on. With `"no"` Steam's folders are looked in only when Settings > MAP FILES is opened. MCC FILES on Settings > MAP FILES sets it. Files in your own folders always win. |
 | `network.legacy_table` | `""` | `HALO_LEGACY_TABLE` | For testing, and for admins: a legacy table file, not signed, next to `config.toml` unless a full path. Its row for the wire of the build sets the OpenCE network versions that the game announces and joins, in place of the signed tables. The log shows a warning at start. Refer to `docs/delta.md`. Empty: none. |
+| `network.list_hosted_games` | `true` | `HALO_NET_LIST_GAMES` | `true`: the system link games this machine hosts are listed on `network.browser_url` (halo.milenko.org), where anyone can find and join them. `false`: they are kept to invites and the local network. |
+| `network.report_joined_games` | `false` | `HALO_NET_REPORT_GAMES` | When an internet game this machine joined ends, the game sends `network.browser_url` its scores as this machine saw them, with this copy's player ID, and confirms this machine's players' lines in the host's report of the game (`POST /v1/claim`), which puts the game on their profiles. `false`: neither, for games this machine joins. Games it hosts are still reported and confirmed. |
+| `network.report_events` | `true` | `HALO_NET_REPORT_EVENTS` | Delta Stats: the games this machine hosts are recorded (kills with weapons and positions, accuracy, medals, objectives, vehicles, pickups) and sent to `network.browser_url` when each ends. Players' names and a hash of their hardware ID; never an address. `false`: off. Refer to `docs/delta.md`. |
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
@@ -1524,7 +1562,7 @@ Other changes:
 | `rasterizer/xbox/rasterizer_xbox_environment_fog.c` | A local pointer gets its value from the file-scope array with the same name. |
 | `game/player_control.c` | The mouse aims the player on controller 1 directly. |
 | `sound/game_sound.c` | The game calculates the obstruction of each sound one time for each tick, not for each frame. |
-| `cseries/errors.c` | `debug.txt` stays open between lines. |
+| `cseries/errors.c` | `debug.txt` stays open between lines. A line that is the same as the line before it is counted, not written again (`last line repeated N times`). At 64 MB, `debug.txt` becomes `debug.old.txt` and a new `debug.txt` starts. |
 | `networking/`, `game/`, `interface/`, `bungie_net/network/` and the pools of objects, effects and sounds | The system link limits and the memory for them. |
 | `game/`, `objects/`, `units/`, `networking/` | The distributed netcode. Refer to `NETCODE.md`. |
 | `cache/cache_files.c` | When a map's tags load and unload, the port finds the bitmaps that the high-res HUD replaces (`game/hud_hires_tags.c`), and adds the tags of the menus to the menus' map (`game/menu_tags.c`). |

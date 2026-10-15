@@ -1,13 +1,14 @@
 # Delta: ChupathingyCE's network family
 
-Status (October 8, 2026, for 0.7.1b): in progress. Delta List, Stats, Link
+Status (October 13, 2026, for 0.7.4e): in progress. Delta List, Stats, Link
 and Control run under the names in the table below; the legacy number's
-table, its signed loader and the cross-play gate that publishes it are
-built (see "The legacy number" and "Following OpenCE"); Delta Peer's first
-layer is built: its port, the advertisement's flag, the handshake with
-silent fallback, platform keys, and the `platform`, `profile`, `ce_maps`
-and `moderation` capabilities (see "Delta Peer"). Delta Stats' event log,
-server moderators and linking servers to the site come with 0.7.1b. The site's page for players:
+table and its signed loader are built, and the cross-play gate that
+publishes it runs on every OpenCE raise (see "The legacy number" and
+"Following OpenCE"); Delta Peer's first layer is built: its port, the
+advertisement's flag, the handshake with silent fallback, platform keys,
+and the `platform`, `profile`, `ce_maps` and `moderation` capabilities (see
+"Delta Peer"). Delta Stats' event log, server moderators and linking
+servers to the site shipped in 0.7.1b. The site's page for players:
 https://halo.milenko.org/delta
 
 Delta is the name for everything ChupathingyCE's machines say to each other
@@ -28,7 +29,7 @@ boundaries:
 | **Delta List** | game or server, and the site | announcing and listing games | `/v1/announce`, `/v1/withdraw`, `/v1/games`, the console list |
 | **Delta Stats** | game or server, and the site | end-of-game reports and the event stream | `/v1/report`, `/v1/client_report`, `/v1/events` |
 | **Delta Control** | an admin or moderator, and a server | roles, commands, the control API and panel, in-game moderation, the site link | `sv_` commands, `HALO_DEDICATED_CONTROL`, `moderators.txt`, `sv_link` |
-| **Delta Link** | a player or server, and the site | linking with a code, and site-relayed control | `/v1/link`, `/v1/connect`, `/v1/claim` (profiles); `sv_link` (servers, 0.7.1b) |
+| **Delta Link** | a player or server, and the site | linking with a code, and site-relayed control | `/v1/link`, `/v1/connect`, `/v1/claim` (profiles); `sv_link` (servers) |
 
 The legacy number (OpenCE's `HALO_PORT_NETWORK_VERSION`) is not part of
 Delta. Delta works around it (see "The legacy number" below).
@@ -346,7 +347,12 @@ plays, with `ce_maps` agreed by both:
   `<file>.map` is not the host's and which folder to replace it in, and
   leaves the game. No such file: nothing more is said here, as the legacy
   join already tells the player the map is missing and where it goes
-  (`cache_files_map_present`).
+  (`cache_files_map_present`), or offers to download a Custom Edition map
+  from the community map repositories (`port/linux/src/map_download.c`),
+  checked against the version the host advertises in the legacy protocol
+  (the first 32 bits of its whole-file hash since network version 29, its
+  header's checksum from an older host). Once it is joined, MAP checks the
+  whole file as for any other.
 - **Hostile input**: a MAP is read only from the client's host, of its
   session, with `ce_maps` agreed and not turned off by the kill switch; a
   name that is not a plain file name, a Halo PC map without its hash, or
@@ -412,9 +418,9 @@ map (end the game, next map), 0x080 settings, 0x100 roles.
 - `"auto"` (the default): the behavior above.
 - `"opence"`: Delta Peer off entirely: no socket, no flag, no handshake; the
   machine is an OpenCE machine to everyone.
-- `"delta"`: for now the same as auto; it marks the intent. The Delta-only
-  rooms and the listings' protocol labels come later (see "The protocol
-  choice").
+- `"delta"`: for now the same as auto; it marks the intent. Delta-only
+  rooms come later (see "The protocol choice"). The browsers already label
+  each listed game Delta or OpenCE by what its host announces.
 
 ### The legacy table's relay
 
@@ -492,6 +498,78 @@ host with the same number. OpenCE raises it often, usually for additive
 changes (a message older machines drop). Delta handles it with a
 compatibility table and automation, so it stops being hand work.
 
+What each side checks, since 0.7.5a:
+
+- **Delta games go by our wire, not OpenCE's number.** A host that speaks
+  Delta puts its Delta major and its wire ID (`chupa-28a`, `DELTA_WIRE`)
+  in its advertisement, in reserved bytes after the port's version and
+  flags (`DELTA_ADVERTISED_WIRE_OFFSET`; OpenCE's machines leave them zero
+  and never read them). Our client, unless set to `network.protocol =
+  "opence"`, joins a host of its own major and wire whatever OpenCE number
+  either one announces, and refuses a host of another wire with a message
+  naming both. A host of another major, or one built before the wire was
+  advertised, is joined by its number, as before. The Online Games list
+  keeps a Delta host whose number is out of range, so that it can be joined
+  this way.
+- **OpenCE hosts and clients are unchanged.** Our client joins an OpenCE
+  host by its number: back to the newest breaking version, up to the
+  maximum. Our host announces one number. It can't let in OpenCE clients
+  of other numbers: an OpenCE client compares the advertised number with
+  its own and joins only on an exact match, before it sends anything, and
+  its join request doesn't say its number. So an OpenCE client of a newer
+  number sees our games only once we announce that number (a signed table
+  or a release, below).
+- **The next number is presumed additive.** Our client joins hosts of the
+  next OpenCE number (`DELTA_LEGACY_PRESUMED`, 1, past the one announced)
+  from the day OpenCE raises it, before anything is followed. The built-in
+  maximum is at least the built-in number plus one, and a signed table's
+  row gets the same: a row that announces 30 joins up to at least 31,
+  whatever its `maximum` says. The rule for such a game: what the client
+  doesn't know it drops, as with any additive raise, and content it can't
+  match ends its join instead of playing on: a map of another version
+  (a Custom Edition map's version is in the game record) is refused as a
+  missing map, before the game loads. A raise that changes an existing
+  message, its layout or what it means, is breaking, not additive: it gets
+  a `breaking` row and a release. Builds already out can't be narrowed by a
+  table, so until they update they would still join such a host; that is
+  the one risk of the window, the same the built-in maximum has carried
+  since it was set two past the number (30 for 28). The join logs
+  "presumed additive", so a report from such a game says so.
+
+### Following policy
+
+ChupathingyCE has its own code and roadmap. Since October 9, 2026 it takes no
+code from OpenCE; it follows OpenCE's **network version**, so players of both
+keep sharing games.
+
+- **Delta players aren't held up.** Between our own builds the wire
+  decides, not OpenCE's number, so a raise never splits our players from
+  each other; a release that changes our game protocol gives itself a new
+  wire ID, and builds of an older wire are told to update. Following
+  OpenCE only decides which OpenCE players see our games.
+- **The next number is joined at once.** Our clients join OpenCE hosts of
+  the next number on day one (presumed additive, above). Our hosts keep
+  announcing the number they have proven until the cross-play gate passes:
+  announcing a number early would let in OpenCE clients that might not play
+  the same game.
+- **Bumps, not features, by hand.** When OpenCE raises its network version,
+  Donut posts it in #crossplay-watch on the Discord, and a person decides
+  whether to follow. Nothing follows on its own. An additive raise (messages
+  older machines drop) is followed with the legacy table or a run of the
+  watch, after the cross-play gate passes. A raise
+  that changes how a game plays, or internet play's signalling, gets the
+  smallest port that keeps games in agreement, in a release, and nothing else
+  of that build.
+- **Servers first.** Our dedicated servers move to each follow as soon as it
+  ships, so OpenCE players always have a server to join.
+- **Weekly at most, for ports.** A raise that needs ported
+  code is batched into a release about once a week, unless cross-play is
+  broken now. A port that would cost more than an evening is weighed against
+  the players it keeps.
+- **Security fixes** in shared code are ported by hand whenever they turn up.
+- **Browser builds** aren't followed: their players can't join our games, nor
+  we theirs.
+
 ### The compatibility table
 
 Built: `port/linux/include/delta.h`, `DELTA_LEGACY_VERSIONS`, one row per
@@ -509,9 +587,10 @@ breaking:
 	X(23, "build-147", additive) /* a Custom Edition map's blocks past the Xbox tools' limits kept, its version in the game's settings; Xbox maps as 22 */ \
 	X(24, "build-149", additive) /* the gametype's PC vehicle set: every vehicle the map places */ \
 	X(25, "build-169", additive) /* units' integrated lights in the object states; a banned machine told so */ \
-	X(26, "build-184", additive) /* internet play's signalling, version 4 (WebRTC, for browsers; ChupathingyCE's p2p_signal.c reads 3 and 4, Arena Evolved's, OpenCE's, 4); game messages as 25 */ \
-	X(27, "build-189", additive) /* followed from OpenCE: additive */ \
-	X(28, "build-201", additive) /* followed from OpenCE: 27's messages; the host holds a downloading machine's players out, keeps a map's first scripted BSP, lights past the Xbox limits, a second weapon readied (a 27 machine disagrees: Arena Evolved's floor joins 28 alone) */
+	X(26, "build-184", additive) /* internet play's signalling, version 4 (WebRTC, for browsers; p2p_signal.c reads 3 and 4); game messages as 25 */ \
+	X(27, "build-189", additive) /* Custom Edition map sharing's messages (a machine of 26 drops them); game messages as 25 */ \
+	X(28, "build-201", additive) /* no message changed: a script's switch_bsp keeps a multiplayer game's first, the flashlight past the Xbox limits, a second weapon readied while firing (wire chupa-28a) */ \
+	X(29, "build-206", additive) /* a Custom Edition map by its own name, its hash's first 32 bits its version in the game record (a client of 29 also takes 28's hashed names and header checksums; wire chupa-29a) */
 ```
 
 `tools/test_delta.py` (in CI) checks `halo_port_limits.h` against it: hosts
@@ -549,17 +628,20 @@ Known history, from `port/linux/NETCODE.md` and OpenCE's commits:
 | 23 | build-147 | a Custom Edition map's blocks past the Xbox tools' limits kept whole, its vehicles placed by their spawn flags, and its header checksum sent as the map's version (a client of another version leaves); Xbox maps play as 22 | additive |
 | 24 | build-149 | the gametype's PC vehicle set (0xFE), every vehicle the map places; on a Custom Edition map every placement whose spawn flags name the game type (a client of 23 places none of it) | additive |
 | 25 | build-169 | units' integrated lights (flashlights) in the host's object states, two bits of their flags (a client of 24 ignores them and keeps toggling a light on presses); a banned machine told it is kept out, an existing rejection code | additive |
-| 26 | build-184 | internet play's signalling (not the game's messages, which are 25's): JOIN and ACCEPT say each machine's WebRTC, for OpenCE's browsers, in signalling version 4, which OpenCE reads alone. A release, not a table row: `p2p_signal.c` reads and answers both 3 and 4, and asks in both until a host answers one (wire `chupa-26a`; no WebRTC, so browsers can't join our games). (Arena Evolved, from OpenCE build-190: OpenCE's `p2p_signal.c`, version 4 alone, with WebRTC, so browsers can join; wire `ae-27a`, `ae-28a` from build-201) | additive |
-| 27 | build-189 | Custom Edition map sharing: new distributed messages (request, offer, sources, progress), which a machine of 26 drops, and connections of their own on port 5153; players of an internet game reach each other (`p2p.c`) | additive |
-| 28 | build-201 | the game's messages are 27's; what the host decides changes: a machine still downloading a Custom Edition map has its players held out of the game (not spawned, not counted) until it has the map, then they join through the late-join queue; a multiplayer map's first scripted BSP switch is kept (the sky the game type picks); dynamic lights and the flashlight stay on past the Xbox player and vehicle limits; a second weapon picked up while firing is readied. A machine of 27 disagrees on these (OpenCE joins its own version alone; Arena Evolved, wire `ae-28a`, joins 28 alone) | additive |
+| 26 | build-184 | internet play's signalling (not the game's messages, which are 25's): JOIN and ACCEPT say each machine's WebRTC, for OpenCE's browsers, in signalling version 4, which OpenCE reads alone. A release, not a table row: `p2p_signal.c` reads and answers both 3 and 4, and asks in both until a host answers one (wire `chupa-26a`; no WebRTC, so browsers can't join our games) | additive |
+| 27 | build-189 | OpenCE's Custom Edition map sharing: new messages, which a machine of 26 drops (we don't share maps: a joining machine without the map is told which one it misses, as before). Signalling as 26, a token joined more than once | additive |
+| 28 | build-201 | no message, kind or struct changed: a multiplayer script's `switch_bsp` keeps the game's first BSP (a map with a copy of its place per sky no longer reloads), the flashlight and dynamic lights stay on past the Xbox's player and vehicle limits, and a second weapon picked up while firing is readied. A release (wire `chupa-28a`), so older builds' wire never gets a row for it: a host of 27 would reload such a map while its OpenCE clients of 28 kept it | additive |
+| 29 | build-206 | no message or struct changed, but two fields mean something else: a Custom Edition map's level name is its own (`custom_maps\hugeass`, not `custom_maps\hugeass_<8 hex digits>`), and the game record's map version is the first 32 bits of the map's whole-file hash, where 23 to 28 sent its header checksum. Our clients of 29 take both meanings, so they still join hosts of 28; our clients of 28 refuse a host of 29's Custom Edition map as another version (Xbox maps play). A release (wire `chupa-29a`), so older builds' wire never gets a row for it: a host of 28 sends the header checksum, which OpenCE's clients of 29 take for another version | additive |
 
 ### Automation
 
-Built (command repository, `watch.yml` and `tools/follow.py`), running every
-half hour since October 5, 2026; it followed versions 15 and 16 that day.
-The cross-play test in step 4 is built (`tools/crossplay_test.py`), and a
-gate runs it on every wire still in use (see "Following OpenCE", below):
-a pass widens the legacy table, so the builds already out follow too.
+Built (command repository, `watch.yml` and `tools/follow.py`), running
+since October 5, 2026; it followed versions 15 and 16 that day. The site's
+host starts it within minutes of an OpenCE release, and a daily run catches
+any start that never came. Beside the steps below, every change of the
+number also starts the cross-play gate (`tools/crossplay_test.py` on every
+wire still in use; see "Following OpenCE", below): a pass widens the legacy
+table, so the builds already out follow too.
 
 1. **Watch.** The command repo's watch workflow sees an OpenCE release that
    changes the number.
@@ -569,14 +651,14 @@ a pass widens the legacy table, so the builds already out follow too.
    record) or *review* (anything else).
 3. **Raise.** It pushes a branch to chupathingyce with the new number, the
    join range, the table row, the README line and the next patch version.
-4. **Verify in CI:** golden packets of every listed version decode with our
-   code, and CI builds OpenCE at that commit and plays a loopback game
-   against ours in both directions, checking joins, kills, scores and
-   positions.
+4. **Verify.** ChupathingyCE's own CI builds and tests the branch. The game
+   against OpenCE is the cross-play gate's, which tests the releases already
+   out.
 5. **Ship.** Additive and green: main moves to the branch, a release goes out
    (clients update themselves), and the [D] servers and Tex roll to it when
-   they're empty. Otherwise nothing ships, and Donut posts to #upstream-watch
-   for a person.
+   they're empty. Otherwise nothing ships: an issue in the command repo and
+   a Discord post ask a person. The repository variable `FOLLOW=off` sends
+   every raise to a person.
 
 ## Delta List
 
@@ -949,7 +1031,7 @@ check it too):
 - **`serial`**: 1 to 4294967294 (0xFFFFFFFF says "takes no tables" on the wire); each table published gets a higher one.
   **`issued`**: when it was made (Unix seconds), for people; optional.
 - **Rows by wire, not by build.** Each build has a wire ID (`DELTA_WIRE` in
-  `delta.h`, `chupa-26a` today; `chupa-24a` was 0.7.1e's, `chupa-23a` 0.7.1b's, `chupa-20a` 0.7.0b's): the revision of the game protocol it
+  `delta.h`, `chupa-29a` today; `chupa-28a` was 0.7.4e's and 0.7.5's, `chupa-26a` was 0.7.2e's and 0.7.3e's, `chupa-24a` was 0.7.1e's, `chupa-23a` 0.7.1b's, `chupa-20a` 0.7.0b's): the revision of the game protocol it
   actually speaks. A row says which OpenCE numbers that wire was proven to
   play with: the number a host announces, and the range of hosts' numbers a
   client joins (each 1 to 65535, `minimum <= announce <= maximum`). An old
@@ -1091,6 +1173,9 @@ the next serial, and `verify` checks the epoch against `delta_key.h`'s keys
   least the built-in number, minimum at most the built-in minimum, maximum at
   least the built-in maximum. Nothing the network sends can make a build
   stricter than it shipped; a table whose row narrows is dropped whole.
+- A taken row's maximum is at least its announce plus
+  `DELTA_LEGACY_PRESUMED` (since 0.7.5a): the next number is presumed
+  additive (see "The legacy number").
 - A table that doesn't verify is dropped quietly (one line in the log, never
   an address); nothing is shown to the player.
 
@@ -1174,8 +1259,9 @@ within hours when it doesn't.
      command and a person runs it.
    - A fail publishes nothing. An issue on chupathingyce ("OpenCE build-N
      needs a release") lists the failing steps, and Donut posts to
-     #upstream-watch. The release work takes it from there: merge OpenCE's
-     change, a new wire ID, its own row once its gate passes.
+     #upstream-watch. The release work takes it from there: the smallest
+     port that keeps games in agreement ("Following policy", above), a new
+     wire ID, its own row once its gate passes.
 5. **Spread.** The site pulls the `delta-table` branch every five minutes
    (checking the signature, newer serials only) and serves it at
    `/v1/delta/legacy`. Builds fetch it at start and every four hours, and
@@ -1277,29 +1363,32 @@ asking players for anything:
 - **No surprises for players.** No accounts needed to play, no prompts in the
   way; a profile is opt-in. Addresses are never shown (see the privacy
   rules); moderation (kick, ban, profile-linked moderators) is the host's.
-- **Reviewed upstream changes.** An OpenCE raise is merged as code, checked by
-  the cross-play test and reviewed before its number is announced; the
-  number alone is never matched blind.
+- **Checked upstream raises.** Builds already out announce an OpenCE raise
+  only after the cross-play gate has played them against it. A new release
+  announces it only when the watch's classifier finds none of the wire's
+  files changed, or after a person's review. The number alone is never
+  matched blind.
 
 ## Phases
 
 1. This document, the compatibility table and the capability registry.
    Done: `delta.h` and `test_delta.py`.
-2. The announced number and join range checked against the table. Done;
-   generating them from it comes with the signed table.
+2. The announced number and join range checked against the table. Done.
+   The built-in numbers are still written in `halo_port_limits.h`; the
+   signed table (7) widens them without a release.
 3. The watch workflow's classifier and the cross-play gate (done, in the
    command repository: "Following OpenCE"). A network version our wire
-   doesn't play with is still a reviewed merge of OpenCE's code and a
-   release.
+   doesn't play with still takes a release ("Following policy").
 4. Delta Peer: the port, the flag, the handshake with fallback, fuzzing,
    platform keys and their policy, and its first capabilities (`platform`,
-   `profile`, `ce_maps`, `moderation`). Built; `server_messages` and the
-   LAN superset are next.
-5. The protocol choice (Auto, Delta only, OpenCE only) and the browsers'
-   protocol labels; a dedicated server's listing marks it (flag 128).
+   `profile`, `ce_maps`, `moderation`). Shipped in 0.7.0b (`moderation` in
+   0.7.1b); `server_messages` and the LAN superset are next.
+5. The protocol choice (Auto, Delta only, OpenCE only). The browsers'
+   protocol labels and a dedicated server's listing flag (128) are built;
+   the choice in Server Setup and Delta-only rooms are not.
 6. Moderators for dedicated servers: Delta Peer's `moderation`,
    site-granted roles through a server's link to the site (`sv_link`), and
-   Delta Stats events with moderation in them. Built, in 0.7.1b.
+   Delta Stats events with moderation in them. Shipped in 0.7.1b.
 7. The legacy table as config. Built: wire IDs, the signed document and
    its tool, the game's loader (cache, Delta List, GitHub), the local
    override, the real keys, delivery over Delta Peer, epochs, and CI

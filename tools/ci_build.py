@@ -288,13 +288,16 @@ def strip_debug(program: Path) -> None:
 
 def server_dist(platform: str, config: str, output: str) -> int:
     """dist/chupathingyce-server-linux-<arch>[-debug]: the server, its
-    README, its playlists and the notices its parts' licenses ask for"""
+    README, its playlists, its blocked names list and the notices its parts'
+    licenses ask for"""
     arch = platform[len("server-"):]
     dist = ROOT / "dist" / f"chupathingyce-server-linux-{arch}{'' if config == 'release' else '-debug'}"
     if dist.exists():
         shutil.rmtree(dist)
     (dist / "playlists").mkdir(parents=True)
     shutil.copy2(ROOT / output, dist)
+    # (sv_name_filter's list, read from the data folder)
+    shutil.copy2(ROOT / "server/blocked_names.txt", dist / "blocked_names.txt")
     if config == "release":
         # a release's download without its debug information (about 20 MB
         # of 33); build/server-<arch>/ keeps the full program, and a debug

@@ -76,6 +76,47 @@ The app is `dev.horrible.chupathingyce` (ChupathingyCE's ID, kept so its
 data folder stays where it was), and its name on the device is Arena
 Evolved. Refer to "App ID, signing and versions".
 
+## The native 64-bit build (experimental)
+
+`ninja android64` builds the game as native 64-bit code (LP64), as the
+Linux x86-64, Windows x64 and macOS builds do (`HALO_64BIT`,
+`tools/lp64_build.py`). It has no guest image and no host loader: the game
+and the platform layer are in `libmain.so`, which calls SDL3 and OpenGL ES
+3 directly. `port/android/native64/android64_main.c` is its entry point
+(`SDL_main`) and does the work of `host_main.c`. The touch controls
+(`host/host_touch.c`) and the OpenGL ES helpers (`host/host_gl.c`) are
+shared with the usual build.
+
+`ninja android64_apk` makes the app:
+`port/android/app/build-native64/outputs/apk/debug/app-debug.apk`. It is
+the same Gradle module built with `-Pnative64`, so the two builds' APKs
+sit side by side. It is the same app: the same ID
+(`dev.horrible.chupathingyce`), name, key and version code. Either build
+installs over the other and keeps the data folder and the saves. Its
+updates come from the release asset `chupathingyce-android64-<config>.zip`,
+the usual build's from `chupathingyce-android-<config>.zip` (refer to
+"Updates").
+
+The game does not use fixed addresses. Its Xbox address space (4 GB,
+`source/cseries/xbox_address.h`) is reserved wherever the process has room,
+aligned to 4 GB (`port/linux/src/xbox_memory.c`). ART's spaces cannot be
+in the way, as they can be at `0x80000000` for the usual build (refer to
+"The fixed addresses"). The log shows the address, for example `Xbox
+address space at 0x7200000000`. If the reservation fails, the game shows a
+message and writes the process's mappings to the log.
+
+The native build has the memory window and texture cache of the desktop
+builds, and it plays Halo PC maps as they do. Kernels with 16 KB pages
+(Android 15 and later) are supported.
+
+To build and install it:
+
+1. Enter `ninja android64_apk`.
+2. Enter `adb install -r port/android/app/build-native64/outputs/apk/debug/app-debug.apk`.
+
+A crash report gives addresses in `libmain.so`. To get the names, enter
+`llvm-symbolizer --obj=build/android64/jniLibs/arm64-v8a/libmain.so 0x<offset>`.
+
 ## Game data
 
 The game needs the `maps/` folder from an Xbox disc image (`.xiso` or
@@ -114,8 +155,24 @@ files of `save/z`, which adb cannot read.
 
 The app plays Halo PC (Custom Edition, HaloMD and retail) maps as the other
 builds do: refer to "Halo PC maps" in the main
-[README](../../README.md#halo-pc-maps). Copy the files from a computer, for
-example
+[README](../../README.md#halo-pc-maps).
+
+To add maps on the device, use **Import maps**: hold the app's icon and
+choose Import Halo PC maps, or, in the game, open the touch controls'
+Options and choose Import maps. Android's own file picker opens (no
+storage permission is asked for). Pick one or more `.map` files, or `.zip`
+archives of them, and the app copies each into its folder by its header
+(`port/android/app/src/main/java/com/halo/decomp/MapImporter.java`): a
+Custom Edition map (cache version 609), and `bitmaps.map`, `sounds.map` and
+`loc.map`, into `maps_ce`; a Halo PC 1.0 map (version 7) into `maps_md`
+when it is named as HaloMD's are (`<name>_<number>.map`), else into
+`maps_pc`. Xbox maps are left out: they come from the disc image. A map
+replaces a file of the same name in its folder. From a zip, only the
+`.map` files are taken, by their names alone (never a folder from the
+archive). This is the way in on recent Android versions, where file
+managers cannot open the app's folder.
+
+Or copy the files from a computer, for example
 `adb push <folder>/. /sdcard/Android/data/dev.horrible.chupathingyce/files/maps_ce/`.
 The older `maps/ce` and `md_maps` of earlier versions stay where they
 are (`game.move_old_map_folders` is `"no"`; `"yes"` moves them into `maps_ce`

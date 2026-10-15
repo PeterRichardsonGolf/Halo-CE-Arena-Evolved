@@ -109,6 +109,9 @@ boolean cache_files_ce_map_release(
 #endif
 unsigned long cache_files_map_version(
 	char const *map_name);
+unsigned long cache_files_map_choose(
+	char *map_name,
+	long size);
 boolean cache_files_map_present(
 	char const *map_name,
 	unsigned long version);
