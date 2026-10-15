@@ -77,6 +77,9 @@ void ae_panel_draw_disc(real cx, real cy, real radius, short tone, real alpha, b
 void ae_panel_draw_ring(real cx, real cy, real radius, real width, short tone, real alpha, boolean keyline);
 /* a filled circle in any colour (the sensor's blips), its edge 1 px soft */
 void ae_panel_fill_disc(real cx, real cy, real radius, const union real_argb_color *color);
+/* a filled polygon with 1 px soft edges, its outline moved grow px out (the keyline: grow 1); it is filled as a fan
+from its first corner, so every corner must be seen from that one (a chevron from its tip) */
+void ae_panel_fill_polygon_soft(const real (*points)[2], short count, real grow, const union real_argb_color *color);
 /* a filled convex polygon (screen px, clockwise or not) */
 void ae_panel_draw_polygon(const real (*points)[2], short count, short tone, real alpha);
 

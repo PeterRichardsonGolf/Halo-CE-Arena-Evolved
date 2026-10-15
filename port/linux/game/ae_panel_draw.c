@@ -160,6 +160,67 @@ static void line_soft(real x0, real y0, real x1, real y1, real width, const real
 	}
 }
 
+/* the polygon's outline moved d px out (in: d < 0), each corner mitred */
+static void offset_polygon(const real (*points)[2], short count, real d, real (*out)[2])
+{
+	real area = 0.0f, sign;
+	short i;
+
+	for (i = 0; i < count; i++)
+		area += points[i][0] * points[(i + 1) % count][1] - points[(i + 1) % count][0] * points[i][1];
+	sign = area > 0.0f ? 1.0f : -1.0f;
+	for (i = 0; i < count; i++)
+	{
+		const real *p = points[(i + count - 1) % count], *q = points[i], *n = points[(i + 1) % count];
+		real ax = q[0] - p[0], ay = q[1] - p[1], bx = n[0] - q[0], by = n[1] - q[1];
+		real la = (real)sqrt(ax * ax + ay * ay), lb = (real)sqrt(bx * bx + by * by);
+		real n0x, n0y, n1x, n1y, dot;
+
+		if (la <= 0.0f)
+			la = 1.0f;
+		if (lb <= 0.0f)
+			lb = 1.0f;
+		n0x = sign * ay / la; n0y = -sign * ax / la;
+		n1x = sign * by / lb; n1y = -sign * bx / lb;
+		/* (a miter limit of 2: a chevron's sharp feet would otherwise grow long spikes) */
+		dot = n0x * n1x + n0y * n1y;
+		if (dot < -0.5f)
+			dot = -0.5f;
+		out[i][0] = q[0] + d * (n0x + n1x) / (1.0f + dot);
+		out[i][1] = q[1] + d * (n0y + n1y) / (1.0f + dot);
+	}
+}
+
+void ae_panel_fill_polygon_soft(const real (*points)[2], short count, real grow, const union real_argb_color *color)
+{
+	real inner[MAXIMUM_POINTS][2], outer[MAXIMUM_POINTS][2];
+	real_argb_color clear;
+	short i;
+
+	if (count < 3 || count > MAXIMUM_POINTS)
+		return;
+	offset_polygon(points, count, grow - FEATHER, inner);
+	offset_polygon(points, count, grow + FEATHER, outer);
+	clear_of(color, &clear);
+	/* the inner shape as a fan from its first corner, then a 1 px ramp across every edge */
+	for (i = 1; i + 1 < count; i++)
+		triangle(inner[0], inner[i], inner[i + 1], color);
+	for (i = 0; i < count; i++)
+	{
+		real quad[4][2];
+		real_argb_color colors[4];
+		short j = (short)((i + 1) % count);
+
+		quad[0][0] = inner[i][0]; quad[0][1] = inner[i][1];
+		quad[1][0] = inner[j][0]; quad[1][1] = inner[j][1];
+		quad[2][0] = outer[j][0]; quad[2][1] = outer[j][1];
+		quad[3][0] = outer[i][0]; quad[3][1] = outer[i][1];
+		colors[0] = colors[1] = *color;
+		colors[2] = colors[3] = clear;
+		ae_hud_fill_quad(quad, colors);
+	}
+}
+
 void ae_panel_draw_polygon(const real (*points)[2], short count, short tone, real alpha)
 {
 	real_argb_color color;
