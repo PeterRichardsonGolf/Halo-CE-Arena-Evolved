@@ -201,6 +201,23 @@ ROWS["AE CRAZYKNG"] = FFAX("king", 2, 0, 150, 2, "all", "nav points", **{"moving
 ROWS["AE RACE"] = FFAX("race", 3, 0, 300, 2, "all", "nav points", **{"race": "normal", "team scoring": "minimum"})
 ROWS["AE RALLY"] = FFAX("race", 15, 0, 300, 2, "all", "nav points", **{"race": "rally", "team scoring": "minimum"})
 
+# revision 11: the AE BR set, each one its AE twin with the battle rifle in hand (the weapon pack's rifle over the
+# PRIMARY slot's assault rifle) and the pistol second; nothing else differs (arena_gametypes.c's self-check too)
+BR_TWINS = {
+    "AE BR FFA": "AE FFA SLAY", "AE BR ELIM": "AE ELIM", "AE BR PHANT": "AE PHANTOMS", "AE BR ENDUR": "AE ENDURE",
+    "AE BR FBALL": "AE FFA BALL", "AE BR JUGG": "AE JUGGER", "AE BR RTAG": "AE REV TAG", "AE BR ACCUM": "AE ACCUM",
+    "AE BR STALK": "AE STALKER", "AE BR FKING": "AE FFA KING", "AE BR CKING": "AE CRAZYKNG", "AE BR PRAC": "AE PRACTICE",
+    "AE BR C FFA": "AE COMP FFA", "AE BR TS": "AE TEAM SLY", "AE BR CTF": "AE CTF", "AE BR KING": "AE KING",
+    "AE BR TM OB": "AE TEAM OB", "AE BR 2V2 S": "AE 2V2 SLY", "AE BR 2V2 C": "AE 2V2 CTF", "AE BR 2V2 K": "AE 2V2 KING",
+    "AE BR 2V2 B": "AE 2V2 BALL", "AE BR C TS": "AE COMP TS", "AE BR C CTF": "AE COMP CTF", "AE BR C KOH": "AE COMP KOH",
+    "AE BR C OB": "AE COMP OB",
+}
+BR_START = {"loadout": "assault rifle + pistol", "weapon pack": "battle rifle (slot 1)", "pack loadout primary": "pack",
+            "pack loadout secondary": "stock", "battle rifle on map": "off"}
+for _name, _twin in BR_TWINS.items():
+    _want, _spawn, _frags = ROWS[_twin]
+    ROWS[_name] = (dict(_want, **BR_START), "battle_rifle + pistol", _frags)
+
 
 def check(runs, prefix):
     """{name: (passed, problems)} for every seed run under runs/<prefix><name, spaces as _>/*/debug.txt"""
@@ -216,7 +233,7 @@ def check(runs, prefix):
         if m:
             got["starting frags"] = m[1]
         bad = {k: (v, got.get(k)) for k, v in want.items() if got.get(k) != v}
-        m = re.search(r"first spawn: ([a-z ]+?(?: \+ [a-z ]+?)?), (\d+) frag", text)
+        m = re.search(r"first spawn: ([a-z_ ]+?(?: \+ [a-z_ ]+?)?), (\d+) frag", text)
         if spawn and (not m or m[1] != spawn or int(m[2]) != frags):
             bad["first spawn"] = ((spawn, frags), (m[1], int(m[2])) if m else None)
         out[name] = (not bad, bad)

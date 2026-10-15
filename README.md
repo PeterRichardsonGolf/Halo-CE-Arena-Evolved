@@ -160,6 +160,12 @@ play:
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic
   health, no grenades), ROCKETS, SHOTGUNS and HEAVIES (75 kills, the map's
   vehicles).
+- **Arena Evolved BR** (0.2.6): the casual set, the free for all variants, FFA AE PRACTICE and AE COMP again with the
+  **battle rifle in hand** and the pistol second (FFA AE BR SLAYER, TEAM AE BR SLAYER, TEAM AE BR COMP CTF, ... 25
+  gametypes; stored as AE BR FFA, AE BR TS, AE BR C CTF, ...). Every other value is its twin's. Not made for the
+  single-weapon modes (snipers, rockets, shotguns, SWAT, heavies, shotty snipers), RACE, RALLY or TRAINING. They
+  need the battle rifle's pack (the `packs` folder): only machines with it join; on Custom Edition maps, and where
+  the pack is not, the slot plays an assault rifle.
 - **Arena Evolved COMP**: FFA AE COMP SLAYER (25 kills), TEAM AE
   COMP SLAYER (50), TEAM AE COMP CTF (3 captures), TEAM AE COMP KING and TEAM
   AE COMP ODDBALL (5 minutes held, with the lethal ball). 5-second respawn and suicide penalty, 2
@@ -184,7 +190,7 @@ play:
   modes on NHE's maps. NHE MODE and NHE EXTRAS are on a gametype's **NHE
   OPTIONS** screen.
 - The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY):
-  the Arena Evolved set, AE COMP, the NHE set, TRAINING, then your own
+  the Arena Evolved set, AE BR, AE COMP, the NHE set, TRAINING, then your own
   gametypes, before the built-in ones. Seeded gametypes you edit are kept as
   you made them when a newer build updates the others.
 

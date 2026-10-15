@@ -21,6 +21,7 @@ enum arena_gametype_set
 {
 	_arena_gametype_set_none,       /* not one of ours: stock CE, the player's own */
 	_arena_gametype_set_ae,         /* AE casual (unmarked in names) */
+	_arena_gametype_set_ae_br,      /* AE BR: AE casual's and AE COMP's with the battle rifle start (revision 11) */
 	_arena_gametype_set_ae_comp,
 	_arena_gametype_set_nhe,
 	_arena_gametype_set_training,   /* AE TRAINING / PRACTICE: outside the sets */
@@ -58,12 +59,12 @@ void arena_gametype_display_name(
 	wchar_t *display_name,
 	short size);
 /* whether stored_name is one of the table's gametypes on AE's rules (the
-AE, AE COMP and TRAINING sets; not an old name, not Halo 1: NHE's set):
+AE, AE BR, AE COMP and TRAINING sets; not an old name, not Halo 1: NHE's set):
 the one marker of AE's gametypes (game_engine.c's weapon set with a custom
 loadout); a player's own gametype only by taking a seed's name */
 boolean arena_gametype_has_ae_rules(
 	wchar_t const *stored_name);
-/* "AE", "AE COMP", "NHE", "TRAINING"; "" for none */
+/* "AE", "AE BR", "AE COMP", "NHE", "TRAINING"; "" for none */
 char const *arena_gametype_set_name(
 	short set);
 /* the table's gametypes (not the aliases), in its order */
