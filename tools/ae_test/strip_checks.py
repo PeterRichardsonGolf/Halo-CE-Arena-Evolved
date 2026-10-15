@@ -3,6 +3,7 @@
 
     python3 tools/ae_test/strip_checks.py modes --build <rev|path> [--cases ctf,ffa_slay,...]
     python3 tools/ae_test/strip_checks.py pair --build <rev|path>
+    python3 tools/ae_test/strip_checks.py digits --build <rev|path> [--maps prisoner,homobox@ce]
 
 modes: one headless host per case, playing a seeded Arena Evolved gametype (HALO_NETWORK_TEST_GAMETYPE) with
 system-link bots and debug.score_strip_log (HALO_DEBUG_SCORE_STRIP_LOG=1). Every 5 seconds of game time the game
@@ -17,6 +18,10 @@ held on at least one line (the rules that must hold on every line say so).
 pair: a host and a joined client (a second game instance, tools/ae_test/handshake.py's pair) playing AE TEAM SLY
 (--gametype) with a kill every 6 seconds; each client line's perspective-free signature (mode, goal, the two sides' scores and colours as a set)
 must equal one of the two host lines nearest its tick (Review Focus 2: a joiner's strip reads as the host's).
+
+digits: CE's counter digits (ae_hud_digits.c) drawn by debug.digits (HALO_DEBUG_DIGITS) in magenta at 24 px cap;
+in the screenshots, the magenta pixels' box must be 24 +- 1 px tall (cap top to baseline) and as wide as the ink the
+game logs ("hud digits: ... ink L..R, emboldened E": R - L + E) +- 2 px, with its left at L +- 2.
 """
 import argparse
 import re
@@ -210,21 +215,95 @@ def run_pair(cfg, a, out):
     return {"pair": result}
 
 
+DIGITS_TEXT = "1:42 17 10"
+DIGITS_LOG = re.compile(r"hud digits: '[^']*' at (?P<cap>[\d.]+) px cap, x [\d.]+ baseline (?P<base>[\d.]+): "
+                        r"advance [\d.]+, ink (?P<left>[\d.]+)\.\.(?P<right>[\d.]+), emboldened (?P<bold>[\d.]+), "
+                        r"sheet (?P<sheet>\w+)")
+
+
+def magenta_box(w, h, rgb, x0=0, y0=0, x1=None, y1=None):
+    """the box (x0, y0, x1, y1, inclusive) of the debug digits' magenta pixels in a region, or None"""
+    x1 = w if x1 is None else min(x1, w)
+    y1 = h if y1 is None else min(y1, h)
+    xs, ys = [], []
+    for y in range(y0, y1):
+        row = y * w * 3
+        for x in range(x0, x1):
+            r, g, b = rgb[row + 3 * x], rgb[row + 3 * x + 1], rgb[row + 3 * x + 2]
+            if r > 150 and b > 150 and g < 90 and abs(r - b) < 70:
+                xs.append(x)
+                ys.append(y)
+    return (min(xs), min(ys), max(xs), max(ys)) if xs else None
+
+
+def judge_digits(text, pngs):
+    """(why list, the measured box): the digits' box against the game's logged ink"""
+    m = DIGITS_LOG.search(text)
+    if not m:
+        return ["no 'hud digits:' line"], None
+    if m["sheet"] != "found":
+        return ["the map's HUD digits sheet was not found"], None
+    cap, base = float(m["cap"]), float(m["base"])
+    left, right, bold = float(m["left"]), float(m["right"]), float(m["bold"])
+    boxes = []
+    for png in pngs:
+        w, h, rgb = harness.read_png(png)
+        box = magenta_box(w, h, rgb, 0, int(base - cap - 20), int(right + 40), int(base + 10))
+        if box:
+            boxes.append(box)
+    if not boxes:
+        return ["no magenta digits in any screenshot"], None
+    box = boxes[-1]
+    why = []
+    height = box[3] - box[1] + 1
+    width = box[2] - box[0] + 1
+    if abs(height - cap) > 1:
+        why.append(f"height {height} px, not {cap:g} +- 1")
+    if abs(width - (right - left + bold)) > 2:
+        why.append(f"width {width} px, not {right - left + bold:.1f} +- 2")
+    if abs(box[0] - left) > 2:
+        why.append(f"left {box[0]}, not {left:.1f} +- 2")
+    if abs(box[3] + 1 - base) > 1:
+        why.append(f"bottom {box[3] + 1}, not the baseline {base:g} +- 1")
+    return why, box
+
+
+def run_digits(cfg, a, out):
+    results = {}
+    for map_name in a.maps.split(","):
+        name = "digits-" + harness.safe_name(map_name)
+        spec = harness.parse_spec({"name": name, "build": a.build, "map": map_name, "start": 3, "bots": 1,
+                                   "window": "1920x1080", "exit_after": 40, "screenshots": 100,
+                                   "env": {"HALO_DEBUG_DIGITS": DIGITS_TEXT}, "expect": {"ticks": 200}})
+        r = harness.play(cfg, spec, out / name, None, a.keep_work, run_id=f"{out.name}-{name}")
+        debug = out / name / "debug.txt"
+        text = debug.read_text(errors="replace") if debug.exists() else ""
+        pngs = [out / name / s for s in r.get("shots", [])][1:]
+        why, box = judge_digits(text, pngs)
+        why = (r.get("why") or []) + why
+        status = "PASS" if r.get("status") == "PASS" and not why else "FAIL"
+        harness.log(f"  {name}: {status}, box {box}" + (f" ({'; '.join(why)})" if why else ""))
+        results[name] = {"status": status, "why": why, "box": box}
+    harness.write_json(out / "digits.json", results)
+    return results
+
+
 def main(argv):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     harness.add_common_args(p)
-    p.add_argument("what", choices=("modes", "pair"))
+    p.add_argument("what", choices=("modes", "pair", "digits"))
     p.add_argument("--build", required=True)
     p.add_argument("--cases", default=DEFAULT_CASES)
     p.add_argument("--seconds", type=int, default=45)
     p.add_argument("--gametype", default="AE TEAM SLY", help="pair: the host's seeded gametype")
+    p.add_argument("--maps", default="prisoner,homobox@ce", help="digits: the maps")
     p.add_argument("--parallel", default=None)
     a = p.parse_args(argv)
     if a.box:
         raise SystemExit("strip_checks: run it on the box itself (ssh halo-build), with --build a path or commit there")
     cfg = harness.load_config(a.config)
     out = harness.new_out_dir(cfg, "strip_checks", a.what, a.out_name)
-    results = run_modes(cfg, a, out) if a.what == "modes" else run_pair(cfg, a, out)
+    results = {"modes": run_modes, "pair": run_pair, "digits": run_digits}[a.what](cfg, a, out)
     failed = [n for n, r in results.items() if r["status"] != "PASS"]
     harness.log(f"strip_checks {a.what}: {len(results) - len(failed)} passed, {len(failed)} failed; results in {out}")
     return 1 if failed else 0

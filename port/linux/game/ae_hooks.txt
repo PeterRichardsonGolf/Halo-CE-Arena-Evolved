@@ -364,3 +364,6 @@ source/game/game_engine_race.c	long ae_strip_race_rally_flag(void) { return race
 source/game/game_engine.c	#include "ae_strip_engine.h" /* AE hook */
 source/game/game_engine.c	ae_strip_engine_debug_log(); /* AE hook */
 port/linux/src/port_config.c	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud.c	#include "ae_score_strip.h" /* AE hook */
+source/interface/hud.c	ae_score_strip_draw(render.local_player_index); /* AE hook */
+port/linux/src/port_config.c	{ "debug.digits", _config_string, "\"\"", "HALO_DEBUG_DIGITS", _environment_value, /* AE hook */\n_platform_all,

@@ -1360,3 +1360,14 @@ class StripChecks(unittest.TestCase):
         self.assertEqual(strip_checks.compare_pair(host, client), [])
         wrong = strip_checks.strip_lines(self.LINE.replace("left=2(blue)", "left=3(blue)"))
         self.assertEqual(len(strip_checks.compare_pair(host, wrong)), 1)
+
+    def test_magenta_box(self):
+        w, h = 8, 6
+        rgb = bytearray(w * h * 3)
+        for x, y in ((2, 1), (5, 4)):
+            rgb[(y * w + x) * 3:(y * w + x) * 3 + 3] = bytes((255, 0, 255))
+        rgb[(3 * w + 1) * 3:(3 * w + 1) * 3 + 3] = bytes((255, 255, 255))  # (white is not the digits')
+        self.assertEqual(strip_checks.magenta_box(w, h, rgb), (2, 1, 5, 4))
+        self.assertIsNone(strip_checks.magenta_box(w, h, rgb, 6, 0, 8, 6))
+        self.assertEqual(strip_checks.judge_digits("nothing", [])[0], ["no 'hud digits:' line"])
+

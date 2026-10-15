@@ -973,6 +973,11 @@ static const struct config_setting config_settings[] =
 		"For automated tests of a full tag table: the most tags a map and a weapon\n"
 		"pack's own may have together, below the built-in 49152 (0xC000); a map\n"
 		"past it refuses the pack. 0 for the built-in limit." },
+	{ "debug.digits", _config_string, "\"\"", "HALO_DEBUG_DIGITS", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the HUD's counter digits (ae_hud_digits.c): the\n"
+		"text (digits, \":\" and spaces) drawn in magenta at 24 px in the first view's\n"
+		"top left, and its measures in the log." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"

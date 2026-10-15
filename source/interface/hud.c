@@ -112,6 +112,7 @@ symbols in this file:
 #include "coop_spectate.h" /* port: port/linux/game/coop_spectate.c */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_weapon_pack.h" /* AE hook */
+#include "ae_score_strip.h" /* AE hook */
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "units/unit_definitions.h"
@@ -1486,6 +1487,7 @@ void hud_draw_screen(
 		/* port: CAMPAIGN TIMER, there in the campaign */
 		else if (!game_engine_running() && !cinematic_in_progress())
 			hud_draw_campaign_timer();
+		ae_score_strip_draw(render.local_player_index); /* AE hook */
 
 		hud_messaging_update(render.local_player_index);
 	}
