@@ -82,6 +82,7 @@ Called from the main loop every frame (main.c).
 #include "saved games/arena_gametypes.h"
 #include "ae_silent.h" /* AE hook */
 #include "ae_burst_rifle.h" /* AE hook */
+#include "ae_saved_limits.h" /* AE hook */
 #include <xtl.h> /* (MAX_GAMENAME) */
 
 #include "../src/p2p.h" /* port: port/linux/src/p2p.c, p2p_lobby.c */
@@ -408,7 +409,7 @@ static boolean network_test_saved_gametype(
 	/* (at most 100 saved gametypes a memory unit, saved_game_files.c, and
 	the built-in ones: the menus' lists hold 128, menu_functions.c's
 	MAXIMUM_GAMETYPES) */
-	long indices[128];
+	long indices[AE_SAVED_GAMES_MAXIMUM]; /* AE hook */
 	short last_used;
 	short count;
 	short attempt;

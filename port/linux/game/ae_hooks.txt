@@ -425,3 +425,13 @@ source/interface/ui_widget.c	scale *= ae_buttons_ce_menu_icon_scale(bitmap_group
 source/game/game_engine.c	#include "ae_postgame.h" /* AE hook */
 source/game/game_engine.c	if (ae_postgame_buttons()) /* AE hook */\nbreak;
 source/game/game_engine.c	if (ae_postgame_confirm_draw(&bounds)) /* AE hook */\nreturn;
+# AE's saved-game limit (0.2.6, seed revision 11; ae_saved_limits.h): the memory unit lists 160 saved games, not
+# 100 (86 seeds + 28 built-ins), and every gametype list holds as many. tools/test_ae_saved_limits.py.
+source/saved games/saved_game_files.c	#include "ae_saved_limits.h" /* AE hook */
+source/saved games/saved_game_files.c	MAXIMUM_ENUMERATED_SAVED_GAME_FILES_ANY_TYPE_PER_MEMORY_UNIT = AE_SAVED_GAMES_MAXIMUM /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	widget->parameters.list.list_items = ui_widget_realloc(widget->parameters.list.list_items, (word)(AE_SAVED_GAMES_MAXIMUM * sizeof(long)), /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	profile_count = AE_SAVED_GAMES_MAXIMUM; /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_saved_limits.h" /* AE hook */
+port/linux/game/menu_functions.c	#define MAXIMUM_GAMETYPES AE_SAVED_GAMES_MAXIMUM /* AE hook */
+port/linux/game/network_test.c	#include "ae_saved_limits.h" /* AE hook */
+port/linux/game/network_test.c	long indices[AE_SAVED_GAMES_MAXIMUM]; /* AE hook */

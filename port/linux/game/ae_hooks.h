@@ -8,6 +8,9 @@ notes/ae-hooks.md says where each goes). Included after cseries.h (boolean).
 #ifndef __AE_HOOKS_H
 #define __AE_HOOKS_H
 
+/* AE_SAVED_GAMES_MAXIMUM (the multiplayer settings list's size) */
+#include "ae_saved_limits.h"
+
 struct halo_ui_pointer;
 struct event_record;
 struct widget_instance;

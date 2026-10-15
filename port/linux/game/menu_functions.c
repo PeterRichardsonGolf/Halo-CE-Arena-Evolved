@@ -99,6 +99,7 @@ their handlers open opens.
 #include "halo_map_families.h"
 #include "ae_glue_mcc.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
+#include "ae_saved_limits.h" /* AE hook */
 #include "ae_glue_settings.h" /* AE hook */
 #include "ae_glue_lan.h" /* AE hook */
 #include "halo_server_browser.h"
@@ -2467,7 +2468,7 @@ Xbox's networking, run by the engine's port entry points
 #define GAMETYPE_ROWS 10
 /* (128: the memory unit's saved games, at most 100, and the 26 built-in
 gametypes after them) */
-#define MAXIMUM_GAMETYPES 128
+#define MAXIMUM_GAMETYPES AE_SAVED_GAMES_MAXIMUM /* AE hook */
 #define BROWSER_ROWS 15
 #define LOBBY_ROWS 11
 #define TEXT_FIELD_LENGTH 128

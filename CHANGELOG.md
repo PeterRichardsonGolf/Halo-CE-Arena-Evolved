@@ -31,6 +31,17 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   player who is alive becomes the juggernaut. The host decides; the rule is part of the gametype (no row in the
   editor). An AE JUGGERNAUT you never changed updates on the first start (backed up first); one you edited is kept
   as it is.
+- **AE BR gametypes**: 25 new gametypes with the **battle rifle in hand** and the pistol second, each a twin of an
+  Arena Evolved one (the casual set, the free for all variants, PRACTICE and AE COMP; not the single-weapon modes,
+  RACE, RALLY or TRAINING), in their own block between Arena Evolved and AE COMP: FFA AE BR SLAYER, TEAM AE BR
+  SLAYER, TEAM AE BR COMP CTF, ... They are added on the first start (seed revision 11); nothing you have is changed,
+  and a gametype of yours with one of their names is kept. They need the battle rifle's pack, as the rifle does.
+- **More saved games**: the game now lists 160 saved games (profiles, gametypes and the 26 built-in gametypes
+  together; it was 100, and Arena Evolved's 86 gametypes would not have fit). **Going back to an older build**
+  (0.2.5-beta and before) on the same save folder: it still lists your profiles and gametypes, but past its 100 it
+  leaves out some of the built-in gametypes (12 or more, one more for each saved game of yours) and the default
+  profiles, and it cannot save a new profile or gametype; with 99 or more saved games in the folder (Arena
+  Evolved's 86 among them: 13 profiles and gametypes of yours) it says "too many saved games" at start. Your files are not changed; this build lists them all again.
 - **HUD STYLE** (Settings > HUD, its first row): AE (the default) or CLASSIC, the HUD exactly as before. With AE, a
   **score strip** under the view in multiplayer: both sides' scores (my team or me on the left) with the clock between
   them, how close each side is to winning, and each gametype's own state (the flags in CTF, the ball's holder, the

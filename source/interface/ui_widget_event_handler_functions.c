@@ -3470,7 +3470,7 @@ static boolean multiplayer_profiles_list_initialize(
 	match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 1385,
 		definition->child_count == 3,
 		"expected 3 list items for 'multiplayer settings list' widget");
-	widget->parameters.list.list_items = ui_widget_realloc(widget->parameters.list.list_items, 0x200,
+	widget->parameters.list.list_items = ui_widget_realloc(widget->parameters.list.list_items, (word)(AE_SAVED_GAMES_MAXIMUM * sizeof(long)), /* AE hook */
 		"c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 1390);
 	profile_indices = widget->parameters.list.list_items;
 	if (profile_indices)
@@ -3478,7 +3478,7 @@ static boolean multiplayer_profiles_list_initialize(
 		long profile_count;
 
 		/* port: 128 (0x200 bytes): up to 100 saved games and the built-in ones after them */
-		profile_count = 128;
+		profile_count = AE_SAVED_GAMES_MAXIMUM; /* AE hook */
 		playlist_profiles_enumerate_available_to_local_player_index(0, &profile_count, profile_indices);
 		if ((word)profile_count < 3)
 		{
