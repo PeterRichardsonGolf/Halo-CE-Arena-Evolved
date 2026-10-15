@@ -668,6 +668,8 @@ static void listing_take(const struct queued *queued, const struct listing *list
 	shown->in_progress = (listing->flags & _listing_in_progress) != 0;
 	shown->has_teams = (listing->flags & _listing_has_teams) != 0;
 	shown->dedicated = (listing->flags & _listing_dedicated) != 0;
+	shown->version = (unsigned short)listing->version;
+	shown->ping = -1;
 }
 
 /* the hosts' pings: those not known lately probed, while there is room (a
@@ -946,7 +948,9 @@ static int listing_order(const void *first, const void *second)
 
 int p2p_lobby_games(struct p2p_listing *games, int maximum_count)
 {
-	int count = 0;
+	unsigned long heard_times[MAXIMUM_GAMES];
+	unsigned char copies[MAXIMUM_GAMES];
+	int count = 0, kept = 0;
 	int index;
 
 	pthread_mutex_lock(&p2p_lock);
@@ -957,11 +961,21 @@ int p2p_lobby_games(struct p2p_listing *games, int maximum_count)
 		games[count] = lobby.games[index].listing;
 		games[count].failed = (unsigned char)identifier_failed(games[count].identifier);
 		games[count].ping = (short)lobby.games[index].ping;
+		heard_times[count] = lobby.games[index].heard_time;
 		count++;
 	}
 	pthread_mutex_unlock(&p2p_lock);
-	qsort(games, (size_t)count, sizeof(*games), listing_order);
-	return count;
+	/* a game listed under every version this client takes: once, at the
+	newest (p2p_listing_older_copy) */
+	for (index = 0; index < count; index++)
+		copies[index] = (unsigned char)p2p_listing_older_copy(games, heard_times, count, index);
+	for (index = 0; index < count; index++)
+	{
+		if (!copies[index])
+			games[kept++] = games[index];
+	}
+	qsort(games, (size_t)kept, sizeof(*games), listing_order);
+	return kept;
 }
 
 /* (AE) the invite code (hexadecimal, as p2p_joined_invite gives it) a

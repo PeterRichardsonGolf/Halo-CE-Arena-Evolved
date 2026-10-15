@@ -373,7 +373,8 @@ def test_p2p_signatures_and_listings(tmp_path):
     # unresolved symbol is let through as a null call)
     built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-pthread", "-Wl,--unresolved-symbols=ignore-all", "-o",
                             str(program), "tools/p2p_lobby_check.c", "port/linux/src/p2p_crypto.c",
-                            "port/linux/src/p2p_lobby.c", "port/third_party/monocypher/monocypher.c",
+                            "port/linux/src/p2p_lobby.c", "port/linux/src/p2p_copies.c",
+                            "port/third_party/monocypher/monocypher.c",
                             "port/third_party/monocypher/monocypher-ed25519.c"],
                            capture_output=True, text=True)
     assert built.returncode == 0, built.stderr[-4000:]
