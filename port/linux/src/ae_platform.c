@@ -16,6 +16,7 @@ pure, so the unit tests build it.)
 #include "ae_platform.h"
 #include "port_config.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
@@ -283,6 +284,13 @@ void ae_platform_test_pad_press(
 		desc.naxes = SDL_GAMEPAD_AXIS_COUNT;
 		desc.axis_mask = (1u << desc.naxes) - 1;
 		desc.name = "AE test pad";
+		/* ($AE_TEST_PAD_PLAYSTATION, tests only: a DualSense's ids, so SDL takes it for a PlayStation pad and the game
+		draws PlayStation buttons, ae_buttons.c) */
+		if (getenv("AE_TEST_PAD_PLAYSTATION"))
+		{
+			desc.vendor_id = 0x054C;
+			desc.product_id = 0x0CE6;
+		}
 		id = SDL_AttachVirtualJoystick(&desc);
 		joystick = id ? SDL_OpenJoystick(id) : NULL;
 		platform_log("test input: virtual gamepad %s", joystick ? "attached" : SDL_GetError());

@@ -64,6 +64,9 @@ int ae_buttons_draw_playstation(int kind, int playstation_now);
 controller the last used, the sequence one of the texture's, and the sheet's
 pixels those it was drawn for */
 int ae_buttons_sprite_wanted(int playstation_now, unsigned int sprites, int sequence_index, int pixels_match);
+/* a Custom Edition map's message icons sheet with the Xbox's sequences after its own (upstream's ce_hud.c, from ui.map;
+the button icons name them past first_sequence): the Xbox's sequence a sequence of it is, or -1 (one of the map's own) */
+int ae_buttons_ce_sequence(int sequence_index, int first_sequence);
 /* the controller scheme (xinput_sdl.c's platform_input_scheme) is a PlayStation one's */
 int ae_buttons_scheme_playstation(int scheme);
 
