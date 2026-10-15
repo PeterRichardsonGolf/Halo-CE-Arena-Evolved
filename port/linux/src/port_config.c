@@ -249,6 +249,11 @@ static const struct config_setting config_settings[] =
 		_environment_value, _platform_all,
 		"The scoreboard panel's colour: \"red, green, blue, alpha\", each 0 to 255\n"
 		"(alpha 0 is see-through, 255 solid)." },
+	{ "display.hud_style", _config_string, "\"ae\"", "HALO_HUD_STYLE", _environment_value, /* AE hook */
+		_platform_all,
+		"HUD STYLE: \"ae\" draws the score strip and Arena Evolved's look for its\n"
+		"own HUD elements; \"classic\" draws the HUD exactly as before. A setting\n"
+		"of this machine's display only: nothing goes over the network." },
 	{ "display.match_clock", _config_string, "\"down\"", "HALO_MATCH_CLOCK", _environment_value, _platform_all,
 		"A clock in the bottom right corner of a multiplayer game's view: \"down\"\n"
 		"the time left of the gametype's time limit (with none, the time played),\n"
@@ -1011,6 +1016,16 @@ static const struct config_setting config_settings[] =
 		"For automated tests of a full tag table: the most tags a map and a weapon\n"
 		"pack's own may have together, below the built-in 49152 (0xC000); a map\n"
 		"past it refuses the pack. 0 for the built-in limit." },
+	{ "debug.digits", _config_string, "\"\"", "HALO_DEBUG_DIGITS", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the HUD's counter digits (ae_hud_digits.c): the\n"
+		"text (digits, \":\" and spaces) drawn in magenta at 24 px in the first view's\n"
+		"top left, and its measures in the log." },
+	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"
+		"seconds of game time, one line per local player of what the strip says.\n"
+		"Any machine; only this machine's log." },
 	{ "debug.weapon_log", _config_boolean, "false", "HALO_WEAPON_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For automated tests of the battle rifle (ae_burst_rifle.c): each round it\n"

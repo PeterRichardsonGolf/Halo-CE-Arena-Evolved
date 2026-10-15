@@ -29,6 +29,7 @@ import smoke  # noqa: E402
 import windows  # noqa: E402
 import gametype_file  # noqa: E402
 import seed_compare  # noqa: E402
+import strip_checks  # noqa: E402
 
 del sys.modules["harness"]
 if _other_harness is not None:
@@ -1326,3 +1327,65 @@ class Sheet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StripChecks(unittest.TestCase):
+    """strip_checks.py: the score strip's log lines, the cases' rules, the host/client comparison"""
+    LINE = ('arena-evolved: score strip: tick 450 view 0 mode=ctf teams=1 left=2(blue) right=1(red) clock=4:12 up=0 '
+            'goal="TO 3" lead="+1" context="" left_sub="DROPPED 0:18" right_sub="bot5" bars=1 fill=0.67/0.33 place=0 '
+            'lead_me=1')
+
+    def test_line(self):
+        (line,) = strip_checks.strip_lines("noise\n" + self.LINE + "\n")
+        self.assertEqual((line["mode"], line["left"], line["lc"], line["right"], line["rc"]),
+                         ("ctf", "2", "blue", "1", "red"))
+        self.assertEqual((line["goal"], line["left_sub"], line["right_sub"], line["lf"]),
+                         ("TO 3", "DROPPED 0:18", "bot5", "0.67"))
+
+    def test_rules(self):
+        lines = strip_checks.strip_lines(self.LINE)
+        self.assertEqual(strip_checks.check_rules(lines, {"all:mode": "ctf", "left_sub": r"DROPPED \d+:\d\d"}), [])
+        self.assertEqual(len(strip_checks.check_rules(lines, {"all:goal": "TO 5"})), 1)
+        self.assertEqual(strip_checks.check_rules(lines, {"carried": "bot5"}), [])
+        self.assertEqual(strip_checks.check_rules([], {}), ["no score strip lines"])
+        for name in strip_checks.CASES:
+            spec = strip_checks.case_spec(name, "build")
+            self.assertEqual(spec["env"]["HALO_DEBUG_SCORE_STRIP_LOG"], "1")
+            self.assertTrue(spec["saved_gametype"])
+
+    def test_pair_is_perspective_free(self):
+        host = strip_checks.strip_lines(self.LINE)
+        client = strip_checks.strip_lines(self.LINE.replace("left=2(blue) right=1(red)", "left=1(red) right=2(blue)")
+                                          .replace("tick 450", "tick 452"))
+        self.assertEqual(strip_checks.compare_pair(host, client), [])
+        wrong = strip_checks.strip_lines(self.LINE.replace("left=2(blue)", "left=3(blue)"))
+        self.assertEqual(len(strip_checks.compare_pair(host, wrong)), 1)
+
+    def test_magenta_box(self):
+        w, h = 8, 6
+        rgb = bytearray(w * h * 3)
+        for x, y in ((2, 1), (5, 4)):
+            rgb[(y * w + x) * 3:(y * w + x) * 3 + 3] = bytes((255, 0, 255))
+        rgb[(3 * w + 1) * 3:(3 * w + 1) * 3 + 3] = bytes((255, 255, 255))  # (white is not the digits')
+        self.assertEqual(strip_checks.magenta_box(w, h, rgb), (2, 1, 5, 4))
+        self.assertIsNone(strip_checks.magenta_box(w, h, rgb, 6, 0, 8, 6))
+        self.assertEqual(strip_checks.judge_digits("nothing", [])[0], ["no 'hud digits:' line"])
+
+    def test_states_from_the_log(self):
+        drawn = self.LINE + " drawn=1 alpha=1.00 clock_box=900,950,60,20 score_box=820,955,30,24"
+        hidden = drawn.replace("drawn=1", "drawn=0").replace("tick 450", "tick 0")
+        text = "\n".join([hidden, "arena-evolved: capture: screenshot /x/shots/frame00000.png (1920x1080, 9 ms)", drawn,
+                          "arena-evolved: capture: screenshot /x/shots/frame00150.png (1920x1080, 9 ms)"])
+        pairs = strip_checks.shots_with_lines(text)
+        self.assertEqual([(name, line["drawn"]) for name, line in pairs],
+                         [("frame00000.png", "0"), ("frame00150.png", "1")])
+        self.assertEqual(strip_checks.judge_states("classic", hidden, Path(".")), [])
+        self.assertEqual(strip_checks.judge_states("classic", drawn, Path(".")), ["drawn with HUD STYLE CLASSIC"])
+
+    def test_clock_colours(self):
+        # (the old corner clock's HUD blue at 0.7 over a dark scene; the T1 list's white, grey and team blue are not)
+        self.assertTrue(strip_checks.old_clock_blue((90, 140, 185)))
+        for colour in ((229, 240, 255), (188, 198, 212), (89, 140, 255), (255, 77, 77), (40, 40, 40)):
+            self.assertFalse(strip_checks.old_clock_blue(colour), colour)
+        self.assertTrue(strip_checks.hud_colour((117, 186, 255)) and not strip_checks.hud_colour((120, 120, 120)))
+

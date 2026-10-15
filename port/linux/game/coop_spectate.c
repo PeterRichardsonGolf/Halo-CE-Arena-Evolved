@@ -28,6 +28,7 @@ It also draws the line telling players about the vote to skip a cutscene
 
 #include "coop_spectate.h"
 #include "network_coop.h"
+#include "ae_hud_style_draw.h" /* AE hook */
 
 #include <math.h>
 
@@ -230,6 +231,8 @@ static void draw_bottom_text(
 	rectangle2d bounds;
 	short height;
 
+	if (ae_hud_style_bottom_text(text)) /* AE hook */
+		return;
 	if (font_index == NONE)
 		return;
 	font = font_definition_get(font_index);

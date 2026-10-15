@@ -76,6 +76,7 @@ port/linux/game/menu_tags.c	"ae mcc use", "ae mcc not now", "ae mcc never ask", 
 port/linux/game/menu_tags.c	"ae mcc status", /* AE hook */
 port/linux/game/menu_tags.c	"main_menu/settings_select/player_setup/player_profile_edit/map_files_profile_item", /* AE hook */
 tools/tests/map_fuzz.c	char const *ae_mcc_refusal_note(void) { return ""; } /* AE hook */
+port/linux/src/port_config.c	{ "display.hud_style", _config_string, "\"ae\"", "HALO_HUD_STYLE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.waypoint_style", _config_string, "\"both\"", "HALO_WAYPOINT_STYLE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.waypoint_size", _config_real, "70.0", "HALO_WAYPOINT_SIZE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/game/menu_functions.c	#include "ae_glue_settings.h" /* AE hook */
@@ -370,3 +371,37 @@ source/game/game_engine_oddball.c	if (ae_juggernaut_player_killed(killing_player
 source/game/game_engine_oddball.c	ae_juggernaut_update(); /* AE hook */
 source/game/game_engine.c	#include "ae_juggernaut.h" /* AE hook */
 source/game/game_engine.c	game_engine_log_append(line, sizeof(line), ", juggernaut rules %s", ae_juggernaut_log_name()); /* AE hook */
+source/game/game_engine_king.c	long ae_strip_king_hill_timer(void) { return king_globals.hill_timer; } /* AE hook */
+source/game/game_engine_king.c	boolean ae_strip_king_player_on_hill(long player_index) { return player_inside_hill(player_index); } /* AE hook */
+source/game/game_engine_oddball.c	long ae_strip_oddball_ball_count(long player_index) { return player_index == NONE ? 0 : player_ball_count(player_index); } /* AE hook */
+source/game/game_engine_race.c	long ae_strip_race_flags_touched(long player_index) { return player_index == NONE || DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) >= MULTIPLAYER_MAXIMUM_PLAYERS ? 0 : count_bits_32(race_globals.lap_bit_vector[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)]); } /* AE hook */
+source/game/game_engine_race.c	long ae_strip_race_flag_count(void) { return count_bits_32(race_globals.lap_completed_value); } /* AE hook */
+source/game/game_engine_race.c	long ae_strip_race_rally_flag(void) { return race_globals.rally_flag; } /* AE hook */
+source/game/game_engine.c	#include "ae_strip_engine.h" /* AE hook */
+source/game/game_engine.c	ae_strip_engine_debug_log(); /* AE hook */
+port/linux/src/port_config.c	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud.c	#include "ae_score_strip.h" /* AE hook */
+source/interface/hud.c	ae_score_strip_draw(render.local_player_index); /* AE hook */
+port/linux/src/port_config.c	{ "debug.digits", _config_string, "\"\"", "HALO_DEBUG_DIGITS", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud.c	ae_score_strip_unit_hud_drawn(render.local_player_index); /* AE hook */
+source/interface/hud_item_timers.c	void hud_item_timers_ae_place(short *inset, long *baseline) { hud_item_timers_clock_place(inset, baseline); } /* AE hook */
+source/interface/hud_item_timers.c	#include "ae_power_list.h" /* AE hook */
+source/interface/hud_item_timers.c	if (!ae_power_list_hides_clock(render.local_player_index)) /* AE hook */\nif (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
+source/interface/hud_item_timers.c	if (!ae_power_list_draw(font_index)) /* AE hook */\nif (game_engine_item_timers() && !game_engine_game_over())
+source/interface/hud_item_timers.c	boolean hud_item_timers_ae_corner(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_top_left[v].valid) return FALSE; *b = hud_item_timers_top_left[v].bounds; return TRUE; } /* AE hook */
+source/interface/hud_item_timers.c	void hud_item_timers_ae_record(real x0, real y0, real x1, real y1) { hud_item_timers_record(x0, y0, x1, y1); } /* AE hook */
+source/game/game_engine.c	#include "ae_scoreboard_header.h" /* AE hook */
+source/game/game_engine.c	gametype_rows = ae_scoreboard_header_rows(gametype_rows); /* AE hook */
+source/game/game_engine.c	ae_scoreboard_header_full(bounds.x0, left, top, block_width, line_height, SCOREBOARD_SCALE, SCOREBOARD_PING_ROOM, alpha); /* AE hook */
+source/game/game_engine.c	ae_scoreboard_header_row(row_index - row_offset, &bounds, color->alpha); /* AE hook */
+source/game/game_engine.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/game/game_engine.c	if (ae_hud_style_countdown(ticks_left, view_width, view_height)) /* AE hook */\nreturn;
+source/game/game_engine.c	if (ae_hud_style_voice_speakers()) /* AE hook */\nreturn;
+source/main/main.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/main/main.c	if (ae_hud_style_overlay(corner, color, text, &frame_statistics_drawn, &frame_statistics_extent)) /* AE hook */\nreturn;
+source/main/main.c	if (ae_hud_style_capture_notice(frame_statistics_drawn, &frame_statistics_extent, frame_statistics_corner() == _text_justification_right)) /* AE hook */\nreturn;
+source/interface/hud.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/interface/hud.c	if (ae_hud_style_name_color(ally, color)) /* AE hook */\nreturn;
+source/interface/hud.c	ae_hud_style_name_outline(font_index, &bounds, x, y, name, &color, hud_player_name_scale()); /* AE hook */
+port/linux/game/coop_spectate.c	#include "ae_hud_style_draw.h" /* AE hook */
+port/linux/game/coop_spectate.c	if (ae_hud_style_bottom_text(text)) /* AE hook */\nreturn;

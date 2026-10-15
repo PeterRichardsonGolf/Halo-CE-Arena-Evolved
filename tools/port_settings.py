@@ -24,6 +24,8 @@ CORNERS = [("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right")]
 HEALTH_STYLES = [("HALO CE", "classic"), ("REACH", "reach"), ("HALO 2", "halo2"), ("HALO 3", "halo3")]
 MATCH_CLOCKS = [("OFF", "off"), ("TIME REMAINING", "down"), ("TIME ELAPSED", "up"), ("BOTH", "both")]
 HUD_AREAS = [("FULL", "full"), ("16:9", "16:9"), ("4:3", "4:3")]
+# (HUD STYLE: the score strip and AE's look, or the HUD exactly as before: ae_hud_style.c)
+HUD_STYLES = [("AE", "ae"), ("CLASSIC", "classic")]
 SCOREBOARD_FADES = [("INSTANT", "instant"), ("FAST", "fast"), ("NORMAL", "normal"), ("SLOW", "slow")]
 CALLOUTS = [("OFF", "off"), ("ITEMS", "items"), ("ITEMS+CLOCK", "items_clock")]
 SPAWN_HEATS = [("OFF", "off"), ("MINE", "mine"), ("ENEMY", "enemy")]
@@ -179,6 +181,10 @@ SCREENS = {
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
+            # (first: it changes how the rows under it look; a help for each value)
+            ("HUD STYLE:", "display.hud_style", HUD_STYLES,
+             ["The score strip under the view, with the clock,\nand Arena Evolved's look for its own HUD.",
+              "The HUD exactly as before: the clock in the\ncorner, no score strip."], None),
             ("HUD AREA:", "display.hud_area", HUD_AREAS,
              "On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide.", None),
             ("COMPACT HUD:", "display.compact_hud", ON_OFF,

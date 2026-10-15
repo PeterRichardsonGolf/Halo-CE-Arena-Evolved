@@ -12,6 +12,7 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 | The per-merge smoke set, against a baseline | `python3 tools/ae_test/smoke.py --build <rev> --baseline <rev> --box` |
 | Split-screen pictures, before vs after (1p/2p/3p/4p, 4p at 720p), reticle offsets | `python3 tools/ae_test/sheet.py --after <rev> --before <rev> [--reticle --flat] --box` |
 | Host/client pairs with stock Chupa / stock OpenCE (version, Delta, positions, kills) | `python3 tools/ae_test/handshake.py --ae <rev> --other stock --box` |
+| The score strip: what it says in every mode (seeded gametypes, bots, debug.score_strip_log), and a joined client's strip against the host's (on the box itself) | `python3 tools/ae_test/strip_checks.py modes --build <path>`, `... pair --build <path>` |
 | A Windows CI build on the Windows test box | `python3 tools/ae_test/windows.py --artifact arena-evolved-windows64-release` |
 | An MP4 clip of a game (H.264 + AAC; needs ffmpeg on the machine) | `python3 tools/ae_test/record.py --build <rev> --map bloodgulch --seconds 20 --box` |
 | A copy of a save root with a saved gametype's variant bytes patched and signed again (for `--save-from`; never in place, never a real save root) | `python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3` (on the machine that plays) |

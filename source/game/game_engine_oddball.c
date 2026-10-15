@@ -1578,3 +1578,5 @@ boolean game_engine_oddball_read_network_state(
 	oddball_events.transfers = state.transfers;
 	return TRUE;
 }
+
+long ae_strip_oddball_ball_count(long player_index) { return player_index == NONE ? 0 : player_ball_count(player_index); } /* AE hook */

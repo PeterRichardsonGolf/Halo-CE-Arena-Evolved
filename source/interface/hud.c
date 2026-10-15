@@ -112,6 +112,8 @@ symbols in this file:
 #include "coop_spectate.h" /* port: port/linux/game/coop_spectate.c */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_weapon_pack.h" /* AE hook */
+#include "ae_score_strip.h" /* AE hook */
+#include "ae_hud_style_draw.h" /* AE hook */
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "units/unit_definitions.h"
@@ -1121,6 +1123,8 @@ void hud_player_name_color(
 	boolean ally,
 	real_argb_color *color)
 {
+	if (ae_hud_style_name_color(ally, color)) /* AE hook */
+		return;
 	if (ally)
 	{
 		hud_get_text_color(color);
@@ -1212,6 +1216,7 @@ static void hud_draw_player_name(
 		color.alpha = PIN((enemy_range - distance) / (0.2f * enemy_range), 0.0f, 1.0f);
 	}
 	/* (centred: 2; scaled about its bottom's middle, over the head) */
+	ae_hud_style_name_outline(font_index, &bounds, x, y, name, &color, hud_player_name_scale()); /* AE hook */
 	draw_string_set_draw_mode(font_index, NONE, 2, 0, &color);
 	rasterizer_text_set_scale(hud_player_name_scale(), (real)x, (real)y);
 	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, name);
@@ -1466,6 +1471,7 @@ void hud_draw_screen(
 				hud_show_action_response(player_index);
 				hud_play_unit_sounds(player, hud_scripted_globals->show_hud);
 				hud_render_unit_interface(player);
+				ae_score_strip_unit_hud_drawn(render.local_player_index); /* AE hook */
 				hud_item_timers_set_top_left(render.local_player_index,
 					hud_top_left_extent_end(&top_left) ? &top_left : NULL);
 				hud_render_nav_points(render.local_player_index);
@@ -1494,6 +1500,7 @@ void hud_draw_screen(
 		/* port: CAMPAIGN TIMER, there in the campaign */
 		else if (!game_engine_running() && !cinematic_in_progress())
 			hud_draw_campaign_timer();
+		ae_score_strip_draw(render.local_player_index); /* AE hook */
 
 		hud_messaging_update(render.local_player_index);
 	}

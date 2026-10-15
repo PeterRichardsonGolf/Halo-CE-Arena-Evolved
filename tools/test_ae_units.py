@@ -73,6 +73,21 @@ UNITS = {
     "ae_juggernaut_rules_test.c": ([UI / "ae_juggernaut_rules.c", UI / "ae_hit_feedback_rules.c",
                                     UI / "ae_silent_rules.c"],
                                    ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
+    # (CE's counter digits at any size: frames, advances, quads, ink bounds)
+    "ae_hud_digit_cells_test.c": ([UI / "ae_hud_digit_cells.c"],
+                                  ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (the scoreboard header's text, HUD STYLE AE)
+    "ae_header_lines_test.c": ([UI / "ae_header_lines.c"],
+                               ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (HUD STYLE: AE unless the setting reads "classic"; a fake config_string)
+    "ae_hud_style_test.c": ([UI / "ae_hud_style.c"], [], []),
+    # (the score strip's model: what it says in every mode, its colours and bars; under the sanitizers, as the
+    # names are players')
+    "ae_strip_model_test.c": ([UI / "ae_strip_model.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                              []),
+    # (the score strip's layout: one bottom line, the gap rule, every mode's places; fake metrics)
+    "ae_strip_layout_test.c": ([UI / "ae_strip_model.c", UI / "ae_strip_layout.c"],
+                               ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
