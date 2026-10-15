@@ -73,4 +73,34 @@ int ae_juggernaut_eligible(int present, int alive, int quit, int already_juggern
 -1 when there is none */
 int ae_juggernaut_pick(int count, unsigned random);
 
+/* Halo 2's juggernaut overshield (its maximum shield x3; owner 2026-10-15: "like h2 and h3"), on CE's overshield (a
+shield vitality over 1 up to 3, CE's over-charge climbing to 3, and in multiplayer a decay of
+AE_JUGGERNAUT_SHIELD_DECAY a tick back to 1). Each tick on the host, from the juggernaut's shield now and a tick ago:
+- a drop of no more than the decay is the decay: given back (his overshield does not wear off);
+- a bigger drop is damage: the wait starts at his shield's stun ticks (at least 1);
+- otherwise the wait counts down;
+- over-charging already: nothing more;
+- full (1, CE's normal recharge done) or a hurt overshield (over 1) whose wait ran out: over-charge to 3.
+Under 1, CE's own recharge runs (its stun first). */
+#define AE_JUGGERNAUT_SHIELD_DECAY 0.00074074074f
+enum
+{
+	AE_JUGGERNAUT_SHIELD_NONE = 0,
+	/* start CE's over-charge (to 3) */
+	AE_JUGGERNAUT_SHIELD_OVERCHARGE,
+	/* give the decay back (shield_give) */
+	AE_JUGGERNAUT_SHIELD_GIVE_BACK,
+};
+struct ae_juggernaut_shield
+{
+	/* AE_JUGGERNAUT_SHIELD_* */
+	int action;
+	/* the vitality to give back */
+	float shield_give;
+	/* the wait's ticks from now */
+	int wait;
+};
+struct ae_juggernaut_shield ae_juggernaut_shield_tick(float shield, float shield_before, int over_charging, int wait,
+	int stun_ticks);
+
 #endif /* __AE_JUGGERNAUT_RULES_H */

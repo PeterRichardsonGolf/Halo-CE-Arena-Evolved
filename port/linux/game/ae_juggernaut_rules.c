@@ -54,3 +54,24 @@ int ae_juggernaut_pick(int count, unsigned random)
 		return -1;
 	return (int)((random & 0xFFFFu) % (unsigned)count);
 }
+
+struct ae_juggernaut_shield ae_juggernaut_shield_tick(float shield, float shield_before, int over_charging, int wait,
+	int stun_ticks)
+{
+	struct ae_juggernaut_shield result = { AE_JUGGERNAUT_SHIELD_NONE, 0.0f, wait > 0 ? wait - 1 : 0 };
+	float drop = shield_before - shield;
+
+	if (drop > 0.0f && drop <= AE_JUGGERNAUT_SHIELD_DECAY + 0.00001f && shield >= 1.0f && !over_charging)
+	{
+		result.action = AE_JUGGERNAUT_SHIELD_GIVE_BACK;
+		result.shield_give = drop;
+		return result;
+	}
+	if (drop > AE_JUGGERNAUT_SHIELD_DECAY + 0.00001f)
+		result.wait = stun_ticks > 0 ? stun_ticks : 1;
+	if (over_charging || result.wait > 0)
+		return result;
+	if (shield >= 0.9999f && shield < 3.0f)
+		result.action = AE_JUGGERNAUT_SHIELD_OVERCHARGE;
+	return result;
+}

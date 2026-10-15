@@ -14,6 +14,7 @@ distributed netcode shows the host's carriers, scores and passes
 #include "game/game_engine.h"
 #include "game/players.h"
 #include "objects/objects.h"
+#include "objects/damage.h"
 #include "units/units.h"
 
 #include "ae_juggernaut.h"
@@ -38,6 +39,9 @@ static struct
 	unsigned char *transfers;
 	unsigned char *transfer_player;
 	void (*add_score)(long player_index);
+	/* each ball's juggernaut's shield a tick ago and his wait after a hit (ae_juggernaut_shield_tick) */
+	float shield_before[MAXIMUM_ODDBALLS];
+	int shield_wait[MAXIMUM_ODDBALLS];
 } ae_juggernaut;
 
 void ae_juggernaut_attach(long *ball_owners, unsigned char *transfers, unsigned char *transfer_player,
@@ -47,6 +51,8 @@ void ae_juggernaut_attach(long *ball_owners, unsigned char *transfers, unsigned 
 	ae_juggernaut.transfers = transfers;
 	ae_juggernaut.transfer_player = transfer_player;
 	ae_juggernaut.add_score = add_score;
+	csmemset(ae_juggernaut.shield_before, 0, sizeof(ae_juggernaut.shield_before));
+	csmemset(ae_juggernaut.shield_wait, 0, sizeof(ae_juggernaut.shield_wait));
 
 	return;
 }
@@ -109,6 +115,44 @@ static char const *ae_juggernaut_name(long player_index, char *buffer, int size)
 	return buffer;
 }
 
+/* the host: CE's over-charge to 3 on the juggernaut's body (his shield state goes to every machine with the
+damage's network state) */
+static void ae_juggernaut_overcharge(long unit_index)
+{
+	struct object_datum *object = object_get(unit_index);
+
+	if (object->object.shield_vitality <= 1.0f)
+		object_double_charge_shield(unit_index);
+	else
+		SET_FLAG(object->object.damage_flags, _object_shield_over_charging_bit, TRUE);
+
+	return;
+}
+
+/* the host, each tick: Halo 2's juggernaut overshield (ae_juggernaut_shield_tick) */
+static void ae_juggernaut_shield(long ball_index, struct player_datum *player)
+{
+	struct object_datum *object;
+	struct ae_juggernaut_shield decision;
+
+	if (!ae_juggernaut_alive(player))
+		return;
+	object = object_get(player->unit_index);
+	if (object->object.maximum_shield_vitality <= 0.0f)
+		return;
+	decision = ae_juggernaut_shield_tick(object->object.shield_vitality, ae_juggernaut.shield_before[ball_index],
+		TEST_FLAG(object->object.damage_flags, _object_shield_over_charging_bit),
+		ae_juggernaut.shield_wait[ball_index], object->object.shield_stun_ticks);
+	ae_juggernaut.shield_wait[ball_index] = decision.wait;
+	if (decision.action == AE_JUGGERNAUT_SHIELD_GIVE_BACK)
+		object->object.shield_vitality += decision.shield_give;
+	else if (decision.action == AE_JUGGERNAUT_SHIELD_OVERCHARGE)
+		ae_juggernaut_overcharge(player->unit_index);
+	ae_juggernaut.shield_before[ball_index] = object->object.shield_vitality;
+
+	return;
+}
+
 /* the role to player_index (the host's): every machine's "%s is it" */
 static void ae_juggernaut_give(long ball_index, long player_index, char const *why)
 {
@@ -117,6 +161,17 @@ static void ae_juggernaut_give(long ball_index, long player_index, char const *w
 	ae_juggernaut.ball_owners[ball_index] = player_index;
 	if (network_game_distributed_client())
 		return;
+	/* (Halo 2: the new juggernaut's overshield, at once) */
+	{
+		struct player_datum *player = player_try_and_get(player_index);
+
+		ae_juggernaut.shield_wait[ball_index] = 0;
+		if (player && ae_juggernaut_alive(player))
+		{
+			ae_juggernaut_overcharge(player->unit_index);
+			ae_juggernaut.shield_before[ball_index] = object_get(player->unit_index)->object.shield_vitality;
+		}
+	}
 	game_show_score_you_ally_enemy(player_index, NONE, AE_ODDBALL_MESSAGE_ALLY_IS_IT, AE_ODDBALL_MESSAGE_ENEMY_IS_IT,
 		player_index);
 	(*ae_juggernaut.transfers)++;
@@ -239,7 +294,10 @@ void ae_juggernaut_update(void)
 
 			/* (the juggernaut left the game) */
 			if (player && !player->quit_out_of_game)
+			{
+				ae_juggernaut_shield(ball_index, player);
 				continue;
+			}
 			ae_juggernaut.ball_owners[ball_index] = NONE;
 		}
 		owner = ae_juggernaut_random_player(NONE);

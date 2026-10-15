@@ -155,12 +155,45 @@ static void test_pick(void)
 	}
 }
 
+/* Halo 2's overshield on CE's: full shields over-charge to 3, the decay is given back, damage waits the stun */
+static void test_shield(void)
+{
+	struct ae_juggernaut_shield r;
+
+	/* (full, not hit: over-charge) */
+	r = ae_juggernaut_shield_tick(1.0f, 1.0f, 0, 0, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_OVERCHARGE && r.wait == 0);
+	/* (over-charging already, or at 3: nothing) */
+	r = ae_juggernaut_shield_tick(2.0f, 1.9667f, 1, 0, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_NONE);
+	r = ae_juggernaut_shield_tick(3.0f, 3.0f, 0, 0, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_NONE);
+	/* (CE's multiplayer decay: given back, exactly) */
+	r = ae_juggernaut_shield_tick(3.0f - AE_JUGGERNAUT_SHIELD_DECAY, 3.0f, 0, 0, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_GIVE_BACK && r.shield_give > 0.00074f && r.shield_give < 0.00075f);
+	/* (a hit on the overshield: wait his stun, then climb back to 3) */
+	r = ae_juggernaut_shield_tick(2.2f, 3.0f, 0, 0, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_NONE && r.wait == 60);
+	r = ae_juggernaut_shield_tick(2.2f, 2.2f, 0, 2, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_NONE && r.wait == 1);
+	r = ae_juggernaut_shield_tick(2.2f, 2.2f, 0, 1, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_OVERCHARGE && r.wait == 0);
+	/* (under 1: CE's recharge runs; at 1 again, over-charge) */
+	r = ae_juggernaut_shield_tick(0.4f, 0.3f, 0, 0, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_NONE);
+	r = ae_juggernaut_shield_tick(0.0f, 0.5f, 0, 0, 0);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_NONE && r.wait == 1);
+	r = ae_juggernaut_shield_tick(1.0f, 0.98f, 0, 0, 60);
+	CHECK(r.action == AE_JUGGERNAUT_SHIELD_OVERCHARGE);
+}
+
 int main(void)
 {
 	test_byte();
 	test_kills();
 	test_eligible();
 	test_pick();
+	test_shield();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

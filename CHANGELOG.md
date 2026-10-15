@@ -24,7 +24,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   left, a spare pad, or the keyboard once player 1 left) takes this PC out
   of the lobby. It did nothing, and the lobby looked stuck.
 
-- **AE JUGGERNAUT plays like Halo 2's**: to 15; the juggernaut deals extra damage and moves at normal speed (stock CE:
+- **AE JUGGERNAUT plays like Halo 2's**: to 15; the juggernaut has a full overshield (it climbs back after a hit
+  and does not wear off), deals extra damage and moves at normal speed (stock CE:
   slow). Only the juggernaut's kills score, one point each; killing the juggernaut makes you the juggernaut but scores
   nothing. When the juggernaut kills himself or dies to the map, or there is none (the start, he quit), a random
   player who is alive becomes the juggernaut. The host decides; the rule is part of the gametype (no row in the
