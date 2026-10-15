@@ -74,6 +74,9 @@ UNITS = {
     # names are players')
     "ae_strip_model_test.c": ([UI / "ae_strip_model.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                               []),
+    # (the score strip's layout: one bottom line, the gap rule, every mode's places; fake metrics)
+    "ae_strip_layout_test.c": ([UI / "ae_strip_model.c", UI / "ae_strip_layout.c"],
+                               ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
