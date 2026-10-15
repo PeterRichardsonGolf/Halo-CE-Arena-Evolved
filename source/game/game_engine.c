@@ -602,6 +602,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_glue_zoom.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
+#include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
@@ -5880,6 +5881,67 @@ short game_engine_nhe_mode(
 		_nhe_mode_by_vehicles;
 }
 
+/* port: a gametype's WEAPON PACK from its byte (past the reserved range, none) */
+short game_variant_weapon_pack(
+	byte weapon_pack)
+{
+	return weapon_pack <= WEAPON_PACK_MAXIMUM ? (short)weapon_pack :
+		_weapon_pack_none;
+}
+
+/* port: weapon pack: TRUE when the pack_loadout byte takes the loadout slot's weapon from
+the pack (a slot past the two: no) */
+boolean game_variant_pack_loadout_slot(
+	byte pack_loadout,
+	short slot)
+{
+	return slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS &&
+		((pack_loadout >> PACK_LOADOUT_SLOT_SHIFT(slot)) & PACK_LOADOUT_SOURCE_MASK) == _pack_loadout_pack;
+}
+
+/* port: weapon pack: BATTLE RIFLE ON MAP from its byte */
+boolean game_variant_pack_map_spawns(
+	byte pack_loadout)
+{
+	return (pack_loadout & PACK_MAP_SPAWNS_BIT) != 0;
+}
+
+/* port: weapon pack: its name for the rules log */
+char const *game_variant_weapon_pack_name(
+	byte weapon_pack)
+{
+	static char const *const packs[] = { "none", "battle rifle (slot 1)" };
+	typedef char verify_weapon_pack_names[NUMBEROF(packs) == _weapon_pack_battle_rifle + 1 ? 1 : -1];
+	short pack = game_variant_weapon_pack(weapon_pack);
+
+	return pack < (short)NUMBEROF(packs) ? packs[pack] : "reserved";
+}
+
+/* port: weapon pack: the running game's (none with no game) */
+short game_engine_weapon_pack(
+	void)
+{
+	return game_engine_running() ? game_variant_weapon_pack(global_variant.universal_variant.weapon_pack) :
+		_weapon_pack_none;
+}
+
+/* port: the running game's custom loadout takes slot's weapon from the weapon
+pack (with its weapon pack not none) */
+boolean game_engine_pack_loadout_slot(
+	short slot)
+{
+	return game_engine_weapon_pack() != _weapon_pack_none &&
+		game_variant_pack_loadout_slot(global_variant.universal_variant.pack_loadout, slot);
+}
+
+/* port: the running game's weapon pack's BATTLE RIFLE ON MAP (with its weapon
+pack not none) */
+boolean game_engine_pack_map_spawns(
+	void)
+{
+	return game_engine_weapon_pack() != _weapon_pack_none && game_variant_pack_map_spawns(global_variant.universal_variant.pack_loadout);
+}
+
 /* port: the gametype's NO SPREAD level (enum no_spread_level): NHE, the
 pistol's and the sniper rifle's shots as Halo 1: NHE's maps have them;
 FULL, both always exact (weapons.c weapon_trigger_error_angle_bounds) */
@@ -8482,6 +8544,11 @@ static void game_engine_predict_resources(
 	if (global_variant.game_engine_index == game_engine_ctf)
 		object_definition_predict(list_index_to_weapon_definition_index(_weapon_list_flag));
 
+	/* port: weapon pack: the pack's weapon, as the map's weapons below, where the gametype uses a pack and it
+	was added to this map (no definition otherwise: nothing predicted) */
+	if (game_engine_weapon_pack() != _weapon_pack_none)
+		object_definition_predict(ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0));
+
 	weapon_indices[0] = list_index_to_weapon_definition_index(0);
 	weapon_indices[1] = list_index_to_weapon_definition_index(1);
 	weapon_indices[2] = list_index_to_weapon_definition_index(2);
@@ -8777,9 +8844,15 @@ void game_engine_log_rules(
 		}
 		/* (the AE gametype options, a line of their own so that the first
 		line's length never cuts them off: game_engine.h, bits 25-30,
-		nhe_mode, starting_frags and ball_melee) */
+		nhe_mode, starting_frags, ball_melee and the weapon pack's fields) */
+		{
+		/* (port: the weapon pack's loadout and on-map fields read stock / off
+		while the gametype's weapon pack is none) */
+		boolean pack = game_variant_weapon_pack(universal->weapon_pack) != _weapon_pack_none;
+
 		error(_error_silent, "AE rules: timers level %s, spawn heat %s, objective %s, nhe extras %s, "
-			"drop secondary %s, nhe mode %s, starting frags %s, ball melee %s",
+			"drop secondary %s, nhe mode %s, starting frags %s, ball melee %s, "
+			"weapon pack: %s, pack loadout: primary %s, secondary %s, battle rifle on map: %s",
 			game_variant_timers_name(flags),
 			TEST_FLAG(flags, _game_variant_no_spawn_heat_bit) ? "off" : "on",
 			TEST_FLAG(flags, _game_variant_objective_in_sight_bit) && universal->goal_radar == _radar_nav_point ?
@@ -8790,7 +8863,25 @@ void game_engine_log_rules(
 			universal->starting_frags == STARTING_GRENADES_NONE ? "none" :
 				universal->starting_frags == 1 ? "1" : universal->starting_frags == 2 ? "2" :
 				universal->starting_frags == 3 ? "3" : universal->starting_frags == 4 ? "4" : "0",
-			universal->ball_melee == 1 ? "lethal" : "stock");
+			universal->ball_melee == 1 ? "lethal" : "stock",
+			game_variant_weapon_pack_name(universal->weapon_pack),
+			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_primary) ? "pack" : "stock",
+			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_secondary) ? "pack" : "stock",
+			pack && game_variant_pack_map_spawns(universal->pack_loadout) ? "on" : "off");
+		/* port: weapon pack: the fallback said on every machine (decision 10): a gametype that uses the pack on
+		a map that did not get it (refused there, a Custom Edition map, no pack here) plays the stock weapons
+		(the loadout's assault rifle or pistol; BATTLE RIFLE ON MAP replaces nothing), and the console says why */
+		if (pack)
+		{
+			char unavailable[256];
+
+			if (ae_weapon_pack_unavailable_line(unavailable, sizeof(unavailable)))
+			{
+				error(_error_silent, "weapon pack: %s", unavailable);
+				console_printf(FALSE, "%s", unavailable);
+			}
+		}
+		}
 		/* (and the players' rules the lines above leave out) */
 		error(_error_silent, "player rules: lives %ld, health %g%%, respawn growth %ld ticks, odd man out %s, "
 			"friend indicators %s, auto team balance %s, friendly fire penalty %d s",
@@ -10785,6 +10876,8 @@ static void game_engine_give_loadout(
 	struct game_variant_options const *options = game_variant_options_get();
 	byte const weapons[2] = { options->primary_weapon, options->secondary_weapon };
 	boolean first = TRUE;
+	/* port: weapon pack: the pack's weapon this unit was given, if any (debug.weapon_pack_ground) */
+	long pack_definition_given = NONE;
 	short index;
 
 	unit_delete_all_weapons(unit_index);
@@ -10793,7 +10886,14 @@ static void game_engine_give_loadout(
 		long definition_index = game_engine_loadout_weapon_definition(weapons[index]);
 		struct object_placement_data placement_data;
 		long weapon_index;
+		/* port: weapon pack: a slot the gametype gives to the pack (pack_loadout) gets the pack's weapon 0
+		where the pack was added to this map; anywhere else its definition is NONE and the stock value above
+		stays: the fallback (an assault rifle, a pistol) */
+		long pack_definition_index = game_engine_pack_loadout_slot(index) ?
+			ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0) : NONE;
 
+		if (pack_definition_index != NONE)
+			definition_index = pack_definition_index;
 		if (definition_index == NONE)
 			continue;
 		object_placement_data_new(&placement_data, definition_index, NONE);
@@ -10806,9 +10906,40 @@ static void game_engine_give_loadout(
 		if (!first && unit_has_weapon_definition_index(unit_index, definition_index))
 			object_delete(weapon_index);
 		else if (unit_add_weapon_to_inventory(unit_index, weapon_index, first ? 2 : 0))
+		{
 			first = FALSE;
+			/* port: weapon pack: (the first of each slot on a map is logged) */
+			if (pack_definition_index != NONE)
+			{
+				ae_weapon_pack_loadout_given(index, definition_index);
+				pack_definition_given = definition_index;
+			}
+		}
 		else
 			object_delete(weapon_index);
+	}
+	/* port: weapon pack: debug.weapon_pack_ground (a test aid, for pictures): one more of the pack's weapon
+	lies two steps ahead of each local player given one, and of each given none in a game asking for the pack
+	without giving it (BATTLE RIFLE ON MAP): a few steps onto it show the swap prompt (two weapons held) or pick it
+	up (one). Only where this machine makes the game's objects (a host, or no network game): ignored on a client */
+	if (config_boolean("debug.weapon_pack_ground") && game_connection() != _game_connection_network_client)
+	{
+		struct unit_datum const *unit = unit_get(unit_index);
+		long ground_definition_index = pack_definition_given != NONE ? pack_definition_given :
+			ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0);
+
+		if (ground_definition_index != NONE && unit->unit.player_index != NONE &&
+			player_get(unit->unit.player_index)->local_player_index != NONE)
+		{
+			struct object_placement_data placement_data;
+
+			object_placement_data_new(&placement_data, ground_definition_index, NONE);
+			placement_data.position = unit->object.position;
+			placement_data.position.x += 1.6f * unit->object.forward.i;
+			placement_data.position.y += 1.6f * unit->object.forward.j;
+			placement_data.position.z += 0.4f;
+			object_new(&placement_data);
+		}
 	}
 }
 

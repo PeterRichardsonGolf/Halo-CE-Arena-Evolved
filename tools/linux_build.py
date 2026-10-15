@@ -42,9 +42,34 @@ def game_sources(config: Dict[str, Any]) -> List[Path]:
     )
 
 
+# (Arena Evolved) units of port/linux/game compiled as the game's, but only
+# for a host tool, never linked into a game: the weapon pack builder
+# (port/linux/game/ae_pack_build.c, tools/ae_pack_build.c)
+TOOL_ONLY_GAME_SOURCES = ("ae_pack_build.c",)
+
+
 def port_game_sources(config: Dict[str, Any]) -> List[Path]:
-    """the port's own game units (port.json "game_sources", port/linux/game)"""
-    return sorted(Path(config["game_sources"]).glob("*.c"))
+    """the port's own game units (port.json "game_sources", port/linux/game),
+    but those only a host tool links (TOOL_ONLY_GAME_SOURCES)"""
+    return sorted(source for source in Path(config["game_sources"]).glob("*.c")
+                  if source.name not in TOOL_ONLY_GAME_SOURCES)
+
+
+def tool_only_game_sources(config: Dict[str, Any]) -> List[Path]:
+    """(Arena Evolved) the units of port/linux/game only host tools link"""
+    return [Path(config["game_sources"]) / name for name in TOOL_ONLY_GAME_SOURCES]
+
+
+def pack_checker(validator: Path) -> Path:
+    """(Arena Evolved) the weapon pack checker ninja linux builds beside the
+    tag validator (tools/ae_pack_check.c)"""
+    return validator.parent / "ae_pack_check"
+
+
+def pack_builder(validator: Path) -> Path:
+    """(Arena Evolved) the weapon pack builder ninja linux builds beside the
+    tag validator (tools/ae_pack_build.c)"""
+    return validator.parent / "ae_pack_build"
 
 
 def game_defines_and_includes(config: Dict[str, Any]) -> str:
@@ -478,8 +503,10 @@ def _retarget(flags: List[str], target_flags: List[str]) -> List[str]:
 
 
 def linux32_objects(n: Writer, units: Linux32Units, obj_dir: Path, extra_cflags: List[str],
-                    implicit_inputs: List[Path]) -> List[Path]:
-    """the 32-bit units' objects, in link order, with the given extra flags"""
+                    implicit_inputs: List[Path], tool_units: bool = False) -> List[Path]:
+    """the 32-bit units' objects, in link order, with the given extra flags
+    (and with tool_units, the units only host tools link compiled too, but
+    left out of the list: tool_only_game_sources)"""
     sln = units.sln
     config = units.config
     prefix_header = PORT_DIR / "include" / "halo_linux_prefix.h"
@@ -503,9 +530,10 @@ def linux32_objects(n: Writer, units: Linux32Units, obj_dir: Path, extra_cflags:
     posix_extra = " ".join(flag for flag in extra_cflags if not flag.startswith("-flto"))
     objects: List[Path] = []
 
-    def add_object(source: Path, cflags: str, posix: bool = False) -> None:
+    def add_object(source: Path, cflags: str, posix: bool = False, link: bool = True) -> None:
         obj = obj_dir / source.with_suffix(".o")
-        objects.append(obj)
+        if link:
+            objects.append(obj)
         n.build(
             outputs=obj,
             rule=units.rule,
@@ -535,6 +563,10 @@ def linux32_objects(n: Writer, units: Linux32Units, obj_dir: Path, extra_cflags:
     # sources do (port/linux/game).
     for source in port_game_sources(config):
         add_object(source, game_cflags)
+    # (Arena Evolved) the host tools' own game units, compiled as the game's
+    if tool_units:
+        for source in tool_only_game_sources(config):
+            add_object(source, game_cflags, link=False)
     # the dedicated server's director, with the game browser (server/)
     if units.game_browser:
         for source in sorted(Path("server/src").glob("*.c")):
@@ -723,7 +755,8 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
              implicit_inputs: List[Path], validator: Optional[Path] = None) -> None:
         """the objects and the executable, with the given extra flags (and
         the tag validator alone, tools/map_validate.c, as validator)"""
-        objects = linux32_objects(n, units, obj_dir, extra_cflags, implicit_inputs)
+        objects = linux32_objects(n, units, obj_dir, extra_cflags, implicit_inputs,
+                                  tool_units=validator is not None)
         n.build(
             outputs=output,
             rule="linux_link",
@@ -769,6 +802,52 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
                 variables={"ldflags": " ".join(["--target=i686-linux-gnu", "-m32", "-no-pie", "-g", *sysroot_ldflags,
                                                 *extra_ldflags])},
             )
+            # (Arena Evolved) the weapon pack checker beside it: the game's
+            # object of the pack reader (port/linux/game/ae_pack_format.c)
+            # and a program that prints a pack (tools/ae_pack_check.c)
+            pack_tool = Path("tools/ae_pack_check.c")
+            pack_tool_object = obj_dir / pack_tool.with_suffix(".o")
+            n.build(
+                outputs=pack_tool_object,
+                rule="linux_cc",
+                inputs=pack_tool,
+                implicit=sysroot_inputs,
+                variables={"cflags": " ".join([posix_cflags, f"-I{game_dir}", posix_extra])},
+            )
+            n.build(
+                outputs=pack_checker(validator),
+                rule="linux_tool_link",
+                inputs=[pack_tool_object, obj_dir / (game_dir / "ae_pack_format.o"),
+                        *(obj_dir / (ZLIB_DIR / name).with_suffix(".o") for name in ZLIB_SOURCES)],
+                variables={"ldflags": " ".join(["--target=i686-linux-gnu", "-m32", "-no-pie", "-g", *sysroot_ldflags,
+                                                *extra_ldflags])},
+            )
+            # (Arena Evolved) the weapon pack builder: the tag validator's
+            # and schema's objects as map_validate links them, the pack
+            # writer's and the builder's (port/linux/game/ae_pack_build.c,
+            # a game unit only this tool links), and a program that reads
+            # the donor and the side files (tools/ae_pack_build.c)
+            builder_tool = Path("tools/ae_pack_build.c")
+            builder_tool_object = obj_dir / builder_tool.with_suffix(".o")
+            n.build(
+                outputs=builder_tool_object,
+                rule="linux_cc",
+                inputs=builder_tool,
+                implicit=sysroot_inputs,
+                variables={"cflags": " ".join([posix_cflags, f"-I{game_dir}", f"-I{ZLIB_DIR}", *ZLIB_DEFINES,
+                                               posix_extra])},
+            )
+            n.build(
+                outputs=pack_builder(validator),
+                rule="linux_tool_link",
+                inputs=[builder_tool_object,
+                        *(obj_dir / source.with_suffix(".o") for source in tool_only_game_sources(config)),
+                        obj_dir / (game_dir / "ae_pack_format.o"), obj_dir / (game_dir / "tag_validate.o"),
+                        *(obj_dir / source.with_suffix(".o") for source in sorted(game_dir.glob("tag_schema*.c"))),
+                        *(obj_dir / (ZLIB_DIR / name).with_suffix(".o") for name in ZLIB_SOURCES)],
+                variables={"ldflags": " ".join(["--target=i686-linux-gnu", "-m32", "-no-pie", "-g", *sysroot_ldflags,
+                                                *extra_ldflags])},
+            )
 
     # Profile-guided optimisation: with the committed profile, or with
     # --pgo=train one that an instrumented build records while playing
@@ -796,5 +875,6 @@ def generate_linux_build(n: Writer, sln: Any) -> None:
     brokers = build_dir / "brokers.txt"
     n.build(outputs=brokers, rule="linux_copy", inputs=Path("port/assets/network/brokers.txt"))
     voices = voices_build(n, "linux_copy", build_dir)
-    n.build(outputs="linux", rule="phony", inputs=[output, brokers, validator, *voices, *sdl_outputs])
+    n.build(outputs="linux", rule="phony", inputs=[output, brokers, validator, pack_checker(validator),
+                                                   pack_builder(validator), *voices, *sdl_outputs])
     n.newline()

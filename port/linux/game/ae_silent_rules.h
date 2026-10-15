@@ -72,6 +72,10 @@ end: the mark's top 12 bits, then the capability */
 /* the refusal's reason, past the game's own rejection codes (0-6): a build
 that does not know it says only that it could not join */
 #define AE_SILENT_REJECTION_CODE 64
+/* 2: and the battle rifle's weapon pack is loaded on the machine (a host whose gametype uses the pack refuses a
+machine that tells less, with AE_RIFLE_REJECTION_CODE) */
+#define AE_RIFLE_CAPABILITY 2
+#define AE_RIFLE_REJECTION_CODE 65
 
 /* the option of a role (AE_SILENT_ROLE_MOVEMENT or _WEAPON) in the byte: its
 mode (3 reads as SILENT); NORMAL for any other role */

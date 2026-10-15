@@ -10,6 +10,10 @@ Automated system link sessions for testing the netcode without the menus
   screen's fast setup does, and starts it debug.network_test_start seconds
   later; with more variants, once a game is over (debug.network_test_score
   makes it short) the next, as the host's button on the scores does;
+- "host:<map>+<map>...:<variant>,<variant>..." changes map between those
+  games: game N plays the Nth map of the list (the last one from then on),
+  so that one run loads several maps one after another (the weapon pack
+  added to each and let go again: ae_weapon_pack.c);
 - "host:<level>:coop" hosts a network co-op game of that campaign level
   (a10, ...) at Normal, as choosing the level and its difficulty on the
   PC menus' Map screen does (ui_widget_port_cooperative_level_choose);
@@ -42,6 +46,10 @@ debug.network_test_flags sets bits of the host's game variant's flags (the
 port's gametype options: game_engine.h's _game_variant_..._bit).
 debug.network_test_gametype: the host plays a custom gametype of the save
 root (by its stored name, with its PC options) in place of the built-in one.
+debug.network_test_pack_loadout (primary, secondary or both) and
+debug.network_test_pack_map_spawns: the host's gametype uses the weapon pack
+(game_engine.h's weapon_pack, pack_loadout and pack_map_spawns), with a custom
+loadout whose stock values are the fallbacks (an assault rifle, a pistol).
 
 Called from the main loop every frame (main.c).
 */
@@ -73,6 +81,7 @@ Called from the main loop every frame (main.c).
 #include "saved games/playlist_profile.h"
 #include "saved games/arena_gametypes.h"
 #include "ae_silent.h" /* AE hook */
+#include "ae_burst_rifle.h" /* AE hook */
 #include <xtl.h> /* (MAX_GAMENAME) */
 
 #include "../src/p2p.h" /* port: port/linux/src/p2p.c, p2p_lobby.c */
@@ -118,8 +127,10 @@ static struct
 {
 	boolean checked;
 	short mode;
-	char map_name[64];
-	char variant_name[64];
+	/* (port: weapon pack tests: room for a rotation of every stock map, "host:<map>+<map>...:<variant>,...",
+	which is read into map_name whole before its variants are cut off it) */
+	char map_name[384];
+	char variant_name[256];
 	/* ... the variant of this game, of variant_name's list; and the seconds
 	the last game's scores have been shown */
 	short variant_index;
@@ -152,7 +163,7 @@ static struct
 	boolean hurt;
 	/* (debug.network_test_damage: "seconds:scale" hits on the host's first
 	player, by its weapon's bullet; applied once each) */
-	char damage_script[128];
+	char damage_script[512]; /* (port: weapon pack tests: room for the battle rifle's 25-hit scripts) */
 	long damage_done;
 	long damage_logged_time;
 	real damage_last[3];
@@ -181,6 +192,10 @@ static struct
 	_loadout_weapon_* values; NONE: the gametype's loadout) */
 	long loadout_primary;
 	long loadout_secondary;
+	/* (debug.network_test_pack_loadout: the variant's pack_loadout byte, 0 none;
+	debug.network_test_pack_map_spawns: its BATTLE RIFLE ON MAP) */
+	byte pack_loadout;
+	boolean pack_map_spawns;
 	/* (debug.network_test_auto_balance: the gametype's AUTO TEAM BALANCE on,
 	so a team game whose players all joined one team (NHE EXTRAS) starts) */
 	boolean auto_balance;
@@ -266,6 +281,22 @@ static void network_test_local_player_profile(
 		platform_log("network test: local player %d has no saved profile to play with", local_player_index + 1);
 }
 
+/* port: weapon pack tests' map rotation ("host:<map>+<map>..."): game N plays
+the Nth map of the list, the last one from then on; one map is itself */
+static char const *network_test_map(
+	void)
+{
+	static char map[64];
+	char const *piece = network_test.map_name;
+	short index;
+
+	for (index = 0; index < network_test.variant_index && strchr(piece, '+'); index++)
+		piece = strchr(piece, '+') + 1;
+	snprintf(map, sizeof(map), "%.*s", (int)strcspn(piece, "+"), piece);
+
+	return map;
+}
+
 static void network_test_read_settings(
 	void)
 {
@@ -321,6 +352,19 @@ static void network_test_read_settings(
 		network_test.loadout_secondary = NONE;
 	}
 	network_test.auto_balance = config_boolean("debug.network_test_auto_balance") != 0;
+	network_test.pack_loadout = 0;
+	network_test.pack_map_spawns = config_boolean("debug.network_test_pack_map_spawns") != 0;
+	{
+		char const *pack_loadout = config_string("debug.network_test_pack_loadout");
+
+		if (!strcmp(pack_loadout, "primary") || !strcmp(pack_loadout, "both"))
+			network_test.pack_loadout |= (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary));
+		if (!strcmp(pack_loadout, "secondary") || !strcmp(pack_loadout, "both"))
+			network_test.pack_loadout |= (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary));
+		if (pack_loadout[0] && !network_test.pack_loadout)
+			platform_log("network test: debug.network_test_pack_loadout '%s' is not primary, secondary or both: ignored",
+				pack_loadout);
+	}
 	network_test.kill_host = config_boolean("debug.network_test_kill_host") != 0;
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	snprintf(network_test.damage_script, sizeof(network_test.damage_script), "%s",
@@ -1057,10 +1101,16 @@ static void network_test_damage_script(
 		char *end;
 		double seconds = strtod(cursor, &end);
 		double scale;
+		boolean head;
 
 		if (end == cursor || *end != ':')
 			break;
 		scale = strtod(end + 1, &end);
+		/* (port: weapon pack tests: "seconds:scaleh" hits the head, its collision model's head material, for the
+		battle rifle's headshot counts) */
+		head = *end == 'h';
+		if (head)
+			end++;
 		if (entry == network_test.damage_done && game_time_get() >= (long)(seconds * TICKS_PER_SECOND))
 		{
 			struct unit_datum *unit = unit_get(player->unit_index);
@@ -1092,10 +1142,12 @@ static void network_test_damage_script(
 						damage.direction.k = 0.0f;
 						damage.scale = (real)scale;
 						scenario_location_from_point(&damage.location, &damage.epicenter);
-						object_cause_damage(&damage, player->unit_index, NONE, NONE, NONE, NULL);
-						platform_log("network test: tick %ld hit x%.1f: health %.4f shield %.4f stun %d", game_time_get(),
-							scale, object->object.body_vitality, object->object.shield_vitality,
-							(int)object->object.shield_stun_ticks);
+						object_cause_damage(&damage, player->unit_index, NONE, NONE,
+							head ? ae_damage_head_material_index(player->unit_index) : NONE, NULL);
+						platform_log("network test: tick %ld hit x%.1f%s: health %.4f shield %.4f stun %d dead %d",
+							game_time_get(), scale, head ? " head" : "", object->object.body_vitality,
+							object->object.shield_vitality, (int)object->object.shield_stun_ticks,
+							TEST_FLAG(object->object.damage_flags, _object_dead_bit) ? 1 : 0);
 					}
 				}
 			}
@@ -1479,9 +1531,9 @@ void network_test_update(
 		if (!network_test.set_up)
 		{
 			network_test.set_up = TRUE;
-			main_set_multiplayer_map_name(network_test.map_name);
+			main_set_multiplayer_map_name(network_test_map());
 			player_ui_fast_setup_network_server();
-			platform_log("network test: hosting %s", network_test.map_name);
+			platform_log("network test: hosting %s", network_test_map());
 			/* (in the server browser, as Create Game > Internet's PUBLIC) */
 			if (network_test.public_game)
 				p2p_set_hosting_public(TRUE);
@@ -1517,7 +1569,7 @@ void network_test_update(
 				if (strchr(network_test.map_name, '\\'))
 					snprintf(path, sizeof(path), "%s", network_test.map_name);
 				else
-					snprintf(path, sizeof(path), "levels\\test\\%s\\%s", network_test.map_name, network_test.map_name);
+					snprintf(path, sizeof(path), "levels\\test\\%s\\%s", network_test_map(), network_test_map());
 				network_test_variant(network_test.variant_index, variant_name, sizeof(variant_name));
 				if (!strcmp(variant_name, "coop"))
 				{
@@ -1541,6 +1593,9 @@ void network_test_update(
 						variant = *game_engine_get_variant_by_name(&variant, variant_name);
 					platform_log("network test: game %d, %s", network_test.variant_index + 1,
 						saved ? network_test.saved_gametype : variant_name);
+					/* port: (the map rotation: which map this game plays) */
+					if (strchr(network_test.map_name, '+'))
+						platform_log("network test: game %d plays %s", network_test.variant_index + 1, network_test_map());
 					/* debug.network_test_score: a short game, to test the next */
 					if (network_test.score_to_win > 0)
 						variant.universal_variant.score_to_win = network_test.score_to_win;
@@ -1549,11 +1604,18 @@ void network_test_update(
 					if (network_test.ball_melee)
 						variant.universal_variant.ball_melee = 1;
 					ae_silent_network_test(&variant); /* AE hook */
+					/* debug.network_test_pack_loadout / _pack_map_spawns: the weapon pack */
+					if (network_test.pack_loadout || network_test.pack_map_spawns)
+					{
+						variant.universal_variant.weapon_pack = _weapon_pack_battle_rifle;
+						variant.universal_variant.pack_loadout = (byte)(network_test.pack_loadout |
+							(network_test.pack_map_spawns ? PACK_MAP_SPAWNS_BIT : 0));
+					}
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */
 					if (saved || network_test.time_limit > 0 || network_test.loadout_primary != NONE ||
-						network_test.auto_balance)
+						network_test.auto_balance || network_test.pack_loadout)
 					{
 						if (!saved)
 							game_variant_options_default(&variant, &options);
@@ -1565,6 +1627,18 @@ void network_test_update(
 							options.loadout = _loadout_custom;
 							options.primary_weapon = (byte)network_test.loadout_primary;
 							options.secondary_weapon = (byte)network_test.loadout_secondary;
+						}
+						/* debug.network_test_pack_loadout: a custom loadout (the test
+						loadout's weapons, a saved gametype's own, else the fallbacks the stock
+						values hold) */
+						if (network_test.pack_loadout)
+						{
+							if (options.loadout != _loadout_custom && network_test.loadout_primary == NONE)
+							{
+								options.primary_weapon = _loadout_weapon_assault_rifle;
+								options.secondary_weapon = _loadout_weapon_pistol;
+							}
+							options.loadout = _loadout_custom;
 						}
 						/* debug.network_test_auto_balance */
 						if (network_test.auto_balance)
@@ -1594,8 +1668,27 @@ void network_test_update(
 				}
 				network_test.player_added = network_test.local_players_added >= network_test.local_players;
 			}
+			/* port: the map rotation ("host:<map>+<map>"): the map and gametype set
+			once more a second and a half before the start (a later game's lobby,
+			opened from the scores, may have put its own map back meanwhile) */
+			{
+				static short map_set_again_for = NONE;
+
+				if (strchr(network_test.map_name, '+') && network_test.map_set &&
+					map_set_again_for != network_test.variant_index &&
+					network_test.setup_seconds >= network_test.start_delay - 1.5f)
+				{
+					map_set_again_for = network_test.variant_index;
+					network_test.map_set = FALSE;
+				}
+			}
 			if (network_test.setup_seconds >= network_test.start_delay)
 			{
+				/* port: (a later game's lobby opens its map choice a moment after
+				the scores, which holds the countdown again: let go here too, or
+				the game never starts) */
+				if (network_test.variant_index > 0 && global_network_game_server_get())
+					network_game_server_pause_countdown(global_network_game_server_get(), FALSE);
 				network_test.started = TRUE;
 				network_game_client_request_immediate_start();
 				platform_log("network test: starting the game");

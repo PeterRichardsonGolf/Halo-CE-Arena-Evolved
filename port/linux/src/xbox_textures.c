@@ -20,6 +20,7 @@ memory_watch.c detects that by write-protecting the pages.
 #include "text_hires.h"
 #include "ae_buttons.h" /* AE hook */
 #include "port_config.h"
+#include "ae_pack_textures.h" /* AE hook */
 
 #include <stdio.h>
 #ifdef HALO_GLES
@@ -1095,6 +1096,7 @@ struct texture_entry
 	unsigned long last_used_frame;
 	/* the high-res HUD texture drawn in its place (hud_hires.h), or -1 */
 	long override;
+	long pack_smooth; /* AE hook */
 	/* the newest generation of its pages (memory_watch_generation) as of the
 	memory watch serial read before it was found: the same while no watched
 	page has been written since (0: never found) */
@@ -1188,6 +1190,8 @@ static GLuint texture_entry_result(struct texture_entry *entry, GLenum *target,
 			return texture;
 		}
 	}
+	description->hires |= entry->pack_smooth != 0; /* AE hook */
+	description->hires_coverage |= entry->pack_smooth == 2; /* AE hook */
 	if (entry->override >= 0)
 	{
 		GLuint texture = hud_hires_override_texture(entry->override, &description->levels);
@@ -1329,6 +1333,7 @@ GLuint xgpu_texture_get(const DWORD *resource, const D3DCOLOR *palette, GLenum *
 				entry->override = -1;
 		}
 		ae_buttons_uploaded(entry->data, entry->address, entry->description.width, entry->description.height, entry->description.levels > 1 ? xgpu_texture_level_offset(&entry->description, 1) : xgpu_texture_face_size(&entry->description)); /* AE hook */
+		entry->pack_smooth = entry->size && !palettized && !entry->description.cube_map && entry->description.depth == 1 ? ae_weapon_pack_smooth_bitmap_at(entry->address, (long)entry->description.width, (long)entry->description.height) : 0; /* AE hook */
 #ifdef HALO_64BIT
 		if (entry->override < 0 && entry->size && platform_is_contiguous(xbox_pointer(entry->address)) &&
 			platform_is_contiguous(xbox_pointer(entry->address + entry->size - 1)))

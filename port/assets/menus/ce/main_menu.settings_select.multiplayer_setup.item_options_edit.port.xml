@@ -56,5 +56,6 @@
 		<string text="PLASMA PISTOL"/>
 		<string text="PLASMA RIFLE"/>
 		<string text="NEEDLER"/>
+		<string text="BATTLE RIFLE"/>
 	</strings>
 </menus>

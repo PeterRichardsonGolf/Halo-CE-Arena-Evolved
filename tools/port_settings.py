@@ -125,14 +125,16 @@ SCREENS = {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
         "title": "GAME OPTIONS",
-        # (nine rows, the other screens' 30 px apart: the HUD's rows are the HUD screen's, hud_setup)
-        "spacing": 30,
+        # (ten rows: the HUD's rows are the HUD screen's, hud_setup)
+        "spacing": 27,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
             ("MOD:", "game.mod", [("STOCK", "")],
              "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
              "desktop"),
+            ("WEAPON PACKS:", "game.weapon_packs", ON_OFF,
+             "The battle rifle and other packs in the packs\nfolder. A gametype's ITEM OPTIONS give them to\nplayers. A change applies from the next start.", None),
             ("CAMPAIGN FALL DAMAGE:", "game.fall_damage", ON_OFF,
              "Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options.", None),
             ("CAMPAIGN HEALTH:", "game.health", HEALTH_STYLES,
@@ -877,6 +879,9 @@ STRING_INSERTS = {
 # a custom loadout's weapons (game_engine.h's _loadout_weapon_*)
 LOADOUT_WEAPONS = ["NONE", "RANDOM", "ASSAULT RIFLE", "PISTOL", "SHOTGUN", "SNIPER RIFLE", "ROCKET LAUNCHER",
                    "PLASMA PISTOL", "PLASMA RIFLE", "NEEDLER"]
+# (after game_engine.h's own: the weapon pack's rifle, a choice the rows' spinners show last; ae_rifle_menu.c stores
+# it as the slot's pack bit over an assault rifle, the weapon played where the pack is not)
+LOADOUT_PACK_WEAPON = "BATTLE RIFLE"
 
 
 def LOADOUT_HELPS(slot: str) -> list:
@@ -884,6 +889,7 @@ def LOADOUT_HELPS(slot: str) -> list:
     helps = [f"No {slot} weapon.", f"A random {slot} weapon, of those the map has,\\neach time you spawn."]
     for weapon in LOADOUT_WEAPONS[2:]:
         helps.append(f"Everyone spawns with a {weapon.lower()} as their {slot}\\nweapon (where the map has one).")
+    helps.append(f"Everyone spawns with a battle rifle as their {slot}\\nweapon (a weapon pack: an assault rifle where\\nthe pack is not). Arena Evolved 0.2.5+ only.")
     return helps
 
 
@@ -1750,7 +1756,7 @@ def _item_options_extras() -> list:
                          ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     lines += _strings(f"{base}/var_map_weapons", ["YES", "NO"])
     lines += _strings(f"{base}/var_loadout", ["CATEGORY", "CUSTOM"])
-    lines += _strings(f"{base}/var_loadout_weapon", LOADOUT_WEAPONS)
+    lines += _strings(f"{base}/var_loadout_weapon", LOADOUT_WEAPONS + [LOADOUT_PACK_WEAPON])
     return lines
 
 

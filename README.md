@@ -28,7 +28,7 @@ port of the Halo: Combat Evolved decompilation, by way of
 both closely.
 
 > **Status: early and in active development.** The current pre-release is
-> 0.2.4-beta (below). The Linux 64-bit build is the one played and tested;
+> 0.2.5-beta (below). The Linux 64-bit build is the one played and tested;
 > the Windows 64-bit build is built by the same automated checks but this
 > release's was not test-played before it went up;
 > the other platforms build from the same code but are untested here.
@@ -62,6 +62,13 @@ What has changed, release by release: [CHANGELOG.md](CHANGELOG.md).
   back upstream.
 
 ## What it adds
+
+**The battle rifle** is a starting weapon: in a gametype's **ITEM OPTIONS**, with STARTING WEAPONS on CUSTOM, BATTLE
+RIFLE is the last choice of PRIMARY and SECONDARY (three-round bursts, a 3x scope, its own reticle). It comes as a
+weapon pack, the `packs` folder beside the game's `maps` (in the Windows and Linux 64-bit downloads); Settings > Game
+Options > WEAPON PACKS turns packs off on a machine. Where the pack is not (packs off, or a map it cannot be added
+to) the slot plays an assault rifle. While a game's gametype gives the rifle, only Arena Evolved 0.2.5 or later with
+the pack can join it.
 
 **Gametype options** (a gametype's **ARENA OPTIONS** screen, in the gametype
 editor and in Server Setup)
@@ -303,9 +310,9 @@ copies or changes MCC's files). Versions and the build-time packages are in
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.2.4-beta, built on ChupathingyCE 0.7.3e and OpenCE build-201
+page: 0.2.5-beta, built on ChupathingyCE 0.7.3e and OpenCE build-201
 (network version 28), is the current one, a pre-release (2026-10-13); it
-plays online with 0.2.3-beta and OpenCE build-201 and later, not with 0.2.2-beta or earlier.
+plays online with 0.2.3-beta, 0.2.4-beta and OpenCE build-201 and later, not with 0.2.2-beta or earlier.
 Each platform is
 a zip of its own: Windows and Linux as 64-bit builds only, plus macOS and
 Android. For Linux there are two, and the first is the one to take:
@@ -454,7 +461,7 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, 0.2.4-beta is network version 28: it
+- Online, 0.2.5-beta is network version 28: it
   plays with OpenCE builds on network 28 (build-201 onward, until OpenCE
   changes its network version), both ways, and joins only games
   hosted on version 28 (an older host is refused: the host needs to update).
@@ -486,6 +493,10 @@ Re-run `configure.py` when source files or the menus are added.
   game's text and the logo's wordmark),
   [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
   [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
+- The battle rifle's model, textures, animations and sounds are CMT's, from the source release of The Silent
+  Cartographer: Evolved (1.4.1c), used with credit; its scope and gun-screen art are redrawn here, and its aiming
+  reticle follows crosshair 033 of [Kenney's Crosshair Pack](https://kenney.nl/assets/crosshair-pack) (CC0). The
+  pack's own credits file is `packs/ae_battle_rifle.CREDITS.txt`.
 - The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
   made by `tools/ae_logo.py`); it uses no third-party art. It is not CC0
   (see below).

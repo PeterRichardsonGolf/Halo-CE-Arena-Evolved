@@ -2,6 +2,7 @@
 """gametype_file: a COPY of a save root with a saved gametype's variant bytes patched and signed again, for tests.
 
     python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3
+        (--set takes an offset or a field name: --set weapon_pack=1 --set pack_loadout=1)
     python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "AE TEAM SLY" --own "TS 50"
         (--own: the copy gets one more saved gametype, --name's file saved again under that name, as a player's
         own made in the editor would be: its folder is the one the game keeps that name in, xbox_xapi.c's
@@ -32,6 +33,19 @@ KEY = b"halo-linux content signature\0"
 VARIANT_SIZE = 0x68
 SIGNATURE_SIZE = 20
 NAME_SIZE = 24
+# the variant's bytes by their field names in game_engine.h (struct universal_variant at 0x1c), for --set
+NAMED = {"nhe_mode": 0x1D, "starting_frags": 0x1E, "ball_melee": 0x1F, "weapon_pack": 0x29,
+         "pack_loadout": 0x2A, "pack_map_spawns": 0x2B}
+
+
+def parse_set(text):
+    """'OFFSET=BYTE' or 'NAME=BYTE' (NAMED) as (offset, byte)"""
+    key, _, value = text.partition("=")
+    try:
+        offset = NAMED[key] if key in NAMED else int(key, 0)
+        return offset, int(value, 0)
+    except ValueError:
+        raise SystemExit(f"gametype_file: --set {text}: want OFFSET=BYTE or NAME=BYTE (names: {', '.join(NAMED)})")
 
 
 def signature(block):
@@ -158,14 +172,15 @@ def main(argv):
     p.add_argument("--from", dest="from_root", required=True, help="the save root to copy (never written)")
     p.add_argument("--to", dest="to_root", required=True, help="a new folder for the patched copy")
     p.add_argument("--name", required=True, help="the gametype's stored name")
-    p.add_argument("--set", action="append", default=[], help="OFFSET=BYTE (e.g. 0x1d=3: nhe_mode); repeat")
+    p.add_argument("--set", action="append", default=[], help="OFFSET=BYTE (e.g. 0x1d=3) or NAME=BYTE (nhe_mode=3, weapon_pack, "
+                   "pack_loadout, pack_map_spawns, ...); repeat")
     p.add_argument("--own", help="save --name's file again as the player's own gametype of this name (--set "
                    "patches that one)")
     a = p.parse_args(argv)
     values = {}
     for kv in a.set:
-        k, _, v = kv.partition("=")
-        values[int(k, 0)] = int(v, 0)
+        offset, value = parse_set(kv)
+        values[offset] = value
     f = copy_and_patch(a.from_root, a.to_root, a.name, values, own_name=a.own)
     print(f"gametype_file: {f} ({name_of(f.read_bytes())}) patched {', '.join(f'{k:#x}={v}' for k, v in values.items())}")
     return 0

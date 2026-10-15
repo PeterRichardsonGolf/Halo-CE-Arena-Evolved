@@ -141,6 +141,7 @@ symbols in this file:
 #include "ae_map_share.h" /* port: map sharing on Arena Evolved's Custom Edition maps */
 #include "ae_glue_ce_maps.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
+#include "ae_weapon_pack.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -750,6 +751,7 @@ void scenario_tags_unload(
 
 		menu_tags_unloaded();
 	}
+	ae_weapon_pack_tags_unloaded(); /* AE hook */
 	cache_file_close();
 #ifdef HALO_CUSTOM_EDITION
 	/* (a Custom Edition map registered no Direct3D buffers) */
@@ -1547,6 +1549,7 @@ long scenario_tags_load(
 				ce_hud_tags_loaded(global_tag_instances, ce_header->tag_count);
 			}
 			ae_ce_map_tags_loaded(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
+			ae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 			return ce_header->scenario_tag_index;
 		}
 #endif
@@ -1627,6 +1630,7 @@ long scenario_tags_load(
 			global_tag_instances = xbox_pointer(cache_file_globals.tag_header->tag_instances);
 			tags_header_register_vertex_and_index_buffers(cache_file_globals.tag_header);
 			cache_file_globals.tags_loaded = TRUE;
+			ae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */
 			/* port: a PAL map played as the NTSC maps are (port/linux/game/pal_tags.c) */
 			{
 				extern void pal_tags_loaded(char const *build);

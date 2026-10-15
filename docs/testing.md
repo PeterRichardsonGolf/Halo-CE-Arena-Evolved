@@ -17,6 +17,72 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 | A copy of a save root with a saved gametype's variant bytes patched and signed again (for `--save-from`; never in place, never a real save root) | `python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3` (on the machine that plays) |
 | A save root's seeded gametypes against golden hashes (`tools/ae_test/golden_seeds_a17102e2.json`, a17102e2's seeds; `--rename OLD=NEW` for migrated names) or against another root (byte-identical, `--same-as`) | `python3 tools/ae_test/seed_compare.py <save root> --golden tools/ae_test/golden_seeds_a17102e2.json` |
 
+Weapon pack tests (spec keys, or the same names as `run.py` options): `pack_loadout` (`primary`, `secondary`,
+`both`) and `pack_map_spawns` make the test host's gametype use the weapon pack (`HALO_NETWORK_TEST_PACK_LOADOUT`,
+`HALO_NETWORK_TEST_PACK_MAP_SPAWNS`; the stock loadout values stay the assault rifle / pistol fallbacks);
+`pack_file` is a pack read in place of `packs/ae_battle_rifle.aepack` (linked as the data root's
+`pack_file/<name>`: the game opens `debug.weapon_pack_file` / `HALO_WEAPON_PACK_FILE` by Xbox path,
+`d:\pack_file\<name>`; the setting is an Xbox path under `d:\`, the data root, never a host path, and the file
+must exist); `packs_from` is a folder linked as the data root's `packs/` (default: the config's `data_dir/packs`
+when it exists), or `"none"` (`run.py --no-packs`) for a game with no `packs/` at all whatever the machine has. At start the game logs slot 1's pack, `weapon pack: 'ae_battle_rifle' revision
+N (sha256 <16 hex>...), ...`, or `weapon pack: slot 1 (<path>) refused: <reason>; the game plays without it`;
+with no `packs/` (and no `pack_file`) nothing (tools/test_weapon_pack_load.py, synthetic packs). A saved
+gametype's pack bytes: `gametype_file.py --set weapon_pack=1 --set pack_loadout=1 --set pack_map_spawns=1`
+(offsets 0x29, 0x2a, 0x2b; `--set` takes field names too). `expect.lines` / `expect.no_lines` (`run.py
+--expect-line REGEX`, `--expect-no-line REGEX`) are regexes a line of the game's debug.txt must / must not match,
+e.g. the rules line: `weapon pack: none, pack loadout: primary stock, secondary stock, battle rifle on map: off`.
+
+The weapon pack on a map (tools/test_weapon_pack_add.py; `AE_TEST_PACK_BUILD`, and `AE_TEST_PACK_REAL` = a real
+pack's path for the cases that need one, `AE_TEST_PACK_ROTATION=1` for the long cases: the four-game rotation, and an AE host and client with the pack,
+which must log the same fingerprint): with `pack_loadout`
+set, each map logs `weapon pack: added to <map>: ... fingerprint <16 hex>`, the first player given the rifle
+`weapon pack: first spawn: the primary weapon is the pack's battle_rifle (...)`, and each map change `weapon pack:
+let go from <map>: ...` with the reads served from the pack; a pack a map cannot take logs `weapon pack: refused
+for <map>: <reason>; the game plays without it` (a refusal: such a case needs `expect.refusals_ok`). The test host
+changes map between games with `network_test: "host:<map>+<map>...:<gametype>,<gametype>..."`: game N plays the
+Nth map (the last one from then on), so the gametype list says how many games there are;
+`HALO_NETWORK_TEST_TIME_LIMIT=1` makes each a minute. `debug.weapon_pack_ground` / `HALO_WEAPON_PACK_GROUND=1` (for
+pictures; a host or no network game only, ignored on a client) lays one more of the pack's weapon two steps ahead
+of each local player who spawns with it, and of one who spawns without it in a game that asks for the pack only for
+BATTLE RIFLE ON MAP (`--pack-map-spawns` with `HALO_NETWORK_TEST_LOADOUT=<w>,<s>`: a few steps onto it show the swap
+prompt, or with `<w>,0` pick it up). `handshake.py --packs-from <folder>` links that folder as both machines'
+`packs/` (`none`: no packs at all).
+
+The pack's checks against the map and the fallback (tools/test_weapon_pack_checks.py; the same three variables):
+forced-failure packs made from the real one (labels `zz`, a required and an optional external renamed, the
+weapon renamed to a stock weapon's name, a first-person animation node renamed), a full tag table
+(`debug.weapon_pack_table_limit` / `HALO_WEAPON_PACK_TABLE_LIMIT=<tags>`, tests only), a Custom Edition map
+(`homobox@ce`) and no pack at all: each refused with its reason, `first spawn: assault rifle + pistol` (the stock
+fallback), the console's `weapon pack: BATTLE RIFLE unavailable on <map>: <reason>` line, and the game played to
+its end. The long cases: all 13 Xbox multiplayer maps in one rotation (a minute each, about 20 minutes), Halo 1:
+NHE's badcreek (`mods/NHE`) and CE+ X's Blood Gulch beside its own rifle (`mods/CE+ X`).
+
+The battle rifle's behaviour (tools/test_weapon_pack_rifle.py, port/linux/game/ae_burst_rifle.c; the same three
+variables, the CE+ X case with the rotation's): the set-up lines (`ae burst rifle: zoom 1 level 2.563x ...`, spread,
+magazine, bullet, damage, aim assist), the cadence with `debug.burst_autofire` / `HALO_BURST_AUTOFIRE=1` (the
+holder pulls again as soon as the rifle allows; `2`: one pull in the middle of each recovery, which is lost, and
+another half a second after it; a host or no network game only, a client ignores it and logs so; the pulls are made
+in the host's weapon update, not its player's input, so other machines of a network game do not see these bursts),
+250 ms pulls with `debug.test_input` (`HALO_KEY_FIRE=K`, `key:K`) firing three rounds each, the reserve topped at
+108 by a second rifle (`HALO_WEAPON_PACK_GROUND=1` and a few steps), the zoomed view's angle with `HALO_FOV=100`,
+a zoom-and-fire game that ends its map (its `let go` line must count no failed read; every rifle case forbids
+`could not be read from the pack`), and network_test head and body hits (`debug.network_test_damage`'s `seconds:scaleh` hits the head, its collision
+model's head material). `debug.weapon_log` / `HALO_WEAPON_LOG=1` logs each round (`ae burst rifle: tick N, round
+r of 3 fired, L loaded, R in reserve, recovery T`), each burst's distance from the last and the zoomed view's
+angle, the firing effect of each round and the removed kick; `debug.weapon_hit_log` / `HALO_WEAPON_HIT_LOG=1` logs
+each of this machine's players' rifle rounds that hits an object (`ae rifle hit: ... head h | shield a -> b body c
+-> d dead x`; the numbers are a host's or a game without network: a client deals no damage). All three are for
+automated tests, default off.
+
+The look of the pack's weapons (tools/test_weapon_pack_look.py; the same variables): the `weapon pack: battle_rifle's
+look:` line (the pickup texts and the message icon its weapon entry names), the two SMOOTH bitmaps' `drawn smooth`
+lines, the ammo text shown after walking over a second rifle, the swap prompt (`--pack-map-spawns`, a stock loadout,
+`HALO_WEAPON_PACK_GROUND=1`, a few steps) drawing the entry's icon with no frame showing the counter's
+sheet (magenta or bright green texels in the upper half), the weapon text when the rifle is picked up with one weapon
+held, a variant pack whose icon is the counter's sheet (its icon
+refused for the map, the prompt drawn with no icon; also an icon whose optional external bitmap the map lacks), and firing zoomed in (`debug.weapon_log`: `zoomed: local player 0 sees no
+particle of the rifle or its holder`).
+
 `<rev>` is any git revision (pushed to the box as `refs/ae-test/<sha12>` and built once in its own worktree),
 a named build from the config (e.g. `stock`), or a folder holding a `halo` binary. `run.py --list-keys` lists
 the spec keys; `run.py --spec game.json` takes a whole spec; `--dry-run` shows the game's environment.

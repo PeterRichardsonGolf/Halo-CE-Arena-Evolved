@@ -82,6 +82,7 @@ their handlers open opens.
 #include "text/text_group.h"
 #include "text/unicode.h"
 #include "saved games/arena_gametypes.h"
+#include "ae_weapon_pack.h" /* AE hook */
 
 #include "halo_menus.h"
 #include "halo_custom_maps.h"
@@ -176,6 +177,7 @@ enum
 #include "ae_glue_mouse.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
+#include "ae_rifle_menu.h" /* AE hook */
 #include "ae_input.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
@@ -5226,6 +5228,8 @@ static boolean lobby_leave(struct widget_instance *widget, struct event_record *
 {
 	if (!lobby_controller_playing(controller))
 	{
+		if (!lobby_join.adding && lobby_join.controller == NONE) /* AE hook */
+			return ae_lobby_leave_all(controller); /* (AE: else a pad whose player had left did nothing and the lobby looked stuck: item 108) */
 		lobby_join_reset();
 		return FALSE;
 	}
@@ -5597,6 +5601,7 @@ static void lobby_update(struct widget_instance *list)
 
 			usnprintf(text + length, NUMBEROF(text) - 1 - length, L"\r\n\r\nInvite link copied:\r\npaste it to friends");
 		}
+		if (global_network_game_server_get()) ae_weapon_pack_lobby_line(text, NUMBEROF(text), game->map.name, &game->variant); /* AE hook */
 		text_set_length(named(description, "lobby_game_data", 0), text, LOBBY_TEXT_LENGTH);
 	}
 	profile_name_show(description);
@@ -6164,6 +6169,7 @@ static void gametype_options_each(struct widget_instance *list, boolean save)
 	}
 	ae_silent_menu_rows(list, variant, save); /* AE hook */
 	ae_hit_feedback_menu_rows(list, variant, save); /* AE hook */
+	ae_rifle_menu_rows(list, variant, options, save); /* AE hook */
 }
 
 /* each of a screen's rows of the host's own settings (_option_setting:

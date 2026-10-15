@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 LIST = ROOT / "port" / "linux" / "game" / "ae_hooks.txt"
 MARK = "/* AE hook */"
 # where upstream code lives; AE's own files (ae_*) and tests are not upstream
-SCANNED = ("source", "port")
+SCANNED = ("source", "port", "server")
 SUFFIXES = (".c", ".h", ".cpp", ".m", ".mm")
 
 
@@ -51,6 +51,12 @@ def upstream_files():
             if path.name.startswith("ae_") or "tests" in path.relative_to(ROOT).parts:
                 continue
             yield path
+
+
+def test_server_is_scanned():
+    """the dedicated server's sources are upstream code too (R15): their marked lines must be listed as well"""
+    assert "server" in SCANNED
+    assert any(path.relative_to(ROOT).parts[0] == "server" for path in upstream_files())
 
 
 def test_hooks_listed():
