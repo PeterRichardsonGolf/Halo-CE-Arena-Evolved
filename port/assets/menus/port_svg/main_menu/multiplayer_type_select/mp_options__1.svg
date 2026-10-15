@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
 <style>
-.b { fill:#000; stroke:#2896FF; stroke-width:2.2; stroke-linejoin:round }
-.l { fill:none; stroke:#2896FF; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round }
-.w { fill:none; stroke:#2896FF; stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round }
+.b { fill:#000; stroke:#2896FF; stroke-width:2.4; stroke-linejoin:round }
+.l { fill:none; stroke:#2896FF; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+.w { fill:none; stroke:#2896FF; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round }
+.arc { fill:none; stroke:#2896FF; stroke-width:6 }
 .f { fill:#2896FF; stroke:none }
 .red { stroke:#FF3A3A }
 </style>
@@ -16,11 +17,11 @@
 <path d="M73.0,42 l-3,7 h14 l-3,-7 z" class="b"/>
 <path d="M23,49 V66 H77 V49" class="w"/>
 <line x1="50" y1="66" x2="50" y2="74" class="w"/>
-<rect x="32" y="74" width="36" height="14" rx="2" class="b"/>
-<circle cx="39" cy="81" r="1.6" class="f"/>
-<circle cx="46" cy="81" r="1.6" class="f"/>
-<circle cx="53" cy="81" r="1.6" class="f"/>
-<circle cx="60" cy="81" r="1.6" class="f"/></g>
+<rect x="30" y="74" width="40" height="16" rx="2" class="b"/>
+<line x1="38" y1="79" x2="38" y2="85" class="l"/>
+<line x1="46" y1="79" x2="46" y2="85" class="l"/>
+<line x1="54" y1="79" x2="54" y2="85" class="l"/>
+<line x1="62" y1="79" x2="62" y2="85" class="l"/></g>
 <rect x="4" y="14" width="38" height="28" rx="2" class="b"/>
 <rect x="7" y="17" width="32" height="22" rx="1" class="l"/>
 <path d="M19.0,42 l-3,7 h14 l-3,-7 z" class="b"/>
@@ -29,10 +30,10 @@
 <path d="M73.0,42 l-3,7 h14 l-3,-7 z" class="b"/>
 <path d="M23,49 V66 H77 V49" class="w"/>
 <line x1="50" y1="66" x2="50" y2="74" class="w"/>
-<rect x="32" y="74" width="36" height="14" rx="2" class="b"/>
-<circle cx="39" cy="81" r="1.6" class="f"/>
-<circle cx="46" cy="81" r="1.6" class="f"/>
-<circle cx="53" cy="81" r="1.6" class="f"/>
-<circle cx="60" cy="81" r="1.6" class="f"/>
+<rect x="30" y="74" width="40" height="16" rx="2" class="b"/>
+<line x1="38" y1="79" x2="38" y2="85" class="l"/>
+<line x1="46" y1="79" x2="46" y2="85" class="l"/>
+<line x1="54" y1="79" x2="54" y2="85" class="l"/>
+<line x1="62" y1="79" x2="62" y2="85" class="l"/>
 </g>
 </svg>

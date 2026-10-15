@@ -1,26 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
 <style>
-.b { fill:#000; stroke:#2896FF; stroke-width:2.2; stroke-linejoin:round }
-.l { fill:none; stroke:#2896FF; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round }
-.w { fill:none; stroke:#2896FF; stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round }
+.b { fill:#000; stroke:#2896FF; stroke-width:2.4; stroke-linejoin:round }
+.l { fill:none; stroke:#2896FF; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+.w { fill:none; stroke:#2896FF; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round }
+.arc { fill:none; stroke:#2896FF; stroke-width:6 }
 .f { fill:#2896FF; stroke:none }
 .red { stroke:#FF3A3A }
 </style>
 <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.50"/></filter></defs>
 <g transform="translate(62 10) scale(1.6)">
-<g filter="url(#glow)" opacity="0.9"><rect x="6" y="34" width="88" height="34" rx="4" class="b"/>
-<rect x="14" y="45" width="10" height="12" rx="1.5" class="f"/>
-<rect x="29" y="45" width="10" height="12" rx="1.5" class="f"/>
-<rect x="44" y="45" width="10" height="12" rx="1.5" class="f"/>
-<line x1="62" y1="42" x2="62" y2="60" class="w"/>
-<path d="M58,84 L86,20 L94,24 L66,88 L56,92 Z" class="b"/>
-<line x1="80" y1="33" x2="88" y2="37" class="l"/></g>
-<rect x="6" y="34" width="88" height="34" rx="4" class="b"/>
-<rect x="14" y="45" width="10" height="12" rx="1.5" class="f"/>
-<rect x="29" y="45" width="10" height="12" rx="1.5" class="f"/>
-<rect x="44" y="45" width="10" height="12" rx="1.5" class="f"/>
-<line x1="62" y1="42" x2="62" y2="60" class="w"/>
-<path d="M58,84 L86,20 L94,24 L66,88 L56,92 Z" class="b"/>
-<line x1="80" y1="33" x2="88" y2="37" class="l"/>
+<g filter="url(#glow)" opacity="0.9"><rect x="4" y="32" width="88" height="38" rx="4" class="b"/>
+<path d="M12,61 L18.5,41 L25,61 M14.6,54 H22.4" class="w"/>
+<path d="M31,61 V41 H37 Q42,41 42,46 Q42,51 37,51 H31 M37,51 Q43,51 43,56 Q43,61 37,61 H31" class="w"/>
+<path d="M58,44 Q55,41 52,41 Q47,41 47,51 Q47,61 52,61 Q55,61 58,58" class="w"/>
+<line x1="64" y1="39" x2="64" y2="63" class="w"/>
+<path d="M62,86 L88,24 L96,28 L70,90 L60,94 Z" class="b"/>
+<line x1="82" y1="37" x2="90" y2="41" class="l"/></g>
+<rect x="4" y="32" width="88" height="38" rx="4" class="b"/>
+<path d="M12,61 L18.5,41 L25,61 M14.6,54 H22.4" class="w"/>
+<path d="M31,61 V41 H37 Q42,41 42,46 Q42,51 37,51 H31 M37,51 Q43,51 43,56 Q43,61 37,61 H31" class="w"/>
+<path d="M58,44 Q55,41 52,41 Q47,41 47,51 Q47,61 52,61 Q55,61 58,58" class="w"/>
+<line x1="64" y1="39" x2="64" y2="63" class="w"/>
+<path d="M62,86 L88,24 L96,28 L70,90 L60,94 Z" class="b"/>
+<line x1="82" y1="37" x2="90" y2="41" class="l"/>
 </g>
 </svg>
