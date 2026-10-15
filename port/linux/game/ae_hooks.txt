@@ -498,3 +498,22 @@ source/interface/hud_messaging.c	line_top = ae_panels_message_top(local_player_i
 source/interface/hud_messaging.c	screen_point.x = ae_panels_message_left(local_player_index, screen_point.x); /* AE hook */
 source/interface/hud_messaging.c	ae_panels_message_scale_begin(local_player_index, screen_point.x, line_top); /* AE hook */
 source/interface/hud_messaging.c	ae_panels_message_scale_end(); /* AE hook */
+# HUD STYLE AE's CE message lines in the score strip's text style (0.3.0, owner 10-15 "full restyle";
+# ae_hud_messages.c): each draw of a message's text or picture is handed to AE while hud_messaging_update's block is
+# open (CLASSIC never opens one); CE's own bookkeeping still runs. ui_widget.c's two are draw_string_and_hack_in_icons'
+# (a custom line's %icons: "Hold BACK for score"), whose menu uses draw as before (no block open). There a button
+# picture keeps its own colour (CE tinted it the line's blue-grey; the HUD's own button pictures keep theirs).
+source/interface/hud_messaging.c	#include "ae_hud_messages.h" /* AE hook */
+source/interface/hud_messaging.c	else\nif (!ae_hud_message_text(text)) /* AE hook */\nrasterizer_draw_unicode_string(&text_bounds, NULL, NULL, 0, text);
+source/interface/hud_messaging.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */\nif (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit))) return; /* AE hook */
+source/interface/hud_messaging.c	text_bounds.x0 = line_bounds.x0;\nif (!ae_hud_message_text(text)) /* AE hook */\nrasterizer_draw_unicode_string(
+source/interface/hud_messaging.c	text_bounds.x0 = line_bounds.x0;\nif (!ae_hud_message_text(icon_text)) /* AE hook */\nrasterizer_draw_unicode_string(
+source/interface/hud_messaging.c	text_bounds.x0 = line_bounds.x0;\nif (!ae_hud_message_text(L"<no button icon>")) /* AE hook */\nrasterizer_draw_unicode_string(
+source/interface/hud_messaging.c	maximum_message_count--;\nae_hud_messages_keep_first_line(); /* AE hook */
+source/interface/hud_messaging.c	if (!ae_hud_message_list_line(formatted)) /* AE hook */\nrasterizer_draw_unicode_string(
+source/interface/hud_messaging.c	if (!ae_hud_message_list_line(item_text)) /* AE hook */\nrasterizer_draw_unicode_string(
+source/interface/hud_messaging.c	if (!ae_hud_message_list_line(message->text)) /* AE hook */\nrasterizer_draw_unicode_string(
+source/interface/ui_widget.c	#include "ae_hud_messages.h" /* AE hook */
+source/interface/ui_widget.c	if (!ae_hud_message_text(text)) /* AE hook */\nrasterizer_draw_unicode_string(&text_bounds, NULL, NULL, 0, text);\nbounds->y0 = cursor_bounds->y0;
+source/interface/ui_widget.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index);\nif (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color)) return; /* AE hook */
+port/linux/src/port_config.c	{ "debug.ae_message_test", _config_string, "\"\"", "HALO_DEBUG_AE_MESSAGE_TEST", _environment_value, /* AE hook */\n_platform_all,

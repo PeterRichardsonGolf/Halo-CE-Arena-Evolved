@@ -148,6 +148,7 @@ symbols in this file:
 #include "text/unicode.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_weapon_pack.h" /* AE hook */
+#include "ae_hud_messages.h" /* AE hook */
 
 #include <stddef.h>
 #ifdef HALO_64BIT
@@ -519,6 +520,7 @@ static void render_state_text(
 	if (custom && game_engine_running())
 		draw_string_and_hack_in_icons(&text_bounds, NULL, NULL, 0, text, TRUE);
 	else
+		if (!ae_hud_message_text(text)) /* AE hook */
 		rasterizer_draw_unicode_string(&text_bounds, NULL, NULL, 0, text);
 	bounds->y0 = cursor_bounds->y0;
 
@@ -551,6 +553,7 @@ static void render_state_bitmap(
 		(struct bitmap_data *)bitmap, FALSE, TRUE))
 	{
 		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
+		if (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit))) return; /* AE hook */
 		scale = hud_split_screen_layout() ? 0.75f : 1.0f;
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0);
 		point.y = (short)(cursor_bounds->y1 - icon->offset.y * scale);
@@ -1603,6 +1606,7 @@ void hud_messaging_update(
 								&line_cursor);
 							line_cursor.x0 -= 3;
 							text_bounds.x0 = line_bounds.x0;
+							if (!ae_hud_message_text(text)) /* AE hook */
 							rasterizer_draw_unicode_string(
 								&text_bounds,
 								NULL,
@@ -1780,6 +1784,7 @@ void hud_messaging_update(
 										&line_cursor);
 									line_cursor.x0 -= 3;
 									text_bounds.x0 = line_bounds.x0;
+									if (!ae_hud_message_text(icon_text)) /* AE hook */
 									rasterizer_draw_unicode_string(
 										&text_bounds,
 										NULL,
@@ -1815,6 +1820,7 @@ void hud_messaging_update(
 									&line_cursor);
 								line_cursor.x0 -= 3;
 								text_bounds.x0 = line_bounds.x0;
+								if (!ae_hud_message_text(L"<no button icon>")) /* AE hook */
 								rasterizer_draw_unicode_string(
 									&text_bounds,
 									NULL,
@@ -1856,6 +1862,7 @@ void hud_messaging_update(
 					screen_point.y + hud_msg_def->spacing * line_height);
 			}
 			maximum_message_count--;
+			ae_hud_messages_keep_first_line(); /* AE hook */
 		}
 
 		qsort(
@@ -1933,6 +1940,7 @@ void hud_messaging_update(
 					}
 					else
 						ustrncpy_terminated(formatted, item_text, NUMBEROF(formatted));
+					if (!ae_hud_message_list_line(formatted)) /* AE hook */
 					rasterizer_draw_unicode_string(
 						&message_bounds,
 						NULL,
@@ -1942,6 +1950,7 @@ void hud_messaging_update(
 				}
 				else
 				{
+					if (!ae_hud_message_list_line(item_text)) /* AE hook */
 					rasterizer_draw_unicode_string(
 						&message_bounds,
 						NULL,
@@ -1952,6 +1961,7 @@ void hud_messaging_update(
 			}
 			else
 			{
+				if (!ae_hud_message_list_line(message->text)) /* AE hook */
 				rasterizer_draw_unicode_string(
 					&message_bounds,
 					NULL,

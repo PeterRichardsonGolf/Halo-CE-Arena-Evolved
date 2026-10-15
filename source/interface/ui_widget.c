@@ -691,6 +691,7 @@ struct widget_instance;
 #endif
 #include "ae_hooks.h" /* AE hook */
 #include "ae_buttons_tags.h" /* AE hook */
+#include "ae_hud_messages.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 /* the in-game server browser (port/linux/game/browser_screen.c): a screen of
@@ -4316,6 +4317,7 @@ static void render_state_text(
 	draw_unicode_string_compute_bounds(bounds, text, &text_bounds, cursor_bounds);
 	cursor_bounds->x0 -= 3;
 	text_bounds.x0 = bounds->x0;
+	if (!ae_hud_message_text(text)) /* AE hook */
 	rasterizer_draw_unicode_string(&text_bounds, NULL, NULL, 0, text);
 	bounds->y0 = cursor_bounds->y0;
 
@@ -4363,6 +4365,7 @@ static void render_state_bitmap(
 	{
 		/* port: the sprite from a high-res texture, if it has one */
 		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index);
+		if (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color)) return; /* AE hook */
 		scale = hud_globals_get_scale(local_player_count() > 1);
 		scale *= ae_buttons_ce_menu_icon_scale(bitmap_group_index); /* AE hook */
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0 + 1.0f);

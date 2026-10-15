@@ -82,6 +82,9 @@ UNITS = {
     # (the scoreboard header's text, HUD STYLE AE)
     "ae_header_lines_test.c": ([UI / "ae_header_lines.c"],
                                ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (HUD STYLE AE's CE message lines: pieces on a pen, broken between words, pictures that do not fit)
+    "ae_hud_message_flow_test.c": ([UI / "ae_hud_message_flow.c"],
+                                   ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (HUD STYLE: AE unless the setting reads "classic"; a fake config_string)
     "ae_hud_style_test.c": ([UI / "ae_hud_style.c"], [], []),
     # (the score strip's model: what it says in every mode, its colours and bars; under the sanitizers, as the

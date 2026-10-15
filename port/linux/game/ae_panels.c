@@ -17,6 +17,7 @@ spec 14.15).
 #include "rasterizer/rasterizer.h"
 
 #include "ae_hud_digits.h"
+#include "ae_hud_messages.h"
 #include "ae_hud_style.h"
 #include "ae_hud_text.h"
 #include "ae_panel_draw.h"
@@ -410,22 +411,46 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 #define MESSAGE_GAP 4.0f    /* px x the view's scale from the ammo group's foot to the (scaled) line's top: the line
                                is pulled up under the group (owner 10-15: "move up closer to the counter") */
 
-#define MESSAGE_SCALE 0.60f   /* CE's message lines under AE: scaled to the panels (owner 10-15: 0.72 still too big) */
+#define MESSAGE_SCALE 0.60f   /* CE's message lines under AE when AE's text cannot draw them: scaled to the panels (owner
+                                 10-15: 0.72 still too big) */
+#define MESSAGE_CAP_GAP 6.0f  /* px x scale from the ammo group's foot to the first restyled line's capitals */
 static boolean message_scaled;
+static boolean message_under_group[MAXIMUM_LOCAL_PLAYERS]; /* message_top moved the lines under the ammo group */
+
+static boolean group_drawn(short local_player_index)
+{
+	return (boolean)(last[local_player_index].valid && last[local_player_index].count >= 2);
+}
 
 void ae_panels_message_scale_begin(short local_player_index, short x, short y)
 {
-	real tx, ty;
+	real tx, ty, ppu = ae_hud_pixels_per_unit();
 	short width, height;
 	rectangle2d visible;
 
 	message_scaled = FALSE;
 	if (!ae_hud_style_is_ae() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
 		return;
-	/* (the screen transform: rasterizer.h; drawn smaller about the lines' top-left, which stays put; the clip is the
-	part of the drawing's space that lands in the view) */
 	width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 	height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+
+	/* the restyle (owner 10-15, "full restyle"): CE's lines handed to AE's text in the strip's style
+	(ae_hud_messages.c), from the ammo group's left edge, the first line's capitals 6 px x scale under its foot */
+	if (ppu > 0.0f)
+	{
+		boolean group = group_drawn(local_player_index);
+		real scale = group ? last[local_player_index].scale : ae_score_strip_view_scale();
+		real left = group ? last[local_player_index].rects[0].x0 : (real)x * ppu;
+		real cap_top = group && message_under_group[local_player_index] ?
+			last[local_player_index].rects[0].y1 + MESSAGE_CAP_GAP * scale : (real)y * ppu;
+		real group_width = group ? last[local_player_index].rects[0].x1 - last[local_player_index].rects[0].x0 : 0.0f;
+
+		if (ae_hud_messages_begin(local_player_index, left, cap_top, (real)width * ppu, group_width, scale))
+			return;
+	}
+
+	/* (the fallback: CE's own drawing smaller, through the screen transform (rasterizer.h), about the lines'
+	top-left, which stays put; the clip is the part of the drawing's space that lands in the view) */
 	tx = (real)x * (1.0f - MESSAGE_SCALE);
 	ty = (real)y * (1.0f - MESSAGE_SCALE);
 	visible.x0 = (short)floorf(-tx / MESSAGE_SCALE);
@@ -438,6 +463,7 @@ void ae_panels_message_scale_begin(short local_player_index, short x, short y)
 
 void ae_panels_message_scale_end(void)
 {
+	ae_hud_messages_end();
 	if (message_scaled)
 		rasterizer_screen_transform_reset();
 	message_scaled = FALSE;
@@ -448,7 +474,7 @@ short ae_panels_message_left(short local_player_index, short x)
 	real ppu = ae_hud_pixels_per_unit();
 
 	if (!ae_hud_style_is_ae() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
-		!last[local_player_index].valid || last[local_player_index].count < 2 || ppu <= 0.0f)
+		!group_drawn(local_player_index) || ppu <= 0.0f)
 	{
 		return x;
 	}
@@ -460,8 +486,10 @@ short ae_panels_message_top(short local_player_index, short line_top)
 	real ppu = ae_hud_pixels_per_unit();
 	real bottom;
 
+	if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS)
+		message_under_group[local_player_index] = FALSE;
 	if (!ae_hud_style_is_ae() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
-		!last[local_player_index].valid || last[local_player_index].count < 2 || ppu <= 0.0f)
+		!group_drawn(local_player_index) || ppu <= 0.0f)
 	{
 		return line_top;
 	}
@@ -469,5 +497,6 @@ short ae_panels_message_top(short local_player_index, short line_top)
 	bottom = (last[local_player_index].rects[0].y1 + MESSAGE_GAP * last[local_player_index].scale) / ppu;
 	if ((real)line_top * ppu < last[local_player_index].rects[0].y0)
 		return line_top;
+	message_under_group[local_player_index] = TRUE;
 	return (short)(bottom + 0.5f);
 }

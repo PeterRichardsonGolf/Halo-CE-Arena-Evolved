@@ -1079,6 +1079,16 @@ static const struct config_setting config_settings[] =
 		"For the automated tests and pictures of the AE panels (ae_panels.c): a\n"
 		"state drawn over the game's (low, empty, overheated, shield_low,\n"
 		"shield_down, overshield1, overshield2, camo, buffs, health_low)." },
+	{ "debug.ae_message_test", _config_string, "\"\"", "HALO_DEBUG_AE_MESSAGE_TEST", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests and pictures of HUD STYLE AE's message lines\n"
+		"(ae_hud_messages.c): a comma list of the game's own messages to set:\n"
+		"vehicle (a vehicle's enter prompt), swap (a swap prompt for the player's\n"
+		"weapon), long (a long custom prompt with a button picture), pickup (an\n"
+		"ammunition line every 4 s). wrap2x breaks lines at twice the ammo\n"
+		"group's width; bigicons draws the pictures 1.36 x taller; ce draws the\n"
+		"lines as before (CE's own, smaller). A log line of the lines' places\n"
+		"every 2 seconds." },
 	{ "debug.ae_sensor_with_ce", _config_boolean, "false", "HALO_DEBUG_AE_SENSOR_WITH_CE", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the AE motion sensor (ae_sensor.c): CE's own\n"
