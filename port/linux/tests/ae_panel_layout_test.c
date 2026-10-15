@@ -205,9 +205,9 @@ static void test_shield_group_1p(void)
 	AE_NEAR(l.buff[1].baseline_y - l.buff[0].baseline_y, 20, 0.01);
 	AE_NEAR(l.buff[0].px, 14, 0.01);
 	AE_NEAR(l.buff[0].time_right_x - l.buff[0].name_right_x, text_width(L"0:00", 14) + 8, 0.01);
-	/* health: 8 cells 10 tall, 6 under the bar, over 170 px; the last on the bar's lean line carried down */
+	/* health: 8 cells 10 tall, 6 under the bar, over 170 px; the last ending under the bar's bottom-right corner */
 	AE_NEAR(l.health_cell[0].y0, 83 + 26, 0.01); AE_NEAR(l.health_cell[0].y1, 83 + 36, 0.01);
-	AE_NEAR(l.health_cell[7].x1, 1758 + AE_PANEL_LEAN * 16, 0.01);
+	AE_NEAR(l.health_cell[7].x1, 1758, 0.01);
 	AE_NEAR(l.health_cell[1].x0 - l.health_cell[0].x0, 170.0 / 8, 0.01);
 	AE_NEAR(l.health_cell[0].x1 - l.health_cell[0].x0, 170.0 / 8 * 0.72, 0.01);
 	/* health -> the first buff's cap top: 8 px */
@@ -218,7 +218,7 @@ static void test_shield_group_1p(void)
 	AE_NEAR(l.health_cell[0].x0 - AE_PANEL_LEAN * 5 - (l.cross_x + l.cross_size), 8, 0.51);
 	AE_CHECK(l.cross_x == floorf(l.cross_x) && l.cross_y == floorf(l.cross_y));  /* pixel-snapped */
 	/* the bar ends on the right column (and so the timers list) */
-	AE_NEAR(l.shield_group.x1, 1758 + AE_PANEL_LEAN * 16, 1.0);
+	AE_NEAR(l.shield_group.x1, 1758, 1.0);
 }
 
 static void test_quarter_view(void)

@@ -432,7 +432,7 @@ static void layout_shield(const struct ae_panel_model *m, const struct ae_panel_
 	const real s = v->scale;
 	const real right = ae_panel_right_column_x(v), top = v->shield_top_y;
 	const real cells_top = top + (SHIELD_HEIGHT + CELLS_GAP) * s, cells_bottom = cells_top + CELL_HEIGHT * s;
-	const real cells_right = right + AE_PANEL_LEAN * (cells_bottom - (top + SHIELD_HEIGHT * s));
+	const real cells_right = right;   /* (owner 10-15: under the bar's bottom-right corner, not its lean carried down) */
 	const real pitch = CELLS_LENGTH * s / (real)AE_PANEL_HEALTH_CELLS, cell = pitch * CELL_SHARE;
 	real size, gap, first_left_mid, baseline, px;
 	boolean any = FALSE;

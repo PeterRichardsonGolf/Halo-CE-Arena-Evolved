@@ -152,15 +152,24 @@ static void line_soft(real x0, real y0, real x1, real y1, real width, const real
 	}
 	clear_of(&peak, &clear);
 	if (core > 0.0f)
-		ae_hud_line(x0, y0, x1, y1, 2.0f * core, &peak);
+	{
+		/* (the core's corners by the same arithmetic as the ramps' inner corners, so their seams meet exactly) */
+		real points[4][2];
+
+		points[0][0] = x0 + nx * core; points[0][1] = y0 + ny * core;
+		points[1][0] = x1 + nx * core; points[1][1] = y1 + ny * core;
+		points[2][0] = x1 - nx * core; points[2][1] = y1 - ny * core;
+		points[3][0] = x0 - nx * core; points[3][1] = y0 - ny * core;
+		ae_hud_fill_quad_color(points, &peak);
+	}
 	for (side = -1; side <= 1; side += 2)
 	{
 		real points[4][2];
 
-		points[0][0] = x0 + nx * core * side; points[0][1] = y0 + ny * core * side;
-		points[1][0] = x1 + nx * core * side; points[1][1] = y1 + ny * core * side;
-		points[2][0] = x1 + nx * outer * side; points[2][1] = y1 + ny * outer * side;
-		points[3][0] = x0 + nx * outer * side; points[3][1] = y0 + ny * outer * side;
+		points[0][0] = x0 + nx * core * (real)side; points[0][1] = y0 + ny * core * (real)side;
+		points[1][0] = x1 + nx * core * (real)side; points[1][1] = y1 + ny * core * (real)side;
+		points[2][0] = x1 + nx * outer * (real)side; points[2][1] = y1 + ny * outer * (real)side;
+		points[3][0] = x0 + nx * outer * (real)side; points[3][1] = y0 + ny * outer * (real)side;
 		for (k = 0; k < 4; k++)
 			colors[k] = k < 2 ? peak : clear;
 		ae_hud_fill_quad(points, colors);
@@ -798,10 +807,11 @@ static short ring_steps(real radius)
 }
 
 /* the band r0..r1 round (cx, cy), colour c0 at r0 shading to c1 at r1 */
-static void ring_band_ramp(real cx, real cy, real r0, real r1, const real_argb_color *c0, const real_argb_color *c1)
+static void ring_band_ramp(real cx, real cy, real r0, real r1, short steps, const real_argb_color *c0,
+	const real_argb_color *c1)
 {
 	real a[MAXIMUM_RING_STEPS][2], b[MAXIMUM_RING_STEPS][2];
-	short steps = ring_steps(r0 > r1 ? r0 : r1), count, i;
+	short count, i;
 
 	count = circle(cx, cy, r0 > 0.0f ? r0 : 0.0f, a, steps);
 	circle(cx, cy, r1 > 0.0f ? r1 : 0.0f, b, steps);
@@ -827,16 +837,19 @@ static void ring_band(real cx, real cy, real r0, real r1, const real_argb_color 
 {
 	real_argb_color peak = *color, clear;
 	real w = r1 - r0;
+	/* (one segment count for every band of the ring: bands that share a circle must share its corners exactly, or
+	the seams between them show as specks) */
+	short steps = ring_steps(r1 + FEATHER);
 
 	if (w <= 0.0f)
 		return;
 	if (w >= 2.0f * FEATHER)
 	{
 		clear_of(color, &clear);
-		ring_band_ramp(cx, cy, r0 - FEATHER, r0 + FEATHER, &clear, color);
+		ring_band_ramp(cx, cy, r0 - FEATHER, r0 + FEATHER, steps, &clear, color);
 		if (w > 2.0f * FEATHER)
-			ring_band_ramp(cx, cy, r0 + FEATHER, r1 - FEATHER, color, color);
-		ring_band_ramp(cx, cy, r1 - FEATHER, r1 + FEATHER, color, &clear);
+			ring_band_ramp(cx, cy, r0 + FEATHER, r1 - FEATHER, steps, color, color);
+		ring_band_ramp(cx, cy, r1 - FEATHER, r1 + FEATHER, steps, color, &clear);
 	}
 	else
 	{
@@ -844,8 +857,8 @@ static void ring_band(real cx, real cy, real r0, real r1, const real_argb_color 
 
 		peak.alpha *= w / (2.0f * FEATHER);
 		clear_of(&peak, &clear);
-		ring_band_ramp(cx, cy, mid - half, mid, &clear, &peak);
-		ring_band_ramp(cx, cy, mid, mid + half, &peak, &clear);
+		ring_band_ramp(cx, cy, mid - half, mid, steps, &clear, &peak);
+		ring_band_ramp(cx, cy, mid, mid + half, steps, &peak, &clear);
 	}
 }
 
@@ -855,13 +868,14 @@ static void disc_soft(real cx, real cy, real radius, const real_argb_color *colo
 	real points[MAXIMUM_RING_STEPS][2];
 	real_argb_color clear;
 	real inner = radius - FEATHER;
+	short steps = ring_steps(radius + FEATHER);
 
 	if (radius <= 0.0f)
 		return;
 	clear_of(color, &clear);
 	if (inner > 0.0f)
-		fan((const real (*)[2])points, circle(cx, cy, inner, points, ring_steps(radius)), color, 0.0f, 0.0f);
-	ring_band_ramp(cx, cy, inner > 0.0f ? inner : 0.0f, radius + FEATHER, color, &clear);
+		fan((const real (*)[2])points, circle(cx, cy, inner, points, steps), color, 0.0f, 0.0f);
+	ring_band_ramp(cx, cy, inner > 0.0f ? inner : 0.0f, radius + FEATHER, steps, color, &clear);
 }
 
 void ae_panel_fill_disc(real cx, real cy, real radius, const union real_argb_color *color)
@@ -1008,7 +1022,10 @@ void ae_panel_draw_debug(short local_player_index)
 		return;
 	/* the plate: flat mid grey, so the checks measure the primitives on a known ground */
 	grey.alpha = 1.0f; grey.red = grey.green = grey.blue = 0.40f;
-	rect(30.0f, 90.0f, 560.0f, 330.0f, &grey);
+	rect(30.0f, 90.0f, 820.0f, 330.0f, &grey);
+	ae_panel_draw_ring(700.0f, 210.0f, 92.0f - 0.8f, 1.6f, _ae_tone_blue, 0.85f, TRUE);
+	ae_panel_draw_ring(700.0f, 210.0f, 56.7f, 1.6f, _ae_tone_blue, 0.70f, TRUE);
+	ae_panel_draw_line(700.0f, 210.0f, 765.0f, 145.0f, 1.6f, _ae_tone_blue, 0.85f, TRUE);
 	ae_panel_draw_box(&box, 1.0f, 0.08f, _ae_tone_blue);
 	ae_panel_draw_bar(&bar, 1.0f, 0.6f, _ae_tone_blue, _ae_tone_blue, 0.0f, 0.0f);
 	ae_panel_draw_art(_ae_art_ar, 260.0f, 120.0f, 23.6f, TRUE, _ae_tone_blue);
@@ -1033,7 +1050,7 @@ void ae_panel_draw_debug(short local_player_index)
 		logged_counts[0] = alphas;
 		logged_counts[1] = icons;
 		logged_counts[2] = backgrounds;
-		platform_log("ae panel primitives: plate 30,90..560,330 box 60..209,120..156 bar 60..361,200..212 "
+		platform_log("ae panel primitives: plate 30,90..820,330 rings 700,210 r 91.2 + 56.7, line 700,210..765,145 box 60..209,120..156 bar 60..361,200..212 "
 			"ar_lit 260,120 h 23.6 ar_spent 280,120 plasma 340,132 d 20 x 380,144 s 12 round 410,121 h 23 "
 			"frag 450,120 h 24 a 0.55 shield 490,120 h 25 battery 260,260 h 20 cell 400..415,200..210 "
 			"cross 460,200 s 12; art %s (alphas %d, icons %d, backgrounds %d)", found ? "found" : "missing", alphas,
