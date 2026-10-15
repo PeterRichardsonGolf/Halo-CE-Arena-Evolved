@@ -411,3 +411,8 @@ port/linux/src/xinput_sdl.c	if (count == 1 && !ae_platform_lone_pad_first()) /* 
 port/linux/src/xinput_sdl.c	if (count == 1 && ae_platform_lone_pad_first() && pc_menu_split_players()) mask |= 1UL << 1; /* AE hook */
 port/linux/src/port_config.c	{ "debug.ae_panel_primitives", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_PRIMITIVES", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.ae_panel_log", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_LOG", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud_unit.c	#include "ae_hud_style.h" /* AE hook */
+source/interface/hud_unit.c	if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->shield_meter.meter, &hud_definition->shield_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
+source/interface/hud_unit.c	if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->health_meter.meter, &hud_definition->health_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
+source/interface/hud_item_timers.c	boolean hud_item_timers_ae_meters(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_meters[v].valid) return FALSE; *b = hud_item_timers_meters[v].bounds; return TRUE; } /* AE hook */
+port/linux/src/port_config.c	{ "debug.ae_panel_powerups", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_POWERUPS", _environment_value, /* AE hook */\n_platform_all,

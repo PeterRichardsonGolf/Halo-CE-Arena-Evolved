@@ -18,6 +18,8 @@ HUD STYLE AE's timers list, T1 (ae_power_list.h).
 #include "ae_hud_digits.h"
 #include "ae_hud_style.h"
 #include "ae_hud_text.h"
+#include "ae_panel_engine.h"
+#include "ae_panel_layout.h"
 #include "ae_power_list.h"
 #include "ae_score_strip.h"
 #include "ae_strip_engine.h"
@@ -70,13 +72,11 @@ boolean ae_power_list_hides_clock(short local_player_index)
 
 real ae_power_list_right_x(short local_player_index)
 {
-	short inset = 0;
-	long baseline = 0;
+	struct ae_panel_view view;
 
-	(void)local_player_index;
-	hud_item_timers_ae_place(&inset, &baseline);
-	return (real)((render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) - inset) *
-		ae_hud_pixels_per_unit();
+	/* (one right column: the AE panels' own, spec 14.15 part 3) */
+	ae_panel_engine_view(local_player_index, &view);
+	return ae_panel_right_column_x(&view);
 }
 
 real ae_power_list_left_x(short local_player_index)

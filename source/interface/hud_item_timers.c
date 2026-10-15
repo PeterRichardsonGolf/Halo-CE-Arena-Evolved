@@ -3695,3 +3695,4 @@ void hud_item_timers_initialize_for_new_map(
 void hud_item_timers_ae_place(short *inset, long *baseline) { hud_item_timers_clock_place(inset, baseline); } /* AE hook */
 boolean hud_item_timers_ae_corner(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_top_left[v].valid) return FALSE; *b = hud_item_timers_top_left[v].bounds; return TRUE; } /* AE hook */
 void hud_item_timers_ae_record(real x0, real y0, real x1, real y1) { hud_item_timers_record(x0, y0, x1, y1); } /* AE hook */
+boolean hud_item_timers_ae_meters(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_meters[v].valid) return FALSE; *b = hud_item_timers_meters[v].bounds; return TRUE; } /* AE hook */
