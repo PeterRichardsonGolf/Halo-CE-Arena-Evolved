@@ -425,6 +425,32 @@ SCREENS["video_settings/fov_viewmodels"] = {
     ],
 }
 
+# (AE) Game Options' BOTS (OpenCE PR #367's bots.count, bots.skill and bots.teams: port/linux/game/bots.c): a
+# screen of its own, a category after the rows (as Video Setup's); Game Options' rows 24 px apart for its place
+BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
+BOT_SKILLS = [("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
+BOT_TEAMS = [("EVEN", "even"), ("AGAINST YOU", "against")]
+_game_options = SCREENS["mods_setup"]
+_game_options["spacing"] = 24
+_game_options["categories"] = [
+    ("BOTS:", "mods_setup/bots",
+     "Computer players in split screen Slayer games\n(MENUS > XBOX, then Multiplayer > Split Screen)."),
+]
+SCREENS["mods_setup/bots"] = {
+    "screen": "bots_settings_screen", "header": ("header_bots", None), "title": "BOTS", "spacing": 30,
+    "rows": [
+        ("BOTS:", "bots.count", BOT_COUNTS,
+         "How many bots join a split screen Slayer game's\nlobby (never a system link or internet game's).",
+         None),
+        ("BOT SKILL:", "bots.skill", BOT_SKILLS,
+         "How soon the bots react, how well they aim and\nhow far they see.", None),
+        # (a help for each value)
+        ("BOT TEAMS:", "bots.teams", BOT_TEAMS,
+         ["In team games, the bots on both teams, evening\nthem with the players.",
+          "In team games, every bot on the team the\nplayers are not on."], None),
+    ],
+}
+
 # Network Setup's map sharing (port/linux/game/map_share.c): this machine's
 # part in another's game, a screen of its own (a category, as Video Setup's)
 SEED_UPLOADS = (64, 128, 256, 512, 1024, 2048)

@@ -80,12 +80,12 @@ def test_profile_menu_item():
 
 def test_game_options_has_no_map_files():
     spec = port_settings.SCREENS["mods_setup"]
-    # (nine rows 30 px apart since the HUD's rows moved to the HUD screen, ten 27 px apart since 0.2.5's WEAPON PACKS;
-    # the help line under them)
-    assert len(spec["rows"]) == 10 and spec["spacing"] == 27 and "help_top" not in spec
-    assert 73 + len(spec["rows"]) * spec["spacing"] <= 350
-    assert "categories" not in spec and "map_files" not in (CE / GAME_OPTIONS).read_text().replace(
-        "map_files_profile_item", "")
+    # (nine rows 30 px apart since the HUD's rows moved to the HUD screen, ten 27 px apart since 0.2.5's WEAPON PACKS,
+    # 24 px apart since 0.2.6's BOTS category after them; the help line under them)
+    assert len(spec["rows"]) == 10 and spec["spacing"] == 24 and "help_top" not in spec
+    assert 73 + (len(spec["rows"]) + len(spec["categories"])) * spec["spacing"] <= 350
+    assert [folder for _, folder, *_ in spec["categories"]] == ["mods_setup/bots"]
+    assert "map_files" not in (CE / GAME_OPTIONS).read_text().replace("map_files_profile_item", "")
 
 
 def test_question():

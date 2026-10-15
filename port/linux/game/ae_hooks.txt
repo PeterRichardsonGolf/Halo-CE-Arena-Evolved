@@ -448,3 +448,11 @@ port/linux/src/xinput_sdl.c	#include "ae_ds5.h" /* AE hook */
 port/linux/src/xinput_sdl.c	ae_ds5_port(port, port_gamepad(gamepads, count, port), feedback->Rumble.wLeftMotorSpeed, feedback->Rumble.wRightMotorSpeed); /* AE hook */
 source/game/player_control.c	#include "ae_ds5_game.h" /* AE hook */
 source/game/player_control.c	ae_ds5_player(local_player_index, current_weapon_index, player->zoom_level); /* AE hook */
+# Bots (OpenCE PR #367, port/linux/game/bots.c; ae_bots.c): the pack's battle rifle in a bot's hands (its value,
+# distance and one pull a burst), the lobby's line for a gametype without bots, Delta Stats leaving bots' games alone
+port/linux/game/bots.c	#include "ae_bots.h" /* AE hook */
+port/linux/game/bots.c	ae_bots_weapon_kind(definition_index, &kind->value, &kind->tap_ticks, &kind->range); /* AE hook */
+source/networking/network_server_manager.c	#include "ae_bots.h" /* AE hook */
+source/networking/network_server_manager.c	ae_bots_lobby_check(network_game_is_splitscreen_local() && server->state == _network_game_server_state_pregame && !server->sent_start_game_message, server->game.variant.game_engine_index, server->game.variant.human_readable_game_description); /* AE hook */
+port/linux/game/game_events.c	#include "ae_bots.h" /* AE hook */
+port/linux/game/game_events.c	if (ae_bots_kept_from_delta()) /* AE hook */\nreturn;

@@ -25,6 +25,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   Linux downloads (README: "DualSense on Linux without Steam"). Bluetooth and the DualSense Edge are handled but not
   yet tried on hardware.
 
+- **Bots** in split screen Slayer games (from OpenCE pull request #367 by
+  BirchWoodGod, the offline bots of the Halo CE for PS Vita port, an OpenCE
+  derivative, contributed under CC0): Settings > Game Options > BOTS sets
+  how many (up to 15), how well they play (EASY to LEGENDARY) and their
+  teams (EVEN, or AGAINST YOU). They join the lobby of a split screen game
+  (MENUS > XBOX, then Multiplayer > Split Screen), Slayer and Team Slayer
+  only (Arena Evolved's Slayer gametypes too), never a system link or
+  internet game. They fight, pick up better weapons and keep the battle
+  rifle. Off by default; Delta Stats records no game with bots.
 - Built on ChupathingyCE 0.7.5b and OpenCE build-206: network version 29.
   Arena Evolved now plays with OpenCE build-206 and ChupathingyCE 0.7.5b
   (both ways), no longer with 0.2.5-beta and older or OpenCE build-205 and
