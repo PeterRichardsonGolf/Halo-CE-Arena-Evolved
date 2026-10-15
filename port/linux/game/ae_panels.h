@@ -40,5 +40,7 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 /* (hud_messaging.c) the HUD's messages' top line (HUD units of the view) moved under the AE ammo group where it
 would start inside it: the AE rounds stand taller than CE's split-screen panel (3p / 4p "Hold BACK for score") */
 short ae_panels_message_top(short local_player_index, short line_top);
+/* CE's message lines' left x (HUD units) under AE: the ammo group's left edge, so they line up with it (owner 10-15) */
+short ae_panels_message_left(short local_player_index, short x);
 
 #endif /* __AE_PANELS_H */

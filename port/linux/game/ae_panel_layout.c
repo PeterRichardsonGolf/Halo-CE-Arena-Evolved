@@ -13,17 +13,17 @@ shield_group, mock8.py magazine), here in the view's pixels.
 #include "ae_panel_layout.h"
 
 /* spec px at scale 1 (14.15 part 2, 3) */
-#define LEFT_LINE_X 19.2f
+#define LEFT_LINE_X AE_PANEL_LEFT_LINE_X
 #define BOX_HEIGHT 36.0f
 #define DIGIT_BASELINE 30.0f
 #define DIGIT_CAP 24.0f
-#define DIGIT_CELL 21.0f
+#define DIGIT_CELL 19.2f                /* rev5 (0.8 x cap; owner 10-15: rev5's proportions) */
 #define DIGIT_CAP_FLOOR 12.0f
 #define LINE_WIDTH 1.5f
-#define GROUP_WIDTH 301.0f
-#define NUMBER_BOX 149.0f
+#define GROUP_WIDTH 225.0f               /* rev5: CE's own width (lean line to lean line) */
+#define NUMBER_BOX 121.0f
 #define BOX_GAP 5.0f
-#define GRENADE_BOX 147.0f
+#define GRENADE_BOX 99.0f
 /* digits -> the "x" (its bottom-left, from the last digit's ink on the middle row), the x's size, the x -> the round's
 box; the round and battery glyphs' heights; digits -> battery glyph (from the same ink) */
 #define DIGITS_TO_X 10.36f
@@ -33,12 +33,13 @@ box; the round and battery glyphs' heights; digits -> battery glyph (from the sa
 #define ROUND_HEIGHT 23.0f
 #define DIGITS_TO_BATTERY 6.36f
 #define BATTERY_HEIGHT 20.0f
-/* the grenade box's inner 144 at mid-height: 10 / frag 13 / 12 / cell 21 / 29 / plasma 20 / 12 / cell 21 / 6 */
-#define GRENADE_EDGE 10.0f
-#define GRENADE_FRAG 13.0f
-#define GRENADE_TO_CELL 12.0f
-#define GRENADE_PAIRS 29.0f
-#define GRENADE_PLASMA 20.0f
+/* the grenade box's inner 96 at mid-height: 8 / frag 20 / 3 / cell 17 / 5 / plasma 17 / 3 / cell 17 / 6 (rev5's box) */
+#define GRENADE_EDGE 8.0f
+#define GRENADE_FRAG 20.0f
+#define GRENADE_TO_CELL 3.0f
+#define GRENADE_CELL 17.0f
+#define GRENADE_PAIRS 5.0f
+#define GRENADE_PLASMA 17.0f
 #define FRAG_HEIGHT 24.0f
 #define BOXES_TO_MAGAZINE 10.0f
 #define ROW_GAP 4.0f
@@ -103,6 +104,11 @@ void ae_panel_metrics_ce(struct ae_panel_metrics *metrics)
 	metrics->frag_mid_left = 0.0385f;
 	metrics->shield_aspect = 0.9091f;   /* 80 x 88 */
 	memcpy(metrics->art, art, sizeof(art));
+}
+
+real ae_hud_corner_margin(real scale)
+{
+	return AE_HUD_CORNER_MARGIN * scale;
 }
 
 real ae_panel_right_column_x(const struct ae_panel_view *v)
@@ -383,7 +389,7 @@ static void layout_ammo(const struct ae_panel_model *m, const struct ae_panel_me
 		out->frag_y = out->digit_baseline_y - out->frag_height;
 		x += (GRENADE_FRAG + GRENADE_TO_CELL) * s;
 		out->count_cell_x[0] = x;
-		x += (DIGIT_CELL + GRENADE_PAIRS) * s;
+		x += (GRENADE_CELL + GRENADE_PAIRS) * s;
 		out->plasma_diameter = GRENADE_PLASMA * s;
 		out->plasma_cx = x + out->plasma_diameter / 2.0f;
 		out->plasma_cy = mid;
@@ -394,7 +400,7 @@ static void layout_ammo(const struct ae_panel_model *m, const struct ae_panel_me
 			real a, b;
 
 			ink(g, m->grenade[i].count, cap, cell, &a, &b);
-			out->count_ink_x[i] = out->count_cell_x[i] + DIGIT_CELL * s / 2.0f - (a + b) / 2.0f;
+			out->count_ink_x[i] = out->count_cell_x[i] + GRENADE_CELL * s / 2.0f - (a + b) / 2.0f;
 		}
 	}
 

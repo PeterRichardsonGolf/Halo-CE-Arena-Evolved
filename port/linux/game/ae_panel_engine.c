@@ -92,7 +92,7 @@ typedef char ae_weapon_interface_state_size[sizeof(struct weapon_interface_state
 /* from CE's placements to the spec's anchors (14.15 parts 2, 3), px at a 1080p single view x the view's scale:
 measured on a 1920x1080 Blood Gulch frame, the HUD's top-left extent is (139.5, 83.2) where the ammo group's origin
 is (150, 83), and the meters' right edge and top (1752.8, 81.0) where the right column is 1758 and the box row 83 */
-#define AMMO_ORIGIN_DX -9.5f   /* 20 px x scale left of where it was (owner 10-15: "a bit more to the left") */
+#define AMMO_ORIGIN_DX 10.5f   /* (the x is then set by the corners' margin: ae_hud_corner_margin) */
 #define AMMO_ORIGIN_DY 0.0f
 #define SHIELD_RIGHT_DX 5.2f
 #define SHIELD_TOP_DY 2.0f
@@ -399,6 +399,9 @@ boolean ae_panel_engine_view(short local_player_index, struct ae_panel_view *out
 		out->shield_top_y = out->ammo_origin_y;
 		placed = FALSE;
 	}
+	/* the corners square: the same margin from the view's left and right edges (CE's placements keep the heights) */
+	out->ammo_origin_x = ae_hud_corner_margin(out->scale) - AE_PANEL_LEFT_LINE_X * out->scale;
+	out->shield_right_x = out->view_width - ae_hud_corner_margin(out->scale);
 	return placed;
 }
 

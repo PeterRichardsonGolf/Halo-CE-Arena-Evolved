@@ -408,6 +408,18 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 #define MESSAGE_GAP 14.0f   /* px x the view's scale under the ammo group (owner 10-15: split screen's line sat
                                nearly on the magazine rows at 6) */
 
+short ae_panels_message_left(short local_player_index, short x)
+{
+	real ppu = ae_hud_pixels_per_unit();
+
+	if (!ae_hud_style_is_ae() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
+		!last[local_player_index].valid || last[local_player_index].count < 2 || ppu <= 0.0f)
+	{
+		return x;
+	}
+	return (short)(last[local_player_index].rects[0].x0 / ppu + 0.5f);
+}
+
 short ae_panels_message_top(short local_player_index, short line_top)
 {
 	real ppu = ae_hud_pixels_per_unit();

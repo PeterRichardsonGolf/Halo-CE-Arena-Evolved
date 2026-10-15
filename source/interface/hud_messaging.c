@@ -1437,6 +1437,7 @@ void hud_messaging_update(
 				font->ascending_height;
 		}
 		line_top = ae_panels_message_top(local_player_index, line_top); /* AE hook */
+		screen_point.x = ae_panels_message_left(local_player_index, screen_point.x); /* AE hook */
 		first_line_height = line_height;
 		datum = &hud_messaging_globals->message_data[render.local_player_index];
 		maximum_message_count = 4 - split_screen;

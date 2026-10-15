@@ -70,7 +70,7 @@ static void number_padding(const struct ae_panel_model *m, const struct ae_panel
 	real *right)
 {
 	real mid = l->number_box.y1 - (l->number_box.y1 - l->number_box.y0) / 2.0f;
-	real inner_left = left_line(l, mid) + 1.5f * s, inner_right = left_line(l, mid) + 149.0f * s - 1.5f * s;
+	real inner_left = left_line(l, mid) + 1.5f * s, inner_right = left_line(l, mid) + 121.0f * s - 1.5f * s;
 	real ink_left, ink_right, block_right;
 	real inset = metrics.digit_lean * l->digit_cap / 2.0f;
 
@@ -91,21 +91,20 @@ static void test_number_box_1p(void)
 
 	view_1p(&v);
 	weapon(&m, _ae_hint_assault_rifle, 60, 60, 180); ae_panel_layout_build(&m, &metrics, &v, &l);
-	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 23.5, 1.0); AE_NEAR(b, 23.5, 1.0); AE_NEAR(a, b, 0.6);
+	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 11.3, 1.0); AE_NEAR(b, 11.3, 1.0); AE_NEAR(a, b, 0.6);
 	AE_CHECK(l.number_shown && l.x_mark_shown && l.glyph_shown);
-	AE_NEAR(l.digit_baseline_y, 83 + 30, 0.01); AE_NEAR(l.digit_cap, 24, 0.01); AE_NEAR(l.digit_cell, 21, 0.01);
+	AE_NEAR(l.digit_baseline_y, 83 + 30, 0.01); AE_NEAR(l.digit_cap, 24, 0.01); AE_NEAR(l.digit_cell, 19.2, 0.01);
 	AE_NEAR(l.glyph_height, 23, 0.01); AE_NEAR(l.glyph_y + l.glyph_height, 113, 0.01);
-	AE_NEAR(l.number_cell_x[1] - l.number_cell_x[0], 21, 0.01);
+	AE_NEAR(l.number_cell_x[1] - l.number_cell_x[0], 19.2, 0.01);
 	weapon(&m, _ae_hint_pistol, 12, 12, 36); ae_panel_layout_build(&m, &metrics, &v, &l);
-	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 21, 1.0); AE_NEAR(b, 20, 1.0);
+	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 8.6, 1.0); AE_NEAR(b, 8.6, 1.0);
 	weapon(&m, _ae_hint_pistol, 12, 12, 4); ae_panel_layout_build(&m, &metrics, &v, &l);
-	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 21, 1.0); AE_NEAR(b, 20, 1.0);
+	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 8.6, 1.0); AE_NEAR(b, 8.6, 1.0);
 	energy(&m, 0.87f); ae_panel_layout_build(&m, &metrics, &v, &l);
-	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 15, 1.0); AE_NEAR(b, 15, 1.0);
+	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 2.6, 1.0); AE_NEAR(b, 2.6, 1.0);   /* (rev5's box: tight) */
 	AE_CHECK(!l.x_mark_shown && l.glyph_shown); AE_NEAR(l.glyph_height, 20, 0.01);
 	weapon(&m, _ae_hint_flamethrower, 100, 64, 200); ae_panel_layout_build(&m, &metrics, &v, &l);
-	/* (the renders measured 44 / 43: centred, the 1 px is their anti-aliasing) */
-	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 43.5, 1.0); AE_NEAR(b, 43.5, 1.0); AE_NEAR(a, b, 0.6);
+	number_padding(&m, &l, 1.0f, &a, &b); AE_NEAR(a, 32.2, 1.0); AE_NEAR(b, 32.2, 1.0); AE_NEAR(a, b, 0.6);
 	AE_CHECK(!l.x_mark_shown && !l.glyph_shown && l.bar_shown && l.round_count == 0);
 }
 
@@ -117,25 +116,25 @@ static void test_boxes_1p(void)
 	view_1p(&v);
 	weapon(&m, _ae_hint_assault_rifle, 60, 60, 180); ae_panel_layout_build(&m, &metrics, &v, &l);
 	AE_NEAR(l.left_line_x0, 150 + 19.2, 0.01); AE_NEAR(l.left_line_y0, 83 + 36, 0.01);
-	AE_NEAR(l.right_line_x0 - l.left_line_x0, 301, 0.01);
-	AE_NEAR(l.number_box.x1 - l.number_box.x0, 149, 0.01); AE_NEAR(l.grenade_box.x1 - l.grenade_box.x0, 147, 0.01);
+	AE_NEAR(l.right_line_x0 - l.left_line_x0, 225, 0.01);   /* rev5: CE's width (owner 10-15) */
+	AE_NEAR(l.number_box.x1 - l.number_box.x0, 121, 0.01); AE_NEAR(l.grenade_box.x1 - l.grenade_box.x0, 99, 0.01);
 	AE_NEAR(l.grenade_box.x0 - l.number_box.x1, 5, 0.01);                  /* the gap between the boxes */
 	AE_NEAR(l.grenade_box.x1, l.right_line_x0, 0.01);
 	AE_NEAR(l.number_box.y0, 83, 0.01); AE_NEAR(l.number_box.y1, 119, 0.01);
 	AE_NEAR(l.number_box.lean, AE_PANEL_LEAN, 0.0001);
 
-	/* the grenade box: frag ink 10 px from the inner edge; a "1" count 14 px from the right edge */
+	/* the grenade box: frag ink 8 px from the inner edge; a "1" count ~12 px from the right edge */
 	mid = l.grenade_box.y1 - 18.0f; inner = l.grenade_box.x0 + AE_PANEL_LEAN * 18.0f + 1.5f;
-	AE_NEAR(l.frag_x + metrics.frag_mid_left * l.frag_height - inner, 10, 0.5);
+	AE_NEAR(l.frag_x + metrics.frag_mid_left * l.frag_height - inner, 8, 0.5);
 	AE_NEAR(l.frag_height, 24, 0.01); AE_NEAR(l.frag_y + l.frag_height, 113, 0.01);
-	AE_NEAR(l.count_cell_x[0] - inner, 35, 0.01); AE_NEAR(l.count_cell_x[1] - inner, 117, 0.01);
-	AE_NEAR(l.plasma_cx - inner, 95, 0.01); AE_NEAR(l.plasma_diameter, 20, 0.01); AE_NEAR(l.plasma_cy, mid, 0.01);
+	AE_NEAR(l.count_cell_x[0] - inner, 31, 0.01); AE_NEAR(l.count_cell_x[1] - inner, 73, 0.01);
+	AE_NEAR(l.plasma_cx - inner, 61.5, 0.01); AE_NEAR(l.plasma_diameter, 17, 0.01); AE_NEAR(l.plasma_cy, mid, 0.01);
 	inset = metrics.digit_lean * l.digit_cap / 2.0f;
 	digits_ink(m.grenade[1].count, l.digit_cap, l.digit_cell, &ink_left, &ink_right);   /* "1" */
-	AE_NEAR(inner + 144 - (l.count_ink_x[1] + ink_right - inset), 14, 1.0);
+	AE_NEAR(inner + 96 - (l.count_ink_x[1] + ink_right - inset), 12.4, 1.0);
 	/* each count's ink centred in its cell */
 	digits_ink(m.grenade[0].count, l.digit_cap, l.digit_cell, &ink_left, &ink_right);   /* "2" */
-	AE_NEAR(l.count_ink_x[0] + (ink_left + ink_right) / 2.0f, l.count_cell_x[0] + 10.5, 0.01);
+	AE_NEAR(l.count_ink_x[0] + (ink_left + ink_right) / 2.0f, l.count_cell_x[0] + 8.5, 0.01);
 }
 
 static void test_magazine_1p(void)
@@ -147,14 +146,14 @@ static void test_magazine_1p(void)
 	weapon(&m, _ae_hint_assault_rifle, 60, 9, 180); ae_panel_layout_build(&m, &metrics, &v, &l);
 	AE_CHECK(l.round_count == 60);
 	AE_NEAR(l.round[0].y, 83 + 36 + 10, 0.01);                              /* boxes -> magazine 10 px */
-	AE_NEAR(l.round[0].height + 2, 23.6, 1.0);                              /* with its keyline: 23.6 on the renders */
-	AE_NEAR(l.round[1].x - l.round[0].x, 15.6, 0.1);                        /* the pitch */
+	AE_NEAR(l.round[0].height + 2, 18.4, 1.0);                              /* rev5: CE's own size */
+	AE_NEAR(l.round[1].x - l.round[0].x, 11.6, 0.1);                        /* the pitch */
 	for (row = 0; row < 3; row++)
 	{
 		const real bottom = l.round[row * 20].y + l.round[row * 20].height;
 		AE_NEAR(l.round[row * 20].x, left_line(&l, bottom), 0.01);          /* starts on the left lean line */
 		/* the last round ENDS on the right line (at its top: the round leans) */
-		AE_NEAR(l.round[row * 20 + 19].x + l.round_width, left_line(&l, bottom) + 301 + AE_PANEL_LEAN *
+		AE_NEAR(l.round[row * 20 + 19].x + l.round_width, left_line(&l, bottom) + 225 + AE_PANEL_LEAN *
 			l.round[0].height, 0.01);
 		if (row)
 			AE_NEAR(l.round[row * 20].y - (l.round[row * 20 - 1].y + l.round[0].height), 4, 0.01);  /* rows 4 apart */
@@ -166,7 +165,7 @@ static void test_magazine_1p(void)
 	AE_CHECK(l.round_count == 4); AE_CHECK(l.round[0].height <= 30.01f);
 	AE_NEAR(l.round[1].x - l.round[0].x, l.round_width * metrics.art[_ae_art_sniper].pitch, 0.01);
 	AE_CHECK(l.round[0].lit && l.round[1].lit && l.round[2].lit && !l.round[3].lit);   /* the bottom row's right */
-	AE_CHECK(l.round[1].x + l.round_width <= left_line(&l, l.round[1].y + l.round[1].height) + 301 +
+	AE_CHECK(l.round[1].x + l.round_width <= left_line(&l, l.round[1].y + l.round[1].height) + 225 +
 		AE_PANEL_LEAN * l.round[1].height + 0.01f);
 	/* rockets: 2 lying, left-aligned, never past the right line */
 	weapon(&m, _ae_hint_rocket, 2, 2, 4); ae_panel_layout_build(&m, &metrics, &v, &l);
@@ -175,11 +174,11 @@ static void test_magazine_1p(void)
 	/* the fuel rod's 3 + 2 */
 	weapon(&m, _ae_hint_fuel_rod_rounds, 5, 5, 4); ae_panel_layout_build(&m, &metrics, &v, &l);
 	AE_CHECK(l.round_count == 5); AE_CHECK(l.round[3].y > l.round[2].y);
-	AE_CHECK(l.round[2].x + l.round_width <= left_line(&l, l.round[2].y + l.round[2].height) + 301 +
+	AE_CHECK(l.round[2].x + l.round_width <= left_line(&l, l.round[2].y + l.round[2].height) + 225 +
 		AE_PANEL_LEAN * l.round[2].height + 0.01f);
-	/* the heat bar: lean line to lean line, 301 x 12 */
+	/* the heat bar: lean line to lean line, 225 x 12 */
 	energy(&m, 0.5f); ae_panel_layout_build(&m, &metrics, &v, &l);
-	AE_CHECK(l.bar_shown); AE_NEAR(l.bar.x1 - l.bar.x0, 301, 0.01); AE_NEAR(l.bar.y1 - l.bar.y0, 12, 0.01);
+	AE_CHECK(l.bar_shown); AE_NEAR(l.bar.x1 - l.bar.x0, 225, 0.01); AE_NEAR(l.bar.y1 - l.bar.y0, 12, 0.01);
 	AE_NEAR(l.bar.x0, left_line(&l, l.bar.y1), 0.01); AE_NEAR(l.bar.y0, 83 + 46, 0.01);
 }
 
@@ -231,13 +230,12 @@ static void test_quarter_view(void)
 	s.weapon_type_hint = _ae_hint_assault_rifle; s.rounds_per_magazine = 60; s.rounds_loaded = 60; s.rounds_reserve = 180;
 	s.shield = 1; s.health = 1; s.camo_ticks = 900;
 	ae_panel_model_build(&s, &m); ae_panel_layout_build(&m, &metrics, &v, &l);
-	AE_NEAR(l.grenade_box.x1 - l.number_box.x0, 226, 0.5);                 /* group 226 wide */
+	AE_NEAR(l.grenade_box.x1 - l.number_box.x0, 168.75, 0.5);              /* group 225 x 0.75 */
 	AE_NEAR(l.number_box.y1 - l.number_box.y0, 27, 0.01);                   /* boxes 27 */
 	AE_NEAR(l.digit_cap, 18, 0.01);                                          /* digits 18 */
 	block_bottom = l.round[59].y + l.round[59].height;
-	/* the AR block's bottom: 128.9 by the rev13 generator's own geometry (spec 14.15 part 6 says 133: see the
-	task report) */
-	AE_NEAR(block_bottom, 128.9, 1.0);
+	/* the AR block's bottom: rev5's smaller rounds */
+	AE_NEAR(block_bottom, 116.45, 1.0);
 	AE_CHECK(l.cross_size >= 9.0f);                                          /* G1 */
 	AE_NEAR(l.shield_bar.x1 - l.shield_bar.x0, 177, 0.01); AE_NEAR(l.shield_bar.y1 - l.shield_bar.y0, 15, 0.01);
 	gap = l.buff[0].baseline_y - 0.74f * l.buff[0].px - l.health_cell[0].y1;
@@ -285,7 +283,7 @@ static void test_odd_magazines(void)
 		{
 			real bottom = l.round[r].y + l.round[r].height;
 			if (l.round[r].x < left_line(&l, bottom) - 0.01f ||
-				l.round[r].x + l.round_width > left_line(&l, bottom) + 301 + AE_PANEL_LEAN * l.round[r].height + 0.01f)
+				l.round[r].x + l.round_width > left_line(&l, bottom) + 225 + AE_PANEL_LEAN * l.round[r].height + 0.01f)
 			{
 				printf("FAIL magazine %d round %d outside the group\n", i, r);
 				failures++;
@@ -313,7 +311,7 @@ static void test_seats(void)
 	AE_CHECK(l.seat_count == 2 && l.seat[0].shell && !l.seat[1].shell);
 	AE_NEAR(l.seat[0].shell_y, 83, 0.01); AE_NEAR(l.seat[0].shell_height, 30, 0.01);
 	AE_NEAR(l.seat[0].shell_x, left_line(&l, 83 + 30), 0.01);
-	AE_NEAR(l.seat[1].bar.y0, 83 + 30 + 8, 0.01); AE_NEAR(l.seat[1].bar.x1 - l.seat[1].bar.x0, 301, 0.01);
+	AE_NEAR(l.seat[1].bar.y0, 83 + 30 + 8, 0.01); AE_NEAR(l.seat[1].bar.x1 - l.seat[1].bar.x0, 225, 0.01);
 	AE_NEAR(l.seat[0].label_x, l.seat[0].shell_x + l.round_width + 8, 0.01);   /* CANNON 8 px after its shell */
 	AE_CHECK(l.seat[0].label_x < l.seat[1].label_x);
 	AE_NEAR(l.seat[1].label_x, l.seat[1].bar.x1 + AE_PANEL_LEAN * 12 + 8, 0.01);

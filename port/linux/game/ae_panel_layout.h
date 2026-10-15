@@ -99,5 +99,12 @@ real ae_panel_right_column_x(const struct ae_panel_view *v);
 void ae_panel_para_bounds(const struct ae_panel_para *p, struct ae_panel_rect *out);
 /* the panels' small labels on screen: 14 px x scale, never under 12 px; 14 px in quarter views (scale under 0.8) */
 real ae_panel_label_px(real scale);
+/* the ammo boxes' left lean line: its x at the box row's bottom, from the ammo group's origin (px x scale) */
+#define AE_PANEL_LEFT_LINE_X 19.2f
+/* one edge margin for the HUD's top corners (owner 10-15: "all corners square"; the bottom row stays as it is), px at a
+1080p single view: from the view's left edge to the ammo boxes' bottom-left corner, from its right edge to the right
+column (shield bar, health cells, timers list) */
+#define AE_HUD_CORNER_MARGIN 162.0f
+real ae_hud_corner_margin(real scale);
 
 #endif /* __AE_PANEL_LAYOUT_H */
