@@ -38,6 +38,7 @@ void hud_item_timers_ae_record(real x0, real y0, real x1, real y1);
 #define AE_LIST_MORE_PX 13.0f
 #define AE_LIST_MORE_ALPHA 0.60f
 #define AE_LIST_PITCH 20.0f
+#define AE_LIST_LIFT 8.0f       /* px x scale over the shared bottom line (owner 10-15: it hung lower than the sensor) */
 #define AE_LIST_NAME_GAP 10.0f
 #define AE_LIST_LINES 4
 #define AE_LIST_MAXIMUM 32
@@ -300,7 +301,7 @@ static void draw_column(short view)
 	real time_px = MAX(AE_LIST_TEXT_PX * s, AE_LIST_TIME_FLOOR);
 	real cell = digit_cell(time_px);
 	real right = ae_power_list_right_x(view);
-	real foot = ae_score_strip_shared_line_y(view);
+	real foot = ae_score_strip_shared_line_y(view) - AE_LIST_LIFT * s;
 	real pitch = AE_LIST_PITCH * s;
 	real widest = 0.0f, name_right, left = right, top;
 	real_argb_color white;

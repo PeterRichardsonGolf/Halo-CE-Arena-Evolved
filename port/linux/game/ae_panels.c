@@ -5,6 +5,7 @@ HUD STYLE AE's ammo + grenade group and shield + health group (ae_panels.h;
 spec 14.15).
 */
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -13,6 +14,7 @@ spec 14.15).
 #include "game/game_engine.h"
 #include "game/players.h"
 #include "render/render.h"
+#include "rasterizer/rasterizer.h"
 
 #include "ae_hud_digits.h"
 #include "ae_hud_style.h"
@@ -407,6 +409,39 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 
 #define MESSAGE_GAP 14.0f   /* px x the view's scale under the ammo group (owner 10-15: split screen's line sat
                                nearly on the magazine rows at 6) */
+
+#define MESSAGE_SCALE 0.72f   /* CE's message lines under AE: scaled to the panels (owner 10-15) */
+static boolean message_scaled;
+
+void ae_panels_message_scale_begin(short local_player_index, short x, short y)
+{
+	real tx, ty;
+	short width, height;
+	rectangle2d visible;
+
+	message_scaled = FALSE;
+	if (!ae_hud_style_is_ae() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return;
+	/* (the screen transform: rasterizer.h; drawn smaller about the lines' top-left, which stays put; the clip is the
+	part of the drawing's space that lands in the view) */
+	width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	tx = (real)x * (1.0f - MESSAGE_SCALE);
+	ty = (real)y * (1.0f - MESSAGE_SCALE);
+	visible.x0 = (short)floorf(-tx / MESSAGE_SCALE);
+	visible.y0 = (short)floorf(-ty / MESSAGE_SCALE);
+	visible.x1 = (short)ceilf(((real)width - tx) / MESSAGE_SCALE);
+	visible.y1 = (short)ceilf(((real)height - ty) / MESSAGE_SCALE);
+	rasterizer_screen_transform_set(MESSAGE_SCALE, tx, ty, &visible);
+	message_scaled = TRUE;
+}
+
+void ae_panels_message_scale_end(void)
+{
+	if (message_scaled)
+		rasterizer_screen_transform_reset();
+	message_scaled = FALSE;
+}
 
 short ae_panels_message_left(short local_player_index, short x)
 {

@@ -492,3 +492,5 @@ source/interface/hud_item_timers.c	hud_waypoint_block_fade *= ae_panels_label_al
 source/interface/hud_messaging.c	#include "ae_panels.h" /* AE hook */
 source/interface/hud_messaging.c	line_top = ae_panels_message_top(local_player_index, line_top); /* AE hook */
 source/interface/hud_messaging.c	screen_point.x = ae_panels_message_left(local_player_index, screen_point.x); /* AE hook */
+source/interface/hud_messaging.c	ae_panels_message_scale_begin(local_player_index, screen_point.x, line_top); /* AE hook */
+source/interface/hud_messaging.c	ae_panels_message_scale_end(); /* AE hook */

@@ -42,5 +42,8 @@ would start inside it: the AE rounds stand taller than CE's split-screen panel (
 short ae_panels_message_top(short local_player_index, short line_top);
 /* CE's message lines' left x (HUD units) under AE: the ammo group's left edge, so they line up with it (owner 10-15) */
 short ae_panels_message_left(short local_player_index, short x);
+/* CE's message lines under AE drawn at the panels' scale, about their top-left (x, y: HUD units); end undoes it */
+void ae_panels_message_scale_begin(short local_player_index, short x, short y);
+void ae_panels_message_scale_end(void);
 
 #endif /* __AE_PANELS_H */
