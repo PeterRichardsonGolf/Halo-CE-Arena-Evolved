@@ -105,6 +105,13 @@ port/linux/game/menu_functions.c	if (multiplayer.mode == _multiplayer_mode_lan) 
 port/linux/game/menu_functions.c	ae_lan_hint_begin(); /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_glue_lan.h" /* AE hook */
 # map sharing's safety rules (DamnationCE v0.3.41, CC0): port/linux/game/ae_map_share_rules.c
+port/linux/game/map_share.c	char ae_base[MAP_SHARE_PATH_SIZE]; char const *own = ae_map_share_download_name(download->level_name, name, digits, ae_base, sizeof(ae_base)); /* AE hook */
+port/linux/game/map_share.c	snprintf(file->final_path, sizeof(file->final_path), "%s%s.map", CUSTOM_EDITION_MAP_DIRECTORY, own); /* AE hook */
+port/linux/game/map_share.c	snprintf(file->final_path, sizeof(file->final_path), "%s%s_%s.map", CUSTOM_EDITION_MAP_DIRECTORY, own, /* AE hook */
+port/linux/game/map_share.c	(TEST_FLAG(request->wanted, _map_share_file_map) && !game->map.version && !csstrcmp(game->map.name, request->level_name) && !ae_map_share_xbox_level(request->level_name))) /* AE hook */
+port/linux/game/map_share.c	if (!wanted || !map_share_name_safe(name) || (TEST_FLAG(wanted, _map_share_file_map) && !version && !ae_map_share_xbox_level(level_name))) /* AE hook */
+port/linux/game/map_share.c	(file->kind == _map_share_file_map && map_share_hash_version(file->hash) != download->version && !ae_map_share_xbox_level(download->level_name))) /* AE hook */
+port/linux/game/map_share.c	(!game || map_share_hash_version(file->hash) != (unsigned long)game->map.version) && !ae_map_share_host_extra(index) && !ae_map_share_xbox_level(machine->request.level_name)) /* AE hook */
 port/linux/game/map_share.c	if (!ae_map_share_source_allowed(TEST_FLAG(entry->flags, _source_internet_bit), entry->address, download->serial)) /* AE hook */\ncontinue;
 port/linux/game/map_share.c	for (index = 0; index < download->file_count; index++) ae_map_share_discard_failed(download->files[index].final_path); /* AE hook */
 # held players (OpenCE's) back in the pregame after a game whose map download they did not finish (DamnationCE v0.3.41;
@@ -256,6 +263,7 @@ port/linux/src/port_config.c	{ "network.map_download_limit", _config_integer, "4
 port/linux/src/port_config.c	{ "debug.map_share_test", _config_string, "\"\"", "HALO_MAP_SHARE_TEST", _environment_value, _platform_all, /* AE hook */
 port/linux/game/map_share_files.c	{ short ae_turn; for (ae_turn = 0; ae_turn < MAXIMUM_SHARE_FILES && (ae_map_share_file_kept(globals->files[index].path) || (globals->job_type == _hash_job_file && globals->job_owner == index)); ae_turn++) index = (short)((index + 1) % MAXIMUM_SHARE_FILES); globals->next_file = (short)((index + 1) % MAXIMUM_SHARE_FILES); } /* AE hook */
 # upstream's own test of map sharing (it compiles map_share.c's functions) sees none of the above: its stand-ins are ours
+tools/harness/tests/map_share_restart.c	#include "ae_map_share_stubs.h" /* AE hook */
 tools/harness/tests/map_share_trust.c	#include "ae_map_share_stubs.h" /* AE hook */
 # HIT FEEDBACK (ARENA OPTIONS: CLASSIC / ARENA EVOLVED): port/linux/game/ae_hit_feedback.c (rules
 # ae_hit_feedback_rules.c). The option is bit 0 of the variant's pad5; looks only, nothing over the network

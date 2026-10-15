@@ -1,5 +1,13 @@
 # Delta: ChupathingyCE's network family
 
+(Arena Evolved: this is ChupathingyCE's document, kept as it is. Arena
+Evolved's own wire is `ae-29a` (`port/linux/include/delta.h`): it announces
+network 29 and joins hosts of 29 alone (`DELTA_LEGACY_PRESUMED` is 0, as
+OpenCE's clients join their own version only), and ChupathingyCE's signed
+tables, with no row for its wire, change none of its numbers. It shares
+Custom Edition maps from the host (OpenCE's map sharing) as well as
+ChupathingyCE's map downloads: `port/linux/README.md`, "Map sharing".)
+
 Status (October 13, 2026, for 0.7.4e): in progress. Delta List, Stats, Link
 and Control run under the names in the table below; the legacy number's
 table and its signed loader are built, and the cross-play gate that

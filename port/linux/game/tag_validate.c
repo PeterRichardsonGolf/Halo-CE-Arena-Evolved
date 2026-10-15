@@ -20,7 +20,9 @@ walked once through its group's schema:
 - counts are cut to what the game has room for, indices, enums and tags
   past what they name are corrected, runtime values reset (tag_schema.h);
 - then, once every tag has been through it, the checks that look at other
-  tags or at graphs (a bsp's nodes, a model's) run.
+  tags or at graphs (a bsp's nodes, a model's) run, and a tag's name that
+  lies in any tag's bytes, where what is written could end it elsewhere,
+  is none.
 A map is refused if any pointer is wrong; anything else is corrected and
 logged, and the map plays.
 
@@ -435,6 +437,43 @@ static boolean claim(
 	}
 
 	return TRUE;
+}
+
+/* whether any of the size bytes at address (in the tag cache) are a tag's,
+or the bytes are not the tag cache's at all (OpenCE 6d64abdb4's
+tag_validate_any_claimed) */
+static boolean any_claimed(
+	void const *address,
+	unsigned long size)
+{
+	byte const *tag_cache = (byte const *)tag_validate_globals.header;
+	unsigned long first, end, bit;
+
+	if (!tag_cache || (byte const *)address < tag_cache)
+		return TRUE;
+	first = (unsigned long)((byte const *)address - tag_cache);
+	if (first > TAG_CACHE_SIZE || size > TAG_CACHE_SIZE - first)
+		return TRUE;
+	end = first + size;
+	for (bit = first; bit < end; )
+	{
+		unsigned long word = tag_validate_claims[bit / CLAIM_BITS];
+
+		if (bit % CLAIM_BITS == 0 && end - bit >= CLAIM_BITS)
+		{
+			if (word)
+				return TRUE;
+			bit += CLAIM_BITS;
+		}
+		else
+		{
+			if (word & (1UL << (bit % CLAIM_BITS)))
+				return TRUE;
+			bit++;
+		}
+	}
+
+	return FALSE;
 }
 
 /* unclaims the size bytes at the tag cache's offset first (a bsp's, as
@@ -1015,12 +1054,11 @@ static boolean schemas_fit(
 	if (fit == NONE)
 	{
 		struct tag_schema_group const *const *list;
+		struct tag_schema_group const *group;
 
 		fit = TRUE;
 		for (list = tag_schema_group_lists; *list && fit; list++)
 		{
-			struct tag_schema_group const *group;
-
 			for (group = *list; group->group_tag && fit; group++)
 			{
 				if (group->definition && !definition_fits(group->definition, 0))
@@ -1530,6 +1568,26 @@ boolean tag_validate_tags(
 		validate_instance(&validation, &instances_get(header)[absolute_index], _pass_values);
 	for (absolute_index = 0; absolute_index < header->tag_count && !validation.refused; absolute_index++)
 		validate_instance(&validation, &instances_get(header)[absolute_index], _pass_checks);
+	/* each tag's name, now that every root, block and data is claimed: a
+	name in any of their bytes could lose its terminator to what is written
+	there (the corrections above, the game's runtime values), and is none.
+	(Tags may share a name: names are only read. OpenCE 6d64abdb4) */
+	for (absolute_index = 0; absolute_index < header->tag_count && !validation.refused; absolute_index++)
+	{
+		struct tag_validate_instance *instance = &instances_get(header)[absolute_index];
+		char const *name = xbox_pointer(instance->name);
+
+		if (name == tag_validate_empty_name)
+			continue;
+		validation.tag_index = instance->tag_index;
+		validation.depth = 0;
+		validation.field_name = NULL;
+		if (!string_valid(&validation, name) || any_claimed(name, (unsigned long)strlen(name) + 1))
+		{
+			instance->name = XBOX_ADDRESS(tag_validate_empty_name);
+			tag_validate_correct(&validation, "has its name in a tag's data: none");
+		}
+	}
 	/* port (Arena Evolved): (extent_claim) */
 	if (!shared_bytes_unchanged() && !validation.refused)
 	{

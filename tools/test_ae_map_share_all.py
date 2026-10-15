@@ -191,9 +191,10 @@ def share_lines(text):
 
 
 def ce_map():
-    """homobox as a host shares it: named for its hash"""
+    """homobox as a host has it: by its own name (network version 29: a game names a Custom Edition map by its own
+    name, its version the hash's first 32 bits; GET ALL's list still names it <name>_<hash>), and as a guest gets it"""
     data = (Path(DATA).expanduser() / "maps/ce/homobox.map").read_bytes()
-    return f"homobox_{share_hash(data)[:4].hex()}.map", data
+    return "homobox.map", data
 
 
 YES = {"HALO_MAP_SHARE_TEST": "yes"}

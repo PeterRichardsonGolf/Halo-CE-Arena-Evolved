@@ -6,6 +6,24 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Built on ChupathingyCE 0.7.5b and OpenCE build-206: network version 29.
+  Arena Evolved now plays with OpenCE build-206 and ChupathingyCE 0.7.5b
+  (both ways), no longer with 0.2.5-beta and older or OpenCE build-205 and
+  older (network 28).
+- Custom Edition maps keep their own names: a game names its map as it is
+  (`hugeass`), its version the map's hash. Maps that 0.2.3-beta to
+  0.2.5-beta renamed for their hash (`hugeass_1a2b3c4d.map`) get their own
+  names back.
+- Map sharing (from the host and GET ALL) follows the new names.
+- New from ChupathingyCE: MAP DOWNLOADS (Settings > Network): a Custom
+  Edition map a game needs can come from the community map repository,
+  asked first. A version mark on the main menu.
+- Map loading hardening from OpenCE: a tag's name inside another tag's data
+  is dropped; a structure's lightmap vertices after a cut are none.
+- The lobby: B from a pad with no player in the game (one whose player just
+  left, a spare pad, or the keyboard once player 1 left) takes this PC out
+  of the lobby. It did nothing, and the lobby looked stuck.
+
 ## 0.2.5-beta - 2026-10-13
 
 A testing release: the battle rifle. Built on ChupathingyCE 0.7.3e and OpenCE build-201 as 0.2.4-beta: **network

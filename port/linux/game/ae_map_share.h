@@ -59,6 +59,27 @@ own resolution */
 boolean custom_edition_map_file_path(
 	char const *level_name,
 	char *path);
+/* (network version 29) the level's map file by its own name alone, whatever
+its version (MAP_SHARE_PATH_SIZE) */
+boolean custom_edition_map_file_named(
+	char const *level_name,
+	char *path);
+/* (network version 29) the level's map file of that version (its hash's
+first 32 bits; 0 for any): its own name's, or <name>_<hash>.map beside it
+(MAP_SHARE_PATH_SIZE) */
+/* (map_share.c, a download's file) the map's own name for a Custom Edition level named for its hash (<name>_<digits>,
+as GET ALL's list names maps: ae_map_share_all.c) whose digits are the offered file's: <name> (in base, of size); else
+name (an Xbox map's download keeps its hashed name until it is checked: ae_map_share_xbox_present) */
+char const *ae_map_share_download_name(
+	char const *level_name,
+	char const *name,
+	char const *digits,
+	char *base,
+	long size);
+boolean custom_edition_map_find_version(
+	char const *level_name,
+	unsigned long version,
+	char *path);
 /* the resource map of `type` the game reads (MAP_SHARE_PATH_SIZE):
 map_family_resource's (maps_ce, its older places, then MCC's in place) */
 boolean custom_edition_resource_map_file_path(
@@ -116,24 +137,6 @@ void map_share_folder_make(
 /* whether the level's map is here but a resource map it needs is not */
 boolean map_share_resource_maps_missing(
 	char const *level_name);
-
-/* map_families.c's map_family_find, a Custom Edition map not found under its
-own name: one named for its hash in the shared folders (<file>_<hash>.map,
-the only one of that name), or, for a name with a hash, that map under its
-name without it, named for its hash now if its hash is that (a map the map
-lists have not named yet). FALSE if neither */
-boolean ae_map_share_find(
-	short family,
-	char const *file,
-	char *path,
-	long size);
-
-/* map_share_files.c's: the map <folder><name>.map hashed now, on this
-thread, and named for its hash (unless it is in use, or was tried before);
-TRUE if it was renamed */
-boolean map_share_name_now(
-	char const *folder,
-	char const *name);
 
 /* map sharing's safety rules (ae_map_share_rules.h; DamnationCE v0.3.41, CC0) */
 

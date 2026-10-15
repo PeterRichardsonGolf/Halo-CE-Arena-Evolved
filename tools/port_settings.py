@@ -287,8 +287,9 @@ SCREENS = {
         "screen": "network_settings_screen",
         "header": ("header_profile_network_settings", f"{PE}/network_setup/header_profile_network_settings"),
         # (22, not 30: twelve rows and MAP SHARING, with the help line as low
-        # as mods_setup's; AE: 20, thirteen with SERVER PINGS)
-        "spacing": 20,
+        # as mods_setup's; AE: 20, thirteen with SERVER PINGS; 19, fifteen
+        # with ChupathingyCE 0.7.5b's MAP DOWNLOADS, the last above the help)
+        "spacing": 19,
         "help_top": 368,
         # (the router, the clipboard and the updates, which the web build
         # has not: the other rows from the top there)

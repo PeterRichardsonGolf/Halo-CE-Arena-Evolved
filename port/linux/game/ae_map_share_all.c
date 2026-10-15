@@ -465,6 +465,24 @@ static void host_seed(
 		entry->entry.hash);
 }
 
+/* a Custom Edition map's entry named for its hash, as the list sends it (network version 29 keeps maps under their own
+names: the list still names each <name>_<hash>, which the client finds by its hash whatever its file is called,
+map_family_find): a name of its hash already, checked; FALSE if it is another's or the name does not fit */
+static boolean host_name_for_hash(
+	struct host_entry *entry)
+{
+	char digits[MAP_SHARE_NAME_DIGITS + 1];
+	size_t length = strlen(entry->entry.name);
+
+	map_share_hash_digits(entry->entry.hash, digits);
+	if (map_share_name_hashed(entry->entry.name))
+		return csstrcmp(entry->entry.name + length - MAP_SHARE_NAME_DIGITS, digits) == 0;
+	if (length + 1 + MAP_SHARE_NAME_DIGITS >= sizeof(entry->entry.name))
+		return FALSE;
+	snprintf(entry->entry.name + length, sizeof(entry->entry.name) - length, "_%s", digits);
+	return ae_map_share_entry_valid(&entry->entry) && map_share_name_safe(entry->entry.name);
+}
+
 static void host_add(
 	char const *path,
 	char const *name,
@@ -490,8 +508,12 @@ static void host_add(
 	entry->entry.size = size;
 	csstrncpy(entry->path, path, sizeof(entry->path) - 1);
 	entry->modified = modified;
-	if (!ae_map_share_entry_valid(&entry->entry) || (kind != AE_MAP_SHARE_KIND_RESOURCE && !map_share_name_safe(name)))
+	/* (a Custom Edition map by its own name is checked once it is named for its hash: host_name_for_hash) */
+	if ((!ae_map_share_entry_valid(&entry->entry) && !(kind == AE_MAP_SHARE_KIND_CE && !map_share_name_hashed(name))) ||
+		(kind != AE_MAP_SHARE_KIND_RESOURCE && !map_share_name_safe(name)))
+	{
 		return;
+	}
 	/* (one name once: the first folder's is the one the game loads) */
 	for (index = 0; index < share.entry_count; index++)
 	{
@@ -515,6 +537,11 @@ static void host_add(
 			entry->piece_count = before->piece_count;
 			share.previous[index].pieces = NULL;
 			entry->hashed = TRUE;
+			if (kind == AE_MAP_SHARE_KIND_CE && !host_name_for_hash(entry))
+			{
+				free(entry->pieces);
+				return;
+			}
 			break;
 		}
 	}
@@ -609,9 +636,7 @@ static void host_scan_custom_edition(
 			continue;
 		}
 		snprintf(name, sizeof(name), "%.*s", (int)(length - 4), data.cFileName);
-		/* (named for its hash: map sharing's own rule of what a host sends) */
-		if (!map_share_name_hashed(name))
-			continue;
+		/* (by its own name or one of its hash: listed named for its hash once hashed, host_name_for_hash) */
 		host_add(path, name, AE_MAP_SHARE_KIND_CE);
 	}
 	while (FindNextFileA(find, &data));
@@ -733,12 +758,7 @@ static void host_hash_update(
 			map_share_file_hash_of_pieces(entry->entry.size, share.hash_pieces, share.hash_piece_count,
 				entry->entry.hash);
 			if (entry->entry.kind == AE_MAP_SHARE_KIND_CE)
-			{
-				char digits[MAP_SHARE_NAME_DIGITS + 1];
-
-				map_share_hash_digits(entry->entry.hash, digits);
-				failed = csstrcmp(entry->entry.name + strlen(entry->entry.name) - MAP_SHARE_NAME_DIGITS, digits) != 0;
-			}
+				failed = !host_name_for_hash(entry);
 		}
 		if (failed)
 		{
@@ -1882,7 +1902,10 @@ static void all_update(
 	share.active_cancel = FALSE;
 	share.active_stopped = FALSE;
 	share.active_failed = FALSE;
-	if (!map_share_download_begin(level, 0, ""))
+	/* (network version 29: a Custom Edition map's version, its hash's first 32 bits, which its offer is checked
+	against; an Xbox map's 0) */
+	if (!map_share_download_begin(level, entry->kind == AE_MAP_SHARE_KIND_CE ? map_share_hash_version(entry->hash) : 0,
+		""))
 	{
 		error(_error_silent, "map sharing: %s of the host's maps could not be asked for", level);
 		share.active_level[0] = 0;

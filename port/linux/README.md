@@ -646,9 +646,8 @@ the setting for one start of the game. It has priority over the file.
 | `game.mcc_path` | `""` | (none; `HALO_MCC_PATH` names one for a run, looked at after this one) | The folder of Halo: The Master Chief Collection (the one holding `halo1`) whose Custom Edition files (`halo1/maps/custom_edition`: `bitmaps.map`, `sounds.map`, `loc.map`) Custom Edition maps read when `maps_ce`, `maps/ce` and `custom_maps` have none. Empty: found in Steam's libraries (Linux: `~/.local/share/Steam`, `~/.steam`, Flatpak, Snap; Windows: the registry's Steam folder). BROWSE on Settings > MAP FILES sets it. Windows: a path with characters outside the system's code page is not found. The files are only read, never changed or copied; the folder never goes over the network or into saves. |
 | `game.mcc_use` | `"ask"` | `HALO_MCC_USE` | Whether Custom Edition maps read MCC's Custom Edition files: `"yes"`, `"no"`, or `"ask"`: picking such a map in the menus asks (USE MCC FILES, NOT NOW, NEVER ASK AGAIN); elsewhere (a game joined, a test host) it counts as no, and the map's refusal says where to turn it on. With `"no"` Steam's folders are looked in only when Settings > MAP FILES is opened. MCC FILES on Settings > MAP FILES sets it. Files in your own folders always win. |
 | `network.legacy_table` | `""` | `HALO_LEGACY_TABLE` | For testing, and for admins: a legacy table file, not signed, next to `config.toml` unless a full path. Its row for the wire of the build sets the OpenCE network versions that the game announces and joins, in place of the signed tables. The log shows a warning at start. Refer to `docs/delta.md`. Empty: none. |
-| `network.list_hosted_games` | `true` | `HALO_NET_LIST_GAMES` | `true`: the system link games this machine hosts are listed on `network.browser_url` (halo.milenko.org), where anyone can find and join them. `false`: they are kept to invites and the local network. |
+| `network.list_hosted_games` | `false` (Arena Evolved's opt-in; ChupathingyCE's is `true`) | `HALO_NET_LIST_GAMES` | `true`: the system link games this machine hosts are listed on `network.browser_url` (halo.milenko.org), where anyone can find and join them. `false`: they are kept to invites and the local network. |
 | `network.report_joined_games` | `false` | `HALO_NET_REPORT_GAMES` | When an internet game this machine joined ends, the game sends `network.browser_url` its scores as this machine saw them, with this copy's player ID, and confirms this machine's players' lines in the host's report of the game (`POST /v1/claim`), which puts the game on their profiles. `false`: neither, for games this machine joins. Games it hosts are still reported and confirmed. |
-| `network.report_events` | `true` | `HALO_NET_REPORT_EVENTS` | Delta Stats: the games this machine hosts are recorded (kills with weapons and positions, accuracy, medals, objectives, vehicles, pickups) and sent to `network.browser_url` when each ends. Players' names and a hash of their hardware ID; never an address. `false`: off. Refer to `docs/delta.md`. |
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
@@ -1121,15 +1120,17 @@ addresses (Hamachi's 25.x, Radmin VPN's 26.x) still works, but the map then
 comes from the host alone, which can be slower. A downloaded map that fails
 its check (another version, a broken file) is deleted from `maps_ce`.
 
-The name of each shared map ends with the start of its hash. Arena Evolved
-names a map so when it hosts it, or when it joins a game on that version of
-it: `hugeass.map` in `maps_ce` (or OpenCE's `custom_maps`) becomes
-`hugeass_0e2b3ee4.map`, with its picture and description. Thus two versions
-of a map have different names, and a game always loads the version of the
-host. The menus show the map without the hash, and with it only when you have
-two versions of the map. A name without the hash (a playlist's, `hugeass@ce`)
-still finds the renamed map. A downloaded map goes into `maps_ce` with the same
-name, and the resource maps it needs into `maps_ce` too. A download that stops
+A shared map keeps its own name (network version 29, as OpenCE build-206
+and ChupathingyCE 0.7.5b): a game names its map as it is (`hugeass@ce`) and
+says which version it is by the map's hash, the first 32 bits of it in the
+game record. A player with that name of another version gets the host's
+beside it as `hugeass_0e2b3ee4.map` (the start of its hash), and a game
+always loads the version of the host. Maps that Arena Evolved 0.2.3-beta to
+0.2.5-beta named for their hash (`hugeass_0e2b3ee4.map`) are still found,
+and get their own names back where no file of that name is there. GET ALL's
+list names each Custom Edition map `<name>_<hash>` (so the list says which
+version it is); a map fetched from it goes into `maps_ce` under its own
+name too. The resource maps a map needs go into `maps_ce`. A download that stops
 leaves a `.part` file there (only of the last map whose download stopped, and
 only if it holds part of the map); the next download of that map continues
 from it. Maps elsewhere (`maps/ce`, or named `<name>@ce.map`) are played but not

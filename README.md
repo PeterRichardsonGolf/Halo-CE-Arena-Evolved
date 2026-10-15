@@ -461,21 +461,21 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, 0.2.5-beta is network version 28: it
-  plays with OpenCE builds on network 28 (build-201 onward, until OpenCE
-  changes its network version), both ways, and joins only games
-  hosted on version 28 (an older host is refused: the host needs to update).
-  ChupathingyCE 0.7.3e (27, which joins hosts of 11 to 30) joins its games,
-  but Arena Evolved does not join ChupathingyCE 0.7.3e's. Builds that join
-  only hosts of 27 or older (OpenCE build-200 and earlier, DamnationCE 0.3.41
-  and 0.3.40, Arena Evolved 0.2.2-beta and 0.2.1-beta, which are 25,
-  ChupathingyCE 0.7.2e and earlier) don't join its games: their players are
-  told the host is newer. 0.2.2-beta (25) plays with OpenCE build-169 to
-  build-183. A game on a Custom Edition map is named as OpenCE names it, so
-  OpenCE and ChupathingyCE players with the map join it too; players without
-  it download it from the game's players when the host shares maps (OpenCE's
+- Online, Arena Evolved is network version 29 (from 0.2.6-beta): it plays
+  with OpenCE builds on network 29 (build-206 onward, until OpenCE changes
+  its network version) and ChupathingyCE 0.7.5b, both ways, and joins only
+  games hosted on version 29 (an older host is refused: the host needs to
+  update). Builds that join only hosts of 28 or older (Arena Evolved
+  0.2.3-beta to 0.2.5-beta, OpenCE build-205 and earlier, DamnationCE,
+  ChupathingyCE 0.7.4 and earlier) don't join its games: their players are
+  told the host is newer. 0.2.3-beta to 0.2.5-beta (28) play with OpenCE
+  build-201 to build-205. A game on a Custom Edition map is named by the
+  map's own name, as OpenCE names it, its version the map's hash, so OpenCE
+  and ChupathingyCE players with the map join it too; players without it
+  download it from the game's players when the host shares maps (OpenCE's
   map sharing, Server Setup > MAP SHARING; port/linux/README.md, "Map
-  sharing").
+  sharing"), or, if they say yes, from the community map repository
+  (ChupathingyCE's map downloads, Settings > Network > MAP DOWNLOADS).
 
 ## Generative AI
 

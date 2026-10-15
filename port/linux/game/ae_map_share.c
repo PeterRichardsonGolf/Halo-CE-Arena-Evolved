@@ -85,55 +85,6 @@ static boolean file_exists(
 	return TRUE;
 }
 
-/* the single <folder><file>_<hash>.map of each shared folder, the first
-folder's first: FALSE if none, or more than one in the folder found first
-(two versions: the name alone says neither) */
-static boolean find_hashed(
-	char const *file,
-	char *path,
-	long size)
-{
-	long folder;
-
-	for (folder = 0; folder < (long)NUMBEROF(shared_folders); folder++)
-	{
-		char pattern[MAP_SHARE_PATH_SIZE];
-		WIN32_FIND_DATAA data;
-		HANDLE find;
-		long found = 0;
-
-		if (snprintf(pattern, sizeof(pattern), "%s%s_*.map", shared_folders[folder], file) >= (int)sizeof(pattern))
-			continue;
-		find = FindFirstFileA(pattern, &data);
-		if (find == INVALID_HANDLE_VALUE)
-			continue;
-		do
-		{
-			char name[MAP_SHARE_PATH_SIZE];
-			size_t length = strlen(data.cFileName);
-
-			if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || length <= 4 || length - 4 >= sizeof(name))
-				continue;
-			snprintf(name, sizeof(name), "%.*s", (int)(length - 4), data.cFileName);
-			if (!map_share_name_hashed(name) || map_share_name_base_length(name) != (short)strlen(file) ||
-				_strnicmp(name, file, strlen(file)))
-			{
-				continue;
-			}
-			if (!found)
-				snprintf(path, (size_t)size, "%s%s", shared_folders[folder], data.cFileName);
-			found++;
-		}
-		while (FindNextFileA(find, &data));
-		CloseHandle(find);
-		if (found == 1)
-			return TRUE;
-		if (found > 1)
-			break;
-	}
-	return FALSE;
-}
-
 /* ---------- public code (OpenCE's names) */
 
 char const *resource_map_type_describe(
@@ -164,6 +115,46 @@ boolean custom_edition_map_file_path(
 		return FALSE;
 	map_family_parse(level_name, file, sizeof(file));
 	return map_family_find(_map_family_custom_edition, file, path, MAP_SHARE_PATH_SIZE);
+}
+
+char const *ae_map_share_download_name(
+	char const *level_name,
+	char const *name,
+	char const *digits,
+	char *base,
+	long size)
+{
+	size_t length = name ? strlen(name) : 0;
+
+	if (!name || !level_name || ae_map_share_xbox_level(level_name) || !digits || !map_share_name_hashed(name) || length <= MAP_SHARE_NAME_DIGITS + 1 ||
+		strcmp(name + length - MAP_SHARE_NAME_DIGITS, digits) || length - MAP_SHARE_NAME_DIGITS - 1 >= (size_t)size)
+	{
+		return name;
+	}
+	snprintf(base, (size_t)size, "%.*s", (int)(length - MAP_SHARE_NAME_DIGITS - 1), name);
+	return base;
+}
+
+boolean custom_edition_map_file_named(
+	char const *level_name,
+	char *path)
+{
+	return custom_edition_map_find_version(level_name, 0, path);
+}
+
+boolean custom_edition_map_find_version(
+	char const *level_name,
+	unsigned long version,
+	char *path)
+{
+	char file[LEVEL_FILE_BYTES];
+
+	if (ae_map_share_xbox_level(level_name))
+		return ae_map_share_xbox_file_path(level_name, path);
+	if (!custom_edition_level_name(level_name))
+		return FALSE;
+	map_family_parse(level_name, file, sizeof(file));
+	return map_family_find_version(_map_family_custom_edition, file, version, path, MAP_SHARE_PATH_SIZE);
 }
 
 boolean custom_edition_resource_map_file_path(
@@ -352,43 +343,26 @@ void map_share_folder_make(
 	}
 }
 
-boolean ae_map_share_find(
-	short family,
-	char const *file,
-	char *path,
-	long size)
-{
-	char base[LEVEL_FILE_BYTES];
-	short base_length;
-	long folder;
-
-	if (family != _map_family_custom_edition || !file || !file[0] || strlen(file) >= sizeof(base))
-		return FALSE;
-	/* (a map named without its hash, renamed since: hugeass, now
-	hugeass_1a2b3c4d) */
-	if (!map_share_name_hashed(file))
-		return find_hashed(file, path, size);
-	/* (one named for its hash that this machine has under its own name,
-	not named yet: named now, if its hash is that one) */
-	base_length = map_share_name_base_length(file);
-	snprintf(base, sizeof(base), "%.*s", (int)base_length, file);
-	for (folder = 0; folder < (long)NUMBEROF(shared_folders); folder++)
-	{
-		char unnamed[MAP_SHARE_PATH_SIZE];
-
-		snprintf(unnamed, sizeof(unnamed), "%s%s.map", shared_folders[folder], base);
-		if (!file_exists(unnamed) || !map_share_name_now(shared_folders[folder], base))
-			continue;
-		snprintf(path, (size_t)size, "%s%s.map", shared_folders[folder], file);
-		if (file_exists(path))
-			return TRUE;
-	}
-	return FALSE;
-}
-
 #else
 
 boolean custom_edition_map_file_path(char const *level_name, char *path) { (void)level_name; (void)path; return FALSE; }
+boolean custom_edition_map_file_named(char const *level_name, char *path) { (void)level_name; (void)path; return FALSE; }
+char const *ae_map_share_download_name(char const *level_name, char const *name, char const *digits, char *base,
+	long size)
+{
+	(void)level_name;
+	(void)digits;
+	(void)base;
+	(void)size;
+	return name;
+}
+boolean custom_edition_map_find_version(char const *level_name, unsigned long version, char *path)
+{
+	(void)level_name;
+	(void)version;
+	(void)path;
+	return FALSE;
+}
 boolean custom_edition_resource_map_file_path(short type, char *path) { (void)type; (void)path; return FALSE; }
 unsigned long custom_edition_map_resource_maps_needed(char const *level_name) { (void)level_name; return 0; }
 unsigned long custom_edition_map_checksum(char const *level_name) { (void)level_name; return 0; }
@@ -405,14 +379,6 @@ boolean map_share_release_map(char const *path) { (void)path; return TRUE; }
 boolean halo_custom_edition_tag_cache(void) { return FALSE; }
 boolean map_share_resource_maps_missing(char const *level_name) { (void)level_name; return FALSE; }
 void map_share_folder_make(void) {}
-boolean ae_map_share_find(short family, char const *file, char *path, long size)
-{
-	(void)family;
-	(void)file;
-	(void)path;
-	(void)size;
-	return FALSE;
-}
 
 #endif
 

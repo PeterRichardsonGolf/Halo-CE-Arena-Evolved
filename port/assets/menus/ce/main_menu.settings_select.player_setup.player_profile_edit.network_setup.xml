@@ -14,26 +14,26 @@
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/network_setup/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/network_setup/help">
 		<data input="port settings help"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_online" x="54" y="73" platform="desktop android web"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_list_hosted_games" x="54" y="93"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_report_joined_games" x="54" y="113"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_browser_pings" x="54" y="133"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_report_events" x="54" y="153"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_allow_upnp" x="54" y="173" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_join_from_clipboard" x="54" y="193" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_auto" x="54" y="213" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_names" x="54" y="233" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_names" x="54" y="173" platform="web"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_name_scale" x="54" y="253" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_name_scale" x="54" y="193" platform="web"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_enemy_name_color" x="54" y="273" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_enemy_name_color" x="54" y="213" platform="web"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_team_layout" x="54" y="293" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_team_layout" x="54" y="233" platform="web"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_background" x="54" y="313" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_background" x="54" y="253" platform="web"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_map_downloads" x="54" y="333" platform="desktop android"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_map_downloads" x="54" y="273" platform="web"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_map_sharing" x="54" y="353" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_list_hosted_games" x="54" y="92"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_report_joined_games" x="54" y="111"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_browser_pings" x="54" y="130"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_report_events" x="54" y="149"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_allow_upnp" x="54" y="168" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_join_from_clipboard" x="54" y="187" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_auto" x="54" y="206" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_names" x="54" y="225" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_names" x="54" y="168" platform="web"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_name_scale" x="54" y="244" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_player_name_scale" x="54" y="187" platform="web"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_enemy_name_color" x="54" y="263" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_enemy_name_color" x="54" y="206" platform="web"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_team_layout" x="54" y="282" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_team_layout" x="54" y="225" platform="web"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_background" x="54" y="301" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_scoreboard_background" x="54" y="244" platform="web"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_map_downloads" x="54" y="320" platform="desktop android"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_map_downloads" x="54" y="263" platform="web"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/op_map_sharing" x="54" y="339" platform="desktop android"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/network_setup/button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/network_setup/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
