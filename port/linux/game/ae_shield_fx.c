@@ -1179,16 +1179,25 @@ short ae_shield_fx_bloodshot(
 {
 	struct object_datum *object = recharge_band_enabled() ? object_try_and_get(object_index) : NULL;
 
-	/* (real damage to the body, or the headshot that kills: not the crumb a round that only empties a shield
-	leaves; and only the round the game shows as a shield hit, the one that broke the shield and went on: a
-	body with no shield has the game's own blood already) */
+	boolean breaks, finishes;
+
 	if (!object || object->object.type != _object_type_biped || hit_effect_index == NONE ||
-		!(body_damage > 0.05f || TEST_FLAG(being_damaged_flags, _object_being_damaged_killed_instantly_bit)) ||
-		!TEST_FLAG(being_damaged_flags, _object_being_damaged_shield_depleted_bit) ||
 		TEST_FLAG(damage_flags, _damage_area_of_effect_bit) || owner_object_index == NONE)
 	{
 		return 0;
 	}
+	/* (real damage to the body, or the headshot that kills: not the crumb a round that only empties a shield
+	leaves; the round that broke the shield and went on) */
+	breaks = (body_damage > 0.05f || TEST_FLAG(being_damaged_flags, _object_being_damaged_killed_instantly_bit)) &&
+		TEST_FLAG(being_damaged_flags, _object_being_damaged_shield_depleted_bit);
+	/* (or the round that kills a body whose shield was already brought to nothing and its pop shown: a harder hitter
+	(the juggernaut's extra damage) empties the shield exactly with one round, and the next, the finishing one,
+	meets no shield; owner 2026-10-15: the AE JUGGER pistol kills had no blood pop) */
+	finishes = (TEST_FLAG(being_damaged_flags, _object_being_damaged_killed_instantly_bit) ||
+		TEST_FLAG(being_damaged_flags, _object_being_damaged_body_depleted_bit)) &&
+		object->object.shield_vitality <= 0.0001f && ae_shield_fx_pop_was_early(object_index);
+	if (!breaks && !finishes)
+		return 0;
 	error(_error_silent, "hit feedback: blood pop, unit %08x, body damage %.3f", (unsigned int)object_index,
 		(double)body_damage);
 	return BLOOD_POP_BURSTS;
