@@ -470,6 +470,23 @@ static const struct config_setting config_settings[] =
 		"Halo does; \"hold\", zoomed to the first level while it is held (no second\n"
 		"level); \"both\", a tap steps the level as toggle does and a hold zooms\n"
 		"while it is held, then returns to unzoomed." },
+	{ "input.adaptive_triggers", _config_boolean, "true", "HALO_ADAPTIVE_TRIGGERS", _environment_value, /* AE hook */
+		_platform_desktop,
+		"A PS5 DualSense's adaptive triggers (ae_ds5.c): R2 a feel for each\n"
+		"weapon and a kick at each shot, free while reloading, switching or\n"
+		"empty; L2 light while zoomed. Other pads are never touched. On Linux\n"
+		"it needs write access to the pad's hidraw node (Steam's udev rules,\n"
+		"or the download's 70-ae-dualsense.rules)." },
+	{ "input.trigger_strength", _config_string, "\"normal\"", "HALO_TRIGGER_STRENGTH", _environment_value, /* AE hook */
+		_platform_desktop,
+		"How strong a DualSense's trigger effects are: \"light\" (60%),\n"
+		"\"normal\", \"strong\" (140%)." },
+	{ "input.lightbar", _config_string, "\"player_color\"", "HALO_LIGHTBAR", _environment_value, /* AE hook */
+		_platform_desktop,
+		"A PS5 DualSense's lightbar and player lights: \"player_color\", the\n"
+		"lightbar in your color (your team's in a team game) with the powerups'\n"
+		"glows; \"shield\", the lightbar your shield as the HUD's meter shows it;\n"
+		"either way the player lights your split-screen number. \"off\": left alone." },
 	{ "input.zoom_reset", _config_string, "\"first\"", "HALO_ZOOM_RESET", _environment_value, /* AE hook */
 		_platform_all,
 		"Where a hold of the zoom action (the \"hold\" mode, and the hold of\n"
@@ -633,6 +650,16 @@ static const struct config_setting config_settings[] =
 		"(each folder moved whole, never copied; one that cannot be moved stays\n"
 		"where it is); \"yes\": moved without asking; \"no\": left where they are.\n"
 		"Android moves them unless this is \"no\"." },
+	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all,
+		"Computer players (bots) in a local (split screen) Slayer game: 0 to 15\n"
+		"join its lobby with the players, as far as the game has room. Not in\n"
+		"system link or internet games. 0: none, as in the stock game." },
+	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all,
+		"How well the bots play: \"easy\", \"normal\", \"heroic\" or \"legendary\"\n"
+		"(how soon they react, how well they aim, how far they see)." },
+	{ "bots.teams", _config_string, "\"even\"", "HALO_BOT_TEAMS", _environment_value, _platform_all,
+		"In team games: \"even\" puts the bots on both teams, evening them with\n"
+		"the players; \"against\" puts them all on the team the players are not on." },
 	{ "display.viewmodel_shield", _config_boolean, "false", "HALO_VIEWMODEL_SHIELD", _environment_value, _platform_all,
 		"The energy shield's flare on the first-person arms too, as on the body\n"
 		"(the stock game draws it on the body only)." },
@@ -915,7 +942,8 @@ static const struct config_setting config_settings[] =
 
 	{ "debug.network_test", _config_string, "\"\"", "HALO_NETWORK_TEST", _environment_value, _platform_all,
 		"Automated system link sessions for testing (port/linux/game/network_test.c):\n"
-		"\"host:<map>\" hosts a game on that map, \"join\" joins the first game found,\n"
+		"\"host:<map>\" hosts a game on that map, \"local:<map>\" plays a local (split\n"
+		"screen) game on it, \"join\" joins the first game found,\n"
 		"\"browse\" the one with the most players the server browser lists (not\n"
 		"co-op, if it can); empty for none." },
 	{ "debug.network_test_start", _config_real, "15.0", "HALO_NETWORK_TEST_START", _environment_value, _platform_all,
@@ -1026,6 +1054,40 @@ static const struct config_setting config_settings[] =
 		"For test launches (ae_platform.c): in split screen a lone gamepad stays\n"
 		"player 1's, with the keyboard, and player 2 stands with no input. Off:\n"
 		"the keyboard is player 1 and the lone gamepad player 2." },
+	{ "debug.ds5_log", _config_boolean, "false", "HALO_DEBUG_DS5_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"A DualSense's effects in debug.txt (ae_ds5.c): the bytes written, what\n"
+		"each player's triggers and lightbar are asked for as it changes, the\n"
+		"rumble, each weapon tag's kind once a map." },
+	{ "debug.ae_panel_primitives", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_PRIMITIVES", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_draw.c): one of each of\n"
+		"their primitives on a grey plate in the first view, and their places in the\n"
+		"log." },
+	{ "debug.ae_panel_log", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_LOG", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): every 2\n"
+		"seconds, one line per local player of what the ammo, grenade, shield and\n"
+		"health panels read from the game. Only this machine's log." },
+	{ "debug.ae_panel_powerups", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_POWERUPS", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): an automated\n"
+		"test host gives its first player the overshield or camo at these seconds of\n"
+		"game time (\"overshield:10,camo:20\"); empty never." },
+	{ "debug.ae_panel_state", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_STATE", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests and pictures of the AE panels (ae_panels.c): a\n"
+		"state drawn over the game's (low, empty, overheated, shield_low,\n"
+		"shield_down, overshield1, overshield2, camo, buffs, health_low)." },
+	{ "debug.ae_sensor_with_ce", _config_boolean, "false", "HALO_DEBUG_AE_SENSOR_WITH_CE", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE motion sensor (ae_sensor.c): CE's own\n"
+		"sensor drawn as well, so that AE's blips can be laid on CE's." },
+	{ "debug.ae_panel_seat", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_SEAT", _environment_value, /* AE hook */
+		_platform_all,
+		"For the automated tests of the AE panels (ae_panel_engine.c): an automated\n"
+		"test host seats its first player in a vehicle (\"ghost:driver:8\",\n"
+		"\"warthog:gunner:8\": the vehicle's tag, the seat, the second)." },
 	{ "debug.score_strip_log", _config_boolean, "false", "HALO_DEBUG_SCORE_STRIP_LOG", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the score strip (ae_strip_engine.c): every 5\n"
@@ -1157,6 +1219,9 @@ static const struct config_setting config_settings[] =
 		"\"bot:<seed>\" plays controller 1 with a scripted pattern (automated\n"
 		"network tests); \"look:<seed>\" stands still, only turning and looking\n"
 		"up and down; empty for none." },
+	{ "debug.bot_trace", _config_integer, "0", "HALO_BOT_TRACE", _environment_value, _platform_all,
+		"Log each bot's state (bots.count) every this many seconds: where it is\n"
+		"and goes, its path, target and weapon; 0 never." },
 	{ "debug.update_answer", _config_string, "\"\"", "HALO_UPDATE_ANSWER", _environment_value, _platform_desktop,
 		"The answer to the new version question, for automated tests: \"yes\",\n"
 		"\"no\" or \"never\" (do not ask again, confirmed); empty asks." },

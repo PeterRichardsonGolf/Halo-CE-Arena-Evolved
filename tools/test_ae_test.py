@@ -30,6 +30,7 @@ import windows  # noqa: E402
 import gametype_file  # noqa: E402
 import seed_compare  # noqa: E402
 import strip_checks  # noqa: E402
+import panel_checks  # noqa: E402
 
 del sys.modules["harness"]
 if _other_harness is not None:
@@ -485,6 +486,26 @@ class SeedCompare(unittest.TestCase):
             g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6}.get(int(revision), golden)
             self.assertEqual(g[name]["block"], digest, name)
 
+    def test_golden_revision_11(self):
+        """golden_seeds_rev11.json: a root seeded at revision 11 (all 86 seeds; a rev-10 root brought to 11 holds the
+        same files): every seed of arena_gametypes.c's table there, the 61 of before as revision 10 seeded them
+        (golden_seeds_rev6's where unchanged since, e.g. the NHE set), each AE BR twin other than its AE gametype"""
+        import re
+        source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
+        table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
+        seeds = re.findall(r'^\t\{ "([^"]+)"', table, re.M)
+        golden = json.loads((HERE / "golden_seeds_rev11.json").read_text())
+        self.assertEqual(sorted(golden), sorted(seeds))
+        self.assertEqual(len(seeds), 86)
+        twins = dict(re.findall(r'\{ "(AE BR [^"]+)", "([^"]+)" \},', source))
+        self.assertEqual(len(twins), 25)
+        for name, twin in twins.items():
+            self.assertIn(twin, golden, name)
+            self.assertNotEqual(golden[name]["content"], golden[twin]["content"], name)
+        golden_rev6 = json.loads((HERE / "golden_seeds_rev6_519ce8a3.json").read_text())
+        for name in ("TS 50", "CTF WIZARD", "1 V 1 NR"):
+            self.assertEqual(golden[name]["block"], golden_rev6[name]["block"], name)
+
 
 class Debug(unittest.TestCase):
     def test_counts(self):
@@ -714,9 +735,9 @@ class Handshake(unittest.TestCase):
 
 class SeedRules(unittest.TestCase):
     def test_table_and_parse(self):
-        """seed_rules.py: the 61 seeds, and a run's rules lines read back field by field"""
+        """seed_rules.py: the 86 seeds, and a run's rules lines read back field by field"""
         import seed_rules
-        self.assertEqual(len(seed_rules.ROWS), 61)
+        self.assertEqual(len(seed_rules.ROWS), 86)
         for name in seed_rules.ROWS:
             self.assertLessEqual(len(name), 11, name)
         text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
@@ -728,21 +749,32 @@ class SeedRules(unittest.TestCase):
                 "drop secondary always, nhe mode by vehicles, starting frags 2, ball melee lethal\n")
         f = seed_rules.fields(text)
         self.assertEqual(f["ball melee"], "lethal")
-        # (revision 7: LETHAL on the four AE oddball seeds, STOCK on every other)
-        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB"}
+        # (revision 7: LETHAL on the four AE oddball seeds, STOCK on every other; revision 11: and their AE BR twins)
+        lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB", "AE BR FBALL", "AE BR TM OB", "AE BR 2V2 B",
+                  "AE BR C OB"}
         for name, (want, _, _) in seed_rules.ROWS.items():
             self.assertEqual(want["ball melee"], "lethal" if name in lethal else "stock", name)
         self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),
                          ("slayer (teams)", "150 ticks (5 s)", "line of sight", "pistol + assault rifle", "always"))
-        # (the weapon pack's fields: every seed expects none / stock / stock / off)
+        # (the weapon pack's fields: every seed expects none / stock / stock / off but the AE BR set's (revision 11),
+        # the pack's rifle in the primary slot, with the pistol second, and its twin's values otherwise)
         self.assertNotIn("weapon pack", f)
         f = seed_rules.fields(text.replace("ball melee lethal", "ball melee stock, weapon pack: battle rifle (slot 1), "
                                            "pack loadout: primary pack, secondary stock, battle rifle on map: on"))
         self.assertEqual((f["ball melee"], f["weapon pack"], f["pack loadout primary"], f["pack loadout secondary"],
                           f["battle rifle on map"]), ("stock", "battle rifle (slot 1)", "pack", "stock", "on"))
-        for name, (want, _, _) in seed_rules.ROWS.items():
+        for name, (want, spawn, frags) in seed_rules.ROWS.items():
+            br = name.startswith("AE BR ")
             self.assertEqual((want["weapon pack"], want["pack loadout primary"], want["pack loadout secondary"],
-                              want["battle rifle on map"]), ("none", "stock", "stock", "off"), name)
+                              want["battle rifle on map"]),
+                             ("battle rifle (slot 1)" if br else "none", "pack" if br else "stock", "stock", "off"), name)
+            if br:
+                twin_want, _, twin_frags = seed_rules.ROWS[seed_rules.BR_TWINS[name]]
+                self.assertEqual((want["loadout"], spawn, frags), ("assault rifle + pistol", "battle_rifle + pistol",
+                                                                   twin_frags), name)
+                differ = {k for k in set(want) | set(twin_want) if want.get(k) != twin_want.get(k)}
+                self.assertEqual(differ, {"loadout", "weapon pack", "pack loadout primary"}, name)
+        self.assertEqual(len(seed_rules.BR_TWINS), 25)
 
 
 class Windows(unittest.TestCase):
@@ -1355,6 +1387,45 @@ class Sheet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PanelChecks(unittest.TestCase):
+    """panel_checks.py: the edge measure and the primitives' judge on a drawn plate"""
+
+    def test_softness(self):
+        self.assertEqual(panel_checks.softness([102, 40, 200, 200, 40, 102]), 0)
+        self.assertEqual(panel_checks.softness([102, 40, 120, 200, 200, 120, 40, 102]), 1)
+        self.assertEqual(panel_checks.softness([102, 120, 140, 160, 200]), 0)   # no DARK keyline: not an edge
+        self.assertEqual(panel_checks.softness([30, 70, 100, 130, 160, 200]), 3)
+
+    LINE = ("arena-evolved: ae panel: tick 600 view 0 name=Player weapon=assault rifle kind=rounds loaded=42/60 "
+            "reserve=180 heat=0.00 battery=1.00 overheated=0 low=0 grenades=2/1 armed=frag shield=1.00 health=1.00 "
+            "camo=0 overshield=0.0 seat=none origin=150.0,83.0 right=1758.0,83.0 scale=1.00 placed=1")
+
+    def test_panel_line(self):
+        (line,) = panel_checks.panel_lines("noise\n" + self.LINE + "\n")
+        self.assertEqual((line["weapon"], line["loaded"], line["magazine"], line["frags"], line["armed"]),
+                         ("assault rifle", 42, 60, 2, "frag"))
+        self.assertEqual(panel_checks.panel_lines(self.LINE, "view 1"), [])
+
+    def test_never_rises(self):
+        lines = [{"tick": t, "camo": c} for t, c in ((0, 900), (60, 840), (120, 845), (180, 600))]
+        self.assertEqual(len(panel_checks.never_rises(lines, "camo", 1)), 1)
+
+    def test_compare_players(self):
+        host = self.LINE.replace("view 0", "player 1").replace(" origin=150.0,83.0 right=1758.0,83.0 scale=1.00 "
+                                                                 "placed=1", "")
+        why, matched = panel_checks.compare_players(host, self.LINE)
+        self.assertEqual((why, matched), ([], 1))
+        why, _ = panel_checks.compare_players(host.replace("loaded=42", "loaded=12"), self.LINE)
+        self.assertTrue(why)
+
+    def test_plate_missing(self):
+        w, h = 600, 340
+        rgb = bytearray([20] * (w * h * 3))
+        why, _ = panel_checks.judge_primitives(w, h, rgb)
+        self.assertTrue(any("plate" in reason for reason in why))
+        self.assertTrue(any("box" in reason for reason in why))
 
 
 class StripChecks(unittest.TestCase):

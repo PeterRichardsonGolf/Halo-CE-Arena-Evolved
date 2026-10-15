@@ -55,6 +55,7 @@ Called each frame from game_stats_update (main.c).
 #include "tag_files/tag_files.h"
 #include "../src/browser.h"
 #include "../src/event_log.h"
+#include "ae_bots.h" /* AE hook */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1105,6 +1106,8 @@ void game_events_update(
 	if (!game_events.recording)
 	{
 		if (!event_upload_enabled() || !game_engine_can_score())
+			return;
+		if (ae_bots_kept_from_delta()) /* AE hook */
 			return;
 		begin_game(tick);
 	}

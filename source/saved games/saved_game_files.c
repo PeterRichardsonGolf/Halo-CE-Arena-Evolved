@@ -317,6 +317,7 @@ symbols in this file:
 #include "text/unicode.h"
 #include "interface/ui_widget.h"
 #include "interface/ui_widget_event_handler_functions.h"
+#include "ae_saved_limits.h" /* AE hook */
 #include "saved games/game_state.h"
 #include "saved games/player_profile.h"
 #include "saved games/playlist_profile.h"
@@ -336,7 +337,7 @@ enum
 
 enum
 {
-	MAXIMUM_ENUMERATED_SAVED_GAME_FILES_ANY_TYPE_PER_MEMORY_UNIT = 100
+	MAXIMUM_ENUMERATED_SAVED_GAME_FILES_ANY_TYPE_PER_MEMORY_UNIT = AE_SAVED_GAMES_MAXIMUM /* AE hook */
 };
 
 enum

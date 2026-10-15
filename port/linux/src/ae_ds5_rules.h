@@ -1,0 +1,188 @@
+/*
+AE_DS5_RULES.H
+
+Arena Evolved: the DualSense's output bytes, pure (no SDL, no game), so a unit test checks
+them (port/linux/tests/ae_ds5_rules_test.c).
+
+- The output report's shared 47-byte body ("effects state"): the same layout as SDL3's DS5EffectsState_t
+  (src/joystick/hidapi/SDL_hidapi_ps5.c, zlib licence): enable bits, rumble, audio, the right then the left
+  trigger's 11-byte effect, LED fields.
+- A trigger effect's 11 bytes: the zone-based modes (feedback 0x21, weapon 0x25, vibration 0x26) packed as in
+  John "Nielk1" Klein's TriggerEffectGenerator (MIT licence), and 0x05, the "off" SDL's testcontroller.c sends.
+- The whole report for a hidraw write: USB report 0x02 (1 + 47 bytes, padded to 48) or Bluetooth report 0x31
+  (78 bytes: id, sequence in the high nibble, tag 0x10, the body, padding, then a CRC-32 over the byte 0xA2 and the
+  first 74 bytes), as SDL's driver frames them.
+*/
+
+#ifndef __AE_DS5_RULES_H
+#define __AE_DS5_RULES_H
+
+#include <stddef.h>
+
+#define AE_DS5_EFFECT_SIZE 11
+#define AE_DS5_BODY_SIZE 47
+#define AE_DS5_USB_REPORT_SIZE 48
+#define AE_DS5_BLUETOOTH_REPORT_SIZE 78
+
+/* the body's fields used here (byte offsets) */
+#define AE_DS5_BODY_ENABLE1 0 /* 0x04 right trigger effect, 0x08 left trigger effect */
+#define AE_DS5_BODY_ENABLE2 1 /* 0x04 lightbar colour, 0x10 player lights */
+#define AE_DS5_BODY_RIGHT_TRIGGER 10
+#define AE_DS5_BODY_LEFT_TRIGGER 21
+#define AE_DS5_BODY_PLAYER_LIGHTS 43
+#define AE_DS5_BODY_RED 44
+#define AE_DS5_BODY_GREEN 45
+#define AE_DS5_BODY_BLUE 46
+
+#define AE_DS5_ENABLE1_RIGHT_TRIGGER 0x04
+#define AE_DS5_ENABLE1_LEFT_TRIGGER 0x08
+#define AE_DS5_ENABLE2_LIGHTBAR 0x04
+#define AE_DS5_ENABLE2_PLAYER_LIGHTS 0x10
+
+/* the weapon kinds, each with its own R2 profile */
+enum ae_ds5_weapon_kind
+{
+	AE_DS5_WEAPON_NONE = 0,
+	AE_DS5_WEAPON_SEMI,      /* the pistol, the plasma pistol's tap: a short click */
+	AE_DS5_WEAPON_HEAVY,     /* slow single shots (shotgun, rocket launcher): a heavy click */
+	AE_DS5_WEAPON_AUTOMATIC, /* assault rifle, plasma rifle, needler, flamethrower: buzz at the rate of fire */
+	AE_DS5_WEAPON_SNIPER,    /* two zoom levels and a slow trigger: firm resistance */
+	AE_DS5_WEAPON_CHARGE,    /* a trigger that charges (plasma pistol, fuel rod): resistance from mid pull */
+	AE_DS5_WEAPON_BURST,     /* AE's battle rifle (one burst a pull): a firm click */
+	AE_DS5_WEAPON_NEEDLER,   /* the tag's weapon type needler: a fast light buzz */
+	AE_DS5_WEAPON_PLASMA_HEAT, /* rounds make heat (plasma rifle): rises with heat, locked when overheated */
+	AE_DS5_WEAPON_CARRY,     /* no trigger with a projectile (ball, flag): free */
+	AE_DS5_WEAPON_FLAME,     /* fast, with heat, not the plasma rifle (flamethrower): a roar while it burns */
+	AE_DS5_WEAPON_KINDS
+};
+
+/* the kind from the weapon's tag numbers: whether it is AE's battle rifle, whether its weapon type is the needler, its
+first trigger's rate of fire (rounds a second), the longest charging time of its triggers (seconds, 0 none), its first
+trigger's heat a round, its zoom level count, whether no trigger has a projectile (a carried ball or flag), whether its
+weapon type is the plasma rifle (a fast weapon with heat is the plasma rifle's kind if so, else the flamethrower's) */
+enum ae_ds5_weapon_kind ae_ds5_weapon_kind(int burst_rifle, int needler, float rate_of_fire, float charging_time,
+	float heat_per_round, int zoom_levels, int no_projectile, int plasma_rifle_type);
+
+/* the weapon in hand now (the game side reads it each frame) */
+struct ae_ds5_weapon_state
+{
+	enum ae_ds5_weapon_kind kind;
+	float rate_of_fire;
+	float heat;   /* 0-1 */
+	int overheated;
+	float charge; /* 0-1 while charging or charged, else 0 */
+	int firing;   /* a round in the last few ticks */
+	int reloading;
+	int empty;    /* the magazine has no round loaded, or a battery weapon's battery is spent */
+	int readying; /* switching weapons: readying or putting away */
+	long ticks;   /* the game time, for the overheat's throb */
+};
+
+/* the events a trigger feels once (a kick, then the held shape again) with a rumble pulse */
+enum ae_ds5_event
+{
+	AE_DS5_EVENT_SHOT,
+	AE_DS5_EVENT_SHOT_CHARGED, /* a fully charged shot (the plasma pistol's blast) */
+	AE_DS5_EVENT_MAG_IN,       /* the reload's magazine (or shell) going in */
+	AE_DS5_EVENT_SETTLE,       /* a weapon readied */
+	AE_DS5_EVENT_CHAMBER,      /* the weapon's own chambering after a shot (the shotgun's pump) */
+	AE_DS5_EVENT_GRENADE_FRAG, /* (L2) a grenade leaving the hand */
+	AE_DS5_EVENT_GRENADE_PLASMA
+};
+struct ae_ds5_rumble
+{
+	int left, right; /* 0-255: the heavy (left) and light (right) motors */
+	int ms;
+};
+char const *ae_ds5_weapon_kind_name(enum ae_ds5_weapon_kind kind);
+
+/* the 11 bytes of a trigger effect; out-of-range numbers are clamped, a strength or amplitude of 0 is "off" */
+void ae_ds5_effect_off(unsigned char effect[AE_DS5_EFFECT_SIZE]);
+/* resistance from zone `position` (0-9) to the end, strength 1-8 */
+void ae_ds5_effect_feedback(unsigned char effect[AE_DS5_EFFECT_SIZE], int position, int strength);
+/* resistance between zone `start` (2-7) and `end` (start+1 to 8) that gives way: a click; strength 1-8 */
+void ae_ds5_effect_weapon(unsigned char effect[AE_DS5_EFFECT_SIZE], int start, int end, int strength);
+/* vibration from zone `position` (0-9) on, amplitude 1-8, frequency 1-255 (Hz) */
+void ae_ds5_effect_vibration(unsigned char effect[AE_DS5_EFFECT_SIZE], int position, int amplitude, int frequency);
+
+/* the weapon profiles (ae_ds5_rules.c's table, one a kind). R2 as the trigger rests / is pulled now, by the weapon's
+state, first rule that applies (the owner's, 0.3.0): no weapon or a carried ball/flag: off; readying or putting away:
+free (QUICK SETTLE); overheated: LOCKED + VENTING THROB; reloading: SLACK (SEAT BUMP); empty: the DRY CLICK; firing:
+the profile's firing shape; else its held shape; heat or charge ramps the strength where the profile says. Its words
+in text */
+void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_weapon_state const *state, int strength,
+	char *text, size_t text_size);
+/* an event's kick on its trigger (R2, or L2 for a grenade) and how long it lasts (ms; 0: no kick, e.g. an automatic's
+shot, which its firing shape does), and its rumble pulse: a human weapon's on the left motor, a Covenant one's on the
+right */
+int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble *rumble, enum ae_ds5_weapon_kind kind,
+	enum ae_ds5_event event, int strength);
+/* whether the kind is a Covenant (energy) weapon's */
+int ae_ds5_kind_covenant(enum ae_ds5_weapon_kind kind);
+/* the plasma pistol's overcharged release on the lightbar: green, fading over 0.3 s; 0 when ticks (since the
+release, -1 none) are past it */
+int ae_ds5_overcharge_flash(unsigned char rgb[3], long ticks);
+/* the profile's feel in a few words */
+char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind);
+/* L2: light while zoomed; a grenade wound up firmer; grenades in hand a light hold; none, the dry click. Returns a
+short text for the log */
+char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
+	int strength);
+
+/* the powerups on the player now (the game side reads them each frame) */
+struct ae_ds5_powerups
+{
+	float shield;          /* shield vitality: above 1 an overshield (up to 3) */
+	int shield_rising;     /* it rose in the last few ticks: an overshield charging */
+	float camo;            /* active camouflage, 0-1 */
+	long juggernaut_ticks; /* ticks since this player became AE's juggernaut (-1: not now) */
+	long ticks;            /* the game time, for the pulses */
+};
+
+/* the lightbar from the player's colour and the powerups (black armour shows a dim white, as black is no light):
+becoming the juggernaut flashes white and fades back (0.67 s); an overshield charging pulses at 2 Hz (35-100 %);
+an overshield held breathes slowly (0.5 Hz, 70-100 %); active camouflage dims it (to 15 % fully cloaked). Steps are
+coarse so the pad gets few reports. Its words in text */
+void ae_ds5_lightbar(unsigned char rgb[3], unsigned char const base[3], struct ae_ds5_powerups const *powerups,
+	char *text, size_t text_size);
+/* L2 while a powerup speaks: becoming the juggernaut a 0.4 s strong buzz, an overshield charging a buzz rising with
+it. Returns 0 (nothing: L2 is the zoom's) or 1, with its words in text */
+int ae_ds5_left_powerup(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_powerups const *powerups, int strength,
+	char *text, size_t text_size);
+
+/* LIGHTBAR's SHIELD: the local player's shield meter as the HUD draws it */
+struct ae_ds5_shield
+{
+	float vitality;          /* the shield: 0 empty, 1 full, above 1 an overshield's layers */
+	int dead;
+	long popped_ticks;       /* ticks since the shield broke (-1: not lately) */
+	int pop_flash;           /* COMBAT FEEDBACK ARENA EVOLVED: a short white flash on the pop */
+	long ticks;              /* the game time, for the low shield's blink */
+	/* the unit HUD interface's shield meter colours (0x..RRGGBB; 0: the tag has none) */
+	unsigned long min_color, max_color, flash_color, empty_color;
+};
+/* the lightbar for the shield: the meter's colour from its min to its max colour with the fill, brighter as it fills
+(never under 25 %); under a quarter (where the HUD's meter flashes) it blinks with the meter's flash colour at 4 Hz;
+empty, the meter's empty colour (the HUD's red if none); just broken, with COMBAT FEEDBACK ARENA EVOLVED, white for
+0.2 s; an overshield, the HUD's colour of its top layer (red, green, yellow, violet, as hud_unit.c draws them),
+brighter as that layer fills; dead, dark. No meter colours in the tag: the HUD's blue. Steps are coarse (16) so the
+pad gets few reports. Its words in text */
+void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size);
+
+/* TRIGGER STRENGTH (input.trigger_strength: light, normal, strong) as a percent of the table's strengths and
+amplitudes (60, 100, 140; anything else 100). Every effect's strength-like number is scaled, then kept 1-8 */
+int ae_ds5_strength_percent(char const *name);
+/* the player lights' byte for split-screen player 1-4 (0 for another number), and back: the player index (0-3) a
+byte shows, -1 for none */
+unsigned char ae_ds5_player_lights(int player_number);
+int ae_ds5_player_index_of_lights(unsigned char lights);
+
+/* CRC-32 (the zlib / IEEE one, reflected, polynomial 0xEDB88320), continued from `crc` (0 to start) */
+unsigned long ae_ds5_crc32(unsigned long crc, unsigned char const *data, size_t size);
+
+/* the whole output report for a hidraw write: the body framed for USB or Bluetooth (sequence 0-15); returns its
+size, or 0 when `size` is too small */
+size_t ae_ds5_output_report(unsigned char *report, size_t size, int bluetooth, int sequence,
+	unsigned char const body[AE_DS5_BODY_SIZE]);
+
+#endif

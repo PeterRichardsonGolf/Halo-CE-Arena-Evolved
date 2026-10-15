@@ -305,6 +305,31 @@ Steam installed). Each gamepad found has a line in `debug.txt`
 says which driver reads PlayStation pads. (From
 DamnationCE.)
 
+A PS5 DualSense (and DualSense Edge) gets **adaptive triggers**, its
+**lightbar** in the player's colour and its **player lights** showing the
+split-screen number (Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER
+STRENGTH, LIGHTBAR; all on by default, and no other pad is touched). R2 has
+a profile for each weapon (`port/linux/src/ae_ds5_rules.c`'s table: human
+weapons mechanical with a left-motor pulse at each shot, Covenant ones
+energy with a right-motor pulse) and the weapon's state first: free while
+drawn and a settle as it is ready, free while reloading with a bump as the
+magazine goes in, a dry click when empty, locked with a venting throb while
+overheated; the shotgun's pump at its recoil animation's key frame. In a
+vehicle the seat that fires the gun (the vehicle's gunner) feels it. L2 is
+the grenades (a hold, firmer wound up, a jolt at the throw, a dry click
+with none) and light while zoomed. The pulses go into the game's own rumble
+and follow the profile's VIBRATION. The
+lightbar pulses while an overshield charges, dims with active camouflage
+and flashes when you become the juggernaut. On Windows and macOS SDL's own
+driver sends the effects. On Linux the kernel's driver keeps reading the
+pad and the game writes the effects to the pad's `/dev/hidraw` node, which
+Steam's udev rules open to the player; without Steam, the download's
+`70-ae-dualsense.rules` does (once:
+`sudo cp 70-ae-dualsense.rules /etc/udev/rules.d/ && sudo udevadm control --reload`,
+then plug the pad in again). `debug.txt` says how each DualSense is driven,
+or why it is not (with the rule's line); `debug.ds5_log` adds every effect
+written.
+
 | Action | Keys and buttons (default) |
 | --- | --- |
 | move | W, A, S, D |
@@ -473,6 +498,21 @@ path replaces one of the game's, and another `.xml` file is added.
 the game uses the Xbox's menus and the log names the file, the line and the
 problem.
 
+## Bots
+
+Computer players (bots) can play a local multiplayer game with you:
+`bots.count` (1 to 15) of them join the lobby of a Slayer game played on
+this computer, which is Multiplayer > Split Screen in the Xbox's menus
+(`display.menus = "xbox"`; the PC version's menus have no game of this
+computer alone). They are players as you are: in the scores, the respawns
+and the game's rules, on the teams that `bots.teams` asks for, and they
+follow the teams' changes in the lobby. They look for enemies, aim, fire,
+throw grenades and pick up better weapons, as well as `bots.skill` lets
+them, and walk the paths that the campaign's AI finds on the maps' walkable
+surfaces (`game/bots.c`). They are never in system link or internet games,
+nor in other gametypes, and nothing that the machines send each other
+changes.
+
 ## Settings
 
 The settings are in `config.toml` next to the executable
@@ -549,7 +589,7 @@ the setting for one start of the game. It has priority over the file.
 | `display.scoreboard_background` | `true` | `HALO_SCOREBOARD_BACKGROUND` | `true`: the multiplayer scoreboard (hold BACK, or tab) has a panel behind its text, for clearer text. |
 | `display.show_quit_players` | `true` | `HALO_SHOW_QUIT_PLAYERS` | `true`: players who quit stay on the multiplayer scoreboard (hold BACK, or tab) and the score in the corner, as in the original game. `false`: they are left off, and the players still in the game are ranked among themselves, as OpenCE does. Only what this machine draws changes. |
 | `display.scoreboard_background_color` | `"16, 16, 16, 150"` | `HALO_SCOREBOARD_BACKGROUND_COLOR` | The colour of the scoreboard's panel: `"red, green, blue, alpha"`, each from `0` to `255`. Alpha `0` is see-through, `255` is solid. |
-| `display.hud_style` | `"ae"` | `HALO_HUD_STYLE` | HUD STYLE, the first row of Settings > HUD. `"ae"`: the score strip under the view (scores, the clock, the gametype's own state) and Arena Evolved's look for the HUD elements it draws. `"classic"`: the HUD exactly as before (the clock in the corner, no score strip). Any other value reads as `"ae"`, the default for new and upgraded installs. This machine's display only: nothing goes over the network. |
+| `display.hud_style` | `"ae"` | `HALO_HUD_STYLE` | HUD STYLE, the first row of Settings > HUD. `"ae"`: the score strip under the view (scores, the clock, the gametype's own state), the AE panels in place of CE's ammo, grenade, shield and health panels and motion sensor, and Arena Evolved's look for the HUD elements it draws. `"classic"`: the HUD exactly as before (the clock in the corner, no score strip). Any other value reads as `"ae"`, the default for new and upgraded installs. This machine's display only: nothing goes over the network. |
 | `display.match_clock` | `"down"` | `HALO_MATCH_CLOCK` | The match clock: in a multiplayer game, M:SS in the bottom right corner of each view, lined up with the motion sensor (as far from the right edge as the sensor is from the left, level with its range). The scoreboard (hold BACK, or tab) shows the time played and, with a time limit, the time left, whichever way the corner counts. `"down"`: the time left of the gametype's time limit; with no time limit, the time played. `"up"`: the time played. `"off"`: no clock. It shows game time, the same on each machine, and hides during PRE-GAME COUNTDOWN and after the game. On Halo 1: NHE's maps, their own clock (their scripts' minute, ten-second and second titles) is never drawn: this clock takes its place, laid out as on any map, and `"off"` shows no clock. Their Cortana callouts and beeps stay, and so does their 3-2-1 countdown at the start. Settings > HUD sets it. |
 | `display.shotgun_power` | `true` | `HALO_SHOTGUN_POWER` | SHOTGUN AS POWER: the shotgun is a power item, with its row in the TIMERS power column (SHOTGUN, R/B SHOTGUN), TRAINING's waypoints and the callouts. `false`: a weapon as any other, none of those. Only this machine's timers (nothing is sent); a change applies from the next game. No Settings row: set it in `config.toml`. |
 | `display.power_list` | `"clock"` | `HALO_POWER_LIST` | Where the gametype's TIMERS and TRAINING list the power items' next spawns. `"clock"`: a column stacked over the match clock in the bottom right corner (the soonest at the foot, a cap over the clock's digits; NAME and TIME aligned, the times flush right on the clock's right edge in tabular figures; at most four lines, the three soonest and `+N`; hidden while the view's scoreboard shows). `"top_left"`: with one view, the earlier single line in the top left corner, as before: it moves down under the performance overlay's line (`display.performance`, at the top left) where the two would meet, and under the ammo and grenades there, moving the HUD's messages down under it. Split-screen views always have the column. `"top_left"` is config-only for now (`config.toml` or `HALO_POWER_LIST`): Settings has no row for it. |
@@ -588,6 +628,9 @@ the setting for one start of the game. It has priority over the file.
 | `input.mouse_zoom_scale` | `1.0` | `HALO_MOUSE_ZOOM_SCALE` | The MCC style's zoomed sensitivity scale, `0.1` to `2`: multiplies the mouse while a weapon is zoomed, on top of the weapon's own magnification. Not read in the classic style. |
 | `input.mouse_vehicle_scale` | `1.0` | `HALO_MOUSE_VEHICLE_SCALE` | The MCC style's vehicle sensitivity scale, `0.1` to `2`: multiplies the mouse while seated in a vehicle (any seat: driver, gunner or passenger). Not read in the classic style. |
 | `input.zoom_mode` | `"toggle"` | `HALO_ZOOM_MODE` | How the zoom action (a mouse button, a key or a controller button) works. `"toggle"`: each press steps the zoom level in, to the next level and out, as Halo does. `"hold"`: zoomed to the first level while it is held (no second level). `"both"`: a tap steps the level as toggle does; a hold zooms to the first level (or keeps the level it was zoomed to) and letting go zooms out. Anything that unzooms the weapon (a switch, a reload, a hit) ends the press. The ZOOM row of Settings > Game Options has it. |
+| `input.adaptive_triggers` | `true` | `HALO_ADAPTIVE_TRIGGERS` | A PS5 DualSense's adaptive triggers: R2 a feel for each weapon and a kick at each shot (free while reloading, switching or empty), L2 light while zoomed. No other pad is touched. On Linux it needs write access to the pad's hidraw node (Steam's udev rules, or the download's `70-ae-dualsense.rules`). ADAPTIVE TRIGGERS on Settings > Gamepads sets it. |
+| `input.trigger_strength` | `"normal"` | `HALO_TRIGGER_STRENGTH` | How strong a DualSense's trigger effects are: `"light"` (60%), `"normal"`, `"strong"` (140%). TRIGGER STRENGTH on Settings > Gamepads. |
+| `input.lightbar` | `"player_color"` | `HALO_LIGHTBAR` | A PS5 DualSense's lightbar and player lights: `"player_color"`, the lightbar in your colour (your team's in a team game; black armour shows a dim white) with the powerups' glows; `"shield"`, the lightbar your shield as the HUD's shield meter shows it (its colours from the HUD's own tag, dimmer as it drains, blinking when low, the empty colour when down, a white flash on the pop with COMBAT FEEDBACK ARENA EVOLVED, the overshield's layer colours, dark while dead); either way the player lights show your split-screen number; `"off"`, left alone. LIGHTBAR on Settings > Gamepads. |
 | `input.zoom_reset` | `"first"` | `HALO_ZOOM_RESET` | Where a hold of the zoom action (`"hold"`, and the hold of `"both"`) starts: `"first"`, the weapon's first zoom level; `"last"`, the last level used on that weapon in hand, for each local player. While zoom is held the mouse wheel steps the level up and down (the weapon is not switched) and the flashlight button steps to the next level, then back to the first. In `"hold"` a tap and then a hold within the hold time starts at the second level. ZOOM RESET on Settings > Game Options sets it. |
 | `input.zoom_hold_time` | `0.25` | `HALO_ZOOM_HOLD_TIME` | The most seconds a press lasts to be a tap in the `"both"` mode, 0.1 to 1: held longer, it is a hold. Not in the menus. |
 | `input.invert_mouse` | `false` | `HALO_MOUSE_INVERT=1` sets `true` | `true`: the vertical mouse aim is inverted. |
@@ -602,6 +645,9 @@ the setting for one start of the game. It has priority over the file.
 | `game.callout_voice` | `"cori"` | `HALO_CALLOUT_VOICE` | The callouts' voice: a folder of `voices/` in the data root (refer to "Files and folders"), or of the mod's `mods/<mod>/voices/`, read as a map starts. A mod's own `mods/<mod>/voices/<folder>/` clips come first (an unreadable one gives way to the `voices/` copy). With no such folder, the first folder of `voices/` by name speaks and the setting stays as it is. 16-bit PCM WAVs, mono or stereo, at any rate; a missing or unusable clip is skipped and logged with why. Every build ships the beta voice `cori` (Piper's en_GB-cori-high, public domain, CC0 clips; `port/assets/voices/cori`), copied beside the game as `voices/` (Android's APK does not carry it yet); a player's own import of Halo 1: NHE's clips (`nhe`) is optional. Settings > Game Options sets it (VOICE: the folders of `voices/` and of the mod's `voices/`). |
 | `game.language` | `""` | `HALO_LANGUAGE` | The language of the menus: `ja`, `de`, `fr`, `es` or `it`. Empty: English. |
 | `game.enhanced_animations` | `true` | `HALO_ENHANCED_ANIMATIONS` | `true`: the player bipeds' grenade throws keep their legs moving, blended by speed and direction (crouched throws stay crouched, throws in the air use the jump's legs), Warthog and Scorpion riders stay seated to throw and let go of the grips to throw and reload, and a player turns with the aim while throwing, as while meleeing. `false`: the original animations, which freeze the legs during a throw and stand a rider up. Only in config.toml, not in the menus. |
+| `bots.count` | `0` | `HALO_BOTS` | Computer players (bots) in a local (split screen) Slayer game: `0` to `15` join its lobby with the players, as far as the game has room. Not in system link or internet games. `0`: none, as in the stock game. Refer to "Bots". |
+| `bots.skill` | `"normal"` | `HALO_BOT_SKILL` | How well the bots play: `"easy"`, `"normal"`, `"heroic"` or `"legendary"`: how soon they react, how far and how wide they see, how large their aim error is and how fast it settles, how fast they turn. |
+| `bots.teams` | `"even"` | `HALO_BOT_TEAMS` | In a team game: `"even"` puts the bots on both teams, evening them with the players; `"against"` puts them all on the team the players are not on. |
 | `paths.data` | `""` | `HALO_DATA_ROOT` | The data root. Refer to "Start the game". |
 | `paths.saves` | `""` | `HALO_SAVE_ROOT` | The save root. Refer to "Files and folders". |
 | `network.address` | `""` | `HALO_NET_ADDRESS` | The IPv4 address of this machine for system link. Refer to "Play on one computer". |
@@ -652,6 +698,7 @@ the setting for one start of the game. It has priority over the file.
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
+| `debug.ds5_log` | `false` | `HALO_DEBUG_DS5_LOG` | A DualSense's effects in `debug.txt`: the bytes written to the pad, what each player's triggers and lightbar are asked for as it changes, the game's rumble, and each weapon tag's kind once a map. |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
 | `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds. `0`: never. |
 | `debug.screenshot_directory`, `debug.screenshot_every`, `debug.screenshot_format` | `""`, `0`, `"bmp"` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY`, `HALO_SCREENSHOT_FORMAT` | The game writes each Nth frame to this folder as a BMP file, or a PNG file with `"png"`. |
@@ -661,6 +708,8 @@ the setting for one start of the game. It has priority over the file.
 | `debug.menu_open` | `""` | `HALO_MENU_OPEN` | Start on this screen of the menus (`main_menu/settings_select/...`, as `port/assets/menus` names it), a player profile being edited, to look at it. |
 | `debug.gpu_skip_vertex_shaders`, `debug.gpu_debug_expression`, `debug.gpu_debug_flat`, `debug.gpu_debug_texture0` | off | `HALO_GPU_SKIP_VS`, `HALO_GPU_DEBUG_EXPR`, `HALO_GPU_DEBUG_FLAT`, `HALO_GPU_DEBUG_T0` | Tools to find problems in the graphics: skip the draws of a vertex shader, or replace the output of all pixel shaders with a GLSL expression (for example `t0.rgb`). |
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_time_limit`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_TIME_LIMIT`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
+| `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
+| `debug.bot_trace` | `0` | `HALO_BOT_TRACE` | Every this many seconds, each bot's state is written to the log: where it is and where it goes, its path, its target and its weapon. `0`: never. |
 | `debug.touch_targets` | `false` | `HALO_TOUCH_TARGETS` | Outlines the tap targets of the menus (item green, value blue, list slot yellow, legend button red, the band beside the slots of a list orange, keys of the on-screen keyboard white), marks where the last finger went down and the last tap landed for 3 seconds, and logs each tap with the target that it hit (for a value, also where it splits into previous and next): to judge the accuracy of touch. |
 | `debug.solo_game` | `false` | `HALO_SOLO_GAME` | A system link or split screen game can start with one player, alone on this machine: to test multiplayer maps without a second machine. |
 | `debug.network_latency`, `debug.network_loss`, `debug.network_corrupt`, `debug.network_corrupt_stream`, `debug.network_corrupt_after` | `0` | `HALO_NETWORK_LATENCY`, `HALO_NETWORK_LOSS`, `HALO_NETWORK_CORRUPT`, `HALO_NETWORK_CORRUPT_STREAM`, `HALO_NETWORK_CORRUPT_AFTER` | The game holds all the data that it receives for this number of milliseconds, ignores this percentage of the datagrams, and damages this percentage of the datagrams it receives, and this percentage of its reads of streams, at random (bytes changed, cut short, stretched or replaced), from this many seconds after the start. Use the first two to test the netcode as on the internet, and the others to test that nothing another machine sends can crash the game (a damaged stream is closed, so a little goes a long way; a host's messages to its own client are damaged too, so start damaging once the game has started). |
@@ -1592,6 +1641,7 @@ Other changes:
 | `cache/cache_files.c`, `networking/network_client_manager.c`, `networking/network_server_manager.c`, `networking/network_server_message_handler.c`, `main/main.c`, `interface/interface.c` | Map sharing (`game/map_share.c`): a client that does not have the game's Custom Edition map asks the host for it instead of leaving, is not given time to precache it until it has it, and adds its players to a game in progress only then; the host names the game's map for its hash, takes the requests from any machine in the game, lobby too, and does not drop a machine that downloads; the transfers run each frame, and their progress is drawn over the screen. |
 | `cutscene/cinematics.c` | A scenario's titles (some Custom Edition maps show their name for the whole game) are not drawn over a menu, as the letterbox is not: the screen's overlays are drawn after the players' menus. |
 | `tag_files/tag_groups.h` | `TAG_BLOCK_GET_ELEMENT` returns an element in the block without a call, and calls `tag_block_get_element_with_size` for anything else. |
+| `game/players.c`, `networking/network_server_manager.c` | Bots (`game/bots.c`, `bots.count`): the lobby of a local Slayer game takes the bot players, each the one player of a machine of its own that no real machine is, and every tick their actions come from `game/bots.c` instead of their empty queues. Nothing changes in a system link or internet game. |
 | `input/input_xbox.c`, `physics/collision_usage.c` | The clock is read only for a button held, and for collision tests only when their times are shown: a read of the clock is slow in a browser. |
 
 The x86 inline assembly of the game is replaced by C. Thus the compiler

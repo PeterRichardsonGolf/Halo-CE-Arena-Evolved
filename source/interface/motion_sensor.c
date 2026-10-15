@@ -108,6 +108,7 @@ symbols in this file:
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "units/vehicles.h"
+#include "ae_sensor.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -729,6 +730,7 @@ static void render_motion_sensor(
 		}
 	}
 
+	if (!ae_sensor_takes_blips()) /* AE hook */
 	rasterizer_hud_motion_sensor_blip_end(&center_point, sweep_theta);
 
 render_motion_sensor_done:
@@ -1003,6 +1005,7 @@ static void blip_begin(
 	game_engine_motion_sensor_viewer(local_player_index);
 	scale[0] = in_multiplayer ? 0.75f : 1.0f;
 	center_point = *reference;
+	if (!ae_sensor_takes_blips()) /* AE hook */
 	rasterizer_hud_motion_sensor_blip_begin();
 
 	return;
@@ -1115,6 +1118,7 @@ static void render_blip(
 		}
 
 		blip_draw_size += pulse_scale * radius;
+		if (ae_sensor_take_blip(&blip_position, fade, blip_draw_size, blip_color, (boolean)(blip_type == _blip_type_custom), hud_globals->defaults.motion_sensor_scale)) return; /* AE hook */
 		rasterizer_hud_motion_sensor_blip_draw(
 			&blip_position,
 			fade,

@@ -398,6 +398,10 @@ source/game/game_engine.c	#include "ae_hud_style_draw.h" /* AE hook */
 source/game/game_engine.c	if (ae_hud_style_countdown(ticks_left, view_width, view_height)) /* AE hook */\nreturn;
 source/game/game_engine.c	if (ae_hud_style_voice_speakers()) /* AE hook */\nreturn;
 source/main/main.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/main/main.c	#include "ae_steady_camera.h" /* AE hook */
+source/main/main.c	ae_steady_camera_note(window->local_player_index, &observer->position, &observer->forward, &observer->up); /* AE hook */
+source/interface/hud_nav_points.c	#include "ae_steady_camera.h" /* AE hook */
+source/interface/hud_nav_points.c	ae_steady_world_to_view(&render.frustum.world_to_view), /* AE hook */
 source/main/main.c	if (ae_hud_style_overlay(corner, color, text, &frame_statistics_drawn, &frame_statistics_extent)) /* AE hook */\nreturn;
 source/main/main.c	if (ae_hud_style_capture_notice(frame_statistics_drawn, &frame_statistics_extent, frame_statistics_corner() == _text_justification_right)) /* AE hook */\nreturn;
 source/interface/hud.c	#include "ae_hud_style_draw.h" /* AE hook */
@@ -419,11 +423,81 @@ source/interface/ui_widget.c	#include "ae_buttons_tags.h" /* AE hook */
 source/interface/ui_widget.c	bitmap_group_index = ae_buttons_ce_menu_icons(bitmap_group_index); /* AE hook */
 source/interface/ui_widget.c	scale *= ae_buttons_ce_menu_icon_scale(bitmap_group_index); /* AE hook */
 # The carnage report's B asks first (0.2.6, owner 10-15: B dropped the player straight to the main menu, the next B
-# into "exit Halo?"): "LEAVE THE GAME?" over the report, A leaves as B did, B stays (ae_postgame.c; PC and Xbox menus
-# alike: one code path)
+# into "exit Halo?"): "LEAVE THE GAME?" over the report, A leaves as B did, B stays; only player 1's buttons count
+# there (owner: "p1/host only"), so AE takes the report's buttons whole (ae_postgame.c; PC and Xbox menus alike: one
+# code path)
 source/game/game_engine.c	#include "ae_postgame.h" /* AE hook */
-source/game/game_engine.c	if (ae_postgame_buttons(test_any_gamepad_button(0) || test_any_gamepad_button(12), test_any_gamepad_button(1) || test_any_gamepad_button(13))) /* AE hook */\nbreak;
+source/game/game_engine.c	if (ae_postgame_buttons()) /* AE hook */\nbreak;
 source/game/game_engine.c	if (ae_postgame_confirm_draw(&bounds)) /* AE hook */\nreturn;
+# AE's saved-game limit (0.2.6, seed revision 11; ae_saved_limits.h): the memory unit lists 160 saved games, not
+# 100 (86 seeds + 28 built-ins), and every gametype list holds as many. tools/test_ae_saved_limits.py.
+source/saved games/saved_game_files.c	#include "ae_saved_limits.h" /* AE hook */
+source/saved games/saved_game_files.c	MAXIMUM_ENUMERATED_SAVED_GAME_FILES_ANY_TYPE_PER_MEMORY_UNIT = AE_SAVED_GAMES_MAXIMUM /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	widget->parameters.list.list_items = ui_widget_realloc(widget->parameters.list.list_items, (word)(AE_SAVED_GAMES_MAXIMUM * sizeof(long)), /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	profile_count = AE_SAVED_GAMES_MAXIMUM; /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_saved_limits.h" /* AE hook */
+port/linux/game/menu_functions.c	#define MAXIMUM_GAMETYPES AE_SAVED_GAMES_MAXIMUM /* AE hook */
+port/linux/game/network_test.c	#include "ae_saved_limits.h" /* AE hook */
+port/linux/game/network_test.c	long indices[AE_SAVED_GAMES_MAXIMUM]; /* AE hook */
+# DualSense (0.3.0): adaptive triggers, lightbar and player lights (port/linux/src/ae_ds5.c, ae_ds5_rules.c,
+# port/linux/game/ae_ds5_game.c); Settings > Gamepads' ADAPTIVE TRIGGERS, TRIGGER STRENGTH, LIGHTBAR; debug.ds5_log
+port/linux/src/port_config.c	{ "input.adaptive_triggers", _config_boolean, "true", "HALO_ADAPTIVE_TRIGGERS", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "input.trigger_strength", _config_string, "\"normal\"", "HALO_TRIGGER_STRENGTH", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "input.lightbar", _config_string, "\"player_color\"", "HALO_LIGHTBAR", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "debug.ds5_log", _config_boolean, "false", "HALO_DEBUG_DS5_LOG", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/sdl_platform.c	#include "ae_ds5.h" /* AE hook */
+port/linux/src/sdl_platform.c	ae_ds5_removed(gamepad); /* AE hook */
+port/linux/src/sdl_platform.c	ae_ds5_frame(); /* AE hook */
+port/linux/src/xinput_sdl.c	#include "ae_ds5.h" /* AE hook */
+port/linux/src/xinput_sdl.c	ae_ds5_port(port, port_gamepad(gamepads, count, port), &feedback->Rumble.wLeftMotorSpeed, &feedback->Rumble.wRightMotorSpeed); /* AE hook */
+source/game/player_control.c	#include "ae_ds5_game.h" /* AE hook */
+source/game/player_control.c	ae_ds5_player(local_player_index, current_weapon_index, player->zoom_level); /* AE hook */
+# Bots (OpenCE PR #367, port/linux/game/bots.c; ae_bots.c): the pack's battle rifle in a bot's hands (its value,
+# distance and one pull a burst), the lobby's line for a gametype without bots, Delta Stats leaving bots' games alone
+port/linux/game/bots.c	#include "ae_bots.h" /* AE hook */
+port/linux/game/bots.c	ae_bots_weapon_kind(definition_index, &kind->value, &kind->tap_ticks, &kind->range); /* AE hook */
+source/networking/network_server_manager.c	#include "ae_bots.h" /* AE hook */
+source/networking/network_server_manager.c	ae_bots_lobby_check(network_game_is_splitscreen_local() && server->state == _network_game_server_state_pregame && !server->sent_start_game_message, server->game.variant.game_engine_index, server->game.variant.human_readable_game_description); /* AE hook */
+port/linux/game/game_events.c	#include "ae_bots.h" /* AE hook */
+port/linux/game/game_events.c	if (ae_bots_kept_from_delta()) /* AE hook */\nreturn;
+port/linux/src/port_config.c	{ "debug.ae_panel_primitives", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_PRIMITIVES", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.ae_panel_log", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_LOG", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud_unit.c	#include "ae_hud_style.h" /* AE hook */
+source/interface/hud_unit.c	if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->shield_meter.meter, &hud_definition->shield_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
+source/interface/hud_unit.c	if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->health_meter.meter, &hud_definition->health_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
+source/interface/hud_item_timers.c	boolean hud_item_timers_ae_meters(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_meters[v].valid) return FALSE; *b = hud_item_timers_meters[v].bounds; return TRUE; } /* AE hook */
+port/linux/src/port_config.c	{ "debug.ae_panel_powerups", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_POWERUPS", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud_draw.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_draw.c	if (ae_panels_hiding_ce()) return; /* AE hook */
+source/interface/hud_draw.c	if (ae_panels_hiding_ce()) return; /* AE hook */
+source/interface/hud_weapon.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(TRUE); /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(FALSE); /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(TRUE); /* AE hook */
+source/interface/hud_weapon.c	ae_panels_hide_ce(FALSE); /* AE hook */
+source/interface/hud_unit.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_unit.c	ae_panels_hide_ce(unit_count == 0 && hud_unit != NULL && unit_hud_indices[unit_count] != NONE); /* AE hook */
+source/interface/hud_unit.c	ae_panels_hide_ce(FALSE); /* AE hook */
+source/interface/hud.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud.c	ae_panels_draw(render.local_player_index); /* AE hook */
+port/linux/src/port_config.c	{ "debug.ae_panel_state", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_STATE", _environment_value, /* AE hook */\n_platform_all,
+source/interface/motion_sensor.c	#include "ae_sensor.h" /* AE hook */
+source/interface/motion_sensor.c	if (ae_sensor_take_blip(&blip_position, fade, blip_draw_size, blip_color, (boolean)(blip_type == _blip_type_custom), hud_globals->defaults.motion_sensor_scale)) return; /* AE hook */
+source/interface/motion_sensor.c	if (!ae_sensor_takes_blips()) /* AE hook */\nrasterizer_hud_motion_sensor_blip_end(&center_point, sweep_theta);
+source/interface/motion_sensor.c	if (!ae_sensor_takes_blips()) /* AE hook */\nrasterizer_hud_motion_sensor_blip_begin();
+source/interface/hud_unit.c	#include "ae_sensor.h" /* AE hook */
+source/interface/hud_unit.c	ae_panels_hide_ce(ae_sensor_takes_blips()); /* AE hook */
+source/interface/hud_unit.c	ae_panels_hide_ce(FALSE); /* AE hook */
+source/interface/hud_unit.c	ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
+port/linux/src/port_config.c	{ "debug.ae_sensor_with_ce", _config_boolean, "false", "HALO_DEBUG_AE_SENSOR_WITH_CE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.ae_panel_seat", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_SEAT", _environment_value, /* AE hook */\n_platform_all,
+source/interface/hud_item_timers.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_item_timers.c	hud_waypoint_block_fade *= ae_panels_label_alpha(render.local_player_index, &block->bounds); /* AE hook */
+source/interface/hud_messaging.c	#include "ae_panels.h" /* AE hook */
+source/interface/hud_messaging.c	line_top = ae_panels_message_top(local_player_index, line_top); /* AE hook */
+source/interface/hud_messaging.c	screen_point.x = ae_panels_message_left(local_player_index, screen_point.x); /* AE hook */
+source/interface/hud_messaging.c	ae_panels_message_scale_begin(local_player_index, screen_point.x, line_top); /* AE hook */
+source/interface/hud_messaging.c	ae_panels_message_scale_end(); /* AE hook */
 # a map's own picture beside its file (maps\previews\<map>.png: the map pack's pictures) on the map select screen,
 # the lobby and the map lists, past ui.map's frames (ae_map_pictures.c); the menus' art reads its PNG by an art name
 port/linux/game/ui_map_list.c	#include "ae_map_pictures.h" /* AE hook */

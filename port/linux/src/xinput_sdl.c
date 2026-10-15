@@ -44,6 +44,7 @@ drive the controller.
 #include "touch_input.h"
 #include "halo_keyboard.h"
 #include "ae_platform.h" /* AE hook */
+#include "ae_ds5.h" /* AE hook */
 
 #include <SDL3/SDL.h>
 #include <math.h>
@@ -1357,6 +1358,7 @@ DWORD WINAPI XInputSetState(HANDLE device, PXINPUT_FEEDBACK feedback)
 		touch_input_rumble(feedback->Rumble.wLeftMotorSpeed, feedback->Rumble.wRightMotorSpeed);
 #endif
 	count = sdl_gamepads(gamepads);
+	ae_ds5_port(port, port_gamepad(gamepads, count, port), &feedback->Rumble.wLeftMotorSpeed, &feedback->Rumble.wRightMotorSpeed); /* AE hook */
 	if (port_gamepad(gamepads, count, port))
 	{
 		/* the game refreshes the motors every frame; rumble a little longer

@@ -41,6 +41,9 @@ MCC_SCALES = [(f"{step / 10:.1f}", f"{step / 10:.1f}") for step in range(1, 21)]
 # (the zoom action's modes: ae_zoom.c)
 ZOOM_MODES = [("TOGGLE", "toggle"), ("HOLD", "hold"), ("BOTH", "both")]
 ZOOM_RESETS = [("FIRST LEVEL", "first"), ("LAST USED", "last")]
+# (a DualSense's trigger strength and lightbar: port/linux/src/ae_ds5_rules.c ae_ds5_strength_percent, ae_ds5.c)
+TRIGGER_STRENGTHS = [("LIGHT", "light"), ("NORMAL", "normal"), ("STRONG", "strong")]
+LIGHTBARS = [("OFF", "off"), ("PLAYER COLOR", "player_color"), ("SHIELD", "shield")]
 # (the item waypoints' labels: hud_item_timers.c, ae_waypoint_icons.c)
 WAYPOINT_STYLES = [("TEXT", "text"), ("ICONS", "icons"), ("BOTH", "both")]
 WAYPOINT_SIZES = [(f"{n}%", str(n)) for n in range(50, 101, 5)]
@@ -344,7 +347,8 @@ SCREENS = {
     "gamepad_setup": {
         "screen": "gamepad_setup_screen",
         "header": ("header_profile_controller_setting", f"{PE}/controller_edit/header_profile_controller_setting"),
-        "spacing": 30,
+        # (22, not 30: twelve rows with the DualSense's three, the help line where it was)
+        "spacing": 22,
         "rows": [
             ("LOOK SENSITIVITY:", "profile.look_sensitivity", [(str(step), str(step)) for step in range(1, 11)],
              "How fast the right stick turns the view.", None),
@@ -366,6 +370,17 @@ SCREENS = {
              "Which stick moves and which looks.", None),
             ("VIBRATION:", "profile.vibration", ON_OFF, "Rumble the controller.", None),
             ("IN-GAME HELP:", "profile.ingame_help", ON_OFF, "Show the game's hints about its controls.", None),
+            # (AE 0.3.0: a PS5 DualSense's, port/linux/src/ae_ds5.c; this machine's settings, every profile's)
+            ("ADAPTIVE TRIGGERS:", "input.adaptive_triggers", ON_OFF,
+             "A DualSense's triggers: a feel for each weapon\nand a kick at each shot. Other pads: nothing.",
+             "desktop"),
+            ("TRIGGER STRENGTH:", "input.trigger_strength", TRIGGER_STRENGTHS,
+             "How strong a DualSense's trigger effects are.", "desktop"),
+            ("LIGHTBAR:", "input.lightbar", LIGHTBARS,
+             ["A DualSense's lightbar and player lights are\nleft alone.",
+              "A DualSense's lightbar in your color, with the\npowerups' glows; its lights your player number.",
+              "A DualSense's lightbar shows your shield as the\nHUD's meter does; its lights your player number."],
+             "desktop"),
         ],
     },
 }
@@ -407,6 +422,32 @@ SCREENS["video_settings/fov_viewmodels"] = {
          "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
         ("SHIELD COLOR:", "display.shield_color", [("DEFAULT", "default")] + [(c.upper(), c) for c in SHIELD_COLORS],
          "Your shield's flare in an armor color, whatever\nyour armor. Only you see it. Default: its own.", None),
+    ],
+}
+
+# (AE) Game Options' BOTS (OpenCE PR #367's bots.count, bots.skill and bots.teams: port/linux/game/bots.c): a
+# screen of its own, a category after the rows (as Video Setup's); Game Options' rows 24 px apart for its place
+BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
+BOT_SKILLS = [("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
+BOT_TEAMS = [("EVEN", "even"), ("AGAINST YOU", "against")]
+_game_options = SCREENS["mods_setup"]
+_game_options["spacing"] = 24
+_game_options["categories"] = [
+    ("BOTS:", "mods_setup/bots",
+     "Computer players in split screen Slayer games\n(MENUS > XBOX, then Multiplayer > Split Screen)."),
+]
+SCREENS["mods_setup/bots"] = {
+    "screen": "bots_settings_screen", "header": ("header_bots", None), "title": "BOTS", "spacing": 30,
+    "rows": [
+        ("BOTS:", "bots.count", BOT_COUNTS,
+         "How many bots join a split screen Slayer game's\nlobby (never a system link or internet game's).",
+         None),
+        ("BOT SKILL:", "bots.skill", BOT_SKILLS,
+         "How soon the bots react, how well they aim and\nhow far they see.", None),
+        # (a help for each value)
+        ("BOT TEAMS:", "bots.teams", BOT_TEAMS,
+         ["In team games, the bots on both teams, evening\nthem with the players.",
+          "In team games, every bot on the team the\nplayers are not on."], None),
     ],
 }
 

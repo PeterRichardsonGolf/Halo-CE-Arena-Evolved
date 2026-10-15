@@ -99,8 +99,8 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 5, 25, 1 };
-	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] = { "", "AE", "AE COMP", "NHE", "TRAINING" };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 25, 5, 25, 1 };
+	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] = { "", "AE", "AE BR", "AE COMP", "NHE", "TRAINING" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
 	short index;
 	short other;
@@ -109,8 +109,8 @@ int main(void)
 	wchar_t display[40];
 
 	/* the table */
-	if (arena_gametype_catalog_count() != 61)
-		fail("catalog count is not 61", "");
+	if (arena_gametype_catalog_count() != 86)
+		fail("catalog count is not 86", "");
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -236,6 +236,22 @@ int main(void)
 		fail("display name cut to the buffer", "CTF 3C 7S R");
 	if (arena_gametype_info(NULL, &info))
 		fail("NULL name", "");
+
+	/* the AE BR set (revision 11): on AE's rules, between AE and AE COMP, each "AE BR ..." and shown "... AE BR ..." */
+	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
+	{
+		struct arena_gametype_name const *entry = &arena_gametype_names[index];
+
+		wide(entry->stored_name, name);
+		if (arena_gametype_has_ae_rules(name) != (entry->set != _arena_gametype_set_nhe))
+			fail("AE's rules: every set but NHE's", entry->stored_name);
+		if ((entry->set == _arena_gametype_set_ae_br) != !strncmp(entry->stored_name, "AE BR ", 6))
+			fail("AE BR set and stored name", entry->stored_name);
+		if (entry->set == _arena_gametype_set_ae_br && !strstr(entry->display_name, " AE BR "))
+			fail("AE BR display name", entry->display_name);
+	}
+	if (!(_arena_gametype_set_ae < _arena_gametype_set_ae_br && _arena_gametype_set_ae_br < _arena_gametype_set_ae_comp))
+		fail("AE BR between AE and AE COMP", "");
 
 	if (failures)
 	{

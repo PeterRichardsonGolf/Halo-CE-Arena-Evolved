@@ -79,6 +79,7 @@ symbols in this file:
 
 #include <math.h>
 #include <string.h>
+#include "ae_panels.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -2066,6 +2067,7 @@ void hud_render_weapon_interface(
 				weapon_index,
 				hud_index,
 				&weapon_state);
+			ae_panels_hide_ce(TRUE); /* AE hook */
 			render_weapon_hud(
 				hud_index,
 				player->local_player_index,
@@ -2074,6 +2076,7 @@ void hud_render_weapon_interface(
 				NULL,
 				NULL,
 				NULL);
+			ae_panels_hide_ce(FALSE); /* AE hook */
 			play_weapon_hud_sounds(
 				player->local_player_index,
 				hud_index,
@@ -2091,9 +2094,11 @@ void hud_render_weapon_interface(
 			&weapon_state);
 	}
 
+	ae_panels_hide_ce(TRUE); /* AE hook */
 	render_grenade_hud(
 		player->local_player_index,
 		player->unit_index);
+	ae_panels_hide_ce(FALSE); /* AE hook */
 	if (player->local_player_index != NONE)
 	{
 		get_hud_state(player->local_player_index)->last_weapon_index = weapon_index;

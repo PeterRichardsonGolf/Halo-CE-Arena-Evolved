@@ -87,6 +87,9 @@ symbols in this file:
 #include "tag_files/tag_groups.h"
 #include "units/unit_definitions.h"
 #include "units/units.h"
+#include "ae_hud_style.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
+#include "ae_sensor.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -929,6 +932,7 @@ void hud_render_unit_interface(
 
 			unit_count--;
 			hud_unit = unit_try_and_get(unit_indices[unit_count]);
+			ae_panels_hide_ce(unit_count == 0 && hud_unit != NULL && unit_hud_indices[unit_count] != NONE); /* AE hook */
 
 			if (hud_unit && unit_hud_indices[unit_count] != NONE)
 			{
@@ -1084,6 +1088,7 @@ void hud_render_unit_interface(
 							&hud_definition->shield_meter.meter, &hud_definition->shield_meter.background,
 							draw_flags, &meters_bounds, &meters_found);
 					}
+					if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->shield_meter.meter, &hud_definition->shield_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
 				}
 
 				if (!TEST_FLAG(
@@ -1179,6 +1184,7 @@ void hud_render_unit_interface(
 							&hud_definition->health_meter.meter, &hud_definition->health_meter.background,
 							draw_flags, &meters_bounds, &meters_found);
 					}
+					if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->health_meter.meter, &hud_definition->health_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
 
 					hud_state->last_body_vitality = hud_unit->object.body_vitality;
 				}
@@ -1186,6 +1192,7 @@ void hud_render_unit_interface(
 				if (meters_found)
 					hud_item_timers_set_meters(local_player_index, &meters_bounds);
 
+				ae_panels_hide_ce(FALSE); /* AE hook */
 				if (unit_count == 0 &&
 					!TEST_FLAG(
 						unit_hud_globals->script_flags,
@@ -1196,6 +1203,7 @@ void hud_render_unit_interface(
 					short draw_flags = 0;
 					point2d corner;
 
+					ae_panels_hide_ce(ae_sensor_takes_blips()); /* AE hook */
 					absolute_placement.corner = _hud_anchor_bottom_left;
 					SET_FLAG(
 						draw_flags,
@@ -1258,6 +1266,8 @@ void hud_render_unit_interface(
 						local_player_index,
 						hud_split_screen_layout(),
 						&corner);
+					ae_panels_hide_ce(FALSE); /* AE hook */
+					ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
 				}
 
 				{

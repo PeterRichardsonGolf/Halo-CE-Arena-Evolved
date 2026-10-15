@@ -5755,7 +5755,7 @@ void game_engine_update_non_deterministic(
 			if (game_engine_globals.postgame_progress > 1.0f)
 				game_engine_globals.postgame_progress = 1.0f;
 
-			if (ae_postgame_buttons(test_any_gamepad_button(0) || test_any_gamepad_button(12), test_any_gamepad_button(1) || test_any_gamepad_button(13))) /* AE hook */
+			if (ae_postgame_buttons()) /* AE hook */
 				break;
 			if (test_any_gamepad_button(0) || test_any_gamepad_button(12))
 			{

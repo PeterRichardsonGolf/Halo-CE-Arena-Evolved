@@ -114,6 +114,7 @@ symbols in this file:
 #include "ae_weapon_pack.h" /* AE hook */
 #include "ae_score_strip.h" /* AE hook */
 #include "ae_hud_style_draw.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "units/unit_definitions.h"
@@ -1480,6 +1481,7 @@ void hud_draw_screen(
 				if (game_engine_running() && !cinematic_in_progress())
 					hud_draw_item_waypoints(render.local_player_index);
 				hud_render_damage_indicators(render.local_player_index);
+				ae_panels_draw(render.local_player_index); /* AE hook */
 			}
 			else
 			{

@@ -18,6 +18,8 @@ HUD STYLE AE's timers list, T1 (ae_power_list.h).
 #include "ae_hud_digits.h"
 #include "ae_hud_style.h"
 #include "ae_hud_text.h"
+#include "ae_panel_engine.h"
+#include "ae_panel_layout.h"
 #include "ae_power_list.h"
 #include "ae_score_strip.h"
 #include "ae_strip_engine.h"
@@ -36,6 +38,7 @@ void hud_item_timers_ae_record(real x0, real y0, real x1, real y1);
 #define AE_LIST_MORE_PX 13.0f
 #define AE_LIST_MORE_ALPHA 0.60f
 #define AE_LIST_PITCH 20.0f
+#define AE_LIST_LIFT 8.0f       /* px x scale over the shared bottom line (owner 10-15: it hung lower than the sensor) */
 #define AE_LIST_NAME_GAP 10.0f
 #define AE_LIST_LINES 4
 #define AE_LIST_MAXIMUM 32
@@ -46,7 +49,7 @@ static const real grey_rgb[3] = { 188.0f / 255.0f, 198.0f / 255.0f, 212.0f / 255
 static const real red_rgb[3] = { 1.0f, 0.3f, 0.3f };       /* hud_item_timers_side_color */
 static const real blue_rgb[3] = { 0.35f, 0.55f, 1.0f };
 
-static struct { boolean drawn; real foot, left; } list_views[MAXIMUM_LOCAL_PLAYERS];
+static struct { boolean drawn; real foot, left, top, right; } list_views[MAXIMUM_LOCAL_PLAYERS];
 
 static boolean valid_view(short view)
 {
@@ -68,15 +71,13 @@ boolean ae_power_list_hides_clock(short local_player_index)
 	return (boolean)(ae_hud_style_is_ae() && ae_strip_engine_snapshot(local_player_index, &snapshot));
 }
 
-real ae_panel_right_column_x(short local_player_index)
+real ae_power_list_right_x(short local_player_index)
 {
-	short inset = 0;
-	long baseline = 0;
+	struct ae_panel_view view;
 
-	(void)local_player_index;
-	hud_item_timers_ae_place(&inset, &baseline);
-	return (real)((render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) - inset) *
-		ae_hud_pixels_per_unit();
+	/* (one right column: the AE panels' own, spec 14.15 part 3) */
+	ae_panel_engine_view(local_player_index, &view);
+	return ae_panel_right_column_x(&view);
 }
 
 real ae_power_list_left_x(short local_player_index)
@@ -84,6 +85,17 @@ real ae_power_list_left_x(short local_player_index)
 	if (valid_view(local_player_index) && list_views[local_player_index].drawn)
 		return list_views[local_player_index].left;
 	return (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) * ae_hud_pixels_per_unit();
+}
+
+boolean ae_power_list_extent(short local_player_index, real extent[4])
+{
+	if (!valid_view(local_player_index) || !list_views[local_player_index].drawn)
+		return FALSE;
+	extent[0] = list_views[local_player_index].left;
+	extent[1] = list_views[local_player_index].top;
+	extent[2] = list_views[local_player_index].right;
+	extent[3] = list_views[local_player_index].foot + 2.0f;
+	return TRUE;
 }
 
 boolean ae_power_list_last(short local_player_index, real *foot_baseline, real *left_x)
@@ -288,8 +300,8 @@ static void draw_column(short view)
 	real name_px = ae_strip_text_px(AE_LIST_TEXT_PX, s, s);
 	real time_px = MAX(AE_LIST_TEXT_PX * s, AE_LIST_TIME_FLOOR);
 	real cell = digit_cell(time_px);
-	real right = ae_panel_right_column_x(view);
-	real foot = ae_score_strip_shared_line_y(view);
+	real right = ae_power_list_right_x(view);
+	real foot = ae_score_strip_shared_line_y(view) - AE_LIST_LIFT * s;
 	real pitch = AE_LIST_PITCH * s;
 	real widest = 0.0f, name_right, left = right, top;
 	real_argb_color white;
@@ -332,6 +344,8 @@ static void draw_column(short view)
 	list_views[view].drawn = TRUE;
 	list_views[view].foot = foot;
 	list_views[view].left = left;
+	list_views[view].top = top;
+	list_views[view].right = right;
 	/* (for TRAINING's labels to keep clear of, in the HUD's units) */
 	hud_item_timers_ae_record(left / ppu, top / ppu, right / ppu, (foot + 2.0f) / ppu);
 }

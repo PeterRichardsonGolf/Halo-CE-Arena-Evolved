@@ -408,6 +408,7 @@ symbols in this file:
 #endif
 #include "view_fov.h" /* port: display.fov, before the projection and culling */
 #include "ae_hud_style_draw.h" /* AE hook */
+#include "ae_steady_camera.h" /* AE hook */
 
 #if defined(HALO_WINDOWS) || defined(HALO_ANDROID) || defined(__linux__) || defined(__APPLE__)
 #define HALO_NATIVE_BUILD_INFO 1
@@ -1181,6 +1182,7 @@ void set_window_camera_values(
 				0.75f * render_camera_get_adjusted_field_of_view_tangent(
 					observer->field_of_view),
 				1.0f));
+		ae_steady_camera_note(window->local_player_index, &observer->position, &observer->forward, &observer->up); /* AE hook */
 
 		if (window->local_player_index != NONE &&
 			!console_is_active() &&

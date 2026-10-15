@@ -24,6 +24,8 @@ boolean ae_score_strip_last_drawn(short local_player_index, real *alpha, real cl
 real ae_score_strip_last_line(short local_player_index);
 /* the view's scale for AE's HUD: its factor (a half screen 0.85, a quarter 0.75) x the screen's height / 1080 */
 real ae_score_strip_view_scale(void);
+/* the strip's last drawn extent in the view px: left, top, right, bottom; FALSE when not drawn */
+boolean ae_score_strip_extent(short local_player_index, real extent[4]);
 /* the view's shared bottom line (spec 11.12), screen pixels from its top: the motion sensor's foot, or where it
 would be */
 real ae_score_strip_shared_line_y(short local_player_index);

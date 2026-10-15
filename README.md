@@ -160,6 +160,12 @@ play:
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic
   health, no grenades), ROCKETS, SHOTGUNS and HEAVIES (75 kills, the map's
   vehicles).
+- **Arena Evolved BR** (0.2.6): the casual set, the free for all variants, FFA AE PRACTICE and AE COMP again with the
+  **battle rifle in hand** and the pistol second (FFA AE BR SLAYER, TEAM AE BR SLAYER, TEAM AE BR COMP CTF, ... 25
+  gametypes; stored as AE BR FFA, AE BR TS, AE BR C CTF, ...). Every other value is its twin's. Not made for the
+  single-weapon modes (snipers, rockets, shotguns, SWAT, heavies, shotty snipers), RACE, RALLY or TRAINING. They
+  need the battle rifle's pack (the `packs` folder): only machines with it join; on Custom Edition maps, and where
+  the pack is not, the slot plays an assault rifle.
 - **Arena Evolved COMP**: FFA AE COMP SLAYER (25 kills), TEAM AE
   COMP SLAYER (50), TEAM AE COMP CTF (3 captures), TEAM AE COMP KING and TEAM
   AE COMP ODDBALL (5 minutes held, with the lethal ball). 5-second respawn and suicide penalty, 2
@@ -184,7 +190,7 @@ play:
   modes on NHE's maps. NHE MODE and NHE EXTRAS are on a gametype's **NHE
   OPTIONS** screen.
 - The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY):
-  the Arena Evolved set, AE COMP, the NHE set, TRAINING, then your own
+  the Arena Evolved set, AE BR, AE COMP, the NHE set, TRAINING, then your own
   gametypes, before the built-in ones. Seeded gametypes you edit are kept as
   you made them when a newer build updates the others.
 
@@ -197,6 +203,27 @@ play:
 - The in-game scoreboard centred in each view.
 
 **Controls and display**
+- **PS5 DualSense: adaptive triggers and lightbar.** R2 has a feel for each
+  weapon and a kick at each shot, human weapons mechanical (clicks, kicks,
+  the heavy left rumble motor), Covenant weapons energy (resistance with
+  heat or charge, the light right motor): the pistol a click and a snap,
+  the assault rifle a pulse a round, the sniper rifle firm with a heavy
+  thump, the shotgun a big kick and its pump, the plasma rifle stiffening
+  with heat, the plasma pistol building with its charge and a blast on the
+  overcharged shot, the needler a fast light buzz, the battle rifle three
+  pulses a burst. The weapon's state comes first: a settle as it is ready,
+  slack with a bump as the magazine goes in, a dry click when empty, locked
+  with a throb while overheated. In a vehicle the seat that fires the gun
+  feels it. L2 is the grenades (a jolt as one is thrown, a dry click with
+  none), light while zoomed. The lightbar takes your colour (your team's in
+  a team game), pulses while an overshield charges, dims with active
+  camouflage and flashes when you become the juggernaut; or, with LIGHTBAR
+  on SHIELD, it shows your shield as the HUD's meter does. The player lights
+  show your split-screen number. Settings > Gamepads: ADAPTIVE TRIGGERS,
+  TRIGGER STRENGTH (LIGHT, NORMAL, STRONG) and LIGHTBAR (OFF, PLAYER COLOR,
+  SHIELD), on by default; other controllers are never touched. On Linux
+  without Steam, see [DualSense on Linux without
+  Steam](#dualsense-on-linux-without-steam).
 - 14 controller layouts, including the Anniversary set and MCC's Universal
   Reclaimer, Zoom & Shoot, Bump & Jump and Green Fingers; layouts that put
   actions on the d-pad don't also move you with it.
@@ -360,6 +387,21 @@ On Linux, the maps and settings (`config.toml`) go next to the `halo`
 executable, and the saves in `~/.local/share/halo-linux`. Everything the port
 adds is in `config.toml`, written the first time the game starts with every
 setting listed and explained; see [port/linux/README.md](port/linux/README.md).
+
+### DualSense on Linux without Steam
+
+On Linux the game writes a DualSense's trigger effects and lightbar to the
+controller's `/dev/hidraw` device. Steam's udev rules (Steam installed, or
+the `steam-devices` package) already let you; without them the Linux
+download's `70-ae-dualsense.rules` does. From the game's folder, once:
+
+```
+sudo cp 70-ae-dualsense.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+```
+
+then unplug the controller (or turn it off) and connect it again. The
+buttons and sticks work either way; only the effects need it. `debug.txt`
+says how each DualSense is driven, or why it is not.
 
 ## Playing over LAN
 

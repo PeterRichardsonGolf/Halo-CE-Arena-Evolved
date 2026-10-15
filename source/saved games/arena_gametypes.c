@@ -43,6 +43,7 @@ arena_gametype_names.c), each in its table's order, then the player's own.
 #include "text/unicode.h"
 #include "ae_hit_feedback_rules.h" /* port: port/linux/game/ae_hit_feedback_rules.c */
 #include "ae_juggernaut_rules.h" /* port: port/linux/game/ae_juggernaut_rules.c */
+#include "ae_saved_limits.h" /* port: port/linux/game/ae_saved_limits.h */
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -67,16 +68,20 @@ enum
 	ARENA_GAMETYPES_RECORD_OLD_LIMIT = 1000,
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
-	/* the seeds' revision now (the last of arena_gametype_migrations) */
-	ARENA_GAMETYPES_REVISION = 10,
-	/* a memory unit holds at most 100 saved games (saved_game_files.c):
-	the self-check warns past this many */
-	ARENA_GAMETYPES_SAVED_WARNING = 90,
+	/* the seeds' revision now (the last of arena_gametype_migrations, or
+	past it: revision 11 only adds seeds) */
+	ARENA_GAMETYPES_REVISION = 11,
+	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
+	type, the built-in ones (the stock gametypes, the default profiles)
+	among them (saved_game_files.c; ae_saved_limits.h): the self-check
+	warns past this many, every one counted (before revision 11: 90 of
+	100, the built-ins left out) */
+	ARENA_GAMETYPES_SAVED_WARNING = AE_SAVED_GAMES_MAXIMUM - 10,
 	/* a gametype directory's files backed up (blam.lst, SaveMeta.xbx) */
 	ARENA_GAMETYPES_BACKUP_FILES = 8,
 	/* the custom gametypes looked through (saved_game_files.c lists at
-	most 100 saved games) */
-	ARENA_GAMETYPES_MAXIMUM_SAVED = 128,
+	most AE_SAVED_GAMES_MAXIMUM saved games; 128 before revision 11) */
+	ARENA_GAMETYPES_MAXIMUM_SAVED = AE_SAVED_GAMES_MAXIMUM,
 };
 
 /* what every AE gametype adds to its stock one: AE's rules (NO SPREAD NHE,
@@ -282,6 +287,16 @@ CE's is 10) */
 a value is given as value + 1 */
 #define ARENA_SET(value) ((value) + 1)
 
+/* the AE BR set's start (revision 11): the battle rifle in hand and the
+pistol second. The weapon pack's rifle takes the PRIMARY slot, which keeps
+an assault rifle as its own weapon (what is played where the pack is not:
+an older build, a Custom Edition map; game_engine.h's pack_loadout) */
+#define ARENA_BR_START \
+	.loadout_primary = ARENA_SET(_loadout_weapon_assault_rifle), \
+	.loadout_secondary = ARENA_SET(_loadout_weapon_pistol), \
+	.weapon_pack = _weapon_pack_battle_rifle, \
+	.pack_loadout = (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary))
+
 /* the objectives indicator (universal_variant.goal_radar, game_engine.c's
 enum goal_radar) and the weapon sets (enum game_engine_weapons), as
 ARENA_SET values */
@@ -347,6 +362,10 @@ struct arena_gametype
 	/* COMBAT FEEDBACK (universal_variant.pad5's low bits; revision 9): 1
 	ARENA EVOLVED, 0 HALO CE */
 	byte hit_feedback;
+	/* the WEAPON PACK and its use (universal_variant.weapon_pack and
+	pack_loadout; revision 11): 0 none, as before them */
+	byte weapon_pack;
+	byte pack_loadout;
 	/* anything else, after the rest (a shipped one is never edited: a
 	changed one is a new function); NULL for none */
 	void (*adjust)(struct game_variant *variant, struct game_variant_options *options);
@@ -540,6 +559,86 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
 		ARENA_VEHICLES_NONE, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS,
 		.ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1 },
+	/* the AE BR set (revision 11; owner, 2026-10-15): each AE gametype but
+	the single-weapon ones, AE RACE / AE RALLY (vehicle games) and AE
+	TRAINING, again with the battle rifle in hand and the pistol second
+	(ARENA_BR_START: the weapon pack, so only machines with it join); every
+	other value its twin's, row for row. Free for all first, then teams */
+	{ "AE BR FFA", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR ELIM", build_game_variant_elimination, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR PHANT", build_game_variant_phantoms, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR ENDUR", build_game_variant_endurance, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR FBALL", build_game_variant_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR JUGG", build_game_variant_juggernaut, ARENA_LATER_FLAGS,
+		ARENA_JUGGERNAUT_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK,
+		TRUE, .hit_feedback = 1, .adjust = arena_gametype_juggernaut_h2, ARENA_BR_START },
+	{ "AE BR RTAG", build_game_variant_reverse_tag, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR ACCUM", build_game_variant_accumulation, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR STALK", build_game_variant_stalker, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR FKING", build_game_variant_king, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR CKING", build_game_variant_crazy_king, ARENA_LATER_FLAGS,
+		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR PRAC", build_game_variant_slayer, ARENA_LATER_FLAGS | FLAG(_game_variant_practice_bit),
+		ARENA_TRAINING_SCORE_TO_WIN, 0, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_DEFAULT, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR C FFA", build_game_variant_slayer, ARENA_COMP_FLAGS,
+		ARENA_FFA_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.starting_frags = ARENA_COMP_STARTING_FRAGS, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR TS", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR TM OB", build_game_variant_team_oddball, ARENA_LATER_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR 2V2 S", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		25, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR 2V2 C", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR 2V2 K", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR 2V2 B", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR C TS", build_game_variant_team_slayer, ARENA_COMP_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.starting_frags = ARENA_COMP_STARTING_FRAGS, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR C CTF", build_game_variant_ctf, ARENA_COMP_OBJECTIVE_FLAGS,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR C KOH", build_game_variant_team_king, ARENA_COMP_OBJECTIVE_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS, .hit_feedback = 1, ARENA_BR_START },
+	{ "AE BR C OB", build_game_variant_team_oddball, ARENA_COMP_OBJECTIVE_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START },
 	/* the casual set's values with Halo 1: NHE's own modes (revision 6),
 	under the NHE set's names since revision 9; COMBAT FEEDBACK stays HALO CE */
 	{ "NHE TS VAN", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
@@ -1534,6 +1633,41 @@ static struct arena_gametype_migration const arena_gametype_test_migration =
 		.score_to_win = 51, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
 		.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
 	.old_block_hash = NULL
+};
+
+/* the AE BR set's twins (revision 11): each one's AE gametype, whose every
+value it has but the start (ARENA_BR_START; arena_gametypes_self_check) */
+static struct
+{
+	char const *name;
+	char const *twin;
+} const arena_gametype_br_twins[] =
+{
+	{ "AE BR FFA", "AE FFA SLAY" },
+	{ "AE BR ELIM", "AE ELIM" },
+	{ "AE BR PHANT", "AE PHANTOMS" },
+	{ "AE BR ENDUR", "AE ENDURE" },
+	{ "AE BR FBALL", "AE FFA BALL" },
+	{ "AE BR JUGG", "AE JUGGER" },
+	{ "AE BR RTAG", "AE REV TAG" },
+	{ "AE BR ACCUM", "AE ACCUM" },
+	{ "AE BR STALK", "AE STALKER" },
+	{ "AE BR FKING", "AE FFA KING" },
+	{ "AE BR CKING", "AE CRAZYKNG" },
+	{ "AE BR PRAC", "AE PRACTICE" },
+	{ "AE BR C FFA", "AE COMP FFA" },
+	{ "AE BR TS", "AE TEAM SLY" },
+	{ "AE BR CTF", "AE CTF" },
+	{ "AE BR KING", "AE KING" },
+	{ "AE BR TM OB", "AE TEAM OB" },
+	{ "AE BR 2V2 S", "AE 2V2 SLY" },
+	{ "AE BR 2V2 C", "AE 2V2 CTF" },
+	{ "AE BR 2V2 K", "AE 2V2 KING" },
+	{ "AE BR 2V2 B", "AE 2V2 BALL" },
+	{ "AE BR C TS", "AE COMP TS" },
+	{ "AE BR C CTF", "AE COMP CTF" },
+	{ "AE BR C KOH", "AE COMP KOH" },
+	{ "AE BR C OB", "AE COMP OB" },
 };
 
 /* the migrations whose old row no longer builds as its old_block_hash says
@@ -2920,14 +3054,71 @@ static void arena_gametypes_self_check(
 		}
 	}
 
+	/* (each AE BR twin: its AE gametype with ARENA_BR_START's values) */
+	{
+		short twin_index;
+
+		for (twin_index = 0; twin_index < (short)NUMBEROF(arena_gametype_br_twins); twin_index++)
+		{
+			struct arena_gametype const *rows[2] = { NULL, NULL };
+			struct game_variant variant[2];
+			struct game_variant_options options[2];
+			wchar_t wide_name[ARENA_GAMETYPE_NAME_LENGTH];
+			short index;
+
+			for (index = 0; index < (short)NUMBEROF(arena_gametypes); index++)
+			{
+				if (!strcmp(arena_gametypes[index].name, arena_gametype_br_twins[twin_index].name))
+					rows[0] = &arena_gametypes[index];
+				if (!strcmp(arena_gametypes[index].name, arena_gametype_br_twins[twin_index].twin))
+					rows[1] = &arena_gametypes[index];
+			}
+			if (!rows[0] || !rows[1])
+			{
+				error(_error_silent, "arena gametypes self-check: ERROR: the AE BR twin '%s' or its '%s' is not seeded",
+					arena_gametype_br_twins[twin_index].name, arena_gametype_br_twins[twin_index].twin);
+				continue;
+			}
+			arena_gametype_wide_name(rows[0]->name, wide_name);
+			csmemset(variant, 0, sizeof(variant));
+			csmemset(options, 0, sizeof(options));
+			arena_gametype_build(rows[0], wide_name, &variant[0], &options[0]);
+			arena_gametype_build(rows[1], wide_name, &variant[1], &options[1]);
+			/* (the twin's AE gametype given the start: then the same) */
+			variant[1].universal_variant.weapon_pack = _weapon_pack_battle_rifle;
+			variant[1].universal_variant.pack_loadout =
+				(byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary));
+			options[1].primary_weapon = _loadout_weapon_assault_rifle;
+			options[1].secondary_weapon = _loadout_weapon_pistol;
+			if (options[1].loadout != _loadout_custom || options[0].loadout != _loadout_custom ||
+				variant[0].universal_variant.weapon_pack != _weapon_pack_battle_rifle ||
+				csmemcmp(&variant[0], &variant[1], sizeof(variant[0])) ||
+				csmemcmp(&options[0], &options[1], sizeof(options[0])))
+			{
+				error(_error_silent, "arena gametypes self-check: ERROR: '%s' is not '%s' with the battle rifle start",
+					rows[0]->name, rows[1]->name);
+			}
+		}
+	}
+
+	/* (every entry of the memory unit's list: the built-in gametypes and
+	default profiles too, which it lists last and leaves out first) */
 	saved_game_files_enumerate_available_to_local_player_index(NONE,
-		_saved_game_file_type_game_variant, &gametype_count, saved, FALSE);
+		_saved_game_file_type_game_variant, &gametype_count, saved, TRUE);
 	saved_game_files_enumerate_available_to_local_player_index(NONE,
-		_saved_game_file_type_player_profile, &profile_count, saved, FALSE);
+		_saved_game_file_type_player_profile, &profile_count, saved, TRUE);
 	if (gametype_count + profile_count > ARENA_GAMETYPES_SAVED_WARNING)
 	{
-		error(_error_silent, "arena gametypes: warning: %d saved games (%d gametypes, %d profiles); a memory unit "
-			"holds at most 100", (int)(gametype_count + profile_count), (int)gametype_count, (int)profile_count);
+		error(_error_silent, "arena gametypes: warning: %d saved games (%d gametypes, %d profiles, the built-in ones "
+			"among them); a memory unit lists at most %d", (int)(gametype_count + profile_count), (int)gametype_count,
+			(int)profile_count, (int)AE_SAVED_GAMES_MAXIMUM);
+	}
+	else if (gametype_count + profile_count > AE_SAVED_GAMES_OLD_MAXIMUM)
+	{
+		error(_error_silent, "arena gametypes: note: %d saved games (%d gametypes, %d profiles, the built-in ones "
+			"among them): builds before 0.2.6 list at most %d (the stock gametypes past it left out) and make no new "
+			"saved game", (int)(gametype_count + profile_count), (int)gametype_count, (int)profile_count,
+			(int)AE_SAVED_GAMES_OLD_MAXIMUM);
 	}
 
 	return;
@@ -3062,6 +3253,11 @@ static void arena_gametype_build(
 	{
 		variant.universal_variant.pad5 = ae_hit_feedback_byte_set(variant.universal_variant.pad5,
 			gametype->hit_feedback);
+	}
+	if (gametype->weapon_pack)
+	{
+		variant.universal_variant.weapon_pack = gametype->weapon_pack;
+		variant.universal_variant.pack_loadout = gametype->pack_loadout;
 	}
 	/* (the PC options a new custom gametype gets: both teams' vehicle sets
 	the variant's, RADAR PLAYERS from its motion sensor bit) */
