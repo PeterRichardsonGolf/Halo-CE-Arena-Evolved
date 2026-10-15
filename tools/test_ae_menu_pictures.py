@@ -1,0 +1,62 @@
+"""Arena Evolved's own pictures for the PC menus' placeholder frames (tools/ae_menu_pictures.py): the hand-edited
+bitmaps.xml, menus.json and the drawn files agree with the generator data, as tools/ce_menus.py would write them."""
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+MENUS = ROOT / "port" / "assets" / "menus"
+sys.path.insert(0, str(ROOT / "tools"))
+import ae_menu_pictures  # noqa: E402
+
+
+def frames_of(bitmap):
+    text = (MENUS / "ce" / "bitmaps.xml").read_text()
+    block = re.search(rf'\t<bitmap name="{re.escape(bitmap)}">\n(.*?)\t</bitmap>', text, re.S)
+    assert block, bitmap
+    return re.findall(r"<frame ([^>]*)/>", block.group(1))
+
+
+def test_the_own_frames_are_in_bitmaps_xml_where_the_generator_puts_them():
+    for bitmap, own in ae_menu_pictures.own_frames().items():
+        frames = frames_of(bitmap)
+        assert len(frames) > max(own)
+        for number, (_, width, height) in own.items():
+            _, png = ae_menu_pictures.frame_paths(bitmap, number)
+            assert frames[number] == f'png="{png}" width="{width}" height="{height}"', (bitmap, number)
+
+
+def test_every_entry_of_the_multiplayer_screen_and_nhe_options_have_their_own():
+    assert len(frames_of(ae_menu_pictures.MULTIPLAYER)) == 7
+    assert sorted(ae_menu_pictures.own_frames()[ae_menu_pictures.MULTIPLAYER]) == list(range(7))
+    # (CHANGE NAME 0 ... NHE OPTIONS 8: GAME, PLAYER and INDICATOR OPTIONS keep theirs)
+    gametype = frames_of(ae_menu_pictures.GAMETYPE)
+    assert len(gametype) == 9
+    assert sorted(ae_menu_pictures.own_frames()[ae_menu_pictures.GAMETYPE]) == [0, 3, 4, 6, 7, 8]
+    assert "gametype_options__1.png" in gametype[1] and 'index="2"' in gametype[2] and 'index="4"' in gametype[5]
+
+
+def test_the_svgs_are_the_generator_s_and_the_pngs_are_embedded():
+    files = set(json.loads((MENUS / "menus.json").read_text())["files"])
+    for bitmap, own in ae_menu_pictures.own_frames().items():
+        for number, (text, _, _) in own.items():
+            svg, png = ae_menu_pictures.frame_paths(bitmap, number)
+            assert (MENUS / svg).read_text() == text, svg
+            assert (MENUS / png).is_file() and png in files, png
+            # (8-bit RGBA, 4 times the frame: Art.own_frame's SCALE)
+            data = (MENUS / png).read_bytes()
+            assert data[:8] == b"\x89PNG\r\n\x1a\n" and data[24:26] == b"\x08\x06"
+            assert int.from_bytes(data[16:20], "big") == 2048 and int.from_bytes(data[20:24], "big") == 1024
+
+
+def test_no_placeholder_is_left_on_those_screens():
+    files = json.loads((MENUS / "menus.json").read_text())["files"]
+    for bitmap in (ae_menu_pictures.MULTIPLAYER, ae_menu_pictures.GAMETYPE):
+        for frame in frames_of(bitmap):
+            png = re.search(r'png="([^"]*)"', frame)
+            if png:
+                assert png.group(1) in files and (MENUS / png.group(1)).is_file()
+    report = (MENUS / "NON_HANDDRAWN.md").read_text()
+    assert "mp_options__" not in report.split("## Placeholders")[1]
+    assert "gametype_options__" not in report.split("## Placeholders")[1]

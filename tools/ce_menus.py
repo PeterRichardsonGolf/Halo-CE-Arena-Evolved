@@ -300,6 +300,7 @@ class Art:
         self.pictures = []  # (frame, size, PC picture) of the frames drawn as the placeholder
         self.xbox_frames = []  # (PC frame, Xbox bitmap, its frame) drawn from the Xbox map
         self.added_frames = []  # (our bitmap, Xbox bitmap, its frame): port_settings.BITMAP_FRAMES
+        self.own_frames = []  # (our bitmap, its frame): port_settings.own_frames(), Arena Evolved's drawing
         self.svgs = []
         self.pngs = []
 
@@ -346,6 +347,20 @@ class Art:
         lines.append("\t</bitmap>")
         return "\n".join(lines)
 
+    def own_frame(self, name: str, index: int, frame: tuple) -> str:
+        """a <frame> of our own drawing (port_settings.own_frames(): SVG text, width, height), its SVG written to
+        port_svg/ and drawn to ce/port/ as port_picture's (tools/ae_menu_pictures.py writes the same)"""
+        text, width, height = frame
+        svg = MENUS / "port_svg" / f"{name}__{index}.svg"
+        svg.parent.mkdir(parents=True, exist_ok=True)
+        svg.write_text(text)
+        png = f"ce/port/{name}__{index}.png"
+        (MENUS / png).parent.mkdir(parents=True, exist_ok=True)
+        Image.fromarray(render_svg(svg, SCALE), "RGBA").save(MENUS / png, optimize=True)
+        self.pngs.append(png)
+        self.own_frames.append((name, index))
+        return f"\t\t<frame{attributes([('png', png), ('width', width), ('height', height)])}/>"
+
     def frame_sources(self, relative: str, index: int, count: int) -> list:
         return [relative, f"{relative}__0"] if count == 1 else [f"{relative}__{index}"]
 
@@ -362,7 +377,12 @@ class Art:
         else:
             indices = list(range(len(data)))
         lines = [f"\t<bitmap{attributes([('name', our_name(tag))])}>"]
-        for index in indices:
+        own = port_settings.own_frames().get(our_name(tag), {})
+        for number, index in enumerate(indices):
+            # (Arena Evolved's own drawing in its place)
+            if number in own:
+                lines.append(self.own_frame(our_name(tag), number, own[number]))
+                continue
             width, height = data[index]["width"], data[index]["height"]
             name = self.frame_sources(relative, index, len(data))[-1]
             if name in XBOX_FRAMES and not any((self.redraws / f"{source}.svg").is_file()
@@ -374,6 +394,9 @@ class Art:
             self.draw(relative, index, len(data), width, height, MENUS / png, self.shown.get(tag, []))
             self.pngs.append(png)
             lines.append(f"\t\t<frame{attributes([('png', png), ('width', width), ('height', height)])}/>")
+        # (Arena Evolved's own frames past the PC version's)
+        for number in sorted(number for number in own if number >= len(indices)):
+            lines.append(self.own_frame(our_name(tag), number, own[number]))
         # (the port's frames after them: the Xbox map's, scaled)
         for source, index, width, height, x, y in port_settings.BITMAP_FRAMES.get(our_name(tag), []):
             self.added_frames.append((our_name(tag), source, index))
@@ -685,6 +708,17 @@ def main() -> None:
         "| --- | --- |",
     ]
     report += [f"| `{name}` | `{tag}` frame {index} |" for name, tag, index in art.added_frames]
+    report += [
+        "",
+        "## Arena Evolved's own",
+        "",
+        "These frames are Arena Evolved's own drawing (`port_svg/`, from `tools/ae_menu_pictures.py`), in the place",
+        "of the PC version's pictures that were placeholders, or added after them.",
+        "",
+        "| Our bitmap | Frame |",
+        "| --- | --- |",
+    ]
+    report += [f"| `{name}` | {index} |" for name, index in art.own_frames]
     report += [
         "",
         "## Placeholders, to be redrawn",
