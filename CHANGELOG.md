@@ -11,6 +11,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   them, how close each side is to winning, and each gametype's own state (the flags in CTF, the ball's holder, the
   hill, the race's place and lap, ...). The clock is in the strip, no longer in the corner; the TIMERS list is in
   the strip's style, its foot on the motion sensor's line.
+- With HUD STYLE AE, a **header over the scoreboard** (Tab, and after the game): the mode, the map and the set
+  ("TEAM CTF · BLOOD GULCH - NHE"), and the goal and time ("3 CAPTURES · 15:00"), in place of the gametype's row.
 
 ## 0.2.5-beta - 2026-10-13
 

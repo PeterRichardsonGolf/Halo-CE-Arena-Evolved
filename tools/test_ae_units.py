@@ -71,6 +71,9 @@ UNITS = {
     # (CE's counter digits at any size: frames, advances, quads, ink bounds)
     "ae_hud_digit_cells_test.c": ([UI / "ae_hud_digit_cells.c"],
                                   ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (the scoreboard header's text, HUD STYLE AE)
+    "ae_header_lines_test.c": ([UI / "ae_header_lines.c"],
+                               ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (HUD STYLE: AE unless the setting reads "classic"; a fake config_string)
     "ae_hud_style_test.c": ([UI / "ae_hud_style.c"], [], []),
     # (the score strip's model: what it says in every mode, its colours and bars; under the sanitizers, as the

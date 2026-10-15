@@ -374,3 +374,7 @@ source/interface/hud_item_timers.c	if (!ae_power_list_hides_clock(render.local_p
 source/interface/hud_item_timers.c	if (!ae_power_list_draw(font_index)) /* AE hook */\nif (game_engine_item_timers() && !game_engine_game_over())
 source/interface/hud_item_timers.c	boolean hud_item_timers_ae_corner(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_top_left[v].valid) return FALSE; *b = hud_item_timers_top_left[v].bounds; return TRUE; } /* AE hook */
 source/interface/hud_item_timers.c	void hud_item_timers_ae_record(real x0, real y0, real x1, real y1) { hud_item_timers_record(x0, y0, x1, y1); } /* AE hook */
+source/game/game_engine.c	#include "ae_scoreboard_header.h" /* AE hook */
+source/game/game_engine.c	gametype_rows = ae_scoreboard_header_rows(gametype_rows); /* AE hook */
+source/game/game_engine.c	ae_scoreboard_header_full(bounds.x0, left, top, block_width, line_height, SCOREBOARD_SCALE, SCOREBOARD_PING_ROOM, alpha); /* AE hook */
+source/game/game_engine.c	ae_scoreboard_header_row(row_index - row_offset, &bounds, color->alpha); /* AE hook */

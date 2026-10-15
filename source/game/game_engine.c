@@ -603,6 +603,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
+#include "ae_scoreboard_header.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -1567,6 +1568,7 @@ static void rasterize_in_game_score_draw_line(
 		row_index += row_offset;
 		bounds.y0 = (short)(row_index * line_height);
 		bounds.y1 = (short)((row_index + 1) * line_height);
+		ae_scoreboard_header_row(row_index - row_offset, &bounds, color->alpha); /* AE hook */
 		draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, color);
 		rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, string);
 	}
@@ -2227,6 +2229,7 @@ static void game_engine_rasterize_scoreboard(
 	the screen holds 1/SCOREBOARD_SCALE as much) */
 	width = (short)((bounds.x1 - bounds.x0) / SCOREBOARD_SCALE);
 	gametype_rows = !campaign && game_engine_scoreboard_gametype_name(gametype_string, NUMBEROF(gametype_string)) ? 1 : 0;
+	gametype_rows = ae_scoreboard_header_rows(gametype_rows); /* AE hook */
 	/* (port: a network game's lines beneath, the vote running and how to
 	pick a player, have their rows) */
 	pointer_state = halo_scoreboard_pointer_update(network && network_votekick_available(), &pointer);
@@ -2330,6 +2333,7 @@ static void game_engine_rasterize_scoreboard(
 			}
 		}
 	}
+	ae_scoreboard_header_full(bounds.x0, left, top, block_width, line_height, SCOREBOARD_SCALE, SCOREBOARD_PING_ROOM, alpha); /* AE hook */
 	rasterizer_text_set_scale(SCOREBOARD_SCALE, (real)bounds.x0, (real)top);
 
 	/* port: the pointer's click, on the menu's items (where they are
@@ -2679,6 +2683,7 @@ static void game_engine_rasterize_in_game_score(
 	color.blue = 0.7f;
 	rasterize_in_game_score_draw_line(title_string, FALSE, &color, 0);
 	gametype_rows = game_engine_scoreboard_gametype_name(gametype_string, NUMBEROF(gametype_string)) ? 1 : 0;
+	gametype_rows = ae_scoreboard_header_rows(gametype_rows); /* AE hook */
 	rasterize_in_game_score_untabbed_rows = 1 + gametype_rows;
 	if (gametype_rows)
 	{
