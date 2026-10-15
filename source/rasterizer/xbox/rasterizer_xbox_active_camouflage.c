@@ -69,6 +69,7 @@ symbols in this file:
 #include "rasterizer/xbox/rasterizer_xbox_internal.h"
 #include "rasterizer/rasterizer_console_vars.h"
 #include "rasterizer/xbox/rasterizer_xbox_pixel_shader.h"
+#include "ae_camo_viewmodel.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -529,6 +530,7 @@ void rasterizer_active_camouflage_draw(
 			rasterizer_set_frustum_z(
 				rasterizer_globals.first_person_weapon_near_clip_distance,
 				rasterizer_globals.first_person_weapon_far_clip_distance);
+			ae_camo_viewmodel_depth_begin(); /* AE hook */
 		}
 
 		if (group->effect.intensity==1.0f)
@@ -908,6 +910,7 @@ void rasterizer_active_camouflage_draw(
 		if (TEST_FLAG(group->geometry_flags, _rasterizer_geometry_first_person_bit))
 		{
 			rasterizer_set_frustum_z(0.0f, 0.0f);
+			ae_camo_viewmodel_depth_end(); /* AE hook */
 		}
 	}
 
