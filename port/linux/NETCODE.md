@@ -229,11 +229,11 @@ are refused (Arena Evolved 0.2.3-beta to 0.2.5-beta's and OpenCE build-201
 to 205's 28, Arena Evolved 0.2.2-beta's 25 among them), and clients that
 join their own version alone (OpenCE build-205 and earlier, Arena Evolved
 0.2.5-beta and earlier) do not join Arena Evolved's games, and are told the
-host is newer. Its wire ID is its own (`ae-29a`, `delta.h`), so
-ChupathingyCE's signed legacy tables (Delta, `docs/delta.md`), which have no
-row for it, neither change these numbers nor turn off its Delta
-capabilities, and they are not fetched unless `network.legacy_table_fetch`
-is on (off by default). The game's messages are OpenCE build-206's unchanged
+host is newer. Its wire ID is ChupathingyCE 0.7.5b's (`chupa-29a`, `delta.h`: ChupathingyCE
+joins Delta hosts of its own wire alone), and
+ChupathingyCE's signed legacy tables (Delta, `docs/delta.md`) are not
+fetched unless `network.legacy_table_fetch` is on (off by default): with
+it on, a table's row for that wire sets these numbers as ChupathingyCE's. The game's messages are OpenCE build-206's unchanged
 (build-167's voice chat and votes to kick, build-169's lights and build-189's
 map sharing are among them; Arena Evolved adds none): Arena Evolved's own
 rules travel in the gametype's flags, which every host of 11 to 29 sends and

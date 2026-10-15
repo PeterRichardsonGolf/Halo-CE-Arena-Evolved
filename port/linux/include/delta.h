@@ -169,13 +169,16 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one.
-(Arena Evolved: its own, "ae-28a", so that ChupathingyCE's signed tables,
-whose rows are for ChupathingyCE's wires, never set Arena Evolved's numbers
-or turn off its capabilities: it plays its built-in 29 / 11..29, and joins
-no host below its own 29 (halo_port_advertised_joinable). The wire ID is
-never sent; the game protocol is OpenCE build-206's: its hosts announce 29,
-the table's newest, as OpenCE build-206's and later's do) */
-#define DELTA_WIRE "ae-29a"
+(Arena Evolved: ChupathingyCE 0.7.5b's own, "chupa-29a", for the same game
+protocol: since 0.7.5b ChupathingyCE joins a Delta host of its own wire
+alone ("another release of the game's network code"), so with a wire of its
+own, "ae-29a", no ChupathingyCE player could join an Arena Evolved game.
+Arena Evolved fetches no signed legacy table unless network.legacy_table_fetch
+is on (off by default), so it plays its built-in 29 / 11..29 and joins no
+host below its own 29 (halo_port_advertised_joinable); a table fetched by
+choice sets its numbers as ChupathingyCE's. The game protocol is OpenCE
+build-206's: its hosts announce 29, as OpenCE build-206's and later's do) */
+#define DELTA_WIRE "chupa-29a"
 
 /* how many OpenCE numbers past the one announced (the newest this build, or
 the signed table, has proven) are presumed additive: a client joins their
