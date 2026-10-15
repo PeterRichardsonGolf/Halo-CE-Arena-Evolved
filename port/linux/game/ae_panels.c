@@ -407,10 +407,10 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 	return 1.0f;
 }
 
-#define MESSAGE_GAP 14.0f   /* px x the view's scale under the ammo group (owner 10-15: split screen's line sat
-                               nearly on the magazine rows at 6) */
+#define MESSAGE_GAP 4.0f    /* px x the view's scale from the ammo group's foot to the (scaled) line's top: the line
+                               is pulled up under the group (owner 10-15: "move up closer to the counter") */
 
-#define MESSAGE_SCALE 0.72f   /* CE's message lines under AE: scaled to the panels (owner 10-15) */
+#define MESSAGE_SCALE 0.60f   /* CE's message lines under AE: scaled to the panels (owner 10-15: 0.72 still too big) */
 static boolean message_scaled;
 
 void ae_panels_message_scale_begin(short local_player_index, short x, short y)
@@ -467,7 +467,7 @@ short ae_panels_message_top(short local_player_index, short line_top)
 	}
 	/* (the ammo group is the first rectangle when it is drawn) */
 	bottom = (last[local_player_index].rects[0].y1 + MESSAGE_GAP * last[local_player_index].scale) / ppu;
-	if ((real)line_top >= bottom || (real)line_top * ppu < last[local_player_index].rects[0].y0)
+	if ((real)line_top * ppu < last[local_player_index].rects[0].y0)
 		return line_top;
 	return (short)(bottom + 0.5f);
 }
