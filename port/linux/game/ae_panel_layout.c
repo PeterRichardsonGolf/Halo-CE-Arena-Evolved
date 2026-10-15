@@ -231,7 +231,7 @@ static void layout_seats(const struct ae_panel_model *m, const struct ae_panel_m
 	real line_x0, real line_y0, struct ae_panel_layout *out, boolean *any)
 {
 	const struct ae_panel_art_metrics *rocket = &g->art[_ae_art_rocket];
-	real y = top, label_x = 0.0f;
+	real y = top;
 	short i;
 
 	out->seat_count = m->seat_count;
@@ -264,16 +264,16 @@ static void layout_seats(const struct ae_panel_model *m, const struct ae_panel_m
 			grow_para(&out->ammo_group, any, &out->seat[i].bar);
 			y += h + SEAT_ROW_GAP * s;
 		}
-		/* G6: stacked labels share one x, at least 8 px from every row's furthest ink */
-		if (furthest + SEAT_LABEL_GAP * s > label_x)
-			label_x = furthest + SEAT_LABEL_GAP * s;
-	}
-	for (i = 0; i < out->seat_count && i < AE_PANEL_MAXIMUM_SEAT_ROWS; i++)
-	{
-		static const wchar_t widest[] = L"CANNON";
-		out->seat[i].label_x = label_x;
-		grow(&out->ammo_group, any, label_x, out->seat[i].label_baseline_y - LABEL_CAP * out->seat[i].label_px,
-			label_x + text_width(g, widest, out->seat[i].label_px), out->seat[i].label_baseline_y);
+		/* each row's label trails its own row's furthest ink by 8 px (owner 10-15: rev13's look, over G6's shared x:
+		the Scorpion's CANNON sits beside its shell, MG after the bar) */
+		{
+			static const wchar_t widest[] = L"CANNON";
+
+			out->seat[i].label_x = furthest + SEAT_LABEL_GAP * s;
+			grow(&out->ammo_group, any, out->seat[i].label_x,
+				out->seat[i].label_baseline_y - LABEL_CAP * out->seat[i].label_px,
+				out->seat[i].label_x + text_width(g, widest, out->seat[i].label_px), out->seat[i].label_baseline_y);
+		}
 	}
 }
 

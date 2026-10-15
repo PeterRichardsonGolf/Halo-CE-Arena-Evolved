@@ -39,11 +39,12 @@ long game_time_get(void);
 #define UNARMED_GLYPH 0.55f
 #define UNARMED_COUNT 0.70f
 #define UNARMED_COUNT_QUARTER 0.85f
+#define AE_SHIELD_BLINK_DIM 0.35f   /* the shield's red on the blink's off beat */
 
 static boolean hiding;
 static long held_back;
 static long faded_labels;  /* waypoint labels faded under a panel since the last log line */     /* CE's quads held back since the last AE draw (the log's "held") */
-static struct { boolean valid; struct ae_panel_rect rects[2]; short count; } last[MAXIMUM_LOCAL_PLAYERS];
+static struct { boolean valid; struct ae_panel_rect rects[2]; short count; real scale; } last[MAXIMUM_LOCAL_PLAYERS];
 
 void ae_panels_hide_ce(boolean hide)
 {
@@ -286,12 +287,13 @@ static void draw_shield(short view, const struct ae_panel_model *m, const struct
 	backing(view, &l->backing_shield);
 	if (shield_shown)
 	{
-		boolean red_now = (boolean)(m->shield_red && !m->shield_hidden_blink);
+		/* low or down: red, and on the blink's off beat the same red dimmed (never the normal blue: owner 10-15) */
+		real fade = m->shield_hidden_blink ? AE_SHIELD_BLINK_DIM : 1.0f;
 
-		ae_panel_draw_bar(&l->shield_bar, s, m->shield_fill, m->shield_red ? _ae_tone_red : _ae_tone_blue,
-			red_now ? _ae_tone_red : _ae_tone_blue, m->overshield1, m->overshield2);
+		ae_panel_draw_bar_faded(&l->shield_bar, s, m->shield_fill, m->shield_red ? _ae_tone_red : _ae_tone_blue,
+			m->shield_red ? _ae_tone_red : _ae_tone_blue, m->overshield1, m->overshield2, fade);
 		ae_panel_draw_glyph(_ae_glyph_shield, l->shield_icon_x, l->shield_icon_y, l->shield_icon_height,
-			red_now ? _ae_tone_red : _ae_tone_blue, 1.0f);
+			m->shield_red ? _ae_tone_red : _ae_tone_blue, fade);
 	}
 	if (health_shown)
 	{
@@ -348,6 +350,7 @@ boolean ae_panels_draw(short local_player_index)
 	last[local_player_index].count = (short)(layout.ammo_group_shown ? 2 : 1);
 	if (!layout.ammo_group_shown)
 		last[local_player_index].rects[0] = layout.shield_group;
+	last[local_player_index].scale = view.scale;
 	last[local_player_index].valid = TRUE;
 	log_layout(local_player_index, &model, &layout);
 	held_back = 0;
@@ -401,7 +404,8 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 	return 1.0f;
 }
 
-#define MESSAGE_GAP 6.0f    /* px under the ammo group */
+#define MESSAGE_GAP 14.0f   /* px x the view's scale under the ammo group (owner 10-15: split screen's line sat
+                               nearly on the magazine rows at 6) */
 
 short ae_panels_message_top(short local_player_index, short line_top)
 {
@@ -414,7 +418,7 @@ short ae_panels_message_top(short local_player_index, short line_top)
 		return line_top;
 	}
 	/* (the ammo group is the first rectangle when it is drawn) */
-	bottom = (last[local_player_index].rects[0].y1 + MESSAGE_GAP) / ppu;
+	bottom = (last[local_player_index].rects[0].y1 + MESSAGE_GAP * last[local_player_index].scale) / ppu;
 	if ((real)line_top >= bottom || (real)line_top * ppu < last[local_player_index].rects[0].y0)
 		return line_top;
 	return (short)(bottom + 0.5f);

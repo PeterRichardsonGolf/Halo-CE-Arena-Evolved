@@ -376,6 +376,12 @@ static void bar_band(const struct ae_panel_para *bar, real w, real f0, real f1, 
 void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
 	real overshield1, real overshield2)
 {
+	ae_panel_draw_bar_faded(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, 1.0f);
+}
+
+void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
+	real overshield1, real overshield2, real fade)
+{
 	real corners[4][2];
 	real w = LINE_WIDTH * scale;
 	real_argb_color color, dark;
@@ -386,7 +392,7 @@ void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, s
 	para_corners(bar, corners);
 	if (fill > 0.0f)
 	{
-		tone_color(fill_tone, 0.96f, &color);
+		tone_color(fill_tone, 0.96f * fade, &color);
 		bar_band(bar, w, 0.0f, fill > 1.0f ? 1.0f : fill, 0.0f, 1.0f, &color);
 	}
 	if (overshield1 > 0.0f)
@@ -413,7 +419,7 @@ void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, s
 
 		line_soft(x + bar->lean * (bottom - top), top, x, bottom, 1.0f, &dark);
 	}
-	outline(corners, scale, line_tone, line_tone == _ae_tone_red ? 1.0f : LINE_ALPHA);
+	outline(corners, scale, line_tone, (line_tone == _ae_tone_red ? 1.0f : LINE_ALPHA) * fade);
 }
 
 /* ---------- CE's art */

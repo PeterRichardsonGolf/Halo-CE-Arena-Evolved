@@ -301,7 +301,7 @@ static void test_odd_magazines(void)
 	}
 }
 
-/* G6: a vehicle seat's rows and labels */
+/* a vehicle seat's rows and labels (owner 10-15: each label trails its own row, rev13's look, over G6's shared x) */
 static void test_seats(void)
 {
 	struct ae_panel_snapshot s; struct ae_panel_model m; struct ae_panel_layout l; struct ae_panel_view v;
@@ -314,8 +314,8 @@ static void test_seats(void)
 	AE_NEAR(l.seat[0].shell_y, 83, 0.01); AE_NEAR(l.seat[0].shell_height, 30, 0.01);
 	AE_NEAR(l.seat[0].shell_x, left_line(&l, 83 + 30), 0.01);
 	AE_NEAR(l.seat[1].bar.y0, 83 + 30 + 8, 0.01); AE_NEAR(l.seat[1].bar.x1 - l.seat[1].bar.x0, 301, 0.01);
-	AE_NEAR(l.seat[0].label_x, l.seat[1].label_x, 0.001);                  /* stacked labels share the x */
-	AE_CHECK(l.seat[0].label_x >= l.seat[0].shell_x + l.round_width + 8 - 0.01f);   /* 8 px from each row's ink */
+	AE_NEAR(l.seat[0].label_x, l.seat[0].shell_x + l.round_width + 8, 0.01);   /* CANNON 8 px after its shell */
+	AE_CHECK(l.seat[0].label_x < l.seat[1].label_x);
 	AE_NEAR(l.seat[1].label_x, l.seat[1].bar.x1 + AE_PANEL_LEAN * 12 + 8, 0.01);
 	AE_NEAR(l.seat[0].label_px, 14, 0.01);
 	AE_CHECK(!l.number_shown && l.round_count == 0);
@@ -323,7 +323,7 @@ static void test_seats(void)
 	s.seat_rows[0].kind = _ae_seat_bolts; s.seat_rows[1].kind = _ae_seat_bomb;
 	ae_panel_model_build(&s, &m); ae_panel_layout_build(&m, &metrics, &v, &l);
 	AE_NEAR(l.seat[0].bar.y0, 83, 0.01); AE_NEAR(l.seat[1].bar.y0, 83 + 12 + 8, 0.01);
-	AE_NEAR(l.seat[0].label_x, l.seat[1].label_x, 0.001);
+	AE_NEAR(l.seat[0].label_x - l.seat[1].label_x, AE_PANEL_LEAN * (12 + 8), 0.01);   /* BOMB follows the lean */
 }
 
 /* Review Focus 10: no rectangle leaves the view, at 1p, 2p, 4p and 21:9 */

@@ -119,6 +119,28 @@ static void wedge_fill(real cx, real cy, real r, real half, real alpha)
 	}
 }
 
+/* the chevron (tip, right foot, notch, left foot) as two triangles from its tip: it is not convex, so it is never
+handed to the quad path whole */
+static void chevron_fill(const real points[4][2], const union real_argb_color *color)
+{
+	real triangle[4][2];
+	short side, j;
+
+	for (side = 0; side < 2; side++)
+	{
+		short corner[3] = { 0, side ? 2 : 1, side ? 3 : 2 };
+
+		for (j = 0; j < 3; j++)
+		{
+			triangle[j][0] = points[corner[j]][0];
+			triangle[j][1] = points[corner[j]][1];
+		}
+		triangle[3][0] = triangle[2][0];
+		triangle[3][1] = triangle[2][1];
+		ae_hud_fill_quad_color(triangle, color);
+	}
+}
+
 static void blips(real cx, real cy, real r, real k)
 {
 	long i;
@@ -211,26 +233,28 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	ae_sensor_sweep(seconds, r, &sweep_r, &sweep_a);
 	if (sweep_r > 1.0f)
 		ae_panel_draw_ring(cx, cy, sweep_r, 1.0f, _ae_tone_blue, sweep_a, FALSE);
-	/* the player: a solid chevron pointing up, 10 tall, keylined */
+	/* the player: a solid chevron pointing up, 10 tall, keylined, its TIP on the wedge's point so the wedge's lines
+	end there and never cross it (rev13; owner 10-15: it read as an "x") */
 	{
 		real h = 10.0f * k;
+		real mid_y = cy + h * 0.6f;   /* the shape's middle, for the keyline's growth */
 		real chevron[4][2];
 		real keyed[4][2];
 		short j;
 
-		chevron[0][0] = cx; chevron[0][1] = cy - h / 2.0f;
-		chevron[1][0] = cx + 0.45f * h; chevron[1][1] = cy + h / 2.0f;
-		chevron[2][0] = cx; chevron[2][1] = cy + 0.2f * h;
-		chevron[3][0] = cx - 0.45f * h; chevron[3][1] = cy + h / 2.0f;
+		chevron[0][0] = cx; chevron[0][1] = cy;
+		chevron[1][0] = cx + 0.45f * h; chevron[1][1] = cy + h;
+		chevron[2][0] = cx; chevron[2][1] = cy + 0.7f * h;
+		chevron[3][0] = cx - 0.45f * h; chevron[3][1] = cy + h;
 		for (j = 0; j < 4; j++)
 		{
 			keyed[j][0] = cx + (chevron[j][0] - cx) * (1.0f + 2.0f / h);
-			keyed[j][1] = cy + (chevron[j][1] - cy) * (1.0f + 2.0f / h);
+			keyed[j][1] = mid_y + (chevron[j][1] - mid_y) * (1.0f + 2.0f / h);
 		}
 		color_of(_ae_tone_dark, 0.90f, &color);
-		ae_hud_fill_quad_color(keyed, &color);
+		chevron_fill(keyed, &color);
 		color_of(_ae_tone_blue, 1.0f, &color);
-		ae_hud_fill_quad_color(chevron, &color);
+		chevron_fill(chevron, &color);
 	}
 	/* CE's contacts, on top of everything (incl. the chevron) */
 	blips(cx, cy, r, k);
