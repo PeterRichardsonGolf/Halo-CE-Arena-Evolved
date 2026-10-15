@@ -15,7 +15,7 @@ The screenshots of each game are in the harness's out folder (ae_menus/<stamp>-p
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config, as tools/test_ae_menus.py); about 60 s a game:
 
-    AE_MENUS_BUILD=$PWD/build/linux64 python3 -m pytest -q tools/test_ae_postgame.py
+    AE_MENUS_BUILD=$PWD/build/linux64 python3 -m pytest -q tools/test_ae_postgame_game.py
 """
 import importlib.util
 from pathlib import Path
