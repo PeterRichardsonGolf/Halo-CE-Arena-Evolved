@@ -128,6 +128,7 @@ symbols in this file:
 #include "cseries/errors.h"
 #endif
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "ae_steady_camera.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -869,7 +870,7 @@ void custom_render_nav_point_placed(
 	arrow_scale *= size;
 
 	matrix4x3_transform_point(
-		&render.frustum.world_to_view,
+		ae_steady_world_to_view(&render.frustum.world_to_view), /* AE hook */
 		&view_point,
 		&view_point);
 

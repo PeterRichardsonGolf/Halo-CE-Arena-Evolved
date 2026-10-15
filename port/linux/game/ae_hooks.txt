@@ -398,6 +398,10 @@ source/game/game_engine.c	#include "ae_hud_style_draw.h" /* AE hook */
 source/game/game_engine.c	if (ae_hud_style_countdown(ticks_left, view_width, view_height)) /* AE hook */\nreturn;
 source/game/game_engine.c	if (ae_hud_style_voice_speakers()) /* AE hook */\nreturn;
 source/main/main.c	#include "ae_hud_style_draw.h" /* AE hook */
+source/main/main.c	#include "ae_steady_camera.h" /* AE hook */
+source/main/main.c	ae_steady_camera_note(window->local_player_index, &observer->position, &observer->forward, &observer->up); /* AE hook */
+source/interface/hud_nav_points.c	#include "ae_steady_camera.h" /* AE hook */
+source/interface/hud_nav_points.c	ae_steady_world_to_view(&render.frustum.world_to_view), /* AE hook */
 source/main/main.c	if (ae_hud_style_overlay(corner, color, text, &frame_statistics_drawn, &frame_statistics_extent)) /* AE hook */\nreturn;
 source/main/main.c	if (ae_hud_style_capture_notice(frame_statistics_drawn, &frame_statistics_extent, frame_statistics_corner() == _text_justification_right)) /* AE hook */\nreturn;
 source/interface/hud.c	#include "ae_hud_style_draw.h" /* AE hook */
