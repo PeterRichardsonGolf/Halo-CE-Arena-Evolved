@@ -49,6 +49,7 @@ asks whether the map is in its family's folders (ui_map_list_family_present).
 #include "halomd_map_names.h"
 #include "halo_custom_maps.h"
 #include "map_share.h" /* port: a map named for its hash (map sharing) */
+#include "ae_map_pictures.h" /* AE hook */
 
 #include "bitmaps/bitmap_group.h"
 #include "tag_files/tag_groups.h"
@@ -990,6 +991,7 @@ short ui_map_list_picture_index(
 {
 	if (row < 0 || row >= ui_map_list_count_value)
 		return 0;
+	if (ae_map_picture_frame(ui_map_list[row].map_name) != NONE) return ae_map_picture_frame(ui_map_list[row].map_name); /* AE hook */
 	if (ui_map_list[row].picture_map[0])
 		return ui_map_list_xbox_picture(ui_map_list[row].picture_map, NULL);
 	return ui_map_list[row].picture_index;
@@ -1000,6 +1002,7 @@ NULL for any other */
 struct bitmap_data *ui_map_list_picture(
 	short frame_index)
 {
+	if (ae_map_picture_bitmap(frame_index)) return ae_map_picture_bitmap(frame_index); /* AE hook */
 	if (frame_index < UI_MAP_LIST_PICTURE_BASE || frame_index - UI_MAP_LIST_PICTURE_BASE >= ce_ui.picture_count)
 		return NULL;
 	return &ce_ui.pictures[frame_index - UI_MAP_LIST_PICTURE_BASE];

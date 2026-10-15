@@ -424,3 +424,10 @@ source/interface/ui_widget.c	scale *= ae_buttons_ce_menu_icon_scale(bitmap_group
 source/game/game_engine.c	#include "ae_postgame.h" /* AE hook */
 source/game/game_engine.c	if (ae_postgame_buttons(test_any_gamepad_button(0) || test_any_gamepad_button(12), test_any_gamepad_button(1) || test_any_gamepad_button(13))) /* AE hook */\nbreak;
 source/game/game_engine.c	if (ae_postgame_confirm_draw(&bounds)) /* AE hook */\nreturn;
+# a map's own picture beside its file (maps\previews\<map>.png: the map pack's pictures) on the map select screen,
+# the lobby and the map lists, past ui.map's frames (ae_map_pictures.c); the menus' art reads its PNG by an art name
+port/linux/game/ui_map_list.c	#include "ae_map_pictures.h" /* AE hook */
+port/linux/game/ui_map_list.c	if (ae_map_picture_frame(ui_map_list[row].map_name) != NONE) return ae_map_picture_frame(ui_map_list[row].map_name); /* AE hook */
+port/linux/game/ui_map_list.c	if (ae_map_picture_bitmap(frame_index)) return ae_map_picture_bitmap(frame_index); /* AE hook */
+port/linux/src/menu_files.c	#include "../game/ae_map_pictures.h" /* AE hook */
+port/linux/src/menu_files.c	{ unsigned int ae_size = 0; const unsigned char *ae_picture = ae_map_picture_png(path, &ae_size); if (ae_picture) { *size = ae_size; return ae_picture; } } /* AE hook */
