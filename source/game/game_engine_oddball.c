@@ -118,6 +118,7 @@ symbols in this file:
 #include "text/text_group.h"
 #include "text/unicode.h"
 #include "units/units.h"
+#include "ae_juggernaut.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -728,6 +729,7 @@ static boolean oddball_engine_initialize_for_new_map(
 	csmemset(&oddball_globals, 0, sizeof(oddball_globals));
 
 	csmemset(&oddball_events, 0, sizeof(oddball_events));
+	ae_juggernaut_attach(oddball_globals.current_ball_owner, &oddball_events.transfers, &oddball_events.transfer_player, oddball_add_score); /* AE hook */
 	oddball_globals.score_to_win = game_engine_get_variant()->universal_variant.score_to_win;
 	if (accumulate_score_by_time())
 		oddball_globals.score_to_win *= ODDBALL_SCORE_TICKS_PER_UNIT;
@@ -970,6 +972,7 @@ static void oddball_engine_update(
 		}
 	}
 
+	ae_juggernaut_update(); /* AE hook */
 	if (oddball_ball_transfer_by_killing())
 	{
 		for (ball_index = 0; ball_index < ball_spawn_count; ball_index++)
@@ -1076,6 +1079,7 @@ static void oddball_engine_player_killed_player(
 	long dead_player_index,
 	boolean friendly_fire)
 {
+	if (ae_juggernaut_player_killed(killing_player_index, dead_player_index, friendly_fire)) return; /* AE hook */
 	if (oddball_ball_transfer_by_killing())
 	{
 		long ball_spawn_count = game_engine_get_variant()->game_engine_variant.oddball.ball_spawn_count;

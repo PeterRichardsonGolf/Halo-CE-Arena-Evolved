@@ -68,6 +68,11 @@ UNITS = {
     # (HIT FEEDBACK: the byte beside SILENT's, the pop line's cases found in play, the shapes' ranges)
     "ae_hit_feedback_rules_test.c": ([UI / "ae_hit_feedback_rules.c", UI / "ae_silent_rules.c"],
                                      ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
+    # (Halo 2 JUGGERNAUT: the byte beside COMBAT FEEDBACK's and SILENT's, every kill's score and succession, the
+    # random pick)
+    "ae_juggernaut_rules_test.c": ([UI / "ae_juggernaut_rules.c", UI / "ae_hit_feedback_rules.c",
+                                    UI / "ae_silent_rules.c"],
+                                   ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),

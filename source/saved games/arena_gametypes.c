@@ -42,6 +42,7 @@ arena_gametype_names.c), each in its table's order, then the player's own.
 #include "tag_files/files.h"
 #include "text/unicode.h"
 #include "ae_hit_feedback_rules.h" /* port: port/linux/game/ae_hit_feedback_rules.c */
+#include "ae_juggernaut_rules.h" /* port: port/linux/game/ae_juggernaut_rules.c */
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -67,7 +68,7 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations) */
-	ARENA_GAMETYPES_REVISION = 9,
+	ARENA_GAMETYPES_REVISION = 10,
 	/* a memory unit holds at most 100 saved games (saved_game_files.c):
 	the self-check warns past this many */
 	ARENA_GAMETYPES_SAVED_WARNING = 90,
@@ -266,10 +267,16 @@ ARENA_REV5_CASUAL_FLAGS) */
 #define ARENA_REV8_TRAINING_FLAGS 0x207F0020UL
 #define ARENA_REV8_COMP_FLAGS 0x24790020UL
 #define ARENA_REV8_COMP_OBJECTIVE_FLAGS 0x2C790020UL
+/* (revision 9's AE JUGGER, frozen for revision 10's migration: the casual
+set's, ARENA_REV8_CASUAL_FLAGS, unchanged since revision 8) */
 
 /* BALL MELEE LETHAL (universal_variant.ball_melee, revision 7): the AE
 oddball gametypes' (the NHE ones keep STOCK) */
 #define ARENA_BALL_MELEE_LETHAL 1
+
+/* AE JUGGER's score to win (revision 10): Halo 2's Juggernaut's 15 (stock
+CE's is 10) */
+#define ARENA_JUGGERNAUT_SCORE 15
 
 /* the seed fields whose 0 means the stock gametype's (or AE's default):
 a value is given as value + 1 */
@@ -370,6 +377,9 @@ static void arena_gametype_nhe_slayer(
 	struct game_variant *variant,
 	struct game_variant_options *options);
 static void arena_gametype_nhe_ctf(
+	struct game_variant *variant,
+	struct game_variant_options *options);
+static void arena_gametype_juggernaut_h2(
 	struct game_variant *variant,
 	struct game_variant_options *options);
 
@@ -475,9 +485,12 @@ static struct arena_gametype const arena_gametypes[] =
 		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
 		.loadout_primary = ARENA_SET(_loadout_weapon_sniper_rifle),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_pistol), .hit_feedback = 1 },
+	/* (Halo 2's Juggernaut since revision 10: to 15, the juggernaut's extra
+	damage at normal speed, and Halo 2's scoring and succession:
+	arena_gametype_juggernaut_h2) */
 	{ "AE JUGGER", build_game_variant_juggernaut, ARENA_LATER_FLAGS,
-		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
-		.hit_feedback = 1 },
+		ARENA_JUGGERNAUT_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK,
+		TRUE, .hit_feedback = 1, .adjust = arena_gametype_juggernaut_h2 },
 	{ "AE REV TAG", build_game_variant_reverse_tag, ARENA_LATER_FLAGS,
 		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1 },
@@ -634,8 +647,9 @@ Halo 1: NHE's own set (NHE 2V2 TS -> TS 50, NHE 1V1 -> 1 V 1 NR, NHE CTF ->
 CTF 3C 7S, PRACTICE -> TS PRACTICE, with NHE's values). Revision 8 has no
 migration (it only added the 13 free for all gametypes). Revision 9 adds
 ARENA EVOLVED combat feedback to AE's seeds and returns VANILLA and POWERUPS
-to the NHE set's names. A row whose old and new names are the same is a value
-update (in place, under its name).
+to the NHE set's names. Revision 10 makes AE JUGGER Halo 2's Juggernaut (to
+15, normal speed, Halo 2's scoring and succession). A row whose old and new
+names are the same is a value update (in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =
@@ -1488,7 +1502,21 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.vehicle_set = ARENA_VEHICLES_NONE, .custom_loadout = TRUE, .goal_radar = ARENA_SET(1), .starting_frags = 2,
 			.ball_melee = 1, .hit_feedback = 1 },
 		.old_block_hash = "b46379a05f691c50c4e896b644317a7514c689a5" },
-
+	/* revision 10: AE JUGGER plays Halo 2's Juggernaut (owner, 2026-10-14):
+	to 15, the juggernaut at normal speed (stock: slow), and Halo 2's
+	scoring and succession (the variant's pad5 bit 2). The old row is
+	revision 9's seed */
+	{ .revision = 10,
+		.old_row = {
+			.name = "AE JUGGER", .build = build_game_variant_juggernaut, .flags = ARENA_REV8_CASUAL_FLAGS, .score_to_win = 0,
+			.time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_STOCK,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
+		.new_row = {
+			.name = "AE JUGGER", .build = build_game_variant_juggernaut, .flags = ARENA_REV8_CASUAL_FLAGS, .score_to_win = 15,
+			.time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_STOCK,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1,
+			.adjust = arena_gametype_juggernaut_h2 },
+		.old_block_hash = "64337787a075f30ac9f8b576d1f1b6d6ce5c57c4" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -3086,6 +3114,21 @@ static void arena_gametype_nhe_ctf(
 	variant->game_engine_variant.ctf.reset_on_capture = FALSE;
 	variant->game_engine_variant.ctf.flag_must_reset = FALSE;
 	variant->game_engine_variant.ctf.single_flag_time = 0;
+
+	return;
+}
+
+/* AE JUGGER, Halo 2's Juggernaut (revision 10): the juggernaut at normal
+speed (game_engine_oddball.c's _oddball_speed_normal; the stock builder's 0 is
+slow) and Halo 2's scoring and succession (ae_juggernaut_rules.h: the
+variant's pad5 bit 2). Shipped: never edited (a change is a new function) */
+static void arena_gametype_juggernaut_h2(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	(void)options;
+	variant->game_engine_variant.oddball.speed_with_ball = 1;
+	variant->universal_variant.pad5 = ae_juggernaut_byte_set(variant->universal_variant.pad5, 1);
 
 	return;
 }
