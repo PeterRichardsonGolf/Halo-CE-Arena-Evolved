@@ -29,8 +29,9 @@ PE = "main_menu/settings_select/player_setup/player_profile_edit"
 GAME_OPTIONS = "main_menu.settings_select.player_setup.player_profile_edit.mods_setup.xml"
 HUD = "main_menu.settings_select.player_setup.player_profile_edit.hud_setup.xml"
 PROFILE_MENU = "main_menu.settings_select.player_setup.player_profile_edit.xml"
-HUD_SETTINGS = ["display.hud_area", "display.compact_hud", "display.scoreboard_fade", "display.campaign_timer",
-                "display.match_clock", "display.short_messages", "display.waypoint_style", "display.waypoint_size"]
+HUD_SETTINGS = ["display.hud_style", "display.hud_area", "display.compact_hud", "display.scoreboard_fade",
+                "display.campaign_timer", "display.match_clock", "display.short_messages", "display.waypoint_style",
+                "display.waypoint_size"]
 GAME_SETTINGS = ["game.mod", "game.fall_damage", "game.health", "game.callouts", "game.callout_detail",
                  "game.callout_voice", "display.spawn_heat", "input.zoom_mode", "input.zoom_reset"]
 
@@ -60,6 +61,12 @@ def test_hud_screen():
     assert 'setting="display.waypoint_size" values="50|55|60|65|70|75|80|85|90|95|100"' in text
     for setting in HUD_SETTINGS:
         assert f'setting="{setting}"' in text, setting
+    # (HUD STYLE first: AE (the default) or CLASSIC, a help for each)
+    style = spec["rows"][0]
+    assert style[0] == "HUD STYLE:" and style[1] == "display.hud_style"
+    assert style[2] == [("AE", "ae"), ("CLASSIC", "classic")] and len(style[3]) == 2
+    assert all(len(help_text.split("\n")) <= 2 for help_text in style[3])
+    assert 'setting="display.hud_style" values="ae|classic"' in text
     # (its rows and its help line stay above the buttons)
     assert 73 + len(HUD_SETTINGS) * spec["spacing"] <= spec.get("help_top", 350)
     assert f'"ce/{HUD}"' in (ROOT / "port" / "assets" / "menus" / "menus.json").read_text()
@@ -151,6 +158,8 @@ def test_settings_stays_in_the_pause_menu():
 def test_config_rows():
     text = (ROOT / "port" / "linux" / "src" / "port_config.c").read_text()
     assert ('{ "display.waypoint_style", _config_string, "\\"both\\"", "HALO_WAYPOINT_STYLE", _environment_value, '
+            "/* AE hook */") in text
+    assert ('{ "display.hud_style", _config_string, "\\"ae\\"", "HALO_HUD_STYLE", _environment_value, '
             "/* AE hook */") in text
     assert ('{ "debug.waypoint_icons", _config_string, "\\"\\"", "HALO_WAYPOINT_ICONS", _environment_value, '
             "/* AE hook */") in text

@@ -238,6 +238,11 @@ static const struct config_setting config_settings[] =
 		_environment_value, _platform_all,
 		"The scoreboard panel's colour: \"red, green, blue, alpha\", each 0 to 255\n"
 		"(alpha 0 is see-through, 255 solid)." },
+	{ "display.hud_style", _config_string, "\"ae\"", "HALO_HUD_STYLE", _environment_value, /* AE hook */
+		_platform_all,
+		"HUD STYLE: \"ae\" draws the score strip and Arena Evolved's look for its\n"
+		"own HUD elements; \"classic\" draws the HUD exactly as before. A setting\n"
+		"of this machine's display only: nothing goes over the network." },
 	{ "display.match_clock", _config_string, "\"down\"", "HALO_MATCH_CLOCK", _environment_value, _platform_all,
 		"A clock in the bottom right corner of a multiplayer game's view: \"down\"\n"
 		"the time left of the gametype's time limit (with none, the time played),\n"
