@@ -9,7 +9,7 @@ and p90, seconds), time to kill (first shot at a target -> its death), engagemen
 shots, world units), strafe changes per second of fighting, crouches per minute alive, blows, kills, deaths; then
 the spots where a bot stood still more than --stuck-seconds while not fighting.
 
-Notes on the numbers: 30 ticks a second. Events before --warmup-ticks (the pre-game countdown) are dropped, and
+Notes on the numbers: 30 ticks a second. Events before --warmup-ticks (the pre-game countdown, where bots stand) are dropped, and
 so are first shots of a target seen before it. Hits are counted once for each bot, tick and victim (a shotgun's
 pellets are one hit), and a hit that follows a blow without a shot is a blow's, not a shot's. A shot is seen one
 tick after the trigger. A kill's time-to-kill starts at the bot's first shot at that target since its previous
@@ -127,7 +127,7 @@ def analyse(events, warmup=120, stuck_seconds=5.0):
             elif kind == "death":
                 r["deaths"] += 1
                 boundary = t
-        r["stuck"] = stuck_spots(pos, stuck_seconds)
+        r["stuck"] = stuck_spots([p for p in pos if p["t"] >= warmup], stuck_seconds)
         bots[bot] = r
     return bots
 
