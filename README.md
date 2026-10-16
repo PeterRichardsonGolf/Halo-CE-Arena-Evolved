@@ -318,9 +318,8 @@ Three rulesets under one roof:
 3. **Classic Comp (NHE)**: the Xbox competitive rules, faithfully, with
    Halo 1: NHE's own maps and gametypes as an option.
 
-Next up: a side-by-side split-screen layout, a
-per-player in-game menu and HUD, and more of our own voice for the callouts
-(Cori, beta, ships now), calling every item.
+Next up: more of our own voice for the callouts (Cori, beta, ships now),
+calling every item.
 
 ## System requirements
 
