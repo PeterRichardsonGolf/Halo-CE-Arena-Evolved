@@ -1674,10 +1674,13 @@ def _lobby() -> list:
                      # (SWITCH TEAM first: hidden in a game without teams, which
                      # moves the focus to the first shown, START NOW; at the end
                      # it traps none)
-                     [f'<child widget="{base}/lobby_button_team" x="120" y="1"/>',
-                      f'<child widget="{base}/lobby_button_start" x="250" y="1"/>',
-                      f'<child widget="{base}/lobby_button_add" x="380" y="1"/>',
-                      f'<child widget="{base}/lobby_button_leave" x="510" y="1"/>'])
+                     # (AE: SHUFFLE first, the host's in a team game (ae_team_shuffle.c), hidden as SWITCH
+                     # TEAM is; the five 124 wide, 128 apart)
+                     [f'<child widget="{base}/lobby_button_shuffle" x="2" y="1"/>',
+                      f'<child widget="{base}/lobby_button_team" x="130" y="1"/>',
+                      f'<child widget="{base}/lobby_button_start" x="258" y="1"/>',
+                      f'<child widget="{base}/lobby_button_add" x="386" y="1"/>',
+                      f'<child widget="{base}/lobby_button_leave" x="514" y="1"/>'])
     for key, caption, handlers in (
         ("add", "ADD PLAYER", ['<on event="a" run="port lobby add player"/>',
                                '<on event="start" run="port lobby add player"/>']),
@@ -1685,8 +1688,10 @@ def _lobby() -> list:
         ("start", "START NOW", ['<on event="a" run="net game speed start"/>',
                                 '<on event="start" run="net game speed start"/>']),
         ("leave", "LEAVE", ['<on event="a" run="mouse emit back event"/>',
-                            '<on event="start" run="mouse emit back event"/>'])):
-        lines += _widget(f"{base}/lobby_button_{key}", [("type", "text"), ("width", 128), ("height", 24),
+                            '<on event="start" run="mouse emit back event"/>']),
+        ("shuffle", "SHUFFLE", ['<on event="a" run="ae lobby shuffle teams"/>',
+                                '<on event="start" run="ae lobby shuffle teams"/>'])):
+        lines += _widget(f"{base}/lobby_button_{key}", [("type", "text"), ("width", 124), ("height", 24),
                                                        ("bitmap", "bitmaps/text_button_background"),
                                                        ("text", caption), ("font", "ui\\small_ui"),
                                                        ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)],

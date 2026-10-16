@@ -397,6 +397,7 @@ static char const *const port_function_names[] =
 	"port profile settings save",
 	"ae mcc use", "ae mcc not now", "ae mcc never ask", "ae mcc browse", /* AE hook */
 	"ae menus open", "ae menus pick", "ae menus focus", "ae menus item", /* AE hook */
+	"ae lobby shuffle teams", /* AE hook */
 	/* (a new profile's screens: Settings' is then being edited, which the
 	Xbox's leaves to its own screens) */
 	"new campaign decision",

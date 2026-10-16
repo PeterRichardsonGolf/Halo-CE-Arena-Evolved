@@ -622,3 +622,8 @@ port/linux/game/ui_map_list.c	#include "ae_map_warm_up.h" /* AE hook */
 port/linux/game/ui_map_list.c	#include <stddef.h> /* AE hook */
 port/linux/game/ui_map_list.c	add_entry(community[index], ae_map_warm_up_name(community[index], name, 0), ae_map_warm_up_name(community[index], name, 1), ae_map_warm_up_description(community[index], L"Community map"), NONE, 13, community[index]); /* AE hook */
 port/linux/game/ui_map_list.c	ae_map_warm_up_first(ui_map_list + XBOX_MAP_COUNT, ui_map_list_count_value - XBOX_MAP_COUNT, sizeof(ui_map_list[0]), offsetof(struct ui_map_entry, map_name)); /* AE hook */
+# the PC lobby's SHUFFLE (the host deals the teams again at random, evenly: ae_team_shuffle.c)
+port/linux/game/menu_tags.c	"ae lobby shuffle teams", /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_team_shuffle.h" /* AE hook */
+port/linux/game/menu_functions.c	if (!strcmp(name, "ae lobby shuffle teams")) /* AE hook */\nreturn ae_team_shuffle();
+port/linux/game/menu_functions.c	visible_set(named(list, "lobby_button_shuffle", 0), ae_team_shuffle_shown()); /* AE hook */

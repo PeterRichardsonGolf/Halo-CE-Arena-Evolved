@@ -103,6 +103,7 @@ their handlers open opens.
 #include "ae_glue_settings.h" /* AE hook */
 #include "ae_lan_bots.h" /* AE hook */
 #include "ae_glue_lan.h" /* AE hook */
+#include "ae_team_shuffle.h" /* AE hook */
 #include "halo_server_browser.h"
 #include "halo_port_limits.h" /* AE: the game lists' rows (halo_port_advertised_join_state) */
 
@@ -5570,6 +5571,7 @@ static void lobby_update(struct widget_instance *list)
 	}
 	lobby_join_help(list);
 	visible_set(named(list, "lobby_button_team", 0), game && game->variant.universal_variant.teams);
+	visible_set(named(list, "lobby_button_shuffle", 0), ae_team_shuffle_shown()); /* AE hook */
 	/* (the buttons' focus, off Switch Team when it is hidden) */
 	focus_off_hidden(named(list, "lobby_button_bar", 0));
 	visible_set(named(description, "lobby_right_item", 0), game != NULL && state >= _client_state_pregame);
@@ -6688,6 +6690,8 @@ boolean pc_menu_event_function_invoke(
 			return ae_mcc_menu_event(name, controller);
 		if (!strncmp(name, "ae menus ", 9)) /* AE hook */
 			return ae_menus_swap_event(name, widget, controller, widget_deleted);
+		if (!strcmp(name, "ae lobby shuffle teams")) /* AE hook */
+			return ae_team_shuffle();
 		if (!strcmp(name, "main menu quit game"))
 		{
 			platform_request_quit();
