@@ -190,6 +190,15 @@ static struct profile
 
 /* the charging hum's frequency (Hz), and the fully charged one's */
 #define CHARGING_HUM_HZ 25
+#define CHARGING_HUM_LOW 1
+#define CHARGING_HUM_HIGH 3
+/* the charge's rumble: a pulse every CHARGE_RUMBLE_TICKS, each a little longer so they run together; the right
+motor from LOW to HIGH with the charge, the left from nothing to LEFT_HIGH */
+#define CHARGE_RUMBLE_TICKS 3
+#define CHARGE_RUMBLE_MS 140
+#define CHARGE_RUMBLE_RIGHT_LOW 70
+#define CHARGE_RUMBLE_RIGHT_HIGH 210
+#define CHARGE_RUMBLE_LEFT_HIGH 110
 #define CHARGED_HUM_HZ 40
 
 static int ramped(int base, int to, float amount)
@@ -298,9 +307,10 @@ void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_w
 	{
 		/* CHARGING HUM (owner 10-15: "plasma pistol is missing a charge haptic": the trigger is held down while it
 		charges, so a resistance building with the charge was not felt): a vibration from the hold's zone, its
-		amplitude rising with the charge from the hold's strength to ramp_to, faster once fully charged */
+		amplitude rising with the charge, kept low (owner 10-15: "lower the intensity on the triggers and mix in the
+		rumble motors": the motors carry most of it, ae_ds5_charge_rumble), faster once fully charged */
 		shape = (struct shape)V(profile->held.a, 0, 0);
-		shape.b = (unsigned char)ramped(profile->held.b, profile->ramp_to, state->charge);
+		shape.b = (unsigned char)ramped(CHARGING_HUM_LOW, CHARGING_HUM_HIGH, state->charge);
 		shape.c = (unsigned char)(state->charge >= 1.0f ? CHARGED_HUM_HZ : CHARGING_HUM_HZ);
 		why = state->charge >= 1.0f ? "charged" : "charging";
 	}
@@ -948,4 +958,19 @@ void ae_ds5_link_result(struct ae_ds5_link *link, int fields, enum ae_ds5_write_
 	}
 	if (result == AE_DS5_WRITE_GONE)
 		ae_ds5_link_forget(link);
+}
+
+int ae_ds5_charge_rumble(enum ae_ds5_weapon_kind kind, float charge, long ticks, struct ae_ds5_rumble *rumble)
+{
+	float amount = charge < 0.0f ? 0.0f : charge > 1.0f ? 1.0f : charge;
+
+	rumble->left = rumble->right = rumble->ms = 0;
+	if (kind < 0 || kind >= AE_DS5_WEAPON_KINDS || profiles[kind].ramp != 2 || charge <= 0.0f ||
+		ticks % CHARGE_RUMBLE_TICKS != 0)
+		return 0;
+	/* (a Covenant weapon: the light right motor leads, the heavy left one joins as the charge builds) */
+	rumble->right = CHARGE_RUMBLE_RIGHT_LOW + (int)((float)(CHARGE_RUMBLE_RIGHT_HIGH - CHARGE_RUMBLE_RIGHT_LOW) * amount + 0.5f);
+	rumble->left = (int)((float)CHARGE_RUMBLE_LEFT_HIGH * amount + 0.5f);
+	rumble->ms = CHARGE_RUMBLE_MS;
+	return 1;
 }

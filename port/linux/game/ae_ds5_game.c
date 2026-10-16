@@ -505,6 +505,16 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	}
 	rounds[gamepad_index].weapon_index = weapon_index;
 	rounds[gamepad_index].last_charge = state.charge;
+	/* (a charge weapon charging: the motors rumble with it) */
+	{
+		struct ae_ds5_rumble charge_rumble;
+
+		if (rumble_on && ae_ds5_charge_rumble(state.kind, state.charge, now, &charge_rumble))
+		{
+			rounds[gamepad_index].rumble = charge_rumble;
+			rounds[gamepad_index].rumbles++;
+		}
+	}
 	/* L2: a grenade's throw, and whether there are grenades to throw */
 	{
 		long unit_index = player_get(player_index)->unit_index;

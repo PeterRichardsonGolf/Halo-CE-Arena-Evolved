@@ -454,10 +454,22 @@ int main(void)
 		/* (charging: the trigger is held down, so a hum rising with the charge, faster once charged) */
 		state.charge = 0.5f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 6 at 25 Hz"));
+		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 2 at 25 Hz"));
 		state.charge = 1.0f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "charged: vibration from zone 2 amplitude 8 at 40 Hz"));
+		CHECK(!strcmp(text, "charged: vibration from zone 2 amplitude 3 at 40 Hz"));
+		/* (the motors while it charges: a pulse every 3 ticks, rising with the charge; none for other kinds or at rest) */
+		{
+			struct ae_ds5_rumble charge_rumble;
+
+			CHECK(ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 0.5f, 3, &charge_rumble) && charge_rumble.right == 140 &&
+				charge_rumble.left == 55 && charge_rumble.ms == 140);
+			CHECK(ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 1.0f, 6, &charge_rumble) && charge_rumble.right == 210 &&
+				charge_rumble.left == 110);
+			CHECK(!ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 0.5f, 4, &charge_rumble));
+			CHECK(!ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 0.0f, 3, &charge_rumble));
+			CHECK(!ae_ds5_charge_rumble(AE_DS5_WEAPON_SEMI, 0.5f, 3, &charge_rumble));
+		}
 		/* (its battery spent: the dry click) */
 		state.empty = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
@@ -585,7 +597,7 @@ int main(void)
 		state.firing = 0;
 		state.charge = 0.75f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 7 at 25 Hz"));
+		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 3 at 25 Hz"));
 		state.charge = 0.0f;
 		state.overheated = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
