@@ -94,6 +94,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   one white, the shield bar with the overshield's two levels, eight health cells, OVERSHIELD and CAMO rows with the
   time left, and a flat motion sensor with the half-range ring, bearing lines and a wedge that shows your field of
   view (narrower when zoomed). CE's contacts, warnings and sounds are its own; CLASSIC is CE's HUD as before.
+  On Custom Edition maps with their own HUD, the AE panels replace that map's HUD as well: to see a map's own HUD,
+  play with HUD STYLE CLASSIC.
   The panels are drawn in the score strip's style (its soft dark under-stroke, dark tracks under bars and boxes,
   glowing digits) with smooth edges; the ammo group is CE's own width; the top corners sit the same distance from
   the screen's left and right edges, and CE's messages line up under the ammo group. A low or down shield blinks
