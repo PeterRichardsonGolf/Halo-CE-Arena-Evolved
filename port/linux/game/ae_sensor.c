@@ -12,6 +12,7 @@ the centre is the HUD's blip placement (hud_unit.c's hud_calculate_point).
 #include <string.h>
 
 #include "cseries/cseries.h"
+#include "cseries/cseries_windows.h"
 #include "math/real_math.h"
 #include "game/players.h"
 #include "interface/hud.h"
@@ -39,7 +40,11 @@ long game_time_get(void);
 #define AE_PI 3.14159265f
 #define CHEVRON_PX 14.0f   /* the player's chevron, px at scale 1 (owner 10-15: rev13's 10 read as a speck in play) */
 
-static struct { boolean valid; real x0, y0, x1, y1; } last[MAXIMUM_LOCAL_PLAYERS];
+static struct { boolean valid; real x0, y0, x1, y1; unsigned long drawn_at; } last[MAXIMUM_LOCAL_PLAYERS];
+
+/* (the last draw's rectangle, only while the sensor is being drawn: the panels' rule (ae_panels.c), so that waypoint
+labels do not fade under a sensor a gametype turned off, an old view's layout or another map's) */
+#define LAST_DRAW_MILLISECONDS 250
 
 boolean ae_sensor_active(void)
 {
@@ -62,8 +67,11 @@ boolean ae_sensor_take_blip(const union real_point2d *position, real fade, real 
 
 boolean ae_sensor_rectangle(short local_player_index, real *x0, real *y0, real *x1, real *y1)
 {
-	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || !last[local_player_index].valid)
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || !last[local_player_index].valid ||
+		system_milliseconds() - last[local_player_index].drawn_at >= LAST_DRAW_MILLISECONDS)
+	{
 		return FALSE;
+	}
 	*x0 = last[local_player_index].x0;
 	*y0 = last[local_player_index].y0;
 	*x1 = last[local_player_index].x1;
@@ -177,6 +185,7 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 		label, ae_panel_label_px(r / DESIGN_RIM), &color, _ae_text_outline);
 
 	last[local_player_index].valid = TRUE;
+	last[local_player_index].drawn_at = system_milliseconds();
 	last[local_player_index].x0 = cx - 1.18f * r;
 	last[local_player_index].y0 = cy - 1.18f * r;
 	last[local_player_index].x1 = cx + 1.18f * r;

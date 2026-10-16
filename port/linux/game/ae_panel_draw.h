@@ -49,8 +49,8 @@ void ae_panel_tone_rgb(short tone, real rgb[3]);
 
 /* a box in the outline rule; fill_alpha 0: no fill */
 void ae_panel_draw_box(const struct ae_panel_para *box, real scale, real fill_alpha, short line_tone);
-/* a bar: outline, the fill from the left (fill 0..1) in fill_tone, overshield level 1 (green, its 1 px lighter top
-edge) and level 2 (a white band on the top 38 %), the 5 cells' dividers */
+/* a bar: the dark track, the fill from the left (fill 0..1) in fill_tone, overshield level 1 (the classic HUD's pink)
+and level 2 (its green, over the first), each with a 1 px light top edge, the 5 cells' dividers, the outline */
 void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
 	real overshield1, real overshield2);
 /* the same with the fill and the line at fade x their alpha, keylines at full (the shield's off beat while it blinks) */
@@ -68,7 +68,7 @@ real ae_panel_glyph_width(short glyph, real height);
 void ae_panel_draw_plasma(real cx, real cy, real diameter, short tone, real alpha);
 /* the "x": two 2.2 px strokes in a leaning square of size, its bottom-left on the baseline */
 void ae_panel_draw_x(real x, real baseline_y, real size, real scale, short tone);
-/* a health cell: lit in tone at 0.94; lost: 0.22 with a rim at 0.5 */
+/* a health cell: lit, the tone at the fill's alpha; lost, the dark track with a 1 px rim in blue (red when tone is) */
 void ae_panel_draw_cell(const struct ae_panel_para *cell, boolean lit, short tone);
 /* the health plus sign, whole pixels, arms a third */
 void ae_panel_draw_cross(real x, real y, real size, short tone);
@@ -80,13 +80,16 @@ void ae_panel_draw_ring(real cx, real cy, real radius, real width, short tone, r
 /* a filled circle in any colour (the sensor's blips), its edge 1 px soft */
 void ae_panel_fill_disc(real cx, real cy, real radius, const union real_argb_color *color);
 /* a filled polygon with 1 px soft edges, its outline moved grow px out (the keyline: grow 1); it is filled as a fan
-from its first corner, so every corner must be seen from that one (a chevron from its tip) */
+from its corners' centroid, so every corner must be seen from there */
 void ae_panel_fill_polygon_soft(const real (*points)[2], short count, real grow, const union real_argb_color *color);
 /* a filled convex polygon (screen px, clockwise or not) */
 void ae_panel_draw_polygon(const real (*points)[2], short count, short tone, real alpha);
 
 /* whether the HUD's art is found in this map (hud_ammo_alphas, hud_ammo_type_icons, hud_unit_backgrounds) */
 boolean ae_panel_art_found(short *alphas, short *icons, short *backgrounds);
+
+/* a map's tags loaded or went: the sheets' bitmap groups are looked up again (ae_buttons_tags.c calls it) */
+void ae_panel_draw_tags_changed(void);
 
 /* debug.ae_panel_primitives (HALO_DEBUG_AE_PANEL_PRIMITIVES=1): one of each primitive on a flat grey plate in the
 first view, for tools/ae_test/panel_checks.py primitives; one log line with the places */

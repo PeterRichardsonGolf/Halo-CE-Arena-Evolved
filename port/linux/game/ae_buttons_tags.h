@@ -29,8 +29,10 @@ long ae_buttons_ce_menu_icons(long bitmap_group_index);
 float ae_buttons_ce_menu_icon_scale(long bitmap_group_index);
 /* (ui_widget.c's render_state_bitmap, AE hook) a text icon in the PC menus (the carnage report's, the lobbies'),
 drawn as the HUD hints' are: sized by the line's font's capitals and centred on them, the cursor moved past it (TRUE);
-FALSE: not in the PC menus (the stock draw) */
+FALSE: not in the PC menus (the stock draw). The cursor moves as the stock draw's does: past the icon plus width_offset,
+or with absolute_width (the icon's _hud_icon_absolute_width_bit) to width_offset past where it starts; the icon's own
+offset is not used, the icon being centred on the capitals instead */
 boolean ae_buttons_menu_icon(struct bitmap_data const *bitmap, union real_rectangle2d const *clip,
-	union rectangle2d *cursor_bounds, short width_offset, unsigned long color);
+	union rectangle2d *cursor_bounds, short width_offset, boolean absolute_width, unsigned long color);
 
 #endif

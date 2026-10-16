@@ -431,9 +431,15 @@ boolean ae_panel_engine_view(short local_player_index, struct ae_panel_view *out
 		out->shield_top_y = out->ammo_origin_y;
 		placed = FALSE;
 	}
-	/* the corners square: the same margin from the view's left and right edges (CE's placements keep the heights) */
-	out->ammo_origin_x = ae_hud_corner_margin(out->scale) - AE_PANEL_LEFT_LINE_X * out->scale;
-	out->shield_right_x = out->view_width - ae_hud_corner_margin(out->scale);
+	/* the corners square: the same margin from the view's left and right edges (CE's placements keep the heights),
+	and with HUD AREA (display.hud_area) from its sides, as CE's elements, the sensor and the strip keep to them */
+	{
+		short area_left = 0, area_right = 0;
+
+		hud_area_insets(&area_left, &area_right);
+		out->ammo_origin_x = (real)area_left * ppu + ae_hud_corner_margin(out->scale) - AE_PANEL_LEFT_LINE_X * out->scale;
+		out->shield_right_x = out->view_width - (real)area_right * ppu - ae_hud_corner_margin(out->scale);
+	}
 	return placed;
 }
 

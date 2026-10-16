@@ -581,6 +581,25 @@ void ae_strip_engine_debug_log(void)
 	/* (the AE panels' test controls, in the game's tick: seating a player draws the game's random numbers) */
 	ae_panel_engine_debug_tick();
 
+	/* (a client's dropped-flag times, whether or not a strip is drawn: a flag dropped while every local player is
+	dead or watching starts its countdown when it drops, not when a strip first sees it) */
+	if (game_engine && game_engine_running() && network_game_distributed_client())
+	{
+		struct game_variant *variant = game_engine_get_variant();
+
+		if (variant && variant->game_engine_index == game_engine_ctf)
+		{
+			struct ae_strip_side_snapshot side;
+			long team;
+
+			for (team = 0; team < 2; team++)
+			{
+				memset(&side, 0, sizeof(side));
+				read_flag(team, NONE, NULL, &side);
+			}
+		}
+	}
+
 	/* (read once: a test's setting) */
 	if (enabled < 0)
 		enabled = config_boolean("debug.score_strip_log") ? 1 : 0;

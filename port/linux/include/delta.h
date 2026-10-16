@@ -168,16 +168,7 @@ legacy table's "platform_policy" section is to tune them without a release
 legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
-Give each release that changes what the machines send a new one.
-(Arena Evolved: ChupathingyCE 0.7.5b's own, "chupa-29a", for the same game
-protocol: since 0.7.5b ChupathingyCE joins a Delta host of its own wire
-alone ("another release of the game's network code"), so with a wire of its
-own, "ae-29a", no ChupathingyCE player could join an Arena Evolved game.
-Arena Evolved fetches no signed legacy table unless network.legacy_table_fetch
-is on (off by default), so it plays its built-in 29 / 11..29 and joins no
-host below its own 29 (halo_port_advertised_joinable); a table fetched by
-choice sets its numbers as ChupathingyCE's. The game protocol is OpenCE
-build-206's: its hosts announce 29, as OpenCE build-206's and later's do) */
+Give each release that changes what the machines send a new one. */
 #define DELTA_WIRE "chupa-29a"
 
 /* how many OpenCE numbers past the one announced (the newest this build, or
@@ -191,7 +182,7 @@ match (a map of another version) ends its join rather than playing on. A
 raise that changes an existing message is breaking: a release follows it
 (docs/delta.md, "The legacy number"). Arena Evolved: 0, it joins hosts of
 its own version alone, as OpenCE does (halo_port_limits.h) */
-#define DELTA_LEGACY_PRESUMED 0
+#define DELTA_LEGACY_PRESUMED 0 /* AE hook */
 
 /* OpenCE's network versions (HALO_PORT_NETWORK_VERSION in its builds), the
 first of its releases with each, and whether the version's change is one the

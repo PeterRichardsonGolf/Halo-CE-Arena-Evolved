@@ -11,12 +11,22 @@ before). See ae_hud_style.h.
 #include "ae_hud_style.h"
 
 const char *config_string(const char *name);
+unsigned long config_changes(void);
 
+/* (asked many times a view a frame: read again only when a setting changed) */
 boolean ae_hud_style_is_ae(void)
 {
-	const char *value = config_string("display.hud_style");
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean ae = TRUE;
 
-	return !(value && strcmp(value, "classic") == 0);
+	if (read_at != config_changes())
+	{
+		const char *value = config_string("display.hud_style");
+
+		read_at = config_changes();
+		ae = (boolean)!(value && strcmp(value, "classic") == 0);
+	}
+	return ae;
 }
 
 const char *ae_hud_style_name(void)

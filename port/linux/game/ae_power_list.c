@@ -82,9 +82,14 @@ real ae_power_list_right_x(short local_player_index)
 
 real ae_power_list_left_x(short local_player_index)
 {
+	short area_left = 0, area_right = 0;
+
 	if (valid_view(local_player_index) && list_views[local_player_index].drawn)
 		return list_views[local_player_index].left;
-	return (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) * ae_hud_pixels_per_unit();
+	/* (no list: the view's right, HUD AREA's side with it) */
+	hud_area_insets(&area_left, &area_right);
+	return (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0 - area_right) *
+		ae_hud_pixels_per_unit();
 }
 
 boolean ae_power_list_extent(short local_player_index, real extent[4])

@@ -7,6 +7,7 @@ source/interface/hud_draw.c), through the HUD's screen-quad pass with the
 same blend, but at real (sub-pixel) positions and any scale.
 */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "cseries/cseries.h"
@@ -24,6 +25,7 @@ same blend, but at real (sub-pixel) positions and any scale.
 #include "ae_hud_digits.h"
 
 const char *config_string(const char *name);
+unsigned long config_changes(void);
 void platform_log(char const *format, ...);
 void platform_video_drawable_size(int *width, int *height);
 
@@ -135,6 +137,19 @@ static void draw_quad(struct glyph_sprite const *sprite, real x0, real y0, real 
 	rasterizer_psuedo_dynamic_screen_quad_draw(&parameters, vertices);
 }
 
+/* the text's sprites, looked up once a draw (ae_hud_digits_draw_ex) for its 10 to 34 passes: the first
+text_sprite_count characters' */
+#define TEXT_SPRITES 64
+static struct { struct glyph_sprite sprite; boolean found; } text_sprites[TEXT_SPRITES];
+static long text_sprite_count;
+
+static void text_sprites_find(wchar_t const *text)
+{
+	for (text_sprite_count = 0; text_sprite_count < TEXT_SPRITES && text[text_sprite_count]; text_sprite_count++)
+		text_sprites[text_sprite_count].found = glyph_sprite(text[text_sprite_count],
+			&text_sprites[text_sprite_count].sprite);
+}
+
 /* every glyph of the text, moved by (dx, dy), in one colour */
 static void draw_pass(wchar_t const *text, real x, real baseline_y, real cap_px,
 	struct ae_hud_digits_options const *options, real dx, real dy, pixel32 color)
@@ -146,7 +161,13 @@ static void draw_pass(wchar_t const *text, real x, real baseline_y, real cap_px,
 		struct glyph_sprite sprite;
 		struct ae_digit_quad quad;
 
-		if (!glyph_sprite(text[i], &sprite))
+		if (i < text_sprite_count)
+		{
+			if (!text_sprites[i].found)
+				continue;
+			sprite = text_sprites[i].sprite;
+		}
+		else if (!glyph_sprite(text[i], &sprite))
 			continue;
 		ae_digit_quad(text, i, x, baseline_y, cap_px, options->cell_px, options->ink_left, sprite.aspect, &quad);
 		if (quad.visible)
@@ -188,6 +209,7 @@ void ae_hud_digits_draw_ex(short local_player_index, real x, real baseline_y, co
 	if (!text || !text[0] || !color || !options || cap_px <= 0.0f)
 		return;
 	fill = pixel(&color->rgb, color->alpha * options->fill_alpha);
+	text_sprites_find(text);
 	switch (options->style)
 	{
 	case _ae_digits_glow:
@@ -217,6 +239,7 @@ void ae_hud_digits_draw_ex(short local_player_index, real x, real baseline_y, co
 		draw_fill(text, x, baseline_y, cap_px, options, 0.0f, 0.0f, fill);
 		break;
 	}
+	text_sprite_count = 0;
 }
 
 void ae_hud_digits_draw(short local_player_index, real x, real baseline_y, const wchar_t *text, real cap_px,
@@ -240,7 +263,8 @@ void ae_hud_digits_draw(short local_player_index, real x, real baseline_y, const
 void ae_hud_digits_debug_draw(short local_player_index)
 {
 	static boolean logged = FALSE;
-	char const *setting;
+	static unsigned long read_at = (unsigned long)-1;
+	static char setting[32];
 	wchar_t text[32];
 	real_argb_color magenta;
 	struct ae_hud_digits_options options;
@@ -249,8 +273,15 @@ void ae_hud_digits_debug_draw(short local_player_index)
 
 	if (local_player_index != 0)
 		return;
-	setting = config_string("debug.digits");
-	if (!setting || !setting[0])
+	/* (read again only when a setting changed) */
+	if (read_at != config_changes())
+	{
+		char const *value = config_string("debug.digits");
+
+		read_at = config_changes();
+		snprintf(setting, sizeof(setting), "%s", value ? value : "");
+	}
+	if (!setting[0])
 		return;
 	for (i = 0; i < (short)(NUMBEROF(text) - 1) && setting[i]; i++)
 		text[i] = (wchar_t)(unsigned char)setting[i];

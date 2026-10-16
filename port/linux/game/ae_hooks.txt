@@ -1,7 +1,8 @@
 # path<TAB>exact text of the hook (one per AE hook in an upstream file; notes/ae-hooks.md says where each goes).
 # A hook of several lines writes them joined by \n: each line is matched with its indentation trimmed, and the
 # lines must follow each other. tools/test_ae_hooks.py checks every hook is present, and every line marked
-# AE hook upstream is a line of one listed here.
+# AE hook upstream is a line of one listed here. A setting row of port_config.c is marked on its opening line: its
+# help text, up to the row's }, belongs to that hook (an AE row's, or AE's edit of an upstream row's text).
 # player 1's controller assigned by the PC menus (profile pick, campaign start, quick profile) takes player 1's
 # active profile (0.2.3; ae_input.c): a layout's d-pad rule follows the player whatever the order of the two calls.
 # Only at the port's own three sites: the Xbox lobby keeps profiles by CONTROLLER index, and a hook inside
@@ -424,7 +425,7 @@ source/interface/ui_widget.c	bitmap_group_index = ae_buttons_ce_menu_icons(bitma
 source/interface/ui_widget.c	scale *= ae_buttons_ce_menu_icon_scale(bitmap_group_index); /* AE hook */
 # PC menus' text icons drawn as the HUD hints' (0.2.6, owner 10-15: the carnage report's "=quit" / "=pick game" icons
 # sat low beside their words): sized by the line's capitals and centred on them (ae_buttons_tags.c); Xbox menus as they were
-source/interface/ui_widget.c	if (ae_buttons_menu_icon(bitmap, clip, cursor_bounds, icon->width_offset, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
+source/interface/ui_widget.c	if (ae_buttons_menu_icon(bitmap, clip, cursor_bounds, icon->width_offset, TEST_FLAG(icon->flags, _hud_icon_absolute_width_bit), TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
 # The carnage report's B asks first (0.2.6, owner 10-15: B dropped the player straight to the main menu, the next B
 # into "exit Halo?"): "LEAVE THE GAME?" over the report, A leaves as B did, B stays; only player 1's buttons count
 # there (owner: "p1/host only"), so AE takes the report's buttons whole (ae_postgame.c; PC and Xbox menus alike: one
@@ -474,10 +475,14 @@ source/objects/damage.c	ae_bots_damage_note(damage->owner_player_index, object_i
 port/linux/src/port_config.c	{ "debug.bot_events", _config_boolean, "false", "HALO_BOT_EVENTS", _environment_set_is_true, _platform_all, /* AE hook */
 # RECRUIT bot level below EASY (ae_bots_skill.inc, included after the skill table): for new players and children
 port/linux/game/bots.c	#include "ae_bots_skill.inc" /* AE hook */
+# the bots rows' help text (OpenCE #367's rows; a setting row's help text belongs to the hook on its opening line):
+# LAN games take up to 3 bots, and RECRUIT
+port/linux/src/port_config.c	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.c	if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT; /* AE hook */
 port/linux/game/bots.c	struct bots_skill_definition const *skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
 port/linux/game/bots.c	tick.skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
-port/linux/game/bots.c	ae_bots_skill_definition(bots_globals.skill)->name, /* AE hook */
+port/linux/game/bots.c	ae_bots_skill_definition(bots_globals.skill)->name, bots_globals.searches, bots_globals.search_failures, /* AE hook */
 port/linux/game/bots.c	if (bots_random_real(bot) < ae_bots_hunt_chance(bots_globals.skill)) /* AE hook */
 port/linux/game/bots.c	ae_bots_aim_floor(bots_globals.skill, &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
 port/linux/game/bots.c	bot->strafe_until_tick = now + ae_bots_strafe_ticks(bots_globals.skill, TICKS_PER_SECOND / 3 + (long)(bots_random(bot) % (TICKS_PER_SECOND))); /* AE hook */
@@ -680,3 +685,5 @@ port/linux/game/menu_functions.c	if (ae_lobby_only_bots_stay(controller)) return
 # ChupathingyCE table's row for the shared wire could otherwise widen AE's numbers)
 port/linux/src/delta.c	if (!config_boolean("network.legacy_table_fetch")) return 0; /* AE hook */
 port/linux/src/delta.c	if (file && !config_boolean("network.legacy_table_fetch")) { free(file); file = NULL; } /* AE hook */
+# Delta: Arena Evolved's clients join hosts of their own network version alone, as OpenCE's do (ChupathingyCE presumes 1)
+port/linux/include/delta.h	#define DELTA_LEGACY_PRESUMED 0 /* AE hook */

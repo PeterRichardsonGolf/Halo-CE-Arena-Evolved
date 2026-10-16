@@ -2392,8 +2392,7 @@ static void bots_report(void)
 		return;
 	platform_log("bots: tick %ld, %ld bots (%s): searches %ld (%ld failed, %ld short, %ld full, %ld unavoided, "
 		"%ld unsmoothed), stuck %ld (goals given up %ld), kills/deaths%s", now, count,
-		ae_bots_skill_definition(bots_globals.skill)->name, /* AE hook */
-		bots_globals.searches, bots_globals.search_failures,
+		ae_bots_skill_definition(bots_globals.skill)->name, bots_globals.searches, bots_globals.search_failures, /* AE hook */
 		bots_globals.search_partials, bots_globals.search_overflows, bots_globals.search_unavoided,
 		bots_globals.search_unsmoothed, bots_globals.stuck_events, bots_globals.stuck_giveups, line);
 }

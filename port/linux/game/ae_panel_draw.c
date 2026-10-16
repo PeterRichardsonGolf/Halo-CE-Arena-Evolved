@@ -26,6 +26,7 @@ draws a sprite (the same blend as the HUD's numbers).
 #include "ae_panel_draw.h"
 
 boolean config_boolean(const char *name);
+unsigned long config_changes(void);
 void platform_log(char const *format, ...);
 
 #define AE_BLEND_ALPHA_MULTIPLY_ADD 7  /* the HUD's, as ae_hud_digits.c */
@@ -562,17 +563,43 @@ static const real battery_shape[][2] = { { 0.9333f, 0.6965f }, { 0.8329f, 0.7313
 	{ 0.9512f, 0.0575f }, { 0.9169f, 0.2982f }, { 0.9834f, 0.3813f } };
 #define BATTERY_ASPECT (210.0f / 80.0f)
 
-static const char ammo_alphas_tag[] = "ui\\hud\\bitmaps\\combined\\hud_ammo_alphas";
-static const char type_icons_tag[] = "ui\\hud\\bitmaps\\combined\\hud_ammo_type_icons";
-static const char unit_backgrounds_tag[] = "ui\\hud\\bitmaps\\combined\\hud_unit_backgrounds";
+/* the three sheets AE's panels draw from */
+enum { _sheet_ammo_alphas, _sheet_type_icons, _sheet_unit_backgrounds, NUMBER_OF_SHEETS };
+static const char *const sheet_tags[NUMBER_OF_SHEETS] = {
+	"ui\\hud\\bitmaps\\combined\\hud_ammo_alphas",
+	"ui\\hud\\bitmaps\\combined\\hud_ammo_type_icons",
+	"ui\\hud\\bitmaps\\combined\\hud_unit_backgrounds" };
+
+/* their bitmap groups, looked up once a map (tag_loaded walks every tag of the map, and a magazine draws a round at a
+time): forgotten when a map's tags load or go (ae_panel_draw_tags_changed) */
+static long sheet_groups[NUMBER_OF_SHEETS];
+static boolean sheet_groups_known = FALSE;
+
+void ae_panel_draw_tags_changed(void)
+{
+	sheet_groups_known = FALSE;
+}
+
+static long sheet_group(short sheet)
+{
+	if (!sheet_groups_known)
+	{
+		short i;
+
+		for (i = 0; i < NUMBER_OF_SHEETS; i++)
+			sheet_groups[i] = tag_loaded(BITMAP_GROUP_TAG, sheet_tags[i]);
+		sheet_groups_known = TRUE;
+	}
+	return sheet >= 0 && sheet < NUMBER_OF_SHEETS ? sheet_groups[sheet] : NONE;
+}
 
 /* a sheet of a HUD bitmap group, its texture ready: sequence `index`, and its clip (texels for an interface group,
 else 0..1) into which the PNG's fractions map. On the Xbox maps the sequence has no sprites: its bitmap is the
 whole of it (the PNG's layout). Halo PC's sheets (a Custom Edition map's, from bitmaps.map) pack the same art as
 sprites of one bitmap: *sprite TRUE, the clip the sprite's. */
-static struct bitmap_data const *sheet_bitmap(const char *tag, short index, real_rectangle2d *clip, boolean *sprite)
+static struct bitmap_data const *sheet_bitmap(short sheet, short index, real_rectangle2d *clip, boolean *sprite)
 {
-	long group_index = tag_loaded(BITMAP_GROUP_TAG, tag);
+	long group_index = sheet_group(sheet);
 	struct bitmap_group const *group;
 	struct bitmap_group_sequence const *sequence;
 	struct bitmap_data const *bitmap = NULL;
@@ -648,11 +675,11 @@ boolean ae_panel_art_found(short *alphas, short *icons, short *backgrounds)
 {
 	long group_index;
 
-	group_index = tag_loaded(BITMAP_GROUP_TAG, ammo_alphas_tag);
+	group_index = sheet_group(_sheet_ammo_alphas);
 	*alphas = (short)(group_index == NONE ? -1 : bitmap_group_get(group_index)->sequences.count);
-	group_index = tag_loaded(BITMAP_GROUP_TAG, type_icons_tag);
+	group_index = sheet_group(_sheet_type_icons);
 	*icons = (short)(group_index == NONE ? -1 : bitmap_group_get(group_index)->sequences.count);
-	group_index = tag_loaded(BITMAP_GROUP_TAG, unit_backgrounds_tag);
+	group_index = sheet_group(_sheet_unit_backgrounds);
 	*backgrounds = (short)(group_index == NONE ? -1 : bitmap_group_get(group_index)->sequences.count);
 	return (boolean)(*alphas > 6 && *icons > 2);
 }
@@ -748,7 +775,7 @@ void ae_panel_draw_art(short art, real x, real y, real height, boolean lit, shor
 	if (art < 0 || art >= (short)NUMBEROF(art_strips) || height <= 0.0f)
 		return;
 	strip = &art_strips[art];
-	bitmap = sheet_bitmap(ammo_alphas_tag, strip->bitmap, &clip, &sprite);
+	bitmap = sheet_bitmap(_sheet_ammo_alphas, strip->bitmap, &clip, &sprite);
 	if (!bitmap)
 		return;
 	scale = height / (strip->ink_y1 - strip->ink_y0);
@@ -762,7 +789,7 @@ void ae_panel_draw_art(short art, real x, real y, real height, boolean lit, shor
 		(SPENT_ALPHA + 0.15f));
 }
 
-static void draw_box_glyph(const char *tag, const struct glyph_box *box, real x, real y, real height, short tone,
+static void draw_box_glyph(short sheet, const struct glyph_box *box, real x, real y, real height, short tone,
 	real alpha)
 {
 	struct bitmap_data const *bitmap;
@@ -770,7 +797,7 @@ static void draw_box_glyph(const char *tag, const struct glyph_box *box, real x,
 	boolean sprite;
 	real texels[4][2];
 
-	bitmap = sheet_bitmap(tag, box->bitmap, &clip, &sprite);
+	bitmap = sheet_bitmap(sheet, box->bitmap, &clip, &sprite);
 	if (!bitmap)
 		return;
 	texels[0][0] = box->x0; texels[0][1] = box->y0;
@@ -812,10 +839,10 @@ void ae_panel_draw_glyph(short glyph, real x, real y, real height, short tone, r
 	switch (glyph)
 	{
 	case _ae_glyph_round:
-		draw_box_glyph(type_icons_tag, &round_box, x, y, height, tone, alpha);
+		draw_box_glyph(_sheet_type_icons, &round_box, x, y, height, tone, alpha);
 		break;
 	case _ae_glyph_frag:
-		draw_box_glyph(type_icons_tag, &frag_box, x, y, height, tone, alpha);
+		draw_box_glyph(_sheet_type_icons, &frag_box, x, y, height, tone, alpha);
 		break;
 	case _ae_glyph_battery:
 		draw_shape(battery_shape, (short)NUMBEROF(battery_shape), BATTERY_ASPECT, x, y, height, tone, alpha);
@@ -1063,8 +1090,16 @@ void ae_panel_draw_debug(short local_player_index)
 	struct ae_panel_para bar = { 60.0f, 361.0f, 200.0f, 212.0f, AE_PANEL_LEAN };
 	struct ae_panel_para cell = { 400.0f, 415.0f, 200.0f, 210.0f, -AE_PANEL_LEAN };
 	real_argb_color grey;
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean on = FALSE;
 
-	if (local_player_index != 0 || !config_boolean("debug.ae_panel_primitives"))
+	/* (read again only when a setting changed) */
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		on = config_boolean("debug.ae_panel_primitives");
+	}
+	if (local_player_index != 0 || !on)
 		return;
 	/* the plate: flat mid grey, so the checks measure the primitives on a known ground */
 	grey.alpha = 1.0f; grey.red = grey.green = grey.blue = 0.40f;

@@ -270,8 +270,11 @@ static void draw_runs(short view, struct ae_strip_text const *text, real x, real
 		long end = start;
 		real_argb_color color;
 
-		while (end < AE_STRIP_TEXT_LENGTH && text->text[end] && text->colors[end] == text->colors[start])
+		/* (room for the terminator, should a text fill its array unterminated) */
+		while (end < AE_STRIP_TEXT_LENGTH - 1 && text->text[end] && text->colors[end] == text->colors[start])
 			end++;
+		if (end == start)
+			break;
 		memcpy(run, text->text + start, (size_t)(end - start) * sizeof(wchar_t));
 		run[end - start] = 0;
 		memcpy(prefix, text->text, (size_t)start * sizeof(wchar_t));
@@ -719,6 +722,22 @@ static void draw_strip(short view)
 	state->extent[1] = MIN(layout.clock.y, layout.left_score.y);
 	state->extent[2] = layout.right_end_x;
 	state->extent[3] = state->shared_line_y + 4.0f;
+	/* (the lines above the scores too, when shown: the context and lead line, the marker) */
+	{
+		struct ae_strip_box const *above[3];
+		short i;
+
+		above[0] = &layout.context;
+		above[1] = &layout.lead;
+		above[2] = &layout.marker;
+		for (i = 0; i < 3; i++)
+			if (above[i]->visible && above[i]->w > 0.0f && above[i]->h > 0.0f)
+			{
+				state->extent[0] = MIN(state->extent[0], above[i]->x);
+				state->extent[1] = MIN(state->extent[1], above[i]->y);
+				state->extent[2] = MAX(state->extent[2], above[i]->x + above[i]->w);
+			}
+	}
 	state->visible = TRUE;
 }
 

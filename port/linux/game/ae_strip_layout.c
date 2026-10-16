@@ -85,6 +85,9 @@ static real measure_score(const struct measures *m, const struct ae_strip_text *
 		return 0.0f;
 	if (count == 0)
 		return m->text(score->text, ae_strip_text_px(AE_STRIP_NAME_PX, k, m->s));
+	/* (room for the terminator, should a text fill its array unterminated) */
+	if (count > AE_STRIP_TEXT_LENGTH - 1)
+		count = AE_STRIP_TEXT_LENGTH - 1;
 	memcpy(digits, score->text, (size_t)count * sizeof(wchar_t));
 	digits[count] = 0;
 	width = m->digits(digits, ae_strip_digits_px(AE_STRIP_SCORE_CAP, k));
@@ -204,7 +207,9 @@ static void fit(const struct measures *m, real room, real *bar_out, real *k_out)
 		*bar_out = bar; *k_out = low;
 		return;
 	}
-	for (step = 0; step < 40; step++)
+	/* (halved until a 2000th of the scale: under half a pixel on a strip a thousand pixels wide, in about 10 steps,
+	each measuring every text: this runs every frame while the gap rule holds) */
+	for (step = 0; step < 40 && high - low > s * 0.0005f; step++)
 	{
 		real middle = (low + high) / 2.0f;
 

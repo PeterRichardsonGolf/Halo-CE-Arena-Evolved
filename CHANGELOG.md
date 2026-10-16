@@ -23,6 +23,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - PC lobby with LAN bots: the host's last person pressing B (to change the map or gametype) left an empty lobby that
   could not be backed out of, because the bots counted as that PC's players. Now that B leaves as the last player's
   does: the bots go too and you are back on Server Setup.
+- HUD AREA (16:9 or 4:3 on a wider screen) now moves HUD STYLE AE's ammo, grenade, shield and health panels in with
+  the rest of the HUD; they stayed in the screen's outer corners.
+- Item waypoint labels no longer fade under a motion sensor that is not drawn (a gametype without one, after split
+  screen goes to one view), or over an empty shield corner; they do fade under the score strip's top lines
+  ("YOU ARE THE JUGGERNAUT", the lead).
+- A guest in a CTF game sees the right return countdown for a flag dropped while all its players were dead.
+- HUD STYLE AE draws with fewer lookups a frame (the HUD's sheets once a map, settings once a change).
 
 ## 0.3.1-beta - 2026-10-16
 

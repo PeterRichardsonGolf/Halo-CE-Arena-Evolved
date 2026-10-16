@@ -25,7 +25,10 @@ it is; where it differs from this section, this section is right for AE.
   generated XML identically. AE's own menus (`display.arena_menus`) live in
   `port/linux/game/ae_*` and `port/linux/src/ae_*`; upstream files carry only
   `/* AE hook */` lines, listed in `port/linux/game/ae_hooks.txt` and checked
-  by `tools/test_ae_hooks.py`.
+  by `tools/test_ae_hooks.py`. A setting row in `port_config.c` carries its
+  hook on its opening line (the `{ "name", ...` line): the help text that
+  follows, up to the row's `},`, belongs to that hook, AE's own row or AE's
+  edit of an upstream row's text.
 - Maps: OpenCE's own Custom Edition loader (`custom_edition_*.c`,
   `cache_file_formats.c`) is not in this tree. Custom Edition, HaloMD and
   Halo PC maps are ChupathingyCE's (`ce_*.c`, `map_families.c`), read from

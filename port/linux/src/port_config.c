@@ -682,12 +682,12 @@ static const struct config_setting config_settings[] =
 		"(each folder moved whole, never copied; one that cannot be moved stays\n"
 		"where it is); \"yes\": moved without asking; \"no\": left where they are.\n"
 		"Android moves them unless this is \"no\"." },
-	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all,
+	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all, /* AE hook */
 		"Computer players (bots) in a local (split screen) Slayer game: 0 to 15\n"
 		"join its lobby with the players, as far as the game has room; up to 3\n"
 		"in a LAN game you host, none in internet games. 0: none, as in the stock\n"
 		"game." },
-	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all,
+	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all, /* AE hook */
 		"How well the bots play: \"recruit\" (for new players), \"easy\", \"normal\",\n"
 		"\"heroic\" or \"legendary\" (how soon they react, how well they aim, how\n"
 		"far they see)." },

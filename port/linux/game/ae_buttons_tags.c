@@ -39,6 +39,7 @@ HUD globals' button icons at them; it tells AE where they start
 #include "text/draw_string.h"
 #include "text/font_group.h"
 #include "ae_buttons_tags.h"
+#include "ae_panel_draw.h"
 
 #include "../src/ae_buttons.h"
 
@@ -48,6 +49,7 @@ void platform_log(char const *format, ...);
 boolean cache_file_tags_are_ce(void);
 /* port_config.c's */
 char const *config_string(char const *name);
+unsigned long config_changes(void);
 
 /* ---------- constants */
 
@@ -153,6 +155,7 @@ void ae_buttons_tags_unloaded(
 	void)
 {
 	glyphs_forget();
+	ae_panel_draw_tags_changed();
 	/* (the map going: its sheets with it; ce_hud.c tells the next one's after this) */
 	ce_sheet_count = 0;
 	ce_menu_icons_logged = FALSE;
@@ -206,6 +209,7 @@ void ae_buttons_tags_loaded(
 	long ce_found = 0;
 
 	glyphs_forget();
+	ae_panel_draw_tags_changed();
 	for (glyph = 0; glyph < glyph_count(); glyph++)
 	{
 		const struct ae_button_glyph *embedded = &ae_button_glyphs[glyph];
@@ -335,16 +339,26 @@ boolean ae_buttons_menu_icon(
 	real_rectangle2d const *clip,
 	rectangle2d *cursor_bounds,
 	short width_offset,
+	boolean absolute_width,
 	pixel32 color)
 {
-	char const *menus = config_string("display.menus");
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean pc_menus = FALSE;
 	struct font_header const *font;
 	long font_index = draw_string_get_font();
 	real texels_wide, texels_high, cap, height, scale, baseline;
 	point2d point;
 
-	/* (only the PC menus' (display.menus "pc"): the Xbox menus are upstream's, as they were) */
-	if (!menus || _stricmp(menus, "pc") || !bitmap || font_index == NONE)
+	/* (only the PC menus' (display.menus "pc"): the Xbox menus are upstream's, as they were; read again only when a
+	setting changed, being asked once an icon) */
+	if (read_at != config_changes())
+	{
+		char const *menus = config_string("display.menus");
+
+		read_at = config_changes();
+		pc_menus = (boolean)(menus && !_stricmp(menus, "pc"));
+	}
+	if (!pc_menus || !bitmap || font_index == NONE)
 		return FALSE;
 	font = font_definition_get(font_index);
 	if (!font || font->ascending_height <= 0)
@@ -362,6 +376,7 @@ boolean ae_buttons_menu_icon(
 	point.x = (short)(cursor_bounds->x0 + 1);
 	point.y = (short)(baseline - cap / 2.0f + height / 2.0f + 0.5f);
 	hud_draw_bitmap_direct(bitmap, _hud_anchor_bottom_left, &point, clip, scale, 0.0f, color, FALSE);
-	cursor_bounds->x0 = (short)(point.x + texels_wide * scale + 0.5f) + width_offset;
+	cursor_bounds->x0 = absolute_width ? (short)(point.x + width_offset) :
+		(short)((short)(point.x + texels_wide * scale + 0.5f) + width_offset);
 	return TRUE;
 }

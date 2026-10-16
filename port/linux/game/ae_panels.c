@@ -33,6 +33,7 @@ spec 14.15).
 long hud_unit_port_script_flags(void);
 const char *config_string(const char *name);
 int config_boolean(const char *name);
+unsigned long config_changes(void);
 void platform_log(char const *format, ...);
 long game_time_get(void);
 
@@ -46,9 +47,10 @@ long game_time_get(void);
 #define AE_SHIELD_BLINK_DIM 0.35f   /* the shield's red on the blink's off beat */
 
 static boolean hiding;
-static long held_back;
-static long faded_labels;  /* waypoint labels faded under a panel since the last log line */     /* CE's quads held back since the last AE draw (the log's "held") */
-static struct { boolean valid; struct ae_panel_rect rects[2]; short count; real scale; unsigned long drawn_at; }
+static long held_back;      /* CE's quads held back since the last AE draw (the log's "held") */
+static long faded_labels;   /* waypoint labels faded under a panel since the last log line */
+static struct { boolean valid, ammo_drawn; struct ae_panel_rect rects[2]; short count; real scale;
+	unsigned long drawn_at; }
 	last[MAXIMUM_LOCAL_PLAYERS];
 
 /* (the last draw's rectangles, only while the panels are being drawn: a view whose panels are not drawn any more (its
@@ -76,9 +78,25 @@ boolean ae_panels_hiding_ce(void)
 /* debug.ae_panel_state: states forced over the game's for the tests and the contact sheets, a comma list of: low,
 empty, overheated, heat:<0..1>, grenades:<frags>/<plasmas>, plasma (armed), shield_low, shield_down, overshield1,
 overshield2, camo, buffs (both rows, the overshield's in its last 5 s), health_low, trail (a hit's trail, held) */
+/* (read twice a view a frame: copied again only when a setting changed) */
+static char const *panel_state(void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static char state[256];
+
+	if (read_at != config_changes())
+	{
+		char const *value = config_string("debug.ae_panel_state");
+
+		read_at = config_changes();
+		snprintf(state, sizeof(state), "%s", value ? value : "");
+	}
+	return state;
+}
+
 static void forced_state(struct ae_panel_snapshot *s)
 {
-	char const *state = config_string("debug.ae_panel_state");
+	char const *state = panel_state();
 	char const *walk;
 
 	if (!state || !state[0])
@@ -159,10 +177,11 @@ static void log_layout(short view, const struct ae_panel_model *m, const struct 
 {
 	static long logged[MAXIMUM_LOCAL_PLAYERS] = { -1, -1, -1, -1 };
 	long tick = game_time_get();
-	char const *state = config_string("debug.ae_panel_state");
+	char const *state;
 
 	if (!ae_panel_engine_log_on() || tick < 0 || tick / 60 == logged[view])
 		return;
+	state = panel_state();
 	logged[view] = tick / 60;
 	platform_log("ae panels: tick %ld view %d state=%s number_box=%.1f,%.1f,%.1f,%.1f grenade_box=%.1f,%.1f,%.1f,%.1f "
 		"baseline=%.1f cap=%.1f rounds=%d round0=%.1f,%.1f,%.1f lit=%d red=%d bar=%d,%.1f,%.1f,%.1f,%.1f,%d "
@@ -218,7 +237,7 @@ static void digits(short view, real x, real baseline, const wchar_t *text, const
 	options.glow_alpha = 0.85f;
 	options.cell_px = l->digit_cell;
 	options.fill_alpha = alpha;
-	tone(outline ? _ae_tone_white : _ae_tone_white, 1.0f, &white);
+	tone(_ae_tone_white, 1.0f, &white);
 	ae_hud_digits_draw_ex(view, x, baseline, text, l->digit_cap, &white, &options);
 }
 
@@ -370,11 +389,14 @@ boolean ae_panels_draw(short local_player_index)
 	draw_ammo(local_player_index, &model, &layout, view.scale);
 	draw_shield(local_player_index, &model, &layout, view.scale, shield_shown, health_shown);
 
-	last[local_player_index].rects[0] = layout.ammo_group;
-	last[local_player_index].rects[1] = layout.shield_group;
-	last[local_player_index].count = (short)(layout.ammo_group_shown ? 2 : 1);
-	if (!layout.ammo_group_shown)
-		last[local_player_index].rects[0] = layout.shield_group;
+	/* (the groups drawn, the ammo group first: the messages are laid out under it; the shield group only when
+	something is drawn there, so that labels do not fade over an empty corner) */
+	last[local_player_index].count = 0;
+	last[local_player_index].ammo_drawn = layout.ammo_group_shown;
+	if (layout.ammo_group_shown)
+		last[local_player_index].rects[last[local_player_index].count++] = layout.ammo_group;
+	if (shield_shown || health_shown || layout.buff_count)
+		last[local_player_index].rects[last[local_player_index].count++] = layout.shield_group;
 	last[local_player_index].scale = view.scale;
 	last[local_player_index].valid = TRUE;
 	last[local_player_index].drawn_at = system_milliseconds();
@@ -441,7 +463,7 @@ static boolean message_under_group[MAXIMUM_LOCAL_PLAYERS]; /* message_top moved 
 
 static boolean group_drawn(short local_player_index)
 {
-	return (boolean)(last_valid(local_player_index) && last[local_player_index].count >= 2);
+	return (boolean)(last_valid(local_player_index) && last[local_player_index].ammo_drawn);
 }
 
 void ae_panels_message_scale_begin(short local_player_index, short x, short y)

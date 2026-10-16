@@ -536,14 +536,14 @@ def run_groups(cfg, a, out):
 SENSOR_LINE = re.compile(
     r"ae sensor: tick (?P<tick>\d+) view (?P<view>\d+) centre=(?P<cx>[-\d.]+),(?P<cy>[-\d.]+) r=(?P<r>[\d.]+) "
     r"inner=(?P<inner>[\d.]+) half=(?P<half>[\d.]+) vfov=(?P<vfov>[\d.]+) view=(?P<vw>\d+)x(?P<vh>\d+) "
-    r"blips=(?P<blips>\d+) label=(?P<label>\S+) baseline=(?P<baseline>[-\d.]+)")
+    r"(?:blips=(?P<blips>\d+) )?label=(?P<label>\S+) baseline=(?P<baseline>[-\d.]+)")
 
 
 def sensor_lines(text, view="0"):
     out = []
     for m in SENSOR_LINE.finditer(text):
         if m["view"] == view:
-            line = {k: (v if k == "label" else float(v)) for k, v in m.groupdict().items()}
+            line = {k: (v if k == "label" or v is None else float(v)) for k, v in m.groupdict().items()}
             out.append(line)
     return out
 
@@ -579,8 +579,9 @@ def s_base(line, frames):
 
 
 def s_blips(lines, frames):
-    """CE's colours (enemy red, friend yellow) inside the rim on some frame when CE had blips"""
-    if not any(l["blips"] for l in lines):
+    """CE's colours (enemy red, friend yellow) inside the rim on some frame. Since 0.3.0 CE draws its own contacts
+    over AE's disc and the line has no blips= count; an older build's line has it, and then CE must have handed some"""
+    if all(l["blips"] is not None for l in lines) and not any(l["blips"] for l in lines):
         return ["CE handed over no blip"]
     line = lines[-1]
     cx, cy, r = line["cx"], line["cy"], line["r"]

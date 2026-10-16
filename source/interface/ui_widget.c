@@ -4366,7 +4366,7 @@ static void render_state_bitmap(
 		/* port: the sprite from a high-res texture, if it has one */
 		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index);
 		if (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color)) return; /* AE hook */
-		if (ae_buttons_menu_icon(bitmap, clip, cursor_bounds, icon->width_offset, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
+		if (ae_buttons_menu_icon(bitmap, clip, cursor_bounds, icon->width_offset, TEST_FLAG(icon->flags, _hud_icon_absolute_width_bit), TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
 		scale = hud_globals_get_scale(local_player_count() > 1);
 		scale *= ae_buttons_ce_menu_icon_scale(bitmap_group_index); /* AE hook */
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0 + 1.0f);
