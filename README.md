@@ -201,6 +201,9 @@ play:
 **Split screen**
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
   you can start on your own.
+- **Bots** (0.3.0, Settings > Game Options > BOTS): up to 15 in a split
+  screen Slayer game, up to 3 in a LAN game you host; RECRUIT (for new and
+  young players), EASY, NORMAL, HEROIC or LEGENDARY.
 - SETTINGS from the pause menu in the campaign, for each player in split
   screen, changing that player's own profile; in a match one player edits
   a profile at a time, and B closes only your own pause.

@@ -6,9 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-## 0.3.0-beta - 2026-10-15
+## 0.3.0-beta - 2026-10-16
 
-A big testing pre-release: the score strip and the AE HUD, PS5 DualSense triggers and lightbar, bots in split screen,
+A big testing pre-release: the score strip and the AE HUD, PS5 DualSense triggers and lightbar, bots in split screen and LAN games,
 AE JUGGERNAUT as in Halo 2, the AE BR gametypes, the PC menus' own pictures and map pictures, built on
 ChupathingyCE 0.7.5b and OpenCE build-206 (network version 29: it does not play online with 0.2.5-beta and older).
 Linux 64-bit is the build played and tested; Windows is built by the same checks but was not test-played.
@@ -49,10 +49,19 @@ Linux 64-bit is the build played and tested; Windows is built by the same checks
   derivative, contributed under CC0): Settings > Game Options > BOTS sets
   how many (up to 15), how well they play (EASY to LEGENDARY) and their
   teams (EVEN, or AGAINST YOU). They join the lobby of a split screen game
-  (MENUS > XBOX, then Multiplayer > Split Screen), Slayer and Team Slayer
-  only (Arena Evolved's Slayer gametypes too), never a system link or
-  internet game. They fight, pick up better weapons and keep the battle
-  rifle. Off by default; Delta Stats records no game with bots.
+  (MENUS > XBOX, then Multiplayer > Split Screen) and, **up to 3, a LAN game
+  you host** (Create Game > LAN: they take your PC's free controller slots,
+  one always kept free, and give a slot up to a person who presses START;
+  players joining from other PCs, OpenCE's and ChupathingyCE's too, play
+  against them), Slayer and Team Slayer only (Arena Evolved's Slayer
+  gametypes too), never in an internet game. They fight, pick up better
+  weapons and keep the battle rifle. Off by default; Delta Stats records no
+  game with bots. A skill set in the middle of a game applies at once.
+  **RECRUIT**, below EASY, is for new and young players: it reacts late, its
+  aim never quite settles, it barely strafes, rarely melees, throws no
+  grenades and roams more than it hunts you. RECRUIT and EASY also aim where
+  their target was a moment ago, so strafing makes them miss, and EASY
+  melees less often.
 - Built on ChupathingyCE 0.7.5b and OpenCE build-206: network version 29.
   Arena Evolved now plays with OpenCE build-206 and ChupathingyCE 0.7.5b
   (both ways), no longer with 0.2.5-beta and older or OpenCE build-205 and
@@ -113,7 +122,8 @@ Linux 64-bit is the build played and tested; Windows is built by the same checks
   glowing digits) with smooth edges; the ammo group is CE's own width; the top corners sit the same distance from
   the screen's left and right edges, and CE's messages line up under the ammo group. A low or down shield blinks
   between red and dim red; the shield bar fills from its right end and drains toward it, as CE's does, a hit's lost part held in white for half a second then fading (CE's trail), its overshield layers in the classic HUD's colours (pink, then green over it). In a vehicle seat the
-  Scorpion shows its cannon only.
+  Scorpion shows its cannon only. The motion sensor draws CE's own contacts (its glowing dots, their trail and its
+  sweep) on the AE disc.
 - With HUD STYLE AE, **CE's messages and hints** (pick-ups, "hold X to ...", vehicle prompts) take the strip's text
   style: white, at the strip's size, small button icons, lined up under the ammo group and wrapped at twice its width.
 - **Steady waypoints**: the item waypoints and their labels no longer shake with the camera (a tank's recoil, a
@@ -124,6 +134,8 @@ Linux 64-bit is the build played and tested; Windows is built by the same checks
   replaced with Arena Evolved's own, each centred and sized alike; the map pictures in the PC menus come from a
   `previews` folder beside the maps (the map packs bring them). The menus' text icons (the carnage report's "=quit"
   and "=pick game") are sized to the text and centred on it.
+- **COMBAT FEEDBACK ARENA EVOLVED: a stronger shield pop**: it lasts 0.8 s, the body stays white longer and its
+  light reaches further, so the pop reads at a distance.
 - **Gametype lists**: all free for all gametypes first (Arena Evolved, AE BR, AE COMP), then all team ones, then
   NHE's, TRAINING and your own.
 - **Fixed:** with active camouflage, the first-person weapon went into a nearby wall (it was depth-tested against the
