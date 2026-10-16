@@ -18,6 +18,7 @@ the game's side, ae_postgame.c, drawn in the carnage report's own pass.
 #define __AE_POSTGAME_H
 
 #include "ae_pure_types.h"
+#include <stddef.h> /* (wchar_t) */
 
 /* ---------- the decisions (ae_postgame_rules.c, pure) */
 
@@ -57,5 +58,10 @@ union rectangle2d;
 /* game_engine.c's AE hook in the carnage report's prompt (bounds: the prompt's, at 70, 410 of its 640 by 480,
 offset as it is): TRUE when the confirm is up and drawn in the prompt's place */
 boolean ae_postgame_confirm_draw(union rectangle2d const *prompt_bounds);
+
+/* game_engine.c's AE hook in the carnage report's rows: the Place column's text for a player, given the stock
+place ("4th"): a player who left before the end shows the game's own quit word (the in-game scoreboard's), so a
+quitter ranked last reads as one */
+wchar_t const *ae_postgame_place_string(long player_index, wchar_t const *place);
 
 #endif

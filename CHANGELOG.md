@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- The carnage report marks a player who left before the end: their Place reads Quit (the in-game scoreboard's word)
+  in place of a last place, so a quitter ranked last is not mistaken for a player with someone else's numbers.
+
 ## 0.3.0-beta - 2026-10-15
 
 A big testing pre-release: the score strip and the AE HUD, PS5 DualSense triggers and lightbar, bots in split screen,

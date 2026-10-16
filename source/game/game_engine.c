@@ -2989,6 +2989,7 @@ void game_engine_post_rasterize_post_game(
 			draw_string_set_color(&winner_color);
 		draw_string_set_tab_stops(tab_stops, NUMBEROF(tab_stops));
 		place_string = get_place_string(&entries[entry_index]);
+		place_string = ae_postgame_place_string(player_index, place_string); /* AE hook */
 		usnprintf(row_string, NUMBEROF(row_string), L" \t%s", place_string);
 		row_string[NUMBEROF(row_string) - 1] = 0;
 		drawline(row_string, draw_row, 0);

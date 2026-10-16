@@ -27,6 +27,7 @@ goes there later.
 #include "bitmaps/bitmap_group_lookup.h"
 #include "bitmaps/bitmaps.h"
 #include "game/players.h"
+#include "memory/data.h"
 #include "input/input.h"
 #include "interface/ui_widget.h"
 #include "math/integer_math.h"
@@ -36,6 +37,7 @@ goes there later.
 #include "rasterizer/rasterizer.h"
 #include "tag_files/tag_groups.h"
 #include "text/draw_string.h"
+#include "text/text_group.h"
 
 #include "ae_hud_digits.h"
 #include "ae_hud_text.h"
@@ -275,4 +277,22 @@ boolean ae_postgame_confirm_draw(
 	text_rect(ox, oy, BOX_LEFT + 96, BOX_BOTTOM - 26, BOX_RIGHT, BOX_BOTTOM, &rect);
 	draw_string_and_hack_in_icons(&rect, NULL, NULL, 0, buttons, FALSE);
 	return TRUE;
+}
+
+/* ---------- the carnage report's Place column for a player who quit */
+
+wchar_t const *ae_postgame_place_string(
+	long player_index,
+	wchar_t const *place)
+{
+	struct player_datum *player = player_try_and_get(player_index);
+	long strings;
+	wchar_t const *quit;
+
+	if (!player || !player->quit_out_of_game)
+		return place;
+	/* (the in-game scoreboard's status for a player who quit, ui\multiplayer_game_text 0x8B) */
+	strings = tag_loaded('ustr', "ui\\multiplayer_game_text");
+	quit = strings != NONE ? unicode_string_list_get_string(strings, 0x8B) : NULL;
+	return quit && quit[0] ? quit : L"Quit";
 }
