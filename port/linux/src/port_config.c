@@ -181,6 +181,11 @@ static const struct config_setting config_settings[] =
 	{ "display.viewmodel_visible", _config_boolean, "true", "HALO_VIEWMODEL_VISIBLE", _environment_value, _platform_all,
 		"Draw the first-person weapon, hands and what is attached to them.\n"
 		"Off, they are not drawn; firing, animation, sound and lights go on." },
+	{ "display.zoom_blur", _config_boolean, "true", "HALO_ZOOM_BLUR", _environment_value, /* AE hook */
+		_platform_all,
+		"The blur a zoomed weapon's scope puts at the screen's edges (the weapon's\n"
+		"HUD screen effect, single view only), as Halo does; false: a clear view\n"
+		"to the edges. The scope's own mask and its tint stay." },
 	{ "display.match_timer", _config_boolean, "false", "HALO_MATCH_TIMER", _environment_value, _platform_all,
 		"In a multiplayer game with a time limit, show the time left at the top\n"
 		"of the screen; false shows it only on the scoreboard, as the Xbox did." },

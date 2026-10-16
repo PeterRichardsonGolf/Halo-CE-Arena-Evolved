@@ -599,3 +599,7 @@ source/interface/hud_messaging.c	ae_test_capture_hud(message_text); /* AE hook *
 source/interface/hud_messaging.c	ae_test_capture("pickup", 500); /* AE hook */
 # the carnage report: a player who left before the end shows the quit word in the Place column (ae_postgame.c)
 source/game/game_engine.c	place_string = ae_postgame_place_string(player_index, place_string); /* AE hook */
+# ZOOM BLUR (display.zoom_blur): the weapon HUD screen effect's edge blur while zoomed, off on request (ae_glue_zoom.c)
+port/linux/src/port_config.c	{ "display.zoom_blur", _config_boolean, "true", "HALO_ZOOM_BLUR", _environment_value, /* AE hook */\n_platform_all,
+source/interface/interface.c	#include "ae_glue_zoom.h" /* AE hook */
+source/interface/interface.c	if (convolution_radius > 0.0f && ae_zoom_blur_allowed()) /* AE hook */

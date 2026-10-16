@@ -149,3 +149,8 @@ void ae_zoom_log_settings(void)
 		zoom.bank.mode == AE_ZOOM_HOLD ? "hold" : zoom.bank.mode == AE_ZOOM_BOTH ? "both" : "toggle",
 		(double)zoom.hold_ms / 1000.0, zoom.bank.reset == AE_ZOOM_RESET_LAST ? "last" : "first");
 }
+
+int ae_zoom_blur_allowed(void)
+{
+	return config_boolean("display.zoom_blur") != 0;
+}

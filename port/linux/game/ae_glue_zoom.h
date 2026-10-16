@@ -25,5 +25,8 @@ short ae_zoom_update(short local_player_index, short zoom_level, long weapon_ind
 	unsigned long player_control_flags);
 /* (game_engine.c game_engine_log_rules, a match's start) forgets the last levels used, then logs "zoom: mode ..., hold time ..." */
 void ae_zoom_log_settings(void);
+/* (interface.c, the weapon HUD's screen effect) whether its edge blur while zoomed is drawn: display.zoom_blur
+(ZOOM BLUR on Video Setup's FOV AND VIEWMODELS; on by default, as Halo) */
+int ae_zoom_blur_allowed(void);
 
 #endif

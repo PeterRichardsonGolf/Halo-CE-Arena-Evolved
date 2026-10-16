@@ -107,6 +107,7 @@ symbols in this file:
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "map_share.h" /* port: port/linux/game/map_share.c */
+#include "ae_glue_zoom.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -666,7 +667,7 @@ void interface_draw_screen(
 					convolution_radius = screen_effect->convolution_radius_out_bounds[1];
 				}
 
-				if (convolution_radius > 0.0f)
+				if (convolution_radius > 0.0f && ae_zoom_blur_allowed()) /* AE hook */
 				{
 					parameters.convolution_radius = convolution_radius;
 					parameters.convolution_type =
