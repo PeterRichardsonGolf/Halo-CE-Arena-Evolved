@@ -608,6 +608,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_stage_map.h" /* AE hook */
 #include "ae_scoreboard_header.h" /* AE hook */
 #include "ae_hud_style_draw.h" /* AE hook */
+#include "ae_radar.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -6247,6 +6248,7 @@ boolean game_engine_draw_object_in_motion_sensor(
 
 		draw_object = viewer && object_get(unit_index)->object.owner_team_index == viewer->team_index;
 	}
+	draw_object = ae_radar_draw_object(draw_object, unit_index, game_engine_motion_sensor_local_player); /* AE hook */
 
 	return draw_object;
 }
@@ -8787,7 +8789,7 @@ void game_engine_log_rules(
 	{
 		static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };
 		static char const *const friendly_fire[] = { "on", "off", "shields only", "explosives only" };
-		static char const *const radar_players[] = { "all", "friends", "none" };
+		static char const *const radar_players[] = { "all", "friends", "none", "enemies" }; /* AE hook */
 		static char const *const goal_radar[] = { "motion tracker", "nav points", "none" };
 		static char const *const weapon_sets[] =
 		{

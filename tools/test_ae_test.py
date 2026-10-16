@@ -470,7 +470,8 @@ class SeedCompare(unittest.TestCase):
         golden_seeds_rev3_083c49e9.json's (a root seeded at revision 3 by 083c49e9), revision 5
         golden_seeds_rev4_da271472.json's (a root seeded at revision 4 by da271472's tree), revision 6
         golden_seeds_rev5_736ce3a7.json's (a root seeded at revision 5 by 736ce3a7's tree), revision 7
-        golden_seeds_rev6_519ce8a3.json's (a root seeded at revision 6 by 519ce8a3's tree)"""
+        golden_seeds_rev6_519ce8a3.json's (a root seeded at revision 6 by 519ce8a3's tree), revision 12
+        golden_seeds_rev11.json's (a root seeded at revision 11)"""
         import re
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
         table = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
@@ -482,8 +483,10 @@ class SeedCompare(unittest.TestCase):
         golden_rev4 = json.loads((HERE / "golden_seeds_rev4_da271472.json").read_text())
         golden_rev5 = json.loads((HERE / "golden_seeds_rev5_736ce3a7.json").read_text())
         golden_rev6 = json.loads((HERE / "golden_seeds_rev6_519ce8a3.json").read_text())
+        golden_rev11 = json.loads((HERE / "golden_seeds_rev11.json").read_text())
         for revision, name, digest in found:
-            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6}.get(int(revision), golden)
+            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6, 12: golden_rev11}.get(int(revision),
+                                                                                                      golden)
             self.assertEqual(g[name]["block"], digest, name)
 
     def test_golden_revision_11(self):
@@ -505,6 +508,28 @@ class SeedCompare(unittest.TestCase):
         golden_rev6 = json.loads((HERE / "golden_seeds_rev6_519ce8a3.json").read_text())
         for name in ("TS 50", "CTF WIZARD", "1 V 1 NR"):
             self.assertEqual(golden[name]["block"], golden_rev6[name]["block"], name)
+
+    def test_golden_revision_12(self):
+        """golden_seeds_rev12.json: a root seeded at revision 12 (a rev-11 root brought to 12 holds the same files but
+        the ones its player edited): the 19 seeds of ARENA_RADAR_ENEMIES (PLAYERS ON RADAR ENEMIES), each with a
+        revision 12 migration, differ from revision 11's, in their folders; every other seed is revision 11's"""
+        import re
+        source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
+        table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
+        rows = re.findall(r'^\t\{ "([^"]+)",(.*?)(?=^\t\{ "|^\};)', table, re.M | re.S)
+        enemies = sorted(name for name, body in rows if "ARENA_RADAR_ENEMIES" in body)
+        self.assertEqual(len(rows), 86)
+        self.assertEqual(len(enemies), 19)
+        migrations = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
+        rev12 = re.findall(r'\.revision = 12,\s*\.old_row = \{ \.name = "([^"]+)"', migrations)
+        self.assertEqual(sorted(rev12), enemies)
+        golden = json.loads((HERE / "golden_seeds_rev12.json").read_text())
+        golden_rev11 = json.loads((HERE / "golden_seeds_rev11.json").read_text())
+        self.assertEqual(sorted(golden), sorted(name for name, _ in rows))
+        changed = sorted(name for name in golden if golden[name]["block"] != golden_rev11[name]["block"])
+        self.assertEqual(changed, enemies)
+        for name in golden:
+            self.assertEqual(golden[name]["folder"], golden_rev11[name]["folder"], name)
 
 
 class Debug(unittest.TestCase):
@@ -775,6 +800,14 @@ class SeedRules(unittest.TestCase):
                 differ = {k for k in set(want) | set(twin_want) if want.get(k) != twin_want.get(k)}
                 self.assertEqual(differ, {"loadout", "weapon pack", "pack loadout primary"}, name)
         self.assertEqual(len(seed_rules.BR_TWINS), 25)
+        # (revision 12: PLAYERS ON RADAR ENEMIES on the AE team seeds with players on the motion sensor and their
+        # AE BR twins, nowhere else; the free for all ones and the NHE set keep theirs)
+        enemies = {name for name, (want, _, _) in seed_rules.ROWS.items() if want["radar players"] == "enemies"}
+        self.assertEqual(enemies, set(seed_rules.RADAR_ENEMIES) |
+                         {br for br, twin in seed_rules.BR_TWINS.items() if twin in seed_rules.RADAR_ENEMIES})
+        self.assertEqual(len(enemies), 19)
+        for name in enemies:
+            self.assertIn("(teams)", seed_rules.ROWS[name][0]["engine"], name)
 
 
 class Windows(unittest.TestCase):

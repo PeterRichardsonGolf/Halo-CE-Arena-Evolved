@@ -354,6 +354,7 @@ enum
 	_radar_players_all = 0,
 	_radar_players_friends,
 	_radar_players_none,
+	_radar_players_enemies, /* AE hook */
 	NUMBER_OF_RADAR_PLAYERS
 };
 
