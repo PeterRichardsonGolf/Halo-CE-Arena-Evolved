@@ -107,6 +107,10 @@ SCREENS = {
              [("OFF", "off"), ("FXAA", "fxaa"), ("MSAA 2X", "msaa2x"), ("MSAA 4X", "msaa4x")],
              "Smooth jagged edges, which the Xbox did not. FXAA\nis cheap; MSAA is sharper.",
              "android web", "anti_aliasing_android"),
+            # (AE: ae_texture_filter.c; the game never asks for it, so OFF is the stock look)
+            ("ANISOTROPIC FILTERING:", "display.anisotropic",
+             [("OFF", "off"), ("2X", "2x"), ("4X", "4x"), ("8X", "8x"), ("16X", "16x")],
+             "Sharper floors and walls seen at a grazing angle.\nOff blurs them as the Xbox did.", None),
             ("SHADOW RESOLUTION:", "display.shadow_resolution",
              [("128", "128"), ("256", "256"), ("512", "512"), ("1024", "1024")],
              "The size objects' shadows are drawn at: 128 as on\nthe Xbox; larger for smoother, as soft, edges.",
@@ -391,12 +395,13 @@ _video = SCREENS["video_settings"]
 # (Arena Evolved's PERFORMANCE and POSITION, the performance line's, go with
 # the graphics rows, with upstream's shield glow: nine places there, Video
 # Setup's nine as OpenCE's)
-_graphics = {"display.high_res_hud", "display.high_res_text", "display.anti_aliasing",
+_graphics = {"display.high_res_hud", "display.high_res_text", "display.anti_aliasing", "display.anisotropic",
              "display.shadow_resolution", "display.per_pixel_lighting",
              "display.performance", "display.performance_position",
              "display.shield_glow", "display.shield_glow_intensity"}
+# (ten rows with ANISOTROPIC FILTERING: 27 apart, as Game Options' ten)
 SCREENS["video_settings/graphics"] = {
-    "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 30,
+    "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 27,
     "same_place": ["anti_aliasing_android"],
     "rows": [row for row in _video["rows"] if row[1] in _graphics],
 }

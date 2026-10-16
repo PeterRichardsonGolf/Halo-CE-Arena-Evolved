@@ -181,6 +181,11 @@ static const struct config_setting config_settings[] =
 	{ "display.viewmodel_visible", _config_boolean, "true", "HALO_VIEWMODEL_VISIBLE", _environment_value, _platform_all,
 		"Draw the first-person weapon, hands and what is attached to them.\n"
 		"Off, they are not drawn; firing, animation, sound and lights go on." },
+	{ "display.anisotropic", _config_string, "\"off\"", "HALO_ANISOTROPIC", _environment_value, /* AE hook */
+		_platform_all,
+		"Anisotropic filtering of the world's textures: \"off\" (as the Xbox:\n"
+		"floors and walls blur at a grazing angle), \"2x\", \"4x\", \"8x\" or \"16x\"\n"
+		"(sharper, at a little cost; the graphics card's most at most)." },
 	{ "display.zoom_blur", _config_boolean, "true", "HALO_ZOOM_BLUR", _environment_value, /* AE hook */
 		_platform_all,
 		"The blur a zoomed weapon's scope puts at the screen's edges (the weapon's\n"

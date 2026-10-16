@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- ANISOTROPIC FILTERING (Video Setup > GRAPHICS): 2x to 16x sharpens floors and walls seen at a grazing angle; off
+  (the default) keeps the Xbox's look.
 - ZOOM BLUR (Video Setup > FOV AND VIEWMODELS): off takes away the blur a zoomed scope puts at the screen's edges.
 - The carnage report marks a player who left before the end: their Place reads Quit (the in-game scoreboard's word)
   in place of a last place, so a quitter ranked last is not mistaken for a player with someone else's numbers.

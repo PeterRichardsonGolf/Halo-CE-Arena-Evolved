@@ -36,6 +36,7 @@ Conventions carried over from the Xbox:
 #include <time.h>
 #include "ae_draw.h" /* AE hook */
 #include "ae_height_fade.h" /* AE hook */
+#include "ae_texture_filter.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 #include "browser.h"
 #include "ui_overlay.h"
@@ -3163,6 +3164,7 @@ static void configure_sampler(int stage, BOOL mipmapped, BOOL hires)
 	inputs[6] = hires ? 0 : state[D3DTSS_MIPMAPLODBIAS];
 	inputs[7] = hires ? 0 : state[D3DTSS_MAXMIPLEVEL];
 	inputs[8] = state[D3DTSS_MAXANISOTROPY];
+	ae_texture_anisotropy(&inputs[0], &inputs[8], inputs[1], hires); /* AE hook */
 	inputs[9] = state[D3DTSS_BORDERCOLOR];
 	inputs[10] = hires;
 	if (!configured_sampler[stage] || memcmp(configured[stage], inputs, sizeof(inputs)))
