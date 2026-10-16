@@ -305,11 +305,6 @@ static const struct config_setting config_settings[] =
 	{ "display.compact_hud", _config_boolean, "false", "HALO_COMPACT_HUD", _environment_value, _platform_all,
 		"With one view, draw split screen's HUD: the game's own smaller meters,\n"
 		"motion sensor and messages. The reticle stays as it is." },
-	{ "display.shrink_empty_weapons", _config_boolean, "false", "HALO_SHRINK_EMPTY_WEAPONS", _environment_value, /* AE hook */
-		_platform_all,
-		"Draw a weapon lying on the ground with no ammo left (none loaded or in\n"
-		"reserve; an energy weapon's battery spent) at 60% of its size, so it\n"
-		"reads as empty. Drawn only: pickups and physics are the game's." },
 	{ "display.scoreboard_fade", _config_string, "\"normal\"", "HALO_SCOREBOARD_FADE", _environment_value,
 		_platform_all,
 		"How fast the in-game scoreboard (hold BACK, or tab) fades in and out:\n"

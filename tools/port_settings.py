@@ -188,8 +188,7 @@ SCREENS = {
         "screen": "hud_settings_screen",
         "header": ("header_hud", None),
         "title": "HUD",
-        # (27, not 30: ten rows with SHRINK EMPTY WEAPONS)
-        "spacing": 27,
+        "spacing": 30,
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
@@ -201,9 +200,6 @@ SCREENS = {
              "On a wider screen, keep the HUD in a 16:9 or 4:3\npart at the middle; the view stays wide.", None),
             ("COMPACT HUD:", "display.compact_hud", ON_OFF,
              "With one player, draw split screen's smaller HUD:\nmeters, motion sensor and messages.", None),
-            # (AE: ae_shrink_weapons.c; drawn only)
-            ("SHRINK EMPTY WEAPONS:", "display.shrink_empty_weapons", ON_OFF,
-             "Weapons on the ground with no ammo left are drawn\nsmaller, so you can tell them from afar.", None),
             ("SCOREBOARD FADE:", "display.scoreboard_fade", SCOREBOARD_FADES,
              "How fast the scoreboard fades in and out while\nBack (or Tab) is held.", None),
             ("CAMPAIGN TIMER:", "display.campaign_timer", ON_OFF,

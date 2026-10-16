@@ -7,7 +7,6 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 - Bots at NORMAL and above crouch now and then while they fight, briefly and not again for a while (RECRUIT and EASY never do).
-- SHRINK EMPTY WEAPONS (Settings > HUD): weapons on the ground with no ammo left are drawn smaller.
 - NHE SOUND FILTER (on NHE OPTIONS, your own setting): mutes the plasma pistol's charging hum and the needler's shots, as Halo 1:
   NHE's maps did, on any map, for you only.
 - SHUFFLE in the PC lobby (the host, team games): one press deals everyone onto the two teams at random, evenly.

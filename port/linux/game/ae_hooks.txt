@@ -638,7 +638,3 @@ port/linux/src/port_config.c	{ "audio.nhe_sound_filter", _config_boolean, "false
 source/sound/sound_manager.c	#include "ae_sound_filter.h" /* AE hook */
 source/sound/sound_manager.c	gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
 source/sound/sound_manager.c	properties.gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
-# SHRINK EMPTY WEAPONS (display.shrink_empty_weapons): an empty weapon on the ground drawn at 60% (ae_shrink_weapons.c)
-port/linux/src/port_config.c	{ "display.shrink_empty_weapons", _config_boolean, "false", "HALO_SHRINK_EMPTY_WEAPONS", _environment_value, /* AE hook */\n_platform_all,
-source/render/render_objects.c	#include "ae_shrink_weapons.h" /* AE hook */
-source/render/render_objects.c	node_matrices = ae_shrink_empty_weapon(object_index, node_matrices); /* AE hook */

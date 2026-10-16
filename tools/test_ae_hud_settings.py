@@ -29,8 +29,7 @@ PE = "main_menu/settings_select/player_setup/player_profile_edit"
 GAME_OPTIONS = "main_menu.settings_select.player_setup.player_profile_edit.mods_setup.xml"
 HUD = "main_menu.settings_select.player_setup.player_profile_edit.hud_setup.xml"
 PROFILE_MENU = "main_menu.settings_select.player_setup.player_profile_edit.xml"
-HUD_SETTINGS = ["display.hud_style", "display.hud_area", "display.compact_hud", "display.shrink_empty_weapons",
-                "display.scoreboard_fade",
+HUD_SETTINGS = ["display.hud_style", "display.hud_area", "display.compact_hud", "display.scoreboard_fade",
                 "display.campaign_timer", "display.match_clock", "display.short_messages", "display.waypoint_style",
                 "display.waypoint_size"]
 GAME_SETTINGS = ["game.mod", "game.weapon_packs", "game.fall_damage", "game.health", "game.callouts",
