@@ -13,10 +13,11 @@ NHE SOUND FILTER (ae_sound_filter.h).
 #include <string.h>
 
 /* the stock maps' sound tags NHE 1.0 muted: the plasma pistol's charge (it shares the plasma rifle's sounds; the
-plasma rifle never charges), its start, and the needler's shot */
+plasma rifle never charges), its start, and the needler's shot. NHE's maps muted "charge" and "startcharge";
+"charging" is another tag, left as it is */
 static const char *const muted_names[] =
 {
-	"sound\\sfx\\weapons\\plasma rifle\\charging",
+	"sound\\sfx\\weapons\\plasma rifle\\charge",
 	"sound\\sfx\\weapons\\plasma rifle\\startcharge",
 	"sound\\sfx\\weapons\\needler\\fire",
 };
