@@ -250,8 +250,8 @@ play:
   the pause menu; cutscenes count. Reverting to a checkpoint does not take
   time back, and starting the level again starts it at 0:00.
 - Spoken callouts (Settings > Game Options > CALLOUTS: OFF, ITEMS or ITEMS +
-  CLOCK), as Halo 1: NHE's voice timer, in any gametype: the power items'
-  calls 10 seconds before they spawn ("rockets in ten"), five to one before
+  CLOCK), as Halo 1: NHE's voice timer: the power items' calls (where the
+  gametype's TIMERS show the items, or with TRAINING) 10 seconds before they spawn ("rockets in ten"), five to one before
   the rockets and "rockets are up" as they spawn; ITEMS + CLOCK adds NHE's
   talking timer (the minutes, thirty and twenty seconds left, ten to one,
   beeps). The items' calls come first: an item alone is called on its

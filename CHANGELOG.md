@@ -37,6 +37,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   turned to NaN on their first tick; OpenCE and ChupathingyCE have the same bug).
 - Map layout files (map pack): a map's netgame items and vehicles changed as it loads, without touching the map file
   (the engine part; no layout ships yet).
+- CALLOUTS' item calls follow the gametype's TIMERS: none when TIMERS is OFF or LINE OF SIGHT (unless TRAINING is on),
+  so a personal setting no longer tells you spawn times the host's gametype hides. The match clock's calls stay.
 - HUD STYLE AE draws with fewer lookups a frame (the HUD's sheets once a map, settings once a change).
 
 ## 0.3.1-beta - 2026-10-16

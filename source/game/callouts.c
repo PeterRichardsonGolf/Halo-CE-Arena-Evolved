@@ -8,7 +8,10 @@ as Halo 1: NHE's maps' voice timer says them. From game time alone, which
 every machine has as the host's, so nothing is networked: each machine says
 its own.
 
-ITEMS, in any gametype: the power items (rockets, sniper, shotgun,
+ITEMS, where the gametype's TIMERS show the items (HUD, or HUD AND
+WAYPOINTS; or TRAINING): a personal setting gives no timer information the
+host's gametype turned off (TIMERS OFF, LINE OF SIGHT; a stock gametype has
+TIMERS OFF). The power items (rockets, sniper, shotgun,
 overshield, camo) spawning at one tick are a WAVE, called 10 seconds before each of its
 spawns after the game's start, from their real periods (item_timers.c),
 and at the spawn. An item at both bases (RED / BLUE before its name,
@@ -1443,12 +1446,16 @@ static boolean callout_tick_valid(
 	return tick > 0 && !game_engine_pregame_countdown_covers(tick);
 }
 
-/* the items' calls muted: the gametype's TIMERS at LINE OF SIGHT, but not
-with TRAINING on (the learning aid keeps them) */
+/* the items' calls muted: the gametype's TIMERS OFF or at LINE OF SIGHT, but
+not with TRAINING on (the learning aid keeps them): competitive fairness, a
+personal setting must not say what the gametype hides (settings fairness
+audit 2026-10-16); the match clock's calls stay, the clock being on screen */
 static boolean callouts_items_muted(
 	void)
 {
-	return game_engine_timers_level() == _timers_line_of_sight && !game_engine_training();
+	short level = game_engine_timers_level();
+
+	return (level == _timers_off || level == _timers_line_of_sight) && !game_engine_training();
 }
 
 /* the items' calls of the wave spawning at this tick: those 10 s before it

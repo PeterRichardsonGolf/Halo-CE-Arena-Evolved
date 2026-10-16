@@ -693,3 +693,5 @@ source/game/game.c	ae_layout_apply(); /* AE hook */
 # Custom Edition projectiles too fast for 32-bit floats (1e31 wu/s on H2 Blood Gulch: bullets turned NaN, hurt nobody)
 port/linux/game/ce_repairs.c	#include "ae_glue_ce_maps.h" /* AE hook */
 port/linux/game/ce_repairs.c	ae_ce_projectile_speeds(tag_instances, tag_count); /* AE hook */
+# CALLOUTS (AE's own row): item calls only where the gametype's TIMERS show the items (fairness audit 2026-10-16)
+port/linux/src/port_config.c	{ "game.callouts", _config_string, "\"off\"", "HALO_CALLOUTS", _environment_value, _platform_all, /* AE hook */

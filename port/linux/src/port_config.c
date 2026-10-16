@@ -635,9 +635,10 @@ static const struct config_setting config_settings[] =
 		"when maps_ce, maps/ce and custom_maps lack them: \"yes\"; \"no\"; \"ask\" (the\n"
 		"menus ask when such a map is picked; elsewhere it counts as no). With \"no\"\n"
 		"Steam's folders are looked in only by Settings > MAP FILES." },
-	{ "game.callouts", _config_string, "\"off\"", "HALO_CALLOUTS", _environment_value, _platform_all,
+	{ "game.callouts", _config_string, "\"off\"", "HALO_CALLOUTS", _environment_value, _platform_all, /* AE hook */
 		"Spoken callouts in multiplayer, in game.callout_voice's voice, on this\n"
-		"machine only, in any gametype: \"items\" each power item's call 10\n"
+		"machine only: \"items\" (where the gametype's TIMERS show the items, or\n"
+		"with TRAINING) each power item's call 10\n"
 		"seconds before it spawns (\"rockets in ten\", else the name), five to\n"
 		"one before the rockets, and \"<item> is up\" as it spawns (when the\n"
 		"voice has it); \"items_clock\" also Halo 1: NHE's talking timer (the\n"
