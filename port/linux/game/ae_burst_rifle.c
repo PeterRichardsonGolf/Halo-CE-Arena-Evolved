@@ -137,8 +137,8 @@ is seen as 2 atan(0.85 tan(F/2)): CE needs F = 2 atan(tan(23.3 / 2) / 0.85) = 27
 typedef char verify_weapon_magazines_maximum[
 	sizeof(((struct weapon_datum *)0)->weapon.magazines) / sizeof(struct weapon_magazine) == WEAPON_MAGAZINES_MAXIMUM ? 1 : -1];
 
-/* (debug.burst_autofire 2) the pull in the recovery: with this many of its ticks left (the recoveries are 5 and
-6 ticks); and the next pull this many ticks after the recovery */
+/* (debug.burst_autofire 2) the pull in the recovery: with this many of its ticks left (the recovery is 7
+ticks at 0.20 s: 6 and the tick it starts on); and the next pull this many ticks after the recovery */
 #define AUTOFIRE_EARLY_PAUSE_TICKS 3
 #define AUTOFIRE_LATE_TICKS 15
 
@@ -226,7 +226,7 @@ static struct burst_state *burst_state_get(
 	return state;
 }
 
-/* the recovery's ticks after a burst: 0.15 s in whole ticks, the fraction carried, and the tick the barrel
+/* the recovery's ticks after a burst: BURST_RECOVERY_SECONDS in whole ticks, the fraction carried, and the tick the barrel
 stops on */
 static char burst_recovery_ticks(
 	struct burst_state *burst)

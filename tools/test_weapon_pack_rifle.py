@@ -1,5 +1,5 @@
 """The AE Halo 2 battle rifle's behaviour (port/linux/game/ae_burst_rifle.c, Task 8): the pack's rifle fires three
-rounds a new pull, two ticks apart, bursts 10 and 11 ticks apart at the fastest; Halo 2's zoom as seen, aim assist,
+rounds a new pull, two ticks apart, bursts 12 ticks apart at the fastest (the 0.20 s recovery); Halo 2's zoom as seen, aim assist,
 spread, bullet, magazine and the owner's balance; a map's own battle rifle untouched. The numbers are the weapon pack
 plan's "Rifle numbers and look" table, which the parity reference (the prototype halo-pack5f with its v6e donor)
 measured the same on the same runs (task-8-report.md).
@@ -24,7 +24,7 @@ ROUND = re.compile(r"ae burst rifle: tick (\d+), round (\d) of 3 (fired|not fire
                    r"recovery \d+, firing effect (-?\d+) of (\d+)")
 # (a pack bitmap read as zeros: the scope's mask, smoke, impacts; reads into guest memory go through a host buffer)
 UNREAD = "could not be read from the pack"
-SET_UP = r"ae burst rifle: '[^']+' set up \(3 rounds a pull, 15 a second, recovery 0\.15 s, damage 6\.5\)"
+SET_UP = r"ae burst rifle: '[^']+' set up \(3 rounds a pull, 15 a second, recovery 0\.2 s, damage 6\.5\)"
 SETUP_LINES = (
     r"ae burst rifle: zoom 1 level 2\.563x \(Halo 2's 3\.00x as seen\)",
     r"ae burst rifle: spread 0\.3 to 0\.3 deg, inner cone 0, a tracer every 3 rounds",
@@ -75,8 +75,8 @@ class Rifle(add.Game):
         return self.debug_lines(name)
 
     def test_setup_and_cadence(self):
-        """the numbers set up once; held fire (debug.burst_autofire): rounds at t, t+2, t+4 and bursts 10 and 11
-        ticks apart in turn; a fresh rifle 36 + 72; the zoomed aim assist cap never met unzoomed; no kick; each
+        """the numbers set up once; held fire (debug.burst_autofire): rounds at t, t+2, t+4 and bursts 12 ticks
+        apart (6 plus the 0.20 s recovery's 6); a fresh rifle 36 + 72; the zoomed aim assist cap never met unzoomed; no kick; each
         burst plays the trigger's firing effects from the first"""
         lines = self.rifle("cadence", "--env", "HALO_WEAPON_LOG=1", "--env", "HALO_BURST_AUTOFIRE=1",
                            *[argument for line in SETUP_LINES for argument in ("--expect-line", line)],
@@ -93,8 +93,8 @@ class Rifle(add.Game):
         magazines = gaps_in_magazines(burst_list)
         self.assertGreaterEqual(sum(map(len, magazines)), 20)
         for gaps in magazines:
-            # (10 and 11 in turn: the recovery's half tick carried)
-            self.assertTrue(set(gaps) <= {10, 11} and all(a != b for a, b in zip(gaps, gaps[1:])), gaps)
+            # (the 0.20 s recovery is a whole 6 ticks: no fraction carried, every gap the same)
+            self.assertEqual(set(gaps), {12}, gaps)
         # (the firing effects: the same ones in the same order in every burst, the first effect first)
         effects = Counter(tuple(entry[5] for entry in burst) for burst in burst_list)
         self.assertEqual(len(effects), 1, effects)
@@ -114,9 +114,9 @@ class Rifle(add.Game):
             self.assertEqual([entry[0] - burst[0][0] for entry in burst], [0, 2, 4])
         gaps = [gap for magazine in gaps_in_magazines(burst_list) for gap in magazine]
         self.assertGreaterEqual(len(gaps), 8)
-        # (a kept pull would start the next burst 10 or 11 ticks after the last, as at the fastest cadence; the late
-        # pull comes AUTOFIRE_LATE_TICKS, 15, later: 25 or 26)
-        self.assertEqual(set(gaps), {25, 26}, gaps)
+        # (a kept pull would start the next burst 12 ticks after the last, as at the fastest cadence; the late
+        # pull comes AUTOFIRE_LATE_TICKS, 15, later: 27)
+        self.assertEqual(set(gaps), {27}, gaps)
 
     def test_zoom_and_fire_then_next_map(self):
         """zoomed and firing (the scope's mask, smoke and impact bitmaps are read from the pack while the renderer
