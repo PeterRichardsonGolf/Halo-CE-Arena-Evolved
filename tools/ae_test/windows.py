@@ -200,6 +200,8 @@ def game_env(root, run_id, a):
 
 
 def init_lines(a):
+    if getattr(a, "menu", False):
+        return []  # no init.txt: the game starts at its main menu
     if a.init:
         return a.init
     if a.map:
@@ -315,6 +317,7 @@ def main(argv):
     p.add_argument("--build-dir", default="latest", help="a folder under C:\\halo-test\\builds (sha12), or latest")
     p.add_argument("--map", help="host this multiplayer map (network test) instead of the init.txt Blood Gulch")
     p.add_argument("--init", action="append", help="init.txt line (repeat)")
+    p.add_argument("--menu", action="store_true", help="no init.txt and no map: start at the main menu")
     p.add_argument("--exit-after", type=int, default=60)
     p.add_argument("--shots", type=int, default=900)
     p.add_argument("--window", help="WxH (default from the config)")

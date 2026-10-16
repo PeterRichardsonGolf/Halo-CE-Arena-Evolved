@@ -844,6 +844,10 @@ class Windows(unittest.TestCase):
         base.update(kw)
         return windows.argparse.Namespace(**base)
 
+    def test_menu_start_has_no_init(self):
+        self.assertEqual(windows.init_lines(self._ns(menu=True)), [])
+        self.assertTrue(windows.init_lines(self._ns()))
+
     def test_sandbox_fields_in_request(self):
         root, exe = "C:\\halo-test", "C:\\halo-test\\branches\\abc\\halo.exe"
         req = windows.make_request("r", exe, "C:\\halo-test\\branches\\abc", {}, isolation="sandbox",
