@@ -30,6 +30,7 @@ scale (a window made fullscreen) or a full atlas starts it over.
 #define STBTT_STATIC
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "../../third_party/stb/stb_truetype.h"
+#include "ae_text_hires.h" /* AE hook */
 
 /* (the Xbox maps' tags and a Custom Edition loc.map's, which share names,
 each at its oversamples) */
@@ -202,6 +203,8 @@ int text_hires_covers(long font, unsigned long code)
 	return code < 32 || code == ' ' || stbtt_FindGlyphIndex(&fonts[font].info, (int)code) != 0;
 }
 
+float text_hires_advance(long font, unsigned long code) { int advance = font < 0 || font >= font_count || fonts[font].scale <= 0.0f ? -1 : ae_text_font_advance(&fonts[font].info, code); return advance < 0 ? -1.0f : advance * fonts[font].scale * fonts[font].narrowing; } /* AE hook */
+
 int text_hires_glyph(long font, unsigned long code, struct text_hires_glyph *glyph)
 {
 	float scale = halo_screen_pixel_scale();
@@ -237,6 +240,7 @@ int text_hires_glyph(long font, unsigned long code, struct text_hires_glyph *gly
 
 		if (index)
 		{
+			index = ae_text_tabular_glyph(&fonts[font].info, code); /* AE hook */
 			stbtt_GetGlyphBitmapBox(&fonts[font].info, index, pixels_x, pixels, &x0, &y0, &x1, &y1);
 			stbtt_GetGlyphHMetrics(&fonts[font].info, index, &advance, &bearing);
 		}

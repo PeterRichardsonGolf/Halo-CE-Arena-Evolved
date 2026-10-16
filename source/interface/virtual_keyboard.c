@@ -96,6 +96,7 @@ symbols in this file:
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "text/unicode.h"
+#include "ae_text_layout.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -762,6 +763,7 @@ static void virtual_keyboard_render_internal(
 				character++;
 			}
 
+			ae_text_layout_caret(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer, virtual_keyboard_globals.cursor, &cursor_offset, &width); /* AE hook */
 			/* 320 is the horizontal center of the 220..420 text box */
 			caret_bounds.x0 = 320 - (width >> 1) + cursor_offset;
 			caret_bounds.x1 = caret_bounds.x0 + 1;

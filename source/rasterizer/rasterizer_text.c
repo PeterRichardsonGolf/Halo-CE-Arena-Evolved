@@ -77,6 +77,7 @@ symbols in this file:
 #include "text/font_group.h"
 #include "text/unicode.h"
 #include "tag_files/tag_files.h"
+#include "ae_text_layout.h" /* AE hook */
 
 /* port: the high-res text (port/linux/src/text_hires.c): the text drawn with
 fonts at the display's resolution, laid out as before. Characters are drawn
@@ -244,6 +245,7 @@ static real text_scale_origin_y = 0.0f;
 static pixel32 global_shadow_color = 0;
 static short rasterizer_text_unused = 0;
 static short magic_number= 12;
+long ae_text_layout_hires_font(long font_index) { return hires_text_atlas ? hires_text_font_get(font_index, MAX(text_scale, 1.0f)) : NONE; } /* AE hook */
 
 /* ---------- public code */
 
@@ -959,7 +961,7 @@ static void rasterizer_draw_hires_glyph(
 		return;
 	/* (the font's advance centred on the tag's, so that its letters keep
 	their own spacing) */
-	left = pen_x + (font_character->character_width - glyph.advance) * 0.5f + glyph.left;
+	left = pen_x + ae_text_layout_glyph_offset(font_character->character_width, glyph.advance) + glyph.left; /* AE hook */
 	right = left + (glyph.right - glyph.left);
 	if (x > 0 && !font_character_cut(font, font_character, 0, x, 0, font_character->bitmap_height))
 		clip_left = -32768.0f;

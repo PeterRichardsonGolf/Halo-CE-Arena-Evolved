@@ -11,6 +11,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   NHE's maps did, on any map, for you only.
 - The carnage report's numbers are right-aligned under their headers (Score, Kills, Assists, Deaths), so ones sit under
   ones and tens under tens.
+- High-res text is laid out by its own font's letter widths, with same-width digits: a narrow letter no longer sits in the
+  middle of a wider space, so columns of names and places start in a straight line and numbers line up digit for digit.
 - SHUFFLE in the PC lobby (the host, team games): one press deals everyone onto the two teams at random, evenly.
 - The map list has a WARM-UP group: Octagon and Octagon B (when installed) come first after the stock maps, marked
   [WARM-UP] and described as warm-up maps for Slayer.

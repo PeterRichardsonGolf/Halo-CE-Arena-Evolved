@@ -116,6 +116,7 @@ symbols in this file:
 #include "text/font_group.h"
 #include "text/international_strings.h"
 #include "text/text_group.h"
+#include "ae_text_layout.h" /* AE hook */
 
 #include <ctype.h>
 
@@ -305,6 +306,7 @@ static void text_bounds_draw_character(
 	short x1 = (short)(x0 + dx);
 	short y1 = (short)(y0 + dy);
 
+	ae_text_layout_character_bounds(x, dx, character->bitmap_width, &x0, &x1); /* AE hook */
 	if (x0 < text_bounds_globals.bounds.x0)
 		text_bounds_globals.bounds.x0 = x0;
 	if (y0 < text_bounds_globals.bounds.y0)
@@ -841,7 +843,7 @@ static void draw_string_partial(
 				short source_y = 0;
 				short height = character->bitmap_height;
 
-				cursor->x += character->character_width;
+				cursor->x = ae_text_layout_advance(1, character->character, character->character_width, cursor->x); /* AE hook */
 
 				if (x + width > clip_right)
 				{
@@ -946,7 +948,7 @@ static void draw_unicode_string_partial(
 				short source_y = 0;
 				short height = character->bitmap_height;
 
-				cursor->x += character->character_width;
+				cursor->x = ae_text_layout_advance(1, character->character, character->character_width, cursor->x); /* AE hook */
 
 				if (x + width > clip_right)
 				{
@@ -1006,6 +1008,7 @@ void draw_string(
 		font_drawing_globals.current_style,
 		font_drawing_globals.current_justification,
 		&font_drawing_globals.current_color);
+	ae_text_layout_begin(font_drawing_globals.current_font_index, string); /* AE hook */
 
 	do
 	{
@@ -1079,7 +1082,7 @@ void draw_string(
 
 					if (character->bitmap_width + cursor.x + line_width < line_bounds.x1)
 					{
-						line_width += character->character_width;
+						line_width = ae_text_layout_advance(0, character->character, character->character_width, line_width); /* AE hook */
 					}
 					else if (TEST_FLAG(font_drawing_globals.current_flags, _draw_text_wrap_horizontally_bit))
 					{
@@ -1112,6 +1115,7 @@ void draw_string(
 			cursor.x = rectangle2d_width(&line_bounds) + line_bounds.x0 - state.font_header->leading_width - line_width;
 			break;
 		}
+		ae_text_layout_line(justification, line_bounds.x0, rectangle2d_width(&line_bounds), state.font_header->leading_width, line_width, cursor.x); /* AE hook */
 
 		if (TEST_FLAG(font_drawing_globals.current_flags, _draw_text_wrap_vertically_bit) || cursor.y < line_bounds.y1)
 		{
@@ -1204,6 +1208,7 @@ void draw_unicode_string(
 		font_drawing_globals.current_style,
 		font_drawing_globals.current_justification,
 		&font_drawing_globals.current_color);
+	ae_text_layout_begin_unicode(font_drawing_globals.current_font_index, string); /* AE hook */
 
 	do
 	{
@@ -1277,7 +1282,7 @@ void draw_unicode_string(
 
 					if (character->bitmap_width + cursor.x + line_width < line_bounds.x1)
 					{
-						line_width += character->character_width;
+						line_width = ae_text_layout_advance(0, character->character, character->character_width, line_width); /* AE hook */
 					}
 					else if (TEST_FLAG(font_drawing_globals.current_flags, _draw_text_wrap_horizontally_bit))
 					{
@@ -1310,6 +1315,7 @@ void draw_unicode_string(
 			cursor.x = rectangle2d_width(&line_bounds) + line_bounds.x0 - state.font_header->leading_width - line_width;
 			break;
 		}
+		ae_text_layout_line(justification, line_bounds.x0, rectangle2d_width(&line_bounds), state.font_header->leading_width, line_width, cursor.x); /* AE hook */
 
 		if (TEST_FLAG(font_drawing_globals.current_flags, _draw_text_wrap_vertically_bit) || cursor.y < line_bounds.y1)
 		{

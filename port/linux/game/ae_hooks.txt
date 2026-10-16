@@ -644,3 +644,22 @@ source/game/game_engine.c	ae_postgame_right_align(tab_stops, 2, row_string); /* 
 source/game/game_engine.c	ae_postgame_right_align(tab_stops, 3, row_string); /* AE hook */
 source/game/game_engine.c	ae_postgame_right_align(tab_stops, 4, row_string); /* AE hook */
 source/game/game_engine.c	ae_postgame_right_align(tab_stops, 5, row_string); /* AE hook */
+# HIGH-RES TEXT LAID OUT BY ITS OWN FONTS: Overpass's advances and tabular digits in place of the font tags' widths
+# for a string the high-res text draws, so narrow letters do not sit centred in wider places (ae_text_layout.c,
+# port/linux/src/ae_text_hires.c): the measure and draw loops of draw_string.c, the glyph's place in rasterizer_text.c,
+# and the fonts' advances and tnum glyphs in text_hires.c.
+source/text/draw_string.c	#include "ae_text_layout.h" /* AE hook */
+source/text/draw_string.c	ae_text_layout_begin(font_drawing_globals.current_font_index, string); /* AE hook */
+source/text/draw_string.c	ae_text_layout_begin_unicode(font_drawing_globals.current_font_index, string); /* AE hook */
+source/text/draw_string.c	cursor->x = ae_text_layout_advance(1, character->character, character->character_width, cursor->x); /* AE hook */
+source/text/draw_string.c	line_width = ae_text_layout_advance(0, character->character, character->character_width, line_width); /* AE hook */
+source/text/draw_string.c	ae_text_layout_line(justification, line_bounds.x0, rectangle2d_width(&line_bounds), state.font_header->leading_width, line_width, cursor.x); /* AE hook */
+source/rasterizer/rasterizer_text.c	#include "ae_text_layout.h" /* AE hook */
+source/rasterizer/rasterizer_text.c	long ae_text_layout_hires_font(long font_index) { return hires_text_atlas ? hires_text_font_get(font_index, MAX(text_scale, 1.0f)) : NONE; } /* AE hook */
+source/rasterizer/rasterizer_text.c	left = pen_x + ae_text_layout_glyph_offset(font_character->character_width, glyph.advance) + glyph.left; /* AE hook */
+port/linux/src/text_hires.c	#include "ae_text_hires.h" /* AE hook */
+port/linux/src/text_hires.c	float text_hires_advance(long font, unsigned long code) { int advance = font < 0 || font >= font_count || fonts[font].scale <= 0.0f ? -1 : ae_text_font_advance(&fonts[font].info, code); return advance < 0 ? -1.0f : advance * fonts[font].scale * fonts[font].narrowing; } /* AE hook */
+port/linux/src/text_hires.c	index = ae_text_tabular_glyph(&fonts[font].info, code); /* AE hook */
+source/interface/virtual_keyboard.c	#include "ae_text_layout.h" /* AE hook */
+source/interface/virtual_keyboard.c	ae_text_layout_caret(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer, virtual_keyboard_globals.cursor, &cursor_offset, &width); /* AE hook */
+source/text/draw_string.c	ae_text_layout_character_bounds(x, dx, character->bitmap_width, &x0, &x1); /* AE hook */

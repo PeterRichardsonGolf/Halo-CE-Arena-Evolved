@@ -71,6 +71,12 @@ UNITS = {
     # (the 2026-10-16 sweep: the lobby's SHUFFLE deal, the map list's WARM-UP group)
     "ae_sweep_rules_test.c": ([UI / "ae_team_shuffle_rules.c", UI / "ae_map_warm_up.c"],
                               ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (the high-res text laid out by its own fonts: the game's fonts' tabular digits, the pen's fraction, line starts)
+    "ae_text_layout_test.c": ([SRC / "ae_text_hires.c", UI / "ae_text_layout.c"],
+                              [f"-I{SRC}", f"-I{UI}", f'-DAE_FONT_DIR="{ROOT / 'port' / 'assets' / 'fonts'}"',
+                               "-fsanitize=address,undefined", "-fno-sanitize-recover=all",
+                               "-Wno-unused-function"],  # (stb's static copy)
+                              ["-lm"]),
     # (the bots of a LAN game: when the lobby has them, how many, their controllers on the host's machine, teams)
     "ae_lan_bots_rules_test.c": ([UI / "ae_lan_bots_rules.c"], ["-fsanitize=address,undefined",
                                                               "-fno-sanitize-recover=all"], []),
