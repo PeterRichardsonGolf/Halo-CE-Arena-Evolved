@@ -11,11 +11,10 @@ text_hires.c, beside its fonts) gives the layout the same glyph's advance. Inclu
 #ifndef AE_TEXT_HIRES_H
 #define AE_TEXT_HIRES_H
 
-/* the glyph tnum puts in place of glyph in the font whose GSUB table starts at gsub (an offset into the font's data;
-0 if it has none), or glyph itself: single substitutions only (lookup type 1, through extensions, type 7). The fonts
-are the build's own embedded ones (port/assets/fonts), read as stb_truetype reads them, without bounds (pure: the
-unit tests' too) */
-int ae_text_tabular_glyph_in(unsigned char const *data, unsigned long gsub, int glyph);
+/* the glyph tnum puts in place of glyph in a font whose GSUB table is the length bytes at gsub, or glyph itself:
+single substitutions only (lookup type 1, through extensions, type 7). Every read is held inside the table; the
+table's offset and length come from the font's own table records (pure: the unit tests' too) */
+int ae_text_tabular_glyph_in(unsigned char const *gsub, unsigned long length, int glyph);
 
 /* a character's glyph in the font: its tabular one where the font has it; 0 if the font has no glyph for it */
 int ae_text_tabular_glyph(struct stbtt_fontinfo const *info, unsigned long code);

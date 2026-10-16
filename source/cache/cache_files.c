@@ -142,6 +142,7 @@ symbols in this file:
 #include "ae_glue_ce_maps.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
 #include "ae_weapon_pack.h" /* AE hook */
+#include "ae_sound_filter.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -752,6 +753,7 @@ void scenario_tags_unload(
 		menu_tags_unloaded();
 	}
 	ae_weapon_pack_tags_unloaded(); /* AE hook */
+	ae_sound_filter_tags_unloaded(); /* AE hook */
 	cache_file_close();
 #ifdef HALO_CUSTOM_EDITION
 	/* (a Custom Edition map registered no Direct3D buffers) */

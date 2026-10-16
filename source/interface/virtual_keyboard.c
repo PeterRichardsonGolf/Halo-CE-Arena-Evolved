@@ -751,19 +751,18 @@ static void virtual_keyboard_render_internal(
 		if (bitmap)
 		{
 			/* January tests the pointer, not the character; the terminator ends the walk because the font has no glyph for it */
+			ae_text_layout_begin_unicode(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer); /* AE hook */
 			while (character)
 			{
 				struct font_character *font_character = font_get_character_by_ascii_code(keyboard_font_header, *character);
 
 				if (!font_character)
 					break;
-				if (character < virtual_keyboard_globals.cursor)
-					cursor_offset += font_character->character_width;
-				width += font_character->character_width;
+				width = ae_text_layout_advance(0, *character, font_character->character_width, width); /* AE hook */
+				if (character < virtual_keyboard_globals.cursor) cursor_offset = width; /* AE hook */
 				character++;
 			}
 
-			ae_text_layout_caret(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer, virtual_keyboard_globals.cursor, &cursor_offset, &width); /* AE hook */
 			/* 320 is the horizontal center of the 220..420 text box */
 			caret_bounds.x0 = 320 - (width >> 1) + cursor_offset;
 			caret_bounds.x1 = caret_bounds.x0 + 1;

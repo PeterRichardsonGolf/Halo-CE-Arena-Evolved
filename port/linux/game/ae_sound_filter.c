@@ -24,6 +24,16 @@ static const char *const muted_names[] =
 
 void platform_log(char const *format, ...);
 
+/* each sound tag's answer as it is first asked, by its tag index's absolute index while the map's tags are loaded:
+0 not asked, 1 heard, 2 muted (2 + its place in muted_names) */
+#define KNOWN_TAGS 4096
+static unsigned char known[KNOWN_TAGS];
+
+void ae_sound_filter_tags_unloaded(void)
+{
+	memset(known, 0, sizeof(known));
+}
+
 /* (the muted sound's place in muted_names, else -1) */
 static int muted_index(const char *name)
 {
@@ -58,7 +68,17 @@ float ae_sound_filter_gain(long definition_index)
 	{
 		/* (each muted sound's first time logged, once a run: the filter seen working) */
 		static unsigned char logged[sizeof(muted_names) / sizeof(muted_names[0])];
-		int index = muted_index(tag_get_name(definition_index));
+		long slot = DATUM_INDEX_TO_ABSOLUTE_INDEX(definition_index);
+		int index;
+
+		if (slot >= 0 && slot < KNOWN_TAGS && known[slot])
+			index = known[slot] - 2;
+		else
+		{
+			index = muted_index(tag_get_name(definition_index));
+			if (slot >= 0 && slot < KNOWN_TAGS)
+				known[slot] = (unsigned char)(index + 2);
+		}
 
 		if (index < 0)
 			return 1.0f;

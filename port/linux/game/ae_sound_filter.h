@@ -14,6 +14,9 @@ player's own setting: nothing goes over the network.
 
 /* (sound_manager.c, each playing sound's channel update: AE hook lines) 0 for a muted sound, else 1 */
 float ae_sound_filter_gain(long definition_index);
+/* (cache_files.c, a map's tags unloaded: an AE hook line) the answers kept per sound tag forgotten: a tag index of
+the next map is another tag */
+void ae_sound_filter_tags_unloaded(void);
 /* whether a sound tag's name is one the filter mutes (pure) */
 int ae_sound_filter_muted_name(const char *name);
 

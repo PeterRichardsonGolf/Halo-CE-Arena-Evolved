@@ -329,7 +329,7 @@ source/game/game.c	ae_weapon_pack_dispose(); /* AE hook */
 port/linux/src/port_config.c	{ "debug.weapon_pack_ground", _config_boolean, "false", "HALO_WEAPON_PACK_GROUND", _environment_value, /* AE hook */\n_platform_all,
 source/cache/cache_files.c	#include "ae_weapon_pack.h" /* AE hook */
 source/cache/cache_files.c	cache_file_globals.tags_loaded = TRUE;\nae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */
-source/cache/cache_files.c	menu_tags_unloaded();\n}\nae_weapon_pack_tags_unloaded(); /* AE hook */\ncache_file_close();
+source/cache/cache_files.c	menu_tags_unloaded();\n}\nae_weapon_pack_tags_unloaded(); /* AE hook */\nae_sound_filter_tags_unloaded(); /* AE hook */\ncache_file_close();
 source/cache/cache_files_windows.c	#include "ae_weapon_pack.h" /* AE hook */
 source/cache/cache_files_windows.c	if (ae_weapon_pack_read(tag_index, offset, size, buffer, completion_flag_reference)) return request_index; /* AE hook */\nif (size & (CACHE_FILE_SECTOR_SIZE - 1)
 port/linux/game/tag_validate.c	#include "ae_tag_validate.inc" /* AE hook */
@@ -485,7 +485,7 @@ port/linux/game/bots.c	real side = bot->strafe_sign * ae_bots_strafe(bots_global
 port/linux/game/bots.c	ae_bots_aim_delay(bots_globals.skill, bot->target_player_index, &aim_point, now); /* AE hook */
 port/linux/game/bots.c	if (tick->target_distance < ae_bots_melee_reach(bots_globals.skill) && now >= bot->melee_tick) /* AE hook */
 port/linux/game/bots.c	bot->melee_tick = now + ae_bots_melee_ticks(bots_globals.skill); /* AE hook */
-port/linux/game/bots.c	if (ae_bots_crouch(bots_globals.skill, bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_crouch_chance(bots_globals.skill) > 0.0f && ae_bots_crouch(bots_globals.skill, bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
 source/networking/network_server_manager.c	#include "ae_lan_bots.h" /* AE hook */
 source/networking/network_server_manager.c	if (ae_lan_bots_lobby(server, &server->game, server->state == _network_game_server_state_pregame && !server->sent_start_game_message) && !network_game_server_send_game_data_pregame(server)) network_event("ae_lan_bots_lobby() failed to send updated game settings to clients"); /* AE hook */
 source/networking/network_server_manager.c	ae_lan_bots_give_way(&server->game, player, server->state == _network_game_server_state_pregame && !server->sent_start_game_message); /* AE hook */
@@ -663,7 +663,12 @@ port/linux/src/text_hires.c	#include "ae_text_hires.h" /* AE hook */
 port/linux/src/text_hires.c	float text_hires_advance(long font, unsigned long code) { int advance = font < 0 || font >= font_count || fonts[font].scale <= 0.0f ? -1 : ae_text_font_advance(&fonts[font].info, code); return advance < 0 ? -1.0f : advance * fonts[font].scale * fonts[font].narrowing; } /* AE hook */
 port/linux/src/text_hires.c	index = ae_text_tabular_glyph(&fonts[font].info, code); /* AE hook */
 source/interface/virtual_keyboard.c	#include "ae_text_layout.h" /* AE hook */
-source/interface/virtual_keyboard.c	ae_text_layout_caret(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer, virtual_keyboard_globals.cursor, &cursor_offset, &width); /* AE hook */
+source/interface/virtual_keyboard.c	ae_text_layout_begin_unicode(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer); /* AE hook */
+source/interface/virtual_keyboard.c	width = ae_text_layout_advance(0, *character, font_character->character_width, width); /* AE hook */
+source/interface/virtual_keyboard.c	if (character < virtual_keyboard_globals.cursor) cursor_offset = width; /* AE hook */
 source/text/draw_string.c	ae_text_layout_character_bounds(x, dx, character->bitmap_width, &x0, &x1); /* AE hook */
 # SHOW COORDINATES after PERFORMANCE FULL on one line: main_framerate_render's line has room for both (ae_coordinates.c)
 source/main/main.c	char line[128]; /* AE hook */
+# NHE SOUND FILTER's answers kept per sound tag while a map's tags are loaded (no name compared every frame)
+source/cache/cache_files.c	#include "ae_sound_filter.h" /* AE hook */
+source/cache/cache_files.c	ae_sound_filter_tags_unloaded(); /* AE hook */

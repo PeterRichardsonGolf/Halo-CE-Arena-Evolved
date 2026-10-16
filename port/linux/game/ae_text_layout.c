@@ -159,29 +159,6 @@ float ae_text_layout_glyph_offset(short tag_width, float glyph_advance)
 	return layout.offset;
 }
 
-void ae_text_layout_caret(long font_index, wchar_t const *text, wchar_t const *cursor, short *cursor_offset,
-	short *width)
-{
-	wchar_t const *character;
-	short pen = 0;
-
-	if (!text || !cursor_offset || !width)
-		return;
-	ae_text_layout_begin_unicode(font_index, text);
-	if (layout.font < 0)
-		return;
-	for (character = text; *character; character++)
-	{
-		if (character == cursor)
-			*cursor_offset = pen;
-		pen = ae_text_layout_advance(_slot_measure, (unsigned short)*character, 0, pen);
-	}
-	if (cursor >= character)
-		*cursor_offset = pen;
-	*width = pen;
-	layout.font = -1;
-}
-
 void ae_text_layout_character_bounds(short x, short dx, short bitmap_width, short *x0, short *x1)
 {
 	if (layout.font < 0 || x != 0 || dx != bitmap_width || !x0 || !x1)

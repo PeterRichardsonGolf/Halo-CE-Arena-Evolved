@@ -4,6 +4,7 @@ starting where its exact width puts it, and the tag's layout kept for a string t
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #define STBTT_STATIC
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "../../third_party/stb/stb_truetype.h"
@@ -95,8 +96,20 @@ static void test_fonts(void)
 		/* (none for a character the font has not) */
 		CHECK(ae_text_tabular_glyph(&info, 0xE000) == 0);
 		CHECK(ae_text_font_advance(&info, 0xE000) == -1);
-		/* (no GSUB table: the glyph as it is) */
-		CHECK(ae_text_tabular_glyph_in(data, 0, 42) == 42);
+		/* (no GSUB table, or one cut short: the glyph as it is, nothing read past its end) */
+		CHECK(ae_text_tabular_glyph_in(NULL, 0, 42) == 42);
+		{
+			int one = stbtt_FindGlyphIndex(&info, '1');
+			unsigned char *cut = malloc(12);
+
+			CHECK(cut != NULL);
+			if (cut)
+			{
+				memcpy(cut, data + stbtt__find_table(data, 0, "GSUB"), 12);
+				CHECK(ae_text_tabular_glyph_in(cut, 12, one) == one);
+				free(cut);
+			}
+		}
 		free(data);
 	}
 }
@@ -177,21 +190,20 @@ static void test_layout(void)
 
 static void test_caret(void)
 {
+	/* (the Xbox keyboard's walk, as virtual_keyboard.c's hook lines do it: "aab", the caret before the b) */
 	static wchar_t const text[] = L"aab";
-	short offset = -1, width = -1;
+	short width = 0, offset = 0;
+	int index;
 
-	/* (3.4 + 3.4 + 5: 11.8 wide, the caret before the b at 6.8) */
-	ae_text_layout_caret(7, text, text + 2, &offset, &width);
+	ae_text_layout_begin_unicode(7, text);
+	for (index = 0; text[index]; index++)
+	{
+		width = ae_text_layout_advance(0, (unsigned short)text[index], 6, width);
+		if (index < 2) offset = width;
+	}
+	/* (3.4 + 3.4 + 5: 11.8 wide, the caret at 6.8) */
 	CHECK(offset == 7);
 	CHECK(width == 12);
-	ae_text_layout_caret(7, text, text + 3, &offset, &width);
-	CHECK(offset == 12);
-	/* (the tag's sums kept where the high-res text does not draw it) */
-	offset = width = 99;
-	ae_text_layout_caret(3, text, text, &offset, &width);
-	CHECK(offset == 99 && width == 99);
-	/* (and the string after it is laid out afresh) */
-	CHECK(ae_text_layout_advance(1, 'a', 6, 0) == 6);
 }
 
 int main(void)

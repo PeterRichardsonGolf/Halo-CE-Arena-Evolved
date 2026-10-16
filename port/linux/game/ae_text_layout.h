@@ -39,11 +39,6 @@ pen), when it is not cut (x, the columns cut at its left, and dx of bitmap_width
 its pen to the next, when AE lays the string out */
 void ae_text_layout_character_bounds(short x, short dx, short bitmap_width, short *x0, short *x1);
 
-/* the Xbox keyboard's caret (virtual_keyboard.c, which adds up the tag's widths itself): the text's width and the
-caret's offset in it (before the character at cursor) as AE lays the text out, when it does; left as they are when not */
-void ae_text_layout_caret(long font_index, wchar_t const *text, wchar_t const *cursor, short *cursor_offset,
-	short *width);
-
 /* rasterizer_text.c (an AE hook line): the high-res text's font for a font tag, as rasterizer_draw_string picks it
 (-1 if none) */
 long ae_text_layout_hires_font(long font_index);
