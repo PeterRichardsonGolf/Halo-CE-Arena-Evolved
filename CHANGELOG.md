@@ -110,7 +110,8 @@ Linux 64-bit is the build played and tested; Windows is built by the same checks
   The panels are drawn in the score strip's style (its soft dark under-stroke, dark tracks under bars and boxes,
   glowing digits) with smooth edges; the ammo group is CE's own width; the top corners sit the same distance from
   the screen's left and right edges, and CE's messages line up under the ammo group. A low or down shield blinks
-  between red and dim red. In a vehicle seat the Scorpion shows its cannon only.
+  between red and dim red; an overshield's layers take CE's colours (red, then green over it). In a vehicle seat the
+  Scorpion shows its cannon only.
 - With HUD STYLE AE, **CE's messages and hints** (pick-ups, "hold X to ...", vehicle prompts) take the strip's text
   style: white, at the strip's size, small button icons, lined up under the ammo group and wrapped at twice its width.
 - **Steady waypoints**: the item waypoints and their labels no longer shake with the camera (a tank's recoil, a

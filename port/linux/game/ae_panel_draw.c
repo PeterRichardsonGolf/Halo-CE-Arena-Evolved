@@ -462,19 +462,26 @@ void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real f
 		tone_color(fill_tone, FILL_ALPHA * fade, &color);
 		bar_band(bar, w, 0.0f, fill > 1.0f ? 1.0f : fill, 0.0f, 1.0f, &color);
 	}
+	/* the overshield's layers in CE's own order of colours (hud_unit.c's overcharge meters: red, then green, then yellow
+	and violet), each over the one below, a light edge on top (owner 10-15: "the ce hud has multiple colors for the ov
+	cycle") */
 	if (overshield1 > 0.0f)
 	{
 		real height = (bar->y1 - bar->y0) - 2.0f * w;
 
-		tone_color(_ae_tone_green, FILL_ALPHA, &color);
+		tone_color(_ae_tone_red, FILL_ALPHA, &color);
 		bar_band(bar, w, 0.0f, overshield1, 0.0f, 1.0f, &color);
-		tone_color(_ae_tone_green_edge, FILL_ALPHA, &color);
+		tone_color(_ae_tone_white, FILL_ALPHA * 0.6f, &color);
 		bar_band(bar, w, 0.0f, overshield1, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	if (overshield2 > 0.0f)
 	{
-		tone_color(_ae_tone_white, FILL_ALPHA, &color);
-		bar_band(bar, w, 0.0f, overshield2, 0.0f, 0.38f, &color);
+		real height = (bar->y1 - bar->y0) - 2.0f * w;
+
+		tone_color(_ae_tone_green, FILL_ALPHA, &color);
+		bar_band(bar, w, 0.0f, overshield2, 0.0f, 1.0f, &color);
+		tone_color(_ae_tone_green_edge, FILL_ALPHA, &color);
+		bar_band(bar, w, 0.0f, overshield2, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	/* the dividers between 5 cells */
 	tone_color(_ae_tone_dark, STRIP_DIVIDER_ALPHA, &dark);

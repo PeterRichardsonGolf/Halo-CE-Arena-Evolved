@@ -118,6 +118,10 @@ static struct
 	/* the event rumble pulse under way on each port (0-255 a motor, until pulse_until, SDL_GetTicks ms) */
 	int pulse_left[PORTS], pulse_right[PORTS];
 	Uint64 pulse_until[PORTS];
+	/* (Bluetooth: a pulse not yet in a report written, and how long it lasts from that report: one report every 50 ms
+	there, and a pulse that ended before its report went out was lost, owner 10-15 "very inconsistent") */
+	int pulse_pending[PORTS];
+	Uint64 pulse_ms[PORTS];
 } shared;
 static struct pad pads[PADS];
 static int exit_registered;
@@ -701,6 +705,11 @@ static void pad_frame(struct pad *pad, SDL_Gamepad *gamepad, int port, struct ae
 				shared.pulse_left[port] = wish->rumble.left;
 				shared.pulse_right[port] = wish->rumble.right;
 				shared.pulse_until[port] = now + (Uint64)wish->rumble.ms;
+				/* (Bluetooth: kept on until a report carries it, then its full length from that report) */
+				shared.pulse_pending[port] = pad->bluetooth;
+				shared.pulse_ms[port] = (Uint64)wish->rumble.ms;
+				if (pad->bluetooth)
+					shared.pulse_until[port] += 2 * AE_DS5_BLUETOOTH_INTERVAL_MS;
 				SDL_UnlockSpinlock(&shared_lock);
 				/* (the rumble reports for it: the triggers sent again after, once they are up) */
 				pad->refresh_at = now + (Uint64)wish->rumble.ms + REFRESH_AFTER_RUMBLE_MS;
@@ -763,6 +772,17 @@ static void pad_frame(struct pad *pad, SDL_Gamepad *gamepad, int port, struct ae
 		return;
 	if (written & AE_DS5_FIELD_TRIGGERS)
 		pad->triggers_sent_at = now;
+	/* (a Bluetooth pulse now in a report: its length counts from here) */
+	if (written & AE_DS5_FIELD_RUMBLE)
+	{
+		SDL_LockSpinlock(&shared_lock);
+		if (shared.pulse_pending[port] && (body[AE_DS5_BODY_RUMBLE_LEFT] || body[AE_DS5_BODY_RUMBLE_RIGHT]))
+		{
+			shared.pulse_pending[port] = 0;
+			shared.pulse_until[port] = now + shared.pulse_ms[port];
+		}
+		SDL_UnlockSpinlock(&shared_lock);
+	}
 	if (written & AE_DS5_FIELD_LIGHTBAR)
 		pad->lightbar_sends++;
 	if (kicking && (written & AE_DS5_FIELD_TRIGGERS))
