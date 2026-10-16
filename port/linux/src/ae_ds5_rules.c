@@ -225,19 +225,37 @@ static int scaled(int value, int percent)
 
 	if (value <= 0)
 		return value;
-	if (percent <= AE_DS5_STRENGTH_LIGHT)
-		return 1;
 	result = (value * percent + 50) / 100;
 	if (percent > 100 && result < value + 1)
 		result = value + 1;
 	return clamp(result, 1, 8);
 }
 
-/* LIGHT: no adaptive trigger effect at all (owner 10-16: "no adaptive triggers at all on light"), as competitive
-players turn them off; the rumble motors stay, at AE_DS5_RUMBLE_LIGHT percent, so a shot or a state is still felt */
-static int resists(int percent)
+/* LIGHT is a HAIR TRIGGER (owner 10-16: "i want light to have triggers hair trigger like"): every hold and click
+becomes a short light break at the top of the pull (zones HAIR_START to HAIR_END, where a press already counts: the
+game's analog press threshold follows the pull, input_xbox.c), so nothing stands deeper in the pull; a kick from zone 0
+(after a shot) and the overheat lock stay as they are, scaled */
+#define HAIR_START 2
+#define HAIR_END 3
+#define HAIR_MINIMUM 2
+static int hair_trigger(int percent)
 {
-	return percent > AE_DS5_STRENGTH_LIGHT;
+	return percent <= AE_DS5_STRENGTH_LIGHT;
+}
+
+/* a hold or click as LIGHT's break at the top of the pull, else as it is; strength already scaled */
+static void resistance(unsigned char effect[AE_DS5_EFFECT_SIZE], int weapon, int start, int end, int strength,
+	int percent)
+{
+	if (hair_trigger(percent) && (weapon || start > 0))
+	{
+		ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, strength < HAIR_MINIMUM ? HAIR_MINIMUM : strength);
+		return;
+	}
+	if (weapon)
+		ae_ds5_effect_weapon(effect, start, end, strength);
+	else
+		ae_ds5_effect_feedback(effect, start, strength);
 }
 
 void ae_ds5_rumble_scaled(struct ae_ds5_rumble *rumble, int percent)
@@ -254,18 +272,24 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 	int frequency;
 
 	shape.b = (unsigned char)scaled(shape.b, strength);
-	if (!resists(strength))
-		shape.mode = OFF;
 
 	switch (shape.mode)
 	{
 	case FEEDBACK:
-		ae_ds5_effect_feedback(effect, shape.a, shape.b);
-		snprintf(text, text_size, "feedback from zone %d strength %d", shape.a, shape.b);
+		resistance(effect, 0, shape.a, 0, shape.b, strength);
+		if (hair_trigger(strength) && shape.a > 0)
+			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END,
+				shape.b < HAIR_MINIMUM ? HAIR_MINIMUM : shape.b);
+		else
+			snprintf(text, text_size, "feedback from zone %d strength %d", shape.a, shape.b);
 		break;
 	case WEAPON:
-		ae_ds5_effect_weapon(effect, shape.a, shape.c, shape.b);
-		snprintf(text, text_size, "click zones %d-%d strength %d", shape.a, shape.c, shape.b);
+		resistance(effect, 1, shape.a, shape.c, shape.b, strength);
+		if (hair_trigger(strength))
+			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END,
+				shape.b < HAIR_MINIMUM ? HAIR_MINIMUM : shape.b);
+		else
+			snprintf(text, text_size, "click zones %d-%d strength %d", shape.a, shape.c, shape.b);
 		break;
 	case VIBRATION:
 		frequency = shape.c ? shape.c : clamp((int)(rate_of_fire * (float)(per_round > 0 ? per_round : 1) + 0.5f), 6, 60);
@@ -441,7 +465,7 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 	}
 	}
 	ae_ds5_rumble_scaled(rumble, strength);
-	if (shape.mode == OFF || ms <= 0 || !resists(strength))
+	if (shape.mode == OFF || ms <= 0)
 	{
 		ae_ds5_effect_off(effect);
 		return 0;
@@ -463,28 +487,23 @@ char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind)
 char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
 	int strength)
 {
-	if (!resists(strength))
-	{
-		ae_ds5_effect_off(effect);
-		return "free (LIGHT: no resistance)";
-	}
 	if (zoomed)
 	{
-		ae_ds5_effect_feedback(effect, 2, scaled(2, strength));
+		resistance(effect, 0, 2, 0, scaled(2, strength), strength);
 		return "light resistance (zoomed)";
 	}
 	if (winding)
 	{
 		/* (a grenade wound up: the throw's held moment) */
-		ae_ds5_effect_feedback(effect, 2, scaled(5, strength));
+		resistance(effect, 0, 2, 0, scaled(5, strength), strength);
 		return "grenade wound up (feedback from zone 2)";
 	}
 	if (grenades > 0)
 	{
-		ae_ds5_effect_feedback(effect, 3, scaled(2, strength));
+		resistance(effect, 0, 3, 0, scaled(2, strength), strength);
 		return "grenade ready (light hold)";
 	}
-	ae_ds5_effect_weapon(effect, 7, 8, scaled(2, strength));
+	resistance(effect, 1, 7, 8, scaled(2, strength), strength);
 	return "no grenades (dry click)";
 }
 
@@ -571,8 +590,6 @@ int ae_ds5_overcharge_flash(unsigned char rgb[3], long ticks)
 int ae_ds5_left_powerup(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_powerups const *powerups, int strength,
 	char *text, size_t text_size)
 {
-	if (!resists(strength))
-		return 0;
 	if (powerups->juggernaut_ticks >= 0 && powerups->juggernaut_ticks < JUGGERNAUT_BUZZ_TICKS)
 	{
 		ae_ds5_effect_vibration(effect, 0, scaled(7, strength), 25);

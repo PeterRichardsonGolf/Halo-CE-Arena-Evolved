@@ -500,10 +500,10 @@ static const struct config_setting config_settings[] =
 		"or the download's 70-ae-dualsense.rules)." },
 	{ "input.trigger_strength", _config_string, "\"normal\"", "HALO_TRIGGER_STRENGTH", _environment_value, /* AE hook */
 		_platform_desktop,
-		"How strong a DualSense's trigger effects are: \"light\" (near\n"
-		"competitive: no trigger effect at all, the rumble motors at a third\n"
-		"tell you a shot or a state), \"normal\", \"strong\" (every effect\n"
-		"x1.75 and at least a step up, the motors x1.4)." },
+		"How strong a DualSense's trigger effects are: \"light\" (a hair\n"
+		"trigger: every hold or click a short light break at the top of the\n"
+		"pull, the rest at half), \"normal\", \"strong\" (every effect x1.75\n"
+		"and at least a step up, the motors x1.4)." },
 	{ "input.lightbar", _config_string, "\"player_color\"", "HALO_LIGHTBAR", _environment_value, /* AE hook */
 		_platform_desktop,
 		"A PS5 DualSense's lightbar and player lights: \"player_color\", the\n"
