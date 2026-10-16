@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- NHE SOUND FILTER (Settings > Audio): mutes the plasma pistol's charging hum and the needler's shots, as Halo 1:
+  NHE's maps did, on any map, for you only.
 - SHUFFLE in the PC lobby (the host, team games): one press deals everyone onto the two teams at random, evenly.
 - The map list has a WARM-UP group: Octagon and Octagon B (when installed) come first after the stock maps, marked
   [WARM-UP] and described as warm-up maps for Slayer.

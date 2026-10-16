@@ -276,7 +276,8 @@ SCREENS = {
     "audio_settings": {
         "screen": "audio_settings_screen",
         "header": ("header_profile_audio_settings", f"{PE}/audio_settings/header_profile_audio_settings"),
-        "spacing": 30,
+        # (27, not 30: ten rows with NHE SOUND FILTER)
+        "spacing": 27,
         # (the devices, desktop only, first: Android's rows from the top)
         "platform_places": True,
         "rows": [
@@ -291,6 +292,10 @@ SCREENS = {
              "The volume of every other sound: effects and\nspeech.", None),
             ("REVERB:", "audio.reverb", ON_OFF,
              "Echo sounds as the place you are in does, and\nmuffle those behind walls, as the Xbox did.", None),
+            # (AE: ae_sound_filter.c; this machine's, so no gametype or network change)
+            ("NHE SOUND FILTER:", "audio.nhe_sound_filter", ON_OFF,
+             "Mute what Halo 1: NHE took out of its maps: the\nplasma pistol's charging hum, the needler's shots.",
+             None),
             ("SOUND:", "audio.enabled", ON_OFF,
              "Play sound at all; from the next time the game\nstarts.", None),
             # voice chat: this machine's own (port/linux/game/network_voice.c)

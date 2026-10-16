@@ -627,3 +627,8 @@ port/linux/game/menu_tags.c	"ae lobby shuffle teams", /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_team_shuffle.h" /* AE hook */
 port/linux/game/menu_functions.c	if (!strcmp(name, "ae lobby shuffle teams")) /* AE hook */\nreturn ae_team_shuffle();
 port/linux/game/menu_functions.c	visible_set(named(list, "lobby_button_shuffle", 0), ae_team_shuffle_shown()); /* AE hook */
+# NHE SOUND FILTER (audio.nhe_sound_filter): the plasma pistol's charge and the needler's shots muted on this machine (ae_sound_filter.c)
+port/linux/src/port_config.c	{ "audio.nhe_sound_filter", _config_boolean, "false", "HALO_NHE_SOUND_FILTER", _environment_value, /* AE hook */\n_platform_all,
+source/sound/sound_manager.c	#include "ae_sound_filter.h" /* AE hook */
+source/sound/sound_manager.c	gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
+source/sound/sound_manager.c	properties.gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */

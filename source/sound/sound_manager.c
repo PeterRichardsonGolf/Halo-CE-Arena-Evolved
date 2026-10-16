@@ -241,6 +241,7 @@ symbols in this file:
 #include "scenario/scenario.h"
 #include "tag_files/tag_files.h"
 #include "ae_silent.h" /* AE hook */
+#include "ae_sound_filter.h" /* AE hook */
 
 #include <math.h>
 #include <stdio.h>
@@ -2365,6 +2366,7 @@ static void update_channel_for_impulse_sound(
 		scale);
 
 	gain *= ae_silent_gain(channel->sound_index, sound->listener_index, sound->playing_channel_index == NONE); /* AE hook */
+	gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
 	if (sound->playing_channel_index == NONE)
 	{
 		struct platform_sound_channel_properties properties;
@@ -2963,6 +2965,7 @@ static void update_channel_for_looping_sound(
 			definition->one_gain_modifier,
 			scale) *
 		sound->source.gain * fade;
+	properties.gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
 
 	if (sound->playing_channel_index == NONE)
 	{
