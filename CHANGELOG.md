@@ -12,15 +12,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   light right motor). The pistol clicks and snaps, the assault rifle pulses with each round, the sniper rifle is
   firm with a heavy thump, the shotgun and rockets kick hard (the shotgun's pump clicks at its own animation's
   moment), the battle rifle pulses three times a burst, the plasma rifle stiffens with heat, the plasma pistol
-  builds with its charge, pulses at each shot and kicks hard as an overcharged shot goes (with a green flash of the
-  lightbar), the needler buzzes. Every weapon's state comes first: free while it is drawn, then a small settle as it
+  hums in R2 as it charges (faster once fully charged), pulses at each shot and kicks hard as an overcharged shot
+  goes (with a green flash of the lightbar), the needler buzzes. Every weapon's state comes first: free while it is drawn, then a small settle as it
   is ready; free while reloading, with a bump as the magazine (or each shell) goes in; a dry click at the bottom of
   the pull when empty; locked with a venting throb while overheated, until the game lets it fire. Vehicles: the
   seat that fires the vehicle's gun (the ghost's driver, the warthog's gunner) feels that gun; other seats nothing.
   L2 is the grenades: a light hold, firmer as one winds up, a jolt as it leaves the hand (frag left motor, plasma
   right), a dry click with none; light while zoomed. It buzzes while an overshield charges or as you become the
   juggernaut. The rumble pulses follow the profile's VIBRATION setting and go into the game's own rumble. The
-  lightbar takes your colour (your team's in a team game; black armour shows a dim white),
+  lightbar takes your colour (your team's in a team game; with black armour it shows your shield, as LIGHTBAR SHIELD),
   pulses while an overshield charges, breathes while you have one, dims with active camouflage and flashes white as
   you become the juggernaut; LIGHTBAR SHIELD shows your shield instead, as the HUD's meter does (its own colours,
   dimmer as it drains, blinking when low, the empty colour when down, a white flash on the pop with COMBAT FEEDBACK
@@ -99,7 +99,25 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   The panels are drawn in the score strip's style (its soft dark under-stroke, dark tracks under bars and boxes,
   glowing digits) with smooth edges; the ammo group is CE's own width; the top corners sit the same distance from
   the screen's left and right edges, and CE's messages line up under the ammo group. A low or down shield blinks
-  between red and dim red.
+  between red and dim red. In a vehicle seat the Scorpion shows its cannon only.
+- With HUD STYLE AE, **CE's messages and hints** (pick-ups, "hold X to ...", vehicle prompts) take the strip's text
+  style: white, at the strip's size, small button icons, lined up under the ammo group and wrapped at twice its width.
+- **Steady waypoints**: the item waypoints and their labels no longer shake with the camera (a tank's recoil, a
+  nearby explosion).
+- **The carnage report's B asks first**: "LEAVE THE GAME?" over the report (A leaves, B stays); only player 1's
+  buttons count there. Custom Edition maps get the button icons there that they were missing.
+- **PC menus' own pictures**: the Multiplayer screen's and the Edit Gametype screen's PLACE HOLDER pictures are
+  replaced with Arena Evolved's own, each centred and sized alike; the map pictures in the PC menus come from a
+  `previews` folder beside the maps (the map packs bring them). The menus' text icons (the carnage report's "=quit"
+  and "=pick game") are sized to the text and centred on it.
+- **Gametype lists**: all free for all gametypes first (Arena Evolved, AE BR, AE COMP), then all team ones, then
+  NHE's, TRAINING and your own.
+- **Fixed:** with active camouflage, the first-person weapon went into a nearby wall (it was depth-tested against the
+  world; OpenCE's and ChupathingyCE's code too).
+- **Fixed:** a game set up without a map picked opens on the first map you have when Derelict's file is not there (it
+  stopped with "couldn't find map 'carousel'" and the dirty disc screen).
+- **Fixed:** a Custom Edition map's weapon that gives off a little heat a round (the "Halo 2 for CE" maps' battle
+  rifle) showed an empty heat bar under its rounds; the bar shows only while the weapon has heat.
 
 ## 0.2.5-beta - 2026-10-13
 

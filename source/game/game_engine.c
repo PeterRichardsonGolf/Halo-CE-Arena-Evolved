@@ -605,6 +605,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_juggernaut.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
 #include "ae_postgame.h" /* AE hook */
+#include "ae_stage_map.h" /* AE hook */
 #include "ae_scoreboard_header.h" /* AE hook */
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
@@ -6492,6 +6493,7 @@ void game_engine_playlist_next(
 		csstrncpy(global_stage.map_name, map_name, sizeof(global_stage.map_name) - 1);
 		global_stage.map_name[sizeof(global_stage.map_name) - 1] = 0;
 	}
+	ae_stage_map_check(global_stage.map_name, sizeof(global_stage.map_name)); /* AE hook */
 
 	if (player_ui_game_variant_specified(&variant))
 		csmemcpy(&global_stage.variant, &variant, sizeof(global_stage.variant));
