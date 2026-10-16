@@ -64,10 +64,11 @@ menus and carnage report draw the latter at the former's size */
 #define CE_MENU_ICON_SCALE (2.0f / 3.0f)
 
 /* the PC menus' text icons (owner 10-15: the carnage report's "=quit" / "=pick game" icons sat low beside their words):
-drawn as the HUD hints' (ae_hud_messages.c), a button MENU_ICON_HEIGHT times the line's capitals tall, a wide picture
+centred as the HUD hints' are (ae_hud_messages.c), a button MENU_ICON_HEIGHT times the line's capitals tall (owner:
+bigger than the hints' 1.25), a wide picture
 MENU_ICON_HEIGHT_WIDE, their middles on the capitals' middle; the capitals MENU_ICON_CAP of the font's ascent (Halo's
 menu fonts: Conduit's capitals are about seven tenths of its ascent) */
-#define MENU_ICON_HEIGHT 1.25f
+#define MENU_ICON_HEIGHT 1.6f
 #define MENU_ICON_HEIGHT_WIDE 2.0f
 #define MENU_ICON_WIDE_ASPECT 2.0f
 #define MENU_ICON_CAP 0.70f
