@@ -24,6 +24,7 @@ PLAYER: with two or more pads the lobby looked stuck (the pad whose player had l
 #include "networking/network_server_manager.h"
 #include "../src/ae_lan_hint.h"
 #include "ae_glue_lan.h"
+#include "ae_lan_bots.h"
 
 void platform_log(char const *format, ...);
 
@@ -122,4 +123,31 @@ int ae_lobby_leave_all(short controller)
 	platform_log("ae lobby: B of controller #%d (no player of its own): this machine left the lobby (%d players)",
 		(int)controller, (int)removed);
 	return TRUE;
+}
+
+int ae_lobby_only_bots_stay(short controller)
+{
+	struct network_game_client *client = global_network_game_client_get();
+	struct network_game *game = client ? network_game_client_get_game(client) : NULL;
+	short machine_index = network_game_client_get_local_machine_index();
+	short state, index;
+	boolean mine = FALSE;
+	short bots = 0;
+
+	if (!game || machine_index == NONE || network_game_client_get_state(client, &state) != 2)
+		return FALSE;
+	for (index = 0; index < (short)NUMBEROF(game->players); index++)
+	{
+		struct network_player *player = &game->players[index];
+
+		if (!network_player_is_valid(player) || (short)player->machine_index != machine_index)
+			continue;
+		if ((short)player->controller_index == controller && !ae_lan_bots_network_player(player))
+			mine = TRUE;
+		else if (ae_lan_bots_network_player(player))
+			bots++;
+		else
+			return FALSE; /* (another person of this machine stays: the game's own B) */
+	}
+	return mine && bots > 0;
 }

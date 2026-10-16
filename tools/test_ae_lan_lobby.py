@@ -108,6 +108,27 @@ def test_b_from_a_controller_with_no_player(cfg):
     after(rest, "network server disposed")
 
 
+# up to the lobby only (no ADD PLAYER): the keyboard's player 1 alone with the host's LAN bots
+TO_LOBBY_ALONE = ("down a a wait wait down down down down a wait wait a wait wait a wait wait up wait a wait wait wait "
+                  "wait wait wait").split()
+
+
+def test_last_person_leaves_with_lan_bots(cfg):
+    """the host's only person, with 3 LAN bots (bots.count 3), presses B: they and the bots leave, the lobby goes back
+    to Server Setup, and B goes back out. Before the fix the game counted the bots as this machine's players, so only
+    the person left, the bots followed, and the host sat in an empty lobby ("port lobby leave" failed) it could not
+    leave (owner, 2026-10-16)"""
+    out = menus.out_dir(cfg, "lobby-leave")
+    result, text = play(cfg, out, "lan-bots-b", ["b", "wait", "wait", "wait", *BACK_TO_MULTIPLAYER],
+                        lead=TO_LOBBY_ALONE, env={"HALO_BOTS": "3"})
+    assert result.get("status") == "PASS", result.get("why")
+    rest = after(text, "lan bots: bot 3 joined the lobby")
+    rest = after(rest, "ae lobby: B of controller #0")
+    assert "this machine left the lobby (4 players)" in rest.split("\n", 1)[0], rest.split("\n", 1)[0]
+    assert "'port lobby leave' failed" not in rest
+    after(rest, "network server disposed")
+
+
 # the main menu's MULTIPLAYER (a new profile's name screen, its Done), then Join Game > LAN
 TO_LAN_LIST = "down a a wait wait down a".split()
 HINT_LOG = "lan: no games found in 10 s and a firewall is on (ufw): No games found. On Linux a firewall can hide LAN games:"

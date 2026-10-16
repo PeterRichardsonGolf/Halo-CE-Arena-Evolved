@@ -5241,6 +5241,7 @@ static boolean lobby_leave(struct widget_instance *widget, struct event_record *
 		lobby_join_reset();
 		return FALSE;
 	}
+	if (ae_lobby_only_bots_stay(controller)) return ae_lobby_leave_all(controller); /* AE hook */
 	return ui_widget_port_unjoin_player(widget, event, widget_deleted);
 }
 
