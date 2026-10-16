@@ -215,6 +215,7 @@ MENU_STUBS = r'''
 #define _ui_widget_type_spinner_list 2
 static char const *const *multiplayer_map_names;
 static struct {char *multiplayer_levels[13];} event_handler_functions;
+static short ae_map_picture_frame(char const *map_name) { (void)map_name; return -1; } /* (the map pictures: none here) */
 struct event_record {short type,controller_index;};
 struct ui_widget_definition {short type,child_count; struct {long index;} text_label_string_list; short string_list_index;};
 static struct ui_widget_definition definitions[8];
