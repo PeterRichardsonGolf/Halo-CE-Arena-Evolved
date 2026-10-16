@@ -10,7 +10,7 @@ fires short bursts with long pauses, throws no grenades, does not jump, takes
 no lead, and roams the map more often than it heads for the nearest enemy.
 Owner 2026-10-15 after play ("these bots will still destroy my kids"; "less
 of strafe demons ... they can't track like me"; then "less strafing on recruit"): its aim never settles: it
-wanders between 1.5 and 8 degrees off the target, so it fires and misses as
+wanders between 0.8 and 6 degrees off the target, so it fires and misses as
 a new player does; and it sidesteps barely (0.15 as hard), three times as
 long each way, so a young player's aim can stay on it. RECRUIT and EASY also aim where
 their target was a moment ago (the TRACKING DELAY below).
@@ -35,11 +35,11 @@ static real ae_bots_hunt_chance(short skill)
 }
 
 /* RECRUIT's aim: after bots.c's settling, a wander that never settles: a
-random walk kept between 1.5 and 8 degrees off (pitch: six tenths of that);
+random walk kept between 0.8 and 6 degrees off (owner 10-16: 1.5..8 was "patronizing") (pitch: six tenths of that);
 r1, r2: two random numbers in -1..1 */
 static void ae_bots_aim_floor(short skill, real *yaw_error, real *pitch_error, real r1, real r2)
 {
-	real const low = 1.5f * BOTS_DEGREES, high = 8.0f * BOTS_DEGREES, step = 0.6f * BOTS_DEGREES;
+	real const low = 0.8f * BOTS_DEGREES, high = 6.0f * BOTS_DEGREES, step = 0.6f * BOTS_DEGREES;
 	real *errors[2];
 	real scale[2] = { 1.0f, 0.6f };
 	real random[2];
@@ -88,10 +88,10 @@ AE_BOTS_TRACK_TICKS ticks, by its player's absolute index. */
 
 static struct { long tick; real_point3d centre; } ae_bots_track[AE_BOTS_TRACK_PLAYERS][AE_BOTS_TRACK_TICKS];
 
-/* the skill's delay, ticks: RECRUIT 0.3 s, EASY 0.2 s, none above */
+/* the skill's delay, ticks: RECRUIT 0.27 s (was 0.3), EASY 0.2 s, none above */
 static long ae_bots_track_delay_ticks(short skill)
 {
-	return skill == AE_BOTS_SKILL_RECRUIT ? 9 : skill == _bots_skill_easy ? 6 : 0;
+	return skill == AE_BOTS_SKILL_RECRUIT ? 8 : skill == _bots_skill_easy ? 6 : 0;
 }
 
 /* aim_point (the target's centre now) becomes its centre the skill's delay ago, when that tick was kept */
