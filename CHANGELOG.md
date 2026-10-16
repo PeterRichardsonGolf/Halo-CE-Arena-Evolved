@@ -23,6 +23,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - ZOOM BLUR (Video Setup > FOV AND VIEWMODELS): off takes away the blur a zoomed scope puts at the screen's edges.
 - The carnage report marks a player who left before the end: their Place reads Quit (the in-game scoreboard's word)
   in place of a last place, so a quitter ranked last is not mistaken for a player with someone else's numbers.
+- The map pack's pictures show in the Xbox menus too (map select and lobby), as they do in the PC menus.
 
 ## 0.3.0-beta - 2026-10-16
 
