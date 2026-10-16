@@ -5899,8 +5899,7 @@ static struct gametype_option const gametype_options[] =
 	/* (the objectives indicator: MOTION TRACKER, NAV POINTS, NONE, and LINE OF
 	SIGHT: nav points with _game_variant_objective_in_sight_bit) */
 	{ "indicator_options_radar display_spinner", _option_goal_radar, 0, 0, 4, { 0, 1, 2, 3 } },
-	{ "indicator_options_players_on_radar_spinner", _option_radar, OPTIONS_FIELD(radar_players), 0, 3,
-		{ _radar_players_all, _radar_players_friends, _radar_players_none } },
+	{ "indicator_options_players_on_radar_spinner", _option_radar, OPTIONS_FIELD(radar_players), 0, 4, { _radar_players_all, _radar_players_friends, _radar_players_enemies, _radar_players_none } }, /* AE hook */
 	{ "indicator_options_friends_on_screen_spinner", _option_flag, 0, FLAG(_game_variant_allow_friendly_navpoints_bit),
 		2, { 1, 0 } },
 	/* (port: TIMERS and TRAINING, OFF or ON) */

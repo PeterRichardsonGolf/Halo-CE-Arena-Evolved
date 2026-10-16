@@ -83,6 +83,8 @@ UNITS = {
     "ae_juggernaut_rules_test.c": ([UI / "ae_juggernaut_rules.c", UI / "ae_hit_feedback_rules.c",
                                     UI / "ae_silent_rules.c"],
                                    ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
+    # (PLAYERS ON RADAR ENEMIES: allies hidden in a team game only, the names over heads kept)
+    "ae_radar_rules_test.c": ([UI / "ae_radar_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (CE's counter digits at any size: frames, advances, quads, ink bounds)
     "ae_hud_digit_cells_test.c": ([UI / "ae_hud_digit_cells.c"],
                                   ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

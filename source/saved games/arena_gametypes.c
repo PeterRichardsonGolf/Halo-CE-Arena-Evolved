@@ -70,8 +70,8 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
-	past it: revision 11 only adds seeds) */
-	ARENA_GAMETYPES_REVISION = 11,
+	past it: revision 11 only added seeds) */
+	ARENA_GAMETYPES_REVISION = 12,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -201,12 +201,14 @@ enum
 
 /* the gametype's motion sensor: other players on it or not (the variant's
 draw object in motion sensor bit, and the PC options' RADAR PLAYERS from
-it: game_variant_options_default) */
+it: game_variant_options_default); ENEMIES (revision 12): on, RADAR PLAYERS
+ENEMIES (the viewer's allies not shown: ae_radar.c) */
 enum
 {
 	ARENA_RADAR_STOCK = 0,
 	ARENA_RADAR_ON,
 	ARENA_RADAR_OFF,
+	ARENA_RADAR_ENEMIES,
 };
 
 /* the vehicle sets a gametype picks Halo 1: NHE's mode with (game_engine.c's
@@ -275,6 +277,13 @@ ARENA_REV5_CASUAL_FLAGS) */
 #define ARENA_REV8_COMP_OBJECTIVE_FLAGS 0x2C790020UL
 /* (revision 9's AE JUGGER, frozen for revision 10's migration: the casual
 set's, ARENA_REV8_CASUAL_FLAGS, unchanged since revision 8) */
+/* (revision 11's team seeds with the motion sensor, frozen for revision 12's
+migrations: the casual set's and the later ones', unchanged since revision 8,
+and the AE BR set's start: the battle rifle's pack over the PRIMARY slot's
+assault rifle, the pistol second) */
+#define ARENA_REV11_CASUAL_FLAGS 0x247B0020UL
+#define ARENA_REV11_BR_START \
+	.loadout_primary = ARENA_SET(2), .loadout_secondary = ARENA_SET(3), .weapon_pack = 1, .pack_loadout = 1
 
 /* BALL MELEE LETHAL (universal_variant.ball_melee, revision 7): the AE
 oddball gametypes' (the NHE ones keep STOCK) */
@@ -410,20 +419,21 @@ gametype options it adds (game_engine.h's universal_variant flags) */
 static struct arena_gametype const arena_gametypes[] =
 {
 	/* AE's casual set: TIMERS HUD + WAYPOINTS, DROP SECONDARY ALWAYS, the
-	motion sensor, 15 minutes, the stock respawns, friendly fire on; King
+	motion sensor (the team games' enemies only: ARENA_RADAR_ENEMIES, revision
+	12), 15 minutes, the stock respawns, friendly fire on; King
 	and Oddball by nav points. The free for all ones say FFA (AE COMP FFA too); the rest
 	are team games */
 	{ "AE FFA SLAY", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1 },
 	{ "AE TEAM SLY", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1 },
 	{ "AE CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1 },
 	{ "AE KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1 },
 	{ "AE FFA BALL", build_game_variant_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
@@ -432,22 +442,22 @@ static struct arena_gametype const arena_gametypes[] =
 	the same rules; the host's player limit (4) is a server setting, not
 	the gametype's */
 	{ "AE 2V2 SLY", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		25, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		25, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1 },
 	{ "AE 2V2 CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1 },
 	{ "AE 2V2 KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1 },
 	{ "AE 2V2 BALL", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1 },
 	/* the casual set's later ones (ARENA_LATER_FLAGS: TIMERS HUD +
 	WAYPOINTS, DROP SECONDARY ALWAYS), friendly fire on, the stock
 	respawns. Team Oddball, its objective shown by nav points */
 	{ "AE TEAM OB", build_game_variant_team_oddball, ARENA_LATER_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1 },
 	/* PRACTICE: free for all slayer with PRACTICE MODE (every weapon and
 	powerup each 30 seconds), no practical score limit, no time limit, the
@@ -470,15 +480,15 @@ static struct arena_gametype const arena_gametypes[] =
 		.weapon_set = ARENA_WEAPONS_PISTOLS, .loadout_primary = ARENA_SET(_loadout_weapon_pistol),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_none), .starting_frags = STARTING_GRENADES_NONE, .hit_feedback = 1 },
 	{ "AE ROCKETS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.weapon_set = ARENA_WEAPONS_ROCKET_LAUNCHERS, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1 },
 	{ "AE SHOTGUNS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.weapon_set = ARENA_WEAPONS_SHOTGUNS, .loadout_primary = ARENA_SET(_loadout_weapon_shotgun),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_pistol), .hit_feedback = 1 },
 	{ "AE HEAVIES", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
-		75, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_DEFAULT, TRUE,
+		75, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE,
 		.weapon_set = ARENA_WEAPONS_HEAVY, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_assault_rifle), .hit_feedback = 1 },
 	/* the stock free for all gametypes on the casual set's rules (revision 8;
@@ -605,28 +615,28 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_FFA_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
 		.starting_frags = ARENA_COMP_STARTING_FRAGS, .hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR TS", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR TM OB", build_game_variant_team_oddball, ARENA_LATER_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR 2V2 S", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		25, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		25, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR 2V2 C", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR 2V2 K", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR 2V2 B", build_game_variant_team_oddball, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START },
 	{ "AE BR C TS", build_game_variant_team_slayer, ARENA_COMP_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
@@ -748,8 +758,11 @@ CTF 3C 7S, PRACTICE -> TS PRACTICE, with NHE's values). Revision 8 has no
 migration (it only added the 13 free for all gametypes). Revision 9 adds
 ARENA EVOLVED combat feedback to AE's seeds and returns VANILLA and POWERUPS
 to the NHE set's names. Revision 10 makes AE JUGGER Halo 2's Juggernaut (to
-15, normal speed, Halo 2's scoring and succession). A row whose old and new
-names are the same is a value update (in place, under its name).
+15, normal speed, Halo 2's scoring and succession). Revision 11 has no
+migration (it only added the AE BR set). Revision 12 gives the AE team seeds
+with the motion sensor (and their AE BR twins) PLAYERS ON RADAR ENEMIES. A
+row whose old and new names are the same is a value update (in place, under
+its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =
@@ -1617,6 +1630,204 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1,
 			.adjust = arena_gametype_juggernaut_h2 },
 		.old_block_hash = "64337787a075f30ac9f8b576d1f1b6d6ce5c57c4" },
+	/* revision 12: PLAYERS ON RADAR ENEMIES (owner, 2026-10-15: the AE
+	gametypes' motion sensor shows enemies, not allies) on every AE team seed
+	whose motion sensor shows players, the AE BR twins too; the free for all
+	ones play ENEMIES as ALL and keep it, those without the motion sensor
+	(AE COMP, SNIPERS, SHOTSNIP, SWAT) keep none, the NHE set its own. The old
+	rows are revision 11's seeds (revision 9's for the AE ones) */
+	{ .revision = 12,
+		.old_row = { .name = "AE TEAM SLY", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
+		.new_row = { .name = "AE TEAM SLY", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1 },
+		.old_block_hash = "cff9dd0158ec19a0593013078935330af359bad7" },
+	{ .revision = 12,
+		.old_row = { .name = "AE CTF", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
+		.new_row = { .name = "AE CTF", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1 },
+		.old_block_hash = "9fe33c089402f15413f584f197e94a77fb491fda" },
+	{ .revision = 12,
+		.old_row = { .name = "AE KING", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1 },
+		.new_row = { .name = "AE KING", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1 },
+		.old_block_hash = "2956fa6610880fe2c8f3d05d9ba810cc426793a9" },
+	{ .revision = 12,
+		.old_row = { .name = "AE 2V2 SLY", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 25, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
+		.new_row = { .name = "AE 2V2 SLY", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 25, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1 },
+		.old_block_hash = "15c6969366cfaaefcf65cbfc79522ddcb1c78b0a" },
+	{ .revision = 12,
+		.old_row = { .name = "AE 2V2 CTF", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
+		.new_row = { .name = "AE 2V2 CTF", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1 },
+		.old_block_hash = "99e9f7923f20e3ad59a2b130189d9b1190202c51" },
+	{ .revision = 12,
+		.old_row = { .name = "AE 2V2 KING", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1 },
+		.new_row = { .name = "AE 2V2 KING", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1 },
+		.old_block_hash = "b9bc7c75979fc9b97fb086279c60de507043badd" },
+	{ .revision = 12,
+		.old_row = { .name = "AE 2V2 BALL", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1 },
+		.new_row = { .name = "AE 2V2 BALL", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1 },
+		.old_block_hash = "cd4eefba21e167473d69cd46aa86d0763a11cead" },
+	{ .revision = 12,
+		.old_row = { .name = "AE TEAM OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1 },
+		.new_row = { .name = "AE TEAM OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1 },
+		.old_block_hash = "fd150eecbd67714d43e4c7b12f4b8aaec83d8841" },
+	{ .revision = 12,
+		.old_row = { .name = "AE ROCKETS", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(6), .loadout_primary = ARENA_SET(6), .loadout_secondary = ARENA_SET(0),
+			.hit_feedback = 1 },
+		.new_row = { .name = "AE ROCKETS", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(6), .loadout_primary = ARENA_SET(6), .loadout_secondary = ARENA_SET(0),
+			.hit_feedback = 1 },
+		.old_block_hash = "185b1643dcc1e65d109c5dfefe98cb1e836f3589" },
+	{ .revision = 12,
+		.old_row = { .name = "AE SHOTGUNS", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(7), .loadout_primary = ARENA_SET(4), .loadout_secondary = ARENA_SET(3),
+			.hit_feedback = 1 },
+		.new_row = { .name = "AE SHOTGUNS", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(7), .loadout_primary = ARENA_SET(4), .loadout_secondary = ARENA_SET(3),
+			.hit_feedback = 1 },
+		.old_block_hash = "785252c2dd130b5edb898bfb36a0c8a26a502e63" },
+	{ .revision = 12,
+		.old_row = { .name = "AE HEAVIES", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 75, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_DEFAULT, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(13), .loadout_primary = ARENA_SET(6), .loadout_secondary = ARENA_SET(2),
+			.hit_feedback = 1 },
+		.new_row = { .name = "AE HEAVIES", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 75, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_DEFAULT, .custom_loadout = TRUE,
+			.weapon_set = ARENA_SET(13), .loadout_primary = ARENA_SET(6), .loadout_secondary = ARENA_SET(2),
+			.hit_feedback = 1 },
+		.old_block_hash = "90dab78352a7e38c3553b884729fb80b2ebb5bd1" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR TS", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1,
+			ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR TS", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "1e08a2693f2f811dccab979f84d1ffdde7c0efe6" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR CTF", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1,
+			ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR CTF", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "966be862088930c1c98ff2b4490632112d68f492" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR KING", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1, ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR KING", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "e692033c6d15ca2c3347312eb03caec3862ed3f2" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR TM OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1, ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR TM OB", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "6412842ccd7752bace3f06c86a4f444a5c53ae6c" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR 2V2 S", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 25, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1,
+			ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR 2V2 S", .build = build_game_variant_team_slayer, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 25, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "06fb3e0aa9dcc970ab1706e242f778dbc44c87b6" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR 2V2 C", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1,
+			ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR 2V2 C", .build = build_game_variant_ctf, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 3, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "9376c099e3e225e2da34e09cb913929a0356fcc0" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR 2V2 K", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1, ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR 2V2 K", .build = build_game_variant_team_king, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "d8ea2513ca62e8b3d7f99c298ca0303847e2281d" },
+	{ .revision = 12,
+		.old_row = { .name = "AE BR 2V2 B", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1, ARENA_REV11_BR_START },
+		.new_row = { .name = "AE BR 2V2 B", .build = build_game_variant_team_oddball, .flags = ARENA_REV11_CASUAL_FLAGS,
+			.score_to_win = 5, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.goal_radar = ARENA_SET(1), .ball_melee = 1, .hit_feedback = 1, ARENA_REV11_BR_START },
+		.old_block_hash = "edb81fbf6336b6952123d3eb33bb68edd22746ed" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -1628,11 +1839,11 @@ static struct arena_gametype_migration const arena_gametype_test_migration =
 	.old_row = { .name = "AE TEAM SLY", .build = build_game_variant_team_slayer,
 		.flags = ARENA_REV5_CASUAL_FLAGS,
 		.score_to_win = 50, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
-		.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
+		.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
 	.new_row = { .name = "AE TEAM SLY", .build = build_game_variant_team_slayer,
 		.flags = ARENA_REV5_CASUAL_FLAGS,
 		.score_to_win = 51, .time_limit = 15, .respawn_time = ARENA_STOCK, .suicide_penalty = ARENA_STOCK,
-		.radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
+		.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, .hit_feedback = 1 },
 	.old_block_hash = NULL
 };
 
@@ -3229,7 +3440,7 @@ static void arena_gametype_build(
 	if (gametype->radar != ARENA_RADAR_STOCK)
 	{
 		SET_FLAG(variant.universal_variant.flags, _game_variant_draw_object_in_motion_sensor_bit,
-			gametype->radar == ARENA_RADAR_ON);
+			gametype->radar == ARENA_RADAR_ON || gametype->radar == ARENA_RADAR_ENEMIES);
 	}
 	if (gametype->vehicle_set != ARENA_VEHICLES_STOCK)
 		variant.universal_variant.vehicle_set = gametype->vehicle_set;
@@ -3257,6 +3468,8 @@ static void arena_gametype_build(
 	/* (the PC options a new custom gametype gets: both teams' vehicle sets
 	the variant's, RADAR PLAYERS from its motion sensor bit) */
 	game_variant_options_default(&variant, &options);
+	if (gametype->radar == ARENA_RADAR_ENEMIES)
+		options.radar_players = _radar_players_enemies;
 	options.time_limit = gametype->time_limit;
 	if (gametype->custom_loadout)
 	{

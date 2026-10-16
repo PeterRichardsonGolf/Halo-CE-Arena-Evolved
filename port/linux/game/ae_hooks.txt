@@ -566,3 +566,14 @@ source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c	rasterizer_set_frustu
 # carousel.map hit "couldn't find map 'carousel' on the DVD" and the dirty disc screen): the first listed map that has one
 source/game/game_engine.c	#include "ae_stage_map.h" /* AE hook */
 source/game/game_engine.c	ae_stage_map_check(global_stage.map_name, sizeof(global_stage.map_name)); /* AE hook */
+# PLAYERS ON RADAR ENEMIES (0.3.0; owner 10-15: the AE gametypes' motion sensor shows enemies only; ae_radar.c): the value
+# 3 after upstream's three (stored 0-2 keep their meaning), the motion sensor's filter after FRIENDS', players' names
+# over heads as the tracker shows them but allies' kept, the "game rules:" line's name, Indicator Options' row with
+# ENEMIES between FRIENDS and NO (strings.xml / tools/port_settings.py STRING_INSERTS)
+source/game/game_engine.h	_radar_players_enemies, /* AE hook */
+source/game/game_engine.c	#include "ae_radar.h" /* AE hook */
+source/game/game_engine.c	draw_object = ae_radar_draw_object(draw_object, unit_index, game_engine_motion_sensor_local_player); /* AE hook */
+source/game/game_engine.c	static char const *const radar_players[] = { "all", "friends", "none", "enemies" }; /* AE hook */
+source/interface/hud.c	#include "ae_radar.h" /* AE hook */
+source/interface/hud.c	!ae_radar_name_shown(player->unit_index)) /* AE hook */
+port/linux/game/menu_functions.c	{ "indicator_options_players_on_radar_spinner", _option_radar, OPTIONS_FIELD(radar_players), 0, 4, { _radar_players_all, _radar_players_friends, _radar_players_enemies, _radar_players_none } }, /* AE hook */
