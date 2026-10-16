@@ -292,6 +292,9 @@ static void read_seat(long vehicle_index, long weapon_index, struct ae_panel_sna
 	}
 }
 
+/* each player slot's shield hit trail (ae_panel_trail_step) */
+static struct ae_panel_trail trails[PLAYER_SLOTS];
+
 static real overshield_projection(short slot, struct unit_datum *unit)
 {
 	real v = unit->object.shield_vitality;
@@ -348,6 +351,8 @@ static boolean player_snapshot(long player_index, struct ae_panel_snapshot *out)
 	out->health_low = (boolean)(out->health < 0.25f);
 	out->camo_ticks = player->powerup_durations[_player_powerup_active_camouflage];
 	out->overshield_seconds = overshield_projection((short)((player_index & 0xFFFF) % PLAYER_SLOTS), unit);
+	ae_panel_trail_step(&trails[(player_index & 0xFFFF) % PLAYER_SLOTS], out->shield, game_time_get(), &out->shield_trail,
+		&out->shield_trail_alpha);
 	out->reduced_motion = (boolean)config_boolean("display.arena_menus_reduce_motion");
 	return TRUE;
 }

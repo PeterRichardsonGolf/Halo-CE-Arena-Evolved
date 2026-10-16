@@ -440,20 +440,20 @@ static void bar_band(const struct ae_panel_para *bar, real w, real f0, real f1, 
 }
 
 static void draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
-	real overshield1, real overshield2, real fade, boolean from_right);
+	real overshield1, real overshield2, real fade, boolean from_right, real trail, real trail_alpha);
 
 void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
 	real overshield1, real overshield2)
 {
-	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, 1.0f, FALSE);
+	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, 1.0f, FALSE, 0.0f, 0.0f);
 }
 
 /* (the shield's bar: it fills from its right end and drains toward it, as CE's shield meter does, its overshield
 layers too; owner 10-15) */
 void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
-	real overshield1, real overshield2, real fade)
+	real overshield1, real overshield2, real fade, real trail, real trail_alpha)
 {
-	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, fade, TRUE);
+	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, fade, TRUE, trail, trail_alpha);
 }
 
 /* a band from the bar's left end (or its right end) over this much of its length */
@@ -469,7 +469,7 @@ static void bar_span(const struct ae_panel_para *bar, real w, real amount, boole
 }
 
 static void draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
-	real overshield1, real overshield2, real fade, boolean from_right)
+	real overshield1, real overshield2, real fade, boolean from_right, real trail, real trail_alpha)
 {
 	real corners[4][2];
 	real w, under;
@@ -485,6 +485,17 @@ static void draw_bar(const struct ae_panel_para *bar, real scale, real fill, sho
 	{
 		tone_color(fill_tone, FILL_ALPHA * fade, &color);
 		bar_span(bar, w, fill, from_right, 0.0f, 1.0f, &color);
+	}
+	/* CE's hit trail: the part a hit just took, in white, held then fading (ae_panel_trail_step) */
+	if (trail_alpha > 0.0f && trail > fill)
+	{
+		real end = trail > 1.0f ? 1.0f : trail;
+
+		tone_color(_ae_tone_white, FILL_ALPHA * 0.85f * trail_alpha, &color);
+		if (from_right)
+			bar_band(bar, w, 1.0f - end, 1.0f - (fill > 0.0f ? fill : 0.0f), 0.0f, 1.0f, &color);
+		else
+			bar_band(bar, w, fill > 0.0f ? fill : 0.0f, end, 0.0f, 1.0f, &color);
 	}
 	/* the overshield's layers in the classic HUD's colours (its first layer pink, the second grass green over it; the
 	game's own red/green, as the shipped HUD tags shade them), each over the one below, a light edge on top (owner

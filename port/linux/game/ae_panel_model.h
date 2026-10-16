@@ -101,6 +101,7 @@ struct ae_panel_snapshot        /* filled by ae_panel_engine.c; plain data, no e
 	short grenades[2]; short armed_grenade; /* 0 frag, 1 plasma */
 	real shield, health;        /* shield 0..3 (1 = full, above = overshield); health 0..1 */
 	boolean shield_low, shield_down, shield_blink_on, health_low;
+	real shield_trail, shield_trail_alpha;  /* the hit trail (ae_panel_trail_step): the shield before the hit, 0..1 */
 	long camo_ticks;            /* 0 = none */
 	real overshield_seconds;    /* projection; 0 = none */
 	struct { short kind; real fill; boolean overheated; } seat_rows[AE_PANEL_MAXIMUM_SEAT_ROWS];
@@ -120,6 +121,7 @@ struct ae_panel_model
 	real bar_fill; boolean bar_shown, bar_red;
 	struct { wchar_t count[3]; boolean armed, zero, shown; } grenade[2];
 	real shield_fill, overshield1, overshield2; boolean shield_red, shield_hidden_blink;
+	real shield_trail, shield_trail_alpha;  /* the lost chunk's end and its alpha (0: none) */
 	short health_cells_lit; boolean health_red;
 	struct { wchar_t name[12]; wchar_t time[6]; boolean time_red; } buff[AE_PANEL_MAXIMUM_BUFFS];
 	short buff_count;           /* OVERSHIELD, then CAMO */
@@ -139,5 +141,13 @@ short ae_panel_model_rows_for(short art, short magazine, short rows[AE_PANEL_MAX
 
 /* seconds left for a camo timer in ticks (30 a second), rounded up */
 long ae_panel_camo_seconds(long ticks);
+
+/* CE's shield hit trail (hud_unit.c: the meter keeps the part a hit took in its flash colour for 15 ticks, then it
+goes): the shield before the hit, kept AE_PANEL_TRAIL_HOLD ticks, then fading over AE_PANEL_TRAIL_FADE; an overshield's
+drain (above 1) is no hit; a rising shield ends it */
+#define AE_PANEL_TRAIL_HOLD 15
+#define AE_PANEL_TRAIL_FADE 15
+struct ae_panel_trail { real trail, last; long hit_tick; boolean active; };
+void ae_panel_trail_step(struct ae_panel_trail *state, real shield, long now, real *trail, real *alpha);
 
 #endif /* __AE_PANEL_MODEL_H */
