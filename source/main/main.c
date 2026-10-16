@@ -3317,7 +3317,7 @@ void main_framerate_render(
 	long level = frame_statistics_level();
 	union real_argb_color color;
 	/* room for the longest line, under C99 snprintf's terminator byte */
-	char line[80];
+	char line[128]; /* AE hook */
 
 	main_version_watermark_render();
 	frame_statistics_update();

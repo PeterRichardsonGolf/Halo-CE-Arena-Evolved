@@ -1312,8 +1312,16 @@ void capture_test_event(const char *kind, const char *detail, int delay_ms)
 	}
 	while (*list)
 	{
-		const char *end = strchr(list, ',');
-		size_t length = end ? (size_t)(end - list) : strlen(list);
+		const char *end;
+		size_t length;
+
+		/* (entries may be written "hud, kill": spaces around each are not part of it) */
+		while (*list == ' ')
+			list++;
+		end = strchr(list, ',');
+		length = end ? (size_t)(end - list) : strlen(list);
+		while (length > 0 && list[length - 1] == ' ')
+			length--;
 
 		if (length >= kind_length && !strncmp(list, kind, kind_length) &&
 			(length == kind_length || list[kind_length] == ':'))

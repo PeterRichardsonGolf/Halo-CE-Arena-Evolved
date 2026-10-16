@@ -665,3 +665,5 @@ port/linux/src/text_hires.c	index = ae_text_tabular_glyph(&fonts[font].info, cod
 source/interface/virtual_keyboard.c	#include "ae_text_layout.h" /* AE hook */
 source/interface/virtual_keyboard.c	ae_text_layout_caret(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer, virtual_keyboard_globals.cursor, &cursor_offset, &width); /* AE hook */
 source/text/draw_string.c	ae_text_layout_character_bounds(x, dx, character->bitmap_width, &x0, &x1); /* AE hook */
+# SHOW COORDINATES after PERFORMANCE FULL on one line: main_framerate_render's line has room for both (ae_coordinates.c)
+source/main/main.c	char line[128]; /* AE hook */

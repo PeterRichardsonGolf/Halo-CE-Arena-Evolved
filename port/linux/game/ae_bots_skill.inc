@@ -147,11 +147,16 @@ static boolean ae_bots_crouch(short skill, long player_index, long now, real ran
 
 	if (player < 0 || player >= AE_BOTS_TRACK_PLAYERS || chance <= 0.0f)
 		return FALSE;
+	/* (a game's ticks start over: an old crouch and an old wait are dropped; a crouch lasts at most 0.6 s and a
+	wait 3.1 s, so anything further ahead than that is the last game's) */
+	if (ae_bots_crouching[player].until > now + TICKS_PER_SECOND ||
+		ae_bots_crouching[player].next > now + TICKS_PER_SECOND * 10)
+	{
+		ae_bots_crouching[player].until = 0;
+		ae_bots_crouching[player].next = 0;
+	}
 	if (now < ae_bots_crouching[player].until)
 		return TRUE;
-	/* (a game's ticks start over: an old wait is dropped) */
-	if (ae_bots_crouching[player].next > now + TICKS_PER_SECOND * 10)
-		ae_bots_crouching[player].next = 0;
 	if (now < ae_bots_crouching[player].next || random >= chance / TICKS_PER_SECOND)
 		return FALSE;
 	/* (random is under chance / TICKS_PER_SECOND here: spread back over 0..1 for the length) */

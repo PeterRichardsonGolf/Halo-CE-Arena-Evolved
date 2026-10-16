@@ -13,7 +13,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   ones and tens under tens.
 - High-res text is laid out by its own font's letter widths, with same-width digits: a narrow letter no longer sits in the
   middle of a wider space, so columns of names and places start in a straight line and numbers line up digit for digit.
-- SHUFFLE in the PC lobby (the host, team games): one press deals everyone onto the two teams at random, evenly.
+- SHUFFLE in the PC lobby (the host, team games): one press deals the people onto the two teams at random, evenly; bots
+  then even the teams up as they always do. With bots set to play AGAINST the people it does nothing.
 - The map list has a WARM-UP group: Octagon and Octagon B (when installed) come first after the stock maps, marked
   [WARM-UP] and described as warm-up maps for Slayer.
 - SHOW COORDINATES (Video Setup > GRAPHICS), for map makers: your X Y Z and facing on the performance line.

@@ -50,9 +50,10 @@ static float character_advance(long font, unsigned long code, short tag_width)
 	if (font < CACHED_FONTS && code < CACHED_CODES && advances_known[font][code])
 		return advances[font][code];
 	advance = text_hires_advance(font, code);
-	/* (a character the font has not: never in a string the font draws but for control characters) */
+	/* (a character the font has not: never in a string the font draws but for control characters; the tag's width,
+	not kept, as callers give different ones) */
 	if (advance < 0.0f)
-		advance = (float)tag_width;
+		return (float)tag_width;
 	if (font < CACHED_FONTS && code < CACHED_CODES)
 	{
 		advances[font][code] = advance;
