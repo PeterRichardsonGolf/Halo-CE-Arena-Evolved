@@ -216,12 +216,36 @@ static int ramped(int base, int to, float amount)
 }
 
 /* the shape's bytes; text: its words */
-/* a strength or amplitude (1-8) scaled by TRIGGER STRENGTH's percent, still 1-8 */
+/* a strength or amplitude (1-8) scaled by TRIGGER STRENGTH's percent, still 1-8: LIGHT (competitive) keeps only the
+lowest step, STRONG raises every value at least one step (the light weapons' 1s too; owner 10-16: the old 60/100/140
+were not felt apart) */
 static int scaled(int value, int percent)
 {
+	int result;
+
 	if (value <= 0)
 		return value;
-	return clamp((value * percent + 50) / 100, 1, 8);
+	if (percent <= AE_DS5_STRENGTH_LIGHT)
+		return 1;
+	result = (value * percent + 50) / 100;
+	if (percent > 100 && result < value + 1)
+		result = value + 1;
+	return clamp(result, 1, 8);
+}
+
+/* LIGHT: nothing resists the pull (no hold, click or lock), as competitive players turn haptics off; the vibrations
+stay at their lowest step, so a shot or a state is still felt */
+static int resists(int percent)
+{
+	return percent > AE_DS5_STRENGTH_LIGHT;
+}
+
+void ae_ds5_rumble_scaled(struct ae_ds5_rumble *rumble, int percent)
+{
+	int motor = percent <= AE_DS5_STRENGTH_LIGHT ? AE_DS5_RUMBLE_LIGHT : percent > 100 ? AE_DS5_RUMBLE_STRONG : 100;
+
+	rumble->left = clamp((rumble->left * motor + 50) / 100, 0, 255);
+	rumble->right = clamp((rumble->right * motor + 50) / 100, 0, 255);
 }
 
 static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape shape, float rate_of_fire, int per_round,
@@ -230,6 +254,8 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 	int frequency;
 
 	shape.b = (unsigned char)scaled(shape.b, strength);
+	if ((shape.mode == FEEDBACK || shape.mode == WEAPON) && !resists(strength))
+		shape.mode = OFF;
 
 	switch (shape.mode)
 	{
@@ -414,7 +440,8 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 		break;
 	}
 	}
-	if (shape.mode == OFF || ms <= 0)
+	ae_ds5_rumble_scaled(rumble, strength);
+	if (shape.mode == OFF || ms <= 0 || ((shape.mode == FEEDBACK || shape.mode == WEAPON) && !resists(strength)))
 	{
 		ae_ds5_effect_off(effect);
 		return 0;
@@ -436,6 +463,11 @@ char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind)
 char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
 	int strength)
 {
+	if (!resists(strength))
+	{
+		ae_ds5_effect_off(effect);
+		return "free (LIGHT: no resistance)";
+	}
 	if (zoomed)
 	{
 		ae_ds5_effect_feedback(effect, 2, scaled(2, strength));
@@ -678,9 +710,9 @@ void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *sh
 int ae_ds5_strength_percent(char const *name)
 {
 	if (!strcmp(name, "light"))
-		return 60;
+		return AE_DS5_STRENGTH_LIGHT;
 	if (!strcmp(name, "strong"))
-		return 140;
+		return AE_DS5_STRENGTH_STRONG;
 	return 100;
 }
 

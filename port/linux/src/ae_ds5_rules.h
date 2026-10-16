@@ -177,8 +177,17 @@ pad gets few reports. Its words in text */
 void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size);
 
 /* TRIGGER STRENGTH (input.trigger_strength: light, normal, strong) as a percent of the table's strengths and
-amplitudes (60, 100, 140; anything else 100). Every effect's strength-like number is scaled, then kept 1-8 */
+amplitudes (AE_DS5_STRENGTH_LIGHT, 100, AE_DS5_STRENGTH_STRONG; anything else 100). LIGHT is near competitive: no
+effect resists the pull (holds, clicks, the overheat lock are off), vibrations stay at their lowest step and the motors
+at AE_DS5_RUMBLE_LIGHT percent. STRONG: every strength-like number x1.75 and at least one step up (kept 1-8), the motors
+at AE_DS5_RUMBLE_STRONG percent (kept 0-255) */
+#define AE_DS5_STRENGTH_LIGHT 25
+#define AE_DS5_STRENGTH_STRONG 175
+#define AE_DS5_RUMBLE_LIGHT 35
+#define AE_DS5_RUMBLE_STRONG 140
 int ae_ds5_strength_percent(char const *name);
+/* a rumble's motors scaled by TRIGGER STRENGTH's percent (ae_ds5_event does it itself; for ae_ds5_charge_rumble's) */
+void ae_ds5_rumble_scaled(struct ae_ds5_rumble *rumble, int percent);
 /* the player lights' byte for split-screen player 1-4 (0 for another number), and back: the player index (0-3) a
 byte shows, -1 for none */
 unsigned char ae_ds5_player_lights(int player_number);

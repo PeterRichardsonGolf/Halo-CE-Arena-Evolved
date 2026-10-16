@@ -29,6 +29,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   screen goes to one view), or over an empty shield corner; they do fade under the score strip's top lines
   ("YOU ARE THE JUGGERNAUT", the lead).
 - A guest in a CTF game sees the right return countdown for a flag dropped while all its players were dead.
+- DualSense TRIGGER STRENGTH spread wider: LIGHT is now near competitive (no trigger resistance at all, only a faint
+  buzz and the rumble motors at a third), STRONG is clearly stronger (every effect x1.75 and at least a step up, so the
+  needler and plasma rifle change too; the motors x1.4). NORMAL is as before.
 - HUD STYLE AE draws with fewer lookups a frame (the HUD's sheets once a map, settings once a change).
 
 ## 0.3.1-beta - 2026-10-16

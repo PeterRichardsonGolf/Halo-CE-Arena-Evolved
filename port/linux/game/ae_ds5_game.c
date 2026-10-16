@@ -511,6 +511,7 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 
 		if (rumble_on && ae_ds5_charge_rumble(state.kind, state.charge, now, &charge_rumble))
 		{
+			ae_ds5_rumble_scaled(&charge_rumble, settings.strength);
 			rounds[gamepad_index].rumble = charge_rumble;
 			rounds[gamepad_index].rumbles++;
 		}
