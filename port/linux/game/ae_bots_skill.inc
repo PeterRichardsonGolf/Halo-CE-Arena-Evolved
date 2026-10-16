@@ -9,10 +9,10 @@ late, sees less, starts far off its target and settles slowly, turns slowly,
 fires short bursts with long pauses, throws no grenades, does not jump, takes
 no lead, and roams the map more often than it heads for the nearest enemy.
 Owner 2026-10-15 after play ("these bots will still destroy my kids"; "less
-of strafe demons ... they can't track like me"): its aim never settles: it
+of strafe demons ... they can't track like me"; then "less strafing on recruit"): its aim never settles: it
 wanders between 1.5 and 8 degrees off the target, so it fires and misses as
-a new player does; and it sidesteps a third as hard, for longer each way,
-so a new player's aim can stay on it.
+a new player does; and it sidesteps barely (0.15 as hard), three times as
+long each way, so a young player's aim can stay on it.
 */
 
 #define AE_BOTS_SKILL_RECRUIT NUMBER_OF_BOTS_SKILLS
@@ -65,15 +65,15 @@ static void ae_bots_aim_floor(short skill, real *yaw_error, real *pitch_error, r
 }
 
 /* how hard it sidesteps while fighting (bots.c: full, either way): RECRUIT
-a third */
+0.15 (0.33 was still too hard to track, owner 10-16) */
 static real ae_bots_strafe(short skill)
 {
-	return skill == AE_BOTS_SKILL_RECRUIT ? 0.33f : 1.0f;
+	return skill == AE_BOTS_SKILL_RECRUIT ? 0.15f : 1.0f;
 }
 
 /* how long a sidestep lasts before it may turn, ticks (bots.c: a third of a
-second to a second and a third): RECRUIT twice as long */
+second to a second and a third): RECRUIT three times as long */
 static long ae_bots_strafe_ticks(short skill, long ticks)
 {
-	return skill == AE_BOTS_SKILL_RECRUIT ? ticks * 2 : ticks;
+	return skill == AE_BOTS_SKILL_RECRUIT ? ticks * 3 : ticks;
 }
