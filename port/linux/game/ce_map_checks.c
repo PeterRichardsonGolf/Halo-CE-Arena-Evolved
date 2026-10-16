@@ -528,8 +528,11 @@ static boolean ce_map_check_tags(
 	loaded BSP's buffers) */
 	if (model_bytes > end_free - next_free || bsp_bytes > end_free - next_free - model_bytes)
 	{
-		ce_refuse("its models and structure BSP need %lu bytes more of the tag cache than its BSP leaves (%lu)",
-			model_bytes + bsp_bytes, end_free - next_free);
+		unsigned long needed = model_bytes + bsp_bytes;
+		unsigned long room = end_free - next_free;
+
+		ce_refuse("its models and structure BSP buffers need %lu bytes of the tag cache, and %lu bytes "
+			"are free between its tags and its BSP (%lu too few)", needed, room, needed - room);
 		goto done;
 	}
 	valid = ce_shaders_check(&tags, instances, tag_count) && ce_hud_check(&tags, instances, tag_count) &&
