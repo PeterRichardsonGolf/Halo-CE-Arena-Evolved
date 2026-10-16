@@ -37,7 +37,7 @@ long game_time_get(void);
 
 #define AE_HUD_PANEL_HEALTH_DONT_SHOW 0     /* hud_unit.c's _hud_panel_health_dont_show_bit */
 #define AE_HUD_PANEL_SHIELD_DONT_SHOW 2     /* _hud_panel_shield_dont_show_bit */
-#define BACKING_PEAK 0.45f
+#define BACKING_PEAK 0.32f
 #define BOX_FILL 0.08f
 #define UNARMED_GLYPH 0.55f
 #define UNARMED_COUNT 0.70f
