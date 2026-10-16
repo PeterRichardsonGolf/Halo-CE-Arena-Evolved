@@ -112,3 +112,16 @@ static void ae_bots_aim_delay(short skill, long target_player_index, real_point3
 	if (now - delay >= 0 && ae_bots_track[player][slot].tick == now - delay)
 		*aim_point = ae_bots_track[player][slot].centre;
 }
+
+/* MELEE (owner 2026-10-16, Infinite's lower levels rarely melee): bots.c strikes within 1.1 units once a second at
+every skill; RECRUIT only at point blank (0.8) and every 3 s, EASY every 2 s */
+static real ae_bots_melee_reach(short skill)
+{
+	return skill == AE_BOTS_SKILL_RECRUIT ? 0.8f : 1.1f;
+}
+
+static long ae_bots_melee_ticks(short skill)
+{
+	return skill == AE_BOTS_SKILL_RECRUIT ? TICKS_PER_SECOND * 3 : skill == _bots_skill_easy ? TICKS_PER_SECOND * 2 :
+		TICKS_PER_SECOND;
+}

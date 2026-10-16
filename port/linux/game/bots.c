@@ -2011,10 +2011,10 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 		}
 	}
 	/* a blow close up */
-	if (tick->target_distance < 1.1f && now >= bot->melee_tick)
+	if (tick->target_distance < ae_bots_melee_reach(bots_globals.skill) && now >= bot->melee_tick) /* AE hook */
 	{
 		tick->flags |= FLAG(_unit_control_use_equipment_bit);
-		bot->melee_tick = now + TICKS_PER_SECOND;
+		bot->melee_tick = now + ae_bots_melee_ticks(bots_globals.skill); /* AE hook */
 	}
 	/* a grenade at middle range, now and then */
 	if (tick->target_distance > 6.0f && tick->target_distance < 22.0f && now >= bot->grenade_tick &&
