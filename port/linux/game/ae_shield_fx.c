@@ -26,10 +26,11 @@ height on the model (port/linux/src/ae_height_fade.h).
 The play-tested prototype, moved here as it was approved (2026-10-12), its
 tuning switches fixed at the approved numbers (tuning()). The rise of the
 flare up a body and its bookkeeping follow OpenCE's open pull request #320
-(animated overshield, by jcompto95-tech), which this file does not turn on:
-only its recharge band, pop and flicker paths run. To tidy: the dormant
-overshield and per-viewer paths, and the finishing hit's points (25, the
-magnum's, typed in: to be read from the map's weapons).
+(animated overshield, by jcompto95-tech); only the recharge band, pop and
+flicker are kept here (the overshield's own rise and the prototype's
+per-weapon pop for each viewer were never turned on, and were taken out
+since). To do: the finishing hit's points (25, the magnum's, typed
+in: to be read from the map's weapons).
 */
 
 #include "cseries.h"
@@ -42,12 +43,6 @@ magnum's, typed in: to be read from the map's weapons).
 #include "shaders/shaders.h"
 #include "units/units.h"
 #include "effects/effect_definitions.h"
-#include "effects/decal_definitions.h"
-#include "effects/contrail_definitions.h"
-#include "effects/particle_system_definitions.h"
-#include "effects/particles.h"
-#include "sound/sound_definitions.h"
-#include "objects/light_definitions.h"
 #include "objects/damage.h"
 #include "effects/effects.h"
 #include "physics/collision_model_definitions.h"
@@ -62,32 +57,12 @@ magnum's, typed in: to be read from the map's weapons).
 #include "ae_shield_fx.h"
 #include "../src/ae_height_fade.h"
 
-/* port/linux/game/view_fov.c */
-boolean viewmodel_shield_is_visible(void);
-
 enum
 {
 	_shader_type_transparent_plasma_glow = 10, /* (shader_get_and_verify_type's plasma, as shield_glow.c has it) */
 	AE_SHIELD_FX_MAXIMUM = 16,
 	AE_SHIELD_FX_MODELS = 8,
 };
-
-/* seconds the rise takes: from a full shield (or any but a down one), and
-from a down one (the charge's own times: 2 and 3 of shield a second) */
-#define AE_SHIELD_FX_RISE 2.f
-#define AE_SHIELD_FX_RISE_FROM_DOWN 3.f
-/* a shield at most this when the overshield begins is down */
-#define AE_SHIELD_FX_DOWN 0.12f
-/* the flare's energy's speed */
-#define AE_SHIELD_FX_ENERGY_SPEED 0.3f
-/* the soft edge, as a share of the body's height */
-#define AE_SHIELD_FX_EDGE 0.12f
-/* where on the rise the arms come up, and over how much of it */
-#define AE_SHIELD_FX_ARMS_START 0.55f
-#define AE_SHIELD_FX_ARMS_LENGTH 0.3f
-
-/* the overshield's color: the powerup's */
-static real_rgb_color const ae_shield_fx_rgb = { 0.992f, 0.306f, 0.455f }; /* (253, 78, 116) */
 
 /* the plasma shader's fields after its header (rasterizer_xbox_plasma_energy.c's) */
 struct ae_shield_fx_plasma
@@ -96,21 +71,20 @@ struct ae_shield_fx_plasma
 	short intensity_exponent_source;
 };
 
+/* a unit's recharge band */
 struct ae_shield_fx
 {
 	long unit_index; /* NONE: free */
-	real start; /* the game's seconds (render_interpolation_game_time_sec) */
-	real rise;
-	real last_seen;
-	/* the values the unit's modifier shader is drawn with, its intensity's
-	full: one copy for the body, one for the arms */
+	real last_seen; /* the game's seconds (render_interpolation_game_time_sec) */
+	/* the values the unit's modifier shader is drawn with: one copy for the
+	body, one for the arms */
 	real body_values[4];
 	real arms_values[4];
-	/* this frame's: how far up (0..1, eased), and the model's heights */
+	/* this frame's: how far up (0..1: as far as the shield is back), and the
+	model's heights */
 	real progress;
 	real bottom;
 	real top;
-	boolean recharge; /* a recharge band, not an overshield */
 	real start_vitality; /* (the shield as the band began) */
 	real end; /* (when the shield was full again: the band's last flash; 0: not yet) */
 };
@@ -132,19 +106,8 @@ static struct
 } ae_shield_fx_models[AE_SHIELD_FX_MODELS];
 static short ae_shield_fx_next_model = 0;
 
-/* port/linux/src/port_config.c */
-int config_boolean(const char *name);
-unsigned long config_changes(void);
-
-/* (the overshield's own rise is not Arena Evolved's: never on here) */
-static boolean ae_shield_fx_enabled(
-	void)
-{
-	return FALSE;
-}
-
 #define RECHARGE_FLASH_SECONDS 0.3f
-/* the recharge band (SHIELDS=1; BAND_SECONDS, _WIDTH, _STRENGTH) */
+/* the recharge band (BAND_WIDTH, BAND_STRENGTH) */
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -153,8 +116,8 @@ static real tuning(char const *name, real fallback)
 {
 	static struct { char const *name; real value; } const approved[] =
 	{
-		{ "BAND_SECONDS", 1.2f }, { "BAND_WIDTH", 0.65f }, { "BAND_STRENGTH", 1.0f }, { "POP_SECONDS", 0.8f }, { "POP_HOLD", 0.4f },
-		{ "POP_AT", 0.5f }, { "POP_VIEWER", 0.f }, { "SPARKS", 0.8f }, { "HIT_SHAPE", 3.f },
+		{ "BAND_WIDTH", 0.65f }, { "BAND_STRENGTH", 1.0f }, { "POP_SECONDS", 0.8f }, { "POP_HOLD", 0.4f },
+		{ "POP_AT", 0.5f }, { "SPARKS", 0.8f }, { "HIT_SHAPE", 3.f },
 	};
 	short index;
 
@@ -169,7 +132,6 @@ static boolean recharge_band_enabled(void)
 {
 	return ae_hit_feedback_active();
 }
-static real recharge_band_seconds(void) { return tuning("BAND_SECONDS", 1.0f); }
 static real recharge_band_width(void) { return tuning("BAND_WIDTH", 0.45f); }
 static real recharge_band_strength(void) { return tuning("BAND_STRENGTH", 1.0f); }
 
@@ -187,7 +149,7 @@ struct shield_pop
 	real top;
 };
 /* (the first 8: pops the game's damage starts, in turn; the rest: pops as each
-local player's view sees them, POP_VIEWER) */
+local player's view sees them, on a machine that is not the host) */
 #define SHIELD_POPS 48
 static struct shield_pop shield_pops[SHIELD_POPS];
 static boolean shield_pop_viewer_mode(void);
@@ -301,13 +263,7 @@ static struct shield_crackle *shield_crackle_for_values(
 	return NULL;
 }
 
-/* option A (off): the pop as each local player's view sees it: a unit pops for
-a viewer as the weapon that viewer holds comes to finish it with one hit to the
-head (FINISH_PISTOL points, 25; FINISH_RIFLE, 20.6; any other
-weapon: the pistol's), or as it dies or its shield truly falls */
 #include "render/render.h"
-#include "game/players.h"
-#include "tag_files/tag_files.h"
 /* a machine that is not the host: no damage is dealt here (the host deals it and sends each unit's shield), so the
 pop and the shield-down flicker are read from the shield's level as it arrives, each view's own */
 static boolean guest_machine(void)
@@ -317,38 +273,16 @@ static boolean guest_machine(void)
 
 static boolean shield_pop_viewer_mode(void)
 {
-	return recharge_band_enabled() && (tuning("POP_VIEWER", 0.f) != 0.f || guest_machine());
+	return recharge_band_enabled() && guest_machine();
 }
 
-static real shield_pop_viewer_finisher(
-	short viewer,
-	long target_unit_index)
-{
-	long player_index = viewer >= 0 && viewer < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS ? local_player_get_player_index(viewer) : NONE;
-	long viewer_unit_index = player_index != NONE ? player_get(player_index)->unit_index : NONE;
-	real pistol = tuning("FINISH_PISTOL", 25.f);
-	struct unit_datum *viewer_unit;
-	long weapon_index;
-	struct object_datum *weapon;
-	char const *name;
+/* the finishing hit's points against a shield: the magnum's (the strongest weapon that kills with one hit to
+the head) */
+#define FINISHER_POINTS 25.f
 
-	/* (a guest: the one finishing hit for every view, as the host reckons it, with room for the rounding of the
-	shield it was sent) */
-	if (tuning("POP_VIEWER", 0.f) == 0.f)
-		return pistol + 0.02f;
-
-	if (viewer_unit_index == NONE || viewer_unit_index == target_unit_index)
-		return pistol;
-	viewer_unit = unit_try_and_get(viewer_unit_index);
-	if (!viewer_unit || viewer_unit->unit.current_weapon_index < 0)
-		return pistol;
-	weapon_index = unit_inventory_get_weapon(viewer_unit_index, viewer_unit->unit.current_weapon_index);
-	weapon = weapon_index != NONE ? object_try_and_get(weapon_index) : NULL;
-	name = weapon ? tag_get_name(weapon->definition_index) : NULL;
-	if (name && (strstr(name, "battle") || strstr(name, "_br") || strstr(name, "\\br")))
-		return tuning("FINISH_RIFLE", 20.6f);
-	return pistol;
-}
+/* (a guest: the one finishing hit for every view, as the host reckons it, with room for the rounding of the
+shield it was sent) */
+#define GUEST_FINISHER_POINTS (FINISHER_POINTS + 0.02f)
 
 /* whether the unit is down for the view being drawn, with its entry (NULL: none) */
 static struct shield_pop *shield_pop_view_entry(
@@ -374,8 +308,7 @@ static struct shield_pop *shield_pop_view_entry(
 	down = TEST_FLAG(unit->object.damage_flags, _object_dead_bit) ||
 		TEST_FLAG(unit->object.damage_flags, _object_shield_depleted_bit) ||
 		(unit->object.shield_vitality < 1.f &&
-			shield_pop_viewer_finisher(viewer, unit_index) -
-				unit->object.maximum_shield_vitality * unit->object.shield_vitality > 0.f);
+			GUEST_FINISHER_POINTS - unit->object.maximum_shield_vitality * unit->object.shield_vitality > 0.f);
 	for (index = 8; index < SHIELD_POPS; index++)
 	{
 		struct shield_pop *each = &shield_pops[index];
@@ -562,15 +495,14 @@ static short ae_shield_fx_intensity_source(
 	return source >= 1 && source <= 4 ? (short)(source - 1) : NONE;
 }
 
-/* a unit's overshield, while it has one and lives (its shield over 1, or
-charging past it); NULL for none */
+/* a unit's recharge band, while its shield recharges (and the flash as it is
+full); NULL for none */
 static struct ae_shield_fx *ae_shield_fx_get_any(
 	long unit_index)
 {
 	struct unit_datum *unit = unit_try_and_get(unit_index);
 	struct ae_shield_fx *effect = NULL;
 	struct ae_shield_fx *free_effect = NULL;
-	boolean charging;
 	boolean recharging;
 	real now;
 	short index;
@@ -596,23 +528,18 @@ static struct ae_shield_fx *ae_shield_fx_get_any(
 		else if (each->unit_index == NONE && !free_effect)
 			free_effect = each;
 	}
-	if (!unit || !(ae_shield_fx_enabled() || recharge_band_enabled()))
+	if (!unit || !recharge_band_enabled())
 		return NULL;
-	charging = TEST_FLAG(unit->object.damage_flags, _object_shield_over_charging_bit);
-	if (!ae_shield_fx_enabled())
-		charging = FALSE;
-	recharging = recharge_band_enabled() && !charging && unit->object.shield_vitality < 1.f &&
-		TEST_FLAG(unit->object.damage_flags, _object_shield_charging_bit);
-	if (effect && effect->recharge != recharging && !(effect->recharge && unit->object.shield_vitality >= 1.f && !charging))
+	recharging = unit->object.shield_vitality < 1.f && TEST_FLAG(unit->object.damage_flags, _object_shield_charging_bit);
+	if (effect && !recharging && !(unit->object.shield_vitality >= 1.f))
 	{
-		/* (one kind became the other) */
+		/* (the recharge stopped short: hit again) */
 		effect->unit_index = NONE;
 		free_effect = effect;
 		effect = NULL;
 	}
 	if (TEST_FLAG(unit->object.damage_flags, _object_dead_bit) ||
-		!(charging || recharging || (effect && effect->recharge && (effect->end <= 0.f || now - effect->end < RECHARGE_FLASH_SECONDS)) ||
-			(ae_shield_fx_enabled() && unit->object.shield_vitality > 1.f)))
+		!(recharging || (effect && (effect->end <= 0.f || now - effect->end < RECHARGE_FLASH_SECONDS))))
 	{
 		if (effect)
 			effect->unit_index = NONE;
@@ -620,69 +547,30 @@ static struct ae_shield_fx *ae_shield_fx_get_any(
 	}
 	if (!effect)
 	{
-		real shield = unit->object.shield_vitality;
-
 		if (!free_effect)
 			return NULL;
 		effect = free_effect;
 		effect->unit_index = unit_index;
-		effect->recharge = recharging;
 		effect->start_vitality = unit->object.shield_vitality;
 		effect->end = 0.f;
-		effect->rise = recharging ? recharge_band_seconds() : charging && shield <= AE_SHIELD_FX_DOWN ?
-			AE_SHIELD_FX_RISE_FROM_DOWN : AE_SHIELD_FX_RISE;
-		/* (seen part of the way through its charge: as far on; seen charged,
-		risen) */
-		effect->start = now;
-		if (recharging)
-			;
-		else if (!charging)
-			effect->start = now - effect->rise;
-		else if (shield > 1.f)
-			effect->start = now - MIN(shield - 1.f, effect->rise);
 	}
 	effect->last_seen = now;
 	{
-		real t = PIN((now - effect->start) / effect->rise, 0.f, 1.f);
+		/* (as far up the body as the shield is back, so its top reaches the head as the shield is full; then a
+		last flash) */
+		real from = MIN(effect->start_vitality, 0.95f);
 
-		/* (smooth at both ends) */
-		effect->progress = t * t * (3.f - 2.f * t);
-		/* (a recharge band: as far up the body as the shield is back, so its top
-		reaches the head as the shield is full; then a last flash) */
-		if (effect->recharge)
-		{
-			real from = MIN(effect->start_vitality, 0.95f);
-
-			effect->progress = PIN((unit->object.shield_vitality - from) / (1.f - from), 0.f, 1.f);
-			if (effect->progress >= 1.f && effect->end <= 0.f)
-				effect->end = now;
-		}
+		effect->progress = PIN((unit->object.shield_vitality - from) / (1.f - from), 0.f, 1.f);
+		if (effect->progress >= 1.f && effect->end <= 0.f)
+			effect->end = now;
 	}
 	return effect;
 }
 
-/* an overshield only (a recharge band is not one) */
-static struct ae_shield_fx *ae_shield_fx_get(
-	long unit_index)
-{
-	struct ae_shield_fx *effect = ae_shield_fx_get_any(unit_index);
-
-	return effect && !effect->recharge ? effect : NULL;
-}
-
 /* ---------- public code */
 
-/* whether the unit has an overshield, as this machine draws it */
-boolean ae_shield_fx_active(
-	long object_index)
-{
-	struct object_datum *object = object_try_and_get(object_index);
-
-	return object && TEST_FLAG(_object_mask_unit, object->object.type) && ae_shield_fx_get(object_index) != NULL;
-}
-
-/* the values a unit's modifier shader is drawn with, given its own: with an
-overshield, a copy whose intensity is full (on the body, or the arms) that
+/* the values a unit's modifier shader is drawn with, given its own: a pop's,
+a recharge band's, a crackle's or a hit's shaped pulse, as a copy that
 ae_shield_fx_draw knows again; otherwise its own */
 real const *ae_shield_fx_values(
 	long unit_index,
@@ -693,7 +581,7 @@ real const *ae_shield_fx_values(
 	short source;
 	real *copy;
 
-	if (!values || !(ae_shield_fx_enabled() || recharge_band_enabled()))
+	if (!values || !recharge_band_enabled())
 		return values;
 	{
 		real pop_value = 0.f;
@@ -716,7 +604,7 @@ real const *ae_shield_fx_values(
 		}
 	}
 	effect = ae_shield_fx_get_any(unit_index);
-	if (effect && effect->recharge && effect->progress >= 1.f)
+	if (effect && effect->progress >= 1.f)
 	{
 		short flash_source = ae_shield_fx_intensity_source(unit_index);
 		real u = effect->end > 0.f ? (global_frame_parameters.game_time_sec - effect->end) / RECHARGE_FLASH_SECONDS : 1.f;
@@ -730,7 +618,7 @@ real const *ae_shield_fx_values(
 	}
 	/* the recharge band on the first-person arms: a swell as the band
 	passes their height on the body */
-	if (effect && effect->recharge && arms)
+	if (effect && arms)
 	{
 		short arms_source = ae_shield_fx_intensity_source(unit_index);
 		real centre = tuning("ARMS_AT", 0.55f);
@@ -817,21 +705,15 @@ real const *ae_shield_fx_values(
 	}
 	if (!effect || source == NONE)
 		return values;
-	copy = arms ? effect->arms_values : effect->body_values;
+	/* (the band on the body: the arms' swell is above) */
+	copy = effect->body_values;
 	csmemcpy(copy, values, sizeof(effect->body_values));
-	if (arms)
+	copy[source] = MAX(values[source], recharge_band_strength());
+	if (!ae_shield_fx_model_heights(
+		object_definition_get(object_get(unit_index)->definition_index)->object.model.index,
+		&effect->bottom, &effect->top))
 	{
-		copy[source] = PIN((effect->progress - AE_SHIELD_FX_ARMS_START) / AE_SHIELD_FX_ARMS_LENGTH, 0.f, 1.f);
-	}
-	else
-	{
-		copy[source] = effect->recharge ? MAX(values[source], recharge_band_strength()) : 1.f;
-		if (!ae_shield_fx_model_heights(
-			object_definition_get(object_get(unit_index)->definition_index)->object.model.index,
-			&effect->bottom, &effect->top))
-		{
-			effect->bottom = effect->top = 0.f;
-		}
+		effect->bottom = effect->top = 0.f;
 	}
 	return copy;
 }
@@ -897,12 +779,12 @@ boolean ae_shield_fx_draw(
 
 		if (effect->unit_index == NONE || (values != effect->body_values && values != effect->arms_values))
 			continue;
-		*energy_speed = effect->recharge ? 1.f : AE_SHIELD_FX_ENERGY_SPEED;
+		*energy_speed = 1.f;
 		*inverse_softness = 0.f;
 		*height = 0.f;
-		if (effect->recharge && (values == effect->arms_values || effect->progress >= 1.f))
+		if (values == effect->arms_values || effect->progress >= 1.f)
 			return TRUE;
-		if (effect->recharge && effect->top > effect->bottom)
+		if (effect->top > effect->bottom)
 		{
 			real range = effect->top - effect->bottom;
 			real band = recharge_band_width() * range;
@@ -911,67 +793,10 @@ boolean ae_shield_fx_draw(
 			/* (the band's top from the feet to its own width over the head) */
 			*inverse_softness = 1.f / edge;
 			*height = effect->bottom + (range + band + edge) * effect->progress;
-			return TRUE;
-		}
-		if (values == effect->body_values && effect->top > effect->bottom && effect->progress < 1.f)
-		{
-			real edge = AE_SHIELD_FX_EDGE * (effect->top - effect->bottom);
-
-			/* (from all of the edge below the feet to all of it above the
-			head) */
-			*inverse_softness = 1.f / edge;
-			*height = effect->bottom + (effect->top - effect->bottom + edge) * effect->progress;
 		}
 		return TRUE;
 	}
 	return FALSE;
-}
-
-/* the unit's overshield's flare, for its glow (shield_glow.c): 0..1, or
-NONE (-1) for no overshield */
-real ae_shield_fx_flare(
-	long unit_index)
-{
-	struct ae_shield_fx *effect = ae_shield_fx_get(unit_index);
-
-	return effect ? effect->progress : -1.f;
-}
-
-/* whether an effect a hit on an overshield may play in place of its own:
-one that only shows and sounds (sounds, lights, decals, particles,
-contrails), so that nothing of the game changes */
-boolean ae_shield_fx_hit_effect_allowed(
-	long effect_index)
-{
-	struct effect_definition const *definition;
-	short event_index;
-
-	if (effect_index == NONE)
-		return FALSE;
-	definition = (struct effect_definition const *)tag_get(EFFECT_DEFINITION_TAG, effect_index);
-	if (!definition)
-		return FALSE;
-	for (event_index = 0; event_index < definition->events.count; event_index++)
-	{
-		struct effect_event_definition const *event =
-			TAG_BLOCK_GET_ELEMENT(&definition->events, event_index, struct effect_event_definition);
-		short part_index;
-
-		for (part_index = 0; part_index < event->parts.count; part_index++)
-		{
-			struct effect_part_definition const *part =
-				TAG_BLOCK_GET_ELEMENT(&event->parts, part_index, struct effect_part_definition);
-			unsigned long group = part->reference.group_tag;
-
-			if (part->reference.index != NONE && group != SOUND_DEFINITION_TAG && group != LIGHT_DEFINITION_TAG &&
-				group != DECAL_GROUP_TAG && group != PARTICLE_SYSTEM_DEFINITION_TAG && group != PARTICLE_TAG &&
-				group != CONTRAIL_DEFINITION_TAG)
-			{
-				return FALSE;
-			}
-		}
-	}
-	return TRUE;
 }
 
 /* a recharging unit's band, for its glow: 0..1 over the rise (0: none) */
@@ -984,7 +809,7 @@ real ae_shield_fx_recharge_value(
 	{
 		struct ae_shield_fx const *effect = &ae_shield_fxs[index];
 
-		if (effect->unit_index == unit_index && effect->recharge && effect->progress < 1.f &&
+		if (effect->unit_index == unit_index && effect->progress < 1.f &&
 			global_frame_parameters.game_time_sec - effect->last_seen < 0.25f)
 		{
 			return (real)sin(3.14159265 * (double)effect->progress) * tuning("BAND_GLOW", 1.f);
@@ -1009,14 +834,15 @@ real ae_shield_fx_band(
 	{
 		struct ae_shield_fx const *effect = &ae_shield_fxs[index];
 
-		if (effect->unit_index != NONE && effect->recharge && values == effect->body_values && effect->top > effect->bottom)
+		if (effect->unit_index != NONE && values == effect->body_values && effect->top > effect->bottom)
 			return recharge_band_width() * (effect->top - effect->bottom);
 	}
 	return 0.f;
 }
 
 /* the color a plasma shader drawn with values from ae_shield_fx_values
-is drawn in, the overshield's own; FALSE for values not from it */
+is drawn in (a pop's white, a recharge band's tint); FALSE for the shield's
+own (values not from it, a crackle's) */
 boolean ae_shield_fx_color(
 	real const *values,
 	real_rgb_color *color)
@@ -1048,7 +874,7 @@ boolean ae_shield_fx_color(
 		{
 			struct ae_shield_fx const *effect = &ae_shield_fxs[index];
 
-			if (effect->unit_index != NONE && effect->recharge &&
+			if (effect->unit_index != NONE &&
 				(values == effect->body_values || values == effect->arms_values) &&
 				tuning("BAND_TINT", 1.f) != 0.f)
 			{
@@ -1059,24 +885,10 @@ boolean ae_shield_fx_color(
 			}
 		}
 	}
-	if (ae_shield_fx_band(values) > 0.f || shield_crackle_for_values(values))
-		return FALSE;
-	*color = ae_shield_fx_rgb;
-	return TRUE;
-}
-
-/* the overshield's color, for its glow */
-real_rgb_color const *ae_shield_fx_overshield_color(
-	void)
-{
-	return &ae_shield_fx_rgb;
+	return FALSE;
 }
 
 /* ---------- what the AE hook lines call (ae_shield_fx.h) */
-
-/* the finishing hit's points against a shield: the magnum's (the strongest weapon that kills with one hit to
-the head) */
-#define FINISHER_POINTS 25.f
 
 static boolean early_pop_now = FALSE;
 
