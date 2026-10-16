@@ -2047,6 +2047,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	}
 	if (bots_random_real(bot) < skill->jump_chance / TICKS_PER_SECOND)
 		tick->flags |= FLAG(_unit_control_jump_bit);
+	if (ae_bots_crouch(bots_globals.skill, bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
 }
 
 /* walking to the goal, looking where it goes; there, a look about (and the

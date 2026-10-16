@@ -125,3 +125,37 @@ static long ae_bots_melee_ticks(short skill)
 	return skill == AE_BOTS_SKILL_RECRUIT ? TICKS_PER_SECOND * 3 : skill == _bots_skill_easy ? TICKS_PER_SECOND * 2 :
 		TICKS_PER_SECOND;
 }
+
+/* CROUCHING IN A FIGHT (owner 2026-10-16: "crouch like while moving like halo infinite but not as spammy"): NORMAL and
+up now and then crouch while they strafe, for a short while, then not again for a while; RECRUIT and EASY never
+(Infinite's lowest levels do not crouch). Kept by the bot's player index. */
+static struct { long until, next; } ae_bots_crouching[AE_BOTS_TRACK_PLAYERS];
+
+/* the chance a second to start a crouch while fighting */
+static real ae_bots_crouch_chance(short skill)
+{
+	return skill == _bots_skill_normal ? 0.12f : skill == _bots_skill_heroic ? 0.20f :
+		skill == _bots_skill_legendary ? 0.28f : 0.0f;
+}
+
+/* whether the fighting bot crouches this tick: a crouch lasts 0.3 to 0.6 s, then none for at least 2.5 s; random
+in 0..1 */
+static boolean ae_bots_crouch(short skill, long player_index, long now, real random)
+{
+	long player = player_index == NONE ? -1 : DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index);
+	real chance = ae_bots_crouch_chance(skill);
+
+	if (player < 0 || player >= AE_BOTS_TRACK_PLAYERS || chance <= 0.0f)
+		return FALSE;
+	if (now < ae_bots_crouching[player].until)
+		return TRUE;
+	/* (a game's ticks start over: an old wait is dropped) */
+	if (ae_bots_crouching[player].next > now + TICKS_PER_SECOND * 10)
+		ae_bots_crouching[player].next = 0;
+	if (now < ae_bots_crouching[player].next || random >= chance / TICKS_PER_SECOND)
+		return FALSE;
+	/* (random is under chance / TICKS_PER_SECOND here: spread back over 0..1 for the length) */
+	ae_bots_crouching[player].until = now + (long)(TICKS_PER_SECOND * (0.3f + 0.3f * random * TICKS_PER_SECOND / chance));
+	ae_bots_crouching[player].next = ae_bots_crouching[player].until + TICKS_PER_SECOND * 5 / 2;
+	return TRUE;
+}

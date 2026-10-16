@@ -479,6 +479,7 @@ port/linux/game/bots.c	real side = bot->strafe_sign * ae_bots_strafe(bots_global
 port/linux/game/bots.c	ae_bots_aim_delay(bots_globals.skill, bot->target_player_index, &aim_point, now); /* AE hook */
 port/linux/game/bots.c	if (tick->target_distance < ae_bots_melee_reach(bots_globals.skill) && now >= bot->melee_tick) /* AE hook */
 port/linux/game/bots.c	bot->melee_tick = now + ae_bots_melee_ticks(bots_globals.skill); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_crouch(bots_globals.skill, bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
 source/networking/network_server_manager.c	#include "ae_lan_bots.h" /* AE hook */
 source/networking/network_server_manager.c	if (ae_lan_bots_lobby(server, &server->game, server->state == _network_game_server_state_pregame && !server->sent_start_game_message) && !network_game_server_send_game_data_pregame(server)) network_event("ae_lan_bots_lobby() failed to send updated game settings to clients"); /* AE hook */
 source/networking/network_server_manager.c	ae_lan_bots_give_way(&server->game, player, server->state == _network_game_server_state_pregame && !server->sent_start_game_message); /* AE hook */
