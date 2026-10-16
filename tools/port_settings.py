@@ -434,13 +434,13 @@ _game_options = SCREENS["mods_setup"]
 _game_options["spacing"] = 24
 _game_options["categories"] = [
     ("BOTS:", "mods_setup/bots",
-     "Computer players in split screen Slayer games\n(MENUS > XBOX, then Multiplayer > Split Screen)."),
+     "Computer players in Slayer: split screen games,\nand up to 3 in a LAN game you host."),
 ]
 SCREENS["mods_setup/bots"] = {
     "screen": "bots_settings_screen", "header": ("header_bots", None), "title": "BOTS", "spacing": 30,
     "rows": [
         ("BOTS:", "bots.count", BOT_COUNTS,
-         "How many bots join a split screen Slayer game's\nlobby (never a system link or internet game's).",
+         "How many bots join a split screen Slayer lobby;\na LAN game you host takes up to 3 (not internet).",
          None),
         ("BOT SKILL:", "bots.skill", BOT_SKILLS,
          "How soon the bots react, how well they aim and\nhow far they see.", None),

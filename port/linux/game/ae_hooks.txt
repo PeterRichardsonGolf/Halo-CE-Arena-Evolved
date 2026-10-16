@@ -477,6 +477,7 @@ source/game/player_queues_new.c	#include "ae_lan_bots.h" /* AE hook */
 source/game/player_queues_new.c	ae_lan_bots_action(queue_index, &update->update.actions[queue_index]); /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_lan_bots.h" /* AE hook */
 port/linux/game/menu_functions.c	if (ae_lan_bots_network_player(player)) continue; /* AE hook */
+port/linux/game/menu_functions.c	if (ae_lan_bots_network_player(player)) { text[ROW_TEXT_LENGTH - 1] = 0; return; } /* AE hook */
 port/linux/src/port_config.c	{ "debug.ae_panel_primitives", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_PRIMITIVES", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.ae_panel_log", _config_boolean, "false", "HALO_DEBUG_AE_PANEL_LOG", _environment_value, /* AE hook */\n_platform_all,
 source/interface/hud_unit.c	#include "ae_hud_style.h" /* AE hook */

@@ -77,8 +77,9 @@ static void log_players(void)
 	short index;
 
 	for (index = 0; index < drive.roster.count; index++)
-		platform_log("ae lobby: player %d '%s' local %d host %d", drive.roster.players[index].slot,
-			drive.roster.players[index].name, drive.roster.players[index].local, drive.roster.players[index].host);
+		platform_log("ae lobby: player %d '%s' local %d host %d bot %d", drive.roster.players[index].slot,
+			drive.roster.players[index].name, drive.roster.players[index].local, drive.roster.players[index].host,
+			drive.roster.players[index].bot);
 }
 
 /* the roster now, read only while AE's session is there (the glue logs a failure: not every frame) */
@@ -263,6 +264,9 @@ void ae_screen_lobby_test_tick(unsigned long now)
 		{
 			platform_log("ae lobby: back in the lobby, roster %d map '%s' gametype '%s'", drive.roster.count,
 				drive.roster.map, drive.roster.gametype);
+			/* (the host and bots' drive: whom it has after the round, LAN bots included) */
+			if (drive.value == 90)
+				log_players();
 			drive.logged_count = drive.roster.count;
 			step_to(drive.value == 92 ? DRIVE_WATCH : DRIVE_DONE, now);
 		}

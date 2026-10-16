@@ -5323,6 +5323,7 @@ static void lobby_row_text(short row, wchar_t *text)
 	else
 		usnprintf(text, ROW_TEXT_LENGTH - 1, L"%s", name);
 	/* (this machine's players, when it has more than one: their controllers) */
+	if (ae_lan_bots_network_player(player)) { text[ROW_TEXT_LENGTH - 1] = 0; return; } /* AE hook */
 	if (lobby_local_player_count() >= 2 && (short)player->machine_index == network_game_client_get_local_machine_index())
 	{
 		size_t length = ustrlen(text);

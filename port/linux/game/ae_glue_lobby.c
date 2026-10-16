@@ -31,6 +31,7 @@ there (ae_lobby_take_pregame_ui) shows AE's pregame screen instead.
 #include "../src/p2p.h"
 #include "halo_port_limits.h"
 #include "ae_glue_lobby.h"
+#include "ae_lan_bots.h"
 #include "ae_hooks.h"
 #include "ae_strings.h"
 #include "ae_ui.h"
@@ -210,10 +211,15 @@ struct ae_result ae_lobby_roster(struct ae_lobby_roster *roster)
 	memset(roster, 0, sizeof(*roster));
 	if (!game || (!global_network_game_client_get() && !global_network_game_server_get()))
 		return failed("roster", AE_STR_ERR_NO_GAME, NULL);
-	for (index = 0; index < game->player_count && index < AE_LOBBY_MAXIMUM_PLAYERS; index++)
+	/* (every slot: a player who left leaves a gap, which a LAN bot giving way to a person makes often) */
+	for (index = 0; index < (short)NUMBEROF(game->players) && roster->count < AE_LOBBY_MAXIMUM_PLAYERS; index++)
 	{
 		struct network_player const *source = &game->players[index];
-		struct ae_lobby_player *player = &roster->players[roster->count++];
+		struct ae_lobby_player *player;
+
+		if (!network_player_is_valid((struct network_player *)source))
+			continue;
+		player = &roster->players[roster->count++];
 
 		/* (the game's names are 16-bit: -fshort-wchar) */
 		ae_lobby_utf16_to_utf8(player->name, sizeof(player->name), (const unsigned short *)source->name,
@@ -225,6 +231,10 @@ struct ae_result ae_lobby_roster(struct ae_lobby_roster *roster)
 		the first machine, the server's own (an assumption: a joining client has no other word for it)) */
 		player->local = local_machine != NONE && source->machine_index == local_machine;
 		player->host = global_network_game_server_get() ? player->local : source->machine_index == 0;
+		/* (a LAN bot is the host machine's player but no one's here: not this machine's person, not the host) */
+		player->bot = ae_lan_bots_network_player(source);
+		if (player->bot)
+			player->local = player->host = 0;
 	}
 	roster->machines = game->machine_count;
 	roster->joined = global_network_game_client_get() &&

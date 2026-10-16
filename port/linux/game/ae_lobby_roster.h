@@ -18,6 +18,7 @@ struct ae_lobby_player
 	char name[AE_LOBBY_NAME_SIZE];   /* UTF-8 of the game's 16-bit name */
 	short team, machine, controller, slot;
 	int local, host;
+	int bot;                         /* a LAN bot of this machine (the host's: ae_lan_bots.c), neither local nor host */
 };
 
 struct ae_lobby_roster
