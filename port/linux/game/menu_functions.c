@@ -101,6 +101,7 @@ their handlers open opens.
 #include "ae_menus_swap.h" /* AE hook */
 #include "ae_saved_limits.h" /* AE hook */
 #include "ae_glue_settings.h" /* AE hook */
+#include "ae_lan_bots.h" /* AE hook */
 #include "ae_glue_lan.h" /* AE hook */
 #include "halo_server_browser.h"
 #include "halo_port_limits.h" /* AE: the game lists' rows (halo_port_advertised_join_state) */
@@ -5132,6 +5133,7 @@ static struct network_player *lobby_local_player(short controller)
 	{
 		struct network_player *player = &game->players[index];
 
+		if (ae_lan_bots_network_player(player)) continue; /* AE hook */
 		if (network_player_is_valid(player) && (short)player->machine_index == machine_index &&
 			(short)player->controller_index == controller)
 		{

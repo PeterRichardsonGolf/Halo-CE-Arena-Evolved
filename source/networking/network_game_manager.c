@@ -93,6 +93,7 @@ symbols in this file:
 #include "objects/objects.h"
 #include "units/units.h"
 #include "text/unicode.h"
+#include "ae_lan_bots.h" /* AE hook */
 
 #include <xtl.h>
 
@@ -523,6 +524,7 @@ boolean network_game_spawn_player(
 		network_player_is_valid(player));
 
 	controller_index = network_game_player_is_local(player) ? player->controller_index : NONE;
+	if (ae_lan_bots_network_player(player)) controller_index = NONE; /* AE hook */
 	/* (the datum at the player's slot, with the identifier datum_new would
 	give it) */
 	if (VALID_INDEX(player->player_list_index, NETWORK_GAME_PLAYER_SLOTS))

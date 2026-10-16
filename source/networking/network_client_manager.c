@@ -396,6 +396,7 @@ symbols in this file:
 #include "text/unicode.h"
 #include "halo_map_families.h" /* port: map_family_from_wire_name */
 #include "ae_hooks.h" /* AE hook */
+#include "ae_lan_bots.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 
@@ -1727,6 +1728,7 @@ boolean network_game_client_game_has_started(
 		{
 			struct network_player *player = &client->game.players[network_player_index];
 
+			if (ae_lan_bots_network_player(player)) continue; /* AE hook */
 			if (network_player_is_valid(player) &&
 				player->machine_index == client->machine_index)
 			{

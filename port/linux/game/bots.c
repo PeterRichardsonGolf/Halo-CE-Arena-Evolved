@@ -2432,3 +2432,4 @@ void bots_update_actions(struct player_action *actions)
 		bots_report();
 	}
 }
+#include "ae_bots_lan.inc" /* AE hook */

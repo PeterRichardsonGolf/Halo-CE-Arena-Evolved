@@ -115,6 +115,7 @@ symbols in this file:
 #include "memory/data.h"
 #include "networking/network_game_globals.h"
 #include "units/units.h"
+#include "ae_lan_bots.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -447,6 +448,7 @@ void update_server_next_update(
 			&update->update.actions[queue_index],
 			&queue->current_action,
 			sizeof(struct player_action));
+		ae_lan_bots_action(queue_index, &update->update.actions[queue_index]); /* AE hook */
 		update->update.actions[queue_index].control_flags |= update_server_pending_control_flags[queue_index];
 		update_server_pending_control_flags[queue_index] = 0;
 		/* port: a client machine's player whose input has stopped coming

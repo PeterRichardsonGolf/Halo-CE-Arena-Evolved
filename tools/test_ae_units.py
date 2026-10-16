@@ -68,6 +68,9 @@ UNITS = {
                                                     "-fno-sanitize-recover=all"], []),
     # (the zoom action's hold mode: the state machine)
     "ae_zoom_test.c": ([UI / "ae_zoom.c"], [], []),
+    # (the bots of a LAN game: when the lobby has them, how many, their controllers on the host's machine, teams)
+    "ae_lan_bots_rules_test.c": ([UI / "ae_lan_bots_rules.c"], ["-fsanitize=address,undefined",
+                                                              "-fno-sanitize-recover=all"], []),
     # (SILENT MOVEMENT / SILENT WEAPONS: the byte, every mode x role x own/other sound, the join's mark and refusal,
     # the scopes and the tag table; under the sanitizers, as the join's name is a remote machine's)
     "ae_silent_rules_test.c": ([UI / "ae_silent_rules.c"], ["-fsanitize=address,undefined",

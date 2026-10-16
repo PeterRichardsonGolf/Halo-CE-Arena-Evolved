@@ -16,6 +16,7 @@ stays upstream's but for the AE hook lines.
 #include "bots.h"
 #include "ae_burst_rifle.h"
 #include "ae_bots.h"
+#include "ae_lan_bots.h"
 
 #include <string.h>
 
@@ -85,9 +86,12 @@ boolean ae_bots_in_game(void)
 	struct data_iterator iterator;
 	struct player_datum *player;
 
-	/* (local games alone have bots: a machine of 113 and up in another game is a person's) */
-	if (!player_data || !network_game_is_splitscreen_local())
+	/* (a local game's bots are on machines of 113 and up, which in another game are people's; a LAN game's are
+	the host's players on its free controller slots: ae_lan_bots.c) */
+	if (!player_data)
 		return FALSE;
+	if (!network_game_is_splitscreen_local())
+		return ae_lan_bots_in_game();
 	data_iterator_new(&iterator, player_data);
 	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 	{

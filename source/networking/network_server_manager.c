@@ -480,6 +480,7 @@ symbols in this file:
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 #include "ae_silent.h" /* AE hook */
 #include "ae_bots.h" /* AE hook */
+#include "ae_lan_bots.h" /* AE hook */
 #include "bots.h" /* port: port/linux/game/bots.c */
 
 /* port: internet play's Discord presence (port/linux/src/p2p.c), and the
@@ -1680,6 +1681,7 @@ boolean network_game_server_idle(
 
 	/* port: the bots of a local game (port/linux/game/bots.c) */
 	network_game_server_port_bots(server);
+	if (ae_lan_bots_lobby(server, &server->game, server->state == _network_game_server_state_pregame && !server->sent_start_game_message) && !network_game_server_send_game_data_pregame(server)) network_event("ae_lan_bots_lobby() failed to send updated game settings to clients"); /* AE hook */
 	ae_bots_lobby_check(network_game_is_splitscreen_local() && server->state == _network_game_server_state_pregame && !server->sent_start_game_message, server->game.variant.game_engine_index, server->game.variant.human_readable_game_description); /* AE hook */
 	/* (what Discord shows of a game hosted for internet play, and the
 	server browser's listing) */
@@ -2660,6 +2662,7 @@ boolean network_game_server_add_player_to_game(
 
 	if (machine->machine_index == player->machine_index)
 	{
+		ae_lan_bots_give_way(&server->game, player, server->state == _network_game_server_state_pregame && !server->sent_start_game_message); /* AE hook */
 		/* port: the smaller team (the Xbox game took turns with a counter of
 		its own, which a failed add or an earlier game moved on) */
 		{
