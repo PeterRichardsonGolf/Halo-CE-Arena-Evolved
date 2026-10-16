@@ -16,6 +16,7 @@ enum
 	BUFF_SECONDS_MAXIMUM = 9 * 60 + 59
 };
 
+#define ROUNDS_HEAT_SHOWN 0.01f /* a rounds weapon's heat over which its heat bar shows */
 #define NONE_ART (-1)
 
 static real clamp01(real value)
@@ -241,7 +242,9 @@ static void build_ammo(const struct ae_panel_snapshot *in, struct ae_panel_model
 	out->lit = in->rounds_loaded < 0 ? 0 : (in->rounds_loaded > magazine ? magazine : in->rounds_loaded);
 	ae_panel_model_row_lit(out->rows, out->row_count, out->lit, out->row_lit);
 	out->rounds_red = in->low_ammo_flash_on && out->lit > 0;
-	if (in->weapon_has_heat)
+	/* (a rounds weapon's heat bar only while it has heat: Custom Edition maps' weapons give off a little heat a round
+	that never shows, and a bar that stays empty read as a battery's, owner 10-15) */
+	if (in->weapon_has_heat && (in->heat > ROUNDS_HEAT_SHOWN || in->overheated))
 	{
 		out->bar_shown = TRUE;
 		out->bar_fill = clamp01(in->heat);

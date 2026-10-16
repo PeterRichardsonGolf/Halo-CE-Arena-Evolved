@@ -155,6 +155,9 @@ static void test_unknown_weapons(void)
 	/* heat AND rounds: the magazine and the heat bar */
 	base(&s, _ae_hint_none, 12, 6, 4); s.weapon_has_heat = TRUE; s.heat = 0.5f; ae_panel_model_build(&s, &m);
 	AE_CHECK(m.weapon_kind == _ae_panel_rounds && m.row_count == 1 && m.bar_shown && AE_NEAR(m.bar_fill, 0.5f));
+	/* (a Custom Edition map's rifle: a little heat a round, none now: no bar, owner 10-15) */
+	base(&s, _ae_hint_none, 36, 36, 4); s.weapon_has_heat = TRUE; s.heat = 0.0f; ae_panel_model_build(&s, &m);
+	AE_CHECK(m.weapon_kind == _ae_panel_rounds && !m.bar_shown);
 	/* heat only (no rounds, no battery): the bar, no number */
 	memset(&s, 0, sizeof(s)); s.has_weapon = TRUE; s.weapon_has_heat = TRUE; s.heat = 0.25f; s.shield = 1; s.health = 1;
 	s.weapon_type_hint = _ae_hint_none; ae_panel_model_build(&s, &m);
