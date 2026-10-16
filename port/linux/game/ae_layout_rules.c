@@ -141,6 +141,10 @@ static int parse_item(char **words, int count, struct ae_layout_item *item, char
 		{
 			item->respawn_seconds = (short)number;
 		}
+		else if (same_word(words[at], "games") && at + 1 < count && same_word(words[at + 1], "all") && !item->games_all)
+		{
+			item->games_all = TRUE;
+		}
 		else if (same_word(words[at], "team") && at + 1 < count && item->team == _ae_layout_team_unset &&
 			(same_word(words[at + 1], "red") || same_word(words[at + 1], "blue") || same_word(words[at + 1], "neutral")))
 		{

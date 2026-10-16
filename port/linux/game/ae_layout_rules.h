@@ -12,7 +12,7 @@ The file (version 1):
 	# a comment (also after a line's words)
 	clear items                       drop every netgame item of the map (then add the wanted ones)
 	remove item <n>                   drop the map's item n (its index as the log lists it)
-	item <what> at <x> <y> <z> [facing <degrees>] [respawn <seconds>] [team red|blue|neutral]
+	item <what> at <x> <y> <z> [facing <degrees>] [respawn <seconds>] [team red|blue|neutral] [games all]
 	remove vehicle <type> [near <x> <y> <z> <radius>]
 	name item <n> <label>             the map's item n's name on the item timers and waypoints (e.g. SWORD where the map
 	                                  puts its sword in the shotgun's slot); <label> one word or quoted, up to 15 characters
@@ -79,6 +79,7 @@ struct ae_layout_item
 	real facing_degrees;
 	short respawn_seconds; /* -1: the map's own */
 	short team;            /* enum ae_layout_team */
+	boolean games_all;     /* games all: in every gametype (the entry's own game types otherwise) */
 	short line;            /* the file's line, for the log */
 };
 

@@ -47,6 +47,7 @@ struct ae_vehicle_definition_head
 };
 #define AE_VEHICLE_TYPE_TURRET 6 /* vehicles.c's _vehicle_type_turret */
 #define AE_EQUIPMENT_CREATED_AT_REST_BIT 0 /* game_engine.c's _equipment_created_at_rest_bit */
+#define AE_GAME_ENGINE_ALL 12 /* game_engine.c's _game_engine_all: an entry's game type for every gametype */
 
 #define PATH_SIZE 260
 #define DEGREES_TO_RADIANS (3.14159265358979f / 180.0f)
@@ -359,6 +360,11 @@ static void apply_items(struct scenario *scenario)
 			entry->facing = item->facing_degrees * DEGREES_TO_RADIANS;
 		if (item->respawn_seconds > 0)
 			entry->spawn_time = item->respawn_seconds;
+		if (item->games_all)
+		{
+			entry->game_type[0] = AE_GAME_ENGINE_ALL;
+			entry->game_type[1] = entry->game_type[2] = entry->game_type[3] = 0;
+		}
 		if (item->team != _ae_layout_team_unset)
 			entry->team_index = (short)(item->team == _ae_layout_team_neutral ? NONE : item->team);
 		platform_log("layout: line %d: item %ld at %.2f %.2f %.2f%s", item->line, count - 1, entry->position.x,

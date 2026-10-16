@@ -24,7 +24,7 @@ static void test_good_file(void)
 		"clear items   # all of the map's\n"
 		"remove item 7\n"
 		"item rockets at 1.0 24.7 5.4 respawn 120\n"
-		"item like 3 at -18.4 -11 0.5 facing 90 team blue\n"
+		"item like 3 at -18.4 -11 0.5 facing 90 team blue games all\n"
 		"item \"weapons\\sniper rifle\\sniper rifle\" at 0 0 0 team neutral respawn 90 facing -45.5\n"
 		"remove vehicle turret\n"
 		"remove vehicle 2 near 10 -4 2.5 6\n"
@@ -41,6 +41,7 @@ static void test_good_file(void)
 	AE_CHECK(layout.items[1].what == _ae_layout_like && layout.items[1].like == 3);
 	AE_CHECK(layout.items[1].has_facing && layout.items[1].facing_degrees == 90.0f);
 	AE_CHECK(layout.items[1].team == _ae_layout_team_blue && layout.items[1].respawn_seconds == -1);
+	AE_CHECK(layout.items[1].games_all && !layout.items[0].games_all);
 	AE_CHECK(layout.items[1].x < -18.3f && layout.items[1].y == -11.0f && layout.items[1].z == 0.5f);
 	AE_CHECK(layout.items[2].what == _ae_layout_tag && !strcmp(layout.items[2].tag, "weapons\\sniper rifle\\sniper rifle"));
 	AE_CHECK(layout.items[2].team == _ae_layout_team_neutral && layout.items[2].respawn_seconds == 90);
@@ -97,6 +98,9 @@ static void test_refusals(void)
 		"layout 1 m.map 00000001\nitem rockets at 1e9 0 0\n",
 		"layout 1 m.map 00000001\nitem rockets at nan 0 0\n",
 		"layout 1 m.map 00000001\nname item 3\n",
+		"layout 1 m.map 00000001\nitem camo at 0 0 0 games\n",
+		"layout 1 m.map 00000001\nitem camo at 0 0 0 games ctf\n",
+		"layout 1 m.map 00000001\nitem camo at 0 0 0 games all games all\n",
 		"layout 1 m.map 00000001\nname item x SWORD\n",
 		"layout 1 m.map 00000001\nname item 3 SIXTEEN_LETTERS_\n",
 		"layout 1 m.map 00000001\nname item 3 TWO WORDS\n",
