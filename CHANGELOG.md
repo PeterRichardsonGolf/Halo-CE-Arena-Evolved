@@ -22,7 +22,7 @@ Linux 64-bit is the build played and tested; Windows is built by the same checks
   rumble motor at each shot), Covenant weapons are energy (resistance building with heat or charge, a pulse on the
   light right motor). The pistol clicks and snaps, the assault rifle pulses with each round, the sniper rifle is
   firm with a heavy thump, the shotgun and rockets kick hard (the shotgun's pump clicks at its own animation's
-  moment), the battle rifle pulses three times a burst, the plasma rifle stiffens with heat, the plasma pistol
+  moment), the battle rifle buzzes through each burst, the plasma rifle stiffens with heat, the plasma pistol
   hums in R2 as it charges (faster once fully charged), pulses at each shot and kicks hard as an overcharged shot
   goes (with a green flash of the lightbar), the needler buzzes. Every weapon's state comes first: free while it is drawn, then a small settle as it
   is ready; free while reloading, with a bump as the magazine (or each shell) goes in; a dry click at the bottom of

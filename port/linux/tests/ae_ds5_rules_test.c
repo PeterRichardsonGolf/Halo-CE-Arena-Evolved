@@ -395,6 +395,13 @@ int main(void)
 		state.firing = 0;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(same(effect, weapon_4_7_6, sizeof(weapon_4_7_6)));
+		/* (firing: a buzz at the burst's 15 rounds a second, amplitude 7, owner 10-15 "more punch like the assault
+		rifle") */
+		state.firing = 1;
+		state.rate_of_fire = 15.0f;
+		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
+		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 7 at 15 Hz"));
+		state.firing = 0;
 
 		/* assault rifle: light hold; firing, round 1's buzz at the rate of fire; no kick */
 		memset(&state, 0, sizeof(state));
@@ -480,8 +487,9 @@ int main(void)
 			effect[9] == 30 && rumble.left == 255);
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SNIPER, AE_DS5_EVENT_SHOT, 100) == 90 &&
 			same(effect, full_kick, sizeof(full_kick)));
-		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_BURST, AE_DS5_EVENT_SHOT, 100) == 30 && effect[0] == 0x21 &&
-			effect[6] == 0x36);
+		/* (the battle rifle: no kick, its firing buzz carries the burst; both motors a round, 50 ms) */
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_BURST, AE_DS5_EVENT_SHOT, 100) == 0 && rumble.left == 255 &&
+			rumble.right == 140 && rumble.ms == 50);
 		/* the plasma pistol: a powerful pulse a shot (Covenant: the right motor), the overcharged blast both */
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_CHARGE, AE_DS5_EVENT_SHOT, 100) == 70 && effect[0] == 0x26 &&
 			effect[9] == 40 && rumble.right == 160 && rumble.left == 0);
@@ -515,7 +523,7 @@ int main(void)
 			CHECK(ae_ds5_overcharge_flash(rgb, 8) && rgb[1] == 85);
 			CHECK(!ae_ds5_overcharge_flash(rgb, 9) && !ae_ds5_overcharge_flash(rgb, -1));
 		}
-		CHECK(!strcmp(ae_ds5_profile_feel(AE_DS5_WEAPON_BURST), "click, three pulses a burst"));
+		CHECK(!strcmp(ae_ds5_profile_feel(AE_DS5_WEAPON_BURST), "click, buzzes through the burst"));
 	}
 
 	/* the powerups: lightbar and L2 */
@@ -678,13 +686,13 @@ int main(void)
 		/* overshield: the HUD's layer colours */
 		shield.vitality = 2.0f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[0] == 198 && rgb[1] == 86 && rgb[2] == 123 && !strcmp(text, "shield: overshield layer 1"));
+		CHECK(rgb[0] == 138 && rgb[1] == 60 && rgb[2] == 86 && !strcmp(text, "shield: overshield layer 1"));
 		shield.vitality = 2.5f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[1] > rgb[0] && rgb[1] > 100 && rgb[1] < 208 && !strcmp(text, "shield: overshield layer 2"));
+		CHECK(rgb[1] > rgb[0] && rgb[1] > 60 && rgb[1] < 146 && !strcmp(text, "shield: overshield layer 2"));
 		shield.vitality = 3.0f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[0] == 111 && rgb[1] == 208 && rgb[2] == 78 && !strcmp(text, "shield: overshield layer 2"));
+		CHECK(rgb[0] == 78 && rgb[1] == 146 && rgb[2] == 55 && !strcmp(text, "shield: overshield layer 2"));
 		/* dead: dark */
 		shield.dead = 1;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));

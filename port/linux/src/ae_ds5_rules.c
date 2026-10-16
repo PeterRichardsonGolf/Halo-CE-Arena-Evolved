@@ -176,7 +176,7 @@ static struct profile
 	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67), a firm left
 	pulse a round on the burst's cadence (owner 10-15: 240 for 50 ms, rounds 67 ms apart: three distinct pulses; 120
 	for 40 ms was not felt) */
-	{ W(4, 7, 6), SM, F(0, 7), 30, 0, 0, 0, HUMAN, 255, 50, "click, three pulses a burst", NO, 0, 0, 0, 0 },
+	{ W(4, 7, 6), V(3, 7, 0), NO, 0, 1, 0, 0, HUMAN, 255, 50, "click, buzzes through the burst", NO, 0, 0, 0, 0 },
 	/* needler: barely there; firing, a fast light buzz (2x the rate of fire, amplitude 3), a light right tick */
 	{ F(3, 1), V(3, 3, 0), NO, 0, 2, 0, 0, COVENANT, 70, 30, "fast light buzz", NO, 0, 0, 0, 0 },
 	/* plasma heat (plasma rifle): resistance and hum rising with heat (locked while overheated, as every weapon) */
@@ -608,9 +608,9 @@ static float stepped(float value)
 
 void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size)
 {
-	/* (the overshield's layers as the AE shield bar and the classic HUD shade them: pink, then grass green; then
-	hud_unit.c's yellow and violet) */
-	static unsigned long const layers[5] = { 0, 0xc6567bUL, 0x6fd04eUL, 0xffff00UL, 0x7f00ffUL };
+	/* (the overshield's layers in the classic HUD's pink, then grass green, at 70 % (owner: a bit darker on the
+	lightbar); then hud_unit.c's yellow and violet) */
+	static unsigned long const layers[5] = { 0, 0x8a3c56UL, 0x4e9237UL, 0xffff00UL, 0x7f00ffUL };
 	unsigned long min_color = shield->min_color & 0xffffffUL, max_color = shield->max_color & 0xffffffUL;
 	unsigned long flash = shield->flash_color & 0xffffffUL, empty = shield->empty_color & 0xffffffUL;
 	float fill;
