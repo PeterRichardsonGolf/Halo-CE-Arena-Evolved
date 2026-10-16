@@ -687,3 +687,6 @@ port/linux/src/delta.c	if (!config_boolean("network.legacy_table_fetch")) return
 port/linux/src/delta.c	if (file && !config_boolean("network.legacy_table_fetch")) { free(file); file = NULL; } /* AE hook */
 # Delta: Arena Evolved's clients join hosts of their own network version alone, as OpenCE's do (ChupathingyCE presumes 1)
 port/linux/include/delta.h	#define DELTA_LEGACY_PRESUMED 0 /* AE hook */
+# map layout files (queue 113, ae_layout.c): the map pack's layout applied to the scenario as the map loads
+source/game/game.c	#include "ae_layout.h" /* AE hook */
+source/game/game.c	ae_layout_apply(); /* AE hook */

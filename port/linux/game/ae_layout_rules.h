@@ -2,13 +2,13 @@
 AE_LAYOUT_RULES.H
 
 AE map layout files (queue 113, notes/specs/2026-10-15-map-layouts.md): a small text file per map, shipped in the map
-pack beside the map (maps/ce/layouts/<map file name>.txt, never in the repo), that changes what the map places (its
+pack beside the map (maps/ce/layouts/<map file name without .map>.txt, never in the repo), that changes what the map places (its
 netgame items, its vehicles) without touching the map file. This half is pure (no engine includes): the file read into
 a struct ae_layout, every line checked; port/linux/game/ae_layout.c applies it to the loaded scenario.
 
 The file (version 1):
 
-	layout 1 <map file name> <map hash: 8 hex digits, the map file's hash prefix (map_file_hash.h)>
+	layout 1 <map file name, no .map> <map hash: 8 hex digits, the map file's hash prefix (map_file_hash.h)>
 	# a comment (also after a line's words)
 	clear items                       drop every netgame item of the map (then add the wanted ones)
 	remove item <n>                   drop the map's item n (its index as the log lists it)

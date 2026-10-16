@@ -190,6 +190,7 @@ struct game_options;
 #endif
 #include "profile_sections.h" /* port: port/linux/include/profile_sections.h */
 #include "ae_weapon_pack.h" /* AE hook */
+#include "ae_layout.h" /* AE hook */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -636,6 +637,7 @@ boolean game_load(
 	csmemcpy(&game_globals->options, options, sizeof(*options));
 	if (scenario_load(options->map_name))
 	{
+		ae_layout_apply(); /* AE hook */
 		game_globals->map_loaded = TRUE;
 	}
 

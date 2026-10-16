@@ -60,6 +60,7 @@ Three things stood in the way, all handled here:
 #include "tag_files/tag_groups.h"
 #include "halo_menus.h"
 #include "ae_glue_ce_maps.h"
+#include "ae_layout.h"
 #include "ae_ce_ui_check.h"
 #include "ce_map_checks.h"
 
@@ -929,6 +930,9 @@ int ae_ce_map_menu_memory(unsigned long address, long size)
 {
 	long low = 0, high;
 
+	/* (a map layout's item list, read in place of the map's: ae_layout.c) */
+	if (ae_layout_memory(address, size))
+		return 1;
 	if (size <= 0 || !menu_memory.count || !(menu_memory.collecting || menu_memory.active))
 		return 0;
 	if (!menu_memory.sorted)
