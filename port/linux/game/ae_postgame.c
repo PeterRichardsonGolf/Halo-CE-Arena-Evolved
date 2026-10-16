@@ -296,3 +296,59 @@ wchar_t const *ae_postgame_place_string(
 	quit = strings != NONE ? unicode_string_list_get_string(strings, 0x8B) : NULL;
 	return quit && quit[0] ? quit : L"Quit";
 }
+
+/* ---------- the carnage report's number columns, right-aligned */
+
+enum { NUMBER_STOPS = 6 };
+
+/* the right end of each number column's header (0: not measured this frame) */
+static short header_right[NUMBER_STOPS];
+
+/* a string's width as the report lays it out (the draw mode's font, from the left of a wide box) */
+static short laid_out_width(wchar_t const *string)
+{
+	rectangle2d bounds;
+	rectangle2d ink;
+	rectangle2d cursor;
+
+	if (!string || !string[0])
+		return 0;
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = 4096;
+	bounds.y1 = 64;
+	draw_unicode_string_compute_bounds(&bounds, string, &ink, &cursor);
+	return (short)(cursor.x0 - bounds.x0);
+}
+
+void ae_postgame_number_columns(short const *tab_stops, wchar_t const *score, wchar_t const *kills,
+	wchar_t const *assists, wchar_t const *deaths)
+{
+	wchar_t const *headers[NUMBER_STOPS] = { NULL, NULL, score, kills, assists, deaths };
+	short stop;
+
+	for (stop = 0; stop < NUMBER_STOPS; stop++)
+		header_right[stop] = headers[stop] ? (short)(tab_stops[stop] + laid_out_width(headers[stop])) : 0;
+}
+
+void ae_postgame_right_align(short const *tab_stops, short stop, wchar_t const *row)
+{
+	short stops[NUMBER_STOPS];
+	wchar_t const *number = row;
+	wchar_t const *character;
+	short index;
+
+	if (stop < 2 || stop >= NUMBER_STOPS || !header_right[stop] || !row)
+		return;
+	for (character = row; *character; character++)
+	{
+		if (*character == L'\t')
+			number = character + 1;
+	}
+	for (index = 0; index < NUMBER_STOPS; index++)
+		stops[index] = tab_stops[index];
+	stops[stop] = (short)(stops[stop] + ae_postgame_number_shift(
+		(short)(header_right[stop] - tab_stops[stop]), laid_out_width(number)));
+	draw_string_set_tab_stops(stops, NUMBER_STOPS);
+}
+

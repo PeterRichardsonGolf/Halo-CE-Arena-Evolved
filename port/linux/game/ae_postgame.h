@@ -64,4 +64,15 @@ place ("4th"): a player who left before the end shows the game's own quit word (
 quitter ranked last reads as one */
 wchar_t const *ae_postgame_place_string(long player_index, wchar_t const *place);
 
+/* the carnage report's number columns right-aligned to the right end of their headers: game_engine.c's AE hooks.
+After the header row: its column texts (Score's name, Kills, Assists, Deaths), measured in the report's font against
+its tab stops (stops 2 to 5) */
+void ae_postgame_number_columns(short const *tab_stops, wchar_t const *score, wchar_t const *kills,
+	wchar_t const *assists, wchar_t const *deaths);
+/* before a number's line (row: the line, its number after the last tab; stop: its column's tab stop, 2 to 5): the tab
+stops set for that line with its stop moved right so the number ends where the header does (never left of the stop) */
+void ae_postgame_right_align(short const *tab_stops, short stop, wchar_t const *row);
+/* the move right for a number of this width under a header of this width (pure: the unit tests' too) */
+short ae_postgame_number_shift(short header_width, short number_width);
+
 #endif

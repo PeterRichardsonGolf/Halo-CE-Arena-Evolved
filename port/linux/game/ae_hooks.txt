@@ -638,3 +638,9 @@ port/linux/src/port_config.c	{ "audio.nhe_sound_filter", _config_boolean, "false
 source/sound/sound_manager.c	#include "ae_sound_filter.h" /* AE hook */
 source/sound/sound_manager.c	gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
 source/sound/sound_manager.c	properties.gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
+# the carnage report's number columns right-aligned to their headers' right ends (ae_postgame.c)
+source/game/game_engine.c	ae_postgame_number_columns(tab_stops, score_string, column_strings[2], column_strings[3], column_strings[4]); /* AE hook */
+source/game/game_engine.c	ae_postgame_right_align(tab_stops, 2, row_string); /* AE hook */
+source/game/game_engine.c	ae_postgame_right_align(tab_stops, 3, row_string); /* AE hook */
+source/game/game_engine.c	ae_postgame_right_align(tab_stops, 4, row_string); /* AE hook */
+source/game/game_engine.c	ae_postgame_right_align(tab_stops, 5, row_string); /* AE hook */

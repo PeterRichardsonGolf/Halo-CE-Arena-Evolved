@@ -47,3 +47,8 @@ enum ae_postgame_action ae_postgame_confirm_step(
 	}
 	return AE_POSTGAME_HELD;
 }
+
+short ae_postgame_number_shift(short header_width, short number_width)
+{
+	return header_width > number_width ? (short)(header_width - number_width) : 0;
+}

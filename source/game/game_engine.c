@@ -2972,6 +2972,7 @@ void game_engine_post_rasterize_post_game(
 		row_string[NUMBEROF(row_string) - 1] = 0;
 		draw_string_set_tab_stops(tab_stops, NUMBEROF(tab_stops));
 		drawline(row_string, 7, 0);
+		ae_postgame_number_columns(tab_stops, score_string, column_strings[2], column_strings[3], column_strings[4]); /* AE hook */
 	}
 
 	entry_count = select_players_to_display(_postgame_statistic_ranking, NONE, entries, 12);
@@ -3022,6 +3023,7 @@ void game_engine_post_rasterize_post_game(
 			score_string);
 		usnprintf(row_string, NUMBEROF(row_string), L" \t \t \t%s", score_string);
 		row_string[NUMBEROF(row_string) - 1] = 0;
+		ae_postgame_right_align(tab_stops, 2, row_string); /* AE hook */
 		drawline(row_string, draw_row, 0);
 		draw_string_set_color(&winner_color);
 
@@ -3033,6 +3035,7 @@ void game_engine_post_rasterize_post_game(
 			L" \t \t \t \t%d",
 			(long)player->statistics.kills[0]);
 		row_string[NUMBEROF(row_string) - 1] = 0;
+		ae_postgame_right_align(tab_stops, 3, row_string); /* AE hook */
 		drawline(row_string, draw_row, 0);
 		draw_string_set_color(&winner_color);
 
@@ -3044,6 +3047,7 @@ void game_engine_post_rasterize_post_game(
 			L" \t \t \t \t \t%d",
 			(long)player->statistics.assists[0]);
 		row_string[NUMBEROF(row_string) - 1] = 0;
+		ae_postgame_right_align(tab_stops, 4, row_string); /* AE hook */
 		drawline(row_string, draw_row, 0);
 		draw_string_set_color(&winner_color);
 
@@ -3055,6 +3059,7 @@ void game_engine_post_rasterize_post_game(
 			L" \t \t \t \t \t \t%d",
 			(long)player->statistics.deaths);
 		row_string[NUMBEROF(row_string) - 1] = 0;
+		ae_postgame_right_align(tab_stops, 5, row_string); /* AE hook */
 		drawline(row_string, draw_row, 0);
 		draw_string_set_tab_stops(tab_stops, NUMBEROF(tab_stops));
 	}
