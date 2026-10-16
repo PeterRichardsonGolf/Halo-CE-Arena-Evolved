@@ -59,7 +59,8 @@ rest to the strip") */
 
 static const real tones[NUMBER_OF_AE_TONES][3] = {
 	{ 229.0f, 240.0f, 255.0f }, { 178.0f, 224.0f, 255.0f }, { 188.0f, 198.0f, 212.0f }, { 6.0f, 10.0f, 18.0f },
-	{ 255.0f, 77.0f, 77.0f }, { 120.0f, 255.0f, 160.0f }, { 214.0f, 255.0f, 226.0f },
+	{ 255.0f, 77.0f, 77.0f }, { 120.0f, 255.0f, 160.0f }, { 214.0f, 255.0f, 226.0f }, { 198.0f, 86.0f, 123.0f },
+	{ 111.0f, 208.0f, 78.0f },
 };
 
 /* the 8 directions of a keyline's passes */
@@ -462,14 +463,14 @@ void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real f
 		tone_color(fill_tone, FILL_ALPHA * fade, &color);
 		bar_band(bar, w, 0.0f, fill > 1.0f ? 1.0f : fill, 0.0f, 1.0f, &color);
 	}
-	/* the overshield's layers in CE's own order of colours (hud_unit.c's overcharge meters: red, then green, then yellow
-	and violet), each over the one below, a light edge on top (owner 10-15: "the ce hud has multiple colors for the ov
-	cycle") */
+	/* the overshield's layers in the classic HUD's colours (its first layer pink, the second grass green over it; the
+	game's own red/green, as the shipped HUD tags shade them), each over the one below, a light edge on top (owner
+	10-15: the plain red read as a low shield) */
 	if (overshield1 > 0.0f)
 	{
 		real height = (bar->y1 - bar->y0) - 2.0f * w;
 
-		tone_color(_ae_tone_red, FILL_ALPHA, &color);
+		tone_color(_ae_tone_overshield1, FILL_ALPHA, &color);
 		bar_band(bar, w, 0.0f, overshield1, 0.0f, 1.0f, &color);
 		tone_color(_ae_tone_white, FILL_ALPHA * 0.6f, &color);
 		bar_band(bar, w, 0.0f, overshield1, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
@@ -478,9 +479,9 @@ void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real f
 	{
 		real height = (bar->y1 - bar->y0) - 2.0f * w;
 
-		tone_color(_ae_tone_green, FILL_ALPHA, &color);
+		tone_color(_ae_tone_overshield2, FILL_ALPHA, &color);
 		bar_band(bar, w, 0.0f, overshield2, 0.0f, 1.0f, &color);
-		tone_color(_ae_tone_green_edge, FILL_ALPHA, &color);
+		tone_color(_ae_tone_white, FILL_ALPHA * 0.6f, &color);
 		bar_band(bar, w, 0.0f, overshield2, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	/* the dividers between 5 cells */

@@ -176,7 +176,7 @@ static struct profile
 	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67), a firm left
 	pulse a round on the burst's cadence (owner 10-15: 240 for 50 ms, rounds 67 ms apart: three distinct pulses; 120
 	for 40 ms was not felt) */
-	{ W(4, 7, 6), SM, F(0, 7), 30, 0, 0, 0, HUMAN, 240, 50, "click, three pulses a burst", NO, 0, 0, 0, 0 },
+	{ W(4, 7, 6), SM, F(0, 7), 30, 0, 0, 0, HUMAN, 255, 50, "click, three pulses a burst", NO, 0, 0, 0, 0 },
 	/* needler: barely there; firing, a fast light buzz (2x the rate of fire, amplitude 3), a light right tick */
 	{ F(3, 1), V(3, 3, 0), NO, 0, 2, 0, 0, COVENANT, 70, 30, "fast light buzz", NO, 0, 0, 0, 0 },
 	/* plasma heat (plasma rifle): resistance and hum rising with heat (locked while overheated, as every weapon) */
@@ -193,6 +193,8 @@ static struct profile
 #define CHARGING_HUM_HZ 25
 /* a shot's rumble pulse, at least (ms) */
 #define SHOT_RUMBLE_MINIMUM_MS 50
+/* the battle rifle's round: the light motor with the heavy one */
+#define BURST_RUMBLE_RIGHT 140
 #define CHARGING_HUM_LOW 1
 #define CHARGING_HUM_HIGH 3
 /* the charge's rumble: a pulse every CHARGE_RUMBLE_TICKS, each a little longer so they run together; the right
@@ -354,6 +356,9 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 		/* (at least SHOT_RUMBLE_MINIMUM_MS, one Bluetooth report: the pad gets one every 50 ms there, and a shorter pulse could be
 		merged away, owner 10-15: "the br doesn't use the rumble motors") */
 		rumble->ms = profile->shot_rumble_ms < SHOT_RUMBLE_MINIMUM_MS ? SHOT_RUMBLE_MINIMUM_MS : profile->shot_rumble_ms;
+		/* (the battle rifle: the light motor joins each round, owner 10-15: "consistent but weak") */
+		if (kind == AE_DS5_WEAPON_BURST)
+			rumble->right = BURST_RUMBLE_RIGHT;
 		break;
 	case AE_DS5_EVENT_MAG_IN:
 	{

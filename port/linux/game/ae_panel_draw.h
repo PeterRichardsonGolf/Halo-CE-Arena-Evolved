@@ -39,6 +39,8 @@ enum ae_panel_tone      /* the tokens (14.15 part 1) */
 	_ae_tone_red,       /* (255,77,77) */
 	_ae_tone_green,     /* OVERSHIELD (120,255,160) */
 	_ae_tone_green_edge,/* (214,255,226) */
+	_ae_tone_overshield1, /* CE's classic HUD's first overshield layer, pink (198,86,123) */
+	_ae_tone_overshield2, /* its second, grass green (111,208,78) */
 	NUMBER_OF_AE_TONES
 };
 
