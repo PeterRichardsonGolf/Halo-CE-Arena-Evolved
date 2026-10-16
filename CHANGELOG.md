@@ -6,6 +6,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.0-beta - 2026-10-15
+
+A big testing pre-release: the score strip and the AE HUD, PS5 DualSense triggers and lightbar, bots in split screen,
+AE JUGGERNAUT as in Halo 2, the AE BR gametypes, the PC menus' own pictures and map pictures, built on
+ChupathingyCE 0.7.5b and OpenCE build-206 (network version 29: it does not play online with 0.2.5-beta and older).
+Linux 64-bit is the build played and tested; Windows is built by the same checks but was not test-played.
+
 - **PS5 DualSense: adaptive triggers, lightbar and player lights.** R2 has a profile for each weapon, from the
   weapon's own numbers, in two families: human weapons are mechanical (clicks and kicks, a pulse on the heavy left
   rumble motor at each shot), Covenant weapons are energy (resistance building with heat or charge, a pulse on the

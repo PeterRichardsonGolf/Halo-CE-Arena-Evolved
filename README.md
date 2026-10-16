@@ -28,7 +28,7 @@ port of the Halo: Combat Evolved decompilation, by way of
 both closely.
 
 > **Status: early and in active development.** The current pre-release is
-> 0.2.5-beta (below). The Linux 64-bit build is the one played and tested;
+> 0.3.0-beta (below). The Linux 64-bit build is the one played and tested;
 > the Windows 64-bit build is built by the same automated checks but this
 > release's was not test-played before it went up;
 > the other platforms build from the same code but are untested here.
@@ -160,7 +160,7 @@ play:
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic
   health, no grenades), ROCKETS, SHOTGUNS and HEAVIES (75 kills, the map's
   vehicles).
-- **Arena Evolved BR** (0.2.6): the casual set, the free for all variants, FFA AE PRACTICE and AE COMP again with the
+- **Arena Evolved BR** (0.3.0): the casual set, the free for all variants, FFA AE PRACTICE and AE COMP again with the
   **battle rifle in hand** and the pistol second (FFA AE BR SLAYER, TEAM AE BR SLAYER, TEAM AE BR COMP CTF, ... 25
   gametypes; stored as AE BR FFA, AE BR TS, AE BR C CTF, ...). Every other value is its twin's. Not made for the
   single-weapon modes (snipers, rockets, shotguns, SWAT, heavies, shotty snipers), RACE, RALLY or TRAINING. They
@@ -340,9 +340,9 @@ copies or changes MCC's files). Versions and the build-time packages are in
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.2.5-beta, built on ChupathingyCE 0.7.3e and OpenCE build-201
-(network version 28), is the current one, a pre-release (2026-10-13); it
-plays online with 0.2.3-beta, 0.2.4-beta and OpenCE build-201 and later, not with 0.2.2-beta or earlier.
+page: 0.3.0-beta, built on ChupathingyCE 0.7.5b and OpenCE build-206
+(network version 29), is the current one, a pre-release (2026-10-15); it
+plays online with OpenCE build-206 and later and ChupathingyCE 0.7.5b, not with 0.2.5-beta or earlier.
 Each platform is
 a zip of its own: Windows and Linux as 64-bit builds only, plus macOS and
 Android. For Linux there are two, and the first is the one to take:
@@ -506,7 +506,7 @@ Re-run `configure.py` when source files or the menus are added.
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, Arena Evolved is network version 29 (from 0.2.6-beta): it plays
+- Online, Arena Evolved is network version 29 (from 0.3.0-beta): it plays
   with OpenCE builds on network 29 (build-206 onward, until OpenCE changes
   its network version) and ChupathingyCE 0.7.5b, both ways, and joins only
   games hosted on version 29 (an older host is refused: the host needs to
