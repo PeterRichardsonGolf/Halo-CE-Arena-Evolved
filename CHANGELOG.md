@@ -32,6 +32,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - DualSense TRIGGER STRENGTH spread wider: LIGHT is now a hair trigger (every hold or click a short light break at
   the top of the pull, nothing deeper in it; kicks, buzzes and the motors at three quarters), STRONG is clearly stronger (every effect x1.75 and at least a step up, so the
   needler and plasma rifle change too; the motors x1.4). NORMAL is as before.
+- Custom Edition maps whose bullets are faster than 32-bit floats can carry ("Halo 2 for CE"'s H2 Blood Gulch: the
+  battle rifle, the SMG) now hurt: their projectiles' speeds are scaled into range as the map loads (the bullets had
+  turned to NaN on their first tick; OpenCE and ChupathingyCE have the same bug).
+- Map layout files (map pack): a map's netgame items and vehicles changed as it loads, without touching the map file
+  (the engine part; no layout ships yet).
 - HUD STYLE AE draws with fewer lookups a frame (the HUD's sheets once a map, settings once a change).
 
 ## 0.3.1-beta - 2026-10-16

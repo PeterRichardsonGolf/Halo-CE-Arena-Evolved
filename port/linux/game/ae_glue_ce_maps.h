@@ -41,4 +41,8 @@ the menus' tags of the Custom Edition map loaded, or in a map layout's item
 list (ae_layout_memory): 1, read as they are; else 0 */
 int ae_ce_map_menu_memory(unsigned long address, long size);
 
+/* (ce_repairs.c's ce_repairs_tags_loaded, AE hook) a Custom Edition map's projectiles faster than 32-bit floats can
+carry (1e31 world units a second) scaled down to 1e12 a tick, their ratio kept (ae_glue_ce_maps.c) */
+void ae_ce_projectile_speeds(void *tag_instances, long tag_count);
+
 #endif

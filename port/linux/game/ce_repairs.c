@@ -63,6 +63,7 @@ way (cache_files_windows.c).
 #include "errors.h"
 #include "structures/structure_bsp_definitions.h"
 #include "ce_map_checks.h"
+#include "ae_glue_ce_maps.h" /* AE hook */
 
 #include <string.h>
 
@@ -668,6 +669,7 @@ void ce_repairs_tags_loaded(
 	if (ce_repairs_scenario_group(tag_instances, tag_count, scenario_tag_index))
 		error(_error_silent, "Custom Edition map: its scenario given the scenario's group");
 	ce_repairs_apply(&image, tag_instances, tag_count, scenario_tag_index);
+	ae_ce_projectile_speeds(tag_instances, tag_count); /* AE hook */
 }
 
 /* one of its structure BSPs loaded (cache_files.c): its clusters'

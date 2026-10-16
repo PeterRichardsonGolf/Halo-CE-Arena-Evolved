@@ -58,6 +58,8 @@ Three things stood in the way, all handled here:
 #include "networking/network_game_manager.h"
 #include "networking/network_server_manager.h"
 #include "tag_files/tag_groups.h"
+#include "items/projectile_definitions.h"
+#include "errors.h"
 #include "halo_menus.h"
 #include "ae_glue_ce_maps.h"
 #include "ae_layout.h"
@@ -953,4 +955,50 @@ int ae_ce_map_menu_memory(unsigned long address, long size)
 	}
 	return menu_memory.blocks[low].start <= address && address < menu_memory.blocks[low].end &&
 		(unsigned long)size <= menu_memory.blocks[low].end - address;
+}
+
+/* (ce_repairs.c's ce_repairs_tags_loaded, AE hook) PROJECTILES TOO FAST FOR 32-BIT FLOATS: some Custom Edition maps
+give a bullet a speed of 1e31 world units a second ("Halo 2 for CE"'s H2 Blood Gulch: three projectiles), which Halo
+PC's x87 registers carried as a hitscan; in 32-bit floats its square overflows (projectiles.c's deceleration from
+distances: inf - inf), the bullet's velocity and place turn NaN on its first tick, and it never hits anything (owner
+2026-10-16: the map's battle rifle and SMG hurt nobody; upstream's bug too, OpenCE build-206 and ChupathingyCE 0.7.5b).
+Both speeds of such a projectile are scaled down to AE_CE_PROJECTILE_SPEED_LIMIT (world units a tick, as the tags hold
+them once loaded), their ratio kept: at that speed a bullet still crosses any map in one tick, its damage and its
+slowing curve are as before. Both machines of a game repair the same map alike: no network change */
+#define AE_CE_PROJECTILE_SPEED_LIMIT 1.0e12f
+
+void ae_ce_projectile_speeds(void *tag_instances, long tag_count)
+{
+	long index, repaired = 0;
+
+	for (index = 0; tag_instances && index < tag_count; index++)
+	{
+		struct ce_tag_instance const *instance =
+			(struct ce_tag_instance const *)((byte const *)tag_instances + index * CE_TAG_INSTANCE_SIZE);
+		struct projectile_definition *definition;
+		real fastest, scale;
+
+		if (instance->group_tag != PROJECTILE_DEFINITION_TAG || instance->base_address < CE_IMAGE_TAG_CACHE_BASE ||
+			instance->base_address - CE_IMAGE_TAG_CACHE_BASE >
+			(unsigned long)CE_IMAGE_TAG_CACHE_SIZE - sizeof(struct projectile_definition))
+		{
+			continue;
+		}
+		definition = (struct projectile_definition *)xbox_pointer(instance->base_address);
+		fastest = definition->projectile.initial_velocity > definition->projectile.final_velocity ?
+			definition->projectile.initial_velocity : definition->projectile.final_velocity;
+		/* (NaN fails every comparison: such a tag is left alone) */
+		if (!(fastest > AE_CE_PROJECTILE_SPEED_LIMIT))
+			continue;
+		scale = AE_CE_PROJECTILE_SPEED_LIMIT / fastest;
+		error(_error_silent, "Custom Edition map: projectile tag %ld's speed %g (initial %g, final %g, a tick) scaled to "
+			"%g, too fast for 32-bit floats", index, (double)fastest, (double)definition->projectile.initial_velocity,
+			(double)definition->projectile.final_velocity, (double)AE_CE_PROJECTILE_SPEED_LIMIT);
+		definition->projectile.initial_velocity *= scale;
+		definition->projectile.final_velocity *= scale;
+		repaired++;
+	}
+	if (repaired)
+		error(_error_silent, "Custom Edition map: %ld projectile%s scaled to the float range", repaired,
+			repaired == 1 ? "" : "s");
 }
