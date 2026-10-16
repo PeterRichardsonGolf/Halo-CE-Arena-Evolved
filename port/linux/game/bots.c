@@ -1945,6 +1945,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	real settle = (real)exp(-1.0f / (skill->aim_settle_seconds * TICKS_PER_SECOND) * 1.1f);
 
 	tick->fighting = TRUE;
+	ae_bots_aim_delay(bots_globals.skill, bot->target_player_index, &aim_point, now); /* AE hook */
 	bots_tick_eye(tick);
 	tick->target_distance = bots_distance3d(&tick->eye, &aim_point);
 	/* (leading a moving target by the projectile's flight) */

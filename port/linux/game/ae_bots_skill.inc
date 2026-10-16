@@ -12,7 +12,8 @@ Owner 2026-10-15 after play ("these bots will still destroy my kids"; "less
 of strafe demons ... they can't track like me"; then "less strafing on recruit"): its aim never settles: it
 wanders between 1.5 and 8 degrees off the target, so it fires and misses as
 a new player does; and it sidesteps barely (0.15 as hard), three times as
-long each way, so a young player's aim can stay on it.
+long each way, so a young player's aim can stay on it. RECRUIT and EASY also aim where
+their target was a moment ago (the TRACKING DELAY below).
 */
 
 #define AE_BOTS_SKILL_RECRUIT NUMBER_OF_BOTS_SKILLS
@@ -76,4 +77,38 @@ second to a second and a third): RECRUIT three times as long */
 static long ae_bots_strafe_ticks(short skill, long ticks)
 {
 	return skill == AE_BOTS_SKILL_RECRUIT ? ticks * 3 : ticks;
+}
+
+/* TRACKING DELAY (owner 2026-10-16, from Infinite's bots as researched: "the over-correction window players win
+strafe fights with"): RECRUIT and EASY aim at where the target was a moment ago, not where it is, so a target that
+strafes or turns back is missed for that moment, as by a person. Each target's centre is kept for the last
+AE_BOTS_TRACK_TICKS ticks, by its player's absolute index. */
+#define AE_BOTS_TRACK_TICKS 16
+#define AE_BOTS_TRACK_PLAYERS 256
+
+static struct { long tick; real_point3d centre; } ae_bots_track[AE_BOTS_TRACK_PLAYERS][AE_BOTS_TRACK_TICKS];
+
+/* the skill's delay, ticks: RECRUIT 0.3 s, EASY 0.2 s, none above */
+static long ae_bots_track_delay_ticks(short skill)
+{
+	return skill == AE_BOTS_SKILL_RECRUIT ? 9 : skill == _bots_skill_easy ? 6 : 0;
+}
+
+/* aim_point (the target's centre now) becomes its centre the skill's delay ago, when that tick was kept */
+static void ae_bots_aim_delay(short skill, long target_player_index, real_point3d *aim_point, long now)
+{
+	long delay = ae_bots_track_delay_ticks(skill);
+	long player = target_player_index == NONE ? -1 : DATUM_INDEX_TO_ABSOLUTE_INDEX(target_player_index);
+	long slot;
+
+	if (player < 0 || player >= AE_BOTS_TRACK_PLAYERS || now < 0)
+		return;
+	slot = now % AE_BOTS_TRACK_TICKS;
+	ae_bots_track[player][slot].tick = now;
+	ae_bots_track[player][slot].centre = *aim_point;
+	if (delay <= 0 || delay >= AE_BOTS_TRACK_TICKS)
+		return;
+	slot = (now - delay) % AE_BOTS_TRACK_TICKS;
+	if (now - delay >= 0 && ae_bots_track[player][slot].tick == now - delay)
+		*aim_point = ae_bots_track[player][slot].centre;
 }
