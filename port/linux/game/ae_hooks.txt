@@ -466,6 +466,13 @@ port/linux/game/game_events.c	if (ae_bots_kept_from_delta()) /* AE hook */\nretu
 # Bots in LAN games (ae_lan_bots.c, "virtual pads"): the host's players on its free controller slots, which are no
 # local players of the host (no view, HUD, sound or player_control), their input the bot brain's in the host's tick
 port/linux/game/bots.c	#include "ae_bots_lan.inc" /* AE hook */
+# RECRUIT bot level below EASY (ae_bots_skill.inc, included after the skill table): for new players and children
+port/linux/game/bots.c	#include "ae_bots_skill.inc" /* AE hook */
+port/linux/game/bots.c	if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT; /* AE hook */
+port/linux/game/bots.c	struct bots_skill_definition const *skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
+port/linux/game/bots.c	tick.skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
+port/linux/game/bots.c	ae_bots_skill_definition(bots_globals.skill)->name, /* AE hook */
+port/linux/game/bots.c	if (bots_random_real(bot) < ae_bots_hunt_chance(bots_globals.skill)) /* AE hook */
 source/networking/network_server_manager.c	#include "ae_lan_bots.h" /* AE hook */
 source/networking/network_server_manager.c	if (ae_lan_bots_lobby(server, &server->game, server->state == _network_game_server_state_pregame && !server->sent_start_game_message) && !network_game_server_send_game_data_pregame(server)) network_event("ae_lan_bots_lobby() failed to send updated game settings to clients"); /* AE hook */
 source/networking/network_server_manager.c	ae_lan_bots_give_way(&server->game, player, server->state == _network_game_server_state_pregame && !server->sent_start_game_message); /* AE hook */

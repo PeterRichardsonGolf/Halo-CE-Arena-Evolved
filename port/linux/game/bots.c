@@ -168,6 +168,7 @@ static struct bots_skill_definition const bots_skills[NUMBER_OF_BOTS_SKILLS] =
 	{ "heroic", 0.30f, 42.0f, 140.0f, 4.0f, 0.6f, 20.0f, 1.5f, 0.8f, 0.16f, 0.15f, 12, 6 },
 	{ "legendary", 0.18f, 55.0f, 160.0f, 2.2f, 0.35f, 30.0f, 1.25f, 1.0f, 0.22f, 0.25f, 16, 4 },
 };
+#include "ae_bots_skill.inc" /* AE hook */
 
 struct bots_bot
 {
@@ -317,6 +318,7 @@ short bots_skill(void)
 	char const *name = config_string("bots.skill");
 	short skill;
 
+	if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT; /* AE hook */
 	for (skill = 0; skill < NUMBER_OF_BOTS_SKILLS; skill++)
 	{
 		if (!strcmp(name, bots_skills[skill].name))
@@ -1543,7 +1545,7 @@ static boolean bots_target_score(struct bots_bot *bot, struct player_datum *play
 
 static long bots_find_target(struct bots_bot *bot, struct player_datum *player, real_point3d const *eye)
 {
-	struct bots_skill_definition const *skill = &bots_skills[bots_globals.skill];
+	struct bots_skill_definition const *skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
 	struct data_iterator iterator;
 	struct player_datum *other;
 	boolean hurt = game_time_get() - bot->hurt_tick < TICKS_PER_SECOND * 2;
@@ -1636,7 +1638,7 @@ static void bots_pick_roam_goal(struct bots_bot *bot, real_point3d const *positi
 	if (bots_globals.roam_point_count <= 0)
 		return;
 	bot->hunting = FALSE;
-	if (bots_random_real(bot) < 0.65f)
+	if (bots_random_real(bot) < ae_bots_hunt_chance(bots_globals.skill)) /* AE hook */
 	{
 		struct player_datum *player = player_get(bot->player_index);
 		struct data_iterator iterator;
@@ -2248,7 +2250,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	real vitality;
 
 	csmemset(&tick, 0, sizeof(tick));
-	tick.skill = &bots_skills[bots_globals.skill];
+	tick.skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
 	tick.player = player_get(bot->player_index);
 	tick.now = game_time_get();
 	tick.throttle_scale = 1.0f;
@@ -2385,7 +2387,8 @@ static void bots_report(void)
 		return;
 	platform_log("bots: tick %ld, %ld bots (%s): searches %ld (%ld failed, %ld short, %ld full, %ld unavoided, "
 		"%ld unsmoothed), stuck %ld (goals given up %ld), kills/deaths%s", now, count,
-		bots_skills[bots_globals.skill].name, bots_globals.searches, bots_globals.search_failures,
+		ae_bots_skill_definition(bots_globals.skill)->name, /* AE hook */
+		bots_globals.searches, bots_globals.search_failures,
 		bots_globals.search_partials, bots_globals.search_overflows, bots_globals.search_unavoided,
 		bots_globals.search_unsmoothed, bots_globals.stuck_events, bots_globals.stuck_giveups, line);
 }

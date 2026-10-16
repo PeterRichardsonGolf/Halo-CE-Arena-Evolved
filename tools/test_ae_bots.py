@@ -31,10 +31,13 @@ def test_bots_screen():
     assert list(rows) == ["bots.count", "bots.skill", "bots.teams"]
     assert [value for _, value in rows["bots.count"][2]] == [str(n) for n in range(16)]
     assert rows["bots.count"][2][0] == ("OFF", "0")
-    # (the names bots.c's bots_skills and bots_teams read)
+    # (the names bots.c's bots_skills and bots_teams read; RECRUIT's in AE's ae_bots_skill.inc, read by name first)
     bots = (ROOT / "port" / "linux" / "game" / "bots.c").read_text()
+    recruit = (ROOT / "port" / "linux" / "game" / "ae_bots_skill.inc").read_text()
+    assert [value for _, value in rows["bots.skill"][2]][0] == "recruit"
+    assert 'if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT;' in bots
     for _, skill in rows["bots.skill"][2]:
-        assert f'{{ "{skill}", ' in bots, skill
+        assert f'{{ "{skill}", ' in bots + recruit, skill
     assert [value for _, value in rows["bots.teams"][2]] == ["even", "against"]
     assert '"against"' in bots
     text = (CE / BOTS).read_text()

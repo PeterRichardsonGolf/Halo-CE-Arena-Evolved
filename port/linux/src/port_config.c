@@ -653,11 +653,13 @@ static const struct config_setting config_settings[] =
 		"Android moves them unless this is \"no\"." },
 	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all,
 		"Computer players (bots) in a local (split screen) Slayer game: 0 to 15\n"
-		"join its lobby with the players, as far as the game has room. Not in\n"
-		"system link or internet games. 0: none, as in the stock game." },
+		"join its lobby with the players, as far as the game has room; up to 3\n"
+		"in a LAN game you host, none in internet games. 0: none, as in the stock\n"
+		"game." },
 	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all,
-		"How well the bots play: \"easy\", \"normal\", \"heroic\" or \"legendary\"\n"
-		"(how soon they react, how well they aim, how far they see)." },
+		"How well the bots play: \"recruit\" (for new players), \"easy\", \"normal\",\n"
+		"\"heroic\" or \"legendary\" (how soon they react, how well they aim, how\n"
+		"far they see)." },
 	{ "bots.teams", _config_string, "\"even\"", "HALO_BOT_TEAMS", _environment_value, _platform_all,
 		"In team games: \"even\" puts the bots on both teams, evening them with\n"
 		"the players; \"against\" puts them all on the team the players are not on." },

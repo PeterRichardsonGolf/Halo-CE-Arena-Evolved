@@ -428,7 +428,7 @@ SCREENS["video_settings/fov_viewmodels"] = {
 # (AE) Game Options' BOTS (OpenCE PR #367's bots.count, bots.skill and bots.teams: port/linux/game/bots.c): a
 # screen of its own, a category after the rows (as Video Setup's); Game Options' rows 24 px apart for its place
 BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
-BOT_SKILLS = [("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
+BOT_SKILLS = [("RECRUIT", "recruit"), ("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
 BOT_TEAMS = [("EVEN", "even"), ("AGAINST YOU", "against")]
 _game_options = SCREENS["mods_setup"]
 _game_options["spacing"] = 24
