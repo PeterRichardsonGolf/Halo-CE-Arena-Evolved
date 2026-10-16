@@ -994,6 +994,7 @@ short ui_map_list_picture_index(
 {
 	if (row < 0 || row >= ui_map_list_count_value)
 		return 0;
+	if (ae_map_picture_frame(ui_map_list[row].map_name) != NONE) return ae_map_picture_frame(ui_map_list[row].map_name); /* AE hook */
 	if (ui_map_list[row].picture_map[0])
 		return ui_map_list_xbox_picture(ui_map_list[row].picture_map, NULL);
 	return ui_map_list[row].picture_index;

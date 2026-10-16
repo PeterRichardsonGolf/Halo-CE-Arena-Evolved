@@ -555,11 +555,13 @@ source/interface/ui_widget.c	if (!ae_hud_message_text(text)) /* AE hook */\nrast
 source/interface/ui_widget.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index);\nif (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color)) return; /* AE hook */
 port/linux/src/port_config.c	{ "debug.ae_message_test", _config_string, "\"\"", "HALO_DEBUG_AE_MESSAGE_TEST", _environment_value, /* AE hook */\n_platform_all,
 # a map's own picture beside its file (maps\previews\<map>.png: the map pack's pictures) on the PC menus' map select
-# screen and lobby only (owner: the Xbox menus are upstream's), past ui.map's frames (ae_map_pictures.c); the menus'
-# art reads its PNG by an art name
+# screen and lobby, past ui.map's frames (ae_map_pictures.c); the menus' art reads its PNG by an art name. The Xbox
+# menus' map select and lobby show it too (owner 2026-10-16) through the map list's frame of a row
+# (ui_map_list_picture_index: the one hook below in it; the Xbox screens' own code is untouched)
 port/linux/game/ui_map_list.c	#include "ae_map_pictures.h" /* AE hook */
 port/linux/game/menu_functions.c	if (ae_map_picture_frame(multiplayer_map_names[map]) != NONE) widget->animation.current_frame_index = ae_map_picture_frame(multiplayer_map_names[map]); /* AE hook */
 port/linux/game/ui_map_list.c	if (ae_map_picture_bitmap(frame_index)) return ae_map_picture_bitmap(frame_index); /* AE hook */
+port/linux/game/ui_map_list.c	if (ae_map_picture_frame(ui_map_list[row].map_name) != NONE) return ae_map_picture_frame(ui_map_list[row].map_name); /* AE hook */
 port/linux/src/menu_files.c	#include "../game/ae_map_pictures.h" /* AE hook */
 port/linux/src/menu_files.c	{ unsigned int ae_size = 0; const unsigned char *ae_picture = ae_map_picture_png(path, &ae_size); if (ae_picture) { *size = ae_size; return ae_picture; } } /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_map_pictures.h" /* AE hook */
