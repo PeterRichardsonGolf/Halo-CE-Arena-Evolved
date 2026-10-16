@@ -61,6 +61,13 @@ int ae_platform_input_scheme(void);
 /* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
 as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
 void ae_platform_test_keystroke(int scancode);
+/* the test hook debug.test_verdict_file (OFF while empty), sdl_platform.c's AE hook lines: F7 (PASS) and F8 (FAIL)
+append "<date> <time> <debug.test_name> PASS|FAIL" to that file, once a run, and quit the game. The key's hook: 1 when
+the key down was F7 or F8 and taken (the event goes no further), else 0. The pump's hook, each frame: with
+debug.test_verdict_auto "PASS:<seconds>" or "FAIL:<seconds>", that verdict by itself that many seconds after the
+first frame (the batch runner's own checks, no key to press). Nothing on the dedicated server */
+int ae_platform_test_verdict_key(int scancode);
+void ae_platform_test_verdict_auto(void);
 /* (debug.test_input "menu:" with "pad:<button>" tokens, xinput_sdl.c's poll, each call) the token pressed now (NULL:
 none) and its length: a virtual SDL gamepad, attached at the first call, gets its button (pad:b, pad:start, ...), so
 the presses of a real lone gamepad are tested, through the game's own mapping of pads to ports (ae_platform.c) */

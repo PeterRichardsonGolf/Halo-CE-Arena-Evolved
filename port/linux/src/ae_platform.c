@@ -16,8 +16,10 @@ pure, so the unit tests build it.)
 #include "ae_platform.h"
 #include "port_config.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
 #include <SDL3/SDL_atomic.h>
@@ -317,5 +319,82 @@ void ae_platform_test_pad_press(
 #else
 	(void)token;
 	(void)length;
+#endif
+}
+
+/* ---------- the test hooks debug.test_verdict_file and debug.test_verdict_auto */
+
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+void platform_request_quit(void);
+
+/* the verdict line, then the game quits */
+static void test_verdict(int pass)
+{
+	static int done; /* one verdict line per run: a key held down repeats before the quit takes effect */
+	FILE *file;
+	time_t now = time(NULL);
+	char stamp[32], name[96];
+	int i;
+
+	if (done)
+		return;
+	done = 1;
+	/* (the name goes in a "<date> <time> <name> PASS|FAIL" line the batch parses: no spaces or control characters) */
+	snprintf(name, sizeof(name), "%s", config_string("debug.test_name"));
+	for (i = 0; name[i]; i++)
+		if ((unsigned char)name[i] <= ' ' || name[i] == 0x7f)
+			name[i] = '_';
+	file = fopen(config_string("debug.test_verdict_file"), "a");
+	strftime(stamp, sizeof(stamp), "%Y-%m-%d %H:%M", localtime(&now));
+	if (file)
+	{
+		fprintf(file, "%s %s %s\n", stamp, name, pass ? "PASS" : "FAIL");
+		fclose(file);
+	}
+	platform_log("test verdict: %s %s", name, pass ? "PASS" : "FAIL");
+	platform_request_quit();
+}
+#endif
+
+int ae_platform_test_verdict_key(int scancode)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	if ((scancode != SDL_SCANCODE_F7 && scancode != SDL_SCANCODE_F8) || !*config_string("debug.test_verdict_file"))
+		return 0;
+	test_verdict(scancode == SDL_SCANCODE_F7);
+	return 1;
+#else
+	(void)scancode;
+	return 0;
+#endif
+}
+
+void ae_platform_test_verdict_auto(void)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	static Uint64 auto_ticks = (Uint64)-1;
+	static int auto_pass;
+
+	if (auto_ticks == (Uint64)-1)
+	{
+		const char *text = config_string("debug.test_verdict_auto");
+
+		auto_ticks = 0;
+		if (*text && *config_string("debug.test_verdict_file") && (!strncmp(text, "PASS:", 5) || !strncmp(text, "FAIL:", 5)))
+		{
+			double seconds = atof(text + 5);
+
+			if (seconds > 0.0) /* (a malformed value would give 0 s: a verdict at once) */
+			{
+				auto_pass = text[0] == 'P';
+				auto_ticks = SDL_GetTicks() + (Uint64)(seconds * 1000.0);
+			}
+		}
+	}
+	if (auto_ticks && SDL_GetTicks() >= auto_ticks)
+	{
+		auto_ticks = 0;
+		test_verdict(auto_pass);
+	}
 #endif
 }

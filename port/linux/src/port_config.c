@@ -1175,21 +1175,25 @@ static const struct config_setting config_settings[] =
 		"An automated test host's local players play with a profile, as a lobby's\n"
 		"do: player 1's last used, else the first saved; false: with none (the\n"
 		"default profile's settings, players 2-4 with no profile of their own)." },
-	{ "debug.capture_on_event", _config_string, "\"\"", "HALO_CAPTURE_ON_EVENT", _environment_value, _platform_all,
+	{ "debug.capture_on_event", _config_string, "\"\"", "HALO_CAPTURE_ON_EVENT", _environment_value, /* AE hook */
+		_platform_all,
 		"Test hook, off while empty: a comma list of game events that each save a\n"
 		"screenshot shortly after (screenshots/, a \"test capture\" line in the log):\n"
 		"hud (a HUD message), start, pickup, kill, death, postgame. A kind may need a\n"
 		"text: hud:Spree." },
-	{ "debug.test_verdict_file", _config_string, "\"\"", "HALO_TEST_VERDICT_FILE", _environment_value, _platform_all,
+	{ "debug.test_verdict_file", _config_string, "\"\"", "HALO_TEST_VERDICT_FILE", _environment_value, /* AE hook */
+		_platform_all,
 		"Test hook, off while empty: F7 (PASS) and F8 (FAIL) append a line \"<date> <time>\n"
 		"<test name> PASS|FAIL\" to this file and quit the game (the batch runner then\n"
 		"starts the next test); the name is debug.test_name." },
-	{ "debug.test_verdict_auto", _config_string, "\"\"", "HALO_TEST_VERDICT_AUTO", _environment_value, _platform_all,
+	{ "debug.test_verdict_auto", _config_string, "\"\"", "HALO_TEST_VERDICT_AUTO", _environment_value, /* AE hook */
+		_platform_all,
 		"With debug.test_verdict_file: \"PASS:30\" or \"FAIL:30\" writes that verdict by itself\n"
 		"30 seconds after the start (the batch runner's own checks, no key to press)." },
-	{ "debug.test_name", _config_string, "\"\"", "HALO_TEST_NAME", _environment_value, _platform_all,
+	{ "debug.test_name", _config_string, "\"\"", "HALO_TEST_NAME", _environment_value, /* AE hook */
+		_platform_all,
 		"The test's name in the line debug.test_verdict_file's keys write." },
-	{ "debug.network_test_all_weapons", _config_boolean, "false", "HALO_NETWORK_TEST_ALL_WEAPONS", _environment_value,
+	{ "debug.network_test_all_weapons", _config_boolean, "false", "HALO_NETWORK_TEST_ALL_WEAPONS", _environment_value, /* AE hook */
 		_platform_all,
 		"An automated test host runs cheat_all_weapons for its first local player a second after\n"
 		"each spawn (the map's weapon list around them), and logs the list." },
