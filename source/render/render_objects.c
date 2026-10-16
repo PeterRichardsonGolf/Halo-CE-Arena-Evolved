@@ -380,6 +380,7 @@ real_matrix4x3 const *first_person_legs_node_matrices(long object_index, real_ma
 /* port: port/linux/game/shield_color.c */
 real_rgb_color const *shield_color_colors(long unit_index, real_rgb_color const *colors);
 #include "ae_shield_fx.h" /* AE hook */
+#include "ae_shrink_weapons.h" /* AE hook */
 
 void render_object_shadows(
 	void)
@@ -487,6 +488,7 @@ static void render_object_list(
 		real_matrix4x3 const *node_matrices = legs ?
 			first_person_legs_node_matrices(object_index, object_get_node_matrices(object_index)) :
 			object_get_node_matrices(object_index);
+		node_matrices = ae_shrink_empty_weapon(object_index, node_matrices); /* AE hook */
 
 		if (!object_is_first_person_camera(object_index) || render.camera.mirrored || (legs && node_matrices))
 		{
