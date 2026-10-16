@@ -36,6 +36,10 @@ void platform_log(char const *format, ...);
 #define CORNER_STEPS 4
 #define LIT_ALPHA 0.94f
 #define SPENT_ALPHA 0.28f
+/* a loaded round: full strength with a light keyline, as the shield bar's fill reads (owner 10-15: thin rounds in a dark
+keyline read grey) */
+#define ROUND_LIT_ALPHA 1.0f
+#define ROUND_LIT_KEYLINE 0.40f
 #define MAXIMUM_POINTS 64
 #define AE_PI 3.14159265f
 /* the score strip's recipe (ae_score_strip.c outline4 / draw_bar), which every panel follows (owner 10-15: "match the
@@ -712,7 +716,7 @@ void ae_panel_draw_art(short art, real x, real y, real height, boolean lit, shor
 	texels[3][0] = strip->bottom_x - strip->half; texels[3][1] = strip->ink_y1;
 	sheet_piece(bitmap, &clip, sprite ? strip->bitmap : -1, strip->width, strip->height, texels, x, y, strip->ink_x0,
 		strip->ink_y0, scale,
-		lit ? tone : _ae_tone_blue, lit ? LIT_ALPHA : SPENT_ALPHA, lit ? KEYLINE_ALPHA : KEYLINE_ALPHA *
+		lit ? tone : _ae_tone_blue, lit ? ROUND_LIT_ALPHA : SPENT_ALPHA, lit ? ROUND_LIT_KEYLINE : KEYLINE_ALPHA *
 		(SPENT_ALPHA + 0.15f));
 }
 

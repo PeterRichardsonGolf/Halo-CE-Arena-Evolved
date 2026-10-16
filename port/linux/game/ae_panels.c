@@ -273,11 +273,10 @@ static void draw_ammo(short view, const struct ae_panel_model *m, const struct a
 		}
 	}
 
-	/* (the loaded rounds in the light tone: in HUD blue the thin rounds read dark on dark maps, owner 10-15; the spent
-	ones stay faint blue) */
+	/* (the loaded rounds in the shield bar's light blue, full strength, light keyline: ae_panel_draw_art; owner 10-15) */
 	for (i = 0; i < l->round_count; i++)
 		ae_panel_draw_art(m->art, l->round[i].x, l->round[i].y, l->round[i].height, l->round[i].lit,
-			m->rounds_red ? _ae_tone_red : _ae_tone_white);
+			m->rounds_red ? _ae_tone_red : _ae_tone_blue);
 	if (l->bar_shown)
 		ae_panel_draw_bar(&l->bar, s, m->bar_fill, m->bar_red ? _ae_tone_red : _ae_tone_blue,
 			m->bar_red ? _ae_tone_red : _ae_tone_blue, 0.0f, 0.0f);
