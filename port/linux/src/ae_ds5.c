@@ -423,11 +423,14 @@ static enum ae_ds5_write_result pad_send(struct pad *pad, SDL_Gamepad *gamepad,
 
 		if (pad->fd < 0)
 			return AE_DS5_WRITE_GONE;
-		pad->sequence = (pad->sequence + 1) & 0x0f;
 		written = write(pad->fd, report, size);
 		error = errno;
+		/* (the next sequence number only once this report went: a busy write is sent again with the same one) */
 		if (written == (ssize_t)size)
+		{
+			pad->sequence = (pad->sequence + 1) & 0x0f;
 			return AE_DS5_WRITE_SENT;
+		}
 		/* (a short write: tried again as the next window opens) */
 		result = written < 0 ? ae_ds5_write_result_of_errno(error) : AE_DS5_WRITE_BUSY;
 		if (result == AE_DS5_WRITE_GONE)

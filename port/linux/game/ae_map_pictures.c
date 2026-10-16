@@ -52,8 +52,12 @@ static struct
 {
 	char map_name[MAP_NAME_SIZE];
 	char path[PICTURE_PATH_SIZE];
-	/* whether the path is a picture the menus draw (looked for once) */
+	/* whether the path is a picture the menus draw (looked for again every few seconds while it is not: a picture
+	put in the previews folder while the game runs shows) */
 	boolean found;
+	/* (a file there the menus cannot draw: said once, not looked for again) */
+	boolean refused;
+	unsigned long looked_at;
 	boolean bitmap_failed;
 	struct bitmap_data bitmap;
 } pictures[MAXIMUM_PICTURE_MAPS];
@@ -77,14 +81,15 @@ static boolean map_file_path(char const *map_name, char *file, unsigned int file
 	return map_family_find(family, file, path, (long)size);
 }
 
-/* whether a file is a picture the menus draw */
-static boolean picture_usable(char const *path)
+/* whether a file is a picture the menus draw; *exists: whether there is a file at all */
+static boolean picture_usable(char const *path, boolean *exists)
 {
 	HANDLE file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 	unsigned char header[AE_MAP_PICTURE_HEADER_SIZE];
 	unsigned long file_size, file_size_high = 0, read = 0;
 	boolean usable;
 
+	*exists = file != INVALID_HANDLE_VALUE;
 	if (file == INVALID_HANDLE_VALUE)
 		return FALSE;
 	file_size = GetFileSize(file, &file_size_high);
@@ -97,6 +102,8 @@ static boolean picture_usable(char const *path)
 	return usable;
 }
 
+#define LOOK_AGAIN_MILLISECONDS 5000
+
 /* a map's entry (made the first time it is asked about), or NONE when the list is full */
 static short picture_entry(char const *map_name)
 {
@@ -105,19 +112,31 @@ static short picture_entry(char const *map_name)
 
 	for (index = 0; index < picture_count; index++)
 	{
-		if (!strcmp(pictures[index].map_name, map_name))
+		if (strcmp(pictures[index].map_name, map_name))
+			continue;
+		if (pictures[index].found || pictures[index].refused ||
+			system_milliseconds() - pictures[index].looked_at < LOOK_AGAIN_MILLISECONDS)
 			return index;
+		break;
 	}
-	if (picture_count == MAXIMUM_PICTURE_MAPS || strlen(map_name) >= MAP_NAME_SIZE)
-		return NONE;
-	index = picture_count++;
-	memset(&pictures[index], 0, sizeof(pictures[index]));
-	strcpy(pictures[index].map_name, map_name);
+	if (index == picture_count)
+	{
+		if (picture_count == MAXIMUM_PICTURE_MAPS || strlen(map_name) >= MAP_NAME_SIZE)
+			return NONE;
+		index = picture_count++;
+		memset(&pictures[index], 0, sizeof(pictures[index]));
+		strcpy(pictures[index].map_name, map_name);
+	}
+	pictures[index].looked_at = system_milliseconds();
+	pictures[index].path[0] = 0;
 	file[0] = 0;
 	if (map_file_path(map_name, file, sizeof(file), map_path, sizeof(map_path)) &&
 		ae_map_picture_path(map_path, file, pictures[index].path, sizeof(pictures[index].path)))
 	{
-		pictures[index].found = picture_usable(pictures[index].path);
+		boolean exists = FALSE;
+
+		pictures[index].found = picture_usable(pictures[index].path, &exists);
+		pictures[index].refused = exists && !pictures[index].found;
 		if (pictures[index].found)
 			platform_log("map pictures: %s shows %s", map_name, pictures[index].path);
 	}

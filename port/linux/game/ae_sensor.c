@@ -22,6 +22,7 @@ the centre is the HUD's blip placement (hud_unit.c's hud_calculate_point).
 #include "ae_hud_style.h"
 #include "ae_hud_text.h"
 #include "ae_panel_draw.h"
+#include "ae_panel_engine.h"
 #include "ae_panel_layout.h"
 #include "ae_score_strip.h"
 #include "ae_sensor.h"
@@ -180,7 +181,7 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	last[local_player_index].y0 = cy - 1.18f * r;
 	last[local_player_index].x1 = cx + 1.18f * r;
 	last[local_player_index].y1 = cy + 1.18f * r;
-	if (config_boolean("debug.ae_panel_log") && game_time_get() / 60 != logged[local_player_index])
+	if (ae_panel_engine_log_on() && game_time_get() / 60 != logged[local_player_index])
 	{
 		logged[local_player_index] = game_time_get() / 60;
 		platform_log("ae sensor: tick %ld view %d centre=%.1f,%.1f r=%.1f inner=%.1f half=%.1f vfov=%.4f view=%.0fx%.0f "

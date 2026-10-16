@@ -10,6 +10,7 @@ spec 14.15).
 #include <string.h>
 
 #include "cseries/cseries.h"
+#include "cseries/cseries_windows.h"
 #include "math/real_math.h"
 #include "game/game_engine.h"
 #include "game/players.h"
@@ -47,7 +48,18 @@ long game_time_get(void);
 static boolean hiding;
 static long held_back;
 static long faded_labels;  /* waypoint labels faded under a panel since the last log line */     /* CE's quads held back since the last AE draw (the log's "held") */
-static struct { boolean valid; struct ae_panel_rect rects[2]; short count; real scale; } last[MAXIMUM_LOCAL_PLAYERS];
+static struct { boolean valid; struct ae_panel_rect rects[2]; short count; real scale; unsigned long drawn_at; }
+	last[MAXIMUM_LOCAL_PLAYERS];
+
+/* (the last draw's rectangles, only while the panels are being drawn: a view whose panels are not drawn any more (its
+player dead or watching, the HUD hidden or CLASSIC, another game) does not lay CE's messages and labels out round an
+old one; a quarter second covers a frame's order and a slow frame) */
+#define LAST_DRAW_MILLISECONDS 250
+static boolean last_valid(short local_player_index)
+{
+	return (boolean)(last[local_player_index].valid &&
+		system_milliseconds() - last[local_player_index].drawn_at < LAST_DRAW_MILLISECONDS);
+}
 
 void ae_panels_hide_ce(boolean hide)
 {
@@ -149,7 +161,7 @@ static void log_layout(short view, const struct ae_panel_model *m, const struct 
 	long tick = game_time_get();
 	char const *state = config_string("debug.ae_panel_state");
 
-	if (!config_boolean("debug.ae_panel_log") || tick < 0 || tick / 60 == logged[view])
+	if (!ae_panel_engine_log_on() || tick < 0 || tick / 60 == logged[view])
 		return;
 	logged[view] = tick / 60;
 	platform_log("ae panels: tick %ld view %d state=%s number_box=%.1f,%.1f,%.1f,%.1f grenade_box=%.1f,%.1f,%.1f,%.1f "
@@ -171,7 +183,7 @@ static void log_layout(short view, const struct ae_panel_model *m, const struct 
 void ae_panels_rectangles(short local_player_index, struct ae_panel_rect out[2], short *count)
 {
 	*count = 0;
-	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || !last[local_player_index].valid)
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || !last_valid(local_player_index))
 		return;
 	memcpy(out, last[local_player_index].rects, sizeof(last[local_player_index].rects));
 	*count = last[local_player_index].count;
@@ -365,6 +377,7 @@ boolean ae_panels_draw(short local_player_index)
 		last[local_player_index].rects[0] = layout.shield_group;
 	last[local_player_index].scale = view.scale;
 	last[local_player_index].valid = TRUE;
+	last[local_player_index].drawn_at = system_milliseconds();
 	log_layout(local_player_index, &model, &layout);
 	held_back = 0;
 	return TRUE;
@@ -388,7 +401,7 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 		return 1.0f;
 	x0 = (real)bounds->x0 * ppu; y0 = (real)bounds->y0 * ppu;
 	x1 = (real)bounds->x1 * ppu; y1 = (real)bounds->y1 * ppu;
-	if (last[local_player_index].valid)
+	if (last_valid(local_player_index))
 		for (i = 0; i < last[local_player_index].count; i++)
 		{
 			r[0] = last[local_player_index].rects[i].x0; r[1] = last[local_player_index].rects[i].y0;
@@ -428,7 +441,7 @@ static boolean message_under_group[MAXIMUM_LOCAL_PLAYERS]; /* message_top moved 
 
 static boolean group_drawn(short local_player_index)
 {
-	return (boolean)(last[local_player_index].valid && last[local_player_index].count >= 2);
+	return (boolean)(last_valid(local_player_index) && last[local_player_index].count >= 2);
 }
 
 void ae_panels_message_scale_begin(short local_player_index, short x, short y)

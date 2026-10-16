@@ -19,6 +19,7 @@ the flag's last owned time; a client's from when it saw the flag dropped).
 #include <string.h>
 
 #include "cseries/cseries.h"
+#include "cseries/cseries_windows.h"
 #include "cutscene/cinematics.h"
 #include "game/game.h"
 #include "game/game_engine.h"
@@ -156,12 +157,32 @@ static void read_teams(long me_index, struct player_datum const *me, boolean tim
 	(void)me_index;
 }
 
+/* the scoreboard's ranking, sorted once a game tick (the scores change only at ticks) for every view and every use of
+it in a frame, and again a few times a second while the game's time stands (paused, the game over: its last tick's
+scores may have come after the sort); *count gets how many players it has */
+static struct ae_strip_statistic const *ranking_now(long *count)
+{
+	static struct ae_strip_statistic ranking[AE_STRIP_MAXIMUM_PLAYERS];
+	static long ranked_at = NONE, ranked_count;
+	static unsigned long sorted_at;
+	long now = game_time_get();
+
+	if (now != ranked_at || system_milliseconds() - sorted_at >= 200)
+	{
+		ranked_count = populate_statistic_buffer(ranking, AE_STRIP_RANKING, FALSE);
+		ranked_at = now;
+		sorted_at = system_milliseconds();
+	}
+	*count = ranked_count;
+	return ranking;
+}
+
 /* free for all: me, and the leader (the second when I lead), by the scoreboard's ranking */
 static void read_free_for_all(long me_index, struct player_datum const *me, boolean timed,
 	struct ae_strip_snapshot *out)
 {
-	static struct ae_strip_statistic ranking[AE_STRIP_MAXIMUM_PLAYERS];
-	long count = populate_statistic_buffer(ranking, AE_STRIP_RANKING, FALSE);
+	long count;
+	struct ae_strip_statistic const *ranking = ranking_now(&count);
 	long divisor = timed ? TICKS_PER_SECOND : 1;
 	long mine = NONE, other = NONE, i;
 
@@ -197,8 +218,8 @@ static void read_free_for_all(long me_index, struct player_datum const *me, bool
 /* the other side's player of a FFA strip (the leader, or the second): its index */
 static long other_ffa_player(long me_index)
 {
-	static struct ae_strip_statistic ranking[AE_STRIP_MAXIMUM_PLAYERS];
-	long count = populate_statistic_buffer(ranking, AE_STRIP_RANKING, FALSE);
+	long count;
+	struct ae_strip_statistic const *ranking = ranking_now(&count);
 
 	if (count <= 0)
 		return NONE;

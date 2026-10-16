@@ -1,6 +1,6 @@
-"""A map's own picture (port/linux/game/ae_map_pictures.c) is the PC menus' alone (owner, 0.3.0): the Xbox menus are
-upstream's and keep their pictures. Only the PC menus' code (menu_functions.c) asks for one, and the picture is
-refused unless display.menus is "pc"."""
+"""A map's own picture (port/linux/game/ae_map_pictures.c), in both menu styles (owner, 2026-10-16: the map pack's
+pictures show in the Xbox menus too). The PC menus' code (menu_functions.c) and the Xbox menus' map list
+(ui_map_list.c's picture index, which their map select and lobby read) ask for one; no menu style refuses it."""
 import re
 from pathlib import Path
 
@@ -19,18 +19,15 @@ def callers(name):
     return found
 
 
-def test_only_the_pc_menus_ask_for_a_map_picture():
-    assert callers("ae_map_picture_frame") == {"port/linux/game/menu_functions.c"}
+def test_the_pc_and_xbox_menus_ask_for_a_map_picture():
+    assert callers("ae_map_picture_frame") == {"port/linux/game/menu_functions.c", "port/linux/game/ui_map_list.c"}
 
 
-def test_the_picture_is_refused_outside_the_pc_menus():
+def test_no_menu_style_refuses_the_picture():
     text = (GAME / "ae_map_pictures.c").read_text()
     body = text[text.index("short ae_map_picture_frame("):]
     body = body[:body.index("\n}\n")]
-    guard = body.index('config_string("display.menus")')
-    assert re.search(r'_stricmp\(menus, "pc"\)\)\s*return NONE;', body)
-    # (the guard comes before any file is looked for)
-    assert guard < body.index("picture_entry(")
+    assert 'config_string("display.menus")' not in body
 
 
 def test_the_bitmap_and_png_are_only_this_list_s_and_the_art_s():

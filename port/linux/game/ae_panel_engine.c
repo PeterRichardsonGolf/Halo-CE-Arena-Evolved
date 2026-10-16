@@ -52,6 +52,8 @@ of this commit):
 
 int config_boolean(const char *name);
 const char *config_string(const char *name);
+unsigned long config_changes(void);
+static boolean reduced_motion_on(void);
 boolean network_game_distributed_client(void);
 void platform_log(char const *format, ...);
 long game_time_get(void);
@@ -97,8 +99,9 @@ is (150, 83), and the meters' right edge and top (1752.8, 81.0) where the right 
 #define SHIELD_RIGHT_DX 5.2f
 #define SHIELD_TOP_DY 2.0f
 
-/* the overshield's projection per player (by its absolute index): kept from rising unless the vitality rose */
-#define PLAYER_SLOTS 16
+/* the overshield's projection per player (by its absolute index): kept from rising unless the vitality rose (a slot
+for each of the most players a game has, so no two players share one) */
+#define PLAYER_SLOTS HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 static struct { real seconds, shield; long tick; } overshield[PLAYER_SLOTS];
 
 static struct unit_datum *player_unit(long player_index, long *unit_index, struct player_datum **player)
@@ -353,7 +356,7 @@ static boolean player_snapshot(long player_index, struct ae_panel_snapshot *out)
 	out->overshield_seconds = overshield_projection((short)((player_index & 0xFFFF) % PLAYER_SLOTS), unit);
 	ae_panel_trail_step(&trails[(player_index & 0xFFFF) % PLAYER_SLOTS], out->shield, game_time_get(), &out->shield_trail,
 		&out->shield_trail_alpha);
-	out->reduced_motion = (boolean)config_boolean("display.arena_menus_reduce_motion");
+	out->reduced_motion = reduced_motion_on();
 	return TRUE;
 }
 
@@ -602,7 +605,7 @@ void ae_panel_engine_debug_log(short local_player_index)
 		return;
 
 	/* (once in each 2 s of game time: the first frame drawn in it, as frames skip ticks) */
-	if (!config_boolean("debug.ae_panel_log") || tick < 0 || tick / 60 == logged_tick[local_player_index])
+	if (!ae_panel_engine_log_on() || tick < 0 || tick / 60 == logged_tick[local_player_index])
 		return;
 	logged_tick[local_player_index] = tick / 60;
 	tick = tick / 60 * 60;
@@ -633,4 +636,28 @@ void ae_panel_engine_debug_log(short local_player_index)
 			log_line(tick, who, iterator.datum_index, &snapshot, "");
 		}
 	}
+}
+
+/* the settings the views read every frame, read again only when a setting changed */
+static struct { unsigned long seen; boolean log, reduced_motion; } cached_settings = { (unsigned long)-1, FALSE, FALSE };
+
+static void settings_read(void)
+{
+	if (cached_settings.seen == config_changes())
+		return;
+	cached_settings.seen = config_changes();
+	cached_settings.log = (boolean)config_boolean("debug.ae_panel_log");
+	cached_settings.reduced_motion = (boolean)config_boolean("display.arena_menus_reduce_motion");
+}
+
+boolean ae_panel_engine_log_on(void)
+{
+	settings_read();
+	return cached_settings.log;
+}
+
+static boolean reduced_motion_on(void)
+{
+	settings_read();
+	return cached_settings.reduced_motion;
 }
