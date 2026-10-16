@@ -6765,6 +6765,7 @@ void game_engine_end_game(
 		game_engine_globals.postgame_timer = 7.0f;
 		game_engine_play_multiplayer_sound(_multiplayer_sound_game_over);
 		ui_widgets_close_all();
+		ae_test_capture("postgame", 9000); /* AE hook */
 	}
 
 	return;

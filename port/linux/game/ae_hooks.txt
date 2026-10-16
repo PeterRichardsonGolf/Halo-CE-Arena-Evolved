@@ -593,6 +593,7 @@ source/game/game_engine.c	#include "ae_test_hooks.h" /* AE hook */
 source/game/game_engine.c	ae_test_capture("start", 700); /* AE hook */
 source/game/game_engine.c	ae_test_capture_player_killed(dead_player_index, killing_player_index); /* AE hook */
 source/game/game_engine.c	ae_test_capture("postgame", global_network_game_server_get() ? 9000 : 2000); /* AE hook */
+source/game/game_engine.c	ui_widgets_close_all();\nae_test_capture("postgame", 9000); /* AE hook */
 source/interface/hud_messaging.c	#include "ae_test_hooks.h" /* AE hook */
 source/interface/hud_messaging.c	ae_test_capture_hud(message_text); /* AE hook */
 source/interface/hud_messaging.c	ae_test_capture("pickup", 500); /* AE hook */
