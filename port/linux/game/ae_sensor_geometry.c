@@ -41,9 +41,11 @@ void ae_sensor_blip_offset(real blip_x, real blip_y, real sensor_scale, real rim
 		*dx = *dy = 0.0f;
 		return;
 	}
-	/* (forward up the screen, left to its left) */
-	*dx = -blip_y / sensor_scale * rim_radius;
-	*dy = -blip_x / sensor_scale * rim_radius;
+	/* (CE's blip space, after its turn by the facing plus a quarter turn: forward is -y, left is +x; forward up
+	the screen, left to its left. Measured against the true bearings of moving players, 2026-10-15: the old
+	mapping drew every contact a quarter turn clockwise, one straight ahead at three o'clock) */
+	*dx = -blip_x / sensor_scale * rim_radius;
+	*dy = blip_y / sensor_scale * rim_radius;
 }
 
 void ae_sensor_sweep(real seconds, real rim_radius, real *radius, real *alpha)

@@ -41,9 +41,11 @@ int main(void)
 	AE_CHECK(!ae_sensor_side_dividers_shown(75.5f));
 
 	/* forward is up, left is left; the sensor's scale is the rim */
-	ae_sensor_blip_offset(32, 0, 32, 92, &dx, &dy); AE_NEAR(dx, 0, 0.001); AE_NEAR(dy, -92, 0.001);
-	ae_sensor_blip_offset(0, 16, 32, 92, &dx, &dy); AE_NEAR(dx, -46, 0.001); AE_NEAR(dy, 0, 0.001);
-	ae_sensor_blip_offset(0, -16, 32, 92, &dx, &dy); AE_NEAR(dx, 46, 0.001);
+	/* (left: +x; ahead: -y; behind: +y) */
+	ae_sensor_blip_offset(32, 0, 32, 92, &dx, &dy); AE_NEAR(dx, -92, 0.001); AE_NEAR(dy, 0, 0.001);
+	ae_sensor_blip_offset(0, -16, 32, 92, &dx, &dy); AE_NEAR(dx, 0, 0.001); AE_NEAR(dy, -46, 0.001);
+	ae_sensor_blip_offset(0, 16, 32, 92, &dx, &dy); AE_NEAR(dx, 0, 0.001); AE_NEAR(dy, 46, 0.001);
+	ae_sensor_blip_offset(-16, 0, 32, 92, &dx, &dy); AE_NEAR(dx, 46, 0.001);
 	ae_sensor_blip_offset(5, 5, 0, 92, &dx, &dy); AE_NEAR(dx, 0, 0.001); AE_NEAR(dy, 0, 0.001);  /* no scale */
 
 	ae_sensor_sweep(0.0f, 92, &r, &a); AE_NEAR(r, 0, 0.01); AE_NEAR(a, 0.30, 0.001);
