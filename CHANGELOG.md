@@ -116,6 +116,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   world; OpenCE's and ChupathingyCE's code too).
 - **Fixed:** with HUD STYLE AE the ammo group could vanish after an active camouflage pickup (it followed a piece of
   CE's weapon HUD drawn far above the view); it keeps its place.
+- **Fixed:** leaving the host's screen after a game (B) could leave only Halo's background, needing a restart; it opens
+  the main menu (from OpenCE pull request #374 by chestahh).
 - **Fixed:** a game set up without a map picked opens on the first map you have when Derelict's file is not there (it
   stopped with "couldn't find map 'carousel'" and the dirty disc screen).
 - **Fixed:** a Custom Edition map's weapon that gives off a little heat a round (the "Halo 2 for CE" maps' battle
