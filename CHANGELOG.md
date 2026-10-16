@@ -6,6 +6,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.1-beta - 2026-10-16
+
+A testing pre-release on top of 0.3.0-beta: cleaner high-res text (laid out by its own font, same-width digits), a
+straight carnage report, NHE SOUND FILTER, SHUFFLE in the PC lobby, bots that crouch in fights, map pictures in the Xbox
+menus too, and fixes. Same network version as 0.3.0-beta (29): they play together online. Linux 64-bit is the build
+played and tested; Windows is built by the same checks but was not test-played.
+
 - Bots at NORMAL and above crouch now and then while they fight, briefly and not again for a while (RECRUIT and EASY never do).
 - NHE SOUND FILTER (on NHE OPTIONS, your own setting): mutes the plasma pistol's charging hum and the needler's shots, as Halo 1:
   NHE's maps did, on any map, for you only.
