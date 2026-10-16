@@ -178,8 +178,7 @@ void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *sh
 
 /* TRIGGER STRENGTH (input.trigger_strength: light, normal, strong) as a percent of the table's strengths and
 amplitudes (AE_DS5_STRENGTH_LIGHT, 100, AE_DS5_STRENGTH_STRONG; anything else 100). LIGHT is near competitive: no
-effect resists the pull (holds, clicks, the overheat lock are off), vibrations stay at their lowest step and the motors
-at AE_DS5_RUMBLE_LIGHT percent. STRONG: every strength-like number x1.75 and at least one step up (kept 1-8), the motors
+adaptive trigger effect at all (holds, clicks, the overheat lock, vibrations), the motors at AE_DS5_RUMBLE_LIGHT percent. STRONG: every strength-like number x1.75 and at least one step up (kept 1-8), the motors
 at AE_DS5_RUMBLE_STRONG percent (kept 0-255) */
 #define AE_DS5_STRENGTH_LIGHT 25
 #define AE_DS5_STRENGTH_STRONG 175

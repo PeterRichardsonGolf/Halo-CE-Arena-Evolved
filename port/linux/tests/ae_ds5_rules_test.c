@@ -705,7 +705,7 @@ int main(void)
 		CHECK(rgb[0] == 0x28 && rgb[1] == 0x96 && rgb[2] == 0xff);
 	}
 
-	/* TRIGGER STRENGTH: LIGHT (competitive) resists nothing, vibrations at their lowest step, motors at 35 %; STRONG
+	/* TRIGGER STRENGTH: LIGHT (competitive) no trigger effect at all, motors at 35 %; STRONG
 	x1.75, at least a step up, kept 1-8, motors at 140 % kept 0-255; the player lights */
 	{
 		struct ae_ds5_weapon_state state;
@@ -729,12 +729,12 @@ int main(void)
 		state.firing = 1;
 		state.rate_of_fire = 15.0f;
 		ae_ds5_right_held(effect, &state, 25, text, sizeof(text));
-		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 1 at 15 Hz"));
+		CHECK(!strcmp(text, "firing: off") && effect[0] == 0x05);
 		state.firing = 0;
 		state.kind = AE_DS5_WEAPON_PLASMA_HEAT;
 		state.overheated = 1;
 		ae_ds5_right_held(effect, &state, 25, text, sizeof(text));
-		CHECK(effect[0] == 0x05 || effect[0] == 0x26);
+		CHECK(effect[0] == 0x05);
 		/* the pistol's shot: no snap back on LIGHT, the motor at 35 % (150 -> 53) */
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 25) == 0 && effect[0] == 0x05);
 		CHECK(rumble.left == 53 && rumble.ms == 60);

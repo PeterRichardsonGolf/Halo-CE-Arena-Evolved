@@ -233,8 +233,8 @@ static int scaled(int value, int percent)
 	return clamp(result, 1, 8);
 }
 
-/* LIGHT: nothing resists the pull (no hold, click or lock), as competitive players turn haptics off; the vibrations
-stay at their lowest step, so a shot or a state is still felt */
+/* LIGHT: no adaptive trigger effect at all (owner 10-16: "no adaptive triggers at all on light"), as competitive
+players turn them off; the rumble motors stay, at AE_DS5_RUMBLE_LIGHT percent, so a shot or a state is still felt */
 static int resists(int percent)
 {
 	return percent > AE_DS5_STRENGTH_LIGHT;
@@ -254,7 +254,7 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 	int frequency;
 
 	shape.b = (unsigned char)scaled(shape.b, strength);
-	if ((shape.mode == FEEDBACK || shape.mode == WEAPON) && !resists(strength))
+	if (!resists(strength))
 		shape.mode = OFF;
 
 	switch (shape.mode)
@@ -441,7 +441,7 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 	}
 	}
 	ae_ds5_rumble_scaled(rumble, strength);
-	if (shape.mode == OFF || ms <= 0 || ((shape.mode == FEEDBACK || shape.mode == WEAPON) && !resists(strength)))
+	if (shape.mode == OFF || ms <= 0 || !resists(strength))
 	{
 		ae_ds5_effect_off(effect);
 		return 0;
@@ -571,6 +571,8 @@ int ae_ds5_overcharge_flash(unsigned char rgb[3], long ticks)
 int ae_ds5_left_powerup(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_powerups const *powerups, int strength,
 	char *text, size_t text_size)
 {
+	if (!resists(strength))
+		return 0;
 	if (powerups->juggernaut_ticks >= 0 && powerups->juggernaut_ticks < JUGGERNAUT_BUZZ_TICKS)
 	{
 		ae_ds5_effect_vibration(effect, 0, scaled(7, strength), 25);
