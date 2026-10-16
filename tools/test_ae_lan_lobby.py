@@ -129,6 +129,22 @@ def test_last_person_leaves_with_lan_bots(cfg):
     after(rest, "network server disposed")
 
 
+def test_back_out_with_lan_bots_and_start(cfg):
+    """the owner's flow: the host alone with 3 LAN bots backs out of the lobby to Server Setup, comes back with START
+    GAME (focused there: player 1 and the bots join again), and START NOW starts the game"""
+    out = menus.out_dir(cfg, "lobby-leave")
+    result, text = play(cfg, out, "lan-bots-back-in", ["b", "wait", "wait", "wait", "a", "wait", "wait",
+                                                       "wait", "wait", "wait", "wait", "down", "wait", "down", "wait", "down", "wait",
+                                                       "down", "wait", "a", "wait",
+                                                       "wait", "wait", "wait", "wait", "wait"],
+                        lead=TO_LOBBY_ALONE, env={"HALO_BOTS": "3"}, exit_after=120)
+    assert result.get("status") == "PASS", result.get("why")
+    rest = after(text, "this machine left the lobby (4 players)")
+    rest = after(rest, "server added player from machine #0 at controller index #0 to the game")
+    rest = after(rest, "lan bots: bot 3 joined the lobby")
+    after(rest, "game rules:")
+
+
 # the main menu's MULTIPLAYER (a new profile's name screen, its Done), then Join Game > LAN
 TO_LAN_LIST = "down a a wait wait down a".split()
 HINT_LOG = "lan: no games found in 10 s and a firewall is on (ufw): No games found. On Linux a firewall can hide LAN games:"
