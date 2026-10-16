@@ -608,8 +608,9 @@ static float stepped(float value)
 
 void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size)
 {
-	/* (hud_unit.c's overcharge layers: none, then red, green, yellow, violet) */
-	static unsigned long const layers[5] = { 0, 0xff0000UL, 0x00ff00UL, 0xffff00UL, 0x7f00ffUL };
+	/* (the overshield's layers as the AE shield bar and the classic HUD shade them: pink, then grass green; then
+	hud_unit.c's yellow and violet) */
+	static unsigned long const layers[5] = { 0, 0xc6567bUL, 0x6fd04eUL, 0xffff00UL, 0x7f00ffUL };
 	unsigned long min_color = shield->min_color & 0xffffffUL, max_color = shield->max_color & 0xffffffUL;
 	unsigned long flash = shield->flash_color & 0xffffffUL, empty = shield->empty_color & 0xffffffUL;
 	float fill;

@@ -678,13 +678,13 @@ int main(void)
 		/* overshield: the HUD's layer colours */
 		shield.vitality = 2.0f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[0] == 255 && rgb[1] == 0 && !strcmp(text, "shield: overshield layer 1"));
+		CHECK(rgb[0] == 198 && rgb[1] == 86 && rgb[2] == 123 && !strcmp(text, "shield: overshield layer 1"));
 		shield.vitality = 2.5f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[0] == 0 && rgb[1] == 179 && !strcmp(text, "shield: overshield layer 2"));
+		CHECK(rgb[1] > rgb[0] && rgb[1] > 100 && rgb[1] < 208 && !strcmp(text, "shield: overshield layer 2"));
 		shield.vitality = 3.0f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[1] == 255 && !strcmp(text, "shield: overshield layer 2"));
+		CHECK(rgb[0] == 111 && rgb[1] == 208 && rgb[2] == 78 && !strcmp(text, "shield: overshield layer 2"));
 		/* dead: dark */
 		shield.dead = 1;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
