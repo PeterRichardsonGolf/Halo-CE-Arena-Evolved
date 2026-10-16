@@ -4,7 +4,13 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
-## Unreleased
+## 0.3.2-beta - 2026-10-16
+
+A testing pre-release on top of 0.3.1-beta: the "Halo 2 for CE" maps' bullets hurt again, CALLOUTS no longer tell spawn
+times a gametype hides, a wider DualSense TRIGGER STRENGTH (LIGHT a hair trigger), HUD AREA moves the AE panels too, the
+map layout engine (no layout ships yet), and fixes from two reviews. Same network version as 0.3.0-beta and 0.3.1-beta
+(29): they play together online. Linux 64-bit is the build played and tested; Windows is built by the same checks but
+was not test-played.
 
 - Network: with `network.legacy_table_fetch` off (the default), no signed legacy table is taken from another machine
   or read from the cache either, so Arena Evolved keeps its own network numbers as the README says.
