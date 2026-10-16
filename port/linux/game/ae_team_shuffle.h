@@ -19,7 +19,7 @@ int ae_team_shuffle_shown(void);
 #define AE_TEAM_SHUFFLE_MAXIMUM 128
 
 /* the teams for count players in their lobby order, dealt by a shuffle from seed: teams[i] is 0 or 1, half each
-(red the extra one) (pure: ae_team_shuffle_rules.c) */
+(an odd one out on either, dealt too) (pure: ae_team_shuffle_rules.c) */
 void ae_team_shuffle_deal(int count, unsigned long seed, signed char *teams);
 
 #endif

@@ -15,7 +15,7 @@ static void test_deal(void)
 {
 	signed char teams[AE_TEAM_SHUFFLE_MAXIMUM];
 	signed char first[16];
-	int count, index, red, differs = 0;
+	int count, index, red, differs = 0, extra_red = 0, extra_blue = 0;
 	unsigned long seed;
 
 	for (count = 1; count <= 20; count++)
@@ -30,10 +30,17 @@ static void test_deal(void)
 				CHECK(teams[index] == 0 || teams[index] == 1);
 				red += teams[index] == 0;
 			}
-			CHECK(red == (count + 1) / 2);
+			/* (half each; an odd one out on either side, at random: one person alone is red or blue) */
+			CHECK(red == count / 2 || red == (count + 1) / 2);
+			if (count % 2)
+			{
+				extra_red += red > count / 2;
+				extra_blue += red == count / 2;
+			}
 			CHECK(teams[count] == 9);
 		}
 	}
+	CHECK(extra_red > 100 && extra_blue > 100);
 	ae_team_shuffle_deal(16, 1, first);
 	for (seed = 2; seed < 20; seed++)
 	{

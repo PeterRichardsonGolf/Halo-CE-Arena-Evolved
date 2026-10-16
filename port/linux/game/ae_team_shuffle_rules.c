@@ -28,7 +28,9 @@ void ae_team_shuffle_deal(int count, unsigned long seed, signed char *teams)
 		order[index] = order[other];
 		order[other] = held;
 	}
-	/* (the first half of the shuffled order red, the rest blue) */
+	/* (the first half of the shuffled order on one team, the rest on the other; which team has the first half, and so
+	an odd one out, is dealt too) */
+	seed = (seed * 1664525ul + 1013904223ul) & 0xFFFFFFFFul;
 	for (index = 0; index < count; index++)
-		teams[order[index]] = (signed char)(index < (count + 1) / 2 ? 0 : 1);
+		teams[order[index]] = (signed char)((index < (count + 1) / 2 ? 0 : 1) ^ (int)((seed >> 16) & 1));
 }

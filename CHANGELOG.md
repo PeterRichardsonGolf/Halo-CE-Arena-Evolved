@@ -6,6 +6,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- SHUFFLE puts an odd one out on red or blue at random (it was always red).
 - PC lobby with LAN bots: the host's last person pressing B (to change the map or gametype) left an empty lobby that
   could not be backed out of, because the bots counted as that PC's players. Now that B leaves as the last player's
   does: the bots go too and you are back on Server Setup.
