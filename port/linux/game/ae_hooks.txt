@@ -617,3 +617,8 @@ port/linux/src/port_config.c	{ "display.coordinates", _config_boolean, "false", 
 source/main/main.c	#include "ae_coordinates.h" /* AE hook */
 source/main/main.c	if (ae_coordinates_shown()) /* AE hook */\nreturn TRUE;
 source/main/main.c	ae_coordinates_append(line, (long)sizeof(line)); /* AE hook */
+# the PC map list's WARM-UP group: octagon and octagon_b first after the Xbox's, named [WARM-UP] (ae_map_warm_up.c)
+port/linux/game/ui_map_list.c	#include "ae_map_warm_up.h" /* AE hook */
+port/linux/game/ui_map_list.c	#include <stddef.h> /* AE hook */
+port/linux/game/ui_map_list.c	add_entry(community[index], ae_map_warm_up_name(community[index], name, 0), ae_map_warm_up_name(community[index], name, 1), ae_map_warm_up_description(community[index], L"Community map"), NONE, 13, community[index]); /* AE hook */
+port/linux/game/ui_map_list.c	ae_map_warm_up_first(ui_map_list + XBOX_MAP_COUNT, ui_map_list_count_value - XBOX_MAP_COUNT, sizeof(ui_map_list[0]), offsetof(struct ui_map_entry, map_name)); /* AE hook */

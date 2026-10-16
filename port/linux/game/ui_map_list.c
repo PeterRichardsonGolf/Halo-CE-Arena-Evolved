@@ -50,6 +50,8 @@ asks whether the map is in its family's folders (ui_map_list_family_present).
 #include "halo_custom_maps.h"
 #include "map_share.h" /* port: a map named for its hash (map sharing) */
 #include "ae_map_pictures.h" /* AE hook */
+#include "ae_map_warm_up.h" /* AE hook */
+#include <stddef.h> /* AE hook */
 
 #include "bitmaps/bitmap_group.h"
 #include "tag_files/tag_groups.h"
@@ -854,9 +856,10 @@ void ui_map_list_refresh(
 			name[character] = 0;
 			/* (its picture the loaded ui.map's of its name, else that
 			ui.map's unknown level's: ui_map_list_xbox_picture) */
-			add_entry(community[index], name, name, L"Community map", NONE, 13, community[index]);
+			add_entry(community[index], ae_map_warm_up_name(community[index], name, 0), ae_map_warm_up_name(community[index], name, 1), ae_map_warm_up_description(community[index], L"Community map"), NONE, 13, community[index]); /* AE hook */
 		}
 	}
+	ae_map_warm_up_first(ui_map_list + XBOX_MAP_COUNT, ui_map_list_count_value - XBOX_MAP_COUNT, sizeof(ui_map_list[0]), offsetof(struct ui_map_entry, map_name)); /* AE hook */
 	for (family = _map_family_custom_edition; family < NUMBER_OF_MAP_FAMILIES; family++)
 	{
 		extern int platform_ce_tag_cache_ready;
