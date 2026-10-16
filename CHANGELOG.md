@@ -13,6 +13,10 @@ AE JUGGERNAUT as in Halo 2, the AE BR gametypes, the PC menus' own pictures and 
 ChupathingyCE 0.7.5b and OpenCE build-206 (network version 29: it does not play online with 0.2.5-beta and older).
 Linux 64-bit is the build played and tested; Windows is built by the same checks but was not test-played.
 
+- From ChupathingyCE 0.7.5c/d: Delta Stats send players' names, never a hardware ID (an OpenCE player only their name,
+  team, score, place, kills and deaths); a game listed under every network version shows once in Online Games; a
+  refused Custom Edition map says why on screen, not the damaged disc text, and the tag cache refusal names the room
+  needed and free; a private game's invite is never on the game list, as a password game's was not.
 - **PS5 DualSense: adaptive triggers, lightbar and player lights.** R2 has a profile for each weapon, from the
   weapon's own numbers, in two families: human weapons are mechanical (clicks and kicks, a pulse on the heavy left
   rumble motor at each shot), Covenant weapons are energy (resistance building with heat or charge, a pulse on the

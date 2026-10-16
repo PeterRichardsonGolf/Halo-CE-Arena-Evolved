@@ -851,10 +851,11 @@ int p2p_hosting_open_invite(char *text, int size)
 {
 	int result;
 
-	/* (one critical section: a password set meanwhile, which makes a new
-	invite under the same lock, is seen with that invite or not at all) */
+	/* (a public game without a password only: a private game's invite is never listed either, as ChupathingyCE 0.7.5d's
+	07daa3ce8; one critical section: a password set meanwhile, which makes a new invite under the same lock, is seen
+	with that invite or not at all) */
 	pthread_mutex_lock(&p2p_lock);
-	result = !lobby.has_password && p2p_hosting_invite_locked(text, size);
+	result = lobby.public && !lobby.has_password && p2p_hosting_invite_locked(text, size);
 	pthread_mutex_unlock(&p2p_lock);
 	if (!result && size > 0)
 		text[0] = 0;
