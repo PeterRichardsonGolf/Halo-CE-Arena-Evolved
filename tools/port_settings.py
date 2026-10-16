@@ -1679,12 +1679,13 @@ def _lobby() -> list:
                      # moves the focus to the first shown, START NOW; at the end
                      # it traps none)
                      # (AE: SHUFFLE first, the host's in a team game (ae_team_shuffle.c), hidden as SWITCH
-                     # TEAM is; the five 124 wide, 128 apart)
-                     [f'<child widget="{base}/lobby_button_shuffle" x="2" y="1"/>',
-                      f'<child widget="{base}/lobby_button_team" x="130" y="1"/>',
-                      f'<child widget="{base}/lobby_button_start" x="258" y="1"/>',
-                      f'<child widget="{base}/lobby_button_add" x="386" y="1"/>',
-                      f'<child widget="{base}/lobby_button_leave" x="514" y="1"/>'])
+                     # TEAM is; the five 128 wide (the button picture's own width: narrower clips its right end),
+                     # side by side across the 640)
+                     [f'<child widget="{base}/lobby_button_shuffle" x="0" y="1"/>',
+                      f'<child widget="{base}/lobby_button_team" x="128" y="1"/>',
+                      f'<child widget="{base}/lobby_button_start" x="256" y="1"/>',
+                      f'<child widget="{base}/lobby_button_add" x="384" y="1"/>',
+                      f'<child widget="{base}/lobby_button_leave" x="512" y="1"/>'])
     for key, caption, handlers in (
         ("add", "ADD PLAYER", ['<on event="a" run="port lobby add player"/>',
                                '<on event="start" run="port lobby add player"/>']),
@@ -1695,7 +1696,7 @@ def _lobby() -> list:
                             '<on event="start" run="mouse emit back event"/>']),
         ("shuffle", "SHUFFLE", ['<on event="a" run="ae lobby shuffle teams"/>',
                                 '<on event="start" run="ae lobby shuffle teams"/>'])):
-        lines += _widget(f"{base}/lobby_button_{key}", [("type", "text"), ("width", 124), ("height", 24),
+        lines += _widget(f"{base}/lobby_button_{key}", [("type", "text"), ("width", 128), ("height", 24),
                                                        ("bitmap", "bitmaps/text_button_background"),
                                                        ("text", caption), ("font", "ui\\small_ui"),
                                                        ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)],
