@@ -1,0 +1,45 @@
+"""Release audit (weapon pack plan Task 18): every debug.* setting in port/linux/src/port_config.c is off by default,
+so a release build plays as a player expects with no config file and no environment. Off is false, 0, an empty
+string, or one of the rows listed in INERT with the reason its default does nothing on its own."""
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+CONFIG = ROOT / "port" / "linux" / "src" / "port_config.c"
+
+ROW = re.compile(r'\{\s*"(debug\.[a-z0-9_.]+)",\s*(_config_\w+),\s*("(?:[^"\\]|\\.)*")')
+OFF = {'"false"', '"0"', '"0.0"', '"\\"\\""'}
+# rows whose default is not off but which do nothing unless another setting turns them on (or are not a test aid)
+INERT = {
+    "debug.network_test_start": "seconds into a debug.network_test game (none unless debug.network_test is set)",
+    "debug.network_test_local_players": "local players of a debug.network_test host",
+    "debug.network_test_profiles": "profiles of a debug.network_test host's players",
+    "debug.telnet_console_port": "the port of debug.telnet_console (off)",
+    "debug.gpu_flush_draws": "-1 is off",
+    "debug.gpu_trace_frame": "-1 is off",
+    "debug.screenshot_format": "the format of debug.screenshot_every's screenshots (0: none)",
+    "debug.memory_watch": "Android's write tracking by page protection, upstream's normal mode (not a test aid)",
+    "debug.profile_record_when": "when debug.profile_record (off) starts; profiling builds only",
+    "debug.profile_memory": "debug.profile_record's buffer; profiling builds only",
+}
+
+
+def rows():
+    return ROW.findall(CONFIG.read_text())
+
+
+def test_rows_found():
+    names = [name for name, _, _ in rows()]
+    assert len(names) > 50
+    assert len(names) == len(set(names)), "a debug.* row is listed twice"
+    assert CONFIG.read_text().count('{ "debug.') == len(names), "a debug.* row the pattern does not read"
+
+
+def test_every_debug_row_is_off_by_default():
+    on = [(name, default) for name, _, default in rows() if default not in OFF and name not in INERT]
+    assert not on, f"debug.* rows on by default in a release: {on}"
+
+
+def test_inert_rows_still_exist():
+    names = {name for name, _, _ in rows()}
+    assert set(INERT) <= names, set(INERT) - names
