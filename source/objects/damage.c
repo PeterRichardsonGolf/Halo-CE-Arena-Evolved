@@ -134,6 +134,7 @@ symbols in this file:
 #include "scenario/scenario.h"
 #include "tag_files/tag_files.h"
 #include "ae_shield_fx.h" /* AE hook */
+#include "ae_bots.h" /* AE hook */
 static short ae_blood; /* AE hook */
 #include "text/draw_string.h"
 #include "units/unit_definitions.h"
@@ -1543,6 +1544,7 @@ void object_cause_damage(
 
 	/* port: a player who is gone is credited with nothing */
 	damage_data_validate_owner(damage);
+	ae_bots_damage_note(damage->owner_player_index, object_index); /* AE hook */
 
 	damage_effect = damage_effect_definition_get(damage->definition_index);
 	damage_definition = &damage_effect->damage;
