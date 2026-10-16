@@ -638,3 +638,6 @@ port/linux/src/port_config.c	{ "audio.nhe_sound_filter", _config_boolean, "false
 source/sound/sound_manager.c	#include "ae_sound_filter.h" /* AE hook */
 source/sound/sound_manager.c	gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
 source/sound/sound_manager.c	properties.gain *= ae_sound_filter_gain(sound->definition_index); /* AE hook */
+# SAME-WIDTH DIGITS in the high-res text: a column of numbers (the carnage report) lines up (ae_text_digits.c)
+port/linux/src/text_hires.c	#include "ae_text_digits.h" /* AE hook */
+port/linux/src/text_hires.c	ae_text_tabular_digit(&fonts[font].info, code, fonts[font].scale * fonts[font].narrowing, pixels_x, &glyphs[slot].advance, &glyphs[slot].left); /* AE hook */

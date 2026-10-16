@@ -30,6 +30,7 @@ scale (a window made fullscreen) or a full atlas starts it over.
 #define STBTT_STATIC
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "../../third_party/stb/stb_truetype.h"
+#include "ae_text_digits.h" /* AE hook */
 
 /* (the Xbox maps' tags and a Custom Edition loc.map's, which share names,
 each at its oversamples) */
@@ -274,6 +275,7 @@ int text_hires_glyph(long font, unsigned long code, struct text_hires_glyph *gly
 		glyphs[slot].left = (short)x0;
 		glyphs[slot].top = (short)y0;
 		glyphs[slot].advance = advance * fonts[font].scale * fonts[font].narrowing;
+		ae_text_tabular_digit(&fonts[font].info, code, fonts[font].scale * fonts[font].narrowing, pixels_x, &glyphs[slot].advance, &glyphs[slot].left); /* AE hook */
 		if (width > 0 && height > 0)
 		{
 			pack_x += width + 2 * ATLAS_PADDING;

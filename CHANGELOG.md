@@ -9,6 +9,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots at NORMAL and above crouch now and then while they fight, briefly and not again for a while (RECRUIT and EASY never do).
 - NHE SOUND FILTER (on NHE OPTIONS, your own setting): mutes the plasma pistol's charging hum and the needler's shots, as Halo 1:
   NHE's maps did, on any map, for you only.
+- Numbers line up in their columns (the carnage report): every digit of the high-res text is drawn the same width.
 - SHUFFLE in the PC lobby (the host, team games): one press deals everyone onto the two teams at random, evenly.
 - The map list has a WARM-UP group: Octagon and Octagon B (when installed) come first after the stock maps, marked
   [WARM-UP] and described as warm-up maps for Slayer.
