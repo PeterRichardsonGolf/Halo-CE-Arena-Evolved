@@ -439,14 +439,37 @@ static void bar_band(const struct ae_panel_para *bar, real w, real f0, real f1, 
 	ae_hud_fill_quad(points, colors);
 }
 
+static void draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
+	real overshield1, real overshield2, real fade, boolean from_right);
+
 void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
 	real overshield1, real overshield2)
 {
-	ae_panel_draw_bar_faded(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, 1.0f);
+	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, 1.0f, FALSE);
 }
 
+/* (the shield's bar: it fills from its right end and drains toward it, as CE's shield meter does, its overshield
+layers too; owner 10-15) */
 void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
 	real overshield1, real overshield2, real fade)
+{
+	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, fade, TRUE);
+}
+
+/* a band from the bar's left end (or its right end) over this much of its length */
+static void bar_span(const struct ae_panel_para *bar, real w, real amount, boolean from_right, real t0, real t1,
+	const real_argb_color *color)
+{
+	if (amount > 1.0f)
+		amount = 1.0f;
+	if (from_right)
+		bar_band(bar, w, 1.0f - amount, 1.0f, t0, t1, color);
+	else
+		bar_band(bar, w, 0.0f, amount, t0, t1, color);
+}
+
+static void draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
+	real overshield1, real overshield2, real fade, boolean from_right)
 {
 	real corners[4][2];
 	real w, under;
@@ -461,7 +484,7 @@ void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real f
 	if (fill > 0.0f)
 	{
 		tone_color(fill_tone, FILL_ALPHA * fade, &color);
-		bar_band(bar, w, 0.0f, fill > 1.0f ? 1.0f : fill, 0.0f, 1.0f, &color);
+		bar_span(bar, w, fill, from_right, 0.0f, 1.0f, &color);
 	}
 	/* the overshield's layers in the classic HUD's colours (its first layer pink, the second grass green over it; the
 	game's own red/green, as the shipped HUD tags shade them), each over the one below, a light edge on top (owner
@@ -471,18 +494,18 @@ void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real f
 		real height = (bar->y1 - bar->y0) - 2.0f * w;
 
 		tone_color(_ae_tone_overshield1, FILL_ALPHA, &color);
-		bar_band(bar, w, 0.0f, overshield1, 0.0f, 1.0f, &color);
+		bar_span(bar, w, overshield1, from_right, 0.0f, 1.0f, &color);
 		tone_color(_ae_tone_white, FILL_ALPHA * 0.6f, &color);
-		bar_band(bar, w, 0.0f, overshield1, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
+		bar_span(bar, w, overshield1, from_right, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	if (overshield2 > 0.0f)
 	{
 		real height = (bar->y1 - bar->y0) - 2.0f * w;
 
 		tone_color(_ae_tone_overshield2, FILL_ALPHA, &color);
-		bar_band(bar, w, 0.0f, overshield2, 0.0f, 1.0f, &color);
+		bar_span(bar, w, overshield2, from_right, 0.0f, 1.0f, &color);
 		tone_color(_ae_tone_white, FILL_ALPHA * 0.6f, &color);
-		bar_band(bar, w, 0.0f, overshield2, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
+		bar_span(bar, w, overshield2, from_right, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	/* the dividers between 5 cells */
 	tone_color(_ae_tone_dark, STRIP_DIVIDER_ALPHA, &dark);
