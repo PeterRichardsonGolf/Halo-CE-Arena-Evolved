@@ -114,6 +114,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   NHE's, TRAINING and your own.
 - **Fixed:** with active camouflage, the first-person weapon went into a nearby wall (it was depth-tested against the
   world; OpenCE's and ChupathingyCE's code too).
+- **Fixed:** with HUD STYLE AE the ammo group could vanish after an active camouflage pickup (it followed a piece of
+  CE's weapon HUD drawn far above the view); it keeps its place.
 - **Fixed:** a game set up without a map picked opens on the first map you have when Derelict's file is not there (it
   stopped with "couldn't find map 'carousel'" and the dirty disc screen).
 - **Fixed:** a Custom Edition map's weapon that gives off a little heat a round (the "Halo 2 for CE" maps' battle

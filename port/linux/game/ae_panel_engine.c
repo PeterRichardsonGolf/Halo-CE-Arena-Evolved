@@ -357,6 +357,10 @@ boolean ae_panel_engine_snapshot(short local_player_index, struct ae_panel_snaps
 	return player_snapshot(view_player_index(local_player_index), out);
 }
 
+/* each view's last ammo corner inside its top-left quarter (ae_panel_engine_view) */
+static rectangle2d good_corner[MAXIMUM_LOCAL_PLAYERS];
+static boolean good_corner_known[MAXIMUM_LOCAL_PLAYERS];
+
 boolean ae_panel_engine_view(short local_player_index, struct ae_panel_view *out)
 {
 	real ppu = ae_hud_pixels_per_unit();
@@ -370,7 +374,29 @@ boolean ae_panel_engine_view(short local_player_index, struct ae_panel_view *out
 	out->view_height = (real)height * ppu;
 	/* the ammo group's origin: where CE's weapon HUD put its top-left elements in this view (hud.c's
 	hud_top_left_extent, kept by hud_item_timers.c) */
-	if (hud_item_timers_ae_corner(local_player_index, &corner))
+	/* (a corner outside the view's top-left quarter is not the ammo's: after an active camouflage pickup one of CE's
+	weapon HUD pieces sat thousands of pixels above the view and the ammo group went with it (owner 10-15, "ammo
+	disappeared"); the last good corner of this view stands in) */
+	if (hud_item_timers_ae_corner(local_player_index, &corner) &&
+		corner.x0 >= 0 && corner.x0 < width / 2 && corner.y0 >= 0 && corner.y0 < height / 2)
+	{
+		if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS)
+		{
+			good_corner[local_player_index] = corner;
+			good_corner_known[local_player_index] = TRUE;
+		}
+	}
+	else if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		good_corner_known[local_player_index] &&
+		good_corner[local_player_index].x0 < width / 2 && good_corner[local_player_index].y0 < height / 2)
+	{
+		corner = good_corner[local_player_index];
+	}
+	else
+	{
+		corner.x0 = NONE;
+	}
+	if (corner.x0 != NONE)
 	{
 		out->ammo_origin_x = (real)corner.x0 * ppu + AMMO_ORIGIN_DX * out->scale;
 		out->ammo_origin_y = (real)corner.y0 * ppu + AMMO_ORIGIN_DY * out->scale;
