@@ -489,10 +489,9 @@ source/interface/motion_sensor.c	if (ae_sensor_take_blip(&blip_position, fade, b
 source/interface/motion_sensor.c	if (!ae_sensor_takes_blips()) /* AE hook */\nrasterizer_hud_motion_sensor_blip_end(&center_point, sweep_theta);
 source/interface/motion_sensor.c	if (!ae_sensor_takes_blips()) /* AE hook */\nrasterizer_hud_motion_sensor_blip_begin();
 source/interface/hud_unit.c	#include "ae_sensor.h" /* AE hook */
-source/interface/hud_unit.c	ae_panels_hide_ce(ae_sensor_takes_blips()); /* AE hook */
+source/interface/hud_unit.c	ae_panels_hide_ce(ae_sensor_active()); /* AE hook */
 source/interface/hud_unit.c	ae_panels_hide_ce(FALSE); /* AE hook */
 source/interface/hud_unit.c	ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
-port/linux/src/port_config.c	{ "debug.ae_sensor_with_ce", _config_boolean, "false", "HALO_DEBUG_AE_SENSOR_WITH_CE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.ae_panel_seat", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_SEAT", _environment_value, /* AE hook */\n_platform_all,
 source/interface/hud_item_timers.c	#include "ae_panels.h" /* AE hook */
 source/interface/hud_item_timers.c	hud_waypoint_block_fade *= ae_panels_label_alpha(render.local_player_index, &block->bounds); /* AE hook */

@@ -18,7 +18,7 @@ int main(void)
 {
 	/* CE's FOV 70 is 70 degrees across a 4:3 view: 55.4 vertical; on a 16:9 view the wedge's half-angle is 43 */
 	real vertical70 = (real)(2.0 * atan(tan(DEGREES(35.0)) * 3.0 / 4.0));
-	real half, dx, dy, r, a;
+	real half;
 	char label[8];
 
 	half = ae_sensor_wedge_half_angle(vertical70, 1920, 1080);
@@ -39,18 +39,6 @@ int main(void)
 	AE_CHECK(ae_sensor_side_dividers_shown(43.0f));
 	AE_CHECK(ae_sensor_side_dividers_shown(75.0f));
 	AE_CHECK(!ae_sensor_side_dividers_shown(75.5f));
-
-	/* forward is up, left is left; the sensor's scale is the rim */
-	/* (left: +x; ahead: -y; behind: +y) */
-	ae_sensor_blip_offset(32, 0, 32, 92, &dx, &dy); AE_NEAR(dx, -92, 0.001); AE_NEAR(dy, 0, 0.001);
-	ae_sensor_blip_offset(0, -16, 32, 92, &dx, &dy); AE_NEAR(dx, 0, 0.001); AE_NEAR(dy, -46, 0.001);
-	ae_sensor_blip_offset(0, 16, 32, 92, &dx, &dy); AE_NEAR(dx, 0, 0.001); AE_NEAR(dy, 46, 0.001);
-	ae_sensor_blip_offset(-16, 0, 32, 92, &dx, &dy); AE_NEAR(dx, 46, 0.001);
-	ae_sensor_blip_offset(5, 5, 0, 92, &dx, &dy); AE_NEAR(dx, 0, 0.001); AE_NEAR(dy, 0, 0.001);  /* no scale */
-
-	ae_sensor_sweep(0.0f, 92, &r, &a); AE_NEAR(r, 0, 0.01); AE_NEAR(a, 0.30, 0.001);
-	ae_sensor_sweep(2.0999f, 92, &r, &a); AE_NEAR(r, 92, 0.1); AE_NEAR(a, 0.12, 0.001);
-	ae_sensor_sweep(2.1f + 1.05f, 92, &r, &a); AE_NEAR(r, 46, 0.1);                 /* every 2.1 s */
 
 	ae_sensor_range_label(20.0f, label); AE_CHECK(!strcmp(label, "15m"));          /* CE's own art: 20 units = 15m */
 	ae_sensor_range_label(-3.0f, label); AE_CHECK(!strcmp(label, "0m"));

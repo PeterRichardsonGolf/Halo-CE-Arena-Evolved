@@ -1203,7 +1203,7 @@ void hud_render_unit_interface(
 					short draw_flags = 0;
 					point2d corner;
 
-					ae_panels_hide_ce(ae_sensor_takes_blips()); /* AE hook */
+					ae_panels_hide_ce(ae_sensor_active()); /* AE hook */
 					absolute_placement.corner = _hud_anchor_bottom_left;
 					SET_FLAG(
 						draw_flags,
@@ -1262,12 +1262,12 @@ void hud_render_unit_interface(
 						hud_split_screen_layout(),
 						0.0f,
 						&corner);
+					ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
 					motion_sensor_draw_screen(
 						local_player_index,
 						hud_split_screen_layout(),
 						&corner);
 					ae_panels_hide_ce(FALSE); /* AE hook */
-					ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
 				}
 
 				{

@@ -34,28 +34,6 @@ boolean ae_sensor_side_dividers_shown(real half_angle_degrees)
 	return (boolean)(half_angle_degrees <= AE_SENSOR_SIDE_DIVIDERS_MAX);
 }
 
-void ae_sensor_blip_offset(real blip_x, real blip_y, real sensor_scale, real rim_radius, real *dx, real *dy)
-{
-	if (sensor_scale <= 0.0f)
-	{
-		*dx = *dy = 0.0f;
-		return;
-	}
-	/* (CE's blip space, after its turn by the facing plus a quarter turn: forward is -y, left is +x; forward up
-	the screen, left to its left. Measured against the true bearings of moving players, 2026-10-15: the old
-	mapping drew every contact a quarter turn clockwise, one straight ahead at three o'clock) */
-	*dx = -blip_x / sensor_scale * rim_radius;
-	*dy = blip_y / sensor_scale * rim_radius;
-}
-
-void ae_sensor_sweep(real seconds, real rim_radius, real *radius, real *alpha)
-{
-	real t = (real)fmod(seconds > 0.0f ? seconds : 0.0f, AE_SENSOR_SWEEP_PERIOD) / AE_SENSOR_SWEEP_PERIOD;
-
-	*radius = rim_radius * t;
-	*alpha = 0.30f - 0.18f * t;
-}
-
 void ae_sensor_range_label(real range_world_units, char *out)
 {
 	real metres = range_world_units * METRES_PER_WORLD_UNIT;

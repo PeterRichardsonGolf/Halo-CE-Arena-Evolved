@@ -1092,10 +1092,6 @@ static const struct config_setting config_settings[] =
 		"group's width; bigicons draws the pictures 1.36 x taller; ce draws the\n"
 		"lines as before (CE's own, smaller). A log line of the lines' places\n"
 		"every 2 seconds." },
-	{ "debug.ae_sensor_with_ce", _config_boolean, "false", "HALO_DEBUG_AE_SENSOR_WITH_CE", _environment_value, /* AE hook */
-		_platform_all,
-		"For the automated tests of the AE motion sensor (ae_sensor.c): CE's own\n"
-		"sensor drawn as well, so that AE's blips can be laid on CE's." },
 	{ "debug.ae_panel_seat", _config_string, "\"\"", "HALO_DEBUG_AE_PANEL_SEAT", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests of the AE panels (ae_panel_engine.c): an automated\n"
