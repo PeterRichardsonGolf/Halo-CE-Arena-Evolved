@@ -43,6 +43,7 @@ ZOOM_MODES = [("TOGGLE", "toggle"), ("HOLD", "hold"), ("BOTH", "both")]
 ZOOM_RESETS = [("FIRST LEVEL", "first"), ("LAST USED", "last")]
 # (a DualSense's trigger strength and lightbar: port/linux/src/ae_ds5_rules.c ae_ds5_strength_percent, ae_ds5.c)
 TRIGGER_STRENGTHS = [("LIGHT", "light"), ("NORMAL", "normal"), ("STRONG", "strong")]
+STICK_DEADZONES = [("DEFAULT", "0")] + [(f"{n}%", str(n)) for n in (5, 10, 15, 20, 25, 30, 35, 40)]
 LIGHTBARS = [("OFF", "off"), ("PLAYER COLOR", "player_color"), ("SHIELD", "shield")]
 # (the item waypoints' labels: hud_item_timers.c, ae_waypoint_icons.c)
 WAYPOINT_STYLES = [("TEXT", "text"), ("ICONS", "icons"), ("BOTH", "both")]
@@ -351,8 +352,9 @@ SCREENS = {
     "gamepad_setup": {
         "screen": "gamepad_setup_screen",
         "header": ("header_profile_controller_setting", f"{PE}/controller_edit/header_profile_controller_setting"),
-        # (22, not 30: twelve rows with the DualSense's three, the help line where it was)
-        "spacing": 22,
+        # (22, not 30: twelve rows with the DualSense's three, the help line where it was; 19 with the two
+        # STICK DEADZONE rows)
+        "spacing": 19,
         "rows": [
             ("LOOK SENSITIVITY:", "profile.look_sensitivity", [(str(step), str(step)) for step in range(1, 11)],
              "How fast the right stick turns the view.", None),
@@ -374,6 +376,12 @@ SCREENS = {
              "Which stick moves and which looks.", None),
             ("VIBRATION:", "profile.vibration", ON_OFF, "Rumble the controller.", None),
             ("IN-GAME HELP:", "profile.ingame_help", ON_OFF, "Show the game's hints about its controls.", None),
+            # (AE: every pad's, this machine's settings; DEFAULT keeps the game's 27%: ae_stick_dead_zones.c)
+            ("LEFT STICK DEADZONE:", "input.left_stick_deadzone", STICK_DEADZONES,
+             "How far the left stick moves before you do, on\nevery controller. Default: the game's own, 27%.", None),
+            ("RIGHT STICK DEADZONE:", "input.right_stick_deadzone", STICK_DEADZONES,
+             "How far the right stick moves before the view\nturns, on every controller. Default: the game's 27%.",
+             None),
             # (AE 0.3.0: a PS5 DualSense's, port/linux/src/ae_ds5.c; this machine's settings, every profile's)
             ("ADAPTIVE TRIGGERS:", "input.adaptive_triggers", ON_OFF,
              "A DualSense's triggers: a feel for each weapon\nand a kick at each shot. Other pads: nothing.",

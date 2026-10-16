@@ -6,6 +6,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- LEFT and RIGHT STICK DEADZONE (Settings > Gamepads): 5% to 40% for every controller; DEFAULT keeps the game's 27%.
 - ANISOTROPIC FILTERING (Video Setup > GRAPHICS): 2x to 16x sharpens floors and walls seen at a grazing angle; off
   (the default) keeps the Xbox's look.
 - ZOOM BLUR (Video Setup > FOV AND VIEWMODELS): off takes away the blur a zoomed scope puts at the screen's edges.

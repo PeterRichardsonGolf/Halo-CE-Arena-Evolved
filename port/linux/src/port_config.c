@@ -498,6 +498,16 @@ static const struct config_setting config_settings[] =
 		"glows (black armour: as \"shield\"); \"shield\", the lightbar your\n"
 		"shield as the HUD's meter shows it;\n"
 		"either way the player lights your split-screen number. \"off\": left alone." },
+	{ "input.left_stick_deadzone", _config_integer, "0", "HALO_LEFT_STICK_DEADZONE", _environment_value, /* AE hook */
+		_platform_all,
+		"Every controller's left stick's dead zone, a percent of its throw on\n"
+		"each axis: how far it moves before the player does. 0: the game's own\n"
+		"(9000 of 32767, about 27%)." },
+	{ "input.right_stick_deadzone", _config_integer, "0", "HALO_RIGHT_STICK_DEADZONE", _environment_value, /* AE hook */
+		_platform_all,
+		"Every controller's right stick's dead zone, a percent of its throw on\n"
+		"each axis: how far it moves before the view turns. 0: the game's own\n"
+		"(9000 of 32767, about 27%)." },
 	{ "input.zoom_reset", _config_string, "\"first\"", "HALO_ZOOM_RESET", _environment_value, /* AE hook */
 		_platform_all,
 		"Where a hold of the zoom action (the \"hold\" mode, and the hold of\n"

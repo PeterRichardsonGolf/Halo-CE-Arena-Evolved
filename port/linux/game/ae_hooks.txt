@@ -607,3 +607,8 @@ source/interface/interface.c	if (convolution_radius > 0.0f && ae_zoom_blur_allow
 port/linux/src/port_config.c	{ "display.anisotropic", _config_string, "\"off\"", "HALO_ANISOTROPIC", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/d3d8_gl.c	#include "ae_texture_filter.h" /* AE hook */
 port/linux/src/d3d8_gl.c	ae_texture_anisotropy(&inputs[0], &inputs[8], inputs[1], hires); /* AE hook */
+# STICK DEADZONES (input.left_stick_deadzone, input.right_stick_deadzone): the sticks again with the set dead zones (ae_stick_dead_zones.c)
+port/linux/src/port_config.c	{ "input.left_stick_deadzone", _config_integer, "0", "HALO_LEFT_STICK_DEADZONE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "input.right_stick_deadzone", _config_integer, "0", "HALO_RIGHT_STICK_DEADZONE", _environment_value, /* AE hook */\n_platform_all,
+source/input/input_xbox.c	#include "ae_stick_dead_zones.h" /* AE hook */
+source/input/input_xbox.c	ae_stick_dead_zones(gamepad_state->sticks, input_state.Gamepad.sThumbLX, input_state.Gamepad.sThumbLY, input_state.Gamepad.sThumbRX, input_state.Gamepad.sThumbRY); /* AE hook */

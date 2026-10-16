@@ -123,6 +123,7 @@ symbols in this file:
 #include "input/input_abstraction.h"
 #include "interface/player_ui.h"
 #include "main/console.h"
+#include "ae_stick_dead_zones.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -978,6 +979,7 @@ static void input_get_device_states(
 				gamepad_state->sticks[_gamepad_stick_right].y = fix_dead_zone(
 					input_state.Gamepad.sThumbRY,
 					GAMEPAD_STICK_DEAD_RANGE);
+				ae_stick_dead_zones(gamepad_state->sticks, input_state.Gamepad.sThumbLX, input_state.Gamepad.sThumbLY, input_state.Gamepad.sThumbRX, input_state.Gamepad.sThumbRY); /* AE hook */
 			}
 			else
 			{
