@@ -1970,6 +1970,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 		bots_random_signed(bot) * skill->aim_error_degrees * 0.04f * BOTS_DEGREES;
 	bot->aim_error_pitch = bot->aim_error_pitch * settle +
 		bots_random_signed(bot) * skill->aim_error_degrees * 0.03f * BOTS_DEGREES;
+	ae_bots_aim_floor(bots_globals.skill, &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
 	desired_yaw = (real)atan2(dy, dx) + bot->aim_error_yaw;
 	desired_pitch = (real)atan2(dz, horizontal) + bot->aim_error_pitch;
 	turn = skill->turn_degrees_per_tick * BOTS_DEGREES;
@@ -2030,13 +2031,13 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	if (now >= bot->strafe_until_tick)
 	{
 		bot->strafe_sign = bots_random_real(bot) < 0.5f ? -1.0f : 1.0f;
-		bot->strafe_until_tick = now + TICKS_PER_SECOND / 3 + (long)(bots_random(bot) % (TICKS_PER_SECOND));
+		bot->strafe_until_tick = now + ae_bots_strafe_ticks(bots_globals.skill, TICKS_PER_SECOND / 3 + (long)(bots_random(bot) % (TICKS_PER_SECOND))); /* AE hook */
 	}
 	{
 		real to_target = (real)atan2(dy, dx);
 		real range = bots_weapon_range(tick->weapon_index);
 		real forward = tick->target_distance > range * 1.3f ? 0.8f : tick->target_distance < range * 0.6f ? -0.5f : 0.0f;
-		real side = bot->strafe_sign;
+		real side = bot->strafe_sign * ae_bots_strafe(bots_globals.skill); /* AE hook */
 
 		tick->move_direction = (real)atan2((real)sin(to_target) * forward + (real)sin(to_target + BOTS_PI * 0.5f) * side,
 			(real)cos(to_target) * forward + (real)cos(to_target + BOTS_PI * 0.5f) * side);
