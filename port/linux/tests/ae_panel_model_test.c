@@ -367,6 +367,34 @@ static void test_row_lit(void)
 	}
 }
 
+static void test_hit_trail(void)
+{
+	struct ae_panel_trail state = { 0 };
+	real trail, alpha;
+
+	/* full, then a hit to 0.6: the trail holds 1.0 for 15 ticks, fades over 15, then goes */
+	ae_panel_trail_step(&state, 1.0f, 0, &trail, &alpha);
+	AE_CHECK(alpha == 0.0f && AE_NEAR(trail, 1.0f));
+	ae_panel_trail_step(&state, 0.6f, 1, &trail, &alpha);
+	AE_CHECK(AE_NEAR(trail, 1.0f) && alpha == 1.0f);
+	ae_panel_trail_step(&state, 0.6f, 15, &trail, &alpha);
+	AE_CHECK(AE_NEAR(trail, 1.0f) && alpha == 1.0f);
+	ae_panel_trail_step(&state, 0.6f, 23, &trail, &alpha);
+	AE_CHECK(alpha > 0.0f && alpha < 1.0f);
+	ae_panel_trail_step(&state, 0.6f, 31, &trail, &alpha);
+	AE_CHECK(alpha == 0.0f && AE_NEAR(trail, 0.6f));
+	/* a rising shield ends a trail at once */
+	ae_panel_trail_step(&state, 0.3f, 40, &trail, &alpha);
+	AE_CHECK(alpha == 1.0f && AE_NEAR(trail, 0.6f));
+	ae_panel_trail_step(&state, 0.35f, 41, &trail, &alpha);
+	AE_CHECK(alpha == 0.0f);
+	/* an overshield's drain (above 1) is no hit */
+	memset(&state, 0, sizeof(state));
+	ae_panel_trail_step(&state, 2.0f, 50, &trail, &alpha);
+	ae_panel_trail_step(&state, 1.9f, 51, &trail, &alpha);
+	AE_CHECK(alpha == 0.0f);
+}
+
 int main(void)
 {
 	test_weapon_table();
@@ -379,6 +407,7 @@ int main(void)
 	test_buffs();
 	test_seats();
 	test_row_lit();
+	test_hit_trail();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

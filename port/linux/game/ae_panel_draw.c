@@ -36,6 +36,10 @@ void platform_log(char const *format, ...);
 #define CORNER_STEPS 4
 #define LIT_ALPHA 0.94f
 #define SPENT_ALPHA 0.28f
+/* a loaded round: full strength with a light keyline, as the shield bar's fill reads (owner 10-15: thin rounds in a dark
+keyline read grey) */
+#define ROUND_LIT_ALPHA 1.0f
+#define ROUND_LIT_KEYLINE 0.40f
 #define MAXIMUM_POINTS 64
 #define AE_PI 3.14159265f
 /* the score strip's recipe (ae_score_strip.c outline4 / draw_bar), which every panel follows (owner 10-15: "match the
@@ -55,7 +59,8 @@ rest to the strip") */
 
 static const real tones[NUMBER_OF_AE_TONES][3] = {
 	{ 229.0f, 240.0f, 255.0f }, { 178.0f, 224.0f, 255.0f }, { 188.0f, 198.0f, 212.0f }, { 6.0f, 10.0f, 18.0f },
-	{ 255.0f, 77.0f, 77.0f }, { 120.0f, 255.0f, 160.0f }, { 214.0f, 255.0f, 226.0f },
+	{ 255.0f, 77.0f, 77.0f }, { 120.0f, 255.0f, 160.0f }, { 214.0f, 255.0f, 226.0f }, { 198.0f, 86.0f, 123.0f },
+	{ 111.0f, 208.0f, 78.0f },
 };
 
 /* the 8 directions of a keyline's passes */
@@ -434,14 +439,37 @@ static void bar_band(const struct ae_panel_para *bar, real w, real f0, real f1, 
 	ae_hud_fill_quad(points, colors);
 }
 
+static void draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
+	real overshield1, real overshield2, real fade, boolean from_right, real trail, real trail_alpha);
+
 void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
 	real overshield1, real overshield2)
 {
-	ae_panel_draw_bar_faded(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, 1.0f);
+	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, 1.0f, FALSE, 0.0f, 0.0f);
 }
 
+/* (the shield's bar: it fills from its right end and drains toward it, as CE's shield meter does, its overshield
+layers too; owner 10-15) */
 void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
-	real overshield1, real overshield2, real fade)
+	real overshield1, real overshield2, real fade, real trail, real trail_alpha)
+{
+	draw_bar(bar, scale, fill, fill_tone, line_tone, overshield1, overshield2, fade, TRUE, trail, trail_alpha);
+}
+
+/* a band from the bar's left end (or its right end) over this much of its length */
+static void bar_span(const struct ae_panel_para *bar, real w, real amount, boolean from_right, real t0, real t1,
+	const real_argb_color *color)
+{
+	if (amount > 1.0f)
+		amount = 1.0f;
+	if (from_right)
+		bar_band(bar, w, 1.0f - amount, 1.0f, t0, t1, color);
+	else
+		bar_band(bar, w, 0.0f, amount, t0, t1, color);
+}
+
+static void draw_bar(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
+	real overshield1, real overshield2, real fade, boolean from_right, real trail, real trail_alpha)
 {
 	real corners[4][2];
 	real w, under;
@@ -456,21 +484,39 @@ void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real f
 	if (fill > 0.0f)
 	{
 		tone_color(fill_tone, FILL_ALPHA * fade, &color);
-		bar_band(bar, w, 0.0f, fill > 1.0f ? 1.0f : fill, 0.0f, 1.0f, &color);
+		bar_span(bar, w, fill, from_right, 0.0f, 1.0f, &color);
 	}
+	/* CE's hit trail: the part a hit just took, in white, held then fading (ae_panel_trail_step) */
+	if (trail_alpha > 0.0f && trail > fill)
+	{
+		real end = trail > 1.0f ? 1.0f : trail;
+
+		tone_color(_ae_tone_white, FILL_ALPHA * 0.85f * trail_alpha, &color);
+		if (from_right)
+			bar_band(bar, w, 1.0f - end, 1.0f - (fill > 0.0f ? fill : 0.0f), 0.0f, 1.0f, &color);
+		else
+			bar_band(bar, w, fill > 0.0f ? fill : 0.0f, end, 0.0f, 1.0f, &color);
+	}
+	/* the overshield's layers in the classic HUD's colours (its first layer pink, the second grass green over it; the
+	game's own red/green, as the shipped HUD tags shade them), each over the one below, a light edge on top (owner
+	10-15: the plain red read as a low shield) */
 	if (overshield1 > 0.0f)
 	{
 		real height = (bar->y1 - bar->y0) - 2.0f * w;
 
-		tone_color(_ae_tone_green, FILL_ALPHA, &color);
-		bar_band(bar, w, 0.0f, overshield1, 0.0f, 1.0f, &color);
-		tone_color(_ae_tone_green_edge, FILL_ALPHA, &color);
-		bar_band(bar, w, 0.0f, overshield1, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
+		tone_color(_ae_tone_overshield1, FILL_ALPHA, &color);
+		bar_span(bar, w, overshield1, from_right, 0.0f, 1.0f, &color);
+		tone_color(_ae_tone_white, FILL_ALPHA * 0.6f, &color);
+		bar_span(bar, w, overshield1, from_right, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	if (overshield2 > 0.0f)
 	{
-		tone_color(_ae_tone_white, FILL_ALPHA, &color);
-		bar_band(bar, w, 0.0f, overshield2, 0.0f, 0.38f, &color);
+		real height = (bar->y1 - bar->y0) - 2.0f * w;
+
+		tone_color(_ae_tone_overshield2, FILL_ALPHA, &color);
+		bar_span(bar, w, overshield2, from_right, 0.0f, 1.0f, &color);
+		tone_color(_ae_tone_white, FILL_ALPHA * 0.6f, &color);
+		bar_span(bar, w, overshield2, from_right, 0.0f, height > 0.0f ? 1.0f / height : 0.0f, &color);
 	}
 	/* the dividers between 5 cells */
 	tone_color(_ae_tone_dark, STRIP_DIVIDER_ALPHA, &dark);
@@ -712,7 +758,7 @@ void ae_panel_draw_art(short art, real x, real y, real height, boolean lit, shor
 	texels[3][0] = strip->bottom_x - strip->half; texels[3][1] = strip->ink_y1;
 	sheet_piece(bitmap, &clip, sprite ? strip->bitmap : -1, strip->width, strip->height, texels, x, y, strip->ink_x0,
 		strip->ink_y0, scale,
-		lit ? tone : _ae_tone_blue, lit ? LIT_ALPHA : SPENT_ALPHA, lit ? KEYLINE_ALPHA : KEYLINE_ALPHA *
+		lit ? tone : _ae_tone_blue, lit ? ROUND_LIT_ALPHA : SPENT_ALPHA, lit ? ROUND_LIT_KEYLINE : KEYLINE_ALPHA *
 		(SPENT_ALPHA + 0.15f));
 }
 

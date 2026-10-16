@@ -37,7 +37,7 @@ long game_time_get(void);
 
 #define AE_HUD_PANEL_HEALTH_DONT_SHOW 0     /* hud_unit.c's _hud_panel_health_dont_show_bit */
 #define AE_HUD_PANEL_SHIELD_DONT_SHOW 2     /* _hud_panel_shield_dont_show_bit */
-#define BACKING_PEAK 0.45f
+#define BACKING_PEAK 0.32f
 #define BOX_FILL 0.08f
 #define UNARMED_GLYPH 0.55f
 #define UNARMED_COUNT 0.70f
@@ -63,7 +63,7 @@ boolean ae_panels_hiding_ce(void)
 
 /* debug.ae_panel_state: states forced over the game's for the tests and the contact sheets, a comma list of: low,
 empty, overheated, heat:<0..1>, grenades:<frags>/<plasmas>, plasma (armed), shield_low, shield_down, overshield1,
-overshield2, camo, buffs (both rows, the overshield's in its last 5 s), health_low */
+overshield2, camo, buffs (both rows, the overshield's in its last 5 s), health_low, trail (a hit's trail, held) */
 static void forced_state(struct ae_panel_snapshot *s)
 {
 	char const *state = config_string("debug.ae_panel_state");
@@ -99,6 +99,13 @@ static void forced_state(struct ae_panel_snapshot *s)
 		}
 		else if (IS("plasma"))
 			s->armed_grenade = 1;
+		else if (IS("trail"))
+		{
+			/* (a hit from full to 0.6, its trail held) */
+			s->shield = 0.6f;
+			s->shield_trail = 1.0f;
+			s->shield_trail_alpha = 1.0f;
+		}
 		else if (IS("shield_low"))
 		{
 			s->shield = 0.2f;
@@ -273,6 +280,7 @@ static void draw_ammo(short view, const struct ae_panel_model *m, const struct a
 		}
 	}
 
+	/* (the loaded rounds in the shield bar's light blue, full strength, light keyline: ae_panel_draw_art; owner 10-15) */
 	for (i = 0; i < l->round_count; i++)
 		ae_panel_draw_art(m->art, l->round[i].x, l->round[i].y, l->round[i].height, l->round[i].lit,
 			m->rounds_red ? _ae_tone_red : _ae_tone_blue);
@@ -295,7 +303,8 @@ static void draw_shield(short view, const struct ae_panel_model *m, const struct
 		real fade = m->shield_hidden_blink ? AE_SHIELD_BLINK_DIM : 1.0f;
 
 		ae_panel_draw_bar_faded(&l->shield_bar, s, m->shield_fill, m->shield_red ? _ae_tone_red : _ae_tone_blue,
-			m->shield_red ? _ae_tone_red : _ae_tone_blue, m->overshield1, m->overshield2, fade);
+			m->shield_red ? _ae_tone_red : _ae_tone_blue, m->overshield1, m->overshield2, fade, m->shield_trail,
+			m->shield_trail_alpha);
 		ae_panel_draw_glyph(_ae_glyph_shield, l->shield_icon_x, l->shield_icon_y, l->shield_icon_height,
 			m->shield_red ? _ae_tone_red : _ae_tone_blue, fade);
 	}

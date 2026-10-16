@@ -479,8 +479,13 @@ static void open_invite_checks(void)
 	pthread_t thread;
 	int reads = 0, leaks = 0, opens = 0;
 
+	p2p_set_hosting_public(1);
 	p2p_set_hosting_password(NULL);
 	check(p2p_hosting_open_invite(text, sizeof(text)) && text[0], "an open game's invite is given");
+	p2p_set_hosting_public(0);
+	check(!p2p_hosting_open_invite(text, sizeof(text)) && !text[0], "a private game's invite is not given");
+	p2p_set_hosting_public(1);
+	check(p2p_hosting_open_invite(text, sizeof(text)) && text[0], "the invite is given again once the game is public");
 	p2p_set_hosting_password("hunter2");
 	check(!p2p_hosting_open_invite(text, sizeof(text)) && !text[0], "a password game's invite is not given");
 	p2p_set_hosting_password(NULL);

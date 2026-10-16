@@ -6,23 +6,34 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.0-beta - 2026-10-15
+
+A big testing pre-release: the score strip and the AE HUD, PS5 DualSense triggers and lightbar, bots in split screen,
+AE JUGGERNAUT as in Halo 2, the AE BR gametypes, the PC menus' own pictures and map pictures, built on
+ChupathingyCE 0.7.5b and OpenCE build-206 (network version 29: it does not play online with 0.2.5-beta and older).
+Linux 64-bit is the build played and tested; Windows is built by the same checks but was not test-played.
+
+- From ChupathingyCE 0.7.5c/d: Delta Stats send players' names, never a hardware ID (an OpenCE player only their name,
+  team, score, place, kills and deaths); a game listed under every network version shows once in Online Games; a
+  refused Custom Edition map says why on screen, not the damaged disc text, and the tag cache refusal names the room
+  needed and free; a private game's invite is never on the game list, as a password game's was not.
 - **PS5 DualSense: adaptive triggers, lightbar and player lights.** R2 has a profile for each weapon, from the
   weapon's own numbers, in two families: human weapons are mechanical (clicks and kicks, a pulse on the heavy left
   rumble motor at each shot), Covenant weapons are energy (resistance building with heat or charge, a pulse on the
   light right motor). The pistol clicks and snaps, the assault rifle pulses with each round, the sniper rifle is
   firm with a heavy thump, the shotgun and rockets kick hard (the shotgun's pump clicks at its own animation's
-  moment), the battle rifle pulses three times a burst, the plasma rifle stiffens with heat, the plasma pistol
-  builds with its charge, pulses at each shot and kicks hard as an overcharged shot goes (with a green flash of the
-  lightbar), the needler buzzes. Every weapon's state comes first: free while it is drawn, then a small settle as it
+  moment), the battle rifle buzzes through each burst, the plasma rifle stiffens with heat, the plasma pistol
+  hums in R2 as it charges (faster once fully charged), pulses at each shot and kicks hard as an overcharged shot
+  goes (with a green flash of the lightbar), the needler buzzes. Every weapon's state comes first: free while it is drawn, then a small settle as it
   is ready; free while reloading, with a bump as the magazine (or each shell) goes in; a dry click at the bottom of
   the pull when empty; locked with a venting throb while overheated, until the game lets it fire. Vehicles: the
   seat that fires the vehicle's gun (the ghost's driver, the warthog's gunner) feels that gun; other seats nothing.
   L2 is the grenades: a light hold, firmer as one winds up, a jolt as it leaves the hand (frag left motor, plasma
   right), a dry click with none; light while zoomed. It buzzes while an overshield charges or as you become the
   juggernaut. The rumble pulses follow the profile's VIBRATION setting and go into the game's own rumble. The
-  lightbar takes your colour (your team's in a team game; black armour shows a dim white),
+  lightbar takes your colour (your team's in a team game; with black armour it shows your shield, as LIGHTBAR SHIELD),
   pulses while an overshield charges, breathes while you have one, dims with active camouflage and flashes white as
-  you become the juggernaut; LIGHTBAR SHIELD shows your shield instead, as the HUD's meter does (its own colours,
+  you become the juggernaut; LIGHTBAR SHIELD shows your shield instead (a full shield deep navy, then the HUD meter's own colours,
   dimmer as it drains, blinking when low, the empty colour when down, a white flash on the pop with COMBAT FEEDBACK
   ARENA EVOLVED, the overshield's layer colours, dark while dead). The player lights show your split-screen number.
   Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER STRENGTH (LIGHT, NORMAL, STRONG) and LIGHTBAR (OFF, PLAYER COLOR,
@@ -99,7 +110,30 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   The panels are drawn in the score strip's style (its soft dark under-stroke, dark tracks under bars and boxes,
   glowing digits) with smooth edges; the ammo group is CE's own width; the top corners sit the same distance from
   the screen's left and right edges, and CE's messages line up under the ammo group. A low or down shield blinks
-  between red and dim red.
+  between red and dim red; the shield bar fills from its right end and drains toward it, as CE's does, a hit's lost part held in white for half a second then fading (CE's trail), its overshield layers in the classic HUD's colours (pink, then green over it). In a vehicle seat the
+  Scorpion shows its cannon only.
+- With HUD STYLE AE, **CE's messages and hints** (pick-ups, "hold X to ...", vehicle prompts) take the strip's text
+  style: white, at the strip's size, small button icons, lined up under the ammo group and wrapped at twice its width.
+- **Steady waypoints**: the item waypoints and their labels no longer shake with the camera (a tank's recoil, a
+  nearby explosion).
+- **The carnage report's B asks first**: "LEAVE THE GAME?" over the report (A leaves, B stays); only player 1's
+  buttons count there. Custom Edition maps get the button icons there that they were missing.
+- **PC menus' own pictures**: the Multiplayer screen's and the Edit Gametype screen's PLACE HOLDER pictures are
+  replaced with Arena Evolved's own, each centred and sized alike; the map pictures in the PC menus come from a
+  `previews` folder beside the maps (the map packs bring them). The menus' text icons (the carnage report's "=quit"
+  and "=pick game") are sized to the text and centred on it.
+- **Gametype lists**: all free for all gametypes first (Arena Evolved, AE BR, AE COMP), then all team ones, then
+  NHE's, TRAINING and your own.
+- **Fixed:** with active camouflage, the first-person weapon went into a nearby wall (it was depth-tested against the
+  world; OpenCE's and ChupathingyCE's code too).
+- **Fixed:** with HUD STYLE AE the ammo group could vanish after an active camouflage pickup (it followed a piece of
+  CE's weapon HUD drawn far above the view); it keeps its place.
+- **Fixed:** leaving the host's screen after a game (B) could leave only Halo's background, needing a restart; it opens
+  the main menu (from OpenCE pull request #374 by chestahh).
+- **Fixed:** a game set up without a map picked opens on the first map you have when Derelict's file is not there (it
+  stopped with "couldn't find map 'carousel'" and the dirty disc screen).
+- **Fixed:** a Custom Edition map's weapon that gives off a little heat a round (the "Halo 2 for CE" maps' battle
+  rifle) showed an empty heat bar under its rounds; the bar shows only while the weapon has heat.
 
 ## 0.2.5-beta - 2026-10-13
 

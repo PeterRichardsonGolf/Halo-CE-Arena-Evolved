@@ -173,9 +173,10 @@ static struct profile
 	the shotgun's (a full 15 Hz jolt, 240 ms), both motors */
 	{ F(2, 4), SM, V(0, 8, 40), 70, 0, 2, 8, COVENANT, 160, 60, "hums as it charges, a pulse a shot, a blast charged",
 		V(0, 8, 15), 240, 170, 255, 240 },
-	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67), a left pulse
-	a round */
-	{ W(4, 7, 6), SM, F(0, 7), 30, 0, 0, 0, HUMAN, 120, 40, "click, three pulses a burst", NO, 0, 0, 0, 0 },
+	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67), a firm left
+	pulse a round on the burst's cadence (owner 10-15: 240 for 50 ms, rounds 67 ms apart: three distinct pulses; 120
+	for 40 ms was not felt) */
+	{ W(4, 7, 6), V(3, 7, 0), NO, 0, 1, 0, 0, HUMAN, 255, 50, "click, buzzes through the burst", NO, 0, 0, 0, 0 },
 	/* needler: barely there; firing, a fast light buzz (2x the rate of fire, amplitude 3), a light right tick */
 	{ F(3, 1), V(3, 3, 0), NO, 0, 2, 0, 0, COVENANT, 70, 30, "fast light buzz", NO, 0, 0, 0, 0 },
 	/* plasma heat (plasma rifle): resistance and hum rising with heat (locked while overheated, as every weapon) */
@@ -190,6 +191,19 @@ static struct profile
 
 /* the charging hum's frequency (Hz), and the fully charged one's */
 #define CHARGING_HUM_HZ 25
+/* a shot's rumble pulse, at least (ms) */
+#define SHOT_RUMBLE_MINIMUM_MS 50
+/* the battle rifle's round: the light motor with the heavy one */
+#define BURST_RUMBLE_RIGHT 140
+#define CHARGING_HUM_LOW 1
+#define CHARGING_HUM_HIGH 3
+/* the charge's rumble: a pulse every CHARGE_RUMBLE_TICKS, each a little longer so they run together; the right
+motor from LOW to HIGH with the charge, the left from nothing to LEFT_HIGH */
+#define CHARGE_RUMBLE_TICKS 3
+#define CHARGE_RUMBLE_MS 140
+#define CHARGE_RUMBLE_RIGHT_LOW 70
+#define CHARGE_RUMBLE_RIGHT_HIGH 210
+#define CHARGE_RUMBLE_LEFT_HIGH 110
 #define CHARGED_HUM_HZ 40
 
 static int ramped(int base, int to, float amount)
@@ -298,9 +312,10 @@ void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_w
 	{
 		/* CHARGING HUM (owner 10-15: "plasma pistol is missing a charge haptic": the trigger is held down while it
 		charges, so a resistance building with the charge was not felt): a vibration from the hold's zone, its
-		amplitude rising with the charge from the hold's strength to ramp_to, faster once fully charged */
+		amplitude rising with the charge, kept low (owner 10-15: "lower the intensity on the triggers and mix in the
+		rumble motors": the motors carry most of it, ae_ds5_charge_rumble), faster once fully charged */
 		shape = (struct shape)V(profile->held.a, 0, 0);
-		shape.b = (unsigned char)ramped(profile->held.b, profile->ramp_to, state->charge);
+		shape.b = (unsigned char)ramped(CHARGING_HUM_LOW, CHARGING_HUM_HIGH, state->charge);
 		shape.c = (unsigned char)(state->charge >= 1.0f ? CHARGED_HUM_HZ : CHARGING_HUM_HZ);
 		why = state->charge >= 1.0f ? "charged" : "charging";
 	}
@@ -338,7 +353,12 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 			rumble->right = profile->shot_rumble;
 		else
 			rumble->left = profile->shot_rumble;
-		rumble->ms = profile->shot_rumble_ms;
+		/* (at least SHOT_RUMBLE_MINIMUM_MS, one Bluetooth report: the pad gets one every 50 ms there, and a shorter pulse could be
+		merged away, owner 10-15: "the br doesn't use the rumble motors") */
+		rumble->ms = profile->shot_rumble_ms < SHOT_RUMBLE_MINIMUM_MS ? SHOT_RUMBLE_MINIMUM_MS : profile->shot_rumble_ms;
+		/* (the battle rifle: the light motor joins each round, owner 10-15: "consistent but weak") */
+		if (kind == AE_DS5_WEAPON_BURST)
+			rumble->right = BURST_RUMBLE_RIGHT;
 		break;
 	case AE_DS5_EVENT_MAG_IN:
 	{
@@ -580,10 +600,17 @@ static float stepped(float value)
 	return (float)(int)(value * (float)SHIELD_STEPS + 0.5f) / (float)SHIELD_STEPS;
 }
 
+/* a full shield's lightbar (owner 10-15: RGB 0, 14, 117), from this vitality up */
+#define SHIELD_FULL 0.999f
+#define SHIELD_FULL_RED 0
+#define SHIELD_FULL_GREEN 14
+#define SHIELD_FULL_BLUE 117
+
 void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size)
 {
-	/* (hud_unit.c's overcharge layers: none, then red, green, yellow, violet) */
-	static unsigned long const layers[5] = { 0, 0xff0000UL, 0x00ff00UL, 0xffff00UL, 0x7f00ffUL };
+	/* (the overshield's layers on the lightbar in the owner's picks (10-15): pink 255,0,51, then green 14,209,0; then
+	hud_unit.c's yellow and violet) */
+	static unsigned long const layers[5] = { 0, 0xff0033UL, 0x0ed100UL, 0xffff00UL, 0x7f00ffUL };
 	unsigned long min_color = shield->min_color & 0xffffffUL, max_color = shield->max_color & 0xffffffUL;
 	unsigned long flash = shield->flash_color & 0xffffffUL, empty = shield->empty_color & 0xffffffUL;
 	float fill;
@@ -626,6 +653,15 @@ void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *sh
 	{
 		colour_scaled(rgb, empty ? empty : HUD_RED, 0.6f);
 		snprintf(text, text_size, "shield: empty");
+		return;
+	}
+	/* (a full shield: the owner's own colour, deep navy, so full reads apart from the meter's blue as it drains) */
+	if (shield->vitality >= SHIELD_FULL)
+	{
+		rgb[0] = SHIELD_FULL_RED;
+		rgb[1] = SHIELD_FULL_GREEN;
+		rgb[2] = SHIELD_FULL_BLUE;
+		snprintf(text, text_size, "shield: full");
 		return;
 	}
 	fill = stepped(shield->vitality);
@@ -948,4 +984,19 @@ void ae_ds5_link_result(struct ae_ds5_link *link, int fields, enum ae_ds5_write_
 	}
 	if (result == AE_DS5_WRITE_GONE)
 		ae_ds5_link_forget(link);
+}
+
+int ae_ds5_charge_rumble(enum ae_ds5_weapon_kind kind, float charge, long ticks, struct ae_ds5_rumble *rumble)
+{
+	float amount = charge < 0.0f ? 0.0f : charge > 1.0f ? 1.0f : charge;
+
+	rumble->left = rumble->right = rumble->ms = 0;
+	if (kind < 0 || kind >= AE_DS5_WEAPON_KINDS || profiles[kind].ramp != 2 || charge <= 0.0f ||
+		ticks % CHARGE_RUMBLE_TICKS != 0)
+		return 0;
+	/* (a Covenant weapon: the light right motor leads, the heavy left one joins as the charge builds) */
+	rumble->right = CHARGE_RUMBLE_RIGHT_LOW + (int)((float)(CHARGE_RUMBLE_RIGHT_HIGH - CHARGE_RUMBLE_RIGHT_LOW) * amount + 0.5f);
+	rumble->left = (int)((float)CHARGE_RUMBLE_LEFT_HIGH * amount + 0.5f);
+	rumble->ms = CHARGE_RUMBLE_MS;
+	return 1;
 }

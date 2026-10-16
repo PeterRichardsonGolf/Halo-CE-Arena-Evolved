@@ -112,6 +112,10 @@ the profile's firing shape; else its held shape; heat or charge ramps the streng
 in text */
 void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_weapon_state const *state, int strength,
 	char *text, size_t text_size);
+/* while a charge weapon charges (the plasma pistol): 1 and a rumble pulse every few ticks (right motor rising with the
+charge, the left joining), else 0 (owner 10-15: the motors carry the charge's feel, the trigger only hums) */
+int ae_ds5_charge_rumble(enum ae_ds5_weapon_kind kind, float charge, long ticks, struct ae_ds5_rumble *rumble);
+
 /* an event's kick on its trigger (R2, or L2 for a grenade) and how long it lasts (ms; 0: no kick, e.g. an automatic's
 shot, which its firing shape does), and its rumble pulse: a human weapon's on the left motor, a Covenant one's on the
 right */

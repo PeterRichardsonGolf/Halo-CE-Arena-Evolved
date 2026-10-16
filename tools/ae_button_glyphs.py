@@ -171,9 +171,18 @@ def draw(arguments) -> None:
                                 SEQUENCE_SYMBOLS[sprite["sequence"]]))
             image = draw_stencils(asset["scale"], asset["width"], asset["height"], circles)
         else:
+            import numpy as np
             area, x, y = tool.shape(alpha)
-            image = tool.bleed(draw_icon(asset["scale"], asset["width"], asset["height"],
-                                         (x, y, (area / 3.141592653589793) ** 0.5), asset["symbol"]))
+            radius = (area / 3.141592653589793) ** 0.5
+            # (the disc whole inside the Xbox art's own box with a texel to spare, rim included: the game draws a little less than
+            # bitmap, and a disc of the art's area ran past it and was drawn cut flat, owner 10-15)
+            columns = np.nonzero(alpha.max(axis=0) > 8)[0]
+            rows = np.nonzero(alpha.max(axis=1) > 8)[0]
+            x0, x1, y0, y1 = columns[0], columns[-1] + 1, rows[0], rows[-1] + 1
+            x, y = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+            radius = min(radius, ((x1 - x0) / 2.0 - 1.5) / 1.04, ((y1 - y0) / 2.0 - 1.5) / 1.04)
+            image = tool.bleed(draw_icon(asset["scale"], asset["width"], asset["height"], (x, y, radius),
+                                         asset["symbol"]))
         Image.fromarray(image, "RGBA").save(ROOT / FOLDER / f"{asset['name']}.png", optimize=True)
         print(f"{asset['name']}.png: {image.shape[1]}x{image.shape[0]}")
 

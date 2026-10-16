@@ -39,6 +39,8 @@ enum ae_panel_tone      /* the tokens (14.15 part 1) */
 	_ae_tone_red,       /* (255,77,77) */
 	_ae_tone_green,     /* OVERSHIELD (120,255,160) */
 	_ae_tone_green_edge,/* (214,255,226) */
+	_ae_tone_overshield1, /* CE's classic HUD's first overshield layer, pink (198,86,123) */
+	_ae_tone_overshield2, /* its second, grass green (111,208,78) */
 	NUMBER_OF_AE_TONES
 };
 
@@ -53,7 +55,7 @@ void ae_panel_draw_bar(const struct ae_panel_para *bar, real scale, real fill, s
 	real overshield1, real overshield2);
 /* the same with the fill and the line at fade x their alpha, keylines at full (the shield's off beat while it blinks) */
 void ae_panel_draw_bar_faded(const struct ae_panel_para *bar, real scale, real fill, short fill_tone, short line_tone,
-	real overshield1, real overshield2, real fade);
+	real overshield1, real overshield2, real fade, real trail, real trail_alpha);
 /* one round of CE's bullet art (enum ae_panel_art) with its ink box's top-left at (x, y), height tall: lit in tone
 at 0.94; spent: 0.28 with a weaker keyline (0.39: the keyline follows the fill's alpha + 0.15, as rev13) */
 void ae_panel_draw_art(short art, real x, real y, real height, boolean lit, short tone);

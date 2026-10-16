@@ -1000,6 +1000,11 @@ MAP_KIND_CHOOSER = "main_menu/new_select/list_item_0_map_kind"
 # changes to the PC version's widgets (by our names): attributes set, all
 # their handlers replaced, children added, game data inputs added
 WIDGET_PATCHES = {
+    # The host returns here after a round with no menu history: B must reopen the main menu when it closes the last
+    # screen, as the lobby does (from OpenCE pull request #374 by chestahh: leaving showed only Halo's background)
+    f"{MT}/connected/connected_map_select_wrapper": {"set": {
+        "flags": "pass_unhandled_to_focused_child pause_game main_menu_if_no_history tag_controller_index force_handle_mouse",
+    }},
     # (MENUS, above QUIT: _menus_select; the column up 18, ce_menus.CHILD_OFFSETS)
     "main_menu/main_menu_select_list": {"insert_before": {
         "main_menu/main_menu_item_quit_game": ['<child widget="main_menu/main_menu_item_menus" x="192" y="373"/>'],

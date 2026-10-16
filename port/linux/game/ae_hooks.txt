@@ -550,3 +550,7 @@ port/linux/game/menu_functions.c	if ((widget = named(description, "lobby_map_pic
 source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c	#include "ae_camo_viewmodel.h" /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c	rasterizer_globals.first_person_weapon_far_clip_distance);\nae_camo_viewmodel_depth_begin(); /* AE hook */\n}
 source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c	rasterizer_set_frustum_z(0.0f, 0.0f);\nae_camo_viewmodel_depth_end(); /* AE hook */\n}
+# The next game's map when the stage's (Derelict by default) has no file (0.2.6, owner 10-15: a data folder without
+# carousel.map hit "couldn't find map 'carousel' on the DVD" and the dirty disc screen): the first listed map that has one
+source/game/game_engine.c	#include "ae_stage_map.h" /* AE hook */
+source/game/game_engine.c	ae_stage_map_check(global_stage.map_name, sizeof(global_stage.map_name)); /* AE hook */

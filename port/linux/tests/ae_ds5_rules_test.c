@@ -395,6 +395,13 @@ int main(void)
 		state.firing = 0;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(same(effect, weapon_4_7_6, sizeof(weapon_4_7_6)));
+		/* (firing: a buzz at the burst's 15 rounds a second, amplitude 7, owner 10-15 "more punch like the assault
+		rifle") */
+		state.firing = 1;
+		state.rate_of_fire = 15.0f;
+		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
+		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 7 at 15 Hz"));
+		state.firing = 0;
 
 		/* assault rifle: light hold; firing, round 1's buzz at the rate of fire; no kick */
 		memset(&state, 0, sizeof(state));
@@ -454,10 +461,22 @@ int main(void)
 		/* (charging: the trigger is held down, so a hum rising with the charge, faster once charged) */
 		state.charge = 0.5f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 6 at 25 Hz"));
+		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 2 at 25 Hz"));
 		state.charge = 1.0f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "charged: vibration from zone 2 amplitude 8 at 40 Hz"));
+		CHECK(!strcmp(text, "charged: vibration from zone 2 amplitude 3 at 40 Hz"));
+		/* (the motors while it charges: a pulse every 3 ticks, rising with the charge; none for other kinds or at rest) */
+		{
+			struct ae_ds5_rumble charge_rumble;
+
+			CHECK(ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 0.5f, 3, &charge_rumble) && charge_rumble.right == 140 &&
+				charge_rumble.left == 55 && charge_rumble.ms == 140);
+			CHECK(ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 1.0f, 6, &charge_rumble) && charge_rumble.right == 210 &&
+				charge_rumble.left == 110);
+			CHECK(!ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 0.5f, 4, &charge_rumble));
+			CHECK(!ae_ds5_charge_rumble(AE_DS5_WEAPON_CHARGE, 0.0f, 3, &charge_rumble));
+			CHECK(!ae_ds5_charge_rumble(AE_DS5_WEAPON_SEMI, 0.5f, 3, &charge_rumble));
+		}
 		/* (its battery spent: the dry click) */
 		state.empty = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
@@ -468,8 +487,9 @@ int main(void)
 			effect[9] == 30 && rumble.left == 255);
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SNIPER, AE_DS5_EVENT_SHOT, 100) == 90 &&
 			same(effect, full_kick, sizeof(full_kick)));
-		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_BURST, AE_DS5_EVENT_SHOT, 100) == 30 && effect[0] == 0x21 &&
-			effect[6] == 0x36);
+		/* (the battle rifle: no kick, its firing buzz carries the burst; both motors a round, 50 ms) */
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_BURST, AE_DS5_EVENT_SHOT, 100) == 0 && rumble.left == 255 &&
+			rumble.right == 140 && rumble.ms == 50);
 		/* the plasma pistol: a powerful pulse a shot (Covenant: the right motor), the overcharged blast both */
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_CHARGE, AE_DS5_EVENT_SHOT, 100) == 70 && effect[0] == 0x26 &&
 			effect[9] == 40 && rumble.right == 160 && rumble.left == 0);
@@ -503,7 +523,7 @@ int main(void)
 			CHECK(ae_ds5_overcharge_flash(rgb, 8) && rgb[1] == 85);
 			CHECK(!ae_ds5_overcharge_flash(rgb, 9) && !ae_ds5_overcharge_flash(rgb, -1));
 		}
-		CHECK(!strcmp(ae_ds5_profile_feel(AE_DS5_WEAPON_BURST), "click, three pulses a burst"));
+		CHECK(!strcmp(ae_ds5_profile_feel(AE_DS5_WEAPON_BURST), "click, buzzes through the burst"));
 	}
 
 	/* the powerups: lightbar and L2 */
@@ -585,7 +605,7 @@ int main(void)
 		state.firing = 0;
 		state.charge = 0.75f;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
-		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 7 at 25 Hz"));
+		CHECK(!strcmp(text, "charging: vibration from zone 2 amplitude 3 at 25 Hz"));
 		state.charge = 0.0f;
 		state.overheated = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
@@ -626,8 +646,11 @@ int main(void)
 		shield.max_color = 0x0000ffUL;
 		shield.flash_color = 0x00ff00UL;
 		shield.empty_color = 0x400000UL;
-		/* full: the max colour, full brightness */
+		/* full: the owner's deep navy (0, 14, 117); just under full: the meter's max colour */
 		shield.vitality = 1.0f;
+		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
+		CHECK(rgb[0] == 0 && rgb[1] == 14 && rgb[2] == 117 && !strcmp(text, "shield: full"));
+		shield.vitality = 0.99f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
 		CHECK(rgb[0] == 0 && rgb[1] == 0 && rgb[2] == 255 && !strcmp(text, "shield: meter"));
 		/* half: halfway from min to max, at 62.5 % */
@@ -663,13 +686,13 @@ int main(void)
 		/* overshield: the HUD's layer colours */
 		shield.vitality = 2.0f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[0] == 255 && rgb[1] == 0 && !strcmp(text, "shield: overshield layer 1"));
+		CHECK(rgb[0] == 255 && rgb[1] == 0 && rgb[2] == 51 && !strcmp(text, "shield: overshield layer 1"));
 		shield.vitality = 2.5f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[0] == 0 && rgb[1] == 179 && !strcmp(text, "shield: overshield layer 2"));
+		CHECK(rgb[1] > rgb[0] && rgb[1] > 60 && rgb[1] < 209 && !strcmp(text, "shield: overshield layer 2"));
 		shield.vitality = 3.0f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
-		CHECK(rgb[1] == 255 && !strcmp(text, "shield: overshield layer 2"));
+		CHECK(rgb[0] == 14 && rgb[1] == 209 && rgb[2] == 0 && !strcmp(text, "shield: overshield layer 2"));
 		/* dead: dark */
 		shield.dead = 1;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
@@ -677,7 +700,7 @@ int main(void)
 		/* no colours in the tag: the HUD's blue */
 		memset(&shield, 0, sizeof(shield));
 		shield.popped_ticks = -1;
-		shield.vitality = 1.0f;
+		shield.vitality = 0.99f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
 		CHECK(rgb[0] == 0x28 && rgb[1] == 0x96 && rgb[2] == 0xff);
 	}

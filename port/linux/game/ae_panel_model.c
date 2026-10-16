@@ -291,6 +291,8 @@ void ae_panel_model_build(const struct ae_panel_snapshot *in, struct ae_panel_mo
 		}
 
 	out->shield_fill = clamp01(in->shield);
+	out->shield_trail = clamp01(in->shield_trail);
+	out->shield_trail_alpha = clamp01(in->shield_trail_alpha);
 	out->overshield1 = clamp01(in->shield - 1.0f);
 	out->overshield2 = clamp01(in->shield - 2.0f);
 	out->shield_red = in->shield_low || in->shield_down;
@@ -314,4 +316,43 @@ void ae_panel_model_build(const struct ae_panel_snapshot *in, struct ae_panel_mo
 	}
 	if (in->camo_ticks > 0)
 		add_buff(out, L"CAMO", ae_panel_camo_seconds(in->camo_ticks));
+}
+
+void ae_panel_trail_step(struct ae_panel_trail *state, real shield, long now, real *trail, real *alpha)
+{
+	real current = clamp01(shield);
+	long age;
+
+	*trail = current;
+	*alpha = 0.0f;
+	if (current > state->last + 0.0001f || !state->active)
+	{
+		/* (rising, or no hit under way: none; a drop from here starts one) */
+		if (current < state->last - 0.005f && state->last <= 1.0f)
+		{
+			state->active = TRUE;
+			state->trail = state->last;
+			state->hit_tick = now;
+		}
+		else
+			state->active = FALSE;
+	}
+	else if (current < state->last - 0.005f && now - state->hit_tick >= AE_PANEL_TRAIL_HOLD)
+	{
+		/* (another hit once the first's hold is over: a new trail from where the shield was) */
+		state->trail = state->last;
+		state->hit_tick = now;
+	}
+	state->last = current;
+	if (!state->active)
+		return;
+	age = now - state->hit_tick;
+	if (age >= AE_PANEL_TRAIL_HOLD + AE_PANEL_TRAIL_FADE || state->trail <= current)
+	{
+		state->active = FALSE;
+		return;
+	}
+	*trail = state->trail;
+	*alpha = age < AE_PANEL_TRAIL_HOLD ? 1.0f :
+		1.0f - (real)(age - AE_PANEL_TRAIL_HOLD) / (real)AE_PANEL_TRAIL_FADE;
 }
