@@ -30,7 +30,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   ("YOU ARE THE JUGGERNAUT", the lead).
 - A guest in a CTF game sees the right return countdown for a flag dropped while all its players were dead.
 - DualSense TRIGGER STRENGTH spread wider: LIGHT is now a hair trigger (every hold or click a short light break at
-  the top of the pull, nothing deeper in it; kicks, buzzes and the motors at half), STRONG is clearly stronger (every effect x1.75 and at least a step up, so the
+  the top of the pull, nothing deeper in it; kicks, buzzes and the motors at three quarters), STRONG is clearly stronger (every effect x1.75 and at least a step up, so the
   needler and plasma rifle change too; the motors x1.4). NORMAL is as before.
 - HUD STYLE AE draws with fewer lookups a frame (the HUD's sheets once a map, settings once a change).
 

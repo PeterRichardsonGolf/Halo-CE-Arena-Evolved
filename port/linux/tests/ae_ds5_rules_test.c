@@ -705,48 +705,48 @@ int main(void)
 		CHECK(rgb[0] == 0x28 && rgb[1] == 0x96 && rgb[2] == 0xff);
 	}
 
-	/* TRIGGER STRENGTH: LIGHT a hair trigger (half strength, every hold or click a light break at zones 2-3, kicks
-	from zone 0 kept, motors at half); STRONG x1.75, at least a step up, kept 1-8, motors at 140 % kept 0-255; the
+	/* TRIGGER STRENGTH: LIGHT a hair trigger (every hold or click a light break at zones 2-3 at half strength, kicks
+	and buzzes at three quarters, motors at three quarters); STRONG x1.75, at least a step up, kept 1-8, motors at 140 % kept 0-255; the
 	player lights */
 	{
 		struct ae_ds5_weapon_state state;
 		struct ae_ds5_rumble rumble;
 		char text[96];
 
-		CHECK(ae_ds5_strength_percent("light") == 50 && ae_ds5_strength_percent("normal") == 100 &&
+		CHECK(ae_ds5_strength_percent("light") == 75 && ae_ds5_strength_percent("normal") == 100 &&
 			ae_ds5_strength_percent("strong") == 175 && ae_ds5_strength_percent("") == 100);
 		memset(&state, 0, sizeof(state));
 		state.kind = AE_DS5_WEAPON_SNIPER;
-		ae_ds5_right_held(effect, &state, 50, text, sizeof(text));
+		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
 		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 3") && effect[0] == 0x25);
 		CHECK(effect[1] == 0x0c && effect[3] == 2);
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 2 strength 8"));
 		state.kind = AE_DS5_WEAPON_NEEDLER;
-		ae_ds5_right_held(effect, &state, 50, text, sizeof(text));
+		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
 		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 2"));
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 3 strength 2"));
 		state.kind = AE_DS5_WEAPON_SEMI;
-		ae_ds5_right_held(effect, &state, 50, text, sizeof(text));
+		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
 		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 2"));
 		state.kind = AE_DS5_WEAPON_AUTOMATIC;
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 3 strength 4"));
 		state.firing = 1;
 		state.rate_of_fire = 15.0f;
-		ae_ds5_right_held(effect, &state, 50, text, sizeof(text));
-		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 3 at 15 Hz"));
+		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
+		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 4 at 15 Hz"));
 		state.firing = 0;
-		/* the pistol's shot on LIGHT: its snap back kept (from zone 0, after the shot) at half, the motor at half */
-		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 50) == 35 && effect[0] == 0x21);
-		CHECK(rumble.left == 75 && rumble.ms == 60);
+		/* the pistol's shot on LIGHT: its snap back kept (from zone 0, after the shot), it and the motor at three quarters */
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 75) == 35 && effect[0] == 0x21);
+		CHECK(rumble.left == 113 && rumble.ms == 60 && effect[3] == 0x6d);
 		ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 100);
 		CHECK(effect[0] == 0x21 && rumble.left == 150);
 		ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_SHOT, 175);
 		CHECK(effect[0] == 0x26 && rumble.left == 255);
 		/* L2 */
-		CHECK(!strcmp(ae_ds5_left_effect(effect, 1, 0, 0, 50), "light resistance (zoomed)") && effect[0] == 0x25);
+		CHECK(!strcmp(ae_ds5_left_effect(effect, 1, 0, 0, 75), "light resistance (zoomed)") && effect[0] == 0x25);
 		ae_ds5_left_effect(effect, 1, 0, 0, 175);
 		CHECK(effect[0] == 0x21 && effect[3] == 0xc0);
 		rumble.left = 200;

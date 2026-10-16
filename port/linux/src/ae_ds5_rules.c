@@ -243,13 +243,23 @@ static int hair_trigger(int percent)
 	return percent <= AE_DS5_STRENGTH_LIGHT;
 }
 
+/* the break's strength from LIGHT's scaled one: two thirds of it (the break at half the table's, as the owner
+approved it, while the rest of LIGHT runs at three quarters: owner 10-16 "barely feel the ar on light"), at least
+HAIR_MINIMUM */
+static int hair_strength(int strength)
+{
+	strength = (strength * 2 + 1) / 3;
+	return strength < HAIR_MINIMUM ? HAIR_MINIMUM : strength;
+}
+
 /* a hold or click as LIGHT's break at the top of the pull, else as it is; strength already scaled */
 static void resistance(unsigned char effect[AE_DS5_EFFECT_SIZE], int weapon, int start, int end, int strength,
 	int percent)
 {
 	if (hair_trigger(percent) && (weapon || start > 0))
 	{
-		ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, strength < HAIR_MINIMUM ? HAIR_MINIMUM : strength);
+		strength = hair_strength(strength);
+		ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, strength);
 		return;
 	}
 	if (weapon)
@@ -279,7 +289,7 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 		resistance(effect, 0, shape.a, 0, shape.b, strength);
 		if (hair_trigger(strength) && shape.a > 0)
 			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END,
-				shape.b < HAIR_MINIMUM ? HAIR_MINIMUM : shape.b);
+				hair_strength(shape.b));
 		else
 			snprintf(text, text_size, "feedback from zone %d strength %d", shape.a, shape.b);
 		break;
@@ -287,7 +297,7 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 		resistance(effect, 1, shape.a, shape.c, shape.b, strength);
 		if (hair_trigger(strength))
 			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END,
-				shape.b < HAIR_MINIMUM ? HAIR_MINIMUM : shape.b);
+				hair_strength(shape.b));
 		else
 			snprintf(text, text_size, "click zones %d-%d strength %d", shape.a, shape.c, shape.b);
 		break;

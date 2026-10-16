@@ -178,12 +178,12 @@ void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *sh
 
 /* TRIGGER STRENGTH (input.trigger_strength: light, normal, strong) as a percent of the table's strengths and
 amplitudes (AE_DS5_STRENGTH_LIGHT, 100, AE_DS5_STRENGTH_STRONG; anything else 100). LIGHT is a HAIR TRIGGER: every
-number at half, and every hold or click a short light break at the top of the pull (zones 2-3) so nothing stands deeper
-in it; the motors at AE_DS5_RUMBLE_LIGHT percent. STRONG: every strength-like number x1.75 and at least one step up (kept 1-8), the motors
+hold or click a short light break at the top of the pull (zones 2-3, at half the table's strength) so nothing stands
+deeper in it; kicks and buzzes at three quarters, the motors at AE_DS5_RUMBLE_LIGHT percent. STRONG: every strength-like number x1.75 and at least one step up (kept 1-8), the motors
 at AE_DS5_RUMBLE_STRONG percent (kept 0-255) */
-#define AE_DS5_STRENGTH_LIGHT 50
+#define AE_DS5_STRENGTH_LIGHT 75
 #define AE_DS5_STRENGTH_STRONG 175
-#define AE_DS5_RUMBLE_LIGHT 50
+#define AE_DS5_RUMBLE_LIGHT 75
 #define AE_DS5_RUMBLE_STRONG 140
 int ae_ds5_strength_percent(char const *name);
 /* a rumble's motors scaled by TRIGGER STRENGTH's percent (ae_ds5_event does it itself; for ae_ds5_charge_rumble's) */

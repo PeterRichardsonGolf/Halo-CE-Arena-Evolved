@@ -502,7 +502,7 @@ static const struct config_setting config_settings[] =
 		_platform_desktop,
 		"How strong a DualSense's trigger effects are: \"light\" (a hair\n"
 		"trigger: every hold or click a short light break at the top of the\n"
-		"pull, the rest at half), \"normal\", \"strong\" (every effect x1.75\n"
+		"pull, the rest at three quarters), \"normal\", \"strong\" (every effect x1.75\n"
 		"and at least a step up, the motors x1.4)." },
 	{ "input.lightbar", _config_string, "\"player_color\"", "HALO_LIGHTBAR", _environment_value, /* AE hook */
 		_platform_desktop,
