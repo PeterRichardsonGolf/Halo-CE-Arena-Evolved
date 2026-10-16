@@ -409,6 +409,7 @@ symbols in this file:
 #include "view_fov.h" /* port: display.fov, before the projection and culling */
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_steady_camera.h" /* AE hook */
+#include "ae_coordinates.h" /* AE hook */
 
 #if defined(HALO_WINDOWS) || defined(HALO_ANDROID) || defined(__linux__) || defined(__APPLE__)
 #define HALO_NATIVE_BUILD_INFO 1
@@ -3183,6 +3184,8 @@ screen (hud_item_timers.c keeps the power list clear of it) */
 boolean main_framerate_shown(
 	void)
 {
+	if (ae_coordinates_shown()) /* AE hook */
+		return TRUE;
 	return display_framerate || frame_statistics_level() != _performance_off;
 }
 
@@ -3342,6 +3345,7 @@ void main_framerate_render(
 		break;
 	}
 	line[sizeof(line) - 1] = 0;
+	ae_coordinates_append(line, (long)sizeof(line)); /* AE hook */
 	if (line[0])
 	{
 		frame_rate_color(frame_statistics.frame_rate, &color);

@@ -612,3 +612,8 @@ port/linux/src/port_config.c	{ "input.left_stick_deadzone", _config_integer, "0"
 port/linux/src/port_config.c	{ "input.right_stick_deadzone", _config_integer, "0", "HALO_RIGHT_STICK_DEADZONE", _environment_value, /* AE hook */\n_platform_all,
 source/input/input_xbox.c	#include "ae_stick_dead_zones.h" /* AE hook */
 source/input/input_xbox.c	ae_stick_dead_zones(gamepad_state->sticks, input_state.Gamepad.sThumbLX, input_state.Gamepad.sThumbLY, input_state.Gamepad.sThumbRX, input_state.Gamepad.sThumbRY); /* AE hook */
+# SHOW COORDINATES (display.coordinates): player 1's position and facing on the performance line (ae_coordinates.c)
+port/linux/src/port_config.c	{ "display.coordinates", _config_boolean, "false", "HALO_COORDINATES", _environment_value, /* AE hook */\n_platform_all,
+source/main/main.c	#include "ae_coordinates.h" /* AE hook */
+source/main/main.c	if (ae_coordinates_shown()) /* AE hook */\nreturn TRUE;
+source/main/main.c	ae_coordinates_append(line, (long)sizeof(line)); /* AE hook */

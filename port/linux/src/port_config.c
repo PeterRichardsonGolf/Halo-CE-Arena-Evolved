@@ -148,6 +148,12 @@ static const struct config_setting config_settings[] =
 	{ "display.performance_position", _config_string, "\"top_right\"", "HALO_PERFORMANCE_POSITION",
 		_environment_value, _platform_all,
 		"Where display.performance's line is: \"top_left\" or \"top_right\"." },
+	{ "display.coordinates", _config_boolean, "false", "HALO_COORDINATES", _environment_value, /* AE hook */
+		_platform_all,
+		"For map makers: the performance line (alone when display.performance\n"
+		"is off) ends with player 1's position in world units and facing in\n"
+		"degrees: \"X 97.65 Y -169.62 Z 0.26  FACING 21\" (the camera's\n"
+		"position while they have no body)." },
 	/* (display.performance's before it: config_carry_over) */
 	{ "display.fps_counter", _config_string, "\"off\"", "HALO_FPS_COUNTER", _environment_value, _platform_none,
 		"The frames a second, at the top of the screen: \"top_left\",\n"

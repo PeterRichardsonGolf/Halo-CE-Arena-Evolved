@@ -123,6 +123,9 @@ SCREENS = {
              None),
             ("POSITION:", "display.performance_position", CORNERS,
              "The corner the performance line is drawn in,\nabove the HUD.", None),
+            # (AE, for map makers: ae_coordinates.c)
+            ("SHOW COORDINATES:", "display.coordinates", ON_OFF,
+             "For map makers: your position (X Y Z) and facing\nat the end of the performance line.", None),
             ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
              "Shields light their surroundings as they flare,\nin the shield's own color.", None),
             ("GLOW INTENSITY:", "display.shield_glow_intensity", [("DEFAULT", "default"), ("LIGHT SHOW", "light_show")],
@@ -405,11 +408,11 @@ _video = SCREENS["video_settings"]
 # Setup's nine as OpenCE's)
 _graphics = {"display.high_res_hud", "display.high_res_text", "display.anti_aliasing", "display.anisotropic",
              "display.shadow_resolution", "display.per_pixel_lighting",
-             "display.performance", "display.performance_position",
+             "display.performance", "display.performance_position", "display.coordinates",
              "display.shield_glow", "display.shield_glow_intensity"}
-# (ten rows with ANISOTROPIC FILTERING: 27 apart, as Game Options' ten)
+# (eleven rows with ANISOTROPIC FILTERING and SHOW COORDINATES: 24 apart)
 SCREENS["video_settings/graphics"] = {
-    "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 27,
+    "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 24,
     "same_place": ["anti_aliasing_android"],
     "rows": [row for row in _video["rows"] if row[1] in _graphics],
 }
