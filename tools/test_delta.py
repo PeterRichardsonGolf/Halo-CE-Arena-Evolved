@@ -629,6 +629,21 @@ def test_loader_fetches_nothing_unless_turned_on(keys, checker, tmp_path):
     assert "request:" not in output
 
 
+def test_loader_takes_no_table_unless_turned_on(keys, checker, tmp_path):
+    """(Arena Evolved) network.legacy_table_fetch off, its default: a table another machine offers is not taken, and
+    one in the cache (taken while the fetch was on) is not read: the built-in numbers stay"""
+    base = floor()
+    table = write_signed(keys, tmp_path / "t10", document(serial=10))
+    output = run_checker(checker, tmp_path, "offer", table, "state", fetch=False)
+    assert "offer 0" in output
+    assert state_line(output)[0].startswith(f"state {base['announce']} {base['minimum']} {base['maximum']} serial 0 ")
+    # (taken with the fetch on, cached; then a run with it off reads none)
+    output = run_checker(checker, tmp_path, "offer", table, "state")
+    assert "offer 1" in output and (tmp_path / "delta_legacy.signed").is_file()
+    output = run_checker(checker, tmp_path, "state", fetch=False)
+    assert state_line(output)[0].startswith(f"state {base['announce']} {base['minimum']} {base['maximum']} serial 0 ")
+
+
 def test_loader_says_once_that_no_table_is_published(checker, tmp_path):
     """neither Delta List nor GitHub has a table (404 from both): said once a
     run, however many times it looks again; a server it cannot reach is said

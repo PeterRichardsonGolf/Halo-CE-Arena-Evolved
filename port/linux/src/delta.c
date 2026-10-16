@@ -818,6 +818,7 @@ static void delta_load(void)
 		return;
 	delta_cache_path(path, sizeof(path));
 	file = config_file_read(path, &size);
+	if (file && !config_boolean("network.legacy_table_fetch")) { free(file); file = NULL; } /* AE hook */
 	if (file)
 	{
 		delta_take_signed(file, size, "the cache", 0);
@@ -1018,6 +1019,7 @@ int delta_legacy_offer(const char *signed_table, int size)
 	pthread_once(&delta_once, delta_load);
 	if (size < 0 || delta_legacy_override())
 		return 0;
+	if (!config_boolean("network.legacy_table_fetch")) return 0; /* AE hook */
 	return delta_take_signed(signed_table, (size_t)size, "another machine", 1) == _delta_taken;
 }
 

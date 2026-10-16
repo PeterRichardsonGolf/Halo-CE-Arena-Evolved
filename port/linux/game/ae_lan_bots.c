@@ -134,9 +134,17 @@ static boolean lan_bot_still_there(struct network_game *game, short bot_index, s
 
 static boolean lan_remove(struct network_game *game, short bot_index, char const *why)
 {
-	struct network_player leaving = game->players[(long)lan.bots[bot_index].slot];
-	boolean removed = network_game_remove_player(game, &leaving);
+	struct network_player leaving;
+	boolean removed;
 
+	/* (only the bot as it was put there: a slot something else took since is not this bot's to empty) */
+	if (!lan_bot_still_there(game, bot_index, network_game_client_get_local_machine_index()))
+	{
+		lan.bots[bot_index].active = FALSE;
+		return FALSE;
+	}
+	leaving = game->players[(long)lan.bots[bot_index].slot];
+	removed = network_game_remove_player(game, &leaving);
 	lan.bots[bot_index].active = FALSE;
 	platform_log("lan bots: bot %d left the lobby (%s)", bot_index + 1, why);
 	return removed;

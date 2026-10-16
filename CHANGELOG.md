@@ -6,6 +6,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Network: with `network.legacy_table_fetch` off (the default), no signed legacy table is taken from another machine
+  or read from the cache either, so Arena Evolved keeps its own network numbers as the README says.
+- The lobby's map, when it is a Custom Edition map whose file is gone, falls back to another map instead of stopping
+  on the damaged-disc screen.
+- Bots: a LAN bot is taken out of the lobby only while its slot is still its own; aim delay history and crouch timers
+  start fresh each game.
+- Delta Stats with bots: the host that has the bots never records the game; a player who joins a LAN game with bots
+  and has turned on joined-game reports still reports it (a joining PC cannot tell the bots from people).
+- HUD: overshield and shield-trail state per player for up to 128 players; CE's messages lay out round the AE panels
+  only while they are drawn; a map picture added while the game runs shows within a few seconds.
+- Going back to 0.2.5-beta or older: a gametype with OTHER PLAYERS ON RADAR at ENEMIES shows no players on the
+  motion sensor there (older builds do not know the value); online it plays as the host's.
+
 - SHUFFLE puts an odd one out on red or blue at random (it was always red).
 - PC lobby with LAN bots: the host's last person pressing B (to change the map or gametype) left an empty lobby that
   could not be backed out of, because the bots counted as that PC's players. Now that B leaves as the last player's

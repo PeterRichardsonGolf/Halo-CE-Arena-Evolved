@@ -20,6 +20,7 @@ when their files are there).
 #include <stdio.h>
 #include <string.h>
 
+#include "halo_map_families.h"
 #include "halo_ui_map_list.h"
 #include "ae_stage_map.h"
 
@@ -52,8 +53,16 @@ static boolean xbox_map_file_present(char const *name)
 
 static boolean map_present(char const *name)
 {
-	/* (a Custom Edition or other family's map is listed only when found) */
-	return strchr(name, '@') ? TRUE : xbox_map_file_present(name);
+	char file[256], path[1024];
+	short family;
+
+	if (!strchr(name, '@'))
+		return xbox_map_file_present(name);
+	/* (a Custom Edition or other family's map: its file found now, not only when the list was made: a file gone
+	since would stop the game on the damaged-disc screen) */
+	file[0] = 0;
+	family = map_family_parse(name, file, (long)sizeof(file));
+	return file[0] && map_family_find(family, file, path, (long)sizeof(path));
 }
 
 void ae_stage_map_check(char *map_name, long size)

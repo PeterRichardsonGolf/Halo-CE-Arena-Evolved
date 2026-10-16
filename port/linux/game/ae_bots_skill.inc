@@ -100,9 +100,19 @@ static void ae_bots_aim_delay(short skill, long target_player_index, real_point3
 	long delay = ae_bots_track_delay_ticks(skill);
 	long player = target_player_index == NONE ? -1 : DATUM_INDEX_TO_ABSOLUTE_INDEX(target_player_index);
 	long slot;
+	static long last_now = -1;
 
 	if (player < 0 || player >= AE_BOTS_TRACK_PLAYERS || now < 0)
 		return;
+	/* (a game's ticks start over: the last game's places are dropped, so that none is taken for a tick of this one) */
+	if (now < last_now)
+	{
+		long index;
+
+		for (index = 0; index < AE_BOTS_TRACK_PLAYERS * AE_BOTS_TRACK_TICKS; index++)
+			ae_bots_track[index / AE_BOTS_TRACK_TICKS][index % AE_BOTS_TRACK_TICKS].tick = -1;
+	}
+	last_now = now;
 	slot = now % AE_BOTS_TRACK_TICKS;
 	ae_bots_track[player][slot].tick = now;
 	ae_bots_track[player][slot].centre = *aim_point;

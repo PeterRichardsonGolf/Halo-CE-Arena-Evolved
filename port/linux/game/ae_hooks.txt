@@ -675,3 +675,8 @@ source/cache/cache_files.c	ae_sound_filter_tags_unloaded(); /* AE hook */
 # LAN bots: the host's last person's B in the PC lobby leaves as the last player's does (the bots go too), not leaving an
 # empty lobby (ae_glue_lan.c ae_lobby_only_bots_stay)
 port/linux/game/menu_functions.c	if (ae_lobby_only_bots_stay(controller)) return ae_lobby_leave_all(controller); /* AE hook */
+# network.legacy_table_fetch off (the default): no signed legacy table is taken at all, not from another machine nor
+# from the cache, so Arena Evolved keeps its built-in network numbers as the README says (0.3.0 review: a
+# ChupathingyCE table's row for the shared wire could otherwise widen AE's numbers)
+port/linux/src/delta.c	if (!config_boolean("network.legacy_table_fetch")) return 0; /* AE hook */
+port/linux/src/delta.c	if (file && !config_boolean("network.legacy_table_fetch")) { free(file); file = NULL; } /* AE hook */
