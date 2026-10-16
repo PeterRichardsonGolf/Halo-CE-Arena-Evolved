@@ -15,6 +15,8 @@ PRELUDE = r'''
 typedef float real;
 typedef int boolean;
 #define NONE (-1)
+/* (AE: NHE SOUND FILTER's gain, port/linux/game/ae_sound_filter.c: nothing muted here) */
+#define ae_sound_filter_gain(...) 1.f
 #define TRUE 1
 #define FALSE 0
 #define TEST_FLAG(x,b) (((x)&(1u<<(b)))!=0)
