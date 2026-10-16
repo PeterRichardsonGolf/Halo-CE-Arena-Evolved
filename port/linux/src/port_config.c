@@ -394,7 +394,8 @@ static const struct config_setting config_settings[] =
 	{ "audio.nhe_sound_filter", _config_boolean, "false", "HALO_NHE_SOUND_FILTER", _environment_value, /* AE hook */
 		_platform_all,
 		"Mute the sounds Halo 1: NHE 1.0 took out of its maps, on any map, for\n"
-		"this machine: the plasma pistol's charging hum and the needler's firing." },
+		"this machine: the plasma pistol's charging hum and the needler's firing\n"
+		"(NHE SOUND FILTER on NHE OPTIONS)." },
 	{ "audio.resampling", _config_string, "\"sinc\"", "HALO_AUDIO_RESAMPLING", _environment_value, _platform_all,
 		"How sounds recorded at another rate (most are 22 kHz) are played at the\n"
 		"output's 48 kHz: \"sinc\" keeps their band and nothing above it;\n"

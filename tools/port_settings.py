@@ -280,8 +280,7 @@ SCREENS = {
     "audio_settings": {
         "screen": "audio_settings_screen",
         "header": ("header_profile_audio_settings", f"{PE}/audio_settings/header_profile_audio_settings"),
-        # (27, not 30: ten rows with NHE SOUND FILTER)
-        "spacing": 27,
+        "spacing": 30,
         # (the devices, desktop only, first: Android's rows from the top)
         "platform_places": True,
         "rows": [
@@ -296,10 +295,6 @@ SCREENS = {
              "The volume of every other sound: effects and\nspeech.", None),
             ("REVERB:", "audio.reverb", ON_OFF,
              "Echo sounds as the place you are in does, and\nmuffle those behind walls, as the Xbox did.", None),
-            # (AE: ae_sound_filter.c; this machine's, so no gametype or network change)
-            ("NHE SOUND FILTER:", "audio.nhe_sound_filter", ON_OFF,
-             "Mute what Halo 1: NHE took out of its maps: the\nplasma pistol's charging hum, the needler's shots.",
-             None),
             ("SOUND:", "audio.enabled", ON_OFF,
              "Play sound at all; from the next time the game\nstarts.", None),
             # voice chat: this machine's own (port/linux/game/network_voice.c)
@@ -1959,6 +1954,15 @@ NHE_ROWS = [
         "As Halo 1: NHE: everyone joins red and keeps their\\ncolour between games, the dead camera stays on you,\\nand the match clock counts up.",
     ]),
 ]
+# (AE: NHE OPTIONS' own row of this machine's settings, after the gametype's: a setting spinner, as the settings
+# screens' (its value loaded on "port setting load", written by OK's "port settings save"; nothing in the
+# gametype, nothing over the network): ae_sound_filter.c)
+NHE_SETTING_ROWS = [
+    ("nhe_sound_filter", "NHE SOUND FILTER:", "audio.nhe_sound_filter", ON_OFF, [
+        "Your game only, any map: mutes the plasma pistol's\\ncharging hum and the needler's shots, as Halo 1:\\nNHE's maps did.",
+        "Your game only: the plasma pistol's charging hum\\nand the needler's shots play as usual.",
+    ]),
+]
 
 
 def _arena_options() -> list:
@@ -2052,7 +2056,7 @@ def _nhe_options() -> list:
                      ['<data input="game settings lists text update"/>',
                       '<on event="created" run="mp profile init player opts"/>',
                       *[f'<child widget="{base}/op_{key}" x="54" y="{73 + 30 * index}"/>'
-                        for index, (key, *_) in enumerate(NHE_ROWS)],
+                        for index, (key, *_) in enumerate(NHE_ROWS + NHE_SETTING_ROWS)],
                       f'<child widget="{base}/nhe_button_bar" y="414"/>'])
     lines += _widget(f"{base}/nhe_options_help",
                      [("type", "text"), ("controller", 1), ("left", 68), ("top", 321), ("width", 482),
@@ -2065,7 +2069,8 @@ def _nhe_options() -> list:
                       f'<child widget="{base}/nhe_button_ok" x="380" y="1"/>',
                       '<child widget="common_button_cancel" x="510" y="1"/>'])
     lines += _button(f"{base}/nhe_button_ok", 1,
-                     ['<on event="a" run="mp profile set player options" back="true"/>',
+                     ['<on event="a" run="port settings save"/>', '<on event="start" run="port settings save"/>',
+                      '<on event="a" run="mp profile set player options" back="true"/>',
                       '<on event="start" run="mp profile set player options" back="true"/>'])
     for index, (key, _, values, _) in enumerate(NHE_ROWS):
         lines += _widget(f"{base}/op_{key}",
@@ -2087,8 +2092,28 @@ def _nhe_options() -> list:
                           ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 178 19 184")],
                          ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
         lines += _strings(f"{base}/var_{key}", values)
-    lines += _strings(f"{base}/nhe_options_labels", [label for _, label, _, _ in NHE_ROWS])
-    lines += _strings(f"{base}/cap_nhe_options", [text for *_, helps in NHE_ROWS for text in helps])
+    for index, (key, _, setting, choices, _) in enumerate(NHE_SETTING_ROWS, len(NHE_ROWS)):
+        lines += _widget(f"{base}/op_{key}",
+                         [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                          ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                         [f'<child widget="{base}/{key}_label"/>',
+                          f'<child widget="{base}/{key}_spinner" x="320" y="1"/>'])
+        lines += _widget(f"{base}/{key}_label",
+                         [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
+                          ("string_list", f"{base}/nhe_options_labels"), ("string_index", index),
+                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+        lines += _widget(f"{base}/{key}_spinner",
+                         [("type", "spinner"), ("left", 2), ("top", 2), ("width", 176), ("height", 20),
+                          ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                          ("strings", "|".join(shown for shown, _ in choices)), ("setting", setting),
+                          ("values", "|".join(value for _, value in choices)), ("font", "ui\\large_ui"),
+                          ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4),
+                          ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 178 19 184")],
+                         ['<on event="created" run="port setting load"/>',
+                          '<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    lines += _strings(f"{base}/nhe_options_labels", [label for _, label, *_ in NHE_ROWS + NHE_SETTING_ROWS])
+    lines += _strings(f"{base}/cap_nhe_options", [text for *_, helps in NHE_ROWS + NHE_SETTING_ROWS for text in helps])
     return lines
 
 

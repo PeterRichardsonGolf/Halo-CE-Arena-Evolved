@@ -1,7 +1,8 @@
 /*
 AE_SOUND_FILTER.H
 
-NHE SOUND FILTER (audio.nhe_sound_filter, Settings > Audio): this machine
+NHE SOUND FILTER (audio.nhe_sound_filter, a row of this machine's on the
+gametype editor's NHE OPTIONS screen; not in the gametype): this machine
 mutes the sounds Halo 1: NHE 1.0 took out of its maps' tags (notes: NHE's
 release notes): the plasma pistol's charging hum and the needler's firing.
 Any map: matched by the sound tags' names (the stock maps' paths). A

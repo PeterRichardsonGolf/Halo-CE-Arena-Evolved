@@ -38,6 +38,8 @@ static struct sound_datum *checked_sound(long i) {
 #define sound_scale_value(a,...) (a)
 #define sound_definition_get_minimum_distance(...) 0.f
 #define sound_manager_master_gain(...) 1.f
+/* (AE: NHE SOUND FILTER's gain, port/linux/game/ae_sound_filter.c: nothing muted here) */
+#define ae_sound_filter_gain(...) 1.f
 #define limit_pitch(a,...) (a)
 #define sound_cache_sound_loaded(...) TRUE
 #define _sound_cache_sound_request(...) TRUE
