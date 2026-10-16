@@ -34,7 +34,9 @@ long game_time_get(void);
 #define RIM_UNITS 42.0f                 /* CE's sweep radius, HUD units */
 #define RIM_UNITS_SPLIT 32.0f
 #define DESIGN_RIM 92.0f                /* the spec's 1p rim, px: blip sizes are given for it */
-#define NEWEST_BLIP_PX 3.4f             /* a medium contact's newest sample's radius at the design rim */
+#define NEWEST_BLIP_PX 5.0f             /* a medium contact's newest sample's radius at the design rim (owner 10-15:
+                                           3.4 "too small", harder to track than CE's) */
+#define TRAIL_ALPHA 0.85f               /* the trail: this x the square root of CE's fade (CE's own fade read too faint) */
 #define LABEL_LEFT_OF_CENTRE 1.033f     /* x r: the label's left edge (1p x 142 for a centre at 237, r 92) */
 #define MAXIMUM_TAKEN_BLIPS 512
 #define AE_PI 3.14159265f
@@ -141,7 +143,7 @@ static void blips(real cx, real cy, real r, real k)
 			ae_sensor_blip_offset(b->x, b->y, taken.sensor_scale, r, &dx, &dy);
 			if (radius < 1.2f)
 				radius = 1.2f;
-			color.alpha = newest ? 1.0f : b->fade;
+			color.alpha = newest ? 1.0f : TRAIL_ALPHA * (real)sqrt(b->fade);
 			color.red = b->rgb[0];
 			color.green = b->rgb[1];
 			color.blue = b->rgb[2];
