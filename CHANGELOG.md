@@ -22,7 +22,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   juggernaut. The rumble pulses follow the profile's VIBRATION setting and go into the game's own rumble. The
   lightbar takes your colour (your team's in a team game; with black armour it shows your shield, as LIGHTBAR SHIELD),
   pulses while an overshield charges, breathes while you have one, dims with active camouflage and flashes white as
-  you become the juggernaut; LIGHTBAR SHIELD shows your shield instead, as the HUD's meter does (its own colours,
+  you become the juggernaut; LIGHTBAR SHIELD shows your shield instead (a full shield deep navy, then the HUD meter's own colours,
   dimmer as it drains, blinking when low, the empty colour when down, a white flash on the pop with COMBAT FEEDBACK
   ARENA EVOLVED, the overshield's layer colours, dark while dead). The player lights show your split-screen number.
   Settings > Gamepads: ADAPTIVE TRIGGERS, TRIGGER STRENGTH (LIGHT, NORMAL, STRONG) and LIGHTBAR (OFF, PLAYER COLOR,

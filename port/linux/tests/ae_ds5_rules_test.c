@@ -638,8 +638,11 @@ int main(void)
 		shield.max_color = 0x0000ffUL;
 		shield.flash_color = 0x00ff00UL;
 		shield.empty_color = 0x400000UL;
-		/* full: the max colour, full brightness */
+		/* full: the owner's deep navy (0, 14, 117); just under full: the meter's max colour */
 		shield.vitality = 1.0f;
+		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
+		CHECK(rgb[0] == 0 && rgb[1] == 14 && rgb[2] == 117 && !strcmp(text, "shield: full"));
+		shield.vitality = 0.99f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
 		CHECK(rgb[0] == 0 && rgb[1] == 0 && rgb[2] == 255 && !strcmp(text, "shield: meter"));
 		/* half: halfway from min to max, at 62.5 % */
@@ -689,7 +692,7 @@ int main(void)
 		/* no colours in the tag: the HUD's blue */
 		memset(&shield, 0, sizeof(shield));
 		shield.popped_ticks = -1;
-		shield.vitality = 1.0f;
+		shield.vitality = 0.99f;
 		ae_ds5_lightbar_shield(rgb, &shield, text, sizeof(text));
 		CHECK(rgb[0] == 0x28 && rgb[1] == 0x96 && rgb[2] == 0xff);
 	}

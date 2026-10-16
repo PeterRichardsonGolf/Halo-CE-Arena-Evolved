@@ -590,6 +590,12 @@ static float stepped(float value)
 	return (float)(int)(value * (float)SHIELD_STEPS + 0.5f) / (float)SHIELD_STEPS;
 }
 
+/* a full shield's lightbar (owner 10-15: RGB 0, 14, 117), from this vitality up */
+#define SHIELD_FULL 0.999f
+#define SHIELD_FULL_RED 0
+#define SHIELD_FULL_GREEN 14
+#define SHIELD_FULL_BLUE 117
+
 void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size)
 {
 	/* (hud_unit.c's overcharge layers: none, then red, green, yellow, violet) */
@@ -636,6 +642,15 @@ void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *sh
 	{
 		colour_scaled(rgb, empty ? empty : HUD_RED, 0.6f);
 		snprintf(text, text_size, "shield: empty");
+		return;
+	}
+	/* (a full shield: the owner's own colour, deep navy, so full reads apart from the meter's blue as it drains) */
+	if (shield->vitality >= SHIELD_FULL)
+	{
+		rgb[0] = SHIELD_FULL_RED;
+		rgb[1] = SHIELD_FULL_GREEN;
+		rgb[2] = SHIELD_FULL_BLUE;
+		snprintf(text, text_size, "shield: full");
 		return;
 	}
 	fill = stepped(shield->vitality);
