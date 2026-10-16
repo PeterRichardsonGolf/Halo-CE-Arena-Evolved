@@ -201,6 +201,13 @@ ROWS["AE CRAZYKNG"] = FFAX("king", 2, 0, 150, 2, "all", "nav points", **{"moving
 ROWS["AE RACE"] = FFAX("race", 3, 0, 300, 2, "all", "nav points", **{"race": "normal", "team scoring": "minimum"})
 ROWS["AE RALLY"] = FFAX("race", 15, 0, 300, 2, "all", "nav points", **{"race": "rally", "team scoring": "minimum"})
 
+# revision 12: PLAYERS ON RADAR ENEMIES on the AE team seeds whose motion sensor shows players (their AE BR twins below
+# take it from them); the free for all ones keep ALL (ENEMIES plays as ALL there), the NHE set its own
+RADAR_ENEMIES = ("AE TEAM SLY", "AE CTF", "AE KING", "AE 2V2 SLY", "AE 2V2 CTF", "AE 2V2 KING", "AE 2V2 BALL", "AE TEAM OB",
+                 "AE ROCKETS", "AE SHOTGUNS", "AE HEAVIES")
+for _name in RADAR_ENEMIES:
+    ROWS[_name][0]["radar players"] = "enemies"
+
 # revision 11: the AE BR set, each one its AE twin with the battle rifle in hand (the weapon pack's rifle over the
 # PRIMARY slot's assault rifle) and the pistol second; nothing else differs (arena_gametypes.c's self-check too)
 BR_TWINS = {

@@ -115,6 +115,7 @@ symbols in this file:
 #include "ae_score_strip.h" /* AE hook */
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_panels.h" /* AE hook */
+#include "ae_radar.h" /* AE hook */
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "units/unit_definitions.h"
@@ -1275,7 +1276,7 @@ static void hud_draw_player_names(
 		if (iterator.datum_index == player_index || player->unit_index == NONE)
 			continue;
 		if ((ally && setting == _player_names_enemies) || (!ally && setting == _player_names_allies) ||
-			!game_engine_draw_object_in_motion_sensor(player->unit_index))
+			!ae_radar_name_shown(player->unit_index)) /* AE hook */
 		{
 			continue;
 		}

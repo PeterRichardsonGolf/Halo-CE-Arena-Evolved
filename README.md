@@ -160,6 +160,10 @@ play:
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic
   health, no grenades), ROCKETS, SHOTGUNS and HEAVIES (75 kills, the map's
   vehicles).
+- **Motion sensor, enemies only** (0.3.0): the team gametypes above that have the
+  motion sensor (and their AE BR twins) show only enemies on it, never your
+  teammates (OTHER PLAYERS ON RADAR: ENEMIES, in Indicator Options); the free
+  for all ones show every other player, as ENEMIES does there.
 - **Arena Evolved BR** (0.3.0): the casual set, the free for all variants, FFA AE PRACTICE and AE COMP again with the
   **battle rifle in hand** and the pistol second (FFA AE BR SLAYER, TEAM AE BR SLAYER, TEAM AE BR COMP CTF, ... 25
   gametypes; stored as AE BR FFA, AE BR TS, AE BR C CTF, ...). Every other value is its twin's. Not made for the

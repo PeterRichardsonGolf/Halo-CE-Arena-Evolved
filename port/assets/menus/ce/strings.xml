@@ -454,6 +454,7 @@
 		<string text="The game's objectives will have special markers\ndisplayed over them on screen, only while you\ncan see them."/>
 		<string text="All other players in the game will show up on your \nMotion Tracker when mobile."/>
 		<string text="Other friendly players in the game will show up on \nyour Motion Tracker when mobile."/>
+		<string text="Only enemies will show up on your Motion Tracker\nwhen mobile, never your teammates. In a free for\nall, every other player."/>
 		<string text="Other players in the game will never show up on your\nMotion Tracker."/>
 		<string text="Green triangles will appear over the heads of your\nteammates as a reminder that you should not shoot\nthem."/>
 		<string text="Your teammates will only be denoted by the color of\ntheir armor."/>
@@ -486,6 +487,7 @@
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_others_on_radar">
 		<string text="ALL"/>
 		<string text="FRIENDS"/>
+		<string text="ENEMIES"/>
 		<string text="NO"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/indicator_options_edit/var_radar display">
