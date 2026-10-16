@@ -324,6 +324,25 @@ int ae_layout_parse(char const *text, long length, struct ae_layout *out, char *
 				goto refused;
 			out->vehicle_rules[out->vehicle_rule_count++].line = (short)line_number;
 		}
+		else if (count >= 2 && same_word(words[0], "name") && same_word(words[1], "item"))
+		{
+			long number;
+
+			if (count != 4 || !whole_of(words[2], 0, 65535, &number) || !words[3][0] ||
+				strlen(words[3]) >= AE_LAYOUT_LABEL_SIZE)
+			{
+				say(error, error_size, "name item: wants <n> <label of up to 15 characters>", count > 3 ? words[3] : NULL);
+				goto refused;
+			}
+			if (out->name_count == AE_LAYOUT_MAXIMUM_NAMES)
+			{
+				say(error, error_size, "more than 64 names", NULL);
+				goto refused;
+			}
+			out->names[out->name_count].item = number;
+			strcpy(out->names[out->name_count].label, words[3]);
+			out->name_count++;
+		}
 		else if (same_word(words[0], "item"))
 		{
 			if (out->item_count == AE_LAYOUT_MAXIMUM_ITEMS)

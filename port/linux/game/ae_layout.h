@@ -21,4 +21,8 @@ void ae_layout_apply(void);
 only inside its tag cache (ce_map_checks.c ce_tags_pointer), and this list is read in place of the map's */
 int ae_layout_memory(unsigned long address, long size);
 
+/* (item_timers.c) the applied layout's name for an item of the scenario's list (name item <n>), into label: TRUE when it
+has one */
+boolean ae_layout_item_label(long equipment_index, char *label, long size);
+
 #endif /* __AE_LAYOUT_H */

@@ -27,7 +27,9 @@ static void test_good_file(void)
 		"item like 3 at -18.4 -11 0.5 facing 90 team blue\n"
 		"item \"weapons\\sniper rifle\\sniper rifle\" at 0 0 0 team neutral respawn 90 facing -45.5\n"
 		"remove vehicle turret\n"
-		"remove vehicle 2 near 10 -4 2.5 6\n";
+		"remove vehicle 2 near 10 -4 2.5 6\n"
+		"name item 33 SWORD\n"
+		"name item 4 \"ENERGY SWORD\"\n";
 
 	AE_CHECK(parse(text) == 0);
 	AE_CHECK(!strcmp(layout.map_file, "h2_zanzibar.map") && layout.map_hash == 0x58102bdcUL);
@@ -45,6 +47,8 @@ static void test_good_file(void)
 	AE_CHECK(layout.vehicle_rule_count == 2 && layout.vehicle_rules[0].turret && !layout.vehicle_rules[0].near);
 	AE_CHECK(!layout.vehicle_rules[1].turret && layout.vehicle_rules[1].palette_index == 2);
 	AE_CHECK(layout.vehicle_rules[1].near && layout.vehicle_rules[1].radius == 6.0f && layout.vehicle_rules[1].line == 9);
+	AE_CHECK(layout.name_count == 2 && layout.names[0].item == 33 && !strcmp(layout.names[0].label, "SWORD"));
+	AE_CHECK(layout.names[1].item == 4 && !strcmp(layout.names[1].label, "ENERGY SWORD"));
 	AE_CHECK(ae_layout_for_map(&layout, "H2_Zanzibar.map", 0x58102bdcUL));
 	AE_CHECK(!ae_layout_for_map(&layout, "h2_zanzibar.map", 0x58102bddUL));
 	AE_CHECK(!ae_layout_for_map(&layout, "h2_warlock.map", 0x58102bdcUL));
@@ -92,6 +96,10 @@ static void test_refusals(void)
 		"layout 1 m.map 00000001\nspawn rockets\n",
 		"layout 1 m.map 00000001\nitem rockets at 1e9 0 0\n",
 		"layout 1 m.map 00000001\nitem rockets at nan 0 0\n",
+		"layout 1 m.map 00000001\nname item 3\n",
+		"layout 1 m.map 00000001\nname item x SWORD\n",
+		"layout 1 m.map 00000001\nname item 3 SIXTEEN_LETTERS_\n",
+		"layout 1 m.map 00000001\nname item 3 TWO WORDS\n",
 	};
 	unsigned int i;
 

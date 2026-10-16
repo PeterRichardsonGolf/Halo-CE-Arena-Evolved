@@ -18,6 +18,7 @@ time alone (a client has the host's: game_time_set_distributed).
 #include "game/game_engine.h"
 #include "game/item_timers.h"
 #include "ae_waypoint_icons.h"
+#include "ae_layout.h"
 #include "hs/hs.h"
 #include "items/equipment_definitions.h"
 #include "items/item_definitions.h"
@@ -634,6 +635,8 @@ void item_timers_map_begin(
 
 		timer = &item_timers[item_timer_count];
 		item_timer_label(timer_class, classes, definition_index, labels[item_timer_count]);
+		/* (a map layout's own name for the item: SWORD where the map puts its sword in the shotgun's slot) */
+		ae_layout_item_label(equipment_index, labels[item_timer_count], sizeof(labels[item_timer_count]));
 		timer->position = equipment->position;
 		timer->period_ticks = game_engine_item_respawn_period(equipment);
 		timer->timer_class = timer_class;

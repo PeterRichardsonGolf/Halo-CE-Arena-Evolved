@@ -59,6 +59,9 @@ static struct
 	long original_count;
 	struct scenario_netgame_equipment *items;
 	long item_count;
+	/* the layout's item names by the new list's index (name item <n>: n is the map's) */
+	short name_count;
+	struct { long item; char label[AE_LAYOUT_LABEL_SIZE]; } names[AE_LAYOUT_MAXIMUM_NAMES];
 } applied;
 
 static struct ae_layout layout;
@@ -256,6 +259,33 @@ static boolean floor_under(real_point3d *point)
 	return TRUE;
 }
 
+/* a name item line for the map's item `original`, now the list's `now` */
+static void name_kept(long original, long now)
+{
+	short name;
+
+	for (name = 0; name < layout.name_count && applied.name_count < AE_LAYOUT_MAXIMUM_NAMES; name++)
+		if (layout.names[name].item == original)
+		{
+			applied.names[applied.name_count].item = now;
+			strcpy(applied.names[applied.name_count].label, layout.names[name].label);
+			applied.name_count++;
+		}
+}
+
+boolean ae_layout_item_label(long equipment_index, char *label, long size)
+{
+	short name;
+
+	for (name = 0; name < applied.name_count; name++)
+		if (applied.names[name].item == equipment_index && size > 0)
+		{
+			snprintf(label, (size_t)size, "%s", applied.names[name].label);
+			return TRUE;
+		}
+	return FALSE;
+}
+
 static void apply_items(struct scenario *scenario)
 {
 	struct scenario_netgame_equipment const *original =
@@ -266,7 +296,12 @@ static void apply_items(struct scenario *scenario)
 	struct scenario_netgame_equipment *items;
 
 	if (!layout.clear_items && !layout.removed_count && !layout.item_count)
+	{
+		/* (names alone: the map's own list, its own numbers) */
+		for (index = 0; index < original_count; index++)
+			name_kept(index, index);
 		return;
+	}
 	items = (struct scenario_netgame_equipment *)malloc((size_t)(capacity ? capacity : 1) * sizeof(*items));
 	if (!items)
 	{
@@ -285,6 +320,7 @@ static void apply_items(struct scenario *scenario)
 					break;
 			if (removed < layout.removed_count)
 				continue;
+			name_kept(index, count);
 			items[count++] = original[index];
 		}
 	}
@@ -424,6 +460,7 @@ void ae_layout_apply(void)
 		return;
 	}
 	applied.scenario = scenario;
+	applied.name_count = 0;
 	applied.original_address = scenario->netgame_equipment.address;
 	applied.original_count = scenario->netgame_equipment.count;
 	if (applied.items)
@@ -455,8 +492,8 @@ void ae_layout_apply(void)
 			layout.map_hash, file, hash);
 		return;
 	}
-	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines)", path, layout.item_count,
-		layout.removed_count, layout.clear_items ? "" : "no ", layout.vehicle_rule_count);
+	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names)", path, layout.item_count,
+		layout.removed_count, layout.clear_items ? "" : "no ", layout.vehicle_rule_count, layout.name_count);
 	apply_items(scenario);
 	apply_vehicles(scenario);
 }

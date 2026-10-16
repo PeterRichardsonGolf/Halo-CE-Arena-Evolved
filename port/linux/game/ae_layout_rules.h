@@ -14,6 +14,8 @@ The file (version 1):
 	remove item <n>                   drop the map's item n (its index as the log lists it)
 	item <what> at <x> <y> <z> [facing <degrees>] [respawn <seconds>] [team red|blue|neutral]
 	remove vehicle <type> [near <x> <y> <z> <radius>]
+	name item <n> <label>             the map's item n's name on the item timers and waypoints (e.g. SWORD where the map
+	                                  puts its sword in the shotgun's slot); <label> one word or quoted, up to 15 characters
 
 <what>: `like <n>` (the map's own item n's collection: works on protected maps, whose tag names are scrambled), an
 alias (rockets, sniper, shotgun, pistol, overshield, camo: found by what the item is, not by its name), or a tag path
@@ -37,6 +39,8 @@ map lacks is the applying half's business (that one item is skipped and logged: 
 #define AE_LAYOUT_MAXIMUM_VEHICLE_RULES 32
 #define AE_LAYOUT_MAP_FILE_SIZE 64
 #define AE_LAYOUT_TAG_SIZE 128
+#define AE_LAYOUT_MAXIMUM_NAMES 64
+#define AE_LAYOUT_LABEL_SIZE 16
 
 enum ae_layout_what
 {
@@ -98,6 +102,8 @@ struct ae_layout
 	struct ae_layout_item items[AE_LAYOUT_MAXIMUM_ITEMS];
 	short vehicle_rule_count;
 	struct ae_layout_vehicle_rule vehicle_rules[AE_LAYOUT_MAXIMUM_VEHICLE_RULES];
+	short name_count;
+	struct { long item; char label[AE_LAYOUT_LABEL_SIZE]; } names[AE_LAYOUT_MAXIMUM_NAMES];
 };
 
 /* the file's text (length bytes, not necessarily terminated) read into *out: 0 when it is a layout of version 1 with
