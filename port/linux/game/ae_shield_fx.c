@@ -153,7 +153,7 @@ static real tuning(char const *name, real fallback)
 {
 	static struct { char const *name; real value; } const approved[] =
 	{
-		{ "BAND_SECONDS", 1.2f }, { "BAND_WIDTH", 0.65f }, { "BAND_STRENGTH", 1.0f }, { "POP_SECONDS", 0.6f },
+		{ "BAND_SECONDS", 1.2f }, { "BAND_WIDTH", 0.65f }, { "BAND_STRENGTH", 1.0f }, { "POP_SECONDS", 0.8f }, { "POP_HOLD", 0.4f },
 		{ "POP_AT", 0.5f }, { "POP_VIEWER", 0.f }, { "SPARKS", 0.8f }, { "HIT_SHAPE", 3.f },
 	};
 	short index;
@@ -201,6 +201,9 @@ static struct
 static short shield_pop_next = 0;
 static boolean shield_pops_initialized = FALSE;
 static real shield_pop_seconds(void) { return tuning("POP_SECONDS", 0.45f); }
+/* the pop's flare at t (0..1 of its time): full for its first half, then away (owner 2026-10-15: "doesn't seem as
+visible": was full for a third of 0.6 s, the body white for a quarter, the light at 2.2 times the hit glow's reach) */
+static real shield_pop_strength(real t) { return t < 0.5f ? 1.f : 1.f - (t - 0.5f) / 0.5f; }
 
 void ae_shield_fx_pop(
 	long unit_index)
@@ -421,7 +424,7 @@ static struct shield_pop *shield_pop_view_get(
 	t = (global_frame_parameters.game_time_sec - pop->start) / shield_pop_seconds();
 	if (t < 0.f || t >= 1.f)
 		return NULL;
-	*value = t < 0.33f ? 1.f : 1.f - (t - 0.33f) / 0.67f;
+	*value = shield_pop_strength(t);
 	pop->t = t;
 	return pop;
 }
@@ -454,7 +457,7 @@ static struct shield_pop *shield_pop_get(
 		if (t < 0.f || t >= 1.f)
 			continue;
 		/* (full for the first third, then away) */
-		*value = t < 0.33f ? 1.f : 1.f - (t - 0.33f) / 0.67f;
+		*value = shield_pop_strength(t);
 		pop->t = t;
 		return pop;
 	}
@@ -476,7 +479,7 @@ real ae_shield_fx_pop_value(
 			real t = (global_frame_parameters.game_time_sec - shield_pops[index].start) / shield_pop_seconds();
 
 			if (shield_pops[index].unit_index == unit_index && t >= 0.f && t < 1.f)
-				value = MAX(value, t < 0.33f ? 1.f : 1.f - (t - 0.33f) / 0.67f);
+				value = MAX(value, shield_pop_strength(t));
 		}
 		return value;
 	}
@@ -1332,5 +1335,5 @@ void ae_shield_fx_glow_color(
 real ae_shield_fx_glow_reach(
 	long unit_index)
 {
-	return recharge_band_enabled() && ae_shield_fx_pop_value(unit_index) > 0.f ? 2.2f : 1.f;
+	return recharge_band_enabled() && ae_shield_fx_pop_value(unit_index) > 0.f ? 3.2f : 1.f;
 }
