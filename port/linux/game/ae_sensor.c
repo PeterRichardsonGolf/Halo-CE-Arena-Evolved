@@ -34,16 +34,10 @@ long game_time_get(void);
 #define RIM_UNITS 42.0f                 /* CE's sweep radius, HUD units */
 #define RIM_UNITS_SPLIT 32.0f
 #define DESIGN_RIM 92.0f                /* the spec's 1p rim, px: blip sizes are given for it */
-#define NEWEST_BLIP_PX 5.0f             /* a medium contact's newest sample's radius at the design rim (owner 10-15:
-                                           3.4 "too small", harder to track than CE's) */
-#define TRAIL_ALPHA 0.85f               /* the trail: this x the square root of CE's fade (CE's own fade read too faint) */
 #define LABEL_LEFT_OF_CENTRE 1.033f     /* x r: the label's left edge (1p x 142 for a centre at 237, r 92) */
-#define MAXIMUM_TAKEN_BLIPS 512
 #define AE_PI 3.14159265f
 #define CHEVRON_PX 14.0f   /* the player's chevron, px at scale 1 (owner 10-15: rev13's 10 read as a speck in play) */
 
-struct taken_blip { real x, y, fade, size; real rgb[3]; boolean custom; };
-static struct { struct taken_blip blips[MAXIMUM_TAKEN_BLIPS]; long count; real sensor_scale; } taken;
 static struct { boolean valid; real x0, y0, x1, y1; } last[MAXIMUM_LOCAL_PLAYERS];
 
 boolean ae_sensor_active(void)
@@ -51,32 +45,18 @@ boolean ae_sensor_active(void)
 	return ae_hud_style_is_ae();
 }
 
+/* CE draws its own contacts, exactly as on its own sensor (its blip texture, added light, trail and sweep), over
+AE's disc (owner 2026-10-15: "clone exactly how ce does the dots"; AE's own dots were harder to track) */
 boolean ae_sensor_takes_blips(void)
 {
-	/* (debug.ae_sensor_with_ce: CE's own sensor drawn too, to lay AE's blips on CE's) */
-	return (boolean)(ae_sensor_active() && !config_boolean("debug.ae_sensor_with_ce"));
+	return FALSE;
 }
 
 boolean ae_sensor_take_blip(const union real_point2d *position, real fade, real size,
 	const union real_rgb_color *color, boolean custom, real sensor_scale)
 {
-	if (!ae_sensor_active())
-		return FALSE;
-	if (taken.count < MAXIMUM_TAKEN_BLIPS)
-	{
-		struct taken_blip *blip = &taken.blips[taken.count++];
-
-		blip->x = position->x;
-		blip->y = position->y;
-		blip->fade = fade;
-		blip->size = size;
-		blip->rgb[0] = color->red;
-		blip->rgb[1] = color->green;
-		blip->rgb[2] = color->blue;
-		blip->custom = custom;
-	}
-	taken.sensor_scale = sensor_scale;
-	return ae_sensor_takes_blips();
+	(void)position; (void)fade; (void)size; (void)color; (void)custom; (void)sensor_scale;
+	return FALSE;
 }
 
 boolean ae_sensor_rectangle(short local_player_index, real *x0, real *y0, real *x1, real *y1)
@@ -122,42 +102,6 @@ static void wedge_fill(real cx, real cy, real r, real half, real alpha)
 	}
 }
 
-static void blips(real cx, real cy, real r, real k)
-{
-	long i;
-	real_argb_color dark;
-	short pass;
-
-	/* history first (larger and fainter), then the newest samples keylined, on top of everything */
-	for (pass = 0; pass < 2; pass++)
-	{
-		for (i = 0; i < taken.count; i++)
-		{
-			struct taken_blip *b = &taken.blips[i];
-			boolean newest = (boolean)(b->fade >= 0.999f);
-			real dx, dy, radius = b->size * NEWEST_BLIP_PX * k;
-			real_argb_color color;
-
-			if (newest != (pass == 1) || b->fade <= 0.01f)
-				continue;
-			ae_sensor_blip_offset(b->x, b->y, taken.sensor_scale, r, &dx, &dy);
-			if (radius < 1.2f)
-				radius = 1.2f;
-			color.alpha = newest ? 1.0f : TRAIL_ALPHA * (real)sqrt(b->fade);
-			color.red = b->rgb[0];
-			color.green = b->rgb[1];
-			color.blue = b->rgb[2];
-			if (newest)
-			{
-				color_of(_ae_tone_dark, 0.90f, &dark);
-				ae_panel_draw_disc(cx + dx, cy + dy, radius + 1.0f, _ae_tone_dark, 0.90f, FALSE);
-			}
-			/* (colour by its own rgb: the tokens hold no blip colours) */
-			ae_panel_fill_disc(cx + dx, cy + dy, radius, &color);
-		}
-	}
-}
-
 void ae_sensor_draw(short local_player_index, const union point2d *centre, boolean split)
 {
 	static long logged[MAXIMUM_LOCAL_PLAYERS] = { -1, -1, -1, -1 };
@@ -170,17 +114,13 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	real half = ae_sensor_wedge_half_angle(render.camera.vertical_field_of_view, view_w, view_h);
 	real inner = ae_sensor_inner_ring(r);
 	real line = 1.6f * (k > 0.75f ? k : 0.75f);   /* the strip's line (1.6 px x scale) */
-	real sweep_r, sweep_a, seconds = (real)game_time_get() / 30.0f;
 	real_argb_color color;
 	char label_ascii[8];
 	wchar_t label[8];
 	short i;
 
 	if (!ae_sensor_active() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
-	{
-		taken.count = 0;
 		return;
-	}
 	ae_hud_backing_draw(local_player_index, cx, cy, 1.18f * r, 1.18f * r, 0.45f);
 	ae_panel_draw_disc(cx, cy, r, _ae_tone_blue, 0.08f, FALSE);   /* (light, as the draft: the lines' dark shows) */
 	/* the view's wedge: its fill, then its two edges from the centre to the rim */
@@ -210,10 +150,7 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	}
 	/* the rim: the outline rule (1.5 px at 0.85, keylined both sides) */
 	ae_panel_draw_ring(cx, cy, r - line / 2.0f, line, _ae_tone_blue, 0.85f, TRUE);
-	/* CE's sweep, drawn as a 1 px ring */
-	ae_sensor_sweep(seconds, r, &sweep_r, &sweep_a);
-	if (sweep_r > 1.0f)
-		ae_panel_draw_ring(cx, cy, sweep_r, 1.0f, _ae_tone_blue, sweep_a, FALSE);
+	/* (CE's own sweep comes with its contacts, drawn after this: motion_sensor_draw_screen) */
 	/* the player: a solid chevron pointing up, CHEVRON_PX tall, centred on the wedge's point and drawn over the wedge's lines
 	with a strong soft dark rim, so the lines end at its shoulders (rev13's drawing; owner 10-15) */
 	{
@@ -229,8 +166,6 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 		color_of(_ae_tone_blue, 1.0f, &color);
 		ae_panel_fill_polygon_soft((const real (*)[2])chevron, 4, 0.0f, &color);
 	}
-	/* CE's contacts, on top of everything (incl. the chevron) */
-	blips(cx, cy, r, k);
 	/* the range label: grey, its left edge where CE's sits, on the shared bottom line */
 	ae_sensor_range_label(hud_globals->defaults.motion_sensor_range, label_ascii);
 	for (i = 0; label_ascii[i] && i < 7; i++)
@@ -249,10 +184,9 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	{
 		logged[local_player_index] = game_time_get() / 60;
 		platform_log("ae sensor: tick %ld view %d centre=%.1f,%.1f r=%.1f inner=%.1f half=%.1f vfov=%.4f view=%.0fx%.0f "
-			"blips=%ld label=%s baseline=%.1f range=%.3f scale=%.3f", logged[local_player_index] * 60, local_player_index, cx, cy, r, inner,
-			half, render.camera.vertical_field_of_view, view_w, view_h, taken.count, label_ascii,
+			"label=%s baseline=%.1f range=%.3f scale=%.3f", logged[local_player_index] * 60, local_player_index, cx, cy, r, inner,
+			half, render.camera.vertical_field_of_view, view_w, view_h, label_ascii,
 			ae_score_strip_shared_line_y(local_player_index), hud_globals->defaults.motion_sensor_range,
-			taken.sensor_scale);
+			hud_globals->defaults.motion_sensor_scale);
 	}
-	taken.count = 0;
 }
