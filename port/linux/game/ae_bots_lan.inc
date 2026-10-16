@@ -11,6 +11,7 @@ for each bot bots_ae_lan_drive's.
 */
 
 #include "ae_lan_bots.h"
+#include "ae_bots_events.inc"
 
 void bots_ae_lan_tick(void)
 {

@@ -36,4 +36,12 @@ boolean ae_bots_in_game(void);
 one halo.log line the first time */
 boolean ae_bots_kept_from_delta(void);
 
+/* (bots.c's bots_bot_update, via ae_bots_events.inc: debug.bot_events) the bots' fight log, read by tools/ae_test/bot_report.py */
+struct bots_bot;
+struct bots_tick;
+void ae_bots_events_begin(struct bots_bot *bot, long bot_index, struct bots_tick *tick);
+void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *tick);
+/* (damage.c's object_cause_damage) the damage a player caused to a unit: a bot's hit is measured and logged */
+void ae_bots_damage_note(long owner_player_index, long object_index);
+
 #endif

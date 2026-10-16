@@ -2258,6 +2258,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	tick.now = game_time_get();
 	tick.throttle_scale = 1.0f;
 	tick.action = action;
+	ae_bots_events_begin(bot, bot_index, &tick); /* AE hook */
 	csmemset(action, 0, sizeof(*action));
 	action->desired_weapon_index = NONE;
 	action->desired_grenade_index = NONE;
@@ -2360,6 +2361,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	action->control_flags = tick.flags;
 	action->primary_trigger = TEST_FLAG(tick.flags, _unit_control_weapon_primary_trigger_bit) ? 1.0f : 0.0f;
 	bots_bot_trace(bot, bot_index, &tick);
+	ae_bots_events_end(bot, bot_index, &tick); /* AE hook */
 }
 
 /* halo.log's line, a minute into the game and each minute on */

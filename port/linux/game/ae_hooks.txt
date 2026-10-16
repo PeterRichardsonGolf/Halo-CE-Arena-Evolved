@@ -466,6 +466,12 @@ port/linux/game/game_events.c	if (ae_bots_kept_from_delta()) /* AE hook */\nretu
 # Bots in LAN games (ae_lan_bots.c, "virtual pads"): the host's players on its free controller slots, which are no
 # local players of the host (no view, HUD, sound or player_control), their input the bot brain's in the host's tick
 port/linux/game/bots.c	#include "ae_bots_lan.inc" /* AE hook */
+# Bot fight log (ae_bots_events.inc, included by ae_bots_lan.inc; debug.bot_events): the bot's tick before and after its controls, and a player's damage to a unit
+port/linux/game/bots.c	ae_bots_events_begin(bot, bot_index, &tick); /* AE hook */
+port/linux/game/bots.c	ae_bots_events_end(bot, bot_index, &tick); /* AE hook */
+source/objects/damage.c	#include "ae_bots.h" /* AE hook */
+source/objects/damage.c	ae_bots_damage_note(damage->owner_player_index, object_index); /* AE hook */
+port/linux/src/port_config.c	{ "debug.bot_events", _config_boolean, "false", "HALO_BOT_EVENTS", _environment_set_is_true, _platform_all, /* AE hook */
 # RECRUIT bot level below EASY (ae_bots_skill.inc, included after the skill table): for new players and children
 port/linux/game/bots.c	#include "ae_bots_skill.inc" /* AE hook */
 port/linux/game/bots.c	if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT; /* AE hook */

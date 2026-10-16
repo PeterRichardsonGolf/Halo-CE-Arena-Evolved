@@ -1032,6 +1032,10 @@ static const struct config_setting config_settings[] =
 		"An automated test host's gametype's SILENT MOVEMENT and SILENT WEAPONS:\n"
 		"\"MOVEMENT,WEAPONS\" or one for both, each normal, just_me or silent;\n"
 		"empty leaves the gametype's (the muted counts are logged as they grow)." },
+	{ "debug.bot_events", _config_boolean, "false", "HALO_BOT_EVENTS", _environment_set_is_true, _platform_all, /* AE hook */
+		"Log each bot's fight events (target seen, shots, hits, melee, strafe, crouch,\n"
+		"kills, deaths, a position each second) as \"bot event:\" lines, for\n"
+		"tools/ae_test/bot_report.py." },
 	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */
 		"For tests and quick launches: every multiplayer game plays HIT FEEDBACK:\n"
 		"ARENA EVOLVED, whatever its gametype says (this machine's drawing only)." },
