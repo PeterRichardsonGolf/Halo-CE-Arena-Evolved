@@ -14,6 +14,7 @@ netgame items and placed vehicles in memory.
 #include "items/item_definitions.h"
 #include "items/weapon_definitions.h"
 #include "objects/object_types.h"
+#include "physics/collision_bsp.h"
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
 #include "tag_files/tag_groups.h"
@@ -231,6 +232,30 @@ static void log_map(struct scenario *scenario)
 	}
 }
 
+#define FLOOR_LOOK_ABOVE 0.5f     /* world units above the spot the look down starts */
+#define FLOOR_LOOK_DOWN 60.0f     /* how far it looks */
+#define FLOOR_CLEARANCE 0.05f     /* the item this far above the floor found */
+
+/* the floor under a point (the level's collision, looked straight down from just above it): the point moved onto it */
+static boolean floor_under(real_point3d *point)
+{
+	struct collision_bsp *bsp = global_collision_bsp_get();
+	struct collision_bsp_test_vector_result result;
+	real_point3d origin = *point;
+	real_vector3d down;
+
+	if (!bsp)
+		return FALSE;
+	origin.z += FLOOR_LOOK_ABOVE;
+	down.i = 0.0f;
+	down.j = 0.0f;
+	down.k = -FLOOR_LOOK_DOWN;
+	if (!collision_bsp_test_vector(1, bsp, 0, NULL, &origin, &down, 1.0f, &result))
+		return FALSE;
+	point->z = origin.z + down.k * result.t + FLOOR_CLEARANCE;
+	return TRUE;
+}
+
 static void apply_items(struct scenario *scenario)
 {
 	struct scenario_netgame_equipment const *original =
@@ -285,17 +310,24 @@ static void apply_items(struct scenario *scenario)
 		if (tag_collection != NONE)
 			entry->item_collection.index = tag_collection;
 		entry->run_time_spawned_item_index = NONE;
-		/* (not created at rest: the item falls onto the floor under its spot, so a layout's height need not be exact) */
-		SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, FALSE);
 		entry->position.x = item->x;
 		entry->position.y = item->y;
 		entry->position.z = item->z;
+		/* (on the floor under its spot, so a layout's height need not be exact: owner 2026-10-16, an item falling from
+		its spot with its waypoint looked wrong; no floor found below: it falls there instead) */
+		if (floor_under(&entry->position))
+			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, TRUE);
+		else
+			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, FALSE);
 		if (item->has_facing)
 			entry->facing = item->facing_degrees * DEGREES_TO_RADIANS;
 		if (item->respawn_seconds > 0)
 			entry->spawn_time = item->respawn_seconds;
 		if (item->team != _ae_layout_team_unset)
 			entry->team_index = (short)(item->team == _ae_layout_team_neutral ? NONE : item->team);
+		platform_log("layout: line %d: item %ld at %.2f %.2f %.2f%s", item->line, count - 1, entry->position.x,
+			entry->position.y, entry->position.z, TEST_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT) ?
+			" (on the floor)" : " (no floor below: it falls)");
 		added++;
 	}
 	/* (the game's free is debug_free, which takes no NULL) */
