@@ -2692,6 +2692,7 @@ boolean hud_numbers_bounds(
 	decimal_point_width = (real)(numbers->fractional_digits ? hud_number->decimal_point_width : 0);
 	scale = override_scale > 0.0f ? override_scale :
 		hud_globals_get_scale(TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
+	scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
 	hud_calculate_point(local_player_index, absolute_placement, &numbers->placement, NULL,
 		TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit), 0.0f, &origin);
 	width = ((digit_count - 1.0f) * hud_number->screen_width + decimal_point_width) * scale +

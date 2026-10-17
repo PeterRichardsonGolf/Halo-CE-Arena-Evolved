@@ -779,3 +779,6 @@ port/linux/game/ce_map_checks.c	if (instance->group_tag == 0xffffffff && instanc
 # high-resolution HUD digits (Halo Flawless Cowboy Edition's maps: screen digit width 18) drawn at the stock size
 source/interface/hud_draw.c	#include "ae_hud_hires.h" /* AE hook */
 source/interface/hud_draw.c	scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
+source/interface/hud_draw.c	scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
+source/interface/hud_messaging.c	#include "ae_hud_hires.h" /* AE hook */
+source/interface/hud_messaging.c	digit_advance = (short)(long)((real)digit_advance * ae_hud_number_scale(hud_number->screen_width)); /* AE hook */
