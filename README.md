@@ -165,7 +165,7 @@ play:
   teammates (OTHER PLAYERS ON RADAR: ENEMIES, in Indicator Options); the free
   for all ones show every other player, as ENEMIES does there.
 - **Arena Evolved BR** (0.3.0): the casual set, the free for all variants, FFA AE PRACTICE and AE COMP again with the
-  **battle rifle in hand** and the pistol second (FFA AE BR SLAYER, TEAM AE BR SLAYER, TEAM AE BR COMP CTF, ... 25
+  **battle rifle in hand** and an assault rifle second (FFA AE BR SLAYER, TEAM AE BR SLAYER, TEAM AE BR COMP CTF, ... 25
   gametypes; stored as AE BR FFA, AE BR TS, AE BR C CTF, ...). Every other value is its twin's. Not made for the
   single-weapon modes (snipers, rockets, shotguns, SWAT, heavies, shotty snipers), RACE, RALLY or TRAINING. They
   need the battle rifle's pack (the `packs` folder): only machines with it join; on Custom Edition maps, and where

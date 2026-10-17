@@ -3378,6 +3378,7 @@ static void server_settings_update(struct widget_instance *list)
 		if (help && list->focused_child == row)
 			help->parameters.text_box.string_list_index = SERVER_PASSWORD_HELP;
 	}
+	ae_split_screen_server_settings(list); /* AE hook */
 }
 
 static void server_password_done(char const *text)
@@ -6864,7 +6865,6 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "mp profile set for game"))
 		{
-			if (network_game_is_splitscreen_local()) return ae_split_screen_lobby_open(widget, gametype_choose(), widget_deleted); /* AE hook */
 			return gametype_choose();
 		}
 		else if (!strcmp(name, "server settings init"))
@@ -6901,7 +6901,7 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "ss start game"))
 		{
-			return server_start();
+			return server_start() && ae_split_screen_server_start(); /* AE hook */
 		}
 		else if (!strcmp(name, "single prev cl item activated"))
 		{

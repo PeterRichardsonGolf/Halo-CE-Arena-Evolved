@@ -7,8 +7,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 - SPLIT SCREEN in the PC menus' Multiplayer (after Create Game's LAN): a game on this PC only, up to four players
-  and up to 15 bots. The map, then the gametype, then the lobby (no Server Setup); another controller's START joins
-  there. The lobby's last rows are BOTS, BOT SKILL, PLAYFIGHT and BOT TEAMS (team games), the same settings as Game
+  and up to 15 bots. The map, the gametype, Server Setup with only the gametype's options (no name, listing or
+  password), then the lobby; another controller's START joins there. The lobby's last rows are BOTS, BOT SKILL, PLAYFIGHT and BOT TEAMS (team games), the same settings as Game
   Options > BOTS, changed live. After a game: the map list, the gametype, the lobby again.
 - PLAYFIGHT (Game Options > BOTS, `bots.playfight`), as Halo Infinite's Training Mode: the bots move, strafe and aim
   at you but never shoot, throw a grenade or strike. Aim practice for new players; split screen and LAN bots.
@@ -25,6 +25,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - SHOOTING SKILL and MOVEMENT SKILL (Game Options > BOTS; `bots.shooting_skill`, `bots.movement_skill`): the bots'
   aim, reactions, grenades and blows, and their strafing, jumping, crouching and retreating, each at a level of its
   own, or SAME AS BOT SKILL (the default). On the BOTS screen only: the split screen lobby keeps its rows for players.
+- AE gametypes (seed revision 13, applied on the first start, the old files backed up): every AE gametype but AE
+  SWAT starts with two frag grenades (Halo CE's own rule gave one in games of 9 players or more, as with bots);
+  the AE BR gametypes have an assault rifle second instead of the pistol.
+- HUD STYLE AE no longer shows Halo CE's name of the player under your reticle (the names over heads stay).
 
 ## 0.3.2-beta - 2026-10-16
 

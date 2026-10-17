@@ -58,25 +58,6 @@ short ae_split_screen_lobby_rows(short rows)
 	return network_game_is_splitscreen_local() ? AE_SPLIT_SCREEN_LOBBY_ROWS : rows;
 }
 
-boolean ae_split_screen_lobby_open(struct widget_instance *widget, boolean chosen, boolean *widget_deleted)
-{
-	struct widget_instance *topmost;
-
-	if (!chosen)
-		return FALSE;
-	network_game_server_port_set_settings(NULL, MAXIMUM_PLAYERS);
-	topmost = widget_instance_get_topmost_parent(widget);
-	if (!ui_widget_load_by_name_or_tag(AE_SPLIT_SCREEN_LOBBY, NONE, NULL, NONE, topmost->definition_tag_index,
-		widget->parent ? widget->parent->definition_tag_index : NONE, (short)widget_instance_get_child_index_from_parent(widget)))
-	{
-		platform_log("split screen: the lobby could not be opened");
-		return FALSE;
-	}
-	platform_log("split screen: the lobby, %d players at most", MAXIMUM_PLAYERS);
-	*widget_deleted = TRUE;
-	return TRUE;
-}
-
 static struct widget_instance *child_named(struct widget_instance *widget, char const *name)
 {
 	struct widget_instance *child;
@@ -133,4 +114,59 @@ void ae_split_screen_lobby_update(struct widget_instance *list, boolean teams, b
 		strcat(spinner_name, "_spinner");
 		spinner_save(child_named(widget, spinner_name));
 	}
+}
+
+/* Server Setup's rows a split screen game has no use for (a network game's), and the gametype's, in their order
+(tools/ce_menus.py and port_settings.py place them 22 apart from y 73) */
+static char const *const network_rows[] = { "op_server_name", "op_max_players", "op_invite", "op_listing", "op_password",
+	"op_map_share_options" };
+static char const *const gametype_rows[] = { "op_game_type", "op_player_options", "op_item_options",
+	"op_vehicle_options", "op_indicator_options", "op_team_options", "op_arena_options" };
+#define SERVER_SETTINGS_FIRST_ROW 73
+#define SERVER_SETTINGS_ROW_SPACING 22
+
+void ae_split_screen_server_settings(struct widget_instance *list)
+{
+	struct widget_instance *child;
+	short row, index;
+
+	if (!list || !network_game_is_splitscreen_local())
+		return;
+	for (row = 0; row < (short)NUMBEROF(network_rows); row++)
+	{
+		struct widget_instance *widget = child_named(list, network_rows[row]);
+
+		if (widget)
+			widget->visible = FALSE;
+	}
+	for (row = 0; row < (short)NUMBEROF(gametype_rows); row++)
+	{
+		struct widget_instance *widget = child_named(list, gametype_rows[row]);
+
+		if (widget)
+			widget->vertical_offset = (short)(SERVER_SETTINGS_FIRST_ROW + SERVER_SETTINGS_ROW_SPACING * row);
+	}
+	/* (the focus off a hidden row, onto the first that shows: menu_functions.c's focus_off_hidden) */
+	if (list->focused_child && !list->focused_child->visible)
+	{
+		for (child = list->child, index = 0; child; child = child->next, index++)
+		{
+			if (child->visible)
+			{
+				list->focused_child = child;
+				list->parameters.list.selected_index = index;
+				break;
+			}
+		}
+	}
+}
+
+boolean ae_split_screen_server_start(void)
+{
+	if (network_game_is_splitscreen_local())
+	{
+		network_game_server_port_set_settings(NULL, MAXIMUM_PLAYERS);
+		platform_log("split screen: %d players at most", MAXIMUM_PLAYERS);
+	}
+	return TRUE;
 }

@@ -24,6 +24,7 @@ PLAYER: with two or more pads the lobby looked stuck (the pad whose player had l
 #include "networking/network_server_manager.h"
 #include "../src/ae_lan_hint.h"
 #include "ae_glue_lan.h"
+#include "ae_split_screen.h"
 #include "ae_lan_bots.h"
 
 void platform_log(char const *format, ...);
@@ -112,7 +113,9 @@ int ae_lobby_leave_all(short controller)
 	}
 	/* then what the last player's B does (netgame_unjoin_player): a host still taking machines holds its countdown,
 	else the game is left */
-	if (global_network_game_server_get() && network_game_should_accept_remote_connections() == TRUE)
+	/* (AE: a split screen game too, which takes no machine: kept for Server Setup's START GAME, ae_split_screen.h) */
+	if (global_network_game_server_get() && (network_game_should_accept_remote_connections() == TRUE ||
+		ae_split_screen_hosting()))
 		network_game_server_pause_countdown(global_network_game_server_get(), TRUE);
 	else
 	{
