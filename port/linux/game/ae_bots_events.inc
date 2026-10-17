@@ -18,6 +18,8 @@ key=value words:
   ev=melee                       the blow
   ev=strafe dir=<-1|1>           the side it strafes to changed
   ev=crouch state=start|end
+  ev=throw                       a grenade left its hand (its grenades went down; seen when they do)
+  ev=jump                        it pressed jump while fighting
   ev=kill / ev=death             its kills or deaths counter went up
 */
 
@@ -40,6 +42,9 @@ struct ae_bots_event_state
 	boolean crouching;
 	long kills, deaths;
 	long next_pos_tick;
+	/* its grenades, and the unit they were counted on */
+	long grenade_unit;
+	short grenades;
 };
 
 struct ae_bots_event_pending
@@ -257,6 +262,17 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 		}
 		state->strafe_sign = bot->strafe_sign;
 	}
+	{
+		short grenades = (short)(tick->unit ? tick->unit->unit.grenade_counts[0] + tick->unit->unit.grenade_counts[1] : 0);
+		long unit = tick->unit ? tick->player->unit_index : NONE;
+
+		if (unit != NONE && unit == state->grenade_unit && grenades < state->grenades)
+			ae_bots_event_line(bot_index, now, "throw", target, dist, "");
+		state->grenade_unit = unit;
+		state->grenades = grenades;
+	}
+	if (tick->fighting && TEST_FLAG(tick->flags, _unit_control_jump_bit))
+		ae_bots_event_line(bot_index, now, "jump", target, dist, "");
 	if (crouching != state->crouching)
 	{
 		state->crouching = crouching;

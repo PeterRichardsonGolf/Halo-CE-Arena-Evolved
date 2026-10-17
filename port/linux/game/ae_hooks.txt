@@ -470,6 +470,16 @@ port/linux/game/bots.c	#include "ae_bots_lan.inc" /* AE hook */
 # Bot fight log (ae_bots_events.inc, included by ae_bots_lan.inc; debug.bot_events): the bot's tick before and after its controls, and a player's damage to a unit
 port/linux/game/bots.c	ae_bots_events_begin(bot, bot_index, &tick); /* AE hook */
 port/linux/game/bots.c	ae_bots_events_end(bot, bot_index, &tick); /* AE hook */
+# Bots fight like people of their level (ae_bots_combat.c, ae_bots_combat_rules.c; the glue ae_bots_combat.inc, at
+# bots.c's end through ae_bots_lan.inc): a random delay to each sighting's reaction and to the look, headshots once
+# shields are down, melee and grenades by level (the throw leads the target), retreat by confidence, closing in,
+# strafe-jumps, sightings shared at HEROIC and up; SHOOTING SKILL / MOVEMENT SKILL take the skill hooks above
+port/linux/game/bots.c	bot->next_look_tick += ae_bots_fight_look_jitter(bot, tick); /* AE hook */
+port/linux/game/bots.c	ae_bots_fight_share(bot, tick, target); /* AE hook */
+port/linux/game/bots.c	reaction_ticks = ae_bots_fight_reaction(bot, tick, reaction_ticks); /* AE hook */
+port/linux/game/bots.c	ae_bots_fight_aim_point(bot, tick, &aim_point); /* AE hook */
+port/linux/game/bots.c	ae_bots_fight_grenade(bot, tick, reaction_ticks); /* AE hook */
+port/linux/game/bots.c	ae_bots_fight_move(bot, tick); /* AE hook */
 source/objects/damage.c	#include "ae_bots.h" /* AE hook */
 source/objects/damage.c	ae_bots_damage_note(damage->owner_player_index, object_index); /* AE hook */
 port/linux/src/port_config.c	{ "debug.bot_events", _config_boolean, "false", "HALO_BOT_EVENTS", _environment_set_is_true, _platform_all, /* AE hook */
@@ -480,17 +490,17 @@ port/linux/game/bots.c	#include "ae_bots_skill.inc" /* AE hook */
 port/linux/src/port_config.c	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.c	if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT; /* AE hook */
-port/linux/game/bots.c	struct bots_skill_definition const *skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
-port/linux/game/bots.c	tick.skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
+port/linux/game/bots.c	struct bots_skill_definition const *skill = ae_bots_skill_definition(ae_bots_shooting_skill(bots_globals.skill)); /* AE hook */
+port/linux/game/bots.c	tick.skill = ae_bots_tick_skill(bots_globals.skill); /* AE hook */
 port/linux/game/bots.c	ae_bots_skill_definition(bots_globals.skill)->name, bots_globals.searches, bots_globals.search_failures, /* AE hook */
 port/linux/game/bots.c	if (bots_random_real(bot) < ae_bots_hunt_chance(bots_globals.skill)) /* AE hook */
-port/linux/game/bots.c	ae_bots_aim_floor(bots_globals.skill, &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
-port/linux/game/bots.c	bot->strafe_until_tick = now + ae_bots_strafe_ticks(bots_globals.skill, TICKS_PER_SECOND / 3 + (long)(bots_random(bot) % (TICKS_PER_SECOND))); /* AE hook */
-port/linux/game/bots.c	real side = bot->strafe_sign * ae_bots_strafe(bots_globals.skill); /* AE hook */
-port/linux/game/bots.c	ae_bots_aim_delay(bots_globals.skill, bot->target_player_index, &aim_point, now); /* AE hook */
-port/linux/game/bots.c	if (tick->target_distance < ae_bots_melee_reach(bots_globals.skill) && now >= bot->melee_tick) /* AE hook */
-port/linux/game/bots.c	bot->melee_tick = now + ae_bots_melee_ticks(bots_globals.skill); /* AE hook */
-port/linux/game/bots.c	if (ae_bots_crouch_chance(bots_globals.skill) > 0.0f && ae_bots_crouch(bots_globals.skill, bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
+port/linux/game/bots.c	ae_bots_aim_floor(ae_bots_shooting_skill(bots_globals.skill), &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
+port/linux/game/bots.c	bot->strafe_until_tick = now + ae_bots_strafe_ticks(ae_bots_movement_skill(bots_globals.skill), TICKS_PER_SECOND / 3 + (long)(bots_random(bot) % (TICKS_PER_SECOND))); /* AE hook */
+port/linux/game/bots.c	real side = bot->strafe_sign * ae_bots_strafe(ae_bots_movement_skill(bots_globals.skill)); /* AE hook */
+port/linux/game/bots.c	ae_bots_aim_delay(ae_bots_shooting_skill(bots_globals.skill), bot->target_player_index, &aim_point, now); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_fight_melee(bot, tick)) /* AE hook */
+port/linux/game/bots.c	bot->melee_tick = now + ae_bots_fight_melee_ticks(bot, tick); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_crouch_chance(ae_bots_movement_skill(bots_globals.skill)) > 0.0f && ae_bots_crouch(ae_bots_movement_skill(bots_globals.skill), bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
 source/networking/network_server_manager.c	#include "ae_lan_bots.h" /* AE hook */
 source/networking/network_server_manager.c	if (ae_lan_bots_lobby(server, &server->game, server->state == _network_game_server_state_pregame && !server->sent_start_game_message) && !network_game_server_send_game_data_pregame(server)) network_event("ae_lan_bots_lobby() failed to send updated game settings to clients"); /* AE hook */
 source/networking/network_server_manager.c	ae_lan_bots_give_way(&server->game, player, server->state == _network_game_server_state_pregame && !server->sent_start_game_message); /* AE hook */

@@ -28,8 +28,10 @@ def test_bots_screen():
     spec = port_settings.SCREENS["mods_setup/bots"]
     assert spec["title"] == "BOTS" and spec["screen"] == "bots_settings_screen"
     rows = {row[1]: row for row in spec["rows"]}
-    # (AE: PLAYFIGHT after BOT SKILL, ae_bots.c's ae_bots_playfight)
-    assert list(rows) == ["bots.count", "bots.skill", "bots.playfight", "bots.teams"]
+    # (AE: SHOOTING SKILL and MOVEMENT SKILL after BOT SKILL, ae_bots_combat.c; PLAYFIGHT after them,
+    # ae_bots.c's ae_bots_playfight)
+    assert list(rows) == ["bots.count", "bots.skill", "bots.shooting_skill", "bots.movement_skill", "bots.playfight",
+                          "bots.teams"]
     assert [value for _, value in rows["bots.count"][2]] == [str(n) for n in range(16)]
     assert rows["bots.count"][2][0] == ("OFF", "0")
     # (the names bots.c's bots_skills and bots_teams read; RECRUIT's in AE's ae_bots_skill.inc, read by name first)
@@ -39,6 +41,14 @@ def test_bots_screen():
     assert 'if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT;' in bots
     for _, skill in rows["bots.skill"][2]:
         assert f'{{ "{skill}", ' in bots + recruit, skill
+    # (the two parts' levels: SAME AS BOT SKILL first, then BOT SKILL's own, the names ae_bots_combat.c reads)
+    combat = (ROOT / "port" / "linux" / "game" / "ae_bots_combat.c").read_text()
+    for part in ("bots.shooting_skill", "bots.movement_skill"):
+        values = [value for _, value in rows[part][2]]
+        assert values == ["same"] + [value for _, value in rows["bots.skill"][2]], part
+        assert rows[part][2][0][0] == "SAME AS BOT SKILL"
+        assert f'config_string("{part}")' in combat
+    assert '{ "recruit", "easy", "normal", "heroic", "legendary" }' in combat
     assert [value for _, value in rows["bots.teams"][2]] == ["even", "against"]
     assert '"against"' in bots
     text = (CE / BOTS).read_text()
@@ -63,6 +73,8 @@ def test_settings_rows():
     assert re.search(r'\{ "bots\.skill", _config_string, "\\"normal\\"",', config)
     assert re.search(r'\{ "bots\.teams", _config_string, "\\"even\\"",', config)
     assert re.search(r'\{ "bots\.playfight", _config_boolean, "false",', config)
+    assert re.search(r'\{ "bots\.shooting_skill", _config_string, "\\"same\\"", "HALO_BOT_SHOOTING_SKILL",', config)
+    assert re.search(r'\{ "bots\.movement_skill", _config_string, "\\"same\\"", "HALO_BOT_MOVEMENT_SKILL",', config)
     assert [value for _, value in {row[1]: row for row in port_settings.SCREENS["mods_setup/bots"]["rows"]}["bots.playfight"][2]] == ["false", "true"]
 
 

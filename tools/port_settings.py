@@ -448,6 +448,7 @@ SCREENS["video_settings/fov_viewmodels"] = {
 # screen of its own, a category after the rows (as Video Setup's); Game Options' rows 24 px apart for its place
 BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
 BOT_SKILLS = [("RECRUIT", "recruit"), ("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
+BOT_SKILL_PARTS = [("SAME AS BOT SKILL", "same")] + BOT_SKILLS
 BOT_TEAMS = [("EVEN", "even"), ("AGAINST YOU", "against")]
 BOT_PLAYFIGHT = [("OFF", "false"), ("ON", "true")]
 _game_options = SCREENS["mods_setup"]
@@ -464,6 +465,11 @@ SCREENS["mods_setup/bots"] = {
          None),
         ("BOT SKILL:", "bots.skill", BOT_SKILLS,
          "How soon the bots react, how well they aim and\nhow far they see.", None),
+        # (AE: Infinite's Training Mode's separate skills, queue 120: ae_bots_combat.h)
+        ("SHOOTING SKILL:", "bots.shooting_skill", BOT_SKILL_PARTS,
+         "The bots' aim, reactions, grenades and blows:\nas BOT SKILL, or a level of their own.", None),
+        ("MOVEMENT SKILL:", "bots.movement_skill", BOT_SKILL_PARTS,
+         "The bots' strafing, jumping, crouching and\nretreating: as BOT SKILL, or a level of their own.", None),
         # (AE: Infinite's Training Mode playfighting)
         ("PLAYFIGHT:", "bots.playfight", BOT_PLAYFIGHT,
          ["The bots fight back.", "The bots move, strafe and aim at you, but\nnever shoot: aim practice."], None),

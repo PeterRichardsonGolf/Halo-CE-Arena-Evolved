@@ -18,6 +18,8 @@ their target was a moment ago (the TRACKING DELAY below).
 
 #define AE_BOTS_SKILL_RECRUIT NUMBER_OF_BOTS_SKILLS
 
+#include "ae_bots_combat.h"
+
 static struct bots_skill_definition const ae_bots_recruit =
 	{ "recruit", 1.4f, 16.0f, 80.0f, 22.0f, 2.5f, 5.0f, 2.6f, 0.0f, 0.0f, 0.0f, 4, 24 };
 
@@ -124,17 +126,8 @@ static void ae_bots_aim_delay(short skill, long target_player_index, real_point3
 }
 
 /* MELEE (owner 2026-10-16, Infinite's lower levels rarely melee): bots.c strikes within 1.1 units once a second at
-every skill; RECRUIT only at point blank (0.8) and every 3 s, EASY every 2 s */
-static real ae_bots_melee_reach(short skill)
-{
-	return skill == AE_BOTS_SKILL_RECRUIT ? 0.8f : 1.1f;
-}
-
-static long ae_bots_melee_ticks(short skill)
-{
-	return skill == AE_BOTS_SKILL_RECRUIT ? TICKS_PER_SECOND * 3 : skill == _bots_skill_easy ? TICKS_PER_SECOND * 2 :
-		TICKS_PER_SECOND;
-}
+every skill; RECRUIT only at point blank (0.8), every 3 s or more and only now and then, EASY every 2 s or more:
+ae_bots_combat_rules.c's ae_bots_combat_melee, which has every level's (ae_bots_combat.inc) */
 
 /* CROUCHING IN A FIGHT (owner 2026-10-16: "crouch like while moving like halo infinite but not as spammy"): NORMAL and
 up now and then crouch while they strafe, for a short while, then not again for a while; RECRUIT and EASY never
@@ -174,3 +167,54 @@ static boolean ae_bots_crouch(short skill, long player_index, long now, real ran
 	ae_bots_crouching[player].next = ae_bots_crouching[player].until + TICKS_PER_SECOND * 5 / 2;
 	return TRUE;
 }
+
+/* SHOOTING SKILL and MOVEMENT SKILL (queue 120; bots.shooting_skill, bots.movement_skill: ae_bots_combat.h): the
+skill, bots.c's index (AE_BOTS_SKILL_RECRUIT or its table's), each part of a bot plays at; SAME AS BOT SKILL
+(the default) keeps bots.skill's */
+static int ae_bots_level_of_skill(short skill)
+{
+	return skill == AE_BOTS_SKILL_RECRUIT ? AE_BOTS_LEVEL_RECRUIT : (int)skill + 1;
+}
+
+static short ae_bots_skill_of_level(int level)
+{
+	return level == AE_BOTS_LEVEL_RECRUIT ? AE_BOTS_SKILL_RECRUIT : (short)(level - 1);
+}
+
+/* the aim, the reaction, how far and wide it sees, grenades, blows, headshots */
+static short ae_bots_shooting_skill(short skill)
+{
+	int level = ae_bots_combat_setting_level(FALSE);
+
+	return level < 0 ? skill : ae_bots_skill_of_level(level);
+}
+
+/* strafing, jumping, crouching, closing in, retreating */
+static short ae_bots_movement_skill(short skill)
+{
+	int level = ae_bots_combat_setting_level(TRUE);
+
+	return level < 0 ? skill : ae_bots_skill_of_level(level);
+}
+
+/* the definition a bot's tick reads (bots_bot_update's tick.skill): the shooting skill's, with the movement
+skill's jumps; its grenade chance 0, as the throw is ae_bots_fight_grenade's */
+static struct bots_skill_definition const *ae_bots_tick_skill(short skill)
+{
+	static struct bots_skill_definition definition;
+
+	definition = *ae_bots_skill_definition(ae_bots_shooting_skill(skill));
+	definition.jump_chance = ae_bots_skill_definition(ae_bots_movement_skill(skill))->jump_chance;
+	definition.grenade_chance = 0.0f;
+	return &definition;
+}
+
+/* the fight by level's glue (ae_bots_combat.inc, at bots.c's end), called from bots.c's AE hook lines */
+static long ae_bots_fight_reaction(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks);
+static long ae_bots_fight_look_jitter(struct bots_bot *bot, struct bots_tick *tick);
+static void ae_bots_fight_share(struct bots_bot *bot, struct bots_tick *tick, long target);
+static void ae_bots_fight_aim_point(struct bots_bot *bot, struct bots_tick *tick, real_point3d *aim_point);
+static boolean ae_bots_fight_melee(struct bots_bot *bot, struct bots_tick *tick);
+static long ae_bots_fight_melee_ticks(struct bots_bot *bot, struct bots_tick *tick);
+static void ae_bots_fight_grenade(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks);
+static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick);

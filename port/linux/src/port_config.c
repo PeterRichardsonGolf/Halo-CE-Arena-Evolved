@@ -694,6 +694,14 @@ static const struct config_setting config_settings[] =
 		"How well the bots play: \"recruit\" (for new players), \"easy\", \"normal\",\n"
 		"\"heroic\" or \"legendary\" (how soon they react, how well they aim, how\n"
 		"far they see)." },
+	{ "bots.shooting_skill", _config_string, "\"same\"", "HALO_BOT_SHOOTING_SKILL", _environment_value, _platform_all, /* AE hook */
+		"SHOOTING SKILL: the bots' aim, reactions, sight, grenades, blows and\n"
+		"headshots at a level of their own: \"recruit\" .. \"legendary\", or\n"
+		"\"same\" (the default) for BOT SKILL's." },
+	{ "bots.movement_skill", _config_string, "\"same\"", "HALO_BOT_MOVEMENT_SKILL", _environment_value, _platform_all, /* AE hook */
+		"MOVEMENT SKILL: the bots' strafing, jumping, crouching, closing in and\n"
+		"retreating at a level of their own: \"recruit\" .. \"legendary\", or\n"
+		"\"same\" (the default) for BOT SKILL's." },
 	{ "bots.teams", _config_string, "\"even\"", "HALO_BOT_TEAMS", _environment_value, _platform_all,
 		"In team games: \"even\" puts the bots on both teams, evening them with\n"
 		"the players; \"against\" puts them all on the team the players are not on." },

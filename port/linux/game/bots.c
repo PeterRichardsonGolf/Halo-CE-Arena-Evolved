@@ -1545,7 +1545,7 @@ static boolean bots_target_score(struct bots_bot *bot, struct player_datum *play
 
 static long bots_find_target(struct bots_bot *bot, struct player_datum *player, real_point3d const *eye)
 {
-	struct bots_skill_definition const *skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
+	struct bots_skill_definition const *skill = ae_bots_skill_definition(ae_bots_shooting_skill(bots_globals.skill)); /* AE hook */
 	struct data_iterator iterator;
 	struct player_datum *other;
 	boolean hurt = game_time_get() - bot->hurt_tick < TICKS_PER_SECOND * 2;
@@ -1895,6 +1895,7 @@ static void bots_bot_look(struct bots_bot *bot, struct bots_tick *tick)
 		long target = bots_find_target(bot, tick->player, bots_tick_eye(tick));
 
 		bot->next_look_tick = tick->now + 3;
+		bot->next_look_tick += ae_bots_fight_look_jitter(bot, tick); /* AE hook */
 		if (target != NONE)
 		{
 			struct player_datum *target_player = player_get(target);
@@ -1917,6 +1918,7 @@ static void bots_bot_look(struct bots_bot *bot, struct bots_tick *tick)
 			surface_index = bots_unit_surface(target_player->unit_index, &ground);
 			if (surface_index != NONE)
 				bot->target_last_surface_index = surface_index;
+			ae_bots_fight_share(bot, tick, target); /* AE hook */
 		}
 	}
 	if (bot->target_player_index != NONE)
@@ -1945,7 +1947,9 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	real settle = (real)exp(-1.0f / (skill->aim_settle_seconds * TICKS_PER_SECOND) * 1.1f);
 
 	tick->fighting = TRUE;
-	ae_bots_aim_delay(bots_globals.skill, bot->target_player_index, &aim_point, now); /* AE hook */
+	reaction_ticks = ae_bots_fight_reaction(bot, tick, reaction_ticks); /* AE hook */
+	ae_bots_aim_delay(ae_bots_shooting_skill(bots_globals.skill), bot->target_player_index, &aim_point, now); /* AE hook */
+	ae_bots_fight_aim_point(bot, tick, &aim_point); /* AE hook */
 	bots_tick_eye(tick);
 	tick->target_distance = bots_distance3d(&tick->eye, &aim_point);
 	/* (leading a moving target by the projectile's flight) */
@@ -1971,7 +1975,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 		bots_random_signed(bot) * skill->aim_error_degrees * 0.04f * BOTS_DEGREES;
 	bot->aim_error_pitch = bot->aim_error_pitch * settle +
 		bots_random_signed(bot) * skill->aim_error_degrees * 0.03f * BOTS_DEGREES;
-	ae_bots_aim_floor(bots_globals.skill, &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
+	ae_bots_aim_floor(ae_bots_shooting_skill(bots_globals.skill), &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
 	desired_yaw = (real)atan2(dy, dx) + bot->aim_error_yaw;
 	desired_pitch = (real)atan2(dz, horizontal) + bot->aim_error_pitch;
 	turn = skill->turn_degrees_per_tick * BOTS_DEGREES;
@@ -2011,10 +2015,10 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 		}
 	}
 	/* a blow close up */
-	if (tick->target_distance < ae_bots_melee_reach(bots_globals.skill) && now >= bot->melee_tick) /* AE hook */
+	if (ae_bots_fight_melee(bot, tick)) /* AE hook */
 	{
 		tick->flags |= FLAG(_unit_control_use_equipment_bit);
-		bot->melee_tick = now + ae_bots_melee_ticks(bots_globals.skill); /* AE hook */
+		bot->melee_tick = now + ae_bots_fight_melee_ticks(bot, tick); /* AE hook */
 	}
 	/* a grenade at middle range, now and then */
 	if (tick->target_distance > 6.0f && tick->target_distance < 22.0f && now >= bot->grenade_tick &&
@@ -2027,18 +2031,19 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 			tick->action->desired_grenade_index = tick->unit->unit.grenade_counts[0] > 0 ? 0 : 1;
 		bot->grenade_tick = now + TICKS_PER_SECOND * 4;
 	}
+	ae_bots_fight_grenade(bot, tick, reaction_ticks); /* AE hook */
 	/* strafing, to a side for a while; nearer or further to keep its
 	weapon's distance; a jump now and then */
 	if (now >= bot->strafe_until_tick)
 	{
 		bot->strafe_sign = bots_random_real(bot) < 0.5f ? -1.0f : 1.0f;
-		bot->strafe_until_tick = now + ae_bots_strafe_ticks(bots_globals.skill, TICKS_PER_SECOND / 3 + (long)(bots_random(bot) % (TICKS_PER_SECOND))); /* AE hook */
+		bot->strafe_until_tick = now + ae_bots_strafe_ticks(ae_bots_movement_skill(bots_globals.skill), TICKS_PER_SECOND / 3 + (long)(bots_random(bot) % (TICKS_PER_SECOND))); /* AE hook */
 	}
 	{
 		real to_target = (real)atan2(dy, dx);
 		real range = bots_weapon_range(tick->weapon_index);
 		real forward = tick->target_distance > range * 1.3f ? 0.8f : tick->target_distance < range * 0.6f ? -0.5f : 0.0f;
-		real side = bot->strafe_sign * ae_bots_strafe(bots_globals.skill); /* AE hook */
+		real side = bot->strafe_sign * ae_bots_strafe(ae_bots_movement_skill(bots_globals.skill)); /* AE hook */
 
 		tick->move_direction = (real)atan2((real)sin(to_target) * forward + (real)sin(to_target + BOTS_PI * 0.5f) * side,
 			(real)cos(to_target) * forward + (real)cos(to_target + BOTS_PI * 0.5f) * side);
@@ -2047,7 +2052,8 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	}
 	if (bots_random_real(bot) < skill->jump_chance / TICKS_PER_SECOND)
 		tick->flags |= FLAG(_unit_control_jump_bit);
-	if (ae_bots_crouch_chance(bots_globals.skill) > 0.0f && ae_bots_crouch(bots_globals.skill, bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
+	if (ae_bots_crouch_chance(ae_bots_movement_skill(bots_globals.skill)) > 0.0f && ae_bots_crouch(ae_bots_movement_skill(bots_globals.skill), bot->player_index, now, bots_random_real(bot))) tick->flags |= FLAG(_unit_control_crouch_modifier_bit); /* AE hook */
+	ae_bots_fight_move(bot, tick); /* AE hook */
 }
 
 /* walking to the goal, looking where it goes; there, a look about (and the
@@ -2253,7 +2259,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	real vitality;
 
 	csmemset(&tick, 0, sizeof(tick));
-	tick.skill = ae_bots_skill_definition(bots_globals.skill); /* AE hook */
+	tick.skill = ae_bots_tick_skill(bots_globals.skill); /* AE hook */
 	tick.player = player_get(bot->player_index);
 	tick.now = game_time_get();
 	tick.throttle_scale = 1.0f;
