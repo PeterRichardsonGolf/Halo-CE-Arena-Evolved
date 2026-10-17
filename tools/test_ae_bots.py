@@ -85,15 +85,22 @@ DATA = Path(os.environ.get("AE_BOTS_DATA", ""))
 PLAYER = re.compile(r"player (\d+): (?:\(-?[\d.]+ -?[\d.]+ -?[\d.]+\)|dead).*? k(-?\d+) d(-?\d+) .*?m(\d+)")
 
 
-def _play(tmp_path, test, seconds, **settings):
+def _play(tmp_path, test, seconds, layouts=None, **settings):
     if not os.environ.get("AE_BOTS_BUILD") or not (BUILD / "halo").is_file() or not (DATA / "maps").is_dir():
         pytest.skip("needs $AE_BOTS_BUILD (a linux64 build) and $AE_BOTS_DATA (a data root with the stock maps)")
     data, save = tmp_path / "data", tmp_path / "save"
     data.mkdir()
     save.mkdir()
     for name in ("maps", "packs"):
-        if (DATA / name).exists():
+        if (DATA / name).exists() and not (name == "maps" and layouts):
             (data / name).symlink_to((DATA / name).resolve())
+    if layouts:
+        # (maps/ of links to the maps, and maps/layouts/<map>.txt: the map layout files, ae_layout.c)
+        (data / "maps" / "layouts").mkdir(parents=True)
+        for entry in (DATA / "maps").iterdir():
+            (data / "maps" / entry.name).symlink_to(entry.resolve())
+        for name, text in layouts.items():
+            (data / "maps" / "layouts" / f"{name}.txt").write_text(text)
     game = tmp_path / "halo"
     shutil.copy(BUILD / "halo", game)
     env = {**os.environ, "SDL_VIDEODRIVER": "offscreen", "SDL_AUDIO_DRIVER": "dummy", "SDL_AUDIODRIVER": "dummy",
@@ -164,3 +171,50 @@ def test_shooting_and_movement_skills(tmp_path):
     assert int(head_aims) == 0 and int(grenades) <= 3
     # (HEROIC's movement: jumps in a fight)
     assert int(jumps) > 0
+
+
+TRAVEL = re.compile(r"bots: travel tick \d+: teleports (\d+) \((\d+) planned, \d+ pads missed\), jumps (\d+) \((\d+) missed\), "
+                    r"links tried (\d+) taken (\d+) declined (\d+), packs taken (\d+) of (\d+) detours")
+
+
+def test_bots_take_teleporters(tmp_path):
+    """Getting around (ae_bots_travel.c): Blood Gulch's two teleporter pads (the bases' roofs to the field) are read as
+    links, and bots take them on their way (halo.log's minute line); with debug.bot_links false none are taken"""
+    status, output = _play(tmp_path, "local:bloodgulch", 70, HALO_BOTS=7)
+    assert status == 0, output[-3000:]
+    assert "bots: travel: 2 links (2 teleporter pads, 0 layout jumps), 0 avoid zones; links taken" in output
+    lines = TRAVEL.findall(output)
+    assert lines, output[-3000:]
+    teleports, planned, jumps, missed, tried, taken, declined, packs, detours = map(int, lines[-1])
+    assert taken > 0 and tried >= taken and planned <= teleports
+
+
+def test_bots_without_links(tmp_path):
+    status, output = _play(tmp_path, "local:bloodgulch", 70, HALO_BOTS=7, HALO_BOT_LINKS="false")
+    assert status == 0, output[-3000:]
+    assert "links off (debug.bot_links)" in output
+    lines = TRAVEL.findall(output)
+    assert lines, output[-3000:]
+    assert int(lines[-1][4]) == 0 and int(lines[-1][5]) == 0
+
+
+def test_layout_bot_lines(tmp_path):
+    """The layout file's bot lines (ae_layout_rules.h): debug.bot_hints names the map's layout header; a file with a
+    bot jump and a bot avoid is read for the bots (a jump link more, the avoid zone's surfaces closed)"""
+    first = tmp_path / "hints"
+    first.mkdir()
+    status, output = _play(first, "local:bloodgulch", 15, HALO_BOTS=1, HALO_BOT_HINTS="true")
+    assert status == 0, output[-3000:]
+    header = re.search(r"bots: hint: this map's layout file .* begins: (layout 1 bloodgulch [0-9a-f]{8})", output)
+    assert header, output[-3000:]
+    second = tmp_path / "layout"
+    second.mkdir()
+    text = (header.group(1) + "\n# a test of the bot lines\nbot jump at 40.0 -79.0 0.5 to 42.0 -79.0 0.5\n"
+            "bot avoid 65.0 -120.0 0.0 radius 6\n")
+    status, output = _play(second, "local:bloodgulch", 15, layouts={"bloodgulch": text}, HALO_BOTS=1)
+    assert status == 0, output[-3000:]
+    assert re.search(r"layout: .*bloodgulch\.txt \(0 items, .* 1 bot jumps, 1 bot avoids\)", output), output[-3000:]
+    assert "bots: travel: 3 links (2 teleporter pads, 1 layout jumps), 1 avoid zones" in output
+    closed = re.search(r"bots: travel: layout line 4: avoid \(65\.0 -120\.0 0\.0\) radius 6\.0: (\d+) walkable surfaces closed",
+                       output)
+    assert closed and int(closed.group(1)) > 0, output[-3000:]

@@ -534,7 +534,8 @@ walkable surfaces fall short:
 A bot whose way passes within a unit of a jump's first point, moving
 towards the second, faces it and jumps (its route may also go there on
 purpose); an avoid zone closes the bots' walkable surfaces whose middle lies
-in it and the roaming places there. To write them: `debug.bot_hints` logs
+in it and the roaming places there (it closes the ways through it too:
+check the minute line after adding one). To write them: `debug.bot_hints` logs
 the map's layout header line, each of player 1's jumps as a ready
 `bot jump` line and a `bot avoid` line where player 1 crouches still a
 second; halo.log's `bots: travel` line each minute lists where bots stood
