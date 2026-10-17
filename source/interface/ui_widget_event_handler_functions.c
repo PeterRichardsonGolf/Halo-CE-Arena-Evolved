@@ -1436,6 +1436,7 @@ static boolean start_network_game_if_no_advertised_servers(
 	struct widget_instance *widget,
 	struct event_record *event,
 	boolean *widget_deleted);
+boolean ae_split_screen_hosting(void); /* AE hook */
 static boolean netgame_unjoin_player(
 	struct widget_instance *widget,
 	struct event_record *event,
@@ -2582,7 +2583,7 @@ static boolean netgame_unjoin_player(
 
 					if (machine_player_count == 1)
 					{
-						if (global_network_game_server_get() && network_game_should_accept_remote_connections() == TRUE)
+						if (global_network_game_server_get() && (network_game_should_accept_remote_connections() == TRUE || ae_split_screen_hosting())) /* AE hook */
 						{
 							void *server = global_network_game_server_get();
 							if (server)
@@ -3672,7 +3673,6 @@ int config_boolean(const char *name);
 /* port: whether the PC menus' Create Game is hosting (ui_widget_port_host),
 which chose internet or LAN, public or private, itself */
 static boolean network_game_port_pc_menus_hosting = FALSE;
-boolean ae_split_screen_hosting(void); /* AE hook */
 
 static boolean network_game_start_new_server(
 	struct widget_instance *widget,

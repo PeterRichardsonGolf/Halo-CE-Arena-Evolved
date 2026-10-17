@@ -721,3 +721,4 @@ port/linux/game/bots.c	if (ae_bots_playfight()) tick.flags &= ~(FLAG(_unit_contr
 # HUD STYLE AE has no name under the reticle (owner 2026-10-16: "out of place"; the names over heads are AE's)
 source/game/game_engine.c	#include "ae_hud_style.h" /* AE hook */
 source/game/game_engine.c	if (ae_hud_style_is_ae()) return; /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	if (global_network_game_server_get() && (network_game_should_accept_remote_connections() == TRUE || ae_split_screen_hosting())) /* AE hook */
