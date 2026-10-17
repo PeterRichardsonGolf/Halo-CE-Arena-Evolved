@@ -62,6 +62,8 @@ static long sends;
 static short next_color;
 
 static boolean network_game_is_splitscreen_local(void) { return local_game; }
+/* (ae_bots_objective.c's: the games bots play, Slayer, CTF, Oddball, King and Race, engines 1 to 5) */
+static boolean ae_bots_engine_played(long game_engine_index) { return game_engine_index >= 1 && game_engine_index <= 5; }
 static long bots_wanted_count(void) { return wanted; }
 static short bots_teams(void) { return teams_setting; }
 static boolean network_game_player_slot_held(long player_index) { (void)player_index; return FALSE; }
@@ -299,21 +301,21 @@ int main(int argc, char **argv)
 		CHECK(sends == 0, "the lobby sent for the people of machines %d up", BOTS_FIRST_MACHINE);
 		return 0;
 	}
-	/* Slayer alone (the other gametypes' goals are not the bots' yet): none
-	in CTF, and those of a Slayer lobby leave when it becomes CTF */
-	CASE("slayer-only")
+	/* the gametypes bots play (ae_bots_objective.c ae_bots_engine_played: Slayer, CTF, Oddball, King, Race): bots
+	in each, none in another (the stub engine), and those of a lobby leave when it becomes one */
+	CASE("played-gametypes")
 	{
 		lobby(game_engine_ctf, 16);
 		player(0, 0);
 		wanted = 6;
 		network_game_server_port_bots(&server);
-		CHECK(bots_in(&team0, &team1) == 0, "%ld bots in CTF", bots_in(&team0, &team1));
-		server.game.variant.game_engine_index = game_engine_slayer;
-		network_game_server_port_bots(&server);
-		CHECK(bots_in(&team0, &team1) == 6, "%ld bots in Slayer, not 6", bots_in(&team0, &team1));
+		CHECK(bots_in(&team0, &team1) == 6, "%ld bots in CTF, not 6", bots_in(&team0, &team1));
 		server.game.variant.game_engine_index = game_engine_king;
 		network_game_server_port_bots(&server);
-		CHECK(bots_in(&team0, &team1) == 0, "%ld bots stayed for King of the Hill", bots_in(&team0, &team1));
+		CHECK(bots_in(&team0, &team1) == 6, "%ld bots in King of the Hill, not 6", bots_in(&team0, &team1));
+		server.game.variant.game_engine_index = game_engine_stub;
+		network_game_server_port_bots(&server);
+		CHECK(bots_in(&team0, &team1) == 0, "%ld bots stayed for the stub engine", bots_in(&team0, &team1));
 		return 0;
 	}
 	/* nothing changes once the game is started, nor in the game */

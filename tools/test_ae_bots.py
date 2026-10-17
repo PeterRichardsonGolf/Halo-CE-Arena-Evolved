@@ -203,7 +203,7 @@ def test_bots_play_the_objective_in_the_next_game(tmp_path):
 # ---------- vehicles (ae_bots_vehicle.c; notes/specs/2026-10-16-bots-infinite.md area 4)
 
 VEHICLE_LINE = re.compile(r"bots: vehicle tick \d+: seats taken gunner (\d+) passenger (\d+) driver (\d+) .*?"
-                          r"kills gunner (\d+) passenger (\d+) driver (\d+); riding s gunner (\d+) passenger (\d+) driver (\d+), "
+                          r"kills gunner (\d+) passenger (\d+) driver (\d+) \| riding s gunner (\d+) passenger (\d+) driver (\d+), "
                           r"parked (\d+), fighting (\d+), longest ride (\d+) s")
 
 

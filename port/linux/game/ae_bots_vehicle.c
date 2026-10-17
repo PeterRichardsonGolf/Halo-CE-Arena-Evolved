@@ -206,9 +206,9 @@ void ae_bots_vehicle_report(void)
 				ae_bots_vehicle_totals.bot_entries[index]);
 	}
 	platform_log("bots: vehicle tick %ld: seats taken gunner %ld passenger %ld driver %ld (warthog %ld, rocket warthog %ld, "
-		"ghost %ld, turret %ld, other %ld); exits wrecked %ld flipped %ld no driver %ld parked %ld there %ld away %ld "
-		"hold %ld stuck %ld; kills gunner %ld passenger %ld driver %ld; riding s gunner %ld passenger %ld driver %ld, "
-		"parked %ld, fighting %ld, longest ride %.0f s, driven %.0f units; by bot%s",
+		"ghost %ld, turret %ld, other %ld) | exits wrecked %ld flipped %ld no driver %ld parked %ld there %ld away %ld "
+		"hold %ld stuck %ld | kills gunner %ld passenger %ld driver %ld | riding s gunner %ld passenger %ld driver %ld, "
+		"parked %ld, fighting %ld, longest ride %.0f s, driven %.0f units | by bot%s",
 		now, ae_bots_vehicle_totals.entries[AE_BOTS_SEAT_GUNNER], ae_bots_vehicle_totals.entries[AE_BOTS_SEAT_PASSENGER],
 		ae_bots_vehicle_totals.entries[AE_BOTS_SEAT_DRIVER], ae_bots_vehicle_totals.entries_by_class[AE_BOTS_VEHICLE_WARTHOG],
 		ae_bots_vehicle_totals.entries_by_class[AE_BOTS_VEHICLE_ROCKET_WARTHOG],
