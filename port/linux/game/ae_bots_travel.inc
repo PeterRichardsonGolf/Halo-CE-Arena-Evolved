@@ -38,6 +38,13 @@ enum
 #define AE_TRAVEL_GOAL_MOVED 3.0f
 /* a jump that ends this near its landing is made */
 #define AE_TRAVEL_LANDED 1.5f
+/* a roaming place this far off is a far goal (halo.log's goal times) */
+#define AE_TRAVEL_FAR_GOAL 15.0f
+/* a bot stuck takes a layout jump this near */
+#define AE_TRAVEL_STUCK_JUMP_REACH 8.0f
+/* a bot this long no nearer its goal while it walks has a stuck spot (Halo Infinite's bots have a 0.3 s wrong path
+direction timeout; ours walk paths with corners and dodge other bots: longer) */
+#define AE_TRAVEL_NO_PROGRESS_TICKS (6 * TICKS_PER_SECOND)
 
 struct ae_travel_bot
 {
@@ -48,6 +55,8 @@ struct ae_travel_bot
 	long goal_tick;
 	real_point3d goal_point;
 	long via_tick;
+	/* walked to straight, no path (a jump taken to get out of where the paths fail) */
+	boolean direct;
 	long approach_tick;
 	long jump_tick;
 	/* the pack it goes to, and its health when it set off */
@@ -57,6 +66,8 @@ struct ae_travel_bot
 	real pack_health;
 	long pack_banned;
 	long pack_banned_until;
+	/* no pack looked for before then (one it found no way to) */
+	long pack_look_tick;
 	/* links not tried again until then */
 	long declined_until[AE_BOTS_TRAVEL_MAXIMUM_LINKS];
 	/* where it last came out of a link, when, and which */
@@ -70,6 +81,10 @@ struct ae_travel_bot
 	real timed_straight;
 	long timed_start_tick;
 	boolean timed_done;
+	/* how near its goal it has come, and when it last came nearer (a bot pacing back and forth) */
+	long progress_goal_tick;
+	real progress_best;
+	long progress_tick;
 };
 
 static struct
@@ -106,6 +121,7 @@ static struct
 	long near_goals;
 	long near_goal_ticks;
 	long goals_left;
+	long no_progress;
 } ae_travel;
 
 static struct ae_travel_bot ae_travel_bots[BOTS_MAXIMUM];
@@ -135,6 +151,14 @@ static struct ae_travel_bot *ae_travel_state(struct bots_bot *bot)
 	return index >= 0 && index < BOTS_MAXIMUM ? &ae_travel_bots[index] : NULL;
 }
 
+static void ae_travel_check_progress(struct bots_bot *bot, struct ae_travel_bot *travel, struct bots_tick *tick);
+
+/* how near a link's entry its last steps are walked straight */
+static real ae_travel_approach(struct ae_bots_travel_link const *link)
+{
+	return link->kind == AE_BOTS_TRAVEL_LINK_JUMP ? AE_TRAVEL_JUMP_APPROACH : AE_TRAVEL_PAD_APPROACH;
+}
+
 static void ae_travel_bot_reset(struct ae_travel_bot *travel, long unit_index)
 {
 	csmemset(travel, 0, sizeof(*travel));
@@ -144,6 +168,7 @@ static void ae_travel_bot_reset(struct ae_travel_bot *travel, long unit_index)
 	travel->pack_banned = NONE;
 	travel->arrival_link = AE_TRAVEL_VIA_NONE;
 	travel->timed_goal_tick = NONE;
+	travel->progress_goal_tick = NONE;
 }
 
 /* ---------- the map */
@@ -235,8 +260,10 @@ void ae_bots_travel_prepare(void)
 
 /* ---------- searches */
 
-/* the walk the search just made found from start to the goal (the search's raw steps): FALSE without a search */
-static real ae_travel_walk_found(real_point3d const *start, real_point3d const *goal, long goal_surface)
+/* the walk the search just made found from start to the goal (the search's raw steps); a way that ends within near
+of the goal (across, and 1.5 up or down) counts as reaching it, the rest walked straight (a pad on its base, a pack
+on a shelf the walkable surfaces stop short of) */
+static real ae_travel_walk_found(real_point3d const *start, real_point3d const *goal, long goal_surface, real near)
 {
 	struct path_state *state = bots_globals.search;
 	struct path_step raw_steps[64];
@@ -253,8 +280,22 @@ static real ae_travel_walk_found(real_point3d const *start, real_point3d const *
 		length += bots_distance3d(&previous, &raw_steps[step].point);
 		previous = raw_steps[step].point;
 	}
+	if (!reached && steps_finish_path && bots_distance2d(&previous, goal) <= near && fabs(previous.z - goal->z) <= 1.5f)
+		return length + bots_distance3d(&previous, goal);
 	return ae_bots_travel_walk(TRUE, length, (boolean)(reached && steps_finish_path), bots_distance3d(&previous, goal),
 		bots_distance3d(start, goal));
+}
+
+/* whether the bot's path (just searched to a via) takes it there, or within near of it (its end then walked
+straight: the via's approach) */
+static boolean ae_travel_path_reaches(struct bots_bot const *bot, real_point3d const *point, real near)
+{
+	if (!bot->path.valid)
+		return FALSE;
+	if (!bot->path_short)
+		return TRUE;
+	return (boolean)(bot->path.steps_finish_path && bots_distance2d(&bot->path.endpoint.point, point) <= near &&
+		fabs(bot->path.endpoint.point.z - point->z) <= 1.5f);
 }
 
 /* a search to the point (a via) in place of the goal: TRUE when one was made */
@@ -283,6 +324,7 @@ static void ae_travel_drop_via(struct bots_bot *bot, struct ae_travel_bot *trave
 		travel->declined_until[travel->via] = now + decline_ticks;
 	travel->via = AE_TRAVEL_VIA_NONE;
 	travel->phase = _ae_travel_phase_to_entry;
+	travel->direct = FALSE;
 	travel->pack_object = NONE;
 	bot->path.valid = FALSE;
 	bot->path_tick = now - TICKS_PER_SECOND;
@@ -328,24 +370,27 @@ static void ae_travel_check_via(struct bots_bot *bot, struct ae_travel_bot *trav
 		}
 		return;
 	}
-	if (bot->goal_kind == _bots_goal_none || bot->goal_kind == _bots_goal_item)
+	if (bot->goal_kind == _bots_goal_none ||
+		(bot->goal_kind == _bots_goal_item && ae_travel.links[travel->via].kind != AE_BOTS_TRAVEL_LINK_JUMP))
 	{
 		ae_travel_drop_via(bot, travel, 0, "goal gone");
 		return;
 	}
 	if (bot->goal_tick != travel->goal_tick)
 	{
-		/* (another goal: the link kept while it still beats walking there, by the straight lines) */
+		/* (another goal: the link kept while it still beats walking straight there) */
 		struct ae_bots_travel_link const *link = &ae_travel.links[travel->via];
 
-		if (bots_distance3d(&bot->goal_point, &travel->goal_point) > AE_TRAVEL_GOAL_MOVED &&
-			(travel->phase != _ae_travel_phase_to_entry || !object ||
-				!ae_bots_travel_link_worth(ae_bots_travel_link_estimate(bots_distance3d(&object->object.position, &link->entry),
-					ae_bots_travel_hop_cost((boolean)(link->kind == AE_BOTS_TRAVEL_LINK_JUMP),
-						bots_distance3d(&link->entry, &link->exit)), bots_distance3d(&link->exit, &bot->goal_point)),
-					bots_distance3d(&object->object.position, &bot->goal_point) * AE_BOTS_TRAVEL_WALK_STRETCH)))
+		if (travel->phase == _ae_travel_phase_to_entry &&
+			bots_distance3d(&bot->goal_point, &travel->goal_point) > AE_TRAVEL_GOAL_MOVED)
 		{
-			if (travel->phase == _ae_travel_phase_to_entry)
+			real straight = object ? bots_distance3d(&object->object.position, &bot->goal_point) : 0.0f;
+			real estimate = !object ? REAL_MAX : ae_bots_travel_link_estimate(
+				bots_distance3d(&object->object.position, &link->entry),
+				ae_bots_travel_hop_cost((boolean)(link->kind == AE_BOTS_TRAVEL_LINK_JUMP),
+					bots_distance3d(&link->entry, &link->exit)), bots_distance3d(&link->exit, &bot->goal_point));
+
+			if (estimate >= straight * AE_BOTS_TRAVEL_WALK_STRETCH)
 			{
 				ae_travel_drop_via(bot, travel, 0, "goal moved");
 				return;
@@ -402,9 +447,9 @@ static void ae_travel_consider_links(struct bots_bot *bot, struct ae_travel_bot 
 
 		ae_travel.links_tried++;
 		if (ae_travel_search_to(bot, unit_index, &ae_travel.entry_ground[best], ae_travel.entry_surface[best]) &&
-			bot->path.valid && !bot->path_short &&
-			ae_bots_travel_link_taken(ae_travel_walk_found(position, &ae_travel.entry_ground[best], ae_travel.entry_surface[best]),
-				hop, bots_distance3d(&link->exit, &bot->goal_point), walk))
+			ae_travel_path_reaches(bot, &ae_travel.entry_ground[best], ae_travel_approach(link)) &&
+			ae_bots_travel_link_taken(ae_travel_walk_found(position, &ae_travel.entry_ground[best], ae_travel.entry_surface[best],
+				ae_travel_approach(link)), hop, bots_distance3d(&link->exit, &bot->goal_point), walk))
 		{
 			travel->via = (short)best;
 			travel->phase = _ae_travel_phase_to_entry;
@@ -447,18 +492,24 @@ boolean ae_bots_travel_search(struct bots_bot *bot, long unit_index)
 	if (travel->via == AE_TRAVEL_VIA_PACK)
 	{
 		if (ae_travel_search_to(bot, unit_index, &travel->pack_point, travel->pack_surface) &&
-			(!bot->path.valid || bot->path_short))
+			!ae_travel_path_reaches(bot, &travel->pack_point, AE_TRAVEL_PACK_APPROACH))
 		{
+			ae_travel_trace(bot, "pack no way: end off", travel->pack_object,
+				bot->path.valid ? bots_distance2d(&bot->path.endpoint.point, &travel->pack_point) : -1.0f,
+				bot->path.valid ? bot->path.endpoint.point.z - travel->pack_point.z : 0.0f);
 			travel->pack_banned = travel->pack_object;
-			travel->pack_banned_until = game_time_get() + TICKS_PER_SECOND * 20;
+			travel->pack_banned_until = game_time_get() + TICKS_PER_SECOND * 60;
+			travel->pack_look_tick = game_time_get() + TICKS_PER_SECOND * 5;
 			ae_travel_drop_via(bot, travel, 0, "pack no way");
 		}
 		return TRUE;
 	}
+	if (travel->via >= 0 && travel->direct)
+		return TRUE;
 	if (travel->via >= 0)
 	{
 		if (ae_travel_search_to(bot, unit_index, &ae_travel.entry_ground[travel->via], ae_travel.entry_surface[travel->via]) &&
-			(!bot->path.valid || bot->path_short))
+			!ae_travel_path_reaches(bot, &ae_travel.entry_ground[travel->via], ae_travel_approach(&ae_travel.links[travel->via])))
 		{
 			ae_travel.links_declined++;
 			ae_travel_drop_via(bot, travel, TICKS_PER_SECOND * 20, "entry no way");
@@ -476,7 +527,7 @@ boolean ae_bots_travel_search(struct bots_bot *bot, long unit_index)
 	if (bots_globals.searches != before && bot->goal_kind != _bots_goal_none && bot->goal_surface_index != NONE)
 	{
 		ae_travel_consider_links(bot, travel, unit_index, &position,
-			ae_travel_walk_found(&position, &bot->goal_point, bot->goal_surface_index));
+			ae_travel_walk_found(&position, &bot->goal_point, bot->goal_surface_index, 0.0f));
 	}
 	return TRUE;
 }
@@ -567,6 +618,17 @@ boolean ae_bots_travel_follow(struct bots_bot *bot, long unit_index, real_point3
 		distance = bots_distance2d(position, point);
 		if (travel->phase == _ae_travel_phase_to_entry)
 		{
+			if (travel->direct && (distance > AE_TRAVEL_JUMP_APPROACH || fabs(position->z - point->z) > 1.5f))
+			{
+				if (now - travel->via_tick > TICKS_PER_SECOND * 8)
+				{
+					ae_travel.jumps_missed++;
+					ae_travel_drop_via(bot, travel, TICKS_PER_SECOND * 30, "jump not reached");
+					return FALSE;
+				}
+				*direction = (real)atan2(point->y - position->y, point->x - position->x);
+				return TRUE;
+			}
 			if (distance > (jump ? AE_TRAVEL_JUMP_APPROACH : AE_TRAVEL_PAD_APPROACH) || fabs(position->z - point->z) > 1.5f)
 				return FALSE;
 			travel->phase = _ae_travel_phase_at_entry;
@@ -615,7 +677,10 @@ boolean ae_bots_travel_follow(struct bots_bot *bot, long unit_index, real_point3
 
 			if (!airborne && now - travel->jump_tick > TICKS_PER_SECOND / 4)
 			{
-				if (landing < AE_TRAVEL_LANDED && fabs(position->z - link->exit.z) < AE_TRAVEL_LANDED)
+				/* (made: near the landing, or down at its height when it is a drop) */
+				if ((landing < AE_TRAVEL_LANDED && fabs(position->z - link->exit.z) < AE_TRAVEL_LANDED) ||
+					(link->exit.z < link->entry.z - 1.0f && fabs(position->z - link->exit.z) < 1.0f &&
+						landing < AE_TRAVEL_LANDED * 3.0f))
 				{
 					travel->arrived = TRUE;
 					travel->arrival = *position;
@@ -662,6 +727,7 @@ static void ae_travel_look_for_pack(struct bots_bot *bot, long bot_index, struct
 	real need, best_score = 0.0f;
 
 	if (travel->via != AE_TRAVEL_VIA_NONE || !ae_travel.pack_count || (now + bot_index) % TICKS_PER_SECOND ||
+		now < travel->pack_look_tick ||
 		bot->goal_kind == _bots_goal_item || tick->object->object.parent_object_index != NONE ||
 		(bot->target_player_index != NONE && now - bot->target_seen_tick < TICKS_PER_SECOND))
 	{
@@ -706,7 +772,7 @@ static void ae_travel_look_for_pack(struct bots_bot *bot, long bot_index, struct
 	}
 }
 
-/* how long its roaming places take to reach: those over 25 units off apart (an enemy's last place moves, a weapon
+/* how long its roaming places take to reach: those AE_TRAVEL_FAR_GOAL units off or more apart (an enemy's last place moves, a weapon
 is fetched near) */
 static void ae_travel_time_goal(struct bots_bot *bot, struct ae_travel_bot *travel, struct bots_tick *tick)
 {
@@ -726,7 +792,7 @@ static void ae_travel_time_goal(struct bots_bot *bot, struct ae_travel_bot *trav
 		fabs(tick->position.z - travel->timed_point.z) < 2.0f)
 	{
 		travel->timed_done = TRUE;
-		if (travel->timed_straight >= 25.0f)
+		if (travel->timed_straight >= AE_TRAVEL_FAR_GOAL)
 		{
 			ae_travel.far_goals++;
 			ae_travel.far_goal_ticks += tick->now - travel->timed_start_tick;
@@ -749,14 +815,14 @@ static void ae_travel_report(long now)
 	ae_bots_travel_stuck_minute(&ae_travel.stuck, 8, spots, (int)sizeof(spots));
 	platform_log("bots: travel tick %ld: teleports %ld (%ld planned, %ld pads missed), jumps %ld (%ld missed), "
 		"links tried %ld taken %ld declined %ld, packs taken %ld of %ld detours, far goals %ld (%.1f s each), "
-		"near goals %ld (%.1f s each), goals left %ld; stuck spots this minute:%s", now, ae_travel.teleports,
+		"near goals %ld (%.1f s each), goals left %ld, no progress %ld; stuck spots this minute:%s", now, ae_travel.teleports,
 		ae_travel.teleports_planned, ae_travel.pads_missed, ae_travel.jumps, ae_travel.jumps_missed,
 		ae_travel.links_tried, ae_travel.links_taken, ae_travel.links_declined, ae_travel.packs_taken,
 		ae_travel.pack_detours, ae_travel.far_goals,
 		ae_travel.far_goals ? (double)ae_travel.far_goal_ticks / ae_travel.far_goals / TICKS_PER_SECOND : 0.0,
 		ae_travel.near_goals,
 		ae_travel.near_goals ? (double)ae_travel.near_goal_ticks / ae_travel.near_goals / TICKS_PER_SECOND : 0.0,
-		ae_travel.goals_left, spots[0] ? spots : " none");
+		ae_travel.goals_left, ae_travel.no_progress, spots[0] ? spots : " none");
 }
 
 void ae_bots_travel_tick(struct bots_bot *bot, long bot_index, struct bots_tick *tick)
@@ -809,12 +875,102 @@ void ae_bots_travel_tick(struct bots_bot *bot, long bot_index, struct bots_tick 
 	ae_travel_refresh_packs(tick->now);
 	ae_travel_look_for_pack(bot, bot_index, travel, tick);
 	ae_travel_time_goal(bot, travel, tick);
+	ae_travel_check_progress(bot, travel, tick);
 	ae_travel_report(tick->now);
+}
+
+/* nothing of the level between the two points at a biped's knees */
+static boolean ae_travel_clear_line(real_point3d const *from, real_point3d const *to)
+{
+	struct collision_result collision;
+	real_point3d start = *from;
+	real_vector3d vector;
+
+	start.z += 0.5f;
+	vector.i = to->x - from->x;
+	vector.j = to->y - from->y;
+	vector.k = to->z - from->z;
+	return (boolean)!collision_test_vector(FLAG(_collision_test_structure_bit) | FLAG(_collision_test_front_facing_surfaces_bit),
+		&start, &vector, NONE, &collision);
+}
+
+/* a bot that stands stuck or comes no nearer its goal: a layout jump near it, about its height, whose landing is
+nearer its goal, is the way out (a weapon on the floor below a ledge the walkable surfaces do not go down from) */
+static void ae_travel_jump_out(struct bots_bot *bot, struct ae_travel_bot *travel, struct bots_tick *tick, char const *why)
+{
+	long index, best = NONE;
+	real best_distance = AE_TRAVEL_STUCK_JUMP_REACH;
+
+	if (travel->via != AE_TRAVEL_VIA_NONE || !ae_bots_travel_links_on() || bot->goal_kind == _bots_goal_none ||
+		(bot->target_player_index != NONE && tick->now - bot->target_seen_tick < TICKS_PER_SECOND))
+	{
+		return;
+	}
+	for (index = 0; index < ae_travel.link_count; index++)
+	{
+		struct ae_bots_travel_link const *link = &ae_travel.links[index];
+		real distance = bots_distance3d(&tick->position, &link->entry);
+
+		if (link->kind != AE_BOTS_TRAVEL_LINK_JUMP || tick->now < travel->declined_until[index] ||
+			distance >= best_distance || fabs(link->entry.z - tick->position.z) > 1.0f ||
+			bots_distance3d(&link->exit, &bot->goal_point) >= bots_distance3d(&tick->position, &bot->goal_point) ||
+			!ae_travel_clear_line(&tick->position, &link->entry))
+		{
+			continue;
+		}
+		best_distance = distance;
+		best = index;
+	}
+	if (best == NONE)
+		return;
+	travel->via = (short)best;
+	travel->direct = TRUE;
+	travel->phase = _ae_travel_phase_to_entry;
+	travel->goal_tick = bot->goal_tick;
+	travel->goal_point = bot->goal_point;
+	travel->via_tick = tick->now;
+	bot->path.valid = FALSE;
+	bot->path_tick = tick->now - TICKS_PER_SECOND;
+	ae_travel.links_taken++;
+	ae_travel_trace(bot, why, best, best_distance, 0.0f);
+}
+
+/* no nearer its goal in AE_TRAVEL_NO_PROGRESS_TICKS while it walks: a stuck spot too (it paces: its path goes where
+it cannot) */
+static void ae_travel_check_progress(struct bots_bot *bot, struct ae_travel_bot *travel, struct bots_tick *tick)
+{
+	real distance;
+
+	if (bot->goal_kind == _bots_goal_none || travel->via != AE_TRAVEL_VIA_NONE || tick->object->object.parent_object_index != NONE ||
+		(bot->target_player_index != NONE && tick->now - bot->target_seen_tick < TICKS_PER_SECOND * 2))
+	{
+		travel->progress_goal_tick = NONE;
+		return;
+	}
+	distance = bots_distance3d(&tick->position, &bot->goal_point);
+	if (travel->progress_goal_tick != bot->goal_tick || distance < travel->progress_best - 1.0f)
+	{
+		travel->progress_goal_tick = bot->goal_tick;
+		travel->progress_best = distance;
+		travel->progress_tick = tick->now;
+		return;
+	}
+	if (tick->now - travel->progress_tick < AE_TRAVEL_NO_PROGRESS_TICKS)
+		return;
+	travel->progress_tick = tick->now;
+	ae_travel.no_progress++;
+	ae_bots_travel_stuck_add(&ae_travel.stuck, tick->position.x, tick->position.y, tick->position.z);
+	ae_travel_jump_out(bot, travel, tick, "no progress: jump");
 }
 
 void ae_bots_travel_stuck(struct bots_bot *bot, struct bots_tick *tick)
 {
-	(void)bot;
-	if (ae_travel.ready)
-		ae_bots_travel_stuck_add(&ae_travel.stuck, tick->position.x, tick->position.y, tick->position.z);
+	struct ae_travel_bot *travel;
+
+	if (!ae_travel.ready)
+		return;
+	ae_bots_travel_stuck_add(&ae_travel.stuck, tick->position.x, tick->position.y, tick->position.z);
+	travel = ae_travel_state(bot);
+	if (travel)
+		ae_travel_jump_out(bot, travel, tick, "stuck: jump");
 }

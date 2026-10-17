@@ -518,6 +518,28 @@ surfaces (`game/bots.c`). They are never in system link or internet games,
 nor in other gametypes, and nothing that the machines send each other
 changes.
 
+Getting around (`game/ae_bots_travel.c`): a bot whose walk to its goal is
+long, or finds no way, takes a teleporter when the pad is near it and sends
+it near its goal (Blood Gulch's, Chill Out's, Sidewinder's, Wizard's ...: it
+steps on the pad's centre and goes on from the receiver, and does not take
+the pad back at once), and a hurt bot that is not fighting goes by a health
+pack in reach when the gametype's HEALTH does not bring all of it back
+(HALO CE, REACH). A map's layout file (`maps/layouts/<map>.txt`, beside the
+map; `maps/ce/layouts` for Custom Edition maps) can help them where the
+walkable surfaces fall short:
+
+    bot jump at <x> <y> <z> to <x> <y> <z>    a jump across a gap or up a ledge
+    bot avoid <x> <y> <z> radius <r>           a place they keep out of
+
+A bot whose way passes within a unit of a jump's first point, moving
+towards the second, faces it and jumps (its route may also go there on
+purpose); an avoid zone closes the bots' walkable surfaces whose middle lies
+in it and the roaming places there. To write them: `debug.bot_hints` logs
+the map's layout header line, each of player 1's jumps as a ready
+`bot jump` line and a `bot avoid` line where player 1 crouches still a
+second; halo.log's `bots: travel` line each minute lists where bots stood
+stuck that minute (and the teleports, jumps and packs taken).
+
 ## Settings
 
 The settings are in `config.toml` next to the executable
@@ -724,6 +746,8 @@ the setting for one start of the game. It has priority over the file.
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_time_limit`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_TIME_LIMIT`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
 | `debug.bot_trace` | `0` | `HALO_BOT_TRACE` | Every this many seconds, each bot's state is written to the log: where it is and where it goes, its path, its target and its weapon. `0`: never. |
+| `debug.bot_links` | `true` | `HALO_BOT_LINKS` | Bots take teleporters and the map's layout jumps (`bot jump` lines) on their way when that is shorter. `false` for tests of how they do without: the teleports are still counted on halo.log's `bots: travel` line. |
+| `debug.bot_hints` | `false` | `HALO_BOT_HINTS` | For map layout authors: the map's layout header line, each of player 1's jumps as a ready `bot jump at ... to ...` line and a `bot avoid` line where player 1 crouches still a second are written to the log. |
 | `debug.bot_events` | `false` | `HALO_BOT_EVENTS` | Each bot's fight events (target seen, first shot, every shot, hits, melee, strafe changes, crouches, kills, deaths, and its position each second) are written to `debug.txt` as `bot event:` lines; `tools/ae_test/bot_report.py` turns them into tables. |
 | `debug.touch_targets` | `false` | `HALO_TOUCH_TARGETS` | Outlines the tap targets of the menus (item green, value blue, list slot yellow, legend button red, the band beside the slots of a list orange, keys of the on-screen keyboard white), marks where the last finger went down and the last tap landed for 3 seconds, and logs each tap with the target that it hit (for a value, also where it splits into previous and next): to judge the accuracy of touch. |
 | `debug.solo_game` | `false` | `HALO_SOLO_GAME` | A system link or split screen game can start with one player, alone on this machine: to test multiplayer maps without a second machine. |

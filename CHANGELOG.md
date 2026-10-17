@@ -29,6 +29,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   SWAT starts with two frag grenades (Halo CE's own rule gave one in games of 9 players or more, as with bots);
   the AE BR gametypes have an assault rifle second instead of the pistol.
 - HUD STYLE AE no longer shows Halo CE's name of the player under your reticle (the names over heads stay).
+- Bots get around better: they take teleporters on their way when that is shorter than walking (Blood Gulch's,
+  Chill Out's, Sidewinder's, Wizard's, Derelict's, Rat Race's ...; not straight back through the pad they came out
+  at), and a hurt bot that is not fighting goes by a health pack in reach when the gametype's HEALTH does not bring
+  all of it back (HALO CE, REACH), never to one that was taken.
+- Map layout files gain two lines for the bots: `bot jump at <x y z> to <x y z>` (a jump the bots' walkable
+  surfaces miss: a gap, a ledge) and `bot avoid <x y z> radius <r>` (a place they keep out of). `debug.bot_hints`
+  logs player 1's jumps and crouches as ready lines; halo.log's `bots: travel` line lists where bots stood stuck.
 
 ## 0.3.2-beta - 2026-10-16
 
