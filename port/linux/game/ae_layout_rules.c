@@ -162,6 +162,150 @@ static int parse_item(char **words, int count, struct ae_layout_item *item, char
 	return 1;
 }
 
+/* the flag types' names, by enum ae_layout_flag_type (5, the vegas bank, is no line's) */
+static struct { char const *name; short type; } const flag_types[] =
+{
+	{ "ctf", _ae_layout_flag_ctf }, { "ctf_vehicle", _ae_layout_flag_ctf_vehicle }, { "ball", _ae_layout_flag_ball },
+	{ "race", _ae_layout_flag_race }, { "race_vehicle", _ae_layout_flag_race_vehicle },
+	{ "teleport_from", _ae_layout_flag_teleport_from }, { "teleport_to", _ae_layout_flag_teleport_to },
+	{ "hill", _ae_layout_flag_hill }
+};
+
+/* a spawn's game type words, as the scenario's numbers */
+static struct { char const *name; short games; } const game_words[] =
+{
+	{ "all", AE_LAYOUT_GAMES_ALL }, { "ctf", 1 }, { "slayer", 2 }, { "oddball", 3 }, { "king", 4 }, { "race", 5 }
+};
+
+char const *ae_layout_flag_type_name(short type)
+{
+	unsigned int index;
+
+	for (index = 0; index < sizeof(flag_types) / sizeof(flag_types[0]); index++)
+		if (flag_types[index].type == type)
+			return flag_types[index].name;
+	return "?";
+}
+
+/* at x y z [facing d] then the line's own words: words[at] is "at"; the next word past the point and facing into *next */
+static int parse_point(char **words, int count, int at, real *x, real *y, real *z, boolean *has_facing, real *facing,
+	int *next)
+{
+	if (at + 4 > count || !same_word(words[at], "at") || !real_of(words[at + 1], x) || !real_of(words[at + 2], y) ||
+		!real_of(words[at + 3], z))
+	{
+		return 0;
+	}
+	at += 4;
+	if (at + 1 < count && same_word(words[at], "facing"))
+	{
+		if (!real_of(words[at + 1], facing))
+			return 0;
+		*has_facing = TRUE;
+		at += 2;
+	}
+	*next = at;
+	return 1;
+}
+
+/* spawn at x y z [facing d] [team red|blue] [games ...] */
+static int parse_spawn(char **words, int count, struct ae_layout_spawn *spawn, char *error, int error_size)
+{
+	int at, team_given = FALSE, games_given = FALSE;
+
+	memset(spawn, 0, sizeof(*spawn));
+	if (!parse_point(words, count, 1, &spawn->x, &spawn->y, &spawn->z, &spawn->has_facing, &spawn->facing_degrees, &at))
+	{
+		say(error, error_size, "spawn: wants at <x> <y> <z> [facing <degrees>]", count > 1 ? words[1] : NULL);
+		return 0;
+	}
+	spawn->games[0] = AE_LAYOUT_GAMES_ALL;
+	while (at < count)
+	{
+		if (same_word(words[at], "team") && at + 1 < count && !team_given &&
+			(same_word(words[at + 1], "red") || same_word(words[at + 1], "blue")))
+		{
+			spawn->team = (short)(same_word(words[at + 1], "blue") ? 1 : 0);
+			team_given = TRUE;
+			at += 2;
+		}
+		else if (same_word(words[at], "games") && at + 1 < count && !games_given)
+		{
+			int game_count = 0;
+
+			games_given = TRUE;
+			spawn->games[0] = 0;
+			at++;
+			while (at < count && !same_word(words[at], "team"))
+			{
+				unsigned int index;
+
+				for (index = 0; index < sizeof(game_words) / sizeof(game_words[0]); index++)
+					if (same_word(words[at], game_words[index].name))
+						break;
+				if (index == sizeof(game_words) / sizeof(game_words[0]) || game_count == 4)
+				{
+					say(error, error_size, "spawn games: up to 4 of all ctf slayer oddball king race", words[at]);
+					return 0;
+				}
+				spawn->games[game_count++] = game_words[index].games;
+				at++;
+			}
+		}
+		else
+		{
+			say(error, error_size, "spawn: not understood (or given twice)", words[at]);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* flag <type> at x y z [facing d] [team red|blue|n] */
+static int parse_flag(char **words, int count, struct ae_layout_flag *flag, char *error, int error_size)
+{
+	unsigned int index;
+	int at;
+	long number;
+
+	memset(flag, 0, sizeof(*flag));
+	for (index = 0; count > 1 && index < sizeof(flag_types) / sizeof(flag_types[0]); index++)
+		if (same_word(words[1], flag_types[index].name))
+			break;
+	if (count < 2 || index == sizeof(flag_types) / sizeof(flag_types[0]))
+	{
+		say(error, error_size, "flag: not a flag type (ctf ctf_vehicle ball race race_vehicle teleport_from teleport_to "
+			"hill)", count > 1 ? words[1] : NULL);
+		return 0;
+	}
+	flag->type = flag_types[index].type;
+	if (!parse_point(words, count, 2, &flag->x, &flag->y, &flag->z, &flag->has_facing, &flag->facing_degrees, &at))
+	{
+		say(error, error_size, "flag: wants at <x> <y> <z> [facing <degrees>]", count > 2 ? words[2] : NULL);
+		return 0;
+	}
+	if (at < count)
+	{
+		if (at + 2 != count || !same_word(words[at], "team"))
+		{
+			say(error, error_size, "flag: not understood", words[at]);
+			return 0;
+		}
+		if (same_word(words[at + 1], "red"))
+			flag->team = 0;
+		else if (same_word(words[at + 1], "blue"))
+			flag->team = 1;
+		else if (whole_of(words[at + 1], 0, 15, &number))
+			flag->team = (short)number;
+		else
+		{
+			say(error, error_size, "flag team: red, blue or 0 to 15", words[at + 1]);
+			return 0;
+		}
+	}
+	return 1;
+}
+
 /* remove vehicle <turret|n> [near x y z r] */
 static int parse_vehicle(char **words, int count, struct ae_layout_vehicle_rule *rule, char *error, int error_size)
 {
@@ -364,6 +508,58 @@ int ae_layout_parse(char const *text, long length, struct ae_layout *out, char *
 		else if (count == 2 && same_word(words[0], "clear") && same_word(words[1], "items"))
 		{
 			out->clear_items = TRUE;
+		}
+		else if (count == 2 && same_word(words[0], "clear") && same_word(words[1], "spawns"))
+		{
+			out->clear_spawns = TRUE;
+		}
+		else if (count == 2 && same_word(words[0], "clear") && same_word(words[1], "flags"))
+		{
+			out->clear_flags = TRUE;
+		}
+		else if (count >= 2 && same_word(words[0], "remove") && (same_word(words[1], "spawn") || same_word(words[1], "flag")))
+		{
+			boolean spawn = same_word(words[1], "spawn");
+			long number;
+
+			if (count != 3 || !whole_of(words[2], 0, 65535, &number))
+			{
+				say(error, error_size, spawn ? "remove spawn: not a spawn number" : "remove flag: not a flag number",
+					count > 2 ? words[2] : NULL);
+				goto refused;
+			}
+			if (spawn ? out->removed_spawn_count == AE_LAYOUT_MAXIMUM_SPAWNS :
+				out->removed_flag_count == AE_LAYOUT_MAXIMUM_FLAGS)
+			{
+				say(error, error_size, spawn ? "more than 256 spawns removed" : "more than 64 flags removed", NULL);
+				goto refused;
+			}
+			if (spawn)
+				out->removed_spawns[out->removed_spawn_count++] = number;
+			else
+				out->removed_flags[out->removed_flag_count++] = number;
+		}
+		else if (same_word(words[0], "spawn"))
+		{
+			if (out->spawn_count == AE_LAYOUT_MAXIMUM_SPAWNS)
+			{
+				say(error, error_size, "more than 256 spawns", NULL);
+				goto refused;
+			}
+			if (!parse_spawn(words, count, &out->spawns[out->spawn_count], error, error_size))
+				goto refused;
+			out->spawns[out->spawn_count++].line = (short)line_number;
+		}
+		else if (same_word(words[0], "flag"))
+		{
+			if (out->flag_count == AE_LAYOUT_MAXIMUM_FLAGS)
+			{
+				say(error, error_size, "more than 64 flags", NULL);
+				goto refused;
+			}
+			if (!parse_flag(words, count, &out->flags[out->flag_count], error, error_size))
+				goto refused;
+			out->flags[out->flag_count++].line = (short)line_number;
 		}
 		else if (count >= 2 && same_word(words[0], "remove") && same_word(words[1], "item"))
 		{

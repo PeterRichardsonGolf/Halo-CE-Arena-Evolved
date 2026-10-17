@@ -262,6 +262,42 @@ def test_bots_without_links(tmp_path):
     assert int(lines[-1][4]) == 0 and int(lines[-1][5]) == 0
 
 
+def test_layout_spawns_and_flags(tmp_path):
+    """Layout spawn and flag lines (queue 141) with the mode guard (bug 139): CTF on stock Blood Gulch with its flags
+    cleared plays Slayer; with the flags put back by flag lines and the spawns replaced by spawn lines, it plays CTF and
+    the players spawn at the new spawns"""
+    first = tmp_path / "header"
+    first.mkdir()
+    status, output = _play(first, "local:bloodgulch", 15, HALO_BOTS=1, HALO_BOT_HINTS="true")
+    assert status == 0, output[-3000:]
+    header = re.search(r"bots: hint: this map's layout file .* begins: (layout 1 bloodgulch [0-9a-f]{8})", output)
+    assert header, output[-3000:]
+    cleared = tmp_path / "cleared"
+    cleared.mkdir()
+    status, output = _play(cleared, "local:bloodgulch:ctf", 25, layouts={"bloodgulch": header.group(1) + "\nclear flags\n"},
+                           HALO_BOTS=3)
+    assert status == 0, output[-3000:]
+    assert "mode guard: the map has no red CTF flag for CTF: played as Slayer" in output, output[-3000:]
+    assert "practice off; slayer" in output
+    placed = tmp_path / "placed"
+    placed.mkdir()
+    text = (header.group(1) + "\nclear flags\nflag ctf at 95.69 -159.45 -0.10 team red\n"
+            "flag ctf at 40.24 -79.12 -0.10 team blue\nclear spawns\n"
+            "spawn at 98.49 -157.64 1.70 team red games ctf\nspawn at 96.82 -156.99 1.70 team red games ctf\n"
+            "spawn at 43.91 -80.68 1.70 team blue games ctf\nspawn at 41.54 -82.79 1.70 team blue games ctf\n")
+    status, output = _play(placed, "local:bloodgulch:ctf", 25, layouts={"bloodgulch": text}, HALO_BOTS=3)
+    assert status == 0, output[-3000:]
+    assert re.search(r"layout: flags 0 of the map's \d+ kept, 2 added: 2 in all", output), output[-3000:]
+    assert re.search(r"layout: spawns 0 of the map's \d+ kept, 4 added: 4 in all", output), output[-3000:]
+    assert "mode guard" not in output
+    assert "practice off; ctf" in output
+    near = [m for m in re.finditer(r"player 0: \((-?[\d.]+) (-?[\d.]+) (-?[\d.]+)\)", output)]
+    assert near, "player 0 never spawned"
+    x, y = float(near[0].group(1)), float(near[0].group(2))
+    assert min((x - 97.6) ** 2 + (y + 157.3) ** 2, (x - 42.7) ** 2 + (y + 81.7) ** 2) < 25, (x, y)
+    assert not re.search(r"assert|exception", output, re.I), "an assert or exception in the game's log"
+
+
 def test_layout_bot_lines(tmp_path):
     """The layout file's bot lines (ae_layout_rules.h): debug.bot_hints names the map's layout header; a file with a
     bot jump and a bot avoid is read for the bots (a jump link more, the avoid zone's surfaces closed)"""
@@ -277,7 +313,7 @@ def test_layout_bot_lines(tmp_path):
             "bot avoid 65.0 -120.0 0.0 radius 6\n")
     status, output = _play(second, "local:bloodgulch", 15, layouts={"bloodgulch": text}, HALO_BOTS=1)
     assert status == 0, output[-3000:]
-    assert re.search(r"layout: .*bloodgulch\.txt \(0 items, .* 1 bot jumps, 1 bot avoids\)", output), output[-3000:]
+    assert re.search(r"layout: .*bloodgulch\.txt \(0 items, .* 1 bot jumps, 1 bot avoids, 0 spawns, 0 flags\)", output), output[-3000:]
     assert "bots: travel: 3 links (2 teleporter pads, 1 layout jumps), 1 avoid zones" in output
     closed = re.search(r"bots: travel: layout line 4: avoid \(65\.0 -120\.0 0\.0\) radius 6\.0: (\d+) walkable surfaces closed",
                        output)

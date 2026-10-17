@@ -4,7 +4,8 @@ AE_LAYOUT.H
 AE map layout files applied (queue 113; the file's reader: ae_layout_rules.h). When a map loads (game.c's game_load,
 an AE hook line right after scenario_load), the map's layout file, if the map pack has one beside the map
 (<the map's folder>\layouts\<map file name, no .map>.txt) and it was made for this very file (its hash prefix), changes the
-loaded scenario in memory: its netgame items (a new list in place of the map's) and its placed vehicles (dropped). The
+loaded scenario in memory: its netgame items (a new list in place of the map's), its placed vehicles (dropped), its
+player spawns and netgame flags (new lists, queue 141). The
 map file is never written. Every machine that has the file does the same, so a guest's item timers agree with the
 host's items; a guest without it gets the host's items and vehicles as always (the host spawns them) and its own item
 timers from the map (owner 2026-10-16: guests read the pack's file).
