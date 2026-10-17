@@ -98,8 +98,8 @@ boolean ae_bots_combat_back_turned(long unit_index, real_point3d const *point)
 		object->object.forward.j * object->object.forward.j);
 	if (length < 0.01f || forward_length < 0.01f)
 		return FALSE;
-	/* (cos 110 degrees) */
-	return (dx * object->object.forward.i + dy * object->object.forward.j) / (length * forward_length) < -0.342f;
+	/* (cos 114.6 degrees: Infinite's 'facing away') */
+	return (dx * object->object.forward.i + dy * object->object.forward.j) / (length * forward_length) < -0.416f;
 }
 
 /* ---------- a bot's state */
@@ -120,6 +120,8 @@ struct ae_bots_combat_bot *ae_bots_combat_bot_state(long bot_index, long unit_in
 		bot->unit_index = unit_index;
 		ae_bots_combat_retreat_reset(&bot->retreat);
 		bot->share_tick = -TICKS_PER_SECOND * 10;
+		bot->last_fight_tick = -TICKS_PER_SECOND * 10;
+		bot->melee_ready_tick = NONE;
 	}
 	return bot;
 }
@@ -153,11 +155,12 @@ void ae_bots_combat_report(long now, char const *shooting, char const *movement)
 		return;
 	combat_log.last_report_tick = now;
 	platform_log("bots: combat tick %ld (shooting %s, movement %s): grenades %ld, blows %ld (%ld held back), "
-		"head aims %ld, retreats %ld, charges %ld, strafe-jumps %ld, sightings shared %ld", now, shooting, movement,
+		"head aims %ld, retreats %ld, charges %ld, jumps %ld, halts %ld, sightings shared %ld", now, shooting, movement,
 		combat_log.counts[AE_BOTS_COMBAT_GRENADES], combat_log.counts[AE_BOTS_COMBAT_MELEES],
 		combat_log.counts[AE_BOTS_COMBAT_MELEES_DECLINED], combat_log.counts[AE_BOTS_COMBAT_HEAD_AIMS],
 		combat_log.counts[AE_BOTS_COMBAT_RETREATS], combat_log.counts[AE_BOTS_COMBAT_CHARGES],
-		combat_log.counts[AE_BOTS_COMBAT_STRAFE_JUMPS], combat_log.counts[AE_BOTS_COMBAT_SHARES]);
+		combat_log.counts[AE_BOTS_COMBAT_JUMPS], combat_log.counts[AE_BOTS_COMBAT_HALTS],
+		combat_log.counts[AE_BOTS_COMBAT_SHARES]);
 }
 
 void ae_bots_combat_event(long bot_index, long now, char const *skill_name, char const *event, long target,

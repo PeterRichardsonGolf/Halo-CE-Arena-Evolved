@@ -78,10 +78,20 @@ static void test_melee(void)
 	{
 		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 0, 1, 0, 0.0f) == 0);
 		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 1, 1, 0, 0.0f) == 1);
-		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 0, 0.2f, 0, 0.0f) == 1);
+		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 0, 0.05f, 0, 0.0f) == 1);
 		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 0, 1, 1, 0.0f) == 1);
 		CHECK(ae_bots_combat_melee(level, 0.5f, 1, 0, 1, 0, 0.99f) == 1);
 	}
+	/* (low shields: under 0.1 for HEROIC, 0.4 for LEGENDARY: Infinite's ODST and Spartan) */
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_HEROIC, 1.0f, 1, 0, 0.3f, 0, 0.0f) == 0);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_LEGENDARY, 1.0f, 1, 0, 0.3f, 0, 0.0f) == 1);
+	/* the wait in reach before a blow: RECRUIT 1-3 s, NORMAL 0.1-0.5, HEROIC up 0.1-0.3 */
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_RECRUIT, 0) == 30);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_RECRUIT, 1) == 90);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_EASY, 0) == 15);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 1) == 15);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_LEGENDARY, 0) == 3);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_LEGENDARY, 1) == 9);
 	/* cooldowns: RECRUIT waits longest, each a range */
 	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 0) == 90);
 	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 1) == 135);
@@ -131,11 +141,15 @@ static void test_grenades(void)
 	CHECK(grenade_rate(AE_BOTS_LEVEL_HEROIC, 12, 1, 0, 0.16f) > grenade_rate(AE_BOTS_LEVEL_HEROIC, 12, 0, 0, 0.16f) + 0.4f);
 	CHECK(grenade_rate(AE_BOTS_LEVEL_LEGENDARY, 12, 0, 1, 0.22f) > grenade_rate(AE_BOTS_LEVEL_LEGENDARY, 12, 0, 0, 0.22f) + 0.5f);
 	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_RECRUIT, 0) == 600);
-	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_EASY, 1) == 270);
-	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_NORMAL, 0) == 120);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_EASY, 1) == 315);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_NORMAL, 0) == 30);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0) == 3);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_LEGENDARY, 1) == 153);
+	CHECK(!ae_bots_combat_grenade(AE_BOTS_LEVEL_LEGENDARY, 19, 1, 1, 1, 1, 1, 0.0f));
 	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_RECRUIT) == 0.0f);
 	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_EASY) == 0.0f);
-	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_NORMAL) > 0.0f);
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_NORMAL) == 0.0f);
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_HEROIC) == 1.0f);
 	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_LEGENDARY) == 1.0f);
 	CHECK(ae_bots_combat_about_to_die(0, 0.5f));
 	CHECK(!ae_bots_combat_about_to_die(0.1f, 0.5f));
@@ -166,42 +180,44 @@ static void test_retreat(void)
 			CHECK(!ae_bots_combat_retreat_step(&state, level, 0.0f, 0.0f, now, 0.5f, &started, &ended));
 		CHECK(ae_bots_combat_retreat_threshold(level) == 0.0f);
 	}
-	/* NORMAL: low, after its hesitation (6 + 12 x 0.5 = 12 ticks) */
+	/* NORMAL: low (under 0.1), after its hesitation (6 + 12 x 0.5 = 12 ticks) */
 	ae_bots_combat_retreat_reset(&state);
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.1f, 0.1f, 99, 0.5f, &started, &ended));
 	for (now = 100; now < 112; now++)
-		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.1f, 0.1f, now, 0.5f, &started, &ended));
-	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.1f, 0.1f, 112, 0.5f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.05f, 0.1f, now, 0.5f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.05f, 0.1f, 112, 0.5f, &started, &ended));
 	CHECK(started && !ended);
-	/* (at least 1.5 s, though its shields are back) */
-	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.9f, 1.0f, 150, 0.5f, &started, &ended));
+	/* (at least 2 s, though its shields are back) */
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.9f, 1.0f, 171, 0.5f, &started, &ended));
 	CHECK(!started && !ended);
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.3f, 1.0f, 160, 0.5f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.3f, 1.0f, 172, 0.5f, &started, &ended));
 	CHECK(ended);
 	/* (then not again for 6 s) */
-	for (now = 161; now < 160 + 180; now++)
+	for (now = 173; now < 172 + 180; now++)
 		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, now, 0.0f, &started, &ended));
-	for (now = 340; now < 346; now++)
+	for (now = 352; now < 358; now++)
 		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, now, 0.0f, &started, &ended));
-	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 346, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 358, 0.0f, &started, &ended));
 	/* (at most 7 s) */
-	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 346 + 209, 0.0f, &started, &ended));
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 346 + 210, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 358 + 209, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 358 + 210, 0.0f, &started, &ended));
 	CHECK(ended);
 	/* shields up, or sure enough: no retreat; a confidence that comes back starts the hesitation over */
 	ae_bots_combat_retreat_reset(&state);
 	for (now = 0; now < 100; now++)
 		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.0f, 0.5f, now, 0.0f, &started, &ended));
 	for (now = 0; now < 100; now++)
-		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.5f, 0.0f, now, 0.0f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.2f, 0.0f, now, 0.0f, &started, &ended));
 	for (now = 100; now < 105; now++)
-		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.1f, 0.0f, now, 0.0f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, now, 0.0f, &started, &ended));
 	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0.0f, 105, 0.0f, &started, &ended));
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.1f, 0.0f, 106, 0.0f, &started, &ended));
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.1f, 0.0f, 111, 0.0f, &started, &ended));
-	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.1f, 0.0f, 112, 0.0f, &started, &ended));
-	/* (higher levels back off sooner) */
-	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_NORMAL) < ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_HEROIC));
-	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_HEROIC) < ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_LEGENDARY));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, 106, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, 111, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, 112, 0.0f, &started, &ended));
+	/* (HEROIC and up: at least 3 s) */
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.9f, 1.0f, 112 + 89, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.9f, 1.0f, 112 + 90, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_NORMAL) == 0.1f);
 }
 
 static void test_charge_jump_share(void)
@@ -213,14 +229,31 @@ static void test_charge_jump_share(void)
 	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_HEROIC, 0.9f, 0, 0.8f, 3));
 	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0, 0.3f, 7));
 	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0, 0.3f, 0.5f));
-	CHECK(!ae_bots_combat_strafe_jump(AE_BOTS_LEVEL_RECRUIT, 0.0f));
-	CHECK(!ae_bots_combat_strafe_jump(AE_BOTS_LEVEL_NORMAL, 0.0f));
-	CHECK(ae_bots_combat_strafe_jump(AE_BOTS_LEVEL_HEROIC, 0.2f));
-	CHECK(!ae_bots_combat_strafe_jump(AE_BOTS_LEVEL_HEROIC, 0.4f));
-	CHECK(ae_bots_combat_strafe_jump(AE_BOTS_LEVEL_LEGENDARY, 0.4f));
-	CHECK(!ae_bots_combat_shares_sightings(AE_BOTS_LEVEL_NORMAL));
-	CHECK(ae_bots_combat_shares_sightings(AE_BOTS_LEVEL_HEROIC));
-	CHECK(ae_bots_combat_shares_sightings(AE_BOTS_LEVEL_LEGENDARY));
+	/* jumps in a fight: NORMAL up (3-5 s, HEROIC 1-4, LEGENDARY 1-3) */
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_RECRUIT, 0.5f) == 0);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_EASY, 0.5f) == 0);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_NORMAL, 0) == 90);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_NORMAL, 1) == 150);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_HEROIC, 1) == 120);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_LEGENDARY, 0) == 30);
+	/* strafe segments and halts: RECRUIT mostly stands, LEGENDARY jiggles */
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_RECRUIT, 0) == 30 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 120);
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_NORMAL, 0) == 60 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_NORMAL, 1) == 120);
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 0) == 6 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 1) == 24);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0.85f, 0) == 60);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0.95f, 0) == 0);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_NORMAL, 0.1f, 1) == 60);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_NORMAL, 0.3f, 1) == 0);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.04f, 1) == 3);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.06f, 1) == 0);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0) == 90);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 150);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_NORMAL, 1) == 6);
+	/* shared sightings: none below HEROIC, 10 units at HEROIC, anywhere at LEGENDARY */
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_RECRUIT) == 0.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_NORMAL) == 0.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_HEROIC) == 10.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_LEGENDARY) > 1000.0f);
 }
 
 int main(void)

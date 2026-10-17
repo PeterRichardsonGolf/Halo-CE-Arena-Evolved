@@ -14,10 +14,11 @@ of ae_bots_combat.c / ae_bots_combat_rules.c. What each does, per level (RECRUIT
 - RETREAT (movement NORMAL and up): low confidence held a moment (and its shields low) sends the bot backing off
   along a path to a place away from its target, still shooting; it does not go back to where it saw the enemy
   while it retreats; CLOSING IN (HEROIC and up): a won fight close by is finished by running in for a blow;
-  STRAFE-JUMPS (HEROIC and up) as the strafe turns;
-- SHARED SIGHTINGS (BOT SKILL HEROIC and up, team games): a bot that sees an enemy tells its teammates who have
-  no target of their own, who then go to where it was seen (bots.c's "where an enemy was last seen"), as a
-  person hears a callout; RECRUIT .. NORMAL know only what they see themselves.
+  HALTS: it stops sidestepping at a fight's start and now and then (RECRUIT mostly stands); JUMPS in a fight
+  (NORMAL and up) at the level's rhythm (bots.c's random jumps are off: ae_bots_tick_skill);
+- SHARED SIGHTINGS (BOT SKILL HEROIC, teammates within 10 units; LEGENDARY, any teammate; team games): a bot that
+  sees an enemy tells its teammates who have no target of their own, who then go to where it was seen (bots.c's
+  "where an enemy was last seen"), as a person hears a callout; RECRUIT .. NORMAL know only what they see.
 */
 
 static long ae_bots_fight_index(struct bots_bot *bot)
@@ -56,12 +57,10 @@ static void ae_bots_fight_share(struct bots_bot *bot, struct bots_tick *tick, lo
 {
 	struct ae_bots_combat_bot *state;
 	long index, told = 0;
+	real reach = ae_bots_combat_share_distance(ae_bots_level_of_skill(bots_globals.skill));
 
-	if (!game_engine_has_teams() || !ae_bots_combat_shares_sightings(ae_bots_level_of_skill(bots_globals.skill)) ||
-		bot->target_last_surface_index == NONE)
-	{
+	if (!game_engine_has_teams() || reach <= 0.0f || bot->target_last_surface_index == NONE)
 		return;
-	}
 	state = ae_bots_fight_state(bot, tick);
 	if (tick->now - state->share_tick >= 0 && tick->now - state->share_tick < TICKS_PER_SECOND)
 		return;
@@ -75,7 +74,8 @@ static void ae_bots_fight_share(struct bots_bot *bot, struct bots_tick *tick, lo
 			continue;
 		player = player_try_and_get(other->player_index);
 		if (!player || player->unit_index == NONE || player->unit_index != other->unit_index ||
-			player->team_index != tick->player->team_index)
+			player->team_index != tick->player->team_index ||
+			bots_distance3d(&object_get(player->unit_index)->object.position, &tick->position) > reach)
 		{
 			continue;
 		}
@@ -119,9 +119,20 @@ static void ae_bots_fight_aim_point(struct bots_bot *bot, struct bots_tick *tick
 		real_point3d const *eye = bots_tick_eye(tick);
 		real ticks = 8.0f + bots_distance2d(eye, aim_point) / ae_bots_combat_grenade_speed(tick->player->unit_index);
 
+		real dx, dy, lead;
+
 		ticks = MIN(ticks, 60.0f) * state->throw_lead;
-		aim_point->x += target->object.translational_velocity.i * ticks;
-		aim_point->y += target->object.translational_velocity.j * ticks;
+		dx = target->object.translational_velocity.i * ticks;
+		dy = target->object.translational_velocity.j * ticks;
+		/* (at most 3.5 units ahead: Infinite's ODST and Spartan throw that far in front of the feet) */
+		lead = (real)sqrt(dx * dx + dy * dy);
+		if (lead > 3.5f)
+		{
+			dx *= 3.5f / lead;
+			dy *= 3.5f / lead;
+		}
+		aim_point->x += dx;
+		aim_point->y += dy;
 	}
 }
 
@@ -134,6 +145,17 @@ static boolean ae_bots_fight_melee(struct bots_bot *bot, struct bots_tick *tick)
 		ae_bots_combat_back_turned(target_unit, &tick->position), object_get(target_unit)->object.shield_vitality,
 		state->charging, bots_random_real(bot));
 
+	/* (within reach, it waits its level's moment first; out of reach, it waits afresh next time) */
+	if (choice == 0)
+	{
+		state->melee_ready_tick = NONE;
+		return FALSE;
+	}
+	if (state->melee_ready_tick == NONE)
+		state->melee_ready_tick = tick->now + ae_bots_combat_melee_delay(level, bots_random_real(bot));
+	if (tick->now < state->melee_ready_tick)
+		return FALSE;
+	state->melee_ready_tick = NONE;
 	if (choice == 2)
 	{
 		/* (it chose not to: asked again in a second) */
@@ -231,9 +253,43 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 		bots_weapon_range(tick->weapon_index), tick->weapon_index != NONE ? bots_weapon_loaded(tick->weapon_index) : 1.0f,
 		tick->position.z - target->object.position.z);
 	int started, ended;
+	boolean new_fight = tick->now - state->last_fight_tick > TICKS_PER_SECOND * 2 || tick->now < state->last_fight_tick;
 	boolean retreating = ae_bots_combat_retreat_step(&state->retreat, level, confidence, own_shield, tick->now,
 		ae_bots_combat_hash01((unsigned long)bot->player_index, (unsigned long)state->retreat.next_allowed), &started, &ended);
 	char extra[48];
+
+	/* HALTS: at the fight's start (RECRUIT stands 3-5 s), and now and then at a new strafe: it stops sidestepping,
+	still keeping its weapon's distance */
+	if (new_fight)
+	{
+		state->halt_until = bot->target_first_seen_tick + ae_bots_combat_initial_halt_ticks(level,
+			ae_bots_combat_hash01((unsigned long)bot->player_index ^ 0x27d4eb2dUL, (unsigned long)bot->target_first_seen_tick));
+		state->next_vertical_tick = tick->now + ae_bots_combat_vertical_delay(level, bots_random_real(bot));
+		state->last_strafe_until = bot->strafe_until_tick;
+	}
+	else if (bot->strafe_until_tick != state->last_strafe_until)
+	{
+		long halt = ae_bots_combat_halt_ticks(level, bots_random_real(bot), bots_random_real(bot));
+
+		state->last_strafe_until = bot->strafe_until_tick;
+		if (halt > 0)
+		{
+			state->halt_until = tick->now + halt;
+			ae_bots_combat_count(AE_BOTS_COMBAT_HALTS);
+		}
+	}
+	state->last_fight_tick = tick->now;
+	if (tick->now < state->halt_until)
+	{
+		real range = bots_weapon_range(tick->weapon_index);
+
+		if (tick->target_distance > range * 1.3f)
+			tick->move_direction = to_target;
+		else if (tick->target_distance < range * 0.6f)
+			tick->move_direction = to_target + BOTS_PI;
+		else
+			tick->moving = FALSE;
+	}
 
 	if (started)
 	{
@@ -284,14 +340,18 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 		}
 		state->charging = charge;
 	}
-	/* (a jump as the strafe turns) */
-	if (state->last_strafe_sign != 0.0f && bot->strafe_sign != state->last_strafe_sign &&
-		ae_bots_combat_strafe_jump(level, bots_random_real(bot)))
+	/* JUMPS in a fight (NORMAL and up), at the level's rhythm */
+	if (state->next_vertical_tick > 0 && tick->now >= state->next_vertical_tick)
 	{
-		tick->flags |= FLAG(_unit_control_jump_bit);
-		ae_bots_combat_count(AE_BOTS_COMBAT_STRAFE_JUMPS);
+		long delay = ae_bots_combat_vertical_delay(level, bots_random_real(bot));
+
+		state->next_vertical_tick = delay > 0 ? tick->now + delay : 0;
+		if (delay > 0)
+		{
+			tick->flags |= FLAG(_unit_control_jump_bit);
+			ae_bots_combat_count(AE_BOTS_COMBAT_JUMPS);
+		}
 	}
-	state->last_strafe_sign = bot->strafe_sign;
 	ae_bots_combat_report(tick->now, ae_bots_skill_definition(ae_bots_shooting_skill(bots_globals.skill))->name,
 		ae_bots_skill_definition(movement)->name);
 }

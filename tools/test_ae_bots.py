@@ -157,10 +157,10 @@ def test_shooting_and_movement_skills(tmp_path):
                            HALO_BOT_SHOOTING_SKILL="recruit", HALO_BOT_MOVEMENT_SKILL="heroic")
     assert status == 0, output[-3000:]
     lines = re.findall(r"bots: combat tick \d+ \(shooting (\w+), movement (\w+)\): grenades (\d+), .*? head aims (\d+), "
-                       r"retreats (\d+), charges (\d+), strafe-jumps (\d+)", output)
+                       r"retreats (\d+), charges (\d+), jumps (\d+)", output)
     assert lines, output[-3000:]
     shooting, movement, grenades, head_aims, retreats, charges, jumps = lines[-1]
     assert (shooting, movement) == ("recruit", "heroic")
     assert int(head_aims) == 0 and int(grenades) <= 3
-    # (HEROIC's movement: strafe-jumps)
+    # (HEROIC's movement: jumps in a fight)
     assert int(jumps) > 0

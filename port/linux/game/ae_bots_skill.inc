@@ -77,10 +77,17 @@ static real ae_bots_strafe(short skill)
 }
 
 /* how long a sidestep lasts before it may turn, ticks (bots.c: a third of a
-second to a second and a third): RECRUIT three times as long */
+second to a second and a third): RECRUIT three times as long; the others
+(2026-10-16, Halo Infinite's segments per level) ae_bots_combat_strafe_ticks's,
+from bots.c's random length */
+static int ae_bots_level_of_skill(short skill);
 static long ae_bots_strafe_ticks(short skill, long ticks)
 {
-	return skill == AE_BOTS_SKILL_RECRUIT ? ticks * 3 : ticks;
+	real random = (real)(ticks - TICKS_PER_SECOND / 3) / (real)(TICKS_PER_SECOND - 1);
+
+	if (skill == AE_BOTS_SKILL_RECRUIT)
+		return ticks * 3;
+	return ae_bots_combat_strafe_ticks(ae_bots_level_of_skill(skill), random);
 }
 
 /* TRACKING DELAY (owner 2026-10-16, from Infinite's bots as researched: "the over-correction window players win
@@ -199,14 +206,14 @@ static short ae_bots_movement_skill(short skill)
 	return level < 0 ? skill : ae_bots_skill_of_level(level);
 }
 
-/* the definition a bot's tick reads (bots_bot_update's tick.skill): the shooting skill's, with the movement
-skill's jumps; its grenade chance 0, as the throw is ae_bots_fight_grenade's */
+/* the definition a bot's tick reads (bots_bot_update's tick.skill): the shooting skill's; its jump and grenade
+chances 0, as the jumps in a fight and the throws are ae_bots_fight_move's and ae_bots_fight_grenade's */
 static struct bots_skill_definition const *ae_bots_tick_skill(short skill)
 {
 	static struct bots_skill_definition definition;
 
 	definition = *ae_bots_skill_definition(ae_bots_shooting_skill(skill));
-	definition.jump_chance = ae_bots_skill_definition(ae_bots_movement_skill(skill))->jump_chance;
+	definition.jump_chance = 0.0f;
 	definition.grenade_chance = 0.0f;
 	return &definition;
 }

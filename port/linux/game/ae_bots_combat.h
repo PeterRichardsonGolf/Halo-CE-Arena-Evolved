@@ -11,7 +11,7 @@ names and the two settings are ae_bots_skill.inc's. Included after cseries.h.
   its blows and its headshots; movement its strafing, jumping, crouching, closing in and retreating. BOT SKILL
   itself keeps what neither names: how often a roam heads for an enemy, the shared sightings, the halo.log line.
 - Each minute of a game with bots that fight: "bots: combat ..." in halo.log, the throws, blows, headshot aims,
-  retreats, charges, strafe-jumps and shared sightings since the game began; with debug.bot_events the fight log
+  retreats, charges, jumps, halts and shared sightings since the game began; with debug.bot_events the fight log
   (ae_bots_events.inc) gains ev=grenade, ev=retreat, ev=charge and ev=share lines.
 */
 
@@ -31,7 +31,7 @@ boolean ae_bots_combat_precision_weapon(long definition_index);
 /* the speed a unit's grenade leaves its hand (its definition's), world units a tick */
 real ae_bots_combat_grenade_speed(long unit_index);
 
-/* whether a unit has its back to a point (it faces more than 110 degrees away from it) */
+/* whether a unit has its back to a point (it faces more than 114.6 degrees away from it) */
 boolean ae_bots_combat_back_turned(long unit_index, real_point3d const *point);
 
 /* a bot's own state for the fight, by its index in bots.c (forgotten when its unit changes: a new life or game) */
@@ -40,8 +40,14 @@ struct ae_bots_combat_bot
 	boolean known;
 	long unit_index;
 	struct ae_bots_combat_retreat retreat;
-	/* the side it strafed to last tick (strafe-jumps as it turns) */
-	real last_strafe_sign;
+	/* the strafe's end it last saw (a new one: a halt, maybe), and the halt's end */
+	long last_strafe_until;
+	long halt_until;
+	/* the fight's last tick (a new fight after 2 s without one), the next jump in it */
+	long last_fight_tick;
+	long next_vertical_tick;
+	/* the tick it may strike, waiting within reach (NONE: not waiting) */
+	long melee_ready_tick;
 	/* a grenade's throw: the aim leads the target's path until then, by this much */
 	long throw_until;
 	real throw_lead;
@@ -62,7 +68,8 @@ enum
 	AE_BOTS_COMBAT_HEAD_AIMS,
 	AE_BOTS_COMBAT_RETREATS,
 	AE_BOTS_COMBAT_CHARGES,
-	AE_BOTS_COMBAT_STRAFE_JUMPS,
+	AE_BOTS_COMBAT_JUMPS,
+	AE_BOTS_COMBAT_HALTS,
 	AE_BOTS_COMBAT_SHARES,
 	AE_BOTS_COMBAT_COUNTERS
 };

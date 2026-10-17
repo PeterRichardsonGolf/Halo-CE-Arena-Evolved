@@ -80,14 +80,29 @@ int ae_bots_combat_melee(int level, float distance, int cooldown_over, int back_
 	case AE_BOTS_LEVEL_NORMAL:
 		break;
 	default:
-		/* (HEROIC and up: a blow when it tells, else only at point blank) */
-		if (!back_turned && target_shield >= 0.35f && !charging)
+		/* (HEROIC and up: a blow when it tells (shields low: under 0.1, LEGENDARY 0.4), else only at point
+		blank) */
+		if (!back_turned && target_shield >= (level >= AE_BOTS_LEVEL_LEGENDARY ? 0.4f : 0.1f) && !charging)
 			reach = 0.6f;
 		break;
 	}
 	if (distance >= reach)
 		return 0;
 	return random < chance ? 1 : 2;
+}
+
+long ae_bots_combat_melee_delay(int level, float random)
+{
+	float low, high;
+
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_RECRUIT: low = 1.0f; high = 3.0f; break;
+	case AE_BOTS_LEVEL_EASY: low = 0.5f; high = 1.5f; break;
+	case AE_BOTS_LEVEL_NORMAL: low = 0.1f; high = 0.5f; break;
+	default: low = 0.1f; high = 0.3f; break;
+	}
+	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
 }
 
 long ae_bots_combat_melee_cooldown(int level, float random)
@@ -113,7 +128,7 @@ int ae_bots_combat_about_to_die(float own_shield, float own_body)
 int ae_bots_combat_grenade(int level, float distance, int has_grenade, int reacted, int first_contact,
 	int about_to_die, float skill_chance, float random)
 {
-	float low = 6.0f, high = 22.0f, rate;
+	float low = 6.0f, high = 18.0f, rate;
 
 	if (!has_grenade || !reacted)
 		return 0;
@@ -147,10 +162,12 @@ long ae_bots_combat_grenade_cooldown(int level, float random)
 	random = clamp01(random);
 	switch (level)
 	{
+	/* (RECRUIT kept slower than Infinite's Recruit, 5 s + up to 10: the children's level) */
 	case AE_BOTS_LEVEL_RECRUIT: seconds = 20.0f + 10.0f * random; break;
-	case AE_BOTS_LEVEL_EASY: seconds = 6.0f + 3.0f * random; break;
-	case AE_BOTS_LEVEL_NORMAL: seconds = 4.0f + 2.0f * random; break;
-	default: seconds = 3.5f + 2.0f * random; break;
+	case AE_BOTS_LEVEL_EASY: seconds = 3.0f + 7.5f * random; break;
+	case AE_BOTS_LEVEL_NORMAL: seconds = 1.0f + 5.0f * random; break;
+	case AE_BOTS_LEVEL_HEROIC: seconds = 0.5f + 5.0f * random; break;
+	default: seconds = 0.1f + 5.0f * random; break;
 	}
 	return (long)(seconds * TICKS);
 }
@@ -159,13 +176,11 @@ float ae_bots_combat_grenade_lead(int level)
 {
 	switch (level)
 	{
+	/* (Infinite: Recruit and Marine at the feet, ODST and Spartan ahead of them) */
 	case AE_BOTS_LEVEL_RECRUIT:
 	case AE_BOTS_LEVEL_EASY:
-		return 0.0f;
 	case AE_BOTS_LEVEL_NORMAL:
-		return 0.5f;
-	case AE_BOTS_LEVEL_HEROIC:
-		return 0.8f;
+		return 0.0f;
 	default:
 		return 1.0f;
 	}
@@ -180,10 +195,12 @@ float ae_bots_combat_retreat_threshold(int level)
 {
 	switch (level)
 	{
-	case AE_BOTS_LEVEL_NORMAL: return 0.22f;
-	case AE_BOTS_LEVEL_HEROIC: return 0.27f;
-	case AE_BOTS_LEVEL_LEGENDARY: return 0.30f;
-	default: return 0.0f;
+	case AE_BOTS_LEVEL_NORMAL:
+	case AE_BOTS_LEVEL_HEROIC:
+	case AE_BOTS_LEVEL_LEGENDARY:
+		return 0.1f;
+	default:
+		return 0.0f;
 	}
 }
 
@@ -200,6 +217,7 @@ int ae_bots_combat_retreat_step(struct ae_bots_combat_retreat *state, int level,
 {
 	float threshold = ae_bots_combat_retreat_threshold(level);
 	long hesitation = 6 + (long)(12.0f * clamp01(hesitation_hash01));
+	long shortest = level >= AE_BOTS_LEVEL_HEROIC ? 3 * TICKS : 2 * TICKS;
 
 	*started = 0;
 	*ended = 0;
@@ -207,7 +225,7 @@ int ae_bots_combat_retreat_step(struct ae_bots_combat_retreat *state, int level,
 	{
 		long length = now - state->started;
 
-		if (length >= 7 * TICKS || (length >= TICKS * 3 / 2 && (own_shield >= 0.95f || confidence >= 0.6f)) ||
+		if (length >= 7 * TICKS || (length >= shortest && (own_shield >= 0.95f || confidence >= 0.6f)) ||
 			threshold <= 0.0f)
 		{
 			state->active = 0;
@@ -238,12 +256,70 @@ int ae_bots_combat_charge(int level, float confidence, float target_shield, floa
 		distance < 6.0f && distance > 0.8f;
 }
 
-int ae_bots_combat_strafe_jump(int level, float random)
+long ae_bots_combat_vertical_delay(int level, float random)
 {
-	return (level == AE_BOTS_LEVEL_HEROIC && random < 0.3f) || (level >= AE_BOTS_LEVEL_LEGENDARY && random < 0.45f);
+	float low, high;
+
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_NORMAL: low = 3.0f; high = 5.0f; break;
+	case AE_BOTS_LEVEL_HEROIC: low = 1.0f; high = 4.0f; break;
+	case AE_BOTS_LEVEL_LEGENDARY: low = 1.0f; high = 3.0f; break;
+	default: return 0;
+	}
+	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
 }
 
-int ae_bots_combat_shares_sightings(int level)
+long ae_bots_combat_strafe_ticks(int level, float random)
 {
-	return level >= AE_BOTS_LEVEL_HEROIC;
+	float low, high;
+
+	switch (level)
+	{
+	/* (RECRUIT: bots.c's third of a second to a second and a third, three times as long: the owner's) */
+	case AE_BOTS_LEVEL_RECRUIT: low = 1.0f; high = 4.0f; break;
+	case AE_BOTS_LEVEL_EASY: low = 1.5f; high = 3.0f; break;
+	case AE_BOTS_LEVEL_NORMAL: low = 2.0f; high = 4.0f; break;
+	case AE_BOTS_LEVEL_HEROIC: low = 1.0f; high = 2.0f; break;
+	default: low = 0.2f; high = 0.8f; break;
+	}
+	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
+}
+
+long ae_bots_combat_halt_ticks(int level, float chance_random, float length_random)
+{
+	float chance, low, high;
+
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_RECRUIT: chance = 0.9f; low = 2.0f; high = 3.0f; break;
+	case AE_BOTS_LEVEL_EASY: chance = 0.55f; low = 1.5f; high = 2.5f; break;
+	case AE_BOTS_LEVEL_NORMAL: chance = 0.2f; low = 1.0f; high = 2.0f; break;
+	case AE_BOTS_LEVEL_HEROIC: chance = 0.1f; low = 0.1f; high = 0.2f; break;
+	default: chance = 0.05f; low = 0.05f; high = 0.1f; break;
+	}
+	if (chance_random >= chance)
+		return 0;
+	return (long)((low + (high - low) * clamp01(length_random)) * TICKS + 0.5f);
+}
+
+long ae_bots_combat_initial_halt_ticks(int level, float random)
+{
+	float low, high;
+
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_RECRUIT: low = 3.0f; high = 5.0f; break;
+	case AE_BOTS_LEVEL_EASY: low = 1.5f; high = 2.5f; break;
+	case AE_BOTS_LEVEL_LEGENDARY: low = 0.0f; high = 0.1f; break;
+	default: low = 0.0f; high = 0.2f; break;
+	}
+	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
+}
+
+float ae_bots_combat_share_distance(int level)
+{
+	/* (Infinite: every level knows what teammates within 10 units know, Spartan its teammates' targets anywhere;
+	ours: RECRUIT .. NORMAL only what they see) */
+	return level >= AE_BOTS_LEVEL_LEGENDARY ? 1.0e9f : level == AE_BOTS_LEVEL_HEROIC ? 10.0f : 0.0f;
 }

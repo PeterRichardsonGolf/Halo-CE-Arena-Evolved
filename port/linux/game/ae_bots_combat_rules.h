@@ -5,16 +5,20 @@ The bots' fight by level (ae_bots_combat.c, notes/specs/2026-10-16-bots-infinite
 engine or config calls (port/linux/tests/ae_bots_combat_rules_test.c runs them). Halo Infinite's "combat dance"
 made fallible per level, as its designers described it (ideas only; every number is ours, tuned on the build box):
 
-- MELEE: RECRUIT strikes only at point blank, now and then, with a long wait between; EASY waits longer than the
-  rest; HEROIC and LEGENDARY strike when the target's back is turned or its shields are low (else only at point
-  blank), and close in to finish a fight they have won.
+- MELEE: RECRUIT strikes only at point blank, now and then, after a wait in reach and with a long wait between;
+  EASY waits longer than the rest; HEROIC and LEGENDARY strike when the target's back is turned or its shields are
+  low (else only at point blank), and close in to finish a fight they have won.
 - GRENADES: RECRUIT rarely, and only far off; EASY when about to die (else rarely); NORMAL now and then; HEROIC and
-  LEGENDARY also on first contact and when about to die; NORMAL and up lead the target's path.
+  LEGENDARY also on first contact and when about to die, and lead the target's path.
 - CONFIDENCE 0..1 from its own and its target's shields and health, the distance against its weapon's, the rounds
   in its magazine and the height between them: NORMAL and up back off along a path when it is low (RECRUIT and
   EASY never retreat cleverly), after a moment's hesitation, until their shields are back.
 - A random per-bot delay on each decision (reaction, looking about, retreating): no metronome rhythm.
-- Strafe-jumping at HEROIC and up.
+- Strafing in segments with halts (RECRUIT mostly stands), jumps in a fight at NORMAL and up.
+
+Where Infinite's own per-level tuning (the owner's game files, read 2026-10-16; local research notes, not in the
+repo) gave a number, the levels follow its ratios: RECRUIT ~ Recruit, EASY between Recruit and Marine, NORMAL ~
+Marine, HEROIC ~ ODST, LEGENDARY ~ Spartan.
 
 Levels: AE_BOTS_LEVEL_RECRUIT (0) .. AE_BOTS_LEVEL_LEGENDARY (4). Vitality: a fraction (1 full; shields above 1
 are an overshield). Ticks: 30 a second.
@@ -55,6 +59,9 @@ float ae_bots_combat_confidence(float own_shield, float own_body, float target_s
 (cooldown_over), random 0..1 */
 int ae_bots_combat_melee(int level, float distance, int cooldown_over, int back_turned, float target_shield,
 	int charging, float random);
+/* the ticks the bot waits within reach before it strikes (Infinite's melee delays: Recruit 1-3 s, Marine 0.1-0.5,
+ODST and Spartan 0.1-0.3; EASY between), random 0..1 */
+long ae_bots_combat_melee_delay(int level, float random);
 /* the ticks until it may strike again, random 0..1 */
 long ae_bots_combat_melee_cooldown(int level, float random);
 
@@ -74,9 +81,10 @@ int ae_bots_combat_about_to_die(float own_shield, float own_body);
 with a shot to the head (a precision weapon) */
 int ae_bots_combat_aim_head(int level, float target_shield, int precision_weapon);
 
-/* RETREAT (NORMAL and up): low confidence held for the bot's hesitation (6 to 18 ticks) starts it, with its shields
-under 0.3; it lasts at least 1.5 s, ends when its shields are back (0.95) or its confidence is high again (0.6),
-after 7 s at most; then not again for 6 s */
+/* RETREAT (NORMAL and up; Infinite's disengage below 0.1): low confidence held for the bot's hesitation (6 to 18
+ticks) starts it, with its shields under 0.3; it lasts at least 2 s (HEROIC and up 3 s: Infinite's hysteresis),
+ends when its shields are back (0.95) or its confidence is high again (0.6), after 7 s at most; then not again for
+6 s */
 struct ae_bots_combat_retreat
 {
 	int active;
@@ -96,10 +104,22 @@ float ae_bots_combat_retreat_threshold(int level);
 target's shields down and under half its health, within 6 units */
 int ae_bots_combat_charge(int level, float confidence, float target_shield, float target_body, float distance);
 
-/* STRAFE-JUMPING (HEROIC and up): whether it jumps as its strafe turns to the other side, random 0..1 */
-int ae_bots_combat_strafe_jump(int level, float random);
+/* JUMPS in a fight (Infinite's "vertical movement", Marine up): the ticks to the next one, 0 for a level that does
+not jump in a fight (RECRUIT, EASY): NORMAL every 3-5 s, HEROIC 1-4, LEGENDARY 1-3 */
+long ae_bots_combat_vertical_delay(int level, float random);
 
-/* SHARED SIGHTINGS: whether a level's bots tell their teammates where an enemy is (HEROIC and up) */
-int ae_bots_combat_shares_sightings(int level);
+/* STRAFING (Infinite's segments): the ticks a strafe to one side lasts: RECRUIT 1-4 s (the owner's), EASY 1.5-3,
+NORMAL 2-4, HEROIC 1-2, LEGENDARY 0.2-0.8; random 0..1 */
+long ae_bots_combat_strafe_ticks(int level, float random);
+/* a strafe's HALT (it stands, still keeping its distance): the ticks of the halt at a new strafe, 0 for none:
+RECRUIT 0.9 of the time for 2-3 s, EASY 0.55 for 1.5-2.5, NORMAL 0.2 for 1-2, HEROIC 0.1 for 0.1-0.2, LEGENDARY
+0.05 for 0.05-0.1 */
+long ae_bots_combat_halt_ticks(int level, float chance_random, float length_random);
+/* the halt that starts a fight: RECRUIT 3-5 s, EASY 1.5-2.5, NORMAL and HEROIC up to 0.2, LEGENDARY 0.1 */
+long ae_bots_combat_initial_halt_ticks(int level, float random);
+
+/* SHARED SIGHTINGS (team games): how near a teammate a bot tells where it saw an enemy (0: it tells no one):
+HEROIC 10 units, LEGENDARY anywhere; RECRUIT .. NORMAL know only what they see */
+float ae_bots_combat_share_distance(int level);
 
 #endif
