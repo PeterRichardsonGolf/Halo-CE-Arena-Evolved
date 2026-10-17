@@ -40,8 +40,10 @@ numbers (bots_random), as bots.c's rule is.
 whose entrance is within 1 of the unit's centre) */
 #define AE_BOTS_VEHICLE_APPROACH 2.5f
 #define AE_BOTS_VEHICLE_AT_ENTRANCE 0.6f
-/* a vehicle it left (or did not get into) is left alone this long */
+/* a vehicle it left (or did not get into) is left alone this long; one it left for standing with no driver, or
+parked, longer (a bot walking past a parked Warthog took its gun again and again: box games on Sidewinder) */
 #define AE_BOTS_VEHICLE_LEFT_TICKS (6 * TICKS_PER_SECOND)
+#define AE_BOTS_VEHICLE_LEFT_IDLE_TICKS (30 * TICKS_PER_SECOND)
 /* upright while its up vector's height is above this (about 66 degrees of tilt) */
 #define AE_BOTS_VEHICLE_UPRIGHT 0.4f
 /* the fight's confidence (ae_bots_combat_rules' scale: 0.5 even) over which the bot is winning */
@@ -445,6 +447,28 @@ boolean ae_bots_vehicle_goal(struct bots_bot *bot, long player_index, real_point
 			bots_set_goal(bot, _bots_goal_roam, &state->drive_goal, state->drive_goal_surface_index);
 		return state->drive_goal_valid;
 	}
+	/* (a rider: its objective's goal (the flag, the hill...), where its driver goes or it gets out; never bots.c's
+	weapon close by, which made a rider 'there' at once; Slayer's gunner and passenger have none) */
+	if (state->vehicle_index != NONE && bot->unit_index != NONE &&
+		object_get(bot->unit_index)->object.parent_object_index == state->vehicle_index)
+	{
+		struct ae_bots_objective_bot const *objective = &ae_bots_objective_bots[bot_index];
+
+		if (ae_bots_vehicle_behaviour(bot, bot_index) != AE_BOTS_FIGHT && objective->target_valid)
+		{
+			real_point3d ground;
+			long surface_index = bots_surface_below(&objective->target, &ground);
+
+			if (surface_index == NONE)
+				ground = objective->target;
+			bots_set_goal(bot, _bots_goal_roam, &ground, surface_index);
+		}
+		else if (state->seat != AE_BOTS_SEAT_DRIVER)
+			bot->goal_kind = _bots_goal_none;
+		else
+			return FALSE;
+		return TRUE;
+	}
 	if (state->target_vehicle_index == NONE || state->vehicle_index != NONE)
 		return FALSE;
 	vehicle = ae_bots_vehicle_get(state->target_vehicle_index);
@@ -792,6 +816,9 @@ void ae_bots_vehicle_move(struct bots_bot *bot, long bot_index, struct bots_tick
 	if (state->vehicle_index != NONE)
 	{
 		/* (put out by the game: the vehicle wrecked, or flipped and its riders thrown) */
+		state->left_vehicle_index = state->vehicle_index;
+		state->left_until_tick = tick->now + (state->leaving == AE_BOTS_LEAVE_NO_DRIVER || state->leaving == AE_BOTS_LEAVE_PARKED ?
+			AE_BOTS_VEHICLE_LEFT_IDLE_TICKS : AE_BOTS_VEHICLE_LEFT_TICKS);
 		if (state->leaving == AE_BOTS_LEAVE_STAY)
 		{
 			struct object_datum *vehicle = ae_bots_vehicle_get(state->vehicle_index);
@@ -800,8 +827,6 @@ void ae_bots_vehicle_move(struct bots_bot *bot, long bot_index, struct bots_tick
 				vehicle && ae_bots_vehicle_alive(vehicle) && !ae_bots_vehicle_upright(vehicle) ? AE_BOTS_LEAVE_FLIPPED :
 				AE_BOTS_LEAVE_WRECKED, (real)(tick->now - state->seated_tick) / TICKS_PER_SECOND);
 		}
-		state->left_vehicle_index = state->vehicle_index;
-		state->left_until_tick = tick->now + AE_BOTS_VEHICLE_LEFT_TICKS;
 		state->vehicle_index = NONE;
 		bot->path.valid = FALSE;
 		bot->goal_kind = _bots_goal_none;
