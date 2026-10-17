@@ -528,7 +528,17 @@ holder (in reverse tag, after the one who is "it"); in King of the Hill
 they go to the hill and hold it; in Juggernaut they hunt the juggernaut,
 who breaks away when badly hurt; in Race they run to the next flag.
 halo.log says when a bot takes, captures, drops or returns a flag, holds
-the ball or enters the hill, and a line each minute counts it. They are
+the ball or enters the hill, and a line each minute counts it. They use
+vehicles as a player does, with the action button at a seat
+(`game/ae_bots_vehicle.c`): a free Warthog gun or gun turret near their
+way (or near them in a fight they are losing), and the gunner's or
+passenger's seat of a Warthog a teammate drives; a gunner fights with the
+same aim, the vehicle's gun its weapon. A CTF carrier rides as a
+passenger, never at a gun (a trigger pull drops the flag). They get out
+when the vehicle is wrecked, flipped, without a driver or standing still a
+while, or when their goal is near or the vehicle takes them away from it.
+No Banshee or Scorpion; driving is a test, off by default
+(`debug.bot_vehicles`). They are
 never in internet games, and nothing that the machines send each other
 changes.
 
@@ -738,6 +748,7 @@ the setting for one start of the game. It has priority over the file.
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_time_limit`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_TIME_LIMIT`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
 | `debug.bot_trace` | `0` | `HALO_BOT_TRACE` | Every this many seconds, each bot's state is written to the log: where it is and where it goes, its path, its target and its weapon. `0`: never. |
+| `debug.bot_vehicles` | `1` | `HALO_BOT_VEHICLES` | Bots and vehicles: `0` they leave them alone, `1` they take a Warthog's or a turret's gun and ride with a teammate, `2` they also drive a Warthog or Ghost (a test, not good enough to play yet). |
 | `debug.bot_events` | `false` | `HALO_BOT_EVENTS` | Each bot's fight events (target seen, first shot, every shot, hits, melee, strafe changes, crouches, kills, deaths, and its position each second) are written to `debug.txt` as `bot event:` lines; `tools/ae_test/bot_report.py` turns them into tables. |
 | `debug.touch_targets` | `false` | `HALO_TOUCH_TARGETS` | Outlines the tap targets of the menus (item green, value blue, list slot yellow, legend button red, the band beside the slots of a list orange, keys of the on-screen keyboard white), marks where the last finger went down and the last tap landed for 3 seconds, and logs each tap with the target that it hit (for a value, also where it splits into previous and next): to judge the accuracy of touch. |
 | `debug.solo_game` | `false` | `HALO_SOLO_GAME` | A system link or split screen game can start with one player, alone on this machine: to test multiplayer maps without a second machine. |

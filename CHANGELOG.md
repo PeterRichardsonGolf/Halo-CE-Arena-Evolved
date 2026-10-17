@@ -37,6 +37,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   for the ball, keep it away from enemies and go after its holder; in King they go to the hill and hold it; in
   Juggernaut they hunt the juggernaut, who breaks away when badly hurt; in Race they run to the next flag. halo.log
   says when a bot takes, captures, drops or returns a flag, holds the ball or enters the hill, with a line a minute.
+- Bots use vehicles as a player does (the action button at a seat): a bot takes a free Warthog gun or gun turret near
+  its way (or when it is losing a fight near one), the gunner or passenger seat of a Warthog a teammate drives (you
+  too: stop and it gets in), and fights from the gun with its own aim. A CTF carrier rides home as a passenger, never
+  as a gunner (a trigger pull drops the flag). It gets out when the vehicle is wrecked or flipped, has had no driver a
+  while, has stood still a while, or when its goal is near or the vehicle takes it away from it. No Banshee or
+  Scorpion. Bots driving a Warthog or Ghost is a test only, off by default (`debug.bot_vehicles` 2). halo.log says
+  when a bot takes or leaves a seat and why, with a line a minute.
 
 ## 0.3.2-beta - 2026-10-16
 

@@ -212,7 +212,8 @@ play:
   screen game, up to 3 in a LAN game you host; RECRUIT (for new and
   young players), EASY, NORMAL, HEROIC or LEGENDARY. They play every
   mode: Slayer, CTF (taking, carrying, returning and defending the flag),
-  Oddball, King of the Hill, Juggernaut and Race.
+  Oddball, King of the Hill, Juggernaut and Race. They take a Warthog's gun
+  or a gun turret near them and ride with a teammate who drives (you too).
 - SETTINGS from the pause menu in the campaign, for each player in split
   screen, changing that player's own profile; in a match one player edits
   a profile at a time, and B closes only your own pause.
