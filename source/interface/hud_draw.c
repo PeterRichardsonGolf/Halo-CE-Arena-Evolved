@@ -1392,6 +1392,7 @@ void hud_zoomed_layout_begin(
 	width = whole.x1 - whole.x0;
 	inset = (short)((width - width * 640 / halo_screen_width()) / 2);
 	*saved_window_bounds = render.camera.window_bounds;
+	ae_panels_zoom_element(TRUE); /* AE hook */
 	render.camera.window_bounds.x0 = (short)(whole.x0 + inset);
 	render.camera.window_bounds.x1 = (short)(whole.x1 - inset);
 }
@@ -1516,6 +1517,7 @@ void hud_zoomed_layout_end(
 	rectangle2d const *saved_window_bounds)
 {
 	render.camera.window_bounds = *saved_window_bounds;
+	ae_panels_zoom_element(FALSE); /* AE hook */
 }
 
 void hud_draw_static_element(

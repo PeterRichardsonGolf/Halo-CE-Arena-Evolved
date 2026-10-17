@@ -68,11 +68,23 @@ void ae_panels_hide_ce(boolean hide)
 	hiding = (boolean)(hide && ae_hud_style_is_ae());
 }
 
+/* (the weapon HUD's zoomed elements, hud_draw.c's hud_zoomed_layout_begin to _end: the sniper's range and elevation
+numbers, angle ticks and caption show under AE's HUD too, owner 2026-10-17) */
+static int zoom_elements;
+
+void ae_panels_zoom_element(boolean begin)
+{
+	zoom_elements += begin ? 1 : -1;
+	if (zoom_elements < 0)
+		zoom_elements = 0;
+}
+
 boolean ae_panels_hiding_ce(void)
 {
-	if (hiding)
-		held_back++;
-	return hiding;
+	if (!hiding || zoom_elements)
+		return FALSE;
+	held_back++;
+	return TRUE;
 }
 
 /* debug.ae_panel_state: states forced over the game's for the tests and the contact sheets, a comma list of: low,

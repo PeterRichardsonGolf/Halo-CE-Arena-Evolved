@@ -782,3 +782,6 @@ source/interface/hud_draw.c	scale *= ae_hud_number_scale(hud_number->screen_widt
 source/interface/hud_draw.c	scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
 source/interface/hud_messaging.c	#include "ae_hud_hires.h" /* AE hook */
 source/interface/hud_messaging.c	digit_advance = (short)(long)((real)digit_advance * ae_hud_number_scale(hud_number->screen_width)); /* AE hook */
+# the sniper's zoomed readouts (the weapon HUD's zoomed elements) are drawn under AE's HUD too (owner 2026-10-17)
+source/interface/hud_draw.c	ae_panels_zoom_element(TRUE); /* AE hook */
+source/interface/hud_draw.c	ae_panels_zoom_element(FALSE); /* AE hook */

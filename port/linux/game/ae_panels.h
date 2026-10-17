@@ -26,6 +26,8 @@ drawing back while HUD STYLE AE draws its own; FALSE lets the HUD draw again */
 void ae_panels_hide_ce(boolean hide);
 /* (hud_draw.c) whether the HUD's draw is held back now */
 boolean ae_panels_hiding_ce(void);
+/* (hud_draw.c) the weapon HUD's zoomed elements are drawn between TRUE and FALSE: not held back */
+void ae_panels_zoom_element(boolean begin);
 /* (hud.c, after CE's weapon and unit HUD and the waypoints) the AE panels of this view; TRUE when drawn */
 boolean ae_panels_draw(short local_player_index);
 /* this view's panel rectangles (view px) from its last draw: the ammo group and the shield group with its rows */
