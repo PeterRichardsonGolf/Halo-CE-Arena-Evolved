@@ -44,6 +44,13 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   while, has stood still a while, or when its goal is near or the vehicle takes it away from it. No Banshee or
   Scorpion. Bots driving a Warthog or Ghost is a test only, off by default (`debug.bot_vehicles` 2). halo.log says
   when a bot takes or leaves a seat and why, with a line a minute.
+- Bots get around better: they take teleporters on their way when that is shorter than walking (Blood Gulch's,
+  Chill Out's, Sidewinder's, Wizard's, Derelict's, Rat Race's ...; not straight back through the pad they came out
+  at), and a hurt bot that is not fighting goes by a health pack in reach when the gametype's HEALTH does not bring
+  all of it back (HALO CE, REACH), never to one that was taken.
+- Map layout files gain two lines for the bots: `bot jump at <x y z> to <x y z>` (a jump the bots' walkable
+  surfaces miss: a gap, a ledge) and `bot avoid <x y z> radius <r>` (a place they keep out of). `debug.bot_hints`
+  logs player 1's jumps and crouches as ready lines; halo.log's `bots: travel` line lists where bots stood stuck.
 
 ## 0.3.2-beta - 2026-10-16
 

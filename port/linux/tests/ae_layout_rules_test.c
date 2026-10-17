@@ -119,6 +119,76 @@ static void test_refusals(void)
 	AE_CHECK(parse("layout 1 m.map 00000001\n\n# x\nitem rockets at 0 0\n") == 4);
 }
 
+/* the bots' lines: bot jump at A to B, bot avoid P radius r (ae_bots_travel.c reads them) */
+static void test_bot_lines(void)
+{
+	char const *text =
+		"layout 1 chillout.map 0a1b2c3d\n"
+		"bot jump at 1.5 -2 0.25 to 4.5 -2 1.75   # up onto the ledge\n"
+		"BOT JUMP AT 0 0 0 TO 0 0 -12\n"
+		"bot avoid 10 20 -1.5 radius 3.5\n"
+		"bot avoid 0 0 0 radius 50\n"
+		"item camo at 0 0 0\n";
+	static char const *const bad[] = {
+		"layout 1 m.map 00000001\nbot\n",
+		"layout 1 m.map 00000001\nbot run at 0 0 0 to 1 1 1\n",
+		"layout 1 m.map 00000001\nbot jump 0 0 0 to 1 1 1\n",                /* no at */
+		"layout 1 m.map 00000001\nbot jump at 0 0 0 1 1 1\n",                /* no to */
+		"layout 1 m.map 00000001\nbot jump at 0 0 0 to 1 1\n",
+		"layout 1 m.map 00000001\nbot jump at 0 0 0 to 1 1 1 now\n",
+		"layout 1 m.map 00000001\nbot jump at 0 0 x to 1 1 1\n",
+		"layout 1 m.map 00000001\nbot jump at 0 0 0 to 0.2 0.2 0\n",         /* too short */
+		"layout 1 m.map 00000001\nbot jump at 0 0 0 to 20.1 0 0\n",          /* too long */
+		"layout 1 m.map 00000001\nbot jump at nan 0 0 to 1 1 1\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 0\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 0 radius\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 0 size 3\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 0 radius 0\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 0 radius -2\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 0 radius 50.5\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 0 radius nan\n",
+		"layout 1 m.map 00000001\nbot avoid 0 0 radius 3\n",
+		"bot avoid 0 0 0 radius 3\nlayout 1 m.map 00000001\n",                /* before the header */
+	};
+	char *many;
+	long length;
+	unsigned int i;
+
+	AE_CHECK(parse(text) == 0);
+	AE_CHECK(layout.bot_jump_count == 2 && layout.bot_avoid_count == 2 && layout.item_count == 1);
+	AE_CHECK(layout.bot_jumps[0].from_x == 1.5f && layout.bot_jumps[0].from_y == -2.0f &&
+		layout.bot_jumps[0].from_z == 0.25f);
+	AE_CHECK(layout.bot_jumps[0].to_x == 4.5f && layout.bot_jumps[0].to_y == -2.0f && layout.bot_jumps[0].to_z == 1.75f);
+	AE_CHECK(layout.bot_jumps[0].line == 2 && layout.bot_jumps[1].line == 3 && layout.bot_jumps[1].to_z == -12.0f);
+	AE_CHECK(layout.bot_avoids[0].x == 10.0f && layout.bot_avoids[0].y == 20.0f && layout.bot_avoids[0].z == -1.5f &&
+		layout.bot_avoids[0].radius == 3.5f && layout.bot_avoids[0].line == 4);
+	AE_CHECK(layout.bot_avoids[1].radius == 50.0f);
+	/* (a file of bot lines alone) */
+	AE_CHECK(parse("layout 1 m.map 00000001\nbot avoid 1 2 3 radius 1\n") == 0 && layout.bot_avoid_count == 1 &&
+		!layout.item_count && !layout.clear_items);
+	for (i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
+	{
+		int result = parse(bad[i]);
+
+		if (!(result > 0 && error[0] && !layout.bot_jump_count && !layout.bot_avoid_count && !layout.map_file[0]))
+			printf("FAIL bot refused #%u (%d: %s)\n", i, result, error);
+		AE_CHECK(result > 0 && error[0] && !layout.bot_jump_count && !layout.bot_avoid_count && !layout.map_file[0]);
+	}
+	AE_CHECK(parse("layout 1 m.map 00000001\nbot avoid 0 0 0 radius 1\nbot jump at 0 0 0 to 0 0 0\n") == 3);
+	/* 64 of each: fine; a 65th: refused */
+	many = malloc(AE_LAYOUT_MAXIMUM_FILE_SIZE);
+	length = sprintf(many, "layout 1 m.map 00000001\n");
+	for (i = 0; i < AE_LAYOUT_MAXIMUM_BOT_JUMPS; i++)
+		length += sprintf(many + length, "bot jump at %u 0 0 to %u 1 0\nbot avoid %u 0 0 radius 1\n", i, i, i);
+	AE_CHECK(ae_layout_parse(many, length, &layout, error, sizeof(error)) == 0 &&
+		layout.bot_jump_count == AE_LAYOUT_MAXIMUM_BOT_JUMPS && layout.bot_avoid_count == AE_LAYOUT_MAXIMUM_BOT_AVOIDS);
+	AE_CHECK(sprintf(many + length, "bot jump at 0 0 0 to 1 0 0\n") > 0 &&
+		ae_layout_parse(many, (long)strlen(many), &layout, error, sizeof(error)) == 2 * AE_LAYOUT_MAXIMUM_BOT_JUMPS + 2);
+	AE_CHECK(sprintf(many + length, "bot avoid 0 0 0 radius 1\n") > 0 &&
+		ae_layout_parse(many, (long)strlen(many), &layout, error, sizeof(error)) == 2 * AE_LAYOUT_MAXIMUM_BOT_AVOIDS + 2);
+	free(many);
+}
+
 static void test_limits(void)
 {
 	char *text = malloc(AE_LAYOUT_MAXIMUM_FILE_SIZE + 64);
@@ -159,6 +229,7 @@ int main(void)
 	test_good_file();
 	test_tag_paths();
 	test_refusals();
+	test_bot_lines();
 	test_limits();
 	printf("%s\n", failures ? "FAILED" : "ok");
 	return failures != 0;

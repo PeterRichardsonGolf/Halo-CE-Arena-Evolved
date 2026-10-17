@@ -9,8 +9,9 @@ of a local game, and its tick comes from the host's update
 does once a tick for a local game's bots is bots_ae_lan_tick's, what it does
 for each bot bots_ae_lan_drive's. It also brings in, at bots.c's end too, the
 bots' fight log (ae_bots_events.inc), the fight by level's glue
-(ae_bots_combat.inc), the objective play's (ae_bots_objective.inc) and the
-vehicles' (ae_bots_vehicle.inc, after the objective's: it reads its state).
+(ae_bots_combat.inc), the objective play's (ae_bots_objective.inc), the
+vehicles' (ae_bots_vehicle.inc, after the objective's: it reads its state) and the
+getting around's (ae_bots_travel.inc).
 */
 
 #include "ae_lan_bots.h"
@@ -18,6 +19,7 @@ vehicles' (ae_bots_vehicle.inc, after the objective's: it reads its state).
 #include "ae_bots_combat.inc"
 #include "ae_bots_objective.inc"
 #include "ae_bots_vehicle.inc"
+#include "ae_bots_travel.inc"
 
 void bots_ae_lan_tick(void)
 {

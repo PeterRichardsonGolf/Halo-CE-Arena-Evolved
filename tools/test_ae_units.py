@@ -89,6 +89,9 @@ UNITS = {
     # (the bots' vehicles: which seat a bot goes for, when it gets out, the driving spike's controls)
     "ae_bots_vehicle_rules_test.c": ([UI / "ae_bots_vehicle_rules.c"], ["-fsanitize=address,undefined",
                                                                       "-fno-sanitize-recover=all"], []),
+    # (the bots' getting around: links' worth, no return, health packs, jump facing, stuck spots)
+    "ae_bots_travel_rules_test.c": ([UI / "ae_bots_travel_rules.c"], ["-fsanitize=address,undefined",
+                                                                    "-fno-sanitize-recover=all"], []),
     # (SILENT MOVEMENT / SILENT WEAPONS: the byte, every mode x role x own/other sound, the join's mark and refusal,
     # the scopes and the tag table; under the sanitizers, as the join's name is a remote machine's)
     "ae_silent_rules_test.c": ([UI / "ae_silent_rules.c"], ["-fsanitize=address,undefined",

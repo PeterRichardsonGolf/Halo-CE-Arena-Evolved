@@ -52,4 +52,7 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 /* (damage.c's object_cause_damage) the damage a player caused to a unit: a bot's hit is measured and logged */
 void ae_bots_damage_note(long owner_player_index, long object_index);
 
+/* how the bots get around a map: teleporters, the layout file's bot lines, health packs (ae_bots_travel.c) */
+#include "ae_bots_travel.h"
+
 #endif

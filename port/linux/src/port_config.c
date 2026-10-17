@@ -1042,6 +1042,14 @@ static const struct config_setting config_settings[] =
 		"An automated test host's gametype's SILENT MOVEMENT and SILENT WEAPONS:\n"
 		"\"MOVEMENT,WEAPONS\" or one for both, each normal, just_me or silent;\n"
 		"empty leaves the gametype's (the muted counts are logged as they grow)." },
+	{ "debug.bot_links", _config_boolean, "true", "HALO_BOT_LINKS", _environment_value, _platform_all, /* AE hook */
+		"Bots take teleporters and the map's layout jumps (bot jump lines) on\n"
+		"their way when that is shorter; false for tests of how they did without\n"
+		"(the teleports are still counted on halo.log's \"bots: travel\" line)." },
+	{ "debug.bot_hints", _config_boolean, "false", "HALO_BOT_HINTS", _environment_set_is_true, _platform_all, /* AE hook */
+		"For map layout authors: log the map's layout header line, each of\n"
+		"player 1's jumps as a ready \"bot jump at ... to ...\" line and a\n"
+		"\"bot avoid\" line where player 1 crouches still a second." },
 	{ "debug.bot_events", _config_boolean, "false", "HALO_BOT_EVENTS", _environment_set_is_true, _platform_all, /* AE hook */
 		"Log each bot's fight events (target seen, shots, hits, melee, strafe, crouch,\n"
 		"kills, deaths, a position each second) as \"bot event:\" lines, for\n"

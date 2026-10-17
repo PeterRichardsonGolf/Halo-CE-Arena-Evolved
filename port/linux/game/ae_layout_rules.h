@@ -16,6 +16,18 @@ The file (version 1):
 	remove vehicle <type> [near <x> <y> <z> <radius>]
 	name item <n> <label>             the map's item n's name on the item timers and waypoints (e.g. SWORD where the map
 	                                  puts its sword in the shotgun's slot); <label> one word or quoted, up to 15 characters
+	bot jump at <x> <y> <z> to <x> <y> <z>
+	                                  for the bots (ae_bots_travel.c): a jump the walkable surfaces do not know (a gap, a
+	                                  ledge up or down): a bot whose way passes within a unit of the first point, moving
+	                                  towards the second, faces it and jumps, then goes on from where it lands; its route
+	                                  may also take the jump on purpose. The two points 0.5 to 20 units apart
+	bot avoid <x> <y> <z> radius <r>  for the bots: a place they keep out of (a pit's edge, a ledge they fall from): the
+	                                  walkable surfaces whose middle lies within r of the point are closed to their routes,
+	                                  and no roaming place there; r more than 0, at most 50
+
+A bot line changes nothing of the map: a guest or a game without bots reads it and does nothing with it. Authoring:
+debug.bot_hints logs each of player 1's jumps as a ready `bot jump` line, and a `bot avoid` line where player 1
+crouches still a second (SHOW COORDINATES on Video Setup > GRAPHICS shows where player 1 stands).
 
 <what>: `like <n>` (the map's own item n's collection: works on protected maps, whose tag names are scrambled), an
 alias (rockets, sniper, shotgun, pistol, overshield, camo: found by what the item is, not by its name), or a tag path
@@ -41,6 +53,11 @@ map lacks is the applying half's business (that one item is skipped and logged: 
 #define AE_LAYOUT_TAG_SIZE 128
 #define AE_LAYOUT_MAXIMUM_NAMES 64
 #define AE_LAYOUT_LABEL_SIZE 16
+#define AE_LAYOUT_MAXIMUM_BOT_JUMPS 64
+#define AE_LAYOUT_MAXIMUM_BOT_AVOIDS 64
+#define AE_LAYOUT_BOT_JUMP_SHORTEST 0.5f
+#define AE_LAYOUT_BOT_JUMP_LONGEST 20.0f
+#define AE_LAYOUT_BOT_AVOID_LARGEST 50.0f
 
 enum ae_layout_what
 {
@@ -92,6 +109,21 @@ struct ae_layout_vehicle_rule
 	short line;
 };
 
+/* bot jump at <from> to <to> */
+struct ae_layout_bot_jump
+{
+	real from_x, from_y, from_z;
+	real to_x, to_y, to_z;
+	short line;
+};
+
+/* bot avoid <x y z> radius <r> */
+struct ae_layout_bot_avoid
+{
+	real x, y, z, radius;
+	short line;
+};
+
 struct ae_layout
 {
 	char map_file[AE_LAYOUT_MAP_FILE_SIZE];
@@ -105,6 +137,10 @@ struct ae_layout
 	struct ae_layout_vehicle_rule vehicle_rules[AE_LAYOUT_MAXIMUM_VEHICLE_RULES];
 	short name_count;
 	struct { long item; char label[AE_LAYOUT_LABEL_SIZE]; } names[AE_LAYOUT_MAXIMUM_NAMES];
+	short bot_jump_count;
+	struct ae_layout_bot_jump bot_jumps[AE_LAYOUT_MAXIMUM_BOT_JUMPS];
+	short bot_avoid_count;
+	struct ae_layout_bot_avoid bot_avoids[AE_LAYOUT_MAXIMUM_BOT_AVOIDS];
 };
 
 /* the file's text (length bytes, not necessarily terminated) read into *out: 0 when it is a layout of version 1 with
