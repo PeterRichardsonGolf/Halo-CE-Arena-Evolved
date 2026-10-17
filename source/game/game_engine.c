@@ -603,6 +603,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
 #include "ae_juggernaut.h" /* AE hook */
+#include "ae_hud_style.h" /* AE hook */
 #include "ae_test_hooks.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
 #include "ae_postgame.h" /* AE hook */
@@ -10190,6 +10191,7 @@ static void internal_rasterize_target_name(
 
 	player = player_get(player_index);
 	target_player_index = NONE;
+	if (ae_hud_style_is_ae()) return; /* AE hook */
 	if (player->local_player_index != NONE && player->unit_index != NONE)
 	{
 		target_player_index = find_closest_player_index(player_index);

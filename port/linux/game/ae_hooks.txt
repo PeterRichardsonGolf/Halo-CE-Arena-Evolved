@@ -718,3 +718,6 @@ port/linux/game/menu_tags.c	{ "ui\\shell\\main_menu\\multiplayer_type_select\\sp
 # PLAYFIGHT (queue 119, owner 2026-10-16): bots.playfight, the bots never shoot, throw or strike (ae_bots.c)
 port/linux/src/port_config.c	{ "bots.playfight", _config_boolean, "false", "HALO_BOT_PLAYFIGHT", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.c	if (ae_bots_playfight()) tick.flags &= ~(FLAG(_unit_control_weapon_primary_trigger_bit) | FLAG(_unit_control_weapon_secondary_trigger_bit) | FLAG(_unit_control_throw_grenade_bit) | FLAG(_unit_control_use_equipment_bit)); /* AE hook */
+# HUD STYLE AE has no name under the reticle (owner 2026-10-16: "out of place"; the names over heads are AE's)
+source/game/game_engine.c	#include "ae_hud_style.h" /* AE hook */
+source/game/game_engine.c	if (ae_hud_style_is_ae()) return; /* AE hook */

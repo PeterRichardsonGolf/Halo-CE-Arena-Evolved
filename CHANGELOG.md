@@ -13,6 +13,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - PLAYFIGHT (Game Options > BOTS, `bots.playfight`), as Halo Infinite's Training Mode: the bots move, strafe and aim
   at you but never shoot, throw a grenade or strike. Aim practice for new players; split screen and LAN bots.
 - Map layout files: `games all` puts an item in every gametype (a map that spawns it in CTF only).
+- AE gametypes (seed revision 13, applied on the first start, the old files backed up): every AE gametype but AE
+  SWAT starts with two frag grenades (Halo CE's own rule gave one in games of 9 players or more, as with bots);
+  the AE BR gametypes have an assault rifle second instead of the pistol.
+- HUD STYLE AE no longer shows Halo CE's name of the player under your reticle (the names over heads stay).
 
 ## 0.3.2-beta - 2026-10-16
 
