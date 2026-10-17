@@ -28,7 +28,8 @@ def test_bots_screen():
     spec = port_settings.SCREENS["mods_setup/bots"]
     assert spec["title"] == "BOTS" and spec["screen"] == "bots_settings_screen"
     rows = {row[1]: row for row in spec["rows"]}
-    assert list(rows) == ["bots.count", "bots.skill", "bots.teams"]
+    # (AE: PLAYFIGHT after BOT SKILL, ae_bots.c's ae_bots_playfight)
+    assert list(rows) == ["bots.count", "bots.skill", "bots.playfight", "bots.teams"]
     assert [value for _, value in rows["bots.count"][2]] == [str(n) for n in range(16)]
     assert rows["bots.count"][2][0] == ("OFF", "0")
     # (the names bots.c's bots_skills and bots_teams read; RECRUIT's in AE's ae_bots_skill.inc, read by name first)
@@ -61,6 +62,8 @@ def test_settings_rows():
     assert re.search(r'\{ "bots\.count", _config_integer, "0",', config)
     assert re.search(r'\{ "bots\.skill", _config_string, "\\"normal\\"",', config)
     assert re.search(r'\{ "bots\.teams", _config_string, "\\"even\\"",', config)
+    assert re.search(r'\{ "bots\.playfight", _config_boolean, "false",', config)
+    assert [value for _, value in {row[1]: row for row in port_settings.SCREENS["mods_setup/bots"]["rows"]}["bots.playfight"][2]] == ["false", "true"]
 
 
 # ---------- games (the box)
