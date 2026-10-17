@@ -77,6 +77,8 @@ struct ae_bots_vehicle_bot
 	long active_tick;
 	long fight_tick;
 	long away_ticks;
+	/* ticks the vehicle has been tipped over past upright (a Ghost banks hard in a turn: a second of it is a flip) */
+	long tipped_ticks;
 	int leaving;
 	long kills;
 	/* the vehicle it left (or did not get into), left alone until then */
@@ -650,6 +652,7 @@ static void ae_bots_vehicle_ride(struct bots_bot *bot, long bot_index, struct bo
 		state->seated_tick = state->driver_tick = state->active_tick = tick->now;
 		state->fight_tick = tick->now;
 		state->away_ticks = 0;
+		state->tipped_ticks = 0;
 		state->leaving = AE_BOTS_LEAVE_STAY;
 		state->kills = tick->player->statistics.kills[0];
 		state->stall_ticks = 0;
@@ -695,7 +698,8 @@ static void ae_bots_vehicle_ride(struct bots_bot *bot, long bot_index, struct bo
 	csmemset(&ride, 0, sizeof(ride));
 	ride.seat = state->seat;
 	ride.alive = ae_bots_vehicle_alive(vehicle);
-	ride.upright = ae_bots_vehicle_upright(vehicle);
+	state->tipped_ticks = ae_bots_vehicle_upright(vehicle) ? 0 : state->tipped_ticks + 1;
+	ride.upright = state->tipped_ticks < TICKS_PER_SECOND;
 	ride.seated = (float)(tick->now - state->seated_tick) / TICKS_PER_SECOND;
 	ride.without_driver = (float)(tick->now - state->driver_tick) / TICKS_PER_SECOND;
 	ride.parked = (float)(tick->now - state->active_tick) / TICKS_PER_SECOND;
