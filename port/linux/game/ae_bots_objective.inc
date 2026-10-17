@@ -599,13 +599,38 @@ boolean ae_bots_objective_goal(struct bots_bot *bot, long player_index, real_poi
 	carries, nor at the ball) */
 	if (!ae_bots_objective_player_carries(ae_bots_objective_snapshot(), player_index) && behaviour != AE_BOTS_BALL_TAKE)
 	{
+		/* (the goal is set here, not left to bots.c: its own choice chases an enemy seen in the last 8 seconds
+		before it looks at weapons, which took the bot off its objective, and looked again every tick) */
 		if (bot->goal_kind == _bots_goal_item && bot->item_index != state->target_object_index)
-			return FALSE;
-		if (now >= bot->item_check_tick)
 		{
-			if (bots_find_item(bot, unit_get(player->unit_index), position, AE_BOTS_OBJECTIVE_WEAPON_NEAR) != NONE)
-				return FALSE;
+			struct item_datum *item = (struct item_datum *)object_try_and_get_and_verify_type(bot->item_index,
+				_object_mask_weapon);
+
+			/* (on its way to one, as bots.c's: given up after 15 seconds, and left be a while) */
+			if (item && item->object.parent_object_index == NONE && now - bot->goal_tick < TICKS_PER_SECOND * 15)
+				return TRUE;
+			if (item && item->object.parent_object_index == NONE)
+				bots_item_set_unreachable(bot, bot->item_index);
+			bot->goal_kind = _bots_goal_none;
+			bot->item_check_tick = now + TICKS_PER_SECOND * 2;
+		}
+		else if (now >= bot->item_check_tick)
+		{
+			long item_index = bots_find_item(bot, unit_get(player->unit_index), position, AE_BOTS_OBJECTIVE_WEAPON_NEAR);
+
 			bot->item_check_tick = now + TICKS_PER_SECOND;
+			if (item_index != NONE)
+			{
+				real_point3d ground;
+				long surface_index = bots_surface_below(&object_get(item_index)->object.position, &ground);
+
+				if (surface_index != NONE)
+				{
+					bots_set_goal(bot, _bots_goal_item, &ground, surface_index);
+					bot->item_index = item_index;
+					return TRUE;
+				}
+			}
 		}
 	}
 	if (!ae_bots_objective_set_goal(bot, bot_index, position) && bot->goal_kind != _bots_goal_none)

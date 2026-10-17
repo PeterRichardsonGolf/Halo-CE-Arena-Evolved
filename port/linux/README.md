@@ -513,11 +513,9 @@ and the game's rules, on the teams that `bots.teams` asks for, and they
 follow the teams' changes in the lobby. They look for enemies, aim, fire,
 throw grenades and pick up better weapons, as well as `bots.skill` lets
 them (`bots.shooting_skill` and `bots.movement_skill` can set the aim and
-the movement apart: `game/ae_bots_combat.c`), and walk the paths that the campaign's AI finds on the maps' walkable
-surfaces (`game/bots.c`). They are never in system link or internet games,
-nor in other gametypes, and nothing that the machines send each other
-them, and walk the paths that the campaign's AI finds on the maps' walkable
-surfaces (`game/bots.c`). They play every mode
+the movement apart: `game/ae_bots_combat.c`), and walk the paths that the
+campaign's AI finds on the maps' walkable surfaces (`game/bots.c`). They are
+never in internet games. They play every mode
 (`game/ae_bots_objective.c`): each one weighs the fight against its mode's
 goal, as Halo Infinite's bots do. In CTF they take the enemy flag, bring
 it home (the carrier keeps running whatever it meets, and strikes what

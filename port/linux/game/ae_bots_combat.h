@@ -57,6 +57,8 @@ struct ae_bots_combat_bot
 	/* it aims at its target's head (counted once a time it starts) */
 	boolean head_aim;
 };
+/* every bot starts over (a new map) */
+void ae_bots_combat_reset(void);
 struct ae_bots_combat_bot *ae_bots_combat_bot_state(long bot_index, long unit_index);
 
 /* the counters of the minute line */

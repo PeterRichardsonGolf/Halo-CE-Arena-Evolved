@@ -33,9 +33,12 @@ float ae_bots_combat_hash01(unsigned long a, unsigned long b)
 	return (float)(x & 0xFFFFFFUL) / (float)0x1000000UL;
 }
 
-long ae_bots_combat_reaction_ticks(long skill_ticks, float hash01)
+long ae_bots_combat_reaction_ticks(int level, long skill_ticks, float hash01)
 {
-	return (long)((float)skill_ticks * (0.85f + 0.5f * clamp01(hash01)) + 0.5f);
+	/* (RECRUIT never quicker than its own time: it must not get harder) */
+	float low = level == AE_BOTS_LEVEL_RECRUIT ? 1.0f : 0.85f;
+
+	return (long)((float)skill_ticks * (low + 0.5f * clamp01(hash01)) + 0.5f);
 }
 
 long ae_bots_combat_look_jitter(float hash01)
@@ -135,10 +138,8 @@ int ae_bots_combat_grenade(int level, float distance, int has_grenade, int react
 	switch (level)
 	{
 	case AE_BOTS_LEVEL_RECRUIT:
-		/* (rarely, and only far off, where it seldom lands) */
-		low = 10.0f;
-		rate = 0.015f;
-		break;
+		/* (never: RECRUIT did not throw before, and it must not get harder; the owner to decide) */
+		return 0;
 	case AE_BOTS_LEVEL_EASY:
 		rate = about_to_die ? 0.6f : 0.02f;
 		break;

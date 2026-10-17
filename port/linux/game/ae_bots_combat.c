@@ -106,6 +106,11 @@ boolean ae_bots_combat_back_turned(long unit_index, real_point3d const *point)
 
 static struct ae_bots_combat_bot combat_bots[BOTS_MAXIMUM];
 
+void ae_bots_combat_reset(void)
+{
+	csmemset(combat_bots, 0, sizeof(combat_bots));
+}
+
 struct ae_bots_combat_bot *ae_bots_combat_bot_state(long bot_index, long unit_index)
 {
 	struct ae_bots_combat_bot *bot;

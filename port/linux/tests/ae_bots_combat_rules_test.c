@@ -25,13 +25,16 @@ static void test_hash(void)
 	CHECK(ae_bots_combat_hash01(1, 2) != ae_bots_combat_hash01(2, 1));
 }
 
-/* a reaction is never quicker than 0.85 of the skill's, at most 1.35 of it */
+/* a reaction is never quicker than 0.85 of the skill's, at most 1.35 of it; RECRUIT's never quicker than its own */
 static void test_reaction_and_look(void)
 {
-	CHECK(ae_bots_combat_reaction_ticks(42, 0.0f) == 36);
-	CHECK(ae_bots_combat_reaction_ticks(42, 0.999f) == 57);
-	CHECK(ae_bots_combat_reaction_ticks(42, -3.0f) == 36);
-	CHECK(ae_bots_combat_reaction_ticks(42, 5.0f) == 57);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, 0.0f) == 36);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, 0.999f) == 57);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, -3.0f) == 36);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, 5.0f) == 57);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_RECRUIT, 42, 0.0f) == 42);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_RECRUIT, 42, -3.0f) == 42);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_RECRUIT, 42, 0.999f) == 63);
 	CHECK(ae_bots_combat_look_jitter(0.0f) == 0);
 	CHECK(ae_bots_combat_look_jitter(0.5f) == 1);
 	CHECK(ae_bots_combat_look_jitter(0.99f) == 2);
@@ -125,10 +128,9 @@ static void test_grenades(void)
 		CHECK(!ae_bots_combat_grenade(level, 4, 1, 1, 1, 1, 1, 0.0f));
 		CHECK(!ae_bots_combat_grenade(level, 25, 1, 1, 1, 1, 1, 0.0f));
 	}
-	/* RECRUIT: rarely, only far off, whatever its state */
+	/* RECRUIT: never, whatever its state */
 	CHECK(grenade_rate(AE_BOTS_LEVEL_RECRUIT, 8, 1, 1, 0) == 0.0f);
-	CHECK(grenade_rate(AE_BOTS_LEVEL_RECRUIT, 15, 1, 1, 0) < 0.02f);
-	CHECK(grenade_rate(AE_BOTS_LEVEL_RECRUIT, 15, 1, 1, 0) > 0.0f);
+	CHECK(grenade_rate(AE_BOTS_LEVEL_RECRUIT, 15, 1, 1, 0) == 0.0f);
 	/* EASY: about to die, else rarely */
 	CHECK(grenade_rate(AE_BOTS_LEVEL_EASY, 12, 0, 0, 0.04f) < 0.03f);
 	CHECK(grenade_rate(AE_BOTS_LEVEL_EASY, 12, 0, 1, 0.04f) > 0.5f);

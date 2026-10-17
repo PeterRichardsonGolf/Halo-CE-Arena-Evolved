@@ -14,8 +14,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   at you but never shoot, throw a grenade or strike. Aim practice for new players; split screen and LAN bots.
 - Map layout files: `games all` puts an item in every gametype (a map that spawns it in CTF only).
 - Bots fight like people of their level, after Halo Infinite's own per-level bot tuning (its ratios, our numbers):
-  RECRUIT strikes only at point blank after a moment and only now and then, and throws a grenade rarely and from
-  far off; EASY throws mostly when it is about
+  RECRUIT strikes only at point blank after a moment and only now and then, never throws a grenade and is never
+  quicker to react than before; EASY throws mostly when it is about
   to die; NORMAL and up go for the head once your shields are down (pistol, sniper rifle, battle rifle), jump in a
   fight now and then, and back off along a path when they are nearly beaten until their shields are back; HEROIC
   and up strike when your back is turned or your shields are low, run in to finish a fight they have won, lead your

@@ -181,6 +181,18 @@ void ae_bots_travel_prepare(void)
 	csmemset(&ae_travel, 0, sizeof(ae_travel));
 	for (index = 0; index < BOTS_MAXIMUM; index++)
 		ae_travel_bot_reset(&ae_travel_bots[index], NONE);
+	/* the other lanes' bots start over too: a player index repeats from game to game (the player data is
+	remade each map with the same identifiers), so a state kept by player index would carry the last game's
+	pauses, patrol points and timers into this one */
+	csmemset(ae_bots_objective_bots, 0, sizeof(ae_bots_objective_bots));
+	csmemset(ae_bots_vehicle_bots, 0, sizeof(ae_bots_vehicle_bots));
+	for (index = 0; index < BOTS_MAXIMUM; index++)
+	{
+		ae_bots_objective_bots[index].player_index = NONE;
+		ae_bots_vehicle_bots[index].player_index = NONE;
+		ae_bots_vehicle_bots[index].unit_index = NONE;
+	}
+	ae_bots_combat_reset();
 	count = ae_bots_travel_read_links(read, AE_BOTS_TRAVEL_MAXIMUM_LINKS);
 	for (index = 0; index < count; index++)
 	{
@@ -720,11 +732,15 @@ static void ae_travel_refresh_packs(long now)
 }
 
 /* a hurt bot, not fighting, looks for a pack in reach (once a second) */
+/* a defender's pack: no farther than this from it (world units) */
+#define AE_TRAVEL_DEFENDER_PACK_DISTANCE 8.0f
+
 static void ae_travel_look_for_pack(struct bots_bot *bot, long bot_index, struct ae_travel_bot *travel,
 	struct bots_tick *tick)
 {
 	long now = tick->now, index, best = NONE;
 	real need, best_score = 0.0f;
+	boolean defending = FALSE;
 
 	if (travel->via != AE_TRAVEL_VIA_NONE || !ae_travel.pack_count || (now + bot_index) % TICKS_PER_SECOND ||
 		now < travel->pack_look_tick ||
@@ -736,11 +752,29 @@ static void ae_travel_look_for_pack(struct bots_bot *bot, long bot_index, struct
 	need = ae_bots_travel_pack_need(ae_travel.health_style, tick->object->object.body_vitality);
 	if (need <= 0.0f)
 		return;
+	/* (its mode's goal first: a carrier keeps running home hurt or not, and the ball's or the hill's holder or a
+	race bot keeps to it; a defender takes only a pack close to where it stands) */
+	{
+		struct ae_bots_objective_bot const *objective = &ae_bots_objective_bots[bot_index];
+
+		if (objective->player_index == bot->player_index)
+		{
+			if (objective->behaviour == AE_BOTS_CTF_CARRY || objective->behaviour == AE_BOTS_BALL_HOLD ||
+				objective->behaviour == AE_BOTS_HILL_HOLD || objective->behaviour == AE_BOTS_RACE_NEXT)
+			{
+				return;
+			}
+			if (objective->behaviour == AE_BOTS_CTF_DEFEND)
+				defending = TRUE;
+		}
+	}
 	for (index = 0; index < ae_travel.pack_count; index++)
 	{
 		real score;
 
 		if (ae_travel.pack_objects[index] == travel->pack_banned && now < travel->pack_banned_until)
+			continue;
+		if (defending && bots_distance2d(&tick->position, &ae_travel.pack_points[index]) > AE_TRAVEL_DEFENDER_PACK_DISTANCE)
 			continue;
 		score = ae_bots_travel_pack_score(need, bots_distance2d(&tick->position, &ae_travel.pack_points[index]),
 			ae_travel.pack_points[index].z - tick->position.z, (boolean)(bot->goal_kind == _bots_goal_enemy));

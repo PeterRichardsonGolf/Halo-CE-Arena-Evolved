@@ -202,16 +202,13 @@ play:
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
   you can start on your own.
 - **Bots** (0.3.0, Settings > Game Options > BOTS): up to 15 in a split
-  screen Slayer game, up to 3 in a LAN game you host; RECRUIT (for new and
-  young players), EASY, NORMAL, HEROIC or LEGENDARY. Each level fights like
-  a person of that level, as Halo Infinite's bots do: how they strafe and
-  jump, when to strike, when to throw a grenade, headshots once your shields
-  are down, backing off when beaten, teammates told where you are at HEROIC
-  and up. SHOOTING SKILL and
-  MOVEMENT SKILL set the aim and the movement to levels of their own.
-  screen game, up to 3 in a LAN game you host; RECRUIT (for new and
-  young players), EASY, NORMAL, HEROIC or LEGENDARY. They play every
-  mode: Slayer, CTF (taking, carrying, returning and defending the flag),
+  screen game, up to 3 in a LAN game you host (never online); RECRUIT (for
+  new and young players), EASY, NORMAL, HEROIC or LEGENDARY. Each level
+  fights like a person of that level, as Halo Infinite's bots do: how they
+  strafe and jump, when to strike, when to throw a grenade, headshots once
+  your shields are down, backing off when beaten, teammates told where you
+  are at HEROIC and up. SHOOTING SKILL and MOVEMENT SKILL set the aim and
+  the movement to levels of their own. They play every mode: Slayer, CTF (taking, carrying, returning and defending the flag),
   Oddball, King of the Hill, Juggernaut and Race. They take a Warthog's gun
   or a gun turret near them and ride with a teammate who drives (you too).
 - SETTINGS from the pause menu in the campaign, for each player in split

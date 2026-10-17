@@ -43,7 +43,7 @@ static void ae_bots_fight_event(struct bots_bot *bot, struct bots_tick *tick, ch
 static long ae_bots_fight_reaction(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks)
 {
 	(void)tick;
-	return ae_bots_combat_reaction_ticks(reaction_ticks,
+	return ae_bots_combat_reaction_ticks(ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill)), reaction_ticks,
 		ae_bots_combat_hash01((unsigned long)bot->player_index, (unsigned long)bot->target_first_seen_tick));
 }
 

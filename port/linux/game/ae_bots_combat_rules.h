@@ -43,8 +43,9 @@ enum
 float ae_bots_combat_hash01(unsigned long a, unsigned long b);
 
 /* the ticks from seeing a target to the first shot: the skill's own times 0.85 .. 1.35 (hash01 of the sighting),
-so that a bot is now quicker, now slower, never as a metronome; never quicker than 0.85 of the skill's */
-long ae_bots_combat_reaction_ticks(long skill_ticks, float hash01);
+so that a bot is now quicker, now slower, never as a metronome; never quicker than 0.85 of the skill's (RECRUIT:
+1.0 .. 1.5, never quicker than its own) */
+long ae_bots_combat_reaction_ticks(int level, long skill_ticks, float hash01);
 
 /* the ticks added to the look's three (0, 1 or 2) */
 long ae_bots_combat_look_jitter(float hash01);

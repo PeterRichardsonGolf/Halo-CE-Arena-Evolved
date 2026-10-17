@@ -189,6 +189,17 @@ def test_bots_play_the_objective(tmp_path, test, seconds, expected):
     assert not re.search(r"assert|exception", output, re.I), "an assert or exception in the game's log"
 
 
+def test_bots_play_the_objective_in_the_next_game(tmp_path):
+    """Two King games in a row from one lobby (1 minute in the hill wins): a player's index repeats from game to game, and the bots' objective
+    states once carried the last game's pauses and timers into the next (final review I1)."""
+    status, output = _play(tmp_path, "local:chillout:king,king", 300, HALO_BOTS=5, HALO_NETWORK_TEST_SCORE=1)
+    assert status == 0, output[-3000:]
+    assert "network test: game 2, king" in output, "the second game never started"
+    second = output.split("network test: game 2, king", 1)[1]
+    assert re.search(r"bots: bot \d+ in the hill", second), "no bot in the hill in the second game"
+    assert not re.search(r"assert|exception", output, re.I), "an assert or exception in the game's log"
+
+
 # ---------- vehicles (ae_bots_vehicle.c; notes/specs/2026-10-16-bots-infinite.md area 4)
 
 VEHICLE_LINE = re.compile(r"bots: vehicle tick \d+: seats taken gunner (\d+) passenger (\d+) driver (\d+) .*?"
