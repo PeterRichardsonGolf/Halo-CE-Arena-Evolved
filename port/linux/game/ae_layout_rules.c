@@ -5,6 +5,7 @@ The map layout file read and checked (ae_layout_rules.h). Pure: no engine includ
 */
 
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -193,6 +194,69 @@ static int parse_vehicle(char **words, int count, struct ae_layout_vehicle_rule 
 	return 1;
 }
 
+/* bot jump at x y z to x y z | bot avoid x y z radius r */
+static int parse_bot(char **words, int count, struct ae_layout *out, short line_number, char *error, int error_size)
+{
+	if (same_word(words[1], "jump"))
+	{
+		struct ae_layout_bot_jump jump;
+		real dx, dy, dz, length;
+
+		memset(&jump, 0, sizeof(jump));
+		if (count != 10 || !same_word(words[2], "at") || !real_of(words[3], &jump.from_x) ||
+			!real_of(words[4], &jump.from_y) || !real_of(words[5], &jump.from_z) || !same_word(words[6], "to") ||
+			!real_of(words[7], &jump.to_x) || !real_of(words[8], &jump.to_y) || !real_of(words[9], &jump.to_z))
+		{
+			say(error, error_size, "bot jump: wants at <x> <y> <z> to <x> <y> <z>", count > 2 ? words[2] : NULL);
+			return 0;
+		}
+		dx = jump.to_x - jump.from_x;
+		dy = jump.to_y - jump.from_y;
+		dz = jump.to_z - jump.from_z;
+		length = (real)sqrt(dx * dx + dy * dy + dz * dz);
+		if (length < AE_LAYOUT_BOT_JUMP_SHORTEST || length > AE_LAYOUT_BOT_JUMP_LONGEST)
+		{
+			say(error, error_size, "bot jump: the points must be 0.5 to 20 units apart", NULL);
+			return 0;
+		}
+		if (out->bot_jump_count == AE_LAYOUT_MAXIMUM_BOT_JUMPS)
+		{
+			say(error, error_size, "more than 64 bot jumps", NULL);
+			return 0;
+		}
+		jump.line = line_number;
+		out->bot_jumps[out->bot_jump_count++] = jump;
+		return 1;
+	}
+	if (same_word(words[1], "avoid"))
+	{
+		struct ae_layout_bot_avoid avoid;
+
+		memset(&avoid, 0, sizeof(avoid));
+		if (count != 7 || !real_of(words[2], &avoid.x) || !real_of(words[3], &avoid.y) || !real_of(words[4], &avoid.z) ||
+			!same_word(words[5], "radius") || !real_of(words[6], &avoid.radius))
+		{
+			say(error, error_size, "bot avoid: wants <x> <y> <z> radius <r>", count > 2 ? words[2] : NULL);
+			return 0;
+		}
+		if (!(avoid.radius > 0.0f) || avoid.radius > AE_LAYOUT_BOT_AVOID_LARGEST)
+		{
+			say(error, error_size, "bot avoid: the radius must be more than 0 and at most 50", words[6]);
+			return 0;
+		}
+		if (out->bot_avoid_count == AE_LAYOUT_MAXIMUM_BOT_AVOIDS)
+		{
+			say(error, error_size, "more than 64 bot avoids", NULL);
+			return 0;
+		}
+		avoid.line = line_number;
+		out->bot_avoids[out->bot_avoid_count++] = avoid;
+		return 1;
+	}
+	say(error, error_size, "bot: not jump or avoid", words[1]);
+	return 0;
+}
+
 int ae_layout_parse(char const *text, long length, struct ae_layout *out, char *error, int error_size)
 {
 	char line[AE_LAYOUT_MAXIMUM_LINE + 2];
@@ -346,6 +410,11 @@ int ae_layout_parse(char const *text, long length, struct ae_layout *out, char *
 			out->names[out->name_count].item = number;
 			strcpy(out->names[out->name_count].label, words[3]);
 			out->name_count++;
+		}
+		else if (count >= 2 && same_word(words[0], "bot"))
+		{
+			if (!parse_bot(words, count, out, (short)line_number, error, error_size))
+				goto refused;
 		}
 		else if (same_word(words[0], "item"))
 		{
