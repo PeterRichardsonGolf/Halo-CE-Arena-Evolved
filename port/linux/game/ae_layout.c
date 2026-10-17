@@ -66,6 +66,8 @@ static struct
 } applied;
 
 static struct ae_layout layout;
+/* whether layout is this map's, applied (its bot lines are read by ae_bots_travel.c) */
+static boolean layout_applied;
 
 /* the map's file name and path as the game opened it; FALSE when it has none */
 static boolean map_file(char *file, long file_size, char *path, long path_size)
@@ -448,6 +450,25 @@ int ae_layout_memory(unsigned long address, long size)
 	return address >= start && address < end && (unsigned long)size <= end - address;
 }
 
+struct ae_layout const *ae_layout_bot_hints(void)
+{
+	return layout_applied && (layout.bot_jump_count || layout.bot_avoid_count) ? &layout : NULL;
+}
+
+boolean ae_layout_map_header(char *text, long size)
+{
+	char file[64], map_path[PATH_SIZE];
+	unsigned int hash = 0;
+
+	if (size <= 0)
+		return FALSE;
+	text[0] = 0;
+	if (!map_file(file, sizeof(file), map_path, sizeof(map_path)) || !map_file_hash_prefix(map_path, &hash))
+		return FALSE;
+	snprintf(text, (size_t)size, "layout %d %s %08x", AE_LAYOUT_VERSION, file, hash);
+	return TRUE;
+}
+
 void ae_layout_apply(void)
 {
 	struct scenario *scenario = global_scenario_get();
@@ -467,6 +488,7 @@ void ae_layout_apply(void)
 	}
 	applied.scenario = scenario;
 	applied.name_count = 0;
+	layout_applied = FALSE;
 	applied.original_address = scenario->netgame_equipment.address;
 	applied.original_count = scenario->netgame_equipment.count;
 	if (applied.items)
@@ -498,8 +520,10 @@ void ae_layout_apply(void)
 			layout.map_hash, file, hash);
 		return;
 	}
-	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names)", path, layout.item_count,
-		layout.removed_count, layout.clear_items ? "" : "no ", layout.vehicle_rule_count, layout.name_count);
+	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names, %d bot jumps, %d bot avoids)",
+		path, layout.item_count, layout.removed_count, layout.clear_items ? "" : "no ", layout.vehicle_rule_count,
+		layout.name_count, layout.bot_jump_count, layout.bot_avoid_count);
+	layout_applied = TRUE;
 	apply_items(scenario);
 	apply_vehicles(scenario);
 }

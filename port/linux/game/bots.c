@@ -1191,6 +1191,7 @@ static void bots_prepare_map(void)
 		platform_log("bots: %ld places to roam on this map, over %.0f units", bots_globals.roam_point_count,
 			bots_globals.roam_point_count > 0 ? (double)bots_distance2d(&low, &high) : 0.0);
 	}
+	ae_bots_travel_prepare(); /* AE hook */
 }
 
 void bots_initialize_for_new_map(void)
@@ -1386,6 +1387,7 @@ static void bots_search(struct bots_bot *bot, long unit_index)
 	long start_surface_index;
 	boolean reached;
 
+	if (ae_bots_travel_search(bot, unit_index)) return; /* AE hook */
 	if (bots_globals.tick_searches >= BOTS_SEARCHES_A_TICK || bot->goal_surface_index == NONE)
 		return;
 	if (!bots_globals.search)
@@ -1760,6 +1762,7 @@ static boolean bots_follow_path(struct bots_bot *bot, long unit_index, real_poin
 		*direction = bot->escape_direction;
 		return TRUE;
 	}
+	if (ae_bots_travel_follow(bot, unit_index, position, direction)) return TRUE; /* AE hook */
 	/* (at the end of a path short of its goal: straight on, jumping, while
 	it comes nearer (the walkable surfaces miss ramps a biped walks up:
 	Prisoner's, Wizard's); then somewhere else) */
@@ -2196,6 +2199,7 @@ static void bots_bot_unstick(struct bots_bot *bot, struct bots_tick *tick)
 			tick->object->object.parent_object_index == NONE)
 		{
 			bots_globals.stuck_events++;
+			ae_bots_travel_stuck(bot, tick); /* AE hook */
 			bot->stuck_count++;
 			bot->unstick_until_tick = now + TICKS_PER_SECOND / 2;
 			bot->unstick_direction = tick->move_direction + (bots_random_real(bot) < 0.5f ? -1.0f : 1.0f) * BOTS_PI * 0.5f;
@@ -2311,6 +2315,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 		bot->path_tick = tick.now - TICKS_PER_SECOND;
 		bot->stuck_position = tick.position;
 	}
+	ae_bots_travel_tick(bot, bot_index, &tick); /* AE hook */
 	bot->last_position = tick.position;
 
 	/* hurt: it turns to look for who did it */
@@ -2410,6 +2415,7 @@ void bots_update_actions(struct player_action *actions)
 	struct player_datum *player;
 	long count = 0;
 
+	ae_bots_travel_author_tick(); /* AE hook */
 	/* (local games alone: no other machine sees a bot) */
 	if (!game_engine_running() || !network_game_is_splitscreen_local())
 		return;

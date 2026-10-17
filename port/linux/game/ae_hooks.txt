@@ -480,6 +480,17 @@ port/linux/game/bots.c	reaction_ticks = ae_bots_fight_reaction(bot, tick, reacti
 port/linux/game/bots.c	ae_bots_fight_aim_point(bot, tick, &aim_point); /* AE hook */
 port/linux/game/bots.c	ae_bots_fight_grenade(bot, tick, reaction_ticks); /* AE hook */
 port/linux/game/bots.c	ae_bots_fight_move(bot, tick); /* AE hook */
+# Bots get around a map (ae_bots_travel.c, ae_bots_travel_rules.c; the glue ae_bots_travel.inc, at bots.c's end
+# through ae_bots_lan.inc): teleporters and the layout file's bot jumps as links of a bot's route, its bot avoid zones
+# closed, health packs as detours (HALO CE / REACH health), stuck spots on halo.log's minute line, debug.bot_hints
+port/linux/game/bots.c	ae_bots_travel_prepare(); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_travel_search(bot, unit_index)) return; /* AE hook */
+port/linux/game/bots.c	if (ae_bots_travel_follow(bot, unit_index, position, direction)) return TRUE; /* AE hook */
+port/linux/game/bots.c	ae_bots_travel_tick(bot, bot_index, &tick); /* AE hook */
+port/linux/game/bots.c	ae_bots_travel_stuck(bot, tick); /* AE hook */
+port/linux/game/bots.c	ae_bots_travel_author_tick(); /* AE hook */
+port/linux/src/port_config.c	{ "debug.bot_links", _config_boolean, "true", "HALO_BOT_LINKS", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "debug.bot_hints", _config_boolean, "false", "HALO_BOT_HINTS", _environment_set_is_true, _platform_all, /* AE hook */
 # SHOOTING SKILL and MOVEMENT SKILL (queue 120): the two settings
 port/linux/src/port_config.c	{ "bots.shooting_skill", _config_string, "\"same\"", "HALO_BOT_SHOOTING_SKILL", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "bots.movement_skill", _config_string, "\"same\"", "HALO_BOT_MOVEMENT_SKILL", _environment_value, _platform_all, /* AE hook */

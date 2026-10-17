@@ -25,4 +25,13 @@ int ae_layout_memory(unsigned long address, long size);
 has one */
 boolean ae_layout_item_label(long equipment_index, char *label, long size);
 
+/* (ae_bots_travel.c) the applied layout's bot lines (bot jump, bot avoid): the layout itself, NULL when the map has
+none applied or no bot lines */
+struct ae_layout;
+struct ae_layout const *ae_layout_bot_hints(void);
+
+/* (ae_bots_travel.c, debug.bot_hints) the first line of a layout file for the loaded map ("layout 1 <file> <hash>"),
+into text: FALSE when the map has no file the layouts know */
+boolean ae_layout_map_header(char *text, long size);
+
 #endif /* __AE_LAYOUT_H */
