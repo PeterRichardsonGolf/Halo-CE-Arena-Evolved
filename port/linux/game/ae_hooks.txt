@@ -610,6 +610,12 @@ source/game/game_engine.c	ae_stage_map_check(global_stage.map_name, sizeof(globa
 # ENEMIES between FRIENDS and NO (strings.xml / tools/port_settings.py STRING_INSERTS)
 source/game/game_engine.h	_radar_players_enemies, /* AE hook */
 source/game/game_engine.c	#include "ae_radar.h" /* AE hook */
+# bug 139 (ae_mode_guard.c): a mode the map cannot play is Slayer, told as the game starts; a mode with no spawn of
+# its own spawns players at every spawn
+source/game/game_engine.c	#include "ae_mode_guard.h" /* AE hook */
+source/game/game_engine.c	if (ae_mode_guard_new_map(&global_variant)) game_engine = game_engines[global_variant.game_engine_index]; /* AE hook */
+source/game/game_engine.c	if (!match_game_type(game_engine_get_type(), 4, starting_location->game_types) && !ae_mode_guard_any_spawns()) /* AE hook */
+source/game/game_engine.c	if (ae_mode_guard_message()) mode = ae_mode_guard_message(); /* AE hook */
 source/game/game_engine.c	draw_object = ae_radar_draw_object(draw_object, unit_index, game_engine_motion_sensor_local_player); /* AE hook */
 source/game/game_engine.c	static char const *const radar_players[] = { "all", "friends", "none", "enemies" }; /* AE hook */
 source/interface/hud.c	#include "ae_radar.h" /* AE hook */

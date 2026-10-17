@@ -611,6 +611,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_scoreboard_header.h" /* AE hook */
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_radar.h" /* AE hook */
+#include "ae_mode_guard.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -5300,6 +5301,7 @@ static void game_engine_update_start_text(
 			mode = L"Practice Mode!";
 		else if (game_engine_training())
 			mode = L"Training Mode!";
+		if (ae_mode_guard_message()) mode = ae_mode_guard_message(); /* AE hook */
 		for (local_player_index = 0; local_player_index < MAXIMUM_LOCAL_PLAYERS; local_player_index++)
 		{
 			if (local_player_get_player_index(local_player_index) != NONE)
@@ -8679,6 +8681,7 @@ void game_engine_initialize_for_new_map(
 {
 	if (game_engine)
 	{
+		if (ae_mode_guard_new_map(&global_variant)) game_engine = game_engines[global_variant.game_engine_index]; /* AE hook */
 		game_engine_verify_current_map();
 		game_engine_intialize_queued_sounds();
 		csmemset(global_goal, 0, sizeof(global_goal));
@@ -9191,7 +9194,7 @@ real game_engine_get_starting_location_rating_ex(
 	if (zero_reason)
 		*zero_reason = _spawn_rating_rated;
 
-	if (!match_game_type(game_engine_get_type(), 4, starting_location->game_types))
+	if (!match_game_type(game_engine_get_type(), 4, starting_location->game_types) && !ae_mode_guard_any_spawns()) /* AE hook */
 	{
 		if (zero_reason)
 			*zero_reason = _spawn_rating_zero_game_type;
