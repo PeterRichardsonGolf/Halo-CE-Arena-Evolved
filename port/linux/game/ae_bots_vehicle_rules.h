@@ -10,14 +10,14 @@ port/linux/tests/ae_bots_vehicle_rules_test.c.
 Seats, as a player takes them (the action button at the seat's entrance):
 - GUNNER: a free gunner seat (a Warthog's chain gun, a gun turret) of a vehicle
   near the bot (Halo Infinite's bots notice vehicles within 10 units) and a few
-  units off its way, or of a vehicle a teammate drives; never while it is
+  units off its way, or of a vehicle a teammate drives (within 15); never while it is
   winning a fight (it fights on), never for a bot that holds a place (a CTF
   defender, the hill's holder) or holds the objective in its hands (a trigger
   pull drops the flag or the ball, players.c: a carrier never pulls one).
-- PASSENGER: the free passenger seat of a vehicle a teammate drives; a carrier
+- PASSENGER: the free passenger seat of a vehicle a teammate drives (within 15); a carrier
   may take it (it rides home without a trigger).
-- DRIVER (the spike, debug.bot_vehicles 2): an empty Warthog or Ghost near its
-  way when its goal is far.
+- DRIVER (the spike, debug.bot_vehicles 2): an empty Warthog or Ghost within 18
+  when its goal is far (25), the detour to it at most half the way.
 - Never a vehicle moving faster than 2 units a second (Infinite's limit), a
   flipped or wrecked one, one an enemy is in, a seat another bot goes for, nor
   the one it just left. No Banshee or Scorpion (no flying; the tank waits).
@@ -82,14 +82,19 @@ enum ae_bots_vehicle_leave
 /* (Halo Infinite's bot tuning, botg 'Vehicle Tuning') vehicles noticed within this many units; entered when moving
 under this speed (units a second); 'active' (not parked) above this speed */
 #define AE_BOTS_VEHICLE_NOTICE 10.0f
+/* (CE's maps park their vehicles off the paths out of a base: box games) a vehicle a teammate drives is noticed
+further; the driving spike's driver goes further for an empty Warthog when its goal is far */
+#define AE_BOTS_VEHICLE_NOTICE_DRIVEN 15.0f
+#define AE_BOTS_VEHICLE_NOTICE_DRIVE 18.0f
 #define AE_BOTS_VEHICLE_ENTER_SPEED 2.0f
 #define AE_BOTS_VEHICLE_ACTIVE_SPEED 1.3f
 /* a gunner seat of a vehicle no one drives: this far off the bot's way at most (or this near without a goal) */
 #define AE_BOTS_VEHICLE_OFF_ROUTE 4.0f
 #define AE_BOTS_VEHICLE_NEAR_NO_GOAL 6.0f
-/* (the driving spike) a goal this far makes a bot drive; a vehicle this far off its way */
+/* (the driving spike) a goal this far makes a bot drive; the detour to the vehicle at most this part of the way
+(and 8 units at least) */
 #define AE_BOTS_VEHICLE_DRIVE_GOAL 25.0f
-#define AE_BOTS_VEHICLE_DRIVE_OFF_ROUTE 6.0f
+#define AE_BOTS_VEHICLE_DRIVE_DETOUR 0.5f
 
 /* the vehicle's kind from its tag's name (the stock multiplayer vehicles: vehicles\warthog\mp_warthog,
 vehicles\rwarthog\rwarthog, vehicles\ghost\ghost_mp, vehicles\scorpion\scorpion_mp, vehicles\banshee\banshee_mp,
@@ -108,6 +113,9 @@ struct ae_bots_seat_offer
 	goal) */
 	float distance;
 	float off_route;
+	/* how much longer its way is by the seat (to the entrance, then on to the goal, less straight to the goal;
+	negative: no goal) */
+	float detour;
 	/* the vehicle's speed (units a second) */
 	float speed;
 	int alive;

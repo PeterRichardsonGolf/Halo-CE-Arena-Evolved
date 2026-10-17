@@ -16,6 +16,7 @@ static struct ae_bots_seat_offer offer(int seat)
 	o.seat = seat;
 	o.distance = 4.0f;
 	o.off_route = 1.0f;
+	o.detour = 2.0f;
 	o.speed = 0.0f;
 	o.alive = 1;
 	o.upright = 1;
@@ -110,11 +111,16 @@ static void test_gunner(void)
 	o = offer(AE_BOTS_SEAT_GUNNER);
 	o.distance = 2.0f;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) > base);
-	/* out of notice (Infinite: 10 units) */
+	/* out of notice (Infinite: 10 units; a teammate's vehicle 15) */
 	o.distance = 10.5f;
-	o.driver = AE_BOTS_DRIVER_TEAMMATE;
+	o.off_route = 0.0f;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
 	o.distance = 10.0f;
+	CHECK(ae_bots_vehicle_seat_score(&s, &o) > 0.0f);
+	o.distance = 15.5f;
+	o.driver = AE_BOTS_DRIVER_TEAMMATE;
+	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
+	o.distance = 14.5f;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) > 0.0f);
 	/* a turret's seat: wanted a little less than a Warthog's */
 	o = offer(AE_BOTS_SEAT_GUNNER);
@@ -240,12 +246,20 @@ static void test_driver(void)
 	s.goal_distance = -1.0f;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
 	s.goal_distance = 40.0f;
-	/* off its way */
-	o.off_route = 6.5f;
+	/* a detour of at most half its way and 8 units (40 off: 28) */
+	o.detour = 27.0f;
+	CHECK(ae_bots_vehicle_seat_score(&s, &o) > 0.0f);
+	o.detour = 29.0f;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
-	o.off_route = -1.0f;
+	o.detour = -1.0f;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
-	o.off_route = 1.0f;
+	o.detour = 2.0f;
+	/* (within 18 for the spike's driver) */
+	o.distance = 17.5f;
+	CHECK(ae_bots_vehicle_seat_score(&s, &o) > 0.0f);
+	o.distance = 18.5f;
+	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
+	o.distance = 4.0f;
 	/* a Ghost, yes; a turret, a tank, a Banshee, someone's: no */
 	o.vehicle_class = AE_BOTS_VEHICLE_GHOST;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) > 0.0f);
@@ -375,7 +389,7 @@ static void test_drive(void)
 	CHECK(out.throttle > 0.0f && out.throttle < 1.0f);
 	in.heading_error = -2.5f;
 	ae_bots_vehicle_drive(&in, &out);
-	CHECK(out.throttle > 0.0f && out.throttle < 0.6f);
+	CHECK(out.throttle > 0.0f && out.throttle <= 0.6f);
 	/* a sharp corner close ahead, fast: brake; a little less fast: ease off */
 	in.heading_error = 0.0f;
 	in.waypoint_distance = 3.0f;
@@ -427,6 +441,7 @@ static void test_range(void)
 		o.vehicle_class = cls;
 		o.distance = distances[d];
 		o.off_route = distances[(d + flags) % 7];
+		o.detour = distances[(d + flags / 2) % 7];
 		o.speed = speeds[v];
 		o.driver = flags % 3;
 		s.fighting = (flags >> 2) & 1;

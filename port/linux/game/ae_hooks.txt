@@ -746,3 +746,13 @@ port/linux/game/bots.c	if (ae_bots_objective_goal(bot, player_index, position, f
 port/linux/game/bots.c	ae_bots_objective_move(bot, bot_index, &tick); /* AE hook */
 source/game/game_engine_ctf.c	boolean ae_bots_ctf_flag(long team_index, long *weapon_index, real_point3d *stand, boolean *handled) { struct weapon_datum *weapon; if (!VALID_INDEX(team_index, NUMBER_OF_CTF_TEAMS) || !ctf_globals.flags[team_index]) return FALSE; *stand = ctf_globals.flags[team_index]->position; *weapon_index = ctf_globals.weapon_indices[team_index]; weapon = *weapon_index != NONE ? weapon_try_and_get(*weapon_index) : NULL; *handled = weapon && TEST_FLAG(weapon->weapon.flags, _ctf_weapon_handled_bit); return TRUE; } /* AE hook */
 source/game/game_engine_race.c	boolean ae_bots_race_can_touch(long player_index, long order) { return player_index != NONE && DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) < MULTIPLAYER_MAXIMUM_PLAYERS && order >= 0 && can_touch_team(player_index, order); } /* AE hook */
+# Bots use vehicles (notes/specs/2026-10-16-bots-infinite.md area 4; ae_bots_vehicle.c, .inc, the pure rules
+# ae_bots_vehicle_rules.c): a rider's position in the world, a gunner's weapon the vehicle's, a riding target's place,
+# the seat's entrance as the goal while a bot goes for one, the seat taken / left / the driving spike after the
+# objective's walk; debug.bot_vehicles
+port/linux/game/bots.c	ae_bots_vehicle_origin(&tick); /* AE hook */
+port/linux/game/bots.c	ae_bots_vehicle_weapon(bot, &tick); /* AE hook */
+port/linux/game/bots.c	ae_bots_vehicle_world_point(target_player->unit_index, &bot->target_last_position); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_vehicle_goal(bot, player_index, position, fighting)) return; /* AE hook */
+port/linux/game/bots.c	ae_bots_vehicle_move(bot, bot_index, &tick); /* AE hook */
+port/linux/src/port_config.c	{ "debug.bot_vehicles", _config_integer, "1", "HALO_BOT_VEHICLES", _environment_value, _platform_all, /* AE hook */

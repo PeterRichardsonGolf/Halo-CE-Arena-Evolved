@@ -70,7 +70,7 @@ int ae_bots_vehicle_seat_kind(int vehicle_class, int driver_flag, int gunner_fla
 
 float ae_bots_vehicle_seat_score(struct ae_bots_vehicle_situation const *situation, struct ae_bots_seat_offer const *offer)
 {
-	float near;
+	float near, notice;
 
 	if (!situation || !offer || offer->seat <= AE_BOTS_SEAT_NONE || offer->seat >= AE_BOTS_SEAT_KINDS ||
 		!offer->alive || !offer->upright || offer->enemy_aboard || offer->driver == AE_BOTS_DRIVER_ENEMY ||
@@ -79,12 +79,14 @@ float ae_bots_vehicle_seat_score(struct ae_bots_vehicle_situation const *situati
 		return 0.0f;
 	}
 	/* (out of notice, or too fast to board: as Infinite's bots) */
-	if (!(offer->distance >= 0.0f && offer->distance <= AE_BOTS_VEHICLE_NOTICE) || !(offer->speed <= AE_BOTS_VEHICLE_ENTER_SPEED))
+	notice = offer->driver == AE_BOTS_DRIVER_TEAMMATE ? AE_BOTS_VEHICLE_NOTICE_DRIVEN :
+		offer->seat == AE_BOTS_SEAT_DRIVER ? AE_BOTS_VEHICLE_NOTICE_DRIVE : AE_BOTS_VEHICLE_NOTICE;
+	if (!(offer->distance >= 0.0f && offer->distance <= notice) || !(offer->speed <= AE_BOTS_VEHICLE_ENTER_SPEED))
 		return 0.0f;
 	/* (a defender, the hill's holder stay; a fight it is winning goes on) */
 	if (situation->holds_place || (situation->fighting && situation->winning))
 		return 0.0f;
-	near = 1.0f - offer->distance / (AE_BOTS_VEHICLE_NOTICE * 2.0f);
+	near = 1.0f - offer->distance / (notice * 2.0f);
 	switch (offer->seat)
 	{
 	case AE_BOTS_SEAT_GUNNER:
@@ -117,8 +119,8 @@ float ae_bots_vehicle_seat_score(struct ae_bots_vehicle_situation const *situati
 		{
 			return 0.0f;
 		}
-		if (!(situation->goal_distance >= AE_BOTS_VEHICLE_DRIVE_GOAL) || !(offer->off_route >= 0.0f) ||
-			offer->off_route > AE_BOTS_VEHICLE_DRIVE_OFF_ROUTE)
+		if (!(situation->goal_distance >= AE_BOTS_VEHICLE_DRIVE_GOAL) || !(offer->detour >= 0.0f) ||
+			offer->detour > AE_BOTS_VEHICLE_DRIVE_DETOUR * situation->goal_distance + 8.0f)
 		{
 			return 0.0f;
 		}
@@ -223,8 +225,8 @@ void ae_bots_vehicle_drive(struct ae_bots_drive_input const *input, struct ae_bo
 		output->reverse_for = 1.5f;
 		return;
 	}
-	/* (a sharp turn ahead: slower the more it must turn) */
-	output->throttle = error < 0.5f ? 1.0f : error < 1.2f ? 0.6f : 0.35f;
+	/* (a turn: a little slower the more it must turn; a Warthog turns only while it rolls) */
+	output->throttle = error < 0.5f ? 1.0f : error < 1.2f ? 0.8f : 0.6f;
 	if (input->waypoint_distance < 5.0f && (input->next_turn > 1.0f || input->next_turn < -1.0f))
 	{
 		if (input->speed > 8.0f)

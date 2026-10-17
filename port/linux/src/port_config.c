@@ -1305,6 +1305,10 @@ static const struct config_setting config_settings[] =
 	{ "debug.bot_trace", _config_integer, "0", "HALO_BOT_TRACE", _environment_value, _platform_all,
 		"Log each bot's state (bots.count) every this many seconds: where it is\n"
 		"and goes, its path, target and weapon; 0 never." },
+	{ "debug.bot_vehicles", _config_integer, "1", "HALO_BOT_VEHICLES", _environment_value, _platform_all, /* AE hook */
+		"Bots and vehicles: 0 they leave them alone, 1 they take a Warthog's or a\n"
+		"turret's gun and ride with a teammate (the default), 2 they also drive\n"
+		"a Warthog or Ghost (a test: not good enough to play yet)." },
 	{ "debug.update_answer", _config_string, "\"\"", "HALO_UPDATE_ANSWER", _environment_value, _platform_desktop,
 		"The answer to the new version question, for automated tests: \"yes\",\n"
 		"\"no\" or \"never\" (do not ask again, confirmed); empty asks." },

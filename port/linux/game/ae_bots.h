@@ -24,6 +24,8 @@ lists them). Included after cseries.h.
 
 /* the objective modes' play, and which gametypes bots play (ae_bots_objective.c) */
 #include "ae_bots_objective.h"
+/* the bots' vehicles: seats taken, ridden, left; the driving spike (ae_bots_vehicle.c) */
+#include "ae_bots_vehicle.h"
 
 /* (bots.c's bots_weapon_kind, once a map for each weapon definition) what bots.c made of the weapon by its tag's
 name, changed for a weapon AE knows better: its value to a bot, the ticks between its trigger's pulls (0: held in

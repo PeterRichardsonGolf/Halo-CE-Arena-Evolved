@@ -1698,6 +1698,7 @@ static void bots_choose_goal(struct bots_bot *bot, long player_index, real_point
 {
 	long now = game_time_get();
 
+	if (ae_bots_vehicle_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (ae_bots_objective_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (!fighting && bot->target_player_index != NONE && bot->target_last_surface_index != NONE &&
 		now - bot->target_seen_tick < TICKS_PER_SECOND * 8)
@@ -1916,6 +1917,7 @@ static void bots_bot_look(struct bots_bot *bot, struct bots_tick *tick)
 			bot->target_player_index = target;
 			bot->target_seen_tick = tick->now;
 			bot->target_last_position = target_object->object.position;
+			ae_bots_vehicle_world_point(target_player->unit_index, &bot->target_last_position); /* AE hook */
 			surface_index = bots_unit_surface(target_player->unit_index, &ground);
 			if (surface_index != NONE)
 				bot->target_last_surface_index = surface_index;
@@ -2286,6 +2288,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	tick.unit = unit_get(tick.player->unit_index);
 	tick.object = object_get(tick.player->unit_index);
 	tick.position = tick.object->object.position;
+	ae_bots_vehicle_origin(&tick); /* AE hook */
 	if (bot->unit_index != tick.player->unit_index)
 	{
 		/* (spawned: it looks the way its unit faces) */
@@ -2322,6 +2325,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 
 	bots_bot_look(bot, &tick);
 	tick.weapon_index = bots_current_weapon(tick.unit);
+	ae_bots_vehicle_weapon(bot, &tick); /* AE hook */
 	if (bot->target_player_index != NONE && tick.now - bot->target_seen_tick <= TICKS_PER_SECOND / 2)
 		bots_bot_fight(bot, &tick);
 	/* the goal, and the path to it (while fighting, only a weapon close by:
@@ -2342,6 +2346,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	}
 	bots_bot_weapons(bot, &tick);
 	ae_bots_objective_move(bot, bot_index, &tick); /* AE hook */
+	ae_bots_vehicle_move(bot, bot_index, &tick); /* AE hook */
 	bots_bot_unstick(bot, &tick);
 
 	if (tick.moving)

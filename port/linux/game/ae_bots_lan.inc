@@ -8,14 +8,16 @@ of a local game, and its tick comes from the host's update
 (ae_lan_bots_action) instead of bots_update_actions. What bots_update_actions
 does once a tick for a local game's bots is bots_ae_lan_tick's, what it does
 for each bot bots_ae_lan_drive's. It also brings in, at bots.c's end too, the
-bots' fight log (ae_bots_events.inc) and the fight by level's glue
-(ae_bots_combat.inc).
+bots' fight log (ae_bots_events.inc), the fight by level's glue
+(ae_bots_combat.inc), the objective play's (ae_bots_objective.inc) and the
+vehicles' (ae_bots_vehicle.inc, after the objective's: it reads its state).
 */
 
 #include "ae_lan_bots.h"
 #include "ae_bots_events.inc"
 #include "ae_bots_combat.inc"
 #include "ae_bots_objective.inc"
+#include "ae_bots_vehicle.inc"
 
 void bots_ae_lan_tick(void)
 {
