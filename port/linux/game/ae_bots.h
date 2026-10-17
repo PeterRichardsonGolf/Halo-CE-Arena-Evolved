@@ -11,15 +11,19 @@ lists them). Included after cseries.h.
   (kept, not swapped for an assault rifle lying near), at a rifle's distance,
   pulled once a burst as a player pulls it (ae_burst_rifle fires three
   rounds a new pull; a held trigger fires one burst).
-- The lobby: bots play Slayer only, so a local game of another gametype
-  (AE JUGGER is the oddball engine's, CTF, King, Race) has none; halo.log
-  says so, once for each gametype the lobby is on.
+- The lobby: bots play Slayer, CTF, Oddball (with reverse tag and
+  juggernaut, AE JUGGER's too), King of the Hill and Race
+  (ae_bots_objective.c); a local game of a gametype they do not play has
+  none, and halo.log says so, once for each gametype the lobby is on.
 - Delta Stats (network.report_events): a game with bots is not recorded nor
   sent; its scores are not people's.
 */
 
 #ifndef __AE_BOTS_H
 #define __AE_BOTS_H
+
+/* the objective modes' play, and which gametypes bots play (ae_bots_objective.c) */
+#include "ae_bots_objective.h"
 
 /* (bots.c's bots_weapon_kind, once a map for each weapon definition) what bots.c made of the weapon by its tag's
 name, changed for a weapon AE knows better: its value to a bot, the ticks between its trigger's pulls (0: held in

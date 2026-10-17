@@ -15,6 +15,7 @@ bots' fight log (ae_bots_events.inc) and the fight by level's glue
 #include "ae_lan_bots.h"
 #include "ae_bots_events.inc"
 #include "ae_bots_combat.inc"
+#include "ae_bots_objective.inc"
 
 void bots_ae_lan_tick(void)
 {

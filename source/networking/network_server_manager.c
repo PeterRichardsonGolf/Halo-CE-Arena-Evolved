@@ -1583,7 +1583,7 @@ static void network_game_server_port_bots(
 
 	if (server->state != _network_game_server_state_pregame || server->sent_start_game_message)
 		return;
-	if (network_game_is_splitscreen_local() && server->game.variant.game_engine_index == game_engine_slayer)
+	if (network_game_is_splitscreen_local() && ae_bots_engine_played(server->game.variant.game_engine_index)) /* AE hook */
 		wanted = PIN(bots_wanted_count(), 0, BOTS_MAXIMUM);
 	for (bot_index = 0; bot_index < BOTS_MAXIMUM; bot_index++)
 		slot_of_bot[bot_index] = NONE;

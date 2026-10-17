@@ -209,6 +209,10 @@ play:
   are down, backing off when beaten, teammates told where you are at HEROIC
   and up. SHOOTING SKILL and
   MOVEMENT SKILL set the aim and the movement to levels of their own.
+  screen game, up to 3 in a LAN game you host; RECRUIT (for new and
+  young players), EASY, NORMAL, HEROIC or LEGENDARY. They play every
+  mode: Slayer, CTF (taking, carrying, returning and defending the flag),
+  Oddball, King of the Hill, Juggernaut and Race.
 - SETTINGS from the pause menu in the campaign, for each player in split
   screen, changing that player's own profile; in a match one player edits
   a profile at a time, and B closes only your own pause.

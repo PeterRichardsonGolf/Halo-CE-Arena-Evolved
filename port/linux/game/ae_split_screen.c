@@ -16,6 +16,7 @@ Multiplayer > SPLIT SCREEN in the PC menus (ae_split_screen.h).
 
 #include "ae_split_screen.h"
 #include "bots.h"
+#include "ae_bots_objective.h"
 
 int config_write(const char *name, const char *value);
 void platform_log(char const *format, ...);
@@ -95,7 +96,7 @@ static void spinner_save(struct widget_instance *spinner)
 	setting->loaded_index = index;
 }
 
-void ae_split_screen_lobby_update(struct widget_instance *list, boolean teams, boolean slayer)
+void ae_split_screen_lobby_update(struct widget_instance *list, boolean teams, long game_engine_index)
 {
 	boolean local = network_game_is_splitscreen_local();
 	short row;
@@ -107,7 +108,7 @@ void ae_split_screen_lobby_update(struct widget_instance *list, boolean teams, b
 
 		if (!widget)
 			continue;
-		widget->visible = local && slayer && (row != BOT_ROW_TEAMS || teams);
+		widget->visible = local && ae_bots_engine_played(game_engine_index) && (row != BOT_ROW_TEAMS || teams);
 		if (!widget->visible)
 			continue;
 		strcpy(spinner_name, bot_rows[row]);

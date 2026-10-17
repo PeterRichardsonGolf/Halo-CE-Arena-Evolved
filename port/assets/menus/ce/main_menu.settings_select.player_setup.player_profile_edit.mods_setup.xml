@@ -164,7 +164,7 @@
 		<string text="@15"/>
 		<string text="@18"/>
 		<string text="@21"/>
-		<string text="Computer players in Slayer: split screen games,\nand up to 3 in a LAN game you host."/>
+		<string text="Computer players in every mode: split screen\ngames, and up to 3 in a LAN game you host."/>
 		<string text="One short line for the items spawning together,\nand the first one up. No beeps."/>
 		<string text="Items spawning together in one line where the\nvoice has one, the item beep and five to one."/>
 		<string text="Every item spawning together named, then each\none up in turn."/>

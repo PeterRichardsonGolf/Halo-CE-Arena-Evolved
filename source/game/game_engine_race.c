@@ -1703,3 +1703,4 @@ boolean game_engine_race_read_network_state(
 long ae_strip_race_flags_touched(long player_index) { return player_index == NONE || DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) >= MULTIPLAYER_MAXIMUM_PLAYERS ? 0 : count_bits_32(race_globals.lap_bit_vector[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)]); } /* AE hook */
 long ae_strip_race_flag_count(void) { return count_bits_32(race_globals.lap_completed_value); } /* AE hook */
 long ae_strip_race_rally_flag(void) { return race_globals.rally_flag; } /* AE hook */
+boolean ae_bots_race_can_touch(long player_index, long order) { return player_index != NONE && DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) < MULTIPLAYER_MAXIMUM_PLAYERS && order >= 0 && can_touch_team(player_index, order); } /* AE hook */

@@ -5580,7 +5580,7 @@ static void lobby_update(struct widget_instance *list)
 	visible_set(named(list, "lobby_button_shuffle", 0), ae_team_shuffle_shown()); /* AE hook */
 	/* (the buttons' focus, off Switch Team when it is hidden) */
 	focus_off_hidden(named(list, "lobby_button_bar", 0));
-	ae_split_screen_lobby_update(list, game && game->variant.universal_variant.teams, game && game->variant.game_engine_index == game_engine_slayer); /* AE hook */
+	ae_split_screen_lobby_update(list, game && game->variant.universal_variant.teams, game ? game->variant.game_engine_index : NONE); /* AE hook */
 	visible_set(named(description, "lobby_right_item", 0), game != NULL && state >= _client_state_pregame);
 	if (!game || state < _client_state_pregame)
 	{

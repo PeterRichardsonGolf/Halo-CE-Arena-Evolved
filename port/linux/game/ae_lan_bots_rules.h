@@ -18,7 +18,7 @@ host's tick where a pad's would go; they have no view, no HUD and no sound
 - A bot leaves one player slot of the game free, so that the game is never
   full for a machine that joins because of bots.
 - Bots only in a LAN lobby being set up (not a local split screen game, which
-  has bots.c's own; not a game hosted for the internet), of Slayer, once a
+  has bots.c's own; not a game hosted for the internet), of a gametype bots play, once a
   person of the host's machine is in it.
 */
 
@@ -31,8 +31,8 @@ host's tick where a pad's would go; they have no view, no HUD and no sound
 #define AE_LAN_BOTS_CONTROLLERS 4
 
 /* whether the lobby has bots at all: its setting-up (pregame, the start not yet sent), not a local game, not hosted
-for the internet, Slayer, and a person of the host's machine in it */
-int ae_lan_bots_eligible(int pregame, int local_game, int internet, int slayer, int host_has_person);
+for the internet, a gametype bots play (ae_bots_engine_played), and a person of the host's machine in it */
+int ae_lan_bots_eligible(int pregame, int local_game, int internet, int played, int host_has_person);
 
 /* the controller slots (bits 0-3) a bot may hold: none a person's nor one a pad wants to join on */
 unsigned ae_lan_bots_free_controllers(unsigned people_mask, unsigned wanting_mask);

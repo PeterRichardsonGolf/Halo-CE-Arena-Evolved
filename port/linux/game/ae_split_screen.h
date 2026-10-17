@@ -32,8 +32,9 @@ void ae_split_screen_server_settings(struct widget_instance *list);
 /* (menu_functions.c, "ss start game", after Server Setup's own) in a split screen game, the game's most players are
 the four people and the most bots; TRUE */
 unsigned char ae_split_screen_server_start(void);
-/* (menu_functions.c's lobby update) the bot rows: shown in a split screen game's lobby of a Slayer gametype (BOT
-TEAMS in a team game only), their values written to the settings as they change */
-void ae_split_screen_lobby_update(struct widget_instance *list, unsigned char teams, unsigned char slayer);
+/* (menu_functions.c's lobby update) the bot rows: shown in a split screen game's lobby of a gametype bots play
+(ae_bots_engine_played: Slayer, CTF, Oddball, King, Race; BOT TEAMS in a team game only), their values written to
+the settings as they change */
+void ae_split_screen_lobby_update(struct widget_instance *list, unsigned char teams, long game_engine_index);
 
 #endif

@@ -6,9 +6,9 @@ The bots of a LAN game's rules (ae_lan_bots_rules.h).
 
 #include "ae_lan_bots_rules.h"
 
-int ae_lan_bots_eligible(int pregame, int local_game, int internet, int slayer, int host_has_person)
+int ae_lan_bots_eligible(int pregame, int local_game, int internet, int played, int host_has_person)
 {
-	return pregame && !local_game && !internet && slayer && host_has_person;
+	return pregame && !local_game && !internet && played && host_has_person;
 }
 
 unsigned ae_lan_bots_free_controllers(unsigned people_mask, unsigned wanting_mask)

@@ -3,7 +3,8 @@ AE_BOTS.C
 
 Arena Evolved's side of the bots of local games (ae_bots.h): the pack's
 battle rifle in a bot's hands, the lobby's line when the gametype has no
-bots, and Delta Stats leaving bots' games alone. bots.c (OpenCE PR #367)
+bots (the objective modes' play: ae_bots_objective.c), and Delta Stats
+leaving bots' games alone. bots.c (OpenCE PR #367)
 stays upstream's but for the AE hook lines.
 */
 
@@ -63,7 +64,7 @@ void ae_bots_lobby_check(boolean local_pregame, long game_engine_index, wchar_t 
 	static char const *const engines[] = { "none", "CTF", "Slayer", "Oddball", "King of the Hill", "Race" };
 
 	/* (none: the lobby before its gametype is set) */
-	if (!local_pregame || config_integer("bots.count") <= 0 || game_engine_index == game_engine_slayer ||
+	if (!local_pregame || config_integer("bots.count") <= 0 || ae_bots_engine_played(game_engine_index) ||
 		game_engine_index == game_engine_none)
 	{
 		lobby.told = FALSE;
@@ -76,7 +77,7 @@ void ae_bots_lobby_check(boolean local_pregame, long game_engine_index, wchar_t 
 	for (index = 0; gametype_name && index < 11 && gametype_name[index]; index++)
 		name[index] = gametype_name[index] < 0x80 ? (char)gametype_name[index] : '?';
 	name[index] = 0;
-	platform_log("bots: none in this game: %s%s%s is a game of %s, not Slayer (bots play Slayer and Team Slayer only)",
+	platform_log("bots: none in this game: %s%s%s is a game of %s (bots play Slayer, CTF, Oddball, King and Race)",
 		name[0] ? "\"" : "", name[0] ? name : "the gametype", name[0] ? "\"" : "",
 		game_engine_index >= 0 && game_engine_index < (long)NUMBEROF(engines) ? engines[game_engine_index] : "another kind");
 }
