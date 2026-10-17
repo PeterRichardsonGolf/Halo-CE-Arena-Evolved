@@ -180,3 +180,49 @@ def test_bots_play_the_objective(tmp_path, test, seconds, expected):
     assert len(_bots(output)) == 5
     assert re.search(expected, output), f"no line {expected!r}"
     assert not re.search(r"assert|exception", output, re.I), "an assert or exception in the game's log"
+
+
+# ---------- vehicles (ae_bots_vehicle.c; notes/specs/2026-10-16-bots-infinite.md area 4)
+
+VEHICLE_LINE = re.compile(r"bots: vehicle tick \d+: seats taken gunner (\d+) passenger (\d+) driver (\d+) .*?"
+                          r"kills gunner (\d+) passenger (\d+) driver (\d+); riding s gunner (\d+) passenger (\d+) driver (\d+), "
+                          r"parked (\d+), fighting (\d+), longest ride (\d+) s")
+
+
+def test_bots_take_vehicle_seats(tmp_path):
+    """Team Slayer on Blood Gulch (Warthogs) with the driving spike: bots take seats, ride, fight from them and get
+    out; none stays for good in a parked vehicle"""
+    status, output = _play(tmp_path, "local:bloodgulch:team_slayer", 130, HALO_BOTS=7, HALO_BOT_VEHICLES=2)
+    assert status == 0, output[-3000:]
+    assert len(_bots(output)) == 7
+    taken = re.findall(r"bots: bot \d+ took the (\w+) seat of a (\w+)", output)
+    assert len(taken) >= 2, f"seats taken: {taken}"
+    lines = VEHICLE_LINE.findall(output)
+    assert lines, "no vehicle minute line"
+    # (Infinite's inactive vehicle: out after 15 s parked; a gun turret 8 s after its last fight)
+    for line in re.findall(r"left the [\w ]+ \(parked\) after ([\d.]+) s", output):
+        assert float(line) < 70.0
+    assert not re.search(r"assert|exception", output, re.I), "an assert or exception in the game's log"
+
+
+def test_no_vehicles_no_seats(tmp_path):
+    """A gametype without vehicles (AE FFA BALL: vehicle set none): no seat is looked for or taken"""
+    status, output = _play(tmp_path, "local:chillout", 70, HALO_NETWORK_TEST_GAMETYPE="AE FFA BALL", HALO_BOTS=5)
+    assert status == 0, output[-3000:]
+    assert len(_bots(output)) == 5
+    assert not re.search(r"bots: bot \d+ took the", output)
+    lines = VEHICLE_LINE.findall(output)
+    assert lines and all(int(value) == 0 for value in lines[-1][:9])
+
+
+def test_playfight_gunner_never_fires(tmp_path):
+    """PLAYFIGHT with vehicles: a bot in a Warthog's gun never fires it (the trigger is cleared after everything), no
+    bot drives, and no one is killed by a bot"""
+    status, output = _play(tmp_path, "local:bloodgulch:team_slayer", 90, HALO_BOTS=7, HALO_BOT_SKILL="legendary",
+                           HALO_BOT_PLAYFIGHT="true", HALO_BOT_VEHICLES=2, HALO_BOT_EVENTS="1")
+    assert status == 0, output[-3000:]
+    bots = _bots(output)
+    assert len(bots) == 7
+    assert sum(kills for kills, _ in bots.values()) == 0
+    assert not re.search(r"bot event: .* ev=(shot|first_shot|melee|throw|hit) ", output)
+    assert not re.search(r"took the driver seat", output)

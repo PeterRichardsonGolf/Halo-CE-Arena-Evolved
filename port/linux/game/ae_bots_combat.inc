@@ -248,10 +248,12 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 	struct object_datum *target = object_get(player_get(bot->target_player_index)->unit_index);
 	real own_shield = tick->object->object.shield_vitality, own_body = tick->object->object.body_vitality;
 	real target_shield = target->object.shield_vitality, target_body = target->object.body_vitality;
-	real to_target = (real)atan2(target->object.position.y - tick->position.y, target->object.position.x - tick->position.x);
+	/* (where it is in the world, a rider too: ae_bots_vehicle.c) */
+	real_point3d target_point = ae_bots_vehicle_point(player_get(bot->target_player_index)->unit_index);
+	real to_target = (real)atan2(target_point.y - tick->position.y, target_point.x - tick->position.x);
 	real confidence = ae_bots_combat_confidence(own_shield, own_body, target_shield, target_body, tick->target_distance,
 		bots_weapon_range(tick->weapon_index), tick->weapon_index != NONE ? bots_weapon_loaded(tick->weapon_index) : 1.0f,
-		tick->position.z - target->object.position.z);
+		tick->position.z - target_point.z);
 	int started, ended;
 	boolean new_fight = tick->now - state->last_fight_tick > TICKS_PER_SECOND * 2 || tick->now < state->last_fight_tick;
 	boolean retreating = ae_bots_combat_retreat_step(&state->retreat, level, confidence, own_shield, tick->now,
@@ -293,7 +295,7 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 
 	if (started)
 	{
-		boolean pathed = ae_bots_fight_retreat_goal(bot, tick, &target->object.position);
+		boolean pathed = ae_bots_fight_retreat_goal(bot, tick, &target_point);
 
 		ae_bots_combat_count(AE_BOTS_COMBAT_RETREATS);
 		snprintf(extra, sizeof(extra), "state=start conf=%.2f path=%d", confidence, pathed ? 1 : 0);

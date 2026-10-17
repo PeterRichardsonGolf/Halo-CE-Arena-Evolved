@@ -98,8 +98,9 @@ float ae_bots_vehicle_seat_score(struct ae_bots_vehicle_situation const *situati
 			return 0.0f;
 		if (offer->driver == AE_BOTS_DRIVER_TEAMMATE)
 			return 0.9f * near;
-		on_way = offer->off_route >= 0.0f ? offer->off_route <= AE_BOTS_VEHICLE_OFF_ROUTE :
-			offer->distance <= AE_BOTS_VEHICLE_NEAR_NO_GOAL;
+		/* (on its way; or near while it loses a fight: a gun's seat, whatever its way) */
+		on_way = situation->fighting || (offer->off_route >= 0.0f ? offer->off_route <= AE_BOTS_VEHICLE_OFF_ROUTE :
+			offer->distance <= AE_BOTS_VEHICLE_NEAR_NO_GOAL);
 		if (!on_way)
 			return 0.0f;
 		return (offer->vehicle_class == AE_BOTS_VEHICLE_TURRET ? 0.5f : 0.6f) * near;

@@ -96,6 +96,12 @@ static void test_gunner(void)
 	/* off its way: not */
 	o.off_route = 4.5f;
 	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
+	/* ... unless it is losing a fight (a gun's seat near) */
+	s.fighting = 1;
+	CHECK(ae_bots_vehicle_seat_score(&s, &o) > 0.0f);
+	s.winning = 1;
+	CHECK(ae_bots_vehicle_seat_score(&s, &o) == 0.0f);
+	s = situation();
 	/* ... but with a teammate at the wheel, yes, and more */
 	o.driver = AE_BOTS_DRIVER_TEAMMATE;
 	score = ae_bots_vehicle_seat_score(&s, &o);

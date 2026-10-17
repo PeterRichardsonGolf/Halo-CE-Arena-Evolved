@@ -10,7 +10,8 @@ port/linux/tests/ae_bots_vehicle_rules_test.c.
 Seats, as a player takes them (the action button at the seat's entrance):
 - GUNNER: a free gunner seat (a Warthog's chain gun, a gun turret) of a vehicle
   near the bot (Halo Infinite's bots notice vehicles within 10 units) and a few
-  units off its way, or of a vehicle a teammate drives (within 15); never while it is
+  units off its way (or anywhere within 10 while it is losing a fight), or of a
+  vehicle a teammate drives (within 15); never while it is
   winning a fight (it fights on), never for a bot that holds a place (a CTF
   defender, the hill's holder) or holds the objective in its hands (a trigger
   pull drops the flag or the ball, players.c: a carrier never pulls one).

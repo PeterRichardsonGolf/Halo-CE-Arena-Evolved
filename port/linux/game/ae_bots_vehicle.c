@@ -61,6 +61,15 @@ void ae_bots_vehicle_world_point(long object_index, real_point3d *point)
 		object_get_origin(object_index, point);
 }
 
+real_point3d ae_bots_vehicle_point(long object_index)
+{
+	real_point3d point;
+
+	point.x = point.y = point.z = 0.0f;
+	ae_bots_vehicle_world_point(object_index, &point);
+	return point;
+}
+
 int ae_bots_vehicle_class(long vehicle_index)
 {
 	struct object_datum *vehicle = (struct object_datum *)object_try_and_get_and_verify_type(vehicle_index,
@@ -114,6 +123,8 @@ static struct
 	long parked_ticks;
 	long fighting_ticks;
 	real longest_ride;
+	/* how far the bots drove (units) */
+	real driven;
 	/* entries by bot */
 	long bot_entries[BOTS_MAXIMUM];
 } ae_bots_vehicle_totals;
@@ -155,7 +166,7 @@ void ae_bots_vehicle_count_exit(long bot_index, int vehicle_class, int reason, r
 		ae_bots_vehicle_leave_name(reason), seconds);
 }
 
-void ae_bots_vehicle_count_tick(long bot_index, int seat, boolean parked, boolean fighting)
+void ae_bots_vehicle_count_tick(long bot_index, int seat, boolean parked, boolean fighting, real speed)
 {
 	(void)bot_index;
 	ae_bots_vehicle_counts_now();
@@ -165,6 +176,8 @@ void ae_bots_vehicle_count_tick(long bot_index, int seat, boolean parked, boolea
 		ae_bots_vehicle_totals.parked_ticks++;
 	if (fighting)
 		ae_bots_vehicle_totals.fighting_ticks++;
+	if (seat == AE_BOTS_SEAT_DRIVER)
+		ae_bots_vehicle_totals.driven += speed / TICKS_PER_SECOND;
 }
 
 void ae_bots_vehicle_count_kill(long bot_index, int seat)
@@ -195,7 +208,7 @@ void ae_bots_vehicle_report(void)
 	platform_log("bots: vehicle tick %ld: seats taken gunner %ld passenger %ld driver %ld (warthog %ld, rocket warthog %ld, "
 		"ghost %ld, turret %ld, other %ld); exits wrecked %ld flipped %ld no driver %ld parked %ld there %ld away %ld "
 		"hold %ld stuck %ld; kills gunner %ld passenger %ld driver %ld; riding s gunner %ld passenger %ld driver %ld, "
-		"parked %ld, fighting %ld, longest ride %.0f s; by bot%s",
+		"parked %ld, fighting %ld, longest ride %.0f s, driven %.0f units; by bot%s",
 		now, ae_bots_vehicle_totals.entries[AE_BOTS_SEAT_GUNNER], ae_bots_vehicle_totals.entries[AE_BOTS_SEAT_PASSENGER],
 		ae_bots_vehicle_totals.entries[AE_BOTS_SEAT_DRIVER], ae_bots_vehicle_totals.entries_by_class[AE_BOTS_VEHICLE_WARTHOG],
 		ae_bots_vehicle_totals.entries_by_class[AE_BOTS_VEHICLE_ROCKET_WARTHOG],
@@ -212,5 +225,5 @@ void ae_bots_vehicle_report(void)
 		ae_bots_vehicle_totals.riding_ticks[AE_BOTS_SEAT_PASSENGER] / TICKS_PER_SECOND,
 		ae_bots_vehicle_totals.riding_ticks[AE_BOTS_SEAT_DRIVER] / TICKS_PER_SECOND,
 		ae_bots_vehicle_totals.parked_ticks / TICKS_PER_SECOND, ae_bots_vehicle_totals.fighting_ticks / TICKS_PER_SECOND,
-		ae_bots_vehicle_totals.longest_ride, line);
+		ae_bots_vehicle_totals.longest_ride, ae_bots_vehicle_totals.driven, line);
 }

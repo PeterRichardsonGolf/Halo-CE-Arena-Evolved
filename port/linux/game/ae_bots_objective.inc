@@ -113,7 +113,7 @@ static boolean ae_bots_objective_spotted(struct player_datum *player, long enemy
 	struct player_datum *enemy = player_try_and_get(enemy_player_index);
 	struct data_iterator iterator;
 	struct player_datum *other;
-	real_point3d const *enemy_position;
+	real_point3d enemy_position;
 	long index;
 
 	if (!enemy || enemy->unit_index == NONE)
@@ -131,12 +131,18 @@ static boolean ae_bots_objective_spotted(struct player_datum *player, long enemy
 		if (mate->target_player_index == enemy_player_index && now - mate->target_seen_tick < AE_BOTS_OBJECTIVE_SPOTTED_TICKS)
 			return TRUE;
 	}
-	enemy_position = &object_get(enemy->unit_index)->object.position;
+	/* (where they are in the world: a rider's object position is its place in its vehicle, ae_bots_vehicle.c) */
+	enemy_position = ae_bots_vehicle_point(enemy->unit_index);
 	data_iterator_new(&iterator, player_data);
 	while ((other = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 	{
-		if (other->unit_index != NONE && other->team_index == player->team_index &&
-			bots_distance3d(&object_get(other->unit_index)->object.position, enemy_position) < AE_BOTS_OBJECTIVE_SHARED_DISTANCE)
+		real_point3d other_position;
+
+		if (other->unit_index == NONE)
+			continue;
+		other_position = ae_bots_vehicle_point(other->unit_index);
+		if (other->team_index == player->team_index &&
+			bots_distance3d(&other_position, &enemy_position) < AE_BOTS_OBJECTIVE_SHARED_DISTANCE)
 		{
 			return TRUE;
 		}
@@ -165,6 +171,7 @@ static long ae_bots_objective_nearest_holder(struct player_datum *player, struct
 	data_iterator_new(&iterator, player_data);
 	while ((other = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 	{
+		real_point3d other_position;
 		real d;
 
 		if (other == player || other->unit_index == NONE ||
@@ -173,7 +180,8 @@ static long ae_bots_objective_nearest_holder(struct player_datum *player, struct
 		{
 			continue;
 		}
-		d = bots_distance3d(position, &object_get(other->unit_index)->object.position);
+		other_position = ae_bots_vehicle_point(other->unit_index);
+		d = bots_distance3d(position, &other_position);
 		if (best == NONE || d < *distance)
 		{
 			best = iterator.datum_index;
@@ -237,7 +245,11 @@ static short ae_bots_objective_think(struct bots_bot *bot, long bot_index, real_
 		struct player_datum *target = player_try_and_get(bot->target_player_index);
 
 		if (target && target->unit_index != NONE)
-			situation.enemy_distance = (float)bots_distance3d(position, &object_get(target->unit_index)->object.position);
+		{
+			real_point3d target_position = ae_bots_vehicle_point(target->unit_index);
+
+			situation.enemy_distance = (float)bots_distance3d(position, &target_position);
+		}
 	}
 	situation.carrying = ae_bots_objective_player_carries(snapshot, bot->player_index);
 
@@ -268,7 +280,7 @@ static short ae_bots_objective_think(struct bots_bot *bot, long bot_index, real_
 
 				if (carrier && carrier->unit_index != NONE && !bots_is_enemy(player, carrier))
 				{
-					targets[AE_BOTS_ESCORT] = object_get(carrier->unit_index)->object.position;
+					targets[AE_BOTS_ESCORT] = ae_bots_vehicle_point(carrier->unit_index);
 					target_players[AE_BOTS_ESCORT] = flag->carrier_player_index;
 					situation.ally_carrier = (float)bots_distance3d(position, &targets[AE_BOTS_ESCORT]);
 				}
@@ -323,15 +335,14 @@ static short ae_bots_objective_think(struct bots_bot *bot, long bot_index, real_
 		if (holder != NONE)
 		{
 			situation.enemy_carrier = (float)distance;
-			targets[AE_BOTS_BALL_CHASE] = targets[AE_BOTS_JUGG_HUNT] =
-				object_get(player_get(holder)->unit_index)->object.position;
+			targets[AE_BOTS_BALL_CHASE] = targets[AE_BOTS_JUGG_HUNT] = ae_bots_vehicle_point(player_get(holder)->unit_index);
 			target_players[AE_BOTS_BALL_CHASE] = target_players[AE_BOTS_JUGG_HUNT] = holder;
 		}
 		holder = ae_bots_objective_nearest_holder(player, snapshot, position, FALSE, &distance);
 		if (holder != NONE)
 		{
 			situation.ally_carrier = (float)distance;
-			targets[AE_BOTS_ESCORT] = object_get(player_get(holder)->unit_index)->object.position;
+			targets[AE_BOTS_ESCORT] = ae_bots_vehicle_point(player_get(holder)->unit_index);
 			target_players[AE_BOTS_ESCORT] = holder;
 		}
 		break;
@@ -423,13 +434,13 @@ static boolean ae_bots_objective_away(struct bots_bot *bot, real_point3d const *
 	data_iterator_new(&iterator, player_data);
 	while ((other = (struct player_datum *)data_iterator_next(&iterator)) != NULL && enemy_count < (long)NUMBEROF(enemies))
 	{
-		struct object_datum *object;
+		real_point3d other_position;
 
 		if (!bots_is_enemy(player, other))
 			continue;
-		object = object_get(other->unit_index);
-		if (bots_distance3d(&object->object.position, position) < AE_BOTS_OBJECTIVE_TRACKER_RANGE)
-			enemies[enemy_count++] = object->object.position;
+		other_position = ae_bots_vehicle_point(other->unit_index);
+		if (bots_distance3d(&other_position, position) < AE_BOTS_OBJECTIVE_TRACKER_RANGE)
+			enemies[enemy_count++] = other_position;
 	}
 	for (index = 0; index < bots_globals.roam_point_count; index++)
 	{

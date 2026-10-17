@@ -42,6 +42,8 @@ long ae_bots_vehicle_setting(void);
 /* the point in the world of an object, a rider's included (its parent's node matrix); bots_bot_look's hook:
 where a riding target is */
 void ae_bots_vehicle_world_point(long object_index, real_point3d *point);
+/* the same, returned (the objective play's and the fight's reads of where a player is) */
+real_point3d ae_bots_vehicle_point(long object_index);
 /* the vehicle's kind (its tag's name) and the role of one of its seats (its flags) */
 int ae_bots_vehicle_class(long vehicle_index);
 int ae_bots_vehicle_seat_role(long vehicle_index, short seat_index);
@@ -51,7 +53,8 @@ short ae_bots_vehicle_seat_count(long vehicle_index);
 
 void ae_bots_vehicle_count_entry(long bot_index, int vehicle_class, int seat);
 void ae_bots_vehicle_count_exit(long bot_index, int vehicle_class, int reason, real seconds);
-void ae_bots_vehicle_count_tick(long bot_index, int seat, boolean parked, boolean fighting);
+/* a rider's tick: its seat, its vehicle parked, it fights, the vehicle's speed (units a second) */
+void ae_bots_vehicle_count_tick(long bot_index, int seat, boolean parked, boolean fighting, real speed);
 void ae_bots_vehicle_count_kill(long bot_index, int seat);
 /* each minute's line */
 void ae_bots_vehicle_report(void);

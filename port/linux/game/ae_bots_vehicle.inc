@@ -275,7 +275,8 @@ static void ae_bots_vehicle_look(struct bots_bot *bot, long bot_index, struct bo
 	situation.winning = ae_bots_vehicle_winning(bot, tick);
 	situation.carrying = ae_bots_vehicle_carrying(bot, bot_index);
 	situation.holds_place = ae_bots_vehicle_holds_place(behaviour);
-	situation.may_drive = ae_bots_vehicle_setting() >= 2;
+	/* (PLAYFIGHT's bots never drive: a Warthog runs people over) */
+	situation.may_drive = ae_bots_vehicle_setting() >= 2 && !ae_bots_playfight();
 	situation.goal_distance = goal ? (float)bots_distance3d(&tick->position, &bot->goal_point) : -1.0f;
 	if (situation.holds_place || (situation.fighting && situation.winning))
 		return;
@@ -689,7 +690,7 @@ static void ae_bots_vehicle_ride(struct bots_bot *bot, long bot_index, struct bo
 			ae_bots_vehicle_count_kill(bot_index, state->seat);
 	}
 	state->kills = tick->player->statistics.kills[0];
-	ae_bots_vehicle_count_tick(bot_index, state->seat, parked, tick->fighting);
+	ae_bots_vehicle_count_tick(bot_index, state->seat, parked, tick->fighting, speed);
 
 	csmemset(&ride, 0, sizeof(ride));
 	ride.seat = state->seat;
