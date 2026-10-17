@@ -103,6 +103,47 @@ static boolean ae_bots_objective_defender(struct bots_bot *bot, struct player_da
 	return rank < ae_bots_ctf_defenders((int)team_size);
 }
 
+/* whether the bot's team has the enemy spotted (as Infinite's bots hunt a flag carrier only while it is): a bot of
+the team saw it in the last 3 seconds, or a teammate is within 10 units of it (Infinite's shared awareness distance) */
+#define AE_BOTS_OBJECTIVE_SPOTTED_TICKS (3 * TICKS_PER_SECOND)
+#define AE_BOTS_OBJECTIVE_SHARED_DISTANCE 10.0f
+
+static boolean ae_bots_objective_spotted(struct player_datum *player, long enemy_player_index, long now)
+{
+	struct player_datum *enemy = player_try_and_get(enemy_player_index);
+	struct data_iterator iterator;
+	struct player_datum *other;
+	real_point3d const *enemy_position;
+	long index;
+
+	if (!enemy || enemy->unit_index == NONE)
+		return FALSE;
+	for (index = 0; index < BOTS_MAXIMUM; index++)
+	{
+		struct bots_bot *mate = &bots_globals.bots[index];
+		struct player_datum *mate_player;
+
+		if (mate->player_index == NONE || (mate_player = player_try_and_get(mate->player_index)) == NULL ||
+			mate_player->team_index != player->team_index)
+		{
+			continue;
+		}
+		if (mate->target_player_index == enemy_player_index && now - mate->target_seen_tick < AE_BOTS_OBJECTIVE_SPOTTED_TICKS)
+			return TRUE;
+	}
+	enemy_position = &object_get(enemy->unit_index)->object.position;
+	data_iterator_new(&iterator, player_data);
+	while ((other = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		if (other->unit_index != NONE && other->team_index == player->team_index &&
+			bots_distance3d(&object_get(other->unit_index)->object.position, enemy_position) < AE_BOTS_OBJECTIVE_SHARED_DISTANCE)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 static void ae_bots_objective_target(struct ae_bots_objective_bot *state, real_point3d const *point, long object_index,
 	long player_index)
 {
@@ -238,11 +279,18 @@ static short ae_bots_objective_think(struct bots_bot *bot, long bot_index, real_
 		{
 			struct ae_bots_objective_flag const *flag = &snapshot->flags[own];
 
-			situation.own_flag_away = (float)bots_distance3d(position, &flag->position);
 			situation.own_flag_carried = flag->carrier_player_index != NONE;
 			targets[AE_BOTS_CTF_RETURN] = flag->position;
 			target_objects[AE_BOTS_CTF_RETURN] = flag->weapon_index;
 			target_players[AE_BOTS_CTF_RETURN] = flag->carrier_player_index;
+			/* (a carrier no one of its team has spotted: to where it will capture, to cut it off) */
+			if (situation.own_flag_carried && !ae_bots_objective_spotted(player, flag->carrier_player_index, now) &&
+				snapshot->flags[other].exists)
+			{
+				targets[AE_BOTS_CTF_RETURN] = snapshot->flags[other].stand;
+				target_players[AE_BOTS_CTF_RETURN] = NONE;
+			}
+			situation.own_flag_away = (float)bots_distance3d(position, &targets[AE_BOTS_CTF_RETURN]);
 		}
 		/* the own stand: where it captures, and defends */
 		if (snapshot->flags[own].exists)
