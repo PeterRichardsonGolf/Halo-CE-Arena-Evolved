@@ -11143,6 +11143,7 @@ void game_engine_postspawn_player_update(
 				break;
 			}
 
+			if (global_variant.universal_variant.starting_frags >= 1 && global_variant.universal_variant.starting_frags <= 4) { fragmentation_grenade_count = MAX(fragmentation_grenade_count, MIN(starting_fragmentation_grenade_count, fragmentation_grenade->maximum_count)); plasma_grenade_count = MAX(plasma_grenade_count, MIN(starting_plasma_grenade_count, plasma_grenade->maximum_count)); } /* AE hook */
 			starting_fragmentation_grenade_count = MIN(
 				starting_fragmentation_grenade_count,
 				fragmentation_grenade_count);

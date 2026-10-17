@@ -722,3 +722,5 @@ port/linux/game/bots.c	if (ae_bots_playfight()) tick.flags &= ~(FLAG(_unit_contr
 source/game/game_engine.c	#include "ae_hud_style.h" /* AE hook */
 source/game/game_engine.c	if (ae_hud_style_is_ae()) return; /* AE hook */
 source/interface/ui_widget_event_handler_functions.c	if (global_network_game_server_get() && (network_game_should_accept_remote_connections() == TRUE || ae_split_screen_hosting())) /* AE hook */
+# a gametype's own STARTING GRENADES (1-4) are not cut by CE's player-count rule (1 at 9+ players), only by the map's maximum (owner 2026-10-16: AE gametypes with bots started with 1)
+source/game/game_engine.c	if (global_variant.universal_variant.starting_frags >= 1 && global_variant.universal_variant.starting_frags <= 4) { fragmentation_grenade_count = MAX(fragmentation_grenade_count, MIN(starting_fragmentation_grenade_count, fragmentation_grenade->maximum_count)); plasma_grenade_count = MAX(plasma_grenade_count, MIN(starting_plasma_grenade_count, plasma_grenade->maximum_count)); } /* AE hook */
