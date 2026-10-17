@@ -158,6 +158,14 @@ MULTIPLAYER_ICONS = [
      _waves(50, 30, (9, 17)) +
      ['<path d="M50,50 V57 M15,57 H85 M15,57 V65 M50,57 V65 M85,57 V65" class="w"/>'] +
      _monitor(0, 65, 30, 21) + _monitor(35, 65, 30, 21) + _monitor(70, 65, 30, 21)),
+    # SPLIT SCREEN (AE): one screen split in four, a player in each quarter, on a stand (CO-OP's in two)
+    ("split_screen", [f'<clipPath id="split_screen_{i}"><rect x="{x}" y="{y}" width="40" height="31"/></clipPath>'
+                      for i, (x, y) in enumerate(((8, 12), (52, 12), (8, 47), (52, 47)))] +
+     ['<rect x="4" y="8" width="92" height="72" rx="3" class="b"/>'] +
+     [part for i, (cx, cy) in enumerate(((28, 30), (72, 30), (28, 65), (72, 65)))
+      for part in [f'<g clip-path="url(#split_screen_{i})">'] + _bust(cx, cy, 0.44) + ['</g>']] +
+     ['<line x1="4" y1="44" x2="96" y2="44" class="w"/>', '<line x1="50" y1="8" x2="50" y2="80" class="w"/>',
+      '<path d="M42,80 l-4,10 h24 l-4,-10 z" class="b"/>']),
     # CO-OP CAMPAIGN: one screen split in two, a player in each half
     ("coop", ['<clipPath id="coop_top"><rect x="12" y="14" width="76" height="30"/></clipPath>',
               '<clipPath id="coop_bottom"><rect x="12" y="46" width="76" height="28"/></clipPath>',
@@ -216,6 +224,7 @@ INK = {
     "direct_link": (3.5, 16.2, 96.5, 83.8),
     "internet_host": (4.8, 10.8, 97.2, 93.2),
     "lan_host": (-1.2, 10.2, 101.2, 94.2),
+    "split_screen": (2.2, 6.2, 97.8, 91.2),
     "coop": (2.2, 6.8, 97.8, 91.2),
     "edit_gametypes": (11.8, 2.2, 101.2, 91.8),
     "name": (2.8, 22.8, 97.2, 95.2),
@@ -282,6 +291,30 @@ def frame_paths(bitmap: str, index: int) -> tuple:
     return f"port_svg/{bitmap}__{index}.svg", f"ce/port/{bitmap}__{index}.png"
 
 
+# (AE) the split screen lobby's bot rows' band: the PC menus' own option row band (bitmaps/option_bkds, 512 wide:
+# its rounded ends kept, its middle shortened) at the lobby's row width, its two frames (the focused one outlined)
+LOBBY_BAND = "bitmaps/ae_option_bkds_lobby"
+LOBBY_BAND_WIDTH = 366
+
+
+def lobby_band(menus: Path) -> list:
+    """the band's frames, cut from the game's own (ce/shell/bitmaps/option_bkds__<n>.png, at 4 pixels a unit)"""
+    from PIL import Image
+    pngs = []
+    for frame in (0, 1):
+        source = Image.open(menus / "ce" / "shell" / "bitmaps" / f"option_bkds__{frame}.png").convert("RGBA")
+        width, height, end = LOBBY_BAND_WIDTH * 4, source.height, 96
+        band = Image.new("RGBA", (width, height))
+        band.paste(source.crop((0, 0, end, height)), (0, 0))
+        band.paste(source.crop((end, 0, end + width - 2 * end, height)), (end, 0))
+        band.paste(source.crop((source.width - end, 0, source.width, height)), (width - end, 0))
+        png = f"ce/port/{LOBBY_BAND}__{frame}.png"
+        (menus / png).parent.mkdir(parents=True, exist_ok=True)
+        band.save(menus / png)
+        pngs.append(png)
+    return pngs
+
+
 def write(menus: Path, scale: int = 4) -> list:
     """the SVGs and their drawings, where Art.own_frame puts them; the PNGs' paths"""
     pngs = []
@@ -293,7 +326,7 @@ def write(menus: Path, scale: int = 4) -> list:
             (menus / png).parent.mkdir(parents=True, exist_ok=True)
             subprocess.run(["rsvg-convert", "-z", str(scale), "-o", str(menus / png), str(menus / source)], check=True)
             pngs.append(png)
-    return pngs
+    return pngs + lobby_band(menus)
 
 
 if __name__ == "__main__":

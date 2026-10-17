@@ -2456,6 +2456,7 @@ char const *pc_menus_screen(
 			"pc\\main_menu\\multiplayer_type_select\\connected\\connected_map_select_wrapper" },
 		{ "ui\\shell\\main_menu\\multiplayer_type_select\\connected\\pregame\\connected_pregame_screen",
 			"pc\\main_menu\\multiplayer_type_select\\lobby\\lobby_screen" },
+		{ "ui\\shell\\main_menu\\multiplayer_type_select\\split_screen\\splitscreen_map_select_postgame_wrapper", "pc\\main_menu\\multiplayer_type_select\\connected\\connected_map_select_wrapper" }, /* AE hook */
 	};
 	short index;
 

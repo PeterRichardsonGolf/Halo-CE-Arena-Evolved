@@ -2358,6 +2358,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 		tick.flags &= ~(bot->previous_control_flags & pressed);
 		bot->previous_control_flags = tick.flags;
 	}
+	if (ae_bots_playfight()) tick.flags &= ~(FLAG(_unit_control_weapon_primary_trigger_bit) | FLAG(_unit_control_weapon_secondary_trigger_bit) | FLAG(_unit_control_throw_grenade_bit) | FLAG(_unit_control_use_equipment_bit)); /* AE hook */
 	action->control_flags = tick.flags;
 	action->primary_trigger = TEST_FLAG(tick.flags, _unit_control_weapon_primary_trigger_bit) ? 1.0f : 0.0f;
 	bots_bot_trace(bot, bot_index, &tick);

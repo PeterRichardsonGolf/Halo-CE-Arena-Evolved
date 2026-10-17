@@ -695,3 +695,25 @@ port/linux/game/ce_repairs.c	#include "ae_glue_ce_maps.h" /* AE hook */
 port/linux/game/ce_repairs.c	ae_ce_projectile_speeds(tag_instances, tag_count); /* AE hook */
 # CALLOUTS (AE's own row): item calls only where the gametype's TIMERS show the items (fairness audit 2026-10-16)
 port/linux/src/port_config.c	{ "game.callouts", _config_string, "\"off\"", "HALO_CALLOUTS", _environment_value, _platform_all, /* AE hook */
+# Multiplayer > SPLIT SCREEN from the PC menus (queue 117; ae_split_screen.c): hosted as LAN's Create Game, taking no
+# remote machine (a local split screen game), the gametype straight to the lobby, the lobby's last rows the bots'.
+port/linux/game/menu_functions.c	#include "ae_split_screen.h" /* AE hook */
+port/linux/game/menu_functions.c	ae_split_screen_chosen(name); /* AE hook */
+port/linux/game/menu_functions.c	strstr(name, "split_scr") ? _multiplayer_mode_host_lan : /* AE hook */
+port/linux/game/menu_functions.c	if (network_game_is_splitscreen_local()) return ae_split_screen_lobby_open(widget, gametype_choose(), widget_deleted); /* AE hook */
+port/linux/game/menu_functions.c	short ae_rows = ae_split_screen_lobby_rows(LOBBY_ROWS); /* AE hook */
+port/linux/game/menu_functions.c	list_scroll(list, &multiplayer.lobby_first, lobby_player_count, ae_rows); /* AE hook */
+port/linux/game/menu_functions.c	if (multiplayer.lobby_first > MAX(0, lobby_player_count - ae_rows)) /* AE hook */
+port/linux/game/menu_functions.c	multiplayer.lobby_first = (short)MAX(0, lobby_player_count - ae_rows); /* AE hook */
+port/linux/game/menu_functions.c	rows_update(list, (short)MIN(lobby_player_count, ae_rows), lobby_row_text); /* AE hook */
+port/linux/game/menu_functions.c	for (index = 0; row && index < MIN(lobby_player_count, ae_rows); row = row->next, index++) /* AE hook */
+port/linux/game/menu_functions.c	ae_split_screen_lobby_update(list, game && game->variant.universal_variant.teams, game && game->variant.game_engine_index == game_engine_slayer); /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	boolean ae_split_screen_hosting(void); /* AE hook */
+source/interface/ui_widget_event_handler_functions.c	if (network_game_port_pc_menus_hosting && ae_split_screen_hosting()) network_game_accept_remote_connections(FALSE); /* AE hook */
+source/interface/ui_widget.c	unsigned char ae_split_screen_hosting(void); /* AE hook */
+source/interface/ui_widget.c	if (global_network_game_server_get() && ae_split_screen_hosting()) network_game_server_pause_countdown(global_network_game_server_get(), TRUE); /* AE hook */
+source/interface/ui_widget.c	pc_menus_screen("ui\\shell\\main_menu\\multiplayer_type_select\\split_screen\\splitscreen_map_select_postgame_wrapper"), /* AE hook */
+port/linux/game/menu_tags.c	{ "ui\\shell\\main_menu\\multiplayer_type_select\\split_screen\\splitscreen_map_select_postgame_wrapper", "pc\\main_menu\\multiplayer_type_select\\connected\\connected_map_select_wrapper" }, /* AE hook */
+# PLAYFIGHT (queue 119, owner 2026-10-16): bots.playfight, the bots never shoot, throw or strike (ae_bots.c)
+port/linux/src/port_config.c	{ "bots.playfight", _config_boolean, "false", "HALO_BOT_PLAYFIGHT", _environment_value, _platform_all, /* AE hook */
+port/linux/game/bots.c	if (ae_bots_playfight()) tick.flags &= ~(FLAG(_unit_control_weapon_primary_trigger_bit) | FLAG(_unit_control_weapon_secondary_trigger_bit) | FLAG(_unit_control_throw_grenade_bit) | FLAG(_unit_control_use_equipment_bit)); /* AE hook */

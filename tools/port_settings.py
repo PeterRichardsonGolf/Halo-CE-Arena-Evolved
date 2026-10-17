@@ -449,6 +449,7 @@ SCREENS["video_settings/fov_viewmodels"] = {
 BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
 BOT_SKILLS = [("RECRUIT", "recruit"), ("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
 BOT_TEAMS = [("EVEN", "even"), ("AGAINST YOU", "against")]
+BOT_PLAYFIGHT = [("OFF", "false"), ("ON", "true")]
 _game_options = SCREENS["mods_setup"]
 _game_options["spacing"] = 24
 _game_options["categories"] = [
@@ -463,6 +464,9 @@ SCREENS["mods_setup/bots"] = {
          None),
         ("BOT SKILL:", "bots.skill", BOT_SKILLS,
          "How soon the bots react, how well they aim and\nhow far they see.", None),
+        # (AE: Infinite's Training Mode playfighting)
+        ("PLAYFIGHT:", "bots.playfight", BOT_PLAYFIGHT,
+         ["The bots fight back.", "The bots move, strafe and aim at you, but\nnever shoot: aim practice."], None),
         # (a help for each value)
         ("BOT TEAMS:", "bots.teams", BOT_TEAMS,
          ["In team games, the bots on both teams, evening\nthem with the players.",
@@ -969,13 +973,14 @@ def LOADOUT_HELPS(slot: str) -> list:
 
 STRING_OVERRIDES.update({
     f"{MT}/multiplayer_options": ["JOIN GAME", "CREATE GAME", "INTERNET", "LAN", "DIRECT LINK", "EDIT GAMETYPES",
-                                  "SERVER BROWSER", "CO-OP CAMPAIGN"],
+                                  "SERVER BROWSER", "CO-OP CAMPAIGN", "SPLIT SCREEN"],
     f"{MT}/multiplayer_option_descriptions": [
         "Browse the games on the\\nInternet.",
         "Join a multiplayer game on\\nyour LAN.",
         "Join a game by its invite link,\\nor one a Discord invite\\nreached.",
         "Host a game on the Internet:\\nplayers join by its invite\\nlink or Discord.",
         "Host a game on your LAN\\nonly.",
+        "Up to four players on this\\nPC in split screen, and up\\nto 15 bots.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
     ],
@@ -1070,7 +1075,9 @@ WIDGET_PATCHES = {
     ]},
     # (Co-op, after Create Game's: _coop)
     f"{MT}/multiplayer_type_select_list": {"insert_before": {
-        f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="309"/>'],
+        f"{MT}/multiplayer_type_gametypes_item": [
+            f'<child widget="{MT}/multiplayer_type_split_screen_item" y="302"/>',
+            f'<child widget="{MT}/multiplayer_type_coop_item" y="334"/>'],
     }},
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
     # maps, the first row's chooser's (_map_kind); B on the Map screen goes
@@ -1639,6 +1646,10 @@ def _lobby() -> list:
                                             ("description", f"{base}/lobby_desc")],
                      ['<data input="net splitscreen prejoin players"/>', '<data input="port lobby update"/>',
                       *rows,
+                      # (AE: a split screen game's bot rows, in the last four player rows' places, which it
+                      # hides: ae_split_screen.c)
+                      *[f'<child widget="{base}/ae_bots_{key}_row" x="20" y="{73 + 30 * (7 + index)}"/>'
+                        for index, (key, _, _, _, _) in enumerate(LOBBY_BOT_ROWS)],
                       f'<child widget="{base}/lobby_button_bar" y="414"/>'])
     for index in range(11):
         lines += _widget(f"{base}/list_item_{index}",
@@ -1648,6 +1659,26 @@ def _lobby() -> list:
                          ['<on event="left right" run="swap player team"/>',
                           '<child widget="main_menu/new_select/list_item_text" x="25"/>',
                           '<child widget="main_menu/new_select/list_item_arrows"/>'])
+    for key, caption, setting, strings, values in LOBBY_BOT_ROWS:
+        lines += _widget(f"{base}/ae_bots_{key}_row",
+                         # (Settings' option rows' look: the PC menus' own band, cut to the lobby's width
+                         # (tools/ae_menu_pictures.py's lobby_band), outlined when focused; the label at 13, the
+                         # spinner as far from the right end as Settings' is)
+                         [("width", 366), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                          ("bitmap", "bitmaps/ae_option_bkds_lobby"), ("color", "#FF2896FF")],
+                         [f'<child widget="{base}/ae_bots_{key}_row_label"/>',
+                          f'<child widget="{base}/ae_bots_{key}_row_spinner" x="174" y="1"/>'])
+        lines += _widget(f"{base}/ae_bots_{key}_row_label",
+                         [("type", "text"), ("controller", 1), ("width", 200), ("height", 22), ("text", caption),
+                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+        lines += _widget(f"{base}/ae_bots_{key}_row_spinner",
+                         [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
+                          ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                          ("strings", "|".join(strings)), ("setting", setting), ("values", "|".join(values)),
+                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
+                          ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                          ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
+                         ['<on event="created" run="port setting load"/>'])
     lines += _widget(f"{base}/lobby_desc", [("width", 640), ("height", 480)],
                      ['<child widget="main_menu/current_profile_name"/>',
                       f'<child widget="{base}/lobby_right_item" x="22" y="2"/>'])
@@ -1761,6 +1792,30 @@ def _lobby() -> list:
                          [f'<on event="a" run="{run}"/>', f'<on event="start" run="{run}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>'])
     return lines
+
+
+# (AE) a split screen game's lobby rows for its bots: the settings of Settings > Game Options > BOTS (bots.c)
+LOBBY_BOT_ROWS = [
+    ("count", "BOTS:", "bots.count", ["OFF"] + [str(n) for n in range(1, 16)], [str(n) for n in range(16)]),
+    ("skill", "BOT SKILL:", "bots.skill", ["RECRUIT", "EASY", "NORMAL", "HEROIC", "LEGENDARY"],
+     ["recruit", "easy", "normal", "heroic", "legendary"]),
+    ("playfight", "PLAYFIGHT:", "bots.playfight", ["OFF", "ON"], ["false", "true"]),
+    ("teams", "BOT TEAMS:", "bots.teams", ["EVEN", "AGAINST YOU"], ["even", "against"]),
+]
+
+
+def _split_screen() -> list:
+    """(AE) SPLIT SCREEN, after Create Game's LAN: hosted as LAN's Create Game, but a game on this PC only
+    (ae_split_screen.c), then the map and the gametype, then the lobby"""
+    return _widget(f"{MT}/multiplayer_type_split_screen_item",
+                   [("type", "text"), ("left", 51), ("width", 232), ("height", 32), ("bitmap", "bitmaps/list_item_bkd"),
+                    ("string_list", f"{MT}/multiplayer_options"), ("string_index", 8), ("font", "ui\\large_ui"),
+                    ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 5)],
+                   ['<on event="a" run="join controller to mp game"/>',
+                    f'<on event="a" run="mp type set mode" open="{MT}/connected/connected_map_select_wrapper"/>',
+                    '<on event="start" run="join controller to mp game"/>',
+                    f'<on event="start" run="mp type set mode" open="{MT}/connected/connected_map_select_wrapper"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>'])
 
 
 def _coop() -> list:
@@ -2256,6 +2311,7 @@ def multiplayer_files() -> dict:
         f"{MT}/server_settings".replace("/", ".") + ".xml": head + _server_settings() + ["</menus>", ""],
         f"{MT}/lobby".replace("/", ".") + ".xml": head + _lobby() + ["</menus>", ""],
         f"{MT}/coop".replace("/", ".") + ".xml": head + _coop() + ["</menus>", ""],
+        f"{MT}/split_screen".replace("/", ".") + ".port.xml": head + _split_screen() + ["</menus>", ""],
         ARENA_OPTIONS.replace("/", ".") + ".xml": head + _arena_options() + ["</menus>", ""],
         NHE_OPTIONS.replace("/", ".") + ".xml": head + _nhe_options() + ["</menus>", ""],
         INDICATOR_OPTIONS.replace("/", ".") + ".port.xml": head + _indicator_options_extras() + ["</menus>", ""],

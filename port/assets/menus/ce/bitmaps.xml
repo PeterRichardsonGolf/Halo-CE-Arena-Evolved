@@ -72,6 +72,10 @@
 		<frame png="ce/shell/bitmaps/option_bkds__0.png" width="512" height="32"/>
 		<frame png="ce/shell/bitmaps/option_bkds__1.png" width="512" height="32"/>
 	</bitmap>
+	<bitmap name="bitmaps/ae_option_bkds_lobby">
+		<frame png="ce/port/bitmaps/ae_option_bkds_lobby__0.png" width="366" height="32"/>
+		<frame png="ce/port/bitmaps/ae_option_bkds_lobby__1.png" width="366" height="32"/>
+	</bitmap>
 	<bitmap name="bitmaps/option_bkds_sm">
 		<frame png="ce/shell/bitmaps/option_bkds_sm__0.png" width="256" height="32"/>
 		<frame png="ce/shell/bitmaps/option_bkds_sm__1.png" width="256" height="32"/>
@@ -217,6 +221,7 @@
 		<frame png="ce/port/main_menu/multiplayer_type_select/mp_options__4.png" width="512" height="256"/>
 		<frame png="ce/port/main_menu/multiplayer_type_select/mp_options__5.png" width="512" height="256"/>
 		<frame png="ce/port/main_menu/multiplayer_type_select/mp_options__6.png" width="512" height="256"/>
+		<frame png="ce/port/main_menu/multiplayer_type_select/mp_options__7.png" width="512" height="256"/>
 	</bitmap>
 	<bitmap name="main_menu/multiplayer_type_select/server_settings/header_server_settings">
 		<frame png="ce/shell/main_menu/multiplayer_type_select/server_settings/header_server_settings__0.png" width="512" height="64"/>

@@ -183,6 +183,7 @@ enum
 #include "ae_rifle_menu.h" /* AE hook */
 #include "ae_input.h" /* AE hook */
 #include "ae_map_pictures.h" /* AE hook */
+#include "ae_split_screen.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
 #include "interface/ui_widget_instance.h"
@@ -2759,10 +2760,12 @@ static void multiplayer_mode_set(struct widget_instance *widget)
 {
 	char const *name = widget->name;
 
+	ae_split_screen_chosen(name); /* AE hook */
 	/* (an instance's name is cut to 31 characters:
 	"multiplayer_type_create_interne") */
 	multiplayer.mode =
 		strstr(name, "create_inter") ? _multiplayer_mode_host_internet :
+		strstr(name, "split_scr") ? _multiplayer_mode_host_lan : /* AE hook */
 		strstr(name, "create_lan") ? _multiplayer_mode_host_lan :
 		strstr(name, "join_lan") ? _multiplayer_mode_lan :
 		strstr(name, "join_direct") ? _multiplayer_mode_direct_link : _multiplayer_mode_server_browser;
@@ -5543,6 +5546,7 @@ static void lobby_update(struct widget_instance *list)
 	short state_data, state = client ? network_game_client_get_state(client, &state_data) : NONE;
 	wchar_t text[LOBBY_TEXT_LENGTH];
 	short index;
+	short ae_rows = ae_split_screen_lobby_rows(LOBBY_ROWS); /* AE hook */
 
 	lobby_player_count = 0;
 	for (index = 0; game && state >= _client_state_pregame && index < HALO_PORT_MAXIMUM_NETWORK_PLAYERS; index++)
@@ -5550,17 +5554,17 @@ static void lobby_update(struct widget_instance *list)
 		if (network_player_is_valid(&game->players[index]))
 			lobby_players[lobby_player_count++] = &game->players[index];
 	}
-	list_scroll(list, &multiplayer.lobby_first, lobby_player_count, LOBBY_ROWS);
-	if (multiplayer.lobby_first > MAX(0, lobby_player_count - LOBBY_ROWS))
-		multiplayer.lobby_first = (short)MAX(0, lobby_player_count - LOBBY_ROWS);
-	rows_update(list, (short)MIN(lobby_player_count, LOBBY_ROWS), lobby_row_text);
+	list_scroll(list, &multiplayer.lobby_first, lobby_player_count, ae_rows); /* AE hook */
+	if (multiplayer.lobby_first > MAX(0, lobby_player_count - ae_rows)) /* AE hook */
+		multiplayer.lobby_first = (short)MAX(0, lobby_player_count - ae_rows); /* AE hook */
+	rows_update(list, (short)MIN(lobby_player_count, ae_rows), lobby_row_text); /* AE hook */
 	lobby_rows_color(list, game);
 	/* (the rows' players, for their speaker icons) */
 	{
 		struct widget_instance *row = list->child;
 
 		lobby_icons.count = 0;
-		for (index = 0; row && index < MIN(lobby_player_count, LOBBY_ROWS); row = row->next, index++)
+		for (index = 0; row && index < MIN(lobby_player_count, ae_rows); row = row->next, index++) /* AE hook */
 		{
 			if (strncmp(row->name, "list_item_", 10))
 				break;
@@ -5575,6 +5579,7 @@ static void lobby_update(struct widget_instance *list)
 	visible_set(named(list, "lobby_button_shuffle", 0), ae_team_shuffle_shown()); /* AE hook */
 	/* (the buttons' focus, off Switch Team when it is hidden) */
 	focus_off_hidden(named(list, "lobby_button_bar", 0));
+	ae_split_screen_lobby_update(list, game && game->variant.universal_variant.teams, game && game->variant.game_engine_index == game_engine_slayer); /* AE hook */
 	visible_set(named(description, "lobby_right_item", 0), game != NULL && state >= _client_state_pregame);
 	if (!game || state < _client_state_pregame)
 	{
@@ -6859,6 +6864,7 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "mp profile set for game"))
 		{
+			if (network_game_is_splitscreen_local()) return ae_split_screen_lobby_open(widget, gametype_choose(), widget_deleted); /* AE hook */
 			return gametype_choose();
 		}
 		else if (!strcmp(name, "server settings init"))

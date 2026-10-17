@@ -3672,6 +3672,7 @@ int config_boolean(const char *name);
 /* port: whether the PC menus' Create Game is hosting (ui_widget_port_host),
 which chose internet or LAN, public or private, itself */
 static boolean network_game_port_pc_menus_hosting = FALSE;
+boolean ae_split_screen_hosting(void); /* AE hook */
 
 static boolean network_game_start_new_server(
 	struct widget_instance *widget,
@@ -3692,6 +3693,7 @@ static boolean network_game_start_new_server(
 	dispose_global_network_game_client();
 	player_ui_clear_multiplayer_variant();
 	network_game_accept_remote_connections(TRUE);
+	if (network_game_port_pc_menus_hosting && ae_split_screen_hosting()) network_game_accept_remote_connections(FALSE); /* AE hook */
 	if (!global_network_game_server_get())
 	{
 		game_engine_playlist_initialize();

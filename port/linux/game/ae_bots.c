@@ -22,6 +22,8 @@ stays upstream's but for the AE hook lines.
 
 /* port/linux/src/port_config.c */
 long config_integer(char const *name);
+int config_boolean(char const *name);
+unsigned long config_changes(void);
 void platform_log(char const *format, ...);
 
 /* ---------- the battle rifle */
@@ -114,4 +116,19 @@ boolean ae_bots_kept_from_delta(void)
 		platform_log("Delta Stats: a game with bots: not recorded");
 	logged = TRUE;
 	return TRUE;
+}
+
+/* ---------- PLAYFIGHT */
+
+boolean ae_bots_playfight(void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean playfight;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		playfight = config_boolean("bots.playfight") != 0;
+	}
+	return playfight;
 }

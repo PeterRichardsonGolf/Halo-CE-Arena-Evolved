@@ -71,8 +71,10 @@ LEFT_OUT = {
     "ui\\shell\\main_menu\\multiplayer_type_select\\checking_updates_screen_join",
 }
 # children moved: (parent, child) to (x, y); the main menu's Quit up into
-# Credits' place; Multiplayer's Edit Gametypes and its line down a row, for
-# Co-op (port_settings.WIDGET_PATCHES)
+# Credits' place; Multiplayer's rows 32 apart, not 33, and Edit Gametypes and
+# its line down two rows, for Split Screen and Co-op (port_settings.WIDGET_PATCHES)
+MULTIPLAYER_ROWS = {"join": (-32, 78), "join_internet": (0, 110), "join_lan": (0, 142), "join_direct": (0, 174),
+                    "create": (-32, 206), "create_internet": (0, 238), "create_lan": (0, 270), "gametypes": (0, 376)}
 CHILD_OFFSETS = {
     # (the main menu's column 18 up, for MENUS above QUIT: port_settings.WIDGET_PATCHES, _menus_select; its build
     # number stays beside QUIT, 9 below its top)
@@ -80,10 +82,11 @@ CHILD_OFFSETS = {
        for item, place in (("load_camp", (194, 229)), ("multiplayer", (192, 265)), ("profile", (192, 301)),
                            ("settings", (192, 337)), ("quit_game", (192, 409)))},
     ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 418),
-    ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
-     "ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_gametypes_item"): (0, 375),
+    **{("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
+        f"ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_{row}_item"): offset
+       for row, offset in MULTIPLAYER_ROWS.items()},
     ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_screen",
-     "ui\\shell\\main_menu\\blueline"): (64, 358),
+     "ui\\shell\\main_menu\\blueline"): (64, 370),
     # (the profile menu's rows: their tops are set, port_settings.PROFILE_ROWS and WIDGET_PATCHES)
     # the browser's rows up under the column titles, into the place of the
     # scroll up button (hidden: the list does not scroll)

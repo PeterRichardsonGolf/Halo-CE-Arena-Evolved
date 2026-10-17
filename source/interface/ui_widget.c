@@ -4991,6 +4991,7 @@ void display_error_damaged_media_text(
 
 /* port: menu_tags.c's */
 char const *pc_menus_screen(char const *name);
+unsigned char ae_split_screen_hosting(void); /* AE hook */
 
 void network_game_reset_to_pregame_ui(
 	void)
@@ -5011,8 +5012,9 @@ void network_game_reset_to_pregame_ui(
 		}
 		else
 		{
+			if (global_network_game_server_get() && ae_split_screen_hosting()) network_game_server_pause_countdown(global_network_game_server_get(), TRUE); /* AE hook */
 			if (!ui_widget_load_by_name_or_tag(
-				"ui\\shell\\main_menu\\multiplayer_type_select\\split_screen\\splitscreen_map_select_postgame_wrapper",
+				pc_menus_screen("ui\\shell\\main_menu\\multiplayer_type_select\\split_screen\\splitscreen_map_select_postgame_wrapper"), /* AE hook */
 				NONE, NULL, NONE, NONE, NONE, NONE))
 			{
 				error(_error_silent, "failed to load map select postgame screen");

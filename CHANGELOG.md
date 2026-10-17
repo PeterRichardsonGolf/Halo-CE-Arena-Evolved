@@ -4,6 +4,16 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## Unreleased
+
+- SPLIT SCREEN in the PC menus' Multiplayer (after Create Game's LAN): a game on this PC only, up to four players
+  and up to 15 bots. The map, then the gametype, then the lobby (no Server Setup); another controller's START joins
+  there. The lobby's last rows are BOTS, BOT SKILL, PLAYFIGHT and BOT TEAMS (team games), the same settings as Game
+  Options > BOTS, changed live. After a game: the map list, the gametype, the lobby again.
+- PLAYFIGHT (Game Options > BOTS, `bots.playfight`), as Halo Infinite's Training Mode: the bots move, strafe and aim
+  at you but never shoot, throw a grenade or strike. Aim practice for new players; split screen and LAN bots.
+- Map layout files: `games all` puts an item in every gametype (a map that spawns it in CTF only).
+
 ## 0.3.2-beta - 2026-10-16
 
 A testing pre-release on top of 0.3.1-beta: the "Halo 2 for CE" maps' bullets hurt again, CALLOUTS no longer tell spawn

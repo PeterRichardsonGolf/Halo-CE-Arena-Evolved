@@ -28,8 +28,9 @@ def test_the_own_frames_are_in_bitmaps_xml_where_the_generator_puts_them():
 
 
 def test_every_entry_of_the_multiplayer_screen_and_nhe_options_have_their_own():
-    assert len(frames_of(ae_menu_pictures.MULTIPLAYER)) == 7
-    assert sorted(ae_menu_pictures.own_frames()[ae_menu_pictures.MULTIPLAYER]) == list(range(7))
+    # (AE: SPLIT SCREEN's, before CO-OP's: 8)
+    assert len(frames_of(ae_menu_pictures.MULTIPLAYER)) == 8
+    assert sorted(ae_menu_pictures.own_frames()[ae_menu_pictures.MULTIPLAYER]) == list(range(8))
     # (CHANGE NAME 0 ... NHE OPTIONS 8: GAME, PLAYER and INDICATOR OPTIONS keep theirs)
     gametype = frames_of(ae_menu_pictures.GAMETYPE)
     assert len(gametype) == 9
@@ -91,3 +92,14 @@ def test_every_drawing_is_centred_in_its_zone_and_no_bigger_than_it():
             assert abs(y + scale * (top + bottom) / 2 - zone["centre"][1]) < 0.02, name
             assert scale * (bottom - top) <= zone["height"] + 0.01 and scale * (right - left) <= zone["width"] + 0.01
             assert scale * ((bottom - top) * (right - left)) ** 0.5 <= zone["mass"] + 0.01, name
+
+
+def test_the_lobby_band_is_the_option_band_cut_to_the_lobby_width():
+    import pytest
+    Image = pytest.importorskip("PIL.Image")
+    for frame in (0, 1):
+        band = Image.open(MENUS / f"ce/port/{ae_menu_pictures.LOBBY_BAND}__{frame}.png")
+        source = Image.open(MENUS / f"ce/shell/bitmaps/option_bkds__{frame}.png")
+        assert band.size == (ae_menu_pictures.LOBBY_BAND_WIDTH * 4, source.height)
+        # (its ends are the game's own)
+        assert band.crop((0, 0, 96, band.height)).tobytes() == source.convert("RGBA").crop((0, 0, 96, band.height)).tobytes()

@@ -35,6 +35,8 @@ boolean ae_bots_in_game(void);
 /* (game_events.c, before Delta Stats begins recording a game) TRUE for a game with bots, which is not recorded:
 one halo.log line the first time */
 boolean ae_bots_kept_from_delta(void);
+/* (bots.c, each bot's tick) PLAYFIGHT (bots.playfight): the bots move and aim but never shoot, throw or strike */
+boolean ae_bots_playfight(void);
 
 /* (bots.c's bots_bot_update, via ae_bots_events.inc: debug.bot_events) the bots' fight log, read by tools/ae_test/bot_report.py */
 struct bots_bot;
