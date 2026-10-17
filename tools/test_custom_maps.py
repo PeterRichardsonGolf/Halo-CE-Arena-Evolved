@@ -216,6 +216,17 @@ MENU_STUBS = r'''
 static char const *const *multiplayer_map_names;
 static struct {char *multiplayer_levels[13];} event_handler_functions;
 static short ae_map_picture_frame(char const *map_name) { (void)map_name; return -1; } /* (the map pictures: none here) */
+/* (the map folders' pages, ae_map_folders.c: none here, the lists' own indices) */
+enum {AE_MAP_PAGES_NEW_GAME, AE_MAP_PAGES_MAP_SCREEN};
+static short ae_map_pages_begin(struct widget_instance *spinner, short list, char const *const *names, short count,
+    boolean singleplayer, short last_used) {return last_used;}
+static boolean ae_map_pages_on(struct widget_instance *spinner) {return 0;}
+static short ae_map_pages_kind(struct widget_instance *spinner) {return 0;}
+static void ae_map_pages_set(struct widget_instance *spinner, short kind) {}
+static boolean ae_map_pages_turned(void) {return 0;}
+static short ae_map_pages_count(short count) {return count;}
+static short ae_map_pages_map(short entry) {return entry;}
+static short ae_map_pages_shown_map(short entry) {return entry;}
 struct event_record {short type,controller_index;};
 struct ui_widget_definition {short type,child_count; struct {long index;} text_label_string_list; short string_list_index;};
 static struct ui_widget_definition definitions[8];
@@ -465,7 +476,7 @@ def fixture_sources():
     table = cache[cache.index("static struct\n{\n\tchar const *build;"):cache.index("/* the region of a build")]
     region = ("static struct {struct {char build[32];} header;} cache_file_globals;\n" +
               table + function(cache, "cache_files_build_region"))
-    common = '#include "cseries.h"\n#include "xtl.h"\n#include "halo_port_capacity.h"\n' + region + FILES + '\nvoid ae_map_share_scan_downloads(void (*scan)(char const *directory)) { (void)scan; } /* AE hook */\n#include "custom_maps.c"\n'
+    common = '#include "cseries.h"\n#include "xtl.h"\n#include "halo_port_capacity.h"\n' + region + FILES + '\nvoid ae_map_share_scan_downloads(void (*scan)(char const *directory)) { (void)scan; } /* AE hook */\nvoid ae_map_folders_scan(void (*scan)(char const *directory)) { (void)scan; }\nvoid ae_map_folders_log_pages(char const *const *names, long count) { (void)names; (void)count; }\n#include "custom_maps.c"\n'
     menu = (ROOT / "port/linux/game/menu_functions.c").read_text()
     events = (ROOT / "source/interface/ui_widget_event_handler_functions.c").read_text()
     data = (ROOT / "source/interface/ui_widget_game_data_input_functions.c").read_text()

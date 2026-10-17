@@ -8170,6 +8170,7 @@ static wchar_t *spinner_string_list_get_string(
 {
 	struct string_list *string_list = unicode_string_list_definition_get(string_list_index);
 
+	if (ae_map_pages_spinner_string(string_list_index, string_index)) return (wchar_t *)ae_map_pages_spinner_string(string_list_index, string_index); /* AE hook */
 	if (string_list && string_index >= string_list->strings.count &&
 		string_index - string_list->strings.count < spinner_string_list_extra_count(string_list_index))
 	{

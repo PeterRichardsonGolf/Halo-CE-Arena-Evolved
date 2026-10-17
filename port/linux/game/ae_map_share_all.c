@@ -46,6 +46,7 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
 #include "ae_map_share.h"
 #include "ae_map_share_rules.h"
 #include "ae_silent.h"
+#include "ae_map_folders.h"
 #include "halo_map_families.h"
 #include "halo_custom_maps.h"
 #include "../src/p2p.h"
@@ -643,6 +644,13 @@ static void host_scan_custom_edition(
 	CloseHandle(find);
 }
 
+/* the folders of the maps folder, as the game finds their maps (ae_map_folders.c) */
+static void host_scan_xbox_folder(
+	char const *folder)
+{
+	host_scan_xbox(folder, AE_MAP_SHARE_KIND_XBOX);
+}
+
 static void host_scan(
 	void)
 {
@@ -657,7 +665,7 @@ static void host_scan(
 	share.previous_count = share.entry_count;
 	share.entry_count = 0;
 	share.ready = FALSE;
-	/* (the game's own order: the mod played, the maps folder, then the downloads) */
+	/* (the game's own order: the mod played, the maps folder, its folders A-Z, then the downloads) */
 	if (mod && mod[0] && !strchr(mod, '\\') && !strchr(mod, '/') && !strstr(mod, ".."))
 	{
 		char folder[PATH_BYTES];
@@ -666,11 +674,13 @@ static void host_scan(
 			host_scan_xbox(folder, AE_MAP_SHARE_KIND_MOD);
 	}
 	host_scan_xbox(cache_files_map_directory(), AE_MAP_SHARE_KIND_XBOX);
+	ae_map_folders_scan(host_scan_xbox_folder);
 	host_scan_xbox(XBOX_DOWNLOAD_FOLDER, AE_MAP_SHARE_KIND_XBOX);
 	if (halo_custom_edition_tag_cache())
 	{
 		host_scan_custom_edition("d:\\maps_ce\\");
 		host_scan_custom_edition("d:\\custom_maps\\");
+		ae_map_folders_ce_scan(host_scan_custom_edition);
 	}
 	for (index = 0; index < share.entry_count; index++)
 		custom_edition |= share.entries[index].entry.kind == AE_MAP_SHARE_KIND_CE;

@@ -184,6 +184,7 @@ enum
 #include "ae_input.h" /* AE hook */
 #include "ae_map_pictures.h" /* AE hook */
 #include "ae_split_screen.h" /* AE hook */
+#include "ae_map_folders.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
 #include "interface/ui_widget_instance.h"
@@ -1188,6 +1189,7 @@ static short map_kind_shown(struct widget_instance *list, short only)
 
 	if (!spinner)
 		return only != NONE ? only : MAP_KIND_SINGLEPLAYER;
+	if (ae_map_pages_on(spinner)) return ae_map_pages_kind(spinner); /* AE hook */
 	if (only != NONE)
 		spinner->parameters.list.selected_index = only;
 	return (short)PIN(spinner->parameters.list.selected_index, 0, NUMBER_OF_MAP_KINDS - 1);
@@ -1197,6 +1199,7 @@ static void map_kind_set(struct widget_instance *list, short kind)
 {
 	struct widget_instance *spinner = named(list, "list_item_0_map_kind_spinner", 0);
 
+	if (spinner && ae_map_pages_on(spinner)) { ae_map_pages_set(spinner, kind); return; } /* AE hook */
 	if (spinner)
 		spinner->parameters.list.selected_index = kind;
 }
@@ -1303,6 +1306,7 @@ static void map_caption_set(struct widget_instance *widget, wchar_t const *capti
 
 static void multiplayer_map_text(short map, wchar_t *text)
 {
+	map = ae_map_pages_map(map); /* AE hook */
 	text[0] = 0;
 	if (map >= 0 && map < HALO_STOCK_MULTIPLAYER_MAP_COUNT)
 		string_get("pc\\main_menu\\mp_map_list", map, text);
@@ -1321,6 +1325,7 @@ static void map_description_show(struct widget_instance *description, short leve
 	struct widget_instance *widget;
 	short marker;
 
+	map = ae_map_pages_shown_map(map); /* AE hook */
 	visible_set(named(description, "replay_level_right_name", 0), level != NONE);
 	visible_set(named(description, "replay_level_right_pic", 0), level != NONE);
 	visible_set(named(description, "replay_level_right_data", 0), level != NONE);
@@ -1408,6 +1413,7 @@ static boolean level_list_initialize(struct widget_instance *list, short control
 	level_list.kind = MAP_KIND_SINGLEPLAYER;
 	level_list.chosen = level;
 	level_list.first = map_kind_first(level, NUMBER_OF_SINGLE_PLAYER_LEVELS);
+	if ((last_used = ae_map_pages_begin(named(list, "list_item_0_map_kind_spinner", 0), AE_MAP_PAGES_NEW_GAME, level_list.map_names, level_list.map_count, TRUE, NONE)) != NONE) { level_list.kind = MAP_KIND_MULTIPLAYER; level_list.chosen = last_used; level_list.first = map_kind_first(last_used, ae_map_pages_count(level_list.map_count)); } /* AE hook */
 	map_kind_set(list, level_list.kind);
 	map_kind_focus(list, level_list.first, level_list.chosen);
 	return TRUE;
@@ -1424,12 +1430,12 @@ static void level_list_update(struct widget_instance *list)
 	struct widget_instance *description = list->parameters.list.extended_description;
 	short kind = map_kind_shown(list, NONE), count, entry, level;
 
-	if (kind != level_list.kind)
+	if (ae_map_pages_turned() || kind != level_list.kind) /* AE hook */
 	{
 		level_list.kind = kind;
 		level_list.first = level_list.chosen = 0;
 	}
-	count = kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : level_list.map_count;
+	count = kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : ae_map_pages_count(level_list.map_count); /* AE hook */
 	entry = map_kind_rows_update(list, &level_list.first, count,
 		kind == MAP_KIND_SINGLEPLAYER ? level_row_text : multiplayer_map_text);
 	if (entry != NONE)
@@ -1460,12 +1466,12 @@ static boolean level_choose(short controller)
 	{
 		struct player_profile profile;
 
-		if (level_list.chosen < 0 || level_list.chosen >= level_list.map_count ||
+		if (ae_map_pages_map(level_list.chosen) < 0 || ae_map_pages_map(level_list.chosen) >= level_list.map_count || /* AE hook */
 			!campaign_profile(controller, &profile))
 		{
 			return campaign_fail();
 		}
-		campaign_start(level_list.map_names[level_list.chosen], main_get_difficulty(), controller);
+		campaign_start(level_list.map_names[ae_map_pages_map(level_list.chosen)], main_get_difficulty(), controller); /* AE hook */
 		return FALSE;
 	}
 	if (level < 0 || level >= NUMBER_OF_SINGLE_PLAYER_LEVELS || !campaign.levels[level].available)
@@ -2828,7 +2834,7 @@ static short map_step_count(void)
 {
 	if (map_list.step == MAP_STEP_DIFFICULTIES)
 		return NUMBER_OF_GAME_DIFFICULTY_LEVELS;
-	return map_list.kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : map_list.map_count;
+	return map_list.kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : ae_map_pages_count(map_list.map_count); /* AE hook */
 }
 
 /* opens a step at the entry given */
@@ -2862,6 +2868,7 @@ static boolean map_list_initialize(struct widget_instance *list)
 	ui_widget_port_multiplayer_maps_refresh();
 	map_list.map_count = ui_widget_port_multiplayer_maps(&multiplayer_map_names, &last_used);
 	map_list.kind = MAP_KIND_MULTIPLAYER;
+	last_used = ae_map_pages_begin(named(list, "list_item_0_map_kind_spinner", 0), AE_MAP_PAGES_MAP_SCREEN, multiplayer_map_names, map_list.map_count, map_list.hosting, last_used); /* AE hook */
 	map_kind_set(list, map_list.kind);
 	map_step_open(list, MAP_STEP_MAPS, last_used);
 	return TRUE;
@@ -2874,7 +2881,7 @@ static void map_list_update(struct widget_instance *list)
 	struct widget_instance *description = list->parameters.list.extended_description;
 	short kind = map_kind_shown(list, map_list.hosting ? NONE : MAP_KIND_MULTIPLAYER), count, entry;
 
-	if (kind != map_list.kind)
+	if (ae_map_pages_turned() || kind != map_list.kind) /* AE hook */
 	{
 		map_list.kind = kind;
 		map_list.step = MAP_STEP_MAPS;
@@ -2925,6 +2932,7 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 			return campaign_fail();
 		return ui_widget_port_open(list, SERVER_SETUP_NAME, widget_deleted);
 	}
+	if (map_list.kind == MAP_KIND_MULTIPLAYER) chosen = ae_map_pages_map(chosen); /* AE hook */
 	if (map_list.kind == MAP_KIND_MULTIPLAYER && ae_mcc_map_chosen(multiplayer_map_names[chosen], chosen, list, widget_deleted)) /* AE hook */
 		return TRUE;
 	if (map_list.kind == MAP_KIND_MULTIPLAYER)

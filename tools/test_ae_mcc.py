@@ -236,8 +236,10 @@ MAP_SCREEN = "main_menu/multiplayer_type_select/mp_map_select/mp_map_select_scre
 
 
 def _pick_ce_map(answer):
-    """the menus' input: the Map screen's first Custom Edition map (after the stock maps), A, then the answer"""
-    return "menu:" + " ".join(["wait"] * 4 + ["down"] * 13 + ["a", "wait", "wait"] + answer + ["wait"] * 4)
+    """the menus' input: the Map screen's first Custom Edition map (the MULTIPLAYER page's first, the chooser's last
+    page: map folders, ae_map_folders.c), A, then the answer"""
+    return "menu:" + " ".join(["wait"] * 12 + ["up", "wait", "left", "wait", "down"] + ["a", "wait", "wait"] + answer +
+                              ["wait"] * 4)
 
 
 def test_game_question(tmp_path):
