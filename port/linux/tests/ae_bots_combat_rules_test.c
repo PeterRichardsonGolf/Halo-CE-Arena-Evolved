@@ -240,14 +240,14 @@ static void test_charge_jump_share(void)
 	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_RECRUIT, 0) == 30 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 120);
 	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_NORMAL, 0) == 60 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_NORMAL, 1) == 120);
 	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 0) == 6 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 1) == 24);
-	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0.85f, 0) == 60);
-	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0.95f, 0) == 0);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0.0f, 0) == 0);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_EASY, 0.0f, 1) == 0);
 	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_NORMAL, 0.1f, 1) == 60);
 	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_NORMAL, 0.3f, 1) == 0);
 	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.04f, 1) == 3);
 	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.06f, 1) == 0);
-	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0) == 90);
-	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 150);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 0);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_EASY, 1) == 0);
 	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_NORMAL, 1) == 6);
 	/* shared sightings: none below HEROIC, 10 units at HEROIC, anywhere at LEGENDARY */
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_RECRUIT) == 0.0f);

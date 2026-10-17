@@ -13,13 +13,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - PLAYFIGHT (Game Options > BOTS, `bots.playfight`), as Halo Infinite's Training Mode: the bots move, strafe and aim
   at you but never shoot, throw a grenade or strike. Aim practice for new players; split screen and LAN bots.
 - Map layout files: `games all` puts an item in every gametype (a map that spawns it in CTF only).
-- Bots fight like people of their level (Halo Infinite's "combat dance", our own numbers): RECRUIT strikes only at
-  point blank and only now and then, and throws a grenade rarely and from far off; EASY throws mostly when it is
-  about to die; NORMAL and up go for the head once your shields are down (pistol, sniper rifle, battle rifle), lead
-  your path with a grenade, and back off along a path when they are losing until their shields are back; HEROIC and
-  up strike when your back is turned or your shields are low, run in to finish a fight they have won, strafe-jump,
-  and tell their teammates where they saw you (team games). A bot's reaction differs a little from one sighting to
-  the next. Same health and damage at every level; PLAYFIGHT bots still never shoot.
+- Bots fight like people of their level, after Halo Infinite's own per-level bot tuning (its ratios, our numbers):
+  RECRUIT strikes only at point blank after a moment and only now and then, and throws a grenade rarely and from
+  far off; EASY throws mostly when it is about
+  to die; NORMAL and up go for the head once your shields are down (pistol, sniper rifle, battle rifle), jump in a
+  fight now and then, and back off along a path when they are nearly beaten until their shields are back; HEROIC
+  and up strike when your back is turned or your shields are low, run in to finish a fight they have won, lead your
+  path with a grenade, and tell teammates where they saw you (HEROIC those near, LEGENDARY all; team games).
+  LEGENDARY strafes in short quick steps, NORMAL in long ones with a pause now and then. A bot's reaction differs a little from one sighting
+  to the next. Same health and damage at every level; PLAYFIGHT bots still never shoot.
 - SHOOTING SKILL and MOVEMENT SKILL (Game Options > BOTS; `bots.shooting_skill`, `bots.movement_skill`): the bots'
   aim, reactions, grenades and blows, and their strafing, jumping, crouching and retreating, each at a level of its
   own, or SAME AS BOT SKILL (the default). On the BOTS screen only: the split screen lobby keeps its rows for players.

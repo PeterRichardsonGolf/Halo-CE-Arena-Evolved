@@ -14,7 +14,7 @@ of ae_bots_combat.c / ae_bots_combat_rules.c. What each does, per level (RECRUIT
 - RETREAT (movement NORMAL and up): low confidence held a moment (and its shields low) sends the bot backing off
   along a path to a place away from its target, still shooting; it does not go back to where it saw the enemy
   while it retreats; CLOSING IN (HEROIC and up): a won fight close by is finished by running in for a blow;
-  HALTS: it stops sidestepping at a fight's start and now and then (RECRUIT mostly stands); JUMPS in a fight
+  HALTS (NORMAL and up): it stops sidestepping at a fight's start and now and then; JUMPS in a fight
   (NORMAL and up) at the level's rhythm (bots.c's random jumps are off: ae_bots_tick_skill);
 - SHARED SIGHTINGS (BOT SKILL HEROIC, teammates within 10 units; LEGENDARY, any teammate; team games): a bot that
   sees an enemy tells its teammates who have no target of their own, who then go to where it was seen (bots.c's
@@ -258,8 +258,8 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 		ae_bots_combat_hash01((unsigned long)bot->player_index, (unsigned long)state->retreat.next_allowed), &started, &ended);
 	char extra[48];
 
-	/* HALTS: at the fight's start (RECRUIT stands 3-5 s), and now and then at a new strafe: it stops sidestepping,
-	still keeping its weapon's distance */
+	/* HALTS (NORMAL and up): at the fight's start, and now and then at a new strafe: it stops sidestepping, still
+	keeping its weapon's distance */
 	if (new_fight)
 	{
 		state->halt_until = bot->target_first_seen_tick + ae_bots_combat_initial_halt_ticks(level,

@@ -14,7 +14,7 @@ made fallible per level, as its designers described it (ideas only; every number
   in its magazine and the height between them: NORMAL and up back off along a path when it is low (RECRUIT and
   EASY never retreat cleverly), after a moment's hesitation, until their shields are back.
 - A random per-bot delay on each decision (reaction, looking about, retreating): no metronome rhythm.
-- Strafing in segments with halts (RECRUIT mostly stands), jumps in a fight at NORMAL and up.
+- Strafing in segments (halts at NORMAL and up), jumps in a fight at NORMAL and up.
 
 Where Infinite's own per-level tuning (the owner's game files, read 2026-10-16; local research notes, not in the
 repo) gave a number, the levels follow its ratios: RECRUIT ~ Recruit, EASY between Recruit and Marine, NORMAL ~
@@ -112,10 +112,10 @@ long ae_bots_combat_vertical_delay(int level, float random);
 NORMAL 2-4, HEROIC 1-2, LEGENDARY 0.2-0.8; random 0..1 */
 long ae_bots_combat_strafe_ticks(int level, float random);
 /* a strafe's HALT (it stands, still keeping its distance): the ticks of the halt at a new strafe, 0 for none:
-RECRUIT 0.9 of the time for 2-3 s, EASY 0.55 for 1.5-2.5, NORMAL 0.2 for 1-2, HEROIC 0.1 for 0.1-0.2, LEGENDARY
-0.05 for 0.05-0.1 */
+NORMAL 0.2 of the time for 1-2 s, HEROIC 0.1 for 0.1-0.2, LEGENDARY 0.05 for 0.05-0.1; RECRUIT and EASY never
+(a CE bot that stands aims far better: the kids' levels must not get harder) */
 long ae_bots_combat_halt_ticks(int level, float chance_random, float length_random);
-/* the halt that starts a fight: RECRUIT 3-5 s, EASY 1.5-2.5, NORMAL and HEROIC up to 0.2, LEGENDARY 0.1 */
+/* the halt that starts a fight: NORMAL and HEROIC up to 0.2 s, LEGENDARY 0.1; RECRUIT and EASY none */
 long ae_bots_combat_initial_halt_ticks(int level, float random);
 
 /* SHARED SIGHTINGS (team games): how near a teammate a bot tells where it saw an enemy (0: it tells no one):
