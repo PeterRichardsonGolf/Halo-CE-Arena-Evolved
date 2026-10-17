@@ -106,6 +106,7 @@ symbols in this file:
 #include "units/units.h"
 #include "view_fov.h" /* port: port/linux/game/view_fov.c */
 #include "ae_panels.h" /* AE hook */
+#include "ae_hud_hires.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -2397,6 +2398,7 @@ void hud_draw_numbers(
 				scale = hud_globals_get_scale(
 					TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
 			}
+			scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
 
 			if (TEST_FLAG(numbers->number_flags, _hud_number_show_trailing_m_bit))
 			{
