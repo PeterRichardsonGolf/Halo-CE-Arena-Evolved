@@ -13,6 +13,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - PLAYFIGHT (Game Options > BOTS, `bots.playfight`), as Halo Infinite's Training Mode: the bots move, strafe and aim
   at you but never shoot, throw a grenade or strike. Aim practice for new players; split screen and LAN bots.
 - Map layout files: `games all` puts an item in every gametype (a map that spawns it in CTF only).
+- Bots play every mode, not only Slayer: CTF, Oddball (its reverse tag and juggernaut too, AE JUGGER's Halo 2 rules
+  included), King of the Hill and Race, in split screen games and in LAN games you host (up to 3). As Halo Infinite's
+  bots do, each one weighs the fight against its mode's goal every moment, and keeps its choice a while: in CTF they
+  take the enemy flag, bring it home (the carrier keeps running, hurt or not, and strikes what blocks it), return or
+  hunt down their own, defend it (a team of three or more keeps a defender) and escort a carrier; in Oddball they go
+  for the ball, keep it away from enemies and go after its holder; in King they go to the hill and hold it; in
+  Juggernaut they hunt the juggernaut, who breaks away when badly hurt; in Race they run to the next flag. halo.log
+  says when a bot takes, captures, drops or returns a flag, holds the ball or enters the hill, with a line a minute.
 
 ## 0.3.2-beta - 2026-10-16
 

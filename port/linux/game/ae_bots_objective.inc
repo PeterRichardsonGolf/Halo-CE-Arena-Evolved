@@ -23,9 +23,12 @@ numbers (bots_random), as bots.c's rule is.
 
 #include "ae_bots_objective.h"
 
-/* the behaviour chosen keeps this bonus for two seconds (no flip-flop between two close utilities) */
-#define AE_BOTS_OBJECTIVE_HYSTERESIS_TICKS (2 * TICKS_PER_SECOND)
-#define AE_BOTS_OBJECTIVE_BONUS 0.12f
+/* the behaviour chosen keeps a bonus a while (no flip-flop between two close utilities): two seconds, three at
+HEROIC and LEGENDARY (Halo Infinite's bot tuning has the same timeouts by level, a smaller bonus at the top) */
+#define AE_BOTS_OBJECTIVE_HYSTERESIS_TICKS(skill) (((skill) == _bots_skill_heroic || (skill) == _bots_skill_legendary ? 3 : 2) * TICKS_PER_SECOND)
+#define AE_BOTS_OBJECTIVE_BONUS(skill) ((skill) == _bots_skill_heroic || (skill) == _bots_skill_legendary ? 0.10f : 0.12f)
+/* a guard stops at each spot it patrols to a moment (0.2 to 1 second, as Infinite's guards), looking about */
+#define AE_BOTS_OBJECTIVE_PAUSE_TICKS(bot) (TICKS_PER_SECOND / 5 + (long)(bots_random(bot) % (TICKS_PER_SECOND * 4 / 5 + 1)))
 /* the enemies a holder keeps away from: those its motion tracker shows (25 world units) */
 #define AE_BOTS_OBJECTIVE_TRACKER_RANGE 25.0f
 /* a goal that moves (a carrier, the ball's holder) is set again when it has gone this far from the bot's goal */
@@ -58,6 +61,8 @@ struct ae_bots_objective_bot
 	real_point3d patrol_point;
 	long patrol_until_tick;
 	short patrol_behaviour;
+	/* standing at the spot until then */
+	long pause_until_tick;
 };
 
 static struct ae_bots_objective_bot ae_bots_objective_bots[BOTS_MAXIMUM];
@@ -313,7 +318,7 @@ static short ae_bots_objective_think(struct bots_bot *bot, long bot_index, real_
 
 	ae_bots_objective_utilities(&situation, utility);
 	behaviour = (short)ae_bots_objective_pick(utility, state->behaviour, now - state->chosen_tick,
-		AE_BOTS_OBJECTIVE_HYSTERESIS_TICKS, AE_BOTS_OBJECTIVE_BONUS);
+		AE_BOTS_OBJECTIVE_HYSTERESIS_TICKS(bots_globals.skill), AE_BOTS_OBJECTIVE_BONUS(bots_globals.skill));
 	if (behaviour != state->behaviour)
 	{
 		state->behaviour = behaviour;
@@ -439,10 +444,23 @@ static boolean ae_bots_objective_set_goal(struct bots_bot *bot, long bot_index, 
 		/* (out of the hill: its centre) */
 		if (!defend && !state->in_hill)
 			break;
-		/* (about the place: a spot, then another, a few seconds each) */
+		/* (about the place: a spot, a moment there, then another, a few seconds each) */
+		if (now < state->pause_until_tick)
+		{
+			bot->goal_kind = _bots_goal_none;
+			return FALSE;
+		}
+		if (state->patrol_behaviour == state->behaviour && now < state->patrol_until_tick &&
+			bots_distance2d(&state->patrol_point, position) < AE_BOTS_OBJECTIVE_THERE && state->pause_until_tick < 0)
+		{
+			state->pause_until_tick = now + AE_BOTS_OBJECTIVE_PAUSE_TICKS(bot);
+			bot->goal_kind = _bots_goal_none;
+			return FALSE;
+		}
 		if (state->patrol_behaviour != state->behaviour || now >= state->patrol_until_tick ||
 			bots_distance2d(&state->patrol_point, position) < AE_BOTS_OBJECTIVE_THERE)
 		{
+			state->pause_until_tick = -1;
 			long spot_surface;
 			real_point3d spot;
 
@@ -478,9 +496,13 @@ static boolean ae_bots_objective_set_goal(struct bots_bot *bot, long bot_index, 
 		point = state->patrol_point;
 		break;
 	case AE_BOTS_BALL_TAKE:
-		/* (close: on to it, the action button held as for a weapon: bots_bot_weapons) */
-		if (state->target_object_index != NONE && bots_distance3d(&point, position) < 3.0f)
+		/* (close, on its floor: on to it, the action button held as for a weapon: bots_bot_weapons; on a floor the
+		walkable surfaces do not reach, Prisoner's top: a place to go to, which bots.c climbs to with jumps) */
+		if (state->target_object_index != NONE && bots_distance2d(&point, position) < 2.0f &&
+			fabs(point.z - position->z) < 1.0f)
+		{
 			kind = _bots_goal_item;
+		}
 		break;
 	default:
 		break;
@@ -542,11 +564,13 @@ void ae_bots_objective_move(struct bots_bot *bot, long bot_index, struct bots_ti
 		return;
 	behaviour = ae_bots_objective_think(bot, bot_index, &tick->position, tick->fighting);
 	state = &ae_bots_objective_bots[bot_index];
-	/* (the flag or the ball in its hands: it neither swaps nor reloads it away) */
+	/* (the flag or the ball in its hands: it neither swaps nor reloads it away, nor pulls a trigger, which drops a
+	weapon that must be readied, as a player's does: players.c; it still strikes with it) */
 	if (state->in_hands)
 	{
 		tick->action->desired_weapon_index = NONE;
-		tick->flags &= ~(FLAG(_unit_control_swap_weapons_bit) | FLAG(_unit_control_weapon_reload_bit));
+		tick->flags &= ~(FLAG(_unit_control_swap_weapons_bit) | FLAG(_unit_control_weapon_reload_bit) |
+			FLAG(_unit_control_weapon_primary_trigger_bit) | FLAG(_unit_control_weapon_secondary_trigger_bit));
 	}
 	if (!tick->fighting || behaviour == AE_BOTS_FIGHT)
 		return;

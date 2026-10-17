@@ -34,6 +34,7 @@ shows its flag, ball, hill or juggernaut on the HUD), never more.
 #include <stdio.h>
 
 /* port/linux/src/port_config.c */
+long config_integer(char const *name);
 void platform_log(char const *format, ...);
 
 /* the oddball engine's ball types (game_engine_oddball.c's enum oddball_ball_type) */
@@ -390,8 +391,17 @@ void ae_bots_objective_note(long bot_index, long player_index, short behaviour)
 		notes[bot_index].behaviour = behaviour;
 		return;
 	}
+	/* (debug.bot_trace: each change of what it does) */
 	if (behaviour != notes[bot_index].behaviour)
+	{
+		static long trace = -1;
+
+		if (trace < 0)
+			trace = config_integer("debug.bot_trace") > 0 ? 1 : 0;
+		if (trace)
+			platform_log("bots: trace %ld bot %ld now %s", snapshot.tick, n, ae_bots_behaviour_name(behaviour));
 		notes[bot_index].behaviour = behaviour;
+	}
 	switch (snapshot.mode)
 	{
 	case AE_BOTS_MODE_CTF:
@@ -405,6 +415,8 @@ void ae_bots_objective_note(long bot_index, long player_index, short behaviour)
 			totals.captures++;
 			platform_log("bots: bot %ld captured the flag", n);
 		}
+		else if (!carrying && notes[bot_index].carrying)
+			platform_log("bots: bot %ld dropped the flag", n);
 		if (statistics->ctf_statistics.flag_returns > notes[bot_index].returns)
 		{
 			totals.returns++;
@@ -428,6 +440,8 @@ void ae_bots_objective_note(long bot_index, long player_index, short behaviour)
 			platform_log("bots: bot %ld %s", n, snapshot.mode == AE_BOTS_MODE_JUGGERNAUT ? "is the juggernaut" :
 				snapshot.mode == AE_BOTS_MODE_TAG ? "is it" : "holds the ball");
 		}
+		else if (!carrying && notes[bot_index].carrying && snapshot.mode == AE_BOTS_MODE_ODDBALL)
+			platform_log("bots: bot %ld dropped the ball", n);
 		break;
 	case AE_BOTS_MODE_KING:
 		if (in_hill && totals.bot_held_counted_tick != snapshot.tick)
