@@ -50,7 +50,7 @@ void ae_bots_objective_utilities(struct ae_bots_situation const *s, float utilit
 		if (s->enemy_flag >= 0.0f)
 		{
 			utility[AE_BOTS_CTF_TAKE] = s->defender ? 0.25f + 0.5f * near(s->enemy_flag, 3.0f) :
-				0.6f + 0.15f * near(s->enemy_flag, 10.0f) - 0.15f * hurt;
+				0.6f + 0.3f * near(s->enemy_flag, 10.0f) - 0.15f * hurt;
 		}
 		if (s->own_stand >= 0.0f)
 			utility[AE_BOTS_CTF_DEFEND] = s->defender ? 0.64f : 0.15f;

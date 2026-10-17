@@ -117,9 +117,25 @@ def test_bots_in_ae_slayer(tmp_path, gametype):
     assert sum(kills for kills, _ in bots.values()) > 0 and sum(deaths for _, deaths in bots.values()) > 0
 
 
-def test_no_bots_in_ae_juggernaut(tmp_path):
-    status, output = _play(tmp_path, "local:bloodgulch", 25, HALO_NETWORK_TEST_GAMETYPE="AE JUGGER",
-                           HALO_BOTS=5)
+def test_bots_in_ae_juggernaut(tmp_path):
+    """bots play every mode (ae_bots_objective.c): AE JUGGER (the oddball engine with Halo 2's rules) has them, and one
+    of them becomes the juggernaut"""
+    status, output = _play(tmp_path, "local:chillout", 70, HALO_NETWORK_TEST_GAMETYPE="AE JUGGER", HALO_BOTS=5)
     assert status == 0, output[-3000:]
-    assert not _bots(output)
-    assert re.search(r"bots: none in this game: .* is a game of Oddball, not Slayer", output)
+    assert len(_bots(output)) == 5
+    assert not re.search(r"bots: none in this game", output)
+    assert re.search(r"bots: objective tick \d+ \(juggernaut\)", output), "no objective line a minute in"
+
+
+@pytest.mark.parametrize("test,seconds,expected", [
+    # (CTF on a small map: a flag taken within two minutes and a half)
+    ("local:hangemhigh:ctf", 150, r"bots: bot \d+ took the flag"),
+    # (King on Chill Out: a bot in the hill within a minute)
+    ("local:chillout:king", 70, r"bots: bot \d+ in the hill"),
+])
+def test_bots_play_the_objective(tmp_path, test, seconds, expected):
+    status, output = _play(tmp_path, test, seconds, HALO_BOTS=5)
+    assert status == 0, output[-3000:]
+    assert len(_bots(output)) == 5
+    assert re.search(expected, output), f"no line {expected!r}"
+    assert not re.search(r"assert|exception", output, re.I), "an assert or exception in the game's log"

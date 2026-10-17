@@ -77,7 +77,7 @@ static struct
 	long bot_held_ticks;
 	long bot_held_counted_tick;
 	/* the bots' events */
-	long grabs, captures, returns, ball_pickups, hill_entries, laps;
+	long grabs, captures, returns, ball_pickups, hill_entries, laps, race_touches;
 	/* bot ticks by behaviour */
 	long behaviour_ticks[AE_BOTS_BEHAVIOURS];
 } totals;
@@ -89,6 +89,7 @@ static struct
 	boolean in_hill;
 	long hill_logged_tick;
 	short grabs, returns, scores, laps;
+	long race_touched;
 	short behaviour;
 } notes[BOTS_MAXIMUM];
 
@@ -233,7 +234,8 @@ static void ae_bots_objective_report(void)
 			totals.ticks ? totals.bot_held_ticks * 100 / totals.ticks : 0L);
 		break;
 	case AE_BOTS_MODE_RACE:
-		length += snprintf(line + length, sizeof(line) - (size_t)length, "laps %ld", totals.laps);
+		length += snprintf(line + length, sizeof(line) - (size_t)length, "flags touched %ld, laps %ld", totals.race_touches,
+			totals.laps);
 		break;
 	default:
 		break;
@@ -386,6 +388,7 @@ void ae_bots_objective_note(long bot_index, long player_index, short behaviour)
 		notes[bot_index].returns = statistics->ctf_statistics.flag_returns;
 		notes[bot_index].scores = statistics->ctf_statistics.flag_scores;
 		notes[bot_index].laps = statistics->race_statistics.laps;
+		notes[bot_index].race_touched = snapshot.mode == AE_BOTS_MODE_RACE ? ae_strip_race_flags_touched(player_index) : 0;
 		notes[bot_index].carrying = carrying;
 		notes[bot_index].in_hill = in_hill;
 		notes[bot_index].behaviour = behaviour;
@@ -467,6 +470,13 @@ void ae_bots_objective_note(long bot_index, long player_index, short behaviour)
 			platform_log("bots: bot %ld finished a lap", n);
 		}
 		notes[bot_index].laps = statistics->race_statistics.laps;
+		{
+			long touched = ae_strip_race_flags_touched(player_index);
+
+			if (touched > notes[bot_index].race_touched)
+				totals.race_touches += touched - notes[bot_index].race_touched;
+			notes[bot_index].race_touched = touched;
+		}
 		break;
 	default:
 		break;
