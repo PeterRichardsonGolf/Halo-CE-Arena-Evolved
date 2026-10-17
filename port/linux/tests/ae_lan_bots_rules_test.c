@@ -5,18 +5,18 @@ static int failures;
 static int checks;
 #define CHECK(c) do { checks++; if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
 
-/* only a LAN lobby being set up, of Slayer, with a person of the host's machine in it */
+/* only a LAN lobby being set up, of a gametype bots play, with a person of the host's machine in it */
 static void test_eligible(void)
 {
-	int pregame, local, internet, slayer, person;
+	int pregame, local, internet, played, person;
 
 	for (pregame = 0; pregame < 2; pregame++)
 		for (local = 0; local < 2; local++)
 			for (internet = 0; internet < 2; internet++)
-				for (slayer = 0; slayer < 2; slayer++)
+				for (played = 0; played < 2; played++)
 					for (person = 0; person < 2; person++)
-						CHECK(ae_lan_bots_eligible(pregame, local, internet, slayer, person) ==
-							(pregame && !local && !internet && slayer && person));
+						CHECK(ae_lan_bots_eligible(pregame, local, internet, played, person) ==
+							(pregame && !local && !internet && played && person));
 }
 
 /* a person's controller and a pad that wants to join are never a bot's */

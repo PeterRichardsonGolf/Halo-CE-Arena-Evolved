@@ -707,7 +707,7 @@ port/linux/game/menu_functions.c	if (multiplayer.lobby_first > MAX(0, lobby_play
 port/linux/game/menu_functions.c	multiplayer.lobby_first = (short)MAX(0, lobby_player_count - ae_rows); /* AE hook */
 port/linux/game/menu_functions.c	rows_update(list, (short)MIN(lobby_player_count, ae_rows), lobby_row_text); /* AE hook */
 port/linux/game/menu_functions.c	for (index = 0; row && index < MIN(lobby_player_count, ae_rows); row = row->next, index++) /* AE hook */
-port/linux/game/menu_functions.c	ae_split_screen_lobby_update(list, game && game->variant.universal_variant.teams, game && game->variant.game_engine_index == game_engine_slayer); /* AE hook */
+port/linux/game/menu_functions.c	ae_split_screen_lobby_update(list, game && game->variant.universal_variant.teams, game ? game->variant.game_engine_index : NONE); /* AE hook */
 source/interface/ui_widget_event_handler_functions.c	boolean ae_split_screen_hosting(void); /* AE hook */
 source/interface/ui_widget_event_handler_functions.c	if (network_game_port_pc_menus_hosting && ae_split_screen_hosting()) network_game_accept_remote_connections(FALSE); /* AE hook */
 source/interface/ui_widget.c	unsigned char ae_split_screen_hosting(void); /* AE hook */
@@ -717,3 +717,12 @@ port/linux/game/menu_tags.c	{ "ui\\shell\\main_menu\\multiplayer_type_select\\sp
 # PLAYFIGHT (queue 119, owner 2026-10-16): bots.playfight, the bots never shoot, throw or strike (ae_bots.c)
 port/linux/src/port_config.c	{ "bots.playfight", _config_boolean, "false", "HALO_BOT_PLAYFIGHT", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.c	if (ae_bots_playfight()) tick.flags &= ~(FLAG(_unit_control_weapon_primary_trigger_bit) | FLAG(_unit_control_weapon_secondary_trigger_bit) | FLAG(_unit_control_throw_grenade_bit) | FLAG(_unit_control_use_equipment_bit)); /* AE hook */
+# Bots play the objective modes (notes/specs/2026-10-16-bots-infinite.md area 1; ae_bots_objective.c, .inc, the pure
+# rules ae_bots_objective_rules.c): the server's lobby takes bots for every gametype they play, a bot's goal is its
+# mode's when that wins over the fight, its walk while it fights a carrier's or the hill's; the CTF flags and the
+# race's next flag read where those game types keep them
+source/networking/network_server_manager.c	if (network_game_is_splitscreen_local() && ae_bots_engine_played(server->game.variant.game_engine_index)) /* AE hook */
+port/linux/game/bots.c	if (ae_bots_objective_goal(bot, player_index, position, fighting)) return; /* AE hook */
+port/linux/game/bots.c	ae_bots_objective_move(bot, bot_index, &tick); /* AE hook */
+source/game/game_engine_ctf.c	boolean ae_bots_ctf_flag(long team_index, long *weapon_index, real_point3d *stand, boolean *handled) { struct weapon_datum *weapon; if (!VALID_INDEX(team_index, NUMBER_OF_CTF_TEAMS) || !ctf_globals.flags[team_index]) return FALSE; *stand = ctf_globals.flags[team_index]->position; *weapon_index = ctf_globals.weapon_indices[team_index]; weapon = *weapon_index != NONE ? weapon_try_and_get(*weapon_index) : NULL; *handled = weapon && TEST_FLAG(weapon->weapon.flags, _ctf_weapon_handled_bit); return TRUE; } /* AE hook */
+source/game/game_engine_race.c	boolean ae_bots_race_can_touch(long player_index, long order) { return player_index != NONE && DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) < MULTIPLAYER_MAXIMUM_PLAYERS && order >= 0 && can_touch_team(player_index, order); } /* AE hook */

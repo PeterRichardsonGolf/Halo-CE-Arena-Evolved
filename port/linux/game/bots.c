@@ -1698,6 +1698,7 @@ static void bots_choose_goal(struct bots_bot *bot, long player_index, real_point
 {
 	long now = game_time_get();
 
+	if (ae_bots_objective_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (!fighting && bot->target_player_index != NONE && bot->target_last_surface_index != NONE &&
 		now - bot->target_seen_tick < TICKS_PER_SECOND * 8)
 	{
@@ -2334,6 +2335,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 			tick.move_direction = direction;
 	}
 	bots_bot_weapons(bot, &tick);
+	ae_bots_objective_move(bot, bot_index, &tick); /* AE hook */
 	bots_bot_unstick(bot, &tick);
 
 	if (tick.moving)

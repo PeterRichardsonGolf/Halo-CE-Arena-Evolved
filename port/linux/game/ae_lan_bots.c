@@ -10,7 +10,8 @@ other machines a bot is the host's player at that controller.
   player slot of the game left free), on the host's free controller slots,
   their teams as bots.c's local games have them (bots.teams); they leave for
   a person of the host's machine who joins on their slot, when the setting
-  asks for fewer, for another gametype than Slayer, and in a game hosted for
+  asks for fewer, for a gametype bots do not play (they play Slayer, CTF,
+  Oddball, King and Race: ae_bots_objective.c), and in a game hosted for
   the internet (LAN only for now: the internet's joiners would see players
   whose machine is the host's, which is fine on the wire, but the host's
   upload of their input and units is not yet measured).
@@ -32,6 +33,7 @@ other machines a bot is the host's player at that controller.
 #include "bots.h"
 #include "ae_lan_bots_rules.h"
 #include "ae_lan_bots.h"
+#include "ae_bots_objective.h"
 
 #include <string.h>
 
@@ -162,7 +164,7 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	short target;
 	boolean has_person = FALSE;
 	boolean internet;
-	boolean slayer;
+	boolean played;
 	boolean eligible;
 	boolean changed = FALSE;
 	char link[160];
@@ -212,8 +214,8 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	if (game->variant.game_engine_index == game_engine_none)
 		return FALSE;
 	internet = p2p_invite_link(link, sizeof(link)) != 0;
-	slayer = game->variant.game_engine_index == game_engine_slayer;
-	eligible = ae_lan_bots_eligible(TRUE, FALSE, internet, slayer, has_person);
+	played = ae_bots_engine_played(game->variant.game_engine_index);
+	eligible = ae_lan_bots_eligible(TRUE, FALSE, internet, played, has_person);
 	free_mask = ae_lan_bots_free_controllers(people, wanting);
 	target = (short)ae_lan_bots_target(bots_wanted_count(), eligible, others, game->maximum_players, free_mask);
 
@@ -223,11 +225,11 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 		if (internet && !lan.told_internet)
 			platform_log("lan bots: none in a game hosted for the internet (LAN games only)");
 		lan.told_internet = internet;
-		if (!slayer && lan.told_engine != game->variant.game_engine_index)
+		if (!played && lan.told_engine != game->variant.game_engine_index)
 		{
-			platform_log("lan bots: none in this game: its gametype is not Slayer (bots play Slayer and Team Slayer)");
+			platform_log("lan bots: none in this game: bots do not play its gametype (they play Slayer, CTF, Oddball, King and Race)");
 		}
-		lan.told_engine = slayer ? NONE : game->variant.game_engine_index;
+		lan.told_engine = played ? NONE : game->variant.game_engine_index;
 	}
 
 	/* those on a slot a person takes, then those not wanted (the last first) */
@@ -247,7 +249,7 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 			bots_mask &= ~(1u << lan.bots[index].controller);
 			changed |= lan_remove(game, index, eligible ? "fewer wanted, or no room" : !has_person ?
 				"no person of the host's machine in the lobby" : internet ? "a game hosted for the internet" :
-				"its gametype is not Slayer");
+				"bots do not play its gametype");
 			count--;
 		}
 	}

@@ -78,7 +78,7 @@
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/help_strings">
 		<string text=""/>
-		<string text="How many bots join a split screen Slayer lobby;\na LAN game you host takes up to 3 (not internet)."/>
+		<string text="How many bots join a split screen lobby, of any\nmode; a LAN game you host takes up to 3."/>
 		<string text="How soon the bots react, how well they aim and\nhow far they see."/>
 		<string text="@5"/>
 		<string text="@7"/>

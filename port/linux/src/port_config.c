@@ -686,10 +686,10 @@ static const struct config_setting config_settings[] =
 		"where it is); \"yes\": moved without asking; \"no\": left where they are.\n"
 		"Android moves them unless this is \"no\"." },
 	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all, /* AE hook */
-		"Computer players (bots) in a local (split screen) Slayer game: 0 to 15\n"
-		"join its lobby with the players, as far as the game has room; up to 3\n"
-		"in a LAN game you host, none in internet games. 0: none, as in the stock\n"
-		"game." },
+		"Computer players (bots) in a local (split screen) game of any mode\n"
+		"(Slayer, CTF, Oddball, King of the Hill, Race): 0 to 15 join its lobby\n"
+		"with the players, as far as the game has room; up to 3 in a LAN game you\n"
+		"host, none in internet games. 0: none, as in the stock game." },
 	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all, /* AE hook */
 		"How well the bots play: \"recruit\" (for new players), \"easy\", \"normal\",\n"
 		"\"heroic\" or \"legendary\" (how soon they react, how well they aim, how\n"

@@ -1675,3 +1675,5 @@ boolean game_engine_ctf_read_network_state(
 	}
 	return TRUE;
 }
+
+boolean ae_bots_ctf_flag(long team_index, long *weapon_index, real_point3d *stand, boolean *handled) { struct weapon_datum *weapon; if (!VALID_INDEX(team_index, NUMBER_OF_CTF_TEAMS) || !ctf_globals.flags[team_index]) return FALSE; *stand = ctf_globals.flags[team_index]->position; *weapon_index = ctf_globals.weapon_indices[team_index]; weapon = *weapon_index != NONE ? weapon_try_and_get(*weapon_index) : NULL; *handled = weapon && TEST_FLAG(weapon->weapon.flags, _ctf_weapon_handled_bit); return TRUE; } /* AE hook */

@@ -32,8 +32,9 @@ short ae_split_screen_lobby_rows(short rows);
 game's most players set and the lobby opened in place of the gametype list; TRUE when the lobby opened */
 unsigned char ae_split_screen_lobby_open(struct widget_instance *widget, unsigned char chosen,
 	unsigned char *widget_deleted);
-/* (menu_functions.c's lobby update) the bot rows: shown in a split screen game's lobby of a Slayer gametype (BOT
-TEAMS in a team game only), their values written to the settings as they change */
-void ae_split_screen_lobby_update(struct widget_instance *list, unsigned char teams, unsigned char slayer);
+/* (menu_functions.c's lobby update) the bot rows: shown in a split screen game's lobby of a gametype bots play
+(ae_bots_engine_played: Slayer, CTF, Oddball, King, Race; BOT TEAMS in a team game only), their values written to
+the settings as they change */
+void ae_split_screen_lobby_update(struct widget_instance *list, unsigned char teams, long game_engine_index);
 
 #endif
