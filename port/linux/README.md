@@ -512,7 +512,8 @@ computer alone). They are players as you are: in the scores, the respawns
 and the game's rules, on the teams that `bots.teams` asks for, and they
 follow the teams' changes in the lobby. They look for enemies, aim, fire,
 throw grenades and pick up better weapons, as well as `bots.skill` lets
-them, and walk the paths that the campaign's AI finds on the maps' walkable
+them (`bots.shooting_skill` and `bots.movement_skill` can set the aim and
+the movement apart: `game/ae_bots_combat.c`), and walk the paths that the campaign's AI finds on the maps' walkable
 surfaces (`game/bots.c`). They are never in system link or internet games,
 nor in other gametypes, and nothing that the machines send each other
 changes.
@@ -657,6 +658,8 @@ the setting for one start of the game. It has priority over the file.
 | `game.enhanced_animations` | `true` | `HALO_ENHANCED_ANIMATIONS` | `true`: the player bipeds' grenade throws keep their legs moving, blended by speed and direction (crouched throws stay crouched, throws in the air use the jump's legs), Warthog and Scorpion riders stay seated to throw and let go of the grips to throw and reload, and a player turns with the aim while throwing, as while meleeing. `false`: the original animations, which freeze the legs during a throw and stand a rider up. Only in config.toml, not in the menus. |
 | `bots.count` | `0` | `HALO_BOTS` | Computer players (bots) in a local (split screen) Slayer game: `0` to `15` join its lobby with the players, as far as the game has room. Not in system link or internet games. `0`: none, as in the stock game. Refer to "Bots". |
 | `bots.skill` | `"normal"` | `HALO_BOT_SKILL` | How well the bots play: `"easy"`, `"normal"`, `"heroic"` or `"legendary"`: how soon they react, how far and how wide they see, how large their aim error is and how fast it settles, how fast they turn. |
+| `bots.shooting_skill` | `"same"` | `HALO_BOT_SHOOTING_SKILL` | SHOOTING SKILL: the bots' aim, reactions, sight, grenades, blows and headshots at a level of their own (`"recruit"` .. `"legendary"`), or `"same"` for `bots.skill`'s. |
+| `bots.movement_skill` | `"same"` | `HALO_BOT_MOVEMENT_SKILL` | MOVEMENT SKILL: the bots' strafing, jumping, crouching, closing in and retreating at a level of their own (`"recruit"` .. `"legendary"`), or `"same"` for `bots.skill`'s. |
 | `bots.teams` | `"even"` | `HALO_BOT_TEAMS` | In a team game: `"even"` puts the bots on both teams, evening them with the players; `"against"` puts them all on the team the players are not on. |
 | `bots.playfight` | `false` | `HALO_BOT_PLAYFIGHT` | PLAYFIGHT, as Halo Infinite's Training Mode: the bots move, strafe and aim at you, but never shoot, throw a grenade or strike (aim practice). Takes effect at once. |
 | `paths.data` | `""` | `HALO_DATA_ROOT` | The data root. Refer to "Start the game". |

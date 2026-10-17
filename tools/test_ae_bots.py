@@ -135,3 +135,32 @@ def test_no_bots_in_ae_juggernaut(tmp_path):
     assert status == 0, output[-3000:]
     assert not _bots(output)
     assert re.search(r"bots: none in this game: .* is a game of Oddball, not Slayer", output)
+
+
+def test_playfight_never_shoots(tmp_path):
+    """PLAYFIGHT (bots.playfight): LEGENDARY bots with the fight by level (ae_bots_combat.c) still never fire,
+    throw or strike: no round leaves their magazines, no grenade their hands, no kill is theirs"""
+    status, output = _play(tmp_path, "local:bloodgulch", 60, HALO_BOTS=7, HALO_BOT_SKILL="legendary",
+                           HALO_BOT_PLAYFIGHT="true", HALO_BOT_EVENTS="1")
+    assert status == 0, output[-3000:]
+    bots = _bots(output)
+    assert len(bots) == 7, f"{len(bots)} bots"
+    assert sum(kills for kills, _ in bots.values()) == 0
+    assert re.search(r"bot event: .* ev=pos ", output)
+    assert not re.search(r"bot event: .* ev=(shot|first_shot|melee|throw|hit) ", output)
+
+
+def test_shooting_and_movement_skills(tmp_path):
+    """SHOOTING SKILL and MOVEMENT SKILL each at a level of their own (bots.shooting_skill, bots.movement_skill):
+    halo.log's fight line names both; RECRUIT's shooting throws at most rarely and never aims at a head"""
+    status, output = _play(tmp_path, "local:bloodgulch", 95, HALO_BOTS=7, HALO_BOT_SKILL="legendary",
+                           HALO_BOT_SHOOTING_SKILL="recruit", HALO_BOT_MOVEMENT_SKILL="heroic")
+    assert status == 0, output[-3000:]
+    lines = re.findall(r"bots: combat tick \d+ \(shooting (\w+), movement (\w+)\): grenades (\d+), .*? head aims (\d+), "
+                       r"retreats (\d+), charges (\d+), strafe-jumps (\d+)", output)
+    assert lines, output[-3000:]
+    shooting, movement, grenades, head_aims, retreats, charges, jumps = lines[-1]
+    assert (shooting, movement) == ("recruit", "heroic")
+    assert int(head_aims) == 0 and int(grenades) <= 3
+    # (HEROIC's movement: strafe-jumps)
+    assert int(jumps) > 0

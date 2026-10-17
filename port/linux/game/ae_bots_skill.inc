@@ -14,6 +14,8 @@ wanders between 0.8 and 6 degrees off the target, so it fires and misses as
 a new player does; and it sidesteps barely (0.15 as hard), three times as
 long each way, so a young player's aim can stay on it. RECRUIT and EASY also aim where
 their target was a moment ago (the TRACKING DELAY below).
+Also here: SHOOTING SKILL and MOVEMENT SKILL (the skill each part of a bot plays at) and the declarations of
+ae_bots_combat.inc's glue, which bots.c's fight and look call (the fight by level: ae_bots_combat.h).
 */
 
 #define AE_BOTS_SKILL_RECRUIT NUMBER_OF_BOTS_SKILLS

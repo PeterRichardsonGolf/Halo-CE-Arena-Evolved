@@ -203,7 +203,11 @@ play:
   you can start on your own.
 - **Bots** (0.3.0, Settings > Game Options > BOTS): up to 15 in a split
   screen Slayer game, up to 3 in a LAN game you host; RECRUIT (for new and
-  young players), EASY, NORMAL, HEROIC or LEGENDARY.
+  young players), EASY, NORMAL, HEROIC or LEGENDARY. Each level fights like
+  a person of that level, as Halo Infinite's bots do: when to strike, when
+  to throw a grenade, headshots once your shields are down, backing off when
+  losing, teammates told where you are at HEROIC and up. SHOOTING SKILL and
+  MOVEMENT SKILL set the aim and the movement to levels of their own.
 - SETTINGS from the pause menu in the campaign, for each player in split
   screen, changing that player's own profile; in a match one player edits
   a profile at a time, and B closes only your own pause.
