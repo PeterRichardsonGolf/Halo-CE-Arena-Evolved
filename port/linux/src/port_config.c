@@ -1160,7 +1160,8 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"For the automated tests and pictures of the AE panels (ae_panels.c): a\n"
 		"state drawn over the game's (low, empty, overheated, shield_low,\n"
-		"shield_down, overshield1, overshield2, camo, buffs, health_low)." },
+		"shield_down, overshield1, overshield2, camo, buffs, health_low,\n"
+		"script_blink: the scripts' health, shield and sensor blink)." },
 	{ "debug.ae_message_test", _config_string, "\"\"", "HALO_DEBUG_AE_MESSAGE_TEST", _environment_value, /* AE hook */
 		_platform_all,
 		"For the automated tests and pictures of HUD STYLE AE's message lines\n"

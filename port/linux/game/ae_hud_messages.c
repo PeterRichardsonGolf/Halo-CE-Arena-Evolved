@@ -29,11 +29,12 @@ HUD STYLE AE's CE message lines in the score strip's text style
 #include "units/unit_definitions.h"
 #include "units/units.h"
 
+#include "interface/hud_draw.h"
+
 #include "ae_hud_digits.h"
 #include "ae_hud_message_flow.h"
 #include "ae_hud_messages.h"
 #include "ae_hud_text.h"
-#include "ae_strip_layout.h"
 
 const char *config_string(const char *name);
 void platform_log(char const *format, ...);
@@ -45,12 +46,10 @@ long game_time_get(void);
 /* hud.c's hud_state_message_type: the debug lines below set the game's own messages */
 #define AE_MESSAGE_ENTER_VEHICLE 6
 #define AE_MESSAGE_SWAP_WEAPON 4
+#define AE_HUD_FLASH_REVERSE_COLORS_BIT 0 /* hud_draw.c's _hud_flash_reverse_colors_bit */
 
-#define LINE_PITCH 18.0f      /* baseline to baseline, px x scale (at the strip's sub-line size) */
-#define PICTURE_HEIGHT 1.25f  /* a button picture's height, of the text's capitals */
-#define PICTURE_HEIGHT_WIDE 2.00f /* a wide picture's (a weapon's, twice as wide as tall or more): at the buttons'
-                                     height it is a smudge (first pictures, 10-15) */
-#define PICTURE_WIDE_ASPECT 2.0f
+/* (the sizes: ae_hud_message_flow.h, the lines' own since the campaign review of 2026-10-18; they had the score
+strip's sub-line 14 px, 0.36 of stock's campaign text) */
 #define PICTURE_BIG 1.36f     /* the debug comparison's ("bigicons": buttons 1.7 x the capitals) */
 #define PICTURE_GAP 0.12f     /* the room after a picture, of the text's size */
 #define PICTURE_HALO_ALPHA 0.50f
@@ -58,6 +57,9 @@ long game_time_get(void);
 
 static const real white_rgb[3] = { 229.0f / 255.0f, 240.0f / 255.0f, 255.0f / 255.0f };
 static const real dark_rgb[3] = { 6.0f / 255.0f, 10.0f / 255.0f, 18.0f / 255.0f };
+/* a flashing help line (the scripts' enable_hud_help_flash) goes from the white toward the PC menus' ice-blue focus
+glow, never CE's own blue-grey or an amber */
+static const real flash_rgb[3] = { 161.0f / 255.0f, 206.0f / 255.0f, 255.0f / 255.0f };
 
 static struct
 {
@@ -66,6 +68,10 @@ static struct
 	real scale;
 	real px;   /* the text's size (its em) */
 	real cap;  /* its capitals' height */
+	real flash; /* a flashing help line's phase: 0 the white, 1 the ice-blue (ae_hud_messages_colour) */
+	boolean opaque; /* a help or state line: drawn at full alpha, not its colour's constant 0.5 */
+	real picture_wide, picture_high, picture_px; /* the last picture's texels and drawn height (the log line) */
+	real drawn_alpha, flash_most; /* CE's last line colour's alpha, the most flash since the last log line */
 	long saved_font;
 	real_argb_color saved_color;
 	struct ae_hud_message_flow flow;
@@ -194,7 +200,7 @@ boolean ae_hud_messages_begin(short local_player_index, real left, real first_ca
 	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || scale <= 0.0f)
 		return FALSE;
 	/* (no font, no AE text: CE's lines as before) */
-	test_px = ae_strip_text_px(AE_STRIP_SUB_PX, scale, scale);
+	test_px = ae_hud_message_px(scale);
 	if (ae_hud_text_measure(L"H", test_px) <= 0.0f)
 		return FALSE;
 	test_messages(local_player_index);
@@ -206,17 +212,12 @@ boolean ae_hud_messages_begin(short local_player_index, real left, real first_ca
 	block.scale = scale;
 	block.px = test_px;
 	block.cap = AE_HUD_TEXT_CAP * block.px;
-	pitch = LINE_PITCH * scale;
-	if (pitch < block.px * LINE_PITCH / AE_STRIP_SUB_PX)
-		pitch = block.px * LINE_PITCH / AE_STRIP_SUB_PX; /* (the quarter views' floor: lines as far apart as the
-		                                                       text is big) */
-	/* the wrap: no wider than twice the ammo group (owner 10-15: a block under the counter), never past the view's
-	edge */
-	right = view_width - left;
-	if (group_width > 0.0f && left + 2.0f * group_width < right)
-		right = left + 2.0f * group_width;
-	if (right < left + 8.0f * block.px)
-		right = left + 8.0f * block.px;
+	block.flash = 0.0f;
+	block.opaque = FALSE;
+	pitch = ae_hud_message_pitch(block.px);
+	/* the wrap: no wider than twice the ammo group (owner 10-15: a block under the counter); with no group (the
+	campaign's start, no weapon yet) 26 em, not the whole view (campaign review F3) */
+	right = ae_hud_message_wrap_right(left, view_width, group_width, block.px, scale);
 	ae_hud_message_flow_start(&block.flow, left, right, first_cap_top + block.cap, pitch);
 	block.open = TRUE;
 
@@ -224,9 +225,12 @@ boolean ae_hud_messages_begin(short local_player_index, real left, real first_ca
 	{
 		logged_tick[local_player_index] = tick / 60;
 		platform_log("ae messages: tick %ld view %d left=%.1f cap_top=%.1f right=%.1f px=%.1f pitch=%.1f "
-			"texts=%ld pictures=%ld list=%ld", tick / 60 * 60, local_player_index, left, first_cap_top, right,
-			block.px, pitch, block.texts, block.pictures, block.list_lines);
+			"texts=%ld pictures=%ld list=%ld picture=%.0fx%.0f@%.1f alpha=%.2f flash=%.2f", tick / 60 * 60,
+			local_player_index, left, first_cap_top, right, block.px, pitch, block.texts, block.pictures,
+			block.list_lines, block.picture_wide, block.picture_high, block.picture_px, block.drawn_alpha,
+			block.flash_most);
 		block.texts = block.pictures = block.list_lines = 0;
+		block.flash_most = 0.0f;
 	}
 	return TRUE;
 }
@@ -234,6 +238,55 @@ boolean ae_hud_messages_begin(short local_player_index, real left, real first_ca
 void ae_hud_messages_end(void)
 {
 	block.open = FALSE;
+}
+
+void ae_hud_messages_colour(boolean objective, boolean help, boolean flashing,
+	struct hud_color_definition const *help_color, union real_argb_color const *drawn)
+{
+	real_argb_color base, flash;
+	real axis[3], length = 0.0f, along = 0.0f, t;
+	short i;
+
+	block.flash = 0.0f;
+	block.opaque = FALSE;
+	if (drawn)
+		block.drawn_alpha = drawn->alpha;
+	if (!block.open || objective)
+		return;
+	/* (a help or state line's colour has a constant alpha, 0.5 in the stock maps, not a fade: AE's white at it was a
+	grey (117,123,134) on a10's cryo bay. An objective's alpha is its fade and stays, as the list lines' do) */
+	block.opaque = TRUE;
+	if (!help || !flashing || !help_color || !drawn)
+		return;
+	/* (get_flash_color mixes the colour toward its flash colour by the phase: read the phase back from the colour CE
+	drew, so AE's white mixes toward the ice-blue in the same beat; reversed colours start at the flash colour) */
+	pixel32_to_real_argb_color(help_color->color, &base);
+	pixel32_to_real_argb_color(help_color->flash_color, &flash);
+	axis[0] = flash.red - base.red;
+	axis[1] = flash.green - base.green;
+	axis[2] = flash.blue - base.blue;
+	for (i = 0; i < 3; i++)
+		length += axis[i] * axis[i];
+	if (length <= 0.0001f)
+		return;
+	along = (drawn->red - base.red) * axis[0] + (drawn->green - base.green) * axis[1] +
+		(drawn->blue - base.blue) * axis[2];
+	t = along / length;
+	t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
+	if (TEST_FLAG(help_color->flash_flags, AE_HUD_FLASH_REVERSE_COLORS_BIT))
+		t = 1.0f - t;
+	block.flash = t;
+	if (t > block.flash_most)
+		block.flash_most = t;
+}
+
+/* the text's colour: AE's white, or toward the ice-blue while a help line flashes */
+static void text_rgb(real rgb[3])
+{
+	short i;
+
+	for (i = 0; i < 3; i++)
+		rgb[i] = white_rgb[i] + (flash_rgb[i] - white_rgb[i]) * block.flash;
 }
 
 /* CE's draw mode kept round AE's text (its font and colour; AE's text sets its own, with no indents) */
@@ -271,6 +324,7 @@ static void flow_text(wchar_t const *source)
 	long length = 0;
 	wchar_t const *walk;
 	real_argb_color color;
+	real rgb[3];
 	wchar_t *at;
 
 	/* (the text without carriage returns; tabs as spaces) */
@@ -278,10 +332,11 @@ static void flow_text(wchar_t const *source)
 		if (*walk != L'\r')
 			text[length++] = *walk == L'\t' ? L' ' : *walk;
 	text[length] = 0;
-	color.alpha = block.saved_color.alpha;
-	color.red = white_rgb[0];
-	color.green = white_rgb[1];
-	color.blue = white_rgb[2];
+	text_rgb(rgb);
+	color.alpha = block.opaque ? 1.0f : block.saved_color.alpha;
+	color.red = rgb[0];
+	color.green = rgb[1];
+	color.blue = rgb[2];
 
 	at = text;
 	while (length > 0)
@@ -339,6 +394,9 @@ boolean ae_hud_message_list_line(wchar_t const *text)
 {
 	if (!block.open)
 		return FALSE;
+	/* (the list's lines after the help line keep their own fade and AE's white) */
+	block.opaque = FALSE;
+	block.flash = 0.0f;
 	ae_hud_message_flow_new_line(&block.flow);
 	if (text && text[0])
 	{
@@ -399,12 +457,41 @@ static pixel32 premultiplied(real const rgb[3], real alpha)
 	return real_argb_color_to_pixel32(&color);
 }
 
+/* the A button's height in texels when bitmap is a page of the HUD's message icons sheet, else 0: CE's pictures keep
+their proportions to it (ae_hud_message_picture_height). (A page, or a stand-in of one: hud_hires_tags.c's and the
+PlayStation pictures' placeholders are new bitmaps of the page's size, so a page is known by its size too) */
+static real sheet_button_texels(struct bitmap_data const *bitmap)
+{
+	long group_index = hud_globals ? hud_globals->messaging.messaging_icons.index : NONE;
+	struct bitmap_group *group;
+	struct bitmap_data const *button = NULL;
+	real_rectangle2d const *clip = NULL;
+	boolean member = FALSE;
+	long i;
+
+	if (group_index == NONE || !bitmap)
+		return 0.0f;
+	group = bitmap_group_get(group_index);
+	for (i = 0; i < group->bitmaps.count && !member; i++)
+	{
+		struct bitmap_data const *page = TAG_BLOCK_GET_ELEMENT(&group->bitmaps, i, struct bitmap_data);
+
+		member = (boolean)(page == bitmap || (page->width == bitmap->width && page->height == bitmap->height));
+	}
+	if (!member)
+		return 0.0f;
+	hud_retrieve_bitmap_and_bounding_rect(group_index, 0, 0, &button, &clip);
+	if (!button || !clip || button->height <= 0)
+		return 0.0f;
+	return (clip->y1 - clip->y0) * (real)button->height;
+}
+
 boolean ae_hud_message_icon(struct bitmap_data const *bitmap, union real_rectangle2d const *clip,
 	pixel32 color, boolean own_color)
 {
 	static const real around[8][2] = { { 1.0f, 0.0f }, { -1.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f },
 		{ 0.7071f, 0.7071f }, { -0.7071f, 0.7071f }, { 0.7071f, -0.7071f }, { -0.7071f, -0.7071f } };
-	real texture[4], texels_wide, texels_high, height, width, x, top, halo, alpha;
+	real texture[4], texels_wide, texels_high, height, width, x, top, halo, alpha, rgb[3];
 	real_argb_color text_color;
 	short pass;
 
@@ -421,23 +508,27 @@ boolean ae_hud_message_icon(struct bitmap_data const *bitmap, union real_rectang
 	texels_high = (texture[3] - texture[1]) * (real)bitmap->height;
 	if (texels_wide <= 0.0f || texels_high <= 0.0f)
 		return TRUE;
-	height = block.cap * (texels_wide >= PICTURE_WIDE_ASPECT * texels_high ? PICTURE_HEIGHT_WIDE : PICTURE_HEIGHT);
+	block.picture_wide = texels_wide;
+	block.picture_high = texels_high;
+	height = ae_hud_message_picture_height(block.cap, texels_wide, texels_high, sheet_button_texels(bitmap));
 	if (test_has("bigicons"))
 		height *= PICTURE_BIG; /* (taller pictures, to compare) */
+	block.picture_px = height;
 	width = height * texels_wide / texels_high;
 	ae_hud_message_flow_picture(&block.flow, width, PICTURE_GAP * block.px, &x);
 	top = block.flow.baseline - block.cap / 2.0f - height / 2.0f;
 
 	/* (the line's alpha: CE's draw colour's, an objective's fade) */
 	draw_string_get_color(&text_color);
-	alpha = text_color.alpha;
+	alpha = block.opaque ? 1.0f : text_color.alpha;
 	halo = 2.0f * (real)sqrt(block.px / 36.0f);
 	for (pass = 0; pass < 8; pass++)
 		picture_quad(bitmap, texture, x + around[pass][0] * halo, top + around[pass][1] * halo,
 			x + width + around[pass][0] * halo, top + height + around[pass][1] * halo,
 			premultiplied(dark_rgb, PICTURE_HALO_ALPHA * alpha));
+	text_rgb(rgb);
 	picture_quad(bitmap, texture, x, top, x + width, top + height,
-		own_color ? color : premultiplied(white_rgb, alpha));
+		own_color ? color : premultiplied(rgb, alpha));
 	block.pictures++;
 	return TRUE;
 }

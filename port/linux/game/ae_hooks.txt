@@ -577,6 +577,10 @@ source/interface/hud_messaging.c	text_bounds.x0 = line_bounds.x0;\nif (!ae_hud_m
 source/interface/hud_messaging.c	text_bounds.x0 = line_bounds.x0;\nif (!ae_hud_message_text(icon_text)) /* AE hook */\nrasterizer_draw_unicode_string(
 source/interface/hud_messaging.c	text_bounds.x0 = line_bounds.x0;\nif (!ae_hud_message_text(L"<no button icon>")) /* AE hook */\nrasterizer_draw_unicode_string(
 source/interface/hud_messaging.c	maximum_message_count--;\nae_hud_messages_keep_first_line(); /* AE hook */
+# a flashing help line (enable_hud_help_flash) flashes in AE's text too: AE reads the flash's phase back from the colour
+# CE chose (campaign review 2026-10-18 I2), and help and state lines are drawn opaque (their colours' alpha is 0.5: AE's
+# white read as grey); objectives keep AE's white at their fade
+source/interface/hud_messaging.c	ae_hud_messages_colour(objective_active, help_active, hud_messaging_globals->use_flash, &hud_globals->messaging.color, &state_color); /* AE hook */
 source/interface/hud_messaging.c	if (!ae_hud_message_list_line(formatted)) /* AE hook */\nrasterizer_draw_unicode_string(
 source/interface/hud_messaging.c	if (!ae_hud_message_list_line(item_text)) /* AE hook */\nrasterizer_draw_unicode_string(
 source/interface/hud_messaging.c	if (!ae_hud_message_list_line(message->text)) /* AE hook */\nrasterizer_draw_unicode_string(

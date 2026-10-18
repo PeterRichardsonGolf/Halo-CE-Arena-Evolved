@@ -32,5 +32,7 @@ boolean ae_power_list_extent(short local_player_index, real extent[4]);
 /* the right-hand column's x in the view (screen px): the shield meter's right edge, where the timers list (and the
 own-buff rows of the AE panels) end (spec 14.15 part 3) */
 real ae_power_list_right_x(short local_player_index);
+/* (a map's tags going) the last game's lists forgotten: a campaign never draws one (campaign review 2026-10-18 M6) */
+void ae_power_list_forget(void);
 
 #endif /* __AE_POWER_LIST_H */

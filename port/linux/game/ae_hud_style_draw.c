@@ -387,12 +387,26 @@ static void bottom_line(const wchar_t *line, long length, real centre, real base
 	}
 }
 
+#define SPECTATE_FIRST_PX 24.0f   /* "SPECTATING Player (A: NEXT)", px at 1080p, single view */
+#define SPECTATE_HINT_PX 20.0f    /* the hint under it */
+#define SPECTATE_PITCH 30.0f      /* baseline to baseline, px x s */
+#define SPECTATE_FLOOR_PX 16.0f   /* as the message lines' floor (ae_hud_message_flow.h) */
+
+static real spectate_px(real px)
+{
+	return px < SPECTATE_FLOOR_PX ? SPECTATE_FLOOR_PX : px;
+}
+
 boolean ae_hud_style_bottom_text(const wchar_t *text)
 {
 	real ppu = ae_hud_pixels_per_unit();
 	rectangle2d bounds = render.camera.window_bounds;
 	real s = ae_score_strip_view_scale();
-	real first_px = floor_px(16.0f * s), hint_px = floor_px(14.0f * s), pitch = 22.0f * s;
+	/* (co-op's spectate lines at the message lines' size: campaign review 2026-10-18 F4; they were 16 / 14 x s,
+	floor 12, 0.40 of stock's) */
+	real first_px = spectate_px(SPECTATE_FIRST_PX * s), hint_px = spectate_px(SPECTATE_HINT_PX * s);
+	real pitch = SPECTATE_PITCH * s < 1.25f * first_px ? 1.25f * first_px : SPECTATE_PITCH * s; /* (floored lines stay
+	apart) */
 	real centre = ((real)bounds.x0 + (real)bounds.x1) / 2.0f * ppu;
 	real bottom = (real)(bounds.y1 - 24) * ppu;
 	long starts[4], lengths[4];

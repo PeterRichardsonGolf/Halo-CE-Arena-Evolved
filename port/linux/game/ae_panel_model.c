@@ -356,3 +356,14 @@ void ae_panel_trail_step(struct ae_panel_trail *state, real shield, long now, re
 	*alpha = age < AE_PANEL_TRAIL_HOLD ? 1.0f :
 		1.0f - (real)(age - AE_PANEL_TRAIL_HOLD) / (real)AE_PANEL_TRAIL_FADE;
 }
+
+real ae_panel_script_blink_fade(boolean blinking, long tick, boolean reduced_motion)
+{
+	if (!blinking)
+		return 1.0f;
+	if (tick < 0)
+		tick = 0;
+	if (reduced_motion)
+		return tick % AE_PANEL_SCRIPT_BLINK_CALM_TICKS < AE_PANEL_SCRIPT_BLINK_TICKS ? AE_PANEL_SCRIPT_BLINK_DIM : 1.0f;
+	return (tick / AE_PANEL_SCRIPT_BLINK_TICKS) % 2 == 0 ? 1.0f : AE_PANEL_SCRIPT_BLINK_DIM;
+}

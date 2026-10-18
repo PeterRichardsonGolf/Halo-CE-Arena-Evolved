@@ -44,6 +44,8 @@ const char *ae_panel_engine_weapon_name(short local_player_index);
 void ae_panel_engine_debug_log(short local_player_index);
 /* debug.ae_panel_log's value, read again only when a setting changed (the HUD's views ask it every frame) */
 boolean ae_panel_engine_log_on(void);
+/* REDUCE MOTION (display.arena_menus_reduce_motion), read the same way */
+boolean ae_panel_engine_reduced_motion(void);
 /* (the game's tick, through ae_strip_engine_debug_log's hook) debug.ae_panel_powerups and debug.ae_panel_seat */
 void ae_panel_engine_debug_tick(void);
 

@@ -23,6 +23,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached
   it, shields or none), so HALO 3 plays the same as HALO 2. Before, it was our own rule (health only after full
   shields, slower) and CE's shield timers.
+- HUD STYLE AE's hints, objectives and button prompts are bigger: about 0.6 of the classic HUD's campaign text
+  instead of 0.36 (24 px at 1080p in a single view, never under 16 px in any view), with button pictures 1.9 times
+  the capitals' height (a thumbstick 2.4, so its RIGHT / LEFT label can be read; a weapon 2.6). With no weapon yet
+  (the start of a campaign level) the lines wrap at a readable width instead of running across the screen. This
+  changes multiplayer's prompts and pickup lines too. Hints and prompts are solid white now, not half see-through.
+- The campaign tutorial's blinking health and shield (and a script's blinking motion sensor) blink under HUD STYLE
+  AE too, in their own blue; with REDUCE MOTION they dim briefly every 2 s instead.
+- A flashing help line flashes again under HUD STYLE AE: it pulses from white to the menus' ice blue.
+- Network co-op's SPECTATING line and the hint under it are bigger (24 and 20 px at 1080p, never under 16).
 - Split screen's JOIN screen: Multiplayer > SPLIT SCREEN starts with four player cards. The first device to press
   START (ENTER or SPACE on the keyboard) is PLAYER 1, the next PLAYER 2, so keyboard and mouse can be any player, and
   each device stays that player's until it leaves: no more pad taking player 1 because it was plugged in first. Each

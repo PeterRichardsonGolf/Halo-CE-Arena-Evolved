@@ -46,6 +46,9 @@ enum ae_panel_tone      /* the tokens (14.15 part 1) */
 
 /* a tone's colour (0..1) */
 void ae_panel_tone_rgb(short tone, real rgb[3]);
+/* every draw below at fade x its alpha, keylines too, until set back to 1 (a scripted blink: ae_panels.c,
+ae_sensor.c) */
+void ae_panel_draw_set_fade(real fade);
 
 /* a box in the outline rule; fill_alpha 0: no fill */
 void ae_panel_draw_box(const struct ae_panel_para *box, real scale, real fill_alpha, short line_tone);
