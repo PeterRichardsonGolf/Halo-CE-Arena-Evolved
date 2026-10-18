@@ -3,7 +3,9 @@ AE_MAP_LOOK_FIXES.H
 
 Look fixes (ae_map_look_fixes.c): tag fields that are wrong in a map's own
 data, so that the stock engine draws the map wrongly too (h2d_coagulation's
-teleporter: an opaque black card), changed in the map's loaded tags; and the
+teleporter: an opaque black card), changed in the map's loaded tags, and tag
+references pointed at another of the map's tags (h2d_salicreek's overshield
+drawn with the camouflage's model); and the
 rasterizer's "incompatible bitmap type" error said once for each bitmap and
 type until the next map, not at every draw. The table and its rules:
 ae_map_look_fixes_rules.h. Include after cseries.h.

@@ -21,7 +21,13 @@ enum
 	shader_transparent_chicago_definition) */
 	CHICAGO_FRAMEBUFFER_BLEND_FUNCTION_OFFSET = 0x2C,
 	FRAMEBUFFER_BLEND_ALPHA_BLEND = 0,
-	FRAMEBUFFER_BLEND_ADD = 3
+	FRAMEBUFFER_BLEND_ADD = 3,
+	/* an object's model and collision model references (object_definitions.h's _object_definition) */
+	OBJECT_MODEL_OFFSET = 0x28,
+	OBJECT_COLLISION_MODEL_OFFSET = 0x70,
+	/* a tag reference: the group, the name, the name's length, the tag index (tag_groups.h) */
+	TAG_REFERENCE_SIZE = 0x10,
+	TAG_REFERENCE_INDEX_OFFSET = 0xC
 };
 
 /* ---------- globals */
@@ -49,17 +55,38 @@ struct ae_map_look_fix const ae_map_look_fixes[] =
 
 unsigned int const ae_map_look_fix_count = sizeof(ae_map_look_fixes) / sizeof(ae_map_look_fixes[0]);
 
+/* h2d_salicreek (H2 Demakes, an Xbox map): its overshield's equipment (item collection "over shield") is drawn
+with the model named "over shield", which in Halo's own tags is the active camouflage's (Bungie's names are
+swapped: the stock overshield equipment uses "active camoflage"'s model and collision model, the camouflage
+"over shield"'s), so the pickup looks like the camouflage sphere. The map has the stock pair too (the stock
+overshield equipment, which no item collection places): the equipment is given it, model and collision model
+together as the stock overshield has them (both models one node, one region, one geometry, three shaders). */
+struct ae_map_look_retarget const ae_map_look_retargets[] =
+{
+	{ "h2d_salicreek", AE_GROUP('e', 'q', 'i', 'p'), "powerups\\over shield\\over shield", OBJECT_MODEL_OFFSET,
+		AE_GROUP('m', 'o', 'd', 'e'), "powerups\\over shield\\over shield",
+		"powerups\\active camoflage\\active camoflage",
+		"the overshield drawn with the stock overshield's model, not the camouflage's" },
+	{ "h2d_salicreek", AE_GROUP('e', 'q', 'i', 'p'), "powerups\\over shield\\over shield",
+		OBJECT_COLLISION_MODEL_OFFSET, AE_GROUP('c', 'o', 'l', 'l'), "powerups\\over shield\\over shield",
+		"powerups\\active camoflage\\active camoflage",
+		"the overshield given the stock overshield's collision model, to match its model" },
+};
+
+unsigned int const ae_map_look_retarget_count = sizeof(ae_map_look_retargets) / sizeof(ae_map_look_retargets[0]);
+
 /* ---------- public code */
 
-int ae_map_look_fix_for_map(struct ae_map_look_fix const *fix, char const *map_name)
+/* whether a fix's map name is the header's (at most AE_MAP_LOOK_FIX_MAP_NAME_SIZE bytes of it, any case) */
+static int map_name_matches(char const *fix_name, char const *map_name)
 {
 	unsigned int index;
 
-	if (!fix || !fix->map_name || !map_name)
+	if (!fix_name || !map_name)
 		return 0;
 	for (index = 0; index < AE_MAP_LOOK_FIX_MAP_NAME_SIZE; index++)
 	{
-		unsigned char want = (unsigned char)fix->map_name[index];
+		unsigned char want = (unsigned char)fix_name[index];
 		unsigned char have = (unsigned char)map_name[index];
 
 		if (tolower(want) != tolower(have))
@@ -68,7 +95,40 @@ int ae_map_look_fix_for_map(struct ae_map_look_fix const *fix, char const *map_n
 			return 1;
 	}
 	/* (a name of the header's whole 32 bytes: the fix's must end there too) */
-	return fix->map_name[AE_MAP_LOOK_FIX_MAP_NAME_SIZE] == '\0';
+	return fix_name[AE_MAP_LOOK_FIX_MAP_NAME_SIZE] == '\0';
+}
+
+int ae_map_look_fix_for_map(struct ae_map_look_fix const *fix, char const *map_name)
+{
+	return fix && map_name_matches(fix->map_name, map_name);
+}
+
+int ae_map_look_retarget_for_map(struct ae_map_look_retarget const *fix, char const *map_name)
+{
+	return fix && map_name_matches(fix->map_name, map_name);
+}
+
+enum ae_map_look_fix_result ae_map_look_retarget_apply(struct ae_map_look_retarget const *fix, unsigned char *data,
+	unsigned int size, int32_t expected_index, int32_t new_index)
+{
+	uint32_t group;
+	int32_t index;
+
+	if (!fix || !data || size < TAG_REFERENCE_SIZE || fix->offset > size - TAG_REFERENCE_SIZE)
+		return AE_MAP_LOOK_FIX_OUTSIDE;
+	/* (-1 is none: a tag's index has its salt in the high bits, so most are negative) */
+	if (expected_index == -1 || new_index == -1)
+		return AE_MAP_LOOK_FIX_MISSING;
+	memcpy(&group, data + fix->offset, sizeof(group));
+	memcpy(&index, data + fix->offset + TAG_REFERENCE_INDEX_OFFSET, sizeof(index));
+	if (group != (uint32_t)fix->target_group)
+		return AE_MAP_LOOK_FIX_UNEXPECTED;
+	if (index == new_index)
+		return AE_MAP_LOOK_FIX_ALREADY;
+	if (index != expected_index)
+		return AE_MAP_LOOK_FIX_UNEXPECTED;
+	memcpy(data + fix->offset + TAG_REFERENCE_INDEX_OFFSET, &new_index, sizeof(new_index));
+	return AE_MAP_LOOK_FIX_APPLIED;
 }
 
 enum ae_map_look_fix_result ae_map_look_fix_apply(struct ae_map_look_fix const *fix, unsigned char *data,
