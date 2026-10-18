@@ -31,6 +31,8 @@ int ae_ce_map_event_function(struct widget_instance *widget, struct event_record
 /* (ae_hooks.h) ae_ce_map_view_place is defined here */
 /* advances RESTART GAME through postgame, the lobby and START */
 void ae_ce_map_update(void);
+/* (menu_tags_loaded, AE hook) the maps' own button prompts widened where the port's text outgrows them */
+void ae_ce_map_prompts_fit(void);
 
 /* (menu_tags.c's allocate) a block of the menus' tags, size bytes, which the
 game reads as tags: noted only while a Custom Edition map's are made;

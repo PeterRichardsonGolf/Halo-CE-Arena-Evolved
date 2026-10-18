@@ -85,6 +85,10 @@ void *cache_files_tag_instances(long *count);
 #define UI_WIDGET_COLLECTION_TAG 'Soul'
 /* the multiplayer maps' widget collection (menu_tags.c's MULTIPLAYER_COLLECTION) */
 #define MULTIPLAYER_COLLECTION "ui\\shell\\multiplayer"
+/* the maps' small "=CANCEL" prompt (ui\shell\main_menu\=cancel_sm, beside B in the pause box) is 63 wide in their
+tags, which the port's high resolution text outgrows (its L cut at 1080p); 72 still ends before the A button that
+button_key_sm puts 90 along, 16 past it */
+#define PROMPT_CANCEL_WIDTH 72
 /* the campaign's pause screens, which menu_tags.c patches too (its
 solo_pause_screens) */
 static char const *const solo_pause_screens[] =
@@ -861,6 +865,18 @@ int ae_ce_map_event_function(struct widget_instance *widget, struct event_record
 		}
 	}
 	return 0;
+}
+
+void ae_ce_map_prompts_fit(void)
+{
+	long tag = tag_loaded(UI_WIDGET_DEFINITION_TAG, "ui\\shell\\main_menu\\=cancel_sm");
+	struct ce_widget_definition *definition;
+
+	if (tag == NONE)
+		return;
+	definition = tag_get(UI_WIDGET_DEFINITION_TAG, tag);
+	if (definition->bounds.x1 - definition->bounds.x0 < PROMPT_CANCEL_WIDTH)
+		definition->bounds.x1 = (short)(definition->bounds.x0 + PROMPT_CANCEL_WIDTH);
 }
 
 void ae_ce_map_update(void)

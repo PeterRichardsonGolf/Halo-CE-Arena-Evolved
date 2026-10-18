@@ -2353,6 +2353,7 @@ void menu_tags_loaded(
 		if (campaign_map)
 			pause_campaign_patch(instances);
 		pause_network_patch();
+		ae_ce_map_prompts_fit(); /* AE hook */
 		if (build.failed)
 			goto failed;
 		/* (those it made) */
