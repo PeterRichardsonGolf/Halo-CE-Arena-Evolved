@@ -44,6 +44,8 @@ static struct
 	int test_join, test_back;
 	/* since when neither the JOIN screen nor a split screen game wants the map (0: they do) */
 	Uint64 unwanted_since;
+	/* asked to end once no key or button that backs out or joins is held (ae_seats_end_released) */
+	int closing;
 } seat_map;
 
 /* the map lets go after this long unwanted (a screen changing, a game being made, are shorter) */
@@ -176,7 +178,12 @@ static int seats_follow_pads(
 void ae_seats_begin(
 	void)
 {
+	/* (the test's keys now are kept: the key that opened the screen is still down, and no press) */
+	int test_join = seat_map.test_join, test_back = seat_map.test_back;
+
 	memset(&seat_map, 0, sizeof(seat_map));
+	seat_map.test_join = test_join;
+	seat_map.test_back = test_back;
 	seat_map.on = 1;
 	platform_log("seats: on (the first to press START, ENTER or SPACE is PLAYER 1)");
 }
@@ -330,8 +337,21 @@ void ae_seats_view(
 void ae_seats_leave_seat(
 	int seat)
 {
+	int index;
+
 	if (seat < 0 || seat >= AE_SEATS_MAXIMUM || seat_map.seats.seat[seat].kind == AE_SEAT_EMPTY)
 		return;
+	/* (the press that left, B or ESC, is held still: the device counts as pressing nothing until it lets go, else
+	that B would also ask, seat-less now, to go back) */
+	if (seat_map.seats.seat[seat].kind == AE_SEAT_KEYBOARD)
+	{
+		seat_map.keyboard_join = seat_map.keyboard_back = 1;
+	}
+	for (index = 0; index < seat_map.pad_count; index++)
+	{
+		if (seat_map.pads[index].id == seat_map.seats.seat[seat].pad_id)
+			seat_map.pads[index].start = seat_map.pads[index].back = 1;
+	}
 	ae_seats_leave(&seat_map.seats, seat);
 	platform_log("seats: P%d left", seat + 1);
 }
@@ -352,8 +372,18 @@ int ae_seats_close(
 int ae_seats_keyboard_port(
 	void)
 {
+	static int logged = -2;
 	int seat = seat_map.on ? ae_seats_keyboard(&seat_map.seats) : -1;
 
+	/* (said when it changes: which controller the keyboard and mouse are) */
+	if (seat != logged)
+	{
+		logged = seat;
+		if (seat >= 0)
+			platform_log("seats: the keyboard and mouse are controller %d (P%d)", seat + 1, seat + 1);
+		else if (seat_map.on)
+			platform_log("seats: the keyboard and mouse have no seat");
+	}
 	return seat >= 0 ? seat : 0;
 }
 
@@ -375,12 +405,48 @@ unsigned long ae_seats_connected(
 	unsigned long mask = 0;
 	int seat;
 
-	for (seat = 0; seat_map.on && seat < AE_SEATS_MAXIMUM; seat++)
+	if (!seat_map.on)
+		return 0;
+	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
 	{
 		if (seat_map.seats.seat[seat].kind != AE_SEAT_EMPTY && !seat_map.seats.seat[seat].held)
 			mask |= 1UL << seat;
 	}
+	/* (port 1 stays, but for an unplugged pad's held seat: the menus are the first controller's, and the game takes
+	it gone at the main menu for the player leaving, back out of every screen) */
+	if (!seat_map.seats.seat[0].held)
+		mask |= 1UL;
 	return mask;
+}
+
+/* nothing held that backs out or joins: the keyboard's ENTER, SPACE, ESC, BACKSPACE, any pad's START or B */
+static int nothing_held(
+	SDL_Gamepad **gamepads,
+	int count)
+{
+	struct platform_input_state input;
+	int index;
+
+	if (seat_map.test_join || seat_map.test_back)
+		return 0;
+	platform_input_read(&input, 0);
+	if (input.keys[SDL_SCANCODE_RETURN] || input.keys[SDL_SCANCODE_KP_ENTER] || input.keys[SDL_SCANCODE_SPACE] ||
+		input.keys[SDL_SCANCODE_ESCAPE] || input.keys[SDL_SCANCODE_BACKSPACE])
+		return 0;
+	for (index = 0; index < count; index++)
+	{
+		if (SDL_GetGamepadButton(gamepads[index], SDL_GAMEPAD_BUTTON_START) ||
+			SDL_GetGamepadButton(gamepads[index], SDL_GAMEPAD_BUTTON_EAST))
+			return 0;
+	}
+	return 1;
+}
+
+void ae_seats_end_released(
+	void)
+{
+	if (seat_map.on)
+		seat_map.closing = 1;
 }
 
 int ae_seats_fill(
@@ -406,6 +472,13 @@ int ae_seats_fill(
 	}
 	(void)count;
 	count = connected_pads(listed);
+	/* (backed out of the JOIN screen: off once the B or ESC that did it is let go, else it would press B again on
+	the first controller, the screen under) */
+	if (seat_map.closing && nothing_held(listed, count))
+	{
+		ae_seats_end();
+		return 0;
+	}
 	seats_follow_pads(listed, count);
 	for (seat = 0; seat < ports; seat++)
 	{
@@ -428,6 +501,7 @@ int ae_seats_fill(
 /* (the dedicated server and Android: no seats) */
 void ae_seats_begin(void) {}
 void ae_seats_end(void) {}
+void ae_seats_end_released(void) {}
 void ae_seats_test_keys(int join, int back) { (void)join; (void)back; }
 int ae_seats_active(void) { return 0; }
 unsigned ae_seats_update(void) { return 0; }

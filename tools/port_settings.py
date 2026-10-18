@@ -1948,7 +1948,7 @@ def _join_screen() -> list:
                       '<on event="created" run="ae split join open"/>',
                       '<on event="deleted" run="ae split join close"/>',
                       '<on event="b" run="ae split b" back="true"/>',
-                      '<on event="back" run="ae split b" back="true"/>',
+                      '<on event="back" run="ae split back key" back="true"/>',
                       *profile_keys,
                       f'<child widget="{JOIN}/header_split_screen"/>', *children,
                       f'<child widget="{JOIN}/join_button_bar" y="414"/>'])

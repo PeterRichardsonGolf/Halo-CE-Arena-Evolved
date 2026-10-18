@@ -194,7 +194,7 @@ boolean ui_widget_port_multiplayer_player(short controller_index, long profile_i
 boolean ui_widget_port_host(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted);
 void p2p_set_hosting_allowed(int allowed);
 void p2p_set_hosting_public(int public);
-void event_manager_post_button(short controller_index, short button_index);
+void ui_widget_port_post_button(short controller_index, short button_index);
 unsigned long system_milliseconds(void);
 
 #define JOIN_PROFILES 32
@@ -475,6 +475,21 @@ static void join_card_update(struct widget_instance *screen, short seat)
 	join_text(join_child(screen, "join_controls", seat), controls);
 }
 
+/* the seat map on, with no seat and no profile chosen (the screen's open, or its first update, whichever is first) */
+static void join_begin(void)
+{
+	short seat;
+
+	if (ae_seats_active())
+		return;
+	ae_seats_begin();
+	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+	{
+		join.profile[seat] = NONE;
+		join.joined_at[seat] = 0;
+	}
+}
+
 void ae_split_screen_join_update(struct widget_instance *screen)
 {
 	unsigned bits;
@@ -486,8 +501,7 @@ void ae_split_screen_join_update(struct widget_instance *screen)
 		screen = screen->parent;
 	if (!screen)
 		return;
-	if (!ae_seats_active())
-		ae_seats_begin();
+	join_begin();
 	bits = ae_seats_update();
 	ae_seats_get(&seats);
 	if (bits & (AE_SEATS_JOINED | AE_SEATS_CHANGED))
@@ -508,7 +522,8 @@ void ae_split_screen_join_update(struct widget_instance *screen)
 	{
 		/* (a device with no seat: back to Multiplayer, as the screen's B does, with every seat let go) */
 		join.back_requested = TRUE;
-		event_manager_post_button(0, JOIN_BUTTON_B);
+		platform_log("split screen: a device with no seat asks to go back");
+		ui_widget_port_post_button(0, JOIN_BUTTON_B);
 	}
 	any = ae_seats_taken(&seats) > 0;
 	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
@@ -589,14 +604,7 @@ unsigned char ae_split_screen_event(char const *name, struct widget_instance *wi
 	{
 		join.open = TRUE;
 		join.back_requested = FALSE;
-		if (!ae_seats_active())
-		{
-			short seat;
-
-			ae_seats_begin();
-			for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
-				join.profile[seat] = NONE;
-		}
+		join_begin();
 		join_profiles_read();
 		return TRUE;
 	}
@@ -616,13 +624,24 @@ unsigned char ae_split_screen_event(char const *name, struct widget_instance *wi
 		}
 		join.back_requested = FALSE;
 		join.open = FALSE;
-		ae_seats_end();
+		ae_seats_end_released();
+		return TRUE;
+	}
+	if (!strcmp(name, "ae split back key"))
+	{
+		/* (the BACK event: a pad's BACK, and the keyboard's ESC, which also presses B on the keyboard's own port: a
+		seated keyboard leaves through that B, so its BACK does nothing; a device with no seat goes back) */
+		if (seated || ae_seats_keyboard(&seats) >= 0)
+			return FALSE;
+		join.back_requested = FALSE;
+		join.open = FALSE;
+		ae_seats_end_released();
 		return TRUE;
 	}
 	if (!strcmp(name, "ae split back"))
 	{
 		join.open = FALSE;
-		ae_seats_end();
+		ae_seats_end_released();
 		return TRUE;
 	}
 	if (!strcmp(name, "ae split profile left") || !strcmp(name, "ae split profile right"))

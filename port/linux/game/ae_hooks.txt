@@ -838,7 +838,7 @@ port/linux/src/xinput_sdl.c	if (port == ae_seats_keyboard_port()) /* AE hook */
 port/linux/src/xinput_sdl.c	if (!console_active && ae_seats_keyboard_plays()) /* AE hook */
 port/linux/src/xinput_sdl.c	if (port_gamepad(gamepads, count, port)) sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); /* AE hook */
 # split screen's JOIN screen (0.3.4, ae_split_screen.c): its handlers and its every-frame update
-port/linux/game/menu_tags.c	"ae split join open", "ae split join close", "ae split b", "ae split back", "ae split profile left", "ae split profile right", "ae split continue", /* AE hook */
+port/linux/game/menu_tags.c	"ae split join open", "ae split join close", "ae split b", "ae split back", "ae split back key", "ae split profile left", "ae split profile right", "ae split continue", /* AE hook */
 port/linux/game/menu_tags.c	"ae split join update", /* AE hook */
 port/linux/game/menu_functions.c	if (!strncmp(name, "ae split ", 9)) /* AE hook */\nreturn ae_split_screen_event(name, widget, controller, widget_deleted);
 port/linux/game/menu_functions.c	if (!strcmp(name, "ae split join update")) /* AE hook */\nae_split_screen_join_update(widget);

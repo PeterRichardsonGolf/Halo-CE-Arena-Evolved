@@ -99,6 +99,8 @@ struct ae_seat_view
 
 void ae_seats_begin(void);
 void ae_seats_end(void);
+/* off as soon as no key or button that joins or backs out is held (backing out of the JOIN screen) */
+void ae_seats_end_released(void);
 int ae_seats_active(void);
 /* every frame while on (the JOIN screen's and the lobby's update): pads plugged and unplugged, and the presses of
 devices with no seat (START / ENTER / SPACE joins, B / ESC / BACKSPACE asks to go back); AE_SEATS_* bits */
@@ -122,7 +124,7 @@ int ae_seats_keyboard_port(void);
 int ae_seats_keyboard_plays(void);
 /* the controller the keyboard's actions and the mouse's aim are: 0 when off; its seat, or -1, when on */
 int ae_seats_keyboard_controller(void);
-/* the ports a seat's device is connected to (held seats are not) */
+/* the ports a seat's device is connected to (held seats are not), and port 1 unless its seat is held */
 unsigned long ae_seats_connected(void);
 /* (sdl_gamepads, through ae_platform_stable_ports) the seats' pads in their ports; the highest port with a pad + 1 */
 struct SDL_Gamepad;
