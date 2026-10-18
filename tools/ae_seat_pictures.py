@@ -2,8 +2,10 @@
 """Arena Evolved: the pictures of split screen's JOIN screen (main_menu/multiplayer_type_select/split_screen/join_*,
 tools/port_settings.py's _join_screen; spec notes/specs/2026-10-16-split-screen-pc.md 4.2 and 6). In the PC menus'
 own look: the cards are the game's panel (bitmaps/spinner_list_3_wide_item_background, its outlined frame) cut to a
-card's size, the profile bar the option row's band; the devices and buttons are Kenney's Input Prompts glyphs (CC0,
-port/linux/ui/fonts) in the menus' blue. Nothing is traced.
+card's size, the profile bar the option row's band; the devices are Kenney's Input Prompts glyphs (CC0,
+port/linux/ui/fonts) in the menus' blue, but for "another pad", drawn here; the buttons are round chips drawn here
+(a blue disc, the symbol in the panel's navy: the OG theme's standard, .superpowers design review 2026-10-18). No
+amber: a held seat is dimmed. Nothing is traced.
 
     python3 tools/ae_seat_pictures.py --write
 
@@ -12,11 +14,12 @@ menus.json list them (tools/test_ae_seat_pictures.py checks both).
 
 The frames, as ae_split_screen.c sets them:
 - bitmaps/ae_seat_card: 0 an empty seat (dim edge, a plus in a dashed ring), 1 a seated player (the menus' blue
-  edge), 2 an unplugged pad's held seat (amber edge);
+  edge), 2 an unplugged pad's held seat (dim edge);
 - bitmaps/ae_seat_devices: 0 keyboard + mouse, 1 Xbox pad, 2 PlayStation pad, 3 Nintendo pad, 4 another pad,
-  5 unplugged (amber, struck through);
-- bitmaps/ae_seat_buttons: 0 Xbox START, 1 PlayStation OPTIONS, 2 ENTER, 3 Xbox B, 4 PlayStation circle, 5 ESC,
-  6 Nintendo B, 7 Nintendo +;
+  5 unplugged (dim, struck through in grey);
+- bitmaps/ae_seat_buttons (round chips): 0 Xbox START, 1 PlayStation OPTIONS, 2 ENTER, 3 Xbox B, 4 PlayStation
+  circle, 5 ESC (small; the capsule is better), 6 Nintendo B, 7 Nintendo +;
+- bitmaps/ae_seat_key_esc: the keyboard's ESC as a capsule;
 - bitmaps/ae_seat_profile_bar: the profile's bar (the option row's band, outlined);
 - bitmaps/ae_seat_strip: the line across the top (the option row's band, outlined).
 """
@@ -30,12 +33,15 @@ UNIT = 4
 
 BLUE = (41, 149, 255)
 DIM = (27, 90, 150)
-AMBER = (255, 186, 64)
+GREY = (150, 150, 150)
+NAVY = (0, 14, 35)
+OVERPASS = ROOT / "port" / "assets" / "fonts" / "Overpass-900.ttf"
 
 # (design units: tools/port_settings.py's _join_screen places them)
 CARD = (146, 300)
 DEVICE = (72, 40)
 BUTTON = (16, 16)
+KEY_ESC = (26, 16)
 PROFILE_BAR = (130, 28)
 STRIP = (608, 28)
 
@@ -47,13 +53,13 @@ DEVICE_GLYPHS = [
     [("xbox", None, "controller_xboxseries")],
     [("ps", None, "controller_playstation5")],
     [("nintendo", None, "controller_wiiu_pro")],
-    [("xbox", None, "controller_xbox360")],
-    [("xbox", None, "controller_xboxseries")],
+    None,
+    None,
 ]
-BUTTON_GLYPHS = [("xbox", None, "xbox_button_menu"), ("ps", None, "playstation5_button_options"),
-                 ("key", None, "keyboard_enter"), ("xbox", None, "xbox_button_b"),
-                 ("ps", None, "playstation_button_circle"), ("key", None, "keyboard_escape"),
-                 ("nintendo", None, "wiiu_button_b"), ("nintendo", None, "wiiu_button_plus")]
+# the chips' symbols, by frame
+BUTTON_SYMBOLS = ["bars", "bars", "return", "B", "ring", "ESC", "B", "plus"]
+# (supersampled, then scaled down: smooth edges)
+SUPER = 4
 
 
 def _code(font: str, code, name: str) -> int:
@@ -142,7 +148,26 @@ def cards(menus: Path) -> list:
         draw.arc((cx - r, cy - r, cx + r, cy + r), k * 15, k * 15 + 9, fill=DIM + (255,), width=w)
     draw.line((cx - 12 * UNIT, cy, cx + 12 * UNIT, cy), fill=DIM + (255,), width=3 * UNIT)
     draw.line((cx, cy - 12 * UNIT, cx, cy + 12 * UNIT), fill=DIM + (255,), width=3 * UNIT)
-    return [empty, seated, _recolour_edge(panel, AMBER)]
+    return [empty, seated, _recolour_edge(panel, DIM)]
+
+
+def _neutral_pad(size, colour):
+    """a pad of no family: a plain body with two grips and two sticks (drawn here: Kenney's set has none)"""
+    from PIL import Image, ImageDraw
+    w, h = size[0] * SUPER, size[1] * SUPER
+    big = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    ink = colour + (255,)
+    body = (w * 0.14, h * 0.1, w * 0.86, h * 0.64)
+    d.rounded_rectangle(body, radius=h * 0.22, fill=ink)
+    d.ellipse((w * 0.1, h * 0.28, w * 0.38, h * 0.96), fill=ink)
+    d.ellipse((w * 0.62, h * 0.28, w * 0.9, h * 0.96), fill=ink)
+    for cx in (0.36, 0.64):
+        r = h * 0.11
+        d.ellipse((w * cx - r, h * 0.42 - r, w * cx + r, h * 0.42 + r), fill=NAVY + (255,))
+        r = h * 0.06
+        d.ellipse((w * cx - r, h * 0.42 - r, w * cx + r, h * 0.42 + r), fill=ink)
+    return big.resize(size, Image.LANCZOS)
 
 
 def devices() -> list:
@@ -151,7 +176,15 @@ def devices() -> list:
     frames = []
     for index, parts in enumerate(DEVICE_GLYPHS):
         image = Image.new("RGBA", size, (0, 0, 0, 0))
-        colour = AMBER if index == 5 else BLUE
+        colour = DIM if index == 5 else BLUE
+        if parts is None:
+            pad = _neutral_pad((round(size[0] * 0.8), round(size[1] * 0.8)), colour)
+            image.alpha_composite(pad, ((size[0] - pad.width) // 2, (size[1] - pad.height) // 2))
+            if index == 5:
+                ImageDraw.Draw(image).line((size[0] * 0.18, size[1] * 0.9, size[0] * 0.82, size[1] * 0.1),
+                                           fill=GREY + (255,), width=3 * UNIT)
+            frames.append(image)
+            continue
         # (a pad about as tall as the PLAYER title's capitals are wide apart: the mockup's proportion)
         top, bottom = size[1] * 0.12, size[1] * 0.88
         if len(parts) == 2:
@@ -160,22 +193,66 @@ def devices() -> list:
             _glyph(image, *parts[1], (size[0] * 0.66, top + size[1] * 0.08, size[0] * 0.92, bottom), colour)
         else:
             _glyph(image, *parts[0], (0, top, size[0], bottom), colour)
-        if index == 5:
-            ImageDraw.Draw(image).line((size[0] * 0.18, size[1] * 0.9, size[0] * 0.82, size[1] * 0.1),
-                                       fill=AMBER + (255,), width=3 * UNIT)
         frames.append(image)
     return frames
+
+
+def _text(draw, centre, text: str, height: float, colour):
+    """text in Overpass 900, its capitals height pixels tall, centred on centre"""
+    from PIL import ImageFont
+    font = ImageFont.truetype(str(OVERPASS), max(1, round(height / 0.7)))
+    x0, y0, x1, y1 = draw.textbbox((0, 0), text, font=font)
+    draw.text((centre[0] - (x0 + x1) / 2, centre[1] - (y0 + y1) / 2), text, font=font, fill=colour)
+
+
+def chip(symbol: str):
+    """a round button chip: a blue disc 15 units across in the 16-unit frame (a clear rim all round), its symbol in
+    the panel's navy"""
+    from PIL import Image, ImageDraw
+    side = BUTTON[0] * UNIT * SUPER
+    big = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    # (about 15 units: a rim of 2 pixels of 64 stays clear after the scale-down's soft edge)
+    D = side * (1 - 2 * 2.5 / 64)
+    c = side / 2
+    d.ellipse((c - D / 2, c - D / 2, c + D / 2, c + D / 2), fill=BLUE + (255,))
+    navy = NAVY + (255,)
+    if symbol == "bars":
+        for k in (-1, 0, 1):
+            y = c + k * 0.17 * D
+            d.rounded_rectangle((c - 0.24 * D, y - 0.045 * D, c + 0.24 * D, y + 0.045 * D), radius=0.045 * D, fill=navy)
+    elif symbol == "plus":
+        d.rectangle((c - 0.26 * D, c - 0.06 * D, c + 0.26 * D, c + 0.06 * D), fill=navy)
+        d.rectangle((c - 0.06 * D, c - 0.26 * D, c + 0.06 * D, c + 0.26 * D), fill=navy)
+    elif symbol == "ring":
+        r, t = 0.25 * D, 0.1 * D
+        d.ellipse((c - r, c - r, c + r, c + r), outline=navy, width=round(t))
+    elif symbol == "return":
+        t = 0.1 * D
+        x_right, y_top, y_mid, x_left = c + 0.22 * D, c - 0.24 * D, c + 0.08 * D, c - 0.16 * D
+        d.rectangle((x_right - t, y_top, x_right, y_mid + t / 2), fill=navy)
+        d.rectangle((x_left, y_mid - t / 2, x_right, y_mid + t / 2), fill=navy)
+        a = 0.15 * D
+        d.polygon([(x_left - a * 0.7, y_mid), (x_left + a * 0.5, y_mid - a), (x_left + a * 0.5, y_mid + a)], fill=navy)
+    else:
+        _text(d, (c, c), symbol, (0.62 if len(symbol) == 1 else 0.28) * D, navy)
+    return big.resize((BUTTON[0] * UNIT, BUTTON[1] * UNIT), Image.BOX)  # (an area average: no ringing into the rim)
 
 
 def buttons() -> list:
-    from PIL import Image
-    size = (BUTTON[0] * UNIT, BUTTON[1] * UNIT)
-    frames = []
-    for glyph in BUTTON_GLYPHS:
-        image = Image.new("RGBA", size, (0, 0, 0, 0))
-        _glyph(image, *glyph, (0, 0, size[0], size[1]), BLUE)
-        frames.append(image)
-    return frames
+    return [chip(symbol) for symbol in BUTTON_SYMBOLS]
+
+
+def key_esc():
+    """the keyboard's ESC: a capsule 26x16 units, its ends fully round, with a clear rim, ESC in navy"""
+    from PIL import Image, ImageDraw
+    w, h = KEY_ESC[0] * UNIT * SUPER, KEY_ESC[1] * UNIT * SUPER
+    big = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    rim = h * 2.5 / 64
+    d.rounded_rectangle((rim, rim, w - rim, h - rim), radius=(h - 2 * rim) / 2, fill=BLUE + (255,))
+    _text(d, (w / 2, h / 2), "ESC", 0.42 * h, NAVY + (255,))
+    return big.resize((KEY_ESC[0] * UNIT, KEY_ESC[1] * UNIT), Image.BOX)  # (an area average: no ringing into the rim)
 
 
 def _band(menus: Path, frame: int, width: int):
@@ -199,6 +276,7 @@ def bitmaps(menus: Path) -> dict:
     return {"bitmaps/ae_seat_card": (CARD, cards(menus)),
             "bitmaps/ae_seat_devices": (DEVICE, devices()),
             "bitmaps/ae_seat_buttons": (BUTTON, buttons()),
+            "bitmaps/ae_seat_key_esc": (KEY_ESC, [key_esc()]),
             "bitmaps/ae_seat_profile_bar": (PROFILE_BAR, [_band(menus, 1, PROFILE_BAR[0])]),
             "bitmaps/ae_seat_strip": (STRIP, [_band(menus, 1, STRIP[0])])}
 

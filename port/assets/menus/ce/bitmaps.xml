@@ -368,6 +368,9 @@
 		<frame png="ce/port/bitmaps/ae_seat_buttons__6.png" width="16" height="16"/>
 		<frame png="ce/port/bitmaps/ae_seat_buttons__7.png" width="16" height="16"/>
 	</bitmap>
+	<bitmap name="bitmaps/ae_seat_key_esc">
+		<frame png="ce/port/bitmaps/ae_seat_key_esc__0.png" width="26" height="16"/>
+	</bitmap>
 	<bitmap name="bitmaps/ae_seat_profile_bar">
 		<frame png="ce/port/bitmaps/ae_seat_profile_bar__0.png" width="130" height="28"/>
 	</bitmap>
