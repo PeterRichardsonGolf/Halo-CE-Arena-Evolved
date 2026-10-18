@@ -530,6 +530,18 @@ static const struct config_setting config_settings[] =
 		"switch weapons) and the flashlight button steps to the next level, and\n"
 		"back to the first after the last. In \"hold\", a tap and then a hold\n"
 		"within the hold time starts at the second level." },
+	{ "input.back_right", _config_string, "\"none\"", "HALO_BACK_RIGHT", _environment_value, /* AE hook */
+		_platform_desktop,
+		"What a controller's right back button does (a Switch 2 Pro\n"
+		"Controller's GR, an Elite's or DualSense Edge's upper right paddle): the\n"
+		"Xbox button it presses, so it follows your profile's controller layout:\n"
+		"\"a\", \"b\", \"x\", \"y\", \"black\", \"white\", \"left_stick\",\n"
+		"\"right_stick\", \"back\", \"start\", \"up\", \"down\", \"left\", \"right\";\n"
+		"\"none\": nothing." },
+	{ "input.back_left", _config_string, "\"none\"", "HALO_BACK_LEFT", _environment_value, /* AE hook */
+		_platform_desktop,
+		"What a controller's left back button does (GL, the upper left\n"
+		"paddle): as input.back_right." },
 	{ "input.zoom_hold_time", _config_real, "0.25", "HALO_ZOOM_HOLD_TIME", _environment_value, /* AE hook */
 		_platform_all,
 		"The most seconds a press of the zoom action lasts to be a tap in the\n"

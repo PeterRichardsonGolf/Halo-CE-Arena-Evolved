@@ -50,6 +50,70 @@ int ae_platform_lone_pad_first(void)
 	return value;
 }
 
+/* a back button's Xbox button (input.back_right, input.back_left): a digital one's mask, or an analog one's index
+plus 0x100; 0 for none or a word that is none of these (the log line says the word read) */
+static int back_button_target(char const *word)
+{
+	static const struct
+	{
+		char const *name;
+		int target;
+	} targets[] =
+	{
+		{ "a", 0x100 + XINPUT_GAMEPAD_A }, { "b", 0x100 + XINPUT_GAMEPAD_B }, { "x", 0x100 + XINPUT_GAMEPAD_X },
+		{ "y", 0x100 + XINPUT_GAMEPAD_Y }, { "black", 0x100 + XINPUT_GAMEPAD_BLACK },
+		{ "white", 0x100 + XINPUT_GAMEPAD_WHITE }, { "left_stick", XINPUT_GAMEPAD_LEFT_THUMB },
+		{ "right_stick", XINPUT_GAMEPAD_RIGHT_THUMB }, { "back", XINPUT_GAMEPAD_BACK },
+		{ "start", XINPUT_GAMEPAD_START }, { "up", XINPUT_GAMEPAD_DPAD_UP }, { "down", XINPUT_GAMEPAD_DPAD_DOWN },
+		{ "left", XINPUT_GAMEPAD_DPAD_LEFT }, { "right", XINPUT_GAMEPAD_DPAD_RIGHT },
+	};
+	unsigned int index;
+
+	for (index = 0; index < sizeof(targets) / sizeof(targets[0]); index++)
+	{
+		if (!SDL_strcasecmp(word, targets[index].name))
+			return targets[index].target;
+	}
+	return 0;
+}
+
+void ae_platform_back_buttons(
+	struct SDL_Gamepad *gamepad,
+	unsigned short *buttons,
+	unsigned char *analog_buttons)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	/* (SDL's names: a Switch 2 Pro Controller's GR is its right paddle, GL its left; an Xbox Elite's upper paddles
+	are the same two, a DualSense Edge's back buttons too) */
+	static const SDL_GamepadButton paddles[2] = { SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1, SDL_GAMEPAD_BUTTON_LEFT_PADDLE1 };
+	static unsigned long read_at = (unsigned long)-1;
+	static int targets[2];
+	int side;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		targets[0] = back_button_target(config_string("input.back_right"));
+		targets[1] = back_button_target(config_string("input.back_left"));
+		platform_log("back buttons: right %s, left %s", config_string("input.back_right"),
+			config_string("input.back_left"));
+	}
+	for (side = 0; side < 2; side++)
+	{
+		if (!targets[side] || !SDL_GetGamepadButton(gamepad, paddles[side]))
+			continue;
+		if (targets[side] & 0x100)
+			analog_buttons[targets[side] & 0xff] = 0xff;
+		else
+			*buttons |= (unsigned short)targets[side];
+	}
+#else
+	(void)gamepad;
+	(void)buttons;
+	(void)analog_buttons;
+#endif
+}
+
 /* whether Num Lock is on. The dedicated server has no keyboard, and Android's guest has no SDL_GetModState (its SDL
 is port/android/guest/runtime/guest_sdl.c's few functions): on there, so the keypad is digits */
 static int num_lock(void)
