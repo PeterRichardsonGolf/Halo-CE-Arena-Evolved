@@ -44,6 +44,7 @@ drive the controller.
 #include "touch_input.h"
 #include "halo_keyboard.h"
 #include "ae_platform.h" /* AE hook */
+#include "ae_seats.h" /* AE hook */
 #include "ae_ds5.h" /* AE hook */
 
 #include <SDL3/SDL.h>
@@ -140,7 +141,7 @@ int halo_linux_mouse_look(short gamepad_index, float *yaw, float *pitch)
 
 	*yaw = 0.0f;
 	*pitch = 0.0f;
-	if (gamepad_index != 0)
+	if (gamepad_index != ae_seats_keyboard_controller()) /* AE hook */
 		return FALSE;
 	if (read_at != config_changes())
 	{
@@ -246,7 +247,7 @@ int halo_linux_mouse_aiming(short gamepad_index)
 	static unsigned long read_at = (unsigned long)-1;
 	int aiming;
 
-	if (gamepad_index != 0)
+	if (gamepad_index != ae_seats_keyboard_controller()) /* AE hook */
 		return FALSE;
 	if (read_at != config_changes())
 	{
@@ -727,7 +728,7 @@ static void keyboard_controls(unsigned long held, XINPUT_GAMEPAD *pad)
 
 unsigned long halo_keyboard_actions(short controller_index)
 {
-	return controller_index == 0 ? keyboard_actions_held : 0;
+	return controller_index == ae_seats_keyboard_controller() ? keyboard_actions_held : 0; /* AE hook */
 }
 
 int halo_push_to_talk_held(void)
@@ -1058,7 +1059,7 @@ a button held across the change would be pressed again on the other port
 (the B that leaves a profile screen leaving the game as player 1's) */
 static SDL_Gamepad *port_gamepad(SDL_Gamepad *gamepads[PORT_COUNT], int count, int port)
 {
-	if (count == 1 && !ae_platform_lone_pad_first()) /* AE hook */
+	if (count == 1 && !ae_platform_lone_pad_first() && !ae_seats_active()) /* AE hook */
 	{
 		BOOL split = pc_menu_split_players() != 0;
 
@@ -1204,6 +1205,7 @@ static DWORD connected_gamepads(void)
 			mask |= 1UL << port;
 	}
 	if (count == 1 && ae_platform_lone_pad_first() && pc_menu_split_players()) mask |= 1UL << 1; /* AE hook */
+	if (ae_seats_active() && ae_seats_connected()) mask = ae_seats_connected() | test_input_menu_ports(); /* AE hook */
 	return mask;
 }
 
@@ -1286,7 +1288,7 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 	if (test_input_menu[0]) { size_t ae_length = 0; const char *ae_token = test_input_menu_token(&ae_length); ae_platform_test_pad_press(ae_token, (int)ae_length); } /* AE hook */
 	platform_pump_events();
 	count = sdl_gamepads(gamepads);
-	if (port == 0)
+	if (port == ae_seats_keyboard_port()) /* AE hook */
 	{
 		struct platform_input_state input;
 		unsigned long held;
@@ -1302,15 +1304,14 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 		held = console_active ? 0 : keyboard_bound_actions(&input);
 		keyboard_screenshot(console_active && keyboard_screenshot_in_console(&input) ?
 			1UL << HALO_KEYBOARD_SCREENSHOT : held);
-		if (!console_active)
+		if (!console_active && ae_seats_keyboard_plays()) /* AE hook */
 		{
 			if (input.menus)
 				keyboard_gamepad(&input, &state->Gamepad);
 			else
 				keyboard_controls(held, &state->Gamepad);
 		}
-		if (port_gamepad(gamepads, count, 0))
-			sdl_gamepad_state(gamepads[0], &state->Gamepad);
+		if (port_gamepad(gamepads, count, port)) sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); /* AE hook */
 		test_input_gamepad(&state->Gamepad);
 		touch_input_gamepad(&state->Gamepad);
 #if defined(HALO_ANDROID) || defined(HALO_WEB)

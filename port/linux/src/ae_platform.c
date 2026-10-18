@@ -15,6 +15,7 @@ pure, so the unit tests build it.)
 #include "sdl_platform.h"
 #include "ae_platform.h"
 #include "ae_pad_ports.h"
+#include "ae_seats.h"
 #include "port_config.h"
 
 #include <stdio.h>
@@ -156,6 +157,9 @@ int ae_platform_stable_ports(
 	unsigned char at_rest[AE_PAD_PORTS_MAXIMUM];
 	int listed_count, index, port, highest = 0;
 
+	/* (split screen's seats, while they are on, put each seat's pad in its port: ae_seats.c) */
+	if (ae_seats_active())
+		return ae_seats_fill(gamepads, count, ports);
 	if (ports > AE_PAD_PORTS_MAXIMUM)
 		ports = AE_PAD_PORTS_MAXIMUM;
 	listed_count = count < ports ? count : ports;
