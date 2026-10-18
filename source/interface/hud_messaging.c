@@ -477,6 +477,7 @@ static void render_state_text(
 boolean hud_hires_button_draw(struct icon_hud_element_definition const *icon,
 	rectangle2d *cursor, pixel32 color);
 struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index);
+int ae_buttons_playstation_now(void); /* AE hook */
 
 static void render_state_bitmap(
 	rectangle2d *bounds,
@@ -561,7 +562,7 @@ static void render_state_bitmap(
 		/* port: keep gameplay prompts on the high-resolution HUD path. */
 		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
 		if (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit))) return; /* AE hook */
-		if (hud_hires_button_draw(icon, cursor_bounds, color))
+		if (!ae_buttons_playstation_now() && hud_hires_button_draw(icon, cursor_bounds, color)) /* AE hook */
 			return;
 		scale = hud_split_screen_layout() ? 0.75f : 1.0f; /* AE hook */
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0);

@@ -843,3 +843,7 @@ port/linux/game/menu_functions.c	if (!strncmp(name, "ae split ", 9)) /* AE hook 
 port/linux/game/menu_functions.c	if (!strcmp(name, "ae split join update")) /* AE hook */\nae_split_screen_join_update(widget);
 # OpenCE build-213 merge: COMPACT HUD's split-screen icon scale in single view (AE line, marked at the merge)
 source/interface/hud_messaging.c	scale = hud_split_screen_layout() ? 0.75f : 1.0f; /* AE hook */
+# OpenCE build-213's high-res button art (hud_hires_button_draw) draws the Xbox's faces: while a PlayStation controller
+# is the last used, the message's sprite path is kept, where AE's PlayStation icons are (ae_buttons_tags.c)
+source/interface/hud_messaging.c	int ae_buttons_playstation_now(void); /* AE hook */
+source/interface/hud_messaging.c	if (!ae_buttons_playstation_now() && hud_hires_button_draw(icon, cursor_bounds, color)) /* AE hook */\nreturn;
