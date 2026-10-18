@@ -126,6 +126,31 @@ int halo_push_to_talk_held(void)
 	return 0;
 }
 
+/* (OpenCE's text chat, network_chat.c: the server has no controller to open
+its on-screen keyboard with, and no touch) */
+unsigned long halo_chat_pad_buttons(void)
+{
+	return 0;
+}
+
+int halo_chat_taps(float *x, float *y)
+{
+	(void)x;
+	(void)y;
+	return 0;
+}
+
+int halo_chat_touch_layout(void)
+{
+	return 0;
+}
+
+/* (the automated tests' controller presses, network_test.c: none here) */
+void test_input_press(unsigned long buttons)
+{
+	(void)buttons;
+}
+
 /* ---------- XAPI */
 
 VOID WINAPI XInitDevices(DWORD preallocation_type_count, PXDEVICE_PREALLOC_TYPE preallocation_types)

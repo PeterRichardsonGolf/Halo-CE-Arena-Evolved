@@ -129,6 +129,9 @@ H2 Demakes map pack, and more of the newer Halo games' features.
 - The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
   made by `tools/ae_logo.py`); it uses no third-party art. It is not CC0
   (see below).
+- Streamer mode's word list (OpenCE's, `port/assets/text_filter`) is made from Surge AI's "The Obscenity List"
+  (MIT License, Copyright (c) Surge AI: the notice is in [AUTHORS.md](AUTHORS.md)) and the public-domain
+  [english-words](https://github.com/dwyl/english-words) list.
 - Libraries: SDL3, stb, Mbed TLS, miniupnpc, KCP, tomlc17, musl's maths,
   extract-xiso, Expat, Monocypher, zlib, SMAA, and Project Nayuki's QR Code
   generator. Their licenses are

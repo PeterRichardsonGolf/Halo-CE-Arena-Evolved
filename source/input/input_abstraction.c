@@ -541,6 +541,8 @@ static boolean input_abstraction_dpad_moves(
 	return TRUE;
 }
 
+boolean input_abstraction_dpad_up_bound(long controller_index) { short control_index; for (control_index = 0; control_index < NUMBER_OF_GAME_CONTROLS; control_index++) if (input_abstraction_globals.player_control_preferences[controller_index].game_control_to_xbox_buttons[control_index] == _gamepad_binary_button_dpad_up) return TRUE; return FALSE; } /* AE hook */
+
 void input_abstraction_update(
 	void)
 {

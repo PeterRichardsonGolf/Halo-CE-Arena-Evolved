@@ -353,6 +353,12 @@ written, and each minute a pad's reports written, merged, deferred and failed.
 | pause menu | escape |
 | screenshot | F10 |
 | talk in voice chat (hold) | V |
+| type a chat line to everyone | T |
+| type a chat line to your team | Y |
+| while typing a chat line: to everyone, the team or the vehicle, in turn | Tab |
+
+With a controller, or the touch controls' D-pad, D-pad Up opens the text
+chat's on-screen keyboard (refer to "Text chat").
 
 Always: \` opens the developer console, F12 releases or captures the mouse,
 F11 changes between fullscreen and window, and F9 starts or stops a
@@ -493,6 +499,10 @@ together. It opens the same settings with only Controls, Gamepads, Mouse,
 Audio and Video Setup; each split-screen player edits their own profile,
 and Gamepads' OK saves it at once. The game stays paused there, unless it
 is a network game.
+
+In a multiplayer game (and in network co-op) the settings' Network Setup has
+only its pages that work in a game (Map Sharing, Multiplayer HUD with the
+text chat, and Streamer Mode), not INTERNET PLAY, which would drop the game.
 
 The menus are XML files in `port/assets/menus` (`tools/ce_menus.py` writes
 them from the PC version's tags), which the game contains. To change them,
@@ -662,6 +672,8 @@ the setting for one start of the game. It has priority over the file.
 | `display.enemy_name_color` | `"classic"` | `HALO_ENEMY_NAME_COLOR` | Enemies' names (anyone's in a free for all): the name the game shows for the player under your reticle (in the upper middle of the view, fading in as you hold on them) and the names over heads (`display.player_names`). `"red"`: in red, as the Master Chief Collection's ENEMY PLAYER NAME COLOR. `"classic"`: in the HUD's blue, as teammates' (the game drew its one name, the one under the reticle, in blue; it had no names over heads). Only this machine's look: nothing is sent. Settings > Network Setup sets it (ENEMY NAME COLOR). |
 | `display.player_names` | `"all"` | `HALO_PLAYER_NAMES` | In multiplayer, whose names are drawn above their heads: `"all"`, `"allies"`, `"enemies"` or `"none"`. An ally's name is drawn above the triangle the game shows over teammates. An enemy's name shows only within the motion sensor's reach, while the enemy is in sight and not camouflaged, so it never shows where an enemy hides. The gametype's motion tracker setting also applies: no names if it shows no players, only allies' if it shows only friends. |
 | `display.player_name_scale` | `1.0` | `HALO_PLAYER_NAME_SCALE` | How large the players' names are drawn: `1.0` is three quarters of the size of the HUD's text, from `0.25` to `4`. With high-res text, larger names are rasterized at their size, so they stay sharp. |
+| `display.text_chat` | `true` | `HALO_TEXT_CHAT` | Show the text chat of network games (Settings > Network Setup > Multiplayer HUD > TEXT CHAT). `false` hides its lines, and its keys and a controller's D-pad Up open nothing. Refer to "Text chat". |
+| `display.chat_style` | `"colors"` | `HALO_CHAT_STYLE` | The text chat's colours (Settings > Network Setup > Multiplayer HUD > CHAT TEXT): `"colors"`, the player's name in their team's colour and the text a pale blue; `"white"`, all of it white, as Custom Edition. |
 | `display.scoreboard_team_layout` | `"teams"` | `HALO_SCOREBOARD_TEAM_LAYOUT` | How the multiplayer scoreboard (hold BACK, or tab) lists a team game's players. `"teams"`: a column for each team, red on the left and blue on the right. `"score"`: all the players in order of score. With more players than fit, the mouse wheel and Page Up / Page Down scroll the scoreboard. |
 | `display.scoreboard_background` | `true` | `HALO_SCOREBOARD_BACKGROUND` | `true`: the multiplayer scoreboard (hold BACK, or tab) has a panel behind its text, for clearer text. |
 | `display.show_quit_players` | `true` | `HALO_SHOW_QUIT_PLAYERS` | `true`: players who quit stay on the multiplayer scoreboard (hold BACK, or tab) and the score in the corner, as in the original game. `false`: they are left off, and the players still in the game are ranked among themselves, as OpenCE does. Only what this machine draws changes. |
@@ -715,7 +727,7 @@ the setting for one start of the game. It has priority over the file.
 | `input.zoom_hold_time` | `0.25` | `HALO_ZOOM_HOLD_TIME` | The most seconds a press lasts to be a tap in the `"both"` mode, 0.1 to 1: held longer, it is a hold. Not in the menus. |
 | `input.invert_mouse` | `false` | `HALO_MOUSE_INVERT=1` sets `true` | `true`: the vertical mouse aim is inverted. |
 | `input.mouse_aim_assist` | `false` | `HALO_MOUSE_AIM_ASSIST` | `true`: the magnetism of the controller also operates for the mouse. `false`: when the mouse moved after the right stick, the view is not slowed or dragged by a target. The autoaim of the bullets operates in both cases. |
-| `controls.<action>` | (the table in "Controls") | `HALO_KEY_<ACTION>` | The keys and mouse buttons of an action, up to two, separated by a comma: `move_forward`, `move_backward`, `strafe_left`, `strafe_right`, `jump`, `crouch`, `fire`, `throw_grenade`, `melee`, `reload`, `zoom`, `switch_weapon`, `switch_grenade`, `action`, `flashlight`, `scoreboard`, `pause`, `screenshot`, `push_to_talk`. Keys by their names (`"W"`, `"Space"`, `"Left Ctrl"`, `"F1"`), and `"Mouse Left"`, `"Mouse Right"`, `"Mouse Middle"`, `"Mouse 4"`, `"Mouse 5"`, `"Wheel"` (either way), `"Wheel Up"`, `"Wheel Down"`. |
+| `controls.<action>` | (the table in "Controls") | `HALO_KEY_<ACTION>` | The keys and mouse buttons of an action, up to two, separated by a comma: `move_forward`, `move_backward`, `strafe_left`, `strafe_right`, `jump`, `crouch`, `fire`, `throw_grenade`, `melee`, `reload`, `zoom`, `switch_weapon`, `switch_grenade`, `action`, `flashlight`, `scoreboard`, `pause`, `screenshot`, `push_to_talk`, `chat`, `team_chat`. Keys by their names (`"W"`, `"Space"`, `"Left Ctrl"`, `"F1"`), and `"Mouse Left"`, `"Mouse Right"`, `"Mouse Middle"`, `"Mouse 4"`, `"Mouse 5"`, `"Wheel"` (either way), `"Wheel Up"`, `"Wheel Down"`. |
 | `game.downloaded_maps` | `""` | `HALO_DOWNLOADED_MAPS` | Maps to play as downloaded maps, until the game downloads maps itself: their names as the game names them (`bloodgulch`, `hugeass@ce`), separated by commas, or `"*"` for all the maps. The scripts of a downloaded map cannot change the settings of the player or the games of other players. `debug.txt` names what the game refused. |
 | `game.console_log` | `"important"` | `HALO_CONSOLE_LOG` | What the console shows on the screen. `"important"`: bans, players that the host drops for cheating, the reasons that the game refuses a command, and the asserts that stop the game. `"all"`: all the lines. `"none"`: only the asserts that stop the game. The output of a command always shows. `debug.txt` gets all the lines. |
 | `game.fall_damage` | `true` | `HALO_FALL_DAMAGE` | In the campaign: `true`, falls hurt players. `false`: landings never hurt, from any height (pits and the map's kill volumes still kill). Multiplayer uses the gametype's FALL DAMAGE (ARENA OPTIONS). Settings > Game Options sets it (CAMPAIGN FALL DAMAGE). |
@@ -755,13 +767,14 @@ the setting for one start of the game. It has priority over the file.
 | `network.voice_mode` | `"team_global_enemy_proximity"` | `HALO_NET_VOICE_MODE` | When you host: who hears whom during a game. `"off"`; `"team_proximity"` (teammates who are near); `"team_enemy_proximity"` (all players who are near); `"team_global"` (all teammates); `"team_global_enemy_proximity"` (all teammates, and enemies who are near). Refer to "Voice chat". |
 | `network.voice_kbps` | `24` | `HALO_NET_VOICE_KBPS` | When you host: the voice quality in the lobby and in a game, in kilobits per second, `8` to `64`. |
 | `network.voice_proximity` | `15.0` | `HALO_NET_VOICE_PROXIMITY` | When you host: the distance in world units (1 unit is approximately 3 metres) at which players are near, for voice chat. `5` to `100`. |
+| `network.text_chat` | `"on"` | `HALO_NET_TEXT_CHAT` | When you host: the text chat. `"on"`, lines with links refused; `"links"`, links allowed; `"off"`, no chat (in either case). Always off in a game listed in the server browser. TEXT CHAT in Server Setup > Teamplay Options (in co-op, Voice and Voting) writes its choice here. Refer to "Text chat". |
 | `network.votekick` | `true` | `HALO_NET_VOTEKICK` | When you host: `true`, the players can vote to kick a player. Refer to "Security". `false`: no votes. VOTE KICK in Server Setup > Teamplay Options (in co-op, Voice and Voting) writes its choice here. |
 | `network.votekick_minutes` | `5` | `HALO_NET_VOTEKICK_MINUTES` | When you host: the minutes that a player must play on the server before the player can start a vote to kick (`0` to `60`). To vote, a player must play for 2 minutes, or for this time if it is less. |
 | `network.votekick_ban_minutes` | `30` | `HALO_NET_VOTEKICK_BAN_MINUTES` | When you host: the minutes that a player who is kicked by a vote cannot join again (`1` to `1440`). |
 | `network.map_share` | `true` | `HALO_NET_MAP_SHARE` | When you host: send a player who joins without the game's Custom Edition map the map, and the resource maps that it needs and that the player does not have. SHARE MAPS in Server Setup > Map Sharing writes its choice here. Refer to "Map sharing". |
-| `network.map_share_upload` | `1024` | `HALO_NET_MAP_SHARE_UPLOAD` | When you host: the most kilobytes per second that the game sends of maps (`16` to `65536`). UPLOAD LIMIT in Server Setup > Map Sharing writes its choice here. |
+| `network.map_share_upload` | `1024` | `HALO_NET_MAP_SHARE_UPLOAD` | When you host: the most kilobytes per second that the game sends of maps (`16` to `20480`, 20 MB/s). UPLOAD LIMIT in Server Setup > Map Sharing writes its choice here. |
 | `network.map_seed` | `true` | `HALO_NET_MAP_SEED` | When you play in the game of another machine: help send its map to players who join without it. HELP SEND MAPS in Settings > Network Setup > Map Sharing. |
-| `network.map_seed_upload` | `256` | `HALO_NET_MAP_SEED_UPLOAD` | When you play in the game of another machine: the most kilobytes per second that the game sends of maps to other players (`16` to `65536`). UPLOAD LIMIT in Settings > Network Setup > Map Sharing. |
+| `network.map_seed_upload` | `256` | `HALO_NET_MAP_SEED_UPLOAD` | When you play in the game of another machine: the most kilobytes per second that the game sends of maps to other players (`16` to `10240`, 10 MB/s). UPLOAD LIMIT in Settings > Network Setup > Map Sharing. |
 | `network.map_download` | `true` | `HALO_NET_MAP_DOWNLOAD` | When you join a game on a Custom Edition map that you do not have: download it from the players of the game. `false`: leave the game and show which map is missing. DOWNLOAD MAPS in Settings > Network Setup > Map Sharing. |
 | `network.map_share_internet` | `false` | `HALO_NET_MAP_SHARE_INTERNET` | When you host: also send maps to players who are not on your local network (an internet game). `false`: only players on the local network get maps from you. INTERNET SHARING in Settings > Network Setup > Map Sharing. |
 | `network.map_download_internet` | `false` | `HALO_NET_MAP_DOWNLOAD_INTERNET` | When you join: also download maps from a host that is not on your local network (an internet game). `false`: only a host on the local network is asked for maps. INTERNET DOWNLOADS in Settings > Network Setup > Map Sharing. |
@@ -780,6 +793,10 @@ the setting for one start of the game. It has priority over the file.
 | `network.report_joined_games` | `false` | `HALO_NET_REPORT_GAMES` | When an internet game this machine joined ends, the game sends `network.browser_url` its scores as this machine saw them, with this copy's player ID, and confirms this machine's players' lines in the host's report of the game (`POST /v1/claim`), which puts the game on their profiles. `false`: neither, for games this machine joins. Games it hosts are still reported and confirmed. |
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | No effect in Arena Evolved, which never looks for a new version (refer to "Updates"). Where the updater is on: `true`, at start-up the game looks for a new version; `false`, it does not look. |
+| `streamer.enabled` | `false` | `HALO_STREAMER_MODE` | `true`: streamer mode hides offensive words, as stars, in the names and text of other players, maps and mods, at the levels below. Refer to "Streamer mode". STREAMER MODE in Settings > Network Setup > Streamer Mode. |
+| `streamer.slurs` | `"mild"` | `HALO_STREAMER_SLURS` | With `streamer.enabled`, the slurs (race, ethnicity, sexuality, gender, disability) hidden: `"off"`, `"severe"`, `"strong"` (strong and severe) or `"mild"` (all). CENSOR SLURS in Settings > Network Setup > Streamer Mode. |
+| `streamer.swearing` | `"strong"` | `HALO_STREAMER_SWEARING` | With `streamer.enabled`, the swearing and sexual words hidden: `"off"`, `"severe"`, `"strong"` or `"mild"`. CENSOR SWEARING in Settings > Network Setup > Streamer Mode. |
+| `streamer.insults` | `"off"` | `HALO_STREAMER_INSULTS` | With `streamer.enabled`, the insults that are not slurs hidden: `"off"`, `"severe"`, `"strong"` or `"mild"`. CENSOR INSULTS in Settings > Network Setup > Streamer Mode. |
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
 | `debug.ds5_log` | `false` | `HALO_DEBUG_DS5_LOG` | A DualSense's effects in `debug.txt`: the bytes written to the pad, what each player's triggers and lightbar are asked for as it changes, the game's rumble, each weapon tag's kind once a map, and each minute a pad's reports (`dualsense: port N: writes X, merged Y, deferred Z, errors E`). |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
@@ -791,7 +808,7 @@ the setting for one start of the game. It has priority over the file.
 | `debug.menu_open` | `""` | `HALO_MENU_OPEN` | Start on this screen of the menus (`main_menu/settings_select/...`, as `port/assets/menus` names it), a player profile being edited, to look at it. |
 | `debug.gpu_skip_vertex_shaders`, `debug.gpu_debug_expression`, `debug.gpu_debug_flat`, `debug.gpu_debug_texture0` | off | `HALO_GPU_SKIP_VS`, `HALO_GPU_DEBUG_EXPR`, `HALO_GPU_DEBUG_FLAT`, `HALO_GPU_DEBUG_T0` | Tools to find problems in the graphics: skip the draws of a vertex shader, or replace the output of all pixel shaders with a GLSL expression (for example `t0.rgb`). |
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_time_limit`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_TIME_LIMIT`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
-| `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
+| `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.network_test_chat`, `debug.network_test_name`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
 | `debug.bot_trace` | `0` | `HALO_BOT_TRACE` | Every this many seconds, each bot's state is written to the log: where it is and where it goes, its path, its target and its weapon. `0`: never. |
 | `debug.bot_vehicles` | `1` | `HALO_BOT_VEHICLES` | Bots and vehicles: `0` they leave them alone, `1` they take a Warthog's or a turret's gun and ride with a teammate, `2` they also drive a Warthog or Ghost (a test, not good enough to play yet). |
 | `debug.bot_links` | `true` | `HALO_BOT_LINKS` | Bots take teleporters and the map's layout jumps (`bot jump` lines) on their way when that is shorter. `false` for tests of how they do without: the teleports are still counted on halo.log's `bots: travel` line. |
@@ -1074,6 +1091,98 @@ as between native builds, two networks that do not let a direct connection
 through (some company and school networks block WebRTC) cannot play
 together.
 
+### Text chat
+
+Network games have a text chat, as the PC version had. Press T
+(`controls.chat`) to type a line to all the players, or Y
+(`controls.team_chat`) to type one to your team (in a game without teams,
+to all the players). While you type, Tab changes who the line is to, in
+turn: all the players, your team, or your vehicle (the players riding in
+the vehicle you ride in, whatever the map's vehicles are, Custom Edition
+maps' too; on foot, only you see it). Enter sends the line, Escape cancels
+it. While you type, your player does not move.
+
+With a controller, D-pad Up opens an on-screen keyboard at the bottom right
+(on Android, at the bottom in the middle) for a line to all the players:
+the left stick (or D-pad Left and Right) moves between the keys, A types
+the key, X deletes, Y switches capitals, D-pad Up and Down change who the
+line is to (all the players, your team, your vehicle), Start sends the
+line, and B closes the keyboard (the button that closed it does nothing in
+the game until you let it go). Its last row has Aa (capitals), #+= (the
+symbols), space, DEL and SEND. On a touchscreen (Android, and a browser on
+a phone or tablet), the touch controls' D-pad Up opens it, a tap on a key
+types it, and a tap anywhere else closes it: the touch controls hide while
+it is up. While the keyboard is up the controller and the touch controls
+move nothing in the game. The face buttons are the same places on
+other controllers (on a PlayStation controller: Cross types, Square
+deletes, Triangle switches capitals, Circle closes).
+
+The lines show above the motion sensor, in a column a little over half the
+screen wide: a long line wraps onto the next rows, and the line you type
+shows its end when it is wider. The player's name is in the colour of
+their team (blue in a game without teams), the text in a pale blue, and the
+host's notices in a pale gold; WHITE in CHAT TEXT in Settings > Network
+Setup > Multiplayer HUD (`display.chat_style`) draws them all white, as
+Custom Edition does. A line to the
+team says "(team)" after the name, one to the vehicle "(vehicle)". The
+lines go after ten seconds; while you type, the last six rows show. Where
+the touch controls are (Android, and a browser whose touch controls you
+use), the lines go at the top left, the newest highest. In split screen,
+each player's view shows the lines that player hears, and the first player
+types. No line shows, and none can be typed, in a menu, in a cinematic or
+while the HUD is hidden; opening a menu ends the line being typed. A new
+game starts with no lines. A line has 63 characters at most, letters,
+numbers and punctuation but `|` only (ASCII; `|` becomes `?`). `debug.txt`
+gets every line.
+
+Streamer mode (refer to "Streamer mode") hides offensive words in the
+chat's lines and players' names as it does in all the text the game draws:
+only on your screen, never in what is sent, and never in the line you are
+typing.
+
+The host sends each line on: a player of an older build does not see the
+lines and cannot send them. The host takes 5 lines at once from a machine,
+then one each 1.5 seconds; a machine that joins starts afresh.
+
+TEXT CHAT in Settings > Network Setup > Multiplayer HUD (`display.text_chat`)
+can HIDE the chat entirely, for purists and streamers: no lines show, and
+its keys open nothing.
+
+The host chooses the text chat for its games with TEXT CHAT in Server
+Setup > Teamplay Options (in co-op, Voice and Voting; `network.text_chat`):
+ON (the default: a line with a link, such as `discord.gg/...`,
+`example.com`, `www.`, an address, or `example [dot] com`, is refused),
+WITH LINKS, or OFF. A domain that is a word as well (`.me`, `.to`, `.is`)
+counts only with a path after it (`youtu.be/...`), so that `go.to` and
+`he.is` are not refused. A game listed in
+the server browser (a public internet game) never has the text chat,
+whatever it says (TEXT CHAT shows OFF there, and cannot be changed, while
+LISTING is PUBLIC); a private game, joined by its invite, and a LAN game have
+it as chosen. A player who joins a game from the server browser has no text
+chat in it even if its host turns it on: their game takes no line from that
+host and sends none. Pressing T where the chat is off says so, and a refused line
+tells its sender why.
+
+On the scoreboard (right-click, then click the player), Mute voice and chat
+mutes a player for you alone: you no longer see their lines or hear their
+voice, and nobody else is told. The host's scoreboard also has Mute for
+everyone: no machine sees the player's lines or hears their voice for 20
+minutes, or until the host picks Unmute for everyone, and all the players
+see "Milenko muted for 20 minutes". The mute holds in the lobby too. A
+machine's voice is one: muting one of two players in split screen mutes
+the other's voice too.
+
+The host can also mute a player from the chat: type `/mute <player>
+<minutes>`, as `/mute Milenko 5` (20 minutes when you give none, 1440 at
+most), which mutes their voice too. The player is found as the console's `kick` finds one: the whole
+name in either case, else the one player whose name begins with what you
+typed. All the players see "Milenko muted for 5 minutes". The muted
+player's lines go to no one, and they see how many minutes are left. The
+mute ends when its minutes are up, or with `/unmute <player>`. A player
+who leaves and joins again under the same name, in either case, is still
+muted. Only the
+host mutes: a player's `/mute` is not sent.
+
 ### Voice chat
 
 Network games have voice chat, on the local network and on the internet.
@@ -1106,8 +1215,10 @@ A speaker shows next to the name of a player who talks: in the lobby, on
 the scoreboard, in a list at the left of the screen during a game, and
 beside the name above their head (when names are shown there:
 `display.player_names`). To mute a player, open the scoreboard,
-right-click, click the player, and click Mute voice. You no longer hear
-them, and nobody else is told.
+right-click, click the player, and click Mute voice and chat. You no longer
+hear them or see their text chat lines, and nobody else is told. The host's
+Mute for everyone silences a player's voice for every machine (refer to
+"Text chat").
 
 The host sends each voice on to the players who can hear it. The host
 accepts a voice only from the machine of the player (with a key that it
@@ -1512,6 +1623,48 @@ checks every file before it plays it, and leaves out (with a line in
 replaces. A mod changes nothing that the machines of a
 network game agree on. Refer to [docs/mods.md](../../docs/mods.md).
 
+## Streamer mode
+
+Streamer mode (Settings > Network Setup > Streamer Mode, `streamer.enabled`)
+hides offensive words as stars wherever the game draws text that other
+people or files wrote: the text chat's lines, players' names over their
+heads, in the chat, in the kill feed, on
+the scoreboards and in the lobbies, the server browser's games, the host's
+notices in the console, map and mod names, and the text of a map's or mod's
+own string lists, as well as the message boxes about mods and maps. It
+changes only what this machine shows: the names others see, and what the
+machines send each other, stay as they are.
+
+The words come from Surge AI's rated list of English profanities, reviewed
+for the game (`port/assets/text_filter`), in three groups, each with a level
+that hides that severity and worse:
+
+| Group | Setting | Default | What it has |
+| --- | --- | --- | --- |
+| SLURS | `streamer.slurs` | `"mild"` (all) | Slurs about race, ethnicity, nationality, religion, sexuality, gender and disability |
+| SWEARING | `streamer.swearing` | `"strong"` | Swearing and sexual words; the mildest (damn, hell) show at `"strong"` |
+| INSULTS | `streamer.insults` | `"off"` | Name-calling that is not a slur |
+
+A word is found however it is dressed: in capitals or with accents, in
+look-alike letters (Cyrillic, Greek, full-width, small capitals), in leet
+(`0` for o, `@` for a, `ph` for f), with its letters stretched ("fuuuck"),
+with punctuation between them (`f.u.c.k`), spaced out (`f u c k`, `fu ck`),
+and with characters the game does not draw (zero-width spaces, the menus'
+`|` codes) between them. Each word may be found inside a name, at a word's
+start, or only as a whole word, as fits it, and some words are never
+hidden though a hidden one is inside them (Scunthorpe). `python3
+tools/text_filter_terms.py --check "some text"` shows what would be hidden.
+
+What it cannot catch: letters added into a word or its letters scrambled, new
+spellings, a word split between two names or two lines, voice chat (mute a
+player from the scoreboard, or set `audio.voice_volume` to 0), and pictures.
+What you type is shown as you type it.
+
+Your own words: `text_filter.txt` in the data root, with lines of `add
+<word>` (hidden whenever streamer mode is on) and `allow <word>` (never
+hidden), read when the game starts and when the settings change. The web
+build's page draws its own list of mods, which is not filtered.
+
 ## Map checks
 
 The game reads a map's tags straight into memory and uses them as its own
@@ -1735,6 +1888,7 @@ Other changes:
 | `render/render.c` | The 3D view of each window is antialiased before the HUD is drawn (`display.anti_aliasing`). |
 | `interface/hud.c` | In multiplayer, players' names are drawn above their heads (`display.player_names`, `display.player_name_scale`). |
 | `interface/interface.c`, `interface/hud_draw.c`, `interface/hud_unit.c`, `interface/hud_weapon.c`, `interface/hud_messaging.c`, `game/game_engine.c` | The HUD's pass of each view clips the view's window to the HUD area, a part of the screen (`display.hud_area`, `hud_area_begin`), and the nav points' off-screen arrows keep to it (`interface/hud_nav_points.c`); the HUD's split-screen choices go through `hud_split_screen_layout` (`display.compact_hud`); the scoreboard fades in `display.scoreboard_fade`'s time. |
+| `text/draw_string.c`, `interface/terminal.c`, `interface/virtual_keyboard.c` | Streamer mode's words are hidden in every string drawn or measured (`game/text_filter.c`), but in the console's line and the virtual keyboard's text being typed. |
 | `rasterizer/rasterizer_text.c`, `text/draw_string.c` | Text is drawn from an atlas of the fonts' glyphs, rasterized at the resolution the game draws at (`src/text_hires.c`), when the font has every character of the string. Text can be drawn scaled about a point (`rasterizer_text_set_scale`), as the players' names are. Each glyph's advance is centred on the font tag character's, so the layout is the same, and a glyph is cut at a text box only where the font tag's character visibly was. |
 | `interface/first_person_weapons.c` | The first-person hands are drawn with the unit's shield modifier shader, as its body is (`display.viewmodel_shield`). |
 | `render/render_objects.c`, `objects/objects.c` | In first person, your own body is drawn from the waist down with the pose `first_person_legs.c` makes (`display.first_person_legs`); the waist it found and the mesh `object_mesh.c` read are forgotten on a new map. |
@@ -1750,6 +1904,7 @@ Other changes:
 | `tag_files/tag_groups.h` | `TAG_BLOCK_GET_ELEMENT` returns an element in the block without a call, and calls `tag_block_get_element_with_size` for anything else. |
 | `game/players.c`, `networking/network_server_manager.c` | Bots (`game/bots.c`, `bots.count`): the lobby of a local game takes the bot players, each the one player of a machine of its own that no real machine is, and every tick their actions come from `game/bots.c` instead of their empty queues. Nothing changes in a system link or internet game. |
 | `input/input_xbox.c`, `physics/collision_usage.c` | The clock is read only for a button held, and for collision tests only when their times are shown: a read of the clock is slow in a browser. |
+| `main/main.c`, `interface/hud.c`, `interface/hud_unit.c`, `interface/hud_draw.c`, `game/game_engine.c` | The text chat of network games (`game/network_chat.c`): its keys are read each frame, and the debug keys are not while a line is typed; each view's HUD draws its lines, above the motion sensor, whose place the HUD notes (the left of the last picture drawn); the scoreboard's menu has Mute voice and chat, and the host's Mute for everyone. |
 
 The x86 inline assembly of the game is replaced by C. Thus the compiler
 can optimize that code for each processor:

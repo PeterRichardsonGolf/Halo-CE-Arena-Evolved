@@ -90,6 +90,7 @@ symbols in this file:
 #include "ae_hud_style.h" /* AE hook */
 #include "ae_panels.h" /* AE hook */
 #include "ae_sensor.h" /* AE hook */
+#include "network_chat.h" /* port: port/linux/game/network_chat.c */
 
 /* ---------- constants */
 
@@ -1202,6 +1203,8 @@ void hud_render_unit_interface(
 					struct hud_absolute_placement_definition absolute_placement;
 					short draw_flags = 0;
 					point2d corner;
+					/* port: its picture's left (NONE: none drawn) */
+					short motion_sensor_left = NONE;
 
 					ae_panels_hide_ce(ae_sensor_active()); /* AE hook */
 					absolute_placement.corner = _hud_anchor_bottom_left;
@@ -1230,6 +1233,8 @@ void hud_render_unit_interface(
 					{
 						rectangle2d sensor_bounds;
 
+						/* port: none, unless it is drawn (its bitmap can be missing) */
+						hud_draw_last_left = NONE;
 						hud_draw_static_element(
 							local_player_index,
 							&absolute_placement,
@@ -1243,6 +1248,8 @@ void hud_render_unit_interface(
 						{
 							hud_item_timers_set_motion_sensor(local_player_index, &sensor_bounds);
 						}
+						/* port: where it is (the text chat goes above it) */
+						motion_sensor_left = hud_draw_last_left;
 					}
 					if (hud_definition->motion_sensor.foreground.interface_bitmap.index != NONE)
 					{
@@ -1268,6 +1275,14 @@ void hud_render_unit_interface(
 						hud_split_screen_layout(),
 						&corner);
 					ae_panels_hide_ce(FALSE); /* AE hook */
+					/* port: the text chat goes above it: the top of its circle, as
+					far above the blips' centre as the picture's left edge is left
+					of it (the picture is taller than the circle) */
+					if (motion_sensor_left != NONE)
+					{
+						network_chat_note_motion_sensor(local_player_index, motion_sensor_left,
+							(short)(corner.y - (corner.x - motion_sensor_left)));
+					}
 				}
 
 				{
