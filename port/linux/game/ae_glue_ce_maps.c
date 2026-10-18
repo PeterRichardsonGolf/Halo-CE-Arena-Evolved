@@ -435,6 +435,36 @@ static void ce_pause_dead_rows_remove(void)
 	}
 }
 
+/* whether a row of the multiplayer pause lists runs a function this engine has not (Halo PC's pause menus: CHANGE
+SETTINGS), as ce_pause_dead_rows_remove finds them */
+static boolean ce_pause_has_dead_rows(void)
+{
+	long collection = tag_loaded(UI_WIDGET_COLLECTION_TAG, MULTIPLAYER_COLLECTION);
+	long lists[MAXIMUM_LISTS], list_count = 0, widgets[MAXIMUM_PAUSE_WIDGETS], widget_count = 0;
+	struct tag_block const *screens;
+	long screen, list_index;
+
+	if (collection == NONE)
+		return FALSE;
+	screens = tag_get(UI_WIDGET_COLLECTION_TAG, collection);
+	for (screen = 0; screen < screens->count; screen++)
+		ce_pause_lists_collect(XBOX_POINTER(struct tag_reference const, screens->address)[screen].index,
+			lists, &list_count, widgets, &widget_count);
+	for (list_index = 0; list_index < list_count; list_index++)
+	{
+		struct ce_widget_definition const *list = tag_get(UI_WIDGET_DEFINITION_TAG, lists[list_index]);
+		struct ce_widget_child const *rows = xbox_pointer(list->child_widgets.address);
+		long row;
+
+		for (row = 0; row < list->child_widgets.count; row++)
+		{
+			if (ce_button_dead(rows[row].widget_tag.index))
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /* the multiplayer pause screen's column list (its child's index), NONE for none */
 static long ce_screen_list(struct ce_widget_definition const *screen)
 {
@@ -788,6 +818,26 @@ void ae_ce_map_tags_loaded(char const *map_name, long scenario_tag_index)
 		platform_log("Custom Edition map: its pause menu's widgets are not whole (%s): no SETTINGS on this map", why);
 	}
 	hud_hires_tags_loaded(scenario_tag_index);
+}
+
+/* (cache_files.c, an AE hook line before the menus' tags of an Xbox map) An Xbox map that carries Halo PC's pause
+menus (Halo OG's Digsite maps: a CHANGE SETTINGS row whose function this engine has not, and Halo PC's split screen
+pauses that run past the bottom of a half view) gets the Custom Edition maps' repair: the dead rows taken out, the
+menus' tags added, the split pauses fitted to their view. TRUE when it added the menus' tags itself; a stock map (no
+such row) is left to the usual call */
+int ae_xbox_map_menu_tags_loaded(char const *map_name)
+{
+	struct split_template template;
+
+	if (!map_name || !strcmp(map_name, "ui") || !ce_pause_has_dead_rows())
+		return FALSE;
+	platform_log("Xbox map %s: Halo PC's pause menus: fitted as a Custom Edition map's", map_name);
+	ce_pause_dead_rows_remove();
+	ce_pause_split_template(&template);
+	menu_tags_loaded(map_name);
+	ce_pause_split_layout(&template);
+	ce_pause_active = TRUE;
+	return TRUE;
 }
 
 int ae_ce_map_building_menu_tags(void)

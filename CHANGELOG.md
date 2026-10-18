@@ -8,6 +8,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## 0.3.3-beta - 2026-10-17
 
+- Xbox maps that carry Halo PC's pause menus (Halo OG's Digsite maps) get the Custom Edition maps' pause repair:
+  no dead CHANGE SETTINGS row, and the split screen pause menus fit each player's view instead of running off it.
 - Custom Edition maps rebuilt with Invader (Halo Flawless Cowboy Edition's copies of the Gearbox maps: Danger
   Canyon, Death Island, Gephyrophobia, Ice Fields, Infinity, Timberland) load: their empty tag slots no longer refuse
   the whole map.

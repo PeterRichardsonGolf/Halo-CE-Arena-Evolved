@@ -1750,6 +1750,7 @@ long scenario_tags_load(
 			{
 				extern void menu_tags_loaded(char const *map_name);
 
+				if (!ae_xbox_map_menu_tags_loaded(cache_file_globals.header.name)) /* AE hook */
 				menu_tags_loaded(cache_file_globals.header.name);
 				ae_menus_swap_tags_loaded(cache_file_globals.header.name); /* AE hook */
 			}

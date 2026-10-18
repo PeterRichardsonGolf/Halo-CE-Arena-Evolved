@@ -17,6 +17,8 @@ before it returns) what an Xbox map's tags get there and a Custom Edition
 map's did not: the menus' tags (the pause menu's SETTINGS) and the high-res
 HUD's bitmaps */
 void ae_ce_map_tags_loaded(char const *map_name, long scenario_tag_index);
+/* an Xbox map with Halo PC's pause menus: the same repair; TRUE when it added the menus' tags itself */
+int ae_xbox_map_menu_tags_loaded(char const *map_name);
 
 /* (menu_tags_loaded) whether it is making a validated Custom Edition map's
 pause support, rather than ui.map's or an Xbox map's tags */

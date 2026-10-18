@@ -813,3 +813,5 @@ port/linux/game/menu_functions.c	return map_list.kind == MAP_KIND_SINGLEPLAYER ?
 port/linux/game/menu_functions.c	last_used = ae_map_pages_begin(named(list, "list_item_0_map_kind_spinner", 0), AE_MAP_PAGES_MAP_SCREEN, multiplayer_map_names, map_list.map_count, map_list.hosting, last_used); /* AE hook */
 port/linux/game/menu_functions.c	if (ae_map_pages_turned() || kind != map_list.kind) /* AE hook */
 port/linux/game/menu_functions.c	if (map_list.kind == MAP_KIND_MULTIPLAYER) chosen = ae_map_pages_map(chosen); /* AE hook */
+# an Xbox map carrying Halo PC's pause menus (Halo OG's Digsite maps) gets the Custom Edition maps' pause repair
+source/cache/cache_files.c	if (!ae_xbox_map_menu_tags_loaded(cache_file_globals.header.name)) /* AE hook */
