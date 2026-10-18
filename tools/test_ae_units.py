@@ -112,6 +112,9 @@ UNITS = {
                                    ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-lm"]),
     # (PLAYERS ON RADAR ENEMIES: allies hidden in a team game only, the names over heads kept)
     "ae_radar_rules_test.c": ([UI / "ae_radar_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (HEALTH's REACH: the stops at the top of each third, the curve's rate, each third's time)
+    "ae_reach_health_rules_test.c": ([UI / "ae_reach_health_rules.c"], ["-fsanitize=address,undefined",
+                                                                      "-fno-sanitize-recover=all"], []),
     # (CE's counter digits at any size: frames, advances, quads, ink bounds)
     "ae_hud_digit_cells_test.c": ([UI / "ae_hud_digit_cells.c"],
                                   ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

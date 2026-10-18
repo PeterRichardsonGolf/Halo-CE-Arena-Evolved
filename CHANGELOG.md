@@ -6,6 +6,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- HEALTH's REACH is now true to Halo: Reach: health has its own wait, 4 s after the last damage that reached it
+  (shield hits do not count), then refills fast to the top of the third it is in (about 1.1 s, 1.5 s and 2.6 s a
+  third); shields recharge 6 s after a hit and fill in 3 s; a health pack also ends the shields' wait. Before, health
+  came back only after full shields, a third every 4 s, on CE's shield timers.
 - HEALTH's HALO 3 is now true to Halo 3: Halo 3's tags and code use Halo 2's numbers and rule (shields recharge 5 s
   after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached
   it, shields or none), so HALO 3 plays the same as HALO 2. Before, it was our own rule (health only after full

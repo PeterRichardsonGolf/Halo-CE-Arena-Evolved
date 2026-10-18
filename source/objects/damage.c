@@ -135,6 +135,7 @@ symbols in this file:
 #include "tag_files/tag_files.h"
 #include "ae_shield_fx.h" /* AE hook */
 #include "ae_bots.h" /* AE hook */
+#include "ae_reach_health_rules.h" /* AE hook */
 static short ae_blood; /* AE hook */
 #include "text/draw_string.h"
 #include "units/unit_definitions.h"
@@ -162,21 +163,29 @@ overcharge): not a client of the distributed netcode, which has the host's
 (damage_set_network_state) */
 #define objects_update_shields() (!network_game_distributed_client())
 
-/* port: HALO 2 and HALO 3 health styles (enum health_style), host side.
-Halo 3's tags and code use Halo 2's numbers and rule, so both run this. The
-shields of players use Halo 2's timers instead of the biped tag's: recharge
+/* port: HALO 2, HALO 3 and REACH health styles (enum health_style), host
+side. Halo 3's tags and code use Halo 2's numbers and rule, so both run this.
+The shields of players use Halo 2's timers instead of the biped tag's: recharge
 starts 5 seconds after the last shield damage and refills in 2 seconds. The
 body has its own timer: 10 seconds after the last damage that reached it,
-then a refill in 5 seconds. The body's last-damage time is kept in a table of
-this machine (by object slot and identifier), not in the object: it is never
-saved or sent. */
+then a refill in 5 seconds. REACH runs on the same timers with Halo: Reach's
+numbers (ae_reach_health_rules.h): the shields 6 seconds after the last hit,
+then 3 seconds; the body 4 seconds after the last damage that reached it (which
+restarts the shields' 6 seconds too), then up to the top of the third it is
+in. The body's last-damage time is kept in a table of this machine (by object
+slot and identifier), not in the object: it is never saved or sent. */
 static short health_style_current(void);
 #define health_style_halo2_rule(style) \
 	((style) == _health_style_halo2 || (style) == _health_style_halo3)
+#define health_style_timed_shields(style) \
+	(health_style_halo2_rule(style) || (style) == _health_style_reach)
 #define HALO2_SHIELD_STUN_TICKS (5 * TICKS_PER_SECOND)
 #define HALO2_SHIELD_RECHARGE_PER_TICK (1.f / (2.f * TICKS_PER_SECOND))
 #define HALO2_BODY_STUN_TICKS (10 * TICKS_PER_SECOND)
 #define HALO2_BODY_RECHARGE_PER_TICK (1.f / (5.f * TICKS_PER_SECOND))
+#define REACH_SHIELD_STUN_TICKS ((short)(AE_REACH_SHIELD_STUN_SECONDS * TICKS_PER_SECOND)) /* AE hook */
+#define REACH_SHIELD_RECHARGE_PER_TICK (1.f / (AE_REACH_SHIELD_RECHARGE_SECONDS * TICKS_PER_SECOND)) /* AE hook */
+#define REACH_BODY_STUN_TICKS ((long)(AE_REACH_BODY_STUN_SECONDS * TICKS_PER_SECOND)) /* AE hook */
 
 static struct
 {
@@ -186,8 +195,21 @@ static struct
 
 static boolean halo2_player_shields(long object_index)
 {
-	return health_style_halo2_rule(health_style_current()) &&
+	return health_style_timed_shields(health_style_current()) &&
 		player_index_from_unit_index(object_index) != NONE;
+}
+
+/* the shields' wait after a hit and their refill a tick (halo2_player_shields) */
+static short halo2_player_shield_stun_ticks(void)
+{
+	return health_style_current() == _health_style_reach ?
+		REACH_SHIELD_STUN_TICKS : HALO2_SHIELD_STUN_TICKS;
+}
+
+static real halo2_player_shield_recharge_per_tick(void)
+{
+	return health_style_current() == _health_style_reach ?
+		REACH_SHIELD_RECHARGE_PER_TICK : HALO2_SHIELD_RECHARGE_PER_TICK;
 }
 
 static void halo2_body_damaged(long object_index)
@@ -592,6 +614,7 @@ boolean object_restore_body(
 	{
 		object->object.body_vitality = 1.f;
 		restored = TRUE;
+		if (health_style_current() == _health_style_reach && player_index_from_unit_index(object_index) != NONE) object->object.shield_stun_ticks = 0; /* AE hook */
 	}
 
 	return restored;
@@ -1078,9 +1101,10 @@ static void object_damage_shield(
 	{
 		/* (HALO 2: any shield damage restarts the 5 seconds, depletion adds
 		none; damage reaching a player whose shield is already empty restarts
-		them too, so the shields never recharge under fire) */
+		them too, so the shields never recharge under fire; REACH: the same,
+		6 seconds) */
 		if (shield_damage > 0.f || object->object.shield_vitality == 0.f)
-			object->object.shield_stun_ticks = HALO2_SHIELD_STUN_TICKS;
+			object->object.shield_stun_ticks = halo2_player_shield_stun_ticks();
 	}
 	else if (shield_damage >= damage_resistance->minimum_shield_stun_damage ||
 		object->object.shield_vitality == 0.f)
@@ -1385,7 +1409,13 @@ static void object_damage_body(
 
 	object->object.body_damage_decay_timer = 0;
 	if (actual_damage > 0.f && !TEST_FLAG(object->object.damage_flags, _object_cannot_take_damage_bit))
+	{
 		halo2_body_damaged(object_index);
+		/* (REACH: damage that reached the body, through the shields or
+		leaked past them, restarts the shields' wait too) */
+		if (halo2_player_shields(object_index) && health_style_current() == _health_style_reach)
+			object->object.shield_stun_ticks = REACH_SHIELD_STUN_TICKS;
+	}
 	object->object.current_body_damage += actual_damage;
 	object->object.recent_body_damage += actual_damage;
 	if (object->object.current_body_damage > 1.f)
@@ -2104,16 +2134,14 @@ void area_of_effect_cause_damage(
 
 /* port: how players' health comes back (enum health_style): in multiplayer
 the gametype's HEALTH (game_engine_health_style), in the campaign game.health.
-REACH: once the shields are full, a third every four seconds, up to the top
-of the third it is in (a health pack fills the rest); HALO 2 and HALO 3: ten
+REACH: four seconds after the body's last damage, up to the top of the third
+it is in, fast near empty and slower near full (ae_reach_health_rules.h; a
+health pack fills the rest and ends the shields' wait); HALO 2 and HALO 3: ten
 seconds after the body's last damage, then all of it in five seconds, shields
 or none (the shields' own timers: see above).
-With no shields, the others start five seconds after the body's last damage.
 The host runs it with the shields (objects_update_shields); clients have its
 health. */
-#define HEALTH_REGENERATION_PER_TICK (1.f / (3.f * 4.f * TICKS_PER_SECOND))
 #define HEALTH_REGENERATION_HALO2_PER_TICK HALO2_BODY_RECHARGE_PER_TICK
-#define HEALTH_REGENERATION_UNSHIELDED_DELAY (5 * TICKS_PER_SECOND)
 const char *config_string(const char *name);
 
 static short health_style_current(
@@ -2149,8 +2177,6 @@ static void object_regenerate_health(
 {
 	struct object_datum *object = object_get(object_index);
 	real health = object->object.body_vitality;
-	real cap = 1.f;
-	boolean ready;
 
 	if (health <= 0.f || health >= 1.f ||
 		TEST_FLAG(object->object.damage_flags, _object_dead_bit) ||
@@ -2160,27 +2186,20 @@ static void object_regenerate_health(
 	}
 	if (player_index_from_unit_index(object_index) == NONE)
 		return;
-	if (health_style_halo2_rule(style))
-	{
-		/* (HALO 2 and HALO 3: its own timer, shields or none) */
-		ready = halo2_body_quiet_ticks(object_index) >= HALO2_BODY_STUN_TICKS;
-	}
-	else if (object->object.maximum_shield_vitality > 0.f)
-	{
-		ready = object->object.shield_vitality >= 1.f;
-	}
-	else
-	{
-		ready = object->object.body_damage_decay_timer == NONE ||
-			object->object.body_damage_decay_timer >= HEALTH_REGENERATION_UNSHIELDED_DELAY;
-	}
-	if (!ready)
-		return;
-	/* (REACH: the top of the third it is in; on a third's top, none) */
 	if (style == _health_style_reach)
-		cap = MIN((real)((long)(health * 3.f - 0.0001f) + 1) / 3.f, 1.f);
-	object->object.body_vitality = MIN(health + (health_style_halo2_rule(style) ?
-		HEALTH_REGENERATION_HALO2_PER_TICK : HEALTH_REGENERATION_PER_TICK), cap);
+	{
+		/* (REACH: its own timer, shields or none, then to the top of the
+		third it is in; on a third's top, none) */
+		if (halo2_body_quiet_ticks(object_index) >= REACH_BODY_STUN_TICKS)
+			object->object.body_vitality = ae_reach_health_step(health, 1.f / TICKS_PER_SECOND); /* AE hook */
+		return;
+	}
+	/* (HALO 2 and HALO 3: its own timer, shields or none, then all of it) */
+	if (health_style_halo2_rule(style) &&
+		halo2_body_quiet_ticks(object_index) >= HALO2_BODY_STUN_TICKS)
+	{
+		object->object.body_vitality = MIN(health + HEALTH_REGENERATION_HALO2_PER_TICK, 1.f);
+	}
 }
 
 void object_damage_update(
@@ -2303,7 +2322,7 @@ void object_damage_update(
 			if (object->object.shield_stun_ticks == 0)
 			{
 				real shield_recharge = halo2_player_shields(object_index) ?
-					HALO2_SHIELD_RECHARGE_PER_TICK :
+					halo2_player_shield_recharge_per_tick() :
 					collision_model->resistance.runtime_shield_recharge_velocity;
 
 				shield_recharge *= game_difficulty_get_team_value(
