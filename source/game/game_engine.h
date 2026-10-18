@@ -142,8 +142,10 @@ enum no_spread_level
 #define GAME_VARIANT_NO_SPREAD_FULL GAME_VARIANT_NO_SPREAD_MASK
 
 /* port: how a player's health comes back (the gametype's HEALTH, the
-campaign's game.health): CLASSIC only from health packs; REACH, once the
-shields are full, up to the top of the third it is in; HALO 2 and HALO 3
+campaign's game.health): CLASSIC only from health packs; REACH, Halo:
+Reach's timers: shields recharge 6 s after the last hit and fill in 3 s,
+health refills 4 s after the last damage that reached the body, up to the top
+of the third it is in, and a health pack ends the shields' wait; HALO 2 and HALO 3
 (the games use the same numbers), Halo 2's timers: shields recharge 5 s
 after the last shield damage and fill in 2 s, health refills in 5 s starting
 10 s after the last damage that reached the body (objects/damage.c) */

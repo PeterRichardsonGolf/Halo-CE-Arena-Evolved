@@ -625,10 +625,11 @@ static const struct config_setting config_settings[] =
 		"uses one. A change applies from the next start." },
 	{ "game.health", _config_string, "\"classic\"", "HALO_HEALTH", _environment_value, _platform_all,
 		"How players' health comes back in the campaign: \"classic\" only from\n"
-		"health packs; \"reach\" once the shields are full, to the top of the third\n"
-		"it is in; \"halo2\" and \"halo3\" Halo 2's and Halo 3's timers, the same\n"
-		"(shields 5 s then 2 s; health 10 s after the last body damage, then 5 s).\n"
-		"Multiplayer goes by the gametype's HEALTH." },
+		"health packs; \"reach\" Halo: Reach's timers (shields 6 s then 3 s; health\n"
+		"4 s after the last body damage, then to the top of the third it is in; a\n"
+		"health pack also ends the shields' wait); \"halo2\" and \"halo3\" Halo 2's\n"
+		"and Halo 3's timers, the same (shields 5 s then 2 s; health 10 s after the\n"
+		"last body damage, then 5 s). Multiplayer goes by the gametype's HEALTH." },
 	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
 		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
 		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"

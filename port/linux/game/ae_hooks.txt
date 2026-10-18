@@ -843,3 +843,12 @@ port/linux/game/menu_tags.c	"ae split dev left 0", "ae split dev left 1", "ae sp
 port/linux/game/menu_tags.c	"ae split join update", /* AE hook */
 port/linux/game/menu_functions.c	if (!strncmp(name, "ae split ", 9)) /* AE hook */\nreturn ae_split_screen_event(name, widget, controller, widget_deleted);
 port/linux/game/menu_functions.c	if (!strcmp(name, "ae split join update")) /* AE hook */\nae_split_screen_join_update(widget);
+# HEALTH's REACH true to Halo: Reach (2026-10-18; ae_reach_health_rules.c): the waits' and the shields' refill numbers,
+# the body's refill a tick to the top of its third, and a health pack ending the shields' wait (object_restore_body,
+# REACH only). The timers' code around them is the HALO 2 path's port: code in damage.c.
+source/objects/damage.c	#include "ae_reach_health_rules.h" /* AE hook */
+source/objects/damage.c	#define REACH_SHIELD_STUN_TICKS ((short)(AE_REACH_SHIELD_STUN_SECONDS * TICKS_PER_SECOND)) /* AE hook */
+source/objects/damage.c	#define REACH_SHIELD_RECHARGE_PER_TICK (1.f / (AE_REACH_SHIELD_RECHARGE_SECONDS * TICKS_PER_SECOND)) /* AE hook */
+source/objects/damage.c	#define REACH_BODY_STUN_TICKS ((long)(AE_REACH_BODY_STUN_SECONDS * TICKS_PER_SECOND)) /* AE hook */
+source/objects/damage.c	object->object.body_vitality = ae_reach_health_step(health, 1.f / TICKS_PER_SECOND); /* AE hook */
+source/objects/damage.c	if (health_style_current() == _health_style_reach && player_index_from_unit_index(object_index) != NONE) object->object.shield_stun_ticks = 0; /* AE hook */
