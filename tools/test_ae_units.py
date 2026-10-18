@@ -62,6 +62,11 @@ UNITS = {
     # are a player's)
     "ae_map_picture_rules_test.c": ([UI / "ae_map_picture_rules.c"], ["-fsanitize=address,undefined",
                                                                        "-fno-sanitize-recover=all"], []),
+    # (look fixes: a fix's map by name, its field changed only from the value it expects and never outside the
+    # tag, the table's entries; the bitmap type errors said once a bitmap and type; under the sanitizers, as the
+    # names and tags are a map's)
+    "ae_map_look_fixes_rules_test.c": ([UI / "ae_map_look_fixes_rules.c"], ["-fsanitize=address,undefined",
+                                                                             "-fno-sanitize-recover=all"], []),
     # (the Settings list's pictures by entry)
     "ae_settings_test.c": ([UI / "ae_settings.c"], [], []),
     # (the item waypoints' pictures: the style, the fallback to text, a map's sprite checked, the sizes, a line's

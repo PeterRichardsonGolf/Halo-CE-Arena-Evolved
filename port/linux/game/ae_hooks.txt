@@ -918,3 +918,11 @@ port/linux/game/network_chat.c	if ((pressed || (TEST_FLAG(pad_pressed, HALO_CHAT
 # the controller picker's ASSIGN (2026-10-18): while it waits, and until its press is let go, the pads' buttons are held
 # back from the game (the pads stay connected: unplugging them made the lobby ask to reconnect)
 port/linux/src/xinput_sdl.c	if (ae_platform_input_held_back()) return; /* AE hook */
+# look fixes (ae_map_look_fixes.c): a map's wrong tag fields fixed as its tags load (h2d_coagulation's teleporter
+# card), on Xbox and Custom Edition maps; and the rasterizer's "incompatible bitmap type" error said once for each
+# bitmap and type until the next map, not at every draw (46k lines a game on h2d_coagulation)
+source/cache/cache_files.c	#include "ae_map_look_fixes.h" /* AE hook */
+source/cache/cache_files.c	ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */\nae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
+source/cache/cache_files.c	ae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */\nae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox.c	#include "ae_map_look_fixes.h" /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox.c	if (ae_map_look_bitmap_type_error_first(bitmap, type)) /* AE hook */\nerror(\n_error_silent,\n"### ERROR incompatible bitmap type in shader got %s expected %s",

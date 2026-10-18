@@ -11,6 +11,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - A multiplayer game's pause menu SETTINGS no longer lists CHANGE COLOR: its Spartans are the main menu's pictures, which
   a game map has not got, so the screen showed an empty box. Change your color from the main menu's Settings.
 - The pause box's "B =CANCEL" is no longer cut at 1080p.
+- The teleporters of the H2 Demakes Coagulation, Headlong and Warlock no longer draw their glow inside a black card:
+  the maps' own shader blended a picture with no transparency, which Arena Evolved now adds instead when those maps
+  load. A map's "incompatible bitmap type" errors are logged once each, not at every frame.
 - Modded discs (Halo 1: NHE, CE+ X, Patch Edition and other whole sets of Xbox maps) have a folder of their own:
   `discs/<name>/maps`, chosen on Settings > Game Options > MODDED DISCS (`game.disc`; the old `game.mod` is read into
   it once). Discs already in `mods/` keep working from there and nothing is moved; move them to `discs/` when you

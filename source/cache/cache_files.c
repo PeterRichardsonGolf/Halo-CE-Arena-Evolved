@@ -144,6 +144,7 @@ symbols in this file:
 #include "ae_weapon_pack.h" /* AE hook */
 #include "ae_sound_filter.h" /* AE hook */
 #include "ae_map_folders.h" /* AE hook */
+#include "ae_map_look_fixes.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1652,6 +1653,7 @@ long scenario_tags_load(
 				ce_hud_tags_loaded(global_tag_instances, ce_header->tag_count);
 			}
 			ae_ce_map_tags_loaded(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
+			ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */
 			ae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 			return ce_header->scenario_tag_index;
 		}
@@ -1734,6 +1736,7 @@ long scenario_tags_load(
 			tags_header_register_vertex_and_index_buffers(cache_file_globals.tag_header);
 			cache_file_globals.tags_loaded = TRUE;
 			ae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */
+			ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */
 			/* port: a PAL map played as the NTSC maps are (port/linux/game/pal_tags.c) */
 			{
 				extern void pal_tags_loaded(char const *build);

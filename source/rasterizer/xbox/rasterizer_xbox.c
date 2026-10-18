@@ -418,6 +418,7 @@ symbols in this file:
 #include "rasterizer/xbox/rasterizer_xbox_pixel_shader.h"
 #include "rasterizer_xbox_internal.h"
 #include "rasterizer_xbox_vertex_shaders.h"
+#include "ae_map_look_fixes.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1309,6 +1310,7 @@ boolean rasterizer_set_texture_non_blocking(
 			{
 				if (bitmap->type != type)
 				{
+					if (ae_map_look_bitmap_type_error_first(bitmap, type)) /* AE hook */
 					error(
 						_error_silent,
 						"### ERROR incompatible bitmap type in shader got %s expected %s",
@@ -2039,6 +2041,7 @@ union point2d *rasterizer_set_texture(
 			}
 			else
 			{
+				if (ae_map_look_bitmap_type_error_first(bitmap, type)) /* AE hook */
 				error(
 					_error_silent,
 					"### ERROR incompatible bitmap type in shader got %s expected %s",
