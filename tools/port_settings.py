@@ -2029,6 +2029,10 @@ def _split_screen() -> list:
 JOIN = f"{MT}/split_screen"
 JOIN_CARD_LEFT, JOIN_CARD_TOP, JOIN_CARD_STEP, JOIN_CARD_WIDTH = 16, 102, 154, 146
 JOIN_BLUE, JOIN_WHITE, JOIN_DIM, JOIN_NAVY = "#FF2896FF", "#FFFFFFFF", "#FF1B5A96", "#FF000E23"
+# (an empty card's OR PICK ONE and its pill, units from the card's top: the label 19 below the legend's last row's
+# text, 7 of air between its letters and the pill, the pill 17 above the card's inner edge (1080p, owner 2026-10-18:
+# the label sat on the pill))
+JOIN_PICK_LABEL, JOIN_PICK_TOP = 231, 251
 
 
 def join_handler_names() -> list:
@@ -2052,7 +2056,7 @@ def _join_card_items(seat: int, x: int, y: int, w: int) -> list:
         items.append(f'<child widget="{JOIN}/{name}_{seat}" x="{ix}" y="{iy}"/>')
 
     # (a pill: its left and right 40 % are its arrows, the middle 20 % picks)
-    for pill, top in (("dev", 54), ("prof", 104), ("cand", 241)):
+    for pill, top in (("dev", 54), ("prof", 104), ("cand", JOIN_PICK_TOP)):
         left, right, pick = ("cand left", "cand right", "cand take") if pill == "cand" else (
             f"{pill} left", f"{pill} right", f"{pill} pick")
         item(f"join_hit_{pill}_l", left, 8, top, 52, 28)
@@ -2124,7 +2128,9 @@ def _join_screen() -> list:
             lines += _join_picture(f"join_{pill}arrow_l_{seat}", "bitmaps/arrow_sm_left", 12, 12)
             place(f"join_{pill}arrow_l_{seat}", x + 13, y + top + 8)
             lines += _join_picture(f"join_{pill}arrow_r_{seat}", "bitmaps/arrow_sm_right", 12, 12)
-            place(f"join_{pill}arrow_r_{seat}", x + w - 25, y + top + 8)
+            # (the arrows' ink is the left 6 units of their pictures: the right one 19 in from the card's edge, so
+            # each sits 5 units inside its pill's end and the value has the same room both sides)
+            place(f"join_{pill}arrow_r_{seat}", x + w - 19, y + top + 8)
             # (the value: large when it fits, small when long; white at rest, navy on the filled flash)
             for size in ("large", "small"):
                 for tone, color in (("", JOIN_WHITE), ("inv", JOIN_NAVY)):
@@ -2151,17 +2157,18 @@ def _join_screen() -> list:
             lines += _join_text(f"join_glyphtext{row}_{seat}", label, "small", JOIN_WHITE, 0, 0, w - 36, align="left")
             place(f"join_glyphtext{row}_{seat}", x + 30, y + 135 + 22 * row)
         lines += _join_text(f"join_pick_{seat}", "OR PICK ONE", "small", JOIN_BLUE, 0, 0, w)
-        place(f"join_pick_{seat}", x, y + 227)
+        place(f"join_pick_{seat}", x, y + JOIN_PICK_LABEL)
         lines += _join_picture(f"join_candbar_{seat}", "bitmaps/ae_seat_profile_bar", 130, 28)
-        place(f"join_candbar_{seat}", x + 8, y + 241)
+        place(f"join_candbar_{seat}", x + 8, y + JOIN_PICK_TOP)
         lines += _join_picture(f"join_candarrow_l_{seat}", "bitmaps/arrow_sm_left", 12, 12)
-        place(f"join_candarrow_l_{seat}", x + 13, y + 249)
+        place(f"join_candarrow_l_{seat}", x + 13, y + JOIN_PICK_TOP + 8)
         lines += _join_picture(f"join_candarrow_r_{seat}", "bitmaps/arrow_sm_right", 12, 12)
-        place(f"join_candarrow_r_{seat}", x + w - 25, y + 249)
+        place(f"join_candarrow_r_{seat}", x + w - 19, y + JOIN_PICK_TOP + 8)
         for size, color in (("large", JOIN_WHITE), ("small", JOIN_WHITE), ("none", JOIN_DIM)):
             lines += _join_text(f"join_cand{size}_{seat}", "NO FREE PAD" if size == "none" else "",
                                 "small" if size != "large" else "large", color, 0, 0, 108)
-            place(f"join_cand{size}_{seat}", x + 19, y + 241 + (4 if size == "large" else 7))
+            # (a unit higher than the other pills' values: the text's shadow falls below it, so centred it sat low)
+            place(f"join_cand{size}_{seat}", x + 19, y + JOIN_PICK_TOP + (3 if size == "large" else 6))
         # (what the mouse clicks: a list of the card's own, its items over the pills' arrows and values and its
         # buttons; ae_split_screen.c hides the items of the state the card is not in)
         lines += _join_card_items(seat, x, y, w)

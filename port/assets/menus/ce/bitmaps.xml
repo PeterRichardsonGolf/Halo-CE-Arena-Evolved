@@ -386,6 +386,7 @@
 		<frame png="ce/port/bitmaps/ae_seat_profile_bar__0.png" width="130" height="28"/>
 		<frame png="ce/port/bitmaps/ae_seat_profile_bar__1.png" width="130" height="28"/>
 		<frame png="ce/port/bitmaps/ae_seat_profile_bar__2.png" width="130" height="28"/>
+		<frame png="ce/port/bitmaps/ae_seat_profile_bar__3.png" width="130" height="28"/>
 	</bitmap>
 	<bitmap name="bitmaps/ae_seat_strip">
 		<frame png="ce/port/bitmaps/ae_seat_strip__0.png" width="608" height="28"/>

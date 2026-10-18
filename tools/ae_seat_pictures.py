@@ -17,13 +17,15 @@ The frames, as ae_split_screen.c sets them:
   edge), 2 an unplugged pad's held seat (dim edge);
 - bitmaps/ae_seat_devices: 0 keyboard + mouse, 1 Xbox pad, 2 PlayStation pad, 3 Nintendo pad, 4 another pad,
   5 unplugged (dim, struck through in grey);
-- bitmaps/ae_seat_buttons (round chips): 0 Xbox START, 1 PlayStation OPTIONS, 2 ENTER, 3 Xbox B, 4 PlayStation
-  circle, 5 ESC (small; the capsule is better), 6 Nintendo B, 7 Nintendo +;
+- bitmaps/ae_seat_buttons (round chips): 0 Xbox START, 1 PlayStation OPTIONS (not round: the DualSense's own
+  button, an upright pill, Kenney's shape, so it never reads as START), 2 ENTER, 3 Xbox B, 4 PlayStation circle,
+  5 ESC (small; the capsule is better), 6 Nintendo B, 7 Nintendo +;
 - bitmaps/ae_seat_key_esc: the keyboard's ESC as a capsule;
 - bitmaps/ae_seat_button_assign, bitmaps/ae_seat_button_leave: the stock button (bitmaps/text_button_background,
   both its frames) narrowed for a card's ASSIGN / CANCEL and its LEAVE (also the lobby's ASSIGN);
 - bitmaps/ae_seat_profile_bar: a pill's bar (the option row's band, outlined): 0 at rest, 1 focused (the menus'
-  ice-blue glow; ASSIGN's wait pulses 0 and 1), 2 filled blue (a seat's device pressed, a swap: its name in navy);
+  ice-blue glow; ASSIGN's wait pulses 0 and 1), 2 filled blue (a seat's device pressed, a swap: its name in navy),
+  3 inert (its edge dim: an empty seat's OR PICK ONE with no free pad);
 - bitmaps/ae_seat_strip: the line across the top (the option row's band, outlined).
 """
 import argparse
@@ -63,7 +65,10 @@ DEVICE_GLYPHS = [
     None,
 ]
 # the chips' symbols, by frame
-BUTTON_SYMBOLS = ["bars", "bars", "return", "B", "ring", "ESC", "B", "plus"]
+BUTTON_SYMBOLS = ["bars", "options", "return", "B", "ring", "ESC", "B", "plus"]
+# (the OPTIONS pill: Kenney's playstation5_button_options_alternative stood upright (it leans 14.5 degrees), as wide as
+# 0.55 of its height, its ends fully round)
+OPTIONS_ASPECT = 0.55
 # (supersampled, then scaled down: smooth edges)
 SUPER = 4
 
@@ -213,7 +218,8 @@ def _text(draw, centre, text: str, height: float, colour):
 
 def chip(symbol: str):
     """a round button chip: a blue disc 15 units across in the 16-unit frame (a clear rim all round), its symbol in
-    the panel's navy"""
+    the panel's navy; PlayStation's OPTIONS is the one chip that is not round: an upright pill as tall as the disc
+    with the three bars in it (the DualSense's button: a round chip would be START's)"""
     from PIL import Image, ImageDraw
     side = BUTTON[0] * UNIT * SUPER
     big = Image.new("RGBA", (side, side), (0, 0, 0, 0))
@@ -221,8 +227,18 @@ def chip(symbol: str):
     # (about 15 units: a rim of 2 pixels of 64 stays clear after the scale-down's soft edge)
     D = side * (1 - 2 * 2.5 / 64)
     c = side / 2
-    d.ellipse((c - D / 2, c - D / 2, c + D / 2, c + D / 2), fill=BLUE + (255,))
     navy = NAVY + (255,)
+    if symbol == "options":
+        # (edges on whole supersampled pixels, so the scale-down leaves one soft pixel at most: crisp)
+        half = round(D * OPTIONS_ASPECT / 2)
+        d.rounded_rectangle((c - half, c - D / 2, c + half, c + D / 2), radius=half, fill=BLUE + (255,))
+        width, thick, pitch = 1.12 * half, 0.085 * D, 0.2 * D
+        for k in (-1, 0, 1):
+            y = c + k * pitch
+            d.rounded_rectangle((c - width / 2, y - thick / 2, c + width / 2, y + thick / 2), radius=thick / 2,
+                                fill=navy)
+        return big.resize((BUTTON[0] * UNIT, BUTTON[1] * UNIT), Image.BOX)
+    d.ellipse((c - D / 2, c - D / 2, c + D / 2, c + D / 2), fill=BLUE + (255,))
     if symbol == "bars":
         for k in (-1, 0, 1):
             y = c + k * 0.17 * D
@@ -292,8 +308,8 @@ ICE_OUTER = (120, 175, 235)
 
 
 def pills(menus: Path) -> list:
-    """the pill's three looks: the band, the band in the focus's glow (an inner 3-pixel ice-blue edge, an outer
-    1-pixel lighter blue), and the band filled with the menus' blue"""
+    """the pill's four looks: the band, the band in the focus's glow (an inner 3-pixel ice-blue edge, an outer
+    1-pixel lighter blue), the band filled with the menus' blue, and the band with its edge dim (nothing to pick)"""
     from PIL import Image, ImageDraw
     band = _band(menus, 1, PROFILE_BAR[0])
     w, h = band.size
@@ -303,7 +319,9 @@ def pills(menus: Path) -> list:
     d.rounded_rectangle((1, 1, w - 2, h - 2), radius=h // 2 - 1, outline=ICE + (255,), width=3)
     filled = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     ImageDraw.Draw(filled).rounded_rectangle((0, 0, w - 1, h - 1), radius=h // 2, fill=BLUE + (255,))
-    return [band, focused, filled]
+    # (the band's own fill kept: only its edge goes dim, as an empty card's)
+    inert = _recolour_edge(band, DIM, fill=band.getpixel((w // 2, h // 2))[:3])
+    return [band, focused, filled, inert]
 
 
 # each bitmap's name, its frames' size (units) and their pictures

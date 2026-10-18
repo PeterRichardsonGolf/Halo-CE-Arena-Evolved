@@ -222,7 +222,7 @@ enum { CARD_EMPTY, CARD_SEATED, CARD_HELD };
 enum { DEVICE_KEYBOARD, DEVICE_XBOX, DEVICE_PLAYSTATION, DEVICE_NINTENDO, DEVICE_OTHER, DEVICE_UNPLUGGED };
 enum { BUTTON_XBOX_START, BUTTON_PLAYSTATION_OPTIONS, BUTTON_ENTER, BUTTON_XBOX_B, BUTTON_PLAYSTATION_CIRCLE,
 	BUTTON_ESCAPE, BUTTON_NINTENDO_B, BUTTON_NINTENDO_PLUS };
-enum { PILL_REST, PILL_FOCUS, PILL_FILLED };
+enum { PILL_REST, PILL_FOCUS, PILL_FILLED, PILL_INERT };
 enum { ROW_CONTROLLER, ROW_PROFILE };
 /* a seat's device pressed (or a swap): its pill blinks three times, 150 ms filled, 100 ms not */
 #define JOIN_FLASH_TIME 750
@@ -563,9 +563,10 @@ static void join_card_update(struct widget_instance *screen, short seat)
 		join_frame(join_child(screen, "join_glyph1", seat), BUTTON_PLAYSTATION_OPTIONS);
 		join_frame(join_child(screen, "join_glyph2", seat), BUTTON_NINTENDO_PLUS);
 		join_frame(join_child(screen, "join_glyph3", seat), BUTTON_ENTER);
-		join_frame(join_child(screen, "join_candbar", seat), PILL_REST);
 		ae_seats_candidate(seat, &candidate);
 		any = candidate.kind != AE_SEAT_EMPTY;
+		/* (no free pad: nothing to pick, so the pill's edge is dim as its NO FREE PAD) */
+		join_frame(join_child(screen, "join_candbar", seat), any ? PILL_REST : PILL_INERT);
 		join_value_ascii(screen, "cand", seat, candidate.name, any, FALSE);
 		join_show(join_child(screen, "join_candnone", seat), !any);
 		join_show(join_child(screen, "join_candarrow_l", seat), any);

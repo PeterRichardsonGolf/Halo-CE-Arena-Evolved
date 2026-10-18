@@ -54,3 +54,13 @@ def test_no_amber():
             hue, saturation, value = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
             # (amber and yellow: hue 25-65 degrees, saturated and bright)
             assert not (25 / 360 <= hue <= 65 / 360 and saturation > 0.5 and value > 0.5), (png.name, (r, g, b))
+
+
+def test_options_is_a_pill_not_start():
+    """PlayStation's OPTIONS (frame 1) is an upright pill, so it is never read as the Xbox's round START (frame 0)"""
+    start = Image.open(MENUS / "ce" / "port" / "bitmaps" / "ae_seat_buttons__0.png").convert("RGBA").getchannel("A")
+    options = Image.open(MENUS / "ce" / "port" / "bitmaps" / "ae_seat_buttons__1.png").convert("RGBA").getchannel("A")
+    x0, y0, x1, y1 = start.getbbox()
+    assert abs((x1 - x0) - (y1 - y0)) <= 1
+    x0, y0, x1, y1 = options.getbbox()
+    assert (x1 - x0) < 0.65 * (y1 - y0)

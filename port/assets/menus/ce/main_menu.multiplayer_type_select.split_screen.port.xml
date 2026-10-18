@@ -34,14 +34,14 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlabel_0" x="28" y="137"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devbar_0" x="24" y="156"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_l_0" x="29" y="164"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_0" x="137" y="164"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_0" x="143" y="164"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlarge_0" x="35" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlargeinv_0" x="35" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmall_0" x="35" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmallinv_0" x="35" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profbar_0" x="24" y="206"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_l_0" x="29" y="214"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_0" x="137" y="214"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_0" x="143" y="214"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflarge_0" x="35" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflargeinv_0" x="35" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profsmall_0" x="35" y="213"/>
@@ -59,13 +59,13 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_0" x="46" y="281"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph3_0" x="25" y="302"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext3_0" x="46" y="303"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_0" x="16" y="329"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_0" x="24" y="343"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_0" x="29" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_0" x="137" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_0" x="35" y="347"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_0" x="35" y="350"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_0" x="35" y="350"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_0" x="16" y="333"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_0" x="24" y="353"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_0" x="29" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_0" x="143" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_0" x="35" y="356"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_0" x="35" y="359"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_0" x="35" y="359"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_items_0" x="16" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_card_1" x="170" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_on_1" x="170" y="109"/>
@@ -76,14 +76,14 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlabel_1" x="182" y="137"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devbar_1" x="178" y="156"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_l_1" x="183" y="164"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_1" x="291" y="164"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_1" x="297" y="164"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlarge_1" x="189" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlargeinv_1" x="189" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmall_1" x="189" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmallinv_1" x="189" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profbar_1" x="178" y="206"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_l_1" x="183" y="214"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_1" x="291" y="214"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_1" x="297" y="214"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflarge_1" x="189" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflargeinv_1" x="189" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profsmall_1" x="189" y="213"/>
@@ -101,13 +101,13 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_1" x="200" y="281"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph3_1" x="179" y="302"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext3_1" x="200" y="303"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_1" x="170" y="329"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_1" x="178" y="343"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_1" x="183" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_1" x="291" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_1" x="189" y="347"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_1" x="189" y="350"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_1" x="189" y="350"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_1" x="170" y="333"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_1" x="178" y="353"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_1" x="183" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_1" x="297" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_1" x="189" y="356"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_1" x="189" y="359"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_1" x="189" y="359"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_items_1" x="170" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_card_2" x="324" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_on_2" x="324" y="109"/>
@@ -118,14 +118,14 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlabel_2" x="336" y="137"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devbar_2" x="332" y="156"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_l_2" x="337" y="164"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_2" x="445" y="164"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_2" x="451" y="164"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlarge_2" x="343" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlargeinv_2" x="343" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmall_2" x="343" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmallinv_2" x="343" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profbar_2" x="332" y="206"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_l_2" x="337" y="214"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_2" x="445" y="214"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_2" x="451" y="214"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflarge_2" x="343" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflargeinv_2" x="343" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profsmall_2" x="343" y="213"/>
@@ -143,13 +143,13 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_2" x="354" y="281"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph3_2" x="333" y="302"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext3_2" x="354" y="303"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_2" x="324" y="329"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_2" x="332" y="343"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_2" x="337" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_2" x="445" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_2" x="343" y="347"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_2" x="343" y="350"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_2" x="343" y="350"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_2" x="324" y="333"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_2" x="332" y="353"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_2" x="337" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_2" x="451" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_2" x="343" y="356"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_2" x="343" y="359"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_2" x="343" y="359"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_items_2" x="324" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_card_3" x="478" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_on_3" x="478" y="109"/>
@@ -160,14 +160,14 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlabel_3" x="490" y="137"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devbar_3" x="486" y="156"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_l_3" x="491" y="164"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_3" x="599" y="164"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devarrow_r_3" x="605" y="164"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlarge_3" x="497" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devlargeinv_3" x="497" y="160"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmall_3" x="497" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_devsmallinv_3" x="497" y="163"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profbar_3" x="486" y="206"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_l_3" x="491" y="214"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_3" x="599" y="214"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_profarrow_r_3" x="605" y="214"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflarge_3" x="497" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflargeinv_3" x="497" y="210"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_profsmall_3" x="497" y="213"/>
@@ -185,13 +185,13 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_3" x="508" y="281"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph3_3" x="487" y="302"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext3_3" x="508" y="303"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_3" x="478" y="329"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_3" x="486" y="343"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_3" x="491" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_3" x="599" y="351"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_3" x="497" y="347"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_3" x="497" y="350"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_3" x="497" y="350"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_pick_3" x="478" y="333"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candbar_3" x="486" y="353"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_l_3" x="491" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candarrow_r_3" x="605" y="361"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candlarge_3" x="497" y="356"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candsmall_3" x="497" y="359"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_candnone_3" x="497" y="359"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_items_3" x="478" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_help_ready" x="20" y="414"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_help_nobody" x="20" y="414"/>
@@ -294,9 +294,9 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_l_0" x="8" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_m_0" x="60" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_r_0" x="86" y="104"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_0" x="8" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_0" x="60" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_0" x="86" y="241"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_0" x="8" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_0" x="60" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_0" x="86" y="251"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_0" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_0" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_0" x="89" y="272"/>
@@ -444,9 +444,9 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_l_1" x="8" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_m_1" x="60" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_r_1" x="86" y="104"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_1" x="8" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_1" x="60" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_1" x="86" y="241"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_1" x="8" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_1" x="60" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_1" x="86" y="251"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_1" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_1" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_1" x="89" y="272"/>
@@ -594,9 +594,9 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_l_2" x="8" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_m_2" x="60" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_r_2" x="86" y="104"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_2" x="8" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_2" x="60" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_2" x="86" y="241"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_2" x="8" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_2" x="60" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_2" x="86" y="251"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_2" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_2" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_2" x="89" y="272"/>
@@ -744,9 +744,9 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_l_3" x="8" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_m_3" x="60" y="104"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_prof_r_3" x="86" y="104"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_3" x="8" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_3" x="60" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_3" x="86" y="241"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_3" x="8" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_3" x="60" y="251"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_3" x="86" y="251"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_3" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_3" x="5" y="272"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_3" x="89" y="272"/>
