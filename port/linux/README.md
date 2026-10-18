@@ -216,7 +216,7 @@ These files are in the data root:
 | `debug.txt` | The log of the game. At start-up, the game shows the data root in the terminal. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
 | `crashes/` | Crash reports that wait to be sent (Linux and macOS; refer to "Crash reports"). |
 | `init.txt` | Console commands that the game does at start-up. For example, `map_name levels\a10\a10` starts the first campaign level. |
-| `tags/` | Sound tag files that replace the sounds of the maps (`audio.loose_sounds`). |
+| `mods/` | Mods: folders of Halo PC tag files whose sounds, bitmaps, text and models play over the maps' on this machine, in the order of the main menu's Mods (`load_order.toml`). Refer to [docs/mods.md](../../docs/mods.md). |
 
 Voice packs for the spoken callouts (item and clock timers) are folders of
 WAVs in `voices/<pack>/` in the data root (`one.wav` ... `ten.wav`,
@@ -695,10 +695,10 @@ the setting for one start of the game. It has priority over the file.
 | `capture.record_quality` | `"medium"` | `HALO_RECORD_QUALITY` | The quality and size of a recording: `"low"`, `"medium"` or `"high"` (H.264 at CRF 28, 23 or 18). |
 | `capture.record_indicator` | `true` | `HALO_RECORD_INDICATOR` | `true`: a red dot at the top right while recording. It is never in the recording. |
 | `capture.record_directory` | `""` | `HALO_RECORD_DIR` | The folder for recordings. Empty: `recordings/` next to `config.toml`. |
+| `audio.resampler` | `"sinc"` | `HALO_AUDIO_RESAMPLER` | How the sounds are converted to the output's rate (48 kHz): `"sinc"` with a band-limited low pass, which keeps out the images above the sound's own rate; `"linear"` between neighbouring samples, which lets some of them through and sounds brighter for it. Audio Setup's SOUND PROCESSING screen sets it, with `audio.reverb`. |
 | `audio.voice_chat` | `"push_to_talk"` | `HALO_VOICE_CHAT` | How you talk in voice chat: `"push_to_talk"` (while `controls.push_to_talk` is held; the microphone opens when you first press it), `"open_mic"` (when the microphone hears speech), or `"off"`. You hear the other players in every case. Refer to "Voice chat". |
 | `audio.voice_volume` | `1.0` | `HALO_VOICE_VOLUME` | The volume of the voices of the other players, `0` to `2`. |
 | `audio.output_device`, `audio.input_device` | `"default"` | `HALO_AUDIO_OUTPUT_DEVICE`, `HALO_AUDIO_INPUT_DEVICE` | The speakers and the microphone, by the name that Settings > Audio shows, or `"default"` for the device of the system. If the device is not found, the game uses the device of the system. Not on Android. |
-| `audio.loose_sounds` | `false` | `HALO_LOOSE_SOUNDS` | For those who make sounds. `true`: each sound of a map that has a sound tag file of its name in `tags/` in the data root (for example `tags/sound/sfx/weapons/assault rifle/fire.sound`) plays from that file. The files are Halo PC tag files, as the Halo Editing Kit and Invader write them. At the console, `loose_sounds_reload` reads the files again, and `loose_sounds false` plays the sounds of the map again. When a file changes, all sounds stop. |
 | `input.mouse_sensitivity` | `1.0` | `HALO_MOUSE_SENSITIVITY` | The multiplier for the mouse aim. |
 | `input.mouse_vertical_sensitivity` | `0.0` | `HALO_MOUSE_VERTICAL_SENSITIVITY` | The multiplier for the vertical mouse aim. `0`: the same as `input.mouse_sensitivity`. |
 | `input.mouse_style` | `"classic"` | `HALO_MOUSE_STYLE` | The way the mouse's sensitivity numbers work. `"classic"`: `input.mouse_sensitivity` and `input.mouse_vertical_sensitivity`, as above. `"mcc"`: Halo: The Master Chief Collection's number, `input.mouse_mcc_sensitivity`, the same for turning and for looking up and down (the vertical sensitivity is not read). The first time the style is `mcc` with no MCC value, it takes the classic multiplier x 5.6723 (one decimal, so 1.0 becomes 5.7). The Mouse screen of Settings has the rows. |
@@ -1493,6 +1493,24 @@ name of the profile) gives `ok <code> <seconds> <token>`.
 `POST /v1/connect/confirm` with the token and the answer gives
 `connected <name>`, `declined` or `expired`. The QR code is from
 `port/third_party/qrcodegen`.
+## Mods
+
+A mod is a folder in `mods/` in the data root with a `mod.toml` and a
+`tags` folder of Halo PC tag files, as the Halo Editing Kit and Invader write
+them: sounds, bitmaps, string lists and models that play over the maps' tags
+of the same names, on this machine only (a high-res audio or texture pack, a
+translation, higher-detail models that keep the map's nodes, markers and
+regions). Every mod in the folder is on, in alphabetical order moved as the
+mods ask (`load_after`, `load_before`); the main menu's Mods lists them as a
+resource pack list does, the mod at the top playing over those below it,
+turns them off and moves them, and keeps that in `mods/load_order.toml`.
+Mods that say they cannot be played together (`incompatible`) are asked
+about at startup. The console's `mods_list` lists them, `mods_reload` reads
+their files again and `mods_enable false` plays the maps' own tags. The game
+checks every file before it plays it, and leaves out (with a line in
+`debug.txt`) one it cannot trust or that does not fit the map's tag it
+replaces. A mod changes nothing that the machines of a
+network game agree on. Refer to [docs/mods.md](../../docs/mods.md).
 
 ## Map checks
 
@@ -1703,7 +1721,9 @@ Other changes:
 | `cseries/errors.c` | `debug.txt` stays open between lines. A line that is the same as the line before it is counted, not written again (`last line repeated N times`). At 64 MB, `debug.txt` becomes `debug.old.txt` and a new `debug.txt` starts. |
 | `networking/`, `game/`, `interface/`, `bungie_net/network/` and the pools of objects, effects and sounds | The system link limits and the memory for them. |
 | `game/`, `objects/`, `units/`, `networking/` | The distributed netcode. Refer to `NETCODE.md`. |
-| `cache/cache_files.c` | When a map's tags load and unload, the port finds the bitmaps that the high-res HUD replaces (`game/hud_hires_tags.c`), and adds the tags of the menus to the menus' map (`game/menu_tags.c`). |
+| `cache/cache_files.c` | When a map's tags load and unload, the port finds the bitmaps that the high-res HUD replaces (`game/hud_hires_tags.c`), adds the tags of the menus to the menus' map (`game/menu_tags.c`), and plays the mods' tags (`game/mods.c`). |
+| `cache/xbox_sound_cache.c`, `cache/xbox_texture_cache.c` | The samples of a mod's sound are copied from memory, and the pixels of a mod's bitmap read from its file and laid out for the hardware, at once (`game/mod_sounds.c`, `game/mod_bitmaps.c`); a mod's linear bitmap need not have rows of whole steps of the pitch. |
+| `hs/hs.c` | The console's `mods_reload`, `mods_enable` and `mods_list`, which a client may run too. |
 | `interface/ui_widget.c`, `interface/ui_widget_event_handler_functions.c`, `interface/ui_widget_game_data_input_functions.c` | The main menu is the PC version's from `port/assets/menus` (`display.menus`); the menus' widgets can call the port's functions (`game/menu_functions.c`) and send the PC version's custom activation event; the widgets' memory is 256 KB, not 16 KB; the main menu and Multiplayer clear co-op's controllers, so that a gamepad going back to controller 1 is not a controller unplugged; the lobby's split screen players leave alone, and one who quits in game is not joined to the next game (`interface/player_ui.c`). |
 | `interface/player_ui.c` | Fast setup opens the pregame screen through the port's menus (the lobby), as `interface/ui_widget.c` does. |
 | `input/input_abstraction.c`, `game/player_control.c`, `game/players.c`, `game/player_queues_new.c`, `units/units.h` | The keyboard and mouse's actions (`src/xinput_sdl.c`, `include/halo_keyboard.h`) join controller 1's game controls; their reload key reloads on its own, and their action key only acts (a control flag of the port's, sent with the player's action, stops the reload the controller's X falls back to). |

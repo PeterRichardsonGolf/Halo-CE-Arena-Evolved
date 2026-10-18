@@ -395,12 +395,13 @@ static const struct config_setting config_settings[] =
 		"Mute the sounds Halo 1: NHE 1.0 took out of its maps, on any map, for\n"
 		"this machine: the plasma pistol's charging hum and the needler's firing\n"
 		"(NHE SOUND FILTER on NHE OPTIONS)." },
-	{ "audio.resampling", _config_string, "\"sinc\"", "HALO_AUDIO_RESAMPLING", _environment_value, _platform_all,
-		"How sounds recorded at another rate (most are 22 kHz) are played at the\n"
-		"output's 48 kHz: \"sinc\" keeps their band and nothing above it;\n"
-		"\"linear\" interpolates between their samples, as the game did before\n"
-		"OpenCE's build 130: their top octave duller, and images of their band\n"
-		"above it (a brighter, grainier sound)." },
+	{ "audio.resampler", _config_string, "\"sinc\"", "HALO_AUDIO_RESAMPLER", _environment_value, _platform_all,
+		"How sounds are converted to the output's rate: \"sinc\" with a\n"
+		"band-limited low pass; \"linear\" between neighbouring samples,\n"
+		"brighter for the aliasing it lets through." },
+	{ "audio.resampling", _config_string, "\"\"", "HALO_AUDIO_RESAMPLING", _environment_value, _platform_none, /* AE hook */
+		"Earlier releases' name of audio.resampler (ChupathingyCE's), read into it once\n"
+		"(config_carry_over)." },
 	{ "audio.voice_chat", _config_string, "\"push_to_talk\"", "HALO_VOICE_CHAT", _environment_value, _platform_all,
 		"Talking in network games' voice chat: \"push_to_talk\" (while\n"
 		"controls.push_to_talk is held; the microphone opens the first time),\n"
@@ -416,12 +417,6 @@ static const struct config_setting config_settings[] =
 		_platform_desktop,
 		"The microphone voice chat listens to: a device's name as Settings >\n"
 		"Audio lists it, or \"default\" for the system's (also if it is not found)." },
-	{ "audio.loose_sounds", _config_boolean, "false", "HALO_LOOSE_SOUNDS", _environment_value, _platform_all,
-		"For those making sounds: play each of a map's sounds that has a Halo PC\n"
-		"sound tag file of its name under the data root's tags folder\n"
-		"(tags/sound/.../name.sound) from that file. At the console,\n"
-		"loose_sounds_reload reads the files again and loose_sounds false gives\n"
-		"the map's sounds back." },
 
 	{ "capture.ffmpeg_path", _config_string, "\"\"", "HALO_FFMPEG", _environment_value, _platform_desktop,
 		"The ffmpeg program F9's recordings are made with (it is not shipped\n"
@@ -2348,6 +2343,21 @@ display.performance_position from display.performance_overlay (its line:
 replacing setting keeps its value where it is set itself, as it is once
 Settings writes it; the earlier ones are left in the file, and not written
 in a new one (_platform_none) */
+/* (AE) audio.resampling, ChupathingyCE's name of OpenCE's audio.resampler: its value, unless audio.resampler is
+set itself */
+static void ae_config_carry_over_resampling(void) /* AE hook */
+{
+	struct config_value *resampler = &config_values[config_setting_index("audio.resampler")];
+	const struct config_value *resampling = &config_values[config_setting_index("audio.resampling")];
+
+	if (resampler->chosen || !resampling->chosen || !resampling->string[0])
+		return;
+	free(resampler->string);
+	resampler->string = strdup(resampling->string);
+	platform_log("settings: audio.resampling (an earlier version's setting) is \"%s\": audio.resampler \"%s\"",
+		resampling->string, resampler->string);
+}
+
 static void config_carry_over(void)
 {
 	static const struct
@@ -2373,6 +2383,7 @@ static void config_carry_over(void)
 		platform_log("settings: game.mod (an earlier version's setting) is \"%s\": game.disc \"%s\"", mod->string,
 			disc->string);
 	}
+	ae_config_carry_over_resampling(); /* AE hook */
 	if (level->chosen && position->chosen)
 		return;
 	for (index = 0; index < sizeof(earlier) / sizeof(earlier[0]); index++)
@@ -2419,7 +2430,7 @@ static const struct
 	{ "display.menus", { "xbox", "pc", NULL }, NULL },
 	{ "display.player_names", { "all", "allies", "allys", "enemies", "none", NULL }, "\"all\"" },
 	{ "display.scoreboard_team_layout", { "teams", "score", NULL }, "\"teams\"" },
-	{ "audio.resampling", { "sinc", "linear", NULL }, "\"sinc\"" },
+	{ "audio.resampler", { "sinc", "linear", NULL }, "\"sinc\"" }, /* AE hook */
 	{ "input.touch_controls", { "on", "auto", "off", NULL }, "\"on\"" },
 	{ "game.console_log", { "important", "all", "none", NULL }, "\"important\"" },
 	{ "game.move_old_map_folders", { "ask", "yes", "no", NULL }, "\"ask\"" },

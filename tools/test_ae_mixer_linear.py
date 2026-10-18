@@ -1,4 +1,4 @@
-"""audio.resampling = "linear" in the real mixer (port/linux/src/dsound_sdl.c): a stereo ramp through mix_voice
+"""audio.resampler = "linear" in the real mixer (port/linux/src/dsound_sdl.c): a stereo ramp through mix_voice
 comes out as the same ramp, each channel its own, across the history ring's wrap; built with the address and
 undefined-behaviour sanitizers, so a read outside the resampler's history stops the test.
 
@@ -46,6 +46,7 @@ static void voice_audio_mix(float *output, unsigned long frames) { (void)output;
 static void capture_audio(const float *output, unsigned int frames, int channels, int rate)
 { (void)output; (void)frames; (void)channels; (void)rate; }
 static double config_real(const char *name) { (void)name; return 1.0; }
+static const char *config_string(const char *name) { (void)name; return "sinc"; }
 
 #include "under_test.inc"
 
@@ -79,7 +80,7 @@ int main(void)
 	stream->packets[0].frames = SOURCE_FRAMES;
 	stream->packet_count = 1;
 	resampler_reset(stream);
-	resampling_linear = TRUE;
+	resampler_mode = RESAMPLER_LINEAR;
 	for (done = 0; done < OUTPUT_FRAMES; done += CHUNK)
 	{
 		unsigned long count = OUTPUT_FRAMES - done < CHUNK ? OUTPUT_FRAMES - done : CHUNK;

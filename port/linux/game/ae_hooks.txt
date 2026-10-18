@@ -868,3 +868,17 @@ port/linux/src/menu_files.c	platform_log("modded discs: %d in %s and earlier rel
 port/linux/src/menu_files.c	char const *mod = config_string("game.disc"); /* AE hook */
 port/linux/src/menu_files.c	snprintf(mod_folder, sizeof(mod_folder), "%s/%s/%s/voices", platform_data_root(), ae_disc_folder(mod), mod); /* AE hook */
 port/linux/src/menu_files.c	platform_log("callouts: %d voice packs in %s%s%s%s", voice_count, folder, mod && mod[0] ? " and disc " : "", /* AE hook */
+# OpenCE build-220 merge: mods (bitmaps left out: ae_mod_bitmaps.c; many-node models refused), the resampler's earlier key, the texture cache's pitch rule
+source/cache/xbox_texture_cache.c	(row_pitch%D3DTEXTURE_PITCH_ALIGNMENT==0 || any_pitch || /* AE hook */
+port/linux/game/mod_bitmaps.c	#if 0 /* AE hook */
+port/linux/game/mod_bitmaps.c	#endif /* AE hook */
+port/linux/game/mod_models.c	if (palettes) { *reason = "it has 44 nodes or more, whose parts Arena Evolved's renderer cannot draw yet"; return FALSE; } /* AE hook */
+port/linux/src/port_config.c	{ "audio.resampling", _config_string, "\"\"", "HALO_AUDIO_RESAMPLING", _environment_value, _platform_none, /* AE hook */
+port/linux/src/port_config.c	static void ae_config_carry_over_resampling(void) /* AE hook */
+port/linux/src/port_config.c	ae_config_carry_over_resampling(); /* AE hook */
+port/linux/src/port_config.c	{ "audio.resampler", { "sinc", "linear", NULL }, "\"sinc\"" }, /* AE hook */
+# OpenCE build-220: mod_models.c's buffer functions, rasterizer_xbox_hardware_geometry.c's (OpenCE's rasterizer_geometry.h declares them)
+port/linux/game/mod_models.c	boolean rasterizer_vertex_buffer_new(struct vertex_buffer *vertex_buffer, long vertex_type, long count, void const *vertices, long buffer_size); /* AE hook */
+port/linux/game/mod_models.c	void rasterizer_vertex_buffer_delete(struct vertex_buffer *vertex_buffer); /* AE hook */
+port/linux/game/mod_models.c	boolean rasterizer_triangle_buffer_new(struct triangle_buffer *triangle_buffer, short triangle_type, long count, void const *triangles); /* AE hook */
+port/linux/game/mod_models.c	void rasterizer_triangle_buffer_delete(struct triangle_buffer *triangle_buffer); /* AE hook */

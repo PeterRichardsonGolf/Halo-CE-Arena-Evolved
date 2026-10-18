@@ -70,18 +70,19 @@ LEFT_OUT = {
     "ui\\shell\\main_menu\\multiplayer_type_select\\checking_updates_screen_create",
     "ui\\shell\\main_menu\\multiplayer_type_select\\checking_updates_screen_join",
 }
-# children moved: (parent, child) to (x, y); the main menu's Quit up into
-# Credits' place; Multiplayer's rows 32 apart, not 33, and Edit Gametypes and
-# its line down two rows, for Split Screen and Co-op (port_settings.WIDGET_PATCHES)
+# children moved: (parent, child) to (x, y); the main menu's MENUS (AE) and
+# MODS (OpenCE) above Quit, the column up 36 for them; Multiplayer's rows 32
+# apart, not 33, and Edit Gametypes and its line down two rows, for Split Screen
+# and Co-op (port_settings.WIDGET_PATCHES)
 MULTIPLAYER_ROWS = {"join": (-32, 78), "join_internet": (0, 110), "join_lan": (0, 142), "join_direct": (0, 174),
                     "create": (-32, 206), "create_internet": (0, 238), "create_lan": (0, 270), "gametypes": (0, 376)}
 CHILD_OFFSETS = {
-    # (the main menu's column 18 up, for MENUS above QUIT: port_settings.WIDGET_PATCHES, _menus_select; its build
-    # number stays beside QUIT, 9 below its top)
+    # (the main menu's column 36 up from OpenCE's, for MENUS and MODS above QUIT: port_settings.WIDGET_PATCHES,
+    # _menus_select, MAIN_MENU_FIRST_ROW; its build number stays beside QUIT, 9 below its top)
     **{("ui\\shell\\main_menu\\main_menu_select_list", f"ui\\shell\\main_menu\\main_menu_item_{item}"): place
-       for item, place in (("load_camp", (194, 229)), ("multiplayer", (192, 265)), ("profile", (192, 301)),
-                           ("settings", (192, 337)), ("quit_game", (192, 409)))},
-    ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 418),
+       for item, place in (("load_camp", (194, 211)), ("multiplayer", (192, 247)), ("profile", (192, 283)),
+                           ("settings", (192, 319)), ("quit_game", port_settings.QUIT_ITEM_PLACE))},
+    ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 436),
     **{("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
         f"ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_{row}_item"): offset
        for row, offset in MULTIPLAYER_ROWS.items()},
@@ -680,6 +681,12 @@ def main() -> None:
         ((ROOT / "port/assets/icons/lucide" / f"{icon}.svg").read_text().replace('stroke="currentColor"',
                                                                                  'stroke="#FFFFFF"'), 24, 24)
         for icon in ("volume-2", "volume-x")]))
+    # (the main menu's MODS, in OpenCE as the redraws' items are, and the mods'
+    # status icons: Lucide's, port/assets/icons/lucide)
+    lines.append(art.port_picture("main_menu/menu_mods", port_settings.menu_item_frames("MODS")))
+    lines.append(art.port_picture("mods/status", port_settings.mod_status_frames(ROOT / "port/assets/icons/lucide")))
+    lines.append(art.port_picture("mods/status_small",
+                                  port_settings.mod_status_frames(ROOT / "port/assets/icons/lucide", 16)))
     # (nothing: what a game map draws for a frame of ui.map's it has not,
     # menu_tags.c)
     lines.append(art.port_picture("blank", [

@@ -145,6 +145,7 @@ To install the data from a computer:
 | Halo PC (Custom Edition) maps, with `bitmaps.map`, `sounds.map` and `loc.map` | `maps_ce` |
 | HaloMD maps | `maps_md` |
 | Halo PC (retail) maps | `maps_pc` |
+| Mods (`docs/mods.md`) | `mods`: `adb push <mod folder> /sdcard/Android/data/com.halo.decomp/files/mods/`; the main menu's Mods orders them and turns them off |
 | Log | `debug.txt` |
 | Settings | `config.toml` |
 
