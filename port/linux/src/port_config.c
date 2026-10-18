@@ -204,6 +204,10 @@ static const struct config_setting config_settings[] =
 		"Draw the HUD (meters, counters, panels, motion sensor, reticles,\n"
 		"waypoints, scopes) from the high-res assets (8x the maps' bitmaps);\n"
 		"false draws the maps' own bitmaps." },
+	{ "display.hud_button_style", _config_string, "\"classic\"", "HALO_HUD_BUTTON_STYLE", _environment_value, _platform_all,
+		"High-res gameplay controller buttons: classic uses plain Xbox faces;\n"
+		"gems uses shaded Xbox faces; menu_gems uses the menu's button art.\n"
+		"Requires display.high_res_hud." },
 	{ "display.high_res_text", _config_boolean, "true", "HALO_HIGH_RES_TEXT", _environment_value, _platform_all,
 		"Draw the menus' and HUD's text with the fonts in port/assets/fonts\n"
 		"(Overpass) at the resolution the game draws at, and the menus' titles\n"
@@ -391,12 +395,13 @@ static const struct config_setting config_settings[] =
 		"Mute the sounds Halo 1: NHE 1.0 took out of its maps, on any map, for\n"
 		"this machine: the plasma pistol's charging hum and the needler's firing\n"
 		"(NHE SOUND FILTER on NHE OPTIONS)." },
-	{ "audio.resampling", _config_string, "\"sinc\"", "HALO_AUDIO_RESAMPLING", _environment_value, _platform_all,
-		"How sounds recorded at another rate (most are 22 kHz) are played at the\n"
-		"output's 48 kHz: \"sinc\" keeps their band and nothing above it;\n"
-		"\"linear\" interpolates between their samples, as the game did before\n"
-		"OpenCE's build 130: their top octave duller, and images of their band\n"
-		"above it (a brighter, grainier sound)." },
+	{ "audio.resampler", _config_string, "\"sinc\"", "HALO_AUDIO_RESAMPLER", _environment_value, _platform_all,
+		"How sounds are converted to the output's rate: \"sinc\" with a\n"
+		"band-limited low pass; \"linear\" between neighbouring samples,\n"
+		"brighter for the aliasing it lets through." },
+	{ "audio.resampling", _config_string, "\"\"", "HALO_AUDIO_RESAMPLING", _environment_value, _platform_none, /* AE hook */
+		"Earlier releases' name of audio.resampler (ChupathingyCE's), read into it once\n"
+		"(config_carry_over)." },
 	{ "audio.voice_chat", _config_string, "\"push_to_talk\"", "HALO_VOICE_CHAT", _environment_value, _platform_all,
 		"Talking in network games' voice chat: \"push_to_talk\" (while\n"
 		"controls.push_to_talk is held; the microphone opens the first time),\n"
@@ -412,12 +417,6 @@ static const struct config_setting config_settings[] =
 		_platform_desktop,
 		"The microphone voice chat listens to: a device's name as Settings >\n"
 		"Audio lists it, or \"default\" for the system's (also if it is not found)." },
-	{ "audio.loose_sounds", _config_boolean, "false", "HALO_LOOSE_SOUNDS", _environment_value, _platform_all,
-		"For those making sounds: play each of a map's sounds that has a Halo PC\n"
-		"sound tag file of its name under the data root's tags folder\n"
-		"(tags/sound/.../name.sound) from that file. At the console,\n"
-		"loose_sounds_reload reads the files again and loose_sounds false gives\n"
-		"the map's sounds back." },
 
 	{ "capture.ffmpeg_path", _config_string, "\"\"", "HALO_FFMPEG", _environment_value, _platform_desktop,
 		"The ffmpeg program F9's recordings are made with (it is not shipped\n"
@@ -597,6 +596,11 @@ static const struct config_setting config_settings[] =
 		"capture). F9, the recording's key, cannot be used here." },
 	{ "controls.push_to_talk", _config_string, "\"V\"", "HALO_KEY_PUSH_TO_TALK", _environment_value, _platform_all,
 		"Voice chat: talk while it is held (audio.voice_chat \"push_to_talk\")." },
+	{ "controls.chat", _config_string, "\"T\"", "HALO_KEY_CHAT", _environment_value, _platform_all,
+		"Network games' text chat: type a line to everyone (Enter sends it,\n"
+		"Escape lets it go)." },
+	{ "controls.team_chat", _config_string, "\"Y\"", "HALO_KEY_TEAM_CHAT", _environment_value, _platform_all,
+		"Network games' text chat: type a line to your team." },
 
 	{ "game.console_log", _config_string, "\"important\"", "HALO_CONSOLE_LOG", _environment_value, _platform_all,
 		"What the game's console shows on screen of what it logs: \"important\"\n"
@@ -608,6 +612,13 @@ static const struct config_setting config_settings[] =
 	{ "game.language", _config_string, "\"\"", "HALO_LANGUAGE", _environment_value, _platform_all,
 		"The language the game asks the Xbox for: \"ja\", \"de\", \"fr\", \"es\" or \"it\";\n"
 		"empty for English. The game data decides what is translated." },
+	{ "display.text_chat", _config_boolean, "true", "HALO_TEXT_CHAT", _environment_value, _platform_all,
+		"Show the text chat of network games: false hides its lines and keeps\n"
+		"its keys (and a controller's D-pad Up) from opening it, as for purists\n"
+		"and streamers." },
+	{ "display.chat_style", _config_string, "\"colors\"", "HALO_CHAT_STYLE", _environment_value, _platform_all,
+		"The text chat's colours: \"colors\" (names in their team's colour, the\n"
+		"text a pale blue) or \"white\" (all white, as Custom Edition)." },
 	{ "game.enhanced_animations", _config_boolean, "true", "HALO_ENHANCED_ANIMATIONS", _environment_value, _platform_all,
 		"The player bipeds' grenade throws keep their legs moving (crouched,\n"
 		"in the air and in a vehicle's seat too), riders' hands leave the grips\n"
@@ -630,10 +641,15 @@ static const struct config_setting config_settings[] =
 		"health pack also ends the shields' wait); \"halo2\" and \"halo3\" Halo 2's\n"
 		"and Halo 3's timers, the same (shields 5 s then 2 s; health 10 s after the\n"
 		"last body damage, then 5 s). Multiplayer goes by the gametype's HEALTH." },
-	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
-		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
-		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"
-		"Mods chooses it, and the game starts again with it." },
+	{ "game.disc", _config_string, "\"\"", "HALO_DISC", _environment_value, /* AE hook */
+		_platform_desktop,
+		"The modded disc played (a whole set of maps, as Halo 1: NHE's or CE+ X's):\n"
+		"a folder of discs/ (next to maps/), whose maps/ holds the maps it replaces\n"
+		"(the others are maps/'s); empty for none. A disc only in mods/, where\n"
+		"earlier releases kept them, is played from there. Settings > Game Options\n"
+		"> MODDED DISCS chooses it, and the game starts again with it." },
+	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_none, /* AE hook */
+		"Earlier releases' name of game.disc, read into it once (config_carry_over)." },
 	{ "game.mcc_path", _config_string, "\"\"", NULL, _environment_value, /* AE hook */
 		_platform_desktop,
 		"The folder of Halo: The Master Chief Collection (the one holding halo1/)\n"
@@ -670,8 +686,8 @@ static const struct config_setting config_settings[] =
 		"mark." },
 	{ "game.callout_voice", _config_string, "\"cori\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
 		"The callouts' voice: a folder of voices/ (next to maps/) holding WAVs\n"
-		"named for what they say (one.wav, rockets.wav, ...); the mod played's\n"
-		"own mods/<mod>/voices/<folder>/ clips come first. With no such folder,\n"
+		"named for what they say (one.wav, rockets.wav, ...); the modded disc\n"
+		"played's own discs/<disc>/voices/<folder>/ clips come first. With no such folder,\n"
 		"the first folder of voices/ speaks (this setting stays)." },
 
 	{ "game.unlock_all_levels", _config_boolean, "false", "HALO_UNLOCK_ALL_LEVELS", _environment_value, _platform_all,
@@ -836,6 +852,10 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"Hosting: how near (world units: 1 is about 3 metres) a player must be\n"
 		"to be heard by proximity voice chat (5 to 100)." },
+	{ "network.text_chat", _config_string, "\"on\"", "HALO_NET_TEXT_CHAT", _environment_value, _platform_all,
+		"Hosting: the text chat: \"on\" (links in lines are refused), \"links\"\n"
+		"(links allowed) or \"off\", in either case. Always off in a game listed\n"
+		"in the server browser (a public internet game)." },
 	{ "network.votekick", _config_boolean, "true", "HALO_NET_VOTEKICK", _environment_value, _platform_all,
 		"Hosting: let the players vote to kick a player (the scoreboard's\n"
 		"right-click, or the console's votekick). More than half of the players\n"
@@ -856,11 +876,12 @@ static const struct config_setting config_settings[] =
 	{ "network.map_share_upload", _config_integer, "1024", "HALO_NET_MAP_SHARE_UPLOAD", _environment_value,
 		_platform_all,
 		"Hosting: the most kilobytes a second the host sends of maps (16 to\n"
-		"65536), so that the game's own traffic keeps the rest of the upload." },
+		"20480: 20 MB/s), so that the game's own traffic keeps the rest of the\n"
+		"upload." },
 	{ "network.map_share_lan_upload", _config_integer, "16384", "HALO_NET_MAP_SHARE_LAN_UPLOAD", _environment_value, /* AE hook */
 		_platform_all,
 		"Hosting a game whose players are all on the local network: the most\n"
-		"kilobytes a second the host sends of maps (16 to 65536), when more\n"
+		"kilobytes a second the host sends of maps (16 to 20480), when more\n"
 		"than network.map_share_upload (which a game with a player on the\n"
 		"internet keeps)." },
 	{ "network.map_seed", _config_boolean, "true", "HALO_NET_MAP_SEED", _environment_value, _platform_all,
@@ -870,7 +891,7 @@ static const struct config_setting config_settings[] =
 	{ "network.map_seed_upload", _config_integer, "256", "HALO_NET_MAP_SEED_UPLOAD", _environment_value,
 		_platform_all,
 		"Playing in another's game: the most kilobytes a second this machine\n"
-		"sends of maps to other players (16 to 65536)." },
+		"sends of maps to other players (16 to 10240: 10 MB/s)." },
 	{ "network.map_download", _config_boolean, "true", "HALO_NET_MAP_DOWNLOAD", _environment_value, _platform_all,
 		"Joining a game on a Custom Edition map this machine does not have:\n"
 		"download it (and the resource maps it needs) from the game's players\n"
@@ -1003,6 +1024,18 @@ static const struct config_setting config_settings[] =
 		"No effect: Arena Evolved never looks for a new version (its updater is\n"
 		"off). Where the updater is on: look for a new version when the game\n"
 		"starts, and offer to update to it; false never looks." },
+	{ "streamer.enabled", _config_boolean, "false", "HALO_STREAMER_MODE", _environment_value, _platform_all,
+		"Hide offensive words in names and text from other players, maps and mods\n"
+		"as stars, at the levels below (Settings > Network Setup > Streamer Mode)." },
+	{ "streamer.slurs", _config_string, "\"mild\"", "HALO_STREAMER_SLURS", _environment_value, _platform_all,
+		"With streamer.enabled, the slurs (race, sexuality, gender, disability)\n"
+		"hidden: \"off\", \"severe\", \"strong\" (and severe) or \"mild\" (all)." },
+	{ "streamer.swearing", _config_string, "\"strong\"", "HALO_STREAMER_SWEARING", _environment_value, _platform_all,
+		"With streamer.enabled, the swearing and sexual words hidden: \"off\",\n"
+		"\"severe\", \"strong\" (and severe) or \"mild\" (all)." },
+	{ "streamer.insults", _config_string, "\"off\"", "HALO_STREAMER_INSULTS", _environment_value, _platform_all,
+		"With streamer.enabled, the insults that are not slurs hidden: \"off\",\n"
+		"\"severe\", \"strong\" (and severe) or \"mild\" (all)." },
 	{ "crash_reports.upload", _config_string, "\"ask\"", "HALO_CRASH_REPORTS", _environment_value, _platform_desktop,
 		"No effect: Arena Evolved's builds send no crash reports and keep none\n"
 		"to send (ChupathingyCE's releases send theirs through\n"
@@ -1278,6 +1311,15 @@ static const struct config_setting config_settings[] =
 	{ "debug.network_test_quit", _config_real, "0.0", "HALO_NETWORK_TEST_QUIT", _environment_value, _platform_all,
 		"This many seconds into an automated test game controller 1's player\n"
 		"quits, as their pause menu's QUIT does (split screen: the others stay); 0 never." },
+	{ "debug.network_test_chat", _config_real, "0.0", "HALO_NETWORK_TEST_CHAT", _environment_value, _platform_all,
+		"This many seconds into an automated test game each machine's player\n"
+		"says a chat line to everyone, then to the team and to the vehicle (the\n"
+		"host seats the last two players in one first), then the host mutes and\n"
+		"unmutes a player, refuses a link and turns the chat off, and the\n"
+		"clients type on the on-screen keyboard (port/linux/NETCODE.md); 0 never." },
+	{ "debug.network_test_name", _config_string, "\"\"", "HALO_NETWORK_TEST_NAME", _environment_value, _platform_all,
+		"The name this machine's player takes in an automated test game (ASCII);\n"
+		"empty keeps its profile's." },
 	{ "debug.network_test_pickup_weapon", _config_string, "\"\"", "HALO_NETWORK_TEST_PICKUP_WEAPON", _environment_value,
 		_platform_all,
 		"The weapon network_test_pickup stands the player on: the first whose tag\n"
@@ -2341,6 +2383,21 @@ display.performance_position from display.performance_overlay (its line:
 replacing setting keeps its value where it is set itself, as it is once
 Settings writes it; the earlier ones are left in the file, and not written
 in a new one (_platform_none) */
+/* (AE) audio.resampling, ChupathingyCE's name of OpenCE's audio.resampler: its value, unless audio.resampler is
+set itself */
+static void ae_config_carry_over_resampling(void) /* AE hook */
+{
+	struct config_value *resampler = &config_values[config_setting_index("audio.resampler")];
+	const struct config_value *resampling = &config_values[config_setting_index("audio.resampling")];
+
+	if (resampler->chosen || !resampling->chosen || !resampling->string[0])
+		return;
+	free(resampler->string);
+	resampler->string = strdup(resampling->string);
+	platform_log("settings: audio.resampling (an earlier version's setting) is \"%s\": audio.resampler \"%s\"",
+		resampling->string, resampler->string);
+}
+
 static void config_carry_over(void)
 {
 	static const struct
@@ -2354,8 +2411,19 @@ static void config_carry_over(void)
 	};
 	struct config_value *level = &config_values[config_setting_index("display.performance")];
 	struct config_value *position = &config_values[config_setting_index("display.performance_position")];
+	struct config_value *disc = &config_values[config_setting_index("game.disc")]; /* AE hook */
+	const struct config_value *mod = &config_values[config_setting_index("game.mod")];
 	size_t index;
 
+	/* (game.mod, earlier releases' game.disc: the disc it names, unless game.disc is set itself) */
+	if (!disc->chosen && mod->chosen && mod->string[0])
+	{
+		free(disc->string);
+		disc->string = strdup(mod->string);
+		platform_log("settings: game.mod (an earlier version's setting) is \"%s\": game.disc \"%s\"", mod->string,
+			disc->string);
+	}
+	ae_config_carry_over_resampling(); /* AE hook */
 	if (level->chosen && position->chosen)
 		return;
 	for (index = 0; index < sizeof(earlier) / sizeof(earlier[0]); index++)
@@ -2402,7 +2470,7 @@ static const struct
 	{ "display.menus", { "xbox", "pc", NULL }, NULL },
 	{ "display.player_names", { "all", "allies", "allys", "enemies", "none", NULL }, "\"all\"" },
 	{ "display.scoreboard_team_layout", { "teams", "score", NULL }, "\"teams\"" },
-	{ "audio.resampling", { "sinc", "linear", NULL }, "\"sinc\"" },
+	{ "audio.resampler", { "sinc", "linear", NULL }, "\"sinc\"" }, /* AE hook */
 	{ "input.touch_controls", { "on", "auto", "off", NULL }, "\"on\"" },
 	{ "game.console_log", { "important", "all", "none", NULL }, "\"important\"" },
 	{ "game.move_old_map_folders", { "ask", "yes", "no", NULL }, "\"ask\"" },

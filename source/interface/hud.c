@@ -116,6 +116,7 @@ symbols in this file:
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_panels.h" /* AE hook */
 #include "ae_radar.h" /* AE hook */
+#include "network_chat.h" /* port: port/linux/game/network_chat.c */
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "units/unit_definitions.h"
@@ -1506,6 +1507,8 @@ void hud_draw_screen(
 		ae_score_strip_draw(render.local_player_index); /* AE hook */
 
 		hud_messaging_update(render.local_player_index);
+		/* port: network games' text chat, the lines this view's player hears */
+		network_chat_draw(render.local_player_index);
 	}
 
 	rasterizer_hud_end();

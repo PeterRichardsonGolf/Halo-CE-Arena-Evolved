@@ -177,13 +177,18 @@ up to their build.
 - A mod's main menu too big for the game's menu cache (the Halo 2 Mappack Collection's) is passed over with a line in
   the log, and the game's own menus load.
 
-**Mods**
-- Settings > Game Options > MOD picks a folder in `mods/`; its `maps` are
-  played over the game's own, and the game restarts into it.
-- Halo 1: NHE's maps play as a mod (`mods/NHE`), with its timer, training and
-  modes working. NHE's files are not included: get Halo 1: NHE 1.0 and its
-  gametypes pack from the NHE team's site, [halo1nhe.com](https://halo1nhe.com/#download),
-  and put its maps in `mods/NHE/maps`.
+**Modded discs**
+- A modded disc is a whole set of maps made for the Xbox (Halo 1: NHE, CE+ X,
+  Patch Edition). Settings > Game Options > MODDED DISCS picks a folder in
+  `discs/`; its `maps` are played over the game's own, and the game restarts
+  into it (`game.disc` in config.toml). Discs that earlier releases kept in
+  `mods/` are still found and played from there; nothing is moved. `mods/` is
+  now OpenCE's client-side mods' folder.
+- Halo 1: NHE's maps play as a modded disc (`discs/NHE`), with its timer,
+  training and modes working. NHE's files are not included: get Halo 1: NHE 1.0
+  and its gametypes pack from the NHE team's site,
+  [halo1nhe.com](https://halo1nhe.com/#download), and put its maps in
+  `discs/NHE/maps`.
 - Xbox community maps (the v5 map pack format) and Halo PC maps, each kind
   in a folder beside `maps`: Custom Edition maps in `maps_ce` (with the
   Custom Edition shared files, `bitmaps.map`, `sounds.map` and `loc.map`,

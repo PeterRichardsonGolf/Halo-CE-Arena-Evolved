@@ -29,6 +29,14 @@ int p2p_join_invite(const char *text);
 /* the invite of the game this machine hosts on the internet (its 44 digits,
 without halo://join/); 0 when it hosts none (browser.c) */
 int p2p_hosting_invite(char *text, int size);
+/* as p2p_hosting_invite, but 0 also when the game is private or has a
+password: only a public game without a password is listed by its invite
+(browser.c) */
+int p2p_hosting_listable_invite(char *text, int size);
+/* the game list took the hosted game's invite (browser.c): the token is
+public now, so going private or setting a password makes a new one; one
+that is no longer public is replaced at once */
+void p2p_hosting_invite_announced(const char *invite);
 #ifdef HALO_GAME_BROWSER
 unsigned long p2p_peer_public_address(unsigned long game_address);
 unsigned long p2p_public_address(void);
@@ -109,6 +117,9 @@ in everyone's server browser: Create Game's PUBLIC; a private game is
 reached only by its invite. Going private makes a new invite, if the old one
 was listed */
 void p2p_set_hosting_public(int public);
+/* whether the game this machine hosts is listed in everyone's server
+browser (PUBLIC, and network.public_lobby): the text chat is off in one */
+int p2p_hosting_listed(void);
 /* the password of the game hosted for the internet (Server Setup's
 PASSWORD; NULL or empty: none): its listing lets only those who know it
 join from the server browser (its invite link still joins it). Setting or
@@ -173,6 +184,14 @@ struct p2p_listing
 	/* the network version it was listed under (0: not known) */
 	unsigned short version;
 };
+/* joins a public game the server browser found (p2p_join_invite with its
+invite), remembering its host: nonzero if it held an invite */
+int p2p_join_listing(const struct p2p_listing *listing);
+/* whether this machine is in the public game it joined from the server
+browser: the tunnel still reaches its host, and no other invite was joined
+since. Such a game has no text chat, whatever its host says
+(port/linux/game/network_chat.c) */
+int p2p_joined_listed_host(void);
 /* a copy of the public games found, each once (p2p_listing_older_copy), in
 the order shown (the most players first; then those not failed, the open
 ones, by name); returns their count */

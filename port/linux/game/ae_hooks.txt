@@ -122,7 +122,6 @@ port/linux/game/map_share.c	for (index = 0; index < download->file_count; index+
 source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */\nfor (i = 0; i < network_game_server_held_player_count; i++) /* AE hook */\nif (!network_game_add_player(&server->game, &network_game_server_held_players[i]) && ((network_game_server_held_players[i].player_list_index = NONE), !network_game_add_player(&server->game, &network_game_server_held_players[i]))) network_event("failed to put back a player held for a map download"); /* AE hook */
 # PlayStation button icons (DamnationCE v0.3.41): AE's own textures and placeholders (port/linux/src/ae_buttons.c,
 # port/linux/game/ae_buttons_tags.c, tools/ae_button_glyphs.py); upstream's high-res HUD table and code untouched
-source/interface/hud_messaging.c	struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */
 source/interface/hud_messaging.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
 port/linux/game/hud_hires_tags.c	#include "ae_buttons_tags.h" /* AE hook */
 port/linux/game/hud_hires_tags.c	hud_hires_sprite_bitmaps_forget();\nae_buttons_tags_loaded(); /* AE hook */
@@ -857,3 +856,48 @@ source/objects/damage.c	#define REACH_SHIELD_RECHARGE_PER_TICK (1.f / (AE_REACH_
 source/objects/damage.c	#define REACH_BODY_STUN_TICKS ((long)(AE_REACH_BODY_STUN_SECONDS * TICKS_PER_SECOND)) /* AE hook */
 source/objects/damage.c	object->object.body_vitality = ae_reach_health_step(health, 1.f / TICKS_PER_SECOND); /* AE hook */
 source/objects/damage.c	if (health_style_current() == _health_style_reach && player_index_from_unit_index(object_index) != NONE) object->object.shield_stun_ticks = 0; /* AE hook */
+# OpenCE build-213 merge: COMPACT HUD's split-screen icon scale in single view (AE line, marked at the merge)
+source/interface/hud_messaging.c	scale = hud_split_screen_layout() ? 0.75f : 1.0f; /* AE hook */
+# OpenCE build-213's high-res button art (hud_hires_button_draw) draws the Xbox's faces: while a PlayStation controller
+# is the last used, the message's sprite path is kept, where AE's PlayStation icons are (ae_buttons_tags.c)
+source/interface/hud_messaging.c	int ae_buttons_playstation_now(void); /* AE hook */
+source/interface/hud_messaging.c	if (!ae_buttons_playstation_now() && hud_hires_button_draw(icon, cursor_bounds, color)) /* AE hook */\nreturn;
+# Modded discs moved to discs/<disc>/maps with game.disc (owner 10-18, for OpenCE's client-side mods in mods/):
+# game.mod stays as an earlier version's row, carried into game.disc once (port/linux/src/ae_discs.c)
+port/linux/src/port_config.c	{ "game.disc", _config_string, "\"\"", "HALO_DISC", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_none, /* AE hook */
+port/linux/src/port_config.c	struct config_value *disc = &config_values[config_setting_index("game.disc")]; /* AE hook */\nconst struct config_value *mod = &config_values[config_setting_index("game.mod")];\nsize_t index;\n\n/* (game.mod, earlier releases' game.disc: the disc it names, unless game.disc is set itself) */\nif (!disc->chosen && mod->chosen && mod->string[0])\n{\nfree(disc->string);\ndisc->string = strdup(mod->string);\nplatform_log("settings: game.mod (an earlier version's setting) is \"%s\": game.disc \"%s\"", mod->string,\ndisc->string);\n}
+# Modded discs in discs/<disc>/maps (game.disc; mods/<disc>/maps still read: port/linux/src/ae_discs.c)
+source/cache/cache_files.c	char const *ae_disc_folder(char const *disc); /* AE hook */
+source/cache/cache_files.c	char const *mod = config_string("game.disc"); /* AE hook */
+source/cache/cache_files.c	length = snprintf(path, (size_t)size, "d:\\%s\\%s\\maps\\%s.map", ae_disc_folder(mod), mod, map_name); /* AE hook */
+source/cache/cache_files.c	(!csstrncmp(path, "d:\\mods\\", 8) || !csstrncmp(path, "d:\\discs\\", 9))); /* AE hook */
+port/linux/src/menu_files.c	#include "ae_discs.h" /* AE hook */
+port/linux/src/menu_files.c	snprintf(maps, sizeof(maps), "%s/%s/maps", (const char *)context, name); /* AE hook */
+port/linux/src/menu_files.c	snprintf(mods_folder, sizeof(mods_folder), "%s/discs", platform_data_root()); /* AE hook */
+port/linux/src/menu_files.c	platform_folder_list(mods_folder, mod_consider, mods_folder); /* AE hook */
+port/linux/src/menu_files.c	{ char earlier[1024]; snprintf(earlier, sizeof(earlier), "%s/mods", platform_data_root()); platform_folder_list(earlier, mod_consider, earlier); } /* AE hook */
+port/linux/src/menu_files.c	mod_count = ae_discs_unique(mod_names[0], MOD_NAME_LENGTH, mod_count); /* AE hook */
+port/linux/src/menu_files.c	if (widget->setting && !strcmp(widget->setting, "game.disc")) /* AE hook */
+port/linux/src/menu_files.c	platform_log("modded discs: %d in %s and earlier releases' mods/", mod_count, mods_folder); /* AE hook */
+port/linux/src/menu_files.c	char const *mod = config_string("game.disc"); /* AE hook */
+port/linux/src/menu_files.c	snprintf(mod_folder, sizeof(mod_folder), "%s/%s/%s/voices", platform_data_root(), ae_disc_folder(mod), mod); /* AE hook */
+port/linux/src/menu_files.c	platform_log("callouts: %d voice packs in %s%s%s%s", voice_count, folder, mod && mod[0] ? " and disc " : "", /* AE hook */
+# OpenCE build-220 merge: mods (bitmaps left out: ae_mod_bitmaps.c; many-node models refused), the resampler's earlier key, the texture cache's pitch rule
+source/cache/xbox_texture_cache.c	(row_pitch%D3DTEXTURE_PITCH_ALIGNMENT==0 || any_pitch || /* AE hook */
+port/linux/game/mod_bitmaps.c	#if 0 /* AE hook */
+port/linux/game/mod_bitmaps.c	#endif /* AE hook */
+port/linux/game/mod_models.c	if (palettes) { *reason = "it has 44 nodes or more, whose parts Arena Evolved's renderer cannot draw yet"; return FALSE; } /* AE hook */
+port/linux/src/port_config.c	{ "audio.resampling", _config_string, "\"\"", "HALO_AUDIO_RESAMPLING", _environment_value, _platform_none, /* AE hook */
+port/linux/src/port_config.c	static void ae_config_carry_over_resampling(void) /* AE hook */
+port/linux/src/port_config.c	ae_config_carry_over_resampling(); /* AE hook */
+port/linux/src/port_config.c	{ "audio.resampler", { "sinc", "linear", NULL }, "\"sinc\"" }, /* AE hook */
+# OpenCE build-220: mod_models.c's buffer functions, rasterizer_xbox_hardware_geometry.c's (OpenCE's rasterizer_geometry.h declares them)
+port/linux/game/mod_models.c	boolean rasterizer_vertex_buffer_new(struct vertex_buffer *vertex_buffer, long vertex_type, long count, void const *vertices, long buffer_size); /* AE hook */
+port/linux/game/mod_models.c	void rasterizer_vertex_buffer_delete(struct vertex_buffer *vertex_buffer); /* AE hook */
+port/linux/game/mod_models.c	boolean rasterizer_triangle_buffer_new(struct triangle_buffer *triangle_buffer, short triangle_type, long count, void const *triangles); /* AE hook */
+port/linux/game/mod_models.c	void rasterizer_triangle_buffer_delete(struct triangle_buffer *triangle_buffer); /* AE hook */
+# OpenCE build-232: text chat's D-pad Up opens the chat only when player 1's layout does not bind it (input_abstraction_dpad_up_bound)
+source/input/input_abstraction.c	boolean input_abstraction_dpad_up_bound(long controller_index) { short control_index; for (control_index = 0; control_index < NUMBER_OF_GAME_CONTROLS; control_index++) if (input_abstraction_globals.player_control_preferences[controller_index].game_control_to_xbox_buttons[control_index] == _gamepad_binary_button_dpad_up) return TRUE; return FALSE; } /* AE hook */
+port/linux/game/network_chat.c	boolean input_abstraction_dpad_up_bound(long controller_index); /* AE hook */
+port/linux/game/network_chat.c	if ((pressed || (TEST_FLAG(pad_pressed, HALO_CHAT_PAD_UP) && !input_abstraction_dpad_up_bound(0))) && !console_is_active()) /* AE hook */

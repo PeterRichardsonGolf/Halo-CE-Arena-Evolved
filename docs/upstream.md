@@ -3,7 +3,9 @@
 Back to the [README](../README.md).
 
 - [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) is where the port is
-  made. Arena Evolved merges its releases.
+  made. Arena Evolved merges its releases: it is on OpenCE build-232 and
+  ChupathingyCE 0.7.5d (the last ChupathingyCE release it merges; later
+  ChupathingyCE releases are GPL-3, and Arena Evolved stays CC0).
 - [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce), a community
   build of OpenCE, is the base Arena Evolved grew from: its online games,
   Custom Edition and HaloMD map support and fixes come with it, and their

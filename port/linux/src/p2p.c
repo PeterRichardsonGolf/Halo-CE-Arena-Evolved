@@ -378,9 +378,10 @@ static struct
 	unsigned char token[P2P_TOKEN_SIZE];
 	/* whether the server browser's exit hook is set (lobby_quit) */
 	int lobby_quit_registered;
-	/* whether the server browser listed this token (p2p_lobby.c): going
-	private makes a new one */
+	/* whether the server browser listed this token (p2p_lobby.c), or the
+	game list (browser.c): going private or a password makes a new one */
 	int token_listed;
+	int token_announced;
 	char invite[P2P_LINK_SIZE];
 	int invite_copied;
 	/* the game's players and its most (p2p_set_game_player_counts; 0: not
@@ -2662,6 +2663,11 @@ static int parse_invite(const char *text, unsigned char *host_hash, unsigned cha
 	return 1;
 }
 
+/* the host of the public game this machine joined from the server browser
+(p2p_join_listing), till another invite is joined: its identifier */
+static unsigned char listed_host[P2P_IDENTIFIER_SIZE];
+static int listed_host_known;
+
 /* under p2p_lock: parse_invite's result */
 static int join_invite(const char *text)
 {
@@ -2679,6 +2685,8 @@ static int join_invite(const char *text)
 			"cannot join");
 	if (parsed <= 0)
 		return parsed;
+	/* (any invite's game is no listed one, unless p2p_join_listing says) */
+	listed_host_known = 0;
 	p2p_identifier_from_hash(hash, host);
 	if (!memcmp(host, identifier, P2P_IDENTIFIER_SIZE))
 	{
@@ -2797,6 +2805,31 @@ int p2p_hosting_invite_locked(char *text, int size)
 	return result;
 }
 
+int p2p_hosting_listable_invite(char *text, int size)
+{
+	int result;
+
+	pthread_mutex_lock(&p2p_lock);
+	result = p2p.running && p2p.hosting && p2p.has_token && p2p_lobby_hosting_open();
+	if (result)
+		snprintf(text, (size_t)size, "%s", p2p.invite + strlen("halo://join/"));
+	pthread_mutex_unlock(&p2p_lock);
+	return result;
+}
+
+void p2p_hosting_invite_announced(const char *invite)
+{
+	pthread_mutex_lock(&p2p_lock);
+	if (p2p.has_token && !strcmp(p2p.invite + strlen("halo://join/"), invite))
+	{
+		p2p.token_announced = 1;
+		/* (made private, or given a password, while it was being announced) */
+		if (!p2p_lobby_hosting_open())
+			p2p_new_invite_if_listed();
+	}
+	pthread_mutex_unlock(&p2p_lock);
+}
+
 #endif
 /* (p2p.h) */
 const char *p2p_invite_log_text(const char *invite, char *text, int size)
@@ -2869,6 +2902,37 @@ int p2p_join_invite(const char *text)
 	result = join_invite(text);
 	pthread_mutex_unlock(&p2p_lock);
 	return result > 0;
+}
+
+int p2p_join_listing(const struct p2p_listing *listing)
+{
+	unsigned char hash[P2P_KEY_HASH_SIZE], token[P2P_TOKEN_SIZE];
+
+	if (!p2p_join_invite(listing->invite))
+		return 0;
+	/* (its host as the invite names it, as the tunnel knows its peers) */
+	pthread_mutex_lock(&p2p_lock);
+	if (parse_invite(listing->invite, hash, token) > 0)
+	{
+		p2p_identifier_from_hash(hash, listed_host);
+		listed_host_known = 1;
+	}
+	pthread_mutex_unlock(&p2p_lock);
+	return 1;
+}
+
+int p2p_joined_listed_host(void)
+{
+	struct peer *peer;
+	int reached;
+
+	if (!p2p.running)
+		return 0;
+	pthread_mutex_lock(&p2p_lock);
+	peer = listed_host_known ? find_peer(listed_host) : NULL;
+	reached = peer && peer->connected;
+	pthread_mutex_unlock(&p2p_lock);
+	return reached;
 }
 
 void p2p_invite_received(const char *text)
@@ -2991,6 +3055,7 @@ static void make_invite(void)
 	posix_random_bytes(p2p.token, sizeof(p2p.token));
 	p2p.has_token = 1;
 	p2p.token_listed = 0;
+	p2p.token_announced = 0;
 	p2p_key_hash(p2p_public_key(), bytes);
 	memcpy(bytes + P2P_KEY_HASH_SIZE, p2p.token, P2P_TOKEN_SIZE);
 	p2p_hex(bytes, sizeof(bytes), text);
@@ -2999,7 +3064,7 @@ static void make_invite(void)
 
 void p2p_new_invite_if_listed(void)
 {
-	if (!p2p.has_token || !p2p.token_listed)
+	if (!p2p.has_token || (!p2p.token_listed && !p2p.token_announced))
 		return;
 	p2p_new_invite();
 }

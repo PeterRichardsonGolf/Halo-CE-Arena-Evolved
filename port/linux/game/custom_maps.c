@@ -160,7 +160,8 @@ char **native_multiplayer_map_list(char **stock, short stock_count, short *count
             mod = NULL;
         if (mod) {
             char directory[256];
-            snprintf(directory, sizeof(directory), "d:\\mods\\%s\\maps\\", mod);
+            char const *ae_disc_folder(char const *disc); /* (ae_discs.h: discs\\, or mods\\ for an earlier release's place) */
+            snprintf(directory, sizeof(directory), "d:\\%s\\%s\\maps\\", ae_disc_folder(mod), mod);
             map_folder_scan(directory);
         }
         map_folder_scan(cache_files_map_directory());

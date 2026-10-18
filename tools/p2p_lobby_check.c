@@ -85,13 +85,17 @@ enum { INVITE_GENERATIONS = 4096 };
 static int invite_generation;
 static unsigned char invite_is_passwords[INVITE_GENERATIONS];
 static int invite_unlocked_reads;
+/* (ChupathingyCE 0.7.5d's checks: each new invite, of either kind) */
+static int new_invite_count;
 void p2p_new_invite_if_listed(void)
 {
+	new_invite_count++;
 	invite_generation++;
 	invite_is_passwords[invite_generation % INVITE_GENERATIONS] = 0;
 }
 void p2p_new_invite(void)
 {
+	new_invite_count++;
 	invite_generation++;
 	invite_is_passwords[invite_generation % INVITE_GENERATIONS] = 1;
 }
@@ -140,6 +144,16 @@ static void lobby_update(const unsigned char *token, int player_count, int maxim
 	pthread_mutex_lock(&p2p_lock);
 	p2p_lobby_update(token, player_count, maximum_player_count);
 	pthread_mutex_unlock(&p2p_lock);
+}
+
+static int hosting_open(void)
+{
+	int open;
+
+	pthread_mutex_lock(&p2p_lock);
+	open = p2p_lobby_hosting_open();
+	pthread_mutex_unlock(&p2p_lock);
+	return open;
 }
 
 /* ---------- the checks */
@@ -409,8 +423,12 @@ static void lobby_checks(void)
 	lobby_update(token, 3, 16);
 	hear(published, published_size, 0, NULL);
 	check(games(NULL) == 1, "a listing newer than the tombstone is taken");
+	check(hosting_open(), "a public game without a password may be listed by its invite");
 	/* a password: listed locked, its token sealed */
+	count = new_invite_count;
 	p2p_set_hosting_password("hunter2");
+	check(new_invite_count == count + 1, "a password makes a new invite");
+	check(!hosting_open(), "a game with a password is not listed by its invite");
 	clock_now += 6000;
 	lobby_update(token, 3, 16);
 	hear(published, published_size, 0, NULL);
@@ -455,6 +473,12 @@ static void lobby_checks(void)
 		"a game whose password is taken off is listed open");
 	check(published_size > 5 && (published[3] << 8 | published[4]) == HALO_PORT_NETWORK_VERSION,
 		"a game without a password is listed as the announced version");
+	check(hosting_open(), "a game whose password is taken off may be listed by its invite");
+	/* private: not listed by its invite, and a new one */
+	count = new_invite_count;
+	p2p_set_hosting_public(0);
+	check(new_invite_count == count + 1 && !hosting_open(), "a private game makes a new invite and is not listed by it");
+	p2p_set_hosting_public(1);
 }
 
 /* (AE) browser.c publishes the hosted invite only through

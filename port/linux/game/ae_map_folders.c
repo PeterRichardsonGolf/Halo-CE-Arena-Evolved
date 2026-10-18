@@ -20,6 +20,7 @@ A-Z, then map sharing's downloads (maps_shared). A later one of a name is logged
 #include "halo_map_families.h"
 #include "ae_map_folders_rules.h"
 #include "ae_map_folders.h"
+#include "../src/ae_discs.h"
 #include <xtl.h>
 #include <stdio.h>
 #include <string.h>
@@ -192,7 +193,7 @@ static void xbox_scan(void)
 			}
 			memcpy(name, header + 0x20, HALO_CUSTOM_MAP_NAME_SIZE);
 			name[HALO_CUSTOM_MAP_NAME_SIZE] = 0;
-			if (mod && snprintf(other, sizeof(other), "d:\\mods\\%s\\maps\\%s.map", mod, name) < (int)sizeof(other) &&
+			if (mod && snprintf(other, sizeof(other), "d:\\%s\\%s\\maps\\%s.map", ae_disc_folder(mod), mod, name) < (int)sizeof(other) &&
 				file_exists(other))
 			{
 				first = "the mod's";

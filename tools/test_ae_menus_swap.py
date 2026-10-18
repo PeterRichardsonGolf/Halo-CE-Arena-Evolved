@@ -33,7 +33,7 @@ MENUS = ROOT / "port" / "assets" / "menus"
 CE = MENUS / "ce"
 SWAP_C = ROOT / "port" / "linux" / "game" / "ae_menus_swap.c"
 # the main menu's rows (menu units): x, the first row's y, the spacing
-ROW_X, FIRST_ROW, SPACING = 192, 229, 36
+ROW_X, FIRST_ROW, SPACING = 192, 211, 35
 XBOX_FIRST_ROW = 247
 LEAD_IN = 12
 
@@ -68,12 +68,14 @@ def test_main_menu_has_menus_above_quit_and_the_column_moved_up():
     rows = _children(xml, "main_menu/main_menu_select_list")
     names = [name.rsplit("/", 1)[1] for name, _, _ in rows]
     assert names == ["main_menu_item_load_camp", "main_menu_item_multiplayer", "main_menu_item_profile",
-                     "main_menu_item_settings", "main_menu_item_menus", "main_menu_item_quit_game"]
-    assert [y for _, _, y in rows] == [FIRST_ROW + SPACING * index for index in range(6)]
-    assert [x for _, x, _ in rows] == [194] + [ROW_X] * 5
-    # (QUIT ends at 442, inside the 5% action-safe area: 456)
+                     "main_menu_item_settings", "main_menu_item_menus", "main_menu_item_mods",
+                     "main_menu_item_quit_game"]
+    # (OpenCE build-220's MODS between MENUS and QUIT: seven rows, 35 apart)
+    assert [y for _, _, y in rows] == [FIRST_ROW + SPACING * index for index in range(7)]
+    assert [x for _, x, _ in rows] == [194] + [ROW_X] * 6
+    # (QUIT ends at 454, inside the 5% action-safe area: 456)
     assert rows[-1][2] + 33 <= 456
-    assert ("main_menu/build_number", 450, 418) in _children(xml, "main_menu/main_menu")
+    assert ("main_menu/build_number", 450, 430) in _children(xml, "main_menu/main_menu")
 
 
 def test_generator_data_agrees_with_the_hand_edited_main_menu():
@@ -82,12 +84,14 @@ def test_generator_data_agrees_with_the_hand_edited_main_menu():
     port_settings = _module(ROOT / "tools" / "port_settings.py", "port_settings")
     patch = port_settings.WIDGET_PATCHES["main_menu/main_menu_select_list"]["insert_before"]
     assert patch["main_menu/main_menu_item_quit_game"] == ['<child widget="main_menu/main_menu_item_menus" x="192" '
-                                                           'y="373"/>']
+                                                           'y="351"/>',
+                                                           '<child widget="main_menu/main_menu_item_mods" x="192" '
+                                                           'y="386"/>']
     source = (ROOT / "tools" / "ce_menus.py").read_text()
-    for item, place in (("load_camp", "(194, 229)"), ("multiplayer", "(192, 265)"), ("profile", "(192, 301)"),
-                        ("settings", "(192, 337)"), ("quit_game", "(192, 409)")):
+    for item, place in (("load_camp", "(194, 211)"), ("multiplayer", "(192, 246)"), ("profile", "(192, 281)"),
+                        ("settings", "(192, 316)"), ("quit_game", "(192, 421)")):
         assert f'("{item}", {place})' in source, item
-    assert '"ui\\\\shell\\\\main_menu\\\\build_number"): (450, 418)' in source
+    assert '"ui\\\\shell\\\\main_menu\\\\build_number"): (450, 430)' in source
     # the styles' screen: the generator's output as it is in the tree
     files = port_settings.main_menu_files()
     assert list(files) == ["main_menu.menus_select.xml"]
@@ -97,13 +101,13 @@ def test_generator_data_agrees_with_the_hand_edited_main_menu():
 def test_styles_screen_is_the_main_menu_with_the_styles_in_place():
     xml = (CE / "main_menu.menus_select.xml").read_text()
     screen = _children(xml, "main_menu/menus_select/menus_screen")
-    assert ("main_menu/halo_logo", 0, 28) in screen and ("main_menu/build_number", 450, 418) in screen
+    assert ("main_menu/halo_logo", 0, 28) in screen and ("main_menu/build_number", 450, 430) in screen
     rows = _children(xml, "main_menu/menus_select/menus_select_list")
     assert [name.rsplit("/", 1)[1] for name, _, _ in rows] == ["menus_item_pc", "menus_item_xbox", "menus_item_arena",
                                                               "menus_item_back"]
     # (BACK straight under the last style, at the rows' pitch: no gap; the C takes ARENA EVOLVED out of a build
     # without AE menus and moves BACK up a row, as the Xbox's list has it)
-    assert [y for _, _, y in rows] == [229, 265, 301, 337]
+    assert [y for _, _, y in rows] == [211, 246, 281, 316]
     assert "BACK_GAP" not in SWAP_C.read_text()
     assert '<on event="b" back="true"/>' in xml and '<on event="back" back="true"/>' in xml
     assert xml.count('run="ae menus pick"') == 6

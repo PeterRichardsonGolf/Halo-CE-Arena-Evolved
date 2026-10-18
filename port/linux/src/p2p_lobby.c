@@ -788,6 +788,11 @@ int p2p_lobby_listed(void)
 	return lobby.listed;
 }
 
+int p2p_lobby_hosting_open(void)
+{
+	return lobby.public && !lobby.has_password;
+}
+
 void p2p_lobby_quit(void)
 {
 	if (!lobby.listed)
@@ -814,6 +819,16 @@ void p2p_set_hosting_public(int public)
 		p2p_new_invite_if_listed();
 	lobby.public = public ? 1 : 0;
 	pthread_mutex_unlock(&p2p_lock);
+}
+
+int p2p_hosting_listed(void)
+{
+	int listed;
+
+	pthread_mutex_lock(&p2p_lock);
+	listed = lobby.public && config_boolean("network.public_lobby");
+	pthread_mutex_unlock(&p2p_lock);
+	return listed;
 }
 
 void p2p_set_hosting_password(const char *password)

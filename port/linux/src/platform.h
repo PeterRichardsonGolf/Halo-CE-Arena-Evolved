@@ -148,6 +148,11 @@ Support/ChupathingyCE, made if need be, into path; 0 otherwise (and on
 other systems). An application's own files are not written: it is signed,
 and may be where its player cannot write (port_config.c) */
 int platform_app_folder(char *path, unsigned long size);
+/* asks the player, in a box of its own that waits for the answer (before
+the window opens, or between frames), with `count` buttons (3 at most: Android's),
+`default_index` Enter's and Escape's: the index of the one chosen, or -1
+when it cannot ask */
+int platform_ask(const char *title, const char *text, const char *const *labels, int count, int default_index);
 const char *platform_save_root(void);
 /* port: folders for the menus' and the callouts' lists (menu_files.c,
 callout_voice.c), through posix.h's helpers (posix_files.c; on Windows,

@@ -2,7 +2,8 @@
 SDL_HEADLESS.C
 
 The few SDL functions the platform units the server shares with the game
-call (port_config.c, menu_files.c, browser.c, dsound_sdl.c, gl_functions.c),
+call (port_config.c, menu_files.c, browser.c, dsound_sdl.c, gl_functions.c,
+and OpenCE's port_mods.c: a file read at an offset, load_order.toml written),
 for a server built without SDL (tools/server_build.py): files and folders
 with the C library, and no audio device or OpenGL to open. Each behaves as
 SDL 3's does for what those units ask of it. Built with the host's ABI, as
@@ -265,5 +266,54 @@ bool SDL_PutAudioStreamData(SDL_AudioStream *stream, const void *buffer, int len
 	(void)stream;
 	(void)buffer;
 	(void)length;
+	return false;
+}
+
+/* (port_mods.c, OpenCE's client-side mods, which the server shares with the
+game: a stream is the C library's file) */
+SDL_IOStream *SDL_IOFromFile(const char *file, const char *mode)
+{
+	FILE *stream = fopen(file, mode);
+
+	if (!stream)
+		headless_set_error(strerror(errno));
+	return (SDL_IOStream *)stream;
+}
+
+Sint64 SDL_SeekIO(SDL_IOStream *context, Sint64 offset, SDL_IOWhence whence)
+{
+	FILE *stream = (FILE *)context;
+	int origin = whence == SDL_IO_SEEK_CUR ? SEEK_CUR : whence == SDL_IO_SEEK_END ? SEEK_END : SEEK_SET;
+
+	if (!stream || fseeko(stream, (off_t)offset, origin) != 0)
+		return -1;
+	return (Sint64)ftello(stream);
+}
+
+size_t SDL_ReadIO(SDL_IOStream *context, void *pointer, size_t size)
+{
+	return context ? fread(pointer, 1, size, (FILE *)context) : 0;
+}
+
+bool SDL_CloseIO(SDL_IOStream *context)
+{
+	return context ? fclose((FILE *)context) == 0 : true;
+}
+
+bool SDL_RemovePath(const char *path)
+{
+	struct stat information;
+
+	if (stat(path, &information) == 0 && S_ISDIR(information.st_mode) ? rmdir(path) == 0 : unlink(path) == 0)
+		return true;
+	headless_set_error(strerror(errno));
+	return false;
+}
+
+bool SDL_RenamePath(const char *oldpath, const char *newpath)
+{
+	if (rename(oldpath, newpath) == 0)
+		return true;
+	headless_set_error(strerror(errno));
 	return false;
 }

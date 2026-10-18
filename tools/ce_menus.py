@@ -70,18 +70,19 @@ LEFT_OUT = {
     "ui\\shell\\main_menu\\multiplayer_type_select\\checking_updates_screen_create",
     "ui\\shell\\main_menu\\multiplayer_type_select\\checking_updates_screen_join",
 }
-# children moved: (parent, child) to (x, y); the main menu's Quit up into
-# Credits' place; Multiplayer's rows 32 apart, not 33, and Edit Gametypes and
-# its line down two rows, for Split Screen and Co-op (port_settings.WIDGET_PATCHES)
+# children moved: (parent, child) to (x, y); the main menu's MENUS (AE) and
+# MODS (OpenCE) above Quit, the column up 36 for them; Multiplayer's rows 32
+# apart, not 33, and Edit Gametypes and its line down two rows, for Split Screen
+# and Co-op (port_settings.WIDGET_PATCHES)
 MULTIPLAYER_ROWS = {"join": (-32, 78), "join_internet": (0, 110), "join_lan": (0, 142), "join_direct": (0, 174),
                     "create": (-32, 206), "create_internet": (0, 238), "create_lan": (0, 270), "gametypes": (0, 376)}
 CHILD_OFFSETS = {
-    # (the main menu's column 18 up, for MENUS above QUIT: port_settings.WIDGET_PATCHES, _menus_select; its build
-    # number stays beside QUIT, 9 below its top)
+    # (the main menu's column from 211, 35 apart, for MENUS and MODS above QUIT (QUIT inside the action-safe area):
+    # port_settings.WIDGET_PATCHES, _menus_select, MAIN_MENU_FIRST_ROW; its build number beside QUIT, 9 below its top)
     **{("ui\\shell\\main_menu\\main_menu_select_list", f"ui\\shell\\main_menu\\main_menu_item_{item}"): place
-       for item, place in (("load_camp", (194, 229)), ("multiplayer", (192, 265)), ("profile", (192, 301)),
-                           ("settings", (192, 337)), ("quit_game", (192, 409)))},
-    ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 418),
+       for item, place in (("load_camp", (194, 211)), ("multiplayer", (192, 246)), ("profile", (192, 281)),
+                           ("settings", (192, 316)), ("quit_game", (192, 421)))},
+    ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 430),
     **{("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
         f"ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_{row}_item"): offset
        for row, offset in MULTIPLAYER_ROWS.items()},
@@ -576,6 +577,19 @@ def engine_names(source: Path, start: str, count: int) -> list:
     return re.findall(r'"([^"\\]*)"', text[:text.index("}")])[:count]
 
 
+def pause_art(art):
+    lines = []
+    for piece in ("left", "center", "right"):
+        heights = [port_settings.pause_box_height(buttons) for buttons in port_settings.PAUSE_BOX_BUTTONS]
+        heights += list(port_settings.PAUSE_BOX_EXTRA_HEIGHTS)
+        lines.append(art.port_picture(f"pause/pausebox_{piece}", [
+            (port_settings.pause_box_svg(piece, height), 4 if piece == "center" else 16, 256) for height in heights]))
+    for piece in ("left", "center", "right"):
+        lines.append(art.port_picture(f"pause/objectives_{piece}", [
+            (port_settings.pause_box_svg(piece, 195, header=True), 4 if piece == "center" else 16, 256)]))
+    return lines
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tags", type=Path, required=True)
@@ -659,18 +673,20 @@ def main() -> None:
     # (the main menu's MENUS and its styles' rows, each style's own: tools/menu_row_art.py)
     art.pngs += menu_row_art.draw_all(MENUS)
     lines += menu_row_art.bitmaps_xml()
-    # (the in-game pause menu's taller box: menu_tags.c's pause_patch)
-    for piece in ("left", "center", "right"):
-        heights = [port_settings.pause_box_height(buttons) for buttons in port_settings.PAUSE_BOX_BUTTONS]
-        heights += list(port_settings.PAUSE_BOX_EXTRA_HEIGHTS)
-        lines.append(art.port_picture(f"pause/pausebox_{piece}", [
-            (port_settings.pause_box_svg(piece, height), 4 if piece == "center" else 16, 256) for height in heights]))
+    # (the in-game pause menu's taller box: menu_tags.c's pause_patch; the objectives' boxes)
+    lines += pause_art(art)
     # (voice chat's speaker, of a player who talks and of one muted: Lucide's
     # icons, port/assets/icons/lucide, white for network_voice.c to tint)
     lines.append(art.port_picture("voice/speaker", [
         ((ROOT / "port/assets/icons/lucide" / f"{icon}.svg").read_text().replace('stroke="currentColor"',
                                                                                  'stroke="#FFFFFF"'), 24, 24)
         for icon in ("volume-2", "volume-x")]))
+    # (the main menu's MODS, in the redraws' own letters, and the mods'
+    # status icons: Lucide's, port/assets/icons/lucide)
+    lines.append(art.port_picture("main_menu/menu_mods", port_settings.menu_item_frames("MODS", art.redraws)))
+    lines.append(art.port_picture("mods/status", port_settings.mod_status_frames(ROOT / "port/assets/icons/lucide")))
+    lines.append(art.port_picture("mods/status_small",
+                                  port_settings.mod_status_frames(ROOT / "port/assets/icons/lucide", 16)))
     # (nothing: what a game map draws for a frame of ui.map's it has not,
     # menu_tags.c)
     lines.append(art.port_picture("blank", [

@@ -37,11 +37,12 @@ def test_the_printed_rule_is_the_file_s():
 def test_the_linux_downloads_carry_the_rule():
     build = (ROOT / "tools/ci_build.py").read_text()
     assert '"port/assets/udev/70-ae-dualsense.rules", dist / "70-ae-dualsense.rules"' in build
-    readme = (ROOT / "README.md").read_text()
-    section = readme[readme.index("### DualSense on Linux without Steam"):]
-    section = section[:section.index("\n## ")]
+    # (the section moved from README.md to docs/features.md with 0.3.4's short README)
+    features = (ROOT / "docs/features.md").read_text()
+    section = features[features.index("## DualSense on Linux without Steam"):]
+    section = section[:section.index("\n## ") if "\n## " in section else len(section)]
     assert "sudo cp 70-ae-dualsense.rules /etc/udev/rules.d/ && sudo udevadm control --reload" in section
-    assert "(#dualsense-on-linux-without-steam)" in readme
+    assert "(#dualsense-on-linux-without-steam)" in features
 
 
 def test_the_gamepads_screen_rows():

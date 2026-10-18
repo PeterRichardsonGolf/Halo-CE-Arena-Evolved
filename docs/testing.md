@@ -57,7 +57,7 @@ weapon renamed to a stock weapon's name, a first-person animation node renamed),
 (`homobox@ce`) and no pack at all: each refused with its reason, `first spawn: assault rifle + pistol` (the stock
 fallback), the console's `weapon pack: BATTLE RIFLE unavailable on <map>: <reason>` line, and the game played to
 its end. The long cases: all 13 Xbox multiplayer maps in one rotation (a minute each, about 20 minutes), Halo 1:
-NHE's badcreek (`mods/NHE`) and CE+ X's Blood Gulch beside its own rifle (`mods/CE+ X`).
+NHE's badcreek (`discs/NHE`, or `mods/NHE` on an older data root) and CE+ X's Blood Gulch beside its own rifle (`discs/CE+ X`).
 
 The battle rifle's behaviour (tools/test_weapon_pack_rifle.py, port/linux/game/ae_burst_rifle.c; the same three
 variables, the CE+ X case with the rotation's): the set-up lines (`ae burst rifle: zoom 1 level 2.563x ...`, spread,
