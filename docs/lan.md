@@ -13,15 +13,15 @@ send one.
 **What is shared.** A host sends the maps you lack: Custom Edition maps, and
 (between Arena Evolved players) community maps in the Xbox's format, from its
 `maps` folder or its active mod. You get the map the game is on when you join,
-and in the lobby **F6** gets all of the
-host's maps you lack; press it again to stop. The game asks you once per host,
+and in the lobby **F6** (or **BACK held** for a second on a controller) gets all of the
+host's maps you lack; do it again to stop. The game asks you once per host,
 with the number of maps and their size, before anything is downloaded.
 Community maps go to `maps_shared`, Custom Edition maps to `maps_ce`.
 
 **How fast.** A host whose players are all on the local network sends maps at up to 16 MB/s
 (`network.map_share_lan_upload`); a game with a player on the internet keeps 1 MB/s (`network.map_share_upload`), so
 the host's upload is left for the game. In the lobby, a guest answers the download question with **F6** on the
-keyboard.
+keyboard, or by holding **BACK** for a second on any controller (a tap is the menus' own).
 
 **What is never shared.** The game's own maps (its 13 multiplayer maps, the
 campaign and the menus): they are never sent, and a download never replaces

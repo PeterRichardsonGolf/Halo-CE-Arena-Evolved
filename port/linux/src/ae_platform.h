@@ -55,6 +55,8 @@ void ae_platform_take_tab_presses(int *forward, int *backward, int *ignored);
 int ae_platform_mouse_left_held(void);
 /* map sharing's key (ae_map_share_all.c): F6 held now; 0 on the dedicated server and Android */
 int ae_platform_map_share_key(void);
+/* map sharing's pad button: BACK held now on any connected pad; 0 on the dedicated server and Android */
+int ae_platform_map_share_pad(void);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */
 int ae_platform_input_scheme(void);

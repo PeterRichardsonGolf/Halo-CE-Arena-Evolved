@@ -13,7 +13,7 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
   it (an offer of more files than there are kinds).
 - THE PLAYED MAP. A guest without the game's map asks for it as Custom Edition maps are asked for: a community map
   too, into maps_shared, where the game then finds it.
-- GET ALL. In the lobby, F6 fetches every listed map the guest lacks, one after
+- GET ALL. In the lobby, F6 (or BACK held on a pad) fetches every listed map the guest lacks, one after
   another; the same again stops it. The game's own map goes first; a game that starts stops the rest until the
   lobby is back.
 - CONSENT AND LIMITS. Nothing is asked of a host before the player said yes, once per host; a size over the
@@ -68,6 +68,7 @@ boolean network_distributed_server_send_to_machine_reliably(long machine_index, 
 unsigned long network_game_server_machine_address(long machine_index);
 unsigned long system_milliseconds(void);
 int ae_platform_map_share_key(void);
+int ae_platform_map_share_pad(void);
 
 /* ---------- constants */
 
@@ -109,6 +110,8 @@ enum
 	QUESTION_SHOWN_LATELY = 500,
 	/* GET ALL waits this long after a host said it does not share (asked too often) */
 	QUEUE_PAUSE = 10000,
+	/* a pad's BACK is map sharing's F6 once held this long, in the lobby (a tap is the menus') */
+	PAD_HOLD_TIME = 1000,
 	_text_centered = 2,
 };
 
@@ -254,6 +257,7 @@ struct share_globals
 	char notice[200];
 	unsigned long notice_until;
 	boolean key_down;
+	unsigned long pad_down_at;
 	boolean test_all_done;
 };
 
@@ -2022,8 +2026,16 @@ static void guest_update(
 	unsigned long address = guest_host_address();
 	boolean lobby = main_menu_is_active();
 	boolean key = ae_platform_map_share_key() != 0;
-	boolean pressed = key && !share.key_down;
+	boolean pressed;
 
+	/* (a pad's BACK held in the lobby counts as the key: for a guest with no keyboard) */
+	if (!lobby || !ae_platform_map_share_pad())
+		share.pad_down_at = 0;
+	else if (!share.pad_down_at)
+		share.pad_down_at = now | 1;
+	else if (elapsed(share.pad_down_at, now, PAD_HOLD_TIME))
+		key = TRUE;
+	pressed = key && !share.key_down;
 	share.key_down = key;
 	if (address != share.host_address)
 		guest_host_changed(address);
@@ -2115,19 +2127,21 @@ void ae_map_share_all_render(
 		if (share.plan_count)
 		{
 			snprintf(text, sizeof(text), "The host has %ld map%s you lack, %ld MB (you take %ld MB at most). "
-				"Download from this host? F6: yes%s", share.plan_count,
+				"Download from this host? F6 or hold BACK: yes%s", share.plan_count,
 				share.plan_count == 1 ? "" : "s", megabytes(question_bytes()), guest_cap(),
 				share.played_asking ? " - B or Esc: leave" : "");
 		}
 		else
 		{
-			snprintf(text, sizeof(text), "Download this game's map from the host? F6: yes - B or Esc: leave");
+			snprintf(text, sizeof(text), "Download this game's map from the host? F6 or hold BACK: yes - B or Esc: leave");
 		}
 	}
 	else if (share.all_active)
 	{
-		snprintf(text, sizeof(text), "Getting the host's maps: %ld of %ld - F6 stops",
-			MIN(share.queue_next + 1, share.queue_count), share.queue_count);
+		/* (the pad's BACK only in the lobby: in a game it is the scoreboard's) */
+		snprintf(text, sizeof(text), "Getting the host's maps: %ld of %ld - F6%s stops",
+			MIN(share.queue_next + 1, share.queue_count), share.queue_count,
+			main_menu_is_active() ? " or hold BACK" : "");
 	}
 	else if (share.notice[0] && !elapsed(share.notice_until, now, 0))
 	{
@@ -2135,7 +2149,7 @@ void ae_map_share_all_render(
 	}
 	else if (main_menu_is_active() && share.host_shares && share.plan_count && guest_policy())
 	{
-		snprintf(text, sizeof(text), "The host has %ld map%s you lack (%ld MB): F6 gets them all",
+		snprintf(text, sizeof(text), "The host has %ld map%s you lack (%ld MB): F6 or hold BACK gets them all",
 			share.plan_count, share.plan_count == 1 ? "" : "s", megabytes(share.plan_bytes));
 	}
 	if (!text[0])

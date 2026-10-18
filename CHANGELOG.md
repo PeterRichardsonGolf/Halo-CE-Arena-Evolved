@@ -9,6 +9,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Controllers' back buttons: `input.back_right` and `input.back_left` in config.toml make a Switch 2 Pro
   Controller's GR and GL (an Xbox Elite's or DualSense Edge's upper paddles) press the Xbox button they name, so
   they follow your controller layout. Off by default; with Steam running, Steam Input takes the pad instead.
+- Map sharing from a controller: in the lobby, holding BACK for a second on any controller does what F6 does
+  (yes to the download question, get all of the host's maps, stop), so a guest with no keyboard can say yes.
 
 ## 0.3.3-beta - 2026-10-17
 
