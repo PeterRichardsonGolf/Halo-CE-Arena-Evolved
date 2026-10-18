@@ -6,6 +6,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- HEALTH's HALO 3 is now true to Halo 3: Halo 3's tags and code use Halo 2's numbers and rule (shields recharge 5 s
+  after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached
+  it, shields or none), so HALO 3 plays the same as HALO 2. Before, it was our own rule (health only after full
+  shields, slower) and CE's shield timers.
 ## 0.3.4-beta - 2026-10-18
 
 - Split screen's JOIN screen: Multiplayer > SPLIT SCREEN starts with four player cards. The first device to press

@@ -16,7 +16,7 @@ editor and in Server Setup)
 | Option | What it does |
 | --- | --- |
 | FALL DAMAGE | Off: no landing damage from any height (pits and kill zones still kill). |
-| HEALTH | HALO CE (stock: health packs only), REACH (health recovers to a third), HALO 2 (Halo 2's timers: shields recharge 5 s after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached it, shield hits do not count), HALO 3 (health refills after the shields). Health packs still spawn. |
+| HEALTH | HALO CE (stock: health packs only), REACH (health recovers to a third), HALO 2 (Halo 2's timers: shields recharge 5 s after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached it, shield hits do not count), HALO 3 (the same as HALO 2: Halo 3 uses Halo 2's numbers and rule). Health packs still spawn. |
 | COMBAT FEEDBACK | HALO CE (stock: the game's own shield flare) or ARENA EVOLVED, which shows on a player's body what the fight has come to: a shield about to fail bursts white, a broken shield flickers until it recharges, a recharge sweeps from feet to head, and the shot that finishes a player after breaking the shield throws a blood pop where it struck. Drawing only: no damage value changes, nothing new on the HUD, and stock players in the game are unaffected. Multiplayer only. |
 | NO SPREAD | OFF (stock), FIRST SHOT (the pistol's first shot from rest and the sniper rifle's unzoomed shots go exactly where you aim; held pistol fire still spreads) or FULL (every pistol and sniper rifle shot goes where you aim, held fire too: no spread, no bloom). Other weapons are unchanged. |
 | PRACTICE MODE | Every weapon and powerup respawns every 30 seconds. |

@@ -2079,7 +2079,7 @@ ARENA_ROWS = [
         "Your health only comes back with a health pack.",
         "Once your shields are full, your health comes\\nback to the top of the third it is in. Health\\npacks fill the rest.",
         "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
-        "Once your shields are full, all your health\\ncomes back.",
+        "As in Halo 3 (the same as HALO 2): your health\\ncomes back 10 s after you were last hurt.",
     ]),
     # (COMBAT FEEDBACK: bits 0-1 of the variant's pad5, port/linux/game/ae_hit_feedback.c's
     # ae_hit_feedback_menu_rows; not in menu_functions.c's table)

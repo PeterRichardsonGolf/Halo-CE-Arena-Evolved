@@ -162,14 +162,17 @@ overcharge): not a client of the distributed netcode, which has the host's
 (damage_set_network_state) */
 #define objects_update_shields() (!network_game_distributed_client())
 
-/* port: HALO 2 health style (enum health_style), host side. The shields of
-players use Halo 2's timers instead of the biped tag's: recharge starts 5
-seconds after the last shield damage and refills in 2 seconds. The body has
-its own timer: 10 seconds after the last damage that reached it, then a
-refill in 5 seconds. The body's last-damage time is kept in a table of this
-machine (by object slot and identifier), not in the object: it is never
+/* port: HALO 2 and HALO 3 health styles (enum health_style), host side.
+Halo 3's tags and code use Halo 2's numbers and rule, so both run this. The
+shields of players use Halo 2's timers instead of the biped tag's: recharge
+starts 5 seconds after the last shield damage and refills in 2 seconds. The
+body has its own timer: 10 seconds after the last damage that reached it,
+then a refill in 5 seconds. The body's last-damage time is kept in a table of
+this machine (by object slot and identifier), not in the object: it is never
 saved or sent. */
 static short health_style_current(void);
+#define health_style_halo2_rule(style) \
+	((style) == _health_style_halo2 || (style) == _health_style_halo3)
 #define HALO2_SHIELD_STUN_TICKS (5 * TICKS_PER_SECOND)
 #define HALO2_SHIELD_RECHARGE_PER_TICK (1.f / (2.f * TICKS_PER_SECOND))
 #define HALO2_BODY_STUN_TICKS (10 * TICKS_PER_SECOND)
@@ -183,7 +186,7 @@ static struct
 
 static boolean halo2_player_shields(long object_index)
 {
-	return health_style_current() == _health_style_halo2 &&
+	return health_style_halo2_rule(health_style_current()) &&
 		player_index_from_unit_index(object_index) != NONE;
 }
 
@@ -2101,10 +2104,10 @@ void area_of_effect_cause_damage(
 
 /* port: how players' health comes back (enum health_style): in multiplayer
 the gametype's HEALTH (game_engine_health_style), in the campaign game.health.
-REACH and HALO 3: once the shields are full, a third every four seconds, up
-to the top of the third it is in (REACH: a health pack fills the rest) or all
-of it (HALO 3); HALO 2: ten seconds after the body's last damage, then all of
-it in five seconds, shields or none (the shields' own timers: see above).
+REACH: once the shields are full, a third every four seconds, up to the top
+of the third it is in (a health pack fills the rest); HALO 2 and HALO 3: ten
+seconds after the body's last damage, then all of it in five seconds, shields
+or none (the shields' own timers: see above).
 With no shields, the others start five seconds after the body's last damage.
 The host runs it with the shields (objects_update_shields); clients have its
 health. */
@@ -2157,9 +2160,9 @@ static void object_regenerate_health(
 	}
 	if (player_index_from_unit_index(object_index) == NONE)
 		return;
-	if (style == _health_style_halo2)
+	if (health_style_halo2_rule(style))
 	{
-		/* (HALO 2: its own timer, shields or none) */
+		/* (HALO 2 and HALO 3: its own timer, shields or none) */
 		ready = halo2_body_quiet_ticks(object_index) >= HALO2_BODY_STUN_TICKS;
 	}
 	else if (object->object.maximum_shield_vitality > 0.f)
@@ -2176,7 +2179,7 @@ static void object_regenerate_health(
 	/* (REACH: the top of the third it is in; on a third's top, none) */
 	if (style == _health_style_reach)
 		cap = MIN((real)((long)(health * 3.f - 0.0001f) + 1) / 3.f, 1.f);
-	object->object.body_vitality = MIN(health + (style == _health_style_halo2 ?
+	object->object.body_vitality = MIN(health + (health_style_halo2_rule(style) ?
 		HEALTH_REGENERATION_HALO2_PER_TICK : HEALTH_REGENERATION_PER_TICK), cap);
 }
 
