@@ -234,6 +234,8 @@ static struct
 	long indices[JOIN_PROFILES];
 	struct player_profile profiles[JOIN_PROFILES];
 	short count;
+	/* the first untitled profile name, as NEW PROFILE will make it (read with the profiles) */
+	wchar_t untitled[128];
 	/* the help line's word for a while (a fifth device: "4 players at most on one PC") */
 	wchar_t const *message;
 	unsigned long message_until;
@@ -325,6 +327,8 @@ static void join_profiles_read(void)
 	short index;
 
 	player_profiles_enumerate_available_to_local_player_index(NONE, &count, indices, FALSE);
+	saved_game_file_get_useable_untitled_profile_name(join.untitled);
+	join.untitled[11] = 0;
 	join.count = 0;
 	for (index = 0; index < (short)count && join.count < JOIN_PROFILES; index++)
 	{
@@ -391,6 +395,39 @@ static void join_message(wchar_t const *text)
 {
 	join.message = text;
 	join.message_until = system_milliseconds() + JOIN_MESSAGE_TIME;
+}
+
+/* the name NEW PROFILE will make for the seat (CONTINUE makes them in seat order, each the first untitled name:
+"New002", then "New003"); "NEW" when the untitled name has no number to count on */
+static void join_new_name(short seat, wchar_t *name)
+{
+	wchar_t base[JOIN_TEXT_LENGTH];
+	short before = 0, other, length, digits, index;
+	long number = 0, power = 1;
+
+	for (other = 0; other < seat; other++)
+		before += join.profile[other] == JOIN_NEW_PROFILE;
+	join_concat(base, join.untitled, L"");
+	length = join_length(base);
+	for (digits = 0; digits < length && base[length - 1 - digits] >= L'0' && base[length - 1 - digits] <= L'9'; digits++)
+	{
+		number += (base[length - 1 - digits] - L'0') * power;
+		power *= 10;
+	}
+	if (!digits || digits > 6 || length >= JOIN_TEXT_LENGTH)
+	{
+		join_concat(name, L"NEW", L"");
+		return;
+	}
+	number += before;
+	for (index = 0; index < length - digits; index++)
+		name[index] = base[index];
+	for (index = 0; index < digits; index++)
+	{
+		name[length - 1 - index] = (wchar_t)(L'0' + number % 10);
+		number /= 10;
+	}
+	name[length] = 0;
 }
 
 static short device_frame(struct ae_seat_view const *view)
@@ -467,8 +504,15 @@ static void join_card_update(struct widget_instance *screen, short seat)
 	join_text(join_child(screen, "join_devname", seat), device_name(&view));
 	join_frame(join_child(screen, "join_leavebtn", seat), leave_frame(&view));
 	profile = join.profile[seat] != NONE && join.profile[seat] < join.count ? &join.profiles[join.profile[seat]] : NULL;
-	/* (NEW PROFILE reads "NEW" over the bar's PROFILE: the whole words do not fit the bar) */
-	join_text(join_child(screen, "join_prof", seat), profile ? profile->player_name : L"NEW");
+	if (profile)
+		join_text(join_child(screen, "join_prof", seat), profile->player_name);
+	else
+	{
+		wchar_t name[JOIN_TEXT_LENGTH];
+
+		join_new_name(seat, name);
+		join_text(join_child(screen, "join_prof", seat), name);
+	}
 	/* (NEW PROFILE: the first colour's armour, as a new profile has until it picks one) */
 	join_frame(join_child(screen, "join_armour", seat), profile ? (short)MAX(profile->primary_color_index, 0) : 0);
 	{
