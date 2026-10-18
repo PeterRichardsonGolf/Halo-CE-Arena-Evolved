@@ -1234,6 +1234,7 @@ static void merge_button(XINPUT_GAMEPAD *pad, int analog_index, BOOL down)
 
 static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 {
+	if (ae_platform_input_held_back()) return; /* AE hook */
 	static const struct
 	{
 		SDL_GamepadButton button;

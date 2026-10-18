@@ -81,6 +81,8 @@ void ae_platform_port_pick_wait(int port);
 void ae_platform_port_pick_cancel(void);
 int ae_platform_port_pick_waiting(int *left_ms);
 unsigned ae_platform_port_pick_update(int *port, int *other);
+/* (xinput_sdl.c's) the pads' buttons held back from the game: a picker's ASSIGN waiting, or its press not let go */
+int ae_platform_input_held_back(void);
 /* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
 as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
 void ae_platform_test_keystroke(int scancode);

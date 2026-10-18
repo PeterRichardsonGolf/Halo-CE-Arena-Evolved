@@ -156,6 +156,26 @@ int ae_lobby_only_bots_stay(short controller)
 	return mine && bots > 0;
 }
 
+boolean ui_widget_port_multiplayer_player(short controller_index, long profile_index);
+boolean ui_widget_port_host(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted);
+
+unsigned char ae_lobby_server_rehost(struct widget_instance *widget, struct event_record *event,
+	unsigned char *widget_deleted)
+{
+	long profile = player_ui_get_active_player_profile_index(0);
+	boolean deleted = FALSE, result;
+
+	if (global_network_game_server_get())
+		return TRUE;
+	platform_log("ae lobby: Server Setup's START GAME with its game closed (the lobby was left): hosting again");
+	if (profile == NONE || !ui_widget_port_multiplayer_player(0, profile))
+		return (unsigned char)ae_lobby_server_gone();
+	result = ui_widget_port_host(widget, event, &deleted);
+	if (widget_deleted)
+		*widget_deleted = (unsigned char)deleted;
+	return (unsigned char)(result && global_network_game_server_get() ? TRUE : ae_lobby_server_gone());
+}
+
 int ae_lobby_server_gone(void)
 {
 	display_error_text_deferred(L"The game closed. Press B and host the game again.", NONE);

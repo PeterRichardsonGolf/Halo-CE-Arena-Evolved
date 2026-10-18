@@ -81,12 +81,16 @@ def _rounded(x, y, w, h, r):
             f"H{x + r} A{r},{r} 0 0 1 {x},{y + h - r} V{y + r} A{r},{r} 0 0 1 {x + r},{y} Z")
 
 
+def _link_path(cx, cy, w, h, wall):
+    """a chain link's path data: a rounded ring, its hole open (fill-rule evenodd)"""
+    return _rounded(cx - w / 2, cy - h / 2, w, h, h / 2) + " " + _rounded(
+        cx - w / 2 + wall, cy - h / 2 + wall, w - 2 * wall, h - 2 * wall, h / 2 - wall)
+
+
 def _link(cx, cy, w, h, wall, clip=None):
     """one chain link: a rounded ring, its hole open"""
-    d = _rounded(cx - w / 2, cy - h / 2, w, h, h / 2) + " " + _rounded(
-        cx - w / 2 + wall, cy - h / 2 + wall, w - 2 * wall, h - 2 * wall, h / 2 - wall)
     extra = f' clip-path="url(#{clip})"' if clip else ""
-    return [f'<path d="{d}" fill-rule="evenodd" class="b"{extra}/>']
+    return [f'<path d="{_link_path(cx, cy, w, h, wall)}" fill-rule="evenodd" class="b"{extra}/>']
 
 
 def _helmet(cx, cy, k):
@@ -144,10 +148,16 @@ MULTIPLAYER_ICONS = [
         '<path d="M23,49 V66 H77 V49" class="w"/>', '<line x1="50" y1="66" x2="50" y2="74" class="w"/>',
         '<rect x="30" y="74" width="40" height="16" rx="2" class="b"/>'] +
      [f'<line x1="{38 + i * 8}" y1="79" x2="{38 + i * 8}" y2="85" class="l"/>' for i in range(4)]),
-    # DIRECT LINK: an invite link, two chain links through each other
-    ("direct_link", ['<clipPath id="direct_link_over"><rect x="44" y="50" width="20" height="22"/></clipPath>',
+    # DIRECT LINK: an invite link, two chain links through each other: the left one whole, the right one over it at
+    # the top crossing and under it at the bottom (a mask cuts the right link where the left one's band, a little
+    # wider for a gap, passes below the links' middle line: there the bands do not touch, so no cut shows)
+    ("direct_link", ['<mask id="direct_link_under" maskUnits="userSpaceOnUse" x="-20" y="-20" width="140" height="140">'
+                     '<rect x="-20" y="-20" width="140" height="140" fill="#fff"/>'
+                     '<clipPath id="direct_link_low"><rect x="-20" y="50" width="140" height="70"/></clipPath>'
+                     f'<path d="{_link_path(30, 50, 60, 30, 9.5)}" fill-rule="evenodd" fill="#000" stroke="#000" '
+                     'stroke-width="5" clip-path="url(#direct_link_low)"/></mask>',
                      '<g transform="rotate(-30 50 50)">'] +
-     _link(30, 50, 60, 30, 9.5) + _link(70, 50, 60, 30, 9.5) + _link(30, 50, 60, 30, 9.5, "direct_link_over") + ["</g>"]),
+     _link(30, 50, 60, 30, 9.5) + ['<g mask="url(#direct_link_under)">'] + _link(70, 50, 60, 30, 9.5) + ["</g>", "</g>"]),
     # INTERNET (create): the host broadcasting, the world behind it
     ("internet_host", _globe(64, 44, 32) + _rack(6, 44, 30, 48) + _waves(21, 38, (8, 16), toward=-105)),
     # LAN (create): the host's router broadcasting, at the top of a tree cabled to three screens (owner 10-15: a
@@ -247,8 +257,8 @@ def ink(shapes) -> tuple:
     the drawing itself (rsvg-convert and Pillow: tools/test_ae_menu_pictures.py checks INK against it)"""
     import io
     from PIL import Image
-    clips = "".join(shape for shape in shapes if shape.startswith("<clipPath"))
-    body = "\n".join(shape for shape in shapes if not shape.startswith("<clipPath"))
+    clips = "".join(shape for shape in shapes if shape.startswith(("<clipPath", "<mask")))
+    body = "\n".join(shape for shape in shapes if not shape.startswith(("<clipPath", "<mask")))
     text = (f'<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="-20 -20 140 140">{STYLE}'
             f"<defs>{clips}</defs>{body}</svg>")
     png = subprocess.run(["rsvg-convert", "-z", "8"], input=text.encode(), capture_output=True, check=True).stdout
@@ -264,8 +274,8 @@ def svg(shapes, box, zone) -> str:
     x = zone["centre"][0] - scale * (left + right) / 2
     y = zone["centre"][1] - scale * (top + bottom) / 2
     # (a drawing's clip paths go in the defs, once: the body is drawn twice, glowing and sharp)
-    clips = "".join(shape for shape in shapes if shape.startswith("<clipPath"))
-    body = "\n".join(shape for shape in shapes if not shape.startswith("<clipPath"))
+    clips = "".join(shape for shape in shapes if shape.startswith(("<clipPath", "<mask")))
+    body = "\n".join(shape for shape in shapes if not shape.startswith(("<clipPath", "<mask")))
     return "\n".join([
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{FRAME[0]}" height="{FRAME[1]}" '
         f'viewBox="0 0 {FRAME[0]} {FRAME[1]}">', STYLE,

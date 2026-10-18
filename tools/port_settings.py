@@ -1396,18 +1396,23 @@ FIELD_BACK = ['<on event="b"/>', '<on event="back"/>']
 SCREEN_BACK = ['<on event="b" run="gamespy back handler"/>', '<on event="back" run="gamespy back handler"/>']
 
 
+# (AE: Server Setup's text values centred where its spinners' values are (x 320 + 3, 147 wide: 396.5), ending at the
+# row's edge, as the owner saw the GAME NAME off the column, 2026-10-18)
+SERVER_VALUE_X, SERVER_VALUE_WIDTH = 282, 230
+
+
 def _value_row(base: str, key: str, label_index: int, run: str) -> list:
     """a row of a label and a value the player sets (A edits it)"""
     lines = _widget(f"{base}/op_{key}", [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                                          ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
                     [f'<on event="a" run="{run}"/>', f'<on event="start" run="{run}"/>', *FIELD_BACK,
                      '<on event="left_mouse" run="mouse emit accept event"/>',
-                     f'<child widget="{base}/{key}_label"/>', f'<child widget="{base}/{key}_value" x="230" y="1"/>'])
+                     f'<child widget="{base}/{key}_label"/>', f'<child widget="{base}/{key}_value" x="{SERVER_VALUE_X}" y="1"/>'])
     lines += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 230), ("height", 22),
                                              ("string_list", f"{base}/labels"), ("string_index", label_index or None),
                                              ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
                                              ("text_y", 4)], [])
-    lines += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 280), ("height", 22),
+    lines += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", SERVER_VALUE_WIDTH), ("height", 22),
                                              ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("align", "center"),
                                              ("text_y", 5), ("text_flags", "no_focus_test")], [])
     return lines
@@ -1567,12 +1572,12 @@ def _server_settings() -> list:
                          [f'<on event="a" run="port setup edit" open="{target}"/>',
                           f'<on event="start" run="port setup edit" open="{target}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>',
-                          f'<child widget="{base}/{key}_label"/>', f'<child widget="{base}/{key}_value" x="230" y="1"/>'])
+                          f'<child widget="{base}/{key}_label"/>', f'<child widget="{base}/{key}_value" x="{SERVER_VALUE_X}" y="1"/>'])
         extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 230), ("height", 22),
                                                  ("string_list", f"{base}/labels"), ("string_index", 3 + index),
                                                  ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
                                                  ("text_y", 4)], [])
-        extra += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 280), ("height", 22),
+        extra += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", SERVER_VALUE_WIDTH), ("height", 22),
                                                  ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("align", "center"),
                                                  ("text_y", 5), ("text_flags", "no_focus_test")], [])
         rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE + index))
@@ -1779,11 +1784,17 @@ def _lobby_pick(base: str) -> list:
 
     for row in range(LOBBY_PICK_ROWS):
         top = 30 * row
-        item(f"lobby_pick_l_{row}", f"left {row}", 150, top, 50, 28)
-        item(f"lobby_pick_r_{row}", f"right {row}", 200, top, 72, 28)
-        item(f"lobby_pick_assign_{row}", f"assign {row}", 278, top + 2, 58, 24, button + [("text", "ASSIGN")])
-        item(f"lobby_pick_cancel_{row}", f"assign {row}", 278, top + 2, 58, 24, button + [("text", "CANCEL")])
-        for side, x in (("left", 156), ("right", 260)):
+        item(f"lobby_pick_l_{row}", f"left {row}", 156, top, 52, 28)
+        item(f"lobby_pick_r_{row}", f"right {row}", 208, top, 70, 28)
+        item(f"lobby_pick_assign_{row}", f"assign {row}", 282, top + 2, 58, 24, button + [("text", "ASSIGN")])
+        item(f"lobby_pick_cancel_{row}", f"assign {row}", 282, top + 2, 58, 24, button + [("text", "CANCEL")])
+        # (ASSIGN's wait: the arrows and value's whole width)
+        lines += _widget(f"{base}/lobby_pick_wait_{row}",
+                         [("type", "text"), ("controller", 1), ("width", 128), ("height", 28), ("text", "PRESS A BUTTON"),
+                          ("font", "ui\\small_ui"), ("color", "#FFFFFFFF"), ("align", "center"),
+                          ("text_flags", "no_focus_test"), ("text_y", 6)], [])
+        items.append(f'<child widget="{base}/lobby_pick_wait_{row}" x="153" y="{top}"/>')
+        for side, x in (("left", 162), ("right", 266)):
             lines += _widget(f"{base}/lobby_pick_arrow_{side}_{row}",
                              [("controller", 1), ("width", 12), ("height", 12), ("bitmap", f"bitmaps/arrow_sm_{side}")], [])
             items.append(f'<child widget="{base}/lobby_pick_arrow_{side}_{row}" x="{x}" y="{top + 8}"/>')
@@ -1792,7 +1803,7 @@ def _lobby_pick(base: str) -> list:
                              [("type", "text"), ("controller", 1), ("width", 88), ("height", 28), ("font", font),
                               ("color", "#FFFFFFFF"), ("align", "center"), ("text_flags", "no_focus_test"),
                               ("text_y", ty)], [])
-            items.append(f'<child widget="{base}/lobby_pick_value_{size}_{row}" x="170" y="{top}"/>')
+            items.append(f'<child widget="{base}/lobby_pick_value_{size}_{row}" x="176" y="{top}"/>')
     lines += _widget(f"{base}/lobby_pick_help", [("type", "text"), ("controller", 1), ("left", 22), ("top", 388),
                                                  ("width", 380), ("height", 24), ("font", "ui\\small_ui"),
                                                  ("color", "#FF2896FF"), ("align", "left"), ("text_y", 5),
@@ -1851,13 +1862,10 @@ def _lobby() -> list:
                           ("bitmap", "bitmaps/sel_list_item_bkd_top" if index == 0 else "bitmaps/sel_list_item_bkd"),
                           ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("align", "center"), ("text_y", 3)],
                          ['<on event="left right" run="swap player team"/>',
-                          f'<child widget="{base}/list_item_text"/>',
+                          '<child widget="main_menu/new_select/list_item_text" x="25"/>',
                           '<child widget="main_menu/new_select/list_item_arrows"/>'])
-    # (AE: the rows' names in their left part, the right part for this machine's players' controllers: R4 of the
-    # controller picker's design review, approved 2026-10-18)
-    lines += _widget(f"{base}/list_item_text", [("type", "text"), ("controller", 1), ("width", 168), ("height", 28),
-                                                ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("align", "center"),
-                                                ("text_flags", "no_focus_test"), ("text_y", 3)], [])
+    # (AE: this machine's players' rows with a controller picker have their names moved left at run time, as R4 of the
+    # picker's design review has them: ae_split_screen.c; the others stay centred)
     lines += _lobby_pick(base)
     for key, caption, setting, strings, values in LOBBY_BOT_ROWS:
         lines += _widget(f"{base}/ae_bots_{key}_row",
@@ -2044,7 +2052,7 @@ def _join_card_items(seat: int, x: int, y: int, w: int) -> list:
         items.append(f'<child widget="{JOIN}/{name}_{seat}" x="{ix}" y="{iy}"/>')
 
     # (a pill: its left and right 40 % are its arrows, the middle 20 % picks)
-    for pill, top in (("dev", 75), ("prof", 122), ("cand", 241)):
+    for pill, top in (("dev", 54), ("prof", 104), ("cand", 241)):
         left, right, pick = ("cand left", "cand right", "cand take") if pill == "cand" else (
             f"{pill} left", f"{pill} right", f"{pill} pick")
         item(f"join_hit_{pill}_l", left, 8, top, 52, 28)
@@ -2052,17 +2060,17 @@ def _join_card_items(seat: int, x: int, y: int, w: int) -> list:
         item(f"join_hit_{pill}_r", right, 86, top, 52, 28)
     button = [("type", "text"), ("bitmap", "bitmaps/ae_seat_button_assign"), ("font", "ui\\small_ui"),
               ("color", JOIN_WHITE), ("align", "center"), ("text_y", 2)]
-    item("join_assign", "assign", 6, 262, 58, 24, button + [("text", "ASSIGN")])
-    item("join_cancel", "assign", 6, 262, 58, 24, button + [("text", "CANCEL")])
+    item("join_assign", "assign", 6, 272, 58, 24, button + [("text", "ASSIGN")])
+    item("join_cancel", "assign", 6, 272, 58, 24, button + [("text", "CANCEL")])
     leave = [p for p in button if p[0] not in ("align", "bitmap")] + [("bitmap", "bitmaps/ae_seat_button_leave"),
                                                                         ("text", "LEAVE"), ("align", "left")]
     # (a pad's B chip, or the keyboard's ESC key, before LEAVE: two buttons, the text where each picture ends)
-    item("join_leave", "leave", 67, 262, 72, 24, leave + [("text_x", 22)])
-    item("join_leavek", "leave", 67, 262, 72, 24, leave + [("text_x", 28)])
+    item("join_leave", "leave", 66, 272, 78, 24, leave + [("text_x", 23)])
+    item("join_leavek", "leave", 66, 272, 78, 24, leave + [("text_x", 28)])
     lines += _join_picture(f"join_leavebtn_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
-    items.append(f'<child widget="{JOIN}/join_leavebtn_{seat}" x="71" y="266"/>')
+    items.append(f'<child widget="{JOIN}/join_leavebtn_{seat}" x="70" y="276"/>')
     lines += _join_picture(f"join_leavekey_{seat}", "bitmaps/ae_seat_key_esc", 22, 14)
-    items.append(f'<child widget="{JOIN}/join_leavekey_{seat}" x="71" y="267"/>')
+    items.append(f'<child widget="{JOIN}/join_leavekey_{seat}" x="70" y="277"/>')
     return _widget(f"{JOIN}/join_items_{seat}", [("type", "column_list"), ("width", w), ("height", 300)], items) + lines
 
 
@@ -2105,11 +2113,13 @@ def _join_screen() -> list:
             place(f"join_title_{key}_{seat}", x, y + 7)
         # (a seated player: the device's picture, then CONTROLLER over its pill, PROFILE over its pill; the pills'
         # bars are frame 0 at rest, 1 the focus's ice-blue glow (and ASSIGN's wait, pulsing), 2 filled (a flash))
-        lines += _join_picture(f"join_device_{seat}", "bitmaps/ae_seat_devices", 54, 30)
-        place(f"join_device_{seat}", x + 46, y + 28)
-        lines += _join_text(f"join_devlabel_{seat}", "CONTROLLER", "small", JOIN_BLUE, 0, 0, w)
-        place(f"join_devlabel_{seat}", x, y + 61)
-        for pill, top in (("dev", 75), ("prof", 122)):
+        # (sizes from 1080p, where the text is largest beside the pictures: the labels left over their pills, the
+        # device's small picture right of CONTROLLER; the armour at its own size, which a picture always is)
+        lines += _join_picture(f"join_device_{seat}", "bitmaps/ae_seat_devices", 30, 16)
+        place(f"join_device_{seat}", x + w - 37, y + 36)
+        lines += _join_text(f"join_devlabel_{seat}", "CONTROLLER", "small", JOIN_BLUE, 0, 0, 96, align="left")
+        place(f"join_devlabel_{seat}", x + 12, y + 35)
+        for pill, top in (("dev", 54), ("prof", 104)):
             lines += _join_picture(f"join_{pill}bar_{seat}", "bitmaps/ae_seat_profile_bar", 130, 28)
             place(f"join_{pill}bar_{seat}", x + 8, y + top)
             lines += _join_picture(f"join_{pill}arrow_l_{seat}", "bitmaps/arrow_sm_left", 12, 12)
@@ -2124,14 +2134,12 @@ def _join_screen() -> list:
                     place(name, x + 19, y + top + (4 if size == "large" else 7))
         # (ASSIGN's wait: the pill's whole width, no arrows)
         lines += _join_text(f"join_devwait_{seat}", "PRESS A BUTTON", "small", JOIN_WHITE, 0, 0, 126)
-        place(f"join_devwait_{seat}", x + 10, y + 82)
-        lines += _join_text(f"join_proflabel_{seat}", "PROFILE", "small", JOIN_BLUE, 0, 0, w)
-        place(f"join_proflabel_{seat}", x, y + 108)
-        lines += _join_picture(f"join_armour_{seat}", "ui\\shell\\bitmaps\\colors_sm", 67, 82)
+        place(f"join_devwait_{seat}", x + 10, y + 61)
+        lines += _join_text(f"join_proflabel_{seat}", "PROFILE", "small", JOIN_BLUE, 0, 0, 96, align="left")
+        place(f"join_proflabel_{seat}", x + 12, y + 85)
+        lines += _join_picture(f"join_armour_{seat}", "ui\\shell\\bitmaps\\colors_sm", 112, 136)
         # (the figure is drawn left in its frame, the profile panel's picture: placed so its figure is centred)
-        place(f"join_armour_{seat}", x + 47, y + 155)
-        lines += _join_text(f"join_controls_{seat}", "", "small", JOIN_BLUE, 0, 0, w - 8)
-        place(f"join_controls_{seat}", x + 4, y + 240)
+        place(f"join_armour_{seat}", x + 29, y + 134)
         # (an empty seat: the ring is the card's own picture; then the join buttons' legend, then OR PICK ONE: a
         # free device's pill a click seats)
         lines += _join_text(f"join_press_{seat}", "PRESS START", "large", JOIN_WHITE, 0, 0, w)

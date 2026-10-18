@@ -345,8 +345,14 @@ unsigned ae_platform_port_pick_update(
 	}
 	return 0;
 }
+int ae_platform_input_held_back(
+	void)
+{
+	return port_pick_blocks() || ae_seats_input_held_back();
+}
 #else
 /* (the dedicated server and Android: no picker) */
+int ae_platform_input_held_back(void) { return 0; }
 unsigned long ae_platform_port_pad(int port) { (void)port; return 0; }
 int ae_platform_port_of_pad(unsigned long pad_id) { (void)pad_id; return -1; }
 int ae_platform_port_give(int port, unsigned long pad_id) { (void)port; (void)pad_id; return -1; }
@@ -401,13 +407,7 @@ int ae_platform_stable_ports(
 	}
 	memcpy(after, stable_port_ids, sizeof(after));
 	SDL_UnlockSpinlock(&stable_port_lock);
-	/* (the LAN lobby's ASSIGN waiting, or its press not yet let go: no pad drives the game) */
-	if (port_pick_blocks())
-	{
-		for (port = 0; port < ports; port++)
-			gamepads[port] = NULL;
-		highest = 0;
-	}
+
 	for (port = 0; port < ports; port++)
 	{
 		char const *name;

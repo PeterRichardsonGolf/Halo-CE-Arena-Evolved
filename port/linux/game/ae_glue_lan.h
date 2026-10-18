@@ -29,6 +29,12 @@ int ae_lobby_leave_all(short controller);
 /* Server Setup's START GAME with no game hosted any more (it closed after the lobby was left, LAN party 2026-10-17:
 START GAME failed without a word): a line saying so; FALSE */
 int ae_lobby_server_gone(void);
+/* Server Setup's START GAME after the lobby was left (its game closed): the game hosted again, player 1 back in on
+their active profile, as Create Game does; FALSE (and the message) if it cannot be */
+struct widget_instance;
+struct event_record;
+unsigned char ae_lobby_server_rehost(struct widget_instance *widget, struct event_record *event,
+	unsigned char *widget_deleted);
 /* (menu_functions.c's lobby B, an AE hook line) whether the controller's player is the last person of this machine,
 the others of it LAN bots (ae_lan_bots.c: the host's spare controllers): their B then leaves as the last player's does
 (ae_lobby_leave_all, the bots too). The game counted the bots as this machine's players, so the person left alone,

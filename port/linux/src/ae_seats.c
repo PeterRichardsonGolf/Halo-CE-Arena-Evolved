@@ -678,12 +678,6 @@ int ae_seats_fill(
 		return 0;
 	}
 	seats_follow_pads(listed, count);
-	if (seat_map.waiting || seat_map.swallow)
-	{
-		for (seat = 0; seat < ports; seat++)
-			gamepads[seat] = NULL;
-		return 0;
-	}
 	for (seat = 0; seat < ports; seat++)
 	{
 		struct ae_seat const *taken = seat < AE_SEATS_MAXIMUM ? &seat_map.seats.seat[seat] : NULL;
@@ -933,9 +927,16 @@ long ae_seats_pressed_ago(
 	return (long)(SDL_GetTicks() - seat_map.pressed_at[seat]);
 }
 
+int ae_seats_input_held_back(
+	void)
+{
+	return seat_map.on && (seat_map.waiting || seat_map.swallow);
+}
+
 #else
 
 /* (the dedicated server and Android: no seats) */
+int ae_seats_input_held_back(void) { return 0; }
 void ae_seats_begin(void) {}
 void ae_seats_end(void) {}
 void ae_seats_end_released(void) {}

@@ -162,6 +162,8 @@ int ae_seats_assign_waiting(int *left_ms);
 void ae_seats_last_change(int *seat, int *other);
 /* ms since a seat's device was last pressed (any button or key), to flash its name; -1 never */
 long ae_seats_pressed_ago(int seat);
+/* ASSIGN waiting, or its press not yet let go: the pads' buttons held back from the game (xinput_sdl.c) */
+int ae_seats_input_held_back(void);
 
 /* (debug.test_input, ae_platform.c) its keys now: ENTER or SPACE, ESC */
 void ae_seats_test_keys(int join, int back);

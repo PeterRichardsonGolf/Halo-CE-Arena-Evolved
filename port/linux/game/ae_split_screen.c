@@ -213,8 +213,6 @@ unsigned long system_milliseconds(void);
 #define JOIN_MESSAGE_TIME 3000
 /* a seat's first presses, the one that took it, are not its CONTINUE */
 #define JOIN_PRESS_GUARD 600
-/* the longest layout name the card's line takes after "Controls: " (small_ui, the card's width) */
-#define JOIN_CONTROLS_FIT 9
 /* (menu_functions.c's) */
 #define JOIN_PROFILE_VALID_BIT 0x80000000UL
 #define JOIN_BUTTON_B 1
@@ -259,13 +257,6 @@ static struct
 	/* each seat's row its own up and down move between: 0 its CONTROLLER, 1 its PROFILE */
 	short row[AE_SEATS_MAXIMUM];
 } join;
-
-/* the layouts' names, as Settings > Gamepads > BUTTON LAYOUT has them (tools/port_settings.py) */
-static wchar_t const *const layout_names[] =
-{
-	L"Default", L"Swap triggers", L"Swap A, L trigger", L"Swap B, L trigger", L"Swap B, R stick", L"Bumper Jumper",
-	L"Recon", L"Hero", L"The Duke", L"Anniversary", L"Reclaimer", L"Zoom & Shoot", L"Bump & Jump", L"Green Fingers",
-};
 
 static void join_text(struct widget_instance *text_box, wchar_t const *text)
 {
@@ -475,7 +466,7 @@ static short leave_frame(struct ae_seat_view const *view)
 
 /* the widgets of a card that show for a seated player, and for an empty seat (tools/port_settings.py's _join_screen) */
 static char const *const seated_widgets[] = { "join_device", "join_devlabel", "join_devbar", "join_profbar",
-	"join_profarrow_l", "join_profarrow_r", "join_proflabel", "join_armour", "join_controls", "join_hit_dev_l",
+	"join_profarrow_l", "join_profarrow_r", "join_proflabel", "join_armour", "join_hit_dev_l",
 	"join_hit_dev_m", "join_hit_dev_r", "join_hit_prof_l", "join_hit_prof_m", "join_hit_prof_r" };
 static char const *const empty_widgets[] = { "join_press", "join_tojoin", "join_glyph0", "join_glyph1", "join_glyph2",
 	"join_glyph3", "join_glyphtext0", "join_glyphtext1", "join_glyphtext2", "join_glyphtext3", "join_pick",
@@ -545,7 +536,6 @@ static void join_card_update(struct widget_instance *screen, short seat)
 {
 	struct ae_seat_view view;
 	struct player_profile const *profile;
-	wchar_t controls[JOIN_TEXT_LENGTH];
 	short index, state;
 	int waiting = ae_seats_assign_waiting(NULL);
 	boolean flashing, mine_waits;
@@ -588,6 +578,7 @@ static void join_card_update(struct widget_instance *screen, short seat)
 		join_show(join_child(screen, "join_leavebtn", seat), FALSE);
 		join_show(join_child(screen, "join_leavekey", seat), FALSE);
 		join_show(join_child(screen, "join_leavek", seat), FALSE);
+		join_show(join_child(screen, "join_leave", seat), FALSE);
 		join_value(screen, "dev", seat, L"", FALSE, FALSE);
 		join_value(screen, "prof", seat, L"", FALSE, FALSE);
 		join_show(join_child(screen, "join_devarrow_l", seat), FALSE);
@@ -648,17 +639,6 @@ static void join_card_update(struct widget_instance *screen, short seat)
 	}
 	/* (NEW PROFILE: the first colour's armour, as a new profile has until it picks one) */
 	join_frame(join_child(screen, "join_armour", seat), profile ? (short)MAX(profile->primary_color_index, 0) : 0);
-	{
-		wchar_t const *layout = view.family == AE_SEAT_FAMILY_KEYBOARD ? L"Keyboard + mouse" :
-			profile && profile->controller_settings.button_preset < NUMBEROF(layout_names) ?
-			layout_names[profile->controller_settings.button_preset] : L"Default";
-
-		/* ("Controls: " when the line still fits the card, else the layout alone) */
-		join_concat(controls, join_length(layout) <= JOIN_CONTROLS_FIT ? L"Controls: " : L"", layout);
-	}
-	join_text(join_child(screen, "join_controls", seat), controls);
-	/* (a keyboard's controls are its own keys, not a layout: no line) */
-	join_show(join_child(screen, "join_controls", seat), view.family != AE_SEAT_FAMILY_KEYBOARD);
 }
 
 /* the seat map on, with no seat and no profile chosen (the screen's open, or its first update, whichever is first) */
@@ -999,6 +979,9 @@ int ae_platform_port_pick_waiting(int *left_ms);
 unsigned ae_platform_port_pick_update(int *port, int *other);
 
 #define LOBBY_PICK_ROWS 11
+/* the row's name's place: the PC lobby's (centred on the row), or left of the picker (its centre about a quarter in) */
+#define LOBBY_NAME_X 25
+#define LOBBY_PICK_NAME_X (-72)
 
 /* the row's player's port, from its text's "[Pn]" (only this machine's players, with two or more, have one); -1 */
 static short lobby_row_port(struct widget_instance *list, short row)
@@ -1142,22 +1125,30 @@ static void lobby_pick_update(struct widget_instance *list, unsigned bits)
 		boolean large;
 
 		any |= shown;
+		/* (the row's name: centred on the row, or on its left part when the picker takes the right) */
+		{
+			char item_name[24];
+			struct widget_instance *item, *text;
+
+			snprintf(item_name, sizeof(item_name), "list_item_%d", row);
+			item = child_named(list, item_name);
+			text = item ? child_named(item, "list_item_text") : NULL;
+			if (text)
+				text->horizontal_offset = shown ? LOBBY_PICK_NAME_X : LOBBY_NAME_X;
+		}
 		lobby_pick_show(screen, "lobby_pick_l", row, shown && !waits);
 		lobby_pick_show(screen, "lobby_pick_r", row, shown && !waits);
 		lobby_pick_show(screen, "lobby_pick_arrow_left", row, shown && !waits);
 		lobby_pick_show(screen, "lobby_pick_arrow_right", row, shown && !waits);
 		lobby_pick_show(screen, "lobby_pick_assign", row, shown && !waits);
 		lobby_pick_show(screen, "lobby_pick_cancel", row, waits);
-		if (shown)
-		{
-			if (waits)
-				snprintf(name, sizeof(name), "PRESS A BUTTON");
-			else
-				lobby_port_name(port, name, sizeof(name));
-		}
+		lobby_pick_show(screen, "lobby_pick_wait", row, waits);
+		if (shown && !waits)
+			lobby_port_name(port, name, sizeof(name));
 		else
 			name[0] = 0;
-		large = !waits && strlen(name) <= JOIN_LARGE_FIT;
+		shown = shown && !waits;
+		large = strlen(name) <= JOIN_LARGE_FIT;
 		snprintf(full, sizeof(full), "lobby_pick_value_large_%d", row);
 		join_show(child_named(screen, full), shown && large);
 		if (shown && large)

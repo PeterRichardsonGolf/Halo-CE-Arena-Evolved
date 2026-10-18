@@ -7445,7 +7445,7 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "ss start game"))
 		{
-			return server_start() && ae_split_screen_server_start(); /* AE hook */
+			return ae_lobby_server_rehost(widget, event, widget_deleted) && server_start() && ae_split_screen_server_start(); /* AE hook */
 		}
 		else if (!strcmp(name, "single prev cl item activated"))
 		{
