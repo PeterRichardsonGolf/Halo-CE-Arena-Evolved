@@ -1164,13 +1164,14 @@ static void lobby_pick_update(struct widget_instance *list, unsigned bits)
 			wchar_t number[2] = { (wchar_t)(L'1' + waiting), 0 }, text[JOIN_TEXT_LENGTH];
 
 			join_concat(text, L"PLAYER ", number);
-			join_concat(join.message_text, text, L": press any button on the controller to use.");
+			/* (the lobby's help line is 380 wide: these fit it at 1080p, where the longer ones were cut) */
+			join_concat(join.message_text, text, L": press a button on the new controller.");
 			join_text(help, join.message_text);
 		}
 		else if (join.message && system_milliseconds() < join.message_until)
 			join_text(help, join.message);
 		else
-			join_text(help, any ? L"Y or ASSIGN, then press a button on the controller to use." : L"");
+			join_text(help, any ? L"Y or ASSIGN, then a button on the new controller." : L"");
 	}
 }
 
