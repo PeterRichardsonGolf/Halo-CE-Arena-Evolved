@@ -979,7 +979,7 @@ unsigned ae_platform_port_pick_update(int *port, int *other);
 #define LOBBY_PICK_ROWS 11
 /* the row's name's place: the PC lobby's (centred on the row), or left of the picker (its centre about a quarter in) */
 #define LOBBY_NAME_X 25
-#define LOBBY_PICK_NAME_X (-72)
+#define LOBBY_PICK_NAME_X (-84) /* (-72 let "New001 2 [P2]" touch the arrow at 1080p) */
 
 /* the row's player's port, from its text's "[Pn]" (only this machine's players, with two or more, have one); -1 */
 static short lobby_row_port(struct widget_instance *list, short row)
