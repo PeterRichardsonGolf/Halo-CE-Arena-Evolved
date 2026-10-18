@@ -576,6 +576,19 @@ def engine_names(source: Path, start: str, count: int) -> list:
     return re.findall(r'"([^"\\]*)"', text[:text.index("}")])[:count]
 
 
+def pause_art(art):
+    lines = []
+    for piece in ("left", "center", "right"):
+        heights = [port_settings.pause_box_height(buttons) for buttons in port_settings.PAUSE_BOX_BUTTONS]
+        heights += list(port_settings.PAUSE_BOX_EXTRA_HEIGHTS)
+        lines.append(art.port_picture(f"pause/pausebox_{piece}", [
+            (port_settings.pause_box_svg(piece, height), 4 if piece == "center" else 16, 256) for height in heights]))
+    for piece in ("left", "center", "right"):
+        lines.append(art.port_picture(f"pause/objectives_{piece}", [
+            (port_settings.pause_box_svg(piece, 195, header=True), 4 if piece == "center" else 16, 256)]))
+    return lines
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tags", type=Path, required=True)
@@ -659,12 +672,8 @@ def main() -> None:
     # (the main menu's MENUS and its styles' rows, each style's own: tools/menu_row_art.py)
     art.pngs += menu_row_art.draw_all(MENUS)
     lines += menu_row_art.bitmaps_xml()
-    # (the in-game pause menu's taller box: menu_tags.c's pause_patch)
-    for piece in ("left", "center", "right"):
-        heights = [port_settings.pause_box_height(buttons) for buttons in port_settings.PAUSE_BOX_BUTTONS]
-        heights += list(port_settings.PAUSE_BOX_EXTRA_HEIGHTS)
-        lines.append(art.port_picture(f"pause/pausebox_{piece}", [
-            (port_settings.pause_box_svg(piece, height), 4 if piece == "center" else 16, 256) for height in heights]))
+    # (the in-game pause menu's taller box: menu_tags.c's pause_patch; the objectives' boxes)
+    lines += pause_art(art)
     # (voice chat's speaker, of a player who talks and of one muted: Lucide's
     # icons, port/assets/icons/lucide, white for network_voice.c to tint)
     lines.append(art.port_picture("voice/speaker", [

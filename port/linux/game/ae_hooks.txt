@@ -122,7 +122,6 @@ port/linux/game/map_share.c	for (index = 0; index < download->file_count; index+
 source/networking/network_server_manager.c	for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++) if (!network_game_server_client_machine_is_joined_to_game(server, &server->client_machines[i])) network_game_server_discard_held_players(i); /* AE hook */\nfor (i = 0; i < network_game_server_held_player_count; i++) /* AE hook */\nif (!network_game_add_player(&server->game, &network_game_server_held_players[i]) && ((network_game_server_held_players[i].player_list_index = NONE), !network_game_add_player(&server->game, &network_game_server_held_players[i]))) network_event("failed to put back a player held for a map download"); /* AE hook */
 # PlayStation button icons (DamnationCE v0.3.41): AE's own textures and placeholders (port/linux/src/ae_buttons.c,
 # port/linux/game/ae_buttons_tags.c, tools/ae_button_glyphs.py); upstream's high-res HUD table and code untouched
-source/interface/hud_messaging.c	struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */
 source/interface/hud_messaging.c	bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
 port/linux/game/hud_hires_tags.c	#include "ae_buttons_tags.h" /* AE hook */
 port/linux/game/hud_hires_tags.c	hud_hires_sprite_bitmaps_forget();\nae_buttons_tags_loaded(); /* AE hook */
@@ -842,3 +841,5 @@ port/linux/game/menu_tags.c	"ae split join open", "ae split join close", "ae spl
 port/linux/game/menu_tags.c	"ae split join update", /* AE hook */
 port/linux/game/menu_functions.c	if (!strncmp(name, "ae split ", 9)) /* AE hook */\nreturn ae_split_screen_event(name, widget, controller, widget_deleted);
 port/linux/game/menu_functions.c	if (!strcmp(name, "ae split join update")) /* AE hook */\nae_split_screen_join_update(widget);
+# OpenCE build-213 merge: COMPACT HUD's split-screen icon scale in single view (AE line, marked at the merge)
+source/interface/hud_messaging.c	scale = hud_split_screen_layout() ? 0.75f : 1.0f; /* AE hook */

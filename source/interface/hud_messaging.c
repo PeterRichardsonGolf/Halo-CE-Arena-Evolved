@@ -463,7 +463,6 @@ typedef char hud_globals_timer_definition_offset_assert[
 
 /* ---------- prototypes */
 
-struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index); /* AE hook */
 
 static struct hud_message_definition *find_free_hud_message(
 	struct hud_messaging_datum_definition *datum,
@@ -474,6 +473,11 @@ static void render_state_text(
 	rectangle2d *cursor_bounds,
 	wchar_t const *text,
 	boolean custom);
+/* port: original Xbox high-resolution glyphs, port/linux/game/hud_hires_tags.c */
+boolean hud_hires_button_draw(struct icon_hud_element_definition const *icon,
+	rectangle2d *cursor, pixel32 color);
+struct bitmap_data const *hud_hires_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index);
+
 static void render_state_bitmap(
 	rectangle2d *bounds,
 	rectangle2d *cursor_bounds,
@@ -554,9 +558,12 @@ static void render_state_bitmap(
 	if (bitmap && _texture_cache_bitmap_get_hardware_format(
 		(struct bitmap_data *)bitmap, FALSE, TRUE))
 	{
+		/* port: keep gameplay prompts on the high-resolution HUD path. */
 		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index); /* AE hook */
 		if (ae_hud_message_icon(bitmap, clip, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color, TEST_FLAG(icon->flags, _hud_icon_use_color_bit))) return; /* AE hook */
-		scale = hud_split_screen_layout() ? 0.75f : 1.0f;
+		if (hud_hires_button_draw(icon, cursor_bounds, color))
+			return;
+		scale = hud_split_screen_layout() ? 0.75f : 1.0f; /* AE hook */
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0);
 		point.y = (short)(cursor_bounds->y1 - icon->offset.y * scale);
 		hud_draw_bitmap_direct(
@@ -904,6 +911,9 @@ void hud_render_timer(
 		numbers.placement.offset = timer->position;
 		numbers.placement.scale.i = 1.0f;
 		numbers.placement.scale.j = 1.0f;
+		/* port: this scripted element has no authored scaling flags. The PC
+		 * digit renderer reads them, so stack data must not halve its glyphs. */
+		numbers.placement.multiplayer_scaling_flags = 0;
 
 		hud_number_index = interface_get_tag_index(_interface_hud_digits);
 		if (hud_number_index != NONE)

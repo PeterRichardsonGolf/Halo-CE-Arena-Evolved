@@ -90,6 +90,7 @@ struct text_hires_glyph
 };
 
 #define TEXT_HIRES_FIT_LETTERS 52
+int text_hires_enabled(void); /* port: port/linux/src/text_hires.c */
 long text_hires_font(char const *tag_name, float cap_height, short const *letter_widths, float oversample);
 int text_hires_enabled(void);
 int text_hires_covers(long font, unsigned long code);
@@ -836,9 +837,8 @@ static long hires_text_font_get(
 	short row;
 	long hires_font;
 
-	/* (asked first, so that the fonts found while it was on are not drawn
-	once it is off, and none is kept as having no high-res font while it is
-	off: the setting can change while the game runs) */
+	/* port: consult the committed setting before the font cache. In particular,
+	 * never cache NONE merely because high-res text was disabled. */
 	if (font_index == NONE || !text_hires_enabled())
 		return NONE;
 	font = font_definition_get(font_index);
