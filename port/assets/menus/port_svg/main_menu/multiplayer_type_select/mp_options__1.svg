@@ -7,6 +7,8 @@
 .arc { fill:none; stroke:#2896FF; stroke-width:4.904 }
 .f { fill:#2896FF; stroke:none }
 .red { stroke:#FF3A3A }
+.red-fill { fill:#FF3A3A }
+.blue-fill { fill:#2896FF }
 </style>
 <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.47"/></filter></defs>
 <g transform="translate(64.44 35.18) scale(1.6312)">

@@ -7,6 +7,8 @@
 .arc { fill:none; stroke:#2896FF; stroke-width:5.089 }
 .f { fill:#2896FF; stroke:none }
 .red { stroke:#FF3A3A }
+.red-fill { fill:#FF3A3A }
+.blue-fill { fill:#2896FF }
 </style>
 <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.53"/></filter><clipPath id="coop_0"><rect x="4" y="8" width="92" height="36"/></clipPath><clipPath id="coop_1"><rect x="4" y="44" width="92" height="36"/></clipPath><clipPath id="coop_screen"><rect x="4" y="8" width="92" height="72"/></clipPath></defs>
 <g transform="translate(67.40 42.97) scale(1.5720)">

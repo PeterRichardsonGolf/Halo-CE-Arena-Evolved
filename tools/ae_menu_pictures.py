@@ -142,11 +142,30 @@ def _split(name, cells, frame=(4, 8, 92, 72), k=0.5, top=7.2):
     return shapes + ["</g>", f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="3" class="e"/>']
 
 
-def _shield(cx, cy, w, h, cls):
-    outline = (f"M{cx},{cy - h / 2} L{cx + w / 2},{cy - h / 2 + h * 0.18} L{cx + w / 2},{cy + h * 0.05} "
-               f"Q{cx + w / 2},{cy + h * 0.35} {cx},{cy + h / 2} Q{cx - w / 2},{cy + h * 0.35} {cx - w / 2},{cy + h * 0.05} "
-               f"L{cx - w / 2},{cy - h / 2 + h * 0.18} Z")
-    return [f'<path d="{outline}" class="{cls}"/>']
+def _tyre(cx, cy, r, knobs=16, depth=1.6):
+    """a chunky off-road tyre's side: its tread a ring of square knobs (an even number, each a little over half its
+    pitch), its rim and hub inside"""
+    points = []
+    for i in range(knobs):
+        a0 = 2 * math.pi * i / knobs
+        a1, a2 = a0 + 2 * math.pi / knobs * 0.55, a0 + 2 * math.pi / knobs
+        for angle, radius in ((a0, r), (a1, r), (a1, r - depth), (a2, r - depth)):
+            points.append(f"{cx + radius * math.cos(angle):.2f},{cy + radius * math.sin(angle):.2f}")
+    return [f'<polygon points="{" ".join(points)}" class="b"/>', f'<circle cx="{cx}" cy="{cy}" r="7.5" class="l"/>',
+            f'<circle cx="{cx}" cy="{cy}" r="2.5" class="f"/>']
+
+
+def _flag(cross, lean, red):
+    """a CTF flag: a pole and its rectangular banner in the team's colour, a knob on top; the pole passes through
+    `cross` leaning `lean` degrees, its banner flying out on the side it leans to (a slight ripple, no flourish)"""
+    team, w = ("red", -34) if red else ("blue", 34)
+    banner = (f"M0,-54 Q{w * 0.25:.1f},-56.5 {w * 0.5:.1f},-54 Q{w * 0.75:.1f},-51.5 {w},-54 V-24 "
+              f"Q{w * 0.75:.1f},-21.5 {w * 0.5:.1f},-24 Q{w * 0.25:.1f},-26.5 0,-24 Z")
+    edge = " red" if red else ""
+    return [f'<g transform="translate({cross[0]} {cross[1]}) rotate({lean})">',
+            f'<path d="{banner}" class="b{edge} {team}-fill"/>',
+            f'<line x1="0" y1="-55" x2="0" y2="20" class="w{edge}"/>',
+            f'<circle cx="0" cy="-57" r="3.2" class="f {team}-fill"/>', "</g>"]
 
 
 def _octagon(cx, cy, r, cls):
@@ -177,12 +196,15 @@ def _pencil(tip, toward, length, width):
             f'<path d="M{at(length - 9, 1)} L{at(length - 9, -1)}" class="l"/>']
 
 
+# the Warthog's wheel arches (radius 19 about its wheels at x 24 and 76, y 68) where they meet its body's floor at y 60
+_ARCH = tuple(cx + side * math.sqrt(19 ** 2 - 8 ** 2) for cx in (24, 76) for side in (-1, 1))
+
 # each entry's drawing, in a 100 by 100 box (class b: black with the blue edge, as the game's own icons; l: a fine
 # blue line, the edge's weight; w: a heavy one; f: blue filled; arc: a countdown's band; e: an edge alone, drawn
-# again over what was clipped to it; red: the red team's edge). Drawn back to front so a part that meets another
-# tucks under its edge (no round cap or seam shows at a join). One grammar across the Multiplayer screen: a JOIN row
-# never shows a host; a CREATE row shows the host (a rack) broadcasting (arcs); the medium says where: the globe the
-# Internet, a cabled switch the LAN, a chain link a direct invite.
+# again over what was clipped to it; red: the red team's edge; red-fill, blue-fill: a team's colour filled). Drawn
+# back to front so a part that meets another tucks under its edge (no round cap or seam shows at a join). One grammar
+# across the Multiplayer screen: a JOIN row never shows a host; a CREATE row shows the host (a rack) broadcasting
+# (arcs); the medium says where: the globe the Internet, a cabled switch the LAN, a chain link a direct invite.
 MULTIPLAYER_ICONS = [
     # SERVER BROWSER: a list of games (a signal for each) searched with a lens; three rows, every one whole (the
     # lens sits below the short last row, over the window's corner)
@@ -249,16 +271,21 @@ GAMETYPE_ICONS = {
     3: ("items", [s for x in (6, 22, 38) for s in _cartridge(x, 12, 30, 86)] +
         ['<circle cx="63" cy="41" r="4.5" class="l"/>', '<path d="M82,40 Q92,40 88,52" class="w"/>',
          '<rect x="67" y="36" width="16" height="11" rx="2" class="b"/>', '<circle cx="75" cy="64" r="20" class="b"/>']),
-    # VEHICLE OPTIONS: a plain open-top off-road buggy from the side, its roll bar over the open cockpit (the
-    # tub dips there, so the bar does not close into a cab's roof; its feet tuck under the tub)
-    4: ("vehicles", ['<path d="M41,47 L45,25 H63 L72,44" class="w"/>',
-                     '<path d="M2,56 L6,47 L32,44 L38,40 H42 L46,47 H66 L71,40 H76 L96,47 L98,57 L94,62 H6 Z" '
-                     'class="b"/>',
-                     '<circle cx="21" cy="64" r="14" class="b"/>', '<circle cx="79" cy="64" r="14" class="b"/>',
-                     '<circle cx="21" cy="64" r="5" class="l"/>', '<circle cx="79" cy="64" r="5" class="l"/>']),
-    # TEAMPLAY OPTIONS: a red and a blue shield, plain; each one's inner line the same 7.5 in from its edge all round
-    6: ("teams", _shield(34, 50, 50, 72, "b red") + _shield(34, 50, 35, 55.5, "l red") +
-        _shield(66, 50, 50, 72, "b") + _shield(66, 50, 35, 55.5, "l")),
+    # VEHICLE OPTIONS: a Halo CE Warthog from the side, nose to the right (owner 10-18: true to the source, not a
+    # buggy): big knobby tyres in deep wheel arches, a long low hood dropping to an angular nose and its forward
+    # bumper, the open cab under its roll bar, and the chain gun on its post on the rear deck, its barrel pointing
+    # back (the post, the barrel and the roll bar's feet tuck under what they meet)
+    4: ("vehicles", ['<rect x="15" y="32" width="7" height="16" class="b"/>',
+                     '<g transform="translate(14 29) rotate(160)"><rect x="0" y="-3.5" width="20" height="7" rx="2" '
+                     'class="b"/><line x1="4" y1="0" x2="17" y2="0" class="l"/></g>',
+                     '<rect x="10" y="23" width="18" height="11" rx="2.5" class="b"/>',
+                     '<path d="M36,50 L40,29 L53,30 L61,46" class="w"/>',
+                     f'<path d="M3,60 L4,44 H31 L35,50 H55 L59,44 L80,42 L92,48 L95,56 L{_ARCH[3]:.1f},60 '
+                     f'A19,19 0 0 0 {_ARCH[2]:.1f},60 H{_ARCH[1]:.1f} A19,19 0 0 0 {_ARCH[0]:.1f},60 Z" class="b"/>',
+                     '<path d="M91,50 L99.5,53.5 L98.5,60 L92,60 Z" class="b"/>'] +
+        _tyre(24, 68, 15.5) + _tyre(76, 68, 15.5)),
+    # TEAMPLAY OPTIONS: a red and a blue CTF flag, crossed (the blue pole over the red), in the teams' colours
+    6: ("teams", _flag((50, 62), -22, True) + _flag((50, 62), 22, False)),
     # ARENA OPTIONS: the arena's walls and a trophy in them: the competitive rules (the handles and the stem tuck
     # under the cup, the cup's foot round, clear of the inner wall)
     7: ("arena", _octagon(50, 50, 46, "b") + _octagon(50, 50, 38, "l") +
@@ -289,8 +316,8 @@ INK = {
     "edit_gametypes": (3.9, 8.9, 102.1, 93.6),
     "name": (2.9, 23.9, 103.8, 85.1),
     "items": (4.9, 28.9, 96.1, 87.1),
-    "vehicles": (0.9, 23.4, 99.1, 79.1),
-    "teams": (7.9, 12.9, 92.1, 87.1),
+    "vehicles": (-6.5, 21.9, 100.6, 84.6),
+    "teams": (-2.9, 5.9, 102.9, 82.1),
     "arena": (6.4, 6.4, 93.6, 93.6),
     "nhe": (9.9, 2.9, 90.1, 96.1),
 }
@@ -304,7 +331,8 @@ def style(scale: float) -> str:
             f".w {{ fill:none; stroke:{BLUE}; stroke-width:{heavy:.3f}; stroke-linecap:round; stroke-linejoin:round }}\n"
             f".e {{ fill:none; stroke:{BLUE}; stroke-width:{edge:.3f}; stroke-linejoin:round }}\n"
             f".arc {{ fill:none; stroke:{BLUE}; stroke-width:{arc:.3f} }}\n"
-            f".f {{ fill:{BLUE}; stroke:none }}\n.red {{ stroke:{RED} }}\n</style>")
+            f".f {{ fill:{BLUE}; stroke:none }}\n.red {{ stroke:{RED} }}\n"
+            f".red-fill {{ fill:{RED} }}\n.blue-fill {{ fill:{BLUE} }}\n</style>")
 
 
 def _split_defs(shapes):
