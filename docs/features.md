@@ -72,8 +72,12 @@ gametype says. What their own game draws and how their own shots spread is
 up to their build.
 
 **Split screen**
-- **SPLIT SCREEN** in the PC menus' Multiplayer: a game on this PC for up to four players and up to 15 bots, set up on
-  GAME SETUP (the gametype and its options; no network rows), with the bots' rows in the lobby.
+- **SPLIT SCREEN** in the PC menus' Multiplayer: a game on this PC for up to four players and up to 15 bots. First a
+  JOIN screen: the first device to press START (ENTER or SPACE on the keyboard) is PLAYER 1, the next PLAYER 2, so the
+  keyboard and mouse can be any player. Each player picks their own profile there with their own LEFT and RIGHT (NEW
+  PROFILE makes one), B or ESC leaves the seat, and CONTINUE goes on to the map, the gametype and GAME SETUP (the
+  gametype and its options; no network rows), with the bots' rows in the lobby. A controller unplugged keeps its
+  player's seat until it is plugged back in; a device that presses START in the lobby joins there.
 - **PLAYFIGHT** (Settings > Game Options > BOTS): bots that move and aim but never shoot, for practice.
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
   you can start on your own.

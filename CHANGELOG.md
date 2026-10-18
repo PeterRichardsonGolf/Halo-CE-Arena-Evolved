@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Split screen's JOIN screen: Multiplayer > SPLIT SCREEN starts with four player cards. The first device to press
+  START (ENTER or SPACE on the keyboard) is PLAYER 1, the next PLAYER 2, so keyboard and mouse can be any player, and
+  each device stays that player's until it leaves: no more pad taking player 1 because it was plugged in first. Each
+  card shows the device, the player's profile (their own LEFT and RIGHT change it; NEW PROFILE makes one), the
+  armour, the controls and the device's own leave button. B or ESC leaves a seat; from a device with no seat it goes
+  back. CONTINUE goes on to the map and gametype as before. A device that presses START in the lobby joins there.
 - Controllers' back buttons: `input.back_right` and `input.back_left` in config.toml make a Switch 2 Pro
   Controller's GR and GL (an Xbox Elite's or DualSense Edge's upper paddles) press the Xbox button they name, so
   they follow your controller layout. Off by default; with Steam running, Steam Input takes the pad instead.
