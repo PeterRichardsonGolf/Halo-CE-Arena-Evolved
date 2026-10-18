@@ -189,6 +189,71 @@ static void test_bot_lines(void)
 	free(many);
 }
 
+/* spawn and flag lines (queue 141: CTF flags and spawns for maps that lack them, as the H2 collection's Terminal) */
+static void test_spawn_and_flag_lines(void)
+{
+	char const *text =
+		"layout 1 sidewinder.map 0a1b2c3d\n"
+		"clear spawns\n"
+		"remove spawn 3\n"
+		"spawn at 1 2 3\n"
+		"spawn at -4.5 6 0.25 facing 90 team blue games ctf slayer\n"
+		"SPAWN AT 0 0 0 games all team red\n"
+		"clear flags\n"
+		"remove flag 0\n"
+		"flag ctf at 10 20 1 team red\n"
+		"flag ctf at -10 -20 1 facing 180 team blue\n"
+		"flag hill at 0 0 0 team 3\n"
+		"flag teleport_from at 1 1 1 team 2\n"
+		"flag ball at 5 5 5\n";
+	static char const *const bad[] = {
+		"layout 1 m.map 00000001\nspawn 0 0 0\n",                         /* no at */
+		"layout 1 m.map 00000001\nspawn at 0 0\n",
+		"layout 1 m.map 00000001\nspawn at 0 0 0 team green\n",
+		"layout 1 m.map 00000001\nspawn at 0 0 0 team red team blue\n",   /* twice */
+		"layout 1 m.map 00000001\nspawn at 0 0 0 games\n",
+		"layout 1 m.map 00000001\nspawn at 0 0 0 games juggernaut\n",
+		"layout 1 m.map 00000001\nspawn at 0 0 0 games ctf ctf ctf ctf ctf\n", /* more than 4 */
+		"layout 1 m.map 00000001\nspawn at 0 0 0 facing\n",
+		"layout 1 m.map 00000001\nspawn at nan 0 0\n",
+		"layout 1 m.map 00000001\nremove spawn\n",
+		"layout 1 m.map 00000001\nremove spawn x\n",
+		"layout 1 m.map 00000001\nclear spawns now\n",
+		"layout 1 m.map 00000001\nflag at 0 0 0\n",
+		"layout 1 m.map 00000001\nflag bank at 0 0 0\n",                 /* the vegas bank: no line */
+		"layout 1 m.map 00000001\nflag ctf 0 0 0\n",
+		"layout 1 m.map 00000001\nflag ctf at 0 0 0 team 16\n",
+		"layout 1 m.map 00000001\nflag ctf at 0 0 0 team\n",
+		"layout 1 m.map 00000001\nflag ctf at 0 0 0 team red now\n",
+		"layout 1 m.map 00000001\nremove flag -1\n",
+	};
+	unsigned int i;
+
+	AE_CHECK(parse(text) == 0);
+	AE_CHECK(layout.clear_spawns && layout.clear_flags);
+	AE_CHECK(layout.removed_spawn_count == 1 && layout.removed_spawns[0] == 3);
+	AE_CHECK(layout.removed_flag_count == 1 && layout.removed_flags[0] == 0);
+	AE_CHECK(layout.spawn_count == 3 && layout.flag_count == 5);
+	AE_CHECK(layout.spawns[0].x == 1.0f && layout.spawns[0].z == 3.0f && layout.spawns[0].team == 0 &&
+		!layout.spawns[0].has_facing && layout.spawns[0].games[0] == AE_LAYOUT_GAMES_ALL && layout.spawns[0].games[1] == 0);
+	AE_CHECK(layout.spawns[1].has_facing && layout.spawns[1].facing_degrees == 90.0f && layout.spawns[1].team == 1 &&
+		layout.spawns[1].games[0] == 1 && layout.spawns[1].games[1] == 2 && layout.spawns[1].games[2] == 0);
+	AE_CHECK(layout.spawns[2].games[0] == AE_LAYOUT_GAMES_ALL && layout.spawns[2].team == 0 && layout.spawns[2].line == 6);
+	AE_CHECK(layout.flags[0].type == _ae_layout_flag_ctf && layout.flags[0].team == 0 && layout.flags[0].y == 20.0f);
+	AE_CHECK(layout.flags[1].team == 1 && layout.flags[1].has_facing && layout.flags[1].facing_degrees == 180.0f);
+	AE_CHECK(layout.flags[2].type == _ae_layout_flag_hill && layout.flags[2].team == 3);
+	AE_CHECK(layout.flags[3].type == _ae_layout_flag_teleport_from && layout.flags[3].team == 2);
+	AE_CHECK(layout.flags[4].type == _ae_layout_flag_ball && layout.flags[4].team == 0 && layout.flags[4].line == 13);
+	AE_CHECK(strcmp(ae_layout_flag_type_name(_ae_layout_flag_hill), "hill") == 0);
+	AE_CHECK(strcmp(ae_layout_flag_type_name(5), "?") == 0);
+	for (i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
+	{
+		if (parse(bad[i]) != 2)
+			printf("FAIL: not refused at line 2: %s", bad[i]);
+		AE_CHECK(parse(bad[i]) == 2);
+	}
+}
+
 static void test_limits(void)
 {
 	char *text = malloc(AE_LAYOUT_MAXIMUM_FILE_SIZE + 64);
@@ -230,6 +295,7 @@ int main(void)
 	test_tag_paths();
 	test_refusals();
 	test_bot_lines();
+	test_spawn_and_flag_lines();
 	test_limits();
 	printf("%s\n", failures ? "FAILED" : "ok");
 	return failures != 0;

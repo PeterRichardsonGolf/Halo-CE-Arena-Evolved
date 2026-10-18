@@ -106,6 +106,7 @@ symbols in this file:
 #include "units/units.h"
 #include "view_fov.h" /* port: port/linux/game/view_fov.c */
 #include "ae_panels.h" /* AE hook */
+#include "ae_hud_hires.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1391,6 +1392,7 @@ void hud_zoomed_layout_begin(
 	width = whole.x1 - whole.x0;
 	inset = (short)((width - width * 640 / halo_screen_width()) / 2);
 	*saved_window_bounds = render.camera.window_bounds;
+	ae_panels_zoom_element(TRUE); /* AE hook */
 	render.camera.window_bounds.x0 = (short)(whole.x0 + inset);
 	render.camera.window_bounds.x1 = (short)(whole.x1 - inset);
 }
@@ -1515,6 +1517,7 @@ void hud_zoomed_layout_end(
 	rectangle2d const *saved_window_bounds)
 {
 	render.camera.window_bounds = *saved_window_bounds;
+	ae_panels_zoom_element(FALSE); /* AE hook */
 }
 
 void hud_draw_static_element(
@@ -2397,6 +2400,7 @@ void hud_draw_numbers(
 				scale = hud_globals_get_scale(
 					TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
 			}
+			scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
 
 			if (TEST_FLAG(numbers->number_flags, _hud_number_show_trailing_m_bit))
 			{
@@ -2690,6 +2694,7 @@ boolean hud_numbers_bounds(
 	decimal_point_width = (real)(numbers->fractional_digits ? hud_number->decimal_point_width : 0);
 	scale = override_scale > 0.0f ? override_scale :
 		hud_globals_get_scale(TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
+	scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
 	hud_calculate_point(local_player_index, absolute_placement, &numbers->placement, NULL,
 		TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit), 0.0f, &origin);
 	width = ((digit_count - 1.0f) * hud_number->screen_width + decimal_point_width) * scale +

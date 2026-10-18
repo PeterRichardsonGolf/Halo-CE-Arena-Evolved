@@ -21,6 +21,16 @@ The file (version 1):
 	                                  ledge up or down): a bot whose way passes within a unit of the first point, moving
 	                                  towards the second, faces it and jumps, then goes on from where it lands; its route
 	                                  may also take the jump on purpose. The two points 0.5 to 20 units apart
+	clear spawns                      drop every player spawn of the map (then add the wanted ones)
+	remove spawn <n>                  drop the map's spawn n
+	spawn at <x> <y> <z> [facing <degrees>] [team red|blue] [games <up to 4 of all ctf slayer oddball king race>]
+	                                  a player spawn (team red when not given; games all when not given)
+	clear flags                       drop every netgame flag of the map (CTF flags, hills, teleporters ...)
+	remove flag <n>                   drop the map's flag n
+	flag <ctf|ctf_vehicle|ball|race|race_vehicle|teleport_from|teleport_to|hill> at <x> <y> <z> [facing <degrees>]
+	     [team red|blue|<0-15>]       a netgame flag: a CTF flag's team, a hill's or a race flag's number, a teleporter
+	                                  pair's number (team 0 when not given). Bug 139 / queue 141: maps without CTF flags
+	                                  (the H2 collection's Terminal) get them here
 	bot avoid <x> <y> <z> radius <r>  for the bots: a place they keep out of (a pit's edge, a ledge they fall from): the
 	                                  walkable surfaces whose middle lies within r of the point are closed to their routes,
 	                                  and no roaming place there; r more than 0, at most 50
@@ -58,6 +68,10 @@ map lacks is the applying half's business (that one item is skipped and logged: 
 #define AE_LAYOUT_BOT_JUMP_SHORTEST 0.5f
 #define AE_LAYOUT_BOT_JUMP_LONGEST 20.0f
 #define AE_LAYOUT_BOT_AVOID_LARGEST 50.0f
+#define AE_LAYOUT_MAXIMUM_SPAWNS 256
+#define AE_LAYOUT_MAXIMUM_FLAGS 64
+/* a spawn's game types, as the scenario's (game_engine.c: the engines' numbers, 12 = every gametype) */
+#define AE_LAYOUT_GAMES_ALL 12
 
 enum ae_layout_what
 {
@@ -124,6 +138,40 @@ struct ae_layout_bot_avoid
 	short line;
 };
 
+/* spawn at <x y z> ... */
+struct ae_layout_spawn
+{
+	real x, y, z;
+	boolean has_facing;
+	real facing_degrees;
+	short team;            /* 0 red, 1 blue */
+	short games[4];        /* the scenario's game types, 0 for none */
+	short line;
+};
+
+/* flag <type> at <x y z> ...: type as scenario_definitions.h's netgame flags */
+enum ae_layout_flag_type
+{
+	_ae_layout_flag_ctf = 0,
+	_ae_layout_flag_ctf_vehicle = 1,
+	_ae_layout_flag_ball = 2,
+	_ae_layout_flag_race = 3,
+	_ae_layout_flag_race_vehicle = 4,
+	_ae_layout_flag_teleport_from = 6,
+	_ae_layout_flag_teleport_to = 7,
+	_ae_layout_flag_hill = 8
+};
+
+struct ae_layout_flag
+{
+	short type;            /* enum ae_layout_flag_type */
+	short team;
+	real x, y, z;
+	boolean has_facing;
+	real facing_degrees;
+	short line;
+};
+
 struct ae_layout
 {
 	char map_file[AE_LAYOUT_MAP_FILE_SIZE];
@@ -141,6 +189,16 @@ struct ae_layout
 	struct ae_layout_bot_jump bot_jumps[AE_LAYOUT_MAXIMUM_BOT_JUMPS];
 	short bot_avoid_count;
 	struct ae_layout_bot_avoid bot_avoids[AE_LAYOUT_MAXIMUM_BOT_AVOIDS];
+	boolean clear_spawns;
+	short removed_spawn_count;
+	long removed_spawns[AE_LAYOUT_MAXIMUM_SPAWNS];
+	short spawn_count;
+	struct ae_layout_spawn spawns[AE_LAYOUT_MAXIMUM_SPAWNS];
+	boolean clear_flags;
+	short removed_flag_count;
+	long removed_flags[AE_LAYOUT_MAXIMUM_FLAGS];
+	short flag_count;
+	struct ae_layout_flag flags[AE_LAYOUT_MAXIMUM_FLAGS];
 };
 
 /* the file's text (length bytes, not necessarily terminated) read into *out: 0 when it is a layout of version 1 with
@@ -153,5 +211,8 @@ boolean ae_layout_for_map(struct ae_layout const *layout, char const *map_file, 
 
 /* an alias's name ("rockets"), for the log */
 char const *ae_layout_alias_name(short alias);
+
+/* a flag type's name ("ctf", "hill"), for the log */
+char const *ae_layout_flag_type_name(short type);
 
 #endif /* __AE_LAYOUT_RULES_H */

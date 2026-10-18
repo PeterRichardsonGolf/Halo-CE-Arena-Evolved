@@ -63,6 +63,13 @@ static struct
 	/* the layout's item names by the new list's index (name item <n>: n is the map's) */
 	short name_count;
 	struct { long item; char label[AE_LAYOUT_LABEL_SIZE]; } names[AE_LAYOUT_MAXIMUM_NAMES];
+	/* the player spawns' and netgame flags' lists, as the items' (queue 141) */
+	unsigned int original_spawn_address, original_flag_address;
+	long original_spawn_count, original_flag_count;
+	struct player_starting_location *spawns;
+	long spawn_count;
+	struct scenario_netgame_flag *flags;
+	long flag_count;
 } applied;
 
 static struct ae_layout layout;
@@ -385,6 +392,111 @@ static void apply_items(struct scenario *scenario)
 		count - added, original_count, added, skipped, count);
 }
 
+/* whether the map's entry index is one of the removed */
+static boolean removed(long const *list, short count, long index)
+{
+	short at;
+
+	for (at = 0; at < count; at++)
+		if (list[at] == index)
+			return TRUE;
+	return FALSE;
+}
+
+static void apply_spawns(struct scenario *scenario)
+{
+	struct player_starting_location const *original =
+		(struct player_starting_location const *)xbox_pointer(applied.original_spawn_address);
+	long original_count = applied.original_spawn_count;
+	long capacity = original_count + layout.spawn_count, index, count = 0;
+	struct player_starting_location *spawns;
+
+	if (!layout.clear_spawns && !layout.removed_spawn_count && !layout.spawn_count)
+		return;
+	spawns = (struct player_starting_location *)malloc((size_t)(capacity ? capacity : 1) * sizeof(*spawns));
+	if (!spawns)
+	{
+		platform_log("layout: no memory for %ld spawns (not applied)", capacity);
+		return;
+	}
+	memset(spawns, 0, (size_t)(capacity ? capacity : 1) * sizeof(*spawns));
+	if (!layout.clear_spawns)
+		for (index = 0; index < original_count; index++)
+			if (!removed(layout.removed_spawns, layout.removed_spawn_count, index))
+				spawns[count++] = original[index];
+	for (index = 0; index < layout.spawn_count; index++)
+	{
+		struct ae_layout_spawn const *spawn = &layout.spawns[index];
+		struct player_starting_location *entry = &spawns[count++];
+		short game;
+
+		/* (the map's first spawn's BSP, else the first BSP: a multiplayer map has one) */
+		entry->structure_bsp_reference_index = original_count > 0 ? original[0].structure_bsp_reference_index : 0;
+		entry->position.x = spawn->x;
+		entry->position.y = spawn->y;
+		entry->position.z = spawn->z;
+		entry->facing = spawn->has_facing ? spawn->facing_degrees * DEGREES_TO_RADIANS : 0.0f;
+		entry->team_index = spawn->team;
+		for (game = 0; game < 4; game++)
+			entry->game_types[game] = spawn->games[game];
+		platform_log("layout: line %d: spawn %ld at %.2f %.2f %.2f team %d", spawn->line, count - 1, entry->position.x,
+			entry->position.y, entry->position.z, entry->team_index);
+	}
+	if (applied.spawns)
+		free(applied.spawns);
+	applied.spawns = spawns;
+	applied.spawn_count = count;
+	scenario->players.address = XBOX_ADDRESS(spawns);
+	scenario->players.count = count;
+	platform_log("layout: spawns %ld of the map's %ld kept, %d added: %ld in all", count - layout.spawn_count,
+		original_count, layout.spawn_count, count);
+}
+
+static void apply_flags(struct scenario *scenario)
+{
+	struct scenario_netgame_flag const *original =
+		(struct scenario_netgame_flag const *)xbox_pointer(applied.original_flag_address);
+	long original_count = applied.original_flag_count;
+	long capacity = original_count + layout.flag_count, index, count = 0;
+	struct scenario_netgame_flag *flags;
+
+	if (!layout.clear_flags && !layout.removed_flag_count && !layout.flag_count)
+		return;
+	flags = (struct scenario_netgame_flag *)malloc((size_t)(capacity ? capacity : 1) * sizeof(*flags));
+	if (!flags)
+	{
+		platform_log("layout: no memory for %ld flags (not applied)", capacity);
+		return;
+	}
+	memset(flags, 0, (size_t)(capacity ? capacity : 1) * sizeof(*flags));
+	if (!layout.clear_flags)
+		for (index = 0; index < original_count; index++)
+			if (!removed(layout.removed_flags, layout.removed_flag_count, index))
+				flags[count++] = original[index];
+	for (index = 0; index < layout.flag_count; index++)
+	{
+		struct ae_layout_flag const *flag = &layout.flags[index];
+		struct scenario_netgame_flag *entry = &flags[count++];
+
+		entry->position.x = flag->x;
+		entry->position.y = flag->y;
+		entry->position.z = flag->z;
+		entry->facing = flag->has_facing ? flag->facing_degrees * DEGREES_TO_RADIANS : 0.0f;
+		entry->type = flag->type;
+		entry->team_index = flag->team;
+		platform_log("layout: line %d: flag %ld %s at %.2f %.2f %.2f team %d", flag->line, count - 1,
+			ae_layout_flag_type_name(flag->type), entry->position.x, entry->position.y, entry->position.z, entry->team_index);
+	}
+	if (applied.flags)
+		free(applied.flags);
+	applied.flags = flags;
+	applied.flag_count = count;
+	scenario->netgame_flags.address = XBOX_ADDRESS(flags);
+	scenario->netgame_flags.count = count;
+	platform_log("layout: flags %ld of the map's %ld kept, %d added: %ld in all", count - layout.flag_count,
+		original_count, layout.flag_count, count);
+}
+
 static void apply_vehicles(struct scenario *scenario)
 {
 	long element_size = 0;
@@ -439,15 +551,23 @@ static void apply_vehicles(struct scenario *scenario)
 	platform_log("layout: %ld vehicle%s removed", removed, removed == 1 ? "" : "s");
 }
 
-int ae_layout_memory(unsigned long address, long size)
+/* whether the size bytes at address lie in a block of count elements of element_size at block */
+static int memory_in(void const *block, long count, unsigned long element_size, unsigned long address, long size)
 {
 	unsigned long start, end;
 
-	if (!applied.items || size <= 0)
+	if (!block || size <= 0)
 		return 0;
-	start = (unsigned long)XBOX_ADDRESS(applied.items);
-	end = start + (unsigned long)applied.item_count * sizeof(*applied.items);
+	start = (unsigned long)XBOX_ADDRESS(block);
+	end = start + (unsigned long)count * element_size;
 	return address >= start && address < end && (unsigned long)size <= end - address;
+}
+
+int ae_layout_memory(unsigned long address, long size)
+{
+	return memory_in(applied.items, applied.item_count, sizeof(*applied.items), address, size) ||
+		memory_in(applied.spawns, applied.spawn_count, sizeof(*applied.spawns), address, size) ||
+		memory_in(applied.flags, applied.flag_count, sizeof(*applied.flags), address, size);
 }
 
 struct ae_layout const *ae_layout_bot_hints(void)
@@ -481,8 +601,10 @@ void ae_layout_apply(void)
 	if (!scenario)
 		return;
 	/* (this load of the map has it already: a replay without a reload) */
-	if (applied.scenario == scenario && applied.items &&
-		scenario->netgame_equipment.address == XBOX_ADDRESS(applied.items))
+	if (applied.scenario == scenario &&
+		((applied.items && scenario->netgame_equipment.address == XBOX_ADDRESS(applied.items)) ||
+		(applied.spawns && scenario->players.address == XBOX_ADDRESS(applied.spawns)) ||
+		(applied.flags && scenario->netgame_flags.address == XBOX_ADDRESS(applied.flags))))
 	{
 		return;
 	}
@@ -491,12 +613,28 @@ void ae_layout_apply(void)
 	layout_applied = FALSE;
 	applied.original_address = scenario->netgame_equipment.address;
 	applied.original_count = scenario->netgame_equipment.count;
+	applied.original_spawn_address = scenario->players.address;
+	applied.original_spawn_count = scenario->players.count;
+	applied.original_flag_address = scenario->netgame_flags.address;
+	applied.original_flag_count = scenario->netgame_flags.count;
 	if (applied.items)
 	{
 		/* (the last map's list: the tag data it was hung on is gone with that map) */
 		free(applied.items);
 		applied.items = NULL;
 		applied.item_count = 0;
+	}
+	if (applied.spawns)
+	{
+		free(applied.spawns);
+		applied.spawns = NULL;
+		applied.spawn_count = 0;
+	}
+	if (applied.flags)
+	{
+		free(applied.flags);
+		applied.flags = NULL;
+		applied.flag_count = 0;
 	}
 	if (!map_file(file, sizeof(file), map_path, sizeof(map_path)) ||
 		!layout_path(map_path, file, path, sizeof(path)))
@@ -520,10 +658,13 @@ void ae_layout_apply(void)
 			layout.map_hash, file, hash);
 		return;
 	}
-	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names, %d bot jumps, %d bot avoids)",
-		path, layout.item_count, layout.removed_count, layout.clear_items ? "" : "no ", layout.vehicle_rule_count,
-		layout.name_count, layout.bot_jump_count, layout.bot_avoid_count);
+	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names, %d bot jumps, %d bot avoids, "
+		"%d spawns, %d flags)", path, layout.item_count, layout.removed_count, layout.clear_items ? "" : "no ",
+		layout.vehicle_rule_count, layout.name_count, layout.bot_jump_count, layout.bot_avoid_count, layout.spawn_count,
+		layout.flag_count);
 	layout_applied = TRUE;
 	apply_items(scenario);
 	apply_vehicles(scenario);
+	apply_spawns(scenario);
+	apply_flags(scenario);
 }

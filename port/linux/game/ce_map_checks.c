@@ -234,6 +234,7 @@ static boolean ce_tag_index_check(
 		struct ce_tag_instance *instance = &instances[index];
 		char const *name = ce_image_pointer(image, instance->name, 1);
 
+		if (instance->group_tag == 0xffffffff && instance->base_address == 0xffffffff && !instance->indexed) continue; /* AE hook */
 		if ((instance->tag_index & 0xffff) != (unsigned long)index)
 			return ce_refuse("tag %ld's handle is %08lx", index, instance->tag_index);
 		if (!name || !memchr(name, 0, image->base + image->size - instance->name))

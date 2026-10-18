@@ -610,6 +610,12 @@ source/game/game_engine.c	ae_stage_map_check(global_stage.map_name, sizeof(globa
 # ENEMIES between FRIENDS and NO (strings.xml / tools/port_settings.py STRING_INSERTS)
 source/game/game_engine.h	_radar_players_enemies, /* AE hook */
 source/game/game_engine.c	#include "ae_radar.h" /* AE hook */
+# bug 139 (ae_mode_guard.c): a mode the map cannot play is Slayer, told as the game starts; a mode with no spawn of
+# its own spawns players at every spawn
+source/game/game_engine.c	#include "ae_mode_guard.h" /* AE hook */
+source/game/game_engine.c	if (ae_mode_guard_new_map(&global_variant)) game_engine = game_engines[global_variant.game_engine_index]; /* AE hook */
+source/game/game_engine.c	if (!match_game_type(game_engine_get_type(), 4, starting_location->game_types) && !ae_mode_guard_any_spawns()) /* AE hook */
+source/game/game_engine.c	if (ae_mode_guard_message()) mode = ae_mode_guard_message(); /* AE hook */
 source/game/game_engine.c	draw_object = ae_radar_draw_object(draw_object, unit_index, game_engine_motion_sensor_local_player); /* AE hook */
 source/game/game_engine.c	static char const *const radar_players[] = { "all", "friends", "none", "enemies" }; /* AE hook */
 source/interface/hud.c	#include "ae_radar.h" /* AE hook */
@@ -767,3 +773,15 @@ port/linux/game/bots.c	ae_bots_vehicle_world_point(target_player->unit_index, &b
 port/linux/game/bots.c	if (ae_bots_vehicle_goal(bot, player_index, position, fighting)) return; /* AE hook */
 port/linux/game/bots.c	ae_bots_vehicle_move(bot, bot_index, &tick); /* AE hook */
 port/linux/src/port_config.c	{ "debug.bot_vehicles", _config_integer, "1", "HALO_BOT_VEHICLES", _environment_value, _platform_all, /* AE hook */
+# Invader-built Custom Edition maps (Halo Flawless Cowboy Edition's Gearbox maps) keep empty tag slots: group and
+# data 0xffffffff, named MISSINGNO.; nothing refers to them, so the tag index check skips them
+port/linux/game/ce_map_checks.c	if (instance->group_tag == 0xffffffff && instance->base_address == 0xffffffff && !instance->indexed) continue; /* AE hook */
+# high-resolution HUD digits (Halo Flawless Cowboy Edition's maps: screen digit width 18) drawn at the stock size
+source/interface/hud_draw.c	#include "ae_hud_hires.h" /* AE hook */
+source/interface/hud_draw.c	scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
+source/interface/hud_draw.c	scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
+source/interface/hud_messaging.c	#include "ae_hud_hires.h" /* AE hook */
+source/interface/hud_messaging.c	digit_advance = (short)(long)((real)digit_advance * ae_hud_number_scale(hud_number->screen_width)); /* AE hook */
+# the sniper's zoomed readouts (the weapon HUD's zoomed elements) are drawn under AE's HUD too (owner 2026-10-17)
+source/interface/hud_draw.c	ae_panels_zoom_element(TRUE); /* AE hook */
+source/interface/hud_draw.c	ae_panels_zoom_element(FALSE); /* AE hook */

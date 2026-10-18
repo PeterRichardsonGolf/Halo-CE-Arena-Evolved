@@ -155,6 +155,7 @@ symbols in this file:
 #ifdef HALO_64BIT
 #include "memory/data.h"
 #include "ae_panels.h" /* AE hook */
+#include "ae_hud_hires.h" /* AE hook */
 #endif
 
 /* ---------- constants */
@@ -911,6 +912,7 @@ void hud_render_timer(
 				HUD_NUMBER_DEFINITION_GET(hud_number_index);
 
 			digit_advance = (short)(long)((real)hud_number->screen_width * 2.0f);
+			digit_advance = (short)(long)((real)digit_advance * ae_hud_number_scale(hud_number->screen_width)); /* AE hook */
 		}
 
 		switch (timer->corner)

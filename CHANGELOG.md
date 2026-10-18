@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- A gametype a map cannot play no longer crashes the game or leaves everyone dead: CTF on a map with no CTF flags
+  (or King, Oddball, Race without their flags) is played as Slayer and every player is told so as the game starts;
+  a mode with no spawns of its own uses all of the map's spawns.
+- Map layout files can now place player spawns and netgame flags (`clear spawns`, `remove spawn <n>`, `spawn at ...`,
+  `clear flags`, `remove flag <n>`, `flag ctf|hill|ball|race|teleport_from|teleport_to ... at ...`), so a map pack can
+  give a map CTF flags it never had.
 - SPLIT SCREEN in the PC menus' Multiplayer (after Create Game's LAN): a game on this PC only, up to four players
   and up to 15 bots. The map, the gametype, Server Setup with only the gametype's options (no name, listing or
   password), then the lobby; another controller's START joins there. The lobby's last rows are BOTS, BOT SKILL, PLAYFIGHT and BOT TEAMS (team games), the same settings as Game
