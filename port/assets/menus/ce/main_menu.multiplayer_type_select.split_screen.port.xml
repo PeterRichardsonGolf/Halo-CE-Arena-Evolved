@@ -314,7 +314,7 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_message" type="text" controller="1" width="290" height="24" font="ui\small_ui" color="#FFFFBA40" align="left" text_y="5" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_more" type="text" controller="1" width="320" height="24" text="Up to 4 players on one PC; bots in the lobby." font="ui\small_ui" color="#FF2896FF" align="right" text_y="5" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_more" type="text" controller="1" width="320" height="24" text="Up to 4 players on one PC." font="ui\small_ui" color="#FF2896FF" align="right" text_y="5" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child">
 		<child widget="main_menu/multiplayer_type_select/split_screen/split_screen_continue" x="380" y="1"/>

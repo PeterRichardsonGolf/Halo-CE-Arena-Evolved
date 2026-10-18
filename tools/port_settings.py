@@ -1916,7 +1916,7 @@ def _join_screen() -> list:
     place("join_help_nobody", 20, 414)
     lines += _join_text("join_message", "", "small", JOIN_AMBER, 0, 0, 290, align="left", height=24, text_y=5)
     place("join_message", 20, 441)
-    lines += _join_text("join_more", "Up to 4 players on one PC; bots in the lobby.", "small", JOIN_BLUE, 0, 0, 320,
+    lines += _join_text("join_more", "Up to 4 players on one PC.", "small", JOIN_BLUE, 0, 0, 320,
                         align="right", height=24, text_y=5)
     place("join_more", 310, 441)
     # (CONTINUE and BACK where the lobby's last two buttons are; left and right are each player's own profile, so
