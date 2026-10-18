@@ -12,6 +12,7 @@ A-Z, then map sharing's downloads (maps_shared). A later one of a name is logged
 
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
+#include "cseries/errors.h"
 #include "cache/cache_files.h"
 #include "interface/ui_widget.h"
 #include "interface/ui_widget_instance.h"
@@ -67,6 +68,33 @@ static boolean read_header(char const *path, unsigned char *header, unsigned lon
 		read = 0;
 	CloseHandle(file);
 	return read == size;
+}
+
+/* a mod's (modded disc's) main menu map too big for the main menu's cache file (cache_files_windows.c's
+MAIN_MENU_CACHE_FILE_MAXIMUM_SIZE): its header's inflated size (offset 8) over it, of the main menu's type (offset 0x60:
+2). The Halo 2 Mappack Collection's ui.map inflates to 51.6 MB, and asserted "no cache file can hold map 'ui'" at start
+(item 140a): the stock one is used instead, said once in the log */
+#define AE_MAIN_MENU_CACHE_MAXIMUM 0x02300000UL
+
+boolean ae_map_folders_mod_map_refused(char const *path, char const *map_name)
+{
+	static char said[AE_MAP_NAME_SIZE];
+	unsigned char header[0x64];
+	unsigned long inflated, type;
+
+	if (!read_header(path, header, sizeof(header)) || memcmp(header, "daeh", 4))
+		return FALSE;
+	inflated = header[8] | (header[9] << 8) | (header[10] << 16) | ((unsigned long)header[11] << 24);
+	type = header[0x60] | (header[0x61] << 8);
+	if (type != 2 || inflated <= AE_MAIN_MENU_CACHE_MAXIMUM)
+		return FALSE;
+	if (strncmp(said, map_name, sizeof(said)))
+	{
+		strncpy(said, map_name, sizeof(said) - 1);
+		error(_error_silent, "mod: %s inflates to %lu bytes, more than the main menu's cache file holds (%lu): "
+			"the game's own %s.map is used", path, inflated, AE_MAIN_MENU_CACHE_MAXIMUM, map_name);
+	}
+	return TRUE;
 }
 
 /* a name a map is found by: no folder in it */

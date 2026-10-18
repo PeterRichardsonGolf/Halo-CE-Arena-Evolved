@@ -18,6 +18,9 @@ struct widget_instance;
 void ae_map_folders_scan(void (*scan)(char const *directory));
 /* cache_files_map_file_path's: an Xbox map's file in its folder when the mod's and the maps folder's are not there */
 void ae_map_folders_xbox_path(char const *map_name, char *path, long size);
+/* cache_files_map_file_path's: TRUE for a mod's main menu map the main menu's cache file cannot hold (then the game's
+own is used; logged once) */
+boolean ae_map_folders_mod_map_refused(char const *path, char const *map_name);
 /* map_families.c's: a Custom Edition map's file in a page folder of maps_ce\ or maps\ce\ (a cache file of the version
 given), after the family's own places; TRUE: path is it */
 boolean ae_map_folders_ce_find(char const *file, long version, char *path, long size);

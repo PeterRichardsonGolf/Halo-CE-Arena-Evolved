@@ -714,7 +714,7 @@ void cache_files_map_file_path(
 			if (file != INVALID_HANDLE_VALUE)
 			{
 				CloseHandle(file);
-				return;
+				if (!ae_map_folders_mod_map_refused(path, map_name)) return; /* AE hook */
 			}
 		}
 	}
