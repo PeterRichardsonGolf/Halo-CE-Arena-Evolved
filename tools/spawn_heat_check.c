@@ -114,6 +114,12 @@ static int check_spawn_count;
 
 static struct game_engine check_engine;
 
+/* (ae_mode_guard.c's: the map's spawns are rated by their game types, as the stock rules do) */
+boolean ae_mode_guard_any_spawns(void)
+{
+	return FALSE;
+}
+
 void *datum_get(struct data_array *data, long index)
 {
 	if (data != player_data || (index & 0xFFFF) >= CHECK_PLAYERS || !check_player_used[index & 0xFFFF])

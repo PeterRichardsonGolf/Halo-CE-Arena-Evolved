@@ -21,6 +21,8 @@ INERT = {
     "debug.memory_watch": "Android's write tracking by page protection, upstream's normal mode (not a test aid)",
     "debug.profile_record_when": "when debug.profile_record (off) starts; profiling builds only",
     "debug.profile_memory": "debug.profile_record's buffer; profiling builds only",
+    "debug.bot_links": "the bots' normal use of teleporters and layout jumps (bots only; false is for tests)",
+    "debug.bot_vehicles": "the bots' normal vehicle seats, 1 = guns and riding (bots only; 0 and 2 are for tests)",
 }
 
 
