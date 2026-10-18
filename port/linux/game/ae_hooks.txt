@@ -935,3 +935,7 @@ port/linux/src/xbox_textures.c	/* Arena Evolved has not OpenCE's Custom Edition 
 port/linux/src/xbox_textures.c	enum { _custom_edition_channels_xbox }; /* AE hook */
 port/linux/src/xbox_textures.c	static const unsigned char channel_order = _custom_edition_channels_xbox, custom_edition_channel_sources[1][4] = { { 0, 1, 2, 3 } }; /* AE hook */
 port/linux/src/xbox_textures.c	#endif /* AE hook */
+# a layout item's facing turns it on an Xbox map too, as on a Custom Edition map (owner 2026-10-18, the H2 demakes'
+# shotguns): ae_layout.c marks the entries a layout line faced
+source/game/game_engine.c	#include "ae_layout.h" /* AE hook */
+source/game/game_engine.c	if (cache_file_tags_are_ce() || ae_layout_equipment_faces(equipment->flags)) /* AE hook */

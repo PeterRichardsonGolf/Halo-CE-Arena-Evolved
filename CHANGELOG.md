@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Map layout files: an item's `facing` now turns it on an Xbox map too (an H2 demake), as on a Custom Edition map, and
+  `drop` makes an item a little above the floor so it falls and lies on its side, as a dropped weapon does.
 ## 0.3.4-beta - 2026-10-18
 
 - A map layout file can now drop placed scenery and other objects: `remove scenery "protected 54"` or

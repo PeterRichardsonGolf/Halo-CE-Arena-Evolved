@@ -50,6 +50,11 @@ struct ae_vehicle_definition_head
 };
 #define AE_VEHICLE_TYPE_TURRET 6 /* vehicles.c's _vehicle_type_turret */
 #define AE_EQUIPMENT_CREATED_AT_REST_BIT 0 /* game_engine.c's _equipment_created_at_rest_bit */
+/* an entry a layout line faced (its facing): game_engine.c faces an Xbox map's item by it too, where the Xbox faced
+items only one way (an unused bit of the entry's flags: the game reads the first alone) */
+#define AE_EQUIPMENT_LAYOUT_FACING_BIT 30
+/* how far above the floor a "drop" item is made: a short fall that settles it as a dropped weapon lies */
+#define AE_LAYOUT_DROP_HEIGHT 0.25f
 #define AE_GAME_ENGINE_ALL 12 /* game_engine.c's _game_engine_all: an entry's game type for every gametype */
 
 #define PATH_SIZE 260
@@ -323,6 +328,11 @@ static void name_kept(long original, long now)
 		}
 }
 
+boolean ae_layout_equipment_faces(long equipment_flags)
+{
+	return TEST_FLAG(equipment_flags, AE_EQUIPMENT_LAYOUT_FACING_BIT);
+}
+
 boolean ae_layout_item_label(long equipment_index, char *label, long size)
 {
 	short name;
@@ -405,6 +415,14 @@ static void apply_items(struct scenario *scenario)
 			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, TRUE);
 		else
 			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, FALSE);
+		/* (drop: a little above the floor and not at rest, so it falls onto its side, as Halo 2's lie: owner
+		2026-10-18, Coagulation's shotguns) */
+		if (item->drop)
+		{
+			entry->position.z += AE_LAYOUT_DROP_HEIGHT;
+			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, FALSE);
+		}
+		SET_FLAG(entry->flags, AE_EQUIPMENT_LAYOUT_FACING_BIT, item->has_facing);
 		if (item->has_facing)
 			entry->facing = item->facing_degrees * DEGREES_TO_RADIANS;
 		if (item->respawn_seconds > 0)
@@ -417,8 +435,8 @@ static void apply_items(struct scenario *scenario)
 		if (item->team != _ae_layout_team_unset)
 			entry->team_index = (short)(item->team == _ae_layout_team_neutral ? NONE : item->team);
 		platform_log("layout: line %d: item %ld at %.2f %.2f %.2f%s", item->line, count - 1, entry->position.x,
-			entry->position.y, entry->position.z, TEST_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT) ?
-			" (on the floor)" : " (no floor below: it falls)");
+			entry->position.y, entry->position.z, item->drop ? " (dropped: it falls onto the floor)" :
+			TEST_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT) ? " (on the floor)" : " (no floor below: it falls)");
 		added++;
 	}
 	/* (the game's free is debug_free, which takes no NULL) */

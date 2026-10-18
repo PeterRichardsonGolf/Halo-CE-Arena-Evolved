@@ -121,6 +121,8 @@ struct ae_layout_item
 	short respawn_seconds; /* -1: the map's own */
 	short team;            /* enum ae_layout_team */
 	boolean games_all;     /* games all: in every gametype (the entry's own game types otherwise) */
+	boolean drop;          /* drop: made a little above the floor, not at rest, so it falls and settles as a dropped
+	                          weapon does (on its side) */
 	short line;            /* the file's line, for the log */
 };
 

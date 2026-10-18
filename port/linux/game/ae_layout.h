@@ -26,6 +26,10 @@ int ae_layout_memory(unsigned long address, long size);
 has one */
 boolean ae_layout_item_label(long equipment_index, char *label, long size);
 
+/* (game_engine.c's item spawn, AE hook) whether a netgame equipment entry's facing is a layout line's, so an Xbox
+map's item turns by it as a Custom Edition map's does */
+boolean ae_layout_equipment_faces(long equipment_flags);
+
 /* (ae_bots_travel.c) the applied layout's bot lines (bot jump, bot avoid): the layout itself, NULL when the map has
 none applied or no bot lines */
 struct ae_layout;

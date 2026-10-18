@@ -613,6 +613,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_radar.h" /* AE hook */
 #include "ae_mode_guard.h" /* AE hook */
+#include "ae_layout.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -10830,7 +10831,7 @@ static void game_engine_update_item_spawn(
 				/* port: Halo PC faces a Custom Edition map's items the way
 				their placements do, where the Xbox copied only the position */
 #ifdef HALO_CUSTOM_EDITION
-				if (cache_file_tags_are_ce())
+				if (cache_file_tags_are_ce() || ae_layout_equipment_faces(equipment->flags)) /* AE hook */
 					vector3d_from_angle(&placement_data.forward, equipment->facing);
 #endif
 				object_index = object_new(&placement_data);
