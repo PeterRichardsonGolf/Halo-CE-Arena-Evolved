@@ -1847,6 +1847,7 @@ static void render_weapon_hud(
 				decimal_value = NONE;
 			}
 
+			if (zoomed_layout && !ae_panels_zoomed_number_kept(state_index)) zoomed_layout = FALSE; /* AE hook */
 			if (zoomed_layout)
 				hud_zoomed_layout_begin(&window_bounds);
 			hud_draw_numbers(

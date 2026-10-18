@@ -81,6 +81,11 @@ void ae_panels_zoom_element(boolean begin)
 		zoom_elements = 0;
 }
 
+boolean ae_panels_zoomed_number_kept(short state_type)
+{
+	return (boolean)(!ae_hud_style_is_ae() || ae_panel_zoomed_number_is_readout(state_type));
+}
+
 boolean ae_panels_hiding_ce(void)
 {
 	if (!hiding || zoom_elements)

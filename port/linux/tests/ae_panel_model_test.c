@@ -416,6 +416,20 @@ static void test_script_blink(void)
 	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, -5, FALSE), 1.0f));
 }
 
+static void test_zoomed_numbers(void)
+{
+	short state;
+
+	/* the sniper's range and elevation readouts stay */
+	AE_CHECK(ae_panel_zoomed_number_is_readout(6));
+	AE_CHECK(ae_panel_zoomed_number_is_readout(7));
+	/* the weapon's own counts are the AE ammo group's (an H2CE map's total rounds flagged "only when zoomed") */
+	for (state = 0; state < 6; state++)
+		AE_CHECK(!ae_panel_zoomed_number_is_readout(state));
+	AE_CHECK(!ae_panel_zoomed_number_is_readout(-1));
+	AE_CHECK(!ae_panel_zoomed_number_is_readout(8));
+}
+
 int main(void)
 {
 	test_weapon_table();
@@ -430,6 +444,7 @@ int main(void)
 	test_row_lit();
 	test_hit_trail();
 	test_script_blink();
+	test_zoomed_numbers();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

@@ -367,3 +367,8 @@ real ae_panel_script_blink_fade(boolean blinking, long tick, boolean reduced_mot
 		return tick % AE_PANEL_SCRIPT_BLINK_CALM_TICKS < AE_PANEL_SCRIPT_BLINK_TICKS ? AE_PANEL_SCRIPT_BLINK_DIM : 1.0f;
 	return (tick / AE_PANEL_SCRIPT_BLINK_TICKS) % 2 == 0 ? 1.0f : AE_PANEL_SCRIPT_BLINK_DIM;
 }
+
+boolean ae_panel_zoomed_number_is_readout(short state_type)
+{
+	return (boolean)(state_type == AE_PANEL_WEAPON_NUMBER_DISTANCE || state_type == AE_PANEL_WEAPON_NUMBER_ELEVATION);
+}
