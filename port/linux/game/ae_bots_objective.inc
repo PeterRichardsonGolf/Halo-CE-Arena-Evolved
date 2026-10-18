@@ -519,10 +519,10 @@ static boolean ae_bots_objective_set_goal(struct bots_bot *bot, long bot_index, 
 		if (state->patrol_behaviour != state->behaviour || now >= state->patrol_until_tick ||
 			bots_distance2d(&state->patrol_point, position) < AE_BOTS_OBJECTIVE_THERE)
 		{
-			state->pause_until_tick = -1;
 			long spot_surface;
 			real_point3d spot;
 
+			state->pause_until_tick = -1;
 			state->patrol_behaviour = state->behaviour;
 			state->patrol_until_tick = now + TICKS_PER_SECOND * (3 + (long)(bots_random(bot) % 4));
 			if (ae_bots_objective_spot(bot, &point, defend ? 1.5f : 0.0f, defend ? 6.0f : 1.2f, &spot, &spot_surface))

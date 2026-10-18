@@ -332,7 +332,7 @@ static void ae_bots_vehicle_look(struct bots_bot *bot, long bot_index, struct bo
 			offer.reserved = ae_bots_vehicle_reserved(bot_index, iterator.index, seat_index);
 			offer.recently_left = iterator.index == state->left_vehicle_index && tick->now < state->left_until_tick;
 			score = ae_bots_vehicle_seat_score(&situation, &offer);
-			if (config_integer("debug.bot_trace") > 0)
+			if (ae_bots_trace_level() > 0)
 			{
 				platform_log("bots: trace %ld bot %ld vehicle %lx %s seat %d %s: distance %.1f off its way %.1f detour %.1f speed %.1f "
 					"alive %d upright %d driver %d reserved %d left %d goal %.1f fighting %d winning %d carrying %d holds %d: "
@@ -622,7 +622,7 @@ static void ae_bots_vehicle_drive_tick(struct bots_bot *bot, long bot_index, str
 	input.stalled = (float)state->stall_ticks / TICKS_PER_SECOND;
 	input.reversing = tick->now < state->reverse_until_tick ? (float)(state->reverse_until_tick - tick->now) / TICKS_PER_SECOND : 0.0f;
 	ae_bots_vehicle_drive(&input, &output);
-	if (config_integer("debug.bot_trace") > 0 && tick->now % TICKS_PER_SECOND == bot_index)
+	if (ae_bots_trace_level() > 0 && tick->now % TICKS_PER_SECOND == bot_index)
 	{
 		platform_log("bots: trace %ld bot %ld drives at (%.1f %.1f %.1f) speed %.1f heading %.0f to waypoint (%.1f %.1f) "
 			"%.1f off, error %.0f, turn after %.0f, goal (%.1f %.1f) %.1f off, path %s %d/%d, stalled %.1f, reversing %.1f "

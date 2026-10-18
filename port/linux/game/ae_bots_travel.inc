@@ -134,11 +134,7 @@ static struct bots_tick *ae_travel_tick_now;
 /* (debug.bot_trace) a line for each via chosen, dropped, made */
 static void ae_travel_trace(struct bots_bot *bot, char const *what, long via, real a, real b)
 {
-	static long trace = -1;
-
-	if (trace < 0)
-		trace = MAX(config_integer("debug.bot_trace"), 0);
-	if (trace <= 0)
+	if (ae_bots_trace_level() <= 0)
 		return;
 	platform_log("bots: travel trace %ld bot %ld %s %ld (%.1f %.1f)", game_time_get(), (long)(bot - bots_globals.bots) + 1,
 		what, via, (double)a, (double)b);
@@ -354,8 +350,10 @@ static void ae_travel_check_via(struct bots_bot *bot, struct ae_travel_bot *trav
 	{
 		char const *why = NULL;
 
-		/* (health up: a pack taken, this one or one beside it) */
-		if (object && object->object.body_vitality > travel->pack_health + 0.05f)
+		/* (health up with the pack gone: taken. Health up with it still there is REACH health's own regeneration, not a
+		pack: the detour goes on until the pack is not needed) */
+		if (object && object->object.body_vitality > travel->pack_health + 0.05f &&
+			!ae_bots_travel_pack_there(travel->pack_object))
 		{
 			ae_travel_trace(bot, "pack health", travel->pack_object, travel->pack_health, object->object.body_vitality);
 			ae_travel.packs_taken++;
@@ -491,7 +489,9 @@ boolean ae_bots_travel_search(struct bots_bot *bot, long unit_index)
 	real_point3d position;
 	long before;
 
-	if (ae_travel_searching || !ae_travel.ready || bot->goal_surface_index == NONE ||
+	/* (only the bot's own feet: the driving spike's search for its vehicle, debug.bot_vehicles 2, gets no teleporter
+	or pack on the way) */
+	if (ae_travel_searching || !ae_travel.ready || bot->goal_surface_index == NONE || unit_index != bot->unit_index ||
 		bots_globals.tick_searches >= BOTS_SEARCHES_A_TICK)
 	{
 		return FALSE;
@@ -857,6 +857,14 @@ static void ae_travel_report(long now)
 		ae_travel.near_goals,
 		ae_travel.near_goals ? (double)ae_travel.near_goal_ticks / ae_travel.near_goals / TICKS_PER_SECOND : 0.0,
 		ae_travel.goals_left, ae_travel.no_progress, spots[0] ? spots : " none");
+}
+
+/* the tick's bot and controls let go at the end of its update (ae_bots_events_end): no later caller of
+bots_follow_path finds another bot's stack */
+static void ae_bots_travel_tick_end(void)
+{
+	ae_travel_tick_bot = NULL;
+	ae_travel_tick_now = NULL;
 }
 
 void ae_bots_travel_tick(struct bots_bot *bot, long bot_index, struct bots_tick *tick)

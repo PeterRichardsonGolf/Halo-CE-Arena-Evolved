@@ -22,6 +22,7 @@ weapon, a grenade or its target, its own state, and the minute line. The choices
 /* port/linux/src/port_config.c */
 const char *config_string(char const *name);
 unsigned long config_changes(void);
+long config_integer(char const *name);
 void platform_log(char const *format, ...);
 
 /* ---------- the settings */
@@ -40,6 +41,19 @@ static int level_named(char const *name)
 	return -1;
 }
 
+long ae_bots_trace_level(void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static long level;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		level = MAX(config_integer("debug.bot_trace"), 0);
+	}
+	return level;
+}
+
 int ae_bots_combat_setting_level(boolean movement)
 {
 	static unsigned long read_at = (unsigned long)-1;
@@ -56,21 +70,23 @@ int ae_bots_combat_setting_level(boolean movement)
 
 /* ---------- weapons, grenades, targets */
 
+/* (the last weapon asked about: its tag index is another weapon's on the next map, so ae_bots_combat_reset forgets it) */
+static long precision_definition = NONE;
+static boolean precision_answer;
+
 boolean ae_bots_combat_precision_weapon(long definition_index)
 {
-	static long last_definition = NONE;
-	static boolean last_answer;
 	char const *name;
 
 	if (definition_index == NONE)
 		return FALSE;
-	if (definition_index == last_definition)
-		return last_answer;
+	if (definition_index == precision_definition)
+		return precision_answer;
 	name = tag_get_name(definition_index);
-	last_definition = definition_index;
-	last_answer = ae_burst_rifle_definition(definition_index) ||
+	precision_definition = definition_index;
+	precision_answer = ae_burst_rifle_definition(definition_index) ||
 		(name && ((strstr(name, "pistol") && !strstr(name, "plasma")) || strstr(name, "sniper")));
-	return last_answer;
+	return precision_answer;
 }
 
 real ae_bots_combat_grenade_speed(long unit_index)
@@ -109,6 +125,7 @@ static struct ae_bots_combat_bot combat_bots[BOTS_MAXIMUM];
 void ae_bots_combat_reset(void)
 {
 	csmemset(combat_bots, 0, sizeof(combat_bots));
+	precision_definition = NONE;
 }
 
 struct ae_bots_combat_bot *ae_bots_combat_bot_state(long bot_index, long unit_index)

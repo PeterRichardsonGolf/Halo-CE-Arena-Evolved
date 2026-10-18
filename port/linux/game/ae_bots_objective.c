@@ -29,6 +29,7 @@ shows its flag, ball, hill or juggernaut on the HUD), never more.
 #include "ae_juggernaut.h"
 #include "ae_strip_engine.h"
 #include "ae_bots_objective.h"
+#include "ae_bots_combat.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -397,11 +398,7 @@ void ae_bots_objective_note(long bot_index, long player_index, short behaviour)
 	/* (debug.bot_trace: each change of what it does) */
 	if (behaviour != notes[bot_index].behaviour)
 	{
-		static long trace = -1;
-
-		if (trace < 0)
-			trace = config_integer("debug.bot_trace") > 0 ? 1 : 0;
-		if (trace)
+		if (ae_bots_trace_level() > 0)
 			platform_log("bots: trace %ld bot %ld now %s", snapshot.tick, n, ae_bots_behaviour_name(behaviour));
 		notes[bot_index].behaviour = behaviour;
 	}

@@ -47,6 +47,14 @@ static long ae_bots_fight_reaction(struct bots_bot *bot, struct bots_tick *tick,
 		ae_bots_combat_hash01((unsigned long)bot->player_index, (unsigned long)bot->target_first_seen_tick));
 }
 
+/* a unit's distance from a place: a rider's from its seat in the world (ae_bots_vehicle_point), not its seat offset */
+static real ae_combat_unit_distance(long unit_index, real_point3d const *position)
+{
+	real_point3d point = ae_bots_vehicle_point(unit_index);
+
+	return bots_distance3d(&point, position);
+}
+
 static long ae_bots_fight_look_jitter(struct bots_bot *bot, struct bots_tick *tick)
 {
 	return ae_bots_combat_look_jitter(ae_bots_combat_hash01((unsigned long)bot->player_index ^ 0x5bd1e995UL,
@@ -75,7 +83,7 @@ static void ae_bots_fight_share(struct bots_bot *bot, struct bots_tick *tick, lo
 		player = player_try_and_get(other->player_index);
 		if (!player || player->unit_index == NONE || player->unit_index != other->unit_index ||
 			player->team_index != tick->player->team_index ||
-			bots_distance3d(&object_get(player->unit_index)->object.position, &tick->position) > reach)
+			ae_combat_unit_distance(player->unit_index, &tick->position) > reach)
 		{
 			continue;
 		}

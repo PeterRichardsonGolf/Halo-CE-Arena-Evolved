@@ -59,6 +59,8 @@ struct ae_bots_combat_bot
 };
 /* every bot starts over (a new map) */
 void ae_bots_combat_reset(void);
+/* debug.bot_trace (0: off), read again when the settings change: every bot lane's trace lines */
+long ae_bots_trace_level(void);
 struct ae_bots_combat_bot *ae_bots_combat_bot_state(long bot_index, long unit_index);
 
 /* the counters of the minute line */

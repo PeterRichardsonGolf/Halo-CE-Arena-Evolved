@@ -184,6 +184,8 @@ void ae_bots_events_begin(struct bots_bot *bot, long bot_index, struct bots_tick
 	(void)bot;
 }
 
+static void ae_bots_travel_tick_end(void); /* (ae_bots_travel.inc, included after) */
+
 void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *tick)
 {
 	struct ae_bots_event_state *state;
@@ -195,6 +197,7 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 	real dist;
 	char extra[160];
 
+	ae_bots_travel_tick_end();
 	if (!ae_bots_events_on() || bot_index < 0 || bot_index >= BOTS_MAXIMUM)
 		return;
 	state = &ae_bots_event_states[bot_index];
