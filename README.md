@@ -17,7 +17,7 @@ HCS settings, with ideas of its own. [Halo 1: NHE](https://halo1nhe.com/)'s own 
 as an option. It is built on [OpenCE](https://github.com/OpenCommunityEdition/OpenCE), the port of the Halo:
 Combat Evolved decompilation, and grew from [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce).
 
-> **Status: early and in active development.** The current pre-release is 0.3.3-beta. The Linux 64-bit build is
+> **Status: early and in active development.** The current pre-release is 0.3.4-beta. The Linux 64-bit build is
 > the one played and tested; the Windows 64-bit build is built by the same automated checks but is not test-played
 > here; the other platforms build from the same code but are untested here.
 

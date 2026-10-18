@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.4-beta - 2026-10-18
+
 - Split screen's JOIN screen: Multiplayer > SPLIT SCREEN starts with four player cards. The first device to press
   START (ENTER or SPACE on the keyboard) is PLAYER 1, the next PLAYER 2, so keyboard and mouse can be any player, and
   each device stays that player's until it leaves: no more pad taking player 1 because it was plugged in first. Each
