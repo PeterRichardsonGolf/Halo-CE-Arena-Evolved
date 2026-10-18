@@ -15,6 +15,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - A multiplayer game's pause menu SETTINGS no longer lists CHANGE COLOR: its Spartans are the main menu's pictures, which
   a game map has not got, so the screen showed an empty box. Change your color from the main menu's Settings.
 - The pause box's "B =CANCEL" is no longer cut at 1080p.
+- The JOIN screen's OPTIONS (a PlayStation controller's) is a pill, as on the controller, no longer the same round chip
+  as START; BOTS' SHOOTING and MOVEMENT SKILL say BOT SKILL (they were cut at 1080p); the lobby's controller picker
+  help fits at 1080p.
 - The teleporters of the H2 Demakes Coagulation, Headlong and Warlock no longer draw their glow inside a black card:
   the maps' own shader blended a picture with no transparency, which Arena Evolved now adds instead when those maps
   load. A map's "incompatible bitmap type" errors are logged once each, not at every frame.
@@ -94,8 +97,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Map sharing on a LAN is faster: a host whose players are all on the local network sends maps at up to 16 MB/s
   (`network.map_share_lan_upload`); with a player on the internet it keeps `network.map_share_upload` (1 MB/s).
 - A split screen game's setup screen is titled GAME SETUP (LAN and internet games keep SERVER SETUP).
-- START GAME on Server Setup after the lobby closed (its host gone) says so ("The game closed. Press B and host the
-  game again.") instead of doing nothing.
+- START GAME on Server Setup after the lobby was left (the game it hosted closed) hosts the game again, with player 1
+  on the active profile, instead of doing nothing; if that cannot be done it says so ("The game closed. Press B and
+  host the game again.").
 - A mod's main menu map (`ui.map`) too big for the game's menu memory (such as the H2 Mappack Collection's) is left
   out with a line in the log, and the stock menus are used, instead of crashing.
 - Bots: small fixes from the bots review (a bot no longer counts itself in a search, a weapon pack counts as taken only
