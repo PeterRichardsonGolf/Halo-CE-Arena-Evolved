@@ -14,7 +14,7 @@ int main(void)
 	AE_CHECK(ae_hud_number_scale(13) == 1.0f);
 	AE_CHECK(ae_hud_number_scale(0) == 1.0f);
 	AE_CHECK(ae_hud_number_scale(-5) == 1.0f);
-	/* (Flawless Cowboy Edition's: twice the stock width, drawn at half) */
+	/* (a rebuilt Gearbox map's: twice the stock width, drawn at half) */
 	AE_CHECK(ae_hud_number_scale(18) == 0.5f);
 	AE_CHECK(ae_hud_number_scale(14) > 0.64f && ae_hud_number_scale(14) < 0.65f);
 	AE_CHECK(ae_hud_number_scale(127) * 127.0f > 8.99f && ae_hud_number_scale(127) * 127.0f < 9.01f);

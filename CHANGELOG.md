@@ -14,9 +14,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 - Xbox maps that carry Halo PC's pause menus (Halo OG's Digsite maps) get the Custom Edition maps' pause repair:
   no dead CHANGE SETTINGS row, and the split screen pause menus fit each player's view instead of running off it.
-- Custom Edition maps rebuilt with Invader (Halo Flawless Cowboy Edition's copies of the Gearbox maps: Danger
-  Canyon, Death Island, Gephyrophobia, Ice Fields, Infinity, Timberland) load: their empty tag slots no longer refuse
-  the whole map.
+- Custom Edition maps rebuilt with Invader (such as Halo Custom Edition's Gearbox maps rebuilt with a high-resolution
+  HUD: Danger Canyon, Death Island, Gephyrophobia, Ice Fields, Infinity, Timberland) load: their empty tag slots no
+  longer refuse the whole map.
 - HUD digits made for a high-resolution HUD (those maps' own) are drawn at the stock size: the flag waypoint's
   distance, the classic HUD's ammo and grenade counts and the scripted timer were twice their size.
 - With HUD STYLE AE, the sniper rifle's zoomed readouts (range and elevation numbers, angle ticks, caption) show

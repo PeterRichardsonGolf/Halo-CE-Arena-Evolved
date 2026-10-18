@@ -1,7 +1,7 @@
 /*
 AE_HUD_HIRES.H
 
-A map's HUD digits made for a high-resolution HUD (Halo Flawless Cowboy Edition's Custom Edition maps:
+A map's HUD digits made for a high-resolution HUD (Halo Custom Edition's Gearbox maps rebuilt with one:
 ui/hud/counter.hud_number with a digit sheet twice the size and a screen digit width of 18 where the stock tag has
 9, meant to be drawn at half scale) are drawn at the stock digits' size: hud_draw.c's hud_draw_numbers scales its
 digits, their spacing and its trailing m by this factor (an AE hook line). Every number drawn from the map's digits
