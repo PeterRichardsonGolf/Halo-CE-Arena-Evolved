@@ -61,6 +61,11 @@ int ae_seats_taken(struct ae_seats const *seats);
 int ae_seats_present(struct ae_seats const *seats);
 /* the gaps closed (P1, _, P3 -> P1, P2): moved[old seat] = its new seat (-1: empty); returns the seats taken */
 int ae_seats_close_gaps(struct ae_seats *seats, int moved[AE_SEATS_MAXIMUM]);
+/* the controller picker (spinner or ASSIGN): this device is seat's from now on. A device another seat has is
+swapped: that seat gets this seat's device (both must be taken: a device is never taken from a player to fill an
+empty seat). An empty or held seat takes a free device. Returns the other seat of a swap, the seat itself when no
+swap, -1 when refused */
+int ae_seats_assign(struct ae_seats *seats, int seat, int kind, unsigned long pad_id, char const *key);
 
 /* ---- the seat map (ae_seats.c): on from the JOIN screen until the machine leaves split screen; off, the ports are
 the stable pad ports' (ae_pad_ports.c) and the keyboard is port 0's, as ever */
@@ -85,8 +90,17 @@ enum
 	/* START from a fifth device */
 	AE_SEATS_FULL = 4,
 	/* a seat's pad unplugged, or back */
-	AE_SEATS_CHANGED = 8
+	AE_SEATS_CHANGED = 8,
+	/* the picker: a device given to a seat (ASSIGN's press, a spinner); a swap between two seats; ASSIGN's wait over
+	with nothing given (cancelled, or no press in time) */
+	AE_SEATS_ASSIGNED = 16,
+	AE_SEATS_SWAPPED = 32,
+	AE_SEATS_WAIT_ENDED = 64
 };
+
+/* a device's short name for the picker (KEYBOARD, XBOX, DUALSENSE, DUALSHOCK, SWITCH PRO, JOY-CON, PAD), with " n"
+when number > 0 (two of a family are connected); name is SDL's, for the kind of a family's pad */
+void ae_seats_short_name(int family, char const *name, int number, char *out, int size);
 
 struct ae_seat_view
 {
@@ -111,6 +125,43 @@ void ae_seats_view(int seat, struct ae_seat_view *view);
 void ae_seats_leave_seat(int seat);
 /* the gaps closed: moved[old seat] = new seat (-1 none); returns the seats taken */
 int ae_seats_close(int moved[AE_SEATS_MAXIMUM]);
+
+/* ---- the controller picker (the JOIN cards' CONTROLLER spinners and ASSIGN, the lobby's rows) */
+
+#define AE_SEATS_DEVICES_MAXIMUM 17
+#define AE_SEATS_ASSIGN_WAIT_MS 10000
+
+struct ae_seat_device
+{
+	int kind;
+	unsigned long pad_id;
+	int family;
+	/* the seat it has, -1 none */
+	int seat;
+	/* its short name (ae_seats_short_name, numbered when two share it) */
+	char name[24];
+};
+
+/* the keyboard, then every pad connected (SDL's order); the number listed */
+int ae_seats_devices(struct ae_seat_device *list, int maximum);
+/* a seated seat's spinner: the next or previous device (direction +1 / -1), given to it at once (a swap when
+another player has it); AE_SEATS_* bits */
+unsigned ae_seats_cycle(int seat, int direction);
+/* an empty seat's spinner: its candidate, a free device (kind AE_SEAT_EMPTY: none free); cycled; and taken (the
+candidate seated: AE_SEATS_ASSIGNED, else 0) */
+void ae_seats_candidate(int seat, struct ae_seat_device *device);
+void ae_seats_candidate_cycle(int seat, int direction);
+unsigned ae_seats_candidate_take(int seat);
+/* ASSIGN: the next press on any device is the seat's (a keyboard key: the keyboard; ESC or the seat's own B
+cancels); every device's input is kept from the game until then, and until the press is let go */
+void ae_seats_assign_wait(int seat);
+void ae_seats_assign_cancel(void);
+/* the seat waiting, -1 none; and the time left in ms */
+int ae_seats_assign_waiting(int *left_ms);
+/* the last change (AE_SEATS_ASSIGNED / SWAPPED): the seat, and the other seat of a swap (-1) */
+void ae_seats_last_change(int *seat, int *other);
+/* ms since a seat's device was last pressed (any button or key), to flash its name; -1 never */
+long ae_seats_pressed_ago(int seat);
 
 /* (debug.test_input, ae_platform.c) its keys now: ENTER or SPACE, ESC */
 void ae_seats_test_keys(int join, int back);

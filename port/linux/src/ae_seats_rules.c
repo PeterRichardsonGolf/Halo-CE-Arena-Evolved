@@ -4,6 +4,7 @@ AE_SEATS_RULES.C
 Split screen's seats: who sits where (ae_seats.h). No SDL here.
 */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "ae_seats.h"
@@ -198,4 +199,102 @@ int ae_seats_close_gaps(
 	}
 	*seats = closed;
 	return next;
+}
+
+static int seat_of_device(
+	struct ae_seats const *seats,
+	int kind,
+	unsigned long pad_id)
+{
+	return kind == AE_SEAT_KEYBOARD ? ae_seats_keyboard(seats) : ae_seats_of_pad(seats, pad_id);
+}
+
+int ae_seats_assign(
+	struct ae_seats *seats,
+	int seat,
+	int kind,
+	unsigned long pad_id,
+	char const *key)
+{
+	struct ae_seat mine;
+	int other;
+
+	if (!seats || !valid(seat) || (kind != AE_SEAT_KEYBOARD && kind != AE_SEAT_PAD) ||
+		(kind == AE_SEAT_PAD && !pad_id))
+	{
+		return -1;
+	}
+	other = seat_of_device(seats, kind, pad_id);
+	if (other == seat)
+		return seat;
+	if (other < 0)
+	{
+		seat_set(&seats->seat[seat], kind, pad_id, key);
+		return seat;
+	}
+	/* (another player's: a swap, only between two players with devices) */
+	if (seats->seat[seat].kind == AE_SEAT_EMPTY || seats->seat[seat].held)
+		return -1;
+	mine = seats->seat[seat];
+	seats->seat[seat] = seats->seat[other];
+	seats->seat[other] = mine;
+	return other;
+}
+
+static int contains(
+	char const *text,
+	char const *word)
+{
+	size_t length = strlen(word);
+
+	for (; text && *text; text++)
+	{
+		size_t i;
+
+		for (i = 0; i < length && text[i]; i++)
+		{
+			char c = text[i];
+
+			if (c >= 'a' && c <= 'z')
+				c = (char)(c - 'a' + 'A');
+			if (c != word[i])
+				break;
+		}
+		if (i == length)
+			return 1;
+	}
+	return 0;
+}
+
+void ae_seats_short_name(
+	int family,
+	char const *name,
+	int number,
+	char *out,
+	int size)
+{
+	char const *word = "PAD";
+
+	if (!out || size <= 0)
+		return;
+	switch (family)
+	{
+	case AE_SEAT_FAMILY_KEYBOARD:
+		word = "KEYBOARD";
+		number = 0;
+		break;
+	case AE_SEAT_FAMILY_XBOX:
+		word = "XBOX";
+		break;
+	case AE_SEAT_FAMILY_PLAYSTATION:
+		word = contains(name, "PS4") || contains(name, "DUALSHOCK") ? "DUALSHOCK" : "DUALSENSE";
+		break;
+	case AE_SEAT_FAMILY_NINTENDO:
+		word = contains(name, "JOY-CON") || contains(name, "JOYCON") ? "JOY-CON" : "SWITCH PRO";
+		break;
+	}
+	if (number > 0)
+		snprintf(out, (size_t)size, "%s %d", word, number);
+	else
+		snprintf(out, (size_t)size, "%s", word);
 }

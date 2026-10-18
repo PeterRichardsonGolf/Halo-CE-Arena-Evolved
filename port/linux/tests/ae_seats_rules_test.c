@@ -83,6 +83,49 @@ int main(void)
 	CHECK(ae_seats_join(&seats, AE_SEAT_PAD, 5, "") == 0);
 	CHECK(ae_seats_unplugged(&seats, 5) == 0 && ae_seats_plugged(&seats, 6, "") == -1);
 
+	/* the picker: a free pad into a seat; a taken one swaps; never taken from a player to fill an empty seat */
+	ae_seats_clear(&seats);
+	CHECK(ae_seats_join(&seats, AE_SEAT_KEYBOARD, 0, NULL) == 0);
+	CHECK(ae_seats_join(&seats, AE_SEAT_PAD, 3, "c") == 1);
+	CHECK(ae_seats_assign(&seats, 1, AE_SEAT_PAD, 4, "d") == 1);
+	CHECK(seats.seat[1].pad_id == 4 && ae_seats_of_pad(&seats, 3) == -1 && !strcmp(seats.seat[1].key, "d"));
+	CHECK(ae_seats_assign(&seats, 1, AE_SEAT_PAD, 4, "d") == 1);
+	CHECK(ae_seats_assign(&seats, 0, AE_SEAT_PAD, 4, "d") == 1);
+	CHECK(seats.seat[0].pad_id == 4 && seats.seat[1].kind == AE_SEAT_KEYBOARD);
+	CHECK(ae_seats_assign(&seats, 2, AE_SEAT_PAD, 4, "d") == -1);
+	CHECK(seats.seat[2].kind == AE_SEAT_EMPTY && seats.seat[0].pad_id == 4);
+	CHECK(ae_seats_assign(&seats, 2, AE_SEAT_PAD, 5, "e") == 2);
+	CHECK(ae_seats_assign(&seats, 3, AE_SEAT_KEYBOARD, 0, NULL) == -1);
+	/* a held seat takes a free device (its pad gone), never another player's */
+	CHECK(ae_seats_unplugged(&seats, 5) == 2);
+	CHECK(ae_seats_assign(&seats, 2, AE_SEAT_KEYBOARD, 0, NULL) == -1);
+	CHECK(ae_seats_assign(&seats, 2, AE_SEAT_PAD, 6, "f") == 2);
+	CHECK(!seats.seat[2].held && seats.seat[2].pad_id == 6);
+	CHECK(ae_seats_assign(&seats, 4, AE_SEAT_PAD, 7, "g") == -1 && ae_seats_assign(&seats, 0, AE_SEAT_PAD, 0, "") == -1);
+	CHECK(ae_seats_assign(NULL, 0, AE_SEAT_KEYBOARD, 0, NULL) == -1 && ae_seats_assign(&seats, 0, AE_SEAT_EMPTY, 0, NULL) == -1);
+
+	/* short names */
+	{
+		char name[24];
+
+		ae_seats_short_name(AE_SEAT_FAMILY_KEYBOARD, NULL, 2, name, sizeof(name));
+		CHECK(!strcmp(name, "KEYBOARD"));
+		ae_seats_short_name(AE_SEAT_FAMILY_XBOX, "Xbox Series X Controller", 0, name, sizeof(name));
+		CHECK(!strcmp(name, "XBOX"));
+		ae_seats_short_name(AE_SEAT_FAMILY_PLAYSTATION, "DualSense Wireless Controller", 2, name, sizeof(name));
+		CHECK(!strcmp(name, "DUALSENSE 2"));
+		ae_seats_short_name(AE_SEAT_FAMILY_PLAYSTATION, "PS4 Controller", 0, name, sizeof(name));
+		CHECK(!strcmp(name, "DUALSHOCK"));
+		ae_seats_short_name(AE_SEAT_FAMILY_NINTENDO, "Nintendo Switch Pro Controller", 1, name, sizeof(name));
+		CHECK(!strcmp(name, "SWITCH PRO 1"));
+		ae_seats_short_name(AE_SEAT_FAMILY_NINTENDO, "Nintendo Switch Joy-Con (L)", 0, name, sizeof(name));
+		CHECK(!strcmp(name, "JOY-CON"));
+		ae_seats_short_name(AE_SEAT_FAMILY_OTHER, "8BitDo Something", 3, name, sizeof(name));
+		CHECK(!strcmp(name, "PAD 3"));
+		ae_seats_short_name(AE_SEAT_FAMILY_NINTENDO, NULL, 0, name, 4);
+		CHECK(!strcmp(name, "SWI"));
+	}
+
 	if (failures)
 		return 1;
 	printf("ae_seats_rules_test: all passed\n");
