@@ -28,7 +28,7 @@ port of the Halo: Combat Evolved decompilation, by way of
 both closely.
 
 > **Status: early and in active development.** The current pre-release is
-> 0.3.2-beta (below). The Linux 64-bit build is the one played and tested;
+> 0.3.3-beta (below). The Linux 64-bit build is the one played and tested;
 > the Windows 64-bit build is built by the same automated checks but this
 > release's was not test-played before it went up;
 > the other platforms build from the same code but are untested here.
@@ -353,9 +353,9 @@ copies or changes MCC's files). Versions and the build-time packages are in
 
 Releases are on the
 [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases)
-page: 0.3.2-beta, built on ChupathingyCE 0.7.5b and OpenCE build-206
-(network version 29), is the current one, a pre-release (2026-10-16); it
-plays online with 0.3.0-beta and 0.3.1-beta, OpenCE build-206 and later and ChupathingyCE 0.7.5b, not with 0.2.5-beta or earlier.
+page: 0.3.3-beta, built on ChupathingyCE 0.7.5b and OpenCE build-206
+(network version 29), is the current one, a pre-release (2026-10-17); it
+plays online with 0.3.0-beta to 0.3.2-beta, OpenCE build-206 and later and ChupathingyCE 0.7.5b, not with 0.2.5-beta or earlier.
 Each platform is
 a zip of its own: Windows and Linux as 64-bit builds only, plus macOS and
 Android. For Linux there are two, and the first is the one to take:

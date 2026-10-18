@@ -6,6 +6,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.3-beta - 2026-10-17
+
+- Custom Edition maps rebuilt with Invader (Halo Flawless Cowboy Edition's copies of the Gearbox maps: Danger
+  Canyon, Death Island, Gephyrophobia, Ice Fields, Infinity, Timberland) load: their empty tag slots no longer refuse
+  the whole map.
+- HUD digits made for a high-resolution HUD (those maps' own) are drawn at the stock size: the flag waypoint's
+  distance, the classic HUD's ammo and grenade counts and the scripted timer were twice their size.
+- With HUD STYLE AE, the sniper rifle's zoomed readouts (range and elevation numbers, angle ticks, caption) show
+  again.
 - A gametype a map cannot play no longer crashes the game or leaves everyone dead: CTF on a map with no CTF flags
   (or King, Oddball, Race without their flags) is played as Slayer and every player is told so as the game starts;
   a mode with no spawns of its own uses all of the map's spawns.
