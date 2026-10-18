@@ -78,11 +78,20 @@ void ae_panel_tone_rgb(short tone, real rgb[3])
 		rgb[i] = tones[tone][i] / 255.0f;
 }
 
+/* every tone's alpha x this while a group blinks (ae_panel_draw_set_fade) */
+static real draw_fade = 1.0f;
+
+void ae_panel_draw_set_fade(real fade)
+{
+	draw_fade = fade < 0.0f ? 0.0f : fade > 1.0f ? 1.0f : fade;
+}
+
 static void tone_color(short tone, real alpha, real_argb_color *color)
 {
 	real rgb[3];
 
 	ae_panel_tone_rgb(tone, rgb);
+	alpha *= draw_fade;
 	color->alpha = alpha < 0.0f ? 0.0f : alpha > 1.0f ? 1.0f : alpha;
 	color->red = rgb[0];
 	color->green = rgb[1];

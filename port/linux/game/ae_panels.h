@@ -30,6 +30,8 @@ boolean ae_panels_hiding_ce(void);
 void ae_panels_zoom_element(boolean begin);
 /* (hud.c, after CE's weapon and unit HUD and the waypoints) the AE panels of this view; TRUE when drawn */
 boolean ae_panels_draw(short local_player_index);
+/* debug.ae_panel_state's "script_blink": the scripts' blink bits taken as on (the sensor's too) */
+boolean ae_panels_forced_script_blink(void);
 /* this view's panel rectangles (view px) from its last draw: the ammo group and the shield group with its rows */
 void ae_panels_rectangles(short local_player_index, struct ae_panel_rect out[2], short *count);
 

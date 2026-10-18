@@ -38,7 +38,9 @@ void platform_log(char const *format, ...);
 long game_time_get(void);
 
 #define AE_HUD_PANEL_HEALTH_DONT_SHOW 0     /* hud_unit.c's _hud_panel_health_dont_show_bit */
+#define AE_HUD_PANEL_HEALTH_BLINK 1         /* _hud_panel_health_blink_bit (hud_blink_health) */
 #define AE_HUD_PANEL_SHIELD_DONT_SHOW 2     /* _hud_panel_shield_dont_show_bit */
+#define AE_HUD_PANEL_SHIELD_BLINK 3         /* _hud_panel_shield_blink_bit (hud_blink_shield) */
 #define BACKING_PEAK 0.32f
 #define BOX_FILL 0.08f
 #define UNARMED_GLYPH 0.55f
@@ -89,7 +91,8 @@ boolean ae_panels_hiding_ce(void)
 
 /* debug.ae_panel_state: states forced over the game's for the tests and the contact sheets, a comma list of: low,
 empty, overheated, heat:<0..1>, grenades:<frags>/<plasmas>, plasma (armed), shield_low, shield_down, overshield1,
-overshield2, camo, buffs (both rows, the overshield's in its last 5 s), health_low, trail (a hit's trail, held) */
+overshield2, camo, buffs (both rows, the overshield's in its last 5 s), health_low, trail (a hit's trail, held),
+script_blink (the scripts' health / shield / sensor blink bits on) */
 /* (read twice a view a frame: copied again only when a setting changed) */
 static char const *panel_state(void)
 {
@@ -183,6 +186,18 @@ static void forced_state(struct ae_panel_snapshot *s)
 		}
 #undef IS
 	}
+}
+
+/* debug.ae_panel_state's "script_blink": the scripts' blink bits forced on (health, shield, sensor) */
+boolean ae_panels_forced_script_blink(void)
+{
+	char const *state = panel_state();
+	char const *walk;
+
+	for (walk = state; walk && *walk; walk = strchr(walk, ','), walk = walk ? walk + 1 : NULL)
+		if (strcspn(walk, ",") == strlen("script_blink") && !strncmp(walk, "script_blink", strlen("script_blink")))
+			return TRUE;
+	return FALSE;
 }
 
 static void log_layout(short view, const struct ae_panel_model *m, const struct ae_panel_layout *l)
@@ -333,7 +348,7 @@ static void draw_ammo(short view, const struct ae_panel_model *m, const struct a
 }
 
 static void draw_shield(short view, const struct ae_panel_model *m, const struct ae_panel_layout *l, real s,
-	boolean shield_shown, boolean health_shown)
+	boolean shield_shown, boolean health_shown, real shield_blink, real health_blink)
 {
 	short i;
 
@@ -342,8 +357,9 @@ static void draw_shield(short view, const struct ae_panel_model *m, const struct
 	backing(view, &l->backing_shield);
 	if (shield_shown)
 	{
-		/* low or down: red, and on the blink's off beat the same red dimmed (never the normal blue: owner 10-15) */
-		real fade = m->shield_hidden_blink ? AE_SHIELD_BLINK_DIM : 1.0f;
+		/* low or down: red, and on the blink's off beat the same red dimmed (never the normal blue: owner 10-15); the
+		scripts' blink (hud_blink_shield) dims it on the same beat */
+		real fade = (m->shield_hidden_blink ? AE_SHIELD_BLINK_DIM : 1.0f) * shield_blink;
 
 		ae_panel_draw_bar_faded(&l->shield_bar, s, m->shield_fill, m->shield_red ? _ae_tone_red : _ae_tone_blue,
 			m->shield_red ? _ae_tone_red : _ae_tone_blue, m->overshield1, m->overshield2, fade, m->shield_trail,
@@ -353,10 +369,13 @@ static void draw_shield(short view, const struct ae_panel_model *m, const struct
 	}
 	if (health_shown)
 	{
+		/* (the scripts' blink, hud_blink_health: the cells and the cross dimmed on the beat) */
+		ae_panel_draw_set_fade(health_blink);
 		for (i = 0; i < AE_PANEL_HEALTH_CELLS; i++)
 			ae_panel_draw_cell(&l->health_cell[i], (boolean)(i < m->health_cells_lit),
 				m->health_red ? _ae_tone_red : _ae_tone_blue);
 		ae_panel_draw_cross(l->cross_x, l->cross_y, l->cross_size, m->health_red ? _ae_tone_red : _ae_tone_blue);
+		ae_panel_draw_set_fade(1.0f);
 	}
 	/* own-buff rows: the time white, right-aligned on the right column (red in its last 5 s); the name white 8 px
 	left of the "0:00" column */
@@ -379,6 +398,7 @@ boolean ae_panels_draw(short local_player_index)
 	long flags = hud_unit_port_script_flags();
 	long player_index;
 	boolean shield_shown, health_shown;
+	real shield_blink, health_blink;
 
 	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
 		return FALSE;
@@ -397,9 +417,16 @@ boolean ae_panels_draw(short local_player_index)
 	/* the scripts' and the gametype's show flags, as hud_render_unit_interface obeys them (hud_unit.c:963, 1089) */
 	shield_shown = (boolean)(game_engine_has_shield(player_index) && !TEST_FLAG(flags, AE_HUD_PANEL_SHIELD_DONT_SHOW));
 	health_shown = (boolean)!TEST_FLAG(flags, AE_HUD_PANEL_HEALTH_DONT_SHOW);
+	/* and their blink bits (hud_blink_health / hud_blink_shield: a10's health and shield lessons; hud_unit.c flashes
+	CE's meters from them), or debug.ae_panel_state's "script_blink" for the pictures */
+	shield_blink = ae_panel_script_blink_fade((boolean)(TEST_FLAG(flags, AE_HUD_PANEL_SHIELD_BLINK) ||
+		ae_panels_forced_script_blink()), game_time_get(), snapshot.reduced_motion);
+	health_blink = ae_panel_script_blink_fade((boolean)(TEST_FLAG(flags, AE_HUD_PANEL_HEALTH_BLINK) ||
+		ae_panels_forced_script_blink()), game_time_get(), snapshot.reduced_motion);
 
 	draw_ammo(local_player_index, &model, &layout, view.scale);
-	draw_shield(local_player_index, &model, &layout, view.scale, shield_shown, health_shown);
+	draw_shield(local_player_index, &model, &layout, view.scale, shield_shown, health_shown, shield_blink,
+		health_blink);
 
 	/* (the groups drawn, the ammo group first: the messages are laid out under it; the shield group only when
 	something is drawn there, so that labels do not fade over an empty corner) */

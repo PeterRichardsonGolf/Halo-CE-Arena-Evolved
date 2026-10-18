@@ -150,4 +150,12 @@ drain (above 1) is no hit; a rising shield ends it */
 struct ae_panel_trail { real trail, last; long hit_tick; boolean active; };
 void ae_panel_trail_step(struct ae_panel_trail *state, real shield, long now, real *trail, real *alpha);
 
+/* the scripts' HUD blink (hud_blink_health / _shield / _motion_sensor: a10's "this is your health" lesson; campaign
+review 2026-10-18 I1): a group's fade, 1 when not blinking; blinking it is 1 and 0.35 on the panels' 15-tick beat, in
+the group's own colour (no new colour); with REDUCE MOTION a steady group dimmed to 0.35 for 0.5 s every 2 s */
+#define AE_PANEL_SCRIPT_BLINK_TICKS 15
+#define AE_PANEL_SCRIPT_BLINK_DIM 0.35f
+#define AE_PANEL_SCRIPT_BLINK_CALM_TICKS 60
+real ae_panel_script_blink_fade(boolean blinking, long tick, boolean reduced_motion);
+
 #endif /* __AE_PANEL_MODEL_H */

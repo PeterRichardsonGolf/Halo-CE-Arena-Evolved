@@ -436,3 +436,8 @@ boolean ae_power_list_draw(long font_index)
 		draw_column(view);
 	return TRUE;
 }
+
+void ae_power_list_forget(void)
+{
+	memset(list_views, 0, sizeof(list_views));
+}

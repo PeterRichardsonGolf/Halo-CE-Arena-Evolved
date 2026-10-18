@@ -667,3 +667,8 @@ static boolean reduced_motion_on(void)
 	settings_read();
 	return cached_settings.reduced_motion;
 }
+
+boolean ae_panel_engine_reduced_motion(void)
+{
+	return reduced_motion_on();
+}

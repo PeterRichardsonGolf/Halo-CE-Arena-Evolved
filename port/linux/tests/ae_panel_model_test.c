@@ -395,6 +395,27 @@ static void test_hit_trail(void)
 	AE_CHECK(alpha == 0.0f);
 }
 
+static void test_script_blink(void)
+{
+	/* not blinking: full */
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(FALSE, 20, FALSE), 1.0f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(FALSE, 20, TRUE), 1.0f));
+	/* blinking: 1 then 0.35 on the 15-tick beat */
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 0, FALSE), 1.0f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 14, FALSE), 1.0f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 15, FALSE), 0.35f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 29, FALSE), 0.35f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 30, FALSE), 1.0f));
+	/* REDUCE MOTION: dimmed 0.5 s of every 2 s */
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 0, TRUE), 0.35f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 14, TRUE), 0.35f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 15, TRUE), 1.0f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 59, TRUE), 1.0f));
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, 60, TRUE), 0.35f));
+	/* a time before the game's start reads as its start */
+	AE_CHECK(AE_NEAR(ae_panel_script_blink_fade(TRUE, -5, FALSE), 1.0f));
+}
+
 int main(void)
 {
 	test_weapon_table();
@@ -408,6 +429,7 @@ int main(void)
 	test_seats();
 	test_row_lit();
 	test_hit_trail();
+	test_script_blink();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

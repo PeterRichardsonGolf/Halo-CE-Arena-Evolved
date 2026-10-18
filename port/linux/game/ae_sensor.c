@@ -25,6 +25,8 @@ the centre is the HUD's blip placement (hud_unit.c's hud_calculate_point).
 #include "ae_panel_draw.h"
 #include "ae_panel_engine.h"
 #include "ae_panel_layout.h"
+#include "ae_panel_model.h"
+#include "ae_panels.h"
 #include "ae_score_strip.h"
 #include "ae_sensor.h"
 #include "ae_sensor_geometry.h"
@@ -32,10 +34,12 @@ the centre is the HUD's blip placement (hud_unit.c's hud_calculate_point).
 int config_boolean(const char *name);
 void platform_log(char const *format, ...);
 long game_time_get(void);
+long hud_unit_port_script_flags(void);
 
 #define RIM_UNITS 42.0f                 /* CE's sweep radius, HUD units */
 #define RIM_UNITS_SPLIT 32.0f
 #define DESIGN_RIM 92.0f                /* the spec's 1p rim, px: blip sizes are given for it */
+#define AE_HUD_PANEL_SENSOR_BLINK 5      /* hud_unit.c's _hud_panel_motion_sensor_blink_bit (hud_blink_motion_sensor) */
 #define LABEL_LEFT_OF_CENTRE 1.033f     /* x r: the label's left edge (1p x 142 for a centre at 237, r 92) */
 #define AE_PI 3.14159265f
 #define CHEVRON_PX 14.0f   /* the player's chevron, px at scale 1 (owner 10-15: rev13's 10 read as a speck in play) */
@@ -79,12 +83,15 @@ boolean ae_sensor_rectangle(short local_player_index, real *x0, real *y0, real *
 	return TRUE;
 }
 
+/* the scripts' blink (hud_blink_motion_sensor) while the disc is drawn: every alpha x this */
+static real sensor_fade = 1.0f;
+
 static void color_of(short tone, real alpha, real_argb_color *color)
 {
 	real rgb[3];
 
 	ae_panel_tone_rgb(tone, rgb);
-	color->alpha = alpha;
+	color->alpha = alpha * sensor_fade;
 	color->red = rgb[0];
 	color->green = rgb[1];
 	color->blue = rgb[2];
@@ -130,7 +137,13 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 
 	if (!ae_sensor_active() || local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
 		return;
-	ae_hud_backing_draw(local_player_index, cx, cy, 1.18f * r, 1.18f * r, 0.45f);
+	/* the scripts' blink bit (hud_blink_motion_sensor; campaign review 2026-10-18 I1): the whole disc dimmed on the
+	panels' beat, in its own blue (CE's sweep and contacts, drawn after, keep theirs) */
+	sensor_fade = ae_panel_script_blink_fade((boolean)(TEST_FLAG(hud_unit_port_script_flags(),
+		AE_HUD_PANEL_SENSOR_BLINK) || ae_panels_forced_script_blink()), game_time_get(),
+		ae_panel_engine_reduced_motion());
+	ae_panel_draw_set_fade(sensor_fade);
+	ae_hud_backing_draw(local_player_index, cx, cy, 1.18f * r, 1.18f * r, 0.45f * sensor_fade);
 	ae_panel_draw_disc(cx, cy, r, _ae_tone_blue, 0.08f, FALSE);   /* (light, as the draft: the lines' dark shows) */
 	/* the view's wedge: its fill, then its two edges from the centre to the rim */
 	wedge_fill(cx, cy, r, half, 0.10f);
@@ -183,6 +196,8 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 	color_of(_ae_tone_grey, 1.0f, &color);
 	ae_hud_text_draw_ex(local_player_index, cx - LABEL_LEFT_OF_CENTRE * r, ae_score_strip_shared_line_y(local_player_index),
 		label, ae_panel_label_px(r / DESIGN_RIM), &color, _ae_text_outline);
+	ae_panel_draw_set_fade(1.0f);
+	sensor_fade = 1.0f;
 
 	last[local_player_index].valid = TRUE;
 	last[local_player_index].drawn_at = system_milliseconds();
