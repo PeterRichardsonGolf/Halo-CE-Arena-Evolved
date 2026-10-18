@@ -32,6 +32,10 @@ name, changed for a weapon AE knows better: its value to a bot, the ticks betwee
 bursts) and the distance a bot keeps with it */
 void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, real *range);
 
+/* (bots.c's bots_weapon_empty) whether a weapon is spent, for an energy weapon (no rounds: its battery out): 1 or 0;
+-1 for a weapon of rounds, which bots.c tests itself (ae_bots_combat_rules.h's ae_bots_combat_weapon_spent) */
+int ae_bots_weapon_spent(long weapon_index);
+
 /* (network_server_manager.c's network_game_server_idle, after the bots' lobby) a local game's lobby whose
 gametype has no bots while bots.count asks for some: one halo.log line for each gametype it is on */
 void ae_bots_lobby_check(boolean local_pregame, long game_engine_index, wchar_t const *gametype_name);

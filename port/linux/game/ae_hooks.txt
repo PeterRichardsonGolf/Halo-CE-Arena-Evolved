@@ -460,6 +460,8 @@ source/game/player_control.c	ae_ds5_player(local_player_index, current_weapon_in
 # distance and one pull a burst), the lobby's line for a gametype without bots, Delta Stats leaving bots' games alone
 port/linux/game/bots.c	#include "ae_bots.h" /* AE hook */
 port/linux/game/bots.c	ae_bots_weapon_kind(definition_index, &kind->value, &kind->tap_ticks, &kind->range); /* AE hook */
+# (0.3.4) an energy weapon (the plasma pistol: a magazine of no rounds) is spent when its battery is out, not always
+port/linux/game/bots.c	{ int spent = ae_bots_weapon_spent(weapon_index); if (spent >= 0) return (boolean)spent; } /* AE hook */
 source/networking/network_server_manager.c	#include "ae_bots.h" /* AE hook */
 source/networking/network_server_manager.c	ae_bots_lobby_check(network_game_is_splitscreen_local() && server->state == _network_game_server_state_pregame && !server->sent_start_game_message, server->game.variant.game_engine_index, server->game.variant.human_readable_game_description); /* AE hook */
 port/linux/game/game_events.c	#include "ae_bots.h" /* AE hook */

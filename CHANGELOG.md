@@ -96,6 +96,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   out with a line in the log, and the stock menus are used, instead of crashing.
 - Bots: small fixes from the bots review (a bot no longer counts itself in a search, a weapon pack counts as taken only
   once picked up, a tick's travel state is cleared at its end, the trace level read once a change).
+- Bots switch to their plasma pistol when their other weapon runs dry: they took it for always empty, so a bot with an
+  empty sniper rifle or pistol kept it, never fired again and backed away from you. A drained plasma weapon now
+  counts as empty, so they switch off it too.
 - The README is a short front page; the detail is in `docs/` (features, gametypes, LAN, building, upstream).
 - The web build runs again: it compiles, links and starts in the browser test (its memory window is set up as
   OpenCE's is; a merge had dropped that).

@@ -2,9 +2,9 @@
 AE_BOTS.C
 
 Arena Evolved's side of the bots of local games (ae_bots.h): the pack's
-battle rifle in a bot's hands, the lobby's line when the gametype has no
-bots (the objective modes' play: ae_bots_objective.c), and Delta Stats
-leaving bots' games alone. bots.c (OpenCE PR #367)
+battle rifle in a bot's hands, an energy weapon's battery as its rounds,
+the lobby's line when the gametype has no bots (the objective modes' play:
+ae_bots_objective.c), and Delta Stats leaving bots' games alone. bots.c (OpenCE PR #367)
 stays upstream's but for the AE hook lines.
 */
 
@@ -12,12 +12,15 @@ stays upstream's but for the AE hook lines.
 #include "game/game_engine.h"
 #include "memory/data.h"
 #include "game/players.h"
+#include "items/weapons.h"
+#include "items/weapon_definitions.h"
 #include "networking/network_game_globals.h"
 
 #include "bots.h"
 #include "ae_burst_rifle.h"
 #include "ae_bots.h"
 #include "ae_lan_bots.h"
+#include "ae_bots_combat_rules.h"
 
 #include <string.h>
 
@@ -45,6 +48,18 @@ void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, 
 	*value = AE_BOTS_RIFLE_VALUE;
 	*tap_ticks = AE_BOTS_RIFLE_PULL_TICKS;
 	*range = AE_BOTS_RIFLE_RANGE;
+}
+
+/* a spent weapon (ae_bots_combat_weapon_spent): 1 spent, 0 not, -1 bots.c's own test (rounds) */
+int ae_bots_weapon_spent(long weapon_index)
+{
+	struct weapon_datum *weapon = weapon_get(weapon_index);
+	struct weapon_definition *definition = weapon_definition_get(weapon->definition_index);
+	struct weapon_magazine_definition *magazine = definition->weapon.magazines.count > 0 ?
+		TAG_BLOCK_GET_ELEMENT(&definition->weapon.magazines, 0, struct weapon_magazine_definition) : NULL;
+
+	return ae_bots_combat_weapon_spent(magazine ? (int)definition->weapon.magazines.count : 0,
+		magazine ? magazine->rounds_loaded_maximum : 0, magazine ? magazine->rounds_total_maximum : 0, weapon->weapon.age);
 }
 
 /* ---------- the lobby */

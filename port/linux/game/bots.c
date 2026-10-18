@@ -462,6 +462,7 @@ static boolean bots_weapon_empty(long weapon_index)
 	struct weapon_datum *weapon = weapon_get(weapon_index);
 	struct weapon_definition *definition = weapon_definition_get(weapon->definition_index);
 
+	{ int spent = ae_bots_weapon_spent(weapon_index); if (spent >= 0) return (boolean)spent; } /* AE hook */
 	if (definition->weapon.magazines.count <= 0)
 		return FALSE;
 	return weapon->weapon.magazines[0].rounds_loaded + weapon->weapon.magazines[0].rounds_total <= 0;

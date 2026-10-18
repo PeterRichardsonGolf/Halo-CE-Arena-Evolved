@@ -258,6 +258,21 @@ static void test_charge_jump_share(void)
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_LEGENDARY) > 1000.0f);
 }
 
+/* SPENT WEAPONS: a weapon of rounds is left to bots.c; the stock plasma pistol (a magazine, every maximum 0) and a
+weapon with no magazine are spent only with their battery out */
+static void test_weapon_spent(void)
+{
+	/* (weapons of rounds: loaded or in reserve; then the plasma pistol's magazine of no rounds; no magazine) */
+	CHECK(ae_bots_combat_weapon_spent(1, 12, 120, 0.0f) == -1);
+	CHECK(ae_bots_combat_weapon_spent(1, 4, 0, 1.0f) == -1);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 24, 0.0f) == -1);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 0, 0.0f) == 0);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 0, 0.96f) == 0);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 0, 1.0f) == 1);
+	CHECK(ae_bots_combat_weapon_spent(0, 0, 0, 0.5f) == 0);
+	CHECK(ae_bots_combat_weapon_spent(0, 0, 0, 1.0f) == 1);
+}
+
 int main(void)
 {
 	test_hash();
@@ -268,6 +283,7 @@ int main(void)
 	test_aim_head();
 	test_retreat();
 	test_charge_jump_share();
+	test_weapon_spent();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }
