@@ -178,7 +178,7 @@ static boolean ae_bots_crouch(short skill, long player_index, long now, real ran
 }
 
 /* SHOOTING SKILL and MOVEMENT SKILL (queue 120; bots.shooting_skill, bots.movement_skill: ae_bots_combat.h): the
-skill, bots.c's index (AE_BOTS_SKILL_RECRUIT or its table's), each part of a bot plays at; SAME AS BOT SKILL
+skill, bots.c's index (AE_BOTS_SKILL_RECRUIT or its table's), each part of a bot plays at; BOT SKILL
 (the default) keeps bots.skill's */
 static int ae_bots_level_of_skill(short skill)
 {

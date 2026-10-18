@@ -465,7 +465,7 @@ SCREENS["video_settings/fov_viewmodels"] = {
 # screen of its own, a category after the rows (as Video Setup's); Game Options' rows 24 px apart for its place
 BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
 BOT_SKILLS = [("RECRUIT", "recruit"), ("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
-BOT_SKILL_PARTS = [("SAME AS BOT SKILL", "same")] + BOT_SKILLS
+BOT_SKILL_PARTS = [("BOT SKILL", "same")] + BOT_SKILLS
 BOT_TEAMS = [("EVEN", "even"), ("AGAINST YOU", "against")]
 BOT_PLAYFIGHT = [("OFF", "false"), ("ON", "true")]
 _game_options = SCREENS["mods_setup"]

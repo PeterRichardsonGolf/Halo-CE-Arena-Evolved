@@ -6,7 +6,7 @@ ae_bots_combat_rules.c's rules. bots.c's fight, look and walk call it through it
 ae_bots_combat.inc (included at bots.c's end by ae_bots_lan.inc, where bots.c's own state is visible); the levels'
 names and the two settings are ae_bots_skill.inc's. Included after cseries.h.
 
-- SHOOTING SKILL (bots.shooting_skill) and MOVEMENT SKILL (bots.movement_skill): "same" (SAME AS BOT SKILL, the
+- SHOOTING SKILL (bots.shooting_skill) and MOVEMENT SKILL (bots.movement_skill): "same" (BOT SKILL: as BOT SKILL, the
   default) or a level of their own. Shooting is the aim, the reaction, how far and wide a bot sees, its grenades,
   its blows and its headshots; movement its strafing, jumping, crouching, closing in and retreating. BOT SKILL
   itself keeps what neither names: how often a roam heads for an enemy, the shared sightings, the halo.log line.
@@ -21,7 +21,7 @@ names and the two settings are ae_bots_skill.inc's. Included after cseries.h.
 #include "ae_bots_combat_rules.h"
 
 /* the level (AE_BOTS_LEVEL_*) bots.shooting_skill (movement FALSE) or bots.movement_skill (TRUE) sets, or -1 for
-SAME AS BOT SKILL (read again when the settings change) */
+BOT SKILL (read again when the settings change) */
 int ae_bots_combat_setting_level(boolean movement);
 
 /* whether a weapon definition kills with a shot to the head once the shields are down (the pistol, the sniper

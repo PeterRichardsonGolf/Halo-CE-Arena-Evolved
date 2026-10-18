@@ -134,7 +134,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   to the next. Same health and damage at every level; PLAYFIGHT bots still never shoot.
 - SHOOTING SKILL and MOVEMENT SKILL (Game Options > BOTS; `bots.shooting_skill`, `bots.movement_skill`): the bots'
   aim, reactions, grenades and blows, and their strafing, jumping, crouching and retreating, each at a level of its
-  own, or SAME AS BOT SKILL (the default). On the BOTS screen only: the split screen lobby keeps its rows for players.
+  own, or BOT SKILL (as BOT SKILL, the default). On the BOTS screen only: the split screen lobby keeps its rows for players.
 - AE gametypes (seed revision 13, applied on the first start, the old files backed up): every AE gametype but AE
   SWAT starts with two frag grenades (Halo CE's own rule gave one in games of 9 players or more, as with bots);
   the AE BR gametypes have an assault rifle second instead of the pistol.

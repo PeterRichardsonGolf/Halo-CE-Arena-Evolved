@@ -46,7 +46,7 @@ def test_bots_screen():
     for part in ("bots.shooting_skill", "bots.movement_skill"):
         values = [value for _, value in rows[part][2]]
         assert values == ["same"] + [value for _, value in rows["bots.skill"][2]], part
-        assert rows[part][2][0][0] == "SAME AS BOT SKILL"
+        assert rows[part][2][0][0] == "BOT SKILL"
         assert f'config_string("{part}")' in combat
     assert '{ "recruit", "easy", "normal", "heroic", "legendary" }' in combat
     assert [value for _, value in rows["bots.teams"][2]] == ["even", "against"]
