@@ -16,6 +16,7 @@ A map's own picture beside its file, on the map select screen (ae_map_pictures.h
 
 #include "ae_map_picture_rules.h"
 #include "ae_map_pictures.h"
+#include "ae_map_folders.h"
 
 #include <xtl.h>
 #include <stdio.h>
@@ -134,8 +135,16 @@ static short picture_entry(char const *map_name)
 		ae_map_picture_path(map_path, file, pictures[index].path, sizeof(pictures[index].path)))
 	{
 		boolean exists = FALSE;
+		char root_path[PICTURE_PATH_SIZE];
 
 		pictures[index].found = picture_usable(pictures[index].path, &exists);
+		/* (a map in a folder of the maps folder with no picture in its folder's previews: the maps folder's,
+		ae_map_folders.c) */
+		if (!exists && ae_map_folders_root_path(map_path, root_path, sizeof(root_path)) &&
+			ae_map_picture_path(root_path, file, pictures[index].path, sizeof(pictures[index].path)))
+		{
+			pictures[index].found = picture_usable(pictures[index].path, &exists);
+		}
 		pictures[index].refused = exists && !pictures[index].found;
 		if (pictures[index].found)
 			platform_log("map pictures: %s shows %s", map_name, pictures[index].path);

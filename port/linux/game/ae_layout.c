@@ -25,6 +25,7 @@ netgame items and placed vehicles in memory.
 
 #include "ae_layout.h"
 #include "ae_layout_rules.h"
+#include "ae_map_folders.h"
 
 #include <xtl.h>
 #include <math.h>
@@ -592,7 +593,7 @@ boolean ae_layout_map_header(char *text, long size)
 void ae_layout_apply(void)
 {
 	struct scenario *scenario = global_scenario_get();
-	char file[64], map_path[PATH_SIZE], path[PATH_SIZE + 32], error[160];
+	char file[64], map_path[PATH_SIZE], root_path[PATH_SIZE], path[PATH_SIZE + 32], error[160];
 	unsigned int hash = 0;
 	char *text;
 	long length = 0;
@@ -642,6 +643,12 @@ void ae_layout_apply(void)
 		return;
 	}
 	text = read_file(path, &length);
+	/* (a map in a folder of the maps folder: its folder's layouts, else the maps folder's, ae_map_folders.c) */
+	if (!text && ae_map_folders_root_path(map_path, root_path, sizeof(root_path)) &&
+		layout_path(root_path, file, path, sizeof(path)))
+	{
+		text = read_file(path, &length);
+	}
 	if (!text)
 		return;
 	log_map(scenario);

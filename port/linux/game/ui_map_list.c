@@ -52,6 +52,7 @@ asks whether the map is in its family's folders (ui_map_list_family_present).
 #include "ae_map_pictures.h" /* AE hook */
 #include "ae_map_warm_up.h" /* AE hook */
 #include <stddef.h> /* AE hook */
+#include "ae_map_folders.h" /* AE hook */
 
 #include "bitmaps/bitmap_group.h"
 #include "tag_files/tag_groups.h"
@@ -892,6 +893,7 @@ void ui_map_list_refresh(
 		}
 		counts[family] = found.count;
 	}
+	ae_map_folders_log_pages((char const *const *)ui_map_list_names_array, ui_map_list_count_value); /* AE hook */
 	if (memcmp(counts, logged_counts, sizeof(counts)))
 	{
 		memcpy(logged_counts, counts, sizeof(counts));

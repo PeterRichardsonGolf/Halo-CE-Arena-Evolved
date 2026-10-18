@@ -143,6 +143,7 @@ symbols in this file:
 #include "ae_menus_swap.h" /* AE hook */
 #include "ae_weapon_pack.h" /* AE hook */
 #include "ae_sound_filter.h" /* AE hook */
+#include "ae_map_folders.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -723,6 +724,7 @@ void cache_files_map_file_path(
 		error(_error_silent, "map path for '%.64s' is too long", map_name);
 		path[0] = 0;
 	}
+	ae_map_folders_xbox_path(map_name, path, size); /* AE hook */
 	ae_map_share_xbox_path(map_name, path, size); /* AE hook */
 }
 

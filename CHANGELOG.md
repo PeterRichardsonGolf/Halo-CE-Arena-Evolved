@@ -12,6 +12,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Map layout files can now place player spawns and netgame flags (`clear spawns`, `remove spawn <n>`, `spawn at ...`,
   `clear flags`, `remove flag <n>`, `flag ctf|hill|ball|race|teleport_from|teleport_to ... at ...`), so a map pack can
   give a map CTF flags it never had.
+- Map folders: the maps folder's folders hold maps (one level: `maps/<folder>/`, and `maps_ce/<folder>/` or
+  `maps/ce/<folder>/` for Custom Edition maps), and the PC menus' map lists show them as pages of the first row's
+  chooser: SINGLEPLAYER, STOCK (the stock maps wherever they are), the folders A-Z by name, MULTIPLAYER (the loose
+  maps). A map is still known by its name, so players may keep it in different folders. Map packs can ship their
+  folders (after GulchCE's package folders).
 - SPLIT SCREEN in the PC menus' Multiplayer (after Create Game's LAN): a game on this PC only, up to four players
   and up to 15 bots. The map, the gametype, Server Setup with only the gametype's options (no name, listing or
   password), then the lobby; another controller's START joins there. The lobby's last rows are BOTS, BOT SKILL, PLAYFIGHT and BOT TEAMS (team games), the same settings as Game

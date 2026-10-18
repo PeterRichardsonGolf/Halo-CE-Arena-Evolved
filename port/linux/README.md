@@ -502,6 +502,30 @@ path replaces one of the game's, and another `.xml` file is added.
 the game uses the Xbox's menus and the log names the file, the line and the
 problem.
 
+### Map folders
+
+The maps folder's folders hold maps as the maps folder does (one level:
+`maps/<folder>/<name>.map`; Custom Edition maps in `maps_ce/<folder>/` or
+`maps/ce/<folder>/`). The PC menus' map lists (New Game, the Map screen of
+LAN, internet and split screen games) show them as pages of their first
+row's chooser: SINGLEPLAYER (not on split screen), STOCK (the 13 stock maps,
+wherever their files are), each folder by its name in capitals A-Z, then
+MULTIPLAYER (the maps loose in `maps`, `maps_ce` and the others, a mod's and
+map sharing's downloads). A page with no maps is not shown; the folders
+`ce`, `previews`, `layouts`, `_shared` and any starting with `.` or `_` are
+not pages, nor one named STOCK, MULTIPLAYER or SINGLEPLAYER (its maps are
+loose). A list opens on the page and map shown last this session, else the
+page of the map played last. A map is still known by its name alone (the
+network, gametypes, the last map, layouts, pictures): two machines may keep
+it in different folders, or loose. The first of a name is played, in this
+order: the stock maps and the mod's, the maps folder's, the folders A-Z,
+map sharing's downloads; a later one is logged once (`[maps] ... is another
+map named ...`). The scan logs each page (`[maps] page <NAME>: N maps`). A
+folder map's picture and layout file are looked for in its folder's
+`previews/` and `layouts/`, then in the maps folder's own. Map sharing's
+host lists the folders' maps too. The Xbox-style menus list every map as
+before.
+
 ## Bots
 
 Computer players (bots) can play a local multiplayer game with you:

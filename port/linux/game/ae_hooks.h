@@ -17,6 +17,9 @@ struct widget_instance;
 union rectangle2d;
 union point2d;
 
+/* (map folders, ui_widget.c's spinner_string_list_get_string) the PC map lists' chooser's value's name, a page's, or
+NULL for another string list's (ae_map_folders.c) */
+wchar_t const *ae_map_pages_spinner_string(long string_list_index, short string_index);
 /* display.arena_menus (HALO_ARENA_MENUS), read once */
 boolean ae_menus_active(void);
 /* TRUE: AE's menus handled this frame (process_ui_widgets returns) */

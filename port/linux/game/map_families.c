@@ -13,6 +13,7 @@ play it); the files are looked for only on the builds that play such maps
 #include "halo_map_families.h"
 #include "ae_glue_mcc.h" /* AE hook */
 #include "ae_map_share.h" /* AE hook */
+#include "ae_map_folders.h" /* AE hook */
 #include "../src/map_archive.h"
 #include "../src/map_file_hash.h"
 
@@ -414,6 +415,8 @@ static boolean find_any(
 		if (cache_file_is(path, family_cache_version(family), FALSE))
 			return TRUE;
 	}
+	if (family == _map_family_custom_edition && ae_map_folders_ce_find(file, family_cache_version(family), path, size)) /* AE hook */
+		return TRUE;
 	/* (a Custom Edition map by a hashed name another build's host gave it:
 	its base name's file, in the same places, if its hash is the name's) */
 	if (family == _map_family_custom_edition && hashed_name_find(places, count, file, path, size))
@@ -441,6 +444,8 @@ static boolean find_version(
 		if (cache_file_is(path, family_cache_version(family), FALSE) && version_matches(path, version))
 			return TRUE;
 	}
+	if (family == _map_family_custom_edition && ae_map_folders_ce_find(file, family_cache_version(family), path, size) && version_matches(path, version)) /* AE hook */
+		return TRUE;
 	if (family == _map_family_custom_edition)
 	{
 		/* (another version of the map beside the one of its name, named
@@ -612,6 +617,7 @@ void map_family_list(
 		while (FindNextFileA(find, &data));
 		CloseHandle(find);
 	}
+	ae_map_folders_ce_list(family, family_cache_version(family), found, context, listed[0], &listed_count, MAXIMUM_LISTED_FILES, MAP_FAMILY_FILE_LENGTH); /* AE hook */
 }
 
 #endif

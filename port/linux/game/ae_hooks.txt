@@ -785,3 +785,31 @@ source/interface/hud_messaging.c	digit_advance = (short)(long)((real)digit_advan
 # the sniper's zoomed readouts (the weapon HUD's zoomed elements) are drawn under AE's HUD too (owner 2026-10-17)
 source/interface/hud_draw.c	ae_panels_zoom_element(TRUE); /* AE hook */
 source/interface/hud_draw.c	ae_panels_zoom_element(FALSE); /* AE hook */
+# map folders (queue 142; ae_map_folders.c): the maps folder's folders (one level) are found as the maps folder is, a
+# map still known by its name; the PC menus' map lists show them as pages of their first row's chooser (STOCK, the
+# folders A-Z, MULTIPLAYER), its values' count and names AE's.
+port/linux/game/custom_maps.c	{ void ae_map_folders_scan(void (*scan)(char const *directory)); ae_map_folders_scan(map_folder_scan); } /* AE hook */
+port/linux/game/custom_maps.c	{ void ae_map_folders_log_pages(char const *const *names, long count); ae_map_folders_log_pages((char const *const *)map_list, map_count); } /* AE hook */
+source/cache/cache_files.c	#include "ae_map_folders.h" /* AE hook */
+source/cache/cache_files.c	ae_map_folders_xbox_path(map_name, path, size); /* AE hook */\nae_map_share_xbox_path(map_name, path, size); /* AE hook */
+port/linux/game/map_families.c	#include "ae_map_folders.h" /* AE hook */
+port/linux/game/map_families.c	if (family == _map_family_custom_edition && ae_map_folders_ce_find(file, family_cache_version(family), path, size)) /* AE hook */\nreturn TRUE;
+port/linux/game/map_families.c	if (family == _map_family_custom_edition && ae_map_folders_ce_find(file, family_cache_version(family), path, size) && version_matches(path, version)) /* AE hook */\nreturn TRUE;
+port/linux/game/map_families.c	ae_map_folders_ce_list(family, family_cache_version(family), found, context, listed[0], &listed_count, MAXIMUM_LISTED_FILES, MAP_FAMILY_FILE_LENGTH); /* AE hook */
+port/linux/game/ui_map_list.c	#include "ae_map_folders.h" /* AE hook */
+port/linux/game/ui_map_list.c	ae_map_folders_log_pages((char const *const *)ui_map_list_names_array, ui_map_list_count_value); /* AE hook */
+source/interface/ui_widget.c	if (ae_map_pages_spinner_string(string_list_index, string_index)) return (wchar_t *)ae_map_pages_spinner_string(string_list_index, string_index); /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_map_folders.h" /* AE hook */
+port/linux/game/menu_functions.c	if (ae_map_pages_on(spinner)) return ae_map_pages_kind(spinner); /* AE hook */
+port/linux/game/menu_functions.c	if (spinner && ae_map_pages_on(spinner)) { ae_map_pages_set(spinner, kind); return; } /* AE hook */
+port/linux/game/menu_functions.c	map = ae_map_pages_map(map); /* AE hook */
+port/linux/game/menu_functions.c	map = ae_map_pages_shown_map(map); /* AE hook */
+port/linux/game/menu_functions.c	if ((last_used = ae_map_pages_begin(named(list, "list_item_0_map_kind_spinner", 0), AE_MAP_PAGES_NEW_GAME, level_list.map_names, level_list.map_count, TRUE, NONE)) != NONE) { level_list.kind = MAP_KIND_MULTIPLAYER; level_list.chosen = last_used; level_list.first = map_kind_first(last_used, ae_map_pages_count(level_list.map_count)); } /* AE hook */
+port/linux/game/menu_functions.c	if (ae_map_pages_turned() || kind != level_list.kind) /* AE hook */
+port/linux/game/menu_functions.c	count = kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : ae_map_pages_count(level_list.map_count); /* AE hook */
+port/linux/game/menu_functions.c	if (ae_map_pages_map(level_list.chosen) < 0 || ae_map_pages_map(level_list.chosen) >= level_list.map_count || /* AE hook */
+port/linux/game/menu_functions.c	campaign_start(level_list.map_names[ae_map_pages_map(level_list.chosen)], main_get_difficulty(), controller); /* AE hook */
+port/linux/game/menu_functions.c	return map_list.kind == MAP_KIND_SINGLEPLAYER ? NUMBER_OF_SINGLE_PLAYER_LEVELS : ae_map_pages_count(map_list.map_count); /* AE hook */
+port/linux/game/menu_functions.c	last_used = ae_map_pages_begin(named(list, "list_item_0_map_kind_spinner", 0), AE_MAP_PAGES_MAP_SCREEN, multiplayer_map_names, map_list.map_count, map_list.hosting, last_used); /* AE hook */
+port/linux/game/menu_functions.c	if (ae_map_pages_turned() || kind != map_list.kind) /* AE hook */
+port/linux/game/menu_functions.c	if (map_list.kind == MAP_KIND_MULTIPLAYER) chosen = ae_map_pages_map(chosen); /* AE hook */
