@@ -2000,6 +2000,10 @@ static void pause_campaign_grow_box(struct ui_widget_definition *widget, short s
 		widget->bounds.y1 = (short)(widget->bounds.y1 + shift);
 }
 
+/* a multiplayer map's pause SETTINGS hides CHANGE COLOR alone: its Spartans are ui.map's, blank in a game (owner
+2026-10-18) */
+static boolean pause_settings_color_only; /* AE hook */
+
 static boolean pause_settings_item_hidden(long tag_index)
 {
 	short index;
@@ -2012,6 +2016,8 @@ static boolean pause_settings_item_hidden(long tag_index)
 		has players beside this one: build.campaign is a game alone) */
 		if (!build.campaign && !strcmp(pause_settings_hidden_items[index], PAUSE_NETWORK_ITEM))
 			continue;
+		if (pause_settings_color_only && !strstr(pause_settings_hidden_items[index], "/color_profile_item")) /* AE hook */
+			continue; /* AE hook */
 		if (widget != NONE && build.widget_tags[widget] == tag_index)
 			return TRUE;
 	}
@@ -2087,6 +2093,8 @@ static void pause_settings_patch(void)
 			children[child].vertical_offset = (short)(places[place++] - item->bounds.y0);
 		}
 	}
+	if (pause_settings_color_only) /* AE hook */
+		return; /* AE hook */
 	ok = tag_get(UI_WIDGET_DEFINITION_TAG, build.widget_tags[ok_widget]);
 	handlers = xbox_pointer(ok->event_handlers.address);
 	for (handler = 0; handler < ok->event_handlers.count; handler++)
@@ -2350,6 +2358,9 @@ void menu_tags_loaded(
 	if (game_map)
 	{
 		pause_patch(instances);
+		pause_settings_color_only = !campaign_map; /* AE hook */
+		if (!campaign_map) /* AE hook */
+			pause_settings_patch(); /* AE hook */
 		if (campaign_map)
 			pause_campaign_patch(instances);
 		pause_network_patch();

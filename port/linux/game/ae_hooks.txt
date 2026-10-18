@@ -850,6 +850,15 @@ port/linux/game/menu_tags.c	"ae split lpick left 0", "ae split lpick left 1", "a
 port/linux/game/menu_tags.c	"ae split join update", /* AE hook */
 # the maps' small =CANCEL prompt widened for the high resolution text (pause box, owner 2026-10-18): ae_glue_ce_maps.c
 port/linux/game/menu_tags.c	ae_ce_map_prompts_fit(); /* AE hook */
+# a multiplayer map's pause SETTINGS hides CHANGE COLOR (its Spartans are ui.map's, blank in a game; owner 2026-10-18)
+port/linux/game/menu_tags.c	static boolean pause_settings_color_only; /* AE hook */
+port/linux/game/menu_tags.c	if (pause_settings_color_only && !strstr(pause_settings_hidden_items[index], "/color_profile_item")) /* AE hook */
+port/linux/game/menu_tags.c	continue; /* AE hook */
+port/linux/game/menu_tags.c	if (pause_settings_color_only) /* AE hook */
+port/linux/game/menu_tags.c	return; /* AE hook */
+port/linux/game/menu_tags.c	pause_settings_color_only = !campaign_map; /* AE hook */
+port/linux/game/menu_tags.c	if (!campaign_map) /* AE hook */
+port/linux/game/menu_tags.c	pause_settings_patch(); /* AE hook */
 port/linux/game/menu_functions.c	if (!strncmp(name, "ae split ", 9)) /* AE hook */\nreturn ae_split_screen_event(name, widget, controller, widget_deleted);
 port/linux/game/menu_functions.c	if (!strcmp(name, "ae split join update")) /* AE hook */\nae_split_screen_join_update(widget);
 # HEALTH's REACH true to Halo: Reach (2026-10-18; ae_reach_health_rules.c): the waits' and the shields' refill numbers,
