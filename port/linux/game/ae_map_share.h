@@ -280,6 +280,10 @@ void ae_map_share_xbox_path(
 	char *path,
 	long size);
 /* map_families.c's: a map loaded from maps_shared is a downloaded one (its scripts' tighter rules), in any run */
+/* map_share.c's upload_limit: the host's kilobytes a second, network.map_share_lan_upload when every other machine of
+its game is on the local network (and that is more) */
+long ae_map_share_upload_kilobytes(
+	long kilobytes);
 boolean ae_map_share_xbox_downloaded(
 	char const *map_name);
 /* custom_maps.c's: maps_shared's maps listed with the maps folder's */

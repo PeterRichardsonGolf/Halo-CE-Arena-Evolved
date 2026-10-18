@@ -62,6 +62,7 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
 
 int config_boolean(const char *name);
 long config_integer(const char *name);
+unsigned long config_changes(void);
 const char *config_string(const char *name);
 boolean network_distributed_server_send_to_machine_reliably(long machine_index, void *message, word size);
 unsigned long network_game_server_machine_address(long machine_index);
@@ -2152,4 +2153,31 @@ void ae_map_share_all_render(
 	/* (the question was really drawn: only then, and only after a while, is an answer taken) */
 	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
 		ae_map_share_consent_shown();
+}
+
+/* map_share.c's upload_limit (an AE hook): a host whose every other machine is on the local network sends at
+network.map_share_lan_upload when that is more than network.map_share_upload (a LAN party's 100 MB map in seconds, not
+minutes); one machine on the internet, and the host keeps the internet's, which leaves its upload to the game */
+long ae_map_share_upload_kilobytes(long kilobytes)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static long lan_kilobytes;
+	short local_machine = network_game_client_get_local_machine_index();
+	long index;
+
+	if (read_at != config_changes())
+	{
+		read_at = config_changes();
+		lan_kilobytes = config_integer("network.map_share_lan_upload");
+	}
+	if (lan_kilobytes <= kilobytes || !global_network_game_server_get())
+		return kilobytes;
+	for (index = 0; index < MACHINES; index++)
+	{
+		unsigned long address = network_game_server_machine_address(index);
+
+		if (index != local_machine && address && !ae_map_share_address_local(address))
+			return kilobytes;
+	}
+	return lan_kilobytes;
 }

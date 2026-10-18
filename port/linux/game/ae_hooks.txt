@@ -823,3 +823,6 @@ port/linux/src/port_config.c	{ "input.back_left", _config_string, "\"none\"", "H
 source/cache/cache_files.c	if (!ae_map_folders_mod_map_refused(path, map_name)) return; /* AE hook */
 # Server Setup's START GAME with no game hosted any more says so (ae_glue_lan.c; LAN party 2026-10-17)
 port/linux/game/menu_functions.c	if (!global_network_game_server_get()) return ae_lobby_server_gone(); /* AE hook */
+# a LAN game's host sends maps at network.map_share_lan_upload (ae_map_share_all.c; owner 2026-10-17)
+port/linux/game/map_share.c	if (map_share_host()) kilobytes = ae_map_share_upload_kilobytes(kilobytes); /* AE hook */
+port/linux/src/port_config.c	{ "network.map_share_lan_upload", _config_integer, "16384", "HALO_NET_MAP_SHARE_LAN_UPLOAD", _environment_value, /* AE hook */\n_platform_all,

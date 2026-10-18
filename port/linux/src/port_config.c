@@ -856,6 +856,12 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"Hosting: the most kilobytes a second the host sends of maps (16 to\n"
 		"65536), so that the game's own traffic keeps the rest of the upload." },
+	{ "network.map_share_lan_upload", _config_integer, "16384", "HALO_NET_MAP_SHARE_LAN_UPLOAD", _environment_value, /* AE hook */
+		_platform_all,
+		"Hosting a game whose players are all on the local network: the most\n"
+		"kilobytes a second the host sends of maps (16 to 65536), when more\n"
+		"than network.map_share_upload (which a game with a player on the\n"
+		"internet keeps)." },
 	{ "network.map_seed", _config_boolean, "true", "HALO_NET_MAP_SEED", _environment_value, _platform_all,
 		"Playing in another's game: help send its map to players who join\n"
 		"without it, as a torrent's peers do (the pieces this machine has, at\n"

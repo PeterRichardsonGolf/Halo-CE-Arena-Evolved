@@ -664,6 +664,7 @@ static long upload_limit(
 {
 	long kilobytes = map_share_host() ? config_integer("network.map_share_upload") :
 		config_integer("network.map_seed_upload");
+	if (map_share_host()) kilobytes = ae_map_share_upload_kilobytes(kilobytes); /* AE hook */
 
 	return PIN(kilobytes, MINIMUM_UPLOAD_KILOBYTES, MAXIMUM_UPLOAD_KILOBYTES) * 1024;
 }
