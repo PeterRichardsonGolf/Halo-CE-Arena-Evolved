@@ -2205,7 +2205,7 @@ ARENA_ROWS = [
     ("health_regeneration", "HEALTH:", ["HALO CE", "REACH", "HALO 2", "HALO 3"], [
         "Your health only comes back with a health pack.",
         "As in Halo: Reach: health comes back 4 s after\\nyou were last hurt, up to the top of its third;\\nshields refill in 3 s. Packs fill the rest.",
-        "Your shields are all that matter: your health\\ncomes back as soon as they start to recharge.",
+        "As in Halo 2: your health comes back 10 s after\\nyou were last hurt, with or without shields.",
         "As in Halo 3 (the same as HALO 2): your health\\ncomes back 10 s after you were last hurt.",
     ]),
     # (COMBAT FEEDBACK: bits 0-1 of the variant's pad5, port/linux/game/ae_hit_feedback.c's

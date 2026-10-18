@@ -256,7 +256,7 @@
 		<string text="Landings never hurt, from any height. Pits and\nleaving the map still kill."/>
 		<string text="Your health only comes back with a health pack."/>
 		<string text="As in Halo: Reach: health comes back 4 s after\nyou were last hurt, up to the top of its third;\nshields refill in 3 s. Packs fill the rest."/>
-		<string text="Your shields are all that matter: your health\ncomes back as soon as they start to recharge."/>
+		<string text="As in Halo 2: your health comes back 10 s after\nyou were last hurt, with or without shields."/>
 		<string text="As in Halo 3 (the same as HALO 2): your health\ncomes back 10 s after you were last hurt."/>
 		<string text="Shields and hits look as in Halo CE."/>
 		<string text="Shields show their state: a pop when one headshot\nwill finish, a flicker while down, a sweep as they\nrecharge; a blood pop on the kill. No damage change."/>
