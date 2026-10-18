@@ -6,6 +6,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- The H2 Demakes Sali Creek's overshield pickup looks like Halo's overshield, not the camouflage sphere: the map gave
+  it the camouflage's model (Halo's own tags have the two models' names swapped), and Arena Evolved now gives it the
+  stock overshield's model, which the map carries, when the map loads.
+
 ## 0.3.4-beta - 2026-10-18
 
 - A map layout file can now drop placed scenery and other objects: `remove scenery "protected 54"` or

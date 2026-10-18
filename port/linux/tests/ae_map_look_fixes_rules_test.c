@@ -111,6 +111,100 @@ int main(void)
 		CHECK(coagulation);
 	}
 
+	/* (a reference's fix: pointed at the new tag only from the expected one, with the target group; its other
+	bytes, the reference's name and the tag's other bytes left) */
+	{
+		struct ae_map_look_retarget const retarget = { "h2d_salicreek", 0x65716970UL, "e\\q", 0x28, 0x6D6F6465UL,
+			"old", "new", "test" };
+		unsigned char object[0x17C];
+		unsigned char kept[0x17C];
+		uint32_t group = 0x6D6F6465UL;
+		int32_t index_value = (int32_t)0xE55403E0;
+		int32_t value;
+		uint32_t name = 0x803BF778UL;
+
+		CHECK(ae_map_look_retarget_for_map(&retarget, "h2d_salicreek"));
+		CHECK(ae_map_look_retarget_for_map(&retarget, "H2D_SALICREEK"));
+		CHECK(!ae_map_look_retarget_for_map(&retarget, "h2d_salicreek2"));
+		CHECK(!ae_map_look_retarget_for_map(&retarget, NULL));
+		CHECK(!ae_map_look_retarget_for_map(NULL, "h2d_salicreek"));
+
+		memset(object, 0x5A, sizeof(object));
+		memcpy(object + 0x28, &group, sizeof(group));
+		memcpy(object + 0x2C, &name, sizeof(name));
+		memcpy(object + 0x34, &index_value, sizeof(index_value));
+		memcpy(kept, object, sizeof(object));
+		/* (the expected or the new tag not the map's: left) */
+		CHECK(ae_map_look_retarget_apply(&retarget, object, sizeof(object), -1, (int32_t)0xE68C0518) ==
+			AE_MAP_LOOK_FIX_MISSING);
+		CHECK(ae_map_look_retarget_apply(&retarget, object, sizeof(object), (int32_t)0xE55403E0, -1) ==
+			AE_MAP_LOOK_FIX_MISSING);
+		CHECK(!memcmp(object, kept, sizeof(object)));
+		/* (to another tag than the expected one: another version of the map, left) */
+		CHECK(ae_map_look_retarget_apply(&retarget, object, sizeof(object), (int32_t)0xE55B03E7, (int32_t)0xE68C0518) ==
+			AE_MAP_LOOK_FIX_UNEXPECTED);
+		CHECK(!memcmp(object, kept, sizeof(object)));
+		/* (a reference of another group: left) */
+		{
+			unsigned char other[0x17C];
+			uint32_t coll = 0x636F6C6CUL;
+
+			memcpy(other, object, sizeof(other));
+			memcpy(other + 0x28, &coll, sizeof(coll));
+			CHECK(ae_map_look_retarget_apply(&retarget, other, sizeof(other), (int32_t)0xE55403E0,
+				(int32_t)0xE68C0518) == AE_MAP_LOOK_FIX_UNEXPECTED);
+			CHECK(!memcmp(other + 0x2C, object + 0x2C, 12));
+		}
+		/* (outside the tag: nothing read) */
+		CHECK(ae_map_look_retarget_apply(&retarget, object, 0x37, (int32_t)0xE55403E0, (int32_t)0xE68C0518) ==
+			AE_MAP_LOOK_FIX_OUTSIDE);
+		CHECK(ae_map_look_retarget_apply(&retarget, NULL, sizeof(object), (int32_t)0xE55403E0, (int32_t)0xE68C0518) ==
+			AE_MAP_LOOK_FIX_OUTSIDE);
+		CHECK(ae_map_look_retarget_apply(NULL, object, sizeof(object), (int32_t)0xE55403E0, (int32_t)0xE68C0518) ==
+			AE_MAP_LOOK_FIX_OUTSIDE);
+		CHECK(!memcmp(object, kept, sizeof(object)));
+		/* (applied: the index alone changes; again, fixed already) */
+		CHECK(ae_map_look_retarget_apply(&retarget, object, 0x38, (int32_t)0xE55403E0, (int32_t)0xE68C0518) ==
+			AE_MAP_LOOK_FIX_APPLIED);
+		memcpy(&value, object + 0x34, sizeof(value));
+		CHECK(value == (int32_t)0xE68C0518);
+		CHECK(!memcmp(object, kept, 0x34) && !memcmp(object + 0x38, kept + 0x38, sizeof(object) - 0x38));
+		CHECK(ae_map_look_retarget_apply(&retarget, object, sizeof(object), (int32_t)0xE55403E0, (int32_t)0xE68C0518) ==
+			AE_MAP_LOOK_FIX_ALREADY);
+		memcpy(&value, object + 0x34, sizeof(value));
+		CHECK(value == (int32_t)0xE68C0518);
+	}
+
+	/* (the references' table: h2d_salicreek's overshield given the stock overshield's model and collision model;
+	every entry names its map, tags and target group, changes something and lies in an object's 0x17C bytes) */
+	{
+		int model = 0;
+		int collision = 0;
+
+		for (index = 0; index < ae_map_look_retarget_count; index++)
+		{
+			struct ae_map_look_retarget const *entry = &ae_map_look_retargets[index];
+
+			CHECK(entry->map_name && entry->map_name[0] && strlen(entry->map_name) <= AE_MAP_LOOK_FIX_MAP_NAME_SIZE);
+			CHECK(entry->tag_name && entry->tag_name[0]);
+			CHECK(entry->expected_name && entry->expected_name[0] && entry->new_name && entry->new_name[0]);
+			CHECK(strcmp(entry->expected_name, entry->new_name));
+			CHECK(entry->what && entry->what[0]);
+			CHECK(entry->offset + 0x10 <= 0x17C);
+			if (!strcmp(entry->map_name, "h2d_salicreek") && entry->group == 0x65716970UL && /* 'eqip' */
+				!strcmp(entry->tag_name, "powerups\\over shield\\over shield") &&
+				!strcmp(entry->expected_name, "powerups\\over shield\\over shield") &&
+				!strcmp(entry->new_name, "powerups\\active camoflage\\active camoflage"))
+			{
+				if (entry->offset == 0x28 && entry->target_group == 0x6D6F6465UL) /* 'mode' */
+					model = 1;
+				if (entry->offset == 0x70 && entry->target_group == 0x636F6C6CUL) /* 'coll' */
+					collision = 1;
+			}
+		}
+		CHECK(model && collision);
+	}
+
 	/* (a bitmap and type said once until the reset; another type or bitmap is its own) */
 	ae_bitmap_type_errors_reset(&errors);
 	CHECK(ae_bitmap_type_errors_first(&errors, 0x1000, 0));
