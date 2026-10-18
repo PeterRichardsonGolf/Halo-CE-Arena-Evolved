@@ -24,8 +24,9 @@ PE = "main_menu/settings_select/player_setup/player_profile_edit"
 # tools/ce_menus.py's LEFT_OUT), Quit a row below it (its CHILD_OFFSETS)
 MODS = "main_menu/mods"
 MOD_ROWS = 11
-MODS_ITEM_PLACE = (192, 391)
-QUIT_ITEM_PLACE = (192, 427)
+# (AE: seven rows with MENUS, 35 apart from 211, so that QUIT ends at 454, inside the 5% action-safe area: 456)
+MODS_ITEM_PLACE = (192, 386)
+QUIT_ITEM_PLACE = (192, 421)
 YES_NO = [("YES", "true"), ("NO", "false")]
 ON_OFF = [("ON", "true"), ("OFF", "false")]
 # (display.performance's levels: main.c's performance_level_names)
@@ -1134,10 +1135,10 @@ WIDGET_PATCHES = {
     f"{MT}/connected/connected_map_select_wrapper": {"set": {
         "flags": "pass_unhandled_to_focused_child pause_game main_menu_if_no_history tag_controller_index force_handle_mouse",
     }},
-    # (MENUS (AE: _menus_select) and OpenCE's MODS (_mods), above QUIT; the column up 36, ce_menus.CHILD_OFFSETS)
+    # (MENUS (AE: _menus_select) and OpenCE's MODS (_mods), above QUIT; the column from 211, 35 apart, ce_menus.CHILD_OFFSETS)
     "main_menu/main_menu_select_list": {"insert_before": {
         "main_menu/main_menu_item_quit_game": [
-            f'<child widget="main_menu/main_menu_item_menus" x="192" y="{MODS_ITEM_PLACE[1] - 36}"/>',
+            f'<child widget="main_menu/main_menu_item_menus" x="192" y="{MODS_ITEM_PLACE[1] - 35}"/>',
             f'<child widget="main_menu/main_menu_item_mods" x="{MODS_ITEM_PLACE[0]}" y="{MODS_ITEM_PLACE[1]}"/>'],
     }},
     # (Mods, after Network Setup: _mods_item; Change Color and About a row down,
@@ -2603,7 +2604,7 @@ def multiplayer_files() -> dict:
 # styles (port/linux/game/ae_menus_swap.c). The main menu's column moves up 18 to make room (ce_menus.CHILD_OFFSETS);
 # the rows' pictures are tools/menu_row_art.py's (bitmaps main_menu/menu_*), the style in use marked
 MENUS_SELECT = "main_menu/menus_select"
-MAIN_MENU_ROW_X, MAIN_MENU_FIRST_ROW, MAIN_MENU_ROW_SPACING = 192, 211, 36
+MAIN_MENU_ROW_X, MAIN_MENU_FIRST_ROW, MAIN_MENU_ROW_SPACING = 192, 211, 35
 # the styles' rows: key, picture; BACK straight under the last, at the same pitch (ae_menus_swap.c takes ARENA
 # EVOLVED out of a build without AE menus, and BACK up into its place)
 MENUS_STYLE_ROWS = [("pc", "main_menu/menu_style_pc_current"), ("xbox", "main_menu/menu_style_xbox"),
@@ -2631,7 +2632,7 @@ def _menus_select() -> list:
                      ['<on event="b" back="true"/>', '<on event="back" back="true"/>',
                       '<child widget="main_menu/halo_logo" y="28"/>',
                       f'<child widget="{MENUS_SELECT}/menus_select_list"/>',
-                      '<child widget="main_menu/build_number" x="450" y="436"/>'])
+                      '<child widget="main_menu/build_number" x="450" y="430"/>'])
     rows = [f'<child widget="{MENUS_SELECT}/menus_item_{key}" x="{MAIN_MENU_ROW_X}" '
             f'y="{MAIN_MENU_FIRST_ROW + MAIN_MENU_ROW_SPACING * index}"/>'
             for index, (key, _) in enumerate(MENUS_STYLE_ROWS)]

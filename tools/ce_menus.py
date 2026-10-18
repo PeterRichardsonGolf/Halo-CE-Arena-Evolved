@@ -77,12 +77,12 @@ LEFT_OUT = {
 MULTIPLAYER_ROWS = {"join": (-32, 78), "join_internet": (0, 110), "join_lan": (0, 142), "join_direct": (0, 174),
                     "create": (-32, 206), "create_internet": (0, 238), "create_lan": (0, 270), "gametypes": (0, 376)}
 CHILD_OFFSETS = {
-    # (the main menu's column 36 up from OpenCE's, for MENUS and MODS above QUIT: port_settings.WIDGET_PATCHES,
-    # _menus_select, MAIN_MENU_FIRST_ROW; its build number stays beside QUIT, 9 below its top)
+    # (the main menu's column from 211, 35 apart, for MENUS and MODS above QUIT (QUIT inside the action-safe area):
+    # port_settings.WIDGET_PATCHES, _menus_select, MAIN_MENU_FIRST_ROW; its build number beside QUIT, 9 below its top)
     **{("ui\\shell\\main_menu\\main_menu_select_list", f"ui\\shell\\main_menu\\main_menu_item_{item}"): place
-       for item, place in (("load_camp", (194, 211)), ("multiplayer", (192, 247)), ("profile", (192, 283)),
-                           ("settings", (192, 319)), ("quit_game", port_settings.QUIT_ITEM_PLACE))},
-    ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 436),
+       for item, place in (("load_camp", (194, 211)), ("multiplayer", (192, 246)), ("profile", (192, 281)),
+                           ("settings", (192, 316)), ("quit_game", (192, 421)))},
+    ("ui\\shell\\main_menu\\main_menu", "ui\\shell\\main_menu\\build_number"): (450, 430),
     **{("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
         f"ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_{row}_item"): offset
        for row, offset in MULTIPLAYER_ROWS.items()},
