@@ -6,6 +6,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Modded discs (Halo 1: NHE, CE+ X, Patch Edition and other whole sets of Xbox maps) have a folder of their own:
+  `discs/<name>/maps`, chosen on Settings > Game Options > MODDED DISCS (`game.disc`; the old `game.mod` is read into
+  it once). Discs already in `mods/` keep working from there and nothing is moved; move them to `discs/` when you
+  like. `mods/` is now the folder of OpenCE's client-side mods.
 - From OpenCE build-208 to build-213 (OpenCE's work, merged): the high-resolution Xbox HUD is complete, with a
   BUTTON STYLE row on Settings > Video > GRAPHICS (CLASSIC, GEMS or DARK GEMS button faces in the game's prompts);
   turning the high-res HUD or text on or off applies at once, without reloading the map; the campaign pause menu's

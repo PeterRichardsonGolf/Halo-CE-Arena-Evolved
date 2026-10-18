@@ -24,6 +24,7 @@ high-res HUD's are (hud_hires.c).
 #include "port_config.h"
 #include "xgpu.h"
 #include "../game/ae_map_pictures.h" /* AE hook */
+#include "ae_discs.h" /* AE hook */
 
 #include "expat.h"
 
@@ -968,7 +969,7 @@ static void mod_consider(const char *name, void *context)
 	{
 		return;
 	}
-	snprintf(maps, sizeof(maps), "%s/%s/maps", mods_folder, name);
+	snprintf(maps, sizeof(maps), "%s/%s/maps", (const char *)context, name); /* AE hook */
 	if (platform_folder_exists(maps))
 	{
 		strcpy(mod_names[mod_count], name);
@@ -995,10 +996,12 @@ static void mods_fill(struct halo_menus *menus)
 	long index;
 	int mod;
 
-	snprintf(mods_folder, sizeof(mods_folder), "%s/mods", platform_data_root());
+	snprintf(mods_folder, sizeof(mods_folder), "%s/discs", platform_data_root()); /* AE hook */
 	mod_count = 0;
-	platform_folder_list(mods_folder, mod_consider, NULL);
+	platform_folder_list(mods_folder, mod_consider, mods_folder); /* AE hook */
+	{ char earlier[1024]; snprintf(earlier, sizeof(earlier), "%s/mods", platform_data_root()); platform_folder_list(earlier, mod_consider, earlier); } /* AE hook */
 	qsort(mod_names, (size_t)mod_count, sizeof(mod_names[0]), mod_name_compare);
+	mod_count = ae_discs_unique(mod_names[0], MOD_NAME_LENGTH, mod_count); /* AE hook */
 	/* STOCK is game.mod's "", which split keeps (menu_tags.c) */
 	strcpy(strings, "STOCK");
 	values[0] = 0;
@@ -1018,14 +1021,14 @@ static void mods_fill(struct halo_menus *menus)
 	{
 		struct halo_menu_widget *widget = &menus->widgets[index];
 
-		if (widget->setting && !strcmp(widget->setting, "game.mod"))
+		if (widget->setting && !strcmp(widget->setting, "game.disc")) /* AE hook */
 		{
 			widget->strings = strings;
 			widget->values = values;
 		}
 	}
 	if (mod_count)
-		platform_log("mods: %d in %s", mod_count, mods_folder);
+		platform_log("modded discs: %d in %s and earlier releases' mods/", mod_count, mods_folder); /* AE hook */
 }
 
 /* port: the voice packs the spinner of game.callout_voice offers (Settings >
@@ -1067,7 +1070,7 @@ static void voices_fill(struct halo_menus *menus)
 {
 	static char strings[MAXIMUM_VOICES * (MOD_NAME_LENGTH + 1) + 8];
 	static char values[MAXIMUM_VOICES * (MOD_NAME_LENGTH + 1) + 8];
-	char const *mod = config_string("game.mod");
+	char const *mod = config_string("game.disc"); /* AE hook */
 	char folder[1024];
 	long index;
 	int voice;
@@ -1079,7 +1082,7 @@ static void voices_fill(struct halo_menus *menus)
 	{
 		char mod_folder[1024];
 
-		snprintf(mod_folder, sizeof(mod_folder), "%s/mods/%s/voices", platform_data_root(), mod);
+		snprintf(mod_folder, sizeof(mod_folder), "%s/%s/%s/voices", platform_data_root(), ae_disc_folder(mod), mod); /* AE hook */
 		platform_folder_list(mod_folder, voice_consider, mod_folder);
 	}
 	if (!voice_count)
@@ -1112,7 +1115,7 @@ static void voices_fill(struct halo_menus *menus)
 			widget->values = values;
 		}
 	}
-	platform_log("callouts: %d voice packs in %s%s%s%s", voice_count, folder, mod && mod[0] ? " and mods/" : "",
+	platform_log("callouts: %d voice packs in %s%s%s%s", voice_count, folder, mod && mod[0] ? " and disc " : "", /* AE hook */
 		mod && mod[0] ? mod : "", mod && mod[0] ? "/voices" : "");
 }
 

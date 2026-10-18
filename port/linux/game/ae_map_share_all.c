@@ -30,6 +30,7 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
 #include "bungie_net/network/transport_endpoint_winsock.h"
 #include "bungie_net/network/transport_address_constants.h"
 #include "cache/cache_files.h"
+#include "../src/ae_discs.h"
 #include "game/game.h"
 #include "interface/interface.h"
 #include "interface/ui_widget.h"
@@ -675,7 +676,7 @@ static void host_scan(
 	{
 		char folder[PATH_BYTES];
 
-		if (snprintf(folder, sizeof(folder), "d:\\mods\\%s\\maps\\", mod) < (int)sizeof(folder))
+		if (snprintf(folder, sizeof(folder), "d:\\%s\\%s\\maps\\", ae_disc_folder(mod), mod) < (int)sizeof(folder))
 			host_scan_xbox(folder, AE_MAP_SHARE_KIND_MOD);
 	}
 	host_scan_xbox(cache_files_map_directory(), AE_MAP_SHARE_KIND_XBOX);

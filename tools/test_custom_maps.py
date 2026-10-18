@@ -119,6 +119,8 @@ const char *cache_files_map_directory(void) {return directory;}
 const char *cache_files_mod(void) {return mod_name[0]?mod_name:NULL;}
 /* (the mod the game started with: the lists follow it, custom_maps.c) */
 const char *cache_files_mod_started(void) {return mod_name;}
+/* (ae_discs.c: a disc only in mods\, an earlier release's place, is read from there; this fixture's are) */
+const char *ae_disc_folder(const char *disc) {(void)disc; return "mods";}
 /* the platform's d:\mods\ (the data root's mods folder) is mod_root here */
 static void host_path(const char *name,char *out,size_t size) {
     if(!strncmp(name,"d:\\mods\\",8)) {

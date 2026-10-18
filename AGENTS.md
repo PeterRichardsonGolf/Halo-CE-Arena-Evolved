@@ -33,7 +33,8 @@ it is; where it differs from this section, this section is right for AE.
   `cache_file_formats.c`) is not in this tree. Custom Edition, HaloMD and
   Halo PC maps are ChupathingyCE's (`ce_*.c`, `map_families.c`), read from
   `maps_ce`, `maps_md` and `maps_pc` (and the older `maps/ce`, `md_maps`,
-  `custom_maps`), and a mod's from `mods/<mod>/maps`. See `port/linux/README.md`.
+  `custom_maps`), and a modded disc's from `discs/<disc>/maps` (`game.disc`;
+  `mods/<disc>/maps` still read: `port/linux/src/ae_discs.c`). See `port/linux/README.md`.
 
 This repository ports the Halo: Combat Evolved decompilation (Xbox build
 01.01.14.2342, `cachebeta.exe`) to Linux, Windows, Android and the web. The game's C

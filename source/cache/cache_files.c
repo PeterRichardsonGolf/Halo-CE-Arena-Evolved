@@ -666,11 +666,12 @@ char const *cache_files_map_directory(
 /* port: the mod played (game.mod: a folder of the data root's mods\), or
 NULL for none; a name that is not one folder's alone is none */
 const char *config_string(const char *name);
+char const *ae_disc_folder(char const *disc); /* AE hook */
 
 char const *cache_files_mod(
 	void)
 {
-	char const *mod = config_string("game.mod");
+	char const *mod = config_string("game.disc"); /* AE hook */
 
 	if (!mod || !mod[0] || strchr(mod, '\\') || strchr(mod, '/') || strstr(mod, ".."))
 		return NULL;
@@ -706,7 +707,7 @@ void cache_files_map_file_path(
 	(another file could be): the name can be a host's, over the network) */
 	if (mod)
 	{
-		length = snprintf(path, (size_t)size, "d:\\mods\\%s\\maps\\%s.map", mod, map_name);
+		length = snprintf(path, (size_t)size, "d:\\%s\\%s\\maps\\%s.map", ae_disc_folder(mod), mod, map_name); /* AE hook */
 		if (length >= 0 && length < size)
 		{
 			HANDLE file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -1700,7 +1701,7 @@ long scenario_tags_load(
 
 				cache_files_map_file_path(stripped_scenario_name, path, sizeof(path));
 				tag_validate_allow_shared_bytes(cache_files_mod_played() != NULL &&
-					!csstrncmp(path, "d:\\mods\\", 8));
+					(!csstrncmp(path, "d:\\mods\\", 8) || !csstrncmp(path, "d:\\discs\\", 9))); /* AE hook */
 			}
 			if (!tag_validate_tags(
 				tag_cache_base_address,

@@ -15,6 +15,7 @@ as it is).
 
 #include "platform.h"
 #include "port_config.h"
+#include "ae_discs.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -230,7 +231,7 @@ static void pack_resolve(const char *pack, const char *mod, char *resolved)
 	{
 		if (mod[0])
 		{
-			snprintf(folder, sizeof(folder), "%s/mods/%s/voices/%s", platform_data_root(), mod, pack);
+			snprintf(folder, sizeof(folder), "%s/%s/%s/voices/%s", platform_data_root(), ae_disc_folder(mod), mod, pack);
 			if (platform_folder_exists(folder))
 				strcpy(resolved, pack);
 		}
@@ -245,20 +246,20 @@ static void pack_resolve(const char *pack, const char *mod, char *resolved)
 	first_pack(folder, resolved);
 	if (!resolved[0] && mod[0])
 	{
-		snprintf(folder, sizeof(folder), "%s/mods/%s/voices", platform_data_root(), mod);
+		snprintf(folder, sizeof(folder), "%s/%s/%s/voices", platform_data_root(), ae_disc_folder(mod), mod);
 		first_pack(folder, resolved);
 	}
 	if (resolved[0])
 	{
 		platform_log("callouts: no voice pack '%s' in %s/voices%s%s%s; using '%s', the first there "
-			"(game.callout_voice stays '%s')", pack, platform_data_root(), mod[0] ? " or mods/" : "", mod,
+			"(game.callout_voice stays '%s')", pack, platform_data_root(), mod[0] ? " or the disc " : "", mod,
 			mod[0] ? "/voices" : "", resolved, pack);
 	}
 }
 
 int platform_callout_voice_load(char const *pack, char const *const *names, int count)
 {
-	const char *mod = config_string("game.mod");
+	const char *mod = config_string("game.disc");
 	char resolved[MAXIMUM_PACK_NAME];
 	char missing[1024];
 	int read = 0;
@@ -299,7 +300,7 @@ int platform_callout_voice_load(char const *pack, char const *const *names, int 
 
 		if (mod[0])
 		{
-			snprintf(path, sizeof(path), "%s/mods/%s/voices/%s/%s.wav", platform_data_root(), mod, resolved,
+			snprintf(path, sizeof(path), "%s/%s/%s/voices/%s/%s.wav", platform_data_root(), ae_disc_folder(mod), mod, resolved,
 				names[index]);
 			result = wav_read(path, &clips[index], &mod_reason);
 		}
@@ -310,7 +311,7 @@ int platform_callout_voice_load(char const *pack, char const *const *names, int 
 			result = wav_read(path, &clips[index], &reason);
 			if (result > 0 && mod_reason)
 			{
-				platform_log("callouts: voice '%s': mods/%s's %s.wav is %s; using voices/'s", resolved, mod,
+				platform_log("callouts: voice '%s': disc %s's %s.wav is %s; using voices/'s", resolved, mod,
 					names[index], mod_reason);
 			}
 			else if (result == 0 && mod_reason)
@@ -337,8 +338,8 @@ int platform_callout_voice_load(char const *pack, char const *const *names, int 
 	}
 	if (mod[0])
 	{
-		platform_log("callouts: voice '%s' with mod %s: %d of %d clips from %s/mods/%s/voices/%s and %s/voices/%s",
-			resolved, mod, read, count, platform_data_root(), mod, resolved, platform_data_root(), resolved);
+		platform_log("callouts: voice '%s' with disc %s: %d of %d clips from %s/%s/%s/voices/%s and %s/voices/%s",
+			resolved, mod, read, count, platform_data_root(), ae_disc_folder(mod), mod, resolved, platform_data_root(), resolved);
 	}
 	else
 	{

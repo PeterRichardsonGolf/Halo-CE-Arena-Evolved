@@ -847,3 +847,24 @@ source/interface/hud_messaging.c	scale = hud_split_screen_layout() ? 0.75f : 1.0
 # is the last used, the message's sprite path is kept, where AE's PlayStation icons are (ae_buttons_tags.c)
 source/interface/hud_messaging.c	int ae_buttons_playstation_now(void); /* AE hook */
 source/interface/hud_messaging.c	if (!ae_buttons_playstation_now() && hud_hires_button_draw(icon, cursor_bounds, color)) /* AE hook */\nreturn;
+# Modded discs moved to discs/<disc>/maps with game.disc (owner 10-18, for OpenCE's client-side mods in mods/):
+# game.mod stays as an earlier version's row, carried into game.disc once (port/linux/src/ae_discs.c)
+port/linux/src/port_config.c	{ "game.disc", _config_string, "\"\"", "HALO_DISC", _environment_value, /* AE hook */\n_platform_desktop,
+port/linux/src/port_config.c	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_none, /* AE hook */
+port/linux/src/port_config.c	struct config_value *disc = &config_values[config_setting_index("game.disc")]; /* AE hook */\nconst struct config_value *mod = &config_values[config_setting_index("game.mod")];\nsize_t index;\n\n/* (game.mod, earlier releases' game.disc: the disc it names, unless game.disc is set itself) */\nif (!disc->chosen && mod->chosen && mod->string[0])\n{\nfree(disc->string);\ndisc->string = strdup(mod->string);\nplatform_log("settings: game.mod (an earlier version's setting) is \"%s\": game.disc \"%s\"", mod->string,\ndisc->string);\n}
+# Modded discs in discs/<disc>/maps (game.disc; mods/<disc>/maps still read: port/linux/src/ae_discs.c)
+source/cache/cache_files.c	char const *ae_disc_folder(char const *disc); /* AE hook */
+source/cache/cache_files.c	char const *mod = config_string("game.disc"); /* AE hook */
+source/cache/cache_files.c	length = snprintf(path, (size_t)size, "d:\\%s\\%s\\maps\\%s.map", ae_disc_folder(mod), mod, map_name); /* AE hook */
+source/cache/cache_files.c	(!csstrncmp(path, "d:\\mods\\", 8) || !csstrncmp(path, "d:\\discs\\", 9))); /* AE hook */
+port/linux/src/menu_files.c	#include "ae_discs.h" /* AE hook */
+port/linux/src/menu_files.c	snprintf(maps, sizeof(maps), "%s/%s/maps", (const char *)context, name); /* AE hook */
+port/linux/src/menu_files.c	snprintf(mods_folder, sizeof(mods_folder), "%s/discs", platform_data_root()); /* AE hook */
+port/linux/src/menu_files.c	platform_folder_list(mods_folder, mod_consider, mods_folder); /* AE hook */
+port/linux/src/menu_files.c	{ char earlier[1024]; snprintf(earlier, sizeof(earlier), "%s/mods", platform_data_root()); platform_folder_list(earlier, mod_consider, earlier); } /* AE hook */
+port/linux/src/menu_files.c	mod_count = ae_discs_unique(mod_names[0], MOD_NAME_LENGTH, mod_count); /* AE hook */
+port/linux/src/menu_files.c	if (widget->setting && !strcmp(widget->setting, "game.disc")) /* AE hook */
+port/linux/src/menu_files.c	platform_log("modded discs: %d in %s and earlier releases' mods/", mod_count, mods_folder); /* AE hook */
+port/linux/src/menu_files.c	char const *mod = config_string("game.disc"); /* AE hook */
+port/linux/src/menu_files.c	snprintf(mod_folder, sizeof(mod_folder), "%s/%s/%s/voices", platform_data_root(), ae_disc_folder(mod), mod); /* AE hook */
+port/linux/src/menu_files.c	platform_log("callouts: %d voice packs in %s%s%s%s", voice_count, folder, mod && mod[0] ? " and disc " : "", /* AE hook */

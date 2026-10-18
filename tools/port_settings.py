@@ -135,8 +135,9 @@ SCREENS = {
              "Light Show: the shield glow three times as far,\nat full from a third of the flare.", None),
         ],
     },
-    # (Mods: its title text, not a picture; the spinner's mods are the data
-    # root's mods/ folders, listed as the menus are read: menu_files.c)
+    # (Game Options: its title text, not a picture; the spinner's modded discs
+    # are the data root's discs/ folders (and earlier releases' mods/ ones),
+    # listed as the menus are read: menu_files.c)
     "mods_setup": {
         "screen": "mods_settings_screen",
         "header": ("header_mods", None),
@@ -146,8 +147,8 @@ SCREENS = {
         # (the spinners wider, from further left: "TIME REMAINING")
         "spinner": (300, 187),
         "rows": [
-            ("MOD:", "game.mod", [("STOCK", "")],
-             "The maps played: a mod's replace the stock maps\nit has. OK starts the game again with it.",
+            ("MODDED DISCS:", "game.disc", [("STOCK", "")],
+             "The maps played: a modded disc's replace the\nstock maps it has. OK starts the game again with it.",
              "desktop"),
             ("WEAPON PACKS:", "game.weapon_packs", ON_OFF,
              "The battle rifle and other packs in the packs\nfolder. A gametype's ITEM OPTIONS give them to\nplayers. A change applies from the next start.", None),
@@ -163,7 +164,7 @@ SCREENS = {
               "Items spawning together in one line where the\nvoice has one, the item beep and five to one.",
               "Every item spawning together named, then each\none up in turn."], None),
             # (the spinner's voices are the data root's voices/ folders and
-            # the mod's mods/<mod>/voices/ ones, listed as the menus are
+            # the disc's discs/<disc>/voices/ ones, listed as the menus are
             # read: menu_files.c)
             ("VOICE:", "game.callout_voice", [("NHE", "nhe")],
              "The callouts' voice: a folder of voices/, next\nto maps/.", None),

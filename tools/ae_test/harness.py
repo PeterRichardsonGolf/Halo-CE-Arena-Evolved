@@ -710,21 +710,24 @@ def map_available(cfg, spec):
     if not data:
         return False, "no data_dir in the config"
     mod = spec.get("mod") or ""
-    if mod and not (data / "mods" / mod).exists():
-        return False, f"mod '{mod}' missing ({data}/mods)"
+    # (a modded disc: discs/<disc>, or mods/<disc> where earlier releases kept them: the game's ae_discs.c)
+    disc_maps = next((data / top / mod / "maps" for top in ("discs", "mods") if mod and (data / top / mod).exists()),
+                     data / "discs" / mod / "maps")
+    if mod and not disc_maps.parent.exists():
+        return False, f"disc '{mod}' missing ({data}/discs or {data}/mods)"
     m = spec.get("map")
     if not m or spec.get("network_test"):
         return True, ""
     if "\\" in m:
         name = m.rsplit("\\", 1)[-1]
-        dirs = [data / "maps"] + ([data / "mods" / mod / "maps"] if mod else [])
+        dirs = [data / "maps"] + ([disc_maps] if mod else [])
         ok = any((d / f"{name}.map").exists() for d in dirs)
         return (ok, "" if ok else f"campaign map {name}.map missing")
     if m.endswith("@ce"):
         name = m[:-3]
         ok = (data / "maps" / "ce" / f"{name}.map").exists()
         return (ok, "" if ok else f"Custom Edition map {name}.map missing ({data}/maps/ce)")
-    dirs = [data / "maps"] + ([data / "mods" / mod / "maps"] if mod else [])
+    dirs = [data / "maps"] + ([disc_maps] if mod else [])
     ok = any((d / f"{m}.map").exists() for d in dirs)
     return (ok, "" if ok else f"map {m}.map missing")
 
@@ -1267,7 +1270,7 @@ def prepare_game(cfg, spec, build, work, out, save_roots=None):
     if spec.get("screenshots"):
         shots.mkdir(parents=True, exist_ok=True)
     src = Path(build["dir"])
-    for d in ("maps", "mods"):
+    for d in ("maps", "mods", "discs"):
         if data and (data / d).exists():
             (root / d).symlink_to(data / d)
     packs = packs_folder(spec, data)

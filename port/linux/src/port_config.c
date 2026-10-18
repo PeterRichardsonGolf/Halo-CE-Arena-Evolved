@@ -633,10 +633,15 @@ static const struct config_setting config_settings[] =
 		"it is in; \"halo3\" once the shields are full, all of it; \"halo2\" Halo 2's\n"
 		"timers (shields 5 s then 2 s; health 10 s after the last body damage, then\n"
 		"5 s). Multiplayer goes by the gametype's HEALTH." },
-	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_desktop,
-		"The mod played: a folder of mods/ (next to maps/), whose maps/ holds the\n"
-		"maps it replaces (the others are maps/'s); empty for none. Settings >\n"
-		"Mods chooses it, and the game starts again with it." },
+	{ "game.disc", _config_string, "\"\"", "HALO_DISC", _environment_value, /* AE hook */
+		_platform_desktop,
+		"The modded disc played (a whole set of maps, as Halo 1: NHE's or CE+ X's):\n"
+		"a folder of discs/ (next to maps/), whose maps/ holds the maps it replaces\n"
+		"(the others are maps/'s); empty for none. A disc only in mods/, where\n"
+		"earlier releases kept them, is played from there. Settings > Game Options\n"
+		"> MODDED DISCS chooses it, and the game starts again with it." },
+	{ "game.mod", _config_string, "\"\"", "HALO_MOD", _environment_value, _platform_none, /* AE hook */
+		"Earlier releases' name of game.disc, read into it once (config_carry_over)." },
 	{ "game.mcc_path", _config_string, "\"\"", NULL, _environment_value, /* AE hook */
 		_platform_desktop,
 		"The folder of Halo: The Master Chief Collection (the one holding halo1/)\n"
@@ -673,8 +678,8 @@ static const struct config_setting config_settings[] =
 		"mark." },
 	{ "game.callout_voice", _config_string, "\"cori\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
 		"The callouts' voice: a folder of voices/ (next to maps/) holding WAVs\n"
-		"named for what they say (one.wav, rockets.wav, ...); the mod played's\n"
-		"own mods/<mod>/voices/<folder>/ clips come first. With no such folder,\n"
+		"named for what they say (one.wav, rockets.wav, ...); the modded disc\n"
+		"played's own discs/<disc>/voices/<folder>/ clips come first. With no such folder,\n"
 		"the first folder of voices/ speaks (this setting stays)." },
 
 	{ "game.unlock_all_levels", _config_boolean, "false", "HALO_UNLOCK_ALL_LEVELS", _environment_value, _platform_all,
@@ -2356,8 +2361,18 @@ static void config_carry_over(void)
 	};
 	struct config_value *level = &config_values[config_setting_index("display.performance")];
 	struct config_value *position = &config_values[config_setting_index("display.performance_position")];
+	struct config_value *disc = &config_values[config_setting_index("game.disc")]; /* AE hook */
+	const struct config_value *mod = &config_values[config_setting_index("game.mod")];
 	size_t index;
 
+	/* (game.mod, earlier releases' game.disc: the disc it names, unless game.disc is set itself) */
+	if (!disc->chosen && mod->chosen && mod->string[0])
+	{
+		free(disc->string);
+		disc->string = strdup(mod->string);
+		platform_log("settings: game.mod (an earlier version's setting) is \"%s\": game.disc \"%s\"", mod->string,
+			disc->string);
+	}
 	if (level->chosen && position->chosen)
 		return;
 	for (index = 0; index < sizeof(earlier) / sizeof(earlier[0]); index++)

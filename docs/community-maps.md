@@ -5,11 +5,12 @@ multiplayer caches in the active game-data map directory. Add the `.map` files
 alongside the retail maps before starting the game, then open the multiplayer
 map selector. If the installation uses a localized `maps_de`, `maps_fr`,
 `maps_es`, or `maps_it` directory, use that active directory. Restart after
-adding or removing maps: discovery runs once per process. With a mod active
-(this fork's Settings > Game Options > MOD, or `HALO_MOD`), its
-`mods/<name>/maps` folder is searched first, as the game loads a map from
-there before the map directory; a mod's maps named as stock maps replace
-them and are not listed again. Changing the mod restarts the game.
+adding or removing maps: discovery runs once per process. With a modded disc
+active (this fork's Settings > Game Options > MODDED DISCS, or `HALO_DISC`), its
+`discs/<name>/maps` folder (or `mods/<name>/maps`, where earlier releases kept
+discs) is searched first, as the game loads a map from there before the map
+directory; a disc's maps named as stock maps replace them and are not listed
+again. Changing the disc restarts the game.
 
 The original 13 multiplayer maps retain their order, localized names, and
 previews. Custom entries follow in case-insensitive name order, with a generic
