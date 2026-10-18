@@ -17,109 +17,110 @@
 		<on event="stick_left" run="ae split profile left"/>
 		<on event="stick_right" run="ae split profile right"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/header_split_screen"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_strip" x="16" y="74"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_strip" x="16" y="72"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_rule" x="16" y="78"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_card_0" x="16" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_on_0" x="16" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_off_0" x="16" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_held_0" x="16" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_device_0" x="53" y="134"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_0" x="16" y="176"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_0" x="24" y="194"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_0" x="29" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_0" x="137" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_0" x="35" y="196"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_0" x="16" y="219"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_0" x="33" y="234"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_0" x="20" y="365"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_0" x="62" y="381"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_0" x="82" y="382"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_0" x="22" y="172"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_0" x="24" y="188"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_0" x="29" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_0" x="137" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_0" x="35" y="192"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_0" x="16" y="215"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_0" x="45" y="228"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_0" x="20" y="360"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_0" x="62" y="377"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_0" x="82" y="378"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_press_0" x="16" y="230"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_tojoin_0" x="16" y="254"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_0" x="28" y="288"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_0" x="50" y="289"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_0" x="28" y="316"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_0" x="50" y="317"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_0" x="28" y="344"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_0" x="50" y="345"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_0" x="24" y="288"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_0" x="44" y="289"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_0" x="24" y="316"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_0" x="44" y="317"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_0" x="24" y="344"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_0" x="44" y="345"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_card_1" x="170" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_on_1" x="170" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_off_1" x="170" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_held_1" x="170" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_device_1" x="207" y="134"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_1" x="170" y="176"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_1" x="178" y="194"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_1" x="183" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_1" x="291" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_1" x="189" y="196"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_1" x="170" y="219"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_1" x="187" y="234"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_1" x="174" y="365"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_1" x="216" y="381"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_1" x="236" y="382"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_1" x="176" y="172"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_1" x="178" y="188"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_1" x="183" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_1" x="291" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_1" x="189" y="192"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_1" x="170" y="215"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_1" x="199" y="228"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_1" x="174" y="360"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_1" x="216" y="377"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_1" x="236" y="378"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_press_1" x="170" y="230"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_tojoin_1" x="170" y="254"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_1" x="182" y="288"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_1" x="204" y="289"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_1" x="182" y="316"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_1" x="204" y="317"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_1" x="182" y="344"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_1" x="204" y="345"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_1" x="178" y="288"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_1" x="198" y="289"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_1" x="178" y="316"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_1" x="198" y="317"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_1" x="178" y="344"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_1" x="198" y="345"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_card_2" x="324" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_on_2" x="324" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_off_2" x="324" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_held_2" x="324" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_device_2" x="361" y="134"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_2" x="324" y="176"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_2" x="332" y="194"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_2" x="337" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_2" x="445" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_2" x="343" y="196"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_2" x="324" y="219"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_2" x="341" y="234"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_2" x="328" y="365"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_2" x="370" y="381"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_2" x="390" y="382"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_2" x="330" y="172"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_2" x="332" y="188"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_2" x="337" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_2" x="445" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_2" x="343" y="192"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_2" x="324" y="215"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_2" x="353" y="228"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_2" x="328" y="360"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_2" x="370" y="377"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_2" x="390" y="378"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_press_2" x="324" y="230"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_tojoin_2" x="324" y="254"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_2" x="336" y="288"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_2" x="358" y="289"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_2" x="336" y="316"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_2" x="358" y="317"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_2" x="336" y="344"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_2" x="358" y="345"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_2" x="332" y="288"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_2" x="352" y="289"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_2" x="332" y="316"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_2" x="352" y="317"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_2" x="332" y="344"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_2" x="352" y="345"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_card_3" x="478" y="102"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_on_3" x="478" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_off_3" x="478" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_title_held_3" x="478" y="109"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_device_3" x="515" y="134"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_3" x="478" y="176"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_3" x="486" y="194"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_3" x="491" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_3" x="599" y="200"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_3" x="497" y="196"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_3" x="478" y="219"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_3" x="495" y="234"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_3" x="482" y="365"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_3" x="524" y="381"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_3" x="544" y="382"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_devname_3" x="484" y="172"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_bar_3" x="486" y="188"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_l_3" x="491" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_arrow_r_3" x="599" y="196"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_prof_3" x="497" y="192"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_proflabel_3" x="478" y="215"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_armour_3" x="507" y="228"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_controls_3" x="482" y="360"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_3" x="524" y="377"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_3" x="544" y="378"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_press_3" x="478" y="230"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_tojoin_3" x="478" y="254"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_3" x="490" y="288"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_3" x="512" y="289"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_3" x="490" y="316"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_3" x="512" y="317"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_3" x="490" y="344"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_3" x="512" y="345"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_help_ready" x="20" y="419"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_help_nobody" x="20" y="419"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_message" x="20" y="446"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_more" x="304" y="446"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph0_3" x="486" y="288"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_3" x="506" y="289"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph1_3" x="486" y="316"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_3" x="506" y="317"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyph2_3" x="486" y="344"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_3" x="506" y="345"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_help_ready" x="20" y="414"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_help_nobody" x="20" y="414"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_message" x="20" y="441"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_more" x="310" y="441"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_button_bar" y="414"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_continue_off" x="380" y="415"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/header_split_screen" controller="1" left="35" top="11" width="363" height="59" bitmap="main_menu/multiplayer_type_select/split_screen/header_split_screen">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_strip" controller="1" width="608" height="24" bitmap="bitmaps/ae_seat_strip">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_strip" controller="1" width="608" height="28" bitmap="bitmaps/ae_seat_strip">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_rule" type="text" controller="1" width="608" height="16" text="The first to press START (or ENTER) is PLAYER 1, the next PLAYER 2 ..." font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
 	</widget>
@@ -133,9 +134,9 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_device_0" controller="1" width="72" height="40" bitmap="bitmaps/ae_seat_devices">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_0" type="text" controller="1" width="146" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_0" type="text" controller="1" width="134" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_0" controller="1" width="130" height="24" bitmap="bitmaps/ae_seat_profile_bar">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_0" controller="1" width="130" height="28" bitmap="bitmaps/ae_seat_profile_bar">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_arrow_l_0" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
 	</widget>
@@ -159,15 +160,15 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph0_0" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_0" type="text" controller="1" width="108" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_0" type="text" controller="1" width="110" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph1_0" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_0" type="text" controller="1" width="108" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_0" type="text" controller="1" width="110" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph2_0" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_0" type="text" controller="1" width="108" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_0" type="text" controller="1" width="110" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_card_1" controller="1" width="146" height="300" bitmap="bitmaps/ae_seat_card">
 	</widget>
@@ -179,9 +180,9 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_device_1" controller="1" width="72" height="40" bitmap="bitmaps/ae_seat_devices">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_1" type="text" controller="1" width="146" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_1" type="text" controller="1" width="134" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_1" controller="1" width="130" height="24" bitmap="bitmaps/ae_seat_profile_bar">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_1" controller="1" width="130" height="28" bitmap="bitmaps/ae_seat_profile_bar">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_arrow_l_1" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
 	</widget>
@@ -205,15 +206,15 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph0_1" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_1" type="text" controller="1" width="108" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_1" type="text" controller="1" width="110" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph1_1" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_1" type="text" controller="1" width="108" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_1" type="text" controller="1" width="110" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph2_1" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_1" type="text" controller="1" width="108" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_1" type="text" controller="1" width="110" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_card_2" controller="1" width="146" height="300" bitmap="bitmaps/ae_seat_card">
 	</widget>
@@ -225,9 +226,9 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_device_2" controller="1" width="72" height="40" bitmap="bitmaps/ae_seat_devices">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_2" type="text" controller="1" width="146" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_2" type="text" controller="1" width="134" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_2" controller="1" width="130" height="24" bitmap="bitmaps/ae_seat_profile_bar">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_2" controller="1" width="130" height="28" bitmap="bitmaps/ae_seat_profile_bar">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_arrow_l_2" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
 	</widget>
@@ -251,15 +252,15 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph0_2" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_2" type="text" controller="1" width="108" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_2" type="text" controller="1" width="110" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph1_2" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_2" type="text" controller="1" width="108" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_2" type="text" controller="1" width="110" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph2_2" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_2" type="text" controller="1" width="108" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_2" type="text" controller="1" width="110" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_card_3" controller="1" width="146" height="300" bitmap="bitmaps/ae_seat_card">
 	</widget>
@@ -271,9 +272,9 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_device_3" controller="1" width="72" height="40" bitmap="bitmaps/ae_seat_devices">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_3" type="text" controller="1" width="146" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_devname_3" type="text" controller="1" width="134" height="16" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_3" controller="1" width="130" height="24" bitmap="bitmaps/ae_seat_profile_bar">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_bar_3" controller="1" width="130" height="28" bitmap="bitmaps/ae_seat_profile_bar">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_arrow_l_3" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
 	</widget>
@@ -297,27 +298,29 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph0_3" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_3" type="text" controller="1" width="108" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext0_3" type="text" controller="1" width="110" height="16" text="START" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph1_3" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_3" type="text" controller="1" width="108" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext1_3" type="text" controller="1" width="110" height="16" text="OPTIONS" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyph2_3" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_3" type="text" controller="1" width="108" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_glyphtext2_3" type="text" controller="1" width="110" height="16" text="ENTER / SPACE" font="ui\small_ui" color="#FFFFFFFF" align="left" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_help_ready" type="text" controller="1" width="350" height="16" text="PLAYER 1 picks the map and gametype next." font="ui\small_ui" color="#FF2896FF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_help_ready" type="text" controller="1" width="350" height="24" text="PLAYER 1 picks the map and gametype next." font="ui\small_ui" color="#FF2896FF" align="left" text_y="5" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_help_nobody" type="text" controller="1" width="350" height="16" text="Nobody has joined yet." font="ui\small_ui" color="#FF2896FF" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_help_nobody" type="text" controller="1" width="350" height="24" text="Nobody has joined yet." font="ui\small_ui" color="#FF2896FF" align="left" text_y="5" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_message" type="text" controller="1" width="350" height="16" font="ui\small_ui" color="#FFFFBA40" align="left" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_message" type="text" controller="1" width="290" height="24" font="ui\small_ui" color="#FFFFBA40" align="left" text_y="5" text_flags="no_focus_test">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_more" type="text" controller="1" width="320" height="16" text="Up to 4 players on one PC; bots in the lobby." font="ui\small_ui" color="#FF2896FF" align="right" text_flags="no_focus_test">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_more" type="text" controller="1" width="320" height="24" text="Up to 4 players on one PC; bots in the lobby." font="ui\small_ui" color="#FF2896FF" align="right" text_y="5" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child">
-		<child widget="main_menu/multiplayer_type_select/split_screen/split_screen_continue" x="384" y="1"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/split_screen_back" x="512" y="1"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/split_screen_continue" x="380" y="1"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/split_screen_back" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_continue_off" type="text" controller="1" width="128" height="24" bitmap="bitmaps/text_button_background" text="CONTINUE" font="ui\small_ui" color="#FF1B5A96" align="center" text_y="2" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/split_screen_continue" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" text="CONTINUE" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
 		<on event="a" run="ae split continue"/>

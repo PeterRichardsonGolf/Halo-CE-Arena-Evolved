@@ -413,7 +413,7 @@ static wchar_t const *device_name(struct ae_seat_view const *view)
 		return L"UNPLUGGED";
 	switch (view->family)
 	{
-	case AE_SEAT_FAMILY_KEYBOARD: return L"KEYBOARD + MOUSE";
+	case AE_SEAT_FAMILY_KEYBOARD: return L"KEYBOARD";
 	case AE_SEAT_FAMILY_XBOX: return L"XBOX CONTROLLER";
 	case AE_SEAT_FAMILY_PLAYSTATION: return L"PLAYSTATION";
 	case AE_SEAT_FAMILY_NINTENDO: return L"NINTENDO";
@@ -480,6 +480,8 @@ static void join_card_update(struct widget_instance *screen, short seat)
 		join_concat(controls, join_length(layout) <= JOIN_CONTROLS_FIT ? L"Controls: " : L"", layout);
 	}
 	join_text(join_child(screen, "join_controls", seat), controls);
+	/* (a keyboard's controls are its own keys, not a layout: no line) */
+	join_show(join_child(screen, "join_controls", seat), view.family != AE_SEAT_FAMILY_KEYBOARD);
 }
 
 /* the seat map on, with no seat and no profile chosen (the screen's open, or its first update, whichever is first) */
@@ -537,6 +539,7 @@ void ae_split_screen_join_update(struct widget_instance *screen)
 		join_card_update(screen, seat);
 	join_show(child_named(screen, "join_help_ready"), any);
 	join_show(child_named(screen, "join_help_nobody"), !any);
+	join_show(child_named(screen, "join_continue_off"), !any);
 	join_text(child_named(screen, "join_message"),
 		join.message && system_milliseconds() < join.message_until ? join.message : L"");
 }

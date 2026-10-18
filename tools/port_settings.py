@@ -1837,13 +1837,14 @@ JOIN_CARD_LEFT, JOIN_CARD_TOP, JOIN_CARD_STEP, JOIN_CARD_WIDTH = 16, 102, 154, 1
 JOIN_BLUE, JOIN_WHITE, JOIN_DIM, JOIN_AMBER = "#FF2896FF", "#FFFFFFFF", "#FF1B5A96", "#FFFFBA40"
 
 
-def _join_text(name: str, text, font: str, color: str, x: int, y: int, width: int, align="center", height=None):
+def _join_text(name: str, text, font: str, color: str, x: int, y: int, width: int, align="center", height=None,
+               text_y=None):
     """a line of the JOIN screen (its text given, or set by ae_split_screen.c)"""
     big = font == "large"
     return _widget(f"{JOIN}/{name}", [("type", "text"), ("controller", 1), ("width", width),
                                       ("height", height or (22 if big else 16)), ("text", text or None),
                                       ("font", "ui\\large_ui" if big else "ui\\small_ui"), ("color", color),
-                                      ("align", align), ("text_flags", "no_focus_test")], [])
+                                      ("align", align), ("text_y", text_y), ("text_flags", "no_focus_test")], [])
 
 
 def _join_picture(name: str, bitmap: str, width: int, height: int):
@@ -1859,8 +1860,8 @@ def _join_screen() -> list:
         children.append(f'<child widget="{JOIN}/{name}" x="{x}" y="{y}"/>')
 
     lines += _header(f"{JOIN}/header_split_screen", f"{JOIN}/header_split_screen")
-    lines += _join_picture("join_strip", "bitmaps/ae_seat_strip", 608, 24)
-    place("join_strip", 16, 74)
+    lines += _join_picture("join_strip", "bitmaps/ae_seat_strip", 608, 28)
+    place("join_strip", 16, 72)
     lines += _join_text("join_rule", "The first to press START (or ENTER) is PLAYER 1, the next PLAYER 2 ...", "small",
                         JOIN_WHITE, 0, 0, 608)
     place("join_rule", 16, 78)
@@ -1875,26 +1876,27 @@ def _join_screen() -> list:
         # (a seated player)
         lines += _join_picture(f"join_device_{seat}", "bitmaps/ae_seat_devices", 72, 40)
         place(f"join_device_{seat}", x + 37, y + 32)
-        lines += _join_text(f"join_devname_{seat}", "", "small", JOIN_WHITE, 0, 0, w)
-        place(f"join_devname_{seat}", x, y + 74)
-        lines += _join_picture(f"join_bar_{seat}", "bitmaps/ae_seat_profile_bar", 130, 24)
-        place(f"join_bar_{seat}", x + 8, y + 92)
+        lines += _join_text(f"join_devname_{seat}", "", "small", JOIN_WHITE, 0, 0, w - 12)
+        place(f"join_devname_{seat}", x + 6, y + 70)
+        lines += _join_picture(f"join_bar_{seat}", "bitmaps/ae_seat_profile_bar", 130, 28)
+        place(f"join_bar_{seat}", x + 8, y + 86)
         lines += _join_picture(f"join_arrow_l_{seat}", "bitmaps/arrow_sm_left", 12, 12)
-        place(f"join_arrow_l_{seat}", x + 13, y + 98)
+        place(f"join_arrow_l_{seat}", x + 13, y + 94)
         lines += _join_picture(f"join_arrow_r_{seat}", "bitmaps/arrow_sm_right", 12, 12)
-        place(f"join_arrow_r_{seat}", x + w - 25, y + 98)
+        place(f"join_arrow_r_{seat}", x + w - 25, y + 94)
         lines += _join_text(f"join_prof_{seat}", "", "large", JOIN_WHITE, 0, 0, 108)
-        place(f"join_prof_{seat}", x + 19, y + 94)
+        place(f"join_prof_{seat}", x + 19, y + 90)
         lines += _join_text(f"join_proflabel_{seat}", "PROFILE", "small", JOIN_BLUE, 0, 0, w)
-        place(f"join_proflabel_{seat}", x, y + 117)
+        place(f"join_proflabel_{seat}", x, y + 113)
         lines += _join_picture(f"join_armour_{seat}", "ui\\shell\\bitmaps\\colors_sm", 112, 136)
-        place(f"join_armour_{seat}", x + 17, y + 132)
+        # (the figure is drawn left in its frame, the profile panel's picture: placed so its figure is centred)
+        place(f"join_armour_{seat}", x + 29, y + 126)
         lines += _join_text(f"join_controls_{seat}", "", "small", JOIN_BLUE, 0, 0, w - 8)
-        place(f"join_controls_{seat}", x + 4, y + 263)
+        place(f"join_controls_{seat}", x + 4, y + 258)
         lines += _join_picture(f"join_leavebtn_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
-        place(f"join_leavebtn_{seat}", x + 46, y + 279)
+        place(f"join_leavebtn_{seat}", x + 46, y + 275)
         lines += _join_text(f"join_leave_{seat}", "LEAVE", "small", JOIN_WHITE, 0, 0, 60, align="left")
-        place(f"join_leave_{seat}", x + 66, y + 280)
+        place(f"join_leave_{seat}", x + 66, y + 276)
         # (an empty seat: the ring is the card's own picture)
         lines += _join_text(f"join_press_{seat}", "PRESS START", "large", JOIN_WHITE, 0, 0, w)
         place(f"join_press_{seat}", x, y + 128)
@@ -1902,19 +1904,21 @@ def _join_screen() -> list:
         place(f"join_tojoin_{seat}", x, y + 152)
         for row, label in enumerate(("START", "OPTIONS", "ENTER / SPACE")):
             lines += _join_picture(f"join_glyph{row}_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
-            place(f"join_glyph{row}_{seat}", x + 12, y + 186 + 28 * row)
-            lines += _join_text(f"join_glyphtext{row}_{seat}", label, "small", JOIN_WHITE, 0, 0, w - 38, align="left")
-            place(f"join_glyphtext{row}_{seat}", x + 34, y + 187 + 28 * row)
+            place(f"join_glyph{row}_{seat}", x + 8, y + 186 + 28 * row)
+            lines += _join_text(f"join_glyphtext{row}_{seat}", label, "small", JOIN_WHITE, 0, 0, w - 36, align="left")
+            place(f"join_glyphtext{row}_{seat}", x + 28, y + 187 + 28 * row)
+    # (the help lines as the lobby's: 24 high, text 5 down)
     lines += _join_text("join_help_ready", "PLAYER 1 picks the map and gametype next.", "small", JOIN_BLUE, 0, 0, 350,
-                        align="left")
-    place("join_help_ready", 20, 419)
-    lines += _join_text("join_help_nobody", "Nobody has joined yet.", "small", JOIN_BLUE, 0, 0, 350, align="left")
-    place("join_help_nobody", 20, 419)
-    lines += _join_text("join_message", "", "small", JOIN_AMBER, 0, 0, 350, align="left")
-    place("join_message", 20, 446)
+                        align="left", height=24, text_y=5)
+    place("join_help_ready", 20, 414)
+    lines += _join_text("join_help_nobody", "Nobody has joined yet.", "small", JOIN_BLUE, 0, 0, 350, align="left",
+                        height=24, text_y=5)
+    place("join_help_nobody", 20, 414)
+    lines += _join_text("join_message", "", "small", JOIN_AMBER, 0, 0, 290, align="left", height=24, text_y=5)
+    place("join_message", 20, 441)
     lines += _join_text("join_more", "Up to 4 players on one PC; bots in the lobby.", "small", JOIN_BLUE, 0, 0, 320,
-                        align="right")
-    place("join_more", 304, 446)
+                        align="right", height=24, text_y=5)
+    place("join_more", 310, 441)
     # (CONTINUE and BACK where the lobby's last two buttons are; left and right are each player's own profile, so
     # they do not move between the buttons: the mouse clicks BACK, a device with no seat's B goes back)
     profile_keys = ['<on event="left" run="ae split profile left"/>',
@@ -1923,8 +1927,13 @@ def _join_screen() -> list:
                     '<on event="stick_right" run="ae split profile right"/>']
     lines += _widget(f"{JOIN}/join_button_bar", [("type", "column_list"), ("width", 640), ("height", 28),
                                                  ("flags", "pass_unhandled_to_focused_child")],
-                     [f'<child widget="{JOIN}/split_screen_continue" x="384" y="1"/>',
-                      f'<child widget="{JOIN}/split_screen_back" x="512" y="1"/>'])
+                     [f'<child widget="{JOIN}/split_screen_continue" x="380" y="1"/>',
+                      f'<child widget="{JOIN}/split_screen_back" x="510" y="1"/>'])
+    # (CONTINUE dim while nobody sits: drawn over the live one, which a press then finds with no one to go on with)
+    lines += _widget(f"{JOIN}/join_continue_off",
+                     [("type", "text"), ("controller", 1), ("width", 128), ("height", 24),
+                      ("bitmap", "bitmaps/text_button_background"), ("text", "CONTINUE"), ("font", "ui\\small_ui"),
+                      ("color", JOIN_DIM), ("align", "center"), ("text_y", 2), ("text_flags", "no_focus_test")], [])
     # (the button's name has "split_scr": menu_functions.c's multiplayer_mode_set reads the mode from it)
     lines += _widget(f"{JOIN}/split_screen_continue",
                      [("type", "text"), ("width", 128), ("height", 24), ("bitmap", "bitmaps/text_button_background"),
@@ -1951,7 +1960,8 @@ def _join_screen() -> list:
                       '<on event="back" run="ae split back key" back="true"/>',
                       *profile_keys,
                       f'<child widget="{JOIN}/header_split_screen"/>', *children,
-                      f'<child widget="{JOIN}/join_button_bar" y="414"/>'])
+                      f'<child widget="{JOIN}/join_button_bar" y="414"/>',
+                      f'<child widget="{JOIN}/join_continue_off" x="380" y="415"/>'])
     return screen + lines
 
 

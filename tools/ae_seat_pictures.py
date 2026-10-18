@@ -36,8 +36,8 @@ AMBER = (255, 186, 64)
 CARD = (146, 300)
 DEVICE = (72, 40)
 BUTTON = (16, 16)
-PROFILE_BAR = (130, 24)
-STRIP = (608, 22)
+PROFILE_BAR = (130, 28)
+STRIP = (608, 28)
 
 FONTS = {"key": "input_keyboard.ttf", "xbox": "input_xbox.ttf", "ps": "input_playstation.ttf",
          "nintendo": "input_nintendo.ttf"}
@@ -102,32 +102,39 @@ def _nine_slice(source, size, corner: int):
     return out
 
 
-def _recolour_edge(card, colour):
-    """the panel's blue edge in another colour (its navy fill kept): a pixel's blueness is how much it is edge"""
+# (the stock panel as the game draws it, measured on screen: a 2-unit edge over this navy; the source's own fill is
+# lighter and its edge 4 units, the game drawing it smaller)
+PANEL_FILL = (0, 14, 35)
+
+
+def _recolour_edge(card, colour, fill=PANEL_FILL):
+    """the panel in an edge colour over the stock fill: each pixel's share of edge (how far it is from the source's
+    own fill toward its blue) kept"""
     import numpy as np
     from PIL import Image
     a = np.array(card).astype(float)
-    # (the panel's own fill, at its middle, and its edge's blue)
     navy = a[a.shape[0] // 2, a.shape[1] // 2, :3].copy()
     blue = np.array(BLUE, float)
-    # (how far each pixel is from the navy toward the blue, 0..1)
     t = np.clip(((a[..., :3] - navy) * (blue - navy)).sum(2) / ((blue - navy) ** 2).sum(), 0, 1)[..., None]
     t[t < 0.04] = 0
-    a[..., :3] = navy + t * (np.array(colour, float) - navy)
+    a[..., :3] = np.array(fill, float) + t * (np.array(colour, float) - np.array(fill, float))
     return Image.fromarray(a.clip(0, 255).astype(np.uint8), "RGBA")
 
 
 def _panel(menus: Path):
+    """the game's outlined panel at half its size: its edge then 2 units, as the game draws it"""
     from PIL import Image
     source = Image.open(menus / "ce" / "shell" / "bitmaps" / "spinner_list_3_wide_item_background__1.png").convert("RGBA")
-    return source.crop(source.getbbox())
+    source = source.crop(source.getbbox())
+    return source.resize((source.width // 2, source.height // 2), Image.LANCZOS)
 
 
 def cards(menus: Path) -> list:
     from PIL import Image, ImageDraw
     size = (CARD[0] * UNIT, CARD[1] * UNIT)
-    seated = _nine_slice(_panel(menus), size, 18 * UNIT // 4 * 4)
-    empty = _recolour_edge(seated, DIM)
+    panel = _nine_slice(_panel(menus), size, 9 * UNIT // 4 * 4)
+    seated = _recolour_edge(panel, BLUE)
+    empty = _recolour_edge(panel, DIM)
     # (the empty seat's plus in a dashed ring, under PLAYER n: tools/port_settings.py's _join_screen leaves its room)
     draw = ImageDraw.Draw(empty)
     cx, cy, r, w = size[0] / 2, 86 * UNIT, 30 * UNIT, 2 * UNIT
@@ -135,7 +142,7 @@ def cards(menus: Path) -> list:
         draw.arc((cx - r, cy - r, cx + r, cy + r), k * 15, k * 15 + 9, fill=DIM + (255,), width=w)
     draw.line((cx - 12 * UNIT, cy, cx + 12 * UNIT, cy), fill=DIM + (255,), width=3 * UNIT)
     draw.line((cx, cy - 12 * UNIT, cx, cy + 12 * UNIT), fill=DIM + (255,), width=3 * UNIT)
-    return [empty, seated, _recolour_edge(seated, AMBER)]
+    return [empty, seated, _recolour_edge(panel, AMBER)]
 
 
 def devices() -> list:
@@ -183,7 +190,8 @@ def _band(menus: Path, frame: int, width: int):
     middle = source.crop((end, 0, min(source.width - end, end + pixels - 2 * end), source.height))
     band.paste(middle.resize((pixels - 2 * end, source.height)), (end, 0))
     band.paste(source.crop((source.width - end, 0, source.width, source.height)), (pixels - end, 0))
-    return band
+    # (cut to its ink: the widget then shows all of it, its rounded bottom too)
+    return band.crop((0, 0, pixels, band.getbbox()[3]))
 
 
 # each bitmap's name, its frames' size (units) and their pictures
@@ -191,8 +199,8 @@ def bitmaps(menus: Path) -> dict:
     return {"bitmaps/ae_seat_card": (CARD, cards(menus)),
             "bitmaps/ae_seat_devices": (DEVICE, devices()),
             "bitmaps/ae_seat_buttons": (BUTTON, buttons()),
-            "bitmaps/ae_seat_profile_bar": ((PROFILE_BAR[0], 32), [_band(menus, 1, PROFILE_BAR[0])]),
-            "bitmaps/ae_seat_strip": ((STRIP[0], 32), [_band(menus, 1, STRIP[0])])}
+            "bitmaps/ae_seat_profile_bar": (PROFILE_BAR, [_band(menus, 1, PROFILE_BAR[0])]),
+            "bitmaps/ae_seat_strip": (STRIP, [_band(menus, 1, STRIP[0])])}
 
 
 def png_path(bitmap: str, frame: int) -> str:
