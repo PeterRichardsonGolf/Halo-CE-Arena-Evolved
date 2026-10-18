@@ -1015,6 +1015,7 @@ distances: inf - inf), the bullet's velocity and place turn NaN on its first tic
 Both speeds of such a projectile are scaled down to AE_CE_PROJECTILE_SPEED_LIMIT (world units a tick, as the tags hold
 them once loaded), their ratio kept: at that speed a bullet still crosses any map in one tick, its damage and its
 slowing curve are as before. Both machines of a game repair the same map alike: no network change */
+#ifdef HALO_CUSTOM_EDITION
 #define AE_CE_PROJECTILE_SPEED_LIMIT 1.0e12f
 
 void ae_ce_projectile_speeds(void *tag_instances, long tag_count)
@@ -1052,3 +1053,4 @@ void ae_ce_projectile_speeds(void *tag_instances, long tag_count)
 		error(_error_silent, "Custom Edition map: %ld projectile%s scaled to the float range", repaired,
 			repaired == 1 ? "" : "s");
 }
+#endif /* (only the builds that read Custom Edition maps: the web build has none) */
