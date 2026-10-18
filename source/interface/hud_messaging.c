@@ -150,12 +150,12 @@ symbols in this file:
 #include "ae_weapon_pack.h" /* AE hook */
 #include "ae_hud_messages.h" /* AE hook */
 #include "ae_test_hooks.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
+#include "ae_hud_hires.h" /* AE hook */
 
 #include <stddef.h>
 #ifdef HALO_64BIT
 #include "memory/data.h"
-#include "ae_panels.h" /* AE hook */
-#include "ae_hud_hires.h" /* AE hook */
 #endif
 
 /* ---------- constants */

@@ -74,7 +74,8 @@ char const *pc_menus_root_name(void);
 char const *pc_menu_function_name(long function_index);
 char const *pc_menu_game_data_input_name(long function_index);
 boolean pc_menu_tag(long tag_index);
-boolean pc_menu_frame_placement(struct bitmap_data const *bitmap, short *x, short *y, short *width, short *height);
+boolean pc_menu_frame_placement(struct bitmap_data const *bitmap, short *x, short *y, short *width, short *height,
+	short *texel_y);
 
 /* ---------- constants */
 
@@ -2396,7 +2397,8 @@ boolean pc_menu_frame_placement(
 	short *x,
 	short *y,
 	short *width,
-	short *height)
+	short *height,
+	short *texel_y)
 {
 	long index;
 
@@ -2404,6 +2406,9 @@ boolean pc_menu_frame_placement(
 	{
 		if (menu_tags.placements[index].bitmap == bitmap)
 		{
+			/* (from the frame's first row: ui_widget.c's caller passes the row it is drawn from, as
+			ChupathingyCE's split frames have it; no frame of this tree is split) */
+			*texel_y = 0;
 			*x = menu_tags.placements[index].x;
 			*y = menu_tags.placements[index].y;
 			*width = menu_tags.placements[index].width;
