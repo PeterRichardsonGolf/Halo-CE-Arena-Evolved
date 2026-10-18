@@ -338,6 +338,55 @@ static int parse_vehicle(char **words, int count, struct ae_layout_vehicle_rule 
 	return 1;
 }
 
+static char const *const object_type_names[NUMBER_OF_AE_LAYOUT_OBJECT_TYPES] =
+{
+	"scenery", "machine", "control", "light_fixture", "sound_scenery", "biped", "weapon", "equipment"
+};
+
+char const *ae_layout_object_type_name(short type)
+{
+	return type >= 0 && type < NUMBER_OF_AE_LAYOUT_OBJECT_TYPES ? object_type_names[type] : "?";
+}
+
+/* remove scenery <name|n> [near x y z r] | remove object <type> <name|n> [near x y z r]: at is the word of the name or
+number (2 for scenery, 3 for object) */
+static int parse_object(char **words, int count, int at, short type, struct ae_layout_object_rule *rule, char *error,
+	int error_size)
+{
+	long number;
+
+	memset(rule, 0, sizeof(*rule));
+	rule->type = type;
+	if (count <= at)
+	{
+		say(error, error_size, "remove scenery/object: which?", NULL);
+		return 0;
+	}
+	if (whole_of(words[at], 0, 65535, &number))
+		rule->palette_index = number;
+	else if (strlen(words[at]) < sizeof(rule->name) && words[at][0])
+	{
+		rule->by_name = TRUE;
+		strcpy(rule->name, words[at]);
+	}
+	else
+	{
+		say(error, error_size, "remove scenery/object: not a name or a palette number", words[at]);
+		return 0;
+	}
+	if (count == at + 1)
+		return 1;
+	if (count != at + 6 || !same_word(words[at + 1], "near") || !real_of(words[at + 2], &rule->x) ||
+		!real_of(words[at + 3], &rule->y) || !real_of(words[at + 4], &rule->z) || !real_of(words[at + 5], &rule->radius) ||
+		rule->radius <= 0.0f)
+	{
+		say(error, error_size, "remove scenery/object: wants near <x> <y> <z> <radius>", words[at + 1]);
+		return 0;
+	}
+	rule->near = TRUE;
+	return 1;
+}
+
 /* bot jump at x y z to x y z | bot avoid x y z radius r */
 static int parse_bot(char **words, int count, struct ae_layout *out, short line_number, char *error, int error_size)
 {
@@ -587,6 +636,39 @@ int ae_layout_parse(char const *text, long length, struct ae_layout *out, char *
 			if (!parse_vehicle(words, count, &out->vehicle_rules[out->vehicle_rule_count], error, error_size))
 				goto refused;
 			out->vehicle_rules[out->vehicle_rule_count++].line = (short)line_number;
+		}
+		else if (count >= 2 && same_word(words[0], "remove") &&
+			(same_word(words[1], "scenery") || same_word(words[1], "object")))
+		{
+			short type = _ae_layout_object_scenery;
+			int at = 2;
+
+			if (out->object_rule_count == AE_LAYOUT_MAXIMUM_OBJECT_RULES)
+			{
+				say(error, error_size, "more than 32 scenery and object lines", NULL);
+				goto refused;
+			}
+			if (same_word(words[1], "object"))
+			{
+				if (count < 3)
+				{
+					say(error, error_size, "remove object: which type?", NULL);
+					goto refused;
+				}
+				for (type = 0; type < NUMBER_OF_AE_LAYOUT_OBJECT_TYPES; type++)
+					if (same_word(words[2], object_type_names[type]))
+						break;
+				if (type == NUMBER_OF_AE_LAYOUT_OBJECT_TYPES)
+				{
+					say(error, error_size, "remove object: not a type (scenery machine control light_fixture "
+						"sound_scenery biped weapon equipment)", words[2]);
+					goto refused;
+				}
+				at = 3;
+			}
+			if (!parse_object(words, count, at, type, &out->object_rules[out->object_rule_count], error, error_size))
+				goto refused;
+			out->object_rules[out->object_rule_count++].line = (short)line_number;
 		}
 		else if (count >= 2 && same_word(words[0], "name") && same_word(words[1], "item"))
 		{

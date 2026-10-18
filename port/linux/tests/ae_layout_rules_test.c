@@ -28,6 +28,10 @@ static void test_good_file(void)
 		"item \"weapons\\sniper rifle\\sniper rifle\" at 0 0 0 team neutral respawn 90 facing -45.5\n"
 		"remove vehicle turret\n"
 		"remove vehicle 2 near 10 -4 2.5 6\n"
+		"remove scenery \"protected 54\"\n"
+		"remove scenery 3 near 1 -2 3 4.5\n"
+		"remove object machine coil near 0 0 0 2\n"
+		"remove object Equipment 7\n"
 		"name item 33 SWORD\n"
 		"name item 4 \"ENERGY SWORD\"\n";
 
@@ -48,6 +52,17 @@ static void test_good_file(void)
 	AE_CHECK(layout.vehicle_rule_count == 2 && layout.vehicle_rules[0].turret && !layout.vehicle_rules[0].near);
 	AE_CHECK(!layout.vehicle_rules[1].turret && layout.vehicle_rules[1].palette_index == 2);
 	AE_CHECK(layout.vehicle_rules[1].near && layout.vehicle_rules[1].radius == 6.0f && layout.vehicle_rules[1].line == 9);
+	AE_CHECK(layout.object_rule_count == 4);
+	AE_CHECK(layout.object_rules[0].type == _ae_layout_object_scenery && layout.object_rules[0].by_name &&
+		!strcmp(layout.object_rules[0].name, "protected 54") && !layout.object_rules[0].near && layout.object_rules[0].line == 10);
+	AE_CHECK(layout.object_rules[1].type == _ae_layout_object_scenery && !layout.object_rules[1].by_name &&
+		layout.object_rules[1].palette_index == 3 && layout.object_rules[1].near && layout.object_rules[1].y == -2.0f &&
+		layout.object_rules[1].radius == 4.5f);
+	AE_CHECK(layout.object_rules[2].type == _ae_layout_object_machine && !strcmp(layout.object_rules[2].name, "coil") &&
+		layout.object_rules[2].near && layout.object_rules[2].radius == 2.0f);
+	AE_CHECK(layout.object_rules[3].type == _ae_layout_object_equipment && layout.object_rules[3].palette_index == 7);
+	AE_CHECK(!strcmp(ae_layout_object_type_name(_ae_layout_object_sound_scenery), "sound_scenery") &&
+		!strcmp(ae_layout_object_type_name(99), "?"));
 	AE_CHECK(layout.name_count == 2 && layout.names[0].item == 33 && !strcmp(layout.names[0].label, "SWORD"));
 	AE_CHECK(layout.names[1].item == 4 && !strcmp(layout.names[1].label, "ENERGY SWORD"));
 	AE_CHECK(ae_layout_for_map(&layout, "H2_Zanzibar.map", 0x58102bdcUL));
@@ -90,6 +105,12 @@ static void test_refusals(void)
 		"layout 1 m.map 00000001\nitem rocket at 0 0 0\n",    /* not an alias, no path */
 		"layout 1 m.map 00000001\nitem like at 0 0 0\n",
 		"layout 1 m.map 00000001\nitem at 0 0 0\n",
+		"layout 1 m.map 00000001\nremove scenery\n",
+		"layout 1 m.map 00000001\nremove scenery coil near 1 2 3\n",
+		"layout 1 m.map 00000001\nremove scenery coil near 1 2 3 0\n",
+		"layout 1 m.map 00000001\nremove object\n",
+		"layout 1 m.map 00000001\nremove object tank 3\n",
+		"layout 1 m.map 00000001\nremove object machine\n",
 		"layout 1 m.map 00000001\nremove vehicle\n",
 		"layout 1 m.map 00000001\nremove vehicle tank\n",
 		"layout 1 m.map 00000001\nremove vehicle turret near 0 0 0\n",
