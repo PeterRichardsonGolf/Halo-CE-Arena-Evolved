@@ -542,6 +542,9 @@ source/interface/hud_weapon.c	ae_panels_hide_ce(TRUE); /* AE hook */
 source/interface/hud_weapon.c	ae_panels_hide_ce(FALSE); /* AE hook */
 source/interface/hud_weapon.c	ae_panels_hide_ce(TRUE); /* AE hook */
 source/interface/hud_weapon.c	ae_panels_hide_ce(FALSE); /* AE hook */
+# an H2CE map's weapon HUD number of the weapon's rounds flagged "only when zoomed" is no zoomed readout: under AE it
+# is held back with CE's weapon panel (0.3.4)
+source/interface/hud_weapon.c	if (zoomed_layout && !ae_panels_zoomed_number_kept(state_index)) zoomed_layout = FALSE; /* AE hook */
 source/interface/hud_unit.c	#include "ae_panels.h" /* AE hook */
 source/interface/hud_unit.c	ae_panels_hide_ce(unit_count == 0 && hud_unit != NULL && unit_hud_indices[unit_count] != NONE); /* AE hook */
 source/interface/hud_unit.c	ae_panels_hide_ce(FALSE); /* AE hook */

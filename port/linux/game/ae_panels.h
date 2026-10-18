@@ -28,6 +28,10 @@ void ae_panels_hide_ce(boolean hide);
 boolean ae_panels_hiding_ce(void);
 /* (hud_draw.c) the weapon HUD's zoomed elements are drawn between TRUE and FALSE: not held back */
 void ae_panels_zoom_element(boolean begin);
+/* (hud_weapon.c) whether a weapon HUD number shown only when zoomed (state_type: its state) is drawn as a zoomed
+element: always with CLASSIC; under AE only the range and elevation readouts (ae_panel_zoomed_number_is_readout), a
+count of the weapon's is held back with CE's weapon panel */
+boolean ae_panels_zoomed_number_kept(short state_type);
 /* (hud.c, after CE's weapon and unit HUD and the waypoints) the AE panels of this view; TRUE when drawn */
 boolean ae_panels_draw(short local_player_index);
 /* debug.ae_panel_state's "script_blink": the scripts' blink bits taken as on (the sensor's too) */

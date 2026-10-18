@@ -158,4 +158,13 @@ the group's own colour (no new colour); with REDUCE MOTION a steady group dimmed
 #define AE_PANEL_SCRIPT_BLINK_CALM_TICKS 60
 real ae_panel_script_blink_fade(boolean blinking, long tick, boolean reduced_motion);
 
+/* a weapon HUD number shown only when zoomed (hud_weapon.c's number elements; its state is the element's state type):
+TRUE when it is the zoomed view's range or elevation readout (states 6 and 7: the sniper's, kept under AE, owner
+2026-10-17); FALSE for one of the weapon's own counts (rounds, heat, age: states 0 to 5), which the AE ammo group shows.
+The engine does not read the flag (it draws such a number zoomed or not): an H2CE map's weapon HUD has the total
+rounds with it, drawn as a second count beside the AE shield bar (0.3.4) */
+#define AE_PANEL_WEAPON_NUMBER_DISTANCE 6
+#define AE_PANEL_WEAPON_NUMBER_ELEVATION 7
+boolean ae_panel_zoomed_number_is_readout(short state_type);
+
 #endif /* __AE_PANEL_MODEL_H */

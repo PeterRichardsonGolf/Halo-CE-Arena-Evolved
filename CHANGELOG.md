@@ -63,6 +63,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - The campaign tutorial's blinking health and shield (and a script's blinking motion sensor) blink under HUD STYLE
   AE too, in their own blue; with REDUCE MOTION they dim briefly every 2 s instead.
 - A flashing help line flashes again under HUD STYLE AE: it pulses from white to the menus' ice blue.
+- HUD STYLE AE no longer shows a second rounds count beside the shield bar on H2CE maps (Coagulation and others):
+  their weapon HUD's total rounds number is now held back with the rest of Halo CE's weapon panel.
 - Network co-op's SPECTATING line and the hint under it are bigger (24 and 20 px at 1080p, never under 16).
 - Split screen's JOIN screen: Multiplayer > SPLIT SCREEN starts with four player cards. The first device to press
   START (ENTER or SPACE on the keyboard) is PLAYER 1, the next PLAYER 2, so keyboard and mouse can be any player, and
