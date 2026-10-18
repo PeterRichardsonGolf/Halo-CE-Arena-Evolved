@@ -1191,6 +1191,8 @@ TITLES = {
     f"{MT}/lobby/header_add_player": "ADD PLAYER",
     f"{ARENA_OPTIONS}/header_arena_options": "ARENA OPTIONS",
     f"{NHE_OPTIONS}/header_nhe_options": "NHE OPTIONS",
+    # (Server Setup's title in a split screen game, a game on this PC: ae_split_screen.c shows it there)
+    f"{MT}/server_settings/header_game_setup": "GAME SETUP",
 }
 
 
@@ -1340,8 +1342,12 @@ def _server_settings() -> list:
     # (thirteen rows, with ARENA OPTIONS, PASSWORD and MAP SHARING: closer
     # together, the help lower, as video_settings)
     spec = {"screen": "server_settings_screen", "spacing": 22, "help_top": 368,
-            "header": ("header_server_settings", f"{base}/header_server_settings")}
+            "header": ("header_server_settings", f"{base}/header_server_settings"),
+            # (GAME SETUP over SERVER SETTINGS in a split screen game: ae_split_screen.c shows one of the two)
+            "screen_children": [f'<child widget="{base}/header_game_setup"/>']}
     rows, extra = [], []
+    extra += _widget(f"{base}/header_game_setup", [("controller", 1), ("left", 35), ("top", 11), ("width", 605),
+                                                    ("height", 59), ("bitmap", f"{base}/header_game_setup")], [])
     extra += _value_row(base, "server_name", 0, "ss edit server name")
     rows.append((f"{base}/op_server_name", None))
     extra += _widget(f"{base}/op_max_players", [("width", 512), ("height", 28),

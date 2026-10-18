@@ -129,9 +129,19 @@ static char const *const gametype_rows[] = { "op_game_type", "op_player_options"
 void ae_split_screen_server_settings(struct widget_instance *list)
 {
 	struct widget_instance *child;
+	struct widget_instance *header;
 	short row, index;
+	boolean local = network_game_is_splitscreen_local();
 
-	if (!list || !network_game_is_splitscreen_local())
+	if (!list)
+		return;
+	/* (its title: GAME SETUP for a game on this PC, else the PC version's SERVER SETTINGS; port_settings.py puts both
+	on the screen) */
+	if ((header = child_named(list->parent, "header_server_settings")) != NULL)
+		header->visible = !local;
+	if ((header = child_named(list->parent, "header_game_setup")) != NULL)
+		header->visible = local;
+	if (!local)
 		return;
 	for (row = 0; row < (short)NUMBEROF(network_rows); row++)
 	{
