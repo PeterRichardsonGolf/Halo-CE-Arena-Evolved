@@ -111,3 +111,51 @@ boolean ae_hud_message_flow_picture(struct ae_hud_message_flow *flow, real width
 	flow->line_empty = FALSE;
 	return broke;
 }
+
+/* ---------- sizes */
+
+real ae_hud_message_px(real scale)
+{
+	real px = AE_HUD_MESSAGE_PX * scale;
+
+	return px < AE_HUD_MESSAGE_FLOOR_PX ? AE_HUD_MESSAGE_FLOOR_PX : px;
+}
+
+real ae_hud_message_pitch(real px)
+{
+	return AE_HUD_MESSAGE_PITCH * px;
+}
+
+real ae_hud_message_wrap_right(real left, real view_width, real group_width, real px, real scale)
+{
+	real width = AE_HUD_MESSAGE_WRAP_EM * px;
+	real edge = view_width - AE_HUD_MESSAGE_EDGE * scale;
+	real right;
+
+	if (group_width > 0.0f && 2.0f * group_width < width)
+		width = 2.0f * group_width;
+	right = left + width;
+	if (right > edge)
+		right = edge;
+	if (right < left + AE_HUD_MESSAGE_WRAP_MINIMUM_EM * px)
+		right = left + AE_HUD_MESSAGE_WRAP_MINIMUM_EM * px;
+	return right;
+}
+
+real ae_hud_message_picture_height(real cap, real texels_wide, real texels_high, real button_texels_high)
+{
+	real height;
+
+	if (texels_wide <= 0.0f || texels_high <= 0.0f)
+		return cap * AE_HUD_MESSAGE_PICTURE;
+	if (texels_wide >= AE_HUD_MESSAGE_PICTURE_WIDE_ASPECT * texels_high)
+		return cap * AE_HUD_MESSAGE_PICTURE_WIDE;
+	if (button_texels_high <= 0.0f)
+		return cap * AE_HUD_MESSAGE_PICTURE;
+	height = AE_HUD_MESSAGE_PICTURE * texels_high / button_texels_high;
+	if (height < AE_HUD_MESSAGE_PICTURE)
+		height = AE_HUD_MESSAGE_PICTURE;
+	if (height > AE_HUD_MESSAGE_PICTURE_WIDE)
+		height = AE_HUD_MESSAGE_PICTURE_WIDE;
+	return cap * height;
+}

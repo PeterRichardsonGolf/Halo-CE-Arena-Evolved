@@ -126,6 +126,40 @@ int main(void)
 	/* nothing to fit */
 	CHECK(ae_hud_message_flow_fit(&flow, L"", 0, measure, NULL, &skip) == 0 && skip == 0);
 
+	/* sizes (campaign review F1-F3): 24 at 1080p single, 16 floor everywhere, pitch 1.3 em */
+#define NEAR(a, b) ((a) > (b) - 0.01f && (a) < (b) + 0.01f)
+	CHECK(NEAR(ae_hud_message_px(1.0f), 24.0f));
+	CHECK(NEAR(ae_hud_message_px(0.854f), 20.496f));      /* 1080p half view */
+	CHECK(NEAR(ae_hud_message_px(0.6667f), 16.0f));       /* 720p single: 16, not 24 x 0.667 */
+	CHECK(NEAR(ae_hud_message_px(0.75f * 0.6667f), 16.0f)); /* 720p quarter: the same floor */
+	CHECK(NEAR(ae_hud_message_px(2.0f), 48.0f));
+	/* the bigger screen never has the smaller text (review I5): 1080p half >= 720p half */
+	CHECK(ae_hud_message_px(0.854f) >= ae_hud_message_px(0.854f * 0.6667f));
+	CHECK(NEAR(ae_hud_message_pitch(24.0f), 31.2f));
+	/* no ammo group: 26 em from the left (624 at 1080p), not the view's edge */
+	CHECK(NEAR(ae_hud_message_wrap_right(100.0f, 1920.0f, 0.0f, 24.0f, 1.0f), 724.0f));
+	/* under a group: twice the group */
+	CHECK(NEAR(ae_hud_message_wrap_right(100.0f, 1920.0f, 251.5f, 24.0f, 1.0f), 603.0f));
+	/* a wide group: capped at 26 em */
+	CHECK(NEAR(ae_hud_message_wrap_right(100.0f, 1920.0f, 400.0f, 24.0f, 1.0f), 724.0f));
+	/* a narrow view: the edge less 16 x scale */
+	CHECK(NEAR(ae_hud_message_wrap_right(100.0f, 600.0f, 0.0f, 24.0f, 1.0f), 584.0f));
+	/* never under 8 em */
+	CHECK(NEAR(ae_hud_message_wrap_right(100.0f, 200.0f, 0.0f, 24.0f, 1.0f), 292.0f));
+	/* pictures (the HUD sheet's real sizes, a10): the A button (24x30) 1.9 x the capitals; a stick with its label
+	(36x40) CE's 40/30 of that, 2.53; the d-pad (31x28) and the small black / white (19x22) a button's 1.9 at least;
+	the 53x53 one and a weapon (122x26, 2:1 or wider) 2.6 at most */
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 24.0f, 30.0f, 30.0f), 31.92f));
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 36.0f, 40.0f, 30.0f), 42.56f));
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 31.0f, 28.0f, 30.0f), 31.92f));
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 19.0f, 22.0f, 30.0f), 31.92f));
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 53.0f, 53.0f, 30.0f), 43.68f));
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 122.0f, 26.0f, 30.0f), 43.68f));
+	/* not the HUD's sheet (the menus' small icons, a weapon pack's): a button's 1.9, a wide one 2.6 */
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 16.0f, 20.0f, 0.0f), 31.92f));
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 128.0f, 64.0f, 0.0f), 43.68f));
+	CHECK(NEAR(ae_hud_message_picture_height(16.8f, 0.0f, 64.0f, 30.0f), 31.92f));
+
 	if (failures)
 		return 1;
 	printf("ae_hud_message_flow: ok\n");

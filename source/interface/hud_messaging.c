@@ -1512,6 +1512,7 @@ void hud_messaging_update(
 				state_color = hud_msg_def->state_color;
 				pixel_color = real_argb_color_to_pixel32(&state_color);
 			}
+			ae_hud_messages_colour(objective_active, help_active, hud_messaging_globals->use_flash, &hud_globals->messaging.color, &state_color); /* AE hook */
 
 			line_bounds.x0 = screen_point.x;
 			line_bounds.x1 = render.camera.window_bounds.x1 -
