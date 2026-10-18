@@ -20,8 +20,8 @@ The frames, as ae_split_screen.c sets them:
 - bitmaps/ae_seat_buttons (round chips): 0 Xbox START, 1 PlayStation OPTIONS, 2 ENTER, 3 Xbox B, 4 PlayStation
   circle, 5 ESC (small; the capsule is better), 6 Nintendo B, 7 Nintendo +;
 - bitmaps/ae_seat_key_esc: the keyboard's ESC as a capsule;
-- bitmaps/ae_seat_button: the stock button (bitmaps/text_button_background, both its frames) at half its width, for
-  a card's ASSIGN / CANCEL and LEAVE;
+- bitmaps/ae_seat_button_assign, bitmaps/ae_seat_button_leave: the stock button (bitmaps/text_button_background,
+  both its frames) narrowed for a card's ASSIGN / CANCEL and its LEAVE (also the lobby's ASSIGN);
 - bitmaps/ae_seat_profile_bar: a pill's bar (the option row's band, outlined): 0 at rest, 1 focused (the menus'
   ice-blue glow; ASSIGN's wait pulses 0 and 1), 2 filled blue (a seat's device pressed, a swap: its name in navy);
 - bitmaps/ae_seat_strip: the line across the top (the option row's band, outlined).
@@ -44,8 +44,10 @@ OVERPASS = ROOT / "port" / "assets" / "fonts" / "Overpass-900.ttf"
 CARD = (146, 300)
 DEVICE = (72, 40)
 BUTTON = (16, 16)
-KEY_ESC = (26, 16)
-SMALL_BUTTON = (64, 32)
+KEY_ESC = (22, 14)
+# (a card's ASSIGN / CANCEL and its LEAVE, side by side in its 134 units)
+ASSIGN_BUTTON = (58, 32)
+LEAVE_BUTTON = (72, 32)
 PROFILE_BAR = (130, 28)
 STRIP = (608, 28)
 
@@ -275,13 +277,13 @@ def _band(menus: Path, frame: int, width: int):
     return band.crop((0, 0, pixels, band.getbbox()[3]))
 
 
-def small_buttons(menus: Path) -> list:
-    """the stock button's frames at half their width, their rounded ends kept"""
+def small_buttons(menus: Path, size) -> list:
+    """the stock button's frames narrowed to size (units), their rounded ends kept"""
     from PIL import Image
     frames = []
     for frame in (0, 1):
         source = Image.open(menus / "ce" / "shell" / "bitmaps" / f"text_button_background__{frame}.png").convert("RGBA")
-        frames.append(_nine_slice(source, (SMALL_BUTTON[0] * UNIT, SMALL_BUTTON[1] * UNIT), 40))
+        frames.append(_nine_slice(source, (size[0] * UNIT, size[1] * UNIT), 40))
     return frames
 
 
@@ -310,7 +312,8 @@ def bitmaps(menus: Path) -> dict:
             "bitmaps/ae_seat_devices": (DEVICE, devices()),
             "bitmaps/ae_seat_buttons": (BUTTON, buttons()),
             "bitmaps/ae_seat_key_esc": (KEY_ESC, [key_esc()]),
-            "bitmaps/ae_seat_button": (SMALL_BUTTON, small_buttons(menus)),
+            "bitmaps/ae_seat_button_assign": (ASSIGN_BUTTON, small_buttons(menus, ASSIGN_BUTTON)),
+            "bitmaps/ae_seat_button_leave": (LEAVE_BUTTON, small_buttons(menus, LEAVE_BUTTON)),
             "bitmaps/ae_seat_profile_bar": (PROFILE_BAR, pills(menus)),
             "bitmaps/ae_seat_strip": (STRIP, [_band(menus, 1, STRIP[0])])}
 

@@ -8,8 +8,11 @@
 		<on event="b" run="port lobby leave" back="true"/>
 		<on event="back" run="port lobby leave" back="true"/>
 		<on event="start" run="port lobby join" open="main_menu/multiplayer_type_select/lobby/player_profile_screen" branch="true"/>
+		<on event="y" run="ae split lobby assign"/>
 		<child widget="main_menu/new_select/sel_list_desc_bkd"/>
 		<child widget="main_menu/multiplayer_type_select/lobby/lobby_list"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_list" x="20" y="73"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_help"/>
 		<child widget="main_menu/multiplayer_type_select/lobby/header_lobby"/>
 		<child widget="main_menu/multiplayer_type_select/lobby/lobby_join_help"/>
 	</widget>
@@ -39,58 +42,416 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_0" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd_top" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_1" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_2" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_3" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_4" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_5" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_6" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_7" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_8" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_9" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_10" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
 		<on event="left right" run="swap player team"/>
-		<child widget="main_menu/new_select/list_item_text" x="25"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/list_item_text"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/list_item_text" type="text" controller="1" width="168" height="28" font="ui\large_ui" color="#FF2896FF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_list" type="column_list" width="390" height="330">
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_0" x="150" y="0"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_0" x="200" y="0"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_0" x="278" y="2"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_0" x="278" y="2"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_0" x="156" y="8"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_0" x="260" y="8"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_0" x="170" y="0"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_0" x="170" y="0"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_1" x="150" y="30"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_1" x="200" y="30"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_1" x="278" y="32"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_1" x="278" y="32"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_1" x="156" y="38"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_1" x="260" y="38"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_1" x="170" y="30"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_1" x="170" y="30"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_2" x="150" y="60"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_2" x="200" y="60"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_2" x="278" y="62"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_2" x="278" y="62"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_2" x="156" y="68"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_2" x="260" y="68"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_2" x="170" y="60"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_2" x="170" y="60"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_3" x="150" y="90"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_3" x="200" y="90"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_3" x="278" y="92"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_3" x="278" y="92"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_3" x="156" y="98"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_3" x="260" y="98"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_3" x="170" y="90"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_3" x="170" y="90"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_4" x="150" y="120"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_4" x="200" y="120"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_4" x="278" y="122"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_4" x="278" y="122"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_4" x="156" y="128"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_4" x="260" y="128"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_4" x="170" y="120"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_4" x="170" y="120"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_5" x="150" y="150"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_5" x="200" y="150"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_5" x="278" y="152"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_5" x="278" y="152"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_5" x="156" y="158"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_5" x="260" y="158"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_5" x="170" y="150"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_5" x="170" y="150"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_6" x="150" y="180"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_6" x="200" y="180"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_6" x="278" y="182"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_6" x="278" y="182"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_6" x="156" y="188"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_6" x="260" y="188"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_6" x="170" y="180"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_6" x="170" y="180"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_7" x="150" y="210"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_7" x="200" y="210"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_7" x="278" y="212"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_7" x="278" y="212"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_7" x="156" y="218"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_7" x="260" y="218"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_7" x="170" y="210"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_7" x="170" y="210"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_8" x="150" y="240"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_8" x="200" y="240"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_8" x="278" y="242"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_8" x="278" y="242"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_8" x="156" y="248"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_8" x="260" y="248"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_8" x="170" y="240"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_8" x="170" y="240"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_9" x="150" y="270"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_9" x="200" y="270"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_9" x="278" y="272"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_9" x="278" y="272"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_9" x="156" y="278"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_9" x="260" y="278"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_9" x="170" y="270"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_9" x="170" y="270"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_l_10" x="150" y="300"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_r_10" x="200" y="300"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_10" x="278" y="302"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_10" x="278" y="302"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_10" x="156" y="308"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_10" x="260" y="308"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_10" x="170" y="300"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_10" x="170" y="300"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_0" width="50" height="28">
+		<on event="a" run="ae split lpick left 0"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_0" width="72" height="28">
+		<on event="a" run="ae split lpick right 0"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_0" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 0"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_0" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 0"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_0" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_0" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_0" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_0" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_1" width="50" height="28">
+		<on event="a" run="ae split lpick left 1"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_1" width="72" height="28">
+		<on event="a" run="ae split lpick right 1"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_1" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 1"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_1" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 1"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_1" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_1" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_1" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_1" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_2" width="50" height="28">
+		<on event="a" run="ae split lpick left 2"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_2" width="72" height="28">
+		<on event="a" run="ae split lpick right 2"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_2" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 2"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_2" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 2"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_2" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_2" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_2" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_2" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_3" width="50" height="28">
+		<on event="a" run="ae split lpick left 3"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_3" width="72" height="28">
+		<on event="a" run="ae split lpick right 3"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_3" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 3"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_3" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 3"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_3" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_3" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_3" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_3" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_4" width="50" height="28">
+		<on event="a" run="ae split lpick left 4"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_4" width="72" height="28">
+		<on event="a" run="ae split lpick right 4"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_4" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 4"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_4" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 4"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_4" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_4" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_4" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_4" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_5" width="50" height="28">
+		<on event="a" run="ae split lpick left 5"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_5" width="72" height="28">
+		<on event="a" run="ae split lpick right 5"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_5" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 5"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_5" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 5"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_5" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_5" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_5" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_5" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_6" width="50" height="28">
+		<on event="a" run="ae split lpick left 6"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_6" width="72" height="28">
+		<on event="a" run="ae split lpick right 6"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_6" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 6"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_6" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 6"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_6" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_6" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_6" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_6" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_7" width="50" height="28">
+		<on event="a" run="ae split lpick left 7"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_7" width="72" height="28">
+		<on event="a" run="ae split lpick right 7"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_7" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 7"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_7" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 7"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_7" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_7" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_7" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_7" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_8" width="50" height="28">
+		<on event="a" run="ae split lpick left 8"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_8" width="72" height="28">
+		<on event="a" run="ae split lpick right 8"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_8" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 8"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_8" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 8"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_8" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_8" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_8" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_8" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_9" width="50" height="28">
+		<on event="a" run="ae split lpick left 9"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_9" width="72" height="28">
+		<on event="a" run="ae split lpick right 9"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_9" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 9"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_9" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 9"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_9" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_9" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_9" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_9" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_l_10" width="50" height="28">
+		<on event="a" run="ae split lpick left 10"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_r_10" width="72" height="28">
+		<on event="a" run="ae split lpick right 10"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_assign_10" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+		<on event="a" run="ae split lpick assign 10"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_cancel_10" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+		<on event="a" run="ae split lpick assign 10"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_left_10" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_left">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_arrow_right_10" controller="1" width="12" height="12" bitmap="bitmaps/arrow_sm_right">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_large_10" type="text" controller="1" width="88" height="28" font="ui\large_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="3">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_value_small_10" type="text" controller="1" width="88" height="28" font="ui\small_ui" color="#FFFFFFFF" align="center" text_flags="no_focus_test" text_y="6">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_pick_help" type="text" controller="1" left="22" top="388" width="380" height="24" font="ui\small_ui" color="#FF2896FF" align="left" text_y="5" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/ae_bots_count_row" width="366" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/ae_option_bkds_lobby" color="#FF2896FF">
 		<child widget="main_menu/multiplayer_type_select/lobby/ae_bots_count_row_label"/>

@@ -146,6 +146,216 @@ static int pad_at_rest(
 }
 #endif
 
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+/* the LAN lobby's picker (ae_platform.h) */
+#define PORT_PICK_WAIT_MS 10000
+#define PORT_PICK_PADS 16
+static struct
+{
+	/* the port waiting + 1 (0 none), since when; its press not yet let go */
+	int waiting;
+	Uint64 since;
+	int swallow;
+	/* each pad's buttons last seen, for a press's edge */
+	unsigned long ids[PORT_PICK_PADS], buttons[PORT_PICK_PADS];
+	int count;
+	int escape_before;
+} port_pick;
+
+static int port_pick_blocks(void)
+{
+	return port_pick.waiting || port_pick.swallow;
+}
+
+unsigned long ae_platform_port_pad(
+	int port)
+{
+	unsigned long id = 0;
+
+	if (port < 0 || port >= AE_PAD_PORTS_MAXIMUM)
+		return 0;
+	SDL_LockSpinlock(&stable_port_lock);
+	id = stable_port_ids[port];
+	SDL_UnlockSpinlock(&stable_port_lock);
+	return id;
+}
+
+int ae_platform_port_of_pad(
+	unsigned long pad_id)
+{
+	int port, found = -1;
+
+	SDL_LockSpinlock(&stable_port_lock);
+	for (port = 0; pad_id && port < AE_PAD_PORTS_MAXIMUM; port++)
+	{
+		if (stable_port_ids[port] == pad_id)
+			found = port;
+	}
+	SDL_UnlockSpinlock(&stable_port_lock);
+	return found;
+}
+
+int ae_platform_port_give(
+	int port,
+	unsigned long pad_id)
+{
+	int other = -1, index;
+
+	if (port < 0 || port >= AE_PAD_PORTS_MAXIMUM || !pad_id)
+		return -1;
+	SDL_LockSpinlock(&stable_port_lock);
+	for (index = 0; index < AE_PAD_PORTS_MAXIMUM; index++)
+	{
+		if (stable_port_ids[index] == pad_id)
+			other = index;
+	}
+	if (other != port)
+	{
+		if (other >= 0)
+			stable_port_ids[other] = stable_port_ids[port];
+		stable_port_ids[port] = pad_id;
+	}
+	SDL_UnlockSpinlock(&stable_port_lock);
+	if (other == port)
+		return port;
+	platform_log("pad ports: port %d given its pad by the picker%s", port + 1, other >= 0 ? " (swapped)" : "");
+	return other >= 0 ? other : port;
+}
+
+void ae_platform_port_pick_wait(
+	int port)
+{
+	if (port < 0 || port >= AE_PAD_PORTS_MAXIMUM)
+		return;
+	port_pick.waiting = port + 1;
+	port_pick.since = SDL_GetTicks();
+	port_pick.swallow = 1;
+	platform_log("pad ports: P%d's ASSIGN: waiting for a press", port + 1);
+}
+
+void ae_platform_port_pick_cancel(
+	void)
+{
+	if (!port_pick.waiting)
+		return;
+	platform_log("pad ports: P%d's ASSIGN cancelled", port_pick.waiting);
+	port_pick.waiting = 0;
+	port_pick.swallow = 1;
+}
+
+int ae_platform_port_pick_waiting(
+	int *left_ms)
+{
+	long left = 0;
+
+	if (port_pick.waiting)
+	{
+		left = PORT_PICK_WAIT_MS - (long)(SDL_GetTicks() - port_pick.since);
+		if (left < 0)
+			left = 0;
+	}
+	if (left_ms)
+		*left_ms = (int)left;
+	return port_pick.waiting ? port_pick.waiting - 1 : -1;
+}
+
+unsigned ae_platform_port_pick_update(
+	int *changed_port,
+	int *changed_other)
+{
+	SDL_JoystickID *ids;
+	struct platform_input_state input;
+	int count = 0, index, held = 0, escape;
+	unsigned long pressed_id = 0;
+	unsigned result = 0;
+
+	if (changed_port)
+		*changed_port = -1;
+	if (changed_other)
+		*changed_other = -1;
+	ids = SDL_GetGamepads(&count);
+	for (index = 0; ids && index < count && index < PORT_PICK_PADS; index++)
+	{
+		SDL_Gamepad *gamepad = SDL_GetGamepadFromID(ids[index]);
+		unsigned long id = (unsigned long)ids[index], buttons = 0, before = 0;
+		int button, known;
+
+		for (button = 0; gamepad && button < SDL_GAMEPAD_BUTTON_COUNT && button < 32; button++)
+		{
+			if (SDL_GetGamepadButton(gamepad, (SDL_GamepadButton)button))
+				buttons |= 1UL << button;
+		}
+		for (known = 0; known < port_pick.count && port_pick.ids[known] != id; known++)
+			;
+		if (known < port_pick.count)
+			before = port_pick.buttons[known];
+		else if (port_pick.count < PORT_PICK_PADS)
+		{
+			known = port_pick.count++;
+			port_pick.ids[known] = id;
+			/* (first seen: what it holds is no press) */
+			before = buttons;
+		}
+		else
+			continue;
+		port_pick.buttons[known] = buttons;
+		held |= buttons != 0;
+		if ((buttons & ~before) && !pressed_id)
+			pressed_id = id;
+	}
+	SDL_free(ids);
+	platform_input_read(&input, 0);
+	escape = input.focused && input.keys[SDL_SCANCODE_ESCAPE];
+	if (!port_pick.waiting)
+	{
+		if (port_pick.swallow && !held && !escape)
+			port_pick.swallow = 0;
+		port_pick.escape_before = escape;
+		return 0;
+	}
+	if (SDL_GetTicks() - port_pick.since >= PORT_PICK_WAIT_MS || (escape && !port_pick.escape_before))
+	{
+		platform_log("pad ports: P%d's ASSIGN ended with no pad", port_pick.waiting);
+		port_pick.waiting = 0;
+		port_pick.swallow = 1;
+		port_pick.escape_before = escape;
+		return AE_SEATS_WAIT_ENDED;
+	}
+	port_pick.escape_before = escape;
+	/* (the press that chose ASSIGN is let go first: until then nothing counts) */
+	if (port_pick.swallow)
+	{
+		if (!held)
+			port_pick.swallow = 0;
+		return 0;
+	}
+	if (pressed_id)
+	{
+		int port = port_pick.waiting - 1, other = ae_platform_port_give(port, pressed_id);
+
+		port_pick.waiting = 0;
+		port_pick.swallow = 1;
+		if (other < 0)
+			return AE_SEATS_WAIT_ENDED;
+		if (changed_port)
+			*changed_port = port;
+		if (changed_other)
+			*changed_other = other != port ? other : -1;
+		return AE_SEATS_ASSIGNED | (other != port ? AE_SEATS_SWAPPED : 0);
+	}
+	return 0;
+}
+#else
+/* (the dedicated server and Android: no picker) */
+unsigned long ae_platform_port_pad(int port) { (void)port; return 0; }
+int ae_platform_port_of_pad(unsigned long pad_id) { (void)pad_id; return -1; }
+int ae_platform_port_give(int port, unsigned long pad_id) { (void)port; (void)pad_id; return -1; }
+void ae_platform_port_pick_wait(int port) { (void)port; }
+void ae_platform_port_pick_cancel(void) {}
+int ae_platform_port_pick_waiting(int *left_ms) { if (left_ms) *left_ms = 0; return -1; }
+unsigned ae_platform_port_pick_update(int *port, int *other) { if (port) *port = -1; if (other) *other = -1; return 0; }
+#endif
+
 int ae_platform_stable_ports(
 	struct SDL_Gamepad **gamepads,
 	int count,
@@ -191,6 +401,13 @@ int ae_platform_stable_ports(
 	}
 	memcpy(after, stable_port_ids, sizeof(after));
 	SDL_UnlockSpinlock(&stable_port_lock);
+	/* (the LAN lobby's ASSIGN waiting, or its press not yet let go: no pad drives the game) */
+	if (port_pick_blocks())
+	{
+		for (port = 0; port < ports; port++)
+			gamepads[port] = NULL;
+		highest = 0;
+	}
 	for (port = 0; port < ports; port++)
 	{
 		char const *name;

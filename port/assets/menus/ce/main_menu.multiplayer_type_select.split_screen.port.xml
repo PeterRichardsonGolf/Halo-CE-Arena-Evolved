@@ -21,6 +21,7 @@
 		<on event="right" run="ae split profile right"/>
 		<on event="stick_left" run="ae split profile left"/>
 		<on event="stick_right" run="ae split profile right"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_button_bar" y="414"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/header_split_screen"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_strip" x="16" y="72"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_rule" x="16" y="78"/>
@@ -200,7 +201,6 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_help_nobody" x="20" y="414"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_message" x="20" y="441"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_more" x="350" y="441"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_button_bar" y="414"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_continue_off" x="380" y="415"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/header_split_screen" controller="1" left="35" top="11" width="363" height="59" bitmap="main_menu/multiplayer_type_select/split_screen/header_split_screen">
@@ -303,11 +303,12 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_0" x="8" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_0" x="60" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_0" x="86" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_0" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_0" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_0" x="75" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_0" x="76" y="266"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_0" x="77" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_0" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_0" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_0" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavek_0" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_0" x="71" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_0" x="71" y="267"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_hit_dev_l_0" width="52" height="28">
 		<on event="a" run="ae split dev left 0"/>
@@ -345,21 +346,25 @@
 		<on event="a" run="ae split cand right 0"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_0" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_0" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
 		<on event="a" run="ae split assign 0"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_0" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_0" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
 		<on event="a" run="ae split assign 0"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_0" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" text_y="2" text="LEAVE" align="left" text_x="17">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_0" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="22">
+		<on event="a" run="ae split leave 0"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavek_0" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="28">
 		<on event="a" run="ae split leave 0"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavebtn_0" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_0" controller="1" width="26" height="16" bitmap="bitmaps/ae_seat_key_esc">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_0" controller="1" width="22" height="14" bitmap="bitmaps/ae_seat_key_esc">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_card_1" controller="1" width="146" height="300" bitmap="bitmaps/ae_seat_card">
 	</widget>
@@ -455,11 +460,12 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_1" x="8" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_1" x="60" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_1" x="86" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_1" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_1" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_1" x="75" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_1" x="76" y="266"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_1" x="77" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_1" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_1" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_1" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavek_1" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_1" x="71" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_1" x="71" y="267"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_hit_dev_l_1" width="52" height="28">
 		<on event="a" run="ae split dev left 1"/>
@@ -497,21 +503,25 @@
 		<on event="a" run="ae split cand right 1"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_1" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_1" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
 		<on event="a" run="ae split assign 1"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_1" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_1" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
 		<on event="a" run="ae split assign 1"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_1" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" text_y="2" text="LEAVE" align="left" text_x="17">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_1" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="22">
+		<on event="a" run="ae split leave 1"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavek_1" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="28">
 		<on event="a" run="ae split leave 1"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavebtn_1" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_1" controller="1" width="26" height="16" bitmap="bitmaps/ae_seat_key_esc">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_1" controller="1" width="22" height="14" bitmap="bitmaps/ae_seat_key_esc">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_card_2" controller="1" width="146" height="300" bitmap="bitmaps/ae_seat_card">
 	</widget>
@@ -607,11 +617,12 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_2" x="8" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_2" x="60" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_2" x="86" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_2" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_2" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_2" x="75" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_2" x="76" y="266"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_2" x="77" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_2" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_2" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_2" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavek_2" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_2" x="71" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_2" x="71" y="267"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_hit_dev_l_2" width="52" height="28">
 		<on event="a" run="ae split dev left 2"/>
@@ -649,21 +660,25 @@
 		<on event="a" run="ae split cand right 2"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_2" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_2" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
 		<on event="a" run="ae split assign 2"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_2" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_2" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
 		<on event="a" run="ae split assign 2"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_2" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" text_y="2" text="LEAVE" align="left" text_x="17">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_2" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="22">
+		<on event="a" run="ae split leave 2"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavek_2" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="28">
 		<on event="a" run="ae split leave 2"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavebtn_2" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_2" controller="1" width="26" height="16" bitmap="bitmaps/ae_seat_key_esc">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_2" controller="1" width="22" height="14" bitmap="bitmaps/ae_seat_key_esc">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_card_3" controller="1" width="146" height="300" bitmap="bitmaps/ae_seat_card">
 	</widget>
@@ -759,11 +774,12 @@
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_l_3" x="8" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_m_3" x="60" y="241"/>
 		<child widget="main_menu/multiplayer_type_select/split_screen/join_hit_cand_r_3" x="86" y="241"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_3" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_3" x="7" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_3" x="75" y="262"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_3" x="76" y="266"/>
-		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_3" x="77" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_assign_3" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_cancel_3" x="6" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leave_3" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavek_3" x="67" y="262"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavebtn_3" x="71" y="266"/>
+		<child widget="main_menu/multiplayer_type_select/split_screen/join_leavekey_3" x="71" y="267"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_hit_dev_l_3" width="52" height="28">
 		<on event="a" run="ae split dev left 3"/>
@@ -801,21 +817,25 @@
 		<on event="a" run="ae split cand right 3"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_3" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_assign_3" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="ASSIGN">
 		<on event="a" run="ae split assign 3"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_3" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_cancel_3" width="58" height="24" type="text" bitmap="bitmaps/ae_seat_button_assign" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2" text="CANCEL">
 		<on event="a" run="ae split assign 3"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_3" width="64" height="24" type="text" bitmap="bitmaps/ae_seat_button" font="ui\small_ui" color="#FFFFFFFF" text_y="2" text="LEAVE" align="left" text_x="17">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leave_3" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="22">
+		<on event="a" run="ae split leave 3"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavek_3" width="72" height="24" type="text" font="ui\small_ui" color="#FFFFFFFF" text_y="2" bitmap="bitmaps/ae_seat_button_leave" text="LEAVE" align="left" text_x="28">
 		<on event="a" run="ae split leave 3"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavebtn_3" controller="1" width="16" height="16" bitmap="bitmaps/ae_seat_buttons">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_3" controller="1" width="26" height="16" bitmap="bitmaps/ae_seat_key_esc">
+	<widget name="main_menu/multiplayer_type_select/split_screen/join_leavekey_3" controller="1" width="22" height="14" bitmap="bitmaps/ae_seat_key_esc">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/split_screen/join_help_ready" type="text" controller="1" width="350" height="24" text="PLAYER 1 picks the map and gametype next." font="ui\small_ui" color="#FF2896FF" align="left" text_y="5" text_flags="no_focus_test">
 	</widget>

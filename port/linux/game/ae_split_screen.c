@@ -5,6 +5,7 @@ Multiplayer > SPLIT SCREEN in the PC menus (ae_split_screen.h).
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cseries.h"
@@ -99,15 +100,18 @@ static void spinner_save(struct widget_instance *spinner)
 
 /* the lobby's seats (ae_split_screen_lobby_update): a device with no seat that presses START takes the next free
 seat, and its START, down on its new port, is the lobby's own join ("port lobby join": its profile screen) */
-static void lobby_seats_update(void);
+static unsigned lobby_seats_update(void);
+static void lobby_pick_update(struct widget_instance *list, unsigned bits);
 
 void ae_split_screen_lobby_update(struct widget_instance *list, boolean teams, long game_engine_index)
 {
 	boolean local = network_game_is_splitscreen_local();
 	short row;
+	unsigned bits = 0;
 
 	if (local)
-		lobby_seats_update();
+		bits = lobby_seats_update();
+	lobby_pick_update(list, bits);
 
 	for (row = 0; row < NUMBER_OF_BOT_ROWS; row++)
 	{
@@ -472,7 +476,7 @@ static short leave_frame(struct ae_seat_view const *view)
 /* the widgets of a card that show for a seated player, and for an empty seat (tools/port_settings.py's _join_screen) */
 static char const *const seated_widgets[] = { "join_device", "join_devlabel", "join_devbar", "join_profbar",
 	"join_profarrow_l", "join_profarrow_r", "join_proflabel", "join_armour", "join_controls", "join_hit_dev_l",
-	"join_hit_dev_m", "join_hit_dev_r", "join_hit_prof_l", "join_hit_prof_m", "join_hit_prof_r", "join_leave" };
+	"join_hit_dev_m", "join_hit_dev_r", "join_hit_prof_l", "join_hit_prof_m", "join_hit_prof_r" };
 static char const *const empty_widgets[] = { "join_press", "join_tojoin", "join_glyph0", "join_glyph1", "join_glyph2",
 	"join_glyph3", "join_glyphtext0", "join_glyphtext1", "join_glyphtext2", "join_glyphtext3", "join_pick",
 	"join_candbar" };
@@ -583,6 +587,7 @@ static void join_card_update(struct widget_instance *screen, short seat)
 		join_show(join_child(screen, "join_cancel", seat), FALSE);
 		join_show(join_child(screen, "join_leavebtn", seat), FALSE);
 		join_show(join_child(screen, "join_leavekey", seat), FALSE);
+		join_show(join_child(screen, "join_leavek", seat), FALSE);
 		join_value(screen, "dev", seat, L"", FALSE, FALSE);
 		join_value(screen, "prof", seat, L"", FALSE, FALSE);
 		join_show(join_child(screen, "join_devarrow_l", seat), FALSE);
@@ -625,6 +630,8 @@ static void join_card_update(struct widget_instance *screen, short seat)
 	join_show(join_child(screen, "join_devarrow_r", seat), !mine_waits && !flashing);
 	join_show(join_child(screen, "join_assign", seat), !mine_waits);
 	join_show(join_child(screen, "join_cancel", seat), mine_waits);
+	join_show(join_child(screen, "join_leave", seat), view.family != AE_SEAT_FAMILY_KEYBOARD);
+	join_show(join_child(screen, "join_leavek", seat), view.family == AE_SEAT_FAMILY_KEYBOARD);
 	join_show(join_child(screen, "join_leavebtn", seat), view.family != AE_SEAT_FAMILY_KEYBOARD);
 	join_show(join_child(screen, "join_leavekey", seat), view.family == AE_SEAT_FAMILY_KEYBOARD);
 	join_frame(join_child(screen, "join_leavebtn", seat), leave_frame(&view));
@@ -837,6 +844,8 @@ static void join_profile_step(short seat, short direction)
 		join.profile[seat] = next;
 }
 
+static boolean lobby_pick_event(char const *name, struct widget_instance *widget, short controller);
+
 unsigned char ae_split_screen_event(char const *name, struct widget_instance *widget, short controller,
 	unsigned char *widget_deleted)
 {
@@ -844,6 +853,8 @@ unsigned char ae_split_screen_event(char const *name, struct widget_instance *wi
 	boolean seated;
 	boolean deleted = FALSE;
 
+	if (!strncmp(name, "ae split lpick ", 15) || !strcmp(name, "ae split lobby assign"))
+		return lobby_pick_event(name, widget, controller);
 	ae_seats_get(&seats);
 	seated = controller >= 0 && controller < AE_SEATS_MAXIMUM && seats.seat[controller].kind != AE_SEAT_EMPTY;
 	if (!strcmp(name, "ae split join open"))
@@ -964,13 +975,243 @@ unsigned char ae_split_screen_event(char const *name, struct widget_instance *wi
 	return FALSE;
 }
 
-static void lobby_seats_update(void)
+static unsigned lobby_seats_update(void)
 {
 	unsigned bits;
 
 	if (!ae_seats_active())
-		return;
+		return 0;
 	bits = ae_seats_update();
 	if (bits & AE_SEATS_FULL)
 		platform_log("split screen: a fifth device pressed START (4 players at most on one PC)");
+	return bits;
+}
+
+/* ---- the lobby's controller picker: this machine's players' rows (those the lobby marks [Pn]) get their
+controller's name, arrows and ASSIGN. A split screen game's go through the seats; a LAN or internet game's through
+the stable pad ports (ae_platform.c: the keyboard stays player 1's there) */
+
+unsigned long ae_platform_port_pad(int port);
+int ae_platform_port_give(int port, unsigned long pad_id);
+void ae_platform_port_pick_wait(int port);
+void ae_platform_port_pick_cancel(void);
+int ae_platform_port_pick_waiting(int *left_ms);
+unsigned ae_platform_port_pick_update(int *port, int *other);
+
+#define LOBBY_PICK_ROWS 11
+
+/* the row's player's port, from its text's "[Pn]" (only this machine's players, with two or more, have one); -1 */
+static short lobby_row_port(struct widget_instance *list, short row)
+{
+	char name[24];
+	struct widget_instance *item, *text;
+	wchar_t const *letters;
+	short index;
+
+	snprintf(name, sizeof(name), "list_item_%d", row);
+	item = child_named(list, name);
+	text = item && item->visible ? child_named(item, "list_item_text") : NULL;
+	letters = text ? text->parameters.text_box.text : NULL;
+	for (index = 0; letters && letters[index] && letters[index + 1] && letters[index + 2]; index++)
+	{
+		if (letters[index] == L'[' && letters[index + 1] == L'P' && letters[index + 2] >= L'1' &&
+			letters[index + 2] <= L'4')
+		{
+			return (short)(letters[index + 2] - L'1');
+		}
+	}
+	return -1;
+}
+
+/* a port's controller as the picker names it */
+static void lobby_port_name(short port, char *name, size_t size)
+{
+	struct ae_seat_device list[AE_SEATS_DEVICES_MAXIMUM];
+	unsigned long pad = ae_platform_port_pad(port);
+	int count, index;
+
+	if (ae_seats_active())
+	{
+		join_device_name(port, name, size);
+		return;
+	}
+	snprintf(name, size, "%s", port == 0 ? "KEYBOARD" : "NONE");
+	count = ae_seats_devices(list, AE_SEATS_DEVICES_MAXIMUM);
+	for (index = 0; pad && index < count; index++)
+	{
+		if (list[index].kind == AE_SEAT_PAD && list[index].pad_id == pad)
+			snprintf(name, size, "%s", list[index].name);
+	}
+}
+
+static int lobby_pick_waiting(void)
+{
+	return ae_seats_active() ? ae_seats_assign_waiting(NULL) : ae_platform_port_pick_waiting(NULL);
+}
+
+static void lobby_pick_wait(short port)
+{
+	if (port < 0 || port >= AE_SEATS_MAXIMUM)
+		return;
+	if (lobby_pick_waiting() == port)
+	{
+		if (ae_seats_active())
+			ae_seats_assign_cancel();
+		else
+			ae_platform_port_pick_cancel();
+	}
+	else if (ae_seats_active())
+		ae_seats_assign_wait(port);
+	else
+		ae_platform_port_pick_wait(port);
+}
+
+/* the next or previous pad for a port (a LAN game's: pads only, swapped with the port that had it) */
+static unsigned lobby_pick_cycle(short port, short direction)
+{
+	struct ae_seat_device list[AE_SEATS_DEVICES_MAXIMUM];
+	unsigned long pads[AE_SEATS_DEVICES_MAXIMUM], current;
+	int count, pad_count = 0, index, at = -1, other;
+
+	if (port < 0 || port >= AE_SEATS_MAXIMUM)
+		return 0;
+	if (ae_seats_active())
+		return ae_seats_cycle(port, direction);
+	count = ae_seats_devices(list, AE_SEATS_DEVICES_MAXIMUM);
+	for (index = 0; index < count; index++)
+	{
+		if (list[index].kind == AE_SEAT_PAD)
+			pads[pad_count++] = list[index].pad_id;
+	}
+	if (!pad_count)
+		return 0;
+	current = ae_platform_port_pad(port);
+	for (index = 0; index < pad_count; index++)
+	{
+		if (pads[index] == current)
+			at = index;
+	}
+	if (at < 0)
+		at = direction < 0 ? 0 : pad_count - 1;
+	at = ((at + direction) % pad_count + pad_count) % pad_count;
+	if (pads[at] == current)
+		return 0;
+	other = ae_platform_port_give(port, pads[at]);
+	if (other < 0)
+		return 0;
+	if (other != port)
+		join_swap_message(port, other);
+	return AE_SEATS_ASSIGNED | (other != port ? AE_SEATS_SWAPPED : 0);
+}
+
+static void lobby_pick_show(struct widget_instance *list, char const *name, short row, boolean visible)
+{
+	char full[40];
+
+	snprintf(full, sizeof(full), "%s_%d", name, row);
+	join_show(child_named(list, full), visible);
+}
+
+static void lobby_pick_update(struct widget_instance *list, unsigned bits)
+{
+	struct widget_instance *screen = list;
+	int changed_port, changed_other, waiting;
+	boolean any = FALSE;
+	short row;
+
+	while (screen && screen->parent)
+		screen = screen->parent;
+	if (!screen)
+		return;
+	if (!ae_seats_active())
+	{
+		bits |= ae_platform_port_pick_update(&changed_port, &changed_other);
+		if ((bits & AE_SEATS_SWAPPED) && changed_port >= 0 && changed_other >= 0)
+			join_swap_message(changed_port, changed_other);
+	}
+	else
+		join_picker_result(bits);
+	if (bits & AE_SEATS_WAIT_ENDED)
+		join_message(L"No controller picked.");
+	waiting = lobby_pick_waiting();
+	for (row = 0; row < LOBBY_PICK_ROWS; row++)
+	{
+		short port = lobby_row_port(list, row);
+		boolean shown = port >= 0, waits = shown && waiting == port;
+		char name[24], full[40];
+		boolean large;
+
+		any |= shown;
+		lobby_pick_show(screen, "lobby_pick_l", row, shown && !waits);
+		lobby_pick_show(screen, "lobby_pick_r", row, shown && !waits);
+		lobby_pick_show(screen, "lobby_pick_arrow_left", row, shown && !waits);
+		lobby_pick_show(screen, "lobby_pick_arrow_right", row, shown && !waits);
+		lobby_pick_show(screen, "lobby_pick_assign", row, shown && !waits);
+		lobby_pick_show(screen, "lobby_pick_cancel", row, waits);
+		if (shown)
+		{
+			if (waits)
+				snprintf(name, sizeof(name), "PRESS A BUTTON");
+			else
+				lobby_port_name(port, name, sizeof(name));
+		}
+		else
+			name[0] = 0;
+		large = !waits && strlen(name) <= JOIN_LARGE_FIT;
+		snprintf(full, sizeof(full), "lobby_pick_value_large_%d", row);
+		join_show(child_named(screen, full), shown && large);
+		if (shown && large)
+			join_text_ascii(child_named(screen, full), name);
+		snprintf(full, sizeof(full), "lobby_pick_value_small_%d", row);
+		join_show(child_named(screen, full), shown && !large);
+		if (shown && !large)
+			join_text_ascii(child_named(screen, full), name);
+	}
+	{
+		struct widget_instance *help = child_named(screen, "lobby_pick_help");
+
+		if (waiting >= 0)
+		{
+			wchar_t number[2] = { (wchar_t)(L'1' + waiting), 0 }, text[JOIN_TEXT_LENGTH];
+
+			join_concat(text, L"PLAYER ", number);
+			join_concat(join.message_text, text, L": press any button on the controller to use.");
+			join_text(help, join.message_text);
+		}
+		else if (join.message && system_milliseconds() < join.message_until)
+			join_text(help, join.message);
+		else
+			join_text(help, any ? L"Y or ASSIGN, then press a button on the controller to use." : L"");
+	}
+}
+
+/* "ae split lpick left|right|assign <row>" and "ae split lobby assign" (a player's own Y) */
+static boolean lobby_pick_event(char const *name, struct widget_instance *widget, short controller)
+{
+	struct widget_instance *list = widget;
+	char const *space = strrchr(name, ' ');
+	short row, port;
+
+	if (!strcmp(name, "ae split lobby assign"))
+	{
+		lobby_pick_wait(controller);
+		return TRUE;
+	}
+	while (list && list->parent)
+		list = list->parent;
+	list = child_named(list, "lobby_list");
+	row = space ? (short)atoi(space + 1) : NONE;
+	port = list && row >= 0 && row < LOBBY_PICK_ROWS ? lobby_row_port(list, row) : -1;
+	if (port < 0)
+		return FALSE;
+	if (strstr(name, " assign "))
+		lobby_pick_wait(port);
+	else
+	{
+		unsigned bits = lobby_pick_cycle(port, strstr(name, " left ") ? -1 : 1);
+
+		if (ae_seats_active())
+			join_picker_result(bits);
+	}
+	return TRUE;
 }

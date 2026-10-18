@@ -69,6 +69,18 @@ void ae_platform_back_buttons(struct SDL_Gamepad *gamepad, unsigned short *butto
 keeping its port while connected and a new one taking the first free port (SDL lists HIDAPI pads first, so a pad
 seen late went in front and moved every other); ports without a pad NULL; returns the highest port with a pad plus one */
 int ae_platform_stable_ports(struct SDL_Gamepad **gamepads, int count, int ports);
+/* the LAN lobby's controller picker (the stable ports; split screen's goes through the seats): a port's pad by its
+SDL id (0 none); a pad's port (-1); a pad given to a port, swapped with the port that had it (that port, the port
+itself when no swap, -1 refused); ASSIGN: the next press on any pad is the port's (ESC or 10 s end it), no pad
+driving the game until then and until that press is let go; its update each lobby frame gives AE_SEATS_* bits
+(ae_seats.h) and the change (the port, the other of a swap or -1) */
+unsigned long ae_platform_port_pad(int port);
+int ae_platform_port_of_pad(unsigned long pad_id);
+int ae_platform_port_give(int port, unsigned long pad_id);
+void ae_platform_port_pick_wait(int port);
+void ae_platform_port_pick_cancel(void);
+int ae_platform_port_pick_waiting(int *left_ms);
+unsigned ae_platform_port_pick_update(int *port, int *other);
 /* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
 as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
 void ae_platform_test_keystroke(int scancode);

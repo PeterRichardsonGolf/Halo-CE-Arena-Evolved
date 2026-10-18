@@ -1624,6 +1624,53 @@ SETUP_OPTION_SCREENS = [
 ]
 
 
+LOBBY_PICK_ROWS = 11
+
+
+def lobby_pick_handler_names() -> list:
+    """the lobby's controller picker's handlers (menu_tags.c lists them, on an AE hook line of their own)"""
+    return [f"ae split lpick {kind} {row}" for kind in ("left", "right", "assign") for row in range(LOBBY_PICK_ROWS)] + [
+        "ae split lobby assign"]
+
+
+def _lobby_pick(base: str) -> list:
+    """(AE) the controller picker on the lobby's rows of this machine's players: a column list of its own over
+    the rows' right part (its children are the mouse's items), each row's arrows, value and ASSIGN / CANCEL;
+    ae_split_screen.c shows a row's only when it is one of this machine's players, and the help line under them"""
+    items, lines = [], []
+    button = [("type", "text"), ("bitmap", "bitmaps/ae_seat_button_assign"), ("font", "ui\\small_ui"),
+              ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)]
+
+    def item(name: str, handler: str, x: int, y: int, width: int, height: int, pairs=None):
+        nonlocal lines
+        lines += _widget(f"{base}/{name}", [("width", width), ("height", height)] + (pairs or []),
+                         [f'<on event="a" run="ae split lpick {handler}"/>',
+                          '<on event="left_mouse" run="mouse emit accept event"/>'])
+        items.append(f'<child widget="{base}/{name}" x="{x}" y="{y}"/>')
+
+    for row in range(LOBBY_PICK_ROWS):
+        top = 30 * row
+        item(f"lobby_pick_l_{row}", f"left {row}", 150, top, 50, 28)
+        item(f"lobby_pick_r_{row}", f"right {row}", 200, top, 72, 28)
+        item(f"lobby_pick_assign_{row}", f"assign {row}", 278, top + 2, 58, 24, button + [("text", "ASSIGN")])
+        item(f"lobby_pick_cancel_{row}", f"assign {row}", 278, top + 2, 58, 24, button + [("text", "CANCEL")])
+        for side, x in (("left", 156), ("right", 260)):
+            lines += _widget(f"{base}/lobby_pick_arrow_{side}_{row}",
+                             [("controller", 1), ("width", 12), ("height", 12), ("bitmap", f"bitmaps/arrow_sm_{side}")], [])
+            items.append(f'<child widget="{base}/lobby_pick_arrow_{side}_{row}" x="{x}" y="{top + 8}"/>')
+        for size, font, ty in (("large", "ui\\large_ui", 3), ("small", "ui\\small_ui", 6)):
+            lines += _widget(f"{base}/lobby_pick_value_{size}_{row}",
+                             [("type", "text"), ("controller", 1), ("width", 88), ("height", 28), ("font", font),
+                              ("color", "#FFFFFFFF"), ("align", "center"), ("text_flags", "no_focus_test"),
+                              ("text_y", ty)], [])
+            items.append(f'<child widget="{base}/lobby_pick_value_{size}_{row}" x="170" y="{top}"/>')
+    lines += _widget(f"{base}/lobby_pick_help", [("type", "text"), ("controller", 1), ("left", 22), ("top", 388),
+                                                 ("width", 380), ("height", 24), ("font", "ui\\small_ui"),
+                                                 ("color", "#FF2896FF"), ("align", "left"), ("text_y", 5),
+                                                 ("text_flags", "no_focus_test")], [])
+    return _widget(f"{base}/lobby_pick_list", [("type", "column_list"), ("width", 390), ("height", 330)], items) + lines
+
+
 def _lobby() -> list:
     """the lobby the host's and the joining players wait in (the Xbox's
     pregame's functions, which need no widget of theirs): up to the port's
@@ -1643,8 +1690,12 @@ def _lobby() -> list:
                      '<on event="b" run="port lobby leave" back="true"/>',
                      '<on event="back" run="port lobby leave" back="true"/>',
                      f'<on event="start" run="port lobby join" open="{base}/player_profile_screen" branch="true"/>',
+                     # (AE: a player's own Y is its ASSIGN, the controller picker: ae_split_screen.c)
+                     '<on event="y" run="ae split lobby assign"/>',
                      '<child widget="main_menu/new_select/sel_list_desc_bkd"/>',
                      f'<child widget="{base}/lobby_list"/>',
+                     f'<child widget="{base}/lobby_pick_list" x="20" y="73"/>',
+                     f'<child widget="{base}/lobby_pick_help"/>',
                      f'<child widget="{base}/header_lobby"/>',
                      f'<child widget="{base}/lobby_join_help"/>'])
     lines += _header(f"{base}/header_lobby", f"{base}/header_lobby")
@@ -1671,8 +1722,14 @@ def _lobby() -> list:
                           ("bitmap", "bitmaps/sel_list_item_bkd_top" if index == 0 else "bitmaps/sel_list_item_bkd"),
                           ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("align", "center"), ("text_y", 3)],
                          ['<on event="left right" run="swap player team"/>',
-                          '<child widget="main_menu/new_select/list_item_text" x="25"/>',
+                          f'<child widget="{base}/list_item_text"/>',
                           '<child widget="main_menu/new_select/list_item_arrows"/>'])
+    # (AE: the rows' names in their left part, the right part for this machine's players' controllers: R4 of the
+    # controller picker's design review, approved 2026-10-18)
+    lines += _widget(f"{base}/list_item_text", [("type", "text"), ("controller", 1), ("width", 168), ("height", 28),
+                                                ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("align", "center"),
+                                                ("text_flags", "no_focus_test"), ("text_y", 3)], [])
+    lines += _lobby_pick(base)
     for key, caption, setting, strings, values in LOBBY_BOT_ROWS:
         lines += _widget(f"{base}/ae_bots_{key}_row",
                          # (Settings' option rows' look: the PC menus' own band, cut to the lobby's width
@@ -1864,16 +1921,19 @@ def _join_card_items(seat: int, x: int, y: int, w: int) -> list:
         item(f"join_hit_{pill}_l", left, 8, top, 52, 28)
         item(f"join_hit_{pill}_m", pick, 60, top, 26, 28)
         item(f"join_hit_{pill}_r", right, 86, top, 52, 28)
-    button = [("type", "text"), ("bitmap", "bitmaps/ae_seat_button"), ("font", "ui\\small_ui"),
+    button = [("type", "text"), ("bitmap", "bitmaps/ae_seat_button_assign"), ("font", "ui\\small_ui"),
               ("color", JOIN_WHITE), ("align", "center"), ("text_y", 2)]
-    item("join_assign", "assign", 7, 262, 64, 24, button + [("text", "ASSIGN")])
-    item("join_cancel", "assign", 7, 262, 64, 24, button + [("text", "CANCEL")])
-    item("join_leave", "leave", 75, 262, 64, 24,
-         [p for p in button if p[0] != "align"] + [("text", "LEAVE"), ("align", "left"), ("text_x", 17)])
+    item("join_assign", "assign", 6, 262, 58, 24, button + [("text", "ASSIGN")])
+    item("join_cancel", "assign", 6, 262, 58, 24, button + [("text", "CANCEL")])
+    leave = [p for p in button if p[0] not in ("align", "bitmap")] + [("bitmap", "bitmaps/ae_seat_button_leave"),
+                                                                        ("text", "LEAVE"), ("align", "left")]
+    # (a pad's B chip, or the keyboard's ESC key, before LEAVE: two buttons, the text where each picture ends)
+    item("join_leave", "leave", 67, 262, 72, 24, leave + [("text_x", 22)])
+    item("join_leavek", "leave", 67, 262, 72, 24, leave + [("text_x", 28)])
     lines += _join_picture(f"join_leavebtn_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
-    items.append(f'<child widget="{JOIN}/join_leavebtn_{seat}" x="76" y="266"/>')
-    lines += _join_picture(f"join_leavekey_{seat}", "bitmaps/ae_seat_key_esc", 26, 16)
-    items.append(f'<child widget="{JOIN}/join_leavekey_{seat}" x="77" y="266"/>')
+    items.append(f'<child widget="{JOIN}/join_leavebtn_{seat}" x="71" y="266"/>')
+    lines += _join_picture(f"join_leavekey_{seat}", "bitmaps/ae_seat_key_esc", 22, 14)
+    items.append(f'<child widget="{JOIN}/join_leavekey_{seat}" x="71" y="267"/>')
     return _widget(f"{JOIN}/join_items_{seat}", [("type", "column_list"), ("width", w), ("height", 300)], items) + lines
 
 
@@ -2025,8 +2085,9 @@ def _join_screen() -> list:
                       '<on event="stick_up" run="ae split row up"/>', '<on event="stick_down" run="ae split row down"/>',
                       '<on event="y" run="ae split own assign"/>',
                       *profile_keys,
-                      f'<child widget="{JOIN}/header_split_screen"/>', *children,
+                      # (the button bar first: the screen's first item takes the focus, CONTINUE's)
                       f'<child widget="{JOIN}/join_button_bar" y="414"/>',
+                      f'<child widget="{JOIN}/header_split_screen"/>', *children,
                       f'<child widget="{JOIN}/join_continue_off" x="380" y="415"/>'])
     return screen + lines
 
