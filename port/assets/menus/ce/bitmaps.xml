@@ -379,8 +379,8 @@
 		<frame png="ce/port/bitmaps/ae_seat_button_assign__1.png" width="58" height="32"/>
 	</bitmap>
 	<bitmap name="bitmaps/ae_seat_button_leave">
-		<frame png="ce/port/bitmaps/ae_seat_button_leave__0.png" width="78" height="32"/>
-		<frame png="ce/port/bitmaps/ae_seat_button_leave__1.png" width="78" height="32"/>
+		<frame png="ce/port/bitmaps/ae_seat_button_leave__0.png" width="54" height="32"/>
+		<frame png="ce/port/bitmaps/ae_seat_button_leave__1.png" width="54" height="32"/>
 	</bitmap>
 	<bitmap name="bitmaps/ae_seat_profile_bar">
 		<frame png="ce/port/bitmaps/ae_seat_profile_bar__0.png" width="130" height="28"/>

@@ -1786,8 +1786,8 @@ def _lobby_pick(base: str) -> list:
         top = 30 * row
         item(f"lobby_pick_l_{row}", f"left {row}", 156, top, 52, 28)
         item(f"lobby_pick_r_{row}", f"right {row}", 208, top, 70, 28)
-        item(f"lobby_pick_assign_{row}", f"assign {row}", 282, top + 2, 58, 24, button + [("text", "ASSIGN")])
-        item(f"lobby_pick_cancel_{row}", f"assign {row}", 282, top + 2, 58, 24, button + [("text", "CANCEL")])
+        item(f"lobby_pick_assign_{row}", f"assign {row}", 282, top + 2, 56, 24, button + [("text", "ASSIGN")])
+        item(f"lobby_pick_cancel_{row}", f"assign {row}", 282, top + 2, 56, 24, button + [("text", "CANCEL")])
         # (ASSIGN's wait: the arrows and value's whole width)
         lines += _widget(f"{base}/lobby_pick_wait_{row}",
                          [("type", "text"), ("controller", 1), ("width", 128), ("height", 28), ("text", "PRESS A BUTTON"),
@@ -2060,17 +2060,16 @@ def _join_card_items(seat: int, x: int, y: int, w: int) -> list:
         item(f"join_hit_{pill}_r", right, 86, top, 52, 28)
     button = [("type", "text"), ("bitmap", "bitmaps/ae_seat_button_assign"), ("font", "ui\\small_ui"),
               ("color", JOIN_WHITE), ("align", "center"), ("text_y", 2)]
-    item("join_assign", "assign", 6, 272, 58, 24, button + [("text", "ASSIGN")])
-    item("join_cancel", "assign", 6, 272, 58, 24, button + [("text", "CANCEL")])
-    leave = [p for p in button if p[0] not in ("align", "bitmap")] + [("bitmap", "bitmaps/ae_seat_button_leave"),
-                                                                        ("text", "LEAVE"), ("align", "left")]
-    # (a pad's B chip, or the keyboard's ESC key, before LEAVE: two buttons, the text where each picture ends)
-    item("join_leave", "leave", 66, 272, 78, 24, leave + [("text_x", 23)])
-    item("join_leavek", "leave", 66, 272, 78, 24, leave + [("text_x", 28)])
+    item("join_assign", "assign", 5, 272, 58, 24, button + [("text", "ASSIGN")])
+    item("join_cancel", "assign", 5, 272, 58, 24, button + [("text", "CANCEL")])
+    # (LEAVE: the device's own leave key just left of the button, as a legend reads: a pad's B chip or the keyboard's
+    # ESC key; the button its text alone, so both fit at 1080p, where the text is widest)
+    leave = [p for p in button if p[0] != "bitmap"] + [("bitmap", "bitmaps/ae_seat_button_leave"), ("text", "LEAVE")]
+    item("join_leave", "leave", 89, 272, 54, 24, leave)
     lines += _join_picture(f"join_leavebtn_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
-    items.append(f'<child widget="{JOIN}/join_leavebtn_{seat}" x="70" y="276"/>')
+    items.append(f'<child widget="{JOIN}/join_leavebtn_{seat}" x="69" y="276"/>')
     lines += _join_picture(f"join_leavekey_{seat}", "bitmaps/ae_seat_key_esc", 22, 14)
-    items.append(f'<child widget="{JOIN}/join_leavekey_{seat}" x="70" y="277"/>')
+    items.append(f'<child widget="{JOIN}/join_leavekey_{seat}" x="65" y="277"/>')
     return _widget(f"{JOIN}/join_items_{seat}", [("type", "column_list"), ("width", w), ("height", 300)], items) + lines
 
 

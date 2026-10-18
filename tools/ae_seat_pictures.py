@@ -47,7 +47,7 @@ BUTTON = (16, 16)
 KEY_ESC = (22, 14)
 # (a card's ASSIGN / CANCEL and its LEAVE, side by side in its 134 units)
 ASSIGN_BUTTON = (58, 32)
-LEAVE_BUTTON = (78, 32)
+LEAVE_BUTTON = (54, 32)
 PROFILE_BAR = (130, 28)
 STRIP = (608, 28)
 

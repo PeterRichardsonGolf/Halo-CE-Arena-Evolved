@@ -577,7 +577,6 @@ static void join_card_update(struct widget_instance *screen, short seat)
 		join_show(join_child(screen, "join_cancel", seat), FALSE);
 		join_show(join_child(screen, "join_leavebtn", seat), FALSE);
 		join_show(join_child(screen, "join_leavekey", seat), FALSE);
-		join_show(join_child(screen, "join_leavek", seat), FALSE);
 		join_show(join_child(screen, "join_leave", seat), FALSE);
 		join_value(screen, "dev", seat, L"", FALSE, FALSE);
 		join_value(screen, "prof", seat, L"", FALSE, FALSE);
@@ -621,8 +620,7 @@ static void join_card_update(struct widget_instance *screen, short seat)
 	join_show(join_child(screen, "join_devarrow_r", seat), !mine_waits && !flashing);
 	join_show(join_child(screen, "join_assign", seat), !mine_waits);
 	join_show(join_child(screen, "join_cancel", seat), mine_waits);
-	join_show(join_child(screen, "join_leave", seat), view.family != AE_SEAT_FAMILY_KEYBOARD);
-	join_show(join_child(screen, "join_leavek", seat), view.family == AE_SEAT_FAMILY_KEYBOARD);
+	join_show(join_child(screen, "join_leave", seat), TRUE);
 	join_show(join_child(screen, "join_leavebtn", seat), view.family != AE_SEAT_FAMILY_KEYBOARD);
 	join_show(join_child(screen, "join_leavekey", seat), view.family == AE_SEAT_FAMILY_KEYBOARD);
 	join_frame(join_child(screen, "join_leavebtn", seat), leave_frame(&view));
