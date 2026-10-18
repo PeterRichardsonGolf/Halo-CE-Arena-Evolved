@@ -17,6 +17,7 @@ netgame items and placed vehicles in memory.
 #include "physics/collision_bsp.h"
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
+#include "tag_files/tag_files.h"
 #include "tag_files/tag_groups.h"
 #include "units/unit_definitions.h"
 #include "units/vehicle_definitions.h"
@@ -28,6 +29,7 @@ netgame items and placed vehicles in memory.
 #include "ae_map_folders.h"
 
 #include <xtl.h>
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -206,6 +208,18 @@ static struct scenario_netgame_equipment const *source_entry(struct scenario_net
 	}
 }
 
+/* the engine's object type of a layout's */
+static short object_type_of(short type)
+{
+	static short const types[NUMBER_OF_AE_LAYOUT_OBJECT_TYPES] =
+	{
+		_object_type_scenery, _object_type_machine, _object_type_control, _object_type_light_fixture,
+		_object_type_sound_scenery, _object_type_biped, _object_type_weapon, _object_type_equipment
+	};
+
+	return types[type];
+}
+
 /* the map's own items and vehicles, by the numbers a layout names them with (written when a layout file exists, so
 that one can be written from the log) */
 static void log_map(struct scenario *scenario)
@@ -216,6 +230,7 @@ static void log_map(struct scenario *scenario)
 	struct tag_block *placements = scenario_get_object_type_scenario_datums(scenario, _object_type_vehicle,
 		&element_size);
 	long index;
+	short type;
 
 	for (index = 0; index < applied.original_count; index++)
 	{
@@ -243,6 +258,30 @@ static void log_map(struct scenario *scenario)
 			definition == NONE ? -1 : (int)((struct ae_vehicle_definition_head const *)
 				tag_get(VEHICLE_DEFINITION_TAG, definition))->vehicle_type,
 			placement->position.x, placement->position.y, placement->position.z);
+	}
+	/* (the other placed objects, so that a remove scenery / remove object line can be written from the log: each
+	type's palette names, then each placement's entry and spot) */
+	for (type = 0; type < NUMBER_OF_AE_LAYOUT_OBJECT_TYPES; type++)
+	{
+		struct tag_block *palette = scenario_get_object_type_scenario_palette(scenario, object_type_of(type));
+
+		for (index = 0; index < palette->count; index++)
+		{
+			long definition = TAG_BLOCK_GET_ELEMENT(palette, index, struct scenario_object_palette_entry)->reference.index;
+
+			platform_log("layout: map %s palette %ld: %s", ae_layout_object_type_name(type), index,
+				definition == NONE ? "(none)" : tag_get_name(definition));
+		}
+		element_size = 0;
+		placements = scenario_get_object_type_scenario_datums(scenario, object_type_of(type), &element_size);
+		for (index = 0; placements && element_size > 0 && index < placements->count; index++)
+		{
+			struct scenario_object_datum const *placement =
+				(struct scenario_object_datum const *)tag_block_get_element_with_size(placements, index, element_size);
+
+			platform_log("layout: map %s %ld: palette %d at %.2f %.2f %.2f", ae_layout_object_type_name(type), index,
+				(int)placement->palette_entry_index, placement->position.x, placement->position.y, placement->position.z);
+		}
 	}
 }
 
@@ -552,6 +591,90 @@ static void apply_vehicles(struct scenario *scenario)
 	platform_log("layout: %ld vehicle%s removed", removed, removed == 1 ? "" : "s");
 }
 
+/* whether name has word in it, letters of either case alike */
+static boolean name_has(char const *name, char const *word)
+{
+	long length = (long)strlen(word), at;
+
+	if (!name || !length)
+		return FALSE;
+	for (at = 0; name[at]; at++)
+	{
+		long same = 0;
+
+		while (same < length && name[at + same] && tolower((unsigned char)name[at + same]) ==
+			tolower((unsigned char)word[same]))
+		{
+			same++;
+		}
+		if (same == length)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/* remove scenery / remove object: the placements dropped as a vehicle's are. These objects are made on each machine
+from its own copy of the scenario (nothing of them goes over the network), so this runs on every machine that has the
+layout; one without the file keeps them (and their collision) */
+static void apply_objects(struct scenario *scenario)
+{
+	long removed = 0;
+	short type;
+
+	if (!layout.object_rule_count)
+		return;
+	for (type = 0; type < NUMBER_OF_AE_LAYOUT_OBJECT_TYPES; type++)
+	{
+		long element_size = 0, index;
+		struct tag_block *placements = scenario_get_object_type_scenario_datums(scenario, object_type_of(type),
+			&element_size);
+		struct tag_block *palette = scenario_get_object_type_scenario_palette(scenario, object_type_of(type));
+		short rule;
+
+		if (!placements || element_size <= 0)
+			continue;
+		for (index = 0; index < placements->count; index++)
+		{
+			struct scenario_object_datum *placement =
+				(struct scenario_object_datum *)tag_block_get_element_with_size(placements, index, element_size);
+			short entry = placement->palette_entry_index;
+			long definition = NONE;
+
+			if (entry < 0 || entry >= palette->count)
+				continue;
+			definition = TAG_BLOCK_GET_ELEMENT(palette, entry, struct scenario_object_palette_entry)->reference.index;
+			for (rule = 0; rule < layout.object_rule_count; rule++)
+			{
+				struct ae_layout_object_rule const *wanted = &layout.object_rules[rule];
+				boolean match;
+
+				if (wanted->type != type)
+					continue;
+				match = wanted->by_name ? (boolean)(definition != NONE && name_has(tag_get_name(definition), wanted->name)) :
+					(boolean)(wanted->palette_index == entry);
+				if (match && wanted->near)
+				{
+					real dx = placement->position.x - wanted->x, dy = placement->position.y - wanted->y;
+					real dz = placement->position.z - wanted->z;
+
+					match = (boolean)(dx * dx + dy * dy + dz * dz <= wanted->radius * wanted->radius);
+				}
+				if (match)
+					break;
+			}
+			if (rule < layout.object_rule_count)
+			{
+				platform_log("layout: line %d: %s %ld (palette %d) at %.1f %.1f %.1f removed", layout.object_rules[rule].line,
+					ae_layout_object_type_name(type), index, entry, placement->position.x, placement->position.y,
+					placement->position.z);
+				placement->palette_entry_index = NONE;
+				removed++;
+			}
+		}
+	}
+	platform_log("layout: %ld scenery and other object%s removed", removed, removed == 1 ? "" : "s");
+}
+
 /* whether the size bytes at address lie in a block of count elements of element_size at block */
 static int memory_in(void const *block, long count, unsigned long element_size, unsigned long address, long size)
 {
@@ -666,12 +789,13 @@ void ae_layout_apply(void)
 		return;
 	}
 	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names, %d bot jumps, %d bot avoids, "
-		"%d spawns, %d flags)", path, layout.item_count, layout.removed_count, layout.clear_items ? "" : "no ",
+		"%d spawns, %d flags, %d object lines)", path, layout.item_count, layout.removed_count, layout.clear_items ? "" : "no ",
 		layout.vehicle_rule_count, layout.name_count, layout.bot_jump_count, layout.bot_avoid_count, layout.spawn_count,
-		layout.flag_count);
+		layout.flag_count, layout.object_rule_count);
 	layout_applied = TRUE;
 	apply_items(scenario);
 	apply_vehicles(scenario);
+	apply_objects(scenario);
 	apply_spawns(scenario);
 	apply_flags(scenario);
 }

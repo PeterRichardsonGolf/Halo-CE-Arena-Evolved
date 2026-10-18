@@ -8,6 +8,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## 0.3.4-beta - 2026-10-18
 
+- A map layout file can now drop placed scenery and other objects: `remove scenery "protected 54"` or
+  `remove object machine <name or number> near <x y z> <radius>` (a Halo 2 remake's fusion coils, trees). Each machine
+  that has the layout drops them from its own copy of the level; the game log lists every placed object of a map with
+  a layout file, to write the lines from.
 - A multiplayer game's pause menu SETTINGS no longer lists CHANGE COLOR: its Spartans are the main menu's pictures, which
   a game map has not got, so the screen showed an empty box. Change your color from the main menu's Settings.
 - The pause box's "B =CANCEL" is no longer cut at 1080p.

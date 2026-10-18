@@ -14,6 +14,15 @@ The file (version 1):
 	remove item <n>                   drop the map's item n (its index as the log lists it)
 	item <what> at <x> <y> <z> [facing <degrees>] [respawn <seconds>] [team red|blue|neutral] [games all]
 	remove vehicle <type> [near <x> <y> <z> <radius>]
+	remove scenery <name or n> [near <x> <y> <z> <radius>]
+	remove object <type> <name or n> [near <x> <y> <z> <radius>]
+	                                  drop placed objects of the scenario (a fusion coil, a tree): <type> one of scenery
+	                                  machine control light_fixture sound_scenery biped weapon equipment (`remove scenery`
+	                                  is `remove object scenery`); <name> a word of the object's tag name (quoted when it
+	                                  has spaces; case aside), <n> the palette number of that type. Scenario objects other
+	                                  than items and vehicles are not sent over the network: each machine that has the
+	                                  layout drops them from its own copy of the level, a machine without the file keeps
+	                                  them (and their collision)
 	name item <n> <label>             the map's item n's name on the item timers and waypoints (e.g. SWORD where the map
 	                                  puts its sword in the shotgun's slot); <label> one word or quoted, up to 15 characters
 	bot jump at <x> <y> <z> to <x> <y> <z>
@@ -59,6 +68,7 @@ map lacks is the applying half's business (that one item is skipped and logged: 
 #define AE_LAYOUT_MAXIMUM_ITEMS 256
 #define AE_LAYOUT_MAXIMUM_REMOVED 256
 #define AE_LAYOUT_MAXIMUM_VEHICLE_RULES 32
+#define AE_LAYOUT_MAXIMUM_OBJECT_RULES 32
 #define AE_LAYOUT_MAP_FILE_SIZE 64
 #define AE_LAYOUT_TAG_SIZE 128
 #define AE_LAYOUT_MAXIMUM_NAMES 64
@@ -118,6 +128,32 @@ struct ae_layout_vehicle_rule
 {
 	boolean turret;        /* every turret, else the palette entry */
 	long palette_index;
+	boolean near;
+	real x, y, z, radius;
+	short line;
+};
+
+/* the scenario's placed objects a layout can drop (remove object <type>) */
+enum ae_layout_object_type
+{
+	_ae_layout_object_scenery,
+	_ae_layout_object_machine,
+	_ae_layout_object_control,
+	_ae_layout_object_light_fixture,
+	_ae_layout_object_sound_scenery,
+	_ae_layout_object_biped,
+	_ae_layout_object_weapon,
+	_ae_layout_object_equipment,
+	NUMBER_OF_AE_LAYOUT_OBJECT_TYPES
+};
+
+/* remove object <type> <name or n> [near x y z r] */
+struct ae_layout_object_rule
+{
+	short type;            /* enum ae_layout_object_type */
+	boolean by_name;       /* a word of the palette entry's tag name, else the palette number */
+	long palette_index;
+	char name[AE_LAYOUT_TAG_SIZE];
 	boolean near;
 	real x, y, z, radius;
 	short line;
@@ -183,6 +219,8 @@ struct ae_layout
 	struct ae_layout_item items[AE_LAYOUT_MAXIMUM_ITEMS];
 	short vehicle_rule_count;
 	struct ae_layout_vehicle_rule vehicle_rules[AE_LAYOUT_MAXIMUM_VEHICLE_RULES];
+	short object_rule_count;
+	struct ae_layout_object_rule object_rules[AE_LAYOUT_MAXIMUM_OBJECT_RULES];
 	short name_count;
 	struct { long item; char label[AE_LAYOUT_LABEL_SIZE]; } names[AE_LAYOUT_MAXIMUM_NAMES];
 	short bot_jump_count;
@@ -211,6 +249,9 @@ boolean ae_layout_for_map(struct ae_layout const *layout, char const *map_file, 
 
 /* an alias's name ("rockets"), for the log */
 char const *ae_layout_alias_name(short alias);
+
+/* an object type's name ("scenery", "machine"), for the log */
+char const *ae_layout_object_type_name(short type);
 
 /* a flag type's name ("ctf", "hill"), for the log */
 char const *ae_layout_flag_type_name(short type);
