@@ -123,4 +123,13 @@ long ae_bots_combat_initial_halt_ticks(int level, float random);
 HEROIC 10 units, LEGENDARY anywhere; RECRUIT .. NORMAL know only what they see */
 float ae_bots_combat_share_distance(int level);
 
+/* SPENT WEAPONS (bots.c's bots_weapon_empty, which swaps a bot off an empty weapon): a weapon of rounds is spent
+when none are left, bots.c's own test (-1: left to it); an energy weapon (the plasma pistol, the plasma rifle) when
+its battery is out (age 1). An energy weapon is one with no magazine or a magazine of no rounds: the stock plasma
+pistol has one, every maximum 0, so bots.c took it for always empty, and a bot whose other weapon ran dry kept that
+one, never fired again and backed off to the empty weapon's distance (owner 2026-10-18: Johnson "ran away and
+didn't shoot"). The magazine's counts (0 for none: magazine_count) and the weapon's age 0..1 */
+int ae_bots_combat_weapon_spent(int magazine_count, int rounds_loaded_maximum, int rounds_total_maximum,
+	float age);
+
 #endif

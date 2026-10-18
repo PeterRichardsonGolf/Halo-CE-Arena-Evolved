@@ -330,3 +330,11 @@ float ae_bots_combat_share_distance(int level)
 	ours: RECRUIT .. NORMAL only what they see) */
 	return level >= AE_BOTS_LEVEL_LEGENDARY ? 1.0e9f : level == AE_BOTS_LEVEL_HEROIC ? 10.0f : 0.0f;
 }
+
+int ae_bots_combat_weapon_spent(int magazine_count, int rounds_loaded_maximum, int rounds_total_maximum,
+	float age)
+{
+	if (magazine_count > 0 && (rounds_loaded_maximum > 0 || rounds_total_maximum > 0))
+		return -1;
+	return age >= 0.999f;
+}
