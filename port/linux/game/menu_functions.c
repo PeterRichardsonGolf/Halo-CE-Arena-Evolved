@@ -3436,6 +3436,7 @@ static boolean invite_copy(void)
 /* "ss start game": the settings given the server, then the lobby */
 static boolean server_start(void)
 {
+	if (!global_network_game_server_get()) return ae_lobby_server_gone(); /* AE hook */
 	if (text_field_editing(NULL))
 		text_field_end(TRUE);
 	network_game_server_port_set_settings(multiplayer.game_name,

@@ -18,6 +18,7 @@ PLAYER: with two or more pads the lobby looked stuck (the pad whose player had l
 #include "cseries/cseries_windows.h"
 #include "interface/player_ui.h"
 #include "interface/ui_widget_instance.h"
+#include "interface/ui_widget.h"
 #include "networking/network_client_manager.h"
 #include "networking/network_game_globals.h"
 #include "networking/network_game_manager.h"
@@ -153,4 +154,11 @@ int ae_lobby_only_bots_stay(short controller)
 			return FALSE; /* (another person of this machine stays: the game's own B) */
 	}
 	return mine && bots > 0;
+}
+
+int ae_lobby_server_gone(void)
+{
+	display_error_text_deferred(L"The game closed. Press B and host the game again.", NONE);
+	platform_log("ae lobby: Server Setup's START GAME with no game hosted (it closed after the lobby was left)");
+	return FALSE;
 }

@@ -821,3 +821,5 @@ port/linux/src/port_config.c	{ "input.back_right", _config_string, "\"none\"", "
 port/linux/src/port_config.c	{ "input.back_left", _config_string, "\"none\"", "HALO_BACK_LEFT", _environment_value, /* AE hook */\n_platform_desktop,
 # a mod's main menu map too big for the main menu's cache file: the game's own (item 140a, ae_map_folders.c)
 source/cache/cache_files.c	if (!ae_map_folders_mod_map_refused(path, map_name)) return; /* AE hook */
+# Server Setup's START GAME with no game hosted any more says so (ae_glue_lan.c; LAN party 2026-10-17)
+port/linux/game/menu_functions.c	if (!global_network_game_server_get()) return ae_lobby_server_gone(); /* AE hook */

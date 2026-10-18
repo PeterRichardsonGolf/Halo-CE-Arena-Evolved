@@ -26,6 +26,9 @@ void ae_lan_hint_label(struct widget_instance *label);
 player of this machine leaves and the machine leaves the lobby, as its last player's B does; TRUE: back from the lobby,
 FALSE: not in a lobby's pregame (nothing done) */
 int ae_lobby_leave_all(short controller);
+/* Server Setup's START GAME with no game hosted any more (it closed after the lobby was left, LAN party 2026-10-17:
+START GAME failed without a word): a line saying so; FALSE */
+int ae_lobby_server_gone(void);
 /* (menu_functions.c's lobby B, an AE hook line) whether the controller's player is the last person of this machine,
 the others of it LAN bots (ae_lan_bots.c: the host's spare controllers): their B then leaves as the last player's does
 (ae_lobby_leave_all, the bots too). The game counted the bots as this machine's players, so the person left alone,
