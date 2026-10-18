@@ -78,6 +78,14 @@ up to their build.
   PROFILE makes one), B or ESC leaves the seat, and CONTINUE goes on to the map, the gametype and GAME SETUP (the
   gametype and its options; no network rows), with the bots' rows in the lobby. A controller unplugged keeps its
   player's seat until it is plugged back in; a device that presses START in the lobby joins there.
+- **Controller picker:** each JOIN card has a CONTROLLER above its PROFILE (a player's own UP and DOWN choose the
+  row, LEFT and RIGHT change it): it lists every device connected, and taking one another player has swaps the two.
+  ASSIGN (or Y on your own pad) waits for a press on the controller you want: press any button on it (a key gives
+  the keyboard; ESC, the seat's own B or 10 seconds end it). A seat's device pressed flashes its name, so two pads
+  of the same kind can be told apart. An empty card's OR PICK ONE seats a free device with the mouse. In the lobby,
+  each of this PC's players (two or more) has the same CONTROLLER and ASSIGN on their row, in a split screen game
+  and when you host a LAN or internet game (there the keyboard stays player 1's). The mouse can use every arrow,
+  value and button.
 - **PLAYFIGHT** (Settings > Game Options > BOTS): bots that move and aim but never shoot, for practice.
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
   you can start on your own.

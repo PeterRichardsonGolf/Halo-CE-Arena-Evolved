@@ -6,6 +6,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.4-beta - 2026-10-18
+
+- Controller picker: each split screen JOIN card has a CONTROLLER above its PROFILE: LEFT and RIGHT on that row (a
+  player's own UP and DOWN choose it) give the player the next connected controller, swapping with whoever had it;
+  ASSIGN (or Y) waits for a button press on the controller to use. A seat's controller flashes its name when pressed,
+  and an empty card can seat a free controller with the mouse. The lobby has the same CONTROLLER and ASSIGN on each of
+  this PC's players' rows, in split screen and when hosting a LAN or internet game, so four controllers on one PC are
+  quick to sort out. The mouse can use all of it. Buttons on the JOIN screen are round chips (no Xbox 360 pad for an
+  unknown controller any more), and nothing there is amber.
 - HEALTH's REACH is now true to Halo: Reach: health has its own wait, 4 s after the last damage that reached it
   (shield hits do not count), then refills fast to the top of the third it is in (about 1.1 s, 1.5 s and 2.6 s a
   third); shields recharge 6 s after a hit and fill in 3 s; a health pack also ends the shields' wait. Before, health
@@ -14,8 +23,6 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   after the last shield damage and fill in 2 s; health refills in 5 s, starting 10 s after the last damage that reached
   it, shields or none), so HALO 3 plays the same as HALO 2. Before, it was our own rule (health only after full
   shields, slower) and CE's shield timers.
-## 0.3.4-beta - 2026-10-18
-
 - Split screen's JOIN screen: Multiplayer > SPLIT SCREEN starts with four player cards. The first device to press
   START (ENTER or SPACE on the keyboard) is PLAYER 1, the next PLAYER 2, so keyboard and mouse can be any player, and
   each device stays that player's until it leaves: no more pad taking player 1 because it was plugged in first. Each
