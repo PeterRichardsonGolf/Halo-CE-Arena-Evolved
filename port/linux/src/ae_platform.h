@@ -58,6 +58,11 @@ int ae_platform_map_share_key(void);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */
 int ae_platform_input_scheme(void);
+/* a controller's back buttons (a Switch 2 Pro Controller's GR and GL, an Elite's or DualSense Edge's upper paddles)
+pressed as the Xbox buttons input.back_right and input.back_left name, so they follow the profile's layout: merged into
+an Xbox pad's state (xinput_sdl.c: its wButtons and bAnalogButtons) */
+struct SDL_Gamepad;
+void ae_platform_back_buttons(struct SDL_Gamepad *gamepad, unsigned short *buttons, unsigned char *analog_buttons);
 /* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
 as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
 void ae_platform_test_keystroke(int scancode);

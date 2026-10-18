@@ -6,6 +6,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Controllers' back buttons: `input.back_right` and `input.back_left` in config.toml make a Switch 2 Pro
+  Controller's GR and GL (an Xbox Elite's or DualSense Edge's upper paddles) press the Xbox button they name, so
+  they follow your controller layout. Off by default; with Steam running, Steam Input takes the pad instead.
+
 ## 0.3.3-beta - 2026-10-17
 
 - Xbox maps that carry Halo PC's pause menus (Halo OG's Digsite maps) get the Custom Edition maps' pause repair:
