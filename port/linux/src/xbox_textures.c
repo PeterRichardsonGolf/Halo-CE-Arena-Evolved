@@ -35,6 +35,12 @@ memory_watch.c detects that by write-protecting the pages.
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83f3
 #endif
 
+#ifdef HALO_WEB /* AE hook */
+/* Arena Evolved has not OpenCE's Custom Edition channel orders (its mods' bitmaps are off): every texture keeps the Xbox's, so the web paths below take that one */ /* AE hook */
+enum { _custom_edition_channels_xbox }; /* AE hook */
+static const unsigned char channel_order = _custom_edition_channels_xbox, custom_edition_channel_sources[1][4] = { { 0, 1, 2, 3 } }; /* AE hook */
+#endif /* AE hook */
+
 /* ---------- formats */
 
 enum texel_kind
