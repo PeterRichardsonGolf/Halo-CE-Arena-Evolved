@@ -6,6 +6,17 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- From OpenCE build-208 to build-213 (OpenCE's work, merged): the high-resolution Xbox HUD is complete, with a
+  BUTTON STYLE row on Settings > Video > GRAPHICS (CLASSIC, GEMS or DARK GEMS button faces in the game's prompts);
+  turning the high-res HUD or text on or off applies at once, without reloading the map; the campaign pause menu's
+  artwork and a scripted timer's digits (which could shrink) are fixed; a voice chat packet that is not one 20 ms
+  frame is dropped before it is decoded. With a PlayStation controller the prompts keep Arena Evolved's PlayStation
+  icons.
+- From ChupathingyCE 0.7.5d: a game listed on the game list that is then made private or given a password gets a
+  new invite, so the one shown on the list no longer lets anyone in.
+- Arena Evolved is now on OpenCE build-213 and ChupathingyCE 0.7.5d (still network version 29: it plays with the
+  same builds as before).
+
 ## 0.3.4-beta - 2026-10-18
 
 - Split screen's JOIN screen: Multiplayer > SPLIT SCREEN starts with four player cards. The first device to press
