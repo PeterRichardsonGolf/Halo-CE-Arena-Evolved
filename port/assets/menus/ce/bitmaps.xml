@@ -342,6 +342,38 @@
 	<bitmap name="main_menu/multiplayer_type_select/lobby/header_lobby">
 		<frame png="ce/port/main_menu/multiplayer_type_select/lobby/header_lobby.png" width="512" height="64"/>
 	</bitmap>
+	<bitmap name="main_menu/multiplayer_type_select/split_screen/header_split_screen">
+		<frame png="ce/port/main_menu/multiplayer_type_select/split_screen/header_split_screen.png" width="512" height="64"/>
+	</bitmap>
+	<bitmap name="bitmaps/ae_seat_card">
+		<frame png="ce/port/bitmaps/ae_seat_card__0.png" width="146" height="300"/>
+		<frame png="ce/port/bitmaps/ae_seat_card__1.png" width="146" height="300"/>
+		<frame png="ce/port/bitmaps/ae_seat_card__2.png" width="146" height="300"/>
+	</bitmap>
+	<bitmap name="bitmaps/ae_seat_devices">
+		<frame png="ce/port/bitmaps/ae_seat_devices__0.png" width="72" height="40"/>
+		<frame png="ce/port/bitmaps/ae_seat_devices__1.png" width="72" height="40"/>
+		<frame png="ce/port/bitmaps/ae_seat_devices__2.png" width="72" height="40"/>
+		<frame png="ce/port/bitmaps/ae_seat_devices__3.png" width="72" height="40"/>
+		<frame png="ce/port/bitmaps/ae_seat_devices__4.png" width="72" height="40"/>
+		<frame png="ce/port/bitmaps/ae_seat_devices__5.png" width="72" height="40"/>
+	</bitmap>
+	<bitmap name="bitmaps/ae_seat_buttons">
+		<frame png="ce/port/bitmaps/ae_seat_buttons__0.png" width="16" height="16"/>
+		<frame png="ce/port/bitmaps/ae_seat_buttons__1.png" width="16" height="16"/>
+		<frame png="ce/port/bitmaps/ae_seat_buttons__2.png" width="16" height="16"/>
+		<frame png="ce/port/bitmaps/ae_seat_buttons__3.png" width="16" height="16"/>
+		<frame png="ce/port/bitmaps/ae_seat_buttons__4.png" width="16" height="16"/>
+		<frame png="ce/port/bitmaps/ae_seat_buttons__5.png" width="16" height="16"/>
+		<frame png="ce/port/bitmaps/ae_seat_buttons__6.png" width="16" height="16"/>
+		<frame png="ce/port/bitmaps/ae_seat_buttons__7.png" width="16" height="16"/>
+	</bitmap>
+	<bitmap name="bitmaps/ae_seat_profile_bar">
+		<frame png="ce/port/bitmaps/ae_seat_profile_bar__0.png" width="130" height="32"/>
+	</bitmap>
+	<bitmap name="bitmaps/ae_seat_strip">
+		<frame png="ce/port/bitmaps/ae_seat_strip__0.png" width="608" height="32"/>
+	</bitmap>
 	<bitmap name="main_menu/multiplayer_type_select/server_settings/header_game_setup">
 		<frame png="ce/port/main_menu/multiplayer_type_select/server_settings/header_game_setup.png" width="512" height="64"/>
 	</bitmap>

@@ -6708,6 +6708,8 @@ boolean pc_menu_event_function_invoke(
 			return ae_menus_swap_event(name, widget, controller, widget_deleted);
 		if (!strcmp(name, "ae lobby shuffle teams")) /* AE hook */
 			return ae_team_shuffle();
+		if (!strncmp(name, "ae split ", 9)) /* AE hook */
+			return ae_split_screen_event(name, widget, controller, widget_deleted);
 		if (!strcmp(name, "main menu quit game"))
 		{
 			platform_request_quit();
@@ -7072,6 +7074,8 @@ void pc_menu_game_data_function_invoke(
 		text_set_length(widget, (wchar_t const *)ae_mcc_status_wide(), 200);
 	if (!strcmp(name, "ae profile picture")) /* AE hook */
 		ae_settings_profile_list(widget);
+	if (!strcmp(name, "ae split join update")) /* AE hook */
+		ae_split_screen_join_update(widget);
 	/* (a text field whose screen has gone: let go of) */
 	if (text_field.row && system_milliseconds() - text_field_shown_time > 500)
 		text_field_end(FALSE);

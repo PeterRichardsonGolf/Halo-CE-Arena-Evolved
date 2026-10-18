@@ -110,6 +110,9 @@ void ae_seats_leave_seat(int seat);
 /* the gaps closed: moved[old seat] = new seat (-1 none); returns the seats taken */
 int ae_seats_close(int moved[AE_SEATS_MAXIMUM]);
 
+/* (debug.test_input, ae_platform.c) its keys now: ENTER or SPACE, ESC */
+void ae_seats_test_keys(int join, int back);
+
 /* ---- xinput_sdl.c's (AE hooks) */
 
 /* the port whose state is made with the keyboard's work (mouse, keys, screenshots): 0 when off, or when the keyboard

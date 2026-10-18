@@ -37,4 +37,16 @@ unsigned char ae_split_screen_server_start(void);
 the settings as they change */
 void ae_split_screen_lobby_update(struct widget_instance *list, unsigned char teams, long game_engine_index);
 
+/* ---------- the JOIN screen (split screen step 2: spec 4.2, 5, 7): who plays, on which device, with which profile
+(port/linux/src/ae_seats.c is the seat map) */
+
+/* (menu_functions.c's pc_menu_function, an AE hook) the JOIN screen's "ae split ..." events; FALSE stops the event's
+other handlers (and a back) */
+unsigned char ae_split_screen_event(char const *name, struct widget_instance *widget, short controller,
+	unsigned char *widget_deleted);
+/* (menu_functions.c's data inputs, an AE hook) "ae split join update": every frame of the JOIN screen */
+void ae_split_screen_join_update(struct widget_instance *screen);
+/* (ae_seats.c) whether the seat map is still wanted: the JOIN screen is up, or a split screen game is */
+int ae_split_screen_seats_wanted(void);
+
 #endif

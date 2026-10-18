@@ -4,6 +4,7 @@ AE_SPLIT_SCREEN.C
 Multiplayer > SPLIT SCREEN in the PC menus (ae_split_screen.h).
 */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "cseries.h"
@@ -180,4 +181,473 @@ boolean ae_split_screen_server_start(void)
 		platform_log("split screen: %d players at most", MAXIMUM_PLAYERS);
 	}
 	return TRUE;
+}
+
+/* ---------- the JOIN screen (ae_split_screen.h) */
+
+#include "interface/player_ui.h"
+#include "saved games/player_profile.h"
+#include "saved games/saved_game_files.h"
+#include "ae_seats.h"
+
+boolean ui_widget_port_multiplayer_player(short controller_index, long profile_index);
+boolean ui_widget_port_host(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted);
+void p2p_set_hosting_allowed(int allowed);
+void p2p_set_hosting_public(int public);
+void event_manager_post_button(short controller_index, short button_index);
+unsigned long system_milliseconds(void);
+
+#define JOIN_PROFILES 32
+#define JOIN_TEXT_LENGTH 64
+#define JOIN_MESSAGE_TIME 3000
+/* a seat's first presses, the one that took it, are not its CONTINUE */
+#define JOIN_PRESS_GUARD 600
+/* the longest layout name the card's line takes after "Controls: " (small_ui, the card's width) */
+#define JOIN_CONTROLS_FIT 9
+/* (menu_functions.c's) */
+#define JOIN_PROFILE_VALID_BIT 0x80000000UL
+#define JOIN_BUTTON_B 1
+
+/* the card's pictures' frames (tools/ae_seat_pictures.py) */
+enum { CARD_EMPTY, CARD_SEATED, CARD_HELD };
+enum { DEVICE_KEYBOARD, DEVICE_XBOX, DEVICE_PLAYSTATION, DEVICE_NINTENDO, DEVICE_OTHER, DEVICE_UNPLUGGED };
+enum { BUTTON_XBOX_B = 3, BUTTON_PLAYSTATION_CIRCLE = 4, BUTTON_ESCAPE = 5, BUTTON_NINTENDO_B = 6 };
+
+static struct
+{
+	/* the screen is up */
+	boolean open;
+	/* a device with no seat pressed B / ESC: the B posted as controller 0 is that, not seat 0's leave */
+	boolean back_requested;
+	/* when each seat was taken: the press that took it is no CONTINUE (its START is down on its new port) */
+	unsigned long joined_at[AE_SEATS_MAXIMUM];
+	/* each seat's profile (an index of the profiles' list), NONE: none chosen yet */
+	short profile[AE_SEATS_MAXIMUM];
+	/* the profiles */
+	long indices[JOIN_PROFILES];
+	struct player_profile profiles[JOIN_PROFILES];
+	short count;
+	/* the help line's word for a while (a fifth device: "4 players at most on one PC") */
+	wchar_t const *message;
+	unsigned long message_until;
+} join;
+
+/* the layouts' names, as Settings > Gamepads > BUTTON LAYOUT has them (tools/port_settings.py) */
+static wchar_t const *const layout_names[] =
+{
+	L"Default", L"Swap triggers", L"Swap A, L trigger", L"Swap B, L trigger", L"Swap B, R stick", L"Bumper Jumper",
+	L"Recon", L"Hero", L"The Duke", L"Anniversary", L"Reclaimer", L"Zoom & Shoot", L"Bump & Jump", L"Green Fingers",
+};
+
+static void join_text(struct widget_instance *text_box, wchar_t const *text)
+{
+	short index;
+
+	if (!text_box)
+		return;
+	if (!text_box->parameters.text_box.text)
+	{
+		text_box->parameters.text_box.text = ui_widget_realloc(NULL, JOIN_TEXT_LENGTH * sizeof(wchar_t), __FILE__,
+			__LINE__);
+	}
+	if (!text_box->parameters.text_box.text)
+		return;
+	for (index = 0; index < JOIN_TEXT_LENGTH - 1 && text && text[index]; index++)
+		text_box->parameters.text_box.text[index] = text[index];
+	text_box->parameters.text_box.text[index] = 0;
+}
+
+/* (an ASCII text) */
+static void join_text_ascii(struct widget_instance *text_box, char const *text)
+{
+	wchar_t wide[JOIN_TEXT_LENGTH];
+	short index;
+
+	for (index = 0; index < JOIN_TEXT_LENGTH - 1 && text && text[index]; index++)
+		wide[index] = (wchar_t)(unsigned char)text[index];
+	wide[index] = 0;
+	join_text(text_box, wide);
+}
+
+static short join_length(wchar_t const *text)
+{
+	short length = 0;
+
+	while (text && text[length])
+		length++;
+	return length;
+}
+
+/* (the build's wchar_t is two bytes: no swprintf) */
+static void join_concat(wchar_t *text, wchar_t const *first, wchar_t const *second)
+{
+	short length = 0;
+
+	while (*first && length < JOIN_TEXT_LENGTH - 1)
+		text[length++] = *first++;
+	while (*second && length < JOIN_TEXT_LENGTH - 1)
+		text[length++] = *second++;
+	text[length] = 0;
+}
+
+static void join_show(struct widget_instance *widget, boolean visible)
+{
+	if (widget)
+		widget->visible = visible;
+}
+
+static struct widget_instance *join_child(struct widget_instance *screen, char const *name, short seat)
+{
+	char full[48];
+
+	snprintf(full, sizeof(full), "%s_%d", name, seat);
+	return child_named(screen, full);
+}
+
+static void join_frame(struct widget_instance *widget, short frame)
+{
+	if (widget)
+		widget->animation.current_frame_index = frame;
+}
+
+/* the profiles, as the PC menus' list reads them (menu_functions.c's profile_list_read) */
+static void join_profiles_read(void)
+{
+	long indices[JOIN_PROFILES];
+	word count = JOIN_PROFILES;
+	short index;
+
+	player_profiles_enumerate_available_to_local_player_index(NONE, &count, indices, FALSE);
+	join.count = 0;
+	for (index = 0; index < (short)count && join.count < JOIN_PROFILES; index++)
+	{
+		if (((unsigned long)indices[index] & JOIN_PROFILE_VALID_BIT) &&
+			player_profile_get(indices[index], &join.profiles[join.count]))
+		{
+			join.indices[join.count++] = indices[index];
+		}
+	}
+}
+
+/* (the list's last choice, after the profiles: NEW PROFILE, made at CONTINUE; any number of seats may be on it) */
+#define JOIN_NEW_PROFILE (join.count)
+
+static boolean join_profile_taken(short profile, short except_seat)
+{
+	struct ae_seats seats;
+	short seat;
+
+	if (profile == JOIN_NEW_PROFILE)
+		return FALSE;
+	ae_seats_get(&seats);
+	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+	{
+		if (seat != except_seat && seats.seat[seat].kind != AE_SEAT_EMPTY && join.profile[seat] == profile)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/* the next profile from `from` in the direction (1, -1) no other seat has; NONE if none */
+static short join_profile_next(short seat, short from, short direction)
+{
+	short step, profile;
+
+	for (step = 1; step <= join.count + 1; step++)
+	{
+		profile = (short)(((from + direction * step) % (join.count + 1) + join.count + 1) % (join.count + 1));
+		if (!join_profile_taken(profile, seat))
+			return profile;
+	}
+	return NONE;
+}
+
+/* a seat just taken: player 1's profile for the first person, else the first no seat has */
+static void join_profile_pick(short seat)
+{
+	long active = player_ui_get_active_player_profile_index(0);
+	short profile;
+
+	if (join.profile[seat] != NONE && join.profile[seat] <= JOIN_NEW_PROFILE && !join_profile_taken(join.profile[seat], seat))
+		return;
+	join.profile[seat] = NONE;
+	for (profile = 0; profile < join.count; profile++)
+	{
+		if (join.indices[profile] == active && !join_profile_taken(profile, seat))
+			join.profile[seat] = profile;
+	}
+	if (join.profile[seat] == NONE)
+		join.profile[seat] = join_profile_next(seat, JOIN_NEW_PROFILE, 1);
+}
+
+static void join_message(wchar_t const *text)
+{
+	join.message = text;
+	join.message_until = system_milliseconds() + JOIN_MESSAGE_TIME;
+}
+
+static short device_frame(struct ae_seat_view const *view)
+{
+	if (view->held)
+		return DEVICE_UNPLUGGED;
+	switch (view->family)
+	{
+	case AE_SEAT_FAMILY_KEYBOARD: return DEVICE_KEYBOARD;
+	case AE_SEAT_FAMILY_XBOX: return DEVICE_XBOX;
+	case AE_SEAT_FAMILY_PLAYSTATION: return DEVICE_PLAYSTATION;
+	case AE_SEAT_FAMILY_NINTENDO: return DEVICE_NINTENDO;
+	default: return DEVICE_OTHER;
+	}
+}
+
+static wchar_t const *device_name(struct ae_seat_view const *view)
+{
+	if (view->held)
+		return L"UNPLUGGED";
+	switch (view->family)
+	{
+	case AE_SEAT_FAMILY_KEYBOARD: return L"KEYBOARD + MOUSE";
+	case AE_SEAT_FAMILY_XBOX: return L"XBOX CONTROLLER";
+	case AE_SEAT_FAMILY_PLAYSTATION: return L"PLAYSTATION";
+	case AE_SEAT_FAMILY_NINTENDO: return L"NINTENDO";
+	default: return L"CONTROLLER";
+	}
+}
+
+static short leave_frame(struct ae_seat_view const *view)
+{
+	switch (view->family)
+	{
+	case AE_SEAT_FAMILY_KEYBOARD: return BUTTON_ESCAPE;
+	case AE_SEAT_FAMILY_PLAYSTATION: return BUTTON_PLAYSTATION_CIRCLE;
+	case AE_SEAT_FAMILY_NINTENDO: return BUTTON_NINTENDO_B;
+	default: return BUTTON_XBOX_B;
+	}
+}
+
+/* the widgets of a card that show for a seated player, and for an empty seat (tools/port_settings.py's _join_screen) */
+static char const *const seated_widgets[] = { "join_device", "join_devname", "join_bar", "join_arrow_l", "join_arrow_r",
+	"join_prof", "join_proflabel", "join_armour", "join_controls", "join_leavebtn", "join_leave" };
+static char const *const empty_widgets[] = { "join_press", "join_tojoin", "join_glyph0", "join_glyph1", "join_glyph2",
+	"join_glyphtext0", "join_glyphtext1", "join_glyphtext2" };
+
+static void join_card_update(struct widget_instance *screen, short seat)
+{
+	struct ae_seat_view view;
+	struct player_profile const *profile;
+	wchar_t controls[JOIN_TEXT_LENGTH];
+	short index, state;
+
+	ae_seats_view(seat, &view);
+	state = view.kind == AE_SEAT_EMPTY ? CARD_EMPTY : view.held ? CARD_HELD : CARD_SEATED;
+	join_frame(join_child(screen, "join_card", seat), state);
+	join_show(join_child(screen, "join_title_on", seat), state == CARD_SEATED);
+	join_show(join_child(screen, "join_title_off", seat), state == CARD_EMPTY);
+	join_show(join_child(screen, "join_title_held", seat), state == CARD_HELD);
+	for (index = 0; index < (short)NUMBEROF(seated_widgets); index++)
+		join_show(join_child(screen, seated_widgets[index], seat), state != CARD_EMPTY);
+	for (index = 0; index < (short)NUMBEROF(empty_widgets); index++)
+		join_show(join_child(screen, empty_widgets[index], seat), state == CARD_EMPTY);
+	if (state == CARD_EMPTY)
+	{
+		/* (the join buttons: Xbox START, PlayStation OPTIONS, ENTER) */
+		join_frame(join_child(screen, "join_glyph0", seat), 0);
+		join_frame(join_child(screen, "join_glyph1", seat), 1);
+		join_frame(join_child(screen, "join_glyph2", seat), 2);
+		return;
+	}
+	join_frame(join_child(screen, "join_device", seat), device_frame(&view));
+	join_text(join_child(screen, "join_devname", seat), device_name(&view));
+	join_frame(join_child(screen, "join_leavebtn", seat), leave_frame(&view));
+	profile = join.profile[seat] != NONE && join.profile[seat] < join.count ? &join.profiles[join.profile[seat]] : NULL;
+	/* (NEW PROFILE reads "NEW" over the bar's PROFILE: the whole words do not fit the bar) */
+	join_text(join_child(screen, "join_prof", seat), profile ? profile->player_name : L"NEW");
+	/* (NEW PROFILE: the first colour's armour, as a new profile has until it picks one) */
+	join_frame(join_child(screen, "join_armour", seat), profile ? (short)MAX(profile->primary_color_index, 0) : 0);
+	{
+		wchar_t const *layout = view.family == AE_SEAT_FAMILY_KEYBOARD ? L"Keyboard + mouse" :
+			profile && profile->controller_settings.button_preset < NUMBEROF(layout_names) ?
+			layout_names[profile->controller_settings.button_preset] : L"Default";
+
+		/* ("Controls: " when the line still fits the card, else the layout alone) */
+		join_concat(controls, join_length(layout) <= JOIN_CONTROLS_FIT ? L"Controls: " : L"", layout);
+	}
+	join_text(join_child(screen, "join_controls", seat), controls);
+}
+
+void ae_split_screen_join_update(struct widget_instance *screen)
+{
+	unsigned bits;
+	short seat;
+	struct ae_seats seats;
+	boolean any;
+
+	while (screen && screen->parent)
+		screen = screen->parent;
+	if (!screen)
+		return;
+	if (!ae_seats_active())
+		ae_seats_begin();
+	bits = ae_seats_update();
+	ae_seats_get(&seats);
+	if (bits & (AE_SEATS_JOINED | AE_SEATS_CHANGED))
+	{
+		join_profiles_read();
+		for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+		{
+			if (seats.seat[seat].kind == AE_SEAT_EMPTY)
+				continue;
+			if (join.profile[seat] == NONE)
+				join.joined_at[seat] = system_milliseconds();
+			join_profile_pick(seat);
+		}
+	}
+	if (bits & AE_SEATS_FULL)
+		join_message(L"4 players at most on one PC.");
+	if (bits & AE_SEATS_BACK)
+	{
+		/* (a device with no seat: back to Multiplayer, as the screen's B does, with every seat let go) */
+		join.back_requested = TRUE;
+		event_manager_post_button(0, JOIN_BUTTON_B);
+	}
+	any = ae_seats_taken(&seats) > 0;
+	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+		join_card_update(screen, seat);
+	join_show(child_named(screen, "join_help_ready"), any);
+	join_show(child_named(screen, "join_help_nobody"), !any);
+	join_text(child_named(screen, "join_message"),
+		join.message && system_milliseconds() < join.message_until ? join.message : L"");
+}
+
+int ae_split_screen_seats_wanted(void)
+{
+	return join.open || network_game_is_splitscreen_local() || (split_screen_chosen && global_network_game_server_get());
+}
+
+/* "ae split continue": the gaps closed, each seat's player on its profile, then the game made (as Create Game's
+"join controller to mp game" makes it, but every seat on its own profile) */
+static boolean join_continue(struct widget_instance *widget, boolean *widget_deleted)
+{
+	int moved[AE_SEATS_MAXIMUM];
+	short profiles[AE_SEATS_MAXIMUM];
+	struct ae_seats seats;
+	short seat, taken;
+
+	*widget_deleted = FALSE;
+	join_profiles_read();
+	ae_seats_get(&seats);
+	if (!ae_seats_present(&seats))
+		return FALSE;
+	taken = (short)ae_seats_close(moved);
+	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+		profiles[seat] = NONE;
+	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+	{
+		if (moved[seat] >= 0)
+			profiles[moved[seat]] = join.profile[seat];
+	}
+	for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+		join.profile[seat] = profiles[seat];
+	for (seat = 0; seat < taken; seat++)
+	{
+		long profile_index = join.profile[seat] != NONE && join.profile[seat] < join.count ?
+			join.indices[join.profile[seat]] : NONE;
+
+		/* (NEW PROFILE: one made now, by the first untitled name, as Settings makes one: renamed in PROFILES) */
+		if (profile_index == NONE)
+		{
+			wchar_t name[128];
+
+			saved_game_file_get_useable_untitled_profile_name(name);
+			name[11] = L'\0';
+			profile_index = player_profile_new(seat, name);
+			platform_log("split screen: P%d made a new profile", seat + 1);
+		}
+		if (profile_index == NONE || !ui_widget_port_multiplayer_player(seat, profile_index))
+		{
+			platform_log("split screen: P%d has no profile to play with", seat + 1);
+			return FALSE;
+		}
+	}
+	platform_log("split screen: %d people", taken);
+	split_screen_chosen = TRUE;
+	p2p_set_hosting_allowed(FALSE);
+	p2p_set_hosting_public(FALSE);
+	return ui_widget_port_host(widget, NULL, widget_deleted);
+}
+
+unsigned char ae_split_screen_event(char const *name, struct widget_instance *widget, short controller,
+	unsigned char *widget_deleted)
+{
+	struct ae_seats seats;
+	boolean seated;
+	boolean deleted = FALSE;
+
+	ae_seats_get(&seats);
+	seated = controller >= 0 && controller < AE_SEATS_MAXIMUM && seats.seat[controller].kind != AE_SEAT_EMPTY;
+	if (!strcmp(name, "ae split join open"))
+	{
+		join.open = TRUE;
+		join.back_requested = FALSE;
+		if (!ae_seats_active())
+		{
+			short seat;
+
+			ae_seats_begin();
+			for (seat = 0; seat < AE_SEATS_MAXIMUM; seat++)
+				join.profile[seat] = NONE;
+		}
+		join_profiles_read();
+		return TRUE;
+	}
+	if (!strcmp(name, "ae split join close"))
+	{
+		join.open = FALSE;
+		return TRUE;
+	}
+	if (!strcmp(name, "ae split b"))
+	{
+		/* (a seated player's B leaves the seat; a device with no seat's goes back, every seat let go) */
+		if (!join.back_requested && seated)
+		{
+			ae_seats_leave_seat(controller);
+			join.profile[controller] = NONE;
+			return FALSE;
+		}
+		join.back_requested = FALSE;
+		join.open = FALSE;
+		ae_seats_end();
+		return TRUE;
+	}
+	if (!strcmp(name, "ae split back"))
+	{
+		join.open = FALSE;
+		ae_seats_end();
+		return TRUE;
+	}
+	if (!strcmp(name, "ae split profile left") || !strcmp(name, "ae split profile right"))
+	{
+		short next;
+
+		if (!seated)
+			return FALSE;
+		next = join_profile_next(controller, join.profile[controller] != NONE ? join.profile[controller] : 0,
+			strstr(name, "right") ? 1 : -1);
+		if (next != NONE)
+			join.profile[controller] = next;
+		return TRUE;
+	}
+	if (!strcmp(name, "ae split continue"))
+	{
+		boolean result;
+
+		/* (the press that seated the device is not its CONTINUE) */
+		if (seated && system_milliseconds() - join.joined_at[controller] < JOIN_PRESS_GUARD)
+			return FALSE;
+		result = join_continue(widget, &deleted);
+
+		*widget_deleted = (unsigned char)deleted;
+		return result;
+	}
+	return FALSE;
 }

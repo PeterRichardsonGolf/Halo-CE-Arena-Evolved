@@ -50,7 +50,7 @@ UNITS = {
     "ae_gamepads_rules_test.c": ([SRC / "ae_gamepads_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                                   "-fno-sanitize-recover=all"], []),
     # (split screen's seats: first to press is player 1, held seats, the same pad back, gaps closed)
-    "ae_seats_rules_test.c": ([SRC / "ae_seats_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
+    "ae_seats_rules_test.c": ([SRC / "ae_seats_rules.c"], [f"-I{ROOT / 'port' / 'linux' / 'include'}", "-fsanitize=address,undefined",
                                                           "-fno-sanitize-recover=all"], []),
     # (the controller ports' pads: a pad keeps its port, a new one takes the first free one)
     "ae_pad_ports_test.c": ([SRC / "ae_pad_ports.c"], [f"-I{SRC}", "-fsanitize=address,undefined",

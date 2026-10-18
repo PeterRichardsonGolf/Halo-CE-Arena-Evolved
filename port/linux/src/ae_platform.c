@@ -159,7 +159,12 @@ int ae_platform_stable_ports(
 
 	/* (split screen's seats, while they are on, put each seat's pad in its port: ae_seats.c) */
 	if (ae_seats_active())
-		return ae_seats_fill(gamepads, count, ports);
+	{
+		int filled = ae_seats_fill(gamepads, count, ports);
+
+		if (ae_seats_active())
+			return filled;
+	}
 	if (ports > AE_PAD_PORTS_MAXIMUM)
 		ports = AE_PAD_PORTS_MAXIMUM;
 	listed_count = count < ports ? count : ports;
@@ -447,6 +452,9 @@ void ae_platform_test_pad_press(
 	int pressed = -1;
 	unsigned int index;
 
+	/* (split screen's seats see the test's keys: ae_seats.c) */
+	ae_seats_test_keys(token && ((length == 10 && !strncmp(token, "key:Return", 10)) ||
+		(length == 9 && !strncmp(token, "key:Space", 9))), token && length == 10 && !strncmp(token, "key:Escape", 10));
 	if (!state)
 	{
 		char const *setting = config_string("debug.test_input");

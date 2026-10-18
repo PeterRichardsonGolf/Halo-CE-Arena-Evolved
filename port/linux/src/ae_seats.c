@@ -17,8 +17,11 @@ and the ports routed by seat while it is on (xinput_sdl.c's hooks).
 #include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_joystick.h>
 #include <SDL3/SDL_scancode.h>
+#include <SDL3/SDL_timer.h>
 
 void platform_log(char const *format, ...);
+/* (ae_split_screen.c's) */
+int ae_split_screen_seats_wanted(void);
 
 /* the pads seen, for their presses' edges: a button held when a pad is first seen is not a press (the press that
 opened the screen does not join) */
@@ -37,7 +40,22 @@ static struct
 	int keyboard_join, keyboard_back;
 	/* the keyboard's keys were seen up since the map went on */
 	int keyboard_ready;
+	/* (debug.test_input's keys now: they go into the controller's state, not SDL's keyboard) */
+	int test_join, test_back;
+	/* since when neither the JOIN screen nor a split screen game wants the map (0: they do) */
+	Uint64 unwanted_since;
 } seat_map;
+
+/* the map lets go after this long unwanted (a screen changing, a game being made, are shorter) */
+#define SEATS_LET_GO_MS 2000
+
+void ae_seats_test_keys(
+	int join,
+	int back)
+{
+	seat_map.test_join = join;
+	seat_map.test_back = back;
+}
 
 static int family_of(
 	SDL_Gamepad *gamepad)
@@ -250,6 +268,8 @@ unsigned ae_seats_update(
 	keyboard_join = input.focused && (input.keys[SDL_SCANCODE_RETURN] || input.keys[SDL_SCANCODE_KP_ENTER] ||
 		input.keys[SDL_SCANCODE_SPACE]);
 	keyboard_back = input.focused && (input.keys[SDL_SCANCODE_ESCAPE] || input.keys[SDL_SCANCODE_BACKSPACE]);
+	keyboard_join |= seat_map.test_join;
+	keyboard_back |= seat_map.test_back;
 	if (!keyboard_join && !keyboard_back)
 		seat_map.keyboard_ready = 1;
 	if (seat_map.keyboard_ready && ae_seats_keyboard(&seat_map.seats) < 0)
@@ -372,6 +392,18 @@ int ae_seats_fill(
 	SDL_Gamepad *listed[WATCHED_PADS];
 	int index, seat, highest = 0;
 
+	/* (the map lets go by itself once neither the JOIN screen nor a split screen game wants it: a game left any
+	way at all gives the keyboard back to port 0) */
+	if (ae_split_screen_seats_wanted())
+		seat_map.unwanted_since = 0;
+	else if (!seat_map.unwanted_since)
+		seat_map.unwanted_since = SDL_GetTicks() | 1;
+	else if (SDL_GetTicks() - seat_map.unwanted_since >= SEATS_LET_GO_MS)
+	{
+		platform_log("seats: no JOIN screen and no split screen game for %d ms", SEATS_LET_GO_MS);
+		ae_seats_end();
+		return count;
+	}
 	(void)count;
 	count = connected_pads(listed);
 	seats_follow_pads(listed, count);
@@ -396,6 +428,7 @@ int ae_seats_fill(
 /* (the dedicated server and Android: no seats) */
 void ae_seats_begin(void) {}
 void ae_seats_end(void) {}
+void ae_seats_test_keys(int join, int back) { (void)join; (void)back; }
 int ae_seats_active(void) { return 0; }
 unsigned ae_seats_update(void) { return 0; }
 void ae_seats_get(struct ae_seats *seats) { if (seats) memset(seats, 0, sizeof(*seats)); }
