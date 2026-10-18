@@ -16,6 +16,8 @@ STUB_CSERIES = """
 #include <string.h>
 #include <strings.h>
 typedef unsigned char boolean;
+typedef unsigned char byte;
+typedef unsigned short word;
 #define TRUE 1
 #define FALSE 0
 #define NUMBEROF(a) (sizeof(a) / sizeof((a)[0]))
@@ -23,14 +25,43 @@ typedef unsigned char boolean;
 STUB_WINDOWS = """
 #define _stricmp strcasecmp
 #define _strnicmp strncasecmp
+/* (the family's file calls: the downloaded maps' list and the MCC/archive reads; the harness opens no file) */
+typedef void *HANDLE;
+typedef unsigned long DWORD;
+#define INVALID_HANDLE_VALUE ((HANDLE)-1)
+#define GENERIC_READ 0x80000000UL
+#define GENERIC_WRITE 0x40000000UL
+#define OPEN_EXISTING 3
+#define OPEN_ALWAYS 4
+#define FILE_ATTRIBUTE_NORMAL 0x80
+#define FILE_END 2
+HANDLE CreateFileA(const char *, unsigned long, unsigned long, void *, unsigned long, unsigned long, void *);
+int ReadFile(HANDLE, void *, unsigned long, unsigned long *, void *);
+int WriteFile(HANDLE, const void *, unsigned long, unsigned long *, void *);
+unsigned long SetFilePointer(HANDLE, long, long *, unsigned long);
+int CloseHandle(HANDLE);
 """
 HARNESS = r"""
 #include <stdio.h>
 #include <string.h>
 #include "cseries.h" /* (boolean, which the header's map_is_downloaded takes) */
+#include "cseries/cseries_windows.h" /* (the file calls' stand-ins, below) */
 #include "halo_map_families.h"
 /* (game.downloaded_maps, which map_is_downloaded reads: none) */
 const char *config_string(const char *name) { (void)name; return ""; }
+HANDLE CreateFileA(const char *path, unsigned long access, unsigned long share, void *security, unsigned long create,
+	unsigned long flags, void *pattern)
+{ (void)path; (void)access; (void)share; (void)security; (void)create; (void)flags; (void)pattern;
+	return INVALID_HANDLE_VALUE; }
+int ReadFile(HANDLE file, void *buffer, unsigned long size, unsigned long *read, void *overlapped)
+{ (void)file; (void)buffer; (void)size; (void)overlapped; if (read) *read = 0; return 0; }
+int WriteFile(HANDLE file, const void *buffer, unsigned long size, unsigned long *written, void *overlapped)
+{ (void)file; (void)buffer; (void)size; (void)overlapped; if (written) *written = 0; return 0; }
+unsigned long SetFilePointer(HANDLE file, long low, long *high, unsigned long method)
+{ (void)file; (void)low; (void)high; (void)method; return 0; }
+int CloseHandle(HANDLE file) { (void)file; return 1; }
+/* (AE: map sharing's downloaded Xbox maps, which map_is_downloaded asks: none) */
+boolean ae_map_share_xbox_downloaded(char const *map_name) { (void)map_name; return FALSE; }
 int main(int argc, char **argv)
 {
 	char out[256];
