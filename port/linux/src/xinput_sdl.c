@@ -1026,6 +1026,7 @@ static int sdl_gamepads(SDL_Gamepad *gamepads[PORT_COUNT])
 	}
 #endif
 	SDL_free(ids);
+	found = ae_platform_stable_ports(gamepads, found, PORT_COUNT); /* AE hook */
 	return found;
 }
 

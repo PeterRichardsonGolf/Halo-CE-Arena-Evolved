@@ -14,6 +14,7 @@ pure, so the unit tests build it.)
 #include "platform.h"
 #include "sdl_platform.h"
 #include "ae_platform.h"
+#include "ae_pad_ports.h"
 #include "port_config.h"
 
 #include <stdio.h>
@@ -111,6 +112,93 @@ void ae_platform_back_buttons(
 	(void)gamepad;
 	(void)buttons;
 	(void)analog_buttons;
+#endif
+}
+
+/* ---------- pad ports: a pad keeps its port while it is connected (ae_pad_ports.c) */
+
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+/* (two or more players on this machine; menu_functions.c's) */
+extern unsigned char pc_menu_split_players(void);
+
+/* each port's pad by its SDL id (0: none), kept from call to call */
+static unsigned long stable_port_ids[AE_PAD_PORTS_MAXIMUM];
+static SDL_SpinLock stable_port_lock;
+
+/* no button of the pad held, its sticks and triggers at rest */
+static int pad_at_rest(
+	SDL_Gamepad *gamepad)
+{
+	int index;
+
+	for (index = 0; index < SDL_GAMEPAD_BUTTON_COUNT; index++)
+	{
+		if (SDL_GetGamepadButton(gamepad, (SDL_GamepadButton)index))
+			return 0;
+	}
+	for (index = 0; index < SDL_GAMEPAD_AXIS_COUNT; index++)
+	{
+		if (abs(SDL_GetGamepadAxis(gamepad, (SDL_GamepadAxis)index)) > 8000)
+			return 0;
+	}
+	return 1;
+}
+#endif
+
+int ae_platform_stable_ports(
+	struct SDL_Gamepad **gamepads,
+	int count,
+	int ports)
+{
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+	SDL_Gamepad *listed[AE_PAD_PORTS_MAXIMUM];
+	unsigned long ids[AE_PAD_PORTS_MAXIMUM], before[AE_PAD_PORTS_MAXIMUM], after[AE_PAD_PORTS_MAXIMUM];
+	unsigned char at_rest[AE_PAD_PORTS_MAXIMUM];
+	int listed_count, index, port, highest = 0;
+
+	if (ports > AE_PAD_PORTS_MAXIMUM)
+		ports = AE_PAD_PORTS_MAXIMUM;
+	listed_count = count < ports ? count : ports;
+	for (index = 0; index < listed_count; index++)
+	{
+		listed[index] = gamepads[index];
+		ids[index] = (unsigned long)SDL_GetGamepadID(gamepads[index]);
+		at_rest[index] = (unsigned char)pad_at_rest(gamepads[index]);
+	}
+	SDL_LockSpinlock(&stable_port_lock);
+	memcpy(before, stable_port_ids, sizeof(before));
+	ae_pad_ports_assign(stable_port_ids, ports, ids, at_rest, listed_count, pc_menu_split_players() != 0,
+		ae_platform_lone_pad_first());
+	for (port = 0; port < ports; port++)
+	{
+		gamepads[port] = NULL;
+		for (index = 0; stable_port_ids[port] && index < listed_count; index++)
+		{
+			if (ids[index] == stable_port_ids[port])
+				gamepads[port] = listed[index];
+		}
+		if (gamepads[port])
+			highest = port + 1;
+	}
+	memcpy(after, stable_port_ids, sizeof(after));
+	SDL_UnlockSpinlock(&stable_port_lock);
+	for (port = 0; port < ports; port++)
+	{
+		char const *name;
+
+		if (before[port] == after[port])
+			continue;
+		name = gamepads[port] ? SDL_GetGamepadName(gamepads[port]) : NULL;
+		if (after[port])
+			platform_log("pad ports: port %d is %s's", port + 1, name ? name : "a pad");
+		else
+			platform_log("pad ports: port %d has no pad", port + 1);
+	}
+	return highest;
+#else
+	(void)gamepads;
+	(void)ports;
+	return count;
 #endif
 }
 

@@ -11,6 +11,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   they follow your controller layout. Off by default; with Steam running, Steam Input takes the pad instead.
 - Map sharing from a controller: in the lobby, holding BACK for a second on any controller does what F6 does
   (yes to the download question, get all of the host's maps, stop), so a guest with no keyboard can say yes.
+- Controllers keep their port: a controller plugged in (or found late, as a Switch Pro controller can be on Linux)
+  takes the first free port instead of moving every other controller to the next one, which gave a joined player
+  another's controller and made the new controller's START fail ("port lobby join failed").
 
 ## 0.3.3-beta - 2026-10-17
 

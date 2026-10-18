@@ -65,6 +65,10 @@ pressed as the Xbox buttons input.back_right and input.back_left name, so they f
 an Xbox pad's state (xinput_sdl.c: its wButtons and bAnalogButtons) */
 struct SDL_Gamepad;
 void ae_platform_back_buttons(struct SDL_Gamepad *gamepad, unsigned short *buttons, unsigned char *analog_buttons);
+/* xinput_sdl.c's sdl_gamepads (an AE hook): the connected pads (SDL's order, count of them) put in their ports, a pad
+keeping its port while connected and a new one taking the first free port (SDL lists HIDAPI pads first, so a pad
+seen late went in front and moved every other); ports without a pad NULL; returns the highest port with a pad plus one */
+int ae_platform_stable_ports(struct SDL_Gamepad **gamepads, int count, int ports);
 /* (debug.test_input, with display.arena_menus on, while the platform types into a field) a key: token typed as well
 as held: one key down and up queued as the keyboard's events, so the typing's keystrokes see it; once a token */
 void ae_platform_test_keystroke(int scancode);
