@@ -97,10 +97,17 @@ static void spinner_save(struct widget_instance *spinner)
 	setting->loaded_index = index;
 }
 
+/* the lobby's seats (ae_split_screen_lobby_update): a device with no seat that presses START takes the next free
+seat, and its START, down on its new port, is the lobby's own join ("port lobby join": its profile screen) */
+static void lobby_seats_update(void);
+
 void ae_split_screen_lobby_update(struct widget_instance *list, boolean teams, long game_engine_index)
 {
 	boolean local = network_game_is_splitscreen_local();
 	short row;
+
+	if (local)
+		lobby_seats_update();
 
 	for (row = 0; row < NUMBER_OF_BOT_ROWS; row++)
 	{
@@ -669,4 +676,15 @@ unsigned char ae_split_screen_event(char const *name, struct widget_instance *wi
 		return result;
 	}
 	return FALSE;
+}
+
+static void lobby_seats_update(void)
+{
+	unsigned bits;
+
+	if (!ae_seats_active())
+		return;
+	bits = ae_seats_update();
+	if (bits & AE_SEATS_FULL)
+		platform_log("split screen: a fifth device pressed START (4 players at most on one PC)");
 }
