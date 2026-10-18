@@ -1834,7 +1834,47 @@ def _split_screen() -> list:
 # tools/ae_seat_pictures.py): four cards across the 640, one a seat
 JOIN = f"{MT}/split_screen"
 JOIN_CARD_LEFT, JOIN_CARD_TOP, JOIN_CARD_STEP, JOIN_CARD_WIDTH = 16, 102, 154, 146
-JOIN_BLUE, JOIN_WHITE, JOIN_DIM, JOIN_AMBER = "#FF2896FF", "#FFFFFFFF", "#FF1B5A96", "#FFFFBA40"
+JOIN_BLUE, JOIN_WHITE, JOIN_DIM, JOIN_NAVY = "#FF2896FF", "#FFFFFFFF", "#FF1B5A96", "#FF000E23"
+
+
+def join_handler_names() -> list:
+    """the JOIN screen's handlers with a seat in their names (menu_tags.c lists them, on an AE hook line of their own)"""
+    kinds = ("dev left", "dev right", "dev pick", "prof left", "prof right", "prof pick", "assign", "leave",
+             "cand left", "cand right", "cand take")
+    return [f"ae split {kind} {seat}" for kind in kinds for seat in range(4)] + ["ae split row up", "ae split row down",
+                                                                                 "ae split own assign"]
+
+
+def _join_card_items(seat: int, x: int, y: int, w: int) -> list:
+    """a card's mouse targets: a column list of its own (its children are items: a click gives one the focus and
+    presses A on it), each item running its seat's handler"""
+    items, lines = [], []
+
+    def item(name: str, handler: str, ix: int, iy: int, width: int, height: int, pairs=None):
+        nonlocal lines
+        lines += _widget(f"{JOIN}/{name}_{seat}", [("width", width), ("height", height)] + (pairs or []),
+                         [f'<on event="a" run="ae split {handler} {seat}"/>',
+                          '<on event="left_mouse" run="mouse emit accept event"/>'])
+        items.append(f'<child widget="{JOIN}/{name}_{seat}" x="{ix}" y="{iy}"/>')
+
+    # (a pill: its left and right 40 % are its arrows, the middle 20 % picks)
+    for pill, top in (("dev", 75), ("prof", 122), ("cand", 241)):
+        left, right, pick = ("cand left", "cand right", "cand take") if pill == "cand" else (
+            f"{pill} left", f"{pill} right", f"{pill} pick")
+        item(f"join_hit_{pill}_l", left, 8, top, 52, 28)
+        item(f"join_hit_{pill}_m", pick, 60, top, 26, 28)
+        item(f"join_hit_{pill}_r", right, 86, top, 52, 28)
+    button = [("type", "text"), ("bitmap", "bitmaps/ae_seat_button"), ("font", "ui\\small_ui"),
+              ("color", JOIN_WHITE), ("align", "center"), ("text_y", 2)]
+    item("join_assign", "assign", 7, 262, 64, 24, button + [("text", "ASSIGN")])
+    item("join_cancel", "assign", 7, 262, 64, 24, button + [("text", "CANCEL")])
+    item("join_leave", "leave", 75, 262, 64, 24,
+         [p for p in button if p[0] != "align"] + [("text", "LEAVE"), ("align", "left"), ("text_x", 17)])
+    lines += _join_picture(f"join_leavebtn_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
+    items.append(f'<child widget="{JOIN}/join_leavebtn_{seat}" x="76" y="266"/>')
+    lines += _join_picture(f"join_leavekey_{seat}", "bitmaps/ae_seat_key_esc", 26, 16)
+    items.append(f'<child widget="{JOIN}/join_leavekey_{seat}" x="77" y="266"/>')
+    return _widget(f"{JOIN}/join_items_{seat}", [("type", "column_list"), ("width", w), ("height", 300)], items) + lines
 
 
 def _join_text(name: str, text, font: str, color: str, x: int, y: int, width: int, align="center", height=None,
@@ -1870,43 +1910,66 @@ def _join_screen() -> list:
         title = f"PLAYER {seat + 1}"
         lines += _join_picture(f"join_card_{seat}", "bitmaps/ae_seat_card", w, 300)
         place(f"join_card_{seat}", x, y)
-        for key, color in (("on", JOIN_BLUE), ("off", JOIN_DIM), ("held", JOIN_AMBER)):
+        # (the title: seated, empty, held, and white while the seat's device is pressed or its pill flashes)
+        for key, color in (("on", JOIN_BLUE), ("off", JOIN_DIM), ("held", JOIN_DIM), ("flash", JOIN_WHITE)):
             lines += _join_text(f"join_title_{key}_{seat}", title, "large", color, 0, 0, w)
             place(f"join_title_{key}_{seat}", x, y + 7)
-        # (a seated player)
-        lines += _join_picture(f"join_device_{seat}", "bitmaps/ae_seat_devices", 72, 40)
-        place(f"join_device_{seat}", x + 37, y + 32)
-        lines += _join_text(f"join_devname_{seat}", "", "small", JOIN_WHITE, 0, 0, w - 12)
-        place(f"join_devname_{seat}", x + 6, y + 70)
-        lines += _join_picture(f"join_bar_{seat}", "bitmaps/ae_seat_profile_bar", 130, 28)
-        place(f"join_bar_{seat}", x + 8, y + 86)
-        lines += _join_picture(f"join_arrow_l_{seat}", "bitmaps/arrow_sm_left", 12, 12)
-        place(f"join_arrow_l_{seat}", x + 13, y + 94)
-        lines += _join_picture(f"join_arrow_r_{seat}", "bitmaps/arrow_sm_right", 12, 12)
-        place(f"join_arrow_r_{seat}", x + w - 25, y + 94)
-        lines += _join_text(f"join_prof_{seat}", "", "large", JOIN_WHITE, 0, 0, 108)
-        place(f"join_prof_{seat}", x + 19, y + 90)
+        # (a seated player: the device's picture, then CONTROLLER over its pill, PROFILE over its pill; the pills'
+        # bars are frame 0 at rest, 1 the focus's ice-blue glow (and ASSIGN's wait, pulsing), 2 filled (a flash))
+        lines += _join_picture(f"join_device_{seat}", "bitmaps/ae_seat_devices", 54, 30)
+        place(f"join_device_{seat}", x + 46, y + 28)
+        lines += _join_text(f"join_devlabel_{seat}", "CONTROLLER", "small", JOIN_BLUE, 0, 0, w)
+        place(f"join_devlabel_{seat}", x, y + 61)
+        for pill, top in (("dev", 75), ("prof", 122)):
+            lines += _join_picture(f"join_{pill}bar_{seat}", "bitmaps/ae_seat_profile_bar", 130, 28)
+            place(f"join_{pill}bar_{seat}", x + 8, y + top)
+            lines += _join_picture(f"join_{pill}arrow_l_{seat}", "bitmaps/arrow_sm_left", 12, 12)
+            place(f"join_{pill}arrow_l_{seat}", x + 13, y + top + 8)
+            lines += _join_picture(f"join_{pill}arrow_r_{seat}", "bitmaps/arrow_sm_right", 12, 12)
+            place(f"join_{pill}arrow_r_{seat}", x + w - 25, y + top + 8)
+            # (the value: large when it fits, small when long; white at rest, navy on the filled flash)
+            for size in ("large", "small"):
+                for tone, color in (("", JOIN_WHITE), ("inv", JOIN_NAVY)):
+                    name = f"join_{pill}{size}{tone}_{seat}"
+                    lines += _join_text(name, "", size, color, 0, 0, 108)
+                    place(name, x + 19, y + top + (4 if size == "large" else 7))
+        # (ASSIGN's wait: the pill's whole width, no arrows)
+        lines += _join_text(f"join_devwait_{seat}", "PRESS A BUTTON", "small", JOIN_WHITE, 0, 0, 126)
+        place(f"join_devwait_{seat}", x + 10, y + 82)
         lines += _join_text(f"join_proflabel_{seat}", "PROFILE", "small", JOIN_BLUE, 0, 0, w)
-        place(f"join_proflabel_{seat}", x, y + 113)
-        lines += _join_picture(f"join_armour_{seat}", "ui\\shell\\bitmaps\\colors_sm", 112, 136)
+        place(f"join_proflabel_{seat}", x, y + 108)
+        lines += _join_picture(f"join_armour_{seat}", "ui\\shell\\bitmaps\\colors_sm", 67, 82)
         # (the figure is drawn left in its frame, the profile panel's picture: placed so its figure is centred)
-        place(f"join_armour_{seat}", x + 29, y + 126)
+        place(f"join_armour_{seat}", x + 47, y + 155)
         lines += _join_text(f"join_controls_{seat}", "", "small", JOIN_BLUE, 0, 0, w - 8)
-        place(f"join_controls_{seat}", x + 4, y + 258)
-        lines += _join_picture(f"join_leavebtn_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
-        place(f"join_leavebtn_{seat}", x + 46, y + 275)
-        lines += _join_text(f"join_leave_{seat}", "LEAVE", "small", JOIN_WHITE, 0, 0, 60, align="left")
-        place(f"join_leave_{seat}", x + 66, y + 276)
-        # (an empty seat: the ring is the card's own picture)
+        place(f"join_controls_{seat}", x + 4, y + 240)
+        # (an empty seat: the ring is the card's own picture; then the join buttons' legend, then OR PICK ONE: a
+        # free device's pill a click seats)
         lines += _join_text(f"join_press_{seat}", "PRESS START", "large", JOIN_WHITE, 0, 0, w)
-        place(f"join_press_{seat}", x, y + 128)
+        place(f"join_press_{seat}", x, y + 88)
         lines += _join_text(f"join_tojoin_{seat}", "TO JOIN", "small", JOIN_BLUE, 0, 0, w)
-        place(f"join_tojoin_{seat}", x, y + 152)
-        for row, label in enumerate(("START", "OPTIONS", "ENTER / SPACE")):
+        place(f"join_tojoin_{seat}", x, y + 112)
+        for row, label in enumerate(("START", "OPTIONS", "PLUS", "ENTER / SPACE")):
             lines += _join_picture(f"join_glyph{row}_{seat}", "bitmaps/ae_seat_buttons", 16, 16)
-            place(f"join_glyph{row}_{seat}", x + 8, y + 186 + 28 * row)
+            place(f"join_glyph{row}_{seat}", x + 9, y + 134 + 22 * row)
             lines += _join_text(f"join_glyphtext{row}_{seat}", label, "small", JOIN_WHITE, 0, 0, w - 36, align="left")
-            place(f"join_glyphtext{row}_{seat}", x + 28, y + 187 + 28 * row)
+            place(f"join_glyphtext{row}_{seat}", x + 30, y + 135 + 22 * row)
+        lines += _join_text(f"join_pick_{seat}", "OR PICK ONE", "small", JOIN_BLUE, 0, 0, w)
+        place(f"join_pick_{seat}", x, y + 227)
+        lines += _join_picture(f"join_candbar_{seat}", "bitmaps/ae_seat_profile_bar", 130, 28)
+        place(f"join_candbar_{seat}", x + 8, y + 241)
+        lines += _join_picture(f"join_candarrow_l_{seat}", "bitmaps/arrow_sm_left", 12, 12)
+        place(f"join_candarrow_l_{seat}", x + 13, y + 249)
+        lines += _join_picture(f"join_candarrow_r_{seat}", "bitmaps/arrow_sm_right", 12, 12)
+        place(f"join_candarrow_r_{seat}", x + w - 25, y + 249)
+        for size, color in (("large", JOIN_WHITE), ("small", JOIN_WHITE), ("none", JOIN_DIM)):
+            lines += _join_text(f"join_cand{size}_{seat}", "NO FREE PAD" if size == "none" else "",
+                                "small" if size != "large" else "large", color, 0, 0, 108)
+            place(f"join_cand{size}_{seat}", x + 19, y + 241 + (4 if size == "large" else 7))
+        # (what the mouse clicks: a list of the card's own, its items over the pills' arrows and values and its
+        # buttons; ae_split_screen.c hides the items of the state the card is not in)
+        lines += _join_card_items(seat, x, y, w)
+        children.append(f'<child widget="{JOIN}/join_items_{seat}" x="{x}" y="{y}"/>')
     # (the help lines as the lobby's: 24 high, text 5 down)
     lines += _join_text("join_help_ready", "PLAYER 1 picks the map and gametype next.", "small", JOIN_BLUE, 0, 0, 350,
                         align="left", height=24, text_y=5)
@@ -1914,11 +1977,11 @@ def _join_screen() -> list:
     lines += _join_text("join_help_nobody", "Nobody has joined yet.", "small", JOIN_BLUE, 0, 0, 350, align="left",
                         height=24, text_y=5)
     place("join_help_nobody", 20, 414)
-    lines += _join_text("join_message", "", "small", JOIN_AMBER, 0, 0, 290, align="left", height=24, text_y=5)
+    lines += _join_text("join_message", "", "small", JOIN_WHITE, 0, 0, 600, align="left", height=24, text_y=5)
     place("join_message", 20, 441)
-    lines += _join_text("join_more", "Up to 4 players on one PC.", "small", JOIN_BLUE, 0, 0, 320,
+    lines += _join_text("join_more", "Up to 4 players on one PC.", "small", JOIN_BLUE, 0, 0, 280,
                         align="right", height=24, text_y=5)
-    place("join_more", 310, 441)
+    place("join_more", 350, 441)
     # (CONTINUE and BACK where the lobby's last two buttons are; left and right are each player's own profile, so
     # they do not move between the buttons: the mouse clicks BACK, a device with no seat's B goes back)
     profile_keys = ['<on event="left" run="ae split profile left"/>',
@@ -1958,6 +2021,9 @@ def _join_screen() -> list:
                       '<on event="deleted" run="ae split join close"/>',
                       '<on event="b" run="ae split b" back="true"/>',
                       '<on event="back" run="ae split back key" back="true"/>',
+                      '<on event="up" run="ae split row up"/>', '<on event="down" run="ae split row down"/>',
+                      '<on event="stick_up" run="ae split row up"/>', '<on event="stick_down" run="ae split row down"/>',
+                      '<on event="y" run="ae split own assign"/>',
                       *profile_keys,
                       f'<child widget="{JOIN}/header_split_screen"/>', *children,
                       f'<child widget="{JOIN}/join_button_bar" y="414"/>',

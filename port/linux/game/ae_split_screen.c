@@ -218,7 +218,18 @@ unsigned long system_milliseconds(void);
 /* the card's pictures' frames (tools/ae_seat_pictures.py) */
 enum { CARD_EMPTY, CARD_SEATED, CARD_HELD };
 enum { DEVICE_KEYBOARD, DEVICE_XBOX, DEVICE_PLAYSTATION, DEVICE_NINTENDO, DEVICE_OTHER, DEVICE_UNPLUGGED };
-enum { BUTTON_XBOX_B = 3, BUTTON_PLAYSTATION_CIRCLE = 4, BUTTON_ESCAPE = 5, BUTTON_NINTENDO_B = 6 };
+enum { BUTTON_XBOX_START, BUTTON_PLAYSTATION_OPTIONS, BUTTON_ENTER, BUTTON_XBOX_B, BUTTON_PLAYSTATION_CIRCLE,
+	BUTTON_ESCAPE, BUTTON_NINTENDO_B, BUTTON_NINTENDO_PLUS };
+enum { PILL_REST, PILL_FOCUS, PILL_FILLED };
+enum { ROW_CONTROLLER, ROW_PROFILE };
+/* a seat's device pressed (or a swap): its pill blinks three times, 150 ms filled, 100 ms not */
+#define JOIN_FLASH_TIME 750
+#define JOIN_FLASH_ON 150
+#define JOIN_FLASH_PERIOD 250
+/* ASSIGN's wait: the pill's edge between rest and focus, a second each way and back */
+#define JOIN_PULSE_PERIOD 1000
+/* a pill's value in the large font up to this many letters, else the small one (the pill's 108 units) */
+#define JOIN_LARGE_FIT 7
 
 static struct
 {
@@ -239,6 +250,10 @@ static struct
 	/* the help line's word for a while (a fifth device: "4 players at most on one PC") */
 	wchar_t const *message;
 	unsigned long message_until;
+	/* (a message made up here: "PLAYER 1 and PLAYER 3 swapped controllers.") */
+	wchar_t message_text[JOIN_TEXT_LENGTH];
+	/* each seat's row its own up and down move between: 0 its CONTROLLER, 1 its PROFILE */
+	short row[AE_SEATS_MAXIMUM];
 } join;
 
 /* the layouts' names, as Settings > Gamepads > BUTTON LAYOUT has them (tools/port_settings.py) */
@@ -444,25 +459,10 @@ static short device_frame(struct ae_seat_view const *view)
 	}
 }
 
-static wchar_t const *device_name(struct ae_seat_view const *view)
-{
-	if (view->held)
-		return L"UNPLUGGED";
-	switch (view->family)
-	{
-	case AE_SEAT_FAMILY_KEYBOARD: return L"KEYBOARD";
-	case AE_SEAT_FAMILY_XBOX: return L"XBOX CONTROLLER";
-	case AE_SEAT_FAMILY_PLAYSTATION: return L"PLAYSTATION";
-	case AE_SEAT_FAMILY_NINTENDO: return L"NINTENDO";
-	default: return L"CONTROLLER";
-	}
-}
-
 static short leave_frame(struct ae_seat_view const *view)
 {
 	switch (view->family)
 	{
-	case AE_SEAT_FAMILY_KEYBOARD: return BUTTON_ESCAPE;
 	case AE_SEAT_FAMILY_PLAYSTATION: return BUTTON_PLAYSTATION_CIRCLE;
 	case AE_SEAT_FAMILY_NINTENDO: return BUTTON_NINTENDO_B;
 	default: return BUTTON_XBOX_B;
@@ -470,10 +470,72 @@ static short leave_frame(struct ae_seat_view const *view)
 }
 
 /* the widgets of a card that show for a seated player, and for an empty seat (tools/port_settings.py's _join_screen) */
-static char const *const seated_widgets[] = { "join_device", "join_devname", "join_bar", "join_arrow_l", "join_arrow_r",
-	"join_prof", "join_proflabel", "join_armour", "join_controls", "join_leavebtn", "join_leave" };
+static char const *const seated_widgets[] = { "join_device", "join_devlabel", "join_devbar", "join_profbar",
+	"join_profarrow_l", "join_profarrow_r", "join_proflabel", "join_armour", "join_controls", "join_hit_dev_l",
+	"join_hit_dev_m", "join_hit_dev_r", "join_hit_prof_l", "join_hit_prof_m", "join_hit_prof_r", "join_leave" };
 static char const *const empty_widgets[] = { "join_press", "join_tojoin", "join_glyph0", "join_glyph1", "join_glyph2",
-	"join_glyphtext0", "join_glyphtext1", "join_glyphtext2" };
+	"join_glyph3", "join_glyphtext0", "join_glyphtext1", "join_glyphtext2", "join_glyphtext3", "join_pick",
+	"join_candbar" };
+
+/* a pill's value: in the large font when it fits, else the small; navy on the filled bar */
+static void join_value(struct widget_instance *screen, char const *pill, short seat, wchar_t const *text,
+	boolean shown, boolean filled)
+{
+	static char const *const variants[] = { "large", "small", "largeinv", "smallinv" };
+	boolean large = join_length(text) <= JOIN_LARGE_FIT;
+	short index;
+
+	for (index = 0; index < (short)NUMBEROF(variants); index++)
+	{
+		char name[32];
+		boolean mine = shown && (index % 2 == 0) == large && (index >= 2) == filled;
+		struct widget_instance *widget;
+
+		snprintf(name, sizeof(name), "join_%s%s", pill, variants[index]);
+		widget = join_child(screen, name, seat);
+		join_show(widget, mine);
+		if (mine)
+			join_text(widget, text);
+	}
+}
+
+static void join_value_ascii(struct widget_instance *screen, char const *pill, short seat, char const *text,
+	boolean shown, boolean filled)
+{
+	wchar_t wide[JOIN_TEXT_LENGTH];
+	short index;
+
+	for (index = 0; index < JOIN_TEXT_LENGTH - 1 && text && text[index]; index++)
+		wide[index] = (wchar_t)(unsigned char)text[index];
+	wide[index] = 0;
+	join_value(screen, pill, seat, wide, shown, filled);
+}
+
+/* a seat's device as the picker names it (XBOX 2, KEYBOARD), from the devices connected */
+static void join_device_name(short seat, char *name, size_t size)
+{
+	struct ae_seat_device list[AE_SEATS_DEVICES_MAXIMUM];
+	struct ae_seats seats;
+	int count, index;
+
+	ae_seats_get(&seats);
+	count = ae_seats_devices(list, AE_SEATS_DEVICES_MAXIMUM);
+	snprintf(name, size, "CONTROLLER");
+	for (index = 0; index < count; index++)
+	{
+		if (list[index].seat == seat)
+			snprintf(name, size, "%s", list[index].name);
+	}
+	(void)seats;
+}
+
+/* the seat's pill flashing now: within the flash of its last press, in an "on" part of the blink */
+static boolean join_flashing(short seat)
+{
+	long ago = ae_seats_pressed_ago(seat);
+
+	return ago >= 0 && ago < JOIN_FLASH_TIME && ago % JOIN_FLASH_PERIOD < JOIN_FLASH_ON;
+}
 
 static void join_card_update(struct widget_instance *screen, short seat)
 {
@@ -481,37 +543,101 @@ static void join_card_update(struct widget_instance *screen, short seat)
 	struct player_profile const *profile;
 	wchar_t controls[JOIN_TEXT_LENGTH];
 	short index, state;
+	int waiting = ae_seats_assign_waiting(NULL);
+	boolean flashing, mine_waits;
 
 	ae_seats_view(seat, &view);
 	state = view.kind == AE_SEAT_EMPTY ? CARD_EMPTY : view.held ? CARD_HELD : CARD_SEATED;
+	flashing = state != CARD_EMPTY && join_flashing(seat);
+	mine_waits = state != CARD_EMPTY && waiting == seat;
 	join_frame(join_child(screen, "join_card", seat), state);
-	join_show(join_child(screen, "join_title_on", seat), state == CARD_SEATED);
+	join_show(join_child(screen, "join_title_on", seat), state == CARD_SEATED && !flashing);
 	join_show(join_child(screen, "join_title_off", seat), state == CARD_EMPTY);
-	join_show(join_child(screen, "join_title_held", seat), state == CARD_HELD);
+	join_show(join_child(screen, "join_title_held", seat), state == CARD_HELD && !flashing);
+	join_show(join_child(screen, "join_title_flash", seat), flashing);
 	for (index = 0; index < (short)NUMBEROF(seated_widgets); index++)
 		join_show(join_child(screen, seated_widgets[index], seat), state != CARD_EMPTY);
 	for (index = 0; index < (short)NUMBEROF(empty_widgets); index++)
 		join_show(join_child(screen, empty_widgets[index], seat), state == CARD_EMPTY);
 	if (state == CARD_EMPTY)
 	{
-		/* (the join buttons: Xbox START, PlayStation OPTIONS, ENTER) */
-		join_frame(join_child(screen, "join_glyph0", seat), 0);
-		join_frame(join_child(screen, "join_glyph1", seat), 1);
-		join_frame(join_child(screen, "join_glyph2", seat), 2);
+		struct ae_seat_device candidate;
+		boolean any;
+
+		/* (the join buttons: Xbox START, PlayStation OPTIONS, Nintendo +, ENTER) */
+		join_frame(join_child(screen, "join_glyph0", seat), BUTTON_XBOX_START);
+		join_frame(join_child(screen, "join_glyph1", seat), BUTTON_PLAYSTATION_OPTIONS);
+		join_frame(join_child(screen, "join_glyph2", seat), BUTTON_NINTENDO_PLUS);
+		join_frame(join_child(screen, "join_glyph3", seat), BUTTON_ENTER);
+		join_frame(join_child(screen, "join_candbar", seat), PILL_REST);
+		ae_seats_candidate(seat, &candidate);
+		any = candidate.kind != AE_SEAT_EMPTY;
+		join_value_ascii(screen, "cand", seat, candidate.name, any, FALSE);
+		join_show(join_child(screen, "join_candnone", seat), !any);
+		join_show(join_child(screen, "join_candarrow_l", seat), any);
+		join_show(join_child(screen, "join_candarrow_r", seat), any);
+		join_show(join_child(screen, "join_hit_cand_l", seat), any);
+		join_show(join_child(screen, "join_hit_cand_m", seat), any);
+		join_show(join_child(screen, "join_hit_cand_r", seat), any);
+		join_show(join_child(screen, "join_assign", seat), FALSE);
+		join_show(join_child(screen, "join_cancel", seat), FALSE);
+		join_show(join_child(screen, "join_leavebtn", seat), FALSE);
+		join_show(join_child(screen, "join_leavekey", seat), FALSE);
+		join_value(screen, "dev", seat, L"", FALSE, FALSE);
+		join_value(screen, "prof", seat, L"", FALSE, FALSE);
+		join_show(join_child(screen, "join_devarrow_l", seat), FALSE);
+		join_show(join_child(screen, "join_devarrow_r", seat), FALSE);
+		join_show(join_child(screen, "join_devwait", seat), FALSE);
 		return;
 	}
+	join_show(join_child(screen, "join_candnone", seat), FALSE);
+	join_show(join_child(screen, "join_candarrow_l", seat), FALSE);
+	join_show(join_child(screen, "join_candarrow_r", seat), FALSE);
+	join_show(join_child(screen, "join_hit_cand_l", seat), FALSE);
+	join_show(join_child(screen, "join_hit_cand_m", seat), FALSE);
+	join_show(join_child(screen, "join_hit_cand_r", seat), FALSE);
+	join_value(screen, "cand", seat, L"", FALSE, FALSE);
 	join_frame(join_child(screen, "join_device", seat), device_frame(&view));
-	join_text(join_child(screen, "join_devname", seat), device_name(&view));
+	/* (the CONTROLLER pill: its device's name; ASSIGN's wait: the edge pulsing, no arrows, PRESS A BUTTON; a press:
+	filled) */
+	if (mine_waits)
+	{
+		join_frame(join_child(screen, "join_devbar", seat),
+			system_milliseconds() % JOIN_PULSE_PERIOD < JOIN_PULSE_PERIOD / 2 ? PILL_REST : PILL_FOCUS);
+		join_value(screen, "dev", seat, L"", FALSE, FALSE);
+	}
+	else if (view.held)
+	{
+		join_frame(join_child(screen, "join_devbar", seat), join.row[seat] == ROW_CONTROLLER ? PILL_FOCUS : PILL_REST);
+		join_value(screen, "dev", seat, L"RECONNECT", TRUE, FALSE);
+	}
+	else
+	{
+		char name[24];
+
+		join_device_name(seat, name, sizeof(name));
+		join_frame(join_child(screen, "join_devbar", seat), flashing ? PILL_FILLED :
+			join.row[seat] == ROW_CONTROLLER ? PILL_FOCUS : PILL_REST);
+		join_value_ascii(screen, "dev", seat, name, TRUE, flashing);
+	}
+	join_show(join_child(screen, "join_devwait", seat), mine_waits);
+	join_show(join_child(screen, "join_devarrow_l", seat), !mine_waits && !flashing);
+	join_show(join_child(screen, "join_devarrow_r", seat), !mine_waits && !flashing);
+	join_show(join_child(screen, "join_assign", seat), !mine_waits);
+	join_show(join_child(screen, "join_cancel", seat), mine_waits);
+	join_show(join_child(screen, "join_leavebtn", seat), view.family != AE_SEAT_FAMILY_KEYBOARD);
+	join_show(join_child(screen, "join_leavekey", seat), view.family == AE_SEAT_FAMILY_KEYBOARD);
 	join_frame(join_child(screen, "join_leavebtn", seat), leave_frame(&view));
+	join_frame(join_child(screen, "join_profbar", seat), join.row[seat] == ROW_PROFILE ? PILL_FOCUS : PILL_REST);
 	profile = join.profile[seat] != NONE && join.profile[seat] < join.count ? &join.profiles[join.profile[seat]] : NULL;
 	if (profile)
-		join_text(join_child(screen, "join_prof", seat), profile->player_name);
+		join_value(screen, "prof", seat, profile->player_name, TRUE, FALSE);
 	else
 	{
 		wchar_t name[JOIN_TEXT_LENGTH];
 
 		join_new_name(seat, name);
-		join_text(join_child(screen, "join_prof", seat), name);
+		join_value(screen, "prof", seat, name, TRUE, FALSE);
 	}
 	/* (NEW PROFILE: the first colour's armour, as a new profile has until it picks one) */
 	join_frame(join_child(screen, "join_armour", seat), profile ? (short)MAX(profile->primary_color_index, 0) : 0);
@@ -540,7 +666,43 @@ static void join_begin(void)
 	{
 		join.profile[seat] = NONE;
 		join.joined_at[seat] = 0;
+		join.row[seat] = ROW_PROFILE;
 	}
+}
+
+/* "PLAYER a and PLAYER b swapped controllers." (made here: the build's wchar_t is two bytes, no swprintf) */
+static void join_swap_message(int seat, int other)
+{
+	wchar_t a[2] = { (wchar_t)(L'1' + seat), 0 }, b[2] = { (wchar_t)(L'1' + other), 0 };
+	wchar_t text[JOIN_TEXT_LENGTH];
+
+	join_concat(text, L"PLAYER ", a);
+	join_concat(join.message_text, text, L" and PLAYER ");
+	join_concat(text, join.message_text, b);
+	join_concat(join.message_text, text, L" swapped controllers.");
+	join_message(join.message_text);
+}
+
+/* a change from the picker (AE_SEATS_* bits): a new seat's profile, the swap said */
+static void join_picker_result(unsigned bits)
+{
+	int seat, other;
+
+	if (!(bits & AE_SEATS_ASSIGNED))
+		return;
+	ae_seats_last_change(&seat, &other);
+	if (bits & AE_SEATS_JOINED)
+	{
+		join_profiles_read();
+		if (seat >= 0 && seat < AE_SEATS_MAXIMUM)
+		{
+			join.joined_at[seat] = system_milliseconds();
+			join.row[seat] = ROW_PROFILE;
+			join_profile_pick((short)seat);
+		}
+	}
+	if ((bits & AE_SEATS_SWAPPED) && seat >= 0 && other >= 0)
+		join_swap_message(seat, other);
 }
 
 void ae_split_screen_join_update(struct widget_instance *screen)
@@ -571,6 +733,9 @@ void ae_split_screen_join_update(struct widget_instance *screen)
 	}
 	if (bits & AE_SEATS_FULL)
 		join_message(L"4 players at most on one PC.");
+	join_picker_result(bits);
+	if (bits & AE_SEATS_WAIT_ENDED)
+		join_message(L"No controller picked.");
 	if (bits & AE_SEATS_BACK)
 	{
 		/* (a device with no seat: back to Multiplayer, as the screen's B does, with every seat let go) */
@@ -584,8 +749,26 @@ void ae_split_screen_join_update(struct widget_instance *screen)
 	join_show(child_named(screen, "join_help_ready"), any);
 	join_show(child_named(screen, "join_help_nobody"), !any);
 	join_show(child_named(screen, "join_continue_off"), !any);
-	join_text(child_named(screen, "join_message"),
-		join.message && system_milliseconds() < join.message_until ? join.message : L"");
+	{
+		int left, waiting = ae_seats_assign_waiting(&left);
+
+		/* (ASSIGN's wait says what to do on the message line) */
+		join_show(child_named(screen, "join_more"), waiting < 0 &&
+			!(join.message && system_milliseconds() < join.message_until));
+		if (waiting >= 0)
+		{
+			wchar_t number[2] = { (wchar_t)(L'1' + waiting), 0 }, text[JOIN_TEXT_LENGTH];
+
+			join_concat(text, L"PLAYER ", number);
+			join_concat(join.message_text, text, L": press any button on the controller to use.");
+			join_text(child_named(screen, "join_message"), join.message_text);
+		}
+		else
+		{
+			join_text(child_named(screen, "join_message"),
+				join.message && system_milliseconds() < join.message_until ? join.message : L"");
+		}
+	}
 }
 
 int ae_split_screen_seats_wanted(void)
@@ -645,6 +828,15 @@ static boolean join_continue(struct widget_instance *widget, boolean *widget_del
 	return ui_widget_port_host(widget, NULL, widget_deleted);
 }
 
+/* a seat's profile, the next or previous no other seat has */
+static void join_profile_step(short seat, short direction)
+{
+	short next = join_profile_next(seat, join.profile[seat] != NONE ? join.profile[seat] : 0, direction);
+
+	if (next != NONE)
+		join.profile[seat] = next;
+}
+
 unsigned char ae_split_screen_event(char const *name, struct widget_instance *widget, short controller,
 	unsigned char *widget_deleted)
 {
@@ -700,15 +892,62 @@ unsigned char ae_split_screen_event(char const *name, struct widget_instance *wi
 	}
 	if (!strcmp(name, "ae split profile left") || !strcmp(name, "ae split profile right"))
 	{
-		short next;
-
+		/* (a player's own left and right: the row its up and down chose, its CONTROLLER or its PROFILE) */
 		if (!seated)
 			return FALSE;
-		next = join_profile_next(controller, join.profile[controller] != NONE ? join.profile[controller] : 0,
-			strstr(name, "right") ? 1 : -1);
-		if (next != NONE)
-			join.profile[controller] = next;
+		if (join.row[controller] == ROW_CONTROLLER)
+			join_picker_result(ae_seats_cycle(controller, strstr(name, "right") ? 1 : -1));
+		else
+			join_profile_step(controller, strstr(name, "right") ? 1 : -1);
 		return TRUE;
+	}
+	if (!strcmp(name, "ae split row up") || !strcmp(name, "ae split row down"))
+	{
+		if (!seated)
+			return FALSE;
+		join.row[controller] = !strcmp(name, "ae split row up") ? ROW_CONTROLLER : ROW_PROFILE;
+		return TRUE;
+	}
+	if (!strcmp(name, "ae split own assign"))
+	{
+		if (!seated)
+			return FALSE;
+		ae_seats_assign_wait(controller);
+		return TRUE;
+	}
+	/* (a card's own items, the mouse's: the seat is the name's last word) */
+	{
+		size_t length = strlen(name);
+		short seat = length ? (short)(name[length - 1] - '0') : NONE;
+
+		if (length > 2 && name[length - 2] == ' ' && seat >= 0 && seat < AE_SEATS_MAXIMUM)
+		{
+			boolean taken = seats.seat[seat].kind != AE_SEAT_EMPTY;
+
+			if (!strncmp(name, "ae split dev ", 13) && taken)
+				join_picker_result(ae_seats_cycle(seat, strstr(name, "left") ? -1 : 1));
+			else if (!strncmp(name, "ae split prof ", 14) && taken)
+				join_profile_step(seat, strstr(name, "left") ? -1 : 1);
+			else if (!strncmp(name, "ae split assign ", 16) && taken)
+			{
+				if (ae_seats_assign_waiting(NULL) == seat)
+					ae_seats_assign_cancel();
+				else
+					ae_seats_assign_wait(seat);
+			}
+			else if (!strncmp(name, "ae split leave ", 15) && taken)
+			{
+				ae_seats_leave_seat(seat);
+				join.profile[seat] = NONE;
+			}
+			else if (!strncmp(name, "ae split cand take ", 19) && !taken)
+				join_picker_result(ae_seats_candidate_take(seat));
+			else if (!strncmp(name, "ae split cand ", 14) && !taken)
+				ae_seats_candidate_cycle(seat, strstr(name, "left") ? -1 : 1);
+			else
+				return FALSE;
+			return TRUE;
+		}
 	}
 	if (!strcmp(name, "ae split continue"))
 	{

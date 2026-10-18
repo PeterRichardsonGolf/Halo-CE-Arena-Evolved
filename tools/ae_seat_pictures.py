@@ -20,7 +20,10 @@ The frames, as ae_split_screen.c sets them:
 - bitmaps/ae_seat_buttons (round chips): 0 Xbox START, 1 PlayStation OPTIONS, 2 ENTER, 3 Xbox B, 4 PlayStation
   circle, 5 ESC (small; the capsule is better), 6 Nintendo B, 7 Nintendo +;
 - bitmaps/ae_seat_key_esc: the keyboard's ESC as a capsule;
-- bitmaps/ae_seat_profile_bar: the profile's bar (the option row's band, outlined);
+- bitmaps/ae_seat_button: the stock button (bitmaps/text_button_background, both its frames) at half its width, for
+  a card's ASSIGN / CANCEL and LEAVE;
+- bitmaps/ae_seat_profile_bar: a pill's bar (the option row's band, outlined): 0 at rest, 1 focused (the menus'
+  ice-blue glow; ASSIGN's wait pulses 0 and 1), 2 filled blue (a seat's device pressed, a swap: its name in navy);
 - bitmaps/ae_seat_strip: the line across the top (the option row's band, outlined).
 """
 import argparse
@@ -42,6 +45,7 @@ CARD = (146, 300)
 DEVICE = (72, 40)
 BUTTON = (16, 16)
 KEY_ESC = (26, 16)
+SMALL_BUTTON = (64, 32)
 PROFILE_BAR = (130, 28)
 STRIP = (608, 28)
 
@@ -143,11 +147,11 @@ def cards(menus: Path) -> list:
     empty = _recolour_edge(panel, DIM)
     # (the empty seat's plus in a dashed ring, under PLAYER n: tools/port_settings.py's _join_screen leaves its room)
     draw = ImageDraw.Draw(empty)
-    cx, cy, r, w = size[0] / 2, 86 * UNIT, 30 * UNIT, 2 * UNIT
+    cx, cy, r, w = size[0] / 2, 58 * UNIT, 24 * UNIT, 2 * UNIT
     for k in range(24):
         draw.arc((cx - r, cy - r, cx + r, cy + r), k * 15, k * 15 + 9, fill=DIM + (255,), width=w)
-    draw.line((cx - 12 * UNIT, cy, cx + 12 * UNIT, cy), fill=DIM + (255,), width=3 * UNIT)
-    draw.line((cx, cy - 12 * UNIT, cx, cy + 12 * UNIT), fill=DIM + (255,), width=3 * UNIT)
+    draw.line((cx - 10 * UNIT, cy, cx + 10 * UNIT, cy), fill=DIM + (255,), width=3 * UNIT)
+    draw.line((cx, cy - 10 * UNIT, cx, cy + 10 * UNIT), fill=DIM + (255,), width=3 * UNIT)
     return [empty, seated, _recolour_edge(panel, DIM)]
 
 
@@ -271,13 +275,43 @@ def _band(menus: Path, frame: int, width: int):
     return band.crop((0, 0, pixels, band.getbbox()[3]))
 
 
+def small_buttons(menus: Path) -> list:
+    """the stock button's frames at half their width, their rounded ends kept"""
+    from PIL import Image
+    frames = []
+    for frame in (0, 1):
+        source = Image.open(menus / "ce" / "shell" / "bitmaps" / f"text_button_background__{frame}.png").convert("RGBA")
+        frames.append(_nine_slice(source, (SMALL_BUTTON[0] * UNIT, SMALL_BUTTON[1] * UNIT), 40))
+    return frames
+
+
+ICE = (184, 214, 255)
+ICE_OUTER = (120, 175, 235)
+
+
+def pills(menus: Path) -> list:
+    """the pill's three looks: the band, the band in the focus's glow (an inner 3-pixel ice-blue edge, an outer
+    1-pixel lighter blue), and the band filled with the menus' blue"""
+    from PIL import Image, ImageDraw
+    band = _band(menus, 1, PROFILE_BAR[0])
+    w, h = band.size
+    focused = band.copy()
+    d = ImageDraw.Draw(focused)
+    d.rounded_rectangle((0, 0, w - 1, h - 1), radius=h // 2, outline=ICE_OUTER + (255,), width=1 * UNIT // 4 + 1)
+    d.rounded_rectangle((1, 1, w - 2, h - 2), radius=h // 2 - 1, outline=ICE + (255,), width=3)
+    filled = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(filled).rounded_rectangle((0, 0, w - 1, h - 1), radius=h // 2, fill=BLUE + (255,))
+    return [band, focused, filled]
+
+
 # each bitmap's name, its frames' size (units) and their pictures
 def bitmaps(menus: Path) -> dict:
     return {"bitmaps/ae_seat_card": (CARD, cards(menus)),
             "bitmaps/ae_seat_devices": (DEVICE, devices()),
             "bitmaps/ae_seat_buttons": (BUTTON, buttons()),
             "bitmaps/ae_seat_key_esc": (KEY_ESC, [key_esc()]),
-            "bitmaps/ae_seat_profile_bar": (PROFILE_BAR, [_band(menus, 1, PROFILE_BAR[0])]),
+            "bitmaps/ae_seat_button": (SMALL_BUTTON, small_buttons(menus)),
+            "bitmaps/ae_seat_profile_bar": (PROFILE_BAR, pills(menus)),
             "bitmaps/ae_seat_strip": (STRIP, [_band(menus, 1, STRIP[0])])}
 
 

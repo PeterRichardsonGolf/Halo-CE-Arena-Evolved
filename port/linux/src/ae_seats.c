@@ -279,6 +279,11 @@ static int keyboard_pressed(
 	{
 		int down = input->focused && input->keys[scancode];
 
+		/* (debug.test_input's ENTER / SPACE and ESC, which reach the controller's state, not SDL's keyboard) */
+		if (scancode == SDL_SCANCODE_SPACE)
+			down |= seat_map.test_join;
+		if (scancode == SDL_SCANCODE_ESCAPE)
+			down |= seat_map.test_back;
 		pressed |= down && !seat_map.keys_before[scancode];
 		seat_map.keys_before[scancode] = (unsigned char)down;
 	}
@@ -290,6 +295,8 @@ static int keyboard_any_held(
 {
 	int scancode;
 
+	if (seat_map.test_join || seat_map.test_back)
+		return 1;
 	for (scancode = 0; input->focused && scancode < SDL_SCANCODE_COUNT; scancode++)
 	{
 		if (input->keys[scancode])
@@ -398,7 +405,7 @@ static int picker_update(
 	{
 		seat_map.waiting = 0;
 		seat_map.swallow = 1;
-		if (input->keys[SDL_SCANCODE_ESCAPE])
+		if (input->keys[SDL_SCANCODE_ESCAPE] || seat_map.test_back)
 		{
 			platform_log("seats: P%d's ASSIGN cancelled", seat + 1);
 			*result |= AE_SEATS_WAIT_ENDED;
