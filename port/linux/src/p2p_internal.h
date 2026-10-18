@@ -129,8 +129,8 @@ int p2p_peer_reoffered(const unsigned char *identifier, const unsigned char *sec
 of the game) */
 void p2p_invite_received(const char *text);
 /* a new invite (token) for the game hosted, if its invite was listed in the
-server browser (going private: those who saw it must not get in); under
-p2p_lock */
+server browser or on the game list (going private, or a password: those who
+saw it must not get in); under p2p_lock */
 void p2p_new_invite_if_listed(void);
 /* (AE) p2p_hosting_invite, the caller holding p2p_lock */
 int p2p_hosting_invite_locked(char *text, int size);
@@ -358,6 +358,9 @@ int p2p_probe_start(const unsigned char *host_hash, const unsigned char *token);
 void p2p_lobby_update(const unsigned char *token, int player_count, int maximum_player_count);
 /* whether the game hosted is listed now, and whether the browser is open */
 int p2p_lobby_listed(void);
+/* whether the game hosted is public and has no password, so its invite may
+be shown to anyone (under p2p_lock) */
+int p2p_lobby_hosting_open(void);
 int p2p_lobby_browsing(void);
 /* a message on a slot (its key hash in hex) through a broker; retained: the
 slot's retained copy, sent on subscribing */
