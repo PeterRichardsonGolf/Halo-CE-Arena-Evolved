@@ -53,6 +53,10 @@ Xbox kernel does.
 #define PAGE_SIZE_BYTES 0x1000UL
 #endif
 #define CONTIGUOUS_PAGE_COUNT (PLATFORM_CONTIGUOUS_SIZE / PAGE_SIZE_BYTES)
+#ifdef HALO_WEB
+/* the memory's size: whether it covers the window */
+#define web_memory_bytes() ((unsigned long long)__builtin_wasm_memory_size(0) << 16)
+#endif
 
 /* per page: 0 free, otherwise the protection of the block (PAGE_*); the
 first page of a block also records the block length */
@@ -97,6 +101,16 @@ static void xbox_address_space_reserve(void)
 static void contiguous_arena_reserve(void)
 #endif
 {
+#ifdef HALO_WEB
+	/* (upstream's: WebAssembly's memory is one block whose top 128 MB is the window, tools/web_build.py: nothing to
+	map, only whether it is there; the build-190 merge had dropped this, and the web build reserved nothing) */
+	if (web_memory_bytes() >= (unsigned long long)PLATFORM_CONTIGUOUS_BASE + PLATFORM_CONTIGUOUS_SIZE)
+		arena_reserved = TRUE;
+	else
+		platform_log("the WebAssembly memory (%llu bytes) does not cover the Xbox contiguous memory window",
+			web_memory_bytes());
+	return;
+#endif
 #ifdef HALO_64BIT
 	void *wanted = (void *)XBOX_ADDRESS_SPACE_BASE;
 	void *result;
@@ -393,6 +407,9 @@ void *platform_contiguous_alloc(unsigned long size, unsigned long alignment,
 	takes its protection */
 	reprotect_host_pages(address, count * PAGE_SIZE_BYTES);
 	clear_block(address, count * PAGE_SIZE_BYTES);
+#elif defined(HALO_WEB)
+	/* (cleared, as fresh pages would be) */
+	memset(address, 0, count * PAGE_SIZE_BYTES);
 #else
 	/* map fresh zeroed pages over the reservation */
 	if (mmap(address, count * PAGE_SIZE_BYTES, protection_to_host(protect),
@@ -429,7 +446,7 @@ void platform_contiguous_free(void *address)
 	if (count)
 	{
 		memory_watch_forget(address, count * PAGE_SIZE_BYTES);
-#ifndef HALO_64BIT
+#if !defined(HALO_64BIT) && !defined(HALO_WEB)
 		mmap(address, count * PAGE_SIZE_BYTES, PROT_NONE,
 			MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED, -1, 0);
 #endif
