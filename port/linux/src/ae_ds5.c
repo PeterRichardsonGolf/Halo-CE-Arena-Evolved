@@ -200,6 +200,19 @@ void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish)
 	SDL_UnlockSpinlock(&shared_lock);
 }
 
+void ae_ds5_pulse(int port, int left, int right, int ms)
+{
+	if (port < 0 || port >= PORTS || ms <= 0)
+		return;
+	SDL_LockSpinlock(&shared_lock);
+	shared.pulse_left[port] = left;
+	shared.pulse_right[port] = right;
+	shared.pulse_until[port] = SDL_GetTicks() + (Uint64)ms;
+	shared.pulse_pending[port] = 0;
+	shared.pulse_ms[port] = (Uint64)ms;
+	SDL_UnlockSpinlock(&shared_lock);
+}
+
 void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_motor, unsigned short *right_motor)
 {
 	if (port < 0 || port >= PORTS || !left_motor || !right_motor)
@@ -209,7 +222,8 @@ void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_mot
 
 	SDL_LockSpinlock(&shared_lock);
 	shared.bound[port] = id;
-	if (shared.active[port] && now < shared.pulse_until[port])
+	/* (a DualSense's event pulse, or ae_ds5_pulse's on any pad) */
+	if (now < shared.pulse_until[port])
 	{
 		unsigned int left = (unsigned int)shared.pulse_left[port] * 257u;
 		unsigned int right = (unsigned int)shared.pulse_right[port] * 257u;
@@ -994,6 +1008,14 @@ void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish)
 {
 	(void)port;
 	(void)wish;
+}
+
+void ae_ds5_pulse(int port, int left, int right, int ms)
+{
+	(void)port;
+	(void)left;
+	(void)right;
+	(void)ms;
 }
 
 void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_motor, unsigned short *right_motor)

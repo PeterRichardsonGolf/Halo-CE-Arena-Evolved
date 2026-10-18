@@ -395,6 +395,50 @@ static void event(short gamepad_index, int right, enum ae_ds5_weapon_kind kind, 
 	}
 }
 
+/* a pad that is not a DualSense this machine drives (an Xbox pad, an 8BitDo, a Switch Pro): the battle rifle's
+round pulse on its motors through the game's rumble, the one a DualSense gets (the rifle's own trigger damage effect
+rumbles only the light motor, at a quarter: owner 10-17, "br doesn't have haptics on xinput devices"). Every other
+weapon keeps its tag's rumble alone. Its own memory of the rounds, apart from the DualSense ports' */
+static void other_pad_battle_rifle(short local_player_index, long weapon_index)
+{
+	static long seen_weapon[MAXIMUM_LOCAL_PLAYERS] = { NONE, NONE, NONE, NONE };
+	static long seen_fired[MAXIMUM_LOCAL_PLAYERS];
+	long player_index = local_player_get_player_index(local_player_index);
+	short gamepad_index;
+	long last_fired;
+
+	if (player_index == NONE)
+		return;
+	gamepad_index = player_get(player_index)->local_player_index;
+	if (gamepad_index < 0 || gamepad_index >= MAXIMUM_LOCAL_PLAYERS || ae_ds5_port_active(gamepad_index))
+		return;
+	weapon_index = seated_weapon(player_get(player_index)->unit_index, weapon_index);
+	if (weapon_index == NONE)
+	{
+		seen_weapon[gamepad_index] = NONE;
+		return;
+	}
+	last_fired = weapon_get(weapon_index)->weapon.game_time_last_fired;
+	if (seen_weapon[gamepad_index] == weapon_index && seen_fired[gamepad_index] != last_fired &&
+		!player_ui_rumble_disabled(local_player_index))
+	{
+		struct ae_ds5_weapon_state state;
+		struct ae_ds5_rumble rumble;
+		unsigned char effect[AE_DS5_EFFECT_SIZE];
+		char const *name;
+
+		weapon_state(weapon_index, &state, &name);
+		memset(&rumble, 0, sizeof(rumble));
+		if (state.kind == AE_DS5_WEAPON_BURST && ae_ds5_event(effect, &rumble, state.kind, AE_DS5_EVENT_SHOT, 100) >= 0 &&
+			rumble.ms > 0)
+		{
+			ae_ds5_pulse(gamepad_index, rumble.left, rumble.right, rumble.ms);
+		}
+	}
+	seen_weapon[gamepad_index] = weapon_index;
+	seen_fired[gamepad_index] = last_fired;
+}
+
 void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level)
 {
 	struct ae_ds5_wish wish;
@@ -416,6 +460,7 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	long now = game_time_get();
 	int rumble_on, winding, grenades;
 
+	other_pad_battle_rifle(local_player_index, weapon_index);
 	if (!ae_ds5_on())
 		return;
 	settings = ae_ds5_settings_get();

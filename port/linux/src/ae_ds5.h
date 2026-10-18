@@ -72,6 +72,9 @@ char const *ae_ds5_lightbar_mode_name(struct ae_ds5_settings const *settings);
 int ae_ds5_on(void);
 /* whether controller port `port`'s pad is a DualSense this machine drives (the game works out a wish only then) */
 int ae_ds5_port_active(int port);
+/* a rumble pulse (0-255 a motor, for ms) on controller port `port`'s pad, whatever pad it is: merged into the game's
+motors as a DualSense's event pulses are (the battle rifle's round on a pad that is not a DualSense) */
+void ae_ds5_pulse(int port, int left, int right, int ms);
 /* the game: controller port `port`'s player wants this (copied) */
 void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish);
 /* xinput_sdl.c XInputSetState: the SDL pad that drives controller port `port` (NULL: none), and the game's motors,
