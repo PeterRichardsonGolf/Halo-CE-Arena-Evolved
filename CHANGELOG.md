@@ -14,6 +14,18 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Controllers keep their port: a controller plugged in (or found late, as a Switch Pro controller can be on Linux)
   takes the first free port instead of moving every other controller to the next one, which gave a joined player
   another's controller and made the new controller's START fail ("port lobby join failed").
+- The battle rifle's rounds rumble on every controller, not only on a DualSense (a short pulse a round).
+- Map sharing on a LAN is faster: a host whose players are all on the local network sends maps at up to 16 MB/s
+  (`network.map_share_lan_upload`); with a player on the internet it keeps `network.map_share_upload` (1 MB/s).
+- A split screen game's setup screen is titled GAME SETUP (LAN and internet games keep SERVER SETUP).
+- START GAME on Server Setup after the lobby closed (its host gone) says so ("The game closed. Press B and host the
+  game again.") instead of doing nothing.
+- A mod's main menu map (`ui.map`) too big for the game's menu memory (such as the H2 Mappack Collection's) is left
+  out with a line in the log, and the stock menus are used, instead of crashing.
+- Bots: small fixes from the bots review (a bot no longer counts itself in a search, a weapon pack counts as taken only
+  once picked up, a tick's travel state is cleared at its end, the trace level read once a change).
+- The README is a short front page; the detail is in `docs/` (features, gametypes, LAN, building, upstream).
+- The web build compiles and links again (it still stops at start, as before).
 
 ## 0.3.3-beta - 2026-10-17
 
