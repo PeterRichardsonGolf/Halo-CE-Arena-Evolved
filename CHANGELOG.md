@@ -18,8 +18,25 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   icons.
 - From ChupathingyCE 0.7.5d: a game listed on the game list that is then made private or given a password gets a
   new invite, so the one shown on the list no longer lets anyone in.
-- Arena Evolved is now on OpenCE build-213 and ChupathingyCE 0.7.5d (still network version 29: it plays with the
-  same builds as before).
+- From OpenCE build-217 to build-232 (OpenCE's work, merged):
+  - Text chat in network games: T to everyone, Y to your team (Tab changes who hears it); a controller's D-pad Up
+    opens an on-screen keyboard, unless your button layout uses D-pad Up for a control (then use a keyboard). The
+    host can turn the chat off or to links only (always off while the game is listed in the server browser) and
+    mute players; the scoreboard mutes a player's voice and chat for you. Settings > Network Setup > MULTIPLAYER
+    HUD has the chat's settings.
+  - Streamer mode (Settings > Network Setup > STREAMER MODE): slurs, swearing and insults in other players' names
+    and text, and in maps' and mods' names, shown as stars, at levels you choose.
+  - Client-side mods: folders of Halo PC tag files in `mods/` that play over the maps on your machine only, in any
+    game: sound packs, translations and models (the main menu's MODS turns them on and off and orders them). Mods'
+    bitmaps (texture packs) are not played yet in Arena Evolved, nor models of 44 nodes or more; the log says so.
+  - Sound Processing in Settings > Audio Setup: the reverb and the RESAMPLER (sinc, or linear: brighter). The
+    earlier `audio.resampling` setting is read into it once.
+  - Vehicles nobody drives move on the other machines as they do on the host; the screen fog stays on a vehicle's
+    canopy at a wide field of view; map sharing sends at most 20 MB/s from a host (Arena Evolved's LAN rate, 16 MB/s,
+    stays under it) and 10 MB/s from another player.
+- Arena Evolved is now on OpenCE build-232 and ChupathingyCE 0.7.5d (still network version 29: it plays with the
+  same builds as before; OpenCE build-230 and later players use the same chat messages, not yet tried
+  between the two builds).
 
 ## 0.3.4-beta - 2026-10-18
 
