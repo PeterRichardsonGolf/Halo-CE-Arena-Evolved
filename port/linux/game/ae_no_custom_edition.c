@@ -4,9 +4,10 @@ AE_NO_CUSTOM_EDITION.C
 A build without Custom Edition map support (no HALO_CUSTOM_EDITION: the web
 build) still links Arena Evolved's units that ask about Custom Edition's
 files. Here they are told there are none: no resource map is found, no map of
-that family is found, no Ogg Vorbis sound is decoded. With
-HALO_CUSTOM_EDITION this file is empty (map_families.c and ce_vorbis.c have
-the real ones).
+that family is found, no Ogg Vorbis sound is decoded, no loaded map is a
+Custom Edition map and the menus' map list is empty. With
+HALO_CUSTOM_EDITION this file is empty (map_families.c, ce_vorbis.c,
+cache_files.c and ui_map_list.c have the real ones).
 */
 
 #include "cseries.h"
@@ -59,6 +60,24 @@ void ce_vorbis_free(
 	short *samples)
 {
 	(void)samples;
+}
+
+boolean cache_file_tags_are_ce(
+	void)
+{
+	return FALSE;
+}
+
+long ui_map_list_count(
+	void)
+{
+	return 0;
+}
+
+char **ui_map_list_names(
+	void)
+{
+	return NULL;
 }
 
 #endif /* !HALO_CUSTOM_EDITION */
