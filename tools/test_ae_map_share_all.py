@@ -242,6 +242,32 @@ def test_played_ce_map(roots):
     assert (guest / "maps_ce" / name).read_bytes() == content
 
 
+def test_played_folder_map(roots):
+    """a guest without the game's community map, which the host keeps in a page folder of its maps folder (map folders,
+    0.3.3: maps/<folder>/), gets it into maps_shared as any other"""
+    host, guest = roots
+    content = xbox_map_named(xbox_source(), "foldercreek")
+    make_root(host, raw={"maps/Pack/foldercreek.map": content})
+    make_root(guest)
+    host_text, guest_text = run_pair("played-folder", host, guest, guest_env=YES, level="foldercreek", start=125,
+                                     seconds=165)
+    assert (guest / "maps_shared/foldercreek.map").exists(), share_lines(guest_text) + share_lines(host_text)
+    assert (guest / "maps_shared/foldercreek.map").read_bytes() == content
+
+
+def test_played_ce_folder_map(roots):
+    """a guest without the game's Custom Edition map, which the host keeps in a page folder of maps_ce (as a player
+    keeps Custom Edition's Gearbox maps in their own folder), gets it into maps_ce"""
+    host, guest = roots
+    name, content = ce_map()
+    make_root(host, raw={f"maps_ce/Gearbox/{name}": content})
+    make_root(guest)
+    host_text, guest_text = run_pair("played-ce-folder", host, guest, guest_env=YES, level=name[:-4] + "@ce",
+                                     seconds=170)
+    assert (guest / "maps_ce" / name).exists(), share_lines(guest_text) + share_lines(host_text)
+    assert (guest / "maps_ce" / name).read_bytes() == content
+
+
 def three_maps():
     name, content = ce_map()
     return {"sharecreek": small_map("sharecreek")}, {"modcreek": small_map("modcreek")}, {name: content}
