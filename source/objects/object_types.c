@@ -144,6 +144,7 @@ symbols in this file:
 #include "units/units.h"
 #include "units/vehicles.h"
 #include "game/game_engine.h" /* port: game_engine_vehicle_placement_begin's type, which WebAssembly calls it by */
+#include "ae_layout.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1228,6 +1229,7 @@ void object_types_place_all(
 					gametype's vehicles of each team (game_variant_options: every
 					machine places the same), asked last as it counts those it
 					places */
+					if (object_type == _object_type_vehicle && !ae_layout_vehicle_placed(scenario_object)) continue; /* AE hook */
 					if (object_type == _object_type_vehicle &&
 						(
 #ifdef HALO_CUSTOM_EDITION

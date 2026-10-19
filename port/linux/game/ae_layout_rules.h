@@ -43,6 +43,17 @@ The file (version 1):
 	bot avoid <x> <y> <z> radius <r>  for the bots: a place they keep out of (a pit's edge, a ledge they fall from): the
 	                                  walkable surfaces whose middle lies within r of the point are closed to their routes,
 	                                  and no roaming place there; r more than 0, at most 50
+	vehicle <warthog|rocket_warthog|ghost|scorpion|banshee|turret|<n>> at <x> <y> <z> [facing <degrees>]
+	     [team red|blue|neutral] [games <up to 4 of all ctf slayer oddball king race>]
+	                                  a multiplayer vehicle spawn of a vehicle the map already carries (0.3.5; owner:
+	                                  "can't we just use the halo ce vehicles for the vehicle spawns?"): <n> its vehicle
+	                                  palette's entry; a kind: the palette's entry of that kind, else a vehicle tag of that
+	                                  kind the map has loaded (its globals' multiplayer warthog, ghost and scorpion). It
+	                                  becomes one of the scenario's vehicle placements, so the host places it, the
+	                                  gametype's vehicle set counts it and it respawns as the map's own do. team: the side
+	                                  it counts for in a set of each team's (the nearest team's spawns when not given);
+	                                  games: the gametypes it is placed in (all when not given). A kind the map does not
+	                                  carry: that line is skipped and logged, as an item the map lacks
 
 A bot line changes nothing of the map: a guest or a game without bots reads it and does nothing with it. Authoring:
 debug.bot_hints logs each of player 1's jumps as a ready `bot jump` line, and a `bot avoid` line where player 1
@@ -80,6 +91,7 @@ map lacks is the applying half's business (that one item is skipped and logged: 
 #define AE_LAYOUT_BOT_AVOID_LARGEST 50.0f
 #define AE_LAYOUT_MAXIMUM_SPAWNS 256
 #define AE_LAYOUT_MAXIMUM_FLAGS 64
+#define AE_LAYOUT_MAXIMUM_VEHICLES 32
 /* a spawn's game types, as the scenario's (game_engine.c: the engines' numbers, 12 = every gametype) */
 #define AE_LAYOUT_GAMES_ALL 12
 
@@ -125,6 +137,33 @@ struct ae_layout_item
 	                          weapon does (on its side) */
 	boolean float_here;    /* float: at rest at its own height, not put on the floor (a powerup over water) */
 	short line;            /* the file's line, for the log */
+};
+
+/* a vehicle line's kind: the gametypes' vehicle types (game_engine.h's _variant_vehicle_*, in their order), or the
+map's vehicle palette's entry */
+enum ae_layout_vehicle_kind
+{
+	_ae_layout_vehicle_palette = -1,
+	_ae_layout_vehicle_warthog,
+	_ae_layout_vehicle_ghost,
+	_ae_layout_vehicle_scorpion,
+	_ae_layout_vehicle_rocket_warthog,
+	_ae_layout_vehicle_banshee,
+	_ae_layout_vehicle_turret,
+	NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS
+};
+
+/* vehicle <kind|n> at <x y z> ... */
+struct ae_layout_vehicle
+{
+	short kind;            /* enum ae_layout_vehicle_kind */
+	long palette_index;    /* for _ae_layout_vehicle_palette */
+	real x, y, z;
+	boolean has_facing;
+	real facing_degrees;
+	short team;            /* enum ae_layout_team: _ae_layout_team_unset for the nearest team's */
+	short games[4];        /* the scenario's game types (as a spawn's), 0 for none */
+	short line;
 };
 
 struct ae_layout_vehicle_rule
@@ -240,6 +279,8 @@ struct ae_layout
 	long removed_flags[AE_LAYOUT_MAXIMUM_FLAGS];
 	short flag_count;
 	struct ae_layout_flag flags[AE_LAYOUT_MAXIMUM_FLAGS];
+	short vehicle_count;
+	struct ae_layout_vehicle vehicles[AE_LAYOUT_MAXIMUM_VEHICLES];
 };
 
 /* the file's text (length bytes, not necessarily terminated) read into *out: 0 when it is a layout of version 1 with
@@ -258,5 +299,16 @@ char const *ae_layout_object_type_name(short type);
 
 /* a flag type's name ("ctf", "hill"), for the log */
 char const *ae_layout_flag_type_name(short type);
+
+/* a vehicle kind's name ("rocket_warthog"), for the log */
+char const *ae_layout_vehicle_kind_name(short kind);
+
+/* a vehicle tag's kind by its name, as the gametypes' vehicle sets tell it (game_engine.c's
+game_engine_variant_vehicle_type after the globals' three): NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS for none */
+short ae_layout_vehicle_kind_of_name(char const *tag_name);
+
+/* whether a line's game types (as a spawn's: 12 every gametype, 0 none) take the gametype engine's (game_engine.h:
+1 ctf, 2 slayer, 3 oddball, 4 king, 5 race) */
+boolean ae_layout_games_take(short const games[4], long game_engine_index);
 
 #endif /* __AE_LAYOUT_RULES_H */

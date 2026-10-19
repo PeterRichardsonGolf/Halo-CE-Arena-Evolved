@@ -319,6 +319,144 @@ static int parse_flag(char **words, int count, struct ae_layout_flag *flag, char
 	return 1;
 }
 
+/* games <up to 4 words> from words[at]: the scenario's numbers into games; *next the word after them (the stop word,
+or the line's end, ends the list) */
+static int parse_games(char **words, int count, int at, char const *stop, short games[4], int *next, char *error,
+	int error_size, char const *what)
+{
+	int game_count = 0;
+
+	games[0] = games[1] = games[2] = games[3] = 0;
+	while (at < count && !same_word(words[at], stop))
+	{
+		unsigned int index;
+
+		for (index = 0; index < sizeof(game_words) / sizeof(game_words[0]); index++)
+			if (same_word(words[at], game_words[index].name))
+				break;
+		if (index == sizeof(game_words) / sizeof(game_words[0]) || game_count == 4)
+		{
+			say(error, error_size, what, words[at]);
+			return 0;
+		}
+		games[game_count++] = game_words[index].games;
+		at++;
+	}
+	if (!game_count)
+	{
+		say(error, error_size, what, NULL);
+		return 0;
+	}
+	*next = at;
+	return 1;
+}
+
+static char const *const vehicle_kind_names[NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS] =
+{
+	"warthog", "ghost", "scorpion", "rocket_warthog", "banshee", "turret"
+};
+
+char const *ae_layout_vehicle_kind_name(short kind)
+{
+	return kind >= 0 && kind < NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS ? vehicle_kind_names[kind] :
+		kind == _ae_layout_vehicle_palette ? "palette entry" : "?";
+}
+
+short ae_layout_vehicle_kind_of_name(char const *tag_name)
+{
+	if (!tag_name)
+		return NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS;
+	/* (game_engine_variant_vehicle_type's words, in its order) */
+	if (strstr(tag_name, "rwarthog") || strstr(tag_name, "rocket"))
+		return _ae_layout_vehicle_rocket_warthog;
+	if (strstr(tag_name, "banshee"))
+		return _ae_layout_vehicle_banshee;
+	if (strstr(tag_name, "turret"))
+		return _ae_layout_vehicle_turret;
+	if (strstr(tag_name, "warthog"))
+		return _ae_layout_vehicle_warthog;
+	if (strstr(tag_name, "ghost"))
+		return _ae_layout_vehicle_ghost;
+	if (strstr(tag_name, "scorpion"))
+		return _ae_layout_vehicle_scorpion;
+	return NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS;
+}
+
+boolean ae_layout_games_take(short const games[4], long game_engine_index)
+{
+	int index;
+
+	for (index = 0; index < 4; index++)
+		if (games[index] == AE_LAYOUT_GAMES_ALL || (games[index] && games[index] == game_engine_index))
+			return TRUE;
+	return FALSE;
+}
+
+/* vehicle <kind|n> at x y z [facing d] [team red|blue|neutral] [games ...] */
+static int parse_vehicle_add(char **words, int count, struct ae_layout_vehicle *vehicle, char *error, int error_size)
+{
+	int at, team_given = FALSE, games_given = FALSE;
+	long number;
+	short kind;
+
+	memset(vehicle, 0, sizeof(*vehicle));
+	vehicle->team = _ae_layout_team_unset;
+	vehicle->games[0] = AE_LAYOUT_GAMES_ALL;
+	if (count < 2)
+	{
+		say(error, error_size, "vehicle: which?", NULL);
+		return 0;
+	}
+	for (kind = 0; kind < NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS; kind++)
+		if (same_word(words[1], vehicle_kind_names[kind]))
+			break;
+	if (kind < NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS)
+		vehicle->kind = kind;
+	else if (whole_of(words[1], 0, 65535, &number))
+	{
+		vehicle->kind = _ae_layout_vehicle_palette;
+		vehicle->palette_index = number;
+	}
+	else
+	{
+		say(error, error_size, "vehicle: not warthog, rocket_warthog, ghost, scorpion, banshee, turret or a palette "
+			"number", words[1]);
+		return 0;
+	}
+	if (!parse_point(words, count, 2, &vehicle->x, &vehicle->y, &vehicle->z, &vehicle->has_facing,
+		&vehicle->facing_degrees, &at))
+	{
+		say(error, error_size, "vehicle: wants at <x> <y> <z> [facing <degrees>]", count > 2 ? words[2] : NULL);
+		return 0;
+	}
+	while (at < count)
+	{
+		if (same_word(words[at], "team") && at + 1 < count && !team_given &&
+			(same_word(words[at + 1], "red") || same_word(words[at + 1], "blue") || same_word(words[at + 1], "neutral")))
+		{
+			vehicle->team = (short)(same_word(words[at + 1], "red") ? _ae_layout_team_red :
+				same_word(words[at + 1], "blue") ? _ae_layout_team_blue : _ae_layout_team_neutral);
+			team_given = TRUE;
+			at += 2;
+		}
+		else if (same_word(words[at], "games") && !games_given)
+		{
+			games_given = TRUE;
+			if (!parse_games(words, count, at + 1, "team", vehicle->games, &at, error, error_size,
+				"vehicle games: up to 4 of all ctf slayer oddball king race"))
+			{
+				return 0;
+			}
+		}
+		else
+		{
+			say(error, error_size, "vehicle: not understood (or given twice)", words[at]);
+			return 0;
+		}
+	}
+	return 1;
+}
+
 /* remove vehicle <turret|n> [near x y z r] */
 static int parse_vehicle(char **words, int count, struct ae_layout_vehicle_rule *rule, char *error, int error_size)
 {
@@ -706,6 +844,17 @@ int ae_layout_parse(char const *text, long length, struct ae_layout *out, char *
 		{
 			if (!parse_bot(words, count, out, (short)line_number, error, error_size))
 				goto refused;
+		}
+		else if (same_word(words[0], "vehicle"))
+		{
+			if (out->vehicle_count == AE_LAYOUT_MAXIMUM_VEHICLES)
+			{
+				say(error, error_size, "more than 32 vehicles", NULL);
+				goto refused;
+			}
+			if (!parse_vehicle_add(words, count, &out->vehicles[out->vehicle_count], error, error_size))
+				goto refused;
+			out->vehicles[out->vehicle_count++].line = (short)line_number;
 		}
 		else if (same_word(words[0], "item"))
 		{

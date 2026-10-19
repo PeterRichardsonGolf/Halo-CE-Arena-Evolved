@@ -324,7 +324,7 @@ def test_layout_bot_lines(tmp_path):
             "bot avoid 65.0 -120.0 0.0 radius 6\n")
     status, output = _play(second, "local:bloodgulch", 15, layouts={"bloodgulch": text}, HALO_BOTS=1)
     assert status == 0, output[-3000:]
-    assert re.search(r"layout: .*bloodgulch\.txt \(0 items, .* 1 bot jumps, 1 bot avoids, 0 spawns, 0 flags\)", output), output[-3000:]
+    assert re.search(r"layout: .*bloodgulch\.txt \(0 items, .* 1 bot jumps, 1 bot avoids, 0 spawns, 0 flags, 0 object lines, 0 vehicles\)", output), output[-3000:]
     assert "bots: travel: 3 links (2 teleporter pads, 1 layout jumps), 1 avoid zones" in output
     closed = re.search(r"bots: travel: layout line 4: avoid \(65\.0 -120\.0 0\.0\) radius 6\.0: (\d+) walkable surfaces closed",
                        output)

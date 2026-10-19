@@ -10,6 +10,7 @@ netgame items and placed vehicles in memory.
 #include "cseries/cseries_windows.h"
 #include "cache/cache_files.h"
 #include "game/game_engine.h"
+#include "game/game_globals.h"
 #include "items/equipment_definitions.h"
 #include "items/item_definitions.h"
 #include "items/weapon_definitions.h"
@@ -80,6 +81,13 @@ static struct
 	long spawn_count;
 	struct scenario_netgame_flag *flags;
 	long flag_count;
+	/* the vehicle placements and palette with a layout's vehicle lines (0.3.5): ours in place of the map's; the
+	placements past original_vehicle_count are the lines', each with its team and game types */
+	byte *vehicles;
+	long vehicle_count, vehicle_element_size, original_vehicle_count;
+	struct scenario_object_palette_entry *vehicle_palette;
+	long vehicle_palette_count;
+	struct { short team; short games[4]; } added_vehicles[AE_LAYOUT_MAXIMUM_VEHICLES];
 } applied;
 
 static struct ae_layout layout;
@@ -769,6 +777,263 @@ static void apply_vehicles(struct scenario *scenario)
 	platform_log("layout: %ld vehicle%s removed", removed, removed == 1 ? "" : "s");
 }
 
+/* a Halo PC (Custom Edition) vehicle placement's multiplayer team index and spawn flags (game_engine.c's
+CE_VEHICLE_SPAWN_FLAGS_OFFSET: the low four bits place it by default in slayer, ctf, king and oddball) */
+#define AE_CE_VEHICLE_TEAM_OFFSET 0x58
+#define AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET 0x5a
+/* a vehicle placement's permutation (change colours, region permutations) after its object datum (vehicles.c's
+struct scenario_vehicle) */
+#define AE_VEHICLE_PERMUTATION_OFFSET 0x28
+#define AE_VEHICLE_PERMUTATION_SIZE 0x20
+
+/* a vehicle tag's kind as the gametypes' vehicle sets tell it (game_engine.c's game_engine_variant_vehicle_type: the
+globals' three multiplayer vehicles, then the tag's name; a turret also by its vehicle type) */
+static short vehicle_kind_of(long definition)
+{
+	struct game_globals *globals = scenario_get_game_globals();
+	short kind;
+
+	if (definition == NONE)
+		return NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS;
+	if (globals && globals->multiplayer_information.count > 0)
+	{
+		struct game_globals_multiplayer_information *information = TAG_BLOCK_GET_ELEMENT(
+			&globals->multiplayer_information, 0, struct game_globals_multiplayer_information);
+		short slot;
+
+		for (slot = 0; slot < 3 && slot < information->vehicles.count; slot++)
+			if (TAG_BLOCK_GET_ELEMENT(&information->vehicles, slot, struct game_globals_vehicle)->vehicle.index ==
+				definition)
+			{
+				return slot == 0 ? _ae_layout_vehicle_warthog : slot == 1 ? _ae_layout_vehicle_ghost :
+					_ae_layout_vehicle_scorpion;
+			}
+	}
+	kind = ae_layout_vehicle_kind_of_name(tag_get_name(definition));
+	if (kind == NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS && ((struct ae_vehicle_definition_head const *)
+		tag_get(VEHICLE_DEFINITION_TAG, definition))->vehicle_type == AE_VEHICLE_TYPE_TURRET)
+	{
+		kind = _ae_layout_vehicle_turret;
+	}
+	return kind;
+}
+
+/* a vehicle tag of the kind the map has loaded though its palette has none: the globals' multiplayer warthog, ghost
+or scorpion, else the stock tag of that kind; NONE */
+static long vehicle_loaded(short kind)
+{
+	static char const *const stock[NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS] =
+	{
+		"vehicles\\warthog\\mp_warthog", "vehicles\\ghost\\ghost_mp", "vehicles\\scorpion\\scorpion_mp",
+		"vehicles\\rwarthog\\rwarthog", "vehicles\\banshee\\banshee_mp", "vehicles\\c gun turret\\c gun turret_mp"
+	};
+	struct game_globals *globals = scenario_get_game_globals();
+
+	if (kind < 0 || kind >= NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS)
+		return NONE;
+	if (kind <= _ae_layout_vehicle_scorpion && globals && globals->multiplayer_information.count > 0)
+	{
+		struct game_globals_multiplayer_information *information = TAG_BLOCK_GET_ELEMENT(
+			&globals->multiplayer_information, 0, struct game_globals_multiplayer_information);
+
+		if (kind < information->vehicles.count)
+		{
+			long definition = TAG_BLOCK_GET_ELEMENT(&information->vehicles, kind, struct game_globals_vehicle)->vehicle.index;
+
+			if (definition != NONE)
+				return definition;
+		}
+	}
+	return tag_loaded(VEHICLE_DEFINITION_TAG, stock[kind]);
+}
+
+/* vehicle lines: each a vehicle placement more, of a vehicle the map carries (its palette's entry, else one added for
+a tag of that kind the map has loaded), so the map's own rules place it: the gametype's vehicle set, NHE MODE's, the
+Halo PC spawn flags, the respawn of vehicles (game_engine.c), on the host (vehicles are synced objects) */
+static void apply_vehicle_adds(struct scenario *scenario)
+{
+	long element_size = 0;
+	struct tag_block *placements = scenario_get_object_type_scenario_datums(scenario, _object_type_vehicle,
+		&element_size);
+	struct tag_block *palette = &scenario->vehicle_palette;
+	long original_count, palette_count, index, count, added = 0, skipped = 0;
+	byte *vehicles;
+	struct scenario_object_palette_entry *entries;
+
+	if (!layout.vehicle_count || !placements || element_size < (long)sizeof(struct scenario_object_datum))
+		return;
+	original_count = placements->count;
+	palette_count = palette->count;
+	vehicles = (byte *)malloc((size_t)(original_count + layout.vehicle_count) * (size_t)element_size);
+	entries = (struct scenario_object_palette_entry *)malloc((size_t)(palette_count + layout.vehicle_count) *
+		sizeof(*entries));
+	if (!vehicles || !entries)
+	{
+		if (vehicles)
+			free(vehicles);
+		if (entries)
+			free(entries);
+		platform_log("layout: no memory for %d vehicles (not added)", layout.vehicle_count);
+		return;
+	}
+	if (original_count)
+		memcpy(vehicles, tag_block_get_element_with_size(placements, 0, element_size),
+			(size_t)original_count * (size_t)element_size);
+	if (palette_count)
+		memcpy(entries, TAG_BLOCK_GET_ELEMENT(palette, 0, struct scenario_object_palette_entry),
+			(size_t)palette_count * sizeof(*entries));
+	count = original_count;
+	for (index = 0; index < layout.vehicle_count; index++)
+	{
+		struct ae_layout_vehicle const *line = &layout.vehicles[index];
+		struct scenario_object_datum *placement;
+		long entry = NONE, definition = NONE, template_index = NONE, other;
+
+		if (line->kind == _ae_layout_vehicle_palette)
+		{
+			if (line->palette_index < palette_count && entries[line->palette_index].reference.index != NONE)
+				entry = line->palette_index;
+		}
+		else
+		{
+			for (other = 0; other < palette_count && entry == NONE; other++)
+				if (vehicle_kind_of(entries[other].reference.index) == line->kind)
+					entry = other;
+			/* (a palette without one: a tag of that kind the map has loaded gets an entry) */
+			if (entry == NONE && (definition = vehicle_loaded(line->kind)) != NONE)
+			{
+				for (other = palette_count; other < palette_count + added && entry == NONE; other++)
+					if (entries[other].reference.index == definition)
+						entry = other;
+				if (entry == NONE)
+				{
+					entry = palette_count + added;
+					if (palette_count)
+						entries[entry] = entries[0];
+					else
+						memset(&entries[entry], 0, sizeof(entries[entry]));
+					entries[entry].reference.group_tag = VEHICLE_DEFINITION_TAG;
+					entries[entry].reference.index = definition;
+					platform_log("layout: line %d: the map's vehicle palette has no %s: %s (a tag the map has) added "
+						"as its entry %ld", line->line, ae_layout_vehicle_kind_name(line->kind), tag_get_name(definition),
+						entry);
+				}
+			}
+		}
+		if (entry == NONE)
+		{
+			platform_log("layout: line %d: the map has no %s%s (skipped)", line->line,
+				line->kind == _ae_layout_vehicle_palette ? "vehicle palette entry " : ae_layout_vehicle_kind_name(line->kind),
+				line->kind == _ae_layout_vehicle_palette ? "of that number" : "");
+			skipped++;
+			continue;
+		}
+		/* (made from one of the map's own placements of that vehicle, else another vehicle's, else nothing) */
+		for (other = 0; other < original_count && template_index == NONE; other++)
+			if (((struct scenario_object_datum *)(vehicles + other * element_size))->palette_entry_index == entry)
+				template_index = other;
+		placement = (struct scenario_object_datum *)(vehicles + count * element_size);
+		if (template_index != NONE)
+			memcpy(placement, vehicles + template_index * element_size, (size_t)element_size);
+		else
+		{
+			memset(placement, 0, (size_t)element_size);
+			for (other = 0; other < original_count; other++)
+				if (((struct scenario_object_datum *)(vehicles + other * element_size))->palette_entry_index != NONE)
+				{
+					memcpy(placement, vehicles + other * element_size, (size_t)element_size);
+					if (element_size >= AE_VEHICLE_PERMUTATION_OFFSET + AE_VEHICLE_PERMUTATION_SIZE)
+						memset((byte *)placement + AE_VEHICLE_PERMUTATION_OFFSET, 0, AE_VEHICLE_PERMUTATION_SIZE);
+					break;
+				}
+			placement->variant_number = 0;
+		}
+		placement->palette_entry_index = (short)entry;
+		placement->name_index = NONE;
+		placement->placement_flags = 0;
+		placement->position.x = line->x;
+		placement->position.y = line->y;
+		placement->position.z = line->z;
+		placement->rotation.yaw = line->has_facing ? line->facing_degrees * DEGREES_TO_RADIANS :
+			template_index != NONE ? placement->rotation.yaw : 0.0f;
+		placement->rotation.pitch = 0.0f;
+		placement->rotation.roll = 0.0f;
+		/* (a Halo PC map's: placed in every gametype by its spawn flags, the line's game types decide; its team) */
+		if (element_size >= AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET + 2)
+		{
+			word flags;
+
+			memcpy(&flags, (byte *)placement + AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET, sizeof(flags));
+			flags |= 0x000F;
+			memcpy((byte *)placement + AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET, &flags, sizeof(flags));
+			if (line->team == _ae_layout_team_red || line->team == _ae_layout_team_blue)
+				((byte *)placement)[AE_CE_VEHICLE_TEAM_OFFSET] = (byte)line->team;
+		}
+		applied.added_vehicles[count - original_count].team = line->team;
+		memcpy(applied.added_vehicles[count - original_count].games, line->games, sizeof(line->games));
+		platform_log("layout: line %d: vehicle %ld (%s, palette %ld) at %.2f %.2f %.2f facing %.0f", line->line, count,
+			ae_layout_vehicle_kind_name(line->kind), entry, placement->position.x, placement->position.y,
+			placement->position.z, placement->rotation.yaw / DEGREES_TO_RADIANS);
+		if (entry >= palette_count + added)
+			added++;
+		count++;
+	}
+	applied.vehicles = vehicles;
+	applied.vehicle_count = count;
+	applied.vehicle_element_size = element_size;
+	applied.original_vehicle_count = original_count;
+	applied.vehicle_palette = entries;
+	applied.vehicle_palette_count = palette_count + added;
+	placements->address = XBOX_ADDRESS(vehicles);
+	placements->count = count;
+	palette->address = XBOX_ADDRESS(entries);
+	palette->count = palette_count + added;
+	platform_log("layout: vehicles %ld of the map's, %ld added, %ld skipped: %ld in all", original_count,
+		count - original_count, skipped, count);
+}
+
+/* the index past the map's own of a placement of ours, else NONE */
+static long added_vehicle(void const *placement)
+{
+	unsigned long address = (unsigned long)XBOX_ADDRESS(placement), start, index;
+
+	if (!applied.vehicles || !placement || applied.vehicle_element_size <= 0)
+		return NONE;
+	start = (unsigned long)XBOX_ADDRESS(applied.vehicles);
+	if (address < start)
+		return NONE;
+	index = (address - start) / (unsigned long)applied.vehicle_element_size;
+	if ((address - start) % (unsigned long)applied.vehicle_element_size || (long)index < applied.original_vehicle_count ||
+		(long)index >= applied.vehicle_count)
+	{
+		return NONE;
+	}
+	return (long)index - applied.original_vehicle_count;
+}
+
+boolean ae_layout_vehicle_placed(void const *placement)
+{
+	long added = added_vehicle(placement);
+	struct game_variant *variant = game_engine_get_variant();
+
+	if (added == NONE || !game_engine_running())
+		return TRUE;
+	return ae_layout_games_take(applied.added_vehicles[added].games, variant ? variant->game_engine_index : 0);
+}
+
+short ae_layout_vehicle_side(void const *placement, short side)
+{
+	long added = added_vehicle(placement);
+
+	if (added == NONE)
+		return side;
+	if (applied.added_vehicles[added].team == _ae_layout_team_red)
+		return 0;
+	if (applied.added_vehicles[added].team == _ae_layout_team_blue)
+		return 1;
+	return side;
+}
+
 /* whether name has word in it, letters of either case alike */
 static boolean name_has(char const *name, char const *word)
 {
@@ -869,7 +1134,10 @@ int ae_layout_memory(unsigned long address, long size)
 {
 	return memory_in(applied.items, applied.item_count, sizeof(*applied.items), address, size) ||
 		memory_in(applied.spawns, applied.spawn_count, sizeof(*applied.spawns), address, size) ||
-		memory_in(applied.flags, applied.flag_count, sizeof(*applied.flags), address, size);
+		memory_in(applied.flags, applied.flag_count, sizeof(*applied.flags), address, size) ||
+		memory_in(applied.vehicles, applied.vehicle_count, (unsigned long)applied.vehicle_element_size, address, size) ||
+		memory_in(applied.vehicle_palette, applied.vehicle_palette_count, sizeof(*applied.vehicle_palette), address,
+			size);
 }
 
 struct ae_layout const *ae_layout_bot_hints(void)
@@ -907,7 +1175,8 @@ void ae_layout_apply(void)
 	if (applied.scenario == scenario &&
 		((applied.items && scenario->netgame_equipment.address == XBOX_ADDRESS(applied.items)) ||
 		(applied.spawns && scenario->players.address == XBOX_ADDRESS(applied.spawns)) ||
-		(applied.flags && scenario->netgame_flags.address == XBOX_ADDRESS(applied.flags))))
+		(applied.flags && scenario->netgame_flags.address == XBOX_ADDRESS(applied.flags)) ||
+		(applied.vehicle_palette && scenario->vehicle_palette.address == XBOX_ADDRESS(applied.vehicle_palette))))
 	{
 		return;
 	}
@@ -938,6 +1207,18 @@ void ae_layout_apply(void)
 		free(applied.flags);
 		applied.flags = NULL;
 		applied.flag_count = 0;
+	}
+	if (applied.vehicles)
+	{
+		free(applied.vehicles);
+		applied.vehicles = NULL;
+		applied.vehicle_count = applied.original_vehicle_count = 0;
+	}
+	if (applied.vehicle_palette)
+	{
+		free(applied.vehicle_palette);
+		applied.vehicle_palette = NULL;
+		applied.vehicle_palette_count = 0;
 	}
 	if (!map_file(file, sizeof(file), map_path, sizeof(map_path)))
 		return;
@@ -1002,12 +1283,13 @@ void ae_layout_apply(void)
 		return;
 	}
 	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names, %d bot jumps, %d bot avoids, "
-		"%d spawns, %d flags, %d object lines)", path, layout.item_count, layout.removed_count, layout.clear_items ? "" : "no ",
-		layout.vehicle_rule_count, layout.name_count, layout.bot_jump_count, layout.bot_avoid_count, layout.spawn_count,
-		layout.flag_count, layout.object_rule_count);
+		"%d spawns, %d flags, %d object lines, %d vehicles)", path, layout.item_count, layout.removed_count,
+		layout.clear_items ? "" : "no ", layout.vehicle_rule_count, layout.name_count, layout.bot_jump_count,
+		layout.bot_avoid_count, layout.spawn_count, layout.flag_count, layout.object_rule_count, layout.vehicle_count);
 	layout_applied = TRUE;
 	apply_items(scenario);
 	apply_vehicles(scenario);
+	apply_vehicle_adds(scenario);
 	apply_objects(scenario);
 	apply_spawns(scenario);
 	apply_flags(scenario);

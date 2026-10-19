@@ -43,6 +43,12 @@ struct ae_layout const *ae_layout_bot_hints(void);
 into text: FALSE when the map has no file the layouts know */
 boolean ae_layout_map_header(char *text, long size);
 
+/* (object_types.c's placing of the scenario's objects, game_engine.c's vehicle sets: AE hooks) whether a vehicle
+placement is placed in this gametype (a layout's vehicle line's game types; the map's own always), and the team it
+counts for in a set of each team's (a vehicle line's team; else side, the nearest team's) */
+boolean ae_layout_vehicle_placed(void const *placement);
+short ae_layout_vehicle_side(void const *placement, short side);
+
 /* (map sharing, a host's: ae_map_share_all.c) the layout file this machine applies to a level's map (level_name as
 the game names it), read: TRUE with its text in text (size bytes; *length of them) when it has one that reads and was
 made for that very map file; FALSE when it has none it would apply */

@@ -954,3 +954,8 @@ source/interface/ui_widget.c	if (ignore_icon_color) ae_key_prompts_note_text_ico
 # poll, and a pad's use
 port/linux/src/xinput_sdl.c	ae_platform_note_keyboard_input(k, m, mouse); /* AE hook */
 port/linux/src/xinput_sdl.c	ae_platform_note_pad_used(); /* AE hook */
+# layout vehicle lines (0.3.5; ae_layout.c): a line's vehicle placement is placed only in its game types, and counts
+# for its team in a gametype's vehicle set of each team's
+source/objects/object_types.c	#include "ae_layout.h" /* AE hook */
+source/objects/object_types.c	if (object_type == _object_type_vehicle && !ae_layout_vehicle_placed(scenario_object)) continue; /* AE hook */
+source/game/game_engine.c	if (global_variant.universal_variant.teams) side = ae_layout_vehicle_side(placement, side); /* AE hook */
