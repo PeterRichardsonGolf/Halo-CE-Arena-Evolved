@@ -416,6 +416,33 @@ void ae_hud_messages_keep_first_line(void)
 
 /* ---------- pictures */
 
+boolean ae_hud_message_metrics(short *view, real *px, real *cap, real *alpha)
+{
+	real_argb_color text_color;
+
+	if (!block.open)
+		return FALSE;
+	draw_string_get_color(&text_color);
+	*view = block.view;
+	*px = block.px;
+	*cap = block.cap;
+	*alpha = block.opaque ? 1.0f : text_color.alpha;
+	return TRUE;
+}
+
+void ae_hud_message_place(real width, real height, real before, real after, real *x, real *top)
+{
+	ae_hud_message_flow_line(&block.flow);
+	if (block.flow.line_empty)
+		ae_hud_message_flow_picture(&block.flow, width, after, x);
+	else if (ae_hud_message_flow_picture(&block.flow, before + width, after, x))
+		block.flow.x -= before; /* (sent to the next line: it starts it, no room before) */
+	else
+		*x += before;
+	*top = block.flow.baseline - block.cap / 2.0f - height / 2.0f;
+	block.pictures++;
+}
+
 static void picture_quad(struct bitmap_data const *bitmap, real const texture[4], real x0, real y0, real x1, real y1,
 	pixel32 color)
 {

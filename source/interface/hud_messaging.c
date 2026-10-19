@@ -152,6 +152,7 @@ symbols in this file:
 #include "ae_test_hooks.h" /* AE hook */
 #include "ae_panels.h" /* AE hook */
 #include "ae_hud_hires.h" /* AE hook */
+#include "ae_key_prompts.h" /* AE hook */
 
 #include <stddef.h>
 #ifdef HALO_64BIT
@@ -547,6 +548,7 @@ static void render_state_bitmap(
 	real scale;
 	point2d point;
 
+	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
 	if (icon->frame_rate)
 		frame_index = game_time_get() / icon->frame_rate;
 	icon = ae_weapon_pack_message_icon(icon, &bitmap_group_index); /* AE hook */
@@ -1818,6 +1820,7 @@ void hud_messaging_update(
 								}
 								else
 								{
+									ae_key_prompts_note(element->data, icon_index); /* AE hook */
 									render_state_bitmap(
 										&line_bounds,
 										&line_cursor,

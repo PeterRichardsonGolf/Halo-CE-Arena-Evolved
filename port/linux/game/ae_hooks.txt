@@ -939,3 +939,11 @@ port/linux/src/xbox_textures.c	#endif /* AE hook */
 # shotguns): ae_layout.c marks the entries a layout line faced
 source/game/game_engine.c	#include "ae_layout.h" /* AE hook */
 source/game/game_engine.c	if (cache_file_tags_are_ce() || ae_layout_equipment_faces(equipment->flags)) /* AE hook */
+# HUD prompts on mouse + keyboard (0.3.5 item 1, ae_key_prompts.c): the icon a button picture stands for is noted just
+# before its render_state_bitmap (the HUD's custom lines only in ui_widget.c), which asks AE first; the key drawn there
+source/interface/hud_messaging.c	#include "ae_key_prompts.h" /* AE hook */
+source/interface/hud_messaging.c	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
+source/interface/hud_messaging.c	ae_key_prompts_note(element->data, icon_index); /* AE hook */
+source/interface/ui_widget.c	#include "ae_key_prompts.h" /* AE hook */
+source/interface/ui_widget.c	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color)) return; /* AE hook */
+source/interface/ui_widget.c	if (ignore_icon_color) ae_key_prompts_note(remapped_icon_type, icon_index); /* AE hook */

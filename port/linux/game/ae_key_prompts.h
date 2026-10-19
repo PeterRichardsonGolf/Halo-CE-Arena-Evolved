@@ -1,0 +1,44 @@
+/*
+AE_KEY_PROMPTS.H
+
+The HUD's prompts on mouse + keyboard (0.3.5 item 1; the owner's approved
+design of 2026-10-18, its look A). While the keyboard
+and mouse are the last used (platform_input_scheme 0) a prompt of the
+keyboard's player ("Hold [X] to swap for", "Press [X] to enter driver seat
+of Scorpion", a custom line's %x-button) shows the key bound to the button's
+action in place of the pad's chip: the FIRST key of its controls.* setting,
+as Kenney's keycap glyph (tools/ae_key_pictures.py's sheets, embedded as AE's
+own pictures: ae_buttons.h), a mouse button as Kenney's mouse with that
+button lit, any other key as a plain keycap with its name ("Num 7"). In split
+screen only the keyboard's seat gets keys; pad players keep their chips.
+
+- HUD STYLE AE (ae_hud_messages.c's block): the ice-on-navy keycap, 26 px tall
+  at the lines' 24 px em (scaling with them), its body 12 px from the words
+  each side, centred on the capitals;
+- CE's lines (HUD STYLE CE, AE's "ce" comparison): the blue keycap where the
+  blue chip was.
+
+The decisions are ae_key_prompts_rules.c's (pure, unit tested). Two AE hooks
+in each of hud_messaging.c and ui_widget.c (draw_string_and_hack_in_icons, the
+HUD's custom lines only): the icon a button picture stands for is noted just
+before its render_state_bitmap, which asks here first.
+
+Include after cseries.h (pixel32).
+*/
+
+#ifndef __AE_KEY_PROMPTS_H
+#define __AE_KEY_PROMPTS_H
+
+#include "ae_pure_types.h"
+
+union rectangle2d;
+
+/* the next render_state_bitmap draws the button picture of icon_type (hud_messaging.c's hud_icon_type, the sticks
+remapped), which CE resolved to the pad's button (0 to 17; else none) */
+void ae_key_prompts_note(short icon_type, short button);
+/* (render_state_bitmap's start, hud_messaging.c and ui_widget.c) the noted picture drawn as its key, the cursor
+moved past it: TRUE; FALSE (the pad's chip, as before): nothing noted (a weapon's picture), the prompt not the
+keyboard player's or a pad the last used, no key bound. color: the picture's as CE draws it (its alpha the keycap's) */
+boolean ae_key_prompts_icon(union rectangle2d *cursor_bounds, pixel32 color);
+
+#endif /* __AE_KEY_PROMPTS_H */

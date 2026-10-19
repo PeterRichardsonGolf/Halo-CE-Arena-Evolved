@@ -129,6 +129,9 @@ UNITS = {
     # (HUD STYLE AE's CE message lines: pieces on a pen, broken between words, pictures that do not fit)
     "ae_hud_message_flow_test.c": ([UI / "ae_hud_message_flow.c"],
                                    ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (the HUD's key prompts on mouse + keyboard: action -> setting, the first key, its glyph or plain keycap)
+    "ae_key_prompts_rules_test.c": ([UI / "ae_key_prompts_rules.c"],
+                                    ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (the map lists' pages: folders and their names, the order, the first of a name, the chooser; under the
     # sanitizers, as the folder names are a player's)
     "ae_map_folders_rules_test.c": ([UI / "ae_map_folders_rules.c"], ["-fsanitize=address,undefined",

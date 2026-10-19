@@ -60,6 +60,12 @@ boolean ae_hud_message_text(wchar_t const *text);
 /* a picture of one: the bitmap and clip CE draws, CE's colour and whether it is the icon's own */
 boolean ae_hud_message_icon(struct bitmap_data const *bitmap, union real_rectangle2d const *clip,
 	pixel32 color, boolean own_color);
+/* (ae_key_prompts.c) the open block's view, text em and capitals (px) and the line's alpha (1 for a help or state
+line, else CE's colour's: an objective's fade); FALSE when no block is open */
+boolean ae_hud_message_metrics(short *view, real *px, real *cap, real *alpha);
+/* (ae_key_prompts.c) room on the pen for a picture whose body is width x height px, before px after the text before it
+(none at a line's start) and after px after it, the body's middle on the capitals' middle: its body's left and top */
+void ae_hud_message_place(real width, real height, real before, real after, real *x, real *top);
 /* (hud_messaging.c) a line of the message list, on a line of its own after what came before */
 boolean ae_hud_message_list_line(wchar_t const *text);
 /* (hud_messaging.c) CE keeps the first line for the state message: the list starts on the second at least */

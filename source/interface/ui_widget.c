@@ -692,6 +692,7 @@ struct widget_instance;
 #include "ae_hooks.h" /* AE hook */
 #include "ae_buttons_tags.h" /* AE hook */
 #include "ae_hud_messages.h" /* AE hook */
+#include "ae_key_prompts.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 /* the in-game server browser (port/linux/game/browser_screen.c): a screen of
@@ -4339,6 +4340,7 @@ static void render_state_bitmap(
 	real scale;
 	point2d point;
 
+	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color)) return; /* AE hook */
 	global_scenario_get();
 	game_globals = scenario_get_game_globals();
 	interface_tag_references = game_globals->interface_tag_references.count
@@ -4524,6 +4526,7 @@ void draw_string_and_hack_in_icons(
 				icon_color.red *= text_color.alpha;
 				icon_color.green *= text_color.alpha;
 				icon_color.blue *= text_color.alpha;
+				if (ignore_icon_color) ae_key_prompts_note(remapped_icon_type, icon_index); /* AE hook */
 				render_state_bitmap(
 					bounds,
 					&cursor_bounds,

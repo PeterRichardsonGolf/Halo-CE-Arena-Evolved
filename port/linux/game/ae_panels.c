@@ -502,6 +502,9 @@ real ae_panels_label_alpha(short local_player_index, const union rectangle2d *bo
 #define MESSAGE_SCALE 0.60f   /* CE's message lines under AE when AE's text cannot draw them: scaled to the panels (owner
                                  10-15: 0.72 still too big) */
 #define MESSAGE_CAP_GAP 6.0f  /* px x scale from the ammo group's foot to the first restyled line's capitals */
+#define MESSAGE_DROP 16.0f    /* px x scale more for every line under the group (owner 2026-10-18, the key prompts: "same
+                                 drop always"): the tallest picture on a prompt line, a weapon's, keeps 8 px clear under
+                                 the bar's outline, where the X chip touched it */
 static boolean message_scaled;
 static boolean message_under_group[MAXIMUM_LOCAL_PLAYERS]; /* message_top moved the lines under the ammo group */
 
@@ -530,7 +533,7 @@ void ae_panels_message_scale_begin(short local_player_index, short x, short y)
 		real scale = group ? last[local_player_index].scale : ae_score_strip_view_scale();
 		real left = group ? last[local_player_index].rects[0].x0 : (real)x * ppu;
 		real cap_top = group && message_under_group[local_player_index] ?
-			last[local_player_index].rects[0].y1 + MESSAGE_CAP_GAP * scale : (real)y * ppu;
+			last[local_player_index].rects[0].y1 + (MESSAGE_CAP_GAP + MESSAGE_DROP) * scale : (real)y * ppu;
 		real group_width = group ? last[local_player_index].rects[0].x1 - last[local_player_index].rects[0].x0 : 0.0f;
 
 		if (ae_hud_messages_begin(local_player_index, left, cap_top, (real)width * ppu, group_width, scale))
@@ -582,7 +585,7 @@ short ae_panels_message_top(short local_player_index, short line_top)
 		return line_top;
 	}
 	/* (the ammo group is the first rectangle when it is drawn) */
-	bottom = (last[local_player_index].rects[0].y1 + MESSAGE_GAP * last[local_player_index].scale) / ppu;
+	bottom = (last[local_player_index].rects[0].y1 + (MESSAGE_GAP + MESSAGE_DROP) * last[local_player_index].scale) / ppu;
 	if ((real)line_top * ppu < last[local_player_index].rects[0].y0)
 		return line_top;
 	message_under_group[local_player_index] = TRUE;
