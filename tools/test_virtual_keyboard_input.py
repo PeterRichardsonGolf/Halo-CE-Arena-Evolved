@@ -50,6 +50,8 @@ static void event_manager_flush(void) {}
 static void ui_play_audio_feedback_sound(int sound) {}
 static void display_error(int code,int controller,int a,int b) {}
 static unsigned long system_milliseconds(void) {return 0;}
+/* (ae_platform.c's: keyboard_gamepad notes the keyboard and mouse's use for the HUD's key prompts) */
+static void ae_platform_note_keyboard_input(const unsigned char *keys,const unsigned char *mouse_buttons,int mouse_live) {}
 static int saved_game_file_name_unique(const wchar_t *name) {return unique_name;}
 static int player_name_clean(wchar_t *name,long count) {return valid_name;}
 static size_t ustrlen(const wchar_t *s) {size_t n=0;while(s[n])n++;return n;}
