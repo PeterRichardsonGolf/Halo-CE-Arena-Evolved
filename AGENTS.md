@@ -13,6 +13,11 @@ it is; where it differs from this section, this section is right for AE.
   (`CUSTOM_EDITION_DEFINES` in `tools/linux_build.py`, also used by
   `tools/windows_build.py`, `tools/lp64_build.py` and `tools/android_build.py`),
   contrary to the Defines section below.
+- Licence: AE is `AGPL-3.0-or-later` from its merge of OpenCE build-237,
+  as OpenCE is; AE's earlier commits and releases (0.3.4-beta and before)
+  stay CC0 (README.md, "Licence"). The logo (`port/assets/branding`) has its
+  own terms. ChupathingyCE after 0.7.5d (GPL-3) stays ideas only, never
+  code, although the licences would combine (the owner's rule).
 - Network version: AE follows OpenCE's `HALO_PORT_NETWORK_VERSION` (now 25).
   Never raise it on AE's own. AE's own data travels only through Delta
   (`port/linux/include/delta.h`, `docs/delta.md`: the wire ID and the
@@ -227,10 +232,18 @@ otherwise.
 
 ### Third-party code and licences
 
-The repository is CC0. Vendored code goes in `port/third_party/<name>`,
-copied unchanged, with a README naming the upstream, the version or commit,
-the checksum and what uses it. GPL code (OpenSauce, Reclaimer) may be read
-as documentation of file formats, never copied.
+The repository is `AGPL-3.0-or-later` (`LICENSE`); the commits before the
+change, and the releases built from them, stay CC0 (`LICENSES/CC0-1.0.txt`).
+The README's "Licence" section says what each part is under. Vendored code
+goes in `port/third_party/<name>`, copied unchanged, with a README naming
+the upstream, the version or commit, the licence, the checksum and what uses
+it. Its licence must let it be combined with the AGPL 3.0: MIT, BSD (without
+an advertising clause), ISC, zlib, Apache 2.0, MPL 2.0, LGPL or GPL 3.0 or
+later, public domain. GPL-2.0-only code and the 4-clause BSD licence cannot
+be. Code taken from another project, GPL 3.0 code included, keeps its
+notices and its licence, and says where it came from.
+The decompilation's upstream, punpckhdq/halo, is AGPL 3.0 from 17 October
+2026; bnunu/halo-1 is CC0.
 
 ### Commits and pull requests
 

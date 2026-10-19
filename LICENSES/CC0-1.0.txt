@@ -1,7 +1,10 @@
-Halo CE: Arena Evolved's code is released under CC0 1.0 (below). Arena
-Evolved's logo (the ORBIT mark and the ARENA EVOLVED wordmark, and the app
-icons made from them) is not: see port/assets/branding/LICENSE.md for the
-files and their terms.
+Halo CE: Arena Evolved's code up to its merge of OpenCE build-237 (the
+source at every earlier commit, and the releases 0.3.4-beta and before) was
+released under CC0 1.0 (below), and stays so. From that merge on, Arena
+Evolved is under the GNU Affero General Public License 3.0 or later (the
+file LICENSE; README.md, "Licence"). Arena Evolved's logo (the ORBIT mark
+and the ARENA EVOLVED wordmark, and the app icons made from them) was never
+CC0: see port/assets/branding/LICENSE.md for the files and their terms.
 
 ---
 

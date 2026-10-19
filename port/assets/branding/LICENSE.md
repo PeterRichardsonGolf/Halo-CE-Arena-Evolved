@@ -1,6 +1,7 @@
-# Arena Evolved's logo: not CC0
+# Arena Evolved's logo: not under the code's licence
 
-Arena Evolved's code is CC0 (see [LICENSE.md](../../../LICENSE.md)). Its logo is not. The ORBIT
+Arena Evolved's code is under the AGPL 3.0 or later (see [LICENSE](../../../LICENSE); its commits before the merge of
+OpenCE build-237 are CC0, [LICENSES/CC0-1.0.txt](../../../LICENSES/CC0-1.0.txt)). Its logo is not. The ORBIT
 mark and the ARENA EVOLVED wordmark, in the files listed below, belong to the Halo CE: Arena
 Evolved project, all rights reserved.
 
@@ -8,7 +9,7 @@ You may use them, unmodified, to refer or link to Arena Evolved, for example in 
 video or a server list. You may not use them, or anything made from them, as the branding of
 another project, mod or build.
 
-`tools/ae_logo.py` is code and stays CC0, but the pictures it draws are the logo and fall under
+`tools/ae_logo.py` is code and is under the code's licence, but the pictures it draws are the logo and fall under
 these terms.
 
 ## The files

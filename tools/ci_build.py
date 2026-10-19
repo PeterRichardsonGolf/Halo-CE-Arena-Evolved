@@ -200,10 +200,8 @@ def main() -> int:
                 continue
             shutil.copy2(pdb, symbols)
             print(f"{pdb.relative_to(ROOT)} -> {symbols.relative_to(ROOT)}", flush=True)
-    # the disc image readers (port/linux/src/xiso.c, and the Android app's
-    # XisoExtractor.java) follow extract-xiso, whose license asks binaries
-    # to carry its notice
-    shutil.copy2(ROOT / "port/third_party/extract-xiso/LICENSE.TXT", dist / "extract-xiso-LICENSE.txt")
+    # OpenCE's own licence, the AGPL, which asks each copy to carry its text
+    shutil.copy2(ROOT / "LICENSE", dist / "LICENSE.txt")
     if args.platform != "web":
         # the game list's and the self-updater's TLS and internet play's DTLS
         # with browsers (port/third_party/mbedtls), in every native build,
@@ -313,7 +311,7 @@ def server_dist(platform: str, config: str, output: str) -> int:
     for source, name in (("port/third_party/mbedtls/LICENSE", "mbedtls-LICENSE.txt"),
                          ("port/third_party/miniupnpc/LICENSE", "miniupnpc-LICENSE.txt"),
                          ("port/third_party/expat/COPYING", "expat-COPYING.txt"),
-                         ("port/third_party/extract-xiso/LICENSE.TXT", "extract-xiso-LICENSE.txt"),
+                         ("LICENSE", "LICENSE.txt"),
                          ("port/assets/fonts/Overpass-OFL.txt", "Overpass-OFL.txt"),
                          ("port/linux/ui/fonts/OFL.txt", "NotoSans-OFL.txt"),
                          ("port/linux/ui/fonts/KENNEY-CC0.txt", "Kenney-Input-Prompts-CC0.txt")):

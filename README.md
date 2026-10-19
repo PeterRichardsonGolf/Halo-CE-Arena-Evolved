@@ -127,15 +127,14 @@ H2 Demakes map pack, and more of the newer Halo games' features.
   reticle follows crosshair 033 of [Kenney's Crosshair Pack](https://kenney.nl/assets/crosshair-pack) (CC0). The
   pack's own credits file is `packs/ae_battle_rifle.CREDITS.txt`.
 - The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
-  made by `tools/ae_logo.py`); it uses no third-party art. It is not CC0
-  (see below).
+  made by `tools/ae_logo.py`); it uses no third-party art. It is not under
+  the code's licence (see "Licence" below).
 - Streamer mode's word list (OpenCE's, `port/assets/text_filter`) is made from Surge AI's "The Obscenity List"
   (MIT License, Copyright (c) Surge AI: the notice is in [AUTHORS.md](AUTHORS.md)) and the public-domain
   [english-words](https://github.com/dwyl/english-words) list.
 - Libraries: SDL3, stb, Mbed TLS, miniupnpc, KCP, tomlc17, musl's maths,
-  extract-xiso, Expat, Monocypher, zlib, SMAA, and Project Nayuki's QR Code
-  generator. Their licenses are
-  beside them in `port/third_party`.
+  Expat, Monocypher, zlib, SMAA, and Project Nayuki's QR Code generator.
+  Their licenses are beside them in `port/third_party`.
 
 Halo is a trademark of Microsoft. Halo CE: Arena Evolved is a non-commercial
 fan project, not made or endorsed by Microsoft, Bungie, 343 Industries or Halo
@@ -143,13 +142,45 @@ Studios, and includes none of the game's content: you need your own copy of the
 game. It is free, and must never be sold (Microsoft's Game Content Usage Rules
 allow free fan projects only).
 
-The code is released under [CC0](LICENSE.md), as OpenCE's and ChupathingyCE's
-are, so upstream and the community are free to use and improve it. If you use
-it, a credit is appreciated: "Halo CE: Arena Evolved by PeterRichardsonGolf",
-with a link to this repository.
+## Licence
 
-The logo is the exception: the ORBIT mark, the ARENA EVOLVED wordmark and the
-app icons made from them are all rights reserved by the project. You may use
-them unmodified to refer or link to Arena Evolved (in articles, videos, server
-lists), but not as another project's branding. The files and terms:
-[port/assets/branding/LICENSE.md](port/assets/branding/LICENSE.md).
+Arena Evolved is free software: you can give it to others and change it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3 of the License or (at your option) any later
+version (`AGPL-3.0-or-later`), as OpenCE is. It comes with no warranty. The
+full text is in [LICENSE](LICENSE).
+
+- **From the change.** Arena Evolved follows OpenCE, which moved to the AGPL
+  at its build-237. The AGPL applies from the merge commit that brought
+  OpenCE build-237 into Arena Evolved, and to each release built from that
+  commit or a later one (0.3.5 and after). Earlier releases (0.3.4-beta and
+  before), and the source at every earlier commit, were released under
+  [CC0 1.0](LICENSES/CC0-1.0.txt) and stay that way.
+- **What Arena Evolved builds on.** [OpenCE](https://github.com/OpenCommunityEdition/OpenCE)
+  is under the AGPL 3.0 from its build-237 and under CC0 1.0 before it. The
+  decompilation of [punpckhdq/halo](https://github.com/punpckhdq/halo) is
+  under the AGPL 3.0 from 17 October 2026, and under CC0 1.0 before that
+  date. [bnunu/halo-1](https://github.com/bnunu/halo-1) is under CC0 1.0.
+  ChupathingyCE's code in Arena Evolved is from its CC0 releases (0.7.5d and
+  before).
+- **Contributions** are under `AGPL-3.0-or-later`.
+- **Hosts and servers.** If you change the game and let other persons play
+  with your version over a network (for example, as the host of an internet
+  game, or on a web site), the AGPL asks you to offer them the source of
+  your version (section 13). The game as released has its source here, and
+  each release's source is its tag.
+- **Third-party code, fonts and art** keep their own licences, which are
+  next to them (`port/third_party`, `port/assets/fonts`, `port/linux/ui/fonts`,
+  `port/assets/icons`, `port/assets/text_filter`) and listed under Credits
+  above. The release downloads carry their notices.
+- **The logo** is the exception: the ORBIT mark, the ARENA EVOLVED wordmark
+  and the app icons made from them are all rights reserved by the project.
+  You may use them unmodified to refer or link to Arena Evolved (in articles,
+  videos, server lists), but not as another project's branding. The files
+  and terms: [port/assets/branding/LICENSE.md](port/assets/branding/LICENSE.md).
+- **Halo is not covered.** The licence covers the work of Arena Evolved's and
+  OpenCE's authors. It gives no rights in Halo, its maps or anything else
+  that Microsoft owns.
+
+If you use Arena Evolved's code, a credit is appreciated: "Halo CE: Arena
+Evolved by PeterRichardsonGolf", with a link to this repository.

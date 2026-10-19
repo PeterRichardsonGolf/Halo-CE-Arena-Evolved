@@ -7,8 +7,8 @@ shape its user needs.
   which stay within 48.
 - halo.exe's icon has every size from 16 to 256; the small master is used up to 32 px; the macOS icon has its 11
   entries; the Android layers have each density's size (108 dp) and the adaptive icon names all three layers.
-- Every picture of the logo is listed in port/assets/branding/LICENSE.md (the logo is not CC0), and LICENSE.md
-  points there.
+- Every picture of the logo is listed in port/assets/branding/LICENSE.md (the logo is not under the code's
+  licence), and README.md's Licence section and LICENSES/CC0-1.0.txt point there.
 
 Needs Pillow, fontTools and rsvg-convert (librsvg), as the generator does: skipped without them."""
 import io
@@ -109,7 +109,8 @@ def test_branding_folder_has_nothing_stale(fresh):
 def test_every_logo_file_is_excluded_from_cc0(fresh):
     """port/assets/branding/LICENSE.md lists every picture of the logo (the Android icon's XML is code)"""
     terms = (ROOT / ae_logo.BRANDING / "LICENSE.md").read_text()
-    assert "LICENSE.md" in (ROOT / "LICENSE.md").read_text().split("Creative Commons Legal Code")[0]
+    assert "port/assets/branding/LICENSE.md" in (ROOT / "LICENSES" / "CC0-1.0.txt").read_text().split("Creative Commons Legal Code")[0]
+    assert "port/assets/branding/LICENSE.md" in (ROOT / "README.md").read_text().split("## Licence")[1]
     for path in fresh:
         if path.suffix == ".xml":
             continue
