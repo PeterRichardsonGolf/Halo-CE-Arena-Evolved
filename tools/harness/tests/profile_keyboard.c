@@ -14,6 +14,8 @@ struct platform_input_state { unsigned char keys[TEST_SCANCODE_COUNT], mouse_but
 #define platform_screen_keyboard(show, password) ((void)0)
 typedef struct { unsigned short wButtons; BYTE bAnalogButtons[8]; SHORT sThumbLX, sThumbLY; } XINPUT_GAMEPAD;
 #define SDL_BUTTON_X1 4
+/* Arena Evolved: keyboard_gamepad notes the keyboard and mouse's use for the HUD's key prompts (ae_platform.c) */
+#define ae_platform_note_keyboard_input(keys, mouse_buttons, mouse_live) ((void)0)
 static BOOL text_typing, text_typing_enter_armed, text_typing_keyboard, text_typing_field;
 /* Arena Evolved (from ChupathingyCE): the Enter that finished typing is held
 off the menu below until it is let go of (xinput_sdl.c) */
