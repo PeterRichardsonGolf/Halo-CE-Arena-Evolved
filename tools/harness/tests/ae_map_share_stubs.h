@@ -21,6 +21,8 @@ tools/test_ae_map_share_all.py.
 #define ae_map_share_download_host_only(level_name) (FALSE)
 #define ae_map_share_xbox_level(level_name) (FALSE)
 #define ae_map_share_discard_failed(path) ((void)0)
+/* (layouts travel with maps, 0.3.5: no layout kept here) */
+#define ae_map_share_layout_downloaded(level_name) ((void)0)
 /* (ChupathingyCE's list of downloaded maps, map_families.c: none here) */
 #define map_downloaded_mark(level_name) ((void)0)
 
