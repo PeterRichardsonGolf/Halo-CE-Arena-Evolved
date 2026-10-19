@@ -139,6 +139,10 @@ UNITS = {
     # (AE map layout files: the reader, every refusal, the limits; under the sanitizers, as the file is the map pack's)
     "ae_layout_rules_test.c": ([UI / "ae_layout_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                                []),
+    # (layouts travel with maps: the frames, a guest's inbox, which layout it plays and writes; under the sanitizers, as
+    # the frames are a host's)
+    "ae_layout_share_rules_test.c": ([UI / "ae_layout_share_rules.c", UI / "ae_layout_rules.c", UI / "ae_map_share_rules.c"],
+                                     ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (HUD STYLE: AE unless the setting reads "classic"; a fake config_string)
     "ae_hud_style_test.c": ([UI / "ae_hud_style.c"], [], []),
     # (bug 139: a mode's needs from a map's flags and spawns)

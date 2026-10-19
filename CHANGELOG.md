@@ -17,6 +17,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - The H2 Demakes Sali Creek's overshield pickup looks like Halo's overshield, not the camouflage sphere: the map gave
   it the camouflage's model (Halo's own tags have the two models' names swapped), and Arena Evolved now gives it the
   stock overshield's model, which the map carries, when the map loads.
+- Map layouts travel with maps: a host sends its layout for the game's map to every guest that runs Arena Evolved
+  (and the layout of any other map a guest downloads from it), so both play the same level: a guest without the file
+  no longer keeps the scenery the host's layout removes (Sali Creek's fusion coils, with their collision), and its bots
+  get the layout's bot lines. For the match a guest uses the host's layout when it was made for the very map file it
+  has, and none when the host has none; its own file is used only with an older host. After you said yes to
+  downloading from the host, its layout is kept beside the map (`layouts/<map>.txt`); a file of your own that differs
+  is never overwritten: the host's goes beside it as `<map>.host.txt`. Older Arena Evolved, OpenCE and ChupathingyCE
+  machines play together as before (nothing is sent to them, network version unchanged).
 
 ## 0.3.4-beta - 2026-10-18
 

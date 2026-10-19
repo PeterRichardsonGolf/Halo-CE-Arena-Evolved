@@ -1888,6 +1888,7 @@ static void download_finish(
 	/* (port: its scripts held to a downloaded map's rules this run:
 	halo_map_families.h, map_is_downloaded) */
 	map_downloaded_mark(download->level_name);
+	ae_map_share_layout_downloaded(download->level_name); /* AE hook */
 	download_report(_progress_done);
 	/* (sent on to the others from here, without hashing them again) */
 	for (index = 0; index < download->file_count; index++)

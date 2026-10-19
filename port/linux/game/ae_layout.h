@@ -9,6 +9,10 @@ player spawns and netgame flags (new lists, queue 141). The
 map file is never written. Every machine that has the file does the same, so a guest's item timers agree with the
 host's items; a guest without it gets the host's items and vehicles as always (the host spawns them) and its own item
 timers from the map (owner 2026-10-16: guests read the pack's file).
+
+Since 0.3.5 a host's layout travels to its guests that run this game (ae_layout_share_rules.h, ae_map_share_all.c): a
+guest plays its host's layout for the match (none when its host has none), and its own file only when its host sent no
+word (an older host).
 */
 
 #ifndef __AE_LAYOUT_H
@@ -38,5 +42,14 @@ struct ae_layout const *ae_layout_bot_hints(void);
 /* (ae_bots_travel.c, debug.bot_hints) the first line of a layout file for the loaded map ("layout 1 <file> <hash>"),
 into text: FALSE when the map has no file the layouts know */
 boolean ae_layout_map_header(char *text, long size);
+
+/* (map sharing, a host's: ae_map_share_all.c) the layout file this machine applies to a level's map (level_name as
+the game names it), read: TRUE with its text in text (size bytes; *length of them) when it has one that reads and was
+made for that very map file; FALSE when it has none it would apply */
+boolean ae_layout_host_text(char const *level_name, char *text, long size, long *length);
+
+/* (map sharing, a guest's) its host's layout for a level whose map was just downloaded from it: kept on disk beside
+the map as ae_layout_share_rules.h says, if it was made for the very map file now here */
+void ae_layout_keep_host_text(char const *level_name, char const *text, long length);
 
 #endif /* __AE_LAYOUT_H */
