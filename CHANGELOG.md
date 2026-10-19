@@ -7,7 +7,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 ## Unreleased
 
 - Map layout files: an item's `facing` now turns it on an Xbox map too (an H2 demake), as on a Custom Edition map, and
-  `drop` makes an item a little above the floor so it falls and lies on its side, as a dropped weapon does.
+  `drop` makes an item a little above the floor so it falls and lies on its side, as a dropped weapon does; `float`
+  keeps an item at the height given (a powerup over water) instead of putting it on the floor.
 - The H2 Demakes Sali Creek's overshield pickup looks like Halo's overshield, not the camouflage sphere: the map gave
   it the camouflage's model (Halo's own tags have the two models' names swapped), and Arena Evolved now gives it the
   stock overshield's model, which the map carries, when the map loads.

@@ -75,7 +75,7 @@ static void say(char *error, int error_size, char const *text, char const *word)
 		snprintf(error, (size_t)error_size, "%s%s%s%s", text, word ? " \"" : "", word ? word : "", word ? "\"" : "");
 }
 
-/* item <what> at x y z [facing d] [respawn s] [team t] [games all] [drop]: words[1..count-1] */
+/* item <what> at x y z [facing d] [respawn s] [team t] [games all] [drop | float]: words[1..count-1] */
 static int parse_item(char **words, int count, struct ae_layout_item *item, char *error, int error_size)
 {
 	int at = 1;
@@ -133,9 +133,15 @@ static int parse_item(char **words, int count, struct ae_layout_item *item, char
 	while (at < count)
 	{
 		/* (the one word without a value) */
-		if (same_word(words[at], "drop") && !item->drop)
+		if (same_word(words[at], "drop") && !item->drop && !item->float_here)
 		{
 			item->drop = TRUE;
+			at++;
+			continue;
+		}
+		if (same_word(words[at], "float") && !item->float_here && !item->drop)
+		{
+			item->float_here = TRUE;
 			at++;
 			continue;
 		}

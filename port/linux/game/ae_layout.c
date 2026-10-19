@@ -411,7 +411,10 @@ static void apply_items(struct scenario *scenario)
 		entry->position.z = item->z;
 		/* (on the floor under its spot, so a layout's height need not be exact: owner 2026-10-16, an item falling from
 		its spot with its waypoint looked wrong; no floor found below: it falls there instead) */
-		if (floor_under(&entry->position))
+		/* (float: at its own height, at rest: a powerup the floor under it would put under water, owner 2026-10-18) */
+		if (item->float_here)
+			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, TRUE);
+		else if (floor_under(&entry->position))
 			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, TRUE);
 		else
 			SET_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT, FALSE);
@@ -436,6 +439,7 @@ static void apply_items(struct scenario *scenario)
 			entry->team_index = (short)(item->team == _ae_layout_team_neutral ? NONE : item->team);
 		platform_log("layout: line %d: item %ld at %.2f %.2f %.2f%s", item->line, count - 1, entry->position.x,
 			entry->position.y, entry->position.z, item->drop ? " (dropped: it falls onto the floor)" :
+			item->float_here ? " (at its own height)" :
 			TEST_FLAG(entry->flags, AE_EQUIPMENT_CREATED_AT_REST_BIT) ? " (on the floor)" : " (no floor below: it falls)");
 		added++;
 	}

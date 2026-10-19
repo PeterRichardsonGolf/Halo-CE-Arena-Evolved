@@ -123,6 +123,7 @@ struct ae_layout_item
 	boolean games_all;     /* games all: in every gametype (the entry's own game types otherwise) */
 	boolean drop;          /* drop: made a little above the floor, not at rest, so it falls and settles as a dropped
 	                          weapon does (on its side) */
+	boolean float_here;    /* float: at rest at its own height, not put on the floor (a powerup over water) */
 	short line;            /* the file's line, for the log */
 };
 
