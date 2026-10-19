@@ -32,7 +32,10 @@ The decisions are ae_buttons_rules.c's (pure; tools/harness test_ae_buttons.py).
 /* an embedded PlayStation texture: the bitmap it stands for (its group tag,
 its index there, its size, the CRC-32 of its first mip level's pixels as the
 English Xbox maps have them), sprites: the sequences of a sheet it is drawn
-for (a bit each), or 0: the whole bitmap; an 8-bit RGBA PNG */
+for (a bit each), or 0: the whole bitmap; an 8-bit RGBA PNG. own: not a
+PlayStation texture but AE's own picture, which no map has, drawn from its
+placeholder whatever the pad (ae_buttons_own_bitmap, port/linux/game/
+ae_buttons_tags.h: the HUD's key prompts' sheets, tools/ae_key_pictures.py) */
 struct ae_button_glyph
 {
 	const char *tag;
@@ -42,6 +45,7 @@ struct ae_button_glyph
 	unsigned int sprites;
 	const unsigned int *png;
 	unsigned int png_size;
+	int own;
 };
 
 extern const struct ae_button_glyph ae_button_glyphs[];

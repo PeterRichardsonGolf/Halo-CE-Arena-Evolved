@@ -16,6 +16,11 @@ sprite drawn from AE's placeholder while a PlayStation controller is the
 last used, or NULL (the sheet's own, or upstream's high-res placeholder) */
 struct bitmap_data const *ae_buttons_sprite_bitmap(struct bitmap_data const *bitmap, short sequence_index);
 
+/* AE's own picture by its table tag (ae_buttons.h's own glyphs: "ae\\key_prompts\\ae"): a placeholder bitmap the HUD's
+quads draw it from (coordinates 0 to 1 over the whole picture), made on first use and deleted with the map; NULL when
+it cannot be (no such picture, its PNG not decoded) */
+struct bitmap_data const *ae_buttons_own_bitmap(char const *tag);
+
 void ae_buttons_tags_loaded(void);
 void ae_buttons_tags_unloaded(void);
 

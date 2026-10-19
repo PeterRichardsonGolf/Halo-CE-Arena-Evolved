@@ -27,6 +27,8 @@ HUD globals' button icons at them; it tells AE where they start
   at the small sheet's size (ae_buttons_ce_menu_icons, its AE hooks).
 */
 
+#include <string.h>
+
 #include "cseries.h"
 #include "bitmaps/bitmap_group.h"
 #include "bitmaps/bitmap_group_lookup.h"
@@ -65,6 +67,9 @@ enum
 message icons' (combined\hud_msg_icons, 24x30): a Custom Edition map's
 menus and carnage report draw the latter at the former's size */
 #define CE_MENU_ICON_SCALE (2.0f / 3.0f)
+
+/* AE's own pictures' placeholders: a8r8g8b8 (bitmaps.c's _bitmap_format_a8r8g8b8, as hud_hires_tags.c's buttons') */
+#define OWN_PLACEHOLDER_FORMAT 11
 
 /* the PC menus' text icons (owner 10-15: the carnage report's "=quit" / "=pick game" icons sat low beside their words):
 centred as the HUD hints' are (ae_hud_messages.c), a button MENU_ICON_HEIGHT times the line's capitals tall (owner:
@@ -165,6 +170,45 @@ void ae_buttons_tags_unloaded(
 	return;
 }
 
+struct bitmap_data const *ae_buttons_own_bitmap(
+	char const *tag)
+{
+	long glyph;
+
+	for (glyph = 0; glyph < glyph_count(); glyph++)
+	{
+		struct bitmap_data *placeholder;
+
+		if (!ae_button_glyphs[glyph].own || strcmp(ae_button_glyphs[glyph].tag, tag))
+			continue;
+		if (loaded[glyph].placeholder || loaded[glyph].placeholder_failed)
+			return loaded[glyph].placeholder;
+		/* (decoded on first use: a pad player never pays for it) */
+		if (!ae_buttons_glyph_ready(glyph))
+		{
+			loaded[glyph].placeholder_failed = TRUE;
+			return NULL;
+		}
+		/* (a small square bitmap: the HUD's quads take the texture's coordinates 0 to 1, whatever its size) */
+		placeholder = bitmap_2d_new(64, 64, 0, OWN_PLACEHOLDER_FORMAT);
+		if (placeholder && !rasterizer_bitmap_new(placeholder))
+		{
+			bitmap_delete(placeholder);
+			placeholder = NULL;
+		}
+		if (placeholder)
+			ae_buttons_register_placeholder(glyph, (unsigned long const *)xbox_pointer(placeholder->hardware_format));
+		else
+		{
+			platform_log("AE pictures: no placeholder for %s", tag);
+			loaded[glyph].placeholder_failed = TRUE;
+		}
+		loaded[glyph].placeholder = placeholder;
+		return placeholder;
+	}
+	return NULL;
+}
+
 void ae_buttons_ce_sheet(
 	void const *group,
 	long first_sequence,
@@ -215,9 +259,13 @@ void ae_buttons_tags_loaded(
 	for (glyph = 0; glyph < glyph_count(); glyph++)
 	{
 		const struct ae_button_glyph *embedded = &ae_button_glyphs[glyph];
-		long group_index = tag_loaded(BITMAP_GROUP_TAG, embedded->tag);
+		long group_index = embedded->own ? NONE : tag_loaded(BITMAP_GROUP_TAG, embedded->tag);
 		long ce_sheet = embedded->sprites ? ce_sheet_of(group_index) : NONE;
 		struct bitmap_data *bitmap;
+
+		/* (AE's own pictures: no map has them; ae_buttons_own_bitmap) */
+		if (embedded->own)
+			continue;
 
 		/* (a Custom Edition map's sheet with the Xbox's copy: the copy's bitmap) */
 		if (ce_sheet != NONE)

@@ -25,6 +25,10 @@ from typing import Callable, List
 ROOT = Path(__file__).resolve().parent.parent
 FOLDER = Path("port/assets/buttons/playstation")
 LIST = FOLDER / "playstation.json"
+# AE's own pictures drawn whatever the pad: the HUD's key prompts' sheets (tools/ae_key_pictures.py,
+# port/linux/game/ae_key_prompts.c), in the same table with own set
+OWN_FOLDER = Path("port/assets/buttons/keys")
+OWN_LIST = OWN_FOLDER / "keys.json"
 
 # each symbol's colour, as PlayStation controllers have them (DamnationCE's)
 COLOURS = {"cross": (110, 156, 226), "circle": (232, 86, 86), "square": (216, 132, 198), "triangle": (66, 212, 170)}
@@ -35,9 +39,12 @@ SUPERSAMPLE = 4
 
 
 def assets() -> List[dict]:
-    if not (ROOT / LIST).is_file():
-        return []
-    return json.loads((ROOT / LIST).read_text())["assets"]
+    """the PlayStation textures (their folder FOLDER), then AE's own pictures (OWN_FOLDER, own set)"""
+    found = []
+    for folder, listing in ((FOLDER, LIST), (OWN_FOLDER, OWN_LIST)):
+        if (ROOT / listing).is_file():
+            found += [dict(asset, folder=folder) for asset in json.loads((ROOT / listing).read_text())["assets"]]
+    return found
 
 
 # ---------- tools/embed_assets.py's AE hooks
@@ -45,12 +52,14 @@ def assets() -> List[dict]:
 
 def inputs() -> List[Path]:
     """The files the embedded table is made from."""
-    return ([LIST] if (ROOT / LIST).is_file() else []) + [FOLDER / f"{asset['name']}.png" for asset in assets()]
+    return ([listing for listing in (LIST, OWN_LIST) if (ROOT / listing).is_file()] +
+            [asset["folder"] / f"{asset['name']}.png" for asset in assets()])
 
 
 def configure_inputs() -> List[Path]:
     """What configure.py is run again for (the list, and the folder for files added or removed)."""
-    return [FOLDER, LIST] if (ROOT / LIST).is_file() else []
+    return [path for folder, listing in ((FOLDER, LIST), (OWN_FOLDER, OWN_LIST)) if (ROOT / listing).is_file()
+            for path in (folder, listing)]
 
 
 def embedded_lines(words: Callable, png_size: Callable) -> List[str]:
@@ -59,7 +68,7 @@ def embedded_lines(words: Callable, png_size: Callable) -> List[str]:
     table = []
     for index, asset in enumerate(assets()):
         name = f"{asset['name']}.png"
-        data = (ROOT / FOLDER / name).read_bytes()
+        data = (ROOT / asset["folder"] / name).read_bytes()
         width, height = png_size(data, name)
         scale = asset["scale"]
         if (width, height) != (asset["width"] * scale, asset["height"] * scale):
@@ -74,7 +83,8 @@ def embedded_lines(words: Callable, png_size: Callable) -> List[str]:
         lines.append("")
         tag = asset["tag"].replace("\\", "\\\\")
         table.append(f'\t{{ "{tag}", {asset["bitmap"]}, {asset["width"]}, {asset["height"]}, '
-                     f'0x{asset["crc"]:08x}u, 0x{sprites:x}u, ae_button_glyph{index}, {len(data)} }},')
+                     f'0x{asset["crc"]:08x}u, 0x{sprites:x}u, ae_button_glyph{index}, {len(data)}, '
+                     f'{int(bool(asset.get("own")))} }},')
     lines.append("const struct ae_button_glyph ae_button_glyphs[] =")
     lines.append("{")
     lines.extend(table if table else ["\t{ 0 },"])
@@ -156,6 +166,8 @@ def draw(arguments) -> None:
 
     maps = {"ui": tool.XboxMap(Path(arguments.map)), "game": tool.XboxMap(Path(arguments.game_map))}
     for asset in assets():
+        if asset.get("own"):
+            continue  # (AE's own pictures: tools/ae_key_pictures.py draws them)
         xbox_map = maps["ui"] if ("bitm", asset["tag"]) in maps["ui"].tags else maps["game"]
         if ("bitm", asset["tag"]) not in xbox_map.tags:
             sys.exit(f"{asset['tag']}: in neither map")
