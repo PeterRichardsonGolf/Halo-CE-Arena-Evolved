@@ -8,7 +8,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 - Playing on mouse and keyboard, the HUD's prompts show your key instead of a controller button: "Hold [E] to swap
   for", "Press [E] to enter driver seat", and a map's own button prompts, with the first key bound to that action in
-  Controls Setup (a mouse button as a mouse with that button lit, any other key by its name, "Num 7"). In split screen
+  Controls Setup (a mouse button as a mouse with that button lit, any other key by its name, "Num 7"); the first
+  seconds' "Hold BACK for score" shows your scoreboard key too ("Hold [Tab] for score"). In split screen
   only the keyboard's player sees keys. The prompt line also sits a little lower under the ammo bar, so its button or
   weapon picture no longer touches the bar.
 - Map layout files: an item's `facing` now turns it on an Xbox map too (an H2 demake), as on a Custom Edition map, and

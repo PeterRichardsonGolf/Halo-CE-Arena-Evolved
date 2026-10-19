@@ -12,6 +12,7 @@ button (ae_key_prompts.h).
 #include "math/real_math.h"
 #include "bitmaps/bitmaps.h"
 #include "bitmaps/bitmap_color_conversion.h"
+#include "memory/data.h"
 #include "game/players.h"
 #include "input/input_abstraction.h"
 #include "interface/player_ui.h"
@@ -438,4 +439,42 @@ void ae_key_prompts_tags_loaded(void)
 	/* (the sheet decoded now, not at the first prompt: no hitch then) */
 	if (ae_platform_keyboard_last_used() || ae_seats_active())
 		ae_buttons_own_preload(ae_hud_style_is_ae() ? "ae\\key_prompts\\ae" : "ae\\key_prompts\\ce");
+}
+
+void ae_key_prompts_score_text(long player_index, wchar_t *buffer, long buffer_size)
+{
+	static wchar_t const word[] = L"BACK";
+	static wchar_t const icon[] = L"%back-button";
+	long const word_length = (long)NUMBEROF(word) - 1;
+	long const icon_length = (long)NUMBEROF(icon) - 1;
+	long length, at;
+	short local_player_index;
+
+	if (player_index == NONE || !buffer || buffer_size <= 0)
+		return;
+	local_player_index = player_get(player_index)->local_player_index;
+	if (local_player_index == NONE ||
+		!ae_key_prompts_wanted(ae_platform_keyboard_last_used(), local_player_index, keyboard_player(),
+			(boolean)(local_player_count() > 1 || ae_seats_active()), forced_pad()))
+	{
+		return;
+	}
+	for (length = 0; length < buffer_size && buffer[length]; length++)
+		;
+	if (length >= buffer_size)
+		return;
+	/* (the word on its own: "BACK", not part of a longer one) */
+	for (at = 0; at + word_length <= length; at++)
+	{
+		if (!csmemcmp(buffer + at, word, word_length * sizeof(wchar_t)) &&
+			(at == 0 || buffer[at - 1] == L' ' || buffer[at - 1] == L'"') &&
+			(buffer[at + word_length] == 0 || buffer[at + word_length] == L' ' || buffer[at + word_length] == L'"'))
+		{
+			break;
+		}
+	}
+	if (at + word_length > length || length - word_length + icon_length >= buffer_size)
+		return;
+	csmemmove(buffer + at + icon_length, buffer + at + word_length, (length - at - word_length + 1) * sizeof(wchar_t));
+	csmemcpy(buffer + at, icon, icon_length * sizeof(wchar_t));
 }

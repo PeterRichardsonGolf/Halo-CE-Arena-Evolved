@@ -614,6 +614,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_radar.h" /* AE hook */
 #include "ae_mode_guard.h" /* AE hook */
 #include "ae_layout.h" /* AE hook */
+#include "ae_key_prompts.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -10665,6 +10666,7 @@ static boolean internal_rasterize_score(
 			buffer,
 			format,
 			buffer_size);
+		ae_key_prompts_score_text(player_index, buffer, buffer_size); /* AE hook */
 		break;
 	default:
 		result = FALSE;

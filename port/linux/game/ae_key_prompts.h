@@ -46,5 +46,9 @@ moved past it: TRUE; FALSE (the pad's chip, as before): nothing noted (a weapon'
 keyboard player's (alone: a pad the last used), no key bound. color: the picture's as CE draws it (its alpha the
 keycap's: a message's chip its own, a custom line's the text's fade) */
 boolean ae_key_prompts_icon(union rectangle2d *cursor_bounds, pixel32 color);
+/* (game_engine.c, the first seconds' "Hold BACK for score": the Xbox maps' text names the button as a word, no
+picture) the keyboard's player reads its "BACK" as %back-button, which the custom line draws as the scoreboard's key
+("Hold [Tab] for score"); anyone else, or a text without the word (another language), keeps it as it is */
+void ae_key_prompts_score_text(long player_index, wchar_t *buffer, long buffer_size);
 
 #endif /* __AE_KEY_PROMPTS_H */
