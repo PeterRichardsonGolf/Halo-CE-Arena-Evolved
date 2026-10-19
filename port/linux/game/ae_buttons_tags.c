@@ -41,6 +41,7 @@ HUD globals' button icons at them; it tells AE where they start
 #include "text/draw_string.h"
 #include "text/font_group.h"
 #include "ae_buttons_tags.h"
+#include "ae_key_prompts.h"
 #include "ae_panel_draw.h"
 #include "ae_power_list.h"
 
@@ -209,6 +210,22 @@ struct bitmap_data const *ae_buttons_own_bitmap(
 	return NULL;
 }
 
+void ae_buttons_own_preload(
+	char const *tag)
+{
+	long glyph;
+
+	for (glyph = 0; glyph < glyph_count(); glyph++)
+	{
+		if (ae_button_glyphs[glyph].own && !strcmp(ae_button_glyphs[glyph].tag, tag))
+		{
+			if (ae_buttons_glyph_ready(glyph))
+				platform_log("AE pictures: %s ready", tag);
+			return;
+		}
+	}
+}
+
 void ae_buttons_ce_sheet(
 	void const *group,
 	long first_sequence,
@@ -296,6 +313,7 @@ void ae_buttons_tags_loaded(
 		platform_log("PlayStation buttons: %ld of %ld icons in this map", found, glyph_count());
 	if (ce_found)
 		platform_log("PlayStation buttons: %ld sheets of the Xbox's icons ui.map gave this Custom Edition map", ce_found);
+	ae_key_prompts_tags_loaded();
 
 	return;
 }

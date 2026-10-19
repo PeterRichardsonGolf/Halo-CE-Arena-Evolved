@@ -87,6 +87,8 @@ void ae_mouse_test_counts(float *x, float *y)
 
 void ae_mouse_look_override(float x, float y, int invert, float *yaw, float *pitch)
 {
+	/* (the mouse moved: the keyboard and mouse used, for the HUD's key prompts) */
+	ae_platform_note_keyboard_used();
 	mouse_read();
 	if (mouse.style == AE_MOUSE_MCC)
 		ae_mouse_mcc_look(mouse.sensitivity, x, y, invert, yaw, pitch);

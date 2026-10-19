@@ -1820,7 +1820,7 @@ void hud_messaging_update(
 								}
 								else
 								{
-									ae_key_prompts_note(element->data, icon_index); /* AE hook */
+									ae_key_prompts_note(element->data, icon_index, local_player_count() > 1 ? 0.75f : 1.0f); /* AE hook */
 									render_state_bitmap(
 										&line_bounds,
 										&line_cursor,

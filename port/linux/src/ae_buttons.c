@@ -78,13 +78,17 @@ int ae_buttons_glyph_ready(long glyph)
 	if (glyphs[glyph].texture)
 		return 1;
 	/* (decoded only once a PlayStation controller is used: a keyboard or
-	Xbox player never pays for it) */
+	Xbox player never pays for it; AE's own pictures when first drawn, or
+	as a map loads: ae_buttons_own_preload) */
 	embedded = &ae_button_glyphs[glyph];
 	glyphs[glyph].texture = hud_hires_png_texture(embedded->png, embedded->png_size, &glyphs[glyph].levels);
 	if (!glyphs[glyph].texture)
 	{
-		platform_log("PlayStation buttons: could not decode the texture for %s bitmap %d", embedded->tag,
-			embedded->bitmap);
+		if (embedded->own)
+			platform_log("AE pictures: could not decode %s", embedded->tag);
+		else
+			platform_log("PlayStation buttons: could not decode the texture for %s bitmap %d", embedded->tag,
+				embedded->bitmap);
 		glyphs[glyph].failed = 1;
 		return 0;
 	}

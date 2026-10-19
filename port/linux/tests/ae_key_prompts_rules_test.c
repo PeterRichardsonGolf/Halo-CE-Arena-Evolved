@@ -67,21 +67,36 @@ static void test_action_to_setting(void)
 	CHECK(ae_key_prompts_control_setting(AE_KEY_CONTROL_COUNT) == NULL);
 }
 
+/* a stand-in for halo_input_from_name: any name but "Foo" */
+static int named(const char *name)
+{
+	return strcmp(name, "Foo") != 0;
+}
+
 static void test_first_binding(void)
 {
 	char key[32];
 
-	CHECK(ae_key_prompts_first_binding("Mouse Right, G", key, sizeof(key)) && !strcmp(key, "Mouse Right"));
-	CHECK(ae_key_prompts_first_binding("E", key, sizeof(key)) && !strcmp(key, "E"));
-	CHECK(ae_key_prompts_first_binding("  Left Ctrl ,C", key, sizeof(key)) && !strcmp(key, "Left Ctrl"));
-	CHECK(ae_key_prompts_first_binding("Wheel, 1", key, sizeof(key)) && !strcmp(key, "Wheel"));
+	CHECK(ae_key_prompts_first_binding("Mouse Right, G", named, key, sizeof(key)) && !strcmp(key, "Mouse Right"));
+	CHECK(ae_key_prompts_first_binding("E", named, key, sizeof(key)) && !strcmp(key, "E"));
+	CHECK(ae_key_prompts_first_binding("  Left Ctrl ,C", named, key, sizeof(key)) && !strcmp(key, "Left Ctrl"));
+	CHECK(ae_key_prompts_first_binding("Wheel, 1", named, key, sizeof(key)) && !strcmp(key, "Wheel"));
+	/* (as xinput_sdl.c's bindings_read: empty pieces skipped, a name with no key passed over) */
+	CHECK(ae_key_prompts_first_binding(", G", named, key, sizeof(key)) && !strcmp(key, "G"));
+	CHECK(ae_key_prompts_first_binding(",, G", named, key, sizeof(key)) && !strcmp(key, "G"));
+	CHECK(ae_key_prompts_first_binding("Foo, G", named, key, sizeof(key)) && !strcmp(key, "G"));
+	/* (only two pieces are read) */
+	CHECK(!ae_key_prompts_first_binding("Foo, Foo, G", named, key, sizeof(key)) && key[0] == 0);
+	CHECK(!ae_key_prompts_first_binding("Foo", named, key, sizeof(key)));
 	/* empty: no key (the pad's chip) */
-	CHECK(!ae_key_prompts_first_binding("", key, sizeof(key)) && key[0] == 0);
-	CHECK(!ae_key_prompts_first_binding("  ", key, sizeof(key)));
-	CHECK(!ae_key_prompts_first_binding(", G", key, sizeof(key)));
-	CHECK(!ae_key_prompts_first_binding(NULL, key, sizeof(key)));
+	CHECK(!ae_key_prompts_first_binding("", named, key, sizeof(key)) && key[0] == 0);
+	CHECK(!ae_key_prompts_first_binding("  ", named, key, sizeof(key)));
+	CHECK(!ae_key_prompts_first_binding(" , ", named, key, sizeof(key)));
+	CHECK(!ae_key_prompts_first_binding(NULL, named, key, sizeof(key)));
+	/* no check: any name */
+	CHECK(ae_key_prompts_first_binding("Foo, G", NULL, key, sizeof(key)) && !strcmp(key, "Foo"));
 	/* cut to the buffer */
-	CHECK(ae_key_prompts_first_binding("Mouse Middle", key, 6) && !strcmp(key, "Mouse"));
+	CHECK(ae_key_prompts_first_binding("Mouse Middle", named, key, 6) && !strcmp(key, "Mouse"));
 }
 
 static void test_glyphs(void)
@@ -149,14 +164,41 @@ static void test_fallback_text(void)
 
 static void test_wanted(void)
 {
-	CHECK(ae_key_prompts_wanted(0, 0, 0, 0));
-	/* a pad the last used, another player's prompt, a forced pad */
-	CHECK(!ae_key_prompts_wanted(1, 0, 0, 0));
-	CHECK(!ae_key_prompts_wanted(2, 0, 0, 0));
-	CHECK(!ae_key_prompts_wanted(0, 1, 0, 0));
-	CHECK(ae_key_prompts_wanted(0, 1, 1, 0));
-	CHECK(!ae_key_prompts_wanted(0, 0, 0, 1));
-	CHECK(!ae_key_prompts_wanted(0, -1, -1, 0));
+	/* alone: keys while the keyboard and mouse are the last used */
+	CHECK(ae_key_prompts_wanted(1, 0, 0, 0, 0));
+	CHECK(!ae_key_prompts_wanted(0, 0, 0, 0, 0));
+	/* sharing the machine: the keyboard's player always, a pad player never, whatever was last used */
+	CHECK(ae_key_prompts_wanted(0, 1, 1, 1, 0));
+	CHECK(ae_key_prompts_wanted(1, 1, 1, 1, 0));
+	CHECK(!ae_key_prompts_wanted(1, 0, 1, 1, 0));
+	CHECK(!ae_key_prompts_wanted(0, 0, 1, 1, 0));
+	/* another player's prompt, a forced pad, no keyboard player */
+	CHECK(!ae_key_prompts_wanted(1, 1, 0, 0, 0));
+	CHECK(!ae_key_prompts_wanted(1, 0, 0, 0, 1));
+	CHECK(!ae_key_prompts_wanted(1, 0, 0, 1, 1));
+	CHECK(!ae_key_prompts_wanted(1, -1, -1, 1, 0));
+	CHECK(!ae_key_prompts_wanted(1, 0, -1, 1, 0));
+}
+
+static void test_player_of_controller(void)
+{
+	const short none[4] = { -1, -1, -1, -1 };
+	const short campaign[4] = { 2, -1, -1, -1 };
+	const short split[4] = { 1, 0, -1, -1 };
+
+	/* a network game (split screen included): the controller's own index */
+	CHECK(ae_key_prompts_player_of_controller(2, 1, campaign, 4) == 2);
+	CHECK(ae_key_prompts_player_of_controller(0, 1, split, 4) == 0);
+	/* else the single player bindings: controller 2 plays player 1 (index 0); controller 0 plays nobody */
+	CHECK(ae_key_prompts_player_of_controller(2, 0, campaign, 4) == 0);
+	CHECK(ae_key_prompts_player_of_controller(0, 0, campaign, 4) == -1);
+	CHECK(ae_key_prompts_player_of_controller(0, 0, split, 4) == 1);
+	CHECK(ae_key_prompts_player_of_controller(1, 0, split, 4) == 0);
+	/* none bound: the controller's own index; no keyboard controller: nobody */
+	CHECK(ae_key_prompts_player_of_controller(1, 0, none, 4) == 1);
+	CHECK(ae_key_prompts_player_of_controller(-1, 0, none, 4) == -1);
+	CHECK(ae_key_prompts_player_of_controller(-1, 1, none, 4) == -1);
+	CHECK(ae_key_prompts_player_of_controller(3, 0, NULL, 0) == 3);
 }
 
 static void test_sizes(void)
@@ -197,6 +239,7 @@ int main(void)
 	test_glyphs();
 	test_fallback_text();
 	test_wanted();
+	test_player_of_controller();
 	test_sizes();
 	if (failures)
 		return 1;

@@ -600,6 +600,49 @@ int ae_platform_map_share_pad(void)
 #endif
 }
 
+/* (ae_platform_keyboard_last_used) the order of the last uses: a count, so whichever was noted later wins */
+static unsigned long input_uses, keyboard_used_at, pad_used_at;
+
+void ae_platform_note_keyboard_used(void)
+{
+	keyboard_used_at = ++input_uses;
+}
+
+void ae_platform_note_pad_used(void)
+{
+	pad_used_at = ++input_uses;
+}
+
+void ae_platform_note_keyboard_input(const unsigned char *keys, const unsigned char *mouse_buttons, int mouse_live)
+{
+	int index;
+
+	/* (any key from A to the modifiers but the system keys (a screenshot's Command), any mouse button) */
+	for (index = SDL_SCANCODE_A; keys && index <= SDL_SCANCODE_RALT; index++)
+	{
+		if (keys[index] && index != SDL_SCANCODE_LGUI)
+		{
+			ae_platform_note_keyboard_used();
+			return;
+		}
+	}
+	for (index = 0; mouse_live && mouse_buttons && index < PLATFORM_MOUSE_BUTTON_COUNT; index++)
+	{
+		if (mouse_buttons[index])
+		{
+			ae_platform_note_keyboard_used();
+			return;
+		}
+	}
+}
+
+int ae_platform_keyboard_last_used(void)
+{
+	if (!keyboard_used_at && !pad_used_at)
+		return ae_platform_input_scheme() == 0;
+	return keyboard_used_at > pad_used_at;
+}
+
 int ae_platform_input_scheme(void)
 {
 #ifdef HALO_GAME_BROWSER

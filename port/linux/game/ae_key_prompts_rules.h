@@ -8,12 +8,13 @@ pure (no engine includes), so the unit test builds them alone
 A prompt's button picture names a game control: an action icon its own
 (hud_messaging.c's button_mappings, the same control the pad's chip shows), a
 physical button the control the player's controller layout puts on it. The
-control's keyboard setting (port_config.c's controls.*) lists up to two keys;
-the FIRST is shown ("Mouse Right, G": the right mouse button), as Kenney's
-glyph when the sheets have one (tools/ae_key_pictures.py, ae_key_sheet.inc),
-else as a plain keycap with the key's name on it ("Keypad 7" as "Num 7"). A
-control with no key (Start and Back's own, or an empty setting) keeps the
-pad's chip.
+control's keyboard setting (port_config.c's controls.*; Start's is
+controls.pause, Back's controls.scoreboard) lists up to two keys; the FIRST
+that names a key is shown ("Mouse Right, G": the right mouse button), as
+Kenney's glyph when the sheets have one (tools/ae_key_pictures.py,
+ae_key_sheet.inc), else as a plain keycap with the key's name on it ("Keypad
+7" as "Num 7"). A button with no control (a stick), or a setting naming no
+key, keeps the pad's chip.
 */
 
 #ifndef __AE_KEY_PROMPTS_RULES_H
@@ -62,8 +63,10 @@ controls_to_buttons the player's layout (game_input_preferences.game_control_to_
 int ae_key_prompts_control_of_icon(int icon_type, int button, const unsigned char *controls_to_buttons);
 /* the control's keyboard setting ("controls.action"), or NULL (none) */
 const char *ae_key_prompts_control_setting(int control);
-/* a setting's first key: its list "Mouse Right, G" -> "Mouse Right" (trimmed); 0 for an empty list */
-int ae_key_prompts_first_binding(const char *list, char *key, size_t size);
+/* a setting's first key as xinput_sdl.c's bindings_read takes it: of its first two pieces (leading spaces and commas
+skipped, trailing spaces trimmed), the first that valid names a key or button ("Mouse Right, G" -> "Mouse Right",
+", G" and "Foo, G" -> "G"); 0 for none */
+int ae_key_prompts_first_binding(const char *list, int (*valid)(const char *name), char *key, size_t size);
 /* the key's cell in the sheets (Kenney's glyph), or -1 (a plain keycap) */
 int ae_key_prompts_cell_of(const char *key);
 const struct ae_key_cell *ae_key_prompts_cell(int cell);
@@ -71,9 +74,17 @@ const struct ae_key_cell *ae_key_prompts_cell(int cell);
 int ae_key_prompts_frame_cell(void);
 /* the name written on a plain keycap: "Keypad 7" -> "Num 7", at most 11 characters, else the name */
 void ae_key_prompts_fallback_text(const char *key, char *text, size_t size);
-/* whether a prompt of local_player shows keys: the keyboard and mouse the last used (scheme 0) and the player the
-keyboard's (keyboard_player); a forced pad (the debug lines' "pad") never */
-int ae_key_prompts_wanted(int scheme, int local_player, int keyboard_player, int force_pad);
+/* whether a prompt of local_player shows keys: never a forced pad's (the debug lines' "pad") nor a player not the
+keyboard's (keyboard_player, a local player index); with players sharing the machine (shared: more than one local
+player, or the seats on) the keyboard's player always (a pad's input never flips it); alone, while the keyboard and
+mouse are the last used (keyboard_last) */
+int ae_key_prompts_wanted(int keyboard_last, int local_player, int keyboard_player, int shared, int force_pad);
+/* the local player a controller plays (the keyboard's controller, ae_seats_keyboard_controller), as player_ui.c's
+player_ui_autolevel_enabled finds it: in a network game the controller's own index; else the single player
+bindings' (single_player_controllers[local player] = its controller, player_ui.c), or the controller's own index when
+none is bound (ae_input.c's player_of); -1: none */
+int ae_key_prompts_player_of_controller(int controller, int network_game, const short *single_player_controllers,
+	int count);
 
 /* ---------- sizes (the approved design's, at 1080p) */
 

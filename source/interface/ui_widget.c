@@ -4340,7 +4340,7 @@ static void render_state_bitmap(
 	real scale;
 	point2d point;
 
-	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color)) return; /* AE hook */
+	if (ae_key_prompts_icon(cursor_bounds, color)) return; /* AE hook */
 	global_scenario_get();
 	game_globals = scenario_get_game_globals();
 	interface_tag_references = game_globals->interface_tag_references.count
@@ -4526,7 +4526,7 @@ void draw_string_and_hack_in_icons(
 				icon_color.red *= text_color.alpha;
 				icon_color.green *= text_color.alpha;
 				icon_color.blue *= text_color.alpha;
-				if (ignore_icon_color) ae_key_prompts_note(remapped_icon_type, icon_index); /* AE hook */
+				if (ignore_icon_color) ae_key_prompts_note_text_icon(remapped_icon_type, icon_index, hud_globals_get_scale(local_player_count() > 1)); /* AE hook */
 				render_state_bitmap(
 					bounds,
 					&cursor_bounds,

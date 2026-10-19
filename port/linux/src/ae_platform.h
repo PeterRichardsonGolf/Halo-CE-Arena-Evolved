@@ -60,6 +60,14 @@ int ae_platform_map_share_pad(void);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */
 int ae_platform_input_scheme(void);
+/* whether the keyboard and mouse were used after any pad (the HUD's key prompts, port/linux/game/ae_key_prompts.c):
+AE's own record, for which a mouse's buttons and motion count too (xinput_sdl.c's scheme takes its keys only, and
+stays as it is for the rest of the game); before either was used, the scheme's (0: the keyboard). xinput_sdl.c's AE
+hooks note the keyboard's keys and mouse buttons each poll and a pad's use; ae_glue_mouse.c the mouse's motion */
+int ae_platform_keyboard_last_used(void);
+void ae_platform_note_keyboard_input(const unsigned char *keys, const unsigned char *mouse_buttons, int mouse_live);
+void ae_platform_note_keyboard_used(void);
+void ae_platform_note_pad_used(void);
 /* a controller's back buttons (a Switch 2 Pro Controller's GR and GL, an Elite's or DualSense Edge's upper paddles)
 pressed as the Xbox buttons input.back_right and input.back_left name, so they follow the profile's layout: merged into
 an Xbox pad's state (xinput_sdl.c: its wButtons and bAnalogButtons) */

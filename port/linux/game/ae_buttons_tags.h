@@ -20,6 +20,8 @@ struct bitmap_data const *ae_buttons_sprite_bitmap(struct bitmap_data const *bit
 quads draw it from (coordinates 0 to 1 over the whole picture), made on first use and deleted with the map; NULL when
 it cannot be (no such picture, its PNG not decoded) */
 struct bitmap_data const *ae_buttons_own_bitmap(char const *tag);
+/* the own picture's texture decoded now (a map loading: not at its first draw) */
+void ae_buttons_own_preload(char const *tag);
 
 void ae_buttons_tags_loaded(void);
 void ae_buttons_tags_unloaded(void);

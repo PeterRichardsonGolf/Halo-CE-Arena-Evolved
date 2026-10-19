@@ -943,7 +943,12 @@ source/game/game_engine.c	if (cache_file_tags_are_ce() || ae_layout_equipment_fa
 # before its render_state_bitmap (the HUD's custom lines only in ui_widget.c), which asks AE first; the key drawn there
 source/interface/hud_messaging.c	#include "ae_key_prompts.h" /* AE hook */
 source/interface/hud_messaging.c	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
-source/interface/hud_messaging.c	ae_key_prompts_note(element->data, icon_index); /* AE hook */
+source/interface/hud_messaging.c	ae_key_prompts_note(element->data, icon_index, local_player_count() > 1 ? 0.75f : 1.0f); /* AE hook */
 source/interface/ui_widget.c	#include "ae_key_prompts.h" /* AE hook */
-source/interface/ui_widget.c	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) || icon->color ? icon->color : color)) return; /* AE hook */
-source/interface/ui_widget.c	if (ignore_icon_color) ae_key_prompts_note(remapped_icon_type, icon_index); /* AE hook */
+source/interface/ui_widget.c	if (ae_key_prompts_icon(cursor_bounds, color)) return; /* AE hook */
+source/interface/ui_widget.c	if (ignore_icon_color) ae_key_prompts_note_text_icon(remapped_icon_type, icon_index, hud_globals_get_scale(local_player_count() > 1)); /* AE hook */
+# the HUD's key prompts decide by the keyboard and mouse's last use, a mouse's buttons and motion included (ae_platform.c's
+# own record; the scheme above keeps its keys-only rule for the rest of the game): the keyboard's keys and buttons each
+# poll, and a pad's use
+port/linux/src/xinput_sdl.c	ae_platform_note_keyboard_input(k, m, mouse); /* AE hook */
+port/linux/src/xinput_sdl.c	ae_platform_note_pad_used(); /* AE hook */

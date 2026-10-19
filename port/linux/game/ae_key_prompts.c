@@ -14,6 +14,8 @@ button (ae_key_prompts.h).
 #include "bitmaps/bitmap_color_conversion.h"
 #include "game/players.h"
 #include "input/input_abstraction.h"
+#include "interface/player_ui.h"
+#include "networking/network_game_globals.h"
 #include "rasterizer/rasterizer.h"
 #include "render/render.h"
 #include "text/draw_string.h"
@@ -22,27 +24,34 @@ button (ae_key_prompts.h).
 #include "ae_buttons_tags.h"
 #include "ae_hud_digits.h"
 #include "ae_hud_messages.h"
+#include "ae_hud_style.h"
 #include "ae_hud_text.h"
 #include "ae_key_prompts.h"
 #include "ae_key_prompts_rules.h"
 
 /* the platform's (port/linux/src: ae_platform.c, ae_seats.c, xinput_sdl.c; the server's stubs) and port_config.c's */
-int ae_platform_input_scheme(void);
+int ae_platform_keyboard_last_used(void);
+int ae_seats_active(void);
 int ae_seats_keyboard_controller(void);
+int halo_input_from_name(const char *name);
 void halo_input_shown_name(const char *binding, char *shown, size_t size);
 const char *config_string(const char *name);
+unsigned long config_changes(void);
 void platform_log(char const *format, ...);
 
 #define AE_BLEND_ALPHA 0 /* _shader_framebuffer_blend_function_alpha_blend: the sheets are straight alpha */
 #define KEY_NAME_MAXIMUM 32
 
-/* CE's lines (HUD units at a single view's scale; split screen draws them 0.75 as large, as hud_hires_tags.c's chips):
+/* CE's lines (HUD units at the chip's scale, which the hooks hand over: hud_messaging.c's high-res chip 0.75 as large in
+split screen, as hud_hires_tags.c draws it; a custom line's text icon hud_globals_get_scale's, and drawn from the small
+icons' sheet, CE_TEXT_ICON as large as a message's chip, measured on the box at 1080p: 25 px to 33):
 the keycap's height, the room from the text before it to its body and from its body to the text after (the text
 pieces' own spaces besides). Today's chip is 21 x 26 units (33 px tall drawn at "ce"'s 0.60 on 1080p): the keycap
 30 px there (the approved mockups' CE case), 13 px from the words each side */
 #define CE_KEY_UNITS 22.8f
 #define CE_BEFORE_UNITS 6.2f
 #define CE_AFTER_UNITS -0.5f
+#define CE_TEXT_ICON 0.76f
 /* HUD STYLE AE: the room before and after is 12 px (0.5 em) from the words' ink, less the text pieces' own spaces
 (measured: "a a" less "aa") and the letters' side bearings at the 24 px em (measured on the box's 1080p shots, the
 "Hold" before and the "to" after: 3 and 1 px) */
@@ -54,20 +63,51 @@ pieces' own spaces besides). Today's chip is 21 x 26 units (33 px tall drawn at 
 static const real ice_rgb[3] = { 0xE8 / 255.0f, 0xF4 / 255.0f, 0xFF / 255.0f };
 static const real ce_dark_rgb[3] = { 0x06 / 255.0f, 0x0E / 255.0f, 0x1E / 255.0f };
 
+#define LOGGED_ICONS 40 /* hud_messaging.c's NUMBER_OF_ICON_TYPES */
+
 static struct
 {
 	boolean noted;
 	short icon_type;
 	short button;
-	/* (said when it changes: the key the log's tests read) */
-	char logged[KEY_NAME_MAXIMUM];
+	real scale;       /* the chip's scale (CE's lines) */
+	boolean text_icon; /* a custom line's (ui_widget.c), drawn from the small icons' sheet */
+	/* (said once per icon and control until a setting changes: the keys the log's tests read) */
+	unsigned long logged_at;
+	boolean logged[LOGGED_ICONS][AE_KEY_CONTROL_COUNT];
 } prompt;
 
-void ae_key_prompts_note(short icon_type, short button)
+void ae_key_prompts_note(short icon_type, short button, real scale)
 {
 	prompt.noted = TRUE;
 	prompt.icon_type = icon_type;
 	prompt.button = button;
+	prompt.scale = scale > 0.0f ? scale : 1.0f;
+	prompt.text_icon = FALSE;
+}
+
+void ae_key_prompts_note_text_icon(short icon_type, short button, real scale)
+{
+	ae_key_prompts_note(icon_type, button, scale);
+	prompt.text_icon = TRUE;
+}
+
+/* a key a binding may name (xinput_sdl.c's own reading of the settings) */
+static int names_key(const char *name)
+{
+	return halo_input_from_name(name) >= 0;
+}
+
+/* the keyboard's local player: its controller's (ae_seats.h) through the players' controllers (player_ui.c) */
+static int keyboard_player(void)
+{
+	short controllers[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS];
+	short player;
+
+	for (player = 0; player < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS; player++)
+		controllers[player] = player_ui_get_single_player_local_player_controller(player);
+	return ae_key_prompts_player_of_controller(ae_seats_keyboard_controller(), network_game_is_active(), controllers,
+		MAXIMUM_NUMBER_OF_LOCAL_PLAYERS);
 }
 
 /* the debug lines' "pad" (debug.ae_message_test): the pad's chips whatever was last used, for the comparison */
@@ -97,16 +137,21 @@ static boolean noted_key(short local_player_index, char *key, size_t size)
 	control = ae_key_prompts_control_of_icon(prompt.icon_type, prompt.button, preferences.game_control_to_xbox_buttons);
 	setting = ae_key_prompts_control_setting(control);
 	list = setting ? config_string(setting) : NULL;
-	if (!ae_key_prompts_first_binding(list, binding, sizeof(binding)))
+	if (!ae_key_prompts_first_binding(list, names_key, binding, sizeof(binding)))
 		return FALSE;
 	halo_input_shown_name(binding, key, size);
 	if (!key[0])
 		return FALSE;
-	if (strcmp(prompt.logged, key))
+	if (prompt.logged_at != config_changes())
 	{
+		prompt.logged_at = config_changes();
+		csmemset(prompt.logged, 0, sizeof(prompt.logged));
+	}
+	if (prompt.icon_type >= 0 && prompt.icon_type < LOGGED_ICONS && !prompt.logged[prompt.icon_type][control])
+	{
+		prompt.logged[prompt.icon_type][control] = TRUE;
 		platform_log("key prompts: icon %d (button %d) is %s's \"%s\"", (int)prompt.icon_type, (int)prompt.button,
 			setting, key);
-		strncpy(prompt.logged, key, sizeof(prompt.logged) - 1);
 	}
 	return TRUE;
 }
@@ -285,7 +330,7 @@ static boolean draw_ce(char const *key, rectangle2d *cursor_bounds, pixel32 colo
 {
 	struct bitmap_data const *sheet = ae_buttons_own_bitmap("ae\\key_prompts\\ce");
 	int cell = ae_key_prompts_cell_of(key);
-	real viewport = local_player_count() > 1 ? 0.75f : 1.0f;
+	real viewport = prompt.scale * (prompt.text_icon ? CE_TEXT_ICON : 1.0f);
 	real key_units = CE_KEY_UNITS * viewport;
 	real alpha = (real)((color >> 24) & 0xFF) / 255.0f;
 	real middle, width, height, margin, x, ppu = ae_hud_pixels_per_unit();
@@ -348,11 +393,26 @@ boolean ae_key_prompts_icon(rectangle2d *cursor_bounds, pixel32 color)
 	short view = render.local_player_index;
 	char key[KEY_NAME_MAXIMUM];
 	boolean noted = prompt.noted;
+	boolean shared;
 
 	prompt.noted = FALSE;
 	if (!noted || !cursor_bounds)
 		return FALSE;
-	if (!ae_key_prompts_wanted(ae_platform_input_scheme(), view, ae_seats_keyboard_controller(), forced_pad()))
+	/* (players sharing the machine: the keyboard's player always gets keys, a pad's input does not flip them) */
+	shared = (boolean)(local_player_count() > 1 || ae_seats_active());
+	{
+		/* (the debug lines' log: who used what last, when that changes) */
+		static int logged_last = -1;
+		int last = ae_platform_keyboard_last_used();
+
+		if (last != logged_last && config_string("debug.ae_message_test")[0])
+		{
+			logged_last = last;
+			platform_log("key prompts: view %d, the keyboard's player %d, %s used last, %s", (int)view,
+				keyboard_player(), last ? "the keyboard or mouse" : "a pad", shared ? "shared" : "alone");
+		}
+	}
+	if (!ae_key_prompts_wanted(ae_platform_keyboard_last_used(), view, keyboard_player(), shared, forced_pad()))
 		return FALSE;
 	if (!noted_key(view, key, sizeof(key)))
 		return FALSE;
@@ -364,10 +424,18 @@ boolean ae_key_prompts_icon(rectangle2d *cursor_bounds, pixel32 color)
 		boolean drawn;
 
 		draw_string_get_color(&saved_color);
+		draw_string_set_indents(0, 0);
 		drawn = draw_ae(key);
 		draw_string_set_font(saved_font);
 		draw_string_set_color(&saved_color);
 		return drawn;
 	}
 	return draw_ce(key, cursor_bounds, color);
+}
+
+void ae_key_prompts_tags_loaded(void)
+{
+	/* (the sheet decoded now, not at the first prompt: no hitch then) */
+	if (ae_platform_keyboard_last_used() || ae_seats_active())
+		ae_buttons_own_preload(ae_hud_style_is_ae() ? "ae\\key_prompts\\ae" : "ae\\key_prompts\\ce");
 }

@@ -520,6 +520,7 @@ static void keyboard_gamepad(const struct platform_input_state *input, XINPUT_GA
 		}
 	}
 #endif
+	ae_platform_note_keyboard_input(k, m, mouse); /* AE hook */
 	if (text_typing)
 	{
 		typing_gamepad(input, pad);
@@ -1289,6 +1290,7 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 		{
 			last_input_scheme = scheme_of(gamepad);
 			last_input_seen = TRUE;
+			ae_platform_note_pad_used(); /* AE hook */
 		}
 	}
 #endif

@@ -53,34 +53,40 @@ const char *ae_key_prompts_control_setting(int control)
 	return control >= 0 && control < AE_KEY_CONTROL_COUNT ? control_settings[control] : NULL;
 }
 
-static int is_space(char c)
+int ae_key_prompts_first_binding(const char *list, int (*valid)(const char *name), char *key, size_t size)
 {
-	return c == ' ' || c == '\t';
-}
-
-int ae_key_prompts_first_binding(const char *list, char *key, size_t size)
-{
-	const char *start, *end;
-	size_t length;
+	int piece;
 
 	if (key && size)
 		key[0] = 0;
 	if (!list || !key || size < 2)
 		return 0;
-	for (start = list; is_space(*start); start++)
-		;
-	for (end = start; *end && *end != ','; end++)
-		;
-	while (end > start && is_space(end[-1]))
-		end--;
-	length = (size_t)(end - start);
-	if (!length)
-		return 0;
-	if (length > size - 1)
-		length = size - 1;
-	memcpy(key, start, length);
-	key[length] = 0;
-	return 1;
+	/* (xinput_sdl.c's bindings_read: two pieces at most, each a key or none) */
+	for (piece = 0; piece < 2; piece++)
+	{
+		size_t length;
+
+		while (*list == ' ' || *list == ',')
+			list++;
+		length = strcspn(list, ",");
+		if (!length)
+			continue;
+		{
+			size_t kept = length;
+
+			while (kept && list[kept - 1] == ' ')
+				kept--;
+			if (kept > size - 1)
+				kept = size - 1;
+			memcpy(key, list, kept);
+			key[kept] = 0;
+		}
+		list += length;
+		if (key[0] && (!valid || valid(key)))
+			return 1;
+		key[0] = 0;
+	}
+	return 0;
 }
 
 static int same_name(const char *a, const char *b)
@@ -148,9 +154,30 @@ void ae_key_prompts_fallback_text(const char *key, char *text, size_t size)
 	text[length] = 0;
 }
 
-int ae_key_prompts_wanted(int scheme, int local_player, int keyboard_player, int force_pad)
+int ae_key_prompts_wanted(int keyboard_last, int local_player, int keyboard_player, int shared, int force_pad)
 {
-	return !force_pad && scheme == 0 && local_player >= 0 && local_player == keyboard_player;
+	if (force_pad || local_player < 0 || local_player != keyboard_player)
+		return 0;
+	return shared || keyboard_last;
+}
+
+int ae_key_prompts_player_of_controller(int controller, int network_game, const short *single_player_controllers,
+	int count)
+{
+	int player, any = 0;
+
+	if (controller < 0)
+		return -1;
+	if (network_game || !single_player_controllers)
+		return controller;
+	for (player = 0; player < count; player++)
+	{
+		if (single_player_controllers[player] == controller)
+			return player;
+		if (single_player_controllers[player] >= 0)
+			any = 1;
+	}
+	return any ? -1 : controller;
 }
 
 /* ---------- sizes */
