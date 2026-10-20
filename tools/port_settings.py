@@ -555,8 +555,8 @@ SEED_UPLOADS = (64, 128, 256, 512, 1024, 2048, 4096, 8192, 10240)
 _network = SCREENS["network_setup"]
 # (and the multiplayer HUD's rows, and streamer mode, screens of their own:
 # Network Setup has room for nine places)
-_hud_settings = ("display.player_names", "display.player_name_scale", "display.scoreboard_team_layout",
-                 "display.scoreboard_background")
+_hud_settings = ("display.player_names", "display.player_name_scale", "display.enemy_name_color",
+                 "display.scoreboard_team_layout", "display.scoreboard_background")
 _hud_rows = [row for row in _network["rows"] if row[1] in _hud_settings]
 _network["rows"] = [row for row in _network["rows"] if row[1] not in _hud_settings]
 _network["categories"] = [

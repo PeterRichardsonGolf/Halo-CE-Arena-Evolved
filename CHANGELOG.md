@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- ENEMY NAME COLOR moved to Network Setup > MULTIPLAYER HUD, under PLAYER NAME SIZE, so the pause menu's SETTINGS
+  has it in a game too (it was left on Network Setup's own page, which a game does not show).
 - OCTAGON, a new group of four 1v1 practice drills for Octagon (seed revision 16, added on the first start; nothing
   else changes): FFA AE OCTAGON BR, FFA AE OCTAGON BR SNIPE, FFA AE OCTAGON MAG and FFA AE OCTAGON MAG SNIPE. Battle
   rifle or magnum in hand, with or without the sniper rifle second; free for all slayer on AE's casual rules with
