@@ -313,9 +313,10 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 	/* (where it is in the world, a rider too: ae_bots_vehicle.c) */
 	real_point3d target_point = ae_bots_vehicle_point(player_get(bot->target_player_index)->unit_index);
 	real to_target = (real)atan2(target_point.y - tick->position.y, target_point.x - tick->position.x);
+	/* (OUTNUMBERED, ae_bots_team.inc: the enemies near past the teammates near take from it) */
 	real confidence = ae_bots_combat_confidence(own_shield, own_body, target_shield, target_body, tick->target_distance,
 		bots_weapon_range(tick->weapon_index), tick->weapon_index != NONE ? bots_weapon_loaded(tick->weapon_index) : 1.0f,
-		tick->position.z - target_point.z);
+		tick->position.z - target_point.z) - ae_bots_team_outnumbered(bot, tick, level);
 	int started, ended;
 	boolean new_fight = tick->now - state->last_fight_tick > TICKS_PER_SECOND * 2 || tick->now < state->last_fight_tick;
 	boolean retreating = ae_bots_combat_retreat_step(&state->retreat, level, confidence, own_shield, tick->now,
@@ -403,6 +404,19 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 			}
 		}
 		state->charging = charge;
+	}
+	/* WINGMAN's leash (ae_bots_team.inc): far from its player, back towards them while it shoots, unless retreating */
+	if (!retreating)
+	{
+		real direction;
+
+		if (ae_bots_team_leash(bot, tick, &direction))
+		{
+			tick->move_direction = direction + bot->strafe_sign * 0.4f;
+			tick->moving = TRUE;
+			tick->throttle_scale = 1.0f;
+			state->charging = FALSE;
+		}
 	}
 	/* JUMPS in a fight (NORMAL and up), at the level's rhythm */
 	if (state->next_vertical_tick > 0 && tick->now >= state->next_vertical_tick)

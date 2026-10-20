@@ -164,6 +164,9 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 			view.fighting = fighting;
 			view.holds_it = ae_bots_power_holds(unit, timer, kind);
 			view.teammate_going = ae_bots_power_teammate_going(bot, player, entry);
+			/* (a wingman leaves its player only for an item within 15 units: ae_bots_team.inc) */
+			if (view.distance > 15.0f && ae_bots_team_wingman_of(bot) != NONE)
+				continue;
 			want = ae_bots_power_want(&view);
 			if (want > best_want)
 			{
