@@ -1219,12 +1219,11 @@ static void game_engine_generate_title_string(
 		}
 	}
 
-	/* port: the gametype's time limit's time left (game_variant_options);
-	with MATCH CLOCK on, the HUD's corner clock tells it instead
-	(game_engine_match_clock) */
+	/* port: the gametype's time limit's time left (game_variant_options),
+	whatever MATCH CLOCK says: HUD STYLE AE has no corner clock, and the
+	strip shows one clock only (owner 2026-10-20) */
 	if (game_variant_options_get()->time_limit > 0 &&
-		game_engine_globals.postgame_state == game_engine_mode_active &&
-		game_engine_match_clock_setting() == _match_clock_off)
+		game_engine_globals.postgame_state == game_engine_mode_active)
 	{
 		long left = game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
 		wchar_t time_string[32];
