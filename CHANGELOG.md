@@ -19,6 +19,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots: a new top level, DEMON (BOT SKILL, SHOOTING SKILL and MOVEMENT SKILL): the LEGENDARY bots of before. LEGENDARY
   now sits halfway between HEROIC and DEMON (it reacts in 0.24 s, sees 48 units over 150 degrees, and tells teammates
   within 20 units what it sees). RECRUIT, EASY, NORMAL and HEROIC are unchanged.
+- Bots play more like good players: they pace the pistol's shots at range instead of holding the trigger as its aim
+  blooms, zoom the sniper rifle and drop out of zoom when shot, take high ground when they roam, throw a grenade where
+  they last saw you, and back off as their shields pop (each from its level up).
+- Bots: EASY is a little harder and NORMAL a little easier, so the two are closer together; NORMAL and up step in for
+  a blow when you are close and weak, so they melee more; and they no longer see you far above or below where they
+  look (they used to turn to a player straight above them at once).
+- Bots: they no longer stand still under a power weapon they cannot reach (Beaver Creek's arches, Prisoner), and they
+  climb onto a powerup's stand instead of giving it up.
+- HUD STYLE AE draws the score strip's numbers with its own digits on every map, also a map with a counter sheet of
+  its own (h2_coagulation@ce's numbers were the map's).
+- The scoreboard shows the time left whenever the game has a time limit; it showed it only with MATCH CLOCK off.
+- Fallout's and Weld's green spawn rings and arrows, always drawn by the maps' own scenery, are no longer drawn
+  (TRAINING still shows Arena Evolved's spawn markers).
 - Map downloads work the OpenCE way: no question. Join a game on a map you lack and it comes from the host on its own,
   and in the lobby the host's other maps follow, one after another (up to 4096 MB from one host). A card at the top
   of the lobby shows which map is coming, how much of it is here, and when it is ready or did not come. F6 and
