@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Bots: NORMAL is a little easier: it reacts later (0.55 s, was 0.45), starts further off its target and settles
+  slower, and leads a moving target less. RECRUIT, EASY, HEROIC and LEGENDARY are unchanged.
 - Playing on mouse and keyboard, the HUD's prompts show your key instead of a controller button: "Hold [E] to swap
   for", "Press [E] to enter driver seat", and a map's own button prompts, with the first key bound to that action in
   Controls Setup (a mouse button as a mouse with that button lit, any other key by its name, "Num 7"); the first

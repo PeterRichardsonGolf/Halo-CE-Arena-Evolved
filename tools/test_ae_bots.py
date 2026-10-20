@@ -329,3 +329,26 @@ def test_layout_bot_lines(tmp_path):
     closed = re.search(r"bots: travel: layout line 4: avoid \(65\.0 -120\.0 0\.0\) radius 6\.0: (\d+) walkable surfaces closed",
                        output)
     assert closed and int(closed.group(1)) > 0, output[-3000:]
+
+
+def test_normal_sits_between_easy_and_the_upstream_row():
+    """NORMAL is AE's own row (owner 10-20: "a little" nerf): every aim number between EASY's and OpenCE's NORMAL,
+    the rest as OpenCE's; every bot path reads skills through ae_bots_skill_definition"""
+    game = ROOT / "port" / "linux" / "game"
+    table = (game / "bots.c").read_text()
+    skill = (game / "ae_bots_skill.inc").read_text()
+    row = r'\{{ "{}", ([^}}]*) \}}'
+
+    def numbers(text, name):
+        return [float(value.strip().rstrip("f")) for value in re.search(row.format(name), text)[1].split(",")]
+
+    easy, upstream, ours = numbers(table, "easy"), numbers(table, "normal"), numbers(skill, "normal")
+    # reaction, aim error, settle seconds: slower than OpenCE's NORMAL, faster than EASY
+    for index in (0, 3, 4):
+        assert upstream[index] < ours[index] < easy[index], index
+    # lead: less than OpenCE's NORMAL, more than EASY
+    assert easy[7] < ours[7] < upstream[7]
+    for index in (1, 2, 5, 6, 8, 9, 10, 11):
+        assert ours[index] == upstream[index], index
+    assert "skill == _bots_skill_normal ? &ae_bots_normal" in skill
+    assert table.count("bots_skills[") == 2  # the table and the name lookup: nothing reads a row past the AE hook

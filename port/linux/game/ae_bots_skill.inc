@@ -25,10 +25,17 @@ ae_bots_combat.inc's glue, which bots.c's fight and look call (the fight by leve
 static struct bots_skill_definition const ae_bots_recruit =
 	{ "recruit", 1.4f, 16.0f, 80.0f, 22.0f, 2.5f, 5.0f, 2.6f, 0.0f, 0.0f, 0.0f, 4, 24 };
 
-/* the skill's definition: the table's, or RECRUIT's */
+/* NORMAL, a little below OpenCE's row (owner 2026-10-20 after play: "normal bots are too cracked ... they need to be
+nerfed a little bit"; on H2D Midship they hit 64-72% of their shots at a median 0.53 s reaction): about a third of the
+way to EASY in reaction (0.45 to 0.55 s), aim error (7 to 8.5 degrees), settling (0.9 to 1.1 s) and lead (0.7 to 0.6);
+sight, turn, fire cone, grenades, jumps and bursts as the table's */
+static struct bots_skill_definition const ae_bots_normal =
+	{ "normal", 0.55f, 32.0f, 120.0f, 8.5f, 1.1f, 13.0f, 1.8f, 0.6f, 0.10f, 0.05f, 9, 9 };
+/* the skill's definition: the table's, or RECRUIT's or NORMAL's */
 static struct bots_skill_definition const *ae_bots_skill_definition(short skill)
 {
-	return skill == AE_BOTS_SKILL_RECRUIT ? &ae_bots_recruit : &bots_skills[skill];
+	return skill == AE_BOTS_SKILL_RECRUIT ? &ae_bots_recruit : skill == _bots_skill_normal ? &ae_bots_normal :
+		&bots_skills[skill];
 }
 
 /* the chance a roam goes towards an enemy (the place nearest a living one)
