@@ -1221,9 +1221,11 @@ static void game_engine_generate_title_string(
 
 	/* port: the gametype's time limit's time left (game_variant_options),
 	whatever MATCH CLOCK says: HUD STYLE AE has no corner clock, and the
-	strip shows one clock only (owner 2026-10-20) */
+	strip shows one clock only (owner 2026-10-20); HUD STYLE AE's header
+	says it instead (ae_scoreboard_header.c) */
 	if (game_variant_options_get()->time_limit > 0 &&
-		game_engine_globals.postgame_state == game_engine_mode_active)
+		game_engine_globals.postgame_state == game_engine_mode_active &&
+		ae_scoreboard_header_rows(1) != 0) /* AE hook */
 	{
 		long left = game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
 		wchar_t time_string[32];

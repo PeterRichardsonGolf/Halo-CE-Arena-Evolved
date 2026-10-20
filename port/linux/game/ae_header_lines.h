@@ -6,7 +6,8 @@ unit-tested in port/linux/tests/ae_header_lines_test.c.
 
 Line 1: the mode (the display name "<FFA|TEAM> <set> <mode>" with its set
 taken out: "TEAM CTF") . the map ("BLOOD GULCH") - the set's tag ("NHE").
-Line 2: goal . time: "FIRST TO 50 . 15:00", "3 CAPTURES . CLOCK COUNTS UP",
+Line 2: goal . time: "FIRST TO 50 . 15:00" ("FIRST TO 50 . 7:53 LEFT" while the game runs), "3 CAPTURES . CLOCK
+COUNTS UP",
 "FIRST TO 25 . NO TIME LIMIT", "NO LIMIT", "5 ROUNDS TO WIN . 2:00 ROUNDS"
 (the separator is a middle dot, U+00B7).
 */
@@ -30,6 +31,8 @@ struct ae_header_input {
 	long time_limit_minutes;        /* 0: none */
 	boolean clock_counts_up;        /* a time limit, but the clock counts up (MATCH CLOCK UP, NHE EXTRAS) */
 	long round_seconds;             /* rounds: each round's length */
+	boolean time_left_shown;        /* the game running with a time limit: its time left (owner 2026-10-20) */
+	long time_left_seconds;         /* (time_left_shown) the time left, rounded up: "7:53 LEFT" for the limit */
 };
 
 #define AE_HEADER_TEXT_LENGTH 64

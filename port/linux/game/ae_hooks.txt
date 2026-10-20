@@ -936,6 +936,9 @@ source/cache/cache_files.c	#include "ae_map_look_fixes.h" /* AE hook */
 source/cache/cache_files.c	ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */\nae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 source/cache/cache_files.c	ae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */\nae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox.c	#include "ae_map_look_fixes.h" /* AE hook */
+# the scoreboard's time left (2026-10-20): HUD STYLE AE's header says it ("FIRST TO 25 . 7:53 LEFT"), the scoreboard's
+# own first line no longer adds it
+source/game/game_engine.c	ae_scoreboard_header_rows(1) != 0) /* AE hook */
 # hidden shaders (ae_map_look_fixes.c): Fallout's and Weld's spawn rings, parts of their scenery's models, not drawn
 source/rasterizer/xbox/rasterizer_xbox_models.c	#include "ae_map_look_fixes.h" /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_models.c	if (ae_map_look_shader_hidden(shader)) return NULL; /* AE hook */

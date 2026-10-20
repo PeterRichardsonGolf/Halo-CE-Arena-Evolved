@@ -216,6 +216,11 @@ void ae_scoreboard_header_lines(const struct ae_header_input *input, struct ae_h
 		append_ascii(goal, count, "NO TIME LIMIT");
 	else if (input->clock_counts_up)
 		append_ascii(goal, count, "CLOCK COUNTS UP");
+	else if (input->time_left_shown)
+	{
+		append_time(goal, count, input->time_left_seconds);
+		append_ascii(goal, count, " LEFT");
+	}
 	else
 		append_time(goal, count, input->time_limit_minutes * 60);
 }
