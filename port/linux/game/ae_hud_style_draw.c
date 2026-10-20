@@ -219,7 +219,10 @@ boolean ae_hud_style_name_color(boolean ally, union real_argb_color *color)
 
 	if (!ae_hud_style_is_ae())
 		return FALSE;
-	if (ally)
+	/* (ENEMY NAME COLOR RED: allies white, owner 2026-10-20, so a red team's allies never read as enemies) */
+	if (ally && game_engine_enemy_name_red())
+		set_color(white_rgb, 1.0f, color);
+	else if (ally)
 		set_color(game_engine_has_teams() && viewer ? team_rgb(viewer->team_index) : white_rgb, 1.0f, color);
 	else if (game_engine_enemy_name_red())
 		set_color(red_rgb, 1.0f, color);
