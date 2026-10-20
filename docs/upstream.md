@@ -21,7 +21,10 @@ Back to the [README](../README.md).
   0.7.5 (29), and OpenCE build-242 (31), don't play with 0.3.5: their
   players are told which side needs to update. ChupathingyCE 0.8 is on
   network 32 but another Delta wire (`chupa-32a`; Arena Evolved's is
-  `ae-32a`), so the two refuse each other's games. 0.3.0-beta to 0.3.4-beta
+  `ae-32a`): in a test (2026-10-20) an Arena Evolved 0.3.5 player joined a
+  ChupathingyCE 0.8.0b host and played, but an Arena Evolved 0.3.5 host
+  refuses ChupathingyCE 0.8 players (0.3.6 merges ChupathingyCE 0.8 and
+  plays with it both ways). 0.3.0-beta to 0.3.4-beta
   (29) play with OpenCE build-206 to build-237; 0.2.3-beta to 0.2.5-beta
   (28) with OpenCE build-201 to build-205. A game on a Custom Edition map is named by the
   map's own name, as OpenCE names it, its version the map's hash, so OpenCE
