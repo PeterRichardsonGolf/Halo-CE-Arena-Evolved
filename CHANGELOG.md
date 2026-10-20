@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- HUD STYLE AE: with MULTIPLAYER GAME TIMER on BOTH and a time limit, the score strip shows the time played too, as a
+  small grey line over the time left (as the corner clock has it); nothing changes with the other settings or without
+  a time limit.
 - Bots play as a team: in a team game one bot sticks with each player as a wingman (near you, fighting beside you,
   not off on its own); NORMAL and up regroup when their team is two or more down, and back off when more enemies are
   close than teammates instead of taking a 1v2; HEROIC and up back out of a crossfire (two or more enemies with a

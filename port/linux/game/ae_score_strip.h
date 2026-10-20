@@ -20,6 +20,8 @@ boolean ae_score_strip_visible(short local_player_index);
 /* (the debug log, debug.score_strip_log) the last frame's: its alpha, the clock's and the left score's boxes
 (x, y, w, h in the view's screen pixels); FALSE when it was not drawn */
 boolean ae_score_strip_last_drawn(short local_player_index, real *alpha, real clock[4], real left_score[4]);
+/* (the debug log) the last frame's time played line (MATCH CLOCK BOTH): its box; FALSE when none was drawn */
+boolean ae_score_strip_last_played(short local_player_index, real played[4]);
 /* (the debug log) the shared line the view's strip was last laid out on */
 real ae_score_strip_last_line(short local_player_index);
 /* the view's scale for AE's HUD: its factor (a half screen 0.85, a quarter 0.75) x the screen's height / 1080 */

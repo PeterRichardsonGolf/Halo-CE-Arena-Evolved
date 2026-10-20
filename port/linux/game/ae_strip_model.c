@@ -340,7 +340,7 @@ void ae_strip_model_build(const struct ae_strip_snapshot *snapshot, struct ae_st
 	text_clear(&model->left_score); text_clear(&model->right_score); text_clear(&model->clock);
 	text_clear(&model->context); text_clear(&model->lead); text_clear(&model->goal);
 	text_clear(&model->left_sub); text_clear(&model->right_sub);
-	text_clear(&model->left_alive); text_clear(&model->right_alive);
+	text_clear(&model->left_alive); text_clear(&model->right_alive); text_clear(&model->played);
 
 	left = snapshot->teams ? team_color(snapshot->me.team_index) : _ae_strip_color_me;
 	right = snapshot->teams ? team_color(snapshot->other.team_index) : _ae_strip_color_white;
@@ -354,6 +354,10 @@ void ae_strip_model_build(const struct ae_strip_snapshot *snapshot, struct ae_st
 	model->clock.color = model->clock_small ? _ae_strip_color_grey : _ae_strip_color_clock;
 	if (!snapshot->clock_hidden)
 		put_time(&model->clock, snapshot->clock_seconds, model->clock.color);
+	/* MATCH CLOCK BOTH: the time played over the time left, as the corner clock has it: a grey line like the goal's,
+	the value alone (an "ELAPSED" label ran into the my-side marker in small views); never without the clock */
+	if (!snapshot->clock_hidden && snapshot->played_shown)
+		put_time(&model->played, snapshot->played_seconds, _ae_strip_color_grey);
 
 	/* the scores: rounds won, times, or numbers */
 	left_value = snapshot->mode == _ae_strip_rounds ? snapshot->me.rounds_won : snapshot->me.score;

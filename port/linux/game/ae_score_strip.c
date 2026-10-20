@@ -74,7 +74,7 @@ static struct strip_view
 	boolean primed;
 	real shared_line_y;
 	real alpha;                 /* last drawn */
-	struct ae_strip_box clock, left_score; /* last drawn (the debug log's) */
+	struct ae_strip_box clock, left_score, played; /* last drawn (the debug log's) */
 	real extent[4];             /* last drawn: left, top, right, bottom (the waypoints' fade) */
 	wchar_t scores[2][AE_STRIP_TEXT_LENGTH];
 	unsigned long score_pop[2];
@@ -120,6 +120,18 @@ boolean ae_score_strip_last_drawn(short local_player_index, real *alpha, real cl
 	clock[0] = state->clock.x; clock[1] = state->clock.y; clock[2] = state->clock.w; clock[3] = state->clock.h;
 	left_score[0] = state->left_score.x; left_score[1] = state->left_score.y;
 	left_score[2] = state->left_score.w; left_score[3] = state->left_score.h;
+	return TRUE;
+}
+
+boolean ae_score_strip_last_played(short local_player_index, real played[4])
+{
+	struct strip_view const *state;
+
+	if (!valid_view(local_player_index) || !views[local_player_index].visible ||
+		!views[local_player_index].played.visible)
+		return FALSE;
+	state = &views[local_player_index];
+	played[0] = state->played.x; played[1] = state->played.y; played[2] = state->played.w; played[3] = state->played.h;
 	return TRUE;
 }
 
@@ -711,6 +723,7 @@ static void draw_strip(short view)
 	draw_centred(view, &model.context, &layout.context, &me, alpha, 1.0f);
 	draw_centred(view, &model.lead, &layout.lead, &me, alpha, pop_scale(state->lead_pop, now, 1.15f));
 	draw_centred(view, &model.goal, &layout.goal, &me, AE_STRIP_GOAL_ALPHA * alpha, 1.0f);
+	draw_centred(view, &model.played, &layout.played, &me, AE_STRIP_GOAL_ALPHA * alpha, 1.0f);
 	draw_sub(view, &model, &model.left_sub, &layout.left_sub, model.left_score.color, k, &me, alpha,
 		flash_on(state->flag_flash[0], now));
 	draw_sub(view, &model, &model.right_sub, &layout.right_sub, model.right_score.color, k, &me, alpha,
@@ -718,19 +731,21 @@ static void draw_strip(short view)
 	state->alpha = alpha;
 	state->clock = layout.clock;
 	state->left_score = layout.left_score;
+	state->played = layout.played;
 	state->extent[0] = layout.left_end_x;
 	state->extent[1] = MIN(layout.clock.y, layout.left_score.y);
 	state->extent[2] = layout.right_end_x;
 	state->extent[3] = state->shared_line_y + 4.0f;
 	/* (the lines above the scores too, when shown: the context and lead line, the marker) */
 	{
-		struct ae_strip_box const *above[3];
+		struct ae_strip_box const *above[4];
 		short i;
 
 		above[0] = &layout.context;
 		above[1] = &layout.lead;
 		above[2] = &layout.marker;
-		for (i = 0; i < 3; i++)
+		above[3] = &layout.played;
+		for (i = 0; i < 4; i++)
 			if (above[i]->visible && above[i]->w > 0.0f && above[i]->h > 0.0f)
 			{
 				state->extent[0] = MIN(state->extent[0], above[i]->x);
