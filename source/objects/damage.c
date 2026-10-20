@@ -1577,7 +1577,7 @@ void object_cause_damage(
 
 	/* port: a player who is gone is credited with nothing */
 	damage_data_validate_owner(damage);
-	ae_bots_damage_note(damage->owner_player_index, object_index); /* AE hook */
+	ae_bots_damage_note(damage->owner_player_index, object_index, damage->definition_index, damage->flags); /* AE hook */
 
 	damage_effect = damage_effect_definition_get(damage->definition_index);
 	damage_definition = &damage_effect->damage;
