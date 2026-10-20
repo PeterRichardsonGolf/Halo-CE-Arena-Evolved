@@ -694,6 +694,7 @@ struct widget_instance;
 #include "ae_hud_messages.h" /* AE hook */
 #include "ae_key_prompts.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
+#include "ae_ui_deleted.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 /* the in-game server browser (port/linux/game/browser_screen.c): a screen of
 code over the widgets, as the virtual keyboard is */
@@ -2295,6 +2296,7 @@ void ui_widget_delete(
 	if (widget->delete_recursion_lock)
 		return;
 	widget->delete_recursion_lock = TRUE;
+	ae_ui_deleted_note(widget); /* AE hook */
 	if (widget->local_player_index != NONE && !widget->parent)
 		player_control_inhibit_buttons(
 			widget->local_player_index,
@@ -7220,6 +7222,8 @@ static void ui_widgets_process_mouse(
 	pointer_active = halo_ui_pointer_update(ui_mouse_menus_active(), &pointer) != 0;
 	if (pointer_active && ae_ui_pointer(&pointer)) /* AE hook */
 		pointer_active = FALSE;
+	if (ae_ui_deleted_forget(ui_mouse_targets, &ui_mouse_target_count, sizeof(ui_mouse_targets[0]), offsetof(struct ui_mouse_target, widget))) /* AE hook */
+		ui_mouse_hover_pending = ui_mouse_click_pending = FALSE; /* AE hook */
 	if (pointer_active)
 		ui_mouse_pointer_is_touch = pointer.touch != 0;
 	if (pointer_active && ui_debug_targets_enabled())
@@ -7434,6 +7438,7 @@ static void ui_widgets_process_mouse(
 	}
 	ui_mouse_target_count = 0;
 	ui_mouse_targets_settled = FALSE;
+	ae_ui_deleted_clear(); /* AE hook */
 
 	return;
 }
@@ -7919,6 +7924,7 @@ static void ui_mouse_settle_targets(
 		ui_mouse_widen_values();
 	}
 	ui_mouse_targets_settled = TRUE;
+	ae_ui_deleted_clear(); /* AE hook */
 
 	return;
 }

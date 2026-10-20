@@ -53,6 +53,8 @@ UNITS = {
     "ae_seats_rules_test.c": ([SRC / "ae_seats_rules.c"], ["-iquote", str(ROOT / "port" / "linux" / "include"), "-fsanitize=address,undefined",
                                                           "-fno-sanitize-recover=all"], []),
     # (the controller ports' pads: a pad keeps its port, a new one takes the first free one)
+    # (the menus' mouse targets of widgets deleted since they were noted: ui_widget.c's AE hooks)
+    "ae_ui_deleted_test.c": ([UI / "ae_ui_deleted.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_pad_ports_test.c": ([SRC / "ae_pad_ports.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                         "-fno-sanitize-recover=all"], []),
     # (the DualSense's profiles, weapon states, powerups, trigger effect bytes, report framing and CRC)

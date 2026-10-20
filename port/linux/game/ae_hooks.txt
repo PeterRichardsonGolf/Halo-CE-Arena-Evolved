@@ -971,3 +971,10 @@ port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
 port/linux/game/passenger_camera.c	#include "render/render_cameras_internal.h" /* AE hook */
 # Arena Evolved 0.3.5's own Delta wire (network 32): no Delta join with 0.3.4 (chupa-29a) or ChupathingyCE 0.8 (chupa-32a)
 port/linux/include/delta.h	#define DELTA_WIRE "ae-32a" /* AE hook */
+# A widget deleted between the menus' render and the next frame's pointer (a join closing the menus) left its mouse
+# targets on freed memory: the hover read its name and crashed (10-19). Its targets are dropped first (ae_ui_deleted.c).
+source/interface/ui_widget.c	#include "ae_ui_deleted.h" /* AE hook */
+source/interface/ui_widget.c	widget->delete_recursion_lock = TRUE;\nae_ui_deleted_note(widget); /* AE hook */
+source/interface/ui_widget.c	pointer_active = FALSE;\nif (ae_ui_deleted_forget(ui_mouse_targets, &ui_mouse_target_count, sizeof(ui_mouse_targets[0]), offsetof(struct ui_mouse_target, widget))) /* AE hook */\nui_mouse_hover_pending = ui_mouse_click_pending = FALSE; /* AE hook */
+source/interface/ui_widget.c	ui_mouse_targets_settled = FALSE;\nae_ui_deleted_clear(); /* AE hook */
+source/interface/ui_widget.c	ui_mouse_targets_settled = TRUE;\nae_ui_deleted_clear(); /* AE hook */
