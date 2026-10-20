@@ -901,7 +901,9 @@ class Box:
         self.ssh(f"mkdir -p {q(self.tree)} {q(self.results)}")
         excludes = [".git", "build/", "build.ninja", ".ninja_deps", ".ninja_log", ".pytest_cache", "__pycache__",
                     ".ae_test_configure"]
-        cmd = ["rsync", "-a", "--delete", "--protect-args"] + [f"--exclude={e}" for e in excludes] + \
+        # (by content, with no times kept: a file that differs gets a new time there, so ninja rebuilds what an
+        # earlier run's edit left built)
+        cmd = ["rsync", "-rlpD", "--checksum", "--delete", "--protect-args"] + [f"--exclude={e}" for e in excludes] + \
             [f"{ROOT}/", f"{self.host}:{self.harness.remote_rsync_path(self.tree)}/"]
         if subprocess.run(cmd).returncode:
             die("rsync to the box failed")
