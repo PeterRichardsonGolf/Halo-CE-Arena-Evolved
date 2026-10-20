@@ -15,8 +15,9 @@ each spawns and when); bots_choose_goal asks first (its AE hook line, after the 
 - an entry out of its reach (bots.c found no whole path to it: a short one, or the weapon left be as unreachable) is
   left alone by that bot for 30 s, as bots.c leaves an item (the soak 10-20: on Beaver Creek, whose snipers and
   rockets lie on the arches, bots stood under them for minutes, searching a path each tick); so is one whose item is
-  still there after 3 s at its spot (Temple's camouflage, on its stand above the floor: a bot stood under it to the
-  game's end).
+  still there after 5 s at its spot (a bot stood under Temple's camouflage to the game's end). A short path that ends
+  beside the spot, a jump below it (a stand: Temple's camouflage and overshield), is not out of reach: bots.c's climb
+  at the path's end jumps on.
 */
 
 #include "ae_bots_power_rules.h"
@@ -134,7 +135,12 @@ static boolean ae_bots_power_out_of_reach(struct bots_bot const *bot, short entr
 	item_index = ae_bots_power_item_at(timer);
 	if (item_index != NONE && bots_item_unreachable(bot, item_index))
 		return TRUE;
-	return (boolean)(bot->path.valid && bot->path_short && bots_distance2d(&bot->goal_point, &timer->position) < 2.5f);
+	if (!bot->path.valid || !bot->path_short || bots_distance2d(&bot->goal_point, &timer->position) >= 2.5f)
+		return FALSE;
+	/* (a short path that ends beside the spot, a jump below it: a stand, as Temple's camouflage's and overshield's,
+	which bots.c's climb at the path's end (jumps towards the goal) takes; the stall rule catches a miss) */
+	return (boolean)(bots_distance2d(&bot->path.endpoint.point, &timer->position) > 1.5f ||
+		timer->position.z - bot->path.endpoint.point.z > 1.2f);
 }
 
 static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_point3d const *position,
@@ -243,12 +249,12 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 		long surface_index;
 
 		/* (at an empty spot that is not about to spawn: taken, for the team, until its next spawn) */
-		/* (at the spot with the item up, 3 s and not got: out of its reach, 30 s) */
+		/* (at the spot with the item up, 5 s and not got: out of its reach, 30 s) */
 		if (best_item != NONE && bots_distance2d(position, &timer->position) < 1.5f)
 		{
 			if (!ae_bots_power_bots[index].near_since)
 				ae_bots_power_bots[index].near_since = now;
-			else if (now - ae_bots_power_bots[index].near_since > TICKS_PER_SECOND * 3 && best < AE_BOTS_POWER_ENTRIES)
+			else if (now - ae_bots_power_bots[index].near_since > TICKS_PER_SECOND * 5 && best < AE_BOTS_POWER_ENTRIES)
 			{
 				ae_bots_power_unreachable_until[index][best] = now + TICKS_PER_SECOND * 30;
 				if (ae_bots_events_on())
