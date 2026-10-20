@@ -312,6 +312,61 @@ static void test_limits(void)
 	free(text);
 }
 
+static void test_vehicle_lines(void)
+{
+	char const *text =
+		"layout 1 h2d_coagulation d7e4cd2e\n"
+		"vehicle warthog at 39.3 -154.1 1.0\n"
+		"vehicle Rocket_Warthog at 1 2 3 facing 90 team blue games ctf slayer\n"
+		"vehicle banshee at 0 0 10 games king team neutral\n"
+		"vehicle 3 at -4.5 6 0.25 facing -45 team red\n";
+	short none[4] = { 0, 0, 0, 0 }, ctf_slayer[4] = { 1, 2, 0, 0 }, all[4] = { AE_LAYOUT_GAMES_ALL, 0, 0, 0 };
+
+	AE_CHECK(parse(text) == 0);
+	AE_CHECK(layout.vehicle_count == 4 && layout.vehicle_rule_count == 0);
+	AE_CHECK(layout.vehicles[0].kind == _ae_layout_vehicle_warthog && !layout.vehicles[0].has_facing);
+	AE_CHECK(layout.vehicles[0].team == _ae_layout_team_unset && layout.vehicles[0].games[0] == AE_LAYOUT_GAMES_ALL);
+	AE_CHECK(layout.vehicles[0].x > 39.2f && layout.vehicles[0].y < -154.0f && layout.vehicles[0].line == 2);
+	AE_CHECK(layout.vehicles[1].kind == _ae_layout_vehicle_rocket_warthog && layout.vehicles[1].has_facing);
+	AE_CHECK(layout.vehicles[1].facing_degrees == 90.0f && layout.vehicles[1].team == _ae_layout_team_blue);
+	AE_CHECK(layout.vehicles[1].games[0] == 1 && layout.vehicles[1].games[1] == 2 && layout.vehicles[1].games[2] == 0);
+	AE_CHECK(layout.vehicles[2].kind == _ae_layout_vehicle_banshee && layout.vehicles[2].games[0] == 4);
+	AE_CHECK(layout.vehicles[2].team == _ae_layout_team_neutral);
+	AE_CHECK(layout.vehicles[3].kind == _ae_layout_vehicle_palette && layout.vehicles[3].palette_index == 3);
+	AE_CHECK(layout.vehicles[3].team == _ae_layout_team_red && layout.vehicles[3].facing_degrees == -45.0f);
+	/* (refused: an unknown kind, no point, a word twice, an unknown game, no games, more than 4) */
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle hog at 1 2 3\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle ghost\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle ghost at 1 2\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle ghost at 1 2 3 team red team blue\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle ghost at 1 2 3 team green\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle ghost at 1 2 3 games juggernaut\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle ghost at 1 2 3 games\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle ghost at 1 2 3 games ctf slayer king oddball race\n") == 2);
+	AE_CHECK(parse("layout 1 m 00000000\nvehicle -1 at 1 2 3\n") == 2);
+	/* (the limit) */
+	{
+		static char many[4096];
+		int index, used = snprintf(many, sizeof(many), "layout 1 m 00000000\n");
+
+		for (index = 0; index <= AE_LAYOUT_MAXIMUM_VEHICLES; index++)
+			used += snprintf(many + used, sizeof(many) - (size_t)used, "vehicle ghost at %d 0 0\n", index);
+		AE_CHECK(parse(many) == AE_LAYOUT_MAXIMUM_VEHICLES + 2);
+	}
+	/* (kinds by tag name, as the vehicle sets tell them; game types) */
+	AE_CHECK(ae_layout_vehicle_kind_of_name("vehicles\\rwarthog\\rwarthog") == _ae_layout_vehicle_rocket_warthog);
+	AE_CHECK(ae_layout_vehicle_kind_of_name("vehicles\\warthog\\mp_warthog") == _ae_layout_vehicle_warthog);
+	AE_CHECK(ae_layout_vehicle_kind_of_name("vehicles\\ghost\\ghost_mp") == _ae_layout_vehicle_ghost);
+	AE_CHECK(ae_layout_vehicle_kind_of_name("vehicles\\scorpion\\scorpion_mp") == _ae_layout_vehicle_scorpion);
+	AE_CHECK(ae_layout_vehicle_kind_of_name("vehicles\\banshee\\banshee_mp") == _ae_layout_vehicle_banshee);
+	AE_CHECK(ae_layout_vehicle_kind_of_name("vehicles\\c gun turret\\c gun turret_mp") == _ae_layout_vehicle_turret);
+	AE_CHECK(ae_layout_vehicle_kind_of_name("protected 12") == NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS);
+	AE_CHECK(ae_layout_vehicle_kind_of_name(NULL) == NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS);
+	AE_CHECK(!strcmp(ae_layout_vehicle_kind_name(_ae_layout_vehicle_rocket_warthog), "rocket_warthog"));
+	AE_CHECK(ae_layout_games_take(all, 5) && ae_layout_games_take(ctf_slayer, 1) && ae_layout_games_take(ctf_slayer, 2));
+	AE_CHECK(!ae_layout_games_take(ctf_slayer, 4) && !ae_layout_games_take(none, 1) && !ae_layout_games_take(none, 0));
+}
+
 int main(void)
 {
 	test_good_file();
@@ -320,6 +375,7 @@ int main(void)
 	test_bot_lines();
 	test_spawn_and_flag_lines();
 	test_limits();
+	test_vehicle_lines();
 	printf("%s\n", failures ? "FAILED" : "ok");
 	return failures != 0;
 }

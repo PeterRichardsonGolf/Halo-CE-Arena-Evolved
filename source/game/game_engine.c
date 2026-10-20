@@ -9427,6 +9427,7 @@ boolean game_engine_vehicle_placement_allowed(
 	if (!game_engine || placement->palette_entry_index == NONE)
 		return TRUE;
 	side = global_variant.universal_variant.teams ? game_engine_nearest_team(&placement->position) : 0;
+	if (global_variant.universal_variant.teams) side = ae_layout_vehicle_side(placement, side); /* AE hook */
 	/* (port: NHE MODE's set on NHE's maps, else the options': the PC set
 	keeps every vehicle the map places) */
 	set = game_engine_effective_team_vehicle_set(side);

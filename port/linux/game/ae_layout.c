@@ -10,6 +10,7 @@ netgame items and placed vehicles in memory.
 #include "cseries/cseries_windows.h"
 #include "cache/cache_files.h"
 #include "game/game_engine.h"
+#include "game/game_globals.h"
 #include "items/equipment_definitions.h"
 #include "items/item_definitions.h"
 #include "items/weapon_definitions.h"
@@ -26,7 +27,9 @@ netgame items and placed vehicles in memory.
 
 #include "ae_layout.h"
 #include "ae_layout_rules.h"
+#include "ae_layout_share_rules.h"
 #include "ae_map_folders.h"
+#include "ae_map_share.h"
 
 #include <xtl.h>
 #include <ctype.h>
@@ -78,16 +81,22 @@ static struct
 	long spawn_count;
 	struct scenario_netgame_flag *flags;
 	long flag_count;
+	/* the vehicle placements and palette with a layout's vehicle lines (0.3.5): ours in place of the map's; the
+	placements past original_vehicle_count are the lines', each with its team and game types */
+	byte *vehicles;
+	long vehicle_count, vehicle_element_size, original_vehicle_count;
+	struct scenario_object_palette_entry *vehicle_palette;
+	long vehicle_palette_count;
+	struct { short team; short games[4]; } added_vehicles[AE_LAYOUT_MAXIMUM_VEHICLES];
 } applied;
 
 static struct ae_layout layout;
 /* whether layout is this map's, applied (its bot lines are read by ae_bots_travel.c) */
 static boolean layout_applied;
 
-/* the map's file name and path as the game opened it; FALSE when it has none */
-static boolean map_file(char *file, long file_size, char *path, long path_size)
+/* a level's map file name and path as the game opens it; FALSE when it has none */
+static boolean map_file_of(char const *name, char *file, long file_size, char *path, long path_size)
 {
-	char const *name = cache_file_loaded_map_name();
 	short family;
 
 	file[0] = path[0] = 0;
@@ -102,6 +111,12 @@ static boolean map_file(char *file, long file_size, char *path, long path_size)
 		return (boolean)(path[0] != 0);
 	}
 	return map_family_find(family, file, path, path_size);
+}
+
+/* the loaded map's file name and path as the game opened it; FALSE when it has none */
+static boolean map_file(char *file, long file_size, char *path, long path_size)
+{
+	return map_file_of(cache_file_loaded_map_name(), file, file_size, path, path_size);
 }
 
 /* <the map's folder>\layouts\<file>.txt */
@@ -147,6 +162,155 @@ static char *read_file(char const *path, long *length)
 		*length = (long)size;
 	}
 	return text;
+}
+
+/* this machine's own layout file for a map: its text (read_file's), the file's path in path; NULL when it has none,
+and path the map's folder's file, where one would go */
+static char *own_layout(char const *map_path, char const *file, char *path, long size, long *length)
+{
+	char root_path[PATH_SIZE], other[PATH_SIZE + 32];
+	char *text;
+
+	path[0] = 0;
+	if (!layout_path(map_path, file, path, size))
+		return NULL;
+	text = read_file(path, length);
+	/* (a map in a folder of the maps folder: its folder's layouts, else the maps folder's, ae_map_folders.c) */
+	if (!text && ae_map_folders_root_path(map_path, root_path, sizeof(root_path)) &&
+		layout_path(root_path, file, other, sizeof(other)))
+	{
+		text = read_file(other, length);
+		if (text)
+			snprintf(path, (size_t)size, "%s", other);
+	}
+	return text;
+}
+
+static boolean write_file(char const *path, char const *text, long length)
+{
+	HANDLE file = CreateFileA(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	unsigned long written = 0;
+	boolean done;
+
+	if (file == INVALID_HANDLE_VALUE)
+		return FALSE;
+	done = (boolean)(WriteFile(file, text, (unsigned long)length, &written, NULL) && written == (unsigned long)length);
+	CloseHandle(file);
+	if (!done)
+		DeleteFileA(path);
+	return done;
+}
+
+/* a host's layout kept on this guest's disk (ae_layout_share_rules.h): written at own_path (its layouts folder made),
+or beside it as <map>.host.txt (unless that file is the same already) */
+static void keep_host_text(int disk, char const *own_path, char const *text, long length)
+{
+	char path[PATH_SIZE + 48];
+
+	if (disk == AE_LAYOUT_SHARE_DISK_WRITE)
+	{
+		char folder[PATH_SIZE + 32];
+		char *slash;
+
+		snprintf(folder, sizeof(folder), "%s", own_path);
+		slash = strrchr(folder, '\\');
+		if (slash)
+		{
+			*slash = 0;
+			CreateDirectoryA(folder, NULL);
+		}
+		snprintf(path, sizeof(path), "%s", own_path);
+	}
+	else if (disk == AE_LAYOUT_SHARE_DISK_BESIDE)
+	{
+		long beside_length = 0;
+		char *beside;
+
+		if (!ae_layout_share_beside_path(own_path, path, sizeof(path)))
+			return;
+		beside = read_file(path, &beside_length);
+		if (beside && beside_length == length && !memcmp(beside, text, (size_t)length))
+		{
+			free(beside);
+			return;
+		}
+		if (beside)
+			free(beside);
+	}
+	else
+	{
+		return;
+	}
+	if (write_file(path, text, length))
+		platform_log("layout: the host's layout kept in %s (%ld bytes)%s", path, length,
+			disk == AE_LAYOUT_SHARE_DISK_BESIDE ? ": this machine's own file differs, and is kept as it is" : "");
+	else
+		platform_log("layout: the host's layout could not be written to %s", path);
+}
+
+/* a host's layout for a map (state, text): what this guest applies (and keeps on disk), given its own file (own, at
+own_path, NULL for none) and the map file (file, its hash) */
+static int host_choice(int state, char const *host_text, long host_length, char const *own, long own_length,
+	char const *own_path, char const *file, unsigned long hash)
+{
+	static struct ae_layout checking;
+	int fits = state == AE_LAYOUT_SHARE_HOST_TEXT &&
+		ae_layout_share_fits(host_text, host_length, file, hash, &checking);
+	int same = fits && own && own_length == host_length && !memcmp(own, host_text, (size_t)own_length);
+	int disk = AE_LAYOUT_SHARE_DISK_NOTHING;
+	int choice = ae_layout_share_decide(state, fits, own != NULL, same, ae_map_share_download_may_write(), &disk);
+
+	if (state == AE_LAYOUT_SHARE_HOST_TEXT && !fits)
+		platform_log("layout: the host's layout for %s (%ld bytes) is not one for this map file (%s %08lx): not used",
+			file, host_length, file, hash);
+	keep_host_text(disk, own_path, host_text, host_length);
+	return choice;
+}
+
+boolean ae_layout_host_text(char const *level_name, char *text, long size, long *length)
+{
+	static struct ae_layout checking;
+	char file[64], map_path[PATH_SIZE], path[PATH_SIZE + 32];
+	unsigned int hash = 0;
+	char *own;
+	long own_length = 0;
+	boolean fits;
+
+	*length = 0;
+	if (!level_name || !map_file_of(level_name, file, sizeof(file), map_path, sizeof(map_path)))
+		return FALSE;
+	own = own_layout(map_path, file, path, sizeof(path), &own_length);
+	if (!own)
+		return FALSE;
+	/* (only one this machine applies: it reads, and was made for this very map file) */
+	fits = (boolean)(own_length <= size && map_file_hash_prefix(map_path, &hash) &&
+		ae_layout_share_fits(own, own_length, file, hash, &checking));
+	if (fits)
+	{
+		memcpy(text, own, (size_t)own_length);
+		*length = own_length;
+	}
+	free(own);
+	return fits;
+}
+
+void ae_layout_keep_host_text(char const *level_name, char const *text, long length)
+{
+	char file[64], map_path[PATH_SIZE], path[PATH_SIZE + 32];
+	unsigned int hash = 0;
+	char *own;
+	long own_length = 0;
+
+	if (!level_name || !text || !map_file_of(level_name, file, sizeof(file), map_path, sizeof(map_path)) ||
+		!map_file_hash_prefix(map_path, &hash))
+	{
+		return;
+	}
+	own = own_layout(map_path, file, path, sizeof(path), &own_length);
+	if (path[0])
+		host_choice(AE_LAYOUT_SHARE_HOST_TEXT, text, length, own, own_length, path, file, (unsigned long)hash);
+	if (own)
+		free(own);
 }
 
 /* what an item collection can spawn, as an alias: whether any of its items is that */
@@ -613,6 +777,263 @@ static void apply_vehicles(struct scenario *scenario)
 	platform_log("layout: %ld vehicle%s removed", removed, removed == 1 ? "" : "s");
 }
 
+/* a Halo PC (Custom Edition) vehicle placement's multiplayer team index and spawn flags (game_engine.c's
+CE_VEHICLE_SPAWN_FLAGS_OFFSET: the low four bits place it by default in slayer, ctf, king and oddball) */
+#define AE_CE_VEHICLE_TEAM_OFFSET 0x58
+#define AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET 0x5a
+/* a vehicle placement's permutation (change colours, region permutations) after its object datum (vehicles.c's
+struct scenario_vehicle) */
+#define AE_VEHICLE_PERMUTATION_OFFSET 0x28
+#define AE_VEHICLE_PERMUTATION_SIZE 0x20
+
+/* a vehicle tag's kind as the gametypes' vehicle sets tell it (game_engine.c's game_engine_variant_vehicle_type: the
+globals' three multiplayer vehicles, then the tag's name; a turret also by its vehicle type) */
+static short vehicle_kind_of(long definition)
+{
+	struct game_globals *globals = scenario_get_game_globals();
+	short kind;
+
+	if (definition == NONE)
+		return NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS;
+	if (globals && globals->multiplayer_information.count > 0)
+	{
+		struct game_globals_multiplayer_information *information = TAG_BLOCK_GET_ELEMENT(
+			&globals->multiplayer_information, 0, struct game_globals_multiplayer_information);
+		short slot;
+
+		for (slot = 0; slot < 3 && slot < information->vehicles.count; slot++)
+			if (TAG_BLOCK_GET_ELEMENT(&information->vehicles, slot, struct game_globals_vehicle)->vehicle.index ==
+				definition)
+			{
+				return slot == 0 ? _ae_layout_vehicle_warthog : slot == 1 ? _ae_layout_vehicle_ghost :
+					_ae_layout_vehicle_scorpion;
+			}
+	}
+	kind = ae_layout_vehicle_kind_of_name(tag_get_name(definition));
+	if (kind == NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS && ((struct ae_vehicle_definition_head const *)
+		tag_get(VEHICLE_DEFINITION_TAG, definition))->vehicle_type == AE_VEHICLE_TYPE_TURRET)
+	{
+		kind = _ae_layout_vehicle_turret;
+	}
+	return kind;
+}
+
+/* a vehicle tag of the kind the map has loaded though its palette has none: the globals' multiplayer warthog, ghost
+or scorpion, else the stock tag of that kind; NONE */
+static long vehicle_loaded(short kind)
+{
+	static char const *const stock[NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS] =
+	{
+		"vehicles\\warthog\\mp_warthog", "vehicles\\ghost\\ghost_mp", "vehicles\\scorpion\\scorpion_mp",
+		"vehicles\\rwarthog\\rwarthog", "vehicles\\banshee\\banshee_mp", "vehicles\\c gun turret\\c gun turret_mp"
+	};
+	struct game_globals *globals = scenario_get_game_globals();
+
+	if (kind < 0 || kind >= NUMBER_OF_AE_LAYOUT_VEHICLE_KINDS)
+		return NONE;
+	if (kind <= _ae_layout_vehicle_scorpion && globals && globals->multiplayer_information.count > 0)
+	{
+		struct game_globals_multiplayer_information *information = TAG_BLOCK_GET_ELEMENT(
+			&globals->multiplayer_information, 0, struct game_globals_multiplayer_information);
+
+		if (kind < information->vehicles.count)
+		{
+			long definition = TAG_BLOCK_GET_ELEMENT(&information->vehicles, kind, struct game_globals_vehicle)->vehicle.index;
+
+			if (definition != NONE)
+				return definition;
+		}
+	}
+	return tag_loaded(VEHICLE_DEFINITION_TAG, stock[kind]);
+}
+
+/* vehicle lines: each a vehicle placement more, of a vehicle the map carries (its palette's entry, else one added for
+a tag of that kind the map has loaded), so the map's own rules place it: the gametype's vehicle set, NHE MODE's, the
+Halo PC spawn flags, the respawn of vehicles (game_engine.c), on the host (vehicles are synced objects) */
+static void apply_vehicle_adds(struct scenario *scenario)
+{
+	long element_size = 0;
+	struct tag_block *placements = scenario_get_object_type_scenario_datums(scenario, _object_type_vehicle,
+		&element_size);
+	struct tag_block *palette = &scenario->vehicle_palette;
+	long original_count, palette_count, index, count, added = 0, skipped = 0;
+	byte *vehicles;
+	struct scenario_object_palette_entry *entries;
+
+	if (!layout.vehicle_count || !placements || element_size < (long)sizeof(struct scenario_object_datum))
+		return;
+	original_count = placements->count;
+	palette_count = palette->count;
+	vehicles = (byte *)malloc((size_t)(original_count + layout.vehicle_count) * (size_t)element_size);
+	entries = (struct scenario_object_palette_entry *)malloc((size_t)(palette_count + layout.vehicle_count) *
+		sizeof(*entries));
+	if (!vehicles || !entries)
+	{
+		if (vehicles)
+			free(vehicles);
+		if (entries)
+			free(entries);
+		platform_log("layout: no memory for %d vehicles (not added)", layout.vehicle_count);
+		return;
+	}
+	if (original_count)
+		memcpy(vehicles, tag_block_get_element_with_size(placements, 0, element_size),
+			(size_t)original_count * (size_t)element_size);
+	if (palette_count)
+		memcpy(entries, TAG_BLOCK_GET_ELEMENT(palette, 0, struct scenario_object_palette_entry),
+			(size_t)palette_count * sizeof(*entries));
+	count = original_count;
+	for (index = 0; index < layout.vehicle_count; index++)
+	{
+		struct ae_layout_vehicle const *line = &layout.vehicles[index];
+		struct scenario_object_datum *placement;
+		long entry = NONE, definition = NONE, template_index = NONE, other;
+
+		if (line->kind == _ae_layout_vehicle_palette)
+		{
+			if (line->palette_index < palette_count && entries[line->palette_index].reference.index != NONE)
+				entry = line->palette_index;
+		}
+		else
+		{
+			for (other = 0; other < palette_count && entry == NONE; other++)
+				if (vehicle_kind_of(entries[other].reference.index) == line->kind)
+					entry = other;
+			/* (a palette without one: a tag of that kind the map has loaded gets an entry) */
+			if (entry == NONE && (definition = vehicle_loaded(line->kind)) != NONE)
+			{
+				for (other = palette_count; other < palette_count + added && entry == NONE; other++)
+					if (entries[other].reference.index == definition)
+						entry = other;
+				if (entry == NONE)
+				{
+					entry = palette_count + added;
+					if (palette_count)
+						entries[entry] = entries[0];
+					else
+						memset(&entries[entry], 0, sizeof(entries[entry]));
+					entries[entry].reference.group_tag = VEHICLE_DEFINITION_TAG;
+					entries[entry].reference.index = definition;
+					platform_log("layout: line %d: the map's vehicle palette has no %s: %s (a tag the map has) added "
+						"as its entry %ld", line->line, ae_layout_vehicle_kind_name(line->kind), tag_get_name(definition),
+						entry);
+				}
+			}
+		}
+		if (entry == NONE)
+		{
+			platform_log("layout: line %d: the map has no %s%s (skipped)", line->line,
+				line->kind == _ae_layout_vehicle_palette ? "vehicle palette entry " : ae_layout_vehicle_kind_name(line->kind),
+				line->kind == _ae_layout_vehicle_palette ? "of that number" : "");
+			skipped++;
+			continue;
+		}
+		/* (made from one of the map's own placements of that vehicle, else another vehicle's, else nothing) */
+		for (other = 0; other < original_count && template_index == NONE; other++)
+			if (((struct scenario_object_datum *)(vehicles + other * element_size))->palette_entry_index == entry)
+				template_index = other;
+		placement = (struct scenario_object_datum *)(vehicles + count * element_size);
+		if (template_index != NONE)
+			memcpy(placement, vehicles + template_index * element_size, (size_t)element_size);
+		else
+		{
+			memset(placement, 0, (size_t)element_size);
+			for (other = 0; other < original_count; other++)
+				if (((struct scenario_object_datum *)(vehicles + other * element_size))->palette_entry_index != NONE)
+				{
+					memcpy(placement, vehicles + other * element_size, (size_t)element_size);
+					if (element_size >= AE_VEHICLE_PERMUTATION_OFFSET + AE_VEHICLE_PERMUTATION_SIZE)
+						memset((byte *)placement + AE_VEHICLE_PERMUTATION_OFFSET, 0, AE_VEHICLE_PERMUTATION_SIZE);
+					break;
+				}
+			placement->variant_number = 0;
+		}
+		placement->palette_entry_index = (short)entry;
+		placement->name_index = NONE;
+		placement->placement_flags = 0;
+		placement->position.x = line->x;
+		placement->position.y = line->y;
+		placement->position.z = line->z;
+		placement->rotation.yaw = line->has_facing ? line->facing_degrees * DEGREES_TO_RADIANS :
+			template_index != NONE ? placement->rotation.yaw : 0.0f;
+		placement->rotation.pitch = 0.0f;
+		placement->rotation.roll = 0.0f;
+		/* (a Halo PC map's: placed in every gametype by its spawn flags, the line's game types decide; its team) */
+		if (element_size >= AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET + 2)
+		{
+			word flags;
+
+			memcpy(&flags, (byte *)placement + AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET, sizeof(flags));
+			flags |= 0x000F;
+			memcpy((byte *)placement + AE_CE_VEHICLE_SPAWN_FLAGS_OFFSET, &flags, sizeof(flags));
+			if (line->team == _ae_layout_team_red || line->team == _ae_layout_team_blue)
+				((byte *)placement)[AE_CE_VEHICLE_TEAM_OFFSET] = (byte)line->team;
+		}
+		applied.added_vehicles[count - original_count].team = line->team;
+		memcpy(applied.added_vehicles[count - original_count].games, line->games, sizeof(line->games));
+		platform_log("layout: line %d: vehicle %ld (%s, palette %ld) at %.2f %.2f %.2f facing %.0f", line->line, count,
+			ae_layout_vehicle_kind_name(line->kind), entry, placement->position.x, placement->position.y,
+			placement->position.z, placement->rotation.yaw / DEGREES_TO_RADIANS);
+		if (entry >= palette_count + added)
+			added++;
+		count++;
+	}
+	applied.vehicles = vehicles;
+	applied.vehicle_count = count;
+	applied.vehicle_element_size = element_size;
+	applied.original_vehicle_count = original_count;
+	applied.vehicle_palette = entries;
+	applied.vehicle_palette_count = palette_count + added;
+	placements->address = XBOX_ADDRESS(vehicles);
+	placements->count = count;
+	palette->address = XBOX_ADDRESS(entries);
+	palette->count = palette_count + added;
+	platform_log("layout: vehicles %ld of the map's, %ld added, %ld skipped: %ld in all", original_count,
+		count - original_count, skipped, count);
+}
+
+/* the index past the map's own of a placement of ours, else NONE */
+static long added_vehicle(void const *placement)
+{
+	unsigned long address = (unsigned long)XBOX_ADDRESS(placement), start, index;
+
+	if (!applied.vehicles || !placement || applied.vehicle_element_size <= 0)
+		return NONE;
+	start = (unsigned long)XBOX_ADDRESS(applied.vehicles);
+	if (address < start)
+		return NONE;
+	index = (address - start) / (unsigned long)applied.vehicle_element_size;
+	if ((address - start) % (unsigned long)applied.vehicle_element_size || (long)index < applied.original_vehicle_count ||
+		(long)index >= applied.vehicle_count)
+	{
+		return NONE;
+	}
+	return (long)index - applied.original_vehicle_count;
+}
+
+boolean ae_layout_vehicle_placed(void const *placement)
+{
+	long added = added_vehicle(placement);
+	struct game_variant *variant = game_engine_get_variant();
+
+	if (added == NONE || !game_engine_running())
+		return TRUE;
+	return ae_layout_games_take(applied.added_vehicles[added].games, variant ? variant->game_engine_index : 0);
+}
+
+short ae_layout_vehicle_side(void const *placement, short side)
+{
+	long added = added_vehicle(placement);
+
+	if (added == NONE)
+		return side;
+	if (applied.added_vehicles[added].team == _ae_layout_team_red)
+		return 0;
+	if (applied.added_vehicles[added].team == _ae_layout_team_blue)
+		return 1;
+	return side;
+}
+
 /* whether name has word in it, letters of either case alike */
 static boolean name_has(char const *name, char const *word)
 {
@@ -713,7 +1134,10 @@ int ae_layout_memory(unsigned long address, long size)
 {
 	return memory_in(applied.items, applied.item_count, sizeof(*applied.items), address, size) ||
 		memory_in(applied.spawns, applied.spawn_count, sizeof(*applied.spawns), address, size) ||
-		memory_in(applied.flags, applied.flag_count, sizeof(*applied.flags), address, size);
+		memory_in(applied.flags, applied.flag_count, sizeof(*applied.flags), address, size) ||
+		memory_in(applied.vehicles, applied.vehicle_count, (unsigned long)applied.vehicle_element_size, address, size) ||
+		memory_in(applied.vehicle_palette, applied.vehicle_palette_count, sizeof(*applied.vehicle_palette), address,
+			size);
 }
 
 struct ae_layout const *ae_layout_bot_hints(void)
@@ -738,11 +1162,12 @@ boolean ae_layout_map_header(char *text, long size)
 void ae_layout_apply(void)
 {
 	struct scenario *scenario = global_scenario_get();
-	char file[64], map_path[PATH_SIZE], root_path[PATH_SIZE], path[PATH_SIZE + 32], error[160];
+	char file[64], map_path[PATH_SIZE], path[PATH_SIZE + 32], error[160];
 	unsigned int hash = 0;
 	char *text;
-	long length = 0;
-	int bad;
+	char const *host_text = NULL;
+	long length = 0, host_length = 0;
+	int bad, host_state;
 
 	if (!scenario)
 		return;
@@ -750,7 +1175,8 @@ void ae_layout_apply(void)
 	if (applied.scenario == scenario &&
 		((applied.items && scenario->netgame_equipment.address == XBOX_ADDRESS(applied.items)) ||
 		(applied.spawns && scenario->players.address == XBOX_ADDRESS(applied.spawns)) ||
-		(applied.flags && scenario->netgame_flags.address == XBOX_ADDRESS(applied.flags))))
+		(applied.flags && scenario->netgame_flags.address == XBOX_ADDRESS(applied.flags)) ||
+		(applied.vehicle_palette && scenario->vehicle_palette.address == XBOX_ADDRESS(applied.vehicle_palette))))
 	{
 		return;
 	}
@@ -782,17 +1208,63 @@ void ae_layout_apply(void)
 		applied.flags = NULL;
 		applied.flag_count = 0;
 	}
-	if (!map_file(file, sizeof(file), map_path, sizeof(map_path)) ||
-		!layout_path(map_path, file, path, sizeof(path)))
+	if (applied.vehicles)
 	{
+		free(applied.vehicles);
+		applied.vehicles = NULL;
+		applied.vehicle_count = applied.original_vehicle_count = 0;
+	}
+	if (applied.vehicle_palette)
+	{
+		free(applied.vehicle_palette);
+		applied.vehicle_palette = NULL;
+		applied.vehicle_palette_count = 0;
+	}
+	if (!map_file(file, sizeof(file), map_path, sizeof(map_path)))
+		return;
+	text = own_layout(map_path, file, path, sizeof(path), &length);
+	if (!path[0])
+	{
+		if (text)
+			free(text);
 		return;
 	}
-	text = read_file(path, &length);
-	/* (a map in a folder of the maps folder: its folder's layouts, else the maps folder's, ae_map_folders.c) */
-	if (!text && ae_map_folders_root_path(map_path, root_path, sizeof(root_path)) &&
-		layout_path(root_path, file, path, sizeof(path)))
+	/* (a guest: its host's word on the map's layout, when its host runs this game and sent it, ae_map_share_all.c:
+	the host's layout for the match, none if the host has none, else its own file as before; ae_layout_share_rules.h) */
+	host_state = ae_map_share_layout_received(cache_file_loaded_map_name(), &host_text, &host_length);
+	if (host_state != AE_LAYOUT_SHARE_HOST_UNKNOWN)
 	{
-		text = read_file(path, &length);
+		int choice;
+
+		if (!map_file_hash_prefix(map_path, &hash))
+			hash = 0;
+		choice = host_choice(host_state, host_text, host_length, text, length, path, file, (unsigned long)hash);
+		if (choice == AE_LAYOUT_SHARE_APPLY_NOTHING)
+		{
+			platform_log("layout: the host has no layout for %s: none applied%s", file, text ?
+				" (this machine's own file is not used this match)" : "");
+			if (text)
+				free(text);
+			return;
+		}
+		if (choice == AE_LAYOUT_SHARE_APPLY_HOST)
+		{
+			char *copy = (char *)malloc((size_t)host_length + 1);
+
+			if (copy)
+			{
+				memcpy(copy, host_text, (size_t)host_length);
+				copy[host_length] = 0;
+				platform_log("layout: the host's layout for %s is used (%ld bytes; this machine's own file %s)", file,
+					host_length, !text ? "is not there" : length == host_length && !memcmp(text, host_text,
+					(size_t)length) ? "is the same" : "differs");
+				if (text)
+					free(text);
+				text = copy;
+				length = host_length;
+				snprintf(path, sizeof(path), "the host's layout");
+			}
+		}
 	}
 	if (!text)
 		return;
@@ -804,19 +1276,20 @@ void ae_layout_apply(void)
 		platform_log("layout: %s line %d: %s (not applied)", path, bad, error);
 		return;
 	}
-	if (!map_file_hash_prefix(map_path, &hash) || !ae_layout_for_map(&layout, file, (unsigned long)hash))
+	if ((!hash && !map_file_hash_prefix(map_path, &hash)) || !ae_layout_for_map(&layout, file, (unsigned long)hash))
 	{
 		platform_log("layout: %s was made for %s %08lx, this map is %s %08x (not applied)", path, layout.map_file,
 			layout.map_hash, file, hash);
 		return;
 	}
 	platform_log("layout: %s (%d items, %d removed, %sclear, %d vehicle lines, %d names, %d bot jumps, %d bot avoids, "
-		"%d spawns, %d flags, %d object lines)", path, layout.item_count, layout.removed_count, layout.clear_items ? "" : "no ",
-		layout.vehicle_rule_count, layout.name_count, layout.bot_jump_count, layout.bot_avoid_count, layout.spawn_count,
-		layout.flag_count, layout.object_rule_count);
+		"%d spawns, %d flags, %d object lines, %d vehicles)", path, layout.item_count, layout.removed_count,
+		layout.clear_items ? "" : "no ", layout.vehicle_rule_count, layout.name_count, layout.bot_jump_count,
+		layout.bot_avoid_count, layout.spawn_count, layout.flag_count, layout.object_rule_count, layout.vehicle_count);
 	layout_applied = TRUE;
 	apply_items(scenario);
 	apply_vehicles(scenario);
+	apply_vehicle_adds(scenario);
 	apply_objects(scenario);
 	apply_spawns(scenario);
 	apply_flags(scenario);

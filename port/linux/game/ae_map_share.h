@@ -271,6 +271,21 @@ void ae_map_share_all_update(
 void ae_map_share_all_render(
 	void);
 
+/* LAYOUTS TRAVEL WITH MAPS (0.3.5; ae_layout_share_rules.h): a host sends each guest that runs this game the layout
+it applies to the game's map (or word that it has none), and the layout of any other map the guest asks it for; a
+guest keeps them for the match.
+- ae_map_share_layout_received (ae_layout.c, as a map loads): what this guest knows of its host's layout for the map
+  (map_name as the game names it): AE_LAYOUT_SHARE_HOST_UNKNOWN (a host, no game, an older host, or not all of it
+  came), _NONE, or _TEXT with the text in *text (length bytes; good until the next frame).
+- ae_map_share_layout_downloaded (map_share.c's download_finish, an AE hook): a level's map was downloaded from the
+  host: its layout kept on disk beside it (ae_layout_keep_host_text). */
+int ae_map_share_layout_received(
+	char const *map_name,
+	char const **text,
+	long *length);
+void ae_map_share_layout_downloaded(
+	char const *level_name);
+
 /* cache_files.c's: a guest without the game's Xbox map asks its host for it (TRUE: taken as present, downloaded
 before it is precached); a map's file is maps_shared's if no other folder has it */
 boolean ae_map_share_played_map(

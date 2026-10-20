@@ -51,6 +51,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     settings words in any case, and an unreadable config.toml line is skipped (the log says why).
   - OpenCE's PC menus in the language of a Custom Edition's loc.map are not in Arena Evolved yet (it reads Custom
     Edition maps with ChupathingyCE's loader): the menus stay in English.
+- Map layouts travel with maps: a host sends its layout for the game's map to every guest that runs Arena Evolved
+  (and the layout of any other map a guest downloads from it), so both play the same level: a guest without the file
+  no longer keeps the scenery the host's layout removes (Sali Creek's fusion coils, with their collision), and its bots
+  get the layout's bot lines. For the match a guest uses the host's layout when it was made for the very map file it
+  has, and none when the host has none; its own file is used only with an older host. After you said yes to
+  downloading from the host, its layout is kept beside the map (`layouts/<map>.txt`); a file of your own that differs
+  is never overwritten: the host's goes beside it as `<map>.host.txt`. OpenCE machines in the game are sent nothing
+  and play as before.
+- Map layout files can add vehicle spawns: `vehicle <warthog|rocket_warthog|ghost|scorpion|banshee|turret|<palette n>>
+  at <x y z> [facing <degrees>] [team red|blue|neutral] [games ...]` places a vehicle the map already carries (its
+  vehicle palette's, else its multiplayer warthog, ghost or scorpion) as one of the map's own vehicle spawns: the
+  gametype's vehicle set, NHE MODE and the vehicle respawn treat it as the map's. A vehicle the map does not carry
+  skips that line (logged).
 
 ## 0.3.4-beta - 2026-10-18
 

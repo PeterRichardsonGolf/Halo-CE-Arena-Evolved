@@ -492,5 +492,92 @@ def test_game_starts_during_get_all(roots):
     assert "| local 1 camera" in guest_text.split("getting all of the host's maps")[1]
 
 
+# ---------- layouts travel with maps (0.3.5; port/linux/game/ae_layout_share_rules.h)
+#
+# AE_SHARE_LAYOUT_MAP: a map with a layout file beside it (<its folder>/layouts/<map>.txt) whose layout removes placed
+# scenery, e.g. the H2 Demakes' h2d_salicreek.map (its fusion coils): copied for the test, never committed.
+
+def layout_map():
+    path = os.environ.get("AE_SHARE_LAYOUT_MAP")
+    if not path:
+        pytest.skip("needs AE_SHARE_LAYOUT_MAP (a map with layouts/<map>.txt beside it)")
+    path = Path(path).expanduser()
+    return path.stem, path.read_bytes(), (path.parent / "layouts" / f"{path.stem}.txt").read_bytes()
+
+
+def layout_lines(text):
+    return "\n".join(line for line in text.splitlines() if "layout" in line)
+
+
+def removed_objects(text):
+    import re
+    found = re.findall(r"layout: (\d+) scenery and other objects? removed", text)
+    return int(found[-1]) if found else None
+
+
+def test_layout_travels_to_a_guest_with_the_map(roots):
+    """a guest that has the map but not its layout plays the host's layout (the scenery it removes is gone there
+    too); without a yes to downloading nothing is written"""
+    host, guest = roots
+    name, content, layout = layout_map()
+    make_root(host, raw={f"maps/Pack/{name}.map": content, f"maps/Pack/layouts/{name}.txt": layout})
+    make_root(guest, raw={f"maps/Pack/{name}.map": content})
+    host_text, guest_text = run_pair("layout-travels", host, guest, level=name, start=40, seconds=80)
+    assert f"{name} ({len(layout)} bytes) goes to its guests" in host_text, share_lines(host_text)
+    assert "was sent this host's layout for" in host_text, share_lines(host_text)
+    assert f"{name} came ({len(layout)} bytes)" in guest_text, share_lines(guest_text)
+    assert f"layout: the host's layout for {name} is used ({len(layout)} bytes; this machine's own file is not there)" \
+        in guest_text, layout_lines(guest_text)
+    assert "layout: the host's layout (" in guest_text, layout_lines(guest_text)
+    host_removed = removed_objects(host_text)
+    assert host_removed and removed_objects(guest_text) == host_removed, layout_lines(guest_text)
+    assert not (guest / f"maps/Pack/layouts/{name}.txt").exists()
+
+
+def test_layout_comes_with_a_downloaded_map(roots):
+    """a guest without the map downloads it (yes), and the host's layout is kept beside it in maps_shared/layouts and
+    applied"""
+    host, guest = roots
+    name, content, layout = layout_map()
+    make_root(host, raw={f"maps/Pack/{name}.map": content, f"maps/Pack/layouts/{name}.txt": layout})
+    make_root(guest)
+    host_text, guest_text = run_pair("layout-download", host, guest, guest_env=YES, level=name, start=150, seconds=200)
+    assert (guest / f"maps_shared/{name}.map").exists(), share_lines(guest_text)
+    assert (guest / f"maps_shared/layouts/{name}.txt").read_bytes() == layout, layout_lines(guest_text)
+    assert "the host's layout kept in" in guest_text, layout_lines(guest_text)
+    assert removed_objects(guest_text) == removed_objects(host_text) and removed_objects(host_text), \
+        layout_lines(guest_text)
+
+
+def test_layout_of_a_guest_that_differs_is_kept(roots):
+    """a guest's own layout that differs from the host's is never overwritten: the host's goes beside it as
+    <map>.host.txt, and the host's is the one played"""
+    host, guest = roots
+    name, content, layout = layout_map()
+    mine = layout.split(b"\n")[0] + b"\n# this guest's own\n"
+    make_root(host, raw={f"maps/Pack/{name}.map": content, f"maps/Pack/layouts/{name}.txt": layout})
+    make_root(guest, raw={f"maps_shared/layouts/{name}.txt": mine})
+    host_text, guest_text = run_pair("layout-differs", host, guest, guest_env=YES, level=name, start=150, seconds=200)
+    assert (guest / f"maps_shared/{name}.map").exists(), share_lines(guest_text)
+    assert (guest / f"maps_shared/layouts/{name}.txt").read_bytes() == mine
+    assert (guest / f"maps_shared/layouts/{name}.host.txt").read_bytes() == layout, layout_lines(guest_text)
+    assert "this machine's own file differs" in guest_text, layout_lines(guest_text)
+    assert removed_objects(guest_text) == removed_objects(host_text), layout_lines(guest_text)
+
+
+def test_host_without_a_layout(roots):
+    """a host without a layout for the map: its guest plays none, though it has a file of its own (left as it is)"""
+    host, guest = roots
+    name, content, layout = layout_map()
+    make_root(host, raw={f"maps/Pack/{name}.map": content})
+    make_root(guest, raw={f"maps/Pack/{name}.map": content, f"maps/Pack/layouts/{name}.txt": layout})
+    host_text, guest_text = run_pair("layout-none", host, guest, level=name, start=40, seconds=80)
+    assert f"this host has no layout for levels\\test\\{name}" in host_text, share_lines(host_text)
+    assert "map sharing: the host has no layout for" in guest_text, share_lines(guest_text)
+    assert f"layout: the host has no layout for {name}: none applied" in guest_text, layout_lines(guest_text)
+    assert removed_objects(guest_text) is None, layout_lines(guest_text)
+    assert (guest / f"maps/Pack/layouts/{name}.txt").read_bytes() == layout
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main(["-q", "-x", *sys.argv[1:], __file__]))

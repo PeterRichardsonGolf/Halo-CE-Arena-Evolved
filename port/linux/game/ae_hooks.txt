@@ -255,6 +255,8 @@ port/linux/game/map_share.c	if (!game || (csstrcmp(game->map.name, request->leve
 port/linux/game/map_share.c	if (ae_map_share_handle_message(machine_index, message, size, from_stream)) return; /* AE hook */
 port/linux/game/map_share.c	ae_map_share_all_update(); /* AE hook */
 port/linux/game/map_share.c	ae_map_share_all_render(); /* AE hook */
+# layouts travel with maps (0.3.5; ae_layout_share_rules.h): a download done keeps its host's layout beside the map
+port/linux/game/map_share.c	ae_map_share_layout_downloaded(download->level_name); /* AE hook */
 source/cache/cache_files.c	ae_map_share_xbox_path(map_name, path, size); /* AE hook */
 source/cache/cache_files.c	if (ae_map_share_played_map(map_name)) return TRUE; /* AE hook */
 port/linux/game/map_families.c	if (ae_map_share_xbox_downloaded(map_name)) return TRUE; /* AE hook */
@@ -978,3 +980,8 @@ source/interface/ui_widget.c	widget->delete_recursion_lock = TRUE;\nae_ui_delete
 source/interface/ui_widget.c	pointer_active = FALSE;\nif (ae_ui_deleted_forget(ui_mouse_targets, &ui_mouse_target_count, sizeof(ui_mouse_targets[0]), offsetof(struct ui_mouse_target, widget))) /* AE hook */\nui_mouse_hover_pending = ui_mouse_click_pending = FALSE; /* AE hook */
 source/interface/ui_widget.c	ui_mouse_targets_settled = FALSE;\nae_ui_deleted_clear(); /* AE hook */
 source/interface/ui_widget.c	ui_mouse_targets_settled = TRUE;\nae_ui_deleted_clear(); /* AE hook */
+# layout vehicle lines (0.3.5; ae_layout.c): a line's vehicle placement is placed only in its game types, and counts
+# for its team in a gametype's vehicle set of each team's
+source/objects/object_types.c	#include "ae_layout.h" /* AE hook */
+source/objects/object_types.c	if (object_type == _object_type_vehicle && !ae_layout_vehicle_placed(scenario_object)) continue; /* AE hook */
+source/game/game_engine.c	if (global_variant.universal_variant.teams) side = ae_layout_vehicle_side(placement, side); /* AE hook */

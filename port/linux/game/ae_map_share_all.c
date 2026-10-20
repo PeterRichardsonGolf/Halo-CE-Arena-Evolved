@@ -46,6 +46,8 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
 #include "map_share.h"
 #include "ae_map_share.h"
 #include "ae_map_share_rules.h"
+#include "ae_layout.h"
+#include "ae_layout_share_rules.h"
 #include "ae_silent.h"
 #include "ae_map_folders.h"
 #include "halo_map_families.h"
@@ -170,6 +172,29 @@ struct host_peer
 	/* which list it was sent (the host's lists are numbered) */
 	long list_serial;
 	char requested[LEVEL_BYTES];
+	/* the layouts it was sent (ae_layout_share_rules.h): the game's map's and the last other map's it asked for, by
+	their texts' serials; the one being sent, and how far */
+	char layout_game[LEVEL_BYTES];
+	unsigned int layout_game_serial;
+	char layout_extra[LEVEL_BYTES];
+	unsigned int layout_extra_serial;
+	boolean layout_busy;
+	boolean layout_busy_game;
+	char layout_level[LEVEL_BYTES];
+	unsigned int layout_serial;
+	long layout_offset;
+};
+
+/* a layout this host sends (ae_layout_share_rules.h): a level's, read from its layout file now and then (has: one this
+host applies), its text's serial new for each new text */
+struct host_layout
+{
+	char level[LEVEL_BYTES];
+	boolean has;
+	long length;
+	unsigned int serial;
+	unsigned long read_at;
+	char text[AE_LAYOUT_MAXIMUM_FILE_SIZE];
 };
 
 struct remembered_host
@@ -263,6 +288,17 @@ struct share_globals
 };
 
 static struct share_globals share;
+
+enum
+{
+	HOST_LAYOUTS = 4,
+	/* the game's map's layout file is read again this often (a file changed is sent again) */
+	HOST_LAYOUT_READ_INTERVAL = 3000,
+};
+static struct host_layout host_layouts[HOST_LAYOUTS];
+static unsigned int host_layout_serial;
+/* the guest's: its host's layouts */
+static struct ae_layout_share_inbox layout_inbox;
 
 /* ---------- small things */
 
@@ -799,21 +835,29 @@ static void host_hash_update(
 	}
 }
 
-static boolean host_send_frame(
+enum
+{
+	FRAME_BODY_BYTES = AE_MAP_SHARE_WIRE_FRAME_BYTES + AE_MAP_SHARE_FRAME_ENTRIES * AE_MAP_SHARE_WIRE_ENTRY_BYTES,
+};
+typedef char layout_frame_assert[AE_LAYOUT_SHARE_FRAME_MAXIMUM_BYTES <= FRAME_BODY_BYTES ? 1 : -1];
+
+/* a frame's body (a list's, or a layout's) sent to a machine in map sharing's offer message */
+static boolean host_send_body(
 	long machine_index,
-	struct ae_map_share_frame const *frame)
+	byte const *bytes,
+	long body)
 {
 	struct
 	{
 		struct distributed_message_header header;
 		byte offer[OFFER_BYTES];
-		byte body[AE_MAP_SHARE_WIRE_FRAME_BYTES + AE_MAP_SHARE_FRAME_ENTRIES * AE_MAP_SHARE_WIRE_ENTRY_BYTES];
+		byte body[FRAME_BODY_BYTES];
 	} message;
-	long body = ae_map_share_frame_encode(frame, message.body, sizeof(message.body));
 	word size = (word)(sizeof(message.header) + sizeof(message.offer) + body);
 
-	if (!body)
+	if (body <= 0 || body > (long)sizeof(message.body))
 		return FALSE;
+	csmemcpy(message.body, bytes, (size_t)body);
 	csmemset(&message.header, 0, sizeof(message.header));
 	csmemset(message.offer, 0, sizeof(message.offer));
 	build_message_header(&message.header.header, size, 2, 0);
@@ -824,6 +868,170 @@ static boolean host_send_frame(
 	message.offer[OFFER_RESULT] = FRAME_RESULT;
 	message.offer[OFFER_FILE_COUNT] = FRAME_FILE_COUNT;
 	return network_distributed_server_send_to_machine_reliably(machine_index, &message, size);
+}
+
+static boolean host_send_frame(
+	long machine_index,
+	struct ae_map_share_frame const *frame)
+{
+	byte body[FRAME_BODY_BYTES];
+	long length = ae_map_share_frame_encode(frame, body, sizeof(body));
+
+	return length ? host_send_body(machine_index, body, length) : FALSE;
+}
+
+/* ---------- the host's layouts (layouts travel with maps, ae_layout_share_rules.h) */
+
+static struct host_layout *host_layout_find(
+	char const *level_name)
+{
+	long index;
+
+	for (index = 0; index < HOST_LAYOUTS; index++)
+	{
+		if (same_level(host_layouts[index].level, level_name))
+			return &host_layouts[index];
+	}
+	return NULL;
+}
+
+/* a level's layout as this host applies it, read from its file if it was not, or (fresh) not lately */
+static struct host_layout *host_layout_get(
+	char const *level_name,
+	boolean fresh)
+{
+	static char text[AE_LAYOUT_MAXIMUM_FILE_SIZE];
+	unsigned long now = system_milliseconds();
+	struct host_layout *entry;
+	long length = 0;
+	boolean has;
+
+	if (!level_name || !level_name[0] || strlen(level_name) >= LEVEL_BYTES)
+		return NULL;
+	entry = host_layout_find(level_name);
+	if (entry && (!fresh || !elapsed(entry->read_at, now, HOST_LAYOUT_READ_INTERVAL)))
+		return entry;
+	has = ae_layout_host_text(level_name, text, sizeof(text), &length);
+	if (entry && entry->has == has && (!has || (entry->length == length && !memcmp(entry->text, text, (size_t)length))))
+	{
+		entry->read_at = now;
+		return entry;
+	}
+	if (!entry)
+	{
+		long index;
+
+		/* (in place of the one read longest ago) */
+		entry = &host_layouts[0];
+		for (index = 0; index < HOST_LAYOUTS; index++)
+		{
+			if (!host_layouts[index].level[0])
+			{
+				entry = &host_layouts[index];
+				break;
+			}
+			if ((long)(host_layouts[index].read_at - entry->read_at) < 0)
+				entry = &host_layouts[index];
+		}
+	}
+	csstrncpy(entry->level, level_name, sizeof(entry->level) - 1);
+	entry->level[sizeof(entry->level) - 1] = 0;
+	entry->has = has;
+	entry->length = has ? length : 0;
+	if (has)
+		csmemcpy(entry->text, text, (size_t)length);
+	entry->serial = ++host_layout_serial & 0xFFFF;
+	entry->read_at = now;
+	if (has)
+		error(_error_silent, "map sharing: this host's layout for %s (%ld bytes) goes to its guests that run this game",
+			level_name, length);
+	else
+		error(_error_silent, "map sharing: this host has no layout for %s: its guests that run this game are told so",
+			level_name);
+	return entry;
+}
+
+/* a guest that runs this game sent the layout of the game's map (or word that there is none), else of the other map
+it asked for last; a few frames each frame, the rest next time (a queue that is full: the same frame again) */
+static void host_layout_update(
+	long machine_index,
+	struct host_peer *peer)
+{
+	struct network_game *game = client_game();
+	char const *game_level = game && game->map.name[0] && strlen(game->map.name) < LEVEL_BYTES ? game->map.name : NULL;
+	struct host_layout *entry = NULL;
+	long frames;
+
+	if (peer->layout_busy)
+	{
+		entry = host_layout_find(peer->layout_level);
+		/* (its text changed, or it was given up for another level's: begun again) */
+		if (!entry || entry->serial != peer->layout_serial ||
+			(peer->layout_busy_game && (!game_level || !same_level(game_level, peer->layout_level))))
+		{
+			peer->layout_busy = FALSE;
+			entry = NULL;
+		}
+	}
+	if (!peer->layout_busy)
+	{
+		boolean is_game = FALSE;
+
+		if (game_level)
+		{
+			entry = host_layout_get(game_level, TRUE);
+			is_game = entry != NULL;
+			if (entry && same_level(peer->layout_game, entry->level) && peer->layout_game_serial == entry->serial)
+				entry = NULL, is_game = FALSE;
+		}
+		if (!entry && peer->shared && peer->requested[0] && (!game_level || !same_level(game_level, peer->requested)))
+		{
+			entry = host_layout_get(peer->requested, FALSE);
+			if (entry && same_level(peer->layout_extra, entry->level) && peer->layout_extra_serial == entry->serial)
+				entry = NULL;
+		}
+		if (!entry)
+			return;
+		peer->layout_busy = TRUE;
+		peer->layout_busy_game = is_game;
+		csmemcpy(peer->layout_level, entry->level, sizeof(peer->layout_level));
+		peer->layout_serial = entry->serial;
+		peer->layout_offset = 0;
+	}
+	for (frames = 0; frames < FRAMES_PER_UPDATE; frames++)
+	{
+		struct ae_layout_share_frame frame;
+		byte body[AE_LAYOUT_SHARE_FRAME_MAXIMUM_BYTES];
+		long length;
+
+		if (!ae_layout_share_frame_make(entry->level, entry->serial, entry->has ? entry->text : NULL, entry->length,
+			peer->layout_offset, &frame))
+		{
+			peer->layout_busy = FALSE;
+			return;
+		}
+		length = ae_layout_share_frame_encode(&frame, body, sizeof(body));
+		if (!length || !host_send_body(machine_index, body, length))
+			return;
+		peer->layout_offset += frame.length;
+		if (!entry->has || peer->layout_offset >= entry->length)
+		{
+			if (peer->layout_busy_game)
+			{
+				csmemcpy(peer->layout_game, entry->level, sizeof(peer->layout_game));
+				peer->layout_game_serial = entry->serial;
+			}
+			else
+			{
+				csmemcpy(peer->layout_extra, entry->level, sizeof(peer->layout_extra));
+				peer->layout_extra_serial = entry->serial;
+			}
+			peer->layout_busy = FALSE;
+			error(_error_silent, "map sharing: machine #%ld was sent %s for %s", machine_index,
+				entry->has ? "this host's layout" : "word of no layout", entry->level);
+			return;
+		}
+	}
 }
 
 static void host_update(
@@ -868,6 +1076,9 @@ static void host_update(
 			error(_error_silent, "map sharing: machine #%ld runs this game: %s", index, peer->shared ?
 				"it gets this host's list of maps" : "not shared with (network.map_share, network.map_share_internet)");
 		}
+		/* (the game's map's layout to every machine that runs this game, whatever the sharing settings: it plays
+		the same level as this host; another map's to a machine this host shares with) */
+		host_layout_update(index, peer);
 		if (!peer->shared || peer->listed)
 			continue;
 		wanted = TRUE;
@@ -1366,6 +1577,8 @@ static void guest_host_changed(
 	share.released_level[0] = 0;
 	share.played_asking = FALSE;
 	share.test_all_done = FALSE;
+	/* (another host's layouts are not this one's) */
+	ae_layout_share_clear(&layout_inbox);
 	for (index = 0; address && index < REMEMBERED_HOSTS; index++)
 	{
 		if (share.remembered[index].address == address && ae_map_share_address_local(address))
@@ -1768,11 +1981,31 @@ boolean ae_map_share_handle_message(
 		return FALSE;
 	/* (a frame: taken from a host alone, over its connection, by a guest; any other dropped here) */
 	if (machine_index != NONE || !from_stream || is_host() || !global_network_game_client_get() ||
-		body[OFFER_RESULT] != FRAME_RESULT || body[OFFER_FILE_COUNT] != FRAME_FILE_COUNT ||
-		!ae_map_share_frame_decode(body + OFFER_BYTES, length - OFFER_BYTES, &frame))
+		body[OFFER_RESULT] != FRAME_RESULT || body[OFFER_FILE_COUNT] != FRAME_FILE_COUNT)
 	{
 		return TRUE;
 	}
+	/* (a layout's frame, from a host that said it runs this game: ae_layout_share_rules.h. Versions before 0.3.5 drop
+	it below, as a frame of a type they do not know) */
+	if (length > OFFER_BYTES && body[OFFER_BYTES] == AE_LAYOUT_SHARE_FRAME_TYPE)
+	{
+		static struct ae_layout_share_frame layout_frame;
+		int slot;
+
+		if (share.host_is_ae && ae_layout_share_frame_decode(body + OFFER_BYTES, length - OFFER_BYTES, &layout_frame) &&
+			ae_layout_share_take(&layout_inbox, &layout_frame, &slot) == 1)
+		{
+			struct ae_layout_share_slot const *taken = &layout_inbox.slots[slot];
+
+			if (taken->state == AE_LAYOUT_SHARE_NONE)
+				error(_error_silent, "map sharing: the host has no layout for %s", taken->level);
+			else
+				error(_error_silent, "map sharing: the host's layout for %s came (%ld bytes)", taken->level, taken->total);
+		}
+		return TRUE;
+	}
+	if (!ae_map_share_frame_decode(body + OFFER_BYTES, length - OFFER_BYTES, &frame))
+		return TRUE;
 	if (frame.type == AE_MAP_SHARE_FRAME_HELLO)
 	{
 		share.host_is_ae = TRUE;
@@ -1816,6 +2049,78 @@ boolean ae_map_share_handle_message(
 			guest_policy() ? "" : "; downloads are off for this host");
 	}
 	return TRUE;
+}
+
+/* ---------- the guest: its host's layouts (ae_layout_share_rules.h) */
+
+/* the inbox's slot of a map (as the game names it: its family and file, any case), or NULL */
+static struct ae_layout_share_slot const *layout_slot_of(
+	char const *map_name)
+{
+	char file[LEVEL_BYTES];
+	char other[LEVEL_BYTES];
+	short family;
+	long index;
+
+	if (!map_name || !map_name[0] || strlen(map_name) >= LEVEL_BYTES)
+		return NULL;
+	family = map_family_parse(map_name, file, sizeof(file));
+	if (!file[0])
+		return NULL;
+	for (index = 0; index < AE_LAYOUT_SHARE_SLOTS; index++)
+	{
+		struct ae_layout_share_slot const *slot = &layout_inbox.slots[index];
+
+		if (slot->state != AE_LAYOUT_SHARE_EMPTY && map_family_parse(slot->level, other, sizeof(other)) == family &&
+			!_stricmp(other, file))
+		{
+			return slot;
+		}
+	}
+	return NULL;
+}
+
+int ae_map_share_layout_received(
+	char const *map_name,
+	char const **text,
+	long *length)
+{
+	struct ae_layout_share_slot const *slot;
+
+	*text = NULL;
+	*length = 0;
+	if (is_host() || !global_network_game_client_get() || !share.host_is_ae)
+		return AE_LAYOUT_SHARE_HOST_UNKNOWN;
+	slot = layout_slot_of(map_name);
+	if (!slot)
+	{
+		error(_error_silent, "map sharing: no word from the host on a layout for %s: this machine's own file is used, if "
+			"it has one", map_name ? map_name : "");
+		return AE_LAYOUT_SHARE_HOST_UNKNOWN;
+	}
+	if (slot->state == AE_LAYOUT_SHARE_NONE)
+		return AE_LAYOUT_SHARE_HOST_NONE;
+	if (slot->state != AE_LAYOUT_SHARE_TEXT)
+	{
+		error(_error_silent, "map sharing: the host's layout for %s had not all come (%ld of %ld bytes): this machine's "
+			"own file is used, if it has one", slot->level, slot->received, slot->total);
+		return AE_LAYOUT_SHARE_HOST_UNKNOWN;
+	}
+	*text = slot->text;
+	*length = slot->total;
+	return AE_LAYOUT_SHARE_HOST_TEXT;
+}
+
+void ae_map_share_layout_downloaded(
+	char const *level_name)
+{
+	struct ae_layout_share_slot const *slot;
+
+	if (is_host() || !share.host_is_ae)
+		return;
+	slot = layout_slot_of(level_name);
+	if (slot && slot->state == AE_LAYOUT_SHARE_TEXT)
+		ae_layout_keep_host_text(level_name, slot->text, slot->total);
 }
 
 /* ---------- the guest: GET ALL */
