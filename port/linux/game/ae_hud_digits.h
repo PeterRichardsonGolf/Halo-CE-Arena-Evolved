@@ -57,6 +57,8 @@ void ae_hud_digits_draw_ex(short local_player_index, real x, real baseline_y, co
 boolean ae_hud_digits_ink_bounds(const wchar_t *text, real cap_px, real cell_px, real *left, real *right);
 /* screen pixels per HUD unit (the screen's height / 480) */
 real ae_hud_pixels_per_unit(void);
+/* (a map unloaded: ae_buttons_tags_unloaded) the stock sheet's placeholder let go */
+void ae_hud_digits_tags_unloaded(void);
 /* (in the HUD's draw, each view: debug.digits) */
 void ae_hud_digits_debug_draw(short local_player_index);
 

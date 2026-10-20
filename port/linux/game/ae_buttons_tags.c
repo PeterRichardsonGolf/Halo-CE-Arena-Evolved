@@ -38,6 +38,7 @@ HUD globals' button icons at them; it tells AE where they start
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
 #include "interface/hud_draw.h"
+#include "ae_hud_digits.h"
 #include "text/draw_string.h"
 #include "text/font_group.h"
 #include "ae_buttons_tags.h"
@@ -169,6 +170,7 @@ void ae_buttons_tags_unloaded(
 	glyphs_forget();
 	ae_panel_draw_tags_changed();
 	ae_power_list_forget();
+	ae_hud_digits_tags_unloaded();
 	/* (the map going: its sheets with it; ce_hud.c tells the next one's after this) */
 	ce_sheet_count = 0;
 	ce_menu_icons_logged = FALSE;

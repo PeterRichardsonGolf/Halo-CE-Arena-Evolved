@@ -20,11 +20,19 @@ same blend, but at real (sub-pixel) positions and any scale.
 #include "interface/interface.h"
 #include "rasterizer/rasterizer.h"
 #include "render/render.h"
+#include "tag_files/tag_files.h"
 #include "tag_files/tag_groups.h"
 
 #include "ae_hud_digits.h"
 
 const char *config_string(const char *name);
+int config_boolean(char const *name);
+/* the high-res HUD's (port/linux/src/hud_hires.c) */
+long hud_hires_asset_count(void);
+char const *hud_hires_asset_tag(long asset);
+long hud_hires_asset_bitmap(long asset);
+void hud_hires_register_placeholder(long asset, const unsigned long *texture);
+boolean rasterizer_bitmap_new(struct bitmap_data *bitmap);
 unsigned long config_changes(void);
 void platform_log(char const *format, ...);
 void platform_video_drawable_size(int *width, int *height);
@@ -73,6 +81,92 @@ static pixel32 pixel(real_rgb_color const *rgb, real alpha)
 /* a glyph's sprite: its bitmap (texture ready) and texture rectangle, and its width over its height */
 struct glyph_sprite { struct bitmap_data const *bitmap; real_rectangle2d clip; real aspect; };
 
+/* AE'S DIGITS ON EVERY MAP (owner 2026-10-20: "always AE's digits"): a map with a counter sheet of its own (h2_coagulation's
+"geno lightning vinx hud") still draws the score strip and the panels with the high-res HUD's copy of the stock sheet,
+through a placeholder bitmap the texture cache draws that texture for (hud_hires_tags.c's buttons' way). Its sprites
+are the stock sheet's (128 by 128; sequence 0's frames, left right top bottom), which the custom sheets keep. With
+display.high_res_hud off the map's own sheet is drawn, as the classic HUD draws it. */
+#define STOCK_SHEET_TAG "ui\\hud\\bitmaps\\combined\\hud_counter_numbers"
+#define STOCK_SHEET_FRAMES 15
+static const real stock_sprites[STOCK_SHEET_FRAMES][4] = {
+	{ 0.000000f, 0.140625f, 0.187500f, 0.281250f }, { 0.000000f, 0.140625f, 0.000000f, 0.093750f },
+	{ 0.140625f, 0.281250f, 0.000000f, 0.093750f }, { 0.281250f, 0.421875f, 0.000000f, 0.093750f },
+	{ 0.265625f, 0.414062f, 0.093750f, 0.187500f }, { 0.554688f, 0.695312f, 0.093750f, 0.187500f },
+	{ 0.835938f, 0.976562f, 0.093750f, 0.187500f }, { 0.140625f, 0.281250f, 0.187500f, 0.281250f },
+	{ 0.843750f, 0.984375f, 0.000000f, 0.093750f }, { 0.421875f, 0.562500f, 0.000000f, 0.093750f },
+	{ 0.562500f, 0.703125f, 0.000000f, 0.093750f }, { 0.414062f, 0.554688f, 0.093750f, 0.187500f },
+	{ 0.703125f, 0.843750f, 0.000000f, 0.093750f }, { 0.695312f, 0.835938f, 0.093750f, 0.187500f },
+	{ 0.000000f, 0.265625f, 0.093750f, 0.187500f },
+};
+static struct
+{
+	struct bitmap_data *placeholder;
+	long asset;
+	boolean attempted;
+} stock_sheet;
+
+/* the placeholder for the stock sheet's high-res texture, made when first needed; NULL for none */
+static struct bitmap_data *stock_sheet_placeholder(void)
+{
+	long asset;
+
+	if (stock_sheet.attempted)
+		return stock_sheet.placeholder;
+	stock_sheet.attempted = TRUE;
+	for (asset = 0; asset < hud_hires_asset_count(); asset++)
+	{
+		struct bitmap_data *bitmap;
+
+		if (strcmp(hud_hires_asset_tag(asset), STOCK_SHEET_TAG) || hud_hires_asset_bitmap(asset) != 0)
+			continue;
+		/* (a small square a8r8g8b8 bitmap: the quads take the texture's coordinates 0 to 1, whatever its size) */
+		bitmap = bitmap_2d_new(64, 64, 0, 11);
+		if (bitmap && !rasterizer_bitmap_new(bitmap))
+		{
+			bitmap_delete(bitmap);
+			bitmap = NULL;
+		}
+		if (!bitmap)
+			break;
+		hud_hires_register_placeholder(asset, (unsigned long const *)xbox_pointer(bitmap->hardware_format));
+		stock_sheet.placeholder = bitmap;
+		stock_sheet.asset = asset;
+		platform_log("hud digits: the map's counter sheet is its own; AE's digits drawn from the stock sheet's high-res copy");
+		break;
+	}
+	return stock_sheet.placeholder;
+}
+
+void ae_hud_digits_tags_unloaded(void)
+{
+	if (stock_sheet.placeholder)
+	{
+		hud_hires_register_placeholder(stock_sheet.asset, NULL);
+		bitmap_delete(stock_sheet.placeholder);
+	}
+	csmemset(&stock_sheet, 0, sizeof(stock_sheet));
+}
+
+/* a map's own counter sheet, drawn from the stock sheet's high-res copy (FALSE: the map's own sheet is drawn) */
+static boolean stock_sheet_sprite(long bitmap_tag_index, short frame, struct glyph_sprite *sprite)
+{
+	char const *name = tag_get_name(bitmap_tag_index);
+	struct bitmap_data *placeholder;
+
+	if (!name || !_stricmp(name, STOCK_SHEET_TAG) || frame >= STOCK_SHEET_FRAMES ||
+		!config_boolean("display.high_res_hud") || !(placeholder = stock_sheet_placeholder()))
+	{
+		return FALSE;
+	}
+	sprite->bitmap = placeholder;
+	sprite->clip.x0 = stock_sprites[frame][0];
+	sprite->clip.x1 = stock_sprites[frame][1];
+	sprite->clip.y0 = stock_sprites[frame][2];
+	sprite->clip.y1 = stock_sprites[frame][3];
+	sprite->aspect = (sprite->clip.x1 - sprite->clip.x0) / (sprite->clip.y1 - sprite->clip.y0);
+	return TRUE;
+}
+
 static boolean glyph_sprite(wchar_t character, struct glyph_sprite *sprite)
 {
 	long number_index = interface_get_tag_index(_interface_hud_digits);
@@ -89,6 +183,8 @@ static boolean glyph_sprite(wchar_t character, struct glyph_sprite *sprite)
 	number = (struct ae_hud_number_head const *)tag_get(AE_HUD_NUMBER_GROUP_TAG, number_index);
 	if (!number || number->number_bitmap.index == NONE)
 		return FALSE;
+	if (stock_sheet_sprite(number->number_bitmap.index, frame, sprite))
+		return TRUE;
 	group = bitmap_group_get(number->number_bitmap.index);
 	hud_retrieve_bitmap_and_bounding_rect(number->number_bitmap.index, 0, frame, &bitmap, &clip);
 	if (!group || !bitmap || !clip || !_texture_cache_bitmap_get_hardware_format((struct bitmap_data *)bitmap,
