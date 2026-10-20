@@ -56,6 +56,14 @@ struct ae_bots_combat_bot
 	boolean charging;
 	/* it aims at its target's head (counted once a time it starts) */
 	boolean head_aim;
+	/* DESCOPE REFLEX: no zoom (and past 10 units no shot) until then, after a hit knocked the zoom out */
+	long rescope_until;
+	/* PRECISION PACING: the tick it began holding a shot for the bloom to settle (NONE: not holding) */
+	long pace_since;
+	/* GRENADE AT THE LAST-SEEN SPOT: the sighting it last weighed one for, the throw's aim held until then, at this */
+	long prenade_seen_tick;
+	long prenade_until;
+	real_point3d prenade_point;
 };
 /* every bot starts over (a new map) */
 void ae_bots_combat_reset(void);
@@ -75,6 +83,10 @@ enum
 	AE_BOTS_COMBAT_JUMPS,
 	AE_BOTS_COMBAT_HALTS,
 	AE_BOTS_COMBAT_SHARES,
+	AE_BOTS_COMBAT_PACED,
+	AE_BOTS_COMBAT_RESCOPES,
+	AE_BOTS_COMBAT_PRENADES,
+	AE_BOTS_COMBAT_HIGH_GROUND,
 	AE_BOTS_COMBAT_COUNTERS
 };
 void ae_bots_combat_count(int counter);

@@ -54,6 +54,10 @@ UNITS = {
                                                           "-fno-sanitize-recover=all"], []),
     # (the controller ports' pads: a pad keeps its port, a new one takes the first free one)
     # (the menus' mouse targets of widgets deleted since they were noted: ui_widget.c's AE hooks)
+    # (the bots' power items, by level: ae_bots_power.inc)
+    "ae_bots_power_rules_test.c": ([UI / "ae_bots_power_rules.c", UI / "ae_bots_combat_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (the bots playing as a team: the numbers game, outnumbered, wingman; ae_bots_team.inc)
+    "ae_bots_team_rules_test.c": ([UI / "ae_bots_team_rules.c", UI / "ae_bots_combat_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_ui_deleted_test.c": ([UI / "ae_ui_deleted.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_pad_ports_test.c": ([SRC / "ae_pad_ports.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                         "-fno-sanitize-recover=all"], []),

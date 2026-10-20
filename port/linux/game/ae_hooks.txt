@@ -996,3 +996,21 @@ source/interface/ui_widget.c	if (character == L' ' || character == 0 || characte
 source/interface/ui_widget.c	if (character == L'\r' || character == 10) { line_start = index + 1; last_space = NONE; continue; } /* AE hook */
 # (the port's own error text starts 6 menu units higher, so that five lines of it fit between the dialog's header and footer)
 source/interface/ui_widget.c	bounds.y0 -= 6; /* AE hook */
+# Bots tune A (2026-10-20, ae_bots_combat_rules.h): CAMO (sight and first aim error), LONG RANGE (the aim error a far
+# target keeps), WEAPON RANGE (no shotgun shots from afar)
+port/linux/game/bots.c	reach *= ae_bots_fight_camo_reach(other_unit); /* AE hook */
+port/linux/game/bots.c	error *= ae_bots_fight_camo_error(target_player); /* AE hook */
+port/linux/game/bots.c	ae_bots_fight_range_floor(bot, tick); /* AE hook */
+port/linux/game/bots.c	if (!ae_bots_fight_in_range(bot, tick)) cone = -1.0f; /* AE hook */
+# POWER ITEMS (2026-10-20, ae_bots_power.inc): bots go for item_timers.c's power entries by level, and a map's start
+# forgets the last one's
+port/linux/game/bots.c	if (ae_bots_power_goal(bot, player_index, position, fighting)) return; /* AE hook */
+port/linux/game/bots.c	ae_bots_power_reset(); /* AE hook */
+# THE BOTS AS A TEAM (2026-10-20, ae_bots_team.inc): WINGMAN and THE NUMBERS GAME in bots_choose_goal, a map's start
+port/linux/game/bots.c	if (ae_bots_team_goal(bot, player_index, position, fighting)) return; /* AE hook */
+port/linux/game/bots.c	ae_bots_team_reset(); /* AE hook */
+# PRO TRAITS (2026-10-20, ae_bots_combat.inc): HIGH GROUND in the roaming place (LEGENDARY and up), the GRENADE AT THE
+# LAST-SEEN SPOT in the walk (LEGENDARY and up); pacing and the descope reflex are ae_bots_fight_in_range's
+port/linux/game/bots.c	distance -= ae_bots_roam_height(bot, &bots_globals.roam_points[index], &enemy->object.position); /* AE hook */
+port/linux/game/bots.c	index = ae_bots_roam_higher(bot, position, index); /* AE hook */
+port/linux/game/bots.c	ae_bots_fight_prenade(bot, &tick); /* AE hook */

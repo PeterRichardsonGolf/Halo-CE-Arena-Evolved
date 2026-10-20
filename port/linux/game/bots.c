@@ -1163,6 +1163,8 @@ static void bots_prepare_map(void)
 
 	bots_globals.map_ready = TRUE;
 	bots_globals.roam_point_count = 0;
+	ae_bots_power_reset(); /* AE hook */
+	ae_bots_team_reset(); /* AE hook */
 	bots_prepare_paths();
 	if (!scenario)
 		return;
@@ -1530,6 +1532,7 @@ static boolean bots_target_score(struct bots_bot *bot, struct player_datum *play
 	/* (active camouflage: seen only close) */
 	if (TEST_FLAG(other_unit->unit.flags, _unit_active_camouflaged_bit))
 		reach *= 0.3f;
+	reach *= ae_bots_fight_camo_reach(other_unit); /* AE hook */
 	/* (the one it fights: a little further) */
 	if (player_index == bot->target_player_index)
 		reach *= 1.25f;
@@ -1667,6 +1670,7 @@ static void bots_pick_roam_goal(struct bots_bot *bot, real_point3d const *positi
 			{
 				real distance = bots_distance2d(&bots_globals.roam_points[index], &enemy->object.position) +
 					bots_random_real(bot) * 6.0f;
+				distance -= ae_bots_roam_height(bot, &bots_globals.roam_points[index], &enemy->object.position); /* AE hook */
 
 				if (distance < nearest_distance && bots_distance2d(&bots_globals.roam_points[index], position) > 4.0f)
 				{
@@ -1690,6 +1694,7 @@ static void bots_pick_roam_goal(struct bots_bot *bot, real_point3d const *positi
 		/* (not where it is) */
 		if (bots_distance2d(&bots_globals.roam_points[index], position) < 6.0f && tries < 5)
 			continue;
+		index = ae_bots_roam_higher(bot, position, index); /* AE hook */
 		bot->roam_index = index;
 		bots_set_goal(bot, _bots_goal_roam, &bots_globals.roam_points[index], bots_globals.roam_surfaces[index]);
 		return;
@@ -1704,6 +1709,8 @@ static void bots_choose_goal(struct bots_bot *bot, long player_index, real_point
 
 	if (ae_bots_vehicle_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (ae_bots_objective_goal(bot, player_index, position, fighting)) return; /* AE hook */
+	if (ae_bots_power_goal(bot, player_index, position, fighting)) return; /* AE hook */
+	if (ae_bots_team_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (!fighting && bot->target_player_index != NONE && bot->target_last_surface_index != NONE &&
 		now - bot->target_seen_tick < TICKS_PER_SECOND * 8)
 	{
@@ -1915,6 +1922,8 @@ static void bots_bot_look(struct bots_bot *bot, struct bots_tick *tick)
 			{
 				real error = tick->skill->aim_error_degrees * BOTS_DEGREES;
 
+				error *= ae_bots_fight_camo_error(target_player); /* AE hook */
+
 				bot->target_first_seen_tick = tick->now;
 				bot->aim_error_yaw = bots_random_signed(bot) * error;
 				bot->aim_error_pitch = bots_random_signed(bot) * error * 0.6f;
@@ -1984,6 +1993,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	bot->aim_error_pitch = bot->aim_error_pitch * settle +
 		bots_random_signed(bot) * skill->aim_error_degrees * 0.03f * BOTS_DEGREES;
 	ae_bots_aim_floor(ae_bots_shooting_skill(bots_globals.skill), &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
+	ae_bots_fight_range_floor(bot, tick); /* AE hook */
 	desired_yaw = (real)atan2(dy, dx) + bot->aim_error_yaw;
 	desired_pitch = (real)atan2(dz, horizontal) + bot->aim_error_pitch;
 	turn = skill->turn_degrees_per_tick * BOTS_DEGREES;
@@ -1997,6 +2007,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	yaw_off = (real)fabs(bots_angle_difference((real)atan2(dy, dx), bot->yaw));
 	pitch_off = (real)fabs((real)atan2(dz, horizontal) - bot->pitch);
 	cone = (real)atan(0.35f / MAX(tick->target_distance, 0.5f)) * skill->fire_cone + 0.01f;
+	if (!ae_bots_fight_in_range(bot, tick)) cone = -1.0f; /* AE hook */
 	if (now - bot->target_first_seen_tick >= reaction_ticks && now - bot->target_seen_tick <= 3 &&
 		yaw_off < cone && pitch_off < cone * 1.5f && tick->weapon_index != NONE)
 	{
@@ -2343,6 +2354,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	{
 		bots_bot_walk(bot, &tick);
 		bots_bot_yield(bot_index, &tick);
+		ae_bots_fight_prenade(bot, &tick); /* AE hook */
 	}
 	else if (bot->goal_kind == _bots_goal_item)
 	{

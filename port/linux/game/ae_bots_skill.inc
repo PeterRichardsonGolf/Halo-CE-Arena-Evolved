@@ -242,3 +242,26 @@ static boolean ae_bots_fight_melee(struct bots_bot *bot, struct bots_tick *tick)
 static long ae_bots_fight_melee_ticks(struct bots_bot *bot, struct bots_tick *tick);
 static void ae_bots_fight_grenade(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks);
 static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick);
+/* (2026-10-20, ae_bots_combat_rules.h) CAMO: the sight of a camouflaged unit and the first aim error at it; LONG RANGE: the
+aim error a far target keeps; WEAPON RANGE: whether the target is near enough for the held weapon */
+static real ae_bots_fight_camo_reach(struct unit_datum const *unit);
+static real ae_bots_fight_camo_error(struct player_datum const *target);
+static void ae_bots_fight_range_floor(struct bots_bot *bot, struct bots_tick *tick);
+static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *tick);
+/* (2026-10-20, ae_bots_combat.inc) PRO TRAITS: the grenade at the last-seen spot (the walk's), high ground when roaming */
+static void ae_bots_fight_prenade(struct bots_bot *bot, struct bots_tick *tick);
+static real ae_bots_roam_height(struct bots_bot *bot, real_point3d const *point, real_point3d const *enemy);
+static short ae_bots_roam_higher(struct bots_bot *bot, real_point3d const *position, short index);
+/* (2026-10-20, ae_bots_power.inc) POWER ITEMS: bots_choose_goal's first ask; a map's start forgets the last one's */
+static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_point3d const *position, boolean fighting);
+static void ae_bots_power_reset(void);
+/* (2026-10-20, ae_bots_team.inc) the bots as a team: WINGMAN and THE NUMBERS GAME (bots_choose_goal's ask after the
+power items), OUTNUMBERED (the fight's confidence), a wingman's human, a map's start */
+static boolean ae_bots_team_goal(struct bots_bot *bot, long player_index, real_point3d const *position, boolean fighting);
+static real ae_bots_team_outnumbered(struct bots_bot *bot, struct bots_tick *tick, int level);
+static long ae_bots_team_wingman_of(struct bots_bot const *bot);
+static boolean ae_bots_team_leash(struct bots_bot *bot, struct bots_tick *tick, real *direction);
+static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_point3d const *position, long now);
+static void ae_bots_team_reset(void);
+/* (ae_bots_travel.inc) whether a point is within radius of a teleporter pad (a spot a bot waits on must not be one) */
+static boolean ae_bots_travel_near_pad(real_point3d const *point, real radius);

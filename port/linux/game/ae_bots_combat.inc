@@ -18,7 +18,10 @@ of ae_bots_combat.c / ae_bots_combat_rules.c. What each does, per level (RECRUIT
   (NORMAL and up) at the level's rhythm (bots.c's random jumps are off: ae_bots_tick_skill);
 - SHARED SIGHTINGS (BOT SKILL HEROIC, teammates within 10 units; LEGENDARY, any teammate; team games): a bot that
   sees an enemy tells its teammates who have no target of their own, who then go to where it was seen (bots.c's
-  "where an enemy was last seen"), as a person hears a callout; RECRUIT .. NORMAL know only what they see.
+  "where an enemy was last seen"), as a person hears a callout; RECRUIT .. NORMAL know only what they see;
+- PRO TRAITS (2026-10-20): PRECISION PACING and the DESCOPE REFLEX (ae_bots_fight_in_range), the GRENADE AT THE
+  LAST-SEEN SPOT (ae_bots_fight_prenade), HIGH GROUND when roaming (ae_bots_roam_height / ae_bots_roam_higher), and
+  RETREAT as shields pop (ae_bots_combat_retreat_step).
 */
 
 static long ae_bots_fight_index(struct bots_bot *bot)
@@ -42,9 +45,116 @@ static void ae_bots_fight_event(struct bots_bot *bot, struct bots_tick *tick, ch
 
 static long ae_bots_fight_reaction(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks)
 {
+	struct player_datum const *target = player_get(bot->target_player_index);
+
 	(void)tick;
+	/* (a camouflaged target: twice as long) */
+	reaction_ticks = (long)((real)reaction_ticks * ae_bots_combat_camo_reaction_scale(
+		TEST_FLAG(unit_get(target->unit_index)->unit.flags, _unit_active_camouflaged_bit)) + 0.5f);
 	return ae_bots_combat_reaction_ticks(ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill)), reaction_ticks,
 		ae_bots_combat_hash01((unsigned long)bot->player_index, (unsigned long)bot->target_first_seen_tick));
+}
+
+static real ae_bots_fight_camo_reach(struct unit_datum const *unit)
+{
+	return ae_bots_combat_camo_reach_scale(TEST_FLAG(unit->unit.flags, _unit_active_camouflaged_bit));
+}
+
+static real ae_bots_fight_camo_error(struct player_datum const *target)
+{
+	return ae_bots_combat_camo_error_scale(TEST_FLAG(unit_get(target->unit_index)->unit.flags,
+		_unit_active_camouflaged_bit));
+}
+
+/* LONG RANGE: an error below the far target's floor is pushed out to it (0 to 30% past it, its side kept), so the aim
+stays off by about the floor and a shot at a person of about that size hits about half the time */
+static void ae_bots_fight_range_floor(struct bots_bot *bot, struct bots_tick *tick)
+{
+	real floor = ae_bots_combat_range_error_floor(ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill)),
+		tick->target_distance) * BOTS_DEGREES;
+	real *errors[2];
+	real scale[2] = { 1.0f, 0.6f };
+	short index;
+
+	if (floor <= 0.0f)
+		return;
+	errors[0] = &bot->aim_error_yaw;
+	errors[1] = &bot->aim_error_pitch;
+	for (index = 0; index < 2; index++)
+	{
+		real least = floor * scale[index];
+		real random = bots_random_signed(bot);
+
+		if ((real)fabs(*errors[index]) < least)
+		{
+			real sign = *errors[index] > 0.0f ? 1.0f : *errors[index] < 0.0f ? -1.0f : random < 0.0f ? -1.0f : 1.0f;
+
+			*errors[index] = sign * least * (1.0f + 0.3f * (real)fabs(random));
+		}
+	}
+}
+
+/* a weapon's first trigger, NULL for none */
+static struct weapon_trigger_definition *ae_bots_fight_trigger(long weapon_index)
+{
+	struct weapon_definition *definition = weapon_definition_get(weapon_get(weapon_index)->definition_index);
+
+	if (definition->weapon.triggers.count <= 0)
+		return NULL;
+	return TAG_BLOCK_GET_ELEMENT(&definition->weapon.triggers, 0, struct weapon_trigger_definition);
+}
+
+/* whether the bot fires now (bots.c's fire, each tick of a fight):
+- WEAPON RANGE: a shotgun's or a flamethrower's target out of its reach is not fired at;
+- DESCOPE REFLEX (NORMAL and up): a weapon true only zoomed (the sniper rifle) is zoomed at a target past 6 units; a
+  hit knocks the zoom out, and the bot zooms again after its level's moment, not firing past 10 units before;
+- PRECISION PACING (NORMAL and up): a precision weapon that blooms (the pistol; held in bursts, as its trigger is
+  not latched) is not fired at range while its error is over the level's limit, for a few ticks at most. */
+static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *tick)
+{
+	struct ae_bots_combat_bot *state;
+	struct weapon_trigger_definition *trigger;
+	int level = ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill));
+
+	if (tick->weapon_index == NONE)
+		return TRUE;
+	if (tick->target_distance > ae_bots_combat_max_fire_distance(tag_get_name(weapon_get(tick->weapon_index)->definition_index)))
+		return FALSE;
+	/* (a vehicle's gun: as before) */
+	if (tick->object->object.parent_object_index != NONE || !(trigger = ae_bots_fight_trigger(tick->weapon_index)))
+		return TRUE;
+	state = ae_bots_fight_state(bot, tick);
+	if (TEST_FLAG(trigger->flags, _weapon_trigger_use_error_when_unzoomed_bit) &&
+		weapon_definition_get(weapon_get(tick->weapon_index)->definition_index)->weapon.zoom_level_count > 0)
+	{
+		/* (hurt while zoomed: CE's unit_unzoom took the zoom; the moment before it zooms again) */
+		if (bot->hurt_tick == tick->now && tick->unit->unit.current_zoom_level == NONE &&
+			tick->now >= state->rescope_until && ae_bots_combat_zooms(level, tick->target_distance))
+		{
+			state->rescope_until = tick->now + ae_bots_combat_rescope_ticks(level, bots_random_real(bot));
+			ae_bots_combat_count(AE_BOTS_COMBAT_RESCOPES);
+		}
+		if (tick->now < state->rescope_until)
+			return (boolean)!ae_bots_combat_descoped_holds_fire(tick->target_distance);
+		if (ae_bots_combat_zooms(level, tick->target_distance))
+			tick->action->desired_zoom_level = 0;
+		return TRUE;
+	}
+	/* (a precision weapon that blooms: paced at range; the wait counted from its first held tick) */
+	if (ae_bots_combat_precision_weapon(weapon_get(tick->weapon_index)->definition_index) &&
+		trigger->projectile_error_angle_upper_bound > trigger->projectile_error_angle_lower_bound + 0.001f &&
+		ae_bots_combat_pace_holds(level, tick->target_distance, weapon_get(tick->weapon_index)->weapon.triggers[0].error,
+			state->pace_since == NONE ? 0 : tick->now - state->pace_since))
+	{
+		if (state->pace_since == NONE)
+		{
+			state->pace_since = tick->now;
+			ae_bots_combat_count(AE_BOTS_COMBAT_PACED);
+		}
+		return FALSE;
+	}
+	state->pace_since = NONE;
+	return TRUE;
 }
 
 /* a unit's distance from a place: a rider's from its seat in the world (ae_bots_vehicle_point), not its seat offset */
@@ -57,6 +167,9 @@ static real ae_combat_unit_distance(long unit_index, real_point3d const *positio
 
 static long ae_bots_fight_look_jitter(struct bots_bot *bot, struct bots_tick *tick)
 {
+	/* (HEARING, ae_bots_team.inc: every look, whatever the goal; bots_choose_goal is not reached while a vehicle,
+	an objective or a power item has the bot) */
+	ae_bots_team_hear(bot, bot->player_index, &tick->position, tick->now);
 	return ae_bots_combat_look_jitter(ae_bots_combat_hash01((unsigned long)bot->player_index ^ 0x5bd1e995UL,
 		(unsigned long)tick->now));
 }
@@ -213,6 +326,105 @@ static void ae_bots_fight_grenade(struct bots_bot *bot, struct bots_tick *tick, 
 	ae_bots_fight_event(bot, tick, "grenade", tick->target_distance, extra);
 }
 
+/* GRENADE AT THE LAST-SEEN SPOT (LEGENDARY and up; bots.c's walk, with no target in sight): once a lost contact, a
+throw at where the target was last seen, 0.6 to 3 s after, the spot 5 to 20 units off and in its line of sight; the
+aim held on it for the throw (half a second). Not while it retreats (the spot is forgotten then). */
+static void ae_bots_fight_prenade(struct bots_bot *bot, struct bots_tick *tick)
+{
+	struct ae_bots_combat_bot *state = ae_bots_fight_state(bot, tick);
+	int level = ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill));
+	boolean has = tick->unit->unit.grenade_counts[0] > 0 || tick->unit->unit.grenade_counts[1] > 0;
+
+	if (tick->now < state->prenade_until)
+	{
+		real_point3d const *eye = bots_tick_eye(tick);
+		real dx = state->prenade_point.x - eye->x, dy = state->prenade_point.y - eye->y;
+		real dz = state->prenade_point.z - eye->z;
+		real turn = ae_bots_skill_definition(ae_bots_shooting_skill(bots_globals.skill))->turn_degrees_per_tick * BOTS_DEGREES;
+		real yaw_off = bots_angle_difference((real)atan2(dy, dx), bot->yaw);
+		real pitch_off = (real)atan2(dz, (real)sqrt(dx * dx + dy * dy)) - bot->pitch;
+
+		bot->yaw += PIN(yaw_off, -turn, turn);
+		bot->pitch += PIN(pitch_off, -turn, turn);
+		/* (the throw once the aim is on the spot) */
+		if (state->prenade_until - tick->now > 1 && (real)fabs(yaw_off) < 0.1f && (real)fabs(pitch_off) < 0.1f)
+		{
+			tick->flags |= FLAG(_unit_control_throw_grenade_bit);
+			if (tick->unit->unit.grenade_counts[(long)tick->unit->unit.current_grenade_index] <= 0)
+				tick->action->desired_grenade_index = tick->unit->unit.grenade_counts[0] > 0 ? 0 : 1;
+			state->prenade_until = tick->now + 1;
+		}
+		return;
+	}
+	if (level < AE_BOTS_LEVEL_LEGENDARY || bot->target_player_index == NONE || bot->target_last_surface_index == NONE ||
+		state->prenade_seen_tick == bot->target_seen_tick || !has || tick->now < bot->grenade_tick ||
+		tick->object->object.parent_object_index != NONE)
+	{
+		return;
+	}
+	{
+		real seconds = (real)(tick->now - bot->target_seen_tick) / TICKS_PER_SECOND;
+		real_point3d point = bot->target_last_position;
+		struct player_datum *target = player_try_and_get(bot->target_player_index);
+		real distance;
+
+		if (seconds < 0.6f)
+			return;
+		state->prenade_seen_tick = bot->target_seen_tick;
+		/* (about the target's middle where it stood) */
+		point.z += 0.3f;
+		distance = bots_distance3d(bots_tick_eye(tick), &point);
+		if (!ae_bots_combat_prenade(level, seconds, distance, has, bots_random_real(bot)) ||
+			!bots_line_of_sight(tick->player->unit_index, bots_tick_eye(tick), &point,
+				target && target->unit_index != NONE ? target->unit_index : NONE))
+		{
+			return;
+		}
+		state->prenade_point = point;
+		state->prenade_until = tick->now + TICKS_PER_SECOND / 2;
+		bot->grenade_tick = tick->now + ae_bots_combat_grenade_cooldown(level, bots_random_real(bot));
+		ae_bots_combat_count(AE_BOTS_COMBAT_PRENADES);
+		ae_bots_fight_event(bot, tick, "prenade", distance, "");
+	}
+}
+
+/* HIGH GROUND (LEGENDARY and up; bots.c's roaming place): a hunting bot's credit for a place above the enemy it
+hunts (taken off the place's distance to it) */
+static real ae_bots_roam_height(struct bots_bot *bot, real_point3d const *point, real_point3d const *enemy)
+{
+	(void)bot;
+	return ae_bots_combat_high_ground(ae_bots_level_of_skill(bots_globals.skill), point->z - enemy->z);
+}
+
+/* a roaming bot's place (bots.c's random one, index): LEGENDARY and up weigh two more random places, not within 6
+units, and take the one with the most credit for its height over the bot */
+static short ae_bots_roam_higher(struct bots_bot *bot, real_point3d const *position, short index)
+{
+	int level = ae_bots_level_of_skill(bots_globals.skill);
+	short best = index, tries;
+	real best_credit = ae_bots_combat_high_ground(level, bots_globals.roam_points[index].z - position->z);
+
+	if (level < AE_BOTS_LEVEL_LEGENDARY)
+		return index;
+	for (tries = 0; tries < 2; tries++)
+	{
+		short other = (short)(bots_random(bot) % (unsigned long)bots_globals.roam_point_count);
+		real credit;
+
+		if (bots_distance2d(&bots_globals.roam_points[other], position) < 6.0f)
+			continue;
+		credit = ae_bots_combat_high_ground(level, bots_globals.roam_points[other].z - position->z);
+		if (credit > best_credit)
+		{
+			best_credit = credit;
+			best = other;
+		}
+	}
+	if (best != index)
+		ae_bots_combat_count(AE_BOTS_COMBAT_HIGH_GROUND);
+	return best;
+}
+
 /* a place to back off to: a roaming place 5 to 35 units off, not towards the target, the furthest from the target
 for the least way; FALSE for none */
 static boolean ae_bots_fight_retreat_goal(struct bots_bot *bot, struct bots_tick *tick, real_point3d const *target)
@@ -259,9 +471,10 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 	/* (where it is in the world, a rider too: ae_bots_vehicle.c) */
 	real_point3d target_point = ae_bots_vehicle_point(player_get(bot->target_player_index)->unit_index);
 	real to_target = (real)atan2(target_point.y - tick->position.y, target_point.x - tick->position.x);
+	/* (OUTNUMBERED, ae_bots_team.inc: the enemies near past the teammates near take from it) */
 	real confidence = ae_bots_combat_confidence(own_shield, own_body, target_shield, target_body, tick->target_distance,
 		bots_weapon_range(tick->weapon_index), tick->weapon_index != NONE ? bots_weapon_loaded(tick->weapon_index) : 1.0f,
-		tick->position.z - target_point.z);
+		tick->position.z - target_point.z) - ae_bots_team_outnumbered(bot, tick, level);
 	int started, ended;
 	boolean new_fight = tick->now - state->last_fight_tick > TICKS_PER_SECOND * 2 || tick->now < state->last_fight_tick;
 	boolean retreating = ae_bots_combat_retreat_step(&state->retreat, level, confidence, own_shield, tick->now,
@@ -349,6 +562,19 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 			}
 		}
 		state->charging = charge;
+	}
+	/* WINGMAN's leash (ae_bots_team.inc): far from its player, back towards them while it shoots, unless retreating */
+	if (!retreating)
+	{
+		real direction;
+
+		if (ae_bots_team_leash(bot, tick, &direction))
+		{
+			tick->move_direction = direction + bot->strafe_sign * 0.4f;
+			tick->moving = TRUE;
+			tick->throttle_scale = 1.0f;
+			state->charging = FALSE;
+		}
 	}
 	/* JUMPS in a fight (NORMAL and up), at the level's rhythm */
 	if (state->next_vertical_tick > 0 && tick->now >= state->next_vertical_tick)

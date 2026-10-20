@@ -207,18 +207,18 @@ static void test_retreat(void)
 	/* shields up, or sure enough: no retreat; a confidence that comes back starts the hesitation over */
 	ae_bots_combat_retreat_reset(&state);
 	for (now = 0; now < 100; now++)
-		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.0f, 0.5f, now, 0.0f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.0f, 0.5f, now, 0.0f, &started, &ended));
 	for (now = 0; now < 100; now++)
-		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.2f, 0.0f, now, 0.0f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.2f, 0.0f, now, 0.0f, &started, &ended));
 	for (now = 100; now < 105; now++)
-		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, now, 0.0f, &started, &ended));
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0.0f, 105, 0.0f, &started, &ended));
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, 106, 0.0f, &started, &ended));
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, 111, 0.0f, &started, &ended));
-	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.05f, 0.0f, 112, 0.0f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, now, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.9f, 0.0f, 105, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, 106, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, 111, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, 112, 0.0f, &started, &ended));
 	/* (HEROIC and up: at least 3 s) */
-	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.9f, 1.0f, 112 + 89, 0.0f, &started, &ended));
-	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.9f, 1.0f, 112 + 90, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.9f, 1.0f, 112 + 89, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.9f, 1.0f, 112 + 90, 0.0f, &started, &ended));
 	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_NORMAL) == 0.1f);
 }
 
@@ -257,6 +257,29 @@ static void test_charge_jump_share(void)
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_HEROIC) == 10.0f);
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_LEGENDARY) == 20.0f);
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_DEMON) > 1000.0f);
+	/* LONG RANGE (owner 10-20: "a bit too good with their distance shots"): no floor within 10 units, a floor that
+	grows past it, larger for lower levels, none at DEMON (the old LEGENDARY, kept as it was) */
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_NORMAL, 9.0f) == 0.0f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_LEGENDARY, 20.0f) > 0.9f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_LEGENDARY, 20.0f) < 1.5f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_DEMON, 30.0f) == 0.0f);
+	for (int level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVEL_DEMON; level++)
+	{
+		CHECK(ae_bots_combat_range_error_floor(level, 15.0f) < ae_bots_combat_range_error_floor(level, 25.0f));
+		CHECK(level == AE_BOTS_LEVEL_EASY ||
+			ae_bots_combat_range_error_floor(level, 20.0f) < ae_bots_combat_range_error_floor(level - 1, 20.0f));
+	}
+	/* WEAPON RANGE (corpus: shotgun shots from 5-10 units): a shotgun holds fire past 5 units, a flamethrower past 4;
+	others have no limit */
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\shotgun\\shotgun") == 5.0f);
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\flamethrower\\flamethrower") == 4.0f);
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\pistol\\pistol") > 1000.0f);
+	CHECK(ae_bots_combat_max_fire_distance(0) > 1000.0f);
+	/* CAMO (owner 10-20: "bots notice you instantly when you are using camo"): seen at 0.4 of bots.c's camo reach,
+	twice the reaction and the first aim error */
+	CHECK(ae_bots_combat_camo_reach_scale(1) == 0.4f && ae_bots_combat_camo_reach_scale(0) == 1.0f);
+	CHECK(ae_bots_combat_camo_error_scale(1) == 2.0f && ae_bots_combat_camo_error_scale(0) == 1.0f);
+	CHECK(ae_bots_combat_camo_reaction_scale(1) == 2.0f && ae_bots_combat_camo_reaction_scale(0) == 1.0f);
 	/* DEMON (owner 10-20: the old LEGENDARY) fights as LEGENDARY does in every other rule */
 	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_DEMON) == ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_LEGENDARY));
 	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_DEMON, 0.5f) == ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_LEGENDARY, 0.5f));
@@ -285,6 +308,75 @@ static void test_weapon_spent(void)
 	CHECK(ae_bots_combat_weapon_spent(0, 0, 0, 1.0f) == 1);
 }
 
+/* PRO TRAITS: pacing, the descope reflex, high ground, the grenade at the last-seen spot, retreat as shields pop */
+static void test_pro_traits(void)
+{
+	struct ae_bots_combat_retreat state;
+	int started, ended, level;
+	long now;
+
+	/* (pacing: NORMAL and up past 8 units, under the level's limit or after its wait) */
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_EASY, 20.0f, 1.0f, 0));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 8.0f, 1.0f, 0));
+	CHECK(ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 12.0f, 0.7f, 0));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 12.0f, 0.5f, 0));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 12.0f, 0.7f, 6));
+	CHECK(ae_bots_combat_pace_holds(AE_BOTS_LEVEL_DEMON, 12.0f, 0.3f, 11));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_DEMON, 12.0f, 0.3f, 12));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_LEGENDARY, 12.0f, 0.3f, 0));
+
+	/* (zoom: NORMAL and up past 6 units; the moment again after a hit, quicker by level) */
+	CHECK(!ae_bots_combat_zooms(AE_BOTS_LEVEL_RECRUIT, 30.0f));
+	CHECK(!ae_bots_combat_zooms(AE_BOTS_LEVEL_EASY, 30.0f));
+	CHECK(!ae_bots_combat_zooms(AE_BOTS_LEVEL_NORMAL, 6.0f));
+	CHECK(ae_bots_combat_zooms(AE_BOTS_LEVEL_NORMAL, 6.5f));
+	CHECK(ae_bots_combat_zooms(AE_BOTS_LEVEL_DEMON, 30.0f));
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_EASY, 0.5f) == 0);
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_NORMAL, 0.0f) == 18);
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_NORMAL, 1.0f) == 24);
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_DEMON, 0.0f) == 5);
+	for (level = AE_BOTS_LEVEL_NORMAL; level < AE_BOTS_LEVEL_DEMON; level++)
+		CHECK(ae_bots_combat_rescope_ticks(level + 1, 1.0f) < ae_bots_combat_rescope_ticks(level, 0.0f));
+	CHECK(!ae_bots_combat_descoped_holds_fire(10.0f));
+	CHECK(ae_bots_combat_descoped_holds_fire(10.5f));
+
+	/* (high ground: LEGENDARY and up, capped; nothing below) */
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_HEROIC, 3.0f) == 0.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_LEGENDARY, -2.0f) == 0.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_LEGENDARY, 2.0f) == 3.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_LEGENDARY, 10.0f) == 4.5f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_DEMON, 2.0f) == 4.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_DEMON, 10.0f) == 6.0f);
+
+	/* (the grenade at the last-seen spot: LEGENDARY and up, in its window and distance) */
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_HEROIC, 1.0f, 10.0f, 1, 0.0f));
+	CHECK(ae_bots_combat_prenade(AE_BOTS_LEVEL_LEGENDARY, 1.0f, 10.0f, 1, 0.4f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_LEGENDARY, 1.0f, 10.0f, 1, 0.6f));
+	CHECK(ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 10.0f, 1, 0.6f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 0.5f, 10.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 3.5f, 10.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 4.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 21.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 10.0f, 0, 0.0f));
+
+	/* (retreat as shields pop: LEGENDARY and up, losing, after 3 to 9 ticks; HEROIC still waits for 0.1) */
+	ae_bots_combat_retreat_reset(&state);
+	for (now = 100; now < 103; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.3f, 0.0f, now, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.3f, 0.0f, 103, 0.0f, &started, &ended));
+	CHECK(started);
+	ae_bots_combat_retreat_reset(&state);
+	for (now = 100; now < 140; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.3f, 0.0f, now, 0.0f, &started, &ended));
+	ae_bots_combat_retreat_reset(&state);
+	/* (shields still up, or winning: no) */
+	for (now = 100; now < 140; now++)
+	{
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_DEMON, 0.3f, 0.2f, now, 0.0f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_DEMON, 0.4f, 0.0f, now, 0.0f, &started, &ended));
+	}
+}
+
 int main(void)
 {
 	test_hash();
@@ -296,6 +388,7 @@ int main(void)
 	test_retreat();
 	test_charge_jump_share();
 	test_weapon_spent();
+	test_pro_traits();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

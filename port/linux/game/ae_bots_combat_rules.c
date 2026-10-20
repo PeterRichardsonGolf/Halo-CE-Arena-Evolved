@@ -8,6 +8,8 @@ reaction budget).
 
 #include "ae_bots_combat_rules.h"
 
+#include <string.h>
+
 #define TICKS AE_BOTS_COMBAT_TICKS_PER_SECOND
 
 static float clamp01(float value)
@@ -220,6 +222,7 @@ int ae_bots_combat_retreat_step(struct ae_bots_combat_retreat *state, int level,
 	float threshold = ae_bots_combat_retreat_threshold(level);
 	long hesitation = 6 + (long)(12.0f * clamp01(hesitation_hash01));
 	long shortest = level >= AE_BOTS_LEVEL_HEROIC ? 3 * TICKS : 2 * TICKS;
+	int popped;
 
 	*started = 0;
 	*ended = 0;
@@ -237,13 +240,18 @@ int ae_bots_combat_retreat_step(struct ae_bots_combat_retreat *state, int level,
 		}
 		return state->active;
 	}
-	if (threshold <= 0.0f || confidence >= threshold || own_shield >= 0.3f || now < state->next_allowed)
+	/* (LEGENDARY and up: also as its shields pop, losing, with a shorter hesitation) */
+	popped = level >= AE_BOTS_LEVEL_LEGENDARY && own_shield <= 0.0f && confidence < 0.35f;
+	if (threshold <= 0.0f || now < state->next_allowed ||
+		(!popped && (confidence >= threshold || own_shield >= 0.3f)))
 	{
 		state->low_since = -1;
 		return 0;
 	}
 	if (state->low_since < 0 || state->low_since > now)
 		state->low_since = now;
+	if (popped)
+		hesitation = 3 + (long)(6.0f * clamp01(hesitation_hash01));
 	if (now - state->low_since < hesitation)
 		return 0;
 	state->active = 1;
@@ -335,10 +343,105 @@ float ae_bots_combat_share_distance(int level)
 		level == AE_BOTS_LEVEL_HEROIC ? 10.0f : 0.0f;
 }
 
+float ae_bots_combat_range_error_floor(int level, float distance)
+{
+	static const float slopes[AE_BOTS_LEVELS] = { 3.0f, 2.6f, 2.0f, 1.6f, 1.2f, 0.0f };
+
+	if (level < 0 || level >= AE_BOTS_LEVELS || distance <= 10.0f)
+		return 0.0f;
+	return slopes[level] * (distance - 10.0f) / 10.0f;
+}
+
+float ae_bots_combat_max_fire_distance(char const *weapon_name)
+{
+	if (weapon_name && strstr(weapon_name, "shotgun"))
+		return 5.0f;
+	if (weapon_name && strstr(weapon_name, "flamethrower"))
+		return 4.0f;
+	return 1.0e9f;
+}
+
+float ae_bots_combat_camo_reach_scale(int camouflaged)
+{
+	return camouflaged ? 0.4f : 1.0f;
+}
+
+float ae_bots_combat_camo_error_scale(int camouflaged)
+{
+	return camouflaged ? 2.0f : 1.0f;
+}
+
+float ae_bots_combat_camo_reaction_scale(int camouflaged)
+{
+	return camouflaged ? 2.0f : 1.0f;
+}
+
 int ae_bots_combat_weapon_spent(int magazine_count, int rounds_loaded_maximum, int rounds_total_maximum,
 	float age)
 {
 	if (magazine_count > 0 && (rounds_loaded_maximum > 0 || rounds_total_maximum > 0))
 		return -1;
 	return age >= 0.999f;
+}
+
+int ae_bots_combat_pace_holds(int level, float distance, float trigger_error, long waited_ticks)
+{
+	static const float limits[AE_BOTS_LEVELS] = { 2.0f, 2.0f, 0.6f, 0.45f, 0.35f, 0.25f };
+	static const long waits[AE_BOTS_LEVELS] = { 0, 0, 6, 8, 10, 12 };
+
+	if (level < AE_BOTS_LEVEL_NORMAL || level >= AE_BOTS_LEVELS || distance <= 8.0f)
+		return 0;
+	return trigger_error > limits[level] && waited_ticks < waits[level];
+}
+
+int ae_bots_combat_zooms(int level, float distance)
+{
+	return level >= AE_BOTS_LEVEL_NORMAL && level < AE_BOTS_LEVELS && distance > 6.0f;
+}
+
+long ae_bots_combat_rescope_ticks(int level, float random)
+{
+	float low, high;
+
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_NORMAL: low = 0.6f; high = 0.8f; break;
+	case AE_BOTS_LEVEL_HEROIC: low = 0.4f; high = 0.5f; break;
+	case AE_BOTS_LEVEL_LEGENDARY: low = 0.25f; high = 0.35f; break;
+	case AE_BOTS_LEVEL_DEMON: low = 0.15f; high = 0.22f; break;
+	default: return 0;
+	}
+	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
+}
+
+int ae_bots_combat_descoped_holds_fire(float distance)
+{
+	return distance > 10.0f;
+}
+
+float ae_bots_combat_high_ground(int level, float height_above)
+{
+	float credit;
+
+	if (height_above <= 0.0f)
+		return 0.0f;
+	if (level == AE_BOTS_LEVEL_LEGENDARY)
+	{
+		credit = 1.5f * height_above;
+		return credit < 4.5f ? credit : 4.5f;
+	}
+	if (level == AE_BOTS_LEVEL_DEMON)
+	{
+		credit = 2.0f * height_above;
+		return credit < 6.0f ? credit : 6.0f;
+	}
+	return 0.0f;
+}
+
+int ae_bots_combat_prenade(int level, float seconds_unseen, float distance, int has_grenade, float random)
+{
+	float chance = level == AE_BOTS_LEVEL_DEMON ? 0.75f : level == AE_BOTS_LEVEL_LEGENDARY ? 0.5f : 0.0f;
+
+	return has_grenade && seconds_unseen >= 0.6f && seconds_unseen <= 3.0f && distance >= 5.0f && distance <= 20.0f &&
+		random < chance;
 }
