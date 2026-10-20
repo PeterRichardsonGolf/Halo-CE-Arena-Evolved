@@ -1042,10 +1042,14 @@ def box_main(argv):
             before = seed_compare.gametype_hashes(roots / a.save_from)
             (results / f"{a.label}-before.json").write_text(json.dumps(before, indent=1, sort_keys=True) + "\n")
         work, save, debug, result = box_game(results, a.label, spec)
+        if not save.is_dir():
+            die(f"the {a.label} game made no save root: {result.get('status')} {result.get('why')}")
         target = roots / (a.label if not a.save_from else f"{a.label}-after")
         if target.exists():
             shutil.rmtree(target)
-        shutil.copytree(save, target, symlinks=True)
+        # (the gametypes, the record and the backups; not the map caches, up to 300 MB each)
+        shutil.copytree(save, target, symlinks=True,
+                        ignore=lambda folder, names: [n for n in names if re.match(r"cache\d+\.map$|shader_cache", n)])
         shutil.rmtree(work.parent, ignore_errors=True)
         golden = subprocess.run([sys.executable, "tools/ae_test/seed_compare.py", str(target)], capture_output=True,
                                 text=True, check=True).stdout
