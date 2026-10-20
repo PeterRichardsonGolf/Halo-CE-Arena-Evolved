@@ -30,6 +30,14 @@ int main(void)
 	CHECK(0.5f - ae_bots_team_outnumbered_penalty(AE_BOTS_LEVEL_DEMON, 2, 1) >
 		ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_DEMON));
 
+	/* angle isolation: HEROIC and up, nothing for one angle, more each level, 0.6 at most */
+	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_NORMAL, 3) == 0.0f);
+	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_HEROIC, 1) == 0.0f);
+	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_HEROIC, 2) == 0.1f);
+	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_LEGENDARY, 2) == 0.15f);
+	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_DEMON, 3) == 0.4f);
+	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_DEMON, 9) == 0.6f);
+
 	/* wingman: EASY and up; past 8 units goes to the player, within moves about them */
 	CHECK(!ae_bots_team_wingman_level(AE_BOTS_LEVEL_RECRUIT));
 	for (level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVELS; level++)

@@ -34,6 +34,19 @@ float ae_bots_team_outnumbered_penalty(
 	return penalty > 0.6f ? 0.6f : penalty;
 }
 
+float ae_bots_team_exposed_penalty(
+	int level,
+	int exposed)
+{
+	float each, penalty;
+
+	if (level < AE_BOTS_LEVEL_HEROIC || level >= AE_BOTS_LEVELS || exposed <= 1)
+		return 0.0f;
+	each = level == AE_BOTS_LEVEL_HEROIC ? 0.1f : level == AE_BOTS_LEVEL_LEGENDARY ? 0.15f : 0.2f;
+	penalty = each * (float)(exposed - 1);
+	return penalty > 0.6f ? 0.6f : penalty;
+}
+
 int ae_bots_team_wingman_level(
 	int level)
 {

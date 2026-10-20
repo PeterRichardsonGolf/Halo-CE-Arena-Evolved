@@ -31,6 +31,12 @@ lots of 1v2's"; the pro-skills list: the numbers game, playing your life, a team
 int ae_bots_team_stance(int level, int allies_alive, int enemies_alive);
 /* how much confidence the enemies near past the allies near take (allies counts the bot) */
 float ae_bots_team_outnumbered_penalty(int level, int enemies_near, int allies_near);
+/* ANGLE ISOLATION (HEROIC and up; owner's pro-skills list: "positioning ... so that only one enemy can see them at any
+given micro-second, turning a 1v3 into three 1v1s"): every enemy within AE_BOTS_TEAM_EXPOSED_RANGE with a clear line to
+the bot past the first takes HEROIC 0.1, LEGENDARY 0.15, DEMON 0.2 from its confidence (0.6 at most), so a bot in a
+crossfire backs out to one angle. Taken with OUTNUMBERED as the larger of the two, not both. */
+#define AE_BOTS_TEAM_EXPOSED_RANGE 30.0f
+float ae_bots_team_exposed_penalty(int level, int exposed);
 /* whether a level plays wingman to a human teammate */
 int ae_bots_team_wingman_level(int level);
 /* the wingman's move: 1 go to the player (past AE_BOTS_WINGMAN_FAR), 2 move about them (within it) */

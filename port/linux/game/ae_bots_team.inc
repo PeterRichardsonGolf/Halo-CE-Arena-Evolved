@@ -4,7 +4,7 @@ AE_BOTS_TEAM.INC
 Included by ae_bots_lan.inc, so at the end of bots.c: the bots playing as a team (ae_bots_team_rules.h). In a team
 game, bots_choose_goal asks after the power items (its AE hook line):
 
-- WINGMAN: each human player's nearest teammate bot (chosen again every 3 s, kept while it lives) stays near that
+- WINGMAN: each human player's nearest teammate bot (chosen again every 3 s, kept while it is in the game, through its deaths) stays near that
   player: past 8 units it goes to them; within, it moves to a spot 3 to 6 units from them every 4 s. In a fight it
   fights as ever. A wingman goes for a power item only within 15 units (ae_bots_power.inc asks).
 - THE NUMBERS GAME: two or more behind, a bot not fighting regroups on its nearest living teammate (when farther than
@@ -50,7 +50,7 @@ static boolean ae_bots_team_alive(struct player_datum const *player)
 }
 
 /* the humans of the game and each one's wingman, every 3 s: the nearest living bot of that human's team that is no
-other human's wingman, the one before kept while it lives and is still of that team */
+other human's wingman, the one before kept while it is in the game and of that team, dead or alive */
 static void ae_bots_team_update(long now)
 {
 	struct data_iterator iterator;
@@ -79,11 +79,14 @@ static void ae_bots_team_update(long now)
 			if (previous_human[index] == player_index)
 				kept = previous_bot[index];
 		}
+		/* (the wingman of before kept while it is in the game and of the player's team, dead or alive: it comes back
+		to them after it respawns; handing the role to the nearest at every death made it hop about 20 times in a
+		7-minute game, 10-20 Sali Creek) */
 		if (kept != NONE && bots_globals.bots[kept].player_index != NONE)
 		{
 			struct player_datum const *mate = player_try_and_get(bots_globals.bots[kept].player_index);
 
-			if (mate && mate->team_index == player->team_index && ae_bots_team_alive(mate))
+			if (mate && mate->team_index == player->team_index)
 				best = kept;
 		}
 		for (bot_index = 0; best == NONE && bot_index < BOTS_MAXIMUM; bot_index++)
@@ -171,15 +174,53 @@ static void ae_bots_team_counts(struct player_datum *player, real_point3d const 
 	}
 }
 
-/* OUTNUMBERED: what the enemies near past the teammates near take from the fight's confidence */
+/* ANGLE ISOLATION's count: the living enemies within AE_BOTS_TEAM_EXPOSED_RANGE with a clear line to the bot's eye,
+counted again every 10 ticks (HEROIC and up only: the lines cost) */
+static struct { long tick; short exposed; } ae_bots_team_exposure[BOTS_MAXIMUM];
+
+static short ae_bots_team_exposed(struct bots_bot *bot, struct bots_tick *tick, int level)
+{
+	long bot_index = (long)(bot - bots_globals.bots);
+	struct data_iterator iterator;
+	struct player_datum *other;
+	real_point3d const *eye;
+	short exposed = 0;
+
+	if (level < AE_BOTS_LEVEL_HEROIC || bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+		return 0;
+	if (tick->now >= ae_bots_team_exposure[bot_index].tick && tick->now - ae_bots_team_exposure[bot_index].tick < 10)
+		return ae_bots_team_exposure[bot_index].exposed;
+	eye = bots_tick_eye(tick);
+	data_iterator_new(&iterator, player_data);
+	while ((other = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		struct object_datum const *object;
+
+		if (!bots_is_enemy(tick->player, other) || !ae_bots_team_alive(other))
+			continue;
+		object = object_get(other->unit_index);
+		if (bots_distance3d(eye, &object->object.bounding_sphere_center) > AE_BOTS_TEAM_EXPOSED_RANGE)
+			continue;
+		if (bots_line_of_sight(tick->player->unit_index, eye, &object->object.bounding_sphere_center, other->unit_index))
+			exposed++;
+	}
+	ae_bots_team_exposure[bot_index].tick = tick->now;
+	ae_bots_team_exposure[bot_index].exposed = exposed;
+	return exposed;
+}
+
+/* OUTNUMBERED and ANGLE ISOLATION: the larger of what the enemies near past the teammates near, and the enemies with
+a line to it past the first, take from the fight's confidence */
 static real ae_bots_team_outnumbered(struct bots_bot *bot, struct bots_tick *tick, int level)
 {
 	int allies, enemies, allies_near, enemies_near;
+	real outnumbered, exposed;
 
 	ae_bots_team_counts(tick->player, &tick->position, AE_BOTS_TEAM_NEAR, &allies, &enemies, &allies_near,
 		&enemies_near);
-	(void)bot;
-	return ae_bots_team_outnumbered_penalty(level, enemies_near, allies_near);
+	outnumbered = ae_bots_team_outnumbered_penalty(level, enemies_near, allies_near);
+	exposed = ae_bots_team_exposed_penalty(level, ae_bots_team_exposed(bot, tick, level));
+	return outnumbered > exposed ? outnumbered : exposed;
 }
 
 /* a spot on the ground near a point (a random one between near and far units away; the point itself if none is
@@ -232,6 +273,10 @@ static boolean ae_bots_team_goal(struct bots_bot *bot, long player_index, real_p
 			distance = bots_distance3d(position, at);
 			if (ae_bots_team_wingman_move(distance) == 1)
 			{
+				/* (the path to where the player was kept while they stay within 4 units of it: a goal moved every
+				tick restarts the path search every tick, and the bot never walks; seen 10-20 on Sali Creek) */
+				if (bot->goal_kind == _bots_goal_roam && bots_distance3d(&bot->goal_point, at) < 4.0f)
+					return TRUE;
 				surface_index = bots_surface_below(at, &ground);
 				if (surface_index != NONE)
 				{
@@ -279,6 +324,12 @@ static boolean ae_bots_team_goal(struct bots_bot *bot, long player_index, real_p
 					mate_at = &object_get(other->unit_index)->object.position;
 				}
 			}
+			/* (as the wingman's: the path kept while the teammate stays within 4 units of its goal) */
+			if (mate_at && nearest > 6.0f && bot->goal_kind == _bots_goal_roam &&
+				bots_distance3d(&bot->goal_point, mate_at) < 4.0f)
+			{
+				return TRUE;
+			}
 			if (mate_at && nearest > 6.0f && (surface_index = bots_surface_below(mate_at, &ground)) != NONE)
 			{
 				bots_set_goal(bot, _bots_goal_roam, &ground, surface_index);
@@ -309,4 +360,5 @@ static boolean ae_bots_team_leash(struct bots_bot *bot, struct bots_tick *tick, 
 static void ae_bots_team_reset(void)
 {
 	csmemset(&ae_bots_team, 0, sizeof(ae_bots_team));
+	csmemset(ae_bots_team_exposure, 0, sizeof(ae_bots_team_exposure));
 }
