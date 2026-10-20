@@ -254,6 +254,16 @@ static void ae_bots_fight_aim_point(struct bots_bot *bot, struct bots_tick *tick
 			ae_bots_combat_count(AE_BOTS_COMBAT_HEAD_AIMS);
 	}
 	state->head_aim = head;
+	/* (an explosive in hand, the rocket launcher or the fuel rod gun: at the feet, as players aim one, so that a near miss
+	still catches the target in the blast (Octagon 10-20: aimed at the waist, 2% of the bots' rockets hit); the lead
+	bots.c adds by the flight then carries the feet along) */
+	if (!head && tick->weapon_index != NONE)
+	{
+		char const *name = tag_get_name(weapon_get(tick->weapon_index)->definition_index);
+
+		if (name && (strstr(name, "rocket") || strstr(name, "plasma_cannon") || strstr(name, "fuel rod")))
+			aim_point->z = MIN(aim_point->z, target->object.position.z + 0.1f);
+	}
 	/* (a grenade in the hand: the aim ahead of the target by its flight, from the throw's start) */
 	if (tick->now < state->throw_until && state->throw_lead > 0.0f)
 	{

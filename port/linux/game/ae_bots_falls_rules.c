@@ -153,11 +153,22 @@ int ae_bots_grenade_flee(int level, int own, float distance)
 	return distance < AE_BOTS_GRENADE_DANGER;
 }
 
-int ae_bots_explosive_fire_safe(int level, float wall_distance, float target_distance)
+float ae_bots_explosive_nearest(int level)
 {
 	if (level < AE_BOTS_LEVEL_NORMAL)
-		return 1;
-	return wall_distance >= AE_BOTS_EXPLOSIVE_BLAST && target_distance >= AE_BOTS_EXPLOSIVE_BLAST;
+		return 0.0f;
+	if (level == AE_BOTS_LEVEL_NORMAL)
+		return 4.0f;
+	if (level == AE_BOTS_LEVEL_HEROIC)
+		return 3.5f;
+	return 3.0f;
+}
+
+int ae_bots_explosive_fire_safe(int level, float wall_distance, float target_distance)
+{
+	float nearest = ae_bots_explosive_nearest(level);
+
+	return wall_distance >= nearest && target_distance >= nearest;
 }
 
 int ae_bots_grenade_throw_safe(float wall_distance, float target_distance)

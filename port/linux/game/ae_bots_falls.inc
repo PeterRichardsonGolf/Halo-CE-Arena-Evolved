@@ -567,12 +567,54 @@ static real ae_falls_aim_wall(struct bots_bot *bot, struct bots_tick *tick, real
 	return REAL_MAX;
 }
 
+/* whether a weapon (its object) is an explosive one: the rocket launcher, the fuel rod gun */
+static boolean ae_falls_weapon_explosive(long weapon_index)
+{
+	char const *name = weapon_index != NONE ? tag_get_name(weapon_get(weapon_index)->definition_index) : NULL;
+
+	return (boolean)(name && (strstr(name, "rocket") || strstr(name, "plasma_cannon") || strstr(name, "fuel rod")));
+}
+
+/* (owner 2026-10-20, Octagon 1v1s: bots with rockets hit 2-9% and held their fire for seconds, their target always
+within the blast on a small map) in a fight, the explosive weapon in hand and the target nearer than the level fires
+at (ae_bots_explosive_nearest): the other
+weapon, when it has rounds (a player's switch); the other weapon in hand and the explosive one with rounds, the target
+past twice the blast: back to it. NORMAL and up, as the held shot */
+static void ae_falls_explosive_switch(struct bots_bot *bot, struct bots_tick *tick, int level)
+{
+	short slot;
+	boolean explosive_in_hand;
+
+	(void)bot;
+	if (level < AE_BOTS_LEVEL_NORMAL || !tick->fighting || tick->weapon_index == NONE)
+		return;
+	explosive_in_hand = ae_falls_weapon_explosive(tick->weapon_index);
+	if (explosive_in_hand ? tick->target_distance >= ae_bots_explosive_nearest(level) :
+		tick->target_distance <= 2.0f * AE_BOTS_EXPLOSIVE_BLAST)
+	{
+		return;
+	}
+	for (slot = 0; slot < MAXIMUM_WEAPONS_PER_UNIT; slot++)
+	{
+		long other = tick->unit->unit.weapon_object_indices[slot];
+
+		if (slot == tick->unit->unit.current_weapon_index || other == NONE || bots_weapon_empty(other))
+			continue;
+		if (ae_falls_weapon_explosive(other) != explosive_in_hand)
+		{
+			tick->action->desired_weapon_index = slot;
+			return;
+		}
+	}
+}
+
 /* EXPLOSIVES: a rocket or a fuel rod not fired within its blast (NORMAL and up) */
 static void ae_falls_explosive(struct bots_bot *bot, struct bots_tick *tick, int level)
 {
 	long definition;
 	real wall;
 
+	ae_falls_explosive_switch(bot, tick, level);
 	if (!TEST_FLAG(tick->flags, _unit_control_weapon_primary_trigger_bit) || tick->weapon_index == NONE || !tick->fighting)
 		return;
 	definition = weapon_get(tick->weapon_index)->definition_index;

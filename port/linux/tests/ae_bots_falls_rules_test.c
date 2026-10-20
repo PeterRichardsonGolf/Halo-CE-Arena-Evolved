@@ -92,6 +92,10 @@ int main(void)
 
 	/* explosives: NORMAL and up hold fire within the blast (target or wall); RECRUIT and EASY do not */
 	CHECK(!ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_NORMAL, 1000.0f, 3.0f));
+	CHECK(ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_NORMAL, 1000.0f, 4.2f));
+	CHECK(!ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_HEROIC, 1000.0f, 3.2f));
+	CHECK(ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_LEGENDARY, 3.1f, 3.1f));
+	CHECK(!ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_DEMON, 1000.0f, 2.5f));
 	CHECK(!ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_DEMON, 2.0f, 20.0f));
 	CHECK(ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_DEMON, 1000.0f, 8.0f));
 	CHECK(ae_bots_explosive_fire_safe(AE_BOTS_LEVEL_EASY, 1000.0f, 1.0f));

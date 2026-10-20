@@ -91,9 +91,13 @@ int ae_bots_grenade_throw_safe(float wall_distance, float target_distance);
 /* (how far short of the target a wall is a wall in the way, not the target's own cover) */
 #define AE_BOTS_GRENADE_SHORT_MARGIN 3.0f
 /* EXPLOSIVES (the rocket launcher, the fuel rod gun): whether a shot is safe, the first wall along the aim and the target
-this far: NORMAL and up never fire one within the blast (Fallout 10-20: LEGENDARY bots killed themselves with rockets
-at targets 1.4 and 4.2 units off); RECRUIT and EASY may, as children do */
+this far: NORMAL and up never fire one nearer than their level's distance (Fallout 10-20: LEGENDARY bots killed
+themselves with rockets at targets 1.4 and 4.2 units off; owner 10-20 after Octagon and Damnation, the bots "really
+struggling with the rockets, just getting the shots off" when it was the whole blast: NORMAL 4 units, HEROIC 3.5,
+LEGENDARY and DEMON 3, a hit's splash taken on the shields as a player takes it); RECRUIT and EASY may, as children do */
 int ae_bots_explosive_fire_safe(int level, float wall_distance, float target_distance);
+/* the nearest the level fires an explosive at (0: any) */
+float ae_bots_explosive_nearest(int level);
 #define AE_BOTS_EXPLOSIVE_BLAST 5.0f
 
 #endif
