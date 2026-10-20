@@ -39,6 +39,9 @@ enum
 
 static struct ae_bitmap_type_errors bitmap_type_errors;
 
+/* the map's hidden shaders' tag data (the table's, found as its tags loaded), NULL past those it has */
+static void const *hidden_shaders[4];
+
 /* ---------- public code */
 
 void ae_map_look_fixes_tags_loaded(
@@ -49,9 +52,20 @@ void ae_map_look_fixes_tags_loaded(
 	unsigned int index;
 
 	ae_bitmap_type_errors_reset(&bitmap_type_errors);
+	csmemset(hidden_shaders, 0, sizeof(hidden_shaders));
 	if (!map_name)
 		return;
 	snprintf(name, sizeof(name), "%.32s", map_name);
+	for (index = 0; index < ae_map_look_hidden_shader_count && index < NUMBEROF(hidden_shaders); index++)
+	{
+		struct ae_map_look_hidden_shader const *hidden = &ae_map_look_hidden_shaders[index];
+		long tag_index = tag_loaded((long)hidden->group, hidden->tag_name);
+
+		if (tag_index == NONE)
+			continue;
+		hidden_shaders[index] = tag_get((long)hidden->group, tag_index);
+		platform_log("look fixes: %s's '%s': %s", name, hidden->tag_name, hidden->what);
+	}
 	for (index = 0; index < ae_map_look_fix_count; index++)
 	{
 		struct ae_map_look_fix const *fix = &ae_map_look_fixes[index];
@@ -130,4 +144,19 @@ boolean ae_map_look_bitmap_type_error_first(
 	short type)
 {
 	return (boolean)ae_bitmap_type_errors_first(&bitmap_type_errors, (uintptr_t)bitmap, type);
+}
+
+boolean ae_map_look_shader_hidden(
+	void const *shader)
+{
+	unsigned int index;
+
+	if (!shader)
+		return FALSE;
+	for (index = 0; index < NUMBEROF(hidden_shaders); index++)
+	{
+		if (hidden_shaders[index] == shader)
+			return TRUE;
+	}
+	return FALSE;
 }

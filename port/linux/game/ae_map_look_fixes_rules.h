@@ -67,11 +67,23 @@ struct ae_map_look_retarget
 	char const *what;
 };
 
+/* a shader that is not drawn on a model (a scenery's), on any map that has it: name is the tag's (of group,
+'schi') */
+struct ae_map_look_hidden_shader
+{
+	unsigned long group;
+	char const *tag_name;
+	/* what hiding it does, for the log */
+	char const *what;
+};
+
 /* the table */
 extern struct ae_map_look_fix const ae_map_look_fixes[];
 extern unsigned int const ae_map_look_fix_count;
 extern struct ae_map_look_retarget const ae_map_look_retargets[];
 extern unsigned int const ae_map_look_retarget_count;
+extern struct ae_map_look_hidden_shader const ae_map_look_hidden_shaders[];
+extern unsigned int const ae_map_look_hidden_shader_count;
 
 /* whether the fix is for the map named map_name (a header's name: at most AE_MAP_LOOK_FIX_MAP_NAME_SIZE
 bytes are read, any case); 0 for no name */
