@@ -550,6 +550,13 @@ class Debug(unittest.TestCase):
         self.assertTrue(d["clean_exit"])
         self.assertEqual(d["final"][1], {"k": 1, "d": 3})
 
+    def test_joined_lines(self):
+        delta = "10.20.26 09:52:02  joining a Delta host of this machine's wire (network version 32; this machine's is 32)"
+        self.assertIn("Delta host", harness.parse_debug(delta)["joined"])
+        for refused in ("10.20.26 09:52:02  not joining a host of network version 29 (this machine's is 32)",
+                        "10.20.26 09:52:02  not joining a Delta host of wire chupa-28a (this machine's is chupa-32a)"):
+            self.assertIsNone(harness.parse_debug(refused)["joined"], refused)
+
     def test_verdicts(self):
         s = harness.parse_spec({"map": "bloodgulch"})
         clean = harness.parse_debug(DEBUG_MP.replace("EXCEPTION assert", "note").replace("2 scripts won't", "ok"))
@@ -739,6 +746,18 @@ class Handshake(unittest.TestCase):
         r = {"debug": clean}
         self.assertEqual(handshake.judge(r, r, tracks)[0], "PASS")
         self.assertEqual(handshake.judge(r, {"debug": dict(clean, joined=None)}, tracks)[0], "FAIL")
+
+    def test_game_log_takes_stdout_when_debug_has_no_ticks(self):
+        """stock OpenCE prints the network test's tick lines to stdout only"""
+        with tempfile.TemporaryDirectory() as d:
+            folder = Path(d)
+            ticks = [l for l in DEBUG_MP.splitlines() if "network test: tick" in l]
+            (folder / "debug.txt").write_text("\n".join(l for l in DEBUG_MP.splitlines() if l not in ticks))
+            (folder / "stdout.log").write_text("\n".join(ticks))
+            self.assertEqual(harness.parse_debug(handshake.game_log(folder))["tick"], 592)
+            (folder / "debug.txt").write_text(DEBUG_MP)
+            (folder / "stdout.log").write_text("arena-evolved: network test: tick 999 player 0: (1 2 3) h1 k0 d0 f0 |")
+            self.assertEqual(harness.parse_debug(handshake.game_log(folder))["tick"], 592)
 
     def test_kd_at_a_common_tick(self):
         """kills/deaths compared at the lower of the two machines' last ticks: a kill the host logs after the

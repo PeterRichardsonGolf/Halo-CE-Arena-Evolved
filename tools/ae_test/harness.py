@@ -756,7 +756,8 @@ def parse_debug(text):
         m = re.search(r"OpenCE network version (\d+)", s)
         if m and r["network_version"] is None:
             r["network_version"] = int(m[1])
-        if "joining a host of network version" in s:
+        # (a legacy host's version check, or a Delta host's wire check; never the "not joining" lines)
+        if re.search(r"(?<!not )joining a (Delta )?host of", s):
             r["joined"] = s.split("  ", 1)[-1][:200]
         if "Delta Peer:" in s and ("speaks Delta" in s or "agreed" in s or "legacy" in s):
             r["delta"].append(s.split(": ", 1)[-1][:200])

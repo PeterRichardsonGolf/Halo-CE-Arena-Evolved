@@ -8,7 +8,7 @@ For each other build, two pairs: AE hosts and the other joins, then the other ho
 (HALO_NETWORK_TEST_START=20, _SHOOT=3, _KILL=20); the client starts 12 s after the host.
 
 Checked per pair, from both debug.txt files: the client joined (its "joining a host of network version"
-line), both builds' versions and network versions, the Delta Peer agreement lines, refusals, asserts;
+or "joining a Delta host of" line), both builds' versions and network versions, the Delta Peer agreement lines, refusals, asserts;
 the players' positions at the same tick on host and client (median and 90th percentile distance) and
 both machines' kills/deaths at a common last tick (the lower of their last samples). PASS: joined, two players seen on both, every player's median
 distance under --max-median metres (default 0.5) and the same kills/deaths at that tick, no asserts/exceptions.
@@ -28,6 +28,16 @@ import harness  # noqa: E402
 HOST = "127.0.0.200"
 CLIENT = "127.0.0.201"
 
+
+
+def game_log(folder):
+    """a game's debug.txt, with its stdout added when the network test's lines went only there
+    (stock OpenCE prints them to stdout alone)"""
+    text = (folder / "debug.txt").read_text(errors="replace") if (folder / "debug.txt").exists() else ""
+    out = folder / "stdout.log"
+    if "network test: tick" not in text and out.exists():
+        text += "\n" + out.read_text(errors="replace")
+    return text
 
 def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch", mod="",
                saved_gametype=None, save_from=None, client_save_from=None, packs_from=None):
@@ -99,8 +109,10 @@ def run_pair(cfg, name, host_build, client_build, out, a, slots):
         raise
     results = [harness.collect_game(s, pr, i, pdir / s["name"], a.keep_work)
                for s, pr, i in zip((host, client), prepared, inner)]
-    texts = [(pdir / s["name"] / "debug.txt").read_text(errors="replace") if (pdir / s["name"] / "debug.txt").exists()
-             else "" for s in (host, client)]
+    texts = [game_log(pdir / s["name"]) for s in (host, client)]
+    for r, t in zip(results, texts):
+        if t:
+            r["debug"] = harness.parse_debug(t)
     tracks = harness.compare_tracks(texts[0], texts[1])
     verdict, why = judge(results[0], results[1], tracks, a.max_median)
     if not a.keep_work:
