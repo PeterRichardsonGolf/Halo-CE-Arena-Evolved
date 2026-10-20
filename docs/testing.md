@@ -18,6 +18,8 @@ if it lacks something, add it there (with a test in `tools/test_ae_test.py`).
 | An MP4 clip of a game (H.264 + AAC; needs ffmpeg on the machine) | `python3 tools/ae_test/record.py --build <rev> --map bloodgulch --seconds 20 --box` |
 | A copy of a save root with a saved gametype's variant bytes patched and signed again (for `--save-from`; never in place, never a real save root) | `python3 tools/ae_test/gametype_file.py --from <save root> --to <new folder> --name "NHE 1V1" --set 0x1d=3` (on the machine that plays) |
 | A save root's seeded gametypes against golden hashes (`tools/ae_test/golden_seeds_a17102e2.json`, a17102e2's seeds; `--rename OLD=NEW` for migrated names) or against another root (byte-identical, `--same-as`) | `python3 tools/ae_test/seed_compare.py <save root> --golden tools/ae_test/golden_seeds_a17102e2.json` |
+| Every field of every seeded AE gametype (the save root's `z/arena_audit.tsv`, written with `HALO_ARENA_AUDIT=1`) as a report, or two audits compared | `python3 tools/ae_gametype_audit.py <arena_audit.tsv>`, `... --diff OLD.tsv NEW.tsv` |
+| A change to AE's seeded gametypes, as a new seed revision (below) | `python3 tools/ae_gametype_change.py --gametypes "AE FFA SNPR" --set universal_variant.respawn_time_growth=0 --why "..." [--dry-run]` |
 
 Weapon pack tests (spec keys, or the same names as `run.py` options): `pack_loadout` (`primary`, `secondary`,
 `both`) and `pack_map_spawns` make the test host's gametype use the weapon pack (`HALO_NETWORK_TEST_PACK_LOADOUT`,
@@ -94,6 +96,31 @@ table), `summary.json`, and per game `result.json`, `debug.txt`, `stdout.log`, `
 `--box` the folder is copied back to the laptop's `out_dir`. Setup: copy `tools/ae_test/config.sample.json` to
 `~/.config/ae_test/config.json` on each machine and fill it in (the laptop's has `box` and `windows`; the
 box's has `repo`, `data_dir`, `named_builds`).
+
+## Changing an AE gametype's seeded settings
+
+The AE gametypes are seeded into each save root once; a later change reaches players' roots only through a new seed
+revision in `source/saved games/arena_gametypes.c` (a migration per changed gametype, its old row exactly as the
+revision before seeded it, the hash of that old file, and a fresh golden root). `tools/ae_gametype_change.py` does
+all of it in one command, on the build box:
+
+- `--gametypes` picks the gametypes: a stored name, a set (`AE`, `AE BR`, `AE COMP`, `NHE`, `TRAINING`), an
+  engine (`slayer`, `ctf`, `oddball`, `king`, `race`), `team` or `ffa`; `&` intersects (`"AE BR&slayer"`). An AE BR
+  gametype and its AE twin always change together.
+- `--set` changes a row field (`score_to_win=30`, `respawn_time=ARENA_COMPETITIVE_RESPAWN`) or a variant field by
+  its audit column name (`universal_variant.respawn_time_growth=0`, `game_engine_variant.slayer.kill_in_order=1`,
+  `options.friendly_fire_penalty=0`); `--adjust` names an existing adjust or a preset (`no_respawn_growth`,
+  `no_odd_man_out`). Variant fields go through a new adjust function that calls the row's old one first: a
+  shipped adjust is never edited.
+- It builds and seeds the current tree (the old files' hashes; they must equal the committed golden file's),
+  writes the revision, builds and seeds the new one, and checks: a clean self-check; only the chosen gametypes'
+  files changed; an old root with an edited copy and a player's own copy migrates as promised (updated in place
+  and backed up, the edited and own ones left alone); each changed gametype passes `seed_rules.py`. Only then
+  does it write the source, `golden_seeds_rev<N>.json`, `seed_rules.py`'s expectations and
+  `tools/ae_test/gametype_changes.json`, and print the audit diff. `tools/test_ae_gametype_change.py` checks
+  the committed result.
+- `--dry-run` prints the plan, the source diff and the expected audit diff without the box; `--dry-run --box`
+  also runs the box checks. The CHANGELOG line and the commit stay a person's.
 
 ## What a merge must run
 

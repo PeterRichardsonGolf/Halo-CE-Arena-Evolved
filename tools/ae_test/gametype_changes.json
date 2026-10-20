@@ -1,0 +1,30 @@
+[
+ {
+  "revision": 15,
+  "why": "no respawn time growth in AE FFA SNPR: the stock Snipers' adds 5 s to a player's respawn per death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE SNIPERS included",
+  "decided": "owner, 2026-10-20",
+  "gametypes": [
+   "AE FFA SNPR"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "set",
+    "universal_variant.respawn_time_growth",
+    "0"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth"
+  },
+  "old_block_hashes": {
+   "AE FFA SNPR": "ff8bea99060536a7399abd8d7e268d52e9183557"
+  },
+  "golden": "golden_seeds_rev15.json",
+  "seed_rules": {
+   "AE FFA SNPR": {
+    "respawn growth": "0 ticks"
+   }
+  }
+ }
+]

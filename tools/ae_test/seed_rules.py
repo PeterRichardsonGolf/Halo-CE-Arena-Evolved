@@ -232,6 +232,11 @@ for _name, (_want, _, _) in ROWS.items():
         _want.update({"death bonus": "off", "kill penalty": "off"})
         _want.setdefault("kill in order", "off")
 
+# revision 15 (tools/ae_gametype_change.py): no respawn time growth in AE FFA SNPR: the stock Snipers' adds 5 s to a
+# player's respawn per death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE SNIPERS included
+for _name in ("AE FFA SNPR",):
+    ROWS[_name][0].update({"respawn growth": "0 ticks"})
+
 
 def check(runs, prefix):
     """{name: (passed, problems)} for every seed run under runs/<prefix><name, spaces as _>/*/debug.txt"""
