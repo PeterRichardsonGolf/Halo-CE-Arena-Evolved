@@ -252,35 +252,32 @@ begin-game and keep-alive field lists under their own messages
 wire's begin game is a short and padding, its keep-alive a long), and
 `network_distributed.c`'s `DISTRIBUTED_TIME_WINDOW_TICKS` is a local check.)
 
-Arena Evolved announces 29, the table's newest (`delta.h`), and joins hosts
-of 29 alone (a host below 29 is refused, though the table's range reaches
-back to 11; the range's top is 29, as OpenCE's clients join only their own
-version, and `DELTA_LEGACY_PRESUMED` is 0, where ChupathingyCE 0.7.5b's
-presume one more): it plays with OpenCE build-206 onward and ChupathingyCE
-0.7.5b, while they stay on network 29, both ways. Hosts of an older version
-are refused (Arena Evolved 0.2.3-beta to 0.2.5-beta's and OpenCE build-201
-to 205's 28, Arena Evolved 0.2.2-beta's 25 among them), and clients that
-join their own version alone (OpenCE build-205 and earlier, Arena Evolved
-0.2.5-beta and earlier) do not join Arena Evolved's games, and are told the
-host is newer. Its wire ID is ChupathingyCE 0.7.5b's (`chupa-29a`, `delta.h`: ChupathingyCE
-joins Delta hosts of its own wire alone), and
-ChupathingyCE's signed legacy tables (Delta, `docs/delta.md`) are not
-fetched unless `network.legacy_table_fetch` is on (off by default): with
-it on, a table's row for that wire sets these numbers as ChupathingyCE's. The game's messages are OpenCE build-206's unchanged
-(build-167's voice chat and votes to kick, build-169's lights and build-189's
-map sharing are among them; Arena Evolved adds none): Arena Evolved's own
-rules travel in the gametype's flags, which every host of 11 to 29 sends and
-a client that does not know a bit leaves alone. Internet play's signalling
-is OpenCE's version 4 alone (ChupathingyCE 0.7.3e also reads 3, which only
-hosts of 25 and below send). Arena Evolved's own rule on top: a game with a
-password never has its invite sent to the game list's site (`browser.c`:
-not listed, not claimed, not reported, hosted or joined through the
-password).
+Arena Evolved announces 32, the table's newest (`delta.h`), and joins hosts
+of 32 alone (from 0.3.5; 30, 31 and 32 are breaking rows: the elevator's
+riders, the keep-alive table and datagram tick window, the host's aim assist
+policy). It plays with OpenCE build-244 onward, both ways, while they stay on
+network 32; hosts of an older version are refused (Arena Evolved 0.3.0-beta
+to 0.3.4-beta's, OpenCE build-206 to 237's and ChupathingyCE 0.7.5's 29,
+OpenCE build-242's 31 among them), and clients that join their own version
+alone do not join Arena Evolved's games, and are told the host is newer.
+Its Delta wire ID is its own from 0.3.5 (`ae-32a`, `delta.h`): Arena Evolved
+0.3.4-beta and earlier were on ChupathingyCE 0.7.5b's `chupa-29a`, and a
+Delta client joins hosts of its own wire whatever number they announce, so
+a new wire keeps 0.3.5 out of 0.3.4's games and 0.3.4 out of 0.3.5's.
+ChupathingyCE 0.8 (`chupa-32a`, network 32) and Arena Evolved refuse each
+other's Delta hosts as another wire. ChupathingyCE's signed legacy tables
+(Delta, `docs/delta.md`) are not fetched unless `network.legacy_table_fetch`
+is on (off by default). Internet play's signalling is OpenCE's version 4
+alone. Arena Evolved's own rules travel in the gametype's flags, which a
+client that does not know a bit leaves alone. Arena Evolved's own rule on
+top: a game with a password never has its invite sent to the game list's
+site (`browser.c`: not listed, not claimed, not reported, hosted or joined
+through the password).
 
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. The
 built-in range is HALO_PORT_NETWORK_VERSION_MINIMUM to
-HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 11 to 29): versions
+HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 32 to 32 in Arena Evolved): versions
 that differ from one another only in messages the other machine drops, not
 knowing them. The historical example is version 10 (OpenCE's build-73),
 which added the host's message of the players' pings, which a machine of

@@ -169,7 +169,12 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one. */
-#define DELTA_WIRE "chupa-29a"
+/* (Arena Evolved: its own wire from 0.3.5, network 32: 0.3.4-beta and
+earlier were on ChupathingyCE 0.7.5b's chupa-29a, whose Delta clients would
+join these hosts whatever number they announce, and a game of 29 and 32
+does not play alike. ChupathingyCE 0.8 is chupa-32a, which the owner may
+take instead once a handshake test with it passes) */
+#define DELTA_WIRE "ae-32a" /* AE hook */
 
 /* how many OpenCE numbers past the one announced (the newest this build, or
 the signed table, has proven) are presumed additive: a client joins their

@@ -18,7 +18,7 @@ it is; where it differs from this section, this section is right for AE.
   stay CC0 (README.md, "Licence"). The logo (`port/assets/branding`) has its
   own terms. ChupathingyCE after 0.7.5d (GPL-3) stays ideas only, never
   code, although the licences would combine (the owner's rule).
-- Network version: AE follows OpenCE's `HALO_PORT_NETWORK_VERSION` (now 25).
+- Network version: AE follows OpenCE's `HALO_PORT_NETWORK_VERSION` (now 32, from OpenCE build-244).
   Never raise it on AE's own. AE's own data travels only through Delta
   (`port/linux/include/delta.h`, `docs/delta.md`: the wire ID and the
   capability table).

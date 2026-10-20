@@ -1,9 +1,9 @@
 # Delta: ChupathingyCE's network family
 
 (Arena Evolved: this is ChupathingyCE's document, kept as it is. Arena
-Evolved's wire is ChupathingyCE 0.7.5b's, `chupa-29a` (`port/linux/include/delta.h`), so that
-ChupathingyCE players join its games; it announces
-network 29 and joins hosts of 29 alone (`DELTA_LEGACY_PRESUMED` is 0, as
+Evolved's wire is its own from 0.3.5, `ae-32a` (`port/linux/include/delta.h`;
+0.3.4-beta and earlier were on ChupathingyCE 0.7.5b's `chupa-29a`); it announces
+network 32 and joins hosts of 32 alone (`DELTA_LEGACY_PRESUMED` is 0, as
 OpenCE's clients join their own version only), and fetches ChupathingyCE's
 signed tables only with `network.legacy_table_fetch` on (off by default). It shares
 Custom Edition maps from the host (OpenCE's map sharing) as well as

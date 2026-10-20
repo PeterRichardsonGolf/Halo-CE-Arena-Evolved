@@ -18,6 +18,41 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - The H2 Demakes Sali Creek's overshield pickup looks like Halo's overshield, not the camouflage sphere: the map gave
   it the camouflage's model (Halo's own tags have the two models' names swapped), and Arena Evolved now gives it the
   stock overshield's model, which the map carries, when the map loads.
+- Licence: Arena Evolved is now free software under the GNU Affero General Public License 3.0 or later, as OpenCE is
+  from its build-237 (the file LICENSE; README, "Licence"). 0.3.4-beta and earlier stay CC0. The logo keeps its own
+  terms, and third-party code, fonts and art their own licences. If you change the game and let others play your
+  version over a network, the AGPL asks you to offer them its source.
+- Network version 32 (OpenCE build-244): this version plays with OpenCE build-244 and later, and no longer with
+  Arena Evolved 0.3.0-beta to 0.3.4-beta, OpenCE build-237 and earlier, or ChupathingyCE; everyone in a game needs
+  the same version (the game says which side needs to update).
+- From OpenCE build-235 to build-244 (OpenCE's work, merged):
+  - Settings > Video > EXTRA EFFECTS, a new screen: the SHIELD GLOW and GLOW INTENSITY rows (moved from GRAPHICS),
+    OVERSHIELD (the overshield rises up the body as it charges and stays lit in its own colour; off by default, and
+    a gametype with HIT FEEDBACK: ARENA EVOLVED keeps its own effects), HDR and HDR DISPLAY (light past white rolled
+    off instead of clipped; on an HDR display, shown brighter than white).
+  - Settings > Video > GRAPHICS: MODEL DETAIL (models' most detailed levels by your display, or always the highest).
+    FOV AND VIEWMODELS: PASSENGER THIRD PERSON (a third-person view for Warthog and Scorpion passengers in the
+    campaign and co-op).
+  - 5.1 surround sound (`audio.channels`), a latency meter for network games (`display.latency_meter`), and the
+    scoreboard's pings in its colours.
+  - Hosts: Player Options' AIM ASSIST (ALLOWED, or BLOCK M+KB to turn off mouse aim assist for everyone in the
+    game); Server Setup's co-op options EXTRA PICKUPS and EXTRA VEHICLES; FRIENDLY FIRE in network co-op's pause
+    menu, under SETTINGS.
+  - A lobby whose players are all on the host's computer (split screen in a LAN or internet lobby) can start.
+  - The server browser says when this network's strict NAT stopped a join (turn on UPnP), and how many games it
+    hides for being on a newer version.
+  - Halo's loading screen is drawn, and the main menu's scene runs behind every menu. Structures cull the triangles
+    the camera cannot see; more particles and lights are drawn a frame on desktop.
+  - Fixes: no "Running Riot" for a killer with no kills in a row; weapons of one magazine no longer flash a second
+    magazine's warnings; Team Oddball's built-in variant starts cleared; no shield damage sound while an overshield
+    drains; a client deletes the host's flag or ball without stopping; network co-op respawns after everyone died,
+    clients see the AI's grenades, elevators carry their riders alike on every machine; Change Name in a game no
+    longer crashes; a unicode string ending in '|' is no longer read past its end; the updater bounds its downloads;
+    settings words in any case, and an unreadable config.toml line is skipped (the log says why).
+  - `display.match_timer` (off): OpenCE's clock counting up at the bottom right, drawn only while Arena Evolved's
+    MATCH CLOCK (Settings > HUD's MULTIPLAYER GAME TIMER) is off, so the two never share that corner.
+  - OpenCE's PC menus in the language of a Custom Edition's loc.map are not in Arena Evolved yet (it reads Custom
+    Edition maps with ChupathingyCE's loader): the menus stay in English.
 
 ## 0.3.4-beta - 2026-10-18
 

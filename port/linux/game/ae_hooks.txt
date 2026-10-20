@@ -969,3 +969,5 @@ source/interface/hud.c	if (game_engine_match_clock_setting() == _match_clock_off
 port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
 # OpenCE build-244's passenger camera calls render_camera_world_to_screen, which the 64-bit builds need declared
 port/linux/game/passenger_camera.c	#include "render/render_cameras_internal.h" /* AE hook */
+# Arena Evolved 0.3.5's own Delta wire (network 32): no Delta join with 0.3.4 (chupa-29a) or ChupathingyCE 0.8 (chupa-32a)
+port/linux/include/delta.h	#define DELTA_WIRE "ae-32a" /* AE hook */
