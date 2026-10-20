@@ -11,7 +11,12 @@ each spawns and when); bots_choose_goal asks first (its AE hook line, after the 
 - one bot of a team per entry (the others leave it to it);
 - a bot that reaches an empty spot while the entry is not about to spawn takes it as taken, for its team, until the
   entry's next spawn;
-- a bot never goes for a weapon it holds, nor for the overshield or the camouflage while it wears it.
+- a bot never goes for a weapon it holds, nor for the overshield or the camouflage while it wears it;
+- an entry out of its reach (bots.c found no whole path to it: a short one, or the weapon left be as unreachable) is
+  left alone by that bot for 30 s, as bots.c leaves an item (the soak 10-20: on Beaver Creek, whose snipers and
+  rockets lie on the arches, bots stood under them for minutes, searching a path each tick); so is one whose item is
+  still there after 3 s at its spot (Temple's camouflage, on its stand above the floor: a bot stood under it to the
+  game's end).
 */
 
 #include "ae_bots_power_rules.h"
@@ -23,10 +28,14 @@ static struct
 {
 	short entry;		/* the item_timers entry it goes for, or NONE */
 	long check_tick;	/* when it weighs the entries again */
+	long near_since;	/* since when it stands at the entry's spot with the item up (0: not) */
 } ae_bots_power_bots[BOTS_MAXIMUM];
 
 /* when each team saw each entry's spot empty, until its next spawn (game ticks; 0 for not) */
 static long ae_bots_power_taken_until[AE_BOTS_POWER_ENTRIES][2];
+
+/* until when each bot leaves each entry alone, out of its reach (game ticks; 0 for not) */
+static long ae_bots_power_unreachable_until[BOTS_MAXIMUM][AE_BOTS_POWER_ENTRIES];
 
 static long ae_bots_power_bot_index(struct bots_bot const *bot)
 {
@@ -114,6 +123,20 @@ static boolean ae_bots_power_teammate_going(struct bots_bot const *bot, struct p
 	return FALSE;
 }
 
+/* whether the entry the bot goes for is out of its reach: its weapon left be by bots.c, or the path to its spot short */
+static boolean ae_bots_power_out_of_reach(struct bots_bot const *bot, short entry)
+{
+	struct item_timer const *timer = item_timers_get(entry);
+	long item_index;
+
+	if (!timer)
+		return FALSE;
+	item_index = ae_bots_power_item_at(timer);
+	if (item_index != NONE && bots_item_unreachable(bot, item_index))
+		return TRUE;
+	return (boolean)(bot->path.valid && bot->path_short && bots_distance2d(&bot->goal_point, &timer->position) < 2.5f);
+}
+
 static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_point3d const *position,
 	boolean fighting)
 {
@@ -132,6 +155,19 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 		return FALSE;
 	if (count > AE_BOTS_POWER_ENTRIES)
 		count = AE_BOTS_POWER_ENTRIES;
+	/* (the entry it goes for, out of its reach: left alone 30 s, and the entries weighed again now) */
+	if (ae_bots_power_bots[index].entry != NONE && ae_bots_power_bots[index].entry < AE_BOTS_POWER_ENTRIES &&
+		ae_bots_power_out_of_reach(bot, ae_bots_power_bots[index].entry))
+	{
+		ae_bots_power_unreachable_until[index][ae_bots_power_bots[index].entry] = now + TICKS_PER_SECOND * 30;
+		if (ae_bots_events_on())
+			platform_log("bots: bot %ld leaves power entry %d (out of reach)", (long)(index + 1),
+				(int)ae_bots_power_bots[index].entry);
+		ae_bots_power_bots[index].entry = NONE;
+		ae_bots_power_bots[index].check_tick = now;
+		if (bot->goal_kind == _bots_goal_item || bot->goal_kind == _bots_goal_roam)
+			bot->goal_kind = _bots_goal_none;
+	}
 	/* (the entry it goes for: kept between the once-a-second weighings while it is still wanted) */
 	if (now < ae_bots_power_bots[index].check_tick && ae_bots_power_bots[index].entry == NONE)
 		return FALSE;
@@ -149,8 +185,11 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 			short kind;
 			real want;
 
-			if (!timer || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES || timer->period_ticks <= 0)
+			if (!timer || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES || timer->period_ticks <= 0 ||
+				now < ae_bots_power_unreachable_until[index][entry])
+			{
 				continue;
+			}
 			item_index = ae_bots_power_item_at(timer);
 			kind = ae_bots_power_entry_kind(timer, item_index);
 			if (kind == NONE)
@@ -204,6 +243,24 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 		long surface_index;
 
 		/* (at an empty spot that is not about to spawn: taken, for the team, until its next spawn) */
+		/* (at the spot with the item up, 3 s and not got: out of its reach, 30 s) */
+		if (best_item != NONE && bots_distance2d(position, &timer->position) < 1.5f)
+		{
+			if (!ae_bots_power_bots[index].near_since)
+				ae_bots_power_bots[index].near_since = now;
+			else if (now - ae_bots_power_bots[index].near_since > TICKS_PER_SECOND * 3 && best < AE_BOTS_POWER_ENTRIES)
+			{
+				ae_bots_power_unreachable_until[index][best] = now + TICKS_PER_SECOND * 30;
+				if (ae_bots_events_on())
+					platform_log("bots: bot %ld leaves power entry %d (not got at its spot)", (long)(index + 1), (int)best);
+				ae_bots_power_bots[index].entry = NONE;
+				ae_bots_power_bots[index].near_since = 0;
+				bot->goal_kind = _bots_goal_none;
+				return FALSE;
+			}
+		}
+		else
+			ae_bots_power_bots[index].near_since = 0;
 		if (best_item == NONE && bots_distance2d(position, &timer->position) < 1.5f &&
 			item_timer_ticks_left(timer) > (long)((ae_bots_power_lead_seconds(level) + 2.0f) * TICKS_PER_SECOND))
 		{
@@ -240,6 +297,8 @@ static void ae_bots_power_reset(void)
 	{
 		ae_bots_power_bots[index].entry = NONE;
 		ae_bots_power_bots[index].check_tick = 0;
+		ae_bots_power_bots[index].near_since = 0;
 	}
 	csmemset(ae_bots_power_taken_until, 0, sizeof(ae_bots_power_taken_until));
+	csmemset(ae_bots_power_unreachable_until, 0, sizeof(ae_bots_power_unreachable_until));
 }
