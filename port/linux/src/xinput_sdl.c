@@ -393,41 +393,9 @@ int halo_linux_mouse_aiming(short gamepad_index)
 	return aiming;
 }
 
-/* collects the motion the game has not asked for yet; motion that nobody
-consumes for a few polls (menus, cutscenes) is dropped so it cannot jerk
-the view later */
-static void mouse_poll(const struct platform_input_state *input)
-{
-	pthread_mutex_lock(&mouse_lock);
-	if (++mouse_polls_unconsumed > 4)
-	{
-		mouse_pending_x = 0.0f;
-		mouse_pending_y = 0.0f;
-	}
-	if (!input->mouse_released)
-	{
-		mouse_pending_x += input->mouse_dx;
-		mouse_pending_y += input->mouse_dy;
-		if (input->mouse_dx != 0.0f || input->mouse_dy != 0.0f)
-			mouse_aimed_ms = SDL_GetTicks();
-		mouse_wheel_accumulated += input->mouse_wheel;
-		if (input->mouse_wheel != 0.0f)
-			wheel_moved_ms = SDL_GetTicks();
-	}
-	pthread_mutex_unlock(&mouse_lock);
-}
-
-/* ---------- keyboard and mouse as a controller */
-
-static BYTE analog(BOOL down)
-{
-	return down ? 0xff : 0x00;
-}
-
-#ifdef HALO_GAME_BROWSER
 /* the device the player last used (the overlay's button prompts,
-ui_overlay.c): 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a
-PlayStation pad, 3 a Nintendo pad */
+ui_overlay.c, and the game's: halo_keyboard_prompts): 0 the keyboard (or
+mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a Nintendo pad */
 static int last_input_scheme = 1;
 static BOOL last_input_seen = FALSE;
 
@@ -456,7 +424,49 @@ static int scheme_of(SDL_Gamepad *gamepad)
 		return 1;
 	}
 }
-#endif
+
+/* collects the motion the game has not asked for yet; motion that nobody
+consumes for a few polls (menus, cutscenes) is dropped so it cannot jerk
+the view later */
+static void mouse_poll(const struct platform_input_state *input)
+{
+	pthread_mutex_lock(&mouse_lock);
+	if (++mouse_polls_unconsumed > 4)
+	{
+		mouse_pending_x = 0.0f;
+		mouse_pending_y = 0.0f;
+	}
+	if (!input->mouse_released)
+	{
+		int button;
+
+		mouse_pending_x += input->mouse_dx;
+		mouse_pending_y += input->mouse_dy;
+		if (input->mouse_dx != 0.0f || input->mouse_dy != 0.0f)
+			mouse_aimed_ms = SDL_GetTicks();
+		/* (the mouse used, not nudged: the prompts show the keyboard's) */
+		for (button = 1; button < PLATFORM_MOUSE_BUTTON_COUNT && !input->mouse_buttons[button]; button++)
+			;
+		if (button < PLATFORM_MOUSE_BUTTON_COUNT || input->mouse_wheel != 0.0f ||
+			fabsf(input->mouse_dx) + fabsf(input->mouse_dy) > 8.0f)
+		{
+			last_input_scheme = 0;
+			last_input_seen = TRUE;
+		}
+		mouse_wheel_accumulated += input->mouse_wheel;
+		if (input->mouse_wheel != 0.0f)
+			wheel_moved_ms = SDL_GetTicks();
+	}
+	pthread_mutex_unlock(&mouse_lock);
+}
+
+/* ---------- keyboard and mouse as a controller */
+
+static BYTE analog(BOOL down)
+{
+	return down ? 0xff : 0x00;
+}
+
 /* the game's on-screen keyboard is up (platform_text_typing): the keys type
 into it (XInputDebugGetKeystroke passes them to the game), but for the
 arrows, which move about it, enter (Done, once let go of since it came up)
@@ -525,7 +535,6 @@ static void keyboard_gamepad(const struct platform_input_state *input, XINPUT_GA
 	if (!enter)
 		text_typing_enter_blocked = FALSE;
 
-#ifdef HALO_GAME_BROWSER
 	{
 		int scancode;
 
@@ -542,7 +551,6 @@ static void keyboard_gamepad(const struct platform_input_state *input, XINPUT_GA
 			}
 		}
 	}
-#endif
 	ae_platform_note_keyboard_input(k, m, mouse); /* AE hook */
 	if (text_typing)
 	{
@@ -585,6 +593,9 @@ static void keyboard_gamepad(const struct platform_input_state *input, XINPUT_GA
 	pad->bAnalogButtons[XINPUT_GAMEPAD_BLACK] |= analog(k[SDL_SCANCODE_C]);
 }
 
+/* ChupathingyCE's text chat (chat.c) types a line (platform_chat_typing) */
+static BOOL chat_typing;
+
 /* the keys held when the game and the menus switch, or typing or the
 console starts or ends, count as up until let go of: the escape that opens
 the pause menu does not also back out of it, nor the one that closes it (or
@@ -595,7 +606,7 @@ static void keys_held_over_switch(struct platform_input_state *input)
 	static unsigned char held[SDL_SCANCODE_COUNT];
 	static int context = -1;
 	int next_context = (input->menus != FALSE) | (text_typing ? 2 : 0) | (console_is_active() ? 4 : 0) |
-		(network_chat_typing() ? 8 : 0);
+		(network_chat_typing() ? 8 : 0) | (chat_typing ? 16 : 0);
 	int scancode;
 
 	if (context != next_context)
@@ -623,6 +634,7 @@ static const char *const binding_settings[NUMBER_OF_HALO_KEYBOARD_ACTIONS] =
 	"controls.reload", "controls.zoom", "controls.switch_weapon", "controls.switch_grenade", "controls.action",
 	"controls.flashlight", "controls.scoreboard", "controls.pause", "controls.screenshot",
 	"controls.push_to_talk", "controls.chat", "controls.team_chat",
+	"controls.chat_all", "controls.chat_team", "controls.chat_log",
 };
 
 static const struct
@@ -743,6 +755,43 @@ void halo_input_shown_name(const char *binding, char *shown, size_t size)
 #endif
 }
 
+/* the key of an action, as the menus show it (halo_input_shown_name): its
+first binding; 0 for an action with none */
+int halo_keyboard_action_shown(int action, char *shown, unsigned long size)
+{
+	char binding[64];
+	const char *text;
+	size_t length;
+
+	if (action < 0 || action >= NUMBER_OF_HALO_KEYBOARD_ACTIONS || !size)
+		return 0;
+	text = config_string(binding_settings[action]);
+	text += strspn(text, " ");
+	length = strcspn(text, ",");
+	while (length && text[length - 1] == ' ')
+		length--;
+	if (!length || length >= sizeof(binding))
+		return 0;
+	memcpy(binding, text, length);
+	binding[length] = 0;
+	halo_input_shown_name(binding, shown, size);
+	return shown[0] != 0;
+}
+
+/* the game's button prompts show the keyboard's keys (Halo PC's) in place
+of the controller's buttons: input.keyboard_prompts, while the keyboard or
+mouse was used last (or, before any input, with no controller connected).
+Android's touch controls are drawn as the controller's buttons, so its
+prompts stay the controller's. */
+int halo_keyboard_prompts(void)
+{
+#ifdef HALO_ANDROID
+	return 0;
+#else
+	return config_boolean("input.keyboard_prompts") && platform_input_scheme() == 0;
+#endif
+}
+
 static void bindings_read(void)
 {
 	int action;
@@ -857,6 +906,34 @@ static void keyboard_controls(unsigned long held, XINPUT_GAMEPAD *pad)
 	if (held & (1UL << HALO_KEYBOARD_SCOREBOARD))
 		pad->wButtons |= XINPUT_GAMEPAD_BACK;
 	keyboard_actions_held = held;
+}
+
+/* text chat's typing (platform_chat_typing: chat_typing, above), and escape
+pressed while it types (platform_chat_escape) */
+static BOOL chat_escape_held, chat_escape_pressed;
+
+void platform_chat_typing(int typing)
+{
+	chat_typing = typing != 0;
+	chat_escape_pressed = FALSE;
+}
+
+int platform_chat_escape(void)
+{
+	BOOL pressed = chat_escape_pressed;
+
+	chat_escape_pressed = FALSE;
+	return pressed;
+}
+
+/* (escape, seen as the key itself rather than as a keystroke) */
+static void chat_escape_update(const struct platform_input_state *input)
+{
+	BOOL held = input->keys[SDL_SCANCODE_ESCAPE] != 0;
+
+	if (chat_typing && held && !chat_escape_held)
+		chat_escape_pressed = TRUE;
+	chat_escape_held = held;
 }
 
 unsigned long halo_keyboard_actions(short controller_index)
@@ -1309,7 +1386,6 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 	if (right_trigger > pad->bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER])
 		pad->bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] = (BYTE)right_trigger;
 
-#ifdef HALO_GAME_BROWSER
 	/* (a button pressed, a trigger pulled or a stick pushed: this pad) */
 	{
 		int button;
@@ -1326,7 +1402,6 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 			ae_platform_note_pad_used(); /* AE hook */
 		}
 	}
-#endif
 	/* a stick only overrides the keyboard when it is pushed further */
 	value = stick(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX), FALSE);
 	if (abs(value) > abs(pad->sThumbLX)) pad->sThumbLX = value;
@@ -1482,8 +1557,10 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 		keyboard_actions_held = 0;
 		keys_held_over_switch(&input);
 		test_input_menu_keys(&input);
-		/* (a chat line typed takes the keyboard as the console does) */
-		console_active = console_is_active() || network_chat_typing();
+		/* (a chat line typed takes the keyboard as the console does: OpenCE's
+		chat, or ChupathingyCE's, whose escape is seen as the key) */
+		chat_escape_update(&input);
+		console_active = console_is_active() || network_chat_typing() || chat_typing;
 		held = console_active ? 0 : keyboard_bound_actions(&input);
 		keyboard_screenshot(console_active && keyboard_screenshot_in_console(&input) ?
 			1UL << HALO_KEYBOARD_SCREENSHOT : held);
@@ -1577,7 +1654,7 @@ DWORD WINAPI XInputDebugGetKeystroke(PXINPUT_DEBUG_KEYSTROKE keystroke)
 		/* key ups always pass, so no key is left latched down; while typing,
 		escape does not (it cancels, as B: the game's own escape leaves the
 		menus, main.c) */
-		if (key_up || next.virtual_key == VK_OEM_3_BACKQUOTE || console_is_active() || network_chat_typing() ||
+		if (key_up || next.virtual_key == VK_OEM_3_BACKQUOTE || console_is_active() || network_chat_typing() || chat_typing ||
 			(text_typing && next.virtual_key != 0x1B /* escape */))
 		{
 			keystroke->VirtualKey = next.virtual_key;

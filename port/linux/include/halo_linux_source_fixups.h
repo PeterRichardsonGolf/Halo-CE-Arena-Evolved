@@ -65,6 +65,9 @@ void halo_screen_anti_alias(short x0, short y0, short x1, short y1);
 /* display.hdr's tone mapping of a window's 3D view, before its
 anti-aliasing (source/render/render.c) */
 void halo_screen_tone_map(short x0, short y0, short x1, short y1);
+/* the loading screen's picture, RGBA bytes with its top row first, over the
+whole back buffer (port/linux/src/d3d8_gl.c, port/linux/game/loading_screen.c) */
+void halo_draw_picture(const unsigned char *rgba, long width, long height);
 /* the mouse in the menus (source/interface/ui_widget.c) */
 #include "halo_ui_pointer.h"
 

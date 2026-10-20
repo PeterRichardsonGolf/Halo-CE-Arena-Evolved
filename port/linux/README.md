@@ -177,7 +177,10 @@ again.
 
 The game writes the copy to `maps.partial`. When the copy is complete, the
 game changes the name to `maps`. If the copy stops before it is complete,
-the game asks for the disc image again at the next start.
+the game asks for the disc image again at the next start. The movies follow
+the maps, each written as `<name>.partial` first. A movie that is already in
+`bink/` is never replaced, and a movie that can't be copied does not stop the
+extraction.
 
 ### Steam Deck
 
@@ -236,16 +239,30 @@ the video driver yourself.
 
 The save root is `paths.saves` in `config.toml`. If that setting is empty,
 the save root is `$XDG_DATA_HOME/halo-linux` (usually
-`~/.local/share/halo-linux`).
+`~/.local/share/halo-linux`). (Arena Evolved keeps this folder: ChupathingyCE
+0.8's own `chupathingyce` folder, and its one-time copy of the saves into it,
+are not used.)
 
 The game makes the folders when it needs them. Names of files and folders
 are not case-sensitive, as on the Xbox.
+
+Beside the maps and the saves, the game keeps folders of its own
+(`port/linux/src/port_folders.h`), the same on every platform:
+
+| Folder | Contents |
+| --- | --- |
+| the data root itself | The logs: `debug.txt`, `halo.log` (Windows) and `crashes/` (Arena Evolved: ChupathingyCE 0.8 puts them in `logs/` in the data root; Arena Evolved's tests and tools read them in the data root). `paths.logs` (`HALO_LOG_ROOT`) puts them elsewhere. |
+| `data/` in the data root | What a player adds that is not a map: `data/fonts/` holds the player's own fonts (`display.high_res_font`). |
+| `cache/` in the save root | What the game can make again; safe to delete. `paths.cache` (`HALO_CACHE_ROOT`) puts it elsewhere. |
+| `private/` in the save root | What is the player's alone. |
+
+An update never touches these folders.
 
 These files are in the data root:
 
 | File | Contents |
 | --- | --- |
-| `debug.txt` | The log of the game. At start-up, the game shows the data root in the terminal. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
+| `debug.txt` | The log of the game. At start-up, the game shows the logs folder and the data root in the terminal. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
 | `crashes/` | Crash reports that wait to be sent (Linux and macOS; refer to "Crash reports"). |
 | `init.txt` | Console commands that the game does at start-up. For example, `map_name levels\a10\a10` starts the first campaign level. |
 | `mods/` | Mods: folders of Halo PC tag files whose sounds, bitmaps, text and models play over the maps' on this machine, in the order of the main menu's Mods (`load_order.toml`). Refer to [docs/mods.md](../../docs/mods.md). |
@@ -294,7 +311,8 @@ ChupathingyCE's builds. A crash's lines still go to `debug.txt`.)
 Releases and nightlies on Linux and macOS also write a crash report when
 the game stops because of `SIGSEGV`, `SIGBUS`, `SIGILL`, `SIGFPE` or
 `SIGABRT` (`port/linux/src/posix_crash.c`). The report goes to `crashes/`
-in the data root. When the game starts the next time, it does what
+in the logs folder (in Arena Evolved the data root itself). When the game starts
+the next time, it does what
 `crash_reports.upload` says: `"yes"` sends the reports to the ChupathingyCE
 site (`network.browser_url`, `POST /v1/crash`) in the background, `"no"`
 deletes them, and `"ask"` asks the player first. `crashes/` keeps at most 8
@@ -665,7 +683,9 @@ those stay as they are, also if a later version changes the default. To get
 the default values again, delete the file.
 
 The game reads the file once, when it starts: restart the game after you
-edit it. If a key is not correct, or a value has the wrong type, the game
+edit it. The volumes (`audio.volume`, `audio.music_volume`,
+`audio.effects_volume`) are the exception: a change to them saved while the
+game runs applies within a second. If a key is not correct, or a value has the wrong type, the game
 writes the line to the log and uses the default value. If a line has a
 mistake that TOML cannot read, such as a word without quotes (`menus = pc`
 for `menus = "pc"`) or `True` for `true`, the game skips that line, reads
@@ -686,6 +706,27 @@ default of an earlier version (`display.menus = "pc"`, the default before
 ChupathingyCE 0.5.2b, or `"xbox"`, its default since), is commented out, so that it follows the default. A setting with
 another value stays. The log has one line that tells what changed.
 
+A version from before `config_version`, run on a file of this layout, adds
+each commented-out setting again as a value at its own default, so that the
+file holds the setting twice: `# key = default` and `key = value`. Such a
+value is taken out (with the comment the older version wrote above it) only
+when the player answers "Use the new settings" to the question below; "Keep
+mine" leaves it, and a value that is no default stays in either case.
+
+When a version changes the default of settings that a `config.toml` has
+untouched (commented out, or not there), the game asks once, before the
+window opens, in a message box on the desktop and on Android: "Use the new
+settings" or "Keep mine" (Return and Escape). It lists the changes in words
+(ChupathingyCE's: smoother edges, sharper shadows, its own menus, and on
+Android a larger audio buffer; Arena Evolved keeps its defaults, so it asks
+nothing yet). Until it is answered, the settings keep their old
+values and the file is left as it is. "Keep mine" writes the old values into
+`config.toml`; "Use the new settings" lets them follow the new defaults. The
+answer is `game.defaults_answered`; the question does not come again. A new
+`config.toml` has the new defaults and is not asked. A run without anyone to
+answer (a hidden window, a test) logs the question and keeps the old values.
+The dedicated server never asks and keeps its own defaults.
+
 Each setting has an environment variable. The environment variable changes
 the setting for one start of the game. It has priority over the file.
 
@@ -699,7 +740,7 @@ the setting for one start of the game. It has priority over the file.
 | `display.window_scale` | `2` | `HALO_WINDOW_SCALE` | Used when `display.window_size` is empty: the size of the window, as a multiple of 640x480. |
 | `display.vsync` | `true` | `HALO_NO_VSYNC=1` sets `false` | `true`: each frame waits for the display. |
 | `display.max_fps` | `0` | `HALO_MAX_FPS` | With vsync off, the most frames each second. `0`: twice the display's refresh rate. `-1`: no limit, which can hang some Intel graphics (Raptor Lake), resetting the desktop's graphics too. |
-| `display.anti_aliasing` | `"off"` | `HALO_ANTI_ALIASING` | The smoothing of jagged edges, which the Xbox did not have. `"off"`: none, as on the Xbox. `"fxaa"` or `"smaa"`: a pass over the 3D view after the game draws it. The HUD and the menus stay sharp. SMAA is the sharper and costs more. `"ssaa2x"`: the game draws at two times the resolution in each direction (at most the GPU's largest texture), and the picture is scaled down. The GPU does four times the work. Not with `display.resolution_scaling = "original"`. `"msaa2x"`, `"msaa4x"` or `"msaa8x"`: each pixel of the 3D view has that many samples (at most the GPU's). On Android, `"smaa"` gives FXAA and `"ssaa2x"` none. A change applies from the next frame. Refer to "Anti-aliasing" in "What operates". |
+| `display.anti_aliasing` | `"msaa2x"` on 64-bit computers, `"off"` on 32-bit ones, Android and the server | `HALO_ANTI_ALIASING` | The smoothing of jagged edges, which the Xbox did not have. `"off"`: none, as on the Xbox. `"fxaa"` or `"smaa"`: a pass over the 3D view after the game draws it. The HUD and the menus stay sharp. SMAA is the sharper and costs more. `"ssaa2x"`: the game draws at two times the resolution in each direction (at most the GPU's largest texture), and the picture is scaled down. The GPU does four times the work. Not with `display.resolution_scaling = "original"`. `"msaa2x"`, `"msaa4x"` or `"msaa8x"`: each pixel of the 3D view has that many samples (at most the GPU's). On Android, `"smaa"` gives FXAA and `"ssaa2x"` none. A change applies from the next frame. Refer to "Anti-aliasing" in "What operates". |
 | `debug.gpu_flush_draws` | `-1` | `HALO_GPU_FLUSH_DRAWS` | Flush the GPU's pipeline every this many draws. `-1`: every 3 on Intel graphics with Mesa's driver, which can otherwise hang in the game's long runs of small draws and reset the desktop's graphics too. `0`: never. |
 | `display.interpolation` | `true` | `HALO_INTERPOLATION` | `true`: one frame for each refresh of the display. `false`: 30 frames each second, as on the Xbox. Refer to "Frame rate". |
 | `display.direct_camera` | `true` | `HALO_DIRECT_CAMERA` | `true`: in first person, on foot, the view points where the player aims in each frame, not where the last tick left it. Refer to "Frame rate". |
@@ -716,7 +757,7 @@ the setting for one start of the game. It has priority over the file.
 | `display.coordinates` | `false` | `HALO_COORDINATES` | For map makers: the performance line (`display.performance`; alone in its corner when that is off) ends with player 1's position in world units and facing in degrees about the up axis (0 along +x, counterclockwise): `X 97.65 Y -169.62 Z 0.26  FACING 21`. The position is the body's origin (its feet), the camera's while there is no body. SHOW COORDINATES on Video Setup > GRAPHICS. |
 | `display.anisotropic` | `"off"` | `HALO_ANISOTROPIC` | Anisotropic filtering of textures drawn with linear mipmapped filtering (the world's floors and walls): `"off"` as the Xbox (the game never asks for it, so they blur at a grazing angle), `"2x"`, `"4x"`, `"8x"`, `"16x"` (the graphics card's most at most). Takes effect at once; the log says `texture filter: anisotropic Nx` when it changes. ANISOTROPIC FILTERING on Video Setup > GRAPHICS. |
 | `display.shadow_resolution` | `128` | `HALO_SHADOW_RESOLUTION` | The size of the maps that the shadows of the objects are drawn in, in pixels each way: `128`, `256`, `512` or `1024` (other values go down to one of these). The game draws the shadow of each object into a map of 128x128 pixels, blurs it and projects it onto the ground. On a large screen, the edges of these shadows show steps that move when the object moves. A larger map makes the edges smooth; the blur is made wider to match, so the shadows are as soft as on the Xbox. Each doubling adds two passes of the blur. `128`: as on the Xbox. |
-| `display.menus` | `"pc"` | `HALO_MENUS` | `"pc"` (Arena Evolved's default): the PC version's menus, where AE's settings are, from the files in `port/assets/menus` and a `menus` folder next to `config.toml`. `"xbox"`: the Xbox's menus, with Online Games (ChupathingyCE's default). Refer to "Menus". |
+| `display.menus` | `"pc"` | `HALO_MENUS` | `"pc"` (Arena Evolved's default): the PC version's menus, where AE's settings are, from the files in `port/assets/menus` and a `menus` folder next to `config.toml`. `"xbox"`: the Xbox's menus, with Online Games. `"gearbox"` is the same as `"pc"` (ChupathingyCE 0.8's name for it; its own `"chupathingy"` menus are not in Arena Evolved). Refer to "Menus". |
 | `display.arena_menus` | `false` | `HALO_ARENA_MENUS` | Experimental, not finished: `true` shows Arena Evolved's own menus in place of the game's. `false`: the menus `display.menus` picks. Read at start-up. |
 | `display.enemy_name_color` | `"classic"` | `HALO_ENEMY_NAME_COLOR` | Enemies' names (anyone's in a free for all): the name the game shows for the player under your reticle (in the upper middle of the view, fading in as you hold on them) and the names over heads (`display.player_names`). `"red"`: in red, as the Master Chief Collection's ENEMY PLAYER NAME COLOR. `"classic"`: in the HUD's blue, as teammates' (the game drew its one name, the one under the reticle, in blue; it had no names over heads). Only this machine's look: nothing is sent. Settings > Network Setup sets it (ENEMY NAME COLOR). |
 | `display.menu_language` | `"maps"` | `HALO_MENU_LANGUAGE` | The PC menus' language. `"maps"`: the language of the Custom Edition whose `loc.map` is in `custom_maps` (English without one). `"english"`: English. The port's own lines are English. |
@@ -725,8 +766,17 @@ the setting for one start of the game. It has priority over the file.
 | `display.match_timer` | `false` | `HALO_MATCH_TIMER` | ChupathingyCE's: `true`: a timed multiplayer game shows its time left at the top of each view. OpenCE's clock of this name (build-244, the bottom right corner) is not drawn in Arena Evolved: its clock is MATCH CLOCK (`display.match_clock`, Settings > HUD's MULTIPLAYER GAME TIMER). Not in the menus. |
 | `display.text_chat` | `true` | `HALO_TEXT_CHAT` | Show the text chat of network games (Settings > Network Setup > Multiplayer HUD > TEXT CHAT). `false` hides its lines, and its keys and a controller's D-pad Up open nothing. Refer to "Text chat". |
 | `display.chat_style` | `"colors"` | `HALO_CHAT_STYLE` | The text chat's colours (Settings > Network Setup > Multiplayer HUD > CHAT TEXT): `"colors"`, the player's name in their team's colour and the text a pale blue; `"white"`, all of it white, as Custom Edition. |
+| `display.far_clip_distance` | `1024.0` | `HALO_FAR_CLIP_DISTANCE` | How far the world is drawn, in world units: `1024`, as on the Xbox, up to `10000`. Raise it on large maps that cut off in the distance (Extinction, Hugeass). It is a floor under the map's own far clip, so it holds across map loads and joins, in single player and multiplayer; scripts and `init.txt` can raise the clip further but not below it. Only the picture changes: the game itself, what each machine sends and the near clip do not. Fog can still end the view sooner. Depth precision at a distance gets coarser as the value grows (about 9 units at 3000, 95 at 10000), so distant overlapping surfaces may flicker at the largest values. |
+| `display.high_res_font` | `""` | `HALO_HIGH_RES_FONT` | The player's own font file (`.ttf` or `.otf`) for the high-res text and the menu text of Online Games, in place of the built-in fonts (`port/assets/fonts/fonts.json`). A relative path is in `data/fonts/` in the data root (a path that leaves that folder is refused); an absolute path is used as it is. A file that is missing or is not a font is logged, and the built-in font is drawn. A change applies while the game runs. |
+| `display.high_res_font_large` | `""` | `HALO_HIGH_RES_FONT_LARGE` | As `display.high_res_font`, for the large text only (the font tags with the role `large` in `fonts.json`: `ui\large_ui`, `ui\interstate`; Online Games' large menu text). Empty: `display.high_res_font`. |
+| `display.version_watermark` | `false` | `HALO_VERSION_WATERMARK` | `true`: the build's version ("0.7.5a (5c1a363)"), which the main menu shows small and faint in the bottom right corner, is shown there while playing too: handy for screenshots and bug reports. |
+| `display.follow_camera` | `"long_waits"` | `HALO_FOLLOW_CAMERA` | In multiplayer, when a dead player's camera follows a living player from behind once the original death camera is done (3 seconds): a teammate in a team game, the killer (or the leader) in a game without teams. LB and RB (Q and E, or the mouse wheel, on the keyboard) switch who, and a "FOLLOWING" line near the bottom says who; it returns to the player's own view on respawn. `"long_waits"`: only when the wait to respawn is long (`display.follow_camera_after`), the player is out of lives or odd man out, or the game type holds spawns until its next round; a short respawn keeps the original death camera. `"always"`: after every death. `"off"`: the original death camera only. Only what this machine shows changes, so it works in any host's game. Split screen: each player's own. |
+| `display.follow_camera_after` | `5.0` | `HALO_FOLLOW_CAMERA_AFTER` | For `display.follow_camera`'s `"long_waits"`: how many seconds of the wait to respawn must be left once the death camera is done for the camera to follow someone. |
+| `display.powerup_timers` | `false` | `HALO_POWERUP_TIMERS` | `true`: a small line of the HUD's text near the top of the view shows the seconds left on the player's active camouflage, overshield and full spectrum vision while one is on ("CAMO 12   OVERSHIELD 41"). The overshield's time is what is left of it above full: it counts down only in multiplayer, where it drains, so in campaign it shows none. Split screen: each player's own. `false`: none, as the original game. |
+| `display.loading_screen_min_seconds` | `0.0` | `HALO_LOADING_SCREEN_MIN_SECONDS` | Keep the original loading screen (the picture with the glow that crosses it) up for at least this many seconds, up to 30, when a level loads, as loading from the Xbox's disc did; the port's loads are usually over before it shows. Also when the level is already loaded (a restart). Only in a game no other machine is in (campaign, split screen): a game on the network (system link, online, network co-op) loads as fast as it can, so that no machine waits on another. Never for the main menu. `0`: no wait. |
 | `display.scoreboard_team_layout` | `"teams"` | `HALO_SCOREBOARD_TEAM_LAYOUT` | How the multiplayer scoreboard (hold BACK, or tab) lists a team game's players. `"teams"`: a column for each team, red on the left and blue on the right. `"score"`: all the players in order of score. With more players than fit, the mouse wheel and Page Up / Page Down scroll the scoreboard. |
 | `display.scoreboard_background` | `true` | `HALO_SCOREBOARD_BACKGROUND` | `true`: the multiplayer scoreboard (hold BACK, or tab) has a panel behind its text, for clearer text. |
+| `display.scoreboard_platforms` | `"auto"` | `HALO_SCOREBOARD_PLATFORMS` | A small logo of each player's platform (Windows, macOS, Linux, Android, Steam Deck, Xbox and so on) before their name on a network game's scoreboard, for players whose client sends it over Delta Peer; other players (OpenCE, retail) get no logo. `"auto"`: shown with the Chupathingy menus only, since the Xbox and Gearbox menus stay close to the originals. `"on"`: with any menus. `"off"`: never. |
 | `display.show_quit_players` | `true` | `HALO_SHOW_QUIT_PLAYERS` | `true`: players who quit stay on the multiplayer scoreboard (hold BACK, or tab) and the score in the corner, as in the original game. `false`: they are left off, and the players still in the game are ranked among themselves, as OpenCE does. Only what this machine draws changes. |
 | `display.scoreboard_background_color` | `"16, 16, 16, 150"` | `HALO_SCOREBOARD_BACKGROUND_COLOR` | The colour of the scoreboard's panel: `"red, green, blue, alpha"`, each from `0` to `255`. Alpha `0` is see-through, `255` is solid. |
 | `display.hud_style` | `"ae"` | `HALO_HUD_STYLE` | HUD STYLE, the first row of Settings > HUD. `"ae"`: the score strip under the view (scores, the clock, the gametype's own state), the AE panels in place of CE's ammo, grenade, shield and health panels and motion sensor, and Arena Evolved's look for the HUD elements it draws. `"classic"`: the HUD exactly as before (the clock in the corner, no score strip). Any other value reads as `"ae"`, the default for new and upgraded installs. This machine's display only: nothing goes over the network. |
@@ -744,6 +794,17 @@ the setting for one start of the game. It has priority over the file.
 | `display.short_messages` | `false` | `HALO_SHORT_MESSAGES` | `true`: the killing spree messages read `Killing Spree!` and `Killing Spree! (N)` (Halo 1: NHE's short form), instead of the game's `You are on a killing spree!`. This machine's own text only; nothing is sent. Settings > HUD sets it. |
 | `display.anisotropic_filtering` | `0` | `HALO_ANISOTROPIC_FILTERING` | OpenCE's, kept beside Arena Evolved's `display.anisotropic` (Settings' ANISOTROPIC FILTERING); the higher of the two filters. Textures seen at a grazing angle (floors, walls, terrain) are sampled along the angle from finer mip levels, so they stay sharp; the Xbox game asks for none. `0` or `1`: as on the Xbox. `2`, `4`, `8` or `16`: at most that many samples (at most the GPU's); `4` keeps most of `16`'s sharpness at less cost on slower GPUs. TEXTURE FILTERING in Video Setup > Graphics. It applies to the textures of the map that have mip levels and are filtered linearly (base, detail, bump and environment maps; lightmaps have no mip levels), not to what the game renders, such as the water's ripples. On Android and the web, only where the GPU has `GL_EXT_texture_filter_anisotropic`. |
 | `display.latency_meter` | `false` | `HALO_LATENCY_METER` | `true`: in a network game, your round trip to the host in milliseconds at the top right of the screen, "Ping 45 ms" with four bars: green below 80 ms, yellow below 150, red from 150. The host shows "Max ping", its slowest player's. A player's machine that has heard nothing from the host for two seconds shows "Connection problem". The round trip includes each machine's wait for its next tick, so a LAN reads 15 to 35 ms. Not shown in the menus, after the game, in a co-op cutscene or when the host plays alone. The scoreboard's pings take the same colours, and show the round trips this machine times itself (the host: each player's; a player: their own), so they agree with the meter. Nothing more is sent. Only in config.toml, not in the menus. |
+| `display.pause_change_teams` | `true` | `HALO_PAUSE_CHANGE_TEAMS` | In a team game, the pause menu's CHANGE TEAMS (Halo PC's, in every menu set): it asks the host to put you on the other team, and the chat says what came of it. Needs a Chupathingy host (docs/delta.md, Team changes). `false` hides it. |
+| `display.server_messages` | `true` | `HALO_SERVER_MESSAGES` | `true`: a warning or notice from a Delta server is drawn as a banner over the game; `false` hides the banner. The message is written to `debug.txt` either way. Kicks and bans are not affected. |
+| `display.server_message_text_color` | `""` | `HALO_SERVER_MESSAGE_TEXT_COLOR` | The banner's text colour, `"#RRGGBB"` or `"#RRGGBBAA"`. Empty, or a value that does not parse (logged once): the default, light for a notice and amber for a warning. Applies to both kinds. |
+| `display.server_message_border_color` | `""` | `HALO_SERVER_MESSAGE_BORDER_COLOR` | The banner's outline colour, `"#RRGGBB"` or `"#RRGGBBAA"`. Empty, or a value that does not parse: the default, blue for a notice and amber for a warning. Applies to both kinds. |
+| `display.server_message_background_color` | `""` | `HALO_SERVER_MESSAGE_BACKGROUND_COLOR` | The banner's background colour, `"#RRGGBB"` or `"#RRGGBBAA"`. Empty, or a value that does not parse: the default, dark blue. |
+| `chat.enabled` | `false` | `HALO_CHAT` | ChupathingyCE's text chat with its players over Delta Peer, in a game whose host speaks it (OpenCE players are never sent a line). Arena Evolved's own text chat is OpenCE's (`controls.chat`, `controls.team_chat`, `display.text_chat`; refer to "Text chat"), which every machine has, so this is off by default; its keys (`controls.chat_all`, `controls.chat_team`, `controls.chat_log`) are empty. A server's own lines still show. |
+| `chat.show` | `"all"` | `HALO_CHAT_SHOW` | Which players' lines show: `"all"`, `"team"` (your team's alone) or `"off"` (none; you can still talk). |
+| `chat.filter` | `"mask"` | `HALO_CHAT_FILTER` | Blocked words in the lines you are shown: `"mask"` stars them out, `"hide"` leaves such a line out, `"show"` shows it as sent. The words are the blocked names list's (`server/blocked_names.txt`, built in) and your own (`chat.filter_file`). Nobody is told and nobody is kicked. |
+| `chat.filter_file` | `"chat_filter.txt"` | `HALO_CHAT_FILTER_FILE` | Your own blocked words, a file in the save folder: a word a line (blocked anywhere in a word), or `whole <word>` (only as a whole word); `#` starts a comment. |
+| `chat.streamer_mode` | `false` | `HALO_CHAT_STREAMER_MODE` | `true`: other players' names in chat show as their team (or "Player"), and blocked words are starred out even with `chat.filter = "show"`. |
+| `chat.quick_messages` | `"Nice shot\|Need backup\|On my way\|Thanks\|Good game\|Sorry"` | `HALO_CHAT_QUICK_MESSAGES` | A controller's quick lines, separated by `\|`: D-pad up shows the next, D-pad down says it (to your team in a team game). Empty: none. |
 | `display.per_pixel_lighting` | `false` | `HALO_PER_PIXEL_LIGHTING` | `false`: the models (characters, weapons, vehicles, scenery) are lit at each vertex and the light is blended between them, as on the Xbox. The light across a curved surface then shows facets, and a point light that passes close lights only the vertices it reaches. `true`: the models are lit at each pixel by the same lights (the ambient light, two distant lights and two point lights), which changes their look. |
 | `display.structure_culling` | `31` | `HALO_STRUCTURE_CULLING` | Which tests skip the triangles of the level (its walls, floors and terrain) that the camera cannot see before they are drawn, as bits added together: `1`, triangles outside the view; `2`, groups of triangles that all face away from the camera; `4`, single triangles that face away; `8`, smaller groups, so that more of them are skipped whole; `16`, the rooms nearest the camera first. Each test is conservative: the picture is the same, with fewer triangles drawn. `0`: the original walk, which draws every triangle of each visible room. The console's `structure_culling <bits>` changes it until the game quits, and `debug_structure_culling true` shows what was skipped (red: outside the view, blue: facing away). |
 | `display.shield_glow` | `false` | `HALO_SHIELD_GLOW` | `true`: as a unit's energy shield flares (hit, charging, falling), it lights what is around it and itself, as a plasma bolt does, in the shield shader's own color (a Spartan's gold, an Elite's blue), rising and falling with the flare seen on the body. An ordinary dynamic light of the game's, drawn with a light definition the map has (`shield_glow.c`). Up to 8 units near the camera. Video Setup's Extra Effects screen sets it. |
@@ -787,6 +848,7 @@ the setting for one start of the game. It has priority over the file.
 | `input.zoom_reset` | `"first"` | `HALO_ZOOM_RESET` | Where a hold of the zoom action (`"hold"`, and the hold of `"both"`) starts: `"first"`, the weapon's first zoom level; `"last"`, the last level used on that weapon in hand, for each local player. While zoom is held the mouse wheel steps the level up and down (the weapon is not switched) and the flashlight button steps to the next level, then back to the first. In `"hold"` a tap and then a hold within the hold time starts at the second level. ZOOM RESET on Settings > Game Options sets it. |
 | `input.zoom_hold_time` | `0.25` | `HALO_ZOOM_HOLD_TIME` | The most seconds a press lasts to be a tap in the `"both"` mode, 0.1 to 1: held longer, it is a hold. Not in the menus. |
 | `input.invert_mouse` | `false` | `HALO_MOUSE_INVERT=1` sets `true` | `true`: the vertical mouse aim is inverted. |
+| `input.keyboard_prompts` | `true` | `HALO_KEYBOARD_PROMPTS` | `true`: while the keyboard or mouse was used last (or no controller is connected), the menus' text names the bound key in brackets in place of a controller's button (ChupathingyCE's). The HUD's prompts are Arena Evolved's key prompts (keycaps), whatever this says. `false`: the menus always show the controller's buttons. |
 | `input.mouse_aim_assist` | `false` | `HALO_MOUSE_AIM_ASSIST` | `true`: the magnetism of the controller also operates for the mouse. `false`: when the mouse moved after the right stick, the view is not slowed or dragged by a target. The autoaim of the bullets operates in both cases. |
 | `controls.<action>` | (the table in "Controls") | `HALO_KEY_<ACTION>` | The keys and mouse buttons of an action, up to two, separated by a comma: `move_forward`, `move_backward`, `strafe_left`, `strafe_right`, `jump`, `crouch`, `fire`, `throw_grenade`, `melee`, `reload`, `zoom`, `switch_weapon`, `switch_grenade`, `action`, `flashlight`, `scoreboard`, `pause`, `screenshot`, `push_to_talk`, `chat`, `team_chat`. Keys by their names (`"W"`, `"Space"`, `"Left Ctrl"`, `"F1"`), and `"Mouse Left"`, `"Mouse Right"`, `"Mouse Middle"`, `"Mouse 4"`, `"Mouse 5"`, `"Wheel"` (either way), `"Wheel Up"`, `"Wheel Down"`. |
 | `game.downloaded_maps` | `""` | `HALO_DOWNLOADED_MAPS` | Maps to play as downloaded maps, until the game downloads maps itself: their names as the game names them (`bloodgulch`, `hugeass@ce`), separated by commas, or `"*"` for all the maps. The scripts of a downloaded map cannot change the settings of the player or the games of other players. `debug.txt` names what the game refused. |
@@ -810,18 +872,25 @@ the setting for one start of the game. It has priority over the file.
 | `bots.teams` | `"even"` | `HALO_BOT_TEAMS` | In a team game: `"even"` puts the bots on both teams, evening them with the players; `"against"` puts them all on the team the players are not on. |
 | `paths.data` | `""` | `HALO_DATA_ROOT` | The data root. Refer to "Start the game". |
 | `paths.saves` | `""` | `HALO_SAVE_ROOT` | The save root. Refer to "Files and folders". |
+| `paths.logs` | `""` | `HALO_LOG_ROOT` | The logs folder (`debug.txt`, `halo.log`, `crashes/`). Empty: the data root itself (Arena Evolved). Refer to "Files and folders". |
+| `paths.cache` | `""` | `HALO_CACHE_ROOT` | The cache folder. Empty: `cache/` in the save root. |
 | `network.address` | `""` | `HALO_NET_ADDRESS` | The IPv4 address of this machine for system link. Refer to "Play on one computer". |
 | `network.broadcast` | `""` | `HALO_NET_BROADCAST` | IPv4 addresses, with commas between them, that get the broadcasts of the game. Empty: 255.255.255.255. |
 | `network.online` | `true` | `HALO_NET_ONLINE` | `true`: internet play. `false`: system link on the local network only. |
-| `network.join_from_clipboard` | `true` | `HALO_NET_JOIN_FROM_CLIPBOARD` | `true`: when the game comes to the front, it joins the game of an invite link on the clipboard. |
+| `network.join_from_clipboard` | `"ask"` | `HALO_NET_JOIN_FROM_CLIPBOARD` | An invite link on the clipboard when the game comes to the front: `"ask"` asks over the menus whether to join its game (with its name and map when the game list knows them; No is kept for that invite), `"always"` joins it, `"never"` leaves it. `true` and `false`, from older versions, mean `"always"` and `"never"`. Network Settings in the Gearbox menus. |
 | `network.map_downloads` | `"ask"` | `HALO_NET_MAP_DOWNLOADS` | A Custom Edition map a game you join needs and you don't have, from the community map repositories (maps.halonet.net and its mirrors, as Chimera downloads from them). `"ask"`: the Online Games screen offers to download it (Yes, No, Don't ask again, which writes `"always"` or `"never"` here). `"always"`: downloaded without asking. `"never"`: the game only says which map is missing. Network Settings in the PC menus. The map is checked before it goes in `maps_ce`: refer to "Halo PC maps" in the [README](../../README.md). Not on the dedicated server. |
 | `network.tunnel_port` | `0` | `HALO_NET_TUNNEL_PORT` | The UDP port for internet play. `0`: the game selects a port. Refer to "Internet play". |
 | `network.allow_upnp` | `true` | `HALO_NET_ALLOW_UPNP` | `true`: internet play can ask the router to forward its port (UPnP). `false`: the game does not ask. Refer to "Internet play". |
 | `network.protocol` | `"auto"` | `HALO_NET_PROTOCOL` | Delta Peer, the messages between ChupathingyCE machines beside OpenCE's protocol (UDP port 5160; `docs/delta.md`). `"auto"`: Delta with the machines that speak it, plain OpenCE with the others. `"opence"`: Delta off. `"delta"`: as `"auto"` for now. |
+| `network.chat` | `"on"` | `HALO_NET_CHAT` | Text chat in the games this copy hosts: `"on"`, `"team"` (team lines alone) or `"off"`. |
+| `network.team_change` | `"balanced"` | `HALO_NET_TEAM_CHANGE` | In the team games this copy hosts, whether players may change teams during the game: `"balanced"` (only while neither team ends up more than `network.team_change_margin` players bigger), `"allow"` or `"off"`. A player changes at most every 10 seconds and never leaves a team empty; they respawn on the new team with no death or penalty counted. |
+| `network.team_change_margin` | `1` | `HALO_NET_TEAM_CHANGE_MARGIN` | With `"balanced"`, the most players one team may have over the other after a change (0 to 16). |
+| `network.chat_filter` | `true` | `HALO_NET_CHAT_FILTER` | In the games this copy hosts, a line with a blocked word (the blocked names list's) is not passed on, and its sender is told. Nobody is kicked. |
 | `network.share_profile` | `false` | `HALO_NET_SHARE_PROFILE` | `true`: the other ChupathingyCE players of a game see this copy's player ID (its game list profile), over Delta. |
 | `network.platform_limits` | `"on"` | `HALO_NET_PLATFORM_LIMITS` | `"on"`: Delta hosts keep a game to the players this platform takes (an original Xbox: 16). `"off"`: this machine joins games of any size. |
 | `network.host_platform_limits` | `true` | `HALO_NET_HOST_PLATFORM_LIMITS` | `true`: a game this machine hosts keeps to the players its Delta machines' platforms take. `false`: their limits are ignored, for testing. |
 | `network.public_lobby` | `true` | `HALO_NET_PUBLIC_LOBBY` | `true`: the server browser. Public games are listed, and Join Game > Server Browser shows them. `false`: no games are listed or shown. Refer to "Server browser". |
+| `network.ping_games` | `false` (Arena Evolved's opt-in, as `network.browser_pings`) | `HALO_NET_PING_GAMES` | `true`: Online Games pings the listed games whose hosts answer pings, before joining (the host sees your public address, as when you join). `false`: no pings; only the estimated ones (`~85`). Refer to docs/delta.md, "Pings before joining". |
 | `network.host_public` | `true` | `HALO_NET_HOST_PUBLIC` | `true`: a new game of Create Game > Internet starts as PUBLIC. `false`: it starts as PRIVATE. LISTING in Server Setup changes it for each game. Refer to "Server browser". |
 | `network.coop_friendly_fire` | `"on"` | `HALO_NET_COOP_FRIENDLY_FIRE` | Whether the players of an online co-op game hurt each other: `"off"`, `"on"`, `"shields_only"` or `"explosives_only"`. FRIENDLY FIRE in co-op's Server Setup > Co-op Options writes its choice here. Their AI allies they always can, as in the campaign. |
 | `network.coop_own_friendly_fire` | `true` | `HALO_NET_COOP_OWN_FRIENDLY_FIRE` | Whether this machine's players hurt, and are hurt by, the other players of an online co-op game. Two players hurt each other only if both have it `true`, and then as the host's `network.coop_friendly_fire` says. FRIENDLY FIRE in that game's pause menu writes its choice here. A player away from the controls for over 70 seconds is hurt by every player, whatever either chose. |
@@ -852,7 +921,7 @@ the setting for one start of the game. It has priority over the file.
 | `network.coop_public` | `false` | `HALO_NET_COOP_PUBLIC` | `true`: an online co-op game (Create Game > Internet, a SINGLEPLAYER map) starts as PUBLIC. `false`: it starts as PRIVATE. LISTING in co-op's Server Setup writes its choice here. Refer to "Server browser". |
 | `network.brokers_file` | `"brokers.txt"` | `HALO_NET_BROKERS_FILE` | The file of the public MQTT brokers that let the machines of an invite find each other, and that carry the listings of the server browser: next to `config.toml`, unless a full path. One `host:port` on each line, up to 4; `#` starts a comment. |
 | `network.stun_servers` | Google and Cloudflare | `HALO_NET_STUN` | The public STUN servers (`host:port`, with commas between them) that give the internet address of a machine. |
-| `network.legacy_table_fetch` | `false` | `HALO_LEGACY_TABLE_FETCH` | Arena Evolved. `true`: at start and every few hours the game fetches ChupathingyCE's signed legacy table from `network.browser_url` (else GitHub). Arena Evolved's wire ID is its own from 0.3.5 (`ae-32a`; 0.3.4-beta and earlier were on ChupathingyCE 0.7.5b's `chupa-29a`): a fetched table's row for it, if one has it, sets the network numbers Arena Evolved announces and joins (its own built-in rule is 32 alone). `false` (the default): no fetch, and no table taken from another machine or read from the cache: the built-in numbers. |
+| `network.legacy_table_fetch` | `false` | `HALO_LEGACY_TABLE_FETCH` | Arena Evolved. `true`: at start and every few hours the game fetches ChupathingyCE's signed legacy table from `network.browser_url` (else GitHub). Arena Evolved's wire ID is ChupathingyCE 0.8's `chupa-32a` from 0.3.6 (0.3.5 had its own, `ae-32a`): a fetched table's `chupa-32a` row, which ChupathingyCE's tables have, would set the network numbers Arena Evolved announces and joins (its own built-in rule is 32 alone), so leave this off. `false` (the default): no fetch, and no table taken from another machine or read from the cache: the built-in numbers. |
 | `network.report_events` | `false` | `HALO_NET_REPORT_EVENTS` | Delta Stats. `true`: the games this machine hosts are recorded (kills with weapons and positions, accuracy, medals, objectives, vehicles, pickups, positions a few seconds apart; players are their names, never a hardware ID or an address; an OpenCE player is only their name, team and that game's score, place, kills and deaths) and sent to `network.browser_url` when each ends, for its match pages, heatmaps and leaderboards. `false` (Arena Evolved's default, an opt-in: Settings > Network, SHARE HOSTED STATS; ChupathingyCE's is `true`): nothing is recorded or sent. The carnage report of a hosted game is separate: it is sent while the game is listed (`network.list_hosted_games`). `network.events_token`, `network.events_positions`, `network.events_limit`, `network.events_part_minutes` and `network.events_folder` tune it (`port_config.c`). |
 | `game.move_old_map_folders` | `"no"` | `HALO_MOVE_OLD_MAP_FOLDERS` | Halo PC maps' folders are `maps_ce`, `maps_md` and `maps_pc`, beside `maps`; the older `maps/ce` and `md_maps` still play. `"no"` (Arena Evolved's default): left where they are, so builds that know only `maps/ce` keep working; `"ask"`: the game offers once to move them (each folder whole, never copied); `"yes"`: moved without asking. |
 | `game.mcc_path` | `""` | (none; `HALO_MCC_PATH` names one for a run, looked at after this one) | The folder of Halo: The Master Chief Collection (the one holding `halo1`) whose Custom Edition files (`halo1/maps/custom_edition`: `bitmaps.map`, `sounds.map`, `loc.map`) Custom Edition maps read when `maps_ce`, `maps/ce` and `custom_maps` have none. Empty: found in Steam's libraries (Linux: `~/.local/share/Steam`, `~/.steam`, Flatpak, Snap; Windows: the registry's Steam folder). BROWSE on Settings > MAP FILES sets it. Windows: a path with characters outside the system's code page is not found. The files are only read, never changed or copied; the folder never goes over the network or into saves. |
@@ -873,8 +942,14 @@ the setting for one start of the game. It has priority over the file.
 | `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds (from when its window opens; with `debug.null_renderer`, or no display, from its first frame). `0`: never. |
 | `debug.screenshot_directory`, `debug.screenshot_every`, `debug.screenshot_format` | `""`, `0`, `"bmp"` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY`, `HALO_SCREENSHOT_FORMAT` | The game writes each Nth frame to this folder as a BMP file, or a PNG file with `"png"`. |
 | `debug.record_seconds` | `0.0` | `HALO_RECORD_SECONDS` | Record this number of seconds (as F9 does) from the first frame of play, a map other than the main menu's, one time. `0`: never. |
+| `network.report_hosted_games` | `true` | `HALO_NET_REPORT_HOSTED` | The stats of the games this machine hosts: a listed game's carnage report, its Delta Stats (`network.report_events`) and the host's own players' claims of their lines. `false`: none of them are sent, and the game stays listed (`network.list_hosted_games`). On the Privacy screen (Gearbox menus). |
+| `discord.presence` | `"full"` | `HALO_DISCORD_PRESENCE` | What Discord shows: `"full"` (game type, map, score, players, time, pictures), `"minimal"` (only the application's name) or `"off"`. Network Setup in the PC menus. |
+| `discord.show_server_name` | `true` | `HALO_DISCORD_SHOW_SERVER_NAME` | `true`: Discord shows the name of the network game. |
+| `discord.show_join` | `true` | `HALO_DISCORD_SHOW_JOIN` | `true`: while this machine hosts a public game (in the server browser, no password), Discord shows a Join game button. |
+| `debug.screenshot_window` | `false` | `HALO_SCREENSHOT_WINDOW` | `true`: those screenshots are of the window as shown, with the overlay's screens (Online Games and others) on the frame. |
 | `debug.hidden_window`, `debug.null_renderer` | `false` | `HALO_HIDDEN_WINDOW`, `HALO_NULL_RENDERER` | `true`: no visible window, or no graphics. |
 | `debug.gpu_stats`, `debug.gpu_trace_frame`, `debug.gpu_trace_constants`, `debug.gpu_dump_shaders`, `debug.texture_dump_directory`, `debug.texture_log`, `debug.gl_debug`, `debug.texture_no_cache` | off | `HALO_GPU_STATS`, `HALO_GPU_TRACE`, `HALO_GPU_TRACE_CONSTANTS`, `HALO_GPU_DUMP_SHADERS`, `HALO_TEXTURE_DUMP`, `HALO_TEXTURE_LOG`, `HALO_GL_DEBUG`, `HALO_TEXTURE_NO_CACHE` | Tools to find problems in the graphics: counts for each frame, all the GL state of one frame, the GLSL code, the textures. |
+| `debug.discord_log` | `false` | `HALO_DISCORD_LOG` | Log each activity sent to Discord, without the invite. |
 | `debug.menu_open` | `""` | `HALO_MENU_OPEN` | Start on this screen of the menus (`main_menu/settings_select/...`, as `port/assets/menus` names it), a player profile being edited, to look at it. |
 | `debug.gpu_skip_vertex_shaders`, `debug.gpu_debug_expression`, `debug.gpu_debug_flat`, `debug.gpu_debug_texture0` | off | `HALO_GPU_SKIP_VS`, `HALO_GPU_DEBUG_EXPR`, `HALO_GPU_DEBUG_FLAT`, `HALO_GPU_DEBUG_T0` | Tools to find problems in the graphics: skip the draws of a vertex shader, or replace the output of all pixel shaders with a GLSL expression (for example `t0.rgb`). |
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_time_limit`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_TIME_LIMIT`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link (`game/network_test.c`). Refer to `NETCODE.md`. |
@@ -884,6 +959,7 @@ the setting for one start of the game. It has priority over the file.
 | `debug.bot_links` | `true` | `HALO_BOT_LINKS` | Bots take teleporters and the map's layout jumps (`bot jump` lines) on their way when that is shorter. `false` for tests of how they do without: the teleports are still counted on halo.log's `bots: travel` line. |
 | `debug.bot_hints` | `false` | `HALO_BOT_HINTS` | For map layout authors: the map's layout header line, each of player 1's jumps as a ready `bot jump at ... to ...` line and a `bot avoid` line where player 1 crouches still a second are written to the log. |
 | `debug.bot_events` | `false` | `HALO_BOT_EVENTS` | Each bot's fight events (target seen, first shot, every shot, hits, melee, strafe changes, crouches, kills, deaths, and its position each second) are written to `debug.txt` as `bot event:` lines; `tools/ae_test/bot_report.py` turns them into tables. |
+| `debug.chat_test` | `""` | `HALO_CHAT_TEST` | A script of text chat for the tests (`game/chat.c`): `"<seconds>:<what>[:<text>]"` steps separated by `;`, from when this copy is in a game: `all` and `team` say a line, `server` says one as the host's server, `mute` and `unmute` mute a machine as a moderator does (the host), `localmute` mutes one for this copy, `log` and `close` open and close the log, `type` shows a line being typed. |
 | `debug.touch_targets` | `false` | `HALO_TOUCH_TARGETS` | Outlines the tap targets of the menus (item green, value blue, list slot yellow, legend button red, the band beside the slots of a list orange, keys of the on-screen keyboard white), marks where the last finger went down and the last tap landed for 3 seconds, and logs each tap with the target that it hit (for a value, also where it splits into previous and next): to judge the accuracy of touch. |
 | `debug.solo_game` | `false` | `HALO_SOLO_GAME` | A system link or split screen game can start with one player, alone on this machine: to test multiplayer maps without a second machine. |
 | `debug.network_test_cues`, `debug.network_test_cue_players` | none, `1` | `HALO_NETWORK_TEST_CUES`, `HALO_NETWORK_TEST_CUE_PLAYERS` | Console lines a test runs at their seconds, from the first tick that many players are in (`"<second> <line>\|..."`; not on the web). |
@@ -933,6 +1009,13 @@ against the certificate authorities of the system: on Linux, the bundle of
 the distribution (`src/posix_update.c`, with Mbed TLS); on Windows, the
 certificate store of Windows (WinHTTP). The folder of the executable must
 let the game write to it.
+
+The game installs only files that the release key signed. First, it reads
+the list of update files of the release (`updates.json`) and examines the
+signature of the list (`updates.json.sig`). Then it downloads the file that
+the list gives for this platform and examines its size and SHA-256 against
+the list. A release from before version 0.8.0 has no list. For such a
+release, the game examines the signature of the zip (`<zip>.sig`).
 
 Builds that you make yourself have no build number. They do not look for
 updates.
@@ -1626,18 +1709,41 @@ In the game, each machine has an address in 100.64.0.0/10:
 
 ### Discord
 
-If the Discord desktop client operates, the game of the host shows in
-Discord (through the application of `discord.application_id`). The activity
-has a private party with the invite as its join secret. The host can send
-the invite with the invite button of Discord. When a person accepts it, that
-person joins the game. If the game does not operate, Discord starts it.
-The game sends the activity only to a Discord client of the same user.
+If the Discord desktop client runs, Discord shows what the player does
+(through the application of `discord.application_id`, whose name is what
+Discord says is being played): the game type and the map ("Team Slayer on
+Blood Gulch"), a team game's score, the network game's name and players,
+the time since the game started, or the campaign's level and difficulty, or
+the menus. The pictures are the game list site's, by URL. A host of a public
+game (in the server browser, with no password) gets a Join game button: it
+opens the game's page on chupathingy.org, which opens the invite
+(`halo://join/`) in the game of the person who clicks it, Chupathingy or
+OpenCE. Otherwise the buttons go to the project's site and Discord server.
+Discord's own Ask to Join is not used: it works only between players of the
+same Discord application. `discord.presence`, `discord.show_server_name` and
+`discord.show_join` choose what shows; `debug.discord_log` logs each
+activity sent (without the invite).
 
 ### Online Games and the profile
 
 Builds with the game list (`configure.py --game-browser`) have Online Games
 in the Multiplayer menu: the games on `network.browser_url`
-(halo.milenko.org). Each copy of the game has a player key in the save root
+(halo.milenko.org). The screen looks like the Xbox's menus, drawn by the
+game itself in the menus' fonts (`port/assets/fonts`). Each game's map has a
+tag for its family: XBX (the Xbox's maps), HCE (Custom Edition), HMD
+(HaloMD) and GBX (Halo PC retail). A lock marks a game with a password, as
+its public listing says. The ping column shows the round trip to a host
+that this machine is connected to (a game that you join), else nothing:
+nothing measures a host before you join it. Sorted by ping, such games come
+last. The details show the map's picture from the menus, or from Halo PC's
+`ui.map`. Without either, a stock map's picture comes from the site
+(stats.chupathingy.org/art/maps), downloaded in the background only while
+`network.online` is on and kept in the save root's `map_art` folder. Any
+other map gets a card with its name in its family's color. RB (Link Profile)
+shows only while this copy is not linked to a profile: linked on this copy
+(kept in the save root's `game_list_profile.txt`), or a profile the site
+has for this copy's player ID. Once linked, Start's prompt names the
+profile. Each copy of the game has a player key in the save root
 (`game_list_player.key`). The key confirms the player's lines in finished
 games. The game sends the key only to an HTTPS server, or to a server on
 this computer (`http://127.0.0.1`, `http://localhost`) for tests.
@@ -1863,7 +1969,7 @@ In Arena Evolved:
 | Memory | The port reserves the Xbox memory at `0x80000000`. Thus the game gets the fixed addresses that it expects. |
 | Saved games | The Xbox `UDATA` layout, with SHA-1 signatures. |
 | Networking | Winsock on BSD sockets. System link on a local network and on the internet. |
-| Bink video | Not available. The game skips the movies. |
+| Bink video | Not available on this build. The game skips the movies, although the disc extraction copies them to `bink/` (`d:\bink\*.bik`) for a build that plays them (macOS does). |
 
 ## How the port operates
 

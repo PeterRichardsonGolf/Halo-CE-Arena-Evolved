@@ -38,3 +38,6 @@ tools/voices/venv/
 port/android/keystore.properties
 *.keystore
 *.jks
+
+# the game's log, when a run writes it at the top of the tree
+/debug.txt

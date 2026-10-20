@@ -713,7 +713,7 @@ source/rasterizer/rasterizer_text.c	#include "ae_text_layout.h" /* AE hook */
 source/rasterizer/rasterizer_text.c	long ae_text_layout_hires_font(long font_index) { return hires_text_atlas ? hires_text_font_get(font_index, MAX(text_scale, 1.0f)) : NONE; } /* AE hook */
 source/rasterizer/rasterizer_text.c	left = pen_x + ae_text_layout_glyph_offset(font_character->character_width, glyph.advance) + glyph.left; /* AE hook */
 port/linux/src/text_hires.c	#include "ae_text_hires.h" /* AE hook */
-port/linux/src/text_hires.c	float text_hires_advance(long font, unsigned long code) { int advance = font < 0 || font >= font_count || fonts[font].scale <= 0.0f ? -1 : ae_text_font_advance(&fonts[font].info, code); return advance < 0 ? -1.0f : advance * fonts[font].scale * fonts[font].narrowing; } /* AE hook */
+port/linux/src/text_hires.c	float text_hires_advance(long font, unsigned long code) { int advance = font < 0 || font >= font_count || fonts[font].scale <= 0.0f ? -1 : ae_text_font_advance(&fonts[font].info, code); return advance < 0 ? -1.0f : advance * fonts[font].scale * fonts[font].width * fonts[font].narrowing; } /* AE hook */
 port/linux/src/text_hires.c	index = ae_text_tabular_glyph(&fonts[font].info, code); /* AE hook */
 source/interface/virtual_keyboard.c	#include "ae_text_layout.h" /* AE hook */
 source/interface/virtual_keyboard.c	ae_text_layout_begin_unicode(virtual_keyboard_globals.keyboard->font_tag.index, virtual_keyboard_globals.text_buffer); /* AE hook */
@@ -974,8 +974,8 @@ source/interface/hud.c	(void)hud_draw_match_timer; /* AE hook */
 port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
 # OpenCE build-244's passenger camera calls render_camera_world_to_screen, which the 64-bit builds need declared
 port/linux/game/passenger_camera.c	#include "render/render_cameras_internal.h" /* AE hook */
-# Arena Evolved 0.3.5's own Delta wire (network 32): no Delta join with 0.3.4 (chupa-29a) or ChupathingyCE 0.8 (chupa-32a)
-port/linux/include/delta.h	#define DELTA_WIRE "ae-32a" /* AE hook */
+# Arena Evolved's Delta wire (network 32): ChupathingyCE 0.8's chupa-32a from 0.3.6 (0.3.5's was its own, ae-32a)
+port/linux/include/delta.h	#define DELTA_WIRE "chupa-32a" /* AE hook */
 # A widget deleted between the menus' render and the next frame's pointer (a join closing the menus) left its mouse
 # targets on freed memory: the hover read its name and crashed (10-19). Its targets are dropped first (ae_ui_deleted.c).
 source/interface/ui_widget.c	#include "ae_ui_deleted.h" /* AE hook */
@@ -1014,3 +1014,22 @@ port/linux/game/bots.c	ae_bots_team_reset(); /* AE hook */
 port/linux/game/bots.c	distance -= ae_bots_roam_height(bot, &bots_globals.roam_points[index], &enemy->object.position); /* AE hook */
 port/linux/game/bots.c	index = ae_bots_roam_higher(bot, position, index); /* AE hook */
 port/linux/game/bots.c	ae_bots_fight_prenade(bot, &tick); /* AE hook */
+# ChupathingyCE v0.8.0b merge (0.3.6): AE on ChupathingyCE 0.8's wire, its range the wire alone (its 30 to 32 are
+# OpenCE's, breaking), and 0.3.5's ae-32a hosts joined as its own; the log in the data root (AE's tests and tools read
+# it there); ChupathingyCE's Delta chat off (AE's text chat is OpenCE's), its keys empty; Online Games' pings an
+# opt-in; Discord stays on OpenCE's application.
+port/linux/src/delta_peer_game.c	#include "ae_delta_wire.h" /* AE hook */
+port/linux/src/delta_peer_game.c	delta_compat_advertise(reserved, size, DELTA_MAJOR, DELTA_WIRE);\nae_delta_wire_narrow(reserved, size, DELTA_MAJOR, DELTA_WIRE); /* AE hook */
+port/linux/src/delta_peer_game.c	return ae_delta_wire_decide(delta_compat_decide(reserved, size, DELTA_MAJOR, DELTA_WIRE, theirs, theirs_size), reserved, size, DELTA_MAJOR, DELTA_WIRE, theirs, theirs_size); /* AE hook */
+port/linux/src/xbox_files.c	if (folder == _port_folder_logs && !*override) override = platform_data_root(); /* AE hook */
+port/linux/src/port_config.c	{ "chat.enabled", _config_boolean, "false", "HALO_CHAT", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "controls.chat_all", _config_string, "\"\"", "HALO_KEY_CHAT_ALL", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "controls.chat_team", _config_string, "\"\"", "HALO_KEY_CHAT_TEAM", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "controls.chat_log", _config_string, "\"\"", "HALO_KEY_CHAT_LOG", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "network.ping_games", _config_boolean, "false", "HALO_NET_PING_GAMES", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "discord.application_id", _config_string, "\"1553978809840050229\"", "HALO_DISCORD_APPLICATION", /* AE hook */\n_environment_value, _platform_desktop,
+# ChupathingyCE 0.8's Discord activity in Arena Evolved's name: its application's logo, its page, no Discord server
+port/linux/src/discord_activity.c	#define LOGO_URL "logo" /* AE hook */
+port/linux/src/discord_activity.c	#define SITE_URL "https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved" /* AE hook */
+port/linux/src/discord_activity.c	#define PRODUCT_LABEL "Get Arena Evolved" /* AE hook */
+port/linux/src/discord_activity.c	#define PRODUCT_NAME "Halo CE: Arena Evolved" /* AE hook */

@@ -101,7 +101,7 @@ H2 Demakes map pack, and more of the newer Halo games' features.
 - **Building:** Python 3, ninja, clang with lld (or gcc on Linux) and SDL3: `python3 configure.py --release` then
   `ninja linux64`. Every platform and package list: [building.md](docs/building.md).
 - **Upstream:** [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) is where the port is made, and Arena
-  Evolved merges its releases and offers fixes to the shared code back. Online, Arena Evolved is network version 29
+  Evolved merges its releases and offers fixes to the shared code back. Online, Arena Evolved is network version 32
   and plays with OpenCE and ChupathingyCE builds on it: [upstream.md](docs/upstream.md).
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md). Arena Evolved's own code is in `port/linux/game/ae_*`; it
   changes the upstream files only by single marked lines (`/* AE hook */`, listed in `port/linux/game/ae_hooks.txt`).
@@ -113,13 +113,29 @@ H2 Demakes map pack, and more of the newer Halo games' features.
 - The port: [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) and its
   contributors.
 - [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce): Milenko and
-  contributors, and the contributors credited there and in each commit.
+  contributors, and the contributors credited there and in each commit. From
+  ChupathingyCE 0.8.0: ugoboom (Zebouski), HD HUDs on Custom Edition maps
+  (MCC's "0.5 HUD scale" and Chimera's "force HUD use high resolution scale"
+  flags) and the loading screen's sound on the SDL ports. The scoreboard's
+  platform logos are one-colour marks from [Simple Icons](https://simpleicons.org)
+  (CC0) and Wikimedia Commons (public domain), plus ChupathingyCE's own Xbox 360
+  ring and Wii U GamePad; the names and logos are their owners' trademarks, used
+  only to identify platforms. HaloMD map names come from
+  [MacGamingMods](https://macgamingmods.com)' public HaloMD mod list.
+- High-res HUD art on the Xbox maps (HUD STYLE CE): Aerocatia's and Jessie's HUD
+  art from [Halo PC Restored](https://github.com/Aerocatia/halopc-restored)
+  (release r220), brought in by ChupathingyCE and used with Aerocatia's
+  permission on the condition that both are credited;
+  `port/assets/hud/NOTICE.md` lists which files are theirs.
+- Controller button icons by snapchipper, CC0 (`port/assets/prompts`).
 - [Halo 1: Neutral Host Edition (NHE)](https://halo1nhe.com/), the Xbox
   competitive mod whose rules inspired Arena Evolved: the NHE team. Arena
   Evolved's versions are its own code; it is not made or endorsed by the NHE
   team. Download NHE itself from [halo1nhe.com](https://halo1nhe.com/#download).
 - Fonts: [Overpass](https://fonts.google.com/specimen/Overpass) (SIL OFL; the
-  game's text and the logo's wordmark),
+  game's text and the logo's wordmark), Cyborg Interface Gothic by fizzy (SIL
+  OFL; made to match Halo's interface font from Overpass and glyphs of their
+  own, ChupathingyCE's high-res text font),
   [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
   [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
 - The battle rifle's model, textures, animations and sounds are CMT's, from the source release of The Silent
@@ -183,8 +199,12 @@ full text is in [LICENSE](LICENSE).
   decompilation of [punpckhdq/halo](https://github.com/punpckhdq/halo) is
   under the AGPL 3.0 from 17 October 2026, and under CC0 1.0 before that
   date. [bnunu/halo-1](https://github.com/bnunu/halo-1) is under CC0 1.0.
-  ChupathingyCE's code in Arena Evolved is from its CC0 releases (0.7.5d and
-  before).
+  ChupathingyCE's code up to its 0.7.5d is under CC0 1.0; its code from
+  0.8.0 (16 October 2026 on) is under the GNU General Public License 3.0 or
+  later (`GPL-3.0-or-later`, the text in [LICENSES/GPL-3.0.txt](LICENSES/GPL-3.0.txt)).
+  Arena Evolved includes ChupathingyCE 0.8.0b; the GPL 3.0 (section 13) lets
+  that code be combined with the AGPL 3.0 work it is in, and those parts keep
+  their GPL terms.
 - **Contributions** are under `AGPL-3.0-or-later`.
 - **Hosts and servers.** If you change the game and let other persons play
   with your version over a network (for example, as the host of an internet
@@ -193,7 +213,8 @@ full text is in [LICENSE](LICENSE).
   each release's source is its tag.
 - **Third-party code, fonts and art** keep their own licences, which are
   next to them (`port/third_party`, `port/assets/fonts`, `port/linux/ui/fonts`,
-  `port/assets/icons`, `port/assets/text_filter`) and listed under Credits
+  `port/assets/icons`, `port/assets/prompts`, `port/assets/hud`,
+  `port/assets/text_filter`) and listed under Credits
   above. The release downloads carry their notices.
 - **The logo** is the exception: the ORBIT mark, the ARENA EVOLVED wordmark
   and the app icons made from them are all rights reserved by the project.

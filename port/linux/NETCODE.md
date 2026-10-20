@@ -260,12 +260,16 @@ network 32; hosts of an older version are refused (Arena Evolved 0.3.0-beta
 to 0.3.4-beta's, OpenCE build-206 to 237's and ChupathingyCE 0.7.5's 29,
 OpenCE build-242's 31 among them), and clients that join their own version
 alone do not join Arena Evolved's games, and are told the host is newer.
-Its Delta wire ID is its own from 0.3.5 (`ae-32a`, `delta.h`): Arena Evolved
-0.3.4-beta and earlier were on ChupathingyCE 0.7.5b's `chupa-29a`, and a
-Delta client joins hosts of its own wire whatever number they announce, so
-a new wire keeps 0.3.5 out of 0.3.4's games and 0.3.4 out of 0.3.5's.
-ChupathingyCE 0.8 (`chupa-32a`, network 32) and Arena Evolved refuse each
-other's Delta hosts as another wire. ChupathingyCE's signed legacy tables
+Its Delta wire ID is ChupathingyCE 0.8's `chupa-32a` from 0.3.6 (`delta.h`),
+with a range of that wire alone (`port/linux/src/ae_delta_wire.h`): its host
+advertises `chupa-32a` in the old slot and the range bytes, so ChupathingyCE
+0.8's clients join it and 0.7.5's (`chupa-29a`, an exact match of the slot)
+do not; as a client it joins a Delta host whose range has `chupa-32a`
+(ChupathingyCE 0.8's, from `chupa-28a`), or one on 0.3.5's own wire,
+`ae-32a`, and refuses the others (ChupathingyCE 0.7.5's) with the wire
+named. Arena Evolved 0.3.4-beta and earlier were on ChupathingyCE 0.7.5b's
+`chupa-29a`, and 0.3.5 on `ae-32a`; 0.3.5 checks no wire and joins by number
+(32). ChupathingyCE's signed legacy tables
 (Delta, `docs/delta.md`) are not fetched unless `network.legacy_table_fetch`
 is on (off by default). Internet play's signalling is OpenCE's version 4
 alone. Arena Evolved's own rules travel in the gametype's flags, which a
@@ -273,6 +277,30 @@ client that does not know a bit leaves alone. Arena Evolved's own rule on
 top: a game with a password never has its invite sent to the game list's
 site (`browser.c`: not listed, not claimed, not reported, hosted or joined
 through the password).
+
+Version 30 carries the riders of an elevator by its node's movement of the
+same tick (sampled before the machine updates, applied after its node
+matrices are made: they were carried by the tick before, and went the wrong
+way on the tick an elevator reversed), takes a stopped elevator the unit
+stands on as riding it (the host takes only where the client's player is
+across, not how high), and has a client discard the height of the host's
+correction on the elevator it was recorded on up to 4.0 world units; version
+31 sends the pregame keep-alive as the 4 bytes its field list always had (the
+last two 0, not the sender's stack), drops a datagram stamped more than 450
+ticks (15 seconds) from the latest taken from its sender (over a sender's
+stream any stamp is taken, and a far one moves the latest), takes
+client_ready, client_identity and hit reports from a client's stream alone,
+and lets a second game on one computer play (a client takes another port if
+the client port is in use; the host answers a machine at the port its
+datagrams came from); version 32 adds the host's policy on aiming assist for
+the mouse and keyboard: message 90 (12 bytes: the header, a 16-bit 0 or 1,
+16 bits of 0) to a client when it has loaded and to every client when the
+host's `network.block_mouse_aim_assist` changes, which a client honors by
+turning the view's magnetism off for a player aiming with the mouse; a
+client is blocked until a host of 32 or later speaks, and a host never takes
+the message. A client's input entry says in its third byte (padding before)
+whether its player plays co-op without friendly fire; this host reads it and
+decides friendly fire by its own setting.
 
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. The
@@ -286,6 +314,20 @@ the range's floor is the newest version that broke compatibility (11). Arena
 Evolved's own floor is higher than the range: it refuses hosts below 29
 and tells the player that the host needs to update (see above).
 The game browser lists the range's games.
+
+`port/linux/network_format.txt` records the wire format of the current
+version (`tools/network_format.py`): `test_linux_port.py` fails when the
+sources' messages, kinds, bits, structs sent whole or the sizes of their
+arrays differ from it.
+
+Before matching a new OpenCE build's network version, compare its wire
+format with ours: extract that build's source (for example `git archive
+<its tag> source port/linux | tar -x -C /tmp/opence`) and run
+`python3 tools/network_format.py --compare /tmp/opence`. Their own message
+kinds (votes to kick, voice, map sharing) are expected there, as is our
+`server_pregame_keep_alive` field list (the same bytes on the wire); match
+anything else before taking the number. The tool is OpenCE's (Addison Bair,
+MrBruh), CC0.
 
 A client plays by its host's rules: in another's game (searching for it,
 in its lobby, or playing it) the developer console, the telnet console

@@ -202,6 +202,9 @@ def main() -> int:
             print(f"{pdb.relative_to(ROOT)} -> {symbols.relative_to(ROOT)}", flush=True)
     # OpenCE's own licence, the AGPL, which asks each copy to carry its text
     shutil.copy2(ROOT / "LICENSE", dist / "LICENSE.txt")
+    # (and the GPL 3.0 of ChupathingyCE's code from its 0.8.0, which it is
+    # combined under: README.md, "Licence")
+    shutil.copy2(ROOT / "LICENSES/GPL-3.0.txt", dist / "GPL-3.0.txt")
     if args.platform != "web":
         # the game list's and the self-updater's TLS and internet play's DTLS
         # with browsers (port/third_party/mbedtls), in every native build,
@@ -213,6 +216,9 @@ def main() -> int:
     # the text's fonts (port/assets/fonts), embedded in every build, whose
     # SIL Open Font License asks each copy to carry it
     shutil.copy2(ROOT / "port/assets/fonts/Overpass-OFL.txt", dist / "Overpass-OFL.txt")
+    shutil.copy2(ROOT / "port/assets/fonts/CyborgInterfaceGothic-OFL.txt", dist / "CyborgInterfaceGothic-OFL.txt")
+    # (OpenCE, the menus' titles' face, which Online Games draws its title in)
+    shutil.copy2(ROOT / "port/assets/fonts/OpenCE-OFL.txt", dist / "OpenCE-OFL.txt")
     # the overlay's fonts (port/linux/ui/fonts), in every build: Noto Sans's
     # license asks the same; Kenney's Input Prompts are CC0, credited all
     # the same
@@ -229,8 +235,10 @@ def main() -> int:
     # license asks copies to carry its notice
     shutil.copy2(ROOT / "port/assets/icons/lucide/LICENSE", dist / "lucide-LICENSE.txt")
     # internet play's MQTT brokers, a file beside the game (network.brokers_file;
-    # Android's APK has its own copy)
-    if args.platform != "android":
+    # Android's APK has its own copy; the macOS application reads its settings
+    # folder in Application Support, never beside the app, so it uses the
+    # game's built-in list)
+    if args.platform != "android" and args.platform != "macos":
         shutil.copy2(ROOT / "port/assets/network/brokers.txt", dist / "brokers.txt")
         # the built-in callout voices, a folder beside the game
         shutil.copytree(ROOT / "port/assets/voices", dist / "voices")
@@ -290,8 +298,8 @@ def strip_debug(program: Path) -> None:
 
 def server_dist(platform: str, config: str, output: str) -> int:
     """dist/chupathingyce-server-linux-<arch>[-debug]: the server, its
-    README, its playlists, its blocked names list and the notices its parts'
-    licenses ask for"""
+    README, its playlists, its blocked names list, its license and the notices
+    its parts' licenses ask for"""
     arch = platform[len("server-"):]
     dist = ROOT / "dist" / f"chupathingyce-server-linux-{arch}{'' if config == 'release' else '-debug'}"
     if dist.exists():
@@ -312,7 +320,10 @@ def server_dist(platform: str, config: str, output: str) -> int:
                          ("port/third_party/miniupnpc/LICENSE", "miniupnpc-LICENSE.txt"),
                          ("port/third_party/expat/COPYING", "expat-COPYING.txt"),
                          ("LICENSE", "LICENSE.txt"),
+                         ("LICENSES/GPL-3.0.txt", "GPL-3.0.txt"),
                          ("port/assets/fonts/Overpass-OFL.txt", "Overpass-OFL.txt"),
+                         ("port/assets/fonts/CyborgInterfaceGothic-OFL.txt", "CyborgInterfaceGothic-OFL.txt"),
+                         ("port/assets/fonts/OpenCE-OFL.txt", "OpenCE-OFL.txt"),
                          ("port/linux/ui/fonts/OFL.txt", "NotoSans-OFL.txt"),
                          ("port/linux/ui/fonts/KENNEY-CC0.txt", "Kenney-Input-Prompts-CC0.txt")):
         shutil.copy2(ROOT / source, dist / name)

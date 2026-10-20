@@ -61,6 +61,8 @@ int platform_audio_devices(int recording, char (*names)[128], int maximum);
 /* the game's network server (this machine hosts: network_game_globals.c) */
 void *global_network_game_server_get(void);
 boolean network_game_is_active(void);
+/* whether the pause menu has CHANGE TEAMS (team_change.c, ChupathingyCE 0.8) */
+boolean team_change_pause_offered(void);
 
 /* cache_files.c's (port) */
 void *cache_files_tag_instances(long *count);
@@ -94,9 +96,9 @@ static char const *const solo_pause_screens[] =
 	"ui\\shell\\solo_game\\pause_game\\pause_game",
 	"ui\\shell\\solo_game\\pause_game\\pause_game_split_screen",
 };
-/* the tags pause_patch or pause_campaign_patch adds: two buttons and their
-texts (SETTINGS, and END GAME or FRIENDLY FIRE) */
-#define PAUSE_PATCH_TAGS 4
+/* the tags pause_patch or pause_campaign_patch adds: three buttons and their
+texts (a team game's CHANGE TEAMS, SETTINGS, and END GAME or FRIENDLY FIRE) */
+#define PAUSE_PATCH_TAGS 6
 /* what a frame of ui.map's is drawn as in a game map, which has not got it */
 #define BLANK_PNG "ce/port/blank__0.png"
 #define UI_WIDGET_DEFINITION_TAG 'DeLa'
@@ -378,7 +380,7 @@ static char const *const port_function_names[] =
 	"port setup edit",
 	"port setup options init", "port setup options save",
 	"port map list back",
-	"port pause end game", "port coop friendly fire",
+	"port pause end game", "port coop friendly fire", "port pause change teams",
 	"port coop begin", "port coop player 2 list initialize", "port coop player 2",
 	"port lobby open", "port lobby add player", "port lobby join", "port lobby leave",
 	"port lobby player list initialize", "port lobby player choose",
@@ -1612,10 +1614,11 @@ static long pause_solo_quit_button(struct ui_widget_definition const *list)
 
 /* a button like the model (its look), its own text, each of the model's
 events (its A and Start) running the function and opening the widget (if
-not NONE); with other_text, a second text, which the game data input (input)
-chooses between */
+not NONE), or closing the pressing player's pause (close); with other_text,
+a second text, which the game data input (input) chooses between */
 static void *pause_button(struct cache_file_tag_instance *instances, struct ui_widget_definition const *model,
-	char const *name, char const *text, long function, long widget_tag, char const *other_text, long input)
+	char const *name, char const *text, long function, long widget_tag, char const *other_text, long input,
+	boolean close)
 {
 	struct ui_widget_definition *button = allocate(sizeof(*button));
 	struct ui_widget_event_handler_reference *handlers =
@@ -1650,6 +1653,8 @@ static void *pause_button(struct cache_file_tag_instance *instances, struct ui_w
 	for (handler = 0; handler < model->event_handlers.count; handler++)
 	{
 		handlers[handler].flags = FLAG(_event_handler_run_function_bit);
+		if (close)
+			handlers[handler].flags |= FLAG(_event_handler_close_current_widget_bit);
 		handlers[handler].function = (short)function;
 		handlers[handler].script[0] = 0;
 		reference_set(&handlers[handler].widget_tag, UI_WIDGET_DEFINITION_TAG, widget_tag);
@@ -1663,52 +1668,66 @@ static void *pause_button(struct cache_file_tag_instance *instances, struct ui_w
 	return button;
 }
 
-/* the list's buttons: SETTINGS, and the host's END GAME or network co-op's
-FRIENDLY FIRE (whose text says the machine's choice: menu_functions.c), put
-before LEAVE GAME or REVERT TO SAVED (quit); returns how many were added, and
-how much taller the list grew for them (growth) */
+/* the list's buttons: a team game's CHANGE TEAMS (change_teams: Halo PC's,
+ChupathingyCE 0.8's team_change.c; it closes the player's pause), SETTINGS,
+and the host's END GAME or network co-op's FRIENDLY FIRE (whose text says
+the machine's choice: menu_functions.c), put before LEAVE GAME or REVERT TO
+SAVED (quit); returns how many were added, and how much taller the list grew
+for them (growth) */
 static long pause_list_patch(struct cache_file_tag_instance *instances, struct ui_widget_definition *list, long quit,
-	boolean host, long *settings_tag, short *growth)
+	boolean host, boolean change_teams, long *settings_tag, short *growth)
 {
 	struct ui_widget_child_reference *children = xbox_pointer(list->child_widgets.address);
-	long count = list->child_widgets.count, added = host || build.coop ? 2 : 1, child;
+	long first = change_teams ? 1 : 0;
+	long count = list->child_widgets.count, added = first + (host || build.coop ? 2 : 1), child;
 	struct ui_widget_child_reference *grown = allocate((count + added) * sizeof(struct ui_widget_child_reference));
 	struct ui_widget_definition const *model = tag_get(UI_WIDGET_DEFINITION_TAG, children[quit].widget_tag.index);
 	long settings_widget = widget_named(PAUSE_SETTINGS_SCREEN);
 	short spacing = count >= 2 ? (short)(children[count - 1].vertical_offset - children[count - 2].vertical_offset) :
 		PAUSE_BUTTON_SPACING;
-	char const *names[2];
-	void *buttons[2];
-	long tags[2];
+	char const *names[3];
+	void *buttons[3];
+	long tags[3];
 
 	if (!grown || settings_widget == NONE || spacing <= 0)
 		return 0;
 	/* (a campaign's second list, split screen's: the SETTINGS button the
 	first list got, not another) */
-	if (*settings_tag != NONE && !host && !build.coop)
+	if (*settings_tag != NONE && !host && !build.coop && !change_teams)
 	{
 		tags[0] = *settings_tag;
 	}
 	else
 	{
-		names[0] = "pause/settings_button";
-		tags[0] = next_tag();
-		buttons[0] = pause_button(instances, model, names[0], "SETTINGS",
-			function_index("profile set edit begin", "pause", 0), build.widget_tags[settings_widget], NULL, NONE);
+		if (change_teams)
+		{
+			names[0] = "pause/change_teams_button";
+			tags[0] = next_tag();
+			buttons[0] = pause_button(instances, model, names[0], "CHANGE TEAMS",
+				function_index("port pause change teams", "pause", 0), NONE, NULL, NONE, TRUE);
+		}
+		names[first] = "pause/settings_button";
+		tags[first] = next_tag();
+		buttons[first] = pause_button(instances, model, names[first], "SETTINGS",
+			function_index("profile set edit begin", "pause", 0), build.widget_tags[settings_widget], NULL, NONE,
+			FALSE);
 		/* (network co-op's FRIENDLY FIRE, OpenCE build-244's, else the host's END GAME) */
-		names[1] = build.coop ? "pause/friendly_fire_button" : "pause/end_game_button";
-		tags[1] = added > 1 ? next_tag() : NONE;
-		buttons[1] = build.coop ?
-			pause_button(instances, model, names[1], "FRIENDLY FIRE ON",
+		names[first + 1] = build.coop ? "pause/friendly_fire_button" : "pause/end_game_button";
+		tags[first + 1] = added > first + 1 ? next_tag() : NONE;
+		buttons[first + 1] = build.coop ?
+			pause_button(instances, model, names[first + 1], "FRIENDLY FIRE ON",
 				function_index("port coop friendly fire", "pause", 0), NONE, "FRIENDLY FIRE OFF",
-				game_data_input_index("port coop friendly fire text", "pause", 0)) :
-			host ? pause_button(instances, model, names[1], "END GAME",
-				function_index("port pause end game", "pause", 0), NONE, NULL, NONE) : NULL;
-		if (!buttons[0] || (added > 1 && !buttons[1]))
-			return 0;
+				game_data_input_index("port coop friendly fire text", "pause", 0), FALSE) :
+			host ? pause_button(instances, model, names[first + 1], "END GAME",
+				function_index("port pause end game", "pause", 0), NONE, NULL, NONE, FALSE) : NULL;
+		for (child = 0; child < added; child++)
+		{
+			if (!buttons[child])
+				return 0;
+		}
 		for (child = 0; child < added; child++)
 			instance_set(instances, UI_WIDGET_DEFINITION_TAG, tags[child], names[child], "", buttons[child]);
-		*settings_tag = tags[0];
+		*settings_tag = tags[first];
 	}
 	if (quit)
 		memcpy(grown, children, quit * sizeof(*grown));
@@ -1816,6 +1835,7 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 	long collection = tag_loaded('Soul', MULTIPLAYER_COLLECTION);
 	long quit_function = ui_function_named("mp game player quit");
 	boolean host = global_network_game_server_get() != NULL;
+	boolean change_teams = team_change_pause_offered();
 	struct tag_block const *screens;
 	long patched_list = NONE, added = 0, buttons = 0, screen, settings_tag = NONE, backs = 0;
 	short grow = 0;
@@ -1855,7 +1875,7 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 			quit = pause_quit_button(list, quit_function);
 			if (quit == NONE || patched_list != NONE)
 				continue;
-			added = pause_list_patch(instances, list, quit, host, &settings_tag, &grow);
+			added = pause_list_patch(instances, list, quit, host, change_teams, &settings_tag, &grow);
 			if (!added)
 				return;
 			buttons = list->child_widgets.count;
@@ -1891,7 +1911,8 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 		}
 	}
 	if (patched_list != NONE)
-		platform_log("menus: the pause menu has SETTINGS%s", host ? " and END GAME" : "");
+		platform_log("menus: the pause menu has %sSETTINGS%s", change_teams ? "CHANGE TEAMS, " : "",
+			host ? " and END GAME" : "");
 	if (backs)
 		platform_log("menus: the pause screens' B and Back close only their player's pause (%ld)", backs);
 }
@@ -1928,11 +1949,11 @@ static char const *const pause_settings_hidden_items[] =
 };
 
 /* the PC version's pause menu's row pitch (30 apart). The pause box's frames
-from the third, and the mission objectives' box's, are the stock 159 grown by
+from the fourth, and the mission objectives' box's, are the stock 159 grown by
 the 36 that five rows at this pitch add (SETTINGS), then by the 66 that six
 add (network co-op's FRIENDLY FIRE too: tools/port_settings.py) */
 #define PAUSE_CAMPAIGN_ROW_PITCH 30
-#define PAUSE_CAMPAIGN_BOX_FRAME 2
+#define PAUSE_CAMPAIGN_BOX_FRAME 3
 static short const pause_campaign_box_heights[] = { 195, 225 };
 
 /* the port box piece for one of the map's pause box pieces, else NULL */
@@ -2223,7 +2244,7 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 			bottom = list->bounds.y1;
 			/* (port: a list that fails to patch leaves this screen alone; the
 			other screens still get SETTINGS) */
-			if (!pause_list_patch(instances, list, at, FALSE, &settings_tag, &grow))
+			if (!pause_list_patch(instances, list, at, FALSE, FALSE, &settings_tag, &grow))
 				break;
 			/* the rows at the PC version's pitch from the first row's place
 			(upstream's #246), the prompts the same gap under the last, the
@@ -2295,13 +2316,32 @@ static boolean menus_pc_chosen(void)
 	static boolean said;
 	char const *value = config_string("display.menus");
 
-	if (!csstrcasecmp(value, "pc"))
+	/* ("gearbox": ChupathingyCE 0.8's name for the same) */
+	if (!csstrcasecmp(value, "pc") || !csstrcasecmp(value, "gearbox"))
 		return TRUE;
 	if (csstrcasecmp(value, "xbox") && !said)
 	{
 		platform_log("menus: display.menus \"%s\" is not \"xbox\" or \"pc\": the Xbox's", value);
 		said = TRUE;
 	}
+	return FALSE;
+}
+
+/* which menus display.menus asks for: 0 the Xbox's, 1 the PC version's
+(ChupathingyCE's scoreboard platform logos follow it: 2 would be its
+Chupathingy menus, which Arena Evolved has not) */
+short pc_menus_set(
+	void)
+{
+	return menus_pc_chosen() ? 1 : 0;
+}
+
+/* whether ChupathingyCE's Chupathingy menus are up: never in Arena Evolved,
+whose PC menus are its own (its invite question and settings picture then
+take the PC menus' way) */
+boolean pc_menus_chupathingy(
+	void)
+{
 	return FALSE;
 }
 

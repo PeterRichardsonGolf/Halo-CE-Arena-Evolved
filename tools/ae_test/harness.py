@@ -1582,7 +1582,9 @@ def collect_game(spec, prepared, inner, out, keep_work=False):
     root = Path(prepared["root"])
     work = root.parent
     found = None
-    for cand in (root / "debug.txt", Path(prepared["save"]) / "debug.txt", Path(prepared["cwd"]) / "debug.txt"):
+    # (and logs/ in the data root: ChupathingyCE 0.8's logs folder, a stock build's)
+    for cand in (root / "debug.txt", root / "logs" / "debug.txt", Path(prepared["save"]) / "debug.txt",
+                 Path(prepared["cwd"]) / "debug.txt"):
         if cand.exists():
             found = cand
             break

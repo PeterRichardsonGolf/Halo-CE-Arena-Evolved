@@ -49,6 +49,9 @@ about that many seconds in, and a joining machine's player holds the action
 button a second later, to pick it up); debug.network_test_hurt (the host
 leaves the first player 40% of their health, shields full, that many
 seconds in, as the port's health regeneration starts from).
+debug.network_test_team_change has each machine's player ask to change
+teams every so often (team_change.c); debug.network_test_pause opens the
+first player's pause menu that many seconds in.
 
 debug.network_test_flags sets bits of the host's game variant's flags (the
 port's gametype options: game_engine.h's _game_variant_..._bit).
@@ -179,6 +182,10 @@ static struct
 	real shoot_interval;
 	real vehicle_time;
 	real pickup_time;
+	real team_change_interval;
+	/* debug.network_test_pause: the pause menu opened then, once */
+	real pause_time;
+	boolean paused;
 	char pickup_weapon[64];
 	/* (debug.network_test_pickup_give: the host puts the weapon the last
 	player stands on in its inventory two seconds on, a pickup every machine
@@ -379,6 +386,8 @@ static void network_test_read_settings(
 	network_test.pickup_give = config_boolean("debug.network_test_pickup_give") != 0;
 	network_test.pickup_weapon_index = NONE;
 	network_test.chat_time = (real)config_real("debug.network_test_chat");
+	network_test.team_change_interval = (real)config_real("debug.network_test_team_change");
+	network_test.pause_time = (real)config_real("debug.network_test_pause");
 	snprintf(network_test.pickup_weapon, sizeof(network_test.pickup_weapon), "%s",
 		config_string("debug.network_test_pickup_weapon"));
 	network_test.score_to_win = (long)config_integer("debug.network_test_score");
@@ -1764,6 +1773,40 @@ void network_test_update(
 					game_time_get() < approach_time + 4 * TICKS_PER_SECOND);
 			}
 		}
+		/* debug.network_test_pause: the first player's pause menu opened
+		that many seconds in, as START opens it (to see it) */
+		if (network_test.pause_time > 0.0f && !network_test.paused &&
+			game_time_get() >= (long)(network_test.pause_time * TICKS_PER_SECOND))
+		{
+			network_test.paused = TRUE;
+			platform_log("network test: the pause menu opens");
+			ui_widget_load_by_name_or_tag(network_test.local_players > 1 ?
+				"ui\\shell\\multiplayer_game\\pause_game\\2p_pause_game" :
+				"ui\\shell\\multiplayer_game\\pause_game\\1p_pause_game", NONE, NULL, 0, NONE, NONE, NONE);
+		}
+		/* debug.network_test_team_change: every so often a player of each
+		machine asks to change teams, as the pause menu's CHANGE TEAMS does
+		(team_change.c); the joining machine's half an interval later */
+		if (network_test.team_change_interval > 0.0f && game_engine_can_score())
+		{
+			static long asked_period = 0;
+			long interval = MAX(1, (long)(network_test.team_change_interval * TICKS_PER_SECOND));
+			long offset = network_test.mode == _network_test_join ? interval / 2 : 0;
+			long period = MAX(0, game_time_get() - offset) / interval;
+			short players = (short)MAX(1, network_test.local_players);
+
+			if (period < asked_period)
+				asked_period = period;
+			if (period > asked_period)
+			{
+				asked_period = period;
+				extern boolean team_change_ask(short local_player_index);
+
+				/* (split screen: each player in turn) */
+				platform_log("network test: player %d asks to change teams", (int)(period % players) + 1);
+				team_change_ask((short)(period % players));
+			}
+		}
 		/* debug.network_test_quit: controller 1's player on this machine
 		quits, as their pause menu's QUIT does (network_game_remove_local_player),
 		once; with split screen the others stay */
@@ -2207,7 +2250,12 @@ void network_test_update(
 				/* (the player joined to multiplayer first, as a player picking
 				their profile: the pregame screen then asks for them every
 				frame until they are in the settings) */
-				player_ui_local_player_joined_multiplayer_game(0);
+				{
+					short controller;
+
+					for (controller = 0; controller < network_test.local_players; controller++)
+						player_ui_local_player_joined_multiplayer_game(controller);
+				}
 				platform_log("network test: searching for games");
 			}
 		}

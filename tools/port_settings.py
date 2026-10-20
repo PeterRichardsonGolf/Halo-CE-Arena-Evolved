@@ -353,11 +353,17 @@ SCREENS = {
             # (Delta Stats, ChupathingyCE 0.7.1's: on by default there)
             ("SHARE HOSTED STATS:", "network.report_events", ON_OFF,
              "Send the games you host (kills, positions, medals)\nto halo.milenko.org, for its match pages.", None),
+            # (ChupathingyCE 0.8's privacy setting: a listed game's carnage report and Delta Stats, or neither)
+            ("HOSTED GAME STATS:", "network.report_hosted_games", ON_OFF,
+             "Send the scores and stats of the games you host\nto the game list. Off: they stay listed.", None),
             ("UPNP PORT FORWARDING:", "network.allow_upnp", ON_OFF,
              "Let internet play ask the router to forward its\nport, for networks that stop connections.",
              "desktop android"),
-            ("JOIN FROM CLIPBOARD:", "network.join_from_clipboard", ON_OFF,
-             "Join the game of an invite link copied before\nswitching to the game.", "desktop android"),
+            # (ChupathingyCE 0.8's three words: invite_prompt.c asks)
+            ("JOIN FROM CLIPBOARD:", "network.join_from_clipboard",
+             [("ASK", "ask"), ("ALWAYS", "always"), ("NEVER", "never")],
+             "An invite link copied before switching to the\ngame: ask to join its game, always join, or not.",
+             "desktop android"),
             ("CHECK FOR UPDATES:", "update.auto", ON_OFF,
              "Look for a new version when the game starts.", "desktop android"),
             ("PLAYER NAMES:", "display.player_names",
@@ -1371,11 +1377,12 @@ def title_backdrop(width: float) -> str:
 
 
 # the in-game pause menu's box, taller for the buttons this port adds
-# (menu_tags.c's pause_patch: SETTINGS, and the host's END GAME): the
+# (menu_tags.c's pause_patch: SETTINGS, the host's END GAME, and a team
+# game's CHANGE TEAMS, ChupathingyCE 0.8's): the
 # pausebox5 redraw's rounded box (ui-svg-handmade/shell/bitmaps), drawn to
 # hold each number of buttons, one frame each (the Xbox's 2-button box is
 # 159 units high, and each button 35 more)
-PAUSE_BOX_BUTTONS = [3, 4]
+PAUSE_BOX_BUTTONS = [3, 4, 5]
 # the campaign pause box, tall enough for five rows (SETTINGS added) or six
 # (network co-op's FRIENDLY FIRE too) at the PC version's pause menu's pitch
 # (30) with the prompts still under the last row: the stock box is 159, and

@@ -11,10 +11,25 @@
   ORION.
 - **The controller's A, B, X and Y buttons** (the menus' button icons and
   the HUD messages'): redraws by saulob (`port/assets/buttons`).
-- **The high-res HUD** (its meters, icons, scopes and messages, and the
-  weapons' reticles): redraws by MrBruh (`port/assets/hud`), based on
-  reference photos by Aerocatia. The sniper rifle's zoom labels (2x, 10x)
-  are set in Overpass (`port/assets/fonts`).
+- **The high-res HUD** (HUD STYLE CE: its meters, icons, scopes and
+  messages, and the weapons' reticles): Aerocatia's and Jessie's HUD art from
+  [Halo PC Restored](https://github.com/Aerocatia/halopc-restored), release
+  r220 (`port/assets/hud/art`, cut to the Xbox sheets by
+  `tools/hud_assets.py`), brought in with ChupathingyCE 0.8.0b. Used with
+  Aerocatia's permission on the condition that Aerocatia and Jessie are
+  credited; not covered by the code's licence. `port/assets/hud/NOTICE.md`
+  lists which files are theirs. The few textures still drawn from the older
+  SVG redraws (`port/assets/hud/svg`) are MrBruh's, based on reference photos
+  by Aerocatia.
+- **The controller's button icons for ChupathingyCE's prompts**
+  (`port/assets/prompts`): by snapchipper, CC0.
+- **The scoreboard's platform logos** (`port/linux/ui/fonts/platform_icons`):
+  one-colour marks from [Simple Icons](https://simpleicons.org) (CC0) and
+  Wikimedia Commons (public domain), plus ChupathingyCE's own Xbox 360 ring
+  and Wii U GamePad; the names and logos are their owners' trademarks, used
+  only to identify platforms.
+- **Cyborg Interface Gothic** (ChupathingyCE's high-res text font,
+  `port/assets/fonts`): by fizzy, SIL Open Font License.
 
 ## Third-party art
 

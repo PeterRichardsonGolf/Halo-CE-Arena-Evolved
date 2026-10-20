@@ -317,7 +317,11 @@ def test_menu_settings_exist():
             assert setting in known | profile, f"{path.name}: {setting}"
     controls = set(re.findall(r'"(controls\.[a-z_]+)"', (root / "port/linux/src/xinput_sdl.c").read_text()))
     assert controls == {name for name in known if name.startswith("controls.")}
-    assert controls == set(re.findall(r'\{ "(controls\.[a-z_]+)", L"', functions))
+    # (Arena Evolved: ChupathingyCE's Delta text chat's keys are off with its chat, chat.enabled, and bound to
+    # nothing; its text chat is OpenCE's, controls.chat and controls.team_chat, which Controls Setup has)
+    delta_chat = {"controls.chat_all", "controls.chat_team", "controls.chat_log"}
+    assert delta_chat <= controls
+    assert controls - delta_chat == set(re.findall(r'\{ "(controls\.[a-z_]+)", L"', functions))
 
 
 def test_report_joined_games_stops_claims():
@@ -325,7 +329,7 @@ def test_report_joined_games_stops_claims():
     game list about a game it joined: its own report of the game
     (browser_client_report) and the claim of its players' lines in the
     host's report (browser_claim_game, /v1/claim). A game it hosts is
-    claimed either way."""
+    claimed unless network.report_hosted_games is off."""
     root = MENUS.parent.parent.parent
     browser = (root / "port/linux/src/browser.c").read_text()
     for function in ("browser_client_report", "browser_claim_game"):
@@ -338,6 +342,28 @@ def test_report_joined_games_stops_claims():
     readme = (root / "port/linux/README.md").read_text()
     row = next(line for line in readme.splitlines() if line.startswith("| `network.report_joined_games`"))
     assert "/v1/claim" in row
+
+
+def test_report_hosted_games_keeps_listing():
+    """network.report_hosted_games = false stops what a host sends the game
+    list about its games (the carnage report, the Delta Stats batch and its
+    own players' claims) and not the listing, and Network Setup sets it with
+    the other stats rows (Arena Evolved: no Privacy screen of its own; crash
+    reports are off)."""
+    root = MENUS.parent.parent.parent
+    browser = (root / "port/linux/src/browser.c").read_text()
+    for function in ("browser_report_game", "browser_claim_game"):
+        body = re.search(r"^void " + function + r"\(.*?^\}", browser, re.M | re.S).group(0)
+        assert 'config_boolean("network.report_hosted_games")' in body, function
+    hosting = re.search(r"^static void update_hosting\(.*?^\}", browser, re.M | re.S).group(0)
+    assert "report_hosted_games" not in hosting
+    upload = (root / "port/linux/src/event_upload.c").read_text()
+    assert 'config_boolean("network.report_hosted_games")' in upload
+    privacy = (MENUS / "ce/main_menu.settings_select.player_setup.player_profile_edit.network_setup.xml").read_text()
+    for setting in ("network.report_hosted_games", "network.report_events", "network.report_joined_games"):
+        assert f'setting="{setting}"' in privacy, setting
+    readme = (root / "port/linux/README.md").read_text()
+    assert any(line.startswith("| `network.report_hosted_games`") for line in readme.splitlines())
 
 
 def c_format_json(format_text: str, values: list) -> str:
@@ -618,7 +644,8 @@ def test_config_has_each_section_once(tmp_path):
     # capture.h: none of it runs here)
     (stubs / "posix.h").write_text(
         "enum { _posix_file_is_directory = 1 << 0 };\n"
-        "struct posix_file_information { unsigned long flags; };\n"
+        "typedef unsigned long posix_ulong;\n"
+        "struct posix_file_information { posix_ulong flags, size_low, modification_seconds, modification_nanoseconds; };\n"
         "static int posix_stat(const char *path, struct posix_file_information *information)\n"
         "{ (void)path; (void)information; return -1; }\n"
         "static void *posix_directory_open(const char *path) { (void)path; return 0; }\n"

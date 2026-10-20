@@ -42,6 +42,11 @@ enum halo_keyboard_action
 	everyone, or to the team: port/linux/game/network_chat.c) */
 	HALO_KEYBOARD_CHAT,
 	HALO_KEYBOARD_TEAM_CHAT,
+	/* text chat's (port/linux/game/chat.c reads them; the game does not):
+	a line to everyone, to the team, and the recent lines */
+	HALO_KEYBOARD_CHAT_ALL,
+	HALO_KEYBOARD_CHAT_TEAM,
+	HALO_KEYBOARD_CHAT_LOG,
 	NUMBER_OF_HALO_KEYBOARD_ACTIONS
 };
 
@@ -85,5 +90,21 @@ int halo_chat_taps(float *x, float *y);
 then goes at the top left: on Android, and in a browser once its touch
 controls have been used */
 int halo_chat_touch_layout(void);
+
+/* the game's button prompts show the keyboard's keys, not the
+controller's buttons (input.keyboard_prompts, the keyboard or mouse used
+last), and the key of an action as the menus name it ("E", "Space", "Mouse
+Left"): 0 for one with none (xinput_sdl.c) */
+int halo_keyboard_prompts(void);
+int halo_keyboard_action_shown(int action, char *shown, unsigned long size);
+
+/* text chat's line is being typed, or its log is open (chat.c): the
+keyboard's keys go to it alone, as with the console (none drives the
+player or the menus) */
+void platform_chat_typing(int typing);
+
+/* escape was pressed while text chat's line or log was up (once for each
+press): it closes them even if its keystroke never reaches the chat */
+int platform_chat_escape(void);
 
 #endif

@@ -6,6 +6,21 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Built on ChupathingyCE 0.8.0b (and OpenCE build-244): plays online with ChupathingyCE 0.8 both ways, on its Delta
+  wire `chupa-32a` (Arena Evolved's range is that wire alone; 0.3.5's `ae-32a` games still join). Also from it:
+  CHANGE TEAMS in a team game's pause menu, the follow camera on long respawn waits, opt-in powerup timers
+  (`display.powerup_timers`) and the classic loading screen (`display.loading_screen_min_seconds`), the loading
+  screen's sound, the far clip distance (`display.far_clip_distance`), your own font for the high-res text
+  (`display.high_res_font`), the first start's choices (an Xbox disc image, a Halo PC CD image or the Custom Edition
+  installer, and the disc's movies copied too), Online Games in the Xbox menus' look with pings before joining
+  (`network.ping_games`, an opt-in) and co-op games kept off the server browsers, HOSTED GAME STATS
+  (`network.report_hosted_games`, Settings > Network Setup), JOIN FROM CLIPBOARD's ASK, config.toml's volumes
+  applied while the game runs, big Custom Edition maps (up to 1 GB), and the dedicated server's chat and moderation.
+- HUD STYLE CE's high-res HUD is Aerocatia's and Jessie's art from Halo PC Restored (r220), as ChupathingyCE 0.8.0b
+  has it; credited in the README.
+- Not taken from ChupathingyCE 0.8: its Chupathingy menus (Arena Evolved's PC menus stay), its text chat (Arena
+  Evolved's is OpenCE's; `chat.enabled` turns ChupathingyCE's on), its new-install defaults (2x multisampling, 256
+  shadows), its own save and logs folders, and its Discord application.
 - Bots play as a team: in a team game one bot sticks with each player as a wingman (near you, fighting beside you,
   not off on its own); NORMAL and up regroup when their team is two or more down, and back off when more enemies are
   close than teammates instead of taking a 1v2; HEROIC and up back out of a crossfire (two or more enemies with a

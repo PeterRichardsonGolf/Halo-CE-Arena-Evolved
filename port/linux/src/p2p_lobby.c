@@ -829,6 +829,11 @@ int p2p_lobby_listed(void)
 	return lobby.listed;
 }
 
+int p2p_lobby_open(void)
+{
+	return lobby.listed && !lobby.has_password;
+}
+
 int p2p_lobby_hosting_open(void)
 {
 	return lobby.public && !lobby.has_password;

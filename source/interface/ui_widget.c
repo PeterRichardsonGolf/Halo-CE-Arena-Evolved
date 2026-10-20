@@ -710,6 +710,13 @@ void moderation_screen_process(void);
 void moderation_screen_render(void);
 /* the menus' pointer, while it is up (its own taps and clicks) */
 void browser_screen_pointer(struct halo_ui_pointer const *pointer);
+/* port: the question before joining a clipboard's invite
+(port/linux/game/invite_prompt.c) */
+boolean invite_prompt_active(void);
+void invite_prompt_update(boolean menu_open);
+void invite_prompt_process(void);
+void invite_prompt_pointer(struct halo_ui_pointer const *pointer);
+void invite_prompt_render(void);
 /* (ONLINE GAMES, below: its list moves focus item by item) */
 boolean ui_widget_online_games_list(struct widget_instance *widget);
 #endif
@@ -1532,6 +1539,10 @@ static struct ui_widget_bss_prefix ui_widget_globals_storage;
 #define dpad_event_times ui_widget_globals_storage.dpad_event_times
 real_argb_color ui_plasma_effect_color;
 short local_player_index_for_draw_string_and_hack_in_icons;
+/* port: draw_string_and_hack_in_icons draws a widget's text (the menus'
+keys for the buttons, not the game's: input_abstraction_port_icon_key) */
+static boolean draw_string_icons_for_menus = FALSE;
+short draw_string_and_hack_in_icons_end_x = 0;
 
 /* January defines this and never references it, as we do not */
 real const _one_over_255 = 1.0f / 255.0f;
@@ -2677,6 +2688,11 @@ static void widget_instance_give_focus_by_tag(
 	return;
 }
 
+/* a list watched for the player stepping it with left/right (the Xbox-style
+controls screen watches its layout spinner) */
+struct widget_instance *g_list_widget_watched = NULL;
+boolean g_list_widget_watched_stepped = FALSE;
+
 boolean widget_event_function_list_widget_goto_next_item(
 	struct widget_instance *widget,
 	struct event_record *event,
@@ -2691,6 +2707,8 @@ boolean widget_event_function_list_widget_goto_next_item(
 		"c:\\halo\\SOURCE\\interface\\ui_widget.c",
 		1230,
 		widget);
+	if (widget == g_list_widget_watched)
+		g_list_widget_watched_stepped = TRUE;
 	definition = ui_widget_definition_get(widget->definition_tag_index);
 	match_vassert(
 		"c:\\halo\\SOURCE\\interface\\ui_widget.c",
@@ -2843,6 +2861,8 @@ boolean widget_event_function_list_widget_goto_previous_item(
 		"c:\\halo\\SOURCE\\interface\\ui_widget.c",
 		1359,
 		widget);
+	if (widget == g_list_widget_watched)
+		g_list_widget_watched_stepped = TRUE;
 	definition = ui_widget_definition_get(widget->definition_tag_index);
 	match_vassert(
 		"c:\\halo\\SOURCE\\interface\\ui_widget.c",
@@ -4454,6 +4474,26 @@ void draw_string_and_hack_in_icons(
 			short icon_index;
 
 			current = icon_spec + wcslen(icon_names[icon_type]);
+			/* port: the keyboard's key, "[E]", in place of the controller's
+			button while the keyboard or mouse was used last (the menus'
+			own keys in the menus: input_abstraction_port_icon_key) */
+			{
+				wchar_t key_text[48];
+
+				/* (Arena Evolved: the menus' text alone; the HUD's custom
+				lines draw AE's keycaps, ae_key_prompts.c) */
+				if (draw_string_icons_for_menus && icon_type <= _icon_look &&
+					input_abstraction_port_icon_key(
+						local_player_index_for_draw_string_and_hack_in_icons,
+						icon_type,
+						draw_string_icons_for_menus,
+						key_text,
+						NUMBEROF(key_text)))
+				{
+					render_state_text(bounds, &cursor_bounds, key_text);
+					continue;
+				}
+			}
 			remapped_icon_type = remap_sticks_for_local_player(
 				icon_type,
 				local_player_index_for_draw_string_and_hack_in_icons);
@@ -4548,6 +4588,7 @@ void draw_string_and_hack_in_icons(
 	}
 	if (current)
 		render_state_text(bounds, &cursor_bounds, current);
+	draw_string_and_hack_in_icons_end_x = cursor_bounds.x0;
 	draw_string_set_indents(0, 0);
 
 	return;
@@ -5789,7 +5830,11 @@ static void widget_instance_render_text_box(
 		ui_widget_port_text_wrap(*text, &bounds, width);
 	}
 	if (string_has_icons_to_draw(*text))
+	{
+		draw_string_icons_for_menus = TRUE;
 		draw_string_and_hack_in_icons(&bounds, &clip, NULL, 0, *text, FALSE);
+		draw_string_icons_for_menus = FALSE;
+	}
 	else
 		rasterizer_draw_unicode_string(&bounds, &clip, NULL, 0, *text);
 
@@ -6315,20 +6360,31 @@ static short ui_mouse_key_button(
 		{ "start_butn", _gamepad_binary_button_start },
 		{ "back_butn", _gamepad_binary_button_back },
 	};
-	char const *name = tag_get_name(widget->definition_tag_index);
-	char const *leaf = name ? strrchr(name, '\\') : NULL;
-	long key_index;
+	long tag_indices[2];
+	long tag;
 
-	leaf = leaf ? leaf + 1 : name;
-	for (key_index = 0; leaf && key_index < NUMBEROF(keys); key_index++)
+	/* the widget's name (ui.map's prompts, "a_butn"), or its picture's (the
+	Chupathingy menus' prompts are "chupathingy\\prompts\\a", drawn from
+	"chupathingy\\prompts\\a_butn": chupathingy/prompts.xml) */
+	tag_indices[0] = widget->definition_tag_index;
+	tag_indices[1] = ui_widget_definition_get(widget->definition_tag_index)->background_bitmap.index;
+	for (tag = 0; tag < NUMBEROF(tag_indices); tag++)
 	{
-		long length = (long)strlen(keys[key_index].name);
+		char const *name = tag_indices[tag] != NONE ? tag_get_name(tag_indices[tag]) : NULL;
+		char const *leaf = name ? strrchr(name, '\\') : NULL;
+		long key_index;
 
-		/* and the smaller icons of the dialogs, "a_butn_sm" */
-		if (!strncmp(leaf, keys[key_index].name, length) &&
-			(leaf[length] == '\0' || leaf[length] == '_'))
+		leaf = leaf ? leaf + 1 : name;
+		for (key_index = 0; leaf && key_index < NUMBEROF(keys); key_index++)
 		{
-			return keys[key_index].button_index;
+			long length = (long)strlen(keys[key_index].name);
+
+			/* and the smaller icons of the dialogs, "a_butn_sm" */
+			if (!strncmp(leaf, keys[key_index].name, length) &&
+				(leaf[length] == '\0' || leaf[length] == '_'))
+			{
+				return keys[key_index].button_index;
+			}
 		}
 	}
 
@@ -7250,14 +7306,17 @@ static void ui_widgets_process_mouse(
 			ui_debug_log_keyboard_tap(pointer.click_x, pointer.click_y, hit);
 	}
 #ifdef HALO_GAME_BROWSER
-	/* Online Games takes the pointer itself, as the virtual keyboard does */
-	if (pointer_active && !keyboard_active && browser_screen_active())
+	/* Online Games takes the pointer itself, as the virtual keyboard does
+	(and the clipboard invite's question, over it) */
+	if (pointer_active && !keyboard_active && invite_prompt_active())
+		invite_prompt_pointer(&pointer);
+	else if (pointer_active && !keyboard_active && browser_screen_active())
 		browser_screen_pointer(&pointer);
 #endif
 	if (!pointer_active || keyboard_active
 #ifdef HALO_GAME_BROWSER
 		/* (nor over Online Games: a click left in the queue would pick a game) */
-		|| browser_screen_active()
+		|| browser_screen_active() || invite_prompt_active()
 #endif
 		)
 	{
@@ -8006,6 +8065,13 @@ void render_ui_widgets(
 					should_render = TRUE;
 				}
 			}
+#ifdef HALO_GAME_BROWSER
+			/* (Online Games is drawn over the menus' background alone, as a
+			screen of their own: the screen it opened over is not drawn under
+			it, an error dialog still is) */
+			if (should_render && browser_screen_active() && !widget->widget_is_error_dialog)
+				should_render = FALSE;
+#endif
 			if (should_render)
 			{
 				point2d offset;
@@ -8107,7 +8173,10 @@ void render_ui_widgets(
 	if (browser_screen_active())
 		browser_screen_render();
 	if (first_players_render)
+	{
 		moderation_screen_render();
+		invite_prompt_render();
+	}
 #endif
 	ae_ui_render(local_player_index, window_bounds); /* AE hook */
 	ui_debug_draw_targets(first_players_render);
@@ -9233,6 +9302,14 @@ void process_ui_widgets(
 	if (ae_ui_process()) /* AE hook */
 		return;
 #ifdef HALO_GAME_BROWSER
+	/* port: an invite on the clipboard, asked about over the menus */
+	invite_prompt_update(widget_globals.active_widgets[0] != NULL);
+	if (invite_prompt_active())
+	{
+		invite_prompt_process();
+
+		return;
+	}
 	if (browser_screen_active())
 	{
 		browser_screen_process();

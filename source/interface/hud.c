@@ -110,6 +110,8 @@ symbols in this file:
 #include "tag_files/tag_files.h"
 #include "text/draw_string.h"
 #include "coop_spectate.h" /* port: port/linux/game/coop_spectate.c */
+#include "follow_camera.h" /* port: port/linux/game/follow_camera.c */
+#include "powerup_timers.h" /* port: port/linux/game/powerup_timers.c */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_weapon_pack.h" /* AE hook */
 #include "ae_score_strip.h" /* AE hook */
@@ -117,6 +119,9 @@ symbols in this file:
 #include "ae_panels.h" /* AE hook */
 #include "ae_radar.h" /* AE hook */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
+#ifdef HALO_GAME_BROWSER
+#include "chat.h" /* port: port/linux/game/chat.c */
+#endif
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "units/unit_definitions.h"
@@ -962,7 +967,12 @@ static void hud_draw_friendly_indicator(
 				bitmap,
 				&position,
 				&clip,
+#ifdef HALO_CUSTOM_EDITION
+				/* port: at its bitmap's HUD scale */
+				hud_bitmap_group_scale(interface_get_tag_index(_interface_bitmap_multiplayer_hud)),
+#else
 				1.0f,
+#endif
 				0.0f,
 				1.0f);
 		}
@@ -1196,7 +1206,15 @@ static void hud_draw_player_name(
 			interface_get_tag_index(_interface_bitmap_multiplayer_hud), 0, 0);
 
 		if (bitmap)
+		{
+#ifdef HALO_CUSTOM_EDITION
+			/* (the triangle drawn at its bitmap's HUD scale) */
+			y -= (short)(bitmap->registration_point.y *
+				hud_bitmap_group_scale(interface_get_tag_index(_interface_bitmap_multiplayer_hud)));
+#else
 			y -= bitmap->registration_point.y;
+#endif
+		}
 	}
 	y -= 2;
 	font = font_definition_get(font_index);
@@ -1508,9 +1526,21 @@ void hud_draw_screen(
 		/* port: who a dead network co-op player is watching */
 		if (player->unit_index == NONE && coop_spectating() && !cinematic_in_progress())
 			coop_spectate_draw(render.local_player_index);
+		/* port: who a dead multiplayer player's camera follows */
+		if (player->unit_index == NONE && game_engine_running() && !cinematic_in_progress())
+			follow_camera_draw(render.local_player_index);
+		/* port: the seconds left on a living player's powerups
+		(display.powerup_timers, off by default) */
+		if (player->unit_index != NONE && hud_scripted_globals->show_hud && !cinematic_in_progress())
+			powerup_timers_draw(render.local_player_index);
 		/* port: the network co-op vote to skip a cinematic */
 		if (cinematic_in_progress())
 			coop_skip_vote_draw(render.local_player_index);
+#ifdef HALO_GAME_BROWSER
+		/* port: text chat's lines (port/linux/game/chat.c) */
+		if (!cinematic_in_progress())
+			chat_draw(render.local_player_index);
+#endif
 
 		/* port: the match clock, in multiplayer */
 		if (game_engine_running() && !cinematic_in_progress() &&

@@ -4064,7 +4064,8 @@ static void browser_games_read(void)
 
 			if (network_game_client_advertised_game_is_valid(game) &&
 				(advertised_join_state(game, NULL) != HALO_PORT_JOIN_OK ? 2 : advertised_in_progress(game) ? 1 : 0) == pass &&
-				game_from_peer(game) == (multiplayer.mode == _multiplayer_mode_direct_link))
+				game_from_peer(game) == (multiplayer.mode == _multiplayer_mode_direct_link) &&
+				(game_from_peer(game) || !browser_map_is_campaign(game->map_name)))
 			{
 				multiplayer.games[multiplayer.game_count++] = game;
 			}
@@ -4501,6 +4502,9 @@ static short lobby_browser_valid_games(struct p2p_listing *games, short count)
 		wchar_t name[P2P_LISTING_NAME_SIZE + 1];
 		short index;
 
+		/* (no co-op games in a server browser) */
+		if (browser_map_is_campaign(games[read].map))
+			continue;
 		text_to_wide(games[read].name, name, NUMBEROF(name));
 		if (!player_name_clean(name, NUMBEROF(name)))
 			continue;
@@ -4666,12 +4670,19 @@ static void lobby_browser_add_listed(void)
 {
 	/* (its gametypes as a listing names them) */
 	static char const *const gametypes[] = { "Game", "CTF", "Slayer", "Oddball", "King", "Race" };
-	short index;
+	short index, kept;
 
 	lobby_browser_listed.count = 0;
 	if (!config_boolean("network.online") || !config_boolean("network.public_lobby"))
 		return;
 	lobby_browser_listed.count = (short)browser_get_games(lobby_browser_listed.games, BROWSER_MAXIMUM_GAMES);
+	/* (no co-op games in a server browser) */
+	for (index = kept = 0; index < lobby_browser_listed.count; index++)
+	{
+		if (!browser_map_is_campaign(lobby_browser_listed.games[index].map))
+			lobby_browser_listed.games[kept++] = lobby_browser_listed.games[index];
+	}
+	lobby_browser_listed.count = kept;
 	for (index = 0; index < lobby_browser_listed.count; index++)
 	{
 		struct browser_game const *listed = &lobby_browser_listed.games[index];
@@ -4710,6 +4721,17 @@ static void lobby_browser_add_listed(void)
 		engine = (short)PIN(listed->engine, 0, NUMBEROF(gametypes) - 1);
 		snprintf(game->gametype, sizeof(game->gametype), "%s%s", listed->teams && engine != 1 ? "Team " : "",
 			gametypes[engine]);
+		/* (a campaign level is a co-op game, whatever variant its host had chosen last) */
+		if (campaign_level_of(game->map) != NONE)
+		{
+			static char const *const difficulties[] = { "Easy", "Normal", "Heroic", "Legendary" };
+
+			engine = 0;
+			if (listed->difficulty >= 1 && listed->difficulty <= NUMBEROF(difficulties))
+				snprintf(game->gametype, sizeof(game->gametype), "Co-op (%s)", difficulties[listed->difficulty - 1]);
+			else
+				snprintf(game->gametype, sizeof(game->gametype), "Co-op");
+		}
 		game->player_count = (unsigned char)PIN(listed->players, 0, 255);
 		game->maximum_player_count = (unsigned char)PIN(listed->maximum_players, 0, 255);
 		game->engine_type = (unsigned char)engine;
@@ -5659,6 +5681,19 @@ static boolean coop_friendly_fire_change(void)
 static void coop_friendly_fire_text(struct widget_instance *button)
 {
 	button->parameters.text_box.string_list_index = config_boolean("network.coop_own_friendly_fire") ? 0 : 1;
+}
+
+/* "port pause change teams" (a team game's pause menu's CHANGE TEAMS, Halo
+PC's): the menu's player asks to be put on the other team (team_change.c,
+which tells them what came of it); the menu closes either way */
+static boolean pause_change_teams(struct widget_instance *widget)
+{
+	extern boolean team_change_ask(short local_player_index);
+
+	if (!game_engine_running())
+		return campaign_fail();
+	team_change_ask(widget->local_player_index);
+	return TRUE;
 }
 
 /* ---- the lobby: the game's players (up to the port's 128), its map and
@@ -7452,6 +7487,10 @@ boolean pc_menu_event_function_invoke(
 		else if (!strcmp(name, "port coop friendly fire"))
 		{
 			return coop_friendly_fire_change();
+		}
+		else if (!strcmp(name, "port pause change teams"))
+		{
+			return pause_change_teams(widget);
 		}
 		else if (!strcmp(name, "player profile save changes"))
 		{

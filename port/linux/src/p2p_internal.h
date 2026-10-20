@@ -137,6 +137,19 @@ int p2p_hosting_invite_locked(char *text, int size);
 /* (AE) a new invite, listed or not (the caller holds p2p_lock) */
 void p2p_new_invite(void);
 
+/* ---------- p2p.c: pings before joining (p2p_probe.c), under p2p_lock */
+
+/* a PROBE the host heard on its topic, opened: its answer (signed; the
+caller seals it) into answer, which holds P2P_PROBE_MAXIMUM_MESSAGE bytes,
+and the prober's reply id (P2P_PROBE_ID_SIZE bytes); returns the answer's
+size, 0 for none (not hosting, over the budget, a resend not due) */
+int p2p_probe_request_heard(const unsigned char *message, int size, unsigned char *answer, unsigned char *reply);
+/* the tokens of the probes waiting for an answer (whose keys may open
+one); returns their count */
+int p2p_probe_asking_tokens(unsigned char (*tokens)[P2P_TOKEN_SIZE], int maximum);
+/* a PROBE_ANSWER opened with the key of that token */
+void p2p_probe_answer_heard(const unsigned char *token, const unsigned char *message, int size);
+
 /* ---------- p2p_signal.c: signalling through public MQTT brokers */
 
 /* connects to the brokers, if not already; called from the p2p thread */
@@ -167,6 +180,13 @@ token, whose answers come to a topic of their own; 0 if there is no room.
 Stopped by its identifier */
 int p2p_signal_probe(const unsigned char *host_hash, const unsigned char *token);
 void p2p_signal_stop_probe(const unsigned char *identifier);
+/* (ChupathingyCE's Online Games pings, p2p_probe.c) a PROBE to the host whose key has this hash, of the invite with this
+token: sealed and published once on every broker (p2p_probe.c resends) */
+void p2p_signal_ping_probe(const unsigned char *host_hash, const unsigned char *token, const unsigned char *message,
+	int size);
+/* the prober's reply topic (hceu/3/ and the reply id in hex) listened on;
+NULL for none */
+void p2p_signal_ping_probe_topic(const unsigned char *reply);
 /* whether any broker is connected */
 int p2p_signal_connected(void);
 /* every broker's connection made anew at once: after the p2p thread was
@@ -358,6 +378,8 @@ int p2p_probe_start(const unsigned char *host_hash, const unsigned char *token);
 void p2p_lobby_update(const unsigned char *token, int player_count, int maximum_player_count);
 /* whether the game hosted is listed now, and whether the browser is open */
 int p2p_lobby_listed(void);
+/* ... listed with no password: anyone can join it by its invite */
+int p2p_lobby_open(void);
 /* whether the game hosted is public and has no password, so its invite may
 be shown to anyone (under p2p_lock) */
 int p2p_lobby_hosting_open(void);
@@ -383,8 +405,8 @@ desktop client */
 void p2p_discord_update(void);
 /* the Discord user signed in, as told (empty if none): under p2p_lock */
 void p2p_discord_user(char *id, int id_size, char *name, int name_size);
-/* what to show: hosting with an invite link's secret and player counts, or
-not (secret NULL) */
-void p2p_discord_set_hosting(const char *secret, int player_count, int maximum_player_count);
+/* the public game hosted, by its invite's code (the hex after halo://join/),
+for the activity's Join game button; NULL for none: under p2p_lock */
+void p2p_discord_set_join(const char *code);
 
 #endif

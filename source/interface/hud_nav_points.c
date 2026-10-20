@@ -865,6 +865,9 @@ void custom_render_nav_point_placed(
 			1.0f-distance*(1.0f/15.0f),
 			0.7) + 0.5f;
 	}
+#ifdef HALO_CUSTOM_EDITION
+	arrow_scale *= hud_bitmap_group_scale(hud_globals->waypoint.arrow_bitmap.index);
+#endif
 
 	/* port: TRAINING's waypoints are drawn smaller (size), the game's own at 1 */
 	arrow_scale *= size;

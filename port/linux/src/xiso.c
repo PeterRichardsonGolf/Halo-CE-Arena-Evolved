@@ -38,6 +38,11 @@ whole and at most 64 MB, is searched for the loading screen's picture
 The game takes a data root as having data once it has a maps folder, so the
 copy is written to maps.partial (emptied first of what an earlier attempt
 left) and given the name maps only when every file is complete.
+
+Then the .bik files of the root's bink folder (the movies) that
+<destination>/bink lacks are copied there, each as <name>.partial first and
+renamed when whole, never over one already there; one that cannot be copied
+does not fail the extraction (ChupathingyCE 0.8, 50441f53d).
 */
 
 #include "platform.h"
@@ -592,13 +597,95 @@ done:
 
 /* ---------- public code */
 
+int xiso_is_image(const char *image_path)
+{
+	struct xiso_image image;
+	posix_ulong size_low, size_high;
+	unsigned long root_sector, root_size;
+	int found;
+
+	memset(&image, 0, sizeof(image));
+	image.descriptor = open(image_path, O_RDONLY | O_LARGEFILE | O_CLOEXEC);
+	if (image.descriptor < 0)
+		return 0;
+	image.size = ~0ULL;
+	if (posix_seek(image.descriptor, 0, 0, SEEK_END, &size_low, &size_high) == 0)
+		image.size = (unsigned long long)size_high << 32 | size_low;
+	found = xiso_find_volume(&image, &root_sector, &root_size);
+	close(image.descriptor);
+	return found;
+}
+
+/* whether a name ends in ".bik", ignoring case */
+static int xiso_is_movie(const char *name)
+{
+	size_t length = strlen(name);
+
+	return length > 4 && xiso_name_is(name + length - 4, 4, ".bik");
+}
+
+/* the bink folder's movies (folder: its entry) that <destination>/bink
+lacks, each written as <name>.partial and renamed when whole; a movie that
+cannot be copied is left out and logged. entries has room for
+XISO_MAXIMUM_ENTRIES */
+static void xiso_copy_movies(struct xiso_image *image, const struct xiso_entry *folder, const char *destination,
+	struct xiso_entry *entries, unsigned char *buffer, char *path, char *partial)
+{
+	unsigned char *table;
+	int count, index, out_of_memory, copied = 0;
+	char error[256];
+
+	if (!folder->size)
+		return;
+	table = xiso_read_table(image, folder->sector, folder->size, &out_of_memory);
+	if (!table)
+	{
+		platform_log("the disc image's bink folder cannot be read: no movies copied");
+		return;
+	}
+	count = xiso_walk_table(table, folder->size, 0, entries);
+	free(table);
+	if (snprintf(path, XISO_MAXIMUM_PATH, "%s/bink", destination) >= XISO_MAXIMUM_PATH)
+		return;
+	posix_make_directory(path);
+	for (index = 0; index < count; index++)
+	{
+		unsigned long long done = 0;
+		struct posix_file_information information;
+
+		snprintf(error, sizeof(error), "%s", "it cannot be renamed");
+		if (!xiso_is_movie(entries[index].name) ||
+			(entries[index].size &&
+				xiso_sector_offset(image, entries[index].sector) + entries[index].size > image->size) ||
+			snprintf(path, XISO_MAXIMUM_PATH, "%s/bink/%s", destination, entries[index].name) >= XISO_MAXIMUM_PATH ||
+			snprintf(partial, XISO_MAXIMUM_PATH, "%s.partial", path) >= XISO_MAXIMUM_PATH)
+		{
+			continue;
+		}
+		/* (never over a movie already there) */
+		if (posix_stat(path, &information) == 0)
+			continue;
+		if (!xiso_copy_file(image, &entries[index], partial, buffer, &done, entries[index].size, NULL, NULL,
+				error, (int)sizeof(error)) ||
+			rename(partial, path) != 0)
+		{
+			platform_log("could not copy bink/%s from the disc image: %s", entries[index].name, error);
+			remove(partial);
+			continue;
+		}
+		copied++;
+	}
+	platform_log("copied %d movies of the disc image to %s/bink", copied, destination);
+}
+
 int xiso_extract_maps(const char *image_path, const char *destination, xiso_progress_proc progress, void *context,
 	char *error, int error_size)
 {
 	struct xiso_image image;
 	struct xiso_entry *entries = NULL;
-	/* the root's default.xbe (the loading screen's picture), size 0 if none */
-	struct xiso_entry xbe;
+	/* the root's default.xbe (the loading screen's picture), size 0 if none,
+	and its bink folder (the movies), size 0 if none */
+	struct xiso_entry xbe, bink;
 	unsigned char *table = NULL;
 	unsigned char *buffer = NULL;
 	char *partial_path = NULL, *file_path = NULL, *maps_path = NULL;
@@ -609,6 +696,7 @@ int xiso_extract_maps(const char *image_path, const char *destination, xiso_prog
 
 	memset(&image, 0, sizeof(image));
 	memset(&xbe, 0, sizeof(xbe));
+	memset(&bink, 0, sizeof(bink));
 	image.descriptor = open(image_path, O_RDONLY | O_LARGEFILE | O_CLOEXEC);
 	if (image.descriptor < 0)
 	{
@@ -658,6 +746,11 @@ int xiso_extract_maps(const char *image_path, const char *destination, xiso_prog
 	{
 		xiso_error(error, error_size, "Out of memory.");
 		goto done;
+	}
+	for (index = 0; index < count; index++)
+	{
+		if (xiso_name_is(entries[index].name, (int)strlen(entries[index].name), "bink"))
+			bink = entries[index];
 	}
 	index = xiso_maps_folder(entries, count);
 	found = index < count;
@@ -746,6 +839,7 @@ int xiso_extract_maps(const char *image_path, const char *destination, xiso_prog
 		goto done;
 	}
 	succeeded = 1;
+	xiso_copy_movies(&image, &bink, destination, entries, buffer, file_path, partial_path);
 
 done:
 	free(table);

@@ -99,12 +99,13 @@ jobs:
           # sources alone, as OpenCE's tree has them; where Arena Evolved's
           # sources differ, each test file has stand-ins of its own. All harness
           # tests run, and our own two sound tests, which are programs, run below)
-          python -m pytest -q tools/harness tools/test_linux_port.py tools/test_android_asm_convert.py tools/test_host_watch_hash.py tools/test_touch_menu.py tools/test_server_control.py tools/test_delta.py tools/test_delta_peer.py tools/test_ae_test.py tools/test_ae_units.py tools/test_ae_hooks.py tools/test_ae_fonts.py tools/test_ae_title_font.py tools/test_ae_lp64_literals.py tools/test_ae_saved_limits.py tools/test_ae_mixer_linear.py tools/test_profile.py tools/test_weapon_pack_format.py tools/test_weapon_pack_build.py tools/test_weapon_pack_tools.py tools/test_p2p_copies.py tools/test_ae_checks.py tools/test_ae_debug_defaults.py tools/test_ae_bot_report.py tools/test_ae_map_pictures.py tools/test_ae_menu_pictures.py tools/test_map_families.py tools/test_ae_seat_pictures.py tools/test_ae_key_pictures.py tools/test_net_compare.py
+          python -m pytest -q tools/harness tools/test_linux_port.py tools/test_android_asm_convert.py tools/test_host_watch_hash.py tools/test_touch_menu.py tools/test_server_control.py tools/test_delta.py tools/test_delta_peer.py tools/test_ae_test.py tools/test_ae_units.py tools/test_ae_hooks.py tools/test_ae_fonts.py tools/test_ae_title_font.py tools/test_ae_lp64_literals.py tools/test_ae_saved_limits.py tools/test_ae_mixer_linear.py tools/test_profile.py tools/test_weapon_pack_format.py tools/test_weapon_pack_build.py tools/test_weapon_pack_tools.py tools/test_p2p_copies.py tools/test_ae_checks.py tools/test_ae_debug_defaults.py tools/test_ae_bot_report.py tools/test_ae_map_pictures.py tools/test_ae_menu_pictures.py tools/test_map_families.py tools/test_ae_seat_pictures.py tools/test_ae_key_pictures.py tools/test_net_compare.py tools/test_ping.py tools/test_save_folder.py tools/test_map_download.py tools/test_map_report.py tools/test_event_log.py tools/test_update_manifest.py tools/test_delta_compat.py tools/test_ae_delta_wire.py tools/test_discord_activity.py tools/test_network_rules.py tools/test_port_folders.py
           python tools/test_ae_sound_lifecycle.py
           python tools/test_ae_sound_transition.py
           python -m unittest tools.test_custom_maps tools.test_virtual_keyboard_input
           python -m unittest tools.test_halo_mcp
           python tools/test_light_storage.py
+          python tools/test_port_config.py
 
       - name: Compile cache
         run: ccache --show-stats

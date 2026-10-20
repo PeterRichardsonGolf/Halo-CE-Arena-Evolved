@@ -29,6 +29,7 @@ the SDK headers are read, exactly as game code sees them. */
 #include "halo_linux_winsock_names.h"
 #undef HALO_LINUX_WINSOCK_NAMES_UNDEFINE
 #include "build_identity.h"
+#include "port_folders.h"
 
 /* ---------- logging */
 
@@ -144,9 +145,12 @@ one that cannot be moved stays where it is), and logs each: how many moved */
 int platform_old_map_folders_move(void);
 /* the macOS application's folder for its data and settings, when the game
 runs as an application (ArenaEvolved.app): ~/Library/Application
-Support/ChupathingyCE, made if need be, into path; 0 otherwise (and on
-other systems). An application's own files are not written: it is signed,
-and may be where its player cannot write (port_config.c) */
+Support/ChupathingyCE, made if need be, into path; on Linux, when the game
+runs as an AppImage, the save root's usual place (HALO_SAVE_ROOT, else
+$XDG_DATA_HOME/halo-linux or ~/.local/share/halo-linux); 0 otherwise
+(and on other systems). An application's own files are not written: it is
+signed, and may be where its player cannot write, and an AppImage is
+mounted read-only (port_config.c) */
 int platform_app_folder(char *path, unsigned long size);
 /* asks the player, in a box of its own that waits for the answer (before
 the window opens, or between frames), with `count` buttons (3 at most: Android's),
@@ -161,6 +165,14 @@ win32_files.c): a unit that sees the Xbox SDK cannot include <windows.h> or
 each name in one (not . or ..), 0 when it does not open */
 int platform_folder_exists(const char *path);
 int platform_folder_list(const char *path, void (*visit)(const char *name, void *context), void *context);
+/* one of the game's own folders (port_folders.h: data/ and logs/ in the
+data root, cache/ and private/ in the save root, or paths.logs and
+paths.cache), made if need be */
+const char *platform_folder(enum port_folder folder);
+/* the logs folder before the data root is known, as near as can be told
+without asking the player anything (Windows' halo.log and crash reporter
+start before the game does), made if need be; 0 when there is none */
+int platform_logs_folder_early(char *path, unsigned long size);
 #ifdef HALO_GAME_BROWSER
 /* a web page opened in the web browser (from any thread: the main thread
 opens it) */
@@ -200,8 +212,23 @@ once it is mapped: a Custom Edition map is not opened without it
 (cache_files_windows.c) */
 #define PLATFORM_CE_TAG_CACHE_BASE 0x40440000U
 #define PLATFORM_CE_TAG_CACHE_SIZE 0x01700000U
+/* and right above it, up to the 64-bit build's heap (xbox_heap.c), room for
+what the port makes of a map's models and level (their converted parts,
+strips and buffers: ce_resources.c), which Halo PC kept outside its tag
+cache: used once the room between a map's tags and its BSP runs out.
+Mapped with the tag cache where the address space has room for it;
+platform_ce_conversion_room is its size then, else 0. Never on a console,
+or a build with the console's limits (halo_port_limits.h): the console's
+memory has no room for it */
+#include "halo_port_limits.h"
+#if defined(HALO_PORT_CONSOLE_LIMITS) || defined(HALO_CONSOLE_LIMITS)
+#define PLATFORM_CE_CONVERSION_ROOM_SIZE 0U
+#else
+#define PLATFORM_CE_CONVERSION_ROOM_SIZE 0x004c0000U
+#endif
 #ifdef HALO_CUSTOM_EDITION
 extern int platform_ce_tag_cache_ready;
+extern unsigned int platform_ce_conversion_room;
 #endif
 
 /* the host's page size, which protection works in (4 KB or more) */

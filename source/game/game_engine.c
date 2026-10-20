@@ -558,6 +558,7 @@ symbols in this file:
 #include "interface/terminal.h"
 #include "interface/ui_widget.h"
 #include "input/input.h"
+#include "input/input_abstraction.h"
 #include "items/equipment_definitions.h"
 #include "items/item_definitions.h"
 #include "items/weapon_definitions.h"
@@ -576,6 +577,7 @@ symbols in this file:
 #include "network_votekick.h" /* port: port/linux/game/network_votekick.c */
 #include "network_voice.h" /* port: port/linux/game/network_voice.c */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
+#include "follow_camera.h" /* port: port/linux/game/follow_camera.c */
 /* (network_server_manager_internal.h's: the host's game record) */
 struct network_game *network_game_server_get_game(struct network_game_server *server);
 #include "objects.h"
@@ -621,6 +623,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #endif
 #ifdef HALO_GAME_BROWSER
 #include "../../port/linux/src/browser.h"
+#include "../../port/linux/src/ui_overlay.h"
 /* port/linux/game/game_stats.c's */
 void game_stats_player_killed(long killing_player_index, long dead_player_index, boolean friendly_fire);
 void game_stats_player_extra(long player_index, char *text, long size, short *multikills);
@@ -641,6 +644,9 @@ void network_distributed_player_killed(long *killing_player_index, long *killing
 	long dead_player_index, boolean *friendly_fire);
 /* port/linux/game/network_damage.c's */
 boolean network_damage_killer_score(long player_index, long *score);
+/* port/linux/game/team_change.c's */
+boolean team_change_death(long dead_player_index);
+void team_change_player_died(long dead_player_index);
 
 /* ---------- constants */
 
@@ -1837,21 +1843,26 @@ HUD's text, centred, on a panel (display.scoreboard_background). A team game's
 players in a column for each team (display.scoreboard_team_layout), else in
 order of score in one column, or two when one has too few rows; each with
 the player's ping in a network game (the host's measure:
-network_distributed.c). More players than a page are scrolled to with the
-mouse wheel and Page Up/Down (platform_scoreboard_scroll), a footer telling
-which are shown; opened, it shows the viewer's own player's page. Network
-co-op's campaign, with no game engine, lists its players as they joined,
-with only their names and pings. */
+network_distributed.c) and, before the name, the logo of the platform its
+client says it plays on over Delta Peer (display.scoreboard_platforms). More
+players than a page are scrolled to with the mouse wheel and Page Up/Down
+(platform_scoreboard_scroll), a footer telling which are shown; opened, it
+shows the viewer's own player's page. Network co-op's campaign, with no
+game engine, lists its players as they joined, with only their names and
+pings. */
 enum
 {
 	/* the rows' widths (in the scoreboard's text, before it is scaled):
 	place, name, score, ping (the last as wide as "Ping" or three digits,
-	so that the columns centred are their text centred) */
+	so that the columns centred are their text centred); and the platform
+	logos' between place and name, when a row has one */
 	SCOREBOARD_PLACE_WIDTH = 55,
+	SCOREBOARD_PLATFORM_WIDTH = 20,
 	SCOREBOARD_NAME_WIDTH = 150,
 	SCOREBOARD_SCORE_WIDTH = 95,
 	SCOREBOARD_PING_WIDTH = 40,
-	SCOREBOARD_COLUMN_WIDTH = SCOREBOARD_PLACE_WIDTH + SCOREBOARD_NAME_WIDTH + SCOREBOARD_SCORE_WIDTH + SCOREBOARD_PING_WIDTH,
+	SCOREBOARD_BASE_COLUMN_WIDTH = SCOREBOARD_PLACE_WIDTH + SCOREBOARD_NAME_WIDTH + SCOREBOARD_SCORE_WIDTH +
+		SCOREBOARD_PING_WIDTH,
 	SCOREBOARD_COLUMN_GAP = 40,
 	/* the room the panel gives the last column's ping beyond its column */
 	SCOREBOARD_PING_ROOM = 8,
@@ -1868,6 +1879,11 @@ enum
 };
 
 #define SCOREBOARD_SCALE 0.75f
+
+/* the platform logos' column this frame: SCOREBOARD_PLATFORM_WIDTH when
+the scoreboard shows them, else 0 (the original layout) */
+static short scoreboard_platform_width = 0;
+#define SCOREBOARD_COLUMN_WIDTH (SCOREBOARD_BASE_COLUMN_WIDTH + scoreboard_platform_width)
 
 /* network_distributed.c's */
 long distributed_player_ping(short player_index);
@@ -1951,7 +1967,7 @@ static void scoreboard_draw_row(
 		color.blue = MIN(color.blue + 0.4f, 1.0f);
 	}
 	tab_stops[0] = left;
-	tab_stops[1] = (short)(left + SCOREBOARD_PLACE_WIDTH);
+	tab_stops[1] = (short)(left + SCOREBOARD_PLACE_WIDTH + scoreboard_platform_width);
 	tab_stops[2] = (short)(tab_stops[1] + SCOREBOARD_NAME_WIDTH);
 	tab_stops[3] = (short)(tab_stops[2] + SCOREBOARD_SCORE_WIDTH);
 	draw_string_set_tab_stops(tabs ? tab_stops : NULL, tabs ? 4 : 0);
@@ -1967,6 +1983,106 @@ static void scoreboard_draw_row(
 
 	return;
 }
+
+#ifdef HALO_GAME_BROWSER
+/* menu_tags.c's: 0 the Xbox's menus, 1 Gearbox's, 2 the Chupathingy menus */
+short pc_menus_set(void);
+/* delta_peer_game.c's */
+int delta_peer_game_on_delta(void);
+int delta_peer_player_platform(int player_index);
+
+/* display.scoreboard_platforms: the menus whose look the logos take (as
+pc_menus_set), or NONE when they are not shown: "auto" with the
+Chupathingy menus only (the Xbox's and Gearbox's stay as the originals
+were), "on" with any, "off" never */
+static short scoreboard_platforms_style(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static short style = NONE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != config_changes())
+	{
+		char const *value = config_string("display.scoreboard_platforms");
+		short menus = pc_menus_set();
+
+		read_at = config_changes();
+		if (value && !csstrcmp(value, "off"))
+			style = NONE;
+		else if (value && !csstrcmp(value, "on"))
+			style = menus;
+		else
+			style = menus == 2 ? menus : NONE;
+	}
+
+	return style;
+}
+
+/* a player's platform for the scoreboard (delta.h's enum delta_platform):
+0 when its machine has not said it over Delta Peer, or this game is not on
+Delta (OpenCE's and the retail game's players show none) */
+static int scoreboard_player_platform(
+	long player_index)
+{
+	if (!delta_peer_game_on_delta())
+		return 0;
+	return delta_peer_player_platform((int)DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index));
+}
+
+/* a row's platform logo, drawn by the overlay (ui_overlay.h) over the
+scoreboard's text, in its column before the name and in the row's colour:
+plain, as the HUD's text is, under the Xbox's and Gearbox's menus; with the
+drop shadow of their text under the Chupathingy menus */
+static void scoreboard_draw_platform(
+	int platform,
+	short style,
+	boolean brighten,
+	real_argb_color const *row_color,
+	long row_index,
+	short top,
+	short left)
+{
+	long font_index = hud_get_font_index();
+	struct font_header *font;
+	real line_height;
+	real size;
+	real x;
+	real y;
+	real red = row_color->red;
+	real green = row_color->green;
+	real blue = row_color->blue;
+	short x0 = (short)(render.camera.window_bounds.x0 - render.camera.viewport_bounds.x0);
+
+	if (platform <= 0 || font_index == NONE || !ui_overlay_available())
+		return;
+	font = font_definition_get(font_index);
+	/* (the scoreboard's units scaled about the title's top left, then the
+	overlay's 640 columns centred on the screen's; its 480 lines are the
+	screen's) */
+	line_height = (real)(font->leading_height + font->descending_height + font->ascending_height) * SCOREBOARD_SCALE;
+	size = line_height * 0.7f;
+	x = x0 + (left + SCOREBOARD_PLACE_WIDTH + 0.5f * SCOREBOARD_PLATFORM_WIDTH - x0) * SCOREBOARD_SCALE -
+		0.5f * (halo_screen_width() - 640);
+	y = top + row_index * line_height + 0.5f * (line_height - size);
+	if (brighten)
+	{
+		red = MIN(red + 0.4f, 1.0f);
+		green = MIN(green + 0.4f, 1.0f);
+		blue = MIN(blue + 0.4f, 1.0f);
+	}
+	ui_overlay_platform(
+		platform,
+		size,
+		x,
+		y,
+		((unsigned int)(red * 255.0f) << 24) | ((unsigned int)(green * 255.0f) << 16) |
+			((unsigned int)(blue * 255.0f) << 8) | (unsigned int)(PIN(row_color->alpha, 0.0f, 1.0f) * 255.0f),
+		style == 2);
+
+	return;
+}
+#endif
 
 /* sdl_platform.c's: the wheel's and Page Up/Down's moves of the open
 scoreboard (notches and pages, down positive) */
@@ -2238,7 +2354,11 @@ static void game_engine_rasterize_scoreboard(
 	short menu_item_count = 0;
 	long menu_first_row = 0;
 	long last_row;
+#ifdef HALO_GAME_BROWSER
+	short platforms_style = network ? scoreboard_platforms_style() : NONE;
+#endif
 
+	scoreboard_platform_width = 0;
 	if (font_index == NONE)
 		return;
 	offset_rectangle2d(&bounds, -render.camera.viewport_bounds.x0, -render.camera.viewport_bounds.y0);
@@ -2272,6 +2392,21 @@ static void game_engine_rasterize_scoreboard(
 		ranked_count = populate_statistic_buffer(ranked, _postgame_statistic_ranking, FALSE);
 		statistic_buffer_in_game_only = FALSE;
 	}
+#ifdef HALO_GAME_BROWSER
+	/* (the logos' column only when a player has one: else the layout is the
+	original's) */
+	if (platforms_style != NONE && ui_overlay_available())
+	{
+		for (index = 0; index < ranked_count; index++)
+		{
+			if (scoreboard_player_platform(ranked[index].player_index) > 0)
+			{
+				scoreboard_platform_width = SCOREBOARD_PLATFORM_WIDTH;
+				break;
+			}
+		}
+	}
+#endif
 	team_columns = has_teams && scoreboard_team_columns() && width >= 2 * SCOREBOARD_COLUMN_WIDTH + SCOREBOARD_COLUMN_GAP;
 	for (index = 0; index < ranked_count; index++)
 	{
@@ -2602,6 +2737,19 @@ static void game_engine_rasterize_scoreboard(
 				(short)(left + column * (SCOREBOARD_COLUMN_WIDTH + SCOREBOARD_COLUMN_GAP)),
 				TRUE);
 		}
+#ifdef HALO_GAME_BROWSER
+		if (scoreboard_platform_width)
+		{
+			scoreboard_draw_platform(
+				scoreboard_player_platform(entry->player_index),
+				platforms_style,
+				player_index == entry->player_index,
+				row_color,
+				2 + row,
+				top,
+				(short)(left + column * (SCOREBOARD_COLUMN_WIDTH + SCOREBOARD_COLUMN_GAP)));
+		}
+#endif
 	}
 	/* (where the scroll is, and how to move it) */
 	if (total > page)
@@ -2860,6 +3008,35 @@ static void drawline(
 	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, string);
 
 	return;
+}
+
+/* port: the carnage report's prompt, kept inside the 4:3 screen. Retail's
+start where the Xbox's buttons fit; the keyboard's keys ("[Space] =pick
+game") and wider buttons ran past the screen's right edge into a wide
+screen's sides. A prompt that would end past POSTGAME_PROMPT_RIGHT starts
+that much further left (measured by drawing it unseen first); one that
+fits is where retail drew it */
+enum
+{
+	POSTGAME_PROMPT_RIGHT = 610
+};
+
+static void postgame_draw_prompt(
+	rectangle2d const *bounds,
+	wchar_t const *prompt,
+	real_argb_color const *color)
+{
+	rectangle2d drawn = *bounds;
+	real_argb_color unseen = *color;
+
+	unseen.alpha = 0.0f;
+	draw_string_set_color(&unseen);
+	draw_string_and_hack_in_icons(&drawn, NULL, NULL, 0, prompt, FALSE);
+	drawn = *bounds;
+	if (draw_string_and_hack_in_icons_end_x > POSTGAME_PROMPT_RIGHT)
+		drawn.x0 = (short)MAX(0, drawn.x0 - (draw_string_and_hack_in_icons_end_x - POSTGAME_PROMPT_RIGHT));
+	draw_string_set_color(color);
+	draw_string_and_hack_in_icons(&drawn, NULL, NULL, 0, prompt, FALSE);
 }
 
 void game_engine_post_rasterize_post_game(
@@ -3137,13 +3314,7 @@ void game_engine_post_rasterize_post_game(
 					unicode_string_list_get_string(string_list_index, 0x48);
 			else
 				prompt = L"";
-			draw_string_and_hack_in_icons(
-				&bounds,
-				NULL,
-				NULL,
-				0,
-				prompt,
-				FALSE);
+			postgame_draw_prompt(&bounds, prompt, &prompt_color);
 			return;
 		}
 
@@ -3153,13 +3324,7 @@ void game_engine_post_rasterize_post_game(
 			prompt = unicode_string_list_get_string(string_list_index, 0x49);
 		else
 			prompt = L"";
-		draw_string_and_hack_in_icons(
-			&bounds,
-			NULL,
-			NULL,
-			0,
-			prompt,
-			FALSE);
+		postgame_draw_prompt(&bounds, prompt, &prompt_color);
 	}
 
 	return;
@@ -5560,6 +5725,7 @@ void game_engine_player_killed(
 	boolean player_kill;
 	boolean same_player;
 	boolean valid_players;
+	boolean team_change;
 	long message = NONE;
 
 	match_assert(
@@ -5569,6 +5735,17 @@ void game_engine_player_killed(
 
 	if (!game_engine)
 		return;
+
+	/* port: the host's kill of a player changing teams (team_change.c, as
+	Halo PC's CHANGE TEAMS): nobody's kill, nothing counted, no penalty, no
+	message; its clients hear a death of no killer */
+	team_change = !network_game_distributed_client() && team_change_death(dead_player_index);
+	if (team_change)
+	{
+		killing_player_index = NONE;
+		killing_object_index = NONE;
+		friendly_fire = FALSE;
+	}
 
 	/* the distributed netcode: a client's copy of a death has the host's
 	killer (port/linux/game/network_distributed.c) */
@@ -5580,7 +5757,8 @@ void game_engine_player_killed(
 #ifdef HALO_GAME_BROWSER
 	/* the game list's statistics recorder (port/linux/game/game_stats.c):
 	who killed whom, as this machine's game has it; it changes nothing */
-	game_stats_player_killed(killing_player_index, dead_player_index, friendly_fire);
+	if (!team_change)
+		game_stats_player_killed(killing_player_index, dead_player_index, friendly_fire);
 #endif
 	/* the host's kill of a player who quit, ahead of this client's clock
 	(game_update_quit_players has not come to its time yet) */
@@ -5607,9 +5785,15 @@ void game_engine_player_killed(
 		valid_players = FALSE;
 	player_kill = !friendly_fire && valid_players && !same_player;
 
+	/* port: who killed whom, for the follow camera (port/linux/game/
+	follow_camera.c), which follows the killer in a game without teams */
+	follow_camera_player_killed(killing_player_index, dead_player_index);
+
 	dead_player->respawn_timer =
 		dead_player->respawn_penalty + global_variant.universal_variant.respawn_time;
-	if (global_variant.universal_variant.respawn_time_growth > 0)
+	if (team_change)
+		dead_player->respawn_timer = global_variant.universal_variant.respawn_time;
+	else if (global_variant.universal_variant.respawn_time_growth > 0)
 	{
 		dead_player->respawn_penalty += global_variant.universal_variant.respawn_time_growth;
 		dead_player->respawn_penalty =
@@ -5626,14 +5810,19 @@ void game_engine_player_killed(
 		}
 	}
 
-	if (!player_kill)
+	if (!player_kill && !team_change)
 		dead_player->respawn_timer += global_variant.universal_variant.suicide_penalty;
+
+	/* port: a team change waiting for the death (team_change.c): the player
+	respawns on the new team (the clients take it from the unit, as below) */
+	if (!network_game_distributed_client())
+		team_change_player_died(dead_player_index);
 
 	/* port: the gametype's auto team balance (game_variant_options): the host
 	moves the dead to the other team when his is two or more bigger (his
 	next unit is the other team's, which the clients take it from:
 	network_player_attach_unit) */
-	if (global_variant.universal_variant.teams && game_variant_options_get()->auto_team_balance &&
+	if (global_variant.universal_variant.teams && game_variant_options_get()->auto_team_balance && !team_change &&
 		!network_game_distributed_client() && VALID_INDEX(dead_player->team_index, 2) && !dead_player->quit_out_of_game)
 	{
 		struct data_iterator iterator;
@@ -5682,7 +5871,8 @@ void game_engine_player_killed(
 	dead_player->respawn_timer = MAX(dead_player->respawn_timer, 90);
 	dead_player = player_get(dead_player_index);
 
-	if (!dead_player->quit_out_of_game)
+	/* (a team change's death says nothing: team_change.c tells the player) */
+	if (!team_change && !dead_player->quit_out_of_game)
 	{
 		if (killing_player_index == NONE)
 		{
@@ -5718,7 +5908,7 @@ void game_engine_player_killed(
 			message,
 			killing_player_index);
 	}
-	else
+	else if (!team_change)
 	{
 		struct data_iterator iterator;
 

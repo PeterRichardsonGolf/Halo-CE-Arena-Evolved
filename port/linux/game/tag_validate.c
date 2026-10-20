@@ -1615,6 +1615,28 @@ boolean tag_validate_tags(
 		tag_validate_refuse(&validation, "has bytes that tags of different kinds share, which its check changed");
 	}
 
+	/* each tag's name, now that every root, block and data is claimed: a
+	name in any of their bytes could lose its terminator to what is written
+	there (the corrections above, the game's runtime values), and is none.
+	(Tags may share a name: names are only read) */
+	for (absolute_index = 0; absolute_index < header->tag_count && !validation.refused; absolute_index++)
+	{
+		struct tag_validate_instance *instance = &instances_get(header)[absolute_index];
+		char const *name = xbox_pointer(instance->name);
+
+		if (name == tag_validate_empty_name)
+			continue;
+		validation.tag_index = instance->tag_index;
+		validation.depth = 0;
+		validation.field_name = NULL;
+		if (!string_valid(&validation, name) ||
+			tag_validate_any_claimed(name, (unsigned long)strlen(name) + 1))
+		{
+			instance->name = XBOX_ADDRESS(tag_validate_empty_name);
+			tag_validate_correct(&validation, "has its name in a tag's data: none");
+		}
+	}
+
 	tag_validate_globals.corrections = validation.corrections;
 
 	return !validation.refused;

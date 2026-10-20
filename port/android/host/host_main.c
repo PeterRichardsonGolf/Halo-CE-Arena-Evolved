@@ -114,10 +114,11 @@ posix_make_directory creates them (port/linux/src/posix_files.c). */
 static int share_entry(const char *path, const struct stat *information, int type, struct FTW *walk)
 {
 	(void)information;
-	(void)walk;
 	if (type == FTW_D || type == FTW_DP)
 		chmod(path, 02775);
-	else if (type == FTW_F)
+	/* (but not the game list's player key, which stays the player's
+	alone: port/linux/src/posix_browser.c) */
+	else if (type == FTW_F && strncmp(path + walk->base, "game_list_player.key", 20))
 		chmod(path, 0664);
 	return 0;
 }
@@ -361,9 +362,20 @@ static void *game_main(void *unused)
 		host_memory_report_low_mappings(report);
 		if (report)
 			fclose(report);
+		/* (and the app, at its next start, offers the 64-bit build while
+		this file is there: LauncherActivity.java) */
 		host_fatal("The game cannot start: the memory it needs at 0x80000000 is taken by Android's "
-			"Java runtime on this device.\n\nRestarting the device may help. Please report it with "
-			"memory_map.txt from\n%s\n(or adb logcat -s " HOST_LOG_TAG ").", data_root);
+			"Java runtime on this device.\n\nThe 64-bit build (chupathingyce-android64 on the release page) "
+			"needs no fixed address: open the app again to install it over this one, keeping your data and "
+			"saves. Restarting the device may also help.\n\nThe memory map is in memory_map.txt in\n%s",
+			data_root);
+	}
+	/* (a start that works: the 64-bit build is no longer offered) */
+	{
+		char report_path[600];
+
+		snprintf(report_path, sizeof(report_path), "%s/memory_map.txt", data_root);
+		unlink(report_path);
 	}
 	SDL_free(image);
 

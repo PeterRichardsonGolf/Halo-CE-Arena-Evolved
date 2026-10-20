@@ -38,9 +38,21 @@ hosts built before then, leave the bytes zero. A Delta client joins a host
 of its own major and wire whatever OpenCE number either announces, and
 refuses one of another wire; a host without the bytes, or of another major,
 is joined by its OpenCE number, as before
-(delta_peer_advertised_wire_matches). */
+(delta_peer_advertised_wire_matches). A host that writes the range bytes puts in the wire there its
+OLDEST COMPATIBLE wire that a released client knows (one that checks
+the bytes for an exact match, as 0.7.5a's does, then joins), and the host's
+own wire and its compatible range follow in the range bytes below. */
 #define DELTA_ADVERTISED_WIRE_OFFSET 3
 #define DELTA_ADVERTISED_WIRE_SIZE 16
+/* ... and after the wire, in the six bytes that were free to the end of the
+advertisement's 0x1A reserved bytes (docs/delta.md, "Wire compatibility
+ranges"): the range's layout version (1), the host's own wire (its number, then
+its letter), its oldest compatible wire (number, letter), and a check byte
+(0xA5 xor the five before). All zero when absent; machines that do not read
+them (OpenCE's, released builds) leave and ignore them (delta_compat.h). */
+#define DELTA_ADVERTISED_RANGE_OFFSET (DELTA_ADVERTISED_WIRE_OFFSET + 1 + DELTA_ADVERTISED_WIRE_SIZE)
+#define DELTA_ADVERTISED_RANGE_SIZE 6
+#define DELTA_ADVERTISED_RANGE_VERSION 1
 
 /* Delta Peer's UDP port: the game's server port (NETWORK_GAME_SERVER_PORT,
 5150) plus this, so 5160. A host listens there; a client sends from any
@@ -82,6 +94,24 @@ enum delta_capability
 	from their player key, and kicks and bans from the game
 	(docs/delta.md, Moderation) */
 	_delta_capability_moderation = 10,
+	/* a host answers Online Games' pings before joining (p2p_probe.c):
+	announced on Delta List only, never offered in a HELLO or WELCOME
+	(docs/delta.md, Pings before joining) */
+	/* Bomb game types (Bomb, Grifball: docs/bomb.md) and their player traits
+	(TRAITS). Room-wide: a host plays a Bomb game type only with machines
+	that agreed to it, and drops any other (delta_peer_machine_lacks) */
+	_delta_capability_bomb = 11,
+	_delta_capability_ping = 12,
+	/* taken by the Bomb builds (Grifball: docs/bomb.md): TRAITS' movement and
+	melee traits, and TRAITS at its own number (22). Never set by this
+	build */
+	_delta_capability_bomb_movement = 13,
+	_delta_capability_bomb_traits = 14,
+	/* changing teams during a game (docs/delta.md, Team changes): a client
+	asks its host (TEAM_REQUEST), the host decides and answers
+	(TEAM_RESULT); the change itself reaches every machine, OpenCE's too,
+	through the game's own player respawn */
+	_delta_capability_team_change = 15,
 
 	NUMBER_OF_DELTA_CAPABILITIES
 };
@@ -101,6 +131,11 @@ enum delta_platform
 	_delta_platform_xbox360 = 7,
 	_delta_platform_wiiu = 8,
 	_delta_platform_switch = 9,
+	/* ports built on ours by others: the PSP (Sheepdog01), the Vita (Lord
+	Birchwood), and the Xbox One/Series in developer mode (warthog-uwp) */
+	_delta_platform_psp = 10,
+	_delta_platform_vita = 11,
+	_delta_platform_xbox_uwp = 12,
 
 	NUMBER_OF_DELTA_PLATFORMS
 };
@@ -160,7 +195,10 @@ legacy table's "platform_policy" section is to tune them without a release
 	X(_delta_platform_xbox, 16, 16, 128, 6, 0) \
 	X(_delta_platform_xbox360, 16, 16, 128, 9, 1) \
 	X(_delta_platform_wiiu, 16, 16, 128, 10, 1) \
-	X(_delta_platform_switch, 16, 16, 128, 12, 1)
+	X(_delta_platform_switch, 16, 16, 128, 12, 1) \
+	X(_delta_platform_psp, 16, 16, 128, 6, 0) \
+	X(_delta_platform_vita, 16, 16, 128, 9, 0) \
+	X(_delta_platform_xbox_uwp, 128, 128, 128, 12, 1)
 
 /* ---------- the legacy number */
 
@@ -169,12 +207,28 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one. */
-/* (Arena Evolved: its own wire from 0.3.5, network 32: 0.3.4-beta and
-earlier were on ChupathingyCE 0.7.5b's chupa-29a, whose Delta clients would
-join these hosts whatever number they announce, and a game of 29 and 32
-does not play alike. ChupathingyCE 0.8 is chupa-32a, which the owner may
-take instead once a handshake test with it passes) */
-#define DELTA_WIRE "ae-32a" /* AE hook */
+/* (Arena Evolved: ChupathingyCE 0.8's wire from 0.3.6, as both play OpenCE
+build-244's network 32, with the client input's co-op friendly fire byte and
+the host's aim assist policy (message 90); its range that wire alone, its 30
+to 32 being OpenCE's: port/linux/src/ae_delta_wire.h. Its 0.3.5 was on a wire
+of its own, ae-32a, which this build joins as its own; 0.3.4-beta and earlier
+were on chupa-29a, which it does not) */
+#define DELTA_WIRE "chupa-32a" /* AE hook */
+
+/* Wire compatibility ranges: the oldest wire each one plays the game with,
+without a desync and without losing what the older wire has (a feature the
+older wire lacks is dropped or unused with it; one it cannot play ends the
+join cleanly). One row for a wire that plays with older ones; a wire with no
+row plays with itself alone. A wire's row is added when the release is made
+and is not changed afterward: an older build cannot learn of a newer row, so
+a host also tells its newer clients its range in the advertisement. The first
+wire a build advertised is DELTA_WIRE_FIRST_ADVERTISED: what a host puts in
+the advertisement's old wire slot is its oldest compatible wire from there on,
+as released clients compare it for an exact match (delta_compat.h). */
+#define DELTA_WIRE_FIRST_ADVERTISED "chupa-29a"
+#define DELTA_WIRE_COMPATIBILITY(X) \
+	X("chupa-29a", "chupa-28a") /* maps by their own names: 29 also takes 28's hashed names and checksums */ \
+	X("chupa-32a", "chupa-28a") /* 30 to 32 are additive; a host of 32 plays with 28 to 31 (docs/delta.md) */
 
 /* how many OpenCE numbers past the one announced (the newest this build, or
 the signed table, has proven) are presumed additive: a client joins their

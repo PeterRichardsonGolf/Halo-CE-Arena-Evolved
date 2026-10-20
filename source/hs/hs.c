@@ -11718,7 +11718,7 @@ static void hs_sv_say(
 	{
 		if (message[index] != '|')
 		{
-			text[length++] = (unsigned char)message[index];
+			text[length++] = (wchar_t)(unsigned char)message[index];
 		}
 	}
 	text[length] = 0;

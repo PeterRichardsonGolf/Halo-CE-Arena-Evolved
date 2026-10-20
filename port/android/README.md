@@ -121,7 +121,8 @@ A crash report gives addresses in `libmain.so`. To get the names, enter
 
 The game needs the `maps/` folder from an Xbox disc image (`.xiso` or
 `.iso`) of any version of the game. The app extracts `maps/` from the disc
-image. The app keeps the data in
+image, and the Bink movies (`bink/`) that the folder lacks. The movies are
+not played on this build yet. The app keeps the data in
 `/sdcard/Android/data/dev.horrible.chupathingyce/files`.
 
 To install the data with the app:
@@ -307,6 +308,7 @@ These settings are only for Android:
 | `input.touch_aim_assist` | `true` (the default): the touch controls' swipe aiming gets the aim assist of a controller (the aim slows over a target and follows a moving one). `false`: none, as with a mouse; the bullets' own autoaim stays. |
 | `input.touch_controls` | The touch controls in a game. `"auto"` (the default): shown on a touchscreen while no controller is connected. `"on"`: also shown with a controller. `"off"`: never shown. A device without a touchscreen never shows them. The menus take taps in any case. |
 | `display.screen_width` | The number of columns of the 480-line picture. `0` (the default): the shape of the display (1068 on a 20:9 phone). `640`: the 4:3 shape of the Xbox. |
+| `display.texture_decode` | Where the compressed (DXT) textures of the maps are unpacked. `"auto"` (the default): by the game on Adreno graphics (Snapdragon), whose driver draws them with dark speckles, and by the driver on other graphics. `"gpu"`: by the driver. `"cpu"`: by the game, as they load (more memory, as on Mali). |
 | `debug.sample_seconds` | Refer to "Find problems". |
 | `debug.memory_watch` | `true` (the default): the app notices the game's writes to textures and vertices by page protection. `false`: it compares page contents once a frame instead, which is slower. Refer to "Limits". |
 
@@ -530,15 +532,26 @@ Thus:
    part that covers the fixed addresses, and only if no page of it is in
    use (`/proc/self/pagemap`, or `mincore` and the swap of that part if
    the device refuses `pagemap`). The host never takes the other spaces of
-   ART.
+   ART. Kernels older than 4.17 (for example the Galaxy S10 on Android 12)
+   take `MAP_FIXED_NOREPLACE` as a hint, and the host then also tries this
+   step. Older ART (Android 9) backs the space with ashmem
+   (`/dev/ashmem/dalvik-free list large object space`); then only `mincore`
+   decides, because it sees the pages of the ashmem file.
 
 If the addresses are not available, the game shows a message, and writes
 the mappings below 4 GB to `memory_map.txt` in the data folder and to the
-log.
+log. At the next start, while that file is there, the app offers the native
+64-bit build of the same version (refer to "The native 64-bit build"), which
+needs no fixed address: a release build downloads it from the release and
+installs it over this one, and other builds open the release page. "Try
+again" starts the game as usual. A start that works removes the file.
 
 The Halo PC maps contain pointers to their own tag cache, at `0x40440000`
 to `0x41b40000`. The host also reserves this range at the start, in the
-same way, but the game can start without it. ART's main space starts at
+same way, but the game can start without it. It also reserves the 4.75 MB
+above it, to `0x42000000`, if that is free, for the converted models and
+level of the largest maps (`port/linux/src/platform.h`); without it, those
+maps are refused. ART's main space starts at
 `0x12c00000` and is as large as the Java heap of the device
 (`dalvik.vm.heapsize`). If that heap is larger than about 700 MB, the main
 space covers the range, and the host does not take it. Then the game does
@@ -632,7 +645,7 @@ assembly of the port is necessary:
 ## Find problems
 
 - Enter `adb logcat -s chupathingyce` to see the log of the port and the errors of
-  the game. `files/debug.txt` is the log of the game.
+  the game. `files/logs/debug.txt` is the log of the game.
 - If the guest code stops, the log shows the registers and the frame chain.
   To find the functions, enter
   `llvm-symbolizer --obj=build/android/halo_guest.elf <address>`.
@@ -646,7 +659,8 @@ assembly of the port is necessary:
 
 ## Limits
 
-- Bink video is not available. The game skips the movies.
+- Bink video is not available on this build. The game skips the movies.
+  The app still copies the disc's `bink/` movies with `maps/`.
 - The Xbox memory is the 128 MB of a development kit, not the 512 MB of the
   computer builds. Thus the texture cache is 44 MB, not 128 MB
   (`port/linux/include/halo_port_capacity.h`). This is sufficient for the

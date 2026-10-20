@@ -83,6 +83,8 @@ boolean cache_files_give_time_to_precache(
 /* port: the name the map loaded was loaded by (cache_files.c) */
 char const *cache_file_loaded_map_name(
 	void);
+void const *cache_file_loaded_header(
+	void);
 char const *cache_files_build_region(
 	char const *build);
 char const *cache_files_multiplayer_region(

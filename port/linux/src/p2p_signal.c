@@ -72,6 +72,7 @@ answered it in a while.
 #include "posix.h"
 #include "port_config.h"
 #include "p2p_internal.h"
+#include "p2p_probe.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -179,7 +180,9 @@ enum
 	_topic_slots,
 	_topic_probe,
 	/* the topics a broker is subscribed to */
-	NUMBER_OF_TOPICS = _topic_probe + P2P_MAXIMUM_PROBES,
+	/* the answers to Online Games' pings (ChupathingyCE's p2p_probe.c) */
+	_topic_ping_answer = _topic_probe + P2P_MAXIMUM_PROBES,
+	NUMBER_OF_TOPICS,
 };
 
 /* MQTT 5's properties */
@@ -344,6 +347,9 @@ static struct
 	int lobby_listing_size;
 	int lobby_version;
 	int lobby_closing;
+
+	/* the prober's reply topic (p2p_signal_ping_probe_topic; empty: none) */
+	char probe_topic[TOPIC_SIZE];
 
 	/* hosting */
 	int hosting;
@@ -703,6 +709,7 @@ static void broker_sync_topics(struct broker *broker)
 	wanted[_topic_slots] = lobby && signalling.lobby_browsing ? P2P_LOBBY_SLOT_PREFIX "+" : "";
 	for (index = 0; index < P2P_MAXIMUM_PROBES; index++)
 		wanted[_topic_probe + index] = signalling.probes[index].join.active ? signalling.probes[index].topic : "";
+	wanted[_topic_ping_answer] = signalling.probe_topic;
 	for (index = 0; index < NUMBER_OF_TOPICS; index++)
 	{
 		char *had = broker->topics[index];
@@ -1461,6 +1468,27 @@ static void accept_received(const unsigned char *message, int size)
 	send_join(join);
 }
 
+/* a PROBE on the host's topic (p2p_probe.c): answered through the broker it
+came through, while the bucket has room past what proven joiners and the
+listing need (the prober asks again) */
+static void probe_received(struct broker *broker, const unsigned char *message, int size)
+{
+	unsigned char answer[P2P_PROBE_MAXIMUM_MESSAGE];
+	unsigned char sealed[P2P_PROBE_MAXIMUM_MESSAGE + P2P_SEAL_OVERHEAD];
+	unsigned char reply[P2P_PROBE_ID_SIZE];
+	char hex[2 * P2P_PROBE_ID_SIZE + 1];
+	char topic[TOPIC_SIZE];
+	int answer_size;
+
+	answer_size = p2p_probe_request_heard(message, size, answer, reply);
+	/* (no room now: the prober's resend is answered) */
+	if (!answer_size || !broker_may_publish(broker, UNPROVEN_RESERVE))
+		return;
+	p2p_hex(reply, P2P_PROBE_ID_SIZE, hex);
+	snprintf(topic, sizeof(topic), "hceu/3/%s", hex);
+	broker_publish(broker, topic, sealed, p2p_seal(signalling.host_key, answer, answer_size, sealed));
+}
+
 static void publish_received(struct broker *broker, const char *topic, const unsigned char *payload, int size,
 	int retained)
 {
@@ -1483,7 +1511,34 @@ static void publish_received(struct broker *broker, const char *topic, const uns
 	{
 		message_size = p2p_open(signalling.host_key, payload, size, message);
 		if (message_size >= 2 && message[0] == _message_join && message[1] == MESSAGE_VERSION)
+		{
 			join_received(broker, message, message_size);
+		}
+		else if (message_size >= 2 && message[0] == P2P_PROBE_MESSAGE_REQUEST)
+		{
+			probe_received(broker, message, message_size);
+		}
+	}
+	else if (signalling.probe_topic[0] && !strcmp(topic, signalling.probe_topic))
+	{
+		unsigned char tokens[P2P_PROBE_IN_FLIGHT][P2P_TOKEN_SIZE];
+		int count = p2p_probe_asking_tokens(tokens, P2P_PROBE_IN_FLIGHT);
+		int index;
+
+		/* (sealed with the key of the invite asked about: one of those
+		waiting) */
+		for (index = 0; index < count; index++)
+		{
+			unsigned char key[P2P_SHA256_SIZE];
+
+			derive(tokens[index], "seal", NULL, key);
+			message_size = p2p_open(key, payload, size, message);
+			if (message_size > 0)
+			{
+				p2p_probe_answer_heard(tokens[index], message, message_size);
+				break;
+			}
+		}
 	}
 	else if (joins_active() && !strcmp(topic, signalling.join_topic))
 	{
@@ -2047,6 +2102,49 @@ void p2p_signal_join(const unsigned char *host_hash, const unsigned char *token)
 	connection for the last goes, unless a session took it up) */
 	p2p_webrtc_new_request();
 	join_start(&signalling.joins[0], host_hash, token);
+}
+
+void p2p_signal_ping_probe(const unsigned char *host_hash, const unsigned char *token, const unsigned char *message,
+	int size)
+{
+	unsigned char host[P2P_IDENTIFIER_SIZE];
+	unsigned char key[P2P_SHA256_SIZE];
+	unsigned char sealed[P2P_PROBE_MAXIMUM_MESSAGE + P2P_SEAL_OVERHEAD];
+	char topic[TOPIC_SIZE];
+	int index;
+
+	if (size > P2P_PROBE_MAXIMUM_MESSAGE)
+		return;
+	p2p_identifier_from_hash(host_hash, host);
+	derive(token, "seal", NULL, key);
+	make_topic(token, "host", host, topic);
+	size = p2p_seal(key, message, size, sealed);
+	/* (as a request not proven: while the bucket keeps room for the rest) */
+	for (index = 0; index < signalling.broker_count; index++)
+	{
+		struct broker *broker = &signalling.brokers[index];
+
+		if (broker->state == _broker_ready && broker_may_publish(broker, UNPROVEN_RESERVE))
+			broker_publish(broker, topic, sealed, size);
+	}
+}
+
+void p2p_signal_ping_probe_topic(const unsigned char *reply)
+{
+	char topic[TOPIC_SIZE] = "";
+
+	if (reply)
+	{
+		char hex[2 * P2P_PROBE_ID_SIZE + 1];
+
+		p2p_hex(reply, P2P_PROBE_ID_SIZE, hex);
+		snprintf(topic, sizeof(topic), "hceu/3/%s", hex);
+	}
+	if (strcmp(topic, signalling.probe_topic))
+	{
+		strcpy(signalling.probe_topic, topic);
+		sync_all_topics();
+	}
 }
 
 void p2p_signal_stop_joining(void)
