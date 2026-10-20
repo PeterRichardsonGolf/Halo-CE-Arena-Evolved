@@ -53,6 +53,11 @@ void platform_log(char const *format, ...);
 boolean cache_file_tags_are_ce(void);
 /* port_config.c's */
 char const *config_string(char const *name);
+int config_boolean(const char *name);
+#ifdef HALO_GAME_BROWSER
+/* browser.c's: the dedicated server or a probe (nothing is drawn) */
+int browser_headless(void);
+#endif
 unsigned long config_changes(void);
 
 /* ---------- constants */
@@ -215,6 +220,14 @@ void ae_buttons_own_preload(
 {
 	long glyph;
 
+	/* (nothing is drawn: the dedicated server, a probe or the null renderer
+	has no textures to make, and no GL to make them with) */
+#ifdef HALO_GAME_BROWSER
+	if (browser_headless())
+		return;
+#endif
+	if (config_boolean("debug.null_renderer"))
+		return;
 	for (glyph = 0; glyph < glyph_count(); glyph++)
 	{
 		if (ae_button_glyphs[glyph].own && !strcmp(ae_button_glyphs[glyph].tag, tag))
