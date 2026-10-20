@@ -2367,6 +2367,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	ae_bots_objective_move(bot, bot_index, &tick); /* AE hook */
 	ae_bots_vehicle_move(bot, bot_index, &tick); /* AE hook */
 	bots_bot_unstick(bot, &tick);
+	ae_bots_falls_guard(bot, &tick); /* AE hook */
 
 	if (tick.moving)
 	{

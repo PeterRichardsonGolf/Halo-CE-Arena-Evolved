@@ -274,3 +274,8 @@ static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_poin
 static void ae_bots_team_reset(void);
 /* (ae_bots_travel.inc) whether a point is within radius of a teleporter pad (a spot a bot waits on must not be one) */
 static boolean ae_bots_travel_near_pad(real_point3d const *point, real radius);
+/* (ae_bots_falls.inc: bots.c's bots_bot_update after the unstick) the bot does not walk off a lethal edge, runs from its
+own grenade, holds a throw into a wall */
+struct bots_bot;
+struct bots_tick;
+static void ae_bots_falls_guard(struct bots_bot *bot, struct bots_tick *tick);

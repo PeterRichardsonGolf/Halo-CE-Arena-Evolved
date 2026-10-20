@@ -6,6 +6,9 @@ Arena Evolved: the bots' deaths by their own hand (ae_bots_falls_rules.h).
 
 #include <stddef.h>
 #include "ae_bots_falls_rules.h"
+#include "ae_bots_combat_rules.h"
+
+#define AE_BOTS_FALLS_PI 3.14159265f
 
 static char const *const ae_bots_death_cause_names[AE_BOTS_DEATH_CAUSES] =
 {
@@ -93,4 +96,72 @@ int ae_bots_death_cause(int known, char const *damage_name, int owner_self, int 
 			return AE_BOTS_DEATH_FALL;
 	}
 	return AE_BOTS_DEATH_OTHER;
+}
+
+float ae_bots_edge_lookahead(int level)
+{
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_RECRUIT: return 0.7f;
+	case AE_BOTS_LEVEL_EASY: return 0.8f;
+	case AE_BOTS_LEVEL_NORMAL: return 1.0f;
+	case AE_BOTS_LEVEL_HEROIC: return 1.2f;
+	default: return 1.4f;
+	}
+}
+
+float ae_bots_edge_attention(int level, int fighting)
+{
+	if (!fighting)
+		return 1.0f;
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_RECRUIT: return 0.8f;
+	case AE_BOTS_LEVEL_EASY: return 0.85f;
+	default: return 1.0f;
+	}
+}
+
+float ae_bots_edge_lethal_distance(int no_falling_damage, float maximum_distance, float full_damage_distance)
+{
+	float lethal = maximum_distance > 0.5f && maximum_distance < 100.0f ? maximum_distance : 15.0f;
+
+	if (!no_falling_damage && full_damage_distance > 0.5f && full_damage_distance < lethal)
+		lethal = full_damage_distance;
+	return lethal;
+}
+
+int ae_bots_edge_lethal(int floor_found, float drop, float lethal_distance)
+{
+	return !floor_found || drop >= lethal_distance * 0.9f;
+}
+
+float ae_bots_edge_turn(int attempt, int side)
+{
+	static float const eighths[AE_BOTS_EDGE_TURNS] = { 2.0f, -2.0f, 1.0f, -1.0f, 3.0f, -3.0f, 4.0f };
+
+	if (attempt < 0 || attempt >= AE_BOTS_EDGE_TURNS)
+		return 0.0f;
+	return eighths[attempt] * (side < 0 ? -1.0f : 1.0f) * AE_BOTS_FALLS_PI * 0.25f;
+}
+
+int ae_bots_grenade_flee(int level, int own, float distance)
+{
+	if (!own || level < AE_BOTS_LEVEL_EASY || level >= AE_BOTS_LEVELS)
+		return 0;
+	return distance < AE_BOTS_GRENADE_DANGER;
+}
+
+int ae_bots_explosive_fire_safe(int level, float wall_distance, float target_distance)
+{
+	if (level < AE_BOTS_LEVEL_NORMAL)
+		return 1;
+	return wall_distance >= AE_BOTS_EXPLOSIVE_BLAST && target_distance >= AE_BOTS_EXPLOSIVE_BLAST;
+}
+
+int ae_bots_grenade_throw_safe(float wall_distance, float target_distance)
+{
+	if (wall_distance < AE_BOTS_GRENADE_WALL || target_distance < AE_BOTS_GRENADE_BLAST)
+		return 0;
+	return !(wall_distance < AE_BOTS_GRENADE_SHORT && wall_distance < target_distance - AE_BOTS_GRENADE_SHORT_MARGIN);
 }

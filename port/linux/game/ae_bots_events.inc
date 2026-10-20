@@ -186,7 +186,7 @@ void ae_bots_events_begin(struct bots_bot *bot, long bot_index, struct bots_tick
 			ae_bots_event_line(bot_index, tick->now, "kill", state->last_target, state->last_dist, "");
 		for (; state->deaths < deaths; state->deaths++)
 		{
-			char words[192];
+			char words[320];
 
 			ae_bots_falls_death_words(bot, bot_index, tick->now, words, sizeof(words));
 			ae_bots_event_line(bot_index, tick->now, "death", state->last_target, state->last_dist, words);
