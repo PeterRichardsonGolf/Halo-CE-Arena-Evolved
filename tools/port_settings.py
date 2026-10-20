@@ -73,8 +73,10 @@ SCREENS = {
         "screen": "video_settings_screen",
         "header": ("header_profile_video_settings", f"{PE}/video_settings/header_profile_video_settings"),
         # the other screens' 30px step. each platform packs its own rows, so
-        # a row hidden on this machine does not leave a gap
-        "spacing": 30,
+        # a row hidden on this machine does not leave a gap. (Arena Evolved:
+        # 28, so that the desktop's ten rows with OpenCE build-244's EXTRA
+        # EFFECTS end 11 above the help, which 30 ran into)
+        "spacing": 28,
         "help_top": 364,
         "platform_places": True,
         # (rows in the place of the row before them: Window Size in
