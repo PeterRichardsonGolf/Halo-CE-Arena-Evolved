@@ -251,11 +251,23 @@ static void test_charge_jump_share(void)
 	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 0);
 	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_EASY, 1) == 0);
 	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_NORMAL, 1) == 6);
-	/* shared sightings: none below HEROIC, 10 units at HEROIC, anywhere at LEGENDARY */
+	/* shared sightings: none below HEROIC, 10 units at HEROIC, 20 at LEGENDARY, anywhere at DEMON */
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_RECRUIT) == 0.0f);
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_NORMAL) == 0.0f);
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_HEROIC) == 10.0f);
-	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_LEGENDARY) > 1000.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_LEGENDARY) == 20.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_DEMON) > 1000.0f);
+	/* DEMON (owner 10-20: the old LEGENDARY) fights as LEGENDARY does in every other rule */
+	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_DEMON) == ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_LEGENDARY));
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_DEMON, 0.5f) == ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_LEGENDARY, 0.5f));
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_DEMON, 1) == ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 1));
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_DEMON, 0.0f, 1) == ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.0f, 1));
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_DEMON, 0.5f) == ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.5f));
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_DEMON, 0) == ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0));
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_DEMON, 0) == ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0));
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_DEMON) == 1.0f);
+	CHECK(ae_bots_combat_charge(AE_BOTS_LEVEL_DEMON, 0.9f, 0.0f, 0.2f, 2.0f) ==
+		ae_bots_combat_charge(AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0.0f, 0.2f, 2.0f));
 }
 
 /* SPENT WEAPONS: a weapon of rounds is left to bots.c; the stock plasma pistol (a magazine, every maximum 0) and a

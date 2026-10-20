@@ -91,7 +91,8 @@ up to their build.
   you can start on your own.
 - **Bots** (0.3.0, Settings > Game Options > BOTS): up to 15 in a split
   screen game, up to 3 in a LAN game you host (never online); RECRUIT (for
-  new and young players), EASY, NORMAL, HEROIC or LEGENDARY. Each level
+  new and young players), EASY, NORMAL, HEROIC, LEGENDARY or DEMON (0.3.5: the
+  LEGENDARY of before, above a new LEGENDARY halfway from HEROIC). Each level
   fights like a person of that level, as Halo Infinite's bots do: how they
   strafe and jump, when to strike, when to throw a grenade, headshots once
   your shields are down, backing off when beaten, teammates told where you

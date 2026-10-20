@@ -489,7 +489,9 @@ SCREENS["video_settings/fov_viewmodels"] = {
 # (AE) Game Options' BOTS (OpenCE PR #367's bots.count, bots.skill and bots.teams: port/linux/game/bots.c): a
 # screen of its own, a category after the rows (as Video Setup's); Game Options' rows 24 px apart for its place
 BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
-BOT_SKILLS = [("RECRUIT", "recruit"), ("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary")]
+# (AE, owner 2026-10-20: DEMON, the LEGENDARY of before, above a new LEGENDARY: ae_bots_skill.inc)
+BOT_SKILLS = [("RECRUIT", "recruit"), ("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary"),
+              ("DEMON", "demon")]
 BOT_SKILL_PARTS = [("BOT SKILL", "same")] + BOT_SKILLS
 BOT_TEAMS = [("EVEN", "even"), ("AGAINST YOU", "against")]
 BOT_PLAYFIGHT = [("OFF", "false"), ("ON", "true")]
@@ -2073,8 +2075,8 @@ def _lobby() -> list:
 # (AE) a split screen game's lobby rows for its bots: the settings of Settings > Game Options > BOTS (bots.c)
 LOBBY_BOT_ROWS = [
     ("count", "BOTS:", "bots.count", ["OFF"] + [str(n) for n in range(1, 16)], [str(n) for n in range(16)]),
-    ("skill", "BOT SKILL:", "bots.skill", ["RECRUIT", "EASY", "NORMAL", "HEROIC", "LEGENDARY"],
-     ["recruit", "easy", "normal", "heroic", "legendary"]),
+    ("skill", "BOT SKILL:", "bots.skill", ["RECRUIT", "EASY", "NORMAL", "HEROIC", "LEGENDARY", "DEMON"],
+     ["recruit", "easy", "normal", "heroic", "legendary", "demon"]),
     ("playfight", "PLAYFIGHT:", "bots.playfight", ["OFF", "ON"], ["false", "true"]),
     ("teams", "BOT TEAMS:", "bots.teams", ["EVEN", "AGAINST YOU"], ["even", "against"]),
 ]

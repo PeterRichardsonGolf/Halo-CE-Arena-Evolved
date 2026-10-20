@@ -499,7 +499,7 @@
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/ae_bots_skill_row_label" type="text" controller="1" width="200" height="22" text="BOT SKILL:" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/lobby/ae_bots_skill_row_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="RECRUIT|EASY|NORMAL|HEROIC|LEGENDARY" setting="bots.skill" values="recruit|easy|normal|heroic|legendary" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/multiplayer_type_select/lobby/ae_bots_skill_row_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="RECRUIT|EASY|NORMAL|HEROIC|LEGENDARY|DEMON" setting="bots.skill" values="recruit|easy|normal|heroic|legendary|demon" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="created" run="port setting load"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/ae_bots_playfight_row" width="366" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/ae_option_bkds_lobby" color="#FF2896FF">

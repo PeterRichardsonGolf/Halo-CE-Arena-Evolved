@@ -512,6 +512,8 @@ port/linux/game/bots.c	#include "ae_bots_skill.inc" /* AE hook */
 port/linux/src/port_config.c	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.c	if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT; /* AE hook */
+# BOT SKILL DEMON (owner 2026-10-20): the LEGENDARY row of before, above a new LEGENDARY (ae_bots_skill.inc)
+port/linux/game/bots.c	if (!strcmp(name, "demon")) return AE_BOTS_SKILL_DEMON; /* AE hook */
 port/linux/game/bots.c	struct bots_skill_definition const *skill = ae_bots_skill_definition(ae_bots_shooting_skill(bots_globals.skill)); /* AE hook */
 port/linux/game/bots.c	tick.skill = ae_bots_tick_skill(bots_globals.skill); /* AE hook */
 port/linux/game/bots.c	ae_bots_skill_definition(bots_globals.skill)->name, bots_globals.searches, bots_globals.search_failures, /* AE hook */

@@ -48,7 +48,7 @@ def test_bots_screen():
         assert values == ["same"] + [value for _, value in rows["bots.skill"][2]], part
         assert rows[part][2][0][0] == "BOT SKILL"
         assert f'config_string("{part}")' in combat
-    assert '{ "recruit", "easy", "normal", "heroic", "legendary" }' in combat
+    assert '{ "recruit", "easy", "normal", "heroic", "legendary", "demon" }' in combat
     assert [value for _, value in rows["bots.teams"][2]] == ["even", "against"]
     assert '"against"' in bots
     text = (CE / BOTS).read_text()
@@ -331,24 +331,25 @@ def test_layout_bot_lines(tmp_path):
     assert closed and int(closed.group(1)) > 0, output[-3000:]
 
 
-def test_normal_sits_between_easy_and_the_upstream_row():
-    """NORMAL is AE's own row (owner 10-20: "a little" nerf): every aim number between EASY's and OpenCE's NORMAL,
-    the rest as OpenCE's; every bot path reads skills through ae_bots_skill_definition"""
+def test_the_ladder():
+    """The six levels (owner 10-20): NORMAL and HEROIC are OpenCE's rows, LEGENDARY is AE's halfway from HEROIC to
+    DEMON, DEMON is OpenCE's LEGENDARY row; every aim and sight number steps the right way level to level"""
     game = ROOT / "port" / "linux" / "game"
     table = (game / "bots.c").read_text()
     skill = (game / "ae_bots_skill.inc").read_text()
-    row = r'\{{ "{}", ([^}}]*) \}}'
 
     def numbers(text, name):
-        return [float(value.strip().rstrip("f")) for value in re.search(row.format(name), text)[1].split(",")]
+        return [float(value.strip().rstrip("f")) for value in re.search(r'\{ "%s", ([^}]*) \}' % name, text)[1].split(",")]
 
-    easy, upstream, ours = numbers(table, "easy"), numbers(table, "normal"), numbers(skill, "normal")
-    # reaction, aim error, settle seconds: slower than OpenCE's NORMAL, faster than EASY
-    for index in (0, 3, 4):
-        assert upstream[index] < ours[index] < easy[index], index
-    # lead: less than OpenCE's NORMAL, more than EASY
-    assert easy[7] < ours[7] < upstream[7]
-    for index in (1, 2, 5, 6, 8, 9, 10, 11):
-        assert ours[index] == upstream[index], index
-    assert "skill == _bots_skill_normal ? &ae_bots_normal" in skill
+    rows = [numbers(skill, "recruit"), numbers(table, "easy"), numbers(table, "normal"), numbers(table, "heroic"),
+            numbers(skill, "legendary"), numbers(skill, "demon")]
+    assert numbers(skill, "demon") == numbers(table, "legendary")
+    heroic, legendary, demon = rows[3], rows[4], rows[5]
+    for index in range(12):
+        assert abs(legendary[index] - (heroic[index] + demon[index]) / 2) <= 0.05 * max(1.0, demon[index]) + 0.5, index
+    for lower, higher in zip(rows, rows[1:]):
+        assert higher[0] < lower[0] and higher[3] < lower[3] and higher[4] < lower[4]  # reaction, aim error, settling
+        assert higher[1] > lower[1] and higher[2] > lower[2] and higher[7] >= lower[7]  # sight, view, lead
+    assert "skill == AE_BOTS_SKILL_DEMON ? &ae_bots_demon" in skill and "&ae_bots_normal" not in skill
+    assert 'if (!strcmp(name, "demon")) return AE_BOTS_SKILL_DEMON;' in table
     assert table.count("bots_skills[") == 2  # the table and the name lookup: nothing reads a row past the AE hook

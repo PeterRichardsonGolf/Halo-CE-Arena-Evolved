@@ -29,7 +29,7 @@ void platform_log(char const *format, ...);
 
 static int level_named(char const *name)
 {
-	static char const *const names[AE_BOTS_LEVELS] = { "recruit", "easy", "normal", "heroic", "legendary" };
+	static char const *const names[AE_BOTS_LEVELS] = { "recruit", "easy", "normal", "heroic", "legendary", "demon" };
 	int level;
 
 	for (level = 0; name && level < AE_BOTS_LEVELS; level++)

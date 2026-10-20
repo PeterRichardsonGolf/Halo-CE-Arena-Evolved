@@ -319,6 +319,7 @@ short bots_skill(void)
 	short skill;
 
 	if (!strcmp(name, "recruit")) return AE_BOTS_SKILL_RECRUIT; /* AE hook */
+	if (!strcmp(name, "demon")) return AE_BOTS_SKILL_DEMON; /* AE hook */
 	for (skill = 0; skill < NUMBER_OF_BOTS_SKILLS; skill++)
 	{
 		if (!strcmp(name, bots_skills[skill].name))

@@ -6,8 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-- Bots: NORMAL is a little easier: it reacts later (0.55 s, was 0.45), starts further off its target and settles
-  slower, and leads a moving target less. RECRUIT, EASY, HEROIC and LEGENDARY are unchanged.
+- Bots: a new top level, DEMON (BOT SKILL, SHOOTING SKILL and MOVEMENT SKILL): the LEGENDARY bots of before. LEGENDARY
+  now sits halfway between HEROIC and DEMON (it reacts in 0.24 s, sees 48 units over 150 degrees, and tells teammates
+  within 20 units what it sees). RECRUIT, EASY, NORMAL and HEROIC are unchanged.
 - Playing on mouse and keyboard, the HUD's prompts show your key instead of a controller button: "Hold [E] to swap
   for", "Press [E] to enter driver seat", and a map's own button prompts, with the first key bound to that action in
   Controls Setup (a mouse button as a mouse with that button lit, any other key by its name, "Num 7"); the first

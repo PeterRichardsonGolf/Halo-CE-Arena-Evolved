@@ -25,8 +25,8 @@ numbers (bots_random), as bots.c's rule is.
 
 /* the behaviour chosen keeps a bonus a while (no flip-flop between two close utilities): two seconds, three at
 HEROIC and LEGENDARY (Halo Infinite's bot tuning has the same timeouts by level, a smaller bonus at the top) */
-#define AE_BOTS_OBJECTIVE_HYSTERESIS_TICKS(skill) (((skill) == _bots_skill_heroic || (skill) == _bots_skill_legendary ? 3 : 2) * TICKS_PER_SECOND)
-#define AE_BOTS_OBJECTIVE_BONUS(skill) ((skill) == _bots_skill_heroic || (skill) == _bots_skill_legendary ? 0.10f : 0.12f)
+#define AE_BOTS_OBJECTIVE_HYSTERESIS_TICKS(skill) (((skill) == _bots_skill_heroic || (skill) == _bots_skill_legendary || (skill) == AE_BOTS_SKILL_DEMON ? 3 : 2) * TICKS_PER_SECOND)
+#define AE_BOTS_OBJECTIVE_BONUS(skill) ((skill) == _bots_skill_heroic || (skill) == _bots_skill_legendary || (skill) == AE_BOTS_SKILL_DEMON ? 0.10f : 0.12f)
 /* a guard stops at each spot it patrols to a moment (0.2 to 1 second, as Infinite's guards), looking about */
 #define AE_BOTS_OBJECTIVE_PAUSE_TICKS(bot) (TICKS_PER_SECOND / 5 + (long)(bots_random(bot) % (TICKS_PER_SECOND * 4 / 5 + 1)))
 /* the enemies a holder keeps away from: those its motion tracker shows (25 world units) */

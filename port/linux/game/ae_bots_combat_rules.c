@@ -199,6 +199,7 @@ float ae_bots_combat_retreat_threshold(int level)
 	case AE_BOTS_LEVEL_NORMAL:
 	case AE_BOTS_LEVEL_HEROIC:
 	case AE_BOTS_LEVEL_LEGENDARY:
+	case AE_BOTS_LEVEL_DEMON:
 		return 0.1f;
 	default:
 		return 0.0f;
@@ -265,7 +266,8 @@ long ae_bots_combat_vertical_delay(int level, float random)
 	{
 	case AE_BOTS_LEVEL_NORMAL: low = 3.0f; high = 5.0f; break;
 	case AE_BOTS_LEVEL_HEROIC: low = 1.0f; high = 4.0f; break;
-	case AE_BOTS_LEVEL_LEGENDARY: low = 1.0f; high = 3.0f; break;
+	case AE_BOTS_LEVEL_LEGENDARY:
+	case AE_BOTS_LEVEL_DEMON: low = 1.0f; high = 3.0f; break;
 	default: return 0;
 	}
 	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
@@ -318,7 +320,8 @@ long ae_bots_combat_initial_halt_ticks(int level, float random)
 	case AE_BOTS_LEVEL_RECRUIT:
 	case AE_BOTS_LEVEL_EASY:
 		return 0;
-	case AE_BOTS_LEVEL_LEGENDARY: low = 0.0f; high = 0.1f; break;
+	case AE_BOTS_LEVEL_LEGENDARY:
+	case AE_BOTS_LEVEL_DEMON: low = 0.0f; high = 0.1f; break;
 	default: low = 0.0f; high = 0.2f; break;
 	}
 	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
@@ -327,8 +330,9 @@ long ae_bots_combat_initial_halt_ticks(int level, float random)
 float ae_bots_combat_share_distance(int level)
 {
 	/* (Infinite: every level knows what teammates within 10 units know, Spartan its teammates' targets anywhere;
-	ours: RECRUIT .. NORMAL only what they see) */
-	return level >= AE_BOTS_LEVEL_LEGENDARY ? 1.0e9f : level == AE_BOTS_LEVEL_HEROIC ? 10.0f : 0.0f;
+	ours: RECRUIT .. NORMAL only what they see; LEGENDARY twice HEROIC's, DEMON anywhere) */
+	return level >= AE_BOTS_LEVEL_DEMON ? 1.0e9f : level == AE_BOTS_LEVEL_LEGENDARY ? 20.0f :
+		level == AE_BOTS_LEVEL_HEROIC ? 10.0f : 0.0f;
 }
 
 int ae_bots_combat_weapon_spent(int magazine_count, int rounds_loaded_maximum, int rounds_total_maximum,

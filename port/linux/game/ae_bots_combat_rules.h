@@ -20,7 +20,8 @@ Where Infinite's own per-level tuning (the owner's game files, read 2026-10-16; 
 repo) gave a number, the levels follow its ratios: RECRUIT ~ Recruit, EASY between Recruit and Marine, NORMAL ~
 Marine, HEROIC ~ ODST, LEGENDARY ~ Spartan.
 
-Levels: AE_BOTS_LEVEL_RECRUIT (0) .. AE_BOTS_LEVEL_LEGENDARY (4). Vitality: a fraction (1 full; shields above 1
+Levels: AE_BOTS_LEVEL_RECRUIT (0) .. AE_BOTS_LEVEL_DEMON (5). DEMON (owner 2026-10-20) is the LEGENDARY of before:
+it fights as LEGENDARY in every rule here but shared sightings (LEGENDARY 20 units, DEMON anywhere). Vitality: a fraction (1 full; shields above 1
 are an overshield). Ticks: 30 a second.
 */
 
@@ -34,6 +35,7 @@ enum
 	AE_BOTS_LEVEL_NORMAL,
 	AE_BOTS_LEVEL_HEROIC,
 	AE_BOTS_LEVEL_LEGENDARY,
+	AE_BOTS_LEVEL_DEMON,
 	AE_BOTS_LEVELS
 };
 
@@ -116,11 +118,11 @@ long ae_bots_combat_strafe_ticks(int level, float random);
 NORMAL 0.2 of the time for 1-2 s, HEROIC 0.1 for 0.1-0.2, LEGENDARY 0.05 for 0.05-0.1; RECRUIT and EASY never
 (a CE bot that stands aims far better: the kids' levels must not get harder) */
 long ae_bots_combat_halt_ticks(int level, float chance_random, float length_random);
-/* the halt that starts a fight: NORMAL and HEROIC up to 0.2 s, LEGENDARY 0.1; RECRUIT and EASY none */
+/* the halt that starts a fight: NORMAL and HEROIC up to 0.2 s, LEGENDARY and DEMON 0.1; RECRUIT and EASY none */
 long ae_bots_combat_initial_halt_ticks(int level, float random);
 
 /* SHARED SIGHTINGS (team games): how near a teammate a bot tells where it saw an enemy (0: it tells no one):
-HEROIC 10 units, LEGENDARY anywhere; RECRUIT .. NORMAL know only what they see */
+HEROIC 10 units, LEGENDARY 20, DEMON anywhere; RECRUIT .. NORMAL know only what they see */
 float ae_bots_combat_share_distance(int level);
 
 /* SPENT WEAPONS (bots.c's bots_weapon_empty, which swaps a bot off an empty weapon): a weapon of rounds is spent

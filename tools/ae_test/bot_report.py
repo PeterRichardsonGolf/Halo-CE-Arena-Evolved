@@ -28,7 +28,7 @@ WORD = re.compile(r"(\w+)=(\S+)")
 MELEE_WINDOW = 8        # ticks: a hit this soon after a blow, with no shot between, is the blow's
 MAX_TTK_TICKS = 60 * 30
 STUCK_RADIUS = 1.0      # world units
-SKILL_ORDER = ["recruit", "easy", "normal", "heroic", "legendary"]
+SKILL_ORDER = ["recruit", "easy", "normal", "heroic", "legendary", "demon"]
 
 
 def parse(path):
