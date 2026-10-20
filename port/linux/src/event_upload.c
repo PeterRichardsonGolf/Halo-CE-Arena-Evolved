@@ -33,6 +33,7 @@ is sent, a file each (<game>-<part>.json), for the operator.
 #include "p2p.h"
 #include "p2p_internal.h"
 #include "event_log.h"
+#include "ae_community.h" /* AE hook */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -190,7 +191,7 @@ static void *upload_thread(void *unused)
 	(void)unused;
 	for (;;)
 	{
-		if (config_string("network.browser_url")[0])
+		if (config_string("network.browser_url")[0] && ae_community_services_on()) /* AE hook */
 			send_one();
 		Sleep(THREAD_INTERVAL);
 	}
@@ -203,6 +204,7 @@ static void flush_at_exit(void)
 {
 	int index, count;
 
+	if (!ae_community_services_on()) { pthread_mutex_lock(&upload_lock); for (index = 0; index < upload.count; index++) free(upload.waiting[index].data); upload.count = 0; pthread_mutex_unlock(&upload_lock); return; } /* AE hook */
 	pthread_mutex_lock(&upload_lock);
 	count = upload.count;
 	for (index = 0; index < upload.count; index++)
@@ -293,7 +295,7 @@ void event_upload_moderation_drain(void)
 
 int event_upload_enabled(void)
 {
-	return config_boolean("network.report_events") && config_string("network.browser_url")[0];
+	return config_boolean("network.report_events") && config_string("network.browser_url")[0] && ae_community_services_on(); /* AE hook */
 }
 
 int event_upload_event_limit(void)

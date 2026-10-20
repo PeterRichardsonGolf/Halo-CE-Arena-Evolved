@@ -33,6 +33,7 @@ threads), so polls are short: one every few seconds, no long poll.
 #include "control_roles.h"
 #include "../src/server_roles.h"
 #include "../src/server_link.h"
+#include "ae_community.h" /* AE hook */
 
 #include "monocypher.h"
 
@@ -677,6 +678,7 @@ void server_link_begin(void)
 		platform_log("Delta Control: the link to halo.milenko.org is off (HALO_DEDICATED_LINK)");
 		return;
 	}
+	if (!ae_community_services_on()) { link_state.disabled = 1; pthread_mutex_unlock(&link_mutex); platform_log("Delta Control: the link to halo.milenko.org is off (network.community_services is not \"yes\")"); return; } /* AE hook */
 	if (!url || !url[0])
 		url = getenv("HALO_NET_BROWSER");
 	if (!url || !url[0])
@@ -718,6 +720,7 @@ int server_link_start(const char *server_name, const char *version, char *text, 
 	int ok = 0;
 
 	pthread_mutex_lock(&link_mutex);
+	if (!ae_community_services_on()) snprintf(text, (size_t)text_size, "the link to halo.milenko.org is off on this server (network.community_services is not \"yes\")"); else /* AE hook */
 	if (link_state.disabled || !link_state.url[0])
 		snprintf(text, (size_t)text_size, "the link to halo.milenko.org is off on this server (HALO_DEDICATED_LINK)");
 	else if (link_state.state == LINK_LINKED)

@@ -83,6 +83,9 @@ UNITS = {
     # sanitizers, as it reads the system's files)
     "ae_lan_hint_test.c": ([SRC / "ae_lan_hint.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                     "-fno-sanitize-recover=all"], []),
+    # (the community services' opt-in: the setting's states, who is asked, what each answer writes, the input guard)
+    "ae_community_rules_test.c": ([SRC / "ae_community_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
+                                                                   "-fno-sanitize-recover=all"], []),
     # (the zoom action's hold mode: the state machine)
     "ae_zoom_test.c": ([UI / "ae_zoom.c"], [], []),
     # (the 2026-10-16 sweep: the lobby's SHUFFLE deal, the map list's WARM-UP group)

@@ -185,6 +185,7 @@ enum
 #include "ae_input.h" /* AE hook */
 #include "ae_map_pictures.h" /* AE hook */
 #include "ae_split_screen.h" /* AE hook */
+#include "ae_community_screen.h" /* AE hook */
 #include "ae_map_folders.h" /* AE hook */
 #ifdef HALO_64BIT
 /* a widget: the shared definition, laid out for 64-bit pointers */
@@ -7319,6 +7320,8 @@ boolean pc_menu_event_function_invoke(
 			return ae_team_shuffle();
 		if (!strncmp(name, "ae split ", 9)) /* AE hook */
 			return ae_split_screen_event(name, widget, controller, widget_deleted);
+		if (!strncmp(name, "ae community ", 13)) /* AE hook */
+			return ae_community_menu_event(name, widget, widget_deleted);
 		if (!strcmp(name, "main menu quit game"))
 		{
 			platform_request_quit();
@@ -7705,6 +7708,8 @@ void pc_menu_game_data_function_invoke(
 		ae_settings_profile_list(widget);
 	if (!strcmp(name, "ae split join update")) /* AE hook */
 		ae_split_screen_join_update(widget);
+	if (!strcmp(name, "ae community update")) /* AE hook */
+		ae_community_screen_update(widget);
 	/* (a text field whose screen has gone: let go of) */
 	if (text_field.row && system_milliseconds() - text_field_shown_time > 500)
 		text_field_end(FALSE);
