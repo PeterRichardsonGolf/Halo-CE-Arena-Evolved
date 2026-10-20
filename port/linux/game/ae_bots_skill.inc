@@ -33,15 +33,24 @@ static struct bots_skill_definition const ae_bots_recruit =
 (a nerf to 0.55 s / 8.5 degrees made it "too easy"); HEROIC stays ("good", "a sweaty casual matchmaking game");
 LEGENDARY is new, halfway from HEROIC to DEMON in every number; DEMON is OpenCE's LEGENDARY row ("the greasiest,
 sweaty demons"). */
+/* EASY and NORMAL closer (owner 2026-10-20 morning: "the difference between easy and normal is still quite large"; the
+soak's bot-vs-bot kills a bot-minute RECRUIT 0.89, EASY 0.96, NORMAL 1.68; answer "both, a little each"): EASY a step
+up from OpenCE's row (about a third of the way to NORMAL), NORMAL a step down (a third of the 0.55 s / 8.5 degree nerf
+the owner found "too easy"). */
+static struct bots_skill_definition const ae_bots_easy =
+	{ "easy", 0.66f, 25.0f, 106.0f, 10.5f, 1.25f, 9.5f, 2.1f, 0.4f, 0.06f, 0.00f, 7, 13 };
+static struct bots_skill_definition const ae_bots_normal =
+	{ "normal", 0.49f, 31.0f, 118.0f, 7.5f, 0.95f, 12.5f, 1.85f, 0.65f, 0.09f, 0.05f, 9, 10 };
 static struct bots_skill_definition const ae_bots_legendary =
 	{ "legendary", 0.24f, 48.0f, 150.0f, 3.1f, 0.48f, 25.0f, 1.4f, 0.9f, 0.19f, 0.20f, 14, 5 };
 static struct bots_skill_definition const ae_bots_demon =
 	{ "demon", 0.18f, 55.0f, 160.0f, 2.2f, 0.35f, 30.0f, 1.25f, 1.0f, 0.22f, 0.25f, 16, 4 };
-/* the skill's definition: the table's, or RECRUIT's, LEGENDARY's or DEMON's */
+/* the skill's definition: the table's (HEROIC), or RECRUIT's, EASY's, NORMAL's, LEGENDARY's or DEMON's */
 static struct bots_skill_definition const *ae_bots_skill_definition(short skill)
 {
 	return skill == AE_BOTS_SKILL_RECRUIT ? &ae_bots_recruit : skill == AE_BOTS_SKILL_DEMON ? &ae_bots_demon :
-		skill == _bots_skill_legendary ? &ae_bots_legendary : &bots_skills[skill];
+		skill == _bots_skill_legendary ? &ae_bots_legendary : skill == _bots_skill_easy ? &ae_bots_easy :
+		skill == _bots_skill_normal ? &ae_bots_normal : &bots_skills[skill];
 }
 
 /* the chance a roam goes towards an enemy (the place nearest a living one)
