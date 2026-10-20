@@ -4,7 +4,7 @@ ARENA_GAMETYPE_NAMES.C
 port: Halo CE: Arena Evolved, the seeded gametypes' names: each one's stored
 name (game_variant's, at most 11 characters: what every machine, listing and
 saved file has) and the longer display name AE machines show in their lists,
-lobby and scoreboard, its set (AE, AE BR, AE COMP, Halo 1: NHE's, TRAINING), its
+lobby and scoreboard, its set (AE, AE BR, AE COMP, OCTAGON, Halo 1: NHE's, TRAINING), its
 place in the set, and a description for a panel.
 
 The table holds every gametype of the final sets, seeded or not yet (one not
@@ -195,6 +195,21 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns, 2 frags, no motion tracker or "
 		"vehicles, the ball in line of sight only, lethal ball melee." },
 
+	/* OCTAGON (revision 16; owner, 2026-10-20): 1v1 practice drills (Octagon), free for all slayer on AE's casual
+	rules with infinite ammo, bottomless clips, no grenades and instant respawns */
+	{ "AE OCT BR", "FFA AE OCTAGON BR", _arena_gametype_set_octagon, game_engine_slayer, FALSE, FALSE,
+		"1v1 drill: the battle rifle alone, infinite ammo and no reloads, no grenades, instant respawns; AE's rules "
+		"(the battle rifle pack needed)." },
+	{ "AE OCT BRSN", "FFA AE OCTAGON BR SNIPE", _arena_gametype_set_octagon, game_engine_slayer, FALSE, FALSE,
+		"1v1 drill: battle rifle and sniper rifle, infinite ammo and no reloads, no grenades, instant respawns; AE's "
+		"rules (the battle rifle pack needed)." },
+	{ "AE OCT MAG", "FFA AE OCTAGON MAG", _arena_gametype_set_octagon, game_engine_slayer, FALSE, FALSE,
+		"1v1 drill: the magnum alone, infinite ammo and no reloads, no grenades, instant respawns; AE's rules, 25 kills, "
+		"15 minutes." },
+	{ "AE OCT MGSN", "FFA AE OCTAGON MAG SNIPE", _arena_gametype_set_octagon, game_engine_slayer, FALSE, FALSE,
+		"1v1 drill: magnum and sniper rifle, infinite ammo and no reloads, no grenades, instant respawns; AE's rules, "
+		"25 kills, 15 minutes." },
+
 	/* the casual set's values with Halo 1: NHE's own modes */
 	{ "NHE TS VAN", "TEAM NHE VANILLA", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,
 		"Team slayer on AE's rules with power item timers and waypoints. On Halo 1: NHE's maps, NHE's VANILLA mode "
@@ -294,7 +309,7 @@ static struct arena_gametype_alias const arena_gametype_aliases[] =
 
 static char const *const arena_gametype_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] =
 {
-	"", "AE", "AE BR", "AE COMP", "NHE", "TRAINING"
+	"", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING"
 };
 
 /* ---------- private code */
@@ -389,7 +404,7 @@ short arena_gametype_list_block(
 	struct arena_gametype_info const *info)
 {
 	if (!known)
-		return 9;
+		return 10;
 	switch (info->set)
 	{
 		case _arena_gametype_set_ae:
@@ -397,10 +412,12 @@ short arena_gametype_list_block(
 		case _arena_gametype_set_ae_comp:
 			/* (FFA 1..3 by set, TEAM 4..6) */
 			return (short)(info->set + (info->team ? 3 : 0));
-		case _arena_gametype_set_nhe:
+		case _arena_gametype_set_octagon:
 			return 7;
-		default:
+		case _arena_gametype_set_nhe:
 			return 8;
+		default:
+			return 9;
 	}
 }
 
@@ -414,7 +431,7 @@ boolean arena_gametype_has_ae_rules(
 		return FALSE;
 	set = arena_gametype_names[name_index].set;
 	return set == _arena_gametype_set_ae || set == _arena_gametype_set_ae_br || set == _arena_gametype_set_ae_comp ||
-		set == _arena_gametype_set_training;
+		set == _arena_gametype_set_octagon || set == _arena_gametype_set_training;
 }
 
 boolean arena_gametype_info(

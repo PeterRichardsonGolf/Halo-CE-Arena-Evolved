@@ -23,6 +23,7 @@ enum arena_gametype_set
 	_arena_gametype_set_ae,         /* AE casual (unmarked in names) */
 	_arena_gametype_set_ae_br,      /* AE BR: AE casual's and AE COMP's with the battle rifle start (revision 11) */
 	_arena_gametype_set_ae_comp,
+	_arena_gametype_set_octagon,    /* OCTAGON: 1v1 practice drills, infinite ammo (revision 16) */
 	_arena_gametype_set_nhe,
 	_arena_gametype_set_training,   /* AE TRAINING / PRACTICE: outside the sets */
 	NUMBER_OF_ARENA_GAMETYPE_SETS
@@ -59,19 +60,20 @@ void arena_gametype_display_name(
 	wchar_t *display_name,
 	short size);
 /* whether stored_name is one of the table's gametypes on AE's rules (the
-AE, AE BR, AE COMP and TRAINING sets; not an old name, not Halo 1: NHE's set):
+AE, AE BR, AE COMP, OCTAGON and TRAINING sets; not an old name, not Halo 1: NHE's set):
 the one marker of AE's gametypes (game_engine.c's weapon set with a custom
 loadout); a player's own gametype only by taking a seed's name */
 /* the lists' block of a gametype (owner 2026-10-15): AE's, AE BR's and AE
 COMP's free for all gametypes (each set in its own order), then their team
-gametypes, then Halo 1: NHE's, TRAINING and the player's own; the sort's key */
+gametypes, then OCTAGON's (revision 16), Halo 1: NHE's, TRAINING and the
+player's own; the sort's key */
 short arena_gametype_list_block(
 	boolean known,
 	struct arena_gametype_info const *info);
 
 boolean arena_gametype_has_ae_rules(
 	wchar_t const *stored_name);
-/* "AE", "AE BR", "AE COMP", "NHE", "TRAINING"; "" for none */
+/* "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING"; "" for none */
 char const *arena_gametype_set_name(
 	short set);
 /* the table's gametypes (not the aliases), in its order */

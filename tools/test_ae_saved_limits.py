@@ -102,7 +102,7 @@ def test_seeds_leave_room():
     """a seeded root (the seeds, the built-in entries, a few profiles and own gametypes) stays under the warning, and
     every gametype the memory unit can list fits the lists"""
     count = len(seeds())
-    assert count == 86
+    assert count == 90
     assert count + BUILT_IN + ROOM_PROFILES + ROOM_OWN <= maximum() - 10
     # (one profile: the start's own state is under the warning)
     assert count + BUILT_IN + 1 < maximum() - 10

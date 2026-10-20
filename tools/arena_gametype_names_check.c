@@ -13,7 +13,7 @@ tables):
 - every alias's successor in the table; an alias's info its successor's set,
   order, team and engine, its own stored name as display_name, no
   description, not special;
-- the sets: AE 30, AE COMP 5, NHE 25, TRAINING 1 (61), each set's orders
+- the sets: AE 30, AE BR 25, AE COMP 5, OCTAGON 4, NHE 25, TRAINING 1 (90), each set's orders
   0..n-1 in the table's order, NHE's own set after VANILLA and POWERUPS
   (TS 50 first, CTF WIZARD last), and the set names;
 - lookups letters' case aside; an unknown name FALSE, displayed as it is;
@@ -99,8 +99,9 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 25, 5, 25, 1 };
-	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] = { "", "AE", "AE BR", "AE COMP", "NHE", "TRAINING" };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 25, 5, 4, 25, 1 };
+	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] =
+		{ "", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
 	short index;
 	short other;
@@ -109,8 +110,8 @@ int main(void)
 	wchar_t display[40];
 
 	/* the table */
-	if (arena_gametype_catalog_count() != 86)
-		fail("catalog count is not 86", "");
+	if (arena_gametype_catalog_count() != 90)
+		fail("catalog count is not 90", "");
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -253,7 +254,24 @@ int main(void)
 	if (!(_arena_gametype_set_ae < _arena_gametype_set_ae_br && _arena_gametype_set_ae_br < _arena_gametype_set_ae_comp))
 		fail("AE BR between AE and AE COMP", "");
 
-	/* the lists' blocks: FFA of AE, AE BR, AE COMP, then their TEAM rows, then NHE, TRAINING, unknown */
+	/* the OCTAGON set (revision 16): free for all slayer drills on AE's rules, each "AE OCT ..." and shown
+	"FFA AE OCTAGON ..." */
+	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
+	{
+		struct arena_gametype_name const *entry = &arena_gametype_names[index];
+
+		if ((entry->set == _arena_gametype_set_octagon) != !strncmp(entry->stored_name, "AE OCT ", 7))
+			fail("OCTAGON set and stored name", entry->stored_name);
+		if (entry->set != _arena_gametype_set_octagon)
+			continue;
+		if (strncmp(entry->display_name, "FFA AE OCTAGON ", 15) || entry->team || entry->special ||
+			entry->game_engine != game_engine_slayer)
+		{
+			fail("OCTAGON: free for all slayer, shown FFA AE OCTAGON", entry->stored_name);
+		}
+	}
+
+	/* the lists' blocks: FFA of AE, AE BR, AE COMP, then their TEAM rows, then OCTAGON, NHE, TRAINING, unknown */
 	{
 
 		for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
@@ -266,12 +284,14 @@ int main(void)
 			block = arena_gametype_list_block(TRUE, &own);
 			if (own.set <= _arena_gametype_set_ae_comp && (block != (own.team ? own.set + 3 : own.set)))
 				fail("list block of an AE set", arena_gametype_names[index].stored_name);
-			if (own.set == _arena_gametype_set_nhe && block != 7)
+			if (own.set == _arena_gametype_set_octagon && block != 7)
+				fail("list block of OCTAGON", arena_gametype_names[index].stored_name);
+			if (own.set == _arena_gametype_set_nhe && block != 8)
 				fail("list block of NHE", arena_gametype_names[index].stored_name);
-			if (own.set == _arena_gametype_set_training && block != 8)
+			if (own.set == _arena_gametype_set_training && block != 9)
 				fail("list block of TRAINING", arena_gametype_names[index].stored_name);
 		}
-		if (arena_gametype_list_block(FALSE, NULL) != 9)
+		if (arena_gametype_list_block(FALSE, NULL) != 10)
 			fail("list block of an unknown name", "");
 	}
 

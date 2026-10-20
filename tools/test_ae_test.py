@@ -15,6 +15,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent / "ae_test"
 sys.path.insert(0, str(HERE))
+# the seeds revision 16 added (the OCTAGON drills): not in the golden roots before it
+OCTAGON_SEEDS = ("AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN")
 # (OpenCE's asset-free tests, tools/harness, are a package of the same name,
 # imported by it too: ours while these tools are imported, then the name is
 # theirs again, whichever tests one pytest run collects first)
@@ -502,7 +504,7 @@ class SeedCompare(unittest.TestCase):
         import re
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
         table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
-        seeds = re.findall(r'^\t\{ "([^"]+)"', table, re.M)
+        seeds = [n for n in re.findall(r'^\t\{ "([^"]+)"', table, re.M) if n not in OCTAGON_SEEDS]
         golden = json.loads((HERE / "golden_seeds_rev11.json").read_text())
         self.assertEqual(sorted(golden), sorted(seeds))
         self.assertEqual(len(seeds), 86)
@@ -522,7 +524,8 @@ class SeedCompare(unittest.TestCase):
         import re
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
         table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
-        rows = re.findall(r'^\t\{ "([^"]+)",(.*?)(?=^\t\{ "|^\};)', table, re.M | re.S)
+        rows = [r for r in re.findall(r'^\t\{ "([^"]+)",(.*?)(?=^\t\{ "|^\};)', table, re.M | re.S)
+                if r[0] not in OCTAGON_SEEDS]
         enemies = sorted(name for name, body in rows if "ARENA_RADAR_ENEMIES" in body)
         self.assertEqual(len(rows), 86)
         self.assertEqual(len(enemies), 19)
@@ -577,6 +580,8 @@ class SeedCompare(unittest.TestCase):
         import re
         seeds, steady, source = self._slayer_seeds()
         self.assertGreaterEqual(int(re.search(r"ARENA_GAMETYPES_REVISION = (\d+),", source)[1]), 14)
+        # (revision 16's OCTAGON drills, slayers seeded without both from the start: test_octagon_drills)
+        seeds = {n: v for n, v in seeds.items() if n not in OCTAGON_SEEDS}
         self.assertEqual(len(seeds), 38)
         bodies = {}
         for name in re.findall(r"^static void (arena_gametype_\w+)\(\n\tstruct game_variant \*variant,\n\tstruct "
@@ -627,6 +632,49 @@ class SeedCompare(unittest.TestCase):
         for name in updated:
             self.assertEqual((golden_rev13[name]["slayer"]["no_death_bonus"],
                               golden_rev13[name]["slayer"]["no_kill_penalty"]), (0, 0), name)
+
+    def test_octagon_drills(self):
+        """revision 16 (owner, 2026-10-20): the OCTAGON set's four 1v1 drills, added seeds (no migration): AE FFA
+        SLAY's row but instant respawns, no grenades, INFINITE AMMO and BOTTOMLESS CLIP (arena_gametype_octagon_drill:
+        no speed changes, then the pack_loadout bits 5-6), each its start. golden_seeds_rev16.json is a fresh revision
+        16 root: revision 15's 86 files as they were, in their folders, and the four drills; seed_rules expects them"""
+        import re
+        import seed_rules
+        source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text(encoding="latin-1")
+        self.assertEqual(int(re.search(r"ARENA_GAMETYPES_REVISION = (\d+),", source)[1]) >= 16, True)
+        migrations = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
+        self.assertNotIn(".revision = 16,", migrations)
+        table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
+        rows = dict(re.findall(r'^\t\{ "([^"]+)",(.*?)(?=^\t\{ "|^\};)', table, re.M | re.S))
+        for name in OCTAGON_SEEDS:
+            body = rows[name]
+            self.assertIn("build_game_variant_slayer", body, name)
+            self.assertIn(".starting_frags = STARTING_GRENADES_NONE", body, name)
+            self.assertIn(".adjust = arena_gametype_octagon_drill", body, name)
+            self.assertIn("ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON", body, name)
+        drill = source[source.index("static void arena_gametype_octagon_drill(\n\tstruct game_variant *variant,\n"
+                                    "\tstruct game_variant_options *options)\n{"):]
+        drill = drill[:drill.index("\n}\n")]
+        self.assertIn("arena_gametype_no_speed_changes(variant, options);", drill)
+        self.assertIn("ae_weapon_ammo_byte_set(variant->universal_variant.pack_loadout, 1, 1)", drill)
+        golden = json.loads((HERE / "golden_seeds_rev16.json").read_text())
+        golden_rev15 = json.loads((HERE / "golden_seeds_rev15.json").read_text())
+        self.assertEqual(sorted(golden), sorted(list(golden_rev15) + list(OCTAGON_SEEDS)))
+        for name, value in golden_rev15.items():
+            self.assertEqual(golden[name], value, name)
+        self.assertEqual(len({golden[n]["folder"] for n in golden}), len(golden))
+        for name in OCTAGON_SEEDS:
+            self.assertEqual((golden[name]["slayer"]["no_death_bonus"], golden[name]["slayer"]["no_kill_penalty"]),
+                             (1, 1), name)
+            want, spawn, frags = seed_rules.ROWS[name]
+            self.assertEqual((want["respawn"], want["starting frags"], want["infinite ammo"], want["bottomless clip"],
+                              frags), ("0 ticks (0 s)", "none", "on", "on", 0), name)
+        self.assertEqual([seed_rules.ROWS[n][1] for n in OCTAGON_SEEDS],
+                         ["battle_rifle", "battle_rifle + sniper rifle", "pistol", "pistol + sniper rifle"])
+        # (every other seed expects both off)
+        for name, (want, _, _) in seed_rules.ROWS.items():
+            if name not in OCTAGON_SEEDS:
+                self.assertEqual((want["infinite ammo"], want["bottomless clip"]), ("off", "off"), name)
 
 
 class Debug(unittest.TestCase):
@@ -857,9 +905,9 @@ class Handshake(unittest.TestCase):
 
 class SeedRules(unittest.TestCase):
     def test_table_and_parse(self):
-        """seed_rules.py: the 86 seeds, and a run's rules lines read back field by field"""
+        """seed_rules.py: the 90 seeds, and a run's rules lines read back field by field"""
         import seed_rules
-        self.assertEqual(len(seed_rules.ROWS), 86)
+        self.assertEqual(len(seed_rules.ROWS), 90)
         for name in seed_rules.ROWS:
             self.assertLessEqual(len(name), 11, name)
         text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
@@ -887,9 +935,11 @@ class SeedRules(unittest.TestCase):
                           f["battle rifle on map"]), ("stock", "battle rifle (slot 1)", "pack", "stock", "on"))
         for name, (want, spawn, frags) in seed_rules.ROWS.items():
             br = name.startswith("AE BR ")
+            pack = br or name in ("AE OCT BR", "AE OCT BRSN")
             self.assertEqual((want["weapon pack"], want["pack loadout primary"], want["pack loadout secondary"],
                               want["battle rifle on map"]),
-                             ("battle rifle (slot 1)" if br else "none", "pack" if br else "stock", "stock", "off"), name)
+                             ("battle rifle (slot 1)" if pack else "none", "pack" if pack else "stock", "stock", "off"),
+                             name)
             if br:
                 twin_want, _, twin_frags = seed_rules.ROWS[seed_rules.BR_TWINS[name]]
                 self.assertEqual((want["loadout"], spawn, frags), ("assault rifle + pistol", "battle_rifle + pistol",
@@ -905,10 +955,10 @@ class SeedRules(unittest.TestCase):
         self.assertEqual(len(enemies), 19)
         for name in enemies:
             self.assertIn("(teams)", seed_rules.ROWS[name][0]["engine"], name)
-        # (revision 14: every slayer seed without the death bonus and the kill penalty, 38 of them; kill in order only
-        # in the Phantoms ones)
+        # (revision 14: every slayer seed without the death bonus and the kill penalty, 38 of them, 42 with revision
+        # 16's OCTAGON drills; kill in order only in the Phantoms ones)
         slayers = {name: want for name, (want, _, _) in seed_rules.ROWS.items() if want["engine"].startswith("slayer")}
-        self.assertEqual(len(slayers), 38)
+        self.assertEqual(len(slayers), 42)
         for name, want in slayers.items():
             self.assertEqual((want["death bonus"], want["kill penalty"]), ("off", "off"), name)
         self.assertEqual(sorted(n for n, want in slayers.items() if want["kill in order"] == "on"),

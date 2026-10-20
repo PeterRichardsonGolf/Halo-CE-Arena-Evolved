@@ -24,8 +24,8 @@ What it changes (--set, repeatable, and --adjust, repeatable):
                   (no_respawn_growth, no_odd_man_out): the same as its --set lines.
 
 Which gametypes (--gametypes, repeatable; "&" intersects): a stored name ("AE FFA SNPR"), a set of
-arena_gametype_names.c ("AE", "AE BR", "AE COMP", "NHE", "TRAINING"), an engine ("slayer", "ctf", "oddball",
-"king", "race"), "team" or "ffa". An AE BR gametype and its AE twin always change together (the self-check
+arena_gametype_names.c ("AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING"), an engine ("slayer", "ctf",
+"oddball", "king", "race"), "team" or "ffa". An AE BR gametype and its AE twin always change together (the self-check
 holds them equal but for the battle rifle start): a missing twin is added, and said so.
 
 What it does (without --dry-run, on the build box: --box HOST, default the ae_test config's box.ssh; tree
@@ -83,7 +83,7 @@ TOOL = "tools/ae_gametype_change.py"
 
 WIDTH = 120
 TICKS_PER_SECOND = 30
-SETS = {"AE": "ae", "AE BR": "ae_br", "AE COMP": "ae_comp", "NHE": "nhe", "TRAINING": "training"}
+SETS = {"AE": "ae", "AE BR": "ae_br", "AE COMP": "ae_comp", "OCTAGON": "octagon", "NHE": "nhe", "TRAINING": "training"}
 ENGINES = ("ctf", "slayer", "oddball", "king", "race")
 # --adjust presets: their --set lines
 PRESETS = {

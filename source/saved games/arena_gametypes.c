@@ -26,7 +26,7 @@ new one, never half of one.
 
 The gametype lists show the custom gametypes in order
 (arena_gametypes_sort): by block (arena_gametype_list_block: the free for all gametypes of AE, AE BR
-and AE COMP, then their team ones, then Halo 1: NHE's, TRAINING:
+and AE COMP, then their team ones, then OCTAGON's, Halo 1: NHE's, TRAINING:
 arena_gametype_names.c), each in its table's order, then the player's own.
 */
 
@@ -45,6 +45,7 @@ arena_gametype_names.c), each in its table's order, then the player's own.
 #include "ae_hit_feedback_rules.h" /* port: port/linux/game/ae_hit_feedback_rules.c */
 #include "ae_juggernaut_rules.h" /* port: port/linux/game/ae_juggernaut_rules.c */
 #include "ae_saved_limits.h" /* port: port/linux/game/ae_saved_limits.h */
+#include "ae_weapon_rules.h" /* port: port/linux/game/ae_weapon_rules.h (INFINITE AMMO, BOTTOMLESS CLIP) */
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -70,8 +71,8 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
-	past it: revision 11 only added seeds) */
-	ARENA_GAMETYPES_REVISION = 15,
+	past it: revisions 11 and 16 only added seeds) */
+	ARENA_GAMETYPES_REVISION = 16,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -312,6 +313,13 @@ build, a Custom Edition map; game_engine.h's pack_loadout) */
 	.pack_loadout = (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary)), \
 	.starting_frags = ARENA_AE_STARTING_FRAGS
 
+/* the OCTAGON drills' battle rifle (revision 16): ARENA_BR_START's pack in the PRIMARY slot (its own weapon an
+assault rifle where the pack is not); the secondary and the grenades each row's own */
+#define ARENA_OCTAGON_BR_PRIMARY \
+	.loadout_primary = ARENA_SET(_loadout_weapon_assault_rifle), \
+	.weapon_pack = _weapon_pack_battle_rifle, \
+	.pack_loadout = (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary))
+
 /* the objectives indicator (universal_variant.goal_radar, game_engine.c's
 enum goal_radar) and the weapon sets (enum game_engine_weapons), as
 ARENA_SET values */
@@ -420,6 +428,9 @@ static void arena_gametype_no_speed_changes(
 	struct game_variant *variant,
 	struct game_variant_options *options);
 static void arena_gametype_no_speed_changes_and_no_respawn_growth(
+	struct game_variant *variant,
+	struct game_variant_options *options);
+static void arena_gametype_octagon_drill(
 	struct game_variant *variant,
 	struct game_variant_options *options);
 
@@ -675,6 +686,28 @@ static struct arena_gametype const arena_gametypes[] =
 	{ "AE BR C OB", build_game_variant_team_oddball, ARENA_COMP_OBJECTIVE_FLAGS,
 		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START },
+	/* OCTAGON (revision 16; owner, 2026-10-20): 1v1 practice drills, played on Octagon. AE FFA SLAY's row (AE's
+	casual rules: 25 kills, 15 minutes, the motion sensor, TIMERS HUD + WAYPOINTS, DROP SECONDARY ALWAYS, COMBAT
+	FEEDBACK ARENA EVOLVED, no death bonus or kill penalty) but instant respawns, no grenades at all
+	(STARTING_GRENADES_NONE, as AE SWAT), INFINITE AMMO and BOTTOMLESS CLIP (arena_gametype_octagon_drill), and
+	each its start: the battle rifle (the pack's, as the AE BR set's) or the magnum alone, or with the sniper rifle
+	second */
+	{ "AE OCT BR", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
+	{ "AE OCT BRSN", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
+	{ "AE OCT MAG", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+		.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
+	{ "AE OCT MGSN", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
+		.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle),
+		.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
 	/* the casual set's values with Halo 1: NHE's own modes (revision 6),
 	under the NHE set's names since revision 9; COMBAT FEEDBACK stays HALO CE */
 	{ "NHE TS VAN", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
@@ -791,7 +824,8 @@ rifle second. Revision 14 takes the death bonus and the kill penalty out of
 AE's slayer seeds. Revision 15 (tools/ae_gametype_change.py): no respawn time
 growth in AE FFA SNPR: the stock Snipers' adds 5 s to a player's respawn per
 death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE
-SNIPERS included. A row whose old and new names are the same is a value update
+SNIPERS included. Revision 16 has no migration (it only added the OCTAGON
+set's four drills). A row whose old and new names are the same is a value update
 (in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
@@ -4356,6 +4390,19 @@ static void arena_gametype_no_speed_changes_and_no_respawn_growth(
 {
 	arena_gametype_no_speed_changes(variant, options);
 	variant->universal_variant.respawn_time_growth = 0;
+
+	return;
+}
+
+/* revision 16 (owner, 2026-10-20): the OCTAGON drills: arena_gametype_no_speed_changes, then INFINITE AMMO and
+BOTTOMLESS CLIP (the universal variant's pack_loadout bits 5-6, ae_weapon_rules.h; the weapon pack's own bits
+kept). Shipped: never edited (a change is a new function) */
+static void arena_gametype_octagon_drill(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	arena_gametype_no_speed_changes(variant, options);
+	variant->universal_variant.pack_loadout = ae_weapon_ammo_byte_set(variant->universal_variant.pack_loadout, 1, 1);
 
 	return;
 }

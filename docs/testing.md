@@ -73,7 +73,8 @@ a zoom-and-fire game that ends its map (its `let go` line must count no failed r
 `could not be read from the pack`), and network_test head and body hits (`debug.network_test_damage`'s `seconds:scaleh` hits the head, its collision
 model's head material). `debug.weapon_log` / `HALO_WEAPON_LOG=1` logs each round (`ae burst rifle: tick N, round
 r of 3 fired, L loaded, R in reserve, recovery T`), each burst's distance from the last and the zoomed view's
-angle, the firing effect of each round and the removed kick; `debug.weapon_hit_log` / `HALO_WEAPON_HIT_LOG=1` logs
+angle, the firing effect of each round and the removed kick, and in a gametype with INFINITE AMMO or BOTTOMLESS CLIP
+(the OCTAGON drills) each weapon's shot (`ae ammo: tick N, <weapon> fired, L loaded, R in reserve`); `debug.weapon_hit_log` / `HALO_WEAPON_HIT_LOG=1` logs
 each of this machine's players' rifle rounds that hits an object (`ae rifle hit: ... head h | shield a -> b body c
 -> d dead x`; the numbers are a host's or a game without network: a client deals no damage). All three are for
 automated tests, default off.

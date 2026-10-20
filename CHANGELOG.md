@@ -6,6 +6,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- OCTAGON, a new group of four 1v1 practice drills for Octagon (seed revision 16, added on the first start; nothing
+  else changes): FFA AE OCTAGON BR, FFA AE OCTAGON BR SNIPE, FFA AE OCTAGON MAG and FFA AE OCTAGON MAG SNIPE. Battle
+  rifle or magnum in hand, with or without the sniper rifle second; free for all slayer on AE's casual rules with
+  instant respawns, no grenades, infinite ammo and bottomless clips (no reloads). Infinite ammo and bottomless clip
+  are gametype rules now, the host's for everyone in the game.
 - FFA AE SNIPERS (seed revision 15, applied on the first start, the old file backed up): no respawn time growth.
   Stock Snipers adds 5 seconds to your respawn for each death, up to 25 seconds, earned back by kills; no other AE
   gametype has it, TEAM AE SNIPERS included. If you edited the gametype yourself, it keeps your settings.

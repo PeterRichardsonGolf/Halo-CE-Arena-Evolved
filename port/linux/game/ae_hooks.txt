@@ -1062,3 +1062,14 @@ port/linux/game/bots.c	ae_bots_falls_guard(bot, &tick); /* AE hook */
 source/saved games/playlist_profile.c	#include "ae_gametype_audit.h" /* AE hook */
 source/saved games/playlist_profile.c	ae_gametype_audit_write(); /* AE hook */
 port/linux/src/port_config.c	{ "debug.arena_audit", _config_boolean, "false", "HALO_ARENA_AUDIT", _environment_set_is_true, _platform_all, /* AE hook */
+# INFINITE AMMO and BOTTOMLESS CLIP as gametype rules (seed revision 16, the OCTAGON drills; port/linux/game/
+# ae_gametype_ammo.c, the bits ae_weapon_rules.h): bits 5-6 of the variant's pack_loadout, beside the cheats; the
+# "AE ammo:" rules line, and each shot's magazine with debug.weapon_log while either is on
+source/items/weapons.c	#include "ae_gametype_ammo.h" /* AE hook */
+source/items/weapons.c	if (!(cheat.infinite_ammo || ae_gametype_infinite_ammo()) && TEST_FLAG(weapon->item.flags, 1)) /* AE hook */
+source/items/weapons.c	if (!(cheat.bottomless_clip || ae_gametype_bottomless_clip()) && (magazine->rounds_loaded-= trigger_definition->rounds_per_shot)<=0) /* AE hook */
+source/items/weapons.c	ae_gametype_ammo_fired(weapon_index, trigger_definition->magazine_index); /* AE hook */
+source/items/weapons.c	if (!(cheat.bottomless_clip || ae_gametype_bottomless_clip())) /* AE hook */
+source/items/weapons.c	if (TEST_FLAG(weapon->item.flags, _item_belongs_to_player_bit) && !(cheat.infinite_ammo || ae_gametype_infinite_ammo())) /* AE hook */
+source/game/game_engine.c	#include "ae_gametype_ammo.h" /* AE hook */
+source/game/game_engine.c	ae_gametype_ammo_log_rules(universal->pack_loadout); /* AE hook */

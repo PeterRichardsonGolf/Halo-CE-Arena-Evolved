@@ -23,7 +23,7 @@ def migration_rows(text):
 
 
 def test_reads_the_table():
-    assert len(SOURCE.rows) == 86
+    assert len(SOURCE.rows) == 90
     assert SOURCE.fields[:10] == ["name", "build", "flags", "score_to_win", "time_limit", "respawn_time",
                                   "suicide_penalty", "radar", "vehicle_set", "custom_loadout"]
     assert SOURCE.fields[-1] == "adjust"
