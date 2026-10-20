@@ -67,10 +67,12 @@ the lethal distance: a slope's run, the jump's height) */
 int ae_bots_edge_lethal(int floor_found, float drop, float lethal_distance);
 /* the probe ahead of a jump: about where a running jump lands */
 #define AE_BOTS_EDGE_JUMP_REACH 2.2f
-/* the ways tried when the way ahead is lethal, turned from it (radians), attempt 0 .. AE_BOTS_EDGE_TURNS - 1: a
-quarter turn to the given side first (side 1 or -1), then the other, then an eighth either way, three eighths, back */
+/* the ways tried when the way ahead is lethal, turned from it (radians), attempt 0 .. AE_BOTS_EDGE_TURNS - 1: in a
+fight a quarter turn to the given side first (side 1 or -1), then the other, then an eighth either way, three eighths,
+back; walking, back first, then three eighths, a quarter, an eighth (along the edge last: Cold Fissure 10-20, walking
+bots turned along the brink each tick drifted over a corner of it) */
 #define AE_BOTS_EDGE_TURNS 7
-float ae_bots_edge_turn(int attempt, int side);
+float ae_bots_edge_turn(int attempt, int side, int walking);
 /* the ticks a walking bot stands blocked at an edge before it gives up its goal (its path goes over the edge) */
 #define AE_BOTS_EDGE_GIVE_UP_TICKS 30
 

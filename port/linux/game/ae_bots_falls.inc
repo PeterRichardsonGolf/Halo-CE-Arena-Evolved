@@ -53,6 +53,7 @@ struct ae_falls_bot
 	real_point3d last_point;
 	/* THE GUARD: the ticks it has stood held at an edge while walking; the grenade it last ran from */
 	long held_ticks;
+	long held_tick;
 	long fled_grenade;
 	/* its own nearest live grenade's distance at its last tick (none: a large number), and when the guard last told
 	the fight log it turned or held it */
@@ -106,14 +107,19 @@ static char const *ae_falls_goal_name(short kind)
 	}
 }
 
-/* (ae_bots_events.inc's damage note, debug.bot_events) a damage to a unit: a bot's living unit's is kept */
+/* (ae_bots_events.inc's damage note, debug.bot_events) a damage to a unit: a bot's living unit's is kept (not one
+after its body is gone: the box's games of 10-20 had a dead bot's own firing effect, weapons\pistol\trigger, no
+owner, dealt after its killer's damage in the same tick, logged as its death's cause) */
 static void ae_bots_falls_damage(long owner_player_index, long object_index, long definition_index, unsigned long flags)
 {
 	struct unit_datum *unit = unit_try_and_get(object_index);
 	long index;
 
-	if (!unit || unit->unit.player_index == NONE || TEST_FLAG(unit->object.damage_flags, _object_dead_bit))
+	if (!unit || unit->unit.player_index == NONE || TEST_FLAG(unit->object.damage_flags, _object_dead_bit) ||
+		unit->object.body_vitality <= 0.0f)
+	{
 		return;
+	}
 	for (index = 0; index < BOTS_MAXIMUM; index++)
 	{
 		struct ae_falls_bot *falls = &ae_falls_bots[index];
@@ -287,6 +293,8 @@ height (Boarding Action 10-20: bots dropped 1.4 to 8 units onto a narrow ledge o
 #define AE_FALLS_LANDING 1.5f
 /* a wall test that hits at once (nearer than this) says nothing */
 #define AE_FALLS_WALL_NEAREST 0.2f
+/* the ticks after which a walking bot's held ticks are forgotten */
+#define AE_FALLS_HELD_FORGET (3 * TICKS_PER_SECOND)
 /* a floor steeper than this (its normal's height; about 32 degrees) is slid down (Fallout 10-20: bots that stepped onto
 a pitched roof slid off its edge, the floor under the probe being the roof itself) */
 #define AE_FALLS_STEEP 0.85f
@@ -662,7 +670,6 @@ static void ae_bots_falls_guard(struct bots_bot *bot, struct bots_tick *tick)
 	if (!biped || (travel && !tick->fighting && travel->via >= 0 && travel->phase != _ae_travel_phase_to_entry &&
 		ae_travel.links[travel->via].kind == AE_BOTS_TRAVEL_LINK_JUMP))
 	{
-		falls->held_ticks = 0;
 		return;
 	}
 	/* (RECRUIT and EASY, in a fight, look now and then: a half second at a time) */
@@ -726,7 +733,7 @@ static void ae_bots_falls_guard(struct bots_bot *bot, struct bots_tick *tick)
 			}
 			for (attempt = 0; !found && attempt < AE_BOTS_EDGE_TURNS; attempt++)
 			{
-				real other = way + ae_bots_edge_turn(attempt, bot->strafe_sign < 0.0f ? -1 : 1);
+				real other = way + ae_bots_edge_turn(attempt, bot->strafe_sign < 0.0f ? -1 : 1, !tick->fighting);
 
 				if (!ae_falls_way_lethal(unit_index, &tick->position, other, lookahead, lethal) &&
 					!(carried && (real)cos(other - carry_way) > -0.3f))
@@ -759,15 +766,31 @@ static void ae_bots_falls_guard(struct bots_bot *bot, struct bots_tick *tick)
 					tick->position.y, tick->position.z);
 				ae_bots_event_line(bot_index, tick->now, "edge", -1, -1.0f, extra);
 			}
-			/* (walking: its path or its climb goes over the edge; held a second, the goal is given up) */
+			/* (walking: its path or its climb goes over the edge; held a second in all (the ticks it was turned away
+			between them counted out after 3 s), the goal is given up; a power item's for all of them, 30 s: Boarding
+			Action 10-20, bots on one ship went for the power items of the other one after the other, each out of
+			reach, and stood at the hull's edge a minute or more, where they used to walk off) */
 			if (!tick->fighting)
 			{
+				long power = ae_bots_power_bots[bot_index].entry;
+
 				bot->climb_until_tick = 0;
+				if (tick->now - falls->held_tick > AE_FALLS_HELD_FORGET)
+					falls->held_ticks = 0;
+				falls->held_tick = tick->now;
 				if (++falls->held_ticks >= AE_BOTS_EDGE_GIVE_UP_TICKS)
 				{
+					short entry;
+
 					falls->held_ticks = 0;
 					if (bot->goal_kind == _bots_goal_item)
 						bots_item_set_unreachable(bot, bot->item_index);
+					if (power != NONE)
+					{
+						for (entry = 0; entry < AE_BOTS_POWER_ENTRIES; entry++)
+							ae_bots_power_unreachable_until[bot_index][entry] = tick->now + TICKS_PER_SECOND * 30;
+						ae_bots_power_bots[bot_index].entry = NONE;
+					}
 					bot->goal_kind = _bots_goal_none;
 					bot->path.valid = FALSE;
 					ae_falls_away_goal(bot, tick, way);
@@ -775,8 +798,6 @@ static void ae_bots_falls_guard(struct bots_bot *bot, struct bots_tick *tick)
 				}
 			}
 		}
-		else
-			falls->held_ticks = 0;
 	}
 	/* (a jump: where it lands, along its way or its look; NORMAL and up, any way about it, as its momentum and its air
 	control may take it any way: Boarding Action 10-20, bots jumping in a fight at the hull's edge fell) */

@@ -136,13 +136,14 @@ int ae_bots_edge_lethal(int floor_found, float drop, float lethal_distance)
 	return !floor_found || drop >= lethal_distance * 0.9f;
 }
 
-float ae_bots_edge_turn(int attempt, int side)
+float ae_bots_edge_turn(int attempt, int side, int walking)
 {
-	static float const eighths[AE_BOTS_EDGE_TURNS] = { 2.0f, -2.0f, 1.0f, -1.0f, 3.0f, -3.0f, 4.0f };
+	static float const fight[AE_BOTS_EDGE_TURNS] = { 2.0f, -2.0f, 1.0f, -1.0f, 3.0f, -3.0f, 4.0f };
+	static float const walk[AE_BOTS_EDGE_TURNS] = { 4.0f, 3.0f, -3.0f, 2.0f, -2.0f, 1.0f, -1.0f };
 
 	if (attempt < 0 || attempt >= AE_BOTS_EDGE_TURNS)
 		return 0.0f;
-	return eighths[attempt] * (side < 0 ? -1.0f : 1.0f) * AE_BOTS_FALLS_PI * 0.25f;
+	return (walking ? walk : fight)[attempt] * (side < 0 ? -1.0f : 1.0f) * AE_BOTS_FALLS_PI * 0.25f;
 }
 
 int ae_bots_grenade_flee(int level, int own, float distance)

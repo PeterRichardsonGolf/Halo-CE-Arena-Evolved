@@ -64,11 +64,14 @@ int main(void)
 	CHECK(!ae_bots_edge_lethal(1, 2.0f, 16.0f));
 	CHECK(!ae_bots_edge_lethal(1, -1.0f, 16.0f));
 	/* the ways tried: a quarter turn to the side first, then the other, ..., back last; none past the last */
-	CHECK(ae_bots_edge_turn(0, 1) > 1.5f && ae_bots_edge_turn(0, 1) < 1.6f);
-	CHECK(ae_bots_edge_turn(0, -1) < -1.5f);
-	CHECK(ae_bots_edge_turn(1, 1) < -1.5f);
-	CHECK(ae_bots_edge_turn(AE_BOTS_EDGE_TURNS - 1, 1) > 3.1f);
-	CHECK(ae_bots_edge_turn(AE_BOTS_EDGE_TURNS, 1) == 0.0f);
+	CHECK(ae_bots_edge_turn(0, 1, 0) > 1.5f && ae_bots_edge_turn(0, 1, 0) < 1.6f);
+	CHECK(ae_bots_edge_turn(0, -1, 0) < -1.5f);
+	CHECK(ae_bots_edge_turn(1, 1, 0) < -1.5f);
+	CHECK(ae_bots_edge_turn(AE_BOTS_EDGE_TURNS - 1, 1, 0) > 3.1f);
+	CHECK(ae_bots_edge_turn(AE_BOTS_EDGE_TURNS, 1, 0) == 0.0f);
+	/* (walking: back first, along the edge last) */
+	CHECK(ae_bots_edge_turn(0, 1, 1) > 3.1f);
+	CHECK(ae_bots_edge_turn(AE_BOTS_EDGE_TURNS - 1, 1, 1) < -0.7f && ae_bots_edge_turn(AE_BOTS_EDGE_TURNS - 1, 1, 1) > -0.8f);
 
 	/* grenades: its own within the danger at EASY and up; never another's, never past the danger */
 	CHECK(!ae_bots_grenade_flee(AE_BOTS_LEVEL_RECRUIT, 1, 2.0f));
