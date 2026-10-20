@@ -89,7 +89,7 @@
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/network_setup/map_sharing/help_strings">
 		<string text=""/>
-		<string text="Joining a game on a map you do not have: download\nit from its host (if shared). You are asked first."/>
+		<string text="Get maps you do not have from the host when you\njoin. OFF: you cannot play games on those maps."/>
 		<string text="In another's game, send its map to players who\njoin without it, as a torrent's peers do."/>
 		<string text="The most you send of maps to other players, so\nthat the game keeps the rest of your upload."/>
 		<string text="Also download maps from a host that is not on\nyour local network (an internet game)."/>

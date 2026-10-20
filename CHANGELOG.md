@@ -9,6 +9,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots: a new top level, DEMON (BOT SKILL, SHOOTING SKILL and MOVEMENT SKILL): the LEGENDARY bots of before. LEGENDARY
   now sits halfway between HEROIC and DEMON (it reacts in 0.24 s, sees 48 units over 150 degrees, and tells teammates
   within 20 units what it sees). RECRUIT, EASY, NORMAL and HEROIC are unchanged.
+- Map downloads work the OpenCE way: no question. Join a game on a map you lack and it comes from the host on its own,
+  and in the lobby the host's other maps follow, one after another (up to 4096 MB from one host). A card at the top
+  of the lobby shows which map is coming, how much of it is here, and when it is ready or did not come. F6 and
+  holding BACK no longer do anything for maps. DOWNLOAD MAPS (Settings > Network Setup > Map Sharing) turns it off,
+  and INTERNET DOWNLOADS is now on by default.
+- A map that did not download says which map, why and what to do, in a dialog whose text stays inside its frame.
 - Playing on mouse and keyboard, the HUD's prompts show your key instead of a controller button: "Hold [E] to swap
   for", "Press [E] to enter driver seat", and a map's own button prompts, with the first key bound to that action in
   Controls Setup (a mouse button as a mouse with that button lit, any other key by its name, "Num 7"); the first

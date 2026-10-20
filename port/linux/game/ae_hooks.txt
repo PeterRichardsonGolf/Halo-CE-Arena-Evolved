@@ -254,7 +254,8 @@ port/linux/game/map_share.c	if (!ae_map_share_host_allowed(machine_index, reques
 port/linux/game/map_share.c	if (!game || (csstrcmp(game->map.name, request->level_name) && !ae_map_share_host_lists(machine_index, request->level_name)) || !custom_edition_level_name(request->level_name) || /* AE hook */
 port/linux/game/map_share.c	if (ae_map_share_handle_message(machine_index, message, size, from_stream)) return; /* AE hook */
 port/linux/game/map_share.c	ae_map_share_all_update(); /* AE hook */
-port/linux/game/map_share.c	ae_map_share_all_render(); /* AE hook */
+port/linux/game/map_share.c	if (ae_map_share_all_render(download->level_name, download->state == _download_asking, download->state == _download_transferring, download->done_bytes, download->total_bytes)) return; /* AE hook */
+port/linux/game/map_share.c	ae_map_share_failure_text(message, sizeof(message), download->level_name, reason); /* AE hook */
 # layouts travel with maps (0.3.5; ae_layout_share_rules.h): a download done keeps its host's layout beside the map
 port/linux/game/map_share.c	ae_map_share_layout_downloaded(download->level_name); /* AE hook */
 source/cache/cache_files.c	ae_map_share_xbox_path(map_name, path, size); /* AE hook */
@@ -262,7 +263,7 @@ source/cache/cache_files.c	if (ae_map_share_played_map(map_name)) return TRUE; /
 port/linux/game/map_families.c	if (ae_map_share_xbox_downloaded(map_name)) return TRUE; /* AE hook */
 port/linux/game/custom_maps.c	{ void ae_map_share_scan_downloads(void (*scan)(char const *directory)); ae_map_share_scan_downloads(map_folder_scan); } /* AE hook */
 port/linux/src/port_config.c	{ "network.map_share_internet", _config_boolean, "false", "HALO_NET_MAP_SHARE_INTERNET", _environment_value, _platform_all, /* AE hook */
-port/linux/src/port_config.c	{ "network.map_download_internet", _config_boolean, "false", "HALO_NET_MAP_DOWNLOAD_INTERNET", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "network.map_download_internet", _config_boolean, "true", "HALO_NET_MAP_DOWNLOAD_INTERNET", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "network.map_download_limit", _config_integer, "4096", "HALO_NET_MAP_DOWNLOAD_LIMIT", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "debug.map_share_test", _config_string, "\"\"", "HALO_MAP_SHARE_TEST", _environment_value, _platform_all, /* AE hook */
 port/linux/game/map_share_files.c	{ short ae_turn; for (ae_turn = 0; ae_turn < MAXIMUM_SHARE_FILES && (ae_map_share_file_kept(globals->files[index].path) || (globals->job_type == _hash_job_file && globals->job_owner == index)); ae_turn++) index = (short)((index + 1) % MAXIMUM_SHARE_FILES); globals->next_file = (short)((index + 1) % MAXIMUM_SHARE_FILES); } /* AE hook */
@@ -987,3 +988,11 @@ source/interface/ui_widget.c	ui_mouse_targets_settled = TRUE;\nae_ui_deleted_cle
 source/objects/object_types.c	#include "ae_layout.h" /* AE hook */
 source/objects/object_types.c	if (object_type == _object_type_vehicle && !ae_layout_vehicle_placed(scenario_object)) continue; /* AE hook */
 source/game/game_engine.c	if (global_variant.universal_variant.teams) side = ae_layout_vehicle_side(placement, side); /* AE hook */
+# the port's own error text wrap (ui_widget_port_text_wrap) measured a line only at a space, so the last words of a
+# paragraph (before a line break) were never wrapped and ran out of the dialog's frame: a break measures its line too
+# (the first two lines are upstream's own with a term added)
+source/interface/ui_widget.c	if ((character == L'\r' || character == 10) && index == line_start) /* AE hook */
+source/interface/ui_widget.c	if (character == L' ' || character == 0 || character == L'\r' || character == 10) /* AE hook */
+source/interface/ui_widget.c	if (character == L'\r' || character == 10) { line_start = index + 1; last_space = NONE; continue; } /* AE hook */
+# (the port's own error text starts 6 menu units higher, so that five lines of it fit between the dialog's header and footer)
+source/interface/ui_widget.c	bounds.y0 -= 6; /* AE hook */

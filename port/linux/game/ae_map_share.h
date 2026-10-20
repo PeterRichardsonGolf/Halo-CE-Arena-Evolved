@@ -227,36 +227,7 @@ boolean ae_map_share_file_kept(
 	char const *path);
 boolean ae_map_share_host_extra(
 	long machine_index);
-/* THE QUESTION ("download from this host?") AND ITS ANSWERS: what a menu's dialog calls (the F6 key and the text
-line of ae_map_share_all.c are one caller, until there is one).
-- ae_map_share_consent_question: TRUE while the question is open, with what to show: the host (its address, host
-  byte order), how many maps this machine lacks, their bytes (0: not known), the most megabytes taken from one host,
-  and whether the game cannot be played without a yes (then "no" means leaving).
-- ae_map_share_consent_shown: called each frame the question is really on the screen. An answer is taken only if
-  it was shown within the last half second and for at least a second, and only in the lobby or the menus.
-- ae_map_share_consent_yes: the player's yes, for that host and that amount. FALSE (nothing changes) if the
-  question is not open, was not shown long enough, or is now for another host or another amount: show it again.
-  The yes covers that many bytes from that host; more is asked for again.
-- ae_map_share_consent_no: the player's no. To the game's map it stands for this host (the download is refused and
-  the game left); to GET ALL alone it only closes the question. */
-struct ae_map_share_question
-{
-	unsigned long host;
-	long maps;
-	unsigned long long bytes;
-	long limit_megabytes;
-	boolean needed_to_play;
-};
-boolean ae_map_share_consent_question(
-	struct ae_map_share_question *question);
-void ae_map_share_consent_shown(
-	void);
-boolean ae_map_share_consent_yes(
-	unsigned long host,
-	unsigned long long bytes);
-boolean ae_map_share_consent_no(
-	unsigned long host);
-/* whether the player said yes to this host (files and folders may be made) */
+/* whether downloads are on for this host (the setting is the player's yes: files and folders may be made) */
 boolean ae_map_share_download_may_write(
 	void);
 
@@ -268,8 +239,22 @@ boolean ae_map_share_handle_message(
 	boolean from_stream);
 void ae_map_share_all_update(
 	void);
-void ae_map_share_all_render(
-	void);
+/* the card in the menus' header (look A of the map offer mockups): TRUE when it was drawn, and then map_share.c's own
+line (the same download's) is not. The arguments are map_share.c's download now: its level (NULL or "" for none),
+whether it is asking the host or transferring, and the bytes had and in all */
+boolean ae_map_share_all_render(
+	char const *level_name,
+	boolean asking,
+	boolean transferring,
+	unsigned long done,
+	unsigned long total);
+/* the main menu's dialog text for a game's map that did not come (map_share.c's download_fail, an AE hook): which map,
+why, and what to do */
+void ae_map_share_failure_text(
+	char *text,
+	int size,
+	char const *level_name,
+	char const *reason);
 
 /* LAYOUTS TRAVEL WITH MAPS (0.3.5; ae_layout_share_rules.h): a host sends each guest that runs this game the layout
 it applies to the game's map (or word that it has none), and the layout of any other map the guest asks it for; a

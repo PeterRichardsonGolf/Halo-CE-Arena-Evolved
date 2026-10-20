@@ -693,8 +693,9 @@ Custom Edition map is (its size and hash); the guest takes the offer only if
 both are the list's. Requests are limited per machine (24 at once, then one
 every 2.5 seconds); beyond that the host answers "not shared".
 
-**The guest's rules.** Nothing is asked before the player's yes (once per
-host). A file is refused before a byte is stored if it is over the engine's
+**The guest's rules.** No question is asked (the OpenCE way): `network.map_download`
+on, and `network.map_download_internet` for a host off the local network, is
+the player's yes. A file is refused before a byte is stored if it is over the engine's
 limit for its kind (128 MiB an Xbox map, 768 MiB a Custom Edition map, 512 MiB
 a resource map), if the host's total would pass `network.map_download_limit`,
 or if the disk would be left with under 256 MiB. Xbox maps come from the host
@@ -705,14 +706,11 @@ that name is there (it is kept, and the download removed). The game loads a
 map from `maps_shared` only when no other folder has it, and holds its scripts
 to a downloaded map's rules in every run.
 
-**The yes and the totals.** The yes is given for the amount the question
-shows (the bytes of the maps the guest lacks) and for the host of that
-connection; it is not kept for a later join. A file offered again is counted
+**The totals.** The host's other maps are fetched by themselves in the lobby,
+the game's map first. A file offered again is counted
 by its growth over what was counted for it, so a host that lists a map small
 and then large is charged the difference; an offer's files must fit the disk
-together; a disk whose free space cannot be read takes nothing. An offer
-beyond the yes is refused and the question is asked again with the new amount.
-A downloaded Xbox map's header must also give the file's own length.
+together; a disk whose free space cannot be read takes nothing. A downloaded Xbox map's header must also give the file's own length.
 
 **The host's hashed files.** Map sharing keeps 16 hashed files and replaces
 them in turn. Arena Evolved keeps the pieces' hashes of its list and hands
@@ -743,7 +741,7 @@ lobby.
 **What a stock machine sees.** A stock guest of an Arena Evolved host: no
 frame; Custom Edition maps as before (on a LAN; over the internet only with
 the host's switch on). A stock host of an Arena Evolved guest: requests for
-Custom Edition maps as before, sent after the player's yes (and over the
+Custom Edition maps as before, sent with the setting on (and over the
 internet only with the guest's switch on); a guest that lacks an Xbox map
 waits 5 seconds for a hello, then leaves as it did before.
 

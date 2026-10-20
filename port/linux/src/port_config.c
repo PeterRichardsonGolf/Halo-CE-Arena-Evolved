@@ -961,24 +961,25 @@ static const struct config_setting config_settings[] =
 		"Playing in another's game: the most kilobytes a second this machine\n"
 		"sends of maps to other players (16 to 10240: 10 MB/s)." },
 	{ "network.map_download", _config_boolean, "true", "HALO_NET_MAP_DOWNLOAD", _environment_value, _platform_all,
-		"Joining a game on a Custom Edition map this machine does not have:\n"
-		"download it (and the resource maps it needs) from the game's players\n"
-		"into maps_ce, if its host shares it (network.map_share); false\n"
-		"leaves the game, saying which map is missing." },
+		"Joining a game on a map this machine does not have: get it from its\n"
+		"host (and the resource maps it needs), if the host shares it\n"
+		"(network.map_share), with no question; in the lobby the host's other\n"
+		"maps follow, up to network.map_download_limit. false: nothing is\n"
+		"downloaded, and a game on a map you lack is left, saying which map." },
 	{ "network.map_share_internet", _config_boolean, "false", "HALO_NET_MAP_SHARE_INTERNET", _environment_value, _platform_all, /* AE hook */
 		"Hosting: also send maps to players who are not on the local network\n"
 		"(an internet game's). Off, they get no map from this host; players on\n"
 		"the local network get them as network.map_share says." },
-	{ "network.map_download_internet", _config_boolean, "false", "HALO_NET_MAP_DOWNLOAD_INTERNET", _environment_value, _platform_all, /* AE hook */
+	{ "network.map_download_internet", _config_boolean, "true", "HALO_NET_MAP_DOWNLOAD_INTERNET", _environment_value, _platform_all, /* AE hook */
 		"Joining: also download maps from a host that is not on the local\n"
 		"network (an internet game's). Off, only a host on the local network is\n"
-		"asked for maps (network.map_download)." },
+		"asked for maps (network.map_download); a game on an internet host's\n"
+		"map you lack is then left, saying so." },
 	{ "network.map_download_limit", _config_integer, "4096", "HALO_NET_MAP_DOWNLOAD_LIMIT", _environment_value, _platform_all, /* AE hook */
 		"Joining: the most megabytes of maps taken from one host (0 to 65536)." },
 	{ "debug.map_share_test", _config_string, "\"\"", "HALO_MAP_SHARE_TEST", _environment_value, _platform_all, /* AE hook */
-		"Tests: the player's answer to map sharing's question, given at once:\n"
-		"\"yes\", \"no\", \"all\" (yes, and all of the host's maps fetched in the\n"
-		"lobby), \"internet\" (as all, the host taken for an internet one). A host's:\n"
+		"Tests: \"internet\" (the host taken for an internet one; the host's\n"
+		"other maps are fetched in the lobby by themselves). A host's:\n"
 		"\"lie-size\", \"lie-hash\" (its list is not what it offers), \"lie-map\" (it\n"
 		"lists files whose headers are not their names'). Read only in a network\n"
 		"test (debug.network_test)." },

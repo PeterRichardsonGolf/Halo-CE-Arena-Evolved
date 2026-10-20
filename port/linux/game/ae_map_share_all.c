@@ -13,13 +13,16 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
   it (an offer of more files than there are kinds).
 - THE PLAYED MAP. A guest without the game's map asks for it as Custom Edition maps are asked for: a community map
   too, into maps_shared, where the game then finds it.
-- GET ALL. In the lobby, F6 (or BACK held on a pad) fetches every listed map the guest lacks, one after
-  another; the same again stops it. The game's own map goes first; a game that starts stops the rest until the
-  lobby is back.
-- CONSENT AND LIMITS. Nothing is asked of a host before the player said yes, once per host; a size over the
-  engine's limit for the kind, the total cap (network.map_download_limit), a full disk, a name the list did not
-  carry, a size or hash that is not the list's: refused before a byte is stored. Internet games share and download
-  only with both switches on (network.map_share_internet, network.map_download_internet).
+- GET ALL. In the lobby, once the host's list is complete, every listed map the guest lacks is fetched on its own,
+  one after another (the OpenCE way: no question, no key). The game's own map goes first; a game that starts stops
+  the rest until the lobby is back.
+- NO CONSENT, AND LIMITS. network.map_download on is the player's yes (and network.map_download_internet for a host
+  that is not on the local network). A size over the engine's limit for the kind, the total cap
+  (network.map_download_limit), a full disk, a name the list did not carry, a size or hash that is not the list's:
+  refused before a byte is stored.
+- THE CARD. In the menus a card in the lobby's header column says what is coming (ae_map_share_all_render): the
+  game's map, the host's others "n OF N", done, or did not download. It is drawn with AE's renderer (ae_draw.h); in a
+  game nothing of it is drawn.
 */
 
 #include "cseries.h"
@@ -53,6 +56,7 @@ requests, offers, connections, pieces and hashes. This adds what it lacks, throu
 #include "halo_map_families.h"
 #include "halo_custom_maps.h"
 #include "../src/p2p.h"
+#include "ae_map_share_card.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -70,8 +74,6 @@ const char *config_string(const char *name);
 boolean network_distributed_server_send_to_machine_reliably(long machine_index, void *message, word size);
 unsigned long network_game_server_machine_address(long machine_index);
 unsigned long system_milliseconds(void);
-int ae_platform_map_share_key(void);
-int ae_platform_map_share_pad(void);
 
 /* ---------- constants */
 
@@ -98,8 +100,6 @@ enum
 	CATALOGUE_WAIT = 120000,
 	/* a host's lists a guest takes in one game (a list started anew again and again is dropped) */
 	CATALOGUE_RESTARTS = 8,
-	/* the question to get all of a host's maps is shown this long */
-	PROMPT_TIME = 20000,
 	/* a map of the queue is tried this often (the game's own map takes its place meanwhile) */
 	QUEUE_ATTEMPTS = 3,
 	REMEMBERED_HOSTS = 8,
@@ -108,13 +108,12 @@ enum
 	FLIGHTS = 6,
 	FLIGHT_TIMEOUT = 45000,
 	RATES = 64,
-	/* the question must have been shown this long before a yes is taken, and shown this lately */
-	QUESTION_MINIMUM_TIME = 1000,
-	QUESTION_SHOWN_LATELY = 500,
 	/* GET ALL waits this long after a host said it does not share (asked too often) */
 	QUEUE_PAUSE = 10000,
-	/* a pad's BACK is map sharing's F6 once held this long, in the lobby (a tap is the menus') */
-	PAD_HOLD_TIME = 1000,
+	/* the card: how long a done or failed card stays, and its fade */
+	CARD_DONE_TIME = 8000,
+	CARD_FAILED_TIME = 12000,
+	CARD_FADE_TIME = 500,
 	_text_centered = 2,
 };
 
@@ -203,6 +202,7 @@ struct remembered_host
 	unsigned long long taken;
 };
 
+
 struct share_globals
 {
 	/* the host's list, and the one before (its hashes kept for the files that did not change) */
@@ -234,20 +234,12 @@ struct share_globals
 	boolean catalogue_begun;
 	long catalogue_restarts;
 	struct ae_map_share_catalogue catalogue;
-	int consent;
 	unsigned long long taken;
 	struct ae_map_share_charges charges;
-	/* the yes: the bytes it was given for and what had been taken when it was; the offer being taken's files' sum
-	(the disk must hold them together) */
-	unsigned long long granted;
-	unsigned long long grant_base;
+	/* the offer being taken's files' sum (the disk must hold them together), and the game's map's size if the list
+	has it */
 	unsigned long long offer_bytes;
-	/* the question: the game's map's size if the list has it; when it was first and last shown this time (0: not
-	shown), and whether the key was seen up since */
 	unsigned long long played_bytes;
-	unsigned long question_first_shown;
-	unsigned long question_last_shown;
-	boolean question_key_clear;
 	unsigned long queue_pause_until;
 	struct remembered_host remembered[REMEMBERED_HOSTS];
 	long remembered_next;
@@ -259,8 +251,8 @@ struct share_globals
 	unsigned long planned_at;
 	/* GET ALL running: the maps it set out to fetch, the next, those fetched and those given up */
 	boolean all_active;
-	boolean all_wanted;
-	unsigned long all_asked_at;
+	/* (GET ALL begins by itself once for each host, when its list is complete and the lobby is up) */
+	boolean all_begun;
 	short queue[AE_MAP_SHARE_CATALOGUE_MAXIMUM];
 	long queue_count;
 	long queue_next;
@@ -278,16 +270,22 @@ struct share_globals
 	unsigned long pending_at;
 	char released_level[LEVEL_BYTES];
 	boolean folder_xbox;
-	boolean played_asking;
 	char refusal[200];
-	char notice[200];
-	unsigned long notice_until;
-	boolean key_down;
-	unsigned long pad_down_at;
+	/* the card (ae_map_share_all_render): the game's map seen downloading (its level, size and the bytes last seen),
+	and the done or failed card with its text, its time and its colour */
+	char card_game_level[LEVEL_BYTES];
+	unsigned long long card_game_bytes;
+	boolean card_end_shown;
+	unsigned long card_end_at;
+	unsigned long card_end_time;
+	struct ae_map_share_card card_end;
 	boolean test_all_done;
 };
 
 static struct share_globals share;
+
+static void card_end_failed(char const *level_name, char const *reason);
+static void card_end_maps(void);
 
 enum
 {
@@ -427,9 +425,6 @@ static long host_find(
 static void notice_set(
 	char const *text)
 {
-	csstrncpy(share.notice, text, sizeof(share.notice) - 1);
-	share.notice[sizeof(share.notice) - 1] = 0;
-	share.notice_until = system_milliseconds() + 8000;
 	error(_error_silent, "map sharing: %s", text);
 }
 
@@ -1555,27 +1550,23 @@ static void guest_host_changed(
 	share.catalogue_begun = FALSE;
 	share.catalogue_restarts = 0;
 	ae_map_share_catalogue_begin(&share.catalogue, 0);
-	share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_HOST);
 	share.taken = 0;
 	csmemset(&share.charges, 0, sizeof(share.charges));
-	share.granted = 0;
-	share.grant_base = 0;
 	share.offer_bytes = 0;
 	share.played_bytes = 0;
-	share.question_first_shown = 0;
-	share.question_last_shown = 0;
 	share.queue_pause_until = 0;
 	share.plan_count = 0;
 	share.plan_bytes = 0;
 	share.plan_over = 0;
 	share.all_active = FALSE;
-	share.all_wanted = FALSE;
+	share.all_begun = FALSE;
+	share.card_game_level[0] = 0;
+	share.card_end_shown = FALSE;
 	share.queue_count = 0;
 	share.active_level[0] = 0;
 	share.active_cancel = FALSE;
 	share.pending_level[0] = 0;
 	share.released_level[0] = 0;
-	share.played_asking = FALSE;
 	share.test_all_done = FALSE;
 	/* (another host's layouts are not this one's) */
 	ae_layout_share_clear(&layout_inbox);
@@ -1654,21 +1645,6 @@ static void charge_key(
 	snprintf(key, AE_MAP_SHARE_CHARGE_KEY_BYTES, "%d:%s", (int)kind, level_name);
 }
 
-/* the question's amount: what the host has that this machine lacks, the game's map at least (0: not known) */
-static unsigned long long question_bytes(
-	void)
-{
-	return MAX(share.plan_bytes, share.played_bytes);
-}
-
-/* whether the yes given covers more bytes on top of what was taken since */
-static boolean grant_covers(
-	unsigned long long more)
-{
-	return ae_map_share_consent_writes(share.consent) &&
-		ae_map_share_grant_covers(share.granted, share.taken - share.grant_base, more) != 0;
-}
-
 static void refuse_printf(
 	char const *format,
 	...)
@@ -1682,6 +1658,41 @@ static void refuse_printf(
 
 /* ---------- the guest's hooks (map_share.c) */
 
+/* the dialog's text for a map that did not come: "The map <Name> did not download.", then what the reason means and what
+to do (ae_map_share_why_dialog), a line break between (a blank line would take a line of the dialog's five) */
+static void failure_text(
+	char const *level_name,
+	char const *reason,
+	char *text,
+	int size)
+{
+	char name[LEVEL_BYTES];
+	char why_text[256];
+	int why = ae_map_share_why(reason);
+
+	ae_map_share_display_name(level_name, name, sizeof(name));
+	ae_map_share_why_dialog(why, guest_cap(), reason, why_text, sizeof(why_text));
+	snprintf(text, size, "The map %.60s did not download.\r%s", name, why_text);
+}
+
+/* whether the level's map file is not on this machine */
+static boolean level_file_missing(
+	char const *level_name)
+{
+	char file[LEVEL_BYTES];
+	char path[PATH_BYTES];
+	short level_family = map_family_parse(level_name, file, sizeof(file));
+
+	if (level_family == _map_family_xbox)
+	{
+		if (!xbox_level_file(level_name, file, sizeof(file)))
+			return FALSE;
+		cache_files_map_file_path(file, path, sizeof(path));
+		return !path[0] || !file_exists(path);
+	}
+	return !map_family_find(level_family, file, path, sizeof(path));
+}
+
 boolean ae_map_share_download_permitted(
 	char const *level_name)
 {
@@ -1689,7 +1700,31 @@ boolean ae_map_share_download_permitted(
 		return TRUE;
 	error(_error_silent, "map sharing: %s is not asked for: downloads are off for this host (network.map_download, "
 		"and for a host that is not on the local network network.map_download_internet)", level_name ? level_name : "");
+	/* (the game's map is missing and may not be asked for: the main menu says which setting, in place of the game's
+	own "you don't have the map") */
+	if (level_name && !same_level(share.active_level, level_name) && level_file_missing(level_name))
+	{
+		char text[512];
+		wchar_t wide[512];
+		int index;
+
+		failure_text(level_name, config_boolean("network.map_download") ? "INTERNET DOWNLOADS is OFF" :
+			"DOWNLOAD MAPS is OFF", text, sizeof(text));
+		for (index = 0; text[index] && index < NUMBEROF(wide) - 1; index++)
+			wide[index] = (wchar_t)(unsigned char)text[index];
+		wide[index] = 0;
+		display_error_text_when_main_menu_loaded(wide);
+	}
 	return FALSE;
+}
+
+void ae_map_share_failure_text(
+	char *text,
+	int size,
+	char const *level_name,
+	char const *reason)
+{
+	failure_text(level_name, reason, text, size);
 }
 
 char const *ae_map_share_refusal(
@@ -1713,7 +1748,7 @@ int ae_map_share_download_gate(
 	/* (a map of GET ALL: stopped at once when asked to, or when the game leaves the lobby) */
 	if (same_level(share.active_level, level_name))
 	{
-		if (share.active_cancel || !main_menu_is_active() || !ae_map_share_consent_writes(share.consent))
+		if (share.active_cancel || !main_menu_is_active() || !guest_policy())
 		{
 			refuse_printf("Getting the host's maps was stopped.");
 			share.active_stopped = TRUE;
@@ -1773,9 +1808,6 @@ int ae_map_share_download_gate(
 		if (!same_level(share.active_level, level_name))
 		{
 			share.played_bytes = growth;
-			/* (more than the yes was given for: asked again, with the new amount) */
-			if (ae_map_share_consent_writes(share.consent) && !grant_covers(growth))
-				share.consent = AE_MAP_SHARE_CONSENT_UNASKED;
 		}
 		if (!ae_map_share_cap_allows(share.taken, growth, guest_cap()))
 		{
@@ -1789,19 +1821,10 @@ int ae_map_share_download_gate(
 			return 3;
 		}
 	}
-	share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_NEED);
-	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
+	/* (the setting is the player's yes: turned off meanwhile, nothing more is fetched) */
+	if (!guest_policy())
 	{
-		if (!share.played_asking)
-			error(_error_silent, "map sharing: the player is asked whether to download from this host");
-		share.played_asking = TRUE;
-		if (!share.planned_at || elapsed(share.planned_at, now, 2000))
-			guest_plan();
-		return 1;
-	}
-	if (!ae_map_share_consent_writes(share.consent))
-	{
-		refuse_printf("You chose not to download maps from this host.");
+		refuse_printf("DOWNLOAD MAPS is OFF.");
 		return 3;
 	}
 	csstrncpy(share.released_level, level_name, sizeof(share.released_level) - 1);
@@ -1835,6 +1858,7 @@ boolean ae_map_share_download_failed(
 		share.queue_pause_until = system_milliseconds() + QUEUE_PAUSE;
 	}
 	error(_error_silent, "map sharing: %s of the host's maps is not fetched: %s", level_name, reason ? reason : "");
+	card_end_failed(level_name, reason);
 	return TRUE;
 }
 
@@ -1863,10 +1887,10 @@ boolean ae_map_share_offer_allowed(
 
 	if (!level_name || strlen(level_name) >= LEVEL_BYTES)
 		return FALSE;
-	/* (nothing is written without the player's yes) */
-	if (!ae_map_share_consent_writes(share.consent))
+	/* (nothing is written with downloads off) */
+	if (!guest_policy())
 	{
-		refuse_printf("You did not say yes to downloading from this host.");
+		refuse_printf("DOWNLOAD MAPS is OFF.");
 		return FALSE;
 	}
 	level_family = map_family_parse(level_name, file, sizeof(file));
@@ -1920,13 +1944,6 @@ boolean ae_map_share_offer_allowed(
 		if (!ae_map_share_cap_allows(share.taken, growth, guest_cap()))
 		{
 			refuse_printf("This would be over the %ld MB you take from one host (network.map_download_limit).", guest_cap());
-			return FALSE;
-		}
-		/* (no more than the player's yes was given for: asked again next time) */
-		if (!grant_covers(growth))
-		{
-			share.consent = AE_MAP_SHARE_CONSENT_UNASKED;
-			refuse_printf("The host offers more than you said yes to.");
 			return FALSE;
 		}
 		/* (every offer, and its files together: the disk keeps its margin after all of them) */
@@ -2128,14 +2145,34 @@ void ae_map_share_layout_downloaded(
 static void all_start(
 	void)
 {
+	struct network_game *game = client_game();
+	long index;
+
 	guest_plan();
 	if (!share.plan_count)
 	{
 		notice_set("You have all of the host's maps.");
 		return;
 	}
-	csmemcpy(share.queue, share.plan, sizeof(share.queue));
-	share.queue_count = share.plan_count;
+	share.queue_count = 0;
+	for (index = 0; index < share.plan_count; index++)
+	{
+		struct ae_map_share_entry const *entry = &share.catalogue.entries[share.plan[index]];
+		char level[LEVEL_BYTES];
+		char file[LEVEL_BYTES];
+
+		/* (the game's own map is fetched as the game's: it is not in this queue; by its level or by its file's name) */
+		snprintf(level, sizeof(level), "%s%s", entry->name, entry->kind == AE_MAP_SHARE_KIND_CE ?
+			map_family_suffix(_map_family_custom_edition) : "");
+		if (game && game->map.name[0] && (same_level(game->map.name, level) ||
+			(map_family_parse(game->map.name, file, sizeof(file)) != NONE && file[0] && !_stricmp(file, entry->name))))
+		{
+			continue;
+		}
+		share.queue[share.queue_count++] = share.plan[index];
+	}
+	if (!share.queue_count)
+		return;
 	share.queue_next = 0;
 	share.queue_done = 0;
 	share.queue_failed = 0;
@@ -2155,6 +2192,9 @@ static void all_stop(
 	share.all_active = FALSE;
 	if (share.active_level[0])
 		share.active_cancel = TRUE;
+	/* (done: the card says which came) */
+	if (share.queue_next >= share.queue_count)
+		card_end_maps();
 	snprintf(text, sizeof(text), "Getting the host's maps %s: %ld of %ld fetched%s.", why, share.queue_done,
 		share.queue_count, share.queue_failed ? ", some could not be" : "");
 	notice_set(text);
@@ -2235,171 +2275,35 @@ static void all_update(
 	}
 }
 
-/* ---------- the guest: the question and its answers (the interface a dialog calls; the F6 key is one caller) */
-
-boolean ae_map_share_consent_question(
-	struct ae_map_share_question *question)
-{
-	if (is_host() || !share.host_address || share.consent != AE_MAP_SHARE_CONSENT_ASKING)
-		return FALSE;
-	if (question)
-	{
-		question->host = share.host_address;
-		question->maps = share.plan_count;
-		question->bytes = question_bytes();
-		question->limit_megabytes = guest_cap();
-		question->needed_to_play = share.played_asking;
-	}
-	return TRUE;
-}
-
-void ae_map_share_consent_shown(
-	void)
-{
-	unsigned long now = system_milliseconds();
-
-	if (share.consent != AE_MAP_SHARE_CONSENT_ASKING)
-		return;
-	/* (shown anew: its time starts, and the key must be let go of before it answers) */
-	if (!share.question_first_shown || elapsed(share.question_last_shown, now, QUESTION_SHOWN_LATELY))
-	{
-		share.question_first_shown = now | 1;
-		share.question_key_clear = FALSE;
-	}
-	share.question_last_shown = now;
-}
-
-/* whether an answer is taken now: the question is the one asked, on the screen (shown lately, and for long enough
-to be read), in the lobby or the menus (never in a game) */
-static boolean consent_answerable(
-	unsigned long host)
-{
-	unsigned long now = system_milliseconds();
-
-	return share.consent == AE_MAP_SHARE_CONSENT_ASKING && host && host == share.host_address &&
-		main_menu_is_active() && share.question_first_shown &&
-		!elapsed(share.question_last_shown, now, QUESTION_SHOWN_LATELY) &&
-		elapsed(share.question_first_shown, now, QUESTION_MINIMUM_TIME);
-}
-
-boolean ae_map_share_consent_yes(
-	unsigned long host,
-	unsigned long long bytes)
-{
-	/* (for the host and the amount that are shown now, no other) */
-	if (!consent_answerable(host) || bytes != question_bytes())
-		return FALSE;
-	share.consent = ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_YES);
-	/* (the yes is for that amount: more is asked for again; an amount not known is the limit's) */
-	share.granted = bytes ? bytes : (unsigned long long)guest_cap() << 20;
-	share.grant_base = share.taken;
-	share.played_asking = FALSE;
-	share.question_first_shown = 0;
-	error(_error_silent, "map sharing: the player said yes to downloading from this host (%ld MB)",
-		megabytes(share.granted));
-	if (share.all_wanted)
-	{
-		share.all_wanted = FALSE;
-		all_start();
-	}
-	return TRUE;
-}
-
-boolean ae_map_share_consent_no(
-	unsigned long host)
-{
-	if (share.consent != AE_MAP_SHARE_CONSENT_ASKING || !host || host != share.host_address)
-		return FALSE;
-	/* (no to GET ALL alone is not a no to the host: it may be asked again; no to the game's map is) */
-	share.consent = share.played_asking ? ae_map_share_consent_step(share.consent, AE_MAP_SHARE_CONSENT_EVENT_NO) :
-		AE_MAP_SHARE_CONSENT_UNASKED;
-	share.all_wanted = FALSE;
-	share.played_asking = FALSE;
-	share.question_first_shown = 0;
-	return TRUE;
-}
+/* ---------- the guest: the setting is the yes */
 
 boolean ae_map_share_download_may_write(
 	void)
 {
-	return !is_host() && ae_map_share_consent_writes(share.consent) != 0;
+	return !is_host() && guest_policy() != 0;
 }
 
 static void guest_update(
 	void)
 {
-	unsigned long now = system_milliseconds();
 	unsigned long address = guest_host_address();
-	boolean lobby = main_menu_is_active();
-	boolean key = ae_platform_map_share_key() != 0;
-	boolean pressed;
 
-	/* (a pad's BACK held in the lobby counts as the key: for a guest with no keyboard) */
-	if (!lobby || !ae_platform_map_share_pad())
-		share.pad_down_at = 0;
-	else if (!share.pad_down_at)
-		share.pad_down_at = now | 1;
-	else if (elapsed(share.pad_down_at, now, PAD_HOLD_TIME))
-		key = TRUE;
-	pressed = key && !share.key_down;
-	share.key_down = key;
 	if (address != share.host_address)
 		guest_host_changed(address);
 	if (!address)
 		return;
-	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
+	/* (the host's other maps: fetched on their own, once for each host, when its list is complete and the lobby is
+	up; the game's own map goes first, and a game that starts pauses them) */
+	if (!share.all_begun && main_menu_is_active() && client_game() && guest_policy() && share.host_is_ae &&
+		share.host_shares && share.catalogue_begun && ae_map_share_catalogue_complete(&share.catalogue))
 	{
-		/* (the key answers only once it was seen up while the question was shown) */
-		if (!key && share.question_first_shown)
-			share.question_key_clear = TRUE;
-		/* (debug.map_share_test, in a network test alone: the player's answers, through the same functions) */
-		if (test_mode("yes") || test_mode("all") || test_mode("internet"))
-			ae_map_share_consent_yes(address, question_bytes());
-		else if (test_mode("no"))
-		{
-			share.played_asking = TRUE;
-			ae_map_share_consent_no(address);
-		}
-		else if (pressed && share.question_key_clear)
-			ae_map_share_consent_yes(address, question_bytes());
-		/* (asked for GET ALL alone, and not answered: not asked any more, and may be asked again) */
-		else if (share.all_wanted && !share.played_asking && elapsed(share.all_asked_at, now, PROMPT_TIME))
-			ae_map_share_consent_no(address);
-	}
-	else
-	{
-		if ((test_mode("all") || test_mode("internet")) && !share.test_all_done && lobby && share.plan_count &&
-			!share.all_active)
-		{
-			share.test_all_done = TRUE;
-			pressed = TRUE;
-		}
-		if (pressed && share.all_active)
-		{
-			all_stop("was stopped");
-		}
-		else if (pressed && lobby && guest_policy() && share.host_shares)
-		{
-			guest_plan();
-			if (!share.plan_count)
-				notice_set(share.plan_over ? "The host's other maps are over what you take from one host." :
-					"You have all of the host's maps.");
-			/* (the yes given covers them: fetched; else asked, with their amount) */
-			else if (grant_covers(share.plan_bytes))
-				all_start();
-			else if (share.consent != AE_MAP_SHARE_CONSENT_NO)
-			{
-				share.consent = ae_map_share_consent_step(AE_MAP_SHARE_CONSENT_UNASKED, AE_MAP_SHARE_CONSENT_EVENT_NEED);
-				share.all_wanted = TRUE;
-				share.all_asked_at = now;
-				error(_error_silent, "map sharing: the player is asked whether to download from this host");
-			}
-		}
+		share.all_begun = TRUE;
+		all_start();
 	}
 	all_update();
 }
 
-/* ---------- every frame, and the screen's line */
+/* ---------- every frame, and the screen's card */
 
 void ae_map_share_all_update(
 	void)
@@ -2416,63 +2320,176 @@ void ae_map_share_all_update(
 	guest_update();
 }
 
-void ae_map_share_all_render(
+/* the card of a done or failed state, shown for a time and then faded */
+static void card_end_begin(
+	struct ae_map_share_card const *card,
+	unsigned long time)
+{
+	csmemcpy(&share.card_end, card, sizeof(share.card_end));
+	share.card_end_at = system_milliseconds();
+	share.card_end_time = time;
+	share.card_end_shown = TRUE;
+}
+
+/* a map of the host's others did not come */
+static void card_end_failed(
+	char const *level_name,
+	char const *reason)
+{
+	struct ae_map_share_card card;
+	int why = ae_map_share_why(reason);
+
+	if (why == AE_MAP_SHARE_WHY_STOPPED)
+		return;
+	csmemset(&card, 0, sizeof(card));
+	snprintf(card.label, sizeof(card.label), "DID NOT DOWNLOAD");
+	ae_map_share_display_name(level_name, card.name, sizeof(card.name));
+	snprintf(card.amount, sizeof(card.amount), "%s", ae_map_share_why_tag(why));
+	ae_map_share_why_line(why, guest_cap(), card.line, sizeof(card.line));
+	card.failed = TRUE;
+	card_end_begin(&card, CARD_FAILED_TIME);
+}
+
+/* the host's other maps are all fetched (or given up): MAPS READY, naming those that came */
+static void card_end_maps(
 	void)
 {
-	unsigned long now = system_milliseconds();
-	real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	rectangle2d bounds;
-	char text[240];
-	long font_tag_index;
+	struct ae_map_share_card card;
+	unsigned long long bytes = 0;
+	long index, count = 0;
 
-	text[0] = 0;
-	if (is_host() || !share.host_address)
-		return;
-	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
+	csmemset(&card, 0, sizeof(card));
+	for (index = 0; index < share.queue_count; index++)
 	{
-		if (share.plan_count)
+		struct ae_map_share_entry const *entry = &share.catalogue.entries[share.queue[index]];
+
+		if (guest_lacks(entry, NULL))
+			continue;
+		bytes += entry->size;
+		if (count < (long)NUMBEROF(card.names))
+			ae_map_share_display_name(entry->name, card.names[card.name_count++], sizeof(card.names[0]));
+		count++;
+	}
+	if (!count)
+		return;
+	card.name_total = count;
+	snprintf(card.label, sizeof(card.label), "MAPS READY");
+	if (count == 1)
+		snprintf(card.name, sizeof(card.name), "%s", card.names[0]);
+	else
+		snprintf(card.name, sizeof(card.name), "%ld new maps", count);
+	ae_map_share_megabytes_text(bytes, card.amount, sizeof(card.amount));
+	if (count == 1)
+	{
+		card.name_count = 0;
+		snprintf(card.line, sizeof(card.line), "Ready for the next game.");
+	}
+	card_end_begin(&card, CARD_DONE_TIME);
+}
+
+/* the card now, if any (menus only; the game's map first, then a failed or done card, then the host's others) */
+static boolean card_choose(
+	struct ae_map_share_card *card,
+	float *alpha,
+	char const *level_name,
+	boolean asking,
+	boolean transferring,
+	unsigned long done,
+	unsigned long total)
+{
+	unsigned long now = system_milliseconds();
+	boolean downloading = (asking || transferring) && level_name && level_name[0];
+	boolean game_map = downloading && !same_level(share.active_level, level_name);
+	long entry_index = NONE;
+
+	csmemset(card, 0, sizeof(*card));
+	*alpha = 1.0f;
+	if (share.card_game_level[0] && !(game_map && same_level(share.card_game_level, level_name)))
+	{
+		/* (the game's map was downloading and is not: it came if its file is here) */
+		if (!level_file_missing(share.card_game_level))
 		{
-			snprintf(text, sizeof(text), "The host has %ld map%s you lack, %ld MB (you take %ld MB at most). "
-				"Download from this host? F6 or hold BACK: yes%s", share.plan_count,
-				share.plan_count == 1 ? "" : "s", megabytes(question_bytes()), guest_cap(),
-				share.played_asking ? " - B or Esc: leave" : "");
+			struct ae_map_share_card ready;
+
+			csmemset(&ready, 0, sizeof(ready));
+			snprintf(ready.label, sizeof(ready.label), "MAP READY");
+			ae_map_share_display_name(share.card_game_level, ready.name, sizeof(ready.name));
+			ae_map_share_megabytes_text(share.card_game_bytes, ready.amount, sizeof(ready.amount));
+			snprintf(ready.line, sizeof(ready.line), "Ready for the next game.");
+			card_end_begin(&ready, CARD_DONE_TIME);
 		}
+		share.card_game_level[0] = 0;
+	}
+	if (game_map)
+	{
+		csstrncpy(share.card_game_level, level_name, sizeof(share.card_game_level) - 1);
+		share.card_game_bytes = total;
+		share.card_end_shown = FALSE;
+		snprintf(card->label, sizeof(card->label), "DOWNLOADING MAP");
+		ae_map_share_display_name(level_name, card->name, sizeof(card->name));
+		card->has_bar = TRUE;
+		if (asking || !total)
+			snprintf(card->amount, sizeof(card->amount), "Asking the host...");
 		else
 		{
-			snprintf(text, sizeof(text), "Download this game's map from the host? F6 or hold BACK: yes - B or Esc: leave");
+			ae_map_share_amount_text(done, total, card->amount, sizeof(card->amount));
+			card->progress = (float)((double)MIN(done, total) / (double)total);
+		}
+		return TRUE;
+	}
+	if (share.card_end_shown)
+	{
+		unsigned long age = now - share.card_end_at;
+
+		if (age >= share.card_end_time + CARD_FADE_TIME)
+			share.card_end_shown = FALSE;
+		else
+		{
+			csmemcpy(card, &share.card_end, sizeof(*card));
+			if (age > share.card_end_time)
+				*alpha = 1.0f - (float)(age - share.card_end_time) / (float)CARD_FADE_TIME;
+			return TRUE;
 		}
 	}
-	else if (share.all_active)
+	if (share.all_active && share.queue_next < share.queue_count)
+		entry_index = share.queue[share.queue_next];
+	if (entry_index != NONE)
 	{
-		/* (the pad's BACK only in the lobby: in a game it is the scoreboard's) */
-		snprintf(text, sizeof(text), "Getting the host's maps: %ld of %ld - F6%s stops",
-			MIN(share.queue_next + 1, share.queue_count), share.queue_count,
-			main_menu_is_active() ? " or hold BACK" : "");
+		struct ae_map_share_entry const *entry = &share.catalogue.entries[entry_index];
+
+		snprintf(card->label, sizeof(card->label), "DOWNLOADING MAPS");
+		snprintf(card->counter, sizeof(card->counter), "%ld OF %ld", MIN(share.queue_next + 1, share.queue_count),
+			share.queue_count);
+		ae_map_share_display_name(entry->name, card->name, sizeof(card->name));
+		card->has_bar = TRUE;
+		if (downloading && same_level(share.active_level, level_name) && transferring && total)
+		{
+			ae_map_share_amount_text(done, total, card->amount, sizeof(card->amount));
+			card->progress = (float)((double)MIN(done, total) / (double)total);
+		}
+		else
+			snprintf(card->amount, sizeof(card->amount), "Asking the host...");
+		return TRUE;
 	}
-	else if (share.notice[0] && !elapsed(share.notice_until, now, 0))
-	{
-		snprintf(text, sizeof(text), "%s", share.notice);
-	}
-	else if (main_menu_is_active() && share.host_shares && share.plan_count && guest_policy())
-	{
-		snprintf(text, sizeof(text), "The host has %ld map%s you lack (%ld MB): F6 or hold BACK gets them all",
-			share.plan_count, share.plan_count == 1 ? "" : "s", megabytes(share.plan_bytes));
-	}
-	if (!text[0])
-		return;
-	font_tag_index = interface_get_tag_index(_interface_font_terminal);
-	if (font_tag_index == NONE)
-		return;
-	/* (under map sharing's own line, at the top of the screen) */
-	bounds = render.camera.window_bounds;
-	offset_rectangle2d(&bounds, -render.camera.viewport_bounds.x0, -render.camera.viewport_bounds.y0);
-	bounds.y0 = 24;
-	bounds.y1 = 42;
-	draw_string_set_draw_mode(font_tag_index, NONE, _text_centered, 0, &color);
-	rasterizer_draw_string(&bounds, NULL, NULL, 0, text);
-	/* (the question was really drawn: only then, and only after a while, is an answer taken) */
-	if (share.consent == AE_MAP_SHARE_CONSENT_ASKING)
-		ae_map_share_consent_shown();
+	return FALSE;
+}
+
+boolean ae_map_share_all_render(
+	char const *level_name,
+	boolean asking,
+	boolean transferring,
+	unsigned long done,
+	unsigned long total)
+{
+	struct ae_map_share_card card;
+	float alpha;
+
+	if (is_host() || !share.host_address || !main_menu_is_active() || !ae_map_share_card_available())
+		return FALSE;
+	if (!card_choose(&card, &alpha, level_name, asking, transferring, done, total))
+		return FALSE;
+	ae_map_share_card_draw(&card, alpha);
+	return TRUE;
 }
 
 /* map_share.c's upload_limit (an AE hook): a host whose every other machine is on the local network sends at

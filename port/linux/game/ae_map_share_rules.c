@@ -8,7 +8,20 @@ DamnationCE v0.3.41 (CC0), the address ranges as its address_local.
 #include "ae_map_share_rules.h"
 
 #include <ctype.h>
+#include <stdio.h>
 #include <string.h>
+
+static int ci_equal(
+	char const *a,
+	char const *b)
+{
+	for (; *a && *b; a++, b++)
+	{
+		if (tolower((unsigned char)*a) != tolower((unsigned char)*b))
+			return 1;
+	}
+	return *a != *b;
+}
 
 int ae_map_share_address_local(
 	unsigned long address)
@@ -448,14 +461,6 @@ void ae_map_share_charge_set(
 		charges->items[index].size = size;
 }
 
-int ae_map_share_grant_covers(
-	unsigned long long granted,
-	unsigned long long used,
-	unsigned long long more)
-{
-	return used <= granted && more <= granted - used;
-}
-
 int ae_map_share_policy_allows(
 	int local,
 	int setting,
@@ -464,28 +469,224 @@ int ae_map_share_policy_allows(
 	return setting && (local || internet_setting);
 }
 
-int ae_map_share_consent_step(
-	int state,
-	int event)
+void ae_map_share_display_name(
+	char const *name,
+	char *out,
+	int size)
 {
-	switch (event)
+	char work[128];
+	char const *slash;
+	size_t length;
+	int index;
+	int word_start = 1;
+
+	if (size <= 0)
+		return;
+	out[0] = 0;
+	if (!name)
+		return;
+	slash = strrchr(name, '\\');
+	if (strrchr(name, '/') > slash)
+		slash = strrchr(name, '/');
+	name = slash ? slash + 1 : name;
+	length = strlen(name);
+	if (length >= sizeof(work))
+		length = sizeof(work) - 1;
+	memcpy(work, name, length);
+	work[length] = 0;
+	/* (a Custom Edition level's "@ce") */
 	{
-	case AE_MAP_SHARE_CONSENT_EVENT_HOST:
-		return AE_MAP_SHARE_CONSENT_UNASKED;
-	case AE_MAP_SHARE_CONSENT_EVENT_NEED:
-		return state == AE_MAP_SHARE_CONSENT_UNASKED ? AE_MAP_SHARE_CONSENT_ASKING : state;
-	case AE_MAP_SHARE_CONSENT_EVENT_YES:
-		return state == AE_MAP_SHARE_CONSENT_ASKING ? AE_MAP_SHARE_CONSENT_YES : state;
-	case AE_MAP_SHARE_CONSENT_EVENT_NO:
-		return state == AE_MAP_SHARE_CONSENT_ASKING ? AE_MAP_SHARE_CONSENT_NO : state;
+		char *at = strchr(work, '@');
+
+		if (at)
+			*at = 0;
+		length = strlen(work);
 	}
-	return state;
+	if (length > 4 && !ci_equal(work + length - 4, ".map"))
+		work[length -= 4] = 0;
+	/* ("_" and 8 hexadecimal digits: a second version's, its hash's first digits) */
+	if (length > 9 && work[length - 9] == '_')
+	{
+		int hex = 1;
+
+		for (index = 1; index <= 8; index++)
+		{
+			char c = work[length - 9 + index];
+
+			if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))
+				hex = 0;
+		}
+		if (hex)
+			work[length -= 9] = 0;
+	}
+	for (index = 0; work[index] && index < size - 1; index++)
+	{
+		char c = work[index] == '_' ? ' ' : work[index];
+
+		if (c >= 'a' && c <= 'z' && word_start)
+			c = (char)(c - 'a' + 'A');
+		word_start = c == ' ';
+		out[index] = c;
+	}
+	out[index] = 0;
 }
 
-int ae_map_share_consent_writes(
-	int state)
+void ae_map_share_megabytes_text(
+	unsigned long long bytes,
+	char *out,
+	int size)
 {
-	return state == AE_MAP_SHARE_CONSENT_YES;
+	if (bytes >= 10ULL * 1048576)
+		snprintf(out, size, "%llu MB", (bytes + 524288) >> 20);
+	else
+		snprintf(out, size, "%llu.%llu MB", bytes / 1048576, (bytes % 1048576) * 10 / 1048576);
+}
+
+void ae_map_share_amount_text(
+	unsigned long long done,
+	unsigned long long total,
+	char *out,
+	int size)
+{
+	if (total >= 10ULL * 1048576)
+		snprintf(out, size, "%llu of %llu MB", (done + 524288) >> 20, (total + 524288) >> 20);
+	else
+		snprintf(out, size, "%llu.%llu of %llu.%llu MB", done / 1048576, (done % 1048576) * 10 / 1048576,
+			total / 1048576, (total % 1048576) * 10 / 1048576);
+}
+
+int ae_map_share_why(
+	char const *reason)
+{
+	if (!reason)
+		return AE_MAP_SHARE_WHY_OTHER;
+	if (strstr(reason, "DOWNLOAD MAPS is OFF"))
+		return AE_MAP_SHARE_WHY_SETTING_OFF;
+	if (strstr(reason, "INTERNET DOWNLOADS is OFF"))
+		return AE_MAP_SHARE_WHY_INTERNET_OFF;
+	if (strstr(reason, "was stopped"))
+		return AE_MAP_SHARE_WHY_STOPPED;
+	if (strstr(reason, "does not share"))
+		return AE_MAP_SHARE_WHY_NOT_SHARED;
+	if (strstr(reason, "you take from one host"))
+		return AE_MAP_SHARE_WHY_OVER_LIMIT;
+	if (strstr(reason, "cannot share") || strstr(reason, "does not have this map") ||
+		strstr(reason, "its list of maps does not have") || strstr(reason, "kind that is not downloaded") ||
+		strstr(reason, "larger than the game takes"))
+	{
+		return AE_MAP_SHARE_WHY_CANNOT_SEND;
+	}
+	if (strstr(reason, "did not send its list") || strstr(reason, "did not answer"))
+		return AE_MAP_SHARE_WHY_NO_ANSWER;
+	if (strstr(reason, "offer was not of this map") || strstr(reason, "not the map of its list"))
+		return AE_MAP_SHARE_WHY_WRONG_FILE;
+	if (strstr(reason, "enough memory"))
+		return AE_MAP_SHARE_WHY_NO_MEMORY;
+	if (strstr(reason, "a file of its name is there"))
+		return AE_MAP_SHARE_WHY_NAME_TAKEN;
+	if (strstr(reason, "could not be written") || strstr(reason, "free disk space"))
+		return AE_MAP_SHARE_WHY_DISK_FULL;
+	if (strstr(reason, "cannot be played"))
+		return AE_MAP_SHARE_WHY_WONT_LOAD;
+	if (strstr(reason, "no player sent"))
+		return AE_MAP_SHARE_WHY_STALLED;
+	return AE_MAP_SHARE_WHY_OTHER;
+}
+
+char const *ae_map_share_why_tag(
+	int why)
+{
+	switch (why)
+	{
+	case AE_MAP_SHARE_WHY_NOT_SHARED: return "not shared";
+	case AE_MAP_SHARE_WHY_CANNOT_SEND: return "host can't send";
+	case AE_MAP_SHARE_WHY_WRONG_FILE: return "wrong file";
+	case AE_MAP_SHARE_WHY_NO_MEMORY: return "out of memory";
+	case AE_MAP_SHARE_WHY_DISK_FULL: return "disk full";
+	case AE_MAP_SHARE_WHY_NAME_TAKEN: return "name taken";
+	case AE_MAP_SHARE_WHY_WONT_LOAD: return "won't load";
+	case AE_MAP_SHARE_WHY_NO_ANSWER: return "no answer";
+	case AE_MAP_SHARE_WHY_STALLED: return "stalled";
+	case AE_MAP_SHARE_WHY_OVER_LIMIT: return "over your limit";
+	case AE_MAP_SHARE_WHY_SETTING_OFF: return "setting off";
+	case AE_MAP_SHARE_WHY_INTERNET_OFF: return "setting off";
+	}
+	return "failed";
+}
+
+void ae_map_share_why_line(
+	int why,
+	long limit_megabytes,
+	char *out,
+	int size)
+{
+	switch (why)
+	{
+	case AE_MAP_SHARE_WHY_NOT_SHARED: snprintf(out, size, "Ask the host to share maps."); break;
+	case AE_MAP_SHARE_WHY_CANNOT_SEND: snprintf(out, size, "Only the host can fix this."); break;
+	case AE_MAP_SHARE_WHY_WRONG_FILE: snprintf(out, size, "It was thrown away. Join again."); break;
+	case AE_MAP_SHARE_WHY_NO_MEMORY: snprintf(out, size, "Close programs, then join again."); break;
+	case AE_MAP_SHARE_WHY_DISK_FULL: snprintf(out, size, "Free up space, then join again."); break;
+	case AE_MAP_SHARE_WHY_NAME_TAKEN: snprintf(out, size, "Move your copy out of maps_ce."); break;
+	case AE_MAP_SHARE_WHY_WONT_LOAD: snprintf(out, size, "This map does not work here."); break;
+	case AE_MAP_SHARE_WHY_NO_ANSWER: snprintf(out, size, "Join again in a minute."); break;
+	case AE_MAP_SHARE_WHY_STALLED: snprintf(out, size, "Check your internet, join again."); break;
+	case AE_MAP_SHARE_WHY_OVER_LIMIT: snprintf(out, size, "Over your %ld MB host limit.", limit_megabytes); break;
+	case AE_MAP_SHARE_WHY_SETTING_OFF: snprintf(out, size, "Turn on DOWNLOAD MAPS."); break;
+	case AE_MAP_SHARE_WHY_INTERNET_OFF: snprintf(out, size, "Turn on INTERNET DOWNLOADS."); break;
+	default: snprintf(out, size, "Join again."); break;
+	}
+}
+
+void ae_map_share_why_dialog(
+	int why,
+	long limit_megabytes,
+	char const *reason,
+	char *out,
+	int size)
+{
+	switch (why)
+	{
+	case AE_MAP_SHARE_WHY_NOT_SHARED:
+		snprintf(out, size, "The host does not share its maps. Ask the host to turn on SHARE MAPS, then join again.");
+		break;
+	case AE_MAP_SHARE_WHY_CANNOT_SEND:
+		snprintf(out, size, "The host cannot send this map. Only the host can fix this.");
+		break;
+	case AE_MAP_SHARE_WHY_WRONG_FILE:
+		snprintf(out, size, "The host sent a different file than it listed, so it was thrown away. Join again.");
+		break;
+	case AE_MAP_SHARE_WHY_NO_MEMORY:
+		snprintf(out, size, "Your computer ran out of memory. Close other programs, then join again.");
+		break;
+	case AE_MAP_SHARE_WHY_DISK_FULL:
+		snprintf(out, size, "It could not be saved: is your disk full? Free up space, then join again.");
+		break;
+	case AE_MAP_SHARE_WHY_NAME_TAKEN:
+		snprintf(out, size, "You have a different map with this name in maps_ce. Move it out, then join again.");
+		break;
+	case AE_MAP_SHARE_WHY_WONT_LOAD:
+		snprintf(out, size, "The map arrived but does not work in this game. Tell the host.");
+		break;
+	case AE_MAP_SHARE_WHY_NO_ANSWER:
+		snprintf(out, size, "The host did not answer. Join again in a minute.");
+		break;
+	case AE_MAP_SHARE_WHY_STALLED:
+		snprintf(out, size, "Nothing arrived for a minute. Check your connection, then join again.");
+		break;
+	case AE_MAP_SHARE_WHY_OVER_LIMIT:
+		snprintf(out, size, "This host's maps are over the %ld MB you take from one host.", limit_megabytes);
+		break;
+	case AE_MAP_SHARE_WHY_SETTING_OFF:
+		snprintf(out, size, "DOWNLOAD MAPS is OFF. Turn it on in Network Setup, Map Sharing, then join again.");
+		break;
+	case AE_MAP_SHARE_WHY_INTERNET_OFF:
+		snprintf(out, size, "This is an internet game and INTERNET DOWNLOADS is OFF. Turn it on in Map Sharing.");
+		break;
+	default:
+		snprintf(out, size, "%s", reason ? reason : "The map is not downloaded.");
+		break;
+	}
 }
 
 int ae_map_share_rate_allow(

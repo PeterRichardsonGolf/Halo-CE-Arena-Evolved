@@ -195,33 +195,52 @@ unsigned long long ae_map_share_charge_growth(struct ae_map_share_charges const 
 /* the key charged size (its largest so far kept) */
 void ae_map_share_charge_set(struct ae_map_share_charges *charges, char const *key, unsigned long long size);
 
-/* whether a yes given for granted bytes, of which used were taken since, covers more bytes */
-int ae_map_share_grant_covers(unsigned long long granted, unsigned long long used, unsigned long long more);
-
 /* whether maps are shared (a host's setting) or downloaded (a guest's) with a machine: the setting on, and the
 machine on the local network (ae_map_share_address_local of its address) or the internet's setting on too */
 int ae_map_share_policy_allows(int local, int setting, int internet_setting);
 
-/* the guest's answer to "download from this host?": asked once per host. Nothing is written unless it is YES */
+/* Map downloads are the OpenCE way: no question. network.map_download on (and network.map_download_internet for a
+host that is not on the local network, ae_map_share_policy_allows) is the player's yes. What the card and the dialog
+say follows. */
+
+/* a map's name as the card and the dialog show it: the folder, the extension (.map) and a level's "@ce" dropped, the "_" and 8
+hexadecimal digits a second version ends in dropped, underscores spaces, each word's first letter a capital
+("h2_coagulation_9fc847de" is "H2 Coagulation"). out is size bytes; "" if name is NULL */
+void ae_map_share_display_name(char const *name, char *out, int size);
+
+/* bytes as megabytes in text: "210 MB" from 10 MB, else one decimal ("9.8 MB", "0.4 MB") */
+void ae_map_share_megabytes_text(unsigned long long bytes, char *out, int size);
+/* a download's amount: "31 of 73 MB" (both whole megabytes if total is 10 MB or more, else both with one decimal:
+"0.4 of 9.8 MB") */
+void ae_map_share_amount_text(unsigned long long done, unsigned long long total, char *out, int size);
+
+/* why a download did not come: the reasons of map_share.c's download_fail and of this game's refusals, in groups */
 enum
 {
-	AE_MAP_SHARE_CONSENT_UNASKED,
-	AE_MAP_SHARE_CONSENT_ASKING,
-	AE_MAP_SHARE_CONSENT_YES,
-	AE_MAP_SHARE_CONSENT_NO,
+	AE_MAP_SHARE_WHY_OTHER,
+	AE_MAP_SHARE_WHY_NOT_SHARED,
+	AE_MAP_SHARE_WHY_CANNOT_SEND,
+	AE_MAP_SHARE_WHY_WRONG_FILE,
+	AE_MAP_SHARE_WHY_NO_MEMORY,
+	AE_MAP_SHARE_WHY_DISK_FULL,
+	AE_MAP_SHARE_WHY_NAME_TAKEN,
+	AE_MAP_SHARE_WHY_WONT_LOAD,
+	AE_MAP_SHARE_WHY_NO_ANSWER,
+	AE_MAP_SHARE_WHY_STALLED,
+	AE_MAP_SHARE_WHY_OVER_LIMIT,
+	AE_MAP_SHARE_WHY_SETTING_OFF,
+	AE_MAP_SHARE_WHY_INTERNET_OFF,
+	AE_MAP_SHARE_WHY_STOPPED,
+	AE_MAP_SHARE_WHY_COUNT,
 };
-enum
-{
-	/* a download wants to start */
-	AE_MAP_SHARE_CONSENT_EVENT_NEED,
-	/* the player's answers (taken only while asking) */
-	AE_MAP_SHARE_CONSENT_EVENT_YES,
-	AE_MAP_SHARE_CONSENT_EVENT_NO,
-	/* another host */
-	AE_MAP_SHARE_CONSENT_EVENT_HOST,
-};
-int ae_map_share_consent_step(int state, int event);
-int ae_map_share_consent_writes(int state);
+/* the group a reason (the text download_fail was given) belongs to */
+int ae_map_share_why(char const *reason);
+/* the card's short tag beside the map's name ("disk full") */
+char const *ae_map_share_why_tag(int why);
+/* the card's line of what to do ("Free up space, then join again."); limit_megabytes is the cap a host may take */
+void ae_map_share_why_line(int why, long limit_megabytes, char *out, int size);
+/* the dialog's text after "The map <Name> did not download." and a blank line; reason is used for a group of none */
+void ae_map_share_why_dialog(int why, long limit_megabytes, char const *reason, char *out, int size);
 
 /* requests counted per machine: burst at once, one more each refill milliseconds */
 struct ae_map_share_rate
