@@ -1760,7 +1760,7 @@ static void broker_readable(struct broker *broker)
 /* port/assets/network/brokers.txt's brokers, for a game with no such file
 beside its config.toml: the dedicated server's container, a macOS
 application (its config.toml in Application Support), a build run from its
-build folder. Keep it the same as that file */
+build folder. Keep it the same as that file (test_linux_port.py checks) */
 #define DEFAULT_BROKERS "opence.milenko.org:1883,broker.emqx.io:1883,broker.hivemq.com:1883,test.mosquitto.org:1883"
 
 /* the brokers in network.brokers_file (beside config.toml, unless a full

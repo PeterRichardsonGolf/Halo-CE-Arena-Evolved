@@ -60,6 +60,8 @@ MUSL_URL = f"https://musl.libc.org/releases/musl-{MUSL_VERSION}.tar.gz"
 # (the download's SHA-256, and the tag's commit, when they were pinned)
 MUSL_SHA256 = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4"
 # (as tools/windows_build.py's and tools/linux_sysroot.py's SDL_VERSION)
+# (the download's SHA-256, and the tag's commit, when they were pinned)
+MUSL_SHA256 = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4"
 SDL_TAG = "release-3.4.16"
 SDL_COMMIT = "fa2c02bb6e21974a89ea9824bc53c9932abe5f9c"
 SDL_DIR = THIRD_PARTY / "SDL3"

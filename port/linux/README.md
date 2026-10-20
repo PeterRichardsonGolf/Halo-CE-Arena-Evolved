@@ -42,9 +42,11 @@ To start the game:
 - The 32-bit OpenGL libraries (`lib32-mesa`).
 - The 32-bit PipeWire or PulseAudio client libraries (`lib32-pipewire` or
   `lib32-libpulse`).
-- The 32-bit X11 libraries (`lib32-libx11`, `lib32-libxext`). In a Wayland
-  session, the game uses them through XWayland. SDL uses Wayland itself
-  only if the 32-bit Wayland libraries are version 1.20 or later
+- The 32-bit X11 libraries (`lib32-libx11`, `lib32-libxext`, and
+  `lib32-libxi`, with which SDL holds the mouse; without it the game hides
+  the pointer and moves it back to the middle of the window instead). In a
+  Wayland session, the game uses them through XWayland. SDL uses Wayland
+  itself only if the 32-bit Wayland libraries are version 1.20 or later
   (`lib32-wayland`, `lib32-libxkbcommon`; Debian 11, Ubuntu 20.04 and
   Fedora 32 have older ones) and the compositor has the fifo-v1 protocol.
   On GNOME, the window then has borders only with the 32-bit libdecor
@@ -83,7 +85,10 @@ against it.
 To make the portable build you need, in addition to the tools above,
 CMake, `pkg-config` (`pkgconf`) and `wayland-scanner` (`wayland` on Arch
 Linux, `libwayland-bin` on Debian and Ubuntu). You do not need the 32-bit
-SDL3. You need the 32-bit glibc only for the tests.
+SDL3. You need the 32-bit glibc only for the tests. Keep the checkout in a
+folder whose path has no spaces: SDL's build takes the system root's
+include folders from `pkg-config`, which splits a path at its spaces, so the
+portable build stops with a message there.
 
 To see the glibc version that a build needs, enter
 `readelf -V build/linux/halo | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1`.
@@ -152,11 +157,23 @@ sequence:
    contains the executable.
 
 If the game finds no data, it asks for an Xbox disc image (`.xiso` or
-`.iso`). This occurs at the first start:
+`.iso`). This occurs at the first start. First the game looks for a disc
+image in the folder of the executable (a name that ends in `.iso` or
+`.xiso`, in capitals or not). If it finds one, it names that image in its
+question:
 
 - Select "No" to stop the game.
-- Select "Yes" to open a file picker. Select the disc image. The game copies
-  `maps/` next to the executable and shows the progress.
+- Select "Yes" to copy `maps/` from the disc image. If the game found an
+  image next to the executable, it uses that image and shows no file picker.
+  Otherwise it opens a file picker: select the disc image, or cancel to see
+  the question again. The game copies `maps/` next to the executable and
+  shows the progress. If the copy from the image found next to the
+  executable fails, the next "Yes" opens the file picker.
+
+On Linux, the file picker needs the desktop portal or `zenity`. If neither
+is present, the game says to put the disc image next to the executable (or
+to install `zenity`) and stops. Put the image there and start the game
+again.
 
 The game writes the copy to `maps.partial`. When the copy is complete, the
 game changes the name to `maps`. If the copy stops before it is complete,
@@ -193,6 +210,21 @@ Do the set-up in Desktop Mode: unpack the release, put `maps/` next to
   so the game continues from where it stopped. A network game does not
   wait: the host drops a machine that it has not heard from for 15 seconds,
   and while a Deck that hosts sleeps, the other players have no host.
+
+### NVIDIA on Wayland
+
+The game is a 32-bit program. NVIDIA's driver draws OpenGL into a Wayland
+window through its `egl-wayland` library, which most distributions only
+ship 64-bit (Arch and its derivatives have no 32-bit package of it). A
+32-bit OpenGL window on Wayland then falls back to Mesa's `llvmpipe`, which
+draws on the processor: the log shows `OpenGL ... on llvmpipe`, and the
+game is slow or never finishes loading.
+
+So on a Wayland desktop with NVIDIA's driver loaded, the game opens its
+window through XWayland (X11), where the 32-bit driver draws, unless a
+32-bit `egl-wayland` is installed. The log says so ("video: NVIDIA's
+driver ..."). `SDL_VIDEO_DRIVER=wayland` or `SDL_VIDEO_DRIVER=x11` chooses
+the video driver yourself.
 
 ## Files and folders
 
@@ -292,7 +324,9 @@ computer (co-op, or split screen in a network game) and only one gamepad,
 that gamepad is controller 2 (player 2) and the keyboard and mouse stay
 controller 1. The gamepad changes controller only when none of its buttons
 is held. The profile's button layout (Settings > Gamepads) is the
-gamepads' only.
+gamepads' only. Besides the Xbox's five, it has the Master Chief
+Collection's Bumper Jumper: jump on the left bumper, melee on the right,
+switching grenades on A, action and reload on B and the flashlight on X.
 
 On Linux a PlayStation controller (DualSense, DualShock 4) goes through the
 kernel's driver of it (`hid-playstation` since Linux 5.12, which also drives
@@ -474,7 +508,9 @@ player's profile is chosen on the ADD PLAYER screen that opens (with any
 controller). With one gamepad, choose the lobby's ADD PLAYER button first:
 until then that gamepad shares controller 1 with the keyboard. Two players on one profile get different names from the host. A
 player's B in the lobby leaves the game alone, and the last player of the
-computer leaves it for all of them. In the game, each player's pause menu
+computer leaves it for all of them. When all the players are on the host's
+computer, START NOW starts the game without another computer, and a team
+game does not need a player on each team. In the game, each player's pause menu
 opens on their part of the screen, and its LEAVE GAME is theirs: their part
 of the screen stays until the game ends. A game under way shows its own
 screen before JOIN GAME: players join there the same way, START or ADD
@@ -692,6 +728,7 @@ the setting for one start of the game. It has priority over the file.
 | `display.waypoint_size` | `70` | `HALO_WAYPOINT_SIZE` | The size of the item waypoints' labels (name, distance, timer and picture), in percent of the full size: 50 to 100, in steps of 5. In split screen the size is multiplied by the view's factor (0.85 for a half screen, 0.75 for a quarter); far items shrink gently (full size to 15 m, down to 75% at 60 m, never below). No label is drawn with capitals under 9 screen pixels high. The power list, the clock and the overlay keep their sizes. WAYPOINT SIZE on Settings > HUD sets it. This machine's display only. |
 | `display.short_messages` | `false` | `HALO_SHORT_MESSAGES` | `true`: the killing spree messages read `Killing Spree!` and `Killing Spree! (N)` (Halo 1: NHE's short form), instead of the game's `You are on a killing spree!`. This machine's own text only; nothing is sent. Settings > HUD sets it. |
 | `display.per_pixel_lighting` | `false` | `HALO_PER_PIXEL_LIGHTING` | `false`: the models (characters, weapons, vehicles, scenery) are lit at each vertex and the light is blended between them, as on the Xbox. The light across a curved surface then shows facets, and a point light that passes close lights only the vertices it reaches. `true`: the models are lit at each pixel by the same lights (the ambient light, two distant lights and two point lights), which changes their look. |
+| `display.structure_culling` | `31` | `HALO_STRUCTURE_CULLING` | Which tests skip the triangles of the level (its walls, floors and terrain) that the camera cannot see before they are drawn, as bits added together: `1`, triangles outside the view; `2`, groups of triangles that all face away from the camera; `4`, single triangles that face away; `8`, smaller groups, so that more of them are skipped whole; `16`, the rooms nearest the camera first. Each test is conservative: the picture is the same, with fewer triangles drawn. `0`: the original walk, which draws every triangle of each visible room. The console's `structure_culling <bits>` changes it until the game quits, and `debug_structure_culling true` shows what was skipped (red: outside the view, blue: facing away). |
 | `display.shield_glow` | `false` | `HALO_SHIELD_GLOW` | `true`: as a unit's energy shield flares (hit, charging, falling), it lights what is around it and itself, as a plasma bolt does, in the shield shader's own color (a Spartan's gold, an Elite's blue), rising and falling with the flare seen on the body. An ordinary dynamic light of the game's, drawn with a light definition the map has (`shield_glow.c`). Up to 8 units near the camera. |
 | `display.shield_glow_intensity` | `default` | `HALO_SHIELD_GLOW_INTENSITY` | The shield glow's reach and brightness: `default`, or `light_show` (three times as far, and at full strength from a third of the flare: a light is no brighter than full). The units glowing are those near any local player's camera, so each of a split screen's views has the same. |
 | `audio.enabled` | `true` | `HALO_NO_AUDIO=1` sets `false` | `false`: no audio device. The sound continues without output. |
@@ -743,6 +780,7 @@ the setting for one start of the game. It has priority over the file.
 | `bots.movement_skill` | `"same"` | `HALO_BOT_MOVEMENT_SKILL` | MOVEMENT SKILL: the bots' strafing, jumping, crouching, closing in and retreating at a level of their own (`"recruit"` .. `"legendary"`), or `"same"` for `bots.skill`'s. |
 | `bots.teams` | `"even"` | `HALO_BOT_TEAMS` | In a team game: `"even"` puts the bots on both teams, evening them with the players; `"against"` puts them all on the team the players are not on. |
 | `bots.playfight` | `false` | `HALO_BOT_PLAYFIGHT` | PLAYFIGHT, as Halo Infinite's Training Mode: the bots move, strafe and aim at you, but never shoot, throw a grenade or strike (aim practice). Takes effect at once. |
+| `game.unlock_all_levels` | `false` | `HALO_UNLOCK_ALL_LEVELS` | `true`: a profile created afterward starts with all the campaign levels finished on all the difficulties. `false`: a new profile starts at The Pillar of Autumn, and each level opens when you finish the level before it, as on the Xbox. Existing profiles keep their progress. To start a profile over, type `profile_reset_campaign` in the console. |
 | `paths.data` | `""` | `HALO_DATA_ROOT` | The data root. Refer to "Start the game". |
 | `paths.saves` | `""` | `HALO_SAVE_ROOT` | The save root. Refer to "Files and folders". |
 | `network.address` | `""` | `HALO_NET_ADDRESS` | The IPv4 address of this machine for system link. Refer to "Play on one computer". |
@@ -800,7 +838,8 @@ the setting for one start of the game. It has priority over the file.
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | No effect in Arena Evolved, whose builds send no crash reports. Where they are on (OpenCE's numbered Windows builds): `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
 | `debug.ds5_log` | `false` | `HALO_DEBUG_DS5_LOG` | A DualSense's effects in `debug.txt`: the bytes written to the pad, what each player's triggers and lightbar are asked for as it changes, the game's rumble, each weapon tag's kind once a map, and each minute a pad's reports (`dualsense: port N: writes X, merged Y, deferred Z, errors E`). |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
-| `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds. `0`: never. |
+| `debug.fixed_step` | `false` | `HALO_FIXED_STEP` | `true`: a game of this computer alone runs one tick a frame, whatever time has passed, so that it plays the same every time (tests). |
+| `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds (from when its window opens; with `debug.null_renderer`, or no display, from its first frame). `0`: never. |
 | `debug.screenshot_directory`, `debug.screenshot_every`, `debug.screenshot_format` | `""`, `0`, `"bmp"` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY`, `HALO_SCREENSHOT_FORMAT` | The game writes each Nth frame to this folder as a BMP file, or a PNG file with `"png"`. |
 | `debug.record_seconds` | `0.0` | `HALO_RECORD_SECONDS` | Record this number of seconds (as F9 does) from the first frame of play, a map other than the main menu's, one time. `0`: never. |
 | `debug.hidden_window`, `debug.null_renderer` | `false` | `HALO_HIDDEN_WINDOW`, `HALO_NULL_RENDERER` | `true`: no visible window, or no graphics. |
@@ -816,6 +855,8 @@ the setting for one start of the game. It has priority over the file.
 | `debug.bot_events` | `false` | `HALO_BOT_EVENTS` | Each bot's fight events (target seen, first shot, every shot, hits, melee, strafe changes, crouches, kills, deaths, and its position each second) are written to `debug.txt` as `bot event:` lines; `tools/ae_test/bot_report.py` turns them into tables. |
 | `debug.touch_targets` | `false` | `HALO_TOUCH_TARGETS` | Outlines the tap targets of the menus (item green, value blue, list slot yellow, legend button red, the band beside the slots of a list orange, keys of the on-screen keyboard white), marks where the last finger went down and the last tap landed for 3 seconds, and logs each tap with the target that it hit (for a value, also where it splits into previous and next): to judge the accuracy of touch. |
 | `debug.solo_game` | `false` | `HALO_SOLO_GAME` | A system link or split screen game can start with one player, alone on this machine: to test multiplayer maps without a second machine. |
+| `debug.network_test_cues`, `debug.network_test_cue_players` | none, `1` | `HALO_NETWORK_TEST_CUES`, `HALO_NETWORK_TEST_CUE_PLAYERS` | Console lines a test runs at their seconds, from the first tick that many players are in (`"<second> <line>\|..."`; not on the web). |
+| `debug.log_addresses` | `false` | `HALO_LOG_ADDRESSES=1` sets `true` | `true`: other machines' internet addresses are written whole in `debug.txt` and the console, for debugging your own network. `false`: a public address is written as a tag (`addr#3f2a9c`) that matches up only within one run; local network addresses are always whole. Do not post a `debug.txt` written with this on. |
 | `debug.network_latency`, `debug.network_loss`, `debug.network_corrupt`, `debug.network_corrupt_stream`, `debug.network_corrupt_after` | `0` | `HALO_NETWORK_LATENCY`, `HALO_NETWORK_LOSS`, `HALO_NETWORK_CORRUPT`, `HALO_NETWORK_CORRUPT_STREAM`, `HALO_NETWORK_CORRUPT_AFTER` | The game holds all the data that it receives for this number of milliseconds, ignores this percentage of the datagrams, and damages this percentage of the datagrams it receives, and this percentage of its reads of streams, at random (bytes changed, cut short, stretched or replaced), from this many seconds after the start. Use the first two to test the netcode as on the internet, and the others to test that nothing another machine sends can crash the game (a damaged stream is closed, so a little goes a long way; a host's messages to its own client are damaged too, so start damaging once the game has started). |
 | `debug.voice_test` | `false` | `HALO_VOICE_TEST` | Automatic tests of voice chat: a tone replaces the microphone, and each voice that the game hears is written to the log once each second. |
 | `debug.telnet_console`, `debug.telnet_console_port` | `false`, `2323` | `HALO_TELNET_CONSOLE`, `HALO_TELNET_CONSOLE_PORT` | The game listens on 127.0.0.1, on this port, for a script console (connect with telnet). The console has no password, so only this computer can reach it. |
@@ -1247,7 +1288,10 @@ runs.
 
 In the Server Browser, select a game to join it. The game joins the invite
 of the game, as for a link. When it reaches the host, it opens the lobby.
-If it cannot reach the host in 30 seconds, it marks the game FAILED.
+If it cannot reach the host in 30 seconds, it marks the game FAILED; when
+this machine's NAT gives each destination its own port and no router
+forwards `network.tunnel_port`, the line below the games says so (turn on
+UPnP on the router, or forward the port: refer to "Connection").
 
 With SERVER PINGS on (Settings > Network; Arena Evolved: off by default,
 `network.browser_pings`) the PING column shows the round trip to each host
@@ -1871,6 +1915,7 @@ Other changes:
 | `rasterizer/xbox/rasterizer_xbox_environment_fog.c` | A local pointer gets its value from the file-scope array with the same name. |
 | `game/player_control.c` | The mouse aims the player on controller 1 directly. |
 | `sound/game_sound.c` | The game calculates the obstruction of each sound one time for each tick, not for each frame. |
+| `sound/sound_manager.c` | A track of a looping sound that is gone stops, even in the millisecond it started (`refresh_sound`). The Xbox never drew three frames in one millisecond; the port can (the null renderer, no frame limit), and then read the deleted looping sound and crashed. |
 | `cseries/errors.c` | `debug.txt` stays open between lines. A line that is the same as the line before it is counted, not written again (`last line repeated N times`). At 64 MB, `debug.txt` becomes `debug.old.txt` and a new `debug.txt` starts. |
 | `networking/`, `game/`, `interface/`, `bungie_net/network/` and the pools of objects, effects and sounds | The system link limits and the memory for them. |
 | `game/`, `objects/`, `units/`, `networking/` | The distributed netcode. Refer to `NETCODE.md`. |
@@ -1879,13 +1924,16 @@ Other changes:
 | `hs/hs.c` | The console's `mods_reload`, `mods_enable` and `mods_list`, which a client may run too. |
 | `interface/ui_widget.c`, `interface/ui_widget_event_handler_functions.c`, `interface/ui_widget_game_data_input_functions.c` | The main menu is the PC version's from `port/assets/menus` (`display.menus`); the menus' widgets can call the port's functions (`game/menu_functions.c`) and send the PC version's custom activation event; the widgets' memory is 256 KB, not 16 KB; the main menu and Multiplayer clear co-op's controllers, so that a gamepad going back to controller 1 is not a controller unplugged; the lobby's split screen players leave alone, and one who quits in game is not joined to the next game (`interface/player_ui.c`). |
 | `interface/player_ui.c` | Fast setup opens the pregame screen through the port's menus (the lobby), as `interface/ui_widget.c` does. |
+| `game/game_time.c`, `main/main.c` | With `debug.fixed_step`, a game of one machine runs a tick a frame, each frame taking a tick's time, so that it plays the same every time (`tools/stagekit`). |
 | `input/input_abstraction.c`, `game/player_control.c`, `game/players.c`, `game/player_queues_new.c`, `units/units.h` | The keyboard and mouse's actions (`src/xinput_sdl.c`, `include/halo_keyboard.h`) join controller 1's game controls; their reload key reloads on its own, and their action key only acts (a control flag of the port's, sent with the player's action, stops the reload the controller's X falls back to). |
+| `saved games/player_profile.h`, `interface/player_ui.c` | A sixth button layout, the Master Chief Collection's Bumper Jumper (`profile.button_preset` 5). A layout the build does not know (a later build's) gets the standard buttons, not none, which moved start and back and stopped the game. |
 | `sound/sound_manager.c`, `interface/hud.c`, `game/game_engine.c` | The music's and the other sounds' volumes; the HUD's and the scoreboard's settings are read again when Settings changes them. |
 | `game/callouts.c`, `game/game_engine.c` | CALLOUTS (`game.callouts`): from game time and the item timers' spawns (`game/item_timers.c`), the callouts planned 30 s ahead from the clips' lengths (the items' calls first, by CALLOUT DETAIL, the clock's fitted around them) and said one at a time through `src/callout_voice.c`. |
 | `game/spawn_heat.c`, `game/game_engine.c`, `game/players.c`, `render/render_spawn_markers.c` | SPAWN HEAT (`display.spawn_heat`): every 6 ticks, for each view's player (or an enemy), each spawn's rating by `game_engine_get_starting_location_rating_ex` (the stock rules, one copy: the stock functions call the `_ex` ones with no unit left out and no reason, bit for bit as before, `tools/spawn_heat_check.c`), why it rates 0, and its chance of being picked (`spawn_heat_probabilities`, exact, not sampled); the markers' colours and crosses; a flash at a real spawn from `player_spawn` (host, local) or `network_player_attach_unit` (a client: the spawn under the new unit). |
 | `rasterizer/xbox/rasterizer_xbox_shadows.c` | With larger shadow maps (`display.shadow_resolution`), the blur's taps stay half a texel apart, and more passes widen it to cover the same part of the map as on the Xbox. |
 | `rasterizer/rasterizer.c` | The 128 KB of vertices of the debug display of a model's vertices are static, not on the stack: the compiler inlines the function in `render_model`, and the Windows build probed the stack a page at a time for every model drawn. |
 | `render/render.c` | The 3D view of each window is antialiased before the HUD is drawn (`display.anti_aliasing`). |
+| `render/render.c` | `render_initialize` reads the structure culling tests from `display.structure_culling`. |
 | `interface/hud.c` | In multiplayer, players' names are drawn above their heads (`display.player_names`, `display.player_name_scale`). |
 | `interface/interface.c`, `interface/hud_draw.c`, `interface/hud_unit.c`, `interface/hud_weapon.c`, `interface/hud_messaging.c`, `game/game_engine.c` | The HUD's pass of each view clips the view's window to the HUD area, a part of the screen (`display.hud_area`, `hud_area_begin`), and the nav points' off-screen arrows keep to it (`interface/hud_nav_points.c`); the HUD's split-screen choices go through `hud_split_screen_layout` (`display.compact_hud`); the scoreboard fades in `display.scoreboard_fade`'s time. |
 | `text/draw_string.c`, `interface/terminal.c`, `interface/virtual_keyboard.c` | Streamer mode's words are hidden in every string drawn or measured (`game/text_filter.c`), but in the console's line and the virtual keyboard's text being typed. |

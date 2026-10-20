@@ -223,9 +223,12 @@ def test_size_cap():
 
 def test_narrowing():
     wire = delta_table.wire()
-    for row in (dict(floor(), announce=floor()["announce"] - 1, minimum=floor()["minimum"] - 1),
-                dict(floor(), minimum=floor()["minimum"] + 1),
-                dict(floor(), maximum=floor()["maximum"] - 1, announce=floor()["maximum"] - 1)):
+    # (Arena Evolved: its floor can be one version, minimum = announce = maximum, so each narrowed row keeps the
+    # other two ends where they make it a range)
+    low, high = floor()["minimum"], floor()["maximum"]
+    for row in (dict(floor(), announce=floor()["announce"] - 1, minimum=low - 1),
+                dict(floor(), minimum=low + 1, announce=max(floor()["announce"], low + 1), maximum=max(high, low + 1)),
+                dict(floor(), maximum=high - 1, announce=high - 1, minimum=min(low, high - 1))):
         with pytest.raises(delta_table.TableError, match="narrows"):
             delta_table.parse(document(row=row), wire)
     delta_table.parse(document(), wire)
@@ -466,7 +469,9 @@ def test_loader_presumes_the_next_version(keys, checker, tmp_path):
 
 @pytest.mark.parametrize("name,make", [
     ("narrows", lambda: document(row=dict(floor(), minimum=floor()["minimum"] + 1))),
-    ("announces older", lambda: document(row=dict(floor(), announce=floor()["minimum"]))),
+    # (Arena Evolved: its floor can be one version, so an older announce takes the minimum down with it)
+    ("announces older", lambda: document(row=dict(floor(), announce=floor()["announce"] - 1,
+                                                  minimum=min(floor()["minimum"], floor()["announce"] - 1)))),
     ("too large", lambda: document(padding="x" * delta_table.DOCUMENT_SIZE)),
     ("trailing", lambda: document() + b" x"),
     ("format 2", lambda: document(delta_legacy=2)),

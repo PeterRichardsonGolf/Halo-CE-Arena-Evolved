@@ -1327,7 +1327,8 @@ static boolean bitmap_group_check(
 				negative one, the start of the file, was corrected again by
 				bitmap_data_check. Data starting at the end of the file is
 				moved to its start, and the bitmaps checked again) */
-				if (!file_contains(validation, group->pixel_data.file_offset, 1))
+				if (group->pixel_data.file_offset != 0 &&
+					!file_contains(validation, group->pixel_data.file_offset, 1))
 				{
 					tag_validate_correct(validation, "has its pixel data at the end of the map's %ld: 0", file_length);
 					group->pixel_data.file_offset = 0;

@@ -205,6 +205,9 @@ way) are one game, kept at its newest version, and of copies of that, the
 last heard (heard_times: p2p_now's); two hosts' games of one version stay
 apart. The game list's rule too (its one_per_version_set) */
 int p2p_listing_older_copy(const struct p2p_listing *games, const unsigned long *heard_times, int count, int index);
+/* how many hosts list a game of a newer network version, which is not
+shown (an old build sees none of the games) */
+int p2p_lobby_newer_games(void);
 /* a game the browser could not join: kept, marked failed, for this run */
 void p2p_lobby_mark_failed(const unsigned char *identifier);
 /* a locked game's invite (into its invite), if the password is its own:
@@ -269,6 +272,9 @@ int p2p_reach_player(const unsigned char *key_hash);
 /* whether the tunnel reaches the machine with this identifier, and the
 virtual address (network byte order) the game reaches it at */
 int p2p_peer_reached(const unsigned char *identifier, unsigned long *address);
+/* this network's NAT gives each destination its own port and no router
+forwards the tunnel's: only games behind more lenient NATs can be reached */
+int p2p_nat_strict(void);
 
 /* BLAKE2b with a 32-byte digest (Monocypher's): a map's pieces
 (map_share.c) */

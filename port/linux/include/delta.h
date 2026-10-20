@@ -214,7 +214,9 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(26, "build-184", additive) /* internet play's signalling, version 4 (WebRTC, for browsers; ChupathingyCE's p2p_signal.c reads 3 and 4, Arena Evolved's, OpenCE's, 4); game messages as 25 */ \
 	X(27, "build-189", additive) /* Custom Edition map sharing's messages (a machine of 26 drops them); game messages as 25 */ \
 	X(28, "build-201", additive) /* no message changed: a script's switch_bsp keeps a multiplayer game's first, the flashlight past the Xbox limits, a second weapon readied while firing (wire chupa-28a) */ \
-	X(29, "build-206", additive) /* a Custom Edition map by its own name, its hash's first 32 bits its version in the game record (a client of 29 also takes 28's hashed names and header checksums; wire chupa-29a) */
+	X(29, "build-206", additive) /* a Custom Edition map by its own name, its hash's first 32 bits its version in the game record (a client of 29 also takes 28's hashed names and header checksums; wire chupa-29a) */ \
+	X(30, "build-242", breaking) /* every machine carries an elevator's riders by the same tick's movement (released only within build-242's 31) */ \
+	X(31, "build-242", breaking) /* the keep-alive's message table; a datagram's tick near its sender's latest, hits, identity and readiness only over a client's stream */
 
 /* ---------- the legacy table (port/linux/src/delta.c)
 

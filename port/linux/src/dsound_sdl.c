@@ -1454,8 +1454,6 @@ static void *silent_clock_thread(void *parameter)
 static void audio_start(void)
 {
 	SDL_AudioSpec spec;
-	long buffer_frames;
-	char frames[16];
 
 	if (audio_started)
 		return;
@@ -1473,15 +1471,27 @@ static void audio_start(void)
 		spec.format = SDL_AUDIO_F32;
 		spec.channels = OUTPUT_CHANNELS;
 		spec.freq = OUTPUT_RATE;
-#ifndef HALO_WEB
-		/* audio.buffer_frames: the device's buffer (port_config.c) */
-		buffer_frames = config_integer("audio.buffer_frames");
-		if (buffer_frames < 64)
-			buffer_frames = 64;
-		if (buffer_frames > 8192)
-			buffer_frames = 8192;
-		snprintf(frames, sizeof(frames), "%ld", buffer_frames);
-		SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames);
+#ifdef HALO_ARM64_GUEST
+		/* frames per callback: on Android each callback is handed to a thread
+		that can run the guest (host_sdl.c): 512 left it too little time and
+		the menus' music broke up, which 1024 does not (about 21 ms at 48 kHz,
+		11 ms more than 512) */
+		SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "1024");
+#elif !defined(HALO_WEB)
+		/* (a browser's, SDL's own: with room for the page's scheduling, which
+		512 frames underran) */
+		{
+			/* audio.buffer_frames: the device's buffer (port_config.c) */
+			long buffer_frames = config_integer("audio.buffer_frames");
+			char frames[16];
+
+			if (buffer_frames < 64)
+				buffer_frames = 64;
+			if (buffer_frames > 8192)
+				buffer_frames = 8192;
+			snprintf(frames, sizeof(frames), "%ld", buffer_frames);
+			SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames);
+		}
 #endif
 		snprintf(audio_device_name, sizeof(audio_device_name), "%s", audio_device_setting());
 		audio_device_read_at = config_changes();

@@ -218,6 +218,7 @@ MENU_STUBS = r'''
 static char const *const *multiplayer_map_names;
 static struct {char *multiplayer_levels[13];} event_handler_functions;
 static short ae_map_picture_frame(char const *map_name) { (void)map_name; return -1; } /* (the map pictures: none here) */
+static boolean list_scrolls_at_end(void) { return TRUE; } /* (the pointer's rest: none here, OpenCE build-242's) */
 /* (the map folders' pages, ae_map_folders.c: none here, the lists' own indices) */
 enum {AE_MAP_PAGES_NEW_GAME, AE_MAP_PAGES_MAP_SCREEN};
 static short ae_map_pages_begin(struct widget_instance *spinner, short list, char const *const *names, short count,

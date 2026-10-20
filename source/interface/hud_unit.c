@@ -407,8 +407,8 @@ last value with it (hud_tick_shield), so on the host the two stay equal. A
 network client's shield falls with the host's updates instead, after the
 HUD has taken its last value for the tick, so each frame it was a tick
 behind: the meter flashed and the shield damage sound played for the whole
-overshield, where the Xbox plays nothing. A small step from past full (0.05
-or less, about 70 ticks of drain) is that drain; a larger one is a hit,
+overshield, where the Xbox plays nothing. A small step from past full (0.02
+or less, about 25 ticks of drain) is that drain; a larger one is a hit,
 which still flashes the meter and plays the sound. */
 static boolean hud_shield_drop_is_hit(
 	real last_shield_vitality,
@@ -416,7 +416,7 @@ static boolean hud_shield_drop_is_hit(
 {
 	if (!(last_shield_vitality > shield_vitality))
 		return FALSE;
-	return !(last_shield_vitality > 1.0f && last_shield_vitality - shield_vitality <= 0.05f);
+	return !(last_shield_vitality > 1.0f && last_shield_vitality - shield_vitality <= 0.02f);
 }
 
 void hud_play_unit_sounds(
@@ -558,7 +558,8 @@ static void hud_update_unit_local_player(
 				/* port: an overshield's drain is not a hit
 				(hud_shield_drop_is_hit). The step is closed here, so one late
 				packet cannot leave the meter a little behind and keep the
-				flash going. */
+				flash going, and a hit's flash already fading goes on fading,
+				as when the shield holds still. */
 				if (!hud_shield_drop_is_hit(hud_state->last_shield_vitality, unit->object.shield_vitality))
 				{
 					hud_state->last_shield_vitality = unit->object.shield_vitality;

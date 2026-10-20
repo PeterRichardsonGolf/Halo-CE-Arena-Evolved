@@ -132,10 +132,10 @@ and the dynamic lights (an assault rifle's flashlight, each plasma bolt's
 light) found in the clusters it sees. The desktop builds draw several
 times as many. Only what is drawn changes: these are rebuilt every frame,
 outside the game state, and nothing of them reaches the network, so
-machines with other limits still play the same game. Android's guest build
-and the Xbox builds keep the Xbox's. */
+machines with other limits still play the same game. Android's guest build,
+the web build (OpenCE build-242's rule) and the Xbox builds keep the Xbox's. */
 
-#if !(defined(HALO_ANDROID) && !defined(HALO_64BIT)) && !defined(HALO_XBOX_CONSOLE)
+#if !(defined(HALO_ANDROID) && !defined(HALO_64BIT)) && !defined(HALO_XBOX_CONSOLE) && !defined(HALO_WEB)
 #define HALO_PORT_MAXIMUM_TRANSPARENT_GEOMETRY_GROUPS 2048 /* (384) */
 #define HALO_PORT_MAXIMUM_RENDERED_PARTICLE_GROUPS 2048 /* (512) */
 #define HALO_PORT_MAXIMUM_RENDERED_LIGHTS 512 /* (128) */

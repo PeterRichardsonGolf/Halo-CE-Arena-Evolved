@@ -129,8 +129,8 @@ one write, under a lock, so lines from several threads do not interleave.
 port: A line written again as it was (the same warning each tick) is
 counted, not written, until a different one comes ("last line repeated N
 times"). Past DEBUG_FILE_PORT_MAXIMUM_SIZE the file is rolled to
-debug.old.txt (the one before that let go) and begun again: a dedicated
-server runs for days and wrote gigabytes. */
+debug.old.txt (the one before that let go) and begun again: a game left
+running for days wrote without end. */
 static void debug_file_port_write(
 	FILE *file,
 	char const *prefix,
@@ -270,6 +270,7 @@ static void debug_file_port_write(
 	}
 	fprintf(file, "%s%s", prefix, string);
 	fflush(file);
+	debug_file_port_size += (long)(csstrlen(prefix) + csstrlen(string));
 #ifdef HALO_WEB
 	/* port: and to the page's log (port/web/README.md) */
 	fputs(string, stderr);

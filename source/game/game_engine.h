@@ -1017,6 +1017,9 @@ boolean game_engine_should_end_game(
 void game_engine_clear_goal_position(
 	short goal_index);
 
+void game_engine_objective_weapon_deleted(
+	long weapon_index);
+
 long get_flag_definition_index(
 	void);
 

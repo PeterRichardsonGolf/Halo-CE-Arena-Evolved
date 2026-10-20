@@ -17,7 +17,7 @@ port/linux/src/port_config.c	{ "debug.ae_test_screen", _config_integer, "0", "HA
 port/linux/src/sdl_platform.c	#include "ae_platform.h" /* AE hook */
 port/linux/src/sdl_platform.c	if (input_state.ui_pointer)\n{\nif (event.button.down && event.button.button == SDL_BUTTON_X1) ae_platform_count_back_press(); /* AE hook */\nif (event.button.down && event.button.button == SDL_BUTTON_LEFT)
 port/linux/src/d3d8_gl.c	#include "ae_draw.h" /* AE hook */
-port/linux/src/d3d8_gl.c	render_target_resolve(&back_buffer->target);\nae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */\nif (screenshot_every > 0 && device.frame % (unsigned long)screenshot_every == 0)
+port/linux/src/d3d8_gl.c	render_target_resolve(&back_buffer->target);\nae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */\n#ifndef HALO_GLES\nvisibility_read_batch();
 source/interface/ui_widget.c	#include "ae_hooks.h" /* AE hook */
 source/interface/ui_widget.c	ae_ce_map_widget_opened(tag_index, local_player_index); /* AE hook */
 source/interface/ui_widget.c	ae_ce_map_view_place(widget->definition_tag_index, window_bounds, &offset, &bounds); /* AE hook */

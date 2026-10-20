@@ -20,6 +20,7 @@ SDL is; only SDL's headers are needed, for the declarations.
 #include <string.h>
 #include <strings.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 static char headless_error[128] = "";
@@ -316,4 +317,17 @@ bool SDL_RenamePath(const char *oldpath, const char *newpath)
 		return true;
 	headless_set_error(strerror(errno));
 	return false;
+}
+
+/* (xbox_textures.c's idle textures go after half a minute of time: OpenCE
+build-242) the milliseconds since the first call */
+Uint64 SDL_GetTicks(void)
+{
+	static struct timespec start;
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	if (!start.tv_sec && !start.tv_nsec)
+		start = now;
+	return (Uint64)((Sint64)(now.tv_sec - start.tv_sec) * 1000 + (Sint64)(now.tv_nsec - start.tv_nsec) / 1000000);
 }
