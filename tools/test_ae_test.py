@@ -487,9 +487,13 @@ class SeedCompare(unittest.TestCase):
         golden_rev11 = json.loads((HERE / "golden_seeds_rev11.json").read_text())
         golden_rev13 = json.loads((HERE / "golden_seeds_rev13.json").read_text())
         for revision, name, digest in found:
+            # (revision 15 on, as tools/ae_gametype_change.py makes them: golden_seeds_rev<N - 1>.json, a root seeded
+            # by the revision before's tree)
             g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6, 12: golden_rev11,
-                 14: golden_rev13}.get(int(revision), golden)
-            self.assertEqual(g[name]["block"], digest, name)
+                 14: golden_rev13}.get(int(revision))
+            if g is None and int(revision) > 14:
+                g = json.loads((HERE / f"golden_seeds_rev{int(revision) - 1}.json").read_text())
+            self.assertEqual((g or golden)[name]["block"], digest, name)
 
     def test_golden_revision_11(self):
         """golden_seeds_rev11.json: a root seeded at revision 11 (all 86 seeds; a rev-10 root brought to 11 holds the
@@ -572,17 +576,29 @@ class SeedCompare(unittest.TestCase):
         edited or made himself is left alone. Nothing else changes: same folders, the other seeds' files as before"""
         import re
         seeds, steady, source = self._slayer_seeds()
-        self.assertIn("ARENA_GAMETYPES_REVISION = 14,", source)
+        self.assertGreaterEqual(int(re.search(r"ARENA_GAMETYPES_REVISION = (\d+),", source)[1]), 14)
         self.assertEqual(len(seeds), 38)
-        for name in ("arena_gametype_no_speed_changes", "arena_gametype_nhe_slayer"):
+        bodies = {}
+        for name in re.findall(r"^static void (arena_gametype_\w+)\(\n\tstruct game_variant \*variant,\n\tstruct "
+                               r"game_variant_options \*options\)\n\{", source, re.M):
             body = source[source.index(f"static void {name}(\n\tstruct game_variant *variant,\n\tstruct game_variant_options *options)\n{{"):]
-            body = body[:body.index("\n}\n")]
-            self.assertIn("variant->game_engine_variant.slayer.no_death_bonus = TRUE;", body, name)
-            self.assertIn("variant->game_engine_variant.slayer.no_kill_penalty = TRUE;", body, name)
-        updated = sorted(n for n, (build, adjust) in seeds.items() if adjust == "arena_gametype_no_speed_changes")
+            bodies[name] = body[:body.index("\n}\n")]
+        for name in ("arena_gametype_no_speed_changes", "arena_gametype_nhe_slayer"):
+            self.assertIn("variant->game_engine_variant.slayer.no_death_bonus = TRUE;", bodies[name], name)
+            self.assertIn("variant->game_engine_variant.slayer.no_kill_penalty = TRUE;", bodies[name], name)
+
+        def calls(adjust):
+            """the adjust and every adjust it calls (a later revision's new adjust calls the one it follows:
+            tools/ae_gametype_change.py)"""
+            out = {adjust}
+            for called in re.findall(r"^\t(arena_gametype_\w+)\(variant, options\);", bodies.get(adjust, ""), re.M):
+                out |= calls(called)
+            return out
+
+        updated = sorted(n for n, (build, adjust) in seeds.items() if "arena_gametype_no_speed_changes" in calls(adjust))
         for name, (build, adjust) in seeds.items():
-            self.assertTrue(adjust in ("arena_gametype_no_speed_changes", "arena_gametype_nhe_slayer") or build in steady,
-                            name)
+            self.assertTrue(calls(adjust) & {"arena_gametype_no_speed_changes", "arena_gametype_nhe_slayer"} or
+                            build in steady, name)
         self.assertEqual(len(updated), 27)
         self.assertEqual(sorted(n for n, (b, _) in seeds.items() if b in steady), ["AE BR PHANT", "AE PHANTOMS"])
         # (the migrations: one same-name update each, the old row the new one without the adjust, a real hash)
