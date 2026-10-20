@@ -225,6 +225,13 @@ for _name, _twin in BR_TWINS.items():
     _want, _spawn, _frags = ROWS[_twin]
     ROWS[_name] = (dict(_want, **BR_START), "battle_rifle + pistol", _frags)
 
+# revision 14: no death bonus and no kill penalty in every slayer seed (everyone at normal speed; the NHE set's since
+# revision 4, the Phantoms ones the stock builder's), kill in order as before
+for _name, (_want, _, _) in ROWS.items():
+    if _want["engine"].startswith("slayer"):
+        _want.update({"death bonus": "off", "kill penalty": "off"})
+        _want.setdefault("kill in order", "off")
+
 
 def check(runs, prefix):
     """{name: (passed, problems)} for every seed run under runs/<prefix><name, spaces as _>/*/debug.txt"""
