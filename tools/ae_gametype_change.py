@@ -667,11 +667,14 @@ def render(plan, hashes):
     end = text.index("};\n\n/* debug.arena_test_migration")
     text = text[:end] + "\n".join(entries) + "\n" + text[end:]
     # (the migrations' comment)
-    marker = "A row whose old and new names are the same is a value"
-    line_start = text.rindex("\n", 0, text.index(marker)) + 1
-    para_end = text.index("update (in place, under its name).\n", line_start) + len("update (in place, under its name).")
+    # (its last sentence, wherever the lines break it)
+    words = r"\s+".join(re.escape(w) for w in "A row whose old and new names are the same is a value update "
+                                                "(in place, under its name).".split())
+    m = re.search(words, text)
+    line_start = text.rindex("\n", 0, m.start()) + 1
+    para_end = m.end()
     sentence = f"Revision {plan.revision} ({TOOL}): {plan.why}. "
-    para = text[line_start:para_end].replace(marker, sentence + marker)
+    para = text[line_start:m.start()] + sentence + text[m.start():para_end]
     text = text[:line_start] + "\n".join(textwrap.wrap(squash(para), width=78, break_long_words=False,
                                                        break_on_hyphens=False)) + text[para_end:]
     # (the revision)
@@ -751,7 +754,8 @@ def render_seed_rules(text, plan):
     groups = {}
     for name, w in words.items():
         groups.setdefault(json.dumps(w, sort_keys=True), []).append(name)
-    block = [f"# revision {plan.revision} ({TOOL}): {plan.why}"]
+    block = textwrap.wrap(f"revision {plan.revision} ({TOOL}): {plan.why}", width=WIDTH - 2, initial_indent="# ",
+                          subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
     for w, names in groups.items():
         block.append(f"for _name in ({', '.join(json.dumps(n) for n in names)},):")
         block.append(f"    ROWS[_name][0].update({json.dumps(json.loads(w))})")
