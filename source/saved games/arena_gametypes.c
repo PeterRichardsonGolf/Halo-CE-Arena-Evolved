@@ -71,7 +71,7 @@ enum
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
 	past it: revision 11 only added seeds) */
-	ARENA_GAMETYPES_REVISION = 14,
+	ARENA_GAMETYPES_REVISION = 15,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -419,6 +419,9 @@ static void arena_gametype_juggernaut_h2(
 static void arena_gametype_no_speed_changes(
 	struct game_variant *variant,
 	struct game_variant_options *options);
+static void arena_gametype_no_speed_changes_and_no_respawn_growth(
+	struct game_variant *variant,
+	struct game_variant_options *options);
 
 /* ---------- globals */
 
@@ -534,7 +537,7 @@ static struct arena_gametype const arena_gametypes[] =
 		0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE,
 		.loadout_primary = ARENA_SET(_loadout_weapon_sniper_rifle),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_pistol), .hit_feedback = 1, .starting_frags = ARENA_AE_STARTING_FRAGS,
-		.adjust = arena_gametype_no_speed_changes },
+		.adjust = arena_gametype_no_speed_changes_and_no_respawn_growth },
 	/* (Halo 2's Juggernaut since revision 10: to 15, the juggernaut's extra
 	damage at normal speed, and Halo 2's scoring and succession:
 	arena_gametype_juggernaut_h2) */
@@ -785,8 +788,11 @@ migration (it only added the AE BR set). Revision 12 gives the AE team seeds
 with the motion sensor (and their AE BR twins) PLAYERS ON RADAR ENEMIES.
 Revision 13 gives AE's seeds two frag grenades and the AE BR set an assault
 rifle second. Revision 14 takes the death bonus and the kill penalty out of
-AE's slayer seeds. A row whose old and new names are the same is a value
-update (in place, under its name).
+AE's slayer seeds. Revision 15 (tools/ae_gametype_change.py): no respawn time
+growth in AE FFA SNPR: the stock Snipers' adds 5 s to a player's respawn per
+death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE
+SNIPERS included. A row whose old and new names are the same is a value update
+(in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =
@@ -2592,6 +2598,26 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON, .vehicle_set = ARENA_VEHICLES_STOCK,
 			.custom_loadout = TRUE, .nhe_mode = _nhe_mode_nhe_and_powerups, .adjust = arena_gametype_no_speed_changes },
 		.old_block_hash = "4db690710fae6b6b048e15b84faab8d0d8e73be7" },
+	/* revision 15 (owner, 2026-10-20): no respawn time growth in AE FFA SNPR: the stock Snipers' adds 5 s to a player's
+	respawn per death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE SNIPERS included. AE
+	FFA SNPR: universal_variant.respawn_time_growth 0 (arena_gametype_no_speed_changes_and_no_respawn_growth). The
+	old rows are revision 14's seeds; the old files' hashes from a root seeded by the revision 14 tree
+	(golden_seeds_rev14.json). Made by tools/ae_gametype_change.py */
+	{ .revision = 15,
+		.old_row = { .name = "AE FFA SNPR", .build = build_game_variant_snipers, .flags = ARENA_LATER_FLAGS,
+			.score_to_win = 0, .time_limit = ARENA_TIME_LIMIT, .respawn_time = ARENA_STOCK,
+			.suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_STOCK,
+			.custom_loadout = TRUE, .loadout_primary = ARENA_SET(_loadout_weapon_sniper_rifle),
+			.loadout_secondary = ARENA_SET(_loadout_weapon_pistol), .hit_feedback = 1,
+			.starting_frags = ARENA_AE_STARTING_FRAGS, .adjust = arena_gametype_no_speed_changes },
+		.new_row = { .name = "AE FFA SNPR", .build = build_game_variant_snipers, .flags = ARENA_LATER_FLAGS,
+			.score_to_win = 0, .time_limit = ARENA_TIME_LIMIT, .respawn_time = ARENA_STOCK,
+			.suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_STOCK, .vehicle_set = ARENA_VEHICLES_STOCK,
+			.custom_loadout = TRUE, .loadout_primary = ARENA_SET(_loadout_weapon_sniper_rifle),
+			.loadout_secondary = ARENA_SET(_loadout_weapon_pistol), .hit_feedback = 1,
+			.starting_frags = ARENA_AE_STARTING_FRAGS,
+			.adjust = arena_gametype_no_speed_changes_and_no_respawn_growth },
+		.old_block_hash = "ff8bea99060536a7399abd8d7e268d52e9183557" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -4314,6 +4340,22 @@ static void arena_gametype_no_speed_changes(
 	(void)options;
 	variant->game_engine_variant.slayer.no_death_bonus = TRUE;
 	variant->game_engine_variant.slayer.no_kill_penalty = TRUE;
+
+	return;
+}
+
+/* revision 15 (owner, 2026-10-20): no respawn time growth in AE FFA SNPR: the
+stock Snipers' adds 5 s to a player's respawn per death, up to 25 s, earned
+back by kills; no other AE gametype has it, Team AE SNIPERS included.
+arena_gametype_no_speed_changes, then universal_variant.respawn_time_growth
+0. Made by tools/ae_gametype_change.py. Shipped: never edited (a change is a
+new function) */
+static void arena_gametype_no_speed_changes_and_no_respawn_growth(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	arena_gametype_no_speed_changes(variant, options);
+	variant->universal_variant.respawn_time_growth = 0;
 
 	return;
 }

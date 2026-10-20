@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- FFA AE SNIPERS (seed revision 15, applied on the first start, the old file backed up): no respawn time growth.
+  Stock Snipers adds 5 seconds to your respawn for each death, up to 25 seconds, earned back by kills; no other AE
+  gametype has it, TEAM AE SNIPERS included. If you edited the gametype yourself, it keeps your settings.
 - AE gametypes (seed revision 14, applied on the first start, the old files backed up): no death bonus and no kill
   penalty in every AE slayer gametype, so nobody speeds up after dying or slows down after a kill; everyone always
   moves at normal speed, as in Halo 1: NHE's slayers. Gametypes you edited or made yourself keep their settings.
