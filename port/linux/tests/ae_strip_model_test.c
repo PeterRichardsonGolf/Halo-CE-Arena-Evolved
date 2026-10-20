@@ -126,6 +126,31 @@ static void test_clock_hidden_and_negative(void)
 	AE_CHECK_WSTR(m.clock.text, L"0:00");
 }
 
+/* MATCH CLOCK BOTH: the time played over the clock, grey, the value alone; nothing without it or the clock */
+static void test_time_played(void)
+{
+	struct ae_strip_snapshot s; struct ae_strip_model m;
+
+	base(&s, _ae_strip_slayer, 1);
+	ae_strip_model_build(&s, &m);
+	AE_CHECK_WSTR(m.played.text, L"");
+	s.played_shown = TRUE; s.played_seconds = 192;
+	ae_strip_model_build(&s, &m);
+	AE_CHECK_WSTR(m.played.text, L"3:12"); AE_CHECK(colored(&m.played, 0, 4, _ae_strip_color_grey));
+	AE_CHECK_WSTR(m.clock.text, L"1:42");
+	s.played_seconds = 754;
+	ae_strip_model_build(&s, &m);
+	AE_CHECK_WSTR(m.played.text, L"12:34");
+	/* (timed modes too, under their small clock's rules; never on NHE's maps, where the clock is hidden) */
+	base(&s, _ae_strip_oddball, 1);
+	s.played_shown = TRUE; s.played_seconds = 31;
+	ae_strip_model_build(&s, &m);
+	AE_CHECK(m.clock_small); AE_CHECK_WSTR(m.played.text, L"0:31");
+	s.clock_hidden = TRUE;
+	ae_strip_model_build(&s, &m);
+	AE_CHECK_WSTR(m.played.text, L"");
+}
+
 static void test_rounds_text_over_four(void)
 {
 	struct ae_strip_snapshot s = {0}; struct ae_strip_model m;
@@ -469,6 +494,7 @@ int main(void)
 	test_no_limits();
 	test_long_clock_and_score();
 	test_clock_hidden_and_negative();
+	test_time_played();
 	test_rounds_text_over_four();
 	test_rounds_cells_and_respawns();
 	test_ffa_me_behind_and_leading();

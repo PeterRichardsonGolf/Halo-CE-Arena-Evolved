@@ -101,7 +101,7 @@ static long player_score(long player_index, boolean team)
 
 static void read_clock(struct ae_strip_snapshot *out)
 {
-	wchar_t text[16];
+	wchar_t text[16], elapsed[16];
 	long now = game_time_get();
 
 	/* (none where the corner clock has none: MATCH CLOCK off, the countdown, the game over; nor over Halo 1: NHE's
@@ -116,6 +116,12 @@ static void read_clock(struct ae_strip_snapshot *out)
 		long left = (long)game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - now;
 
 		out->clock_seconds = left <= 0 ? 0 : (left + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
+		/* (MATCH CLOCK BOTH: the time played too, over it) */
+		if (game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)))
+		{
+			out->played_shown = TRUE;
+			out->played_seconds = now / TICKS_PER_SECOND;
+		}
 	}
 	else
 	{
@@ -613,7 +619,8 @@ void ae_strip_engine_debug_log(void)
 	{
 		struct ae_strip_snapshot snapshot;
 		struct ae_strip_model model;
-		char left[48], right[48], clock[48], goal[48], lead[48], context[64], left_sub[64], right_sub[64];
+		char left[48], right[48], clock[48], goal[48], lead[48], context[64], left_sub[64], right_sub[64], played[48];
+		real played_box[4];
 
 		real alpha = 0.0f, clock_box[4] = { 0 }, score_box[4] = { 0 };
 		real list_foot = 0.0f, list_left = 0.0f;
@@ -623,11 +630,13 @@ void ae_strip_engine_debug_log(void)
 			continue;
 		ae_strip_model_build(&snapshot, &model);
 		drawn = ae_score_strip_last_drawn(local, &alpha, clock_box, score_box);
+		if (!drawn || !ae_score_strip_last_played(local, played_box))
+			memset(played_box, 0, sizeof(played_box));
 		list = ae_power_list_last(local, &list_foot, &list_left);
 		platform_log("score strip: tick %d view %d mode=%s teams=%d left=%s(%s) right=%s(%s) clock=%s up=%d goal=\"%s\" "
 			"lead=\"%s\" context=\"%s\" left_sub=\"%s\" right_sub=\"%s\" bars=%d fill=%.2f/%.2f place=%d lead_me=%d "
 			"drawn=%d alpha=%.2f clock_box=%.0f,%.0f,%.0f,%.0f score_box=%.0f,%.0f,%.0f,%.0f list=%d list_foot=%.1f "
-			"list_left=%.1f line=%.1f corner_clock=%d",
+			"list_left=%.1f line=%.1f corner_clock=%d played=\"%s\" played_box=%.0f,%.0f,%.0f,%.0f",
 			(int)now, (int)local, mode_name(snapshot.mode), (int)snapshot.teams,
 			ascii(&model.left_score, left, sizeof(left)), color_name(model.left_score.color),
 			ascii(&model.right_score, right, sizeof(right)), color_name(model.right_score.color),
@@ -637,6 +646,7 @@ void ae_strip_engine_debug_log(void)
 			ascii(&model.right_sub, right_sub, sizeof(right_sub)), (int)model.bars, model.left_fill,
 			model.right_fill, (int)snapshot.me.place, (int)snapshot.i_lead, (int)drawn, alpha, clock_box[0],
 			clock_box[1], clock_box[2], clock_box[3], score_box[0], score_box[1], score_box[2], score_box[3], (int)list,
-			list_foot, list_left, drawn ? ae_score_strip_last_line(local) : 0.0f, (int)!ae_power_list_hides_clock(local));
+			list_foot, list_left, drawn ? ae_score_strip_last_line(local) : 0.0f, (int)!ae_power_list_hides_clock(local),
+			ascii(&model.played, played, sizeof(played)), played_box[0], played_box[1], played_box[2], played_box[3]);
 	}
 }
