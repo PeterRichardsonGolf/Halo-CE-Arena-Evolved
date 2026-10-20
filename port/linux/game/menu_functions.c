@@ -94,6 +94,14 @@ their handlers open opens.
 #include "../src/ae_net_pings.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 #include "../src/browser.h"
+#else
+/* (a build without the game browser, the web build: browser.c's campaign
+check is not there, and no listed game is left out as a co-op one) */
+static int browser_map_is_campaign(const char *map)
+{
+	(void)map;
+	return 0;
+}
 #endif
 /* (its games on Halo PC maps: server_browser.c) */
 #include "halo_map_families.h"
