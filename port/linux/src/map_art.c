@@ -29,6 +29,8 @@ have (404) is not asked for again this run. The log says nothing of them
 #include <time.h>
 
 #define ART_URL "https://stats.chupathingy.org/art/"
+/* (Arena Evolved, owner 2026-10-20: no pictures downloaded from ChupathingyCE's site; ones in the map_art folder still show) */
+#define AE_MAP_ART_DOWNLOADS 0 /* AE hook */
 #define CACHE_FOLDER "map_art"
 
 enum
@@ -210,7 +212,7 @@ static void *load_thread(void *argument)
 		free(data);
 		data = NULL;
 	}
-	if (!pixels && config_boolean("network.online"))
+	if (!pixels && config_boolean("network.online") && AE_MAP_ART_DOWNLOADS) /* AE hook */
 	{
 		data = download(path, &size, &missing);
 		if (data)

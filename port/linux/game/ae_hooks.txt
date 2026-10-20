@@ -1033,3 +1033,9 @@ port/linux/src/discord_activity.c	#define LOGO_URL "logo" /* AE hook */
 port/linux/src/discord_activity.c	#define SITE_URL "https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved" /* AE hook */
 port/linux/src/discord_activity.c	#define PRODUCT_LABEL "Get Arena Evolved" /* AE hook */
 port/linux/src/discord_activity.c	#define PRODUCT_NAME "Halo CE: Arena Evolved" /* AE hook */
+# DISCORD OFF (owner 2026-10-20, with ChupathingyCE 0.8): Discord's activity off by default until AE has a Discord
+# application of its own; the Online Games' map pictures are not downloaded from ChupathingyCE's site
+port/linux/src/port_config.c	{ "discord.presence", _config_string, "\"off\"", "HALO_DISCORD_PRESENCE", _environment_value, /* AE hook */
+port/linux/src/port_config.c	{ "discord.presence", { "full", "minimal", "off", NULL }, "\"off\"" }, /* AE hook */
+port/linux/src/map_art.c	#define AE_MAP_ART_DOWNLOADS 0 /* AE hook */
+port/linux/src/map_art.c	if (!pixels && config_boolean("network.online") && AE_MAP_ART_DOWNLOADS) /* AE hook */

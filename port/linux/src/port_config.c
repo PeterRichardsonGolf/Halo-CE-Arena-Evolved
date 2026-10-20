@@ -1251,7 +1251,9 @@ static const struct config_setting config_settings[] =
 		"The Discord application the game shows as while the Discord desktop\n"
 		"client runs (its name is what Discord says is being played); empty\n"
 		"for none." },
-	{ "discord.presence", _config_string, "\"full\"", "HALO_DISCORD_PRESENCE", _environment_value,
+	/* (Arena Evolved, owner 2026-10-20: off by default until AE has a Discord application of its own; "full"
+	shows OpenCE's application with ChupathingyCE's map pictures and join page) */
+	{ "discord.presence", _config_string, "\"off\"", "HALO_DISCORD_PRESENCE", _environment_value, /* AE hook */
 		_platform_desktop,
 		"What Discord shows of the game: \"full\" (the game type, map, score,\n"
 		"players and time, the map's picture, and a public game's Join game\n"
@@ -3172,7 +3174,7 @@ static const struct
 	{ "network.map_downloads", { "ask", "always", "never", NULL }, "\"ask\"" },
 	{ "network.join_from_clipboard", { "ask", "always", "never", NULL }, "\"ask\"" },
 	{ "network.team_change", { "balanced", "allow", "off", NULL }, "\"balanced\"" },
-	{ "discord.presence", { "full", "minimal", "off", NULL }, "\"full\"" },
+	{ "discord.presence", { "full", "minimal", "off", NULL }, "\"off\"" }, /* AE hook */
 	{ "network.platform_limits", { "on", "off", NULL }, "\"on\"" },
 	{ "network.coop_friendly_fire", { "off", "on", "shields_only", "explosives_only", NULL }, NULL },
 	{ "network.coop_enemies_mode", { "none", "per_player", "multiplier", NULL }, "\"none\"" },
