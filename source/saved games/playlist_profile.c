@@ -79,6 +79,7 @@ symbols in this file:
 #include "cseries/cseries.h"
 #include "saved games/playlist_profile.h"
 #include "saved games/arena_gametypes.h"
+#include "ae_gametype_audit.h" /* AE hook */
 #include "bungie_net/common/thread.h"
 #include "cseries/errors.h"
 #include "text/unicode.h"
@@ -327,6 +328,7 @@ void playlist_profiles_enumerate_available_to_local_player_index(
 			saved_game_files_notify_memory_units_changed();
 		}
 		arena_gametypes_debug_set_display_name();
+		ae_gametype_audit_write(); /* AE hook */
 	}
 
 	saved_game_files_enumerate_available_to_local_player_index(
