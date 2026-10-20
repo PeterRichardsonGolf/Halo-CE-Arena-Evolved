@@ -623,6 +623,8 @@ boolean game_engine_showing_postgame(
 	void);
 boolean game_engine_game_over(
 	void);
+boolean game_engine_in_play(
+	void);
 
 boolean game_engine_get_state_message(
 	long player_index,

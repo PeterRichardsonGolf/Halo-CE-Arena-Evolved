@@ -331,3 +331,19 @@ Uint64 SDL_GetTicks(void)
 		start = now;
 	return (Uint64)((Sint64)(now.tv_sec - start.tv_sec) * 1000 + (Sint64)(now.tv_nsec - start.tv_nsec) / 1000000);
 }
+
+/* (dsound_sdl.c's audio.channels "auto": no device, so no channels to count) */
+bool SDL_GetAudioDeviceFormat(SDL_AudioDeviceID device, SDL_AudioSpec *spec, int *sample_frames)
+{
+	(void)device;
+	if (spec)
+	{
+		spec->format = SDL_AUDIO_F32;
+		spec->channels = 2;
+		spec->freq = 48000;
+	}
+	if (sample_frames)
+		*sample_frames = 0;
+	return false;
+}
+

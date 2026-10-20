@@ -347,6 +347,9 @@ static const char shader_prologue[] =
 	/* columns the menus shift by to center on a wide screen (d3d8_gl.c) */
 	"uniform float screen_offset;\n"
 	AE_HEIGHT_FADE_UNIFORMS /* AE hook */
+	/* a fade above a height on the model (d3d8_gl_set_height_fade): off
+	while w is zero */
+	"uniform vec4 height_fade;\n"
 	"out vec4 xD0;\n"
 	"out vec4 xD1;\n"
 	"out vec4 xB0;\n"
@@ -536,6 +539,13 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 	}
 
 	xgpu_text_append(&text, AE_HEIGHT_FADE_GLSL); /* AE hook */
+	xgpu_text_append(&text,
+		"\tif (height_fade.w != 0.0)\n"
+		"\t{\n"
+		"\t\tfloat faded = clamp((height_fade.y - (oT0.z - height_fade.z) / height_fade.w) * height_fade.x, 0.0, 1.0);\n"
+		"\t\toD0 *= faded;\n"
+		"\t\toD1 *= faded;\n"
+		"\t}\n");
 	xgpu_text_append(&text,
 		"\t/* undo the screen-space conversion done with c[-38] and c[-37] */\n"
 		"\tvec3 scale = vec3(viewport_scale.x != 0.0 ? viewport_scale.x : 1.0,\n"

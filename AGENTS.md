@@ -128,6 +128,7 @@ python -m pytest -q tools/stagekit/tests                    # scenarios on the r
 python -m pytest -q tools/test_linux_port.py                # the build, the maps' checks (needs assets/maps)
 python -m pytest -q tools/test_bots.py                      # the bots in local games (needs assets/maps)
 python -m pytest -q tools/test_mods.py                      # mods played over a map (needs assets/maps)
+python -m pytest -q tools/test_bots.py                      # the bots in local games (needs assets/maps)
 python -m pytest -q tools/test_cache_file_formats.py tools/test_bmp_files.py tools/test_profile.py
 python tools/test_touch_layout.py                           # the Android touch layout (JDK 17+)
 python tools/test_light_storage.py

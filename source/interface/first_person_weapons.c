@@ -134,6 +134,8 @@ symbols in this file:
 #include "ae_shield_fx.h" /* AE hook */
 /* port: port/linux/game/shield_color.c */
 real_rgb_color const *shield_color_colors(long unit_index, real_rgb_color const *colors);
+/* port: port/linux/game/overshield_effect.c */
+real const *overshield_effect_values(long unit_index, real const *values, boolean arms);
 
 /* ---------- constants */
 
@@ -573,7 +575,7 @@ void first_person_weapon_draw(
 								model_effect.modifier_shader= modifier_shader;
 								model_effect.modifier_animation.colors= shield_color_colors(unit_index,
 									unit->object.outgoing_change_colors);
-								model_effect.modifier_animation.values= ae_shield_fx_values(unit_index, unit->object.outgoing_function_values, TRUE); /* AE hook */
+								model_effect.modifier_animation.values= ae_shield_fx_values(unit_index, overshield_effect_values(unit_index, unit->object.outgoing_function_values, TRUE), TRUE); /* AE hook */
 							}
 						}
 					}

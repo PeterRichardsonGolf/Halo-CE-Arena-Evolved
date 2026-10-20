@@ -48,6 +48,9 @@ unsigned long config_changes(void);
 long light_port_glow_definition_get(void);
 boolean light_port_glow_set(long light_index, long object_index, real_rgb_color const *color, real radius);
 #include "ae_shield_fx.h" /* AE hook */
+/* port/linux/game/overshield_effect.c */
+real overshield_effect_flare(long unit_index);
+real_rgb_color const *overshield_effect_glow_color(void);
 
 enum
 {
@@ -167,12 +170,22 @@ static real shield_glow_flare(
 		return 0.f;
 	value = object->object.outgoing_function_values[source - 1];
 	value = ae_shield_fx_glow_value(unit_index, value); /* AE hook */
+	/* (an overshield: lit as it rises, then whole while it lasts) */
+	{
+		real overshield = overshield_effect_flare(unit_index);
+
+		if (overshield >= 0.f)
+			value = overshield;
+	}
 	if (!(value > 0.f))
 		return 0.f;
 	value = (real)pow((double)value, (double)plasma->intensity_exponent);
 
 	*color = plasma->perpendicular_color;
 	ae_shield_fx_glow_color(unit_index, color); /* AE hook */
+	/* (an overshield: its own color) */
+	if (overshield_effect_flare(unit_index) >= 0.f)
+		*color = *overshield_effect_glow_color();
 	peak = MAX(color->red, MAX(color->green, color->blue));
 	if (!(peak > 0.f))
 		return 0.f;

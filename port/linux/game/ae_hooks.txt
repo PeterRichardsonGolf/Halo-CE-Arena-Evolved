@@ -286,7 +286,7 @@ source/game/game_engine.c	ae_hit_feedback_log_rules(); /* AE hook */
 port/linux/src/d3d8_gl.c	float ae_height_fade[4]; float ae_height_band; /* AE hook */
 port/linux/src/d3d8_gl.c	GLint ae_height_fade, ae_height_band; /* AE hook */
 port/linux/src/d3d8_gl.c	entry->ae_height_fade = glGetUniformLocation(entry->program, "ae_height_fade"); entry->ae_height_band = glGetUniformLocation(entry->program, "ae_height_band"); /* AE hook */
-port/linux/src/d3d8_gl.c	#define DRAW_UNIFORM_INPUT_COUNT (4 + 4 + 16 + 1 + 16 + 2 + 4 + 1 + 1 + 7 * D3DTSS_MAXSTAGES + 5) /* AE hook */
+port/linux/src/d3d8_gl.c	#define DRAW_UNIFORM_INPUT_COUNT (4 + 4 + 16 + 1 + 16 + 2 + 4 + 1 + 1 + 7 * D3DTSS_MAXSTAGES + 4 + 5) /* AE hook */
 port/linux/src/d3d8_gl.c	memcpy(&inputs[count], ae_height_fade_value, sizeof(ae_height_fade_value)); count += 5; /* AE hook */
 port/linux/src/d3d8_gl.c	memcpy(converted->ae_height_fade, ae_height_fade_value, sizeof(converted->ae_height_fade)); converted->ae_height_band = ae_height_fade_value[4]; /* AE hook */
 port/linux/src/d3d8_gl.c	uniform_vec4(entry->ae_height_fade, entry->uniforms.ae_height_fade, draw_uniforms.ae_height_fade, 1); uniform_float(entry->ae_height_band, &entry->uniforms.ae_height_band, draw_uniforms.ae_height_band); /* AE hook */
@@ -302,11 +302,11 @@ source/objects/damage.c	if (ae_shield_fx_early_pop_taken()) object->object.curre
 source/objects/damage.c	for (ae_blood = ae_shield_fx_bloodshot(object_index, damage->flags, damage->owner_object_index, damage_resistance->localized_damage_effect.index, damage_amount, *being_damaged_flags); ae_blood > 0; ae_blood--) damage_effect_new_at_location(ae_shield_fx_blood_effect(damage_resistance->localized_damage_effect.index), object_index, NONE, &damage->epicenter, ae_shield_fx_blood_direction(&damage->direction, ae_blood), object_normal); /* AE hook */
 source/objects/damage.c	ae_shield_fx_recharging(object_index, shield_recharge); /* AE hook */
 source/render/render_objects.c	#include "ae_shield_fx.h" /* AE hook */
-source/render/render_objects.c	model_effect.modifier_animation.values = TEST_FLAG(_object_mask_unit, object->object.type) ? ae_shield_fx_values(object_index, object->object.outgoing_function_values, FALSE) : object->object.outgoing_function_values; /* AE hook */
+source/render/render_objects.c	model_effect.modifier_animation.values = TEST_FLAG(_object_mask_unit, object->object.type) ? ae_shield_fx_values(object_index, overshield_effect_values(object_index, object->object.outgoing_function_values, FALSE), FALSE) : object->object.outgoing_function_values; /* AE hook */
 source/interface/first_person_weapons.c	#include "ae_shield_fx.h" /* AE hook */
-source/interface/first_person_weapons.c	model_effect.modifier_animation.values= ae_shield_fx_values(unit_index, unit->object.outgoing_function_values, TRUE); /* AE hook */
+source/interface/first_person_weapons.c	model_effect.modifier_animation.values= ae_shield_fx_values(unit_index, overshield_effect_values(unit_index, unit->object.outgoing_function_values, TRUE), TRUE); /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	#include "ae_shield_fx.h" /* AE hook */
-source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	if ((runtime && ae_shield_fx_color(runtime->exponents, &chosen)) || shield_color_override(runtime ? runtime->colors : NULL, &chosen)) /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	if ((runtime && (ae_shield_fx_color(runtime->exponents, &chosen) || overshield_effect_color(runtime->exponents, &chosen))) || shield_color_override(runtime ? runtime->colors : NULL, &chosen)) /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	ae_shield_fx_draw_begin(runtime ? runtime->exponents : NULL, vertex_constants[2][3], primary_scale); /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	ae_shield_fx_draw_end(); /* AE hook */
 source/objects/damage.c	for (ae_blood = ae_shield_fx_guest_blood_pop(object_index, damage); ae_blood > 0; ae_blood--) damage_effect_new_at_location(ae_shield_fx_blood_effect(ae_shield_fx_hit_effect(object_index)), object_index, NONE, &damage->epicenter, ae_shield_fx_blood_direction(&damage->direction, ae_blood), NULL); /* AE hook */
@@ -315,6 +315,10 @@ port/linux/game/network_damage.c	ae_shield_fx_guest_hit(event->being_damaged_fla
 port/linux/game/shield_glow.c	#include "ae_shield_fx.h" /* AE hook */
 port/linux/game/shield_glow.c	value = ae_shield_fx_glow_value(unit_index, value); /* AE hook */
 port/linux/game/shield_glow.c	ae_shield_fx_glow_color(unit_index, color); /* AE hook */
+# OpenCE build-244's overshield effect (display.overshield_effect) gives way to HIT FEEDBACK: ARENA EVOLVED: the
+# two never draw at once (the render hooks above chain both; this one turns OpenCE's off while AE's acts).
+port/linux/game/overshield_effect.c	#include "ae_hit_feedback.h" /* AE hook */
+port/linux/game/overshield_effect.c	if (ae_hit_feedback_active()) return FALSE; /* AE hook */
 port/linux/game/shield_glow.c	shield_glow_scale * ae_shield_fx_glow_reach(iterator.index))) /* AE hook */
 port/linux/src/port_config.c	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */
 source/objects/damage.c	static short ae_blood; /* AE hook */
@@ -956,3 +960,12 @@ source/interface/ui_widget.c	if (ignore_icon_color) ae_key_prompts_note_text_ico
 # poll, and a pad's use
 port/linux/src/xinput_sdl.c	ae_platform_note_keyboard_input(k, m, mouse); /* AE hook */
 port/linux/src/xinput_sdl.c	ae_platform_note_pad_used(); /* AE hook */
+# OpenCE build-244's display.anisotropic_filtering: its help says Settings' row is AE's display.anisotropic (both filter)
+port/linux/src/port_config.c	{ "display.anisotropic_filtering", _config_integer, "0", "HALO_ANISOTROPIC_FILTERING", _environment_value, /* AE hook */\n_platform_all,
+# OpenCE build-244's match clock (display.match_timer, the bottom right corner counting up) only while Arena Evolved's
+# MATCH CLOCK (display.match_clock) is off: the two never draw in that corner at once
+source/interface/hud.c	if (game_engine_match_clock_setting() == _match_clock_off) hud_draw_match_timer(); /* AE hook */
+# OpenCE build-244's menu language from loc.map: AE's stand-in, no loc.map reader (port/linux/game/ae_ce_locale.c)
+port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
+# OpenCE build-244's passenger camera calls render_camera_world_to_screen, which the 64-bit builds need declared
+port/linux/game/passenger_camera.c	#include "render/render_cameras_internal.h" /* AE hook */

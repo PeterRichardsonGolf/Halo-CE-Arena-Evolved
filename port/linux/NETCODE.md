@@ -84,6 +84,13 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   actor pool, `halo_port_capacity.h`, holds 1024). Riders a dropship has no
   seats for are kept, and placed beside its riders once they get out. Only
   the host runs the AI, so the clients see them as the host's other actors.
+
+  Each player chooses whether to play with friendly fire between players
+  (`network.coop_own_friendly_fire`, FRIENDLY FIRE in the pause menu): two
+  players hurt each other only if both do. A client's input tells the host
+  its choice. A player with no input for over 70 seconds (no button pressed
+  or let go, no stick or trigger held) is hurt by every player, whatever
+  either chose, until their next input.
 - **Host authoritative.** The host alone decides damage, deaths, spawns,
   pickups, scores and the game's objects; clients do not decide them but
   apply what the host sends.
@@ -211,25 +218,29 @@ holds the players of a machine still downloading the map out of the game
 until it has the map, keeps a multiplayer map's first scripted BSP, leaves
 dynamic lights and the flashlight on past the Xbox game's player and vehicle
 limits, and readies a second weapon picked up while firing; version 29
-(OpenCE build-206, ChupathingyCE 0.7.5b) names a Custom Edition map by its
-own name (`custom_maps\hugeass`, which every screen shows) and says which
-version it is by the map version of the game record, its hash's first 32
-bits (the header checksum before), which a client finds its file by (below,
-"Map sharing"); version 30 carries an elevator's riders by its movement of
-the same tick, which the Xbox game did a tick late, so that every machine
-moves them alike; version 31 (OpenCE build-242) puts the Xbox game's begin
-game, graceful exit and pregame keep-alive field lists under their own
-messages (its table had each on its neighbour's) and makes the keep-alive a
-long, as it was sent: not a byte on the wire moves but the keep-alive's
-last two, the sender's stack before and zero now, and the table's record
-changed with it; and with it, every machine drops a datagram of the netcode
-stamped more than 15 seconds from its sender's latest, the host takes a
-client's hits, Discord user and readiness only over its connection, and the
-host answers each machine's datagrams where they come from, so that a
-second copy of the game on one computer, on a port of its own, plays too.
+(OpenCE build-206, ChupathingyCE 0.7.5b) names a Custom Edition map by its own name (`custom_maps\hugeass`, which every
+screen shows) and says which version it is by the map version of the game
+record, its hash's first 32 bits (the header checksum before), which a
+client finds its file by (below, "Map sharing"); version 30 carries an
+elevator's riders by its movement of the same tick, which the Xbox game did
+a tick late, so that every machine moves them alike; version 31 puts the
+Xbox game's begin game, graceful exit and pregame keep-alive field lists
+under their own messages (its table had each on its neighbour's) and makes
+the keep-alive a long, as it was sent: not a byte on the wire moves but the
+keep-alive's last two, the sender's stack before and zero now, and the
+table's record changed with it; and with it, every machine drops a datagram
+of the netcode stamped more than 15 seconds from its sender's latest, the
+host takes a client's hits, Discord user and readiness only over its
+connection, and the host answers each machine's datagrams where they come
+from, so that a second copy of the game on one computer, on a port of its
+own, plays too; version 32 sends the host's mouse aim assist policy
+(distributed message 90, `network_aim_assist.c`), which a client must not
+ignore, and has a client's input say whether its player plays co-op with
+friendly fire.
 Arena Evolved 0.2.3-beta to 0.2.5-beta named such maps' files for their
 hash (`hugeass_1a2b3c4d.map`): they are still found, and are given their own
-names back where no file of that name is there.
+names back where no file of that name is there. Arena Evolved follows OpenCE
+from version 32 (0.3.5): it joins hosts of 32 alone.
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the
@@ -496,6 +507,14 @@ shooter's machine has heard of the host's tick 90, is refused the same way.
 The reverse, a client of this port on another build's host with these bits
 set (a gametype file written by this port), freezes the client alone and
 shows item timers that the host does not keep.
+The host's AIM ASSIST option in Player Options defaults to ALLOWED.
+BLOCK M+KB overrides optional mouse magnetism on every machine, including
+the host. Aiming with the controller or touch retains its existing behavior;
+the player's saved preference and the bullets' autoaim are unchanged.
+`network_aim_assist.c` sends the policy reliably on client ready and on
+change. Clients take it only from the host and default to blocked until it
+arrives. This adds distributed message 90; network version 32 requires
+matching builds so an older client cannot silently ignore the rule.
 
 ## Joining a game in progress
 
@@ -1033,6 +1052,18 @@ Unity's Netcode for Entities, lightyear, netfox and the Ares source):
   took to come (the reliable channel's resending holds it up), that is
   when the shooter saw the target (as far back as the host keeps). A
   report made more than three seconds ago is refused.
+- **The latency meter** (`latency_meter.c`, `display.latency_meter`) shows
+  the same round trips, timed in milliseconds by when each machine sent the
+  tick they come back naming (the last 64 ticks' send times kept), with
+  nothing more sent: the host each client's, by the host tick its input
+  names; a client its own, by its tick the host's state of its player (or,
+  driving, its vehicle) says the host has it at. Each is the network both
+  ways plus each machine's wait for its next tick, so a LAN reads 15 to 35
+  ms. A client that has heard nothing from the host for two seconds shows
+  "Connection problem"; the host logs a client silent as long. With the
+  meter on, the scoreboard shows these where the machine has them (the
+  host every client's, a client its own players'), and the host's measure
+  in ticks, which every machine is sent, for the others.
 
 ## Testing
 
