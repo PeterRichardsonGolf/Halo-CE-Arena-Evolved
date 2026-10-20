@@ -17,7 +17,7 @@ each spawns and when); bots_choose_goal asks first (its AE hook line, after the 
   rockets lie on the arches, bots stood under them for minutes, searching a path each tick); so is one whose item is
   still there after 5 s at its spot (a bot stood under Temple's camouflage to the game's end). A short path that ends
   beside the spot, a jump below it (a stand: Temple's camouflage and overshield), is not out of reach: bots.c's climb
-  at the path's end jumps on.
+  at the path's end jumps on; at the spot, an item a step above the bot's feet starts that climb too.
 */
 
 #include "ae_bots_power_rules.h"
@@ -252,6 +252,16 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 		/* (at the spot with the item up, 5 s and not got: out of its reach, 30 s) */
 		if (best_item != NONE && bots_distance2d(position, &timer->position) < 1.5f)
 		{
+			/* (an item on a stand, a step above the bot's feet: Temple's camouflage and overshield, 0.75 units up. The
+			path's last step is on the stand's top, which the bot walked into without jumping: bots.c's climb, as at a
+			short path's end, takes it on, walking at the goal and jumping) */
+			if (object_get(best_item)->object.position.z - position->z > 0.3f &&
+				bots_distance2d(position, &object_get(best_item)->object.position) > 0.3f && !bot->climb_until_tick)
+			{
+				bot->climb_start_tick = now;
+				bot->climb_until_tick = now + TICKS_PER_SECOND * 3;
+				bot->climb_best_distance = bots_distance3d(&bot->goal_point, position);
+			}
 			if (!ae_bots_power_bots[index].near_since)
 				ae_bots_power_bots[index].near_since = now;
 			else if (now - ae_bots_power_bots[index].near_since > TICKS_PER_SECOND * 5 && best < AE_BOTS_POWER_ENTRIES)
