@@ -47,6 +47,14 @@ float ae_bots_team_exposed_penalty(
 	return penalty > 0.6f ? 0.6f : penalty;
 }
 
+float ae_bots_team_hearing_range(
+	int level)
+{
+	static const float range[AE_BOTS_LEVELS] = { 0.0f, 0.0f, 15.0f, 20.0f, 25.0f, 30.0f };
+
+	return level >= 0 && level < AE_BOTS_LEVELS ? range[level] : 0.0f;
+}
+
 int ae_bots_team_wingman_level(
 	int level)
 {

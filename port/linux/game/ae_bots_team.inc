@@ -14,6 +14,7 @@ OUTNUMBERED is the fight's (ae_bots_combat.inc takes ae_bots_team_outnumbered fr
 */
 
 #include "ae_bots_team_rules.h"
+#include "items/projectiles.h"
 
 static struct
 {
@@ -49,6 +50,19 @@ static boolean ae_bots_team_alive(struct player_datum const *player)
 	return (boolean)!TEST_FLAG(object->object.damage_flags, _object_dead_bit);
 }
 
+/* whether the player was among the humans of the last update */
+static boolean ae_bots_team_was_human(long player_index, long const *humans, short count)
+{
+	short index;
+
+	for (index = 0; index < count; index++)
+	{
+		if (humans[index] == player_index)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /* the humans of the game and each one's wingman, every 3 s: the nearest living bot of that human's team that is no
 other human's wingman, the one before kept while it is in the game and of that team, dead or alive */
 static void ae_bots_team_update(long now)
@@ -72,7 +86,9 @@ static void ae_bots_team_update(long now)
 		long kept = NONE, best = NONE, bot_index;
 		real best_distance = REAL_MAX;
 
-		if (ae_bots_team_bot_of(player_index) != NONE || !ae_bots_team_alive(player))
+		/* (a human, dead or alive: the wingman stays theirs while they respawn) */
+		if (ae_bots_team_bot_of(player_index) != NONE ||
+			(player->unit_index == NONE && !ae_bots_team_was_human(player_index, previous_human, previous_count)))
 			continue;
 		for (index = 0; index < previous_count; index++)
 		{
@@ -89,7 +105,8 @@ static void ae_bots_team_update(long now)
 			if (mate && mate->team_index == player->team_index)
 				best = kept;
 		}
-		for (bot_index = 0; best == NONE && bot_index < BOTS_MAXIMUM; bot_index++)
+		/* (a fresh choice needs the human's body: none between their lives) */
+		for (bot_index = 0; best == NONE && player->unit_index != NONE && bot_index < BOTS_MAXIMUM; bot_index++)
 		{
 			struct player_datum const *mate;
 			boolean taken = FALSE;
@@ -239,11 +256,68 @@ static boolean ae_bots_team_spot(struct bots_bot *bot, real_point3d const *point
 		spot.x += (real)cos(angle) * distance;
 		spot.y += (real)sin(angle) * distance;
 		*surface_index = bots_surface_below(&spot, ground);
-		if (*surface_index != NONE)
+		/* (never a spot on a teleporter pad: a wingman waiting there was sent off and back, 10-20 Sali Creek) */
+		if (*surface_index != NONE && !ae_bots_travel_near_pad(ground, 2.5f))
 			return TRUE;
 	}
 	*surface_index = bots_surface_below(point, ground);
-	return (boolean)(*surface_index != NONE);
+	return (boolean)(*surface_index != NONE && !ae_bots_travel_near_pad(ground, 2.5f));
+}
+
+/* HEARING: a bot with no enemy in mind (none seen for 3 s) hears an enemy's shot (a projectile of its in flight: a
+bullet lives under a second) when the shooter is within its level's range, every 5 ticks, and keeps where the shooter is as where an enemy was last seen,
+a second ago (bots_choose_goal then goes there; seen less than half a second ago would start a fight it cannot see) */
+static long ae_bots_team_hear_tick[BOTS_MAXIMUM];
+
+static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_point3d const *position, long now)
+{
+	long bot_index = (long)(bot - bots_globals.bots);
+	real range = ae_bots_team_hearing_range(ae_bots_level_of_skill(bots_globals.skill));
+	struct object_iterator iterator;
+	struct player_datum *player = player_get(player_index);
+
+	if (range <= 0.0f || bot_index < 0 || bot_index >= BOTS_MAXIMUM || now < ae_bots_team_hear_tick[bot_index] ||
+		(bot->target_player_index != NONE && now - bot->target_seen_tick < 3 * TICKS_PER_SECOND))
+	{
+		return;
+	}
+	ae_bots_team_hear_tick[bot_index] = now + 5;
+	object_iterator_new(&iterator, _object_mask_projectile, 0);
+	while (object_iterator_next(&iterator))
+	{
+		struct projectile_datum const *projectile = projectile_get(iterator.index);
+		long owner = projectile->object.owner_object_index;
+		struct data_iterator players;
+		struct player_datum *other;
+
+		if (owner == NONE)
+			continue;
+		/* (a projectile owned by the weapon: its holder's) */
+		owner = object_get_ultimate_parent(owner);
+		data_iterator_new(&players, player_data);
+		while ((other = (struct player_datum *)data_iterator_next(&players)) != NULL)
+		{
+			long surface_index;
+			real_point3d ground;
+
+			if (other->unit_index != owner || !bots_is_enemy(player, other) || !ae_bots_team_alive(other) ||
+				bots_distance3d(&object_get(other->unit_index)->object.position, position) > range)
+			{
+				continue;
+			}
+			surface_index = bots_unit_surface(other->unit_index, &ground);
+			if (surface_index == NONE)
+				return;
+			bot->target_player_index = players.datum_index;
+			bot->target_last_position = object_get(other->unit_index)->object.position;
+			bot->target_last_surface_index = surface_index;
+			bot->target_seen_tick = now - TICKS_PER_SECOND;
+			if (ae_bots_events_on())
+				platform_log("bots: bot %ld hears a shot %.0f units away", (long)(bot_index + 1),
+					(double)bots_distance3d(&bot->target_last_position, position));
+			return;
+		}
+	}
 }
 
 static boolean ae_bots_team_goal(struct bots_bot *bot, long player_index, real_point3d const *position,
@@ -361,4 +435,5 @@ static void ae_bots_team_reset(void)
 {
 	csmemset(&ae_bots_team, 0, sizeof(ae_bots_team));
 	csmemset(ae_bots_team_exposure, 0, sizeof(ae_bots_team_exposure));
+	csmemset(ae_bots_team_hear_tick, 0, sizeof(ae_bots_team_hear_tick));
 }

@@ -9,7 +9,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots play as a team: in a team game one bot sticks with each player as a wingman (near you, fighting beside you,
   not off on its own); NORMAL and up regroup when their team is two or more down, and back off when more enemies are
   close than teammates instead of taking a 1v2; HEROIC and up back out of a crossfire (two or more enemies with a
-  line to them) to fight one angle at a time.
+  line to them) to fight one angle at a time; NORMAL and up hear gunfire near them (NORMAL 15 units .. DEMON 30) and
+  go to look where it came from.
 - Bots go for power weapons and powerups (rockets, sniper, shotgun, overshield, camouflage) as a player who knows the
   timers does: NORMAL and below only for one lying near, HEROIC and up from farther and timed to its spawn (DEMON from
   anywhere, 15 s early), one bot of a team for each.

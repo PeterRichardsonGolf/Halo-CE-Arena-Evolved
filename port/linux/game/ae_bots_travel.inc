@@ -1016,3 +1016,18 @@ void ae_bots_travel_stuck(struct bots_bot *bot, struct bots_tick *tick)
 	if (travel)
 		ae_travel_jump_out(bot, travel, tick, "stuck: jump");
 }
+
+static boolean ae_bots_travel_near_pad(real_point3d const *point, real radius)
+{
+	long index;
+
+	for (index = 0; index < ae_travel.link_count; index++)
+	{
+		if (ae_travel.links[index].kind != AE_BOTS_TRAVEL_LINK_JUMP &&
+			bots_distance3d(&ae_travel.links[index].entry, point) < radius)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}

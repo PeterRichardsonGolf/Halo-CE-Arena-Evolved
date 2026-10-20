@@ -257,4 +257,7 @@ static boolean ae_bots_team_goal(struct bots_bot *bot, long player_index, real_p
 static real ae_bots_team_outnumbered(struct bots_bot *bot, struct bots_tick *tick, int level);
 static long ae_bots_team_wingman_of(struct bots_bot const *bot);
 static boolean ae_bots_team_leash(struct bots_bot *bot, struct bots_tick *tick, real *direction);
+static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_point3d const *position, long now);
 static void ae_bots_team_reset(void);
+/* (ae_bots_travel.inc) whether a point is within radius of a teleporter pad (a spot a bot waits on must not be one) */
+static boolean ae_bots_travel_near_pad(real_point3d const *point, real radius);

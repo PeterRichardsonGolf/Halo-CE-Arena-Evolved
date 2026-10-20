@@ -38,6 +38,12 @@ int main(void)
 	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_DEMON, 3) == 0.4f);
 	CHECK(ae_bots_team_exposed_penalty(AE_BOTS_LEVEL_DEMON, 9) == 0.6f);
 
+	/* hearing: none below NORMAL, farther each level */
+	CHECK(ae_bots_team_hearing_range(AE_BOTS_LEVEL_EASY) == 0.0f);
+	CHECK(ae_bots_team_hearing_range(AE_BOTS_LEVEL_NORMAL) == 15.0f);
+	for (level = AE_BOTS_LEVEL_HEROIC; level < AE_BOTS_LEVELS; level++)
+		CHECK(ae_bots_team_hearing_range(level) > ae_bots_team_hearing_range(level - 1));
+
 	/* wingman: EASY and up; past 8 units goes to the player, within moves about them */
 	CHECK(!ae_bots_team_wingman_level(AE_BOTS_LEVEL_RECRUIT));
 	for (level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVELS; level++)

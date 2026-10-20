@@ -37,6 +37,10 @@ the bot past the first takes HEROIC 0.1, LEGENDARY 0.15, DEMON 0.2 from its conf
 crossfire backs out to one angle. Taken with OUTNUMBERED as the larger of the two, not both. */
 #define AE_BOTS_TEAM_EXPOSED_RANGE 30.0f
 float ae_bots_team_exposed_penalty(int level, int exposed);
+/* HEARING (NORMAL and up; the pro-skills list's audio awareness): how far a bot with no enemy in mind hears an enemy's
+fresh shot (world units): NORMAL 15, HEROIC 20, LEGENDARY 25, DEMON 30; RECRUIT and EASY 0. It then goes to look
+where the shot came from (as where an enemy was last seen), never seeing or shooting through a wall */
+float ae_bots_team_hearing_range(int level);
 /* whether a level plays wingman to a human teammate */
 int ae_bots_team_wingman_level(int level);
 /* the wingman's move: 1 go to the player (past AE_BOTS_WINGMAN_FAR), 2 move about them (within it) */

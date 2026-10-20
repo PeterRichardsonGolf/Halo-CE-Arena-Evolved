@@ -111,6 +111,9 @@ static real ae_combat_unit_distance(long unit_index, real_point3d const *positio
 
 static long ae_bots_fight_look_jitter(struct bots_bot *bot, struct bots_tick *tick)
 {
+	/* (HEARING, ae_bots_team.inc: every look, whatever the goal; bots_choose_goal is not reached while a vehicle,
+	an objective or a power item has the bot) */
+	ae_bots_team_hear(bot, bot->player_index, &tick->position, tick->now);
 	return ae_bots_combat_look_jitter(ae_bots_combat_hash01((unsigned long)bot->player_index ^ 0x5bd1e995UL,
 		(unsigned long)tick->now));
 }
