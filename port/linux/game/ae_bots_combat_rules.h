@@ -125,6 +125,25 @@ long ae_bots_combat_initial_halt_ticks(int level, float random);
 HEROIC 10 units, LEGENDARY 20, DEMON anywhere; RECRUIT .. NORMAL know only what they see */
 float ae_bots_combat_share_distance(int level);
 
+/* LONG RANGE (owner 2026-10-20 after LEGENDARY on Temple: "a bit too good with their distance shots"; the corpus: 52% of
+its shots hit at 10-15 units, 25% past 15): the least aim error, in degrees, a bot keeps on a target this far away (world
+units). None within 10 units; past them it grows by the level's degrees every 10 units: RECRUIT 3, EASY 2.6, NORMAL 2,
+HEROIC 1.6, LEGENDARY 1.2, DEMON none (the LEGENDARY of before, kept as it was). A person's size at 20 units is about
+a degree, so a floor near it misses about half the time. */
+float ae_bots_combat_range_error_floor(int level, float distance);
+
+/* WEAPON RANGE (the corpus: a shotgun fired from 5 to 10 units, where it does almost nothing): the farthest a bot fires
+a weapon, by its tag's name: a shotgun 5 units, a flamethrower 4; any other (or none) without a limit. The bot still
+closes in (bots.c's distance kept) */
+float ae_bots_combat_max_fire_distance(char const *weapon_name);
+
+/* CAMO (owner 2026-10-20: "bots notice you instantly when you are using camo"): for a target in active camouflage
+(camouflaged nonzero), how far it is seen (a factor on bots.c's own 0.3 of the sight), and the first aim error and the
+reaction (factors); 1 for a target in sight */
+float ae_bots_combat_camo_reach_scale(int camouflaged);
+float ae_bots_combat_camo_error_scale(int camouflaged);
+float ae_bots_combat_camo_reaction_scale(int camouflaged);
+
 /* SPENT WEAPONS (bots.c's bots_weapon_empty, which swaps a bot off an empty weapon): a weapon of rounds is spent
 when none are left, bots.c's own test (-1: left to it); an energy weapon (the plasma pistol, the plasma rifle) when
 its battery is out (age 1). An energy weapon is one with no magazine or a magazine of no rounds: the stock plasma

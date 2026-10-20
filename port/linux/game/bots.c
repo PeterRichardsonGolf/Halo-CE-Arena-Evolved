@@ -1530,6 +1530,7 @@ static boolean bots_target_score(struct bots_bot *bot, struct player_datum *play
 	/* (active camouflage: seen only close) */
 	if (TEST_FLAG(other_unit->unit.flags, _unit_active_camouflaged_bit))
 		reach *= 0.3f;
+	reach *= ae_bots_fight_camo_reach(other_unit); /* AE hook */
 	/* (the one it fights: a little further) */
 	if (player_index == bot->target_player_index)
 		reach *= 1.25f;
@@ -1915,6 +1916,8 @@ static void bots_bot_look(struct bots_bot *bot, struct bots_tick *tick)
 			{
 				real error = tick->skill->aim_error_degrees * BOTS_DEGREES;
 
+				error *= ae_bots_fight_camo_error(target_player); /* AE hook */
+
 				bot->target_first_seen_tick = tick->now;
 				bot->aim_error_yaw = bots_random_signed(bot) * error;
 				bot->aim_error_pitch = bots_random_signed(bot) * error * 0.6f;
@@ -1984,6 +1987,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	bot->aim_error_pitch = bot->aim_error_pitch * settle +
 		bots_random_signed(bot) * skill->aim_error_degrees * 0.03f * BOTS_DEGREES;
 	ae_bots_aim_floor(ae_bots_shooting_skill(bots_globals.skill), &bot->aim_error_yaw, &bot->aim_error_pitch, bots_random_signed(bot), bots_random_signed(bot)); /* AE hook */
+	ae_bots_fight_range_floor(bot, tick); /* AE hook */
 	desired_yaw = (real)atan2(dy, dx) + bot->aim_error_yaw;
 	desired_pitch = (real)atan2(dz, horizontal) + bot->aim_error_pitch;
 	turn = skill->turn_degrees_per_tick * BOTS_DEGREES;
@@ -1997,6 +2001,7 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	yaw_off = (real)fabs(bots_angle_difference((real)atan2(dy, dx), bot->yaw));
 	pitch_off = (real)fabs((real)atan2(dz, horizontal) - bot->pitch);
 	cone = (real)atan(0.35f / MAX(tick->target_distance, 0.5f)) * skill->fire_cone + 0.01f;
+	if (!ae_bots_fight_in_range(bot, tick)) cone = -1.0f; /* AE hook */
 	if (now - bot->target_first_seen_tick >= reaction_ticks && now - bot->target_seen_tick <= 3 &&
 		yaw_off < cone && pitch_off < cone * 1.5f && tick->weapon_index != NONE)
 	{

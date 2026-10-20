@@ -257,6 +257,29 @@ static void test_charge_jump_share(void)
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_HEROIC) == 10.0f);
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_LEGENDARY) == 20.0f);
 	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_DEMON) > 1000.0f);
+	/* LONG RANGE (owner 10-20: "a bit too good with their distance shots"): no floor within 10 units, a floor that
+	grows past it, larger for lower levels, none at DEMON (the old LEGENDARY, kept as it was) */
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_NORMAL, 9.0f) == 0.0f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_LEGENDARY, 20.0f) > 0.9f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_LEGENDARY, 20.0f) < 1.5f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_DEMON, 30.0f) == 0.0f);
+	for (int level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVEL_DEMON; level++)
+	{
+		CHECK(ae_bots_combat_range_error_floor(level, 15.0f) < ae_bots_combat_range_error_floor(level, 25.0f));
+		CHECK(level == AE_BOTS_LEVEL_EASY ||
+			ae_bots_combat_range_error_floor(level, 20.0f) < ae_bots_combat_range_error_floor(level - 1, 20.0f));
+	}
+	/* WEAPON RANGE (corpus: shotgun shots from 5-10 units): a shotgun holds fire past 5 units, a flamethrower past 4;
+	others have no limit */
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\shotgun\\shotgun") == 5.0f);
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\flamethrower\\flamethrower") == 4.0f);
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\pistol\\pistol") > 1000.0f);
+	CHECK(ae_bots_combat_max_fire_distance(0) > 1000.0f);
+	/* CAMO (owner 10-20: "bots notice you instantly when you are using camo"): seen at 0.4 of bots.c's camo reach,
+	twice the reaction and the first aim error */
+	CHECK(ae_bots_combat_camo_reach_scale(1) == 0.4f && ae_bots_combat_camo_reach_scale(0) == 1.0f);
+	CHECK(ae_bots_combat_camo_error_scale(1) == 2.0f && ae_bots_combat_camo_error_scale(0) == 1.0f);
+	CHECK(ae_bots_combat_camo_reaction_scale(1) == 2.0f && ae_bots_combat_camo_reaction_scale(0) == 1.0f);
 	/* DEMON (owner 10-20: the old LEGENDARY) fights as LEGENDARY does in every other rule */
 	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_DEMON) == ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_LEGENDARY));
 	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_DEMON, 0.5f) == ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_LEGENDARY, 0.5f));

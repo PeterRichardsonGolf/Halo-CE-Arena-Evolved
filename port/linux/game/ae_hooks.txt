@@ -987,3 +987,9 @@ source/interface/ui_widget.c	ui_mouse_targets_settled = TRUE;\nae_ui_deleted_cle
 source/objects/object_types.c	#include "ae_layout.h" /* AE hook */
 source/objects/object_types.c	if (object_type == _object_type_vehicle && !ae_layout_vehicle_placed(scenario_object)) continue; /* AE hook */
 source/game/game_engine.c	if (global_variant.universal_variant.teams) side = ae_layout_vehicle_side(placement, side); /* AE hook */
+# Bots tune A (2026-10-20, ae_bots_combat_rules.h): CAMO (sight and first aim error), LONG RANGE (the aim error a far
+# target keeps), WEAPON RANGE (no shotgun shots from afar)
+port/linux/game/bots.c	reach *= ae_bots_fight_camo_reach(other_unit); /* AE hook */
+port/linux/game/bots.c	error *= ae_bots_fight_camo_error(target_player); /* AE hook */
+port/linux/game/bots.c	ae_bots_fight_range_floor(bot, tick); /* AE hook */
+port/linux/game/bots.c	if (!ae_bots_fight_in_range(bot, tick)) cone = -1.0f; /* AE hook */

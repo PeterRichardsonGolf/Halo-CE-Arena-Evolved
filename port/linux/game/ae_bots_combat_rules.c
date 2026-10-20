@@ -8,6 +8,8 @@ reaction budget).
 
 #include "ae_bots_combat_rules.h"
 
+#include <string.h>
+
 #define TICKS AE_BOTS_COMBAT_TICKS_PER_SECOND
 
 static float clamp01(float value)
@@ -333,6 +335,39 @@ float ae_bots_combat_share_distance(int level)
 	ours: RECRUIT .. NORMAL only what they see; LEGENDARY twice HEROIC's, DEMON anywhere) */
 	return level >= AE_BOTS_LEVEL_DEMON ? 1.0e9f : level == AE_BOTS_LEVEL_LEGENDARY ? 20.0f :
 		level == AE_BOTS_LEVEL_HEROIC ? 10.0f : 0.0f;
+}
+
+float ae_bots_combat_range_error_floor(int level, float distance)
+{
+	static const float slopes[AE_BOTS_LEVELS] = { 3.0f, 2.6f, 2.0f, 1.6f, 1.2f, 0.0f };
+
+	if (level < 0 || level >= AE_BOTS_LEVELS || distance <= 10.0f)
+		return 0.0f;
+	return slopes[level] * (distance - 10.0f) / 10.0f;
+}
+
+float ae_bots_combat_max_fire_distance(char const *weapon_name)
+{
+	if (weapon_name && strstr(weapon_name, "shotgun"))
+		return 5.0f;
+	if (weapon_name && strstr(weapon_name, "flamethrower"))
+		return 4.0f;
+	return 1.0e9f;
+}
+
+float ae_bots_combat_camo_reach_scale(int camouflaged)
+{
+	return camouflaged ? 0.4f : 1.0f;
+}
+
+float ae_bots_combat_camo_error_scale(int camouflaged)
+{
+	return camouflaged ? 2.0f : 1.0f;
+}
+
+float ae_bots_combat_camo_reaction_scale(int camouflaged)
+{
+	return camouflaged ? 2.0f : 1.0f;
 }
 
 int ae_bots_combat_weapon_spent(int magazine_count, int rounds_loaded_maximum, int rounds_total_maximum,

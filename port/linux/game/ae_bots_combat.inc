@@ -42,9 +42,63 @@ static void ae_bots_fight_event(struct bots_bot *bot, struct bots_tick *tick, ch
 
 static long ae_bots_fight_reaction(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks)
 {
+	struct player_datum const *target = player_get(bot->target_player_index);
+
 	(void)tick;
+	/* (a camouflaged target: twice as long) */
+	reaction_ticks = (long)((real)reaction_ticks * ae_bots_combat_camo_reaction_scale(
+		TEST_FLAG(unit_get(target->unit_index)->unit.flags, _unit_active_camouflaged_bit)) + 0.5f);
 	return ae_bots_combat_reaction_ticks(ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill)), reaction_ticks,
 		ae_bots_combat_hash01((unsigned long)bot->player_index, (unsigned long)bot->target_first_seen_tick));
+}
+
+static real ae_bots_fight_camo_reach(struct unit_datum const *unit)
+{
+	return ae_bots_combat_camo_reach_scale(TEST_FLAG(unit->unit.flags, _unit_active_camouflaged_bit));
+}
+
+static real ae_bots_fight_camo_error(struct player_datum const *target)
+{
+	return ae_bots_combat_camo_error_scale(TEST_FLAG(unit_get(target->unit_index)->unit.flags,
+		_unit_active_camouflaged_bit));
+}
+
+/* LONG RANGE: an error below the far target's floor is pushed out to it (0 to 30% past it, its side kept), so the aim
+stays off by about the floor and a shot at a person of about that size hits about half the time */
+static void ae_bots_fight_range_floor(struct bots_bot *bot, struct bots_tick *tick)
+{
+	real floor = ae_bots_combat_range_error_floor(ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill)),
+		tick->target_distance) * BOTS_DEGREES;
+	real *errors[2];
+	real scale[2] = { 1.0f, 0.6f };
+	short index;
+
+	if (floor <= 0.0f)
+		return;
+	errors[0] = &bot->aim_error_yaw;
+	errors[1] = &bot->aim_error_pitch;
+	for (index = 0; index < 2; index++)
+	{
+		real least = floor * scale[index];
+		real random = bots_random_signed(bot);
+
+		if ((real)fabs(*errors[index]) < least)
+		{
+			real sign = *errors[index] > 0.0f ? 1.0f : *errors[index] < 0.0f ? -1.0f : random < 0.0f ? -1.0f : 1.0f;
+
+			*errors[index] = sign * least * (1.0f + 0.3f * (real)fabs(random));
+		}
+	}
+}
+
+/* WEAPON RANGE: a shotgun's or a flamethrower's target out of its reach is not fired at */
+static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *tick)
+{
+	(void)bot;
+	if (tick->weapon_index == NONE)
+		return TRUE;
+	return (boolean)(tick->target_distance <=
+		ae_bots_combat_max_fire_distance(tag_get_name(weapon_get(tick->weapon_index)->definition_index)));
 }
 
 /* a unit's distance from a place: a rider's from its seat in the world (ae_bots_vehicle_point), not its seat offset */

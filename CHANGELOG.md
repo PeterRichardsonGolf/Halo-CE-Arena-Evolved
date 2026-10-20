@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Bots: below DEMON they miss more the farther you are (past about 30 m); they see a camouflaged player only close
+  up, react to one later and aim worse at it; and they hold a shotgun's fire until they are close enough for it.
 - Bots: a new top level, DEMON (BOT SKILL, SHOOTING SKILL and MOVEMENT SKILL): the LEGENDARY bots of before. LEGENDARY
   now sits halfway between HEROIC and DEMON (it reacts in 0.24 s, sees 48 units over 150 degrees, and tells teammates
   within 20 units what it sees). RECRUIT, EASY, NORMAL and HEROIC are unchanged.

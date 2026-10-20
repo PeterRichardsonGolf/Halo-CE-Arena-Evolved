@@ -242,3 +242,9 @@ static boolean ae_bots_fight_melee(struct bots_bot *bot, struct bots_tick *tick)
 static long ae_bots_fight_melee_ticks(struct bots_bot *bot, struct bots_tick *tick);
 static void ae_bots_fight_grenade(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks);
 static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick);
+/* (2026-10-20, ae_bots_combat_rules.h) CAMO: the sight of a camouflaged unit and the first aim error at it; LONG RANGE: the
+aim error a far target keeps; WEAPON RANGE: whether the target is near enough for the held weapon */
+static real ae_bots_fight_camo_reach(struct unit_datum const *unit);
+static real ae_bots_fight_camo_error(struct player_datum const *target);
+static void ae_bots_fight_range_floor(struct bots_bot *bot, struct bots_tick *tick);
+static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *tick);
