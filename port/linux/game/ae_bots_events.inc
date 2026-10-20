@@ -20,7 +20,9 @@ key=value words:
   ev=crouch state=start|end
   ev=throw                       a grenade left its hand (its grenades went down; seen when they do)
   ev=jump                        it pressed jump while fighting
-  ev=kill / ev=death             its kills or deaths counter went up
+  ev=kill / ev=death             its kills or deaths counter went up; a death's line has its cause and how it came
+                                 (ae_bots_falls.inc: cause= dmg= by= and, while it stood on the ground before,
+                                 gx= gy= gz= drop= air= doing=)
 */
 
 boolean config_boolean(char const *name);
@@ -116,14 +118,24 @@ static void ae_bots_events_resolve(long now)
 	ae_bots_event_pending_count = 0;
 }
 
-/* object_cause_damage: a bot's damage to a player's unit, to be measured when it is done */
-void ae_bots_damage_note(long owner_player_index, long object_index)
+/* (ae_bots_travel.inc and ae_bots_falls.inc, included after) */
+static void ae_bots_travel_tick_end(void);
+static void ae_bots_falls_damage(long owner_player_index, long object_index, long definition_index, unsigned long flags);
+static void ae_bots_falls_tick_end(struct bots_bot *bot, long bot_index, struct bots_tick *tick);
+static void ae_bots_falls_death_words(struct bots_bot *bot, long bot_index, long now, char *out, size_t size);
+
+/* object_cause_damage: a bot's damage to a player's unit, to be measured when it is done; a bot's unit's damage, the
+cause of its death (ae_bots_falls.inc) */
+void ae_bots_damage_note(long owner_player_index, long object_index, long definition_index, unsigned long flags)
 {
 	struct object_datum *victim;
 	struct unit_datum *unit;
 	long index;
 
-	if (!ae_bots_events_on() || owner_player_index == NONE || !bots_globals.map_ready)
+	if (!ae_bots_events_on() || !bots_globals.map_ready)
+		return;
+	ae_bots_falls_damage(owner_player_index, object_index, definition_index, flags);
+	if (owner_player_index == NONE)
 		return;
 	ae_bots_events_resolve(game_time_get());
 	unit = unit_try_and_get(object_index);
@@ -174,17 +186,18 @@ void ae_bots_events_begin(struct bots_bot *bot, long bot_index, struct bots_tick
 			ae_bots_event_line(bot_index, tick->now, "kill", state->last_target, state->last_dist, "");
 		for (; state->deaths < deaths; state->deaths++)
 		{
-			ae_bots_event_line(bot_index, tick->now, "death", state->last_target, state->last_dist, "");
+			char words[320];
+
+			ae_bots_falls_death_words(bot, bot_index, tick->now, words, sizeof(words));
+			ae_bots_event_line(bot_index, tick->now, "death", state->last_target, state->last_dist, words);
 			state->crouching = FALSE;
 			state->rounds_known = FALSE;
 		}
 	}
 	state->kills = kills;
 	state->deaths = deaths;
-	(void)bot;
 }
 
-static void ae_bots_travel_tick_end(void); /* (ae_bots_travel.inc, included after) */
 
 void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *tick)
 {
@@ -200,6 +213,7 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 	ae_bots_travel_tick_end();
 	if (!ae_bots_events_on() || bot_index < 0 || bot_index >= BOTS_MAXIMUM)
 		return;
+	ae_bots_falls_tick_end(bot, bot_index, tick);
 	state = &ae_bots_event_states[bot_index];
 	if (bot->target_player_index != NONE)
 	{

@@ -17,7 +17,8 @@ each spawns and when); bots_choose_goal asks first (its AE hook line, after the 
   rockets lie on the arches, bots stood under them for minutes, searching a path each tick); so is one whose item is
   still there after 5 s at its spot (a bot stood under Temple's camouflage to the game's end). A short path that ends
   beside the spot, a jump below it (a stand: Temple's camouflage and overshield), is not out of reach: bots.c's climb
-  at the path's end jumps on; at the spot, an item a step above the bot's feet starts that climb too.
+  at the path's end jumps on; at the spot, an item a step above the bot's feet starts that climb too. Three entries left out of its reach within 20 s leave them all alone 30 s: where the bot
+  stands reaches none (Boarding Action 10-20, once the bots no longer walked off the ships).
 */
 
 #include "ae_bots_power_rules.h"
@@ -30,6 +31,9 @@ static struct
 	short entry;		/* the item_timers entry it goes for, or NONE */
 	long check_tick;	/* when it weighs the entries again */
 	long near_since;	/* since when it stands at the entry's spot with the item up (0: not) */
+	/* the entries it left out of its reach lately: how many, the first's tick */
+	short unreachable_run;
+	long unreachable_run_tick;
 } ae_bots_power_bots[BOTS_MAXIMUM];
 
 /* when each team saw each entry's spot empty, until its next spawn (game ticks; 0 for not) */
@@ -169,6 +173,23 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 		if (ae_bots_events_on())
 			platform_log("bots: bot %ld leaves power entry %d (out of reach)", (long)(index + 1),
 				(int)ae_bots_power_bots[index].entry);
+		/* (three left within 20 s: where it stands reaches none of them, so none for 30 s; bots.c's roaming and
+		hunting move it on. Boarding Action 10-20: a bot on one ship went for the other ship's items one after the
+		other, each out of reach, and stood climbing at the hull a minute or more; it used to walk off and respawn) */
+		if (now - ae_bots_power_bots[index].unreachable_run_tick > TICKS_PER_SECOND * 20 ||
+			now < ae_bots_power_bots[index].unreachable_run_tick)
+		{
+			ae_bots_power_bots[index].unreachable_run = 0;
+			ae_bots_power_bots[index].unreachable_run_tick = now;
+		}
+		if (++ae_bots_power_bots[index].unreachable_run >= 3)
+		{
+			for (entry = 0; entry < AE_BOTS_POWER_ENTRIES; entry++)
+				ae_bots_power_unreachable_until[index][entry] = now + TICKS_PER_SECOND * 30;
+			ae_bots_power_bots[index].unreachable_run = 0;
+			if (ae_bots_events_on())
+				platform_log("bots: bot %ld leaves the power entries a while (none in reach)", (long)(index + 1));
+		}
 		ae_bots_power_bots[index].entry = NONE;
 		ae_bots_power_bots[index].check_tick = now;
 		if (bot->goal_kind == _bots_goal_item || bot->goal_kind == _bots_goal_roam)
