@@ -1379,6 +1379,7 @@ static void download_fail(
 	if (ae_map_share_download_failed(download->level_name, reason)) { download_report(_progress_failed); download_end(FALSE); return; } /* AE hook */
 	error(_error_silent, "map sharing: the download of %s failed: %s", download->level_name, reason);
 	snprintf(message, sizeof(message), "%s\r\n\r\n%s", download->message, reason);
+	ae_map_share_failure_text(message, sizeof(message), download->level_name, reason); /* AE hook */
 	for (index = 0; message[index] && index < NUMBEROF(text) - 1; index++)
 		text[index] = (wchar_t)(unsigned char)message[index];
 	text[index] = 0;
@@ -3427,7 +3428,7 @@ void map_share_render(
 	short base_length;
 	long percent;
 
-	ae_map_share_all_render(); /* AE hook */
+	if (ae_map_share_all_render(download->level_name, download->state == _download_asking, download->state == _download_transferring, download->done_bytes, download->total_bytes)) return; /* AE hook */
 	if (download->state != _download_asking && download->state != _download_transferring)
 		return;
 	font_tag_index = interface_get_tag_index(_interface_font_terminal);

@@ -197,7 +197,8 @@ def ce_map():
     return "homobox.map", data
 
 
-YES = {"HALO_MAP_SHARE_TEST": "yes"}
+# (no question any more, the OpenCE way: the setting is the yes, on by default)
+YES = {}
 
 
 def test_played_xbox_map(roots):
@@ -281,39 +282,40 @@ def test_get_all(roots):
     make_root(host, xbox=xbox, mod=mod, ce=ce)
     make_root(guest)
     host_text, guest_text = run_pair("get-all", host, guest, host_env={"HALO_MOD": "sharemod"},
-                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=120)
+                                     guest_env={}, seconds=120)
     assert "this host lists 6 maps" in host_text, share_lines(host_text)  # (3 maps and the 3 resource maps)
     assert "the host lists 6 maps; this machine lacks 3 of them" in guest_text, share_lines(guest_text)
     assert (guest / "maps_shared/sharecreek.map").read_bytes() == xbox["sharecreek"], share_lines(guest_text)
     assert (guest / "maps_shared/modcreek.map").read_bytes() == mod["modcreek"]
     assert (guest / "maps_ce" / next(iter(ce))).read_bytes() == next(iter(ce.values()))
     assert "is done: 3 of 3 fetched" in guest_text, share_lines(guest_text)
-    # (M3: the yes is taken only once the question has been on the screen for a second)
-    assert seconds_of(guest_text, "the player said yes") - seconds_of(guest_text, "the player is asked") >= 1
+    # (no question: nothing asked, no key; the host's maps came by themselves)
+    assert "the player said yes" not in guest_text and "the player is asked" not in guest_text, share_lines(guest_text)
     for stock in STOCK:
         assert not (guest / "maps_shared" / f"{stock}.map").exists()
 
 
-def test_no_consent(roots):
-    """without the player's yes nothing is asked of the host and nothing is written"""
+def test_downloads_off(roots):
+    """DOWNLOAD MAPS off: nothing is asked of the host and nothing is written; the game's own map is not fetched"""
     host, guest = roots
     make_root(host, xbox={"sharecreek": xbox_map_named(xbox_source(), "sharecreek")})
     make_root(guest)
-    host_text, guest_text = run_pair("no-consent", host, guest, guest_env={"HALO_MAP_SHARE_TEST": "no"},
+    host_text, guest_text = run_pair("downloads-off", host, guest, guest_env={"HALO_NET_MAP_DOWNLOAD": "false"},
                                      level="sharecreek", seconds=45)
     assert "asks for" not in share_lines(host_text), share_lines(host_text)
     assert not (guest / "maps_shared").exists() or not list((guest / "maps_shared").iterdir())
     assert not (guest / "maps_ce").exists() or not list((guest / "maps_ce").iterdir())
-    assert "You chose not to download maps from this host" in guest_text, share_lines(guest_text)
+    assert "downloads are off for this host" in guest_text, share_lines(guest_text)
 
 
 def test_internet_without_opt_in(roots):
-    """a host that is not on the local network is not asked for maps (the guest's switch, off by default)"""
+    """a host that is not on the local network is not asked for maps (the guest's switch, turned off here)"""
     host, guest = roots
     xbox, mod, ce = three_maps()
     make_root(host, xbox=xbox)
     make_root(guest)
-    host_text, guest_text = run_pair("internet-guest", host, guest, guest_env={"HALO_MAP_SHARE_TEST": "internet"},
+    host_text, guest_text = run_pair("internet-guest", host, guest, guest_env={"HALO_MAP_SHARE_TEST": "internet",
+                                                "HALO_NET_MAP_DOWNLOAD_INTERNET": "false"},
                                      seconds=40)
     # (it knows the host runs this game, and keeps no list of it)
     assert "the host runs this game" in guest_text, share_lines(guest_text)
@@ -330,7 +332,7 @@ def test_internet_host_without_opt_in(roots):
     make_root(host, xbox=xbox)
     make_root(guest)
     host_text, guest_text = run_pair("internet-host", host, guest, host_env={"HALO_MAP_SHARE_TEST": "internet"},
-                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=40)
+                                     guest_env={}, seconds=40)
     assert "not shared with (network.map_share, network.map_share_internet)" in host_text, share_lines(host_text)
     assert "was sent the list" not in host_text
     assert "does not share its maps with this machine" in guest_text, share_lines(guest_text)
@@ -339,7 +341,7 @@ def test_internet_host_without_opt_in(roots):
     make_root(guest)
     host_text, guest_text = run_pair("internet-host-on", host, guest,
                                      host_env={"HALO_MAP_SHARE_TEST": "internet", "HALO_NET_MAP_SHARE_INTERNET": "true"},
-                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=50)
+                                     guest_env={}, seconds=50)
     assert (guest / "maps_shared/sharecreek.map").exists(), share_lines(guest_text) + share_lines(host_text)
 
 
@@ -389,7 +391,7 @@ def test_lying_list(roots, lie):
     make_root(host, xbox=xbox)
     make_root(guest)
     host_text, guest_text = run_pair(lie, host, guest, host_env={"HALO_MAP_SHARE_TEST": lie},
-                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=45)
+                                     guest_env={}, seconds=45)
     assert "is not the map of its list (another size or hash)" in guest_text, share_lines(guest_text)
     assert not list((guest / "maps_shared").glob("*")), list((guest / "maps_shared").glob("*"))
     assert "0 of 1 fetched" in guest_text, share_lines(guest_text)
@@ -402,7 +404,7 @@ def test_lying_map_is_deleted(roots):
     make_root(host, xbox={"fakecreek": small_map("sharecreek")})
     make_root(guest)
     host_text, guest_text = run_pair("lie-map", host, guest, host_env={"HALO_MAP_SHARE_TEST": "lie-map"},
-                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=50)
+                                     guest_env={}, seconds=50)
     assert guest_text.count("map sharing: downloading fakecreek, 1 files") == 1, share_lines(guest_text)
     assert guest_text.count("removed d:\\maps_shared\\fakecreek_") == 1, share_lines(guest_text)
     assert "is done: 0 of 1 fetched, some could not be" in guest_text, share_lines(guest_text)
@@ -416,12 +418,12 @@ def test_long_map_is_deleted(roots):
     long_map = small_map("longcreek") + b"x" * 400000
     make_root(host, xbox={"longcreek": long_map})
     make_root(guest)
-    honest, guest_text = run_pair("long-honest", host, guest, guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=30)
+    honest, guest_text = run_pair("long-honest", host, guest, guest_env={}, seconds=30)
     assert "this host lists 0 maps" in honest, share_lines(honest)
     shutil.rmtree(guest)
     make_root(guest)
     host_text, guest_text = run_pair("long-map", host, guest, host_env={"HALO_MAP_SHARE_TEST": "lie-map"},
-                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=50)
+                                     guest_env={}, seconds=50)
     assert guest_text.count("removed d:\\maps_shared\\longcreek_") == 1, share_lines(guest_text)
     assert not list((guest / "maps_shared").glob("*")), list((guest / "maps_shared").glob("*"))
 
@@ -440,7 +442,7 @@ def test_many_maps_do_not_stall_the_played_map(roots):
     make_root(guest)
     make_root(second, xbox={"sharecreek": played})
     host_text, guest_text = run_pair("many", host, guest, guest_env=YES, level="sharecreek", seconds=200,
-                                     second=(second, {"HALO_MAP_SHARE_TEST": "all"}))
+                                     second=(second, {}))
     second_text = (second / "debug.txt").read_text(errors="replace")
     assert "this host lists 21 maps" in host_text, share_lines(host_text)
     assert "is done: 20 of 20 fetched" in second_text, share_lines(second_text)[-3000:]
@@ -456,7 +458,7 @@ def test_never_overwrites(roots):
     make_root(host, xbox=xbox)
     # (a file the game does not list as a map, so the guest still lacks the map)
     make_root(guest, raw={"maps_shared/sharecreek.map": b"mine"})
-    host_text, guest_text = run_pair("overwrite", host, guest, guest_env={"HALO_MAP_SHARE_TEST": "all"}, seconds=50)
+    host_text, guest_text = run_pair("overwrite", host, guest, guest_env={}, seconds=50)
     assert (guest / "maps_shared/sharecreek.map").read_bytes() == b"mine", share_lines(guest_text)
 
 
@@ -485,7 +487,7 @@ def test_game_starts_during_get_all(roots):
     make_root(guest)
     host_text, guest_text = run_pair("start-mid-way", host, guest,
                                      host_env={"HALO_MOD": "sharemod", "HALO_NET_MAP_SHARE_UPLOAD": "256"},
-                                     guest_env={"HALO_MAP_SHARE_TEST": "all"}, start=22, seconds=75)
+                                     guest_env={}, start=22, seconds=75)
     assert "getting all of the host's maps" in guest_text, share_lines(guest_text)
     assert "Getting the host's maps was stopped" in guest_text, share_lines(guest_text)
     # (the guest is in the game, its own player playing)
@@ -515,14 +517,12 @@ def removed_objects(text):
     return int(found[-1]) if found else None
 
 
-def test_layout_travels_to_a_guest_with_the_map(roots):
-    """a guest that has the map but not its layout plays the host's layout (the scenery it removes is gone there
-    too); without a yes to downloading nothing is written"""
+def layout_travels(roots, name_of_run, guest_env, kept):
     host, guest = roots
     name, content, layout = layout_map()
     make_root(host, raw={f"maps/Pack/{name}.map": content, f"maps/Pack/layouts/{name}.txt": layout})
     make_root(guest, raw={f"maps/Pack/{name}.map": content})
-    host_text, guest_text = run_pair("layout-travels", host, guest, level=name, start=40, seconds=80)
+    host_text, guest_text = run_pair(name_of_run, host, guest, guest_env=guest_env, level=name, start=40, seconds=80)
     assert f"{name} ({len(layout)} bytes) goes to its guests" in host_text, share_lines(host_text)
     assert "was sent this host's layout for" in host_text, share_lines(host_text)
     assert f"{name} came ({len(layout)} bytes)" in guest_text, share_lines(guest_text)
@@ -531,7 +531,18 @@ def test_layout_travels_to_a_guest_with_the_map(roots):
     assert "layout: the host's layout (" in guest_text, layout_lines(guest_text)
     host_removed = removed_objects(host_text)
     assert host_removed and removed_objects(guest_text) == host_removed, layout_lines(guest_text)
-    assert not (guest / f"maps/Pack/layouts/{name}.txt").exists()
+    assert (guest / f"maps/Pack/layouts/{name}.txt").exists() == kept
+
+
+def test_layout_travels_to_a_guest_with_the_map(roots):
+    """a guest that has the map but not its layout plays the host's layout (the scenery it removes is gone there
+    too), and with DOWNLOAD MAPS on (the player's yes) keeps it beside the map"""
+    layout_travels(roots, "layout-travels", None, True)
+
+
+def test_layout_is_not_kept_with_downloads_off(roots):
+    """the same with DOWNLOAD MAPS off: the layout is played from memory and nothing is written"""
+    layout_travels(roots, "layout-travels-off", {"HALO_NET_MAP_DOWNLOAD": "false"}, False)
 
 
 def test_layout_comes_with_a_downloaded_map(roots):

@@ -5553,13 +5553,13 @@ static boolean ui_widget_port_text_wrap(
 	{
 		wchar_t character = text[index];
 
-		if (character == L'\r' || character == L'\n')
+		if ((character == L'\r' || character == 10) && index == line_start) /* AE hook */
 		{
 			line_start = index + 1;
 			last_space = NONE;
 			continue;
 		}
-		if (character == L' ' || character == 0)
+		if (character == L' ' || character == 0 || character == L'\r' || character == 10) /* AE hook */
 		{
 			wchar_t line[256];
 			long length = MIN(index - line_start, (long)NUMBEROF(line) - 1);
@@ -5583,6 +5583,7 @@ static boolean ui_widget_port_text_wrap(
 				fits = FALSE;
 			if (character == 0)
 				break;
+			if (character == L'\r' || character == 10) { line_start = index + 1; last_space = NONE; continue; } /* AE hook */
 			last_space = index;
 		}
 	}
@@ -5770,6 +5771,7 @@ static void widget_instance_render_text_box(
 		if (background && background->width > 0 && background->width < width)
 			width = background->width;
 		width = (short)(width - 4 * definition->horizontal_offset);
+		bounds.y0 -= 6; /* AE hook */
 		ustrncpy(wrapped, *text, NUMBEROF(wrapped) - 1);
 		wrapped[NUMBEROF(wrapped) - 1] = 0;
 		if (!ui_widget_port_text_wrap(wrapped, &bounds, width) ||

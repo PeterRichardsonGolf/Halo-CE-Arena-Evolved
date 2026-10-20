@@ -99,7 +99,7 @@ static void share_all_tests(void)
 	int count = 0;
 	size_t index;
 	long size;
-	int state;
+	char text[200];
 
 	/* the stock maps: each of the retail game's is one, in any case, as an Xbox map, a mod's and a Custom Edition
 	map; the engine's list is exactly these */
@@ -310,24 +310,60 @@ static void share_all_tests(void)
 	CHECK(!ae_map_share_policy_allows(ae_map_share_address_local(ip(10, 0, 0, 1)), 0, 1));
 	CHECK(!ae_map_share_policy_allows(0, 0, 1));
 
-	/* the player's answer: asked once, yes or no only while asked, another host asked anew; written only on yes */
-	state = AE_MAP_SHARE_CONSENT_UNASKED;
-	CHECK(!ae_map_share_consent_writes(state));
-	CHECK(ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_YES) == AE_MAP_SHARE_CONSENT_UNASKED);
-	CHECK(ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_NO) == AE_MAP_SHARE_CONSENT_UNASKED);
-	state = ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_NEED);
-	CHECK(state == AE_MAP_SHARE_CONSENT_ASKING && !ae_map_share_consent_writes(state));
-	CHECK(ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_NEED) == AE_MAP_SHARE_CONSENT_ASKING);
-	CHECK(ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_NO) == AE_MAP_SHARE_CONSENT_NO);
-	CHECK(!ae_map_share_consent_writes(AE_MAP_SHARE_CONSENT_NO));
-	CHECK(ae_map_share_consent_step(AE_MAP_SHARE_CONSENT_NO, AE_MAP_SHARE_CONSENT_EVENT_YES) == AE_MAP_SHARE_CONSENT_NO);
-	CHECK(ae_map_share_consent_step(AE_MAP_SHARE_CONSENT_NO, AE_MAP_SHARE_CONSENT_EVENT_NEED) == AE_MAP_SHARE_CONSENT_NO);
-	state = ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_YES);
-	CHECK(state == AE_MAP_SHARE_CONSENT_YES && ae_map_share_consent_writes(state));
-	CHECK(ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_NEED) == AE_MAP_SHARE_CONSENT_YES);
-	CHECK(ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_NO) == AE_MAP_SHARE_CONSENT_YES);
-	CHECK(ae_map_share_consent_step(state, AE_MAP_SHARE_CONSENT_EVENT_HOST) == AE_MAP_SHARE_CONSENT_UNASKED);
-	CHECK(ae_map_share_consent_step(state, 99) == state && !ae_map_share_consent_writes(99));
+	/* no question (the OpenCE way): the setting is the player's yes, and the policy above is all there is. The names,
+	amounts and reasons the card and the dialog show */
+	ae_map_share_display_name("h2_coagulation_9fc847de", text, sizeof(text));
+	CHECK(!strcmp(text, "H2 Coagulation"));
+	ae_map_share_display_name("h2_zanzibar_D9913A5C", text, sizeof(text));
+	CHECK(!strcmp(text, "H2 Zanzibar"));
+	ae_map_share_display_name("h2_coagulation_9fc847de@ce", text, sizeof(text));
+	CHECK(!strcmp(text, "H2 Coagulation"));
+	ae_map_share_display_name("sharecreek", text, sizeof(text));
+	CHECK(!strcmp(text, "Sharecreek"));
+	ae_map_share_display_name("d:\\maps_ce\\cmt_snow_grove.MAP", text, sizeof(text));
+	CHECK(!strcmp(text, "Cmt Snow Grove"));
+	/* (a name that only looks like a hash is kept: 7 digits, a non-hex letter) */
+	ae_map_share_display_name("ridge_9fc847d", text, sizeof(text));
+	CHECK(!strcmp(text, "Ridge 9fc847d"));
+	ae_map_share_display_name("ridge_9fc847dG", text, sizeof(text));
+	CHECK(!strcmp(text, "Ridge 9fc847dG"));
+	ae_map_share_display_name(NULL, text, sizeof(text));
+	CHECK(!text[0]);
+	ae_map_share_display_name("abcdefghij", text, 5);
+	CHECK(!strcmp(text, "Abcd"));
+	ae_map_share_amount_text(7ULL << 20, 22ULL << 20, text, sizeof(text));
+	CHECK(!strcmp(text, "7 of 22 MB"));
+	ae_map_share_amount_text(400000, 10300000, text, sizeof(text));
+	CHECK(!strcmp(text, "0.3 of 9.8 MB"));
+	ae_map_share_amount_text(0, 10ULL << 20, text, sizeof(text));
+	CHECK(!strcmp(text, "0 of 10 MB"));
+	ae_map_share_megabytes_text(210ULL << 20, text, sizeof(text));
+	CHECK(!strcmp(text, "210 MB"));
+	ae_map_share_megabytes_text(5ULL << 20, text, sizeof(text));
+	CHECK(!strcmp(text, "5.0 MB"));
+	CHECK(ae_map_share_why("The host does not share its maps.") == AE_MAP_SHARE_WHY_NOT_SHARED);
+	CHECK(ae_map_share_why("The host does not share this map.") == AE_MAP_SHARE_WHY_NOT_SHARED);
+	CHECK(ae_map_share_why("The host cannot share this map.") == AE_MAP_SHARE_WHY_CANNOT_SEND);
+	CHECK(ae_map_share_why("The host's offer was not of this map.") == AE_MAP_SHARE_WHY_WRONG_FILE);
+	CHECK(ae_map_share_why("There is not enough memory to download the map.") == AE_MAP_SHARE_WHY_NO_MEMORY);
+	CHECK(ae_map_share_why("The map could not be written (is the disk full?).") == AE_MAP_SHARE_WHY_DISK_FULL);
+	CHECK(ae_map_share_why("There is not enough free disk space to download the map (9 MB).") == AE_MAP_SHARE_WHY_DISK_FULL);
+	CHECK(ae_map_share_why("The downloaded map could not be put in maps_ce (a file of its name is there).") ==
+		AE_MAP_SHARE_WHY_NAME_TAKEN);
+	CHECK(ae_map_share_why("The map was downloaded, but cannot be played.") == AE_MAP_SHARE_WHY_WONT_LOAD);
+	CHECK(ae_map_share_why("The host did not answer the request for the map.") == AE_MAP_SHARE_WHY_NO_ANSWER);
+	CHECK(ae_map_share_why("The download stopped: no player sent any of the map for a minute.") == AE_MAP_SHARE_WHY_STALLED);
+	CHECK(ae_map_share_why("The map is 90 MB: over the 80 MB you take from one host (network.map_download_limit).") ==
+		AE_MAP_SHARE_WHY_OVER_LIMIT);
+	CHECK(ae_map_share_why("DOWNLOAD MAPS is OFF.") == AE_MAP_SHARE_WHY_SETTING_OFF);
+	CHECK(ae_map_share_why("Something new") == AE_MAP_SHARE_WHY_OTHER && ae_map_share_why(NULL) == AE_MAP_SHARE_WHY_OTHER);
+	ae_map_share_why_line(AE_MAP_SHARE_WHY_OVER_LIMIT, 4096, text, sizeof(text));
+	CHECK(!strcmp(text, "Over your 4096 MB host limit."));
+	ae_map_share_why_dialog(AE_MAP_SHARE_WHY_OTHER, 0, "Something new", text, sizeof(text));
+	CHECK(!strcmp(text, "Something new"));
+	ae_map_share_why_dialog(AE_MAP_SHARE_WHY_SETTING_OFF, 0, NULL, text, sizeof(text));
+	CHECK(!strncmp(text, "DOWNLOAD MAPS is OFF.", 21));
+	CHECK(!strcmp(ae_map_share_why_tag(AE_MAP_SHARE_WHY_DISK_FULL), "disk full"));
 
 	/* requests: a burst, then one each refill; a clock that wraps */
 	memset(&rate, 0, sizeof(rate));
@@ -433,12 +469,6 @@ static void share_all_tests(void)
 		CHECK(taken_files == 1);
 		CHECK(!ae_map_share_disk_allows(0, 1));
 	}
-	/* L6: a yes covers the amount it was given for, no more */
-	CHECK(ae_map_share_grant_covers(1000, 0, 1000) && !ae_map_share_grant_covers(1000, 0, 1001) &&
-		ae_map_share_grant_covers(1000, 400, 600) && !ae_map_share_grant_covers(1000, 400, 601) &&
-		!ae_map_share_grant_covers(1000, 1001, 0) && !ae_map_share_grant_covers(0, 0, 1) &&
-		!ae_map_share_grant_covers(1000, 0, ~0ULL));
-
 	/* overwrite refusal's path rule is the downloads' folder's own (above): a download's file is a plain name of
 	maps_shared, nothing else */
 	CHECK(ae_map_share_path_in_folder("d:\\maps_shared\\badcreek_1a2b3c4d.map", "d:\\maps_shared\\"));

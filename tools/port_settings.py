@@ -566,7 +566,7 @@ SCREENS["network_setup/map_sharing"] = {
     "screen": "map_sharing_settings_screen", "header": _network["header"], "spacing": 30,
     "rows": [
         ("DOWNLOAD MAPS:", "network.map_download", ON_OFF,
-         "Joining a game on a map you do not have: download\nit from its host (if shared). You are asked first.",
+         "Get maps you do not have from the host when you\njoin. OFF: you cannot play games on those maps.",
          None),
         ("HELP SEND MAPS:", "network.map_seed", ON_OFF,
          "In another's game, send its map to players who\njoin without it, as a torrent's peers do.", None),

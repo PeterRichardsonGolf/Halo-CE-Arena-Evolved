@@ -562,44 +562,6 @@ int ae_platform_mouse_left_held(void)
 #endif
 }
 
-/* map sharing's key (ae_map_share_all.c): F6 held now (no button a game uses: the key also answers a question);
-0 on the dedicated server and Android */
-int ae_platform_map_share_key(void)
-{
-#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
-	struct platform_input_state input;
-
-	platform_input_read(&input, FALSE);
-	return input.focused && input.keys[SDL_SCANCODE_F6];
-#else
-	return 0;
-#endif
-}
-
-/* map sharing's pad button (ae_map_share_all.c): BACK held now on any connected pad (a pad-only guest's F6; the
-caller asks it held for a while, so a tap for anything else answers nothing); 0 on the dedicated server and Android */
-int ae_platform_map_share_pad(void)
-{
-#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
-	SDL_JoystickID *ids;
-	int count = 0, index, held = 0;
-
-	ids = SDL_GetGamepads(&count);
-	if (!ids)
-		return 0;
-	for (index = 0; index < count && !held; index++)
-	{
-		SDL_Gamepad *gamepad = SDL_GetGamepadFromID(ids[index]);
-
-		held = gamepad && SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_BACK);
-	}
-	SDL_free(ids);
-	return held;
-#else
-	return 0;
-#endif
-}
-
 /* (ae_platform_keyboard_last_used) the order of the last uses: a count, so whichever was noted later wins */
 static unsigned long input_uses, keyboard_used_at, pad_used_at;
 
