@@ -1516,9 +1516,10 @@ void hud_draw_screen(
 		if (game_engine_running() && !cinematic_in_progress() &&
 			hud_scripted_globals->show_hud)
 		{
-			/* (Arena Evolved: the bottom right corner is MATCH CLOCK's,
-			display.match_clock, unless that is off) */
-			if (game_engine_match_clock_setting() == _match_clock_off) hud_draw_match_timer(); /* AE hook */
+			/* (Arena Evolved: OpenCE's match clock is not drawn, the owner's
+			rule: the HUD's clock is Arena Evolved's MATCH CLOCK,
+			display.match_clock, on every HUD style) */
+			(void)hud_draw_match_timer; /* AE hook */
 		}
 
 		if (!game_time_get_paused() &&

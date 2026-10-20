@@ -49,8 +49,6 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
     clients see the AI's grenades, elevators carry their riders alike on every machine; Change Name in a game no
     longer crashes; a unicode string ending in '|' is no longer read past its end; the updater bounds its downloads;
     settings words in any case, and an unreadable config.toml line is skipped (the log says why).
-  - `display.match_timer` (off): OpenCE's clock counting up at the bottom right, drawn only while Arena Evolved's
-    MATCH CLOCK (Settings > HUD's MULTIPLAYER GAME TIMER) is off, so the two never share that corner.
   - OpenCE's PC menus in the language of a Custom Edition's loc.map are not in Arena Evolved yet (it reads Custom
     Edition maps with ChupathingyCE's loader): the menus stay in English.
 

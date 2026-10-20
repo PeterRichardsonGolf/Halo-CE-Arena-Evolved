@@ -962,9 +962,9 @@ port/linux/src/xinput_sdl.c	ae_platform_note_keyboard_input(k, m, mouse); /* AE 
 port/linux/src/xinput_sdl.c	ae_platform_note_pad_used(); /* AE hook */
 # OpenCE build-244's display.anisotropic_filtering: its help says Settings' row is AE's display.anisotropic (both filter)
 port/linux/src/port_config.c	{ "display.anisotropic_filtering", _config_integer, "0", "HALO_ANISOTROPIC_FILTERING", _environment_value, /* AE hook */\n_platform_all,
-# OpenCE build-244's match clock (display.match_timer, the bottom right corner counting up) only while Arena Evolved's
-# MATCH CLOCK (display.match_clock) is off: the two never draw in that corner at once
-source/interface/hud.c	if (game_engine_match_clock_setting() == _match_clock_off) hud_draw_match_timer(); /* AE hook */
+# OpenCE build-244's match clock (hud_draw_match_timer, display.match_timer) is never drawn: Arena Evolved keeps its
+# own MATCH CLOCK (display.match_clock) on every HUD style (the owner's rule, 2026-10-19)
+source/interface/hud.c	(void)hud_draw_match_timer; /* AE hook */
 # OpenCE build-244's menu language from loc.map: AE's stand-in, no loc.map reader (port/linux/game/ae_ce_locale.c)
 port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
 # OpenCE build-244's passenger camera calls render_camera_world_to_screen, which the 64-bit builds need declared

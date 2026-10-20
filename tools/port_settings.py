@@ -437,9 +437,9 @@ _graphics = {"display.high_res_hud", "display.hud_button_style", "display.high_r
              "display.performance", "display.performance_position", "display.coordinates"}
 # (eleven rows with ANISOTROPIC FILTERING, SHOW COORDINATES, OpenCE's HUD
 # BUTTON STYLE and MODEL DETAIL: 22 apart, as the twelve were before the shield
-# glow's two went to Extra Effects. OpenCE's MATCH TIMER row is left out: the
-# HUD screen's MULTIPLAYER GAME TIMER (display.match_clock) is Arena Evolved's
-# clock in that corner, and display.match_timer stays a config.toml setting)
+# glow's two went to Extra Effects. OpenCE's MATCH TIMER row is left out, and
+# its clock is not drawn (hud.c): the owner keeps Arena Evolved's clock, the
+# HUD screen's MULTIPLAYER GAME TIMER, display.match_clock)
 # (the visual modifiers: a screen of their own, Extra Effects, as OpenCE's)
 _extra_effects = {"display.shield_glow", "display.shield_glow_intensity",
                   "display.overshield_effect", "display.hdr", "display.hdr_output"}
