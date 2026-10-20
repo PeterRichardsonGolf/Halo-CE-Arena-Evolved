@@ -1208,6 +1208,10 @@ static const struct config_setting config_settings[] =
 	{ "debug.hit_feedback", _config_boolean, "false", "HALO_HIT_FEEDBACK", _environment_set_is_true, _platform_all, /* AE hook */
 		"For tests and quick launches: every multiplayer game plays HIT FEEDBACK:\n"
 		"ARENA EVOLVED, whatever its gametype says (this machine's drawing only)." },
+	{ "debug.arena_audit", _config_boolean, "false", "HALO_ARENA_AUDIT", _environment_set_is_true, _platform_all, /* AE hook */
+		"For checking the gametypes: once the arena gametypes are seeded, write\n"
+		"every field of each one (and of the stock gametypes) to the save root's\n"
+		"z/arena_audit.tsv, for tools/ae_gametype_audit.py." },
 	{ "debug.network_test_melee", _config_boolean, "false", "HALO_NETWORK_TEST_MELEE", _environment_value,
 		_platform_all,
 		"With debug.network_test_shoot, each player strikes with the weapon's melee\n"

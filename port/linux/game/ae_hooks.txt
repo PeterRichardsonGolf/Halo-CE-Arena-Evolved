@@ -1057,3 +1057,8 @@ port/linux/src/event_upload.c	if (!ae_community_services_on()) { pthread_mutex_l
 # THE BOTS' FALLS AND OWN GRENADES (2026-10-20, ae_bots_falls.inc): the last word on where a bot walks each tick: not
 # off a lethal edge, away from its own live grenade, no throw into a wall
 port/linux/game/bots.c	ae_bots_falls_guard(bot, &tick); /* AE hook */
+# Gametype audit (debug.arena_audit; port/linux/game/ae_gametype_audit.c): once the arena gametypes are seeded,
+# every field of each one and of the stock builders in the save root's z/arena_audit.tsv (tools/ae_gametype_audit.py)
+source/saved games/playlist_profile.c	#include "ae_gametype_audit.h" /* AE hook */
+source/saved games/playlist_profile.c	ae_gametype_audit_write(); /* AE hook */
+port/linux/src/port_config.c	{ "debug.arena_audit", _config_boolean, "false", "HALO_ARENA_AUDIT", _environment_set_is_true, _platform_all, /* AE hook */
