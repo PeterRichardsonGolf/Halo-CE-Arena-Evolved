@@ -87,7 +87,8 @@ int ae_bots_combat_aim_head(int level, float target_shield, int precision_weapon
 /* RETREAT (NORMAL and up; Infinite's disengage below 0.1): low confidence held for the bot's hesitation (6 to 18
 ticks) starts it, with its shields under 0.3; it lasts at least 2 s (HEROIC and up 3 s: Infinite's hysteresis),
 ends when its shields are back (0.95) or its confidence is high again (0.6), after 7 s at most; then not again for
-6 s */
+6 s. RETREAT ON THE SHIELD'S POP (LEGENDARY and up): its shields gone and its confidence under 0.35 start it too,
+after a short hesitation (3 to 9 ticks), as a player turns away as the shield pops rather than at the last hit */
 struct ae_bots_combat_retreat
 {
 	int active;
@@ -152,5 +153,31 @@ one, never fired again and backed off to the empty weapon's distance (owner 2026
 didn't shoot"). The magazine's counts (0 for none: magazine_count) and the weapon's age 0..1 */
 int ae_bots_combat_weapon_spent(int magazine_count, int rounds_loaded_maximum, int rounds_total_maximum,
 	float age);
+
+/* PRO TRAITS (owner 2026-10-19: "implement the rest of the pro traits"; the gap table pro-skills-ideas):
+
+PRECISION PACING (NORMAL and up): with a weapon that blooms (its error grows as it fires: the pistol) and a target
+past 8 units, the bot waits for the error (the trigger's 0..1) to fall under its level's limit before the next shot,
+as a player paces the pistol at range: NORMAL 0.6, HEROIC 0.45, LEGENDARY 0.35, DEMON 0.25; never longer than its
+level's ticks past the moment it could fire (NORMAL 6, HEROIC 8, LEGENDARY 10, DEMON 12). Up close it fires at the
+weapon's rate. Nonzero: it holds the shot now. */
+int ae_bots_combat_pace_holds(int level, float distance, float trigger_error, long waited_ticks);
+
+/* DESCOPE REFLEX (NORMAL and up): a weapon whose shots are true only zoomed (the sniper rifle: its trigger's "use
+error when unzoomed") is zoomed at a target past 6 units. A hit knocks the zoom out (CE's unit_unzoom); the bot zooms
+again after its level's moment (NORMAL 0.6 .. 0.8 s, HEROIC 0.4 .. 0.5, LEGENDARY 0.25 .. 0.35, DEMON 0.15 .. 0.22)
+and, past 10 units, does not fire before. RECRUIT and EASY never zoom (as before). */
+int ae_bots_combat_zooms(int level, float distance);
+long ae_bots_combat_rescope_ticks(int level, float random);
+int ae_bots_combat_descoped_holds_fire(float distance);
+
+/* HIGH GROUND (LEGENDARY and up): a roaming place's credit for its height over the reference (the enemy's when it
+hunts, its own else), in units of distance: LEGENDARY 1.5 a unit up to 4.5, DEMON 2 a unit up to 6; none below or
+for the other levels */
+float ae_bots_combat_high_ground(int level, float height_above);
+
+/* GRENADE AT THE LAST-SEEN SPOT (LEGENDARY and up): a target lost from sight 0.6 to 3 s ago, its last-seen spot 5 to
+20 units off and in the bot's line of sight: once a lost contact, LEGENDARY half the time, DEMON 0.75 (random 0..1) */
+int ae_bots_combat_prenade(int level, float seconds_unseen, float distance, int has_grenade, float random);
 
 #endif

@@ -1670,6 +1670,7 @@ static void bots_pick_roam_goal(struct bots_bot *bot, real_point3d const *positi
 			{
 				real distance = bots_distance2d(&bots_globals.roam_points[index], &enemy->object.position) +
 					bots_random_real(bot) * 6.0f;
+				distance -= ae_bots_roam_height(bot, &bots_globals.roam_points[index], &enemy->object.position); /* AE hook */
 
 				if (distance < nearest_distance && bots_distance2d(&bots_globals.roam_points[index], position) > 4.0f)
 				{
@@ -1693,6 +1694,7 @@ static void bots_pick_roam_goal(struct bots_bot *bot, real_point3d const *positi
 		/* (not where it is) */
 		if (bots_distance2d(&bots_globals.roam_points[index], position) < 6.0f && tries < 5)
 			continue;
+		index = ae_bots_roam_higher(bot, position, index); /* AE hook */
 		bot->roam_index = index;
 		bots_set_goal(bot, _bots_goal_roam, &bots_globals.roam_points[index], bots_globals.roam_surfaces[index]);
 		return;
@@ -2352,6 +2354,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	{
 		bots_bot_walk(bot, &tick);
 		bots_bot_yield(bot_index, &tick);
+		ae_bots_fight_prenade(bot, &tick); /* AE hook */
 	}
 	else if (bot->goal_kind == _bots_goal_item)
 	{

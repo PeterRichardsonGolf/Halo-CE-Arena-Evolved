@@ -144,6 +144,8 @@ struct ae_bots_combat_bot *ae_bots_combat_bot_state(long bot_index, long unit_in
 		bot->share_tick = -TICKS_PER_SECOND * 10;
 		bot->last_fight_tick = -TICKS_PER_SECOND * 10;
 		bot->melee_ready_tick = NONE;
+		bot->prenade_seen_tick = NONE;
+		bot->pace_since = NONE;
 	}
 	return bot;
 }
@@ -177,12 +179,15 @@ void ae_bots_combat_report(long now, char const *shooting, char const *movement)
 		return;
 	combat_log.last_report_tick = now;
 	platform_log("bots: combat tick %ld (shooting %s, movement %s): grenades %ld, blows %ld (%ld held back), "
-		"head aims %ld, retreats %ld, charges %ld, jumps %ld, halts %ld, sightings shared %ld", now, shooting, movement,
+		"head aims %ld, retreats %ld, charges %ld, jumps %ld, halts %ld, sightings shared %ld, shots paced %ld, "
+		"zoomed again %ld, grenades at last seen %ld, high ground picks %ld", now, shooting, movement,
 		combat_log.counts[AE_BOTS_COMBAT_GRENADES], combat_log.counts[AE_BOTS_COMBAT_MELEES],
 		combat_log.counts[AE_BOTS_COMBAT_MELEES_DECLINED], combat_log.counts[AE_BOTS_COMBAT_HEAD_AIMS],
 		combat_log.counts[AE_BOTS_COMBAT_RETREATS], combat_log.counts[AE_BOTS_COMBAT_CHARGES],
 		combat_log.counts[AE_BOTS_COMBAT_JUMPS], combat_log.counts[AE_BOTS_COMBAT_HALTS],
-		combat_log.counts[AE_BOTS_COMBAT_SHARES]);
+		combat_log.counts[AE_BOTS_COMBAT_SHARES], combat_log.counts[AE_BOTS_COMBAT_PACED],
+		combat_log.counts[AE_BOTS_COMBAT_RESCOPES], combat_log.counts[AE_BOTS_COMBAT_PRENADES],
+		combat_log.counts[AE_BOTS_COMBAT_HIGH_GROUND]);
 }
 
 void ae_bots_combat_event(long bot_index, long now, char const *skill_name, char const *event, long target,
