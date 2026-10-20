@@ -1042,3 +1042,12 @@ port/linux/game/menu_functions.c	if (!strncmp(name, "ae community ", 13)) /* AE 
 port/linux/game/menu_functions.c	if (!strcmp(name, "ae community update")) /* AE hook */\nae_community_screen_update(widget);
 source/interface/ui_widget.c	#include "ae_community_screen.h" /* AE hook */
 source/interface/ui_widget.c	ae_community_main_menu_loaded(); /* AE hook */
+# (and the review's three more: the dedicated server's Delta Control link, the legacy table's fetch (its thread and each
+# refresh), and Delta Stats' batches at exit, dropped while the services are off)
+server/platform/control_link.c	#include "ae_community.h" /* AE hook */
+server/platform/control_link.c	if (!ae_community_services_on()) { link_state.disabled = 1; pthread_mutex_unlock(&link_mutex); platform_log("Delta Control: the link to halo.milenko.org is off (network.community_services is not \"yes\")"); return; } /* AE hook */
+server/platform/control_link.c	if (!ae_community_services_on()) snprintf(text, (size_t)text_size, "the link to halo.milenko.org is off on this server (network.community_services is not \"yes\")"); else /* AE hook */\nif (link_state.disabled || !link_state.url[0])
+port/linux/src/delta.c	#include "ae_community.h" /* AE hook */
+port/linux/src/delta.c	if (!delta_legacy_override() && ae_community_services_on()) /* AE hook */\ndelta_refresh(&failed);
+port/linux/src/delta.c	config_boolean("network.legacy_table_fetch") && ae_community_services_on()) /* AE hook */
+port/linux/src/event_upload.c	if (!ae_community_services_on()) { pthread_mutex_lock(&upload_lock); for (index = 0; index < upload.count; index++) free(upload.waiting[index].data); upload.count = 0; pthread_mutex_unlock(&upload_lock); return; } /* AE hook */

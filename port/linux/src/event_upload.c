@@ -204,6 +204,7 @@ static void flush_at_exit(void)
 {
 	int index, count;
 
+	if (!ae_community_services_on()) { pthread_mutex_lock(&upload_lock); for (index = 0; index < upload.count; index++) free(upload.waiting[index].data); upload.count = 0; pthread_mutex_unlock(&upload_lock); return; } /* AE hook */
 	pthread_mutex_lock(&upload_lock);
 	count = upload.count;
 	for (index = 0; index < upload.count; index++)

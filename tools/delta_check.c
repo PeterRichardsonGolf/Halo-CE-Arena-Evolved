@@ -71,6 +71,15 @@ int config_boolean(const char *name)
 	return !strcmp(name, "network.legacy_table_fetch") && !(fetch && !strcmp(fetch, "0"));
 }
 
+/* (Arena Evolved: network.community_services is "yes" unless
+DELTA_CHECK_COMMUNITY is 0) */
+int ae_community_services_on(void)
+{
+	const char *community = getenv("DELTA_CHECK_COMMUNITY");
+
+	return !(community && !strcmp(community, "0"));
+}
+
 void config_folder(char *path, size_t size)
 {
 	snprintf(path, size, "%s/", platform_save_root());
