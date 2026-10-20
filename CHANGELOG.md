@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- AE gametypes (seed revision 14, applied on the first start, the old files backed up): no death bonus and no kill
+  penalty in every AE slayer gametype, so nobody speeds up after dying or slows down after a kill; everyone always
+  moves at normal speed, as in Halo 1: NHE's slayers. Gametypes you edited or made yourself keep their settings.
 - COMMUNITY SERVICES: the first time Arena Evolved opens its PC menus (and once after an upgrade from 0.3.4) a screen
   asks whether to use the game list and match stats the ChupathingyCE team runs at halo.milenko.org. It says what each
   one sends and who runs them, that Arena Evolved cannot vouch for them, and thanks the team. Nothing goes to that

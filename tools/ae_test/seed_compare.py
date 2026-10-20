@@ -10,7 +10,9 @@ For each u/UDATA/<folder>/blam.lst: "content", a SHA-1 of every byte playlist_pr
 name and its signature (the variant after its name, 0x18..0x67, and 0x100..0x1FF: the PC options block with
 its own signature, and the rest), which a rename leaves alone; "file", a SHA-1 of the whole file
 (byte-identical files); and "block", the game's own hash of its 512-byte block (a SHA-1 of the content
-signature's key and the block: arena_gametypes.c's migrations' old_block_hash). --golden checks every golden name's content (a renamed one
+signature's key and the block: arena_gametypes.c's migrations' old_block_hash); a slayer one also "slayer", its
+variant's three slayer bytes (no_death_bonus, no_kill_penalty, kill_in_order: game_engine.h's struct slayer_variant,
+1 each when set). --golden checks every golden name's content (a renamed one
 under its new name); --same-as checks every gametype of the other root is byte-identical here. Reads only.
 Exit 0 when everything matches, 1 otherwise.
 """
@@ -26,6 +28,19 @@ import gametype_file  # noqa: E402
 
 OPTIONS_OFFSET = 0x100
 BLOCK_SIZE = 0x200  # (SAVED_GAME_FILE_BLOCK_SIZE: what playlist_profile_matches compares)
+# the variant's game_engine_index (a long after the 24-byte name) and its game_engine_variant (after the 0x30-byte
+# universal_variant at 0x1c): a slayer's no_death_bonus, no_kill_penalty, kill_in_order, a byte each
+ENGINE_OFFSET = 0x18
+GAME_ENGINE_SLAYER = 2
+SLAYER_OFFSET = 0x4C
+SLAYER_FIELDS = ("no_death_bonus", "no_kill_penalty", "kill_in_order")
+
+
+def slayer_fields(block):
+    """a slayer gametype's {no_death_bonus, no_kill_penalty, kill_in_order} (0 or 1 each), or None"""
+    if int.from_bytes(block[ENGINE_OFFSET:ENGINE_OFFSET + 4], "little") != GAME_ENGINE_SLAYER:
+        return None
+    return {k: block[SLAYER_OFFSET + i] for i, k in enumerate(SLAYER_FIELDS)}
 
 
 def block_hash(block):
@@ -46,6 +61,8 @@ def gametype_hashes(save_root):
         content = hashlib.sha1(b[0x18:gametype_file.VARIANT_SIZE] + b[OPTIONS_OFFSET:BLOCK_SIZE])
         out[name] = {"content": content.hexdigest(), "file": hashlib.sha1(b).hexdigest(), "block": block_hash(b),
                      "folder": f.parent.name}
+        if slayer_fields(b) is not None:
+            out[name]["slayer"] = slayer_fields(b)
     return out
 
 

@@ -471,7 +471,8 @@ class SeedCompare(unittest.TestCase):
         golden_seeds_rev4_da271472.json's (a root seeded at revision 4 by da271472's tree), revision 6
         golden_seeds_rev5_736ce3a7.json's (a root seeded at revision 5 by 736ce3a7's tree), revision 7
         golden_seeds_rev6_519ce8a3.json's (a root seeded at revision 6 by 519ce8a3's tree), revision 12
-        golden_seeds_rev11.json's (a root seeded at revision 11)"""
+        golden_seeds_rev11.json's (a root seeded at revision 11), revision 14 golden_seeds_rev13.json's (a root seeded
+        at revision 13 by 971ed2fe's tree)"""
         import re
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text()
         table = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
@@ -484,9 +485,10 @@ class SeedCompare(unittest.TestCase):
         golden_rev5 = json.loads((HERE / "golden_seeds_rev5_736ce3a7.json").read_text())
         golden_rev6 = json.loads((HERE / "golden_seeds_rev6_519ce8a3.json").read_text())
         golden_rev11 = json.loads((HERE / "golden_seeds_rev11.json").read_text())
+        golden_rev13 = json.loads((HERE / "golden_seeds_rev13.json").read_text())
         for revision, name, digest in found:
-            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6, 12: golden_rev11}.get(int(revision),
-                                                                                                      golden)
+            g = {4: golden_rev3, 5: golden_rev4, 6: golden_rev5, 7: golden_rev6, 12: golden_rev11,
+                 14: golden_rev13}.get(int(revision), golden)
             self.assertEqual(g[name]["block"], digest, name)
 
     def test_golden_revision_11(self):
@@ -530,6 +532,85 @@ class SeedCompare(unittest.TestCase):
         self.assertEqual(changed, enemies)
         for name in golden:
             self.assertEqual(golden[name]["folder"], golden_rev11[name]["folder"], name)
+
+    def test_slayer_fields(self):
+        """seed_compare's "slayer": a slayer variant's no_death_bonus, no_kill_penalty, kill_in_order bytes (0x4c..);
+        none for another engine"""
+        block = bytearray(512)
+        block[0x18:0x1C] = (2).to_bytes(4, "little")
+        block[0x4C:0x4F] = b"\x01\x00\x01"
+        self.assertEqual(seed_compare.slayer_fields(block),
+                         {"no_death_bonus": 1, "no_kill_penalty": 0, "kill_in_order": 1})
+        block[0x18:0x1C] = (3).to_bytes(4, "little")
+        self.assertIsNone(seed_compare.slayer_fields(block))
+
+    @staticmethod
+    def _slayer_seeds():
+        """arena_gametypes.c's table rows built by a stock Slayer-engine builder (game_engine.c), as {name: (builder,
+        adjust)}, and the builders that already have neither death bonus nor kill penalty"""
+        import re
+        root = HERE.parent.parent
+        engine = (root / "source" / "game" / "game_engine.c").read_text(encoding="latin-1")
+        builders = {m[1]: m[0] for m in re.finditer(r"^struct game_variant \*(build_game_variant_\w+)\(.*?^\}", engine,
+                                                     re.M | re.S)}
+        slayer = {n for n, body in builders.items() if "game_engine_index = game_engine_slayer;" in body}
+        steady = {n for n in slayer if "slayer.no_death_bonus = TRUE;" in builders[n] and
+                  "slayer.no_kill_penalty = TRUE;" in builders[n]}
+        source = (root / "source" / "saved games" / "arena_gametypes.c").read_text(encoding="latin-1")
+        table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
+        rows = re.findall(r'^\t\{ "([^"]+)", (build_game_variant_\w+),(.*?)(?=^\t\{ "|^\};)', table, re.M | re.S)
+        seeds = {name: (build, (re.findall(r"\.adjust = (\w+)", body) or [None])[0]) for name, build, body in rows
+                 if build in slayer}
+        return seeds, steady, source
+
+    def test_slayers_without_speed_changes(self):
+        """revision 14 (owner, 2026-10-20): every seeded slayer gametype plays without the death bonus and the kill
+        penalty: its adjust sets both (arena_gametype_no_speed_changes, or the NHE set's arena_gametype_nhe_slayer), or
+        its stock builder has neither (Phantoms). A fresh revision 14 root (golden_seeds_rev14.json) has both bytes set
+        in every slayer gametype; a revision 13 root (golden_seeds_rev13.json) had neither in the 27 revision 14 updates
+        in place, under their names, each from its exact revision 13 file (old_block_hash), so a gametype the player
+        edited or made himself is left alone. Nothing else changes: same folders, the other seeds' files as before"""
+        import re
+        seeds, steady, source = self._slayer_seeds()
+        self.assertIn("ARENA_GAMETYPES_REVISION = 14,", source)
+        self.assertEqual(len(seeds), 38)
+        for name in ("arena_gametype_no_speed_changes", "arena_gametype_nhe_slayer"):
+            body = source[source.index(f"static void {name}(\n\tstruct game_variant *variant,\n\tstruct game_variant_options *options)\n{{"):]
+            body = body[:body.index("\n}\n")]
+            self.assertIn("variant->game_engine_variant.slayer.no_death_bonus = TRUE;", body, name)
+            self.assertIn("variant->game_engine_variant.slayer.no_kill_penalty = TRUE;", body, name)
+        updated = sorted(n for n, (build, adjust) in seeds.items() if adjust == "arena_gametype_no_speed_changes")
+        for name, (build, adjust) in seeds.items():
+            self.assertTrue(adjust in ("arena_gametype_no_speed_changes", "arena_gametype_nhe_slayer") or build in steady,
+                            name)
+        self.assertEqual(len(updated), 27)
+        self.assertEqual(sorted(n for n, (b, _) in seeds.items() if b in steady), ["AE BR PHANT", "AE PHANTOMS"])
+        # (the migrations: one same-name update each, the old row the new one without the adjust, a real hash)
+        migrations = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
+        rev14 = re.findall(r'\{ \.revision = 14,\s*\.old_row = (\{ \.name = "([^"]+)".*?\}),\s*\.new_row = '
+                           r'(\{ \.name = "([^"]+)".*?\}),\s*\.old_block_hash = "([0-9a-f]{40})" \}', migrations, re.S)
+        self.assertEqual(migrations.count(".revision = 14,"), len(rev14))
+        self.assertEqual(sorted(old_name for _, old_name, _, _, _ in rev14), updated)
+        squash = lambda s: re.sub(r"\s+", " ", s)
+        for old_row, old_name, new_row, new_name, _ in rev14:
+            self.assertEqual(old_name, new_name)
+            self.assertNotIn(".adjust", old_row, old_name)
+            self.assertEqual(squash(new_row), squash(old_row[:-2]) + ", .adjust = arena_gametype_no_speed_changes }",
+                             old_name)
+        # (the files: a fresh revision 14 root against a revision 13 one)
+        golden = json.loads((HERE / "golden_seeds_rev14.json").read_text())
+        golden_rev13 = json.loads((HERE / "golden_seeds_rev13.json").read_text())
+        self.assertEqual(sorted(golden), sorted(golden_rev13))
+        self.assertEqual(sorted(n for n, v in golden.items() if "slayer" in v), sorted(seeds))
+        for name, value in golden.items():
+            self.assertEqual(value["folder"], golden_rev13[name]["folder"], name)
+            if "slayer" in value:
+                self.assertEqual((value["slayer"]["no_death_bonus"], value["slayer"]["no_kill_penalty"]), (1, 1), name)
+                self.assertEqual(value["slayer"]["kill_in_order"], golden_rev13[name]["slayer"]["kill_in_order"], name)
+        self.assertEqual(sorted(n for n in golden if golden[n]["block"] != golden_rev13[n]["block"]), updated)
+        for name in updated:
+            self.assertEqual((golden_rev13[name]["slayer"]["no_death_bonus"],
+                              golden_rev13[name]["slayer"]["no_kill_penalty"]), (0, 0), name)
 
 
 class Debug(unittest.TestCase):
@@ -808,6 +889,14 @@ class SeedRules(unittest.TestCase):
         self.assertEqual(len(enemies), 19)
         for name in enemies:
             self.assertIn("(teams)", seed_rules.ROWS[name][0]["engine"], name)
+        # (revision 14: every slayer seed without the death bonus and the kill penalty, 38 of them; kill in order only
+        # in the Phantoms ones)
+        slayers = {name: want for name, (want, _, _) in seed_rules.ROWS.items() if want["engine"].startswith("slayer")}
+        self.assertEqual(len(slayers), 38)
+        for name, want in slayers.items():
+            self.assertEqual((want["death bonus"], want["kill penalty"]), ("off", "off"), name)
+        self.assertEqual(sorted(n for n, want in slayers.items() if want["kill in order"] == "on"),
+                         ["AE BR PHANT", "AE PHANTOMS"])
 
 
 class Windows(unittest.TestCase):
