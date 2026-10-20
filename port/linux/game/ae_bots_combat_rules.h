@@ -63,9 +63,12 @@ float ae_bots_combat_confidence(float own_shield, float own_body, float target_s
 int ae_bots_combat_melee(int level, float distance, int cooldown_over, int back_turned, float target_shield,
 	int charging, float random);
 /* the ticks the bot waits within reach before it strikes (Infinite's melee delays: Recruit 1-3 s, Marine 0.1-0.5,
-ODST and Spartan 0.1-0.3; EASY between), random 0..1 */
+ODST and Spartan 0.1-0.3; owner 2026-10-20, "melee reaction needs to be tuned better between the levels", they were
+alike from NORMAL up: RECRUIT 1-3 s, EASY 0.6-1.5, NORMAL 0.35-0.7, HEROIC 0.25-0.5, LEGENDARY 0.18-0.35, DEMON
+0.1-0.3), random 0..1 */
 long ae_bots_combat_melee_delay(int level, float random);
-/* the ticks until it may strike again, random 0..1 */
+/* the ticks until it may strike again (RECRUIT 3-4.5 s, EASY 2-3, NORMAL 1.2-1.7, HEROIC 1-1.5, LEGENDARY 0.95-1.35,
+DEMON 0.9-1.3), random 0..1 */
 long ae_bots_combat_melee_cooldown(int level, float random);
 
 /* GRENADES: whether the bot throws now (asked each tick of a fight): its target's distance, whether it has a

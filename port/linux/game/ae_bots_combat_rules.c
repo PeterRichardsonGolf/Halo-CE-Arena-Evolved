@@ -103,8 +103,10 @@ long ae_bots_combat_melee_delay(int level, float random)
 	switch (level)
 	{
 	case AE_BOTS_LEVEL_RECRUIT: low = 1.0f; high = 3.0f; break;
-	case AE_BOTS_LEVEL_EASY: low = 0.5f; high = 1.5f; break;
-	case AE_BOTS_LEVEL_NORMAL: low = 0.1f; high = 0.5f; break;
+	case AE_BOTS_LEVEL_EASY: low = 0.6f; high = 1.5f; break;
+	case AE_BOTS_LEVEL_NORMAL: low = 0.35f; high = 0.7f; break;
+	case AE_BOTS_LEVEL_HEROIC: low = 0.25f; high = 0.5f; break;
+	case AE_BOTS_LEVEL_LEGENDARY: low = 0.18f; high = 0.35f; break;
 	default: low = 0.1f; high = 0.3f; break;
 	}
 	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
@@ -119,7 +121,9 @@ long ae_bots_combat_melee_cooldown(int level, float random)
 	{
 	case AE_BOTS_LEVEL_RECRUIT: seconds = 3.0f + 1.5f * random; break;
 	case AE_BOTS_LEVEL_EASY: seconds = 2.0f + random; break;
-	case AE_BOTS_LEVEL_NORMAL: seconds = 1.0f + 0.5f * random; break;
+	case AE_BOTS_LEVEL_NORMAL: seconds = 1.2f + 0.5f * random; break;
+	case AE_BOTS_LEVEL_HEROIC: seconds = 1.0f + 0.5f * random; break;
+	case AE_BOTS_LEVEL_LEGENDARY: seconds = 0.95f + 0.4f * random; break;
 	default: seconds = 0.9f + 0.4f * random; break;
 	}
 	return (long)(seconds * TICKS);
