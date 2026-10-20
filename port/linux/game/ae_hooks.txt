@@ -993,3 +993,7 @@ port/linux/game/bots.c	reach *= ae_bots_fight_camo_reach(other_unit); /* AE hook
 port/linux/game/bots.c	error *= ae_bots_fight_camo_error(target_player); /* AE hook */
 port/linux/game/bots.c	ae_bots_fight_range_floor(bot, tick); /* AE hook */
 port/linux/game/bots.c	if (!ae_bots_fight_in_range(bot, tick)) cone = -1.0f; /* AE hook */
+# POWER ITEMS (2026-10-20, ae_bots_power.inc): bots go for item_timers.c's power entries by level, and a map's start
+# forgets the last one's
+port/linux/game/bots.c	if (ae_bots_power_goal(bot, player_index, position, fighting)) return; /* AE hook */
+port/linux/game/bots.c	ae_bots_power_reset(); /* AE hook */

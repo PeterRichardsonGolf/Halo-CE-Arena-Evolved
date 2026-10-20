@@ -1163,6 +1163,7 @@ static void bots_prepare_map(void)
 
 	bots_globals.map_ready = TRUE;
 	bots_globals.roam_point_count = 0;
+	ae_bots_power_reset(); /* AE hook */
 	bots_prepare_paths();
 	if (!scenario)
 		return;
@@ -1705,6 +1706,7 @@ static void bots_choose_goal(struct bots_bot *bot, long player_index, real_point
 
 	if (ae_bots_vehicle_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (ae_bots_objective_goal(bot, player_index, position, fighting)) return; /* AE hook */
+	if (ae_bots_power_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (!fighting && bot->target_player_index != NONE && bot->target_last_surface_index != NONE &&
 		now - bot->target_seen_tick < TICKS_PER_SECOND * 8)
 	{

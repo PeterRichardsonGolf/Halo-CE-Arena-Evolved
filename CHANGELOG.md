@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Bots go for power weapons and powerups (rockets, sniper, shotgun, overshield, camouflage) as a player who knows the
+  timers does: NORMAL and below only for one lying near, HEROIC and up from farther and timed to its spawn (DEMON from
+  anywhere, 15 s early), one bot of a team for each.
 - Bots: below DEMON they miss more the farther you are (past about 30 m); they see a camouflaged player only close
   up, react to one later and aim worse at it; and they hold a shotgun's fire until they are close enough for it.
 - Bots: a new top level, DEMON (BOT SKILL, SHOOTING SKILL and MOVEMENT SKILL): the LEGENDARY bots of before. LEGENDARY

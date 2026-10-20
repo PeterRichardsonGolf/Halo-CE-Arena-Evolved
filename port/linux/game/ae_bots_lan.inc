@@ -17,6 +17,7 @@ getting around's (ae_bots_travel.inc).
 #include "ae_lan_bots.h"
 #include "ae_bots_events.inc"
 #include "ae_bots_combat.inc"
+#include "ae_bots_power.inc"
 #include "ae_bots_objective.inc"
 #include "ae_bots_vehicle.inc"
 #include "ae_bots_travel.inc"

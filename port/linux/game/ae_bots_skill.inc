@@ -248,3 +248,6 @@ static real ae_bots_fight_camo_reach(struct unit_datum const *unit);
 static real ae_bots_fight_camo_error(struct player_datum const *target);
 static void ae_bots_fight_range_floor(struct bots_bot *bot, struct bots_tick *tick);
 static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *tick);
+/* (2026-10-20, ae_bots_power.inc) POWER ITEMS: bots_choose_goal's first ask; a map's start forgets the last one's */
+static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_point3d const *position, boolean fighting);
+static void ae_bots_power_reset(void);
