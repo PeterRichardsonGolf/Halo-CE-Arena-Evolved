@@ -339,6 +339,10 @@ SCREENS = {
         # has not: the other rows from the top there)
         "platform_places": True,
         "rows": [
+            # (AE 0.3.5: the community services' master switch, the first-run opt-in's answer: OFF first, so that
+            # "ask" (not yet answered, which is off) shows OFF and is written only when turned ON)
+            ("COMMUNITY SERVICES:", "network.community_services", [("OFF", "no"), ("ON", "yes")],
+             "Use the game list and stats ChupathingyCE runs\nat halo.milenko.org. OFF: nothing goes there.", None),
             ("INTERNET PLAY:", "network.online", ON_OFF,
              "Host and join games over the internet by invite\nlinks; off keeps to the local network.",
              "desktop android web"),
@@ -1337,6 +1341,10 @@ def own_frames() -> dict:
 
 # the titles this port has that the PC version has not, set as its headers
 # are (port/assets/menus/port_svg): bitmap name, text
+# (AE) the COMMUNITY SERVICES screen, the first-run opt-in (_community_services)
+COMMUNITY = "main_menu/community_services"
+COMMUNITY_HEADER = f"{COMMUNITY}/header_community_services"
+
 TITLES = {
     "main_menu/mods/header_mods": "MODS",
     f"{MT}/join_game/header_server_browser": "SERVER BROWSER",
@@ -1351,6 +1359,8 @@ TITLES = {
     f"{MT}/server_settings/header_game_setup": "GAME SETUP",
     # (split screen's JOIN screen: who plays, on which device)
     f"{MT}/split_screen/header_split_screen": "SPLIT SCREEN",
+    # (the community services' first-run opt-in: _community_services)
+    COMMUNITY_HEADER: "COMMUNITY SERVICES",
 }
 
 
@@ -2807,6 +2817,82 @@ def _mcc_question() -> list:
                          [f'<on event="a" run="{run}" {then}/>', f'<on event="start" run="{run}" {then}/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>'])
     return lines
+
+
+# COMMUNITY SERVICES (AE 0.3.5, port/linux/game/ae_community_screen.c): the first-run opt-in for the services the
+# ChupathingyCE team runs at halo.milenko.org, opened in front of the main menu while network.community_services is
+# "ask". The opt-in mockups' look A3 (the owner's pick, 2026-10-20): a settings screen's title and band; the LIST
+# HOSTED GAMES row, its own opt-in (OFF until turned on; only USE writes it); the stock buttons USE COMMUNITY SERVICES
+# and NOT NOW (in CANCEL's place), NOT NOW focused first ("ae community focus"). The text (what each service sends)
+# and the card (who runs them, the thanks) are drawn by the screen's game data input with AE's renderer. B, BACK and
+# Esc (START) are NOT NOW; nothing answers in the first half second. The pictures: tools/ae_optin_pictures.py
+COMMUNITY_SCREEN = f"{COMMUNITY}/community_services_screen"
+# the row: at 54 as the settings' rows, 187 down (its frame 8 px under GAME LIST's text, 8 over its help at 1080p),
+# 328 wide (40 px short of the card); its value between arrows at 888 and 1049 px (the spinner at 237, 63 wide)
+COMMUNITY_ROW_Y, COMMUNITY_ROW_WIDTH = 187, 328
+COMMUNITY_SPINNER_X, COMMUNITY_SPINNER_WIDTH = 237, 63
+# USE COMMUNITY SERVICES: its words and 40 px of face either side, ending where OK's button ends (380 + 128), 13 px
+# before NOT NOW's at 1080p
+COMMUNITY_USE_WIDTH = 216
+
+
+def _community_services() -> list:
+    base = COMMUNITY
+    lines = _widget(COMMUNITY_SCREEN, [("width", 640), ("height", 480), ("flags", "pass_unhandled_to_focused_child"),
+                                       ("bitmap", "bitmaps/gradient")],
+                    ['<data input="ae community update"/>',
+                     '<on event="b" run="ae community not now"/>', '<on event="back" run="ae community not now"/>',
+                     '<on event="start" run="ae community not now"/>',
+                     f'<child widget="{COMMUNITY_HEADER}"/>', f'<child widget="{base}/options_menu"/>'])
+    # (605 wide, as the password screen's title: the picture is drawn across it, a little wider than its 512, as the
+    # mockup's title is, and COMMUNITY SERVICES is longer than the stock headers' 363)
+    lines += _widget(COMMUNITY_HEADER, [("controller", 1), ("left", 35), ("top", 11), ("width", 605), ("height", 59),
+                                        ("bitmap", COMMUNITY_HEADER)], [])
+    lines += _widget(f"{base}/options_menu",
+                     [("type", "column_list"), ("width", 640), ("height", 480),
+                      ("flags", "pass_unhandled_to_focused_child up_down_tabs_children")],
+                     ['<on event="created" run="ae community focus"/>',
+                      f'<child widget="{base}/op_list_hosted_games" x="54" y="{COMMUNITY_ROW_Y}"/>',
+                      f'<child widget="{base}/button_bar" y="414"/>'])
+    lines += _widget(f"{base}/op_list_hosted_games",
+                     [("width", COMMUNITY_ROW_WIDTH), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+                      ("bitmap", "bitmaps/ae_option_bkds_optin"), ("color", "#FF2896FF")],
+                     ['<on event="a" run="ae community row"/>',
+                      f'<child widget="{base}/list_hosted_games_label"/>',
+                      f'<child widget="{base}/list_hosted_games_spinner" x="{COMMUNITY_SPINNER_X}" y="1"/>'])
+    lines += _widget(f"{base}/list_hosted_games_label",
+                     [("type", "text"), ("controller", 1), ("width", 230), ("height", 22), ("text", "LIST HOSTED GAMES:"),
+                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    # (no setting: the screen holds the value until an answer writes it, ae_community_screen.c)
+    lines += _widget(f"{base}/list_hosted_games_spinner",
+                     [("type", "spinner"), ("left", 3), ("top", 2), ("width", COMMUNITY_SPINNER_WIDTH), ("height", 20),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"), ("strings", "OFF|ON"),
+                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
+                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                      ("header_bounds", "7 -6 19 0"),
+                      ("footer_bounds", f"7 {COMMUNITY_SPINNER_WIDTH + 3} 19 {COMMUNITY_SPINNER_WIDTH + 9}")], [])
+    lines += _widget(f"{base}/button_bar",
+                     [("type", "column_list"), ("width", 640), ("height", 28),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
+                     [f'<child widget="{base}/button_use" x="{380 + 128 - COMMUNITY_USE_WIDTH}" y="1"/>',
+                      f'<child widget="{base}/button_not_now" x="510" y="1"/>'])
+    for key, caption, width, bitmap, run in (
+            ("use", "USE COMMUNITY SERVICES", COMMUNITY_USE_WIDTH, "bitmaps/ae_optin_button_use", "ae community use"),
+            ("not_now", "NOT NOW", 128, "bitmaps/text_button_background", "ae community not now")):
+        # (A only: START is the screen's, NOT NOW)
+        lines += _widget(f"{base}/button_{key}",
+                         [("type", "text"), ("width", width), ("height", 24), ("bitmap", bitmap), ("text", caption),
+                          ("font", "ui\\small_ui"), ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)],
+                         [f'<on event="a" run="{run}"/>', '<on event="left_mouse" run="mouse emit accept event"/>'])
+    return lines
+
+
+def community_services_files() -> dict:
+    """the COMMUNITY SERVICES screen (the first-run opt-in)"""
+    head = ['<?xml version="1.0" encoding="UTF-8"?>',
+            "<!-- The community services' first-run opt-in, in the PC version's style (tools/port_settings.py) -->",
+            "<menus>"]
+    return {COMMUNITY.replace("/", ".") + ".xml": head + _community_services() + ["</menus>", ""]}
 
 
 def multiplayer_files() -> dict:

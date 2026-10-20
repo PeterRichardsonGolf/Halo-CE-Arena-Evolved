@@ -4,6 +4,7 @@
   "ce/bitmaps.xml",
   "ce/error.xml",
   "ce/main_menu.campaign_select.xml",
+  "ce/main_menu.community_services.xml",
   "ce/main_menu.difficulty_select.xml",
   "ce/main_menu.gametype_select.xml",
   "ce/main_menu.menus_select.xml",
@@ -322,6 +323,11 @@
   "ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__6.png",
   "ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8.png",
   "ce/shell/main_menu/settings_select/player_setup/player_profile_edit/video_settings/header_profile_video_settings__0.png",
-  "ce/shell/main_menu/solo_level_select/header_load_level__0.png"
+  "ce/shell/main_menu/solo_level_select/header_load_level__0.png",
+  "ce/port/main_menu/community_services/header_community_services.png",
+  "ce/port/bitmaps/ae_option_bkds_optin__0.png",
+  "ce/port/bitmaps/ae_option_bkds_optin__1.png",
+  "ce/port/bitmaps/ae_optin_button_use__0.png",
+  "ce/port/bitmaps/ae_optin_button_use__1.png"
  ]
 }

@@ -1019,3 +1019,26 @@ port/linux/game/bots.c	index = ae_bots_roam_higher(bot, position, index); /* AE 
 port/linux/game/bots.c	ae_bots_fight_prenade(bot, &tick); /* AE hook */
 # VERTICAL VIEW (2026-10-20, ae_bots_combat.inc): a target far above or below where the bot looks is not seen
 port/linux/game/bots.c	if (!ae_bots_fight_in_vertical_view(bot, eye, &candidate->point, distance, hurt, player_index)) return FALSE; /* AE hook */
+# COMMUNITY SERVICES (0.3.5, ae_community_screen.h, ../src/ae_community.h): the first-run opt-in. network.community_services
+# ("ask" until answered, which is off) gates every request to network.browser_url's community services: the game list's
+# thread and its list (browser.c), Link Profile and the profile page, Delta Stats' uploads (event_upload.c). The screen
+# opens in front of the PC menus' main menu while it is "ask"; its functions and its game data input are the menus'.
+port/linux/src/port_config.c	{ "network.community_services", _config_string, "\"ask\"", "HALO_COMMUNITY_SERVICES", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "network.community_services", { "ask", "yes", "no", NULL }, "\"ask\"" }, /* AE hook */
+port/linux/src/browser.c	#include "ae_community.h" /* AE hook */
+port/linux/src/browser.c	if (config_string("network.browser_url")[0] && ae_community_services_on()) /* AE hook */
+port/linux/src/browser.c	browser.profile_wanted = ae_community_services_on(); /* AE hook */
+port/linux/src/browser.c	if (!ae_community_services_on()) { browser.connect_state = BROWSER_CONNECT_FAILED; snprintf(browser.connect_message, sizeof(browser.connect_message), "%s", AE_COMMUNITY_OFF_TEXT); } /* AE hook */
+port/linux/src/browser.c	if (!ae_community_services_on()) return 0; /* AE hook */
+port/linux/src/event_upload.c	#include "ae_community.h" /* AE hook */
+port/linux/src/event_upload.c	if (config_string("network.browser_url")[0] && ae_community_services_on()) /* AE hook */
+port/linux/src/event_upload.c	return config_boolean("network.report_events") && config_string("network.browser_url")[0] && ae_community_services_on(); /* AE hook */
+port/linux/game/browser_screen.c	#include "../src/ae_community.h" /* AE hook */
+port/linux/game/browser_screen.c	set_status(ae_community_services_on() ? "Opening your profile in the web browser" : AE_COMMUNITY_OFF_TEXT); /* AE hook */
+port/linux/game/menu_tags.c	"ae community focus", "ae community row", "ae community use", "ae community not now", /* AE hook */
+port/linux/game/menu_tags.c	"ae community update", /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_community_screen.h" /* AE hook */
+port/linux/game/menu_functions.c	if (!strncmp(name, "ae community ", 13)) /* AE hook */\nreturn ae_community_menu_event(name, widget, widget_deleted);
+port/linux/game/menu_functions.c	if (!strcmp(name, "ae community update")) /* AE hook */\nae_community_screen_update(widget);
+source/interface/ui_widget.c	#include "ae_community_screen.h" /* AE hook */
+source/interface/ui_widget.c	ae_community_main_menu_loaded(); /* AE hook */

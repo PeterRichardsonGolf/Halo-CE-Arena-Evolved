@@ -1062,6 +1062,16 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The game list server (configure.py --game-browser): hosted games are\n"
 		"listed there, and System Link shows its games; empty for none." },
+	{ "network.community_services", _config_string, "\"ask\"", "HALO_COMMUNITY_SERVICES", _environment_value, /* AE hook */
+		_platform_all,
+		"Arena Evolved: the community services the ChupathingyCE team runs at\n"
+		"network.browser_url (halo.milenko.org): System Link's list of internet\n"
+		"games, LIST HOSTED GAMES, SHARE GAME STATS and SHARE HOSTED STATS (Link\n"
+		"Profile and the profile page too). \"yes\" uses them (each of those\n"
+		"settings still says whether its part runs); \"no\" never contacts that\n"
+		"server; \"ask\" (a new install's, and an upgrade's from 0.3.4) asks once,\n"
+		"on the PC menus' first main menu, and is off until then. Settings >\n"
+		"Network Setup > COMMUNITY SERVICES changes it." },
 	{ "network.list_hosted_games", _config_boolean, "false", "HALO_NET_LIST_GAMES", _environment_value, _platform_all,
 		"List the system link games this machine hosts on network.browser_url,\n"
 		"where anyone can find and join them, and send each one's carnage report\n"
@@ -2595,6 +2605,7 @@ static const struct
 	{ "streamer.swearing", { "off", "severe", "strong", "mild", NULL }, NULL },
 	{ "streamer.insults", { "off", "severe", "strong", "mild", NULL }, NULL },
 	{ "crash_reports.upload", { "ask", "yes", "no", NULL }, "\"ask\"" },
+	{ "network.community_services", { "ask", "yes", "no", NULL }, "\"ask\"" }, /* AE hook */
 };
 
 #define NUMBER_OF_CONFIG_WORDS (sizeof(config_words) / sizeof(config_words[0]))

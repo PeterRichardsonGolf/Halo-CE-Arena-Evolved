@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- COMMUNITY SERVICES: the first time Arena Evolved opens its PC menus (and once after an upgrade from 0.3.4) a screen
+  asks whether to use the game list and match stats the ChupathingyCE team runs at halo.milenko.org. It says what each
+  one sends and who runs them, that Arena Evolved cannot vouch for them, and thanks the team. Nothing goes to that
+  server until you pick USE COMMUNITY SERVICES; NOT NOW (also B or Esc) keeps everything off. Listing the games you
+  host is a separate choice on the same screen, off unless you turn it on. Change it any time in Settings > Network
+  Setup > COMMUNITY SERVICES.
 - Bots play as a team: in a team game one bot sticks with each player as a wingman (near you, fighting beside you,
   not off on its own); NORMAL and up regroup when their team is two or more down, and back off when more enemies are
   close than teammates instead of taking a 1v2; HEROIC and up back out of a crossfire (two or more enemies with a

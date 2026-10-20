@@ -695,6 +695,7 @@ struct widget_instance;
 #include "ae_key_prompts.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
 #include "ae_ui_deleted.h" /* AE hook */
+#include "ae_community_screen.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 /* the in-game server browser (port/linux/game/browser_screen.c): a screen of
 code over the widgets, as the virtual keyboard is */
@@ -5321,6 +5322,7 @@ void main_screen_shell_load(
 
 			if (!ui_widget_load_by_name_or_tag(pc_menus_root_name(), NONE, NULL, NONE, NONE, NONE, NONE))
 				error(_error_silent, "failed to load main screen shell window");
+			ae_community_main_menu_loaded(); /* AE hook */
 		}
 #ifdef HALO_GAME_BROWSER
 		/* port: a join left for a Custom Edition map the player may
