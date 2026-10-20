@@ -257,6 +257,9 @@ static real ae_bots_fight_camo_reach(struct unit_datum const *unit);
 static real ae_bots_fight_camo_error(struct player_datum const *target);
 static void ae_bots_fight_range_floor(struct bots_bot *bot, struct bots_tick *tick);
 static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *tick);
+/* (2026-10-20) VERTICAL VIEW: bots.c's target scoring, a target too far above or below where the bot looks */
+static boolean ae_bots_fight_in_vertical_view(struct bots_bot *bot, real_point3d const *eye, real_point3d const *point,
+	real distance, boolean hurt, long player_index);
 /* (2026-10-20, ae_bots_combat.inc) PRO TRAITS: the grenade at the last-seen spot (the walk's), high ground when roaming */
 static void ae_bots_fight_prenade(struct bots_bot *bot, struct bots_tick *tick);
 static real ae_bots_roam_height(struct bots_bot *bot, real_point3d const *point, real_point3d const *enemy);

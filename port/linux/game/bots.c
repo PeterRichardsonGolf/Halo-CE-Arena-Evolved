@@ -1544,6 +1544,7 @@ static boolean bots_target_score(struct bots_bot *bot, struct player_datum *play
 	the bot fights) */
 	if (bearing > half_view && distance > 3.0f && !hurt && player_index != bot->target_player_index)
 		return FALSE;
+	if (!ae_bots_fight_in_vertical_view(bot, eye, &candidate->point, distance, hurt, player_index)) return FALSE; /* AE hook */
 	candidate->player_index = player_index;
 	candidate->unit_index = other->unit_index;
 	candidate->score = distance + bearing * 4.0f - (player_index == bot->target_player_index ? 6.0f : 0.0f);

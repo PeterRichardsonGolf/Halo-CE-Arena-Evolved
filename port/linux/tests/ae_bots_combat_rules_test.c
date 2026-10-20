@@ -309,6 +309,33 @@ static void test_weapon_spent(void)
 }
 
 /* PRO TRAITS: pacing, the descope reflex, high ground, the grenade at the last-seen spot, retreat as shields pop */
+static void test_vertical_view(void)
+{
+	int level;
+
+	for (level = AE_BOTS_LEVEL_RECRUIT; level < AE_BOTS_LEVEL_DEMON; level++)
+		CHECK(ae_bots_combat_vertical_half_view(level) < ae_bots_combat_vertical_half_view(level + 1));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 30.0f, 0.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 45.0f, 0.0f));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 45.0f, 20.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, -40.0f, 0.0f));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_DEMON, 39.0f, 0.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_RECRUIT, 23.0f, 0.0f));
+}
+
+static void test_step_in(void)
+{
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_RECRUIT, 1.0f, 0.0f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 2.4f, 0.4f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 2.6f, 0.4f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 1.0f, 0.6f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_NORMAL, 3.4f, 0.7f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_NORMAL, 3.4f, 0.9f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_HEROIC, 3.9f, 1.0f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_DEMON, 4.1f, 0.0f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_DEMON, 1.0f, 1.2f));
+}
+
 static void test_pro_traits(void)
 {
 	struct ae_bots_combat_retreat state;
@@ -389,6 +416,8 @@ int main(void)
 	test_charge_jump_share();
 	test_weapon_spent();
 	test_pro_traits();
+	test_step_in();
+	test_vertical_view();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }
