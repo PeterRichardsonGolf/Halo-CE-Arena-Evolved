@@ -650,7 +650,8 @@ class SeedCompare(unittest.TestCase):
         table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
         rows = dict(re.findall(r'^\t\{ "([^"]+)",(.*?)(?=^\t\{ "|^\};)', table, re.M | re.S))
         for name in OCTAGON_SEEDS:
-            body = rows[name]
+            # (as one line: a later revision's tool may wrap the row otherwise)
+            body = re.sub(r"\s+", " ", rows[name])
             self.assertIn("build_game_variant_slayer", body, name)
             self.assertIn(".starting_frags = STARTING_GRENADES_NONE", body, name)
             self.assertIn(".adjust = arena_gametype_octagon_drill", body, name)
