@@ -41,6 +41,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   the stock maps): contacts close by are easier to track. Every Arena Evolved 0.3.6 player in the game sees the host's range (older builds and ChupathingyCE draw the map's own);
   enemies' names over their heads keep the map's reach. The NHE gametypes keep the map's range, and a gametype
   you edited yourself keeps its own rules.
+- Level flashing fixed: for a frame now and then, a big piece of the level (a cliff, part of a base) was not drawn
+  and the fog color showed in its place, most often while looking around near portals between parts of the map. A
+  rounding case in the visibility walk lost the parts of the level past one doorway (OpenCE's structure culling,
+  since build-242, made the hole bigger).
 
 ## 0.3.5.2-beta - 2026-10-20
 
