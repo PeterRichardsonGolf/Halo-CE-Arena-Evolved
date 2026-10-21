@@ -1,0 +1,96 @@
+#include <stdio.h>
+#include "ae_weapon_slots.h"
+
+static int failures;
+#define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
+
+#define BR AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_BATTLE_RIFLE)
+#define SMG AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_SMG)
+#define SILENCED AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_SMG_SILENCED)
+#define CARBINE AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_CARBINE)
+
+int main(void)
+{
+	unsigned int byte;
+
+	/* the byte: 1 is the BR alone, as before the mask; 128 and over none; unknown slots' bits dropped */
+	CHECK(ae_weapon_slots_mask(0) == 0);
+	CHECK(ae_weapon_slots_mask(1) == BR);
+	CHECK(ae_weapon_slots_mask(3) == (BR | SMG));
+	CHECK(ae_weapon_slots_mask(0x0F) == (BR | SMG | SILENCED | CARBINE));
+	CHECK(ae_weapon_slots_mask(0x10) == 0 && ae_weapon_slots_mask(0x7F) == 0x0F);
+	for (byte = 128; byte < 256; byte++)
+		CHECK(ae_weapon_slots_mask((unsigned char)byte) == 0);
+
+	/* the loadout's sources: 1 the lowest named slot (the BR for the BR's byte, as before), 2 the second */
+	CHECK(ae_weapon_slots_loadout(BR, 1) == AE_WEAPON_SLOT_BATTLE_RIFLE);
+	CHECK(ae_weapon_slots_loadout(BR, 2) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_loadout(BR, 0) == AE_WEAPON_SLOT_NONE && ae_weapon_slots_loadout(BR, 3) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_loadout(BR | SMG, 1) == AE_WEAPON_SLOT_BATTLE_RIFLE);
+	CHECK(ae_weapon_slots_loadout(BR | SMG, 2) == AE_WEAPON_SLOT_SMG);
+	CHECK(ae_weapon_slots_loadout(SMG | CARBINE, 1) == AE_WEAPON_SLOT_SMG);
+	CHECK(ae_weapon_slots_loadout(SMG | CARBINE, 2) == AE_WEAPON_SLOT_CARBINE);
+	CHECK(ae_weapon_slots_loadout(0, 1) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_first(SILENCED | CARBINE) == AE_WEAPON_SLOT_SMG_SILENCED && ae_weapon_slots_first(0) == 0);
+
+	/* the capability: the highest level whose slots are all loaded; the BR's 2 as before */
+	CHECK(ae_weapon_slots_capability(0) == 0);
+	CHECK(ae_weapon_slots_capability(BR) == 2);
+	CHECK(ae_weapon_slots_capability(BR | SMG) == 2);
+	CHECK(ae_weapon_slots_capability(BR | SMG | SILENCED) == 3);
+	CHECK(ae_weapon_slots_capability(SMG | SILENCED) == 0);
+	CHECK(ae_weapon_slots_capability(BR | SMG | SILENCED | CARBINE) == 4);
+	CHECK(ae_weapon_slots_capability(BR | CARBINE) == 2);
+	/* what a game needs: the highest of its slots' levels; a host's check (capability < required) */
+	CHECK(ae_weapon_slots_required(0) == 0);
+	CHECK(ae_weapon_slots_required(BR) == 2);
+	CHECK(ae_weapon_slots_required(BR | SMG) == 3 && ae_weapon_slots_required(SILENCED) == 3);
+	CHECK(ae_weapon_slots_required(BR | CARBINE) == 4);
+	/* (every mask: a machine with exactly those packs passes a game that names them, and a game naming more than
+	a machine's level refuses it) */
+	for (byte = 0; byte < 16; byte++)
+	{
+		unsigned int game;
+
+		for (game = 0; game < 16; game++)
+		{
+			int pass = ae_weapon_slots_capability(byte) >= ae_weapon_slots_required(game);
+
+			/* (passing means the machine has every slot the game names) */
+			if (pass)
+				CHECK((game & ~byte) == 0);
+		}
+	}
+
+	/* map spawns: the pistol the BR, the assault rifle the SMG, only where on the map */
+	CHECK(ae_weapon_slots_spawn(AE_WEAPON_STOCK_PISTOL, BR | SMG) == AE_WEAPON_SLOT_BATTLE_RIFLE);
+	CHECK(ae_weapon_slots_spawn(AE_WEAPON_STOCK_ASSAULT_RIFLE, BR | SMG) == AE_WEAPON_SLOT_SMG);
+	CHECK(ae_weapon_slots_spawn(AE_WEAPON_STOCK_ASSAULT_RIFLE, BR) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_spawn(AE_WEAPON_STOCK_PISTOL, SMG | SILENCED) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_spawn(AE_WEAPON_STOCK_NONE, BR | SMG) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_spawn(7, 0x0F) == AE_WEAPON_SLOT_NONE);
+
+	/* layout aliases and their fallbacks */
+	CHECK(ae_weapon_slots_alias("smg") == AE_WEAPON_SLOT_SMG);
+	CHECK(ae_weapon_slots_alias("SMG") == AE_WEAPON_SLOT_SMG);
+	CHECK(ae_weapon_slots_alias("br") == AE_WEAPON_SLOT_BATTLE_RIFLE);
+	CHECK(ae_weapon_slots_alias("Battle_Rifle") == AE_WEAPON_SLOT_BATTLE_RIFLE);
+	CHECK(ae_weapon_slots_alias("silenced_smg") == AE_WEAPON_SLOT_SMG_SILENCED);
+	CHECK(ae_weapon_slots_alias("smg_silenced") == AE_WEAPON_SLOT_SMG_SILENCED);
+	CHECK(ae_weapon_slots_alias("carbine") == AE_WEAPON_SLOT_CARBINE);
+	CHECK(ae_weapon_slots_alias("sm") == AE_WEAPON_SLOT_NONE && ae_weapon_slots_alias("smgs") == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_alias("") == AE_WEAPON_SLOT_NONE && ae_weapon_slots_alias(NULL) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_alias("pistol") == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_fallback(AE_WEAPON_SLOT_BATTLE_RIFLE) == AE_WEAPON_STOCK_PISTOL);
+	CHECK(ae_weapon_slots_fallback(AE_WEAPON_SLOT_SMG) == AE_WEAPON_STOCK_ASSAULT_RIFLE);
+	CHECK(ae_weapon_slots_fallback(AE_WEAPON_SLOT_SMG_SILENCED) == AE_WEAPON_STOCK_ASSAULT_RIFLE);
+	CHECK(ae_weapon_slots_fallback(AE_WEAPON_SLOT_CARBINE) == AE_WEAPON_STOCK_PISTOL);
+	CHECK(ae_weapon_slots_fallback(0) == AE_WEAPON_STOCK_NONE && ae_weapon_slots_fallback(9) == AE_WEAPON_STOCK_NONE);
+	CHECK(ae_weapon_slots_name(AE_WEAPON_SLOT_SMG)[0] == 's' && ae_weapon_slots_name(-1)[0] == '?');
+
+	if (failures)
+		printf("%d failures\n", failures);
+	else
+		printf("ae_weapon_slots_test: all passed\n");
+	return failures != 0;
+}

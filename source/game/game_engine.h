@@ -195,11 +195,12 @@ union real_point2d;
 union real_point3d;
 union real_rgb_color;
 
-/* port: universal_variant.weapon_pack */
+/* port: universal_variant.weapon_pack: a MASK of pack slots (port/linux/game/ae_weapon_slots.h): bit n-1 names
+slot n; 1, the battle rifle's slot alone, is the byte's value from before the mask */
 enum weapon_pack
 {
 	_weapon_pack_none = 0,
-	_weapon_pack_battle_rifle, /* packs/ae_battle_rifle.aepack, slot 1 */
+	_weapon_pack_battle_rifle, /* packs/ae_battle_rifle.aepack, slot 1 (bit 0) */
 	WEAPON_PACK_MAXIMUM = 127 /* (reserved up to here; a larger byte reads as none) */
 };
 
@@ -214,7 +215,8 @@ enum pack_loadout_slot
 enum pack_loadout_source
 {
 	_pack_loadout_stock = 0,
-	_pack_loadout_pack
+	_pack_loadout_pack,       /* the lowest named pack's weapon 0 (the BR, for the BR's byte) */
+	_pack_loadout_second_pack /* the second lowest named pack's weapon 0 (older builds: stock) */
 };
 
 #define PACK_LOADOUT_SLOT_SHIFT(slot) ((slot) * 2)
@@ -881,6 +883,10 @@ short game_variant_weapon_pack(
 boolean game_variant_pack_loadout_slot(
 	byte pack_loadout,
 	short slot);
+short game_variant_pack_loadout_weapon_slot(
+	byte weapon_pack,
+	byte pack_loadout,
+	short slot);
 #define PACK_MAP_SPAWNS_BIT 0x10
 boolean game_variant_pack_map_spawns(
 	byte pack_loadout);
@@ -889,6 +895,8 @@ char const *game_variant_weapon_pack_name(
 short game_engine_weapon_pack(
 	void);
 boolean game_engine_pack_loadout_slot(
+	short slot);
+short game_engine_pack_loadout_weapon_slot(
 	short slot);
 boolean game_engine_pack_map_spawns(
 	void);
@@ -1082,6 +1090,7 @@ long game_engine_remap_item_definition(long definition_index);
 boolean game_engine_weapon_is_rocket_launcher(long definition_index);
 boolean game_engine_weapon_is_sniper_rifle(long definition_index);
 boolean game_engine_weapon_is_pistol(long definition_index);
+boolean game_engine_weapon_is_assault_rifle(long definition_index);	/* port */
 boolean game_engine_weapon_is_shotgun(long definition_index);	/* port */
 
 long game_engine_remap_vehicle(long vehicle_definition_index);

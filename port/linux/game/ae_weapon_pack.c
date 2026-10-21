@@ -105,6 +105,8 @@ A refusal is one "weapon pack: refused for <map>: <reason>" line.
 
 #include "ae_pack_format.h"
 #include "ae_weapon_pack.h"
+#include "ae_weapon_slots.h"
+#include "ae_pack_spawns.h"
 
 /* ---------- constants */
 
@@ -113,15 +115,16 @@ A refusal is one "weapon pack: refused for <map>: <reason>" line.
 /* the failed resource reads a map logs, each on its own line (the "let go" line counts them all) */
 #define FAILED_READS_LOGGED 32
 
-/* the item message strings of the pack's weapons (hud_get_item_string): weapon n's pickup text is this plus 2n,
-its ammo text the one after: far past any map's own list (the stock maps' hold a few dozen; the prototype's
-number) */
+/* the item message strings of the packs' weapons (hud_get_item_string): slot s's weapon n's pickup text is this plus
+ITEM_STRINGS_PER_SLOT (s - 1) plus 2n, its ammo text the one after: far past any map's own list (the stock maps'
+hold a few dozen; the prototype's number) */
 #define ITEM_STRING_INDEX_FIRST 0x7F00
+#define ITEM_STRINGS_PER_SLOT (2 * AE_PACK_MAXIMUM_WEAPONS)
 
 /* a weapon HUD interface tag's group (hud.c's weapon_hud_interface_definition_get) */
 #define WEAPON_HUD_INTERFACE_TAG 0x77706869 /* 'wphi' */
 
-/* each slot's file in the packs folder, and the pack id it takes */
+/* each slot's file in the packs folder, and the pack id it takes (ae_weapon_slots.h's slots, in their order) */
 static struct
 {
 	char const *path;
@@ -129,6 +132,9 @@ static struct
 } const slot_files[AE_WEAPON_PACK_SLOTS] =
 {
 	{ PACKS_FOLDER "\\ae_battle_rifle.aepack", "ae_battle_rifle" },
+	{ PACKS_FOLDER "\\ae_smg.aepack", "ae_smg" },
+	{ PACKS_FOLDER "\\ae_smg_silenced.aepack", "ae_smg_silenced" },
+	{ PACKS_FOLDER "\\ae_carbine.aepack", "ae_carbine" },
 };
 
 /* the pack on a map */
@@ -214,6 +220,7 @@ struct placed_animation_graph_node
 	byte unused[0x20];
 };
 
+typedef char verify_slots[AE_WEAPON_PACK_SLOTS == AE_WEAPON_SLOT_COUNT ? 1 : -1];
 typedef char verify_placed_animation_graph_node_size[sizeof(struct placed_animation_graph_node) == 0x40 ? 1 : -1];
 typedef char verify_placed_tag_instance_size[sizeof(struct placed_tag_instance) == 0x20 ? 1 : -1];
 typedef char verify_placed_tag_header_size[sizeof(struct placed_tag_header) == 0x24 ? 1 : -1];
@@ -261,8 +268,8 @@ static struct
 	struct ae_pack *packs[AE_WEAPON_PACK_SLOTS];
 } weapon_pack_globals;
 
-/* the pack on the loaded map */
-static struct
+/* a pack on the loaded map (one a slot: placements below; `placed` is the one being added or asked) */
+struct placed_state
 {
 	boolean added;
 	short slot;
@@ -310,24 +317,49 @@ static struct
 	} looks[AE_PACK_MAXIMUM_WEAPONS];
 	/* (each SMOOTH bitmap tag's first upload on this map is logged) */
 	byte smooth_logged[AE_PACK_MAXIMUM_TAGS];
-} placed;
+};
 
-/* the last map a game asked the pack for, and why it did not get it (the fallback's line at game start) */
-static struct
+/* each slot's pack on the loaded map, added in slot order (each grows the table the one before left) and let go
+in reverse; `placed` is the slot's being added, let go or asked (placed_select) */
+static struct placed_state placements[AE_WEAPON_PACK_SLOTS];
+static struct placed_state *placed_current = &placements[0];
+#define placed (*placed_current)
+
+/* the last map a game asked each slot's pack for, and why it did not get it (the fallback's line at game start) */
+struct refusal_state
 {
 	boolean asked;
 	char map_name[MAP_NAME_SIZE];
 	char reason[REASON_SIZE];
-} refusal;
+};
+static struct refusal_state refusals[AE_WEAPON_PACK_SLOTS];
+static struct refusal_state *refusal_current = &refusals[0];
+#define refusal (*refusal_current)
 
-/* the maps the pack was refused for since the start, and why (the lobby's line): the pack and the maps do not
-change while the game runs, so a map refused once is refused again */
-static struct
+/* the maps each slot's pack was refused for since the start, and why (the lobby's line): the packs and the maps do
+not change while the game runs, so a map refused once is refused again */
+struct refused_map
 {
 	char map_name[MAP_NAME_SIZE];
 	char reason[REASON_SIZE];
-} refused_maps[REFUSED_MAPS_MAXIMUM];
-static short refused_maps_next;
+};
+static struct refused_map refused_maps_of[AE_WEAPON_PACK_SLOTS][REFUSED_MAPS_MAXIMUM];
+static short refused_maps_next_of[AE_WEAPON_PACK_SLOTS];
+static struct refused_map *refused_maps = refused_maps_of[0];
+static short *refused_maps_next_current = &refused_maps_next_of[0];
+#define refused_maps_next (*refused_maps_next_current)
+
+/* `placed`, `refusal` and the refused maps made the slot's (1 to AE_WEAPON_PACK_SLOTS) */
+static void placed_select(
+	short slot)
+{
+	short index = slot >= 1 && slot <= AE_WEAPON_PACK_SLOTS ? (short)(slot - 1) : 0;
+
+	placed_current = &placements[index];
+	refusal_current = &refusals[index];
+	refused_maps = refused_maps_of[index];
+	refused_maps_next_current = &refused_maps_next_of[index];
+}
 
 /* ---------- private code */
 
@@ -418,8 +450,8 @@ static struct ae_pack *slot_read(
 	struct ae_pack_problem problem;
 	char const *pack_id = slot_files[slot - 1].pack_id;
 
-	/* (R32: no packs folder is a game without packs, and silent; a packs folder without the slot's file is a
-	refusal. With a second slot, a folder holding only some slots' files would log one each start: decide then) */
+	/* (R32: no packs folder is a game without packs, and silent; a packs folder without slot 1's file is a
+	refusal, without a later slot's one line, below) */
 	if (!asked_for && path_kind(PACKS_FOLDER) == _path_missing)
 		return NULL;
 	if (asked_for && path_leaves_data_root(path))
@@ -430,6 +462,14 @@ static struct ae_pack *slot_read(
 	switch (path_kind(path))
 	{
 	case _path_missing:
+		/* (R32's later-slot case, decided 2026-10-21: a packs folder without a later slot's file is a machine without
+		that weapon yet, said once and not a refusal; slot 1's missing file stays one) */
+		if (slot > 1 && !asked_for)
+		{
+			error(_error_silent, "weapon pack: slot %d (%s): none here; its weapon plays as its stock fallback", slot,
+				path);
+			return NULL;
+		}
 		pack_refused(slot, path, "there is no such file");
 		return NULL;
 	case _path_other:
@@ -1140,7 +1180,8 @@ static void placed_own_rifle_log(
 map changed, everything let go by the caller) if it cannot be */
 static boolean placed_add(
 	struct ae_pack *pack,
-	char const *map_name)
+	char const *map_name,
+	short slot)
 {
 	struct placed_tag_instance *instances, *table;
 	struct placed_tag_header *header;
@@ -1362,7 +1403,8 @@ static boolean placed_add(
 
 	if (!placed_buffers_make(pack))
 		return FALSE;
-	placed_own_rifle_log(pack, instances, existing, map_name);
+	if (slot == AE_WEAPON_SLOT_BATTLE_RIFLE)
+		placed_own_rifle_log(pack, instances, existing, map_name);
 	placed.original_instances = instances;
 	placed.own_count = next;
 	cache_files_set_tag_instances(table, existing + next);
@@ -1456,30 +1498,47 @@ static void refusal_refused(
 	refusal_note(map_name, problem, TRUE);
 }
 
-/* whether the game about to be played on the map whose tags have just loaded asks for a pack (its slot in slot):
-the pending game variant's weapon_pack (game_variant_global, which a network game's host and clients, the test
-host and a split-screen game all set just before the map loads; the menus' map and the campaign have none), and a
-multiplayer scenario. Each map starts with no refusal */
+/* whether the game about to be played on the map whose tags have just loaded asks for packs (their slots' mask in
+mask, ae_weapon_slots.h): the pending game variant's weapon_pack (game_variant_global, which a network game's host
+and clients, the test host and a split-screen game all set just before the map loads; the menus' map and the
+campaign have none), and a multiplayer scenario. Each map starts with no refusal, for every slot */
 static boolean refusal_asked(
 	char const *map_name,
 	long scenario_tag_index,
-	short *slot)
+	unsigned int *mask)
 {
 	struct game_variant const *variant = &game_variant_global;
+	short slot;
 
-	memset(&refusal, 0, sizeof(refusal));
-	snprintf(refusal.map_name, sizeof(refusal.map_name), "%s", map_name);
-	*slot = _weapon_pack_none;
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		memset(&refusals[slot - 1], 0, sizeof(refusals[slot - 1]));
+		snprintf(refusals[slot - 1].map_name, sizeof(refusals[slot - 1].map_name), "%s", map_name);
+	}
+	*mask = 0;
 	if (!variant->game_engine_index)
 		return FALSE;
-	*slot = game_variant_weapon_pack(variant->universal_variant.weapon_pack);
-	if (*slot == _weapon_pack_none)
+	*mask = (unsigned int)game_variant_weapon_pack(variant->universal_variant.weapon_pack);
+	if (!*mask)
 		return FALSE;
 	if (scenario_tag_index == NONE || scenario_definition_get(scenario_tag_index)->type != _scenario_type_multiplayer)
 		return FALSE;
-	refusal.asked = TRUE;
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+		refusals[slot - 1].asked = (*mask & AE_WEAPON_SLOT_BIT(slot)) != 0;
 
 	return TRUE;
+}
+
+/* whether any slot's pack is on the loaded map */
+static boolean placed_any(
+	void)
+{
+	short slot;
+
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+		if (placements[slot - 1].added)
+			return TRUE;
+	return FALSE;
 }
 
 /* ---------- public code */
@@ -1515,10 +1574,13 @@ void ae_weapon_pack_dispose(
 
 	/* (a map's tags are let go before the game is: scenario_tags_unload. Were they not, the pack's tags stay
 	as they are, in memory that is not given back, and no more is read from the pack: said, as it should not be) */
-	if (placed.added)
-		error(_error_silent, "weapon pack: the game ends with the pack still on %s: its tags were never let go",
-			placed.map_name);
-	placed.added = FALSE;
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		if (placements[slot - 1].added)
+			error(_error_silent, "weapon pack: the game ends with the pack still on %s: its tags were never let go",
+				placements[slot - 1].map_name);
+		placements[slot - 1].added = FALSE;
+	}
 	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
 	{
 		ae_pack_close(weapon_pack_globals.packs[slot - 1]);
@@ -1649,7 +1711,8 @@ static void placed_looks_set(
 		if (placed.looks[index].texts_set)
 		{
 			placed.looks[index].message_index = weapon->item.hud_message_index;
-			weapon->item.hud_message_index = (short)(ITEM_STRING_INDEX_FIRST + 2 * index);
+			weapon->item.hud_message_index = (short)(ITEM_STRING_INDEX_FIRST + ITEM_STRINGS_PER_SLOT * (placed.slot - 1) +
+			2 * index);
 		}
 
 		/* (only the pack's own HUD: a HUD tag the pack shares with the map is the map's weapons' too, and they keep
@@ -1715,47 +1778,60 @@ void ae_weapon_pack_tags_loaded(
 	char const *map_name,
 	long scenario_tag_index)
 {
-	struct ae_pack *pack;
 	/* (the map's header's name: 32 bytes, its terminator the header's to keep) */
 	char name[MAP_NAME_SIZE];
+	unsigned int mask;
 	short slot;
 
-	if (placed.added || !map_name)
+	if (placed_any() || !map_name)
 		return;
 	snprintf(name, sizeof(name), "%.32s", map_name);
 	map_name = name;
-	if (!refusal_asked(map_name, scenario_tag_index, &slot))
+	ae_pack_spawns_new_map();
+	if (!refusal_asked(map_name, scenario_tag_index, &mask))
 		return;
-	pack = slot_pack(slot);
-	memset(&placed, 0, sizeof(placed));
-	if (!pack)
+	/* (each named slot's pack in slot order: each grows the table the one before left) */
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
 	{
-		error(_error_silent, "weapon pack: not added to %s: this game has no pack for slot %d", map_name, (int)slot);
-		refusal_note(map_name, "this machine has no battle rifle pack", FALSE);
-		return;
-	}
-	/* CHECK: the map's tags are laid out as the engine's: a build it plays multiplayer on (2276, NHE's 2300,
-	PAL's through pal_tags.c: cache_files.c's list) */
-	{
-		char build[0x20];
+		struct ae_pack *pack = slot_pack(slot);
 
-		if (!cache_files_multiplayer_region(build))
+		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
+			continue;
+		placed_select(slot);
+		memset(&placed, 0, sizeof(placed));
+		if (!pack)
 		{
-			snprintf(placed.problem, sizeof(placed.problem), "build %.31s", build);
-			refusal_refused(pack, map_name);
-			return;
+			char reason[64];
+
+			error(_error_silent, "weapon pack: not added to %s: this game has no pack for slot %d", map_name, (int)slot);
+			snprintf(reason, sizeof(reason), "this machine has no %s pack", ae_weapon_slots_name(slot));
+			refusal_note(map_name, reason, FALSE);
+			continue;
 		}
+		/* CHECK: the map's tags are laid out as the engine's: a build it plays multiplayer on (2276, NHE's 2300,
+		PAL's through pal_tags.c: cache_files.c's list) */
+		{
+			char build[0x20];
+
+			if (!cache_files_multiplayer_region(build))
+			{
+				snprintf(placed.problem, sizeof(placed.problem), "build %.31s", build);
+				refusal_refused(pack, map_name);
+				continue;
+			}
+		}
+		if (!placed_add(pack, map_name, slot))
+		{
+			refusal_refused(pack, map_name);
+			continue;
+		}
+		placed.added = TRUE;
+		placed.slot = slot;
+		snprintf(placed.map_name, sizeof(placed.map_name), "%s", map_name);
+		refused_map_forget(map_name);
+		placed_looks_set(pack);
 	}
-	if (!placed_add(pack, map_name))
-	{
-		refusal_refused(pack, map_name);
-		return;
-	}
-	placed.added = TRUE;
-	placed.slot = slot;
-	snprintf(placed.map_name, sizeof(placed.map_name), "%s", map_name);
-	refused_map_forget(map_name);
-	placed_looks_set(pack);
+	placed_select(1);
 }
 
 /* the Custom Edition branch of scenario_tags_load: no pack on such a map (R34: the pack's tags would be read
@@ -1765,29 +1841,40 @@ void ae_weapon_pack_tags_refused_ce(
 	long scenario_tag_index)
 {
 	char name[MAP_NAME_SIZE];
+	unsigned int mask;
 	short slot;
 
-	if (placed.added || !map_name)
+	if (placed_any() || !map_name)
 		return;
 	snprintf(name, sizeof(name), "%.32s", map_name);
-	if (!refusal_asked(name, scenario_tag_index, &slot))
+	if (!refusal_asked(name, scenario_tag_index, &mask))
 		return;
-	error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", name, NOT_ON_CUSTOM_EDITION);
-	refusal_note(name, NOT_ON_CUSTOM_EDITION, TRUE);
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
+			continue;
+		placed_select(slot);
+		error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", name, NOT_ON_CUSTOM_EDITION);
+		refusal_note(name, NOT_ON_CUSTOM_EDITION, TRUE);
+	}
+	placed_select(1);
 }
 
 boolean ae_weapon_pack_unavailable_line(
+	short slot,
 	char *line,
 	long size)
 {
-	if (!line || size <= 0 || !refusal.asked || placed.added)
+	struct refusal_state const *state = slot >= 1 && slot <= AE_WEAPON_PACK_SLOTS ? &refusals[slot - 1] : NULL;
+
+	if (!line || size <= 0 || !state || !state->asked || placements[slot - 1].added)
 		return FALSE;
-	if (!strcmp(refusal.reason, NOT_ON_CUSTOM_EDITION))
-		snprintf(line, (size_t)size, "BATTLE RIFLE: %s", NOT_ON_CUSTOM_EDITION);
+	if (!strcmp(state->reason, NOT_ON_CUSTOM_EDITION))
+		snprintf(line, (size_t)size, "%s: %s", ae_weapon_slots_display(slot), NOT_ON_CUSTOM_EDITION);
 	else
 	{
-		snprintf(line, (size_t)size, "BATTLE RIFLE unavailable on %s: %s", refusal.map_name,
-			refusal.reason[0] ? refusal.reason : "not added");
+		snprintf(line, (size_t)size, "%s unavailable on %s: %s", ae_weapon_slots_display(slot), state->map_name,
+			state->reason[0] ? state->reason : "not added");
 	}
 
 	return TRUE;
@@ -1801,31 +1888,38 @@ void ae_weapon_pack_lobby_line(
 {
 	char file[MAP_NAME_SIZE + 8];
 	char line[96];
+	unsigned int mask;
 	short slot, index;
 	size_t length;
 
 	if (!text || count <= 0 || !map_name || !map_name[0] || !variant)
 		return;
-	slot = game_variant_weapon_pack(variant->universal_variant.weapon_pack);
-	if (slot == _weapon_pack_none)
-		return;
-	/* (the pre-game check on the map's family, R34: before any map is loaded) */
-	if (map_family_parse(map_name, file, sizeof(file)) != _map_family_xbox)
-		snprintf(line, sizeof(line), "BATTLE RIFLE: %s", NOT_ON_CUSTOM_EDITION);
-	else if (!slot_pack(slot) || refused_map_reason(file))
-		snprintf(line, sizeof(line), "BATTLE RIFLE unavailable on %.40s", file);
-	else
-		return;
-	length = 0;
-	while (length < (size_t)count && text[length])
-		length++;
-	if (length + 2 + strlen(line) + 1 > (size_t)count)
-		return;
-	text[length++] = '\r';
-	text[length++] = '\n';
-	for (index = 0; line[index]; index++)
-		text[length++] = (wchar_t)(unsigned char)line[index];
-	text[length] = 0;
+	mask = (unsigned int)game_variant_weapon_pack(variant->universal_variant.weapon_pack);
+	/* (a line a named slot whose pack this machine knows cannot be added) */
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
+			continue;
+		placed_select(slot);
+		/* (the pre-game check on the map's family, R34: before any map is loaded) */
+		if (map_family_parse(map_name, file, sizeof(file)) != _map_family_xbox)
+			snprintf(line, sizeof(line), "%s: %s", ae_weapon_slots_display(slot), NOT_ON_CUSTOM_EDITION);
+		else if (!slot_pack(slot) || refused_map_reason(file))
+			snprintf(line, sizeof(line), "%s unavailable on %.40s", ae_weapon_slots_display(slot), file);
+		else
+			continue;
+		length = 0;
+		while (length < (size_t)count && text[length])
+			length++;
+		if (length + 2 + strlen(line) + 1 > (size_t)count)
+			break;
+		text[length++] = '\r';
+		text[length++] = '\n';
+		for (index = 0; line[index]; index++)
+			text[length++] = (wchar_t)(unsigned char)line[index];
+		text[length] = 0;
+	}
+	placed_select(1);
 }
 
 /* as a map's tags are let go (scenario_tags_unload: after the texture and sound caches closed and the menus'
@@ -1833,13 +1927,21 @@ tags went, so the table is the pack's grown one again; before the map's file clo
 void ae_weapon_pack_tags_unloaded(
 	void)
 {
-	if (!placed.added)
-		return;
-	error(_error_silent, "weapon pack: let go from %s: %d tags; %d bitmap and %d sound reads (%u bytes) were served "
-		"from the pack, %d could not be", placed.map_name, (int)placed.own_count, (int)placed.bitmap_reads,
-		(int)placed.sound_reads, (unsigned int)placed.read_bytes, (int)placed.failed_reads);
-	cache_files_set_tag_instances(placed.original_instances, placed.original_count);
-	placed_free(slot_pack(placed.slot));
+	short slot;
+
+	/* (in reverse: each slot's table back to the one the slot before left) */
+	for (slot = AE_WEAPON_PACK_SLOTS; slot >= 1; slot--)
+	{
+		placed_select(slot);
+		if (!placed.added)
+			continue;
+		error(_error_silent, "weapon pack: let go from %s: %d tags; %d bitmap and %d sound reads (%u bytes) were "
+			"served from the pack, %d could not be", placed.map_name, (int)placed.own_count, (int)placed.bitmap_reads,
+			(int)placed.sound_reads, (unsigned int)placed.read_bytes, (int)placed.failed_reads);
+		cache_files_set_tag_instances(placed.original_instances, placed.original_count);
+		placed_free(slot_pack(placed.slot));
+	}
+	placed_select(1);
 }
 
 /* a read of the map file for tag tag_index (cache_file_read: a bitmap's pixels, a sound's samples): TRUE if the
@@ -1902,7 +2004,7 @@ static boolean resource_read_into(
 	return read;
 }
 
-boolean ae_weapon_pack_read(
+static boolean placed_read(
 	long tag_index,
 	long offset,
 	long size,
@@ -1952,23 +2054,66 @@ boolean ae_weapon_pack_read(
 	return FALSE;
 }
 
+boolean ae_weapon_pack_read(
+	long tag_index,
+	long offset,
+	long size,
+	void *buffer,
+	boolean *complete)
+{
+	short slot;
+	boolean read = FALSE;
+
+	for (slot = 1; !read && slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		placed_select(slot);
+		read = placed_read(tag_index, offset, size, buffer, complete);
+	}
+	placed_select(1);
+	return read;
+}
+
 short ae_weapon_pack_added(
 	void)
 {
-	return placed.added ? placed.slot : 0;
+	short slot;
+
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+		if (placements[slot - 1].added)
+			return slot;
+	return 0;
+}
+
+boolean ae_weapon_pack_slot_added(
+	short slot)
+{
+	return slot >= 1 && slot <= AE_WEAPON_PACK_SLOTS && placements[slot - 1].added;
+}
+
+unsigned int ae_weapon_pack_added_mask(
+	void)
+{
+	unsigned int mask = 0;
+	short slot;
+
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+		if (placements[slot - 1].added)
+			mask |= AE_WEAPON_SLOT_BIT(slot);
+	return mask;
 }
 
 boolean ae_weapon_pack_fingerprint(
+	short slot,
 	unsigned char *fingerprint)
 {
-	if (!placed.added)
+	if (!ae_weapon_pack_slot_added(slot))
 		return FALSE;
-	memcpy(fingerprint, placed.fingerprint, PLACED_FINGERPRINT_SIZE);
+	memcpy(fingerprint, placements[slot - 1].fingerprint, PLACED_FINGERPRINT_SIZE);
 
 	return TRUE;
 }
 
-boolean ae_weapon_pack_tag_is_own(
+static boolean placed_tag_is_own(
 	long tag_index)
 {
 	struct ae_pack const *pack = slot_pack(placed.slot);
@@ -1988,19 +2133,54 @@ boolean ae_weapon_pack_tag_is_own(
 	return FALSE;
 }
 
+boolean ae_weapon_pack_tag_is_own(
+	long tag_index)
+{
+	short slot;
+	boolean own = FALSE;
+
+	for (slot = 1; !own && slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		placed_select(slot);
+		own = placed_tag_is_own(tag_index);
+	}
+	placed_select(1);
+	return own;
+}
+
 long ae_weapon_pack_weapon_definition(
 	short slot,
 	short weapon)
 {
 	struct ae_pack const *pack = slot_pack(slot);
+	struct placed_state const *state = slot >= 1 && slot <= AE_WEAPON_PACK_SLOTS ? &placements[slot - 1] : NULL;
 
-	if (!placed.added || placed.slot != slot || !pack || weapon < 0 || (unsigned int)weapon >= pack->weapon_count)
+	if (!state || !state->added || state->slot != slot || !pack || weapon < 0 ||
+		(unsigned int)weapon >= pack->weapon_count)
+	{
 		return NONE;
+	}
 
-	return placed.tag_indices[pack->weapons[weapon].root_tag];
+	return state->tag_indices[pack->weapons[weapon].root_tag];
 }
 
-void ae_weapon_pack_loadout_given(
+short ae_weapon_pack_definition_slot(
+	long definition_index)
+{
+	short slot;
+
+	for (slot = 1; definition_index != NONE && slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		short weapon;
+
+		for (weapon = 0; weapon < ae_weapon_pack_weapon_count(slot); weapon++)
+			if (ae_weapon_pack_weapon_definition(slot, weapon) == definition_index)
+				return slot;
+	}
+	return 0;
+}
+
+static void placed_loadout_given(
 	short loadout_slot,
 	long definition_index)
 {
@@ -2023,11 +2203,24 @@ void ae_weapon_pack_loadout_given(
 	}
 }
 
-boolean ae_weapon_pack_item_string(
+void ae_weapon_pack_loadout_given(
+	short loadout_slot,
+	long definition_index)
+{
+	short slot = ae_weapon_pack_definition_slot(definition_index);
+
+	if (!slot)
+		return;
+	placed_select(slot);
+	placed_loadout_given(loadout_slot, definition_index);
+	placed_select(1);
+}
+
+static boolean placed_item_string(
 	long *string_index,
 	wchar_t const **string)
 {
-	long relative = *string_index - ITEM_STRING_INDEX_FIRST;
+	long relative = *string_index - ITEM_STRING_INDEX_FIRST - ITEM_STRINGS_PER_SLOT * (placed.slot - 1);
 	short weapon, which;
 
 	if (!placed.added || relative < 0 || relative >= 2 * AE_PACK_MAXIMUM_WEAPONS)
@@ -2056,7 +2249,23 @@ boolean ae_weapon_pack_item_string(
 	return TRUE;
 }
 
-struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
+boolean ae_weapon_pack_item_string(
+	long *string_index,
+	wchar_t const **string)
+{
+	long relative = *string_index - ITEM_STRING_INDEX_FIRST;
+	short slot = relative >= 0 ? (short)(relative / ITEM_STRINGS_PER_SLOT + 1) : 0;
+	boolean found;
+
+	if (slot < 1 || slot > AE_WEAPON_PACK_SLOTS)
+		return FALSE;
+	placed_select(slot);
+	found = placed_item_string(string_index, string);
+	placed_select(1);
+	return found;
+}
+
+static struct icon_hud_element_definition const *placed_message_icon(
 	struct icon_hud_element_definition const *icon,
 	long *bitmap_group_index)
 {
@@ -2101,7 +2310,23 @@ struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
 
 /* (the texture cache asks as it uploads a texture's pixels; the high-res HUD's textures are found the same way:
 hud_hires_tags.c's hud_hires_asset_at) */
-long ae_weapon_pack_smooth_bitmap_at(
+struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
+	struct icon_hud_element_definition const *icon,
+	long *bitmap_group_index)
+{
+	struct icon_hud_element_definition const *result = icon;
+	short slot;
+
+	for (slot = 1; result == icon && slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		placed_select(slot);
+		result = placed_message_icon(icon, bitmap_group_index);
+	}
+	placed_select(1);
+	return result;
+}
+
+static long placed_smooth_bitmap_at(
 	unsigned long address,
 	long width,
 	long height)
@@ -2142,4 +2367,21 @@ long ae_weapon_pack_smooth_bitmap_at(
 		}
 	}
 	return 0;
+}
+
+long ae_weapon_pack_smooth_bitmap_at(
+	unsigned long address,
+	long width,
+	long height)
+{
+	long smooth = 0;
+	short slot;
+
+	for (slot = 1; !smooth && slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	{
+		placed_select(slot);
+		smooth = placed_smooth_bitmap_at(address, width, height);
+	}
+	placed_select(1);
+	return smooth;
 }

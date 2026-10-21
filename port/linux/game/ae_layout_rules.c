@@ -11,6 +11,7 @@ The map layout file read and checked (ae_layout_rules.h). Pure: no engine includ
 #include <string.h>
 
 #include "ae_layout_rules.h"
+#include "ae_weapon_slots.h"
 
 #define MAXIMUM_WORDS 24
 
@@ -110,6 +111,12 @@ static int parse_item(char **words, int count, struct ae_layout_item *item, char
 		{
 			item->what = _ae_layout_alias;
 			item->alias = alias;
+		}
+		else if (ae_weapon_slots_alias(words[at]) != AE_WEAPON_SLOT_NONE)
+		{
+			/* (a pack weapon: battle_rifle, smg, smg_silenced, carbine; ae_weapon_slots.h) */
+			item->what = _ae_layout_pack;
+			item->pack_slot = ae_weapon_slots_alias(words[at]);
 		}
 		else
 		{

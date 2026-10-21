@@ -618,6 +618,8 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_mode_guard.h" /* AE hook */
 #include "ae_layout.h" /* AE hook */
 #include "ae_key_prompts.h" /* AE hook */
+#include "ae_weapon_slots.h" /* AE hook */
+#include "ae_pack_spawns.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -6204,22 +6206,34 @@ short game_engine_nhe_mode(
 		_nhe_mode_by_vehicles;
 }
 
-/* port: a gametype's WEAPON PACK from its byte (past the reserved range, none) */
+/* port: a gametype's WEAPON PACKS from its byte: the mask of their slots (ae_weapon_slots.h: bit 0 the battle
+rifle's slot 1, as the byte's 1 always was; past the reserved range, none) */
 short game_variant_weapon_pack(
 	byte weapon_pack)
 {
-	return weapon_pack <= WEAPON_PACK_MAXIMUM ? (short)weapon_pack :
-		_weapon_pack_none;
+	return (short)ae_weapon_slots_mask(weapon_pack);
 }
 
 /* port: weapon pack: TRUE when the pack_loadout byte takes the loadout slot's weapon from
-the pack (a slot past the two: no) */
+a pack (source 1, the lowest named pack's weapon 0, or 2, the second lowest's; a slot past the two: no) */
 boolean game_variant_pack_loadout_slot(
 	byte pack_loadout,
 	short slot)
 {
-	return slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS &&
-		((pack_loadout >> PACK_LOADOUT_SLOT_SHIFT(slot)) & PACK_LOADOUT_SOURCE_MASK) == _pack_loadout_pack;
+	unsigned int source = slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS ?
+		(pack_loadout >> PACK_LOADOUT_SLOT_SHIFT(slot)) & PACK_LOADOUT_SOURCE_MASK : 0;
+
+	return source == _pack_loadout_pack || source == _pack_loadout_second_pack;
+}
+
+/* port: weapon pack: the pack slot (ae_weapon_slots.h) a variant's loadout slot takes its weapon from, or 0 */
+short game_variant_pack_loadout_weapon_slot(
+	byte weapon_pack,
+	byte pack_loadout,
+	short slot)
+{
+	return slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS ? ae_weapon_slots_loadout(ae_weapon_slots_mask(weapon_pack),
+		(pack_loadout >> PACK_LOADOUT_SLOT_SHIFT(slot)) & PACK_LOADOUT_SOURCE_MASK) : 0;
 }
 
 /* port: weapon pack: BATTLE RIFLE ON MAP from its byte */
@@ -6229,15 +6243,30 @@ boolean game_variant_pack_map_spawns(
 	return (pack_loadout & PACK_MAP_SPAWNS_BIT) != 0;
 }
 
-/* port: weapon pack: its name for the rules log */
+/* port: weapon pack: its name for the rules log ("battle rifle (slot 1)" for the BR alone, as before the mask;
+"battle_rifle + smg (slots 1, 2)" for several) */
 char const *game_variant_weapon_pack_name(
 	byte weapon_pack)
 {
-	static char const *const packs[] = { "none", "battle rifle (slot 1)" };
-	typedef char verify_weapon_pack_names[NUMBEROF(packs) == _weapon_pack_battle_rifle + 1 ? 1 : -1];
-	short pack = game_variant_weapon_pack(weapon_pack);
+	static char name[128];
+	unsigned int mask = (unsigned int)game_variant_weapon_pack(weapon_pack);
+	char names[80] = "", slots[40] = "";
+	short slot;
 
-	return pack < (short)NUMBEROF(packs) ? packs[pack] : "reserved";
+	if (!mask)
+		return "none";
+	if (mask == AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_BATTLE_RIFLE))
+		return "battle rifle (slot 1)";
+	for (slot = 1; slot <= AE_WEAPON_SLOT_COUNT; slot++)
+	{
+		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
+			continue;
+		snprintf(names + strlen(names), sizeof(names) - strlen(names), "%s%s", names[0] ? " + " : "",
+			ae_weapon_slots_name(slot));
+		snprintf(slots + strlen(slots), sizeof(slots) - strlen(slots), "%s%d", slots[0] ? ", " : "", (int)slot);
+	}
+	snprintf(name, sizeof(name), "%s (slot%s %s)", names, strchr(slots, ',') ? "s" : "", slots);
+	return name;
 }
 
 /* port: weapon pack: the running game's (none with no game) */
@@ -6248,13 +6277,21 @@ short game_engine_weapon_pack(
 		_weapon_pack_none;
 }
 
-/* port: the running game's custom loadout takes slot's weapon from the weapon
+/* port: the running game's custom loadout takes slot's weapon from a weapon
 pack (with its weapon pack not none) */
 boolean game_engine_pack_loadout_slot(
 	short slot)
 {
 	return game_engine_weapon_pack() != _weapon_pack_none &&
 		game_variant_pack_loadout_slot(global_variant.universal_variant.pack_loadout, slot);
+}
+
+/* port: the pack slot the running game's loadout slot takes its weapon from, or 0 */
+short game_engine_pack_loadout_weapon_slot(
+	short slot)
+{
+	return game_engine_running() ? game_variant_pack_loadout_weapon_slot(global_variant.universal_variant.weapon_pack,
+		global_variant.universal_variant.pack_loadout, slot) : 0;
 }
 
 /* port: the running game's weapon pack's BATTLE RIFLE ON MAP (with its weapon
@@ -8897,10 +8934,15 @@ static void game_engine_predict_resources(
 	if (global_variant.game_engine_index == game_engine_ctf)
 		object_definition_predict(list_index_to_weapon_definition_index(_weapon_list_flag));
 
-	/* port: weapon pack: the pack's weapon, as the map's weapons below, where the gametype uses a pack and it
+	/* port: weapon pack: each named pack's weapon, as the map's weapons below, where the gametype names it and it
 	was added to this map (no definition otherwise: nothing predicted) */
-	if (game_engine_weapon_pack() != _weapon_pack_none)
-		object_definition_predict(ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0));
+	{
+		short slot;
+
+		for (slot = 1; slot <= AE_WEAPON_SLOT_COUNT; slot++)
+			if (game_engine_weapon_pack() & AE_WEAPON_SLOT_BIT(slot))
+				object_definition_predict(ae_weapon_pack_weapon_definition(slot, 0));
+	}
 
 	weapon_indices[0] = list_index_to_weapon_definition_index(0);
 	weapon_indices[1] = list_index_to_weapon_definition_index(1);
@@ -9230,11 +9272,15 @@ void game_engine_log_rules(
 		if (pack)
 		{
 			char unavailable[256];
+			short slot;
 
-			if (ae_weapon_pack_unavailable_line(unavailable, sizeof(unavailable)))
+			for (slot = 1; slot <= AE_WEAPON_SLOT_COUNT; slot++)
 			{
-				error(_error_silent, "weapon pack: %s", unavailable);
-				console_printf(FALSE, "%s", unavailable);
+				if (ae_weapon_pack_unavailable_line(slot, unavailable, sizeof(unavailable)))
+				{
+					error(_error_silent, "weapon pack: %s", unavailable);
+					console_printf(FALSE, "%s", unavailable);
+				}
 			}
 		}
 		}
@@ -10101,6 +10147,13 @@ boolean game_engine_weapon_is_pistol(
 	long definition_index)
 {
 	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_pistol;
+}
+
+/* port: weapon packs' map spawns and layouts' fallbacks (ae_pack_spawns.c, ae_layout.c) */
+boolean game_engine_weapon_is_assault_rifle(
+	long definition_index)
+{
+	return weapon_definition_index_to_list_index(definition_index) == _weapon_list_assault_rifle;
 }
 
 /* port: the item timers' shotgun (item_timers.c) */
@@ -11080,6 +11133,7 @@ static void game_engine_update_item_spawn(
 					continue;
 				}
 				if (ae_gametype_skips_map_item(definition_index)) continue; /* AE hook */
+				definition_index = ae_pack_spawn_definition(equipment_index, definition_index); /* AE hook */
 				object_placement_data_new(
 					&placement_data,
 					definition_index,
@@ -11252,8 +11306,8 @@ static void game_engine_give_loadout(
 		/* port: weapon pack: a slot the gametype gives to the pack (pack_loadout) gets the pack's weapon 0
 		where the pack was added to this map; anywhere else its definition is NONE and the stock value above
 		stays: the fallback (an assault rifle, a pistol) */
-		long pack_definition_index = game_engine_pack_loadout_slot(index) ?
-			ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0) : NONE;
+		short pack_slot = game_engine_pack_loadout_slot(index) ? game_engine_pack_loadout_weapon_slot(index) : 0;
+		long pack_definition_index = pack_slot ? ae_weapon_pack_weapon_definition(pack_slot, 0) : NONE;
 
 		if (pack_definition_index != NONE)
 			definition_index = pack_definition_index;
@@ -11289,7 +11343,7 @@ static void game_engine_give_loadout(
 	{
 		struct unit_datum const *unit = unit_get(unit_index);
 		long ground_definition_index = pack_definition_given != NONE ? pack_definition_given :
-			ae_weapon_pack_weapon_definition(game_engine_weapon_pack(), 0);
+			ae_weapon_pack_weapon_definition(ae_weapon_slots_first(ae_weapon_pack_added_mask()), 0);
 
 		if (ground_definition_index != NONE && unit->unit.player_index != NONE &&
 			player_get(unit->unit.player_index)->local_player_index != NONE)

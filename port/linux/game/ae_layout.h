@@ -30,6 +30,10 @@ int ae_layout_memory(unsigned long address, long size);
 has one */
 boolean ae_layout_item_label(long equipment_index, char *label, long size);
 
+/* (ae_pack_spawns.c, the item spawn's) the pack slot (ae_weapon_slots.h) a layout line put on an item of the
+scenario's list (item smg at ...), or 0 */
+short ae_layout_item_pack_slot(long equipment_index);
+
 /* (game_engine.c's item spawn, AE hook) whether a netgame equipment entry's facing is a layout line's, so an Xbox
 map's item turns by it as a Custom Edition map's does */
 boolean ae_layout_equipment_faces(long equipment_flags);

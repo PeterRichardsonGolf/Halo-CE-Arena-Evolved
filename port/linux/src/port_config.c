@@ -1298,11 +1298,19 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"An automated test host's gametype uses the weapon pack in its custom\n"
 		"loadout: primary, secondary or both (the stock values stay an assault rifle\n"
-		"and a pistol, the fallbacks). Empty for none." },
+		"and a pistol, the fallbacks); primary2, secondary2 the second named pack's\n"
+		"weapon; first_second the first's and the second's. Empty for none." },
 	{ "debug.network_test_pack_map_spawns", _config_boolean, "false", "HALO_NETWORK_TEST_PACK_MAP_SPAWNS", _environment_value, /* AE hook */
 		_platform_all,
-		"An automated test host's gametype uses the weapon pack and has BATTLE RIFLE\n"
-		"ON MAP (the map's assault rifles spawn the pack's weapon)." },
+		"An automated test host's gametype uses the weapon packs and has their MAP\n"
+		"SPAWNS (the map's pistols spawn the battle rifle, its assault rifles the\n"
+		"SMG, where those packs are named). A test switch: no gametype has it." },
+	{ "debug.network_test_weapon_packs", _config_integer, "0", "HALO_NETWORK_TEST_WEAPON_PACKS", _environment_value, /* AE hook */
+		_platform_all,
+		"An automated test host's gametype names these weapon packs, a mask of\n"
+		"their slots: 1 the battle rifle, 2 the SMG, 4 the silenced SMG, 8 the\n"
+		"carbine (3: the BR and the SMG). 0: the battle rifle alone, when a pack\n"
+		"option above is set." },
 	{ "debug.weapon_pack_file", _config_string, "\"\"", "HALO_WEAPON_PACK_FILE", _environment_value, /* AE hook */
 		_platform_all,
 		"A weapon pack read in place of packs\\ae_battle_rifle.aepack (tests: variants\n"
