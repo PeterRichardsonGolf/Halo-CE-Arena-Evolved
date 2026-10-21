@@ -45,6 +45,7 @@ then the player's own.
 #include "ae_hit_feedback_rules.h" /* port: port/linux/game/ae_hit_feedback_rules.c */
 #include "ae_juggernaut_rules.h" /* port: port/linux/game/ae_juggernaut_rules.c */
 #include "ae_saved_limits.h" /* port: port/linux/game/ae_saved_limits.h */
+#include "ae_sensor_range_rules.h" /* port: port/linux/game/ae_sensor_range_rules.h (SENSOR RANGE) */
 #include "ae_weapon_rules.h" /* port: port/linux/game/ae_weapon_rules.h (INFINITE AMMO, BOTTOMLESS CLIP) */
 
 #include <ctype.h>
@@ -437,6 +438,9 @@ static void arena_gametype_no_map_grenades(
 	struct game_variant *variant,
 	struct game_variant_options *options);
 static void arena_gametype_no_speed_changes_and_no_map_grenades(
+	struct game_variant *variant,
+	struct game_variant_options *options);
+static void arena_gametype_sensor_range_10(
 	struct game_variant *variant,
 	struct game_variant_options *options);
 
@@ -4477,6 +4481,19 @@ static void arena_gametype_no_speed_changes_and_no_map_grenades(
 {
 	arena_gametype_no_speed_changes(variant, options);
 	arena_gametype_no_map_grenades(variant, options);
+
+	return;
+}
+
+/* revision 19: SENSOR RANGE 10 m (the universal variant's flags bits 6-7, ae_sensor_range_rules.h; the other bits
+kept): the motion sensor reaches 10 m (13.33 world units, two thirds of the stock maps' 20) on every map. Shipped:
+never edited (a change is a new function) */
+static void arena_gametype_sensor_range_10(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	(void)options;
+	variant->universal_variant.flags = ae_sensor_range_flags_set(variant->universal_variant.flags, _ae_sensor_range_10m);
 
 	return;
 }
