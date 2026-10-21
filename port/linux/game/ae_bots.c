@@ -52,9 +52,12 @@ they are strong close up. The silenced one a step further: its spread is tighter
 #define AE_BOTS_SMG_VALUE 6
 #define AE_BOTS_SMG_RANGE 5.0f
 #define AE_BOTS_SILENCED_SMG_RANGE 6.0f
-/* the carbine: a precision rifle as the BR, its rounds one a pull */
+/* the carbine: a precision rifle as the BR, its rounds one a pull: a pull every 11 ticks (its pack's 2.857 rounds a
+second, Halo 2's 0.35 s fire recovery: 10.5 ticks, and a tick more as the BR's), else bots.c holds its trigger
+down as an automatic's and a NORMAL bot's held aim sprays it (3% of its rounds hit in the octagon grid) */
 #define AE_BOTS_CARBINE_VALUE 8
 #define AE_BOTS_CARBINE_RANGE 11.0f
+#define AE_BOTS_CARBINE_PULL_TICKS 11
 
 void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, real *range)
 {
@@ -77,6 +80,7 @@ void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, 
 		break;
 	case AE_WEAPON_SLOT_CARBINE:
 		*value = AE_BOTS_CARBINE_VALUE;
+		*tap_ticks = AE_BOTS_CARBINE_PULL_TICKS;
 		*range = AE_BOTS_CARBINE_RANGE;
 		break;
 	}

@@ -2168,8 +2168,11 @@ void network_test_update(
 					{
 						variant.universal_variant.weapon_pack = network_test.weapon_packs ? network_test.weapon_packs :
 							_weapon_pack_battle_rifle;
+						/* (the gametype's own bits 5-7, INFINITE AMMO, BOTTOMLESS CLIP and MAP GRENADES OFF, kept:
+						ae_weapon_rules.h) */
 						variant.universal_variant.pack_loadout = (byte)(network_test.pack_loadout |
-							(network_test.pack_map_spawns ? PACK_MAP_SPAWNS_BIT : 0));
+							(network_test.pack_map_spawns ? PACK_MAP_SPAWNS_BIT : 0) |
+							(variant.universal_variant.pack_loadout & 0xE0));
 					}
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
