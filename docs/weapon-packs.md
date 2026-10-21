@@ -221,8 +221,16 @@ A zlib resource (no v1 writer makes one) is inflated whole on every read, even o
 ## A pack on a map
 
 A pack is added to a map when the map's tags have loaded and been checked, if the game about to be played
-asks for it: the gametype's `weapon_pack` byte names its slot (the pending game variant, set by a network
-game's host and clients and by a split-screen game just before the map loads). The menus' map and the campaign
+asks for it: the gametype's `weapon_pack` byte is a MASK of slots (bit n-1 names slot n; the pending game variant,
+set by a network game's host and clients and by a split-screen game just before the map loads). The slots
+(`port/linux/game/ae_weapon_slots.h`): 1 `packs/ae_battle_rifle.aepack`, 2 `ae_smg`, 3 `ae_smg_silenced`, 4
+`ae_carbine`, each file taking only its own pack id. 1, the battle rifle alone, is the byte's value from before the
+mask. Every named slot's pack is added, in slot order: each grows the tag table the one before left (its own tags
+past the earlier packs', its externals the map's), each is checked and refused alone (one line, the slot's display
+name in the fallback line: `SMG unavailable on <map>: <reason>`), and they are let go in reverse. A machine's join
+request tells the highest level of packs it has (2 the BR's, 3 and both SMGs', 4 and the carbine's); a host refuses
+a machine below its gametype's level (code 66, AE 0.3.6's text; the BR's alone keeps code 65). A packs folder
+without a later slot's file is one line at start, not a refusal. The menus' map and the campaign
 have no game variant and never get a pack; nor does a map that is not a multiplayer map. The code is
 `port/linux/game/ae_weapon_pack.c` (`ae_weapon_pack_tags_loaded`); it runs before the menus' own tags are added.
 
