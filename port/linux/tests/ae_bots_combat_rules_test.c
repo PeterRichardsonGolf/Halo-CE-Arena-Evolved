@@ -88,19 +88,29 @@ static void test_melee(void)
 	/* (low shields: under 0.1 for HEROIC, 0.4 for LEGENDARY: Infinite's ODST and Spartan) */
 	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_HEROIC, 1.0f, 1, 0, 0.3f, 0, 0.0f) == 0);
 	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_LEGENDARY, 1.0f, 1, 0, 0.3f, 0, 0.0f) == 1);
-	/* the wait in reach before a blow: RECRUIT 1-3 s, NORMAL 0.1-0.5, HEROIC up 0.1-0.3 */
+	/* the wait in reach before a blow: RECRUIT 1-3 s, EASY 0.6-1.5, NORMAL 0.35-0.7, HEROIC 0.25-0.5, LEGENDARY
+	0.18-0.35, DEMON 0.1-0.3: each level's quickest and slowest quicker than the level below's */
 	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_RECRUIT, 0) == 30);
 	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_RECRUIT, 1) == 90);
-	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_EASY, 0) == 15);
-	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 1) == 15);
-	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_LEGENDARY, 0) == 3);
-	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_LEGENDARY, 1) == 9);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_EASY, 0) == 18);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 0) >= 10 && ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 0) <= 11);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 1) == 21);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_DEMON, 0) == 3);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_DEMON, 1) == 9);
+	for (level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVELS; level++)
+	{
+		CHECK(ae_bots_combat_melee_delay(level, 0) < ae_bots_combat_melee_delay(level - 1, 0));
+		CHECK(ae_bots_combat_melee_delay(level, 1) < ae_bots_combat_melee_delay(level - 1, 1));
+	}
 	/* cooldowns: RECRUIT waits longest, each a range */
 	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 0) == 90);
 	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 1) == 135);
 	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_EASY, 0) == 60);
-	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_NORMAL, 0) == 30);
-	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0) == 27);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_NORMAL, 0) == 36);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_HEROIC, 0) == 30);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_DEMON, 0) == 27);
+	for (level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVELS; level++)
+		CHECK(ae_bots_combat_melee_cooldown(level, 0) < ae_bots_combat_melee_cooldown(level - 1, 0));
 	for (level = 1; level < AE_BOTS_LEVELS; level++)
 		CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 0) >= ae_bots_combat_melee_cooldown(level, 1));
 }
@@ -286,7 +296,7 @@ static void test_charge_jump_share(void)
 	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_DEMON, 1) == ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 1));
 	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_DEMON, 0.0f, 1) == ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.0f, 1));
 	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_DEMON, 0.5f) == ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.5f));
-	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_DEMON, 0) == ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0));
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_DEMON, 0) < ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0)); /* (melee ladder, 2026-10-20) */
 	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_DEMON, 0) == ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0));
 	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_DEMON) == 1.0f);
 	CHECK(ae_bots_combat_charge(AE_BOTS_LEVEL_DEMON, 0.9f, 0.0f, 0.2f, 2.0f) ==
@@ -309,6 +319,33 @@ static void test_weapon_spent(void)
 }
 
 /* PRO TRAITS: pacing, the descope reflex, high ground, the grenade at the last-seen spot, retreat as shields pop */
+static void test_vertical_view(void)
+{
+	int level;
+
+	for (level = AE_BOTS_LEVEL_RECRUIT; level < AE_BOTS_LEVEL_DEMON; level++)
+		CHECK(ae_bots_combat_vertical_half_view(level) < ae_bots_combat_vertical_half_view(level + 1));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 30.0f, 0.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 45.0f, 0.0f));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 45.0f, 20.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, -40.0f, 0.0f));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_DEMON, 39.0f, 0.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_RECRUIT, 23.0f, 0.0f));
+}
+
+static void test_step_in(void)
+{
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_RECRUIT, 1.0f, 0.0f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 2.4f, 0.4f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 2.6f, 0.4f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 1.0f, 0.6f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_NORMAL, 3.4f, 0.7f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_NORMAL, 3.4f, 0.9f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_HEROIC, 3.9f, 1.0f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_DEMON, 4.1f, 0.0f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_DEMON, 1.0f, 1.2f));
+}
+
 static void test_pro_traits(void)
 {
 	struct ae_bots_combat_retreat state;
@@ -389,6 +426,8 @@ int main(void)
 	test_charge_jump_share();
 	test_weapon_spent();
 	test_pro_traits();
+	test_step_in();
+	test_vertical_view();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

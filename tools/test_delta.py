@@ -410,9 +410,9 @@ def checker(keys, recovery_keys, tmp_path_factory):
     return program
 
 
-def run_checker(program, root, *steps, override=None, url="", fetch=True):
+def run_checker(program, root, *steps, override=None, url="", fetch=True, community=True):
     environment = {"DELTA_CHECK_ROOT": str(root), "PATH": "/usr/bin:/bin", "DELTA_CHECK_URL": url,
-                   "DELTA_CHECK_FETCH": "1" if fetch else "0"}
+                   "DELTA_CHECK_FETCH": "1" if fetch else "0", "DELTA_CHECK_COMMUNITY": "1" if community else "0"}
     if override:
         environment["DELTA_CHECK_OVERRIDE"] = str(override)
     result = subprocess.run([str(program), *map(str, steps)], capture_output=True, text=True, env=environment,
@@ -631,6 +631,13 @@ def test_loader_fetches_nothing_unless_turned_on(keys, checker, tmp_path):
     """(Arena Evolved) network.legacy_table_fetch off, its default: no
     request, with a list server set"""
     output = run_checker(checker, tmp_path, "start", "sleep", 300, url="https://list.example", fetch=False)
+    assert "request:" not in output
+
+
+def test_loader_fetches_nothing_without_community_services(keys, checker, tmp_path):
+    """(Arena Evolved) network.legacy_table_fetch on, but network.community_services not "yes" (unanswered, or NOT
+    NOW): no request, to the list server or GitHub"""
+    output = run_checker(checker, tmp_path, "start", "sleep", 300, url="https://list.example", community=False)
     assert "request:" not in output
 
 

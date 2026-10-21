@@ -32,6 +32,17 @@ int main(void)
 	ae_scoreboard_header_lines(&in, &out);
 	AE_CHECK_WSTR(out.mode, L"TEAM SLAYER"); AE_CHECK_WSTR(out.map, L"BLOOD GULCH"); AE_CHECK_WSTR(out.tag, L"AE");
 	AE_CHECK_WSTR(out.goal_time, L"FIRST TO 50 \x00B7 15:00");
+	/* (while the game runs: the time left) */
+	in.time_left_shown = 1; in.time_left_seconds = 473;
+	ae_scoreboard_header_lines(&in, &out);
+	AE_CHECK_WSTR(out.goal_time, L"FIRST TO 50 \x00B7 7:53 LEFT");
+	in.time_left_seconds = 0;
+	ae_scoreboard_header_lines(&in, &out);
+	AE_CHECK_WSTR(out.goal_time, L"FIRST TO 50 \x00B7 0:00 LEFT");
+	in.clock_counts_up = 1;
+	ae_scoreboard_header_lines(&in, &out);
+	AE_CHECK_WSTR(out.goal_time, L"FIRST TO 50 \x00B7 CLOCK COUNTS UP");
+	in.clock_counts_up = 0; in.time_left_shown = 0;
 	input(&in, L"FFA AE COMP SLAYER", L"AE COMP", "bloodgulch", _ae_goal_points, 25, 0);
 	ae_scoreboard_header_lines(&in, &out);
 	AE_CHECK_WSTR(out.mode, L"FFA SLAYER"); AE_CHECK_WSTR(out.tag, L"AE COMP");

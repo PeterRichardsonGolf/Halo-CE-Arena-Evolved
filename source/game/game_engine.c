@@ -606,6 +606,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
 #include "ae_juggernaut.h" /* AE hook */
+#include "ae_gametype_ammo.h" /* AE hook */
 #include "ae_hud_style.h" /* AE hook */
 #include "ae_test_hooks.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
@@ -1225,12 +1226,13 @@ static void game_engine_generate_title_string(
 		}
 	}
 
-	/* port: the gametype's time limit's time left (game_variant_options);
-	with MATCH CLOCK on, the HUD's corner clock tells it instead
-	(game_engine_match_clock) */
+	/* port: the gametype's time limit's time left (game_variant_options),
+	whatever MATCH CLOCK says: HUD STYLE AE has no corner clock, and the
+	strip shows one clock only (owner 2026-10-20); HUD STYLE AE's header
+	says it instead (ae_scoreboard_header.c) */
 	if (game_variant_options_get()->time_limit > 0 &&
 		game_engine_globals.postgame_state == game_engine_mode_active &&
-		game_engine_match_clock_setting() == _match_clock_off)
+		ae_scoreboard_header_rows(1) != 0) /* AE hook */
 	{
 		long left = game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
 		wchar_t time_string[32];
@@ -9221,6 +9223,7 @@ void game_engine_log_rules(
 			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_primary) ? "pack" : "stock",
 			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_secondary) ? "pack" : "stock",
 			pack && game_variant_pack_map_spawns(universal->pack_loadout) ? "on" : "off");
+		ae_gametype_ammo_log_rules(universal->pack_loadout); /* AE hook */
 		/* port: weapon pack: the fallback said on every machine (decision 10): a gametype that uses the pack on
 		a map that did not get it (refused there, a Custom Edition map, no pack here) plays the stock weapons
 		(the loadout's assault rifle or pistol; BATTLE RIFLE ON MAP replaces nothing), and the console says why */

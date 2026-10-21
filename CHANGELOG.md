@@ -21,6 +21,39 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Not taken from ChupathingyCE 0.8: its Chupathingy menus (Arena Evolved's PC menus stay), its text chat (Arena
   Evolved's is OpenCE's; `chat.enabled` turns ChupathingyCE's on), its new-install defaults (2x multisampling, 256
   shadows), its own save and logs folders, and its Discord application.
+- The gametype lists sort by category: AE CASUAL, AE COMP, AE PARTY, AE WEAPONS, AE PRACTICE (with the OCTAGON drills),
+  then NHE; each battle rifle version sits right after the gametype it copies (FFA AE SLAYER, then FFA AE BR SLAYER).
+- BOTS changed during a split screen game (the pause menu's SETTINGS) takes effect at once: bots join the game in
+  progress or leave it, on the teams BOT TEAMS asks for (in a team game the larger team's bot leaves first). LAN
+  games keep their bots until the next lobby, as before.
+- ENEMY NAME COLOR moved to Network Setup > MULTIPLAYER HUD, under PLAYER NAME SIZE, so the pause menu's SETTINGS
+  has it in a game too (it was left on Network Setup's own page, which a game does not show).
+- HUD STYLE AE with ENEMY NAME COLOR RED: teammates' names over heads in white, not their team's color (a red
+  team's teammates no longer look like enemies).
+- TEAM OCTAGON drills (seed revision 17, added on the first start; nothing else changes): TEAM AE OCTAGON BR, TEAM
+  AE OCTAGON BR SNIPE, TEAM AE OCTAGON MAG and TEAM AE OCTAGON MAG SNIPE, the OCTAGON drills as team slayer on TEAM AE
+  SLAYER's values (50 kills), to warm up with a team: instant respawns, no grenades, infinite ammo and bottomless
+  clips.
+- OCTAGON, a new group of four 1v1 practice drills for Octagon (seed revision 16, added on the first start; nothing
+  else changes): FFA AE OCTAGON BR, FFA AE OCTAGON BR SNIPE, FFA AE OCTAGON MAG and FFA AE OCTAGON MAG SNIPE. Battle
+  rifle or magnum in hand, with or without the sniper rifle second; free for all slayer on AE's casual rules with
+  instant respawns, no grenades, infinite ammo and bottomless clips (no reloads). Infinite ammo and bottomless clip
+  are gametype rules now, the host's for everyone in the game.
+- FFA AE SNIPERS (seed revision 15, applied on the first start, the old file backed up): no respawn time growth.
+  Stock Snipers adds 5 seconds to your respawn for each death, up to 25 seconds, earned back by kills; no other AE
+  gametype has it, TEAM AE SNIPERS included. If you edited the gametype yourself, it keeps your settings.
+- AE gametypes (seed revision 14, applied on the first start, the old files backed up): no death bonus and no kill
+  penalty in every AE slayer gametype, so nobody speeds up after dying or slows down after a kill; everyone always
+  moves at normal speed, as in Halo 1: NHE's slayers. Gametypes you edited or made yourself keep their settings.
+- COMMUNITY SERVICES: the first time Arena Evolved opens its PC menus (and once after an upgrade from 0.3.4) a screen
+  asks whether to use the game list and match stats the ChupathingyCE team runs at halo.milenko.org. It says what each
+  one sends and who runs them, that Arena Evolved cannot vouch for them, and thanks the team. Nothing goes to that
+  server until you pick USE COMMUNITY SERVICES; NOT NOW (also B or Esc) keeps everything off. Listing the games you
+  host is a separate choice on the same screen, off unless you turn it on. Change it any time in Settings > Network
+  Setup > COMMUNITY SERVICES.
+- HUD STYLE AE: with MULTIPLAYER GAME TIMER on BOTH and a time limit, the score strip shows the time played too, as a
+  small grey line over the time left (as the corner clock has it); nothing changes with the other settings or without
+  a time limit.
 - Bots play as a team: in a team game one bot sticks with each player as a wingman (near you, fighting beside you,
   not off on its own); NORMAL and up regroup when their team is two or more down, and back off when more enemies are
   close than teammates instead of taking a 1v2; HEROIC and up back out of a crossfire (two or more enemies with a
@@ -34,6 +67,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots: a new top level, DEMON (BOT SKILL, SHOOTING SKILL and MOVEMENT SKILL): the LEGENDARY bots of before. LEGENDARY
   now sits halfway between HEROIC and DEMON (it reacts in 0.24 s, sees 48 units over 150 degrees, and tells teammates
   within 20 units what it sees). RECRUIT, EASY, NORMAL and HEROIC are unchanged.
+- Bots play more like good players: they pace the pistol's shots at range instead of holding the trigger as its aim
+  blooms, zoom the sniper rifle and drop out of zoom when shot, take high ground when they roam, throw a grenade where
+  they last saw you, and back off as their shields pop (each from its level up).
+- Bots: EASY is a little harder and NORMAL a little easier, so the two are closer together; NORMAL and up step in for
+  a blow when you are close and weak, so they melee more; and they no longer see you far above or below where they
+  look (they used to turn to a player straight above them at once).
+- Bots: they no longer stand still under a power weapon they cannot reach (Beaver Creek's arches, Prisoner), and they
+  climb onto a powerup's stand instead of giving it up.
+- HUD STYLE AE draws the score strip's numbers with its own digits on every map, also a map with a counter sheet of
+  its own (h2_coagulation@ce's numbers were the map's).
+- The scoreboard shows the time left whenever the game has a time limit; it showed it only with MATCH CLOCK off.
+- Fallout's and Weld's green spawn rings and arrows, always drawn by the maps' own scenery, are no longer drawn
+  (TRAINING still shows Arena Evolved's spawn markers).
 - Map downloads work the OpenCE way: no question. Join a game on a map you lack and it comes from the host on its own,
   and in the lobby the host's other maps follow, one after another (up to 4096 MB from one host). A card at the top
   of the lobby shows which map is coming, how much of it is here, and when it is ready or did not come. F6 and

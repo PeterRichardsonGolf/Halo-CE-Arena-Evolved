@@ -53,10 +53,13 @@ struct bots_bot;
 struct bots_tick;
 void ae_bots_events_begin(struct bots_bot *bot, long bot_index, struct bots_tick *tick);
 void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *tick);
-/* (damage.c's object_cause_damage) the damage a player caused to a unit: a bot's hit is measured and logged */
-void ae_bots_damage_note(long owner_player_index, long object_index);
+/* (damage.c's object_cause_damage) the damage a player caused to a unit: a bot's hit is measured and logged; and a
+bot's unit's last damage (its effect's definition and damage flags), the cause of its death (ae_bots_falls_rules.h) */
+void ae_bots_damage_note(long owner_player_index, long object_index, long definition_index, unsigned long flags);
 
 /* how the bots get around a map: teleporters, the layout file's bot lines, health packs (ae_bots_travel.c) */
 #include "ae_bots_travel.h"
+/* bots.count changed in a local game in progress: bots join or leave it at once (ae_bots_live.c) */
+#include "ae_bots_live.h"
 
 #endif

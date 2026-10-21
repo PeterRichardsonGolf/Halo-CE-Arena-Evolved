@@ -28,7 +28,7 @@ NHE_COMMON = {
     "vehicle sets": "none (red none, blue none)",
     "timers level": "off", "spawn heat": "on", "objective": "normal", "nhe extras": "on", "drop secondary": "ce",
     "ball melee": "stock", "weapon pack": "none", "pack loadout primary": "stock", "pack loadout secondary": "stock",
-    "battle rifle on map": "off",
+    "battle rifle on map": "off", "infinite ammo": "off", "bottomless clip": "off",
     "lives": "0", "health%": "100%", "respawn growth": "0 ticks", "odd man out": "off", "friend indicators": "on",
     "auto team balance": "off", "friendly fire penalty": "0 s", "vehicles placed": "0",
 }
@@ -98,6 +98,11 @@ def fields(text):
                          ("battle rifle on map", r"battle rifle on map: ([^,]*)")]:
         mm = re.search(pattern, m[1] if m else "")
         if mm: out[key] = mm[1].strip()
+    # (revision 16's ammo rules, a line of their own: "AE ammo: infinite ammo on, bottomless clip on")
+    m = re.search(r"AE ammo: (.*)", text)
+    for key in ["infinite ammo", "bottomless clip"]:
+        mm = re.search(rf"(?:^|, ){re.escape(key)} ([^,]*)", m[1] if m else "")
+        if mm: out[key] = mm[1].strip()
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -115,7 +120,8 @@ AE = {"health": "halo 2", "fall damage": "off", "starting equipment": "generic",
       "infinite grenades": "off", "no map weapons": "off", "nhe extras": "off", "drop secondary": "always",
       "lives": "0", "odd man out": "off", "friendly fire penalty": "0 s", "auto team balance": "off",
       "spawn heat": "on", "nhe mode": "by vehicles", "ball melee": "stock", "weapon pack": "none",
-      "pack loadout primary": "stock", "pack loadout secondary": "stock", "battle rifle on map": "off"}
+      "pack loadout primary": "stock", "pack loadout secondary": "stock", "battle rifle on map": "off",
+      "infinite ammo": "off", "bottomless clip": "off"}
 CASUAL = dict(AE, **{"timers": "hud + waypoints", "timers level": "hud + waypoints", "training": "off",
                      "practice": "off", "time limit": "15 min", "radar players": "all", "objective": "normal",
                      "loadout": "pistol + assault rifle", "weapon set": "normal", "starting frags": "0"})
@@ -224,6 +230,39 @@ BR_START = {"loadout": "assault rifle + pistol", "weapon pack": "battle rifle (s
 for _name, _twin in BR_TWINS.items():
     _want, _spawn, _frags = ROWS[_twin]
     ROWS[_name] = (dict(_want, **BR_START), "battle_rifle + pistol", _frags)
+
+# revision 14: no death bonus and no kill penalty in every slayer seed (everyone at normal speed; the NHE set's since
+# revision 4, the Phantoms ones the stock builder's), kill in order as before
+for _name, (_want, _, _) in ROWS.items():
+    if _want["engine"].startswith("slayer"):
+        _want.update({"death bonus": "off", "kill penalty": "off"})
+        _want.setdefault("kill in order", "off")
+
+# revision 15 (tools/ae_gametype_change.py): no respawn time growth in AE FFA SNPR: the stock Snipers' adds 5 s to a
+# player's respawn per death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE SNIPERS included
+for _name in ("AE FFA SNPR",):
+    ROWS[_name][0].update({"respawn growth": "0 ticks"})
+
+# revision 16 (owner, 2026-10-20): the OCTAGON set's 1v1 drills, added seeds: AE FFA SLAY's row but instant respawns,
+# no grenades at all, INFINITE AMMO and BOTTOMLESS CLIP, each its start (the BR ones the weapon pack's rifle over the
+# PRIMARY slot's assault rifle, as the AE BR set's)
+_OCTAGON = dict(ROWS["AE FFA SLAY"][0], **{"respawn": T(0), "starting frags": "none", "infinite ammo": "on",
+                                           "bottomless clip": "on", "death bonus": "off", "kill penalty": "off"})
+_OCTAGON_BR = {"weapon pack": "battle rifle (slot 1)", "pack loadout primary": "pack"}
+ROWS["AE OCT BR"] = (dict(_OCTAGON, loadout="assault rifle + none", **_OCTAGON_BR), "battle_rifle", 0)
+ROWS["AE OCT BRSN"] = (dict(_OCTAGON, loadout="assault rifle + sniper rifle", **_OCTAGON_BR),
+                       "battle_rifle + sniper rifle", 0)
+ROWS["AE OCT MAG"] = (dict(_OCTAGON, loadout="pistol + none"), "pistol", 0)
+ROWS["AE OCT MGSN"] = (dict(_OCTAGON, loadout="pistol + sniper rifle"), "pistol + sniper rifle", 0)
+# revision 17 (owner, 2026-10-20): their team versions, added seeds: AE TEAM SLY's row (50 kills, the motion sensor's
+# enemies) with the same changes and starts
+_TEAM_OCTAGON = dict(ROWS["AE TEAM SLY"][0], **{"respawn": T(0), "starting frags": "none", "infinite ammo": "on",
+                                                "bottomless clip": "on", "death bonus": "off", "kill penalty": "off"})
+ROWS["AE OCT TBR"] = (dict(_TEAM_OCTAGON, loadout="assault rifle + none", **_OCTAGON_BR), "battle_rifle", 0)
+ROWS["AE OCT TBSN"] = (dict(_TEAM_OCTAGON, loadout="assault rifle + sniper rifle", **_OCTAGON_BR),
+                       "battle_rifle + sniper rifle", 0)
+ROWS["AE OCT TMAG"] = (dict(_TEAM_OCTAGON, loadout="pistol + none"), "pistol", 0)
+ROWS["AE OCT TMSN"] = (dict(_TEAM_OCTAGON, loadout="pistol + sniper rifle"), "pistol + sniper rifle", 0)
 
 
 def check(runs, prefix):

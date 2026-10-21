@@ -45,6 +45,7 @@ struct ae_strip_layout {
 	struct ae_strip_box left_alive, right_alive;        /* "6 ALIVE" where the cells would be */
 	real right_end_x;                                   /* the strip's rightmost ink, for the gap check */
 	real left_end_x;
+	struct ae_strip_box played;                         /* MATCH CLOCK BOTH: the time played, over the clock */
 };
 
 /* the layout's constants (px at 1080p, s = 1): spec 11.5 and the mockups (mock4.py) */
@@ -88,6 +89,11 @@ struct ae_strip_layout {
 #define AE_STRIP_MINIMUM_SCALE 0.5f       /* the gap rule never scales the strip under half the view factor */
 #define AE_STRIP_FLAG_GLYPH 0.95f         /* CTF's flag glyph before a flag line, x the line's px (mock4.py) */
 #define AE_STRIP_FLAG_GAP 0.35f           /* and the room after it, x the line's px */
+#define AE_STRIP_PLAYED_PX 13.0f          /* MATCH CLOCK BOTH's time played: the goal line's size */
+#define AE_STRIP_PLAYED_CLOCK_GAP 10.0f   /* its ink over the clock's top (8, and room for the last seconds' pulse) */
+#define AE_STRIP_PLAYED_CONTEXT_GAP 8.0f  /* the context / lead line's lowest ink over it */
+#define AE_STRIP_TEXT_CAP 0.70f           /* Overpass's capital height, of its px (ae_hud_text.h AE_HUD_TEXT_CAP) */
+#define AE_STRIP_TEXT_DESCENT 0.22f       /* and its descenders' depth ("Player"'s y), of its px */
 
 /* FFA's YOU colour (spec 11.4): my armour colour lifted until its relative luminance is at least 0.33 (the tints'
 level beside the outline), its hue kept; WHITE (229,240,255) when the armour is white, black or grey (saturation

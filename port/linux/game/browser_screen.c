@@ -80,6 +80,7 @@ the right button is B.
 #include "../src/browser.h"
 #include "../src/browser_ping.h"
 #include "../src/map_art.h"
+#include "../src/ae_community.h" /* AE hook */
 #include "../src/map_download.h"
 #include "../src/ui_overlay.h"
 #include "halo_ui_map_list.h"
@@ -1293,7 +1294,7 @@ offer's while it is) */
 		break;
 	case _gamepad_binary_button_start:
 		browser_open_profile();
-		set_status("Opening your profile in the web browser");
+		set_status(ae_community_services_on() ? "Opening your profile in the web browser" : AE_COMMUNITY_OFF_TEXT); /* AE hook */
 		break;
 	case _gamepad_analog_button_x:
 		fetch_games();

@@ -85,6 +85,14 @@ void ae_scoreboard_header_text(struct ae_header_lines *lines)
 	input.score_to_win = variant->universal_variant.score_to_win;
 	input.time_limit_minutes = options ? options->time_limit : 0;
 	input.clock_counts_up = (boolean)(game_engine_match_clock_setting() == _match_clock_up);
+	/* (the time left counting down while the game runs: the scoreboard's own line no longer says it, owner 2026-10-20) */
+	if (input.time_limit_minutes > 0 && game_engine_running() && !game_engine_game_over())
+	{
+		long left = input.time_limit_minutes * 60L * TICKS_PER_SECOND - game_time_get();
+
+		input.time_left_shown = TRUE;
+		input.time_left_seconds = left <= 0 ? 0 : (left + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
+	}
 	switch (variant->game_engine_index)
 	{
 	case game_engine_ctf: input.goal = _ae_goal_captures; break;

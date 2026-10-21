@@ -83,6 +83,9 @@ UNITS = {
     # sanitizers, as it reads the system's files)
     "ae_lan_hint_test.c": ([SRC / "ae_lan_hint.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                     "-fno-sanitize-recover=all"], []),
+    # (the community services' opt-in: the setting's states, who is asked, what each answer writes, the input guard)
+    "ae_community_rules_test.c": ([SRC / "ae_community_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
+                                                                   "-fno-sanitize-recover=all"], []),
     # (the zoom action's hold mode: the state machine)
     "ae_zoom_test.c": ([UI / "ae_zoom.c"], [], []),
     # (the 2026-10-16 sweep: the lobby's SHUFFLE deal, the map list's WARM-UP group)
@@ -97,6 +100,9 @@ UNITS = {
     # (the bots of a LAN game: when the lobby has them, how many, their controllers on the host's machine, teams)
     "ae_lan_bots_rules_test.c": ([UI / "ae_lan_bots_rules.c"], ["-fsanitize=address,undefined",
                                                               "-fno-sanitize-recover=all"], []),
+    # (bots.count changed in a local game in progress: which bot joins or leaves, its team, the test's steps)
+    "ae_bots_live_rules_test.c": ([UI / "ae_bots_live_rules.c"], ["-fsanitize=address,undefined",
+                                                                "-fno-sanitize-recover=all"], []),
     # (the bots' fight by level: melee, grenades, headshots, confidence and retreat, the random delays)
     "ae_bots_combat_rules_test.c": ([UI / "ae_bots_combat_rules.c"], ["-fsanitize=address,undefined",
                                                                     "-fno-sanitize-recover=all"], []),
@@ -109,6 +115,9 @@ UNITS = {
     # (the bots' getting around: links' worth, no return, health packs, jump facing, stuck spots)
     "ae_bots_travel_rules_test.c": ([UI / "ae_bots_travel_rules.c"], ["-fsanitize=address,undefined",
                                                                     "-fno-sanitize-recover=all"], []),
+    # (the bots' deaths by their own hand: a death's cause, the edge ahead, a grenade too near)
+    "ae_bots_falls_rules_test.c": ([UI / "ae_bots_falls_rules.c"], ["-fsanitize=address,undefined",
+                                                                  "-fno-sanitize-recover=all"], ["-lm"]),
     # (SILENT MOVEMENT / SILENT WEAPONS: the byte, every mode x role x own/other sound, the join's mark and refusal,
     # the scopes and the tag table; under the sanitizers, as the join's name is a remote machine's)
     "ae_silent_rules_test.c": ([UI / "ae_silent_rules.c"], ["-fsanitize=address,undefined",

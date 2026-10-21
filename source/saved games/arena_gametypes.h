@@ -15,17 +15,33 @@ ordinary custom gametypes (arena_gametypes.c).
 
 /* ---------- constants */
 
-/* the sets of seeded gametypes (arena_gametype_names.c's table), in the
-lists' order; the player's own and the stock ones are in none */
+/* the sets of seeded gametypes (arena_gametype_names.c's table; the lists
+sort by category, below); the player's own and the stock ones are in none */
 enum arena_gametype_set
 {
 	_arena_gametype_set_none,       /* not one of ours: stock CE, the player's own */
 	_arena_gametype_set_ae,         /* AE casual (unmarked in names) */
 	_arena_gametype_set_ae_br,      /* AE BR: AE casual's and AE COMP's with the battle rifle start (revision 11) */
 	_arena_gametype_set_ae_comp,
+	_arena_gametype_set_octagon,    /* OCTAGON: practice drills, infinite ammo (revision 16; their team ones 17) */
 	_arena_gametype_set_nhe,
 	_arena_gametype_set_training,   /* AE TRAINING / PRACTICE: outside the sets */
 	NUMBER_OF_ARENA_GAMETYPE_SETS
+};
+
+/* the lists' categories (owner 2026-10-20, "by play style, BR inside"), in
+the lists' order: each gametype's battle rifle version right after it; the
+sets above keep their own jobs (AE's rules, the names) */
+enum arena_gametype_category
+{
+	_arena_gametype_category_none,      /* not one of ours: stock CE, the player's own */
+	_arena_gametype_category_casual,    /* AE CASUAL: slayer, CTF, king, oddball, the 2v2s */
+	_arena_gametype_category_comp,      /* AE COMP */
+	_arena_gametype_category_party,     /* AE PARTY: phantoms, juggernaut, reverse tag, ... race, rally */
+	_arena_gametype_category_weapons,   /* AE WEAPONS: snipers, SWAT, rockets, shotguns, heavies */
+	_arena_gametype_category_practice,  /* AE PRACTICE: practice, training, the OCTAGON drills */
+	_arena_gametype_category_nhe,       /* Halo 1: NHE's */
+	NUMBER_OF_ARENA_GAMETYPE_CATEGORIES
 };
 
 /* ---------- structures */
@@ -34,6 +50,8 @@ struct arena_gametype_info
 {
 	short set;                      /* enum arena_gametype_set */
 	short order;                    /* place within its set (the table's order) */
+	short category;                 /* enum arena_gametype_category */
+	short category_order;           /* place within its category (the lists' order) */
 	boolean team;                   /* TEAM, else FFA */
 	boolean special;                /* AE casual's special team modes (SNIPERS, SWAT, ...) */
 	short game_engine;              /* the mode: game_engine.h's engine (slayer, ctf, oddball, king, race) */
@@ -59,21 +77,24 @@ void arena_gametype_display_name(
 	wchar_t *display_name,
 	short size);
 /* whether stored_name is one of the table's gametypes on AE's rules (the
-AE, AE BR, AE COMP and TRAINING sets; not an old name, not Halo 1: NHE's set):
+AE, AE BR, AE COMP, OCTAGON and TRAINING sets; not an old name, not Halo 1: NHE's set):
 the one marker of AE's gametypes (game_engine.c's weapon set with a custom
 loadout); a player's own gametype only by taking a seed's name */
-/* the lists' block of a gametype (owner 2026-10-15): AE's, AE BR's and AE
-COMP's free for all gametypes (each set in its own order), then their team
-gametypes, then Halo 1: NHE's, TRAINING and the player's own; the sort's key */
+/* the lists' block of a gametype (owner 2026-10-20): its category (AE
+CASUAL, AE COMP, AE PARTY, AE WEAPONS, AE PRACTICE, Halo 1: NHE), then the
+player's own; the sort's key, with category_order within a block */
 short arena_gametype_list_block(
 	boolean known,
 	struct arena_gametype_info const *info);
 
 boolean arena_gametype_has_ae_rules(
 	wchar_t const *stored_name);
-/* "AE", "AE BR", "AE COMP", "NHE", "TRAINING"; "" for none */
+/* "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING"; "" for none */
 char const *arena_gametype_set_name(
 	short set);
+/* "AE CASUAL", "AE COMP", "AE PARTY", "AE WEAPONS", "AE PRACTICE", "NHE"; "" for none */
+char const *arena_gametype_category_name(
+	short category);
 /* the table's gametypes (not the aliases), in its order */
 short arena_gametype_catalog_count(
 	void);

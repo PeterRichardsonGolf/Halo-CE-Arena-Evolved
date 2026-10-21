@@ -165,6 +165,7 @@ static void measure_all(const struct measures *m, real bar, real k, struct exten
 	e->right = side_extent(m, &e->r, e->inner, bar, k);
 	centred = maximum(maximum(measure_text(m, &model->context, AE_STRIP_CONTEXT_PX, k),
 		measure_text(m, &model->lead, AE_STRIP_CONTEXT_PX, k)), measure_text(m, &model->goal, AE_STRIP_GOAL_PX, k));
+	centred = maximum(centred, measure_text(m, &model->played, AE_STRIP_PLAYED_PX, k));
 	centred = maximum(centred, e->clock) / 2.0f;
 	e->left = maximum(e->left, centred);
 	e->right = maximum(e->right, centred);
@@ -249,7 +250,7 @@ void ae_strip_layout_compute(const struct ae_strip_model *model, const struct ae
 {
 	struct measures m;
 	struct extents e;
-	real k, bar, room, centre, base, inner, lowest, sub_drop, goal_drop, px, w, clock_px;
+	real k, bar, room, centre, base, inner, lowest, sub_drop, goal_drop, px, w, clock_px, context_y;
 	boolean subs, pips;
 
 	if (!layout)
@@ -298,12 +299,29 @@ void ae_strip_layout_compute(const struct ae_strip_model *model, const struct ae
 		ae_strip_digits_px(AE_STRIP_SCORE_CAP, k);
 	text_box(&layout->right_score, centre + inner, base, e.r.score, px, has_text(&model->right_score));
 
+	/* MATCH CLOCK BOTH: the time played over the clock, as the corner clock has it; the context / lead line clears
+	it */
+	context_y = base - AE_STRIP_CONTEXT_RISE * k;
+	px = ae_strip_text_px(AE_STRIP_PLAYED_PX, k, m.s);
+	w = measure_text(&m, &model->played, AE_STRIP_PLAYED_PX, k);
+	text_box(&layout->played, centre - w / 2.0f, (model->clock_small ? layout->clock_baseline_y - AE_STRIP_TEXT_CAP *
+		clock_px : layout->clock.y) - AE_STRIP_PLAYED_CLOCK_GAP * k, w, px, has_text(&model->played));
+	if (layout->played.visible)
+	{
+		real context_px = ae_strip_text_px(AE_STRIP_CONTEXT_PX, k, m.s);
+		real highest = layout->played.y + layout->played.h - AE_STRIP_TEXT_CAP * px - AE_STRIP_PLAYED_CONTEXT_GAP * k -
+			AE_STRIP_TEXT_DESCENT * context_px;
+
+		if (context_y > highest)
+			context_y = highest;
+	}
+
 	/* the lines over and under the clock */
 	px = ae_strip_text_px(AE_STRIP_CONTEXT_PX, k, m.s);
 	w = measure_text(&m, &model->context, AE_STRIP_CONTEXT_PX, k);
-	text_box(&layout->context, centre - w / 2.0f, base - AE_STRIP_CONTEXT_RISE * k, w, px, has_text(&model->context));
+	text_box(&layout->context, centre - w / 2.0f, context_y, w, px, has_text(&model->context));
 	w = measure_text(&m, &model->lead, AE_STRIP_CONTEXT_PX, k);
-	text_box(&layout->lead, centre - w / 2.0f, base - AE_STRIP_CONTEXT_RISE * k, w, px, has_text(&model->lead));
+	text_box(&layout->lead, centre - w / 2.0f, context_y, w, px, has_text(&model->lead));
 	w = measure_text(&m, &model->goal, AE_STRIP_GOAL_PX, k);
 	text_box(&layout->goal, centre - w / 2.0f, base + goal_drop * k, w, ae_strip_text_px(AE_STRIP_GOAL_PX, k, m.s),
 		has_text(&model->goal));

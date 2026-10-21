@@ -63,9 +63,12 @@ float ae_bots_combat_confidence(float own_shield, float own_body, float target_s
 int ae_bots_combat_melee(int level, float distance, int cooldown_over, int back_turned, float target_shield,
 	int charging, float random);
 /* the ticks the bot waits within reach before it strikes (Infinite's melee delays: Recruit 1-3 s, Marine 0.1-0.5,
-ODST and Spartan 0.1-0.3; EASY between), random 0..1 */
+ODST and Spartan 0.1-0.3; owner 2026-10-20, "melee reaction needs to be tuned better between the levels", they were
+alike from NORMAL up: RECRUIT 1-3 s, EASY 0.6-1.5, NORMAL 0.35-0.7, HEROIC 0.25-0.5, LEGENDARY 0.18-0.35, DEMON
+0.1-0.3), random 0..1 */
 long ae_bots_combat_melee_delay(int level, float random);
-/* the ticks until it may strike again, random 0..1 */
+/* the ticks until it may strike again (RECRUIT 3-4.5 s, EASY 2-3, NORMAL 1.2-1.7, HEROIC 1-1.5, LEGENDARY 0.95-1.35,
+DEMON 0.9-1.3), random 0..1 */
 long ae_bots_combat_melee_cooldown(int level, float random);
 
 /* GRENADES: whether the bot throws now (asked each tick of a fight): its target's distance, whether it has a
@@ -107,6 +110,22 @@ float ae_bots_combat_retreat_threshold(int level);
 /* CLOSING IN (HEROIC and up): whether the bot charges to finish its target with a blow: sure of the fight, the
 target's shields down and under half its health, within 6 units */
 int ae_bots_combat_charge(int level, float confidence, float target_shield, float target_body, float distance);
+
+/* VERTICAL VIEW (owner 2026-10-20 on HEROIC: "some wall hack stuff on them still. like snapping to you when you are
+above them while they are running by"; bots.c's sight had only a horizontal field of view): half the vertical view, in
+degrees, around where the bot looks (its pitch): a target further above or below it is not seen (unless close, or it
+shot the bot, or it is the one it fights). A player running by looks ahead, not up: RECRUIT 22, EASY 25, NORMAL 28,
+HEROIC 32, LEGENDARY 36, DEMON 40 (CE's own view is about 27 each way at 16:9). */
+float ae_bots_combat_vertical_half_view(int level);
+/* whether a target elevation_degrees above (negative: below) the bot's line of sight at pitch_degrees is in view */
+int ae_bots_combat_in_vertical_view(int level, float elevation_degrees, float pitch_degrees);
+
+/* STEPPING IN FOR A BLOW (owner 2026-10-20: "maybe get them to throw some more melees in"; the soak: 1 to 16 blows a
+5-minute 6-bot game at any level, as a bot backs off a near target to its weapon's distance and seldom comes within
+reach): whether the bot steps towards a near target rather than backing off, its shields low: EASY within 2.5 units
+(shields under 0.5), NORMAL within 3.5 (under 0.8), HEROIC and up within 4 (whatever its shields: a blow is a
+player's answer close up); RECRUIT never */
+int ae_bots_combat_step_in(int level, float distance, float target_shield);
 
 /* JUMPS in a fight (Infinite's "vertical movement", Marine up): the ticks to the next one, 0 for a level that does
 not jump in a fight (RECRUIT, EASY): NORMAL every 3-5 s, HEROIC 1-4, LEGENDARY 1-3 */

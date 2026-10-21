@@ -51,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hud_assets import bleed, render_svg  # noqa: E402
 import port_settings  # noqa: E402
 import menu_row_art  # noqa: E402
+import ae_optin_pictures  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 MENUS = ROOT / "port/assets/menus"
@@ -675,7 +676,7 @@ def main() -> None:
         lines.append("</menus>")
         (CE / f"{folder.replace('/', '.')}.xml").write_text("\n".join(lines) + "\n")
     for name, lines in [*port_settings.settings_files().items(), *port_settings.multiplayer_files().items(),
-                        *port_settings.main_menu_files().items()]:
+                        *port_settings.main_menu_files().items(), *port_settings.community_services_files().items()]:
         (CE / name).write_text("\n".join(lines))
     # their strings
     (CE / "strings.xml").write_text(strings_xml({
@@ -692,6 +693,9 @@ def main() -> None:
     lines += menu_row_art.bitmaps_xml()
     # (the in-game pause menu's taller box: menu_tags.c's pause_patch; the objectives' boxes)
     lines += pause_art(art)
+    # (AE: the COMMUNITY SERVICES screen's widened button and row band: tools/ae_optin_pictures.py)
+    art.pngs += ae_optin_pictures.write(MENUS)
+    lines += ae_optin_pictures.bitmaps_xml()
     # (voice chat's speaker, of a player who talks and of one muted: Lucide's
     # icons, port/assets/icons/lucide, white for network_voice.c to tint)
     lines.append(art.port_picture("voice/speaker", [

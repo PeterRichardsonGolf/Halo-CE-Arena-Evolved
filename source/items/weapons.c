@@ -240,6 +240,7 @@ symbols in this file:
 #include "effects/contrail_definitions.h"
 #include "ae_silent.h" /* AE hook */
 #include "ae_weapon_rules.h" /* AE hook */
+#include "ae_gametype_ammo.h" /* AE hook */
 #endif
 
 /* port/linux/game/pal_tags.c's */
@@ -1566,7 +1567,7 @@ static void weapon_magazine_finish_reload(
 	if (rounds_loaded>magazine_definition->rounds_loaded_maximum)
 		rounds_loaded = magazine_definition->rounds_loaded_maximum;
 
-	if (!cheat.infinite_ammo && TEST_FLAG(weapon->item.flags, 1))
+	if (!(cheat.infinite_ammo || ae_gametype_infinite_ammo()) && TEST_FLAG(weapon->item.flags, 1)) /* AE hook */
 		magazine->rounds_total = magazine->rounds_total-rounds_loaded+magazine->rounds_loaded;
 
 	magazine->rounds_loaded = rounds_loaded;
@@ -2819,7 +2820,7 @@ static void weapon_trigger_fire(
 				!(TEST_FLAG(weapon_definition->weapon.flags, _weapon_cannot_fire_at_maximum_age_bit) && weapon->weapon.age>=1.0f) &&
 				(magazine->rounds_loaded>=trigger_definition->minimum_rounds_loaded_per_shot || !TEST_FLAG(trigger->flags, _weapon_trigger_released_since_last_shot_bit)))
 			{
-				if (!cheat.bottomless_clip && (magazine->rounds_loaded-= trigger_definition->rounds_per_shot)<=0)
+				if (!(cheat.bottomless_clip || ae_gametype_bottomless_clip()) && (magazine->rounds_loaded-= trigger_definition->rounds_per_shot)<=0) /* AE hook */
 				{
 					magazine->rounds_loaded= 0;
 				}
@@ -2951,6 +2952,7 @@ static void weapon_trigger_fire(
 		}
 
 		weapon->weapon.game_time_last_fired= game_time_get();
+		ae_gametype_ammo_fired(weapon_index, trigger_definition->magazine_index); /* AE hook */
 
 		first_person_weapon_message_from_weapon(weapon_index, misfired ?
 			(trigger_index ? _first_person_weapon_message_secondary_misfire : _first_person_weapon_message_primary_misfire) :
@@ -2962,7 +2964,7 @@ static void weapon_trigger_fire(
 			trigger->illumination= 1.0f;
 		}
 
-		if (!cheat.bottomless_clip)
+		if (!(cheat.bottomless_clip || ae_gametype_bottomless_clip())) /* AE hook */
 		{
 			weapon->weapon.heat+= trigger_definition->heat_generated_per_round;
 		}
@@ -2976,7 +2978,7 @@ static void weapon_trigger_fire(
 			weapon->weapon.heat= 1.0f;
 		}
 
-		if (TEST_FLAG(weapon->item.flags, _item_belongs_to_player_bit) && !cheat.infinite_ammo)
+		if (TEST_FLAG(weapon->item.flags, _item_belongs_to_player_bit) && !(cheat.infinite_ammo || ae_gametype_infinite_ammo())) /* AE hook */
 		{
 			weapon->weapon.age+= trigger_definition->age_generated_per_round;
 			if (weapon->weapon.age>1.0f)

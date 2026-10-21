@@ -45,6 +45,14 @@ They are in the gametype list the first time you play. Back to the [README](../R
   frag grenades, no motion sensor, no vehicles, item TIMERS only in line of
   sight (no list, no item calls), the objective only in line of sight, both
   weapons dropped; the slayers have no time limit, the others 15 minutes.
+- **OCTAGON** (0.3.5): four 1v1 practice drills, made for Octagon: FFA AE OCTAGON BR (the battle rifle alone), FFA AE
+  OCTAGON BR SNIPE (battle rifle and sniper rifle), FFA AE OCTAGON MAG (the magnum alone) and FFA AE OCTAGON MAG SNIPE
+  (magnum and sniper rifle); stored as AE OCT BR, AE OCT BRSN, AE OCT MAG, AE OCT MGSN. Free for all slayer on the
+  casual set's values (25 kills, 15 minutes, the motion sensor, item TIMERS) with instant respawns, no grenades, and
+  INFINITE AMMO and BOTTOMLESS CLIP: a magazine never empties and never needs a reload. The BR ones need the battle
+  rifle's pack, as the AE BR set. The same four as team drills, to warm up with a team: TEAM AE OCTAGON BR, BR SNIPE,
+  MAG and MAG SNIPE (stored as AE OCT TBR, AE OCT TBSN, AE OCT TMAG, AE OCT TMSN), team slayer on TEAM AE SLAYER's
+  values (50 kills, 15 minutes, the motion sensor showing enemies) with the same drill rules.
 - **FFA AE TRAINING:** item TIMERS and TRAINING's markers, plays to 500, no
   time limit.
 - Every Arena Evolved gametype has no fall damage, HALO 2 health (SWAT:
@@ -62,8 +70,18 @@ They are in the gametype list the first time you play. Back to the [README](../R
   Evolved's casual values that plays Halo 1: NHE's VANILLA and NHE & POWERUPS
   modes on NHE's maps. NHE MODE and NHE EXTRAS are on a gametype's **NHE
   OPTIONS** screen.
-- The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY):
-  the Arena Evolved set, AE BR, AE COMP, the NHE set, TRAINING, then your own
-  gametypes, before the built-in ones. Seeded gametypes you edit are kept as
+- The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY),
+  sorted by category, each battle rifle version right after the gametype it
+  copies, then your own gametypes, before the built-in ones:
+
+  | Category | Gametypes |
+  |---|---|
+  | AE CASUAL | slayer, king and oddball (free for all), then team slayer, CTF, king, oddball, then the 2V2s |
+  | AE COMP | COMP slayer (free for all and team), CTF, king, oddball |
+  | AE PARTY | phantoms, juggernaut, reverse tag, accumulation, stalker, crazy king, elimination, endurance, race, rally |
+  | AE WEAPONS | snipers, shotty snipers, SWAT, rockets, shotguns, heavies |
+  | AE PRACTICE | practice, BR practice, training, the OCTAGON drills |
+  | NHE | Halo 1: NHE's, as before |
+ Seeded gametypes you edit are kept as
   you made them when a newer build updates the others.
 

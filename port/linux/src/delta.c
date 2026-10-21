@@ -41,6 +41,7 @@ skips what it does not know.
 #include "halo_port_limits.h"
 #include "delta.h"
 #include "delta_key.h"
+#include "ae_community.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
 #include "browser_http.h"
 #endif
@@ -906,7 +907,7 @@ static void *delta_thread(void *unused)
 		struct timespec deadline;
 		int failed = 0, interval;
 
-		if (!delta_legacy_override())
+		if (!delta_legacy_override() && ae_community_services_on()) /* AE hook */
 			delta_refresh(&failed);
 		interval = failed ? DELTA_RETRY_INTERVAL : DELTA_REFRESH_INTERVAL;
 		clock_gettime(CLOCK_REALTIME, &deadline);
@@ -943,7 +944,7 @@ void delta_legacy_start(void)
 	choice to talk to none. Arena Evolved: and only when the player turned
 	the fetch on, network.legacy_table_fetch) */
 	if (!delta_legacy_override() && delta_has_key() && config_string("network.browser_url")[0] &&
-		config_boolean("network.legacy_table_fetch"))
+		config_boolean("network.legacy_table_fetch") && ae_community_services_on()) /* AE hook */
 	{
 		pthread_t thread;
 

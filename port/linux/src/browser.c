@@ -39,6 +39,7 @@ with it under the lock.
 #include "delta_peer.h"
 #include "browser_ping.h"
 #include "qrcodegen.h"
+#include "ae_community.h" /* AE hook */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -1557,7 +1558,7 @@ static void *browser_thread(void *unused)
 	(void)unused;
 	for (;;)
 	{
-		if (config_string("network.browser_url")[0])
+		if (config_string("network.browser_url")[0] && ae_community_services_on()) /* AE hook */
 		{
 			update_hosting();
 			send_report();
@@ -1884,7 +1885,7 @@ void browser_open_profile(void)
 {
 	pthread_once(&browser_once, start_thread);
 	pthread_mutex_lock(&browser_lock);
-	browser.profile_wanted = 1;
+	browser.profile_wanted = ae_community_services_on(); /* AE hook */
 	pthread_mutex_unlock(&browser_lock);
 }
 
@@ -1903,6 +1904,7 @@ void browser_connect_start(const unsigned short *name)
 	browser.connect_answer = 0;
 	browser.connect_qr_size = 0;
 	memset(browser.connect_token, 0, sizeof(browser.connect_token));
+	if (!ae_community_services_on()) { browser.connect_state = BROWSER_CONNECT_FAILED; snprintf(browser.connect_message, sizeof(browser.connect_message), "%s", AE_COMMUNITY_OFF_TEXT); } /* AE hook */
 	/* (the browser thread asks no server without one) */
 	if (!config_string("network.browser_url")[0])
 	{
@@ -2249,6 +2251,7 @@ int browser_get_games(struct browser_game *games, int maximum_count)
 {
 	int count;
 
+	if (!ae_community_services_on()) return 0; /* AE hook */
 	pthread_once(&browser_once, start_thread);
 	pthread_mutex_lock(&browser_lock);
 	browser.list_wanted = 1;

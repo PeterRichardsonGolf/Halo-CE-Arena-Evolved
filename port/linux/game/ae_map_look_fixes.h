@@ -7,7 +7,8 @@ teleporter: an opaque black card), changed in the map's loaded tags, and tag
 references pointed at another of the map's tags (h2d_salicreek's overshield
 drawn with the camouflage's model); and the
 rasterizer's "incompatible bitmap type" error said once for each bitmap and
-type until the next map, not at every draw. The table and its rules:
+type until the next map, not at every draw; and shaders of a map's models
+not drawn (Fallout's spawn rings). The table and its rules:
 ae_map_look_fixes_rules.h. Include after cseries.h.
 */
 
@@ -21,5 +22,9 @@ void ae_map_look_fixes_tags_loaded(char const *map_name);
 /* (rasterizer_xbox.c, rasterizer_set_texture and its non-blocking twin) whether the "incompatible bitmap type"
 error for this bitmap and expected type is to be said: the first time since the map's tags loaded */
 boolean ae_map_look_bitmap_type_error_first(void const *bitmap, short type);
+
+/* (rasterizer_xbox_models.c, a model's transparent part submitted) whether the shader (its tag data) is one of the
+table's hidden shaders, not drawn: Fallout's spawn rings */
+boolean ae_map_look_shader_hidden(void const *shader);
 
 #endif

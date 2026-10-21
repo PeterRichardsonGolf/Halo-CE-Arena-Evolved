@@ -68,6 +68,8 @@ struct ae_strip_snapshot {
 	long own_score;             /* team oddball: the viewer's own time held, for "YOU 0:31" */
 	boolean reverse_tag;        /* accumulation mode played as Reverse Tag: "IT <name>" */
 	long balls_held, balls_total; /* accumulation: "YOU HOLD 3 OF 16" */
+	boolean played_shown;       /* MATCH CLOCK BOTH with a time limit: the time played over the time left */
+	long played_seconds;
 };
 struct ae_strip_text {
 	wchar_t text[AE_STRIP_TEXT_LENGTH];
@@ -91,6 +93,8 @@ struct ae_strip_model {
 	boolean marker_left;                              /* my-side triangle over the left score */
 	/* (addition) CTF: each sub-line is a team's flag line, a flag glyph in that team's colour before its text */
 	boolean flag_glyphs;
+	/* (addition) MATCH CLOCK BOTH: the time played, a small grey line over the clock ("3:12"); empty otherwise */
+	struct ae_strip_text played;
 };
 void ae_strip_model_build(const struct ae_strip_snapshot *snapshot, struct ae_strip_model *model);
 void ae_strip_format_time(long seconds, wchar_t *out, long out_count);   /* "1:42", "12:05" */

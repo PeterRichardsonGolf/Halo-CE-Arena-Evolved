@@ -36,6 +36,26 @@ int main(void)
 		/* (whatever it reads is a magazine the weapon has, or none: never out of the array) */
 		CHECK(got == -1 || (got >= 0 && got < triggers[index].magazine_count));
 	}
+	/* INFINITE AMMO and BOTTOMLESS CLIP (seed revision 16): bits 5 and 6 of pack_loadout, the pack's bits 0-4 and
+	bit 7 kept and never read as them */
+	{
+		unsigned int byte;
+
+		for (byte = 0; byte < 256; byte++)
+		{
+			unsigned char both = ae_weapon_ammo_byte_set((unsigned char)byte, 1, 1);
+			unsigned char none = ae_weapon_ammo_byte_set((unsigned char)byte, 0, 0);
+
+			CHECK(ae_weapon_infinite_ammo((unsigned char)byte) == ((byte & 0x20u) != 0));
+			CHECK(ae_weapon_bottomless_clip((unsigned char)byte) == ((byte & 0x40u) != 0));
+			CHECK((both & 0x9Fu) == (byte & 0x9Fu) && ae_weapon_infinite_ammo(both) && ae_weapon_bottomless_clip(both));
+			CHECK((none & 0x9Fu) == (byte & 0x9Fu) && !ae_weapon_infinite_ammo(none) && !ae_weapon_bottomless_clip(none));
+			CHECK(ae_weapon_ammo_byte_set((unsigned char)byte, 1, 0) == ((byte & 0x9Fu) | 0x20u));
+			CHECK(ae_weapon_ammo_byte_set((unsigned char)byte, 0, 1) == ((byte & 0x9Fu) | 0x40u));
+		}
+		/* (the AE BR set's byte, the pack in the primary slot: neither) */
+		CHECK(!ae_weapon_infinite_ammo(0x01) && !ae_weapon_bottomless_clip(0x01 | 0x10));
+	}
 	printf("ae_weapon_rules: %u fake triggers, %d failed\n", index, failures);
 	return failures ? 1 : 0;
 }

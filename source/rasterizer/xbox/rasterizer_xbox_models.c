@@ -118,6 +118,7 @@ symbols in this file:
 
 #include "interface/progress_bar_internal.h"
 #include "rasterizer/rasterizer_model_types.h"
+#include "ae_map_look_fixes.h" /* AE hook */
 #include "rasterizer/xbox/rasterizer_xbox.h"
 #include "rasterizer/xbox/rasterizer_xbox_pixel_shader.h"
 #include "rasterizer/xbox/rasterizer_xbox_draw_primitives.h"
@@ -2482,6 +2483,7 @@ struct transparent_geometry_group *_rasterizer_model_transparent_geometry_submit
 	boolean alpha_blended_decal;
 	boolean submit_decals;
 
+	if (ae_map_look_shader_hidden(shader)) return NULL; /* AE hook */
 	if (rasterizer_debug_options.draw_models &&
 		rasterizer_debug_options.draw_model_transparent_geometry)
 	{

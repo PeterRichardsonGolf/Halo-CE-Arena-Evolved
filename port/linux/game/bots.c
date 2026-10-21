@@ -1544,6 +1544,7 @@ static boolean bots_target_score(struct bots_bot *bot, struct player_datum *play
 	the bot fights) */
 	if (bearing > half_view && distance > 3.0f && !hurt && player_index != bot->target_player_index)
 		return FALSE;
+	if (!ae_bots_fight_in_vertical_view(bot, eye, &candidate->point, distance, hurt, player_index)) return FALSE; /* AE hook */
 	candidate->player_index = player_index;
 	candidate->unit_index = other->unit_index;
 	candidate->score = distance + bearing * 4.0f - (player_index == bot->target_player_index ? 6.0f : 0.0f);
@@ -2367,6 +2368,7 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 	ae_bots_objective_move(bot, bot_index, &tick); /* AE hook */
 	ae_bots_vehicle_move(bot, bot_index, &tick); /* AE hook */
 	bots_bot_unstick(bot, &tick);
+	ae_bots_falls_guard(bot, &tick); /* AE hook */
 
 	if (tick.moving)
 	{
@@ -2449,6 +2451,7 @@ void bots_update_actions(struct player_action *actions)
 
 		if (player->local_player_index != NONE || !bots_machine_is_bot(player->network_player_data.machine_index))
 			continue;
+		if (ae_bots_live_quitting(player, absolute_index, actions)) continue; /* AE hook */
 		/* (the roaming places and the walkable surfaces once a game has
 		bots; the skill once a tick) */
 		if (!count)

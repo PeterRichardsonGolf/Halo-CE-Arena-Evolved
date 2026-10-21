@@ -75,6 +75,18 @@ struct ae_map_look_retarget const ae_map_look_retargets[] =
 
 unsigned int const ae_map_look_retarget_count = sizeof(ae_map_look_retargets) / sizeof(ae_map_look_retargets[0]);
 
+/* scenery\spawn_marker's shader on a map's own scenery model, as Fallout's green rings at its spawns (on its
+fallout_randoms; Weld's weld_randoms too), always drawn: a Training look (the maps of Halo 1: NHE name theirs spawn_marker_nhe and show them by script, in
+their Training only), so not drawn; TRAINING draws Arena Evolved's own (render_spawn_markers.c). Owner 2026-10-20. */
+struct ae_map_look_hidden_shader const ae_map_look_hidden_shaders[] =
+{
+	{ AE_GROUP('s', 'c', 'h', 'i'), "scenery\\spawn_marker\\shaders\\spawn_marker",
+		"the spawn rings on the map's scenery not drawn (TRAINING draws AE's own)" },
+};
+
+unsigned int const ae_map_look_hidden_shader_count =
+	sizeof(ae_map_look_hidden_shaders) / sizeof(ae_map_look_hidden_shaders[0]);
+
 /* ---------- public code */
 
 /* whether a fix's map name is the header's (at most AE_MAP_LOOK_FIX_MAP_NAME_SIZE bytes of it, any case) */

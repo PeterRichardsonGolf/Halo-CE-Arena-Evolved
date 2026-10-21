@@ -103,8 +103,10 @@ long ae_bots_combat_melee_delay(int level, float random)
 	switch (level)
 	{
 	case AE_BOTS_LEVEL_RECRUIT: low = 1.0f; high = 3.0f; break;
-	case AE_BOTS_LEVEL_EASY: low = 0.5f; high = 1.5f; break;
-	case AE_BOTS_LEVEL_NORMAL: low = 0.1f; high = 0.5f; break;
+	case AE_BOTS_LEVEL_EASY: low = 0.6f; high = 1.5f; break;
+	case AE_BOTS_LEVEL_NORMAL: low = 0.35f; high = 0.7f; break;
+	case AE_BOTS_LEVEL_HEROIC: low = 0.25f; high = 0.5f; break;
+	case AE_BOTS_LEVEL_LEGENDARY: low = 0.18f; high = 0.35f; break;
 	default: low = 0.1f; high = 0.3f; break;
 	}
 	return (long)((low + (high - low) * clamp01(random)) * TICKS + 0.5f);
@@ -119,7 +121,9 @@ long ae_bots_combat_melee_cooldown(int level, float random)
 	{
 	case AE_BOTS_LEVEL_RECRUIT: seconds = 3.0f + 1.5f * random; break;
 	case AE_BOTS_LEVEL_EASY: seconds = 2.0f + random; break;
-	case AE_BOTS_LEVEL_NORMAL: seconds = 1.0f + 0.5f * random; break;
+	case AE_BOTS_LEVEL_NORMAL: seconds = 1.2f + 0.5f * random; break;
+	case AE_BOTS_LEVEL_HEROIC: seconds = 1.0f + 0.5f * random; break;
+	case AE_BOTS_LEVEL_LEGENDARY: seconds = 0.95f + 0.4f * random; break;
 	default: seconds = 0.9f + 0.4f * random; break;
 	}
 	return (long)(seconds * TICKS);
@@ -264,6 +268,35 @@ int ae_bots_combat_charge(int level, float confidence, float target_shield, floa
 {
 	return level >= AE_BOTS_LEVEL_HEROIC && confidence >= 0.6f && target_shield <= 0.05f && target_body < 0.5f &&
 		distance < 6.0f && distance > 0.8f;
+}
+
+float ae_bots_combat_vertical_half_view(int level)
+{
+	static const float halves[AE_BOTS_LEVELS] = { 22.0f, 25.0f, 28.0f, 32.0f, 36.0f, 40.0f };
+
+	return level >= 0 && level < AE_BOTS_LEVELS ? halves[level] : 40.0f;
+}
+
+int ae_bots_combat_in_vertical_view(int level, float elevation_degrees, float pitch_degrees)
+{
+	float off = elevation_degrees - pitch_degrees;
+
+	if (off < 0.0f)
+		off = -off;
+	return off <= ae_bots_combat_vertical_half_view(level);
+}
+
+int ae_bots_combat_step_in(int level, float distance, float target_shield)
+{
+	switch (level)
+	{
+	case AE_BOTS_LEVEL_EASY: return distance < 2.5f && target_shield < 0.5f;
+	case AE_BOTS_LEVEL_NORMAL: return distance < 3.5f && target_shield < 0.8f;
+	case AE_BOTS_LEVEL_HEROIC:
+	case AE_BOTS_LEVEL_LEGENDARY:
+	case AE_BOTS_LEVEL_DEMON: return distance < 4.0f;
+	default: return 0;
+	}
 }
 
 long ae_bots_combat_vertical_delay(int level, float random)

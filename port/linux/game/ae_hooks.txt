@@ -476,7 +476,11 @@ port/linux/game/game_events.c	if (ae_bots_kept_from_delta()) /* AE hook */\nretu
 # Bots in LAN games (ae_lan_bots.c, "virtual pads"): the host's players on its free controller slots, which are no
 # local players of the host (no view, HUD, sound or player_control), their input the bot brain's in the host's tick
 port/linux/game/bots.c	#include "ae_bots_lan.inc" /* AE hook */
-# Bot fight log (ae_bots_events.inc, included by ae_bots_lan.inc; debug.bot_events): the bot's tick before and after its controls, and a player's damage to a unit
+# bots.count changed in a local game in progress (ae_bots_live.c, ae_bots_live_rules.c): a bot joins or leaves at once,
+# one a frame, as a player added in game or a quitting machine's player; a bot that left is let be until its quit time
+source/networking/network_server_manager.c	ae_bots_live(server, &server->game, network_game_is_splitscreen_local() && server->state == _network_game_server_state_ingame); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_live_quitting(player, absolute_index, actions)) continue; /* AE hook */
+# Bot fight log (ae_bots_events.inc, included by ae_bots_lan.inc; debug.bot_events): the bot's tick before and after its controls, and a player's damage to a unit (with its damage effect and flags: a bot's death's cause, ae_bots_falls_rules.h)
 port/linux/game/bots.c	ae_bots_events_begin(bot, bot_index, &tick); /* AE hook */
 port/linux/game/bots.c	ae_bots_events_end(bot, bot_index, &tick); /* AE hook */
 # Bots fight like people of their level (ae_bots_combat.c, ae_bots_combat_rules.c; the glue ae_bots_combat.inc, at
@@ -504,7 +508,7 @@ port/linux/src/port_config.c	{ "debug.bot_hints", _config_boolean, "false", "HAL
 port/linux/src/port_config.c	{ "bots.shooting_skill", _config_string, "\"same\"", "HALO_BOT_SHOOTING_SKILL", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "bots.movement_skill", _config_string, "\"same\"", "HALO_BOT_MOVEMENT_SKILL", _environment_value, _platform_all, /* AE hook */
 source/objects/damage.c	#include "ae_bots.h" /* AE hook */
-source/objects/damage.c	ae_bots_damage_note(damage->owner_player_index, object_index); /* AE hook */
+source/objects/damage.c	ae_bots_damage_note(damage->owner_player_index, object_index, damage->definition_index, damage->flags); /* AE hook */
 port/linux/src/port_config.c	{ "debug.bot_events", _config_boolean, "false", "HALO_BOT_EVENTS", _environment_set_is_true, _platform_all, /* AE hook */
 # RECRUIT bot level below EASY (ae_bots_skill.inc, included after the skill table): for new players and children
 port/linux/game/bots.c	#include "ae_bots_skill.inc" /* AE hook */
@@ -936,6 +940,12 @@ source/cache/cache_files.c	#include "ae_map_look_fixes.h" /* AE hook */
 source/cache/cache_files.c	ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */\nae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 source/cache/cache_files.c	ae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */\nae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox.c	#include "ae_map_look_fixes.h" /* AE hook */
+# the scoreboard's time left (2026-10-20): HUD STYLE AE's header says it ("FIRST TO 25 . 7:53 LEFT"), the scoreboard's
+# own first line no longer adds it
+source/game/game_engine.c	ae_scoreboard_header_rows(1) != 0) /* AE hook */
+# hidden shaders (ae_map_look_fixes.c): Fallout's and Weld's spawn rings, parts of their scenery's models, not drawn
+source/rasterizer/xbox/rasterizer_xbox_models.c	#include "ae_map_look_fixes.h" /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_models.c	if (ae_map_look_shader_hidden(shader)) return NULL; /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox.c	if (ae_map_look_bitmap_type_error_first(bitmap, type)) /* AE hook */\nerror(\n_error_silent,\n"### ERROR incompatible bitmap type in shader got %s expected %s",
 # the web build: OpenCE's web texture paths name Custom Edition channel orders AE has not got (mod bitmaps off since
 # the build-232 merge): a stand-in that keeps the Xbox order (owner's CI, 2026-10-18)
@@ -1039,3 +1049,56 @@ port/linux/src/port_config.c	{ "discord.presence", _config_string, "\"off\"", "H
 port/linux/src/port_config.c	{ "discord.presence", { "full", "minimal", "off", NULL }, "\"off\"" }, /* AE hook */
 port/linux/src/map_art.c	#define AE_MAP_ART_DOWNLOADS 0 /* AE hook */
 port/linux/src/map_art.c	if (!pixels && config_boolean("network.online") && AE_MAP_ART_DOWNLOADS) /* AE hook */
+# VERTICAL VIEW (2026-10-20, ae_bots_combat.inc): a target far above or below where the bot looks is not seen
+port/linux/game/bots.c	if (!ae_bots_fight_in_vertical_view(bot, eye, &candidate->point, distance, hurt, player_index)) return FALSE; /* AE hook */
+# COMMUNITY SERVICES (0.3.5, ae_community_screen.h, ../src/ae_community.h): the first-run opt-in. network.community_services
+# ("ask" until answered, which is off) gates every request to network.browser_url's community services: the game list's
+# thread and its list (browser.c), Link Profile and the profile page, Delta Stats' uploads (event_upload.c). The screen
+# opens in front of the PC menus' main menu while it is "ask"; its functions and its game data input are the menus'.
+port/linux/src/port_config.c	{ "network.community_services", _config_string, "\"ask\"", "HALO_COMMUNITY_SERVICES", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "network.community_services", { "ask", "yes", "no", NULL }, "\"ask\"" }, /* AE hook */
+port/linux/src/browser.c	#include "ae_community.h" /* AE hook */
+port/linux/src/browser.c	if (config_string("network.browser_url")[0] && ae_community_services_on()) /* AE hook */
+port/linux/src/browser.c	browser.profile_wanted = ae_community_services_on(); /* AE hook */
+port/linux/src/browser.c	if (!ae_community_services_on()) { browser.connect_state = BROWSER_CONNECT_FAILED; snprintf(browser.connect_message, sizeof(browser.connect_message), "%s", AE_COMMUNITY_OFF_TEXT); } /* AE hook */
+port/linux/src/browser.c	if (!ae_community_services_on()) return 0; /* AE hook */
+port/linux/src/event_upload.c	#include "ae_community.h" /* AE hook */
+port/linux/src/event_upload.c	if (config_string("network.browser_url")[0] && ae_community_services_on()) /* AE hook */
+port/linux/src/event_upload.c	return config_boolean("network.report_events") && config_boolean("network.report_hosted_games") &&\nconfig_string("network.browser_url")[0] && ae_community_services_on(); /* AE hook */
+port/linux/game/browser_screen.c	#include "../src/ae_community.h" /* AE hook */
+port/linux/game/browser_screen.c	set_status(ae_community_services_on() ? "Opening your profile in the web browser" : AE_COMMUNITY_OFF_TEXT); /* AE hook */
+port/linux/game/menu_tags.c	"ae community focus", "ae community row", "ae community use", "ae community not now", /* AE hook */
+port/linux/game/menu_tags.c	"ae community update", /* AE hook */
+port/linux/game/menu_functions.c	#include "ae_community_screen.h" /* AE hook */
+port/linux/game/menu_functions.c	if (!strncmp(name, "ae community ", 13)) /* AE hook */\nreturn ae_community_menu_event(name, widget, widget_deleted);
+port/linux/game/menu_functions.c	if (!strcmp(name, "ae community update")) /* AE hook */\nae_community_screen_update(widget);
+source/interface/ui_widget.c	#include "ae_community_screen.h" /* AE hook */
+source/interface/ui_widget.c	ae_community_main_menu_loaded(); /* AE hook */
+# (and the review's three more: the dedicated server's Delta Control link, the legacy table's fetch (its thread and each
+# refresh), and Delta Stats' batches at exit, dropped while the services are off)
+server/platform/control_link.c	#include "ae_community.h" /* AE hook */
+server/platform/control_link.c	if (!ae_community_services_on()) { link_state.disabled = 1; pthread_mutex_unlock(&link_mutex); platform_log("Delta Control: the link to halo.milenko.org is off (network.community_services is not \"yes\")"); return; } /* AE hook */
+server/platform/control_link.c	if (!ae_community_services_on()) snprintf(text, (size_t)text_size, "the link to halo.milenko.org is off on this server (network.community_services is not \"yes\")"); else /* AE hook */\nif (link_state.disabled || !link_state.url[0])
+port/linux/src/delta.c	#include "ae_community.h" /* AE hook */
+port/linux/src/delta.c	if (!delta_legacy_override() && ae_community_services_on()) /* AE hook */\ndelta_refresh(&failed);
+port/linux/src/delta.c	config_boolean("network.legacy_table_fetch") && ae_community_services_on()) /* AE hook */
+port/linux/src/event_upload.c	if (!ae_community_services_on()) { pthread_mutex_lock(&upload_lock); for (index = 0; index < upload.count; index++) free(upload.waiting[index].data); upload.count = 0; pthread_mutex_unlock(&upload_lock); return; } /* AE hook */
+# THE BOTS' FALLS AND OWN GRENADES (2026-10-20, ae_bots_falls.inc): the last word on where a bot walks each tick: not
+# off a lethal edge, away from its own live grenade, no throw into a wall
+port/linux/game/bots.c	ae_bots_falls_guard(bot, &tick); /* AE hook */
+# Gametype audit (debug.arena_audit; port/linux/game/ae_gametype_audit.c): once the arena gametypes are seeded,
+# every field of each one and of the stock builders in the save root's z/arena_audit.tsv (tools/ae_gametype_audit.py)
+source/saved games/playlist_profile.c	#include "ae_gametype_audit.h" /* AE hook */
+source/saved games/playlist_profile.c	ae_gametype_audit_write(); /* AE hook */
+port/linux/src/port_config.c	{ "debug.arena_audit", _config_boolean, "false", "HALO_ARENA_AUDIT", _environment_set_is_true, _platform_all, /* AE hook */
+# INFINITE AMMO and BOTTOMLESS CLIP as gametype rules (seed revision 16, the OCTAGON drills; port/linux/game/
+# ae_gametype_ammo.c, the bits ae_weapon_rules.h): bits 5-6 of the variant's pack_loadout, beside the cheats; the
+# "AE ammo:" rules line, and each shot's magazine with debug.weapon_log while either is on
+source/items/weapons.c	#include "ae_gametype_ammo.h" /* AE hook */
+source/items/weapons.c	if (!(cheat.infinite_ammo || ae_gametype_infinite_ammo()) && TEST_FLAG(weapon->item.flags, 1)) /* AE hook */
+source/items/weapons.c	if (!(cheat.bottomless_clip || ae_gametype_bottomless_clip()) && (magazine->rounds_loaded-= trigger_definition->rounds_per_shot)<=0) /* AE hook */
+source/items/weapons.c	ae_gametype_ammo_fired(weapon_index, trigger_definition->magazine_index); /* AE hook */
+source/items/weapons.c	if (!(cheat.bottomless_clip || ae_gametype_bottomless_clip())) /* AE hook */
+source/items/weapons.c	if (TEST_FLAG(weapon->item.flags, _item_belongs_to_player_bit) && !(cheat.infinite_ammo || ae_gametype_infinite_ammo())) /* AE hook */
+source/game/game_engine.c	#include "ae_gametype_ammo.h" /* AE hook */
+source/game/game_engine.c	ae_gametype_ammo_log_rules(universal->pack_loadout); /* AE hook */

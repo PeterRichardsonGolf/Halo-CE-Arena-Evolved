@@ -94,6 +94,26 @@ static void ae_bots_fight_range_floor(struct bots_bot *bot, struct bots_tick *ti
 	}
 }
 
+/* VERTICAL VIEW (bots.c's target scoring, after its horizontal view): a target far above or below where the bot
+looks is out of view, as for bots.c's horizontal view: unless within 3 units, it hurt the bot, or it is the one the
+bot fights */
+static boolean ae_bots_fight_in_vertical_view(struct bots_bot *bot, real_point3d const *eye, real_point3d const *point,
+	real distance, boolean hurt, long player_index)
+{
+	real dx = point->x - eye->x, dy = point->y - eye->y;
+	real elevation = (real)atan2(point->z - eye->z, (real)sqrt(dx * dx + dy * dy));
+
+	if (distance <= 3.0f || hurt || player_index == bot->target_player_index)
+		return TRUE;
+	if (ae_bots_combat_in_vertical_view(ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill)),
+		elevation / BOTS_DEGREES, bot->pitch / BOTS_DEGREES))
+	{
+		return TRUE;
+	}
+	ae_bots_combat_count(AE_BOTS_COMBAT_OUT_OF_VERTICAL_VIEW);
+	return FALSE;
+}
+
 /* a weapon's first trigger, NULL for none */
 static struct weapon_trigger_definition *ae_bots_fight_trigger(long weapon_index)
 {
@@ -234,6 +254,16 @@ static void ae_bots_fight_aim_point(struct bots_bot *bot, struct bots_tick *tick
 			ae_bots_combat_count(AE_BOTS_COMBAT_HEAD_AIMS);
 	}
 	state->head_aim = head;
+	/* (an explosive in hand, the rocket launcher or the fuel rod gun: at the feet, as players aim one, so that a near miss
+	still catches the target in the blast (Octagon 10-20: aimed at the waist, 2% of the bots' rockets hit); the lead
+	bots.c adds by the flight then carries the feet along) */
+	if (!head && tick->weapon_index != NONE)
+	{
+		char const *name = tag_get_name(weapon_get(tick->weapon_index)->definition_index);
+
+		if (name && (strstr(name, "rocket") || strstr(name, "plasma_cannon") || strstr(name, "fuel rod")))
+			aim_point->z = MIN(aim_point->z, target->object.position.z + 0.1f);
+	}
 	/* (a grenade in the hand: the aim ahead of the target by its flight, from the throw's start) */
 	if (tick->now < state->throw_until && state->throw_lead > 0.0f)
 	{
@@ -562,6 +592,14 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 			}
 		}
 		state->charging = charge;
+		/* STEPPING IN FOR A BLOW: a near target (its shields low below HEROIC) is closed on, not backed off from,
+		so the blow's reach is met (ae_bots_fight_melee strikes) */
+		if (!charge && ae_bots_combat_step_in(level, tick->target_distance, target_shield))
+		{
+			tick->move_direction = to_target + bot->strafe_sign * 0.3f;
+			tick->moving = TRUE;
+			tick->throttle_scale = 1.0f;
+		}
 	}
 	/* WINGMAN's leash (ae_bots_team.inc): far from its player, back towards them while it shoots, unless retreating */
 	if (!retreating)

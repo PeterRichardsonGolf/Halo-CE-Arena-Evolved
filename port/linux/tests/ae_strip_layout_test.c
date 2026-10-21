@@ -378,6 +378,72 @@ static void test_wide_context_clears_the_marker(void)
 	/* (a narrow line clear of the marker stays where it was: the team slayer test's lead at 939) */
 }
 
+/* the played line's ink (its caps: digits and ':' have no descenders) */
+static real played_ink_top(const struct ae_strip_layout *l) { return bottom(&l->played) - AE_STRIP_TEXT_CAP * l->played.h; }
+
+/* the clearance rule: two boxes are at least `gap` apart on one axis */
+static int clear(const struct ae_strip_box *a, real a_top, const struct ae_strip_box *b, real b_top, real gap)
+{
+	return right(a) + gap <= b->x || right(b) + gap <= a->x || bottom(a) + gap <= b_top || bottom(b) + gap <= a_top;
+}
+
+/* MATCH CLOCK BOTH: the time played 10 over the clock's top; the context / lead line 8 over it (its descenders
+too); clear of the marker and the scores in every view; nothing moves without it */
+static void test_time_played_over_the_clock(void)
+{
+	static const struct ae_strip_geometry views[] = {
+		{ 0, 0, 1920, 1080, 1.0f, 998.0f, 1600.0f, 960.0f },  /* 1080p */
+		{ 0, 0, 1280, 720, 0.667f, 665.0f, 1066.0f, 640.0f }, /* 720p: the text floors at 12 */
+		{ 0, 0, 1920, 540, 0.85f, 499.0f, 1700.0f, 960.0f },  /* 2 players */
+		{ 0, 0, 960, 540, 0.75f, 499.0f, 700.0f, 480.0f },    /* 4 players: floors 14 */
+	};
+	struct ae_strip_snapshot s; struct ae_strip_model m; struct ae_strip_layout l, before;
+	long i, mode;
+
+	for (mode = 0; mode < 3; mode++)
+		for (i = 0; i < (long)(sizeof(views) / sizeof(views[0])); i++)
+		{
+			const struct ae_strip_geometry *g = &views[i];
+			real k, clock_top, lead_bottom;
+			const struct ae_strip_box *line;
+
+			team_slayer(&s);
+			if (mode == 1)
+			{
+				/* (oddball: the small clock, wide timed scores beside it, a context line with a descender) */
+				s.mode = _ae_strip_oddball; s.score_to_win = 300; s.me.score = 72; s.other.score = 48;
+				wcscpy(s.context_name, L"Player"); s.context_side = _ae_strip_side_other;
+			}
+			else if (mode == 2)
+			{
+				/* (free for all: sub-lines, the goal on their line) */
+				s.teams = FALSE; s.me.place = 1; s.i_lead = TRUE; s.me.score = 9; s.other.score = 3;
+			}
+			s.clock_seconds = 899;
+			lay(&s, g, &m, &before);
+			s.played_shown = TRUE; s.played_seconds = 3599;
+			lay(&s, g, &m, &l);
+			k = l.strip_scale;
+			AE_CHECK(l.played.visible && l.played.h >= 12.0f);
+			AE_CHECK(NEAR(l.played.x + l.played.w / 2.0f, g->centre_x));
+			clock_top = m.clock_small ? l.clock_baseline_y - AE_STRIP_TEXT_CAP * l.clock.h : l.clock.y;
+			AE_CHECK(NEAR(clock_top - bottom(&l.played), AE_STRIP_PLAYED_CLOCK_GAP * k));
+			line = l.context.visible ? &l.context : &l.lead;
+			AE_CHECK(line->visible);
+			lead_bottom = bottom(line) + AE_STRIP_TEXT_DESCENT * line->h;
+			AE_CHECK(played_ink_top(&l) - lead_bottom >= AE_STRIP_PLAYED_CONTEXT_GAP * k - 0.01f);
+			/* (8 at 1080p, scaled with the strip) */
+			AE_CHECK(clear(&l.played, played_ink_top(&l), &l.marker, l.marker.y, 8.0f * k));
+			AE_CHECK(clear(&l.played, played_ink_top(&l), &l.left_score, l.left_score.y, 8.0f * k));
+			AE_CHECK(clear(&l.played, played_ink_top(&l), &l.right_score, l.right_score.y, 8.0f * k));
+			/* (the scores, the clock, the goal and the bottom line stay where they were) */
+			AE_CHECK(NEAR(l.score_baseline_y, before.score_baseline_y) && NEAR(l.clock.x, before.clock.x));
+			AE_CHECK(NEAR(bottom(&l.goal), bottom(&before.goal)) && NEAR(l.strip_scale, before.strip_scale));
+			AE_CHECK(!before.played.visible && bottom(line) <= bottom(before.context.visible ? &before.context :
+				&before.lead) + 0.01f);
+		}
+}
+
 int main(void)
 {
 	test_me_color();
@@ -394,6 +460,7 @@ int main(void)
 	test_clock_cell();
 	test_bad_input();
 	test_wide_context_clears_the_marker();
+	test_time_played_over_the_clock();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures != 0;
 }
