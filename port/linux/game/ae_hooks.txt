@@ -1114,3 +1114,9 @@ source/game/game_engine.c	if (ae_gametype_skips_map_item(definition_index)) cont
 port/linux/src/d3d8_gl.c	{ platform_log("GPU: visibility counts did not arrive through the buffer in %lu presents; they are read on the CPU from now on", device.frame - batch->frame); device.visibility_mapped = NULL; device.visibility_stats.failures++; return; } /* AE hook */
 # LOOK DOWN (0.3.6): an enemy below/above a ledge shows the bot only its head; bots_find_target tries it when the middle is hidden.
 port/linux/game/bots.c	if (ae_bots_fight_head_in_sight(bot, player->unit_index, eye, candidates[least].unit_index)) return candidates[least].player_index; /* AE hook */
+# SENSOR RANGE (seed revision 19: 10 m in every AE gametype with the motion sensor on): bits 6-7 of the universal
+# variant's flags (ae_sensor_range_rules.h), put into the map's HUD globals as they load for each game (ae_sensor.c)
+source/game/game_engine.h	_game_variant_sensor_range_first_bit = 6, /* AE hook */
+source/game/game_engine.h	_game_variant_sensor_range_second_bit = 7, /* AE hook */
+source/interface/hud.c	#include "ae_sensor.h" /* AE hook */
+source/interface/hud.c	ae_sensor_range_apply(); /* AE hook */

@@ -35,6 +35,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   unchanged). A SWAT you edited yourself keeps its own rules.
 - Item waypoints line up: the distance, the name, the picture and the timer share one centre, and the stack sits over
   the arrow's own art (the double chevron for an item behind a wall sits left of its sprite's middle).
+- A 10 m motion sensor in every Arena Evolved gametype that has the motion sensor on (it was the map's own, 15 m on
+  the stock maps): contacts close by are easier to track. Every Arena Evolved 0.3.6 player in the game sees the host's range (older builds and ChupathingyCE draw the map's own), and
+  enemies' names over their heads show within the same 10 m. The NHE gametypes keep the map's range, and a gametype
+  you edited yourself keeps its own rules.
 
 ## 0.3.5.1-beta - 2026-10-20
 

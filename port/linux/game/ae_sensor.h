@@ -31,6 +31,9 @@ boolean ae_sensor_take_blip(const union real_point2d *position, real fade, real 
 boolean ae_sensor_takes_blips(void);
 /* (hud_unit.c, after CE's sensor work) draws the AE sensor round CE's blips' centre (HUD units of the view) */
 void ae_sensor_draw(short local_player_index, const union point2d *centre, boolean split);
+/* (hud.c, as the map's HUD globals load for a game) the game's SENSOR RANGE into them, the map's own for STOCK or
+no game (ae_sensor_range_rules.h); the rules log says which */
+void ae_sensor_range_apply(void);
 /* the sensor's box in the view px from its last draw, FALSE when none */
 boolean ae_sensor_rectangle(short local_player_index, real *x0, real *y0, real *x1, real *y1);
 

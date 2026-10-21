@@ -238,7 +238,9 @@ class Row:
             m = re.match(r"\.(\w+)\s*=\s*", text, re.S)
             if m:
                 self.items.append(Item("designated", m[1], squash(text[m.end():]), (s, e), (s + m.end(), e)))
-            elif self.items and any(i.kind != "positional" for i in self.items):
+            elif squash(text) in macros or (self.items and any(i.kind != "positional" for i in self.items)):
+                # (a macro of designated fields right after the positional ones, too: the OCTAGON drills'
+                # ARENA_OCTAGON_BR_PRIMARY)
                 self.items.append(Item("macro", None, squash(text), (s, e), (s, e)))
             else:
                 self.items.append(Item("positional", fields[positional], squash(text), (s, e), (s, e)))

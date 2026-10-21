@@ -28,6 +28,8 @@ enum
 	_game_variant_always_invisible_bit,
 	/* (the starting equipment: generic, else the map's) */
 	_game_variant_generic_starting_equipment_bit,
+	_game_variant_sensor_range_first_bit = 6, /* AE hook */
+	_game_variant_sensor_range_second_bit = 7, /* AE hook */
 	/* port: a player's landing does no damage, from any height (pits and
 	kill volumes still kill); the port's own bits from 16, clear of the
 	game's */
