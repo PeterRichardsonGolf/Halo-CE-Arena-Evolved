@@ -32,6 +32,11 @@ def test_reads_the_table():
     row = SOURCE.by_name["AE BR TS"]
     assert row.value("score_to_win") == "ARENA_TEAM_SLAYER_SCORE"
     assert row.macro_values["weapon_pack"] == ("ARENA_BR_START", "_weapon_pack_battle_rifle")
+    # (a macro right after the positional fields is a macro, not the next positional field)
+    row = SOURCE.by_name["AE OCT BR"]
+    assert row.value("weapon_set") is None
+    assert row.macro_values["weapon_pack"] == ("ARENA_OCTAGON_BR_PRIMARY", "_weapon_pack_battle_rifle")
+    assert "ARENA_OCTAGON_BR_PRIMARY" in row.designated_items()
     assert len(SOURCE.twins) == 25
     assert set(SOURCE.catalog) >= set(SOURCE.by_name)
     assert SOURCE.columns["universal_variant.respawn_time_growth"] == ("variant", "universal_variant.respawn_time_growth",
