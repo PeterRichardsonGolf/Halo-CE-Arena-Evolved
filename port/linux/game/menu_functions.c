@@ -3484,6 +3484,33 @@ static void gametype_setup_type(wchar_t *text);
 /* ---- the gametype list: its spinner's bank (STANDARD: the built-in ones,
 CUSTOM: those saved) in its first row, then the bank's gametypes */
 
+/* the settings of the gametype a list shows the rules of (its own list's
+or Edit Gametypes'), read once each time it changes rather than every
+frame: a saved gametype's are its file on the card, opened, read and its
+checksum worked out, which kept the game thread busy on those screens */
+static struct
+{
+	long profile;
+	boolean valid;
+	struct game_variant variant;
+} gametype_shown = { NONE };
+
+static struct game_variant const *gametype_shown_get(long profile)
+{
+	if (profile != gametype_shown.profile)
+	{
+		gametype_shown.profile = profile;
+		gametype_shown.valid = playlist_profile_get(profile, &gametype_shown.variant);
+	}
+	return gametype_shown.valid ? &gametype_shown.variant : NULL;
+}
+
+/* (read again next time: the lists read again, or a gametype saved) */
+static void gametype_shown_forget(void)
+{
+	gametype_shown.profile = NONE;
+}
+
 static void gametype_bank_read(short bank)
 {
 	short index;
@@ -3499,6 +3526,7 @@ static void gametype_bank_read(short bank)
 	}
 	multiplayer.gametype_first = 0;
 	multiplayer.gametype_chosen = 0;
+	gametype_shown_forget();
 }
 
 /* "mp profiles list initialize": on the gametype used last */
@@ -3655,20 +3683,21 @@ static void gametype_list_update(struct widget_instance *list)
 	visible_set(named(description, "gametype_right_item", 0), multiplayer.bank_count > 0);
 	if (multiplayer.gametype_chosen < multiplayer.bank_count)
 	{
-		struct game_variant variant;
 		wchar_t text[ROW_TEXT_LENGTH * 2];
+		long profile = multiplayer.gametypes[multiplayer.bank[multiplayer.gametype_chosen]];
+		struct game_variant const *variant = gametype_shown_get(profile);
 
 		gametype_name(multiplayer.gametype_chosen, text);
 		gametype_panel_name(text, NUMBEROF(text));
 		text_set(named(description, "gametype_right_name", 0), text);
-		if (playlist_profile_get(multiplayer.gametypes[multiplayer.bank[multiplayer.gametype_chosen]], &variant))
+		if (variant)
 		{
-			long engine = PIN(variant.game_engine_index, 0, 5);
+			long engine = PIN(variant->game_engine_index, 0, 5);
 
 			if ((widget = named(description, "gametype_right_pic", 0)) != NULL)
 				widget->animation.current_frame_index = (short)engine;
 			usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\nScore to win: %ld", engine_names[engine],
-				variant.universal_variant.teams ? L"Teams" : L"Free for all", variant.universal_variant.score_to_win);
+				variant->universal_variant.teams ? L"Teams" : L"Free for all", variant->universal_variant.score_to_win);
 			text[NUMBEROF(text) - 1] = 0;
 			text_set(named(description, "gametype_right_data", 0), text);
 		}
@@ -7080,6 +7109,7 @@ static void gametype_edit_read(void)
 	gametype_edit.count = ui_widget_port_gametypes(gametype_edit.gametypes, MAXIMUM_GAMETYPES, &last);
 	gametype_edit.chosen = (short)MIN(gametype_edit.chosen, MAX(0, gametype_edit.count - 1));
 	gametype_edit.stale = FALSE;
+	gametype_shown_forget();
 }
 
 /* "mp profiles list initialize" (Edit Gametypes'): on the gametype used last */
@@ -7092,6 +7122,7 @@ static boolean gametype_edit_list_initialize(struct widget_instance *list)
 	gametype_edit.chosen = last;
 	gametype_edit.first = (short)MAX(0, MIN(last - GAMETYPE_EDIT_ROWS / 2, gametype_edit.count - GAMETYPE_EDIT_ROWS));
 	gametype_edit.stale = FALSE;
+	gametype_shown_forget();
 	focus_row(list, (short)(gametype_edit.chosen - gametype_edit.first));
 	return TRUE;
 }
@@ -7119,7 +7150,7 @@ static void gametype_edit_list_update(struct widget_instance *list)
 	if (gametype_edit.chosen < gametype_edit.count)
 	{
 		long profile_index = gametype_edit.gametypes[gametype_edit.chosen];
-		struct game_variant variant;
+		struct game_variant const *variant = gametype_shown_get(profile_index);
 		wchar_t text[ROW_TEXT_LENGTH * 2];
 
 		visible_set(named(description, "locked_gametype_icon", 0),
@@ -7127,14 +7158,14 @@ static void gametype_edit_list_update(struct widget_instance *list)
 		gametype_display_name(profile_index, text);
 		gametype_panel_name(text, NUMBEROF(text));
 		text_set(named(description, "gametype_right_name", 0), text);
-		if (playlist_profile_get(profile_index, &variant))
+		if (variant)
 		{
-			long engine = PIN(variant.game_engine_index, 0, 5);
+			long engine = PIN(variant->game_engine_index, 0, 5);
 
 			if ((widget = named(description, "gametype_right_pic", 0)) != NULL)
 				widget->animation.current_frame_index = (short)engine;
 			usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\nScore to win: %ld", engine_names[engine],
-				variant.universal_variant.teams ? L"Teams" : L"Free for all", variant.universal_variant.score_to_win);
+				variant->universal_variant.teams ? L"Teams" : L"Free for all", variant->universal_variant.score_to_win);
 			text[NUMBEROF(text) - 1] = 0;
 			text_set(named(description, "gametype_right_data", 0), text);
 		}
@@ -7451,6 +7482,7 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "mp profile save changes"))
 		{
+			gametype_shown_forget();
 			return ui_widget_port_gametype_save(widget, widget_deleted);
 		}
 		else if (!strcmp(name, "mp profile begin editing"))
