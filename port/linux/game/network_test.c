@@ -57,10 +57,13 @@ debug.network_test_flags sets bits of the host's game variant's flags (the
 port's gametype options: game_engine.h's _game_variant_..._bit).
 debug.network_test_gametype: the host plays a custom gametype of the save
 root (by its stored name, with its PC options) in place of the built-in one.
-debug.network_test_pack_loadout (primary, secondary or both) and
-debug.network_test_pack_map_spawns: the host's gametype uses the weapon pack
-(game_engine.h's weapon_pack, pack_loadout and pack_map_spawns), with a custom
-loadout whose stock values are the fallbacks (an assault rifle, a pistol).
+debug.network_test_pack_loadout (primary, secondary or both; primary2,
+secondary2, first_second for the second named pack's weapon),
+debug.network_test_pack_map_spawns and debug.network_test_weapon_packs (the
+packs' slot mask, ae_weapon_slots.h: 3 the BR and the SMG): the host's gametype
+uses the weapon packs (game_engine.h's weapon_pack, pack_loadout and
+pack_map_spawns), with a custom loadout whose stock values are the fallbacks
+(an assault rifle, a pistol).
 
 debug.network_test_cues: console lines the host (or a game of one machine)
 runs at their ticks, counted from the first tick every player of
@@ -236,6 +239,8 @@ static struct
 	debug.network_test_pack_map_spawns: its BATTLE RIFLE ON MAP) */
 	byte pack_loadout;
 	boolean pack_map_spawns;
+	/* (debug.network_test_weapon_packs: the variant's weapon_pack mask, 0 the battle rifle's alone) */
+	byte weapon_packs;
 	/* (debug.network_test_auto_balance: the gametype's AUTO TEAM BALANCE on,
 	so a team game whose players all joined one team (NHE EXTRAS) starts) */
 	boolean auto_balance;
@@ -420,10 +425,21 @@ static void network_test_read_settings(
 			network_test.pack_loadout |= (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary));
 		if (!strcmp(pack_loadout, "secondary") || !strcmp(pack_loadout, "both"))
 			network_test.pack_loadout |= (byte)(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary));
+		/* (the second named pack's weapon, ae_weapon_slots.h: "primary2", "secondary2", or the first's in the primary
+		and the second's in the secondary, "first_second") */
+		if (!strcmp(pack_loadout, "primary2"))
+			network_test.pack_loadout |= (byte)(_pack_loadout_second_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary));
+		if (!strcmp(pack_loadout, "secondary2"))
+			network_test.pack_loadout |= (byte)(_pack_loadout_second_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary));
+		if (!strcmp(pack_loadout, "first_second"))
+			network_test.pack_loadout |= (byte)((_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary)) |
+				(_pack_loadout_second_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary)));
 		if (pack_loadout[0] && !network_test.pack_loadout)
-			platform_log("network test: debug.network_test_pack_loadout '%s' is not primary, secondary or both: ignored",
-				pack_loadout);
+			platform_log("network test: debug.network_test_pack_loadout '%s' is not primary, secondary, both, primary2, "
+				"secondary2 or first_second: ignored", pack_loadout);
 	}
+	/* (debug.network_test_weapon_packs: the packs' slots, a mask: 0 the battle rifle's alone) */
+	network_test.weapon_packs = (byte)(config_integer("debug.network_test_weapon_packs") & WEAPON_PACK_MAXIMUM);
 	network_test.kill_host = config_boolean("debug.network_test_kill_host") != 0;
 	network_test.hurt_time = (real)config_real("debug.network_test_hurt");
 	snprintf(network_test.damage_script, sizeof(network_test.damage_script), "%s",
@@ -2148,9 +2164,10 @@ void network_test_update(
 						variant.universal_variant.ball_melee = 1;
 					ae_silent_network_test(&variant); /* AE hook */
 					/* debug.network_test_pack_loadout / _pack_map_spawns: the weapon pack */
-					if (network_test.pack_loadout || network_test.pack_map_spawns)
+					if (network_test.pack_loadout || network_test.pack_map_spawns || network_test.weapon_packs)
 					{
-						variant.universal_variant.weapon_pack = _weapon_pack_battle_rifle;
+						variant.universal_variant.weapon_pack = network_test.weapon_packs ? network_test.weapon_packs :
+							_weapon_pack_battle_rifle;
 						variant.universal_variant.pack_loadout = (byte)(network_test.pack_loadout |
 							(network_test.pack_map_spawns ? PACK_MAP_SPAWNS_BIT : 0));
 					}

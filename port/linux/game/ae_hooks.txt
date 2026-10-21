@@ -1125,3 +1125,7 @@ source/interface/hud.c	#include "ae_sensor.h" /* AE hook */
 source/interface/hud.c	ae_sensor_range_apply(); /* AE hook */
 # enemies' names over heads keep the map's own sensor reach, whatever the gametype's SENSOR RANGE (owner 10-21)
 source/interface/hud.c	return hud_globals ? ae_sensor_range_map_own(hud_globals->defaults.motion_sensor_range) : 0.0f; /* AE hook */
+source/game/game_engine.c	#include "ae_weapon_slots.h" /* AE hook */
+source/game/game_engine.c	#include "ae_pack_spawns.h" /* AE hook */
+source/game/game_engine.c	definition_index = ae_pack_spawn_definition(equipment_index, definition_index); /* AE hook */
+port/linux/src/port_config.c	{ "debug.network_test_weapon_packs", _config_integer, "0", "HALO_NETWORK_TEST_WEAPON_PACKS", _environment_value, /* AE hook */\n_platform_all,

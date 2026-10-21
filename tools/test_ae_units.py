@@ -152,11 +152,11 @@ UNITS = {
     "ae_map_folders_rules_test.c": ([UI / "ae_map_folders_rules.c"], ["-fsanitize=address,undefined",
                                                                        "-fno-sanitize-recover=all"], []),
     # (AE map layout files: the reader, every refusal, the limits; under the sanitizers, as the file is the map pack's)
-    "ae_layout_rules_test.c": ([UI / "ae_layout_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+    "ae_layout_rules_test.c": ([UI / "ae_layout_rules.c", UI / "ae_weapon_slots.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                                []),
     # (layouts travel with maps: the frames, a guest's inbox, which layout it plays and writes; under the sanitizers, as
     # the frames are a host's)
-    "ae_layout_share_rules_test.c": ([UI / "ae_layout_share_rules.c", UI / "ae_layout_rules.c", UI / "ae_map_share_rules.c"],
+    "ae_layout_share_rules_test.c": ([UI / "ae_layout_share_rules.c", UI / "ae_layout_rules.c", UI / "ae_weapon_slots.c", UI / "ae_map_share_rules.c"],
                                      ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (HUD STYLE: AE unless the setting reads "classic"; a fake config_string)
     "ae_hud_style_test.c": ([UI / "ae_hud_style.c"], [], []),
@@ -183,6 +183,9 @@ UNITS = {
                          ["-lm"]),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (several weapon packs in one game: the gametype's slot mask, the loadout's sources, the join capability, map
+    # spawns and the layout's pack weapons)
+    "ae_weapon_slots_test.c": ([UI / "ae_weapon_slots.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (SENSOR RANGE: the variant's flags bits, the world units, the map's own range kept across games)
     "ae_sensor_range_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),

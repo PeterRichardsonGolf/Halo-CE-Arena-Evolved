@@ -2,9 +2,11 @@
 AE_WEAPON_PACK.H
 
 port: weapon pack. The weapon packs this game carries (docs/weapon-packs.md),
-read once at start (game_initialize) and kept by SLOT: the value a
-gametype's universal_variant.weapon_pack names (game_engine.h; 1 = the AE
-battle rifle, packs\ae_battle_rifle.aepack beside the game's maps folder).
+read once at start (game_initialize) and kept by SLOT (ae_weapon_slots.h): a
+gametype's universal_variant.weapon_pack is a mask of slots (game_engine.h; bit
+0 = slot 1, the AE battle rifle, packs\ae_battle_rifle.aepack beside the
+game's maps folder; slot 2 the SMG, 3 the silenced SMG, 4 the carbine). Every
+named slot's pack is added to the map, in slot order.
 
 A pack is an untrusted download: one that is missing, damaged or of another
 pack is refused with one "weapon pack:" line in debug.txt, its slot stays
@@ -27,8 +29,9 @@ struct ae_pack_weapon_record;
 
 enum
 {
-	/* the slots are 1 to AE_WEAPON_PACK_SLOTS (universal_variant.weapon_pack's _weapon_pack_battle_rifle is 1) */
-	AE_WEAPON_PACK_SLOTS = 1,
+	/* the slots are 1 to AE_WEAPON_PACK_SLOTS (ae_weapon_slots.h's AE_WEAPON_SLOT_COUNT; the mask's bit 0,
+	_weapon_pack_battle_rifle, is slot 1) */
+	AE_WEAPON_PACK_SLOTS = 4,
 	AE_WEAPON_PACK_SHA256_SIZE = 32,
 };
 
@@ -67,13 +70,19 @@ void ae_weapon_pack_tags_unloaded(void);
 size bytes from the pack (zeros for what it cannot give) and *complete is set */
 boolean ae_weapon_pack_read(long tag_index, long offset, long size, void *buffer, boolean *complete);
 
-/* the slot of the pack added to the loaded map, or 0: none was asked for, or it was refused (the fallback: what
-the loadout, BATTLE RIFLE ON MAP and the network's pack report key on) */
+/* the lowest slot whose pack is added to the loaded map, or 0: none was asked for, or each was refused (the
+fallback: what the loadout and the map spawns key on) */
 short ae_weapon_pack_added(void);
-/* the import fingerprint of the pack on this map (AE_WEAPON_PACK_FINGERPRINT_SIZE bytes: the first 8 of the
-SHA-256 of the pack's SHA-256, the map's name, the map's own tag count and each pack tag's tag index in pack
-order): FALSE (nothing written) when no pack is added */
-boolean ae_weapon_pack_fingerprint(unsigned char *fingerprint);
+/* whether the slot's pack is added to the loaded map */
+boolean ae_weapon_pack_slot_added(short slot);
+/* the slots whose packs are added to the loaded map (ae_weapon_slots.h's mask) */
+unsigned int ae_weapon_pack_added_mask(void);
+/* the slot of the pack whose weapon this definition is on the loaded map, or 0 */
+short ae_weapon_pack_definition_slot(long definition_index);
+/* the import fingerprint of the slot's pack on this map (AE_WEAPON_PACK_FINGERPRINT_SIZE bytes: the first 8 of the
+SHA-256 of the pack's SHA-256, the map's name, the tag count before it and each pack tag's tag index in pack
+order): FALSE (nothing written) when that pack is not added */
+boolean ae_weapon_pack_fingerprint(short slot, unsigned char *fingerprint);
 /* the slot's pack's weapon's definition (its weapon tag) on the loaded map, or NONE: no such weapon, or the pack
 is not added to this map */
 long ae_weapon_pack_weapon_definition(short slot, short weapon);
@@ -112,11 +121,12 @@ struct game_variant;
 Custom Edition map (or Halo PC's, HaloMD's) gets no pack: one refusal line when the pending game asks for one */
 void ae_weapon_pack_tags_refused_ce(char const *map_name, long scenario_tag_index);
 /* (game_engine_log_rules: every machine, at game start) the line the console and the log give when the game's
-gametype uses a pack the loaded map did not get ("BATTLE RIFLE unavailable on <map>: <reason>", or "BATTLE RIFLE:
-not on Custom Edition maps yet"): TRUE and line written, or FALSE (the pack is on the map, or none is asked for) */
-boolean ae_weapon_pack_unavailable_line(char *line, long size);
-/* (the PC lobby, on the host) appended to the lobby's panel text (count characters) as a line of its own, for a
-game of this variant on this map before it starts: "BATTLE RIFLE: not on Custom Edition maps yet" on a map of
+gametype names the slot and the loaded map did not get its pack ("BATTLE RIFLE unavailable on <map>: <reason>", or
+"SMG: not on Custom Edition maps yet"): TRUE and line written, or FALSE (the pack is on the map, or not asked for) */
+boolean ae_weapon_pack_unavailable_line(short slot, char *line, long size);
+/* (the PC lobby, on the host) appended to the lobby's panel text (count characters) as a line of its own for each
+slot the variant names (the slot's display name in place of BATTLE RIFLE), for a game of this variant on this map
+before it starts: "BATTLE RIFLE: not on Custom Edition maps yet" on a map of
 another family than the Xbox's; "BATTLE RIFLE unavailable on <map>" where this machine knows the pack cannot be
 added (no pack in the slot here, or the pack was refused for that map before); nothing otherwise */
 void ae_weapon_pack_lobby_line(wchar_t *text, long count, char const *map_name, struct game_variant const *variant);

@@ -30,6 +30,7 @@ netgame items and placed vehicles in memory.
 #include "ae_layout_share_rules.h"
 #include "ae_map_folders.h"
 #include "ae_map_share.h"
+#include "ae_weapon_slots.h"
 
 #include <xtl.h>
 #include <ctype.h>
@@ -74,6 +75,9 @@ static struct
 	/* the layout's item names by the new list's index (name item <n>: n is the map's) */
 	short name_count;
 	struct { long item; char label[AE_LAYOUT_LABEL_SIZE]; } names[AE_LAYOUT_MAXIMUM_NAMES];
+	/* the layout's pack weapons by the new list's index (item smg at ...: ae_weapon_slots.h) */
+	short pack_item_count;
+	struct { long item; short slot; } pack_items[AE_LAYOUT_MAXIMUM_ITEMS];
 	/* the player spawns' and netgame flags' lists, as the items' (queue 141) */
 	unsigned int original_spawn_address, original_flag_address;
 	long original_spawn_count, original_flag_count;
@@ -355,6 +359,33 @@ static boolean collection_is(long collection_index, short alias)
 	return FALSE;
 }
 
+/* whether an item collection can spawn a stock weapon of ae_weapon_slots.h's (the pistol, the assault rifle) */
+static boolean collection_is_stock(long collection_index, short stock)
+{
+	struct item_collection_definition const *collection;
+	struct item_permutation_definition const *permutations;
+	long index;
+
+	if (stock == AE_WEAPON_STOCK_PISTOL)
+		return collection_is(collection_index, _ae_layout_pistol);
+	if (collection_index == NONE || stock != AE_WEAPON_STOCK_ASSAULT_RIFLE)
+		return FALSE;
+	collection = item_collection_definition_get(collection_index);
+	permutations = (struct item_permutation_definition const *)xbox_pointer(collection->permutations.address);
+	for (index = 0; index < collection->permutations.count; index++)
+	{
+		long definition = permutations[index].item.index;
+
+		if (definition != NONE && permutations[index].weight > 0.0f &&
+			tag_get_group_tag(definition) == WEAPON_DEFINITION_TAG &&
+			game_engine_weapon_is_assault_rifle(definition))
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /* the map's own entry a layout item starts from (its collection, game types and flags), or NULL: the map lacks it */
 static struct scenario_netgame_equipment const *source_entry(struct scenario_netgame_equipment const *original,
 	long original_count, struct ae_layout_item const *item, long *tag_collection)
@@ -369,6 +400,12 @@ static struct scenario_netgame_equipment const *source_entry(struct scenario_net
 	case _ae_layout_alias:
 		for (index = 0; index < original_count; index++)
 			if (collection_is(original[index].item_collection.index, item->alias))
+				return &original[index];
+		return NULL;
+	case _ae_layout_pack:
+		/* (the map's own fallback item: what spawns where the pack is not on the map) */
+		for (index = 0; index < original_count; index++)
+			if (collection_is_stock(original[index].item_collection.index, ae_weapon_slots_fallback(item->pack_slot)))
 				return &original[index];
 		return NULL;
 	default:
@@ -492,6 +529,16 @@ static void name_kept(long original, long now)
 		}
 }
 
+short ae_layout_item_pack_slot(long equipment_index)
+{
+	short index;
+
+	for (index = 0; index < applied.pack_item_count; index++)
+		if (applied.pack_items[index].item == equipment_index)
+			return applied.pack_items[index].slot;
+	return 0;
+}
+
 boolean ae_layout_equipment_faces(long equipment_flags)
 {
 	return TEST_FLAG(equipment_flags, AE_EQUIPMENT_LAYOUT_FACING_BIT);
@@ -519,6 +566,7 @@ static void apply_items(struct scenario *scenario)
 	long index, count = 0, added = 0, skipped = 0;
 	struct scenario_netgame_equipment *items;
 
+	applied.pack_item_count = 0;
 	if (!layout.clear_items && !layout.removed_count && !layout.item_count)
 	{
 		/* (names alone: the map's own list, its own numbers) */
@@ -560,6 +608,8 @@ static void apply_items(struct scenario *scenario)
 			/* (a weapon the map lacks: that one item is skipped, owner 2026-10-16) */
 			platform_log("layout: line %d: the map has no %s%s%s (skipped)", item->line,
 				item->what == _ae_layout_alias ? ae_layout_alias_name(item->alias) :
+				item->what == _ae_layout_pack ? (ae_weapon_slots_fallback(item->pack_slot) == AE_WEAPON_STOCK_PISTOL ?
+					"pistol (the pack weapon's fallback)" : "assault rifle (the pack weapon's fallback)") :
 				item->what == _ae_layout_tag ? item->tag : "item", item->what == _ae_layout_like ? " " : "",
 				item->what == _ae_layout_like ? "of that number" : "");
 			skipped++;
@@ -601,6 +651,15 @@ static void apply_items(struct scenario *scenario)
 		}
 		if (item->team != _ae_layout_team_unset)
 			entry->team_index = (short)(item->team == _ae_layout_team_neutral ? NONE : item->team);
+		if (item->what == _ae_layout_pack && applied.pack_item_count < AE_LAYOUT_MAXIMUM_ITEMS)
+		{
+			applied.pack_items[applied.pack_item_count].item = count - 1;
+			applied.pack_items[applied.pack_item_count].slot = item->pack_slot;
+			applied.pack_item_count++;
+			platform_log("layout: line %d: item %ld is the %s where its pack is on the map, else the map's %s", item->line,
+				count - 1, ae_weapon_slots_name(item->pack_slot),
+				ae_weapon_slots_fallback(item->pack_slot) == AE_WEAPON_STOCK_PISTOL ? "pistol" : "assault rifle");
+		}
 		platform_log("layout: line %d: item %ld at %.2f %.2f %.2f%s", item->line, count - 1, entry->position.x,
 			entry->position.y, entry->position.z, item->drop ? " (dropped: it falls onto the floor)" :
 			item->float_here ? " (at its own height)" :
@@ -1195,6 +1254,7 @@ void ae_layout_apply(void)
 		free(applied.items);
 		applied.items = NULL;
 		applied.item_count = 0;
+		applied.pack_item_count = 0;
 	}
 	if (applied.spawns)
 	{
