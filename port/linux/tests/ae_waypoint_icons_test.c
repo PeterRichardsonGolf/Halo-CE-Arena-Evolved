@@ -275,22 +275,42 @@ static void badge_tests(void)
 
 static void centring_tests(void)
 {
-	int top, height, i;
+	int top, height, i, left, right;
 	float in[4] = { 1.0f, 0.3f, 0.3f, 0.8f }, out[4];
 	/* rows of different widths and ink offsets (the font's leading, scaled with each row): every row's ink centre is
-	the line's centre */
-	int widths[4] = { 120, 62, 31, 40 };
-	int offsets[4] = { 7, 6, 5, 6 };
+	the axis, exactly (no whole-unit rounding) */
+	float widths[4] = { 120.0f, 62.4f, 31.0f, 40.9f };
+	float offsets[4] = { 7.0f, 0.6f, 5.0f, 2.45f };
+	/* an arrow sheet 8 wide, 3 high: ink in columns 1..4 (the 30 is under the threshold), its middle 3 and the
+	sheet's 4 */
+	static const unsigned char sheet[24] = {
+		0, 200, 0, 0, 0, 0, 0, 0,
+		0, 0, 255, 0, 90, 30, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0 };
 
 	for (i = 0; i < 4; i++)
 	{
-		int origin = ae_waypoint_row_origin(120, widths[i], offsets[i]);
-		int ink_left = origin + offsets[i];
-		int ink_right = ink_left + widths[i];
+		float ink_left = ae_waypoint_row_left(57.25f, widths[i], offsets[i]) + offsets[i];
 
-		CHECK(ink_left + ink_right >= 119 && ink_left + ink_right <= 121);
+		CHECK(fabsf(ink_left + widths[i] / 2.0f - 57.25f) < 0.001f);
 	}
-	CHECK(ae_waypoint_row_origin(100, 100, 0) == 0 && ae_waypoint_row_origin(101, 50, 3) == 22);
+	/* a block's axis: on its anchor where it is not pinned, moved by whole units where it is, its fraction kept */
+	CHECK(fabsf(ae_waypoint_block_axis(39, 21, 50.3f) - 50.3f) < 0.001f);
+	CHECK(fabsf(ae_waypoint_block_axis(40, 20, 50.3f) - 50.3f) < 0.001f);
+	CHECK(fabsf(ae_waypoint_block_axis(45, 20, 50.3f) - 55.3f) < 0.001f);
+	CHECK(fabsf(ae_waypoint_block_axis(0, 20, -3.75f) - 10.25f) < 0.001f);
+	/* text scaled about its origin moves by the origin's move times one less the scale */
+	CHECK(fabsf(ae_waypoint_scaled_shift(0.3f, 0.4f) * (1.0f - 0.4f) - 0.3f) < 0.001f);
+	CHECK(fabsf(ae_waypoint_scaled_shift(0.5f, 1.6f) * (1.0f - 1.6f) - 0.5f) < 0.001f);
+	CHECK(ae_waypoint_scaled_shift(0.5f, 1.0f) == 0.0f && ae_waypoint_scaled_shift(0.5f, 0.97f) == 0.0f);
+	CHECK(ae_waypoint_scaled_shift(0.5f, nanf("")) == 0.0f);
+	/* a sprite's ink: its columns, and their middle from the sprite's as a fraction of its width */
+	CHECK(ae_waypoint_ink_columns(sheet, 8, 3, 64, &left, &right) && left == 1 && right == 4);
+	CHECK(fabsf(ae_waypoint_ink_middle(left, right, 8) - (-1.0f / 8.0f)) < 0.0001f);
+	CHECK(!ae_waypoint_ink_columns(sheet, 8, 3, 256, &left, &right));
+	CHECK(!ae_waypoint_ink_columns(NULL, 8, 3, 64, &left, &right) && !ae_waypoint_ink_columns(sheet, 0, 3, 64, NULL, NULL));
+	CHECK(ae_waypoint_ink_middle(0, 7, 8) == 0.0f && ae_waypoint_ink_middle(3, 2, 8) == 0.0f &&
+		ae_waypoint_ink_middle(0, 8, 8) == 0.0f);
 	/* a row's ink: capitals start below the line's top and the row is as high as they are */
 	ae_waypoint_row_ink(14, 10, 1.0f, &top, &height);
 	CHECK(top == 4 && height == 11);

@@ -129,6 +129,7 @@ symbols in this file:
 #endif
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_steady_camera.h" /* AE hook */
+#include "ae_waypoint_ink.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1003,6 +1004,7 @@ void custom_render_nav_point_placed(
 				theta,
 				((pixel32)alpha<<24) | real_rgb_color_to_pixel32(&rgb_temp),
 				FALSE);
+			ae_waypoint_arrow_drawn(bitmap, clip, arrow_scale, theta); /* AE hook */
 
 			/* port: where the arrow is: its middle, and half its size
 			either way it may be turned (an arrow at the view's edge) */
