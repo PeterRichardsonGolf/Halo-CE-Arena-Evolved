@@ -114,6 +114,40 @@ static boolean ae_bots_fight_in_vertical_view(struct bots_bot *bot, real_point3d
 	return FALSE;
 }
 
+/* LOOK DOWN (owner 10-20: "they don't look down when you are shooting below them"): bots_find_target casts its line of
+sight to the enemy's middle. An enemy below a ledge (or above one) can show the bot its head alone, as the bot shows him
+its own, and shoot it while the bot never takes it for a target: the head is tried when the middle is hidden, and the
+bot then aims at it (ae_bots_fight_aim_point) for half a second from the last time only the head was seen. */
+static long ae_bots_fight_head_only_tick[BOTS_MAXIMUM];
+
+static boolean ae_bots_fight_head_in_sight(struct bots_bot *bot, long unit_index, real_point3d const *eye,
+	long target_unit_index)
+{
+	long bot_index = (long)(bot - bots_globals.bots);
+	real_point3d head;
+
+	if (target_unit_index == NONE)
+		return FALSE;
+	unit_get_head_position(target_unit_index, &head);
+	if (!bots_line_of_sight(unit_index, eye, &head, target_unit_index))
+		return FALSE;
+	if (bot_index >= 0 && bot_index < BOTS_MAXIMUM)
+		ae_bots_fight_head_only_tick[bot_index] = game_time_get();
+	ae_bots_combat_count(AE_BOTS_COMBAT_HEADS_SEEN);
+	return TRUE;
+}
+
+/* whether only the target's head was seen in the last half second (ae_bots_fight_head_in_sight) */
+static boolean ae_bots_fight_head_only(struct bots_bot *bot, long now)
+{
+	long bot_index = (long)(bot - bots_globals.bots);
+
+	/* (a tick of an earlier game, after the clock's restart, is not now's) */
+	return bot_index >= 0 && bot_index < BOTS_MAXIMUM && ae_bots_fight_head_only_tick[bot_index] &&
+		now >= ae_bots_fight_head_only_tick[bot_index] &&
+		now - ae_bots_fight_head_only_tick[bot_index] <= TICKS_PER_SECOND / 2;
+}
+
 /* a weapon's first trigger, NULL for none */
 static struct weapon_trigger_definition *ae_bots_fight_trigger(long weapon_index)
 {
@@ -246,6 +280,10 @@ static void ae_bots_fight_aim_point(struct bots_bot *bot, struct bots_tick *tick
 	int level = ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill));
 	boolean head = tick->weapon_index != NONE && ae_bots_combat_aim_head(level, target->object.shield_vitality,
 		ae_bots_combat_precision_weapon(weapon_get(tick->weapon_index)->definition_index));
+
+	/* (LOOK DOWN: only the head over a ledge's lip: at the head, whatever the weapon) */
+	if (!head && ae_bots_fight_head_only(bot, tick->now))
+		head = TRUE;
 
 	if (head)
 	{

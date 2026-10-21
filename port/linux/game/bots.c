@@ -1609,6 +1609,7 @@ static long bots_find_target(struct bots_bot *bot, struct player_datum *player, 
 		}
 		if (bots_line_of_sight(player->unit_index, eye, &candidates[least].point, candidates[least].unit_index))
 			return candidates[least].player_index;
+		if (ae_bots_fight_head_in_sight(bot, player->unit_index, eye, candidates[least].unit_index)) return candidates[least].player_index; /* AE hook */
 		/* (out, the others kept in their order) */
 		candidate_count--;
 		for (index = least; index < candidate_count; index++)

@@ -528,13 +528,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: symbols-windows-debug
-          path: dist/chupathingyce-windows-debug-symbols
+          path: dist/arena-evolved-windows-debug-symbols
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
           name: symbols-windows-release
-          path: dist/chupathingyce-windows-release-symbols
+          path: dist/arena-evolved-windows-release-symbols
           retention-days: 3
 
   web:
@@ -681,13 +681,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: symbols-windows64-debug
-          path: dist/chupathingyce-windows64-debug-symbols
+          path: dist/arena-evolved-windows64-debug-symbols
           retention-days: 3
 
       - uses: actions/upload-artifact@v4
         with:
           name: symbols-windows64-release
-          path: dist/chupathingyce-windows64-release-symbols
+          path: dist/arena-evolved-windows64-release-symbols
           retention-days: 3
 
   macos:

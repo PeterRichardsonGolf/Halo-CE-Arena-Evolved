@@ -48,6 +48,11 @@ const char *ae_mode_guard_mode_name(long mode)
 	}
 }
 
+long ae_mode_guard_slayer_score(int teams)
+{
+	return teams ? 50 : 25;
+}
+
 int ae_mode_guard_spawn_anywhere(int spawns_for_mode, int spawns)
 {
 	return spawns_for_mode <= 0 && spawns > 0;

@@ -36,6 +36,10 @@ const char *ae_mode_guard_missing(long mode, struct ae_mode_guard_map const *map
 /* the mode's name for the message ("CTF", "KING OF THE HILL" ...), "" for an unknown mode */
 const char *ae_mode_guard_mode_name(long mode);
 
+/* the score to win of the Slayer a mode the map cannot play falls back to: AE's Slayer's (50 kills a team, 25 a player),
+not the mode's own (KING OF THE HILL's 5 was minutes on the hill: 5 kills ended the game in seconds, Terminal 10-20) */
+long ae_mode_guard_slayer_score(int teams);
+
 /* whether players spawn at every spawn, whatever its game types: the map has spawns, none of them the mode's */
 int ae_mode_guard_spawn_anywhere(int spawns_for_mode, int spawns);
 

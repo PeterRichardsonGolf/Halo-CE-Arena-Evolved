@@ -39,6 +39,9 @@ static void test_names_and_spawns(void)
 	AE_CHECK(!ae_mode_guard_spawn_anywhere(4, 16));
 	/* (a map with no spawns at all: nothing to fall back to) */
 	AE_CHECK(!ae_mode_guard_spawn_anywhere(0, 0));
+	/* (the fallback Slayer's score: never the mode's own, KING's 5 minutes taken for 5 kills) */
+	AE_CHECK(ae_mode_guard_slayer_score(1) == 50);
+	AE_CHECK(ae_mode_guard_slayer_score(0) == 25);
 }
 
 int main(void)
