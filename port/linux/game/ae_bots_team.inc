@@ -290,10 +290,24 @@ static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_poin
 		struct data_iterator players;
 		struct player_datum *other;
 
+		/* (a projectile owned by the weapon: its holder's. A shooter deleted while its shots fly leaves the
+		projectile an owner index that is no object's: object_get_ultimate_parent asserts on it, a Windows crash
+		10-20 with 15 bots on H2D Terminal; each step is looked up softly, a gone one is no owner to hear) */
+		while (owner != NONE)
+		{
+			struct object_datum const *object = (struct object_datum const *)object_try_and_get(owner);
+
+			if (!object)
+			{
+				owner = NONE;
+				break;
+			}
+			if (object->object.parent_object_index == NONE)
+				break;
+			owner = object->object.parent_object_index;
+		}
 		if (owner == NONE)
 			continue;
-		/* (a projectile owned by the weapon: its holder's) */
-		owner = object_get_ultimate_parent(owner);
 		data_iterator_new(&players, player_data);
 		while ((other = (struct player_datum *)data_iterator_next(&players)) != NULL)
 		{
