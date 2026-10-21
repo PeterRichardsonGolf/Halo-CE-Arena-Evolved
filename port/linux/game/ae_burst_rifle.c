@@ -6,7 +6,7 @@ behaviour the owner approved in the prototype (ae/br-prototype b2b489ac,
 played as halo-pack5f with the v6e donor; the weapon pack plan's "Rifle
 numbers and look" table and its rulings R7, R12, R13, R14).
 
-Which weapons: the pack on the loaded map (ae_weapon_pack_added), each of its
+Which weapons: the packs on the loaded map (ae_weapon_pack_slot_added), each of their
 weapon entries whose behaviour is 1 (AE_PACK_BEHAVIOUR_AE_BATTLE_RIFLE). Never
 a tag picked by its name: a map's own battle rifle (CE+ X's) keeps its tags.
 The pack's tags are the map's own copy, made again for every map, so the
@@ -458,7 +458,7 @@ static void zoomed_view_log(
 void ae_burst_rifle_new_map(
 	void)
 {
-	short slot = ae_weapon_pack_added();
+	short slot;
 	short weapon;
 
 	memset(&burst_rifles, 0, sizeof(burst_rifles));
@@ -471,15 +471,19 @@ void ae_burst_rifle_new_map(
 	burst_rifles.weapon_log = config_boolean("debug.weapon_log") ? TRUE : FALSE;
 	burst_rifles.autofire = config_integer("debug.burst_autofire");
 	burst_rifles.hit_log = config_boolean("debug.weapon_hit_log") ? TRUE : FALSE;
-	if (!slot)
-		return;
-	for (weapon = 0; weapon < ae_weapon_pack_weapon_count(slot); weapon++)
+	/* (every pack on the map: each slot's, ae_weapon_slots.h) */
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
 	{
-		struct ae_pack_weapon_record const *entry = ae_weapon_pack_weapon_entry(slot, weapon);
-		long definition_index = ae_weapon_pack_weapon_definition(slot, weapon);
+		if (!ae_weapon_pack_slot_added(slot))
+			continue;
+		for (weapon = 0; weapon < ae_weapon_pack_weapon_count(slot); weapon++)
+		{
+			struct ae_pack_weapon_record const *entry = ae_weapon_pack_weapon_entry(slot, weapon);
+			long definition_index = ae_weapon_pack_weapon_definition(slot, weapon);
 
-		if (entry && entry->behaviour == AE_PACK_BEHAVIOUR_AE_BATTLE_RIFLE && definition_index != NONE)
-			burst_rifle_setup(definition_index);
+			if (entry && entry->behaviour == AE_PACK_BEHAVIOUR_AE_BATTLE_RIFLE && definition_index != NONE)
+				burst_rifle_setup(definition_index);
+		}
 	}
 }
 

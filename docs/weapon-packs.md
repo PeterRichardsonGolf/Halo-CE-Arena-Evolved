@@ -221,8 +221,16 @@ A zlib resource (no v1 writer makes one) is inflated whole on every read, even o
 ## A pack on a map
 
 A pack is added to a map when the map's tags have loaded and been checked, if the game about to be played
-asks for it: the gametype's `weapon_pack` byte names its slot (the pending game variant, set by a network
-game's host and clients and by a split-screen game just before the map loads). The menus' map and the campaign
+asks for it: the gametype's `weapon_pack` byte is a MASK of slots (bit n-1 names slot n; the pending game variant,
+set by a network game's host and clients and by a split-screen game just before the map loads). The slots
+(`port/linux/game/ae_weapon_slots.h`): 1 `packs/ae_battle_rifle.aepack`, 2 `ae_smg`, 3 `ae_smg_silenced`, 4
+`ae_carbine`, each file taking only its own pack id. 1, the battle rifle alone, is the byte's value from before the
+mask. Every named slot's pack is added, in slot order: each grows the tag table the one before left (its own tags
+past the earlier packs', its externals the map's), each is checked and refused alone (one line, the slot's display
+name in the fallback line: `SMG unavailable on <map>: <reason>`), and they are let go in reverse. A machine's join
+request tells the highest level of packs it has (2 the BR's, 3 and both SMGs', 4 and the carbine's); a host refuses
+a machine below its gametype's level (code 66, AE 0.3.6's text; the BR's alone keeps code 65). A packs folder
+without a later slot's file is one line at start, not a refusal. The menus' map and the campaign
 have no game variant and never get a pack; nor does a map that is not a multiplayer map. The code is
 `port/linux/game/ae_weapon_pack.c` (`ae_weapon_pack_tags_loaded`); it runs before the menus' own tags are added.
 
@@ -333,7 +341,7 @@ of a DONOR map, an Xbox map of the game's build:
   the counts (with `--verbose` every tag and the validator's corrections of the donor) and exits 0, or prints
   `ae_pack_build: refused: <reason>` and exits 1 with nothing written; bad arguments exit 2.
 
-## The battle rifle's recipe
+## The recipes (the battle rifle's, the SMGs')
 
 `tools/weapon_pack/make_pack.py` builds `ae_battle_rifle.aepack` from its recipe,
 `tools/weapon_pack/battle_rifle/recipe.json`: from CMT's source release (the zip as downloaded) and the player's
@@ -351,9 +359,12 @@ own stock Blood Gulch to the donor map and the pack.
   (180 tag files) is unpacked from the zip by `extract_allowlist.py` (which refuses an empty list, and anything
   under the release's `util` and `scripts` folders); the stock map's tags are extracted; what the art scripts read
   goes to `art-in/`.
-- **art**: our own art is drawn (`screen_art.py` the gun screen's digits and compass, `scope_hd.py` and
-  `scope_label.py` the sharp scope and its "[3x]", `counter_art.py` the ammunition counter, `hud_sheet.py` the
-  prompts' picture of the rifle, from the model's geometry). These need numpy and Pillow, so a machine without
+- **art**: our own art is drawn, each file as the recipe's `art_drawings` names it (make_pack.py `DRAWINGS`: a
+  drawing, the script that draws it, its inputs and numbers): `screen_art.py` the gun screen's digits and compass,
+  `scope_hd.py` and `scope_label.py` the sharp scope and its "[3x]", `counter_art.py` the ammunition counter (a
+  `layout` of rounds, rows, groups and sizes; the battle rifle's numbers are its defaults), `reticle_art.py` the
+  aiming reticle (a picture beside the recipe, or a `form` drawn from geometry), `hud_sheet.py` the prompts'
+  picture of the weapon, from the model's geometry (a `width`; 86 texels the default). These need numpy and Pillow, so a machine without
   them takes `art/` from one that has them (`--stage art` on a folder holding `art-in/`). Each picture is pinned
   in the recipe by its decoded pixels, mode and size (`png_pixels.py`), not by its file: the same picture written
   by another library version or compression is taken, a different pixel is refused. The pixels come out of
@@ -368,6 +379,33 @@ own stock Blood Gulch to the donor map and the pack.
   stock multiplayer maps. `pack_compare.py` then holds the pack to its donor: every tag byte but what the builder
   blanks (its header lists each class), every resource's bytes and every model part's vertices and indices. The
   pack's SHA-256 must be the recipe's recorded one; a pack refused at any point is set aside as `.refused`.
+
+**Recipes without a prototype.** `reference`, `departures` and `approved_reference` belong to a recipe made
+against a prototype's folders and donor (the battle rifle's): a recipe has all three or none. The SMG packs'
+recipes (`tools/weapon_pack/smg/`, `tools/weapon_pack/smg_silenced/`) have none, so `--reference` and
+`--approved-donor` are refused for them; everything else (the allowlist, the pins, the audit, the externals, the
+comparison with the donor) holds as for the rifle.
+
+**The SMGs' recipes.** CMT's TSC:E SMG and silenced SMG, each its own pack (`ae_smg`, slot 2, may replace the
+assault rifle's spawns; `ae_smg_silenced`, slot 3), built as the rifle's (Open Sauce blocks cut, multipurpose maps
+reordered, models converted, the body's base map lifted 1.8, its reflection 0.75 with the warthog's metal cube map,
+campaign and grunt cube maps renamed to the stock cyborg's, the held weapon's collision the stock assault rifle's)
+and set to Halo 2's numbers (15 rounds a second, 60 a magazine, 180 or 160 rounds to start, 180 in reserve at most,
+Halo 2's single-wield error and its minimum, 400 units a second over 40, aim assist 6 degrees / 12 units,
+magnetism 12 / 18), 8 damage a round (tuned later by bot grids), no night vision. The silenced one's shots are
+silent to the AI's hearing and its bullet has no contrail (no tracer); the SMG's two muzzle fireballs are one at
+0.7 of its size. Our art: the counter (60 rounds, 3 rows of 20 in groups of 5), the reticle (Halo 2's SMG form),
+the prompts' picture (60 texels wide; the silenced one 86, at one scale). tools/test_weapon_pack_smg.py holds the
+recipes to this.
+
+**The carbine's recipe** (`tools/weapon_pack/carbine/`, `ae_carbine`, slot 4, replaces nothing): CMT's TSC:E
+carbine the same way (its base map lifted 1.4 and its purple shell's reflection 0.6: the lighter shell otherwise
+shows mint green in the sun), held by `c_cb` or `ar`, with Halo 2's numbers: a magazine of 18, 36 rounds to start
+and 72 in reserve at most, one round a pull at most every 0.35 s (Halo 2's barrel names 2 shots per fire, a burst
+its carbine never fires in play: single shots kept), error 0.3 to 0.6 degrees, one 2x zoom, aim assist 3 degrees /
+17 units and magnetism 6 / 21, 400 units a second over 40, 14.3 a round (Halo 2's 11 for CE's 150, the head bonus
+kept). The scope is CMT's; the aiming reticle is ours (Halo 2's carbine form), the counter 18 rounds in groups of 3.
+tools/test_weapon_pack_carbine.py holds the recipe to this.
 
 **The approved donor and the departures from it.** The rifle the owner approved was a prototype's donor map
 ("v6e", SHA-256 0aa3ffcb..., `approved_reference` in the recipe). The recipe reproduces that donor's 96 fix tags

@@ -677,6 +677,11 @@ def test_icon_is_drawn_from_the_geometry_alone():
     assert plate.getpixel((44, 15)) == (100, 100, 100, 100)             # colour and alpha both the picture
     inside = numpy.asarray(plate)[1:-1, 1:-1]
     assert (inside[..., 0] == picture).all() and (inside[..., 3] == picture).all()
+    narrow = hud_sheet.icon(geometry, 60)                               # another width, the same drawing
+    assert narrow.shape[1] == 60 and narrow.shape[0] < picture.shape[0]
+    for width in (8, 300, 60.5):
+        with pytest.raises(hud_sheet.Refused):
+            hud_sheet.icon(geometry, width)
     with pytest.raises(hud_sheet.Refused):
         hud_sheet.icon("tris\n0 1 2\n")
     with pytest.raises(hud_sheet.Refused):
@@ -698,6 +703,56 @@ def test_icon_sprite_is_placed_by_its_corner():
         hud_sheet.place_by_corner(bitmap_tag([(2, 2, hek.FORMAT_A8R8G8B8, 0, bytes(16))], sequences=2, sprites=2))
     with pytest.raises(hek.Refused):
         hud_sheet.place_by_corner(bitmap_tag([(2, 2, hek.FORMAT_A8R8G8B8, 0, bytes(16))], sequences=1, sprites=3))
+
+
+def test_counter_layout_another_weapons_rounds():
+    """the SMG's counter: the same drawing with its own numbers (60 rounds, 3 rows of 20 in groups of 5)"""
+    numpy = pytest.importorskip("numpy")
+    pytest.importorskip("PIL")
+    import counter_art
+    layout = {"columns": 20, "rows": 3, "group": 5, "height": 6.2, "width": 2.3, "pitch": 4.5, "group_gap": 1.8}
+    rounds = list(counter_art.rounds(layout))
+    assert [number for number, _, _ in rounds] == list(range(1, 61))
+    assert sorted({top for _, _, top in rounds}) == [counter_art.TOP + row * counter_art.ROW for row in range(3)]
+    first = [entry for entry in rounds if entry[0] <= 20]
+    gaps = [round(first[index + 1][1] - first[index][1], 6) for index in range(19)]
+    assert gaps == [4.5 if index % 5 != 4 else 6.3 for index in range(19)]
+    # the rows keep the assault rifle's places: each row starts one row's lean left of the one above
+    starts = [entry[1] for entry in rounds if entry[0] in (1, 21, 41)]
+    assert [round(starts[0] - starts[1], 6), round(starts[1] - starts[2], 6)] == [
+        round(counter_art.ROW * counter_art.LEAN, 6)] * 2
+    meter, _ = counter_art.sheets(layout)
+    covered = meter[..., 3] == 255
+    assert sorted(int(value) for value in numpy.unique(meter[..., 0][covered])) == [4 * n for n in range(1, 61)]
+    # the defaults are the battle rifle's, given or not
+    assert list(counter_art.rounds({})) == list(counter_art.rounds()) == list(counter_art.rounds(None))
+    for bad, reason in (({"colour": 1}, "no such"), ({"columns": 32, "rows": 2}, "at most 63"),
+                        ({"rows": 0}, "positive"), ({"columns": 30, "rows": 2, "pitch": 4.5}, "past the")):
+        with pytest.raises(counter_art.Refused) as refusal:
+            counter_art.layout_of(bad)
+        assert reason in str(refusal.value)
+
+
+def test_smg_reticle_is_four_arcs_with_ticks_and_a_clear_middle():
+    numpy = pytest.importorskip("numpy")
+    pytest.importorskip("PIL")
+    import reticle_art
+    alpha = reticle_art.smg_reticle().astype(int)
+    assert alpha.shape == (512, 512)
+    middle = 256
+    ring = int(reticle_art.SMG_RING)
+    # the arcs up, down, left and right; the diagonals open
+    for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+        assert alpha[middle + dy * ring, middle + dx * ring] > 200
+    diagonal = int(ring / 2 ** 0.5)
+    assert alpha[middle - diagonal, middle - diagonal] == 0 and alpha[middle + diagonal, middle + diagonal] == 0
+    # the ticks run out past the ring; the middle is clear but for the faint small ring
+    assert alpha[middle, middle + int(reticle_art.SMG_TICK_END) - 4] > 200
+    assert alpha[middle, middle + int(reticle_art.SMG_TICK_END) + 4] == 0
+    assert alpha[middle, middle] == 0 and alpha[middle - 30:middle + 30, middle - 30:middle + 30].max() == 0
+    assert 80 < alpha[middle, middle + int(reticle_art.SMG_EYE)] <= reticle_art.SMG_EYE_ALPHA
+    # symmetric four ways (but for the drawing's edge texels, a supersample apart)
+    assert numpy.abs(alpha - alpha[::-1, :]).mean() < 1 and numpy.abs(alpha - alpha.T).mean() < 1
 
 
 def test_scope_redraw_keeps_the_ink_and_clears_the_ring_band():
@@ -1367,6 +1422,58 @@ def test_png_reader_agrees_with_pillow_on_every_row_filter(tmp_path):
 
 # ---------- the recipe's own checks, and the work folder
 
+def test_check_recipe_takes_a_recipe_made_against_no_prototype():
+    """the SMG packs' recipes have no prototype: no reference folders, departures or approved donor"""
+    data = recipe()
+    for key in make_pack.PROTOTYPE_KEYS:
+        data.pop(key)
+    make_pack.check_recipe(data)
+    half = recipe()
+    half.pop("departures")
+    with pytest.raises(make_pack.Refused) as refusal:
+        make_pack.check_recipe(half)
+    assert "names all of" in str(refusal.value)
+
+
+def test_every_art_file_names_a_drawing_of_its_script():
+    data = recipe()
+    assert make_pack.art_drawing_problems(data) == []
+    assert set(make_pack.DRAWINGS.values()) <= make_pack.scripts()
+    for change, reason in (
+            (lambda data: data["art_drawings"].pop("br_icon.png"), "no drawing"),
+            (lambda data: data["art_drawings"]["br_icon.png"].update(draw="paint"), "no drawing"),
+            (lambda data: data["art_drawings"]["br_icon.png"].update(draw="reticle"), "not the recipe's script"),
+            (lambda data: data["art_drawings"]["br_icon.png"].update(input="other.txt"), "no art input"),
+            (lambda data: data["art_drawings"].update({"extra.png": {"draw": "icon"}}), "of no art file")):
+        changed = recipe()
+        change(changed)
+        assert any(reason in problem for problem in make_pack.art_drawing_problems(changed)), reason
+        with pytest.raises(make_pack.Refused):
+            make_pack.check_recipe(changed)
+
+
+def test_the_art_stage_draws_each_file_as_its_drawing_says(tmp_path):
+    numpy = pytest.importorskip("numpy")
+    pytest.importorskip("PIL")
+    import argparse
+    import reticle_art
+    data = recipe()
+    options = argparse.Namespace(work=str(tmp_path), recipe=str(RECIPE), invader="invader", library_path=None,
+                                 ffmpeg="ffmpeg", builder=None)
+    run = make_pack.Run(options, data)
+    smg = numpy.asarray(run.draw("smg_reticle.png", {"draw": "reticle", "form": "smg"}))
+    assert (smg[..., 3] == reticle_art.smg_reticle()).all() and (smg[..., 0] == smg[..., 3]).all()
+    layout = {"columns": 20, "rows": 3, "group": 5, "height": 6.2, "width": 2.3, "pitch": 4.5, "group_gap": 1.8}
+    meter = numpy.asarray(run.draw("m.png", {"draw": "counter_meter", "layout": layout}))
+    assert int(meter[..., 0][meter[..., 3] == 255].max()) == 240                     # 60 rounds
+    with pytest.raises(make_pack.Refused):
+        run.draw("x.png", {"draw": "reticle", "form": "star"})
+    with pytest.raises(make_pack.Refused):
+        run.draw("x.png", {"draw": "counter_meter", "layout": {"rows": 9}})
+    with pytest.raises(make_pack.Refused):
+        run.draw("x.png", {"draw": "paint"})
+
+
 def test_check_recipe_refusals():
     good = recipe()
     make_pack.check_recipe(good)
@@ -1390,6 +1497,8 @@ def test_check_recipe_refusals():
     assert "no script here" in refused(lambda data: data["art_scripts"].update({"digits.png": "elsewhere.py"}))
     assert "departure in no layer" in refused(lambda data: data["departures"].update({"fix-x/a.bitmap": "why"}))
     assert "other than its pixels" in refused(lambda data: data["art"].update({"digits.png": {"sha256": "0" * 64}}))
+    assert "no art_drawings" in refused(lambda data: data.pop("art_drawings"))
+    assert "drawings" in refused(lambda data: data["art_drawings"]["digits.png"].update(draw="screen_compass_x"))
 
 
 def test_work_folder_must_be_one_make_pack_made(tmp_path):

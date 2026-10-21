@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "ae_layout_rules.h"
+#include "ae_weapon_slots.h"
 
 static int failures;
 #define AE_CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
@@ -367,6 +368,32 @@ static void test_vehicle_lines(void)
 	AE_CHECK(!ae_layout_games_take(ctf_slayer, 4) && !ae_layout_games_take(none, 1) && !ae_layout_games_take(none, 0));
 }
 
+/* weapon packs' weapons by name (ae_weapon_slots.h): their slot kept, the map's fallback chosen when applied */
+static void test_pack_weapons(void)
+{
+	char const *text =
+		"layout 1 h2d_turf 0badf00d\n"
+		"item smg at 1 2 3 respawn 30\n"
+		"item BR at 4 5 6 facing 90\n"
+		"item silenced_smg at 7 8 9 drop\n"
+		"item carbine at 0 0 0\n"
+		"item pistol at 1 1 1\n";
+
+	AE_CHECK(parse(text) == 0);
+	AE_CHECK(layout.item_count == 5);
+	AE_CHECK(layout.items[0].what == _ae_layout_pack && layout.items[0].pack_slot == AE_WEAPON_SLOT_SMG);
+	AE_CHECK(layout.items[0].respawn_seconds == 30);
+	AE_CHECK(layout.items[1].what == _ae_layout_pack && layout.items[1].pack_slot == AE_WEAPON_SLOT_BATTLE_RIFLE);
+	AE_CHECK(layout.items[1].has_facing);
+	AE_CHECK(layout.items[2].what == _ae_layout_pack && layout.items[2].pack_slot == AE_WEAPON_SLOT_SMG_SILENCED);
+	AE_CHECK(layout.items[2].drop);
+	AE_CHECK(layout.items[3].what == _ae_layout_pack && layout.items[3].pack_slot == AE_WEAPON_SLOT_CARBINE);
+	/* (the stock alias stays the stock weapon) */
+	AE_CHECK(layout.items[4].what == _ae_layout_alias && layout.items[4].alias == _ae_layout_pistol);
+	/* (not a pack weapon's name, and no tag path: refused) */
+	AE_CHECK(parse("layout 1 h2d_turf 0badf00d\nitem smgg at 1 2 3\n") != 0);
+}
+
 int main(void)
 {
 	test_good_file();
@@ -376,6 +403,7 @@ int main(void)
 	test_spawn_and_flag_lines();
 	test_limits();
 	test_vehicle_lines();
+	test_pack_weapons();
 	printf("%s\n", failures ? "FAILED" : "ok");
 	return failures != 0;
 }

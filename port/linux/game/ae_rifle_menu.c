@@ -53,9 +53,24 @@ static void slot_row(struct widget_instance *spinner, struct universal_variant *
 		return;
 	if (!save)
 	{
-		if (universal->weapon_pack == _weapon_pack_battle_rifle && (universal->pack_loadout & SLOT_PACK(slot)))
+		/* (the choice is the battle rifle's: the slot's weapon the BR's pack, ae_weapon_slots.h) */
+		if (game_variant_pack_loadout_weapon_slot(universal->weapon_pack, universal->pack_loadout, slot) ==
+			_weapon_pack_battle_rifle)
+		{
 			spinner->parameters.list.selected_index = PACK_CHOICE;
+		}
 		return;
+	}
+	/* (a slot that names another pack keeps it unless the BR's choice is taken: the editor has no rows for the
+	other packs yet, and their slot shows the weapon played without the pack) */
+	{
+		short named = game_variant_pack_loadout_weapon_slot(universal->weapon_pack, universal->pack_loadout, slot);
+
+		if (named != _weapon_pack_none && named != _weapon_pack_battle_rifle &&
+			!(custom && spinner->parameters.list.selected_index == PACK_CHOICE))
+		{
+			return;
+		}
 	}
 	universal->pack_loadout &= (byte)~(0x3 << (slot * 2));
 	if (custom && spinner->parameters.list.selected_index == PACK_CHOICE)
@@ -82,9 +97,15 @@ void ae_rifle_menu_rows(struct widget_instance *list, struct game_variant *varia
 	slot_row(secondary, universal, &options->secondary_weapon, _pack_loadout_secondary, custom, save);
 	if (!save)
 		return;
-	/* (the gametype uses the pack while a slot, or the map's spawns, take its weapon) */
-	universal->weapon_pack = (universal->pack_loadout & (SLOTS_MASK | PACK_MAP_SPAWNS_BIT)) ?
-		_weapon_pack_battle_rifle : _weapon_pack_none;
+	/* (the gametype uses the BR's pack while a slot, or the map's spawns, take its weapon; the other packs it
+	names, ae_weapon_slots.h, are kept: a gametype naming them has no editor rows yet, and a choice here sets the
+	BR's bit alone) */
+	if (game_variant_weapon_pack(universal->weapon_pack) & ~_weapon_pack_battle_rifle)
+		universal->weapon_pack = (byte)(game_variant_weapon_pack(universal->weapon_pack) |
+			((universal->pack_loadout & SLOTS_MASK) ? _weapon_pack_battle_rifle : 0));
+	else
+		universal->weapon_pack = (universal->pack_loadout & (SLOTS_MASK | PACK_MAP_SPAWNS_BIT)) ?
+			_weapon_pack_battle_rifle : _weapon_pack_none;
 	platform_log("menus: the gametype's battle rifle: primary %s, secondary %s",
 		(universal->pack_loadout & SLOT_PACK(_pack_loadout_primary)) ? "pack" : "stock",
 		(universal->pack_loadout & SLOT_PACK(_pack_loadout_secondary)) ? "pack" : "stock");

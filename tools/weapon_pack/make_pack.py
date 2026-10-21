@@ -153,12 +153,54 @@ def unknown_scripts(recipe):
         name for name in recipe["art"] if name not in recipe["art_scripts"])
 
 
+# what the art stage can draw: each drawing's name and the script that draws it. A recipe names, for each of its
+# art files, a drawing and that drawing's inputs and numbers (art_drawings); the battle rifle's recipe is one user
+DRAWINGS = {
+    "screen_digits": "screen_art.py",          # the gun screen's digits
+    "screen_compass": "screen_art.py",         # the gun screen's compass
+    "counter_meter": "counter_art.py",         # the ammunition counter's meter sheet ("layout": counter_art's numbers)
+    "counter_alphas": "counter_art.py",        # its low-ammo flash ("layout" the same)
+    "scope_details_hd": "scope_hd.py",         # the sharp scope's lines ("input": the scope's details bitmap)
+    "scope_ring_hd": "scope_hd.py",            # its ring ("input": the scope's mask bitmap)
+    "scope_mask_noring": "scope_hd.py",        # its mask without the ring ("input": the mask)
+    "scope_details_label": "scope_label.py",   # the lines with the zoom's label ("input": the details)
+    "reticle": "reticle_art.py",               # the aiming reticle ("picture": a file beside the recipe, or
+                                               # "form": "zoom" (the default), "smg" or "carbine",
+                                               # drawn from geometry: reticle_art.FORMS)
+    "icon": "hud_sheet.py",                    # the prompts' picture ("input": a model's geometry; "width";
+                                               # its size is the art settings' icon_size)
+}
+# the recipe's keys; the last three are only for a recipe made against a prototype (the battle rifle's)
+RECIPE_KEYS = ("pack", "source", "stock_map", "tools", "donor", "layers", "steps", "art", "art_scripts", "art_inputs",
+               "art_settings", "art_drawings", "expected")
+PROTOTYPE_KEYS = ("reference", "departures", "approved_reference")
+
+
+def art_drawing_problems(recipe):
+    """each art file: a drawing the art stage has, drawn by the script the recipe names for the file, reading only
+    art inputs the recipe has"""
+    problems = []
+    drawings = recipe["art_drawings"]
+    for name in recipe["art"]:
+        entry = drawings.get(name)
+        if not entry or entry.get("draw") not in DRAWINGS:
+            problems.append("%s: no drawing the art stage has" % name)
+        elif DRAWINGS[entry["draw"]] != recipe["art_scripts"].get(name):
+            problems.append("%s: drawn by %s, not the recipe's script" % (name, DRAWINGS[entry["draw"]]))
+        elif "input" in entry and entry["input"] not in recipe["art_inputs"]:
+            problems.append("%s: reads %s, which is no art input" % (name, entry["input"]))
+    problems += ["%s: a drawing of no art file" % name for name in sorted(set(drawings) - set(recipe["art"]))]
+    return problems
+
+
 def check_recipe(recipe):
     """the recipe's own rules, before anything is run"""
-    for key in ("pack", "source", "stock_map", "tools", "donor", "layers", "steps", "art", "art_scripts",
-                "art_inputs", "art_settings", "expected", "reference", "departures", "approved_reference"):
+    for key in RECIPE_KEYS:
         if key not in recipe:
             raise Refused("the recipe has no %s" % key)
+    prototype = [key for key in PROTOTYPE_KEYS if key in recipe]
+    if prototype and len(prototype) != len(PROTOTYPE_KEYS):
+        raise Refused("a recipe made against a prototype names all of %s" % ", ".join(PROTOTYPE_KEYS))
     made = set()
     for step in recipe["steps"]:
         if step["op"] not in OPERATIONS:
@@ -177,15 +219,19 @@ def check_recipe(recipe):
         made.add((step["layer"], step["tag"]))
     if unknown_scripts(recipe):
         raise Refused("art with no script here: %s" % ", ".join(unknown_scripts(recipe)))
+    problems = art_drawing_problems(recipe)
+    if problems:
+        raise Refused("the art's drawings: %s" % "; ".join(problems[:3]))
     used = recipe_inputs(recipe)["cmt"] | set(recipe["source"]["verbatim"])
     listed = set(recipe["source"]["allowlist"])
     if used != listed:
         raise Refused("the allowlist and what the recipe reads differ: %s" % ", ".join(sorted(used ^ listed)[:5]))
-    if set(recipe["reference"]) != set(recipe["layers"]):
-        raise Refused("the reference folders are not the layers'")
-    for name in recipe["departures"]:
-        if name.split("/", 1)[0] not in recipe["layers"]:
-            raise Refused("a departure in no layer: %s" % name)
+    if prototype:
+        if set(recipe["reference"]) != set(recipe["layers"]):
+            raise Refused("the reference folders are not the layers'")
+        for name in recipe["departures"]:
+            if name.split("/", 1)[0] not in recipe["layers"]:
+                raise Refused("a departure in no layer: %s" % name)
     for name, entry in recipe["art"].items():
         if set(entry) != {"mode", "size", "pixels_sha256"}:
             raise Refused("art pinned by something other than its pixels: %s" % name)
@@ -601,11 +647,6 @@ class Run:
             raise Refused("the art scripts need numpy and Pillow: take %s to a machine that has them, run "
                           "--stage art there on a work folder holding it, and bring its art/ back here" %
                           self.art_in)
-        import counter_art
-        import hud_sheet
-        import scope_hd
-        import scope_label
-        import screen_art
         recipe = self.recipe
         for name, entry in recipe["art_inputs"].items():
             if not (self.art_in / name).is_file() or sha256_file(self.art_in / name) != entry["sha256"]:
@@ -613,16 +654,27 @@ class Run:
         if self.art.exists():
             shutil.rmtree(self.art)
         self.art.mkdir(parents=True)
-        settings = recipe["art_settings"]
-        screen_art.plate([screen_art.digit(value) for value in range(10)]).save(self.art / "digits.png")
-        screen_art.plate([screen_art.compass(frame) for frame in range(8)]).save(self.art / "compass.png")
-        meter, alphas = counter_art.sheets()
-        Image.fromarray(meter, "RGBA").save(self.art / "br_meter_smooth.png")
-        Image.fromarray(alphas, "RGBA").save(self.art / "br_alphas_smooth.png")
-        lines, _, _, _ = scope_hd.details(scope_hd.load_alpha(self.art_in / "scope_details.bitmap"),
-                                          settings["scope_ink"])
-        ring, mask, _ = scope_hd.ring_and_mask(scope_hd.load_alpha(self.art_in / "scope_mask.bitmap"),
-                                               settings["scope_ink"] == "bold")
+        for name in sorted(recipe["art"]):
+            self.draw(name, recipe["art_drawings"][name]).save(self.art / name)
+        self.check_art()
+        log("art: %d files drawn in %s, each the recipe's" % (len(recipe["art"]), self.art))
+
+    def draw(self, name, entry):
+        """one art file's picture (a Pillow image), drawn as the recipe's art_drawings entry says; numbers the
+        entry does not give are the art settings' (the battle rifle's recipe gives them there)"""
+        import numpy as np
+        from PIL import Image
+        import counter_art
+        import hud_sheet
+        import reticle_art
+        import scope_hd
+        import scope_label
+        import screen_art
+        settings = self.recipe["art_settings"]
+        kind = entry["draw"]
+
+        def setting(key):
+            return entry[key] if key in entry else settings[key]
 
         def grey(alpha, white=False):
             image = np.zeros(alpha.shape + (4,), np.uint8)
@@ -630,29 +682,54 @@ class Run:
             image[..., 3] = alpha
             return Image.fromarray(image, "RGBA")
 
-        grey(lines).save(self.art / "br_scope_details_hd.png")
-        grey(ring, white=True).save(self.art / "br_scope_ring_hd.png")
-        grey(mask).save(self.art / "br_scope_mask_noring.png")
-        import reticle_art
-        # (grey, not white: an aiming reticle is drawn by its colour as well as its alpha (the crosshair's colour has
-        # no alpha of its own), so a white sheet shows as a filled square)
-        picture = settings.get("reticle_picture")
-        grey(reticle_art.from_picture(self.recipe_folder / picture) if picture else
-             reticle_art.zoom_reticle()).save(self.art / "br_zoom_reticle.png")
-        # (the bold scope draws its own label: scope_hd.bold_label)
-        if settings["scope_ink"] == "bold":
-            if settings["scope_label_digit"] != scope_hd.BOLD_LABEL:
-                raise Refused("the bold scope's label is drawn for %sx only" % scope_hd.BOLD_LABEL)
-            relabelled = lines
-        else:
-            relabelled, _ = scope_label.relabel(lines, settings["scope_label_digit"])
-        Image.fromarray(np.dstack([relabelled] * 4), "RGBA").save(self.art / "br_scope_details_3x.png")
-        picture = hud_sheet.icon((self.art_in / "br_geo.txt").read_text())
-        if [picture.shape[1], picture.shape[0]] != settings["icon_size"]:
-            raise Refused("the icon is %d x %d, not the recipe's size" % (picture.shape[1], picture.shape[0]))
-        hud_sheet.plate(picture).save(self.art / "br_icon.png")
-        self.check_art()
-        log("art: %d files drawn in %s, each the recipe's" % (len(recipe["art"]), self.art))
+        def alpha_of(key="input"):
+            return scope_hd.load_alpha(self.art_in / entry[key])
+
+        try:
+            if kind == "screen_digits":
+                return screen_art.plate([screen_art.digit(value) for value in range(10)])
+            if kind == "screen_compass":
+                return screen_art.plate([screen_art.compass(frame) for frame in range(8)])
+            if kind in ("counter_meter", "counter_alphas"):
+                meter, alphas = counter_art.sheets(entry.get("layout"))
+                return Image.fromarray(meter if kind == "counter_meter" else alphas, "RGBA")
+            if kind == "scope_details_hd":
+                return grey(scope_hd.details(alpha_of(), setting("scope_ink"))[0])
+            if kind in ("scope_ring_hd", "scope_mask_noring"):
+                ring, mask, _ = scope_hd.ring_and_mask(alpha_of(), setting("scope_ink") == "bold")
+                return grey(ring, white=True) if kind == "scope_ring_hd" else grey(mask)
+            if kind == "scope_details_label":
+                lines = scope_hd.details(alpha_of(), setting("scope_ink"))[0]
+                # (the bold scope draws its own label: scope_hd.bold_label)
+                if setting("scope_ink") == "bold":
+                    if setting("scope_label_digit") != scope_hd.BOLD_LABEL:
+                        raise Refused("the bold scope's label is drawn for %sx only" % scope_hd.BOLD_LABEL)
+                    relabelled = lines
+                else:
+                    relabelled, _ = scope_label.relabel(lines, setting("scope_label_digit"))
+                return Image.fromarray(np.dstack([relabelled] * 4), "RGBA")
+            if kind == "reticle":
+                # (grey, not white: an aiming reticle is drawn by its colour as well as its alpha (the crosshair's
+                # colour has no alpha of its own), so a white sheet shows as a filled square)
+                # (a form drawn from geometry, or a picture: the entry's, else the art settings')
+                form = entry.get("form")
+                picture = None if form else entry.get("picture", settings.get("reticle_picture"))
+                form = form or "zoom"
+                if picture:
+                    return grey(reticle_art.from_picture(self.recipe_folder / picture))
+                if form not in reticle_art.FORMS:
+                    raise Refused("%s: no reticle form %s" % (name, form))
+                return grey(reticle_art.FORMS[form]())
+            if kind == "icon":
+                picture = hud_sheet.icon((self.art_in / entry["input"]).read_text(),
+                                         entry.get("width", hud_sheet.ICON_WIDTH))
+                if [picture.shape[1], picture.shape[0]] != setting("icon_size"):
+                    raise Refused("the icon is %d x %d, not the recipe's size" % (picture.shape[1],
+                                                                                   picture.shape[0]))
+                return hud_sheet.plate(picture)
+        except counter_art.Refused as refusal:
+            raise Refused("%s: %s" % (name, refusal))
+        raise Refused("%s: no such drawing: %s" % (name, kind))
 
     def check_art(self):
         for name, entry in self.recipe["art"].items():
@@ -769,6 +846,10 @@ class Run:
             if (index + 1) % 16 == 0:
                 log("build: %d of %d fix tags made" % (index + 1, len(recipe["steps"])))
         log("build: %d fix tags made in %d layers" % (len(recipe["steps"]), len(recipe["layers"])))
+        if "reference" not in recipe:
+            if self.options.reference:
+                raise Refused("--reference: the recipe was made against no prototype")
+            return
         if not self.options.reference:
             log("build: no --reference: the fix tags are not compared with the prototype's")
             return
@@ -936,6 +1017,10 @@ class Run:
     def check_departures(self, image):
         """the pack against the APPROVED donor (another build of it): it may differ only in the tags the recipe
         names; departures.tsv lists every difference. Returns the problems"""
+        if "approved_reference" not in self.recipe:
+            if self.options.approved_donor:
+                raise Refused("--approved-donor: the recipe has no approved donor")
+            return []
         approved = self.recipe["approved_reference"]
         if not self.options.approved_donor:
             log("build: no --approved-donor: the pack is not compared with the approved donor")

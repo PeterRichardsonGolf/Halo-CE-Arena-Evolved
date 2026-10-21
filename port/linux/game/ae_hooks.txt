@@ -1130,3 +1130,7 @@ source/interface/hud.c	return hud_globals ? ae_sensor_range_map_own(hud_globals-
 # PIN keeps a NaN, the NaN corner spread through every later clip and the clusters past that portal were not drawn
 # that frame. The corner on the line is the crossing (scale 0). OpenCE's own (Bungie's) code.
 source/math/geometry.c	if (scale != scale) scale = 0.f; /* AE hook */
+source/game/game_engine.c	#include "ae_weapon_slots.h" /* AE hook */
+source/game/game_engine.c	#include "ae_pack_spawns.h" /* AE hook */
+source/game/game_engine.c	definition_index = ae_pack_spawn_definition(equipment_index, definition_index); /* AE hook */
+port/linux/src/port_config.c	{ "debug.network_test_weapon_packs", _config_integer, "0", "HALO_NETWORK_TEST_WEAPON_PACKS", _environment_value, /* AE hook */\n_platform_all,

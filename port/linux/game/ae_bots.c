@@ -21,6 +21,8 @@ stays upstream's but for the AE hook lines.
 #include "ae_bots.h"
 #include "ae_lan_bots.h"
 #include "ae_bots_combat_rules.h"
+#include "ae_weapon_pack.h"
+#include "ae_weapon_slots.h"
 
 #include <string.h>
 
@@ -41,13 +43,47 @@ burst's own 4 ticks, the 0.20 s recovery, the tick of the pull), and a pull in t
 more; bots.c adds its skill's few ticks */
 #define AE_BOTS_RIFLE_PULL_TICKS 13
 
+/* ---------- the other packs' weapons (ae_weapon_slots.h), by their slot: their tags' names say nothing to bots.c */
+
+/* the SMGs: full-automatic close-range weapons, held down in bursts as the assault rifle is (tap 0, bots.c's own
+from the trigger); wanted a little more than the assault rifle (6), less than the pistol (7) at range; kept
+closer than bots.c's 7 (the assault rifle's) because their spread opens fast (Halo 2's 1 to 2.75 degrees) and
+they are strong close up. The silenced one a step further: its spread is tighter (0.25 to 2.5) */
+#define AE_BOTS_SMG_VALUE 6
+#define AE_BOTS_SMG_RANGE 5.0f
+#define AE_BOTS_SILENCED_SMG_RANGE 6.0f
+/* the carbine: a precision rifle as the BR, its rounds one a pull: a pull every 11 ticks (its pack's 2.857 rounds a
+second, Halo 2's 0.35 s fire recovery: 10.5 ticks, and a tick more as the BR's), else bots.c holds its trigger
+down as an automatic's and a NORMAL bot's held aim sprays it (3% of its rounds hit in the octagon grid) */
+#define AE_BOTS_CARBINE_VALUE 8
+#define AE_BOTS_CARBINE_RANGE 11.0f
+#define AE_BOTS_CARBINE_PULL_TICKS 11
+
 void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, real *range)
 {
-	if (!ae_burst_rifle_definition(definition_index))
+	if (ae_burst_rifle_definition(definition_index))
+	{
+		*value = AE_BOTS_RIFLE_VALUE;
+		*tap_ticks = AE_BOTS_RIFLE_PULL_TICKS;
+		*range = AE_BOTS_RIFLE_RANGE;
 		return;
-	*value = AE_BOTS_RIFLE_VALUE;
-	*tap_ticks = AE_BOTS_RIFLE_PULL_TICKS;
-	*range = AE_BOTS_RIFLE_RANGE;
+	}
+	switch (ae_weapon_pack_definition_slot(definition_index))
+	{
+	case AE_WEAPON_SLOT_SMG:
+		*value = AE_BOTS_SMG_VALUE;
+		*range = AE_BOTS_SMG_RANGE;
+		break;
+	case AE_WEAPON_SLOT_SMG_SILENCED:
+		*value = AE_BOTS_SMG_VALUE;
+		*range = AE_BOTS_SILENCED_SMG_RANGE;
+		break;
+	case AE_WEAPON_SLOT_CARBINE:
+		*value = AE_BOTS_CARBINE_VALUE;
+		*tap_ticks = AE_BOTS_CARBINE_PULL_TICKS;
+		*range = AE_BOTS_CARBINE_RANGE;
+		break;
+	}
 }
 
 /* a spent weapon (ae_bots_combat_weapon_spent): 1 spent, 0 not, -1 bots.c's own test (rounds) */

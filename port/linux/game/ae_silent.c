@@ -32,6 +32,7 @@ random number stay the same.
 #include "ae_silent.h"
 #include "ae_silent_rules.h"
 #include "ae_weapon_pack.h"
+#include "ae_weapon_slots.h"
 
 void platform_log(char const *format, ...);
 
@@ -229,18 +230,40 @@ void ae_silent_log_counts(void)
 
 void ae_silent_join_request_mark(wchar_t *machine_name, short length)
 {
+	unsigned int loaded = 0;
+	int level;
+	short slot;
+
 	ae_silent_join_mark((unsigned short *)machine_name, length);
-	/* (and that this machine has the battle rifle's pack: AE_RIFLE_CAPABILITY in the same place; a host of
-	before reads any capability over 0 as the SILENT options') */
-	if (machine_name && length >= 3 && ae_weapon_pack_slot_loaded(_weapon_pack_battle_rifle))
-		((unsigned short *)machine_name)[length - 1] = (unsigned short)(AE_SILENT_JOIN_MARK | AE_RIFLE_CAPABILITY);
+	/* (and which weapon packs this machine has: AE_RIFLE_CAPABILITY, the battle rifle's, or a higher level of
+	ae_weapon_slots.h's, in the same place; a host of before reads any capability over 0 as the SILENT options',
+	and 2 or more as the battle rifle's) */
+	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+		if (ae_weapon_pack_slot_loaded(slot))
+			loaded |= AE_WEAPON_SLOT_BIT(slot);
+	level = ae_weapon_slots_capability(loaded);
+	if (machine_name && length >= 3 && level >= AE_RIFLE_CAPABILITY)
+		((unsigned short *)machine_name)[length - 1] = (unsigned short)(AE_SILENT_JOIN_MARK | (unsigned int)level);
 }
 
-/* the game's gametype uses the battle rifle's pack and the machine has not said it has it: on a machine without
-the pack's tags the rifle is an object of no definition */
+/* the capability level the game's gametype's weapon packs need (ae_weapon_slots.h; 0 none, AE_RIFLE_CAPABILITY the
+battle rifle's alone) */
+static int packs_required(struct game_variant const *variant)
+{
+	return variant ? ae_weapon_slots_required((unsigned int)game_variant_weapon_pack(variant->universal_variant.weapon_pack)) : 0;
+}
+
+/* the game's gametype uses weapon packs and the machine has not said it has them all: on a machine without a
+pack's tags its weapon is an object of no definition */
 static boolean rifle_join_refused(struct game_variant const *variant, int capability)
 {
-	return variant && variant->universal_variant.weapon_pack == _weapon_pack_battle_rifle && capability < AE_RIFLE_CAPABILITY;
+	return capability < packs_required(variant);
+}
+
+/* the refusal's code: the battle rifle's alone keeps its own (older builds know it) */
+static short packs_rejection_code(struct game_variant const *variant)
+{
+	return packs_required(variant) > AE_RIFLE_CAPABILITY ? AE_PACKS_REJECTION_CODE : AE_RIFLE_REJECTION_CODE;
 }
 
 /* the record's place in the heard table: its own, else a free one, else NONE */
@@ -299,10 +322,11 @@ boolean ae_silent_join_refused_now(void const *client_machine, long machine_inde
 	}
 	if (rifle_join_refused(variant, machine_capability(machine_index)))
 	{
-		platform_log("weapon pack: refusing machine #%d: it has not the battle rifle's pack, which the game's "
-			"gametype uses", (int)machine_index);
+		platform_log("weapon pack: refusing machine #%d: it has not the weapon packs the game's gametype uses (it "
+			"tells level %d, the game needs %d)", (int)machine_index, machine_capability(machine_index),
+			packs_required(variant));
 		if (refusal_code)
-			*refusal_code = AE_RIFLE_REJECTION_CODE;
+			*refusal_code = packs_rejection_code(variant);
 		return TRUE;
 	}
 	if (!ae_silent_join_refused(byte, machine_capability(machine_index), 0))
@@ -325,11 +349,12 @@ void ae_silent_host_machine(long machine_index, boolean remote_joined, struct ga
 	/* (the gametype changed in the lobby to one with the battle rifle) */
 	if (rifle_join_refused(variant, machine_capability(machine_index)))
 	{
-		if (network_game_server_drop_machine(machine_index, AE_RIFLE_REJECTION_CODE))
+		if (network_game_server_drop_machine(machine_index, packs_rejection_code(variant)))
 		{
 			silent.dropped[machine_index] = TRUE;
-			platform_log("weapon pack: dropping machine #%d: it has not the battle rifle's pack, which the game's "
-				"gametype now uses", (int)machine_index);
+			platform_log("weapon pack: dropping machine #%d: it has not the weapon packs the game's gametype now "
+				"uses (it tells level %d, the game needs %d)", (int)machine_index, machine_capability(machine_index),
+				packs_required(variant));
 		}
 		return;
 	}
@@ -348,6 +373,15 @@ void ae_silent_join_rejected(word rejection_code)
 	static wchar_t const text[] = L"This game uses Arena Evolved's SILENT options: join with Arena Evolved "
 		L"(version 0.2.3 or later).";
 
+	if (rejection_code == AE_PACKS_REJECTION_CODE)
+	{
+		static wchar_t const packs_text[] = L"This game uses Arena Evolved's Halo 2 weapons: join with Arena Evolved "
+			L"0.3.6 or later, with its packs folder beside the game.";
+
+		platform_log("weapon pack: the host refused this machine: its game uses weapon packs this machine has not");
+		display_error_text_when_main_menu_loaded(packs_text);
+		return;
+	}
 	if (rejection_code == AE_RIFLE_REJECTION_CODE)
 	{
 		static wchar_t const rifle_text[] = L"This game uses Arena Evolved's battle rifle: join with Arena Evolved "

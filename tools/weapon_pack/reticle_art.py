@@ -6,7 +6,18 @@ colour, red on a target).
   br_zoom_reticle.png  512 x 512. Drawn by the HUD at RETICLE_SCALE of its size: the ring is 48 px across on a
       1080-line screen, its lines a little over 3 px (the scope ring's weight).
 
-Usage: reticle_art.py <out png>
+  smg_reticle.png  512 x 512: the SMG's, in the form Halo 2's SMG reticle has (drawn here, nothing of it read):
+      four arcs of a ring centred up, down, left and right with the diagonals open, a short tick out from each
+      arc's middle, a faint small ring in the centre. Drawn by the HUD at SMG_SCALE: the ring 58 px across on a
+      1080-line screen (about the SMG's first-shot error cone, 1 degree each side at the default field of view),
+      the ticks' ends 72 px, its lines 2.2 px (the battle rifle reticle's weight).
+
+  carbine_reticle.png  512 x 512: the carbine's, in the form Halo 2's carbine reticle has (drawn here): four arcs
+      of a ring centred up, down, left and right, four wedges on the diagonals pointing in, broad outside and
+      narrow inside, and the faint small ring. Drawn at SMG_SCALE: the ring 43 px across, the wedges' outer ends
+      70 px, its lines 2.2 px.
+
+Usage: reticle_art.py <out png> [smg|carbine]
 """
 import sys
 
@@ -48,6 +59,84 @@ def zoom_reticle():
     return np.array(image.resize((SIZE, SIZE), Image.LANCZOS))
 
 
+SMG_RING, SMG_LINE = 200.0, 15.0          # the arcs' middle radius and their width, texels
+SMG_ARC_DEGREES = 30.0                     # each side of an arc's middle
+SMG_TICK_END = 250.0                       # the ticks run out from the ring to here
+SMG_EYE, SMG_EYE_LINE, SMG_EYE_ALPHA = 64.0, 9.0, 110
+SMG_SCALE = 0.0644                         # 400 texels x this x 2.25 = 58 px on 1080 lines
+
+
+def smg_reticle():
+    """the SMG reticle's alpha, SIZE x SIZE bytes (a numpy array)"""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    n = SIZE * SUPER
+    c = n / 2.0
+    arcs = Image.new("L", (n, n), 0)
+    draw = ImageDraw.Draw(arcs)
+    r = (SMG_RING + SMG_LINE / 2) * SUPER
+    for middle in (0, 90, 180, 270):
+        draw.pieslice((c - r, c - r, c + r, c + r), middle - SMG_ARC_DEGREES, middle + SMG_ARC_DEGREES, fill=255)
+    r = (SMG_RING - SMG_LINE / 2) * SUPER
+    draw.ellipse((c - r, c - r, c + r, c + r), fill=0)
+    half = SMG_LINE * SUPER / 2
+    near, far = (SMG_RING - SMG_LINE / 2) * SUPER, SMG_TICK_END * SUPER
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        x0, y0, x1, y1 = c + dx * near, c + dy * near, c + dx * far, c + dy * far
+        draw.rectangle((min(x0, x1) - abs(dy) * half, min(y0, y1) - abs(dx) * half,
+                        max(x0, x1) + abs(dy) * half, max(y0, y1) + abs(dx) * half), fill=255)
+    eye = Image.new("L", (n, n), 0)
+    draw = ImageDraw.Draw(eye)
+    r = (SMG_EYE + SMG_EYE_LINE / 2) * SUPER
+    draw.ellipse((c - r, c - r, c + r, c + r), fill=SMG_EYE_ALPHA)
+    r = (SMG_EYE - SMG_EYE_LINE / 2) * SUPER
+    draw.ellipse((c - r, c - r, c + r, c + r), fill=0)
+    both = np.maximum(np.array(arcs), np.array(eye))
+    return np.array(Image.fromarray(both).resize((SIZE, SIZE), Image.LANCZOS))
+
+
+CARBINE_RING = 150.0                          # the arcs' middle radius, texels (lines SMG_LINE wide)
+CARBINE_ARC_DEGREES = 26.0
+CARBINE_WEDGE = (172.0, 245.0, 8.0, 34.0)     # the wedges: from, to (radius), width there and there
+CARBINE_EYE = 52.0
+
+
+def carbine_reticle():
+    """the carbine reticle's alpha, SIZE x SIZE bytes (a numpy array)"""
+    import math
+    import numpy as np
+    from PIL import Image, ImageDraw
+    n = SIZE * SUPER
+    c = n / 2.0
+    shape = Image.new("L", (n, n), 0)
+    draw = ImageDraw.Draw(shape)
+    r = (CARBINE_RING + SMG_LINE / 2) * SUPER
+    for middle in (0, 90, 180, 270):
+        draw.pieslice((c - r, c - r, c + r, c + r), middle - CARBINE_ARC_DEGREES, middle + CARBINE_ARC_DEGREES,
+                      fill=255)
+    r = (CARBINE_RING - SMG_LINE / 2) * SUPER
+    draw.ellipse((c - r, c - r, c + r, c + r), fill=0)
+    near, far, narrow, broad = CARBINE_WEDGE
+    for degrees in (45, 135, 225, 315):
+        a = math.radians(degrees)
+        ux, uy, px, py = math.cos(a), math.sin(a), -math.sin(a), math.cos(a)
+        corners = [(c + (ux * radius + px * side * width / 2) * SUPER, c + (uy * radius + py * side * width / 2) * SUPER)
+                   for radius, width, side in ((near, narrow, 1), (far, broad, 1), (far, broad, -1),
+                                               (near, narrow, -1))]
+        draw.polygon(corners, fill=255)
+    eye = Image.new("L", (n, n), 0)
+    draw = ImageDraw.Draw(eye)
+    r = (CARBINE_EYE + SMG_EYE_LINE / 2) * SUPER
+    draw.ellipse((c - r, c - r, c + r, c + r), fill=SMG_EYE_ALPHA)
+    r = (CARBINE_EYE - SMG_EYE_LINE / 2) * SUPER
+    draw.ellipse((c - r, c - r, c + r, c + r), fill=0)
+    both = np.maximum(np.array(shape), np.array(eye))
+    return np.array(Image.fromarray(both).resize((SIZE, SIZE), Image.LANCZOS))
+
+
+FORMS = {"zoom": zoom_reticle, "smg": smg_reticle, "carbine": carbine_reticle}
+
+
 def from_picture(path):
     """a reticle kept as a picture beside the recipe (512 x 512, its alpha the shape), as bytes (a numpy array):
     battle_rifle/reticle_kenney_033.png is crosshair 033 of Kenney's Crosshair Pack 1.1 (www.kenney.nl, CC0): its
@@ -62,12 +151,12 @@ def from_picture(path):
 
 
 def main(arguments):
-    if len(arguments) != 1:
+    if len(arguments) not in (1, 2) or arguments[1:] not in ([], ["smg"], ["carbine"]):
         print(__doc__.strip().splitlines()[-1], file=sys.stderr)
         return 2
     import numpy as np
     from PIL import Image
-    alpha = zoom_reticle()
+    alpha = FORMS[arguments[1] if len(arguments) == 2 else "zoom"]()
     image = np.zeros(alpha.shape + (4,), np.uint8)
     image[..., :3] = 255
     image[..., 3] = alpha

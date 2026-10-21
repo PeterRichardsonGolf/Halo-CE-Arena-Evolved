@@ -48,13 +48,15 @@ def _parts(geometry):
     return parts
 
 
-def icon(geometry):
-    """the picture: rows x 86 bytes, 0 outside the rifle (the bitmap's colour and its alpha are both this)"""
+def icon(geometry, width=ICON_WIDTH):
+    """the picture: rows x width bytes (86 the battle rifle's), 0 outside the weapon (the bitmap's colour and its
+    alpha are both this)"""
     import numpy as np
+    if not isinstance(width, int) or not 16 <= width <= 256:
+        raise Refused("an icon %r texels wide" % (width,))
     parts = _parts(geometry)
     every = np.array([v for p in parts for v in p["v"]])
     xmin, xmax, zmin, zmax = every[:, 0].min(), every[:, 0].max(), every[:, 2].min(), every[:, 2].max()
-    width = ICON_WIDTH
     samples = ICON_SAMPLES
     scale = (width - 4) * samples / (xmax - xmin)
     rows = int((zmax - zmin) * scale / samples) + 5

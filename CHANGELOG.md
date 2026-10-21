@@ -6,6 +6,20 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Weapon packs: a gametype can name several packs at once (the battle rifle's, and next the Halo 2 SMG's, silenced
+  SMG's and carbine's, each its own file in `packs`), all added to the map. Battle rifle gametypes play exactly as
+  before. A host refuses a machine that lacks a pack its gametype names, with its own message (older builds just
+  cannot join). A test switch (`debug.network_test_pack_map_spawns`, no gametype has it yet) spawns the battle rifle
+  on the map's pistol spots and the SMG on its assault rifle spots, each spot keeping its own respawn time.
+- Three new weapon packs from CMT's The Silent Cartographer: Evolved (credited in each pack): the SMG, the silenced
+  SMG and the covenant carbine, with Halo 2's numbers where they fit one weapon in one hand. The SMG fires 15 rounds
+  a second from a 60-round magazine, a strong close-range automatic (Halo 2 built it for dual wielding; here it
+  stands alone). The silenced SMG is quieter, shows no tracer and is silent to bots' hearing. The carbine fires
+  single rounds from an 18-round magazine with a 2x zoom. Each has its own ammunition counter, reticle and pickup
+  picture, and bots know how to use them. No gametype uses them yet: they are for the Halo 2 demake maps.
+- Map layout files can place a pack weapon by name (`item smg at ...`, also `battle_rifle`, `smg_silenced`,
+  `carbine`). Where the gametype has no such pack, the spot spawns the map's own pistol (battle rifle, carbine) or
+  assault rifle (the SMGs).
 - A controller's crouch now crouches with the stick pushed all the way, as the keyboard's crouch key does (Halo
   stood you up at full stick).
 - Built on ChupathingyCE 0.8.0b (and OpenCE build-244): plays online with ChupathingyCE 0.8 both ways, on its Delta

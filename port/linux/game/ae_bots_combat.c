@@ -13,6 +13,8 @@ weapon, a grenade or its target, its own state, and the minute line. The choices
 
 #include "bots.h"
 #include "ae_burst_rifle.h"
+#include "ae_weapon_pack.h"
+#include "ae_weapon_slots.h"
 #include "ae_bots_combat.h"
 
 #include <math.h>
@@ -84,7 +86,9 @@ boolean ae_bots_combat_precision_weapon(long definition_index)
 		return precision_answer;
 	name = tag_get_name(definition_index);
 	precision_definition = definition_index;
+	/* (and the carbine pack's, a head-shot rifle as the BR: ae_weapon_slots.h) */
 	precision_answer = ae_burst_rifle_definition(definition_index) ||
+		ae_weapon_pack_definition_slot(definition_index) == AE_WEAPON_SLOT_CARBINE ||
 		(name && ((strstr(name, "pistol") && !strstr(name, "plasma")) || strstr(name, "sniper")));
 	return precision_answer;
 }

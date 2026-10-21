@@ -60,7 +60,10 @@ debug.bot_hints logs each of player 1's jumps as a ready `bot jump` line, and a 
 crouches still a second (SHOW COORDINATES on Video Setup > GRAPHICS shows where player 1 stands).
 
 <what>: `like <n>` (the map's own item n's collection: works on protected maps, whose tag names are scrambled), an
-alias (rockets, sniper, shotgun, pistol, overshield, camo: found by what the item is, not by its name), or a tag path
+alias (rockets, sniper, shotgun, pistol, overshield, camo: found by what the item is, not by its name), a weapon
+pack's weapon (battle_rifle or br, smg, smg_silenced or silenced_smg, carbine: ae_weapon_slots.h; the entry is the
+map's own FALLBACK item, the pistol for the BR and the carbine, the assault rifle for the SMGs, and the pack's weapon
+spawns there only where the gametype names that pack and it is on the map, else the fallback does), or a tag path
 of an item collection in double quotes (unprotected maps only). <type>: turret, or the index of the map's vehicle palette entry.
 
 A line the reader does not understand refuses the whole file (a half-applied layout is worse than none); a weapon the
@@ -99,7 +102,8 @@ enum ae_layout_what
 {
 	_ae_layout_like,   /* the map's own item n's collection */
 	_ae_layout_alias,  /* an item found by what it is */
-	_ae_layout_tag     /* an item collection's tag path */
+	_ae_layout_tag,    /* an item collection's tag path */
+	_ae_layout_pack    /* a weapon pack's weapon (ae_weapon_slots.h), made from the map's own fallback item */
 };
 
 enum ae_layout_alias
@@ -126,6 +130,7 @@ struct ae_layout_item
 	short what;            /* enum ae_layout_what */
 	short alias;           /* enum ae_layout_alias, for _ae_layout_alias */
 	long like;             /* the map's item index, for _ae_layout_like */
+	short pack_slot;       /* the pack slot (ae_weapon_slots.h), for _ae_layout_pack */
 	char tag[AE_LAYOUT_TAG_SIZE];
 	real x, y, z;
 	boolean has_facing;
