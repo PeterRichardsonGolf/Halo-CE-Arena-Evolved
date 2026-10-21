@@ -3715,6 +3715,7 @@ void hud_item_timers_initialize_for_new_map(
 	csmemset(hud_item_timers_motion_sensors, 0, sizeof(hud_item_timers_motion_sensors));
 	csmemset(hud_item_timers_meters, 0, sizeof(hud_item_timers_meters));
 	csmemset(hud_item_timers_top_left, 0, sizeof(hud_item_timers_top_left));
+	ae_waypoint_ink_forget_all();
 	/* (LINE OF SIGHT: nothing tested or seen yet) */
 	{
 		short local;

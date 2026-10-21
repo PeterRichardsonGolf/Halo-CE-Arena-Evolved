@@ -67,6 +67,13 @@ void ae_waypoint_arrow_forget(void)
 	ae_waypoint_arrow.drawn = FALSE;
 }
 
+void ae_waypoint_ink_forget_all(void)
+{
+	memset(ae_waypoint_inks, 0, sizeof(ae_waypoint_inks));
+	ae_waypoint_ink_next = 0;
+	ae_waypoint_arrow.drawn = FALSE;
+}
+
 /* a sprite's ink middle (a fraction of its width; 0 for a sprite with no ink) from its bitmap's pixels: FALSE while
 they are not in memory */
 static boolean ae_waypoint_ink_read(struct bitmap_data const *bitmap, real_rectangle2d const *clip, real *middle)

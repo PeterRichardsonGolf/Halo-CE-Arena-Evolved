@@ -19,6 +19,8 @@ turn */
 void ae_waypoint_arrow_drawn(struct bitmap_data const *bitmap, real_rectangle2d const *clip, real scale, real theta);
 /* before a waypoint's arrow is placed: no arrow drawn yet */
 void ae_waypoint_arrow_forget(void);
+/* a new map: the sprites' inks read on the old one are dropped (its bitmaps may be at the same addresses) */
+void ae_waypoint_ink_forget_all(void);
 /* the arrow last drawn: where its ink's middle is across from the middle of its sprite (where the game puts the
 waypoint's point), in the HUD's units; 0 for none drawn, a turned one (at the view's edge) or its pixels not read.
 A map's own arrow art need not sit in the middle of its sprite (the stock double chevron, drawn for an item behind a
