@@ -378,6 +378,18 @@ recipes (`tools/weapon_pack/smg/`, `tools/weapon_pack/smg_silenced/`) have none,
 `--approved-donor` are refused for them; everything else (the allowlist, the pins, the audit, the externals, the
 comparison with the donor) holds as for the rifle.
 
+**The SMGs' recipes.** CMT's TSC:E SMG and silenced SMG, each its own pack (`ae_smg`, slot 2, may replace the
+assault rifle's spawns; `ae_smg_silenced`, slot 3), built as the rifle's (Open Sauce blocks cut, multipurpose maps
+reordered, models converted, the body's base map lifted 1.8, its reflection 0.75 with the warthog's metal cube map,
+campaign and grunt cube maps renamed to the stock cyborg's, the held weapon's collision the stock assault rifle's)
+and set to Halo 2's numbers (15 rounds a second, 60 a magazine, 180 or 160 rounds to start, 180 in reserve at most,
+Halo 2's single-wield error and its minimum, 400 units a second over 40, aim assist 6 degrees / 12 units,
+magnetism 12 / 18), 8 damage a round (tuned later by bot grids), no night vision. The silenced one's shots are
+silent to the AI's hearing and its bullet has no contrail (no tracer); the SMG's two muzzle fireballs are one at
+0.7 of its size. Our art: the counter (60 rounds, 3 rows of 20 in groups of 5), the reticle (Halo 2's SMG form),
+the prompts' picture (60 texels wide; the silenced one 86, at one scale). tools/test_weapon_pack_smg.py holds the
+recipes to this.
+
 **The approved donor and the departures from it.** The rifle the owner approved was a prototype's donor map
 ("v6e", SHA-256 0aa3ffcb..., `approved_reference` in the recipe). The recipe reproduces that donor's 96 fix tags
 byte for byte except six it names under `departures`, which exist so that the pack carries no pixel of the game's
