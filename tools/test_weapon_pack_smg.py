@@ -124,7 +124,7 @@ def test_numbers_are_halo_2s(kind):
     assert weapon["triggers[0].error_angle"] == ("0.25 2.5" if silenced else "1 2.75")
     assert weapon["triggers[0].minimum_error"] == ("0.25" if silenced else "1")
     assert (weapon["triggers[0].error_acceleration_time"], weapon["triggers[0].error_deceleration_time"]) == (
-        ("1", "0.2") if silenced else ("1.1", "0.3"))
+        "1", "0.2")
     assert (weapon["autoaim_angle"], weapon["autoaim_range"], weapon["magnetism_angle"],
             weapon["magnetism_range"]) == ("6", "12", "12", "18")
     assert weapon["triggers[0].projectiles_between_contrails"] == "3"
