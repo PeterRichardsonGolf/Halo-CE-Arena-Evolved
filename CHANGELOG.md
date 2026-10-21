@@ -6,9 +6,6 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-- Smoother on NVIDIA graphics: the game no longer waits for the graphics driver at every frame to read back which lights
-  and lens flares are visible (OpenCE PR #433, from OpenCE build-242's readback; NVIDIA's driver then ran the game's
-  frames one after the other with the graphics card's).
 - Built on ChupathingyCE 0.8.0b (and OpenCE build-244): plays online with ChupathingyCE 0.8 both ways, on its Delta
   wire `chupa-32a` (Arena Evolved's range is that wire alone; 0.3.5's `ae-32a` games still join). Also from it:
   CHANGE TEAMS in a team game's pause menu, the follow camera on long respawn waits, opt-in powerup timers
@@ -24,6 +21,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Not taken from ChupathingyCE 0.8: its Chupathingy menus (Arena Evolved's PC menus stay), its text chat (Arena
   Evolved's is OpenCE's; `chat.enabled` turns ChupathingyCE's on), its new-install defaults (2x multisampling, 256
   shadows), its own save and logs folders, and its Discord application.
+
+## 0.3.5.1-beta - 2026-10-20
+
+- Smoother on NVIDIA graphics: the game no longer waits for the graphics driver at every frame to read back which lights
+  and lens flares are visible (OpenCE PR #433, by hkmodd: since OpenCE build-242 that wait made NVIDIA's driver and the
+  game take turns, about 60 fps on a fast card). Plays with 0.3.5-beta and OpenCE build-244 (network version 32).
+- If a graphics driver never passes those results back that way, the game reads them the old way from then on (the
+  log says so once), so lens flares and coronas keep working instead of freezing.
 
 ## 0.3.5-beta - 2026-10-20
 

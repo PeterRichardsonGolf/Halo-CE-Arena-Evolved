@@ -245,19 +245,25 @@ int main(int argc, char **argv)
 	}
 	CASE("lost")
 	{
-		/* counts never copied (a copy that failed) drop their batch after
-		VISIBILITY_COPY_FRAMES presents, keeping the slots' earlier counts,
-		and the next batches are read */
+		/* counts never copied into the buffer (a driver that does not show
+		the GPU's copies there) are read on the CPU from then on, the batch
+		waiting too, rather than its batch dropped (AE, 0.3.5.1: the slots
+		would keep their counts for the rest of the game) */
 		start(FALSE);
 		frame(0);
 		copy_count = 0;
 		frame(VISIBILITY_COPY_FRAMES);
-		CHECK(!device.visibility_batches[0].failed, "a batch dropped before VISIBILITY_COPY_FRAMES presents");
+		CHECK(device.visibility_mapped, "the buffer given up before VISIBILITY_COPY_FRAMES presents");
 		gpu_copy(ULONG_MAX);
 		frame(VISIBILITY_COPY_FRAMES + 2);
-		CHECK(device.visibility_batches[0].failed, "a batch never copied was kept");
-		known((GLuint)(100 + VISIBILITY_COPY_FRAMES), (GLuint)(200 + VISIBILITY_COPY_FRAMES), "after a lost batch");
-		CHECK(logs > 0, "a lost batch not reported");
+		CHECK(!device.visibility_mapped, "counts that never came through the buffer still looked for there");
+		CHECK(!device.visibility_batches[0].failed, "the batch waiting was dropped, not read on the CPU");
+		CHECK(logs > 0, "the change to the CPU not reported");
+		present(VISIBILITY_COPY_FRAMES + 3);
+		known((GLuint)(100 + VISIBILITY_COPY_FRAMES), (GLuint)(200 + VISIBILITY_COPY_FRAMES), "read on the CPU");
+		present(VISIBILITY_COPY_FRAMES + 4);
+		known((GLuint)(100 + VISIBILITY_COPY_FRAMES + 2), (GLuint)(200 + VISIBILITY_COPY_FRAMES + 2),
+			"a batch sealed after the change");
 	}
 	CASE("logging")
 	{

@@ -6576,6 +6576,7 @@ static void visibility_read_batch(void)
 				{
 					if (device.frame - batch->frame > VISIBILITY_COPY_FRAMES)
 					{
+						{ platform_log("GPU: visibility counts did not arrive through the buffer in %lu presents; they are read on the CPU from now on", device.frame - batch->frame); device.visibility_mapped = NULL; device.visibility_stats.failures++; return; } /* AE hook */
 						batch->failed = TRUE;
 						device.visibility_stats.failures++;
 						break;

@@ -43,6 +43,9 @@ def test_case(case):
     (('if (samples == VISIBILITY_UNCOPIED)', 'if (0)'), 'behind'),
     # counts that never come wait for ever
     (('if (device.frame - batch->frame > VISIBILITY_COPY_FRAMES)', 'if (0)'), 'lost'),
+    # AE: counts that never come drop their batch instead of being read on the CPU
+    (('device.visibility_mapped = NULL; device.visibility_stats.failures++; return; } /* AE hook */',
+      'device.visibility_stats.failures++; } /* AE hook */'), 'lost'),
 ])
 def test_negative_control(fault, case):
     status, output = run(build('visibility_readback', generated(fault)), case)
