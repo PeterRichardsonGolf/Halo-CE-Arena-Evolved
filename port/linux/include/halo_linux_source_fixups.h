@@ -19,12 +19,15 @@ void render_interpolation_reset(void);
 void render_interpolation_frame_begin(void);
 void render_interpolation_frame_end(void);
 float render_interpolation_fraction(void);
+unsigned char render_interpolation_drawing(void);
 struct real_matrix4x3 *render_interpolation_object_node_matrices(long object_index);
+float *render_interpolation_object_function_values(long object_index);
 struct observer_result const *render_interpolation_camera(short local_player_index,
 	struct observer_result const *observer);
 void render_interpolation_first_person(short local_player_index, struct real_matrix4x3 *node_matrices,
 	short node_count, struct render_camera const *camera);
 float render_interpolation_game_time_sec(long ticks);
+float render_interpolation_ticks_since(long now, long then);
 
 /* an IP address as the log may show it: a public one as a tag of the run's,
 never whole (port/linux/src/log_address.c, log_address.h) */

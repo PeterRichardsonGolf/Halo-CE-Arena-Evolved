@@ -548,7 +548,7 @@ static void render_object_list(
 							/* port: an overshield as it rises and lasts
 							(port/linux/game/overshield_effect.c, OpenCE's), and Arena
 							Evolved's HIT FEEDBACK (ae_shield_fx.c): one of the two acts */
-							model_effect.modifier_animation.values = TEST_FLAG(_object_mask_unit, object->object.type) ? ae_shield_fx_values(object_index, overshield_effect_values(object_index, object->object.outgoing_function_values, FALSE), FALSE) : object->object.outgoing_function_values; /* AE hook */
+							model_effect.modifier_animation.values = TEST_FLAG(_object_mask_unit, object->object.type) ? ae_shield_fx_values(object_index, overshield_effect_values(object_index, object_get_function_values(object_index), FALSE), FALSE) : object_get_function_values(object_index); /* AE hook */
 						}
 						else
 						{
@@ -630,7 +630,7 @@ static void render_object_list(
 						node_matrices,
 						object->object.region_permutations,
 						object->object.outgoing_change_colors,
-						object->object.outgoing_function_values,
+						object_get_function_values(object_index),
 						data->lighting,
 						&object->object.bounding_sphere_center,
 						object->object.bounding_sphere_radius,
@@ -652,7 +652,7 @@ static void render_object_list(
 						node_matrices,
 						object->object.region_permutations,
 						object->object.outgoing_change_colors,
-						object->object.outgoing_function_values,
+						object_get_function_values(object_index),
 						data->lighting,
 						&object->object.bounding_sphere_center,
 						object->object.bounding_sphere_radius,
@@ -668,7 +668,7 @@ static void render_object_list(
 				struct render_animation animation;
 
 				animation.colors = object->object.outgoing_change_colors;
-				animation.values = object->object.outgoing_function_values;
+				animation.values = object_get_function_values(object_index);
 				widgets_render(object_index, data->lighting, &animation);
 			}
 

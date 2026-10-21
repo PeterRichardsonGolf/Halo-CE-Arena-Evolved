@@ -1254,6 +1254,7 @@ static const struct config_setting config_settings[] =
 		"(a full path is best: a relative one is from the working folder); empty\n"
 		"for none." },
 #endif
+#ifndef HALO_CONSOLE_NO_DISCORD
 	/* (Arena Evolved: OpenCE's Discord application, as it had before; not
 	ChupathingyCE's, "Chupathingy") */
 	{ "discord.application_id", _config_string, "\"1553978809840050229\"", "HALO_DISCORD_APPLICATION", /* AE hook */
@@ -1276,11 +1277,14 @@ static const struct config_setting config_settings[] =
 		"While this machine hosts a public game (in the server browser, with no\n"
 		"password), Discord shows a Join game button: its page on the project's\n"
 		"site, which opens its invite. False: no button." },
+#endif
 
+#ifndef HALO_CONSOLE_NO_UPDATER
 	{ "update.auto", _config_boolean, "true", "HALO_UPDATE_AUTO", _environment_value, _platform_all,
 		"No effect: Arena Evolved never looks for a new version (its updater is\n"
 		"off). Where the updater is on: look for a new version when the game\n"
 		"starts, and offer to update to it; false never looks." },
+#endif
 	{ "streamer.enabled", _config_boolean, "false", "HALO_STREAMER_MODE", _environment_value, _platform_all,
 		"Hide offensive words in names and text from other players, maps and mods\n"
 		"as stars, at the levels below (Settings > Network Setup > Streamer Mode)." },
@@ -1656,9 +1660,11 @@ static const struct config_setting config_settings[] =
 		"Bots and vehicles: 0 they leave them alone, 1 they take a Warthog's or a\n"
 		"turret's gun and ride with a teammate (the default), 2 they also drive\n"
 		"a Warthog or Ghost (a test: not good enough to play yet)." },
+#ifndef HALO_CONSOLE_NO_UPDATER
 	{ "debug.update_answer", _config_string, "\"\"", "HALO_UPDATE_ANSWER", _environment_value, _platform_desktop,
 		"The answer to the new version question, for automated tests: \"yes\",\n"
 		"\"no\" or \"never\" (do not ask again, confirmed); empty asks." },
+#endif
 	{ "debug.fixed_step", _config_boolean, "false", "HALO_FIXED_STEP", _environment_set_is_true, _platform_all,
 		"A game of this machine alone runs one tick a frame, whatever time has\n"
 		"passed, so that it plays the same every time (tests); game_speed has no\n"
@@ -1729,9 +1735,11 @@ static const struct config_setting config_settings[] =
 		"the game's frame (frameNNNNN.bmp)." },
 	{ "debug.texture_dump_directory", _config_string, "\"\"", "HALO_TEXTURE_DUMP", _environment_value, _platform_all,
 		"A folder to write every texture to as it is uploaded; empty none." },
+#ifndef HALO_CONSOLE_NO_DISCORD
 	{ "debug.discord_log", _config_boolean, "false", "HALO_DISCORD_LOG", _environment_set_is_true,
 		_platform_desktop,
 		"Log each activity sent to Discord (an invite in it left out)." },
+#endif
 	{ "debug.texture_log", _config_boolean, "false", "HALO_TEXTURE_LOG", _environment_set_is_true, _platform_all,
 		"Log texture uploads." },
 	{ "debug.texture_no_cache", _config_boolean, "false", "HALO_TEXTURE_NO_CACHE", _environment_set_is_true, _platform_all,
@@ -3188,7 +3196,9 @@ static const struct
 	{ "network.map_downloads", { "ask", "always", "never", NULL }, "\"ask\"" },
 	{ "network.join_from_clipboard", { "ask", "always", "never", NULL }, "\"ask\"" },
 	{ "network.team_change", { "balanced", "allow", "off", NULL }, "\"balanced\"" },
+#ifndef HALO_CONSOLE_NO_DISCORD
 	{ "discord.presence", { "full", "minimal", "off", NULL }, "\"off\"" }, /* AE hook */
+#endif
 	{ "network.platform_limits", { "on", "off", NULL }, "\"on\"" },
 	{ "network.coop_friendly_fire", { "off", "on", "shields_only", "explosives_only", NULL }, NULL },
 	{ "network.coop_enemies_mode", { "none", "per_player", "multiplier", NULL }, "\"none\"" },

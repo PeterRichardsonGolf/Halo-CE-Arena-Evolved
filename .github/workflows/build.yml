@@ -106,6 +106,7 @@ jobs:
           python -m unittest tools.test_halo_mcp
           python tools/test_light_storage.py
           python tools/test_port_config.py
+          python tools/test_tick_input.py
 
       - name: Compile cache
         run: ccache --show-stats

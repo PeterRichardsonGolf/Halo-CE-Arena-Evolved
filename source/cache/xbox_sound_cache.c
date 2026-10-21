@@ -115,7 +115,9 @@ symbols in this file:
 
 /* ---------- constants */
 
-/* port: the cache's pages (sound_cache_new), named for the size check */
+/* port: the cache's pages (sound_cache_new), named for the size check: as
+many 4k pages as the cache holds (the Xbox's 4 MB, 1024), so a platform's
+smaller cache never has sounds placed past its end */
 enum
 {
 	/* port: the native builds' cache (halo_port_capacity.h; 1024 pages) */

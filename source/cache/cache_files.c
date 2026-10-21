@@ -734,11 +734,13 @@ void scenario_tags_unload(
 	void)
 {
 	/* port: the high-res HUD forgets this map's bitmaps (port/linux/game/hud_hires_tags.c) */
+#ifndef HALO_CONSOLE_NO_HIRES
 	{
 		extern void hud_hires_tags_unloaded(void);
 
 		hud_hires_tags_unloaded();
 	}
+#endif
 	sound_cache_close();
 	texture_cache_close();
 	/* port: the mods' tags go, after the sound and texture caches that held
@@ -1648,11 +1650,13 @@ long scenario_tags_load(
 			/* (none of the high-res HUD: Halo PC's HUD bitmaps are laid out
 			otherwise than the Xbox's it was drawn for, so a Custom Edition map
 			draws its own) */
+#ifndef HALO_CONSOLE_NO_HIRES
 			{
 				extern void hud_hires_tags_unloaded(void);
 
 				hud_hires_tags_unloaded();
 			}
+#endif
 			/* its HUD interfaces: placements at Halo PC's high resolution
 			scale halved, meters' bitmaps sampled in Halo PC's channels
 			(port/linux/game/ce_hud.c) */
@@ -1701,6 +1705,7 @@ long scenario_tags_load(
 
 				return NONE;
 			}
+#ifndef HALO_CONSOLE_NO_TAG_VALIDATE
 			/* port: and every tag checked against its group's schema before
 			anything reads it (port/linux/game/tag_validate.c): a map whose
 			tags' pointers cannot be trusted is refused; what can be
@@ -1724,6 +1729,7 @@ long scenario_tags_load(
 
 				return NONE;
 			}
+#endif
 
 			cache_file_globals.tag_header = tag_cache_base_address;
 			match_vassert(
@@ -1768,11 +1774,13 @@ long scenario_tags_load(
 				ae_menus_swap_tags_loaded(cache_file_globals.header.name); /* AE hook */
 			}
 			/* port: the bitmaps the high-res HUD stands for (port/linux/game/hud_hires_tags.c) */
+#ifndef HALO_CONSOLE_NO_HIRES
 			{
 				extern void hud_hires_tags_loaded(long scenario_index);
 
 				hud_hires_tags_loaded(cache_file_globals.tag_header->scenario_tag_index);
 			}
+#endif
 #ifdef HALO_GAME_BROWSER
 			/* the Multiplayer menu's ONLINE GAMES (interface/ui_widget.c) */
 			{
@@ -1900,6 +1908,7 @@ boolean scenario_structure_bsp_load(
 	/* port: and checked against its schema, as the map's tags were
 	(port/linux/game/tag_validate.c); a Custom Edition or HaloMD map's
 	tags are Halo PC's layout, checked as they load (ce_map_checks.c) */
+#ifndef HALO_CONSOLE_NO_TAG_VALIDATE
 	if (
 #ifdef HALO_CUSTOM_EDITION
 		!cache_file_is_ce &&
@@ -1911,6 +1920,7 @@ boolean scenario_structure_bsp_load(
 	{
 		return FALSE;
 	}
+#endif
 
 	cache_file_globals.structure_bsp_header = structure_bsp_header;
 	match_assert(
