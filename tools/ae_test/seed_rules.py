@@ -282,6 +282,10 @@ SENSOR_10M = ("AE FFA SLAY", "AE TEAM SLY", "AE CTF", "AE KING", "AE FFA BALL", 
               "AE OCT TBSN", "AE OCT TMAG", "AE OCT TMSN")
 for _name, (_want, _, _) in ROWS.items():
     _want["sensor range"] = "10 m" if _name in SENSOR_10M else "stock"
+# revision 20 (owner, 2026-10-21): the OCTAGON drills are no-grenade games: MAP GRENADES off too
+for _name in ("AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG",
+              "AE OCT TMSN"):
+    ROWS[_name][0]["map grenades"] = "off"
 
 
 def check(runs, prefix):

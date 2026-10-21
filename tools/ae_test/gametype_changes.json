@@ -207,5 +207,49 @@
   },
   "golden": "golden_seeds_rev19.json",
   "seed_rules": {}
+ },
+ {
+  "revision": 20,
+  "why": "the drills are no-grenade games: map grenades off too (owner 10-21 ask-me: OCTAGON DRILLS map grenades OFF)",
+  "decided": "owner, 2026-10-21",
+  "gametypes": [
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "call",
+    "arena_gametype_no_map_grenades"
+   ]
+  ],
+  "adjusts": {
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades"
+  },
+  "old_block_hashes": {
+   "AE OCT BR": "e2ad7350bdec89197c6206de36d879a3760baaf9",
+   "AE OCT BRSN": "5163624a547b4bca900f7cda8dafdecabc3f0438",
+   "AE OCT MAG": "87c4ece73d551272279fd6feecd21acbc4c55d4e",
+   "AE OCT MGSN": "88a8cc5ef3da47d559fa74c2f8c05b33504bf492",
+   "AE OCT TBR": "5ed242fc2a068ceb4525a5f0cc5af2528437f755",
+   "AE OCT TBSN": "22c587c3e5c35a50fd5e9cf70f9034c7b4758e68",
+   "AE OCT TMAG": "4d2e6f32cb1cc69eec106b1aafc299d7648bde0e",
+   "AE OCT TMSN": "047e685dcf13bccd219a1fa005397c4cacc99585"
+  },
+  "golden": "golden_seeds_rev20.json",
+  "seed_rules": {}
  }
 ]

@@ -73,7 +73,7 @@ enum
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
 	past it: revisions 11, 16 and 17 only added seeds) */
-	ARENA_GAMETYPES_REVISION = 19,
+	ARENA_GAMETYPES_REVISION = 20,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -452,6 +452,9 @@ static void arena_gametype_juggernaut_h2_and_sensor_range_10(
 static void arena_gametype_octagon_drill_and_sensor_range_10(
 	struct game_variant *variant,
 	struct game_variant_options *options);
+static void arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades(
+	struct game_variant *variant,
+	struct game_variant_options *options);
 
 /* ---------- globals */
 
@@ -723,46 +726,52 @@ static struct arena_gametype const arena_gametypes[] =
 	(STARTING_GRENADES_NONE, as AE SWAT), INFINITE AMMO and BOTTOMLESS CLIP (arena_gametype_octagon_drill), and
 	each its start: the battle rifle (the pack's, as the AE BR set's) or the magnum alone, or with the sniper rifle
 	second */
-	{ "AE OCT BR", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
-		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
-		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
-	{ "AE OCT BRSN", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
-		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
-		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+	{ "AE OCT BR", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_FFA_SCORE, ARENA_TIME_LIMIT,
+		0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE, ARENA_OCTAGON_BR_PRIMARY,
+		.loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE,
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+	{ "AE OCT BRSN", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_FFA_SCORE,
+		ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE, ARENA_OCTAGON_BR_PRIMARY,
+		.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE,
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
 	{ "AE OCT MAG", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_FFA_SCORE, ARENA_TIME_LIMIT,
 		0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
 		.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
 		.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE,
-		.adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
 	{ "AE OCT MGSN", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_FFA_SCORE,
 		ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
 		.loadout_primary = ARENA_SET(_loadout_weapon_pistol),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
-		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.starting_frags = STARTING_GRENADES_NONE,
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
 	/* revision 17 (owner, 2026-10-20: "would be nice to have some team octagon also it is fun to warm up that way
 	with the boys"): the same four drills as team games, each AE TEAM SLY's row (50 kills, 15 minutes, the motion
 	sensor's enemies) with the drills' changes: instant respawns, no grenades, INFINITE AMMO and BOTTOMLESS CLIP,
 	the same starts */
-	{ "AE OCT TBR", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
-		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
-		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
-	{ "AE OCT TBSN", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
-		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
-		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
-		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+	{ "AE OCT TBR", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_TEAM_SLAYER_SCORE,
+		ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE, ARENA_OCTAGON_BR_PRIMARY,
+		.loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE,
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+	{ "AE OCT TBSN", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_TEAM_SLAYER_SCORE,
+		ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE, ARENA_OCTAGON_BR_PRIMARY,
+		.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE,
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
 	{ "AE OCT TMAG", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_TEAM_SLAYER_SCORE,
 		ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
 		.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE,
-		.adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
 	{ "AE OCT TMSN", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_TEAM_SLAYER_SCORE,
 		ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.loadout_primary = ARENA_SET(_loadout_weapon_pistol),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
-		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.starting_frags = STARTING_GRENADES_NONE,
+		.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
 	/* the casual set's values with Halo 1: NHE's own modes (revision 6),
 	under the NHE set's names since revision 9; COMBAT FEEDBACK stays HALO CE */
 	{ "NHE TS VAN", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
@@ -884,7 +893,9 @@ set's four drills), nor has revision 17 (their four team versions). Revision
 18 (tools/ae_gametype_change.py): AE SWAT starts with no grenades but the
 map's grenade pickups still spawned: MAP GRENADES off. Revision 19
 (tools/ae_gametype_change.py): the owner's play test: a 10 m motion sensor is
-easier to track; 10 m in every AE gametype with the motion sensor on. A row
+easier to track; 10 m in every AE gametype with the motion sensor on. Revision
+20 (tools/ae_gametype_change.py): the drills are no-grenade games: map
+grenades off too (owner 10-21 ask-me: OCTAGON DRILLS map grenades OFF). A row
 whose old and new names are the same is a value update (in place, under its
 name).
 Designated initialisers: a field added to struct arena_gametype never
@@ -3364,6 +3375,145 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
 			.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
 		.old_block_hash = "ee2073876b6a0b41adaa49858fda1983f0d07a76" },
+	/* revision 20 (owner, 2026-10-21): the drills are no-grenade games: map grenades off too (owner 10-21 ask-me:
+	OCTAGON DRILLS map grenades OFF). AE OCT BR: arena_gametype_no_map_grenades
+	(arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades); AE OCT BRSN:
+	arena_gametype_no_map_grenades (arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades); AE OCT
+	MAG: arena_gametype_no_map_grenades (arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades); AE
+	OCT MGSN: arena_gametype_no_map_grenades (arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades);
+	AE OCT TBR: arena_gametype_no_map_grenades
+	(arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades); AE OCT TBSN:
+	arena_gametype_no_map_grenades (arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades); AE OCT
+	TMAG: arena_gametype_no_map_grenades (arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades); AE
+	OCT TMSN: arena_gametype_no_map_grenades (arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades).
+	The old rows are revision 19's seeds; the old files' hashes from a root seeded by the revision 19 tree
+	(golden_seeds_rev19.json). Made by tools/ae_gametype_change.py */
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT BR", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, ARENA_OCTAGON_BR_PRIMARY,
+			.loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT BR", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, ARENA_OCTAGON_BR_PRIMARY,
+			.loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "e2ad7350bdec89197c6206de36d879a3760baaf9" },
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT BRSN", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, ARENA_OCTAGON_BR_PRIMARY,
+			.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT BRSN", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE, ARENA_OCTAGON_BR_PRIMARY,
+			.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "5163624a547b4bca900f7cda8dafdecabc3f0438" },
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT MAG", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+			.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT MAG", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+			.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "87c4ece73d551272279fd6feecd21acbc4c55d4e" },
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT MGSN", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol),
+			.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT MGSN", .build = build_game_variant_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_FFA_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_ON,
+			.vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol),
+			.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "88a8cc5ef3da47d559fa74c2f8c05b33504bf492" },
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT TBR", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT TBR", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "5ed242fc2a068ceb4525a5f0cc5af2528437f755" },
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT TBSN", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT TBSN", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "22c587c3e5c35a50fd5e9cf70f9034c7b4758e68" },
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT TMAG", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+			.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT TMAG", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+			.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "4d2e6f32cb1cc69eec106b1aafc299d7648bde0e" },
+	{ .revision = 20,
+		.old_row = { .name = "AE OCT TMSN", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol),
+			.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill_and_sensor_range_10 },
+		.new_row = { .name = "AE OCT TMSN", .build = build_game_variant_team_slayer,
+			.flags = ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, .score_to_win = ARENA_TEAM_SLAYER_SCORE,
+			.time_limit = ARENA_TIME_LIMIT, .respawn_time = 0, .suicide_penalty = ARENA_STOCK,
+			.radar = ARENA_RADAR_ENEMIES, .vehicle_set = ARENA_VEHICLES_STOCK, .custom_loadout = TRUE,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol),
+			.loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+			.starting_frags = STARTING_GRENADES_NONE,
+			.adjust = arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades },
+		.old_block_hash = "047e685dcf13bccd219a1fa005397c4cacc99585" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -5200,6 +5350,21 @@ static void arena_gametype_octagon_drill_and_sensor_range_10(
 {
 	arena_gametype_octagon_drill(variant, options);
 	arena_gametype_sensor_range_10(variant, options);
+
+	return;
+}
+
+/* revision 20 (owner, 2026-10-21): the drills are no-grenade games: map
+grenades off too (owner 10-21 ask-me: OCTAGON DRILLS map grenades OFF).
+arena_gametype_octagon_drill_and_sensor_range_10, then
+arena_gametype_no_map_grenades. Made by tools/ae_gametype_change.py. Shipped:
+never edited (a change is a new function) */
+static void arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	arena_gametype_octagon_drill_and_sensor_range_10(variant, options);
+	arena_gametype_no_map_grenades(variant, options);
 
 	return;
 }
