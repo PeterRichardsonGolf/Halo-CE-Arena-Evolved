@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- AE's own text (menus, the community services screen, HUD STYLE AE) no longer shows thin lines and cut letter edges on
+  some graphics drivers (Mesa's Intel driver): the glyph atlas is cleared and each glyph keeps an empty border.
 - The gametype lists sort by category: AE CASUAL, AE COMP, AE PARTY, AE WEAPONS, AE PRACTICE (with the OCTAGON drills),
   then NHE; each battle rifle version sits right after the gametype it copies (FFA AE SLAYER, then FFA AE BR SLAYER).
 - BOTS changed during a split screen game (the pause menu's SETTINGS) takes effect at once: bots join the game in

@@ -915,7 +915,14 @@ static int set_up(void)
 	glGenTextures(1, &ae.atlas);
 	glBindTexture(GL_TEXTURE_2D, ae.atlas);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, ATLAS_SIZE, ATLAS_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+	/* (cleared: a driver may hand back a new texture's memory as it was, which the glyphs' filtered edges read;
+	Mesa's Intel driver does, the software one clears it) */
+	{
+		unsigned char *clear = calloc((size_t)ATLAS_SIZE * ATLAS_SIZE, 1);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, ATLAS_SIZE, ATLAS_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, clear);
+		free(clear);
+	}
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1013,9 +1020,26 @@ static struct glyph *glyph(struct face face, int pixel_size, unsigned int codepo
 	entry->atlas_y = (short)ae.shelf_y;
 	if (bitmap && width > 0 && height > 0)
 	{
+		/* (with a 1-texel empty border, inside the 2 between glyphs: after the glyphs are packed again, a filtered
+		edge never reads a glyph of before) */
+		unsigned char *bordered = calloc((size_t)(width + 2) * (size_t)(height + 2), 1);
+		int row;
+
 		glBindTexture(GL_TEXTURE_2D, ae.atlas);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, ae.shelf_x, ae.shelf_y, width, height, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+		if (bordered)
+		{
+			for (row = 0; row < height; row++)
+				memcpy(bordered + (size_t)(row + 1) * (size_t)(width + 2) + 1, bitmap + (size_t)row * (size_t)width,
+					(size_t)width);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, ae.shelf_x - 1, ae.shelf_y - 1, width + 2, height + 2, GL_RED,
+				GL_UNSIGNED_BYTE, bordered);
+			free(bordered);
+		}
+		else
+		{
+			glTexSubImage2D(GL_TEXTURE_2D, 0, ae.shelf_x, ae.shelf_y, width, height, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+		}
 		ae.shelf_x += width + 2;
 		if (height > ae.shelf_height)
 			ae.shelf_height = height;
