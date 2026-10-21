@@ -271,8 +271,13 @@ int main(void)
 		}
 	}
 
-	/* the lists' blocks: FFA of AE, AE BR, AE COMP, then their TEAM rows, then OCTAGON, NHE, TRAINING, unknown */
+	/* the lists' blocks: the categories (owner 2026-10-20), AE CASUAL 1 .. AE PRACTICE 5, Halo 1: NHE 6, unknown 10;
+	every one of AE's in the categories table (its places in a category 0, 1, 2, ... with none left out), each
+	battle rifle version right after the gametype it is of, NHE's in their table order */
 	{
+		short counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0 };
+		short places[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES][128];
+		short category;
 
 		for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 		{
@@ -282,14 +287,80 @@ int main(void)
 			wide(arena_gametype_names[index].stored_name, name);
 			arena_gametype_info(name, &own);
 			block = arena_gametype_list_block(TRUE, &own);
-			if (own.set <= _arena_gametype_set_ae_comp && (block != (own.team ? own.set + 3 : own.set)))
-				fail("list block of an AE set", arena_gametype_names[index].stored_name);
-			if (own.set == _arena_gametype_set_octagon && block != 7)
-				fail("list block of OCTAGON", arena_gametype_names[index].stored_name);
-			if (own.set == _arena_gametype_set_nhe && block != 8)
-				fail("list block of NHE", arena_gametype_names[index].stored_name);
-			if (own.set == _arena_gametype_set_training && block != 9)
-				fail("list block of TRAINING", arena_gametype_names[index].stored_name);
+			if (own.category <= _arena_gametype_category_none || own.category >= NUMBER_OF_ARENA_GAMETYPE_CATEGORIES ||
+				block != own.category)
+			{
+				fail("list block: no category", arena_gametype_names[index].stored_name);
+				continue;
+			}
+			if ((own.set == _arena_gametype_set_nhe) != (own.category == _arena_gametype_category_nhe))
+				fail("list block: NHE's set is the NHE category", arena_gametype_names[index].stored_name);
+			if (counts[own.category] < 128)
+				places[own.category][counts[own.category]++] = index;
+		}
+		for (category = _arena_gametype_category_casual; category < _arena_gametype_category_nhe; category++)
+		{
+			short place;
+
+			for (place = 0; place < counts[category]; place++)
+			{
+				struct arena_gametype_info own;
+				short other;
+				boolean found = FALSE;
+
+				/* (the gametype at each place 0 .. count - 1, once) */
+				for (other = 0; other < counts[category]; other++)
+				{
+					wide(arena_gametype_names[places[category][other]].stored_name, name);
+					arena_gametype_info(name, &own);
+					if (own.category_order == place)
+					{
+						if (found)
+							fail("list block: two at one place", arena_gametype_names[places[category][other]].stored_name);
+						found = TRUE;
+						if (own.set == _arena_gametype_set_ae_br)
+						{
+							char expected[40];
+							char const *display = own.display_name;
+							short in = 0, out = 0;
+							short before;
+							boolean after_it = FALSE;
+
+							/* ("FFA AE BR SLAYER" is the battle rifle version of "FFA AE SLAYER") */
+							while (display[in] && out < (short)sizeof(expected) - 1)
+							{
+								if (display[in] == ' ' && display[in + 1] == 'B' && display[in + 2] == 'R' &&
+									(display[in + 3] == ' ' || !display[in + 3]) && !after_it)
+								{
+									in += 3;
+									after_it = TRUE;
+									continue;
+								}
+								expected[out++] = display[in++];
+							}
+							expected[out] = 0;
+							for (before = 0; before < counts[category]; before++)
+							{
+								struct arena_gametype_info previous;
+
+								wide(arena_gametype_names[places[category][before]].stored_name, name);
+								arena_gametype_info(name, &previous);
+								if (previous.category_order == place - 1)
+								{
+									if (strcmp(previous.display_name, expected))
+										fail("list block: a BR version not right after its gametype", own.display_name);
+									after_it = FALSE;
+									break;
+								}
+							}
+							if (after_it)
+								fail("list block: a BR version first in its category", own.display_name);
+						}
+					}
+				}
+				if (!found)
+					fail("list block: a gametype left out of the categories table", arena_gametype_category_name(category));
+			}
 		}
 		if (arena_gametype_list_block(FALSE, NULL) != 10)
 			fail("list block of an unknown name", "");

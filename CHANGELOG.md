@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- The gametype lists sort by category: AE CASUAL, AE COMP, AE PARTY, AE WEAPONS, AE PRACTICE (with the OCTAGON drills),
+  then NHE; each battle rifle version sits right after the gametype it copies (FFA AE SLAYER, then FFA AE BR SLAYER).
 - BOTS changed during a split screen game (the pause menu's SETTINGS) takes effect at once: bots join the game in
   progress or leave it, on the teams BOT TEAMS asks for (in a team game the larger team's bot leaves first). LAN
   games keep their bots until the next lobby, as before.

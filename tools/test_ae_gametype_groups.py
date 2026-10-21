@@ -2,8 +2,10 @@
 place (arena_gametypes.c arena_gametypes_sort), so the table is the order. Pinned here with the current seeds (AE,
 AE BR, AE COMP, OCTAGON, NHE, TRAINING): in each AE set the free for all gametypes come before the team ones, the
 sets keep their order, every seed is in the table (an unknown one sorts after all sets, alphabetically, mixing FFA
-and TEAM), AE BR lists the twins in the order of the AE gametypes they copy, and OCTAGON's free for all drills
-(revision 16) come after the AE sets' team block, before NHE's."""
+and TEAM), AE BR lists the twins in the order of the AE gametypes they copy. The lists themselves sort by category (owner
+2026-10-20, "by play style, BR inside": arena_gametype_names.c's categories table): AE CASUAL, AE COMP, AE PARTY, AE
+WEAPONS, AE PRACTICE, then NHE's in their table order; every one of AE's in the table once, each battle rifle twin
+right after the gametype it copies."""
 import re
 from pathlib import Path
 
@@ -30,32 +32,33 @@ def test_free_for_all_before_teams_in_each_ae_set():
         assert teams[0] is False and teams[-1] is True
 
 
-def list_order():
-    """the lists' order (owner 2026-10-15): one FFA block (AE, AE BR, AE COMP), one TEAM block, then OCTAGON (revision
-    16), NHE, TRAINING"""
-    key = {"ae": 1, "ae_br": 2, "ae_comp": 3}
-    rows = []
-    for i, (stored, _, st, team) in enumerate(ROWS):
-        block = key[st] + (3 if team else 0) if st in key else {"octagon": 7, "nhe": 8}.get(st, 9)
-        rows.append((block, i, stored, st, team))
-    return sorted(rows)
+CATEGORY = re.compile(r'\{ _arena_gametype_category_(\w+), "([^"]+)" \}')
+CATEGORIES = CATEGORY.findall(NAMES)
 
 
-def test_one_ffa_block_then_one_team_block():
-    order = list_order()
-    ae = [(st, team) for _, _, _, st, team in order if st in ("ae", "ae_br", "ae_comp")]
-    flags = [t for _, t in ae]
-    assert flags == sorted(flags) and flags.count(False) == 30 and flags.count(True) == 30
-    sets = [s for s, t in ae if not t]
-    assert sets == sorted(sets, key=["ae", "ae_br", "ae_comp"].index)
-    assert [r[3] for r in order if r[3] in ("nhe", "training")] == [r[3] for r in order][-len([1 for r in order if r[3] in ("nhe", "training")]):]
-    # (OCTAGON's four drills right after the AE sets' team block, all free for all)
-    sets = [r[3] for r in order]
-    octagon = [r for r in order if r[3] == "octagon"]
-    assert len(octagon) == 4 and not any(r[4] for r in octagon)
-    assert sets.index("octagon") == len(ae) and sets.index("nhe") == len(ae) + len(octagon)
+def test_categories_in_order():
+    order = []
+    for category, _ in CATEGORIES:
+        if not order or order[-1] != category:
+            order.append(category)
+    assert order == ["casual", "comp", "party", "weapons", "practice"]
+
+
+def test_every_ae_gametype_in_one_category():
+    listed = [stored for _, stored in CATEGORIES]
+    assert len(listed) == len(set(listed))
+    assert set(listed) == {s for s, _, st, _ in ROWS if st != "nhe"}
+
+
+def test_br_twins_right_after_their_gametype():
+    twin = dict(re.findall(r'^\t\{ "(AE BR [^"]+)", "([^"]+)" \}', SEEDS, re.M))
+    listed = [stored for _, stored in CATEGORIES]
+    category = dict((stored, c) for c, stored in CATEGORIES)
+    for br, base in twin.items():
+        assert listed.index(br) == listed.index(base) + 1, br
+        assert category[br] == category[base], br
     # (the C code's key must be the same: the names check's "list block")
-    assert "arena_gametype_list_block" in (ROOT / "source/saved games/arena_gametypes.c").read_text(encoding="latin1")
+    assert "arena_gametype_list_block" in SEEDS and "category_order" in SEEDS
 
 
 def test_display_names_say_what_the_table_says():
