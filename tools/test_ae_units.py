@@ -188,6 +188,8 @@ UNITS = {
     "ae_weapon_slots_test.c": ([UI / "ae_weapon_slots.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (SENSOR RANGE: the variant's flags bits, the world units, the map's own range kept across games)
     "ae_sensor_range_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (CONTROLLER CROUCH: the variant's flags bit, the crouch gate's term, the log's words)
+    "ae_crouch_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
     # (editing a field's text: under the sanitizers, as it takes pasted text)
     "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

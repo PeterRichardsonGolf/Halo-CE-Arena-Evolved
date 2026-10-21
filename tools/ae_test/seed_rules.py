@@ -109,6 +109,9 @@ def fields(text):
     # (revision 19's SENSOR RANGE, a line of its own as the HUD loads: "AE motion sensor range: 10 m (...)")
     mm = re.search(r"AE motion sensor range: (stock|\d+ m)", text)
     if mm: out["sensor range"] = mm[1]
+    # (revision 21's CONTROLLER CROUCH, a line of its own: "AE controller crouch: stays down")
+    mm = re.search(r"AE controller crouch: (stays down|halo ce)", text)
+    if mm: out["controller crouch"] = mm[1]
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -286,6 +289,9 @@ for _name, (_want, _, _) in ROWS.items():
 for _name in ("AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG",
               "AE OCT TMSN"):
     ROWS[_name][0]["map grenades"] = "off"
+# CONTROLLER CROUCH (bit 8 of the variant's flags): HALO CE in every gametype before revision 21 (no seed had the bit)
+for _name, (_want, _, _) in ROWS.items():
+    _want["controller crouch"] = "halo ce"
 
 
 def check(runs, prefix):

@@ -724,6 +724,7 @@ RULES_WORDS = {
     "suicide_penalty": ("suicide penalty", lambda v: _ticks(v) if v >= 0 else None),
     "starting_frags": ("starting frags", lambda v: "none" if v == 0xFF else (str(v) if v else None)),
     "ball_melee": ("ball melee", lambda v: "lethal" if v == 1 else "stock"),
+    "universal_variant.flags.controller_crouch": ("controller crouch", lambda v: "stays down" if v else "halo ce"),
 }
 
 

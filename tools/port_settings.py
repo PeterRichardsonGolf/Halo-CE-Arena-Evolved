@@ -2421,7 +2421,7 @@ def _item_options_extras() -> list:
 # for every gametype, in finer steps and to an hour (menu_functions.c's
 # ARENA_TIME_LIMITS, minutes)
 ARENA_TIME_LIMITS = [*range(1, 11), 12, 15, 20, 25, 30, 45, 60]
-# (the rows' pitch and the help's top: 20 for twelve, the help just under the
+# (the rows' pitch and the help's top: 20 for thirteen, the help just under the
 # last row and its third line clear of the buttons' bar)
 ARENA_ROW_TOP, ARENA_ROW_PITCH, ARENA_HELP_TOP, ARENA_HELP_HEIGHT = 68, 20, 340, 66
 ARENA_ROWS = [
@@ -2484,6 +2484,13 @@ ARENA_ROWS = [
         "Readying and putting away weapons sound as in\\nHalo CE.",
         "You hear your own weapon swaps; everyone else's\\nare silent (firing and reloading still sound).\\nOnly Arena Evolved players can join.",
         "Nobody's weapon swaps make a sound, yours\\nincluded (firing and reloading still sound).\\nOnly Arena Evolved players can join.",
+    ]),
+    # (CONTROLLER CROUCH: bit 8 of the variant's flags, ae_crouch_rules.h;
+    # menu_functions.c's gametype_options. STAYS DOWN first, as the AE
+    # gametypes have it; a gametype without the bit shows HALO CE)
+    ("controller_crouch", "CONTROLLER CROUCH:", ["STAYS DOWN", "HALO CE"], [
+        "Holding crouch on a controller keeps you down,\\nstick pushed all the way too, as on a keyboard.",
+        "As Halo CE: on a controller, pushing the stick\\nall the way stands you up from a crouch.",
     ]),
     # (universal_variant.ball_melee; Oddball only: the row is hidden for the
     # other gametype types, menu_functions.c gametype_option_help)

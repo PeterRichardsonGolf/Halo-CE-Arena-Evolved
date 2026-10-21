@@ -59,8 +59,10 @@ source/game/game_engine.c	#include "ae_glue_zoom.h" /* AE hook */
 source/game/game_engine.c	ae_zoom_log_settings(); /* AE hook */
 source/game/player_control.c	ae_zoom_note_flash(&input->player_control_flags, effective_buttons[_button_flashlight] != 0, gamepad_index); /* AE hook */
 # a pad's crouch crouches at full stick too, as the keyboard's crouch key does (owner 10-20): stock Halo stood the
-# biped up past 0.98 of the stick.
-source/game/player_control.c	effective_buttons[_button_crouch] || /* AE hook */
+# biped up past 0.98 of the stick. Since 0.3.6 the gametype's CONTROLLER CROUCH rule (owner 10-21): STAYS DOWN does
+# it, HALO CE (every gametype without the bit, and no game) keeps Halo's own gate (ae_crouch.c, ae_crouch_rules.h).
+source/game/player_control.c	#include "ae_crouch.h" /* AE hook */
+source/game/player_control.c	ae_controller_crouch_holds_down(effective_buttons[_button_crouch]) || /* AE hook */
 port/linux/src/xinput_sdl.c	if (ae_zoom_wheel_taken()) /* AE hook */\nreturn FALSE;
 port/linux/src/xinput_sdl.c	ae_zoom_wheel_scrolled(wheel_direction); /* AE hook */
 port/linux/src/port_config.c	{ "game.mcc_path", _config_string, "\"\"", NULL, _environment_value, /* AE hook */\n_platform_desktop,
@@ -1134,3 +1136,10 @@ source/game/game_engine.c	#include "ae_weapon_slots.h" /* AE hook */
 source/game/game_engine.c	#include "ae_pack_spawns.h" /* AE hook */
 source/game/game_engine.c	definition_index = ae_pack_spawn_definition(equipment_index, definition_index); /* AE hook */
 port/linux/src/port_config.c	{ "debug.network_test_weapon_packs", _config_integer, "0", "HALO_NETWORK_TEST_WEAPON_PACKS", _environment_value, /* AE hook */\n_platform_all,
+# CONTROLLER CROUCH (seed revision 21: STAYS DOWN in every AE gametype, the NHE set HALO CE): bit 8 of the universal
+# variant's flags (ae_crouch_rules.h), read by player_control.c's crouch gate (above) on every machine, the host's
+# variant on a network client; the rules log's "AE controller crouch:" line; the row in ARENA OPTIONS (menu_functions.c)
+source/game/game_engine.h	_game_variant_controller_crouch_bit = 8, /* AE hook */
+source/game/game_engine.c	#include "ae_crouch.h" /* AE hook */
+source/game/game_engine.c	ae_controller_crouch_log_rules(flags); /* AE hook */
+port/linux/game/menu_functions.c	{ "controller_crouch_spinner", _option_flag, 0, FLAG(_game_variant_controller_crouch_bit), 2, { 1, 0 } }, /* AE hook */

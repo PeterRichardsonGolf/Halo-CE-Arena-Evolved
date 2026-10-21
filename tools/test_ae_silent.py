@@ -1,8 +1,8 @@
 """SILENT MOVEMENT / SILENT WEAPONS (port/linux/game/ae_silent.c, ae_silent_rules.c; the rules' own unit test is
 port/linux/tests/ae_silent_rules_test.c, run by tools/test_ae_units.py).
 
-- the generator: ARENA OPTIONS has SOUND PRESET, SILENT MOVEMENT and SILENT WEAPONS before BALL MELEE (the
-  Oddball-only row stays last), thirteen rows clear of the help, and every other generated screen is
+- the generator: ARENA OPTIONS has SOUND PRESET, SILENT MOVEMENT and SILENT WEAPONS, then CONTROLLER CROUCH, before
+  BALL MELEE (the Oddball-only row stays last), thirteen rows clear of the help, and every other generated screen is
   byte-identical to its file on disk;
 - the test setting's config row exists;
 - (games, only when $AE_SILENT_BUILD names a linux64 build, through the harness on the machine that plays it):
@@ -42,7 +42,7 @@ def test_untouched_screens_are_byte_identical():
 
 def test_arena_rows():
     keys = [row[0] for row in port_settings.ARENA_ROWS]
-    assert keys[-4:] == ["sound_preset", "silent_movement", "silent_weapons", "ball_melee"]
+    assert keys[-5:] == ["sound_preset", "silent_movement", "silent_weapons", "controller_crouch", "ball_melee"]
     rows = {row[0]: row for row in port_settings.ARENA_ROWS}
     assert rows["silent_movement"][2] == rows["silent_weapons"][2] == ["NORMAL", "JUST ME", "SILENT"]
     assert rows["sound_preset"][2] == ["CUSTOM", "SPLIT SCREEN"]
