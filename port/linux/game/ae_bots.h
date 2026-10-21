@@ -59,5 +59,7 @@ void ae_bots_damage_note(long owner_player_index, long object_index, long defini
 
 /* how the bots get around a map: teleporters, the layout file's bot lines, health packs (ae_bots_travel.c) */
 #include "ae_bots_travel.h"
+/* bots.count changed in a local game in progress: bots join or leave it at once (ae_bots_live.c) */
+#include "ae_bots_live.h"
 
 #endif

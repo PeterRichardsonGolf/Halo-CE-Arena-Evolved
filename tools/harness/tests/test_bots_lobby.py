@@ -18,7 +18,7 @@ GAME_MANAGER_FUNCTIONS = ("network_game_invalidate_player", "network_player_is_v
 
 # a fault in network_game_server_port_bots, and the case that must catch it
 NEGATIVE_CONTROLS = {
-    "bots-in-network-games": (("network_game_is_splitscreen_local() && ", ""), "never-network"),
+    "bots-in-network-games": (("if (network_game_is_splitscreen_local() && ", "if ("), "never-network"),
     "bots-in-any-gametype": ((" && ae_bots_engine_played(server->game.variant.game_engine_index)", ""), "played-gametypes"),
     "bots-once-started": (("server->state != _network_game_server_state_pregame || server->sent_start_game_message",
                            "server->state != _network_game_server_state_pregame"), "not-once-started"),

@@ -175,6 +175,14 @@ never under /tmp (each game's private /tmp would hide them). A spec's `env` adds
 - Verdicts read `debug.txt`: exit code and the clean-exit line, asserts, exceptions, refusals ("cannot be
   played"), lost scripts ("scripts won't run"), the last network-test tick, items, scenario scripts.
 
+## Bots changed in a game in progress
+
+`HALO_BOTS_LIVE_TEST="<second>:<count>,..."` (tests only, no setting) writes `bots.count` at those seconds of a
+local game's clock, as the pause menu's SETTINGS would (`game/ae_bots_live.c`): for example
+`HALO_BOTS=1 HALO_BOTS_LIVE_TEST=20:3,40:1,60:0` with `--network-test local:bloodgulch`. halo.log/debug.txt says
+`bots: test sets bots.count to N`, then `bots: bot N joined the game in progress (team T)` or `bots: bot N left the
+game in progress` for each change. A LAN game (`host:`) ignores it.
+
 ## The Windows test box (a shared PC: people, children included, use it)
 
 The runner in `C:\halo-test\runner` decides, and the tool follows it. Its contract (kept with the box's

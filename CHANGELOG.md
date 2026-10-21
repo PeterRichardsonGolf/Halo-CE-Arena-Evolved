@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- BOTS changed during a split screen game (the pause menu's SETTINGS) takes effect at once: bots join the game in
+  progress or leave it, on the teams BOT TEAMS asks for (in a team game the larger team's bot leaves first). LAN
+  games keep their bots until the next lobby, as before.
 - ENEMY NAME COLOR moved to Network Setup > MULTIPLAYER HUD, under PLAYER NAME SIZE, so the pause menu's SETTINGS
   has it in a game too (it was left on Network Setup's own page, which a game does not show).
 - HUD STYLE AE with ENEMY NAME COLOR RED: teammates' names over heads in white, not their team's color (a red

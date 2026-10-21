@@ -1586,6 +1586,7 @@ static void network_game_server_port_bots(
 	long bot_index;
 	boolean changed = FALSE;
 
+	ae_bots_live(server, &server->game, network_game_is_splitscreen_local() && server->state == _network_game_server_state_ingame); /* AE hook */
 	if (server->state != _network_game_server_state_pregame || server->sent_start_game_message)
 		return;
 	if (network_game_is_splitscreen_local() && ae_bots_engine_played(server->game.variant.game_engine_index)) /* AE hook */

@@ -2451,6 +2451,7 @@ void bots_update_actions(struct player_action *actions)
 
 		if (player->local_player_index != NONE || !bots_machine_is_bot(player->network_player_data.machine_index))
 			continue;
+		if (ae_bots_live_quitting(player, absolute_index, actions)) continue; /* AE hook */
 		/* (the roaming places and the walkable surfaces once a game has
 		bots; the skill once a tick) */
 		if (!count)

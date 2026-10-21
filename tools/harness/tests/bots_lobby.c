@@ -67,6 +67,14 @@ static boolean ae_bots_engine_played(long game_engine_index) { return game_engin
 static long bots_wanted_count(void) { return wanted; }
 static short bots_teams(void) { return teams_setting; }
 static boolean network_game_player_slot_held(long player_index) { (void)player_index; return FALSE; }
+/* (ae_bots_live.c's: the bots of a local game in progress, not the lobby's; tested by ae_bots_live_rules_test.c and
+in games) */
+static void ae_bots_live(struct network_game_server *server, struct network_game *game, boolean local_ingame)
+{
+	(void)server;
+	(void)game;
+	(void)local_ingame;
+}
 static void get_unique_random_color(struct network_game_server *server, struct network_player *player)
 {
 	(void)server;

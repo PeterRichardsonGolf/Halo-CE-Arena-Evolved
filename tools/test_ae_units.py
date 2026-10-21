@@ -100,6 +100,9 @@ UNITS = {
     # (the bots of a LAN game: when the lobby has them, how many, their controllers on the host's machine, teams)
     "ae_lan_bots_rules_test.c": ([UI / "ae_lan_bots_rules.c"], ["-fsanitize=address,undefined",
                                                               "-fno-sanitize-recover=all"], []),
+    # (bots.count changed in a local game in progress: which bot joins or leaves, its team, the test's steps)
+    "ae_bots_live_rules_test.c": ([UI / "ae_bots_live_rules.c"], ["-fsanitize=address,undefined",
+                                                                "-fno-sanitize-recover=all"], []),
     # (the bots' fight by level: melee, grenades, headshots, confidence and retreat, the random delays)
     "ae_bots_combat_rules_test.c": ([UI / "ae_bots_combat_rules.c"], ["-fsanitize=address,undefined",
                                                                     "-fno-sanitize-recover=all"], []),

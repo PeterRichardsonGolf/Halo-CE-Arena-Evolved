@@ -476,6 +476,10 @@ port/linux/game/game_events.c	if (ae_bots_kept_from_delta()) /* AE hook */\nretu
 # Bots in LAN games (ae_lan_bots.c, "virtual pads"): the host's players on its free controller slots, which are no
 # local players of the host (no view, HUD, sound or player_control), their input the bot brain's in the host's tick
 port/linux/game/bots.c	#include "ae_bots_lan.inc" /* AE hook */
+# bots.count changed in a local game in progress (ae_bots_live.c, ae_bots_live_rules.c): a bot joins or leaves at once,
+# one a frame, as a player added in game or a quitting machine's player; a bot that left is let be until its quit time
+source/networking/network_server_manager.c	ae_bots_live(server, &server->game, network_game_is_splitscreen_local() && server->state == _network_game_server_state_ingame); /* AE hook */
+port/linux/game/bots.c	if (ae_bots_live_quitting(player, absolute_index, actions)) continue; /* AE hook */
 # Bot fight log (ae_bots_events.inc, included by ae_bots_lan.inc; debug.bot_events): the bot's tick before and after its controls, and a player's damage to a unit (with its damage effect and flags: a bot's death's cause, ae_bots_falls_rules.h)
 port/linux/game/bots.c	ae_bots_events_begin(bot, bot_index, &tick); /* AE hook */
 port/linux/game/bots.c	ae_bots_events_end(bot, bot_index, &tick); /* AE hook */
