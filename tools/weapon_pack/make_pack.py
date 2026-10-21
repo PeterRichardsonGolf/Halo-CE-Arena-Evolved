@@ -165,7 +165,8 @@ DRAWINGS = {
     "scope_mask_noring": "scope_hd.py",        # its mask without the ring ("input": the mask)
     "scope_details_label": "scope_label.py",   # the lines with the zoom's label ("input": the details)
     "reticle": "reticle_art.py",               # the aiming reticle ("picture": a file beside the recipe, or
-                                               # "form": "zoom" (the default) or "smg", drawn from geometry)
+                                               # "form": "zoom" (the default), "smg" or "carbine",
+                                               # drawn from geometry: reticle_art.FORMS)
     "icon": "hud_sheet.py",                    # the prompts' picture ("input": a model's geometry; "width";
                                                # its size is the art settings' icon_size)
 }
@@ -716,9 +717,9 @@ class Run:
                 form = form or "zoom"
                 if picture:
                     return grey(reticle_art.from_picture(self.recipe_folder / picture))
-                if form not in ("zoom", "smg"):
+                if form not in reticle_art.FORMS:
                     raise Refused("%s: no reticle form %s" % (name, form))
-                return grey(reticle_art.smg_reticle() if form == "smg" else reticle_art.zoom_reticle())
+                return grey(reticle_art.FORMS[form]())
             if kind == "icon":
                 picture = hud_sheet.icon((self.art_in / entry["input"]).read_text(),
                                          entry.get("width", hud_sheet.ICON_WIDTH))
