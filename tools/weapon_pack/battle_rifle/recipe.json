@@ -428,6 +428,18 @@
   "br_zoom_reticle.png": "reticle_art.py",
   "br_icon.png": "hud_sheet.py"
  },
+ "art_drawings": {
+  "digits.png": {"draw": "screen_digits"},
+  "compass.png": {"draw": "screen_compass"},
+  "br_meter_smooth.png": {"draw": "counter_meter"},
+  "br_alphas_smooth.png": {"draw": "counter_alphas"},
+  "br_scope_details_hd.png": {"draw": "scope_details_hd", "input": "scope_details.bitmap"},
+  "br_scope_ring_hd.png": {"draw": "scope_ring_hd", "input": "scope_mask.bitmap"},
+  "br_scope_mask_noring.png": {"draw": "scope_mask_noring", "input": "scope_mask.bitmap"},
+  "br_scope_details_3x.png": {"draw": "scope_details_label", "input": "scope_details.bitmap"},
+  "br_zoom_reticle.png": {"draw": "reticle"},
+  "br_icon.png": {"draw": "icon", "input": "br_geo.txt"}
+ },
  "art": {
   "br_alphas_smooth.png": {
    "mode": "RGBA",
@@ -634,7 +646,7 @@
  "expected": {
   "about": "re-pinned for R33 (still revision 1: the pack was never released); Task 19's final credits text changes the pack's hashes once more",
   "donor_sha256": "a8117667d76817d94be458d09fb2fb0ab7acbfb10f234e7dc020b7a4902aa378",
-  "donor_size": 22552576,
+  "donor_size": 22548480,
   "pack_sha256": "2a8df5417be390700c47da67d7c045ccbc29811a01d13aabcfabfd6353c6aaa9",
   "pack_own_sha256": "70f35cc948a2b8d8efdb3395a813f2111e31761150178e390fada1fd13a1333f",
   "pack_size": 15852626,
