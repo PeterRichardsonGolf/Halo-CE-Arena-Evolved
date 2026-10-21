@@ -1111,3 +1111,8 @@ source/game/game_engine.c	if (ae_gametype_skips_map_item(definition_index)) cont
 port/linux/src/d3d8_gl.c	{ platform_log("GPU: visibility counts did not arrive through the buffer in %lu presents; they are read on the CPU from now on", device.frame - batch->frame); device.visibility_mapped = NULL; device.visibility_stats.failures++; return; } /* AE hook */
 # LOOK DOWN (0.3.6): an enemy below/above a ledge shows the bot only its head; bots_find_target tries it when the middle is hidden.
 port/linux/game/bots.c	if (ae_bots_fight_head_in_sight(bot, player->unit_index, eye, candidates[least].unit_index)) return candidates[least].player_index; /* AE hook */
+# LEVEL FLASHING (0.3.6): the portal walk clips each portal's outline to the region seen so far; the outlines share
+# corners, and a corner exactly on a clip line with the one before it a rounding error behind made the crossing 0/0.
+# PIN keeps a NaN, the NaN corner spread through every later clip and the clusters past that portal were not drawn
+# that frame. The corner on the line is the crossing (scale 0). OpenCE's own (Bungie's) code.
+source/math/geometry.c	if (scale != scale) scale = 0.f; /* AE hook */

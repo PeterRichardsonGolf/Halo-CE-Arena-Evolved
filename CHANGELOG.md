@@ -33,6 +33,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - AE SWAT no longer has grenade pickups on the map: it starts with no grenades, and the map's frag and plasma
   grenades stay away too (a gametype rule, MAP GRENADES, on in every other gametype; the weapons and powerups are
   unchanged). A SWAT you edited yourself keeps its own rules.
+- Level flashing fixed: for a frame now and then, a big piece of the level (a cliff, part of a base) was not drawn
+  and the fog color showed in its place, most often while looking around near portals between parts of the map. A
+  rounding case in the visibility walk lost the parts of the level past one doorway (OpenCE's structure culling,
+  since build-242, made the hole bigger).
 
 ## 0.3.5.1-beta - 2026-10-20
 
