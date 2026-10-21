@@ -109,7 +109,8 @@ static struct ae_audit_column const ae_audit_columns[] =
 	FLAG_BIT("generic_starting_equipment", _game_variant_generic_starting_equipment_bit),
 	/* (bits 6-7: SENSOR RANGE, 0 stock, 1 10 m, 2 15 m, 3 25 m: ae_sensor_range_rules.h, seed revision 19) */
 	BITS("universal_variant.flags.sensor_range", universal_variant.flags, _audit_bits_long, AE_SENSOR_RANGE_MASK),
-	FLAG_BIT("bit8", 8),
+	/* (bit 8: CONTROLLER CROUCH, 1 STAYS DOWN, 0 HALO CE: ae_crouch_rules.h, seed revision 21) */
+	FLAG_BIT("controller_crouch", _game_variant_controller_crouch_bit),
 	FLAG_BIT("bit9", 9),
 	FLAG_BIT("bit10", 10),
 	FLAG_BIT("bit11", 11),

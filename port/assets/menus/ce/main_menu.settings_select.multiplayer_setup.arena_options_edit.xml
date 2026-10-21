@@ -26,7 +26,8 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_sound_preset" x="54" y="228"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_movement" x="54" y="248"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_silent_weapons" x="54" y="268"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" x="54" y="288"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_controller_crouch" x="54" y="288"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" x="54" y="308"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_help" type="text" controller="1" left="68" top="340" width="482" height="66" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options" font="ui\large_ui" color="#FFFFFFFF">
@@ -206,11 +207,24 @@
 		<string text="JUST ME"/>
 		<string text="SILENT"/>
 	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_controller_crouch" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/controller_crouch_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/controller_crouch_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/controller_crouch_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="11" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/controller_crouch_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_controller_crouch" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_controller_crouch">
+		<string text="STAYS DOWN"/>
+		<string text="HALO CE"/>
+	</strings>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/op_ball_melee" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="11" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/arena_options_labels" string_index="12" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/arena_options_edit/ball_melee_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/arena_options_edit/var_ball_melee" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -231,6 +245,7 @@
 		<string text="SOUND PRESET:"/>
 		<string text="SILENT MOVEMENT:"/>
 		<string text="SILENT WEAPONS:"/>
+		<string text="CONTROLLER CROUCH:"/>
 		<string text="BALL MELEE:"/>
 	</strings>
 	<strings name="main_menu/settings_select/multiplayer_setup/arena_options_edit/cap_arena_options">
@@ -278,6 +293,8 @@
 		<string text="Readying and putting away weapons sound as in\nHalo CE."/>
 		<string text="You hear your own weapon swaps; everyone else's\nare silent (firing and reloading still sound).\nOnly Arena Evolved players can join."/>
 		<string text="Nobody's weapon swaps make a sound, yours\nincluded (firing and reloading still sound).\nOnly Arena Evolved players can join."/>
+		<string text="Holding crouch on a controller keeps you down,\nstick pushed all the way too, as on a keyboard."/>
+		<string text="As Halo CE: on a controller, pushing the stick\nall the way stands you up from a crouch."/>
 		<string text="Oddball only: the ball carrier's melee is as in\nHalo CE: it takes the shield and a little health,\nand kills from behind."/>
 		<string text="Oddball only: the ball carrier's melee kills in\none hit, shields and all, as in Halo 3. Same\nreach, no hits through walls."/>
 	</strings>

@@ -109,6 +109,9 @@ def fields(text):
     # (revision 19's SENSOR RANGE, a line of its own as the HUD loads: "AE motion sensor range: 10 m (...)")
     mm = re.search(r"AE motion sensor range: (stock|\d+ m)", text)
     if mm: out["sensor range"] = mm[1]
+    # (revision 21's CONTROLLER CROUCH, a line of its own: "AE controller crouch: stays down")
+    mm = re.search(r"AE controller crouch: (stays down|halo ce)", text)
+    if mm: out["controller crouch"] = mm[1]
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -286,6 +289,14 @@ for _name, (_want, _, _) in ROWS.items():
 for _name in ("AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG",
               "AE OCT TMSN"):
     ROWS[_name][0]["map grenades"] = "off"
+# CONTROLLER CROUCH (bit 8 of the variant's flags): HALO CE in every gametype before revision 21 (no seed had the bit)
+for _name, (_want, _, _) in ROWS.items():
+    _want["controller crouch"] = "halo ce"
+
+# revision 21 (tools/ae_gametype_change.py): CONTROLLER CROUCH STAYS DOWN in every AE gametype: a controller's held
+# crouch keeps you down at full stick; the NHE set keeps HALO CE
+for _name in ("AE FFA SLAY", "AE TEAM SLY", "AE CTF", "AE KING", "AE FFA BALL", "AE 2V2 SLY", "AE 2V2 CTF", "AE 2V2 KING", "AE 2V2 BALL", "AE TEAM OB", "AE PRACTICE", "AE SNIPERS", "AE SHOTSNIP", "AE SWAT", "AE ROCKETS", "AE SHOTGUNS", "AE HEAVIES", "AE ELIM", "AE PHANTOMS", "AE ENDURE", "AE FFA ROCK", "AE FFA SNPR", "AE JUGGER", "AE REV TAG", "AE ACCUM", "AE STALKER", "AE FFA KING", "AE CRAZYKNG", "AE RACE", "AE RALLY", "AE TRAINING", "AE COMP FFA", "AE COMP TS", "AE COMP CTF", "AE COMP KOH", "AE COMP OB", "AE BR FFA", "AE BR ELIM", "AE BR PHANT", "AE BR ENDUR", "AE BR FBALL", "AE BR JUGG", "AE BR RTAG", "AE BR ACCUM", "AE BR STALK", "AE BR FKING", "AE BR CKING", "AE BR PRAC", "AE BR C FFA", "AE BR TS", "AE BR CTF", "AE BR KING", "AE BR TM OB", "AE BR 2V2 S", "AE BR 2V2 C", "AE BR 2V2 K", "AE BR 2V2 B", "AE BR C TS", "AE BR C CTF", "AE BR C KOH", "AE BR C OB", "AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG", "AE OCT TMSN",):
+    ROWS[_name][0].update({"controller crouch": "stays down"})
 
 
 def check(runs, prefix):

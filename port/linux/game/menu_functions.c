@@ -6519,6 +6519,8 @@ static struct gametype_option const gametype_options[] =
 	{ "pregame_countdown_spinner", _option_flag, 0, FLAG(_game_variant_pregame_countdown_bit), 2, { 0, 1 } },
 	{ "practice_spinner", _option_flag, 0, FLAG(_game_variant_practice_bit), 2, { 0, 1 } },
 	{ "nhe_extras_spinner", _option_flag, 0, FLAG(_game_variant_nhe_extras_bit), 2, { 0, 1 } },
+	/* (CONTROLLER CROUCH: bit 8, ae_crouch_rules.h; STAYS DOWN sets it, HALO CE, every gametype from before, has 0) */
+	{ "controller_crouch_spinner", _option_flag, 0, FLAG(_game_variant_controller_crouch_bit), 2, { 1, 0 } }, /* AE hook */
 	/* (BALL MELEE: universal_variant.ball_melee, STOCK or LETHAL; Oddball only) */
 	{ "ball_melee_spinner", _option_ball_melee, VARIANT_FIELD(universal_variant.ball_melee), 0, 2, { 0, 1 } },
 	/* (DROP SECONDARY: bits 29-30, enum drop_secondary; a stored 3 shows as
