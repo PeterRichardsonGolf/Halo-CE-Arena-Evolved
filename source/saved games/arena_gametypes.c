@@ -433,6 +433,9 @@ static void arena_gametype_no_speed_changes_and_no_respawn_growth(
 static void arena_gametype_octagon_drill(
 	struct game_variant *variant,
 	struct game_variant_options *options);
+static void arena_gametype_no_map_grenades(
+	struct game_variant *variant,
+	struct game_variant_options *options);
 
 /* ---------- globals */
 
@@ -4424,6 +4427,18 @@ static void arena_gametype_octagon_drill(
 {
 	arena_gametype_no_speed_changes(variant, options);
 	variant->universal_variant.pack_loadout = ae_weapon_ammo_byte_set(variant->universal_variant.pack_loadout, 1, 1);
+
+	return;
+}
+
+/* revision 18: MAP GRENADES off (the universal variant's pack_loadout bit 7, ae_weapon_rules.h; the other bits kept):
+the map's frag and plasma grenade pickups never spawn. Shipped: never edited (a change is a new function) */
+static void arena_gametype_no_map_grenades(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	(void)options;
+	variant->universal_variant.pack_loadout = ae_map_grenades_byte_set(variant->universal_variant.pack_loadout, 1);
 
 	return;
 }
