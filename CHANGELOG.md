@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.5.2-beta - 2026-10-20
+
+- A game with bots no longer crashes when a player's body is gone while his shots still fly (the bots' hearing looked
+  the shooter up; seen on Windows with 15 bots).
+- Windows builds keep their symbols on CI again, so a crash report's addresses can be named.
+
 ## 0.3.5.1-beta - 2026-10-20
 
 - Smoother on NVIDIA graphics: the game no longer waits for the graphics driver at every frame to read back which lights
