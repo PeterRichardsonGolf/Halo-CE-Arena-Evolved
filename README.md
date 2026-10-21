@@ -17,7 +17,7 @@ HCS settings, with ideas of its own. [Halo 1: NHE](https://halo1nhe.com/)'s own 
 as an option. It is built on [OpenCE](https://github.com/OpenCommunityEdition/OpenCE), the port of the Halo:
 Combat Evolved decompilation, and grew from [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce).
 
-> **Status: early and in active development.** The current pre-release is 0.3.4-beta. The Linux 64-bit build is
+> **Status: early and in active development.** The current pre-release is 0.3.5-beta. The Linux 64-bit build is
 > the one played and tested; the Windows 64-bit build is built by the same automated checks but is not test-played
 > here; the other platforms build from the same code but are untested here.
 
@@ -25,22 +25,27 @@ Combat Evolved decompilation, and grew from [ChupathingyCE](https://github.com/C
 
 - **Competitive rules on any map:** no fall damage, Halo 2 or Halo 3 style health, no spread, a pre-game countdown,
   practice mode, silent movement for split screen, a lethal oddball, all on a gametype's ARENA OPTIONS.
-- **Ready-made gametypes:** casual, COMP, battle rifle and free-for-all sets, special modes, training, and Halo 1:
-  NHE's own 23 ([gametypes.md](docs/gametypes.md)).
+- **Ready-made gametypes, by category:** AE CASUAL, AE COMP, AE PARTY, AE WEAPONS and AE PRACTICE (with OCTAGON
+  warm-up drills: infinite ammo, instant respawns), each with its battle rifle version, and Halo 1: NHE's own
+  ([gametypes.md](docs/gametypes.md)).
 - **Item timers and training:** the power items' next spawns by the match clock, waypoints over them, spawn markers
   coloured by how likely you are to spawn there, spoken callouts.
 - **The battle rifle:** three-round bursts and a 3x scope, as a starting weapon (a weapon pack, in the Windows and
   Linux downloads).
 - **Split screen on PC:** up to four players on one PC, locally, on a LAN and online, each with their own profile,
   controller layout and settings.
-- **Bots** that play every mode like a person of their level, modelled on how Halo Infinite's bots play: up to 15
-  in a split screen game, 3 in a LAN game you host.
-- **LAN nights:** players get the host's maps over the network (map sharing), map packs keep their own folders and
-  pages in the map lists, and community, Custom Edition and HaloMD maps all play.
+- **Bots** that play every mode like a person of their level, in six levels from RECRUIT to DEMON: up to 15 in a
+  split screen game (change how many from the pause menu, mid-game), 3 in a LAN game you host. They play as a team:
+  a wingman sticks with each player, they know the power items' timers, regroup when outnumbered, hear gunfire, pace
+  their pistol shots, scope back in after a hit and take the high ground.
+- **LAN nights:** players who lack a map get it from the host as they join, with its progress on the lobby's
+  header (Settings > Network > INTERNET DOWNLOADS turns it off); map packs keep their own folders and pages in the
+  map lists, and community, Custom Edition and HaloMD maps all play.
 - **Controllers:** a PS5 DualSense's adaptive triggers and lightbar, 14 layouts including MCC's, back buttons and
   paddles, Nintendo Switch Pro controllers.
 - **Display:** a combat HUD of its own (or Halo CE's), a match clock and campaign timer like the Master Chief
-  Collection's, waypoint pictures, a performance overlay.
+  Collection's, waypoint pictures, keyboard keys shown in the game's prompts when you play with a keyboard, a
+  performance overlay.
 - **Privacy first:** public game lists, stats and crash reports stay off unless you turn them on, and the game never
   updates itself.
 
@@ -93,16 +98,17 @@ sharing: [lan.md](docs/lan.md).
 
 Three rulesets under one roof: **AE Casual** (Arena Evolved's rules with the timers, training aids and
 quality-of-life options on), **AE Comp** (modern competitive settings, closer to today's HCS, researched rather than
-guessed) and **Classic Comp (NHE)** (the Xbox competitive rules, faithfully). Next: split screen's join screen, the
-H2 Demakes map pack, and more of the newer Halo games' features.
+guessed) and **Classic Comp (NHE)** (the Xbox competitive rules, faithfully). Next: ChupathingyCE 0.8 merged in,
+Arena Evolved's own menus, map packs as folders in the map lists, and more of the newer Halo games' features.
 
 ## For developers
 
 - **Building:** Python 3, ninja, clang with lld (or gcc on Linux) and SDL3: `python3 configure.py --release` then
   `ninja linux64`. Every platform and package list: [building.md](docs/building.md).
 - **Upstream:** [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) is where the port is made, and Arena
-  Evolved merges its releases and offers fixes to the shared code back. Online, Arena Evolved is network version 29
-  and plays with OpenCE and ChupathingyCE builds on it: [upstream.md](docs/upstream.md).
+  Evolved merges its releases and offers fixes and features back to it, credited to Arena Evolved. Online, Arena
+  Evolved is network version 32 and plays with OpenCE builds on it (build-244 onward); ChupathingyCE 0.8 comes with
+  its merge: [upstream.md](docs/upstream.md).
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md). Arena Evolved's own code is in `port/linux/game/ae_*`; it
   changes the upstream files only by single marked lines (`/* AE hook */`, listed in `port/linux/game/ae_hooks.txt`).
 

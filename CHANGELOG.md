@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.5-beta - 2026-10-20
+
 - AE's own text (menus, the community services screen, HUD STYLE AE) no longer shows thin lines and cut letter edges on
   some graphics drivers (Mesa's Intel driver): the glyph atlas is cleared and each glyph keeps an empty border.
 - The gametype lists sort by category: AE CASUAL, AE COMP, AE PARTY, AE WEAPONS, AE PRACTICE (with the OCTAGON drills),
