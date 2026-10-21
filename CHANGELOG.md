@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- A controller's crouch now crouches with the stick pushed all the way, as the keyboard's crouch key does (Halo
+  stood you up at full stick).
 - Built on ChupathingyCE 0.8.0b (and OpenCE build-244): plays online with ChupathingyCE 0.8 both ways, on its Delta
   wire `chupa-32a` (Arena Evolved's range is that wire alone; 0.3.5's `ae-32a` games still join). Also from it:
   CHANGE TEAMS in a team game's pause menu, the follow camera on long respawn waits, opt-in powerup timers
