@@ -13,7 +13,7 @@ tables):
 - every alias's successor in the table; an alias's info its successor's set,
   order, team and engine, its own stored name as display_name, no
   description, not special;
-- the sets: AE 30, AE BR 25, AE COMP 5, OCTAGON 4, NHE 25, TRAINING 1 (90), each set's orders
+- the sets: AE 30, AE BR 25, AE COMP 5, OCTAGON 8, NHE 25, TRAINING 1 (94), each set's orders
   0..n-1 in the table's order, NHE's own set after VANILLA and POWERUPS
   (TS 50 first, CTF WIZARD last), and the set names;
 - lookups letters' case aside; an unknown name FALSE, displayed as it is;
@@ -99,7 +99,7 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 25, 5, 4, 25, 1 };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 25, 5, 8, 25, 1 };
 	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] =
 		{ "", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
@@ -110,8 +110,8 @@ int main(void)
 	wchar_t display[40];
 
 	/* the table */
-	if (arena_gametype_catalog_count() != 90)
-		fail("catalog count is not 90", "");
+	if (arena_gametype_catalog_count() != 94)
+		fail("catalog count is not 94", "");
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -254,8 +254,8 @@ int main(void)
 	if (!(_arena_gametype_set_ae < _arena_gametype_set_ae_br && _arena_gametype_set_ae_br < _arena_gametype_set_ae_comp))
 		fail("AE BR between AE and AE COMP", "");
 
-	/* the OCTAGON set (revision 16): free for all slayer drills on AE's rules, each "AE OCT ..." and shown
-	"FFA AE OCTAGON ..." */
+	/* the OCTAGON set (revision 16): slayer drills on AE's rules, each "AE OCT ..." and shown "FFA AE OCTAGON ..."
+	(revision 17's team ones "TEAM AE OCTAGON ...") */
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -264,10 +264,10 @@ int main(void)
 			fail("OCTAGON set and stored name", entry->stored_name);
 		if (entry->set != _arena_gametype_set_octagon)
 			continue;
-		if (strncmp(entry->display_name, "FFA AE OCTAGON ", 15) || entry->team || entry->special ||
-			entry->game_engine != game_engine_slayer)
+		if (strncmp(entry->display_name, entry->team ? "TEAM AE OCTAGON " : "FFA AE OCTAGON ", entry->team ? 16 : 15) ||
+			entry->special || entry->game_engine != game_engine_slayer)
 		{
-			fail("OCTAGON: free for all slayer, shown FFA AE OCTAGON", entry->stored_name);
+			fail("OCTAGON: slayer, shown FFA AE OCTAGON or TEAM AE OCTAGON", entry->stored_name);
 		}
 	}
 

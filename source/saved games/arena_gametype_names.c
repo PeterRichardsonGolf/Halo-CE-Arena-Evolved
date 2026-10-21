@@ -209,6 +209,20 @@ static struct arena_gametype_name const arena_gametype_names[] =
 	{ "AE OCT MGSN", "FFA AE OCTAGON MAG SNIPE", _arena_gametype_set_octagon, game_engine_slayer, FALSE, FALSE,
 		"1v1 drill: magnum and sniper rifle, infinite ammo and no reloads, no grenades, instant respawns; AE's rules, "
 		"25 kills, 15 minutes." },
+	/* (revision 17; owner, 2026-10-20: "would be nice to have some team octagon"): the same drills as team slayer on
+	AE's casual team rules (AE TEAM SLY's), to warm up with a team */
+	{ "AE OCT TBR", "TEAM AE OCTAGON BR", _arena_gametype_set_octagon, game_engine_slayer, TRUE, FALSE,
+		"Team drill: the battle rifle alone, infinite ammo and no reloads, no grenades, instant respawns; AE's rules "
+		"(the battle rifle pack needed)." },
+	{ "AE OCT TBSN", "TEAM AE OCTAGON BR SNIPE", _arena_gametype_set_octagon, game_engine_slayer, TRUE, FALSE,
+		"Team drill: battle rifle and sniper rifle, infinite ammo and no reloads, no grenades, instant respawns; AE's "
+		"rules (the battle rifle pack needed)." },
+	{ "AE OCT TMAG", "TEAM AE OCTAGON MAG", _arena_gametype_set_octagon, game_engine_slayer, TRUE, FALSE,
+		"Team drill: the magnum alone, infinite ammo and no reloads, no grenades, instant respawns; AE's rules, 50 "
+		"kills, 15 minutes." },
+	{ "AE OCT TMSN", "TEAM AE OCTAGON MAG SNIPE", _arena_gametype_set_octagon, game_engine_slayer, TRUE, FALSE,
+		"Team drill: magnum and sniper rifle, infinite ammo and no reloads, no grenades, instant respawns; AE's rules, "
+		"50 kills, 15 minutes." },
 
 	/* the casual set's values with Halo 1: NHE's own modes */
 	{ "NHE TS VAN", "TEAM NHE VANILLA", _arena_gametype_set_nhe, game_engine_slayer, TRUE, FALSE,

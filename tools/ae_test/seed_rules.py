@@ -254,6 +254,15 @@ ROWS["AE OCT BRSN"] = (dict(_OCTAGON, loadout="assault rifle + sniper rifle", **
                        "battle_rifle + sniper rifle", 0)
 ROWS["AE OCT MAG"] = (dict(_OCTAGON, loadout="pistol + none"), "pistol", 0)
 ROWS["AE OCT MGSN"] = (dict(_OCTAGON, loadout="pistol + sniper rifle"), "pistol + sniper rifle", 0)
+# revision 17 (owner, 2026-10-20): their team versions, added seeds: AE TEAM SLY's row (50 kills, the motion sensor's
+# enemies) with the same changes and starts
+_TEAM_OCTAGON = dict(ROWS["AE TEAM SLY"][0], **{"respawn": T(0), "starting frags": "none", "infinite ammo": "on",
+                                                "bottomless clip": "on", "death bonus": "off", "kill penalty": "off"})
+ROWS["AE OCT TBR"] = (dict(_TEAM_OCTAGON, loadout="assault rifle + none", **_OCTAGON_BR), "battle_rifle", 0)
+ROWS["AE OCT TBSN"] = (dict(_TEAM_OCTAGON, loadout="assault rifle + sniper rifle", **_OCTAGON_BR),
+                       "battle_rifle + sniper rifle", 0)
+ROWS["AE OCT TMAG"] = (dict(_TEAM_OCTAGON, loadout="pistol + none"), "pistol", 0)
+ROWS["AE OCT TMSN"] = (dict(_TEAM_OCTAGON, loadout="pistol + sniper rifle"), "pistol + sniper rifle", 0)
 
 
 def check(runs, prefix):
