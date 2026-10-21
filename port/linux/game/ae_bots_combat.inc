@@ -162,6 +162,8 @@ static struct weapon_trigger_definition *ae_bots_fight_trigger(long weapon_index
 - WEAPON RANGE: a shotgun's or a flamethrower's target out of its reach is not fired at;
 - DESCOPE REFLEX (NORMAL and up): a weapon true only zoomed (the sniper rifle) is zoomed at a target past 6 units; a
   hit knocks the zoom out, and the bot zooms again after its level's moment, not firing past 10 units before;
+- SCOPED RIFLE (NORMAL and up): the carbine is zoomed at a target past half its aim assist's reach, as the DESCOPE
+  REFLEX zooms, but fired unzoomed while the bot waits to zoom again;
 - PRECISION PACING (NORMAL and up): a precision weapon that blooms (the pistol; held in bursts, as its trigger is
   not latched) is not fired at range while its error is over the level's limit, for a few ticks at most. */
 static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *tick)
@@ -169,6 +171,8 @@ static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *ti
 	struct ae_bots_combat_bot *state;
 	struct weapon_trigger_definition *trigger;
 	int level = ae_bots_level_of_skill(ae_bots_shooting_skill(bots_globals.skill));
+	long definition_index;
+	boolean sniper;
 
 	if (tick->weapon_index == NONE)
 		return TRUE;
@@ -178,24 +182,35 @@ static boolean ae_bots_fight_in_range(struct bots_bot *bot, struct bots_tick *ti
 	if (tick->object->object.parent_object_index != NONE || !(trigger = ae_bots_fight_trigger(tick->weapon_index)))
 		return TRUE;
 	state = ae_bots_fight_state(bot, tick);
-	if (TEST_FLAG(trigger->flags, _weapon_trigger_use_error_when_unzoomed_bit) &&
-		weapon_definition_get(weapon_get(tick->weapon_index)->definition_index)->weapon.zoom_level_count > 0)
+	definition_index = weapon_get(tick->weapon_index)->definition_index;
+	sniper = TEST_FLAG(trigger->flags, _weapon_trigger_use_error_when_unzoomed_bit) &&
+		weapon_definition_get(definition_index)->weapon.zoom_level_count > 0;
+	if (sniper || ae_bots_combat_scoped_rifle(definition_index))
 	{
+		boolean zooms = sniper ? ae_bots_combat_zooms(level, tick->target_distance) :
+			ae_bots_combat_rifle_zooms(level, tick->target_distance,
+				weapon_definition_get(definition_index)->weapon.aim_assist_parameters.autoaim_distance);
+
 		/* (hurt while zoomed: CE's unit_unzoom took the zoom; the moment before it zooms again) */
 		if (bot->hurt_tick == tick->now && tick->unit->unit.current_zoom_level == NONE &&
-			tick->now >= state->rescope_until && ae_bots_combat_zooms(level, tick->target_distance))
+			tick->now >= state->rescope_until && zooms)
 		{
 			state->rescope_until = tick->now + ae_bots_combat_rescope_ticks(level, bots_random_real(bot));
 			ae_bots_combat_count(AE_BOTS_COMBAT_RESCOPES);
 		}
 		if (tick->now < state->rescope_until)
-			return (boolean)!ae_bots_combat_descoped_holds_fire(tick->target_distance);
-		if (ae_bots_combat_zooms(level, tick->target_distance))
+		{
+			/* (a scoped rifle fires unzoomed meanwhile) */
+			if (sniper)
+				return (boolean)!ae_bots_combat_descoped_holds_fire(tick->target_distance);
+		}
+		else if (zooms)
 			tick->action->desired_zoom_level = 0;
-		return TRUE;
+		if (sniper)
+			return TRUE;
 	}
 	/* (a precision weapon that blooms: paced at range; the wait counted from its first held tick) */
-	if (ae_bots_combat_precision_weapon(weapon_get(tick->weapon_index)->definition_index) &&
+	if (ae_bots_combat_precision_weapon(definition_index) &&
 		trigger->projectile_error_angle_upper_bound > trigger->projectile_error_angle_lower_bound + 0.001f &&
 		ae_bots_combat_pace_holds(level, tick->target_distance, weapon_get(tick->weapon_index)->weapon.triggers[0].error,
 			state->pace_since == NONE ? 0 : tick->now - state->pace_since))

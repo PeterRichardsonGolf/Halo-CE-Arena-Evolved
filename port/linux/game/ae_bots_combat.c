@@ -10,6 +10,7 @@ weapon, a grenade or its target, its own state, and the minute line. The choices
 #include "units/units.h"
 #include "units/unit_definitions.h"
 #include "tag_files/tag_groups.h"
+#include "items/weapon_definitions.h"
 
 #include "bots.h"
 #include "ae_burst_rifle.h"
@@ -91,6 +92,12 @@ boolean ae_bots_combat_precision_weapon(long definition_index)
 		ae_weapon_pack_definition_slot(definition_index) == AE_WEAPON_SLOT_CARBINE ||
 		(name && ((strstr(name, "pistol") && !strstr(name, "plasma")) || strstr(name, "sniper")));
 	return precision_answer;
+}
+
+boolean ae_bots_combat_scoped_rifle(long definition_index)
+{
+	return definition_index != NONE && ae_weapon_pack_definition_slot(definition_index) == AE_WEAPON_SLOT_CARBINE &&
+		weapon_definition_get(definition_index)->weapon.zoom_level_count > 0;
 }
 
 real ae_bots_combat_grenade_speed(long unit_index)

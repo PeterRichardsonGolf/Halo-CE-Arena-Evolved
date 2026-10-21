@@ -13,7 +13,7 @@ key=value words:
   ev=pos x= y= z= fighting=0|1   once a second while alive (stuck spots, fight and alive time)
   ev=seen                        the tick it takes a target (a new one, or after losing it 2 s)
   ev=first_shot since_seen=<ticks>   its first shot at that target
-  ev=shot weapon=<tag name>      a round leaves the magazine (energy weapons: a trigger press); seen one tick late
+  ev=shot weapon=<tag name>      the weapon fired (its last fired tick moved on; any weapon, any ammo rule); seen one tick late
   ev=hit dmg=<vitality lost>     a player took damage with this bot as the cause (aggregated per damage call)
   ev=melee                       the blow
   ev=strafe dir=<-1|1>           the side it strafes to changed
@@ -37,7 +37,7 @@ struct ae_bots_event_state
 	long last_target;
 	real last_dist;
 	long weapon_index;
-	short rounds;
+	long fired;
 	boolean rounds_known;
 	boolean trigger;
 	real strafe_sign;
@@ -233,22 +233,18 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 		ae_bots_event_line(bot_index, now, "seen", target, dist, "");
 	}
 
-	/* a round gone from the magazine (the weapon unchanged); an energy weapon: a press */
+	/* the weapon fired (the weapon unchanged): its last fired tick moved on (weapons.c sets it on each shot, so a
+	BOTTOMLESS CLIP's rounds that never go down count, and an empty magazine's clicks do not; the rounds counted
+	before missed every shot of the AE OCT drills and logged an empty carbine's clicks as shots) */
 	if (tick->weapon_index != NONE)
 	{
 		struct weapon_datum *weapon = weapon_get(tick->weapon_index);
-		short rounds = weapon->weapon.magazines[0].rounds_loaded;
-		boolean has_rounds = weapon->weapon.magazines[0].rounds_total > 0 || rounds > 0;
+		long fired = weapon->weapon.game_time_last_fired;
 
 		if (state->weapon_index == tick->weapon_index && state->rounds_known)
-		{
-			if (has_rounds)
-				shot = rounds < state->rounds;
-			else
-				shot = trigger && !state->trigger && tick->fighting;
-		}
+			shot = fired != state->fired;
 		state->weapon_index = tick->weapon_index;
-		state->rounds = rounds;
+		state->fired = fired;
 		state->rounds_known = TRUE;
 		if (shot)
 		{
