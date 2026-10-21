@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- The gametype lists sort by category: AE CASUAL, AE COMP, AE PARTY, AE WEAPONS, AE PRACTICE (with the OCTAGON drills),
+  then NHE; each battle rifle version sits right after the gametype it copies (FFA AE SLAYER, then FFA AE BR SLAYER).
 - ENEMY NAME COLOR moved to Network Setup > MULTIPLAYER HUD, under PLAYER NAME SIZE, so the pause menu's SETTINGS
   has it in a game too (it was left on Network Setup's own page, which a game does not show).
 - HUD STYLE AE with ENEMY NAME COLOR RED: teammates' names over heads in white, not their team's color (a red
