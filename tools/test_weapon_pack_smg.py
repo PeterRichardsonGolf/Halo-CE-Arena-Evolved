@@ -135,7 +135,9 @@ def test_numbers_are_halo_2s(kind):
     assert sets(projectile) == {"initial_velocity": "400", "final_velocity": "400", "maximum_range": "40"}
     # the silenced one's bullet carries no tracer: the contrail attachment is taken off
     assert (["erase", "attachments[*]"] in projectile["edits"]) == silenced
-    assert sets(step(data, "fix-ae", DAMAGE)) == {"damage_lower_bound": "8", "damage_upper_bound": "8 8"}
+    damage = "7" if silenced else "8"                     # the silenced one: evened with the SMG by the bot grid
+    assert sets(step(data, "fix-ae", DAMAGE)) == {"damage_lower_bound": damage,
+                                                  "damage_upper_bound": damage + " " + damage}
     for entry in data["steps"]:
         if entry["layer"] == "fix-ae" and entry["op"] == "edit":
             assert len(entry.get("why", "")) > 30, entry["tag"]
