@@ -361,6 +361,14 @@ static void placed_select(
 	refused_maps_next_current = &refused_maps_next_of[index];
 }
 
+/* the slot `placed` is now (what a public query selects back as it returns: it may be asked while a slot's pack is
+being added, as placed_looks_set asks ae_weapon_pack_tag_is_own) */
+static short placed_selected(
+	void)
+{
+	return (short)(placed_current - placements + 1);
+}
+
 /* ---------- private code */
 
 static struct ae_pack *slot_pack(
@@ -1886,6 +1894,7 @@ void ae_weapon_pack_lobby_line(
 	char const *map_name,
 	struct game_variant const *variant)
 {
+	short const selected = placed_selected();
 	char file[MAP_NAME_SIZE + 8];
 	char line[96];
 	unsigned int mask;
@@ -1919,7 +1928,7 @@ void ae_weapon_pack_lobby_line(
 			text[length++] = (wchar_t)(unsigned char)line[index];
 		text[length] = 0;
 	}
-	placed_select(1);
+	placed_select(selected);
 }
 
 /* as a map's tags are let go (scenario_tags_unload: after the texture and sound caches closed and the menus'
@@ -2061,6 +2070,7 @@ boolean ae_weapon_pack_read(
 	void *buffer,
 	boolean *complete)
 {
+	short const selected = placed_selected();
 	short slot;
 	boolean read = FALSE;
 
@@ -2069,7 +2079,7 @@ boolean ae_weapon_pack_read(
 		placed_select(slot);
 		read = placed_read(tag_index, offset, size, buffer, complete);
 	}
-	placed_select(1);
+	placed_select(selected);
 	return read;
 }
 
@@ -2136,6 +2146,7 @@ static boolean placed_tag_is_own(
 boolean ae_weapon_pack_tag_is_own(
 	long tag_index)
 {
+	short const selected = placed_selected();
 	short slot;
 	boolean own = FALSE;
 
@@ -2144,7 +2155,7 @@ boolean ae_weapon_pack_tag_is_own(
 		placed_select(slot);
 		own = placed_tag_is_own(tag_index);
 	}
-	placed_select(1);
+	placed_select(selected);
 	return own;
 }
 
@@ -2207,13 +2218,14 @@ void ae_weapon_pack_loadout_given(
 	short loadout_slot,
 	long definition_index)
 {
+	short const selected = placed_selected();
 	short slot = ae_weapon_pack_definition_slot(definition_index);
 
 	if (!slot)
 		return;
 	placed_select(slot);
 	placed_loadout_given(loadout_slot, definition_index);
-	placed_select(1);
+	placed_select(selected);
 }
 
 static boolean placed_item_string(
@@ -2253,6 +2265,7 @@ boolean ae_weapon_pack_item_string(
 	long *string_index,
 	wchar_t const **string)
 {
+	short const selected = placed_selected();
 	long relative = *string_index - ITEM_STRING_INDEX_FIRST;
 	short slot = relative >= 0 ? (short)(relative / ITEM_STRINGS_PER_SLOT + 1) : 0;
 	boolean found;
@@ -2261,7 +2274,7 @@ boolean ae_weapon_pack_item_string(
 		return FALSE;
 	placed_select(slot);
 	found = placed_item_string(string_index, string);
-	placed_select(1);
+	placed_select(selected);
 	return found;
 }
 
@@ -2314,6 +2327,7 @@ struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
 	struct icon_hud_element_definition const *icon,
 	long *bitmap_group_index)
 {
+	short const selected = placed_selected();
 	struct icon_hud_element_definition const *result = icon;
 	short slot;
 
@@ -2322,7 +2336,7 @@ struct icon_hud_element_definition const *ae_weapon_pack_message_icon(
 		placed_select(slot);
 		result = placed_message_icon(icon, bitmap_group_index);
 	}
-	placed_select(1);
+	placed_select(selected);
 	return result;
 }
 
@@ -2374,6 +2388,7 @@ long ae_weapon_pack_smooth_bitmap_at(
 	long width,
 	long height)
 {
+	short const selected = placed_selected();
 	long smooth = 0;
 	short slot;
 
@@ -2382,6 +2397,6 @@ long ae_weapon_pack_smooth_bitmap_at(
 		placed_select(slot);
 		smooth = placed_smooth_bitmap_at(address, width, height);
 	}
-	placed_select(1);
+	placed_select(selected);
 	return smooth;
 }
