@@ -180,7 +180,7 @@ void ae_bots_combat_report(long now, char const *shooting, char const *movement)
 	combat_log.last_report_tick = now;
 	platform_log("bots: combat tick %ld (shooting %s, movement %s): grenades %ld, blows %ld (%ld held back), "
 		"head aims %ld, retreats %ld, charges %ld, jumps %ld, halts %ld, sightings shared %ld, shots paced %ld, "
-		"zoomed again %ld, grenades at last seen %ld, high ground picks %ld, looks out of vertical view %ld", now, shooting,
+		"zoomed again %ld, grenades at last seen %ld, high ground picks %ld, looks out of vertical view %ld, heads seen past a ledge %ld", now, shooting,
 		movement,
 		combat_log.counts[AE_BOTS_COMBAT_GRENADES], combat_log.counts[AE_BOTS_COMBAT_MELEES],
 		combat_log.counts[AE_BOTS_COMBAT_MELEES_DECLINED], combat_log.counts[AE_BOTS_COMBAT_HEAD_AIMS],
@@ -188,7 +188,8 @@ void ae_bots_combat_report(long now, char const *shooting, char const *movement)
 		combat_log.counts[AE_BOTS_COMBAT_JUMPS], combat_log.counts[AE_BOTS_COMBAT_HALTS],
 		combat_log.counts[AE_BOTS_COMBAT_SHARES], combat_log.counts[AE_BOTS_COMBAT_PACED],
 		combat_log.counts[AE_BOTS_COMBAT_RESCOPES], combat_log.counts[AE_BOTS_COMBAT_PRENADES],
-		combat_log.counts[AE_BOTS_COMBAT_HIGH_GROUND], combat_log.counts[AE_BOTS_COMBAT_OUT_OF_VERTICAL_VIEW]);
+		combat_log.counts[AE_BOTS_COMBAT_HIGH_GROUND], combat_log.counts[AE_BOTS_COMBAT_OUT_OF_VERTICAL_VIEW],
+		combat_log.counts[AE_BOTS_COMBAT_HEADS_SEEN]);
 }
 
 void ae_bots_combat_event(long bot_index, long now, char const *skill_name, char const *event, long target,
