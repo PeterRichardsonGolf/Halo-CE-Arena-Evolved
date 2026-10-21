@@ -35,6 +35,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - AE SWAT no longer has grenade pickups on the map: it starts with no grenades, and the map's frag and plasma
   grenades stay away too (a gametype rule, MAP GRENADES, on in every other gametype; the weapons and powerups are
   unchanged). A SWAT you edited yourself keeps its own rules.
+- The OCTAGON drills (FFA and TEAM) have no grenade pickups on the map either, as they start with none (seed
+  revision 20). A drill you edited yourself keeps its own rules.
 - Item waypoints line up: the distance, the name, the picture and the timer share one centre, and the stack sits over
   the arrow's own art (the double chevron for an item behind a wall sits left of its sprite's middle).
 - A 10 m motion sensor in every Arena Evolved gametype that has the motion sensor on (it was the map's own, 15 m on
