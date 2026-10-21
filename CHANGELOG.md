@@ -6,6 +6,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+## 0.3.5.1-beta - 2026-10-20
+
+- Smoother on NVIDIA graphics: the game no longer waits for the graphics driver at every frame to read back which lights
+  and lens flares are visible (OpenCE PR #433, by hkmodd: since OpenCE build-242 that wait made NVIDIA's driver and the
+  game take turns, about 60 fps on a fast card). Plays with 0.3.5-beta and OpenCE build-244 (network version 32).
+- If a graphics driver never passes those results back that way, the game reads them the old way from then on (the
+  log says so once), so lens flares and coronas keep working instead of freezing.
+
 ## 0.3.5-beta - 2026-10-20
 
 - AE's own text (menus, the community services screen, HUD STYLE AE) no longer shows thin lines and cut letter edges on
