@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Smoother on NVIDIA graphics: the game no longer waits for the graphics driver at every frame to read back which lights
+  and lens flares are visible (OpenCE PR #433, from OpenCE build-242's readback). On an RTX 4070 Ti SUPER with driver
+  610.88 the game ran at about 60 fps on every map; with it, at the frame cap.
 - Built on ChupathingyCE 0.8.0b (and OpenCE build-244): plays online with ChupathingyCE 0.8 both ways, on its Delta
   wire `chupa-32a` (Arena Evolved's range is that wire alone; 0.3.5's `ae-32a` games still join). Also from it:
   CHANGE TEAMS in a team game's pause menu, the follow camera on long respawn waits, opt-in powerup timers
