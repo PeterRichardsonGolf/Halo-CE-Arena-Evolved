@@ -182,6 +182,21 @@ def geometry_for_no_part(real):
     raise AssertionError("the pack has no model part")
 
 
+def respelled(real, pack_id, word):
+    """the real pack as another slot's (a test stand-in, ae_weapon_slots.h): its pack id the slot's and every
+    string's "battle_rifle" respelled as word (same length), so its own tags do not collide with the real pack's
+    on the map"""
+    assert len(word) == len("battle_rifle")
+    data = bytearray(real)
+    entry = next(e for e in aepack.section_entries(data) if e[0] == aepack.STRINGS)
+    start, size = entry[1], entry[2]
+    data[start:start + size] = bytes(data[start:start + size]).replace(b"battle_rifle", word.encode())
+    data[0x14:0x34] = pack_id.encode().ljust(32, b"\0")
+    aepack.rehash(data)
+    aepack.read(bytes(data))
+    return bytes(data)
+
+
 class Game(unittest.TestCase):
     def setUp(self):
         self.folder = Path(tempfile.mkdtemp(dir=Path.home(), prefix="packadd-"))
@@ -293,6 +308,32 @@ class RealPack(Game):
 
     def test_geometry_for_no_part_refused(self):
         self.refused("parts", geometry_for_no_part(self.real()), r".* has geometry for what is no model part")
+
+    def test_several_packs_and_map_spawns(self):
+        """three slots' packs on one map (the real one and two stand-ins for the SMGs' slots), each added past the
+        one before; the loadout's second source the second named pack's weapon; MAP SPAWNS: the map's assault
+        rifles spawn slot 2's weapon, its pistols the battle rifle"""
+        folder = self.folder / "slots"
+        folder.mkdir()
+        (folder / "ae_battle_rifle.aepack").write_bytes(self.real())
+        (folder / "ae_smg.aepack").write_bytes(respelled(self.real(), "ae_smg", "smgtest_____"))
+        (folder / "ae_smg_silenced.aepack").write_bytes(respelled(self.real(), "ae_smg_silenced", "smgsiltest__"))
+        added = r"weapon pack: added to bloodgulch: \d+ tags new \(\d+ bytes\), \d+ the map's own, \d+ optional ones " \
+                r"the map lacks, 0 corrections; its tag table {before} to "
+        self.play("slots", "--packs-from", str(folder), "--pack-map-spawns",
+                  "--env", "HALO_NETWORK_TEST_WEAPON_PACKS=7", "--env", "HALO_NETWORK_TEST_PACK_LOADOUT=first_second",
+                  "--expect-line", added.format(before="1806"),
+                  "--expect-line", FIRST_SPAWN.format(slot="primary"),
+                  "--expect-line", r"weapon pack: first spawn: the secondary weapon is the pack's smgtest_____ \(",
+                  "--expect-line", r"weapon pack: map item \d+ spawns the smg \(slot 2\) in place of its assault rifle",
+                  "--expect-line", r"weapon pack: map item \d+ spawns the battle_rifle \(slot 1\) in place of its pistol",
+                  "--expect-line", r"weapon pack: smgsiltest__'s look: .*ae\\packs\\smgsiltest__\\",
+                  "--expect-no-line", "weapon pack: refused", "--expect-no-line", "could not be read")
+        tables = [m.group(1, 2) for m in map(re.compile(r"its tag table (\d+) to (\d+);").search,
+                                              self.debug_lines("slots")) if m]
+        self.assertEqual(len(tables), 3, tables)
+        # (each pack's table starts where the one before ended)
+        self.assertEqual([t[0] for t in tables[1:]], [t[1] for t in tables[:-1]])
 
     @unittest.skipUnless(ROTATION, "AE_TEST_PACK_ROTATION not set (four one-minute games)")
     def test_rotation(self):
