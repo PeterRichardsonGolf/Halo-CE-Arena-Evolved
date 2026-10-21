@@ -33,6 +33,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - AE SWAT no longer has grenade pickups on the map: it starts with no grenades, and the map's frag and plasma
   grenades stay away too (a gametype rule, MAP GRENADES, on in every other gametype; the weapons and powerups are
   unchanged). A SWAT you edited yourself keeps its own rules.
+- A 10 m motion sensor in every Arena Evolved gametype that has the motion sensor on (it was the map's own, 15 m on
+  the stock maps): contacts close by are easier to track. Every player in the game sees the host's range, and
+  enemies' names over their heads show within the same 10 m. The NHE gametypes keep the map's range, and a gametype
+  you edited yourself keeps its own rules.
 
 ## 0.3.5.1-beta - 2026-10-20
 

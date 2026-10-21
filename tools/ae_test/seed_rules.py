@@ -106,6 +106,9 @@ def fields(text):
     # (revision 18's MAP GRENADES, a line of its own: "AE map grenades: off")
     mm = re.search(r"AE map grenades: (\w+)", text)
     if mm: out["map grenades"] = mm[1]
+    # (revision 19's SENSOR RANGE, a line of its own as the HUD loads: "AE motion sensor range: 10 m (...)")
+    mm = re.search(r"AE motion sensor range: (stock|\d+ m)", text)
+    if mm: out["sensor range"] = mm[1]
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -266,6 +269,19 @@ ROWS["AE OCT TBSN"] = (dict(_TEAM_OCTAGON, loadout="assault rifle + sniper rifle
                        "battle_rifle + sniper rifle", 0)
 ROWS["AE OCT TMAG"] = (dict(_TEAM_OCTAGON, loadout="pistol + none"), "pistol", 0)
 ROWS["AE OCT TMSN"] = (dict(_TEAM_OCTAGON, loadout="pistol + sniper rifle"), "pistol + sniper rifle", 0)
+
+# revision 19 (owner, 2026-10-20): SENSOR RANGE 10 m in every AE seed whose motion sensor is on (radar players all,
+# friends or enemies), their AE BR twins and the OCTAGON drills with them; the sensor-off ones and the NHE set keep
+# STOCK (the map's own range)
+SENSOR_10M = ("AE FFA SLAY", "AE TEAM SLY", "AE CTF", "AE KING", "AE FFA BALL", "AE 2V2 SLY", "AE 2V2 CTF",
+              "AE 2V2 KING", "AE 2V2 BALL", "AE TEAM OB", "AE PRACTICE", "AE ROCKETS", "AE SHOTGUNS", "AE HEAVIES",
+              "AE TRAINING", "AE ELIM", "AE ENDURE", "AE JUGGER", "AE FFA KING", "AE CRAZYKNG", "AE RACE", "AE RALLY",
+              "AE BR FFA", "AE BR ELIM", "AE BR ENDUR", "AE BR FBALL", "AE BR JUGG", "AE BR FKING", "AE BR CKING",
+              "AE BR PRAC", "AE BR TS", "AE BR CTF", "AE BR KING", "AE BR TM OB", "AE BR 2V2 S", "AE BR 2V2 C",
+              "AE BR 2V2 K", "AE BR 2V2 B", "AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR",
+              "AE OCT TBSN", "AE OCT TMAG", "AE OCT TMSN")
+for _name, (_want, _, _) in ROWS.items():
+    _want["sensor range"] = "10 m" if _name in SENSOR_10M else "stock"
 
 
 def check(runs, prefix):
