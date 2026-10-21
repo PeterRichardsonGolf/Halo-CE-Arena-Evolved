@@ -65,6 +65,8 @@ boolean ae_mode_guard_new_map(struct game_variant *variant)
 		ae_mode_guard.changed = TRUE;
 		variant->game_engine_index = game_engine_slayer;
 		csmemset(&variant->game_engine_variant, 0, sizeof(variant->game_engine_variant));
+		variant->universal_variant.score_to_win = ae_mode_guard_slayer_score(variant->universal_variant.teams);
+		platform_log("mode guard: Slayer to %ld", variant->universal_variant.score_to_win);
 		mode = game_engine_slayer;
 	}
 	count = player_get_starting_location_count();
