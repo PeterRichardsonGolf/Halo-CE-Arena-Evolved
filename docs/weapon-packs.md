@@ -398,6 +398,15 @@ silent to the AI's hearing and its bullet has no contrail (no tracer); the SMG's
 the prompts' picture (60 texels wide; the silenced one 86, at one scale). tools/test_weapon_pack_smg.py holds the
 recipes to this.
 
+**The carbine's recipe** (`tools/weapon_pack/carbine/`, `ae_carbine`, slot 4, replaces nothing): CMT's TSC:E
+carbine the same way (its base map lifted 1.4 and its purple shell's reflection 0.6: the lighter shell otherwise
+shows mint green in the sun), held by `c_cb` or `ar`, with Halo 2's numbers: a magazine of 18, 36 rounds to start
+and 72 in reserve at most, one round a pull at most every 0.35 s (Halo 2's barrel names 2 shots per fire, a burst
+its carbine never fires in play: single shots kept), error 0.3 to 0.6 degrees, one 2x zoom, aim assist 3 degrees /
+17 units and magnetism 6 / 21, 400 units a second over 40, 14.3 a round (Halo 2's 11 for CE's 150, the head bonus
+kept). The scope is CMT's; the aiming reticle is ours (Halo 2's carbine form), the counter 18 rounds in groups of 3.
+tools/test_weapon_pack_carbine.py holds the recipe to this.
+
 **The approved donor and the departures from it.** The rifle the owner approved was a prototype's donor map
 ("v6e", SHA-256 0aa3ffcb..., `approved_reference` in the recipe). The recipe reproduces that donor's 96 fix tags
 byte for byte except six it names under `departures`, which exist so that the pack carries no pixel of the game's
