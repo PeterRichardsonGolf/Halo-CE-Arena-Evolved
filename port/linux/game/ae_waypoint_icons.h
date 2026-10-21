@@ -95,9 +95,24 @@ int ae_waypoint_sprite_size(int bitmap_width, int bitmap_height, float x0, float
 	int *width, int *height);
 
 /* Centring and tight rows (a stack's rows centre on one axis; each row's ink, not its text box, is what is placed):
-a text row drawn from x0 shows its first ink ink_offset to the right of x0 (the font's leading), so its origin is
-the line's centre less half its ink width less ink_offset */
-int ae_waypoint_row_origin(int line_width, int row_width, int ink_offset);
+a text row drawn from x shows its first ink ink_offset to the right of x (the font's leading), so it is drawn from
+the axis less half its ink width less ink_offset. All in the HUD's units (480 to the view's height: 2.25 pixels at
+1080p), kept exact: a rounding to whole units here was a picture row 1 unit (2 to 3 pixels at 1080p) left of the text */
+float ae_waypoint_row_left(float axis, float ink_width, float ink_offset);
+/* a block's axis: centred on a point (anchor_x, its arrow's ink) the block's left is the whole unit at or left of
+anchor_x less half its width, then pinned in its room by whole units; its axis is that left, half its width and the
+fraction of a unit dropped */
+float ae_waypoint_block_axis(int left, int width, float anchor_x);
+/* text drawn scaled about an origin (rasterizer_text_set_scale: p' = origin + (p - origin) scale) from a whole unit:
+how far the origin is moved to move the scaled text by shift (a fraction of a unit); 0 for a scale too near 1 to
+move it so (the text then at the nearest whole unit) */
+float ae_waypoint_scaled_shift(float shift, float scale);
+/* A sprite's ink (the map's waypoint arrow): the columns of a width by height sheet of weights (0..255, a pixel's
+alpha and brightness) whose weight reaches threshold, the leftmost and the rightmost; 0 if none does */
+int ae_waypoint_ink_columns(const unsigned char *weights, int width, int height, int threshold, int *left, int *right);
+/* the middle of a sprite's ink (columns left..right of width) from the sprite's middle, a fraction of its width
+(negative: left of it) */
+float ae_waypoint_ink_middle(int left, int right, int width);
 /* a text row's ink at a scale: its capitals' top below its line's top (ascent less cap_height) and its height (cap_height,
 and a texel under the baseline), both in the view's pixels */
 void ae_waypoint_row_ink(int ascent, int cap_height, float scale, int *top_offset, int *height);

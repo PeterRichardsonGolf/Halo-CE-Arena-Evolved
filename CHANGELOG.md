@@ -30,6 +30,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   (`network.join_from_clipboard`) is NEVER by default, as in ChupathingyCE; ASK and ALWAYS still work.
 - The gametype lists (Create Game's and Edit Gametypes') read the chosen gametype's rules once when it changes,
   not every frame (by thelinkin3000).
+- Item waypoints line up: the distance, the name, the picture and the timer share one centre, and the stack sits over
+  the arrow's own art (the double chevron for an item behind a wall sits left of its sprite's middle).
 
 ## 0.3.5.1-beta - 2026-10-20
 

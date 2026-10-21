@@ -410,6 +410,9 @@ source/main/main.c	#include "ae_steady_camera.h" /* AE hook */
 source/main/main.c	ae_steady_camera_note(window->local_player_index, &observer->position, &observer->forward, &observer->up); /* AE hook */
 source/interface/hud_nav_points.c	#include "ae_steady_camera.h" /* AE hook */
 source/interface/hud_nav_points.c	ae_steady_world_to_view(&render.frustum.world_to_view), /* AE hook */
+# (the item waypoints' labels centre on the arrow's ink: port/linux/game/ae_waypoint_ink.c)
+source/interface/hud_nav_points.c	#include "ae_waypoint_ink.h" /* AE hook */
+source/interface/hud_nav_points.c	ae_waypoint_arrow_drawn(bitmap, clip, arrow_scale, theta); /* AE hook */
 source/main/main.c	if (ae_hud_style_overlay(corner, color, text, &frame_statistics_drawn, &frame_statistics_extent)) /* AE hook */\nreturn;
 source/main/main.c	if (ae_hud_style_capture_notice(frame_statistics_drawn, &frame_statistics_extent, frame_statistics_corner() == _text_justification_right)) /* AE hook */\nreturn;
 source/interface/hud.c	#include "ae_hud_style_draw.h" /* AE hook */

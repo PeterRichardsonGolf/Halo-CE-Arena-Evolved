@@ -328,9 +328,63 @@ void ae_waypoint_badge_coverage(int width, int height, int outline, unsigned cha
 	}
 }
 
-int ae_waypoint_row_origin(int line_width, int row_width, int ink_offset)
+float ae_waypoint_row_left(float axis, float ink_width, float ink_offset)
 {
-	return (line_width - row_width) / 2 - ink_offset;
+	return axis - ink_width / 2.0f - ink_offset;
+}
+
+float ae_waypoint_block_axis(int left, int width, float anchor_x)
+{
+	float unpinned = anchor_x - (float)width / 2.0f;
+
+	return (float)left + (float)width / 2.0f + (unpinned - floorf(unpinned));
+}
+
+float ae_waypoint_scaled_shift(float shift, float scale)
+{
+	float moved = 1.0f - scale;
+
+	/* (written so that a NaN gives no move) */
+	if (!(moved > 0.05f || moved < -0.05f))
+		return 0.0f;
+	return shift / moved;
+}
+
+int ae_waypoint_ink_columns(const unsigned char *weights, int width, int height, int threshold, int *left, int *right)
+{
+	int first = -1;
+	int last = -1;
+	int x, y;
+
+	if (!weights || width < 1 || height < 1)
+		return 0;
+	for (x = 0; x < width; x++)
+	{
+		for (y = 0; y < height; y++)
+		{
+			if (weights[y * width + x] >= threshold)
+			{
+				if (first < 0)
+					first = x;
+				last = x;
+				break;
+			}
+		}
+	}
+	if (first < 0)
+		return 0;
+	if (left)
+		*left = first;
+	if (right)
+		*right = last;
+	return 1;
+}
+
+float ae_waypoint_ink_middle(int left, int right, int width)
+{
+	if (width < 1 || left < 0 || right < left || right >= width)
+		return 0.0f;
+	return ((float)(left + right + 1) / 2.0f - (float)width / 2.0f) / (float)width;
 }
 
 void ae_waypoint_row_ink(int ascent, int cap_height, float scale, int *top_offset, int *height)
