@@ -30,7 +30,8 @@ static struct
 {
 	long shots_logged;
 	long last_tick;
-} ae_ammo_log = { 0, -1 };
+	long grenades_logged;
+} ae_ammo_log = { 0, -1, 0 };
 
 static unsigned char ae_gametype_ammo_byte(void)
 {
@@ -54,13 +55,24 @@ boolean ae_gametype_skips_map_item(long definition_index)
 	unsigned char byte = ae_gametype_ammo_byte();
 	boolean equipment;
 	boolean grenade = FALSE;
+	boolean skip;
 
-	if (definition_index == NONE || !ae_map_grenades_off(byte))
+	if (definition_index == NONE)
 		return FALSE;
 	equipment = object_definition_get(definition_index)->object.type == _object_type_equipment;
 	if (equipment)
 		grenade = equipment_definition_get(definition_index)->equipment.powerup_type == _equipment_powerup_grenade;
-	return ae_map_item_skipped(byte, equipment, grenade) ? TRUE : FALSE;
+	skip = ae_map_item_skipped(byte, equipment, grenade) ? TRUE : FALSE;
+	/* (debug.weapon_log: each grenade pickup the map's spawn reaches, the first few dozen a game) */
+	if (grenade && ae_ammo_log.grenades_logged < AE_AMMO_LOG_SHOTS && config_boolean("debug.weapon_log"))
+	{
+		char const *name = tag_get_name(definition_index);
+
+		ae_ammo_log.grenades_logged++;
+		error(_error_silent, "ae map grenades: tick %ld, %s pickup %s", game_time_get(),
+			name ? tag_name_strip_path(name) : "?", skip ? "skipped" : "spawns");
+	}
+	return skip;
 }
 
 void ae_gametype_ammo_log_rules(unsigned char pack_loadout)
