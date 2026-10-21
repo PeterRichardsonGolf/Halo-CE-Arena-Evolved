@@ -56,6 +56,31 @@ int main(void)
 		/* (the AE BR set's byte, the pack in the primary slot: neither) */
 		CHECK(!ae_weapon_infinite_ammo(0x01) && !ae_weapon_bottomless_clip(0x01 | 0x10));
 	}
+	/* MAP GRENADES (seed revision 18): bit 7 of pack_loadout, set = OFF; the other bits kept and never read as it */
+	{
+		unsigned int byte;
+
+		for (byte = 0; byte < 256; byte++)
+		{
+			unsigned char off = ae_map_grenades_byte_set((unsigned char)byte, 1);
+			unsigned char on = ae_map_grenades_byte_set((unsigned char)byte, 0);
+
+			CHECK(ae_map_grenades_off((unsigned char)byte) == ((byte & 0x80u) != 0));
+			CHECK((off & 0x7Fu) == (byte & 0x7Fu) && ae_map_grenades_off(off));
+			CHECK((on & 0x7Fu) == (byte & 0x7Fu) && !ae_map_grenades_off(on));
+			/* (the ammo bits and the pack's neither read it nor lose it) */
+			CHECK(ae_map_grenades_off(ae_weapon_ammo_byte_set(off, 1, 1)) && !ae_map_grenades_off(ae_weapon_ammo_byte_set(on, 1, 1)));
+			CHECK(ae_weapon_infinite_ammo(off) == ae_weapon_infinite_ammo(on));
+			/* (only a grenade pickup is skipped, and only with it off: weapons, powerups, health, no equipment never) */
+			CHECK(ae_map_item_skipped((unsigned char)byte, 1, 1) == ae_map_grenades_off((unsigned char)byte));
+			CHECK(!ae_map_item_skipped((unsigned char)byte, 1, 0));
+			CHECK(!ae_map_item_skipped((unsigned char)byte, 0, 0));
+			CHECK(!ae_map_item_skipped((unsigned char)byte, 0, 1));
+		}
+		/* (every gametype from before has 0 there: MAP GRENADES on; the AE BR set's byte too) */
+		CHECK(!ae_map_grenades_off(0x00) && !ae_map_grenades_off(0x01) && !ae_map_grenades_off(0x7F));
+		CHECK(ae_map_item_skipped(0x80, 1, 1) && !ae_map_item_skipped(0x7F, 1, 1));
+	}
 	printf("ae_weapon_rules: %u fake triggers, %d failed\n", index, failures);
 	return failures ? 1 : 0;
 }

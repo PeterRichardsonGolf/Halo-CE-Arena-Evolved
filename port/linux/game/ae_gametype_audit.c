@@ -143,13 +143,13 @@ static struct ae_audit_column const ae_audit_columns[] =
 	PAD5("silent_movement", 0x30),
 	PAD5("silent_weapons", 0xC0),
 	/* (pack_loadout: each slot's source, the map spawns' bit, INFINITE AMMO and BOTTOMLESS CLIP (seed revision 16,
-	ae_weapon_rules.h), the rest: game_engine.h) */
+	ae_weapon_rules.h), MAP GRENADES OFF (revision 17), the rest: game_engine.h) */
 	PACK("primary", 0x03),
 	PACK("secondary", 0x0C),
 	PACK("map_spawns", PACK_MAP_SPAWNS_BIT),
 	PACK("infinite_ammo", AE_WEAPON_INFINITE_AMMO_BIT),
 	PACK("bottomless_clip", AE_WEAPON_BOTTOMLESS_CLIP_BIT),
-	PACK("other", 0x80),
+	PACK("no_map_grenades", AE_MAP_GRENADES_OFF_BIT),
 	VC("universal_variant.respawn_time_growth", universal_variant.respawn_time_growth, _audit_long),
 	VC("universal_variant.respawn_time", universal_variant.respawn_time, _audit_long),
 	VC("universal_variant.suicide_penalty", universal_variant.suicide_penalty, _audit_long),

@@ -10,6 +10,7 @@ the host's, so a network client's weapons play as the host's.
 #include "cseries/errors.h"
 #include "game/game.h"
 #include "game/game_engine.h"
+#include "items/equipment_definitions.h"
 #include "items/weapon_definitions.h"
 #include "items/weapons.h"
 #include "tag_files/tag_files.h"
@@ -48,10 +49,25 @@ boolean ae_gametype_bottomless_clip(void)
 	return ae_weapon_bottomless_clip(ae_gametype_ammo_byte()) ? TRUE : FALSE;
 }
 
+boolean ae_gametype_skips_map_item(long definition_index)
+{
+	unsigned char byte = ae_gametype_ammo_byte();
+	boolean equipment;
+	boolean grenade = FALSE;
+
+	if (definition_index == NONE || !ae_map_grenades_off(byte))
+		return FALSE;
+	equipment = object_definition_get(definition_index)->object.type == _object_type_equipment;
+	if (equipment)
+		grenade = equipment_definition_get(definition_index)->equipment.powerup_type == _equipment_powerup_grenade;
+	return ae_map_item_skipped(byte, equipment, grenade) ? TRUE : FALSE;
+}
+
 void ae_gametype_ammo_log_rules(unsigned char pack_loadout)
 {
 	error(_error_silent, "AE ammo: infinite ammo %s, bottomless clip %s",
 		ae_weapon_infinite_ammo(pack_loadout) ? "on" : "off", ae_weapon_bottomless_clip(pack_loadout) ? "on" : "off");
+	error(_error_silent, "AE map grenades: %s", ae_map_grenades_off(pack_loadout) ? "off" : "on");
 }
 
 void ae_gametype_ammo_fired(long weapon_index, short magazine_index)

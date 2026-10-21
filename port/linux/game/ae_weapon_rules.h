@@ -23,7 +23,7 @@ static inline short ae_weapon_charged_magazine_index(short magazine_index, short
 
 /* INFINITE AMMO and BOTTOMLESS CLIP as a gametype's rules (seed revision 16, the OCTAGON drills; the cheats
 cheat_infinite_ammo / cheat_bottomless_clip as before): bits 5 and 6 of the universal variant's pack_loadout byte
-(game_engine.h; bits 0-4 the weapon pack's, bit 7 free), read whatever the weapon pack. The byte travels with the
+(game_engine.h; bits 0-4 the weapon pack's, bit 7 MAP GRENADES OFF below), read whatever the weapon pack. The byte travels with the
 variant (the saved file's and the network game's sizes are unchanged), so every machine in a game plays the host's;
 every gametype from before has 0 there, and older builds ignore them. INFINITE AMMO: a reload takes nothing from
 the reserve, an energy weapon never ages; BOTTOMLESS CLIP: a shot takes nothing from the magazine and adds no heat
@@ -47,6 +47,32 @@ static inline unsigned char ae_weapon_ammo_byte_set(unsigned char pack_loadout, 
 	pack_loadout &= (unsigned char)~(AE_WEAPON_INFINITE_AMMO_BIT | AE_WEAPON_BOTTOMLESS_CLIP_BIT);
 	return (unsigned char)(pack_loadout | (infinite_ammo ? AE_WEAPON_INFINITE_AMMO_BIT : 0u) |
 		(bottomless_clip ? AE_WEAPON_BOTTOMLESS_CLIP_BIT : 0u));
+}
+
+/* MAP GRENADES as a gametype rule (seed revision 17, AE SWAT): bit 7 of pack_loadout, the bit set = OFF, so every
+gametype from before (0 there) keeps the map's grenades, and an older build ignores it. OFF: a netgame equipment
+entry whose item is a grenade never spawns (game_engine.c's item spawn hook, ae_gametype_ammo.c); weapons, powerups
+and health are unaffected */
+#define AE_MAP_GRENADES_OFF_BIT 0x80u
+
+static inline int ae_map_grenades_off(unsigned char pack_loadout)
+{
+	return (pack_loadout & AE_MAP_GRENADES_OFF_BIT) != 0;
+}
+
+/* the byte with MAP GRENADES off or on (its other bits kept) */
+static inline unsigned char ae_map_grenades_byte_set(unsigned char pack_loadout, int off)
+{
+	pack_loadout &= (unsigned char)~AE_MAP_GRENADES_OFF_BIT;
+	return (unsigned char)(pack_loadout | (off ? AE_MAP_GRENADES_OFF_BIT : 0u));
+}
+
+/* whether a netgame equipment spawn is skipped: the byte has MAP GRENADES off and the item is equipment of the
+grenade powerup type (equipment_definition.powerup_type == _equipment_powerup_grenade: frag, plasma, a map's own),
+whatever its tag's name */
+static inline int ae_map_item_skipped(unsigned char pack_loadout, int item_is_equipment, int equipment_is_grenade)
+{
+	return ae_map_grenades_off(pack_loadout) && item_is_equipment && equipment_is_grenade;
 }
 
 #endif

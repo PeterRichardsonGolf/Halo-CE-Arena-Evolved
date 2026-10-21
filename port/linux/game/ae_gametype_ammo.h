@@ -14,6 +14,10 @@ cheats cheat_infinite_ammo / cheat_bottomless_clip. Included after cseries.h.
 boolean ae_gametype_infinite_ammo(void);
 boolean ae_gametype_bottomless_clip(void);
 
+/* MAP GRENADES OFF (ae_weapon_rules.h): TRUE when the running game's gametype has it off and definition_index is a
+grenade pickup (equipment of the grenade powerup type): game_engine.c's item spawn skips it. FALSE with no game */
+boolean ae_gametype_skips_map_item(long definition_index);
+
 /* the "AE ammo:" line of the game's rules, after its "AE rules:" one (from the variant's byte) */
 void ae_gametype_ammo_log_rules(unsigned char pack_loadout);
 

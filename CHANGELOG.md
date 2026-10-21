@@ -30,6 +30,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   (`network.join_from_clipboard`) is NEVER by default, as in ChupathingyCE; ASK and ALWAYS still work.
 - The gametype lists (Create Game's and Edit Gametypes') read the chosen gametype's rules once when it changes,
   not every frame (by thelinkin3000).
+- AE SWAT no longer has grenade pickups on the map: it starts with no grenades, and the map's frag and plasma
+  grenades stay away too (a gametype rule, MAP GRENADES, on in every other gametype; the weapons and powerups are
+  unchanged). A SWAT you edited yourself keeps its own rules.
 
 ## 0.3.5.1-beta - 2026-10-20
 

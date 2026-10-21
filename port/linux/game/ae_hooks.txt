@@ -1102,6 +1102,8 @@ source/items/weapons.c	if (!(cheat.bottomless_clip || ae_gametype_bottomless_cli
 source/items/weapons.c	if (TEST_FLAG(weapon->item.flags, _item_belongs_to_player_bit) && !(cheat.infinite_ammo || ae_gametype_infinite_ammo())) /* AE hook */
 source/game/game_engine.c	#include "ae_gametype_ammo.h" /* AE hook */
 source/game/game_engine.c	ae_gametype_ammo_log_rules(universal->pack_loadout); /* AE hook */
+# MAP GRENADES OFF (seed revision 17, AE SWAT; bit 7 of the same byte): the item spawn skips a grenade pickup
+source/game/game_engine.c	if (ae_gametype_skips_map_item(definition_index)) /* AE hook */
 # 0.3.5.1: OpenCE PR #433's readback takes counts the GPU copied into a coherent mapping without a fence. On a driver
 # that never shows those copies there (the spec does not promise it; AMD Mesa was named in the PR's review), a batch
 # was dropped after VISIBILITY_COPY_FRAMES presents and, all three gone, lens flares and coronas kept their counts for

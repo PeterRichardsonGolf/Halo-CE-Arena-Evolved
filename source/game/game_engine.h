@@ -260,7 +260,7 @@ struct universal_variant
 	stock value. Bit 4 (PACK_MAP_SPAWNS_BIT): BATTLE RIFLE ON MAP, every
 	map item the gametype would spawn as an assault rifle spawns the pack's
 	weapon 0. Bits 5 and 6, whatever the pack: INFINITE AMMO and BOTTOMLESS
-	CLIP (port/linux/game/ae_weapon_rules.h); bit 7 free */
+	CLIP (port/linux/game/ae_weapon_rules.h); bit 7 MAP GRENADES OFF (same file) */
 	byte pack_loadout;
 	long respawn_time_growth;
 	long respawn_time;

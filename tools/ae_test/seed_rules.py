@@ -28,7 +28,7 @@ NHE_COMMON = {
     "vehicle sets": "none (red none, blue none)",
     "timers level": "off", "spawn heat": "on", "objective": "normal", "nhe extras": "on", "drop secondary": "ce",
     "ball melee": "stock", "weapon pack": "none", "pack loadout primary": "stock", "pack loadout secondary": "stock",
-    "battle rifle on map": "off", "infinite ammo": "off", "bottomless clip": "off",
+    "battle rifle on map": "off", "infinite ammo": "off", "bottomless clip": "off", "map grenades": "on",
     "lives": "0", "health%": "100%", "respawn growth": "0 ticks", "odd man out": "off", "friend indicators": "on",
     "auto team balance": "off", "friendly fire penalty": "0 s", "vehicles placed": "0",
 }
@@ -103,6 +103,9 @@ def fields(text):
     for key in ["infinite ammo", "bottomless clip"]:
         mm = re.search(rf"(?:^|, ){re.escape(key)} ([^,]*)", m[1] if m else "")
         if mm: out[key] = mm[1].strip()
+    # (revision 18's MAP GRENADES, a line of its own: "AE map grenades: off")
+    mm = re.search(r"AE map grenades: (\w+)", text)
+    if mm: out["map grenades"] = mm[1]
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -121,7 +124,7 @@ AE = {"health": "halo 2", "fall damage": "off", "starting equipment": "generic",
       "lives": "0", "odd man out": "off", "friendly fire penalty": "0 s", "auto team balance": "off",
       "spawn heat": "on", "nhe mode": "by vehicles", "ball melee": "stock", "weapon pack": "none",
       "pack loadout primary": "stock", "pack loadout secondary": "stock", "battle rifle on map": "off",
-      "infinite ammo": "off", "bottomless clip": "off"}
+      "infinite ammo": "off", "bottomless clip": "off", "map grenades": "on"}
 CASUAL = dict(AE, **{"timers": "hud + waypoints", "timers level": "hud + waypoints", "training": "off",
                      "practice": "off", "time limit": "15 min", "radar players": "all", "objective": "normal",
                      "loadout": "pistol + assault rifle", "weapon set": "normal", "starting frags": "0"})
@@ -146,7 +149,7 @@ ROWS = {  # name: (fields, first-spawn weapons, frags at first spawn)
     "AE PRACTICE": (dict(CASUAL, engine="slayer", **{"score to win": "500", "time limit": "none", "practice": "on", "respawn": T(0), "suicide penalty": T(300), "vehicle set": "0"}), "pistol + assault rifle", 4),
     "AE SNIPERS": (TSX(**{"score to win": "50", "radar players": "none", "weapon set": "sniping", "loadout": "sniper rifle + pistol"}), "sniper rifle + pistol", 4),
     "AE SHOTSNIP": (TSX(**{"score to win": "50", "radar players": "none", "no map weapons": "on", "loadout": "shotgun + sniper rifle"}), "shotgun + sniper rifle", 4),
-    "AE SWAT": (TSX(**{"score to win": "50", "radar players": "none", "weapon set": "pistols", "health": "classic", "shields": "off", "loadout": "pistol + none", "starting frags": "none"}), "pistol", 0),
+    "AE SWAT": (TSX(**{"score to win": "50", "radar players": "none", "weapon set": "pistols", "health": "classic", "shields": "off", "loadout": "pistol + none", "starting frags": "none", "map grenades": "off"}), "pistol", 0),
     "AE ROCKETS": (TSX(**{"score to win": "50", "weapon set": "rocket launchers", "loadout": "rocket launcher + none"}), "rocket launcher", 4),
     "AE SHOTGUNS": (TSX(**{"score to win": "50", "weapon set": "shotguns", "loadout": "shotgun + pistol"}), "shotgun + pistol", 4),
     "AE HEAVIES": (TSX(**{"score to win": "75", "weapon set": "heavy", "vehicle set": "0", "loadout": "rocket launcher + assault rifle"}), "rocket launcher + assault rifle", 4),
