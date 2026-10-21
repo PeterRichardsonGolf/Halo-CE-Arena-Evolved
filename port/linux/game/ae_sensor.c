@@ -227,10 +227,11 @@ typedef char ae_sensor_range_bits_check[_game_variant_sensor_range_first_bit == 
 /* SENSOR RANGE (ae_sensor_range_rules.h): the game's range into the map's HUD globals, as they load for the game
 (hud.c's hud_initialize_for_new_map, after game.c's game_engine_initialize took the variant: the host's, on a
 network client too). A gametype at STOCK, or no game (a campaign, the main menu), puts the map's own back */
+static struct ae_sensor_range_memory memory;
+
 void ae_sensor_range_apply(
 	void)
 {
-	static struct ae_sensor_range_memory memory;
 	int range = game_engine_running() ? ae_sensor_range_get(game_engine_get_variant()->universal_variant.flags) :
 		_ae_sensor_range_stock;
 	real *field;
@@ -247,4 +248,10 @@ void ae_sensor_range_apply(
 			error(_error_silent, "AE motion sensor range: %d m (%.2f world units; the map's own %.2f)",
 				ae_sensor_range_metres(range), (double)*field, (double)memory.stock);
 	}
+}
+
+float ae_sensor_range_map_own(
+	float current)
+{
+	return memory.valid ? memory.stock : current;
 }

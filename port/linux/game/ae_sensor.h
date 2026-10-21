@@ -34,6 +34,9 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 /* (hud.c, as the map's HUD globals load for a game) the game's SENSOR RANGE into them, the map's own for STOCK or
 no game (ae_sensor_range_rules.h); the rules log says which */
 void ae_sensor_range_apply(void);
+/* the map's own motion sensor range, whatever the gametype set (current when none was set yet): how far enemies'
+names show over their heads (hud.c), which the gametype's SENSOR RANGE does not change */
+float ae_sensor_range_map_own(float current);
 /* the sensor's box in the view px from its last draw, FALSE when none */
 boolean ae_sensor_rectangle(short local_player_index, real *x0, real *y0, real *x1, real *y1);
 

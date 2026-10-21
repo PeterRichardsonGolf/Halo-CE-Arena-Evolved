@@ -1120,3 +1120,5 @@ source/game/game_engine.h	_game_variant_sensor_range_first_bit = 6, /* AE hook *
 source/game/game_engine.h	_game_variant_sensor_range_second_bit = 7, /* AE hook */
 source/interface/hud.c	#include "ae_sensor.h" /* AE hook */
 source/interface/hud.c	ae_sensor_range_apply(); /* AE hook */
+# enemies' names over heads keep the map's own sensor reach, whatever the gametype's SENSOR RANGE (owner 10-21)
+source/interface/hud.c	return hud_globals ? ae_sensor_range_map_own(hud_globals->defaults.motion_sensor_range) : 0.0f; /* AE hook */

@@ -1130,7 +1130,7 @@ static boolean hud_player_name_in_sight(
 static real hud_player_name_enemy_range(
 	void)
 {
-	return hud_globals ? hud_globals->defaults.motion_sensor_range : 0.0f;
+	return hud_globals ? ae_sensor_range_map_own(hud_globals->defaults.motion_sensor_range) : 0.0f; /* AE hook */
 }
 
 /* port: a player's name's colour above their head, an ally's (the HUD's
