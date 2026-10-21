@@ -71,22 +71,23 @@ def test_pack_arguments_and_texts():
     assert "CMT" in (FOLDER / pack["credits"]).read_text() and "carbine" in (FOLDER / pack["credits"]).read_text()
 
 
-def test_numbers_are_halo_2s():
+def test_numbers_are_halo_2s_and_the_owners_tuning():
     data = recipe()
     weapon = step(data, "fix-ae", WEAPON)
     numbers = sets(weapon)
     assert (numbers["magazines[0].rounds_loaded_maximum"], numbers["magazines[0].rounds_total_initial"],
             numbers["magazines[0].rounds_reserved_maximum"]) == ("18", "36", "72")
-    assert numbers["triggers[0].maximum_rate_of_fire"] == "2.857 2.857"          # one round each 0.35 s
-    assert (numbers["triggers[0].error_angle"], numbers["triggers[0].minimum_error"]) == ("0.3 0.6", "0")
+    # (the owner's tuning in play, 2026-10-21: Halo 5's rate, no bloom, the BR's round and aim assist reach)
+    assert numbers["triggers[0].maximum_rate_of_fire"] == "5 5"                  # one round each 0.2 s
+    assert (numbers["triggers[0].error_angle"], numbers["triggers[0].minimum_error"]) == ("0.3 0.3", "0")
     assert (numbers["zoom_levels"], numbers["zoom_magnification_range"]) == ("1", "2 2")
     assert (numbers["autoaim_angle"], numbers["autoaim_range"], numbers["magnetism_angle"],
-            numbers["magnetism_range"]) == ("3", "17", "6", "21")
-    assert "2 shots per fire" in weapon["why"] and "single shots kept" in weapon["why"]
+            numbers["magnetism_range"]) == ("3", "20", "6", "30")
+    assert "2 shots per fire" in weapon["why"] and "single shots" in weapon["why"]
     projectile = sets(step(data, "fix-ae", "cmt/weapons/evolved/carbine/projectiles/carbine_bolt.projectile"))
-    assert projectile == {"initial_velocity": "400", "final_velocity": "400", "maximum_range": "40"}
+    assert projectile == {"initial_velocity": "1000", "final_velocity": "1000", "maximum_range": "200"}
     damage = sets(step(data, "fix-ae", "cmt/weapons/evolved/carbine/damage_effects/carbine_bolt_impact.damage_effect"))
-    assert damage == {"damage_lower_bound": "14.3", "damage_upper_bound": "14.3 14.3"}
+    assert damage == {"damage_lower_bound": "15.2", "damage_upper_bound": "15.2 15.2"}   # 5 pop a shield, the sixth to the head kills
 
 
 def test_scope_is_cmts_and_the_reticle_ours():
