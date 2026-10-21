@@ -1077,3 +1077,8 @@ source/items/weapons.c	if (!(cheat.bottomless_clip || ae_gametype_bottomless_cli
 source/items/weapons.c	if (TEST_FLAG(weapon->item.flags, _item_belongs_to_player_bit) && !(cheat.infinite_ammo || ae_gametype_infinite_ammo())) /* AE hook */
 source/game/game_engine.c	#include "ae_gametype_ammo.h" /* AE hook */
 source/game/game_engine.c	ae_gametype_ammo_log_rules(universal->pack_loadout); /* AE hook */
+# 0.3.5.1: OpenCE PR #433's readback takes counts the GPU copied into a coherent mapping without a fence. On a driver
+# that never shows those copies there (the spec does not promise it; AMD Mesa was named in the PR's review), a batch
+# was dropped after VISIBILITY_COPY_FRAMES presents and, all three gone, lens flares and coronas kept their counts for
+# the rest of the game. AE reads them on the CPU from then on (the queries are kept until read), and says so once.
+port/linux/src/d3d8_gl.c	{ platform_log("GPU: visibility counts did not arrive through the buffer in %lu presents; they are read on the CPU from now on", device.frame - batch->frame); device.visibility_mapped = NULL; device.visibility_stats.failures++; return; } /* AE hook */
