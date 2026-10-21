@@ -1299,7 +1299,8 @@ static const struct config_setting config_settings[] =
 		"An automated test host's gametype uses the weapon pack in its custom\n"
 		"loadout: primary, secondary or both (the stock values stay an assault rifle\n"
 		"and a pistol, the fallbacks); primary2, secondary2 the second named pack's\n"
-		"weapon; first_second the first's and the second's. Empty for none." },
+		"weapon; first_second the first's and the second's; second_first the second's\n"
+		"and the first's. Empty for none." },
 	{ "debug.network_test_pack_map_spawns", _config_boolean, "false", "HALO_NETWORK_TEST_PACK_MAP_SPAWNS", _environment_value, /* AE hook */
 		_platform_all,
 		"An automated test host's gametype uses the weapon packs and has their MAP\n"
