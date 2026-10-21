@@ -61,6 +61,17 @@ static void slot_row(struct widget_instance *spinner, struct universal_variant *
 		}
 		return;
 	}
+	/* (a slot that names another pack keeps it unless the BR's choice is taken: the editor has no rows for the
+	other packs yet, and their slot shows the weapon played without the pack) */
+	{
+		short named = game_variant_pack_loadout_weapon_slot(universal->weapon_pack, universal->pack_loadout, slot);
+
+		if (named != _weapon_pack_none && named != _weapon_pack_battle_rifle &&
+			!(custom && spinner->parameters.list.selected_index == PACK_CHOICE))
+		{
+			return;
+		}
+	}
 	universal->pack_loadout &= (byte)~(0x3 << (slot * 2));
 	if (custom && spinner->parameters.list.selected_index == PACK_CHOICE)
 	{
