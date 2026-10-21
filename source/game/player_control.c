@@ -1465,6 +1465,7 @@ static void get_local_player_input_blob(
 						(controls_enable_crouch ||
 						TEST_FLAG(biped->biped.flags, _biped_airborne_bit) ||
 						magnitude_squared2d(&input->throttle) < 0.98f * 0.98f ||
+						effective_buttons[_button_crouch] || /* AE hook */
 						input_abstraction_port_crouch(gamepad_index)))
 					{
 						SET_FLAG(

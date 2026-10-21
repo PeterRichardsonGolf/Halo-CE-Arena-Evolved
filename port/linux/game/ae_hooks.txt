@@ -58,6 +58,9 @@ source/game/player_control.c	ae_zoom_note_held(&input->player_control_flags, inp
 source/game/game_engine.c	#include "ae_glue_zoom.h" /* AE hook */
 source/game/game_engine.c	ae_zoom_log_settings(); /* AE hook */
 source/game/player_control.c	ae_zoom_note_flash(&input->player_control_flags, effective_buttons[_button_flashlight] != 0, gamepad_index); /* AE hook */
+# a pad's crouch crouches at full stick too, as the keyboard's crouch key does (owner 10-20): stock Halo stood the
+# biped up past 0.98 of the stick.
+source/game/player_control.c	effective_buttons[_button_crouch] || /* AE hook */
 port/linux/src/xinput_sdl.c	if (ae_zoom_wheel_taken()) /* AE hook */\nreturn FALSE;
 port/linux/src/xinput_sdl.c	ae_zoom_wheel_scrolled(wheel_direction); /* AE hook */
 port/linux/src/port_config.c	{ "game.mcc_path", _config_string, "\"\"", NULL, _environment_value, /* AE hook */\n_platform_desktop,
