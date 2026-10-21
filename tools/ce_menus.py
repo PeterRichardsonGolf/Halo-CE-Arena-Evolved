@@ -606,10 +606,13 @@ def engine_names(source: Path, start: str, count: int) -> list:
 def pause_art(art):
     lines = []
     for piece in ("left", "center", "right"):
-        heights = [port_settings.pause_box_height(buttons) for buttons in port_settings.PAUSE_BOX_BUTTONS]
-        heights += list(port_settings.PAUSE_BOX_EXTRA_HEIGHTS)
+        # (the multiplayer box's frames in PAUSE_BOX_TEXTURE-high textures, the campaign's in 256-high ones)
+        heights = [(port_settings.pause_box_height(buttons), port_settings.PAUSE_BOX_TEXTURE)
+                   for buttons in port_settings.PAUSE_BOX_BUTTONS]
+        heights += [(height, 256) for height in port_settings.PAUSE_BOX_EXTRA_HEIGHTS]
         lines.append(art.port_picture(f"pause/pausebox_{piece}", [
-            (port_settings.pause_box_svg(piece, height), 4 if piece == "center" else 16, 256) for height in heights]))
+            (port_settings.pause_box_svg(piece, height, texture=texture), 4 if piece == "center" else 16, texture)
+            for height, texture in heights]))
     for piece in ("left", "center", "right"):
         lines.append(art.port_picture(f"pause/objectives_{piece}", [
             (port_settings.pause_box_svg(piece, height, header=True), 4 if piece == "center" else 16, 256)

@@ -1393,6 +1393,9 @@ def title_backdrop(width: float) -> str:
 # hold each number of buttons, one frame each (the Xbox's 2-button box is
 # 159 units high, and each button 35 more)
 PAUSE_BOX_BUTTONS = [3, 4, 5]
+# their textures' height (menu_tags.c's pause_box_redraw sets the pieces'
+# bounds to it): five buttons' box is 264 high, past a 256-high texture
+PAUSE_BOX_TEXTURE = 512
 # the campaign pause box, tall enough for five rows (SETTINGS added) or six
 # (network co-op's FRIENDLY FIRE too) at the PC version's pause menu's pitch
 # (30) with the prompts still under the last row: the stock box is 159, and
@@ -1405,11 +1408,11 @@ def pause_box_height(buttons: int) -> int:
     return 159 + (buttons - 2) * 35
 
 
-def pause_box_svg(piece: str, height: int, header: bool = False) -> str:
+def pause_box_svg(piece: str, height: int, header: bool = False, texture: int = 256) -> str:
     """a piece of the pause box (left cap, centre strip, right cap; 9-slice:
-    the strip tiles across), height units high in its 256-high texture"""
+    the strip tiles across), height units high in its texture-high texture"""
     width = 4 if piece == "center" else 16
-    lines = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="256" viewBox="0 0 {width} 256">']
+    lines = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{texture}" viewBox="0 0 {width} {texture}">']
     fill = "#0a2649"
     body_clip = ""
     if not header:

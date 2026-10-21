@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- The pause menu's box is whole with five buttons (a hosted team game's: CHANGE TEAMS, SETTINGS, END GAME): its
+  bottom edge was cut off, the B and A prompts below it.
 - Weapon packs: a gametype can name several packs at once (the battle rifle's, and next the Halo 2 SMG's, silenced
   SMG's and carbine's, each its own file in `packs`), all added to the map. Battle rifle gametypes play exactly as
   before. A host refuses a machine that lacks a pack its gametype names, with its own message (older builds just

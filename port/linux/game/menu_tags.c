@@ -1542,6 +1542,11 @@ what is below the list moves down. */
 #define PAUSE_SETTINGS_SCREEN "main_menu/settings_select/player_setup/player_profile_edit/player_profile_edit_screen"
 #define PAUSE_BUTTON_SPACING 35
 #define PAUSE_BOX_FIRST_BUTTONS 3
+/* the box's height for a number of buttons (tools/port_settings.py pause_box_height: the Xbox's 2-button box is
+159, each button 35 more); its frames' textures are taller (PAUSE_BOX_TEXTURE there, 512: five buttons' box is
+264), and the pieces' bounds are the box's own height, as the campaign's (bounds past the screen's clip squash the
+picture) */
+#define PAUSE_BOX_HEIGHT(buttons) (159 + ((buttons) - 2) * PAUSE_BUTTON_SPACING)
 
 static long ui_function_named(char const *name)
 {
@@ -1802,7 +1807,8 @@ static void pause_box_redraw(struct ui_widget_definition const *box, long button
 		sequence->first_bitmap_index = (short)PIN(buttons - PAUSE_BOX_FIRST_BUTTONS, 0, group->bitmaps.count - 1);
 		sequence->bitmap_count = 1;
 		reference_set(&definition->background_bitmap, BITMAP_GROUP_TAG, build.bitmap_tags[bitmap]);
-		definition->bounds.y1 = (short)(definition->bounds.y0 + 256);
+		definition->bounds.y1 = (short)(definition->bounds.y0 +
+			PAUSE_BOX_HEIGHT(PIN(buttons, PAUSE_BOX_FIRST_BUTTONS, PAUSE_BOX_FIRST_BUTTONS + 2)));
 	}
 }
 
