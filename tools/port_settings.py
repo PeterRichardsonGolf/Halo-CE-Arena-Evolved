@@ -509,7 +509,7 @@ SCREENS["mods_setup/bots"] = {
     "screen": "bots_settings_screen", "header": ("header_bots", None), "title": "BOTS", "spacing": 30,
     "rows": [
         ("BOTS:", "bots.count", BOT_COUNTS,
-         "How many bots join a split screen lobby, of any\nmode; a LAN game you host takes up to 3.",
+         "How many bots play a split screen game (changed\nmid-game: at once); a LAN host takes up to 3.",
          None),
         ("BOT SKILL:", "bots.skill", BOT_SKILLS,
          "How soon the bots react, how well they aim and\nhow far they see.", None),
