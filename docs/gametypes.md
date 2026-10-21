@@ -50,7 +50,9 @@ They are in the gametype list the first time you play. Back to the [README](../R
   (magnum and sniper rifle); stored as AE OCT BR, AE OCT BRSN, AE OCT MAG, AE OCT MGSN. Free for all slayer on the
   casual set's values (25 kills, 15 minutes, the motion sensor, item TIMERS) with instant respawns, no grenades, and
   INFINITE AMMO and BOTTOMLESS CLIP: a magazine never empties and never needs a reload. The BR ones need the battle
-  rifle's pack, as the AE BR set.
+  rifle's pack, as the AE BR set. The same four as team drills, to warm up with a team: TEAM AE OCTAGON BR, BR SNIPE,
+  MAG and MAG SNIPE (stored as AE OCT TBR, AE OCT TBSN, AE OCT TMAG, AE OCT TMSN), team slayer on TEAM AE SLAYER's
+  values (50 kills, 15 minutes, the motion sensor showing enemies) with the same drill rules.
 - **FFA AE TRAINING:** item TIMERS and TRAINING's markers, plays to 500, no
   time limit.
 - Every Arena Evolved gametype has no fall damage, HALO 2 health (SWAT:

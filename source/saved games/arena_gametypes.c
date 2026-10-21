@@ -71,8 +71,8 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
-	past it: revisions 11 and 16 only added seeds) */
-	ARENA_GAMETYPES_REVISION = 16,
+	past it: revisions 11, 16 and 17 only added seeds) */
+	ARENA_GAMETYPES_REVISION = 17,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -708,6 +708,26 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_FFA_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ON, ARENA_VEHICLES_STOCK, TRUE,
 		.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle),
 		.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
+	/* revision 17 (owner, 2026-10-20: "would be nice to have some team octagon also it is fun to warm up that way
+	with the boys"): the same four drills as team games, each AE TEAM SLY's row (50 kills, 15 minutes, the motion
+	sensor's enemies) with the drills' changes: instant respawns, no grenades, INFINITE AMMO and BOTTOMLESS CLIP,
+	the same starts */
+	{ "AE OCT TBR", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_none), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
+	{ "AE OCT TBSN", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
+		ARENA_OCTAGON_BR_PRIMARY, .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle), .hit_feedback = 1,
+		.starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
+	{ "AE OCT TMAG", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
+		.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+		.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
+	{ "AE OCT TMSN", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS,
+		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, 0, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
+		.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_sniper_rifle),
+		.hit_feedback = 1, .starting_frags = STARTING_GRENADES_NONE, .adjust = arena_gametype_octagon_drill },
 	/* the casual set's values with Halo 1: NHE's own modes (revision 6),
 	under the NHE set's names since revision 9; COMBAT FEEDBACK stays HALO CE */
 	{ "NHE TS VAN", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
@@ -825,8 +845,9 @@ AE's slayer seeds. Revision 15 (tools/ae_gametype_change.py): no respawn time
 growth in AE FFA SNPR: the stock Snipers' adds 5 s to a player's respawn per
 death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE
 SNIPERS included. Revision 16 has no migration (it only added the OCTAGON
-set's four drills). A row whose old and new names are the same is a value update
-(in place, under its name).
+set's four drills), nor has revision 17 (their four team versions). A row
+whose old and new names are the same is a value update (in place, under its
+name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =

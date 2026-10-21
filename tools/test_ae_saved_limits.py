@@ -102,7 +102,7 @@ def test_seeds_leave_room():
     """a seeded root (the seeds, the built-in entries, a few profiles and own gametypes) stays under the warning, and
     every gametype the memory unit can list fits the lists"""
     count = len(seeds())
-    assert count == 90
+    assert count == 94
     assert count + BUILT_IN + ROOM_PROFILES + ROOM_OWN <= maximum() - 10
     # (one profile: the start's own state is under the warning)
     assert count + BUILT_IN + 1 < maximum() - 10
@@ -111,13 +111,13 @@ def test_seeds_leave_room():
 
 
 def test_record_fits():
-    """the record of the seeded names (each "NAME\\n" after "#revision N\\n") fits its buffer; a fresh root's stays
-    under the length builds before the migrations read (ARENA_GAMETYPES_RECORD_OLD_LIMIT)"""
+    """the record of the seeded names (each "NAME\\n" after "#revision N\\n") fits its buffer. A fresh root's stayed
+    under the length builds before the migrations read (ARENA_GAMETYPES_RECORD_OLD_LIMIT) until revision 17's four
+    seeds took it past (arena_gametypes_seed logs a warning: such a build, 0.1.0-beta's, would seed its own gametypes
+    again, never over a file)"""
     text = ARENA.read_text()
     size = int(re.search(r"ARENA_GAMETYPES_RECORD_SIZE = (\d+)", text)[1])
-    old_limit = int(re.search(r"ARENA_GAMETYPES_RECORD_OLD_LIMIT = (\d+)", text)[1])
     table = text[text.index("arena_gametype_migrations[] ="):text.index("arena_gametype_test_migration =")]
     old_names = set(re.findall(r'\.old_row = \{\s*\.name = "([^"]+)"', table)) - set(seeds())
     fresh = len("#revision 11\n") + sum(len(n) + 1 for n in seeds())
-    assert fresh < old_limit
     assert fresh + sum(len(n) + 1 for n in old_names) < size

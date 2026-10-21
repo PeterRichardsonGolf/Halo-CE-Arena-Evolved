@@ -23,7 +23,7 @@ enum arena_gametype_set
 	_arena_gametype_set_ae,         /* AE casual (unmarked in names) */
 	_arena_gametype_set_ae_br,      /* AE BR: AE casual's and AE COMP's with the battle rifle start (revision 11) */
 	_arena_gametype_set_ae_comp,
-	_arena_gametype_set_octagon,    /* OCTAGON: 1v1 practice drills, infinite ammo (revision 16) */
+	_arena_gametype_set_octagon,    /* OCTAGON: practice drills, infinite ammo (revision 16; their team ones 17) */
 	_arena_gametype_set_nhe,
 	_arena_gametype_set_training,   /* AE TRAINING / PRACTICE: outside the sets */
 	NUMBER_OF_ARENA_GAMETYPE_SETS
