@@ -64,31 +64,42 @@ int main(void)
 		float other_map = 31.5f;
 
 		/* a 10 m game, then a stock game on the same map (not loaded again): the map's own again */
-		field = ae_sensor_range_next(&memory, &field, field, _ae_sensor_range_10m);
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_10m);
 		CHECK(near(field, 13.3333f));
-		field = ae_sensor_range_next(&memory, &field, field, _ae_sensor_range_stock);
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_stock);
 		CHECK(near(field, STOCK));
 		/* two 10 m games in a row, then stock */
-		field = ae_sensor_range_next(&memory, &field, field, _ae_sensor_range_10m);
-		field = ae_sensor_range_next(&memory, &field, field, _ae_sensor_range_10m);
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_10m);
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_10m);
 		CHECK(near(field, 13.3333f) && near(memory.stock, STOCK));
-		field = ae_sensor_range_next(&memory, &field, field, _ae_sensor_range_stock);
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_stock);
 		CHECK(near(field, STOCK));
 		/* 10 m, then 25 m: from the map's own, never from the last game's */
-		field = ae_sensor_range_next(&memory, &field, field, _ae_sensor_range_10m);
-		field = ae_sensor_range_next(&memory, &field, field, _ae_sensor_range_25m);
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_10m);
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_25m);
 		CHECK(near(field, 33.3333f) && near(memory.stock, STOCK));
 		/* another map's tag data (another field): its own value is its own */
-		other_map = ae_sensor_range_next(&memory, &other_map, other_map, _ae_sensor_range_stock);
+		other_map = ae_sensor_range_next(&memory, "map_b", &other_map, other_map, _ae_sensor_range_stock);
 		CHECK(near(other_map, 31.5f) && near(memory.stock, 31.5f));
-		other_map = ae_sensor_range_next(&memory, &other_map, other_map, _ae_sensor_range_10m);
-		other_map = ae_sensor_range_next(&memory, &other_map, other_map, _ae_sensor_range_stock);
+		other_map = ae_sensor_range_next(&memory, "map_b", &other_map, other_map, _ae_sensor_range_10m);
+		other_map = ae_sensor_range_next(&memory, "map_b", &other_map, other_map, _ae_sensor_range_stock);
 		CHECK(near(other_map, 31.5f));
 		/* the same field loaded again with the map's own (it no longer holds what was set): taken as the map's own */
-		other_map = ae_sensor_range_next(&memory, &other_map, other_map, _ae_sensor_range_10m);
+		other_map = ae_sensor_range_next(&memory, "map_b", &other_map, other_map, _ae_sensor_range_10m);
 		other_map = 31.5f;
-		other_map = ae_sensor_range_next(&memory, &other_map, other_map, _ae_sensor_range_stock);
+		other_map = ae_sensor_range_next(&memory, "map_b", &other_map, other_map, _ae_sensor_range_stock);
 		CHECK(near(other_map, 31.5f));
+	}
+	/* another map at the same tag address whose own range matches the last applied value */
+	{
+		struct ae_sensor_range_memory memory = { 0 };
+		float field = 30.0f;
+
+		field = ae_sensor_range_next(&memory, "map_a", &field, field, _ae_sensor_range_10m);
+		CHECK(near(field, 13.3333f));
+		field = memory.applied;
+		field = ae_sensor_range_next(&memory, "map_b", &field, field, _ae_sensor_range_stock);
+		CHECK(near(field, 13.3333f) && near(memory.stock, 13.3333f));
 	}
 	printf("ae_sensor_range_rules: %d failed\n", failures);
 	return failures ? 1 : 0;

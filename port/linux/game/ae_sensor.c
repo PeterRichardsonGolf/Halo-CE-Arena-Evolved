@@ -19,6 +19,7 @@ the centre is the HUD's blip placement (hud_unit.c's hud_calculate_point).
 #include "game/players.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
+#include "main/main.h"
 #include "render/render.h"
 
 #include "ae_hud_digits.h"
@@ -237,7 +238,7 @@ void ae_sensor_range_apply(
 	if (!hud_globals)
 		return;
 	field = &hud_globals->defaults.motion_sensor_range;
-	*field = ae_sensor_range_next(&memory, field, *field, range);
+	*field = ae_sensor_range_next(&memory, main_get_map_name(), field, *field, range);
 	if (game_engine_running())
 	{
 		if (range == _ae_sensor_range_stock)

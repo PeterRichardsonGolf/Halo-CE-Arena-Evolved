@@ -21,6 +21,7 @@ sensor art's: CE's own art reads "15m" for the stock maps' 20 world units, 0.75 
 
 #define AE_SENSOR_RANGE_SHIFT 6
 #define AE_SENSOR_RANGE_MASK (3UL << AE_SENSOR_RANGE_SHIFT)
+#define AE_SENSOR_RANGE_MAP_NAME_LENGTH 128
 /* the sensor art's metres in a world unit (ae_sensor_geometry.c's METRES_PER_WORLD_UNIT) */
 #define AE_SENSOR_RANGE_METRES_PER_WORLD_UNIT 0.75f
 
@@ -68,27 +69,57 @@ static inline float ae_sensor_range_world_units(int range, float stock_world_uni
 }
 
 /* the map's own range, kept across games: hud_globals is the map's tag data, which a next game on the same map
-may find as the last game left it (not loaded again). The value found is the map's own unless it is the field
-the last game set and still holds what it set */
+may find as the last game left it (not loaded again). The value found is the map's own unless it is the same map's
+field the last game set and still holds what it set */
 struct ae_sensor_range_memory
 {
 	void const *field;
 	float stock;
 	float applied;
 	int valid;
+	char map[AE_SENSOR_RANGE_MAP_NAME_LENGTH];
 };
 
+static inline int ae_sensor_range_same_map(struct ae_sensor_range_memory const *memory, char const *map)
+{
+	int i;
+
+	if (!map)
+		map = "";
+	for (i = 0; i < AE_SENSOR_RANGE_MAP_NAME_LENGTH - 1; i++)
+	{
+		if (memory->map[i] != map[i])
+			return 0;
+		if (!map[i])
+			return 1;
+	}
+	return 1;
+}
+
+static inline void ae_sensor_range_remember_map(struct ae_sensor_range_memory *memory, char const *map)
+{
+	int i;
+
+	if (!map)
+		map = "";
+	for (i = 0; i < AE_SENSOR_RANGE_MAP_NAME_LENGTH - 1 && map[i]; i++)
+		memory->map[i] = map[i];
+	memory->map[i] = 0;
+}
+
 /* the value to write to field (which holds current) for a game with range; memory updated */
-static inline float ae_sensor_range_next(struct ae_sensor_range_memory *memory, void const *field, float current,
-	int range)
+static inline float ae_sensor_range_next(struct ae_sensor_range_memory *memory, char const *map, void const *field,
+	float current, int range)
 {
 	float wanted;
 
-	if (!(memory->valid && memory->field == field && memory->applied == current))
+	if (!(memory->valid && ae_sensor_range_same_map(memory, map) && memory->field == field &&
+		memory->applied == current))
 		memory->stock = current;
 	wanted = ae_sensor_range_world_units(range, memory->stock);
 	memory->field = field;
 	memory->applied = wanted;
+	ae_sensor_range_remember_map(memory, map);
 	memory->valid = 1;
 	return wanted;
 }
