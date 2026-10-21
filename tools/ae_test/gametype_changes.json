@@ -26,5 +26,28 @@
     "respawn growth": "0 ticks"
    }
   }
+ },
+ {
+  "revision": 18,
+  "why": "AE SWAT starts with no grenades but the map's grenade pickups still spawned: MAP GRENADES off",
+  "decided": "owner, 2026-10-08",
+  "gametypes": [
+   "AE SWAT"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "call",
+    "arena_gametype_no_map_grenades"
+   ]
+  ],
+  "adjusts": {
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades"
+  },
+  "old_block_hashes": {
+   "AE SWAT": "4a9e009fcb596af350561fcb10356d780cc99e05"
+  },
+  "golden": "golden_seeds_rev18.json",
+  "seed_rules": {}
  }
 ]

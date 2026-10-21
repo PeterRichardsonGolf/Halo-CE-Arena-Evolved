@@ -72,7 +72,7 @@ enum
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
 	past it: revisions 11, 16 and 17 only added seeds) */
-	ARENA_GAMETYPES_REVISION = 17,
+	ARENA_GAMETYPES_REVISION = 18,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -436,6 +436,9 @@ static void arena_gametype_octagon_drill(
 static void arena_gametype_no_map_grenades(
 	struct game_variant *variant,
 	struct game_variant_options *options);
+static void arena_gametype_no_speed_changes_and_no_map_grenades(
+	struct game_variant *variant,
+	struct game_variant_options *options);
 
 /* ---------- globals */
 
@@ -510,7 +513,7 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_OFF, ARENA_VEHICLES_STOCK, TRUE,
 		.weapon_set = ARENA_WEAPONS_PISTOLS, .loadout_primary = ARENA_SET(_loadout_weapon_pistol),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_none), .starting_frags = STARTING_GRENADES_NONE, .hit_feedback = 1,
-		.adjust = arena_gametype_no_speed_changes },
+		.adjust = arena_gametype_no_speed_changes_and_no_map_grenades },
 	{ "AE ROCKETS", build_game_variant_team_slayer, ARENA_LATER_FLAGS,
 		ARENA_TEAM_SLAYER_SCORE, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE,
 		.weapon_set = ARENA_WEAPONS_ROCKET_LAUNCHERS, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
@@ -848,9 +851,10 @@ AE's slayer seeds. Revision 15 (tools/ae_gametype_change.py): no respawn time
 growth in AE FFA SNPR: the stock Snipers' adds 5 s to a player's respawn per
 death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE
 SNIPERS included. Revision 16 has no migration (it only added the OCTAGON
-set's four drills), nor has revision 17 (their four team versions). A row
-whose old and new names are the same is a value update (in place, under its
-name).
+set's four drills), nor has revision 17 (their four team versions). Revision
+18 (tools/ae_gametype_change.py): AE SWAT starts with no grenades but the
+map's grenade pickups still spawned: MAP GRENADES off. A row whose old and new
+names are the same is a value update (in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =
@@ -2676,6 +2680,25 @@ static struct arena_gametype_migration const arena_gametype_migrations[] =
 			.starting_frags = ARENA_AE_STARTING_FRAGS,
 			.adjust = arena_gametype_no_speed_changes_and_no_respawn_growth },
 		.old_block_hash = "ff8bea99060536a7399abd8d7e268d52e9183557" },
+	/* revision 18 (owner, 2026-10-08): AE SWAT starts with no grenades but the map's grenade pickups still spawned: MAP
+	GRENADES off. AE SWAT: arena_gametype_no_map_grenades (arena_gametype_no_speed_changes_and_no_map_grenades). The
+	old rows are revision 17's seeds; the old files' hashes from a root seeded by the revision 17 tree
+	(golden_seeds_rev17.json). Made by tools/ae_gametype_change.py */
+	{ .revision = 18,
+		.old_row = { .name = "AE SWAT", .build = build_game_variant_team_slayer, .flags = ARENA_SWAT_FLAGS,
+			.score_to_win = ARENA_TEAM_SLAYER_SCORE, .time_limit = ARENA_TIME_LIMIT, .respawn_time = ARENA_STOCK,
+			.suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_STOCK,
+			.custom_loadout = TRUE, .weapon_set = ARENA_WEAPONS_PISTOLS,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+			.starting_frags = STARTING_GRENADES_NONE, .hit_feedback = 1, .adjust = arena_gametype_no_speed_changes },
+		.new_row = { .name = "AE SWAT", .build = build_game_variant_team_slayer, .flags = ARENA_SWAT_FLAGS,
+			.score_to_win = ARENA_TEAM_SLAYER_SCORE, .time_limit = ARENA_TIME_LIMIT, .respawn_time = ARENA_STOCK,
+			.suicide_penalty = ARENA_STOCK, .radar = ARENA_RADAR_OFF, .vehicle_set = ARENA_VEHICLES_STOCK,
+			.custom_loadout = TRUE, .weapon_set = ARENA_WEAPONS_PISTOLS,
+			.loadout_primary = ARENA_SET(_loadout_weapon_pistol), .loadout_secondary = ARENA_SET(_loadout_weapon_none),
+			.starting_frags = STARTING_GRENADES_NONE, .hit_feedback = 1,
+			.adjust = arena_gametype_no_speed_changes_and_no_map_grenades },
+		.old_block_hash = "4a9e009fcb596af350561fcb10356d780cc99e05" },
 };
 
 /* debug.arena_test_migration: a same-name revision past the current one
@@ -4439,6 +4462,21 @@ static void arena_gametype_no_map_grenades(
 {
 	(void)options;
 	variant->universal_variant.pack_loadout = ae_map_grenades_byte_set(variant->universal_variant.pack_loadout, 1);
+
+	return;
+}
+
+/* revision 18 (owner, 2026-10-08): AE SWAT starts with no grenades but the
+map's grenade pickups still spawned: MAP GRENADES off.
+arena_gametype_no_speed_changes, then arena_gametype_no_map_grenades. Made by
+tools/ae_gametype_change.py. Shipped: never edited (a change is a new
+function) */
+static void arena_gametype_no_speed_changes_and_no_map_grenades(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	arena_gametype_no_speed_changes(variant, options);
+	arena_gametype_no_map_grenades(variant, options);
 
 	return;
 }
