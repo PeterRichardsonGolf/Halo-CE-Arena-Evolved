@@ -183,6 +183,8 @@ UNITS = {
                          ["-lm"]),
     # (a charged trigger's magazine: none is no magazine, never magazines[NONE]; fake triggers)
     "ae_weapon_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (SENSOR RANGE: the variant's flags bits, the world units, the map's own range kept across games)
+    "ae_sensor_range_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
     # (editing a field's text: under the sanitizers, as it takes pasted text)
     "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

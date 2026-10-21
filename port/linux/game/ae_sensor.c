@@ -13,7 +13,9 @@ the centre is the HUD's blip placement (hud_unit.c's hud_calculate_point).
 
 #include "cseries/cseries.h"
 #include "cseries/cseries_windows.h"
+#include "cseries/errors.h"
 #include "math/real_math.h"
+#include "game/game_engine.h"
 #include "game/players.h"
 #include "interface/hud.h"
 #include "interface/hud_definitions.h"
@@ -30,6 +32,7 @@ the centre is the HUD's blip placement (hud_unit.c's hud_calculate_point).
 #include "ae_score_strip.h"
 #include "ae_sensor.h"
 #include "ae_sensor_geometry.h"
+#include "ae_sensor_range_rules.h"
 
 int config_boolean(const char *name);
 void platform_log(char const *format, ...);
@@ -213,5 +216,34 @@ void ae_sensor_draw(short local_player_index, const union point2d *centre, boole
 			half, render.camera.vertical_field_of_view, view_w, view_h, label_ascii,
 			ae_score_strip_shared_line_y(local_player_index), hud_globals->defaults.motion_sensor_range,
 			hud_globals->defaults.motion_sensor_scale);
+	}
+}
+
+/* (game_engine.h names the two bits the rules header reads) */
+typedef char ae_sensor_range_bits_check[_game_variant_sensor_range_first_bit == AE_SENSOR_RANGE_SHIFT &&
+	_game_variant_sensor_range_second_bit == AE_SENSOR_RANGE_SHIFT + 1 ? 1 : -1];
+
+/* SENSOR RANGE (ae_sensor_range_rules.h): the game's range into the map's HUD globals, as they load for the game
+(hud.c's hud_initialize_for_new_map, after game.c's game_engine_initialize took the variant: the host's, on a
+network client too). A gametype at STOCK, or no game (a campaign, the main menu), puts the map's own back */
+void ae_sensor_range_apply(
+	void)
+{
+	static struct ae_sensor_range_memory memory;
+	int range = game_engine_running() ? ae_sensor_range_get(game_engine_get_variant()->universal_variant.flags) :
+		_ae_sensor_range_stock;
+	real *field;
+
+	if (!hud_globals)
+		return;
+	field = &hud_globals->defaults.motion_sensor_range;
+	*field = ae_sensor_range_next(&memory, field, *field, range);
+	if (game_engine_running())
+	{
+		if (range == _ae_sensor_range_stock)
+			error(_error_silent, "AE motion sensor range: stock (%.2f world units)", (double)*field);
+		else
+			error(_error_silent, "AE motion sensor range: %d m (%.2f world units; the map's own %.2f)",
+				ae_sensor_range_metres(range), (double)*field, (double)memory.stock);
 	}
 }

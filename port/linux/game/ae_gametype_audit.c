@@ -27,6 +27,7 @@ Off (the default), nothing is read or written.
 
 #include "ae_saved_limits.h"
 #include "ae_gametype_audit.h"
+#include "ae_sensor_range_rules.h"
 #include "ae_weapon_rules.h"
 
 #include <stddef.h>
@@ -106,8 +107,8 @@ static struct ae_audit_column const ae_audit_columns[] =
 	FLAG_BIT("no_shields", _game_variant_no_shields_bit),
 	FLAG_BIT("always_invisible", _game_variant_always_invisible_bit),
 	FLAG_BIT("generic_starting_equipment", _game_variant_generic_starting_equipment_bit),
-	FLAG_BIT("bit6", 6),
-	FLAG_BIT("bit7", 7),
+	/* (bits 6-7: SENSOR RANGE, 0 stock, 1 10 m, 2 15 m, 3 25 m: ae_sensor_range_rules.h, seed revision 19) */
+	BITS("universal_variant.flags.sensor_range", universal_variant.flags, _audit_bits_long, AE_SENSOR_RANGE_MASK),
 	FLAG_BIT("bit8", 8),
 	FLAG_BIT("bit9", 9),
 	FLAG_BIT("bit10", 10),

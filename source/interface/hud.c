@@ -118,6 +118,7 @@ symbols in this file:
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_panels.h" /* AE hook */
 #include "ae_radar.h" /* AE hook */
+#include "ae_sensor.h" /* AE hook */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
 #ifdef HALO_GAME_BROWSER
 #include "chat.h" /* port: port/linux/game/chat.c */
@@ -277,6 +278,7 @@ void hud_initialize_for_new_map(
 		interface_get_tag_index(_interface_hud_globals)!=NONE);
 	hud_globals = hud_globals_definition_get(
 		interface_get_tag_index(_interface_hud_globals));
+	ae_sensor_range_apply(); /* AE hook */
 	hud_messaging_initialize_for_new_map();
 	hud_initialize_unit_interface_for_new_map();
 	hud_initialize_weapon_interface_for_new_map();
