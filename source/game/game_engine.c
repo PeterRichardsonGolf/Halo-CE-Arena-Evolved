@@ -11079,9 +11079,7 @@ static void game_engine_update_item_spawn(
 				{
 					continue;
 				}
-				/* port: the gametype's MAP GRENADES off (ae_gametype_ammo.c) */
-				if (ae_gametype_skips_map_item(definition_index)) /* AE hook */
-					continue;
+				if (ae_gametype_skips_map_item(definition_index)) continue; /* AE hook */
 				object_placement_data_new(
 					&placement_data,
 					definition_index,
