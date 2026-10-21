@@ -28,6 +28,10 @@ int ae_bots_combat_setting_level(boolean movement);
 rifle, the pack's battle rifle): a bot aims at the head with it */
 boolean ae_bots_combat_precision_weapon(long definition_index);
 
+/* whether bots zoom a weapon definition at range though it is as true unzoomed (SCOPED RIFLE,
+ae_bots_combat_rules.h): the carbine pack's, whose Halo 2 aim assist reaches 17 units unzoomed and twice that zoomed */
+boolean ae_bots_combat_scoped_rifle(long definition_index);
+
 /* the speed a unit's grenade leaves its hand (its definition's), world units a tick */
 real ae_bots_combat_grenade_speed(long unit_index);
 

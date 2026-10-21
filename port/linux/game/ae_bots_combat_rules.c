@@ -452,6 +452,12 @@ int ae_bots_combat_descoped_holds_fire(float distance)
 	return distance > 10.0f;
 }
 
+int ae_bots_combat_rifle_zooms(int level, float distance, float autoaim_distance)
+{
+	return level >= AE_BOTS_LEVEL_NORMAL && level < AE_BOTS_LEVELS && autoaim_distance > 0.0f &&
+		distance > 0.5f * autoaim_distance;
+}
+
 float ae_bots_combat_high_ground(int level, float height_above)
 {
 	float credit;

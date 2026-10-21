@@ -377,6 +377,13 @@ static void test_pro_traits(void)
 	CHECK(!ae_bots_combat_descoped_holds_fire(10.0f));
 	CHECK(ae_bots_combat_descoped_holds_fire(10.5f));
 
+	/* (a scoped rifle: NORMAL and up past half its aim assist's reach, the carbine's 17 units) */
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_EASY, 14.0f, 17.0f));
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_NORMAL, 8.5f, 17.0f));
+	CHECK(ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_NORMAL, 9.0f, 17.0f));
+	CHECK(ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_DEMON, 30.0f, 17.0f));
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_HEROIC, 30.0f, 0.0f));
+
 	/* (high ground: LEGENDARY and up, capped; nothing below) */
 	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_HEROIC, 3.0f) == 0.0f);
 	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_LEGENDARY, -2.0f) == 0.0f);
