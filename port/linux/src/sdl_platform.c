@@ -1983,7 +1983,7 @@ void platform_clipboard_set(const char *text)
 	SDL_SetClipboardText(text);
 }
 
-/* network.join_from_clipboard: "ask" (the default), "always" or "never"
+/* network.join_from_clipboard: "never" (the default), "ask" or "always"
 (true and false, of older versions, are "always" and "never":
 port_config.c) */
 enum
@@ -2000,9 +2000,9 @@ static int platform_clipboard_join_setting(void)
 	/* (in lowercase, true and false read as these: config_check_words) */
 	if (!strcmp(setting, "always"))
 		return _clipboard_join_always;
-	if (!strcmp(setting, "never"))
-		return _clipboard_join_never;
-	return _clipboard_join_ask;
+	if (!strcmp(setting, "ask"))
+		return _clipboard_join_ask;
+	return _clipboard_join_never;
 }
 
 /* an invite found on the clipboard, waiting for the player's answer (the
@@ -2956,6 +2956,48 @@ void platform_ui_pointer_set_active(BOOL active)
 	{
 		show_pointer(FALSE);
 	}
+}
+
+/* debug.test_input's mouse (xinput_sdl.c): the event a mouse would send,
+at a point of the window; button 0 moves, SDL_BUTTON_LEFT or _RIGHT clicks
+(down and up), and wheel turns the wheel that many notches instead */
+void platform_test_pointer_event(float x, float y, int button, int wheel)
+{
+	SDL_Event event;
+	SDL_WindowID window = platform_window ? SDL_GetWindowID(platform_window) : 0;
+
+	memset(&event, 0, sizeof(event));
+	if (wheel)
+	{
+		event.type = SDL_EVENT_MOUSE_WHEEL;
+		event.wheel.windowID = window;
+		event.wheel.y = (float)wheel;
+		event.wheel.integer_y = wheel;
+		event.wheel.mouse_x = x;
+		event.wheel.mouse_y = y;
+		SDL_PushEvent(&event);
+		return;
+	}
+	if (!button)
+	{
+		event.type = SDL_EVENT_MOUSE_MOTION;
+		event.motion.windowID = window;
+		event.motion.x = x;
+		event.motion.y = y;
+		SDL_PushEvent(&event);
+		return;
+	}
+	event.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+	event.button.windowID = window;
+	event.button.button = (Uint8)button;
+	event.button.down = TRUE;
+	event.button.clicks = 1;
+	event.button.x = x;
+	event.button.y = y;
+	SDL_PushEvent(&event);
+	event.type = SDL_EVENT_MOUSE_BUTTON_UP;
+	event.button.down = FALSE;
+	SDL_PushEvent(&event);
 }
 
 /* what the pointer did since the last call; FALSE when it is not active */

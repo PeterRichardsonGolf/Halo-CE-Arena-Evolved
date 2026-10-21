@@ -136,6 +136,9 @@ BOOL platform_ui_pointer_read(struct platform_ui_pointer *pointer);
 /* the open scoreboard's pointer, offered (a network game's) or not: TRUE
 while a right click has freed it, with what it did since the last call */
 BOOL platform_scoreboard_pointer(BOOL offered, struct platform_ui_pointer *pointer);
+/* debug.test_input's mouse: a move (button 0), a click of an SDL button, or
+wheel notches, at a point of the window (desktop builds) */
+void platform_test_pointer_event(float x, float y, int button, int wheel);
 
 /* returns the window's size in the units that pointer positions come in,
 which differ from the drawable's pixels on displays that scale */

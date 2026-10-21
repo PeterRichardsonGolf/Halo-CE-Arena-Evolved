@@ -717,6 +717,8 @@ boolean invite_prompt_active(void);
 void invite_prompt_update(boolean menu_open);
 void invite_prompt_process(void);
 void invite_prompt_pointer(struct halo_ui_pointer const *pointer);
+/* moderation's screen: the same */
+void moderation_screen_pointer(struct halo_ui_pointer const *pointer);
 void invite_prompt_render(void);
 /* (ONLINE GAMES, below: its list moves focus item by item) */
 boolean ui_widget_online_games_list(struct widget_instance *widget);
@@ -6100,7 +6102,10 @@ enum ui_mouse_target_kind
 	several items): a click steps the list back by one */
 	_ui_mouse_target_list_back,
 	/* the band right of its last slot: a click steps it forward by one */
-	_ui_mouse_target_list_forward
+	_ui_mouse_target_list_forward,
+	/* a setting's row around its value (ui_mouse_merge_setting_rows): the
+	pointer gives the value the focus, and a click does nothing more */
+	_ui_mouse_target_row
 };
 
 struct ui_mouse_target
@@ -6278,10 +6283,11 @@ static void ui_debug_draw_targets(
 		{
 			/* in the order of enum ui_mouse_target_kind; the band's two sides
 			share orange, which no other kind uses */
-			static pixel32 const colors[] = { 0xc000ff00, 0xc04080ff, 0xc0ffff00, 0xc0ff0000, 0xc0ff8000, 0xc0ff8000 };
+			static pixel32 const colors[] = { 0xc000ff00, 0xc04080ff, 0xc0ffff00, 0xc0ff0000, 0xc0ff8000, 0xc0ff8000,
+				0x8000ffff };
 			short kind = ui_mouse_targets[index].kind;
 
-			ui_debug_draw_outline(&ui_mouse_targets[index].bounds, colors[PIN(kind, 0, 5)]);
+			ui_debug_draw_outline(&ui_mouse_targets[index].bounds, colors[PIN(kind, 0, 6)]);
 		}
 	}
 	ui_debug_draw_mark(&ui_debug_down_mark, 0xffff00ff);
@@ -6393,6 +6399,26 @@ static short ui_mouse_key_button(
 	return NONE;
 }
 
+/* a label or a picture: nothing in it takes an event (a PC list's heading,
+the sort arrows of a column's head) */
+static boolean ui_mouse_widget_is_decoration(
+	struct widget_instance *widget)
+{
+	struct widget_instance *child;
+
+	if (widget_instance_port_is_label(widget))
+		return TRUE;
+	if (widget_instance_can_handle_events(widget))
+		return FALSE;
+	for (child = widget->child; child; child = child->next)
+	{
+		if (!ui_mouse_widget_is_decoration(child))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
 /* whether the d-pad moves the focus to a widget: an item of a column list,
 or a child its parent tabs through */
 static boolean ui_mouse_widget_is_item(
@@ -6409,6 +6435,10 @@ static boolean ui_mouse_widget_is_item(
 		return FALSE;
 	if (parent->type == _ui_widget_type_column_list)
 	{
+		/* (not a PC list's heading, which the d-pad passes over: "JOIN
+		GAME" above its choices, nor a picture in a column's head) */
+		if (pc_menu_tag(parent->definition_tag_index) && ui_mouse_widget_is_decoration(widget))
+			return FALSE;
 		return !parent->parameters.list.list_items ||
 			index < parent->parameters.list.number_of_items;
 	}
@@ -6633,6 +6663,70 @@ static void ui_mouse_note_target(
 	return;
 }
 
+/* whether a widget has an A of its own (not only its children's) */
+static boolean ui_mouse_widget_handles_a(
+	struct widget_instance *widget)
+{
+	struct ui_widget_definition *definition = ui_widget_definition_get(widget->definition_tag_index);
+	long handler_index;
+
+	for (handler_index = 0; handler_index < definition->event_handlers.count; handler_index++)
+	{
+		struct ui_widget_event_handler_reference *handler =
+			(struct ui_widget_event_handler_reference *)xbox_pointer(definition->event_handlers.address) + handler_index;
+
+		if (handler->event_type == _gamepad_analog_button_a)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+/* drops an item that holds other items and has no A of its own (the PC
+menus' button bars, a list of servers): A on it is its focused item's, so a
+click on it between its items pressed whichever of them had the focus
+(REFRESH, DEFAULTS); there is nothing between them to press. A column's
+head that sorts (its own A) and holds its arrows stays. Before
+ui_mouse_fit_button_targets, which would hold legends to it */
+static void ui_mouse_drop_containers(
+	void)
+{
+	long index;
+	long other;
+	long kept = 0;
+
+	for (index = 0; index < ui_mouse_target_count; index++)
+	{
+		struct ui_mouse_target *container = &ui_mouse_targets[index];
+
+		if (container->kind != _ui_mouse_target_item || ui_mouse_widget_handles_a(container->widget))
+			continue;
+		for (other = 0; other < ui_mouse_target_count; other++)
+		{
+			struct ui_mouse_target const *inner = &ui_mouse_targets[other];
+			struct widget_instance *ancestor;
+
+			if (other == index || (inner->kind != _ui_mouse_target_item && inner->kind != _ui_mouse_target_list_slot))
+				continue;
+			for (ancestor = inner->widget->parent; ancestor && ancestor != container->widget; ancestor = ancestor->parent)
+				;
+			if (ancestor)
+				break;
+		}
+		if (other < ui_mouse_target_count)
+			container->kind = NONE;
+	}
+	/* in place, in order: the last target noted wins an overlap */
+	for (index = 0; index < ui_mouse_target_count; index++)
+	{
+		if (ui_mouse_targets[index].kind != NONE)
+			ui_mouse_targets[kept++] = ui_mouse_targets[index];
+	}
+	ui_mouse_target_count = kept;
+
+	return;
+}
+
 /* makes a setting row its value: an item whose only value child is a value
 stops being a target, and the value takes the row's height. A tap anywhere
 else on the row would press A, which on a setting screen is ACCEPT. The
@@ -6672,7 +6766,9 @@ static void ui_mouse_merge_setting_rows(
 		{
 			only_value->bounds.y0 = row->bounds.y0;
 			only_value->bounds.y1 = row->bounds.y1;
-			row->kind = NONE;
+			/* the rest of the row (its label) gives the value the focus */
+			row->kind = _ui_mouse_target_row;
+			row->widget = only_value->widget;
 		}
 	}
 	/* in place, in order: the last target noted wins an overlap */
@@ -7187,11 +7283,11 @@ static void ui_debug_log_click(
 	long frames)
 {
 	/* in the order of enum ui_mouse_target_kind */
-	static char const *const kinds[] = { "item", "value", "list slot", "button", "list back", "list forward" };
+	static char const *const kinds[] = { "item", "value", "list slot", "button", "list back", "list forward", "row" };
 
 	if (target)
 	{
-		char const *kind = kinds[PIN(target->kind, 0, 5)];
+		char const *kind = kinds[PIN(target->kind, 0, 6)];
 		char const *name = tag_get_name(target->widget->definition_tag_index);
 
 		/* a value steps by the side of its split the tap is on, and once
@@ -7212,6 +7308,42 @@ static void ui_debug_log_click(
 	else
 	{
 		platform_log("touch targets: tap at %d,%d hit none after %ld frames", x, y, frames);
+	}
+
+	return;
+}
+
+/* logs the frame's targets once the screen the mouse drives or its targets'
+count change, to read a screen's targets against a screenshot */
+static void ui_debug_log_targets(
+	void)
+{
+	static char const *const kinds[] = { "item", "value", "list slot", "button", "list back", "list forward", "row" };
+	static long last_screen = NONE;
+	static long last_count = NONE;
+	struct widget_instance *screen;
+	struct widget_instance *focus;
+	long index;
+
+	if (!ui_debug_targets_enabled())
+		return;
+	screen = ui_mouse_menu();
+	for (focus = screen; focus && focus->focused_child; focus = focus->focused_child)
+		;
+	if ((screen ? screen->definition_tag_index : NONE) == last_screen && ui_mouse_target_count == last_count)
+		return;
+	last_screen = screen ? screen->definition_tag_index : NONE;
+	last_count = ui_mouse_target_count;
+	platform_log("touch targets: screen %s, %ld targets, focus %s",
+		screen ? tag_get_name(screen->definition_tag_index) : "none", ui_mouse_target_count,
+		focus ? tag_get_name(focus->definition_tag_index) : "none");
+	for (index = 0; index < ui_mouse_target_count; index++)
+	{
+		struct ui_mouse_target const *target = &ui_mouse_targets[index];
+
+		platform_log("touch targets:   %s %s [%d,%d,%d,%d]", kinds[PIN(target->kind, 0, 6)],
+			tag_get_name(target->widget->definition_tag_index),
+			target->bounds.x0, target->bounds.y0, target->bounds.x1, target->bounds.y1);
 	}
 
 	return;
@@ -7277,6 +7409,7 @@ static void ui_widgets_process_mouse(
 	short controller_index = 0;
 	boolean pointer_active;
 	boolean keyboard_active;
+	boolean overlay_active = FALSE;
 
 	ui_debug_frame++;
 	pointer_active = halo_ui_pointer_update(ui_mouse_menus_active(), &pointer) != 0;
@@ -7309,18 +7442,20 @@ static void ui_widgets_process_mouse(
 	}
 #ifdef HALO_GAME_BROWSER
 	/* Online Games takes the pointer itself, as the virtual keyboard does
-	(and the clipboard invite's question, over it) */
+	(and the clipboard invite's question, over it, and moderation's screen);
+	whether one was up is read before it takes the click: a click that
+	closes it (BACK) is not also a click on the menu behind, which drew no
+	targets under it and would have taken the click as its A (ONLINE GAMES,
+	opening it again) */
+	overlay_active = invite_prompt_active() || browser_screen_active() || moderation_screen_active();
 	if (pointer_active && !keyboard_active && invite_prompt_active())
 		invite_prompt_pointer(&pointer);
 	else if (pointer_active && !keyboard_active && browser_screen_active())
 		browser_screen_pointer(&pointer);
+	else if (pointer_active && !keyboard_active && moderation_screen_active())
+		moderation_screen_pointer(&pointer);
 #endif
-	if (!pointer_active || keyboard_active
-#ifdef HALO_GAME_BROWSER
-		/* (nor over Online Games: a click left in the queue would pick a game) */
-		|| browser_screen_active() || invite_prompt_active()
-#endif
-		)
+	if (!pointer_active || keyboard_active || overlay_active)
 	{
 		ui_mouse_press_count = 0;
 		ui_mouse_hover_pending = FALSE;
@@ -7394,6 +7529,7 @@ static void ui_widgets_process_mouse(
 				{
 				case _ui_mouse_target_item:
 				case _ui_mouse_target_value:
+				case _ui_mouse_target_row:
 					/* (a selection list's row is chosen by a click, not
 					by passing over it on the way to its buttons) */
 					if (!ui_mouse_selection_row(target->widget))
@@ -7455,6 +7591,9 @@ static void ui_widgets_process_mouse(
 				case _ui_mouse_target_list_slot:
 					ui_mouse_step_list_to_slot(target->widget);
 					ui_mouse_press(_gamepad_analog_button_a);
+					break;
+				case _ui_mouse_target_row:
+					ui_mouse_give_focus(target->widget);
 					break;
 				case _ui_mouse_target_button:
 					ui_mouse_press(target->button_index);
@@ -7979,7 +8118,9 @@ static void ui_mouse_settle_targets(
 	/* fit the legends while the rows are still targets (merging
 	removes them); widen after merging (the merged values are
 	row-tall). A finger's targets only: the mouse clicks the
-	labels and values where CE's menus have them */
+	labels and values where CE's menus have them. A button bar's
+	empty part goes first (ui_mouse_drop_containers, ChupathingyCE) */
+	ui_mouse_drop_containers();
 	ui_mouse_fit_button_targets();
 	if (ui_mouse_pointer_is_touch)
 	{
@@ -7988,6 +8129,7 @@ static void ui_mouse_settle_targets(
 	}
 	ui_mouse_targets_settled = TRUE;
 	ae_ui_deleted_clear(); /* AE hook */
+	ui_debug_log_targets();
 
 	return;
 }

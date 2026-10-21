@@ -233,6 +233,8 @@ static struct
 	{
 		float x0, y0, x1, y1;
 		short button;
+		/* a column's head: the order it puts the list in (NONE: a button) */
+		short sort;
 	} targets[MAXIMUM_TARGETS];
 	short drawn_first;
 } browser_screen;
@@ -435,6 +437,7 @@ static void join_first_player(
 /* (p2p.c: the invite this machine joined last, its hex digits) */
 int p2p_joined_invite(char *text, int size);
 void platform_log(char const *format, ...);
+int config_boolean(char const *name);
 void display_error_text_deferred(wchar_t const *text, short local_player_index);
 
 /* a game left for want of the map, which is not downloaded after all (the
@@ -457,7 +460,7 @@ static void rejoin_given_up(
 	map_download_reset();
 	/* (the words the error has without the downloader: why the download
 	failed is in the log, the dialog having no room for more) */
-	snprintf(text, sizeof(text), "You don't have the %s map %.31s. If you have it, copy %.31s.map into %s.",
+	snprintf(text, sizeof(text), "You don't have the %s map %.31s. Copy %.31s.map into %s.",
 		map_family_badge(_map_family_custom_edition), browser_screen.offer_file, browser_screen.offer_file,
 		map_family_folder(_map_family_custom_edition));
 	for (index = 0; text[index] && index < NUMBEROF(message) - 1; index++)
@@ -567,7 +570,7 @@ static void rejoin(
 	join_first_player();
 	if (browser_screen.rejoin_invite[0] && !browser_join(browser_screen.rejoin_invite))
 	{
-		set_status("Online play is off (network.online in config.toml).");
+		set_status("Turn on Internet Play in Settings.");
 		return;
 	}
 	browser_screen.connecting = TRUE;
@@ -753,7 +756,7 @@ static void join_selected(
 	join_first_player();
 	if (!browser_join(game->invite))
 	{
-		set_status("Online play is off (network.online in config.toml).");
+		set_status("Turn on Internet Play in Settings.");
 		return;
 	}
 	browser_screen.connecting = TRUE;
@@ -941,10 +944,10 @@ static char const *ce_map_blocker(
 		/* (a hashed name by the file the player knows: map_archive.h) */
 		map_archive_display_name(file, display, (int)sizeof(display));
 		if (ce_map_stock(game))
-			snprintf(text, (size_t)size, "%s.map is one of Halo PC's own maps: install it yourself", display);
+			snprintf(text, (size_t)size, "%s.map comes with Halo PC: install it to join", display);
 		else if (ce_map_downloadable(game))
 		{
-			snprintf(text, (size_t)size, "Needs %s/%s.map: joining offers to download it", map_family_folder(family),
+			snprintf(text, (size_t)size, "Needs %s/%s.map: join to download it", map_family_folder(family),
 				display);
 		}
 		else
@@ -1764,6 +1767,27 @@ static void add_target(
 		browser_screen.targets[browser_screen.target_count].x1 = x1;
 		browser_screen.targets[browser_screen.target_count].y1 = y1;
 		browser_screen.targets[browser_screen.target_count].button = glyph_buttons[button];
+		browser_screen.targets[browser_screen.target_count].sort = NONE;
+		browser_screen.target_count++;
+	}
+}
+
+/* a column's head, which puts the list in its order */
+static void add_sort_target(
+	float x0,
+	float y0,
+	float x1,
+	float y1,
+	short sort)
+{
+	if (browser_screen.target_count < MAXIMUM_TARGETS)
+	{
+		browser_screen.targets[browser_screen.target_count].x0 = x0;
+		browser_screen.targets[browser_screen.target_count].y0 = y0;
+		browser_screen.targets[browser_screen.target_count].x1 = x1;
+		browser_screen.targets[browser_screen.target_count].y1 = y1;
+		browser_screen.targets[browser_screen.target_count].button = NONE;
+		browser_screen.targets[browser_screen.target_count].sort = sort;
 		browser_screen.target_count++;
 	}
 }
@@ -1922,12 +1946,14 @@ static void draw_sort_mark(
 	ui_overlay_rect(x + 2.0f, y + 2.0f, 1.0f, 1.0f, 0, color);
 }
 
-/* a column's head: white with the mark when the list is in its order */
+/* a column's head: white with the mark when the list is in its order; the
+pointer puts the list in it (sort NONE: not now, under a dialog) */
 static void column_head(
 	float x,
 	int align,
 	char const *text,
-	boolean active)
+	boolean active,
+	short sort)
 {
 	float y = LIST_Y + 7.0f;
 	float width = ui_overlay_text(UI_FONT_MENU_SMALL, HEAD_SIZE, x, y, align, active ? 0xFFFFFFFF : COLOR_HEAD, text);
@@ -1935,6 +1961,13 @@ static void column_head(
 	if (active)
 	{
 		draw_sort_mark(align == UI_ALIGN_RIGHT ? x + 3.0f : x + width + 3.0f, y + HEAD_SIZE * 0.4f, 0xFFFFFFFF);
+	}
+	if (sort != NONE)
+	{
+		/* (the mark's room on both sides, and the head's whole height) */
+		float left = align == UI_ALIGN_RIGHT ? x - width : x;
+
+		add_sort_target(left - 4.0f, LIST_Y, left + width + 12.0f, LIST_Y + LIST_HEAD, sort);
 	}
 }
 
@@ -2016,7 +2049,7 @@ static void draw_qr(
 		}
 	}
 	ui_overlay_text(UI_FONT_MENU_SMALL, 9.0f, CONNECT_QR_X + CONNECT_QR_WIDTH / 2, CONNECT_QR_Y + CONNECT_QR_WIDTH + 6,
-		UI_ALIGN_CENTER, COLOR_DIM, "or scan this with your phone");
+		UI_ALIGN_CENTER, COLOR_DIM, "or scan this code");
 }
 
 static void draw_link_profile(
@@ -2057,10 +2090,8 @@ static void draw_link_profile(
 		else
 			snprintf(text, sizeof(text), "Connect this game to %s?", connect->handle);
 		ui_overlay_text_glow(UI_FONT_MENU, 15.0f, center, CONNECT_Y + 96, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFF90, text);
-		snprintf(text, sizeof(text), "Someone signed in as %s entered the code.", connect->handle);
+		snprintf(text, sizeof(text), "Not %s? Cancel.", connect->handle);
 		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 130, UI_ALIGN_CENTER, COLOR_DIM, text);
-		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 146, UI_ALIGN_CENTER, COLOR_DIM,
-			"If that isn't you, cancel.");
 		if (connect->answered)
 		{
 			ui_overlay_text(UI_FONT_MENU, 11.0f, center, CONNECT_Y + 196, UI_ALIGN_CENTER, COLOR_TEXT,
@@ -2080,8 +2111,6 @@ static void draw_link_profile(
 		snprintf(text, sizeof(text), "Connected as %s", connect->handle);
 		ui_overlay_text_glow(UI_FONT_MENU, 17.0f, center, CONNECT_Y + 106, UI_ALIGN_CENTER, COLOR_CONNECTED, 0x6BE38A80,
 			text);
-		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 140, UI_ALIGN_CENTER, COLOR_DIM,
-			"Your games now count toward this profile.");
 		dialog_prompt(UI_BUTTON_B, "=DONE");
 		break;
 	case BROWSER_CONNECT_EXPIRED:
@@ -2145,10 +2174,6 @@ static void draw_map_offer(
 		ui_overlay_text_glow(UI_FONT_MENU, 15.0f, center, CONNECT_Y + 86, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFF90, text);
 		ui_overlay_text_glow(UI_FONT_MENU, 15.0f, center, CONNECT_Y + 106, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFF90,
 			"community map repository?");
-		ui_overlay_text(UI_FONT_MENU_SMALL, 9.5f, center, CONNECT_Y + 138, UI_ALIGN_CENTER, COLOR_DIM,
-			"It goes in maps_ce once it is checked: a Custom Edition map, named");
-		ui_overlay_text(UI_FONT_MENU_SMALL, 9.5f, center, CONNECT_Y + 152, UI_ALIGN_CENTER, COLOR_DIM,
-			browser_screen.offer_version ? "as asked, and the host's version of it." : "as asked.");
 		/* "Don't ask again", ticked or not (Y, or a click on it) */
 		width = ui_overlay_button_width(UI_BUTTON_Y, glyph) + 6 + box + 6 +
 			ui_overlay_text_width(UI_FONT_MENU, 11.0f, "DON'T ASK AGAIN");
@@ -2202,24 +2227,16 @@ static void draw_map_offer(
 		}
 		ui_overlay_outline(bar_x, CONNECT_Y + 126, bar_width, 12, 6, 1.0f, 0x4F9DFFFF);
 		ui_overlay_text(UI_FONT_MENU, 10.0f, center, CONNECT_Y + 150, UI_ALIGN_CENTER, COLOR_TEXT, text);
-		ui_overlay_text(UI_FONT_MENU_SMALL, 9.5f, center, CONNECT_Y + 184, UI_ALIGN_CENTER, COLOR_DIM,
-			"The game is joined once the map is in place.");
 		dialog_prompt(UI_BUTTON_B, "=CANCEL");
 		break;
 	}
 	case _offer_stock:
 	{
-		boolean file = map_archive_stock_name(browser_screen.offer_file) == MAP_ARCHIVE_STOCK_FILE;
-
 		/* (map_archive_stock_message's words, a line at a time) */
-		snprintf(text, sizeof(text), "%s.map is one of Halo PC's own %s,", browser_screen.offer_display,
-			file ? "files" : "maps");
-		ui_overlay_text_glow(UI_FONT_MENU, 15.0f, center, CONNECT_Y + 82, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFF90, text);
-		ui_overlay_text_glow(UI_FONT_MENU, 15.0f, center, CONNECT_Y + 102, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFF90,
-			"so Chupathingy can't download it.");
-		snprintf(text, sizeof(text), "Copy %s.map from your Halo PC or Custom Edition install",
-			browser_screen.offer_display);
-		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 142, UI_ALIGN_CENTER, COLOR_DIM, text);
+		snprintf(text, sizeof(text), "%s.map comes with Halo PC.", browser_screen.offer_display);
+		ui_overlay_text_glow(UI_FONT_MENU, 15.0f, center, CONNECT_Y + 92, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFF90, text);
+		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 142, UI_ALIGN_CENTER, COLOR_DIM,
+			"Copy it from your Halo PC or Custom Edition install");
 		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 158, UI_ALIGN_CENTER, COLOR_DIM,
 			"into maps_ce, then join again.");
 		dialog_prompt(UI_BUTTON_B, "=CLOSE");
@@ -2233,7 +2250,7 @@ static void draw_map_offer(
 		if (text[0] >= 'a' && text[0] <= 'z')
 			text[0] = (char)(text[0] - 32);
 		ui_overlay_text(UI_FONT_MENU, 10.0f, center, CONNECT_Y + 126, UI_ALIGN_CENTER, COLOR_TEXT, text);
-		snprintf(text, sizeof(text), "If you have it, copy %s.map into maps_ce.", browser_screen.offer_display);
+		snprintf(text, sizeof(text), "Or copy %s.map into maps_ce.", browser_screen.offer_display);
 		ui_overlay_text(UI_FONT_MENU_SMALL, 9.5f, center, CONNECT_Y + 160, UI_ALIGN_CENTER, COLOR_DIM, text);
 		dialog_prompt(UI_BUTTON_B, "=CLOSE");
 		break;
@@ -2383,12 +2400,12 @@ static void draw_empty_list(
 	switch (browser_list_status())
 	{
 	case BROWSER_LIST_NONE:
-		title = "There is no game list to show.";
-		line = "Set network.browser_url in config.toml to the list's address.";
+		title = "No game list.";
+		line = "Set network.browser_url in config.toml.";
 		break;
 	case BROWSER_LIST_FAILED:
 		title = "The game list isn't answering.";
-		line = "Check your internet connection. The list tries again on its own.";
+		line = "Check your internet connection.";
 		break;
 	case BROWSER_LIST_WAITING:
 		title = "Looking for games\xE2\x80\xA6";
@@ -2397,8 +2414,8 @@ static void draw_empty_list(
 	default:
 		ui_overlay_text_glow(UI_FONT_MENU, 14.0f, center, y, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFFA0,
 			"No one is hosting right now.");
-		text_with_button(UI_FONT_MENU_SMALL, 10.0f, center, y + 24, COLOR_DIM, "Host a game with", UI_BUTTON_Y,
-			"and it shows here. The list checks again on its own.");
+		text_with_button(UI_FONT_MENU_SMALL, 10.0f, center, y + 24, COLOR_DIM, "Press", UI_BUTTON_Y,
+			"to host a game.");
 		return;
 	}
 	ui_overlay_text_glow(UI_FONT_MENU, 14.0f, center, y, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFFA0, title);
@@ -2644,13 +2661,13 @@ void browser_screen_render(
 
 	/* the list */
 	ui_overlay_panel(LIST_X, LIST_Y, LIST_WIDTH, LIST_HEAD + ROWS_PER_PAGE * LIST_ROW + 3 + LIST_FOOT, FALSE);
-	column_head(COLUMN_NAME, UI_ALIGN_LEFT, "SERVER", browser_screen.sort == SORT_NAME);
-	column_head(COLUMN_MAP, UI_ALIGN_LEFT, "MAP", browser_screen.sort == SORT_MAP);
-	column_head(COLUMN_TYPE, UI_ALIGN_LEFT, "TYPE", browser_screen.sort == SORT_TYPE);
+	column_head(COLUMN_NAME, UI_ALIGN_LEFT, "SERVER", browser_screen.sort == SORT_NAME, dialog ? NONE : SORT_NAME);
+	column_head(COLUMN_MAP, UI_ALIGN_LEFT, "MAP", browser_screen.sort == SORT_MAP, dialog ? NONE : SORT_MAP);
+	column_head(COLUMN_TYPE, UI_ALIGN_LEFT, "TYPE", browser_screen.sort == SORT_TYPE, dialog ? NONE : SORT_TYPE);
 	column_head(COLUMN_PLAYERS - (browser_screen.sort == SORT_PLAYERS ? 9 : 0), UI_ALIGN_RIGHT, "PLAYERS",
-		browser_screen.sort == SORT_PLAYERS);
+		browser_screen.sort == SORT_PLAYERS, dialog ? NONE : SORT_PLAYERS);
 	column_head(COLUMN_PING - (browser_screen.sort == SORT_PING ? 9 : 0), UI_ALIGN_RIGHT, "PING",
-		browser_screen.sort == SORT_PING);
+		browser_screen.sort == SORT_PING, dialog ? NONE : SORT_PING);
 	page_first = (short)(browser_screen.selected - browser_screen.selected % ROWS_PER_PAGE);
 	page_count = (short)MAX(1, (browser_screen.count + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE);
 	if (!dialog)
@@ -2721,12 +2738,38 @@ void browser_screen_pointer(
 		step((short)-pointer->wheel_steps);
 	if (!pointer->left_clicks || !browser_screen.active)
 		return;
+	/* (debug.touch_targets: each tap, as the menus' are logged) */
+	if (config_boolean("debug.touch_targets"))
+	{
+		for (index = 0; index < browser_screen.target_count; index++)
+		{
+			if (pointer->click_x >= browser_screen.targets[index].x0 && pointer->click_x < browser_screen.targets[index].x1 &&
+				pointer->click_y >= browser_screen.targets[index].y0 && pointer->click_y < browser_screen.targets[index].y1)
+				break;
+		}
+		if (index < browser_screen.target_count)
+		{
+			platform_log("touch targets: Online Games tap at %d,%d hit %s %d [%.0f,%.0f,%.0f,%.0f]", pointer->click_x,
+				pointer->click_y, browser_screen.targets[index].sort == NONE ? "button" : "column",
+				browser_screen.targets[index].sort == NONE ? browser_screen.targets[index].button :
+				browser_screen.targets[index].sort, browser_screen.targets[index].x0, browser_screen.targets[index].y0,
+				browser_screen.targets[index].x1, browser_screen.targets[index].y1);
+		}
+		else
+			platform_log("touch targets: Online Games tap at %d,%d hit no button", pointer->click_x, pointer->click_y);
+	}
 	for (index = 0; index < browser_screen.target_count; index++)
 	{
 		if (pointer->click_x >= browser_screen.targets[index].x0 && pointer->click_x < browser_screen.targets[index].x1 &&
 			pointer->click_y >= browser_screen.targets[index].y0 && pointer->click_y < browser_screen.targets[index].y1)
 		{
-			press(browser_screen.targets[index].button);
+			if (browser_screen.targets[index].sort == NONE)
+				press(browser_screen.targets[index].button);
+			else if (browser_screen.sort != browser_screen.targets[index].sort)
+			{
+				browser_screen.sort = browser_screen.targets[index].sort;
+				fetch_games();
+			}
 			return;
 		}
 	}
