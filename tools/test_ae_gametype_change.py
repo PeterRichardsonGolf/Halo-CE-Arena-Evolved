@@ -122,21 +122,24 @@ def test_row_change_render():
 def test_variant_change_render():
     """a variant field goes through a new adjust: after the row's old one (called), or alone; one that exists with
     the same body is reused; the BR start's fields and other engines' fields are refused"""
+    # (AE FFA ROCK's own adjust: no speed changes, and CONTROLLER CROUCH STAYS DOWN since revision 21)
     p = plan(["AE FFA ROCK"], ["universal_variant.respawn_time_growth=0"])
-    function = "arena_gametype_no_speed_changes_and_no_respawn_growth"
-    assert p.changes["AE FFA ROCK"]["adjust"] == ("arena_gametype_no_speed_changes", function)
+    old = "arena_gametype_no_speed_changes_and_controller_crouch_stays_down"
+    function = old + "_and_no_respawn_growth"
+    assert p.changes["AE FFA ROCK"]["adjust"] == (old, function)
     text = change.render(p, {})
     assert change.adjust_functions(text)[function] == [
-        "arena_gametype_no_speed_changes(variant, options);", "variant->universal_variant.respawn_time_growth = 0;"]
+        f"{old}(variant, options);", "variant->universal_variant.respawn_time_growth = 0;"]
     assert text.count(f"static void {function}(") == 2  # (prototype and definition)
-    # (a gametype with no adjust of its own: AE COMP CTF; AE CTF has SENSOR RANGE's since revision 19)
-    p = plan(["AE COMP CTF"], adjusts=["no_odd_man_out"])
+    # (a gametype with no adjust of its own: KOTH 5M 7S of the NHE set; every AE gametype has CONTROLLER CROUCH's
+    # since revision 21)
+    p = plan(["KOTH 5M 7S"], adjusts=["no_odd_man_out"])
     text = change.render(p, {})
     assert change.adjust_functions(text)["arena_gametype_no_odd_man_out"] == [
         "variant->universal_variant.odd_man_out = FALSE;"]
     assert "\t(void)options;\n\tvariant->universal_variant.odd_man_out = FALSE;" in text
-    p = plan(["AE COMP CTF"], adjusts=["no_speed_changes"])
-    assert p.changes["AE COMP CTF"]["adjust"] == (None, "arena_gametype_no_speed_changes") and not p.functions
+    p = plan(["KOTH 5M 7S"], adjusts=["no_speed_changes"])
+    assert p.changes["KOTH 5M 7S"]["adjust"] == (None, "arena_gametype_no_speed_changes") and not p.functions
     p = plan(["AE PRACTICE"], ["universal_variant.flags.practice=0"])
     assert "SET_FLAG(variant->universal_variant.flags, _game_variant_practice_bit, FALSE);" in \
         change.render(p, {})

@@ -251,5 +251,441 @@
   },
   "golden": "golden_seeds_rev20.json",
   "seed_rules": {}
+ },
+ {
+  "revision": 21,
+  "why": "CONTROLLER CROUCH STAYS DOWN in every AE gametype: a controller's held crouch keeps you down at full stick; the NHE set keeps HALO CE",
+  "decided": "owner, 2026-10-21",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE FFA BALL",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE 2V2 BALL",
+   "AE TEAM OB",
+   "AE PRACTICE",
+   "AE SNIPERS",
+   "AE SHOTSNIP",
+   "AE SWAT",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE ELIM",
+   "AE PHANTOMS",
+   "AE ENDURE",
+   "AE FFA ROCK",
+   "AE FFA SNPR",
+   "AE JUGGER",
+   "AE REV TAG",
+   "AE ACCUM",
+   "AE STALKER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE TRAINING",
+   "AE COMP FFA",
+   "AE COMP TS",
+   "AE COMP CTF",
+   "AE COMP KOH",
+   "AE COMP OB",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR PHANT",
+   "AE BR ENDUR",
+   "AE BR FBALL",
+   "AE BR JUGG",
+   "AE BR RTAG",
+   "AE BR ACCUM",
+   "AE BR STALK",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR C FFA",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR TM OB",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR 2V2 B",
+   "AE BR C TS",
+   "AE BR C CTF",
+   "AE BR C KOH",
+   "AE BR C OB",
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "set",
+    "universal_variant.flags.controller_crouch",
+    "1"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE FFA BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE TEAM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE SNIPERS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE SHOTSNIP": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE PHANTOMS": "arena_gametype_controller_crouch_stays_down",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE FFA ROCK": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth_and_controller_crouch_stays_down",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE REV TAG": "arena_gametype_controller_crouch_stays_down",
+   "AE ACCUM": "arena_gametype_controller_crouch_stays_down",
+   "AE STALKER": "arena_gametype_controller_crouch_stays_down",
+   "AE FFA KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE RACE": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE RALLY": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE TRAINING": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE COMP FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE COMP TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE COMP CTF": "arena_gametype_controller_crouch_stays_down",
+   "AE COMP KOH": "arena_gametype_controller_crouch_stays_down",
+   "AE COMP OB": "arena_gametype_controller_crouch_stays_down",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR PHANT": "arena_gametype_controller_crouch_stays_down",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR FBALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR RTAG": "arena_gametype_controller_crouch_stays_down",
+   "AE BR ACCUM": "arena_gametype_controller_crouch_stays_down",
+   "AE BR STALK": "arena_gametype_controller_crouch_stays_down",
+   "AE BR FKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR CKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR C FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR TM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR C TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE BR C CTF": "arena_gametype_controller_crouch_stays_down",
+   "AE BR C KOH": "arena_gametype_controller_crouch_stays_down",
+   "AE BR C OB": "arena_gametype_controller_crouch_stays_down",
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "5890f916a0536e6a245e7ca6191e4f013bf6e24c",
+   "AE TEAM SLY": "64fe4ecad34b113c232dfd8c39c3c90dc0a4a991",
+   "AE CTF": "11c2141ceb71aa451034c277f68843319121edc6",
+   "AE KING": "51cd9e1fbe85d2dccde64afe7b16147bebdea66a",
+   "AE FFA BALL": "8c73ccb9de33cc635c1f9a86c4adb172a596242c",
+   "AE 2V2 SLY": "14e776730818987a648e88e2510bef73c9a8f7f5",
+   "AE 2V2 CTF": "c92b6548c6aa510e1160d38e1678f5db965d6225",
+   "AE 2V2 KING": "ebdeb2eb3af07126f91b1c5db9d3b1a56b7a3568",
+   "AE 2V2 BALL": "b441eeb5af7c5cf7da13466b1a567bede4c1b23a",
+   "AE TEAM OB": "6ef15842b964086f96035d0d380a40606ac738d7",
+   "AE PRACTICE": "bcb6c10d95d32118eb21addd3b6a5a3fb2ca24f9",
+   "AE SNIPERS": "f42ff59b8952a23235d8f8a491a40ed529fa6ab4",
+   "AE SHOTSNIP": "dda1384caf800de3b0844dc71d50f7c69fc2da81",
+   "AE SWAT": "22d41ea82a72834aa88e441a2600ece0b3c213e2",
+   "AE ROCKETS": "f4fea7a256eb10bbb3f3000b20df62c4cf44b9fc",
+   "AE SHOTGUNS": "43451972934716050a79d03263659a31044bd7e9",
+   "AE HEAVIES": "fb7ee7afcc205566eca745d318a09f1c229e37de",
+   "AE ELIM": "1baa009ece397504c7ddd4e48cd4a07802688b62",
+   "AE PHANTOMS": "2b446c6d3010a86c3dfbbe1716d5de85ba19da29",
+   "AE ENDURE": "2a0c66d35c0e6f78bed8da3fe36991d47d018c7c",
+   "AE FFA ROCK": "fe58144d4055d8017b91fa407c04ef9117252206",
+   "AE FFA SNPR": "87eba344ef6155c477ff517ab9b2cb12d0bfacc1",
+   "AE JUGGER": "f0066f926101c888155d6b52c39e3f724962b0a4",
+   "AE REV TAG": "2aeb8fe38bf8e57ce5ffbb0584af43a04263984c",
+   "AE ACCUM": "c77c09684e49d738a6930b6bb3f2054bf0144d50",
+   "AE STALKER": "4324c375e9b32dafc3ef979ef616bf8a93e99ea2",
+   "AE FFA KING": "a0f5ff707384f60fb51cbe5117f1862563a81e23",
+   "AE CRAZYKNG": "900b56551c6a400c4b1db008a1b8f8ece598759e",
+   "AE RACE": "d2c7a17136671715a007d4095fb9d7490dc816cc",
+   "AE RALLY": "40393d4450c014e500989c471970a60b3b1dde38",
+   "AE TRAINING": "9ff1fa3570c47b6c3a6f62dd8c2c2c767ffcdc60",
+   "AE COMP FFA": "706561368538f532ce782dcdfe960c4427dc1ffd",
+   "AE COMP TS": "01a53783a776786b8b3a41b94a388752a306bcae",
+   "AE COMP CTF": "c3cd2c801af6f8c8197f5ed66582c6ede497f2fc",
+   "AE COMP KOH": "cc8dd048145c559f430e1983118fc30766337840",
+   "AE COMP OB": "60c90d31217c8d1eaeed5392159ea1f6bf770392",
+   "AE BR FFA": "a0d31a797aaacba7a0859731918945a560abd265",
+   "AE BR ELIM": "f49e0b924b2eb9b34c00ecb62db7bbad093a6d0d",
+   "AE BR PHANT": "0f5d698be9f31379c12895fe6bbc1d70f2372ab7",
+   "AE BR ENDUR": "7f7f2b93e68b540bcf9e05fa5569929f595471c3",
+   "AE BR FBALL": "0ae84e1a3cda89493d8c2aa15aa756c5f71f543a",
+   "AE BR JUGG": "b40f5e966ab5c95b32ee43b6ac7268c64874aa54",
+   "AE BR RTAG": "57f0cd6e7eecb5e6713151642104fb15ac750f6c",
+   "AE BR ACCUM": "f404ce4821bba70de0fee6c08b7e3517e43089ab",
+   "AE BR STALK": "5d5d29d5e06bc8a27d53776b63232a5a1c4def90",
+   "AE BR FKING": "290fe80502a63e4fa3a7176d99a4edc9ba7aa381",
+   "AE BR CKING": "a3dfb3a793117cb49bcdf13cf0bfcae7fa9055fb",
+   "AE BR PRAC": "29d44400662f5e0935079932bf787ef5184fea87",
+   "AE BR C FFA": "73c5f24784fb04ea703a8138d20918622c73ecfb",
+   "AE BR TS": "e5df36907bfcf12c3898075268de56ce98d04fef",
+   "AE BR CTF": "9102f7b6f71cf2a7e869c4c67a9e756f82bbe491",
+   "AE BR KING": "c42a9e36c854fd019b919a33664f9b4adc8a4d80",
+   "AE BR TM OB": "aa9231a6061a2aaaeee344ba55c895c8179093dd",
+   "AE BR 2V2 S": "c61b556a4e66b8260783de19fc0859872efee165",
+   "AE BR 2V2 C": "e964489d531c1971ee65e191fbc8253fca77bf3b",
+   "AE BR 2V2 K": "d391b379fa9cb044cf45e0570fa78235db28fb0a",
+   "AE BR 2V2 B": "92e7504da998858d0575d1e8c789d192c263ad39",
+   "AE BR C TS": "089c49703f6fca408e5f291117958f77bbd00454",
+   "AE BR C CTF": "74f4db7c6d74500a9245e8d5770c364499e83126",
+   "AE BR C KOH": "8ed1b8f04fa68e42402b81da2e39ae13a4813eb3",
+   "AE BR C OB": "f140eef05c0364e24b046b8f4ba27fe83618f89f",
+   "AE OCT BR": "cff736ee40ee1ed438c608ff7f2876d433cc717b",
+   "AE OCT BRSN": "083627ec3b599329d156c350430f07e48e0438bd",
+   "AE OCT MAG": "08a1a6dd9b6587d5170c6fa77216ec40d508f8ae",
+   "AE OCT MGSN": "117aa706a3136d5beb1cf4f483cb48330179f7c4",
+   "AE OCT TBR": "6465a8201dcaa0072527557d6ee931e35422912d",
+   "AE OCT TBSN": "8529e833658548712f4010a8a3392d93a314330b",
+   "AE OCT TMAG": "a0e74bf9be1a67022b4ca314c76f02018b1d4b58",
+   "AE OCT TMSN": "da90bfd5796c7a7031152b4aee42da5d9b249c8e"
+  },
+  "golden": "golden_seeds_rev21.json",
+  "seed_rules": {
+   "AE FFA SLAY": {
+    "controller crouch": "stays down"
+   },
+   "AE TEAM SLY": {
+    "controller crouch": "stays down"
+   },
+   "AE CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE KING": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA BALL": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 SLY": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 KING": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 BALL": {
+    "controller crouch": "stays down"
+   },
+   "AE TEAM OB": {
+    "controller crouch": "stays down"
+   },
+   "AE PRACTICE": {
+    "controller crouch": "stays down"
+   },
+   "AE SNIPERS": {
+    "controller crouch": "stays down"
+   },
+   "AE SHOTSNIP": {
+    "controller crouch": "stays down"
+   },
+   "AE SWAT": {
+    "controller crouch": "stays down"
+   },
+   "AE ROCKETS": {
+    "controller crouch": "stays down"
+   },
+   "AE SHOTGUNS": {
+    "controller crouch": "stays down"
+   },
+   "AE HEAVIES": {
+    "controller crouch": "stays down"
+   },
+   "AE ELIM": {
+    "controller crouch": "stays down"
+   },
+   "AE PHANTOMS": {
+    "controller crouch": "stays down"
+   },
+   "AE ENDURE": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA ROCK": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA SNPR": {
+    "controller crouch": "stays down"
+   },
+   "AE JUGGER": {
+    "controller crouch": "stays down"
+   },
+   "AE REV TAG": {
+    "controller crouch": "stays down"
+   },
+   "AE ACCUM": {
+    "controller crouch": "stays down"
+   },
+   "AE STALKER": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA KING": {
+    "controller crouch": "stays down"
+   },
+   "AE CRAZYKNG": {
+    "controller crouch": "stays down"
+   },
+   "AE RACE": {
+    "controller crouch": "stays down"
+   },
+   "AE RALLY": {
+    "controller crouch": "stays down"
+   },
+   "AE TRAINING": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP FFA": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP TS": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP KOH": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP OB": {
+    "controller crouch": "stays down"
+   },
+   "AE BR FFA": {
+    "controller crouch": "stays down"
+   },
+   "AE BR ELIM": {
+    "controller crouch": "stays down"
+   },
+   "AE BR PHANT": {
+    "controller crouch": "stays down"
+   },
+   "AE BR ENDUR": {
+    "controller crouch": "stays down"
+   },
+   "AE BR FBALL": {
+    "controller crouch": "stays down"
+   },
+   "AE BR JUGG": {
+    "controller crouch": "stays down"
+   },
+   "AE BR RTAG": {
+    "controller crouch": "stays down"
+   },
+   "AE BR ACCUM": {
+    "controller crouch": "stays down"
+   },
+   "AE BR STALK": {
+    "controller crouch": "stays down"
+   },
+   "AE BR FKING": {
+    "controller crouch": "stays down"
+   },
+   "AE BR CKING": {
+    "controller crouch": "stays down"
+   },
+   "AE BR PRAC": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C FFA": {
+    "controller crouch": "stays down"
+   },
+   "AE BR TS": {
+    "controller crouch": "stays down"
+   },
+   "AE BR CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE BR KING": {
+    "controller crouch": "stays down"
+   },
+   "AE BR TM OB": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 S": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 C": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 K": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 B": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C TS": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C KOH": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C OB": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT BR": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT BRSN": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT MAG": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT MGSN": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TBR": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TBSN": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TMAG": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TMSN": {
+    "controller crouch": "stays down"
+   }
+  }
  }
 ]

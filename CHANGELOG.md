@@ -22,8 +22,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Map layout files can place a pack weapon by name (`item smg at ...`, also `battle_rifle`, `smg_silenced`,
   `carbine`). Where the gametype has no such pack, the spot spawns the map's own pistol (battle rifle, carbine) or
   assault rifle (the SMGs).
-- A controller's crouch now crouches with the stick pushed all the way, as the keyboard's crouch key does (Halo
-  stood you up at full stick).
+- CONTROLLER CROUCH, a new gametype rule (ARENA OPTIONS): STAYS DOWN keeps a controller player crouched with the
+  stick pushed all the way, as the keyboard's crouch key does; HALO CE stands you up at full stick, as Halo did. Every
+  Arena Evolved gametype plays STAYS DOWN (a gametype you edited keeps its own rules); the Halo 1: NHE set, stock and
+  older custom gametypes and the campaign play HALO CE. The host's gametype decides for everyone in the game, split
+  screen players too; older builds play HALO CE. The keyboard's crouch is unchanged.
 - Built on ChupathingyCE 0.8.0b (and OpenCE build-244): plays online with ChupathingyCE 0.8 both ways, on its Delta
   wire `chupa-32a` (Arena Evolved's range is that wire alone; 0.3.5's `ae-32a` games still join). Also from it:
   CHANGE TEAMS in a team game's pause menu, the follow camera on long respawn waits, opt-in powerup timers
