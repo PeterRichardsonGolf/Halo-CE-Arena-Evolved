@@ -21,6 +21,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Not taken from ChupathingyCE 0.8: its Chupathingy menus (Arena Evolved's PC menus stay), its text chat (Arena
   Evolved's is OpenCE's; `chat.enabled` turns ChupathingyCE's on), its new-install defaults (2x multisampling, 256
   shadows), its own save and logs folders, and its Discord application.
+- Sound and music keep playing when the game's window loses focus (OpenCE PR #431, by Wouter Beets: NVIDIA's vsync
+  held the sound up for about a second at a time); out of focus the game paces its frames at the display's refresh.
+- Mouse clicks in the menus (from ChupathingyCE): a click on the empty part of a button bar no longer presses the
+  button that had the focus, list headings no longer take clicks, Online Games sorts by the column head clicked, and
+  a click that closes Online Games or the invite question no longer also clicks the menu behind it.
+- A copied invite link is no longer offered when the game comes to the front: JOIN FROM CLIPBOARD
+  (`network.join_from_clipboard`) is NEVER by default, as in ChupathingyCE; ASK and ALWAYS still work.
+- The gametype lists (Create Game's and Edit Gametypes') read the chosen gametype's rules once when it changes,
+  not every frame (by thelinkin3000).
 
 ## 0.3.5.1-beta - 2026-10-20
 
