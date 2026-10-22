@@ -21,6 +21,7 @@ screen is open.
 #include "ae_screen_game_options.h"
 #include "ae_screen_change_map.h"
 #include "ae_screen_create_game.h"
+#include "ae_screen_main_menu.h"
 #include "ae_glue_ce_maps.h"
 #include "ae_glue_lobby.h"
 #include "ae_screen_lobby_test.h"
@@ -217,6 +218,8 @@ boolean ae_ui_process(
 	void)
 {
 	static boolean test_screen_checked = FALSE;
+	/* debug.ae_test_screen as read (a test screen up: AE's main menu stays out of its way) */
+	static long test_screen = 0;
 	/* a screen was up last frame */
 	static boolean was_up = FALSE;
 
@@ -239,6 +242,7 @@ boolean ae_ui_process(
 		long views = config_integer("debug.ae_test_screen");
 
 		test_screen_checked = TRUE;
+		test_screen = views;
 		/* (M1's test screen: 1, 2, 4, and 9 with the game's menus closed) */
 		if (views == 1 || views == 2 || views == 4 || views == 9)
 			ae_screen_test_open((int)views);
@@ -261,6 +265,10 @@ boolean ae_ui_process(
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
+	/* (the 0.3.7 menus: AE's main menu takes the game's main menu's place, whenever no AE screen is up there) */
+	if (test_screen_checked && !test_screen && ae_draw_available() && main_menu_is_active() && !ae_ui_depth() &&
+		!server_browser_up() && !virtual_keyboard_active())
+		ae_screen_main_menu_open();
 	/* (the game setup spike: F3 or a pad's BACK on the main menu opens CREATE GAME) */
 	if (test_screen_checked && ae_draw_available())
 		ae_screen_create_game_entry(ae_platform_keys());
