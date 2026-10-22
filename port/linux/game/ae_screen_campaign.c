@@ -120,7 +120,7 @@ static void draw_side(void)
 	memset(&row, 0, sizeof(row));
 	row.label = "CO-OP";
 	row.flags = AE_ROW_DISABLED;
-	row.reason = "COMING IN 0.3.7";
+	row.reason = "COMING SOON";
 	ae_widget_row(d, x, y, width, &row, HIT_SIDE, 2);
 }
 
