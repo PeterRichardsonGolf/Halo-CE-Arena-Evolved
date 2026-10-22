@@ -22,6 +22,7 @@ other machines a bot is the host's player at that controller.
 */
 
 #include "cseries.h"
+#include "cseries/cseries_windows.h"
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/players.h"
@@ -35,10 +36,12 @@ other machines a bot is the host's player at that controller.
 #include "ae_lan_bots.h"
 #include "ae_bots_objective.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 /* port/linux/src/port_config.c, p2p.c */
 void platform_log(char const *format, ...);
+int config_boolean(const char *name);
 int p2p_invite_link(char *link, int size);
 /* network_server_manager.c's */
 void get_unique_random_color(struct network_game_server *server, struct network_player *player);
@@ -60,7 +63,43 @@ static struct
 	/* the tick the brain's shared work was last done for */
 	long last_tick;
 	boolean tick_valid;
-} lan = { { { FALSE, 0, 0 } }, NONE, FALSE, NONE, FALSE };
+	/* SPIKE (debug.network_bots): the brain's time on the host (per bot's input) */
+	double brain_seconds;
+	double brain_tick_max;
+	long brain_ticks;
+	/* (a bot's input asked for again at a game tick it already had one for: two updates built in one tick) */
+	long driven_tick[AE_LAN_BOTS_MAXIMUM];
+	long brain_repeats;
+} lan = { { { FALSE, 0, 0 } }, NONE, FALSE, NONE, FALSE, 0.0, 0.0, 0, { NONE, NONE, NONE }, 0 };
+
+/* SPIKE: debug.network_bots (HALO_NETWORK_BOTS, default off): the host's bots play in a game it hosts for the
+internet too, and halo.log has the brain's time a minute. Internet play's tunnel (p2p.c) carries the system link
+game's own traffic, so the bots reach an internet client as they reach a LAN one: the host's players. */
+static boolean lan_network_bots(void)
+{
+	return config_boolean("debug.network_bots") != 0;
+}
+
+/* SPIKE test hook: HALO_NETWORK_BOTS_FAKE_INTERNET=1 has the lobby take the game for one hosted for the internet
+(the box's tests run with network.online off: no tunnel, no invite) */
+static boolean lan_internet(void)
+{
+	char link[160];
+	char const *fake = getenv("HALO_NETWORK_BOTS_FAKE_INTERNET");
+
+	if (fake && fake[0] == '1')
+		return TRUE;
+	return p2p_invite_link(link, sizeof(link)) != 0;
+}
+
+static double lan_now(void)
+{
+	LARGE_INTEGER now, frequency;
+
+	QueryPerformanceCounter(&now);
+	QueryPerformanceFrequency(&frequency);
+	return (double)now.QuadPart / (double)frequency.QuadPart;
+}
 
 static boolean lan_hosting(void)
 {
@@ -167,7 +206,6 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	boolean played;
 	boolean eligible;
 	boolean changed = FALSE;
-	char link[160];
 
 	/* (the game under way, its loading and its end keep their bots) */
 	if (!setting_up || !game)
@@ -213,9 +251,10 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	/* (a lobby whose gametype is not set yet, between two games: its bots stay as they are) */
 	if (game->variant.game_engine_index == game_engine_none)
 		return FALSE;
-	internet = p2p_invite_link(link, sizeof(link)) != 0;
+	internet = lan_internet();
 	played = ae_bots_engine_played(game->variant.game_engine_index);
-	eligible = ae_lan_bots_eligible(TRUE, FALSE, internet, played, has_person);
+	/* SPIKE: debug.network_bots lets the internet's games have them */
+	eligible = ae_lan_bots_eligible(TRUE, FALSE, internet && !lan_network_bots(), played, has_person);
 	free_mask = ae_lan_bots_free_controllers(people, wanting);
 	target = (short)ae_lan_bots_target(bots_wanted_count(), eligible, others, game->maximum_players, free_mask);
 
@@ -223,7 +262,8 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	if (bots_wanted_count() > 0 && has_person)
 	{
 		if (internet && !lan.told_internet)
-			platform_log("lan bots: none in a game hosted for the internet (LAN games only)");
+			platform_log(lan_network_bots() ? "lan bots: a game hosted for the internet, bots in it (debug.network_bots)" :
+				"lan bots: none in a game hosted for the internet (LAN games only)");
 		lan.told_internet = internet;
 		if (!played && lan.told_engine != game->variant.game_engine_index)
 		{
@@ -343,6 +383,7 @@ void ae_lan_bots_action(long absolute_player_index, struct player_action *action
 	long player_index;
 	short bot_index = NONE;
 	long now;
+	double started;
 
 	if (!lan_any() || !player_data || !action || game_connection() != _game_connection_network_server ||
 		!lan_hosting() || !game_engine_running())
@@ -354,13 +395,32 @@ void ae_lan_bots_action(long absolute_player_index, struct player_action *action
 		return;
 	/* (once a tick, before its first bot: a new game's time starts again) */
 	now = game_time_get();
+	started = lan_now();
 	if (!lan.tick_valid || now != lan.last_tick)
 	{
 		bots_ae_lan_tick();
 		lan.last_tick = now;
 		lan.tick_valid = TRUE;
 	}
+	if (lan.driven_tick[bot_index] == now)
+		lan.brain_repeats++;
+	lan.driven_tick[bot_index] = now;
 	bots_ae_lan_drive(bot_index, player_index, action);
+	/* SPIKE: the brain's time per bot's input (the tick's shared work counted in its first bot's), a line every
+	1800 inputs */
+	started = lan_now() - started;
+	lan.brain_seconds += started;
+	if (started > lan.brain_tick_max)
+		lan.brain_tick_max = started;
+	lan.brain_ticks++;
+	if (lan_network_bots() && lan.brain_ticks >= 1800)
+	{
+		platform_log("net bots: brain %.1f us a bot's input (max %.1f us) over %ld inputs (%ld at a tick already "
+			"driven), game tick %ld", lan.brain_seconds * 1e6 / lan.brain_ticks, lan.brain_tick_max * 1e6,
+			lan.brain_ticks, lan.brain_repeats, now);
+		lan.brain_seconds = lan.brain_tick_max = 0.0;
+		lan.brain_ticks = lan.brain_repeats = 0;
+	}
 }
 
 boolean ae_lan_bots_in_game(void)
