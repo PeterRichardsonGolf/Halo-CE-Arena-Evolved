@@ -45,7 +45,7 @@ void platform_log(char const *format, ...);
 enum
 {
 	DRIVE_IDLE, DRIVE_HOST, DRIVE_JOIN, DRIVE_JOINING, DRIVE_ADD_PLAYER, DRIVE_WAIT_PLAYERS, DRIVE_IN_GAME,
-	DRIVE_POSTGAME, DRIVE_BACK, DRIVE_WATCH, DRIVE_CLIENT_GAME, DRIVE_CLIENT_BACK, DRIVE_PROFILES, DRIVE_DONE,
+	DRIVE_POSTGAME, DRIVE_BACK, DRIVE_RESTART, DRIVE_WATCH, DRIVE_CLIENT_GAME, DRIVE_CLIENT_BACK, DRIVE_PROFILES, DRIVE_DONE,
 	WAIT_PLAYERS_MS = 30000, GAME_MS = 8000, POSTGAME_MS = 4000
 };
 
@@ -273,7 +273,18 @@ void ae_screen_lobby_test_tick(unsigned long now)
 			if (drive.value == 90)
 				log_players();
 			drive.logged_count = drive.roster.count;
-			step_to(drive.value == 92 ? DRIVE_WATCH : DRIVE_DONE, now);
+			/* (HALO_AE_TEST_RESTART on the host and bots' drive: START GAME again, the next round loads) */
+			if (drive.value == 90 && getenv("HALO_AE_TEST_RESTART"))
+				step_to(ae_lobby_start().ok ? DRIVE_RESTART : DRIVE_DONE, now);
+			else
+				step_to(drive.value == 92 ? DRIVE_WATCH : DRIVE_DONE, now);
+		}
+		break;
+	case DRIVE_RESTART:
+		if (in_game())
+		{
+			platform_log("ae lobby: second round playing");
+			step_to(DRIVE_DONE, now);
 		}
 		break;
 	case DRIVE_WATCH:

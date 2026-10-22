@@ -317,6 +317,9 @@ struct ae_result ae_lobby_start(void)
 		return failed("start", AE_STR_ERR_NOT_HOSTING, NULL);
 	if (game_engine_running() && !main_menu_is_active())
 		return failed("start", AE_STR_ERR_IN_GAME, NULL);
+	/* back from a game the take-over held the host's countdown (ae_lobby_take_pregame_ui), and the server ignores
+	the start while it is held: this is the start, so it is let go */
+	network_game_server_pause_countdown(global_network_game_server_get(), FALSE);
 	network_game_client_request_immediate_start();
 	platform_log("ae lobby: starting");
 	return succeeded();

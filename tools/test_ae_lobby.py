@@ -91,6 +91,20 @@ def test_host_bots_round_trip(cfg):
     assert picture_brightness(pngs[-1]) > 12, "the lobby's background is black after the game"
 
 
+def test_start_again_after_a_game(cfg):
+    """back in the lobby from a round, START GAME plays the next round (the take-over held the host's countdown, which
+    ignored the start: the game went back to the main menu and no map loaded)"""
+    out = menus.out_dir(cfg, "lobby-again")
+    result, text, pngs = play(cfg, out, "again", {
+        "exit_after": 110, "bots": 3,
+        "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "90", "HALO_AE_TEST_RESTART": "1"},
+        "expect": {"ticks": 0}})
+    assert result.get("status") == "PASS", result.get("why")
+    in_order(text, ["ae lobby: took the pregame UI", "ae lobby: back in the lobby, roster 4", "ae lobby: starting",
+                    "ae lobby: second round playing"])
+    assert text.count("game rules:") >= 2, "the next round's game rules never loaded"
+
+
 def test_not_ae_session_left_to_the_game(cfg):
     """preflight P20: display.arena_menus on, a session AE didn't make (network_test hosts, 1-minute games): back
     from the game the hook leaves the pregame UI to the game, whose screen loads"""
