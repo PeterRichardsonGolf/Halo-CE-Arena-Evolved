@@ -28,8 +28,6 @@ static struct
 	/* the profile each player's values are of now (NONE: a guest, none read), and that profile's file as read */
 	long profile[LOCAL_PLAYERS];
 	struct ae_player_settings file[LOCAL_PLAYERS];
-	/* (a write from a player's own put: config_write's writer does not put it again) */
-	int putting;
 } players;
 
 /* the file's Xbox path: the profile's folder + ae.toml; 0 when the profile has none */
@@ -113,7 +111,7 @@ static void load(short player, long profile)
 /* config_write of a per-player setting (the old menus' rows, the MCC mouse's seed): the player's the game worked for */
 static void written(int player, const char *name, const char *value)
 {
-	if (players.putting || player < 0 || player >= LOCAL_PLAYERS)
+	if (player < 0 || player >= LOCAL_PLAYERS)
 		return;
 	ae_player_setting_put((short)player, name, value);
 }

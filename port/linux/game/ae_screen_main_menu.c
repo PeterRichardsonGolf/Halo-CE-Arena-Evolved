@@ -6,7 +6,7 @@ https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD). Rows on the left (ae_setup_f
 "START to add a player" and the last game; the prompts. QUIT asks first. MULTIPLAYER's CREATE GAME opens
 CREATE GAME (ae_screen_create_game.h) over it, JOIN WITH INVITE its field (ae_screen_join_invite.h), SERVER BROWSER and
 LAN GAMES theirs (ae_screen_browser.h); the
-main menu's SETTINGS is disabled with why until its AE screen is built; CAMPAIGN and PROFILES open theirs.
+main menu's SETTINGS, CAMPAIGN and PROFILES open theirs (ae_screen_settings.h, ...).
 
 Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 */
@@ -27,6 +27,7 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 #include "ae_screen_join_invite.h"
 #include "ae_screen_main_menu.h"
 #include "ae_screen_profiles.h"
+#include "ae_screen_settings.h"
 #include "ae_setup_flow.h"
 #include "ae_sound.h"
 #include "ae_strings.h"
@@ -60,6 +61,8 @@ static struct
 } main_page, multiplayer_page;
 
 static struct ae_screen_class const menu_class;
+/* the local player whose A opened a row (a click: player 1) */
+static short accept_player;
 
 static void rows_main(void)
 {
@@ -71,7 +74,7 @@ static void rows_main(void)
 	flow->rows[count++] = (struct ae_flow_row){ ROW_CAMPAIGN, -1, "CAMPAIGN", NULL,
 		"Halo's campaign: the levels you have reached, your saved game, a difficulty.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_SETTINGS, -1, "SETTINGS", NULL,
-		"Game, display, interface, controls, audio, online and chat.", NOT_YET };
+		"Controls, video, view, audio, HUD, chat, online, accessibility and system.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_PROFILES, -1, "PROFILES", NULL,
 		"Your profiles: names, colours and controls, and who plays as player 1.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_QUIT, -1, "QUIT", NULL, "Leaves the game.", NULL };
@@ -237,6 +240,11 @@ static void accept(int multiplayer, short row)
 		if (ae_screen_campaign_open())
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
+	case ROW_SETTINGS:
+		/* (for the player whose pad or keyboard pressed A) */
+		if (ae_screen_settings_open(accept_player))
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
 	case ROW_PROFILES:
 		if (ae_screen_profiles_open())
 			ae_sound_request(AE_SOUND_FORWARD, 0);
@@ -296,6 +304,7 @@ static int menu_handle(struct ae_screen *instance, struct ae_event const *event)
 		ae_flow_focus_step(flow, event->action == AE_ACTION_UP ? -1 : 1, event->repeat);
 		return 1;
 	case AE_ACTION_ACCEPT:
+		accept_player = event->player >= 0 && event->player < 4 ? event->player : 0;
 		accept(multiplayer, flow->focus);
 		return 1;
 	default:
@@ -323,7 +332,10 @@ static void menu_pointer(struct ae_screen *instance, struct ae_pointer const *po
 	}
 	row = ae_flow_rows_pointer(flow, pointer);
 	if (row >= 0)
+	{
+		accept_player = pointer->player >= 0 && pointer->player < 4 ? pointer->player : 0;
 		accept(multiplayer, row);
+	}
 }
 
 static void menu_enter(struct ae_screen *instance)

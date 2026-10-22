@@ -90,6 +90,9 @@ UNITS = {
                                                                              "-fno-sanitize-recover=all"], []),
     # (the Settings list's pictures by entry)
     "ae_settings_test.c": ([UI / "ae_settings.c"], [], []),
+    # (the 0.3.7 SETTINGS model: groups, rows.md's rows, what shows when, sections, values, the dialogs' texts)
+    "ae_settings_rows_test.c": ([UI / "ae_settings_rows.c"], ["-fsanitize=address,undefined",
+                                                               "-fno-sanitize-recover=all"], ["-lm"]),
     # (a player's own settings file, ae.toml: read, written, seeded, upgraded; under the sanitizers)
     "ae_player_settings_test.c": ([UI / "ae_player_settings.c"], ["-fsanitize=address,undefined",
                                                                    "-fno-sanitize-recover=all"], []),

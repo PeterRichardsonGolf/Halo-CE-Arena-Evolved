@@ -16,6 +16,7 @@ screen is open.
 #include "interface/event_manager.h"
 #include "ae_hooks.h"
 #include "ae_glue_player_settings.h"
+#include "ae_screen_settings.h"
 #include "ae_input.h"
 #include "ae_motion.h"
 #include "ae_screen_gallery.h"
@@ -276,6 +277,12 @@ boolean ae_ui_process(
 			ae_screen_change_gametype_open(getenv("HALO_AE_TEST_GAMETYPE_FILTER") ?
 				atoi(getenv("HALO_AE_TEST_GAMETYPE_FILTER")) : 0, getenv("HALO_AE_TEST_GAMETYPE_SEARCH"));
 		}
+		/* (0.3.7 SETTINGS: 34 its top level, 35 a group, $HALO_AE_TEST_SETTINGS_GROUP 0-8; with
+		$HALO_AE_TEST_SETTINGS_PLAYERS 2 a second local player joins first, on a profile of its own) */
+		else if (views == 34 || views == 35)
+			ae_screen_settings_test_open(views == 35, getenv("HALO_AE_TEST_SETTINGS_GROUP") ?
+				atoi(getenv("HALO_AE_TEST_SETTINGS_GROUP")) : 0, getenv("HALO_AE_TEST_SETTINGS_PLAYERS") ?
+				atoi(getenv("HALO_AE_TEST_SETTINGS_PLAYERS")) : 1);
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
