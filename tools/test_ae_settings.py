@@ -56,13 +56,24 @@ CASES = (
     ("top-seat", 34, 0, 2, "1920x1080", 100, ("pad:x",)),
     # (a change for player 1, then X: KEEP / UNDO first; KEEP, then player 2)
     ("seat-keep", 35, CONTROLS, 2, "1920x1080", 100, ("pad:right", "pad:x", "pad:a")),
+    # (SYSTEM from the top level (the ninth group); MENUS, a RESTART row, stepped as the owner did (CLASSIC, back, again,
+    # then picked from its values); B, KEEP: back on the top level, still open; its B asks RESTART NOW / LATER)
+    ("restart", 34, 0, 1, "1920x1080", 100, ("pad:down",) * 8 + ("pad:a", "pad:right", "pad:left", "pad:right",
+                                                                 "pad:a", "pad:a", "pad:b", "pad:a", "wait", "wait",
+                                                                 "pad:b", "wait")),
+    # (the same by the mouse: the prompts' Back, KEEP CHANGES, the top level's Back)
+    ("restart-mouse", 34, 0, 1, "1920x1080", 100, ("down",) * 8 + ("a", "right", "click:53:452", "wait",
+                                                                    "click:218:234", "wait", "wait", "click:40:452",
+                                                                    "wait", "wait")),
 )
 
 
 def play(cfg, out, name, screen, group, players, presses, window, scale):
     env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_SETTINGS_GROUP": str(group),
            "HALO_AE_TEST_SETTINGS_PLAYERS": str(players)}
-    return menus.play(cfg, out, name, views=screen, window=window, env=env, shots=8, exit_after=EXIT_AFTER,
+    # (a long run of presses gets the time it needs: the lead-in, one a second, a few seconds after)
+    exit_after = max(EXIT_AFTER, menus.LEAD_IN + len(presses) + 6)
+    return menus.play(cfg, out, name, views=screen, window=window, env=env, shots=8, exit_after=exit_after,
                       test_input=menus.menu_input(*presses) if presses else menus.menu_input("wait"))
 
 
@@ -131,6 +142,18 @@ def test_keep_and_undo(runs):
     # (no change: B goes back, no dialog)
     back = runs["back"][1]
     assert lines(back, "ae settings: closed VIEW ") == ["(0 changed)"] and "Keep your changes?" not in back
+
+
+def test_restart_asked_after_keep(runs):
+    """a RESTART row (MENUS) changed and kept: SETTINGS stays open on its top level, and leaving it asks RESTART NOW /
+    LATER (0.3.7.1: the owner saw SETTINGS close after KEEP CHANGES; not reproduced here, this pins the flow)"""
+    for name in ("restart", "restart-mouse"):
+        text = runs[name][1]
+        rest = text.split("ae settings: keep", 1)
+        assert len(rest) == 2, name
+        said = lines(rest[1], "ae settings: ")
+        assert said[:1] == ["closed SYSTEM (1 changed)"] and "restart asked" in said, (name, said)
+        assert "closed SETTINGS" not in said and "restart later" not in said, (name, said)
 
 
 def test_restore_defaults(runs):

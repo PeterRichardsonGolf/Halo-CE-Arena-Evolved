@@ -689,6 +689,7 @@ static void restart_picked(short choice, void *context)
 		platform_restart();
 		return;
 	}
+	platform_log("ae settings: restart later");
 	who.restart_pending = 0;
 	ae_ui_pop();
 }
@@ -718,7 +719,7 @@ static int top_handle(struct ae_screen *instance, struct ae_event const *event)
 			spec.density = flow->density;
 			spec.bounds = flow->frame.rect;
 			spec.picked = restart_picked;
-			ae_dialog_open(&spec, AE_OWNER_ANY);
+			platform_log("ae settings: restart asked%s", ae_dialog_open(&spec, AE_OWNER_ANY) ? "" : " (refused)");
 			return 1;
 		}
 		return 0;
