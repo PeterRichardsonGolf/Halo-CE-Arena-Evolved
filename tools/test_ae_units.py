@@ -237,6 +237,9 @@ UNITS = {
     # (the lobby's roster order and names, preflight P18)
     "ae_lobby_roster_test.c": ([UI / "ae_lobby_roster.c"], [f"-I{UI}", "-fsanitize=address,undefined",
                                                               "-fno-sanitize-recover=all"], []),
+    # (an invite's code in a player's text: JOIN WITH INVITE, the lobby's join; under the sanitizers, as it is pasted)
+    "ae_invite_rules_test.c": ([UI / "ae_invite_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                               []),
     # (the lobby's host compatibility: the join's own test, halo_port_limits.h)
     "ae_lobby_compat_test.c": ([], [], []),
     "ae_updater_pick_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

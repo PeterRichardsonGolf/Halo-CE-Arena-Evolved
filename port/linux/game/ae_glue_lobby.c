@@ -31,6 +31,7 @@ there (ae_lobby_take_pregame_ui) shows AE's pregame screen instead.
 #include "../src/p2p.h"
 #include "halo_port_limits.h"
 #include "ae_glue_lobby.h"
+#include "ae_invite_rules.h"
 #include "ae_lan_bots.h"
 #include "bots.h"
 #include "ae_hooks.h"
@@ -462,42 +463,6 @@ static void trimmed(const char *text, char *out, size_t size)
 		out[length - 1] = 0;
 }
 
-#ifdef HALO_GAME_BROWSER
-/* the invite's code in the text itself (hexadecimal, lower case, as network_game_client_join_invite_host reads
-it): after "halo://join/" (any case) when the text is a link, else the text's digits alone; as p2p.c parse_invite
-reads it. FALSE if the text holds no invite of this version (a key link, an older invite, anything else) */
-static int invite_code(const char *text, char *code, size_t size)
-{
-	static const char prefix[] = "halo://join/";
-	const char *start = text;
-	const char *search;
-	size_t digits;
-
-	for (search = text; *search; search++)
-	{
-		size_t length;
-
-		for (length = 0; prefix[length] && search[length] && (search[length] | 0x20) == prefix[length]; length++)
-			;
-		if (!prefix[length])
-		{
-			start = search + length;
-			break;
-		}
-	}
-	for (digits = 0; (start[digits] >= '0' && start[digits] <= '9') || ((start[digits] | 0x20) >= 'a' &&
-		(start[digits] | 0x20) <= 'f'); digits++)
-		;
-	/* (the host's key hash and the token: 16 bytes each, p2p_internal.h; a bare code is its digits alone) */
-	if (digits != 64 || digits >= size || (start == text && start[digits]))
-		return 0;
-	for (search = start; search < start + digits; search++)
-		*code++ = (char)(*search >= 'A' && *search <= 'F' ? *search | 0x20 : *search);
-	*code = 0;
-	return 1;
-}
-#endif
-
 struct ae_result ae_lobby_join_address(const char *address)
 {
 	char text[256];
@@ -517,8 +482,8 @@ struct ae_result ae_lobby_join_address(const char *address)
 	if (!config_boolean("network.online"))
 		return failed("join", AE_STR_ERR_INTERNET_OFF, NULL);
 	/* (the code from this text, never p2p_joined_invite's: that is the last invite joined, an older one while
-	this one waits for internet play to start) */
-	if (!invite_code(text, code, sizeof(code)))
+	this one waits for internet play to start; as p2p.c parse_invite reads it: ae_invite_rules.c) */
+	if (!ae_invite_code(text, code, sizeof(code)))
 		return failed("join", AE_STR_ERR_NOT_INVITE, NULL);
 	if (!join_client(JOIN_INVITE))
 		return lobby.join_failure;
