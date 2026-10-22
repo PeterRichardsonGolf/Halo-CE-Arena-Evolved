@@ -78,6 +78,11 @@ static struct
 	struct ae_prompt prompts[PROMPTS];
 	short prompt_count;
 	char name[16];
+	/* NAME's typing: its text, typed (a keyboard) or AE's keyboard (a pad) */
+	struct ae_text name_text;
+	struct ae_field_edit name_edit;
+	int typing, keyboard_open;
+	unsigned long caret_since;
 	int dialog;                          /* 0 none, 1 DEFAULTS, 2 saved / failed */
 	float logged_width, logged_scale;
 } screen;
@@ -184,6 +189,9 @@ static void refresh(void)
 	if (screen.list.list.focus >= 0 && screen.list.list.focus < screen.count &&
 		ae_setup_entry_is_header(screen.entries[screen.list.list.focus]))
 		ae_list_set_focus(&screen.list.list, ae_setup_row_step(screen.entries, screen.count, screen.list.list.focus, 1));
+	/* (NAME's value: the copy's name, kept for the model) */
+	ae_setup_edit_name(screen.name, sizeof(screen.name));
+	ae_setup_name_set(screen.name);
 	screen.focus_option = focused_option();
 	if (screen.focus_option != screen.logged_focus)
 	{
@@ -206,6 +214,89 @@ static void skip_headers(short direction)
 			(short)-direction));
 }
 
+/* ---------- NAME's typing */
+
+enum { NAME_LIMIT = 11 };
+
+/* the typed text becomes the copy's name (kept); nothing typed keeps the old one */
+static void name_commit(void)
+{
+	ae_setup_edit_set_name(screen.name_text.text);
+	screen.tick_option = -1;
+	refresh();
+}
+
+static void name_typing_done(int keep, void *context)
+{
+	(void)context;
+	screen.typing = 0;
+	if (keep)
+		name_commit();
+}
+
+static void name_typing_begin(void)
+{
+	screen.name_edit.done = name_typing_done;
+	screen.name_edit.context = NULL;
+	screen.name_edit.holder = &screen;
+	ae_field_edit_begin(&screen.name_edit, &screen.name_text);
+	ae_text_end(&screen.name_text, 0);
+	screen.typing = 1;
+	screen.caret_since = ae_motion_now();
+}
+
+static void name_typing_end(int keep)
+{
+	if (!screen.typing)
+		return;
+	screen.typing = 0;
+	ae_field_edit_end(&screen.name_edit, keep);
+	if (keep)
+		name_commit();
+	ae_sound_request(keep ? AE_SOUND_FORWARD : AE_SOUND_BACK, 0);
+}
+
+static void name_keyboard_done(int keep, void *context)
+{
+	(void)context;
+	screen.keyboard_open = 0;
+	/* (a physical key closed it into the field's own typing: that goes on) */
+	if (screen.name_edit.active && screen.name_edit.text == &screen.name_text)
+	{
+		screen.typing = 1;
+		screen.caret_since = ae_motion_now();
+		return;
+	}
+	if (keep)
+		name_commit();
+}
+
+static void name_begin(void)
+{
+	ae_text_init(&screen.name_text, screen.name, NAME_LIMIT, 1);
+	if (ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE)
+		name_typing_begin();
+	else
+	{
+		struct ae_keyboard_spec spec;
+
+		memset(&spec, 0, sizeof(spec));
+		spec.text = &screen.name_text;
+		spec.field = screen.focus_row;
+		spec.bounds = screen.frame.rect;
+		spec.density = screen.density;
+		spec.done = name_keyboard_done;
+		screen.name_edit.done = name_typing_done;
+		screen.name_edit.context = NULL;
+		screen.name_edit.holder = &screen;
+		spec.edit = &screen.name_edit;
+		if (ae_keyboard_open(&spec, AE_OWNER_ANY))
+			screen.keyboard_open = 1;
+	}
+	platform_log("ae game options: name %s", screen.typing ? "typing" : "keyboard");
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+}
+
 /* ---------- changing values */
 
 static void value_step(short option, short direction)
@@ -216,6 +307,11 @@ static void value_step(short option, short direction)
 
 	if (!row || current < 0)
 		return;
+	if (ae_setup_edit_reason(option))
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
 	next = ae_value_step(row->value_count, (short)current, direction);
 	if (next == current)
 	{
@@ -247,6 +343,16 @@ static void picker_open(short option)
 
 	if (!row)
 		return;
+	if (option == AE_SO_NAME)
+	{
+		name_begin();
+		return;
+	}
+	if (ae_setup_edit_reason(option))
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
 	memset(&spec, 0, sizeof(spec));
 	/* (the row's own static texts: they outlive the picker and its ghost) */
 	spec.values = row->values;
@@ -343,7 +449,7 @@ static void save_as_new(void)
 	if (ae_setup_edit_save_as_new(saved, sizeof(saved)))
 	{
 		ae_setup_edit_name(screen.name, sizeof(screen.name));
-		snprintf(body, sizeof(body), "These rules are saved as a new game type, %s. Rename it in EDIT GAME TYPES.", saved);
+		snprintf(body, sizeof(body), "These rules are saved as a new game type, %s. Change NAME first to pick the name.", saved);
 		screen.dialog = 2;
 		dialog_open(AE_DIALOG_CONFIRM, "Saved", body, "OK", NULL);
 		refresh();
@@ -388,6 +494,11 @@ static void list_item(void *context, short item, float x, float y, float width, 
 		widget.flags |= AE_ROW_CHANGED;
 		widget.base_value = ae_setup_value_text(entry, base);
 	}
+	if (ae_setup_edit_reason(entry))
+	{
+		widget.flags |= AE_ROW_DISABLED;
+		widget.reason = ae_setup_edit_reason(entry);
+	}
 	if (entry == screen.tick_option)
 	{
 		widget.tick = &screen.tick;
@@ -400,6 +511,19 @@ static void list_item(void *context, short item, float x, float y, float width, 
 		screen.focus_row.y = y;
 		screen.focus_row.width = width;
 		screen.focus_row.height = height;
+	}
+	if (entry == AE_SO_NAME && (screen.typing || screen.keyboard_open))
+	{
+		/* (NAME being typed: the row's value is the text, in the ring of an edit field) */
+		char shown[AE_TEXT_MAXIMUM + 8];
+
+		snprintf(shown, sizeof(shown), "%s%s", screen.name_text.text,
+			((ae_motion_now() - screen.caret_since) / 530u) % 2u == 0u ? "|" : "");
+		widget.value = shown;
+		widget.flags &= ~(unsigned int)AE_ROW_CHANGED;
+		ae_widget_row(list->density, x, y, width, &widget, HIT_LIST, item);
+		ae_draw_outline(x, y, width, height, u(screen.density.metrics->corner), u(1.0f), AE_COLOR_RING);
+		return;
 	}
 	ae_widget_row(list->density, x, y, width, &widget, HIT_LIST, item);
 }
@@ -525,6 +649,15 @@ static int options_handle(struct ae_screen *instance, struct ae_event const *eve
 	(void)instance;
 	refresh();
 	option = screen.focus_option;
+	/* (NAME typing: Enter or START keeps it, Esc or B drops it; the rest is the typing's) */
+	if (screen.typing)
+	{
+		if (event->action == AE_ACTION_START || event->action == AE_ACTION_ACCEPT)
+			name_typing_end(1);
+		else if (event->action == AE_ACTION_BACK)
+			name_typing_end(0);
+		return 1;
+	}
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
@@ -569,6 +702,8 @@ static void options_pointer(struct ae_screen *instance, struct ae_pointer const 
 	struct ae_hit hit;
 	short item;
 
+	if (screen.typing)
+		return;
 	if (ae_prompts_pointer(screen.prompts, screen.prompt_count, pointer, HIT_PROMPTS, &event))
 	{
 		if (event.action == AE_ACTION_BACK)
@@ -612,17 +747,86 @@ static void options_pointer(struct ae_screen *instance, struct ae_pointer const 
 		picker_open(screen.entries[item]);
 }
 
+static void options_update(struct ae_screen *instance)
+{
+	(void)instance;
+	if (screen.typing && screen.name_edit.active && !ae_field_edit_keys(&screen.name_edit))
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+}
+
 static void options_leave(struct ae_screen *instance)
 {
 	(void)instance;
+	if (screen.typing)
+	{
+		screen.typing = 0;
+		ae_field_edit_end(&screen.name_edit, 0);
+	}
 	platform_log("ae game options: closed (%d changed)", ae_setup_changes(&screen.access));
 }
 
 static struct ae_screen_class const options_class =
 {
 	.name = "game options", .leave = options_leave, .handle = options_handle, .draw = options_draw,
-	.pointer = options_pointer,
+	.pointer = options_pointer, .update = options_update,
 };
+
+/* the tests' hooks (the harness types no text): HALO_AE_TEST_SET "LABEL=index;LABEL=index" sets rows by value index,
+HALO_AE_TEST_NAME renames the copy, HALO_AE_TEST_SAVE saves it as new and opens the new file again (the rules read
+back from the file), and with it or HALO_AE_TEST_DUMP every row's value index is logged as "ae game options: value
+LABEL=index" */
+static void test_hooks(void)
+{
+	char const *sets = getenv("HALO_AE_TEST_SET"), *rename = getenv("HALO_AE_TEST_NAME");
+	int save = getenv("HALO_AE_TEST_SAVE") != NULL, dump = save || getenv("HALO_AE_TEST_DUMP") != NULL;
+	int option;
+
+	while (sets && *sets)
+	{
+		char label[64], *equals;
+		char const *end = strchr(sets, ';');
+		size_t length = end ? (size_t)(end - sets) : strlen(sets);
+
+		snprintf(label, sizeof(label), "%.*s", (int)length, sets);
+		equals = strrchr(label, '=');
+		if (equals)
+		{
+			*equals = 0;
+			for (option = 0; option < AE_SETUP_OPTIONS; option++)
+			{
+				if (!strcmp(ae_setup_label(NULL, option), label))
+				{
+					ae_setup_edit_set(option, atoi(equals + 1));
+					break;
+				}
+			}
+		}
+		sets = end ? end + 1 : NULL;
+	}
+	if (rename)
+		ae_setup_edit_set_name(rename);
+	if (save)
+	{
+		char saved[16];
+
+		if (ae_setup_edit_save_as_new(saved, sizeof(saved)) && ae_setup_edit_begin_named(saved))
+			platform_log("ae game options: test: reopened '%s'", saved);
+		else
+			platform_log("ae game options: test: save failed");
+	}
+	if (dump)
+	{
+		struct ae_setup_access access;
+
+		ae_setup_edit_access(&access);
+		for (option = 0; option < AE_SETUP_OPTIONS; option++)
+		{
+			if (access.get(access.context, option) >= 0)
+				platform_log("ae game options: value %s=%d", ae_setup_label(NULL, option),
+					access.get(access.context, option));
+		}
+	}
+}
 
 int ae_screen_game_options_open(char const *gametype)
 {
@@ -630,6 +834,7 @@ int ae_screen_game_options_open(char const *gametype)
 
 	if (!ae_setup_edit_begin_named(name))
 		return 0;
+	test_hooks();
 	ae_setup_edit_check();
 	if (!ae_screen_game_options_show())
 		return 0;

@@ -6,6 +6,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- GAME OPTIONS (the new game setup screens) gets the rows it lacked: one for each WEAPON PACK (battle rifle, SMG,
+  silenced SMG, carbine, silenced assault rifle; a pack that is not installed shows NOT INSTALLED), PACK WEAPONS ON
+  MAP, STARTING GRENADES (the game's own, none, 1 to 4), BOTTOMLESS CLIP, a pack's weapons among PRIMARY and
+  SECONDARY WEAPON (the pack turns on with its weapon; turning a pack off puts back the stock weapon), and NAME,
+  which SAVE AS NEW keeps as typed. Gametypes from before read the stock value in every row.
 - AE BTB, big team games for 8 against 8 (seed revision 22, added on the first start; nothing else changes): TEAM
   AE BTB SLAYER (100 kills), TEAM AE BTB CTF (3 captures), TEAM AE BTB KING and TEAM AE BTB ODDBALL (5 minutes held),
   each with a 20-minute time limit and the map's own vehicles, on AE's casual team rules; and TEAM AE BTB HEAVIES, big

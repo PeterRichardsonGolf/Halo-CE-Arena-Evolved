@@ -36,6 +36,17 @@ int main(void)
 	CHECK(ae_weapon_slots_loadout(0, 1) == AE_WEAPON_SLOT_NONE);
 	CHECK(ae_weapon_slots_first(SILENCED | CARBINE) == AE_WEAPON_SLOT_SMG_SILENCED && ae_weapon_slots_first(0) == 0);
 
+	/* a slot's source among the named ones; the third and later have none; remapping keeps each loadout slot's pack */
+	CHECK(ae_weapon_slots_source(BR | SMG, AE_WEAPON_SLOT_BATTLE_RIFLE) == 1);
+	CHECK(ae_weapon_slots_source(BR | SMG, AE_WEAPON_SLOT_SMG) == 2);
+	CHECK(ae_weapon_slots_source(BR | SMG | CARBINE, AE_WEAPON_SLOT_CARBINE) == 0);
+	CHECK(ae_weapon_slots_source(BR, AE_WEAPON_SLOT_SMG) == 0 && ae_weapon_slots_source(BR, 0) == 0);
+	/* primary the SMG (source 1 of SMG|CARBINE), secondary the carbine (2); the BR joins: SMG 2, carbine 0 */
+	CHECK(ae_weapon_slots_loadout_remap(SMG | CARBINE, BR | SMG | CARBINE, 0x20 | 0x01 | (2 << 2)) == (0x20 | 2));
+	/* the SMG leaves: the carbine, was the second, is the first; the primary goes back to stock */
+	CHECK(ae_weapon_slots_loadout_remap(SMG | CARBINE, CARBINE, 0x80 | 0x01 | (2 << 2)) == (0x80 | (1 << 2)));
+	CHECK(ae_weapon_slots_loadout_remap(0, BR, 0x55) == 0x50);
+
 	/* the capability: the highest level whose slots are all loaded; the BR's 2 as before */
 	CHECK(ae_weapon_slots_capability(0) == 0);
 	CHECK(ae_weapon_slots_capability(BR) == 2);

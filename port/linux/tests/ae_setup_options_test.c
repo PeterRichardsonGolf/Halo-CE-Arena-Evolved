@@ -67,7 +67,8 @@ int main(void)
 	short entries[160], count, index, first, last_header;
 	int option, group;
 
-	/* every row: a label, a group, values, and one help or one per value */
+	/* every row: a label, a group, values, and one help or one per value (NAME's value is the screen's text) */
+	ae_setup_name_set("AE SLAYER");
 	for (option = 0; option < AE_SETUP_OPTIONS; option++)
 	{
 		struct ae_setup_row const *row = ae_setup_row(option);
@@ -107,7 +108,7 @@ int main(void)
 	}
 	CHECK(last_header == AE_SG_NHE);
 	ae_setup_groups(&access, entries, count, groups);
-	CHECK(groups[AE_SG_TEAMS].rows == 1 && groups[AE_SG_MATCH].rows == 3 && groups[AE_SG_MODE].rows == 3);
+	CHECK(groups[AE_SG_TEAMS].rows == 1 && groups[AE_SG_MATCH].rows == 4 && groups[AE_SG_MODE].rows == 3);
 	CHECK(groups[AE_SG_MATCH].header == 0 && ae_setup_changes(&access) == 0);
 	/* turning TEAM PLAY on brings the team rules, blue's vehicles and RED VEHICLES */
 	fake.now[AE_SO_TEAM_PLAY] = AE_SETUP_TEAM_PLAY_YES;
@@ -127,6 +128,57 @@ int main(void)
 	/* a change to a row of another mode is not counted (the gametype has no such rule) */
 	fake.now[AE_SO_DEATH_BONUS] = 1;
 	CHECK(ae_setup_changes(&access) == 0);
+
+	/* the rows of GAME OPTIONS' second pass: the packs, PACK WEAPONS ON MAP, STARTING GRENADES, BOTTOMLESS CLIP in
+	EQUIPMENT (a gametype from before reads 0 = the stock value in each), NAME in MATCH */
+	{
+		static const short packs[] = { AE_SO_PACK_BATTLE_RIFLE, AE_SO_PACK_SMG, AE_SO_PACK_SMG_SILENCED,
+			AE_SO_PACK_CARBINE, AE_SO_PACK_AR_SILENCED };
+		static const short equipment[] = { AE_SO_PACKS_ON_MAP, AE_SO_STARTING_GRENADES, AE_SO_BOTTOMLESS_CLIP };
+		short row_index;
+
+		fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
+		count = ae_setup_entries(&access, entries, 160);
+		CHECK(AE_SO_PACK_FIRST == AE_SO_PACK_BATTLE_RIFLE && AE_SO_PACK_AR_SILENCED == AE_SO_PACK_FIRST + AE_SETUP_PACKS - 1);
+		for (row_index = 0; row_index < 5; row_index++)
+		{
+			CHECK(has(entries, count, packs[row_index]) && ae_setup_row(packs[row_index])->group == AE_SG_EQUIPMENT);
+			CHECK(ae_setup_row(packs[row_index])->value_count == 2 && ae_setup_row(packs[row_index])->ae);
+			CHECK(!strcmp(ae_setup_value_text(packs[row_index], 0), "OFF") && !strcmp(ae_setup_value_text(packs[row_index], 1), "ON"));
+			fake.now[packs[row_index]] = 1;
+			CHECK(ae_setup_changes(&access) == 1);
+			fake.now[packs[row_index]] = 0;
+		}
+		for (row_index = 0; row_index < 3; row_index++)
+		{
+			CHECK(has(entries, count, equipment[row_index]) && ae_setup_row(equipment[row_index])->group == AE_SG_EQUIPMENT);
+			fake.now[equipment[row_index]] = 1;
+			CHECK(ae_setup_changes(&access) == 1);
+			fake.now[equipment[row_index]] = 0;
+		}
+		CHECK(ae_setup_row(AE_SO_STARTING_GRENADES)->value_count == 6 &&
+			!strcmp(ae_setup_value_text(AE_SO_STARTING_GRENADES, 0), "GAME'S OWN") &&
+			!strcmp(ae_setup_value_text(AE_SO_STARTING_GRENADES, 1), "NONE") &&
+			!strcmp(ae_setup_value_text(AE_SO_STARTING_GRENADES, 5), "4"));
+		/* the loadout rows: the game's ten weapons, then one a pack slot in slot order */
+		CHECK(ae_setup_row(AE_SO_PRIMARY)->value_count == AE_SETUP_WEAPON_PACK_FIRST + AE_SETUP_PACKS &&
+			ae_setup_row(AE_SO_SECONDARY)->value_count == AE_SETUP_WEAPON_PACK_FIRST + AE_SETUP_PACKS);
+		CHECK(!strcmp(ae_setup_value_text(AE_SO_PRIMARY, 9), "NEEDLER") &&
+			!strcmp(ae_setup_value_text(AE_SO_PRIMARY, AE_SETUP_WEAPON_PACK_FIRST), "BATTLE RIFLE") &&
+			!strcmp(ae_setup_value_text(AE_SO_SECONDARY, AE_SETUP_WEAPON_PACK_FIRST + 4), "SILENCED AR"));
+		/* NAME: one value, the text the screen gave (cut at the buffer) */
+		CHECK(has(entries, count, AE_SO_NAME) && ae_setup_row(AE_SO_NAME)->group == AE_SG_MATCH);
+		CHECK(ae_setup_row(AE_SO_NAME)->value_count == 1 && !ae_setup_row(AE_SO_NAME)->ae);
+		ae_setup_name_set("AE TEAM SLY");
+		CHECK(!strcmp(ae_setup_value_text(AE_SO_NAME, 0), "AE TEAM SLY"));
+		ae_setup_name_set("A NAME OF MUCH TOO MANY CHARACTERS");
+		CHECK(strlen(ae_setup_value_text(AE_SO_NAME, 0)) == 15);
+		ae_setup_name_set(NULL);
+		CHECK(!strcmp(ae_setup_value_text(AE_SO_NAME, 0), "") && !strcmp(ae_setup_value_text(AE_SO_NAME, 1), ""));
+		fake.now[AE_SO_NAME] = -1;
+		count = ae_setup_entries(&access, entries, 160);
+		CHECK(!has(entries, count, AE_SO_NAME));
+	}
 
 	/* a custom loadout: the weapons, and WEAPON SET only on AE's rules */
 	fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
@@ -177,9 +229,9 @@ int main(void)
 	/* a list too short for everything: no header without its row */
 	count = ae_setup_entries(&access, entries, 4);
 	CHECK(count == 4 && entries[0] == -1 - AE_SG_MATCH && entries[3] != -1 - AE_SG_PLAYERS);
-	CHECK(ae_setup_entries(&access, entries, 5) == 4);
-	count = ae_setup_entries(&access, entries, 6);
-	CHECK(count == 6 && entries[4] == -1 - AE_SG_PLAYERS && entries[5] == AE_SO_LIVES);
+	CHECK(ae_setup_entries(&access, entries, 6) == 5);
+	count = ae_setup_entries(&access, entries, 7);
+	CHECK(count == 7 && entries[5] == -1 - AE_SG_PLAYERS && entries[6] == AE_SO_LIVES);
 	CHECK(ae_setup_entries(NULL, entries, 10) == 0 && ae_setup_entries(&access, entries, 0) == 0);
 
 	if (failures) return 1;

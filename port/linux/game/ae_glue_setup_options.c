@@ -22,7 +22,9 @@ gametype_options[] kinds (gametype_option_value / gametype_option_value_set), in
 #include "ae_hit_feedback_rules.h"
 #include "ae_sensor_range_rules.h"
 #include "ae_silent_rules.h"
+#include "ae_weapon_pack.h"
 #include "ae_weapon_rules.h"
+#include "ae_weapon_slots.h"
 
 void platform_log(char const *format, ...);
 /* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
@@ -54,7 +56,11 @@ enum
 	_encoding_pack_bit,         /* a bit of the variant's pack_loadout (argument), its value 1 when set */
 	_encoding_vehicle_set,      /* a side's vehicle set (argument: the side) */
 	_encoding_vehicle_count,    /* a side's count of a vehicle (argument: side * kinds + kind) */
-	_encoding_sound_preset      /* SPLIT SCREEN while both SILENT fields are SILENT */
+	_encoding_sound_preset,     /* SPLIT SCREEN while both SILENT fields are SILENT */
+	_encoding_name,             /* the stored name: one value, set by ae_setup_edit_set_name */
+	_encoding_pack_slot,        /* a weapon pack slot in the variant's weapon_pack mask (argument: the slot's bit) */
+	_encoding_loadout_slot,     /* PRIMARY / SECONDARY: the game's weapons, then a pack slot's (argument: the slot) */
+	_encoding_frags             /* the variant's starting_frags: 0 the game's own, 255 none, 1-4 */
 };
 
 struct encoding { short kind; short offset; unsigned long argument; short count; long values[20]; };
@@ -85,6 +91,7 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	/* (ARENA OPTIONS' finer TIME LIMIT, minutes) */
 	[AE_SO_TIME_LIMIT] = SHORT(time_limit, 18, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 45, 60),
 	[AE_SO_COUNTDOWN] = BIT(_game_variant_pregame_countdown_bit, 0, 1),
+	[AE_SO_NAME] = { _encoding_name, 0, 0, 1, { 0 } },
 
 	[AE_SO_LIVES] = LONG(universal_variant.lives, 4, 0, 1, 3, 5),
 	[AE_SO_RESPAWN_TIME] = LONG(universal_variant.respawn_time, 5, 0, 150, 225, 300, 450),
@@ -115,12 +122,23 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_WEAPON_SET] = LONG(universal_variant.weapon_set, 14, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 10),
 	[AE_SO_MAP_WEAPONS] = OPTION_BYTE(no_map_weapons, 2, 0, 1),
 	[AE_SO_GRENADES_ON_MAP] = { _encoding_pack_bit, 0, AE_MAP_GRENADES_OFF_BIT, 2, { 0, 1 } },
+	/* (the packs: the weapon_pack mask's bits, slot n = bit n - 1; PACK WEAPONS ON MAP: pack_loadout bit 4) */
+	[AE_SO_PACK_BATTLE_RIFLE] = { _encoding_pack_slot, 0, AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_BATTLE_RIFLE), 2, { 0, 1 } },
+	[AE_SO_PACK_SMG] = { _encoding_pack_slot, 0, AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_SMG), 2, { 0, 1 } },
+	[AE_SO_PACK_SMG_SILENCED] = { _encoding_pack_slot, 0, AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_SMG_SILENCED), 2, { 0, 1 } },
+	[AE_SO_PACK_CARBINE] = { _encoding_pack_slot, 0, AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_CARBINE), 2, { 0, 1 } },
+	[AE_SO_PACK_AR_SILENCED] = { _encoding_pack_slot, 0, AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_AR_SILENCED), 2, { 0, 1 } },
+	[AE_SO_PACKS_ON_MAP] = { _encoding_pack_bit, 0, PACK_MAP_SPAWNS_BIT, 2, { 0, 1 } },
+	[AE_SO_STARTING_GRENADES] = { _encoding_frags, 0, 0, 6, { 0, STARTING_GRENADES_NONE, 1, 2, 3, 4 } },
 	[AE_SO_STARTING_EQUIPMENT] = BIT(_game_variant_generic_starting_equipment_bit, 0, 1),
 	[AE_SO_LOADOUT] = OPTION_BYTE(loadout, 2, _loadout_category, _loadout_custom),
-	[AE_SO_PRIMARY] = OPTION_BYTE(primary_weapon, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
-	[AE_SO_SECONDARY] = OPTION_BYTE(secondary_weapon, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+	[AE_SO_PRIMARY] = { _encoding_loadout_slot, 0, _pack_loadout_primary, 15, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+		13, 14 } },
+	[AE_SO_SECONDARY] = { _encoding_loadout_slot, 0, _pack_loadout_secondary, 15, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+		12, 13, 14 } },
 	[AE_SO_INFINITE_GRENADES] = BIT(_game_variant_infinite_grenades_bit, 1, 0),
 	[AE_SO_INFINITE_AMMO] = { _encoding_pack_bit, 0, AE_WEAPON_INFINITE_AMMO_BIT, 2, { 0, 1 } },
+	[AE_SO_BOTTOMLESS_CLIP] = { _encoding_pack_bit, 0, AE_WEAPON_BOTTOMLESS_CLIP_BIT, 2, { 0, 1 } },
 
 	[AE_SO_VEHICLE_RESPAWN] = SHORT(vehicle_respawn_time, 7, 0, 30, 60, 90, 120, 180, 300),
 	[AE_SO_VEHICLE_SET_RED] = VEHICLE_SET(0),
@@ -253,6 +271,22 @@ static long raw_get(struct encoding const *encoding, struct rules const *rules)
 		return options->vehicle_counts[encoding->argument / NUMBER_OF_VARIANT_VEHICLES]
 			[encoding->argument % NUMBER_OF_VARIANT_VEHICLES];
 	case _encoding_sound_preset: return split_screen(rules);
+	case _encoding_name: return 0;
+	case _encoding_pack_slot: return (ae_weapon_slots_mask(variant->universal_variant.weapon_pack) & encoding->argument) != 0;
+	case _encoding_loadout_slot:
+	{
+		short pack = game_variant_pack_loadout_weapon_slot(variant->universal_variant.weapon_pack,
+			variant->universal_variant.pack_loadout, (short)encoding->argument);
+
+		return pack != AE_WEAPON_SLOT_NONE ? AE_SETUP_WEAPON_PACK_FIRST + pack - 1 :
+			(encoding->argument == _pack_loadout_primary ? options->primary_weapon : options->secondary_weapon);
+	}
+	case _encoding_frags:
+	{
+		byte frags = variant->universal_variant.starting_frags;
+
+		return frags == STARTING_GRENADES_NONE || (frags >= 1 && frags <= 4) ? frags : 0;
+	}
 	}
 	return 0;
 }
@@ -270,6 +304,46 @@ static void silent_set(struct rules *rules, int shift, int value)
 	byte *pad5 = &rules->variant.universal_variant.pad5;
 
 	*pad5 = (byte)((*pad5 & ~(AE_SILENT_FIELD_MASK << shift)) | (((unsigned)value & AE_SILENT_FIELD_MASK) << shift));
+}
+
+/* the weapon_pack mask changed: the loadout slots keep their packs' weapons where those are still named */
+static void pack_mask_set(struct rules *rules, unsigned int mask)
+{
+	struct universal_variant *universal = &rules->variant.universal_variant;
+	unsigned int old_mask = ae_weapon_slots_mask(universal->weapon_pack);
+
+	universal->pack_loadout = ae_weapon_slots_loadout_remap(old_mask, mask, universal->pack_loadout);
+	universal->weapon_pack = (byte)mask;
+}
+
+/* a loadout slot to a value: a game weapon (the pack source off), or a pack slot's weapon (its pack turned on; the
+slot's own weapon keeps the stock one the pack falls back to). A pack that no source reaches (the third named or
+later) is not taken: 0 */
+static int loadout_slot_set(struct rules *rules, short loadout_slot, long value)
+{
+	struct universal_variant *universal = &rules->variant.universal_variant;
+	byte *weapon = loadout_slot == _pack_loadout_primary ? &rules->options.primary_weapon :
+		&rules->options.secondary_weapon;
+
+	if (value < AE_SETUP_WEAPON_PACK_FIRST)
+	{
+		universal->pack_loadout &= (byte)~(PACK_LOADOUT_SOURCE_MASK << PACK_LOADOUT_SLOT_SHIFT(loadout_slot));
+		*weapon = (byte)value;
+		return 1;
+	}
+	{
+		short pack = (short)(value - AE_SETUP_WEAPON_PACK_FIRST + 1);
+		unsigned int mask = ae_weapon_slots_mask(universal->weapon_pack) | AE_WEAPON_SLOT_BIT(pack);
+		unsigned int source = ae_weapon_slots_source(mask, pack);
+
+		if (!source)
+			return 0;
+		pack_mask_set(rules, mask);
+		universal->pack_loadout &= (byte)~(PACK_LOADOUT_SOURCE_MASK << PACK_LOADOUT_SLOT_SHIFT(loadout_slot));
+		universal->pack_loadout |= (byte)(source << PACK_LOADOUT_SLOT_SHIFT(loadout_slot));
+		*weapon = (byte)ae_weapon_slots_fallback(pack);
+		return 1;
+	}
 }
 
 static void raw_set(struct encoding const *encoding, long value, struct rules *rules)
@@ -351,6 +425,19 @@ static void raw_set(struct encoding const *encoding, long value, struct rules *r
 			silent_set(rules, AE_SILENT_WEAPONS_SHIFT, keep ? silent_field(base, AE_SILENT_WEAPONS_SHIFT) : 0);
 		}
 		break;
+	case _encoding_name: break;
+	case _encoding_pack_slot:
+	{
+		unsigned int mask = ae_weapon_slots_mask(variant->universal_variant.weapon_pack);
+
+		pack_mask_set(rules, value ? (mask | encoding->argument) : (mask & ~encoding->argument));
+		break;
+	}
+	case _encoding_loadout_slot:
+		if (!loadout_slot_set(rules, (short)encoding->argument, value))
+			platform_log("ae game options: no source reaches that pack weapon (two packs at most)");
+		break;
+	case _encoding_frags: variant->universal_variant.starting_frags = (byte)value; break;
 	}
 }
 
@@ -395,6 +482,10 @@ static int access_changed(void *context, int option)
 	/* (SOUND PRESET follows the SILENT rows: their changes are counted, not it) */
 	if (!encoding || !setup_edit.open || encoding->kind == _encoding_sound_preset)
 		return 0;
+	if (encoding->kind == _encoding_name)
+		return memcmp(setup_edit.edit.variant.human_readable_game_description,
+			setup_edit.base.variant.human_readable_game_description,
+			sizeof(setup_edit.edit.variant.human_readable_game_description)) != 0;
 	return raw_get(encoding, &setup_edit.edit) != raw_get(encoding, &setup_edit.base);
 }
 
@@ -516,17 +607,64 @@ void ae_setup_edit_name(char *name, int size)
 	narrow_name(setup_edit.edit.variant.human_readable_game_description, name, size);
 }
 
+void ae_setup_edit_set_name(char const *name)
+{
+	wchar_t *stored = setup_edit.edit.variant.human_readable_game_description;
+	int index, length = 0;
+
+	if (!setup_edit.open || !name)
+		return;
+	/* (printable ASCII, at most the stored length; a name of nothing keeps the one it has) */
+	csmemset(stored, 0, sizeof(setup_edit.edit.variant.human_readable_game_description));
+	for (index = 0; name[index] && length < MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1; index++)
+	{
+		unsigned char letter = (unsigned char)name[index];
+
+		if (letter >= 0x20 && letter < 0x7F)
+			stored[length++] = (wchar_t)letter;
+	}
+	if (!length)
+		memcpy(stored, setup_edit.base.variant.human_readable_game_description,
+			sizeof(setup_edit.edit.variant.human_readable_game_description));
+	platform_log("ae game options: name '%s'", name);
+}
+
+char const *ae_setup_edit_reason(int option)
+{
+	int slot = option - AE_SO_PACK_FIRST + 1;
+
+	/* (a pack that is not loaded here and not on in the gametype: it can't be turned on) */
+	if (!setup_edit.open || slot < 1 || slot > AE_SETUP_PACKS || ae_weapon_pack_slot_loaded((short)slot))
+		return NULL;
+	return ae_weapon_slots_mask(setup_edit.edit.variant.universal_variant.weapon_pack) & AE_WEAPON_SLOT_BIT(slot) ?
+		NULL : "NOT INSTALLED";
+}
+
 int ae_setup_edit_save_as_new(char *name, int size)
 {
 	wchar_t wide[MAXIMUM_GAME_VARIANT_NAME_LENGTH];
 	char stored[16], candidate[16];
 	long profile = NONE;
-	int number, index;
+	int number = 0, index, exact = 0;
 
 	if (!setup_edit.open || size <= 0)
 		return 0;
 	narrow_name(setup_edit.edit.variant.human_readable_game_description, stored, sizeof(stored));
-	for (number = 2; number < 100; number++)
+	/* (a name typed in NAME is kept as typed when it is free) */
+	if (memcmp(setup_edit.edit.variant.human_readable_game_description,
+		setup_edit.base.variant.human_readable_game_description,
+		sizeof(setup_edit.edit.variant.human_readable_game_description)) != 0)
+	{
+		for (index = 0; stored[index]; index++)
+			wide[index] = (wchar_t)(unsigned char)stored[index];
+		wide[index] = 0;
+		if (index > 0 && saved_game_file_name_unique(wide))
+		{
+			snprintf(candidate, sizeof(candidate), "%s", stored);
+			exact = 1;
+		}
+	}
+	for (number = exact ? 100 : 2; number < 100; number++)
 	{
 		char suffix[4];
 		int length, keep;
@@ -543,7 +681,7 @@ int ae_setup_edit_save_as_new(char *name, int size)
 		if (saved_game_file_name_unique(wide))
 			break;
 	}
-	if (number >= 100)
+	if (!exact && number >= 100)
 	{
 		platform_log("ae game options: save as new: no free name for '%s'", stored);
 		return 0;
