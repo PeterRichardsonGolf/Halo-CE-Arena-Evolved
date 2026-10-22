@@ -36,6 +36,14 @@ void ae_setup_edit_name(char *name, int size);
 /* a new gametype file of the copy, named name (11 characters at most), which is written into: the copy's name with
 " 2", " 3" ... until it is free. 1 when written; the copy then starts from it (no changes) */
 int ae_setup_edit_save_as_new(char *name, int size);
+/* (CREATE GAME, the LOBBY) the copy as the game's gametype: player_ui's variant and options (so the server takes the
+options with it), the server's when there is one (PREGAME: network_game_server_change_game_variant), the stage's
+for the next round. 1 when applied */
+int ae_setup_edit_apply(void);
+/* the saved gametypes the game lists (ui_widget_port_gametypes): each one's stored name (16 bytes) and file, at most
+maximum; the edit's own file's place in current (-1 none). Returns the count */
+short ae_setup_gametypes(char (*names)[16], long *profiles, short maximum, short *current);
+
 /* the table against the model: every row's value count; logs each that differs; 1 when all match */
 int ae_setup_edit_check(void);
 

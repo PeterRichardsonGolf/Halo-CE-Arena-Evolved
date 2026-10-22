@@ -11,6 +11,9 @@ gametype_options[] kinds (gametype_option_value / gametype_option_value_set), in
 
 #include "cseries.h"
 #include "game/game_engine.h"
+#include "interface/player_ui.h"
+#include "networking/network_game_globals.h"
+#include "networking/network_server_manager.h"
 #include "saved games/arena_gametypes.h"
 #include "saved games/playlist_profile.h"
 #include "saved games/saved_game_files.h"
@@ -23,6 +26,9 @@ gametype_options[] kinds (gametype_option_value / gametype_option_value_set), in
 void platform_log(char const *format, ...);
 /* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
 short ui_widget_port_gametypes(long *indices, short maximum, short *last_used);
+/* network_server_manager.c's (its states are its own: pregame is 0, as map_share.c reads them) */
+word network_game_server_get_state(struct network_game_server *server, short *substate);
+#define SERVER_STATE_PREGAME 0
 
 typedef char verify_vehicle_kinds[AE_SETUP_VEHICLE_KINDS == NUMBER_OF_VARIANT_VEHICLES ? 1 : -1];
 typedef char verify_engines[AE_SETUP_ENGINE_CTF == game_engine_ctf && AE_SETUP_ENGINE_SLAYER == game_engine_slayer &&
@@ -180,6 +186,8 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	((int)NUMBEROF(((struct game_variant *)0)->human_readable_game_description))
 
 /* ---------- the edit */
+
+static short changes_now(void);
 
 struct rules { struct game_variant variant; struct game_variant_options options; };
 
@@ -555,6 +563,52 @@ int ae_setup_edit_save_as_new(char *name, int size)
 	return 1;
 }
 
+int ae_setup_edit_apply(void)
+{
+	struct network_game_server *server = global_network_game_server_get();
+	struct game_variant variant;
+	char name[16];
+
+	if (!setup_edit.open)
+		return 0;
+	/* (the options first: the server keeps the menus' options only for the menus' own variant) */
+	variant = setup_edit.edit.variant;
+	player_ui_set_game_variant_options(&setup_edit.edit.options);
+	player_ui_set_game_variant(&variant);
+	/* (the server takes a gametype in its pregame only: it asserts so) */
+	if (server && network_game_server_get_state(server, NULL) == SERVER_STATE_PREGAME)
+		network_game_server_change_game_variant(server, &variant);
+	else if (server)
+		server = NULL;
+	game_engine_override_game_variant(&variant);
+	narrow_name(variant.human_readable_game_description, name, sizeof(name));
+	platform_log("ae game options: applied '%s' (%d changed)%s", name, changes_now(),
+		server ? " to the server" : "");
+	return 1;
+}
+
+short ae_setup_gametypes(char (*names)[16], long *profiles, short maximum, short *current)
+{
+	long indices[128];
+	short count, last = 0, index, written = 0;
+
+	*current = -1;
+	count = ui_widget_port_gametypes(indices, (short)NUMBEROF(indices), &last);
+	for (index = 0; index < count && written < maximum; index++)
+	{
+		struct game_variant variant;
+
+		if (!playlist_profile_get(indices[index], &variant))
+			continue;
+		narrow_name(variant.human_readable_game_description, names[written], 16);
+		profiles[written] = indices[index];
+		if (setup_edit.open && indices[index] == setup_edit.profile)
+			*current = written;
+		written++;
+	}
+	return written;
+}
+
 int ae_setup_edit_check(void)
 {
 	int option, ok = 1;
@@ -571,4 +625,13 @@ int ae_setup_edit_check(void)
 		ok = 0;
 	}
 	return ok;
+}
+
+/* N CHANGED, through the model (the rows a gametype has) */
+static short changes_now(void)
+{
+	struct ae_setup_access access;
+
+	ae_setup_edit_access(&access);
+	return ae_setup_changes(&access);
 }
