@@ -48,6 +48,38 @@ int main(void)
 	ae_lobby_roster_order(&roster);
 	CHECK(roster.count == 2 && roster.players[0].slot == 1 && roster.players[1].slot == 2 &&
 		!strcmp(roster.players[0].name, "Player 1"));
+	/* people, not machines: the host, a split screen guest on the same machine and a joiner are people; network
+	bots (on the host's controllers and on a virtual machine of their own) are not */
+	memset(&roster, 0, sizeof(roster));
+	add("Player 1", 0, 0, 1, 1);
+	add("Guest", 0, 1, 1, 1);
+	add("BOT Fred", 0, 3, 0, 0);
+	roster.players[2].bot = 1;
+	add("Friend", 1, 0, 0, 0);
+	add("BOT Wilma", 126, 0, 0, 0);
+	roster.players[4].bot = 1;
+	add("BOT Barney", 126, 1, 0, 0);
+	roster.players[5].bot = 1;
+	roster.machines = 3;
+	ae_lobby_roster_order(&roster);
+	CHECK(roster.count == 6 && roster.people == 3);
+	/* (all bots, none) */
+	memset(&roster, 0, sizeof(roster));
+	add("BOT Fred", 0, 3, 0, 0);
+	roster.players[0].bot = 1;
+	ae_lobby_roster_order(&roster);
+	CHECK(roster.people == 0);
+	memset(&roster, 0, sizeof(roster));
+	ae_lobby_roster_order(&roster);
+	CHECK(roster.people == 0);
+	/* a joiner's word for a bot: the virtual machine's name, or "BOT " before the player's */
+	CHECK(ae_lobby_bot_by_names("Bots", "Wilma"));
+	CHECK(ae_lobby_bot_by_names("Josh", "BOT Fred"));
+	CHECK(!ae_lobby_bot_by_names("Josh", "Josh"));
+	CHECK(!ae_lobby_bot_by_names("Bots2", "Bottle"));
+	CHECK(!ae_lobby_bot_by_names("Josh", "BOT "));
+	CHECK(!ae_lobby_bot_by_names("Josh", "BOTTOM"));
+	CHECK(!ae_lobby_bot_by_names(NULL, NULL));
 	/* (an empty roster, a count out of range) */
 	memset(&roster, 0, sizeof(roster));
 	ae_lobby_roster_order(&roster);

@@ -32,6 +32,7 @@ there (ae_lobby_take_pregame_ui) shows AE's pregame screen instead.
 #include "halo_port_limits.h"
 #include "ae_glue_lobby.h"
 #include "ae_lan_bots.h"
+#include "bots.h"
 #include "ae_hooks.h"
 #include "ae_strings.h"
 #include "ae_ui.h"
@@ -232,8 +233,24 @@ struct ae_result ae_lobby_roster(struct ae_lobby_roster *roster)
 		the first machine, the server's own (an assumption: a joining client has no other word for it)) */
 		player->local = local_machine != NONE && source->machine_index == local_machine;
 		player->host = global_network_game_server_get() ? player->local : source->machine_index == 0;
-		/* (a LAN bot is the host machine's player but no one's here: not this machine's person, not the host) */
+		/* (a bot is no one's person: not this machine's, not the host. A network game's on its host: its own word
+		(ae_lan_bots.c); a split screen game's: a machine of the bots' own (bots.c); a joiner is told nothing of
+		them: the host's virtual machine "Bots", or "BOT " before the name, as the host names them) */
 		player->bot = ae_lan_bots_network_player(source);
+		if (!player->bot && network_game_is_splitscreen_local())
+			player->bot = bots_machine_is_bot(source->machine_index);
+		else if (!player->bot && !global_network_game_server_get())
+		{
+			char machine[48];
+
+			machine[0] = 0;
+			if (source->machine_index >= 0 && source->machine_index < (short)NUMBEROF(game->machines) &&
+				game->machines[source->machine_index].machine_index == source->machine_index)
+				ae_lobby_utf16_to_utf8(machine, sizeof(machine),
+					(const unsigned short *)game->machines[source->machine_index].name,
+					NUMBEROF(game->machines[source->machine_index].name));
+			player->bot = ae_lobby_bot_by_names(machine, player->name);
+		}
 		if (player->bot)
 			player->local = player->host = 0;
 	}

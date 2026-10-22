@@ -41,8 +41,20 @@ void ae_lobby_roster_order(struct ae_lobby_roster *roster)
 		}
 		roster->players[place] = moving;
 	}
+	roster->people = 0;
 	for (index = 0; index < count; index++)
+	{
 		roster->players[index].slot = (short)(index + 1);
+		if (!roster->players[index].bot)
+			roster->people++;
+	}
+}
+
+int ae_lobby_bot_by_names(const char *machine_name, const char *player_name)
+{
+	if (machine_name && !strcmp(machine_name, "Bots"))
+		return 1;
+	return player_name && !strncmp(player_name, "BOT ", 4) && player_name[4];
 }
 
 /* a UTF-8 sequence's length from its first byte (1 for a stray continuation byte) */
