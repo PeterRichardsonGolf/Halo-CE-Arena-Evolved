@@ -422,10 +422,12 @@ static void dialog_draw(struct ae_screen *screen)
 	prompts[0].label = ae_string(AE_STR_SELECT);
 	prompts[0].key = NULL;
 	prompts[0].action = AE_ACTION_ACCEPT;
+	prompts[0].pair = 0;
 	prompts[1].button = AE_BUTTON_B;
 	prompts[1].label = ae_string(AE_STR_CANCEL);
 	prompts[1].key = NULL;
 	prompts[1].action = AE_ACTION_BACK;
+	prompts[1].pair = 0;
 	ae_widget_prompts(density, x, box.y + l.prompts_center, prompts, 2, NULL, x + inner, state->pressed, id);
 }
 
@@ -473,8 +475,10 @@ static void dialog_pointer(struct ae_screen *screen, struct ae_pointer const *po
 	memset(prompts, 0, sizeof(prompts));
 	prompts[0].button = AE_BUTTON_A;
 	prompts[0].action = AE_ACTION_ACCEPT;
+	prompts[0].pair = 0;
 	prompts[1].button = AE_BUTTON_B;
 	prompts[1].action = AE_ACTION_BACK;
+	prompts[1].pair = 0;
 	mine = ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == id;
 	/* (hover focuses a choice) */
 	if (pointer->moved && mine && hit.part == AE_PART_ROW && dialog_choice_valid(state, hit.index))

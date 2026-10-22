@@ -145,6 +145,7 @@ struct ae_prompt ae_flow_prompt(int button, const char *label, int action)
 	prompt.label = label;
 	prompt.key = NULL;
 	prompt.action = action;
+	prompt.pair = 0;
 	return prompt;
 }
 

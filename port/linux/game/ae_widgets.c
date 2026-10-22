@@ -594,6 +594,11 @@ static float more_line(struct ae_density const *density)
 	return more_size(density) * MORE_LINE;
 }
 
+float ae_list_view_rows_top(struct ae_density const *density, struct ae_list_view const *view, float y)
+{
+	return y + more_line(density) * ae_motion_value(&view->top);
+}
+
 void ae_list_view_init(struct ae_list_view *view, short count, short rows)
 {
 	memset(view, 0, sizeof(*view));

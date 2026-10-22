@@ -119,6 +119,7 @@ static struct ae_prompt prompt_of(int button, const char *label, int action)
 	prompt.label = label;
 	prompt.key = NULL;
 	prompt.action = action;
+	prompt.pair = 0;
 	return prompt;
 }
 
