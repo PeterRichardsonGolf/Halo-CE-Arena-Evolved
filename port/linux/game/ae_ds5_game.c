@@ -6,7 +6,7 @@ the platform side can drive (port/linux/src/ae_ds5.c):
 - the lightbar in the player's colour (the team's in a team game, the armour's otherwise; a campaign's Chief green),
   with the powerups (ae_ds5_lightbar), and the player lights the split-screen number;
 - R2 by the weapon in hand, its profile (ae_ds5_rules.c's table) from the tag's own numbers (rate of fire, charging,
-  heat a round, zoom levels, weapon type; AE's battle rifle by its own check) and the weapon's state each frame
+  heat a round, zoom levels, weapon type; AE's battle rifle by its own check, the weapon packs' by their pack) and the weapon's state each frame
   (heat, overheated, charge, a round in the last 5 ticks, reloading, empty, readying); each new round (the weapon's
   last-fired game time moved) is a shot the platform side turns into the profile's kick. In a vehicle, a gunner's
   seat takes the vehicle's weapon; any other seat has none;
@@ -31,6 +31,8 @@ rounds of each weapon.
 #include "cache/cache_files.h"
 #include "../src/ae_ds5.h"
 #include "ae_burst_rifle.h"
+#include "ae_weapon_pack.h"
+#include "ae_weapon_slots.h"
 #include "ae_juggernaut.h"
 #include "units/units.h"
 #include "units/unit_definitions.h"
@@ -79,7 +81,26 @@ static struct
 /* the first rounds of each weapon in hand are logged (to check the counting; the rest are counted by the platform) */
 #define ROUNDS_LOGGED 20
 
-/* a weapon definition's kind from its tag's numbers (and its first trigger, NULL: none) */
+/* the weapon pack a weapon definition comes from on the loaded map: its pack's slot (ae_weapon_slots.h), the stable
+key (the packs' weapons are told apart by the pack, never by their numbers) */
+static int definition_pack(long definition_index)
+{
+	switch (ae_weapon_pack_definition_slot(definition_index))
+	{
+	case AE_WEAPON_SLOT_BATTLE_RIFLE:
+		return AE_DS5_PACK_BATTLE_RIFLE;
+	case AE_WEAPON_SLOT_SMG:
+		return AE_DS5_PACK_SMG;
+	case AE_WEAPON_SLOT_SMG_SILENCED:
+		return AE_DS5_PACK_SMG_SILENCED;
+	case AE_WEAPON_SLOT_CARBINE:
+		return AE_DS5_PACK_CARBINE;
+	default:
+		return AE_DS5_PACK_NONE;
+	}
+}
+
+/* a weapon definition's kind from its tag's numbers and its pack (and its first trigger, NULL: none) */
 static enum ae_ds5_weapon_kind definition_kind(long definition_index, float *rate_of_fire,
 	struct weapon_trigger_definition **first_trigger)
 {
@@ -108,7 +129,7 @@ static enum ae_ds5_weapon_kind definition_kind(long definition_index, float *rat
 	*rate_of_fire = rate;
 	if (first_trigger)
 		*first_trigger = first;
-	return ae_ds5_weapon_kind(ae_burst_rifle_definition(definition_index),
+	return ae_ds5_weapon_kind(ae_burst_rifle_definition(definition_index), definition_pack(definition_index),
 		definition->weapon.weapon_type == _weapon_type_needler, rate, charging,
 		first ? first->heat_generated_per_round : 0.0f, definition->weapon.zoom_level_count, projectiles == 0,
 		definition->weapon.weapon_type == _weapon_type_plasma_rifle);
@@ -143,12 +164,14 @@ static void weapon_catalogue(void)
 		int magazine = magazine_definition ? magazine_definition->rounds_loaded_maximum : -1;
 
 		platform_log("dualsense: weapon tag %s: triggers %d, rate %.2f/s, charging %.2f s, heat %.3f a round, "
-			"zoom levels %d, type %d, magazine holds %d (chamber %.2f s, reload %.2f s) -> %s (%s)", name ? name : "?",
+			"zoom levels %d, type %d, magazine holds %d (chamber %.2f s, reload %.2f s), pack slot %d -> %s (%s)",
+			name ? name : "?",
 			(int)definition->weapon.triggers.count, (double)rate, first ? (double)first->charging_time : 0.0,
 			first ? (double)first->heat_generated_per_round : 0.0, (int)definition->weapon.zoom_level_count,
 			(int)definition->weapon.weapon_type, magazine,
 			magazine_definition ? (double)magazine_definition->chamber_time : 0.0,
-			magazine_definition ? (double)magazine_definition->reload_time : 0.0, ae_ds5_weapon_kind_name(kind),
+			magazine_definition ? (double)magazine_definition->reload_time : 0.0,
+			(int)ae_weapon_pack_definition_slot(tag_index), ae_ds5_weapon_kind_name(kind),
 			ae_ds5_profile_feel(kind));
 	}
 }

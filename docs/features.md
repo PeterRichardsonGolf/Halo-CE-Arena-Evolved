@@ -117,8 +117,11 @@ up to their build.
   pulses a burst. The weapon's state comes first: a settle as it is ready,
   slack with a bump as the magazine goes in, a dry click when empty, locked
   with a throb while overheated. In a vehicle the seat that fires the gun
-  feels it. L2 is the grenades (a jolt as one is thrown, a dry click with
-  none), light while zoomed. The lightbar takes your colour (your team's in
+  feels it. The weapon packs have their own: the SMG a fast buzz, the
+  silenced SMG a softer, lower one, the carbine a crisp click lighter than
+  the pistol's, the battle rifle a firm click and a pulse a round. L2 is the
+  grenades (a light click where the press counts, a short click as one is
+  thrown, a dry click with none), light while zoomed. The lightbar takes your colour (your team's in
   a team game), pulses while an overshield charges, dims with active
   camouflage and flashes when you become the juggernaut; or, with LIGHTBAR
   on SHIELD, it shows your shield as the HUD's meter does. The player lights
