@@ -51,8 +51,12 @@ enum
 	AE_ROW_BAR_BY_LIST = 1 << 6,                       /* the list draws the moving bar, the row not */
 	AE_ROW_HOVER_LEFT = 1 << 7, AE_ROW_HOVER_RIGHT = 1 << 8,
 	/* (with AE_ROW_BAR_BY_LIST) the moving bar overlaps the row: the row draws no background either */
-	AE_ROW_UNDER_BAR = 1 << 9
+	AE_ROW_UNDER_BAR = 1 << 9,
+	/* (0.3.7 SETTINGS, spec 3) a slider: the value in a 112 u column, its track (120 u, `slider` filled) left of it; a
+	sub-screen: the value a muted summary with a chevron, no arrows; a status: the value muted, read only, no arrows */
+	AE_ROW_SLIDER = 1 << 10, AE_ROW_SUBSCREEN = 1 << 11, AE_ROW_STATUS = 1 << 12
 };
+enum { AE_ROW_BADGES = 2 };
 struct ae_row
 {
 	const char *label;          /* UTF-8 */
@@ -63,6 +67,9 @@ struct ae_row
 	short tick_side;            /* value tick: -1, 1, 0 none */
 	struct ae_motion const *tick;
 	const char *old_value;      /* during a tick */
+	/* (0.3.7) muted outlined badges after the label and the changed dot (RESTART, THIS PC); NULL: none */
+	const char *badges[AE_ROW_BADGES];
+	float slider;               /* AE_ROW_SLIDER: the value's place on the track, 0 to 1 */
 };
 /* a row's parts (drawing units, x from the row's left) */
 struct ae_row_layout
@@ -75,6 +82,12 @@ struct ae_row_layout
 	and the AE badge are drawn (left out only when even an empty label leaves them no room) */
 	char base[160];
 	int dot, badge;
+	/* (0.3.7) the value as drawn (cut with "…" only when the label would be cut otherwise: the label first, spec 3),
+	the slider's track, the sub-screen's chevron, the badges after the AE badge */
+	char value[160];
+	float track_x, track_width, chevron_x;
+	float badges_x[AE_ROW_BADGES], badges_width[AE_ROW_BADGES];
+	int badge_count;
 };
 void ae_row_layout(struct ae_density const *density, float width, struct ae_row const *row,
 	struct ae_row_layout *layout);

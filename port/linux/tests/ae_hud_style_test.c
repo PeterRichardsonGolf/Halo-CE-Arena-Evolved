@@ -24,6 +24,13 @@ unsigned long config_changes(void)
 	return changes;
 }
 
+/* (the per-player readers' count: one player here) */
+unsigned long ae_config_player_changes(void);
+unsigned long ae_config_player_changes(void)
+{
+	return changes;
+}
+
 static void set_style(const char *value)
 {
 	hud_style_value = value;

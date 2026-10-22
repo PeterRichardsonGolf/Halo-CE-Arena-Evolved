@@ -102,25 +102,38 @@ static void rows(struct density_case const *c)
 	int index;
 
 	allowance = 2.0f * d.pixel;
-	/* long text: label cut, value whole */
+	/* long text: the label first (settings spec 3): the value is cut ("…") before the label, but never under a third
+	of its width; the label is cut only then */
 	memset(&row, 0, sizeof(row));
 	row.label = "AN EXTREMELY LONG DISPLAY NAME THAT GOES ON";
 	row.value = "TEAM AE COMP SLAYER";
 	ae_row_layout(&d, width, &row, &layout);
-	CHECK(layout.label_cut && strstr(layout.label, "\xE2\x80\xA6"));
 	CHECK(layout.label_x + layout.label_width <= layout.value_x - 16 * d.unit + 0.01f);
 	CHECK(near(layout.value_x + layout.value_width, width - d.metrics->pad * d.unit, 0.01f));
+	CHECK(!strcmp(layout.value, row.value) || strstr(layout.value, "\xE2\x80\xA6"));
+	CHECK(!layout.label_cut || strstr(layout.value, "\xE2\x80\xA6"));
+	CHECK(layout.value_width >= ae_draw_text_width(AE_FONT_ROW, ae_size_text(&d), row.value) / 4.0f);
 	ae_widget_row(&d, 0, 0, width, &row, 1, 0);
-	CHECK(ae_stub_find_text("TEAM AE COMP SLAYER", 0) >= 0);         /* never shortened */
-	CHECK(ae_stub_find_text(layout.label, 0) >= 0 && ae_stub_find_text(row.label, 0) < 0);
+	CHECK(ae_stub_find_text(layout.value, 0) >= 0);
+	CHECK(ae_stub_find_text(layout.label, 0) >= 0);
 	/* (the drawn label ends before the value, its ink allowed 2 px) */
 	call = text_call(layout.label);
 	CHECK(call && call->x + call->width <= layout.value_x - 16 * d.unit + allowance);
+	/* a label that fits beside the whole value is never cut, and the value is whole */
+	row.label = "BUTTON LAYOUT";
+	row.value = "SWAP A, L TRIGGER";
+	ae_row_layout(&d, width, &row, &layout);
+	if (ae_draw_text_width(AE_FONT_ROW, ae_size_text(&d), row.label) + ae_draw_text_width(AE_FONT_ROW,
+		ae_size_text(&d), row.value) + (16.0f + 2.0f * d.metrics->pad) * d.unit < width)
+		CHECK(!layout.label_cut && !strcmp(layout.value, row.value));
+	else
+		CHECK(!layout.label_cut || strstr(layout.value, "\xE2\x80\xA6"));
+	row.label = "AN EXTREMELY LONG DISPLAY NAME THAT GOES ON";
+	row.value = "TEAM AE COMP SLAYER";
 	/* the same with focus (arrows) and changed (struck base, dot): the label still clear of the right block */
 	row.flags = AE_ROW_FOCUSED | AE_ROW_CHANGED | AE_ROW_AE;
 	row.base_value = "TEAM AE CASUAL SLAYER";
 	ae_row_layout(&d, width, &row, &layout);
-	CHECK(layout.label_cut);
 	/* (the indicators and the label stay clear of the right block: the base value shortened or left out first) */
 	CHECK(layout.label_x + layout.label_width <= (layout.base[0] ? layout.base_x : layout.arrow_left_x) - 16 * d.unit +
 		0.01f);
@@ -129,21 +142,22 @@ static void rows(struct density_case const *c)
 	CHECK(!layout.base[0] || !strcmp(layout.base, row.base_value) || strstr(layout.base, "\xE2\x80\xA6"));
 	CHECK(layout.arrow_left_x + layout.arrow_cell <= layout.value_x + 0.01f &&
 		layout.value_x + layout.value_width <= layout.arrow_right_x + 0.01f);
-	/* a value wider than the row: whole, but clipped inside the row's padding */
+	/* a value wider than the row: cut ("…") as far as the label needs, clipped inside the row's padding; the label
+	drawn whole */
 	ae_stub_reset(1920, c->window_height);
 	if (c->view)
 		ae_draw_view(0, 0, 960, 540);
 	memset(&row, 0, sizeof(row));
 	row.label = "X";
 	row.value = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW";
+	ae_row_layout(&d, width, &row, &layout);
 	ae_widget_row(&d, 0, 0, width, &row, 1, 0);
-	call = text_call(row.value);
-	CHECK(call && call->width > width);
+	call = text_call(layout.value);
+	CHECK(call && strstr(layout.value, "\xE2\x80\xA6"));
 	CHECK(call && call->clipped && call->clip[0] >= 0.0f && call->clip[2] <= width &&
 		near(call->clip[0], d.metrics->pad * d.unit - allowance, 0.01f) &&
 		near(call->clip[2], width - d.metrics->pad * d.unit + allowance, 0.01f));
-	/* the label had no room: drawn as nothing rather than over the value */
-	CHECK(ae_stub_find_text("X", 0) < 0);
+	CHECK(ae_stub_find_text("X", 0) >= 0);
 	/* the value's hit is cut to the row (none left of it) */
 	{
 		struct ae_view view;
@@ -153,7 +167,7 @@ static void rows(struct density_case const *c)
 		ae_hits_clear();
 		ae_widget_row(&d, 0, 0, width, &row, 1, 0);
 		ae_draw_current_view(&view);
-		ae_view_to_layout(&view, 1.0f, 10.0f, &lx, &ly);
+		ae_view_to_layout(&view, layout.value_x + layout.value_width * 0.5f, 10.0f, &lx, &ly);
 		CHECK(ae_hit_at(lx, ly, 0, &hit) && hit.part == AE_PART_VALUE && hit.rect.x >= view.x - 0.01f);
 		ae_view_to_layout(&view, -1.0f, 10.0f, &lx, &ly);
 		CHECK(!ae_hit_at(lx, ly, 0, &hit) || hit.rect.x >= view.x - 0.01f);
