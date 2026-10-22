@@ -74,11 +74,11 @@ int main(void)
 	CHECK(roster.people == 0);
 	/* a joiner's word for a bot: the virtual machine's name, or "BOT " before the player's */
 	CHECK(ae_lobby_bot_by_names("Bots", "Wilma"));
-	CHECK(ae_lobby_bot_by_names("Josh", "BOT Fred"));
-	CHECK(!ae_lobby_bot_by_names("Josh", "Josh"));
+	CHECK(ae_lobby_bot_by_names("Alice", "BOT Fred"));
+	CHECK(!ae_lobby_bot_by_names("Alice", "Alice"));
 	CHECK(!ae_lobby_bot_by_names("Bots2", "Bottle"));
-	CHECK(!ae_lobby_bot_by_names("Josh", "BOT "));
-	CHECK(!ae_lobby_bot_by_names("Josh", "BOTTOM"));
+	CHECK(!ae_lobby_bot_by_names("Alice", "BOT "));
+	CHECK(!ae_lobby_bot_by_names("Alice", "BOTTOM"));
 	CHECK(!ae_lobby_bot_by_names(NULL, NULL));
 	/* (an empty roster, a count out of range) */
 	memset(&roster, 0, sizeof(roster));
