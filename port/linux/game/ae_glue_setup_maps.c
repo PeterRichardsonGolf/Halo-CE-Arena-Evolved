@@ -46,8 +46,6 @@ realloc and free are the game's checked ones: stb_image allocates and frees with
 
 
 void platform_log(char const *format, ...);
-/* platform.h's (a game path, d:\\maps\\x.map, as the host's) */
-void platform_translate_path(const char *xbox_path, char *host_path, unsigned long host_path_size);
 /* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
 short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
 void ui_widget_port_multiplayer_maps_refresh(void);
@@ -122,8 +120,9 @@ static int has_tag(char const *tags, char const *tag)
 }
 
 /* ---------- the facts: read on a worker thread and kept for the session (an Xbox map's tags are inflated to be
-read: 150-250 ms a map, up to 1.5 s, which stalled the menus when read a few a frame). The worker reads host paths
-with stdio (ae_mapinfo_read) and nothing of the game's; the menus' thread only queues and copies under the lock */
+read: 150-250 ms a map, up to 1.5 s, which stalled the menus when read a few a frame). The worker reads the files
+with stdio (ae_mapinfo_read: the port's fopen, which makes a game path the host's) and nothing else of the game's;
+the menus' thread only queues and copies under the lock */
 
 enum { FACTS_PENDING, FACTS_DONE };
 
@@ -354,6 +353,17 @@ static void *facts_worker(void *unused)
 		pthread_mutex_unlock(&reader.lock);
 		memset(&info, 0, sizeof(info));
 		ok = host[0] && ae_mapinfo_read(host, &info) == AE_MAPINFO_OK;
+		/* (the first that can't be read, said once: its host path) */
+		{
+			static int said;
+
+			if (!ok && !said)
+			{
+				said = 1;
+				platform_log("ae change map: facts: '%s' unreadable (family %d, '%s')", reader.maps[index].file,
+					info.family, host);
+			}
+		}
 		/* (entries are only ever added: index still names this one) */
 		pthread_mutex_lock(&reader.lock);
 		reader.maps[index].ok = ok;
@@ -380,8 +390,9 @@ static short facts_queue(char const *list_name)
 	{
 		snprintf(reader.maps[index].file, AE_SETUP_MAP_TEXT, "%s", list_name);
 		reader.maps[index].host[0] = 0;
+		/* (the game's path: the port's fopen, which ae_mapinfo_read calls, makes it the host's itself) */
 		if (map_path(list_name, path, sizeof(path)))
-			platform_translate_path(path, reader.maps[index].host, PATH_SIZE);
+			snprintf(reader.maps[index].host, PATH_SIZE, "%s", path);
 		reader.maps[index].state = FACTS_PENDING;
 		reader.count++;
 	}
