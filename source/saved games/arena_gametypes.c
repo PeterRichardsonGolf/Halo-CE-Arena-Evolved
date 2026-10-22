@@ -72,8 +72,8 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
-	past it: revisions 11, 16 and 17 only added seeds) */
-	ARENA_GAMETYPES_REVISION = 21,
+	past it: revisions 11, 16, 17 and 22 only added seeds) */
+	ARENA_GAMETYPES_REVISION = 22,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -196,6 +196,10 @@ enum
 	ARENA_CTF_SCORE = 3,
 	/* King's and Oddball's minutes held */
 	ARENA_TIMED_SCORE = 5,
+	/* the AE BTB set's (revision 22; owner, 2026-10-22): big team slayer's
+	kills, and every BTB gametype's time limit, minutes */
+	ARENA_BTB_SLAYER_SCORE = 100,
+	ARENA_BTB_TIME_LIMIT = 20,
 	/* Halo 1: NHE's respawns and suicide penalties, ticks: 5 seconds, its
 	objective gametypes' "hacked" 7.5 (the stock editor cannot set it; the
 	gametype editor shows it: menu_functions.c's respawn spinner) and 10 */
@@ -479,6 +483,9 @@ static void arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crou
 static void arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down(
 	struct game_variant *variant,
 	struct game_variant_options *options);
+static void arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles(
+	struct game_variant *variant,
+	struct game_variant_options *options);
 
 /* ---------- globals */
 
@@ -582,6 +589,34 @@ static struct arena_gametype const arena_gametypes[] =
 		.weapon_set = ARENA_WEAPONS_HEAVY, .loadout_primary = ARENA_SET(_loadout_weapon_rocket_launcher),
 		.loadout_secondary = ARENA_SET(_loadout_weapon_assault_rifle), .hit_feedback = 1, .starting_frags = ARENA_AE_STARTING_FRAGS,
 		.adjust = arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down },
+	/* AE BTB (revision 22; owner, 2026-10-22): big team games (8 against 8), each the AE casual team gametype's row
+	(AE TEAM SLY, AE CTF, AE KING, AE TEAM OB: TIMERS HUD + WAYPOINTS, DROP SECONDARY ALWAYS, the stock respawns, the
+	motion sensor's enemies at 10 m, a pistol and an assault rifle, 2 frags, no death bonus or kill penalty in the
+	slayers, CONTROLLER CROUCH STAYS DOWN) with BTB's numbers: 100 kills, 3 captures, 5 minutes in the hill or with
+	the ball, 20 minutes; the map's own vehicles (ARENA_VEHICLES_DEFAULT). HEAVIES: big team slayer with the heavy
+	vehicles, each team's set CUSTOM (rocket warthogs and scorpions, as many as the map places, at most 4 each:
+	arena_gametype_..._heavy_vehicles); the map's weapons. CTF's flag returns after Halo CE's own 17 s untouched
+	(game_engine_ctf.c CTF_FLAG_RETURN_TIME: no gametype field) */
+	{ "AE BTB SLY", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_BTB_SLAYER_SCORE,
+		ARENA_BTB_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .hit_feedback = 1,
+		.starting_frags = ARENA_AE_STARTING_FRAGS,
+		.adjust = arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BTB CTF", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_CTF_SCORE, ARENA_BTB_TIME_LIMIT,
+		ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .hit_feedback = 1,
+		.starting_frags = ARENA_AE_STARTING_FRAGS,
+		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BTB KING", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_TIMED_SCORE,
+		ARENA_BTB_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, .starting_frags = ARENA_AE_STARTING_FRAGS,
+		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BTB BALL", build_game_variant_team_oddball, ARENA_LATER_FLAGS, ARENA_TIMED_SCORE, ARENA_BTB_TIME_LIMIT,
+		ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS,
+		.ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, .starting_frags = ARENA_AE_STARTING_FRAGS,
+		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BTB HVY", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_BTB_SLAYER_SCORE,
+		ARENA_BTB_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .hit_feedback = 1,
+		.starting_frags = ARENA_AE_STARTING_FRAGS,
+		.adjust = arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles },
 	/* the stock free for all gametypes on the casual set's rules (revision 8;
 	owner, 2026-10-11): each keeps its own score, lives, ball or hill, weapon
 	set, vehicles and motion sensor (the ARENA_*_STOCK values), and adds the
@@ -664,6 +699,26 @@ static struct arena_gametype const arena_gametypes[] =
 		ARENA_VEHICLES_NONE, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS,
 		.hit_feedback = 1, .adjust = arena_gametype_controller_crouch_stays_down },
 	{ "AE COMP OB", build_game_variant_team_oddball, ARENA_COMP_OBJECTIVE_FLAGS, ARENA_TIMED_SCORE, ARENA_TIME_LIMIT,
+		ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS,
+		.ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1,
+		.adjust = arena_gametype_controller_crouch_stays_down },
+	/* AE COMP 2V2 (revision 22; owner, 2026-10-22): AE COMP's team gametypes for two against two, each its AE COMP
+	row (5 second respawns, 2 frags, no motion sensor, no vehicles, TIMERS LINE OF SIGHT, the objective only in line
+	of sight) with the AE 2V2 set's scores: 25 kills, 3 captures, 5 minutes in the hill or with the ball */
+	{ "AE C2V2 TS", build_game_variant_team_slayer, ARENA_COMP_FLAGS,
+		25, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, TRUE, .starting_frags = ARENA_COMP_STARTING_FRAGS, .hit_feedback = 1,
+		.adjust = arena_gametype_no_speed_changes_and_controller_crouch_stays_down },
+	{ "AE C2V2 CTF", build_game_variant_ctf, ARENA_COMP_OBJECTIVE_FLAGS,
+		ARENA_CTF_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS,
+		.hit_feedback = 1, .adjust = arena_gametype_controller_crouch_stays_down },
+	{ "AE C2V2 KOH", build_game_variant_team_king, ARENA_COMP_OBJECTIVE_FLAGS,
+		ARENA_TIMED_SCORE, ARENA_TIME_LIMIT, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF,
+		ARENA_VEHICLES_NONE, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS,
+		.hit_feedback = 1, .adjust = arena_gametype_controller_crouch_stays_down },
+	{ "AE C2V2 OB", build_game_variant_team_oddball, ARENA_COMP_OBJECTIVE_FLAGS, ARENA_TIMED_SCORE, ARENA_TIME_LIMIT,
 		ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .starting_frags = ARENA_COMP_STARTING_FRAGS,
 		.ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1,
@@ -754,6 +809,41 @@ static struct arena_gametype const arena_gametypes[] =
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START,
 		.adjust = arena_gametype_controller_crouch_stays_down },
 	{ "AE BR C OB", build_game_variant_team_oddball, ARENA_COMP_OBJECTIVE_FLAGS, ARENA_TIMED_SCORE, ARENA_TIME_LIMIT,
+		ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START,
+		.adjust = arena_gametype_controller_crouch_stays_down },
+	/* revision 22 (owner, 2026-10-22): the AE BTB set's and the AE COMP 2V2 set's battle rifle versions, each its
+	twin's row with ARENA_BR_START */
+	{ "AE BR BTB S", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_BTB_SLAYER_SCORE,
+		ARENA_BTB_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .hit_feedback = 1,
+		ARENA_BR_START, .adjust = arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BR BTB C", build_game_variant_ctf, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_CTF_SCORE, ARENA_BTB_TIME_LIMIT,
+		ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .hit_feedback = 1, ARENA_BR_START,
+		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BR BTB K", build_game_variant_team_king, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_TIMED_SCORE,
+		ARENA_BTB_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START,
+		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BR BTB B", build_game_variant_team_oddball, ARENA_LATER_FLAGS, ARENA_TIMED_SCORE, ARENA_BTB_TIME_LIMIT,
+		ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .goal_radar = ARENA_GOAL_NAV_POINTS,
+		.ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START,
+		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down },
+	{ "AE BR BTB H", build_game_variant_team_slayer, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, ARENA_BTB_SLAYER_SCORE,
+		ARENA_BTB_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_DEFAULT, TRUE, .hit_feedback = 1,
+		ARENA_BR_START,
+		.adjust = arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles },
+	{ "AE BR C2 TS", build_game_variant_team_slayer, ARENA_COMP_FLAGS,
+		25, 0, ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.hit_feedback = 1, ARENA_BR_START, .adjust = arena_gametype_no_speed_changes_and_controller_crouch_stays_down },
+	{ "AE BR C2CTF", build_game_variant_ctf, ARENA_COMP_OBJECTIVE_FLAGS, ARENA_CTF_SCORE, ARENA_TIME_LIMIT,
+		ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START,
+		.adjust = arena_gametype_controller_crouch_stays_down },
+	{ "AE BR C2KOH", build_game_variant_team_king, ARENA_COMP_OBJECTIVE_FLAGS, ARENA_TIMED_SCORE, ARENA_TIME_LIMIT,
+		ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
+		.goal_radar = ARENA_GOAL_NAV_POINTS, .hit_feedback = 1, ARENA_BR_START,
+		.adjust = arena_gametype_controller_crouch_stays_down },
+	{ "AE BR C2 OB", build_game_variant_team_oddball, ARENA_COMP_OBJECTIVE_FLAGS, ARENA_TIMED_SCORE, ARENA_TIME_LIMIT,
 		ARENA_COMPETITIVE_RESPAWN, ARENA_COMPETITIVE_RESPAWN, ARENA_RADAR_OFF, ARENA_VEHICLES_NONE, TRUE,
 		.goal_radar = ARENA_GOAL_NAV_POINTS, .ball_melee = ARENA_BALL_MELEE_LETHAL, .hit_feedback = 1, ARENA_BR_START,
 		.adjust = arena_gametype_controller_crouch_stays_down },
@@ -935,8 +1025,9 @@ easier to track; 10 m in every AE gametype with the motion sensor on. Revision
 grenades off too (owner 10-21 ask-me: OCTAGON DRILLS map grenades OFF).
 Revision 21 (tools/ae_gametype_change.py): CONTROLLER CROUCH STAYS DOWN in
 every AE gametype: a controller's held crouch keeps you down at full stick;
-the NHE set keeps HALO CE. A row whose old and new names are the same is a
-value update (in place, under its name).
+the NHE set keeps HALO CE. Revision 22 has no migration (it only added the AE
+BTB set, the AE COMP 2V2 set and their battle rifle versions). A row whose old
+and new names are the same is a value update (in place, under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =
@@ -4642,6 +4733,15 @@ static struct
 	{ "AE BR C CTF", "AE COMP CTF" },
 	{ "AE BR C KOH", "AE COMP KOH" },
 	{ "AE BR C OB", "AE COMP OB" },
+	{ "AE BR BTB S", "AE BTB SLY" },
+	{ "AE BR BTB C", "AE BTB CTF" },
+	{ "AE BR BTB K", "AE BTB KING" },
+	{ "AE BR BTB B", "AE BTB BALL" },
+	{ "AE BR BTB H", "AE BTB HVY" },
+	{ "AE BR C2 TS", "AE C2V2 TS" },
+	{ "AE BR C2CTF", "AE C2V2 CTF" },
+	{ "AE BR C2KOH", "AE C2V2 KOH" },
+	{ "AE BR C2 OB", "AE C2V2 OB" },
 };
 
 /* the migrations whose old row no longer builds as its old_block_hash says
@@ -6569,6 +6669,32 @@ static void arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades
 {
 	arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades(variant, options);
 	SET_FLAG(variant->universal_variant.flags, _game_variant_controller_crouch_bit, TRUE);
+
+	return;
+}
+
+/* revision 22 (owner, 2026-10-22): AE BTB HEAVIES: big team slayer with the
+heavy vehicles: each team's vehicle set CUSTOM with rocket warthogs and
+scorpions, as many of each as the map places, at most
+MAXIMUM_VARIANT_VEHICLE_COUNT (game_engine_vehicle_placement_allowed; a map
+without rocket warthogs, the Xbox maps, places its scorpions only), no other
+vehicle. arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down,
+then options.vehicle_set and options.vehicle_counts. Shipped: never edited (a
+change is a new function) */
+static void arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles(
+	struct game_variant *variant,
+	struct game_variant_options *options)
+{
+	short side;
+
+	arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down(variant, options);
+	for (side = 0; side < 2; side++)
+	{
+		csmemset(options->vehicle_counts[side], 0, sizeof(options->vehicle_counts[side]));
+		options->vehicle_set[side] = VARIANT_VEHICLE_SET_CUSTOM;
+		options->vehicle_counts[side][_variant_vehicle_rocket_warthog] = MAXIMUM_VARIANT_VEHICLE_COUNT;
+		options->vehicle_counts[side][_variant_vehicle_scorpion] = MAXIMUM_VARIANT_VEHICLE_COUNT;
+	}
 
 	return;
 }

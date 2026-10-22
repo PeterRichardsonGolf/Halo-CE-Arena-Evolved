@@ -23,7 +23,7 @@ def migration_rows(text):
 
 
 def test_reads_the_table():
-    assert len(SOURCE.rows) == 94
+    assert len(SOURCE.rows) == 112
     assert SOURCE.fields[:10] == ["name", "build", "flags", "score_to_win", "time_limit", "respawn_time",
                                   "suicide_penalty", "radar", "vehicle_set", "custom_loadout"]
     assert SOURCE.fields[-1] == "adjust"
@@ -37,7 +37,7 @@ def test_reads_the_table():
     assert row.value("weapon_set") is None
     assert row.macro_values["weapon_pack"] == ("ARENA_OCTAGON_BR_PRIMARY", "_weapon_pack_battle_rifle")
     assert "ARENA_OCTAGON_BR_PRIMARY" in row.designated_items()
-    assert len(SOURCE.twins) == 25
+    assert len(SOURCE.twins) == 34
     assert set(SOURCE.catalog) >= set(SOURCE.by_name)
     assert SOURCE.columns["universal_variant.respawn_time_growth"] == ("variant", "universal_variant.respawn_time_growth",
                                                                        "_audit_long")
@@ -65,10 +65,11 @@ def test_designated_form_matches_the_frozen_rows():
 
 def test_selection():
     br_slayers = change.select(SOURCE, ["AE BR&slayer"])
-    assert len(br_slayers) == 9 and all(n.startswith("AE BR ") for n in br_slayers)
+    assert len(br_slayers) == 12 and all(n.startswith("AE BR ") for n in br_slayers)
     assert len(change.select(SOURCE, ["NHE&ctf"])) == 9
     assert change.select(SOURCE, ["ae ffa snpr"]) == ["AE FFA SNPR"]
-    assert change.select(SOURCE, ["AE COMP&team"]) == ["AE COMP TS", "AE COMP CTF", "AE COMP KOH", "AE COMP OB"]
+    assert change.select(SOURCE, ["AE COMP&team"]) == ["AE COMP TS", "AE COMP CTF", "AE COMP KOH", "AE COMP OB",
+                                                       "AE C2V2 TS", "AE C2V2 CTF", "AE C2V2 KOH", "AE C2V2 OB"]
     names, added = change.add_twins(SOURCE, ["AE TEAM SLY", "AE FFA SNPR"])
     assert added == ["AE BR TS"] and names == ["AE TEAM SLY", "AE FFA SNPR", "AE BR TS"]
     with pytest.raises(SystemExit):

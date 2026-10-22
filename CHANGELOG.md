@@ -6,9 +6,19 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- AE BTB, big team games for 8 against 8 (seed revision 22, added on the first start; nothing else changes): TEAM
+  AE BTB SLAYER (100 kills), TEAM AE BTB CTF (3 captures), TEAM AE BTB KING and TEAM AE BTB ODDBALL (5 minutes held),
+  each with a 20-minute time limit and the map's own vehicles, on AE's casual team rules; and TEAM AE BTB HEAVIES, big
+  team slayer with rocket warthogs and scorpions for both teams where the map has them (the Xbox maps have no rocket
+  warthog: there, their scorpions only). Each has its battle rifle version (TEAM AE BR BTB SLAYER, ...).
+- AE COMP 2V2 (seed revision 22): TEAM AE COMP 2V2 SLAYER (25 kills), CTF, KING and ODDBALL, the AE COMP rules (5
+  second respawns, 2 frags, no motion sensor, no vehicles, objectives only in line of sight) for two against two, each
+  with its battle rifle version.
 - The gametype lists are sorted into playlist folders: AE FFA, AE 2V2, AE 4V4, AE BTB, AE ACTION SACK (the party and
   weapon modes) and AE PRACTICE, then Halo 1: NHE's (they were AE CASUAL, AE COMP, AE PARTY, AE WEAPONS and AE
   PRACTICE).
+- The AE BR gametypes' descriptions said the pistol is second; it is an assault rifle (since the two-frag
+  update in 0.3.3), and they now say so.
 - A save can hold 200 saved games (was 160), so the 112 seeded gametypes, the built-in ones, your profiles and your own
   gametypes all fit; the new menus list every gametype (they stopped at 128).
 - DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT's hair-trigger break is easier to

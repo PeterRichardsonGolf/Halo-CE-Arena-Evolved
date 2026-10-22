@@ -19,7 +19,13 @@ sys.path.insert(0, str(HERE))
 OCTAGON_SEEDS = ("AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN")
 # and revision 17's (their team versions)
 TEAM_OCTAGON_SEEDS = ("AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG", "AE OCT TMSN")
-ADDED_SEEDS = OCTAGON_SEEDS + TEAM_OCTAGON_SEEDS
+# and revision 22's (the AE BTB set, the AE COMP 2V2 set, their battle rifle versions)
+BTB_SEEDS = ("AE BTB SLY", "AE BTB CTF", "AE BTB KING", "AE BTB BALL", "AE BTB HVY")
+COMP_2V2_SEEDS = ("AE C2V2 TS", "AE C2V2 CTF", "AE C2V2 KOH", "AE C2V2 OB")
+BR_22_SEEDS = ("AE BR BTB S", "AE BR BTB C", "AE BR BTB K", "AE BR BTB B", "AE BR BTB H", "AE BR C2 TS", "AE BR C2CTF",
+               "AE BR C2KOH", "AE BR C2 OB")
+REVISION_22_SEEDS = BTB_SEEDS + COMP_2V2_SEEDS + BR_22_SEEDS
+ADDED_SEEDS = OCTAGON_SEEDS + TEAM_OCTAGON_SEEDS + REVISION_22_SEEDS
 # (OpenCE's asset-free tests, tools/harness, are a package of the same name,
 # imported by it too: ours while these tools are imported, then the name is
 # theirs again, whichever tests one pytest run collects first)
@@ -511,7 +517,7 @@ class SeedCompare(unittest.TestCase):
         golden = json.loads((HERE / "golden_seeds_rev11.json").read_text())
         self.assertEqual(sorted(golden), sorted(seeds))
         self.assertEqual(len(seeds), 86)
-        twins = dict(re.findall(r'\{ "(AE BR [^"]+)", "([^"]+)" \},', source))
+        twins = {n: t for n, t in re.findall(r'\{ "(AE BR [^"]+)", "([^"]+)" \},', source) if n not in ADDED_SEEDS}
         self.assertEqual(len(twins), 25)
         for name, twin in twins.items():
             self.assertIn(twin, golden, name)
@@ -720,6 +726,87 @@ class SeedCompare(unittest.TestCase):
             ffa_want, ffa_spawn, _ = seed_rules.ROWS[ffa]
             self.assertEqual((want["loadout"], want["weapon pack"], spawn),
                              (ffa_want["loadout"], ffa_want["weapon pack"], ffa_spawn), team)
+
+    def test_btb_and_comp_2v2(self):
+        """revision 22 (owner, 2026-10-22): the AE BTB set and the AE COMP 2V2 set, each with its battle rifle version,
+        added seeds (no migration). Each BTB gametype is its AE casual team gametype's row with 20 minutes, the map's
+        own vehicles and BTB's score (slayer 100); BTB HEAVIES team slayer with each team's vehicles CUSTOM (rocket
+        warthogs and scorpions, arena_gametype_..._heavy_vehicles). Each COMP 2V2 gametype is its AE COMP team
+        gametype's row (the slayer to 25). golden_seeds_rev22.json is a fresh revision 22 root: revision 21's 94 files as
+        they were, in their folders, and the 18 new ones; seed_rules expects them"""
+        import re
+        import seed_rules
+        source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text(encoding="latin-1")
+        self.assertGreaterEqual(int(re.search(r"ARENA_GAMETYPES_REVISION = (\d+),", source)[1]), 22)
+        migrations = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
+        self.assertNotIn(".revision = 22,", migrations)
+        table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
+        # (each row as one line, the comments after it left out)
+        rows = {n: re.sub(r"\s+", " ", re.sub(r"/\*.*?\*/", "", b, flags=re.S)).strip()
+                for n, b in re.findall(r'^\t\{ "([^"]+)",(.*?)(?=^\t\{ "|^\};)', table, re.M | re.S)}
+        bases = {"AE BTB SLY": "AE TEAM SLY", "AE BTB CTF": "AE CTF", "AE BTB KING": "AE KING", "AE BTB BALL": "AE TEAM OB",
+                 "AE BTB HVY": "AE TEAM SLY", "AE C2V2 TS": "AE COMP TS", "AE C2V2 CTF": "AE COMP CTF",
+                 "AE C2V2 KOH": "AE COMP KOH", "AE C2V2 OB": "AE COMP OB"}
+        def same(name, base, swaps):
+            text = rows[base]
+            for old, new in swaps:
+                text = text.replace(old, new, 1)
+            # (the rows wrap otherwise: compare without spaces)
+            self.assertEqual(rows[name].replace(" ", ""), text.replace(" ", ""), name)
+        btb = [("ARENA_TIME_LIMIT", "ARENA_BTB_TIME_LIMIT"), ("ARENA_VEHICLES_STOCK", "ARENA_VEHICLES_DEFAULT")]
+        same("AE BTB SLY", "AE TEAM SLY", [("ARENA_TEAM_SLAYER_SCORE", "ARENA_BTB_SLAYER_SCORE")] + btb)
+        same("AE BTB CTF", "AE CTF", btb)
+        same("AE BTB KING", "AE KING", btb)
+        same("AE BTB BALL", "AE TEAM OB", btb)
+        same("AE BTB HVY", "AE TEAM SLY", [("ARENA_TEAM_SLAYER_SCORE", "ARENA_BTB_SLAYER_SCORE")] + btb +
+             [("controller_crouch_stays_down", "controller_crouch_stays_down_and_heavy_vehicles")])
+        same("AE C2V2 TS", "AE COMP TS", [("ARENA_TEAM_SLAYER_SCORE", "25")])
+        for name in ("AE C2V2 CTF", "AE C2V2 KOH", "AE C2V2 OB"):
+            same(name, bases[name], [])
+        heavy = source[source.index("static void arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_"
+                                    "crouch_stays_down_and_heavy_vehicles(\n\tstruct game_variant *variant,\n"
+                                    "\tstruct game_variant_options *options)\n{"):]
+        heavy = heavy[:heavy.index("\n}\n")]
+        for line in ("arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down(variant, "
+                     "options);", "options->vehicle_set[side] = VARIANT_VEHICLE_SET_CUSTOM;",
+                     "options->vehicle_counts[side][_variant_vehicle_rocket_warthog] = MAXIMUM_VARIANT_VEHICLE_COUNT;",
+                     "options->vehicle_counts[side][_variant_vehicle_scorpion] = MAXIMUM_VARIANT_VEHICLE_COUNT;"):
+            self.assertIn(line, heavy)
+        # (the battle rifle versions: twins in the self-check's table, ARENA_BR_START)
+        twins = dict(re.findall(r'\{ "(AE BR [^"]+)", "([^"]+)" \},', source))
+        self.assertEqual({n: twins[n] for n in BR_22_SEEDS}, {n: t for n, t in seed_rules.BR_TWINS_22.items()})
+        for name in BR_22_SEEDS:
+            self.assertIn("ARENA_BR_START", rows[name], name)
+        golden = json.loads((HERE / "golden_seeds_rev22.json").read_text())
+        golden_rev21 = json.loads((HERE / "golden_seeds_rev21.json").read_text())
+        self.assertEqual(sorted(golden), sorted(list(golden_rev21) + list(REVISION_22_SEEDS)))
+        for name, value in golden_rev21.items():
+            self.assertEqual(golden[name], value, name)
+        self.assertEqual(len({golden[n]["folder"] for n in golden}), len(golden))
+        for name in ("AE BTB SLY", "AE BTB HVY", "AE C2V2 TS", "AE BR BTB S", "AE BR BTB H", "AE BR C2 TS"):
+            self.assertEqual((golden[name]["slayer"]["no_death_bonus"], golden[name]["slayer"]["no_kill_penalty"]),
+                             (1, 1), name)
+        # (each new one other than its base's file, and each battle rifle version other than its twin's; but the COMP
+        # 2V2 CTF, KING and ODDBALL play their AE COMP gametype's rules under their own name, as AE 2V2 CTF plays AE
+        # CTF's: their content, which leaves the name out, is the same)
+        same_rules = ("AE C2V2 CTF", "AE C2V2 KOH", "AE C2V2 OB")
+        for name, base in list(bases.items()) + list(seed_rules.BR_TWINS_22.items()):
+            if name in same_rules:
+                self.assertEqual(golden[name]["content"], golden[base]["content"], name)
+                self.assertNotEqual(golden[name]["file"], golden[base]["file"], name)
+            else:
+                self.assertNotEqual(golden[name]["content"], golden[base]["content"], name)
+        self.assertEqual(golden["AE 2V2 CTF"]["content"], golden["AE CTF"]["content"])
+        for name in REVISION_22_SEEDS:
+            want, _, _ = seed_rules.ROWS[name]
+            self.assertEqual(want["controller crouch"], "stays down", name)
+        for name in BTB_SEEDS:
+            want = seed_rules.ROWS[name][0]
+            self.assertEqual((want["time limit"], want["vehicle set"], want["radar players"]),
+                             ("20 min", "0", "enemies"), name)
+        self.assertEqual(seed_rules.ROWS["AE BTB SLY"][0]["score to win"], "100")
+        self.assertEqual(seed_rules.ROWS["AE BTB HVY"][0]["vehicle sets"], "default (red custom, blue custom)")
+        self.assertEqual(seed_rules.ROWS["AE C2V2 TS"][0]["score to win"], "25")
 
 
 class Debug(unittest.TestCase):
@@ -974,9 +1061,9 @@ class Handshake(unittest.TestCase):
 
 class SeedRules(unittest.TestCase):
     def test_table_and_parse(self):
-        """seed_rules.py: the 94 seeds, and a run's rules lines read back field by field"""
+        """seed_rules.py: the 112 seeds, and a run's rules lines read back field by field"""
         import seed_rules
-        self.assertEqual(len(seed_rules.ROWS), 94)
+        self.assertEqual(len(seed_rules.ROWS), 112)
         for name in seed_rules.ROWS:
             self.assertLessEqual(len(name), 11, name)
         text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
@@ -990,7 +1077,7 @@ class SeedRules(unittest.TestCase):
         self.assertEqual(f["ball melee"], "lethal")
         # (revision 7: LETHAL on the four AE oddball seeds, STOCK on every other; revision 11: and their AE BR twins)
         lethal = {"AE FFA BALL", "AE TEAM OB", "AE 2V2 BALL", "AE COMP OB", "AE BR FBALL", "AE BR TM OB", "AE BR 2V2 B",
-                  "AE BR C OB"}
+                  "AE BR C OB", "AE BTB BALL", "AE BR BTB B", "AE C2V2 OB", "AE BR C2 OB"}
         for name, (want, _, _) in seed_rules.ROWS.items():
             self.assertEqual(want["ball melee"], "lethal" if name in lethal else "stock", name)
         self.assertEqual((f["engine"], f["respawn"], f["timers"], f["loadout"], f["drop secondary"]),
@@ -1015,19 +1102,21 @@ class SeedRules(unittest.TestCase):
                                                                    twin_frags), name)
                 differ = {k for k in set(want) | set(twin_want) if want.get(k) != twin_want.get(k)}
                 self.assertEqual(differ, {"loadout", "weapon pack", "pack loadout primary"}, name)
-        self.assertEqual(len(seed_rules.BR_TWINS), 25)
+        self.assertEqual(len(seed_rules.BR_TWINS), 34)
         # (revision 12: PLAYERS ON RADAR ENEMIES on the AE team seeds with players on the motion sensor and their
         # AE BR twins, and revision 17's team drills, nowhere else; the free for all ones and the NHE set keep theirs)
         enemies = {name for name, (want, _, _) in seed_rules.ROWS.items() if want["radar players"] == "enemies"}
-        self.assertEqual(enemies, set(seed_rules.RADAR_ENEMIES) | set(TEAM_OCTAGON_SEEDS) |
+        # (and revision 22's BTB set and its battle rifle versions, from the AE team gametypes)
+        btb = set(BTB_SEEDS) | {br for br, twin in seed_rules.BR_TWINS_22.items() if twin in BTB_SEEDS}
+        self.assertEqual(enemies, set(seed_rules.RADAR_ENEMIES) | set(TEAM_OCTAGON_SEEDS) | btb |
                          {br for br, twin in seed_rules.BR_TWINS.items() if twin in seed_rules.RADAR_ENEMIES})
-        self.assertEqual(len(enemies), 23)
+        self.assertEqual(len(enemies), 33)
         for name in enemies:
             self.assertIn("(teams)", seed_rules.ROWS[name][0]["engine"], name)
         # (revision 14: every slayer seed without the death bonus and the kill penalty, 38 of them, 46 with revisions
-        # 16 and 17's OCTAGON drills; kill in order only in the Phantoms ones)
+        # 16 and 17's OCTAGON drills, 52 with revision 22's; kill in order only in the Phantoms ones)
         slayers = {name: want for name, (want, _, _) in seed_rules.ROWS.items() if want["engine"].startswith("slayer")}
-        self.assertEqual(len(slayers), 46)
+        self.assertEqual(len(slayers), 52)
         for name, want in slayers.items():
             self.assertEqual((want["death bonus"], want["kill penalty"]), ("off", "off"), name)
         self.assertEqual(sorted(n for n, want in slayers.items() if want["kill in order"] == "on"),

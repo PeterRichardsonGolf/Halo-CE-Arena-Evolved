@@ -89,7 +89,6 @@ def test_pc_menus_and_test_launcher_hold_it():
         assert not re.search(r"(indices|gametypes)\[128\]|GAMETYPES_MAXIMUM = 128|gametypes, 128,", source), name
     assert "GAMETYPES_MAXIMUM = AE_SAVED_GAMES_MAXIMUM," in (game / "ae_screen_create_game.c").read_text()
     assert not re.search(r"#define MAXIMUM_GAMETYPES \d", text)
-    assert not re.search(r"#define MAXIMUM_GAMETYPES \d", text)
     text = NETWORK_TEST.read_text()
     assert "long indices[AE_SAVED_GAMES_MAXIMUM]; /* AE hook */" in text
     assert "long indices[128];" not in text
@@ -110,7 +109,7 @@ def test_seeds_leave_room():
     """a seeded root (the seeds, the built-in entries, a few profiles and own gametypes) stays under the warning, and
     every gametype the memory unit can list fits the lists"""
     count = len(seeds())
-    assert count == 94
+    assert count == 112
     assert count + BUILT_IN + ROOM_PROFILES + ROOM_OWN <= maximum() - 10
     # (one profile: the start's own state is under the warning)
     assert count + BUILT_IN + 1 < maximum() - 10
@@ -122,10 +121,13 @@ def test_record_fits():
     """the record of the seeded names (each "NAME\\n" after "#revision N\\n") fits its buffer. A fresh root's stayed
     under the length builds before the migrations read (ARENA_GAMETYPES_RECORD_OLD_LIMIT) until revision 17's four
     seeds took it past (arena_gametypes_seed logs a warning: such a build, 0.1.0-beta's, would seed its own gametypes
-    again, never over a file)"""
+    again, never over a file). Revision 22's 112 seeds: about 1.3 KB of the 2 KB, every old name too, with room for
+    another 40 or so"""
     text = ARENA.read_text()
     size = int(re.search(r"ARENA_GAMETYPES_RECORD_SIZE = (\d+)", text)[1])
     table = text[text.index("arena_gametype_migrations[] ="):text.index("arena_gametype_test_migration =")]
     old_names = set(re.findall(r'\.old_row = \{\s*\.name = "([^"]+)"', table)) - set(seeds())
     fresh = len("#revision 11\n") + sum(len(n) + 1 for n in seeds())
     assert fresh + sum(len(n) + 1 for n in old_names) < size
+    # (and room left: 40 more 11-character seeds)
+    assert fresh + sum(len(n) + 1 for n in old_names) + 40 * 12 < size

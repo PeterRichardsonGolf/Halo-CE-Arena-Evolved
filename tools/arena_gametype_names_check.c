@@ -13,7 +13,7 @@ tables):
 - every alias's successor in the table; an alias's info its successor's set,
   order, team and engine, its own stored name as display_name, no
   description, not special;
-- the sets: AE 30, AE BR 25, AE COMP 5, OCTAGON 8, NHE 25, TRAINING 1 (94), each set's orders
+- the sets: AE 35, AE BR 34, AE COMP 9, OCTAGON 8, NHE 25, TRAINING 1 (112), each set's orders
   0..n-1 in the table's order, NHE's own set after VANILLA and POWERUPS
   (TS 50 first, CTF WIZARD last), and the set names;
 - lookups letters' case aside; an unknown name FALSE, displayed as it is;
@@ -99,7 +99,7 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 25, 5, 8, 25, 1 };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 35, 34, 9, 8, 25, 1 };
 	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] =
 		{ "", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
@@ -110,8 +110,8 @@ int main(void)
 	wchar_t display[40];
 
 	/* the table */
-	if (arena_gametype_catalog_count() != 94)
-		fail("catalog count is not 94", "");
+	if (arena_gametype_catalog_count() != 112)
+		fail("catalog count is not 112", "");
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -370,7 +370,7 @@ int main(void)
 		{
 			char const *const expected_names[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] =
 				{ "", "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK" };
-			short const expected_category_counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0, 10, 8, 16, 0, 24, 11, 25, 0 };
+			short const expected_category_counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0, 10, 16, 16, 10, 24, 11, 25, 0 };
 
 			for (category = 0; category < NUMBER_OF_ARENA_GAMETYPE_CATEGORIES; category++)
 			{

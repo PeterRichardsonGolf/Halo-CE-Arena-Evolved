@@ -298,6 +298,31 @@ for _name, (_want, _, _) in ROWS.items():
 for _name in ("AE FFA SLAY", "AE TEAM SLY", "AE CTF", "AE KING", "AE FFA BALL", "AE 2V2 SLY", "AE 2V2 CTF", "AE 2V2 KING", "AE 2V2 BALL", "AE TEAM OB", "AE PRACTICE", "AE SNIPERS", "AE SHOTSNIP", "AE SWAT", "AE ROCKETS", "AE SHOTGUNS", "AE HEAVIES", "AE ELIM", "AE PHANTOMS", "AE ENDURE", "AE FFA ROCK", "AE FFA SNPR", "AE JUGGER", "AE REV TAG", "AE ACCUM", "AE STALKER", "AE FFA KING", "AE CRAZYKNG", "AE RACE", "AE RALLY", "AE TRAINING", "AE COMP FFA", "AE COMP TS", "AE COMP CTF", "AE COMP KOH", "AE COMP OB", "AE BR FFA", "AE BR ELIM", "AE BR PHANT", "AE BR ENDUR", "AE BR FBALL", "AE BR JUGG", "AE BR RTAG", "AE BR ACCUM", "AE BR STALK", "AE BR FKING", "AE BR CKING", "AE BR PRAC", "AE BR C FFA", "AE BR TS", "AE BR CTF", "AE BR KING", "AE BR TM OB", "AE BR 2V2 S", "AE BR 2V2 C", "AE BR 2V2 K", "AE BR 2V2 B", "AE BR C TS", "AE BR C CTF", "AE BR C KOH", "AE BR C OB", "AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG", "AE OCT TMSN",):
     ROWS[_name][0].update({"controller crouch": "stays down"})
 
+# revision 22 (owner, 2026-10-22): added seeds, no migration. The AE BTB set: each its AE casual team gametype's row
+# (AE TEAM SLY, AE CTF, AE KING, AE TEAM OB) with 20 minutes, the map's own vehicles (vehicle set 0) and BTB's scores
+# (slayer 100 kills); AE BTB HVY big team slayer with each team's vehicles CUSTOM (rocket warthogs and scorpions).
+# The AE COMP 2V2 set: each its AE COMP team gametype's row, the slayer to 25. Each with its battle rifle version
+_BTB = {"time limit": "20 min", "vehicle set": "0", "vehicle sets": "default (red default, blue default)"}
+BTB_SEEDS = {"AE BTB SLY": ("AE TEAM SLY", {"score to win": "100"}), "AE BTB CTF": ("AE CTF", {}),
+             "AE BTB KING": ("AE KING", {}), "AE BTB BALL": ("AE TEAM OB", {}),
+             "AE BTB HVY": ("AE TEAM SLY", {"score to win": "100",
+                                            "vehicle sets": "default (red custom, blue custom)"})}
+COMP_2V2_SEEDS = {"AE C2V2 TS": ("AE COMP TS", {"score to win": "25"}), "AE C2V2 CTF": ("AE COMP CTF", {}),
+                  "AE C2V2 KOH": ("AE COMP KOH", {}), "AE C2V2 OB": ("AE COMP OB", {})}
+for _name, (_base, _changes) in BTB_SEEDS.items():
+    _want, _spawn, _frags = ROWS[_base]
+    ROWS[_name] = (dict(_want, **dict(_BTB, **_changes)), _spawn, _frags)
+for _name, (_base, _changes) in COMP_2V2_SEEDS.items():
+    _want, _spawn, _frags = ROWS[_base]
+    ROWS[_name] = (dict(_want, **_changes), _spawn, _frags)
+BR_TWINS_22 = {"AE BR BTB S": "AE BTB SLY", "AE BR BTB C": "AE BTB CTF", "AE BR BTB K": "AE BTB KING",
+               "AE BR BTB B": "AE BTB BALL", "AE BR BTB H": "AE BTB HVY", "AE BR C2 TS": "AE C2V2 TS",
+               "AE BR C2CTF": "AE C2V2 CTF", "AE BR C2KOH": "AE C2V2 KOH", "AE BR C2 OB": "AE C2V2 OB"}
+for _name, _twin in BR_TWINS_22.items():
+    _want, _spawn, _frags = ROWS[_twin]
+    ROWS[_name] = (dict(_want, **BR_START), "battle_rifle + pistol", _frags)
+BR_TWINS.update(BR_TWINS_22)
+
 
 def check(runs, prefix):
     """{name: (passed, problems)} for every seed run under runs/<prefix><name, spaces as _>/*/debug.txt"""

@@ -44,7 +44,7 @@ enum arena_gametype_category
 	_arena_gametype_category_ffa,          /* AE FFA: slayer, king, oddball, COMP FFA, snipers, rockets */
 	_arena_gametype_category_2v2,          /* AE 2V2: the 2v2s and the COMP 2V2 set */
 	_arena_gametype_category_4v4,          /* AE 4V4: team slayer, CTF, king, oddball and the team COMP set */
-	_arena_gametype_category_btb,          /* AE BTB: the big team set (none yet) */
+	_arena_gametype_category_btb,          /* AE BTB: the big team set (revision 22) */
 	_arena_gametype_category_action_sack,  /* AE ACTION SACK: phantoms, juggernaut, ... SWAT, the weapon modes */
 	_arena_gametype_category_practice,     /* AE PRACTICE: practice, training, the OCTAGON drills */
 	_arena_gametype_category_nhe,          /* Halo 1: NHE's */
