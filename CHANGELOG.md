@@ -4,8 +4,13 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
-## Unreleased
+## 0.3.6-beta - 2026-10-21
 
+- Bots see an enemy above or below a ledge by the head, and aim at it: they no longer ignore someone shooting down
+  at them.
+- A gametype a map cannot play (King on a map with no hills) falls back to Slayer with a Slayer score (50 kills, 25
+  in 1v1 and 2v2), not the mode's own small score.
+- Discord's activity is off by default until Arena Evolved has its own Discord application (it showed ChupathingyCE's).
 - The pause menu's box is whole with five buttons (a hosted team game's: CHANGE TEAMS, SETTINGS, END GAME): its
   bottom edge was cut off, the B and A prompts below it.
 - Weapon packs: a gametype can name several packs at once (the battle rifle's, and next the Halo 2 SMG's, silenced
