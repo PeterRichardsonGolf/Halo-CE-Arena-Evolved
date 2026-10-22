@@ -821,7 +821,7 @@ static const struct config_setting config_settings[] =
 		"(Slayer, CTF, Oddball, King of the Hill, Race) and in the LAN and\n"
 		"internet games you host (debug.network_bots): they join its lobby with\n"
 		"the players, as far as the game has room. The menus' BOTS row goes to\n"
-		"15, this to 127. 0: none, as in the stock game." },
+		"31, this to 127. 0: none, as in the stock game." },
 	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all, /* AE hook */
 		"How well the bots play: \"recruit\" (for new players), \"easy\", \"normal\",\n"
 		"\"heroic\", \"legendary\" or \"demon\" (how soon they react, how well they\n"
