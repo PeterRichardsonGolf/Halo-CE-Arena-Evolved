@@ -557,7 +557,8 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	if (lan.starting && network_bots && eligible)
 	{
 		short extra = (short)ae_lan_bots_start_extra(game->variant.universal_variant.teams != 0,
-			bots_teams() == _bots_teams_against, target, (int)others, game->maximum_players, capacity);
+			bots_teams() == _bots_teams_against, target, (int)others, game->maximum_players, capacity,
+			(int)ae_lan_bots_server_playerless_machines(server));
 
 		if (extra)
 			platform_log("net bots: one more bot at the start, for even teams (%ld players and %d bots)", others, target);

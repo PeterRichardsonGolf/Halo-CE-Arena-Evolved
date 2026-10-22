@@ -60,8 +60,10 @@ slot of the game left free (other_players: the game's players that are not bots)
 int ae_lan_bots_target(int wanted, int eligible, int other_players, int maximum_players, int capacity);
 
 /* (debug.network_bots) the bots added at the start: 1 in a team game (not bots.teams "against") whose players
-(other_players and bots) are odd, when the free slot and a seat are there, else 0 */
-int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players, int maximum_players, int capacity);
+(other_players and bots) are odd, when the free slot and a seat are there and no machine that joined is still to add
+its player (playerless_machines: the free slot is that player's), else 0 */
+int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players, int maximum_players, int capacity,
+	int playerless_machines);
 
 /* the virtual machine a new bot sits on: the first of `count` (their bots in counts) with a free seat; `count` for
 a new one when fewer than AE_NET_BOTS_MACHINES; -1 for none */

@@ -48,9 +48,10 @@ int ae_lan_bots_target(int wanted, int eligible, int other_players, int maximum_
 	return count < 0 ? 0 : count;
 }
 
-int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players, int maximum_players, int capacity)
+int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players, int maximum_players, int capacity,
+	int playerless_machines)
 {
-	if (!teams || against || bots <= 0 || ((bots + other_players) & 1) == 0)
+	if (!teams || against || bots <= 0 || ((bots + other_players) & 1) == 0 || playerless_machines > 0)
 		return 0;
 	return bots < capacity && bots + other_players < maximum_players ? 1 : 0;
 }

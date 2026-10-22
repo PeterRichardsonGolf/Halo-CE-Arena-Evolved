@@ -1669,6 +1669,7 @@ static void network_game_server_port_bots(
 		network_event("network_game_server_port_bots() failed to send updated game settings to clients");
 }
 
+long ae_lan_bots_server_playerless_machines(struct network_game_server *server) { long count = 0, index; for (index = 0; server && index < MAXIMUM_NETWORK_MACHINE_COUNT; index++) if (server->client_machines[index].connection && server->client_machines[index].machine_index != NONE && !network_game_server_client_machine_is_local(server, &server->client_machines[index]) && !network_game_server_machine_has_players(server, server->client_machines[index].machine_index)) count++; return count; } /* AE hook */
 boolean ae_lan_bots_server_slot_free(struct network_game_server *server, long machine_index) { return server && VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) && server->client_machines[machine_index].machine_index == NONE && !network_machine_is_valid(&server->game.machines[machine_index]); } /* AE hook */
 
 boolean network_game_server_idle(

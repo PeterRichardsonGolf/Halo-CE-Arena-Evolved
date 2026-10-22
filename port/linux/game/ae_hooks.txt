@@ -556,6 +556,7 @@ port/linux/game/menu_functions.c	if (ae_lan_bots_network_player(player)) { text[
 source/networking/network_server_manager.c	if (server->client_machines[i].machine_index == NONE && !ae_lan_bots_machine_held(i)) /* AE hook */
 source/networking/network_server_manager.c	ae_lan_bots_start(server, &server->game); /* AE hook */
 source/networking/network_server_manager.c	boolean ae_lan_bots_server_slot_free(struct network_game_server *server, long machine_index) { return server && VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) && server->client_machines[machine_index].machine_index == NONE && !network_machine_is_valid(&server->game.machines[machine_index]); } /* AE hook */
+source/networking/network_server_manager.c	long ae_lan_bots_server_playerless_machines(struct network_game_server *server) { long count = 0, index; for (index = 0; server && index < MAXIMUM_NETWORK_MACHINE_COUNT; index++) if (server->client_machines[index].connection && server->client_machines[index].machine_index != NONE && !network_game_server_client_machine_is_local(server, &server->client_machines[index]) && !network_game_server_machine_has_players(server, server->client_machines[index].machine_index)) count++; return count; } /* AE hook */
 port/linux/src/port_config.c	{ "debug.network_bots", _config_boolean, "true", "HALO_NETWORK_BOTS", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.h	#define BOTS_BRAINS 127 /* AE hook */
 port/linux/game/bots.c	struct bots_bot bots[BOTS_BRAINS]; /* AE hook */

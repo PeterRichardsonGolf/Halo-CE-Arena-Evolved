@@ -100,17 +100,21 @@ static void test_capacity(void)
 static void test_start_extra(void)
 {
 	/* 1 person + 14 bots of 16: the fifteenth bot, 8 against 8 */
-	CHECK(ae_lan_bots_start_extra(1, 0, 14, 1, 16, 127) == 1);
+	CHECK(ae_lan_bots_start_extra(1, 0, 14, 1, 16, 127, 0) == 1);
 	/* 2 people + 13 bots: the fourteenth */
-	CHECK(ae_lan_bots_start_extra(1, 0, 13, 2, 16, 127) == 1);
+	CHECK(ae_lan_bots_start_extra(1, 0, 13, 2, 16, 127, 0) == 1);
 	/* even already, FFA, "against", no bots, no room, no seat: none */
-	CHECK(ae_lan_bots_start_extra(1, 0, 13, 1, 16, 127) == 0);
-	CHECK(ae_lan_bots_start_extra(0, 0, 14, 1, 16, 127) == 0);
-	CHECK(ae_lan_bots_start_extra(1, 1, 14, 1, 16, 127) == 0);
-	CHECK(ae_lan_bots_start_extra(1, 0, 0, 1, 16, 127) == 0);
-	CHECK(ae_lan_bots_start_extra(1, 0, 15, 2, 16, 127) == 0);
-	CHECK(ae_lan_bots_start_extra(1, 0, 14, 1, 15, 127) == 0);
-	CHECK(ae_lan_bots_start_extra(1, 0, 14, 1, 16, 14) == 0);
+	CHECK(ae_lan_bots_start_extra(1, 0, 13, 1, 16, 127, 0) == 0);
+	CHECK(ae_lan_bots_start_extra(0, 0, 14, 1, 16, 127, 0) == 0);
+	CHECK(ae_lan_bots_start_extra(1, 1, 14, 1, 16, 127, 0) == 0);
+	CHECK(ae_lan_bots_start_extra(1, 0, 0, 1, 16, 127, 0) == 0);
+	CHECK(ae_lan_bots_start_extra(1, 0, 15, 2, 16, 127, 0) == 0);
+	CHECK(ae_lan_bots_start_extra(1, 0, 14, 1, 15, 127, 0) == 0);
+	CHECK(ae_lan_bots_start_extra(1, 0, 14, 1, 16, 14, 0) == 0);
+	/* (Codex review) host + 14 bots of 16, a machine joined as the countdown ended, its player not added yet: the
+	free slot is that player's, no bot takes it */
+	CHECK(ae_lan_bots_start_extra(1, 0, 14, 1, 16, 127, 1) == 0);
+	CHECK(ae_lan_bots_start_extra(1, 0, 13, 2, 16, 127, 2) == 0);
 }
 
 static void test_pick_machine(void)

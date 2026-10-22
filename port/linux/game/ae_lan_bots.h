@@ -38,6 +38,10 @@ void ae_lan_bots_start(struct network_game_server *server, struct network_game *
 host's own controllers, with no connection): network_game_server_add_new_client gives a new connection another */
 boolean ae_lan_bots_machine_held(long machine_index);
 
+/* (network_server_manager.c, an AE hook line) the client machines (connected or joined, not the host's own) with no
+player in the game yet: a machine that joined adds its player a moment later (the countdown does not wait for it) */
+long ae_lan_bots_server_playerless_machines(struct network_game_server *server);
+
 /* (network_server_manager.c, an AE hook line) whether a machine slot is free for a virtual machine: no connection
 holds it and the game has no machine there */
 boolean ae_lan_bots_server_slot_free(struct network_game_server *server, long machine_index);
