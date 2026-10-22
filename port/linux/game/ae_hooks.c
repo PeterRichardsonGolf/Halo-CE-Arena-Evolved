@@ -20,6 +20,7 @@ screen is open.
 #include "ae_screen_gallery.h"
 #include "ae_screen_game_options.h"
 #include "ae_screen_change_map.h"
+#include "ae_screen_create_game.h"
 #include "ae_glue_ce_maps.h"
 #include "ae_glue_lobby.h"
 #include "ae_screen_lobby_test.h"
@@ -251,12 +252,18 @@ boolean ae_ui_process(
 		/* (the game setup spike's GAME OPTIONS: the last used gametype, or $HALO_AE_TEST_GAMETYPE's) */
 		else if (views == 30)
 			ae_screen_game_options_open(NULL);
+		/* (its CREATE GAME, as F3 or a pad's BACK opens it on the main menu) */
+		else if (views == 32)
+			ae_screen_create_game_open();
 		/* (its CHANGE MAP: the filter $HALO_AE_TEST_MAP_FILTER, 0-6, else ALL) */
 		else if (views == 31)
 			ae_screen_change_map_open(getenv("HALO_AE_TEST_MAP_FILTER") ? atoi(getenv("HALO_AE_TEST_MAP_FILTER")) : 0);
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
+	/* (the game setup spike: F3 or a pad's BACK on the main menu opens CREATE GAME) */
+	if (test_screen_checked && ae_draw_available())
+		ae_screen_create_game_entry(ae_platform_keys());
 	/* (a timed revert counts down and reverts covered or hidden too; a waiting error opens) */
 	ae_dialog_tick();
 	/* (the lobby glue's join going on, its session's owner checked; the lobby drives: in the menus and in the game) */

@@ -1,0 +1,1057 @@
+/*
+AE_SCREEN_CREATE_GAME.C
+
+The game setup spike's CREATE GAME and LOBBY screens (ae_screen_create_game.h; the mockup's boards 1 and 3,
+https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD). Both are rows on the left, as the gallery's lobby page; positions
+are fractions of the frame, sizes u.
+
+CREATE GAME: MAP (CHANGE MAP for the gametype's filter; its pick comes back here), GAMETYPE (the saved gametypes'
+picker: a new copy), GAME OPTIONS (N CHANGED: the GAME OPTIONS screen on the copy), TIME LIMIT and the score in place,
+NETWORK (PLAY ON THIS PC, LAN, HOST ONLINE), START GAME. START GAME hosts (ae_lobby_host), waits for this PC's client
+(10 s at most), adds player 1, chooses the map, applies the copy (ae_setup_edit_apply) and opens the LOBBY. B closes
+it: the game's main menu comes back.
+
+LOBBY (AE's pregame screen: ae_lobby_set_pregame_screen): MAP and GAMETYPE as in CREATE GAME, QUICK OPTIONS (time,
+score, shield type, primary weapon with a custom loadout, grenades on map, sensor range, respawn time: stepped in place
+and applied to the server at once, PREGAME), START GAME; the roster's cards on the right. START GAME starts and takes
+every AE screen off the stack while the game plays; the take-over (ae_lobby_take_pregame_ui) brings the LOBBY back
+after it. B asks, then leaves the session and goes back to CREATE GAME. The quick options change the session's copy:
+they last to the next game, the saved gametype is never written.
+
+Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "hosted, player 1 in", "start failed:
+<why>", "lobby: open", "lobby: quick <label> <value>", "lobby: start", "lobby: leave", "closed".
+*/
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "cseries.h"
+#include "cseries/cseries_windows.h"
+#include "input/input.h"
+#include "halo_ui_map_list.h"
+#include "../src/ae_draw.h"
+#include "../src/ae_platform.h"
+#include "ae_glue_lobby.h"
+#include "ae_glue_setup_options.h"
+#include "ae_hooks.h"
+#include "ae_screen_change_map.h"
+#include "ae_screen_create_game.h"
+#include "ae_screen_game_options.h"
+#include "ae_setup_maps.h"
+#include "ae_setup_options.h"
+#include "ae_sound.h"
+#include "ae_strings.h"
+#include "ae_ui.h"
+#include "ae_widgets.h"
+
+void platform_log(char const *format, ...);
+/* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
+short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
+boolean ui_widget_port_multiplayer_map_choose(short level_index);
+/* ui_widget.c (its header needs the game's math types first: as ae_hooks.c declares them) */
+boolean main_menu_is_active(void);
+void ui_widgets_close_all(void);
+void main_screen_shell_load(void);
+
+enum
+{
+	FLOW_HIT = 0x7F00,
+	HIT_ROWS = FLOW_HIT + 1, HIT_PROMPTS, HIT_CARDS,
+	ROWS_MAXIMUM = 16,
+	PROMPTS = 6,
+	GAMETYPES_MAXIMUM = 128,
+	JOIN_WAIT_MS = 10000
+};
+enum { NETWORK_LOCAL, NETWORK_LAN, NETWORK_ONLINE, NETWORKS };
+enum { ROW_MAP, ROW_GAMETYPE, ROW_OPTIONS, ROW_OPTION, ROW_NETWORK, ROW_START, ROW_HEADER };
+enum { START_IDLE, START_JOINING, START_DONE };
+
+/* the frame's positions (fractions of 1920 x 1080 at 100 %) */
+#define TITLE_Y (70.0f / 1080.0f)
+#define RULE_Y (156.0f / 1080.0f)
+#define CONTENT_Y (190.0f / 1080.0f)
+#define ROWS_WIDTH 0.46f
+#define PANEL_X (1095.0f / 1920.0f)
+/* sizes, u */
+#define TITLE_U 60.0f
+#define CRUMB_U 20.0f
+#define CRUMB_TRACKING 0.09f
+#define RULE_U 1.0f
+#define HELP_GAP_U 28.0f
+#define CARD_GAP_U 8.0f
+#define INSET_U 23.0f
+#define FOOTER_ABOVE_U 62.0f
+#define FOOTER_ROOM_U 40.0f
+
+static const char *const network_names[NETWORKS] = { "PLAY ON THIS PC", "LAN", "HOST ONLINE" };
+static const char *const network_helps[NETWORKS] = {
+	"Split screen on this PC. Nobody else can join.",
+	"Players on your network join from their game list.",
+	"Hosted for the internet too: invite players with your game's code."
+};
+static const int network_kinds[NETWORKS] = { AE_LOBBY_LOCAL, AE_LOBBY_LAN, AE_LOBBY_ONLINE };
+
+/* a row as drawn: what it is, its option (ROW_OPTION), its texts */
+struct flow_row { short kind, option; const char *label, *value, *help; };
+
+/* what both screens share: the look, the rows, the prompts */
+struct flow_screen
+{
+	struct ae_density density;
+	struct ae_frame frame;
+	struct flow_row rows[ROWS_MAXIMUM];
+	short count, focus;
+	struct ae_rect rects[ROWS_MAXIMUM];   /* layout units, as last drawn */
+	struct ae_prompt prompts[PROMPTS];
+	short prompt_count;
+	char value_texts[ROWS_MAXIMUM][48];
+};
+
+static struct
+{
+	struct flow_screen flow;
+	short map_index;
+	char map_name[64];
+	int network;
+	/* the gametypes' picker (its values outlive the picker: static) */
+	char gametype_names[GAMETYPES_MAXIMUM][16];
+	const char *gametype_values[GAMETYPES_MAXIMUM];
+	long gametype_profiles[GAMETYPES_MAXIMUM];
+	short gametype_count;
+	/* START GAME's steps */
+	int start_step;
+	unsigned long start_since;
+	int menus_closed;          /* the game's menus closed by this screen: brought back when it closes */
+	int starting;              /* a start under way: leaving does not bring the game's menus back */
+} create;
+
+static struct
+{
+	struct flow_screen flow;
+	struct ae_lobby_roster roster;
+	int have_roster;
+	unsigned long roster_at;
+	int options_open;          /* GAME OPTIONS opened from here: its changes applied when it closes */
+	int leaving;
+} lobby;
+
+static struct ae_screen_class const create_class, lobby_class;
+
+/* ---------- the look */
+
+static float u(struct flow_screen const *flow, float spec_units)
+{
+	return spec_units * flow->frame.unit;
+}
+
+static float left_x(struct flow_screen const *flow)
+{
+	return flow->frame.rect.x + flow->frame.margin;
+}
+
+static float right_x(struct flow_screen const *flow)
+{
+	return flow->frame.rect.x + flow->frame.rect.width - flow->frame.margin;
+}
+
+static float cap_top(int font, float size, float center_y)
+{
+	return center_y - ae_draw_cap_height(font, size) * 0.5f;
+}
+
+static void full_density(struct flow_screen *flow)
+{
+	struct ae_layout layout;
+	float scale = ae_settings_ui_scale();
+
+	ae_draw_current_layout(&layout);
+	ae_density_full(layout.height * layout.scale, scale, &flow->density);
+	ae_frame_compute(layout.width, scale, &flow->frame);
+}
+
+static void title(struct flow_screen *flow, const char *text, const char *crumb)
+{
+	float size = u(flow, TITLE_U), top = ae_frame_y(&flow->frame, TITLE_Y), crumb_size = u(flow, CRUMB_U);
+	float middle = top + ae_draw_cap_height(AE_FONT_TITLE, size) * 0.5f;
+
+	ae_draw_text(AE_FONT_TITLE, size, left_x(flow), top, AE_ALIGN_LEFT, AE_COLOR_TITLE, text);
+	ae_draw_text_tracked(AE_FONT_BODY, crumb_size, CRUMB_TRACKING, right_x(flow), cap_top(AE_FONT_BODY, crumb_size,
+		middle), AE_ALIGN_RIGHT, AE_COLOR_TEXT, crumb);
+	ae_draw_rect(left_x(flow), ae_frame_y(&flow->frame, RULE_Y), right_x(flow) - left_x(flow), u(flow, RULE_U), 0.0f,
+		AE_COLOR_RULE);
+}
+
+static float content_bottom(struct flow_screen const *flow)
+{
+	return flow->frame.rect.height - u(flow, FOOTER_ABOVE_U) - u(flow, FOOTER_ROOM_U);
+}
+
+/* the rows from CONTENT_Y down, the focus's lit; the focused row's help under them (2 lines) */
+static void draw_rows(struct flow_screen *flow, float width)
+{
+	struct ae_density const *d = &flow->density;
+	float x = left_x(flow), y = ae_frame_y(&flow->frame, CONTENT_Y), gap = u(flow, d->metrics->gap);
+	float body = u(flow, d->metrics->body), line = u(flow, d->metrics->body_line), help_y;
+	char lines[2][160];
+	short index;
+	int count;
+
+	for (index = 0; index < flow->count; index++)
+	{
+		struct flow_row const *row = &flow->rows[index];
+		struct ae_row widget;
+
+		if (row->kind == ROW_HEADER)
+		{
+			y += ae_widget_group(d, x, y, width, row->label);
+			flow->rects[index].width = 0.0f;
+			continue;
+		}
+		memset(&widget, 0, sizeof(widget));
+		widget.label = row->label;
+		widget.value = row->value;
+		if (index == flow->focus)
+			widget.flags |= AE_ROW_FOCUSED;
+		if (row->kind == ROW_OPTION && ae_setup_row(row->option) && ae_setup_row(row->option)->ae)
+			widget.flags |= AE_ROW_AE;
+		if (row->kind == ROW_OPTION)
+		{
+			struct ae_setup_access access;
+
+			ae_setup_edit_access(&access);
+			if (access.changed(access.context, row->option))
+			{
+				widget.flags |= AE_ROW_CHANGED;
+				widget.base_value = ae_setup_value_text(row->option, ae_setup_edit_base(row->option));
+			}
+		}
+		flow->rects[index].x = x;
+		flow->rects[index].y = y;
+		flow->rects[index].width = width;
+		flow->rects[index].height = ae_widget_row(d, x, y, width, &widget, HIT_ROWS, index);
+		y += flow->rects[index].height + gap;
+	}
+	help_y = content_bottom(flow) - line * 2.0f;
+	if (flow->focus < 0 || flow->focus >= flow->count || !flow->rows[flow->focus].help || help_y < y + u(flow, HELP_GAP_U))
+		return;
+	ae_draw_rect(x, help_y - u(flow, HELP_GAP_U) * 0.5f, width, u(flow, RULE_U), 0.0f, AE_COLOR_RULE);
+	count = ae_wrap_text(AE_FONT_BODY, body, flow->rows[flow->focus].help, width, lines, 2);
+	for (index = 0; index < count; index++)
+		ae_draw_text(AE_FONT_BODY, body, x, help_y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
+}
+
+static void draw_prompts(struct flow_screen *flow)
+{
+	ae_widget_prompts(&flow->density, left_x(flow), flow->frame.rect.height - u(flow, FOOTER_ABOVE_U), flow->prompts,
+		flow->prompt_count, NULL, right_x(flow), -1, HIT_PROMPTS);
+}
+
+static struct ae_prompt prompt_of(int button, const char *label, int action)
+{
+	struct ae_prompt prompt;
+
+	prompt.button = button;
+	prompt.label = label;
+	prompt.key = NULL;
+	prompt.action = action;
+	return prompt;
+}
+
+/* up / down past headers; returns whether it moved */
+static int focus_step(struct flow_screen *flow, short direction, int repeat)
+{
+	short next = flow->focus;
+
+	do
+		next = (short)(next + direction);
+	while (next >= 0 && next < flow->count && flow->rows[next].kind == ROW_HEADER);
+	if (next < 0 || next >= flow->count)
+		return 0;
+	flow->focus = next;
+	ae_sound_request(AE_SOUND_CURSOR, repeat);
+	return 1;
+}
+
+/* the pointer over the rows: hover focuses; returns the row clicked, or -1 */
+static short rows_pointer(struct flow_screen *flow, struct ae_pointer const *pointer)
+{
+	struct ae_hit hit;
+
+	if (!ae_hit_at(pointer->x, pointer->y, 0, &hit) || hit.id != HIT_ROWS || hit.index < 0 || hit.index >= flow->count)
+		return -1;
+	if (pointer->moved && flow->rows[hit.index].kind != ROW_HEADER)
+		flow->focus = hit.index;
+	if (!pointer->left_clicks)
+		return -1;
+	if (hit.part == AE_PART_ARROW_LEFT || hit.part == AE_PART_ARROW_RIGHT)
+		return (short)(-2 - (hit.part == AE_PART_ARROW_RIGHT));
+	return hit.index;
+}
+
+static void error_dialog(struct flow_screen *flow, const char *title_text, const char *body)
+{
+	struct ae_dialog_spec spec;
+
+	memset(&spec, 0, sizeof(spec));
+	spec.kind = AE_DIALOG_ERROR;
+	spec.title = title_text;
+	spec.body = body;
+	spec.choices[0] = ae_string(AE_STR_BACK);
+	spec.choice_count = 1;
+	spec.has_cancel = 1;
+	spec.density = flow->density;
+	spec.bounds = flow->frame.rect;
+	ae_dialog_open(&spec, AE_OWNER_ANY);
+}
+
+/* ---------- what the copy says */
+
+static struct ae_setup_access access_now(void)
+{
+	struct ae_setup_access access;
+
+	ae_setup_edit_access(&access);
+	return access;
+}
+
+/* the engine's score row */
+static short score_option(int engine)
+{
+	switch (engine)
+	{
+	case AE_SETUP_ENGINE_CTF: return AE_SO_CAPTURES_TO_WIN;
+	case AE_SETUP_ENGINE_KING: return AE_SO_HILL_SCORE;
+	case AE_SETUP_ENGINE_ODDBALL: return AE_SO_BALL_SCORE;
+	case AE_SETUP_ENGINE_RACE: return AE_SO_LAPS_TO_WIN;
+	}
+	return AE_SO_KILLS_TO_WIN;
+}
+
+/* CHANGE MAP's filter for the copy's gametype */
+static int map_filter(void)
+{
+	struct ae_setup_access access = access_now();
+
+	switch (access.engine)
+	{
+	case AE_SETUP_ENGINE_SLAYER: return ae_setup_team(&access) ? AE_MF_TEAM_SLAYER : AE_MF_FFA_SLAYER;
+	case AE_SETUP_ENGINE_KING: return AE_MF_KING;
+	case AE_SETUP_ENGINE_ODDBALL: return AE_MF_BALL;
+	case AE_SETUP_ENGINE_CTF: return AE_MF_CTF;
+	}
+	return AE_MF_ALL;
+}
+
+static const char *option_value(int option)
+{
+	struct ae_setup_access access = access_now();
+
+	return ae_setup_value_text(option, access.get(access.context, option));
+}
+
+/* a row of the copy's option stepped in place */
+static void option_step(int option, short direction, const char *who)
+{
+	struct ae_setup_access access = access_now();
+	struct ae_setup_row const *row = ae_setup_row(option);
+	int current = access.get(access.context, option);
+	short next;
+
+	if (!row || current < 0)
+		return;
+	next = ae_value_step(row->value_count, (short)current, direction);
+	if (next == current)
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	ae_setup_edit_set(option, next);
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	if (who)
+	{
+		platform_log("ae create game: %s %s %s", who, ae_setup_label(&access, option), ae_setup_value_text(option, next));
+		ae_setup_edit_apply();
+	}
+}
+
+static void map_name_of(short index)
+{
+	char const *const *names = NULL;
+	short last = 0, count = ui_widget_port_multiplayer_maps(&names, &last);
+	wchar_t wide[64];
+	int at;
+
+	create.map_name[0] = 0;
+	if (index < 0 || index >= count)
+		return;
+	ui_map_list_caption(names[index], wide, 64);
+	for (at = 0; at < (int)sizeof(create.map_name) - 1 && wide[at]; at++)
+		create.map_name[at] = wide[at] >= 0x20 && wide[at] < 0x7F ? (char)wide[at] : '?';
+	create.map_name[at] = 0;
+}
+
+static void map_picked(short list_index, char const *name)
+{
+	create.map_index = list_index;
+	snprintf(create.map_name, sizeof(create.map_name), "%s", name);
+	/* (in the lobby: the server's map now) */
+	if (ae_ui_holds(&lobby) && ae_lobby_owns_session())
+	{
+		if (ui_widget_port_multiplayer_map_choose(list_index))
+			platform_log("ae create game: lobby: map '%s'", name);
+	}
+}
+
+static void gametype_picked(short index, void *context)
+{
+	(void)context;
+	if (index < 0 || index >= create.gametype_count)
+		return;
+	if (ae_setup_edit_begin(create.gametype_profiles[index]))
+	{
+		platform_log("ae create game: gametype '%s'", create.gametype_names[index]);
+		if (ae_ui_holds(&lobby) && ae_lobby_owns_session())
+			ae_setup_edit_apply();
+	}
+}
+
+static void gametype_picker(struct flow_screen *flow, short row)
+{
+	struct ae_picker_spec spec;
+	short current = -1, index;
+
+	create.gametype_count = ae_setup_gametypes(create.gametype_names, create.gametype_profiles, GAMETYPES_MAXIMUM,
+		&current);
+	for (index = 0; index < create.gametype_count; index++)
+		create.gametype_values[index] = create.gametype_names[index];
+	if (!create.gametype_count)
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	memset(&spec, 0, sizeof(spec));
+	spec.values = create.gametype_values;
+	spec.count = create.gametype_count;
+	spec.current = current < 0 ? 0 : current;
+	spec.row = flow->rects[row];
+	spec.bounds = flow->frame.rect;
+	spec.density = flow->density;
+	spec.picked = gametype_picked;
+	if (ae_picker_open(&spec, AE_OWNER_ANY))
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+}
+
+/* the rows CREATE GAME and the LOBBY both have: MAP, GAMETYPE, GAME OPTIONS */
+static short setup_rows(struct flow_screen *flow, short count)
+{
+	char name[16];
+	short changes;
+	struct ae_setup_access access = access_now();
+
+	ae_setup_edit_name(name, sizeof(name));
+	changes = ae_setup_changes(&access);
+	flow->rows[count] = (struct flow_row){ ROW_MAP, -1, "MAP", create.map_name[0] ? create.map_name : "CHOOSE",
+		"The maps in folders, filtered for the gametype (LT / RT change the filter)." };
+	count++;
+	snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", name);
+	flow->rows[count] = (struct flow_row){ ROW_GAMETYPE, -1, "GAMETYPE", flow->value_texts[count],
+		"The saved gametypes: picking one starts a new copy of its rules." };
+	count++;
+	if (changes)
+		snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%d CHANGED", changes);
+	else
+		snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "AS SAVED");
+	flow->rows[count] = (struct flow_row){ ROW_OPTIONS, -1, "GAME OPTIONS", flow->value_texts[count],
+		"Every rule of the gametype, in Halo 2's groups. Changes are for these games; SAVE AS NEW keeps them." };
+	count++;
+	return count;
+}
+
+static struct flow_row option_row(int option)
+{
+	struct ae_setup_access access = access_now();
+	struct flow_row row;
+
+	row.kind = ROW_OPTION;
+	row.option = (short)option;
+	row.label = ae_setup_label(&access, option);
+	row.value = option_value(option);
+	row.help = ae_setup_help(option, access.get(access.context, option));
+	return row;
+}
+
+/* ---------- CREATE GAME */
+
+static void create_rows(void)
+{
+	struct flow_screen *flow = &create.flow;
+	struct ae_setup_access access = access_now();
+	short count = setup_rows(flow, 0);
+
+	flow->rows[count++] = option_row(AE_SO_TIME_LIMIT);
+	flow->rows[count++] = option_row(score_option(access.engine));
+	flow->rows[count++] = (struct flow_row){ ROW_NETWORK, -1, "NETWORK", network_names[create.network],
+		network_helps[create.network] };
+	flow->rows[count++] = (struct flow_row){ ROW_START, -1, "START GAME", NULL,
+		"Hosts the game with these settings and opens its lobby." };
+	flow->count = count;
+	if (flow->focus >= count)
+		flow->focus = (short)(count - 1);
+}
+
+static void start_failed(const char *why)
+{
+	create.start_step = START_IDLE;
+	create.starting = 0;
+	platform_log("ae create game: start failed: %s", why);
+	error_dialog(&create.flow, "The game did not start", why);
+}
+
+static void lobby_open(void);
+
+static void start_game(void)
+{
+	struct ae_result result;
+	char name[16];
+
+	if (create.map_index < 0)
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	ae_setup_edit_name(name, sizeof(name));
+	platform_log("ae create game: start (%s, '%s', '%s')", network_names[create.network], create.map_name, name);
+	create.starting = 1;
+	result = ae_lobby_host(network_kinds[create.network]);
+	if (!result.ok)
+	{
+		start_failed(result.reason);
+		return;
+	}
+	create.menus_closed = 1;
+	create.start_step = START_JOINING;
+	create.start_since = system_milliseconds();
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+}
+
+/* START GAME's wait: this PC's client in the pregame, then player 1, the map, the copy, the lobby */
+static void start_update(void)
+{
+	static struct ae_lobby_roster roster;
+	struct ae_result result;
+
+	if (create.start_step != START_JOINING)
+		return;
+	if (!ae_lobby_roster(&roster).ok || (!roster.joined && system_milliseconds() - create.start_since < JOIN_WAIT_MS))
+	{
+		if (system_milliseconds() - create.start_since >= JOIN_WAIT_MS)
+		{
+			ae_lobby_leave();
+			start_failed("This PC's game did not open its lobby in 10 seconds.");
+		}
+		return;
+	}
+	result = ae_lobby_add_local_player(0);
+	if (!result.ok)
+	{
+		ae_lobby_leave();
+		start_failed(result.reason);
+		return;
+	}
+	if (!ui_widget_port_multiplayer_map_choose(create.map_index))
+	{
+		ae_lobby_leave();
+		start_failed("That map can't be played with others in this build.");
+		return;
+	}
+	ae_setup_edit_apply();
+	create.start_step = START_DONE;
+	platform_log("ae create game: hosted, player 1 in");
+	lobby_open();
+}
+
+static void create_accept(short row)
+{
+	struct flow_row const *r = &create.flow.rows[row];
+
+	switch (r->kind)
+	{
+	case ROW_MAP:
+		if (ae_screen_change_map_pick(map_filter(), create.map_index, map_picked))
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
+	case ROW_GAMETYPE:
+		gametype_picker(&create.flow, row);
+		break;
+	case ROW_OPTIONS:
+		if (ae_screen_game_options_show())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
+	case ROW_NETWORK:
+		create.network = (create.network + 1) % NETWORKS;
+		ae_sound_request(AE_SOUND_CURSOR, 0);
+		break;
+	case ROW_START:
+		start_game();
+		break;
+	default:
+		break;
+	}
+}
+
+static void create_step(short row, short direction)
+{
+	struct flow_row const *r = &create.flow.rows[row];
+
+	if (r->kind == ROW_OPTION)
+		option_step(r->option, direction, NULL);
+	else if (r->kind == ROW_NETWORK)
+	{
+		short next = ae_value_step(NETWORKS, (short)create.network, direction);
+
+		ae_sound_request(next == create.network ? AE_SOUND_FAILURE : AE_SOUND_CURSOR, 0);
+		create.network = next;
+	}
+}
+
+static void create_draw(struct ae_screen *instance)
+{
+	struct flow_screen *flow = &create.flow;
+	char crumb[96], name[16];
+	float panel_x, y, text, body, line;
+
+	(void)instance;
+	ae_draw_view_full();
+	full_density(flow);
+	create_rows();
+	ae_setup_edit_name(name, sizeof(name));
+	snprintf(crumb, sizeof(crumb), "%s", create.start_step == START_JOINING ? "HOSTING..." : network_names[create.network]);
+	title(flow, "CREATE GAME", crumb);
+	draw_rows(flow, flow->frame.rect.width * ROWS_WIDTH);
+	/* the panel: the game at a glance */
+	panel_x = flow->frame.rect.x + flow->frame.rect.width * PANEL_X;
+	y = ae_frame_y(&flow->frame, CONTENT_Y);
+	text = ae_size_text(&flow->density);
+	body = u(flow, flow->density.metrics->body);
+	line = u(flow, flow->density.metrics->body_line);
+	ae_draw_text(AE_FONT_ROW, text * 1.5f, panel_x, y, AE_ALIGN_LEFT, AE_COLOR_TITLE, create.map_name[0] ? create.map_name :
+		"No map yet");
+	y += ae_draw_cap_height(AE_FONT_ROW, text * 1.5f) + u(flow, 18.0f);
+	{
+		struct ae_setup_access access = access_now();
+		char words[160];
+
+		snprintf(words, sizeof(words), "%s: %s %s, %s", name, ae_setup_label(&access, score_option(access.engine)),
+			option_value(score_option(access.engine)), option_value(AE_SO_TIME_LIMIT));
+		ae_draw_text(AE_FONT_BODY, body, panel_x, y, AE_ALIGN_LEFT, AE_COLOR_ACCENT, words);
+		y += line;
+		snprintf(words, sizeof(words), "%d rules changed from the saved gametype.", ae_setup_changes(&access));
+		ae_draw_text(AE_FONT_BODY, body, panel_x, y, AE_ALIGN_LEFT, AE_COLOR_MUTED, words);
+	}
+	flow->prompt_count = 0;
+	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_A, ae_string(AE_STR_SELECT), AE_ACTION_ACCEPT);
+	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
+	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_START, "Start game", AE_ACTION_START);
+	draw_prompts(flow);
+}
+
+static void create_update(struct ae_screen *instance)
+{
+	(void)instance;
+	start_update();
+}
+
+static int create_handle(struct ae_screen *instance, struct ae_event const *event)
+{
+	struct flow_screen *flow = &create.flow;
+
+	(void)instance;
+	/* (hosting: wait; B still leaves) */
+	if (create.start_step == START_JOINING && event->action != AE_ACTION_BACK)
+		return 1;
+	switch (event->action)
+	{
+	case AE_ACTION_BACK:
+		if (create.start_step == START_JOINING)
+		{
+			ae_lobby_leave();
+			create.start_step = START_IDLE;
+			create.starting = 0;
+			return 1;
+		}
+		return 0;
+	case AE_ACTION_UP:
+	case AE_ACTION_DOWN:
+		focus_step(flow, event->action == AE_ACTION_UP ? -1 : 1, event->repeat);
+		return 1;
+	case AE_ACTION_LEFT:
+	case AE_ACTION_RIGHT:
+		create_step(flow->focus, event->action == AE_ACTION_RIGHT ? 1 : -1);
+		return 1;
+	case AE_ACTION_ACCEPT:
+		create_accept(flow->focus);
+		return 1;
+	case AE_ACTION_START:
+		start_game();
+		return 1;
+	default:
+		return 1;
+	}
+}
+
+static void create_pointer(struct ae_screen *instance, struct ae_pointer const *pointer)
+{
+	struct ae_event event;
+	short row;
+
+	if (ae_prompts_pointer(create.flow.prompts, create.flow.prompt_count, pointer, HIT_PROMPTS, &event))
+	{
+		if (event.action == AE_ACTION_BACK && create.start_step != START_JOINING)
+		{
+			ae_sound_request(AE_SOUND_BACK, 0);
+			ae_ui_pop();
+		}
+		else
+			create_handle(instance, &event);
+		return;
+	}
+	row = rows_pointer(&create.flow, pointer);
+	if (row <= -2)
+		create_step(create.flow.focus, row == -3 ? 1 : -1);
+	else if (row >= 0)
+		create_accept(row);
+}
+
+static void create_leave(struct ae_screen *instance)
+{
+	(void)instance;
+	platform_log("ae create game: closed");
+	/* (the game's menus back, unless a game is on its way: AE's lobby takes over) */
+	if (!create.starting && !ae_lobby_owns_session())
+	{
+		ui_widgets_close_all();
+		main_screen_shell_load();
+	}
+}
+
+static struct ae_screen_class const create_class =
+{
+	.name = "create game", .leave = create_leave, .handle = create_handle, .draw = create_draw,
+	.pointer = create_pointer, .update = create_update,
+};
+
+static int create_push(void)
+{
+	create.start_step = START_IDLE;
+	create.starting = 0;
+	create.flow.focus = 0;
+	if (!ae_ui_push(&create_class, AE_OWNER_ANY, &create))
+		return 0;
+	platform_log("ae create game: open");
+	return 1;
+}
+
+int ae_screen_create_game_open(void)
+{
+	char const *const *names = NULL;
+	short last = 0;
+
+	memset(&create, 0, sizeof(create));
+	create.network = NETWORK_LAN;
+	if (!ae_setup_edit_begin_named(getenv("HALO_AE_TEST_GAMETYPE")))
+		return 0;
+	ui_widget_port_multiplayer_maps(&names, &last);
+	create.map_index = last;
+	map_name_of(last);
+	ae_ui_replace_menus();
+	create.menus_closed = 1;
+	(void)ae_settings_ui_scale();
+	return create_push();
+}
+
+void ae_screen_create_game_entry(int keys)
+{
+	static int f3_was, back_was;
+	int f3 = (keys & AE_KEY_F3) != 0, back = 0;
+	short controller;
+
+	for (controller = 0; controller < 4; controller++)
+	{
+		struct gamepad_state const *state = input_has_gamepad(controller) ? input_get_gamepad_state(controller) : NULL;
+
+		back |= state && state->buttons[_gamepad_binary_button_back];
+	}
+	if (((f3 && !f3_was) || (back && !back_was)) && !ae_ui_depth() && main_menu_is_active())
+	{
+		platform_log("ae create game: opened from the main menu (%s)", f3 && !f3_was ? "F3" : "BACK");
+		ae_screen_create_game_open();
+	}
+	f3_was = f3;
+	back_was = back;
+}
+
+/* ---------- the LOBBY */
+
+static void lobby_rows(void)
+{
+	static const short quick[] = { AE_SO_TIME_LIMIT, -1, AE_SO_SHIELDS, AE_SO_PRIMARY, AE_SO_GRENADES_ON_MAP,
+		AE_SO_SENSOR_RANGE, AE_SO_RESPAWN_TIME };
+	struct flow_screen *flow = &lobby.flow;
+	struct ae_setup_access access = access_now();
+	short count = setup_rows(flow, 0), index;
+
+	flow->rows[count++] = (struct flow_row){ ROW_HEADER, -1, "QUICK OPTIONS", NULL, NULL };
+	for (index = 0; index < (short)(sizeof(quick) / sizeof(quick[0])); index++)
+	{
+		short option = quick[index] < 0 ? score_option(access.engine) : quick[index];
+
+		if (ae_setup_visible(&access, option))
+			flow->rows[count++] = option_row(option);
+	}
+	flow->rows[count++] = (struct flow_row){ ROW_START, -1, "START GAME", NULL,
+		"Starts the game for everyone in the lobby. After it, everyone comes back here." };
+	flow->count = count;
+	if (flow->focus >= count)
+		flow->focus = (short)(count - 1);
+	if (flow->rows[flow->focus].kind == ROW_HEADER)
+		flow->focus++;
+}
+
+static void lobby_start(void)
+{
+	struct ae_result result = ae_lobby_start();
+
+	if (!result.ok)
+	{
+		error_dialog(&lobby.flow, "The game did not start", result.reason);
+		return;
+	}
+	platform_log("ae create game: lobby: start");
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+	/* (no AE screen over the game: the take-over brings the lobby back after it) */
+	create.starting = 1;
+	ae_ui_remove(&lobby);
+	ae_ui_remove(&create);
+}
+
+static void leave_picked(short choice, void *context)
+{
+	(void)context;
+	if (choice != 1)
+		return;
+	platform_log("ae create game: lobby: leave");
+	lobby.leaving = 1;
+	ae_lobby_leave();
+	ae_ui_remove(&lobby);
+	/* (back to CREATE GAME: under the lobby still, or opened again after a game took it off) */
+	create.start_step = START_IDLE;
+	create.starting = 0;
+	if (!ae_ui_holds(&create))
+		create_push();
+}
+
+static void lobby_leave_ask(void)
+{
+	struct ae_dialog_spec spec;
+
+	memset(&spec, 0, sizeof(spec));
+	spec.kind = AE_DIALOG_CONFIRM;
+	spec.title = "Leave the lobby?";
+	spec.body = "The game closes for everyone in it. Its settings stay for CREATE GAME.";
+	spec.choices[0] = "STAY";
+	spec.choices[1] = "LEAVE";
+	spec.choice_count = 2;
+	spec.has_cancel = 1;
+	spec.density = lobby.flow.density;
+	spec.bounds = lobby.flow.frame.rect;
+	spec.picked = leave_picked;
+	ae_dialog_open(&spec, AE_OWNER_ANY);
+}
+
+static void lobby_accept(short row)
+{
+	struct flow_row const *r = &lobby.flow.rows[row];
+
+	switch (r->kind)
+	{
+	case ROW_MAP:
+		if (ae_screen_change_map_pick(map_filter(), create.map_index, map_picked))
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
+	case ROW_GAMETYPE:
+		gametype_picker(&lobby.flow, row);
+		break;
+	case ROW_OPTIONS:
+		if (ae_screen_game_options_show())
+		{
+			lobby.options_open = 1;
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		}
+		break;
+	case ROW_START:
+		lobby_start();
+		break;
+	default:
+		break;
+	}
+}
+
+static void draw_roster(float x, float y, float width, float bottom)
+{
+	struct flow_screen *flow = &lobby.flow;
+	float inset = u(flow, INSET_U), minor = ae_size_minor(&flow->density), card_y;
+	char heading[48];
+	short index;
+
+	ae_draw_rect(x, y, width, bottom - y, u(flow, flow->density.metrics->corner), AE_COLOR_PANEL);
+	ae_draw_outline(x, y, width, bottom - y, u(flow, flow->density.metrics->corner), u(flow, RULE_U), AE_COLOR_RULE);
+	snprintf(heading, sizeof(heading), "PLAYERS  %d", lobby.have_roster ? lobby.roster.count : 0);
+	ae_draw_text_tracked(AE_FONT_BODY, minor, 0.09f, x + inset, cap_top(AE_FONT_BODY, minor, y + u(flow, 29.0f)),
+		AE_ALIGN_LEFT, AE_COLOR_MUTED, heading);
+	card_y = y + u(flow, 56.0f);
+	for (index = 0; lobby.have_roster && index < lobby.roster.count; index++)
+	{
+		static const unsigned int colors[4] = { 0xC0392BFFu, 0x2E86DEFFu, 0x7FA035FFu, 0xE6B422FFu };
+		struct ae_lobby_player const *player = &lobby.roster.players[index];
+		struct ae_roster_card card;
+		float pitch = u(flow, flow->density.metrics->card) + u(flow, CARD_GAP_U);
+
+		if (card_y + pitch > bottom)
+			break;
+		memset(&card, 0, sizeof(card));
+		card.name = player->name;
+		card.slot = player->slot;
+		card.color = colors[(player->slot - 1) & 3];
+		card.sub_line = player->bot ? "Bot" : player->local ? "This PC" : "Joined";
+		if (lobby.roster.team_game)
+		{
+			card.flags |= AE_CARD_TEAM;
+			card.team_name = player->team ? "BLUE" : "RED";
+			card.team_color = player->team ? 0x2E86DEFFu : 0xC0392BFFu;
+		}
+		if (player->host)
+			card.flags |= AE_CARD_HOST;
+		card_y += ae_widget_roster_card(&flow->density, x + inset, card_y, width - 2.0f * inset, &card, HIT_CARDS, index) +
+			u(flow, CARD_GAP_U);
+	}
+}
+
+static void lobby_draw(struct ae_screen *instance)
+{
+	struct flow_screen *flow = &lobby.flow;
+	char crumb[96];
+	float roster_x;
+
+	(void)instance;
+	ae_draw_view_full();
+	full_density(flow);
+	lobby_rows();
+	snprintf(crumb, sizeof(crumb), "%s", network_names[create.network]);
+	title(flow, "LOBBY", crumb);
+	draw_rows(flow, flow->frame.rect.width * ROWS_WIDTH);
+	roster_x = flow->frame.rect.x + flow->frame.rect.width * PANEL_X;
+	draw_roster(roster_x, ae_frame_y(&flow->frame, CONTENT_Y), right_x(flow) - roster_x, content_bottom(flow));
+	flow->prompt_count = 0;
+	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_A, ae_string(AE_STR_SELECT), AE_ACTION_ACCEPT);
+	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_B, "Leave", AE_ACTION_BACK);
+	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_START, "Start game", AE_ACTION_START);
+	draw_prompts(flow);
+}
+
+static void lobby_update(struct ae_screen *instance)
+{
+	unsigned long now = system_milliseconds();
+
+	(void)instance;
+	/* (GAME OPTIONS closed over the lobby: its changes to the server) */
+	if (lobby.options_open && ae_ui_top() && ae_ui_top()->data == &lobby)
+	{
+		lobby.options_open = 0;
+		ae_setup_edit_apply();
+	}
+	if (now - lobby.roster_at >= 250)
+	{
+		lobby.roster_at = now;
+		lobby.have_roster = ae_lobby_owns_session() && ae_lobby_roster(&lobby.roster).ok;
+	}
+}
+
+static int lobby_handle(struct ae_screen *instance, struct ae_event const *event)
+{
+	struct flow_screen *flow = &lobby.flow;
+	struct flow_row const *row;
+
+	(void)instance;
+	lobby_rows();
+	row = &flow->rows[flow->focus];
+	switch (event->action)
+	{
+	case AE_ACTION_BACK:
+		lobby_leave_ask();
+		return 1;
+	case AE_ACTION_UP:
+	case AE_ACTION_DOWN:
+		focus_step(flow, event->action == AE_ACTION_UP ? -1 : 1, event->repeat);
+		return 1;
+	case AE_ACTION_LEFT:
+	case AE_ACTION_RIGHT:
+		if (row->kind == ROW_OPTION)
+			option_step(row->option, event->action == AE_ACTION_RIGHT ? 1 : -1, "lobby: quick");
+		return 1;
+	case AE_ACTION_ACCEPT:
+		lobby_accept(flow->focus);
+		return 1;
+	case AE_ACTION_START:
+		lobby_start();
+		return 1;
+	default:
+		return 1;
+	}
+}
+
+static void lobby_pointer(struct ae_screen *instance, struct ae_pointer const *pointer)
+{
+	struct ae_event event;
+	short row;
+
+	if (ae_prompts_pointer(lobby.flow.prompts, lobby.flow.prompt_count, pointer, HIT_PROMPTS, &event))
+	{
+		lobby_handle(instance, &event);
+		return;
+	}
+	row = rows_pointer(&lobby.flow, pointer);
+	if (row <= -2 && lobby.flow.rows[lobby.flow.focus].kind == ROW_OPTION)
+		option_step(lobby.flow.rows[lobby.flow.focus].option, row == -3 ? 1 : -1, "lobby: quick");
+	else if (row >= 0)
+		lobby_accept(row);
+}
+
+static void lobby_leave(struct ae_screen *instance)
+{
+	(void)instance;
+	platform_log("ae create game: lobby: %s", lobby.leaving ? "left" : "off the stack");
+	lobby.leaving = 0;
+}
+
+static struct ae_screen_class const lobby_class =
+{
+	.name = "setup lobby", .leave = lobby_leave, .handle = lobby_handle, .draw = lobby_draw, .pointer = lobby_pointer,
+	.update = lobby_update, .start_from_anyone = 1,
+};
+
+static void lobby_open(void)
+{
+	memset(&lobby, 0, sizeof(lobby));
+	ae_lobby_set_pregame_screen(&lobby_class, &lobby);
+	if (!ae_ui_push(&lobby_class, AE_OWNER_ANY, &lobby))
+	{
+		platform_log("ae create game: lobby: could not open");
+		return;
+	}
+	/* (the focus on START GAME, the last row) */
+	lobby_rows();
+	lobby.flow.focus = (short)(lobby.flow.count - 1);
+	platform_log("ae create game: lobby: open");
+}

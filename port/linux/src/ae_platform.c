@@ -484,6 +484,8 @@ int ae_platform_keys(void)
 		keys |= AE_KEY_TAB;
 	if (input.keys[SDL_SCANCODE_LSHIFT] || input.keys[SDL_SCANCODE_RSHIFT])
 		keys |= AE_KEY_SHIFT;
+	if (input.keys[SDL_SCANCODE_F3])
+		keys |= AE_KEY_F3;
 	return keys | keypad_keys(input.keys, num_lock());
 }
 
