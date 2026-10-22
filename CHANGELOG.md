@@ -6,6 +6,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT's hair-trigger break is easier to
+  feel, STRONG is two steps firmer than NORMAL but never so stiff that a full pull tires. L2's grenade is a light,
+  quick pull with a short click at the throw on every setting (it was strong on all of them). The weapon packs have
+  their own feel: the SMG a fast buzz, the silenced SMG a softer, lower buzz, the carbine a crisp click lighter than the
+  pistol's, the battle rifle a firm click and a small pulse for each round of its burst.
 - OpenCE build-250 merged. The visibility readback (which lights and lens flares are visible) is OpenCE's final
   version of PR #433, by hkmodd: nothing is asked of the graphics driver before the frame is shown, and the counts are
   read after it once the GPU says they are done, so NVIDIA's driver and the game no longer take turns. If a driver

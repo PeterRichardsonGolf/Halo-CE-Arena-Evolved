@@ -53,15 +53,31 @@ enum ae_ds5_weapon_kind
 	AE_DS5_WEAPON_PLASMA_HEAT, /* rounds make heat (plasma rifle): rises with heat, locked when overheated */
 	AE_DS5_WEAPON_CARRY,     /* no trigger with a projectile (ball, flag): free */
 	AE_DS5_WEAPON_FLAME,     /* fast, with heat, not the plasma rifle (flamethrower): a roar while it burns */
+	AE_DS5_WEAPON_SMG,       /* AE's SMG pack (15 rounds/s): a light hold, a fast buzz */
+	AE_DS5_WEAPON_SMG_SILENCED, /* AE's silenced SMG pack: the SMG's hold, a softer, lower buzz */
+	AE_DS5_WEAPON_CARBINE,   /* AE's carbine pack (5 rounds/s, semi-automatic): a quick crisp click, lighter than the
+	                            pistol's */
 	AE_DS5_WEAPON_KINDS
 };
 
-/* the kind from the weapon's tag numbers: whether it is AE's battle rifle, whether its weapon type is the needler, its
-first trigger's rate of fire (rounds a second), the longest charging time of its triggers (seconds, 0 none), its first
-trigger's heat a round, its zoom level count, whether no trigger has a projectile (a carried ball or flag), whether its
-weapon type is the plasma rifle (a fast weapon with heat is the plasma rifle's kind if so, else the flamethrower's) */
-enum ae_ds5_weapon_kind ae_ds5_weapon_kind(int burst_rifle, int needler, float rate_of_fire, float charging_time,
-	float heat_per_round, int zoom_levels, int no_projectile, int plasma_rifle_type);
+/* the weapon pack a weapon comes from (the game side reads it from the pack's slot, ae_weapon_slots.h; the same
+numbers): its own feel, whatever its tag's numbers say */
+enum ae_ds5_pack
+{
+	AE_DS5_PACK_NONE = 0,
+	AE_DS5_PACK_BATTLE_RIFLE,
+	AE_DS5_PACK_SMG,
+	AE_DS5_PACK_SMG_SILENCED,
+	AE_DS5_PACK_CARBINE
+};
+
+/* the kind from the weapon's tag numbers: whether it is AE's battle rifle, the weapon pack it comes from (an
+ae_ds5_pack: a pack weapon's kind is the pack's), whether its weapon type is the needler, its first trigger's rate of
+fire (rounds a second), the longest charging time of its triggers (seconds, 0 none), its first trigger's heat a round,
+its zoom level count, whether no trigger has a projectile (a carried ball or flag), whether its weapon type is the
+plasma rifle (a fast weapon with heat is the plasma rifle's kind if so, else the flamethrower's) */
+enum ae_ds5_weapon_kind ae_ds5_weapon_kind(int burst_rifle, int pack, int needler, float rate_of_fire,
+	float charging_time, float heat_per_round, int zoom_levels, int no_projectile, int plasma_rifle_type);
 
 /* the weapon in hand now (the game side reads it each frame) */
 struct ae_ds5_weapon_state
@@ -128,8 +144,8 @@ release, -1 none) are past it */
 int ae_ds5_overcharge_flash(unsigned char rgb[3], long ticks);
 /* the profile's feel in a few words */
 char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind);
-/* L2: light while zoomed; a grenade wound up firmer; grenades in hand a light hold; none, the dry click. Returns a
-short text for the log */
+/* L2: light while zoomed; grenades in hand a light short click where the press counts (the throw); a grenade wound up
+free (the throw's own kick is an event); none, the dry click. Returns a short text for the log */
 char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
 	int strength);
 
@@ -176,11 +192,14 @@ brighter as that layer fills; dead, dark. No meter colours in the tag: the HUD's
 pad gets few reports. Its words in text */
 void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size);
 
-/* TRIGGER STRENGTH (input.trigger_strength: light, normal, strong) as a percent of the table's strengths and
-amplitudes (AE_DS5_STRENGTH_LIGHT, 100, AE_DS5_STRENGTH_STRONG; anything else 100). LIGHT is a HAIR TRIGGER: every
-hold or click a short light break at the top of the pull (zones 2-3, at half the table's strength) so nothing stands
-deeper in it; kicks and buzzes at three quarters, the motors at AE_DS5_RUMBLE_LIGHT percent. STRONG: every strength-like number x1.75 and at least one step up (kept 1-8), the motors
-at AE_DS5_RUMBLE_STRONG percent (kept 0-255) */
+/* TRIGGER STRENGTH (input.trigger_strength: light, normal, strong) as a percent (AE_DS5_STRENGTH_LIGHT, 100,
+AE_DS5_STRENGTH_STRONG; anything else 100). The table is NORMAL's (owner 10-21, 0.3.7: every step re-spaced):
+- STRONG: a hold (resistance to the end of the pull) two steps up, at most 6, so a full pull never tires; a click two
+  steps up, at most 7; kicks and buzzes two steps up (at most 8); the motors at AE_DS5_RUMBLE_STRONG percent;
+- LIGHT is a HAIR TRIGGER: every hold or click a short break at the top of the pull (zones 2-3) one step under
+  NORMAL's, between 3 (clearly felt) and 5, nothing deeper in the pull; kicks and buzzes one step down (not under 2);
+  the motors at AE_DS5_RUMBLE_LIGHT percent;
+- L2's grenade its own lighter steps (ae_ds5_left_effect, the throw's event). */
 #define AE_DS5_STRENGTH_LIGHT 75
 #define AE_DS5_STRENGTH_STRONG 175
 #define AE_DS5_RUMBLE_LIGHT 75
