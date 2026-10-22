@@ -106,9 +106,9 @@ void ae_disc_join_rejected(
 	/* (short: the error box shows five lines) */
 	static wchar_t const stock_text[] = L"The host plays a modded disc. Choose it in Settings > Game Options > "
 		L"MODDED DISCS, then join again.";
-	static wchar_t const disc_start[] = L"The host does not play the modded disc ";
-	static wchar_t const disc_end[] = L". Choose the host's disc (or none) in Settings > Game Options > "
-		L"MODDED DISCS.";
+	static wchar_t const disc_start[] = L"The host plays another disc than ";
+	static wchar_t const disc_end[] = L", or an older build. Choose the host's disc (or none) in "
+		L"Settings > Game Options > MODDED DISCS.";
 	wchar_t text[512];
 	long length = 0;
 	char const *c;
@@ -122,7 +122,8 @@ void ae_disc_join_rejected(
 		display_error_text_when_main_menu_loaded(stock_text);
 		return;
 	}
-	error(_error_silent, "modded discs: the host refused this machine's join token: it does not play %s",
+	error(_error_silent, "modded discs: the host refused this machine's join token: it plays another disc than %s, or an "
+		"older build",
 		disc_join.disc);
 	for (; length < (long)NUMBEROF(disc_start) - 1; length++)
 		text[length] = disc_start[length];

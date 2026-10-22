@@ -24,6 +24,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   Halo 1: NHE or CE+ X and load its own Blood Gulch where the host had the disc's, and the two games went apart; it is
   now refused and told to choose the host's disc in MODDED DISCS. Without a disc nothing changes (stock OpenCE and
   ChupathingyCE machines join as before), nor with a disc that only adds maps of its own.
+  With a disc that replaces stock maps, only Arena Evolved 0.3.7 and later machines on the same disc join each other:
+  older Arena Evolved, OpenCE and ChupathingyCE machines on that disc are refused.
 
 ## 0.3.6-beta - 2026-10-21
 
