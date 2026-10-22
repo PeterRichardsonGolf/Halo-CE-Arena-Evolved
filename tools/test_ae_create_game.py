@@ -2,7 +2,6 @@
 harness (tools/ae_test), in tools/test_ae_gallery.py's pattern (tools/test_ae_menus.py's helpers).
 
 - CREATE GAME (debug.ae_test_screen 32) at 1080p 100 % and 130 %;
-- opened from the game's main menu with a pad's BACK (no test screen);
 - START GAME: hosted (LAN), player 1 in, the map chosen, the copy applied, the LOBBY; a quick option stepped there
   and applied to the server;
 - the LOBBY's START GAME: the game plays (no AE screen over it).
@@ -29,7 +28,6 @@ CASES = (
     ("create-130", 32, 130, (), 30),
     # (HOST ONLINE: PRIVACY and MAX PLAYERS shown; JOIN WITH INVITE with nothing on the clipboard says so)
     ("online", 32, 100, ("pad:down",) * 5 + ("pad:right",) + ("pad:down",) * 4, 30),
-    ("entry", 0, 100, ("pad:back",), 30),
     ("lobby", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:up", "pad:right"), 34),
     ("play", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:start"), 50),
 )
@@ -74,9 +72,8 @@ def runs(cfg):
 
 
 def test_create_game_opens(runs):
-    for name in ("create", "create-130", "entry"):
+    for name in ("create", "create-130"):
         assert "open" in lines(runs[name][1], "ae create game: "), name
-    assert lines(runs["entry"][1], "ae create game: opened from the main menu ")
 
 
 def test_start_hosts_and_opens_the_lobby(runs):

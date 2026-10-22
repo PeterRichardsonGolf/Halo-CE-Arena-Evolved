@@ -256,7 +256,7 @@ boolean ae_ui_process(
 		/* (the game setup spike's GAME OPTIONS: the last used gametype, or $HALO_AE_TEST_GAMETYPE's) */
 		else if (views == 30)
 			ae_screen_game_options_open(NULL);
-		/* (its CREATE GAME, as F3 or a pad's BACK opens it on the main menu) */
+		/* (its CREATE GAME, as AE's MULTIPLAYER opens it) */
 		else if (views == 32)
 			ae_screen_create_game_open();
 		/* (its CHANGE MAP: the filter $HALO_AE_TEST_MAP_FILTER, 0-6, else ALL) */
@@ -273,9 +273,6 @@ boolean ae_ui_process(
 	open again in between, over the level) */
 	else if (!main_menu_is_active())
 		ae_screen_main_menu_close();
-	/* (the game setup spike: F3 or a pad's BACK on the main menu opens CREATE GAME) */
-	if (test_screen_checked && ae_draw_available())
-		ae_screen_create_game_entry(ae_platform_keys());
 	/* (a timed revert counts down and reverts covered or hidden too; a waiting error opens) */
 	ae_dialog_tick();
 	/* (the lobby glue's join going on, its session's owner checked; the lobby drives: in the menus and in the game) */

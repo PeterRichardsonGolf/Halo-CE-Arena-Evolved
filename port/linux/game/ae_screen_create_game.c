@@ -772,27 +772,6 @@ int ae_screen_create_game_open(void)
 	return create_push();
 }
 
-void ae_screen_create_game_entry(int keys)
-{
-	static int f3_was, back_was;
-	int f3 = (keys & AE_KEY_F3) != 0, back = 0;
-	short controller;
-
-	for (controller = 0; controller < 4; controller++)
-	{
-		struct gamepad_state const *state = input_has_gamepad(controller) ? input_get_gamepad_state(controller) : NULL;
-
-		back |= state && state->buttons[_gamepad_binary_button_back];
-	}
-	if (((f3 && !f3_was) || (back && !back_was)) && !ae_ui_depth() && main_menu_is_active())
-	{
-		platform_log("ae create game: opened from the main menu (%s)", f3 && !f3_was ? "F3" : "BACK");
-		ae_screen_create_game_open();
-	}
-	f3_was = f3;
-	back_was = back;
-}
-
 /* ---------- the LOBBY */
 
 static void lobby_rows(void)

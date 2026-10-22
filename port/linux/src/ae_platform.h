@@ -22,9 +22,7 @@ enum
 	AE_KEY_UP = 1 << 6,
 	AE_KEY_DOWN = 1 << 7,
 	AE_KEY_LEFT = 1 << 8,
-	AE_KEY_RIGHT = 1 << 9,
-	/* (the game setup spike) F3 on the game's main menu opens AE's CREATE GAME (ae_screen_create_game.h) */
-	AE_KEY_F3 = 1 << 10
+	AE_KEY_RIGHT = 1 << 9
 };
 
 /* the AE_KEY_* held now (0 without a focused window). SDL reports the keys where they are, so the numeric keypad's
