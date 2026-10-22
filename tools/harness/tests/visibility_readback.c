@@ -20,16 +20,15 @@ typedef struct fence *GLsync;
 #define GL_QUERY_BUFFER 0x9192
 #define GL_QUERY_BUFFER_BINDING 0x9193
 #define GL_SYNC_GPU_COMMANDS_COMPLETE 0x9117
+#define GL_SYNC_FLUSH_COMMANDS_BIT 0x00000001
 #define GL_ALREADY_SIGNALED 0x911A
 #define GL_TIMEOUT_EXPIRED 0x911B
 #define GL_CONDITION_SATISFIED 0x911C
+#define GL_WAIT_FAILED 0x911D
 #include "config.inc"
-/* (the code before the change has neither) */
+/* (the code before the change has none) */
 #ifndef VISIBILITY_UNCOPIED
 #define VISIBILITY_UNCOPIED 0xFFFFFFFFUL
-#endif
-#ifndef VISIBILITY_COPY_FRAMES
-#define VISIBILITY_COPY_FRAMES 240
 #endif
 
 static struct
@@ -50,29 +49,43 @@ static struct
 	} visibility_stats;
 } device;
 
-/* the GPU: each query's count, and the copies into the buffer it has yet to
-make (gpu_copy makes them, oldest first) */
+/* the GPU: each query's count, and the commands it has yet to carry out, in
+the order they were sent (gpu_run carries them out) */
 struct fence
 {
-	BOOL signaled;
+	BOOL signaled, broken;
 };
+enum { COMMAND_COPY, COMMAND_FENCE };
+static struct
+{
+	int type;
+	GLuint query;
+	GLintptr offset;
+	struct fence *fence;
+} commands[512];
+static unsigned long command_count;
 static GLuint query_samples[64];
 static GLuint results[VISIBILITY_BATCH_COUNT * VISIBILITY_TEST_SLOTS];
-static struct { GLuint query; GLintptr offset; } copies[256];
-static unsigned long copy_count;
-static struct fence fences[64];
+static struct fence fences[512];
 static unsigned long fence_count;
-static BOOL copy_error;
+static BOOL copy_lost, copy_error, fence_broken;
 static GLenum gl_error;
-/* calls that make a threaded driver catch up with every command before
-them (they answer the CPU), and the flushes */
-static unsigned long driver_answers, flushes, logs;
+/* calls that make a threaded driver catch up with every command before them
+(they answer the CPU), all of them and those before the swap; the flushes */
+static unsigned long driver_answers, answers_before_swap, flushes, logs;
+static BOOL before_swap;
+
+static void answered(void)
+{
+	driver_answers++;
+	answers_before_swap += before_swap;
+}
 
 static GLenum glGetError(void)
 {
 	GLenum error = gl_error;
 
-	driver_answers++;
+	answered();
 	gl_error = GL_NO_ERROR;
 	return error;
 }
@@ -80,33 +93,41 @@ static GLenum glGetError(void)
 static void glGetQueryBufferObjectuiv(GLuint query, GLuint buffer, GLenum name, GLintptr offset)
 {
 	CHECK(buffer == device.visibility_buffer && name == GL_QUERY_RESULT, "a copy into another buffer");
-	copies[copy_count].query = query;
-	copies[copy_count++].offset = offset;
+	commands[command_count].type = COMMAND_COPY;
+	commands[command_count].query = query;
+	commands[command_count++].offset = offset;
 	if (copy_error)
 		gl_error = GL_INVALID_OPERATION;
 }
 
 static GLsync glFenceSync(GLenum condition, GLbitfield flags)
 {
-	struct fence *fence = &fences[fence_count++ % 64];
+	struct fence *fence = &fences[fence_count++ % 512];
 
 	fence->signaled = FALSE;
+	fence->broken = fence_broken;
+	commands[command_count].type = COMMAND_FENCE;
+	commands[command_count++].fence = fence;
 	return fence;
 }
 
 static GLenum glClientWaitSync(GLsync fence, GLbitfield flags, GLuint64 timeout)
 {
-	driver_answers++;
-	return fence && fence->signaled ? GL_ALREADY_SIGNALED : GL_TIMEOUT_EXPIRED;
+	/* (a fence not yet sent to the GPU may never pass without a flush) */
+	CHECK(flags & GL_SYNC_FLUSH_COMMANDS_BIT, "a fence waited on without asking for a flush");
+	answered();
+	if (fence->broken)
+		return GL_WAIT_FAILED;
+	return fence->signaled ? GL_ALREADY_SIGNALED : GL_TIMEOUT_EXPIRED;
 }
 
 static void glDeleteSync(GLsync fence) { }
 static void glFlush(void) { flushes++; }
 static void glBindBuffer(GLenum target, GLuint buffer) { }
-static void glGetIntegerv(GLenum name, GLint *value) { driver_answers++; *value = 0; }
+static void glGetIntegerv(GLenum name, GLint *value) { answered(); *value = 0; }
 static void glGetQueryObjectuiv(GLuint query, GLenum name, GLuint *value)
 {
-	driver_answers++;
+	answered();
 	*value = name == GL_QUERY_RESULT_AVAILABLE ? 1 : query_samples[query];
 }
 
@@ -123,24 +144,35 @@ static void platform_log(const char *format, ...)
 
 #include "under_test.inc"
 
-/* the GPU makes the first count of its copies waiting (all of them with
-ULONG_MAX), and passes its fences once none is left */
-static void gpu_copy(unsigned long count)
+/* the GPU carries out the first count of its commands (all of them with
+ULONG_MAX): a copy writes its query's count (none when copy_lost), a fence
+passes */
+static void gpu_run(unsigned long count)
 {
 	unsigned long i;
 
-	if (count > copy_count)
-		count = copy_count;
+	if (count > command_count)
+		count = command_count;
 	for (i = 0; i < count; i++)
-		results[copies[i].offset / sizeof(GLuint)] = query_samples[copies[i].query];
-	for (i = count; i < copy_count; i++)
-		copies[i - count] = copies[i];
-	copy_count -= count;
-	if (!copy_count)
 	{
-		for (i = 0; i < 64; i++)
-			fences[i].signaled = TRUE;
+		if (commands[i].type == COMMAND_COPY && !copy_lost)
+			results[commands[i].offset / sizeof(GLuint)] = query_samples[commands[i].query];
+		else if (commands[i].type == COMMAND_FENCE)
+			commands[i].fence->signaled = TRUE;
 	}
+	for (i = count; i < command_count; i++)
+		commands[i - count] = commands[i];
+	command_count -= count;
+}
+
+/* a present: the batch sent before the swap, the counts read after it */
+static void present(unsigned long index)
+{
+	device.frame = index;
+	before_swap = TRUE;
+	visibility_send_batch();
+	before_swap = FALSE;
+	visibility_read_batch();
 }
 
 /* a frame's two tests in the batch being filled (slots 10 and 11, counts by
@@ -158,16 +190,8 @@ static struct visibility_batch *frame(unsigned long index)
 	batch->slots[1] = 11;
 	batch->areas[0] = batch->areas[1] = 1.0f;
 	batch->count = 2;
-	device.frame = index;
-	visibility_read_batch();
+	present(index);
 	return batch;
-}
-
-/* a present with no tests in its frame (none free to go in) */
-static void present(unsigned long index)
-{
-	device.frame = index;
-	visibility_read_batch();
 }
 
 static void start(BOOL logging)
@@ -186,8 +210,8 @@ static void known(GLuint first, GLuint second, const char *what)
 		first, second);
 }
 
-/* frames whose counts the GPU copies before the next present, which reads
-them */
+/* frames whose commands the GPU carries out before the next present, which
+reads their counts */
 static void play(unsigned long frames)
 {
 	unsigned long index;
@@ -197,7 +221,7 @@ static void play(unsigned long frames)
 		frame(index);
 		if (index)
 			known((GLuint)(100 + index - 1), (GLuint)(200 + index - 1), "a frame on");
-		gpu_copy(ULONG_MAX);
+		gpu_run(ULONG_MAX);
 	}
 	CHECK(device.visibility_stats.completed == frames - 1, "%lu batches read, not %lu",
 		device.visibility_stats.completed, frames - 1);
@@ -209,72 +233,100 @@ int main(int argc, char **argv)
 
 	CASE("quiet")
 	{
-		/* without debug.gl_debug, no present asks the driver for anything
-		(a GL error, a fence's state), and none flushes: presenting does */
+		/* without debug.gl_debug, nothing before the swap asks the driver
+		for an answer, no present flushes (the swap does), and after the
+		swap at most one question a present */
 		start(FALSE);
 		play(12);
-		CHECK(driver_answers == 0, "the driver was asked %lu times in 12 presents", driver_answers);
+		CHECK(answers_before_swap == 0, "the driver was asked %lu times before the swap in 12 presents",
+			answers_before_swap);
 		CHECK(flushes == 0, "%lu flushes in 12 presents", flushes);
+		CHECK(driver_answers <= 12, "the driver was asked %lu times in 12 presents", driver_answers);
 	}
-	CASE("behind")
+	CASE("late")
 	{
-		/* counts the GPU has not copied yet are not taken, the slots keep
-		their earlier ones, and a batch is not used again until it is read */
+		/* a GPU 1000 presents behind: its counts are not taken before their
+		fence passes, no batch is given up, and the counts are read once
+		they come (visibility goes on updating) */
+		unsigned long index;
+
 		start(FALSE);
 		frame(0);
 		frame(1);
 		frame(2);
-		known(77, 88, "nothing copied");
-		CHECK(device.visibility_batch == VISIBILITY_BATCH_COUNT, "a batch whose counts are unread was given out");
-		gpu_copy(1);
-		present(3);
-		known(100, 88, "one count copied");
-		gpu_copy(ULONG_MAX);
-		present(4);
-		known(102, 202, "all copied");
+		for (index = 3; index < 1003; index++)
+			present(index);
+		known(77, 88, "nothing carried out");
+		for (index = 0; index < VISIBILITY_BATCH_COUNT; index++)
+			CHECK(!device.visibility_batches[index].failed, "batch %lu given up while the GPU was late", index);
+		gpu_run(2);
+		present(1003);
+		known(77, 88, "copies done, fence not passed");
+		gpu_run(ULONG_MAX);
+		present(1004);
+		known(102, 202, "all carried out");
+		frame(1005);
+		gpu_run(ULONG_MAX);
+		present(1006);
+		known(1105, 1205, "the next batch after a late GPU");
 	}
-	CASE("reused")
+	CASE("lost_copy")
 	{
-		/* a batch used again does not give its earlier counts for the new
-		tests' before the GPU copies those */
-		start(FALSE);
-		play(VISIBILITY_BATCH_COUNT + 2);
-		frame(VISIBILITY_BATCH_COUNT + 2);
-		frame(VISIBILITY_BATCH_COUNT + 3);
-		known(100 + VISIBILITY_BATCH_COUNT + 1, 200 + VISIBILITY_BATCH_COUNT + 1, "the GPU behind a reused batch");
-	}
-	CASE("lost")
-	{
-		/* counts never copied into the buffer (a driver that does not show
-		the GPU's copies there) are read on the CPU from then on, the batch
-		waiting too, rather than its batch dropped (AE, 0.3.5.1: the slots
-		would keep their counts for the rest of the game) */
+		/* a copy that wrote nothing (a failed one) is seen without asking
+		for GL errors: its place still holds VISIBILITY_UNCOPIED once the
+		fence has passed. Its batch is dropped, the slots keep their earlier
+		counts, and the counts are read from each query from then on: the
+		batch sent meanwhile, and those after it. */
 		start(FALSE);
 		frame(0);
-		copy_count = 0;
-		frame(VISIBILITY_COPY_FRAMES);
-		CHECK(device.visibility_mapped, "the buffer given up before VISIBILITY_COPY_FRAMES presents");
-		gpu_copy(ULONG_MAX);
-		frame(VISIBILITY_COPY_FRAMES + 2);
-		CHECK(!device.visibility_mapped, "counts that never came through the buffer still looked for there");
-		CHECK(!device.visibility_batches[0].failed, "the batch waiting was dropped, not read on the CPU");
-		CHECK(logs > 0, "the change to the CPU not reported");
-		present(VISIBILITY_COPY_FRAMES + 3);
-		known((GLuint)(100 + VISIBILITY_COPY_FRAMES), (GLuint)(200 + VISIBILITY_COPY_FRAMES), "read on the CPU");
-		present(VISIBILITY_COPY_FRAMES + 4);
-		known((GLuint)(100 + VISIBILITY_COPY_FRAMES + 2), (GLuint)(200 + VISIBILITY_COPY_FRAMES + 2),
-			"a batch sealed after the change");
+		copy_lost = TRUE;
+		gpu_run(ULONG_MAX);
+		copy_lost = FALSE;
+		frame(1);
+		CHECK(device.visibility_batches[0].failed, "a batch whose counts were never copied was kept");
+		known(77, 88, "after a lost copy");
+		CHECK(logs > 0 && device.visibility_stats.failures, "a lost copy not reported");
+		CHECK(driver_answers <= 1, "GL errors asked for without debug.gl_debug (%lu answers)", driver_answers);
+		CHECK(!device.visibility_mapped, "the buffer still read after its copies failed");
+		gpu_run(ULONG_MAX);
+		present(2);
+		known(101, 201, "the batch sent before the lost copy was seen");
+		frame(3);
+		present(4);
+		known(103, 203, "a batch sent after the lost copy");
+	}
+	CASE("fence_failed")
+	{
+		/* a fence that cannot be waited on drops its batch, keeping the
+		slots' earlier counts; the counts are read from each query from
+		then on */
+		start(FALSE);
+		fence_broken = TRUE;
+		frame(0);
+		fence_broken = FALSE;
+		gpu_run(ULONG_MAX);
+		frame(1);
+		CHECK(device.visibility_batches[0].failed, "a batch whose fence failed was read");
+		known(77, 88, "after a failed fence");
+		CHECK(!device.visibility_mapped, "the buffer still read after a fence failed");
+		present(2);
+		known(101, 201, "the batch after a failed fence");
 	}
 	CASE("logging")
 	{
-		/* with debug.gl_debug, GL errors are asked for, and a failed copy
-		drops its batch */
+		/* with debug.gl_debug, GL errors are asked for, and a copy that
+		failed drops its batch as it is sent */
 		start(TRUE);
 		play(6);
-		CHECK(driver_answers > 0, "GL errors never asked for with debug.gl_debug");
+		CHECK(driver_answers > 6, "GL errors never asked for with debug.gl_debug");
 		copy_error = TRUE;
 		CHECK(frame(6)->failed, "a batch whose copies failed was kept");
 		CHECK(logs > 0 && device.visibility_stats.failures, "a failed copy not reported");
+		CHECK(!device.visibility_mapped, "the buffer still read after its copies failed");
+		copy_error = FALSE;
+		frame(7);
+		present(8);
+		known(107, 207, "a batch after the failed copies");
 	}
 	return 0;
 }

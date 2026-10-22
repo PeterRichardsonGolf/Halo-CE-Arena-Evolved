@@ -30,6 +30,8 @@
   only to identify platforms.
 - **Cyborg Interface Gothic** (ChupathingyCE's high-res text font,
   `port/assets/fonts`): by fizzy, SIL Open Font License.
+- **The menus' mouse cursor** (the blue arrow the menus show for the
+  mouse): by pugzysixtyfour (`port/assets/cursor`).
 
 ## Third-party art
 

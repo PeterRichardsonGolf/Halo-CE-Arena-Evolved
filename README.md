@@ -117,7 +117,9 @@ Arena Evolved's own menus, map packs as folders in the map lists, and more of th
 - The decompilation: [punpckhdq/halo](https://github.com/punpckhdq/halo) and
   [bnunu/halo-1](https://github.com/bnunu/halo-1), of the Xbox build 2342.
 - The port: [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) and its
-  contributors.
+  contributors (its main contributors are Jonas Volman, @bnunu, and MrBruh,
+  @cybersecurity). The menus' blue arrow mouse cursor (`port/assets/cursor`,
+  from OpenCE build-250) is pugzysixtyfour's art.
 - [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce): Milenko and
   contributors, and the contributors credited there and in each commit. From
   ChupathingyCE 0.8.0: ugoboom (Zebouski), HD HUDs on Custom Edition maps

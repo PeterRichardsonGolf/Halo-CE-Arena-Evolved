@@ -1,7 +1,7 @@
-"""The desktop visibility readback through the buffer asks the driver for nothing at a present (a GL error, a fence's
-state), so that a threaded driver need not catch up with the frame just drawn; it takes a test's count only once the
-GPU has copied it, and drops a batch whose counts never come."""
-import re
+"""The desktop visibility readback asks the driver for nothing before the swap (a GL error, a fence's state), and at
+most one question after it, so that a threaded driver need not catch up with the frame just drawn before it is
+shown. Each batch's counts are taken once the fence after their copies has passed; a GPU however late is waited for,
+never given up on; a copy that failed is seen by the place it left uncopied, without asking for GL errors."""
 import sys
 from pathlib import Path
 
@@ -10,18 +10,18 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from harness import CHECK_FAILED, build, constant, function, mutated, read, run, structure
 
-CASES = ['quiet', 'behind', 'reused', 'lost', 'logging']
+CASES = ['quiet', 'late', 'lost_copy', 'fence_failed', 'logging']
 SOURCE = 'port/linux/src/d3d8_gl.c'
 
 
 def generated(fault=None):
     source = read(SOURCE)
-    defines = ''.join(match.group(0) + '\n' for match in
-                      re.finditer(r'^#define VISIBILITY_(?:UNCOPIED|COPY_FRAMES)\b.*$', source, re.M))
-    config = '#define VISIBILITY_TEST_SLOTS %d\n#define VISIBILITY_BATCH_COUNT %d\n%s%s;\n' % (
-        constant(source, 'VISIBILITY_TEST_SLOTS'), constant(source, 'VISIBILITY_BATCH_COUNT'), defines,
+    config = '#define VISIBILITY_TEST_SLOTS %d\n#define VISIBILITY_BATCH_COUNT %d\n%s;\n' % (
+        constant(source, 'VISIBILITY_TEST_SLOTS'), constant(source, 'VISIBILITY_BATCH_COUNT'),
         structure(source, 'visibility_batch'))
-    code = '\n'.join(function(source, name) for name in ('visibility_readback_gl_ok', 'visibility_read_batch'))
+    code = '\n'.join(function(source, name) for name in (
+        'visibility_readback_gl_ok', 'visibility_fall_back_to_queries', 'visibility_send_batch',
+        'visibility_read_batch'))
     if fault:
         code = mutated(code, *fault)
     return (('config.inc', config), ('under_test.inc', code))
@@ -34,18 +34,24 @@ def test_case(case):
 
 
 @pytest.mark.parametrize('fault,case', [
-    # GL errors asked for at every present
-    (('if (device.visibility_logging && !visibility_readback_gl_ok("query copies"))',
-      'if (!visibility_readback_gl_ok("query copies"))'), 'quiet'),
-    # a batch used again without marking its counts uncopied: the earlier ones are taken
-    (('counts[i] = VISIBILITY_UNCOPIED;', 'counts[i] = counts[i];'), 'reused'),
-    # a count not yet copied taken as one
-    (('if (samples == VISIBILITY_UNCOPIED)', 'if (0)'), 'behind'),
-    # counts that never come wait for ever
-    (('if (device.frame - batch->frame > VISIBILITY_COPY_FRAMES)', 'if (0)'), 'lost'),
-    # AE: counts that never come drop their batch instead of being read on the CPU
-    (('device.visibility_mapped = NULL; device.visibility_stats.failures++; return; } /* AE hook */',
-      'device.visibility_stats.failures++; } /* AE hook */'), 'lost'),
+    # GL errors asked for before every swap
+    (('if (device.visibility_logging)\n\t\t\tvisibility_readback_gl_ok("before query copies");',
+      'visibility_readback_gl_ok("before query copies");'), 'quiet'),
+    # the batch just sent asked about too: two questions a present
+    (('if (batch->frame == device.frame)\n\t\t\tbreak;', 'if (0)\n\t\t\tbreak;'), 'quiet'),
+    # a late GPU's batches given up after a while
+    (('if (status == GL_TIMEOUT_EXPIRED)\n',
+      'if (status == GL_TIMEOUT_EXPIRED && device.frame - batch->frame < 240)\n'), 'late'),
+    # a copy that wrote nothing taken for a count
+    (('if (samples == VISIBILITY_UNCOPIED)', 'if (0)'), 'lost_copy'),
+    # a fence waited on, counting on the swap to have sent it
+    (('glClientWaitSync(batch->fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0)', 'glClientWaitSync(batch->fence, 0, 0)'),
+     'quiet'),
+    # the buffer read on after a lost copy, whose batch is not used again (with all three lost, no more counts)
+    (('if (fall_back)\n\t\tvisibility_fall_back_to_queries();', 'if (fall_back)\n\t\tfall_back = FALSE;'),
+     'lost_copy'),
+    # a failed fence taken for a passed one
+    (('if (status != GL_ALREADY_SIGNALED && status != GL_CONDITION_SATISFIED)', 'if (0)'), 'fence_failed'),
 ])
 def test_negative_control(fault, case):
     status, output = run(build('visibility_readback', generated(fault)), case)

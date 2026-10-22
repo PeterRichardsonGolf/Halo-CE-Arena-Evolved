@@ -4,6 +4,20 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## Unreleased
+
+- OpenCE build-250 merged. The visibility readback (which lights and lens flares are visible) is OpenCE's final
+  version of PR #433, by hkmodd: nothing is asked of the graphics driver before the frame is shown, and the counts are
+  read after it once the GPU says they are done, so NVIDIA's driver and the game no longer take turns. If a driver
+  fails to pass the counts back that way, the game reads them the old way from then on, as 0.3.5.1 did (now
+  OpenCE's own rule; Arena Evolved's extra line for it is gone).
+- The menus show a blue arrow mouse cursor in place of the system's, sized to the window as Halo PC's was, and hidden
+  while a controller is used (OpenCE build-250; the art is by pugzysixtyfour).
+- Online co-op: the gravity lift on Truth and Reconciliation (and other scripted moves of the players) takes every
+  player beyond the first two along too, instead of leaving them in the part of the level that was unloaded (OpenCE
+  build-246, by eltanschauung).
+- Plays with 0.3.6-beta, OpenCE build-244 to build-250 and ChupathingyCE 0.8 (network version 32).
+
 ## 0.3.6-beta - 2026-10-21
 
 - Bots see an enemy above or below a ledge by the head, and aim at it: they no longer ignore someone shooting down
