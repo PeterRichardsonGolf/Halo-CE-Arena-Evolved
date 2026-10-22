@@ -1156,6 +1156,39 @@ boolean ui_map_list_family_present(
 	return family != _map_family_xbox && map_family_find(family, file, path, sizeof(path));
 }
 
+#else
+
+/* AE: a map's name on one line on the builds without Custom Edition maps (the
+web's): a stock map's caption, its NHE file's alias, else the file's name made
+readable */
+void ui_map_list_caption(
+	char const *map_name,
+	wchar_t *text,
+	long size)
+{
+	char const *file = native_map_basename(map_name);
+	short stock = xbox_map_index(file);
+	char const *caption = stock != NONE ? xbox_map_captions[stock] : NULL;
+	char readable[48];
+	long index;
+
+	if (size <= 0)
+		return;
+	for (index = 0; index < (long)NUMBEROF(map_file_captions); index++)
+	{
+		if (!_stricmp(file, map_file_captions[index].file))
+			caption = map_file_captions[index].caption;
+	}
+	if (!caption)
+	{
+		native_map_display_name(map_name, readable, sizeof(readable));
+		caption = readable;
+	}
+	for (index = 0; index < size - 1 && caption[index]; index++)
+		text[index] = (wchar_t)(unsigned char)caption[index];
+	text[index] = 0;
+}
+
 #endif
 
 /* a Custom Edition or HaloMD map's name, by its file's name: Halo PC's own
