@@ -73,14 +73,15 @@ static struct ae_result succeeded(void)
 	return result;
 }
 
-/* a failure, its reason logged with the call */
+/* a failure, its reason logged with the call (a NULL call: not logged, the caller logs) */
 static struct ae_result failed(const char *call, int reason)
 {
 	struct ae_result result;
 
 	result.ok = 0;
 	snprintf(result.reason, sizeof(result.reason), "%s", ae_string(reason));
-	platform_log("ae profiles: %s: %s", call, result.reason);
+	if (call)
+		platform_log("ae profiles: %s: %s", call, result.reason);
 	return result;
 }
 
@@ -336,8 +337,8 @@ struct ae_result ae_profile_guest(short local_player)
 	return succeeded();
 }
 
-/* the player's profile: its index and the game's copy of it; FALSE (the reason logged) for a player with neither a
-profile nor a guest's settings */
+/* the player's profile: its index and the game's copy of it; FALSE (the reason logged, unless call is NULL) for a
+player with neither a profile nor a guest's settings */
 static boolean active_profile(const char *call, short local_player, long *index, struct player_profile *profile,
 	struct ae_result *failure)
 {
@@ -362,10 +363,22 @@ struct ae_result ae_profile_get_controls(short local_player, struct ae_profile_c
 	struct ae_result failure;
 	long index;
 
+	/* each player's read failing, logged once until a read works: the settings screens read it for every row they
+	draw, every frame (0.3.7.1: a player with no profile logged it thousands of times) */
+	static boolean failing[LOCAL_PLAYERS];
+	short slot = local_player >= 0 && local_player < LOCAL_PLAYERS ? local_player : 0;
+
 	if (!controls)
 		return failed("controls", AE_STR_ERR_PROFILE);
-	if (!active_profile("controls", local_player, &index, &profile, &failure))
+	if (!active_profile(NULL, local_player, &index, &profile, &failure))
+	{
+		if (!failing[slot])
+			platform_log("ae profiles: controls: %s (player %d; said once until it is found)", failure.reason,
+				local_player + 1);
+		failing[slot] = TRUE;
 		return failure;
+	}
+	failing[slot] = FALSE;
 	controls->layout = profile.controller_settings.button_preset;
 	controls->look_sensitivity = profile.controller_settings.look_sensitivity;
 	controls->invert = profile.controller_settings.invert_look ? 1 : 0;
