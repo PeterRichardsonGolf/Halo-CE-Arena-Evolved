@@ -62,13 +62,13 @@ void ae_ds5_effect_off(unsigned char effect[AE_DS5_EFFECT_SIZE])
 	effect[0] = 0x05;
 }
 
-/* zones `position` to 9 active, each with the same 3-bit level (Feedback and Vibration share it) */
-static void zones(unsigned char effect[AE_DS5_EFFECT_SIZE], int position, int level)
+/* zones `position` to `last` active, each with the same 3-bit level (Feedback and Vibration share it) */
+static void zones(unsigned char effect[AE_DS5_EFFECT_SIZE], int position, int last, int level)
 {
 	unsigned long active = 0, levels = 0;
 	int zone;
 
-	for (zone = position; zone < 10; zone++)
+	for (zone = position; zone <= last && zone < 10; zone++)
 	{
 		active |= 1UL << zone;
 		levels |= (unsigned long)(level & 7) << (3 * zone);
@@ -90,7 +90,20 @@ void ae_ds5_effect_feedback(unsigned char effect[AE_DS5_EFFECT_SIZE], int positi
 	}
 	memset(effect, 0, AE_DS5_EFFECT_SIZE);
 	effect[0] = 0x21;
-	zones(effect, clamp(position, 0, 9), clamp(strength, 1, 8) - 1);
+	zones(effect, clamp(position, 0, 9), 9, clamp(strength, 1, 8) - 1);
+}
+
+void ae_ds5_effect_feedback_span(unsigned char effect[AE_DS5_EFFECT_SIZE], int first, int last, int strength)
+{
+	if (strength <= 0)
+	{
+		ae_ds5_effect_off(effect);
+		return;
+	}
+	first = clamp(first, 0, 9);
+	memset(effect, 0, AE_DS5_EFFECT_SIZE);
+	effect[0] = 0x21;
+	zones(effect, first, clamp(last, first, 9), clamp(strength, 1, 8) - 1);
 }
 
 void ae_ds5_effect_weapon(unsigned char effect[AE_DS5_EFFECT_SIZE], int start, int end, int strength)
@@ -121,7 +134,7 @@ void ae_ds5_effect_vibration(unsigned char effect[AE_DS5_EFFECT_SIZE], int posit
 	}
 	memset(effect, 0, AE_DS5_EFFECT_SIZE);
 	effect[0] = 0x26;
-	zones(effect, clamp(position, 0, 9), clamp(amplitude, 1, 8) - 1);
+	zones(effect, clamp(position, 0, 9), 9, clamp(amplitude, 1, 8) - 1);
 	effect[9] = (unsigned char)clamp(frequency, 1, 255);
 }
 
@@ -214,13 +227,12 @@ static struct profile
 #define CHARGING_HUM_HZ 25
 /* a shot's rumble pulse, at least (ms) */
 #define SHOT_RUMBLE_MINIMUM_MS 50
-/* L2's grenade (owner 10-21): the ready click's zones (from where a press counts), the throw's short click (NORMAL's
-strength; LIGHT 3, STRONG 6) or the plasma grenade's buzz (2 / 3 / 5), how long, the motor's pulse */
-#define GRENADE_CLICK_START 2
-#define GRENADE_CLICK_END 4
-#define GRENADE_THROW_KICK 4
-#define GRENADE_THROW_BUZZ 3
-#define GRENADE_THROW_MS 30
+/* L2's grenade (owner 10-21, after the first re-spacing: "needs a little less resistance on grenade should be like a
+hair trigger"): on every preset a hair trigger, the lightest tick that is still felt, early in the pull (zones
+GRENADE_TICK_START to GRENADE_TICK_END), nothing after it; the throw has no trigger kick, only the motor's pulse */
+#define GRENADE_TICK_START 1
+#define GRENADE_TICK_END 2
+#define GRENADE_TICK_STRENGTH 2
 #define GRENADE_THROW_RUMBLE 100
 /* the battle rifle's round: the light motor with the heavy one */
 #define BURST_RUMBLE_RIGHT 120
@@ -245,25 +257,25 @@ static int ramped(int base, int to, float amount)
 }
 
 /* TRIGGER STRENGTH (owner 10-21 after 0.3.7: "reajust the trigger pull on all the settings"; before it LIGHT,
-NORMAL and STRONG were x0.75, x1, x1.75 of every number, so STRONG's holds ran to 8, a stiff full pull, and LIGHT's
-breaks sat at 2, barely felt). The table is NORMAL's; each preset is two steps apart:
+NORMAL and STRONG were x0.75, x1, x1.75 of every number, so STRONG's holds ran to 8, a stiff full pull). The table is
+NORMAL's:
 - a hold (resistance from a zone to the end of the pull): STRONG two steps up, at most HOLD_STRONGEST (firm; a full
   pull held through a fight does not tire);
 - a click (resistance that gives way): STRONG two steps up, at most CLICK_STRONGEST;
-- LIGHT a HAIR TRIGGER (owner 10-16: "i want light to have triggers hair trigger like"): every hold and click a short
-  break at the top of the pull (zones HAIR_START to HAIR_END, where a press already counts: the game's analog press
-  threshold follows the pull, input_xbox.c), one step under NORMAL's, kept between HAIR_MINIMUM (clearly felt) and
-  HAIR_MAXIMUM, so nothing stands deeper in the pull;
-- kicks and buzzes (a vibration, a kick from zone 0 after the shot, the overheat's lock): LIGHT one step down (not
-  under PULSE_LIGHTEST, nor above the table's), STRONG two steps up (at most 8) */
+- kicks and buzzes (a vibration, a kick from zone 0 after the shot, the overheat's lock): STRONG two steps up (at
+  most 8);
+- LIGHT is a HAIR TRIGGER on both triggers (owner 10-16: "i want light to have triggers hair trigger like"; 10-21 after
+  the first re-spacing: "light mode still pretty instence on the trigger pulls. it should feel like a hair trigger on
+  both triggers on light"): every hold and click, whatever the weapon, a tiny tick early in the pull (a resistance
+  over zones HAIR_START to HAIR_END only, at HAIR_STRENGTH, nothing after it), so the pull is almost free; kicks and
+  buzzes at most LIGHT_PULSE_MOST */
 #define STRONG_STEPS 2
 #define HOLD_STRONGEST 6
 #define CLICK_STRONGEST 7
-#define HAIR_START 2
-#define HAIR_END 3
-#define HAIR_MINIMUM 3
-#define HAIR_MAXIMUM 5
-#define PULSE_LIGHTEST 2
+#define HAIR_START 1
+#define HAIR_END 2
+#define HAIR_STRENGTH 2
+#define LIGHT_PULSE_MOST 2
 
 static int hair_trigger(int percent)
 {
@@ -285,10 +297,10 @@ static int held_strong(int value, int strongest)
 	return clamp(result, 1, 8);
 }
 
-/* LIGHT's break from NORMAL's strength */
-static int hair_strength(int value)
+/* LIGHT's tick: early in the pull, nothing after it */
+static void hair_tick(unsigned char effect[AE_DS5_EFFECT_SIZE])
 {
-	return clamp(value - 1, HAIR_MINIMUM, HAIR_MAXIMUM);
+	ae_ds5_effect_feedback_span(effect, HAIR_START, HAIR_END, HAIR_STRENGTH);
 }
 
 /* a kick's or buzz's strength / amplitude for the preset */
@@ -297,7 +309,7 @@ static int pulse_scaled(int value, int percent)
 	if (value <= 0)
 		return value;
 	if (hair_trigger(percent))
-		return value - 1 < PULSE_LIGHTEST ? (value < PULSE_LIGHTEST ? value : PULSE_LIGHTEST) : value - 1;
+		return value < LIGHT_PULSE_MOST ? value : LIGHT_PULSE_MOST;
 	if (strong(percent))
 		return clamp(value + STRONG_STEPS, 1, 8);
 	return clamp(value, 1, 8);
@@ -329,9 +341,8 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 		}
 		else if (hair_trigger(strength))
 		{
-			value = hair_strength(shape.b);
-			ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, value);
-			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END, value);
+			hair_tick(effect);
+			snprintf(text, text_size, "hair trigger tick zones %d-%d strength %d", HAIR_START, HAIR_END, HAIR_STRENGTH);
 		}
 		else
 		{
@@ -343,9 +354,8 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 	case WEAPON:
 		if (hair_trigger(strength))
 		{
-			value = hair_strength(shape.b);
-			ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, value);
-			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END, value);
+			hair_tick(effect);
+			snprintf(text, text_size, "hair trigger tick zones %d-%d strength %d", HAIR_START, HAIR_END, HAIR_STRENGTH);
 		}
 		else
 		{
@@ -368,12 +378,12 @@ static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape 
 }
 
 /* DRY CLICK (an empty weapon, L2 with no grenades): slack, then a weak hollow click at the bottom of the pull, once a
-pull (the weapon effect's own), on every preset (LIGHT too: an empty weapon has nothing to fire, the click is news,
-not resistance), STRONG a step firmer */
+pull (the weapon effect's own), on every preset (an empty weapon has nothing to fire, the click is news, not
+resistance): LIGHT the faintest, STRONG a step firmer */
 #define DRY_STRENGTH 2
 static int dry_click(unsigned char effect[AE_DS5_EFFECT_SIZE], int strength)
 {
-	int value = DRY_STRENGTH + (strong(strength) ? 1 : 0);
+	int value = hair_trigger(strength) ? 1 : DRY_STRENGTH + (strong(strength) ? 1 : 0);
 
 	ae_ds5_effect_weapon(effect, 7, 8, value);
 	return value;
@@ -517,28 +527,16 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 		break;
 	}
 	case AE_DS5_EVENT_GRENADE_FRAG:
-	{
-		/* (L2) a frag grenade leaving the hand: a short click (owner 10-21, 0.3.7: "Grenade trigger strong on all
-		presets": was a 25 Hz jolt at 7 for 80 ms), a light pulse on the left motor */
-		struct shape click = F(0, GRENADE_THROW_KICK);
-
-		shape = click;
-		ms = GRENADE_THROW_MS;
+		/* (L2) a frag grenade leaving the hand: no trigger kick (owner 10-21: "should be like a hair trigger"; it was a
+		25 Hz jolt at 7 for 80 ms, then a 30 ms click), a light pulse on the left motor */
 		rumble->left = GRENADE_THROW_RUMBLE;
 		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
 		break;
-	}
 	case AE_DS5_EVENT_GRENADE_PLASMA:
-	{
-		/* (L2) a plasma grenade leaving the hand: a short light buzz, the right motor */
-		struct shape buzz = V(0, GRENADE_THROW_BUZZ, 45);
-
-		shape = buzz;
-		ms = GRENADE_THROW_MS + 20;
+		/* (L2) a plasma grenade leaving the hand: the same, on the right motor */
 		rumble->right = GRENADE_THROW_RUMBLE;
 		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
 		break;
-	}
 	}
 	ae_ds5_rumble_scaled(rumble, strength);
 	if (shape.mode == OFF || ms <= 0)
@@ -563,20 +561,17 @@ char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind)
 char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
 	int strength)
 {
-	/* (L2 lighter than R2 on every preset, owner 10-21: "Grenade trigger strong on all presets": a grenade is a light,
-	quick pull. The zoom's hold LIGHT / NORMAL / STRONG: a break of 2 / feedback 2 / feedback 3; grenades in hand a
-	short click where the press counts, 2 / 3 / 4; wound up, free (it was a feedback of 3 / 5 / 8 from zone 2 against
-	the finger already down); the throw's click is its event) */
-	static int const zoom[3] = { 2, 2, 3 };
-	static int const ready[3] = { 2, 3, 4 };
-	int preset = hair_trigger(strength) ? 0 : strong(strength) ? 2 : 1;
-
+	/* (owner 10-21: the grenade a hair trigger on every preset, LIGHT a hair trigger on both triggers. The zoom's hold:
+	LIGHT none, NORMAL feedback 2, STRONG 3; grenades in hand the hair tick (zones 1-2, strength 2) on every preset;
+	wound up, free) */
 	if (zoomed)
 	{
-		if (preset == 0)
-			ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, zoom[preset]);
-		else
-			ae_ds5_effect_feedback(effect, 2, zoom[preset]);
+		if (hair_trigger(strength))
+		{
+			ae_ds5_effect_off(effect);
+			return "free (zoomed, light)";
+		}
+		ae_ds5_effect_feedback(effect, 2, strong(strength) ? 3 : 2);
 		return "light resistance (zoomed)";
 	}
 	if (winding)
@@ -586,8 +581,8 @@ char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoo
 	}
 	if (grenades > 0)
 	{
-		ae_ds5_effect_weapon(effect, GRENADE_CLICK_START, preset == 0 ? HAIR_END : GRENADE_CLICK_END, ready[preset]);
-		return "grenade ready (light click)";
+		ae_ds5_effect_feedback_span(effect, GRENADE_TICK_START, GRENADE_TICK_END, GRENADE_TICK_STRENGTH);
+		return "grenade ready (hair trigger tick)";
 	}
 	dry_click(effect, strength);
 	return "no grenades (dry click)";

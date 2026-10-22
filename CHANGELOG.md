@@ -6,9 +6,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
-- DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT's hair-trigger break is easier to
-  feel, STRONG is two steps firmer than NORMAL but never so stiff that a full pull tires. L2's grenade is a light,
-  quick pull with a short click at the throw on every setting (it was strong on all of them). The weapon packs have
+- DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT is a true hair trigger on both
+  triggers (a tiny tick early in the pull, nothing after it, small kicks), STRONG is two steps firmer than NORMAL but
+  never so stiff that a full pull tires. L2's grenade is a hair trigger on every setting (it was strong on all of
+  them). The weapon packs have
   their own feel: the SMG a fast buzz, the silenced SMG a softer, lower buzz, the carbine a crisp click lighter than the
   pistol's, the battle rifle a firm click and a small pulse for each round of its burst.
 - OpenCE build-250 merged. The visibility readback (which lights and lens flares are visible) is OpenCE's final

@@ -11,6 +11,19 @@ static int same(unsigned char const *a, unsigned char const *b, size_t size)
 	return memcmp(a, b, size) == 0;
 }
 
+/* a zone effect's (feedback, vibration) strength / amplitude 1-8 in its first active zone */
+static int first_level(unsigned char const *effect)
+{
+	unsigned long active = effect[1] | (unsigned long)effect[2] << 8;
+	unsigned long bits = effect[3] | (unsigned long)effect[4] << 8 | (unsigned long)effect[5] << 16 |
+		(unsigned long)effect[6] << 24;
+	int zone;
+
+	for (zone = 0; zone < 10 && !(active & (1UL << zone)); zone++)
+		;
+	return zone < 10 ? (int)((bits >> (3 * zone)) & 7) + 1 : 0;
+}
+
 /* ONE WRITER: the link's coalescing, the Bluetooth window, a busy queue, a pad that went */
 static void link_tests(void)
 {
@@ -247,6 +260,12 @@ int main(void)
 	ae_ds5_effect_vibration(effect, 3, 5, 15);
 	CHECK(same(effect, vibration_3_5_15, sizeof(vibration_3_5_15)));
 	ae_ds5_effect_vibration(effect, 3, 5, 0);
+	CHECK(same(effect, off, sizeof(off)));
+	/* a span: zones 1-2 only at strength 2 (level 1: bits 3 and 6) */
+	ae_ds5_effect_feedback_span(effect, 1, 2, 2);
+	CHECK(effect[0] == 0x21 && effect[1] == 0x06 && effect[2] == 0 && effect[3] == 0x48 && effect[4] == 0 &&
+		effect[5] == 0 && effect[6] == 0);
+	ae_ds5_effect_feedback_span(effect, 1, 2, 0);
 	CHECK(same(effect, off, sizeof(off)));
 
 	/* kinds from the tag numbers */
@@ -526,11 +545,11 @@ int main(void)
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SNIPER, AE_DS5_EVENT_SETTLE, 100) == 30 && effect[0] == 0x21 &&
 			rumble.left == 0 && rumble.right == 0);
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_CHAMBER, 100) == 45 && rumble.left == 120);
-		/* (grenades: a short click at the throw, light motors) */
-		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_FRAG, 100) == 30 &&
-			effect[0] == 0x21 && rumble.left == 100 && rumble.right == 0 && rumble.ms == 50);
-		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_PLASMA, 100) == 50 &&
-			effect[0] == 0x26 && effect[9] == 45 && rumble.right == 100 && rumble.left == 0);
+		/* (grenades: no trigger kick at the throw, a light motor pulse) */
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_FRAG, 100) == 0 &&
+			same(effect, off, sizeof(off)) && rumble.left == 100 && rumble.right == 0 && rumble.ms == 50);
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_PLASMA, 100) == 0 &&
+			same(effect, off, sizeof(off)) && rumble.right == 100 && rumble.left == 0);
 		/* the families */
 		CHECK(ae_ds5_kind_covenant(AE_DS5_WEAPON_CHARGE) && ae_ds5_kind_covenant(AE_DS5_WEAPON_NEEDLER) &&
 			ae_ds5_kind_covenant(AE_DS5_WEAPON_PLASMA_HEAT));
@@ -607,8 +626,8 @@ int main(void)
 	/* L2: zoomed, a grenade wound up, grenades in hand, none (the dry click) */
 	CHECK(!strcmp(ae_ds5_left_effect(effect, 1, 0, 0, 100), "light resistance (zoomed)") && effect[0] == 0x21);
 	CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 2, 1, 100), "grenade wound up (free)") && same(effect, off, sizeof(off)));
-	CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 2, 0, 100), "grenade ready (light click)") && effect[0] == 0x25 &&
-		effect[1] == ((1 << 2) | (1 << 4)) && effect[3] == 2);
+	CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 2, 0, 100), "grenade ready (hair trigger tick)") && effect[0] == 0x21 &&
+		effect[1] == 0x06 && effect[3] == 0x48);
 	CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 0, 0, 100), "no grenades (dry click)") && effect[0] == 0x25 &&
 		effect[1] == 0x80 && effect[2] == 0x01);
 
@@ -728,32 +747,35 @@ int main(void)
 		CHECK(rgb[0] == 0x28 && rgb[1] == 0x96 && rgb[2] == 0xff);
 	}
 
-	/* TRIGGER STRENGTH (owner 10-21 after 0.3.7: "reajust the trigger pull on all the settings"): the table is NORMAL's;
-	STRONG a hold two steps up (at most 6), a click two up (at most 7), kicks and buzzes two up (at most 8), motors at
-	140 % kept 0-255; LIGHT a hair trigger (every hold or click a break at zones 2-3, a step under NORMAL's, 3 to 5),
-	kicks and buzzes a step down (not under 2), motors at three quarters; the player lights */
+	/* TRIGGER STRENGTH (owner 10-21 after 0.3.7: "reajust the trigger pull on all the settings"; then "it should feel
+	like a hair trigger on both triggers on light"): the table is NORMAL's; STRONG a hold two steps up (at most 6), a
+	click two up (at most 7), kicks and buzzes two up (at most 8), motors at 140 % kept 0-255; LIGHT a hair trigger
+	(every hold or click a tick over zones 1-2 at 2, nothing after it), kicks and buzzes at most 2, motors at three
+	quarters; the player lights */
 	{
 		struct ae_ds5_weapon_state state;
 		struct ae_ds5_rumble rumble;
 		char text[96];
+		unsigned char tick[AE_DS5_EFFECT_SIZE];
 
+		/* (LIGHT's hair trigger: a tick over zones 1-2 at 2, nothing after it) */
+		ae_ds5_effect_feedback_span(tick, 1, 2, 2);
 		CHECK(ae_ds5_strength_percent("light") == 75 && ae_ds5_strength_percent("normal") == 100 &&
 			ae_ds5_strength_percent("strong") == 175 && ae_ds5_strength_percent("") == 100);
 		memset(&state, 0, sizeof(state));
 		state.kind = AE_DS5_WEAPON_SNIPER;
 		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
-		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 3") && effect[0] == 0x25);
-		CHECK(effect[1] == 0x0c && effect[3] == 2);
+		CHECK(!strcmp(text, "held: hair trigger tick zones 1-2 strength 2") && same(effect, tick, sizeof(tick)));
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 2 strength 6"));
 		state.kind = AE_DS5_WEAPON_NEEDLER;
 		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
-		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 3"));
+		CHECK(!strcmp(text, "held: hair trigger tick zones 1-2 strength 2"));
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 3 strength 4"));
 		state.kind = AE_DS5_WEAPON_SEMI;
 		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
-		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 3"));
+		CHECK(!strcmp(text, "held: hair trigger tick zones 1-2 strength 2"));
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: click zones 4-7 strength 6"));
 		state.kind = AE_DS5_WEAPON_AUTOMATIC;
@@ -762,7 +784,7 @@ int main(void)
 		state.firing = 1;
 		state.rate_of_fire = 15.0f;
 		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
-		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 4 at 15 Hz"));
+		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 2 at 15 Hz"));
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 7 at 15 Hz"));
 		state.firing = 0;
@@ -772,27 +794,26 @@ int main(void)
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: feedback from zone 2 strength 6"));
 		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
-		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 5"));
+		CHECK(!strcmp(text, "held: hair trigger tick zones 1-2 strength 2"));
 		state.heat = 0.0f;
-		/* the dry click: the bottom of the pull on every preset (LIGHT too), STRONG a step firmer */
+		/* the dry click: the bottom of the pull on every preset, LIGHT the faintest, STRONG a step firmer */
 		state.kind = AE_DS5_WEAPON_SEMI;
 		state.empty = 1;
 		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
-		CHECK(!strcmp(text, "dry click (empty): click zones 7-8 strength 2") && effect[1] == 0x80 && effect[2] == 0x01);
+		CHECK(!strcmp(text, "dry click (empty): click zones 7-8 strength 1") && effect[1] == 0x80 && effect[2] == 0x01);
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "dry click (empty): click zones 7-8 strength 3"));
 		state.empty = 0;
-		/* the pistol's shot on LIGHT: its snap back kept (from zone 0, after the shot), a step lighter (6), the motor
-		at three quarters */
+		/* the pistol's shot on LIGHT: its snap back only a tick (2, from zone 0, after the shot), the motor at three
+		quarters */
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 75) == 35 && effect[0] == 0x21);
-		CHECK(rumble.left == 113 && rumble.ms == 60 && effect[3] == 0x6d);
+		CHECK(rumble.left == 113 && rumble.ms == 60 && effect[3] == 0x49);
 		ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, 100);
 		CHECK(effect[0] == 0x21 && rumble.left == 150);
 		ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_SHOT, 175);
 		CHECK(effect[0] == 0x26 && rumble.left == 255);
-		/* L2's zoom: a break of 2 / a hold of 2 / a hold of 3 */
-		CHECK(!strcmp(ae_ds5_left_effect(effect, 1, 0, 0, 75), "light resistance (zoomed)") && effect[0] == 0x25 &&
-			effect[3] == 1);
+		/* L2's zoom: free on LIGHT / a hold of 2 / a hold of 3 */
+		CHECK(!strcmp(ae_ds5_left_effect(effect, 1, 0, 0, 75), "free (zoomed, light)") && same(effect, off, sizeof(off)));
 		ae_ds5_left_effect(effect, 1, 0, 0, 175);
 		CHECK(effect[0] == 0x21 && effect[3] == 0x80);
 		rumble.left = 200;
@@ -806,8 +827,8 @@ int main(void)
 	}
 
 	/* EVERY KIND ON EVERY PRESET (owner 10-21): NORMAL the table's; STRONG clearly firmer (a hold or click at least two
-	steps up), a hold never over 6 and a click never over 7 (a full pull does not tire); LIGHT a break at the top of
-	the pull, 3 to 5 (clearly felt), never firmer than NORMAL's click */
+	steps up), a hold never over 6 and a click never over 7 (a full pull does not tire); LIGHT almost free: the same
+	tick early in the pull for every weapon, its kick and its firing buzz at most 2 */
 	{
 		int kind;
 
@@ -817,7 +838,8 @@ int main(void)
 			char text[96];
 			int levels[3], i, preset;
 			static int const percents[3] = { 75, 100, 175 };
-			unsigned char modes[3];
+			unsigned char modes[3], tick[AE_DS5_EFFECT_SIZE];
+			struct ae_ds5_rumble rumble;
 
 			if (kind == AE_DS5_WEAPON_CARRY)
 				continue;
@@ -847,35 +869,45 @@ int main(void)
 					levels[1]);
 			CHECK(levels[2] > levels[1]);
 			CHECK(levels[2] <= (modes[2] == 0x25 ? 7 : 6));
-			CHECK(modes[0] == 0x25 && levels[0] >= 3 && levels[0] <= 5);
-			CHECK(modes[1] != 0x25 || levels[0] <= levels[1]);
+			CHECK(levels[0] <= levels[1]);
+			/* (LIGHT: the tick; its firing shape and its kick at most 2: level 1 in zone 0 or 3) */
+			memset(&state, 0, sizeof(state));
+			state.kind = (enum ae_ds5_weapon_kind)kind;
+			state.rate_of_fire = 10.0f;
+			ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
+			ae_ds5_effect_feedback_span(tick, 1, 2, 2);
+			if (!same(effect, tick, sizeof(tick)))
+				printf("FAIL %s on LIGHT: %s\n", ae_ds5_weapon_kind_name(kind), text);
+			CHECK(same(effect, tick, sizeof(tick)));
+			state.firing = 1;
+			ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
+			CHECK(same(effect, tick, sizeof(tick)) || (effect[0] == 0x26 && first_level(effect) <= 2));
+			if (ae_ds5_event(effect, &rumble, (enum ae_ds5_weapon_kind)kind, AE_DS5_EVENT_SHOT, 75) > 0)
+				CHECK((effect[0] == 0x21 || effect[0] == 0x26) && first_level(effect) <= 2);
 		}
 	}
 
-	/* L2's grenade (owner 10-21 after 0.3.7: "Grenade trigger strong on all presets"): lighter than R2 on every
-	preset, scaled like it: ready a short click where the press counts (2 / 3 / 4), free once wound up, the throw a
-	short click (3 / 4 / 6, 30 ms) or the plasma grenade's buzz (2 / 3 / 5), the motor's pulse 75 / 100 / 140 */
+	/* L2's grenade (owner 10-21 after 0.3.7: "Grenade trigger strong on all presets", then "needs a little less
+	resistance on grenade should be like a hair trigger"): on every preset the lightest tick still felt, zones 1-2 at 2,
+	nothing after it; free once wound up; the throw no trigger kick, the motor's pulse 75 / 100 / 140 */
 	{
 		static int const percents[3] = { 75, 100, 175 };
-		static int const ready[3] = { 2, 3, 4 }, ready_end[3] = { 3, 4, 4 };
-		static int const throw_kick[3] = { 3, 4, 6 }, plasma_buzz[3] = { 2, 3, 5 }, motor[3] = { 75, 100, 140 };
-		unsigned char expected[AE_DS5_EFFECT_SIZE];
+		static int const motor[3] = { 75, 100, 140 };
+		unsigned char tick[AE_DS5_EFFECT_SIZE];
 		struct ae_ds5_rumble rumble;
 		int preset;
 
+		ae_ds5_effect_feedback_span(tick, 1, 2, 2);
 		for (preset = 0; preset < 3; preset++)
 		{
-			CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 2, 0, percents[preset]), "grenade ready (light click)"));
-			ae_ds5_effect_weapon(expected, 2, ready_end[preset], ready[preset]);
-			CHECK(same(effect, expected, sizeof(expected)));
+			CHECK(!strcmp(ae_ds5_left_effect(effect, 0, 2, 0, percents[preset]), "grenade ready (hair trigger tick)"));
+			CHECK(same(effect, tick, sizeof(tick)));
 			ae_ds5_left_effect(effect, 0, 2, 1, percents[preset]);
 			CHECK(same(effect, off, sizeof(off)));
-			CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_GRENADE_FRAG, percents[preset]) == 30);
-			ae_ds5_effect_feedback(expected, 0, throw_kick[preset]);
-			CHECK(same(effect, expected, sizeof(expected)) && rumble.left == motor[preset] && rumble.ms == 50);
-			CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_GRENADE_PLASMA, percents[preset]) == 50);
-			ae_ds5_effect_vibration(expected, 0, plasma_buzz[preset], 45);
-			CHECK(same(effect, expected, sizeof(expected)) && rumble.right == motor[preset]);
+			CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_GRENADE_FRAG, percents[preset]) == 0);
+			CHECK(same(effect, off, sizeof(off)) && rumble.left == motor[preset] && rumble.ms == 50);
+			CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_GRENADE_PLASMA, percents[preset]) == 0);
+			CHECK(same(effect, off, sizeof(off)) && rumble.right == motor[preset]);
 		}
 	}
 
@@ -907,7 +939,11 @@ int main(void)
 			ae_ds5_right_held(silenced, &state, percents[preset], text, sizeof(text));
 			/* (amplitude: zone 3's level; frequency byte 9) */
 			CHECK(smg[0] == 0x26 && silenced[0] == 0x26 && silenced[9] < smg[9]);
-			CHECK(((silenced[4] >> 1) & 7) < ((smg[4] >> 1) & 7));
+			/* (LIGHT: both at most 2) */
+			if (preset == 0)
+				CHECK(((silenced[4] >> 1) & 7) <= ((smg[4] >> 1) & 7) && ((smg[4] >> 1) & 7) <= 1);
+			else
+				CHECK(((silenced[4] >> 1) & 7) < ((smg[4] >> 1) & 7));
 		}
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SMG, AE_DS5_EVENT_SHOT, 100) == 0 && rumble.left == 70);
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SMG_SILENCED, AE_DS5_EVENT_SHOT, 100) == 0 &&
@@ -929,19 +965,20 @@ int main(void)
 		{
 			CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_CARBINE, AE_DS5_EVENT_SHOT, percents[preset]) == 30);
 			CHECK(ae_ds5_event(pistol_effect, &pistol, AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, percents[preset]) == 35);
-			/* (from zone 0: the level in byte 3's low bits) */
-			CHECK(effect[0] == 0x21 && (effect[3] & 7) < (pistol_effect[3] & 7));
+			/* (from zone 0: the level in byte 3's low bits; on LIGHT both a tick of 2) */
+			CHECK(effect[0] == 0x21 && (preset == 0 ? (effect[3] & 7) == 1 && (pistol_effect[3] & 7) == 1 :
+				(effect[3] & 7) < (pistol_effect[3] & 7)));
 			CHECK(rumble.right > 0 && rumble.left == 0 && rumble.right < pistol.left);
 		}
 
-		/* the battle rifle: a firm click (5; STRONG 7, LIGHT a break of 4); a burst's three rounds, three pulses */
+		/* the battle rifle: a firm click (5; STRONG 7, LIGHT the tick); a burst's three rounds, three pulses */
 		memset(&state, 0, sizeof(state));
 		state.kind = AE_DS5_WEAPON_BURST;
 		state.rate_of_fire = 15.0f;
 		ae_ds5_right_held(effect, &state, 175, text, sizeof(text));
 		CHECK(!strcmp(text, "held: click zones 4-7 strength 7"));
 		ae_ds5_right_held(effect, &state, 75, text, sizeof(text));
-		CHECK(!strcmp(text, "held: hair trigger break zones 2-3 strength 4"));
+		CHECK(!strcmp(text, "held: hair trigger tick zones 1-2 strength 2"));
 		state.firing = 1;
 		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
 		CHECK(effect[0] == 0x26 && effect[9] == 15);
