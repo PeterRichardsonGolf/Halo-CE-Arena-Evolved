@@ -58,6 +58,8 @@ enum { JOIN_SEARCH_MS = 10000, JOIN_VERSION_MS = 3000, JOIN_CONNECT_MS = 15000 }
 /* (JOIN_LISTING: LAN GAMES' search, no game joined until one is picked) */
 enum { JOIN_NONE, JOIN_SEARCHING, JOIN_INVITE, JOIN_CONNECTING, JOIN_JOINED, JOIN_FAILED, JOIN_LISTING };
 
+void main_menu_scene_start_for_lobby(void); /* main.c */
+
 static struct
 {
 	/* AE's glue made the session there is now (hosted or joined it) */
@@ -72,6 +74,8 @@ static struct
 	/* (the hosts the search heard: on this machine's network version, on another (the last such)) */
 	int heard_compatible, heard_incompatible;
 	unsigned short incompatible_version;
+	/* the ui scenario to load again under the lobby (after a game) */
+	int background_pending;
 	/* an invite's code (its host joined by it) */
 	char invite[128];
 } lobby;
@@ -313,6 +317,9 @@ struct ae_result ae_lobby_start(void)
 		return failed("start", AE_STR_ERR_NOT_HOSTING, NULL);
 	if (game_engine_running() && !main_menu_is_active())
 		return failed("start", AE_STR_ERR_IN_GAME, NULL);
+	/* back from a game the take-over held the host's countdown (ae_lobby_take_pregame_ui), and the server ignores
+	the start while it is held: this is the start, so it is let go */
+	network_game_server_pause_countdown(global_network_game_server_get(), FALSE);
 	network_game_client_request_immediate_start();
 	platform_log("ae lobby: starting");
 	return succeeded();
@@ -532,6 +539,9 @@ struct ae_result ae_lobby_leave(void)
 	p2p_set_hosting_allowed(FALSE);
 	p2p_set_hosting_public(FALSE);
 	game_connection_set(_game_connection_local);
+	/* (the client's disposal took the update queues, which the menus' running clock needs: the engine's own no-client
+	path makes them again) */
+	main_menu_ensure_player_queues_exist();
 	lobby.owns = FALSE;
 	lobby.join = JOIN_NONE;
 	platform_log(hosting ? "ae lobby: closed" : "ae lobby: left");
@@ -567,6 +577,12 @@ void ae_lobby_update(unsigned long now)
 	struct network_game_client *client = global_network_game_client_get();
 
 	lobby.now = now;
+	if (lobby.background_pending)
+	{
+		lobby.background_pending = FALSE;
+		main_menu_scene_start_for_lobby();
+		platform_log("ae lobby: the menus' background scene started under the lobby");
+	}
 	/* (the session gone, by whatever means: not AE's any more; checked each frame) */
 	ae_lobby_owns_session();
 	if (lobby.join == JOIN_SEARCHING)
@@ -643,6 +659,9 @@ boolean ae_lobby_take_pregame_ui(
 		platform_log("ae lobby: pregame UI left to the game (the screen could not be pushed)");
 		return FALSE;
 	}
+	/* the menus' background is the ui scenario's scene (the ring), whose clock the round stopped:
+	started again, next frame, outside the network's own update (ae_lobby_update) */
+	lobby.background_pending = TRUE;
 	/* what upstream's branch does besides loading its widget: the host's countdown held (ui_widget.c
 	network_game_reset_to_pregame_ui); AE's pregame screen is up */
 	if (global_network_game_server_get())

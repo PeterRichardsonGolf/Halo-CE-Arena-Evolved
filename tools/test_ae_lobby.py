@@ -48,6 +48,13 @@ def play(cfg, out, name, spec):
     return result, text, pngs
 
 
+def picture_brightness(path):
+    """the mean of every 7th pixel of the picture ((r + g + b) / 3, 0-255)"""
+    w, h, rgb = menus.harness.read_png(path)
+    values = [(rgb[i] + rgb[i + 1] + rgb[i + 2]) / 3 for i in range(0, w * h * 3, 21)]
+    return sum(values) / len(values)
+
+
 def in_order(text, lines):
     """the index in text of each line, in order; a missing (or out of order) one fails with what came before"""
     position = 0
@@ -79,6 +86,23 @@ def test_host_bots_round_trip(cfg):
     assert before and before.groups() == back.groups(), (before, back)
     assert pngs, "no screenshots"
     (out / "back-in-the-lobby.png").write_bytes(pngs[-1].read_bytes())
+    # (the menus' background scene is under the lobby again: the picture is not near black, as the round left it)
+    assert "ae lobby: the menus' background scene started under the lobby" in text
+    assert picture_brightness(pngs[-1]) > 12, "the lobby's background is black after the game"
+
+
+def test_start_again_after_a_game(cfg):
+    """back in the lobby from a round, START GAME plays the next round (the take-over held the host's countdown, which
+    ignored the start: the game went back to the main menu and no map loaded)"""
+    out = menus.out_dir(cfg, "lobby-again")
+    result, text, pngs = play(cfg, out, "again", {
+        "exit_after": 110, "bots": 3,
+        "env": {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "90", "HALO_AE_TEST_RESTART": "1"},
+        "expect": {"ticks": 0}})
+    assert result.get("status") == "PASS", result.get("why")
+    in_order(text, ["ae lobby: took the pregame UI", "ae lobby: back in the lobby, roster 4", "ae lobby: starting",
+                    "ae lobby: second round playing"])
+    assert text.count("game rules:") >= 2, "the next round's game rules never loaded"
 
 
 def test_not_ae_session_left_to_the_game(cfg):

@@ -1160,6 +1160,19 @@ void main_menu_load(
 	return;
 }
 
+/* AE hook: the menus' background (the ui scenario's ring and planet) under AE's lobby back from a game. The round
+left the ui scenario loaded (network_game_end_and_load_ui) with its clock stopped, so the scripted camera never moved
+into the scene and the menu drew black: the clock started, as main_menu_load does. Not its shell widget
+(main_screen_shell_load: the root's initialize disposes the session the lobby shows), nor its clock reset (a client's
+update server queues are gone by then: a crash) */
+void main_menu_scene_start_for_lobby(
+	void)
+{
+	if (!main_globals.main_menu_scenario_loaded)
+		main_load_ui_scenario(FALSE);
+	game_time_start();
+}
+
 static void screenshot_record(
 	struct bitmap_data *screen,
 	struct file_reference *file)
