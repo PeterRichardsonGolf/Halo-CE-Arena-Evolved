@@ -7,19 +7,23 @@ are fractions of the frame, sizes u.
 
 CREATE GAME: MAP (CHANGE MAP for the gametype's filter; its pick comes back here), GAMETYPE (the saved gametypes'
 picker: a new copy), GAME OPTIONS (N CHANGED: the GAME OPTIONS screen on the copy), TIME LIMIT and the score in place,
-NETWORK (PLAY ON THIS PC, LAN, HOST ONLINE), START GAME. START GAME hosts (ae_lobby_host), waits for this PC's client
+NETWORK (PLAY ON THIS PC, LAN, HOST ONLINE), BOTS and BOT SKILL (the settings' bots.count and bots.skill, as the old
+menus' Bots screen writes them: OFF and 1-15 in the menus, config.toml up to 127), START GAME. START GAME hosts (ae_lobby_host), waits for this PC's client
 (10 s at most), adds player 1, chooses the map, applies the copy (ae_setup_edit_apply) and opens the LOBBY. B closes
 it: the game's main menu comes back.
 
 LOBBY (AE's pregame screen: ae_lobby_set_pregame_screen): MAP and GAMETYPE as in CREATE GAME, QUICK OPTIONS (time,
 score, shield type, primary weapon with a custom loadout, grenades on map, sensor range, respawn time: stepped in place
-and applied to the server at once, PREGAME), START GAME; the roster's cards on the right. START GAME starts and takes
+and applied to the server at once, PREGAME), START GAME; the roster's cards on the right, PLAYERS counting people (bots
+apart), and under them BOTS and BOT SKILL (the host's: down from START GAME; written at once, so the lobby's bots
+follow, as the old menus' live BOT COUNT; the rows on the left have no room for two more with their help). START GAME starts and takes
 every AE screen off the stack while the game plays; the take-over (ae_lobby_take_pregame_ui) brings the LOBBY back
 after it. B asks, then leaves the session and goes back to CREATE GAME. The quick options change the session's copy:
 they last to the next game, the saved gametype is never written.
 
 Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "hosted, player 1 in", "start failed:
-<why>", "lobby: open", "lobby: quick <label> <value>", "lobby: start", "lobby: leave", "closed".
+<why>", "lobby: open", "lobby: quick <label> <value>", "[lobby: ]bots <count>", "[lobby: ]bot skill <level>", "lobby: start",
+"lobby: leave", "closed".
 */
 
 #include <stdint.h>
@@ -64,17 +68,21 @@ void p2p_set_hosting_public(int public_game);
 void p2p_set_hosting_password(const char *password);
 void network_game_server_port_set_settings(wchar_t const *name, long maximum_players);
 int config_boolean(char const *name);
+long config_integer(char const *name);
+char const *config_string(char const *name);
+int config_write(char const *name, char const *value);
 
 enum
 {
 	FLOW_HIT = 0x7F00,
-	HIT_ROWS = FLOW_HIT + 1, HIT_PROMPTS, HIT_CARDS,
+	HIT_ROWS = FLOW_HIT + 1, HIT_PROMPTS, HIT_CARDS, HIT_BOT_ROWS,
 	GAMETYPES_MAXIMUM = 128,
 	JOIN_WAIT_MS = 10000
 };
 enum { NETWORK_LOCAL, NETWORK_LAN, NETWORK_ONLINE, NETWORKS };
 enum { ROW_HEADER = AE_FLOW_ROW_HEADER, ROW_OPTION = AE_FLOW_ROW_OPTION, ROW_MAP = AE_FLOW_ROW_OWN, ROW_GAMETYPE,
-	ROW_OPTIONS, ROW_NETWORK, ROW_START, ROW_PRIVACY, ROW_MAXIMUM_PLAYERS, ROW_JOIN, ROW_INVITE, ROW_INFO };
+	ROW_OPTIONS, ROW_NETWORK, ROW_START, ROW_PRIVACY, ROW_MAXIMUM_PLAYERS, ROW_JOIN, ROW_INVITE, ROW_INFO, ROW_BOTS,
+	ROW_BOT_SKILL };
 enum { START_IDLE, START_JOINING, START_DONE, START_JOINING_INVITE };
 enum { PRIVACY_INVITE_ONLY, PRIVACY_PUBLIC, PRIVACIES };
 
@@ -91,6 +99,14 @@ static const char *const privacy_helps[PRIVACIES] = {
 	"Only players with your invite link join. Copy it in the lobby.",
 	"Listed in the server browser for anyone to join, and joinable by invite."
 };
+/* BOTS: OFF and 1-15 (bots.count; config.toml takes up to 127, shown as it is), BOT SKILL: bots.skill's levels (wording
+and help: tools/port_settings.py's Bots screen) */
+enum { BOTS_MENU_MAXIMUM = 15, BOTS_SETTING_MAXIMUM = 127, BOT_SKILLS = 6, BOT_SKILL_DEFAULT = 2, BOT_ROWS = 2 };
+static const char *const bot_skill_values[BOT_SKILLS] = { "recruit", "easy", "normal", "heroic", "legendary", "demon" };
+static const char *const bot_skill_names[BOT_SKILLS] = { "RECRUIT", "EASY", "NORMAL", "HEROIC", "LEGENDARY", "DEMON" };
+#define BOTS_HELP "How many bots, up to 15, play the games you host: split screen, LAN or internet. A person who " \
+	"joins a full game takes a bot's place."
+#define BOT_SKILL_HELP "How soon the bots react, how well they aim and how far they see."
 static const short maximum_players[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
 enum { MAXIMUM_PLAYERS_COUNT = sizeof(maximum_players) / sizeof(maximum_players[0]), MAXIMUM_PLAYERS_DEFAULT = 4 };
 
@@ -129,6 +145,8 @@ static struct
 	int from_browser;          /* opened by SERVER BROWSER / LAN GAMES (ae_screen_browser.c): leaving goes back to it */
 	char invite[160];          /* the hosted game's invite link (ONLINE), "" none yet */
 	char invite_shown[48];
+	short bot_focus;           /* BOTS (0) or BOT SKILL (1) under the roster has the focus, -1 none */
+	struct ae_rect bot_rects[BOT_ROWS];
 } lobby;
 
 static struct ae_screen_class const create_class, lobby_class;
@@ -310,6 +328,83 @@ static struct ae_flow_row option_row(int option)
 	return row;
 }
 
+/* ---------- BOTS and BOT SKILL (the settings: both screens) */
+
+static long bots_count(void)
+{
+	long count = config_integer("bots.count");
+
+	return count < 0 ? 0 : count > BOTS_SETTING_MAXIMUM ? BOTS_SETTING_MAXIMUM : count;
+}
+
+static const char *bots_value(void)
+{
+	static char text[8];
+	long count = bots_count();
+
+	if (!count)
+		return "OFF";
+	snprintf(text, sizeof(text), "%ld", count);
+	return text;
+}
+
+static short bot_skill(void)
+{
+	char const *now = config_string("bots.skill");
+	short index;
+
+	for (index = 0; now && index < BOT_SKILLS; index++)
+	{
+		if (!strcmp(now, bot_skill_values[index]))
+			return index;
+	}
+	return BOT_SKILL_DEFAULT;
+}
+
+/* BOTS (row 0) or BOT SKILL (1) stepped and written (the lobby's bots follow the setting at once); who: the log's
+"lobby: " or "" */
+static void bots_step(int row, short direction, const char *who)
+{
+	char text[8];
+	long count = bots_count();
+	short current, next;
+
+	if (row == 0)
+	{
+		/* (more than the menus' 15, from config.toml: left comes back to 15, right goes no further) */
+		current = (short)(count > BOTS_MENU_MAXIMUM ? BOTS_MENU_MAXIMUM + 1 : count);
+		next = ae_value_step(BOTS_MENU_MAXIMUM + 1, current > BOTS_MENU_MAXIMUM ? BOTS_MENU_MAXIMUM : current,
+			direction);
+		if (current > BOTS_MENU_MAXIMUM && direction > 0)
+			next = current;
+		snprintf(text, sizeof(text), "%d", next);
+		if (next == current || !config_write("bots.count", text))
+		{
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+			return;
+		}
+		platform_log("ae create game: %sbots %s", who, bots_value());
+	}
+	else
+	{
+		current = bot_skill();
+		next = ae_value_step(BOT_SKILLS, current, direction);
+		if (next == current || !config_write("bots.skill", bot_skill_values[next]))
+		{
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+			return;
+		}
+		platform_log("ae create game: %sbot skill %s", who, bot_skill_names[next]);
+	}
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+}
+
+static struct ae_flow_row bot_row(int row)
+{
+	return row == 0 ? (struct ae_flow_row){ ROW_BOTS, -1, "BOTS", bots_value(), BOTS_HELP } :
+		(struct ae_flow_row){ ROW_BOT_SKILL, -1, "BOT SKILL", bot_skill_names[bot_skill()], BOT_SKILL_HELP };
+}
+
 /* ---------- CREATE GAME */
 
 static void create_rows(void)
@@ -331,6 +426,8 @@ static void create_rows(void)
 		flow->rows[count++] = (struct ae_flow_row){ ROW_MAXIMUM_PLAYERS, -1, "MAX PLAYERS", create.players_text,
 			"The most players the game takes, bots included." };
 	}
+	flow->rows[count++] = bot_row(0);
+	flow->rows[count++] = bot_row(1);
 	flow->rows[count++] = (struct ae_flow_row){ ROW_START, -1, "START GAME", NULL,
 		"Hosts the game with these settings and opens its lobby." };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_JOIN, -1, "JOIN WITH INVITE", NULL,
@@ -578,6 +675,8 @@ static void create_step(short row, short direction)
 	}
 	else if (r->kind == ROW_OPTION)
 		option_step(r->option, direction, NULL);
+	else if (r->kind == ROW_BOTS || r->kind == ROW_BOT_SKILL)
+		bots_step(r->kind == ROW_BOT_SKILL, direction, "");
 	else if (r->kind == ROW_NETWORK)
 	{
 		short next = ae_value_step(NETWORKS, (short)create.network, direction);
@@ -960,18 +1059,77 @@ static void lobby_accept(short row)
 	}
 }
 
+/* the host's BOTS and BOT SKILL at the roster panel's foot (the rows on the left have no room for two more with their
+help); returns their top */
+static float draw_bot_rows(float x, float width, float bottom)
+{
+	struct ae_flow_screen *flow = &lobby.flow;
+	struct ae_density const *d = &flow->density;
+	float gap = ae_flow_u(flow, d->metrics->gap), row_height = ae_size_row(d), y, top;
+	int row;
+
+	top = y = bottom - (float)BOT_ROWS * row_height - (float)(BOT_ROWS - 1) * gap;
+	for (row = 0; row < BOT_ROWS; row++)
+	{
+		struct ae_flow_row const source = bot_row(row);
+		struct ae_row widget;
+
+		memset(&widget, 0, sizeof(widget));
+		widget.label = source.label;
+		widget.value = source.value;
+		if (row == lobby.bot_focus)
+			widget.flags |= AE_ROW_FOCUSED;
+		lobby.bot_rects[row].x = x;
+		lobby.bot_rects[row].y = y;
+		lobby.bot_rects[row].width = width;
+		lobby.bot_rects[row].height = ae_widget_row(d, x, y, width, &widget, HIT_BOT_ROWS, (short)row);
+		y += lobby.bot_rects[row].height + gap;
+	}
+	return top;
+}
+
+/* a bot row's help where the rows' help goes (ae_flow_draw_rows' place and rule: under the rows on the left, when
+there is room under them, as for theirs) */
+static void draw_bot_help(float width)
+{
+	struct ae_flow_screen *flow = &lobby.flow;
+	struct ae_density const *d = &flow->density;
+	float x = ae_flow_left_x(flow), body = ae_flow_u(flow, d->metrics->body), line = ae_flow_u(flow, d->metrics->body_line);
+	float help_gap = ae_flow_u(flow, 28.0f), help_y = ae_flow_content_bottom(flow) - line * 2.0f, rows_end;
+	char lines[2][160];
+	int index, count;
+
+	if (lobby.bot_focus < 0 || lobby.bot_focus >= BOT_ROWS || flow->count <= 0)
+		return;
+	rows_end = flow->rects[flow->count - 1].y + flow->rects[flow->count - 1].height + ae_flow_u(flow, d->metrics->gap);
+	if (help_y < rows_end + help_gap)
+		return;
+	ae_draw_rect(x, help_y - help_gap * 0.5f, width, ae_flow_u(flow, AE_FLOW_RULE_U), 0.0f, AE_COLOR_RULE);
+	count = ae_wrap_text(AE_FONT_BODY, body, bot_row(lobby.bot_focus).help, width, lines, 2);
+	for (index = 0; index < count; index++)
+		ae_draw_text(AE_FONT_BODY, body, x, help_y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
+}
+
 static void draw_roster(float x, float y, float width, float bottom)
 {
 	struct ae_flow_screen *flow = &lobby.flow;
-	float inset = ae_flow_u(flow, AE_FLOW_INSET_U), minor = ae_size_minor(&flow->density), card_y;
+	float inset = ae_flow_u(flow, AE_FLOW_INSET_U), minor = ae_size_minor(&flow->density), card_y, cards_bottom = bottom;
 	char heading[48];
-	short index;
+	short index, people = lobby.have_roster ? lobby.roster.people : 0;
+	short bots = lobby.have_roster ? (short)(lobby.roster.count - lobby.roster.people) : 0;
 
 	ae_draw_rect(x, y, width, bottom - y, ae_flow_u(flow, flow->density.metrics->corner), AE_COLOR_PANEL);
 	ae_draw_outline(x, y, width, bottom - y, ae_flow_u(flow, flow->density.metrics->corner), ae_flow_u(flow, AE_FLOW_RULE_U), AE_COLOR_RULE);
-	snprintf(heading, sizeof(heading), "PLAYERS  %d", lobby.have_roster ? lobby.roster.count : 0);
+	/* (people, not machines or bots: a split screen guest is one; the bots apart) */
+	if (bots > 0)
+		snprintf(heading, sizeof(heading), "PLAYERS  %d   BOTS  %d", people, bots);
+	else
+		snprintf(heading, sizeof(heading), "PLAYERS  %d", people);
 	ae_draw_text_tracked(AE_FONT_BODY, minor, 0.09f, x + inset, ae_flow_cap_top(AE_FONT_BODY, minor, y + ae_flow_u(flow, 29.0f)),
 		AE_ALIGN_LEFT, AE_COLOR_MUTED, heading);
+	if (!lobby.joiner)
+		/* (a card's pitch has its gap: the last card ends AE_FLOW_CARD_GAP_U over the rows) */
+		cards_bottom = draw_bot_rows(x + inset, width - 2.0f * inset, bottom - inset);
 	card_y = y + ae_flow_u(flow, 56.0f);
 	for (index = 0; lobby.have_roster && index < lobby.roster.count; index++)
 	{
@@ -980,7 +1138,7 @@ static void draw_roster(float x, float y, float width, float bottom)
 		struct ae_roster_card card;
 		float pitch = ae_flow_u(flow, flow->density.metrics->card) + ae_flow_u(flow, AE_FLOW_CARD_GAP_U);
 
-		if (card_y + pitch > bottom)
+		if (card_y + pitch > cards_bottom)
 			break;
 		memset(&card, 0, sizeof(card));
 		card.name = player->name;
@@ -1012,7 +1170,18 @@ static void lobby_draw(struct ae_screen *instance)
 	snprintf(crumb, sizeof(crumb), "%s", !lobby.joiner ? network_names[create.network] : lobby.joined_how[0] ?
 		lobby.joined_how : "JOINED BY INVITE");
 	ae_flow_title(flow, "LOBBY", crumb);
-	ae_flow_draw_rows(flow, flow->frame.rect.width * AE_FLOW_ROWS_WIDTH);
+	if (lobby.joiner)
+		lobby.bot_focus = -1;
+	/* (a bot row under the roster has the focus: no row on the left lit, nor its help) */
+	{
+		short focus = flow->focus;
+
+		if (lobby.bot_focus >= 0)
+			flow->focus = -1;
+		ae_flow_draw_rows(flow, flow->frame.rect.width * AE_FLOW_ROWS_WIDTH);
+		flow->focus = focus;
+	}
+	draw_bot_help(flow->frame.rect.width * AE_FLOW_ROWS_WIDTH);
 	roster_x = flow->frame.rect.x + flow->frame.rect.width * AE_FLOW_PANEL_X;
 	draw_roster(roster_x, ae_frame_y(&flow->frame, AE_FLOW_CONTENT_Y), ae_flow_right_x(flow) - roster_x, ae_flow_content_bottom(flow));
 	flow->prompt_count = 0;
@@ -1083,13 +1252,31 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 		return 1;
 	case AE_ACTION_UP:
 	case AE_ACTION_DOWN:
-		ae_flow_focus_step(flow, event->action == AE_ACTION_UP ? -1 : 1, event->repeat);
+		/* (the bot rows under the roster: down from the last row on the left, up from them back to it) */
+		if (lobby.bot_focus >= 0)
+		{
+			short next = (short)(lobby.bot_focus + (event->action == AE_ACTION_UP ? -1 : 1));
+
+			if (next >= BOT_ROWS)
+				return 1;
+			lobby.bot_focus = next;
+			ae_sound_request(AE_SOUND_CURSOR, event->repeat);
+			return 1;
+		}
+		if (!ae_flow_focus_step(flow, event->action == AE_ACTION_UP ? -1 : 1, event->repeat) &&
+			event->action == AE_ACTION_DOWN && !lobby.joiner)
+		{
+			lobby.bot_focus = 0;
+			ae_sound_request(AE_SOUND_CURSOR, event->repeat);
+		}
 		return 1;
 	case AE_ACTION_LEFT:
 	case AE_ACTION_RIGHT:
 		if (lobby.joiner)
 			return 1;
-		if (row->kind == ROW_OPTION)
+		if (lobby.bot_focus >= 0)
+			bots_step(lobby.bot_focus, event->action == AE_ACTION_RIGHT ? 1 : -1, "lobby: ");
+		else if (row->kind == ROW_OPTION)
 			option_step(row->option, event->action == AE_ACTION_RIGHT ? 1 : -1, "lobby: quick");
 		else if (row->kind == ROW_MAP)
 			map_step(event->action == AE_ACTION_RIGHT ? 1 : -1);
@@ -1097,7 +1284,7 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 			gametype_step(event->action == AE_ACTION_RIGHT ? 1 : -1);
 		return 1;
 	case AE_ACTION_ACCEPT:
-		if (!lobby.joiner)
+		if (!lobby.joiner && lobby.bot_focus < 0)
 			lobby_accept(flow->focus);
 		return 1;
 	case AE_ACTION_START:
@@ -1116,6 +1303,7 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 static void lobby_pointer(struct ae_screen *instance, struct ae_pointer const *pointer)
 {
 	struct ae_event event;
+	struct ae_hit hit;
 	short row;
 
 	if (ae_prompts_pointer(lobby.flow.prompts, lobby.flow.prompt_count, pointer, HIT_PROMPTS, &event))
@@ -1123,6 +1311,18 @@ static void lobby_pointer(struct ae_screen *instance, struct ae_pointer const *p
 		lobby_handle(instance, &event);
 		return;
 	}
+	/* (the bot rows under the roster: hover focuses, their arrows step) */
+	if (!lobby.joiner && ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_BOT_ROWS && hit.index >= 0 &&
+		hit.index < BOT_ROWS)
+	{
+		if (pointer->moved)
+			lobby.bot_focus = hit.index;
+		if (pointer->left_clicks && (hit.part == AE_PART_ARROW_LEFT || hit.part == AE_PART_ARROW_RIGHT))
+			bots_step(hit.index, hit.part == AE_PART_ARROW_RIGHT ? 1 : -1, "lobby: ");
+		return;
+	}
+	if (pointer->moved && ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_ROWS)
+		lobby.bot_focus = -1;
 	row = ae_flow_rows_pointer(&lobby.flow, pointer);
 	if (row <= -2 && lobby.flow.rows[lobby.flow.focus].kind == ROW_OPTION)
 		option_step(lobby.flow.rows[lobby.flow.focus].option, row == -3 ? 1 : -1, "lobby: quick");
@@ -1147,6 +1347,7 @@ static void lobby_open(int joiner)
 {
 	memset(&lobby, 0, sizeof(lobby));
 	lobby.joiner = joiner;
+	lobby.bot_focus = -1;
 	lobby.flow.hit_rows = HIT_ROWS;
 	lobby.flow.hit_prompts = HIT_PROMPTS;
 	ae_lobby_set_pregame_screen(&lobby_class, &lobby);

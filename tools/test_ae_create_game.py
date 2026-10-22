@@ -4,7 +4,9 @@ harness (tools/ae_test), in tools/test_ae_gallery.py's pattern (tools/test_ae_me
 - CREATE GAME (debug.ae_test_screen 32) at 1080p 100 % and 130 %;
 - START GAME: hosted (LAN), player 1 in, the map chosen, the copy applied, the LOBBY; a quick option stepped there
   and applied to the server;
-- the LOBBY's START GAME: the game plays (no AE screen over it).
+- the LOBBY's START GAME: the game plays (no AE screen over it);
+- BOTS and BOT SKILL: stepped in CREATE GAME (bots.count, bots.skill written), and in the LOBBY (down from START GAME
+  to the rows under the roster): the lobby's bots join at once, PLAYERS counts the person alone.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is 30-50 s:
 
@@ -27,7 +29,12 @@ CASES = (
     ("create", 32, 100, (), 30),
     ("create-130", 32, 130, (), 30),
     # (HOST ONLINE: PRIVACY and MAX PLAYERS shown; JOIN WITH INVITE with nothing on the clipboard says so)
-    ("online", 32, 100, ("pad:down",) * 5 + ("pad:right",) + ("pad:down",) * 4, 30),
+    ("online", 32, 100, ("pad:down",) * 5 + ("pad:right",) + ("pad:down",) * 6, 30),
+    # (LAN: BOTS is the eighth row, BOT SKILL the ninth: OFF -> 2, NORMAL -> HEROIC)
+    ("create-bots", 32, 100, ("pad:down",) * 7 + ("pad:right", "pad:right", "pad:down", "pad:right"), 34),
+    # (the lobby: down from START GAME to BOTS under the roster, 3 bots, then BOT SKILL focused)
+    ("lobby-bots", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:down", "pad:right", "pad:right", "pad:right",
+                             "wait", "wait", "pad:down"), 40),
     ("lobby", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:up", "pad:right"), 34),
     ("play", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:start"), 50),
 )
@@ -81,6 +88,15 @@ def test_start_hosts_and_opens_the_lobby(runs):
     assert "hosted, player 1 in" in said and "lobby: open" in said, said
     assert any(line.startswith("lobby: quick ") for line in said), said
     assert any("to the server" in line for line in lines(runs["lobby"][1], "ae game options: applied ")), said
+
+
+def test_bots_rows(runs):
+    said = lines(runs["create-bots"][1], "ae create game: ")
+    assert "bots 1" in said and "bots 2" in said and "bot skill HEROIC" in said, said
+    said = lines(runs["lobby-bots"][1], "ae create game: ")
+    assert "lobby: bots 3" in said, said
+    # (the lobby's bots follow the setting at once)
+    assert lines(runs["lobby-bots"][1], "lan bots: bot 3 joined the lobby"), said
 
 
 def test_the_lobby_starts_the_game(runs):
