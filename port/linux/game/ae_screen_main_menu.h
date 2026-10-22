@@ -12,5 +12,7 @@ CAMPAIGN, SETTINGS, PROFILES, QUIT, in AE's look. While display.arena_menus is o
 
 /* opens AE's main menu over an empty stack, the game's menus closed; 0 when a screen is up or the stack is full */
 int ae_screen_main_menu_open(void);
+/* closes it (and its MULTIPLAYER) wherever it is on the stack: the game has left its main menu */
+void ae_screen_main_menu_close(void);
 
 #endif

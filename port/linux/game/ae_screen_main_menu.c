@@ -20,6 +20,7 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 #include "../src/ae_draw.h"
 #include "ae_glue_profiles.h"
 #include "ae_hooks.h"
+#include "ae_screen_campaign.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_main_menu.h"
 #include "ae_setup_flow.h"
@@ -64,7 +65,7 @@ static void rows_main(void)
 	flow->rows[count++] = (struct ae_flow_row){ ROW_MULTIPLAYER, -1, "MULTIPLAYER", NULL,
 		"Create a game, join one with an invite, or find one in the server browser.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_CAMPAIGN, -1, "CAMPAIGN", NULL,
-		"Halo's campaign, alone, in split screen or in online co-op.", NOT_YET };
+		"Halo's campaign: the levels you have reached, your saved game, a difficulty.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_SETTINGS, -1, "SETTINGS", NULL,
 		"Game, display, interface, controls, audio, online and chat.", NOT_YET };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_PROFILES, -1, "PROFILES", NULL,
@@ -227,6 +228,10 @@ static void accept(int multiplayer, short row)
 	case ROW_QUIT:
 		quit_ask(flow);
 		break;
+	case ROW_CAMPAIGN:
+		if (ae_screen_campaign_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
 	case ROW_CREATE:
 	case ROW_JOIN:
 		if (ae_screen_create_game_from_menu(r->kind == ROW_JOIN))
@@ -339,4 +344,12 @@ int ae_screen_main_menu_open(void)
 	ae_ui_replace_menus();
 	(void)ae_settings_ui_scale();
 	return 1;
+}
+
+void ae_screen_main_menu_close(void)
+{
+	int closed = ae_ui_remove(&multiplayer_page);
+
+	if (ae_ui_remove(&main_page) || closed)
+		platform_log("ae main menu: closed (the game left its main menu)");
 }

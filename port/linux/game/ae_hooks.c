@@ -269,6 +269,10 @@ boolean ae_ui_process(
 	if (test_screen_checked && !test_screen && ae_draw_available() && main_menu_is_active() && !ae_ui_depth() &&
 		!server_browser_up() && !virtual_keyboard_active())
 		ae_screen_main_menu_open();
+	/* (and never outside it: CAMPAIGN's level loads a frame or more after its screens closed, and the main menu can
+	open again in between, over the level) */
+	else if (!main_menu_is_active())
+		ae_screen_main_menu_close();
 	/* (the game setup spike: F3 or a pad's BACK on the main menu opens CREATE GAME) */
 	if (test_screen_checked && ae_draw_available())
 		ae_screen_create_game_entry(ae_platform_keys());

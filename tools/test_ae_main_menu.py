@@ -3,7 +3,8 @@ in tools/test_ae_gallery.py's pattern (tools/test_ae_menus.py's helpers): no tes
 game's main menu's place.
 
 - the main menu at 1080p 100 % and 130 %, 21:9 (2560x1080), 3440x1440, 4K, 720p and 16:10 (1920x1200);
-- MULTIPLAYER, CREATE GAME from it, and B back to MULTIPLAYER.
+- MULTIPLAYER, CREATE GAME from it, and B back to MULTIPLAYER;
+- CAMPAIGN, and its first level played.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is about 30 s. Name cases to run some:
 
@@ -34,6 +35,9 @@ CASES = (
     ("multiplayer", "1920x1080", 100, ("pad:a",)),
     ("create", "1920x1080", 100, ("pad:a", "pad:a")),
     ("create-back", "1920x1080", 100, ("pad:a", "pad:a", "wait", "pad:b")),
+    # (CAMPAIGN: the levels; A on the first plays it at the difficulty shown)
+    ("campaign", "1920x1080", 100, ("pad:down", "pad:a", "pad:right")),
+    ("campaign-play", "1920x1080", 100, ("pad:down", "pad:a", "wait", "pad:a")),
 )
 
 
@@ -88,6 +92,14 @@ def test_multiplayer_and_create_game(runs):
     assert "open" in lines(runs["create"][1], "ae create game: ")
     said = lines(runs["create-back"][1], "ae create game: ")
     assert said[-1:] == ["closed"], said
+
+
+def test_campaign(runs):
+    assert lines(runs["campaign"][1], "ae campaign: open ")
+    assert any(line.startswith("start level 1 on ") for line in lines(runs["campaign-play"][1], "ae campaign: "))
+    # (the level loads after CAMPAIGN closes: AE's main menu never stays up over it)
+    said = lines(runs["campaign-play"][1], "ae main menu: ")
+    assert said[-1] in ("CAMPAIGN", "closed (the game left its main menu)"), said
 
 
 if __name__ == "__main__":
