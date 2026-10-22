@@ -141,6 +141,9 @@ def build(cc, kind, directory):
 	(source / "SDL3").mkdir(parents=True, exist_ok=True)
 	shutil.copy(ROOT / "port/linux/src/port_config.c", source)
 	shutil.copy(ROOT / "port/linux/src/port_config.h", source)
+	# (Arena Evolved 0.3.7: the players' own settings, port_config.c's hook: ae_config_players.c)
+	shutil.copy(ROOT / "port/linux/src/ae_config_players.c", source)
+	shutil.copy(ROOT / "port/linux/src/ae_config_players.h", source)
 	(source / "platform.h").write_text(STUB_PLATFORM)
 	(source / "posix.h").write_text(STUB_POSIX)
 	(source / "capture.h").write_text(STUB_CAPTURE)
@@ -148,7 +151,7 @@ def build(cc, kind, directory):
 	program = directory / f"port_config_test_{kind}"
 	subprocess.run([cc, "-std=c11", "-D_DEFAULT_SOURCE", "-D_DARWIN_C_SOURCE", "-Wall", "-Werror", "-g",
 		*DEFINES[kind], "-I", str(source), "-I", str(ROOT / "port/third_party/tomlc17"),
-		str(source / "port_config.c"), str(ROOT / "tools/tests/port_config_test.c"),
+		str(source / "port_config.c"), str(source / "ae_config_players.c"), str(ROOT / "tools/tests/port_config_test.c"),
 		str(ROOT / "port/third_party/tomlc17/tomlc17.c"), "-lpthread", "-o", str(program)],
 		check=True)
 	return program

@@ -654,13 +654,13 @@ def test_config_has_each_section_once(tmp_path):
         "static void posix_directory_close(void *directory) { (void)directory; }\n")
     (stubs / "capture.h").write_text("static void capture_shutdown(void) {}\nstatic void capture_resume(void) {}\n")
     # (beside the stubs, which it then includes instead of the platform layer's)
-    for name in ("port_config.c", "port_config.h"):
+    for name in ("port_config.c", "port_config.h", "ae_config_players.c", "ae_config_players.h"):
         shutil.copy(root / "port/linux/src" / name, stubs / name)
     (tmp_path / "main.c").write_text(CONFIG_PROGRAM)
     program = tmp_path / "config_program"
     subprocess.run([compiler, "-DHALO_ANDROID=1", "-DHALO_ARM64_GUEST=1", f"-I{stubs}",
                     f"-I{root}/port/third_party/tomlc17", "-o", str(program),
-                    str(tmp_path / "main.c"), str(stubs / "port_config.c"),
+                    str(tmp_path / "main.c"), str(stubs / "port_config.c"), str(stubs / "ae_config_players.c"),
                     str(root / "port/third_party/tomlc17/tomlc17.c"), "-lpthread"], check=True)
     data = tmp_path / "data"
     data.mkdir()
