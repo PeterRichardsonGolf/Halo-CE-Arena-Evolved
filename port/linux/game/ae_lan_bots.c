@@ -54,6 +54,7 @@ tick it has one for (an update built twice in a tick) is the same input.
 #include "ae_lan_bots.h"
 #include "ae_bots_objective.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -570,6 +571,26 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 		}
 	}
 	internet = lan_internet();
+	/* test hook (the environment only, no setting): HALO_NETWORK_BOTS_INVITE_FILE, a file the host's invite link is
+	written to once it has one (the box's real internet test hosts in a window no one sees: the link is on the
+	clipboard and only its start in the log) */
+	{
+		static boolean written;
+		char const *path = getenv("HALO_NETWORK_BOTS_INVITE_FILE");
+		char link[256];
+
+		if (path && path[0] && !written && p2p_invite_link(link, sizeof(link)) && link[0])
+		{
+			FILE *file = fopen(path, "w");
+
+			if (file)
+			{
+				fprintf(file, "%s\n", link);
+				fclose(file);
+				written = TRUE;
+			}
+		}
+	}
 	played = ae_bots_engine_played(game->variant.game_engine_index);
 	/* (debug.network_bots lets the internet's games have them) */
 	eligible = ae_lan_bots_eligible(TRUE, FALSE, internet && !network_bots, played, has_person);
@@ -1046,8 +1067,9 @@ void ae_lan_bots_action(long absolute_player_index, struct player_action *action
 
 		for (index = 0; index < LAN_BOTS; index++)
 			bots += lan.bots[index].active ? 1 : 0;
-		platform_log("net bots: %ld bots, brain %.3f ms a tick (max %.3f ms; ticks over 5/16/33 ms: %ld/%ld/%ld of %ld), "
-			"%.1f us a bot's input (max %.1f us) over %ld inputs, %ld repeats reused, game tick %ld (%.1f ticks a second)",
+		platform_log("net bots: %ld bots, brain %.3f ms a tick (max %.3f ms, ticks over 5/16/33 ms: %ld/%ld/%ld of %ld), "
+			"%.1f us a bot's input (max %.1f us) over %ld inputs, %ld repeats reused, game tick %ld "
+			"(%.1f ticks a second)",
 			bots,
 			lan.tick_seconds_total * 1e3 / lan.ticks, lan.tick_seconds_max * 1e3, lan.ticks_over[0], lan.ticks_over[1],
 			lan.ticks_over[2], lan.ticks, lan.brain_seconds * 1e6 / (lan.brain_inputs ? lan.brain_inputs : 1),
