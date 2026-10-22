@@ -83,7 +83,7 @@ static struct
 	struct ae_field_edit name_edit;
 	int typing, keyboard_open;
 	unsigned long caret_since;
-	int dialog;                          /* 0 none, 1 DEFAULTS, 2 saved / failed */
+	int dialog;                          /* 0 none, 1 DEFAULTS, 2 saved / failed, 3 leaving with changes */
 	float logged_width, logged_scale;
 } screen;
 
@@ -394,16 +394,44 @@ static void group_jump(short direction)
 	refresh();
 }
 
+/* the leave dialog's choices (MCC's: a seeded or built-in gametype is never saved over, only as a copy) */
+enum { LEAVE_SAVE, LEAVE_SAVE_COPY, LEAVE_THIS_GAME, LEAVE_KEEP_EDITING };
+static short leave_actions[4];
+
+static void dialog_open(int kind, const char *title, const char *body, const char *first, const char *second);
+
+static void leave_picked(short action)
+{
+	char saved[16];
+
+	if (action == LEAVE_KEEP_EDITING)
+		return;
+	if ((action == LEAVE_SAVE && !ae_setup_edit_save()) ||
+		(action == LEAVE_SAVE_COPY && !ae_setup_edit_save_as_new(saved, sizeof(saved))))
+	{
+		screen.dialog = 2;
+		dialog_open(AE_DIALOG_ERROR, "Not saved", "The game type could not be written.", ae_string(AE_STR_BACK), NULL);
+		return;
+	}
+	/* (saved, or THIS GAME ONLY: the caller applies the rules as it does on B) */
+	ae_sound_request(AE_SOUND_BACK, 0);
+	ae_ui_pop();
+}
+
 static void dialog_picked(short choice, void *context)
 {
+	int kind = screen.dialog;
+
 	(void)context;
-	if (screen.dialog == 1 && choice == 1)
+	screen.dialog = 0;
+	if (kind == 1 && choice == 1)
 	{
 		ae_setup_edit_defaults();
 		screen.tick_option = -1;
 		refresh();
 	}
-	screen.dialog = 0;
+	else if (kind == 3 && choice >= 0 && choice < 4)
+		leave_picked(leave_actions[choice]);
 }
 
 static void dialog_open(int kind, const char *title, const char *body, const char *first, const char *second)
@@ -457,6 +485,50 @@ static void save_as_new(void)
 	}
 	screen.dialog = 2;
 	dialog_open(AE_DIALOG_ERROR, "Not saved", "The new game type could not be written.", ae_string(AE_STR_BACK), NULL);
+}
+
+/* B: with no changes the screen closes (returns 1); with changes it asks first, as MCC does: SAVE (the player's own
+gametypes only), SAVE AS COPY, THIS GAME ONLY (the rules for this game, the file as it was), KEEP EDITING (B) */
+static int leave_or_ask(void)
+{
+	struct ae_dialog_spec spec;
+	char body[200];
+	short count = 0;
+	int own = ae_setup_edit_can_save();
+
+	if (!ae_setup_changes(&screen.access))
+		return 1;
+	memset(&spec, 0, sizeof(spec));
+	if (own)
+	{
+		leave_actions[count] = LEAVE_SAVE;
+		spec.choices[count++] = "SAVE";
+	}
+	leave_actions[count] = LEAVE_SAVE_COPY;
+	spec.choices[count++] = "SAVE AS COPY";
+	leave_actions[count] = LEAVE_THIS_GAME;
+	spec.choices[count++] = "THIS GAME ONLY";
+	leave_actions[count] = LEAVE_KEEP_EDITING;
+	spec.choices[count++] = "KEEP EDITING";
+	if (own)
+		snprintf(body, sizeof(body), "Save the changes to %s, or as a new game type?", screen.name);
+	else
+		snprintf(body, sizeof(body), "%s can't be changed. Save these rules as a new game type, or use them for this "
+			"game only.", screen.name);
+	spec.kind = AE_DIALOG_CONFIRM;
+	spec.title = "Save changes?";
+	spec.body = body;
+	spec.choice_count = count;
+	spec.safe_choice = (short)(count - 1);
+	spec.cancel_choice = (short)(count - 1);
+	spec.has_cancel = 1;
+	spec.density = screen.density;
+	spec.bounds = screen.frame.rect;
+	spec.picked = dialog_picked;
+	screen.dialog = 3;
+	ae_dialog_open(&spec, AE_OWNER_ANY);
+	platform_log("ae game options: leave: asked (save over: %s)", own ? "yes" : "no");
+	return 0;
 }
 
 /* ---------- drawing */
@@ -661,7 +733,8 @@ static int options_handle(struct ae_screen *instance, struct ae_event const *eve
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
-		return 0;
+		/* (0: the screen closes as before; the leave dialog when there are changes) */
+		return leave_or_ask() ? 0 : 1;
 	case AE_ACTION_TAB_PREVIOUS:
 	case AE_ACTION_TAB_NEXT:
 		group_jump(event->action == AE_ACTION_TAB_NEXT ? 1 : -1);
@@ -708,8 +781,11 @@ static void options_pointer(struct ae_screen *instance, struct ae_pointer const 
 	{
 		if (event.action == AE_ACTION_BACK)
 		{
-			ae_sound_request(AE_SOUND_BACK, 0);
-			ae_ui_pop();
+			if (leave_or_ask())
+			{
+				ae_sound_request(AE_SOUND_BACK, 0);
+				ae_ui_pop();
+			}
 		}
 		else
 			options_handle(instance, &event);

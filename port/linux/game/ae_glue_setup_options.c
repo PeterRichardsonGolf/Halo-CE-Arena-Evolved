@@ -706,6 +706,30 @@ int ae_setup_edit_save_as_new(char *name, int size)
 	return 1;
 }
 
+int ae_setup_edit_can_save(void)
+{
+	struct game_variant const *base = &setup_edit.base.variant;
+
+	/* (a saved file, the player's own: not a built-in, not one AE seeds (AE's, NHE's: its stored name is in
+	arena_gametype_names.c), even when the player renamed the copy) */
+	return setup_edit.open && setup_edit.profile != NONE && (setup_edit.profile & 0x80000000) &&
+		!TEST_FLAG(base->flags, SYSTEM_DEFAULT_BIT) && !arena_gametype_info(base->human_readable_game_description, NULL);
+}
+
+int ae_setup_edit_save(void)
+{
+	char name[16];
+
+	if (!ae_setup_edit_can_save())
+		return 0;
+	playlist_profile_save_with_options(setup_edit.profile, &setup_edit.edit.variant, &setup_edit.edit.options);
+	playlist_profile_wait_for_write();
+	setup_edit.base = setup_edit.edit;
+	narrow_name(setup_edit.edit.variant.human_readable_game_description, name, sizeof(name));
+	platform_log("ae game options: saved '%s' (file %ld)", name, setup_edit.profile);
+	return 1;
+}
+
 int ae_setup_edit_apply(void)
 {
 	struct network_game_server *server = global_network_game_server_get();

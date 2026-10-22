@@ -41,6 +41,11 @@ char const *ae_setup_edit_reason(int option);
 /* a new gametype file of the copy, named name (11 characters at most), which is written into: the copy's name with
 " 2", " 3" ... until it is free. 1 when written; the copy then starts from it (no changes) */
 int ae_setup_edit_save_as_new(char *name, int size);
+/* whether the edit may be saved over its own file: the player's own saved gametype, never a built-in or one AE seeds
+(AE's, NHE's): those are only saved as a copy (owner 2026-10-22) */
+int ae_setup_edit_can_save(void);
+/* the copy written over its own file (when ae_setup_edit_can_save); 1 when written: the copy then has no changes */
+int ae_setup_edit_save(void);
 /* (CREATE GAME, the LOBBY) the copy as the game's gametype: player_ui's variant and options (so the server takes the
 options with it), the server's when there is one (PREGAME: network_game_server_change_game_variant), the stage's
 for the next round. 1 when applied */

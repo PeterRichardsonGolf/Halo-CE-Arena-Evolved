@@ -36,6 +36,8 @@ CASES = (
     ("slay-picker", "AE TEAM SLY", "1920x1080", 100, ("pad:rb",) + ("pad:down",) * 8 + ("pad:a",)),
     # (a change, then Y: the DEFAULTS dialog)
     ("slay-defaults", "AE TEAM SLY", "1920x1080", 100, ("pad:right", "pad:y")),
+    # (a change, then B: the leave dialog; an AE gametype: no SAVE over it, only SAVE AS COPY)
+    ("slay-leave", "AE TEAM SLY", "1920x1080", 100, ("pad:right", "pad:b")),
     # (four groups on: VEHICLES, then the mode's)
     ("ctf-mode", "AE CTF", "1920x1080", 100, ("pad:rb",) * 5),
     ("ball-mode", "AE FFA BALL", "1920x1080", 100, ("pad:rb",) * 5),
@@ -157,6 +159,13 @@ def test_a_step_changes_the_copy(runs):
     assert "PLAYERS" in lines(text, "ae game options: group ")
     assert "SHIELD TYPE NONE" in lines(text, "ae game options: set ")
     assert lines(text, "ae game options: closed ")[-1:] != ["(0 changed)"]
+
+
+def test_leaving_with_changes_asks(runs):
+    # (B with a change asks first; an AE gametype is never saved over: SAVE is not offered)
+    _, text, _ = runs["slay-leave"]
+    assert lines(text, "ae game options: leave: asked ") == ["(save over: no)"], lines(text, "ae game options: leave")
+    assert not lines(text, "ae game options: closed ")
 
 
 def test_the_mode_groups(runs):
