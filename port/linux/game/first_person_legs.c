@@ -32,6 +32,7 @@ keep their place and size at any field of view.
 /* port/linux/src/port_config.c */
 int config_boolean(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 enum
 {
@@ -59,9 +60,9 @@ static boolean first_person_legs_enabled(
 	static unsigned long changes = (unsigned long)-1;
 	static boolean enabled = FALSE;
 
-	if (changes != config_changes())
+	if (changes != ae_config_player_changes()) /* AE hook */
 	{
-		changes = config_changes();
+		changes = ae_config_player_changes(); /* AE hook */
 		enabled = config_boolean("display.first_person_legs") != 0;
 	}
 	return enabled;

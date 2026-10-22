@@ -90,6 +90,9 @@ UNITS = {
                                                                              "-fno-sanitize-recover=all"], []),
     # (the Settings list's pictures by entry)
     "ae_settings_test.c": ([UI / "ae_settings.c"], [], []),
+    # (a player's own settings file, ae.toml: read, written, seeded, upgraded; under the sanitizers)
+    "ae_player_settings_test.c": ([UI / "ae_player_settings.c"], ["-fsanitize=address,undefined",
+                                                                   "-fno-sanitize-recover=all"], []),
     # (the item waypoints' pictures: the style, the fallback to text, a map's sprite checked, the sizes, a line's
     # parts, the glyphs' tables; under the sanitizers, as a map's sprite bounds are untrusted)
     "ae_waypoint_icons_test.c": ([UI / "ae_waypoint_icons.c", UI / "ae_waypoint_glyphs.c"],

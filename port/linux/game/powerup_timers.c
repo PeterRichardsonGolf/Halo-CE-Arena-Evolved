@@ -38,6 +38,7 @@ drain and shows none. hud.c calls in here.
 /* port_config.c */
 int config_boolean(char const *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 /* ---------- private code */
 
@@ -48,9 +49,9 @@ static boolean powerup_timers_enabled(
 	static unsigned long read_at = (unsigned long)-1;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		enabled = config_boolean("display.powerup_timers") != 0;
 	}
 

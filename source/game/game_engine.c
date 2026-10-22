@@ -1898,6 +1898,7 @@ long distributed_player_ping(short player_index);
 int config_boolean(const char *name);
 const char *config_string(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 /* cinematics.c's */
 void draw_quad(rectangle2d *rectangle, pixel32 color);
 
@@ -1910,13 +1911,13 @@ static pixel32 scoreboard_background_color(
 	static pixel32 color = 0;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
 		char const *text = config_string("display.scoreboard_background_color");
 		long parts[4] = { 16, 16, 16, 150 };
 		short part;
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		color = 0;
 		if (!config_boolean("display.scoreboard_background"))
 			return color;
@@ -2110,11 +2111,11 @@ static boolean scoreboard_team_columns(
 	static short setting = NONE;
 	static unsigned long read_at = (unsigned long)-1;
 
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
 		char const *value = config_string("display.scoreboard_team_layout");
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		setting = value && !csstrcmp(value, "score") ? FALSE : TRUE;
 	}
 
@@ -4320,11 +4321,11 @@ static real game_engine_scoreboard_fade_seconds(
 	static real seconds = 0.5f;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
 		char const *value = config_string("display.scoreboard_fade");
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		if (!csstrcmp(value, "instant"))
 			seconds = 0.0f;
 		else if (!csstrcmp(value, "fast"))
@@ -6403,11 +6404,11 @@ short game_engine_match_clock_setting(
 	static short setting = _match_clock_down;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
 		char const *value = config_string("display.match_clock");
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		if (value && !csstrcmp(value, "off"))
 			setting = _match_clock_off;
 		else if (value && !csstrcmp(value, "up"))
@@ -10504,9 +10505,9 @@ boolean game_engine_enemy_name_red(
 	static boolean red = FALSE;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		red = !csstrcmp(config_string("display.enemy_name_color"), "red");
 	}
 

@@ -15,6 +15,7 @@ screen is open.
 #include "../src/ae_platform.h"
 #include "interface/event_manager.h"
 #include "ae_hooks.h"
+#include "ae_glue_player_settings.h"
 #include "ae_input.h"
 #include "ae_motion.h"
 #include "ae_screen_gallery.h"
@@ -227,6 +228,8 @@ boolean ae_ui_process(
 
 	unsigned long now;
 
+	/* (each local player's own settings, their profile's: AE's menus on or off) */
+	ae_player_settings_update();
 	ae_ce_map_update();
 	if (!ae_menus_active())
 	{

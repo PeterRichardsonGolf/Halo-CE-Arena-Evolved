@@ -9,6 +9,7 @@ ae_ds5_rules.c's; what each player wants is the game's (port/linux/game/ae_ds5_g
 
 #include "platform.h"
 #include "port_config.h"
+#include "ae_config_players.h"
 #include "ae_ds5.h"
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID) && !defined(HALO_WEB)
@@ -177,7 +178,7 @@ struct ae_ds5_settings ae_ds5_settings_get(void)
 	struct ae_ds5_settings result;
 
 	SDL_LockSpinlock(&settings_lock);
-	if (!read || read_at != config_changes())
+	if (!read || read_at != ae_config_player_changes())
 	{
 		char const *strength = config_string("input.trigger_strength");
 		char const *lightbar = config_string("input.lightbar");
@@ -193,7 +194,7 @@ struct ae_ds5_settings ae_ds5_settings_get(void)
 				settings.triggers ? "on" : "off", settings.strength, ae_ds5_lightbar_mode_name(&settings));
 		logged = settings;
 		read = 1;
-		read_at = config_changes();
+		read_at = ae_config_player_changes();
 	}
 	result = settings;
 	SDL_UnlockSpinlock(&settings_lock);

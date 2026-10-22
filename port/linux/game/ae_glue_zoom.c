@@ -8,6 +8,7 @@ and these functions return what they were given.
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
@@ -17,11 +18,14 @@ and these functions return what they were given.
 #include "items/weapons.h"
 #include "items/weapon_definitions.h"
 #include "../src/port_config.h"
+#include "../src/ae_config_players.h"
 #include "../src/ae_platform.h"
+#include "ae_seats.h"
 #include "ae_glue_zoom.h"
 #include "ae_zoom.h"
 
 void platform_log(char const *format, ...);
+int platform_input_scheme(void);
 boolean weapon_reloading(long weapon_index);
 
 static struct
@@ -37,16 +41,47 @@ static struct
 	unsigned long wheel_taken_at;
 } zoom = { (unsigned long)-1 };
 
-/* the settings, read again when a setting has been written */
-static void zoom_read(void)
+/* the keyboard and mouse's player: the JOIN screen's seat of the keyboard, else player 1 (the first controller's) */
+static short keyboard_player(void)
 {
-	if (zoom.read && zoom.read_at == config_changes())
+	struct ae_seats seats;
+
+	if (!ae_seats_active())
+		return 0;
+	ae_seats_get(&seats);
+	return (short)ae_seats_keyboard(&seats);
+}
+
+/* the zoom settings of the input this player plays with now (0.3.7: the keyboard and mouse have their own, "same" is
+the controller's), the player's own (their profile's); read again when a setting changes, or the player or input */
+static void zoom_read(short local_player_index)
+{
+	int previous = ae_config_player_enter(local_player_index);
+	int mouse = local_player_index == keyboard_player() && platform_input_scheme() == 0;
+	unsigned long read_at = ae_config_player_changes() * 2 + (unsigned long)mouse;
+	char const *mode, *reset;
+	double hold;
+
+	if (zoom.read && zoom.read_at == read_at)
+	{
+		ae_config_player_leave(previous);
 		return;
+	}
 	zoom.read = 1;
-	zoom.read_at = config_changes();
-	zoom.hold_ms = ae_zoom_hold_ms(config_real("input.zoom_hold_time"));
-	ae_zoom_bank_set_mode(&zoom.bank, ae_zoom_mode_from_text(config_string("input.zoom_mode")));
-	ae_zoom_bank_set_reset(&zoom.bank, ae_zoom_reset_from_text(config_string("input.zoom_reset")));
+	zoom.read_at = read_at;
+	mode = mouse ? config_string("input.mouse_zoom_mode") : "same";
+	reset = mouse ? config_string("input.mouse_zoom_reset") : "same";
+	hold = mouse ? config_real("input.mouse_zoom_hold_time") : 0.0;
+	if (!strcmp(mode, "same") || !*mode)
+		mode = config_string("input.zoom_mode");
+	if (!strcmp(reset, "same") || !*reset)
+		reset = config_string("input.zoom_reset");
+	if (!(hold > 0.0))
+		hold = config_real("input.zoom_hold_time");
+	zoom.hold_ms = ae_zoom_hold_ms(hold);
+	ae_zoom_bank_set_mode(&zoom.bank, ae_zoom_mode_from_text(mode));
+	ae_zoom_bank_set_reset(&zoom.bank, ae_zoom_reset_from_text(reset));
+	ae_config_player_leave(previous);
 }
 
 void ae_zoom_note_held(unsigned long *player_control_flags, int held)
@@ -69,7 +104,7 @@ void ae_zoom_note_flash(unsigned long *player_control_flags, int down, short gam
 void ae_zoom_filter_press(short local_player_index, unsigned long *player_control_flags, int zoom_bit,
 	unsigned long *unit_control_flags, int light_bit)
 {
-	zoom_read();
+	zoom_read(local_player_index);
 	ae_zoom_flags_filter_press(zoom.bank.mode, player_control_flags, zoom_bit);
 	ae_zoom_bank_filter_flash(&zoom.bank, local_player_index, player_control_flags, unit_control_flags, light_bit);
 }
@@ -98,7 +133,7 @@ short ae_zoom_update(short local_player_index, short zoom_level, long weapon_ind
 	long player_index;
 	short level;
 
-	zoom_read();
+	zoom_read(local_player_index);
 	/* the wheel is the first controller's (the keyboard and mouse's) player's alone */
 	player_index = local_player_get_player_index(local_player_index);
 	first = player_index != NONE && player_get(player_index)->local_player_index == 0;
@@ -143,7 +178,7 @@ void ae_zoom_new_game(void)
 
 void ae_zoom_log_settings(void)
 {
-	zoom_read();
+	zoom_read(0);
 	ae_zoom_new_game();
 	platform_log("zoom: mode %s, hold time %g, reset %s",
 		zoom.bank.mode == AE_ZOOM_HOLD ? "hold" : zoom.bank.mode == AE_ZOOM_BOTH ? "both" : "toggle",

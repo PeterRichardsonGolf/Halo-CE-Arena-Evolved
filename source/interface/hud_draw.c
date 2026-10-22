@@ -420,6 +420,7 @@ int backtrace(void **frames, int count);
 int config_boolean(const char *name);
 const char *config_string(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 /* ---------- globals */
 
@@ -1433,11 +1434,11 @@ static real hud_area_aspect(
 	static real aspect = 0.0f;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
 		char const *value = config_string("display.hud_area");
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		if (!csstrcmp(value, "16:9"))
 			aspect = 16.0f / 9.0f;
 		else if (!csstrcmp(value, "4:3"))
@@ -1531,9 +1532,9 @@ boolean hud_split_screen_layout(
 	if (local_player_count() > 1)
 		return TRUE;
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		compact = config_boolean("display.compact_hud") != 0;
 	}
 

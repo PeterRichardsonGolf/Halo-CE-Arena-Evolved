@@ -22,6 +22,7 @@ Only the drawing is changed; the shield itself is the game's.
 /* port/linux/src/port_config.c */
 const char *config_string(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 /* the multiplayer armor colors, in the profile's order (player_profile.c) */
 static char const *const shield_color_names[] =
@@ -39,9 +40,9 @@ static void shield_color_update(
 	char const *value;
 	short index;
 
-	if (shield_color_changes == config_changes())
+	if (shield_color_changes == ae_config_player_changes()) /* AE hook */
 		return;
-	shield_color_changes = config_changes();
+	shield_color_changes = ae_config_player_changes(); /* AE hook */
 	shield_color_index = NONE;
 	value = config_string("display.shield_color");
 	for (index = 0; value && index < (short)NUMBEROF(shield_color_names); index++)

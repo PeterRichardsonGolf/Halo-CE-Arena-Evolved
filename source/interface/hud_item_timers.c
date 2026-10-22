@@ -763,6 +763,7 @@ static void hud_item_timers_side_color(
 const char *config_string(const char *name);
 int config_boolean(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 /* whether one view's power list is the TOP LEFT line (display.power_list
 "top_left"), not the column over the clock ("clock", as split screen's
@@ -774,9 +775,9 @@ static boolean hud_item_timers_power_list_top_left(
 	static boolean top_left = FALSE;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		top_left = !csstrcmp(config_string("display.power_list"), "top_left");
 	}
 
@@ -792,9 +793,9 @@ static boolean hud_item_timers_clock_labels(
 	static boolean labels = FALSE;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		labels = config_boolean("display.match_clock_labels") != 0;
 	}
 
@@ -1589,9 +1590,9 @@ static boolean hud_campaign_timer_shown(
 	static boolean shown = FALSE;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		shown = config_boolean("display.campaign_timer") != 0;
 	}
 
@@ -1670,10 +1671,10 @@ static short hud_waypoint_style(
 	static unsigned long read_at;
 	static short style;
 
-	if (!read || read_at != config_changes())
+	if (!read || read_at != ae_config_player_changes()) /* AE hook */
 	{
 		read = TRUE;
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		style = (short)ae_waypoint_style_from_text(config_string("display.waypoint_style"));
 	}
 
@@ -2124,10 +2125,10 @@ static real hud_waypoint_size(
 	static unsigned long read_at;
 	static real size = 0.7f;
 
-	if (!read || read_at != config_changes())
+	if (!read || read_at != ae_config_player_changes()) /* AE hook */
 	{
 		read = TRUE;
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		size = PIN((real)config_real("display.waypoint_size"), 50.0f, 100.0f) / 100.0f;
 	}
 

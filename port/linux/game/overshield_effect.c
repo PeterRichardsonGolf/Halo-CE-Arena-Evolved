@@ -117,6 +117,7 @@ static short overshield_effect_next_model = 0;
 /* port/linux/src/port_config.c */
 int config_boolean(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 static boolean overshield_effect_enabled(
 	void)
@@ -125,9 +126,9 @@ static boolean overshield_effect_enabled(
 	static boolean enabled = FALSE;
 
 	if (ae_hit_feedback_active()) return FALSE; /* AE hook */
-	if (changes != config_changes())
+	if (changes != ae_config_player_changes()) /* AE hook */
 	{
-		changes = config_changes();
+		changes = ae_config_player_changes(); /* AE hook */
 		enabled = config_boolean("display.overshield_effect") != 0;
 	}
 	return enabled;
