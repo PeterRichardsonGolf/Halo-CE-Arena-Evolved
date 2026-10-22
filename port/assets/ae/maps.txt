@@ -1,0 +1,60 @@
+# Arena Evolved map facts: file<TAB>name<TAB>players<TAB>size (s, m, l or -)<TAB>tags<TAB>credits
+# Read by ae_catalog_read_facts; the generated port/linux/game/ae_maps_data.c is made from this file by
+# tools/ae_maps_data.py (run it after editing). Facts only: names of maps, player ranges, size, tags. A player's own
+# ratings (ae_ratings.txt) go over these. Tags: competitive, featured, nhe-vehicles (NHE MODE note).
+# Sizes follow the play-area extent of notes/map-metadata (small < 35, medium 35-130, large > 130 world units).
+# competitive / featured are editorial picks (the arena-play maps; the ones a first-time player should see first).
+# 
+# The 13 stock Xbox maps. Names and player ranges: the stock ui.map's mp_map_list and mp_map_select map_data
+# (notes/map-metadata/ui_xbox.json); sizes: mapmeta.py, play-area extent of the 2276 maps (table.txt).
+beavercreek	Battle Creek	2-8	m	competitive,featured	Bungie
+sidewinder	Sidewinder	4-16	l		Bungie
+damnation	Damnation	4-8	m	competitive	Bungie
+ratrace	Rat Race	2-6	m	competitive	Bungie
+prisoner	Prisoner	2-8	s	competitive,featured	Bungie
+hangemhigh	Hang 'Em High	4-16	m	competitive,featured	Bungie
+chillout	Chill Out	2-8	s	competitive,featured	Bungie
+carousel	Derelict	4-8	m	competitive	Bungie
+boardingaction	Boarding Action	4-16	m		Bungie
+bloodgulch	Blood Gulch	4-16	l	featured	Bungie
+wizard	Wizard	2-8	s	competitive,featured	Bungie
+putput	Chiron TL34	2-6	m		Bungie
+longest	Longest	2-8	m	competitive	Bungie
+# 
+# NHE's renamed maps (the alias table in ui_map_list.c: badcreek, outbnd, dammy) and its other Xbox v5 community
+# maps (the 2300 build, notes/map-metadata/table.txt: sizes from the play-area extent; names from NHE's ui.map
+# mp_map_list). NHE's ui.map gives no player ranges: "-" (unknown, shown as Unrated).
+badcreek	Battle Creek	-	m	nhe-vehicles	Bungie, Halo 1: NHE
+outbnd	Outbound	-	m	nhe-vehicles	Halo 1: NHE
+dammy	Damnation	-	m	nhe-vehicles	Bungie, Halo 1: NHE
+atlas	Atlas	-	s	nhe-vehicles	Halo 1: NHE
+calamity	Calamity	-	s	nhe-vehicles	Halo 1: NHE
+decidia	Decidia	-	s	nhe-vehicles	Halo 1: NHE
+derelict	Derelict	-	m	nhe-vehicles	Bungie, Halo 1: NHE
+doubletake	Double Take	-	s	nhe-vehicles	Halo 1: NHE
+downrush	Downrush	-	s	nhe-vehicles	Halo 1: NHE
+exhibit	Exhibit	-	s	nhe-vehicles	Halo 1: NHE
+hotbox	Hotbox	-	m	nhe-vehicles	Halo 1: NHE
+imminent	Imminent	-	m	nhe-vehicles	Halo 1: NHE
+madhouse	Madhouse	-	s	nhe-vehicles	Halo 1: NHE
+overflow	Overflow	-	m	nhe-vehicles	Halo 1: NHE
+redshift	Redshift	-	s	nhe-vehicles	Halo 1: NHE
+tinker	Tinker	-	s	nhe-vehicles	Halo 1: NHE
+zerohour	Zero Hour	-	m	nhe-vehicles	Halo 1: NHE
+# 
+# Custom Edition maps the release tests use (notes/map-metadata/table.txt; a CE map's key carries its family's mark).
+# Player ranges of Ice Fields to Gephyrophobia: MCC's ui.map (ui_mcc.json); the rest: "-" (unknown).
+# hugeass is a joke map: its size is an override; homobox's size is unknown ("-").
+beavercreek_v2@ce	Beaver Creek V2	-	m		
+battlecreek_anniversary@ce	Battle Creek Anniversary	-	m		
+foundation@ce	Foundation	-	s		
+guardian@ce	Guardian	-	s		
+H2_Zanzibar@ce	H2 Zanzibar	-	m		
+icefields@ce	Ice Fields	4-16	l		Bungie
+deathisland@ce	Death Island	4-16	l		Bungie
+dangercanyon@ce	Danger Canyon	4-16	l		Bungie
+infinity@ce	Infinity	4-16	l		Bungie
+timberland@ce	Timberland	4-16	l		Bungie
+gephyrophobia@ce	Gephyrophobia	2-12	l		Bungie
+hugeass@ce	Hugeass	-	l		
+homobox@ce	Homobox	-	-		
