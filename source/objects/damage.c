@@ -136,6 +136,7 @@ symbols in this file:
 #include "ae_shield_fx.h" /* AE hook */
 #include "ae_bots.h" /* AE hook */
 #include "ae_reach_health_rules.h" /* AE hook */
+#include "ae_vehicle_death.h" /* AE hook */
 static short ae_blood; /* AE hook */
 #include "text/draw_string.h"
 #include "units/unit_definitions.h"
@@ -671,6 +672,7 @@ void object_deplete_body(
 		{
 			long unit_index;
 
+			damage_effect_new_on_object(ae_vehicle_death_effect(object_index), object_index); /* AE hook */
 			unit_index = object->object.first_child_object_index;
 			while (unit_index != NONE)
 			{
@@ -1287,7 +1289,7 @@ static void object_damage_body(
 	real total_damage)
 {
 	struct object_datum *object = object_get(object_index);
-	real damage_amount = damage_material->body_damage_multiplier*total_damage;
+	real damage_amount = ae_vehicle_death_body_multiplier(object_index, damage_material->body_damage_multiplier)*total_damage; /* AE hook */
 	boolean ignore_difficulty = FALSE;
 	real maximum_body_vitality;
 	real inverse_maximum_body_vitality;
@@ -1491,6 +1493,7 @@ static void object_damage_body(
 				}
 
 				object_deplete_body(object_index);
+				ae_vehicle_death_depleted(object_index, damage); /* AE hook */
 				SET_FLAG(*being_damaged_flags, _object_being_damaged_body_depleted_bit, TRUE);
 			}
 		}

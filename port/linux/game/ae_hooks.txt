@@ -1276,3 +1276,13 @@ port/linux/game/menu_functions.c	ae_player_settings_menu_player(widget->local_pl
 # (0.3.7 AE SETTINGS) PASSENGER THIRD PERSON is the player's own: the camera (director, tick) and the reticle (render) read the same player's
 port/linux/game/passenger_camera.c	int ae_config_player_boolean(int player, const char *name); /* AE hook */
 port/linux/game/passenger_camera.c	!ae_config_player_boolean(local_player_index, "display.passenger_third_person") || game_engine_running() || cinematic_in_progress() || /* AE hook */
+# SPIKE destructible vehicles (ae_vehicle_death.c, HALO_VEHICLE_DEATH=1, host side): the health pool and 0
+# multipliers of stock multiplayer vehicle tags, the riders' deaths credited, an explosion from the map's tags, and
+# the wrecks cleared each tick
+source/objects/damage.c	#include "ae_vehicle_death.h" /* AE hook */
+source/objects/damage.c	real damage_amount = ae_vehicle_death_body_multiplier(object_index, damage_material->body_damage_multiplier)*total_damage; /* AE hook */
+source/objects/damage.c	ae_vehicle_death_depleted(object_index, damage); /* AE hook */
+source/objects/damage.c	damage_effect_new_on_object(ae_vehicle_death_effect(object_index), object_index); /* AE hook */
+source/game/game_engine.c	#include "ae_vehicle_death.h" /* AE hook */
+source/game/game_engine.c	ae_vehicle_death_update(); /* AE hook */
+source/game/game_engine.c	long respawn_ticks = ae_vehicle_death_respawn_ticks(game_variant_options_get()->vehicle_respawn_time * TICKS_PER_SECOND); /* AE hook */
