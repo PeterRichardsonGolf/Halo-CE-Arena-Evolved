@@ -5,7 +5,9 @@ game's main menu's place.
 - the main menu at 1080p 100 % and 130 %, 21:9 (2560x1080), 3440x1440, 4K, 720p and 16:10 (1920x1200);
 - MULTIPLAYER, CREATE GAME from it, and B back to MULTIPLAYER;
 - CAMPAIGN, and its first level played;
-- PROFILES: the list with no profile, a profile named on AE's keyboard, its colour changed in EDIT.
+- PROFILES: the list with no profile, a profile named on AE's keyboard, its colour changed in EDIT;
+- JOIN WITH INVITE: empty, holding the clipboard's invite (HALO_AE_TEST_INVITE), a paste that is no invite (its
+  error), AE's keyboard on it, and a join with internet play off (its reason on the field).
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is about 30 s. Name cases to run some:
 
@@ -52,11 +54,27 @@ CASES = (
     ("browser", "1920x1080", 100, ("pad:a", "pad:down", "pad:down", "pad:a", "pad:rb", "pad:x")),
     ("lan", "1920x1080", 100, ("pad:a", "pad:down", "pad:down", "pad:down", "pad:a")),
     ("lan-back", "1920x1080", 100, ("pad:a", "pad:down", "pad:down", "pad:down", "pad:a", "wait", "pad:b")),
+    # (JOIN WITH INVITE, MULTIPLAYER's second row: empty; the clipboard's invite in it; Y pasting a text that is no
+    # invite; X opening AE's keyboard; A joining the clipboard's invite with internet play off)
+    ("join", "1920x1080", 100, ("pad:a", "pad:down", "pad:a")),
+    ("join-clipboard", "1920x1080", 100, ("pad:a", "pad:down", "pad:a")),
+    ("join-paste", "1920x1080", 100, ("pad:a", "pad:down", "pad:a", "pad:y")),
+    ("join-keyboard", "1920x1080", 100, ("pad:a", "pad:down", "pad:a", "pad:x")),
+    ("join-offline", "1920x1080", 100, ("pad:a", "pad:down", "pad:a", "pad:a")),
+    ("join-130", "1920x1080", 130, ("pad:a", "pad:down", "pad:a")),
 )
+INVITE = "halo://join/" + "0123456789abcdef" * 4
+# the cases' own environment (the clipboard's text as JOIN WITH INVITE reads it: HALO_AE_TEST_INVITE)
+CASE_ENV = {
+    "join-clipboard": {"HALO_AE_TEST_INVITE": "join me: " + INVITE},
+    "join-paste": {"HALO_AE_TEST_INVITE": "see you at 8"},
+    "join-offline": {"HALO_AE_TEST_INVITE": INVITE, "HALO_NET_ONLINE": "false"},
+    "join-130": {"HALO_AE_TEST_INVITE": INVITE},
+}
 
 
 def play(cfg, out, name, window, scale, presses, shots=8, exit_after=EXIT_AFTER):
-    env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_GAMETYPE": "AE TEAM SLY"}
+    env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_GAMETYPE": "AE TEAM SLY", **CASE_ENV.get(name, {})}
     return menus.play(cfg, out, name, views=0, window=window, env=env, shots=shots, exit_after=exit_after,
                       test_input=menus.menu_input(*presses) if presses else menus.menu_input("wait"))
 
@@ -124,6 +142,16 @@ def test_profiles(runs):
     glue = lines(runs["profiles-new"][1], "ae profiles: ")
     assert any(line.startswith("player 1 uses ") for line in glue), glue
     assert any(line.endswith(" colour 1 saved") for line in glue), glue
+
+
+def test_join_with_invite(runs):
+    assert "open (empty)" in lines(runs["join"][1], "ae join invite: ")
+    assert "open (the clipboard's invite)" in lines(runs["join-clipboard"][1], "ae join invite: ")
+    assert "pasted, not an invite" in lines(runs["join-paste"][1], "ae join invite: ")
+    said = lines(runs["join-offline"][1], "ae join invite: ")
+    assert "join failed: Internet play is off" in said, said
+    # (the main menu's JOIN WITH INVITE no longer goes through CREATE GAME)
+    assert not lines(runs["join"][1], "ae create game: ")
 
 
 def test_browsers(runs):

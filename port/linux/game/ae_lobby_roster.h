@@ -24,7 +24,8 @@ struct ae_lobby_player
 struct ae_lobby_roster
 {
 	short count;
-	short machines;            /* the machines in the session */
+	short machines;            /* the machines in the session (network bots' virtual machines too: never people) */
+	short people;              /* the players who are not bots (split screen guests are people): ae_lobby_roster_order */
 	int joined;                /* this machine's client has joined the session (players can be added) */
 	struct ae_lobby_player players[AE_LOBBY_MAXIMUM_PLAYERS];
 	char map[64];              /* the map's file name ("bloodgulch") */
@@ -33,8 +34,12 @@ struct ae_lobby_roster
 };
 
 /* the roster as the game reports it, sorted host first, then by machine, then in the order it lists them (a stable
-order); slot = place + 1 (1..count, always contiguous) */
+order); slot = place + 1 (1..count, always contiguous); people = the players who are not bots */
 void ae_lobby_roster_order(struct ae_lobby_roster *roster);
+/* (a joiner, who is told nothing of the host's bots) whether a player is a network game's bot by its names, UTF-8:
+its machine is one of the host's virtual machines, named "Bots" (ae_lan_bots.c), or its name has "BOT " before it,
+as the host names every network bot (ae_lan_bots_name) so that any machine tells it from a person */
+int ae_lobby_bot_by_names(const char *machine_name, const char *player_name);
 /* UTF-8 text into out (size bytes with its end), cut on a character's boundary when longer; returns its length */
 int ae_lobby_copy_utf8(char *out, int size, const char *text);
 /* count 16-bit units of UTF-16 (to the first 0) as UTF-8 into out, cut on a character's boundary; a lone

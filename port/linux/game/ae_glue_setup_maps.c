@@ -4,7 +4,6 @@ AE_GLUE_SETUP_MAPS.C
 The game setup spike's CHANGE MAP glue. See ae_glue_setup_maps.h.
 */
 
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,7 +24,9 @@ realloc and free are the game's checked ones: stb_image allocates and frees with
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
-/* (stb_image.h brings limits.h, whose macros the 32-bit build sees before cseries.h's enum of the same names) */
+/* (stb_image brings the C library's <limits.h>: in the 32-bit builds its LONG_MAX, LONG_MIN, CHAR_MAX and CHAR_MIN are
+macros, which break cseries.h's enumerators of those names; the 64-bit builds' port/linux/include/limits.h drops them
+itself) */
 #undef LONG_MAX
 #undef LONG_MIN
 #undef CHAR_MAX
@@ -40,6 +41,7 @@ realloc and free are the game's checked ones: stb_image allocates and frees with
 #include "halo_ui_map_list.h"
 #include "../src/ae_discs.h"
 #include "../src/ae_draw.h"
+#include "../src/ae_worker.h"
 #include "ae_catalog.h"
 #include "ae_glue_setup_maps.h"
 #include "ae_map_folders.h"
@@ -126,14 +128,19 @@ static int has_tag(char const *tags, char const *tag)
 
 /* ---------- the facts: read on a worker thread and kept for the session (an Xbox map's tags are inflated to be
 read: 150-250 ms a map, up to 1.5 s, which stalled the menus when read a few a frame). The worker reads the files
-with stdio (ae_mapinfo_read: the port's fopen, which makes a game path the host's) and nothing else of the game's;
-the menus' thread only queues and copies under the lock */
+with stdio (ae_mapinfo_read) and nothing else of the game's; the menus' thread only queues and copies under the lock.
+The thread and the lock are the platform layer's (ae_worker.h: no <pthread.h> in a game unit). The worker opens each
+map by its game path (d:\maps\<file>.map, as cache_files_map_file_path and map_family_find give it): ae_mapinfo.c is
+a game unit, so its fopen is the port's wrapper, which translates the path the way CreateFile does
+(platform_translate_path): halo_linux_fopen on Linux (port/linux/include/stdio.h), halo_windows_fopen on Windows
+(port/windows/include/crt/stdio.h, halo_windows_file_names.h: the game units' <stdio.h> there). A host path given to
+it would be translated again (under the data root): it never gets one */
 
 enum { FACTS_PENDING, FACTS_DONE };
 
 static struct
 {
-	pthread_mutex_t lock;
+	struct ae_worker_lock *lock;   /* made at the first queue (the menus' thread), before any worker */
 	int running;
 	short count;
 	struct { char file[AE_SETUP_MAP_TEXT]; char host[PATH_SIZE]; int state, ok, modes; float extent; }
@@ -141,7 +148,7 @@ static struct
 	/* each loaded map's entry here */
 	short entry_of[AE_SETUP_MAPS_MAXIMUM];
 	unsigned long started_at;
-} reader = { .lock = PTHREAD_MUTEX_INITIALIZER };
+} reader;
 
 static short facts_queue(char const *list_name);
 
@@ -345,17 +352,17 @@ static void *facts_worker(void *unused)
 		short index;
 		int ok;
 
-		pthread_mutex_lock(&reader.lock);
+		ae_worker_lock_take(reader.lock);
 		for (index = 0; index < reader.count && reader.maps[index].state != FACTS_PENDING; index++)
 			;
 		if (index == reader.count)
 		{
 			reader.running = 0;
-			pthread_mutex_unlock(&reader.lock);
+			ae_worker_lock_give(reader.lock);
 			return NULL;
 		}
 		snprintf(host, sizeof(host), "%s", reader.maps[index].host);
-		pthread_mutex_unlock(&reader.lock);
+		ae_worker_lock_give(reader.lock);
 		memset(&info, 0, sizeof(info));
 		ok = host[0] && ae_mapinfo_read(host, &info) == AE_MAPINFO_OK;
 		/* (the first that can't be read, said once: its host path) */
@@ -370,12 +377,12 @@ static void *facts_worker(void *unused)
 			}
 		}
 		/* (entries are only ever added: index still names this one) */
-		pthread_mutex_lock(&reader.lock);
+		ae_worker_lock_take(reader.lock);
 		reader.maps[index].ok = ok;
 		reader.maps[index].modes = info.modes;
 		reader.maps[index].extent = info.play_extent;
 		reader.maps[index].state = FACTS_DONE;
-		pthread_mutex_unlock(&reader.lock);
+		ae_worker_lock_give(reader.lock);
 	}
 }
 
@@ -385,7 +392,10 @@ static short facts_queue(char const *list_name)
 	char path[PATH_SIZE];
 	short index;
 
-	pthread_mutex_lock(&reader.lock);
+	/* (the menus' thread, before any worker: none runs without the lock) */
+	if (!reader.lock)
+		reader.lock = ae_worker_lock_new();
+	ae_worker_lock_take(reader.lock);
 	for (index = 0; index < reader.count; index++)
 	{
 		if (!strcmp(reader.maps[index].file, list_name))
@@ -405,24 +415,20 @@ static short facts_queue(char const *list_name)
 		index = -1;
 	if (index >= 0 && reader.maps[index].state == FACTS_PENDING && !reader.running)
 	{
-		pthread_t thread;
-
 		reader.started_at = system_milliseconds();
-		if (pthread_create(&thread, NULL, facts_worker, NULL) == 0)
-		{
-			pthread_detach(thread);
-			reader.running = 1;
-		}
-		else
+		/* (running set before the worker can look at it; no lock, no worker) */
+		reader.running = reader.lock != NULL;
+		if (!reader.running || !ae_worker_start(facts_worker, NULL))
 		{
 			short other;
 
+			reader.running = 0;
 			platform_log("ae change map: the facts' worker did not start: no facts");
 			for (other = 0; other < reader.count; other++)
 				reader.maps[other].state = FACTS_DONE;
 		}
 	}
-	pthread_mutex_unlock(&reader.lock);
+	ae_worker_lock_give(reader.lock);
 	return index;
 }
 
@@ -441,7 +447,7 @@ short ae_setup_maps_read_facts(struct ae_setup_maps *maps, short count)
 	short index, left = 0;
 
 	(void)count;
-	pthread_mutex_lock(&reader.lock);
+	ae_worker_lock_take(reader.lock);
 	for (index = 0; index < maps->count; index++)
 	{
 		struct ae_setup_map *map = &maps->maps[index];
@@ -474,7 +480,7 @@ short ae_setup_maps_read_facts(struct ae_setup_maps *maps, short count)
 		else
 			glue.facts_unreadable++;
 	}
-	pthread_mutex_unlock(&reader.lock);
+	ae_worker_lock_give(reader.lock);
 	if (!left && !glue.facts_logged && maps->count)
 	{
 		glue.facts_logged = 1;

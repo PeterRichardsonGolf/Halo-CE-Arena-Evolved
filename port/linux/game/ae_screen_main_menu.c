@@ -3,8 +3,9 @@ AE_SCREEN_MAIN_MENU.C
 
 AE's MAIN MENU and MULTIPLAYER (ae_screen_main_menu.h; the mockup's boards 5 and 6,
 https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD). Rows on the left (ae_setup_flow.h), on the right player 1's card,
-"START to add a player" and the last game; the prompts. QUIT asks first. MULTIPLAYER's CREATE GAME and JOIN WITH INVITE
-open CREATE GAME (ae_screen_create_game.h) over it, SERVER BROWSER and LAN GAMES theirs (ae_screen_browser.h); the
+"START to add a player" and the last game; the prompts. QUIT asks first. MULTIPLAYER's CREATE GAME opens
+CREATE GAME (ae_screen_create_game.h) over it, JOIN WITH INVITE its field (ae_screen_join_invite.h), SERVER BROWSER and
+LAN GAMES theirs (ae_screen_browser.h); the
 main menu's SETTINGS is disabled with why until its AE screen is built; CAMPAIGN and PROFILES open theirs.
 
 Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
@@ -23,6 +24,7 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 #include "ae_screen_browser.h"
 #include "ae_screen_campaign.h"
 #include "ae_screen_create_game.h"
+#include "ae_screen_join_invite.h"
 #include "ae_screen_main_menu.h"
 #include "ae_screen_profiles.h"
 #include "ae_setup_flow.h"
@@ -85,7 +87,7 @@ static void rows_multiplayer(void)
 		"Pick a map, a gametype and its rules, and how others join: this PC, your network, or online with an invite.",
 		NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_JOIN, -1, "JOIN WITH INVITE", NULL,
-		"Joins the game whose invite link or code is on your clipboard.", NULL };
+		"Paste or type the invite link or code a friend sent you, and join their game.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_BROWSER, -1, "SERVER BROWSER", NULL,
 		"The internet's games, refreshed in place.",
 		ae_screen_browser_available(AE_BROWSER_INTERNET) ? NULL : "NOT IN THIS BUILD" };
@@ -244,9 +246,12 @@ static void accept(int multiplayer, short row)
 		if (ae_screen_browser_open(r->kind == ROW_LAN ? AE_BROWSER_LAN : AE_BROWSER_INTERNET))
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
-	case ROW_CREATE:
 	case ROW_JOIN:
-		if (ae_screen_create_game_from_menu(r->kind == ROW_JOIN))
+		if (ae_screen_join_invite_open("MULTIPLAYER"))
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
+	case ROW_CREATE:
+		if (ae_screen_create_game_from_menu())
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		else
 			ae_flow_error(flow, "No gametype", "There is no gametype to start a game with.");

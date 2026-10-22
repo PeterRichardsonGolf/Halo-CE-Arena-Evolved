@@ -9,8 +9,9 @@ games' count top right; the filters between LT and RT (SERVER BROWSER: ALL, NOT 
 table (GAME, MAP, GAMETYPE, PLAYERS, PING), a game this build can't join dimmed; on the right the focused game's card:
 its map, name, map . gametype . players, its state in plain words, its host, its players.
 
-Input (anyone's): up / down move; A joins the focused game; X refreshes (LAN: searches again); Y joins the game whose
-invite is on the clipboard (SERVER BROWSER); LT / RT the filter; B back. While a join goes on only B, which leaves it.
+Input (anyone's): up / down move; A joins the focused game; X refreshes (LAN: searches again); Y opens JOIN WITH
+INVITE (SERVER BROWSER: ae_screen_join_invite.h, a link or code pasted or typed); LT / RT the filter; B back. While a
+join goes on only B, which leaves it.
 Joined: player 1 in, then the joiner's LOBBY (ae_screen_create_game.h); leaving it comes back here. A Halo PC map the
 PC lacks: a downloadable one is joined (the download offer takes over once the host names it, browser_screen.c),
 else the card says what is missing and A says it.
@@ -30,6 +31,7 @@ failed: <why>", "closed".
 #include "ae_hooks.h"
 #include "ae_screen_browser.h"
 #include "ae_screen_create_game.h"
+#include "ae_screen_join_invite.h"
 #include "ae_setup_flow.h"
 #include "ae_sound.h"
 #include "ae_strings.h"
@@ -44,7 +46,6 @@ failed: <why>", "closed".
 
 void platform_log(char const *format, ...);
 int config_boolean(char const *name);
-int ae_host_clipboard_get(char *text, int size);
 
 enum
 {
@@ -407,27 +408,6 @@ static void join_focused(void)
 	join_started(game->name);
 }
 
-/* Y: the clipboard's invite joined, as MULTIPLAYER's JOIN WITH INVITE does */
-static void join_invite(void)
-{
-	char text[512];
-	struct ae_result result;
-
-	text[0] = 0;
-	if (!ae_host_clipboard_get(text, sizeof(text)) || !text[0])
-	{
-		ae_flow_error(&screen.flow, "No invite on the clipboard", "Copy a halo://join/ link or an invite code first.");
-		return;
-	}
-	result = ae_lobby_join_address(text);
-	if (!result.ok)
-	{
-		join_failed(result.reason);
-		return;
-	}
-	join_started("the invite's game");
-}
-
 /* the join under way: joined, player 1 in, the joiner's LOBBY; else why not */
 static void join_update(void)
 {
@@ -758,8 +738,8 @@ static int browser_handle(struct ae_screen *instance, struct ae_event const *eve
 		refresh();
 		return 1;
 	case AE_ACTION_Y:
-		if (screen.kind == AE_BROWSER_INTERNET)
-			join_invite();
+		if (screen.kind == AE_BROWSER_INTERNET && ae_screen_join_invite_open("SERVER BROWSER"))
+			ae_sound_request(AE_SOUND_FORWARD, 0);
 		return 1;
 	case AE_ACTION_PAGE_UP:
 	case AE_ACTION_PAGE_DOWN:

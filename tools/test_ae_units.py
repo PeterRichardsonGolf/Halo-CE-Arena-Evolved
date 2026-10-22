@@ -3,6 +3,7 @@
 The units under test have no SDL or game dependency (pattern of tools/test_touch_menu.py), so they compile
 anywhere, with warnings as errors."""
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -208,6 +209,8 @@ UNITS = {
     # (editing a field's text: under the sanitizers, as it takes pasted text)
     "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_ui_test.c": ([UI / "ae_ui.c", UI / "ae_motion.c", UI / "ae_sound.c"], [], []),
+    # (the platform layer's worker and lock, which the map facts' worker runs on: ae_glue_setup_maps.c)
+    "ae_worker_test.c": ([SRC / "ae_worker.c"], [f"-I{SRC}", "-D_POSIX_C_SOURCE=200809L", "-pthread"], ["-pthread"]),
     # (the texts, checked against Overpass 900)
     "ae_strings_test.c": ([UI / "ae_strings.c", SRC / "ae_font.c"], [f"-I{SRC}"], []),
     # (the widget core with the recording ae_draw stub and the real fonts; under the sanitizers)
@@ -238,6 +241,9 @@ UNITS = {
     # (the lobby's roster order and names, preflight P18)
     "ae_lobby_roster_test.c": ([UI / "ae_lobby_roster.c"], [f"-I{UI}", "-fsanitize=address,undefined",
                                                               "-fno-sanitize-recover=all"], []),
+    # (an invite's code in a player's text: JOIN WITH INVITE, the lobby's join; under the sanitizers, as it is pasted)
+    "ae_invite_rules_test.c": ([UI / "ae_invite_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
+                               []),
     # (the lobby's host compatibility: the join's own test, halo_port_limits.h)
     "ae_lobby_compat_test.c": ([], [], []),
     "ae_updater_pick_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
@@ -303,3 +309,20 @@ def test_mapinfo_stock_maps(tmp_path):
     """The map reader against the stock maps' known facts: skipped when $AE_MAPINFO_MAPS or $HALO_DATA_ROOT/maps
     doesn't have them (as on CI); the reader's own maps are test_unit's."""
     run_unit(build_unit("ae_mapinfo_test.c", tmp_path), tmp_path, "stock")
+
+
+def test_game_units_reach_threads_through_the_platform_layer():
+    """AE's game units (port/linux/game) never include <pthread.h>: the Windows builds give them no POSIX headers
+    (port/windows/include/posix is the platform layer's), and in the 32-bit Linux build it brings the C library's
+    <limits.h>, whose LONG_MAX breaks cseries.h. Threads come from the platform layer (port/linux/src/ae_worker.h).
+    And a game unit's fopen of a game path (d:\\maps\\...) is the port's wrapper on Windows too: the game units'
+    <stdio.h> there (port/windows/include/crt) renames fopen to halo_windows_fopen, which translates the path."""
+    offenders = [path.name for path in sorted(UI.glob("*.[ch]"))
+                 if re.search(r"^\s*#\s*include\s*<pthread\.h>", path.read_text(errors="replace"), re.M)]
+    assert not offenders, offenders
+    crt = ROOT / "port" / "windows" / "include" / "crt"
+    assert '#include "halo_windows_file_names.h"' in (crt / "stdio.h").read_text()
+    assert "#define fopen halo_windows_fopen" in (crt / "halo_windows_file_names.h").read_text()
+    windows_build = (ROOT / "tools" / "windows_build.py").read_text()
+    game_flags = windows_build[windows_build.index("game_cflags = "):windows_build.index("for source in game_sources")]
+    assert 'f"-I{crt_include}"' in game_flags and "posix_include" not in game_flags
