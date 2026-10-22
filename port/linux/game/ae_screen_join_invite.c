@@ -33,6 +33,7 @@ Its log: "ae join invite: open", "pasted", "not an invite", "joining", "join fai
 #include "ae_strings.h"
 #include "ae_ui.h"
 #include "ae_widgets.h"
+#include "ae_input.h"
 
 void platform_log(char const *format, ...);
 
@@ -151,7 +152,7 @@ static void join_update(void)
 	if (!ae_lobby_roster(&roster).ok || !roster.joined)
 		return;
 	join.joining = 0;
-	if (!ae_lobby_add_local_player(0).ok)
+	if (!ae_lobby_add_local_player(ae_input_last_controller()).ok)
 	{
 		ae_lobby_leave();
 		join_failed("The game is full, or no longer takes players.");
