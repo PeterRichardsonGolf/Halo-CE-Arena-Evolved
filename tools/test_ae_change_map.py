@@ -2,7 +2,8 @@
 harness (tools/ae_test), in tools/test_ae_gallery.py's pattern (tools/test_ae_menus.py's helpers).
 
 - the folders at 1080p 100 % and 130 %, the folder of the map used last open;
-- the AE CTF filter (set at the start); LB / RB from folder to folder; left closing the open one;
+- the AE CTF filter (set at the start); LB / RB from filter to filter (LT / RT, the folders, checked live); left
+  closing the open one;
 - FAVOURITE (Y) making the FAVOURITES folder; the NHE disc's folder and the NHE filter;
 - the facts read (the log's "facts N read" line) and no picture drawn where the data has none (the dashed place).
 
@@ -29,9 +30,9 @@ CASES = (
     ("open", "1920x1080", 100, (), {}),
     ("open-130", "1920x1080", 130, (), {}),
     # (the filter set at the start: a hidden window has no focus, so AE takes no keys, and the test pad has no
-    # triggers; LT / RT are checked live)
+    # triggers; LT / RT, the folders, are checked live)
     ("filter-ctf", "1920x1080", 100, ("pad:down",), {"HALO_AE_TEST_MAP_FILTER": "5"}),
-    ("folders", "1920x1080", 100, ("pad:rb",) * 3, {}),
+    ("filters", "1920x1080", 100, ("pad:rb",) * 3, {}),
     ("closed", "1920x1080", 100, ("pad:left",), {}),
     ("favourite", "1920x1080", 100, ("pad:down", "pad:y", "pad:up", "pad:up"), {}),
     ("nhe", "1920x1080", 100, (), {"HALO_MOD": "NHE", "HALO_AE_TEST_MAP_FILTER": "6"}),
@@ -90,7 +91,7 @@ def test_opens_with_folders_and_facts(runs):
 
 def test_the_filter_and_folders(runs):
     assert lines(runs["filter-ctf"][1], "ae change map: open ")[0] == "(filter AE CTF)"
-    assert len(lines(runs["folders"][1], "ae change map: folder ")) >= 3
+    assert len(lines(runs["filters"][1], "ae change map: filter ")) >= 3
     assert lines(runs["closed"][1], "ae change map: folder ")[-1].endswith(" closed")
     assert lines(runs["favourite"][1], "ae change map: favourite ")[-1].endswith(" on")
 

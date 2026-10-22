@@ -3,12 +3,12 @@ AE_SCREEN_CHANGE_MAP.C
 
 The game setup spike's CHANGE MAP screen (ae_screen_change_map.h). One page (the mockup's board 4,
 https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD): the title and "N OF M MAPS SUIT <filter>" top right; the filter's
-chips between LT and RT; the folders' list (a chevron, the name, its maps under the filter; one open in place, its maps
+chips between LB and RB; the folders' list (a chevron, the name, its maps under the filter; one open in place, its maps
 under it); the panel (the map's picture or a dashed place for one, its name and badge, players . size . credits,
 PLAYS WELL WITH, how players get it). Positions are fractions of the frame (ae_frame_compute), sizes u.
 
 Input (anyone's): up / down move; A opens or closes a folder, or picks a map (the next game's: logged) and closes;
-right opens a folder, left closes the open one (back on its row); LT / RT (PgUp / PgDn) the filter; LB / RB the next
+right opens a folder, left closes the open one (back on its row); LB / RB (Q / E) the filter; LT / RT (PgUp / PgDn) the next
 folder, opened; Y FAVOURITE (this session's); B back. The pointer: hover, a click on a row as A, on a chip its filter.
 
 Its log: "ae change map: open (filter <name>)", "filter <name>: N of M", "folder <name> open|closed", "focus '<map>'",
@@ -339,13 +339,13 @@ static float draw_filters(void)
 		screen.chips[filter].count = ae_setup_map_suiting(&maps, filter);
 		screen.chips[filter].flags = filter == screen.filter ? AE_CHIP_ON : 0;
 	}
-	chips_x = x + ae_draw_button_width(AE_FONT_LAST_DEVICE, AE_BUTTON_LEFT_TRIGGER, glyph) + u(GLYPH_GAP_U);
+	chips_x = x + ae_draw_button_width(AE_FONT_LAST_DEVICE, AE_BUTTON_LEFT_SHOULDER, glyph) + u(GLYPH_GAP_U);
 	height = ae_chips_layout(&screen.density, right_x() - chips_x - u(80.0f), screen.chips, AE_MAP_FILTERS, rects);
-	ae_draw_button(AE_FONT_LAST_DEVICE, AE_BUTTON_LEFT_TRIGGER, glyph, x, y + (rects[0].height - glyph) * 0.5f,
+	ae_draw_button(AE_FONT_LAST_DEVICE, AE_BUTTON_LEFT_SHOULDER, glyph, x, y + (rects[0].height - glyph) * 0.5f,
 		AE_COLOR_KEY_CAP);
 	ae_widget_chips(&screen.density, chips_x, y, right_x() - chips_x - u(80.0f), screen.chips, AE_MAP_FILTERS, HIT_CHIPS);
 	end = chips_x + rects[AE_MAP_FILTERS - 1].x + rects[AE_MAP_FILTERS - 1].width + u(GLYPH_GAP_U);
-	ae_draw_button(AE_FONT_LAST_DEVICE, AE_BUTTON_RIGHT_TRIGGER, glyph, end,
+	ae_draw_button(AE_FONT_LAST_DEVICE, AE_BUTTON_RIGHT_SHOULDER, glyph, end,
 		y + rects[AE_MAP_FILTERS - 1].y + (rects[AE_MAP_FILTERS - 1].height - glyph) * 0.5f, AE_COLOR_KEY_CAP);
 	return y + height + u(14.0f);
 }
@@ -472,10 +472,10 @@ static void draw_footer(void)
 	screen.prompts[count++] = prompt_of(AE_BUTTON_A, ae_setup_map_row_is_group(entry) ? "Open" : "Play this map",
 		AE_ACTION_ACCEPT);
 	screen.prompts[count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_TRIGGER, "Filter", AE_ACTION_PAGE_UP);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_RIGHT_TRIGGER, "Filter", AE_ACTION_PAGE_DOWN);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_SHOULDER, "Folder", AE_ACTION_TAB_PREVIOUS);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_RIGHT_SHOULDER, "Folder", AE_ACTION_TAB_NEXT);
+	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_SHOULDER, "Filter", AE_ACTION_TAB_PREVIOUS);
+	screen.prompts[count++] = prompt_of(AE_BUTTON_RIGHT_SHOULDER, "Filter", AE_ACTION_TAB_NEXT);
+	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_TRIGGER, "Folder", AE_ACTION_PAGE_UP);
+	screen.prompts[count++] = prompt_of(AE_BUTTON_RIGHT_TRIGGER, "Folder", AE_ACTION_PAGE_DOWN);
 	if (!ae_setup_map_row_is_group(entry))
 		screen.prompts[count++] = prompt_of(AE_BUTTON_Y, "Favourite", AE_ACTION_Y);
 	screen.prompt_count = count;
@@ -529,17 +529,17 @@ static int map_handle(struct ae_screen *instance, struct ae_event const *event)
 	{
 	case AE_ACTION_BACK:
 		return 0;
-	case AE_ACTION_PAGE_UP:
-	case AE_ACTION_PAGE_DOWN:
-		/* (LT / RT: the filter here, not a page) */
-		filter_set(screen.filter + (event->action == AE_ACTION_PAGE_DOWN ? 1 : -1));
-		ae_sound_request(AE_SOUND_CURSOR, event->repeat);
-		return 1;
 	case AE_ACTION_TAB_PREVIOUS:
 	case AE_ACTION_TAB_NEXT:
+		/* (LB / RB: the filter here, the owner's pick; LT / RT the folders) */
+		filter_set(screen.filter + (event->action == AE_ACTION_TAB_NEXT ? 1 : -1));
+		ae_sound_request(AE_SOUND_CURSOR, event->repeat);
+		return 1;
+	case AE_ACTION_PAGE_UP:
+	case AE_ACTION_PAGE_DOWN:
 	{
 		short row = ae_setup_map_group_step(screen.rows, screen.count, screen.list.list.focus,
-			event->action == AE_ACTION_TAB_NEXT ? 1 : -1);
+			event->action == AE_ACTION_PAGE_DOWN ? 1 : -1);
 
 		if (row < 0 || row >= screen.count || !ae_setup_map_row_is_group(screen.rows[row]))
 			return 1;
