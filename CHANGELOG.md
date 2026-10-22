@@ -15,8 +15,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   on the map's pistol spots and the SMG on its assault rifle spots, each spot keeping its own respawn time.
 - Three new weapon packs from CMT's The Silent Cartographer: Evolved (credited in each pack): the SMG, the silenced
   SMG and the covenant carbine, with Halo 2's numbers where they fit one weapon in one hand. The SMG fires 15 rounds
-  a second from a 60-round magazine, a strong close-range automatic (Halo 2 built it for dual wielding; here it
-  stands alone). The silenced SMG is quieter, shows no tracer and is silent to bots' hearing. The carbine fires
+  a second from a 60-round magazine and is lethal up close (about 0.8 s inside 5 units), its damage falling to about
+  a third by mid range, where the assault rifle wins (Halo 5's balance; Halo 2 built it for dual wielding; here it
+  stands alone), with smaller blood on a hit. The silenced SMG is quieter, shows no tracer and is silent to bots' hearing. The carbine fires
   single rounds, 5 a second, from an 18-round magazine with a 2x zoom and no bloom: 5 rounds pop a shield and the
   sixth to the head kills, a second at best, the fastest precision kill if every round lands (the battle rifle stays
   the more forgiving rifle). Each has its own ammunition counter, reticle and pickup
