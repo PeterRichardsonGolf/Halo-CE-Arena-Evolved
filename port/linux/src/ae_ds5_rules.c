@@ -32,6 +32,8 @@ enum ae_ds5_weapon_kind ae_ds5_weapon_kind(int burst_rifle, int pack, int needle
 		return AE_DS5_WEAPON_SMG_SILENCED;
 	if (pack == AE_DS5_PACK_CARBINE)
 		return AE_DS5_WEAPON_CARBINE;
+	if (pack == AE_DS5_PACK_AR_SILENCED)
+		return AE_DS5_WEAPON_AR_SILENCED;
 	if (charging_time > 0.0f)
 		return AE_DS5_WEAPON_CHARGE;
 	if (zoom_levels >= 2 && rate_of_fire < 3.0f)
@@ -51,7 +53,7 @@ char const *ae_ds5_weapon_kind_name(enum ae_ds5_weapon_kind kind)
 {
 	static char const *const names[AE_DS5_WEAPON_KINDS] = {
 		"none", "semi", "heavy", "automatic", "sniper", "charge", "burst", "needler", "plasma heat", "carry", "flame",
-		"smg", "silenced smg", "carbine" };
+		"smg", "silenced smg", "carbine", "silenced ar" };
 
 	return kind >= 0 && kind < AE_DS5_WEAPON_KINDS ? names[kind] : "?";
 }
@@ -219,6 +221,10 @@ static struct profile
 	pistol's (zones 4-6, strength 3), a short snap each shot (30 ms of 200, lighter than the pistol's), a light
 	pulse on the right motor (Covenant) */
 	{ W(4, 6, 3), SM, F(0, 5), 30, 0, 0, 0, COVENANT, 110, 40, "crisp light click, quick snap a shot", NO, 0, 0, 0, 0 },
+	/* silenced ar (AE's silenced assault rifle pack, the assault rifle's 15 rounds/s): the assault rifle's light hold;
+	firing, its pulse a round (the buzz at the rate of fire) softer (amplitude 3, the assault rifle's 5), a softer
+	left pulse a round (as the silenced SMG's beside the SMG's) */
+	{ F(3, 2), V(3, 3, 0), NO, 0, 1, 0, 0, HUMAN, 55, 40, "light hold, a soft pulse a round", NO, 0, 0, 0, 0 },
 };
 #define THROB_TICKS 8
 #define THROB_ON_TICKS 2

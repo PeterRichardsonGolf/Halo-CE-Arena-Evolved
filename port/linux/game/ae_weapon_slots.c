@@ -26,6 +26,9 @@ static struct
 	{ "smg_silenced", "silenced_smg", "SILENCED SMG", AE_WEAPON_STOCK_ASSAULT_RIFLE, AE_WEAPON_SLOTS_CAPABILITY_SMG },
 	/* (the carbine, a precision rifle: the pistol's role on a CE map) */
 	{ "carbine", NULL, "CARBINE", AE_WEAPON_STOCK_PISTOL, AE_WEAPON_SLOTS_CAPABILITY_CARBINE },
+	/* (the H2 Mappack Collection's silenced assault rifle: the assault rifle's role) */
+	{ "ar_silenced", "silenced_ar", "SILENCED AR", AE_WEAPON_STOCK_ASSAULT_RIFLE,
+		AE_WEAPON_SLOTS_CAPABILITY_AR_SILENCED },
 };
 
 static int valid(short slot)
@@ -69,7 +72,7 @@ int ae_weapon_slots_capability(unsigned int loaded_mask)
 	int level, best = 0;
 
 	/* (each level: every slot of it or below loaded) */
-	for (level = AE_WEAPON_SLOTS_CAPABILITY_BR; level <= AE_WEAPON_SLOTS_CAPABILITY_CARBINE; level++)
+	for (level = AE_WEAPON_SLOTS_CAPABILITY_BR; level <= AE_WEAPON_SLOTS_CAPABILITY_AR_SILENCED; level++)
 	{
 		short slot;
 		int all = 1;

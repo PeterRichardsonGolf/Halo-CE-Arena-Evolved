@@ -1,7 +1,9 @@
-"""Builds a weapon pack from a recipe: from CMT's source release (its zip, untouched) and the player's own stock map
-to the donor map and the pack, every step scripted and checked.
+"""Builds a weapon pack from a recipe: from its source (CMT's source release, its zip untouched, or a map's tags: a
+recipe whose source's "kind" is "map") and the player's own stock map to the donor map and the pack, every step
+scripted and checked.
 
     make_pack.py --recipe tools/weapon_pack/battle_rifle/recipe.json --work <folder> --zip <CMT's zip>
+                 (or, for a map source, --source-map <the map>)
                  --stock-map <the stock map the donor's scenario starts from>
                  [--stock-maps <folder of the 13 stock multiplayer maps>]   (default: --stock-map's folder)
                  [--invader <Invader's build folder>] [--library-path <folder of the libraries Invader needs>]
@@ -13,7 +15,9 @@ What it does, all of it under --work (never /tmp, never the prototype's folders;
 it marks, since it deletes and remakes the folders in it):
   prepare  Invader's programs, the zip and the stock map checked against the recipe's SHA-256s; exactly the
            recipe's allowlist unpacked from the zip (cmt-tags/); the stock map's tags extracted (stock-tags/);
-           what the art scripts read written to art-in/
+           what the art scripts read written to art-in/. A map source: the map checked against its SHA-256, written
+           whole and deflated again as Invader reads it (source-map/: see map_source_copy), exactly the
+           allowlist's tags extracted from it (cmt-tags/, the source's tags whatever the source)
   art      our own art drawn (art/): the gun screen's digits and compass, the sharp scope and its label, the
            ammunition counter, the prompts' picture of the rifle. Each picture must be the recipe's: it is pinned
            by its decoded pixels, mode and size, so the same picture from another library version or compression
@@ -48,6 +52,7 @@ import shutil
 import struct
 import sys
 import zipfile
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))    # (found when run with python -I, too)
@@ -80,6 +85,10 @@ STOCK_MULTIPLAYER_MAPS = ("beavercreek", "bloodgulch", "boardingaction", "carous
                           "hangemhigh", "longest", "prisoner", "putput", "ratrace", "sidewinder", "wizard")
 SCRIPT_PREFIX = "AE script "
 STOCK_PREFIX = "stock "
+# a step's "from" (and a graft's) names the recipe's source as "cmt" (CMT's zip, the first recipes') or "source" (any
+# source, a map's too): both are the source's tags (cmt-tags/), its allowlist's files
+SOURCE_ROOTS = ("cmt", "source")
+SOURCE_KINDS = ("zip", "map")
 
 
 class Refused(Exception):
@@ -115,7 +124,7 @@ def step_inputs(step):
     found = []
 
     def add(root, tag):
-        if root == "cmt":
+        if root in SOURCE_ROOTS:
             found.append(("cmt", tag))
         elif root == "stock":
             found.append(("stock", tag))
@@ -198,6 +207,10 @@ def check_recipe(recipe):
     for key in RECIPE_KEYS:
         if key not in recipe:
             raise Refused("the recipe has no %s" % key)
+    needed = ("file", "sha256", "allowlist", "verbatim") + (("tags",) if source_kind(recipe) == "map" else ("root",))
+    for key in needed:
+        if key not in recipe["source"]:
+            raise Refused("the recipe's source has no %s" % key)
     prototype = [key for key in PROTOTYPE_KEYS if key in recipe]
     if prototype and len(prototype) != len(PROTOTYPE_KEYS):
         raise Refused("a recipe made against a prototype names all of %s" % ", ".join(PROTOTYPE_KEYS))
@@ -237,14 +250,36 @@ def check_recipe(recipe):
             raise Refused("art pinned by something other than its pixels: %s" % name)
 
 
+def source_kind(recipe):
+    """the recipe's source: "zip" (CMT's source release, the default) or "map" (an Xbox map's tags)"""
+    kind = recipe["source"].get("kind", "zip")
+    if kind not in SOURCE_KINDS:
+        raise Refused("no such source: %s" % kind)
+    return kind
+
+
+def map_source_copy(path):
+    """a source map as Invader reads it: (the bytes, how many the stream lacked, its tag count). The whole map
+    (donor_map.whole_length_map: a stream ending short past the tags is taken, the rest as zeros) deflated again
+    after its header, as the disc has it: Invader refuses a map inflating short of its header's length, and an Xbox
+    map whose rest is not deflated"""
+    whole, added = donor_map.whole_length_map(path)
+    count = len(donor_map.Tags(whole[struct.unpack_from("<I", whole, 0x10)[0]:]).tags)
+    header = donor_map.MAP_HEADER_SIZE
+    return whole[:header] + zlib.compress(whole[header:], 9), added, count
+
+
 def builder_arguments(recipe, donor, names, out, recipe_folder):
-    """ae_pack_build's arguments for the recipe's pack"""
+    """ae_pack_build's arguments for the recipe's pack (its icon only when the recipe names one: a pack weapon whose
+    HUD is the map's has the map's weapons' icon)"""
     pack = recipe["pack"]
     arguments = ["--donor", str(donor), "--weapon", pack["weapon"], "--external-names", str(names),
                  "--prefix", pack["prefix"], "--id", pack["id"], "--revision", str(pack["revision"]),
                  "--display", pack["display"], "--weapon-key", pack["weapon_key"], "--labels", pack["labels"],
                  "--behaviour", str(pack["behaviour"]), "--replaces", str(pack["replaces"]),
-                 "--texts", str(Path(recipe_folder) / pack["texts"]), "--icon", pack["icon"]]
+                 "--texts", str(Path(recipe_folder) / pack["texts"])]
+    if pack.get("icon"):
+        arguments += ["--icon", pack["icon"]]
     for bitmap in pack["smooth"]:
         arguments += ["--smooth", bitmap]
     arguments += ["--credits", str(Path(recipe_folder) / pack["credits"]), "--verbose", "--out", str(out)]
@@ -325,7 +360,7 @@ def provenance(recipe, layer, tag):
         if step["op"] == "bitmap":
             return SCRIPT_PREFIX + recipe["art_scripts"][step["art"][0]], inputs
         root, name = step["from"]
-        if root == "cmt":
+        if root in SOURCE_ROOTS:
             return name, inputs
         if root == "stock":
             return STOCK_PREFIX + name, inputs
@@ -561,7 +596,7 @@ class Run:
         self.art = self.work / "art"
 
     def root(self, name):
-        if name == "cmt":
+        if name in SOURCE_ROOTS:
             return self.cmt
         if name == "stock":
             return self.stock
@@ -580,20 +615,24 @@ class Run:
     def prepare(self):
         recipe, options = self.recipe, self.options
         self.programs.check()
-        for name in ("zip", "stock_map"):
+        source = recipe["source"]
+        kind = source_kind(recipe)
+        for name in ("zip" if kind == "zip" else "source_map", "stock_map"):
             if not getattr(options, name):
                 raise Refused("--%s is needed" % name.replace("_", "-"))
         stock_map = Path(options.stock_map).expanduser()
         if sha256_file(stock_map) != recipe["stock_map"]["sha256"]:
             raise Refused("the stock map is not the recipe's (SHA-256): %s" % stock_map)
-        for folder in (self.cmt, self.stock, self.art_in):
+        for folder in (self.cmt, self.stock, self.art_in, self.work / "source-map"):
             if folder.exists():
                 shutil.rmtree(folder)
-        source = recipe["source"]
-        written = extract_allowlist.extract(Path(options.zip).expanduser(),
-                                            [source["root"] + name for name in source["allowlist"]], self.cmt,
-                                            strip=source["root"], sha256=source["sha256"])
-        log("prepare: %d of CMT's files unpacked (the allowlist, nothing else)" % len(written))
+        if kind == "zip":
+            written = extract_allowlist.extract(Path(options.zip).expanduser(),
+                                                [source["root"] + name for name in source["allowlist"]], self.cmt,
+                                                strip=source["root"], sha256=source["sha256"])
+            log("prepare: %d of CMT's files unpacked (the allowlist, nothing else)" % len(written))
+        else:
+            self.prepare_map_source(Path(options.source_map).expanduser())
         self.stock.mkdir(parents=True)
         self.programs.run("invader-extract", "-m", stock_map.parent, "-t", self.stock, stock_map)
         count = sum(1 for path in self.stock.rglob("*") if path.is_file())
@@ -612,6 +651,30 @@ class Run:
             if sha256_file(path) != entry["sha256"]:
                 raise Refused("art-in/%s is not the recipe's (SHA-256)" % name)
         log("prepare: %d files for the art scripts in %s" % (len(recipe["art_inputs"]), self.art_in))
+
+    def prepare_map_source(self, path):
+        """the source map's allowlisted tags, extracted by Invader into the source's folder: exactly those"""
+        source = self.recipe["source"]
+        if sha256_file(path) != source["sha256"]:
+            raise Refused("the source map is not the recipe's (SHA-256): %s" % path)
+        image, added, count = map_source_copy(path)
+        if count != source["tags"]:
+            raise Refused("the source map has %d tags, not %d" % (count, source["tags"]))
+        copy = self.work / "source-map" / Path(source["file"]).name
+        copy.parent.mkdir(parents=True)
+        copy.write_bytes(image)
+        log("prepare: the source map written whole (%d bytes the stream lacked, past its tags, as zeros) and "
+            "deflated again for Invader: %s" % (added, copy))
+        self.cmt.mkdir(parents=True)
+        searches = []
+        for name in source["allowlist"]:
+            searches += ["-s", backslashes(name)]
+        self.programs.run("invader-extract", *searches, "-t", self.cmt, copy)
+        have = {str(file.relative_to(self.cmt)).replace(os.sep, "/") for file in self.cmt.rglob("*") if file.is_file()}
+        if have != set(source["allowlist"]):
+            raise Refused("the tags extracted from the source map are not the allowlist: %s" % ", ".join(
+                sorted(have ^ set(source["allowlist"]))[:5]))
+        log("prepare: %d of the source map's tags extracted (the allowlist, nothing else)" % len(have))
 
     def geometry(self, entry):
         """a model's geometry as text for hud_sheet.py: for each part, its vertices' positions, then its
@@ -1043,6 +1106,7 @@ def main(arguments):
     parser.add_argument("--recipe", required=True)
     parser.add_argument("--work", required=True)
     parser.add_argument("--zip")
+    parser.add_argument("--source-map", help="the source map, for a recipe whose source is a map")
     parser.add_argument("--stock-map")
     parser.add_argument("--stock-maps", help="the stock multiplayer maps' folder (default: --stock-map's)")
     parser.add_argument("--invader", default="invader")

@@ -58,6 +58,10 @@ down as an automatic's and a NORMAL bot's held aim sprays it (3% of its rounds h
 #define AE_BOTS_CARBINE_VALUE 8
 #define AE_BOTS_CARBINE_RANGE 11.0f
 #define AE_BOTS_CARBINE_PULL_TICKS 11
+/* the silenced assault rifle: the stock assault rifle's numbers under another name (bots.c values it by the name:
+4 for one it does not know), so the assault rifle's value and bots.c's distance for it */
+#define AE_BOTS_AR_SILENCED_VALUE 6
+#define AE_BOTS_AR_SILENCED_RANGE 7.0f
 
 void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, real *range)
 {
@@ -82,6 +86,10 @@ void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, 
 		*value = AE_BOTS_CARBINE_VALUE;
 		*tap_ticks = AE_BOTS_CARBINE_PULL_TICKS;
 		*range = AE_BOTS_CARBINE_RANGE;
+		break;
+	case AE_WEAPON_SLOT_AR_SILENCED:
+		*value = AE_BOTS_AR_SILENCED_VALUE;
+		*range = AE_BOTS_AR_SILENCED_RANGE;
 		break;
 	}
 }

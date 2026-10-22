@@ -135,6 +135,7 @@ static struct
 	{ PACKS_FOLDER "\\ae_smg.aepack", "ae_smg" },
 	{ PACKS_FOLDER "\\ae_smg_silenced.aepack", "ae_smg_silenced" },
 	{ PACKS_FOLDER "\\ae_carbine.aepack", "ae_carbine" },
+	{ PACKS_FOLDER "\\ae_ar_silenced.aepack", "ae_ar_silenced" },
 };
 
 /* the pack on a map */
