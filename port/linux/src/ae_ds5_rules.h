@@ -313,4 +313,9 @@ int ae_ds5_link_due_now(struct ae_ds5_link *link, unsigned long long now, unsign
 /* the outcome of writing what ae_ds5_link_due gave */
 void ae_ds5_link_result(struct ae_ds5_link *link, int fields, enum ae_ds5_write_result result, unsigned long long now);
 
+/* ONE PAD, ONE PORT: `port` is now pad `id`'s (0: no pad), and no other port is. A pad moves port mid-game when the
+one before it is unplugged; the old port's handle went with that pad, so nothing sets the old port again, and a
+binding left there gave the pad both ports' reports in turn (the lightbar blinking, the triggers clicking at rest) */
+void ae_ds5_bind(unsigned int *bound, int ports, int port, unsigned int id);
+
 #endif

@@ -24,6 +24,26 @@ static int first_level(unsigned char const *effect)
 	return zone < 10 ? (int)((bits >> (3 * zone)) & 7) + 1 : 0;
 }
 
+/* ONE PAD, ONE PORT: a pad that moves port mid-game (the one before it unplugged) is bound to its new port only */
+static void bind_tests(void)
+{
+	unsigned int bound[4] = { 0, 0, 0, 0 };
+
+	ae_ds5_bind(bound, 4, 0, 7);
+	ae_ds5_bind(bound, 4, 1, 9);
+	CHECK(bound[0] == 7 && bound[1] == 9);
+	/* (pad 7 unplugged: port 1's handle is gone and never set again; pad 9 moves to port 1) */
+	ae_ds5_bind(bound, 4, 0, 9);
+	CHECK(bound[0] == 9 && bound[1] == 0);
+	/* (a port with no pad) */
+	ae_ds5_bind(bound, 4, 0, 0);
+	CHECK(bound[0] == 0 && bound[1] == 0);
+	/* (out of range: nothing) */
+	ae_ds5_bind(bound, 4, 4, 9);
+	ae_ds5_bind(bound, 4, -1, 9);
+	CHECK(bound[0] == 0 && bound[1] == 0 && bound[2] == 0 && bound[3] == 0);
+}
+
 /* ONE WRITER: the link's coalescing, the Bluetooth window, a busy queue, a pad that went */
 static void link_tests(void)
 {
@@ -244,6 +264,7 @@ int main(void)
 		{ 0x26, 0xf8, 0x03, 0x00, 0x48, 0x92, 0x24, 0, 0, 15, 0 };
 	static unsigned char const nine[] = "123456789";
 
+	bind_tests();
 	ae_ds5_effect_off(effect);
 	CHECK(same(effect, off, sizeof(off)));
 	ae_ds5_effect_feedback(effect, 2, 8);

@@ -258,7 +258,8 @@ void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_mot
 	SDL_JoystickID id = gamepad ? SDL_GetGamepadID(gamepad) : 0;
 
 	SDL_LockSpinlock(&shared_lock);
-	shared.bound[port] = id;
+	/* (one pad, one port: a pad that moved here is no longer its old port's) */
+	ae_ds5_bind(shared.bound, PORTS, port, id);
 	/* (a DualSense's event pulse, or ae_ds5_pulse's on any pad) */
 	if (now < shared.pulse_until[port])
 	{

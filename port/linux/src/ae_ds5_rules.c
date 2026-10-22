@@ -1138,3 +1138,20 @@ int ae_ds5_charge_rumble(enum ae_ds5_weapon_kind kind, float charge, long ticks,
 	rumble->ms = CHARGE_RUMBLE_MS;
 	return 1;
 }
+
+void ae_ds5_bind(unsigned int *bound, int ports, int port, unsigned int id)
+{
+	int other;
+
+	if (port < 0 || port >= ports)
+		return;
+	if (id)
+	{
+		for (other = 0; other < ports; other++)
+		{
+			if (other != port && bound[other] == id)
+				bound[other] = 0;
+		}
+	}
+	bound[port] = id;
+}
