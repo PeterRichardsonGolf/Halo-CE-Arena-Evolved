@@ -7,7 +7,8 @@
 #include "networking/network_game_globals.h"
 #include "network_distributed.h"
 #include "network_aim_assist.h"
-#include "ae_mouse_aim.h" /* AE hook */
+/* AE hook */
+#include "ae_mouse_aim.h"
 #include <string.h>
 
 int config_boolean(char const *name);

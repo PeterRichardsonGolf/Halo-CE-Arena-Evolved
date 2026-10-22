@@ -1185,7 +1185,10 @@ source/game/game_engine.c	ae_melee_unzoom_log_rules(flags); /* AE hook */
 source/game/game_engine.h	_game_variant_block_mouse_aim_assist_bit = 10, /* AE hook */
 source/game/game_engine.c	#include "ae_mouse_aim.h" /* AE hook */
 source/game/game_engine.c	ae_mouse_aim_assist_log_rules(flags); /* AE hook */
-port/linux/game/network_aim_assist.c	#include "ae_mouse_aim.h" /* AE hook */
+port/linux/game/network_aim_assist.c	/* AE hook */\n#include "ae_mouse_aim.h"
+# (OpenCE's aim assist harness test compiles network_aim_assist.c with its includes taken out: these stand in)
+tools/harness/tests/aim_assist.c	static boolean ae_mouse_aim_assist_host_blocks(boolean setting){return setting;} /* AE hook */
+tools/harness/tests/aim_assist.c	static void ae_mouse_aim_assist_note_policy(boolean blocked){(void)blocked;} /* AE hook */
 port/linux/game/network_aim_assist.c	if (game_connection() == _game_connection_local) return ae_mouse_aim_assist_host_blocks(FALSE); /* AE hook */
 port/linux/game/network_aim_assist.c	return ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
 port/linux/game/network_aim_assist.c	message.block_mouse = ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */

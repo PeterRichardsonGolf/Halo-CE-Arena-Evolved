@@ -25,6 +25,9 @@ static void distributed_send(void *data,byte type,int count,word size,int destin
 static void distributed_send_to_machine_reliably(long machine,void *data,byte type,int count,word size){distributed_send(data,type,count,size,0);}
 /* (Arena Evolved: the keyboard plays as the first controller unless its seat map says otherwise: ae_seats.c) */
 static int ae_seats_keyboard_controller(void){return 0;}
+/* (Arena Evolved: the gametype's MOUSE AIM ASSIST rule, ae_mouse_aim.h: none here, the host's setting alone) */
+static boolean ae_mouse_aim_assist_host_blocks(boolean setting){return setting;} /* AE hook */
+static void ae_mouse_aim_assist_note_policy(boolean blocked){(void)blocked;} /* AE hook */
 #include "policy.inc"
 #include "input.inc"
 static void receive(int from,int value,int count,int size){
