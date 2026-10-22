@@ -937,6 +937,30 @@ def test_recipe_pack_arguments():
     assert "--power" not in arguments and arguments[arguments.index("--revision") + 1] == str(data["revision"])
 
 
+@pytest.mark.parametrize("kind", ["battle_rifle", "carbine", "smg", "smg_silenced"])
+def test_every_pack_weapon_melees_as_the_stock_assault_rifle(kind):
+    """the owner (2026-10-22): a pack weapon's melee took about five blows from the front. CMT's melee is 30 flat
+    at 1.0 against a Spartan; every pack weapon names the stock assault rifle's melee damage and response instead
+    (left to the map, on every stock multiplayer map), so it strikes as every stock weapon does. The weapon tag the
+    donor takes is the first layer's that makes it, so the edit is followed through the steps it is made from."""
+    data = json.loads((TOOLS / kind / "recipe.json").read_text())
+    tag = data["pack"]["weapon"].replace("\\", "/") + ".weapon"
+    made = {(step["layer"], step["tag"]): step for step in data["steps"]}
+    layer = next(layer for layer in data["layers"] if (layer, tag) in made)
+    found = {}
+    while layer != "cmt":
+        step = made[(layer, tag)]
+        for edit in step["edits"]:
+            pairs = [edit[1:]] if edit[0] == "set" else edit[1] if edit[0] == "sets" else []
+            for field, value in pairs:
+                found.setdefault(field, value)
+        layer, tag = step["from"]
+    assert found["player_melee_damage"] == "weapons\\assault rifle\\melee.damage_effect"
+    assert found["player_melee_response"] == "weapons\\assault rifle\\melee_response.damage_effect"
+    assert not [name for name in data["source"]["allowlist"]
+                if name.startswith("cmt/globals/evolved/damage_effects/melee")]
+
+
 # ---------- make_pack.py's own rules
 
 @pytest.mark.parametrize("path", ["/tmp/br", "/tmp", "/var/tmp/x", "/dev/shm/x", "~/halo-test/wp2/new",

@@ -116,8 +116,6 @@
    "cmt/effects/point physics/plasma debris.point_physics",
    "cmt/effects/point physics/sparks.point_physics",
    "cmt/effects/shared effects/covenant_ammunition_empty.effect",
-   "cmt/globals/evolved/damage_effects/melee.damage_effect",
-   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
    "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
    "cmt/sounds/sfx/effects/impacts/plasma_impact.sound",
    "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
@@ -308,8 +306,6 @@
    "cmt/effects/point physics/plasma debris.point_physics",
    "cmt/effects/point physics/sparks.point_physics",
    "cmt/effects/shared effects/covenant_ammunition_empty.effect",
-   "cmt/globals/evolved/damage_effects/melee.damage_effect",
-   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
    "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
    "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
    "cmt/sounds/sfx/effects/impacts/plasma_impact.sound",
@@ -568,18 +564,18 @@
   {"layer": "fix-ae", "tag": "cmt/weapons/_shared/carbine/bitmaps/carbine_body_diff.bitmap", "op": "dxt_lift", "lift": 1.4, "from": ["cmt", "cmt/weapons/_shared/carbine/bitmaps/carbine_body_diff.bitmap"], "why": "CMT's art is dark in stock CE's lighting: the base map brightened (less than the battle rifle's 1.8: the carbine's shell is lighter, and its tinted reflection shows through more)"},
   {"layer": "fix-ae", "tag": "cmt/weapons/_shared/carbine/shaders/carbine_body_gray.shader_model", "op": "edit", "from": ["fix-xbox", "cmt/weapons/_shared/carbine/shaders/carbine_body_gray.shader_model"], "edits": [["sets", [["perpendicular_brightness", "1"]]]], "why": "the grey parts' lighting, tuned beside the battle rifle's in the game"},
   {"layer": "fix-ae", "tag": "cmt/weapons/_shared/carbine/shaders/carbine_body_purple.shader_model", "op": "edit", "from": ["fix-xbox", "cmt/weapons/_shared/carbine/shaders/carbine_body_purple.shader_model"], "edits": [["sets", [["perpendicular_brightness", "0.6"]]]], "why": "the purple shell's lighting, tuned beside the battle rifle's in the game"},
-  {"layer": "fix-ae", "tag": "cmt/weapons/evolved/carbine/carbine.weapon", "op": "edit", "from": ["fix-xbox", "cmt/weapons/evolved/carbine/carbine.weapon"], "edits": [["sets", [["collision_model", "weapons\\assault rifle\\assault rifle.model_collision_geometry"], ["magazines[0].rounds_total_initial", "36"], ["magazines[0].rounds_reserved_maximum", "72"], ["magazines[0].rounds_loaded_maximum", "18"], ["magazines[0].rounds_reloaded", "18"], ["triggers[0].maximum_rate_of_fire", "5 5"], ["triggers[0].acceleration_time", "0"], ["triggers[0].deceleration_time", "0"], ["triggers[0].error_angle", "0.3 0.3"], ["triggers[0].minimum_error", "0"], ["triggers[0].error_acceleration_time", "0.1"], ["triggers[0].error_deceleration_time", "0.1"], ["triggers[0].firing_noise", "loud"], ["zoom_levels", "1"], ["zoom_magnification_range", "2 2"], ["autoaim_angle", "3"], ["autoaim_range", "20"], ["magnetism_angle", "6"], ["magnetism_range", "30"]]]], "why": "Halo 2's carbine (its shared.map, numbers only): a magazine of 18, 36 rounds to start and 90 in all at most (CE's maximum is the reserve alone: 72), single shots (Halo 2's barrel names 2 shots per fire, a 2-round burst the carbine never fires in play: a departure), a loud shot, one zoom level of 2x, aim assist 3 degrees and magnetism 6; then the owner's tuning in play (2026-10-21, Octagon drills beside the BR): Halo 5's rate, 5 rounds a second, its error held at 0.3 degrees (no bloom), and the BR's aim assist reach, 20 units, and magnetism reach, 30; the held weapon's collision the stock assault rifle's"},
+  {"layer": "fix-ae", "tag": "cmt/weapons/evolved/carbine/carbine.weapon", "op": "edit", "from": ["fix-xbox", "cmt/weapons/evolved/carbine/carbine.weapon"], "edits": [["sets", [["collision_model", "weapons\\assault rifle\\assault rifle.model_collision_geometry"], ["magazines[0].rounds_total_initial", "36"], ["magazines[0].rounds_reserved_maximum", "72"], ["magazines[0].rounds_loaded_maximum", "18"], ["magazines[0].rounds_reloaded", "18"], ["triggers[0].maximum_rate_of_fire", "5 5"], ["triggers[0].acceleration_time", "0"], ["triggers[0].deceleration_time", "0"], ["triggers[0].error_angle", "0.3 0.3"], ["triggers[0].minimum_error", "0"], ["triggers[0].error_acceleration_time", "0.1"], ["triggers[0].error_deceleration_time", "0.1"], ["triggers[0].firing_noise", "loud"], ["zoom_levels", "1"], ["zoom_magnification_range", "2 2"], ["autoaim_angle", "3"], ["autoaim_range", "20"], ["magnetism_angle", "6"], ["magnetism_range", "30"], ["player_melee_damage", "weapons\\assault rifle\\melee.damage_effect"], ["player_melee_response", "weapons\\assault rifle\\melee_response.damage_effect"]]]], "why": "Halo 2's carbine (its shared.map, numbers only): a magazine of 18, 36 rounds to start and 90 in all at most (CE's maximum is the reserve alone: 72), single shots (Halo 2's barrel names 2 shots per fire, a 2-round burst the carbine never fires in play: a departure), a loud shot, one zoom level of 2x, aim assist 3 degrees and magnetism 6; then the owner's tuning in play (2026-10-21, Octagon drills beside the BR): Halo 5's rate, 5 rounds a second, its error held at 0.3 degrees (no bloom), and the BR's aim assist reach, 20 units, and magnetism reach, 30; the held weapon's collision the stock assault rifle's; the melee the stock assault rifle's, its damage and response tags left to the map (on every stock multiplayer map): 40 to 60 a blow, 1.4 against a Spartan's shield and body, as every stock weapon's (CMT's melee took 30 flat at 1.0: about five blows from the front where a stock weapon takes two or three)"},
   {"layer": "fix-ae", "tag": "cmt/weapons/evolved/carbine/projectiles/carbine_bolt.projectile", "op": "edit", "from": ["cmt", "cmt/weapons/evolved/carbine/projectiles/carbine_bolt.projectile"], "edits": [["sets", [["initial_velocity", "1000"], ["final_velocity", "1000"], ["maximum_range", "200"]]]], "why": "the BR's round (owner, 2026-10-21): 1000 units a second (33.3 a tick), 200 units of range; Halo 2's slug was 400 and 40"},
   {"layer": "fix-ae", "tag": "cmt/weapons/evolved/carbine/damage_effects/carbine_bolt_impact.damage_effect", "op": "edit", "from": ["cmt", "cmt/weapons/evolved/carbine/damage_effects/carbine_bolt_impact.damage_effect"], "edits": [["sets", [["damage_lower_bound", "15.2"], ["damage_upper_bound", "15.2 15.2"]]]], "why": "the owner's pick in play (2026-10-21, option A): 5 rounds pop the shield and the sixth to the head kills, 1.0 s at 5 a second (Halo 2's 11 a round brought to CE's 150 vitality was 14.3, a 7-round kill); CMT's head bonus kept"}
  ],
  "expected": {
   "about": "the owner's tuning in play (2026-10-21, revision 1); re-pinned when a step changes",
-  "donor_sha256": "a9f8d2b00800a77d0418e4981efca33704c7a66ddf97b330f2198a11e42b66bb",
+  "donor_sha256": "c355c2224c2a2d0e238f64d3a2ab41202a3cb860ca674b10cc3e4d13cb67beca",
   "donor_size": 22650880,
-  "pack_sha256": "dd7c1e46d0d3a26267acda8a0e654c295258195d6b33fd832b9797850b056421",
-  "pack_own_sha256": "fbd0bba419dca5b9ec0906d27e8f2e041245c5e38122420ef53d4375ad6f41aa",
-  "pack_size": 15399007,
-  "own_tags": 207,
-  "external_tags": 46
+  "pack_sha256": "32d3a0517fca8ada132c19992bc54f28390d0337d800c63c3b11e4b8fc18814a",
+  "pack_own_sha256": "6b7e7c165881d70160d41c6fbea81893f850bd0eb7b1d83e4855eb1642bd8cd9",
+  "pack_size": 15397503,
+  "own_tags": 205,
+  "external_tags": 48
  }
 }

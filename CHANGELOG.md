@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- Weapon packs: the battle rifle, SMG, silenced SMG and carbine melee as every stock weapon does (the stock
+  assault rifle's blow, 40 to 60 and 1.4 against a Spartan), two blows (now and then three) from full, like the
+  assault rifle; CMT's melee they had took 30 a blow, about five to kill. The packs are rebuilt.
+- Silenced SMG retuned on Halo 3's: 11 a round up close falling off to 4.4 by about 9.5 units, tight at first
+  (0.25 degrees) and wide after 2 s of fire (5.5), a 2x zoom, a magazine of 48 (144 at start and in reserve),
+  and the stock assault rifle's smaller impacts on Spartans.
 - DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT's hair-trigger break is easier to
   feel, STRONG is two steps firmer than NORMAL but never so stiff that a full pull tires. L2's grenade is a light,
   quick pull with a short click at the throw on every setting (it was strong on all of them). The weapon packs have
