@@ -818,9 +818,10 @@ static const struct config_setting config_settings[] =
 		"Android moves them unless this is \"no\"." },
 	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all, /* AE hook */
 		"Computer players (bots) in a local (split screen) game of any mode\n"
-		"(Slayer, CTF, Oddball, King of the Hill, Race): 0 to 15 join its lobby\n"
-		"with the players, as far as the game has room; up to 3 in a LAN game you\n"
-		"host, none in internet games. 0: none, as in the stock game." },
+		"(Slayer, CTF, Oddball, King of the Hill, Race) and in the LAN and\n"
+		"internet games you host (debug.network_bots): they join its lobby with\n"
+		"the players, as far as the game has room. The menus' BOTS row goes to\n"
+		"15, this to 127. 0: none, as in the stock game." },
 	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all, /* AE hook */
 		"How well the bots play: \"recruit\" (for new players), \"easy\", \"normal\",\n"
 		"\"heroic\", \"legendary\" or \"demon\" (how soon they react, how well they\n"
