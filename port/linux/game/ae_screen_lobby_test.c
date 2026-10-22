@@ -135,7 +135,9 @@ static short log_profiles(const char *when)
 /* 94: the profile drive, at once (the glue's calls are all immediate) */
 static void profile_drive(void)
 {
-	static struct ae_profile_controls const controls = { 2, 5, 1, 0 }, guest_controls = { 3, 7, 0, 1 };
+	/* (look sensitivity as Halo stores it, 1 to 10: the top one taken, a 0 not) */
+	static struct ae_profile_controls const controls = { 2, 10, 1, 0 }, guest_controls = { 3, 7, 0, 1 },
+		no_look = { 2, 0, 1, 0 };
 	struct ae_profile_controls read;
 	struct player_profile profile;
 	struct ae_result result;
@@ -150,7 +152,10 @@ static void profile_drive(void)
 	ae_profile_new("AE\tTAB", NULL);
 	ae_profile_new("AE \xF0\x9F\x8E\xAE", NULL);
 	ae_profile_new("ABCDEFGHIJKL", NULL);
-	if (!ae_profile_switch(0, index).ok || !ae_profile_set_controls(0, &controls).ok || !ae_profile_set_color(0, 3).ok)
+	if (!ae_profile_switch(0, index).ok)
+		return;
+	platform_log("ae profiles: look sensitivity 0 taken %d", ae_profile_set_controls(0, &no_look).ok);
+	if (!ae_profile_set_controls(0, &controls).ok || !ae_profile_set_color(0, 3).ok)
 		return;
 	/* the profile read again from its file (player_profile_get waits for the save's write) */
 	if (player_profile_get((long)(unsigned int)index, &profile))

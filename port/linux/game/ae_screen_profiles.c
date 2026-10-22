@@ -192,7 +192,7 @@ static float draw_settings(struct ae_flow_screen *flow, float x, float y, float 
 	const char *labels[5] = { "COLOUR", "BUTTON LAYOUT", "LOOK SENSITIVITY", "INVERT LOOK", "VIBRATION" };
 	const char *values[5];
 
-	snprintf(look, sizeof(look), "%d", controls->look_sensitivity + 1);
+	snprintf(look, sizeof(look), "%d", controls->look_sensitivity);
 	values[0] = color_name(color);
 	values[1] = layout_name(controls->layout);
 	values[2] = look;
@@ -245,7 +245,7 @@ static void rows_edit(void)
 	struct ae_flow_screen *flow = &screen.edit.flow;
 	short count = 0;
 
-	snprintf(flow->value_texts[2], sizeof(flow->value_texts[2]), "%d", screen.controls.look_sensitivity + 1);
+	snprintf(flow->value_texts[2], sizeof(flow->value_texts[2]), "%d", screen.controls.look_sensitivity);
 	flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "PLAYER", NULL, NULL, NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_COLOR, -1, "COLOUR", color_name(screen.color),
 		"Your armour's colour, from the next game you join.", NULL };
@@ -295,7 +295,8 @@ static void edit_step(short row, short direction)
 			direction);
 		break;
 	case ROW_LOOK:
-		controls.look_sensitivity = ae_value_step(10, controls.look_sensitivity, direction);
+		/* (stored as Halo shows it, 1 to 10) */
+		controls.look_sensitivity = 1 + ae_value_step(10, controls.look_sensitivity - 1, direction);
 		break;
 	case ROW_INVERT:
 		controls.invert = !controls.invert;

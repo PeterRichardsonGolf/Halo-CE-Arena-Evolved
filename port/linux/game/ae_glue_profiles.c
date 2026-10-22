@@ -436,7 +436,7 @@ struct ae_result ae_profile_set_controls(short local_player, struct ae_profile_c
 	long index;
 
 	if (!controls || controls->layout < 0 || controls->layout >= NUMBER_OF_BUTTON_PRESETS ||
-		controls->look_sensitivity < 0 || controls->look_sensitivity >= NUMBER_OF_LOOK_SENSITIVITY_SETTINGS)
+		controls->look_sensitivity < 1 || controls->look_sensitivity > NUMBER_OF_LOOK_SENSITIVITY_SETTINGS)
 	{
 		return failed("controls", AE_STR_ERR_SETTING);
 	}
@@ -501,7 +501,7 @@ static boolean profile_of(const char *call, int profile_index, long *index, stru
 static boolean controls_valid(struct ae_profile_controls const *controls)
 {
 	return controls && controls->layout >= 0 && controls->layout < NUMBER_OF_BUTTON_PRESETS &&
-		controls->look_sensitivity >= 0 && controls->look_sensitivity < NUMBER_OF_LOOK_SENSITIVITY_SETTINGS;
+		controls->look_sensitivity >= 1 && controls->look_sensitivity <= NUMBER_OF_LOOK_SENSITIVITY_SETTINGS;
 }
 
 struct ae_result ae_profile_read(int profile_index, struct ae_profile_controls *controls, short *color)

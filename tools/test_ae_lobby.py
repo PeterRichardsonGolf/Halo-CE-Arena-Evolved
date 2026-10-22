@@ -247,7 +247,7 @@ def profile_files(save_root):
 
 
 def test_profile_drive(cfg):
-    """the profiles' glue (94) on a fresh throwaway save root: a profile made, player 1's, controls 2 5 1 0 and colour
+    """the profiles' glue (94) on a fresh throwaway save root: a profile made, player 1's, controls 2 10 1 0 and colour
     3 saved, read back from the file by the game and here from the save root; player 2 a guest: their settings apply
     to the session and nothing is written (the profile files the same before and after)"""
     import re
@@ -276,9 +276,10 @@ def test_profile_drive(cfg):
                     "ae profiles: new: A name can't use that character",
                     "ae profiles: new: A name can't use that character",
                     "ae profiles: new: Names are up to 11 characters",
-                    f"ae profiles: player 1 uses {index}", "ae profiles: controls 2 5 1 0 saved",
-                    "ae profiles: colour 3 saved", "ae profiles: read back controls 2 5 1 0 colour 3",
-                    "ae profiles: player 1 controls 2 5 1 0 in the game",
+                    f"ae profiles: player 1 uses {index}", "ae profiles: look sensitivity 0 taken 0",
+                    "ae profiles: controls 2 10 1 0 saved",
+                    "ae profiles: colour 3 saved", "ae profiles: read back controls 2 10 1 0 colour 3",
+                    "ae profiles: player 1 controls 2 10 1 0 in the game",
                     "ae profiles: colour 4 saved", "ae profiles: saved past an idle upstream edit buffer",
                     f"ae profiles: count {before + 1} before the guest", "ae profiles: 'AE TEST' colour ",
                     "ae profiles: player 2 guest", "ae profiles: player 2 is guest 1, player 1 is guest 0",
@@ -286,8 +287,8 @@ def test_profile_drive(cfg):
                     "ae profiles: guest controls ok 1 (A guest's settings are not saved)",
                     "ae profiles: guest controls 3 7 0 1 this session", "ae profiles: guest colour not saved",
                     f"ae profiles: count {before + 1} after the guest", "ae profiles: done"])
-    # (the save root: the one profile made, as the drive left it: colour 4 last, controls 2 5 1 0; the guest's
+    # (the save root: the one profile made, as the drive left it: colour 4 last, controls 2 10 1 0; the guest's
     # controls 3 7 0 1 and colour 5 nowhere, and no other file)
     assert len(files) == before + 1, (files, listing)
-    assert ("AE TEST", 4, 2, 5, 1, 1) in files.values(), files
+    assert ("AE TEST", 4, 2, 10, 1, 1) in files.values(), files
     assert not [f for f in files.values() if f[0].startswith("Guest")], files
