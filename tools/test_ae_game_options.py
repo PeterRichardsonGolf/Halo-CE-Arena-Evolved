@@ -44,7 +44,7 @@ CASES = (
 
 def play(cfg, out, name, gametype, presses, window, scale):
     env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_GAMETYPE": gametype}
-    return menus.play(cfg, out, name, views=SCREEN, window=window, env=env, shots=60, exit_after=EXIT_AFTER,
+    return menus.play(cfg, out, name, views=SCREEN, window=window, env=env, shots=8, exit_after=EXIT_AFTER,
                       test_input=menus.menu_input(*presses) if presses else menus.menu_input("wait"))
 
 
@@ -52,9 +52,12 @@ def lines(text, start):
     return [line.split(start, 1)[1] for line in text.splitlines() if start in line]
 
 
-def run_cases(cfg, out):
+def run_cases(cfg, out, only=()):
+    """the cases (only those named, when names are given)"""
     runs = {}
     for name, gametype, window, scale, presses in CASES:
+        if only and name not in only:
+            continue
         result, text, pngs = play(cfg, out, name, gametype, presses, window, scale)
         frame = None
         if pngs:
@@ -103,8 +106,8 @@ if __name__ == "__main__":
     if not c:
         sys.exit("needs the ae_test harness config and a built game ($AE_MENUS_BUILD)")
     folder = menus.out_dir(c, "game-options")
-    done = run_cases(c, folder)
-    frames = [done[n][2] for n, *_ in CASES if done[n][2]]
+    done = run_cases(c, folder, tuple(sys.argv[1:]))
+    frames = [done[n][2] for n, *_ in CASES if n in done and done[n][2]]
     if frames:
         print(menus.tile(frames, folder / "sheet.png", width=960, columns=2))
     for n, (result, text, frame) in done.items():

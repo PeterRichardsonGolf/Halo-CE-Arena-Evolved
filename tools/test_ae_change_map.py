@@ -41,7 +41,7 @@ CASES = (
 def play(cfg, out, name, window, scale, presses, env):
     e = {"HALO_ARENA_MENUS_SCALE": str(scale)}
     e.update(env)
-    return menus.play(cfg, out, name, views=SCREEN, window=window, env=e, shots=60, exit_after=EXIT_AFTER,
+    return menus.play(cfg, out, name, views=SCREEN, window=window, env=e, shots=8, exit_after=EXIT_AFTER,
                       test_input=menus.menu_input(*presses) if presses else menus.menu_input("wait"))
 
 
@@ -49,9 +49,12 @@ def lines(text, start):
     return [line.split(start, 1)[1] for line in text.splitlines() if start in line]
 
 
-def run_cases(cfg, out):
+def run_cases(cfg, out, only=()):
+    """the cases (only those named, when names are given)"""
     runs = {}
     for name, window, scale, presses, env in CASES:
+        if only and name not in only:
+            continue
         result, text, pngs = play(cfg, out, name, window, scale, presses, env)
         frame = None
         if pngs:
@@ -103,6 +106,6 @@ if __name__ == "__main__":
     if not c:
         sys.exit("needs the ae_test harness config and a built game ($AE_MENUS_BUILD)")
     folder = menus.out_dir(c, "change-map")
-    done = run_cases(c, folder)
+    done = run_cases(c, folder, tuple(sys.argv[1:]))
     for n, (result, text, frame) in done.items():
         print(n, frame, lines(text, "ae change map: ")[-4:])
