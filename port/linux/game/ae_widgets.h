@@ -109,6 +109,8 @@ the moving selection bar, overflow fades and "▲ / ▼ N more", and the scrollb
 void ae_widget_list(struct ae_density const *density, struct ae_list_view *view, float x, float y, float width,
 	float height, ae_list_item_draw draw_item, void *context, short hit_id);
 short ae_list_view_rows(struct ae_density const *density, float height);
+/* where a list drawn at y has its rows' top now: under the "▲ N more" line's room as it is (its motion's) */
+float ae_list_view_rows_top(struct ae_density const *density, struct ae_list_view const *view, float y);
 /* the thumb, in the list's own coordinates (the track from 0 to track_height): never from view or frame offsets
 (the M1 right-hand-view bug) */
 void ae_scrollbar_thumb(short count, short rows, float first, float track_height, float minimum,
@@ -142,9 +144,14 @@ short ae_page_step(short count, short current, short direction);   /* wraps */
 /* in place (left / right on a row): the new index, wrapping off; the caller starts the value tick */
 short ae_value_step(short count, short current, short direction);
 
-struct ae_prompt { int button; const char *label; const char *key; /* NULL: ae_prompt_key(button) */ int action; };
+/* pair: the next button's mark too, before the one label ("LB RB Filter", "LT RT Folder", d-pad left / right): a click
+on that second mark sends the next action (TAB_PREVIOUS / TAB_NEXT, PAGE_UP / PAGE_DOWN, LEFT / RIGHT) */
+struct ae_prompt { int button; const char *label; const char *key; /* NULL: ae_prompt_key(button) */ int action;
+	int pair; };
 const char *ae_prompt_key(int button);      /* A Enter, B Esc, X Ctrl+F, Y R, LB Q, RB E, LT PgUp, RT PgDn,
-                                               START Enter */
+                                               START Enter, d-pad Left / Right */
+/* a prompt's hit index for a pair's second mark: the prompt's index with this bit */
+enum { AE_PROMPT_PAIR_HIT = 0x100 };
 unsigned int ae_prompt_tint(int device, int button);   /* AE_TINT_*, or AE_COLOR_KEY_CAP */
 /* the footer: a row whose centre is center_y; 32 u between prompts; status right-aligned at right_x (muted);
 pressed: the prompt index the pointer holds down (-1) */

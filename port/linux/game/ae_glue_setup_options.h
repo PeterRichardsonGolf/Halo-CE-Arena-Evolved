@@ -44,6 +44,10 @@ int ae_setup_edit_apply(void);
 maximum; the edit's own file's place in current (-1 none). Returns the count */
 short ae_setup_gametypes(char (*names)[16], long *profiles, short maximum, short *current);
 
+/* (CHANGE GAMETYPE's panel) a saved gametype's rules as the model's value indexes (the nearest listed value; -1 for an
+option not in this build), count of them from the first; 0 when its file can't be read */
+int ae_setup_profile_values(long profile, int *values, int count);
+
 /* the table against the model: every row's value count; logs each that differs; 1 when all match */
 int ae_setup_edit_check(void);
 

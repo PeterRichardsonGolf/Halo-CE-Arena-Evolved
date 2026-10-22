@@ -19,10 +19,12 @@ screen is open.
 #include "ae_motion.h"
 #include "ae_screen_gallery.h"
 #include "ae_screen_game_options.h"
+#include "ae_screen_change_gametype.h"
 #include "ae_screen_change_map.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_main_menu.h"
 #include "ae_glue_ce_maps.h"
+#include "ae_glue_setup_options.h"
 #include "ae_glue_lobby.h"
 #include "ae_screen_lobby_test.h"
 #include "ae_screen_test.h"
@@ -262,6 +264,15 @@ boolean ae_ui_process(
 		/* (its CHANGE MAP: the filter $HALO_AE_TEST_MAP_FILTER, 0-6, else ALL) */
 		else if (views == 31)
 			ae_screen_change_map_open(getenv("HALO_AE_TEST_MAP_FILTER") ? atoi(getenv("HALO_AE_TEST_MAP_FILTER")) : 0);
+		/* (its CHANGE GAMETYPE: $HALO_AE_TEST_GAMETYPE's (else the last used) focused, the filter
+		$HALO_AE_TEST_GAMETYPE_FILTER, 0-5, else ALL, the search $HALO_AE_TEST_GAMETYPE_SEARCH) */
+		else if (views == 33)
+		{
+			if (!ae_setup_edit_open())
+				ae_setup_edit_begin_named(getenv("HALO_AE_TEST_GAMETYPE"));
+			ae_screen_change_gametype_open(getenv("HALO_AE_TEST_GAMETYPE_FILTER") ?
+				atoi(getenv("HALO_AE_TEST_GAMETYPE_FILTER")) : 0, getenv("HALO_AE_TEST_GAMETYPE_SEARCH"));
+		}
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}

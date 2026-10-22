@@ -34,6 +34,10 @@ UNITS = {
     # (the game setup spike's CHANGE MAP model: folders, filters, plays well with; under the sanitizers)
     "ae_setup_maps_test.c": ([UI / "ae_setup_maps.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                              []),
+    # (CHANGE GAMETYPE's model: folders, battle rifle pairs, labels, filters, search, RECENT, PLAYS WELL ON; under the
+    # sanitizers)
+    "ae_gametype_picker_test.c": ([UI / "ae_gametype_picker.c"], ["-fsanitize=address,undefined",
+                                                                   "-fno-sanitize-recover=all"], []),
     # (the look's tokens, frame and densities, with the recording ae_draw stub that measures with the real fonts)
     "ae_style_test.c": ([UI / "ae_style.c", TESTS / "ae_draw_stub.c", SRC / "ae_font.c", SRC / "ae_layout.c"],
                         [f"-I{SRC}", f"-I{TESTS}"], []),

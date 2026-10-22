@@ -108,7 +108,7 @@ static float cap_top(int font, float size, float center_y)
 	return center_y - ae_draw_cap_height(font, size) * 0.5f;
 }
 
-static struct ae_prompt prompt_of(int button, const char *label, int action)
+static struct ae_prompt prompt_of(int button, const char *label, int action, int pair)
 {
 	struct ae_prompt prompt;
 
@@ -116,6 +116,7 @@ static struct ae_prompt prompt_of(int button, const char *label, int action)
 	prompt.label = label;
 	prompt.key = NULL;
 	prompt.action = action;
+	prompt.pair = pair;
 	return prompt;
 }
 
@@ -373,8 +374,8 @@ static void facts_line(struct ae_setup_map const *map, float x, float y)
 	{
 		if (index)
 		{
-			ae_widget_separator(&screen.density, x + u(10.0f), center, 5.0f, AE_COLOR_MUTED);
-			x += u(20.0f);
+			ae_widget_separator(&screen.density, x + u(12.0f), center, 5.0f, AE_COLOR_MUTED);
+			x += u(24.0f);
 		}
 		x += ae_draw_text_tracked(AE_FONT_BODY, minor, 0.06f, x, y, AE_ALIGN_LEFT, AE_COLOR_TEXT, parts[index]);
 	}
@@ -431,14 +432,15 @@ static void draw_panel(float x, float y, float width, float bottom)
 		if (badge[0])
 		{
 			float name_width = ae_draw_text_width(AE_FONT_ROW, text * NAME_SCALE, map->name);
-			float badge_width = ae_draw_text_tracked_width(AE_FONT_BODY, minor * 0.85f, 0.1f, badge) + u(16.0f);
-			float badge_height = u(24.0f), center = y + ae_draw_cap_height(AE_FONT_ROW, text * NAME_SCALE) * 0.5f;
+			/* (30 u tall, 10 u sides: CHANGE GAMETYPE's clearance check found 24 u / 8 u short of 8 px) */
+			float badge_width = ae_draw_text_tracked_width(AE_FONT_BODY, minor * 0.85f, 0.1f, badge) + u(20.0f);
+			float badge_height = u(30.0f), center = y + ae_draw_cap_height(AE_FONT_ROW, text * NAME_SCALE) * 0.5f;
 
 			if (x + name_width + u(14.0f) + badge_width <= x + width)
 			{
 				ae_draw_outline(x + name_width + u(14.0f), center - badge_height * 0.5f, badge_width, badge_height, u(2.0f),
 					u(1.0f), AE_COLOR_ACCENT);
-				ae_draw_text_tracked(AE_FONT_BODY, minor * 0.85f, 0.1f, x + name_width + u(22.0f),
+				ae_draw_text_tracked(AE_FONT_BODY, minor * 0.85f, 0.1f, x + name_width + u(24.0f),
 					cap_top(AE_FONT_BODY, minor * 0.85f, center), AE_ALIGN_LEFT, AE_COLOR_ACCENT, badge);
 			}
 		}
@@ -470,14 +472,13 @@ static void draw_footer(void)
 	short entry = screen.focus_entry;
 
 	screen.prompts[count++] = prompt_of(AE_BUTTON_A, ae_setup_map_row_is_group(entry) ? "Open" : "Play this map",
-		AE_ACTION_ACCEPT);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_SHOULDER, "Filter", AE_ACTION_TAB_PREVIOUS);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_RIGHT_SHOULDER, "Filter", AE_ACTION_TAB_NEXT);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_TRIGGER, "Folder", AE_ACTION_PAGE_UP);
-	screen.prompts[count++] = prompt_of(AE_BUTTON_RIGHT_TRIGGER, "Folder", AE_ACTION_PAGE_DOWN);
+		AE_ACTION_ACCEPT, 0);
+	screen.prompts[count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK, 0);
+	/* (the pairs: "LB RB Filter", "LT RT Folder", the owner's pick, at every UI scale) */
+	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_SHOULDER, "Filter", AE_ACTION_TAB_PREVIOUS, 1);
+	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_TRIGGER, "Folder", AE_ACTION_PAGE_UP, 1);
 	if (!ae_setup_map_row_is_group(entry))
-		screen.prompts[count++] = prompt_of(AE_BUTTON_Y, "Favourite", AE_ACTION_Y);
+		screen.prompts[count++] = prompt_of(AE_BUTTON_Y, "Favourite", AE_ACTION_Y, 0);
 	screen.prompt_count = count;
 	status[0] = 0;
 	if (screen.facts_left)

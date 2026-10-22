@@ -652,9 +652,9 @@ static void keyboard_draw(struct ae_screen *screen)
 {
 	static const struct ae_prompt shortcuts[5] =
 	{
-		{ AE_BUTTON_X, NULL, NULL, AE_ACTION_X }, { AE_BUTTON_Y, NULL, NULL, AE_ACTION_Y },
-		{ AE_BUTTON_LEFT_SHOULDER, NULL, NULL, AE_ACTION_TAB_PREVIOUS },
-		{ AE_BUTTON_LEFT_TRIGGER, NULL, NULL, AE_ACTION_PAGE_UP }, { AE_BUTTON_START, NULL, NULL, AE_ACTION_START },
+		{ AE_BUTTON_X, NULL, NULL, AE_ACTION_X, 0 }, { AE_BUTTON_Y, NULL, NULL, AE_ACTION_Y, 0 },
+		{ AE_BUTTON_LEFT_SHOULDER, NULL, NULL, AE_ACTION_TAB_PREVIOUS, 0 },
+		{ AE_BUTTON_LEFT_TRIGGER, NULL, NULL, AE_ACTION_PAGE_UP, 0 }, { AE_BUTTON_START, NULL, NULL, AE_ACTION_START, 0 },
 	};
 	struct keyboard_state *state = screen->data;
 	struct ae_density const *density = &state->spec.density;
@@ -787,9 +787,9 @@ static void keyboard_pointer(struct ae_screen *screen, struct ae_pointer const *
 {
 	static const struct ae_prompt shortcuts[5] =
 	{
-		{ AE_BUTTON_X, NULL, NULL, AE_ACTION_X }, { AE_BUTTON_Y, NULL, NULL, AE_ACTION_Y },
-		{ AE_BUTTON_LEFT_SHOULDER, NULL, NULL, AE_ACTION_TAB_PREVIOUS },
-		{ AE_BUTTON_LEFT_TRIGGER, NULL, NULL, AE_ACTION_PAGE_UP }, { AE_BUTTON_START, NULL, NULL, AE_ACTION_START },
+		{ AE_BUTTON_X, NULL, NULL, AE_ACTION_X, 0 }, { AE_BUTTON_Y, NULL, NULL, AE_ACTION_Y, 0 },
+		{ AE_BUTTON_LEFT_SHOULDER, NULL, NULL, AE_ACTION_TAB_PREVIOUS, 0 },
+		{ AE_BUTTON_LEFT_TRIGGER, NULL, NULL, AE_ACTION_PAGE_UP, 0 }, { AE_BUTTON_START, NULL, NULL, AE_ACTION_START, 0 },
 	};
 	struct keyboard_state *state = screen->data;
 	struct ae_hit hit;

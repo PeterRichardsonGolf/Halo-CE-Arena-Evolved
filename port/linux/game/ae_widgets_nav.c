@@ -508,6 +508,9 @@ const char *ae_prompt_key(int button)
 	case AE_BUTTON_LEFT_TRIGGER: return ae_string(AE_STR_KEY_PAGE_UP);
 	case AE_BUTTON_RIGHT_TRIGGER: return ae_string(AE_STR_KEY_PAGE_DOWN);
 	case AE_BUTTON_START: return ae_string(AE_STR_KEY_ENTER);
+	/* (a pair's: the arrow keys) */
+	case AE_BUTTON_DPAD_LEFT: return "Left";
+	case AE_BUTTON_DPAD_RIGHT: return "Right";
 	}
 	return NULL;
 }
@@ -538,8 +541,14 @@ struct prompt_parts
 {
 	float mark, label_width, width;
 	const char *key;
+	/* (a pair's second mark: its width, its key's words) */
+	float second;
+	const char *second_key;
 	char label[160];
 };
+
+/* the room between a pair's two marks: a glyph's GLYPH_GAP (9 px at 1080p: the clearance rule's 8) */
+#define PAIR_GAP 0.3f
 
 /* the prompts' parts for a device, labels shortened to label_room each (0: whole); their total width with the gaps */
 static float prompt_parts(struct ae_density const *density, int device, struct ae_prompt const *prompts, short count,
@@ -565,18 +574,29 @@ static float prompt_parts(struct ae_density const *density, int device, struct a
 			snprintf(part->label, sizeof(part->label), "%s", prompt->label ? prompt->label : "");
 		part->label_width = part->label[0] ? ae_draw_text_width(AE_FONT_BODY, label_size, part->label) : 0.0f;
 		part->key = NULL;
+		part->second_key = NULL;
+		part->second = 0.0f;
 		if (font < 0)
 		{
 			float cap = cap_height(density, glyph), pad_x = cap * BUTTON_PAD_X;
 
 			part->key = prompt->key ? prompt->key : ae_prompt_key(prompt->button);
 			part->mark = part->key ? key_cap_width(density, glyph, part->key) : 0.0f;
-			part->width = pad_x + (part->key ? part->mark + pad_x : 0.0f) + part->label_width + pad_x;
+			if (prompt->pair)
+			{
+				part->second_key = ae_prompt_key(prompt->button + 1);
+				part->second = part->second_key ? key_cap_width(density, glyph, part->second_key) : 0.0f;
+			}
+			part->width = pad_x + (part->key ? part->mark + pad_x : 0.0f) + (part->second_key ? part->second + pad_x : 0.0f) +
+				part->label_width + pad_x;
 		}
 		else
 		{
 			part->mark = button_mark(density, device, prompt->button, NULL, 0.0f, 0.0f, glyph, 0);
-			part->width = part->mark + (part->label[0] ? glyph * GLYPH_GAP + part->label_width : 0.0f);
+			if (prompt->pair)
+				part->second = button_mark(density, device, prompt->button + 1, NULL, 0.0f, 0.0f, glyph, 0);
+			part->width = part->mark + (prompt->pair ? glyph * PAIR_GAP + part->second : 0.0f) +
+				(part->label[0] ? glyph * GLYPH_GAP + part->label_width : 0.0f);
 		}
 		total += part->width + (index + 1 < count ? gap : 0.0f);
 	}
@@ -658,22 +678,38 @@ void ae_widget_prompts(struct ae_density const *density, float x, float center_y
 			else if (hit_id == prompt_hover_id && index == prompt_hover_index)
 				ae_draw_rect(pen, top, part->width, height, 0.0f, AE_COLOR_HOVER);
 			ae_draw_outline(pen, top, part->width, height, 0.0f, rule, index == pressed ? AE_COLOR_ACCENT : AE_COLOR_RULE);
+			float second_x = pen + pad_x + (part->key ? part->mark + pad_x : 0.0f);
+
 			if (part->key)
 				ae_widget_key_cap(density, pen + pad_x, center_y - glyph * 0.5f, glyph, part->key);
+			if (part->second_key)
+				ae_widget_key_cap(density, second_x, center_y - glyph * 0.5f, glyph, part->second_key);
 			if (part->label[0])
-				ae_draw_text(AE_FONT_BODY, label_size, pen + pad_x + (part->key ? part->mark + pad_x : 0.0f),
+				ae_draw_text(AE_FONT_BODY, label_size, second_x + (part->second_key ? part->second + pad_x : 0.0f),
 					text_top(AE_FONT_BODY, label_size, center_y), AE_ALIGN_LEFT, AE_COLOR_TEXT, part->label);
 			ae_hit_add(pen, top, part->width, height, hit_id, AE_PART_PROMPT, index);
+			/* (a pair's second cap: the next action; added last, so it wins under the pointer) */
+			if (part->second_key)
+				ae_hit_add(second_x - pad_x * 0.5f, top, part->second + pad_x, height, hit_id, AE_PART_PROMPT,
+					(short)(index | AE_PROMPT_PAIR_HIT));
 		}
 		else
 		{
 			/* a pad: its glyph (face buttons tinted), or a drawn cap (shoulders, triggers, PlayStation's OPTIONS /
 			CREATE) */
+			float marks = part->mark + (prompt->pair ? glyph * PAIR_GAP + part->second : 0.0f);
+
 			button_mark(density, device, prompt->button, NULL, pen, center_y, glyph, 1);
+			if (prompt->pair)
+				button_mark(density, device, prompt->button + 1, NULL, pen + part->mark + glyph * PAIR_GAP, center_y, glyph,
+					1);
 			if (part->label[0])
-				ae_draw_text(AE_FONT_BODY, label_size, pen + part->mark + glyph * GLYPH_GAP, text_top(AE_FONT_BODY, label_size,
+				ae_draw_text(AE_FONT_BODY, label_size, pen + marks + glyph * GLYPH_GAP, text_top(AE_FONT_BODY, label_size,
 					center_y), AE_ALIGN_LEFT, AE_COLOR_TEXT, part->label);
 			ae_hit_add(pen, center_y - glyph * 0.5f, part->width, glyph, hit_id, AE_PART_PROMPT, index);
+			if (prompt->pair)
+				ae_hit_add(pen + part->mark + glyph * PAIR_GAP * 0.5f, center_y - glyph * 0.5f,
+					part->second + glyph * PAIR_GAP * 0.5f, glyph, hit_id, AE_PART_PROMPT, (short)(index | AE_PROMPT_PAIR_HIT));
 		}
 		pen += part->width + gap;
 	}
@@ -691,14 +727,14 @@ int ae_prompts_pointer(struct ae_prompt const *prompts, short count, struct ae_p
 	if (!prompts || !pointer || !event)
 		return 0;
 	over = ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == hit_id && hit.part == AE_PART_PROMPT &&
-		hit.index >= 0 && hit.index < count;
+		hit.index >= 0 && (hit.index & ~AE_PROMPT_PAIR_HIT) < count;
 	/* (the hover is this footer's only while over it: another footer's move never clears it) */
 	if (pointer->moved)
 	{
 		if (over)
 		{
 			prompt_hover_id = hit_id;
-			prompt_hover_index = hit.index;
+			prompt_hover_index = (short)(hit.index & ~AE_PROMPT_PAIR_HIT);
 		}
 		else if (prompt_hover_id == hit_id)
 			prompt_hover_id = prompt_hover_index = -1;
@@ -706,7 +742,8 @@ int ae_prompts_pointer(struct ae_prompt const *prompts, short count, struct ae_p
 	if (!pointer->left_clicks || !over)
 		return 0;
 	event->player = 0;
-	event->action = (unsigned char)prompts[hit.index].action;
+	event->action = (unsigned char)(prompts[hit.index & ~AE_PROMPT_PAIR_HIT].action +
+		((hit.index & AE_PROMPT_PAIR_HIT) && prompts[hit.index & ~AE_PROMPT_PAIR_HIT].pair ? 1 : 0));
 	event->device = AE_DEVICE_KEYBOARD_MOUSE;
 	event->repeat = 0;
 	return 1;

@@ -225,12 +225,12 @@ static void prompts(void)
 {
 	static const struct ae_prompt pair[2] =
 	{
-		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_B, "Back", NULL, AE_ACTION_BACK },
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT, 0 }, { AE_BUTTON_B, "Back", NULL, AE_ACTION_BACK, 0 },
 	};
 	static const struct ae_prompt ps[3] =
 	{
-		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_START, "Add player", NULL, AE_ACTION_START },
-		{ AE_BUTTON_BACK, "Scores", NULL, AE_ACTION_SELECT },
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT, 0 }, { AE_BUTTON_START, "Add player", NULL, AE_ACTION_START, 0 },
+		{ AE_BUTTON_BACK, "Scores", NULL, AE_ACTION_SELECT, 0 },
 	};
 	struct ae_density d;
 	struct ae_pointer pointer;
@@ -282,6 +282,34 @@ static void prompts(void)
 	ae_widget_prompts(&d, 96, 1018, pair, 2, NULL, 1824, 1, 6);
 	CHECK(count_calls(AE_STUB_RECT, AE_COLOR_HOVER) == 1 && count_calls(AE_STUB_RECT, AE_COLOR_PRESSED) == 1 &&
 		count_calls(AE_STUB_OUTLINE, AE_COLOR_ACCENT) == 1);
+	/* a pair (LB RB Filter): both caps, one label; a click on the second cap is the next action */
+	{
+		static const struct ae_prompt filter[1] = { { AE_BUTTON_LEFT_SHOULDER, "Filter", NULL, AE_ACTION_TAB_PREVIOUS, 1 } };
+		static const struct ae_prompt arrows[1] = { { AE_BUTTON_DPAD_LEFT, "Start weapon", NULL, AE_ACTION_LEFT, 1 } };
+
+		ae_stub_reset(1920, 1080);
+		ae_hits_clear();
+		ae_widget_prompts(&d, 96, 1018, filter, 1, NULL, 1824, -1, 6);
+		CHECK(text_call("Q") && text_call("E") && text_call("Filter") && count_calls(AE_STUB_OUTLINE, AE_COLOR_RULE) == 1);
+		CHECK(text_call("Q")->x < text_call("E")->x && text_call("E")->x < text_call("Filter")->x);
+		pointer.left_clicks = 1;
+		pointer.moved = 0;
+		middle_of(text_call("E"), &pointer.x, &pointer.y, 1080);
+		CHECK(ae_prompts_pointer(filter, 1, &pointer, 6, &event) == 1 && event.action == AE_ACTION_TAB_NEXT);
+		middle_of(text_call("Q"), &pointer.x, &pointer.y, 1080);
+		CHECK(ae_prompts_pointer(filter, 1, &pointer, 6, &event) == 1 && event.action == AE_ACTION_TAB_PREVIOUS);
+		middle_of(text_call("Filter"), &pointer.x, &pointer.y, 1080);
+		CHECK(ae_prompts_pointer(filter, 1, &pointer, 6, &event) == 1 && event.action == AE_ACTION_TAB_PREVIOUS);
+		ae_stub_reset(1920, 1080);
+		ae_widget_prompts(&d, 96, 1018, arrows, 1, NULL, 1824, -1, 6);
+		CHECK(text_call("Left") && text_call("Right") && text_call("Start weapon"));
+		use_device(AE_DEVICE_XBOX);
+		ae_stub_reset(1920, 1080);
+		ae_widget_prompts(&d, 96, 1018, filter, 1, NULL, 1824, -1, 6);
+		CHECK(text_call("LB") && text_call("RB") && text_call("Filter"));
+		use_device(AE_DEVICE_KEYBOARD_MOUSE);
+		pointer.left_clicks = 0;
+	}
 	/* Xbox: the Kenney glyphs, face buttons tinted */
 	use_device(AE_DEVICE_XBOX);
 	ae_stub_reset(1920, 1080);
@@ -383,12 +411,12 @@ static void fixes(void)
 {
 	static const struct ae_prompt pair[2] =
 	{
-		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_B, "Back", NULL, AE_ACTION_BACK },
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT, 0 }, { AE_BUTTON_B, "Back", NULL, AE_ACTION_BACK, 0 },
 	};
 	static const struct ae_prompt three[3] =
 	{
-		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_B, "Resume", NULL, AE_ACTION_BACK },
-		{ AE_BUTTON_LEFT_SHOULDER, "Pages", NULL, AE_ACTION_TAB_PREVIOUS },
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT, 0 }, { AE_BUTTON_B, "Resume", NULL, AE_ACTION_BACK, 0 },
+		{ AE_BUTTON_LEFT_SHOULDER, "Pages", NULL, AE_ACTION_TAB_PREVIOUS, 0 },
 	};
 	static const struct ae_tab eight[8] =
 	{
@@ -655,8 +683,8 @@ static void rows_hold(void)
 {
 	static const struct ae_prompt three[3] =
 	{
-		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_B, "Resume", NULL, AE_ACTION_BACK },
-		{ AE_BUTTON_LEFT_SHOULDER, "Pages", NULL, AE_ACTION_TAB_PREVIOUS },
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT, 0 }, { AE_BUTTON_B, "Resume", NULL, AE_ACTION_BACK, 0 },
+		{ AE_BUTTON_LEFT_SHOULDER, "Pages", NULL, AE_ACTION_TAB_PREVIOUS, 0 },
 	};
 	static const struct ae_tab eight[8] =
 	{
@@ -831,8 +859,8 @@ static void shoulder_caps(void)
 {
 	static struct ae_prompt const prompts[3] =
 	{
-		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT }, { AE_BUTTON_LEFT_SHOULDER, "Move caret", NULL, AE_ACTION_TAB_PREVIOUS },
-		{ AE_BUTTON_LEFT_TRIGGER, "Shift", NULL, AE_ACTION_PAGE_UP },
+		{ AE_BUTTON_A, "Select", NULL, AE_ACTION_ACCEPT, 0 }, { AE_BUTTON_LEFT_SHOULDER, "Move caret", NULL, AE_ACTION_TAB_PREVIOUS, 0 },
+		{ AE_BUTTON_LEFT_TRIGGER, "Shift", NULL, AE_ACTION_PAGE_UP, 0 },
 	};
 	struct ae_density d;
 	int index;
