@@ -16,6 +16,7 @@ screen is open.
 #include "ae_input.h"
 #include "ae_motion.h"
 #include "ae_screen_gallery.h"
+#include "ae_screen_game_options.h"
 #include "ae_glue_ce_maps.h"
 #include "ae_glue_lobby.h"
 #include "ae_screen_lobby_test.h"
@@ -244,6 +245,9 @@ boolean ae_ui_process(
 		profiles, 95 ONLINE) */
 		else if (views >= 90 && views <= 95)
 			ae_screen_lobby_test_open((int)views);
+		/* (the game setup spike's GAME OPTIONS: the last used gametype, or $HALO_AE_TEST_GAMETYPE's) */
+		else if (views == 30)
+			ae_screen_game_options_open(NULL);
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
