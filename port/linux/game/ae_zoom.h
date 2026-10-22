@@ -89,8 +89,9 @@ down; the flashlight button is down */
 #define AE_ZOOM_MEMORY 4
 struct ae_zoom_bank
 {
-	int mode;
-	int reset;
+	/* each player's mode and reset (0.3.7: each player has their own, their input's: split screen mixes them) */
+	int modes[AE_ZOOM_PLAYERS];
+	int resets[AE_ZOOM_PLAYERS];
 	struct ae_zoom_state states[AE_ZOOM_PLAYERS];
 	/* the last level used on each of a player's weapons (the weapon's object index: a new life has new objects, so what
 	is left of an old one never matches), the oldest replaced first */
@@ -121,8 +122,13 @@ short ae_zoom_step(struct ae_zoom_state *state, int mode, long hold_ms, int held
 void ae_zoom_flags_note_held(unsigned long *flags, int held);
 /* in the HOLD and BOTH modes takes press_bit (the engine's own press) out of the flags; TOGGLE leaves them alone */
 void ae_zoom_flags_filter_press(int mode, unsigned long *flags, int press_bit);
-/* a mode change lets go of every player's press in progress; the same mode changes nothing */
+/* every player's mode: a change lets go of the press in progress of each player whose mode it changes; the same mode
+changes nothing */
 void ae_zoom_bank_set_mode(struct ae_zoom_bank *bank, int mode);
+/* one player's mode and reset: a mode change lets go of that player's press in progress only (the others' go on) */
+void ae_zoom_bank_set_player(struct ae_zoom_bank *bank, int player, int mode, int reset);
+/* a player's mode (TOGGLE for one out of range) */
+int ae_zoom_bank_mode(struct ae_zoom_bank const *bank, int player);
 /* ae_zoom_step for local player `player` with the held bit of the flags; the TOGGLE mode and a player out of range
 return the level untouched */
 short ae_zoom_bank_step(struct ae_zoom_bank *bank, int player, long hold_ms, unsigned long flags, long now_ms,
@@ -135,7 +141,7 @@ short ae_zoom_clamp_level(short level, short count);
 /* ae_zoom_step with the zoom level input, the double press and the reset */
 short ae_zoom_step_ex(struct ae_zoom_state *state, struct ae_zoom_in const *in);
 
-/* the reset policy and the memory of the last level used on a weapon */
+/* the reset policy (every player's) and the memory of the last level used on a weapon */
 void ae_zoom_bank_set_reset(struct ae_zoom_bank *bank, int reset);
 void ae_zoom_bank_remember(struct ae_zoom_bank *bank, int player, long weapon, short level);
 /* -1 when none */

@@ -1655,7 +1655,7 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 			else
 				keyboard_controls(held, &state->Gamepad);
 		}
-		if (port_gamepad(gamepads, count, port)) sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); /* AE hook */
+		if (port_gamepad(gamepads, count, port)) { int ae_previous_player = ae_config_player_enter(port); sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); ae_config_player_leave(ae_previous_player); } /* AE hook */
 		test_input_gamepad(&state->Gamepad);
 		touch_input_gamepad(&state->Gamepad);
 #if defined(HALO_ANDROID) || defined(HALO_WEB)
@@ -1675,8 +1675,7 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 	}
 	else
 	{
-		if (port_gamepad(gamepads, count, port))
-			sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad);
+		if (port_gamepad(gamepads, count, port)) { int ae_previous_player = ae_config_player_enter(port); sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); ae_config_player_leave(ae_previous_player); } /* AE hook */
 		/* (debug.test_input's presses for this controller: 2:start) */
 		if (test_input_menu[0])
 			test_input_menu_gamepad(&state->Gamepad, port);

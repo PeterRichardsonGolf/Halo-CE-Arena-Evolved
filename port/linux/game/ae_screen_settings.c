@@ -40,6 +40,7 @@ const char *platform_data_root(void);
 int platform_folder_list(const char *path, void (*visit)(const char *name, void *context), void *context);
 int platform_folder_exists(const char *path);
 int platform_restart(void);
+int config_write(const char *name, const char *value);
 
 enum
 {
@@ -126,6 +127,7 @@ static struct
 	short prompt_count;
 	int dialog;                          /* 0 none, 1 KEEP / UNDO, 2 RESTORE DEFAULTS, 3 already at defaults */
 	short dragging_row;                  /* a slider held by the pointer, -1 */
+	int then_switch;                     /* the KEEP / UNDO asked by X: the player switches after it */
 	float logged_width, logged_scale;
 } group;
 
@@ -267,6 +269,9 @@ static int row_set(short player, struct ae_settings_row const *row, const char *
 	}
 	if (row->kind == AE_SETTINGS_SUBSCREEN)
 		return 0;
+	/* (a THIS PC row in a player's group: config.toml's, every player's) */
+	if (!ae_player_setting_is_own(row->key))
+		return config_write(row->key, text);
 	return ae_player_setting_put(player, row->key, text);
 }
 
@@ -282,16 +287,39 @@ static void row_default(short player, struct ae_settings_row const *row, char *t
 			!strcmp(row->key, "profile.autocenter") ? "false" : "0");
 		return;
 	}
+	/* (the setting's own default text, exactly: "same" for the mouse's zoom, 0.0 for MCC MOUSE SENSITIVITY (seed from
+	the classic one), never snapped to a step) */
+	(void)player;
 	if (!ae_player_setting_default(row->key, text, size))
 		text[0] = 0;
-	/* (the mouse's zoom: its default follows the controller's) */
-	if (!strcmp(text, "same") || (!strcmp(row->key, "input.mouse_zoom_hold_time") && !(atof(text) > 0.0)))
-	{
-		const char *pad = !strcmp(row->key, "input.mouse_zoom_mode") ? "input.zoom_mode" :
-			!strcmp(row->key, "input.mouse_zoom_reset") ? "input.zoom_reset" : "input.zoom_hold_time";
+}
 
-		ae_player_setting_get(player, pad, text, size);
-	}
+/* a value as the row shows and compares it: the mouse's zoom "same" (or no hold time) as the controller's */
+static void row_resolved(short player, struct ae_settings_row const *row, const char *text, char *out, int size)
+{
+	snprintf(out, (size_t)size, "%s", text);
+	if (!strcmp(row->key, "input.mouse_zoom_mode") && (!strcmp(text, "same") || !text[0]))
+		ae_player_setting_get(player, "input.zoom_mode", out, size);
+	else if (!strcmp(row->key, "input.mouse_zoom_reset") && (!strcmp(text, "same") || !text[0]))
+		ae_player_setting_get(player, "input.zoom_reset", out, size);
+	else if (!strcmp(row->key, "input.mouse_zoom_hold_time") && !(atof(text) > 0.0))
+		ae_player_setting_get(player, "input.zoom_hold_time", out, size);
+}
+
+/* whether two values of a row are the same: the same text, the same number written another way, or (a word) the same
+step. Off-step numbers (a seeded 1.3, the 0.0 seed) are their own values, never their nearest step's */
+static int values_same(struct ae_settings_row const *row, const char *a, const char *b)
+{
+	char *end_a, *end_b;
+	double x, y;
+
+	if (!strcmp(a, b))
+		return 1;
+	x = strtod(a, &end_a);
+	y = strtod(b, &end_b);
+	if (end_a != a && !*end_a && end_b != b && !*end_b)
+		return x == y;
+	return ae_settings_value_index(row, a) >= 0 && ae_settings_value_index(row, a) == ae_settings_value_index(row, b);
 }
 
 static short row_index(struct ae_settings_row const *row, const char *text)
@@ -748,6 +776,7 @@ static void top_pointer(struct ae_screen *instance, struct ae_pointer const *poi
 static void top_leave(struct ae_screen *instance)
 {
 	(void)instance;
+	ae_player_settings_flush();
 	platform_log("ae settings: closed SETTINGS");
 }
 
@@ -829,9 +858,7 @@ static int row_changed(short row_number)
 	if (!row || row->kind == AE_SETTINGS_SUBSCREEN)
 		return 0;
 	row_value(who.player, row, now, sizeof(now));
-	if (!strcmp(now, group.opened[row_number]))
-		return 0;
-	return row_index(row, now) != row_index(row, group.opened[row_number]) || row_index(row, now) < 0;
+	return !values_same(row, now, group.opened[row_number]);
 }
 
 /* the changed rows shown (their labels, in the list's order): the count */
@@ -1044,23 +1071,26 @@ static short rows_put_back(int defaults)
 	{
 		short entry = group.entries[place];
 		struct ae_settings_row const *row;
-		char now[VALUE_TEXT], wanted[VALUE_TEXT];
-		short index;
+		char now[VALUE_TEXT], wanted[VALUE_TEXT], resolved[VALUE_TEXT];
 
 		if (ae_settings_entry_is_header(entry))
 			continue;
 		row = ae_settings_row(entry);
 		if (row->kind == AE_SETTINGS_SUBSCREEN)
 			continue;
+		/* (RESTORE DEFAULTS: the player's own rows only, this PC's stay) */
+		if (defaults && (row->flags & AE_SETTINGS_THIS_PC))
+			continue;
 		row_value(who.player, row, now, sizeof(now));
 		if (defaults)
 			row_default(who.player, row, wanted, sizeof(wanted));
 		else
 			snprintf(wanted, sizeof(wanted), "%s", group.opened[entry]);
-		index = row_index(row, wanted);
-		if (index < 0 || index == row_index(row, now))
+		row_resolved(who.player, row, wanted, resolved, sizeof(resolved));
+		if (!wanted[0] || values_same(row, now, resolved))
 			continue;
-		if (row_set(who.player, row, ae_settings_value_of(row, index)))
+		/* (the exact text, as opened or as the default: never snapped to a step) */
+		if (row_set(who.player, row, wanted))
 			put++;
 	}
 	return put;
@@ -1075,16 +1105,19 @@ static short defaults_changes(void)
 	{
 		short entry = group.entries[place];
 		struct ae_settings_row const *row;
-		char now[VALUE_TEXT], wanted[VALUE_TEXT];
+		char now[VALUE_TEXT], wanted[VALUE_TEXT], resolved[VALUE_TEXT];
 
 		if (ae_settings_entry_is_header(entry))
 			continue;
 		row = ae_settings_row(entry);
 		if (row->kind == AE_SETTINGS_SUBSCREEN)
 			continue;
+		if (row->flags & AE_SETTINGS_THIS_PC)
+			continue;
 		row_value(who.player, row, now, sizeof(now));
 		row_default(who.player, row, wanted, sizeof(wanted));
-		if (row_index(row, wanted) >= 0 && row_index(row, wanted) != row_index(row, now))
+		row_resolved(who.player, row, wanted, resolved, sizeof(resolved));
+		if (wanted[0] && !values_same(row, now, resolved))
 			found++;
 	}
 	return found;
@@ -1095,26 +1128,36 @@ static const char *who_text(void)
 	return ae_settings_group(group.group)->whose == AE_SETTINGS_PC ? NULL : who.name[who.player];
 }
 
+static void group_player_switch(void);
+
 static void dialog_picked(short choice, void *context)
 {
-	int dialog = group.dialog;
+	int dialog = group.dialog, then_switch = group.then_switch;
 
 	(void)context;
 	group.dialog = 0;
+	group.then_switch = 0;
 	if (dialog == 1)
 	{
-		/* KEEP CHANGES (0), UNDO CHANGES (1), KEEP EDITING (2) */
+		/* KEEP CHANGES (0), UNDO CHANGES (1), KEEP EDITING (2); asked by X: then the next player, else back */
 		if (choice == 0)
 		{
+			/* (KEEP: in the player's file now) */
+			ae_player_settings_flush();
 			platform_log("ae settings: keep");
-			ae_ui_pop();
 		}
 		else if (choice == 1)
 		{
 			short put = rows_put_back(0);
 
 			platform_log("ae settings: undo (%d rows)", put);
-			ae_ui_pop();
+		}
+		if (choice == 0 || choice == 1)
+		{
+			if (then_switch)
+				group_player_switch();
+			else
+				ae_ui_pop();
 		}
 	}
 	else if (dialog == 2 && choice == 1)
@@ -1419,8 +1462,16 @@ static int group_handle(struct ae_screen *instance, struct ae_event const *event
 		defaults_ask();
 		return 1;
 	case AE_ACTION_X:
+		/* (with changes: KEEP / UNDO for this player first, then the next) */
 		if (who.count > 1 && ae_settings_group(group.group)->whose != AE_SETTINGS_PC)
-			group_player_switch();
+		{
+			group.then_switch = 1;
+			if (!keep_ask())
+			{
+				group.then_switch = 0;
+				group_player_switch();
+			}
+		}
 		return 1;
 	default:
 		break;
@@ -1530,6 +1581,7 @@ static void group_pointer(struct ae_screen *instance, struct ae_pointer const *p
 static void group_leave(struct ae_screen *instance)
 {
 	(void)instance;
+	ae_player_settings_flush();
 	platform_log("ae settings: closed %s (%d changed)", ae_settings_group(group.group)->name, changes(NULL, 0));
 }
 

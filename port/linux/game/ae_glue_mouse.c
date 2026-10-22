@@ -16,6 +16,7 @@ here leaves what upstream computed as it was.
 #include "../src/port_config.h"
 #include "../src/ae_config_players.h"
 #include "ae_seats.h"
+#include "ae_glue_player_settings.h"
 #include "../src/ae_platform.h"
 #include "ae_glue_mouse.h"
 #include "ae_mouse.h"
@@ -67,7 +68,8 @@ static void mouse_read(void)
 
 		mouse.sensitivity = ae_mouse_seed((float)config_real("input.mouse_sensitivity"));
 		snprintf(text, sizeof(text), "%.1f", (double)mouse.sensitivity);
-		if (config_write("input.mouse_mcc_sensitivity", text))
+		/* (the keyboard player's own, their ae.toml: never config.toml, every other player's base) */
+		if (ae_player_setting_put((short)ae_seats_keyboard_controller(), "input.mouse_mcc_sensitivity", text))
 		{
 			platform_log("mouse: MCC sensitivity %s from the classic one", text);
 			mouse.read_at = ae_config_player_changes();

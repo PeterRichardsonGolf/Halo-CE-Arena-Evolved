@@ -14,6 +14,7 @@ pure, so the unit tests build it.)
 #include "platform.h"
 #include "sdl_platform.h"
 #include "ae_platform.h"
+#include "ae_config_players.h"
 #include "ae_pad_ports.h"
 #include "ae_seats.h"
 #include "port_config.h"
@@ -88,26 +89,28 @@ void ae_platform_back_buttons(
 	/* (SDL's names: a Switch 2 Pro Controller's GR is its right paddle, GL its left; an Xbox Elite's upper paddles
 	are the same two, a DualSense Edge's back buttons too) */
 	static const SDL_GamepadButton paddles[2] = { SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1, SDL_GAMEPAD_BUTTON_LEFT_PADDLE1 };
-	static unsigned long read_at = (unsigned long)-1;
-	static int targets[2];
-	int side;
+	/* (0.3.7: each player's own, BACK PADDLES: read as the pad's player's, xinput_sdl.c entering the port's player) */
+	static unsigned long read_at[AE_CONFIG_PLAYERS] = { (unsigned long)-1, (unsigned long)-1, (unsigned long)-1,
+		(unsigned long)-1 };
+	static int targets[AE_CONFIG_PLAYERS][2];
+	int player = ae_config_player_now(), side;
 
-	if (read_at != config_changes())
+	if (read_at[player] != ae_config_player_changes())
 	{
-		read_at = config_changes();
-		targets[0] = back_button_target(config_string("input.back_right"));
-		targets[1] = back_button_target(config_string("input.back_left"));
-		platform_log("back buttons: right %s, left %s", config_string("input.back_right"),
+		read_at[player] = ae_config_player_changes();
+		targets[player][0] = back_button_target(config_string("input.back_right"));
+		targets[player][1] = back_button_target(config_string("input.back_left"));
+		platform_log("back buttons: player %d right %s, left %s", player + 1, config_string("input.back_right"),
 			config_string("input.back_left"));
 	}
 	for (side = 0; side < 2; side++)
 	{
-		if (!targets[side] || !SDL_GetGamepadButton(gamepad, paddles[side]))
+		if (!targets[player][side] || !SDL_GetGamepadButton(gamepad, paddles[side]))
 			continue;
-		if (targets[side] & 0x100)
-			analog_buttons[targets[side] & 0xff] = 0xff;
+		if (targets[player][side] & 0x100)
+			analog_buttons[targets[player][side] & 0xff] = 0xff;
 		else
-			*buttons |= (unsigned short)targets[side];
+			*buttons |= (unsigned short)targets[player][side];
 	}
 #else
 	(void)gamepad;

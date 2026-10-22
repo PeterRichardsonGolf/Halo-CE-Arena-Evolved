@@ -27,6 +27,7 @@ and the deterministic camera used for shooting keeps its original view.
 #include <string.h>
 
 int config_boolean(const char *name);
+int ae_config_player_boolean(int player, const char *name); /* AE hook */
 
 static boolean reticle_active;
 static real_point2d reticle_offset;
@@ -45,7 +46,7 @@ static struct unit_seat const *reference_seat(short local_player_index, long *ve
 	/* (not in multiplayer, where seeing around the vehicle is an advantage the
 	other players do not have) */
 	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
-		!config_boolean("display.passenger_third_person") || game_engine_running() || cinematic_in_progress() ||
+		!ae_config_player_boolean(local_player_index, "display.passenger_third_person") || game_engine_running() || cinematic_in_progress() || /* AE hook */
 		(director_camera_scripted && *director_camera_scripted))
 		return NULL;
 	player_index = local_player_get_player_index(local_player_index);

@@ -10,16 +10,20 @@ root); deleting the profile deletes its folder, the file with it.
 #include <string.h>
 
 #include "cseries.h"
+#include "cseries/cseries_windows.h"
 #include "interface/player_ui.h"
 #include "saved games/saved_game_files.h"
 #include "../src/port_config.h"
 #include "../src/ae_config_players.h"
 #include "ae_glue_player_settings.h"
+#include "ae_glue_profiles.h"
 #include "ae_player_settings.h"
 
 void platform_log(char const *format, ...);
 
-enum { LOCAL_PLAYERS = 4, FILE_TEXT = 16384 };
+enum { LOCAL_PLAYERS = 4, FILE_TEXT = 16384, SETTLE_MS = 500 };
+/* (xbox_files.c's: a file put in another's place in one step) */
+int platform_replace_file(char const *path, char const *new_path);
 typedef char ae_player_settings_players_match[LOCAL_PLAYERS == AE_CONFIG_PLAYERS ? 1 : -1];
 
 static struct
@@ -27,6 +31,11 @@ static struct
 	int started;
 	/* the profile each player's values are of now (NONE: a guest, none read), and that profile's file as read */
 	long profile[LOCAL_PLAYERS];
+	/* the guest's start (ae_profile_guest_generation): a new guest has none of the last one's values */
+	int guest[LOCAL_PLAYERS];
+	/* a change not written yet, and when it was made (written SETTLE_MS after the last: a slider's steps one write) */
+	int dirty[LOCAL_PLAYERS];
+	unsigned long changed_at[LOCAL_PLAYERS];
 	struct ae_player_settings file[LOCAL_PLAYERS];
 } players;
 
@@ -59,18 +68,41 @@ static int read_file(long profile, char *text, int size)
 static int write_file(long profile, struct ae_player_settings const *settings)
 {
 	static char text[FILE_TEXT];
-	char path[300];
+	char path[300], new_path[310];
 	FILE *file;
 	int written;
 
 	if (!file_path(profile, path, sizeof(path)) ||
 		!ae_player_settings_write(settings, ae_config_player_is_string, text, sizeof(text)))
 		return 0;
-	if (!(file = fopen(path, "wb")))
+	/* (a whole file or the old one: written beside it, then put in its place in one step, as arena_gametypes.c's
+	record) */
+	snprintf(new_path, sizeof(new_path), "%s.new", path);
+	if (!(file = fopen(new_path, "wb")))
 		return 0;
 	written = fwrite(text, 1, strlen(text), file) == strlen(text);
 	written = fclose(file) == 0 && written;
-	return written;
+	return written && platform_replace_file(new_path, path);
+}
+
+/* a player's file written now if a change waits (the settle after a slider's steps, a KEEP, leaving, a profile
+switch) */
+static void flush(short player)
+{
+	if (!players.dirty[player])
+		return;
+	players.dirty[player] = 0;
+	if (players.profile[player] != NONE && players.profile[player] >= 0 &&
+		!write_file(players.profile[player], &players.file[player]))
+		platform_log("ae player settings: player %d: %s could not be written", player + 1, AE_PLAYER_SETTINGS_FILE);
+}
+
+void ae_player_settings_flush(void)
+{
+	short player;
+
+	for (player = 0; player < LOCAL_PLAYERS; player++)
+		flush(player);
 }
 
 /* the profile's values into the player's memory: read, seeded the first time (and written) */
@@ -81,6 +113,7 @@ static void load(short player, long profile)
 	struct ae_player_settings *file = &players.file[player];
 	int found, index, count = ae_config_player_setting_count();
 
+	flush(player);
 	ae_config_player_clear(player);
 	ae_player_settings_clear(file);
 	players.profile[player] = profile;
@@ -130,9 +163,15 @@ void ae_player_settings_update(void)
 	for (player = 0; player < LOCAL_PLAYERS; player++)
 	{
 		long profile = player_ui_get_active_player_profile_index(player);
+		int guest = ae_profile_guest_generation(player);
 
-		if (profile != players.profile[player])
+		if (profile != players.profile[player] || (profile == NONE && guest != players.guest[player]))
+		{
+			players.guest[player] = guest;
 			load(player, profile);
+		}
+		else if (players.dirty[player] && system_milliseconds() - players.changed_at[player] >= SETTLE_MS)
+			flush(player);
 	}
 }
 
@@ -172,9 +211,9 @@ int ae_player_setting_put(short local_player, const char *name, const char *valu
 			}
 		}
 	}
-	if (!write_file(profile, &players.file[local_player]))
-		platform_log("ae player settings: player %d: %s could not be written", local_player + 1,
-			AE_PLAYER_SETTINGS_FILE);
+	/* (written once it settles, or at once on a KEEP, leaving SETTINGS or a profile switch: ae_player_settings_flush) */
+	players.dirty[local_player] = 1;
+	players.changed_at[local_player] = system_milliseconds();
 	return 1;
 }
 
@@ -186,4 +225,27 @@ int ae_player_setting_default(const char *name, char *text, int size)
 int ae_player_setting_is_own(const char *name)
 {
 	return ae_config_player_setting(name);
+}
+
+/* ---------- the PC menus */
+
+static short menu_player;
+
+void ae_player_settings_menu_player(short local_player)
+{
+	menu_player = local_player >= 0 && local_player < LOCAL_PLAYERS ? local_player : 0;
+}
+
+int ae_player_settings_menu_text(const char *name, char *text, unsigned int size)
+{
+	if (ae_config_player_setting(name))
+		return ae_config_player_text(menu_player, name, text, size);
+	return config_text(name, text, size);
+}
+
+int ae_player_settings_menu_write(const char *name, const char *value)
+{
+	if (ae_config_player_setting(name))
+		return ae_player_setting_put(menu_player, name, value);
+	return config_write(name, value);
 }

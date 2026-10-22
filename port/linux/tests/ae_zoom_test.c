@@ -266,6 +266,36 @@ int main(void)
 			ae_zoom_bank_set_mode(&bank, AE_ZOOM_TOGGLE);
 			CHECK(ae_zoom_bank_step(&bank, 0, HOLD_MS, down, 6000, -1, 2, 0) == -1);
 		}
+		/* (0.3.7) each player their own mode, set every tick as the glue does (player 1 on HOLD with the mouse, player 2
+		on TOGGLE with a pad): player 1's held button stays one press (zoomed while held, out once let go of), and
+		player 2's mode never lets go of it */
+		{
+			unsigned long down = 1ul << 12;
+			short level0 = -1, level1 = 1, tick;
+
+			memset(&bank, 0, sizeof(bank));
+			for (tick = 0; tick < 6; tick++)
+			{
+				ae_zoom_bank_set_player(&bank, 0, AE_ZOOM_HOLD, AE_ZOOM_RESET_FIRST);
+				ae_zoom_bank_set_player(&bank, 1, AE_ZOOM_TOGGLE, AE_ZOOM_RESET_LAST);
+				level0 = ae_zoom_bank_step(&bank, 0, HOLD_MS, down, tick * 33L, level0, 2, 0);
+				CHECK(ae_zoom_bank_step(&bank, 1, HOLD_MS, down, tick * 33L, level1, 2, 0) == level1);
+				CHECK(level0 == 0 && bank.states[0].was_held == 1);
+			}
+			ae_zoom_bank_set_player(&bank, 0, AE_ZOOM_HOLD, AE_ZOOM_RESET_FIRST);
+			ae_zoom_bank_set_player(&bank, 1, AE_ZOOM_TOGGLE, AE_ZOOM_RESET_LAST);
+			level0 = ae_zoom_bank_step(&bank, 0, HOLD_MS, 0, 300, level0, 2, 0);
+			CHECK(level0 == -1);
+			CHECK(ae_zoom_bank_mode(&bank, 0) == AE_ZOOM_HOLD && ae_zoom_bank_mode(&bank, 1) == AE_ZOOM_TOGGLE);
+			CHECK(bank.resets[0] == AE_ZOOM_RESET_FIRST && bank.resets[1] == AE_ZOOM_RESET_LAST);
+			CHECK(ae_zoom_bank_mode(&bank, 4) == AE_ZOOM_TOGGLE);
+			/* a player's own mode change lets go of their press only */
+			level0 = ae_zoom_bank_step(&bank, 0, HOLD_MS, down, 400, level0, 2, 0);
+			ae_zoom_bank_set_player(&bank, 1, AE_ZOOM_BOTH, AE_ZOOM_RESET_LAST);
+			CHECK(bank.states[0].was_held == 1);
+			ae_zoom_bank_set_player(&bank, 0, AE_ZOOM_BOTH, AE_ZOOM_RESET_FIRST);
+			CHECK(bank.states[0].was_held == 0);
+		}
 	}
 
 
@@ -529,7 +559,7 @@ int main(void)
 		CHECK(bank.states[0].was_held == 1);
 		ae_zoom_bank_forget(&bank);
 		CHECK(ae_zoom_bank_recall(&bank, 0, 100) == -1 && ae_zoom_bank_recall(&bank, 2, 100) == -1);
-		CHECK(bank.states[0].was_held == 0 && bank.mode == AE_ZOOM_HOLD && bank.reset == AE_ZOOM_RESET_LAST);
+		CHECK(bank.states[0].was_held == 0 && bank.modes[0] == AE_ZOOM_HOLD && bank.resets[3] == AE_ZOOM_RESET_LAST);
 		/* the first weapon of the new game (the same object index) starts at the first level */
 		CHECK(ae_zoom_bank_step_ex(&bank, 0, HOLD_MS, held, 100, -1, 2, 0, 100, 0) == 0);
 		/* a mode change with the flashlight down: the next tick's press is not seen as new */

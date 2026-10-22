@@ -47,6 +47,8 @@ struct ae_result ae_profile_new(const char *name, int *profile_index);
 /* plays without a profile: settings apply to this session only (never saved) */
 struct ae_result ae_profile_guest(short local_player);
 int ae_profile_is_guest(short local_player);
+/* how many times the player became a guest: a new guest in the same place counts one more */
+int ae_profile_guest_generation(short local_player);
 /* the player's controls as the game has them now (a guest's included) */
 struct ae_result ae_profile_get_controls(short local_player, struct ae_profile_controls *controls);
 /* saved to that player's own profile at once (no shared edit buffer, no "PLAYER n IS EDITING": M7's rule); a

@@ -72,6 +72,8 @@ struct ae_ds5_wish
 };
 
 struct ae_ds5_settings ae_ds5_settings_get(void);
+/* (0.3.7) a port's player's own (each player's DUALSENSE rows); ae_ds5_settings_get is port 1's */
+struct ae_ds5_settings ae_ds5_settings_port(int port);
 /* LIGHTBAR's mode in words, for debug.txt */
 char const *ae_ds5_lightbar_mode_name(struct ae_ds5_settings const *settings);
 /* whether either feature is on */

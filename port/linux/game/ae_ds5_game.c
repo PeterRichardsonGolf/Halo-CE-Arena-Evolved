@@ -488,7 +488,8 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	other_pad_battle_rifle(local_player_index, weapon_index);
 	if (!ae_ds5_on())
 		return;
-	settings = ae_ds5_settings_get();
+	/* (the player's own DUALSENSE settings: their controller's port is their local player's) */
+	settings = ae_ds5_settings_port(local_player_index);
 	if (settings.log)
 		weapon_catalogue();
 	player_index = local_player_get_player_index(local_player_index);

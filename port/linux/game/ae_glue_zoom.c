@@ -30,16 +30,17 @@ boolean weapon_reloading(long weapon_index);
 
 static struct
 {
-	unsigned long read_at;
-	int read;
-	long hold_ms;
+	/* each local player's settings as read (their own, of the input they play with now) */
+	unsigned long read_at[AE_ZOOM_PLAYERS];
+	int read[AE_ZOOM_PLAYERS];
+	long hold_ms[AE_ZOOM_PLAYERS];
 	struct ae_zoom_bank bank;
 	/* the mouse wheel's scroll to take for the zoom level (+1 up, -1 down, 0 none), and whether the zoom is held by
 	the player on the first controller (the keyboard and mouse's), published each tick: for 100 ms, then not */
 	int wheel_pending;
 	int wheel_taken;
 	unsigned long wheel_taken_at;
-} zoom = { (unsigned long)-1 };
+} zoom;
 
 /* the keyboard and mouse's player: the JOIN screen's seat of the keyboard, else player 1 (the first controller's) */
 static short keyboard_player(void)
@@ -56,19 +57,23 @@ static short keyboard_player(void)
 the controller's), the player's own (their profile's); read again when a setting changes, or the player or input */
 static void zoom_read(short local_player_index)
 {
-	int previous = ae_config_player_enter(local_player_index);
-	int mouse = local_player_index == keyboard_player() && platform_input_scheme() == 0;
-	unsigned long read_at = ae_config_player_changes() * 2 + (unsigned long)mouse;
+	int previous, mouse;
+	unsigned long read_at;
 	char const *mode, *reset;
 	double hold;
 
-	if (zoom.read && zoom.read_at == read_at)
+	if (local_player_index < 0 || local_player_index >= AE_ZOOM_PLAYERS)
+		return;
+	previous = ae_config_player_enter(local_player_index);
+	mouse = local_player_index == keyboard_player() && platform_input_scheme() == 0;
+	read_at = ae_config_player_changes() * 2 + (unsigned long)mouse;
+	if (zoom.read[local_player_index] && zoom.read_at[local_player_index] == read_at)
 	{
 		ae_config_player_leave(previous);
 		return;
 	}
-	zoom.read = 1;
-	zoom.read_at = read_at;
+	zoom.read[local_player_index] = 1;
+	zoom.read_at[local_player_index] = read_at;
 	mode = mouse ? config_string("input.mouse_zoom_mode") : "same";
 	reset = mouse ? config_string("input.mouse_zoom_reset") : "same";
 	hold = mouse ? config_real("input.mouse_zoom_hold_time") : 0.0;
@@ -78,9 +83,10 @@ static void zoom_read(short local_player_index)
 		reset = config_string("input.zoom_reset");
 	if (!(hold > 0.0))
 		hold = config_real("input.zoom_hold_time");
-	zoom.hold_ms = ae_zoom_hold_ms(hold);
-	ae_zoom_bank_set_mode(&zoom.bank, ae_zoom_mode_from_text(mode));
-	ae_zoom_bank_set_reset(&zoom.bank, ae_zoom_reset_from_text(reset));
+	zoom.hold_ms[local_player_index] = ae_zoom_hold_ms(hold);
+	/* (that player's own: a change lets go of their press only, never another player's) */
+	ae_zoom_bank_set_player(&zoom.bank, local_player_index, ae_zoom_mode_from_text(mode),
+		ae_zoom_reset_from_text(reset));
 	ae_config_player_leave(previous);
 }
 
@@ -105,7 +111,7 @@ void ae_zoom_filter_press(short local_player_index, unsigned long *player_contro
 	unsigned long *unit_control_flags, int light_bit)
 {
 	zoom_read(local_player_index);
-	ae_zoom_flags_filter_press(zoom.bank.mode, player_control_flags, zoom_bit);
+	ae_zoom_flags_filter_press(ae_zoom_bank_mode(&zoom.bank, local_player_index), player_control_flags, zoom_bit);
 	ae_zoom_bank_filter_flash(&zoom.bank, local_player_index, player_control_flags, unit_control_flags, light_bit);
 }
 
@@ -137,7 +143,7 @@ short ae_zoom_update(short local_player_index, short zoom_level, long weapon_ind
 	/* the wheel is the first controller's (the keyboard and mouse's) player's alone */
 	player_index = local_player_get_player_index(local_player_index);
 	first = player_index != NONE && player_get(player_index)->local_player_index == 0;
-	if (zoom.bank.mode == AE_ZOOM_TOGGLE)
+	if (ae_zoom_bank_mode(&zoom.bank, local_player_index) == AE_ZOOM_TOGGLE)
 	{
 		if (first)
 			zoom.wheel_taken = 0;
@@ -155,13 +161,15 @@ short ae_zoom_update(short local_player_index, short zoom_level, long weapon_ind
 		wheel = zoom.wheel_pending;
 		zoom.wheel_pending = 0;
 	}
-	level = ae_zoom_bank_step_ex(&zoom.bank, local_player_index, zoom.hold_ms, player_control_flags,
+	level = ae_zoom_bank_step_ex(&zoom.bank, local_player_index, zoom.hold_ms[local_player_index],
+		player_control_flags,
 		(long)system_milliseconds(), zoom_level, count, blocked, weapon_index, wheel);
 	if (first)
 	{
 		/* the wheel is the zoom's only while a held zoom can act (the final blob: a menu that takes the controller
 		zeroed it) */
-		zoom.wheel_taken = ae_zoom_wheel_wanted(zoom.bank.mode, player_control_flags, count, blocked, level);
+		zoom.wheel_taken = ae_zoom_wheel_wanted(ae_zoom_bank_mode(&zoom.bank, local_player_index), player_control_flags,
+			count, blocked, level);
 		zoom.wheel_taken_at = system_milliseconds();
 		if (!zoom.wheel_taken)
 			zoom.wheel_pending = 0;
@@ -181,8 +189,8 @@ void ae_zoom_log_settings(void)
 	zoom_read(0);
 	ae_zoom_new_game();
 	platform_log("zoom: mode %s, hold time %g, reset %s",
-		zoom.bank.mode == AE_ZOOM_HOLD ? "hold" : zoom.bank.mode == AE_ZOOM_BOTH ? "both" : "toggle",
-		(double)zoom.hold_ms / 1000.0, zoom.bank.reset == AE_ZOOM_RESET_LAST ? "last" : "first");
+		zoom.bank.modes[0] == AE_ZOOM_HOLD ? "hold" : zoom.bank.modes[0] == AE_ZOOM_BOTH ? "both" : "toggle",
+		(double)zoom.hold_ms[0] / 1000.0, zoom.bank.resets[0] == AE_ZOOM_RESET_LAST ? "last" : "first");
 }
 
 int ae_zoom_blur_allowed(void)

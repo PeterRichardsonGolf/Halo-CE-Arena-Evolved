@@ -54,6 +54,8 @@ CASES = (
     # (two players: X switches to player 2, a change there is theirs: LEFT STICK DEADZONE, 5 %)
     ("seat", 35, CONTROLS, 2, "1920x1080", 100, ("pad:x",) + ("pad:down",) * 7 + ("pad:right",)),
     ("top-seat", 34, 0, 2, "1920x1080", 100, ("pad:x",)),
+    # (a change for player 1, then X: KEEP / UNDO first; KEEP, then player 2)
+    ("seat-keep", 35, CONTROLS, 2, "1920x1080", 100, ("pad:right", "pad:x", "pad:a")),
 )
 
 
@@ -149,6 +151,9 @@ def test_the_second_players_own(runs):
     assert own == ["input.left_stick_deadzone 5"], own
     assert not lines(text, "ae player settings: player 1 set ")
     assert "player 2" in lines(runs["top-seat"][1], "ae settings: ")
+    # (X with a change asks first: KEEP, then the next player)
+    said = lines(runs["seat-keep"][1], "ae settings: ")
+    assert "keep" in said and "player 2" in said and said.index("keep") < said.index("player 2"), said
 
 
 if __name__ == "__main__":

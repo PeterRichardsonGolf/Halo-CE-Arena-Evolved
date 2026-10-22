@@ -883,7 +883,7 @@ port/linux/src/xinput_sdl.c	return controller_index == ae_seats_keyboard_control
 port/linux/src/xinput_sdl.c	if (ae_seats_active() && ae_seats_connected()) mask = ae_seats_connected() | test_input_menu_ports(); /* AE hook */
 port/linux/src/xinput_sdl.c	if (port == ae_seats_keyboard_port()) /* AE hook */
 port/linux/src/xinput_sdl.c	if (!console_active && ae_seats_keyboard_plays()) /* AE hook */
-port/linux/src/xinput_sdl.c	if (port_gamepad(gamepads, count, port)) sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); /* AE hook */
+port/linux/src/xinput_sdl.c	if (port_gamepad(gamepads, count, port)) { int ae_previous_player = ae_config_player_enter(port); sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); ae_config_player_leave(ae_previous_player); } /* AE hook */
 # split screen's JOIN screen (0.3.4, ae_split_screen.c): its handlers and its every-frame update
 port/linux/game/menu_tags.c	"ae split join open", "ae split join close", "ae split b", "ae split back", "ae split back key", "ae split profile left", "ae split profile right", "ae split continue", /* AE hook */
 port/linux/game/menu_tags.c	"ae split dev left 0", "ae split dev left 1", "ae split dev left 2", "ae split dev left 3", "ae split dev right 0", "ae split dev right 1", "ae split dev right 2", "ae split dev right 3", "ae split dev pick 0", "ae split dev pick 1", "ae split dev pick 2", "ae split dev pick 3", "ae split prof left 0", "ae split prof left 1", "ae split prof left 2", "ae split prof left 3", "ae split prof right 0", "ae split prof right 1", "ae split prof right 2", "ae split prof right 3", "ae split prof pick 0", "ae split prof pick 1", "ae split prof pick 2", "ae split prof pick 3", "ae split assign 0", "ae split assign 1", "ae split assign 2", "ae split assign 3", "ae split leave 0", "ae split leave 1", "ae split leave 2", "ae split leave 3", "ae split cand left 0", "ae split cand left 1", "ae split cand left 2", "ae split cand left 3", "ae split cand right 0", "ae split cand right 1", "ae split cand right 2", "ae split cand right 3", "ae split cand take 0", "ae split cand take 1", "ae split cand take 2", "ae split cand take 3", "ae split row up", "ae split row down", "ae split own assign", /* AE hook */
@@ -1267,3 +1267,12 @@ port/linux/src/xinput_sdl.c	vertical_sensitivity = (float)ae_config_player_real(
 port/linux/src/xinput_sdl.c	invert = ae_config_player_boolean(ae_seats_keyboard_controller(), "input.invert_mouse"); /* AE hook */
 port/linux/src/xinput_sdl.c	aim_assist = ae_config_player_boolean(ae_seats_keyboard_controller(), "input.mouse_aim_assist"); /* AE hook */
 port/linux/src/xinput_sdl.c	return ae_config_player_boolean(ae_seats_keyboard_controller(), "input.keyboard_prompts") && platform_input_scheme() == 0; /* AE hook */
+# (0.3.7 AE SETTINGS) the PC menus (pause SETTINGS too) read and write a per-player setting as the menu's own player's (their ae.toml, never config.toml)
+port/linux/game/menu_functions.c	#include "ae_glue_player_settings.h" /* AE hook */
+port/linux/game/menu_functions.c	if (!(default_value ? config_default(name, text, size) : ae_player_settings_menu_text(name, text, size))) /* AE hook */
+port/linux/game/menu_functions.c	return ae_player_settings_menu_write(name, value); /* AE hook */
+port/linux/game/menu_functions.c	if (!ae_player_settings_menu_write(setting->setting, setting->values[widget->parameters.list.selected_index])) /* AE hook */
+port/linux/game/menu_functions.c	ae_player_settings_menu_player(widget->local_player_index); /* AE hook */
+# (0.3.7 AE SETTINGS) PASSENGER THIRD PERSON is the player's own: the camera (director, tick) and the reticle (render) read the same player's
+port/linux/game/passenger_camera.c	int ae_config_player_boolean(int player, const char *name); /* AE hook */
+port/linux/game/passenger_camera.c	!ae_config_player_boolean(local_player_index, "display.passenger_third_person") || game_engine_running() || cinematic_in_progress() || /* AE hook */

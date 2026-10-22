@@ -335,11 +335,13 @@ static struct ae_settings_row const rows[] =
 		VALUES(heat_texts, heat_values), AE_SETTINGS_ALWAYS,
 		"Colours where players will spawn, when the gametype allows it.", 0 },
 	{ AE_SETTINGS_HUD, "CALLOUTS", "CALLOUTS", AE_SETTINGS_SPINNER, "game.callouts",
-		VALUES(callout_texts, callout_values), AE_SETTINGS_ALWAYS, "A voice calls power items as they come up.", 0 },
+		VALUES(callout_texts, callout_values), AE_SETTINGS_ALWAYS, "A voice calls power items as they come up.",
+		AE_SETTINGS_THIS_PC },
 	{ AE_SETTINGS_HUD, "CALLOUTS", "CALLOUT DETAIL", AE_SETTINGS_SPINNER, "game.callout_detail",
-		VALUES(detail_texts, detail_values), AE_SETTINGS_WHEN_CALLOUTS, "How much each callout says.", 0 },
+		VALUES(detail_texts, detail_values), AE_SETTINGS_WHEN_CALLOUTS, "How much each callout says.",
+		AE_SETTINGS_THIS_PC },
 	{ AE_SETTINGS_HUD, "CALLOUTS", "CALLOUT VOICE", AE_SETTINGS_SPINNER, "game.callout_voice", NULL, NULL, 0,
-		AE_SETTINGS_WHEN_CALLOUTS, "Whose voice calls them.", 0 },
+		AE_SETTINGS_WHEN_CALLOUTS, "Whose voice calls them.", AE_SETTINGS_THIS_PC },
 };
 
 short ae_settings_row_count(void)

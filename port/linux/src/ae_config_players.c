@@ -34,7 +34,8 @@ static const char *const names[] =
 	"display.enemy_name_color", "display.scoreboard_team_layout", "display.scoreboard_background",
 	"display.scoreboard_fade", "display.show_quit_players", "display.scoreboard_background_color",
 	"display.waypoint_style", "display.waypoint_size", "display.power_list", "display.shotgun_power",
-	"display.spawn_heat", "game.callouts", "game.callout_detail", "game.callout_voice"
+	"display.spawn_heat"
+	/* (CALLOUTS, CALLOUT DETAIL, CALLOUT VOICE: one voice on this PC's speakers for every player, so this PC's) */
 };
 
 #define SETTINGS ((int)(sizeof(names) / sizeof(names[0])))
@@ -42,7 +43,7 @@ static const char *const names[] =
 static const char types[] =
 	"iissrssrssbsssrrrrrbbb"
 	"rrbbbbbsbsb"
-	"ssbsbbbbbssrssbsbssrsbssss";
+	"ssbsbbbbbssrssbsbssrsbs";
 typedef char ae_config_players_types_match[sizeof(types) - 1 == sizeof(names) / sizeof(names[0]) ? 1 : -1];
 
 struct player_value
