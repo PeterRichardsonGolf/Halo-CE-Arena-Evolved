@@ -29,6 +29,7 @@ Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "ho
 
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
+#include "game/game_engine.h"
 #include "input/input.h"
 #include "halo_ui_map_list.h"
 #include "../src/ae_draw.h"
@@ -55,6 +56,12 @@ boolean ui_widget_port_multiplayer_map_choose(short level_index);
 boolean main_menu_is_active(void);
 void ui_widgets_close_all(void);
 void main_screen_shell_load(void);
+/* p2p.c's (internet play: the hosted game's invite, its listing) and network_server_manager.c's server settings */
+int p2p_invite_link(char *link, int size);
+void p2p_set_hosting_public(int public_game);
+void p2p_set_hosting_password(const char *password);
+void network_game_server_port_set_settings(wchar_t const *name, long maximum_players);
+int config_boolean(char const *name);
 
 enum
 {
@@ -66,8 +73,10 @@ enum
 	JOIN_WAIT_MS = 10000
 };
 enum { NETWORK_LOCAL, NETWORK_LAN, NETWORK_ONLINE, NETWORKS };
-enum { ROW_MAP, ROW_GAMETYPE, ROW_OPTIONS, ROW_OPTION, ROW_NETWORK, ROW_START, ROW_HEADER };
-enum { START_IDLE, START_JOINING, START_DONE };
+enum { ROW_MAP, ROW_GAMETYPE, ROW_OPTIONS, ROW_OPTION, ROW_NETWORK, ROW_START, ROW_HEADER, ROW_PRIVACY,
+	ROW_MAXIMUM_PLAYERS, ROW_JOIN, ROW_INVITE, ROW_INFO };
+enum { START_IDLE, START_JOINING, START_DONE, START_JOINING_INVITE };
+enum { PRIVACY_INVITE_ONLY, PRIVACY_PUBLIC, PRIVACIES };
 
 /* the frame's positions (fractions of 1920 x 1080 at 100 %) */
 #define TITLE_Y (70.0f / 1080.0f)
@@ -93,6 +102,13 @@ static const char *const network_helps[NETWORKS] = {
 	"Hosted for the internet too: invite players with your game's code."
 };
 static const int network_kinds[NETWORKS] = { AE_LOBBY_LOCAL, AE_LOBBY_LAN, AE_LOBBY_ONLINE };
+static const char *const privacy_names[PRIVACIES] = { "INVITE ONLY", "PUBLIC" };
+static const char *const privacy_helps[PRIVACIES] = {
+	"Only players with your invite link join. Copy it in the lobby.",
+	"Listed in the server browser for anyone to join, and joinable by invite."
+};
+static const short maximum_players[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
+enum { MAXIMUM_PLAYERS_COUNT = sizeof(maximum_players) / sizeof(maximum_players[0]), MAXIMUM_PLAYERS_DEFAULT = 4 };
 
 /* a row as drawn: what it is, its option (ROW_OPTION), its texts */
 struct flow_row { short kind, option; const char *label, *value, *help; };
@@ -115,7 +131,9 @@ static struct
 	struct flow_screen flow;
 	short map_index;
 	char map_name[64];
-	int network;
+	int network, privacy;
+	short players_index;
+	char players_text[8];
 	/* the gametypes' picker (its values outlive the picker: static) */
 	char gametype_names[GAMETYPES_MAXIMUM][16];
 	const char *gametype_values[GAMETYPES_MAXIMUM];
@@ -136,6 +154,9 @@ static struct
 	unsigned long roster_at;
 	int options_open;          /* GAME OPTIONS opened from here: its changes applied when it closes */
 	int leaving;
+	int joiner;                /* joined another's game by invite: the roster, map and gametype only */
+	char invite[160];          /* the hosted game's invite link (ONLINE), "" none yet */
+	char invite_shown[48];
 } lobby;
 
 static struct ae_screen_class const create_class, lobby_class;
@@ -495,8 +516,19 @@ static void create_rows(void)
 	flow->rows[count++] = option_row(score_option(access.engine));
 	flow->rows[count++] = (struct flow_row){ ROW_NETWORK, -1, "NETWORK", network_names[create.network],
 		network_helps[create.network] };
+	if (create.network == NETWORK_ONLINE)
+		flow->rows[count++] = (struct flow_row){ ROW_PRIVACY, -1, "PRIVACY", privacy_names[create.privacy],
+			privacy_helps[create.privacy] };
+	if (create.network != NETWORK_LOCAL)
+	{
+		snprintf(create.players_text, sizeof(create.players_text), "%d", maximum_players[create.players_index]);
+		flow->rows[count++] = (struct flow_row){ ROW_MAXIMUM_PLAYERS, -1, "MAX PLAYERS", create.players_text,
+			"The most players the game takes, bots included." };
+	}
 	flow->rows[count++] = (struct flow_row){ ROW_START, -1, "START GAME", NULL,
 		"Hosts the game with these settings and opens its lobby." };
+	flow->rows[count++] = (struct flow_row){ ROW_JOIN, -1, "JOIN WITH INVITE", NULL,
+		"Joins the game whose invite link or code is on your clipboard (copy it from a message first)." };
 	flow->count = count;
 	if (flow->focus >= count)
 		flow->focus = (short)(count - 1);
@@ -510,7 +542,7 @@ static void start_failed(const char *why)
 	error_dialog(&create.flow, "The game did not start", why);
 }
 
-static void lobby_open(void);
+static void lobby_open(int joiner);
 
 static void start_game(void)
 {
@@ -531,10 +563,70 @@ static void start_game(void)
 		start_failed(result.reason);
 		return;
 	}
+	/* (ae_lobby_host hosts invite only: PUBLIC lists it, as Server Setup's LISTING; no password in the spike) */
+	p2p_set_hosting_public(create.network == NETWORK_ONLINE && create.privacy == PRIVACY_PUBLIC);
+	p2p_set_hosting_password(NULL);
 	create.menus_closed = 1;
 	create.start_step = START_JOINING;
 	create.start_since = system_milliseconds();
 	ae_sound_request(AE_SOUND_FORWARD, 0);
+}
+
+/* JOIN WITH INVITE: the clipboard's link or code joined (ae_lobby_join_address: the host's own game, never another) */
+static void join_invite(void)
+{
+	char text[512];
+	struct ae_result result;
+
+	text[0] = 0;
+	if (!ae_host_clipboard_get(text, sizeof(text)) || !text[0])
+	{
+		error_dialog(&create.flow, "No invite on the clipboard", "Copy a halo://join/ link or an invite code first.");
+		return;
+	}
+	result = ae_lobby_join_address(text);
+	if (!result.ok)
+	{
+		error_dialog(&create.flow, "Can't join", result.reason);
+		return;
+	}
+	create.starting = 1;
+	create.menus_closed = 1;
+	create.start_step = START_JOINING_INVITE;
+	create.start_since = system_milliseconds();
+	platform_log("ae create game: joining by invite");
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+}
+
+/* the join under way: joined, player 1 in, the joiner's lobby; else why not */
+static void join_update(void)
+{
+	struct ae_result failure;
+	int state = ae_lobby_join_state(&failure);
+
+	if (state == 0)
+		return;
+	if (state < 0)
+	{
+		start_failed(failure.reason[0] ? failure.reason : "The join was left.");
+		return;
+	}
+	{
+		static struct ae_lobby_roster roster;
+
+		/* (this PC's client in the pregame first: its players are taken from then) */
+		if (!ae_lobby_roster(&roster).ok || !roster.joined)
+			return;
+	}
+	if (!ae_lobby_add_local_player(0).ok)
+	{
+		ae_lobby_leave();
+		start_failed("The game is full, or no longer takes players.");
+		return;
+	}
+	create.start_step = START_DONE;
+	platform_log("ae create game: joined, player 1 in");
+	lobby_open(1);
 }
 
 /* START GAME's wait: this PC's client in the pregame, then player 1, the map, the copy, the lobby */
@@ -543,6 +635,11 @@ static void start_update(void)
 	static struct ae_lobby_roster roster;
 	struct ae_result result;
 
+	if (create.start_step == START_JOINING_INVITE)
+	{
+		join_update();
+		return;
+	}
 	if (create.start_step != START_JOINING)
 		return;
 	if (!ae_lobby_roster(&roster).ok || (!roster.joined && system_milliseconds() - create.start_since < JOIN_WAIT_MS))
@@ -568,9 +665,20 @@ static void start_update(void)
 		return;
 	}
 	ae_setup_edit_apply();
+	/* (the game's name in lists: player 1's, as Server Setup's; the most players) */
+	{
+		wchar_t name[16];
+		int at;
+
+		for (at = 0; at < 15 && roster.count && roster.players[0].name[at]; at++)
+			name[at] = (wchar_t)(unsigned char)roster.players[0].name[at];
+		name[at] = 0;
+		if (create.network != NETWORK_LOCAL)
+			network_game_server_port_set_settings(name, maximum_players[create.players_index]);
+	}
 	create.start_step = START_DONE;
 	platform_log("ae create game: hosted, player 1 in");
-	lobby_open();
+	lobby_open(0);
 }
 
 static void create_accept(short row)
@@ -597,6 +705,13 @@ static void create_accept(short row)
 	case ROW_START:
 		start_game();
 		break;
+	case ROW_JOIN:
+		join_invite();
+		break;
+	case ROW_PRIVACY:
+		create.privacy = (create.privacy + 1) % PRIVACIES;
+		ae_sound_request(AE_SOUND_CURSOR, 0);
+		break;
 	default:
 		break;
 	}
@@ -606,7 +721,21 @@ static void create_step(short row, short direction)
 {
 	struct flow_row const *r = &create.flow.rows[row];
 
-	if (r->kind == ROW_OPTION)
+	if (r->kind == ROW_PRIVACY)
+	{
+		short next = ae_value_step(PRIVACIES, (short)create.privacy, direction);
+
+		ae_sound_request(next == create.privacy ? AE_SOUND_FAILURE : AE_SOUND_CURSOR, 0);
+		create.privacy = next;
+	}
+	else if (r->kind == ROW_MAXIMUM_PLAYERS)
+	{
+		short next = ae_value_step(MAXIMUM_PLAYERS_COUNT, create.players_index, direction);
+
+		ae_sound_request(next == create.players_index ? AE_SOUND_FAILURE : AE_SOUND_CURSOR, 0);
+		create.players_index = next;
+	}
+	else if (r->kind == ROW_OPTION)
 		option_step(r->option, direction, NULL);
 	else if (r->kind == ROW_NETWORK)
 	{
@@ -628,7 +757,8 @@ static void create_draw(struct ae_screen *instance)
 	full_density(flow);
 	create_rows();
 	ae_setup_edit_name(name, sizeof(name));
-	snprintf(crumb, sizeof(crumb), "%s", create.start_step == START_JOINING ? "HOSTING..." : network_names[create.network]);
+	snprintf(crumb, sizeof(crumb), "%s", create.start_step == START_JOINING ? "HOSTING..." :
+		create.start_step == START_JOINING_INVITE ? "JOINING..." : network_names[create.network]);
 	title(flow, "CREATE GAME", crumb);
 	draw_rows(flow, flow->frame.rect.width * ROWS_WIDTH);
 	/* the panel: the game at a glance */
@@ -669,13 +799,14 @@ static int create_handle(struct ae_screen *instance, struct ae_event const *even
 	struct flow_screen *flow = &create.flow;
 
 	(void)instance;
-	/* (hosting: wait; B still leaves) */
-	if (create.start_step == START_JOINING && event->action != AE_ACTION_BACK)
+	/* (hosting or joining: wait; B still leaves) */
+	if ((create.start_step == START_JOINING || create.start_step == START_JOINING_INVITE) &&
+		event->action != AE_ACTION_BACK)
 		return 1;
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
-		if (create.start_step == START_JOINING)
+		if (create.start_step == START_JOINING || create.start_step == START_JOINING_INVITE)
 		{
 			ae_lobby_leave();
 			create.start_step = START_IDLE;
@@ -761,6 +892,8 @@ int ae_screen_create_game_open(void)
 
 	memset(&create, 0, sizeof(create));
 	create.network = NETWORK_LAN;
+	create.privacy = config_boolean("network.host_public") ? PRIVACY_PUBLIC : PRIVACY_INVITE_ONLY;
+	create.players_index = MAXIMUM_PLAYERS_DEFAULT;
 	if (!ae_setup_edit_begin_named(getenv("HALO_AE_TEST_GAMETYPE")))
 		return 0;
 	ui_widget_port_multiplayer_maps(&names, &last);
@@ -803,8 +936,24 @@ static void lobby_rows(void)
 		AE_SO_SENSOR_RANGE, AE_SO_RESPAWN_TIME };
 	struct flow_screen *flow = &lobby.flow;
 	struct ae_setup_access access = access_now();
-	short count = setup_rows(flow, 0), index;
+	short count = 0, index;
 
+	/* (a joiner: the host's map and gametype, nothing to change) */
+	if (lobby.joiner)
+	{
+		flow->rows[count++] = (struct flow_row){ ROW_INFO, -1, "MAP", lobby.have_roster ? lobby.roster.map : "", NULL };
+		flow->rows[count++] = (struct flow_row){ ROW_INFO, -1, "GAMETYPE", lobby.have_roster ? lobby.roster.gametype : "",
+			NULL };
+		flow->rows[count++] = (struct flow_row){ ROW_INFO, -1, "WAITING FOR THE HOST TO START", NULL,
+			"The host picks the map and rules and starts the game. B leaves it." };
+		flow->count = count;
+		flow->focus = (short)(count - 1);
+		return;
+	}
+	count = setup_rows(flow, 0);
+	if (create.network == NETWORK_ONLINE)
+		flow->rows[count++] = (struct flow_row){ ROW_INVITE, -1, "INVITE", lobby.invite_shown,
+			"A copies your game's invite link (halo://join/...) to paste to friends. Anyone with it can join." };
 	flow->rows[count++] = (struct flow_row){ ROW_HEADER, -1, "QUICK OPTIONS", NULL, NULL };
 	for (index = 0; index < (short)(sizeof(quick) / sizeof(quick[0])); index++)
 	{
@@ -820,6 +969,37 @@ static void lobby_rows(void)
 		flow->focus = (short)(count - 1);
 	if (flow->rows[flow->focus].kind == ROW_HEADER)
 		flow->focus++;
+}
+
+/* the hosted game's invite link to the clipboard */
+static void invite_copy(void)
+{
+	char body[160];
+
+	if (!lobby.invite[0])
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	ae_host_clipboard_set(lobby.invite);
+	platform_log("ae create game: lobby: invite copied");
+	snprintf(body, sizeof(body), "Your game's invite link (%s) is on the clipboard: paste it to your friends.",
+		lobby.invite_shown);
+	{
+		struct ae_dialog_spec spec;
+
+		memset(&spec, 0, sizeof(spec));
+		spec.kind = AE_DIALOG_CONFIRM;
+		spec.title = "Invite copied";
+		spec.body = body;
+		spec.choices[0] = "OK";
+		spec.choice_count = 1;
+		spec.has_cancel = 1;
+		spec.density = lobby.flow.density;
+		spec.bounds = lobby.flow.frame.rect;
+		ae_dialog_open(&spec, AE_OWNER_ANY);
+	}
+	ae_sound_request(AE_SOUND_FORWARD, 0);
 }
 
 static void lobby_start(void)
@@ -862,7 +1042,8 @@ static void lobby_leave_ask(void)
 	memset(&spec, 0, sizeof(spec));
 	spec.kind = AE_DIALOG_CONFIRM;
 	spec.title = "Leave the lobby?";
-	spec.body = "The game closes for everyone in it. Its settings stay for CREATE GAME.";
+	spec.body = lobby.joiner ? "You leave the host's game." :
+		"The game closes for everyone in it. Its settings stay for CREATE GAME.";
 	spec.choices[0] = "STAY";
 	spec.choices[1] = "LEAVE";
 	spec.choice_count = 2;
@@ -895,6 +1076,9 @@ static void lobby_accept(short row)
 		break;
 	case ROW_START:
 		lobby_start();
+		break;
+	case ROW_INVITE:
+		invite_copy();
 		break;
 	default:
 		break;
@@ -951,7 +1135,7 @@ static void lobby_draw(struct ae_screen *instance)
 	ae_draw_view_full();
 	full_density(flow);
 	lobby_rows();
-	snprintf(crumb, sizeof(crumb), "%s", network_names[create.network]);
+	snprintf(crumb, sizeof(crumb), "%s", lobby.joiner ? "JOINED BY INVITE" : network_names[create.network]);
 	title(flow, "LOBBY", crumb);
 	draw_rows(flow, flow->frame.rect.width * ROWS_WIDTH);
 	roster_x = flow->frame.rect.x + flow->frame.rect.width * PANEL_X;
@@ -959,7 +1143,10 @@ static void lobby_draw(struct ae_screen *instance)
 	flow->prompt_count = 0;
 	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_A, ae_string(AE_STR_SELECT), AE_ACTION_ACCEPT);
 	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_B, "Leave", AE_ACTION_BACK);
-	flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_START, "Start game", AE_ACTION_START);
+	if (!lobby.joiner)
+		flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_START, "Start game", AE_ACTION_START);
+	if (!lobby.joiner && create.network == NETWORK_ONLINE)
+		flow->prompts[flow->prompt_count++] = prompt_of(AE_BUTTON_X, "Copy invite", AE_ACTION_X);
 	draw_prompts(flow);
 }
 
@@ -978,6 +1165,32 @@ static void lobby_update(struct ae_screen *instance)
 	{
 		lobby.roster_at = now;
 		lobby.have_roster = ae_lobby_owns_session() && ae_lobby_roster(&lobby.roster).ok;
+		/* (the invite: made once the game is hosted for the internet; shown by its first digits only) */
+		if (create.network == NETWORK_ONLINE && !lobby.joiner)
+		{
+			if (!config_boolean("network.online"))
+				snprintf(lobby.invite_shown, sizeof(lobby.invite_shown), "INTERNET PLAY IS OFF");
+			else if (!p2p_invite_link(lobby.invite, sizeof(lobby.invite)) || !lobby.invite[0])
+			{
+				lobby.invite[0] = 0;
+				snprintf(lobby.invite_shown, sizeof(lobby.invite_shown), "BEING MADE...");
+			}
+			else
+			{
+				char const *digits = strstr(lobby.invite, "join/");
+
+				snprintf(lobby.invite_shown, sizeof(lobby.invite_shown), "COPY (%.8s...)", digits ? digits + 5 :
+					lobby.invite);
+			}
+		}
+	}
+	/* (a joiner: the host started; no AE screen over the game, the take-over brings the lobby back) */
+	if (lobby.joiner && game_engine_running() && !main_menu_is_active() && !game_engine_showing_postgame())
+	{
+		platform_log("ae create game: lobby: the host started");
+		create.starting = 1;
+		ae_ui_remove(&lobby);
+		ae_ui_remove(&create);
 	}
 }
 
@@ -1004,10 +1217,16 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 			option_step(row->option, event->action == AE_ACTION_RIGHT ? 1 : -1, "lobby: quick");
 		return 1;
 	case AE_ACTION_ACCEPT:
-		lobby_accept(flow->focus);
+		if (!lobby.joiner)
+			lobby_accept(flow->focus);
 		return 1;
 	case AE_ACTION_START:
-		lobby_start();
+		if (!lobby.joiner)
+			lobby_start();
+		return 1;
+	case AE_ACTION_X:
+		if (!lobby.joiner && create.network == NETWORK_ONLINE)
+			invite_copy();
 		return 1;
 	default:
 		return 1;
@@ -1044,9 +1263,10 @@ static struct ae_screen_class const lobby_class =
 	.update = lobby_update, .start_from_anyone = 1,
 };
 
-static void lobby_open(void)
+static void lobby_open(int joiner)
 {
 	memset(&lobby, 0, sizeof(lobby));
+	lobby.joiner = joiner;
 	ae_lobby_set_pregame_screen(&lobby_class, &lobby);
 	if (!ae_ui_push(&lobby_class, AE_OWNER_ANY, &lobby))
 	{
