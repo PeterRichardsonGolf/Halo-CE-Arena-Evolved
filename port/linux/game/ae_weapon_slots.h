@@ -61,6 +61,12 @@ enum ae_weapon_stock
 unsigned int ae_weapon_slots_mask(unsigned char weapon_pack);
 /* the slot a loadout slot's two source bits give (pack_loadout >> 2 * loadout slot & 3), or AE_WEAPON_SLOT_NONE */
 short ae_weapon_slots_loadout(unsigned int mask, unsigned int source);
+/* the source value (1, 2) that gives a loadout slot this pack slot's weapon 0 among the named slots in mask, or 0:
+the slot is not named, or is the third named or later (no source reaches it) */
+unsigned int ae_weapon_slots_source(unsigned int mask, short slot);
+/* pack_loadout's two loadout slots (bits 0-3) after the mask changed from old_mask to new_mask: each keeps its
+pack slot's weapon where that slot is still named and reachable, else goes back to stock (0). Other bits kept */
+unsigned char ae_weapon_slots_loadout_remap(unsigned int old_mask, unsigned int new_mask, unsigned char pack_loadout);
 /* the lowest named slot (0 for none) */
 short ae_weapon_slots_first(unsigned int mask);
 /* the level a machine with these slots loaded tells */

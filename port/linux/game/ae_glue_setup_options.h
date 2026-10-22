@@ -33,6 +33,11 @@ int ae_setup_edit_base(int option);
 void ae_setup_edit_defaults(void);
 /* the copy's stored name (11 characters), as ASCII */
 void ae_setup_edit_name(char *name, int size);
+/* the copy renamed (printable ASCII, 11 characters at most; nothing typed keeps the original name) */
+void ae_setup_edit_set_name(char const *name);
+/* why a row can't be changed now (shown in place of its value), or NULL: a weapon pack's row for a pack that is not
+loaded here and not on in the gametype ("NOT INSTALLED") */
+char const *ae_setup_edit_reason(int option);
 /* a new gametype file of the copy, named name (11 characters at most), which is written into: the copy's name with
 " 2", " 3" ... until it is free. 1 when written; the copy then starts from it (no changes) */
 int ae_setup_edit_save_as_new(char *name, int size);

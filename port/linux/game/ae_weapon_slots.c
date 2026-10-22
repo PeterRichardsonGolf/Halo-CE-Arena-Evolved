@@ -67,6 +67,32 @@ short ae_weapon_slots_loadout(unsigned int mask, unsigned int source)
 	return AE_WEAPON_SLOT_NONE;
 }
 
+unsigned int ae_weapon_slots_source(unsigned int mask, short slot)
+{
+	short other, rank = 0;
+
+	if (!valid(slot) || !(mask & AE_WEAPON_SLOT_BIT(slot)))
+		return 0;
+	for (other = 1; other <= slot; other++)
+		if (mask & AE_WEAPON_SLOT_BIT(other))
+			rank++;
+	return rank <= 2 ? (unsigned int)rank : 0u;
+}
+
+unsigned char ae_weapon_slots_loadout_remap(unsigned int old_mask, unsigned int new_mask, unsigned char pack_loadout)
+{
+	unsigned char result = (unsigned char)(pack_loadout & ~0x0Fu);
+	unsigned int loadout_slot;
+
+	for (loadout_slot = 0; loadout_slot < 2; loadout_slot++)
+	{
+		short slot = ae_weapon_slots_loadout(old_mask, (pack_loadout >> (loadout_slot * 2)) & 3u);
+
+		result = (unsigned char)(result | (ae_weapon_slots_source(new_mask, slot) << (loadout_slot * 2)));
+	}
+	return result;
+}
+
 int ae_weapon_slots_capability(unsigned int loaded_mask)
 {
 	int level, best = 0;

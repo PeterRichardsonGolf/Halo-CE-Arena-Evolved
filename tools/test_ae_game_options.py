@@ -12,6 +12,7 @@ Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is ab
     AE_MENUS_BUILD=$PWD/build/linux64 python3 tools/test_ae_game_options.py      (the frames and a sheet alone)
 """
 import importlib.util
+import shutil
 import sys
 from pathlib import Path
 
@@ -39,6 +40,34 @@ CASES = (
     ("ctf-mode", "AE CTF", "1920x1080", 100, ("pad:rb",) * 5),
     ("ball-mode", "AE FFA BALL", "1920x1080", 100, ("pad:rb",) * 5),
     ("slay-4x3", "AE TEAM SLY", "1440x1080", 100, ("pad:rb",)),
+    # (EQUIPMENT of a team game, three groups on: the top of the group, then its foot with every new row)
+    ("equip-top", "AE TEAM SLY", "1920x1080", 100, ("pad:rb",) * 3),
+    ("equip-foot", "AE TEAM SLY", "1920x1080", 100, ("pad:rb",) * 3 + ("pad:down",) * 17),
+    ("equip-top-130", "AE TEAM SLY", "1920x1080", 130, ("pad:rb",) * 3),
+    ("equip-foot-130", "AE TEAM SLY", "1920x1080", 130, ("pad:rb",) * 3 + ("pad:down",) * 17),
+    # (MATCH, down to NAME, A: AE's keyboard on a pad)
+    ("name-keyboard", "AE TEAM SLY", "1920x1080", 100, ("pad:down",) * 3 + ("pad:a",)),
+)
+
+# the rows set by value index, the copy renamed, saved as new and read back from the file (the tests' hooks in
+# ae_screen_game_options.c; the harness types no text): name, SET, NAME, what the file must hold
+SAVES = (
+    ("save-packs", "BATTLE RIFLE PACK=1;SMG PACK=1;PACK WEAPONS ON MAP=1;STARTING GRENADES=3;BOTTOMLESS CLIP=1;"
+     "LOADOUT=1;PRIMARY WEAPON=10;SECONDARY WEAPON=11", "GORS TEST",
+     {"BATTLE RIFLE PACK": 1, "SMG PACK": 1, "SILENCED SMG PACK": 0, "CARBINE PACK": 0, "SILENCED AR PACK": 0,
+      "PACK WEAPONS ON MAP": 1, "STARTING GRENADES": 3, "BOTTOMLESS CLIP": 1, "PRIMARY WEAPON": 10,
+      "SECONDARY WEAPON": 11, "LOADOUT": 1}),
+    # (the BR joins a game whose loadout names the SMG and the carbine: the carbine is the third pack, no source
+    # reaches it, the secondary goes back to the pistol the carbine plays as; the SMG, still second, stays)
+    ("save-remap", "SMG PACK=1;CARBINE PACK=1;LOADOUT=1;PRIMARY WEAPON=11;SECONDARY WEAPON=13;BATTLE RIFLE PACK=1",
+     "GORS REMAP", {"PRIMARY WEAPON": 11, "SECONDARY WEAPON": 3, "CARBINE PACK": 1, "BATTLE RIFLE PACK": 1}),
+    # (a pack turned off: the slot that took its weapon plays the stock one)
+    ("save-pack-off", "SMG PACK=1;LOADOUT=1;PRIMARY WEAPON=11;SMG PACK=0", "GORS OFF",
+     {"SMG PACK": 0, "PRIMARY WEAPON": 2}),
+    # (NAME untouched: the old name and " 2", as before)
+    ("save-default-name", "", None, {}),
+    # (the old name typed in as NAME is no rename: the same number)
+    ("save-stock-values", "", "AE TEAM SLY", {}),
 )
 
 
@@ -52,6 +81,31 @@ def lines(text, start):
     return [line.split(start, 1)[1] for line in text.splitlines() if start in line]
 
 
+def play_save(cfg, out, name, sets, rename):
+    result = _play_save(cfg, out, name, sets, rename)
+    shutil.rmtree(out / name / "shots", ignore_errors=True)
+    return result
+
+
+def _play_save(cfg, out, name, sets, rename):
+    env = {"HALO_AE_TEST_GAMETYPE": "AE TEAM SLY", "HALO_AE_TEST_SAVE": "1"}
+    if sets:
+        env["HALO_AE_TEST_SET"] = sets
+    if rename:
+        env["HALO_AE_TEST_NAME"] = rename
+    return menus.play(cfg, out, name, views=SCREEN, window="1920x1080", env=env, shots=1, exit_after=EXIT_AFTER,
+                      test_input=menus.menu_input("wait"))
+
+
+def values(text):
+    """the logged value lines as {label: index}"""
+    found = {}
+    for line in lines(text, "ae game options: value "):
+        label, _, index = line.rpartition("=")
+        found[label] = int(index)
+    return found
+
+
 def run_cases(cfg, out, only=()):
     """the cases (only those named, when names are given)"""
     runs = {}
@@ -63,6 +117,8 @@ def run_cases(cfg, out, only=()):
         if pngs:
             frame = out / f"{name}.png"
             frame.write_bytes(pngs[-1].read_bytes())
+        # (the box's disk is shared: the frames' copies of a run go once the last one is kept)
+        shutil.rmtree(out / name / "shots", ignore_errors=True)
         runs[name] = (result, text, frame)
     return runs
 
@@ -78,6 +134,13 @@ def cfg():
 @pytest.fixture(scope="module")
 def runs(cfg):
     return run_cases(cfg, menus.out_dir(cfg, "game-options"))
+
+
+@pytest.fixture(scope="module")
+def saves(cfg):
+    out = menus.out_dir(cfg, "game-options-saves")
+    return {name: (play_save(cfg, out, name, sets, rename)[1], rename, expected)
+            for name, sets, rename, expected in SAVES}
 
 
 def test_opens_on_the_gametype(runs):
@@ -99,6 +162,30 @@ def test_a_step_changes_the_copy(runs):
 def test_the_mode_groups(runs):
     assert "CAPTURE THE FLAG" in lines(runs["ctf-mode"][1], "ae game options: group ")
     assert "ODDBALL" in lines(runs["ball-mode"][1], "ae game options: group ")
+
+
+@pytest.mark.parametrize("name", [save[0] for save in SAVES])
+def test_new_rows_survive_save_as_new(saves, name):
+    text, rename, expected = saves[name]
+    assert not lines(text, "the model has"), name
+    assert not lines(text, "test: save failed"), name
+    saved = lines(text, "ae game options: saved as new ")
+    assert saved, name
+    # a typed name is kept as typed when free, else (and with none typed) the old name, cut to 11 characters with the number
+    if rename and rename != "AE TEAM SLY":
+        assert saved[0].startswith(f"'{rename}'"), saved
+    else:
+        assert saved[0].startswith("'AE TEAM S 2'"), saved
+    assert any(line.startswith("'") for line in lines(text, "ae game options: test: reopened ")), name
+    got = values(text)
+    for label, index in expected.items():
+        assert got.get(label) == index, (name, label, got.get(label), index)
+
+
+def test_the_pack_rows_and_name_are_in_the_table(runs):
+    # (every new row has a glue encoding of the model's value count)
+    for name, *_ in CASES:
+        assert not lines(runs[name][1], "the model has"), name
 
 
 if __name__ == "__main__":

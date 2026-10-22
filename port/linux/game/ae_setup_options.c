@@ -9,6 +9,7 @@ values (ae_glue_setup_options.c), which are menu_functions.c's gametype_options[
 */
 
 #include <stddef.h>
+#include <string.h>
 #include "ae_setup_options.h"
 
 #define COUNT(list) ((short)(sizeof(list) / sizeof((list)[0])))
@@ -122,10 +123,34 @@ static const char *const equipment_help[] = { "You start with the weapons the ma
 static const char *const loadout_values[] = { "CATEGORY", "CUSTOM" };
 static const char *const loadout_help[] = { "The weapons follow the weapon set.",
 	"Everyone starts with the primary and secondary weapons below." };
-static const char *const weapon_values[] = { "NONE", "RANDOM", "ASSAULT RIFLE", "PISTOL", "SHOTGUN", "SNIPER RIFLE",
-	"ROCKET LAUNCHER", "PLASMA PISTOL", "PLASMA RIFLE", "NEEDLER" };
-static const char *const primary_help[] = { "The weapon everyone spawns with in hand, where the map has it." };
-static const char *const secondary_help[] = { "The weapon everyone spawns with on their back, where the map has it." };
+static const char *const loadout_weapon_values[] = { "NONE", "RANDOM", "ASSAULT RIFLE", "PISTOL", "SHOTGUN",
+	"SNIPER RIFLE", "ROCKET LAUNCHER", "PLASMA PISTOL", "PLASMA RIFLE", "NEEDLER", "BATTLE RIFLE", "SMG", "SILENCED SMG",
+	"CARBINE", "SILENCED AR" };
+static const char *const primary_help[] = { "The weapon everyone spawns with in hand, where the map has it. A pack "
+	"weapon turns its pack on; where the pack is not loaded, its stock weapon is played." };
+static const char *const secondary_help[] = { "The weapon everyone spawns with on their back, where the map has it. A "
+	"pack weapon turns its pack on; where the pack is not loaded, its stock weapon is played." };
+static const char *const name_values[] = { "" };
+static const char *const name_help[] = { "The gametype's name, up to eleven characters. SAVE AS NEW keeps it." };
+static const char *const pack_help_br[] = { "The battle rifle is not added to the map.",
+	"The battle rifle pack is added to the map: the game may spawn and give it." };
+static const char *const pack_help_smg[] = { "The SMG is not added to the map.",
+	"The SMG pack is added to the map: the game may spawn and give it." };
+static const char *const pack_help_smg_silenced[] = { "The silenced SMG is not added to the map.",
+	"The silenced SMG pack is added to the map: the game may spawn and give it." };
+static const char *const pack_help_carbine[] = { "The carbine is not added to the map.",
+	"The carbine pack is added to the map: the game may spawn and give it." };
+static const char *const pack_help_ar_silenced[] = { "The silenced assault rifle is not added to the map.",
+	"The silenced assault rifle pack is added to the map: the game may spawn and give it." };
+static const char *const packs_on_map_help[] = { "The map's weapons are the game's own.",
+	"The map's pistols become the battle rifle and its assault rifles the SMG, where those packs are on." };
+static const char *const frags_values[] = { "GAME'S OWN", "NONE", "1", "2", "3", "4" };
+static const char *const frags_help[] = { "Players start with the game's own number of frag grenades.",
+	"Players start with no grenades at all.", "Players start with one frag grenade.",
+	"Players start with two frag grenades.", "Players start with three frag grenades.",
+	"Players start with four frag grenades." };
+static const char *const bottomless_help[] = { "A shot takes a round from the magazine, as in Halo CE.",
+	"A shot takes nothing from the magazine and adds no heat; you still reload when you like." };
 static const char *const grenades_help[] = { "Everyone has an unlimited supply of grenades.",
 	"Each player carries up to four grenades of each type." };
 static const char *const ammo_help[] = { "Weapons run out of ammo as in Halo CE.",
@@ -270,6 +295,8 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 	[AE_SO_TIME_LIMIT] = ROW("TIME LIMIT", AE_SG_MATCH, 0, 0, 0, time_values, time_help),
 	[AE_SO_COUNTDOWN] = ROW("PRE-GAME COUNTDOWN", AE_SG_MATCH, 0, 0, 1, off_on, countdown_help),
 
+	[AE_SO_NAME] = ROW("NAME", AE_SG_MATCH, 0, 0, 0, name_values, name_help),
+
 	[AE_SO_LIVES] = ROW("NUMBER OF LIVES", AE_SG_PLAYERS, 0, 0, 0, lives_values, lives_help),
 	[AE_SO_RESPAWN_TIME] = ROW("RESPAWN TIME", AE_SG_PLAYERS, 0, 0, 0, respawn_values, respawn_help),
 	[AE_SO_RESPAWN_GROWTH] = ROW("RESPAWN TIME GROWTH", AE_SG_PLAYERS, 0, 0, 0, growth_values, growth_help),
@@ -293,12 +320,20 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 	[AE_SO_WEAPON_SET] = ROW("WEAPON SET", AE_SG_EQUIPMENT, 0, 0, 0, weapon_set_values, weapon_set_help),
 	[AE_SO_MAP_WEAPONS] = ROW("MAP WEAPONS", AE_SG_EQUIPMENT, 0, 0, 0, yes_no, map_weapons_help),
 	[AE_SO_GRENADES_ON_MAP] = ROW("GRENADES ON MAP", AE_SG_EQUIPMENT, 0, 0, 1, yes_no, map_grenades_help),
+	[AE_SO_PACK_BATTLE_RIFLE] = ROW("BATTLE RIFLE PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_br),
+	[AE_SO_PACK_SMG] = ROW("SMG PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_smg),
+	[AE_SO_PACK_SMG_SILENCED] = ROW("SILENCED SMG PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_smg_silenced),
+	[AE_SO_PACK_CARBINE] = ROW("CARBINE PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_carbine),
+	[AE_SO_PACK_AR_SILENCED] = ROW("SILENCED AR PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_ar_silenced),
+	[AE_SO_PACKS_ON_MAP] = ROW("PACK WEAPONS ON MAP", AE_SG_EQUIPMENT, 0, 0, 1, off_on, packs_on_map_help),
 	[AE_SO_STARTING_EQUIPMENT] = ROW("STARTING EQUIPMENT", AE_SG_EQUIPMENT, 0, 0, 0, equipment_values, equipment_help),
+	[AE_SO_STARTING_GRENADES] = ROW("STARTING GRENADES", AE_SG_EQUIPMENT, 0, 0, 1, frags_values, frags_help),
 	[AE_SO_LOADOUT] = ROW("LOADOUT", AE_SG_EQUIPMENT, 0, 0, 0, loadout_values, loadout_help),
-	[AE_SO_PRIMARY] = ROW("PRIMARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, weapon_values, primary_help),
-	[AE_SO_SECONDARY] = ROW("SECONDARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, weapon_values, secondary_help),
+	[AE_SO_PRIMARY] = ROW("PRIMARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, loadout_weapon_values, primary_help),
+	[AE_SO_SECONDARY] = ROW("SECONDARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, loadout_weapon_values, secondary_help),
 	[AE_SO_INFINITE_GRENADES] = ROW("INFINITE GRENADES", AE_SG_EQUIPMENT, 0, 0, 0, on_off, grenades_help),
 	[AE_SO_INFINITE_AMMO] = ROW("INFINITE AMMO", AE_SG_EQUIPMENT, 0, 0, 1, off_on, ammo_help),
+	[AE_SO_BOTTOMLESS_CLIP] = ROW("BOTTOMLESS CLIP", AE_SG_EQUIPMENT, 0, 0, 1, off_on, bottomless_help),
 
 	[AE_SO_VEHICLE_RESPAWN] = ROW("VEHICLE RESPAWN TIME", AE_SG_VEHICLES, 0, 0, 0, vehicle_respawn_values,
 		vehicle_respawn_help),
@@ -378,9 +413,25 @@ struct ae_setup_row const *ae_setup_row(int option)
 	return option >= 0 && option < AE_SETUP_OPTIONS && rows[option].label ? &rows[option] : NULL;
 }
 
+static char name_text[16];
+
+void ae_setup_name_set(const char *name)
+{
+	size_t length = name ? strlen(name) : 0;
+
+	if (length > sizeof(name_text) - 1)
+		length = sizeof(name_text) - 1;
+	if (length)
+		memcpy(name_text, name, length);
+	name_text[length] = 0;
+}
+
 const char *ae_setup_value_text(int option, int value_index)
 {
 	struct ae_setup_row const *row = ae_setup_row(option);
+
+	if (option == AE_SO_NAME && value_index == 0)
+		return name_text;
 
 	return row && value_index >= 0 && value_index < row->value_count ? row->values[value_index] : "";
 }

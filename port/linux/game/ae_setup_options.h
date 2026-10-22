@@ -24,7 +24,7 @@ enum ae_setup_option
 {
 	/* MATCH (the score to win is the mode's: one row per engine) */
 	AE_SO_KILLS_TO_WIN, AE_SO_CAPTURES_TO_WIN, AE_SO_HILL_SCORE, AE_SO_BALL_SCORE, AE_SO_LAPS_TO_WIN,
-	AE_SO_TIME_LIMIT, AE_SO_COUNTDOWN,
+	AE_SO_TIME_LIMIT, AE_SO_COUNTDOWN, AE_SO_NAME,
 	/* PLAYERS */
 	AE_SO_LIVES, AE_SO_RESPAWN_TIME, AE_SO_RESPAWN_GROWTH, AE_SO_SUICIDE_PENALTY, AE_SO_SHIELDS,
 	AE_SO_MAXIMUM_HEALTH, AE_SO_ACTIVE_CAMO, AE_SO_MOTION_SENSOR, AE_SO_SENSOR_RANGE, AE_SO_ODD_MAN_OUT,
@@ -32,8 +32,10 @@ enum ae_setup_option
 	/* TEAMS */
 	AE_SO_TEAM_PLAY, AE_SO_FRIENDLY_FIRE, AE_SO_BETRAYAL_PENALTY, AE_SO_FORCE_EVEN_TEAMS, AE_SO_FRIENDS_ON_SCREEN,
 	/* EQUIPMENT */
-	AE_SO_WEAPON_SET, AE_SO_MAP_WEAPONS, AE_SO_GRENADES_ON_MAP, AE_SO_STARTING_EQUIPMENT, AE_SO_LOADOUT,
-	AE_SO_PRIMARY, AE_SO_SECONDARY, AE_SO_INFINITE_GRENADES, AE_SO_INFINITE_AMMO,
+	AE_SO_WEAPON_SET, AE_SO_MAP_WEAPONS, AE_SO_GRENADES_ON_MAP,
+	AE_SO_PACK_BATTLE_RIFLE, AE_SO_PACK_SMG, AE_SO_PACK_SMG_SILENCED, AE_SO_PACK_CARBINE, AE_SO_PACK_AR_SILENCED,
+	AE_SO_PACKS_ON_MAP, AE_SO_STARTING_EQUIPMENT, AE_SO_STARTING_GRENADES, AE_SO_LOADOUT,
+	AE_SO_PRIMARY, AE_SO_SECONDARY, AE_SO_INFINITE_GRENADES, AE_SO_INFINITE_AMMO, AE_SO_BOTTOMLESS_CLIP,
 	/* VEHICLES (a side's set, then its counts; blue's in team games only) */
 	AE_SO_VEHICLE_RESPAWN, AE_SO_VEHICLE_SET_RED,
 	AE_SO_VEHICLE_COUNT_RED,                                   /* + kind */
@@ -56,6 +58,12 @@ enum ae_setup_option
 	AE_SO_NHE_MODE, AE_SO_NHE_EXTRAS,
 	AE_SETUP_OPTIONS
 };
+
+/* the weapon packs' rows are AE_SO_PACK_FIRST + (slot - 1): slots as ae_weapon_slots.h numbers them */
+#define AE_SO_PACK_FIRST AE_SO_PACK_BATTLE_RIFLE
+enum { AE_SETUP_PACKS = 5 };
+/* PRIMARY / SECONDARY: values 0-9 are the game's weapons, then one per pack slot (AE_SETUP_WEAPON_PACK_FIRST + slot - 1) */
+enum { AE_SETUP_WEAPON_STOCK = 10, AE_SETUP_WEAPON_PACK_FIRST = 10 };
 
 /* the engines as game_engine.h numbers them (the glue checks): ctf 1, slayer 2, oddball 3, king 4, race 5 */
 enum { AE_SETUP_ENGINE_CTF = 1, AE_SETUP_ENGINE_SLAYER = 2, AE_SETUP_ENGINE_ODDBALL = 3, AE_SETUP_ENGINE_KING = 4,
@@ -89,6 +97,8 @@ struct ae_setup_row
 
 /* NULL for a number out of range */
 struct ae_setup_row const *ae_setup_row(int option);
+/* NAME's value text: the edit copy's name (the model keeps a copy; the screen sets it each frame) */
+void ae_setup_name_set(const char *name);
 /* "" out of range */
 const char *ae_setup_value_text(int option, int value_index);
 const char *ae_setup_help(int option, int value_index);
