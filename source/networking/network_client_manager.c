@@ -3431,27 +3431,59 @@ boolean network_game_client_advertised_game_in_progress(
 		(network_game_client_advertised_versions[game_index].flags & HALO_PORT_ADVERTISED_IN_PROGRESS_FLAG) != 0;
 }
 
-boolean network_game_client_join_first_available_game(
+/* the searching client, ready to join (none joining or connected), or NULL */
+static struct network_game_client *network_game_client_searching(
 	void)
 {
 	struct network_game_client *client = global_network_game_client_get();
-	long game_index;
 
 	if (!client || client->state != _network_game_client_state_searching || client->join_in_progress ||
 		!client->connection || network_connection_connected(client->connection))
 	{
-		return FALSE;
+		return NULL;
 	}
+	return client;
+}
+
+/* whether the advertised game is live, of this platform and open */
+static boolean network_game_client_game_listed(
+	struct network_advertised_game *game)
+{
+	return network_game_client_advertised_game_is_valid(game) &&
+		game->platform == network_game_get_local_platform() && game->open;
+}
+
+/* the join of an advertised game: the transport to its host, then the join's request */
+static boolean network_game_client_join_advertised(
+	struct network_game_client *client,
+	struct network_advertised_game *game)
+{
+	struct transport_address address = { { { 0 } } };
+	struct network_join_parameters join_parameters;
+
+	csmemset(&join_parameters, 0, sizeof(join_parameters));
+	transport_client_start((XNADDR const *)&game->xnaddr, (XNKEY const *)&game->key,
+		(XNKID const *)&game->key_id, NETWORK_GAME_SERVER_PORT, &address);
+	if (!address.address.long_words[0] || !address.port)
+		return FALSE;
+	network_game_generate_join_game_token(join_parameters.join_token);
+	return network_game_client_initiate_join_game(client, game, &join_parameters, &address);
+}
+
+boolean network_game_client_join_first_available_game(
+	void)
+{
+	struct network_game_client *client = network_game_client_searching();
+	long game_index;
+
+	if (!client)
+		return FALSE;
 	for (game_index = 0; game_index < MAXIMUM_NETWORK_ADVERTISED_GAMES; game_index++)
 	{
 		struct network_advertised_game *game = &client->available_games[game_index];
 
-		if (network_game_client_advertised_game_is_valid(game) &&
-			game->platform == network_game_get_local_platform() && game->open)
+		if (network_game_client_game_listed(game))
 		{
-			struct transport_address address = { { { 0 } } };
-			struct network_join_parameters join_parameters;
-
 			/* (the automated tests try every frame: told once until the client resets) */
 			if (!network_game_client_advertised_game_compatible(client, game,
 				!network_game_client_incompatibility_told))
@@ -3459,17 +3491,60 @@ boolean network_game_client_join_first_available_game(
 				network_game_client_incompatibility_told = TRUE;
 				return FALSE;
 			}
-
-			csmemset(&join_parameters, 0, sizeof(join_parameters));
-			transport_client_start((XNADDR const *)&game->xnaddr, (XNKEY const *)&game->key,
-				(XNKID const *)&game->key_id, NETWORK_GAME_SERVER_PORT, &address);
-			if (!address.address.long_words[0] || !address.port)
-				return FALSE;
-			network_game_generate_join_game_token(join_parameters.join_token);
-			return network_game_client_initiate_join_game(client, game, &join_parameters, &address);
+			return network_game_client_join_advertised(client, game);
 		}
 	}
 	return FALSE;
+}
+
+/* (the header's count is this file's) */
+typedef char network_game_client_available_games_check[
+	NETWORK_GAME_CLIENT_AVAILABLE_GAMES == MAXIMUM_NETWORK_ADVERTISED_GAMES ? 1 : -1];
+
+boolean network_game_client_available_game_read(
+	long game_index,
+	struct network_available_game *game)
+{
+	struct network_game_client *client = global_network_game_client_get();
+	struct network_advertised_game *advertised;
+
+	csmemset(game, 0, sizeof(*game));
+	if (!client || client->state != _network_game_client_state_searching || game_index < 0 ||
+		game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES)
+	{
+		return FALSE;
+	}
+	advertised = &client->available_games[game_index];
+	if (!network_game_client_advertised_game_is_valid(advertised) ||
+		advertised->platform != network_game_get_local_platform())
+	{
+		return FALSE;
+	}
+	csmemcpy(game->name, advertised->game_name, sizeof(game->name));
+	game->name[NUMBEROF(game->name) - 1] = 0;
+	csmemcpy(game->map, advertised->map.name, sizeof(game->map));
+	game->map[sizeof(game->map) - 1] = 0;
+	game->engine = advertised->engine_type;
+	game->players = (short)advertised->player_count;
+	game->maximum_players = advertised->maximum_player_count;
+	game->open = advertised->open;
+	game->teams = advertised->has_teams;
+	game->in_progress = network_game_client_advertised_game_in_progress(client, advertised);
+	game->join_state = network_game_client_advertised_game_join_state(client, advertised, &game->version);
+	return TRUE;
+}
+
+boolean network_game_client_join_available_game(
+	long game_index)
+{
+	struct network_game_client *client = network_game_client_searching();
+
+	if (!client || game_index < 0 || game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES ||
+		!network_game_client_game_listed(&client->available_games[game_index]))
+	{
+		return FALSE;
+	}
+	return network_game_client_join_advertised(client, &client->available_games[game_index]);
 }
 
 /* ... and puts this machine's players on a team (a team game needs both

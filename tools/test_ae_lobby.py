@@ -98,7 +98,8 @@ HOST = "127.0.0.200"
 CLIENT = "127.0.0.201"
 
 
-def play_pair(cfg, out, name, host_env, client_env, seconds=100, join_delay=6):
+def play_pair(cfg, out, name, host_env, client_env, seconds=100, join_delay=6, client_input=None,
+              client_shots=300):
     """two machines in one network namespace (tools/ae_test/handshake.py's way, with AE's drives instead of
     network_test): (host result, client result, host text, client text)"""
     harness = menus.harness
@@ -107,7 +108,9 @@ def play_pair(cfg, out, name, host_env, client_env, seconds=100, join_delay=6):
                                "expect": {"ticks": 0}})
     client = harness.parse_spec({"name": "client", "build": menus.build(), "address": CLIENT, "broadcast": HOST,
                                  "exit_after": seconds - join_delay, "delay": join_delay, "window": "1280x720",
-                                 "screenshots": 300, "env": client_env, "expect": {"ticks": 0}})
+                                 "screenshots": client_shots, "env": client_env, "expect": {"ticks": 0}})
+    if client_input:
+        client["test_input"] = client_input
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
     harness.OWN_WORK.add(work)
@@ -150,6 +153,19 @@ def test_join_and_leave(cfg):
     host_players = roster_players(host)
     assert any(p[2] and p[3] for p in host_players), host_players
 
+
+def test_lan_games_join(cfg):
+    """an AE host (92) and a player at AE's main menu: MULTIPLAYER > LAN GAMES lists the host's game, A joins it, and
+    the joiner's lobby opens (the host waits 30 s for the second player, then plays)"""
+    out = menus.out_dir(cfg, "lobby-lan-games")
+    host_r, client_r, host, client = play_pair(
+        cfg, out, "pair", {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "92"},
+        {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "0"}, join_delay=2, client_shots=60,
+        client_input=menus.menu_input("pad:a", "pad:down", "pad:down", "pad:down", "pad:a", "wait", "wait", "pad:a"))
+    assert host_r.get("status") == "PASS", host_r.get("why")
+    in_order(client, ["ae browser: open (lan games)", "ae browser: join '", "ae browser: joined",
+                      "ae create game: lobby: open"])
+    in_order(host, ["ae lobby: hosting (LAN)", "ae lobby: roster 2"])
 
 def test_local_refuses(cfg):
     """a LOCAL host (93) with a bot: nobody joins (the roster stays 1, the bot tool joins nothing)"""

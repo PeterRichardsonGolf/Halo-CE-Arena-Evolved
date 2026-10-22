@@ -53,7 +53,8 @@ typedef char ae_lobby_players_match[AE_LOBBY_MAXIMUM_PLAYERS == HALO_PORT_MAXIMU
 
 /* how long a join searches the LAN before it gives up */
 enum { JOIN_SEARCH_MS = 10000, JOIN_VERSION_MS = 3000, JOIN_CONNECT_MS = 15000 };
-enum { JOIN_NONE, JOIN_SEARCHING, JOIN_INVITE, JOIN_CONNECTING, JOIN_JOINED, JOIN_FAILED };
+/* (JOIN_LISTING: LAN GAMES' search, no game joined until one is picked) */
+enum { JOIN_NONE, JOIN_SEARCHING, JOIN_INVITE, JOIN_CONNECTING, JOIN_JOINED, JOIN_FAILED, JOIN_LISTING };
 
 static struct
 {
@@ -365,6 +366,68 @@ struct ae_result ae_lobby_join_first_available(void)
 	if (!join_client(JOIN_SEARCHING))
 		return lobby.join_failure;
 	platform_log("ae lobby: searching the LAN");
+	return succeeded();
+}
+
+struct ae_result ae_lobby_lan_search(void)
+{
+	if (!main_menu_is_active())
+		return failed("lan search", AE_STR_ERR_IN_GAME, NULL);
+	if (!join_client(JOIN_LISTING))
+		return lobby.join_failure;
+	platform_log("ae lobby: listing the LAN's games");
+	return succeeded();
+}
+
+int ae_lobby_lan_searching(void)
+{
+	return lobby.join == JOIN_LISTING && global_network_game_client_get() != NULL;
+}
+
+short ae_lobby_lan_games(struct ae_lan_game *games, short maximum)
+{
+	struct network_available_game game;
+	short count = 0;
+	long index;
+
+	if (!ae_lobby_lan_searching())
+		return 0;
+	for (index = 0; index < NETWORK_GAME_CLIENT_AVAILABLE_GAMES && count < maximum; index++)
+	{
+		struct ae_lan_game *out = &games[count];
+
+		if (!network_game_client_available_game_read(index, &game) || !game.open)
+			continue;
+		memset(out, 0, sizeof(*out));
+		out->index = (short)index;
+		/* (the game's names are 16-bit: -fshort-wchar) */
+		ae_lobby_utf16_to_utf8(out->name, sizeof(out->name), (const unsigned short *)game.name, NUMBEROF(game.name));
+		snprintf(out->map, sizeof(out->map), "%s", game.map);
+		out->engine = game.engine;
+		out->players = game.players;
+		out->maximum_players = game.maximum_players;
+		out->teams = game.teams;
+		out->in_progress = game.in_progress;
+		out->join_state = game.join_state;
+		out->version = game.version;
+		count++;
+	}
+	return count;
+}
+
+struct ae_result ae_lobby_lan_join(short index)
+{
+	struct network_available_game game;
+
+	if (!ae_lobby_lan_searching() || !network_game_client_available_game_read(index, &game) || !game.open)
+		return failed("lan join", AE_STR_ERR_NO_GAME, NULL);
+	if (game.join_state != HALO_PORT_JOIN_OK)
+		return failed_version("lan join", game.version, delta_legacy_announce());
+	if (!network_game_client_join_available_game(index))
+		return failed("lan join", AE_STR_ERR_NO_GAME, NULL);
+	lobby.join = JOIN_CONNECTING;
+	lobby.join_since = system_milliseconds();
+	platform_log("ae lobby: joining a LAN game (%d)", (int)index);
 	return succeeded();
 }
 

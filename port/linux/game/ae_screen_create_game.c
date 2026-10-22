@@ -35,6 +35,7 @@ Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "ho
 #include "../src/ae_draw.h"
 #include "../src/ae_platform.h"
 #include "ae_glue_lobby.h"
+#include "ae_header_lines.h"
 #include "ae_glue_setup_maps.h"
 #include "ae_glue_setup_options.h"
 #include "ae_hooks.h"
@@ -124,6 +125,8 @@ static struct
 	int options_open;          /* GAME OPTIONS opened from here: its changes applied when it closes */
 	int leaving;
 	int joiner;                /* joined another's game by invite: the roster, map and gametype only */
+	char joined_how[32];       /* (a joiner's crumb) how: "JOINED BY INVITE", the browser's own words */
+	int from_browser;          /* opened by SERVER BROWSER / LAN GAMES (ae_screen_browser.c): leaving goes back to it */
 	char invite[160];          /* the hosted game's invite link (ONLINE), "" none yet */
 	char invite_shown[48];
 } lobby;
@@ -730,6 +733,16 @@ static int create_push(void)
 	return 1;
 }
 
+int ae_screen_create_game_lobby_joined(const char *how)
+{
+	lobby_open(1);
+	if (!ae_ui_holds(&lobby))
+		return 0;
+	snprintf(lobby.joined_how, sizeof(lobby.joined_how), "%s", how ? how : "");
+	lobby.from_browser = 1;
+	return 1;
+}
+
 int ae_screen_create_game_from_menu(int join)
 {
 	char const *const *names = NULL;
@@ -785,9 +798,17 @@ static void lobby_rows(void)
 	/* (a joiner: the host's map and gametype, nothing to change) */
 	if (lobby.joiner)
 	{
-		flow->rows[count++] = (struct ae_flow_row){ ROW_INFO, -1, "MAP", lobby.have_roster ? lobby.roster.map : "", NULL };
-		flow->rows[count++] = (struct ae_flow_row){ ROW_INFO, -1, "GAMETYPE", lobby.have_roster ? lobby.roster.gametype : "",
-			NULL };
+		wchar_t map[64];
+
+		/* (the map by its name, not its file's: "BLOOD GULCH"; a gametype the client is not told yet: the host's) */
+		map[0] = 0;
+		if (lobby.have_roster && lobby.roster.map[0])
+			ae_scoreboard_header_map_name(lobby.roster.map, map, NUMBEROF(map));
+		ae_lobby_utf16_to_utf8(flow->value_texts[0], sizeof(flow->value_texts[0]), (const unsigned short *)map,
+			NUMBEROF(map));
+		flow->rows[count++] = (struct ae_flow_row){ ROW_INFO, -1, "MAP", flow->value_texts[0], NULL };
+		flow->rows[count++] = (struct ae_flow_row){ ROW_INFO, -1, "GAMETYPE", lobby.have_roster &&
+			lobby.roster.gametype[0] ? lobby.roster.gametype : "THE HOST'S", NULL };
 		flow->rows[count++] = (struct ae_flow_row){ ROW_INFO, -1, "WAITING FOR THE HOST TO START", NULL,
 			"The host picks the map and rules and starts the game. B leaves it." };
 		flow->count = count;
@@ -882,10 +903,11 @@ static void leave_picked(short choice, void *context)
 	lobby.leaving = 1;
 	ae_lobby_leave();
 	ae_ui_remove(&lobby);
-	/* (back to CREATE GAME: under the lobby still, or opened again after a game took it off) */
+	/* (back to CREATE GAME: under the lobby still, or opened again after a game took it off; a browser's join goes
+	back to the browser under it) */
 	create.start_step = START_IDLE;
 	create.starting = 0;
-	if (!ae_ui_holds(&create))
+	if (!lobby.from_browser && !ae_ui_holds(&create))
 		create_push();
 }
 
@@ -989,7 +1011,8 @@ static void lobby_draw(struct ae_screen *instance)
 	ae_draw_view_full();
 	ae_flow_full_density(flow);
 	lobby_rows();
-	snprintf(crumb, sizeof(crumb), "%s", lobby.joiner ? "JOINED BY INVITE" : network_names[create.network]);
+	snprintf(crumb, sizeof(crumb), "%s", !lobby.joiner ? network_names[create.network] : lobby.joined_how[0] ?
+		lobby.joined_how : "JOINED BY INVITE");
 	ae_flow_title(flow, "LOBBY", crumb);
 	ae_flow_draw_rows(flow, flow->frame.rect.width * AE_FLOW_ROWS_WIDTH);
 	roster_x = flow->frame.rect.x + flow->frame.rect.width * AE_FLOW_PANEL_X;

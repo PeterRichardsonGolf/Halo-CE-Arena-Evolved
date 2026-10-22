@@ -45,6 +45,24 @@ went: 1 joined ("ae lobby: joined"), 0 still going, -1 failed (the reason: no ga
 another network version with both numbers (3 s when only such hosts are heard), the lobby full or closed to this
 machine), -2 no join (none tried, or left) */
 struct ae_result ae_lobby_join_first_available(void);
+/* (AE's LAN GAMES) this machine searching the LAN, joining nothing yet: the games it hears read with ae_lobby_lan_games,
+one joined with ae_lobby_lan_join (then ae_lobby_join_state, as any join); ae_lobby_leave ends the search */
+struct ae_lan_game
+{
+	short index;                /* the client's own (ae_lobby_lan_join's) */
+	char name[48], map[128];    /* UTF-8; map: the scenario's name or path, as advertised */
+	short engine, players, maximum_players;
+	int teams, in_progress;
+	int join_state;             /* HALO_PORT_JOIN_* (halo_port_limits.h): 0 joinable */
+	unsigned int version;
+};
+enum { AE_LAN_GAMES = 9 };
+struct ae_result ae_lobby_lan_search(void);
+/* whether the LAN search goes on (none of a join under way) */
+int ae_lobby_lan_searching(void);
+/* the games heard now (open ones of this platform), at most maximum; their count */
+short ae_lobby_lan_games(struct ae_lan_game *games, short maximum);
+struct ae_result ae_lobby_lan_join(short index);
 /* the game an invite link or code leads to (pasted text, trimmed), as upstream's Server Browser joins one
 (browser_screen.c: p2p_join_invite, then network_game_client_join_invite_host each frame): its own host's game, never
 another. Reasons: internet play is off, not an invite, can't be joined from this version, the host did not answer

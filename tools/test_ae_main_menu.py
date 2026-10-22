@@ -48,6 +48,10 @@ CASES = (
     ("profiles", "1920x1080", 100, ("pad:down", "pad:down", "pad:down", "pad:a")),
     ("profiles-new", "1920x1080", 100, ("down", "down", "down", "a", "wait", "2:a", "2:a", "2:right", "2:a",
                                         "2:start", "wait", "a", "right"), 8, 40),
+    # (SERVER BROWSER: the next filter (RB), a refresh (X); LAN GAMES: searching, then B ends the search)
+    ("browser", "1920x1080", 100, ("pad:a", "pad:down", "pad:down", "pad:a", "pad:rb", "pad:x")),
+    ("lan", "1920x1080", 100, ("pad:a", "pad:down", "pad:down", "pad:down", "pad:a")),
+    ("lan-back", "1920x1080", 100, ("pad:a", "pad:down", "pad:down", "pad:down", "pad:a", "wait", "pad:b")),
 )
 
 
@@ -120,6 +124,18 @@ def test_profiles(runs):
     glue = lines(runs["profiles-new"][1], "ae profiles: ")
     assert any(line.startswith("player 1 uses ") for line in glue), glue
     assert any(line.endswith(" colour 1 saved") for line in glue), glue
+
+
+def test_browsers(runs):
+    said = lines(runs["browser"][1], "ae browser: ")
+    assert "open (server browser)" in said, said
+    assert any(line.startswith("filter NOT FULL: ") for line in said), said
+    assert "refresh" in said, said
+    assert "open (lan games)" in lines(runs["lan"][1], "ae browser: ")
+    assert "listing the LAN's games" in lines(runs["lan"][1], "ae lobby: ")
+    said = lines(runs["lan-back"][1], "ae browser: ")
+    assert said[-1:] == ["closed"], said
+    assert "left" in lines(runs["lan-back"][1], "ae lobby: ")
 
 
 if __name__ == "__main__":

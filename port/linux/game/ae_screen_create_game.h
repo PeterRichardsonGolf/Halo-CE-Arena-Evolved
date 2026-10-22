@@ -16,5 +16,8 @@ int ae_screen_create_game_open(void);
 /* opened from AE's MULTIPLAYER (the copy open stays, else the last used gametype's); join: its JOIN WITH INVITE at
 once. B goes back to MULTIPLAYER */
 int ae_screen_create_game_from_menu(int join);
+/* the LOBBY of a game this machine has joined, player 1 in (SERVER BROWSER / LAN GAMES, ae_screen_browser.c); how:
+its crumb ("JOINED ON YOUR NETWORK"). Leaving it goes back to the screen under it; 0 when the stack is full */
+int ae_screen_create_game_lobby_joined(const char *how);
 
 #endif

@@ -4,8 +4,8 @@ AE_SCREEN_MAIN_MENU.C
 AE's MAIN MENU and MULTIPLAYER (ae_screen_main_menu.h; the mockup's boards 5 and 6,
 https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD). Rows on the left (ae_setup_flow.h), on the right player 1's card,
 "START to add a player" and the last game; the prompts. QUIT asks first. MULTIPLAYER's CREATE GAME and JOIN WITH INVITE
-open CREATE GAME (ae_screen_create_game.h) over it; SERVER BROWSER and LAN GAMES, and the main menu's SETTINGS,
-are disabled with why until their AE screens are built; CAMPAIGN and PROFILES open theirs.
+open CREATE GAME (ae_screen_create_game.h) over it, SERVER BROWSER and LAN GAMES theirs (ae_screen_browser.h); the
+main menu's SETTINGS is disabled with why until its AE screen is built; CAMPAIGN and PROFILES open theirs.
 
 Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 */
@@ -20,6 +20,7 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 #include "../src/ae_draw.h"
 #include "ae_glue_profiles.h"
 #include "ae_hooks.h"
+#include "ae_screen_browser.h"
 #include "ae_screen_campaign.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_main_menu.h"
@@ -86,9 +87,10 @@ static void rows_multiplayer(void)
 	flow->rows[count++] = (struct ae_flow_row){ ROW_JOIN, -1, "JOIN WITH INVITE", NULL,
 		"Joins the game whose invite link or code is on your clipboard.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_BROWSER, -1, "SERVER BROWSER", NULL,
-		"The internet's games, refreshed in place.", NOT_YET };
+		"The internet's games, refreshed in place.",
+		ae_screen_browser_available(AE_BROWSER_INTERNET) ? NULL : "NOT IN THIS BUILD" };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_LAN, -1, "LAN GAMES", NULL,
-		"Games on your network, no internet needed.", NOT_YET };
+		"Games on your network, no internet needed.", NULL };
 	flow->count = count;
 }
 
@@ -235,6 +237,11 @@ static void accept(int multiplayer, short row)
 		break;
 	case ROW_PROFILES:
 		if (ae_screen_profiles_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
+	case ROW_BROWSER:
+	case ROW_LAN:
+		if (ae_screen_browser_open(r->kind == ROW_LAN ? AE_BROWSER_LAN : AE_BROWSER_INTERNET))
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
 	case ROW_CREATE:

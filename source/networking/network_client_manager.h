@@ -59,6 +59,33 @@ short network_game_client_advertised_game_join_state(
 	struct network_game_client *client,
 	struct network_advertised_game const *game,
 	unsigned int *version);
+/* port (AE's LAN GAMES, port/linux/game/ae_glue_lobby.c): the games the
+searching client hears, by their index (0 to
+NETWORK_GAME_CLIENT_AVAILABLE_GAMES - 1), in plain words; join_state is
+network_game_client_advertised_game_join_state's (HALO_PORT_JOIN_*) */
+enum { NETWORK_GAME_CLIENT_AVAILABLE_GAMES = 9 };
+struct network_available_game
+{
+	wchar_t name[16];
+	char map[0x80];
+	short engine;
+	short players;
+	short maximum_players;
+	boolean open;
+	boolean teams;
+	boolean in_progress;
+	short join_state;
+	unsigned int version;
+};
+/* FALSE when no live game of this platform is at the index, or no client
+searches */
+boolean network_game_client_available_game_read(
+	long game_index,
+	struct network_available_game *game);
+/* joins the game at the index, as network_game_client_join_first_available_game
+joins the first (no message: the caller checked join_state) */
+boolean network_game_client_join_available_game(
+	long game_index);
 #ifdef HALO_GAME_BROWSER
 /* the advertisement of the game an invite's host advertises (the game
 list's probe, server/src/probe.c) */
