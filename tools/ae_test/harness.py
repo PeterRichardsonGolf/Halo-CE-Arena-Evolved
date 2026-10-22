@@ -649,7 +649,7 @@ def spec_kind(spec):
 def spec_env(spec, data_root, save_root, shots_dir=None):
     """the environment of one game (without the inherited one)"""
     env = {
-        "SDL_AUDIO_DRIVER": "dummy",
+        "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0",
         "SDL_GAMECONTROLLER_IGNORE_DEVICES": "all",
         "HALO_HIDDEN_WINDOW": "1",
         "HALO_NET_ONLINE": "false",

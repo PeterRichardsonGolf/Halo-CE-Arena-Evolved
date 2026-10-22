@@ -91,7 +91,7 @@ def _game(tmp_path, case, seconds, test_input, env=None):
     (out / "data" / "maps").symlink_to(data / "maps")
     (out / "save").mkdir()
     run_env = dict(os.environ, HALO_DATA_ROOT=str(out / "data"), HALO_SAVE_ROOT=str(out / "save"),
-                   HALO_NET_ONLINE="false", HALO_NET_ADDRESS="127.0.0.181", SDL_AUDIO_DRIVER="dummy",
+                   HALO_NET_ONLINE="false", HALO_NET_ADDRESS="127.0.0.181", SDL_AUDIO_DRIVER="dummy", HALO_ARENA_MENUS="0",
                    HALO_HIDDEN_WINDOW="1", HALO_EXIT_AFTER=str(seconds), HOME=str(out),
                    HALO_NETWORK_TEST=f"host:{CE_MAP}", HALO_NETWORK_TEST_START="3",
                    HALO_TEST_INPUT="menu:" + " ".join(["wait"] * LEAD_IN + test_input))

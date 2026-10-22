@@ -82,7 +82,7 @@ def guest_root(root, data):
 
 
 def game_env(root, address, peer, seconds, extra):
-    env = {"SDL_AUDIO_DRIVER": "dummy", "SDL_GAMECONTROLLER_IGNORE_DEVICES": "all", "HALO_HIDDEN_WINDOW": "1",
+    env = {"SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0", "SDL_GAMECONTROLLER_IGNORE_DEVICES": "all", "HALO_HIDDEN_WINDOW": "1",
            "HALO_NET_ONLINE": "false", "HALO_NET_ADDRESS": address, "HALO_NET_BROADCAST": peer,
            "HALO_UPDATE_AUTO": "false", "HALO_UPDATE_ANSWER": "no", "HALO_DATA_ROOT": str(root),
            "HALO_SAVE_ROOT": str(root / "save"), "HALO_EXIT_AFTER": str(seconds), "HALO_MCC_USE": "never",

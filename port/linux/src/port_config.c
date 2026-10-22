@@ -239,11 +239,11 @@ static const struct config_setting config_settings[] =
 		"The menus: \"pc\" (the default) for the PC version's main menu\n"
 		"(port/assets/menus, and a menus folder here for your own), where the\n"
 		"Arena Evolved settings are; \"xbox\" for the Xbox's (with Online Games)." },
-	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */
+	{ "display.arena_menus", _config_boolean, "true", "HALO_ARENA_MENUS", _environment_value, /* AE hook */
 		_platform_all,
-		"Arena Evolved's own menus (experimental, not finished): true shows\n"
-		"them in place of the game's; false keeps the menus display.menus\n"
-		"picks. Read at start-up." },
+		"Arena Evolved's own menus (the default since 0.3.7): true shows them in\n"
+		"place of the game's; false keeps the menus display.menus picks (the\n"
+		"older PC or Xbox menus). Read at start-up." },
 	{ "display.arena_menus_scale", _config_integer, "100", "HALO_ARENA_MENUS_SCALE", _environment_value, /* AE hook */
 		_platform_all,
 		"Arena Evolved's menus: their size, 90, 100, 115 or 130 (percent)." },

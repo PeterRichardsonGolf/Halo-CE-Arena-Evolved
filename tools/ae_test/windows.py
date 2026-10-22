@@ -184,7 +184,7 @@ def game_env(root, run_id, a):
         "HALO_SAVE_ROOT": save_root(root, run_id, a),
         "HALO_DISPLAY_MODE": "windowed",
         "HALO_WINDOW_SIZE": a.window,
-        "SDL_AUDIO_DRIVER": "dummy",
+        "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0",
         "HALO_NET_ONLINE": "false",
         "HALO_UPDATE_AUTO": "false",
         "HALO_EXIT_AFTER": str(a.exit_after),

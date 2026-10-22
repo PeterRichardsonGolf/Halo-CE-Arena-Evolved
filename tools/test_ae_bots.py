@@ -103,7 +103,7 @@ def _play(tmp_path, test, seconds, layouts=None, **settings):
             (data / "maps" / "layouts" / f"{name}.txt").write_text(text)
     game = tmp_path / "halo"
     shutil.copy(BUILD / "halo", game)
-    env = {**os.environ, "SDL_VIDEODRIVER": "offscreen", "SDL_AUDIO_DRIVER": "dummy", "SDL_AUDIODRIVER": "dummy",
+    env = {**os.environ, "SDL_VIDEODRIVER": "offscreen", "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0", "SDL_AUDIODRIVER": "dummy",
            "HALO_DATA_ROOT": str(data), "HALO_SAVE_ROOT": str(save), "HALO_HIDDEN_WINDOW": "1",
            "HALO_FULLSCREEN": "0", "HALO_NO_VSYNC": "1", "HALO_NO_AUDIO": "1", "HALO_UPDATE_AUTO": "false",
            "HALO_NET_ONLINE": "false", "HALO_NET_ADDRESS": "127.0.0.1", "HALO_NET_BROADCAST": "127.255.255.255",

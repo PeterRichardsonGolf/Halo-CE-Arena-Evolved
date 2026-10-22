@@ -144,7 +144,7 @@ def _game(tmp_path, case, seconds, env, data=None, keep_config=False):
     if not keep_config and config.exists():
         config.unlink()
     run_env = dict(os.environ, HALO_DATA_ROOT=str(out / "data"), HALO_SAVE_ROOT=str(out / "save"),
-                   HALO_NET_ONLINE="false", HALO_NET_ADDRESS="127.0.0.178", SDL_AUDIO_DRIVER="dummy",
+                   HALO_NET_ONLINE="false", HALO_NET_ADDRESS="127.0.0.178", SDL_AUDIO_DRIVER="dummy", HALO_ARENA_MENUS="0",
                    HALO_HIDDEN_WINDOW="1", HALO_EXIT_AFTER=str(seconds), HOME=str(out))
     for name in ("XDG_DATA_HOME", "HALO_MCC_PATH", "HALO_MCC_USE"):
         run_env.pop(name, None)

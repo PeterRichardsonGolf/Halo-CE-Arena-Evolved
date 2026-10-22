@@ -206,7 +206,7 @@ def _game(tmp_path, case, game_map, seconds, env):
     if config.exists():
         config.unlink()
     run_env = dict(os.environ, HALO_DATA_ROOT=str(out / "data"), HALO_SAVE_ROOT=str(out / "save"),
-                   HALO_NET_ONLINE="false", HALO_NET_ADDRESS="127.0.0.179", SDL_AUDIO_DRIVER="dummy",
+                   HALO_NET_ONLINE="false", HALO_NET_ADDRESS="127.0.0.179", SDL_AUDIO_DRIVER="dummy", HALO_ARENA_MENUS="0",
                    HALO_HIDDEN_WINDOW="1", HALO_EXIT_AFTER=str(seconds), HOME=str(out),
                    HALO_NETWORK_TEST=f"host:{game_map}:slayer", HALO_NETWORK_TEST_FLAGS=TRAINING_FLAGS,
                    HALO_NETWORK_TEST_START="3", HALO_WAYPOINT_LOG="1")

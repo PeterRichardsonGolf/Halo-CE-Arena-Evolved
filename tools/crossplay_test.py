@@ -165,7 +165,7 @@ class Copy:
             "HALO_NET_ALLOW_UPNP": "false",
             "HALO_DEDICATED_PUBLIC": "false",
             "SDL_VIDEO_DRIVER": "dummy",
-            "SDL_AUDIO_DRIVER": "dummy",
+            "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0",
         }
         if "LD_LIBRARY_PATH" in os.environ:
             self.env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]

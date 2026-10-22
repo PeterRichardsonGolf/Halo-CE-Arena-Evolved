@@ -451,7 +451,7 @@ def copy_environment(copy, address, broadcast, test, seed, args, extra):
         "HALO_TEST_INPUT": f"bot:{seed}",
         # (a safety: the tool stops the copies itself)
         "HALO_EXIT_AFTER": str(args.start + args.skip + args.seconds + 120),
-        "SDL_AUDIO_DRIVER": "dummy",
+        "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0",
     })
     if args.events:
         # hits every few seconds (each machine's player the next player)

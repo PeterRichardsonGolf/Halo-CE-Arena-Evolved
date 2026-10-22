@@ -225,7 +225,7 @@ def _game(tmp_path, case, size, seconds, presses, menus, env=None, menus_files=N
         (copy / "menus" / name).write_text(text)
     run_env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(out), "HALO_DATA_ROOT": str(out / "data"),
                "HALO_SAVE_ROOT": str(out / "save"), "HALO_NET_ONLINE": "false", "HALO_NET_ADDRESS": "127.0.0.1",
-               "SDL_AUDIO_DRIVER": "dummy", "HALO_HIDDEN_WINDOW": "1", "HALO_UPDATE_AUTO": "false",
+               "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0", "HALO_HIDDEN_WINDOW": "1", "HALO_UPDATE_AUTO": "false",
                "HALO_EXIT_AFTER": str(seconds), "HALO_DISPLAY_MODE": "windowed", "HALO_WINDOW_SIZE": size,
                "HALO_SCREENSHOT_FORMAT": "png", "HALO_MENUS": menus,
                "HALO_TEST_INPUT": "menu:" + " ".join(["wait"] * LEAD_IN + presses)}
@@ -395,7 +395,7 @@ def test_pointer_moving_and_clicking_through_the_switch(tmp_path):
         time.sleep(1.5)
         env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(out), "DISPLAY": display,
                "HALO_DATA_ROOT": str(out / "data"), "HALO_SAVE_ROOT": str(out / "save"), "HALO_NET_ONLINE": "false",
-               "HALO_NET_ADDRESS": "127.0.0.1", "SDL_AUDIO_DRIVER": "dummy", "HALO_UPDATE_AUTO": "false",
+               "HALO_NET_ADDRESS": "127.0.0.1", "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0", "HALO_UPDATE_AUTO": "false",
                "SDL_GAMECONTROLLER_IGNORE_DEVICES": "all", "HALO_EXIT_AFTER": "40", "HALO_DISPLAY_MODE": "windowed",
                "HALO_WINDOW_SIZE": "1280x720", "HALO_MENUS": "pc"}
         game = subprocess.Popen(["timeout", "130", "./halo"], cwd=copy, env=env, stdout=subprocess.DEVNULL,
