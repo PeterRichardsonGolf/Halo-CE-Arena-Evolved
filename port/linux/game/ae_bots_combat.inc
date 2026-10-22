@@ -162,7 +162,8 @@ static struct weapon_trigger_definition *ae_bots_fight_trigger(long weapon_index
 - WEAPON RANGE: a shotgun's or a flamethrower's target out of its reach is not fired at;
 - DESCOPE REFLEX (NORMAL and up): a weapon true only zoomed (the sniper rifle) is zoomed at a target past 6 units; a
   hit knocks the zoom out, and the bot zooms again after its level's moment, not firing past 10 units before;
-- SCOPED RIFLE (NORMAL and up): the carbine is zoomed at a target past half its aim assist's reach, as the DESCOPE
+- SCOPED RIFLE (NORMAL and up): the pack's battle rifle and carbine are zoomed at a target past half their aim
+  assist's reach, as the DESCOPE
   REFLEX zooms, but fired unzoomed while the bot waits to zoom again;
 - PRECISION PACING (NORMAL and up): a precision weapon that blooms (the pistol; held in bursts, as its trigger is
   not latched) is not fired at range while its error is over the level's limit, for a few ticks at most. */

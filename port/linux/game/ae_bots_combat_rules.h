@@ -190,11 +190,12 @@ int ae_bots_combat_zooms(int level, float distance);
 long ae_bots_combat_rescope_ticks(int level, float random);
 int ae_bots_combat_descoped_holds_fire(float distance);
 
-/* SCOPED RIFLE (NORMAL and up): a rifle that bots zoom at range though its shots are as true unzoomed (the carbine:
-ae_bots_combat_scoped_rifle) is zoomed at a target past half its aim assist's reach unzoomed, where that aim assist
+/* SCOPED RIFLE (NORMAL and up): a rifle that bots zoom at range though its shots are as true unzoomed (the packs'
+battle rifle and carbine: ae_bots_combat_scoped_rifle) is zoomed at a target past half its aim assist's reach unzoomed, where that aim assist
 starts to fade (aim_assist.c's attenuation: whole to half the reach, none at it); zoomed, the reach is the zoom's
 times longer, as for a player who scopes it. The bot's aim error is about a degree at the octagon's 13 units, which the
-carbine's 17 units of reach no longer bend onto the target (NORMAL hit 4% of its shots past 14 units); a hit's
+carbine's 17 units of reach no longer bend onto the target (NORMAL hit 4% of its shots past 14 units; the battle
+rifle's 20 units, 2 to 10%); a hit's
 descope and the moment before it zooms again are the DESCOPE REFLEX's, but it fires unzoomed meanwhile. RECRUIT and
 EASY never zoom. Nonzero: zoom now. */
 int ae_bots_combat_rifle_zooms(int level, float distance, float autoaim_distance);

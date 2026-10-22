@@ -21,6 +21,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   sixth to the head kills, a second at best, the fastest precision kill if every round lands (the battle rifle stays
   the more forgiving rifle). Each has its own ammunition counter, reticle and pickup
   picture, and bots know how to use them. No gametype uses them yet: they are for the Halo 2 demake maps.
+- Bots of NORMAL and up zoom the battle rifle and the carbine at range, past half the reach of the rifle's aim assist
+  (zoomed, it reaches as many times further as the zoom, as for a player who scopes it). After a hit knocks the zoom
+  out they keep firing unzoomed until they zoom again; RECRUIT and EASY never zoom. On the octagon, a NORMAL bot's
+  battle rifle hit 12% of its rounds on a player standing still and now hits 36%.
 - Map layout files can place a pack weapon by name (`item smg at ...`, also `battle_rifle`, `smg_silenced`,
   `carbine`). Where the gametype has no such pack, the spot spawns the map's own pistol (battle rifle, carbine) or
   assault rifle (the SMGs).
