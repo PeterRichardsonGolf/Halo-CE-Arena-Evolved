@@ -20,6 +20,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - DualSense on Windows: the adaptive triggers, rumble, lightbar and player lights go straight to the pad's HID device
   in one whole report, as on Linux, not through SDL's queue, which merged and dropped the triggers' kicks (they felt
   hardly there). Where the HID device cannot be opened, SDL's way as before (`debug.txt` says which and why).
+- Modded discs: a machine joins only a host playing the same disc. A machine on the stock maps could join a host on
+  Halo 1: NHE or CE+ X and load its own Blood Gulch where the host had the disc's, and the two games went apart; it is
+  now refused and told to choose the host's disc in MODDED DISCS. Without a disc nothing changes (stock OpenCE and
+  ChupathingyCE machines join as before), nor with a disc that only adds maps of its own.
 
 ## 0.3.6-beta - 2026-10-21
 

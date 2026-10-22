@@ -1138,3 +1138,9 @@ source/game/game_engine.h	_game_variant_controller_crouch_bit = 8, /* AE hook */
 source/game/game_engine.c	#include "ae_crouch.h" /* AE hook */
 source/game/game_engine.c	ae_controller_crouch_log_rules(flags); /* AE hook */
 port/linux/game/menu_functions.c	{ "controller_crouch_spinner", _option_flag, 0, FLAG(_game_variant_controller_crouch_bit), 2, { 1, 0 } }, /* AE hook */
+# a modded disc that replaces stock maps in the join token: a machine joins only a host playing the same disc
+# (0.3.7; ae_disc_join.c). The stock token with no disc: stock OpenCE and Chupathingy machines join as before.
+source/networking/network_server_manager.c	#include "ae_disc_join.h" /* AE hook */
+source/networking/network_server_manager.c	ae_disc_join_token(join_token, NETWORK_JOIN_GAME_TOKEN_SIZE); /* AE hook */
+source/networking/network_client_manager.c	#include "ae_disc_join.h" /* AE hook */
+source/networking/network_client_manager.c	ae_disc_join_rejected(rejection_code); /* AE hook */

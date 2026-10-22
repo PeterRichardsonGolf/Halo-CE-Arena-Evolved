@@ -481,6 +481,7 @@ symbols in this file:
 #include "ae_silent.h" /* AE hook */
 #include "ae_bots.h" /* AE hook */
 #include "ae_lan_bots.h" /* AE hook */
+#include "ae_disc_join.h" /* AE hook */
 #include "bots.h" /* port: port/linux/game/bots.c */
 
 /* port: internet play's Discord presence (port/linux/src/p2p.c), and the
@@ -3743,6 +3744,7 @@ void network_game_generate_join_game_token(
 		}
 	}
 #endif
+	ae_disc_join_token(join_token, NETWORK_JOIN_GAME_TOKEN_SIZE); /* AE hook */
 
 	return;
 }

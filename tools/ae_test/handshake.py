@@ -40,10 +40,10 @@ def game_log(folder):
     return text
 
 def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, map_name="bloodgulch", mod="",
-               saved_gametype=None, save_from=None, client_save_from=None, packs_from=None):
-    """the host's and the client's specs: both on the map (and the mod's maps); the host's gametype a saved one of
-    its save root (save_from copied as it) when given; packs_from (a folder, or harness.NO_PACKS) both machines'
-    packs/"""
+               saved_gametype=None, save_from=None, client_save_from=None, packs_from=None, client_mod=None):
+    """the host's and the client's specs: both on the map (and the mod's maps; client_mod, when given, the joining
+    machine's alone); the host's gametype a saved one of its save root (save_from copied as it) when given;
+    packs_from (a folder, or harness.NO_PACKS) both machines' packs/"""
     common = {"HALO_NETWORK_TEST_START": "20", "HALO_NETWORK_TEST_SHOOT": "3", "HALO_NETWORK_TEST_KILL": "20"}
     common.update(env or {})
     host = {"name": "host", "build": host_build, "network_test": f"host:{map_name}",
@@ -54,7 +54,7 @@ def pair_specs(host_build, client_build, seconds=90, join_delay=12, env=None, ma
         host["save_from"] = save_from
     client = {"name": "client", "build": client_build, "network_test": "join",
               "address": CLIENT, "broadcast": HOST, "exit_after": seconds - join_delay,
-              "delay": join_delay, "env": common, "mod": mod}
+              "delay": join_delay, "env": common, "mod": mod if client_mod is None else client_mod}
     if client_save_from:
         client["save_from"] = client_save_from
     if packs_from:
@@ -90,7 +90,8 @@ def run_pair(cfg, name, host_build, client_build, out, a, slots):
     host, client = pair_specs(host_build, client_build, a.seconds, a.join_delay, env=env, map_name=a.map, mod=a.mod,
                               saved_gametype=a.saved_gametype, save_from=a.save_from,
                               client_save_from=getattr(a, "client_save_from", None),
-                              packs_from=getattr(a, "packs_from", None))
+                              packs_from=getattr(a, "packs_from", None),
+                              client_mod=getattr(a, "client_mod", None))
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
     harness.OWN_WORK.add(work)
@@ -147,6 +148,8 @@ def main(argv):
     p.add_argument("--max-median", type=float, default=0.5)
     p.add_argument("--map", default="bloodgulch", help="the map both play (default bloodgulch)")
     p.add_argument("--mod", default="", help="HALO_MOD for both (e.g. NHE: its maps)")
+    p.add_argument("--client-mod", help="HALO_MOD for the joining machine alone (default --mod; '' the stock maps): "
+                   "a pair on different discs, which the host refuses")
     p.add_argument("--saved-gametype", help="the host's gametype: a saved one of its save root, by stored name. "
                    "Without --one-way the reverse pair hosts it (and --save-from) on the other build, which may "
                    "seed or migrate that root by its own rules or not know the setting")

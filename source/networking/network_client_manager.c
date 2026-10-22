@@ -397,6 +397,7 @@ symbols in this file:
 #include "halo_map_families.h" /* port: map_family_from_wire_name */
 #include "ae_hooks.h" /* AE hook */
 #include "ae_lan_bots.h" /* AE hook */
+#include "ae_disc_join.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 
@@ -2464,6 +2465,7 @@ void network_game_client_rejected_by_game(
 	it): with no game behind it, it is left for the main menu, which says
 	why, rather than sitting in a lobby that will never start */
 	ae_silent_join_rejected(rejection_code); /* AE hook */
+	ae_disc_join_rejected(rejection_code); /* AE hook */
 	display_error_when_main_menu_loaded(
 		rejection_code == _rejection_code_game_is_full || rejection_code == _rejection_code_game_is_closed ?
 			_error_network_join_game_closed :
