@@ -9,7 +9,7 @@
 # player_ui_set_single_player_local_player_controller gave a pad another player's look sensitivity.
 port/linux/game/menu_functions.c	#include "ae_input.h" /* AE hook */
 port/linux/game/menu_functions.c	ae_input_controller_assigned(0); /* AE hook */
-port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "false", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "true", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.arena_menus_scale", _config_integer, "100", "HALO_ARENA_MENUS_SCALE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.arena_menus_reduce_motion", _config_boolean, "false", "HALO_ARENA_MENUS_REDUCE_MOTION", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "audio.arena_menus_volume", _config_real, "1.0", "HALO_ARENA_MENUS_VOLUME", _environment_value, /* AE hook */\n_platform_all,
