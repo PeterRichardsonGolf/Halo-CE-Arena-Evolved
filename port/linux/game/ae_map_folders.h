@@ -37,6 +37,10 @@ void ae_map_folders_log_pages(char const *const *names, long count);
 map's root); FALSE when map_path is not in a page folder */
 boolean ae_map_folders_root_path(char const *map_path, char *path, long size);
 
+/* (the game setup spike's CHANGE MAP) the page of a list row's map: its folder's page name, "" when it has none (a
+stock or loose one) */
+void ae_map_folders_row_page(char const *name, char *page, unsigned int size);
+
 /* ---------- the PC menus' map lists (menu_functions.c) */
 
 enum

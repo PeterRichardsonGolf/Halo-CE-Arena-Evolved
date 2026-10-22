@@ -442,6 +442,11 @@ static void row_page(char const *name, char *page, unsigned int size)
 		ae_map_folders_page_name(folder, page, size);
 }
 
+void ae_map_folders_row_page(char const *name, char *page, unsigned int size)
+{
+	row_page(name, page, size);
+}
+
 static void pages_of(char const *const *names, long count, struct ae_map_pages *pages)
 {
 	static unsigned char stock[AE_MAP_PAGES_MAPS];
