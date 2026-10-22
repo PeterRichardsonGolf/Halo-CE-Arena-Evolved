@@ -29,18 +29,26 @@ enum arena_gametype_set
 	NUMBER_OF_ARENA_GAMETYPE_SETS
 };
 
-/* the lists' categories (owner 2026-10-20, "by play style, BR inside"), in
+/* the lists' categories: the playlist folders (owner 2026-10-22; before,
+2026-10-20's "by play style": AE CASUAL, AE COMP, AE PARTY, AE WEAPONS), in
 the lists' order: each gametype's battle rifle version right after it; the
-sets above keep their own jobs (AE's rules, the names) */
+sets above keep their own jobs (AE's rules, the names). STOCK is for the
+pickers only: no seed is in it. arena_gametype_info is FALSE for Halo CE's
+built-in gametypes (and the player's own); a picker tells a built-in one by
+its variant's flags (playlist_profile.c's _game_variant_is_system_default_bit,
+set on the built-ins only: arena_gametype_build clears it) and files it under
+STOCK, a player's own under MY GAMETYPES */
 enum arena_gametype_category
 {
-	_arena_gametype_category_none,      /* not one of ours: stock CE, the player's own */
-	_arena_gametype_category_casual,    /* AE CASUAL: slayer, CTF, king, oddball, the 2v2s */
-	_arena_gametype_category_comp,      /* AE COMP */
-	_arena_gametype_category_party,     /* AE PARTY: phantoms, juggernaut, reverse tag, ... race, rally */
-	_arena_gametype_category_weapons,   /* AE WEAPONS: snipers, SWAT, rockets, shotguns, heavies */
-	_arena_gametype_category_practice,  /* AE PRACTICE: practice, training, the OCTAGON drills */
-	_arena_gametype_category_nhe,       /* Halo 1: NHE's */
+	_arena_gametype_category_none,         /* not one of ours: stock CE, the player's own */
+	_arena_gametype_category_ffa,          /* AE FFA: slayer, king, oddball, COMP FFA, snipers, rockets */
+	_arena_gametype_category_2v2,          /* AE 2V2: the 2v2s and the COMP 2V2 set */
+	_arena_gametype_category_4v4,          /* AE 4V4: team slayer, CTF, king, oddball and the team COMP set */
+	_arena_gametype_category_btb,          /* AE BTB: the big team set (revision 22) */
+	_arena_gametype_category_action_sack,  /* AE ACTION SACK: phantoms, juggernaut, ... SWAT, the weapon modes */
+	_arena_gametype_category_practice,     /* AE PRACTICE: practice, training, the OCTAGON drills */
+	_arena_gametype_category_nhe,          /* Halo 1: NHE's */
+	_arena_gametype_category_stock,        /* STOCK: Halo CE's built-in gametypes (no seed) */
 	NUMBER_OF_ARENA_GAMETYPE_CATEGORIES
 };
 
@@ -80,8 +88,8 @@ void arena_gametype_display_name(
 AE, AE BR, AE COMP, OCTAGON and TRAINING sets; not an old name, not Halo 1: NHE's set):
 the one marker of AE's gametypes (game_engine.c's weapon set with a custom
 loadout); a player's own gametype only by taking a seed's name */
-/* the lists' block of a gametype (owner 2026-10-20): its category (AE
-CASUAL, AE COMP, AE PARTY, AE WEAPONS, AE PRACTICE, Halo 1: NHE), then the
+/* the lists' block of a gametype (owner 2026-10-22): its category (AE FFA,
+AE 2V2, AE 4V4, AE BTB, AE ACTION SACK, AE PRACTICE, Halo 1: NHE), then the
 player's own; the sort's key, with category_order within a block */
 short arena_gametype_list_block(
 	boolean known,
@@ -92,7 +100,7 @@ boolean arena_gametype_has_ae_rules(
 /* "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING"; "" for none */
 char const *arena_gametype_set_name(
 	short set);
-/* "AE CASUAL", "AE COMP", "AE PARTY", "AE WEAPONS", "AE PRACTICE", "NHE"; "" for none */
+/* "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK"; "" for none */
 char const *arena_gametype_category_name(
 	short category);
 /* the table's gametypes (not the aliases), in its order */

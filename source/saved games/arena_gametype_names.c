@@ -5,7 +5,8 @@ port: Halo CE: Arena Evolved, the seeded gametypes' names: each one's stored
 name (game_variant's, at most 11 characters: what every machine, listing and
 saved file has) and the longer display name AE machines show in their lists,
 lobby and scoreboard, its set (AE, AE BR, AE COMP, OCTAGON, Halo 1: NHE's, TRAINING), its
-place in the set, and a description for a panel.
+place in the set, its playlist folder (the categories: AE FFA, AE 2V2, AE 4V4, AE BTB, AE ACTION SACK,
+AE PRACTICE, NHE), and a description for a panel.
 
 The table holds every gametype of the final sets, seeded or not yet (one not
 seeded is simply never on disk). Old stored names (aliases) report their
@@ -127,57 +128,100 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Team slayer with shotguns and pistols." },
 	{ "AE HEAVIES", "TEAM AE HEAVIES", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
 		"Team slayer with rocket launchers, assault rifles, the heavy weapons and the map's vehicles, to 75 kills." },
+	/* AE BTB (revision 22; owner, 2026-10-22): big team games, 8 against 8, on AE's rules, with the map's vehicles */
+	{ "AE BTB SLY", "TEAM AE BTB SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
+		"Big team slayer (8 against 8) on AE's rules: 100 kills, 20 minutes, the map's vehicles, power item timers "
+		"and waypoints." },
+	{ "AE BTB CTF", "TEAM AE BTB CTF", _arena_gametype_set_ae, game_engine_ctf, TRUE, FALSE,
+		"Big team capture the flag (8 against 8) on AE's rules: 3 captures, 20 minutes, the map's vehicles." },
+	{ "AE BTB KING", "TEAM AE BTB KING", _arena_gametype_set_ae, game_engine_king, TRUE, FALSE,
+		"Big team King of the Hill (8 against 8) on AE's rules: 5 minutes in the hill, 20 minutes, the map's "
+		"vehicles." },
+	{ "AE BTB BALL", "TEAM AE BTB ODDBALL", _arena_gametype_set_ae, game_engine_oddball, TRUE, FALSE,
+		"Big team Oddball (8 against 8) on AE's rules: 5 minutes with the ball, 20 minutes, the map's vehicles. The "
+		"ball carrier's melee kills in one hit." },
+	{ "AE BTB HVY", "TEAM AE BTB HEAVIES", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
+		"Big team slayer (8 against 8) with the heavy vehicles: rocket warthogs and scorpions for both teams where "
+		"the map has them. 100 kills, 20 minutes." },
 	/* AE BR (revision 11): AE casual's and AE COMP's gametypes with the battle rifle in hand; free for all first */
 	{ "AE BR FFA", "FFA AE BR SLAYER", _arena_gametype_set_ae_br, game_engine_slayer, FALSE, FALSE,
-		"Free for all slayer on AE's rules with power item timers and waypoints. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all slayer on AE's rules with power item timers and waypoints. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR ELIM", "FFA AE BR ELIMINATION", _arena_gametype_set_ae_br, game_engine_slayer, FALSE, FALSE,
-		"Free for all Elimination on AE's rules: one life each, last standing. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Elimination on AE's rules: one life each, last standing. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR PHANT", "FFA AE BR PHANTOMS", _arena_gametype_set_ae_br, game_engine_slayer, FALSE, FALSE,
-		"Free for all Phantoms (everyone invisible) on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Phantoms (everyone invisible) on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR ENDUR", "FFA AE BR ENDURANCE", _arena_gametype_set_ae_br, game_engine_slayer, FALSE, FALSE,
-		"Free for all Endurance (5 lives, respawns slow down) on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Endurance (5 lives, respawns slow down) on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR FBALL", "FFA AE BR ODDBALL", _arena_gametype_set_ae_br, game_engine_oddball, FALSE, FALSE,
-		"Free for all Oddball on AE's rules; the ball carrier's melee kills in one hit. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Oddball on AE's rules; the ball carrier's melee kills in one hit. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR JUGG", "FFA AE BR JUGGERNAUT", _arena_gametype_set_ae_br, game_engine_oddball, FALSE, FALSE,
-		"Free for all Juggernaut on AE's rules (Halo 2's, to 15). Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Juggernaut on AE's rules (Halo 2's, to 15). Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR RTAG", "FFA AE BR REVERSE TAG", _arena_gametype_set_ae_br, game_engine_oddball, FALSE, FALSE,
-		"Free for all Reverse Tag on AE's rules: score by not holding the ball. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Reverse Tag on AE's rules: score by not holding the ball. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR ACCUM", "FFA AE BR ACCUMULATION", _arena_gametype_set_ae_br, game_engine_oddball, FALSE, FALSE,
-		"Free for all Accumulation (many balls) on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Accumulation (many balls) on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR STALK", "FFA AE BR STALKER", _arena_gametype_set_ae_br, game_engine_oddball, FALSE, FALSE,
-		"Free for all Stalker on AE's rules: the carrier is invisible. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Stalker on AE's rules: the carrier is invisible. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR FKING", "FFA AE BR KING", _arena_gametype_set_ae_br, game_engine_king, FALSE, FALSE,
-		"Free for all King of the Hill on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all King of the Hill on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR CKING", "FFA AE BR CRAZY KING", _arena_gametype_set_ae_br, game_engine_king, FALSE, FALSE,
-		"Free for all Crazy King (the hill moves) on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all Crazy King (the hill moves) on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR PRAC", "FFA AE BR PRACTICE", _arena_gametype_set_ae_br, game_engine_slayer, FALSE, FALSE,
-		"Free for all practice: every weapon and powerup every 30 seconds, 500 kills. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Free for all practice: every weapon and powerup every 30 seconds, 500 kills. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR C FFA", "FFA AE BR COMP SLAYER", _arena_gametype_set_ae_br, game_engine_slayer, FALSE, FALSE,
-		"Competitive free for all (AE COMP FFA's rules): 5 second respawns, 2 frags. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Competitive free for all (AE COMP FFA's rules): 5 second respawns, 2 frags. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR TS", "TEAM AE BR SLAYER", _arena_gametype_set_ae_br, game_engine_slayer, TRUE, FALSE,
-		"Team slayer on AE's rules with power item timers and waypoints. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Team slayer on AE's rules with power item timers and waypoints. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR CTF", "TEAM AE BR CTF", _arena_gametype_set_ae_br, game_engine_ctf, TRUE, FALSE,
-		"Capture the flag on AE's rules with power item timers and waypoints. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Capture the flag on AE's rules with power item timers and waypoints. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR KING", "TEAM AE BR KING", _arena_gametype_set_ae_br, game_engine_king, TRUE, FALSE,
-		"Team King of the Hill on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Team King of the Hill on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR TM OB", "TEAM AE BR ODDBALL", _arena_gametype_set_ae_br, game_engine_oddball, TRUE, FALSE,
-		"Team Oddball on AE's rules; the ball carrier's melee kills in one hit. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Team Oddball on AE's rules; the ball carrier's melee kills in one hit. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR 2V2 S", "TEAM AE BR 2V2 SLAYER", _arena_gametype_set_ae_br, game_engine_slayer, TRUE, FALSE,
-		"Team slayer for two against two, to 25 kills, on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Team slayer for two against two, to 25 kills, on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR 2V2 C", "TEAM AE BR 2V2 CTF", _arena_gametype_set_ae_br, game_engine_ctf, TRUE, FALSE,
-		"Capture the flag for two against two on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Capture the flag for two against two on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR 2V2 K", "TEAM AE BR 2V2 KING", _arena_gametype_set_ae_br, game_engine_king, TRUE, FALSE,
-		"Team King of the Hill for two against two on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Team King of the Hill for two against two on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR 2V2 B", "TEAM AE BR 2V2 ODDBALL", _arena_gametype_set_ae_br, game_engine_oddball, TRUE, FALSE,
-		"Team Oddball for two against two on AE's rules. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Team Oddball for two against two on AE's rules. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR C TS", "TEAM AE BR COMP SLAYER", _arena_gametype_set_ae_br, game_engine_slayer, TRUE, FALSE,
-		"Competitive team slayer (AE COMP TS's rules): 5 second respawns, 2 frags. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Competitive team slayer (AE COMP TS's rules): 5 second respawns, 2 frags. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR C CTF", "TEAM AE BR COMP CTF", _arena_gametype_set_ae_br, game_engine_ctf, TRUE, FALSE,
-		"Competitive capture the flag (AE COMP CTF's rules); flags in line of sight. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Competitive capture the flag (AE COMP CTF's rules); flags in line of sight. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR C KOH", "TEAM AE BR COMP KING", _arena_gametype_set_ae_br, game_engine_king, TRUE, FALSE,
-		"Competitive team King (AE COMP KOH's rules); the hill in line of sight. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Competitive team King (AE COMP KOH's rules); the hill in line of sight. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
 	{ "AE BR C OB", "TEAM AE BR COMP ODDBALL", _arena_gametype_set_ae_br, game_engine_oddball, TRUE, FALSE,
-		"Competitive team Oddball (AE COMP OB's rules); lethal ball melee. Battle rifle in hand, pistol second (the battle rifle pack needed)." },
+		"Competitive team Oddball (AE COMP OB's rules); lethal ball melee. Battle rifle in hand, assault rifle second (the battle rifle pack needed)." },
+	/* (revision 22: the AE BTB set's and the AE COMP 2V2 set's) */
+	{ "AE BR BTB S", "TEAM AE BR BTB SLAYER", _arena_gametype_set_ae_br, game_engine_slayer, TRUE, FALSE,
+		"Big team slayer (8 against 8), 100 kills, the map's vehicles. Battle rifle in hand, assault rifle second (the "
+		"battle rifle pack needed)." },
+	{ "AE BR BTB C", "TEAM AE BR BTB CTF", _arena_gametype_set_ae_br, game_engine_ctf, TRUE, FALSE,
+		"Big team capture the flag (8 against 8), the map's vehicles. Battle rifle in hand, assault rifle second (the "
+		"battle rifle pack needed)." },
+	{ "AE BR BTB K", "TEAM AE BR BTB KING", _arena_gametype_set_ae_br, game_engine_king, TRUE, FALSE,
+		"Big team King of the Hill (8 against 8), the map's vehicles. Battle rifle in hand, assault rifle second (the "
+		"battle rifle pack needed)." },
+	{ "AE BR BTB B", "TEAM AE BR BTB ODDBALL", _arena_gametype_set_ae_br, game_engine_oddball, TRUE, FALSE,
+		"Big team Oddball (8 against 8), the map's vehicles. Battle rifle in hand, assault rifle second (the battle "
+		"rifle pack needed)." },
+	{ "AE BR BTB H", "TEAM AE BR BTB HEAVIES", _arena_gametype_set_ae_br, game_engine_slayer, TRUE, FALSE,
+		"Big team slayer with rocket warthogs and scorpions. Battle rifle in hand, assault rifle second (the battle "
+		"rifle pack needed)." },
+	{ "AE BR C2 TS", "TEAM AE BR COMP 2V2 SLAYER", _arena_gametype_set_ae_br, game_engine_slayer, TRUE, FALSE,
+		"Competitive 2v2 slayer (AE C2V2 TS's rules): 25 kills, 5 second respawns. Battle rifle in hand, assault "
+		"rifle second (the battle rifle pack needed)." },
+	{ "AE BR C2CTF", "TEAM AE BR COMP 2V2 CTF", _arena_gametype_set_ae_br, game_engine_ctf, TRUE, FALSE,
+		"Competitive 2v2 capture the flag (AE C2V2 CTF's rules); flags in line of sight. Battle rifle in hand, "
+		"assault rifle second (the battle rifle pack needed)." },
+	{ "AE BR C2KOH", "TEAM AE BR COMP 2V2 KING", _arena_gametype_set_ae_br, game_engine_king, TRUE, FALSE,
+		"Competitive 2v2 King (AE C2V2 KOH's rules); the hill in line of sight. Battle rifle in hand, assault rifle "
+		"second (the battle rifle pack needed)." },
+	{ "AE BR C2 OB", "TEAM AE BR COMP 2V2 ODDBALL", _arena_gametype_set_ae_br, game_engine_oddball, TRUE, FALSE,
+		"Competitive 2v2 Oddball (AE C2V2 OB's rules); lethal ball melee. Battle rifle in hand, assault rifle second "
+		"(the battle rifle pack needed)." },
 	/* AE COMP */
 	{ "AE COMP FFA", "FFA AE COMP SLAYER", _arena_gametype_set_ae_comp, game_engine_slayer, FALSE, FALSE,
 		"Competitive free for all: 5 second respawns, 2 frag grenades, no motion tracker, no vehicles, power item "
@@ -194,6 +238,19 @@ static struct arena_gametype_name const arena_gametype_names[] =
 	{ "AE COMP OB", "TEAM AE COMP ODDBALL", _arena_gametype_set_ae_comp, game_engine_oddball, TRUE, FALSE,
 		"Competitive team Oddball: 5 minutes with the ball, 5 second respawns, 2 frags, no motion tracker or "
 		"vehicles, the ball in line of sight only, lethal ball melee." },
+	/* AE COMP 2V2 (revision 22; owner, 2026-10-22): AE COMP's team gametypes for two against two */
+	{ "AE C2V2 TS", "TEAM AE COMP 2V2 SLAYER", _arena_gametype_set_ae_comp, game_engine_slayer, TRUE, FALSE,
+		"Competitive 2v2 slayer: 25 kills, 5 second respawns, 2 frag grenades, no motion tracker, no vehicles, power "
+		"item waypoints only in line of sight." },
+	{ "AE C2V2 CTF", "TEAM AE COMP 2V2 CTF", _arena_gametype_set_ae_comp, game_engine_ctf, TRUE, FALSE,
+		"Competitive 2v2 capture the flag: 3 captures, 5 second respawns, 2 frag grenades, no motion tracker, no "
+		"vehicles; the flags show only in line of sight." },
+	{ "AE C2V2 KOH", "TEAM AE COMP 2V2 KING", _arena_gametype_set_ae_comp, game_engine_king, TRUE, FALSE,
+		"Competitive 2v2 King of the Hill: 5 minutes in the hill, 5 second respawns, 2 frags, no motion tracker, no "
+		"vehicles; the hill shows only in line of sight." },
+	{ "AE C2V2 OB", "TEAM AE COMP 2V2 ODDBALL", _arena_gametype_set_ae_comp, game_engine_oddball, TRUE, FALSE,
+		"Competitive 2v2 Oddball: 5 minutes with the ball, 5 second respawns, 2 frags, no motion tracker or vehicles, "
+		"the ball in line of sight only, lethal ball melee." },
 
 	/* OCTAGON (revision 16; owner, 2026-10-20): 1v1 practice drills (Octagon), free for all slayer on AE's casual
 	rules with infinite ammo, bottomless clips, no grenades and instant respawns */
@@ -326,9 +383,10 @@ static char const *const arena_gametype_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS]
 	"", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING"
 };
 
-/* the lists' categories (owner 2026-10-20): each category's gametypes in the
-lists' order, a gametype's battle rifle version right after it; Halo 1: NHE's
-set is its own category, in its table order (arena_gametype_category_fill) */
+/* the lists' categories: the playlist folders (owner 2026-10-22; "by play style, BR inside" before, 2026-10-20):
+each folder's gametypes in the lists' order, a gametype's battle rifle version right after it; Halo 1: NHE's set
+is its own folder, in its table order (arena_gametype_category_fill). STOCK (Halo CE's built-in gametypes) has no
+rows: no seed is in it */
 struct arena_gametype_category_row
 {
 	short category;
@@ -337,39 +395,49 @@ struct arena_gametype_category_row
 
 static struct arena_gametype_category_row const arena_gametype_category_rows[] =
 {
-	/* AE CASUAL: free for all, then team, then the 2v2s */
-	{ _arena_gametype_category_casual, "AE FFA SLAY" }, { _arena_gametype_category_casual, "AE BR FFA" },
-	{ _arena_gametype_category_casual, "AE FFA KING" }, { _arena_gametype_category_casual, "AE BR FKING" },
-	{ _arena_gametype_category_casual, "AE FFA BALL" }, { _arena_gametype_category_casual, "AE BR FBALL" },
-	{ _arena_gametype_category_casual, "AE TEAM SLY" }, { _arena_gametype_category_casual, "AE BR TS" },
-	{ _arena_gametype_category_casual, "AE CTF" }, { _arena_gametype_category_casual, "AE BR CTF" },
-	{ _arena_gametype_category_casual, "AE KING" }, { _arena_gametype_category_casual, "AE BR KING" },
-	{ _arena_gametype_category_casual, "AE TEAM OB" }, { _arena_gametype_category_casual, "AE BR TM OB" },
-	{ _arena_gametype_category_casual, "AE 2V2 SLY" }, { _arena_gametype_category_casual, "AE BR 2V2 S" },
-	{ _arena_gametype_category_casual, "AE 2V2 CTF" }, { _arena_gametype_category_casual, "AE BR 2V2 C" },
-	{ _arena_gametype_category_casual, "AE 2V2 KING" }, { _arena_gametype_category_casual, "AE BR 2V2 K" },
-	{ _arena_gametype_category_casual, "AE 2V2 BALL" }, { _arena_gametype_category_casual, "AE BR 2V2 B" },
-	/* AE COMP */
-	{ _arena_gametype_category_comp, "AE COMP FFA" }, { _arena_gametype_category_comp, "AE BR C FFA" },
-	{ _arena_gametype_category_comp, "AE COMP TS" }, { _arena_gametype_category_comp, "AE BR C TS" },
-	{ _arena_gametype_category_comp, "AE COMP CTF" }, { _arena_gametype_category_comp, "AE BR C CTF" },
-	{ _arena_gametype_category_comp, "AE COMP KOH" }, { _arena_gametype_category_comp, "AE BR C KOH" },
-	{ _arena_gametype_category_comp, "AE COMP OB" }, { _arena_gametype_category_comp, "AE BR C OB" },
-	/* AE PARTY */
-	{ _arena_gametype_category_party, "AE PHANTOMS" }, { _arena_gametype_category_party, "AE BR PHANT" },
-	{ _arena_gametype_category_party, "AE JUGGER" }, { _arena_gametype_category_party, "AE BR JUGG" },
-	{ _arena_gametype_category_party, "AE REV TAG" }, { _arena_gametype_category_party, "AE BR RTAG" },
-	{ _arena_gametype_category_party, "AE ACCUM" }, { _arena_gametype_category_party, "AE BR ACCUM" },
-	{ _arena_gametype_category_party, "AE STALKER" }, { _arena_gametype_category_party, "AE BR STALK" },
-	{ _arena_gametype_category_party, "AE CRAZYKNG" }, { _arena_gametype_category_party, "AE BR CKING" },
-	{ _arena_gametype_category_party, "AE ELIM" }, { _arena_gametype_category_party, "AE BR ELIM" },
-	{ _arena_gametype_category_party, "AE ENDURE" }, { _arena_gametype_category_party, "AE BR ENDUR" },
-	{ _arena_gametype_category_party, "AE RACE" }, { _arena_gametype_category_party, "AE RALLY" },
-	/* AE WEAPONS: free for all before team where both are */
-	{ _arena_gametype_category_weapons, "AE FFA SNPR" }, { _arena_gametype_category_weapons, "AE SNIPERS" },
-	{ _arena_gametype_category_weapons, "AE SHOTSNIP" }, { _arena_gametype_category_weapons, "AE SWAT" },
-	{ _arena_gametype_category_weapons, "AE FFA ROCK" }, { _arena_gametype_category_weapons, "AE ROCKETS" },
-	{ _arena_gametype_category_weapons, "AE SHOTGUNS" }, { _arena_gametype_category_weapons, "AE HEAVIES" },
+	/* AE FFA: slayer, king, oddball, the competitive slayer, then snipers and rockets */
+	{ _arena_gametype_category_ffa, "AE FFA SLAY" }, { _arena_gametype_category_ffa, "AE BR FFA" },
+	{ _arena_gametype_category_ffa, "AE FFA KING" }, { _arena_gametype_category_ffa, "AE BR FKING" },
+	{ _arena_gametype_category_ffa, "AE FFA BALL" }, { _arena_gametype_category_ffa, "AE BR FBALL" },
+	{ _arena_gametype_category_ffa, "AE COMP FFA" }, { _arena_gametype_category_ffa, "AE BR C FFA" },
+	{ _arena_gametype_category_ffa, "AE FFA SNPR" }, { _arena_gametype_category_ffa, "AE FFA ROCK" },
+	/* AE 2V2: the casual 2v2s, then the competitive ones */
+	{ _arena_gametype_category_2v2, "AE 2V2 SLY" }, { _arena_gametype_category_2v2, "AE BR 2V2 S" },
+	{ _arena_gametype_category_2v2, "AE 2V2 CTF" }, { _arena_gametype_category_2v2, "AE BR 2V2 C" },
+	{ _arena_gametype_category_2v2, "AE 2V2 KING" }, { _arena_gametype_category_2v2, "AE BR 2V2 K" },
+	{ _arena_gametype_category_2v2, "AE 2V2 BALL" }, { _arena_gametype_category_2v2, "AE BR 2V2 B" },
+	{ _arena_gametype_category_2v2, "AE C2V2 TS" }, { _arena_gametype_category_2v2, "AE BR C2 TS" },
+	{ _arena_gametype_category_2v2, "AE C2V2 CTF" }, { _arena_gametype_category_2v2, "AE BR C2CTF" },
+	{ _arena_gametype_category_2v2, "AE C2V2 KOH" }, { _arena_gametype_category_2v2, "AE BR C2KOH" },
+	{ _arena_gametype_category_2v2, "AE C2V2 OB" }, { _arena_gametype_category_2v2, "AE BR C2 OB" },
+	/* AE 4V4: the casual team games, then the competitive ones */
+	{ _arena_gametype_category_4v4, "AE TEAM SLY" }, { _arena_gametype_category_4v4, "AE BR TS" },
+	{ _arena_gametype_category_4v4, "AE CTF" }, { _arena_gametype_category_4v4, "AE BR CTF" },
+	{ _arena_gametype_category_4v4, "AE KING" }, { _arena_gametype_category_4v4, "AE BR KING" },
+	{ _arena_gametype_category_4v4, "AE TEAM OB" }, { _arena_gametype_category_4v4, "AE BR TM OB" },
+	{ _arena_gametype_category_4v4, "AE COMP TS" }, { _arena_gametype_category_4v4, "AE BR C TS" },
+	{ _arena_gametype_category_4v4, "AE COMP CTF" }, { _arena_gametype_category_4v4, "AE BR C CTF" },
+	{ _arena_gametype_category_4v4, "AE COMP KOH" }, { _arena_gametype_category_4v4, "AE BR C KOH" },
+	{ _arena_gametype_category_4v4, "AE COMP OB" }, { _arena_gametype_category_4v4, "AE BR C OB" },
+	/* AE BTB (revision 22) */
+	{ _arena_gametype_category_btb, "AE BTB SLY" }, { _arena_gametype_category_btb, "AE BR BTB S" },
+	{ _arena_gametype_category_btb, "AE BTB CTF" }, { _arena_gametype_category_btb, "AE BR BTB C" },
+	{ _arena_gametype_category_btb, "AE BTB KING" }, { _arena_gametype_category_btb, "AE BR BTB K" },
+	{ _arena_gametype_category_btb, "AE BTB BALL" }, { _arena_gametype_category_btb, "AE BR BTB B" },
+	{ _arena_gametype_category_btb, "AE BTB HVY" }, { _arena_gametype_category_btb, "AE BR BTB H" },
+	/* AE ACTION SACK: the party modes, then the weapon modes */
+	{ _arena_gametype_category_action_sack, "AE PHANTOMS" }, { _arena_gametype_category_action_sack, "AE BR PHANT" },
+	{ _arena_gametype_category_action_sack, "AE JUGGER" }, { _arena_gametype_category_action_sack, "AE BR JUGG" },
+	{ _arena_gametype_category_action_sack, "AE REV TAG" }, { _arena_gametype_category_action_sack, "AE BR RTAG" },
+	{ _arena_gametype_category_action_sack, "AE ACCUM" }, { _arena_gametype_category_action_sack, "AE BR ACCUM" },
+	{ _arena_gametype_category_action_sack, "AE STALKER" }, { _arena_gametype_category_action_sack, "AE BR STALK" },
+	{ _arena_gametype_category_action_sack, "AE CRAZYKNG" }, { _arena_gametype_category_action_sack, "AE BR CKING" },
+	{ _arena_gametype_category_action_sack, "AE ELIM" }, { _arena_gametype_category_action_sack, "AE BR ELIM" },
+	{ _arena_gametype_category_action_sack, "AE ENDURE" }, { _arena_gametype_category_action_sack, "AE BR ENDUR" },
+	{ _arena_gametype_category_action_sack, "AE RACE" }, { _arena_gametype_category_action_sack, "AE RALLY" },
+	{ _arena_gametype_category_action_sack, "AE SWAT" }, { _arena_gametype_category_action_sack, "AE SNIPERS" },
+	{ _arena_gametype_category_action_sack, "AE SHOTSNIP" }, { _arena_gametype_category_action_sack, "AE ROCKETS" },
+	{ _arena_gametype_category_action_sack, "AE SHOTGUNS" }, { _arena_gametype_category_action_sack, "AE HEAVIES" },
 	/* AE PRACTICE: the practice modes, then the OCTAGON drills */
 	{ _arena_gametype_category_practice, "AE PRACTICE" }, { _arena_gametype_category_practice, "AE BR PRAC" },
 	{ _arena_gametype_category_practice, "AE TRAINING" }, { _arena_gametype_category_practice, "AE OCT BR" },
@@ -381,7 +449,7 @@ static struct arena_gametype_category_row const arena_gametype_category_rows[] =
 
 static char const *const arena_gametype_category_names[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] =
 {
-	"", "AE CASUAL", "AE COMP", "AE PARTY", "AE WEAPONS", "AE PRACTICE", "NHE"
+	"", "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK"
 };
 
 /* ---------- private code */
@@ -489,7 +557,7 @@ static void arena_gametype_category_fill(
 			info->category = _arena_gametype_category_practice;
 			break;
 		default:
-			info->category = _arena_gametype_category_casual;
+			info->category = name->team ? _arena_gametype_category_4v4 : _arena_gametype_category_ffa;
 			break;
 	}
 	info->category_order = (short)(NUMBEROF(arena_gametype_category_rows) + info->order);
@@ -519,7 +587,7 @@ short arena_gametype_list_block(
 {
 	if (!known)
 		return 10;
-	/* (AE CASUAL 1 .. NHE 6) */
+	/* (AE FFA 1 .. NHE 7; STOCK 8 is no seed's) */
 	return info->category > _arena_gametype_category_none && info->category < NUMBER_OF_ARENA_GAMETYPE_CATEGORIES ?
 		info->category : 9;
 }

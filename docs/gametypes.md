@@ -29,13 +29,23 @@ They are in the gametype list the first time you play. Back to the [README](../R
   and sniper rifle, no weapons on the map), SWAT (pistols, no shields, classic
   health, no grenades), ROCKETS, SHOTGUNS and HEAVIES (75 kills, the map's
   vehicles).
+- **Arena Evolved BTB** (big team, 8 against 8; seed revision 22): TEAM AE BTB SLAYER (100 kills), TEAM AE BTB CTF (3
+  captures), TEAM AE BTB KING and TEAM AE BTB ODDBALL (5 minutes held, the lethal ball), each with a 20-minute time
+  limit and the map's own vehicles, on the casual team rules (the stock respawns, the motion sensor showing enemies,
+  item TIMERS with waypoints, a pistol and an assault rifle, 2 frags); stored as AE BTB SLY, AE BTB CTF, AE BTB KING,
+  AE BTB BALL. TEAM AE BTB HEAVIES (AE BTB HVY): big team slayer to 100 with the heavy vehicles, rocket warthogs and
+  scorpions for both teams (each team's vehicles CUSTOM: as many as the map places, up to 4 of each; the Xbox maps
+  have no rocket warthog, so they place their scorpions only). A dropped flag goes home after Halo CE's own 17
+  seconds untouched (the gametype has no setting for it).
 - **Motion sensor, enemies only** (0.3.0): the team gametypes above that have the
   motion sensor (and their AE BR twins) show only enemies on it, never your
   teammates (OTHER PLAYERS ON RADAR: ENEMIES, in Indicator Options); the free
   for all ones show every other player, as ENEMIES does there.
 - **Arena Evolved BR** (0.3.0): the casual set, the free for all variants, FFA AE PRACTICE and AE COMP again with the
   **battle rifle in hand** and an assault rifle second (FFA AE BR SLAYER, TEAM AE BR SLAYER, TEAM AE BR COMP CTF, ... 25
-  gametypes; stored as AE BR FFA, AE BR TS, AE BR C CTF, ...). Every other value is its twin's. Not made for the
+  gametypes; stored as AE BR FFA, AE BR TS, AE BR C CTF, ...; seed revision 22 adds the BTB and COMP 2V2 sets' nine:
+  TEAM AE BR BTB SLAYER, ..., TEAM AE BR COMP 2V2 SLAYER, ..., stored as AE BR BTB S/C/K/B/H and AE BR C2 TS, AE BR
+  C2CTF, AE BR C2KOH, AE BR C2 OB). Every other value is its twin's. Not made for the
   single-weapon modes (snipers, rockets, shotguns, SWAT, heavies, shotty snipers), RACE, RALLY or TRAINING. They
   need the battle rifle's pack (the `packs` folder): only machines with it join; on Custom Edition maps, and where
   the pack is not, the slot plays an assault rifle.
@@ -45,6 +55,8 @@ They are in the gametype list the first time you play. Back to the [README](../R
   frag grenades, no motion sensor, no vehicles, item TIMERS only in line of
   sight (no list, no item calls), the objective only in line of sight, both
   weapons dropped; the slayers have no time limit, the others 15 minutes.
+  The same four team ones for two against two (seed revision 22): TEAM AE COMP 2V2 SLAYER (25 kills), CTF (3
+  captures), KING and ODDBALL (5 minutes held), stored as AE C2V2 TS, AE C2V2 CTF, AE C2V2 KOH, AE C2V2 OB.
 - **OCTAGON** (0.3.5): four 1v1 practice drills, made for Octagon: FFA AE OCTAGON BR (the battle rifle alone), FFA AE
   OCTAGON BR SNIPE (battle rifle and sniper rifle), FFA AE OCTAGON MAG (the magnum alone) and FFA AE OCTAGON MAG SNIPE
   (magnum and sniper rifle); stored as AE OCT BR, AE OCT BRSN, AE OCT MAG, AE OCT MGSN. Free for all slayer on the
@@ -58,7 +70,11 @@ They are in the gametype list the first time you play. Back to the [README](../R
 - Every Arena Evolved gametype has no fall damage, HALO 2 health (SWAT:
   Halo CE), NO SPREAD FIRST SHOT, the PRE-GAME COUNTDOWN and generic starting
   equipment, with a pistol in hand and an assault rifle unless its mode says
-  otherwise.
+  otherwise. Since seed revision 22 they also have MELEE UNZOOMS ON (a melee
+  while zoomed takes the zoom off and strikes, as in Halo 2; Halo CE has no
+  melee while zoomed) and MOUSE AIM ASSIST OFF (no aim assist for the mouse,
+  for every player; controllers keep theirs). Halo 1: NHE's set and the stock
+  gametypes keep Halo CE's melee and allow the mouse's aim assist.
 - **Halo 1: NHE's own 23 gametypes** (TS 50, TS 100, TS ON-OFF, TS TRAINING,
   TS PRACTICE, TS SNIPERS, FFA 50 NR/R, 1 V 1 NR/R, KOTH 5M 7S/10S, BALL 5M
   7S/10S, eight CTFs and CTF WIZARD), with NHE's values: Halo CE health, fall
@@ -71,15 +87,16 @@ They are in the gametype list the first time you play. Back to the [README](../R
   modes on NHE's maps. NHE MODE and NHE EXTRAS are on a gametype's **NHE
   OPTIONS** screen.
 - The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY),
-  sorted by category, each battle rifle version right after the gametype it
-  copies, then your own gametypes, before the built-in ones:
+  sorted by playlist folder (seed revision 22), each battle rifle version right after the gametype it
+  copies, then your own gametypes, before the built-in ones (STOCK):
 
-  | Category | Gametypes |
+  | Folder | Gametypes |
   |---|---|
-  | AE CASUAL | slayer, king and oddball (free for all), then team slayer, CTF, king, oddball, then the 2V2s |
-  | AE COMP | COMP slayer (free for all and team), CTF, king, oddball |
-  | AE PARTY | phantoms, juggernaut, reverse tag, accumulation, stalker, crazy king, elimination, endurance, race, rally |
-  | AE WEAPONS | snipers, shotty snipers, SWAT, rockets, shotguns, heavies |
+  | AE FFA | slayer, king, oddball, COMP slayer, snipers, rockets (all free for all) |
+  | AE 2V2 | the 2V2 slayer, CTF, king and oddball, then the COMP 2V2 set |
+  | AE 4V4 | team slayer, CTF, king, oddball, then the team COMP set |
+  | AE BTB | BTB slayer, CTF, king, oddball, heavies |
+  | AE ACTION SACK | phantoms, juggernaut, reverse tag, accumulation, stalker, crazy king, elimination, endurance, race, rally, SWAT, team snipers, shotty snipers, team rockets, shotguns, heavies |
   | AE PRACTICE | practice, BR practice, training, the OCTAGON drills |
   | NHE | Halo 1: NHE's, as before |
  Seeded gametypes you edit are kept as

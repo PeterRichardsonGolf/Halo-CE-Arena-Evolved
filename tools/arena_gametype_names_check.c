@@ -13,7 +13,7 @@ tables):
 - every alias's successor in the table; an alias's info its successor's set,
   order, team and engine, its own stored name as display_name, no
   description, not special;
-- the sets: AE 30, AE BR 25, AE COMP 5, OCTAGON 8, NHE 25, TRAINING 1 (94), each set's orders
+- the sets: AE 35, AE BR 34, AE COMP 9, OCTAGON 8, NHE 25, TRAINING 1 (112), each set's orders
   0..n-1 in the table's order, NHE's own set after VANILLA and POWERUPS
   (TS 50 first, CTF WIZARD last), and the set names;
 - lookups letters' case aside; an unknown name FALSE, displayed as it is;
@@ -99,7 +99,7 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 30, 25, 5, 8, 25, 1 };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 35, 34, 9, 8, 25, 1 };
 	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] =
 		{ "", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
@@ -110,8 +110,8 @@ int main(void)
 	wchar_t display[40];
 
 	/* the table */
-	if (arena_gametype_catalog_count() != 94)
-		fail("catalog count is not 94", "");
+	if (arena_gametype_catalog_count() != 112)
+		fail("catalog count is not 112", "");
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -271,9 +271,9 @@ int main(void)
 		}
 	}
 
-	/* the lists' blocks: the categories (owner 2026-10-20), AE CASUAL 1 .. AE PRACTICE 5, Halo 1: NHE 6, unknown 10;
-	every one of AE's in the categories table (its places in a category 0, 1, 2, ... with none left out), each
-	battle rifle version right after the gametype it is of, NHE's in their table order */
+	/* the lists' blocks: the playlist folders (owner 2026-10-22), AE FFA 1 .. AE PRACTICE 6, Halo 1: NHE 7, unknown
+	10 (STOCK 8: no seed's); every one of AE's in the categories table (its places in a category 0, 1, 2, ... with
+	none left out), each battle rifle version right after the gametype it is of, NHE's in their table order */
 	{
 		short counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0 };
 		short places[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES][128];
@@ -295,10 +295,12 @@ int main(void)
 			}
 			if ((own.set == _arena_gametype_set_nhe) != (own.category == _arena_gametype_category_nhe))
 				fail("list block: NHE's set is the NHE category", arena_gametype_names[index].stored_name);
+			if (own.category == _arena_gametype_category_stock)
+				fail("list block: a seed in STOCK", arena_gametype_names[index].stored_name);
 			if (counts[own.category] < 128)
 				places[own.category][counts[own.category]++] = index;
 		}
-		for (category = _arena_gametype_category_casual; category < _arena_gametype_category_nhe; category++)
+		for (category = _arena_gametype_category_ffa; category < _arena_gametype_category_nhe; category++)
 		{
 			short place;
 
@@ -364,6 +366,25 @@ int main(void)
 		}
 		if (arena_gametype_list_block(FALSE, NULL) != 10)
 			fail("list block of an unknown name", "");
+		/* (the folders' names, in the lists' order) */
+		{
+			char const *const expected_names[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] =
+				{ "", "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK" };
+			short const expected_category_counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0, 10, 16, 16, 10, 24, 11, 25, 0 };
+
+			for (category = 0; category < NUMBER_OF_ARENA_GAMETYPE_CATEGORIES; category++)
+			{
+				if (strcmp(arena_gametype_category_name(category), expected_names[category]))
+					fail("category name", expected_names[category]);
+				if (counts[category] != expected_category_counts[category])
+					fail("category count", expected_names[category]);
+			}
+			if (strcmp(arena_gametype_category_name(-1), "") ||
+				strcmp(arena_gametype_category_name(NUMBER_OF_ARENA_GAMETYPE_CATEGORIES), ""))
+			{
+				fail("category name out of range", "");
+			}
+		}
 	}
 
 	if (failures)

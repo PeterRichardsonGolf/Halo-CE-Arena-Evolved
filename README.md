@@ -25,8 +25,9 @@ Combat Evolved decompilation, and grew from [ChupathingyCE](https://github.com/C
 
 - **Competitive rules on any map:** no fall damage, Halo 2 or Halo 3 style health, no spread, a pre-game countdown,
   practice mode, silent movement for split screen, a lethal oddball, all on a gametype's ARENA OPTIONS.
-- **Ready-made gametypes, by category:** AE CASUAL, AE COMP, AE PARTY, AE WEAPONS and AE PRACTICE (with OCTAGON
-  warm-up drills: infinite ammo, instant respawns), each with its battle rifle version, and Halo 1: NHE's own
+- **Ready-made gametypes, in playlist folders:** AE FFA, AE 2V2, AE 4V4, AE BTB (big team), AE ACTION SACK and AE
+  PRACTICE (with OCTAGON warm-up drills: infinite ammo, instant respawns), each with its battle rifle version, and
+  Halo 1: NHE's own
   ([gametypes.md](docs/gametypes.md)).
 - **Item timers and training:** the power items' next spawns by the match clock, waypoints over them, spawn markers
   coloured by how likely you are to spawn there, spoken callouts.

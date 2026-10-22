@@ -276,6 +276,7 @@ symbols in this file:
 #include "structures/structure_bsp_definitions.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "ae_silent.h" /* AE hook */
+#include "ae_melee_unzoom.h" /* AE hook */
 
 /* port: port/linux/game/network_objects.c's (a client deletes the host's
 objects on the host's word alone) */
@@ -4363,7 +4364,7 @@ boolean biped_update(
 				/* with no weapon, weapon_prevents_melee_attack(NONE) is TRUE:
 				an unarmed player cannot melee, as in the retail game */
 				if (!weapon_prevents_melee_attack(weapon_index) &&
-					biped->unit.current_zoom_level==NONE)
+					(biped->unit.current_zoom_level==NONE || ae_melee_unzoom_begin(biped_index))) /* AE hook */
 				{
 					short melee_speedup_ticks;
 
