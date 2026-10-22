@@ -7,6 +7,8 @@ unless display.arena_menus is on, and nothing is drawn or taken while no AE
 screen is open.
 */
 
+#include <stdlib.h>
+
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
 #include "../src/ae_draw.h"
@@ -17,6 +19,7 @@ screen is open.
 #include "ae_motion.h"
 #include "ae_screen_gallery.h"
 #include "ae_screen_game_options.h"
+#include "ae_screen_change_map.h"
 #include "ae_glue_ce_maps.h"
 #include "ae_glue_lobby.h"
 #include "ae_screen_lobby_test.h"
@@ -248,6 +251,9 @@ boolean ae_ui_process(
 		/* (the game setup spike's GAME OPTIONS: the last used gametype, or $HALO_AE_TEST_GAMETYPE's) */
 		else if (views == 30)
 			ae_screen_game_options_open(NULL);
+		/* (its CHANGE MAP: the filter $HALO_AE_TEST_MAP_FILTER, 0-6, else ALL) */
+		else if (views == 31)
+			ae_screen_change_map_open(getenv("HALO_AE_TEST_MAP_FILTER") ? atoi(getenv("HALO_AE_TEST_MAP_FILTER")) : 0);
 		else if (views != 0)
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
