@@ -142,6 +142,8 @@ static struct
 	int options_open;          /* GAME OPTIONS opened from here: its changes applied when it closes */
 	int leaving;
 	int joiner;                /* joined another's game by invite: the roster, map and gametype only */
+	int host_started;          /* the host pressed START: the lobby stays up until the game runs (a joiner loading
+	                              the map holds the countdown, and the server may cancel it) */
 	char joined_how[32];       /* (a joiner's crumb) how: "JOINED BY INVITE", the browser's own words */
 	int from_browser;          /* opened by SERVER BROWSER / LAN GAMES (ae_screen_browser.c): leaving goes back to it */
 	char invite[160];          /* the hosted game's invite link (ONLINE), "" none yet */
@@ -909,9 +911,9 @@ static void lobby_start(void)
 	}
 	platform_log("ae create game: lobby: start");
 	ae_sound_request(AE_SOUND_FORWARD, 0);
-	/* (no AE screen over the game: the take-over brings the lobby back after it) */
-	create.starting = 1;
-	clear_stack();
+	/* (the lobby stays up through the countdown; it leaves once the game runs, as a joiner's does: lobby_update.
+	Clearing it here showed AE's main menu over the live lobby until then: release review S1) */
+	lobby.host_started = 1;
 }
 
 static void leave_picked(short choice, void *context)
@@ -1150,10 +1152,13 @@ static void lobby_update(struct ae_screen *instance)
 			}
 		}
 	}
-	/* (a joiner: the host started; no AE screen over the game, the take-over brings the lobby back) */
-	if (lobby.joiner && game_engine_running() && !main_menu_is_active() && !game_engine_showing_postgame())
+	/* (a joiner, or the host after START: the game runs; no AE screen over the game, the take-over brings the
+	lobby back) */
+	if ((lobby.joiner || lobby.host_started) && game_engine_running() && !main_menu_is_active() &&
+		!game_engine_showing_postgame())
 	{
-		platform_log("ae create game: lobby: the host started");
+		platform_log(lobby.joiner ? "ae create game: lobby: the host started" : "ae create game: lobby: the game runs");
+		lobby.host_started = 0;
 		create.starting = 1;
 		clear_stack();
 	}
@@ -1269,6 +1274,7 @@ static void lobby_open(int joiner)
 {
 	memset(&lobby, 0, sizeof(lobby));
 	lobby.joiner = joiner;
+	lobby.host_started = 0;
 	lobby.bot_focus = -1;
 	lobby.flow.hit_rows = HIT_ROWS;
 	lobby.flow.hit_prompts = HIT_PROMPTS;
