@@ -181,7 +181,9 @@ def test_switch_runs_after_the_pointer_lets_its_targets_go():
     start = source.index("\nstatic void ui_widgets_process_mouse(\n")
     mouse_body = source[start:source.index("\n}\n", start)]
     # (the targets forgotten unconditionally, at the function's end, at its outermost level)
-    assert mouse_body.rstrip().endswith("\tui_mouse_target_count = 0;\n\tui_mouse_targets_settled = FALSE;\n\n\treturn;")
+    # (0.3.5's menu crash fix forgets the deleted widgets there too: ae_ui_deleted_clear, an AE hook)
+    assert mouse_body.rstrip().endswith("\tui_mouse_target_count = 0;\n\tui_mouse_targets_settled = FALSE;\n"
+                                        "\tae_ui_deleted_clear(); /* AE hook */\n\n\treturn;")
     assert mouse_body.count("return;") == 1
 
 
