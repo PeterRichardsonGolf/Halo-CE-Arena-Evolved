@@ -47,7 +47,8 @@ struct ae_flow_screen
 	struct ae_frame frame;
 	struct ae_flow_row rows[AE_FLOW_ROWS];
 	short count, focus;
-	struct ae_rect rects[AE_FLOW_ROWS];   /* layout units, as last drawn (a picker's place) */
+	short first;                          /* the first row drawn: the rows scroll when they don't all fit (130 %) */
+	struct ae_rect rects[AE_FLOW_ROWS];   /* layout units, as last drawn (a picker's place; width 0: not drawn) */
 	struct ae_prompt prompts[AE_FLOW_PROMPTS];
 	short prompt_count;
 	char value_texts[AE_FLOW_ROWS][48];   /* the screen's own value texts, kept while drawn */
@@ -64,7 +65,8 @@ void ae_flow_full_density(struct ae_flow_screen *flow);
 void ae_flow_title(struct ae_flow_screen *flow, const char *text, const char *crumb);
 /* the content's bottom: above the prompts' row */
 float ae_flow_content_bottom(struct ae_flow_screen const *flow);
-/* the rows from AE_FLOW_CONTENT_Y down, width wide, the focus's lit; the focused row's help under them (2 lines) */
+/* the rows from AE_FLOW_CONTENT_Y down, width wide, the focus's lit; the focused row's help under them (2 lines).
+Rows that don't fit above the help scroll with the focus, with "▲ / ▼ N more" lines where rows are left out */
 void ae_flow_draw_rows(struct ae_flow_screen *flow, float width);
 void ae_flow_draw_prompts(struct ae_flow_screen *flow);
 struct ae_prompt ae_flow_prompt(int button, const char *label, int action);

@@ -666,6 +666,16 @@ static void more(struct ae_density const *density, float center_x, float top, in
 		AE_ALIGN_CENTER, AE_COLOR_MUTED, text);
 }
 
+float ae_widget_more_line(struct ae_density const *density)
+{
+	return more_line(density);
+}
+
+void ae_widget_more(struct ae_density const *density, float center_x, float top, int up, int count)
+{
+	more(density, center_x, top, up, count);
+}
+
 void ae_widget_list(struct ae_density const *density, struct ae_list_view *view, float x, float y, float width,
 	float height, ae_list_item_draw draw_item, void *context, short hit_id)
 {

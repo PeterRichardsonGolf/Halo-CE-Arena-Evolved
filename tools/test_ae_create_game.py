@@ -28,6 +28,8 @@ _spec.loader.exec_module(menus)
 CASES = (
     ("create", 32, 100, (), 30),
     ("create-130", 32, 130, (), 30),
+    # (130 %: the rows scroll with the focus, the help kept: down to the last row)
+    ("create-130-foot", 32, 130, ("pad:down",) * 12, 34),
     # (HOST ONLINE: PRIVACY and MAX PLAYERS shown, past BOTS and BOT SKILL to JOIN WITH INVITE)
     ("online", 32, 100, ("pad:down",) * 5 + ("pad:right",) + ("pad:down",) * 6, 30),
     # (LAN: BOTS is the eighth row, BOT SKILL the ninth: OFF -> 2, NORMAL -> HEROIC)

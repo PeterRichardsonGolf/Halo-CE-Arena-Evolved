@@ -71,20 +71,105 @@ float ae_flow_content_bottom(struct ae_flow_screen const *flow)
 	return flow->frame.rect.height - ae_flow_u(flow, FOOTER_ABOVE_U) - ae_flow_u(flow, FOOTER_ROOM_U);
 }
 
+/* a row's height with the gap under it (a header's has none) */
+static float flow_row_pitch(struct ae_flow_screen const *flow, short index)
+{
+	struct ae_density const *d = &flow->density;
+
+	if (flow->rows[index].kind == AE_FLOW_ROW_HEADER)
+		return ae_widget_group(d, 0.0f, 0.0f, 0.0f, NULL);
+	return ae_size_row(d) + ae_flow_u(flow, d->metrics->gap);
+}
+
+/* the last row drawn from first in height: the "▲ N more" line's room taken when rows are above, the "▼ N more"
+line's when rows are left below; first at the least */
+static short flow_last_row(struct ae_flow_screen const *flow, short first, float height)
+{
+	float more = ae_widget_more_line(&flow->density), room, used;
+	short index, pass;
+
+	for (pass = 0; pass < 2; pass++)
+	{
+		room = height - (first > 0 ? more : 0.0f) - (pass ? more : 0.0f);
+		used = 0.0f;
+		for (index = first; index < flow->count; index++)
+		{
+			used += flow_row_pitch(flow, index);
+			if (used > room)
+				break;
+		}
+		if (index >= flow->count)
+			return (short)(flow->count - 1);
+		if (pass)
+			return index > first ? (short)(index - 1) : first;
+	}
+	return first;
+}
+
+/* the rows (not headers) from first to last */
+static int flow_rows_between(struct ae_flow_screen const *flow, short first, short last)
+{
+	int count = 0;
+	short index;
+
+	for (index = first; index <= last; index++)
+		count += flow->rows[index].kind != AE_FLOW_ROW_HEADER;
+	return count;
+}
+
+/* first moved so the focus shows (with its header when it is the first row under one), and back up while the rows
+below it would fit */
+static void flow_scroll_to_focus(struct ae_flow_screen *flow, float height)
+{
+	short focus = flow->focus;
+
+	if (flow->first < 0 || flow->first >= flow->count)
+		flow->first = 0;
+	if (focus < 0 || focus >= flow->count)
+		return;
+	if (focus < flow->first)
+		flow->first = focus;
+	if (flow->first == focus && focus > 0 && flow->rows[focus - 1].kind == AE_FLOW_ROW_HEADER)
+		flow->first = (short)(focus - 1);
+	while (flow->first < focus && flow_last_row(flow, flow->first, height) < focus)
+		flow->first++;
+	while (flow->first > 0 && flow_last_row(flow, (short)(flow->first - 1), height) == flow->count - 1)
+		flow->first--;
+}
+
 void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 {
 	struct ae_density const *d = &flow->density;
 	float x = ae_flow_left_x(flow), y = ae_frame_y(&flow->frame, AE_FLOW_CONTENT_Y), gap = ae_flow_u(flow, d->metrics->gap);
 	float body = ae_flow_u(flow, d->metrics->body), line = ae_flow_u(flow, d->metrics->body_line), help_y;
+	float more = ae_widget_more_line(d), bottom = ae_flow_content_bottom(flow);
 	char lines[2][160];
-	short index;
-	int count;
+	short index, last;
+	int count, any_help = 0;
 
+	/* (the rows end above the help's room when any row has help: it never drops off) */
+	for (index = 0; index < flow->count; index++)
+		any_help |= flow->rows[index].help != NULL;
+	help_y = bottom - line * 2.0f;
+	if (any_help)
+		bottom = help_y - ae_flow_u(flow, HELP_GAP_U);
+	flow_scroll_to_focus(flow, bottom - y);
+	last = flow_last_row(flow, flow->first, bottom - y);
+	if (flow->first > 0)
+	{
+		ae_widget_more(d, x + width * 0.5f, y, 1, flow_rows_between(flow, 0, (short)(flow->first - 1)));
+		y += more;
+	}
 	for (index = 0; index < flow->count; index++)
 	{
 		struct ae_flow_row const *row = &flow->rows[index];
 		struct ae_row widget;
 
+		if (index < flow->first || index > last)
+		{
+			flow->rects[index].width = 0.0f;
+			continue;
+		}
 		if (row->kind == AE_FLOW_ROW_HEADER)
 		{
 			y += ae_widget_group(d, x, y, width, row->label);
@@ -120,7 +205,11 @@ void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 		flow->rects[index].height = ae_widget_row(d, x, y, width, &widget, flow->hit_rows, index);
 		y += flow->rects[index].height + gap;
 	}
-	help_y = ae_flow_content_bottom(flow) - line * 2.0f;
+	if (last < flow->count - 1)
+	{
+		ae_widget_more(d, x + width * 0.5f, y, 0, flow_rows_between(flow, (short)(last + 1), (short)(flow->count - 1)));
+		y += more;
+	}
 	if (flow->focus < 0 || flow->focus >= flow->count || !flow->rows[flow->focus].help ||
 		help_y < y + ae_flow_u(flow, HELP_GAP_U))
 		return;

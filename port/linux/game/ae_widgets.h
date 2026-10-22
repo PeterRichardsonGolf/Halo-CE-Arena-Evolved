@@ -109,6 +109,10 @@ the moving selection bar, overflow fades and "▲ / ▼ N more", and the scrollb
 void ae_widget_list(struct ae_density const *density, struct ae_list_view *view, float x, float y, float width,
 	float height, ae_list_item_draw draw_item, void *context, short hit_id);
 short ae_list_view_rows(struct ae_density const *density, float height);
+/* the list's "N more" line: its height, and "▲ N more" (up) / "▼ N more" centred on center_x in a line from top
+(for row screens that scroll without a list: ae_setup_flow.c) */
+float ae_widget_more_line(struct ae_density const *density);
+void ae_widget_more(struct ae_density const *density, float center_x, float top, int up, int count);
 /* where a list drawn at y has its rows' top now: under the "▲ N more" line's room as it is (its motion's) */
 float ae_list_view_rows_top(struct ae_density const *density, struct ae_list_view const *view, float y);
 /* the thumb, in the list's own coordinates (the track from 0 to track_height): never from view or frame offsets
