@@ -83,6 +83,7 @@ mutes.
 #include "text_filter.h"
 #include "halo_keyboard.h"
 boolean input_abstraction_dpad_up_bound(long controller_index); /* AE hook */
+boolean ae_ui_takes_pointer(void); /* AE hook */
 
 #include <stdio.h>
 
@@ -1712,6 +1713,7 @@ was opened), a cinematic, or the HUD hidden; no line is typed nor shown */
 static boolean chat_hidden(
 	void)
 {
+	if (ae_ui_takes_pointer()) return TRUE; /* AE hook */
 	return ui_widgets_active() || cinematic_in_progress() || (hud_scripted_globals && !hud_scripted_globals->show_hud);
 }
 

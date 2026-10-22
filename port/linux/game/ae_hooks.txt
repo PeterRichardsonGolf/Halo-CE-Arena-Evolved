@@ -938,6 +938,10 @@ port/linux/game/mod_models.c	void rasterizer_triangle_buffer_delete(struct trian
 source/input/input_abstraction.c	boolean input_abstraction_dpad_up_bound(long controller_index) { short control_index; for (control_index = 0; control_index < NUMBER_OF_GAME_CONTROLS; control_index++) if (input_abstraction_globals.player_control_preferences[controller_index].game_control_to_xbox_buttons[control_index] == _gamepad_binary_button_dpad_up) return TRUE; return FALSE; } /* AE hook */
 port/linux/game/network_chat.c	boolean input_abstraction_dpad_up_bound(long controller_index); /* AE hook */
 port/linux/game/network_chat.c	if ((pressed || (TEST_FLAG(pad_pressed, HALO_CHAT_PAD_UP) && !input_abstraction_dpad_up_bound(0))) && !console_is_active()) /* AE hook */
+# the game setup spike: no text chat (D-pad Up's keyboard, the chat keys) while an AE screen is up (AE's lobby is a
+# network pregame with the game's widgets closed, so ui_widgets_active() was FALSE there)
+port/linux/game/network_chat.c	boolean ae_ui_takes_pointer(void); /* AE hook */
+port/linux/game/network_chat.c	if (ae_ui_takes_pointer()) return TRUE; /* AE hook */
 # the controller picker's ASSIGN (2026-10-18): while it waits, and until its press is let go, the pads' buttons are held
 # back from the game (the pads stay connected: unplugging them made the lobby ask to reconnect)
 port/linux/src/xinput_sdl.c	if (ae_platform_input_held_back()) return; /* AE hook */
