@@ -28,7 +28,7 @@ _spec.loader.exec_module(menus)
 CASES = (
     ("create", 32, 100, (), 30),
     ("create-130", 32, 130, (), 30),
-    # (HOST ONLINE: PRIVACY and MAX PLAYERS shown; JOIN WITH INVITE with nothing on the clipboard says so)
+    # (HOST ONLINE: PRIVACY and MAX PLAYERS shown, past BOTS and BOT SKILL to JOIN WITH INVITE)
     ("online", 32, 100, ("pad:down",) * 5 + ("pad:right",) + ("pad:down",) * 6, 30),
     # (LAN: BOTS is the eighth row, BOT SKILL the ninth: OFF -> 2, NORMAL -> HEROIC)
     ("create-bots", 32, 100, ("pad:down",) * 7 + ("pad:right", "pad:right", "pad:down", "pad:right"), 34),
