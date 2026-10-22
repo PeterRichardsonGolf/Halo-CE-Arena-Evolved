@@ -25,6 +25,11 @@ realloc and free are the game's checked ones: stb_image allocates and frees with
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+/* (stb_image.h brings limits.h, whose macros the 32-bit build sees before cseries.h's enum of the same names) */
+#undef LONG_MAX
+#undef LONG_MIN
+#undef CHAR_MAX
+#undef CHAR_MIN
 
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
