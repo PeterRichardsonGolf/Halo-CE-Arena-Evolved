@@ -483,3 +483,111 @@ struct ae_result ae_profile_set_color(short local_player, short color)
 	platform_log("ae profiles: colour %d saved", color);
 	return succeeded();
 }
+
+/* a profile on this PC by its index (ae_profile_switch's checks) */
+static boolean profile_of(const char *call, int profile_index, long *index, struct player_profile *profile,
+	struct ae_result *failure)
+{
+	*index = file_index(profile_index);
+	if (*index == NONE || saved_game_file_get_type(*index) != _saved_game_file_type_player_profile ||
+		!TEST_FLAG(*index, _saved_game_file_index_valid_bit) || !player_profile_get(*index, profile))
+	{
+		*failure = failed(call, AE_STR_ERR_PROFILE);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static boolean controls_valid(struct ae_profile_controls const *controls)
+{
+	return controls && controls->layout >= 0 && controls->layout < NUMBER_OF_BUTTON_PRESETS &&
+		controls->look_sensitivity >= 0 && controls->look_sensitivity < NUMBER_OF_LOOK_SENSITIVITY_SETTINGS;
+}
+
+struct ae_result ae_profile_read(int profile_index, struct ae_profile_controls *controls, short *color)
+{
+	struct player_profile profile;
+	struct ae_result failure;
+	long index;
+
+	if (!profile_of("read", profile_index, &index, &profile, &failure))
+		return failure;
+	if (controls)
+	{
+		controls->layout = profile.controller_settings.button_preset;
+		controls->look_sensitivity = profile.controller_settings.look_sensitivity;
+		controls->invert = profile.controller_settings.invert_look ? 1 : 0;
+		controls->vibration = profile.controller_settings.vibration_disabled ? 0 : 1;
+	}
+	if (color)
+		*color = profile.primary_color_index;
+	return succeeded();
+}
+
+struct ae_result ae_profile_save_controls(int profile_index, struct ae_profile_controls const *controls)
+{
+	struct player_profile profile;
+	struct ae_result result;
+	long index;
+
+	if (!controls_valid(controls))
+		return failed("controls", AE_STR_ERR_SETTING);
+	if (!profile_of("controls", profile_index, &index, &profile, &result) ||
+		!save_profile("controls", index, change_controls, controls, &result))
+	{
+		return result;
+	}
+	platform_log("ae profiles: %08X controls %d %d %d %d saved", (unsigned int)profile_index, controls->layout,
+		controls->look_sensitivity, controls->invert ? 1 : 0, controls->vibration ? 1 : 0);
+	return succeeded();
+}
+
+struct ae_result ae_profile_save_color(int profile_index, short color)
+{
+	struct player_profile profile;
+	struct ae_result result;
+	long index;
+
+	if (color < 0 || color >= ae_profile_color_count())
+		return failed("colour", AE_STR_ERR_SETTING);
+	if (!profile_of("colour", profile_index, &index, &profile, &result) ||
+		!save_profile("colour", index, change_color, &color, &result))
+	{
+		return result;
+	}
+	platform_log("ae profiles: %08X colour %d saved", (unsigned int)profile_index, color);
+	return succeeded();
+}
+
+short ae_profile_color_count(void)
+{
+	return (short)player_profile_number_of_available_primary_colors();
+}
+
+unsigned int ae_profile_color_rgba(short color)
+{
+	return color_rgba(color);
+}
+
+struct ae_result ae_profile_delete(int profile_index)
+{
+	struct player_profile profile;
+	struct ae_result result;
+	short player;
+	long index;
+
+	if (!main_menu_is_active())
+		return failed("delete", AE_STR_ERR_IN_GAME);
+	if (!profile_of("delete", profile_index, &index, &profile, &result))
+		return result;
+	for (player = 0; player < LOCAL_PLAYERS; player++)
+	{
+		if (player_ui_get_active_player_profile_index(player) == index)
+			return failed("delete", AE_STR_ERR_PROFILE_IN_USE);
+	}
+	if (upstream_edit_holder() != NONE)
+		return failed("delete", AE_STR_ERR_PROFILE_IN_USE);
+	player_profile_delete(index);
+	platform_log("ae profiles: %08X deleted", (unsigned int)profile_index);
+	return succeeded();
+}

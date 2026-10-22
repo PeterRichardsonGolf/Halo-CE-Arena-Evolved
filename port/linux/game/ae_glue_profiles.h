@@ -55,4 +55,16 @@ game's copy is updated now, but it is read only when a player is added to a game
 lobby the player is in) keeps the colour the player joined with */
 struct ae_result ae_profile_set_color(short local_player, short color);
 
+/* (the 0.3.7 menus' PROFILES: any profile on this PC, by its index, whoever plays with it) */
+/* its controls and colour (the colour index; -1: none, the game's random one) as its file has them */
+struct ae_result ae_profile_read(int profile_index, struct ae_profile_controls *controls, short *color);
+/* saved to its file at once, and to the game's copy for each local player playing with it (as the calls above) */
+struct ae_result ae_profile_save_controls(int profile_index, struct ae_profile_controls const *controls);
+struct ae_result ae_profile_save_color(int profile_index, short color);
+/* the colours a profile can have (the game's primary colours), and one as the game draws it (0xRRGGBBAA; -1: white) */
+short ae_profile_color_count(void);
+unsigned int ae_profile_color_rgba(short color);
+/* its file deleted; refused while a local player plays with it; at the menus only */
+struct ae_result ae_profile_delete(int profile_index);
+
 #endif

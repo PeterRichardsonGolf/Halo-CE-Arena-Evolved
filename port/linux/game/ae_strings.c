@@ -104,6 +104,8 @@ static const char *const strings[AE_NUMBER_OF_STRINGS] =
 	"Not a valid setting",
 	"Guest %d",
 	"A name can't use that character",
+	/* (the 0.3.7 menus' PROFILES) */
+	"A player is playing with it",
 };
 
 const char *ae_string(int id)
