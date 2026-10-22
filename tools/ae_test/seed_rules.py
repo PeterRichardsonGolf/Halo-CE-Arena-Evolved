@@ -335,6 +335,12 @@ for _name, _twin in BR_TWINS_22.items():
     ROWS[_name] = (dict(_want, **BR_START), "battle_rifle + pistol", _frags)
 BR_TWINS.update(BR_TWINS_22)
 
+# revision 22 (tools/ae_gametype_change.py): feel rules as host gametype rules: a melee while zoomed takes the zoom
+# off (MELEE UNZOOMS ON) and no aim assist for the mouse (MOUSE AIM ASSIST OFF) in every AE gametype; the NHE set and
+# stock gametypes keep Halo CE's
+for _name in ("AE FFA SLAY", "AE TEAM SLY", "AE CTF", "AE KING", "AE FFA BALL", "AE 2V2 SLY", "AE 2V2 CTF", "AE 2V2 KING", "AE 2V2 BALL", "AE TEAM OB", "AE PRACTICE", "AE SNIPERS", "AE SHOTSNIP", "AE SWAT", "AE ROCKETS", "AE SHOTGUNS", "AE HEAVIES", "AE BTB SLY", "AE BTB CTF", "AE BTB KING", "AE BTB BALL", "AE BTB HVY", "AE ELIM", "AE PHANTOMS", "AE ENDURE", "AE FFA ROCK", "AE FFA SNPR", "AE JUGGER", "AE REV TAG", "AE ACCUM", "AE STALKER", "AE FFA KING", "AE CRAZYKNG", "AE RACE", "AE RALLY", "AE TRAINING", "AE COMP FFA", "AE COMP TS", "AE COMP CTF", "AE COMP KOH", "AE COMP OB", "AE C2V2 TS", "AE C2V2 CTF", "AE C2V2 KOH", "AE C2V2 OB", "AE BR FFA", "AE BR ELIM", "AE BR PHANT", "AE BR ENDUR", "AE BR FBALL", "AE BR JUGG", "AE BR RTAG", "AE BR ACCUM", "AE BR STALK", "AE BR FKING", "AE BR CKING", "AE BR PRAC", "AE BR C FFA", "AE BR TS", "AE BR CTF", "AE BR KING", "AE BR TM OB", "AE BR 2V2 S", "AE BR 2V2 C", "AE BR 2V2 K", "AE BR 2V2 B", "AE BR C TS", "AE BR C CTF", "AE BR C KOH", "AE BR C OB", "AE BR BTB S", "AE BR BTB C", "AE BR BTB K", "AE BR BTB B", "AE BR BTB H", "AE BR C2 TS", "AE BR C2CTF", "AE BR C2KOH", "AE BR C2 OB", "AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG", "AE OCT TMSN",):
+    ROWS[_name][0].update({"melee unzooms": "on", "mouse aim assist": "off"})
+
 
 def check(runs, prefix):
     """{name: (passed, problems)} for every seed run under runs/<prefix><name, spaces as _>/*/debug.txt"""

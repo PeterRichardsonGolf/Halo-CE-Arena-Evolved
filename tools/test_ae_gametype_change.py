@@ -123,9 +123,10 @@ def test_row_change_render():
 def test_variant_change_render():
     """a variant field goes through a new adjust: after the row's old one (called), or alone; one that exists with
     the same body is reused; the BR start's fields and other engines' fields are refused"""
-    # (AE FFA ROCK's own adjust: no speed changes, and CONTROLLER CROUCH STAYS DOWN since revision 21)
+    # (AE FFA ROCK's own adjust: no speed changes, CONTROLLER CROUCH STAYS DOWN since revision 21, MELEE UNZOOMS ON
+    # and MOUSE AIM ASSIST OFF since revision 22)
     p = plan(["AE FFA ROCK"], ["universal_variant.respawn_time_growth=0"])
-    old = "arena_gametype_no_speed_changes_and_controller_crouch_stays_down"
+    old = "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off"
     function = old + "_and_no_respawn_growth"
     assert p.changes["AE FFA ROCK"]["adjust"] == (old, function)
     text = change.render(p, {})
@@ -220,9 +221,12 @@ def test_committed_change(entry):
         if name in entry["adjusts"]:
             assert f".adjust = {entry['adjusts'][name]}" in change.squash(new_row), name
             assert entry["adjusts"][name] in SOURCE.adjusts, name
-    assert sorted(golden) == sorted(before)
-    assert sorted(n for n in golden if golden[n]["block"] != before[n]["block"]) == sorted(entry["gametypes"])
-    assert all(golden[n]["folder"] == before[n]["folder"] for n in golden)
+    # (a revision that also adds seeds, 22, names them: no migration, not in the root before)
+    added = entry.get("added_seeds", [])
+    assert not set(added) & set(before) and not set(added) & set(entry["gametypes"])
+    assert sorted(golden) == sorted(list(before) + added)
+    assert sorted(n for n in before if golden[n]["block"] != before[n]["block"]) == sorted(entry["gametypes"])
+    assert all(golden[n]["folder"] == before[n]["folder"] for n in before)
     for name, words in entry["seed_rules"].items():
         for key, value in words.items():
             assert seed_rules.ROWS[name][0][key] == value, (name, key)

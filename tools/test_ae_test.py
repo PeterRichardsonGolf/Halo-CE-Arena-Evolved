@@ -739,7 +739,9 @@ class SeedCompare(unittest.TestCase):
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text(encoding="latin-1")
         self.assertGreaterEqual(int(re.search(r"ARENA_GAMETYPES_REVISION = (\d+),", source)[1]), 22)
         migrations = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
-        self.assertNotIn(".revision = 22,", migrations)
+        # (the new seeds have no migration: only revision 21's AE seeds do)
+        for name in REVISION_22_SEEDS:
+            self.assertNotIn(f'.old_row = {{ .name = "{name}"', migrations)
         table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
         # (each row as one line, the comments after it left out)
         rows = {n: re.sub(r"\s+", " ", re.sub(r"/\*.*?\*/", "", b, flags=re.S)).strip()
@@ -780,8 +782,16 @@ class SeedCompare(unittest.TestCase):
         golden = json.loads((HERE / "golden_seeds_rev22.json").read_text())
         golden_rev21 = json.loads((HERE / "golden_seeds_rev21.json").read_text())
         self.assertEqual(sorted(golden), sorted(list(golden_rev21) + list(REVISION_22_SEEDS)))
+        # (revision 22's migration, MELEE UNZOOMS ON and MOUSE AIM ASSIST OFF, changed every AE seed of revision 21 in
+        # place, in its folder: tools/ae_gametype_change.py's entry; the NHE set's files are revision 21's)
+        migrated = sorted(re.findall(r'\.revision = 22,\s*\.old_row = \{ \.name = "([^"]+)"', migrations))
+        self.assertEqual(len(migrated), 69)
         for name, value in golden_rev21.items():
-            self.assertEqual(golden[name], value, name)
+            if name in migrated:
+                self.assertNotEqual(golden[name]["block"], value["block"], name)
+                self.assertEqual(golden[name]["folder"], value["folder"], name)
+            else:
+                self.assertEqual(golden[name], value, name)
         self.assertEqual(len({golden[n]["folder"] for n in golden}), len(golden))
         for name in ("AE BTB SLY", "AE BTB HVY", "AE C2V2 TS", "AE BR BTB S", "AE BR BTB H", "AE BR C2 TS"):
             self.assertEqual((golden[name]["slayer"]["no_death_bonus"], golden[name]["slayer"]["no_kill_penalty"]),

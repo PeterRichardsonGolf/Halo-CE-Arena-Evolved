@@ -70,7 +70,11 @@ They are in the gametype list the first time you play. Back to the [README](../R
 - Every Arena Evolved gametype has no fall damage, HALO 2 health (SWAT:
   Halo CE), NO SPREAD FIRST SHOT, the PRE-GAME COUNTDOWN and generic starting
   equipment, with a pistol in hand and an assault rifle unless its mode says
-  otherwise.
+  otherwise. Since seed revision 22 they also have MELEE UNZOOMS ON (a melee
+  while zoomed takes the zoom off and strikes, as in Halo 2; Halo CE has no
+  melee while zoomed) and MOUSE AIM ASSIST OFF (no aim assist for the mouse,
+  for every player; controllers keep theirs). Halo 1: NHE's set and the stock
+  gametypes keep Halo CE's melee and allow the mouse's aim assist.
 - **Halo 1: NHE's own 23 gametypes** (TS 50, TS 100, TS ON-OFF, TS TRAINING,
   TS PRACTICE, TS SNIPERS, FFA 50 NR/R, 1 V 1 NR/R, KOTH 5M 7S/10S, BALL 5M
   7S/10S, eight CTFs and CTF WIZARD), with NHE's values: Halo CE health, fall

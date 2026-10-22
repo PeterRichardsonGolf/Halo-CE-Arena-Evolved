@@ -14,6 +14,15 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - AE COMP 2V2 (seed revision 22): TEAM AE COMP 2V2 SLAYER (25 kills), CTF, KING and ODDBALL, the AE COMP rules (5
   second respawns, 2 frags, no motion sensor, no vehicles, objectives only in line of sight) for two against two, each
   with its battle rifle version.
+- MELEE UNZOOMS, a new gametype rule (GAME OPTIONS, seed revision 22: ON in every AE gametype; Halo 1: NHE's and the
+  stock gametypes OFF): a melee while zoomed, any weapon at any zoom, takes the zoom off and strikes, as in Halo 2.
+  OFF is Halo CE's own: no melee while zoomed. The host's gametype decides for every player in the game. AE
+  gametypes you edited keep their own rules.
+- MOUSE AIM ASSIST, a new gametype rule (GAME OPTIONS, seed revision 22: OFF in every AE gametype; Halo 1: NHE's and
+  the stock gametypes ALLOWED): OFF turns the mouse's aim assist off for every player of the game, the host's
+  BLOCK M+KB setting as before still blocks it too, and controllers keep their aim assist. It rides on OpenCE's own
+  aim assist message, so OpenCE and ChupathingyCE players in an AE host's game follow it as well. In a game on one
+  machine (split screen, bots) the gametype's rule applies too.
 - The gametype lists are sorted into playlist folders: AE FFA, AE 2V2, AE 4V4, AE BTB, AE ACTION SACK (the party and
   weapon modes) and AE PRACTICE, then Halo 1: NHE's (they were AE CASUAL, AE COMP, AE PARTY, AE WEAPONS and AE
   PRACTICE).
