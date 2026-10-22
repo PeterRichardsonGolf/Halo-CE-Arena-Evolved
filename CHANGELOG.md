@@ -4,6 +4,12 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## Unreleased
+
+- DualSense on Windows: the adaptive triggers, rumble, lightbar and player lights go straight to the pad's HID device
+  in one whole report, as on Linux, not through SDL's queue, which merged and dropped the triggers' kicks (they felt
+  hardly there). Where the HID device cannot be opened, SDL's way as before (`debug.txt` says which and why).
+
 ## 0.3.6-beta - 2026-10-21
 
 - Bots see an enemy above or below a ledge by the head, and aim at it: they no longer ignore someone shooting down
