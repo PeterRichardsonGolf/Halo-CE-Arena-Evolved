@@ -27,7 +27,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 		AE_SETTINGS_PLAYER, 0 },
 	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 0 },
 	{ "ACCESSIBILITY", "Menu size, motion, help and language.", AE_SETTINGS_MIXED, 0 },
-	{ "SYSTEM", "Files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 0 },
+	{ "SYSTEM", "The menus, files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
 };
 
 struct ae_settings_group_info const *ae_settings_group(short group)
@@ -99,6 +99,10 @@ static const char *const waypoint_values[] = { "text", "icons", "both" };
 static const char *const power_texts[] = { "CLOCK", "TOP LEFT" };
 static const char *const power_values[] = { "clock", "top_left" };
 static const char *const heat_texts[] = { "OFF", "MINE", "ENEMY" };
+/* (0.3.7: the way back to the classic menus while AE's lack a screen, CO-OP first; the classic menus' MENUS row
+comes back here) */
+static const char *const menus_texts[] = { "ARENA EVOLVED", "CLASSIC" };
+static const char *const menus_values[] = { "true", "false" };
 static const char *const heat_values[] = { "off", "mine", "enemy" };
 static const char *const callout_texts[] = { "OFF", "ITEMS", "ITEMS + CLOCK" };
 static const char *const callout_values[] = { "off", "items", "items_clock" };
@@ -342,6 +346,10 @@ static struct ae_settings_row const rows[] =
 		AE_SETTINGS_THIS_PC },
 	{ AE_SETTINGS_HUD, "CALLOUTS", "CALLOUT VOICE", AE_SETTINGS_SPINNER, "game.callout_voice", NULL, NULL, 0,
 		AE_SETTINGS_WHEN_CALLOUTS, "Whose voice calls them.", AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_SYSTEM, "MENUS", "MENUS", AE_SETTINGS_SPINNER, "display.arena_menus",
+		VALUES(menus_texts, menus_values), AE_SETTINGS_ALWAYS,
+		"Arena Evolved's menus, or the classic ones (co-op is there for now). The game restarts to switch.",
+		AE_SETTINGS_RESTART },
 };
 
 short ae_settings_row_count(void)

@@ -68,6 +68,10 @@ int main(void)
 	CHECK(!ae_settings_group(AE_SETTINGS_GROUPS) && !ae_settings_group(-1));
 	CHECK(ae_settings_group(AE_SETTINGS_CONTROLS)->built && ae_settings_group(AE_SETTINGS_VIEW)->built &&
 		ae_settings_group(AE_SETTINGS_HUD)->built && !ae_settings_group(AE_SETTINGS_VIDEO)->built);
+	/* (0.3.7: SYSTEM holds MENUS alone, the way back to the classic menus; it needs a restart) */
+	CHECK(ae_settings_group(AE_SETTINGS_SYSTEM)->built && ae_settings_row_of("display.arena_menus") >= 0 &&
+		ae_settings_row(ae_settings_row_of("display.arena_menus"))->group == AE_SETTINGS_SYSTEM &&
+		(ae_settings_row(ae_settings_row_of("display.arena_menus"))->flags & AE_SETTINGS_RESTART));
 	CHECK(ae_settings_group(AE_SETTINGS_VIDEO)->whose == AE_SETTINGS_PC);
 
 	/* rows.md's counts: CONTROLS 29 with everything shown (a pad-only player sees fewer), VIEW 11, HUD 26 */

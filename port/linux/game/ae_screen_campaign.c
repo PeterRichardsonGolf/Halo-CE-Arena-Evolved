@@ -120,7 +120,8 @@ static void draw_side(void)
 	memset(&row, 0, sizeof(row));
 	row.label = "CO-OP";
 	row.flags = AE_ROW_DISABLED;
-	row.reason = "COMING SOON";
+	/* (co-op is in the classic menus for now: SETTINGS > SYSTEM > MENUS) */
+	row.reason = "IN CLASSIC MENUS";
 	ae_widget_row(d, x, y, width, &row, HIT_SIDE, 2);
 }
 
