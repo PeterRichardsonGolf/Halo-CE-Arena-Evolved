@@ -39,7 +39,7 @@ def seeds():
 def test_the_limit():
     text = LIMITS.read_text()
     assert define(text, "AE_SAVED_GAMES_OLD_MAXIMUM") == 100
-    assert maximum() == 160
+    assert maximum() == 200
 
 
 def test_memory_unit_uses_it():
@@ -81,6 +81,14 @@ def test_xbox_menus_list_holds_it():
 def test_pc_menus_and_test_launcher_hold_it():
     text = MENUS.read_text()
     assert "#define MAXIMUM_GAMETYPES AE_SAVED_GAMES_MAXIMUM /* AE hook */" in text
+    # (the AE menus' gametype lists: no list of 128 (revision 22's 112 seeds and the 26 built-ins are 138))
+    game = ROOT / "port" / "linux" / "game"
+    for name in ("ae_glue_setup_options.c", "ae_screen_create_game.c", "ae_screen_main_menu.c"):
+        source = (game / name).read_text()
+        assert "ui_widget_port_gametypes(" in source or "ae_setup_gametypes(" in source, name
+        assert not re.search(r"(indices|gametypes)\[128\]|GAMETYPES_MAXIMUM = 128|gametypes, 128,", source), name
+    assert "GAMETYPES_MAXIMUM = AE_SAVED_GAMES_MAXIMUM," in (game / "ae_screen_create_game.c").read_text()
+    assert not re.search(r"#define MAXIMUM_GAMETYPES \d", text)
     assert not re.search(r"#define MAXIMUM_GAMETYPES \d", text)
     text = NETWORK_TEST.read_text()
     assert "long indices[AE_SAVED_GAMES_MAXIMUM]; /* AE hook */" in text

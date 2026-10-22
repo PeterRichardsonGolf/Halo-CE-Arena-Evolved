@@ -18,6 +18,7 @@ gametype_options[] kinds (gametype_option_value / gametype_option_value_set), in
 #include "saved games/playlist_profile.h"
 #include "saved games/saved_game_files.h"
 #include "ae_glue_setup_options.h"
+#include "ae_saved_limits.h"
 #include "ae_hit_feedback_rules.h"
 #include "ae_sensor_range_rules.h"
 #include "ae_silent_rules.h"
@@ -438,7 +439,7 @@ int ae_setup_edit_begin(long profile)
 
 int ae_setup_edit_begin_named(char const *name)
 {
-	long indices[128];
+	long indices[AE_SAVED_GAMES_MAXIMUM];
 	short count, last = 0, index;
 
 	count = ui_widget_port_gametypes(indices, (short)NUMBEROF(indices), &last);
@@ -589,7 +590,7 @@ int ae_setup_edit_apply(void)
 
 short ae_setup_gametypes(char (*names)[16], long *profiles, short maximum, short *current)
 {
-	long indices[128];
+	long indices[AE_SAVED_GAMES_MAXIMUM];
 	short count, last = 0, index, written = 0;
 
 	*current = -1;

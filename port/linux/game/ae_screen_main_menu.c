@@ -101,7 +101,7 @@ static void facts_read(void)
 	long active = player_ui_get_active_player_profile_index(0);
 	short count = 0, index, last = 0;
 	char const *const *names = NULL;
-	long gametypes[128];
+	long gametypes[AE_SAVED_GAMES_MAXIMUM];
 	char map[64], gametype[16];
 	wchar_t wide[64];
 
@@ -129,7 +129,7 @@ static void facts_read(void)
 			map[at] = wide[at] >= 0x20 && wide[at] < 0x7F ? (char)wide[at] : '?';
 		map[at] = 0;
 	}
-	count = ui_widget_port_gametypes(gametypes, 128, &last);
+	count = ui_widget_port_gametypes(gametypes, (short)NUMBEROF(gametypes), &last);
 	if (last >= 0 && last < count)
 	{
 		struct game_variant variant;

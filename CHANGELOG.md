@@ -6,6 +6,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- A save can hold 200 saved games (was 160), so the 112 seeded gametypes, the built-in ones, your profiles and your own
+  gametypes all fit; the new menus list every gametype (they stopped at 128).
 - DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT's hair-trigger break is easier to
   feel, STRONG is two steps firmer than NORMAL but never so stiff that a full pull tires. L2's grenade is a light,
   quick pull with a short click at the throw on every setting (it was strong on all of them). The weapon packs have
