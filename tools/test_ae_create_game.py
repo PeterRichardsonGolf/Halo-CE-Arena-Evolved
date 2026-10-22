@@ -27,6 +27,8 @@ _spec.loader.exec_module(menus)
 CASES = (
     ("create", 32, 100, (), 30),
     ("create-130", 32, 130, (), 30),
+    # (HOST ONLINE: PRIVACY and MAX PLAYERS shown; JOIN WITH INVITE with nothing on the clipboard says so)
+    ("online", 32, 100, ("pad:down",) * 5 + ("pad:right",) + ("pad:down",) * 4, 30),
     ("entry", 0, 100, ("pad:back",), 30),
     ("lobby", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:up", "pad:right"), 34),
     ("play", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:start"), 50),
