@@ -5,9 +5,15 @@ Arena Evolved: a PS5 DualSense's (and DualSense Edge's) adaptive triggers, light
 game (port/linux/game/ae_ds5_game.c says what each player wants: lightbar colour, player number, R2 and L2 effects).
 Settings > Gamepads: ADAPTIVE TRIGGERS (input.adaptive_triggers, on), TRIGGER STRENGTH (input.trigger_strength,
 normal) and LIGHTBAR (input.lightbar: player_color, the lightbar in the player's colour and the player lights the
-split-screen number; shield, the lightbar the player's shield meter as the HUD draws it; off). Other pads are never touched. Two ways to the pad:
-- SDL's own PS5 driver (Windows, macOS; Linux where SDL reads the pad's hidraw node): SDL_SendGamepadEffect with
-  the 47-byte effects body, SDL_SetGamepadLED, SDL_SetGamepadPlayerIndex.
+split-screen number; shield, the lightbar the player's shield meter as the HUD draws it; off). Other pads are never touched. Three ways to the pad:
+- Windows: SDL's PS5 driver reads the pad, and the same whole output reports as the hidraw way's (USB 0x02, Bluetooth
+  0x31 with its CRC) are written to the pad's own HID device, opened beside SDL's through SDL's hidapi (SDL's path to
+  it), by a writer thread of its own (a write waits for the pad). ONE WRITER as on Linux: the game's rumble goes in
+  our reports (SDL is given zeros), no SDL effect or LED calls; our lightbar and player lights are sent again once a
+  second, as SDL's driver sets its own now and then. Through SDL's queue the trigger reports were merged and replaced
+  (a kick replaced by the held shape before it went out: owner 10-21, "hardly there"). Not opened: SDL's way.
+- SDL's own PS5 driver (macOS; Windows when the HID device cannot be opened; Linux where SDL reads the pad's hidraw
+  node): SDL_SendGamepadEffect with the 47-byte effects body, SDL_SetGamepadLED, SDL_SetGamepadPlayerIndex.
 - Linux with the kernel's hid-playstation driver (AE's default, ae_gamepads.c): the input stays the kernel's, and
   the output reports are written to the pad's own /dev/hidraw node when this user may write it (udev rules: Steam's
   60-steam-input.rules, or the Linux downloads' 70-ae-dualsense.rules). Only the trigger, lightbar and player light
@@ -79,7 +85,7 @@ void ae_ds5_pulse(int port, int left, int right, int ms);
 void ae_ds5_wish_set(int port, struct ae_ds5_wish const *wish);
 /* xinput_sdl.c XInputSetState: the SDL pad that drives controller port `port` (NULL: none), and the game's motors,
 which a DualSense's event pulse raises while it lasts (each motor the larger of the game's and the pulse's). Through
-SDL's driver the pad's rumble stays the game's own SDL_RumbleGamepad; on the hidraw way the motors go in our reports
+SDL's driver the pad's rumble stays the game's own SDL_RumbleGamepad; on the hidraw and HID ways the motors go in our reports
 and are given back zero, so SDL_RumbleGamepad sends nothing (one writer) */
 void ae_ds5_port(int port, struct SDL_Gamepad *gamepad, unsigned short *left_motor, unsigned short *right_motor);
 /* sdl_platform.c: once a frame, after the events (sends what changed) */

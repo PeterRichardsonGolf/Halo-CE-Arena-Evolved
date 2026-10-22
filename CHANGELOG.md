@@ -17,6 +17,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   player beyond the first two along too, instead of leaving them in the part of the level that was unloaded (OpenCE
   build-246, by eltanschauung).
 - Plays with 0.3.6-beta, OpenCE build-244 to build-250 and ChupathingyCE 0.8 (network version 32).
+- DualSense on Windows: the adaptive triggers, rumble, lightbar and player lights go straight to the pad's HID device
+  in one whole report, as on Linux, not through SDL's queue, which merged and dropped the triggers' kicks (they felt
+  hardly there). Where the HID device cannot be opened, SDL's way as before (`debug.txt` says which and why).
 
 ## 0.3.6-beta - 2026-10-21
 
