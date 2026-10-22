@@ -509,13 +509,13 @@ _game_options = SCREENS["mods_setup"]
 _game_options["spacing"] = 24
 _game_options["categories"] = [
     ("BOTS:", "mods_setup/bots",
-     "Computer players in every mode: split screen\ngames, and up to 3 in a LAN game you host."),
+     "Computer players in every mode: split screen\ngames and games you host, LAN or internet."),
 ]
 SCREENS["mods_setup/bots"] = {
     "screen": "bots_settings_screen", "header": ("header_bots", None), "title": "BOTS", "spacing": 30,
     "rows": [
         ("BOTS:", "bots.count", BOT_COUNTS,
-         "How many bots play a split screen game (changed\nmid-game: at once); a LAN host takes up to 3.",
+         "How many bots, up to 15, play split screen and\nLAN or internet games you host (mid-game too).",
          None),
         ("BOT SKILL:", "bots.skill", BOT_SKILLS,
          "How soon the bots react, how well they aim and\nhow far they see.", None),

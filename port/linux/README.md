@@ -609,20 +609,23 @@ before.
 Computer players (bots) can play a local multiplayer game with you:
 `bots.count` (1 to 15) of them join the lobby of a game played on this
 computer, which is Multiplayer > Split Screen in the Xbox's menus and
-SPLIT SCREEN in the PC menus' Multiplayer, and up to 3 join a LAN game you
-host. Changed during a local game (the pause menu's SETTINGS), the
+SPLIT SCREEN in the PC menus' Multiplayer, and up to 127 join a LAN or
+internet game you host (`debug.network_bots`, on by default: past the
+host's three free controllers they sit on machines of the host's own, four
+each, with no connection; their names start "BOT "; in a team game whose
+players are odd one more joins at the start, so the teams are even). Changed during a local game (the pause menu's SETTINGS), the
 count takes effect at once: bots join the game in progress, one a frame
 on the teams `bots.teams` asks for, or leave it (in a team game the larger
 team's last bot first), as a player who joins or quits a game does
-(`game/ae_bots_live.c`); in a LAN game and after a game, the change waits
-for the next lobby. They are players as you are: in the scores, the respawns
+(`game/ae_bots_live.c`); a game you host does the same (`game/ae_lan_bots.c`:
+a person joining it full takes a bot's place, and a bot comes back once a
+person leaves); after a game, the change waits for the next lobby. They are players as you are: in the scores, the respawns
 and the game's rules, on the teams that `bots.teams` asks for, and they
 follow the teams' changes in the lobby. They look for enemies, aim, fire,
 throw grenades and pick up better weapons, as well as `bots.skill` lets
 them (`bots.shooting_skill` and `bots.movement_skill` can set the aim and
 the movement apart: `game/ae_bots_combat.c`), and walk the paths that the
-campaign's AI finds on the maps' walkable surfaces (`game/bots.c`). They are
-never in internet games. They play every mode
+campaign's AI finds on the maps' walkable surfaces (`game/bots.c`). They play every mode
 (`game/ae_bots_objective.c`): each one weighs the fight against its mode's
 goal, as Halo Infinite's bots do. In CTF they take the enemy flag, bring
 it home (the carrier keeps running whatever it meets, and strikes what
@@ -643,9 +646,9 @@ passenger, never at a gun (a trigger pull drops the flag). They get out
 when the vehicle is wrecked, flipped, without a driver or standing still a
 while, or when their goal is near or the vehicle takes them away from it.
 No Banshee or Scorpion; driving is a test, off by default
-(`debug.bot_vehicles`). They are
-never in internet games, and nothing that the machines send each other
-changes.
+(`debug.bot_vehicles`). Nothing that the machines send each other
+changes: in a network game the host runs them, and the other machines see
+them as the host's players.
 
 Getting around (`game/ae_bots_travel.c`): a bot whose walk to its goal is
 long, or finds no way, takes a teleporter when the pad is near it and sends
@@ -867,7 +870,8 @@ the setting for one start of the game. It has priority over the file.
 | `game.callout_voice` | `"cori"` | `HALO_CALLOUT_VOICE` | The callouts' voice: a folder of `voices/` in the data root (refer to "Files and folders"), or of the modded disc's `discs/<disc>/voices/`, read as a map starts. A disc's own `discs/<disc>/voices/<folder>/` clips come first (an unreadable one gives way to the `voices/` copy). With no such folder, the first folder of `voices/` by name speaks and the setting stays as it is. 16-bit PCM WAVs, mono or stereo, at any rate; a missing or unusable clip is skipped and logged with why. Every build ships the beta voice `cori` (Piper's en_GB-cori-high, public domain, CC0 clips; `port/assets/voices/cori`), copied beside the game as `voices/` (Android's APK does not carry it yet); a player's own import of Halo 1: NHE's clips (`nhe`) is optional. Settings > Game Options sets it (VOICE: the folders of `voices/` and of the mod's `voices/`). |
 | `game.language` | `""` | `HALO_LANGUAGE` | The language of the menus: `ja`, `de`, `fr`, `es` or `it`. Empty: English. |
 | `game.enhanced_animations` | `true` | `HALO_ENHANCED_ANIMATIONS` | `true`: the player bipeds' grenade throws keep their legs moving, blended by speed and direction (crouched throws stay crouched, throws in the air use the jump's legs), Warthog and Scorpion riders stay seated to throw and let go of the grips to throw and reload, and a player turns with the aim while throwing, as while meleeing. `false`: the original animations, which freeze the legs during a throw and stand a rider up. Only in config.toml, not in the menus. |
-| `bots.count` | `0` | `HALO_BOTS` | Computer players (bots) in a local (split screen) game of any mode (Slayer, CTF, Oddball, King of the Hill, Race): `0` to `15` join its lobby with the players, as far as the game has room; up to 3 in a LAN game you host. Not in internet games. `0`: none, as in the stock game. Changed during a local game (the pause menu's SETTINGS), it takes effect at once: bots join or leave the game in progress; a LAN game's bots change in its next lobby. Refer to "Bots". |
+| `bots.count` | `0` | `HALO_BOTS` | Computer players (bots) in a local (split screen) game of any mode (Slayer, CTF, Oddball, King of the Hill, Race): `0` to `15` join its lobby with the players, as far as the game has room; in a LAN or internet game you host, up to `127` (`debug.network_bots`; off: up to 3, LAN only). `0`: none, as in the stock game. Changed during a local game (the pause menu's SETTINGS), it takes effect at once: bots join or leave the game in progress; so do a game's you host (`debug.network_bots`; off: in its next lobby). Refer to "Bots". |
+| `debug.network_bots` | `true` | `HALO_NETWORK_BOTS` | The host's bots in network games: LAN and internet games it hosts take `bots.count` bots, up to 127. The first three take the host's free controllers; the rest sit on machines of the host's own with no connection (four each), which every machine, stock OpenCE and ChupathingyCE included, sees as a machine of four players; nothing that the machines send each other changes. Their names start "BOT ". The lobby keeps one player slot free for a joiner; at the start of a team game whose players are odd, one more bot takes it, so the teams are even. In the game in progress the bots fill the game up to `bots.count`: a person joining a full game takes a bot's place (the larger team's bot leaves, so the teams stay even), and a bot comes back once a person leaves. `false`: 0.3.6's LAN bots (up to 3, not in internet games). halo.log has the bots' brain time a minute. |
 | `bots.skill` | `"normal"` | `HALO_BOT_SKILL` | How well the bots play: `"recruit"`, `"easy"`, `"normal"`, `"heroic"`, `"legendary"` or `"demon"` (the top level, the `"legendary"` of 0.3.4 and before): how soon they react, how far and how wide they see, how large their aim error is and how fast it settles, how fast they turn. |
 | `bots.shooting_skill` | `"same"` | `HALO_BOT_SHOOTING_SKILL` | SHOOTING SKILL: the bots' aim, reactions, sight, grenades, blows and headshots at a level of their own (`"recruit"` .. `"demon"`), or `"same"` for `bots.skill`'s. |
 | `bots.movement_skill` | `"same"` | `HALO_BOT_MOVEMENT_SKILL` | MOVEMENT SKILL: the bots' strafing, jumping, crouching, closing in and retreating at a level of their own (`"recruit"` .. `"demon"`), or `"same"` for `bots.skill`'s. |

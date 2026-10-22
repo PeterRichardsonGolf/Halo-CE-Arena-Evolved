@@ -17,6 +17,7 @@ struct network_player;
 #define BOTS_MAXIMUM 15
 /* the first bot's machine index (the last machine indices of the session) */
 #define BOTS_FIRST_MACHINE (HALO_PORT_MAXIMUM_NETWORK_MACHINES - BOTS_MAXIMUM)
+#define BOTS_BRAINS 127 /* AE hook */
 
 enum
 {

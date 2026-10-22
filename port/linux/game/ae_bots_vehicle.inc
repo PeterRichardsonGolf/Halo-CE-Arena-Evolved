@@ -99,7 +99,7 @@ struct ae_bots_vehicle_bot
 	long drive_goal_tick;
 };
 
-static struct ae_bots_vehicle_bot ae_bots_vehicle_bots[BOTS_MAXIMUM];
+static struct ae_bots_vehicle_bot ae_bots_vehicle_bots[BOTS_BRAINS];
 
 static long ae_bots_vehicle_index(struct bots_bot *bot)
 {
@@ -213,7 +213,7 @@ static boolean ae_bots_vehicle_reserved(long bot_index, long vehicle_index, shor
 {
 	long index;
 
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		struct ae_bots_vehicle_bot const *other = &ae_bots_vehicle_bots[index];
 
@@ -231,7 +231,7 @@ static boolean ae_bots_vehicle_gunner_coming(long bot_index, long vehicle_index)
 {
 	long index;
 
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		struct ae_bots_vehicle_bot const *other = &ae_bots_vehicle_bots[index];
 
@@ -412,7 +412,7 @@ boolean ae_bots_vehicle_goal(struct bots_bot *bot, long player_index, real_point
 	(void)player_index;
 	(void)position;
 	(void)fighting;
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM || !ae_bots_vehicle_setting())
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS || !ae_bots_vehicle_setting())
 		return FALSE;
 	state = ae_bots_vehicle_state(bot, bot_index);
 	/* (Slayer's driver: a roaming place far off, kept until it is there: a goal that changed each time an enemy was
@@ -802,7 +802,7 @@ void ae_bots_vehicle_move(struct bots_bot *bot, long bot_index, struct bots_tick
 	struct ae_bots_vehicle_bot *state;
 	long parent;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM || !tick->unit)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS || !tick->unit)
 		return;
 	ae_bots_vehicle_report();
 	state = ae_bots_vehicle_state(bot, bot_index);

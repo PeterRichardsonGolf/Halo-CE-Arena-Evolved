@@ -1670,6 +1670,9 @@ static void network_game_server_port_bots(
 		network_event("network_game_server_port_bots() failed to send updated game settings to clients");
 }
 
+long ae_lan_bots_server_playerless_machines(struct network_game_server *server) { long count = 0, index; for (index = 0; server && index < MAXIMUM_NETWORK_MACHINE_COUNT; index++) if (server->client_machines[index].connection && server->client_machines[index].machine_index != NONE && !network_game_server_client_machine_is_local(server, &server->client_machines[index]) && !network_game_server_machine_has_players(server, server->client_machines[index].machine_index)) count++; return count; } /* AE hook */
+boolean ae_lan_bots_server_slot_free(struct network_game_server *server, long machine_index) { return server && VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) && server->client_machines[machine_index].machine_index == NONE && !network_machine_is_valid(&server->game.machines[machine_index]); } /* AE hook */
+
 boolean network_game_server_idle(
 	struct network_game_server *server)
 {
@@ -1689,6 +1692,7 @@ boolean network_game_server_idle(
 	/* port: the bots of a local game (port/linux/game/bots.c) */
 	network_game_server_port_bots(server);
 	if (ae_lan_bots_lobby(server, &server->game, server->state == _network_game_server_state_pregame && !server->sent_start_game_message) && !network_game_server_send_game_data_pregame(server)) network_event("ae_lan_bots_lobby() failed to send updated game settings to clients"); /* AE hook */
+	if (server->state == _network_game_server_state_ingame) ae_lan_bots_ingame(server, &server->game); /* AE hook */
 	ae_bots_lobby_check(network_game_is_splitscreen_local() && server->state == _network_game_server_state_pregame && !server->sent_start_game_message, server->game.variant.game_engine_index, server->game.variant.human_readable_game_description); /* AE hook */
 	/* (what Discord shows of a game hosted for internet play, and the
 	server browser's listing) */
@@ -2011,6 +2015,7 @@ boolean network_game_server_start_network_game(
 		refuse a second start) and the wait for the others never began.
 		A machine still downloading the map is left out of this start, and so
 		are its players: they spawn when it joins, not while it is downloading. */
+		ae_lan_bots_start(server, &server->game); /* AE hook */
 		network_game_server_hold_map_fetcher_players(server);
 		if (network_game_server_send_game_settings_to_all_machines(server, &server->game, sizeof(server->game)) &&
 			((message = create_network_game_message(
@@ -2838,6 +2843,7 @@ void network_game_server_update_ticks(
 				the game has started), and joins with them once the map is
 				there (network_game_server_release_map_fetchers). Added now, it
 				was started at once, without the map: the damaged disc error */
+				if (client_machine && !map_share_machine_needs_map(client_machine->machine_index) && network_game_server_machine_may_add_player_ingame(server, client_machine_index)) ae_lan_bots_make_room(server, &server->game, &server->queued_player); /* AE hook */
 				if (client_machine && map_share_machine_needs_map(client_machine->machine_index))
 				{
 					network_game_server_hold_requested_player(client_machine_index, &server->queued_player);
@@ -2923,7 +2929,7 @@ boolean network_game_server_accepts_late_joins(
 	refused, network_game_server_refuse_late_joiner) */
 	return server->state == _network_game_server_state_ingame &&
 		network_game_server_game_is_open(server) &&
-		network_game_has_free_player_slot(&server->game);
+		(network_game_has_free_player_slot(&server->game) || ae_lan_bots_room_ingame(&server->game)); /* AE hook */
 }
 
 boolean network_game_server_client_machine_is_loaded(
@@ -4860,7 +4866,7 @@ static boolean network_game_server_add_new_client(
 	{
 		for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++)
 		{
-			if (server->client_machines[i].machine_index == NONE)
+			if (server->client_machines[i].machine_index == NONE && !ae_lan_bots_machine_held(i)) /* AE hook */
 			{
 				struct transport_address client_address = { 0 };
 

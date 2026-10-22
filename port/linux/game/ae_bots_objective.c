@@ -92,7 +92,7 @@ static struct
 	short grabs, returns, scores, laps;
 	long race_touched;
 	short behaviour;
-} notes[BOTS_MAXIMUM];
+} notes[BOTS_BRAINS];
 
 static short ae_bots_objective_mode(void)
 {
@@ -271,7 +271,7 @@ struct ae_bots_objective_snapshot const *ae_bots_objective_snapshot(void)
 		{
 			long index;
 
-			for (index = 0; index < BOTS_MAXIMUM; index++)
+			for (index = 0; index < BOTS_BRAINS; index++)
 				notes[index].player_index = NONE;
 		}
 		totals.last_report_tick = now;
@@ -372,7 +372,7 @@ void ae_bots_objective_note(long bot_index, long player_index, short behaviour)
 	boolean carrying, in_hill;
 	long n = bot_index + 1;
 
-	if (!snapshot_valid || !player || bot_index < 0 || bot_index >= BOTS_MAXIMUM ||
+	if (!snapshot_valid || !player || bot_index < 0 || bot_index >= BOTS_BRAINS ||
 		behaviour < 0 || behaviour >= AE_BOTS_BEHAVIOURS)
 	{
 		return;

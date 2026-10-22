@@ -34,13 +34,13 @@ static struct
 	/* the entries it left out of its reach lately: how many, the first's tick */
 	short unreachable_run;
 	long unreachable_run_tick;
-} ae_bots_power_bots[BOTS_MAXIMUM];
+} ae_bots_power_bots[BOTS_BRAINS];
 
 /* when each team saw each entry's spot empty, until its next spawn (game ticks; 0 for not) */
 static long ae_bots_power_taken_until[AE_BOTS_POWER_ENTRIES][2];
 
 /* until when each bot leaves each entry alone, out of its reach (game ticks; 0 for not) */
-static long ae_bots_power_unreachable_until[BOTS_MAXIMUM][AE_BOTS_POWER_ENTRIES];
+static long ae_bots_power_unreachable_until[BOTS_BRAINS][AE_BOTS_POWER_ENTRIES];
 
 static long ae_bots_power_bot_index(struct bots_bot const *bot)
 {
@@ -112,7 +112,7 @@ static boolean ae_bots_power_teammate_going(struct bots_bot const *bot, struct p
 {
 	long index;
 
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		struct bots_bot const *other = &bots_globals.bots[index];
 		struct player_datum const *other_player;
@@ -161,7 +161,7 @@ static boolean ae_bots_power_goal(struct bots_bot *bot, long player_index, real_
 	real best_want = 0.0f;
 	int level = ae_bots_level_of_skill(bots_globals.skill);
 
-	if (index < 0 || index >= BOTS_MAXIMUM || count <= 0)
+	if (index < 0 || index >= BOTS_BRAINS || count <= 0)
 		return FALSE;
 	if (count > AE_BOTS_POWER_ENTRIES)
 		count = AE_BOTS_POWER_ENTRIES;
@@ -330,7 +330,7 @@ static void ae_bots_power_reset(void)
 {
 	long index;
 
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		ae_bots_power_bots[index].entry = NONE;
 		ae_bots_power_bots[index].check_tick = 0;

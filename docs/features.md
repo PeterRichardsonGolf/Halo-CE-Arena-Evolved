@@ -90,7 +90,8 @@ up to their build.
 - Split screen in System Link and online lobbies (ADD PLAYER), and a lobby
   you can start on your own.
 - **Bots** (0.3.0, Settings > Game Options > BOTS): up to 15 in a split
-  screen game, up to 3 in a LAN game you host (never online); RECRUIT (for
+  screen game, and (0.3.7) in any LAN or internet game you host, up to 127
+  ("BOT " before their names, the teams filled evenly); RECRUIT (for
   new and young players), EASY, NORMAL, HEROIC, LEGENDARY or DEMON (0.3.5: the
   LEGENDARY of before, above a new LEGENDARY halfway from HEROIC). Each level
   fights like a person of that level, as Halo Infinite's bots do: how they

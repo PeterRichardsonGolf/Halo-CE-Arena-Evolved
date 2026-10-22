@@ -24,7 +24,7 @@ static struct
 	long wingman_bot[MAXIMUM_LOCAL_PLAYERS + 16];
 	short human_count;
 	/* when each bot picks its next spot about its player */
-	long spot_tick[BOTS_MAXIMUM];
+	long spot_tick[BOTS_BRAINS];
 } ae_bots_team;
 
 /* the bot of a player, or NONE for a human */
@@ -32,7 +32,7 @@ static long ae_bots_team_bot_of(long player_index)
 {
 	long index;
 
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		if (bots_globals.bots[index].player_index == player_index)
 			return index;
@@ -106,7 +106,7 @@ static void ae_bots_team_update(long now)
 				best = kept;
 		}
 		/* (a fresh choice needs the human's body: none between their lives) */
-		for (bot_index = 0; best == NONE && player->unit_index != NONE && bot_index < BOTS_MAXIMUM; bot_index++)
+		for (bot_index = 0; best == NONE && player->unit_index != NONE && bot_index < BOTS_BRAINS; bot_index++)
 		{
 			struct player_datum const *mate;
 			boolean taken = FALSE;
@@ -193,7 +193,7 @@ static void ae_bots_team_counts(struct player_datum *player, real_point3d const 
 
 /* ANGLE ISOLATION's count: the living enemies within AE_BOTS_TEAM_EXPOSED_RANGE with a clear line to the bot's eye,
 counted again every 10 ticks (HEROIC and up only: the lines cost) */
-static struct { long tick; short exposed; } ae_bots_team_exposure[BOTS_MAXIMUM];
+static struct { long tick; short exposed; } ae_bots_team_exposure[BOTS_BRAINS];
 
 static short ae_bots_team_exposed(struct bots_bot *bot, struct bots_tick *tick, int level)
 {
@@ -203,7 +203,7 @@ static short ae_bots_team_exposed(struct bots_bot *bot, struct bots_tick *tick, 
 	real_point3d const *eye;
 	short exposed = 0;
 
-	if (level < AE_BOTS_LEVEL_HEROIC || bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+	if (level < AE_BOTS_LEVEL_HEROIC || bot_index < 0 || bot_index >= BOTS_BRAINS)
 		return 0;
 	if (tick->now >= ae_bots_team_exposure[bot_index].tick && tick->now - ae_bots_team_exposure[bot_index].tick < 10)
 		return ae_bots_team_exposure[bot_index].exposed;
@@ -267,7 +267,7 @@ static boolean ae_bots_team_spot(struct bots_bot *bot, real_point3d const *point
 /* HEARING: a bot with no enemy in mind (none seen for 3 s) hears an enemy's shot (a projectile of its in flight: a
 bullet lives under a second) when the shooter is within its level's range, every 5 ticks, and keeps where the shooter is as where an enemy was last seen,
 a second ago (bots_choose_goal then goes there; seen less than half a second ago would start a fight it cannot see) */
-static long ae_bots_team_hear_tick[BOTS_MAXIMUM];
+static long ae_bots_team_hear_tick[BOTS_BRAINS];
 
 static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_point3d const *position, long now)
 {
@@ -276,7 +276,7 @@ static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_poin
 	struct object_iterator iterator;
 	struct player_datum *player = player_get(player_index);
 
-	if (range <= 0.0f || bot_index < 0 || bot_index >= BOTS_MAXIMUM || now < ae_bots_team_hear_tick[bot_index] ||
+	if (range <= 0.0f || bot_index < 0 || bot_index >= BOTS_BRAINS || now < ae_bots_team_hear_tick[bot_index] ||
 		(bot->target_player_index != NONE && now - bot->target_seen_tick < 3 * TICKS_PER_SECOND))
 	{
 		return;
@@ -344,7 +344,7 @@ static boolean ae_bots_team_goal(struct bots_bot *bot, long player_index, real_p
 	real_point3d ground;
 	long surface_index;
 
-	if (!game_engine_has_teams() || fighting || bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+	if (!game_engine_has_teams() || fighting || bot_index < 0 || bot_index >= BOTS_BRAINS)
 		return FALSE;
 	ae_bots_team_update(now);
 	/* WINGMAN */

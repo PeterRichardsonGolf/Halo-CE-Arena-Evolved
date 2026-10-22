@@ -126,7 +126,7 @@ static struct
 	/* how far the bots drove (units) */
 	real driven;
 	/* entries by bot */
-	long bot_entries[BOTS_MAXIMUM];
+	long bot_entries[BOTS_BRAINS];
 } ae_bots_vehicle_totals;
 
 /* (a new game: its own counts) */
@@ -149,7 +149,7 @@ void ae_bots_vehicle_count_entry(long bot_index, int vehicle_class, int seat)
 		ae_bots_vehicle_totals.entries[seat]++;
 	if (vehicle_class >= 0 && vehicle_class < AE_BOTS_VEHICLE_CLASSES)
 		ae_bots_vehicle_totals.entries_by_class[vehicle_class]++;
-	if (bot_index >= 0 && bot_index < BOTS_MAXIMUM)
+	if (bot_index >= 0 && bot_index < BOTS_BRAINS)
 		ae_bots_vehicle_totals.bot_entries[bot_index]++;
 	platform_log("bots: bot %ld took the %s seat of a %s", bot_index + 1, ae_bots_vehicle_seat_name(seat),
 		ae_bots_vehicle_class_name(vehicle_class));
@@ -199,7 +199,7 @@ void ae_bots_vehicle_report(void)
 		return;
 	ae_bots_vehicle_totals.report_tick = now;
 	line[0] = 0;
-	for (index = 0; index < BOTS_MAXIMUM && length < (int)sizeof(line) - 16; index++)
+	for (index = 0; index < BOTS_BRAINS && length < (int)sizeof(line) - 16; index++)
 	{
 		if (ae_bots_vehicle_totals.bot_entries[index])
 			length += snprintf(line + length, sizeof(line) - (size_t)length, " %d:%ld", index + 1,

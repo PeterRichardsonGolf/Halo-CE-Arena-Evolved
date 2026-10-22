@@ -65,7 +65,7 @@ struct ae_bots_objective_bot
 	long pause_until_tick;
 };
 
-static struct ae_bots_objective_bot ae_bots_objective_bots[BOTS_MAXIMUM];
+static struct ae_bots_objective_bot ae_bots_objective_bots[BOTS_BRAINS];
 
 static real ae_bots_objective_health(struct object_datum *object)
 {
@@ -88,7 +88,7 @@ static boolean ae_bots_objective_defender(struct bots_bot *bot, struct player_da
 		if (other->team_index == player->team_index)
 			team_size++;
 	}
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		struct bots_bot *mate = &bots_globals.bots[index];
 		struct player_datum *mate_player;
@@ -118,7 +118,7 @@ static boolean ae_bots_objective_spotted(struct player_datum *player, long enemy
 
 	if (!enemy || enemy->unit_index == NONE)
 		return FALSE;
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		struct bots_bot *mate = &bots_globals.bots[index];
 		struct player_datum *mate_player;
@@ -423,7 +423,7 @@ static boolean ae_bots_objective_spot(struct bots_bot *bot, real_point3d const *
 static boolean ae_bots_objective_away(struct bots_bot *bot, real_point3d const *position, real_point3d *spot)
 {
 	struct player_datum *player = player_get(bot->player_index);
-	real_point3d enemies[BOTS_MAXIMUM + MAXIMUM_LOCAL_PLAYERS];
+	real_point3d enemies[BOTS_BRAINS + MAXIMUM_LOCAL_PLAYERS];
 	long enemy_count = 0, index, best = NONE;
 	real best_score = -REAL_MAX;
 	struct data_iterator iterator;
@@ -589,7 +589,7 @@ boolean ae_bots_objective_goal(struct bots_bot *bot, long player_index, real_poi
 	long now = game_time_get();
 	short behaviour;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM || !player || player->unit_index == NONE)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS || !player || player->unit_index == NONE)
 		return FALSE;
 	behaviour = ae_bots_objective_think(bot, bot_index, position, fighting);
 	if (behaviour == AE_BOTS_FIGHT)
@@ -644,7 +644,7 @@ void ae_bots_objective_move(struct bots_bot *bot, long bot_index, struct bots_ti
 	short behaviour;
 	real direction;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM || !tick->unit)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS || !tick->unit)
 		return;
 	behaviour = ae_bots_objective_think(bot, bot_index, &tick->position, tick->fighting);
 	state = &ae_bots_objective_bots[bot_index];

@@ -26,6 +26,14 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   ChupathingyCE machines join as before), nor with a disc that only adds maps of its own.
   With a disc that replaces stock maps, only Arena Evolved 0.3.7 and later machines on the same disc join each other:
   older Arena Evolved, OpenCE and ChupathingyCE machines on that disc are refused.
+- Bots in network games: a LAN or internet game you host takes your bots (BOTS in Settings > Game Options, up to 15:
+  a big team game's 16 players with you; `bots.count` in config.toml goes up to 127), not only 3 on a LAN. Past your three free controllers they sit on
+  machines of the host's own, four to a machine, which every machine sees as a machine of four players, stock
+  OpenCE and ChupathingyCE ones too: nothing that the machines send each other changes. Their names start "BOT ",
+  so everyone can tell them from people. The lobby keeps a player slot free for someone joining; at the start of a
+  team game with an odd number of players one more bot takes it, so the teams are even. In a game under way a
+  person who joins a full game takes a bot's place (the bot leaves from the larger team, so the teams stay even),
+  and a bot comes back when a person leaves. `debug.network_bots` is on by default; set it to false to turn it off.
 
 ## 0.3.6-beta - 2026-10-21
 
