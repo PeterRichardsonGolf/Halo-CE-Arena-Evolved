@@ -13,7 +13,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   so everyone can tell them from people. The lobby keeps a player slot free for someone joining; at the start of a
   team game with an odd number of players one more bot takes it, so the teams are even. In a game under way a
   person who joins a full game takes a bot's place (the bot leaves from the larger team, so the teams stay even),
-  and a bot comes back when a person leaves. `debug.network_bots` (on) turns it off.
+  and a bot comes back when a person leaves. `debug.network_bots` is on by default; set it to false to turn it off.
 
 ## 0.3.6-beta - 2026-10-21
 
