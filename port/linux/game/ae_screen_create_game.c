@@ -46,6 +46,7 @@ Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "ho
 #include "ae_screen_change_map.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_game_options.h"
+#include "ae_screen_join_invite.h"
 #include "ae_setup_flow.h"
 #include "ae_setup_maps.h"
 #include "ae_setup_options.h"
@@ -83,7 +84,7 @@ enum { NETWORK_LOCAL, NETWORK_LAN, NETWORK_ONLINE, NETWORKS };
 enum { ROW_HEADER = AE_FLOW_ROW_HEADER, ROW_OPTION = AE_FLOW_ROW_OPTION, ROW_MAP = AE_FLOW_ROW_OWN, ROW_GAMETYPE,
 	ROW_OPTIONS, ROW_NETWORK, ROW_START, ROW_PRIVACY, ROW_MAXIMUM_PLAYERS, ROW_JOIN, ROW_INVITE, ROW_INFO, ROW_BOTS,
 	ROW_BOT_SKILL };
-enum { START_IDLE, START_JOINING, START_DONE, START_JOINING_INVITE };
+enum { START_IDLE, START_JOINING, START_DONE };
 enum { PRIVACY_INVITE_ONLY, PRIVACY_PUBLIC, PRIVACIES };
 
 
@@ -129,7 +130,6 @@ static struct
 	int menus_closed;          /* the game's menus closed by this screen: brought back when it closes */
 	int starting;              /* a start under way: leaving does not bring the game's menus back */
 	int from_menu;             /* opened from AE's MULTIPLAYER: leaving goes back to it */
-	int pending_join;          /* JOIN WITH INVITE asked from MULTIPLAYER: run once drawn (its dialogs need the frame) */
 } create;
 
 static struct
@@ -431,7 +431,7 @@ static void create_rows(void)
 	flow->rows[count++] = (struct ae_flow_row){ ROW_START, -1, "START GAME", NULL,
 		"Hosts the game with these settings and opens its lobby." };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_JOIN, -1, "JOIN WITH INVITE", NULL,
-		"Joins the game whose invite link or code is on your clipboard (copy it from a message first)." };
+		"Paste or type the invite link or code a friend sent you, and join their game." };
 	flow->count = count;
 	if (flow->focus >= count)
 		flow->focus = (short)(count - 1);
@@ -475,74 +475,12 @@ static void start_game(void)
 	ae_sound_request(AE_SOUND_FORWARD, 0);
 }
 
-/* JOIN WITH INVITE: the clipboard's link or code joined (ae_lobby_join_address: the host's own game, never another) */
-static void join_invite(void)
-{
-	char text[512];
-	struct ae_result result;
-
-	text[0] = 0;
-	if (!ae_host_clipboard_get(text, sizeof(text)) || !text[0])
-	{
-		ae_flow_error(&create.flow, "No invite on the clipboard", "Copy a halo://join/ link or an invite code first.");
-		return;
-	}
-	result = ae_lobby_join_address(text);
-	if (!result.ok)
-	{
-		ae_flow_error(&create.flow, "Can't join", result.reason);
-		return;
-	}
-	create.starting = 1;
-	create.menus_closed = 1;
-	create.start_step = START_JOINING_INVITE;
-	create.start_since = system_milliseconds();
-	platform_log("ae create game: joining by invite");
-	ae_sound_request(AE_SOUND_FORWARD, 0);
-}
-
-/* the join under way: joined, player 1 in, the joiner's lobby; else why not */
-static void join_update(void)
-{
-	struct ae_result failure;
-	int state = ae_lobby_join_state(&failure);
-
-	if (state == 0)
-		return;
-	if (state < 0)
-	{
-		start_failed(failure.reason[0] ? failure.reason : "The join was left.");
-		return;
-	}
-	{
-		static struct ae_lobby_roster roster;
-
-		/* (this PC's client in the pregame first: its players are taken from then) */
-		if (!ae_lobby_roster(&roster).ok || !roster.joined)
-			return;
-	}
-	if (!ae_lobby_add_local_player(0).ok)
-	{
-		ae_lobby_leave();
-		start_failed("The game is full, or no longer takes players.");
-		return;
-	}
-	create.start_step = START_DONE;
-	platform_log("ae create game: joined, player 1 in");
-	lobby_open(1);
-}
-
 /* START GAME's wait: this PC's client in the pregame, then player 1, the map, the copy, the lobby */
 static void start_update(void)
 {
 	static struct ae_lobby_roster roster;
 	struct ae_result result;
 
-	if (create.start_step == START_JOINING_INVITE)
-	{
-		join_update();
-		return;
-	}
 	if (create.start_step != START_JOINING)
 		return;
 	if (!ae_lobby_roster(&roster).ok || (!roster.joined && system_milliseconds() - create.start_since < JOIN_WAIT_MS))
@@ -609,7 +547,8 @@ static void create_accept(short row)
 		start_game();
 		break;
 	case ROW_JOIN:
-		join_invite();
+		if (ae_screen_join_invite_open("CREATE GAME"))
+			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
 	case ROW_PRIVACY:
 		create.privacy = (create.privacy + 1) % PRIVACIES;
@@ -697,7 +636,7 @@ static void create_draw(struct ae_screen *instance)
 	create_rows();
 	ae_setup_edit_name(name, sizeof(name));
 	snprintf(crumb, sizeof(crumb), "%s", create.start_step == START_JOINING ? "HOSTING..." :
-		create.start_step == START_JOINING_INVITE ? "JOINING..." : network_names[create.network]);
+		network_names[create.network]);
 	ae_flow_title(flow, "CREATE GAME", crumb);
 	ae_flow_draw_rows(flow, flow->frame.rect.width * AE_FLOW_ROWS_WIDTH);
 	/* the panel: the game at a glance */
@@ -730,11 +669,6 @@ static void create_draw(struct ae_screen *instance)
 static void create_update(struct ae_screen *instance)
 {
 	(void)instance;
-	if (create.pending_join && create.flow.frame.unit > 0.0f)
-	{
-		create.pending_join = 0;
-		join_invite();
-	}
 	start_update();
 }
 
@@ -743,14 +677,13 @@ static int create_handle(struct ae_screen *instance, struct ae_event const *even
 	struct ae_flow_screen *flow = &create.flow;
 
 	(void)instance;
-	/* (hosting or joining: wait; B still leaves) */
-	if ((create.start_step == START_JOINING || create.start_step == START_JOINING_INVITE) &&
-		event->action != AE_ACTION_BACK)
+	/* (hosting: wait; B still leaves) */
+	if (create.start_step == START_JOINING && event->action != AE_ACTION_BACK)
 		return 1;
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
-		if (create.start_step == START_JOINING || create.start_step == START_JOINING_INVITE)
+		if (create.start_step == START_JOINING)
 		{
 			ae_lobby_leave();
 			create.start_step = START_IDLE;
@@ -841,7 +774,7 @@ int ae_screen_create_game_lobby_joined(const char *how)
 	return 1;
 }
 
-int ae_screen_create_game_from_menu(int join)
+int ae_screen_create_game_from_menu(void)
 {
 	char const *const *names = NULL;
 	short last = 0;
@@ -857,7 +790,6 @@ int ae_screen_create_game_from_menu(int join)
 	create.map_index = last;
 	map_name_of(last);
 	create.from_menu = 1;
-	create.pending_join = join;
 	return create_push();
 }
 
