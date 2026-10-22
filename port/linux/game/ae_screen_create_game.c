@@ -7,7 +7,7 @@ are fractions of the frame, sizes u.
 
 CREATE GAME: MAP (CHANGE MAP for the gametype's filter; its pick comes back here), GAMETYPE (CHANGE GAMETYPE; its pick
 comes back here: a new copy), GAME OPTIONS (N CHANGED: the GAME OPTIONS screen on the copy), TIME LIMIT and the score in place,
-NETWORK (SPLIT SCREEN, LAN, HOST ONLINE), BOTS and BOT SKILL (the settings' bots.count and bots.skill, as the old
+NETWORK (LAN, HOST ONLINE), BOTS and BOT SKILL (the settings' bots.count and bots.skill, as the old
 menus' Bots screen writes them: OFF and 1-31 in the menus, config.toml up to 127), START GAME. START GAME hosts (ae_lobby_host), waits for this PC's client
 (10 s at most), adds player 1, chooses the map, applies the copy (ae_setup_edit_apply) and opens the LOBBY. B closes
 it: the game's main menu comes back.
@@ -81,7 +81,9 @@ enum
 	GAMETYPES_MAXIMUM = AE_SAVED_GAMES_MAXIMUM, /* (every gametype the memory unit lists) */
 	JOIN_WAIT_MS = 10000
 };
-enum { NETWORK_LOCAL, NETWORK_LAN, NETWORK_ONLINE, NETWORKS };
+/* (no split screen choice: every game takes this PC's split screen players, and one bot path, the network bots,
+serves them all: owner 2026-10-22) */
+enum { NETWORK_LAN, NETWORK_ONLINE, NETWORKS };
 enum { ROW_HEADER = AE_FLOW_ROW_HEADER, ROW_OPTION = AE_FLOW_ROW_OPTION, ROW_MAP = AE_FLOW_ROW_OWN, ROW_GAMETYPE,
 	ROW_OPTIONS, ROW_NETWORK, ROW_START, ROW_PRIVACY, ROW_MAXIMUM_PLAYERS, ROW_JOIN, ROW_INVITE, ROW_INFO, ROW_BOTS,
 	ROW_BOT_SKILL };
@@ -89,13 +91,12 @@ enum { START_IDLE, START_JOINING, START_DONE };
 enum { PRIVACY_INVITE_ONLY, PRIVACY_PUBLIC, PRIVACIES };
 
 
-static const char *const network_names[NETWORKS] = { "SPLIT SCREEN", "LAN", "HOST ONLINE" };
+static const char *const network_names[NETWORKS] = { "LAN", "HOST ONLINE" };
 static const char *const network_helps[NETWORKS] = {
-	"Split screen on this PC. Nobody else can join.",
 	"Players on your network join from their game list.",
 	"Hosted for the internet too: invite players with your game's code."
 };
-static const int network_kinds[NETWORKS] = { AE_LOBBY_LOCAL, AE_LOBBY_LAN, AE_LOBBY_ONLINE };
+static const int network_kinds[NETWORKS] = { AE_LOBBY_LAN, AE_LOBBY_ONLINE };
 static const char *const privacy_names[PRIVACIES] = { "INVITE ONLY", "PUBLIC" };
 static const char *const privacy_helps[PRIVACIES] = {
 	"Only players with your invite link join. Copy it in the lobby.",
@@ -106,7 +107,7 @@ and help: tools/port_settings.py's Bots screen) */
 enum { BOTS_MENU_MAXIMUM = 31, BOTS_SETTING_MAXIMUM = 127, BOT_SKILLS = 6, BOT_SKILL_DEFAULT = 2, BOT_ROWS = 2 };
 static const char *const bot_skill_values[BOT_SKILLS] = { "recruit", "easy", "normal", "heroic", "legendary", "demon" };
 static const char *const bot_skill_names[BOT_SKILLS] = { "RECRUIT", "EASY", "NORMAL", "HEROIC", "LEGENDARY", "DEMON" };
-#define BOTS_HELP "How many bots, up to 31, play the games you host: split screen, LAN or internet. A person who " \
+#define BOTS_HELP "How many bots, up to 31, play the games you host, LAN or internet. A person who " \
 	"joins a full game takes a bot's place."
 #define BOT_SKILL_HELP "How soon the bots react, how well they aim and how far they see."
 static const short maximum_players[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
@@ -413,12 +414,9 @@ static void create_rows(void)
 	if (create.network == NETWORK_ONLINE)
 		flow->rows[count++] = (struct ae_flow_row){ ROW_PRIVACY, -1, "PRIVACY", privacy_names[create.privacy],
 			privacy_helps[create.privacy] };
-	if (create.network != NETWORK_LOCAL)
-	{
-		snprintf(create.players_text, sizeof(create.players_text), "%d", maximum_players[create.players_index]);
-		flow->rows[count++] = (struct ae_flow_row){ ROW_MAXIMUM_PLAYERS, -1, "MAX PLAYERS", create.players_text,
-			"The most players the game takes, bots included." };
-	}
+	snprintf(create.players_text, sizeof(create.players_text), "%d", maximum_players[create.players_index]);
+	flow->rows[count++] = (struct ae_flow_row){ ROW_MAXIMUM_PLAYERS, -1, "MAX PLAYERS", create.players_text,
+		"The most players the game takes, bots included." };
 	flow->rows[count++] = bot_row(0);
 	flow->rows[count++] = bot_row(1);
 	flow->rows[count++] = (struct ae_flow_row){ ROW_START, -1, "OPEN LOBBY", NULL,
@@ -507,9 +505,7 @@ static void start_update(void)
 		for (at = 0; at < 15 && roster.count && roster.players[0].name[at]; at++)
 			name[at] = (wchar_t)(unsigned char)roster.players[0].name[at];
 		name[at] = 0;
-		/* (SPLIT SCREEN: room for this PC's four players and the menus' most bots; else MAX PLAYERS) */
-		network_game_server_port_set_settings(name, create.network == NETWORK_LOCAL ? 4 + BOTS_MENU_MAXIMUM :
-			maximum_players[create.players_index]);
+		network_game_server_port_set_settings(name, maximum_players[create.players_index]);
 	}
 	create.start_step = START_DONE;
 	platform_log("ae create game: hosted, player 1 in");
