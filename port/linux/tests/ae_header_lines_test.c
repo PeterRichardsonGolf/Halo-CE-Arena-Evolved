@@ -47,6 +47,10 @@ int main(void)
 	ae_scoreboard_header_lines(&in, &out);
 	AE_CHECK_WSTR(out.mode, L"FFA SLAYER"); AE_CHECK_WSTR(out.tag, L"AE COMP");
 	AE_CHECK_WSTR(out.goal_time, L"FIRST TO 25 \x00B7 NO TIME LIMIT");
+	/* (a set whose names carry AE first: the Octagon drills, "FFA AE OCTAGON BR" in set OCTAGON) */
+	input(&in, L"FFA AE OCTAGON BR", L"OCTAGON", "octagon_b", _ae_goal_points, 0, 0);
+	ae_scoreboard_header_lines(&in, &out);
+	AE_CHECK_WSTR(out.mode, L"FFA BR"); AE_CHECK_WSTR(out.tag, L"OCTAGON");
 	input(&in, L"TEAM NHE CTF", L"NHE", "levels\\test\\bloodgulch\\bloodgulch", _ae_goal_captures, 3, 15);
 	in.clock_counts_up = TRUE;
 	ae_scoreboard_header_lines(&in, &out);

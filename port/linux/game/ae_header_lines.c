@@ -86,7 +86,8 @@ static boolean starts_word(const wchar_t *text, const wchar_t *prefix)
 	return (boolean)(text[n] == L' ');
 }
 
-/* the mode: "<FFA|TEAM> <set> <mode>" with "<set> " taken out; any other name whole */
+/* the mode: "<FFA|TEAM> <set> <mode>" with "<set> " taken out (and "<FFA|TEAM> AE <set> <mode>", a set whose
+names carry AE first: "FFA AE OCTAGON BR" in set OCTAGON is "FFA BR"); any other name whole */
 static void split_mode(const wchar_t *display, const wchar_t *set, wchar_t *mode, long count)
 {
 	static const wchar_t *const kinds[] = { L"FFA", L"TEAM" };
@@ -103,6 +104,13 @@ static void split_mode(const wchar_t *display, const wchar_t *set, wchar_t *mode
 		{
 			append(mode, count, kinds[k]);
 			append(mode, count, display + kind + 1 + wlength(set));
+			return;
+		}
+		if (starts_word(display, kinds[k]) && set && set[0] && starts_word(display + kind + 1, L"AE") &&
+			starts_word(display + kind + 4, set))
+		{
+			append(mode, count, kinds[k]);
+			append(mode, count, display + kind + 4 + wlength(set));
 			return;
 		}
 	}
