@@ -4,7 +4,8 @@ game's main menu's place.
 
 - the main menu at 1080p 100 % and 130 %, 21:9 (2560x1080), 3440x1440, 4K, 720p and 16:10 (1920x1200);
 - MULTIPLAYER, CREATE GAME from it, and B back to MULTIPLAYER;
-- CAMPAIGN, and its first level played.
+- CAMPAIGN, and its first level played;
+- PROFILES: the list with no profile, a profile named on AE's keyboard, its colour changed in EDIT.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is about 30 s. Name cases to run some:
 
@@ -23,7 +24,8 @@ menus = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(menus)
 
 EXIT_AFTER = 30
-# name, window, UI SCALE, the presses (after the lead-in: one a second)
+# name, window, UI SCALE, the presses (after the lead-in: one a second)[, screenshot every (8 frames), seconds in all
+# (EXIT_AFTER)]
 CASES = (
     ("menu", "1920x1080", 100, ()),
     ("menu-130", "1920x1080", 130, ()),
@@ -38,12 +40,20 @@ CASES = (
     # (CAMPAIGN: the levels; A on the first plays it at the difficulty shown)
     ("campaign", "1920x1080", 100, ("pad:down", "pad:a", "pad:right")),
     ("campaign-play", "1920x1080", 100, ("pad:down", "pad:a", "wait", "pad:a")),
+    # (PROFILES: none on this PC; NEW PROFILE named on AE's keyboard with the second pad (the first counts as the
+    # keyboard's, and the second's first press only attaches it): A opens it on Q, right, A types W, START keeps it
+    # and makes 'w'; A edits it, right steps its COLOUR. Its presses outlast EXIT_AFTER: 40 s. Typing on a keyboard
+    # (key:A) reaches the gallery's field headless but not this one's, nor do pad: presses once AE's keyboard is
+    # open: not found yet, checked by hand)
+    ("profiles", "1920x1080", 100, ("pad:down", "pad:down", "pad:down", "pad:a")),
+    ("profiles-new", "1920x1080", 100, ("down", "down", "down", "a", "wait", "2:a", "2:a", "2:right", "2:a",
+                                        "2:start", "wait", "a", "right"), 8, 40),
 )
 
 
-def play(cfg, out, name, window, scale, presses):
+def play(cfg, out, name, window, scale, presses, shots=8, exit_after=EXIT_AFTER):
     env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_GAMETYPE": "AE TEAM SLY"}
-    return menus.play(cfg, out, name, views=0, window=window, env=env, shots=8, exit_after=EXIT_AFTER,
+    return menus.play(cfg, out, name, views=0, window=window, env=env, shots=shots, exit_after=exit_after,
                       test_input=menus.menu_input(*presses) if presses else menus.menu_input("wait"))
 
 
@@ -54,10 +64,10 @@ def lines(text, start):
 def run_cases(cfg, out, only=()):
     """the cases (only those named, when names are given)"""
     runs = {}
-    for name, window, scale, presses in CASES:
+    for name, window, scale, presses, *more in CASES:
         if only and name not in only:
             continue
-        result, text, pngs = play(cfg, out, name, window, scale, presses)
+        result, text, pngs = play(cfg, out, name, window, scale, presses, *more)
         frame = None
         if pngs:
             frame = out / f"{name}.png"
@@ -100,6 +110,16 @@ def test_campaign(runs):
     # (the level loads after CAMPAIGN closes: AE's main menu never stays up over it)
     said = lines(runs["campaign-play"][1], "ae main menu: ")
     assert said[-1] in ("CAMPAIGN", "closed (the game left its main menu)"), said
+
+
+def test_profiles(runs):
+    assert lines(runs["profiles"][1], "ae profiles screen: open ")
+    said = lines(runs["profiles-new"][1], "ae profiles screen: ")
+    assert "made 'w'" in said, said
+    assert "edit 'w'" in said, said
+    glue = lines(runs["profiles-new"][1], "ae profiles: ")
+    assert any(line.startswith("player 1 uses ") for line in glue), glue
+    assert any(line.endswith(" colour 1 saved") for line in glue), glue
 
 
 if __name__ == "__main__":

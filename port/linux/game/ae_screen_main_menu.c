@@ -4,8 +4,8 @@ AE_SCREEN_MAIN_MENU.C
 AE's MAIN MENU and MULTIPLAYER (ae_screen_main_menu.h; the mockup's boards 5 and 6,
 https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD). Rows on the left (ae_setup_flow.h), on the right player 1's card,
 "START to add a player" and the last game; the prompts. QUIT asks first. MULTIPLAYER's CREATE GAME and JOIN WITH INVITE
-open CREATE GAME (ae_screen_create_game.h) over it; SERVER BROWSER and LAN GAMES, and the main menu's CAMPAIGN,
-SETTINGS and PROFILES, are disabled with why until their AE screens are built.
+open CREATE GAME (ae_screen_create_game.h) over it; SERVER BROWSER and LAN GAMES, and the main menu's SETTINGS,
+are disabled with why until their AE screens are built; CAMPAIGN and PROFILES open theirs.
 
 Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 */
@@ -23,6 +23,7 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 #include "ae_screen_campaign.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_main_menu.h"
+#include "ae_screen_profiles.h"
 #include "ae_setup_flow.h"
 #include "ae_sound.h"
 #include "ae_strings.h"
@@ -69,7 +70,7 @@ static void rows_main(void)
 	flow->rows[count++] = (struct ae_flow_row){ ROW_SETTINGS, -1, "SETTINGS", NULL,
 		"Game, display, interface, controls, audio, online and chat.", NOT_YET };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_PROFILES, -1, "PROFILES", NULL,
-		"Your profiles: names, colours and controls, and who plays as player 1.", NOT_YET };
+		"Your profiles: names, colours and controls, and who plays as player 1.", NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_QUIT, -1, "QUIT", NULL, "Leaves the game.", NULL };
 	flow->count = count;
 }
@@ -230,6 +231,10 @@ static void accept(int multiplayer, short row)
 		break;
 	case ROW_CAMPAIGN:
 		if (ae_screen_campaign_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
+	case ROW_PROFILES:
+		if (ae_screen_profiles_open())
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
 	case ROW_CREATE:
