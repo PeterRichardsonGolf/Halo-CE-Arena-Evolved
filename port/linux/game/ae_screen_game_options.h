@@ -12,5 +12,8 @@ debug.ae_test_screen 30.
 /* begins an edit of the gametype whose stored name is gametype (NULL or not found: the last used one) and opens the
 screen over the stack; closes upstream's menus. 0 when there is no gametype or the stack is full */
 int ae_screen_game_options_open(char const *gametype);
+/* opens the screen over the stack on the edit open now (CREATE GAME's GAME OPTIONS); 0 when there is none or the
+stack is full */
+int ae_screen_game_options_show(void);
 
 #endif

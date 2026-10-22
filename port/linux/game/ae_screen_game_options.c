@@ -628,13 +628,23 @@ int ae_screen_game_options_open(char const *gametype)
 {
 	char const *name = gametype ? gametype : getenv("HALO_AE_TEST_GAMETYPE");
 
+	if (!ae_setup_edit_begin_named(name))
+		return 0;
+	ae_setup_edit_check();
+	if (!ae_screen_game_options_show())
+		return 0;
+	ae_ui_replace_menus();
+	return 1;
+}
+
+int ae_screen_game_options_show(void)
+{
+	if (!ae_setup_edit_open())
+		return 0;
 	memset(&screen, 0, sizeof(screen));
 	screen.tick_option = -1;
 	screen.logged_focus = -1;
 	screen.logged_width = -1.0f;
-	if (!ae_setup_edit_begin_named(name))
-		return 0;
-	ae_setup_edit_check();
 	ae_setup_edit_name(screen.name, sizeof(screen.name));
 	ae_setup_edit_access(&screen.access);
 	screen.count = ae_setup_entries(&screen.access, screen.entries, ENTRIES_MAXIMUM);
@@ -645,7 +655,6 @@ int ae_screen_game_options_open(char const *gametype)
 	if (!ae_ui_push(&options_class, AE_OWNER_ANY, &screen))
 		return 0;
 	platform_log("ae game options: open '%s' engine %d rows %d", screen.name, screen.access.engine, screen.count);
-	ae_ui_replace_menus();
 	(void)ae_settings_ui_scale();
 	return 1;
 }

@@ -75,6 +75,8 @@ static struct
 	struct ae_chip chips[AE_MAP_FILTERS];
 	char chip_labels[AE_MAP_FILTERS][32];
 	short facts_left;
+	/* (CREATE GAME's) a pick told back instead of taken here */
+	void (*picked)(short list_index, char const *name);
 } screen;
 
 static struct ae_screen_class const map_class;
@@ -223,6 +225,14 @@ static void accept(short entry)
 	}
 	if (entry < 0 || entry >= maps.count)
 		return;
+	if (screen.picked)
+	{
+		platform_log("ae change map: pick '%s' (for the caller)", maps.maps[entry].file);
+		screen.picked(maps.maps[entry].list_index, maps.maps[entry].name);
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		ae_ui_pop();
+		return;
+	}
 	if (!ae_setup_map_pick(&maps, entry))
 	{
 		ae_sound_request(AE_SOUND_FAILURE, 0);
@@ -613,16 +623,25 @@ static struct ae_screen_class const map_class =
 
 int ae_screen_change_map_open(int filter)
 {
+	if (!ae_screen_change_map_pick(filter, -1, NULL))
+		return 0;
+	ae_ui_replace_menus();
+	return 1;
+}
+
+int ae_screen_change_map_pick(int filter, short current, void (*picked)(short list_index, char const *name))
+{
 	short last;
 	int source;
 
 	memset(&screen, 0, sizeof(screen));
+	screen.picked = picked;
 	screen.logged_entry = (short)-1 - AE_SETUP_MAP_GROUPS;
 	screen.filter = filter >= 0 && filter < AE_MAP_FILTERS ? filter : AE_MF_ALL;
 	ae_setup_maps_load(&maps);
 	screen.facts_left = maps.count;
-	/* (the folder of the map used last open, the map focused) */
-	last = ae_setup_maps_last_used();
+	/* (the folder of the map given, else the map used last, open, the map focused) */
+	last = current >= 0 ? current : ae_setup_maps_last_used();
 	source = ae_setup_map_source(last);
 	screen.open_group = source;
 	if (last >= 0 && last < maps.count && ae_setup_map_suits(&maps.maps[last], screen.filter))
@@ -634,7 +653,6 @@ int ae_screen_change_map_open(int filter)
 	if (!ae_ui_push(&map_class, AE_OWNER_ANY, &screen))
 		return 0;
 	platform_log("ae change map: open (filter %s)", ae_setup_map_filter_name(screen.filter));
-	ae_ui_replace_menus();
 	(void)ae_settings_ui_scale();
 	return 1;
 }
