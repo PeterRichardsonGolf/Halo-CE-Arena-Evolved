@@ -4,8 +4,28 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
-## Unreleased
+## 0.3.7-beta - 2026-10-22
 
+- ARENA EVOLVED'S OWN MENUS are now the front end (`display.arena_menus`, on by default): MAIN MENU and MULTIPLAYER;
+  CREATE GAME (NETWORK: LAN or HOST ONLINE, PRIVACY, BOTS up to 31, MAX PLAYERS 128 by default, OPEN LOBBY);
+  CHANGE MAP (map folders, LB/RB filter, LT/RT folder); CHANGE GAMETYPE (the playlist folders, full names, PISTOL
+  or BR START); GAME OPTIONS (every gametype rule; leaving with changes asks SAVE, SAVE AS COPY, THIS GAME ONLY or
+  KEEP EDITING, and AE's, NHE's and the built-in gametypes are never saved over); the lobby; SERVER BROWSER and LAN
+  GAMES; JOIN WITH INVITE; CAMPAIGN; SETTINGS (CONTROLS, VIEW and HUD, each player's own); PROFILES. Controllers,
+  mouse, keyboard and touch; UI SCALE 90 to 130 % with long lists scrolling. The classic menus are one row away:
+  SETTINGS > SYSTEM > MENUS (online co-op is there for now; the game restarts to switch, and the classic menus' MENUS
+  row comes back).
+- Games hosted from the new CREATE GAME ran on the default PC rules (the motion sensor showed teammates, no time
+  limit, the map's vehicles in place of the gametype's): the gametype's own rules play now.
+- Back in the lobby after a game: the menus' background scene runs again (it was black), and START GAME starts the
+  next game (it went back to the main menu). The host's START keeps the lobby up until the game runs.
+- Item waypoints (TIMERS with waypoints): only the nearest copy of each power item on each side gets one (Death
+  Island showed about 16 at once); the power list keeps them all. TRAINING still shows every spawn.
+- DualSense: a pad that moves to another port in a game (the pad before it unplugged) no longer gets both ports'
+  effects in turn (the lightbar blinked and the triggers clicked at rest until the pad was disconnected).
+- The scoreboard header read "FFA AE OCTAGON BR - OCTAGON" for the Octagon drills: now "FFA BR - OCTAGON".
+- OpenCE build-251 to build-256 merged: the high-res HUD setting is read once per settings change (a frame-rate fix),
+  and co-op on The Pillar of Autumn no longer softlocks.
 - GAME OPTIONS (the new game setup screens) gets the rows it lacked: one for each WEAPON PACK (battle rifle, SMG,
   silenced SMG, carbine, silenced assault rifle; a pack that is not installed shows NOT INSTALLED), PACK WEAPONS ON
   MAP, STARTING GRENADES (the game's own, none, 1 to 4), BOTTOMLESS CLIP, a pack's weapons among PRIMARY and
