@@ -24,6 +24,8 @@ INERT = {
     "debug.bot_links": "the bots' normal use of teleporters and layout jumps (bots only; false is for tests)",
     "debug.network_test_cue_players": "players debug.network_test_cues waits for (none unless cues are set: OpenCE's)",
     "debug.bot_vehicles": "the bots' normal vehicle seats, 1 = guns and riding (bots only; 0 and 2 are for tests)",
+    "debug.network_bots": "the host's bots in network games (owner 0.3.7: on; none unless bots.count asks; false is "
+                          "0.3.6's LAN-only 3)",
 }
 
 

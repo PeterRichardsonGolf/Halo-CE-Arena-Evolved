@@ -124,7 +124,7 @@ static struct
 	long no_progress;
 } ae_travel;
 
-static struct ae_travel_bot ae_travel_bots[BOTS_MAXIMUM];
+static struct ae_travel_bot ae_travel_bots[BOTS_BRAINS];
 /* (a search made from here: bots_search's hook lets it through) */
 static boolean ae_travel_searching;
 /* the bot whose tick runs now, and its tick (the jump's button, the throttle onto a pad) */
@@ -144,7 +144,7 @@ static struct ae_travel_bot *ae_travel_state(struct bots_bot *bot)
 {
 	long index = (long)(bot - bots_globals.bots);
 
-	return index >= 0 && index < BOTS_MAXIMUM ? &ae_travel_bots[index] : NULL;
+	return index >= 0 && index < BOTS_BRAINS ? &ae_travel_bots[index] : NULL;
 }
 
 static void ae_travel_check_progress(struct bots_bot *bot, struct ae_travel_bot *travel, struct bots_tick *tick);
@@ -175,14 +175,14 @@ void ae_bots_travel_prepare(void)
 	long count, index, jumps = 0;
 
 	csmemset(&ae_travel, 0, sizeof(ae_travel));
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 		ae_travel_bot_reset(&ae_travel_bots[index], NONE);
 	/* the other lanes' bots start over too: a player index repeats from game to game (the player data is
 	remade each map with the same identifiers), so a state kept by player index would carry the last game's
 	pauses, patrol points and timers into this one */
 	csmemset(ae_bots_objective_bots, 0, sizeof(ae_bots_objective_bots));
 	csmemset(ae_bots_vehicle_bots, 0, sizeof(ae_bots_vehicle_bots));
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		ae_bots_objective_bots[index].player_index = NONE;
 		ae_bots_vehicle_bots[index].player_index = NONE;

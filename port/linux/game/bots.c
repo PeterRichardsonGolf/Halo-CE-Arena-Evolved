@@ -258,7 +258,7 @@ static struct
 	long roam_point_count;
 	real_point3d roam_points[BOTS_MAXIMUM_ROAM_POINTS];
 	long roam_surfaces[BOTS_MAXIMUM_ROAM_POINTS];
-	struct bots_bot bots[BOTS_MAXIMUM];
+	struct bots_bot bots[BOTS_BRAINS]; /* AE hook */
 	/* the skill setting, read once a tick for every bot */
 	short skill;
 	/* the path search's state (80 KB: the engine's 1024 nodes, heap and
@@ -1203,7 +1203,7 @@ void bots_initialize_for_new_map(void)
 	long index;
 
 	csmemset(bots_globals.bots, 0, sizeof(bots_globals.bots));
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++) /* AE hook */
 		bots_globals.bots[index].player_index = NONE;
 	bots_globals.map_ready = FALSE;
 	bots_globals.roam_point_count = 0;
@@ -1557,7 +1557,7 @@ static long bots_find_target(struct bots_bot *bot, struct player_datum *player, 
 	struct data_iterator iterator;
 	struct player_datum *other;
 	boolean hurt = game_time_get() - bot->hurt_tick < TICKS_PER_SECOND * 2;
-	struct bots_target_candidate candidates[BOTS_MAXIMUM + MAXIMUM_LOCAL_PLAYERS];
+	struct bots_target_candidate candidates[BOTS_BRAINS + MAXIMUM_LOCAL_PLAYERS]; /* AE hook */
 	long candidate_count = 0, index;
 	boolean ordered = TRUE;
 
@@ -1652,7 +1652,7 @@ static void bots_pick_roam_goal(struct bots_bot *bot, real_point3d const *positi
 		struct player_datum *player = player_get(bot->player_index);
 		struct data_iterator iterator;
 		struct player_datum *other;
-		long enemies[BOTS_MAXIMUM + MAXIMUM_LOCAL_PLAYERS];
+		long enemies[BOTS_BRAINS + MAXIMUM_LOCAL_PLAYERS]; /* AE hook */
 		long enemy_count = 0;
 
 		data_iterator_new(&iterator, player_data);
@@ -2412,7 +2412,7 @@ static void bots_report(void)
 		return;
 	bots_globals.last_report_tick = now;
 	line[0] = 0;
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++) /* AE hook */
 	{
 		struct bots_bot *bot = &bots_globals.bots[index];
 		struct player_datum *player = bot->player_index != NONE ? player_try_and_get(bot->player_index) : NULL;

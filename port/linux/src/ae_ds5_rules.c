@@ -17,13 +17,21 @@ static int clamp(int value, int low, int high)
 	return value < low ? low : value > high ? high : value;
 }
 
-enum ae_ds5_weapon_kind ae_ds5_weapon_kind(int burst_rifle, int needler, float rate_of_fire, float charging_time,
-	float heat_per_round, int zoom_levels, int no_projectile, int plasma_rifle_type)
+enum ae_ds5_weapon_kind ae_ds5_weapon_kind(int burst_rifle, int pack, int needler, float rate_of_fire,
+	float charging_time, float heat_per_round, int zoom_levels, int no_projectile, int plasma_rifle_type)
 {
 	if (no_projectile)
 		return AE_DS5_WEAPON_CARRY;
-	if (burst_rifle)
+	if (burst_rifle || pack == AE_DS5_PACK_BATTLE_RIFLE)
 		return AE_DS5_WEAPON_BURST;
+	/* (the packs' weapons by the pack, not their numbers: the SMGs' 15 rounds a second read as the assault rifle's,
+	the carbine's 5 as the pistol's) */
+	if (pack == AE_DS5_PACK_SMG)
+		return AE_DS5_WEAPON_SMG;
+	if (pack == AE_DS5_PACK_SMG_SILENCED)
+		return AE_DS5_WEAPON_SMG_SILENCED;
+	if (pack == AE_DS5_PACK_CARBINE)
+		return AE_DS5_WEAPON_CARBINE;
 	if (charging_time > 0.0f)
 		return AE_DS5_WEAPON_CHARGE;
 	if (zoom_levels >= 2 && rate_of_fire < 3.0f)
@@ -42,7 +50,8 @@ enum ae_ds5_weapon_kind ae_ds5_weapon_kind(int burst_rifle, int needler, float r
 char const *ae_ds5_weapon_kind_name(enum ae_ds5_weapon_kind kind)
 {
 	static char const *const names[AE_DS5_WEAPON_KINDS] = {
-		"none", "semi", "heavy", "automatic", "sniper", "charge", "burst", "needler", "plasma heat", "carry", "flame" };
+		"none", "semi", "heavy", "automatic", "sniper", "charge", "burst", "needler", "plasma heat", "carry", "flame",
+		"smg", "silenced smg", "carbine" };
 
 	return kind >= 0 && kind < AE_DS5_WEAPON_KINDS ? names[kind] : "?";
 }
@@ -156,35 +165,47 @@ static struct profile
 	int charged_kick_ms;
 	int charged_rumble_left, charged_rumble_right, charged_rumble_ms;
 } const profiles[AE_DS5_WEAPON_KINDS] = {
+	/* (owner 10-21, 0.3.7: every strength re-spaced so STRONG has room above NORMAL and LIGHT below it: a hold at most
+	4 here (STRONG 6), a click at most 5 (STRONG 7), a kick at most 7 (STRONG 8) but the plasma pistol's blast) */
 	/* none */ { NO, SM, NO, 0, 0, 0, 0, HUMAN, 0, 0, "off", NO, 0, 0, 0, 0 },
 	/* semi (pistol): its click, a sharp snap back each shot (3.5 shots/s: 35 ms of 285), a firm left pulse */
-	{ W(4, 7, 4), SM, F(0, 8), 35, 0, 0, 0, HUMAN, 150, 60, "click, snap a shot", NO, 0, 0, 0, 0 },
-	/* heavy (shotgun, rockets): a heavy click, a big kick each shot (a 30 Hz full jolt, 130 ms of ~700), the left
-	motor full */
-	{ W(3, 7, 6), SM, V(0, 8, 30), 130, 0, 0, 0, HUMAN, 255, 160, "heavy click, big kick", NO, 0, 0, 0, 0 },
+	{ W(4, 7, 4), SM, F(0, 7), 35, 0, 0, 0, HUMAN, 150, 60, "click, snap a shot", NO, 0, 0, 0, 0 },
+	/* heavy (shotgun, rockets): a heavy click, a big kick each shot (a 30 Hz jolt, 130 ms of ~700), the left motor
+	full */
+	{ W(3, 7, 5), SM, V(0, 7, 30), 130, 0, 0, 0, HUMAN, 255, 160, "heavy click, big kick", NO, 0, 0, 0, 0 },
 	/* automatic (assault rifle): light hold; firing, round 1's buzz at 1x the rate of fire = a pulse a round, a short
 	left pulse a round (40 ms of 67) */
 	{ F(3, 2), V(3, 5, 0), NO, 0, 1, 0, 0, HUMAN, 90, 40, "light hold, a pulse a round", NO, 0, 0, 0, 0 },
 	/* sniper: firm, a heavy thump each shot (2 shots/s: 90 ms of 500), the left motor nearly full */
-	{ F(2, 6), SM, F(0, 8), 90, 0, 0, 0, HUMAN, 230, 130, "firm, heavy thump", NO, 0, 0, 0, 0 },
+	{ F(2, 4), SM, F(0, 7), 90, 0, 0, 0, HUMAN, 230, 130, "firm, heavy thump", NO, 0, 0, 0, 0 },
 	/* charge (plasma pistol): a hold from zone 2; while it charges a hum from there rising to full (faster once
 	charged: ae_ds5_right_held's CHARGING HUM); each ordinary shot a powerful
-	pulse (a full 40 Hz jolt, 70 ms, the right motor); the overcharged release a big heavy kick, longer and lower than
+	pulse (a 40 Hz jolt, 70 ms, the right motor); the overcharged release a big heavy kick, longer and lower than
 	the shotgun's (a full 15 Hz jolt, 240 ms), both motors */
-	{ F(2, 4), SM, V(0, 8, 40), 70, 0, 2, 8, COVENANT, 160, 60, "hums as it charges, a pulse a shot, a blast charged",
+	{ F(2, 3), SM, V(0, 7, 40), 70, 0, 2, 8, COVENANT, 160, 60, "hums as it charges, a pulse a shot, a blast charged",
 		V(0, 8, 15), 240, 170, 255, 240 },
-	/* burst (battle rifle): its click, three quick pulses a burst (15 rounds/s inside it: 30 ms of 67), a firm left
-	pulse a round on the burst's cadence (owner 10-15: 240 for 50 ms, rounds 67 ms apart: three distinct pulses; 120
-	for 40 ms was not felt) */
-	{ W(4, 7, 6), V(3, 7, 0), NO, 0, 1, 0, 0, HUMAN, 255, 50, "click, buzzes through the burst", NO, 0, 0, 0, 0 },
+	/* burst (battle rifle): a firm click; three small pulses a burst (one a round, 15 rounds/s inside it: the trigger's
+	buzz at the rate of fire), a firm pulse on both motors a round on the burst's cadence (owner 10-15: 240 for 50 ms,
+	rounds 67 ms apart, three distinct pulses; 120 for 40 ms was not felt) */
+	{ W(4, 7, 5), V(3, 4, 0), NO, 0, 1, 0, 0, HUMAN, 220, 50, "firm click, three pulses a burst", NO, 0, 0, 0, 0 },
 	/* needler: barely there; firing, a fast light buzz (2x the rate of fire, amplitude 3), a light right tick */
-	{ F(3, 1), V(3, 3, 0), NO, 0, 2, 0, 0, COVENANT, 70, 30, "fast light buzz", NO, 0, 0, 0, 0 },
+	{ F(3, 2), V(3, 3, 0), NO, 0, 2, 0, 0, COVENANT, 70, 30, "fast light buzz", NO, 0, 0, 0, 0 },
 	/* plasma heat (plasma rifle): resistance and hum rising with heat (locked while overheated, as every weapon) */
-	{ F(2, 1), V(2, 3, 0), NO, 0, 1, 1, 7, COVENANT, 80, 40, "rises with heat, locked overheated", NO, 0, 0, 0, 0 },
+	{ F(2, 2), V(2, 3, 0), NO, 0, 1, 1, 6, COVENANT, 80, 40, "rises with heat, locked overheated", NO, 0, 0, 0, 0 },
 	/* carry (ball, flag: no projectile, R2 swings it): free, nothing to shoot (ruled off) */
 	{ NO, SM, NO, 0, 0, 0, 0, HUMAN, 0, 0, "free (melee carry)", NO, 0, 0, 0, 0 },
 	/* flame (flamethrower): light hold; firing, a low 18 Hz roar rising with heat, a low left rumble */
 	{ F(3, 2), V(3, 3, 18), NO, 0, 0, 1, 6, HUMAN, 60, 60, "light hold, a roar while it burns", NO, 0, 0, 0, 0 },
+	/* smg (AE's SMG pack, 15 rounds/s): the assault rifle's light hold; firing, a fast buzz (30 Hz, twice the
+	assault rifle's, lighter: amplitude 4), a light left tick a round */
+	{ F(3, 2), V(3, 4, 30), NO, 0, 1, 0, 0, HUMAN, 70, 40, "light hold, a fast buzz", NO, 0, 0, 0, 0 },
+	/* silenced smg (AE's silenced SMG pack): the SMG's hold; firing, a softer, lower buzz (20 Hz, amplitude 3), a
+	softer left tick */
+	{ F(3, 2), V(3, 3, 20), NO, 0, 1, 0, 0, HUMAN, 45, 40, "light hold, a soft low buzz", NO, 0, 0, 0, 0 },
+	/* carbine (AE's carbine pack, 5 shots/s, semi-automatic): a quick crisp click, shorter and lighter than the
+	pistol's (zones 4-6, strength 3), a short snap each shot (30 ms of 200, lighter than the pistol's), a light
+	pulse on the right motor (Covenant) */
+	{ W(4, 6, 3), SM, F(0, 5), 30, 0, 0, 0, COVENANT, 110, 40, "crisp light click, quick snap a shot", NO, 0, 0, 0, 0 },
 };
 #define THROB_TICKS 8
 #define THROB_ON_TICKS 2
@@ -193,8 +214,16 @@ static struct profile
 #define CHARGING_HUM_HZ 25
 /* a shot's rumble pulse, at least (ms) */
 #define SHOT_RUMBLE_MINIMUM_MS 50
+/* L2's grenade (owner 10-21): the ready click's zones (from where a press counts), the throw's short click (NORMAL's
+strength; LIGHT 3, STRONG 6) or the plasma grenade's buzz (2 / 3 / 5), how long, the motor's pulse */
+#define GRENADE_CLICK_START 2
+#define GRENADE_CLICK_END 4
+#define GRENADE_THROW_KICK 4
+#define GRENADE_THROW_BUZZ 3
+#define GRENADE_THROW_MS 30
+#define GRENADE_THROW_RUMBLE 100
 /* the battle rifle's round: the light motor with the heavy one */
-#define BURST_RUMBLE_RIGHT 140
+#define BURST_RUMBLE_RIGHT 120
 #define CHARGING_HUM_LOW 1
 #define CHARGING_HUM_HIGH 3
 /* the charge's rumble: a pulse every CHARGE_RUMBLE_TICKS, each a little longer so they run together; the right
@@ -215,57 +244,63 @@ static int ramped(int base, int to, float amount)
 	return base + (int)((float)(to - base) * amount + 0.5f);
 }
 
-/* the shape's bytes; text: its words */
-/* a strength or amplitude (1-8) scaled by TRIGGER STRENGTH's percent, still 1-8: LIGHT (competitive) keeps only the
-lowest step, STRONG raises every value at least one step (the light weapons' 1s too; owner 10-16: the old 60/100/140
-were not felt apart) */
-static int scaled(int value, int percent)
-{
-	int result;
-
-	if (value <= 0)
-		return value;
-	result = (value * percent + 50) / 100;
-	if (percent > 100 && result < value + 1)
-		result = value + 1;
-	return clamp(result, 1, 8);
-}
-
-/* LIGHT is a HAIR TRIGGER (owner 10-16: "i want light to have triggers hair trigger like"): every hold and click
-becomes a short light break at the top of the pull (zones HAIR_START to HAIR_END, where a press already counts: the
-game's analog press threshold follows the pull, input_xbox.c), so nothing stands deeper in the pull; a kick from zone 0
-(after a shot) and the overheat lock stay as they are, scaled */
+/* TRIGGER STRENGTH (owner 10-21 after 0.3.7: "reajust the trigger pull on all the settings"; before it LIGHT,
+NORMAL and STRONG were x0.75, x1, x1.75 of every number, so STRONG's holds ran to 8, a stiff full pull, and LIGHT's
+breaks sat at 2, barely felt). The table is NORMAL's; each preset is two steps apart:
+- a hold (resistance from a zone to the end of the pull): STRONG two steps up, at most HOLD_STRONGEST (firm; a full
+  pull held through a fight does not tire);
+- a click (resistance that gives way): STRONG two steps up, at most CLICK_STRONGEST;
+- LIGHT a HAIR TRIGGER (owner 10-16: "i want light to have triggers hair trigger like"): every hold and click a short
+  break at the top of the pull (zones HAIR_START to HAIR_END, where a press already counts: the game's analog press
+  threshold follows the pull, input_xbox.c), one step under NORMAL's, kept between HAIR_MINIMUM (clearly felt) and
+  HAIR_MAXIMUM, so nothing stands deeper in the pull;
+- kicks and buzzes (a vibration, a kick from zone 0 after the shot, the overheat's lock): LIGHT one step down (not
+  under PULSE_LIGHTEST, nor above the table's), STRONG two steps up (at most 8) */
+#define STRONG_STEPS 2
+#define HOLD_STRONGEST 6
+#define CLICK_STRONGEST 7
 #define HAIR_START 2
 #define HAIR_END 3
-#define HAIR_MINIMUM 2
+#define HAIR_MINIMUM 3
+#define HAIR_MAXIMUM 5
+#define PULSE_LIGHTEST 2
+
 static int hair_trigger(int percent)
 {
 	return percent <= AE_DS5_STRENGTH_LIGHT;
 }
 
-/* the break's strength from LIGHT's scaled one: two thirds of it (the break at half the table's, as the owner
-approved it, while the rest of LIGHT runs at three quarters: owner 10-16 "barely feel the ar on light"), at least
-HAIR_MINIMUM */
-static int hair_strength(int strength)
+static int strong(int percent)
 {
-	strength = (strength * 2 + 1) / 3;
-	return strength < HAIR_MINIMUM ? HAIR_MINIMUM : strength;
+	return percent > 100;
 }
 
-/* a hold or click as LIGHT's break at the top of the pull, else as it is; strength already scaled */
-static void resistance(unsigned char effect[AE_DS5_EFFECT_SIZE], int weapon, int start, int end, int strength,
-	int percent)
+/* a hold's or click's strength (NORMAL's value) on STRONG, never above `strongest` (nor under the value) */
+static int held_strong(int value, int strongest)
 {
-	if (hair_trigger(percent) && (weapon || start > 0))
-	{
-		strength = hair_strength(strength);
-		ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, strength);
-		return;
-	}
-	if (weapon)
-		ae_ds5_effect_weapon(effect, start, end, strength);
-	else
-		ae_ds5_effect_feedback(effect, start, strength);
+	int result = value + STRONG_STEPS;
+
+	if (result > strongest)
+		result = strongest > value ? strongest : value;
+	return clamp(result, 1, 8);
+}
+
+/* LIGHT's break from NORMAL's strength */
+static int hair_strength(int value)
+{
+	return clamp(value - 1, HAIR_MINIMUM, HAIR_MAXIMUM);
+}
+
+/* a kick's or buzz's strength / amplitude for the preset */
+static int pulse_scaled(int value, int percent)
+{
+	if (value <= 0)
+		return value;
+	if (hair_trigger(percent))
+		return value - 1 < PULSE_LIGHTEST ? (value < PULSE_LIGHTEST ? value : PULSE_LIGHTEST) : value - 1;
+	if (strong(percent))
+		return clamp(value + STRONG_STEPS, 1, 8);
+	return clamp(value, 1, 8);
 }
 
 void ae_ds5_rumble_scaled(struct ae_ds5_rumble *rumble, int percent)
@@ -276,41 +311,72 @@ void ae_ds5_rumble_scaled(struct ae_ds5_rumble *rumble, int percent)
 	rumble->right = clamp((rumble->right * motor + 50) / 100, 0, 255);
 }
 
+/* the shape's bytes for the preset (the shape's numbers NORMAL's); text: its words */
 static void shape_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], struct shape shape, float rate_of_fire, int per_round,
 	int strength, char *text, size_t text_size)
 {
-	int frequency;
-
-	shape.b = (unsigned char)scaled(shape.b, strength);
+	int frequency, value;
 
 	switch (shape.mode)
 	{
 	case FEEDBACK:
-		resistance(effect, 0, shape.a, 0, shape.b, strength);
-		if (hair_trigger(strength) && shape.a > 0)
-			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END,
-				hair_strength(shape.b));
+		if (shape.a == 0)
+		{
+			/* (from zone 0: a kick after the shot, or the overheat's lock) */
+			value = pulse_scaled(shape.b, strength);
+			ae_ds5_effect_feedback(effect, 0, value);
+			snprintf(text, text_size, "feedback from zone 0 strength %d", value);
+		}
+		else if (hair_trigger(strength))
+		{
+			value = hair_strength(shape.b);
+			ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, value);
+			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END, value);
+		}
 		else
-			snprintf(text, text_size, "feedback from zone %d strength %d", shape.a, shape.b);
+		{
+			value = strong(strength) ? held_strong(shape.b, HOLD_STRONGEST) : clamp(shape.b, 1, 8);
+			ae_ds5_effect_feedback(effect, shape.a, value);
+			snprintf(text, text_size, "feedback from zone %d strength %d", shape.a, value);
+		}
 		break;
 	case WEAPON:
-		resistance(effect, 1, shape.a, shape.c, shape.b, strength);
 		if (hair_trigger(strength))
-			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END,
-				hair_strength(shape.b));
+		{
+			value = hair_strength(shape.b);
+			ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, value);
+			snprintf(text, text_size, "hair trigger break zones %d-%d strength %d", HAIR_START, HAIR_END, value);
+		}
 		else
-			snprintf(text, text_size, "click zones %d-%d strength %d", shape.a, shape.c, shape.b);
+		{
+			value = strong(strength) ? held_strong(shape.b, CLICK_STRONGEST) : clamp(shape.b, 1, 8);
+			ae_ds5_effect_weapon(effect, shape.a, shape.c, value);
+			snprintf(text, text_size, "click zones %d-%d strength %d", shape.a, shape.c, value);
+		}
 		break;
 	case VIBRATION:
+		value = pulse_scaled(shape.b, strength);
 		frequency = shape.c ? shape.c : clamp((int)(rate_of_fire * (float)(per_round > 0 ? per_round : 1) + 0.5f), 6, 60);
-		ae_ds5_effect_vibration(effect, shape.a, shape.b, frequency);
-		snprintf(text, text_size, "vibration from zone %d amplitude %d at %d Hz", shape.a, shape.b, frequency);
+		ae_ds5_effect_vibration(effect, shape.a, value, frequency);
+		snprintf(text, text_size, "vibration from zone %d amplitude %d at %d Hz", shape.a, value, frequency);
 		break;
 	default:
 		ae_ds5_effect_off(effect);
 		snprintf(text, text_size, "off");
 		break;
 	}
+}
+
+/* DRY CLICK (an empty weapon, L2 with no grenades): slack, then a weak hollow click at the bottom of the pull, once a
+pull (the weapon effect's own), on every preset (LIGHT too: an empty weapon has nothing to fire, the click is news,
+not resistance), STRONG a step firmer */
+#define DRY_STRENGTH 2
+static int dry_click(unsigned char effect[AE_DS5_EFFECT_SIZE], int strength)
+{
+	int value = DRY_STRENGTH + (strong(strength) ? 1 : 0);
+
+	ae_ds5_effect_weapon(effect, 7, 8, value);
+	return value;
 }
 
 void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_weapon_state const *state, int strength,
@@ -354,11 +420,10 @@ void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_w
 	}
 	if (state->empty)
 	{
-		/* DRY CLICK: slack, then a weak hollow click at the bottom of the pull, once a pull (the weapon effect's own) */
-		struct shape dry = W(7, 8, 2);
+		/* DRY CLICK */
+		int value = dry_click(effect, strength);
 
-		shape_effect(effect, dry, 0.0f, 1, strength, words, sizeof(words));
-		snprintf(text, text_size, "dry click (empty): %s", words);
+		snprintf(text, text_size, "dry click (empty): click zones 7-8 strength %d", value);
 		return;
 	}
 	if (state->firing && profile->firing.mode != SAME)
@@ -453,24 +518,25 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 	}
 	case AE_DS5_EVENT_GRENADE_FRAG:
 	{
-		/* (L2) a frag grenade leaving the hand: a mechanical jolt, the left motor */
-		struct shape jolt = V(0, 7, 25);
+		/* (L2) a frag grenade leaving the hand: a short click (owner 10-21, 0.3.7: "Grenade trigger strong on all
+		presets": was a 25 Hz jolt at 7 for 80 ms), a light pulse on the left motor */
+		struct shape click = F(0, GRENADE_THROW_KICK);
 
-		shape = jolt;
-		ms = 80;
-		rumble->left = 140;
-		rumble->ms = 70;
+		shape = click;
+		ms = GRENADE_THROW_MS;
+		rumble->left = GRENADE_THROW_RUMBLE;
+		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
 		break;
 	}
 	case AE_DS5_EVENT_GRENADE_PLASMA:
 	{
-		/* (L2) a plasma grenade leaving the hand: a lighter, faster buzz, the right motor */
-		struct shape buzz = V(0, 5, 45);
+		/* (L2) a plasma grenade leaving the hand: a short light buzz, the right motor */
+		struct shape buzz = V(0, GRENADE_THROW_BUZZ, 45);
 
 		shape = buzz;
-		ms = 80;
-		rumble->right = 140;
-		rumble->ms = 70;
+		ms = GRENADE_THROW_MS + 20;
+		rumble->right = GRENADE_THROW_RUMBLE;
+		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
 		break;
 	}
 	}
@@ -497,23 +563,33 @@ char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind)
 char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
 	int strength)
 {
+	/* (L2 lighter than R2 on every preset, owner 10-21: "Grenade trigger strong on all presets": a grenade is a light,
+	quick pull. The zoom's hold LIGHT / NORMAL / STRONG: a break of 2 / feedback 2 / feedback 3; grenades in hand a
+	short click where the press counts, 2 / 3 / 4; wound up, free (it was a feedback of 3 / 5 / 8 from zone 2 against
+	the finger already down); the throw's click is its event) */
+	static int const zoom[3] = { 2, 2, 3 };
+	static int const ready[3] = { 2, 3, 4 };
+	int preset = hair_trigger(strength) ? 0 : strong(strength) ? 2 : 1;
+
 	if (zoomed)
 	{
-		resistance(effect, 0, 2, 0, scaled(2, strength), strength);
+		if (preset == 0)
+			ae_ds5_effect_weapon(effect, HAIR_START, HAIR_END, zoom[preset]);
+		else
+			ae_ds5_effect_feedback(effect, 2, zoom[preset]);
 		return "light resistance (zoomed)";
 	}
 	if (winding)
 	{
-		/* (a grenade wound up: the throw's held moment) */
-		resistance(effect, 0, 2, 0, scaled(5, strength), strength);
-		return "grenade wound up (feedback from zone 2)";
+		ae_ds5_effect_off(effect);
+		return "grenade wound up (free)";
 	}
 	if (grenades > 0)
 	{
-		resistance(effect, 0, 3, 0, scaled(2, strength), strength);
-		return "grenade ready (light hold)";
+		ae_ds5_effect_weapon(effect, GRENADE_CLICK_START, preset == 0 ? HAIR_END : GRENADE_CLICK_END, ready[preset]);
+		return "grenade ready (light click)";
 	}
-	resistance(effect, 1, 7, 8, scaled(2, strength), strength);
+	dry_click(effect, strength);
 	return "no grenades (dry click)";
 }
 
@@ -602,14 +678,14 @@ int ae_ds5_left_powerup(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_
 {
 	if (powerups->juggernaut_ticks >= 0 && powerups->juggernaut_ticks < JUGGERNAUT_BUZZ_TICKS)
 	{
-		ae_ds5_effect_vibration(effect, 0, scaled(7, strength), 25);
-		snprintf(text, text_size, "juggernaut buzz (vibration amplitude %d at 25 Hz)", scaled(7, strength));
+		ae_ds5_effect_vibration(effect, 0, pulse_scaled(7, strength), 25);
+		snprintf(text, text_size, "juggernaut buzz (vibration amplitude %d at 25 Hz)", pulse_scaled(7, strength));
 		return 1;
 	}
 	if (powerups->shield > 1.0f && powerups->shield_rising)
 	{
 		float amount = (powerups->shield - 1.0f) / 2.0f;
-		int amplitude = scaled(1 + (int)((amount > 1.0f ? 1.0f : amount) * 5.0f + 0.5f), strength);
+		int amplitude = pulse_scaled(1 + (int)((amount > 1.0f ? 1.0f : amount) * 5.0f + 0.5f), strength);
 
 		ae_ds5_effect_vibration(effect, 0, amplitude, 30);
 		snprintf(text, text_size, "overshield charging (vibration amplitude %d at 30 Hz)", amplitude);

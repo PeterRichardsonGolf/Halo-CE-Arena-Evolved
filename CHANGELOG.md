@@ -6,6 +6,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT's hair-trigger break is easier to
+  feel, STRONG is two steps firmer than NORMAL but never so stiff that a full pull tires. L2's grenade is a light,
+  quick pull with a short click at the throw on every setting (it was strong on all of them). The weapon packs have
+  their own feel: the SMG a fast buzz, the silenced SMG a softer, lower buzz, the carbine a crisp click lighter than the
+  pistol's, the battle rifle a firm click and a small pulse for each round of its burst.
 - OpenCE build-250 merged. The visibility readback (which lights and lens flares are visible) is OpenCE's final
   version of PR #433, by hkmodd: nothing is asked of the graphics driver before the frame is shown, and the counts are
   read after it once the GPU says they are done, so NVIDIA's driver and the game no longer take turns. If a driver
@@ -20,6 +25,20 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - DualSense on Windows: the adaptive triggers, rumble, lightbar and player lights go straight to the pad's HID device
   in one whole report, as on Linux, not through SDL's queue, which merged and dropped the triggers' kicks (they felt
   hardly there). Where the HID device cannot be opened, SDL's way as before (`debug.txt` says which and why).
+- Modded discs: a machine joins only a host playing the same disc. A machine on the stock maps could join a host on
+  Halo 1: NHE or CE+ X and load its own Blood Gulch where the host had the disc's, and the two games went apart; it is
+  now refused and told to choose the host's disc in MODDED DISCS. Without a disc nothing changes (stock OpenCE and
+  ChupathingyCE machines join as before), nor with a disc that only adds maps of its own.
+  With a disc that replaces stock maps, only Arena Evolved 0.3.7 and later machines on the same disc join each other:
+  older Arena Evolved, OpenCE and ChupathingyCE machines on that disc are refused.
+- Bots in network games: a LAN or internet game you host takes your bots (BOTS in Settings > Game Options, up to 15:
+  a big team game's 16 players with you; `bots.count` in config.toml goes up to 127), not only 3 on a LAN. Past your three free controllers they sit on
+  machines of the host's own, four to a machine, which every machine sees as a machine of four players, stock
+  OpenCE and ChupathingyCE ones too: nothing that the machines send each other changes. Their names start "BOT ",
+  so everyone can tell them from people. The lobby keeps a player slot free for someone joining; at the start of a
+  team game with an odd number of players one more bot takes it, so the teams are even. In a game under way a
+  person who joins a full game takes a bot's place (the bot leaves from the larger team, so the teams stay even),
+  and a bot comes back when a person leaves. `debug.network_bots` is on by default; set it to false to turn it off.
 
 ## 0.3.6-beta - 2026-10-21
 

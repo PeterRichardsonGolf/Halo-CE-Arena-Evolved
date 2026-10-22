@@ -16,24 +16,93 @@ unsigned ae_lan_bots_free_controllers(unsigned people_mask, unsigned wanting_mas
 	return ~(people_mask | wanting_mask) & ((1u << AE_LAN_BOTS_CONTROLLERS) - 1);
 }
 
-int ae_lan_bots_target(int wanted, int eligible, int other_players, int maximum_players, unsigned free_mask)
+int ae_lan_bots_capacity(int network_bots, unsigned free_mask, int machines)
+{
+	int count = 0;
+	int controller;
+
+	for (controller = 0; controller < AE_LAN_BOTS_CONTROLLERS; controller++)
+		count += (free_mask >> controller) & 1u;
+	if (count > AE_LAN_BOTS_MAXIMUM)
+		count = AE_LAN_BOTS_MAXIMUM;
+	if (!network_bots)
+		return count;
+	if (machines > AE_NET_BOTS_MACHINES)
+		machines = AE_NET_BOTS_MACHINES;
+	if (machines > 0)
+		count += machines * AE_LAN_BOTS_CONTROLLERS;
+	return count > AE_NET_BOTS_MAXIMUM ? AE_NET_BOTS_MAXIMUM : count;
+}
+
+int ae_lan_bots_target(int wanted, int eligible, int other_players, int maximum_players, int capacity)
 {
 	int count = wanted;
-	int free_count = 0;
 	int room = maximum_players - 1 - other_players;
-	int controller;
 
 	if (!eligible || wanted <= 0)
 		return 0;
-	for (controller = 0; controller < AE_LAN_BOTS_CONTROLLERS; controller++)
-		free_count += (free_mask >> controller) & 1u;
-	if (count > AE_LAN_BOTS_MAXIMUM)
-		count = AE_LAN_BOTS_MAXIMUM;
-	if (count > free_count)
-		count = free_count;
+	if (count > capacity)
+		count = capacity;
 	if (count > room)
 		count = room;
 	return count < 0 ? 0 : count;
+}
+
+int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players, int maximum_players, int capacity,
+	int playerless_machines)
+{
+	if (!teams || against || bots <= 0 || ((bots + other_players) & 1) == 0 || playerless_machines > 0)
+		return 0;
+	return bots < capacity && bots + other_players < maximum_players ? 1 : 0;
+}
+
+int ae_lan_bots_ingame_target(int wanted, int eligible, int other_players, int maximum_players, int capacity, int teams,
+	int against)
+{
+	int count = wanted;
+
+	if (!eligible || wanted <= 0)
+		return 0;
+	if (count > capacity)
+		count = capacity;
+	if (count > maximum_players - other_players)
+		count = maximum_players - other_players;
+	if (count <= 0)
+		return 0;
+	if (teams && !against && ((count + other_players) & 1) && count < capacity && count + other_players < maximum_players)
+		count++;
+	return count;
+}
+
+int ae_lan_bots_leaving_team(int teams, int red_bots, int blue_bots, int red_players, int blue_players)
+{
+	int first;
+
+	if (!teams || (red_bots <= 0 && blue_bots <= 0))
+		return -1;
+	first = blue_players > red_players ? 1 : 0;
+	if ((first ? blue_bots : red_bots) > 0)
+		return first;
+	return first ? 0 : 1;
+}
+
+int ae_lan_bots_pick_machine(int const *counts, int count)
+{
+	int index;
+
+	for (index = 0; index < count; index++)
+	{
+		if (counts[index] < AE_LAN_BOTS_CONTROLLERS)
+			return index;
+	}
+	return count < AE_NET_BOTS_MACHINES ? count : -1;
+}
+
+int ae_lan_bots_name_number(int bot_index, int names)
+{
+	if (names <= 0 || bot_index < names)
+		return 0;
+	return bot_index / names + 1;
 }
 
 int ae_lan_bots_pick_controller(unsigned free_mask, unsigned bots_mask)
@@ -53,4 +122,21 @@ int ae_lan_bots_team(int against, int people_team, int red_count, int blue_count
 	if (against)
 		return people_team == 1 ? 0 : 1;
 	return blue_count < red_count ? 1 : 0;
+}
+
+void ae_lan_bots_name(char const *base, int number, int tagged, char *name, int size)
+{
+	static char const tag[] = "BOT ";
+	int length = 0, room, index;
+
+	if (!name || size <= 0)
+		return;
+	room = (size - 1 < AE_LAN_BOTS_NAME_LENGTH ? size - 1 : AE_LAN_BOTS_NAME_LENGTH) - (number ? 1 : 0);
+	for (index = 0; tagged && tag[index] && length < room; index++)
+		name[length++] = tag[index];
+	for (index = 0; base && base[index] && length < room; index++)
+		name[length++] = base[index];
+	if (number && length < size - 1)
+		name[length++] = (char)('0' + number % 10);
+	name[length] = 0;
 }
