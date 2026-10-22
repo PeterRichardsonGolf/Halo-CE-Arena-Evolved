@@ -48,6 +48,13 @@ def play(cfg, out, name, spec):
     return result, text, pngs
 
 
+def picture_brightness(path):
+    """the mean of every 7th pixel of the picture ((r + g + b) / 3, 0-255)"""
+    w, h, rgb = menus.harness.read_png(path)
+    values = [(rgb[i] + rgb[i + 1] + rgb[i + 2]) / 3 for i in range(0, w * h * 3, 21)]
+    return sum(values) / len(values)
+
+
 def in_order(text, lines):
     """the index in text of each line, in order; a missing (or out of order) one fails with what came before"""
     position = 0
@@ -79,6 +86,9 @@ def test_host_bots_round_trip(cfg):
     assert before and before.groups() == back.groups(), (before, back)
     assert pngs, "no screenshots"
     (out / "back-in-the-lobby.png").write_bytes(pngs[-1].read_bytes())
+    # (the menus' background scene is under the lobby again: the picture is not near black, as the round left it)
+    assert "ae lobby: the menus' background scene started under the lobby" in text
+    assert picture_brightness(pngs[-1]) > 12, "the lobby's background is black after the game"
 
 
 def test_not_ae_session_left_to_the_game(cfg):

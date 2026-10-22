@@ -1160,6 +1160,24 @@ void main_menu_load(
 	return;
 }
 
+/* AE hook: the menus' background (the ui scenario's ring and planet) under AE's lobby back from a game. The round
+left the ui scenario loaded (network_game_end_and_load_ui) with its clock and scripts stopped, so the scripted camera
+never moved into the scene and the menu drew black: main_menu_load's clock and script start, without its shell widget
+(main_screen_shell_load: the root's initialize disposes the network session the lobby shows) and the update server */
+void main_menu_scene_start_for_lobby(
+	void)
+{
+	if (!main_globals.main_menu_scenario_loaded)
+		main_load_ui_scenario(FALSE);
+	main_menu_precache_resources();
+	game_time_dispose_from_old_map();
+	game_time_initialize_for_new_map();
+	game_time_start();
+	hs_runtime_dispose_from_old_map();
+	hs_runtime_initialize_for_new_map();
+	main_globals.want_to_be_at_main_menu = FALSE;
+}
+
 static void screenshot_record(
 	struct bitmap_data *screen,
 	struct file_reference *file)
