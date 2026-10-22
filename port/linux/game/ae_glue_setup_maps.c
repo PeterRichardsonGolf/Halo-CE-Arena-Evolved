@@ -4,9 +4,27 @@ AE_GLUE_SETUP_MAPS.C
 The game setup spike's CHANGE MAP glue. See ae_glue_setup_maps.h.
 */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* (PNG alone: a map's picture; static, so it never meets posix_ui_font.c's JPEG one. Before cseries.h, whose malloc,
+realloc and free are the game's checked ones: stb_image allocates and frees with the C library's, all of a piece) */
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#define STBI_ONLY_PNG
+#define STBI_NO_STDIO
+#define STBI_NO_LINEAR
+#define STBI_NO_HDR
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+#include "../../third_party/stb/stb_image.h"
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
@@ -26,23 +44,10 @@ The game setup spike's CHANGE MAP glue. See ae_glue_setup_maps.h.
 #include "ae_mapinfo.h"
 #include <xtl.h>
 
-/* (PNG alone: a map's picture; static, so it never meets posix_ui_font.c's JPEG one) */
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_STATIC
-#define STBI_ONLY_PNG
-#define STBI_NO_STDIO
-#define STBI_NO_LINEAR
-#define STBI_NO_HDR
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
-#endif
-#include "../../third_party/stb/stb_image.h"
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 
 void platform_log(char const *format, ...);
+/* platform.h's (a game path, d:\\maps\\x.map, as the host's) */
+void platform_translate_path(const char *xbox_path, char *host_path, unsigned long host_path_size);
 /* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
 short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
 void ui_widget_port_multiplayer_maps_refresh(void);
@@ -115,6 +120,26 @@ static int has_tag(char const *tags, char const *tag)
 	}
 	return 0;
 }
+
+/* ---------- the facts: read on a worker thread and kept for the session (an Xbox map's tags are inflated to be
+read: 150-250 ms a map, up to 1.5 s, which stalled the menus when read a few a frame). The worker reads host paths
+with stdio (ae_mapinfo_read) and nothing of the game's; the menus' thread only queues and copies under the lock */
+
+enum { FACTS_PENDING, FACTS_DONE };
+
+static struct
+{
+	pthread_mutex_t lock;
+	int running;
+	short count;
+	struct { char file[AE_SETUP_MAP_TEXT]; char host[PATH_SIZE]; int state, ok, modes; float extent; }
+		maps[AE_SETUP_MAPS_MAXIMUM];
+	/* each loaded map's entry here */
+	short entry_of[AE_SETUP_MAPS_MAXIMUM];
+	unsigned long started_at;
+} reader = { .lock = PTHREAD_MUTEX_INITIALIZER };
+
+static short facts_queue(char const *list_name);
 
 /* ---------- loading */
 
@@ -275,6 +300,7 @@ void ae_setup_maps_load(struct ae_setup_maps *maps)
 		if (source >= 0)
 			map->groups |= 1u << source;
 		glue.source[maps->count] = (signed char)source;
+		reader.entry_of[maps->count] = facts_queue(names[index]);
 		maps->count++;
 	}
 	{
@@ -287,18 +313,6 @@ void ae_setup_maps_load(struct ae_setup_maps *maps)
 				maps->group_names[group], ae_setup_map_group_count(maps, group, AE_MF_ALL));
 		platform_log("ae change map: maps %d, groups %s", maps->count, line);
 	}
-}
-
-/* ---------- the facts */
-
-static int file_reader(void *context, unsigned long offset, void *buffer, unsigned long size)
-{
-	HANDLE file = *(HANDLE *)context;
-	unsigned long bytes_read = 0;
-
-	if (SetFilePointer(file, (long)offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
-		return 0;
-	return ReadFile(file, buffer, size, &bytes_read, NULL) && bytes_read == size;
 }
 
 /* a map's file as the game opens it; 0 for none */
@@ -317,60 +331,139 @@ static int map_path(char const *list_name, char *path, long size)
 	return map_family_find(family, file, path, size) ? 1 : 0;
 }
 
-static void facts_read(struct ae_setup_map *map)
+static void *facts_worker(void *unused)
+{
+	(void)unused;
+	for (;;)
+	{
+		char host[PATH_SIZE];
+		struct ae_mapinfo info;
+		short index;
+		int ok;
+
+		pthread_mutex_lock(&reader.lock);
+		for (index = 0; index < reader.count && reader.maps[index].state != FACTS_PENDING; index++)
+			;
+		if (index == reader.count)
+		{
+			reader.running = 0;
+			pthread_mutex_unlock(&reader.lock);
+			return NULL;
+		}
+		snprintf(host, sizeof(host), "%s", reader.maps[index].host);
+		pthread_mutex_unlock(&reader.lock);
+		memset(&info, 0, sizeof(info));
+		ok = host[0] && ae_mapinfo_read(host, &info) == AE_MAPINFO_OK;
+		/* (entries are only ever added: index still names this one) */
+		pthread_mutex_lock(&reader.lock);
+		reader.maps[index].ok = ok;
+		reader.maps[index].modes = info.modes;
+		reader.maps[index].extent = info.play_extent;
+		reader.maps[index].state = FACTS_DONE;
+		pthread_mutex_unlock(&reader.lock);
+	}
+}
+
+/* a map queued for the worker (once a session); its entry, -1 when there is no room */
+static short facts_queue(char const *list_name)
 {
 	char path[PATH_SIZE];
-	struct ae_mapinfo info;
-	HANDLE file;
-	unsigned long high = 0, size;
+	short index;
 
-	map->facts = AE_SETUP_FACTS_UNREADABLE;
-	if (!map_path(map->file, path, sizeof(path)))
-		return;
-	file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-	if (file == INVALID_HANDLE_VALUE)
-		return;
-	size = GetFileSize(file, &high);
-	memset(&info, 0, sizeof(info));
-	if (!high && ae_mapinfo_parse(file_reader, &file, size, &info) == AE_MAPINFO_OK)
+	pthread_mutex_lock(&reader.lock);
+	for (index = 0; index < reader.count; index++)
 	{
-		map->facts = AE_SETUP_FACTS_READ;
-		map->modes = info.modes;
-		/* (maps.txt's size first; else the play area's, as maps.txt's sizes were made) */
-		if (!map->size && info.play_extent > 0.0f)
-			map->size = info.play_extent < SMALL_EXTENT ? 's' : info.play_extent <= LARGE_EXTENT ? 'm' : 'l';
-		if (map->size == 'l')
-			map->groups |= 1u << GROUP_BTB;
+		if (!strcmp(reader.maps[index].file, list_name))
+			break;
 	}
-	CloseHandle(file);
+	if (index == reader.count && reader.count < AE_SETUP_MAPS_MAXIMUM)
+	{
+		snprintf(reader.maps[index].file, AE_SETUP_MAP_TEXT, "%s", list_name);
+		reader.maps[index].host[0] = 0;
+		if (map_path(list_name, path, sizeof(path)))
+			platform_translate_path(path, reader.maps[index].host, PATH_SIZE);
+		reader.maps[index].state = FACTS_PENDING;
+		reader.count++;
+	}
+	else if (index == reader.count)
+		index = -1;
+	if (index >= 0 && reader.maps[index].state == FACTS_PENDING && !reader.running)
+	{
+		pthread_t thread;
+
+		reader.started_at = system_milliseconds();
+		if (pthread_create(&thread, NULL, facts_worker, NULL) == 0)
+		{
+			pthread_detach(thread);
+			reader.running = 1;
+		}
+		else
+		{
+			short other;
+
+			platform_log("ae change map: the facts' worker did not start: no facts");
+			for (other = 0; other < reader.count; other++)
+				reader.maps[other].state = FACTS_DONE;
+		}
+	}
+	pthread_mutex_unlock(&reader.lock);
+	return index;
+}
+
+void ae_setup_maps_prefetch(void)
+{
+	char const *const *names = NULL;
+	short count, last = 0, index;
+
+	count = ui_widget_port_multiplayer_maps(&names, &last);
+	for (index = 0; index < count && index < AE_SETUP_MAPS_MAXIMUM; index++)
+		facts_queue(names[index]);
 }
 
 short ae_setup_maps_read_facts(struct ae_setup_maps *maps, short count)
 {
 	short index, left = 0;
 
+	(void)count;
+	pthread_mutex_lock(&reader.lock);
 	for (index = 0; index < maps->count; index++)
 	{
 		struct ae_setup_map *map = &maps->maps[index];
+		short entry = reader.entry_of[index];
 
 		if (map->facts != AE_SETUP_FACTS_NONE)
 			continue;
-		if (count > 0)
+		if (entry < 0 || entry >= reader.count)
+			map->facts = AE_SETUP_FACTS_UNREADABLE;
+		else if (reader.maps[entry].state != FACTS_DONE)
 		{
-			facts_read(map);
-			if (map->facts == AE_SETUP_FACTS_READ)
-				glue.facts_read++;
-			else
-				glue.facts_unreadable++;
-			count--;
+			left++;
 			continue;
 		}
-		left++;
+		else if (!reader.maps[entry].ok)
+			map->facts = AE_SETUP_FACTS_UNREADABLE;
+		else
+		{
+			map->facts = AE_SETUP_FACTS_READ;
+			map->modes = reader.maps[entry].modes;
+			/* (maps.txt's size first; else the play area's, as maps.txt's sizes were made) */
+			if (!map->size && reader.maps[entry].extent > 0.0f)
+				map->size = reader.maps[entry].extent < SMALL_EXTENT ? 's' : reader.maps[entry].extent <= LARGE_EXTENT ?
+					'm' : 'l';
+			if (map->size == 'l')
+				map->groups |= 1u << GROUP_BTB;
+		}
+		if (map->facts == AE_SETUP_FACTS_READ)
+			glue.facts_read++;
+		else
+			glue.facts_unreadable++;
 	}
+	pthread_mutex_unlock(&reader.lock);
 	if (!left && !glue.facts_logged && maps->count)
 	{
 		glue.facts_logged = 1;
-		platform_log("ae change map: facts %d read (%d unreadable)", glue.facts_read, glue.facts_unreadable);
+		platform_log("ae change map: facts %d read (%d unreadable), %lu ms since the worker started", glue.facts_read,
+			glue.facts_unreadable, system_milliseconds() - reader.started_at);
 	}
 	return left;
 }

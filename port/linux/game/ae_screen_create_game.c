@@ -34,6 +34,7 @@ Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "ho
 #include "../src/ae_draw.h"
 #include "../src/ae_platform.h"
 #include "ae_glue_lobby.h"
+#include "ae_glue_setup_maps.h"
 #include "ae_glue_setup_options.h"
 #include "ae_hooks.h"
 #include "ae_screen_change_map.h"
@@ -763,6 +764,8 @@ int ae_screen_create_game_open(void)
 	if (!ae_setup_edit_begin_named(getenv("HALO_AE_TEST_GAMETYPE")))
 		return 0;
 	ui_widget_port_multiplayer_maps(&names, &last);
+	/* (the maps' facts read on the worker now, before CHANGE MAP wants them) */
+	ae_setup_maps_prefetch();
 	create.map_index = last;
 	map_name_of(last);
 	ae_ui_replace_menus();

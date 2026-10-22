@@ -24,7 +24,10 @@ enum { AE_SETUP_GROUP_FAVOURITES = 0 };
 
 /* the maps the game lists now; their facts not read yet (maps.txt's are there) */
 void ae_setup_maps_load(struct ae_setup_maps *maps);
-/* reads the facts of up to count maps not read yet; returns how many are left */
+/* the game's maps queued for the facts' worker (CREATE GAME opening: they are read before CHANGE MAP is) */
+void ae_setup_maps_prefetch(void);
+/* the facts the worker has read copied into the maps not read yet (count: unused, never blocks); returns how many
+are left */
 short ae_setup_maps_read_facts(struct ae_setup_maps *maps, short count);
 /* the group a map comes from (-1 none) */
 int ae_setup_map_source(short index);
