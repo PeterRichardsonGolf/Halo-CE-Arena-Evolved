@@ -5,7 +5,8 @@ port: Halo CE: Arena Evolved, the seeded gametypes' names: each one's stored
 name (game_variant's, at most 11 characters: what every machine, listing and
 saved file has) and the longer display name AE machines show in their lists,
 lobby and scoreboard, its set (AE, AE BR, AE COMP, OCTAGON, Halo 1: NHE's, TRAINING), its
-place in the set, and a description for a panel.
+place in the set, its playlist folder (the categories: AE FFA, AE 2V2, AE 4V4, AE BTB, AE ACTION SACK,
+AE PRACTICE, NHE), and a description for a panel.
 
 The table holds every gametype of the final sets, seeded or not yet (one not
 seeded is simply never on disk). Old stored names (aliases) report their
@@ -326,9 +327,10 @@ static char const *const arena_gametype_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS]
 	"", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING"
 };
 
-/* the lists' categories (owner 2026-10-20): each category's gametypes in the
-lists' order, a gametype's battle rifle version right after it; Halo 1: NHE's
-set is its own category, in its table order (arena_gametype_category_fill) */
+/* the lists' categories: the playlist folders (owner 2026-10-22; "by play style, BR inside" before, 2026-10-20):
+each folder's gametypes in the lists' order, a gametype's battle rifle version right after it; Halo 1: NHE's set
+is its own folder, in its table order (arena_gametype_category_fill). STOCK (Halo CE's built-in gametypes) has no
+rows: no seed is in it */
 struct arena_gametype_category_row
 {
 	short category;
@@ -337,39 +339,39 @@ struct arena_gametype_category_row
 
 static struct arena_gametype_category_row const arena_gametype_category_rows[] =
 {
-	/* AE CASUAL: free for all, then team, then the 2v2s */
-	{ _arena_gametype_category_casual, "AE FFA SLAY" }, { _arena_gametype_category_casual, "AE BR FFA" },
-	{ _arena_gametype_category_casual, "AE FFA KING" }, { _arena_gametype_category_casual, "AE BR FKING" },
-	{ _arena_gametype_category_casual, "AE FFA BALL" }, { _arena_gametype_category_casual, "AE BR FBALL" },
-	{ _arena_gametype_category_casual, "AE TEAM SLY" }, { _arena_gametype_category_casual, "AE BR TS" },
-	{ _arena_gametype_category_casual, "AE CTF" }, { _arena_gametype_category_casual, "AE BR CTF" },
-	{ _arena_gametype_category_casual, "AE KING" }, { _arena_gametype_category_casual, "AE BR KING" },
-	{ _arena_gametype_category_casual, "AE TEAM OB" }, { _arena_gametype_category_casual, "AE BR TM OB" },
-	{ _arena_gametype_category_casual, "AE 2V2 SLY" }, { _arena_gametype_category_casual, "AE BR 2V2 S" },
-	{ _arena_gametype_category_casual, "AE 2V2 CTF" }, { _arena_gametype_category_casual, "AE BR 2V2 C" },
-	{ _arena_gametype_category_casual, "AE 2V2 KING" }, { _arena_gametype_category_casual, "AE BR 2V2 K" },
-	{ _arena_gametype_category_casual, "AE 2V2 BALL" }, { _arena_gametype_category_casual, "AE BR 2V2 B" },
-	/* AE COMP */
-	{ _arena_gametype_category_comp, "AE COMP FFA" }, { _arena_gametype_category_comp, "AE BR C FFA" },
-	{ _arena_gametype_category_comp, "AE COMP TS" }, { _arena_gametype_category_comp, "AE BR C TS" },
-	{ _arena_gametype_category_comp, "AE COMP CTF" }, { _arena_gametype_category_comp, "AE BR C CTF" },
-	{ _arena_gametype_category_comp, "AE COMP KOH" }, { _arena_gametype_category_comp, "AE BR C KOH" },
-	{ _arena_gametype_category_comp, "AE COMP OB" }, { _arena_gametype_category_comp, "AE BR C OB" },
-	/* AE PARTY */
-	{ _arena_gametype_category_party, "AE PHANTOMS" }, { _arena_gametype_category_party, "AE BR PHANT" },
-	{ _arena_gametype_category_party, "AE JUGGER" }, { _arena_gametype_category_party, "AE BR JUGG" },
-	{ _arena_gametype_category_party, "AE REV TAG" }, { _arena_gametype_category_party, "AE BR RTAG" },
-	{ _arena_gametype_category_party, "AE ACCUM" }, { _arena_gametype_category_party, "AE BR ACCUM" },
-	{ _arena_gametype_category_party, "AE STALKER" }, { _arena_gametype_category_party, "AE BR STALK" },
-	{ _arena_gametype_category_party, "AE CRAZYKNG" }, { _arena_gametype_category_party, "AE BR CKING" },
-	{ _arena_gametype_category_party, "AE ELIM" }, { _arena_gametype_category_party, "AE BR ELIM" },
-	{ _arena_gametype_category_party, "AE ENDURE" }, { _arena_gametype_category_party, "AE BR ENDUR" },
-	{ _arena_gametype_category_party, "AE RACE" }, { _arena_gametype_category_party, "AE RALLY" },
-	/* AE WEAPONS: free for all before team where both are */
-	{ _arena_gametype_category_weapons, "AE FFA SNPR" }, { _arena_gametype_category_weapons, "AE SNIPERS" },
-	{ _arena_gametype_category_weapons, "AE SHOTSNIP" }, { _arena_gametype_category_weapons, "AE SWAT" },
-	{ _arena_gametype_category_weapons, "AE FFA ROCK" }, { _arena_gametype_category_weapons, "AE ROCKETS" },
-	{ _arena_gametype_category_weapons, "AE SHOTGUNS" }, { _arena_gametype_category_weapons, "AE HEAVIES" },
+	/* AE FFA: slayer, king, oddball, the competitive slayer, then snipers and rockets */
+	{ _arena_gametype_category_ffa, "AE FFA SLAY" }, { _arena_gametype_category_ffa, "AE BR FFA" },
+	{ _arena_gametype_category_ffa, "AE FFA KING" }, { _arena_gametype_category_ffa, "AE BR FKING" },
+	{ _arena_gametype_category_ffa, "AE FFA BALL" }, { _arena_gametype_category_ffa, "AE BR FBALL" },
+	{ _arena_gametype_category_ffa, "AE COMP FFA" }, { _arena_gametype_category_ffa, "AE BR C FFA" },
+	{ _arena_gametype_category_ffa, "AE FFA SNPR" }, { _arena_gametype_category_ffa, "AE FFA ROCK" },
+	/* AE 2V2: the casual 2v2s */
+	{ _arena_gametype_category_2v2, "AE 2V2 SLY" }, { _arena_gametype_category_2v2, "AE BR 2V2 S" },
+	{ _arena_gametype_category_2v2, "AE 2V2 CTF" }, { _arena_gametype_category_2v2, "AE BR 2V2 C" },
+	{ _arena_gametype_category_2v2, "AE 2V2 KING" }, { _arena_gametype_category_2v2, "AE BR 2V2 K" },
+	{ _arena_gametype_category_2v2, "AE 2V2 BALL" }, { _arena_gametype_category_2v2, "AE BR 2V2 B" },
+	/* AE 4V4: the casual team games, then the competitive ones */
+	{ _arena_gametype_category_4v4, "AE TEAM SLY" }, { _arena_gametype_category_4v4, "AE BR TS" },
+	{ _arena_gametype_category_4v4, "AE CTF" }, { _arena_gametype_category_4v4, "AE BR CTF" },
+	{ _arena_gametype_category_4v4, "AE KING" }, { _arena_gametype_category_4v4, "AE BR KING" },
+	{ _arena_gametype_category_4v4, "AE TEAM OB" }, { _arena_gametype_category_4v4, "AE BR TM OB" },
+	{ _arena_gametype_category_4v4, "AE COMP TS" }, { _arena_gametype_category_4v4, "AE BR C TS" },
+	{ _arena_gametype_category_4v4, "AE COMP CTF" }, { _arena_gametype_category_4v4, "AE BR C CTF" },
+	{ _arena_gametype_category_4v4, "AE COMP KOH" }, { _arena_gametype_category_4v4, "AE BR C KOH" },
+	{ _arena_gametype_category_4v4, "AE COMP OB" }, { _arena_gametype_category_4v4, "AE BR C OB" },
+	/* AE ACTION SACK: the party modes, then the weapon modes */
+	{ _arena_gametype_category_action_sack, "AE PHANTOMS" }, { _arena_gametype_category_action_sack, "AE BR PHANT" },
+	{ _arena_gametype_category_action_sack, "AE JUGGER" }, { _arena_gametype_category_action_sack, "AE BR JUGG" },
+	{ _arena_gametype_category_action_sack, "AE REV TAG" }, { _arena_gametype_category_action_sack, "AE BR RTAG" },
+	{ _arena_gametype_category_action_sack, "AE ACCUM" }, { _arena_gametype_category_action_sack, "AE BR ACCUM" },
+	{ _arena_gametype_category_action_sack, "AE STALKER" }, { _arena_gametype_category_action_sack, "AE BR STALK" },
+	{ _arena_gametype_category_action_sack, "AE CRAZYKNG" }, { _arena_gametype_category_action_sack, "AE BR CKING" },
+	{ _arena_gametype_category_action_sack, "AE ELIM" }, { _arena_gametype_category_action_sack, "AE BR ELIM" },
+	{ _arena_gametype_category_action_sack, "AE ENDURE" }, { _arena_gametype_category_action_sack, "AE BR ENDUR" },
+	{ _arena_gametype_category_action_sack, "AE RACE" }, { _arena_gametype_category_action_sack, "AE RALLY" },
+	{ _arena_gametype_category_action_sack, "AE SWAT" }, { _arena_gametype_category_action_sack, "AE SNIPERS" },
+	{ _arena_gametype_category_action_sack, "AE SHOTSNIP" }, { _arena_gametype_category_action_sack, "AE ROCKETS" },
+	{ _arena_gametype_category_action_sack, "AE SHOTGUNS" }, { _arena_gametype_category_action_sack, "AE HEAVIES" },
 	/* AE PRACTICE: the practice modes, then the OCTAGON drills */
 	{ _arena_gametype_category_practice, "AE PRACTICE" }, { _arena_gametype_category_practice, "AE BR PRAC" },
 	{ _arena_gametype_category_practice, "AE TRAINING" }, { _arena_gametype_category_practice, "AE OCT BR" },
@@ -381,7 +383,7 @@ static struct arena_gametype_category_row const arena_gametype_category_rows[] =
 
 static char const *const arena_gametype_category_names[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] =
 {
-	"", "AE CASUAL", "AE COMP", "AE PARTY", "AE WEAPONS", "AE PRACTICE", "NHE"
+	"", "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK"
 };
 
 /* ---------- private code */
@@ -489,7 +491,7 @@ static void arena_gametype_category_fill(
 			info->category = _arena_gametype_category_practice;
 			break;
 		default:
-			info->category = _arena_gametype_category_casual;
+			info->category = name->team ? _arena_gametype_category_4v4 : _arena_gametype_category_ffa;
 			break;
 	}
 	info->category_order = (short)(NUMBEROF(arena_gametype_category_rows) + info->order);
@@ -519,7 +521,7 @@ short arena_gametype_list_block(
 {
 	if (!known)
 		return 10;
-	/* (AE CASUAL 1 .. NHE 6) */
+	/* (AE FFA 1 .. NHE 7; STOCK 8 is no seed's) */
 	return info->category > _arena_gametype_category_none && info->category < NUMBER_OF_ARENA_GAMETYPE_CATEGORIES ?
 		info->category : 9;
 }

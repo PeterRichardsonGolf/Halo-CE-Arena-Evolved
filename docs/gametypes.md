@@ -71,15 +71,15 @@ They are in the gametype list the first time you play. Back to the [README](../R
   modes on NHE's maps. NHE MODE and NHE EXTRAS are on a gametype's **NHE
   OPTIONS** screen.
 - The lists show display names (TEAM AE SLAYER over the stored AE TEAM SLY),
-  sorted by category, each battle rifle version right after the gametype it
-  copies, then your own gametypes, before the built-in ones:
+  sorted by playlist folder, each battle rifle version right after the gametype it
+  copies, then your own gametypes, before the built-in ones (STOCK):
 
-  | Category | Gametypes |
+  | Folder | Gametypes |
   |---|---|
-  | AE CASUAL | slayer, king and oddball (free for all), then team slayer, CTF, king, oddball, then the 2V2s |
-  | AE COMP | COMP slayer (free for all and team), CTF, king, oddball |
-  | AE PARTY | phantoms, juggernaut, reverse tag, accumulation, stalker, crazy king, elimination, endurance, race, rally |
-  | AE WEAPONS | snipers, shotty snipers, SWAT, rockets, shotguns, heavies |
+  | AE FFA | slayer, king, oddball, COMP slayer, snipers, rockets (all free for all) |
+  | AE 2V2 | the 2V2 slayer, CTF, king and oddball |
+  | AE 4V4 | team slayer, CTF, king, oddball, then the team COMP set |
+  | AE ACTION SACK | phantoms, juggernaut, reverse tag, accumulation, stalker, crazy king, elimination, endurance, race, rally, SWAT, team snipers, shotty snipers, team rockets, shotguns, heavies |
   | AE PRACTICE | practice, BR practice, training, the OCTAGON drills |
   | NHE | Halo 1: NHE's, as before |
  Seeded gametypes you edit are kept as

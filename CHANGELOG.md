@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- The gametype lists are sorted into playlist folders: AE FFA, AE 2V2, AE 4V4, AE BTB, AE ACTION SACK (the party and
+  weapon modes) and AE PRACTICE, then Halo 1: NHE's (they were AE CASUAL, AE COMP, AE PARTY, AE WEAPONS and AE
+  PRACTICE).
 - A save can hold 200 saved games (was 160), so the 112 seeded gametypes, the built-in ones, your profiles and your own
   gametypes all fit; the new menus list every gametype (they stopped at 128).
 - DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT's hair-trigger break is easier to

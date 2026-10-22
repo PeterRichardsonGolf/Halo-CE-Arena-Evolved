@@ -25,9 +25,9 @@ is written through a temporary file, so a crash leaves the old one or the
 new one, never half of one.
 
 The gametype lists show the custom gametypes in order
-(arena_gametypes_sort): by block (arena_gametype_list_block: the categories AE CASUAL, AE COMP, AE PARTY,
-AE WEAPONS, AE PRACTICE and Halo 1: NHE, arena_gametype_names.c), each in its categories table's order,
-then the player's own.
+(arena_gametypes_sort): by block (arena_gametype_list_block: the playlist folders AE FFA, AE 2V2, AE 4V4,
+AE BTB, AE ACTION SACK, AE PRACTICE and Halo 1: NHE, arena_gametype_names.c), each in its categories
+table's order, then the player's own.
 */
 
 /* ---------- headers */

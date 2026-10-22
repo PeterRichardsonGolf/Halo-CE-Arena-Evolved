@@ -271,9 +271,9 @@ int main(void)
 		}
 	}
 
-	/* the lists' blocks: the categories (owner 2026-10-20), AE CASUAL 1 .. AE PRACTICE 5, Halo 1: NHE 6, unknown 10;
-	every one of AE's in the categories table (its places in a category 0, 1, 2, ... with none left out), each
-	battle rifle version right after the gametype it is of, NHE's in their table order */
+	/* the lists' blocks: the playlist folders (owner 2026-10-22), AE FFA 1 .. AE PRACTICE 6, Halo 1: NHE 7, unknown
+	10 (STOCK 8: no seed's); every one of AE's in the categories table (its places in a category 0, 1, 2, ... with
+	none left out), each battle rifle version right after the gametype it is of, NHE's in their table order */
 	{
 		short counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0 };
 		short places[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES][128];
@@ -295,10 +295,12 @@ int main(void)
 			}
 			if ((own.set == _arena_gametype_set_nhe) != (own.category == _arena_gametype_category_nhe))
 				fail("list block: NHE's set is the NHE category", arena_gametype_names[index].stored_name);
+			if (own.category == _arena_gametype_category_stock)
+				fail("list block: a seed in STOCK", arena_gametype_names[index].stored_name);
 			if (counts[own.category] < 128)
 				places[own.category][counts[own.category]++] = index;
 		}
-		for (category = _arena_gametype_category_casual; category < _arena_gametype_category_nhe; category++)
+		for (category = _arena_gametype_category_ffa; category < _arena_gametype_category_nhe; category++)
 		{
 			short place;
 
@@ -364,6 +366,25 @@ int main(void)
 		}
 		if (arena_gametype_list_block(FALSE, NULL) != 10)
 			fail("list block of an unknown name", "");
+		/* (the folders' names, in the lists' order) */
+		{
+			char const *const expected_names[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] =
+				{ "", "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK" };
+			short const expected_category_counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0, 10, 8, 16, 0, 24, 11, 25, 0 };
+
+			for (category = 0; category < NUMBER_OF_ARENA_GAMETYPE_CATEGORIES; category++)
+			{
+				if (strcmp(arena_gametype_category_name(category), expected_names[category]))
+					fail("category name", expected_names[category]);
+				if (counts[category] != expected_category_counts[category])
+					fail("category count", expected_names[category]);
+			}
+			if (strcmp(arena_gametype_category_name(-1), "") ||
+				strcmp(arena_gametype_category_name(NUMBER_OF_ARENA_GAMETYPE_CATEGORIES), ""))
+			{
+				fail("category name out of range", "");
+			}
+		}
 	}
 
 	if (failures)
