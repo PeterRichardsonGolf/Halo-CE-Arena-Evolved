@@ -17,6 +17,10 @@ harness takes that file's 32-bit forms, plain pointers */
 #define XBOX_POINTER(type, address) ((type *)xbox_pointer(address))
 
 typedef unsigned short word;
+/* (ChupathingyCE's Custom layout, config.toml's controls.controller_layout through
+port/linux/src/controller_layout.c, is not this test's: its case left out as a
+build without the Controls screen leaves it) */
+#define HALO_CONSOLE_NO_CONTROLS
 
 #include "config.inc"
 

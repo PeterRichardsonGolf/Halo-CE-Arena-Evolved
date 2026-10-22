@@ -28,6 +28,9 @@ STUB_CSERIES = """
 #include <string.h>
 #include <strings.h>
 typedef unsigned char boolean;
+/* (Arena Evolved: ae_map_share.h's, which map_families.c includes) */
+typedef unsigned char byte;
+typedef unsigned short word;
 #define TRUE 1
 #define FALSE 0
 #define NONE -1
@@ -64,6 +67,8 @@ int CloseHandle(HANDLE handle);
 """
 # (Win32 over POSIX: d:\ is HARNESS_ROOT, backslashes slashes)
 STUBS = r"""
+/* (Arena Evolved: map sharing's downloaded Xbox maps, which map_is_downloaded asks: none) */
+boolean ae_map_share_xbox_downloaded(char const *map_name) { (void)map_name; return FALSE; }
 #include <dirent.h>
 #include <sys/stat.h>
 /* (a pattern of one '*', any case: "*.map", "maps_*") */

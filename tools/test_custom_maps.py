@@ -514,6 +514,10 @@ def fixture_sources():
     render = function(renderer, "widget_instance_render_text_box")
     begin = render.index("\tif (definition->text_label_string_list.index")
     end = render.index("\ttext = &widget->parameters.text_box.text;", begin)
+    # (ChupathingyCE 0.8.0d: a spinner's extra items' descriptions, none of them this test's)
+    functions.append("#define SPINNER_EXTRA_DESCRIPTIONS_EACH 0x20\n"
+                     "static struct { wchar_t const *const *descriptions; short count; } const spinner_extras[1] = "
+                     "{ { kills_to_win_extra_descriptions, 0 } };\n")
     functions.append("static void render_caption(struct widget_instance *widget, struct ui_widget_definition *definition)\n{\n" + render[begin:end] + "}\n")
     cache_header = c_block(cache, cache.index("struct cache_file_header\n")) + ";\n"
     cache_header = re.sub(r"\blong\b", "int32_t", cache_header.replace("unsigned long", "uint32_t"))

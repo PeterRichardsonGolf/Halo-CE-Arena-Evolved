@@ -18,7 +18,6 @@ edits and comments stay.
 #include "port_config.h"
 #include "ae_config_players.h" /* AE hook */
 #include "capture.h"
-#include "halo_port_limits.h"
 #include "posix.h"
 
 #include <time.h>
