@@ -20,8 +20,10 @@ other machines a bot is the host's player at that controller.
   steers only its people; each tick the host's update takes the bot's input
   from the brain (ae_lan_bots_action), as it takes a client's from the wire.
 
-SPIKE (debug.network_bots, default off): BTB bots. The internet's games have
-them too, and up to AE_NET_BOTS_MAXIMUM: past the host's free controllers,
+Network games' bots (debug.network_bots, on by default since 0.3.7; off it
+is 0.3.6's LAN bots above): the internet's games have them too, "BOT "
+before their names (a stock machine shows it too), and up to
+AE_NET_BOTS_MAXIMUM: past the host's free controllers,
 the bots sit on VIRTUAL MACHINES, machines of the host's own in the game's
 machines (at the top machine indices, named "Bots"), four to a machine, with
 no connection: the server's client machine slot stays empty, so none of the
@@ -98,7 +100,7 @@ static struct
 	/* the tick the brain's shared work was last done for */
 	long last_tick;
 	boolean tick_valid;
-	/* SPIKE (debug.network_bots): the brain's time on the host, per bot's input and per tick (all its bots) */
+	/* (debug.network_bots) the brain's time on the host, per bot's input and per tick (all its bots) */
 	double brain_seconds;
 	double brain_input_max;
 	long brain_inputs;
@@ -135,7 +137,7 @@ static void lan_initialize(void)
 	lan.initialized = TRUE;
 }
 
-/* SPIKE: debug.network_bots (HALO_NETWORK_BOTS, default off): the host's bots play in a game it hosts for the
+/* debug.network_bots (HALO_NETWORK_BOTS, on by default; an off switch): the host's bots play in a game it hosts for the
 internet too, more than three of them (virtual machines), and halo.log has the brain's time a minute. Internet
 play's tunnel (p2p.c) carries the system link game's own traffic, so the bots reach an internet client as they reach
 a LAN one: the host's players. */
@@ -144,7 +146,7 @@ static boolean lan_network_bots(void)
 	return config_boolean("debug.network_bots") != 0;
 }
 
-/* SPIKE test hook: HALO_NETWORK_BOTS_FAKE_INTERNET=1 has the lobby take the game for one hosted for the internet
+/* test hook (the environment only, no setting): HALO_NETWORK_BOTS_FAKE_INTERNET=1 has the lobby take the game for one hosted for the internet
 (the box's tests run with network.online off: no tunnel, no invite) */
 static boolean lan_internet(void)
 {
@@ -263,21 +265,26 @@ static boolean lan_same_name(wchar_t const *a, wchar_t const *b)
 	return TRUE;
 }
 
-/* a bot's network player: bots.c's fifteen names, then the same with a number ("Johnson2") */
-static void lan_bot_player(short bot_index, struct network_player *player)
+/* a bot's network player: bots.c's fifteen names, then the same with a number; in a network game (debug.network_bots)
+"BOT " before it, so that every machine, a stock one too, tells a bot from a person */
+static void lan_bot_named(short bot_index, boolean tagged, struct network_player *player)
 {
-	int number = ae_lan_bots_name_number(bot_index, BOTS_MAXIMUM);
-	long length;
+	char base[16], name[AE_LAN_BOTS_NAME_LENGTH + 1];
+	long index;
 
 	bots_network_player(bot_index % BOTS_MAXIMUM, player);
-	if (!number)
-		return;
-	for (length = 0; length < (long)NUMBEROF(player->name) - 1 && player->name[length]; length++)
-		;
-	if (length > (long)NUMBEROF(player->name) - 2)
-		length = (long)NUMBEROF(player->name) - 2;
-	player->name[length] = (wchar_t)(L'0' + number % 10);
-	player->name[length + 1] = 0;
+	for (index = 0; index < (long)sizeof(base) - 1 && index < (long)NUMBEROF(player->name) && player->name[index]; index++)
+		base[index] = (char)player->name[index];
+	base[index] = 0;
+	ae_lan_bots_name(base, ae_lan_bots_name_number(bot_index, BOTS_MAXIMUM), tagged, name, sizeof(name));
+	for (index = 0; index < (long)NUMBEROF(player->name) - 1 && name[index]; index++)
+		player->name[index] = (wchar_t)name[index];
+	player->name[index] = 0;
+}
+
+static void lan_bot_player(short bot_index, struct network_player *player)
+{
+	lan_bot_named(bot_index, lan_network_bots(), player);
 }
 
 /* a bot still in the game as it was put there (its slot, machine, controller and name): else forgotten (the
@@ -292,9 +299,17 @@ static boolean lan_bot_still_there(struct network_game *game, short bot_index)
 	if (!VALID_INDEX(lan.bots[bot_index].slot, NUMBEROF(game->players)))
 		return FALSE;
 	player = &game->players[(long)lan.bots[bot_index].slot];
-	lan_bot_player(bot_index, &expected);
-	return network_player_is_valid(player) && player->machine_index == lan.bots[bot_index].machine &&
-		player->controller_index == lan.bots[bot_index].controller && lan_same_name(player->name, expected.name);
+	if (!network_player_is_valid(player) || player->machine_index != lan.bots[bot_index].machine ||
+		player->controller_index != lan.bots[bot_index].controller)
+	{
+		return FALSE;
+	}
+	/* (its name with the tag or without: the switch may have changed since it joined) */
+	lan_bot_named(bot_index, TRUE, &expected);
+	if (lan_same_name(player->name, expected.name))
+		return TRUE;
+	lan_bot_named(bot_index, FALSE, &expected);
+	return lan_same_name(player->name, expected.name);
 }
 
 static boolean lan_remove(struct network_game *game, short bot_index, char const *why)
@@ -517,7 +532,7 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	if (game->variant.game_engine_index == game_engine_none)
 		return FALSE;
 	network_bots = lan_network_bots();
-	/* SPIKE test hook: HALO_NETWORK_BOTS_MAXIMUM_PLAYERS sets the game's most players, as Server Setup's MAXIMUM
+	/* test hook (the environment only, no setting): HALO_NETWORK_BOTS_MAXIMUM_PLAYERS sets the game's most players, as Server Setup's MAXIMUM
 	PLAYERS does (the box's BTB tests host without the menus) */
 	{
 		char const *maximum = getenv("HALO_NETWORK_BOTS_MAXIMUM_PLAYERS");
@@ -532,7 +547,7 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 	}
 	internet = lan_internet();
 	played = ae_bots_engine_played(game->variant.game_engine_index);
-	/* SPIKE: debug.network_bots lets the internet's games have them */
+	/* (debug.network_bots lets the internet's games have them) */
 	eligible = ae_lan_bots_eligible(TRUE, FALSE, internet && !network_bots, played, has_person);
 	free_mask = ae_lan_bots_free_controllers(people, wanting);
 	capacity = ae_lan_bots_capacity(network_bots, free_mask, network_bots ? lan_machines_available(server) : 0);
@@ -695,7 +710,7 @@ static long lan_bot_player_index(long absolute_player_index, short *bot_index)
 	return *bot_index != NONE ? player_index : NONE;
 }
 
-/* SPIKE: the brain's time of the tick that ended (all its bots'), counted */
+/* (debug.network_bots) the brain's time of the tick that ended (all its bots'), counted */
 static void lan_tick_ended(void)
 {
 	double milliseconds = lan.tick_seconds * 1000.0;
@@ -730,7 +745,7 @@ void ae_lan_bots_action(long absolute_player_index, struct player_action *action
 		return;
 	network_bots = lan_network_bots();
 	now = game_time_get();
-	/* SPIKE: an update built again in a tick (network_server_manager.c's bursts): the world has not moved, the
+	/* (debug.network_bots) an update built again in a tick (network_server_manager.c's bursts): the world has not moved, the
 	bot's input is the one it had (as a client's held input) */
 	if (network_bots && lan.bots[bot_index].driven_tick == now)
 	{
@@ -752,7 +767,7 @@ void ae_lan_bots_action(long absolute_player_index, struct player_action *action
 	lan.bots[bot_index].driven_tick = now;
 	bots_ae_lan_drive(bot_index, player_index, action);
 	lan.bots[bot_index].action = *action;
-	/* SPIKE: the brain's time per bot's input (the tick's shared work counted in its first bot's) and per tick, a
+	/* (debug.network_bots) the brain's time per bot's input (the tick's shared work counted in its first bot's) and per tick, a
 	line a minute of game time, with the host's ticks a second of the clock */
 	started = lan_now() - started;
 	lan.brain_seconds += started;

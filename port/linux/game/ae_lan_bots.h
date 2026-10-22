@@ -29,12 +29,12 @@ moved and let go as the settings and the lobby ask (setting_up: pregame, the sta
 players changed (the host then sends its clients the lobby) */
 boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_game *game, boolean setting_up);
 
-/* SPIKE (debug.network_bots): (network_server_manager.c's network_game_server_start_network_game, before the
+/* (debug.network_bots) (network_server_manager.c's network_game_server_start_network_game, before the
 settings go out with the start) the lobby's last look: in a team game whose players are odd, one more bot takes the
 free slot, so the teams are even */
 void ae_lan_bots_start(struct network_game_server *server, struct network_game *game);
 
-/* SPIKE (debug.network_bots): whether a machine slot is one of the host's virtual machines (its bots past the
+/* (debug.network_bots) whether a machine slot is one of the host's virtual machines (its bots past the
 host's own controllers, with no connection): network_game_server_add_new_client gives a new connection another */
 boolean ae_lan_bots_machine_held(long machine_index);
 

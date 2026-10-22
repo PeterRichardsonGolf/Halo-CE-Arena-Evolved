@@ -21,8 +21,8 @@ host's tick where a pad's would go; they have no view, no HUD and no sound
   has bots.c's own; not a game hosted for the internet), of a gametype bots play, once a
   person of the host's machine is in it.
 
-With debug.network_bots (BTB bots, a test switch, default off) a game hosted
-for the internet has them too, and up to AE_NET_BOTS_MAXIMUM: past the host's
+With debug.network_bots (on by default since 0.3.7, an off switch) a game
+hosted for the internet has them too, "BOT " before their names, and up to AE_NET_BOTS_MAXIMUM: past the host's
 free controller slots, the bots sit on machines of the host's own ("virtual
 machines": in the game's machines, at the top machine indices, with no
 connection), four to a machine, which every other machine sees as a machine
@@ -69,6 +69,12 @@ int ae_lan_bots_pick_machine(int const *counts, int count);
 
 /* the number after a bot's name (bots.c names fifteen): 0 for the first fifteen, then 2, 3, ... */
 int ae_lan_bots_name_number(int bot_index, int names);
+
+/* a network game's bot's name (ASCII, at most AE_LAN_BOTS_NAME_LENGTH characters): with tagged (debug.network_bots)
+"BOT " before it, so that every machine, a stock one too, tells it from a person; the base name cut so the number
+(when not 0) still fits after it */
+#define AE_LAN_BOTS_NAME_LENGTH 11
+void ae_lan_bots_name(char const *base, int number, int tagged, char *name, int size);
 
 /* the controller a new bot takes: the highest free one no bot holds; -1 for none */
 int ae_lan_bots_pick_controller(unsigned free_mask, unsigned bots_mask);

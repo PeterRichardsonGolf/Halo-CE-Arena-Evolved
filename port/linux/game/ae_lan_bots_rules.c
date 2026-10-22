@@ -92,3 +92,20 @@ int ae_lan_bots_team(int against, int people_team, int red_count, int blue_count
 		return people_team == 1 ? 0 : 1;
 	return blue_count < red_count ? 1 : 0;
 }
+
+void ae_lan_bots_name(char const *base, int number, int tagged, char *name, int size)
+{
+	static char const tag[] = "BOT ";
+	int length = 0, room, index;
+
+	if (!name || size <= 0)
+		return;
+	room = (size - 1 < AE_LAN_BOTS_NAME_LENGTH ? size - 1 : AE_LAN_BOTS_NAME_LENGTH) - (number ? 1 : 0);
+	for (index = 0; tagged && tag[index] && length < room; index++)
+		name[length++] = tag[index];
+	for (index = 0; base && base[index] && length < room; index++)
+		name[length++] = base[index];
+	if (number && length < size - 1)
+		name[length++] = (char)('0' + number % 10);
+	name[length] = 0;
+}

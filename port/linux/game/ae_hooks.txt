@@ -550,13 +550,13 @@ source/game/player_queues_new.c	ae_lan_bots_action(queue_index, &update->update.
 port/linux/game/menu_functions.c	#include "ae_lan_bots.h" /* AE hook */
 port/linux/game/menu_functions.c	if (ae_lan_bots_network_player(player)) continue; /* AE hook */
 port/linux/game/menu_functions.c	if (ae_lan_bots_network_player(player)) { text[ROW_TEXT_LENGTH - 1] = 0; return; } /* AE hook */
-# SPIKE BTB bots (debug.network_bots, default off; ae_lan_bots.c): more than three, on the host's virtual machines
+# Bots in network games, BTB (debug.network_bots, on by default since 0.3.7, an off switch; ae_lan_bots.c): more than three, on the host's virtual machines
 # (game machines with no connection, top indices); a new connection never takes their slot; even teams at the start;
 # bots.c's per-bot state sized for 127 (BOTS_BRAINS; local games keep BOTS_MAXIMUM 15)
 source/networking/network_server_manager.c	if (server->client_machines[i].machine_index == NONE && !ae_lan_bots_machine_held(i)) /* AE hook */
 source/networking/network_server_manager.c	ae_lan_bots_start(server, &server->game); /* AE hook */
 source/networking/network_server_manager.c	boolean ae_lan_bots_server_slot_free(struct network_game_server *server, long machine_index) { return server && VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) && server->client_machines[machine_index].machine_index == NONE && !network_machine_is_valid(&server->game.machines[machine_index]); } /* AE hook */
-port/linux/src/port_config.c	{ "debug.network_bots", _config_boolean, "false", "HALO_NETWORK_BOTS", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "debug.network_bots", _config_boolean, "true", "HALO_NETWORK_BOTS", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.h	#define BOTS_BRAINS 127 /* AE hook */
 port/linux/game/bots.c	struct bots_bot bots[BOTS_BRAINS]; /* AE hook */
 port/linux/game/bots.c	for (index = 0; index < BOTS_BRAINS; index++) /* AE hook */

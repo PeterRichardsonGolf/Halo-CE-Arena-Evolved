@@ -35,7 +35,8 @@ Combat Evolved decompilation, and grew from [ChupathingyCE](https://github.com/C
 - **Split screen on PC:** up to four players on one PC, locally, on a LAN and online, each with their own profile,
   controller layout and settings.
 - **Bots** that play every mode like a person of their level, in six levels from RECRUIT to DEMON: up to 15 in a
-  split screen game (change how many from the pause menu, mid-game), 3 in a LAN game you host. They play as a team:
+  split screen game (change how many from the pause menu, mid-game), and in any LAN or internet game you host, up to
+  a big team game's worth and more (127), "BOT " before their names, filling the teams evenly. They play as a team:
   a wingman sticks with each player, they know the power items' timers, regroup when outnumbered, hear gunfire, pace
   their pistol shots, scope back in after a hit and take the high ground.
 - **LAN nights:** players who lack a map get it from the host as they join, with its progress on the lobby's

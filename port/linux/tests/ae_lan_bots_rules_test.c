@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "ae_lan_bots_rules.h"
 
 static int failures;
@@ -140,6 +141,28 @@ static void test_name_number(void)
 	CHECK(ae_lan_bots_name_number(5, 0) == 0);
 }
 
+/* "BOT " before a network game's bot's name, eleven characters at most, its number kept */
+static void test_name(void)
+{
+	char name[12];
+
+	ae_lan_bots_name("Johnson", 0, 1, name, sizeof(name));
+	CHECK(!strcmp(name, "BOT Johnson"));
+	ae_lan_bots_name("Fitzgerald", 0, 1, name, sizeof(name));
+	CHECK(!strcmp(name, "BOT Fitzger"));
+	ae_lan_bots_name("Johnson", 2, 1, name, sizeof(name));
+	CHECK(!strcmp(name, "BOT Johnso2"));
+	ae_lan_bots_name("Kojo", 9, 1, name, sizeof(name));
+	CHECK(!strcmp(name, "BOT Kojo9"));
+	/* untagged (the switch off): the name as bots.c has it */
+	ae_lan_bots_name("Fitzgerald", 0, 0, name, sizeof(name));
+	CHECK(!strcmp(name, "Fitzgerald"));
+	ae_lan_bots_name("Fitzgerald", 3, 0, name, sizeof(name));
+	CHECK(!strcmp(name, "Fitzgerald3"));
+	ae_lan_bots_name("Johnson", 0, 1, name, 5);
+	CHECK(!strcmp(name, "BOT "));
+}
+
 int main(void)
 {
 	test_eligible();
@@ -151,6 +174,7 @@ int main(void)
 	test_start_extra();
 	test_pick_machine();
 	test_name_number();
+	test_name();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }
