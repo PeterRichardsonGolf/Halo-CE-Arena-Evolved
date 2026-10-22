@@ -492,7 +492,6 @@ static void map_draw(struct ae_screen *instance)
 	float top, bottom, list_width, panel_x, rule;
 
 	(void)instance;
-	ae_draw_view_full();
 	full_density();
 	draw_header();
 	rule = draw_filters();

@@ -496,7 +496,6 @@ static void options_draw(struct ae_screen *instance)
 	float top, bottom, rail_width, list_x, list_width, help_y, line;
 
 	(void)instance;
-	ae_draw_view_full();
 	full_density();
 	refresh();
 	draw_header();

@@ -261,7 +261,6 @@ static void menu_draw(struct ae_screen *instance)
 	int multiplayer = instance->data == &multiplayer_page;
 	struct ae_flow_screen *flow = multiplayer ? &multiplayer_page.flow : &main_page.flow;
 
-	ae_draw_view_full();
 	ae_flow_full_density(flow);
 	if (multiplayer)
 		rows_multiplayer();

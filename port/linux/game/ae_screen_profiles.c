@@ -489,7 +489,6 @@ static void profiles_draw(struct ae_screen *instance)
 	struct ae_profile_summary const *player1 = profile_by_index(screen.player1);
 	char crumb[64];
 
-	ae_draw_view_full();
 	ae_flow_full_density(flow);
 	flow->prompt_count = 0;
 	switch (page->kind)

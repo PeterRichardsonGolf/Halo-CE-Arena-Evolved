@@ -594,7 +594,6 @@ static void create_draw(struct ae_screen *instance)
 	float panel_x, y, text, body, line;
 
 	(void)instance;
-	ae_draw_view_full();
 	ae_flow_full_density(flow);
 	create_rows();
 	ae_setup_edit_name(name, sizeof(name));
@@ -1008,7 +1007,6 @@ static void lobby_draw(struct ae_screen *instance)
 	float roster_x;
 
 	(void)instance;
-	ae_draw_view_full();
 	ae_flow_full_density(flow);
 	lobby_rows();
 	snprintf(crumb, sizeof(crumb), "%s", !lobby.joiner ? network_names[create.network] : lobby.joined_how[0] ?

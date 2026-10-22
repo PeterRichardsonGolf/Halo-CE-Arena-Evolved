@@ -679,7 +679,6 @@ static void browser_draw(struct ae_screen *instance)
 	float top, bottom, list_width, panel_x;
 
 	(void)instance;
-	ae_draw_view_full();
 	ae_flow_full_density(flow);
 	if (screen.kind == AE_BROWSER_INTERNET && !config_boolean("network.online"))
 		snprintf(crumb, sizeof(crumb), "INTERNET PLAY IS OFF");

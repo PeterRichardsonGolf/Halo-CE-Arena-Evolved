@@ -165,7 +165,6 @@ static void campaign_draw(struct ae_screen *instance)
 	char crumb[64];
 
 	(void)instance;
-	ae_draw_view_full();
 	ae_flow_full_density(flow);
 	rows_make();
 	snprintf(crumb, sizeof(crumb), "%s", screen.campaign.have_profile ? screen.campaign.profile : "NO PROFILE");
