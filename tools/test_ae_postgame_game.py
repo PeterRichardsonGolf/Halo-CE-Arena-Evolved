@@ -118,3 +118,25 @@ def test_custom_edition_icons(cfg):
     assert CE_ICONS in text
     rest = after(text, POSTGAME)
     after(rest, ASKED)
+
+
+AE_OPEN = "ae main menu: open"
+AE_REPLACED = "ae menus: replaced the game's menus"
+SHELL_MUSIC = "starting main menu music"
+AE_UNWAITED = "ae menus: the game's main menu did not load: AE's opens without it"
+
+
+def test_ae_menus_take_the_main_menu_back(cfg):
+    """with AE's menus on (display.arena_menus): back from a game AE's main menu opens only once the game has loaded
+    its own main menu (main_screen_shell_load starts the music), so the replacing closes it; before 0.3.7.1 AE's
+    opened first, on the ui scenario alone, and the game's main menu loaded after it drew under AE's"""
+    result, text = play(cfg, "ae-back", "wizard", ["b", "wait", "wait", "a", "wait", "wait"],
+                        env={"HALO_ARENA_MENUS": "1"})
+    assert result.get("status") == "PASS", result.get("why")
+    rest = after(text, POSTGAME)
+    rest = after(rest, LEFT)
+    rest = after(rest, DISPOSED)
+    assert SHELL_MUSIC in rest and AE_REPLACED in rest, rest[-2000:]
+    assert rest.index(SHELL_MUSIC) < rest.index(AE_OPEN) < rest.index(AE_REPLACED), rest[-2000:]
+    # (by the game's main menu loading, not by the fallback's wait running out)
+    assert AE_UNWAITED not in text
