@@ -105,6 +105,10 @@ def test_the_lobby_starts_the_game(runs):
     text = runs["play"][1]
     assert "lobby: start" in lines(text, "ae create game: ")
     assert "starting" in lines(text, "ae lobby: ")
+    # (the gametype's PC options reach the game, not the defaults: AE TEAM SLY's motion sensor shows enemies only
+    # and it has a time limit)
+    rules = lines(text, "game rules: ")
+    assert rules and "radar players enemies" in rules[-1] and "time limit none" not in rules[-1], rules[-1:]
 
 
 if __name__ == "__main__":

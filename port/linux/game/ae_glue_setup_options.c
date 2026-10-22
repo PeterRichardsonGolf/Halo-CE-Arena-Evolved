@@ -714,10 +714,12 @@ int ae_setup_edit_apply(void)
 
 	if (!setup_edit.open)
 		return 0;
-	/* (the options first: the server keeps the menus' options only for the menus' own variant) */
+	/* (the variant, then its options: player_ui_set_game_variant resets the options to the defaults, and the server
+	keeps the menus' options only for the menus' own variant; the other way round every game ran on the defaults:
+	radar ALL, no time limit, the map's vehicles) */
 	variant = setup_edit.edit.variant;
-	player_ui_set_game_variant_options(&setup_edit.edit.options);
 	player_ui_set_game_variant(&variant);
+	player_ui_set_game_variant_options(&setup_edit.edit.options);
 	/* (the server takes a gametype in its pregame only: it asserts so) */
 	if (server && network_game_server_get_state(server, NULL) == SERVER_STATE_PREGAME)
 		network_game_server_change_game_variant(server, &variant);
