@@ -684,6 +684,15 @@ void weapon_ready(
 	weapon_reset(weapon_index);
 	weapon_set_state(weapon_index, _weapon_state_ready, TRUE);
 	first_person_weapon_message_from_weapon(weapon_index, _first_person_weapon_message_ready);
+#ifdef HALO_GAME_BROWSER
+	/* port: a melee-only Bomb game's unseen fists are ready at once, with
+	none of the pistol's draw: no sound, no wait (game_engine_bomb.c) */
+	if (game_engine_bomb_hides_weapon(weapon->definition_index))
+	{
+		weapon->weapon.state_timer = 0;
+		return;
+	}
+#endif
 	ae_silent_weapon_scope_begin(weapon_index, TRUE); /* AE hook */
 	weapon_effect_new(weapon_index, weapon_definition->weapon.ready_effect.index, 0.f, 0.f);
 	ae_silent_scope_end(); /* AE hook */
@@ -792,6 +801,13 @@ char const *weapon_get_label(
 		struct weapon_definition *weapon_definition = weapon_definition_get(weapon->definition_index);
 
 		label = weapon_definition->weapon.label;
+#ifdef HALO_GAME_BROWSER
+		/* port: a melee-only Bomb game's unseen fists are held as no weapon
+		is: the unit stands, runs and strikes empty-handed
+		(game_engine_bomb.c) */
+		if (game_engine_bomb_hides_weapon(weapon->definition_index))
+			label = "unarmed";
+#endif
 	}
 
 	return label;
@@ -930,9 +946,18 @@ void weapon_delete(
 	/* (port: but a flag or ball a client of the distributed netcode deletes,
 	on the host's word or as one the host has not told it of: objects.c's
 	object_delete_initial_recursive) */
-	if (game_engine_running() && !network_objects_client_deleting())
+	if (game_engine_running() && !network_objects_client_deleting() &&
+		/* port: not for a Custom Edition map's (objects.c, object_delete) */
+		!CACHE_FILE_TAGS_ARE_CE())
 	{
+#if defined(HALO_CONSOLE) || defined(HALO_XBOX_CONSOLE)
+		/* port: on the consoles a warning in debug.txt, and the game goes on:
+		a modded host's game that deleted the oddball stopped an Xbox here.
+		Nothing follows that the check protects */
+		match_warn("c:\\halo\\SOURCE\\items\\weapons.c", 234, !weapon_is_flag(weapon_index));
+#else
 		match_assert("c:\\halo\\SOURCE\\items\\weapons.c", 234, !weapon_is_flag(weapon_index));
+#endif
 	}
 
 	return;

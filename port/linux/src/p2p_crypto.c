@@ -22,6 +22,9 @@ tunnel's packets are sealed with keys only its two machines have.
 #include <stdlib.h>
 #include <string.h>
 
+/* (the platform layer's log: platform.h, which this posix unit does not include) */
+void platform_log(const char *format, ...);
+
 /* ---------- SHA-256 */
 
 struct sha256
@@ -669,7 +672,9 @@ void p2p_password_key(const char *password, const unsigned char *salt, unsigned 
 	inputs.salt_size = P2P_KEY_SIZE;
 	if (!work_area)
 	{
-		/* (no key anyone could guess: nothing opens with it) */
+		/* (no key anyone could guess: nothing opens with it; the work area
+		of 4 MiB is more than a 64 MB console has) */
+		platform_log("Internet play: no memory (%d KB) for a password's key", PASSWORD_KEY_BLOCKS);
 		posix_random_bytes(key, P2P_PASSWORD_KEY_SIZE);
 		return;
 	}

@@ -17,6 +17,8 @@ player's can have:
   settings keep their old values and the file stays as it is, the player is
   asked once, "keep mine" writes the old values and "use the new settings"
   lets them follow the new defaults; the question never comes again;
+- a file with a setting under its older name: a value the player chose
+  goes on under the new one (Arena Evolved: config_carry_over);
 - the per-platform defaults of each build (DEFAULTS below).
 
 Needs only a C compiler. Usage: test_port_config.py [--cc clang]
@@ -80,10 +82,10 @@ NEW = {}
 # the macros each kind of build is compiled with; the others are not macOS
 # (whose own defaults the native build checks on a Mac)
 DEFINES = {
-	"desktop": ["-DHALO_64BIT"],
-	"desktop32": ["-U__APPLE__"],
-	"android": ["-U__APPLE__", "-DHALO_ANDROID"],
-	"server": ["-U__APPLE__", "-DHALO_SERVER", "-DHALO_64BIT"],
+	"desktop": ["-DHALO_64BIT", "-DHALO_GAME_BROWSER"],
+	"desktop32": ["-U__APPLE__", "-DHALO_GAME_BROWSER"],
+	"android": ["-U__APPLE__", "-DHALO_ANDROID", "-DHALO_GAME_BROWSER"],
+	"server": ["-U__APPLE__", "-DHALO_SERVER", "-DHALO_64BIT", "-DHALO_GAME_BROWSER"],
 }
 
 STUB_PLATFORM = """#include <stddef.h>
@@ -144,6 +146,11 @@ def build(cc, kind, directory):
 	# (Arena Evolved 0.3.7: the players' own settings, port_config.c's hook: ae_config_players.c)
 	shutil.copy(ROOT / "port/linux/src/ae_config_players.c", source)
 	shutil.copy(ROOT / "port/linux/src/ae_config_players.h", source)
+	shutil.copy(ROOT / "port/linux/include/halo_port_limits.h", source)
+	shutil.copy(ROOT / "port/linux/include/halo_port_capacity.h", source)
+	shutil.copy(ROOT / "port/linux/include/halo_port_features.h", source)
+	shutil.copy(ROOT / "port/linux/include/halo_console_memory.h", source)
+	shutil.copy(ROOT / "port/linux/include/halo_console_features.h", source)
 	(source / "platform.h").write_text(STUB_PLATFORM)
 	(source / "posix.h").write_text(STUB_POSIX)
 	(source / "capture.h").write_text(STUB_CAPTURE)
@@ -391,6 +398,37 @@ def test_before_config_version(program, directory, defaults, kind):
 	check(not lines and len(commented) == 1, f"version 1: vsync, at its default, is not commented out: {lines} {commented}")
 
 
+def test_renamed_setting(program, directory, defaults, kind):
+	"""A setting under its older name: ChupathingyCE 0.8.0's
+	display.loading_screen_min_seconds. A value the player chose goes on
+	under the new name, display.loading_screen_campaign_seconds (Arena
+	Evolved: config_carry_over reads it into the new one; the old line stays
+	as the player wrote it), and the multiplayer one starts at its default;
+	a value already under the new name is the one kept."""
+	names = ("display.loading_screen", "display.loading_screen_campaign_seconds",
+		"display.loading_screen_multiplayer_seconds")
+	cases = {
+		"chosen": ("loading_screen_min_seconds = 8\n", 8.0),
+		"commented": ("# loading_screen_min_seconds = 0.0\n", 0.0),
+		"both": ("loading_screen_min_seconds = 8\n\nloading_screen_campaign_seconds = 3.0\n", 3.0),
+	}
+	for name, (lines, campaign) in cases.items():
+		case = Case(program, directory / f"renamed_{name}")
+		case.get("display.vsync")
+		text = case.text()
+		for key in ("loading_screen_campaign_seconds", "loading_screen_min_seconds"):
+			text = re.sub(rf"\n(# [^\n]*\n)*# {key} = [^\n]*\n", "\n", text)
+		text = text.replace("\n[display]\n", "\n[display]\n" + lines, 1)
+		case.path.write_text(text)
+		values, output = case.get(*names)
+		check(values["display.loading_screen"] == "true", f"renamed/{name}: loading_screen is {values}")
+		check(float(values["display.loading_screen_campaign_seconds"]) == campaign,
+			f"renamed/{name}: campaign is {values['display.loading_screen_campaign_seconds']}, not {campaign}")
+		check(float(values["display.loading_screen_multiplayer_seconds"]) == 0.0,
+			f"renamed/{name}: multiplayer is {values['display.loading_screen_multiplayer_seconds']}")
+		check("unknown setting" not in output, f"renamed/{name}: the old name is reported: {output}")
+
+
 def main():
 	parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 	parser.add_argument("--cc", default=os.environ.get("CC", "cc"))
@@ -401,7 +439,7 @@ def main():
 		for kind in DEFAULTS:
 			program = build(arguments.cc, kind, directory / kind)
 			for test in (test_new_file, test_previous_release_file, test_file_without_the_settings,
-				test_readded_by_older_version, test_before_config_version):
+				test_readded_by_older_version, test_before_config_version, test_renamed_setting):
 				try:
 					test(program, directory / kind / "cases", DEFAULTS[kind], kind)
 					print(f"ok   {kind}: {test.__name__}")

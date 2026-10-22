@@ -11,10 +11,10 @@ with a profile (the committed profiles are the 32-bit builds').
 """
 
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional
 
 from .embed_assets import hud_assets_build, hud_configure_inputs, ui_fonts_build
-from .linux_build import OPTIMISATION, lto_flags, march_flag
+from .linux_build import OPTIMISATION, ffmpeg_build, lto_flags, march_flag
 from .lp64_build import (
     LINUX_PORT_CONFIG,
     Lp64Build,
@@ -66,6 +66,17 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
 
     n.comment("Native 64-bit Linux build (ninja linux64)")
     lp64 = Lp64Build(n, sln, "linux64", cc)
+    # the movies' FFmpeg, for this target (configure.py --without-ffmpeg: the
+    # stubs, and the game skips the movies). (AE) Built against the build
+    # machine's system: Arena Evolved's portable 64-bit build is
+    # tools/linux64_portable_deps.py's, not a Debian system root
+    ffmpeg_cflags: List[str] = []
+    ffmpeg_libs: List[str] = []
+    ffmpeg_inputs: List[Path] = []
+    if getattr(sln, "with_ffmpeg", True):
+        ffmpeg_cflags, ffmpeg_libs, ffmpeg_stamp, ffmpeg_archives = ffmpeg_build(
+            n, "linux64", build_dir / "ffmpeg", cc, "linux", "x86_64", [LINUX64_TARGET])
+        ffmpeg_inputs = [ffmpeg_stamp, *ffmpeg_archives]
     n.rule(
         name="linux64_link",
         command=(
@@ -87,12 +98,13 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
         # linux_link_check.py rejects: the game's wchar_t is 16-bit)
         third_party_flags=["-fno-builtin-wcslen"],
         excluded=set(lp64_excluded()),
+        ffmpeg_cflags=ffmpeg_cflags,
     )
     # Link-time optimisation of the units with the Xbox's ABI, as in the
     # 32-bit build (the host-ABI units have a 32-bit wchar_t and stay native
     # objects)
     lto_cflags, lto_ldflags = lto_flags(sln, build_dir / "thinlto-cache")
-    objects = lp64.objects(host, generated_sources, build_dir / "obj", lto_cflags)
+    objects = lp64.objects(host, generated_sources, build_dir / "obj", lto_cflags, ffmpeg_inputs)
     # (AE) the portable build's libraries beside the executable, the SDL3 of
     # the portable download (tools/ci_build.py, tools/linux64_portable_deps.py):
     # DT_RPATH, not RUNPATH, so that it comes before a LD_LIBRARY_PATH, as
@@ -111,9 +123,9 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
                                      # (posix_trace_marker.c's, which the GPU driver's calls must reach)
                                      *(f"-Wl,--export-dynamic-symbol={name}"
                                        for name in ("open", "open64", "openat", "openat64"))]),
-            "libs": " ".join(f"-l{lib}" for lib in config.get("libraries", [])),
+            "libs": " ".join([*ffmpeg_libs, *(f"-l{lib}" for lib in config.get("libraries", []))]),
         },
-        implicit=[Path("tools/linux_link_check.py")],
+        implicit=[Path("tools/linux_link_check.py"), *ffmpeg_inputs],
     )
     # internet play's MQTT brokers, a file beside the game (network.brokers_file),
     # as the 32-bit build has it (linux_build.py)

@@ -34,7 +34,11 @@ void platform_log(const char *format, ...)
 	FILE *handle;
 #endif
 
+	/* (a console whose standard error is its debug channel gets the line
+	from console_debug_print below: HALO_CONSOLE_DEBUG_CHANNEL) */
+#ifndef HALO_CONSOLE_DEBUG_CHANNEL
 	fputs(PLATFORM_LOG_PREFIX, stderr);
+#endif
 	va_start(arguments, format);
 #ifdef HALO_64BIT
 	vsnprintf(buffer, sizeof(buffer), format, arguments);
@@ -42,10 +46,27 @@ void platform_log(const char *format, ...)
 	vfprintf(stderr, format, arguments);
 #endif
 	va_end(arguments);
-#ifdef HALO_64BIT
+#if defined(HALO_64BIT) && !defined(HALO_CONSOLE_DEBUG_CHANNEL)
 	fputs(buffer, stderr);
 #endif
+#ifndef HALO_CONSOLE_DEBUG_CHANNEL
 	fputc('\n', stderr);
+#endif
+#ifdef HALO_CONSOLE_DEBUG_CHANNEL
+	{
+		/* the console has no standard error: its debug channel and its own
+		log (the port's console_debug_print) */
+		void console_debug_print(const char *text);
+		char line[2048];
+
+		va_start(arguments, format);
+		snprintf(line, sizeof(line) - 2, "halo: ");
+		vsnprintf(line + 6, sizeof(line) - 8, format, arguments);
+		va_end(arguments);
+		strcat(line, "\r\n");
+		console_debug_print(line);
+	}
+#endif
 #ifdef HALO_SERVER
 	{
 		/* the dedicated server's recent log, for its control API
@@ -120,7 +141,12 @@ void platform_unimplemented(const char *name)
 
 /* ---------- last error */
 
+#ifdef HALO_CONSOLE_NO_THREAD_LOCAL
+PLATFORM_THREAD_LOCAL_SLOT(DWORD, platform_last_error)
+#define platform_last_error (*platform_last_error_slot())
+#else
 static __thread DWORD platform_last_error;
+#endif
 
 DWORD WINAPI GetLastError(void)
 {
@@ -236,8 +262,15 @@ struct platform_apc
 	void *context[3];
 };
 
+#ifdef HALO_CONSOLE_NO_THREAD_LOCAL
+PLATFORM_THREAD_LOCAL_SLOT(struct platform_apc *, platform_apc_head)
+PLATFORM_THREAD_LOCAL_SLOT(struct platform_apc *, platform_apc_tail)
+#define platform_apc_head (*platform_apc_head_slot())
+#define platform_apc_tail (*platform_apc_tail_slot())
+#else
 static __thread struct platform_apc *platform_apc_head;
 static __thread struct platform_apc *platform_apc_tail;
+#endif
 
 void platform_queue_apc(platform_apc_routine routine, void *context0, void *context1, void *context2)
 {
@@ -999,6 +1032,13 @@ VOID WINAPI GlobalMemoryStatus(LPMEMORYSTATUS status)
 
 VOID WINAPI OutputDebugStringA(LPCSTR string)
 {
+#ifdef HALO_CONSOLE_DEBUG_CHANNEL
+	void console_debug_print(const char *text);
+
+	if (string)
+		console_debug_print(string);
+#else
 	if (string)
 		fputs(string, stderr);
+#endif
 }

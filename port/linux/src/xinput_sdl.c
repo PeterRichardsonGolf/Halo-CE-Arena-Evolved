@@ -44,6 +44,7 @@ drive the controller.
 #include "touch_input.h"
 /* port/linux/game/network_aim_assist.c */
 extern unsigned char network_aim_assist_block_mouse(void);
+#include "controller_layout.h"
 #include "halo_keyboard.h"
 #include "ae_platform.h" /* AE hook */
 #include "ae_seats.h" /* AE hook */
@@ -394,18 +395,43 @@ int halo_linux_mouse_aiming(short gamepad_index)
 	return aiming;
 }
 
-/* the device the player last used (the overlay's button prompts,
-ui_overlay.c, and the game's: halo_keyboard_prompts): 0 the keyboard (or
-mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a Nintendo pad */
+/* the device the player last used (Controls Setup's page, and the button
+prompts: platform_prompt_scheme): 0 the keyboard (or mouse), 1 an Xbox-like
+pad, 2 a PlayStation pad, 3 a Nintendo pad */
 static int last_input_scheme = 1;
 static BOOL last_input_seen = FALSE;
+/* (the kind of pad used last, for prompts that never show keys) */
+static int last_pad_scheme = 1;
 
 int platform_input_scheme(void)
 {
-	/* (before any input: a pad if one is connected, else the keyboard) */
+	/* (before any input: a pad if one is connected, else the keyboard; on
+	Android the controller's, whose buttons its touch controls are drawn
+	as) */
 	if (!last_input_seen)
+	{
+#ifdef HALO_ANDROID
+		return 1;
+#else
 		return SDL_HasGamepad() ? 1 : 0;
+#endif
+	}
 	return last_input_scheme;
+}
+
+/* the device every button prompt is drawn for: the menus' (the Chupathingy
+menus' and the code-drawn screens', ui_overlay.c; the Xbox and Gearbox
+menus' pictures, menu_tags.c) and the HUD's (halo_keyboard_prompts). The
+device used last, but with input.keyboard_prompts set to false (in
+config.toml alone: the menus no longer have it) never the keyboard: the
+controller's buttons always, as that setting's false was */
+int platform_prompt_scheme(void)
+{
+	int scheme = platform_input_scheme();
+
+	if (scheme == 0 && !config_boolean("input.keyboard_prompts"))
+		return last_pad_scheme;
+	return scheme;
 }
 
 static int scheme_of(SDL_Gamepad *gamepad)
@@ -592,6 +618,8 @@ static void keyboard_gamepad(const struct platform_input_state *input, XINPUT_GA
 	pad->bAnalogButtons[XINPUT_GAMEPAD_Y] |= analog(k[SDL_SCANCODE_TAB]);
 	/* (Online Games' Link Profile: browser_screen.c) */
 	pad->bAnalogButtons[XINPUT_GAMEPAD_BLACK] |= analog(k[SDL_SCANCODE_C]);
+	/* (and Q, the left bumper's: the game type editor's pages, with C) */
+	pad->bAnalogButtons[XINPUT_GAMEPAD_WHITE] |= analog(k[SDL_SCANCODE_Q]);
 }
 
 /* ChupathingyCE's text chat (chat.c) types a line (platform_chat_typing) */
@@ -780,10 +808,11 @@ int halo_keyboard_action_shown(int action, char *shown, unsigned long size)
 }
 
 /* the game's button prompts show the keyboard's keys (Halo PC's) in place
-of the controller's buttons: input.keyboard_prompts, while the keyboard or
-mouse was used last (or, before any input, with no controller connected).
-Android's touch controls are drawn as the controller's buttons, so its
-prompts stay the controller's. */
+of the controller's buttons while the keyboard or mouse was used last (or,
+before any input, on the desktop with no controller connected):
+platform_prompt_scheme's. Android's touch controls are drawn as the
+controller's buttons, and touches leave the prompts the controller's; a
+keyboard or mouse used there shows its keys too. */
 int halo_keyboard_prompts(void)
 {
 #ifdef HALO_ANDROID
@@ -1007,6 +1036,23 @@ void test_input_hold_action(int hold)
 	if (hold && !test_input_holding_action)
 		test_input_holding_action_since = test_input_seconds();
 	test_input_holding_action = hold;
+}
+
+/* ... and the melee button (B) held, the player standing still */
+static int test_input_holding_melee;
+
+void test_input_hold_melee(int hold)
+{
+	test_input_holding_melee = hold;
+}
+
+/* ... and the trigger (right), the player standing still: a flag or ball
+in hand is thrown down */
+static int test_input_holding_fire;
+
+void test_input_hold_fire(int hold)
+{
+	test_input_holding_fire = hold;
 }
 
 /* debug.test_input "menu:<buttons>": the buttons pressed one a second, from
@@ -1272,6 +1318,16 @@ static void test_input_gamepad(XINPUT_GAMEPAD *pad)
 		test_input_menu_gamepad(pad, 0);
 		return;
 	}
+	if (test_input_holding_melee)
+	{
+		pad->bAnalogButtons[XINPUT_GAMEPAD_B] = 255;
+		return;
+	}
+	if (test_input_holding_fire)
+	{
+		pad->bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] = 255;
+		return;
+	}
 	if (seed < 0)
 		return;
 	if (test_input_holding_action)
@@ -1372,6 +1428,74 @@ static int sdl_gamepads(SDL_Gamepad *gamepads[PORT_COUNT])
 	return found;
 }
 
+/* the gamepad last used (its SDL id; 0 none yet), which the Controls screen
+names first (Android has no SDL_GetGamepadID: the first) */
+#ifndef HALO_ANDROID
+static SDL_JoystickID last_used_gamepad;
+#endif
+
+int platform_gamepad_count(void)
+{
+	SDL_Gamepad *gamepads[PORT_COUNT];
+
+	return sdl_gamepads(gamepads);
+}
+
+/* a gamepad's name (as it names itself, else its kind's) and its kind
+(controller_layout.h's CONTROLLER_KIND_*): index -1 is the one last used,
+else the first; -1 if there is none */
+int platform_gamepad_describe(int index, char *name, size_t size)
+{
+	SDL_Gamepad *gamepads[PORT_COUNT];
+	SDL_Gamepad *gamepad = NULL;
+	int count = sdl_gamepads(gamepads), type, kind, each;
+	const char *own;
+
+	if (size)
+		name[0] = 0;
+	if (index < 0)
+	{
+#ifndef HALO_ANDROID
+		for (each = 0; each < count && !gamepad; each++)
+		{
+			if (last_used_gamepad && SDL_GetGamepadID(gamepads[each]) == last_used_gamepad)
+				gamepad = gamepads[each];
+		}
+#else
+		(void)each;
+#endif
+		index = 0;
+	}
+	if (!gamepad && index < count)
+		gamepad = gamepads[index];
+	if (!gamepad)
+		return -1;
+	switch (SDL_GetGamepadType(gamepad))
+	{
+	case SDL_GAMEPAD_TYPE_XBOX360: type = 1; break;
+	case SDL_GAMEPAD_TYPE_XBOXONE: type = 2; break;
+	case SDL_GAMEPAD_TYPE_PS3: type = 3; break;
+	case SDL_GAMEPAD_TYPE_PS4: type = 4; break;
+	case SDL_GAMEPAD_TYPE_PS5: type = 5; break;
+	case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO:
+	case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
+	case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
+	case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR: type = 6; break;
+	default: type = 0; break;
+	}
+#ifdef HALO_ANDROID
+	/* (the guest reaches SDL only through host_imports.list, which has no
+	SDL_GetGamepadName or SDL_GetGamepadID: the kind's name, the first pad) */
+	own = NULL;
+#else
+	own = SDL_GetGamepadName(gamepad);
+#endif
+	kind = controller_layout_kind(type, own);
+	if (size)
+		snprintf(name, size, "%s", own && *own ? own : controller_layout_kind_title(kind));
+	return kind;
+}
+
 /* whether one gamepad is port 1's (port_gamepad) */
 static BOOL lone_gamepad_split;
 
@@ -1426,6 +1550,79 @@ static void merge_button(XINPUT_GAMEPAD *pad, int analog_index, BOOL down)
 	if (down)
 		pad->bAnalogButtons[analog_index] = 0xff;
 }
+
+#ifdef HALO_SWITCH_CONSOLE
+/* ---------- gyro aiming (the Switch)
+
+The controller's gyroscope turns the view as well as the stick, each local
+player from their own pad: the host reads the sensor (port/switch/host/
+host_sdl2.c, host_sdl_gamepad_gyro) and gives the turn since the last call
+in radians, which player_control.c adds to the view as it adds the mouse's.
+Whether it aims is input.gyro_aim (true always, zoom only while zoomed in:
+halo_linux_gyro_zoom_only), and its horizontal and vertical sensitivity and
+invert are its own, apart from the stick's. */
+void host_sdl_gamepad_gyro(unsigned int gamepad, float *yaw, float *pitch);
+
+static struct
+{
+	int enabled;
+	int zoom_only;
+	int invert_horizontal;
+	int invert_vertical;
+	float sensitivity_horizontal;
+	float sensitivity_vertical;
+	unsigned long read_at;
+} gyro = { 0, 0, 0, 0, 1.0f, 1.0f, (unsigned long)-1 };
+
+/* (read again when the settings change) */
+static void gyro_settings_read(void)
+{
+	const char *aim;
+
+	if (gyro.read_at == config_changes())
+		return;
+	gyro.read_at = config_changes();
+	aim = config_string("input.gyro_aim");
+	gyro.zoom_only = !strcmp(aim, "zoom");
+	gyro.enabled = gyro.zoom_only || !strcmp(aim, "true");
+	gyro.invert_horizontal = config_boolean("input.gyro_invert_horizontal");
+	gyro.invert_vertical = config_boolean("input.gyro_invert_vertical");
+	gyro.sensitivity_horizontal = (float)config_real("input.gyro_sensitivity_horizontal");
+	gyro.sensitivity_vertical = (float)config_real("input.gyro_sensitivity_vertical");
+}
+
+/* whether the gyroscope aims only while the player is zoomed in
+(input.gyro_aim = "zoom"): player_control.c drops its turn otherwise */
+int halo_linux_gyro_zoom_only(void)
+{
+	gyro_settings_read();
+	return gyro.zoom_only;
+}
+
+/* radians of yaw and pitch the pad on port gamepad_index turned since the
+last call, with the settings' sensitivity and invert; FALSE for nothing */
+int halo_linux_gyro_look(short gamepad_index, float *yaw, float *pitch)
+{
+	SDL_Gamepad *gamepads[PORT_COUNT];
+	SDL_Gamepad *gamepad;
+	int count;
+	float turn_yaw, turn_pitch;
+
+	*yaw = 0.0f;
+	*pitch = 0.0f;
+	gyro_settings_read();
+	if (!gyro.enabled || gamepad_index < 0)
+		return FALSE;
+	count = sdl_gamepads(gamepads);
+	gamepad = port_gamepad(gamepads, count, gamepad_index);
+	if (!gamepad)
+		return FALSE;
+	host_sdl_gamepad_gyro((unsigned int)(uintptr_t)gamepad, &turn_yaw, &turn_pitch);
+	*yaw = (gyro.invert_horizontal ? -turn_yaw : turn_yaw) * gyro.sensitivity_horizontal;
+	*pitch = (gyro.invert_vertical ? -turn_pitch : turn_pitch) * gyro.sensitivity_vertical;
+	return *yaw != 0.0f || *pitch != 0.0f;
+}
+#endif
 
 static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 {
@@ -1482,8 +1679,12 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 		if (used)
 		{
 			last_input_scheme = scheme_of(gamepad);
+			last_pad_scheme = last_input_scheme;
 			last_input_seen = TRUE;
 			ae_platform_note_pad_used(); /* AE hook */
+#ifndef HALO_ANDROID
+			last_used_gamepad = SDL_GetGamepadID(gamepad);
+#endif
 		}
 	}
 	/* a stick only overrides the keyboard when it is pushed further */

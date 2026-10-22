@@ -264,6 +264,12 @@ void SDL_DestroyAudioStream(SDL_AudioStream *stream)
 	(void)stream;
 }
 
+SDL_AudioDeviceID SDL_GetAudioStreamDevice(SDL_AudioStream *stream)
+{
+	(void)stream;
+	return 0;
+}
+
 SDL_AudioStream *SDL_OpenAudioDeviceStream(SDL_AudioDeviceID device, const SDL_AudioSpec *specification,
 	SDL_AudioStreamCallback callback, void *userdata)
 {

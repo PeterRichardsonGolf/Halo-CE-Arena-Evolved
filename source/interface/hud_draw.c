@@ -114,6 +114,10 @@ symbols in this file:
 enum
 {
 	_hud_dont_scale_offset_bit = 0,
+	/* port: Halo PC's "use high resolution scale" (port/linux/game/ce_hud.c),
+	which only a Custom Edition map's numbers keep: their digits are drawn
+	at half size, as Halo PC draws them (no Xbox map sets it) */
+	_hud_port_high_resolution_scale_bit = 2,
 };
 
 /* hud number and meter definitions (no shared header declares these yet;
@@ -438,6 +442,7 @@ static boolean hud_bad_bitmap_reported = FALSE;
 
 /* Inspect the guarded caller's frame, not the return site of this helper.
  * A normal prologue would replace EBP and defeat the paired stack check. */
+#ifndef HALO_XBOX_CONSOLE
 __attribute__((noinline)) long get_return_eip(
 	void)
 {
@@ -454,6 +459,17 @@ __attribute__((noinline)) long get_return_eip(
 	return (long)(__INTPTR_TYPE__)__builtin_return_address(1);
 #endif
 }
+#else
+__declspec(naked) long get_return_eip(
+	void)
+{
+	__asm
+	{
+		mov eax, [ebp+4]
+		ret
+	}
+}
+#endif
 
 real hud_globals_get_scale(
 	boolean in_multiplayer)
@@ -1366,6 +1382,7 @@ void hud_draw_bitmap(
 	return;
 }
 
+#ifndef HALO_XBOX_CONSOLE
 /* port: a screen wider than 640 widens the HUD's window, which the HUD's
 elements keep to by their corners (the ammo counter to the left edge). The
 zoomed view's elements (the sniper rifle's angle ticks and range numbers)
@@ -1548,6 +1565,7 @@ void hud_zoomed_layout_end(
 	ae_panels_zoom_element(FALSE); /* AE hook */
 }
 
+#endif
 void hud_draw_static_element(
 	short local_player_index,
 	struct hud_absolute_placement_definition const *absolute_placement,
@@ -2445,6 +2463,8 @@ void hud_draw_numbers(
 					TEST_FLAG(draw_flags, _hud_draw_in_multiplayer_bit));
 			}
 			scale *= ae_hud_number_scale(hud_number->screen_width); /* AE hook */
+			if (TEST_FLAG(numbers->placement.multiplayer_scaling_flags, _hud_port_high_resolution_scale_bit))
+				scale *= 0.5f;
 #ifdef HALO_CUSTOM_EDITION
 			/* port: the digits' bitmap drawn at its HUD scale, their spacing
 			(the HUD number's widths, in pixels of the screen) at the HUD's */

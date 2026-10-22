@@ -83,6 +83,7 @@ void hud_calculate_point(
 	boolean in_multiplayer,
 	real override_scale,
 	point2d *result);
+#ifndef HALO_XBOX_CONSOLE
 boolean hud_multitexture_overlays_follow_zoom(
 	struct tag_block const *multitexture_overlays);
 boolean hud_number_shows_only_when_zoomed(
@@ -103,6 +104,7 @@ void hud_area_insets(
 	short *right);
 boolean hud_split_screen_layout(
 	void);
+#endif
 long get_flash_duration(
 	struct hud_color_definition const *hud_color);
 pixel32 get_flash_color(

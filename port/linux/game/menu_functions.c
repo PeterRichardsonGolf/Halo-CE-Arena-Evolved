@@ -4634,7 +4634,7 @@ static short lobby_browser_rows_place(struct widget_instance *list)
 
 /* ---- the server browser's second source (configure.py --game-browser):
 the games of a game list, network.browser_url (port/linux/src/browser.c;
-halo.milenko.org by default), merged into the listings' as listings of
+stats.chupathingy.org by default), merged into the listings' as listings of
 their own. A game both lists have is shown once, as its listing (the same invite
 token). One on a Halo PC map, which its host lists as <map>@ce (Custom
 Edition) or <map>@md (HaloMD), is marked PC or MD, and joined only where it
@@ -4922,6 +4922,29 @@ static short lobby_browser_map_name(struct p2p_listing const *game, wchar_t *tex
 	return family;
 }
 
+/* a game's map's mark after its name: before, after (" (", ")"), and its
+family's (HALOMD, HALO PC) or its pack's tag (CE+) between, in capitals
+(long: the Rules line's), else its short tag (MD, PC, CE+) after a space */
+static void lobby_browser_map_mark(struct p2p_listing const *game, short family, boolean long_mark, wchar_t *mark,
+	short size)
+{
+	char tag[16], title[64], text[24];
+	short index;
+
+	mark[0] = 0;
+	if (family == _map_family_xbox)
+		return;
+	if (family == _map_family_pack)
+		ui_map_list_map_tag(game->map, tag, sizeof(tag), title, sizeof(title));
+	else
+		snprintf(tag, sizeof(tag), "%s", family == _map_family_halomd ? (long_mark ? "HALOMD" : "MD") :
+			long_mark ? "HALO PC" : "PC");
+	snprintf(text, sizeof(text), long_mark ? " (%s)" : " %s", tag);
+	for (index = 0; text[index] && index < size - 1; index++)
+		mark[index] = (wchar_t)(unsigned char)text[index];
+	mark[index] = 0;
+}
+
 /* the Players line: how many of how many (and who, when it is known) */
 static void lobby_browser_players_text(struct p2p_listing const *game, wchar_t *text, short size)
 {
@@ -4938,6 +4961,7 @@ static void lobby_browser_rules_text(struct p2p_listing const *game, wchar_t *te
 	wchar_t map[ROW_TEXT_LENGTH];
 	wchar_t score[16];
 	wchar_t host[64];
+	wchar_t mark[24];
 	short score_limit = lobby_browser_score_limit(game);
 	short family;
 
@@ -4949,8 +4973,9 @@ static void lobby_browser_rules_text(struct p2p_listing const *game, wchar_t *te
 	/* (a dedicated server's game says so: its listing's flag, p2p_lobby.c;
 	a game list's game, its host as the list says) */
 	lobby_browser_host_text(game, host, NUMBEROF(host));
+	lobby_browser_map_mark(game, family, TRUE, mark, NUMBEROF(mark));
 	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 5)],
-		score, map, family == _map_family_halomd ? L" (HALOMD)" : family != _map_family_xbox ? L" (HALO PC)" : L"",
+		score, map, mark,
 		game->dedicated && !host[0] ? L" (DEDICATED)" : L"", host,
 		!game->open ? L": full or starting" : game->in_progress ? L": under way" : L"",
 		game->locked ? L", password" : L"");
@@ -5022,9 +5047,11 @@ static void lobby_browser_update(struct widget_instance *list)
 		family = lobby_browser_map_name(game, text);
 		if (family != _map_family_xbox)
 		{
+			wchar_t mark[24];
 			short length = (short)ustrlen(text);
 
-			usnprintf(text + length, ROW_TEXT_LENGTH - 1 - length, family == _map_family_halomd ? L" MD" : L" PC");
+			lobby_browser_map_mark(game, family, FALSE, mark, NUMBEROF(mark));
+			usnprintf(text + length, ROW_TEXT_LENGTH - 1 - length, L"%s", mark);
 			text[ROW_TEXT_LENGTH - 1] = 0;
 		}
 		text_set(named(row, "server_item_map", 0), text);
@@ -6254,7 +6281,10 @@ static void lobby_update(struct widget_instance *list)
 
 			usnprintf(text + length, NUMBEROF(text) - 1 - length, L" %d", seconds);
 		}
-		if (global_network_game_server_get() && p2p_invite_link(link, sizeof(link)))
+		/* (copied by itself only with network.copy_to_clipboard:
+		sdl_platform.c) */
+		if (global_network_game_server_get() && config_boolean("network.copy_to_clipboard") &&
+			p2p_invite_link(link, sizeof(link)))
 		{
 			size_t length = ustrlen(text);
 
@@ -7843,4 +7873,32 @@ void pc_menu_game_data_function_invoke(
 		profile_gamepad_layout(widget);
 	else if (!strcmp(name, "port coop friendly fire text"))
 		coop_friendly_fire_text(widget);
+}
+
+/* ---------- ChupathingyCE's PC menu screens Arena Evolved leaves out
+
+ChupathingyCE 0.8.0d's Controller Buttons, Delta Profile and settings rows
+are screens of its own menu sets (tools/port_settings.py, Chupathingy menus),
+which Arena Evolved's PC menus do not have (its own menus are
+port/linux/game/ae_*): their hooks from the shared code answer as with none
+of those screens up. */
+
+/* (ui_widget.c) no button is being asked for */
+boolean pc_menu_controller_capture(void)
+{
+	return FALSE;
+}
+
+/* (browser_screen.c, Chupathingy menus only) no Delta Profile screen */
+boolean pc_menu_delta_profile_open(void)
+{
+	return FALSE;
+}
+
+/* (ui_widget.c) no value scrolls: NONE */
+long pc_menu_text_marquee(struct widget_instance const *widget, boolean focus)
+{
+	(void)widget;
+	(void)focus;
+	return NONE;
 }

@@ -436,6 +436,7 @@ static void motion_sensor_update(
 								center.z -
 								camera_positions[scan_player_index].z;
 
+#ifndef HALO_XBOX_CONSOLE
 							/* test the range before taking a blip slot in multiplayer
 							too: with the native builds' larger sessions, units out of
 							range would otherwise fill the slots (update_motion_sensor
@@ -447,6 +448,12 @@ static void motion_sensor_update(
 							if (magnitude_squared3d(&displacement) <=
 								hud_globals->defaults.motion_sensor_range *
 									hud_globals->defaults.motion_sensor_range)
+#else
+							if (game_engine_running() ||
+								magnitude_squared3d(&displacement) <=
+									hud_globals->defaults.motion_sensor_range *
+										hud_globals->defaults.motion_sensor_range)
+#endif
 							{
 								struct motion_sensor_player *player =
 									&motion_sensor_globals->players[scan_player_index];
@@ -814,10 +821,12 @@ void motion_sensor_tick(
 {
 	sweep_theta = motion_sensor_sweep_theta((real)game_time_get() * (1.0f / TICKS_PER_SECOND));
 
+#ifndef HALO_XBOX_CONSOLE
 	/* The HUD is drawn once a frame, several frames per tick
 	(port/linux/game/render_interpolation.c), and each update moves the
 	blip history on a step: update once a tick, as on the Xbox. */
 	if (motion_sensor_globals->last_update_time != game_time_get())
+#endif
 	motion_sensor_update();
 
 	return;
@@ -1149,7 +1158,9 @@ motion_sensor_initialize_for_new_map(
 	long player_count;
 
 	csmemset(motion_sensor_globals, 0, sizeof(*motion_sensor_globals));
+#ifndef HALO_XBOX_CONSOLE
 	motion_sensor_globals->last_update_time = NONE;
+#endif
 	player = motion_sensor_globals->players;
 	player_count = NUMBEROF(motion_sensor_globals->players);
 

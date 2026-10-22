@@ -43,6 +43,7 @@ co-op game's pause menu gets FRIENDLY FIRE too (OpenCE build-244).
 #include "rasterizer/xbox/rasterizer_xbox_hardware_bitmaps.h"
 
 #include "halo_menus.h"
+#include "halo_map_packs.h"
 #include "ae_glue_ce_maps.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
 #include "ae_ce_locale.h" /* AE hook */
@@ -2324,6 +2325,10 @@ static boolean menus_pc_chosen(void)
 	static boolean said;
 	char const *value = config_string("display.menus");
 
+	/* (a map pack's own menus, game.pack_menus, are its ui.map's as they
+	are: none of ours are built over them, map_packs.c) */
+	if (map_pack_menus())
+		return FALSE;
 	/* ("gearbox": ChupathingyCE 0.8's name for the same) */
 	if (!csstrcasecmp(value, "pc") || !csstrcasecmp(value, "gearbox"))
 		return TRUE;

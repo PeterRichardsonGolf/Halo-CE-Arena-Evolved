@@ -334,6 +334,15 @@ float halo_model_detail_scale(int level)
 	display_scale = screen_scale[1] / screen_supersampling;
 	return display_scale > 1.0f ? display_scale : 1.0f;
 }
+#ifdef HALO_CONSOLE_MAP_LOAD_HOOKS
+/* a map has finished loading (scenario_load): a console's renderer gives
+its shaders priority (the first, the Switch's deko3d renderer:
+port/switch/guest/d3d8_dk.c); nothing to do here */
+void d3d8_gl_map_loaded(const char *name)
+{
+	(void)name;
+}
+#endif
 
 /* how many pixels the screen's targets draw to the Xbox's one, the larger
 of the two ways (the screen effects' convolutions: rasterizer_xbox_screen_effect.c) */
@@ -605,6 +614,12 @@ vertices. */
 #define STREAM_BUFFER_SIZE (16 * 1024 * 1024)
 #define INDEX_BUFFER_SIZE (2 * 1024 * 1024)
 #define STREAM_BUFFER_RING 3
+#elif defined(HALO_CONSOLE_GL_LAYER)
+/* A console's GL layer (the Xbox 360's, of its 512 MB 256 MB the Xbox's
+window): an orphaned buffer is new physical memory until the GPU is done
+with the old one two frames later, so these stay small. */
+#define STREAM_BUFFER_SIZE (8 * 1024 * 1024)
+#define INDEX_BUFFER_SIZE (2 * 1024 * 1024)
 #else
 #define STREAM_BUFFER_SIZE (32 * 1024 * 1024)
 #define INDEX_BUFFER_SIZE (8 * 1024 * 1024)
@@ -1377,9 +1392,21 @@ GLuint xgpu_compile_shader(GLenum type, const char *source, const char *what)
 	if (!status)
 	{
 		char log[4096];
+#ifdef HALO_CONSOLE_GL_LAYER
+		static int reports;
+
+		glGetShaderInfoLog(shader, sizeof(log), NULL, log);
+		/* (the whole text for the first few: it is long, and a console's
+		log is slow) */
+		if (reports++ < 3)
+			platform_log("cannot compile the %s shader:\n%s\n%s", what, log, source);
+		else
+			platform_log("cannot compile the %s shader: %s", what, log);
+#else
 
 		glGetShaderInfoLog(shader, sizeof(log), NULL, log);
 		platform_log("cannot compile the %s shader:\n%s\n%s", what, log, source);
+#endif
 		glDeleteShader(shader);
 		return 0;
 	}
@@ -3797,8 +3824,8 @@ static void render_targets_evict(void)
 #endif
 static GLuint framebuffer_get(GLuint color, GLuint depth);
 
-/* glCopyImageSubData for ES 3.0/3.1 contexts without the extension, and
-macOS's OpenGL 4.1 */
+/* glCopyImageSubData for ES 3.0/3.1 contexts without the extension,
+macOS's OpenGL 4.1 and a console's GL layer (HALO_CONSOLE_GL_LAYER) */
 static void copy_level_by_blit(GLuint source, GLuint destination, GLint level, GLsizei width, GLsizei height)
 {
 	static GLuint draw_framebuffer;
@@ -4826,9 +4853,12 @@ every write; after a few such rewrites a page counts as volatile for a
 while, and draws that use it stream their data as before. */
 
 #define MIRROR_SEGMENT_SIZE 0x400000UL
-#define MIRROR_SEGMENT_COUNT (PLATFORM_CONTIGUOUS_SIZE / MIRROR_SEGMENT_SIZE)
+#ifdef HALO_CONSOLE_GL_LAYER
+void console_gl_buffer_alias(GLenum target, void *memory, unsigned long size);
+#endif
+#define MIRROR_SEGMENT_COUNT (PLATFORM_CONTIGUOUS_MAXIMUM / MIRROR_SEGMENT_SIZE)
 #define MIRROR_PAGE_SIZE 0x1000UL
-#define MIRROR_PAGE_COUNT (PLATFORM_CONTIGUOUS_SIZE / MIRROR_PAGE_SIZE)
+#define MIRROR_PAGE_COUNT (PLATFORM_CONTIGUOUS_MAXIMUM / MIRROR_PAGE_SIZE)
 /* rewrites no more than this many frames apart ... */
 #define MIRROR_REWRITE_FRAMES 2
 /* ... this many times in a row make a page volatile ... */
@@ -4937,10 +4967,18 @@ static BOOL mirror_refresh(unsigned long first, unsigned long last)
 		{
 			glGenBuffers(1, &mirror.buffers[segment]);
 			glBindBuffer(GL_COPY_WRITE_BUFFER, mirror.buffers[segment]);
+#ifdef HALO_CONSOLE_GL_LAYER
+			/* (the console's GPU reads the window where it is: the segment's
+			buffer is the window's memory, and an upload only makes the CPU's
+			writes visible to it) */
+			console_gl_buffer_alias(GL_COPY_WRITE_BUFFER,
+				xbox_pointer(PLATFORM_CONTIGUOUS_BASE + segment * MIRROR_SEGMENT_SIZE), MIRROR_SEGMENT_SIZE);
+#else
 			glBufferData(GL_COPY_WRITE_BUFFER, MIRROR_SEGMENT_SIZE, NULL, GL_DYNAMIC_DRAW);
 #ifdef HALO_GLES
 			/* (no glBufferSubData yet: as if long enough ago) */
 			mirror.subdata_frame[segment] = device.frame - STREAM_BUFFER_RING;
+#endif
 #endif
 		}
 		glBindBuffer(GL_COPY_WRITE_BUFFER, mirror.buffers[segment]);
