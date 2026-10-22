@@ -539,6 +539,9 @@ struct ae_result ae_lobby_leave(void)
 	p2p_set_hosting_allowed(FALSE);
 	p2p_set_hosting_public(FALSE);
 	game_connection_set(_game_connection_local);
+	/* (the client's disposal took the update queues, which the menus' running clock needs: the engine's own no-client
+	path makes them again) */
+	main_menu_ensure_player_queues_exist();
 	lobby.owns = FALSE;
 	lobby.join = JOIN_NONE;
 	platform_log(hosting ? "ae lobby: closed" : "ae lobby: left");
@@ -656,7 +659,7 @@ boolean ae_lobby_take_pregame_ui(
 		platform_log("ae lobby: pregame UI left to the game (the screen could not be pushed)");
 		return FALSE;
 	}
-	/* the menus' background is the ui scenario's scene (the ring), whose clock and scripts the round stopped:
+	/* the menus' background is the ui scenario's scene (the ring), whose clock the round stopped:
 	started again, next frame, outside the network's own update (ae_lobby_update) */
 	lobby.background_pending = TRUE;
 	/* what upstream's branch does besides loading its widget: the host's countdown held (ui_widget.c
