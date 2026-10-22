@@ -126,10 +126,6 @@ static short player_of(
 	return ae_input_player_of_controller(controller, bindings);
 }
 
-/* the controller the menus were last driven with (a press, not a held step's repeat; the pointer is the first
-controller's): the one a lobby AE opens adds as this machine's first player */
-static short last_controller = 0;
-
 /* (repeat: a held direction's repeat step, not its press) */
 static void send_step(
 	short controller,
@@ -142,14 +138,7 @@ static void send_step(
 	event.action = (unsigned char)action;
 	event.device = device_of(controller);
 	event.repeat = (unsigned char)(repeat != 0);
-	if (!repeat)
-		last_controller = controller;
 	ae_ui_dispatch(&event);
-}
-
-short ae_input_last_controller(void)
-{
-	return last_controller;
 }
 
 static void send_action(
@@ -372,7 +361,6 @@ void ae_input_pointer(
 	was_held = held;
 	if (pointer->left_clicks && ae_ui_depth())
 	{
-		last_controller = 0;
 		memset(&clicked, 0, sizeof(clicked));
 		ae_draw_pointer_to_layout(pointer->click_x, pointer->click_y, &clicked.x, &clicked.y);
 		clicked.left_clicks = pointer->left_clicks;

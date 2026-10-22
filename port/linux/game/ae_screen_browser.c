@@ -37,7 +37,6 @@ failed: <why>", "closed".
 #include "ae_strings.h"
 #include "ae_ui.h"
 #include "ae_widgets.h"
-#include "ae_input.h"
 #include "halo_map_families.h"
 #include "halo_port_limits.h"
 #include "halo_server_browser.h"
@@ -427,7 +426,7 @@ static void join_update(void)
 	if (!ae_lobby_roster(&roster).ok || !roster.joined)
 		return;
 	screen.joining = 0;
-	if (!ae_lobby_add_local_player(ae_input_last_controller()).ok)
+	if (!ae_lobby_add_local_player(0).ok)
 	{
 		ae_lobby_leave();
 		join_failed("The game is full, or no longer takes players.");

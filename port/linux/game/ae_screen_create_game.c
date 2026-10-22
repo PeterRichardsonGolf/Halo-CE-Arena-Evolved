@@ -55,7 +55,6 @@ Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "ho
 #include "ae_strings.h"
 #include "ae_ui.h"
 #include "ae_widgets.h"
-#include "ae_input.h"
 
 void platform_log(char const *format, ...);
 /* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
@@ -484,7 +483,7 @@ static void start_update(void)
 		}
 		return;
 	}
-	result = ae_lobby_add_local_player(ae_input_last_controller());
+	result = ae_lobby_add_local_player(0);
 	if (!result.ok)
 	{
 		ae_lobby_leave();
