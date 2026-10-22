@@ -24,7 +24,7 @@ answer 5): AE_COLOR_SCRIM is drawn behind dialogs only.
 #define AE_COLOR_SELECTION      0xE8EEF2FFu
 #define AE_COLOR_SELECTION_TEXT 0x0F171EFFu
 #define AE_COLOR_ACCENT         0x5FC8ECFFu
-#define AE_COLOR_WARNING        0xE0A84AFFu
+#define AE_COLOR_WARNING        0x2894FEFFu   /* menu blue (40,148,254): the OG theme's attention colour, never amber */
 #define AE_COLOR_HOVER          0xE8EEF224u   /* .14 wash */
 #define AE_COLOR_POPOVER        0x10161CFFu
 #define AE_COLOR_SCRIM          0x04070A9Eu   /* .62, behind dialogs only (no chrome scrims: owner answer 5) */

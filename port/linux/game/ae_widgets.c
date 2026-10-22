@@ -522,7 +522,7 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	if (shown)
 	{
 		float right = x + layout.value_x + layout.value_width;
-		unsigned int color = disabled ? AE_COLOR_WARNING : value_color;
+		unsigned int color = disabled && !on_bar ? AE_COLOR_WARNING : value_color;   /* (on the bar: its own text colour, readable) */
 
 		/* (a value tick: the old value out, the new in from the pressed side) */
 		if (!disabled && row->tick && row->tick_side && row->old_value && ae_motion_running(row->tick))
