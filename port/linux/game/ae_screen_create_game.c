@@ -5,8 +5,8 @@ The game setup spike's CREATE GAME and LOBBY screens (ae_screen_create_game.h; t
 https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD). Both are rows on the left, as the gallery's lobby page; positions
 are fractions of the frame, sizes u.
 
-CREATE GAME: MAP (CHANGE MAP for the gametype's filter; its pick comes back here), GAMETYPE (the saved gametypes'
-picker: a new copy), GAME OPTIONS (N CHANGED: the GAME OPTIONS screen on the copy), TIME LIMIT and the score in place,
+CREATE GAME: MAP (CHANGE MAP for the gametype's filter; its pick comes back here), GAMETYPE (CHANGE GAMETYPE; its pick
+comes back here: a new copy), GAME OPTIONS (N CHANGED: the GAME OPTIONS screen on the copy), TIME LIMIT and the score in place,
 NETWORK (PLAY ON THIS PC, LAN, HOST ONLINE), BOTS and BOT SKILL (the settings' bots.count and bots.skill, as the old
 menus' Bots screen writes them: OFF and 1-15 in the menus, config.toml up to 127), START GAME. START GAME hosts (ae_lobby_host), waits for this PC's client
 (10 s at most), adds player 1, chooses the map, applies the copy (ae_setup_edit_apply) and opens the LOBBY. B closes
@@ -43,6 +43,7 @@ Its log: "ae create game: open", "start (<network>, '<map>', '<gametype>')", "ho
 #include "ae_glue_setup_maps.h"
 #include "ae_glue_setup_options.h"
 #include "ae_hooks.h"
+#include "ae_screen_change_gametype.h"
 #include "ae_screen_change_map.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_game_options.h"
@@ -119,9 +120,8 @@ static struct
 	int network, privacy;
 	short players_index;
 	char players_text[8];
-	/* the gametypes' picker (its values outlive the picker: static) */
+	/* the saved gametypes, as GAMETYPE steps through them in place */
 	char gametype_names[GAMETYPES_MAXIMUM][16];
-	const char *gametype_values[GAMETYPES_MAXIMUM];
 	long gametype_profiles[GAMETYPES_MAXIMUM];
 	short gametype_count;
 	/* START GAME's steps */
@@ -262,29 +262,22 @@ static void gametype_picked(short index, void *context)
 	}
 }
 
-static void gametype_picker(struct ae_flow_screen *flow, short row)
+/* CHANGE GAMETYPE's pick: a new copy of its rules (in the lobby: the server's at once) */
+static void gametype_profile_picked(long profile)
 {
-	struct ae_picker_spec spec;
-	short current = -1, index;
+	char name[16];
 
-	create.gametype_count = ae_setup_gametypes(create.gametype_names, create.gametype_profiles, GAMETYPES_MAXIMUM,
-		&current);
-	for (index = 0; index < create.gametype_count; index++)
-		create.gametype_values[index] = create.gametype_names[index];
-	if (!create.gametype_count)
-	{
-		ae_sound_request(AE_SOUND_FAILURE, 0);
+	if (!ae_setup_edit_begin(profile))
 		return;
-	}
-	memset(&spec, 0, sizeof(spec));
-	spec.values = create.gametype_values;
-	spec.count = create.gametype_count;
-	spec.current = current < 0 ? 0 : current;
-	spec.row = flow->rects[row];
-	spec.bounds = flow->frame.rect;
-	spec.density = flow->density;
-	spec.picked = gametype_picked;
-	if (ae_picker_open(&spec, AE_OWNER_ANY))
+	ae_setup_edit_name(name, sizeof(name));
+	platform_log("ae create game: gametype '%s'", name);
+	if (ae_ui_holds(&lobby) && ae_lobby_owns_session())
+		ae_setup_edit_apply();
+}
+
+static void gametype_picker(void)
+{
+	if (ae_screen_change_gametype_pick(gametype_profile_picked))
 		ae_sound_request(AE_SOUND_FORWARD, 0);
 }
 
@@ -302,7 +295,7 @@ static short setup_rows(struct ae_flow_screen *flow, short count)
 	count++;
 	snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", name);
 	flow->rows[count] = (struct ae_flow_row){ ROW_GAMETYPE, -1, "GAMETYPE", flow->value_texts[count],
-		"The saved gametypes: picking one starts a new copy of its rules." };
+		"CHANGE GAMETYPE: the gametypes in folders, by mode. Picking one starts a new copy of its rules." };
 	count++;
 	if (changes)
 		snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%d CHANGED", changes);
@@ -533,7 +526,7 @@ static void create_accept(short row)
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
 	case ROW_GAMETYPE:
-		gametype_picker(&create.flow, row);
+		gametype_picker();
 		break;
 	case ROW_OPTIONS:
 		if (ae_screen_game_options_show())
@@ -971,7 +964,7 @@ static void lobby_accept(short row)
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
 	case ROW_GAMETYPE:
-		gametype_picker(&lobby.flow, row);
+		gametype_picker();
 		break;
 	case ROW_OPTIONS:
 		if (ae_screen_game_options_show())

@@ -650,7 +650,8 @@ void ae_platform_test_keystroke(
 any, so the game finds it as a real gamepad (SDL_EVENT_GAMEPAD_ADDED: sdl_platform.c opens it) and its buttons go
 through xinput_sdl.c's own mapping of pads to ports (port_gamepad: a lone pad shares port 0 with the keyboard, or is
 port 1's while there are two players). Each call sets every button: the token's down (it is a pad's: "pad:b"), the
-others up; SDL applies the state at the next pump of events */
+others up; a trigger's token ("pad:lt", "pad:rt") pulls it, the other tokens leave both at rest; SDL applies the state
+at the next pump of events */
 void ae_platform_test_pad_press(
 	char const *token,
 	int length)
@@ -726,6 +727,11 @@ void ae_platform_test_pad_press(
 	}
 	for (index = 0; index < sizeof(buttons) / sizeof(buttons[0]); index++)
 		SDL_SetJoystickVirtualButton(joystick, buttons[index].button, buttons[index].button == pressed);
+	/* (the triggers, "pad:lt" / "pad:rt": pulled all the way for the token, at rest otherwise) */
+	SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, token && length == 6 &&
+		!strncmp(token, "pad:lt", 6) ? SDL_JOYSTICK_AXIS_MAX : SDL_JOYSTICK_AXIS_MIN);
+	SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, token && length == 6 &&
+		!strncmp(token, "pad:rt", 6) ? SDL_JOYSTICK_AXIS_MAX : SDL_JOYSTICK_AXIS_MIN);
 #else
 	(void)token;
 	(void)length;

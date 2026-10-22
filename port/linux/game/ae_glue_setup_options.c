@@ -614,6 +614,23 @@ short ae_setup_gametypes(char (*names)[16], long *profiles, short maximum, short
 	return written;
 }
 
+int ae_setup_profile_values(long profile, int *values, int count)
+{
+	struct rules rules;
+	int option;
+
+	csmemset(&rules, 0, sizeof(rules));
+	if (!values || !playlist_profile_get(profile, &rules.variant) || !playlist_profile_get_options(profile, &rules.options))
+		return 0;
+	for (option = 0; option < count && option < AE_SETUP_OPTIONS; option++)
+	{
+		struct encoding const *encoding = encoding_of(option);
+
+		values[option] = encoding ? value_index(encoding, raw_get(encoding, &rules)) : -1;
+	}
+	return 1;
+}
+
 int ae_setup_edit_check(void)
 {
 	int option, ok = 1;
