@@ -111,6 +111,8 @@ static struct
 	unsigned long start_since;
 	int menus_closed;          /* the game's menus closed by this screen: brought back when it closes */
 	int starting;              /* a start under way: leaving does not bring the game's menus back */
+	int from_menu;             /* opened from AE's MULTIPLAYER: leaving goes back to it */
+	int pending_join;          /* JOIN WITH INVITE asked from MULTIPLAYER: run once drawn (its dialogs need the frame) */
 } create;
 
 static struct
@@ -296,6 +298,7 @@ static struct ae_flow_row option_row(int option)
 	struct ae_setup_access access = access_now();
 	struct ae_flow_row row;
 
+	memset(&row, 0, sizeof(row));
 	row.kind = ROW_OPTION;
 	row.option = (short)option;
 	row.label = ae_setup_label(&access, option);
@@ -517,11 +520,46 @@ static void create_accept(short row)
 	}
 }
 
+/* MAP and GAMETYPE stepped in place (left / right, as their rows' arrows say): the next map of the game's list (in the
+lobby, the server's at once), the next saved gametype (a new copy) */
+static void map_step(short direction)
+{
+	char const *const *names = NULL;
+	short last = 0, count = ui_widget_port_multiplayer_maps(&names, &last), next;
+
+	if (count <= 0)
+		return;
+	next = (short)(((create.map_index < 0 ? 0 : create.map_index) + direction + count) % count);
+	create.map_index = next;
+	map_name_of(next);
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	/* (in the lobby: the server's map now) */
+	if (ae_ui_holds(&lobby) && ae_lobby_owns_session() && ui_widget_port_multiplayer_map_choose(next))
+		platform_log("ae create game: lobby: map '%s'", create.map_name);
+}
+
+static void gametype_step(short direction)
+{
+	short current = -1;
+
+	create.gametype_count = ae_setup_gametypes(create.gametype_names, create.gametype_profiles, GAMETYPES_MAXIMUM,
+		&current);
+	if (create.gametype_count <= 0)
+		return;
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	gametype_picked((short)(((current < 0 ? 0 : current) + direction + create.gametype_count) % create.gametype_count),
+		NULL);
+}
+
 static void create_step(short row, short direction)
 {
 	struct ae_flow_row const *r = &create.flow.rows[row];
 
-	if (r->kind == ROW_PRIVACY)
+	if (r->kind == ROW_MAP)
+		map_step(direction);
+	else if (r->kind == ROW_GAMETYPE)
+		gametype_step(direction);
+	else if (r->kind == ROW_PRIVACY)
 	{
 		short next = ae_value_step(PRIVACIES, (short)create.privacy, direction);
 
@@ -591,6 +629,11 @@ static void create_draw(struct ae_screen *instance)
 static void create_update(struct ae_screen *instance)
 {
 	(void)instance;
+	if (create.pending_join && create.flow.frame.unit > 0.0f)
+	{
+		create.pending_join = 0;
+		join_invite();
+	}
 	start_update();
 }
 
@@ -660,8 +703,8 @@ static void create_leave(struct ae_screen *instance)
 {
 	(void)instance;
 	platform_log("ae create game: closed");
-	/* (the game's menus back, unless a game is on its way: AE's lobby takes over) */
-	if (!create.starting && !ae_lobby_owns_session())
+	/* (the game's menus back, unless a game is on its way, AE's lobby takes over, or AE's MULTIPLAYER is under it) */
+	if (!create.starting && !create.from_menu && !ae_lobby_owns_session())
 	{
 		ui_widgets_close_all();
 		main_screen_shell_load();
@@ -685,6 +728,26 @@ static int create_push(void)
 		return 0;
 	platform_log("ae create game: open");
 	return 1;
+}
+
+int ae_screen_create_game_from_menu(int join)
+{
+	char const *const *names = NULL;
+	short last = 0;
+
+	memset(&create, 0, sizeof(create));
+	create.network = NETWORK_LAN;
+	create.privacy = config_boolean("network.host_public") ? PRIVACY_PUBLIC : PRIVACY_INVITE_ONLY;
+	create.players_index = MAXIMUM_PLAYERS_DEFAULT;
+	if (!ae_setup_edit_open() && !ae_setup_edit_begin_named(NULL))
+		return 0;
+	ui_widget_port_multiplayer_maps(&names, &last);
+	ae_setup_maps_prefetch();
+	create.map_index = last;
+	map_name_of(last);
+	create.from_menu = 1;
+	create.pending_join = join;
+	return create_push();
 }
 
 int ae_screen_create_game_open(void)
@@ -804,6 +867,17 @@ static void invite_copy(void)
 	ae_sound_request(AE_SOUND_FORWARD, 0);
 }
 
+/* every AE screen off the stack (a game is starting: nothing of AE's draws over it; the take-over brings the lobby
+back after it, AE's main menu comes back when the session is left) */
+static void clear_stack(void)
+{
+	while (ae_ui_depth() && ae_ui_top())
+	{
+		if (!ae_ui_top()->data || !ae_ui_remove(ae_ui_top()->data))
+			ae_ui_pop();
+	}
+}
+
 static void lobby_start(void)
 {
 	struct ae_result result = ae_lobby_start();
@@ -817,8 +891,7 @@ static void lobby_start(void)
 	ae_sound_request(AE_SOUND_FORWARD, 0);
 	/* (no AE screen over the game: the take-over brings the lobby back after it) */
 	create.starting = 1;
-	ae_ui_remove(&lobby);
-	ae_ui_remove(&create);
+	clear_stack();
 }
 
 static void leave_picked(short choice, void *context)
@@ -991,8 +1064,7 @@ static void lobby_update(struct ae_screen *instance)
 	{
 		platform_log("ae create game: lobby: the host started");
 		create.starting = 1;
-		ae_ui_remove(&lobby);
-		ae_ui_remove(&create);
+		clear_stack();
 	}
 }
 
@@ -1015,8 +1087,14 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 		return 1;
 	case AE_ACTION_LEFT:
 	case AE_ACTION_RIGHT:
+		if (lobby.joiner)
+			return 1;
 		if (row->kind == ROW_OPTION)
 			option_step(row->option, event->action == AE_ACTION_RIGHT ? 1 : -1, "lobby: quick");
+		else if (row->kind == ROW_MAP)
+			map_step(event->action == AE_ACTION_RIGHT ? 1 : -1);
+		else if (row->kind == ROW_GAMETYPE)
+			gametype_step(event->action == AE_ACTION_RIGHT ? 1 : -1);
 		return 1;
 	case AE_ACTION_ACCEPT:
 		if (!lobby.joiner)

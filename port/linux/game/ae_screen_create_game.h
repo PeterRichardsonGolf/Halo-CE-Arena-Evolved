@@ -13,6 +13,9 @@ game's main menu (ae_screen_create_game_entry: F3 or a pad's BACK) or debug.ae_t
 /* opens CREATE GAME over the stack on the last used gametype (or $HALO_AE_TEST_GAMETYPE's), the game's menus closed
 (they come back when it closes); 0 when there is no gametype or the stack is full */
 int ae_screen_create_game_open(void);
+/* opened from AE's MULTIPLAYER (the copy open stays, else the last used gametype's); join: its JOIN WITH INVITE at
+once. B goes back to MULTIPLAYER */
+int ae_screen_create_game_from_menu(int join);
 /* (ae_hooks.c, each frame AE's menus are on) on the game's main menu with no AE screen up: F3 (pressed: keys are
 AE_KEY_* held now) or a pad's BACK opens CREATE GAME */
 void ae_screen_create_game_entry(int keys);
