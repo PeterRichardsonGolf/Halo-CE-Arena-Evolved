@@ -3457,6 +3457,38 @@ static void hud_waypoint_name(
 	}
 }
 
+/* port: NEAREST COPY (owner 2026-10-22): of the entries of one power class
+on one side whose waypoints show now, only the one nearest this view's
+player gets a TIMERS waypoint (Death Island's four red snipers: one); the
+power list keeps them all. TRAINING's waypoints show every spawn */
+static boolean hud_item_waypoint_nearest_copy(
+	short count,
+	short index,
+	real_point3d const *from)
+{
+	struct item_timer const *timer = item_timers_get(index);
+	real best = distance_squared3d(from, &timer->position);
+	short other;
+
+	if (game_engine_training())
+		return TRUE;
+	for (other = 0; other < count; other++)
+	{
+		struct item_timer const *copy = item_timers_get(other);
+		real distance;
+
+		if (other == index || copy->timer_class != timer->timer_class || copy->side != timer->side ||
+			!item_timer_waypoint_shown(copy))
+		{
+			continue;
+		}
+		distance = distance_squared3d(from, &copy->position);
+		if (distance < best || (distance == best && other < index))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 static void hud_draw_item_waypoints_inner(
 	short local_player_index);
 
@@ -3521,12 +3553,15 @@ static void hud_draw_item_waypoints_inner(
 
 		/* (an entry not drawn in sight this frame: not drawn, for the log's
 		hold ends) */
-		if ((!in_sight_only || !item_timer_waypoint_shown(timer)) && local_player_index >= 0 &&
+		boolean shown = item_timer_waypoint_shown(timer) &&
+			hud_item_waypoint_nearest_copy(count, index, &head_position);
+
+		if ((!in_sight_only || !shown) && local_player_index >= 0 &&
 			local_player_index < MAXIMUM_LOCAL_PLAYERS && index < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
 		{
 			hud_item_waypoint_sight[local_player_index][index].drawn = FALSE;
 		}
-		if (!item_timer_waypoint_shown(timer))
+		if (!shown)
 			continue;
 		if (in_sight_only || log_now)
 		{
