@@ -71,6 +71,7 @@ likely than the next by more than this part */
 void platform_log(char const *format, ...);
 char const *config_string(char const *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 static boolean spawn_heat_rate(long player_index, long ignore_unit_index, struct spawn_heat_view *view);
 
@@ -116,11 +117,11 @@ short spawn_heat_setting(
 	static short setting = _spawn_heat_mine;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
 		char const *value = config_string("display.spawn_heat");
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		if (value && !csstrcmp(value, "off"))
 			setting = _spawn_heat_off;
 		else if (value && !csstrcmp(value, "enemy"))

@@ -702,7 +702,7 @@ port/linux/src/d3d8_gl.c	ae_texture_anisotropy(&inputs[0], &inputs[8], inputs[1]
 port/linux/src/port_config.c	{ "input.left_stick_deadzone", _config_integer, "0", "HALO_LEFT_STICK_DEADZONE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "input.right_stick_deadzone", _config_integer, "0", "HALO_RIGHT_STICK_DEADZONE", _environment_value, /* AE hook */\n_platform_all,
 source/input/input_xbox.c	#include "ae_stick_dead_zones.h" /* AE hook */
-source/input/input_xbox.c	ae_stick_dead_zones(gamepad_state->sticks, input_state.Gamepad.sThumbLX, input_state.Gamepad.sThumbLY, input_state.Gamepad.sThumbRX, input_state.Gamepad.sThumbRY); /* AE hook */
+source/input/input_xbox.c	ae_stick_dead_zones(gamepad_index, gamepad_state->sticks, input_state.Gamepad.sThumbLX, input_state.Gamepad.sThumbLY, input_state.Gamepad.sThumbRX, input_state.Gamepad.sThumbRY); /* AE hook */
 # SHOW COORDINATES (display.coordinates): player 1's position and facing on the performance line (ae_coordinates.c)
 port/linux/src/port_config.c	{ "display.coordinates", _config_boolean, "false", "HALO_COORDINATES", _environment_value, /* AE hook */\n_platform_all,
 source/main/main.c	#include "ae_coordinates.h" /* AE hook */
@@ -883,7 +883,7 @@ port/linux/src/xinput_sdl.c	return controller_index == ae_seats_keyboard_control
 port/linux/src/xinput_sdl.c	if (ae_seats_active() && ae_seats_connected()) mask = ae_seats_connected() | test_input_menu_ports(); /* AE hook */
 port/linux/src/xinput_sdl.c	if (port == ae_seats_keyboard_port()) /* AE hook */
 port/linux/src/xinput_sdl.c	if (!console_active && ae_seats_keyboard_plays()) /* AE hook */
-port/linux/src/xinput_sdl.c	if (port_gamepad(gamepads, count, port)) sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); /* AE hook */
+port/linux/src/xinput_sdl.c	if (port_gamepad(gamepads, count, port)) { int ae_previous_player = ae_config_player_enter(port); sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); ae_config_player_leave(ae_previous_player); } /* AE hook */
 # split screen's JOIN screen (0.3.4, ae_split_screen.c): its handlers and its every-frame update
 port/linux/game/menu_tags.c	"ae split join open", "ae split join close", "ae split b", "ae split back", "ae split back key", "ae split profile left", "ae split profile right", "ae split continue", /* AE hook */
 port/linux/game/menu_tags.c	"ae split dev left 0", "ae split dev left 1", "ae split dev left 2", "ae split dev left 3", "ae split dev right 0", "ae split dev right 1", "ae split dev right 2", "ae split dev right 3", "ae split dev pick 0", "ae split dev pick 1", "ae split dev pick 2", "ae split dev pick 3", "ae split prof left 0", "ae split prof left 1", "ae split prof left 2", "ae split prof left 3", "ae split prof right 0", "ae split prof right 1", "ae split prof right 2", "ae split prof right 3", "ae split prof pick 0", "ae split prof pick 1", "ae split prof pick 2", "ae split prof pick 3", "ae split assign 0", "ae split assign 1", "ae split assign 2", "ae split assign 3", "ae split leave 0", "ae split leave 1", "ae split leave 2", "ae split leave 3", "ae split cand left 0", "ae split cand left 1", "ae split cand left 2", "ae split cand left 3", "ae split cand right 0", "ae split cand right 1", "ae split cand right 2", "ae split cand right 3", "ae split cand take 0", "ae split cand take 1", "ae split cand take 2", "ae split cand take 3", "ae split row up", "ae split row down", "ae split own assign", /* AE hook */
@@ -1194,3 +1194,85 @@ port/linux/game/network_aim_assist.c	return ae_mouse_aim_assist_host_blocks(conf
 port/linux/game/network_aim_assist.c	message.block_mouse = ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
 port/linux/game/network_aim_assist.c	policy = ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
 port/linux/game/network_aim_assist.c	ae_mouse_aim_assist_note_policy(client_blocks_mouse); /* AE hook */
+# (0.3.7 AE SETTINGS) per-player settings: a setting read while the game works for a local player is that player's own
+# value (their profile's ae.toml: port/linux/src/ae_config_players.c), and config_write of one (the old menus) is player 1's
+port/linux/src/port_config.c	#include "ae_config_players.h" /* AE hook */
+port/linux/src/port_config.c	static __thread struct config_value ae_player_value; /* AE hook */
+port/linux/src/port_config.c	if (ae_config_player_value(name, config_settings[index].environment, (int)type, &ae_player_value.boolean, &ae_player_value.integer, &ae_player_value.real, &ae_player_value.string)) /* AE hook */\nreturn &ae_player_value;
+port/linux/src/port_config.c	ae_config_player_written(name, value); /* AE hook */
+port/linux/src/port_config.c	return config_change_count + ae_config_player_value_changes(); /* AE hook */
+# (0.3.7 AE SETTINGS) readers of per-player settings read again for each player in turn (ae_config_player_changes)
+port/linux/game/first_person_legs.c	if (changes != ae_config_player_changes()) /* AE hook */
+port/linux/game/first_person_legs.c	changes = ae_config_player_changes(); /* AE hook */
+port/linux/game/first_person_legs.c	unsigned long ae_config_player_changes(void); /* AE hook */
+port/linux/game/shield_color.c	if (shield_color_changes == ae_config_player_changes()) /* AE hook */
+port/linux/game/shield_color.c	shield_color_changes = ae_config_player_changes(); /* AE hook */
+port/linux/game/shield_color.c	unsigned long ae_config_player_changes(void); /* AE hook */
+port/linux/game/shield_glow.c	if (changes != ae_config_player_changes()) /* AE hook */
+port/linux/game/shield_glow.c	changes = ae_config_player_changes(); /* AE hook */
+port/linux/game/shield_glow.c	unsigned long ae_config_player_changes(void); /* AE hook */
+port/linux/game/overshield_effect.c	if (changes != ae_config_player_changes()) /* AE hook */
+port/linux/game/overshield_effect.c	changes = ae_config_player_changes(); /* AE hook */
+port/linux/game/overshield_effect.c	unsigned long ae_config_player_changes(void); /* AE hook */
+port/linux/game/powerup_timers.c	if (read_at != ae_config_player_changes()) /* AE hook */
+port/linux/game/powerup_timers.c	read_at = ae_config_player_changes(); /* AE hook */
+port/linux/game/powerup_timers.c	unsigned long ae_config_player_changes(void); /* AE hook */
+port/linux/game/latency_meter.c	if (changes != ae_config_player_changes()) /* AE hook */
+port/linux/game/latency_meter.c	changes = ae_config_player_changes(); /* AE hook */
+port/linux/game/latency_meter.c	unsigned long ae_config_player_changes(void); /* AE hook */
+port/linux/game/view_fov.c	unsigned long changes = ae_config_player_changes(); /* AE hook */
+port/linux/game/view_fov.c	unsigned long ae_config_player_changes(void); /* AE hook */
+source/interface/hud_draw.c	if (read_at != ae_config_player_changes()) /* AE hook */
+source/interface/hud_draw.c	read_at = ae_config_player_changes(); /* AE hook */
+source/interface/hud_draw.c	unsigned long ae_config_player_changes(void); /* AE hook */
+source/interface/hud_item_timers.c	if (read_at != ae_config_player_changes()) /* AE hook */
+source/interface/hud_item_timers.c	read_at = ae_config_player_changes(); /* AE hook */
+source/interface/hud_item_timers.c	if (!read || read_at != ae_config_player_changes()) /* AE hook */
+source/interface/hud_item_timers.c	unsigned long ae_config_player_changes(void); /* AE hook */
+source/text/text_group.c	if (read_at != ae_config_player_changes()) /* AE hook */
+source/text/text_group.c	read_at = ae_config_player_changes(); /* AE hook */
+source/text/text_group.c	unsigned long ae_config_player_changes(void); /* AE hook */
+source/interface/hud.c	if (read_at != ae_config_player_changes()) /* AE hook */
+source/interface/hud.c	read_at = ae_config_player_changes(); /* AE hook */
+source/interface/hud.c	unsigned long ae_config_player_changes(void); /* AE hook */
+source/game/item_timers.c	if (read_at != ae_config_player_changes()) /* AE hook */
+source/game/item_timers.c	read_at = ae_config_player_changes(); /* AE hook */
+source/game/item_timers.c	unsigned long ae_config_player_changes(void); /* AE hook */
+source/game/spawn_heat.c	if (read_at != ae_config_player_changes()) /* AE hook */
+source/game/spawn_heat.c	read_at = ae_config_player_changes(); /* AE hook */
+source/game/spawn_heat.c	unsigned long ae_config_player_changes(void); /* AE hook */
+source/game/game_engine.c	if (read_at != ae_config_player_changes()) /* AE hook */
+source/game/game_engine.c	read_at = ae_config_player_changes(); /* AE hook */
+source/game/game_engine.c	unsigned long ae_config_player_changes(void); /* AE hook */
+port/linux/src/xinput_sdl.c	if (read_at != ae_config_player_changes()) /* AE hook */
+port/linux/src/xinput_sdl.c	read_at = ae_config_player_changes(); /* AE hook */
+port/linux/src/xinput_sdl.c	#include "ae_config_players.h" /* AE hook */
+# (0.3.7 AE SETTINGS) the game works for a local player: their view (FOV, HUD, scoreboard) reads their own settings
+port/linux/game/view_fov.c	int ae_previous_player = ae_config_player_enter(local_player_index); /* AE hook */
+port/linux/game/view_fov.c	ae_config_player_leave(ae_previous_player); /* AE hook */
+port/linux/game/view_fov.c	int ae_config_player_enter(int player); /* AE hook */
+port/linux/game/view_fov.c	void ae_config_player_leave(int previous); /* AE hook */
+source/render/render.c	ae_previous_player = ae_config_player_enter(window->local_player_index); /* AE hook */
+source/render/render.c	ae_config_player_leave(ae_previous_player); /* AE hook */
+source/render/render.c	int ae_previous_player; /* AE hook */
+source/render/render.c	int ae_config_player_enter(int player); /* AE hook */
+source/render/render.c	void ae_config_player_leave(int previous); /* AE hook */
+# (0.3.7 AE SETTINGS) the zoom split per input: the keyboard and mouse's own zoom settings
+port/linux/src/port_config.c	{ "input.mouse_zoom_mode", _config_string, "\"same\"", "HALO_MOUSE_ZOOM_MODE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "input.mouse_zoom_reset", _config_string, "\"same\"", "HALO_MOUSE_ZOOM_RESET", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "input.mouse_zoom_hold_time", _config_real, "0.0", "HALO_MOUSE_ZOOM_HOLD_TIME", _environment_value, /* AE hook */\n_platform_all,
+# (0.3.7 AE SETTINGS) the mouse and keys are the keyboard player's: their own settings
+port/linux/src/xinput_sdl.c	sensitivity = (float)ae_config_player_real(ae_seats_keyboard_controller(), "input.mouse_sensitivity"); /* AE hook */
+port/linux/src/xinput_sdl.c	vertical_sensitivity = (float)ae_config_player_real(ae_seats_keyboard_controller(), "input.mouse_vertical_sensitivity"); /* AE hook */
+port/linux/src/xinput_sdl.c	invert = ae_config_player_boolean(ae_seats_keyboard_controller(), "input.invert_mouse"); /* AE hook */
+port/linux/src/xinput_sdl.c	aim_assist = ae_config_player_boolean(ae_seats_keyboard_controller(), "input.mouse_aim_assist"); /* AE hook */
+port/linux/src/xinput_sdl.c	return ae_config_player_boolean(ae_seats_keyboard_controller(), "input.keyboard_prompts") && platform_input_scheme() == 0; /* AE hook */
+# (0.3.7 AE SETTINGS) the PC menus (pause SETTINGS too) read and write a per-player setting as the menu's own player's (their ae.toml, never config.toml)
+port/linux/game/menu_functions.c	#include "ae_glue_player_settings.h" /* AE hook */
+port/linux/game/menu_functions.c	if (!(default_value ? config_default(name, text, size) : ae_player_settings_menu_text(name, text, size))) /* AE hook */
+port/linux/game/menu_functions.c	return ae_player_settings_menu_write(name, value); /* AE hook */
+port/linux/game/menu_functions.c	if (!ae_player_settings_menu_write(setting->setting, setting->values[widget->parameters.list.selected_index])) /* AE hook */
+port/linux/game/menu_functions.c	ae_player_settings_menu_player(widget->local_player_index); /* AE hook */
+# (0.3.7 AE SETTINGS) PASSENGER THIRD PERSON is the player's own: the camera (director, tick) and the reticle (render) read the same player's
+port/linux/game/passenger_camera.c	int ae_config_player_boolean(int player, const char *name); /* AE hook */
+port/linux/game/passenger_camera.c	!ae_config_player_boolean(local_player_index, "display.passenger_third_person") || game_engine_running() || cinematic_in_progress() || /* AE hook */

@@ -57,6 +57,9 @@ symbols in this file:
 	_render_invalid_fog_warning_displayed (0000)
 */
 
+int ae_config_player_enter(int player); /* AE hook */
+void ae_config_player_leave(int previous); /* AE hook */
+
 /* ---------- headers */
 
 #include "cseries.h"
@@ -623,6 +626,7 @@ void render_frame(
 	short window_index;
 	struct render_window *window;
 	point2d screenshot_combined_index;
+	int ae_previous_player; /* AE hook */
 
 	render.frame_index++;
 	render.time_delta_since_tick_sec = time_delta_since_tick_sec;
@@ -652,9 +656,11 @@ void render_frame(
 					screenshot_page_index->y * global_screenshot_size + screenshot_index->y;
 			}
 
+			ae_previous_player = ae_config_player_enter(window->local_player_index); /* AE hook */
 			render_player_frame(
 				window,
 				screenshot_index != NULL ? &screenshot_combined_index : NULL);
+			ae_config_player_leave(ae_previous_player); /* AE hook */
 			continue;
 		}
 		else

@@ -43,6 +43,7 @@ machines.
 int config_boolean(const char *name);
 const char *config_string(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 /* object_lights.c (port) */
 long light_port_glow_definition_get(void);
@@ -100,11 +101,11 @@ static boolean shield_glow_enabled(
 	static unsigned long changes = (unsigned long)-1;
 	static boolean enabled = FALSE;
 
-	if (changes != config_changes())
+	if (changes != ae_config_player_changes()) /* AE hook */
 	{
 		char const *intensity = config_string("display.shield_glow_intensity");
 
-		changes = config_changes();
+		changes = ae_config_player_changes(); /* AE hook */
 		enabled = config_boolean("display.shield_glow") != 0;
 		shield_glow_scale = intensity && !strcmp(intensity, "light_show") ? 3.f : 1.f;
 	}

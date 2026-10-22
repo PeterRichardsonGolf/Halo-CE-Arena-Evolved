@@ -80,6 +80,7 @@ and health at the top right */
 /* port_config.c's, cseries_windows.c's, cinematics.c's */
 int config_boolean(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 unsigned long system_milliseconds(void);
 void draw_quad(rectangle2d *rectangle, pixel32 color);
 
@@ -110,9 +111,9 @@ boolean latency_meter_enabled(
 	static unsigned long changes = (unsigned long)-1;
 	static boolean enabled = FALSE;
 
-	if (changes != config_changes())
+	if (changes != ae_config_player_changes()) /* AE hook */
 	{
-		changes = config_changes();
+		changes = ae_config_player_changes(); /* AE hook */
 		enabled = config_boolean("display.latency_meter") != 0;
 	}
 	return enabled;

@@ -1037,6 +1037,7 @@ const char *config_string(const char *name);
 double config_real(const char *name);
 int config_boolean(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 /* port/linux/game/network_voice.c's: a player talking in voice chat (its
 machine), and its speaker drawn */
 boolean network_voice_machine_speaking(long machine_index);
@@ -1057,11 +1058,11 @@ static short hud_player_names_setting(
 	static unsigned long read_at = (unsigned long)-1;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
 		const char *value = config_string("display.player_names");
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		setting = _player_names_all;
 		if (value)
 		{
@@ -1085,9 +1086,9 @@ static real hud_player_name_scale(
 	static real scale = 0.0f;
 	static unsigned long read_at = (unsigned long)-1;
 
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		scale = 0.75f * PIN((real)config_real("display.player_name_scale"), 0.25f, 4.0f);
 	}
 

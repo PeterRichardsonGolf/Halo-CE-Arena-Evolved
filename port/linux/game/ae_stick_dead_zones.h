@@ -13,7 +13,8 @@ game's own fix_dead_zone, so the curve past the dead zone is the game's.
 #define AE_STICK_DEAD_ZONES_H
 
 /* (input_xbox.c, after the game's dead zone: an AE hook line) a pad's sticks (left, right), given the raw axes */
-void ae_stick_dead_zones(union point2d *sticks, short left_x, short left_y, short right_x, short right_y);
+void ae_stick_dead_zones(short gamepad_index, union point2d *sticks, short left_x, short left_y, short right_x,
+	short right_y);
 /* a setting's percent as the dead range on an axis (0 to 32767); 0 for DEFAULT, the game's (pure) */
 short ae_stick_dead_range(long percent);
 

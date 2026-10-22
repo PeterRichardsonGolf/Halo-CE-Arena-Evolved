@@ -16,6 +16,7 @@ edits and comments stay.
 
 #include "platform.h"
 #include "port_config.h"
+#include "ae_config_players.h" /* AE hook */
 #include "capture.h"
 #include "posix.h"
 
@@ -625,6 +626,20 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The most seconds a press of the zoom action lasts to be a tap in the\n"
 		"\"both\" mode, 0.1 to 1: held longer, it is a hold." },
+	{ "input.mouse_zoom_mode", _config_string, "\"same\"", "HALO_MOUSE_ZOOM_MODE", _environment_value, /* AE hook */
+		_platform_all,
+		"The zoom action's mode while you play with the keyboard and mouse:\n"
+		"\"toggle\", \"hold\" or \"both\" (as input.zoom_mode), or \"same\", the\n"
+		"controller's (input.zoom_mode). Each player has their own (SETTINGS:\n"
+		"CONTROLS, in their profile's ae.toml)." },
+	{ "input.mouse_zoom_reset", _config_string, "\"same\"", "HALO_MOUSE_ZOOM_RESET", _environment_value, /* AE hook */
+		_platform_all,
+		"Where a hold of the mouse's zoom starts: \"first\" or \"last\" (as\n"
+		"input.zoom_reset), or \"same\", the controller's." },
+	{ "input.mouse_zoom_hold_time", _config_real, "0.0", "HALO_MOUSE_ZOOM_HOLD_TIME", _environment_value, /* AE hook */
+		_platform_all,
+		"The mouse's hold time in the \"both\" mode, 0.1 to 1 seconds; 0: the\n"
+		"controller's (input.zoom_hold_time)." },
 
 	/* the keyboard and mouse's own controls (port/linux/src/xinput_sdl.c) */
 	{ "chat.enabled", _config_boolean, "false", "HALO_CHAT", _environment_value, _platform_all, /* AE hook */
@@ -1682,6 +1697,7 @@ struct config_value
 static struct config_value config_values[NUMBER_OF_CONFIG_SETTINGS];
 /* whether the file or the environment gives the setting a value */
 static int config_given[NUMBER_OF_CONFIG_SETTINGS];
+static __thread struct config_value ae_player_value; /* AE hook */
 /* the settings an existing file would see change with this version's
 defaults, until the player is asked (config_find_new_defaults): 1 for one
 that follows the default (commented out, or not there), 2 for one that an
@@ -3538,6 +3554,8 @@ static const struct config_value *config_value(const char *name, enum config_typ
 		platform_log("settings: no %s setting %s", type == _config_string ? "string" : "such", name);
 		return &none;
 	}
+	if (ae_config_player_value(name, config_settings[index].environment, (int)type, &ae_player_value.boolean, &ae_player_value.integer, &ae_player_value.real, &ae_player_value.string)) /* AE hook */
+		return &ae_player_value;
 	return &config_values[index];
 }
 
@@ -3654,6 +3672,7 @@ int config_write(const char *name, const char *value)
 	pthread_mutex_unlock(&config_lock);
 	free(out.buffer);
 	free(text);
+	ae_config_player_written(name, value); /* AE hook */
 	return succeeded;
 }
 
@@ -3963,7 +3982,7 @@ static void config_follow_file(void)
 unsigned long config_changes(void)
 {
 	config_follow_file();
-	return config_change_count;
+	return config_change_count + ae_config_player_value_changes(); /* AE hook */
 }
 
 int config_default(const char *name, char *text, size_t size)

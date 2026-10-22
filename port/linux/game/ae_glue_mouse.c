@@ -14,6 +14,9 @@ here leaves what upstream computed as it was.
 #include "cseries.h"
 #include "units/units.h"
 #include "../src/port_config.h"
+#include "../src/ae_config_players.h"
+#include "ae_seats.h"
+#include "ae_glue_player_settings.h"
 #include "../src/ae_platform.h"
 #include "ae_glue_mouse.h"
 #include "ae_mouse.h"
@@ -45,11 +48,16 @@ the classic one's seed and writes it, so the first switch keeps the feel */
 static void mouse_read(void)
 {
 	char const *test;
+	/* (the keyboard and mouse player's own settings, 0.3.7) */
+	int previous = ae_config_player_enter(ae_seats_keyboard_controller());
 
-	if (mouse.read && mouse.read_at == config_changes())
+	if (mouse.read && mouse.read_at == ae_config_player_changes())
+	{
+		ae_config_player_leave(previous);
 		return;
+	}
 	mouse.read = 1;
-	mouse.read_at = config_changes();
+	mouse.read_at = ae_config_player_changes();
 	mouse.style = ae_mouse_style_from_text(config_string("input.mouse_style"));
 	mouse.sensitivity = (float)config_real("input.mouse_mcc_sensitivity");
 	mouse.zoom_scale = ae_mouse_clamp_scale((float)config_real("input.mouse_zoom_scale"));
@@ -60,15 +68,17 @@ static void mouse_read(void)
 
 		mouse.sensitivity = ae_mouse_seed((float)config_real("input.mouse_sensitivity"));
 		snprintf(text, sizeof(text), "%.1f", (double)mouse.sensitivity);
-		if (config_write("input.mouse_mcc_sensitivity", text))
+		/* (the keyboard player's own, their ae.toml: never config.toml, every other player's base) */
+		if (ae_player_setting_put((short)ae_seats_keyboard_controller(), "input.mouse_mcc_sensitivity", text))
 		{
 			platform_log("mouse: MCC sensitivity %s from the classic one", text);
-			mouse.read_at = config_changes();
+			mouse.read_at = ae_config_player_changes();
 		}
 	}
 	mouse.sensitivity = ae_mouse_clamp_sensitivity(mouse.sensitivity);
 	test = config_string("debug.test_input");
 	mouse.test = ae_mouse_test_parse(test, &mouse.test_x, &mouse.test_y);
+	ae_config_player_leave(previous);
 }
 
 void ae_mouse_test_counts(float *x, float *y)

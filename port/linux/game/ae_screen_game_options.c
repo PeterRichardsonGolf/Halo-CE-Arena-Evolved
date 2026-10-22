@@ -651,7 +651,7 @@ static void draw_rail(float x, float y, float width)
 		count_x -= ae_draw_text(AE_FONT_BODY, minor, count_x, cap_top(AE_FONT_BODY, minor, middle), AE_ALIGN_RIGHT,
 			AE_COLOR_MUTED, rows);
 		if (groups[group].changed)
-			ae_widget_separator(&screen.density, count_x - u(10.0f), middle, DOT_U, AE_COLOR_ACCENT);
+			ae_widget_separator(&screen.density, count_x - u(14.0f), middle, DOT_U, AE_COLOR_ACCENT);
 		ae_hit_add(x, y, width, pitch - u(RAIL_GAP_U), HIT_RAIL, AE_PART_ROW, (short)group);
 		y += pitch;
 	}

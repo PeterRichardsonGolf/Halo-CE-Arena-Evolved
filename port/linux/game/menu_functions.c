@@ -187,6 +187,7 @@ enum
 /* ---------- structures */
 
 #include "ae_glue_mouse.h" /* AE hook */
+#include "ae_glue_player_settings.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "ae_hit_feedback.h" /* AE hook */
 #include "ae_rifle_menu.h" /* AE hook */
@@ -377,7 +378,7 @@ static boolean setting_text(char const *name, char *text, unsigned int size, boo
 
 	if (strncmp(name, "profile.", 8))
 	{
-		if (!(default_value ? config_default(name, text, size) : config_text(name, text, size)))
+		if (!(default_value ? config_default(name, text, size) : ae_player_settings_menu_text(name, text, size))) /* AE hook */
 			return FALSE;
 		ae_mouse_menu_text(name, text, size, default_value); /* AE hook */
 		/* (display.mode empty: display.fullscreen's, as the window has it:
@@ -433,7 +434,7 @@ static boolean setting_write(char const *name, char const *value)
 	short index;
 
 	if (strncmp(name, "profile.", 8))
-		return config_write(name, value);
+		return ae_player_settings_menu_write(name, value); /* AE hook */
 	for (index = 0; index < NUMBEROF(profile_settings); index++)
 	{
 		struct player_profile *profile = player_ui_get_edit_player_profile();
@@ -480,7 +481,7 @@ static boolean setting_save(struct widget_instance *widget)
 		return FALSE;
 	if (widget->parameters.list.selected_index == setting->loaded_index)
 		return TRUE;
-	if (!config_write(setting->setting, setting->values[widget->parameters.list.selected_index]))
+	if (!ae_player_settings_menu_write(setting->setting, setting->values[widget->parameters.list.selected_index])) /* AE hook */
 	{
 		platform_log("menus: could not write %s to config.toml", setting->setting);
 		return FALSE;
@@ -7373,6 +7374,7 @@ boolean pc_menu_event_function_invoke(
 {
 	short controller = event_controller(widget, event);
 
+	ae_player_settings_menu_player(widget->local_player_index); /* AE hook */
 	switch (function_index)
 	{
 	case _pc_menu_function_quit_game:
@@ -7781,6 +7783,7 @@ void pc_menu_game_data_function_invoke(
 {
 	char const *name = pc_menu_game_data_input_name(function);
 
+	ae_player_settings_menu_player(widget->local_player_index); /* AE hook */
 	if (!name)
 		return;
 	if (!strcmp(name, "ae mcc status")) /* AE hook */

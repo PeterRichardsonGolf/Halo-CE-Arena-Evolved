@@ -37,6 +37,9 @@ enum
 double config_real(const char *name);
 int config_boolean(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
+int ae_config_player_enter(int player); /* AE hook */
+void ae_config_player_leave(int previous); /* AE hook */
 
 /* ---------- the world's field of view */
 
@@ -51,7 +54,7 @@ static real render_fov_adjust(short local_player_index, real native_vertical_fie
 	static boolean initialized;
 	static unsigned long read_at;
 	static real requested_tangent;
-	unsigned long changes = config_changes();
+	unsigned long changes = ae_config_player_changes(); /* AE hook */
 	long unit_index, weapon_index;
 	struct unit_datum *unit;
 	real unzoomed_angle, unzoomed_tangent, native_tangent, adjusted_tangent;
@@ -124,7 +127,10 @@ static real render_fov_adjust(short local_player_index, real native_vertical_fie
 
 real render_fov_vertical(short local_player_index, real native_vertical_field_of_view)
 {
+	int ae_previous_player = ae_config_player_enter(local_player_index); /* AE hook */
 	real adjusted = render_fov_adjust(local_player_index, native_vertical_field_of_view);
+
+	ae_config_player_leave(ae_previous_player); /* AE hook */
 
 	if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS)
 	{
@@ -179,7 +185,7 @@ static real viewmodel_vertical(void)
 	static boolean initialized;
 	static unsigned long read_at;
 	static real angle;
-	unsigned long changes = config_changes();
+	unsigned long changes = ae_config_player_changes(); /* AE hook */
 
 	if (!initialized || read_at != changes)
 	{
@@ -252,7 +258,7 @@ boolean viewmodel_is_visible(void)
 {
 	static boolean initialized, visible;
 	static unsigned long read_at;
-	unsigned long changes = config_changes();
+	unsigned long changes = ae_config_player_changes(); /* AE hook */
 
 	if (!initialized || read_at != changes)
 	{
@@ -269,7 +275,7 @@ boolean viewmodel_shield_is_visible(void)
 {
 	static boolean initialized, visible;
 	static unsigned long read_at;
-	unsigned long changes = config_changes();
+	unsigned long changes = ae_config_player_changes(); /* AE hook */
 
 	if (!initialized || read_at != changes)
 	{

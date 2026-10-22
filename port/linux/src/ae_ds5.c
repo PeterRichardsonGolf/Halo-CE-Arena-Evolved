@@ -9,6 +9,7 @@ ae_ds5_rules.c's; what each player wants is the game's (port/linux/game/ae_ds5_g
 
 #include "platform.h"
 #include "port_config.h"
+#include "ae_config_players.h"
 #include "ae_ds5.h"
 
 #if !defined(HALO_SERVER) && !defined(HALO_ANDROID) && !defined(HALO_WEB)
@@ -162,42 +163,55 @@ static struct
 } shared;
 static struct pad pads[PADS];
 static int exit_registered;
-/* the settings as last sent (for the change to OFF: the triggers let go, the lightbar given back once) */
-static struct ae_ds5_settings applied;
+/* the settings as last sent, each port's (for the change to OFF: the triggers let go, the lightbar given back once) */
+static struct ae_ds5_settings applied[PORTS];
 static int applied_known;
 
 /* (read by the game's thread and the event thread: their own lock) */
 static SDL_SpinLock settings_lock;
 
-struct ae_ds5_settings ae_ds5_settings_get(void)
+/* (0.3.7) a port's player's own settings (SETTINGS > CONTROLS > DUALSENSE are each player's: the port is the player's,
+as the game's controller n is local player n) */
+struct ae_ds5_settings ae_ds5_settings_port(int port)
 {
-	static struct ae_ds5_settings settings, logged;
-	static unsigned long read_at;
-	static int read;
+	static struct ae_ds5_settings settings[PORTS], logged[PORTS];
+	static unsigned long read_at[PORTS];
+	static int read[PORTS];
 	struct ae_ds5_settings result;
+	int previous;
 
+	if (port < 0 || port >= PORTS)
+		port = 0;
 	SDL_LockSpinlock(&settings_lock);
-	if (!read || read_at != config_changes())
+	previous = ae_config_player_enter(port);
+	if (!read[port] || read_at[port] != ae_config_player_changes())
 	{
+		struct ae_ds5_settings *now = &settings[port];
 		char const *strength = config_string("input.trigger_strength");
 		char const *lightbar = config_string("input.lightbar");
 
-		settings.triggers = config_boolean("input.adaptive_triggers");
-		settings.strength = ae_ds5_strength_percent(strength ? strength : "");
-		settings.lights = !lightbar || strcmp(lightbar, "off");
-		settings.shield = lightbar && !strcmp(lightbar, "shield");
-		settings.log = config_boolean("debug.ds5_log");
-		if (!read || settings.triggers != logged.triggers || settings.lights != logged.lights ||
-			settings.shield != logged.shield || settings.strength != logged.strength)
-			platform_log("dualsense: adaptive triggers %s (strength %d%%), lightbar %s (a DualSense's only)",
-				settings.triggers ? "on" : "off", settings.strength, ae_ds5_lightbar_mode_name(&settings));
-		logged = settings;
-		read = 1;
-		read_at = config_changes();
+		now->triggers = config_boolean("input.adaptive_triggers");
+		now->strength = ae_ds5_strength_percent(strength ? strength : "");
+		now->lights = !lightbar || strcmp(lightbar, "off");
+		now->shield = lightbar && !strcmp(lightbar, "shield");
+		now->log = config_boolean("debug.ds5_log");
+		if (!read[port] || now->triggers != logged[port].triggers || now->lights != logged[port].lights ||
+			now->shield != logged[port].shield || now->strength != logged[port].strength)
+			platform_log("dualsense: adaptive triggers %s (strength %d%%), lightbar %s (a DualSense's only; player %d)",
+				now->triggers ? "on" : "off", now->strength, ae_ds5_lightbar_mode_name(now), port + 1);
+		logged[port] = *now;
+		read[port] = 1;
+		read_at[port] = ae_config_player_changes();
 	}
-	result = settings;
+	result = settings[port];
+	ae_config_player_leave(previous);
 	SDL_UnlockSpinlock(&settings_lock);
 	return result;
+}
+
+struct ae_ds5_settings ae_ds5_settings_get(void)
+{
+	return ae_ds5_settings_port(0);
 }
 
 char const *ae_ds5_lightbar_mode_name(struct ae_ds5_settings const *settings)
@@ -208,9 +222,17 @@ char const *ae_ds5_lightbar_mode_name(struct ae_ds5_settings const *settings)
 
 int ae_ds5_on(void)
 {
-	struct ae_ds5_settings settings = ae_ds5_settings_get();
+	int port;
 
-	return settings.triggers || settings.lights;
+	/* (any player's: each port then follows its own player's) */
+	for (port = 0; port < PORTS; port++)
+	{
+		struct ae_ds5_settings settings = ae_ds5_settings_port(port);
+
+		if (settings.triggers || settings.lights)
+			return 1;
+	}
+	return 0;
 }
 
 int ae_ds5_port_active(int port)
@@ -982,7 +1004,7 @@ static void ds5_exit(void)
 		{
 			pad_reset(&pads[i], SDL_GetGamepadFromID(pads[i].id), AE_DS5_FIELDS, now);
 			/* (the settings as last applied: the config is not read at exit) */
-			pad_minute(&pads[i], now, 1, applied.log);
+			pad_minute(&pads[i], now, 1, applied[pads[i].port >= 0 && pads[i].port < PORTS ? pads[i].port : 0].log);
 			pad_close(&pads[i]);
 		}
 	}
@@ -1204,7 +1226,8 @@ static void pad_frame(struct pad *pad, SDL_Gamepad *gamepad, int port, struct ae
 
 void ae_ds5_frame(void)
 {
-	struct ae_ds5_settings settings = ae_ds5_settings_get();
+	struct ae_ds5_settings port_settings[PORTS];
+	int any_on = 0;
 	SDL_JoystickID bound[PORTS];
 	struct ae_ds5_wish wish[PORTS];
 	int fresh[PORTS];
@@ -1212,27 +1235,34 @@ void ae_ds5_frame(void)
 	Uint64 now = SDL_GetTicks();
 	int port, i;
 
-	/* a setting turned off: the triggers let go and the lightbar given back, once; both off, the rumble (ours on the
-	hidraw way) stopped too: SDL's rumble is the pad's again */
-	if (applied_known && ((applied.triggers && !settings.triggers) || (applied.lights && !settings.lights)))
+	/* a setting turned off (each port's player's own): that port's pad's triggers let go and the lightbar given back,
+	once; both off, the rumble (ours on the hidraw way) stopped too: SDL's rumble is the pad's again */
+	for (port = 0; port < PORTS; port++)
 	{
+		port_settings[port] = ae_ds5_settings_port(port);
+		any_on |= port_settings[port].triggers || port_settings[port].lights;
+	}
+	for (i = 0; i < PADS; i++)
+	{
+		struct ae_ds5_settings const *was, *settings;
 		int fields = 0;
 
-		if (applied.triggers && !settings.triggers)
+		if (!applied_known || !pads[i].used || pads[i].port < 0 || pads[i].port >= PORTS)
+			continue;
+		was = &applied[pads[i].port];
+		settings = &port_settings[pads[i].port];
+		if (was->triggers && !settings->triggers)
 			fields |= AE_DS5_FIELD_TRIGGERS;
-		if (applied.lights && !settings.lights)
+		if (was->lights && !settings->lights)
 			fields |= AE_DS5_FIELD_LIGHTBAR;
-		if (!settings.triggers && !settings.lights)
+		if (fields && !settings->triggers && !settings->lights)
 			fields |= AE_DS5_FIELD_RUMBLE;
-		for (i = 0; i < PADS; i++)
-		{
-			if (pads[i].used)
-				pad_reset(&pads[i], SDL_GetGamepadFromID(pads[i].id), fields, now);
-		}
+		if (fields)
+			pad_reset(&pads[i], SDL_GetGamepadFromID(pads[i].id), fields, now);
 	}
-	applied = settings;
+	memcpy(applied, port_settings, sizeof(applied));
 	applied_known = 1;
-	if (!settings.triggers && !settings.lights)
+	if (!any_on)
 	{
 		SDL_LockSpinlock(&shared_lock);
 		memset(shared.active, 0, sizeof(shared.active));
@@ -1280,7 +1310,7 @@ void ae_ds5_frame(void)
 		int active;
 
 		if (pad && pad->backend == BACKEND_UNKNOWN)
-			pad_choose_backend(pad, gamepad, &settings);
+			pad_choose_backend(pad, gamepad, &port_settings[port]);
 #ifdef __linux__
 		if (pad && pad->backend == BACKEND_HIDRAW && pad->gone && now >= pad->reopen_at)
 			pad_reopen(pad, gamepad, now);
@@ -1298,10 +1328,10 @@ void ae_ds5_frame(void)
 		shared.owns_rumble[port] = owns;
 		SDL_UnlockSpinlock(&shared_lock);
 		if (active && !pad->gone)
-			pad_frame(pad, gamepad, port, &wish[port], fresh[port], rumble_left[port], rumble_right[port], &settings,
-				now);
+			pad_frame(pad, gamepad, port, &wish[port], fresh[port], rumble_left[port], rumble_right[port],
+				&port_settings[port], now);
 		if (pad)
-			pad_minute(pad, now, 0, settings.log);
+			pad_minute(pad, now, 0, port_settings[port].log);
 	}
 }
 
@@ -1325,7 +1355,7 @@ void ae_ds5_removed(struct SDL_Gamepad *gamepad)
 				pad_reset(&pads[i], gamepad, AE_DS5_FIELDS, now);
 			if (pads[i].backend != BACKEND_NONE)
 				platform_log("dualsense: the pad on port %d left", pads[i].port + 1);
-			pad_minute(&pads[i], now, 1, applied.log);
+			pad_minute(&pads[i], now, 1, applied[pads[i].port >= 0 && pads[i].port < PORTS ? pads[i].port : 0].log);
 			pad_close(&pads[i]);
 		}
 	}
@@ -1351,6 +1381,12 @@ struct ae_ds5_settings ae_ds5_settings_get(void)
 	memset(&settings, 0, sizeof(settings));
 	settings.strength = 100;
 	return settings;
+}
+
+struct ae_ds5_settings ae_ds5_settings_port(int port)
+{
+	(void)port;
+	return ae_ds5_settings_get();
 }
 
 char const *ae_ds5_lightbar_mode_name(struct ae_ds5_settings const *settings)

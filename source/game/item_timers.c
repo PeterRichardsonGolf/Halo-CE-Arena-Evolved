@@ -91,6 +91,7 @@ static struct
 /* port_config.c's */
 int config_boolean(char const *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 
 static char const *const item_timer_side_names[NUMBER_OF_ITEM_TIMER_SIDES] =
 {
@@ -575,9 +576,9 @@ boolean item_timers_shotgun_is_power(
 	static boolean power = TRUE;
 
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		power = config_boolean("display.shotgun_power") != 0;
 	}
 

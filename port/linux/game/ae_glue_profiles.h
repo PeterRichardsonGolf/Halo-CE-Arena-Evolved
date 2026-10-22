@@ -32,7 +32,9 @@ layout (the button preset: player_profile.h's _button_preset_*) */
 struct ae_profile_summary { int index; char name[48]; unsigned int color; short layout; };
 /* a player's controls: layout (the button preset, 0 to NUMBER_OF_BUTTON_PRESETS - 1), look sensitivity (the
 profile's own step, 0-9: the game's 1-10), invert (look), vibration (1 on) */
-struct ae_profile_controls { short layout; short look_sensitivity; int invert; int vibration; };
+struct ae_profile_controls { short layout; short look_sensitivity; int invert; int vibration;
+	/* (0.3.7 SETTINGS) the stick layout (player_profile.h's _joystick_preset_*), INVERT FLIGHT, AUTO-CENTER LOOK */
+	short stick; int invert_flight; int autocenter; };
 
 /* the profiles on this PC (not the game's two default profiles), in the save files' order; up to maximum */
 struct ae_result ae_profiles_list(struct ae_profile_summary *profiles, short maximum, short *count);
@@ -45,6 +47,8 @@ struct ae_result ae_profile_new(const char *name, int *profile_index);
 /* plays without a profile: settings apply to this session only (never saved) */
 struct ae_result ae_profile_guest(short local_player);
 int ae_profile_is_guest(short local_player);
+/* how many times the player became a guest: a new guest in the same place counts one more */
+int ae_profile_guest_generation(short local_player);
 /* the player's controls as the game has them now (a guest's included) */
 struct ae_result ae_profile_get_controls(short local_player, struct ae_profile_controls *controls);
 /* saved to that player's own profile at once (no shared edit buffer, no "PLAYER n IS EDITING": M7's rule); a

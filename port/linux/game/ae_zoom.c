@@ -221,25 +221,49 @@ void ae_zoom_flags_filter_press(int mode, unsigned long *flags, int press_bit)
 		*flags &= ~(1ul << press_bit);
 }
 
+static void player_let_go(struct ae_zoom_bank *bank, int player)
+{
+	ae_zoom_reset(&bank->states[player]);
+	bank->flash_latch[player] = 0;
+	bank->flash_pending[player] = 0;
+	bank->flash_was_down[player] = 0;
+}
+
+void ae_zoom_bank_set_player(struct ae_zoom_bank *bank, int player, int mode, int reset)
+{
+	if (player < 0 || player >= AE_ZOOM_PLAYERS)
+		return;
+	bank->resets[player] = reset;
+	if (mode == bank->modes[player])
+		return;
+	bank->modes[player] = mode;
+	player_let_go(bank, player);
+}
+
 void ae_zoom_bank_set_mode(struct ae_zoom_bank *bank, int mode)
 {
 	int index;
 
-	if (mode == bank->mode)
-		return;
-	bank->mode = mode;
 	for (index = 0; index < AE_ZOOM_PLAYERS; index++)
 	{
-		ae_zoom_reset(&bank->states[index]);
-		bank->flash_latch[index] = 0;
-		bank->flash_pending[index] = 0;
-		bank->flash_was_down[index] = 0;
+		if (mode == bank->modes[index])
+			continue;
+		bank->modes[index] = mode;
+		player_let_go(bank, index);
 	}
+}
+
+int ae_zoom_bank_mode(struct ae_zoom_bank const *bank, int player)
+{
+	return player >= 0 && player < AE_ZOOM_PLAYERS ? bank->modes[player] : AE_ZOOM_TOGGLE;
 }
 
 void ae_zoom_bank_set_reset(struct ae_zoom_bank *bank, int reset)
 {
-	bank->reset = reset;
+	int index;
+
+	for (index = 0; index < AE_ZOOM_PLAYERS; index++)
+		bank->resets[index] = reset;
 }
 
 void ae_zoom_bank_remember(struct ae_zoom_bank *bank, int player, long weapon, short level)
@@ -287,7 +311,7 @@ void ae_zoom_bank_filter_flash(struct ae_zoom_bank *bank, int player, unsigned l
 	down = (int)((*player_flags >> AE_ZOOM_FLASH_BIT) & 1);
 	rising = down && !bank->flash_was_down[player];
 	bank->flash_was_down[player] = down;
-	if (bank->mode == AE_ZOOM_TOGGLE || !down)
+	if (bank->modes[player] == AE_ZOOM_TOGGLE || !down)
 	{
 		bank->flash_latch[player] = 0;
 		return;
@@ -307,10 +331,10 @@ short ae_zoom_bank_step_ex(struct ae_zoom_bank *bank, int player, long hold_ms, 
 {
 	struct ae_zoom_in in;
 
-	if (bank->mode == AE_ZOOM_TOGGLE || player < 0 || player >= AE_ZOOM_PLAYERS)
+	if (player < 0 || player >= AE_ZOOM_PLAYERS || bank->modes[player] == AE_ZOOM_TOGGLE)
 		return level;
 	memset(&in, 0, sizeof(in));
-	in.mode = bank->mode;
+	in.mode = bank->modes[player];
 	in.hold_ms = hold_ms;
 	in.held = (int)((flags >> AE_ZOOM_HELD_BIT) & 1);
 	in.now_ms = now_ms;
@@ -318,7 +342,7 @@ short ae_zoom_bank_step_ex(struct ae_zoom_bank *bank, int player, long hold_ms, 
 	in.count = count;
 	in.blocked = blocked;
 	in.key = weapon;
-	in.reset = bank->reset;
+	in.reset = bank->resets[player];
 	in.remembered = ae_zoom_bank_recall(bank, player, weapon);
 	in.wheel = wheel;
 	in.flash = bank->flash_pending[player];
@@ -335,9 +359,9 @@ short ae_zoom_bank_step_ex(struct ae_zoom_bank *bank, int player, long hold_ms, 
 short ae_zoom_bank_step(struct ae_zoom_bank *bank, int player, long hold_ms, unsigned long flags, long now_ms,
 	short level, short count, int blocked)
 {
-	if (bank->mode == AE_ZOOM_TOGGLE || player < 0 || player >= AE_ZOOM_PLAYERS)
+	if (player < 0 || player >= AE_ZOOM_PLAYERS || bank->modes[player] == AE_ZOOM_TOGGLE)
 		return level;
-	return ae_zoom_step(&bank->states[player], bank->mode, hold_ms, (int)((flags >> AE_ZOOM_HELD_BIT) & 1), now_ms,
+	return ae_zoom_step(&bank->states[player], bank->modes[player], hold_ms, (int)((flags >> AE_ZOOM_HELD_BIT) & 1), now_ms,
 		level, count, blocked);
 }
 

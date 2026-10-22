@@ -12,6 +12,7 @@ before). See ae_hud_style.h.
 
 const char *config_string(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void);
 
 /* (asked many times a view a frame: read again only when a setting changed) */
 boolean ae_hud_style_is_ae(void)
@@ -19,11 +20,11 @@ boolean ae_hud_style_is_ae(void)
 	static unsigned long read_at = (unsigned long)-1;
 	static boolean ae = TRUE;
 
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes())
 	{
 		const char *value = config_string("display.hud_style");
 
-		read_at = config_changes();
+		read_at = ae_config_player_changes();
 		ae = (boolean)!(value && strcmp(value, "classic") == 0);
 	}
 	return ae;

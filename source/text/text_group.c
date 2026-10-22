@@ -217,6 +217,7 @@ display.short_messages) or for PRACTICE MODE: the multiplayer game text string
 asked for, or NULL for the game's own */
 extern int config_boolean(const char *name);
 extern unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
 extern boolean game_engine_practice(void);
 
 static wchar_t *ae_text_override(long tag_index, short string_index)
@@ -231,9 +232,9 @@ static wchar_t *ae_text_override(long tag_index, short string_index)
 	if (string_index == 177)
 		return game_engine_practice() ? L"Practice Mode" : NULL;
 	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes(); /* AE hook */
 		short_messages = config_boolean("display.short_messages") != 0;
 	}
 	if (!short_messages)

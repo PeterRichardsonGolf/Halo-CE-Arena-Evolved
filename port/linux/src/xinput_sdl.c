@@ -47,6 +47,7 @@ extern unsigned char network_aim_assist_block_mouse(void);
 #include "halo_keyboard.h"
 #include "ae_platform.h" /* AE hook */
 #include "ae_seats.h" /* AE hook */
+#include "ae_config_players.h" /* AE hook */
 #include "ae_ds5.h" /* AE hook */
 
 #include <SDL3/SDL.h>
@@ -127,13 +128,13 @@ static float mouse_sensitivity(void)
 	static float sensitivity;
 	static unsigned long read_at = (unsigned long)-1;
 
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
-		sensitivity = (float)config_real("input.mouse_sensitivity");
+		read_at = ae_config_player_changes(); /* AE hook */
+		sensitivity = (float)ae_config_player_real(ae_seats_keyboard_controller(), "input.mouse_sensitivity"); /* AE hook */
 		if (sensitivity <= 0.0f)
 			sensitivity = 1.0f;
-		vertical_sensitivity = (float)config_real("input.mouse_vertical_sensitivity");
+		vertical_sensitivity = (float)ae_config_player_real(ae_seats_keyboard_controller(), "input.mouse_vertical_sensitivity"); /* AE hook */
 		if (vertical_sensitivity <= 0.0f)
 			vertical_sensitivity = sensitivity;
 	}
@@ -154,10 +155,10 @@ int halo_linux_mouse_look(short gamepad_index, float *yaw, float *pitch)
 	*pitch = 0.0f;
 	if (gamepad_index != ae_seats_keyboard_controller()) /* AE hook */
 		return FALSE;
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
-		invert = config_boolean("input.invert_mouse");
+		read_at = ae_config_player_changes(); /* AE hook */
+		invert = ae_config_player_boolean(ae_seats_keyboard_controller(), "input.invert_mouse"); /* AE hook */
 	}
 	pthread_mutex_lock(&mouse_lock);
 	x = mouse_pending_x;
@@ -378,10 +379,10 @@ int halo_linux_mouse_aiming(short gamepad_index)
 
 	if (gamepad_index != ae_seats_keyboard_controller()) /* AE hook */
 		return FALSE;
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes()) /* AE hook */
 	{
-		read_at = config_changes();
-		aim_assist = config_boolean("input.mouse_aim_assist");
+		read_at = ae_config_player_changes(); /* AE hook */
+		aim_assist = ae_config_player_boolean(ae_seats_keyboard_controller(), "input.mouse_aim_assist"); /* AE hook */
 	}
 	if (network_aim_assist_block_mouse() && mouse_is_aim_device(gamepad_index))
 		return TRUE;
@@ -788,7 +789,7 @@ int halo_keyboard_prompts(void)
 #ifdef HALO_ANDROID
 	return 0;
 #else
-	return config_boolean("input.keyboard_prompts") && platform_input_scheme() == 0;
+	return ae_config_player_boolean(ae_seats_keyboard_controller(), "input.keyboard_prompts") && platform_input_scheme() == 0; /* AE hook */
 #endif
 }
 
@@ -1654,7 +1655,7 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 			else
 				keyboard_controls(held, &state->Gamepad);
 		}
-		if (port_gamepad(gamepads, count, port)) sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); /* AE hook */
+		if (port_gamepad(gamepads, count, port)) { int ae_previous_player = ae_config_player_enter(port); sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); ae_config_player_leave(ae_previous_player); } /* AE hook */
 		test_input_gamepad(&state->Gamepad);
 		touch_input_gamepad(&state->Gamepad);
 #if defined(HALO_ANDROID) || defined(HALO_WEB)
@@ -1674,8 +1675,7 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 	}
 	else
 	{
-		if (port_gamepad(gamepads, count, port))
-			sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad);
+		if (port_gamepad(gamepads, count, port)) { int ae_previous_player = ae_config_player_enter(port); sdl_gamepad_state(port_gamepad(gamepads, count, port), &state->Gamepad); ae_config_player_leave(ae_previous_player); } /* AE hook */
 		/* (debug.test_input's presses for this controller: 2:start) */
 		if (test_input_menu[0])
 			test_input_menu_gamepad(&state->Gamepad, port);

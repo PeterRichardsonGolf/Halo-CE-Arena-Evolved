@@ -61,6 +61,8 @@ typedef char ae_profiles_wchar_is_ucs2[sizeof(wchar_t) == 2 ? 1 : -1];
 
 /* the local players playing as guests (this glue's ae_profile_guest; a profile chosen since, by anything, ends it) */
 static boolean guests[LOCAL_PLAYERS];
+/* each guest start counted: a new guest in the same place is another player (their settings start afresh) */
+static int guest_generation[LOCAL_PLAYERS];
 
 static struct ae_result succeeded(void)
 {
@@ -329,6 +331,7 @@ struct ae_result ae_profile_guest(short local_player)
 	guest_profile(local_player, &profile);
 	player_ui_set_active_player_profile(local_player, NONE, &profile);
 	guests[local_player] = TRUE;
+	guest_generation[local_player]++;
 	platform_log("ae profiles: player %d guest", local_player + 1);
 	return succeeded();
 }
@@ -367,6 +370,9 @@ struct ae_result ae_profile_get_controls(short local_player, struct ae_profile_c
 	controls->look_sensitivity = profile.controller_settings.look_sensitivity;
 	controls->invert = profile.controller_settings.invert_look ? 1 : 0;
 	controls->vibration = profile.controller_settings.vibration_disabled ? 0 : 1;
+	controls->stick = profile.controller_settings.joystick_preset;
+	controls->invert_flight = profile.controller_settings.flight_stick_aircraft_controls ? 1 : 0;
+	controls->autocenter = profile.controller_settings.autocenter ? 1 : 0;
 	return succeeded();
 }
 
@@ -376,6 +382,9 @@ static void apply_controls(struct player_profile *profile, struct ae_profile_con
 	profile->controller_settings.look_sensitivity = (byte)controls->look_sensitivity;
 	profile->controller_settings.invert_look = controls->invert ? TRUE : FALSE;
 	profile->controller_settings.vibration_disabled = controls->vibration ? FALSE : TRUE;
+	profile->controller_settings.joystick_preset = (byte)controls->stick;
+	profile->controller_settings.flight_stick_aircraft_controls = controls->invert_flight ? TRUE : FALSE;
+	profile->controller_settings.autocenter = controls->autocenter ? TRUE : FALSE;
 }
 
 /* the profile's file changed by change (read, changed, written: player_profile_save) and the game's copy of it, for
@@ -518,6 +527,9 @@ struct ae_result ae_profile_read(int profile_index, struct ae_profile_controls *
 		controls->look_sensitivity = profile.controller_settings.look_sensitivity;
 		controls->invert = profile.controller_settings.invert_look ? 1 : 0;
 		controls->vibration = profile.controller_settings.vibration_disabled ? 0 : 1;
+		controls->stick = profile.controller_settings.joystick_preset;
+		controls->invert_flight = profile.controller_settings.flight_stick_aircraft_controls ? 1 : 0;
+		controls->autocenter = profile.controller_settings.autocenter ? 1 : 0;
 	}
 	if (color)
 		*color = profile.primary_color_index;
@@ -590,4 +602,9 @@ struct ae_result ae_profile_delete(int profile_index)
 	player_profile_delete(index);
 	platform_log("ae profiles: %08X deleted", (unsigned int)profile_index);
 	return succeeded();
+}
+
+int ae_profile_guest_generation(short local_player)
+{
+	return local_player_valid(local_player) ? guest_generation[local_player] : 0;
 }

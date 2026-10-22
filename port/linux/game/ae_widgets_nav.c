@@ -547,6 +547,15 @@ struct prompt_parts
 	char label[160];
 };
 
+/* a pad mark to its label: GLYPH_GAP of the glyph, never under 8 px (VIEW's 24 u glyph gave 7.2: the settings spec 13,
+the clearance rule) */
+static float glyph_gap(struct ae_density const *density, float glyph)
+{
+	float gap = glyph * GLYPH_GAP, floor = 8.0f * density->pixel;
+
+	return gap > floor ? gap : floor;
+}
+
 /* the room between a pair's two marks: a glyph's GLYPH_GAP (9 px at 1080p: the clearance rule's 8) */
 #define PAIR_GAP 0.3f
 
@@ -596,7 +605,7 @@ static float prompt_parts(struct ae_density const *density, int device, struct a
 			if (prompt->pair)
 				part->second = button_mark(density, device, prompt->button + 1, NULL, 0.0f, 0.0f, glyph, 0);
 			part->width = part->mark + (prompt->pair ? glyph * PAIR_GAP + part->second : 0.0f) +
-				(part->label[0] ? glyph * GLYPH_GAP + part->label_width : 0.0f);
+				(part->label[0] ? glyph_gap(density, glyph) + part->label_width : 0.0f);
 		}
 		total += part->width + (index + 1 < count ? gap : 0.0f);
 	}
@@ -704,7 +713,7 @@ void ae_widget_prompts(struct ae_density const *density, float x, float center_y
 				button_mark(density, device, prompt->button + 1, NULL, pen + part->mark + glyph * PAIR_GAP, center_y, glyph,
 					1);
 			if (part->label[0])
-				ae_draw_text(AE_FONT_BODY, label_size, pen + marks + glyph * GLYPH_GAP, text_top(AE_FONT_BODY, label_size,
+				ae_draw_text(AE_FONT_BODY, label_size, pen + marks + glyph_gap(density, glyph), text_top(AE_FONT_BODY, label_size,
 					center_y), AE_ALIGN_LEFT, AE_COLOR_TEXT, part->label);
 			ae_hit_add(pen, center_y - glyph * 0.5f, part->width, glyph, hit_id, AE_PART_PROMPT, index);
 			if (prompt->pair)

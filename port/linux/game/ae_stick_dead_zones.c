@@ -8,6 +8,7 @@ STICK DEADZONES (ae_stick_dead_zones.h).
 #include "math/integer_math.h"
 #include "input/input.h"
 #include "../src/port_config.h"
+#include "../src/ae_config_players.h"
 
 #include "ae_stick_dead_zones.h"
 
@@ -20,18 +21,22 @@ short ae_stick_dead_range(long percent)
 	return (short)((percent * SHORT_MAX + 50) / 100);
 }
 
-void ae_stick_dead_zones(union point2d *sticks, short left_x, short left_y, short right_x, short right_y)
+void ae_stick_dead_zones(short gamepad_index, union point2d *sticks, short left_x, short left_y, short right_x,
+	short right_y)
 {
-	/* (read again only when a setting has changed: this runs for every pad each frame) */
+	/* (read again only when a setting has changed, for each player in turn: this runs for every pad each frame; the
+	pad's player is its controller's, 0.3.7's per-player settings) */
 	static unsigned long changes_seen = (unsigned long)-1;
 	static short left = 0, right = 0;
+	int previous = ae_config_player_enter(gamepad_index);
 
-	if (config_changes() != changes_seen)
+	if (ae_config_player_changes() != changes_seen)
 	{
-		changes_seen = config_changes();
+		changes_seen = ae_config_player_changes();
 		left = ae_stick_dead_range(config_integer("input.left_stick_deadzone"));
 		right = ae_stick_dead_range(config_integer("input.right_stick_deadzone"));
 	}
+	ae_config_player_leave(previous);
 	if (left)
 	{
 		sticks[_gamepad_stick_left].x = fix_dead_zone(left_x, left);

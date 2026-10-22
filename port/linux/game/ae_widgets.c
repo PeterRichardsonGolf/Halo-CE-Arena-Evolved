@@ -22,11 +22,18 @@ window pixels each side (horizontal ink can sit 1-2 px outside the advance box).
 #define DOT_U 10.0f
 #define DOT_GAP_U 12.0f            /* label to the changed dot */
 #define BADGE_GAP_U 8.0f           /* dot to the AE badge */
-#define BADGE_PAD_U 10.0f          /* the badge's box: text + 10 u */
+#define BADGE_PAD_U 14.0f          /* the badge's box: text + 14 u (10 let THIS PC / RESTART touch it: settings spec 13) */
 #define BADGE_HEIGHT_FULL_U 20.0f  /* (a ruling: not in the spec; mockup 12) */
 #define BADGE_HEIGHT_VIEW_U 18.0f
 #define BASE_GAP_U 12.0f           /* the struck base value to the value */
 #define STRIKE_U 2.0f
+/* (0.3.7 SETTINGS, spec 3) the slider: its value's column, its track and the gap between; the sub-screen's chevron */
+#define SLIDER_COLUMN_U 112.0f
+#define SLIDER_TRACK_U 120.0f
+#define SLIDER_TRACK_HEIGHT_U 4.0f
+#define SLIDER_GAP_U 16.0f
+#define CHEVRON_U 7.0f
+#define CHEVRON_GAP_U 10.0f
 #define GROUP_INSET_U 10.0f
 #define GROUP_TRACKING 0.09f
 #define TRACK_PAD_U 6.0f
@@ -34,7 +41,7 @@ window pixels each side (horizontal ink can sit 1-2 px outside the advance box).
 #define TRACK_STRIP_U 24.0f
 #define THUMB_MINIMUM_U 40.0f
 #define WHEEL_ROWS 3
-#define MORE_LINE 1.5f             /* the "N more" line: its text size x this */
+#define MORE_LINE 2.0f             /* the "N more" line: its text size x this (1.5 put it 6 px under the last row) */
 #define MINOR_FLOOR_PIXELS 14.0f
 #define CLIP_ALLOWANCE_PIXELS 2.0f
 /* Overpass's triangles (U+25C0 / U+25B6): ink 0.594 em wide, from 0.008 to 0.692 em above the baseline (their middle
@@ -354,32 +361,39 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 	struct ae_row_layout *layout)
 {
 	float pad = units(density, density->metrics->pad), text = ae_size_text(density);
-	float right = width - pad, extras = 0.0f, room, gap;
+	float right = width - pad, extras = 0.0f, room, gap, block_left, label_full, value_size;
 	int focused = (row->flags & AE_ROW_FOCUSED) != 0, disabled = (row->flags & AE_ROW_DISABLED) != 0;
 	int changed = (row->flags & AE_ROW_CHANGED) && !disabled, badge = (row->flags & AE_ROW_AE) != 0;
-	int arrows = focused && row->value && !disabled;
+	int slider = (row->flags & AE_ROW_SLIDER) && !disabled;
+	int quiet = (row->flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS)) != 0;
+	int arrows = focused && row->value && !disabled && !quiet;
 	const char *shown = disabled ? row->reason : row->value;
+	int index;
 
 	memset(layout, 0, sizeof(*layout));
 	layout->height = ae_size_row(density);
 	layout->arrow_cell = units(density, ARROW_CELL_U);
-	/* the right block first: arrow, value (or reason), arrow, struck base value */
+	/* (a disabled row's reason and a sub-screen's summary at the minor size, as the mockups: 04, 25; settings 3) */
+	value_size = disabled || (row->flags & AE_ROW_SUBSCREEN) ? minor_size(density) : text;
+	/* the right block first: arrow, value (or reason), arrow (a slider's track), the sub-screen's chevron */
 	if (arrows)
 	{
 		right -= layout->arrow_cell;
 		layout->arrow_right_x = right;
 	}
-	/* (a disabled row's reason at the minor size, as the mockups: 04, 25) */
-	if (shown)
-		layout->value_width = ae_draw_text_width(AE_FONT_ROW, disabled ? minor_size(density) : text, shown);
-	layout->value_x = right - layout->value_width;
-	right = layout->value_x;
-	if (arrows)
+	if (row->flags & AE_ROW_SUBSCREEN)
 	{
-		right -= layout->arrow_cell;
-		layout->arrow_left_x = right;
+		layout->chevron_x = right - units(density, CHEVRON_U);
+		right = layout->chevron_x - units(density, CHEVRON_GAP_U);
 	}
-	/* the dot and the badge after the label */
+	if (shown)
+	{
+		snprintf(layout->value, sizeof(layout->value), "%s", shown);
+		layout->value_width = ae_draw_text_width(AE_FONT_ROW, value_size, shown);
+	}
+	/* the label's whole width and what follows it (the dot, the badges) are reserved before anything on the left of
+	the value: the label never gives way while the struck base or the value could (settings spec 3) */
+	label_full = row->label && row->label[0] ? ae_draw_text_width(AE_FONT_ROW, text, row->label) : 0.0f;
 	layout->dot = changed;
 	layout->badge = badge;
 	if (changed)
@@ -390,15 +404,65 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 			units(density, BADGE_PAD_U);
 		extras += units(density, changed ? BADGE_GAP_U : DOT_GAP_U) + layout->badge_width;
 	}
+	for (index = 0; index < AE_ROW_BADGES; index++)
+	{
+		if (!row->badges[index] || !row->badges[index][0])
+			continue;
+		layout->badges_width[layout->badge_count] = ae_draw_text_width(AE_FONT_ROW, badge_size(density),
+			row->badges[index]) + units(density, BADGE_PAD_U);
+		extras += units(density, changed || badge || layout->badge_count ? BADGE_GAP_U : DOT_GAP_U) +
+			layout->badges_width[layout->badge_count];
+		layout->badge_count++;
+	}
 	layout->label_x = pad;
 	gap = shown || arrows || changed ? units(density, LABEL_GAP_U) : 0.0f;
-	/* the struck base value: whole when it fits beside the indicators, else shortened, else left out (it is the
-	least needed: the help panel says it too) */
+	/* the value cut ("…") only as far as the label needs, never under a third of its own width */
+	if (shown && !slider)
+	{
+		float needed = layout->label_x + label_full + extras + gap + (arrows ? layout->arrow_cell : 0.0f);
+		float left = right - layout->value_width;
+
+		if (needed > left)
+		{
+			float allowed = right - needed, least = layout->value_width / 3.0f;
+
+			if (allowed < least)
+				allowed = least;
+			if (allowed < layout->value_width)
+			{
+				ae_fit_text(AE_FONT_ROW, value_size, shown, allowed, layout->value, sizeof(layout->value));
+				layout->value_width = ae_draw_text_width(AE_FONT_ROW, value_size, layout->value);
+			}
+		}
+	}
+	layout->value_x = right - layout->value_width;
+	block_left = layout->value_x;
+	if (arrows)
+	{
+		layout->arrow_left_x = layout->value_x - layout->arrow_cell;
+		block_left = layout->arrow_left_x;
+	}
+	if (slider)
+	{
+		/* (the value right in its column; the track left of the column, or of the left arrow hugging a wide value) */
+		float column = right - units(density, SLIDER_COLUMN_U);
+
+		if (block_left < column)
+			column = block_left;
+		layout->track_width = units(density, SLIDER_TRACK_U);
+		layout->track_x = column - units(density, SLIDER_GAP_U) - layout->track_width;
+		block_left = layout->track_x;
+	}
+	right = block_left;
+	/* the struck base value: whole when it fits beside the label, else shortened, else left out (it is the least
+	needed: the help says it too) */
 	if (changed && row->base_value)
 	{
-		float room_for_base = right - units(density, BASE_GAP_U) - gap - layout->label_x - extras;
+		float room_for_base = right - units(density, BASE_GAP_U) - gap - layout->label_x - label_full - extras;
 
-		ae_fit_text(AE_FONT_BODY, minor_size(density), row->base_value, room_for_base, layout->base, sizeof(layout->base));
+		if (room_for_base > 0.0f)
+			ae_fit_text(AE_FONT_BODY, minor_size(density), row->base_value, room_for_base, layout->base,
+				sizeof(layout->base));
 		if (layout->base[0])
 		{
 			layout->base_width = ae_draw_text_width(AE_FONT_BODY, minor_size(density), layout->base);
@@ -406,13 +470,14 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 			right = layout->base_x;
 		}
 	}
-	/* the label gets the rest, less the gap and the dot and badge after it, shortened with "…"; when even the dot and
-	the badge have no room, they are left out rather than drawn over the right block */
+	/* the label gets the rest, less the gap and the dot and badges after it, shortened with "…" only now; when even
+	the dot and the badges have no room, they are left out rather than drawn over the right block */
 	room = right - gap - layout->label_x - extras;
 	if (room < 0.0f && extras > 0.0f)
 	{
 		layout->dot = layout->badge = 0;
 		layout->badge_width = 0.0f;
+		layout->badge_count = 0;
 		room += extras;
 	}
 	layout->label_cut = ae_fit_text(AE_FONT_ROW, text, row->label ? row->label : "", room, layout->label,
@@ -421,6 +486,32 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 	layout->dot_x = layout->label_x + layout->label_width + units(density, DOT_GAP_U);
 	layout->badge_x = layout->dot ? layout->dot_x + units(density, DOT_U) + units(density, BADGE_GAP_U) :
 		layout->label_x + layout->label_width + units(density, DOT_GAP_U);
+	{
+		float x = layout->badge ? layout->badge_x + layout->badge_width + units(density, BADGE_GAP_U) : layout->badge_x;
+
+		for (index = 0; index < layout->badge_count; index++)
+		{
+			layout->badges_x[index] = x;
+			x += layout->badges_width[index] + units(density, BADGE_GAP_U);
+		}
+	}
+}
+
+/* (0.3.7) the slider's track: the rule's colour at .25, or the selection text's on the bar */
+#define SLIDER_TRACK 0xC8D6E040u
+#define SLIDER_TRACK_ON_BAR 0x0F171E40u
+
+/* the nth badge given (the layout counts only those with text) */
+static const char *row_badge(struct ae_row const *row, int nth)
+{
+	int index;
+
+	for (index = 0; index < AE_ROW_BADGES; index++)
+	{
+		if (row->badges[index] && row->badges[index][0] && nth-- == 0)
+			return row->badges[index];
+	}
+	return "";
 }
 
 /* a value arrow (U+25C0 left, U+25B6 right) centred in its cell */
@@ -447,10 +538,11 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	float corner = units(density, density->metrics->corner);
 	unsigned int value_color = on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_ACCENT;
 	const char *shown;
+	int badges;
 
 	ae_row_layout(density, width, row, &layout);
-	arrows = focused && row->value && !disabled;
-	shown = disabled ? row->reason : row->value;
+	arrows = focused && row->value && !disabled && !(flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS));
+	shown = (disabled ? row->reason : row->value) ? layout.value : NULL;
 	center_y = y + layout.height * 0.5f;
 	allowance = CLIP_ALLOWANCE_PIXELS * density->pixel;
 
@@ -511,6 +603,39 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 		ae_draw_text(AE_FONT_ROW, size, x + layout.badge_x + layout.badge_width * 0.5f, text_top(AE_FONT_ROW, size,
 			center_y), AE_ALIGN_CENTER, AE_COLOR_ACCENT, ae_string(AE_STR_BADGE_AE));
 	}
+	for (badges = 0; badges < layout.badge_count; badges++)
+	{
+		float height = badge_height(density);
+		float size = badge_size(density);
+		unsigned int color = on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_MUTED;
+
+		ae_draw_outline(x + layout.badges_x[badges], center_y - height * 0.5f, layout.badges_width[badges], height, 0.0f,
+			units(density, 1.0f), color);
+		ae_draw_text(AE_FONT_ROW, size, x + layout.badges_x[badges] + layout.badges_width[badges] * 0.5f,
+			text_top(AE_FONT_ROW, size, center_y), AE_ALIGN_CENTER, color, row_badge(row, badges));
+	}
+	if (layout.track_width > 0.0f)
+	{
+		float height = units(density, SLIDER_TRACK_HEIGHT_U), fill = row->slider;
+
+		if (!(fill >= 0.0f))
+			fill = 0.0f;
+		if (fill > 1.0f)
+			fill = 1.0f;
+		ae_draw_rect(x + layout.track_x, center_y - height * 0.5f, layout.track_width, height, height * 0.5f,
+			on_bar ? SLIDER_TRACK_ON_BAR : SLIDER_TRACK);
+		if (fill > 0.0f)
+			ae_draw_rect(x + layout.track_x, center_y - height * 0.5f, layout.track_width * fill, height, height * 0.5f,
+				on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_ACCENT);
+	}
+	if (flags & AE_ROW_SUBSCREEN)
+	{
+		float size = units(density, CHEVRON_U), thickness = units(density, 2.0f);
+		unsigned int color = on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_ACCENT;
+
+		ae_draw_line(x + layout.chevron_x, center_y - size, x + layout.chevron_x + size, center_y, thickness, color);
+		ae_draw_line(x + layout.chevron_x + size, center_y, x + layout.chevron_x, center_y + size, thickness, color);
+	}
 	if (layout.base[0])
 	{
 		float minor = minor_size(density), strike = units(density, STRIKE_U);
@@ -523,6 +648,24 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	{
 		float right = x + layout.value_x + layout.value_width;
 		unsigned int color = disabled && !on_bar ? AE_COLOR_WARNING : value_color;   /* (on the bar: its own text colour, readable) */
+
+		/* (a status's value and a sub-screen's summary muted, unless on the bar) */
+		if (!disabled && !on_bar && (flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS)))
+			color = AE_COLOR_MUTED;
+		if (flags & AE_ROW_SUBSCREEN)
+		{
+			ae_draw_text(AE_FONT_BODY, minor_size(density), right, text_top(AE_FONT_BODY, minor_size(density), center_y),
+				AE_ALIGN_RIGHT, color, shown);
+			shown = NULL;
+		}
+	}
+	if (shown)
+	{
+		float right = x + layout.value_x + layout.value_width;
+		unsigned int color = disabled ? AE_COLOR_WARNING : value_color;
+
+		if (!disabled && !on_bar && (flags & AE_ROW_STATUS))
+			color = AE_COLOR_MUTED;
 
 		/* (a value tick: the old value out, the new in from the pressed side) */
 		if (!disabled && row->tick && row->tick_side && row->old_value && ae_motion_running(row->tick))
@@ -557,6 +700,9 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 
 		ae_hit_add(x + value_left, y, value_right - value_left, layout.height, hit_id, AE_PART_VALUE, index);
 	}
+	/* (a slider's track: a click or drag there sets the value at that point; the hit's rect is the track) */
+	if (layout.track_width > 0.0f)
+		ae_hit_add(x + layout.track_x, y, layout.track_width, layout.height, hit_id, AE_PART_TRACK, index);
 	if (arrows)
 	{
 		ae_hit_add(x + layout.arrow_left_x, y, layout.arrow_cell, layout.height, hit_id, AE_PART_ARROW_LEFT, index);

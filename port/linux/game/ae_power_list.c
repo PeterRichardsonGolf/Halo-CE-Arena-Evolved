@@ -27,6 +27,7 @@ HUD STYLE AE's timers list, T1 (ae_power_list.h).
 
 const char *config_string(const char *name);
 unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void);
 /* hud_item_timers.c's (AE hooks): the clock's place (HUD units); the HUD's corner elements' extent; a rectangle
 TRAINING's labels keep clear of */
 void hud_item_timers_ae_place(short *inset, long *baseline);
@@ -401,9 +402,9 @@ static boolean top_left_setting(void)
 	static unsigned long read_at = (unsigned long)-1;
 	static boolean top_left = FALSE;
 
-	if (read_at != config_changes())
+	if (read_at != ae_config_player_changes())
 	{
-		read_at = config_changes();
+		read_at = ae_config_player_changes();
 		top_left = (boolean)!strcmp(config_string("display.power_list"), "top_left");
 	}
 	return top_left;
