@@ -96,6 +96,11 @@ void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 		widget.value = row->value;
 		if (index == flow->focus)
 			widget.flags |= AE_ROW_FOCUSED;
+		if (row->reason)
+		{
+			widget.flags |= AE_ROW_DISABLED;
+			widget.reason = row->reason;
+		}
 		if (row->kind == AE_FLOW_ROW_OPTION)
 		{
 			struct ae_setup_access access;

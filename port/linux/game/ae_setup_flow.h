@@ -38,8 +38,8 @@ enum
 #define AE_FLOW_INSET_U 23.0f
 
 /* a row as drawn: what it is, its option (AE_FLOW_ROW_OPTION: ae_setup_options.h's), its texts (NULL value: an action
-row; help: the line under the rows while it has the focus) */
-struct ae_flow_row { short kind, option; const char *label, *value, *help; };
+row; help: the line under the rows while it has the focus; reason: disabled, the reason shown in the value's place) */
+struct ae_flow_row { short kind, option; const char *label, *value, *help, *reason; };
 
 struct ae_flow_screen
 {
