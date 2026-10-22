@@ -42,7 +42,7 @@ void bots_ae_lan_drive(long bot_index, long player_index, struct player_action *
 {
 	struct bots_bot *bot;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS)
 		return;
 	if (!bots_globals.map_ready)
 		bots_ae_lan_tick();

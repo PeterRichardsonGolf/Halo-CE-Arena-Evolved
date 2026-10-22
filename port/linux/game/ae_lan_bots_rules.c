@@ -16,24 +16,62 @@ unsigned ae_lan_bots_free_controllers(unsigned people_mask, unsigned wanting_mas
 	return ~(people_mask | wanting_mask) & ((1u << AE_LAN_BOTS_CONTROLLERS) - 1);
 }
 
-int ae_lan_bots_target(int wanted, int eligible, int other_players, int maximum_players, unsigned free_mask)
+int ae_lan_bots_capacity(int network_bots, unsigned free_mask, int machines)
+{
+	int count = 0;
+	int controller;
+
+	for (controller = 0; controller < AE_LAN_BOTS_CONTROLLERS; controller++)
+		count += (free_mask >> controller) & 1u;
+	if (count > AE_LAN_BOTS_MAXIMUM)
+		count = AE_LAN_BOTS_MAXIMUM;
+	if (!network_bots)
+		return count;
+	if (machines > AE_NET_BOTS_MACHINES)
+		machines = AE_NET_BOTS_MACHINES;
+	if (machines > 0)
+		count += machines * AE_LAN_BOTS_CONTROLLERS;
+	return count > AE_NET_BOTS_MAXIMUM ? AE_NET_BOTS_MAXIMUM : count;
+}
+
+int ae_lan_bots_target(int wanted, int eligible, int other_players, int maximum_players, int capacity)
 {
 	int count = wanted;
-	int free_count = 0;
 	int room = maximum_players - 1 - other_players;
-	int controller;
 
 	if (!eligible || wanted <= 0)
 		return 0;
-	for (controller = 0; controller < AE_LAN_BOTS_CONTROLLERS; controller++)
-		free_count += (free_mask >> controller) & 1u;
-	if (count > AE_LAN_BOTS_MAXIMUM)
-		count = AE_LAN_BOTS_MAXIMUM;
-	if (count > free_count)
-		count = free_count;
+	if (count > capacity)
+		count = capacity;
 	if (count > room)
 		count = room;
 	return count < 0 ? 0 : count;
+}
+
+int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players, int maximum_players, int capacity)
+{
+	if (!teams || against || bots <= 0 || ((bots + other_players) & 1) == 0)
+		return 0;
+	return bots < capacity && bots + other_players < maximum_players ? 1 : 0;
+}
+
+int ae_lan_bots_pick_machine(int const *counts, int count)
+{
+	int index;
+
+	for (index = 0; index < count; index++)
+	{
+		if (counts[index] < AE_LAN_BOTS_CONTROLLERS)
+			return index;
+	}
+	return count < AE_NET_BOTS_MACHINES ? count : -1;
+}
+
+int ae_lan_bots_name_number(int bot_index, int names)
+{
+	if (names <= 0 || bot_index < names)
+		return 0;
+	return bot_index / names + 1;
 }
 
 int ae_lan_bots_pick_controller(unsigned free_mask, unsigned bots_mask)

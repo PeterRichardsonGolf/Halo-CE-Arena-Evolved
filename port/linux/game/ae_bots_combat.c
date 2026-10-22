@@ -137,7 +137,7 @@ boolean ae_bots_combat_back_turned(long unit_index, real_point3d const *point)
 
 /* ---------- a bot's state */
 
-static struct ae_bots_combat_bot combat_bots[BOTS_MAXIMUM];
+static struct ae_bots_combat_bot combat_bots[BOTS_BRAINS];
 
 void ae_bots_combat_reset(void)
 {
@@ -149,7 +149,7 @@ struct ae_bots_combat_bot *ae_bots_combat_bot_state(long bot_index, long unit_in
 {
 	struct ae_bots_combat_bot *bot;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS)
 		bot_index = 0;
 	bot = &combat_bots[bot_index];
 	if (!bot->known || bot->unit_index != unit_index)

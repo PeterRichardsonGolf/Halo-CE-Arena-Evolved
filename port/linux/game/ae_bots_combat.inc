@@ -118,7 +118,7 @@ static boolean ae_bots_fight_in_vertical_view(struct bots_bot *bot, real_point3d
 sight to the enemy's middle. An enemy below a ledge (or above one) can show the bot its head alone, as the bot shows him
 its own, and shoot it while the bot never takes it for a target: the head is tried when the middle is hidden, and the
 bot then aims at it (ae_bots_fight_aim_point) for half a second from the last time only the head was seen. */
-static long ae_bots_fight_head_only_tick[BOTS_MAXIMUM];
+static long ae_bots_fight_head_only_tick[BOTS_BRAINS];
 
 static boolean ae_bots_fight_head_in_sight(struct bots_bot *bot, long unit_index, real_point3d const *eye,
 	long target_unit_index)
@@ -131,7 +131,7 @@ static boolean ae_bots_fight_head_in_sight(struct bots_bot *bot, long unit_index
 	unit_get_head_position(target_unit_index, &head);
 	if (!bots_line_of_sight(unit_index, eye, &head, target_unit_index))
 		return FALSE;
-	if (bot_index >= 0 && bot_index < BOTS_MAXIMUM)
+	if (bot_index >= 0 && bot_index < BOTS_BRAINS)
 		ae_bots_fight_head_only_tick[bot_index] = game_time_get();
 	ae_bots_combat_count(AE_BOTS_COMBAT_HEADS_SEEN);
 	return TRUE;
@@ -143,7 +143,7 @@ static boolean ae_bots_fight_head_only(struct bots_bot *bot, long now)
 	long bot_index = (long)(bot - bots_globals.bots);
 
 	/* (a tick of an earlier game, after the clock's restart, is not now's) */
-	return bot_index >= 0 && bot_index < BOTS_MAXIMUM && ae_bots_fight_head_only_tick[bot_index] &&
+	return bot_index >= 0 && bot_index < BOTS_BRAINS && ae_bots_fight_head_only_tick[bot_index] &&
 		now >= ae_bots_fight_head_only_tick[bot_index] &&
 		now - ae_bots_fight_head_only_tick[bot_index] <= TICKS_PER_SECOND / 2;
 }
@@ -256,7 +256,7 @@ static void ae_bots_fight_share(struct bots_bot *bot, struct bots_tick *tick, lo
 	if (tick->now - state->share_tick >= 0 && tick->now - state->share_tick < TICKS_PER_SECOND)
 		return;
 	state->share_tick = tick->now;
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		struct bots_bot *other = &bots_globals.bots[index];
 		struct player_datum *player;

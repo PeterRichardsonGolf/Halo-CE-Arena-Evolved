@@ -57,7 +57,7 @@ struct ae_bots_event_pending
 	real before;
 };
 
-static struct ae_bots_event_state ae_bots_event_states[BOTS_MAXIMUM];
+static struct ae_bots_event_state ae_bots_event_states[BOTS_BRAINS];
 static struct ae_bots_event_pending ae_bots_event_pending[AE_BOTS_EVENTS_PENDING];
 static long ae_bots_event_pending_count;
 
@@ -141,12 +141,12 @@ void ae_bots_damage_note(long owner_player_index, long object_index, long defini
 	unit = unit_try_and_get(object_index);
 	if (!unit || unit->unit.player_index == NONE || unit->unit.player_index == owner_player_index)
 		return;
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		if (bots_globals.bots[index].player_index == owner_player_index)
 			break;
 	}
-	if (index >= BOTS_MAXIMUM || ae_bots_event_pending_count >= AE_BOTS_EVENTS_PENDING)
+	if (index >= BOTS_BRAINS || ae_bots_event_pending_count >= AE_BOTS_EVENTS_PENDING)
 		return;
 	victim = (struct object_datum *)unit;
 	ae_bots_event_pending[ae_bots_event_pending_count].bot_index = index;
@@ -161,7 +161,7 @@ void ae_bots_events_begin(struct bots_bot *bot, long bot_index, struct bots_tick
 	struct ae_bots_event_state *state;
 	long kills, deaths;
 
-	if (!ae_bots_events_on() || bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+	if (!ae_bots_events_on() || bot_index < 0 || bot_index >= BOTS_BRAINS)
 		return;
 	state = &ae_bots_event_states[bot_index];
 	ae_bots_events_resolve(tick->now);
@@ -211,7 +211,7 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 	char extra[160];
 
 	ae_bots_travel_tick_end();
-	if (!ae_bots_events_on() || bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+	if (!ae_bots_events_on() || bot_index < 0 || bot_index >= BOTS_BRAINS)
 		return;
 	ae_bots_falls_tick_end(bot, bot_index, tick);
 	state = &ae_bots_event_states[bot_index];

@@ -1507,9 +1507,11 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The network test's host lists its game in the server browser, as Create\n"
 		"Game > Internet's PUBLIC does (debug.network_test \"browse\" joins it)." },
-	{ "debug.network_bots", _config_boolean, "false", "HALO_NETWORK_BOTS", _environment_value, _platform_all,
-		"SPIKE: the host's bots (bots.count) play in a game it hosts for the internet\n"
-		"too, not only on a LAN; halo.log has their brain's time a minute." },
+	{ "debug.network_bots", _config_boolean, "false", "HALO_NETWORK_BOTS", _environment_value, _platform_all, /* AE hook */
+		"SPIKE: the host's bots (bots.count, up to 127) play in a game it hosts for\n"
+		"the internet too, and past the host's three free controllers they sit on\n"
+		"machines of the host's own (four each); a team game whose players are odd\n"
+		"gets one more at the start. halo.log has their brain's time a minute." },
 	{ "debug.telnet_console", _config_boolean, "false", "HALO_TELNET_CONSOLE", _environment_set_is_true, _platform_all,
 		"A console on 127.0.0.1 (telnet_console_port), with no password." },
 	{ "debug.telnet_console_port", _config_integer, "2323", "HALO_TELNET_CONSOLE_PORT", _environment_value,

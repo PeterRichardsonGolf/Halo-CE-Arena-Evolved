@@ -1669,6 +1669,8 @@ static void network_game_server_port_bots(
 		network_event("network_game_server_port_bots() failed to send updated game settings to clients");
 }
 
+boolean ae_lan_bots_server_slot_free(struct network_game_server *server, long machine_index) { return server && VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) && server->client_machines[machine_index].machine_index == NONE && !network_machine_is_valid(&server->game.machines[machine_index]); } /* AE hook */
+
 boolean network_game_server_idle(
 	struct network_game_server *server)
 {
@@ -2010,6 +2012,7 @@ boolean network_game_server_start_network_game(
 		refuse a second start) and the wait for the others never began.
 		A machine still downloading the map is left out of this start, and so
 		are its players: they spawn when it joins, not while it is downloading. */
+		ae_lan_bots_start(server, &server->game); /* AE hook */
 		network_game_server_hold_map_fetcher_players(server);
 		if (network_game_server_send_game_settings_to_all_machines(server, &server->game, sizeof(server->game)) &&
 			((message = create_network_game_message(
@@ -4858,7 +4861,7 @@ static boolean network_game_server_add_new_client(
 	{
 		for (i = 0; i < MAXIMUM_NETWORK_MACHINE_COUNT; i++)
 		{
-			if (server->client_machines[i].machine_index == NONE)
+			if (server->client_machines[i].machine_index == NONE && !ae_lan_bots_machine_held(i)) /* AE hook */
 			{
 				struct transport_address client_address = { 0 };
 

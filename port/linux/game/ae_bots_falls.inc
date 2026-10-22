@@ -67,7 +67,7 @@ struct ae_falls_bot
 height), S a steep floor slid down (the same; ! when it slides off), L a big drop's landing with none beyond */
 static char ae_falls_probe_note[24];
 
-static struct ae_falls_bot ae_falls_bots[BOTS_MAXIMUM];
+static struct ae_falls_bot ae_falls_bots[BOTS_BRAINS];
 
 #define AE_FALLS_GRENADES 16
 
@@ -120,7 +120,7 @@ static void ae_bots_falls_damage(long owner_player_index, long object_index, lon
 	{
 		return;
 	}
-	for (index = 0; index < BOTS_MAXIMUM; index++)
+	for (index = 0; index < BOTS_BRAINS; index++)
 	{
 		struct ae_falls_bot *falls = &ae_falls_bots[index];
 
@@ -204,7 +204,7 @@ static void ae_bots_falls_tick_end(struct bots_bot *bot, long bot_index, struct 
 	struct ae_falls_bot *falls;
 	struct biped_datum *biped;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM || !tick->object)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS || !tick->object)
 		return;
 	falls = &ae_falls_bots[bot_index];
 	falls->last_point = tick->position;
@@ -229,7 +229,7 @@ static void ae_bots_falls_death_words(struct bots_bot *bot, long bot_index, long
 	char word[64];
 	int cause;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS)
 	{
 		out[0] = 0;
 		return;
@@ -698,7 +698,7 @@ static void ae_bots_falls_guard(struct bots_bot *bot, struct bots_tick *tick)
 	boolean carried = FALSE;
 	real carry_way = 0.0f;
 
-	if (bot_index < 0 || bot_index >= BOTS_MAXIMUM || !tick->object || tick->object->object.parent_object_index != NONE)
+	if (bot_index < 0 || bot_index >= BOTS_BRAINS || !tick->object || tick->object->object.parent_object_index != NONE)
 		return;
 	falls = &ae_falls_bots[bot_index];
 	ae_falls_report(tick->now);
