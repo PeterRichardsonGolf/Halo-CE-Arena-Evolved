@@ -40,13 +40,29 @@ def read_whole_map(path):
             rest = inflater.decompress(disk[MAP_HEADER_SIZE:], length - MAP_HEADER_SIZE)
         except zlib.error:
             raise Refused("the map could not be inflated: %s" % path)
-        if len(rest) != length - MAP_HEADER_SIZE or not inflater.eof:
+        # (a stream that ends whole but short of the header's length is taken when all it lacks lies past the
+        # tags: the game loads such a map (the H2 Collection's h2d_gemini inflates 888 bytes short, its tags
+        # ending where the stream does); a stream cut off before its end, or short inside the tags, is not)
+        if len(rest) > length - MAP_HEADER_SIZE or not inflater.eof:
             raise Refused("the map could not be inflated: %s" % path)
         whole = disk[:MAP_HEADER_SIZE] + rest
+        if len(whole) < length:
+            offset, size = struct.unpack_from("<II", whole, 0x10)
+            if offset > len(whole) or size > len(whole) - offset:
+                raise Refused("the map inflates %d bytes short, inside its tags: %s" % (length - len(whole), path))
     offset, size = struct.unpack_from("<II", whole, 0x10)
     if size < TAG_HEADER_SIZE or offset > length or size > length - offset:
         raise Refused("the map's tags are not in its file: %s" % path)
     return whole, whole[offset:offset + size]
+
+
+def whole_length_map(path):
+    """the map inflated to every byte its header counts, what the stream lacks (past the tags: read_whole_map
+    refuses any other shortfall) written as zeros, so that a reader that wants the whole length (Invader) takes
+    it. Returns (the bytes, how many were added)"""
+    whole, _ = read_whole_map(path)
+    length = struct.unpack_from("<I", whole, 8)[0]
+    return whole + bytes(length - len(whole)), length - len(whole)
 
 
 def read_map(path):

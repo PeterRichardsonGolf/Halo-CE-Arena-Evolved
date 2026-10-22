@@ -27,6 +27,7 @@ import re
 import struct
 import sys
 import zipfile
+import zlib
 from pathlib import Path
 
 import pytest
@@ -1163,6 +1164,49 @@ def test_tags_of_a_map_found_by_group_and_name_case_aside():
     assert sorted(tags.names()) == [("bitm", "b\\skin"), ("weap", "w\\rifle")]
     with pytest.raises(donor_map.Refused):
         donor_map.Tags(image[:20])
+
+
+def disc_map(tmp_path, tags_size, inflated_short, stream_cut=0):
+    """an Xbox map file as the disc has it (header, then the rest deflated) whose header counts 0x1000 bytes past
+    the header, its tags at 0x900; the stream inflates inflated_short bytes less than that, and stream_cut bytes
+    are cut off the end of the deflated stream"""
+    length = donor_map.MAP_HEADER_SIZE + 0x1000
+    header = bytearray(donor_map.MAP_HEADER_SIZE)
+    struct.pack_into("<4sIIIII", header, 0, b"daeh", 5, length, 0, 0x900, tags_size)
+    header[-4:] = b"toof"
+    image, _ = tiny_map([(b"weap", "w\\rifle", bytes(8))])
+    rest = bytearray(0x1000 - inflated_short)
+    rest[0x100:0x100 + len(image)] = image[:len(rest) - 0x100]
+    stream = zlib.compress(bytes(rest))
+    path = tmp_path / "disc.map"
+    path.write_bytes(bytes(header) + stream[:len(stream) - stream_cut])
+    return path, image
+
+
+def test_a_map_whose_stream_ends_short_past_its_tags_is_read(tmp_path):
+    """h2d_gemini (H2 Collection v2) inflates 888 bytes short of its header's length, its tags ending where the
+    stream does, and the game loads it: what is missing lies past the tags, so the reader takes it"""
+    path, image = disc_map(tmp_path, 0x200, 0x1000 - 0x300)
+    whole, tags = donor_map.read_whole_map(path)
+    assert len(whole) == donor_map.MAP_HEADER_SIZE + 0x300 and tags[:len(image)] == image
+    assert donor_map.Tags(tags).find("weap", "w\\rifle") is not None
+    padded, added = donor_map.whole_length_map(path)
+    assert added == 0x1000 - 0x300 and len(padded) == donor_map.MAP_HEADER_SIZE + 0x1000
+    assert padded[:len(whole)] == whole and not any(padded[len(whole):])
+    # the whole length: nothing added
+    path, _ = disc_map(tmp_path, 0x200, 0)
+    assert donor_map.whole_length_map(path)[1] == 0
+
+
+def test_a_map_short_inside_its_tags_or_cut_off_is_refused(tmp_path):
+    # short by one byte inside the tags
+    path, _ = disc_map(tmp_path, 0x200, 0x1000 - 0x2FF)
+    with pytest.raises(donor_map.Refused, match="inside its tags"):
+        donor_map.read_whole_map(path)
+    # a stream cut off before its end (no end of stream): refused however much it holds
+    path, _ = disc_map(tmp_path, 0x200, 0, stream_cut=4)
+    with pytest.raises(donor_map.Refused, match="could not be inflated"):
+        donor_map.read_whole_map(path)
 
 
 def one_piece_tag(group, size):
