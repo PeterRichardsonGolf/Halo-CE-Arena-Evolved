@@ -557,6 +557,11 @@ source/networking/network_server_manager.c	if (server->client_machines[i].machin
 source/networking/network_server_manager.c	ae_lan_bots_start(server, &server->game); /* AE hook */
 source/networking/network_server_manager.c	boolean ae_lan_bots_server_slot_free(struct network_game_server *server, long machine_index) { return server && VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT) && server->client_machines[machine_index].machine_index == NONE && !network_machine_is_valid(&server->game.machines[machine_index]); } /* AE hook */
 source/networking/network_server_manager.c	long ae_lan_bots_server_playerless_machines(struct network_game_server *server) { long count = 0, index; for (index = 0; server && index < MAXIMUM_NETWORK_MACHINE_COUNT; index++) if (server->client_machines[index].connection && server->client_machines[index].machine_index != NONE && !network_game_server_client_machine_is_local(server, &server->client_machines[index]) && !network_game_server_machine_has_players(server, server->client_machines[index].machine_index)) count++; return count; } /* AE hook */
+# the game in progress: a full game's bot gives way to a person joining (the larger team's), and comes back once the
+# person leaves (ae_lan_bots_ingame / _room_ingame / _make_room)
+source/networking/network_server_manager.c	(network_game_has_free_player_slot(&server->game) || ae_lan_bots_room_ingame(&server->game)); /* AE hook */
+source/networking/network_server_manager.c	if (client_machine && !map_share_machine_needs_map(client_machine->machine_index) && network_game_server_machine_may_add_player_ingame(server, client_machine_index)) ae_lan_bots_make_room(server, &server->game, &server->queued_player); /* AE hook */
+source/networking/network_server_manager.c	if (server->state == _network_game_server_state_ingame) ae_lan_bots_ingame(server, &server->game); /* AE hook */
 port/linux/src/port_config.c	{ "debug.network_bots", _config_boolean, "true", "HALO_NETWORK_BOTS", _environment_value, _platform_all, /* AE hook */
 port/linux/game/bots.h	#define BOTS_BRAINS 127 /* AE hook */
 port/linux/game/bots.c	struct bots_bot bots[BOTS_BRAINS]; /* AE hook */

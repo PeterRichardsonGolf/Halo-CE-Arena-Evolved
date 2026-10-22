@@ -56,6 +56,36 @@ int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players,
 	return bots < capacity && bots + other_players < maximum_players ? 1 : 0;
 }
 
+int ae_lan_bots_ingame_target(int wanted, int eligible, int other_players, int maximum_players, int capacity, int teams,
+	int against)
+{
+	int count = wanted;
+
+	if (!eligible || wanted <= 0)
+		return 0;
+	if (count > capacity)
+		count = capacity;
+	if (count > maximum_players - other_players)
+		count = maximum_players - other_players;
+	if (count <= 0)
+		return 0;
+	if (teams && !against && ((count + other_players) & 1) && count < capacity && count + other_players < maximum_players)
+		count++;
+	return count;
+}
+
+int ae_lan_bots_leaving_team(int teams, int red_bots, int blue_bots, int red_players, int blue_players)
+{
+	int first;
+
+	if (!teams || (red_bots <= 0 && blue_bots <= 0))
+		return -1;
+	first = blue_players > red_players ? 1 : 0;
+	if ((first ? blue_bots : red_bots) > 0)
+		return first;
+	return first ? 0 : 1;
+}
+
 int ae_lan_bots_pick_machine(int const *counts, int count)
 {
 	int index;

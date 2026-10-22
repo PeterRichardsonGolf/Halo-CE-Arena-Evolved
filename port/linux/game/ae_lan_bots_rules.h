@@ -65,6 +65,17 @@ its player (playerless_machines: the free slot is that player's), else 0 */
 int ae_lan_bots_start_extra(int teams, int against, int bots, int other_players, int maximum_players, int capacity,
 	int playerless_machines);
 
+/* (debug.network_bots) the bots the game in progress keeps: bots.count's `wanted`, as many as the seats take and
+the game has player slots (none kept free: a person joining a full game takes a bot's place,
+ae_lan_bots_leaving_team), one more in a team game whose players are odd (as at the start) */
+int ae_lan_bots_ingame_target(int wanted, int eligible, int other_players, int maximum_players, int capacity, int teams,
+	int against);
+
+/* (debug.network_bots) the team whose bot leaves (a person takes its place, or fewer are wanted): in a team game the
+team with more players that has a bot (red when even), else the other's (0 red, 1 blue); -1 in a game without teams
+(the last bot) or when no team has a bot */
+int ae_lan_bots_leaving_team(int teams, int red_bots, int blue_bots, int red_players, int blue_players);
+
 /* the virtual machine a new bot sits on: the first of `count` (their bots in counts) with a free seat; `count` for
 a new one when fewer than AE_NET_BOTS_MACHINES; -1 for none */
 int ae_lan_bots_pick_machine(int const *counts, int count);

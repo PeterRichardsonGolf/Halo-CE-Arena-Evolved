@@ -34,6 +34,21 @@ settings go out with the start) the lobby's last look: in a team game whose play
 free slot, so the teams are even */
 void ae_lan_bots_start(struct network_game_server *server, struct network_game *game);
 
+/* (debug.network_bots; network_server_manager.c's network_game_server_idle, the game in progress) a bot comes back
+once a person leaves (up to bots.count, one more for even teams), or leaves when fewer are wanted: one change once
+the game's players have been the same for two seconds and no machine is still to add its player; the machines are
+told as for a player added or quitting in game */
+void ae_lan_bots_ingame(struct network_game_server *server, struct network_game *game);
+
+/* (debug.network_bots; network_game_server_accepts_late_joins) whether the game in progress has a bot that gives
+way: a full game with bots takes a machine joining it */
+boolean ae_lan_bots_room_ingame(struct network_game *game);
+
+/* (debug.network_bots; network_game_server_update_ticks, before a player joins the game in progress) a full game's
+bot leaves for the person: the larger team's last bot, so the person joins the team it leaves */
+void ae_lan_bots_make_room(struct network_game_server *server, struct network_game *game,
+	struct network_player const *joining);
+
 /* (debug.network_bots) whether a machine slot is one of the host's virtual machines (its bots past the
 host's own controllers, with no connection): network_game_server_add_new_client gives a new connection another */
 boolean ae_lan_bots_machine_held(long machine_index);

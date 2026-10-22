@@ -1691,6 +1691,7 @@ boolean network_game_server_idle(
 	/* port: the bots of a local game (port/linux/game/bots.c) */
 	network_game_server_port_bots(server);
 	if (ae_lan_bots_lobby(server, &server->game, server->state == _network_game_server_state_pregame && !server->sent_start_game_message) && !network_game_server_send_game_data_pregame(server)) network_event("ae_lan_bots_lobby() failed to send updated game settings to clients"); /* AE hook */
+	if (server->state == _network_game_server_state_ingame) ae_lan_bots_ingame(server, &server->game); /* AE hook */
 	ae_bots_lobby_check(network_game_is_splitscreen_local() && server->state == _network_game_server_state_pregame && !server->sent_start_game_message, server->game.variant.game_engine_index, server->game.variant.human_readable_game_description); /* AE hook */
 	/* (what Discord shows of a game hosted for internet play, and the
 	server browser's listing) */
@@ -2841,6 +2842,7 @@ void network_game_server_update_ticks(
 				the game has started), and joins with them once the map is
 				there (network_game_server_release_map_fetchers). Added now, it
 				was started at once, without the map: the damaged disc error */
+				if (client_machine && !map_share_machine_needs_map(client_machine->machine_index) && network_game_server_machine_may_add_player_ingame(server, client_machine_index)) ae_lan_bots_make_room(server, &server->game, &server->queued_player); /* AE hook */
 				if (client_machine && map_share_machine_needs_map(client_machine->machine_index))
 				{
 					network_game_server_hold_requested_player(client_machine_index, &server->queued_player);
@@ -2926,7 +2928,7 @@ boolean network_game_server_accepts_late_joins(
 	refused, network_game_server_refuse_late_joiner) */
 	return server->state == _network_game_server_state_ingame &&
 		network_game_server_game_is_open(server) &&
-		network_game_has_free_player_slot(&server->game);
+		(network_game_has_free_player_slot(&server->game) || ae_lan_bots_room_ingame(&server->game)); /* AE hook */
 }
 
 boolean network_game_server_client_machine_is_loaded(

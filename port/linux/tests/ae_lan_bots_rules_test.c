@@ -167,6 +167,38 @@ static void test_name(void)
 	CHECK(!strcmp(name, "BOT "));
 }
 
+/* the game in progress: no slot kept free, a person takes a bot's place, a bot comes back when the person leaves */
+static void test_ingame_target(void)
+{
+	/* BTB 16, bots.count 15: the host alone and 15 bots; a client joins: 14; two: 13; the client leaves: 14 again */
+	CHECK(ae_lan_bots_ingame_target(15, 1, 1, 16, 127, 1, 0) == 15);
+	CHECK(ae_lan_bots_ingame_target(15, 1, 2, 16, 127, 1, 0) == 14);
+	CHECK(ae_lan_bots_ingame_target(15, 1, 3, 16, 127, 1, 0) == 13);
+	/* odd players in a team game: one more (2 people and 7 bots are 9: 8 bots) */
+	CHECK(ae_lan_bots_ingame_target(7, 1, 2, 128, 127, 1, 0) == 8);
+	CHECK(ae_lan_bots_ingame_target(7, 1, 2, 128, 127, 0, 0) == 7);
+	CHECK(ae_lan_bots_ingame_target(7, 1, 2, 128, 127, 1, 1) == 7);
+	/* the game full of people, none asked, not eligible, no seat: none */
+	CHECK(ae_lan_bots_ingame_target(15, 1, 16, 16, 127, 1, 0) == 0);
+	CHECK(ae_lan_bots_ingame_target(0, 1, 2, 16, 127, 1, 0) == 0);
+	CHECK(ae_lan_bots_ingame_target(15, 0, 2, 16, 127, 1, 0) == 0);
+	CHECK(ae_lan_bots_ingame_target(15, 1, 2, 16, 3, 1, 0) == 3);
+	/* a full game stays full with odd max: 15 slots, 2 people, 13 bots */
+	CHECK(ae_lan_bots_ingame_target(15, 1, 2, 15, 127, 1, 0) == 13);
+}
+
+/* the bot that gives way: the larger team's, so the person joins the team it leaves (the host puts a joiner on
+the smaller team, red when even) and the teams stay even */
+static void test_leaving_team(void)
+{
+	CHECK(ae_lan_bots_leaving_team(1, 7, 7, 8, 8) == 0);
+	CHECK(ae_lan_bots_leaving_team(1, 7, 7, 7, 8) == 1);
+	CHECK(ae_lan_bots_leaving_team(1, 0, 7, 8, 8) == 1);
+	CHECK(ae_lan_bots_leaving_team(1, 3, 0, 5, 8) == 0);
+	CHECK(ae_lan_bots_leaving_team(1, 0, 0, 8, 8) == -1);
+	CHECK(ae_lan_bots_leaving_team(0, 3, 3, 8, 8) == -1);
+}
+
 int main(void)
 {
 	test_eligible();
@@ -179,6 +211,8 @@ int main(void)
 	test_pick_machine();
 	test_name_number();
 	test_name();
+	test_ingame_target();
+	test_leaving_team();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

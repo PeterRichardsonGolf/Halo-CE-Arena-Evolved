@@ -46,6 +46,8 @@ tick it has one for (an update built twice in a tick) is the same input.
 #include "memory/data.h"
 #include "networking/network_game_globals.h"
 #include "networking/network_game_manager.h"
+#include "networking/network_messages.h"
+#include "networking/network_server_message_handler.h"
 
 #include "bots.h"
 #include "ae_lan_bots_rules.h"
@@ -113,7 +115,27 @@ static struct
 	/* the game tick and the time of the last line (NONE: none yet) */
 	long report_tick;
 	double report_time;
+	/* the game in progress: its players as last counted (people and bots) and the tick they last changed, so that a
+	bot comes back only once the game has settled (NONE: not yet in a game) */
+	long ingame_signature;
+	long ingame_settled_tick;
 } lan;
+
+enum
+{
+	/* network_server_manager.c's NETWORK_GAME_PLAYER_QUIT_DELAY: the ticks from a quit message to the quit */
+	LAN_QUIT_DELAY = 33,
+	/* the game in progress: a bot comes back (or more leave) this long after its players last changed */
+	LAN_INGAME_SETTLE_TICKS = 2 * TICKS_PER_SECOND,
+};
+
+/* _message_server_remove_player_ingame's record (network_server_manager.c's message_server_remove_player_ingame):
+the player and its quit time */
+struct lan_remove_message
+{
+	struct network_player player;
+	long quit_time;
+};
 
 static void lan_initialize(void)
 {
@@ -134,6 +156,8 @@ static void lan_initialize(void)
 	lan.told_engine = NONE;
 	lan.last_tick = NONE;
 	lan.report_tick = NONE;
+	lan.ingame_signature = NONE;
+	lan.ingame_settled_tick = NONE;
 	lan.initialized = TRUE;
 }
 
@@ -420,7 +444,7 @@ static boolean lan_machines_tidy(struct network_game *game, boolean forget_only)
 /* a seat for a new bot: the host's highest free controller no bot holds, else (debug.network_bots) a virtual
 machine's free controller, a new machine's when those are full; FALSE for none */
 static boolean lan_seat(struct network_game_server *server, struct network_game *game, short local_machine,
-	unsigned free_mask, boolean network_bots, short *machine_index, char *controller_index)
+	unsigned free_mask, boolean network_bots, boolean new_machine, short *machine_index, char *controller_index)
 {
 	unsigned host_bots = 0;
 	int counts[LAN_MACHINES];
@@ -450,7 +474,7 @@ static boolean lan_seat(struct network_game_server *server, struct network_game 
 		numbers[count++] = number;
 	}
 	pick = ae_lan_bots_pick_machine(counts, count);
-	if (pick < 0)
+	if (pick < 0 || (pick >= count && !new_machine))
 		return FALSE;
 	number = pick < count ? numbers[pick] : lan_machine_new(server, game);
 	if (number == NONE)
@@ -608,7 +632,7 @@ boolean ae_lan_bots_lobby(struct network_game_server *server, struct network_gam
 
 		if (lan.bots[index].active)
 			continue;
-		if (!lan_seat(server, game, machine, free_mask, network_bots, &seat_machine, &controller))
+		if (!lan_seat(server, game, machine, free_mask, network_bots, TRUE, &seat_machine, &controller))
 			break;
 		lan_bot_player(index, &joining);
 		joining.machine_index = (char)seat_machine;
@@ -660,6 +684,240 @@ void ae_lan_bots_start(struct network_game_server *server, struct network_game *
 	lan.starting = TRUE;
 	ae_lan_bots_lobby(server, game, TRUE);
 	lan.starting = FALSE;
+}
+
+/* ---------- the game in progress (debug.network_bots): a person takes a bot's place, a bot comes back */
+
+/* the game's players as the bots see them */
+struct lan_scan
+{
+	unsigned people;
+	long others;
+	long people_team;
+	long team_players[2];
+	long team_bots[2];
+	long bots;
+	boolean has_person;
+};
+
+static void lan_scan_players(struct network_game *game, short machine, struct lan_scan *scan)
+{
+	long slot;
+
+	csmemset(scan, 0, sizeof(*scan));
+	scan->people_team = NONE;
+	for (slot = 0; slot < (long)NUMBEROF(game->players); slot++)
+	{
+		struct network_player *player = &game->players[slot];
+		boolean bot;
+
+		if (!network_player_is_valid(player))
+			continue;
+		bot = lan_bot_of(player->machine_index, player->controller_index) != NONE;
+		if (VALID_INDEX(player->team_index, 2))
+		{
+			scan->team_players[(long)player->team_index]++;
+			if (bot)
+				scan->team_bots[(long)player->team_index]++;
+			else if (scan->people_team == NONE)
+				scan->people_team = player->team_index;
+		}
+		if (bot)
+		{
+			scan->bots++;
+			continue;
+		}
+		scan->others++;
+		if (player->machine_index == machine && VALID_INDEX(player->controller_index, AE_LAN_BOTS_CONTROLLERS))
+		{
+			scan->people |= 1u << player->controller_index;
+			scan->has_person = TRUE;
+		}
+	}
+}
+
+/* a bot leaves the game in progress: out of the game's players, and every machine told it quits (as a machine's
+player that leaves: network_game_server_send_player_quit_messages_ingame), at once for the host's settings, at its
+quit time on each machine; its slot is free for the person who takes its place */
+static boolean lan_remove_ingame(struct network_game_server *server, struct network_game *game, short bot_index,
+	char const *why)
+{
+	struct lan_remove_message removal;
+	void *message;
+
+	if (!lan_bot_still_there(game, bot_index))
+	{
+		lan_unseat(bot_index);
+		return FALSE;
+	}
+	removal.player = game->players[(long)lan.bots[bot_index].slot];
+	if (!network_game_remove_player(game, &removal.player))
+	{
+		platform_log("net bots: bot %d could not leave the game in progress", bot_index + 1);
+		return FALSE;
+	}
+	lan_unseat(bot_index);
+	removal.quit_time = game_time_get() + LAN_QUIT_DELAY;
+	message = create_network_game_message(_message_server_remove_player_ingame, &removal, sizeof(removal));
+	if (!message || !network_game_server_send_message_to_all_machines(server, message))
+		platform_log("net bots: the machines missed bot %d leaving the game in progress", bot_index + 1);
+	platform_log("net bots: bot %d left the game in progress (%s)", bot_index + 1, why);
+	return TRUE;
+}
+
+/* the bot that leaves the game in progress: the last of the team ae_lan_bots_leaving_team picks (any team's in a
+game without teams); NONE for none */
+static short lan_leaving_bot(struct network_game *game, struct lan_scan const *scan)
+{
+	int team = ae_lan_bots_leaving_team(game->variant.universal_variant.teams != 0, (int)scan->team_bots[0],
+		(int)scan->team_bots[1], (int)scan->team_players[0], (int)scan->team_players[1]);
+	short index;
+
+	for (index = LAN_BOTS - 1; index >= 0; index--)
+	{
+		struct network_player *player;
+
+		if (!lan.bots[index].active || !VALID_INDEX(lan.bots[index].slot, NUMBEROF(game->players)))
+			continue;
+		player = &game->players[(long)lan.bots[index].slot];
+		if (team < 0 || player->team_index == team)
+			return index;
+	}
+	return NONE;
+}
+
+boolean ae_lan_bots_room_ingame(struct network_game *game)
+{
+	struct lan_scan scan;
+	short machine = network_game_client_get_local_machine_index();
+
+	if (!game || !lan_any() || !lan_network_bots() || !lan_hosting() || machine == NONE)
+		return FALSE;
+	lan_scan_players(game, machine, &scan);
+	return scan.bots > 0;
+}
+
+void ae_lan_bots_make_room(struct network_game_server *server, struct network_game *game,
+	struct network_player const *joining)
+{
+	struct lan_scan scan;
+	short machine = network_game_client_get_local_machine_index();
+	short bot_index;
+
+	if (!server || !game || !joining || !lan_any() || !lan_network_bots() || !lan_hosting() || machine == NONE)
+		return;
+	/* (a pad of the host's added in game on a bot's controller: that bot gives way) */
+	bot_index = lan_bot_of(joining->machine_index, joining->controller_index);
+	if (bot_index != NONE)
+	{
+		if (lan_remove_ingame(server, game, bot_index, "a person of the host's machine takes its controller"))
+			lan.ingame_settled_tick = game_time_get();
+		return;
+	}
+	if (network_game_has_free_player_slot(game))
+		return;
+	lan_scan_players(game, machine, &scan);
+	bot_index = lan_leaving_bot(game, &scan);
+	if (bot_index != NONE && lan_remove_ingame(server, game, bot_index, "a person joins the full game"))
+		lan.ingame_settled_tick = game_time_get();
+}
+
+void ae_lan_bots_ingame(struct network_game_server *server, struct network_game *game)
+{
+	struct lan_scan scan;
+	short machine = network_game_client_get_local_machine_index();
+	long now, signature, wanted;
+	int capacity, target;
+	unsigned free_mask;
+	boolean played;
+
+	if (!server || !game || !lan.initialized || !lan_network_bots() || !lan_hosting() || machine == NONE ||
+		!VALID_INDEX(machine, LAN_MACHINE_SLOTS) || !game_engine_running() ||
+		game->variant.game_engine_index == game_engine_none)
+	{
+		lan.ingame_signature = NONE;
+		return;
+	}
+	now = game_time_get();
+	lan_scan_players(game, machine, &scan);
+	/* (changes wait for the game to settle: its players unchanged for a while, no machine still to add its
+	player) */
+	signature = scan.others * 1000 + scan.bots;
+	if (signature != lan.ingame_signature || lan.ingame_settled_tick == NONE || now < lan.ingame_settled_tick)
+	{
+		lan.ingame_signature = signature;
+		lan.ingame_settled_tick = now;
+		return;
+	}
+	if (now - lan.ingame_settled_tick < LAN_INGAME_SETTLE_TICKS || ae_lan_bots_server_playerless_machines(server) > 0)
+		return;
+	played = ae_bots_engine_played(game->variant.game_engine_index);
+	free_mask = ae_lan_bots_free_controllers(scan.people, 0);
+	/* (the seats: the bots there are, the host's free controllers, the virtual machines' free seats; the game in
+	progress takes no new virtual machine: its machines went out with the start) */
+	capacity = (int)scan.bots;
+	{
+		short number, controller;
+
+		for (controller = 0; controller < AE_LAN_BOTS_CONTROLLERS; controller++)
+			capacity += ((free_mask >> controller) & 1u) && lan.seats[machine][controller] == NONE ? 1 : 0;
+		for (number = 0; number < LAN_MACHINES; number++)
+		{
+			if (lan.machines[number] == NONE)
+				continue;
+			for (controller = 0; controller < AE_LAN_BOTS_CONTROLLERS; controller++)
+				capacity += lan.seats[lan.machines[number]][controller] == NONE ? 1 : 0;
+		}
+	}
+	wanted = lan_wanted();
+	target = ae_lan_bots_ingame_target((int)wanted, played && scan.has_person, (int)scan.others, game->maximum_players,
+		capacity, game->variant.universal_variant.teams != 0, bots_teams() == _bots_teams_against);
+	if (scan.bots > target)
+	{
+		short bot_index = lan_leaving_bot(game, &scan);
+
+		if (bot_index != NONE)
+			lan_remove_ingame(server, game, bot_index, "fewer wanted");
+		lan.ingame_settled_tick = now;
+	}
+	else if (scan.bots < target && network_game_has_free_player_slot(game))
+	{
+		struct network_player joining;
+		short index, seat_machine;
+		char controller;
+		int team;
+
+		for (index = 0; index < LAN_BOTS && lan.bots[index].active; index++)
+			;
+		if (index >= LAN_BOTS ||
+			!lan_seat(server, game, machine, free_mask, TRUE, FALSE, &seat_machine, &controller))
+		{
+			return;
+		}
+		team = ae_lan_bots_team(bots_teams() == _bots_teams_against, (int)scan.people_team,
+			(int)scan.team_players[0], (int)scan.team_players[1]);
+		lan_bot_player(index, &joining);
+		joining.machine_index = (char)seat_machine;
+		joining.controller_index = controller;
+		joining.team_index = (char)team;
+		joining.primary_color_index = NONE;
+		get_unique_random_color(server, &joining);
+		joining.player_list_index = NONE;
+		if (!network_game_add_player(game, &joining))
+			return;
+		/* (seated before the machines are told: the host's own spawns it as no local player) */
+		lan.bots[index].active = TRUE;
+		lan.bots[index].machine = seat_machine;
+		lan.bots[index].controller = controller;
+		lan.bots[index].slot = joining.player_list_index;
+		lan.bots[index].driven_tick = NONE;
+		lan.seats[seat_machine][(long)controller] = index;
+		if (!network_game_server_send_player_joined_info_ingame(server, &joining))
+			platform_log("net bots: the machines missed bot %d joining the game in progress", index + 1);
+		platform_log("net bots: bot %d joined the game in progress (machine #%d, controller %d, slot %d, team %d)",
+			index + 1, (int)seat_machine, controller + 1, (int)joining.player_list_index, team);
+		lan.ingame_settled_tick = now;
+	}
 }
 
 boolean ae_lan_bots_machine_held(long machine_index)
