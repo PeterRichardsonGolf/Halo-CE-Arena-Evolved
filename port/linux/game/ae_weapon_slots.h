@@ -4,22 +4,22 @@ AE_WEAPON_SLOTS.H
 Several weapon packs in one game: the pure rules (no engine includes; port/linux/tests/ae_weapon_slots_test.c).
 
 A gametype's universal_variant.weapon_pack byte is a MASK of pack SLOTS: bit n-1 names slot n (1 the battle rifle,
-2 the SMG, 3 the silenced SMG, 4 the carbine). 1 is the BR alone, exactly as before the mask; 128 and over read as
-none (as before). Each named slot's pack is added to the map, in slot order.
+2 the SMG, 3 the silenced SMG, 4 the carbine, 5 the silenced assault rifle). 1 is the BR alone, exactly as before
+the mask; 128 and over read as none (as before). Each named slot's pack is added to the map, in slot order.
 
 pack_loadout's two bits a loadout slot (game_engine.h): 1 the LOWEST named slot's weapon 0 (for the BR alone: the BR,
 as before), 2 the SECOND lowest named slot's; anything else the stock value. Older builds read 2 as stock.
 
 The join mark's capability (ae_silent_rules.h): 2 the machine has the BR's pack, 3 and the SMG's and the silenced
-SMG's, 4 and the carbine's. A machine tells the highest level whose slots are all loaded; a host refuses a machine
-below the level of the highest slot the game names.
+SMG's, 4 and the carbine's, 5 and the silenced assault rifle's. A machine tells the highest level whose slots are all
+loaded; a host refuses a machine below the level of the highest slot the game names.
 
 MAP SPAWNS (pack_loadout bit 4, a test switch only: owner 2026-10-21): a map item that would spawn as a stock pistol
 spawns the BR, one that would spawn as an assault rifle the SMG, where that pack is named and on the map.
 
-Layout aliases (ae_layout_rules.h): battle_rifle (br), smg, smg_silenced (silenced_smg), carbine: a pack weapon on a
-spot, made from the map's own fallback item (BR and carbine: the pistol; the SMGs: the assault rifle), which is what
-spawns where the pack is not on the map.
+Layout aliases (ae_layout_rules.h): battle_rifle (br), smg, smg_silenced (silenced_smg), carbine, ar_silenced
+(silenced_ar): a pack weapon on a spot, made from the map's own fallback item (BR and carbine: the pistol; the SMGs
+and the silenced assault rifle: the assault rifle), which is what spawns where the pack is not on the map.
 */
 
 #ifndef __AE_WEAPON_SLOTS_H
@@ -34,7 +34,8 @@ enum ae_weapon_slot
 	AE_WEAPON_SLOT_SMG,
 	AE_WEAPON_SLOT_SMG_SILENCED,
 	AE_WEAPON_SLOT_CARBINE,
-	AE_WEAPON_SLOT_COUNT = AE_WEAPON_SLOT_CARBINE
+	AE_WEAPON_SLOT_AR_SILENCED,
+	AE_WEAPON_SLOT_COUNT = AE_WEAPON_SLOT_AR_SILENCED
 };
 
 /* a slot's bit in the mask */
@@ -54,6 +55,7 @@ enum ae_weapon_stock
 #define AE_WEAPON_SLOTS_CAPABILITY_BR 2
 #define AE_WEAPON_SLOTS_CAPABILITY_SMG 3
 #define AE_WEAPON_SLOTS_CAPABILITY_CARBINE 4
+#define AE_WEAPON_SLOTS_CAPABILITY_AR_SILENCED 5
 
 /* the mask a gametype byte names (0 for none; 128 and over none; bits past the known slots dropped) */
 unsigned int ae_weapon_slots_mask(unsigned char weapon_pack);

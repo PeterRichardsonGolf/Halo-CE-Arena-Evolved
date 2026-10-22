@@ -57,6 +57,7 @@ enum ae_ds5_weapon_kind
 	AE_DS5_WEAPON_SMG_SILENCED, /* AE's silenced SMG pack: the SMG's hold, a softer, lower buzz */
 	AE_DS5_WEAPON_CARBINE,   /* AE's carbine pack (5 rounds/s, semi-automatic): a quick crisp click, lighter than the
 	                            pistol's */
+	AE_DS5_WEAPON_AR_SILENCED, /* AE's silenced assault rifle pack: the assault rifle's hold, a softer pulse a round */
 	AE_DS5_WEAPON_KINDS
 };
 
@@ -68,7 +69,8 @@ enum ae_ds5_pack
 	AE_DS5_PACK_BATTLE_RIFLE,
 	AE_DS5_PACK_SMG,
 	AE_DS5_PACK_SMG_SILENCED,
-	AE_DS5_PACK_CARBINE
+	AE_DS5_PACK_CARBINE,
+	AE_DS5_PACK_AR_SILENCED
 };
 
 /* the kind from the weapon's tag numbers: whether it is AE's battle rifle, the weapon pack it comes from (an

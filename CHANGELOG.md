@@ -6,6 +6,12 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- New weapon pack: the SILENCED AR (`ae_ar_silenced`, slot 5), the silenced assault rifle of the Halo 2 Mappack
+  Collection v2's Gemini (by Dominater01, S3anyboy and GoodFellaPro with Team NHE): the stock assault rifle's numbers,
+  silent to the AI, a 2x zoom, and its brass now leaves the ejection port as the stock rifle's does (it came out of
+  the silencer's tip). Layouts place it as `ar_silenced`; machines tell the new pack level 5 when joining.
+  `make_pack.py` builds packs from a map's tags too (`--source-map`), and reads a map whose stream ends short past its
+  tags.
 - Weapon packs: the battle rifle, SMG, silenced SMG and carbine melee as every stock weapon does (the stock
   assault rifle's blow, 40 to 60 and 1.4 against a Spartan), two blows (now and then three) from full, like the
   assault rifle; CMT's melee they had took 30 a blow, about five to kill. The packs are rebuilt.

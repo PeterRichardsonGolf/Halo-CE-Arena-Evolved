@@ -259,6 +259,9 @@ int main(void)
 	CHECK(ae_ds5_weapon_kind(0, AE_DS5_PACK_SMG_SILENCED, 0, 15.0f, 0.0f, 0.0f, 1, 0, 0) == AE_DS5_WEAPON_SMG_SILENCED);
 	CHECK(ae_ds5_weapon_kind(0, AE_DS5_PACK_NONE, 0, 5.0f, 0.0f, 0.0f, 1, 0, 0) == AE_DS5_WEAPON_SEMI);
 	CHECK(ae_ds5_weapon_kind(0, AE_DS5_PACK_CARBINE, 0, 5.0f, 0.0f, 0.0f, 1, 0, 0) == AE_DS5_WEAPON_CARBINE);
+	/* (the silenced assault rifle: the assault rifle's numbers, its own kind by its pack) */
+	CHECK(ae_ds5_weapon_kind(0, AE_DS5_PACK_AR_SILENCED, 0, 15.0f, 0.0f, 0.0f, 1, 0, 0) == AE_DS5_WEAPON_AR_SILENCED);
+	CHECK(!strcmp(ae_ds5_weapon_kind_name(AE_DS5_WEAPON_AR_SILENCED), "silenced ar"));
 	CHECK(ae_ds5_weapon_kind(0, AE_DS5_PACK_BATTLE_RIFLE, 0, 15.0f, 0.0f, 0.0f, 1, 0, 0) == AE_DS5_WEAPON_BURST);
 	CHECK(ae_ds5_weapon_kind(0, AE_DS5_PACK_SMG, 0, 15.0f, 0.0f, 0.0f, 0, 1, 0) == AE_DS5_WEAPON_CARRY);
 	CHECK(!strcmp(ae_ds5_weapon_kind_name(AE_DS5_WEAPON_SMG), "smg") &&
@@ -297,6 +300,8 @@ int main(void)
 			{ "silenced smg (AE pack)", 0, AE_DS5_PACK_SMG_SILENCED, 0, 15.0f, 0.0f, 0.0f, 1, 0, 0,
 				AE_DS5_WEAPON_SMG_SILENCED },
 			{ "carbine (AE pack)", 0, AE_DS5_PACK_CARBINE, 0, 5.0f, 0.0f, 0.0f, 1, 0, 0, AE_DS5_WEAPON_CARBINE },
+			{ "silenced assault rifle (AE pack)", 0, AE_DS5_PACK_AR_SILENCED, 0, 15.0f, 0.0f, 0.0f, 1, 0, 0,
+				AE_DS5_WEAPON_AR_SILENCED },
 		};
 		size_t i;
 
@@ -912,6 +917,16 @@ int main(void)
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SMG, AE_DS5_EVENT_SHOT, 100) == 0 && rumble.left == 70);
 		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_SMG_SILENCED, AE_DS5_EVENT_SHOT, 100) == 0 &&
 			rumble.left == 45);
+		/* the silenced assault rifle: the assault rifle's pulse a round (15 Hz at its 15 rounds a second), softer
+		(amplitude 3, the assault rifle's 5), and a softer left pulse a round (55, the assault rifle's 90) */
+		state.kind = AE_DS5_WEAPON_AUTOMATIC;
+		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
+		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 5 at 15 Hz"));
+		state.kind = AE_DS5_WEAPON_AR_SILENCED;
+		ae_ds5_right_held(effect, &state, 100, text, sizeof(text));
+		CHECK(!strcmp(text, "firing: vibration from zone 3 amplitude 3 at 15 Hz"));
+		CHECK(ae_ds5_event(effect, &rumble, AE_DS5_WEAPON_AR_SILENCED, AE_DS5_EVENT_SHOT, 100) == 0 &&
+			rumble.left == 55);
 
 		/* the carbine: zones 4-6 at 3 (the pistol's 4-7 at 4), STRONG 5 (the pistol's 6); its snap 5 (the pistol's 7),
 		30 ms; the right motor */

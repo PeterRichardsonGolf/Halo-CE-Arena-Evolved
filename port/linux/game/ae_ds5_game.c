@@ -95,6 +95,8 @@ static int definition_pack(long definition_index)
 		return AE_DS5_PACK_SMG_SILENCED;
 	case AE_WEAPON_SLOT_CARBINE:
 		return AE_DS5_PACK_CARBINE;
+	case AE_WEAPON_SLOT_AR_SILENCED:
+		return AE_DS5_PACK_AR_SILENCED;
 	default:
 		return AE_DS5_PACK_NONE;
 	}

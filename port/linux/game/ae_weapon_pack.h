@@ -31,7 +31,7 @@ enum
 {
 	/* the slots are 1 to AE_WEAPON_PACK_SLOTS (ae_weapon_slots.h's AE_WEAPON_SLOT_COUNT; the mask's bit 0,
 	_weapon_pack_battle_rifle, is slot 1) */
-	AE_WEAPON_PACK_SLOTS = 4,
+	AE_WEAPON_PACK_SLOTS = 5,
 	AE_WEAPON_PACK_SHA256_SIZE = 32,
 };
 

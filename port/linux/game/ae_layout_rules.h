@@ -61,8 +61,9 @@ crouches still a second (SHOW COORDINATES on Video Setup > GRAPHICS shows where 
 
 <what>: `like <n>` (the map's own item n's collection: works on protected maps, whose tag names are scrambled), an
 alias (rockets, sniper, shotgun, pistol, overshield, camo: found by what the item is, not by its name), a weapon
-pack's weapon (battle_rifle or br, smg, smg_silenced or silenced_smg, carbine: ae_weapon_slots.h; the entry is the
-map's own FALLBACK item, the pistol for the BR and the carbine, the assault rifle for the SMGs, and the pack's weapon
+pack's weapon (battle_rifle or br, smg, smg_silenced or silenced_smg, carbine, ar_silenced or silenced_ar:
+ae_weapon_slots.h; the entry is the map's own FALLBACK item, the pistol for the BR and the carbine, the assault rifle
+for the SMGs and the silenced assault rifle, and the pack's weapon
 spawns there only where the gametype names that pack and it is on the map, else the fallback does), or a tag path
 of an item collection in double quotes (unprotected maps only). <type>: turret, or the index of the map's vehicle palette entry.
 
