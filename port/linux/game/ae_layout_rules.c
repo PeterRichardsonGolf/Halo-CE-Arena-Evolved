@@ -114,7 +114,7 @@ static int parse_item(char **words, int count, struct ae_layout_item *item, char
 		}
 		else if (ae_weapon_slots_alias(words[at]) != AE_WEAPON_SLOT_NONE)
 		{
-			/* (a pack weapon: battle_rifle, smg, smg_silenced, carbine; ae_weapon_slots.h) */
+			/* (a pack weapon: battle_rifle, smg, smg_silenced, carbine, ar_silenced; ae_weapon_slots.h) */
 			item->what = _ae_layout_pack;
 			item->pack_slot = ae_weapon_slots_alias(words[at]);
 		}

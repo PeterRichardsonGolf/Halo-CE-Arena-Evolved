@@ -1010,7 +1010,8 @@ void test_input_hold_action(int hold)
 
 /* debug.test_input "menu:<buttons>": the buttons pressed one a second, from
 the first poll, for testing the menus: a, b, x, y, lb, rb (white and black),
-up, down, left, right, start, back, key:<a key's name> (a key of the
+rt (the right trigger: in a game, a quarter second of fire), up, down, left,
+right, start, back, key:<a key's name> (a key of the
 keyboard, as SDL names it: key:C; key:W+C holds both), the mouse's (move,
 click, rclick, wheel, below), shot, or wait (none), separated by spaces or
 commas; a button with its controller's number before it (2:start) is another
@@ -1164,6 +1165,7 @@ static void test_input_menu_gamepad(XINPUT_GAMEPAD *pad, int port)
 		{ "y", XINPUT_GAMEPAD_Y, 0 },
 		{ "lb", XINPUT_GAMEPAD_WHITE, 0 },
 		{ "rb", XINPUT_GAMEPAD_BLACK, 0 },
+		{ "rt", XINPUT_GAMEPAD_RIGHT_TRIGGER, 0 },
 		{ "up", -1, XINPUT_GAMEPAD_DPAD_UP },
 		{ "down", -1, XINPUT_GAMEPAD_DPAD_DOWN },
 		{ "left", -1, XINPUT_GAMEPAD_DPAD_LEFT },

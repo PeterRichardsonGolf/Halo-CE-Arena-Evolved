@@ -27,6 +27,7 @@ import re
 import struct
 import sys
 import zipfile
+import zlib
 from pathlib import Path
 
 import pytest
@@ -937,6 +938,30 @@ def test_recipe_pack_arguments():
     assert "--power" not in arguments and arguments[arguments.index("--revision") + 1] == str(data["revision"])
 
 
+@pytest.mark.parametrize("kind", ["battle_rifle", "carbine", "smg", "smg_silenced"])
+def test_every_pack_weapon_melees_as_the_stock_assault_rifle(kind):
+    """the owner (2026-10-22): a pack weapon's melee took about five blows from the front. CMT's melee is 30 flat
+    at 1.0 against a Spartan; every pack weapon names the stock assault rifle's melee damage and response instead
+    (left to the map, on every stock multiplayer map), so it strikes as every stock weapon does. The weapon tag the
+    donor takes is the first layer's that makes it, so the edit is followed through the steps it is made from."""
+    data = json.loads((TOOLS / kind / "recipe.json").read_text())
+    tag = data["pack"]["weapon"].replace("\\", "/") + ".weapon"
+    made = {(step["layer"], step["tag"]): step for step in data["steps"]}
+    layer = next(layer for layer in data["layers"] if (layer, tag) in made)
+    found = {}
+    while layer != "cmt":
+        step = made[(layer, tag)]
+        for edit in step["edits"]:
+            pairs = [edit[1:]] if edit[0] == "set" else edit[1] if edit[0] == "sets" else []
+            for field, value in pairs:
+                found.setdefault(field, value)
+        layer, tag = step["from"]
+    assert found["player_melee_damage"] == "weapons\\assault rifle\\melee.damage_effect"
+    assert found["player_melee_response"] == "weapons\\assault rifle\\melee_response.damage_effect"
+    assert not [name for name in data["source"]["allowlist"]
+                if name.startswith("cmt/globals/evolved/damage_effects/melee")]
+
+
 # ---------- make_pack.py's own rules
 
 @pytest.mark.parametrize("path", ["/tmp/br", "/tmp", "/var/tmp/x", "/dev/shm/x", "~/halo-test/wp2/new",
@@ -1139,6 +1164,49 @@ def test_tags_of_a_map_found_by_group_and_name_case_aside():
     assert sorted(tags.names()) == [("bitm", "b\\skin"), ("weap", "w\\rifle")]
     with pytest.raises(donor_map.Refused):
         donor_map.Tags(image[:20])
+
+
+def disc_map(tmp_path, tags_size, inflated_short, stream_cut=0):
+    """an Xbox map file as the disc has it (header, then the rest deflated) whose header counts 0x1000 bytes past
+    the header, its tags at 0x900; the stream inflates inflated_short bytes less than that, and stream_cut bytes
+    are cut off the end of the deflated stream"""
+    length = donor_map.MAP_HEADER_SIZE + 0x1000
+    header = bytearray(donor_map.MAP_HEADER_SIZE)
+    struct.pack_into("<4sIIIII", header, 0, b"daeh", 5, length, 0, 0x900, tags_size)
+    header[-4:] = b"toof"
+    image, _ = tiny_map([(b"weap", "w\\rifle", bytes(8))])
+    rest = bytearray(0x1000 - inflated_short)
+    rest[0x100:0x100 + len(image)] = image[:len(rest) - 0x100]
+    stream = zlib.compress(bytes(rest))
+    path = tmp_path / "disc.map"
+    path.write_bytes(bytes(header) + stream[:len(stream) - stream_cut])
+    return path, image
+
+
+def test_a_map_whose_stream_ends_short_past_its_tags_is_read(tmp_path):
+    """h2d_gemini (H2 Collection v2) inflates 888 bytes short of its header's length, its tags ending where the
+    stream does, and the game loads it: what is missing lies past the tags, so the reader takes it"""
+    path, image = disc_map(tmp_path, 0x200, 0x1000 - 0x300)
+    whole, tags = donor_map.read_whole_map(path)
+    assert len(whole) == donor_map.MAP_HEADER_SIZE + 0x300 and tags[:len(image)] == image
+    assert donor_map.Tags(tags).find("weap", "w\\rifle") is not None
+    padded, added = donor_map.whole_length_map(path)
+    assert added == 0x1000 - 0x300 and len(padded) == donor_map.MAP_HEADER_SIZE + 0x1000
+    assert padded[:len(whole)] == whole and not any(padded[len(whole):])
+    # the whole length: nothing added
+    path, _ = disc_map(tmp_path, 0x200, 0)
+    assert donor_map.whole_length_map(path)[1] == 0
+
+
+def test_a_map_short_inside_its_tags_or_cut_off_is_refused(tmp_path):
+    # short by one byte inside the tags
+    path, _ = disc_map(tmp_path, 0x200, 0x1000 - 0x2FF)
+    with pytest.raises(donor_map.Refused, match="inside its tags"):
+        donor_map.read_whole_map(path)
+    # a stream cut off before its end (no end of stream): refused however much it holds
+    path, _ = disc_map(tmp_path, 0x200, 0, stream_cut=4)
+    with pytest.raises(donor_map.Refused, match="could not be inflated"):
+        donor_map.read_whole_map(path)
 
 
 def one_piece_tag(group, size):

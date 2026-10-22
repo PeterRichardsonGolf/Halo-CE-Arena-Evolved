@@ -377,10 +377,11 @@ static void test_pack_weapons(void)
 		"item BR at 4 5 6 facing 90\n"
 		"item silenced_smg at 7 8 9 drop\n"
 		"item carbine at 0 0 0\n"
-		"item pistol at 1 1 1\n";
+		"item pistol at 1 1 1\n"
+		"item silenced_ar at 2 2 2\n";
 
 	AE_CHECK(parse(text) == 0);
-	AE_CHECK(layout.item_count == 5);
+	AE_CHECK(layout.item_count == 6);
 	AE_CHECK(layout.items[0].what == _ae_layout_pack && layout.items[0].pack_slot == AE_WEAPON_SLOT_SMG);
 	AE_CHECK(layout.items[0].respawn_seconds == 30);
 	AE_CHECK(layout.items[1].what == _ae_layout_pack && layout.items[1].pack_slot == AE_WEAPON_SLOT_BATTLE_RIFLE);
@@ -390,6 +391,7 @@ static void test_pack_weapons(void)
 	AE_CHECK(layout.items[3].what == _ae_layout_pack && layout.items[3].pack_slot == AE_WEAPON_SLOT_CARBINE);
 	/* (the stock alias stays the stock weapon) */
 	AE_CHECK(layout.items[4].what == _ae_layout_alias && layout.items[4].alias == _ae_layout_pistol);
+	AE_CHECK(layout.items[5].what == _ae_layout_pack && layout.items[5].pack_slot == AE_WEAPON_SLOT_AR_SILENCED);
 	/* (not a pack weapon's name, and no tag path: refused) */
 	AE_CHECK(parse("layout 1 h2d_turf 0badf00d\nitem smgg at 1 2 3\n") != 0);
 }

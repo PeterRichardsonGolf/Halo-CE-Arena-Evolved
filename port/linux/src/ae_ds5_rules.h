@@ -57,6 +57,7 @@ enum ae_ds5_weapon_kind
 	AE_DS5_WEAPON_SMG_SILENCED, /* AE's silenced SMG pack: the SMG's hold, a softer, lower buzz */
 	AE_DS5_WEAPON_CARBINE,   /* AE's carbine pack (5 rounds/s, semi-automatic): a quick crisp click, lighter than the
 	                            pistol's */
+	AE_DS5_WEAPON_AR_SILENCED, /* AE's silenced assault rifle pack: the assault rifle's hold, a softer pulse a round */
 	AE_DS5_WEAPON_KINDS
 };
 
@@ -68,7 +69,8 @@ enum ae_ds5_pack
 	AE_DS5_PACK_BATTLE_RIFLE,
 	AE_DS5_PACK_SMG,
 	AE_DS5_PACK_SMG_SILENCED,
-	AE_DS5_PACK_CARBINE
+	AE_DS5_PACK_CARBINE,
+	AE_DS5_PACK_AR_SILENCED
 };
 
 /* the kind from the weapon's tag numbers: whether it is AE's battle rifle, the weapon pack it comes from (an
@@ -118,6 +120,8 @@ void ae_ds5_effect_off(unsigned char effect[AE_DS5_EFFECT_SIZE]);
 void ae_ds5_effect_feedback(unsigned char effect[AE_DS5_EFFECT_SIZE], int position, int strength);
 /* resistance between zone `start` (2-7) and `end` (start+1 to 8) that gives way: a click; strength 1-8 */
 void ae_ds5_effect_weapon(unsigned char effect[AE_DS5_EFFECT_SIZE], int start, int end, int strength);
+/* resistance over zones `first` to `last` (0-9) only, free after it (a tick early in the pull), strength 1-8 */
+void ae_ds5_effect_feedback_span(unsigned char effect[AE_DS5_EFFECT_SIZE], int first, int last, int strength);
 /* vibration from zone `position` (0-9) on, amplitude 1-8, frequency 1-255 (Hz) */
 void ae_ds5_effect_vibration(unsigned char effect[AE_DS5_EFFECT_SIZE], int position, int amplitude, int frequency);
 
@@ -144,8 +148,9 @@ release, -1 none) are past it */
 int ae_ds5_overcharge_flash(unsigned char rgb[3], long ticks);
 /* the profile's feel in a few words */
 char const *ae_ds5_profile_feel(enum ae_ds5_weapon_kind kind);
-/* L2: light while zoomed; grenades in hand a light short click where the press counts (the throw); a grenade wound up
-free (the throw's own kick is an event); none, the dry click. Returns a short text for the log */
+/* L2: light while zoomed (free on LIGHT); grenades in hand a hair trigger on every preset (the lightest tick still
+felt, zones 1-2, nothing after it); a grenade wound up free (the throw has only its motor pulse); none, the dry click.
+Returns a short text for the log */
 char const *ae_ds5_left_effect(unsigned char effect[AE_DS5_EFFECT_SIZE], int zoomed, int grenades, int winding,
 	int strength);
 
@@ -193,13 +198,13 @@ pad gets few reports. Its words in text */
 void ae_ds5_lightbar_shield(unsigned char rgb[3], struct ae_ds5_shield const *shield, char *text, size_t text_size);
 
 /* TRIGGER STRENGTH (input.trigger_strength: light, normal, strong) as a percent (AE_DS5_STRENGTH_LIGHT, 100,
-AE_DS5_STRENGTH_STRONG; anything else 100). The table is NORMAL's (owner 10-21, 0.3.7: every step re-spaced):
+AE_DS5_STRENGTH_STRONG; anything else 100). The table is NORMAL's (owner 10-21, 0.3.7):
 - STRONG: a hold (resistance to the end of the pull) two steps up, at most 6, so a full pull never tires; a click two
   steps up, at most 7; kicks and buzzes two steps up (at most 8); the motors at AE_DS5_RUMBLE_STRONG percent;
-- LIGHT is a HAIR TRIGGER: every hold or click a short break at the top of the pull (zones 2-3) one step under
-  NORMAL's, between 3 (clearly felt) and 5, nothing deeper in the pull; kicks and buzzes one step down (not under 2);
-  the motors at AE_DS5_RUMBLE_LIGHT percent;
-- L2's grenade its own lighter steps (ae_ds5_left_effect, the throw's event). */
+- LIGHT is a HAIR TRIGGER on both triggers: every hold or click, every weapon, a tiny tick early in the pull (zones
+  1-2, strength 2) and nothing after it, no zoom hold; kicks and buzzes at most 2; the motors at AE_DS5_RUMBLE_LIGHT
+  percent;
+- L2's grenade a hair trigger on every preset (ae_ds5_left_effect). */
 #define AE_DS5_STRENGTH_LIGHT 75
 #define AE_DS5_STRENGTH_STRONG 175
 #define AE_DS5_RUMBLE_LIGHT 75
