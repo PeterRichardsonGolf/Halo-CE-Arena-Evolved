@@ -9,9 +9,20 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - DualSense: TRIGGER STRENGTH re-spaced so each setting feels clearly apart: LIGHT is a true hair trigger on both
   triggers (a tiny tick early in the pull, nothing after it, small kicks), STRONG is two steps firmer than NORMAL but
   never so stiff that a full pull tires. L2's grenade is a hair trigger on every setting (it was strong on all of
-  them). The weapon packs have
-  their own feel: the SMG a fast buzz, the silenced SMG a softer, lower buzz, the carbine a crisp click lighter than the
+  them). The weapon packs have their own feel: the SMG a fast buzz, the silenced SMG a softer, lower buzz, the carbine a crisp click lighter than the
   pistol's, the battle rifle a firm click and a small pulse for each round of its burst.
+- New weapon pack: the SILENCED AR (`ae_ar_silenced`, slot 5), the silenced assault rifle of the Halo 2 Mappack
+  Collection v2's Gemini (by Dominater01, S3anyboy and GoodFellaPro with Team NHE): the stock assault rifle's numbers,
+  silent to the AI, a 2x zoom, and its brass now leaves the ejection port as the stock rifle's does (it came out of
+  the silencer's tip). Layouts place it as `ar_silenced`; machines tell the new pack level 5 when joining.
+  `make_pack.py` builds packs from a map's tags too (`--source-map`), and reads a map whose stream ends short past its
+  tags.
+- Weapon packs: the battle rifle, SMG, silenced SMG and carbine melee as every stock weapon does (the stock
+  assault rifle's blow, 40 to 60 and 1.4 against a Spartan), two blows (now and then three) from full, like the
+  assault rifle; CMT's melee they had took 30 a blow, about five to kill. The packs are rebuilt.
+- Silenced SMG retuned on Halo 3's: 11 a round up close falling off to 4.4 by about 9.5 units, tight at first
+  (0.25 degrees) and wide after 2 s of fire (5.5), a 2x zoom, a magazine of 48 (144 at start and in reserve),
+  and the stock assault rifle's smaller impacts on Spartans.
 - OpenCE build-250 merged. The visibility readback (which lights and lens flares are visible) is OpenCE's final
   version of PR #433, by hkmodd: nothing is asked of the graphics driver before the frame is shown, and the counts are
   read after it once the GPU says they are done, so NVIDIA's driver and the game no longer take turns. If a driver
