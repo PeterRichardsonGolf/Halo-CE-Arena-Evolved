@@ -96,7 +96,13 @@ boolean ae_bots_combat_precision_weapon(long definition_index)
 
 boolean ae_bots_combat_scoped_rifle(long definition_index)
 {
-	return definition_index != NONE && ae_weapon_pack_definition_slot(definition_index) == AE_WEAPON_SLOT_CARBINE &&
+	short slot;
+
+	if (definition_index == NONE)
+		return FALSE;
+	/* (the packs' two precision rifles; the sniper rifle keeps the DESCOPE REFLEX) */
+	slot = ae_weapon_pack_definition_slot(definition_index);
+	return (slot == AE_WEAPON_SLOT_BATTLE_RIFLE || slot == AE_WEAPON_SLOT_CARBINE) &&
 		weapon_definition_get(definition_index)->weapon.zoom_level_count > 0;
 }
 
