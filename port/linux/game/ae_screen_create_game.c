@@ -421,8 +421,8 @@ static void create_rows(void)
 	}
 	flow->rows[count++] = bot_row(0);
 	flow->rows[count++] = bot_row(1);
-	flow->rows[count++] = (struct ae_flow_row){ ROW_START, -1, "START GAME", NULL,
-		"Hosts the game with these settings and opens its lobby." };
+	flow->rows[count++] = (struct ae_flow_row){ ROW_START, -1, "OPEN LOBBY", NULL,
+		"Hosts the game with these settings and opens its lobby, where START GAME starts it." };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_JOIN, -1, "JOIN WITH INVITE", NULL,
 		"Paste or type the invite link or code a friend sent you, and join their game." };
 	flow->count = count;
@@ -656,7 +656,7 @@ static void create_draw(struct ae_screen *instance)
 	flow->prompt_count = 0;
 	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_A, ae_string(AE_STR_SELECT), AE_ACTION_ACCEPT);
 	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
-	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_START, "Start game", AE_ACTION_START);
+	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_START, "Open lobby", AE_ACTION_START);
 	ae_flow_draw_prompts(flow);
 }
 
