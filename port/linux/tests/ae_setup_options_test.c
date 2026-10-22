@@ -1,0 +1,188 @@
+#include <stdio.h>
+#include <string.h>
+#include "ae_setup_options.h"
+
+static int failures;
+#define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
+
+/* a fake gametype: each option's value index now and where the edit started (-1: not in this build) */
+struct fake { int now[AE_SETUP_OPTIONS], base[AE_SETUP_OPTIONS]; };
+
+static int fake_get(void *context, int option)
+{
+	return ((struct fake *)context)->now[option];
+}
+
+static int fake_changed(void *context, int option)
+{
+	struct fake *fake = context;
+
+	return fake->now[option] != fake->base[option];
+}
+
+static void fake_init(struct fake *fake, struct ae_setup_access *access, int engine)
+{
+	int option;
+
+	for (option = 0; option < AE_SETUP_OPTIONS; option++)
+		fake->now[option] = fake->base[option] = 0;
+	/* (free for all: TEAM PLAY NO; vehicles DEFAULT, the loadout CATEGORY) */
+	fake->now[AE_SO_TEAM_PLAY] = fake->base[AE_SO_TEAM_PLAY] = 1;
+	access->get = fake_get;
+	access->changed = fake_changed;
+	access->context = fake;
+	access->engine = engine;
+	access->ae_rules = 0;
+}
+
+static int has(short const *entries, short count, short entry)
+{
+	short index;
+
+	for (index = 0; index < count; index++)
+	{
+		if (entries[index] == entry)
+			return 1;
+	}
+	return 0;
+}
+
+static short index_of(short const *entries, short count, short entry)
+{
+	short index;
+
+	for (index = 0; index < count; index++)
+	{
+		if (entries[index] == entry)
+			return index;
+	}
+	return -1;
+}
+
+int main(void)
+{
+	struct fake fake;
+	struct ae_setup_access access;
+	struct ae_setup_group_info groups[AE_SETUP_GROUPS];
+	short entries[160], count, index, first, last_header;
+	int option, group;
+
+	/* every row: a label, a group, values, and one help or one per value */
+	for (option = 0; option < AE_SETUP_OPTIONS; option++)
+	{
+		struct ae_setup_row const *row = ae_setup_row(option);
+
+		CHECK(row != NULL);
+		if (!row)
+			continue;
+		CHECK(row->label && row->label[0]);
+		CHECK(row->group >= 0 && row->group < AE_SETUP_GROUPS);
+		CHECK(row->value_count > 0 && row->values);
+		CHECK(row->help_count == 1 || row->help_count == row->value_count);
+		for (index = 0; index < row->value_count; index++)
+			CHECK(ae_setup_value_text(option, index)[0] && ae_setup_help(option, index)[0]);
+	}
+	CHECK(ae_setup_row(-1) == NULL && ae_setup_row(AE_SETUP_OPTIONS) == NULL);
+	CHECK(!strcmp(ae_setup_value_text(AE_SO_LIVES, 99), ""));
+
+	/* free-for-all Slayer: its score row, no team rules but TEAM PLAY, red's vehicles named VEHICLE SET */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(count > 0 && entries[0] == -1 - AE_SG_MATCH && entries[1] == AE_SO_KILLS_TO_WIN);
+	CHECK(!has(entries, count, AE_SO_CAPTURES_TO_WIN) && !has(entries, count, AE_SO_OBJECTIVES));
+	CHECK(has(entries, count, AE_SO_TEAM_PLAY) && !has(entries, count, AE_SO_FRIENDLY_FIRE));
+	CHECK(!has(entries, count, AE_SO_VEHICLE_SET_BLUE) && !has(entries, count, AE_SO_VEHICLE_COUNT_RED));
+	CHECK(!strcmp(ae_setup_label(&access, AE_SO_VEHICLE_SET_RED), "VEHICLE SET"));
+	CHECK(!strcmp(ae_setup_group_name(&access, AE_SG_MODE), "SLAYER"));
+	CHECK(has(entries, count, AE_SO_WEAPON_SET) && !has(entries, count, AE_SO_PRIMARY));
+	/* groups in Halo 2's order, each header once, never two headers in a row, never one last */
+	last_header = -1;
+	for (index = 0; index < count; index++)
+	{
+		if (!ae_setup_entry_is_header(entries[index]))
+			continue;
+		CHECK(ae_setup_entry_group(entries[index]) > last_header);
+		CHECK(index + 1 < count && !ae_setup_entry_is_header(entries[index + 1]));
+		last_header = (short)ae_setup_entry_group(entries[index]);
+	}
+	CHECK(last_header == AE_SG_NHE);
+	ae_setup_groups(&access, entries, count, groups);
+	CHECK(groups[AE_SG_TEAMS].rows == 1 && groups[AE_SG_MATCH].rows == 3 && groups[AE_SG_MODE].rows == 3);
+	CHECK(groups[AE_SG_MATCH].header == 0 && ae_setup_changes(&access) == 0);
+	/* turning TEAM PLAY on brings the team rules, blue's vehicles and RED VEHICLES */
+	fake.now[AE_SO_TEAM_PLAY] = AE_SETUP_TEAM_PLAY_YES;
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(has(entries, count, AE_SO_FRIENDLY_FIRE) && has(entries, count, AE_SO_VEHICLE_SET_BLUE));
+	CHECK(!strcmp(ae_setup_label(&access, AE_SO_VEHICLE_SET_RED), "RED VEHICLES"));
+	CHECK(ae_setup_changes(&access) == 1);
+	ae_setup_groups(&access, entries, count, groups);
+	CHECK(groups[AE_SG_TEAMS].rows == 5 && groups[AE_SG_TEAMS].changed == 1 && groups[AE_SG_PLAYERS].changed == 0);
+
+	/* CTF: always team, no TEAM PLAY row, its objectives row */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_CTF);
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(!has(entries, count, AE_SO_TEAM_PLAY) && has(entries, count, AE_SO_FRIENDLY_FIRE));
+	CHECK(has(entries, count, AE_SO_CAPTURES_TO_WIN) && has(entries, count, AE_SO_OBJECTIVES));
+	CHECK(!has(entries, count, AE_SO_DEATH_BONUS) && !has(entries, count, AE_SO_BALL_MELEE));
+	/* a change to a row of another mode is not counted (the gametype has no such rule) */
+	fake.now[AE_SO_DEATH_BONUS] = 1;
+	CHECK(ae_setup_changes(&access) == 0);
+
+	/* a custom loadout: the weapons, and WEAPON SET only on AE's rules */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
+	fake.now[AE_SO_LOADOUT] = AE_SETUP_LOADOUT_CUSTOM;
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(has(entries, count, AE_SO_PRIMARY) && has(entries, count, AE_SO_SECONDARY));
+	CHECK(!has(entries, count, AE_SO_WEAPON_SET));
+	access.ae_rules = 1;
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(has(entries, count, AE_SO_WEAPON_SET));
+
+	/* a CUSTOM vehicle set: its six counts right under it */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_KING);
+	fake.now[AE_SO_VEHICLE_SET_RED] = AE_SETUP_VEHICLE_SET_CUSTOM;
+	count = ae_setup_entries(&access, entries, 160);
+	index = index_of(entries, count, AE_SO_VEHICLE_SET_RED);
+	CHECK(index >= 0 && index + 6 < count);
+	for (option = 0; option < AE_SETUP_VEHICLE_KINDS; option++)
+		CHECK(entries[index + 1 + option] == AE_SO_VEHICLE_COUNT_RED + option);
+	CHECK(!strcmp(ae_setup_group_name(&access, AE_SG_MODE), "KING OF THE HILL"));
+
+	/* a rule this build lacks is hidden and never counted */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
+	fake.now[AE_SO_SENSOR_RANGE] = -1;
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(!has(entries, count, AE_SO_SENSOR_RANGE) && ae_setup_changes(&access) == 0);
+
+	/* LB / RB: group to group, wrapping; up / down past headers */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_ODDBALL);
+	count = ae_setup_entries(&access, entries, 160);
+	first = ae_setup_group_first_row(entries, count, AE_SG_PLAYERS);
+	CHECK(first > 0 && entries[first] == AE_SO_LIVES);
+	CHECK(ae_setup_group_step(entries, count, 1, 1) == first);
+	CHECK(ae_setup_group_step(entries, count, first, -1) == 1);
+	CHECK(entries[ae_setup_group_step(entries, count, 1, -1)] == AE_SO_NHE_MODE);   /* MATCH back to NHE */
+	CHECK(ae_setup_group_step(entries, count, ae_setup_group_first_row(entries, count, AE_SG_NHE), 1) == 1);
+	CHECK(ae_setup_group_at(entries, count, first) == AE_SG_PLAYERS && ae_setup_group_at(entries, count, 0) == AE_SG_MATCH);
+	CHECK(ae_setup_row_step(entries, count, (short)(first - 2), 1) == first);       /* the last MATCH row down: LIVES */
+	CHECK(ae_setup_row_step(entries, count, first, -1) == first - 2);
+	CHECK(ae_setup_row_step(entries, count, 1, -1) == 1);                           /* the top stays */
+	CHECK(ae_setup_row_step(entries, count, (short)(count - 1), 1) == count - 1);   /* the bottom too */
+	CHECK(ae_setup_group_first_row(entries, count, AE_SETUP_GROUPS) == -1);
+	CHECK(!strcmp(ae_setup_group_name(&access, AE_SG_MODE), "ODDBALL") && has(entries, count, AE_SO_BALL_MELEE));
+	/* every group of an oddball game shows */
+	for (group = 0; group < AE_SETUP_GROUPS; group++)
+		CHECK(ae_setup_group_first_row(entries, count, group) > 0);
+
+	/* a list too short for everything: no header without its row */
+	count = ae_setup_entries(&access, entries, 4);
+	CHECK(count == 4 && entries[0] == -1 - AE_SG_MATCH && entries[3] != -1 - AE_SG_PLAYERS);
+	CHECK(ae_setup_entries(&access, entries, 5) == 4);
+	count = ae_setup_entries(&access, entries, 6);
+	CHECK(count == 6 && entries[4] == -1 - AE_SG_PLAYERS && entries[5] == AE_SO_LIVES);
+	CHECK(ae_setup_entries(NULL, entries, 10) == 0 && ae_setup_entries(&access, entries, 0) == 0);
+
+	if (failures) return 1;
+	printf("ae_setup_options: ok\n");
+	return 0;
+}

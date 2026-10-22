@@ -27,6 +27,9 @@ UNITS = {
     "ae_input_rules_test.c": ([UI / "ae_input_rules.c", UI / "ae_ui.c", UI / "ae_motion.c", UI / "ae_sound.c",
                                SRC / "ae_back_presses.c"], [], []),
     "ae_list_test.c": ([UI / "ae_list.c"], [], []),
+    # (the game setup spike's GAME OPTIONS model: rows, groups, what shows; under the sanitizers)
+    "ae_setup_options_test.c": ([UI / "ae_setup_options.c"], ["-fsanitize=address,undefined",
+                                                               "-fno-sanitize-recover=all"], []),
     # (the look's tokens, frame and densities, with the recording ae_draw stub that measures with the real fonts)
     "ae_style_test.c": ([UI / "ae_style.c", TESTS / "ae_draw_stub.c", SRC / "ae_font.c", SRC / "ae_layout.c"],
                         [f"-I{SRC}", f"-I{TESTS}"], []),
