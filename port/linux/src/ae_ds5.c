@@ -27,6 +27,13 @@ ae_ds5_rules.c's; what each player wants is the game's (port/linux/game/ae_ds5_g
 #include <sys/ioctl.h>
 #include <unistd.h>
 #endif
+#ifdef _WIN32
+/* Windows: the pad's own HID device, opened beside SDL's (Windows shares it), written through SDL's hidapi */
+#define AE_DS5_HID
+#include <SDL3/SDL_hidapi.h>
+#include <SDL3/SDL_mutex.h>
+#include <SDL3/SDL_thread.h>
+#endif
 
 /* the udev rule that lets the player at the seat write the pad's hidraw node (the Linux downloads'
 70-ae-dualsense.rules, port/assets/udev/: tools/test_ae_ds5.py checks they agree) */
@@ -49,14 +56,39 @@ SDL's driver its own report; on the hidraw way kept, as it costs little: merged)
 #define REOPEN_MS 1000
 /* (debug.ds5_log) the writes counted over this long */
 #define MINUTE_MS 60000
+/* (the HID way) the lightbar and player lights sent again this often, though unchanged: SDL's driver sets its own
+once in a while (at a new player number; on Bluetooth as the pad's enhanced reports start, after the pad's own
+connection animation) */
+#define LIGHTS_REFRESH_MS 1000
 
 enum backend
 {
 	BACKEND_UNKNOWN,
 	BACKEND_NONE,   /* not a DualSense, or no way to write to it */
 	BACKEND_SDL,    /* SDL's own PS5 driver */
-	BACKEND_HIDRAW  /* Linux: the kernel's driver reads it, we write its hidraw node */
+	BACKEND_HIDRAW, /* Linux: the kernel's driver reads it, we write its hidraw node */
+	BACKEND_HID     /* Windows: SDL's driver reads it, we write the same full reports to its HID device */
 };
+
+#ifdef AE_DS5_HID
+/* the HID way's writer thread: SDL_hid_write waits for the pad (up to a second), so never on the game's thread. One
+report waits while one is written; a report handed over while one still waits is refused (busy: the link keeps its
+fields for the next window), never merged into or put in place of another */
+struct hid_writer
+{
+	SDL_hid_device *device;
+	SDL_Thread *thread;
+	SDL_Mutex *lock;
+	SDL_Condition *wake;
+	unsigned char report[AE_DS5_BLUETOOTH_REPORT_SIZE];
+	size_t size;
+	int pending, quit, failed;
+	Uint64 failed_ms;
+	/* (debug.ds5_log) the slowest write so far this minute, ms, and the reports refused as one still waited */
+	Uint64 slowest_ms;
+	unsigned long busy;
+};
+#endif
 
 struct pad
 {
@@ -78,6 +110,11 @@ struct pad
 	int gone;
 	Uint64 reopen_at;
 	int reopen_logged;
+#ifdef AE_DS5_HID
+	struct hid_writer *hid;
+	/* (when the lightbar and player lights are sent again though unchanged) */
+	Uint64 lights_refresh_at;
+#endif
 	/* the player's colour last asked for (SHIELD darkens it while there is no player) */
 	int has_colour;
 	unsigned char red, green, blue;
@@ -323,6 +360,226 @@ static void pad_hidraw_link(struct pad *pad, int *firmware_read)
 }
 #endif
 
+#ifdef AE_DS5_HID
+/* the writer thread: the report waiting is taken (the next one may wait meanwhile), written, and a failed write kept
+for the game's thread to see; at quit the report still waiting is written first (the triggers let go at exit) */
+static int SDLCALL hid_writer_main(void *data)
+{
+	struct hid_writer *writer = (struct hid_writer *)data;
+	unsigned char report[AE_DS5_BLUETOOTH_REPORT_SIZE];
+
+	SDL_LockMutex(writer->lock);
+	for (;;)
+	{
+		size_t size;
+		Uint64 started, took;
+		int written;
+
+		while (!writer->pending && !writer->quit)
+			SDL_WaitCondition(writer->wake, writer->lock);
+		if (!writer->pending)
+			break;
+		size = writer->size;
+		memcpy(report, writer->report, size);
+		writer->pending = 0;
+		SDL_UnlockMutex(writer->lock);
+		started = SDL_GetTicks();
+		written = SDL_hid_write(writer->device, report, size);
+		took = SDL_GetTicks() - started;
+		SDL_LockMutex(writer->lock);
+		if (took > writer->slowest_ms)
+			writer->slowest_ms = took;
+		if (written < 0 && !writer->failed)
+		{
+			writer->failed = 1;
+			writer->failed_ms = took;
+		}
+	}
+	SDL_UnlockMutex(writer->lock);
+	return 0;
+}
+
+/* the writer stopped (after its last report) and the HID device closed */
+static void hid_close(struct pad *pad)
+{
+	struct hid_writer *writer = pad->hid;
+
+	if (!writer)
+		return;
+	pad->hid = NULL;
+	SDL_LockMutex(writer->lock);
+	writer->quit = 1;
+	SDL_SignalCondition(writer->wake);
+	SDL_UnlockMutex(writer->lock);
+	SDL_WaitThread(writer->thread, NULL);
+	SDL_hid_close(writer->device);
+	SDL_DestroyCondition(writer->wake);
+	SDL_DestroyMutex(writer->lock);
+	SDL_free(writer);
+	SDL_hid_exit();
+}
+
+/* a DualSense (054C:0CE6) or DualSense Edge (054C:0DF2) */
+static int hid_is_dualsense(SDL_hid_device_info const *info)
+{
+	return info && info->vendor_id == 0x054c && (info->product_id == 0x0ce6 || info->product_id == 0x0df2);
+}
+
+static int hid_bluetooth(SDL_hid_device_info const *info, int wireless)
+{
+	return info->bus_type == SDL_HID_API_BUS_BLUETOOTH || (info->bus_type == SDL_HID_API_BUS_UNKNOWN && wireless);
+}
+
+/* the pad's HID device, opened beside SDL's: SDL's own path to it (SDL's driver reads the pad through hidapi), else
+the DualSense hidapi lists when it lists one only; its bus and product. NULL, with why, when there is none to write */
+static SDL_hid_device *hid_find(SDL_Gamepad *gamepad, int *bluetooth, int *product, char *why, size_t why_size)
+{
+	char const *path = SDL_GetGamepadPath(gamepad);
+	int wireless = SDL_GetGamepadConnectionState(gamepad) == SDL_JOYSTICK_CONNECTION_WIRELESS;
+	SDL_hid_device *device = path && *path ? SDL_hid_open_path(path) : NULL;
+	SDL_hid_device_info *list, *entry, *only = NULL;
+	int count = 0;
+
+	if (device)
+	{
+		SDL_hid_device_info *info = SDL_hid_get_device_info(device);
+
+		if (hid_is_dualsense(info))
+		{
+			*bluetooth = hid_bluetooth(info, wireless);
+			*product = info->product_id;
+			return device;
+		}
+		SDL_hid_close(device);
+		device = NULL;
+	}
+	list = SDL_hid_enumerate(0x054c, 0);
+	for (entry = list; entry; entry = entry->next)
+	{
+		if (hid_is_dualsense(entry) && entry->path)
+		{
+			only = entry;
+			count++;
+		}
+	}
+	if (count == 1)
+	{
+		device = SDL_hid_open_path(only->path);
+		if (device)
+		{
+			*bluetooth = hid_bluetooth(only, wireless);
+			*product = only->product_id;
+		}
+		else
+			SDL_snprintf(why, why_size, "SDL's path %s and hidapi's %s could not be opened", path ? path : "(none)",
+				only->path);
+	}
+	else
+		SDL_snprintf(why, why_size, "SDL's path %s could not be opened, and hidapi lists %d DualSenses",
+			path ? path : "(none)", count);
+	SDL_hid_free_enumeration(list);
+	return device;
+}
+
+/* the rumble's kind, as hidraw_vibration_v2 decides it (the firmware feature report 0x20, bytes 44-45) */
+static int hid_vibration_v2(SDL_hid_device *device, int product, int *read)
+{
+	unsigned char report[64];
+
+	*read = 1;
+	if (product == 0x0df2)
+		return 1;
+	memset(report, 0, sizeof(report));
+	report[0] = 0x20;
+	if (SDL_hid_get_feature_report(device, report, sizeof(report)) < 46)
+	{
+		*read = 0;
+		return 0;
+	}
+	return ((int)report[44] | ((int)report[45] << 8)) >= 0x0215;
+}
+
+/* the pad's HID device opened and its writer thread started (the bus, the product and the rumble's kind found);
+0, with why, when not */
+static int pad_hid_open(struct pad *pad, SDL_Gamepad *gamepad, int *v2, int *firmware_read, char *why,
+	size_t why_size)
+{
+	struct hid_writer *writer;
+	SDL_hid_device *device;
+	int bluetooth = 0, product = 0;
+
+	if (SDL_hid_init() < 0)
+	{
+		SDL_snprintf(why, why_size, "SDL_hid_init failed: %s", SDL_GetError());
+		return 0;
+	}
+	device = hid_find(gamepad, &bluetooth, &product, why, why_size);
+	if (!device)
+	{
+		SDL_hid_exit();
+		return 0;
+	}
+	/* (read before the writer thread has the device) */
+	*v2 = hid_vibration_v2(device, product, firmware_read);
+	writer = (struct hid_writer *)SDL_calloc(1, sizeof(*writer));
+	if (writer)
+	{
+		writer->device = device;
+		writer->lock = SDL_CreateMutex();
+		writer->wake = SDL_CreateCondition();
+		if (writer->lock && writer->wake)
+			writer->thread = SDL_CreateThread(hid_writer_main, "ae_ds5_hid", writer);
+	}
+	if (!writer || !writer->thread)
+	{
+		SDL_snprintf(why, why_size, "no writer thread: %s", SDL_GetError());
+		if (writer)
+		{
+			if (writer->wake)
+				SDL_DestroyCondition(writer->wake);
+			if (writer->lock)
+				SDL_DestroyMutex(writer->lock);
+			SDL_free(writer);
+		}
+		SDL_hid_close(device);
+		SDL_hid_exit();
+		return 0;
+	}
+	pad->hid = writer;
+	pad->bluetooth = bluetooth;
+	pad->product = product;
+	pad->sequence = 0;
+	pad->gone = 0;
+	pad->failed_logged = 0;
+	pad->lights_refresh_at = 0;
+	pad->owns_rumble = 1;
+	return 1;
+}
+
+/* the pad's HID device again (a failed write closed it); everything is sent again */
+static void pad_hid_reopen(struct pad *pad, SDL_Gamepad *gamepad, Uint64 now)
+{
+	char why[512];
+	int v2 = 0, firmware_read = 0;
+
+	pad->reopen_at = now + REOPEN_MS;
+	why[0] = 0;
+	if (!pad_hid_open(pad, gamepad, &v2, &firmware_read, why, sizeof(why)))
+	{
+		if (!pad->reopen_logged)
+			platform_log("dualsense: port %d: waiting for the pad's HID device to come back (tried every %d ms): %s",
+				pad->port + 1, REOPEN_MS, why);
+		pad->reopen_logged = 1;
+		return;
+	}
+	pad->link.bluetooth = pad->bluetooth;
+	pad->link.vibration_v2 = v2;
+	ae_ds5_link_forget(&pad->link);
+	platform_log("dualsense: port %d: the pad's HID device opened again (%s): everything sent again", pad->port + 1,
+		pad->bluetooth ? "Bluetooth" : "USB");
+}
+#endif
+
 /* how this pad is driven, said once in debug.txt: the way, the bus, write access, the settings */
 static void pad_choose_backend(struct pad *pad, SDL_Gamepad *gamepad, struct ae_ds5_settings const *settings)
 {
@@ -348,9 +605,38 @@ static void pad_choose_backend(struct pad *pad, SDL_Gamepad *gamepad, struct ae_
 	{
 		int wireless = SDL_GetGamepadConnectionState(gamepad) == SDL_JOYSTICK_CONNECTION_WIRELESS;
 
+#ifdef AE_DS5_HID
+		{
+			char why[512];
+			int v2 = 0, firmware_read = 0;
+
+			why[0] = 0;
+			if (pad_hid_open(pad, gamepad, &v2, &firmware_read, why, sizeof(why)))
+			{
+				char const *path = SDL_GetGamepadPath(gamepad);
+
+				pad->backend = BACKEND_HID;
+				ae_ds5_link_init(&pad->link, pad->bluetooth, v2);
+				platform_log("dualsense: %s on port %d: backend hid: input through SDL's PS5 driver, effects written "
+					"straight to the pad's HID device (%s, report 0x%02x, the Linux way's whole report); adaptive triggers "
+					"%s, lightbar %s", name, pad->port + 1, pad->bluetooth ? "Bluetooth" : "USB",
+					pad->bluetooth ? 0x31 : 0x02, settings->triggers ? "on" : "off", ae_ds5_lightbar_mode_name(settings));
+				platform_log("dualsense: port %d: one writer: the game's rumble goes in the same reports (compatible "
+					"vibration %s%s), not through SDL; no SDL effect, LED or rumble calls for this pad; %s", pad->port + 1,
+					v2 ? "2" : "1", firmware_read ? "" : ", the firmware's version unread", pad->bluetooth ?
+					"Bluetooth: one report every 50 ms at most, changes in between merged" :
+					"USB: one report a frame at most");
+				if (log)
+					platform_log("dualsense: port %d: HID path %s", pad->port + 1, path ? path : "(none from SDL)");
+				return;
+			}
+			platform_log("dualsense: %s on port %d: the pad's HID device cannot be written (%s): through SDL's own PS5 "
+				"driver instead", name, pad->port + 1, why);
+		}
+#endif
 		pad->backend = BACKEND_SDL;
 		ae_ds5_link_init(&pad->link, wireless, 0);
-		platform_log("dualsense: %s on port %d: through SDL's own PS5 driver (effects with SDL_SendGamepadEffect%s); "
+		platform_log("dualsense: %s on port %d: backend sdl: through SDL's own PS5 driver (effects with SDL_SendGamepadEffect%s); "
 			"adaptive triggers %s, lightbar %s", name, pad->port + 1,
 			wireless ? "; wireless: one report every 50 ms at most" : "", settings->triggers ? "on" : "off",
 			ae_ds5_lightbar_mode_name(settings));
@@ -382,7 +668,7 @@ static void pad_choose_backend(struct pad *pad, SDL_Gamepad *gamepad, struct ae_
 		}
 		pad->backend = BACKEND_HIDRAW;
 		pad_hidraw_link(pad, &firmware_read);
-		platform_log("dualsense: %s on port %d: input through the kernel's driver (%s), effects written to %s (%s); "
+		platform_log("dualsense: %s on port %d: backend hidraw: input through the kernel's driver (%s), effects written to %s (%s); "
 			"adaptive triggers %s, lightbar %s", name, pad->port + 1, path, pad->node, pad->bluetooth ? "Bluetooth" : "USB",
 			settings->triggers ? "on" : "off", ae_ds5_lightbar_mode_name(settings));
 		platform_log("dualsense: port %d: one writer: the game's rumble goes in the same reports (compatible vibration "
@@ -462,6 +748,45 @@ static enum ae_ds5_write_result pad_send(struct pad *pad, SDL_Gamepad *gamepad,
 		return result;
 	}
 #endif
+#ifdef AE_DS5_HID
+	if (pad->backend == BACKEND_HID)
+	{
+		unsigned char report[AE_DS5_BLUETOOTH_REPORT_SIZE];
+		size_t size = ae_ds5_output_report(report, sizeof(report), pad->bluetooth, pad->sequence, body);
+		struct hid_writer *writer = pad->hid;
+		enum ae_ds5_write_result result = AE_DS5_WRITE_SENT;
+		Uint64 failed_ms = 0;
+
+		if (!writer || !size)
+			return AE_DS5_WRITE_GONE;
+		SDL_LockMutex(writer->lock);
+		if (writer->failed)
+		{
+			result = AE_DS5_WRITE_GONE;
+			failed_ms = writer->failed_ms;
+		}
+		else if (writer->pending)
+		{
+			/* (one still waits: kept for the next window, nothing merged away) */
+			result = AE_DS5_WRITE_BUSY;
+			writer->busy++;
+		}
+		else
+		{
+			memcpy(writer->report, report, size);
+			writer->size = size;
+			writer->pending = 1;
+			SDL_SignalCondition(writer->wake);
+		}
+		SDL_UnlockMutex(writer->lock);
+		if (result == AE_DS5_WRITE_SENT)
+			pad->sequence = (pad->sequence + 1) & 0x0f;
+		else if (result == AE_DS5_WRITE_GONE)
+			platform_log("dualsense: port %d: a write to the pad's HID device failed (after %u ms): the pad went; it is "
+				"opened again when it is back, and everything sent again", pad->port + 1, (unsigned int)failed_ms);
+		return result;
+	}
+#endif
 	(void)gamepad;
 	return AE_DS5_WRITE_REFUSED;
 }
@@ -483,16 +808,22 @@ static void pad_close(struct pad *pad)
 	if (pad->fd >= 0)
 		close(pad->fd);
 #endif
+#ifdef AE_DS5_HID
+	hid_close(pad);
+#endif
 	memset(pad, 0, sizeof(*pad));
 	pad->fd = -1;
 }
 
-/* the hidraw node went (ENODEV, EIO): closed; opened again when the pad is back */
+/* the hidraw node went (ENODEV, EIO), or a write to the HID device failed: closed; opened again when the pad is back */
 static void pad_lose(struct pad *pad, Uint64 now)
 {
 #ifdef __linux__
 	if (pad->fd >= 0)
 		close(pad->fd);
+#endif
+#ifdef AE_DS5_HID
+	hid_close(pad);
 #endif
 	pad->fd = -1;
 	pad->gone = 1;
@@ -578,13 +909,31 @@ static void pad_minute(struct pad *pad, Uint64 now, int final, int log)
 		platform_log("dualsense: port %d: writes %lu, merged %lu, deferred %lu, errors %lu (%s%s)", pad->port + 1,
 			link->writes, link->merged, link->deferred, link->errors, link->bluetooth ? "Bluetooth" : "USB",
 			final ? ", the last part of a minute" : ", a minute");
+#ifdef AE_DS5_HID
+	/* (the HID way: the writer thread's slowest write and the reports refused as one still waited) */
+	if (pad->hid)
+	{
+		Uint64 slowest;
+		unsigned long busy;
+
+		SDL_LockMutex(pad->hid->lock);
+		slowest = pad->hid->slowest_ms;
+		busy = pad->hid->busy;
+		pad->hid->slowest_ms = 0;
+		pad->hid->busy = 0;
+		SDL_UnlockMutex(pad->hid->lock);
+		if (log && link->writes)
+			platform_log("dualsense: port %d: HID writer: slowest write %u ms, %lu reports kept back as one still waited",
+				pad->port + 1, (unsigned int)slowest, busy);
+	}
+#endif
 	link->writes = link->merged = link->deferred = link->errors = 0;
 	pad->minute_at = now + MINUTE_MS;
 }
 
 /* these fields given back, at once (the window ignored), where the pad has them from us: the triggers let go, the
-rumble stopped (where it is ours), the lightbar the kernel's own blue (hid-playstation's default; the hidraw way only:
-SDL's driver keeps the last colour set) */
+rumble stopped (where it is ours), the lightbar the kernel's own blue (hid-playstation's default; the hidraw and HID
+ways only: SDL's driver keeps the last colour set) */
 static void pad_reset(struct pad *pad, SDL_Gamepad *gamepad, int fields, Uint64 now)
 {
 	unsigned char body[AE_DS5_BODY_SIZE];
@@ -592,7 +941,7 @@ static void pad_reset(struct pad *pad, SDL_Gamepad *gamepad, int fields, Uint64 
 	int wanted, forced, sent;
 
 	fields &= pad->link.known & (AE_DS5_FIELD_TRIGGERS | AE_DS5_FIELD_RUMBLE | AE_DS5_FIELD_LIGHTBAR);
-	if (pad->backend != BACKEND_HIDRAW)
+	if (pad->backend != BACKEND_HIDRAW && pad->backend != BACKEND_HID)
 		fields &= ~(AE_DS5_FIELD_RUMBLE | AE_DS5_FIELD_LIGHTBAR);
 	if (!fields)
 		return;
@@ -783,6 +1132,17 @@ static void pad_frame(struct pad *pad, SDL_Gamepad *gamepad, int port, struct ae
 	}
 	else
 		ae_ds5_link_drop(&pad->link, AE_DS5_FIELD_LIGHTBAR | AE_DS5_FIELD_PLAYER_LIGHTS);
+#ifdef AE_DS5_HID
+	/* (SDL's driver sets its own lights now and then: ours sent again, though unchanged, once a second) */
+	if (pad->backend == BACKEND_HID && settings->lights && now >= pad->lights_refresh_at)
+	{
+		int lights = pad->link.known & (AE_DS5_FIELD_LIGHTBAR | AE_DS5_FIELD_PLAYER_LIGHTS);
+
+		if (lights)
+			ae_ds5_link_force(&pad->link, lights);
+		pad->lights_refresh_at = now + LIGHTS_REFRESH_MS;
+	}
+#endif
 
 	written = pad_write(pad, gamepad, now, 0, body);
 	if (!written)
@@ -824,7 +1184,7 @@ static void pad_frame(struct pad *pad, SDL_Gamepad *gamepad, int port, struct ae
 			body[AE_DS5_BODY_ENABLE3], (written & AE_DS5_FIELD_TRIGGERS) ? right_hex : "-",
 			(written & AE_DS5_FIELD_TRIGGERS) ? left_hex : "-", (unsigned int)body[AE_DS5_BODY_RUMBLE_LEFT],
 			(unsigned int)body[AE_DS5_BODY_RUMBLE_RIGHT], body[AE_DS5_BODY_PLAYER_LIGHTS],
-			pad->backend == BACKEND_SDL ? " through SDL" : "");
+			pad->backend == BACKEND_SDL ? " through SDL" : pad->backend == BACKEND_HID ? " to the HID device" : "");
 	}
 	if (fresh && !kicking && !refresh && strcmp(pad->logged, wish->what))
 	{
@@ -924,8 +1284,13 @@ void ae_ds5_frame(void)
 		if (pad && pad->backend == BACKEND_HIDRAW && pad->gone && now >= pad->reopen_at)
 			pad_reopen(pad, gamepad, now);
 #endif
+#ifdef AE_DS5_HID
+		if (pad && pad->backend == BACKEND_HID && pad->gone && now >= pad->reopen_at)
+			pad_hid_reopen(pad, gamepad, now);
+#endif
 		active = pad && pad->backend != BACKEND_NONE;
-		if (active && pad->backend == BACKEND_HIDRAW && !pad->gone && pad->owns_rumble)
+		if (active && (pad->backend == BACKEND_HIDRAW || pad->backend == BACKEND_HID) && !pad->gone &&
+			pad->owns_rumble)
 			owns = bound[port];
 		SDL_LockSpinlock(&shared_lock);
 		shared.active[port] = active;

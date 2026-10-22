@@ -53,7 +53,7 @@ in: to be read from the map's weapons).
 #include "networking/network_game_globals.h"
 
 #include "ae_hit_feedback.h"
-#include "ae_weapon_pack.h"
+#include "ae_burst_rifle.h"
 #include "ae_shield_fx.h"
 #include "../src/ae_height_fade.h"
 
@@ -896,7 +896,8 @@ static boolean early_pop_now = FALSE;
 that holds for the rifle too. A magnum's pop leaves exactly its own 25 points; three of the rifle's rounds take 20.6,
 so a burst to the head would not finish. Against a shield whose pop was shown, a round of the pack's rifle takes a
 third of the finishing hit's points at least (and a hair, for the rounding). No other weapon and no unpopped shield
-is touched */
+is touched: the battle rifle's rounds alone (ae_burst_rifle_damage), not the other packs' (the SMGs' falloff, the
+carbine's single rounds) */
 real ae_shield_fx_rifle_finish(
 	long object_index,
 	long damage_definition_index,
@@ -904,7 +905,7 @@ real ae_shield_fx_rifle_finish(
 {
 	real least = FINISHER_POINTS / 3.f + 0.005f;
 
-	if (!recharge_band_enabled() || damage_definition_index == NONE || !ae_weapon_pack_tag_is_own(damage_definition_index) ||
+	if (!recharge_band_enabled() || damage_definition_index == NONE || !ae_burst_rifle_damage(damage_definition_index) ||
 		!ae_shield_fx_pop_was_early(object_index))
 	{
 		return shield_damage;

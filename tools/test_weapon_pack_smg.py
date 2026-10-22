@@ -112,7 +112,7 @@ def test_pack_arguments_and_texts(kind):
 
 
 @pytest.mark.parametrize("kind", KINDS)
-def test_numbers_are_halo_2s(kind):
+def test_numbers_are_halo_2s_and_the_owners_tuning(kind):
     """the brief of 2026-10-21 (Halo 2 Vista's shared.map, numbers only): each set in one fix-ae edit"""
     data = recipe(kind)
     silenced = kind == "smg_silenced"
@@ -121,10 +121,11 @@ def test_numbers_are_halo_2s(kind):
     assert weapon["magazines[0].rounds_loaded_maximum"] == "60" and weapon["magazines[0].rounds_reloaded"] == "60"
     assert weapon["magazines[0].rounds_total_initial"] == ("160" if silenced else "180")
     assert weapon["magazines[0].rounds_reserved_maximum"] == "180"         # 240 with a full magazine
-    assert weapon["triggers[0].error_angle"] == ("0.25 2.5" if silenced else "1 2.75")
+    # (the SMG widened in play, owner 2026-10-21: "a little less tight at range")
+    assert weapon["triggers[0].error_angle"] == ("0.25 2.5" if silenced else "1.5 5.5")
     assert weapon["triggers[0].minimum_error"] == ("0.25" if silenced else "1")
     assert (weapon["triggers[0].error_acceleration_time"], weapon["triggers[0].error_deceleration_time"]) == (
-        "1", "0.2")
+        "1" if silenced else "0.8", "0.2")
     assert (weapon["autoaim_angle"], weapon["autoaim_range"], weapon["magnetism_angle"],
             weapon["magnetism_range"]) == ("6", "12", "12", "18")
     assert weapon["triggers[0].projectiles_between_contrails"] == "3"
@@ -132,12 +133,22 @@ def test_numbers_are_halo_2s(kind):
     assert weapon["collision_model"] == "weapons\\assault rifle\\assault rifle.model_collision_geometry"
     assert weapon["weapon_flags.enables_integrated_night_vision"] == "0"
     projectile = step(data, "fix-ae", PROJECTILE)
-    assert sets(projectile) == {"initial_velocity": "400", "final_velocity": "400", "maximum_range": "40"}
+    bullet = sets(projectile)
+    if silenced:
+        assert bullet == {"initial_velocity": "400", "final_velocity": "400", "maximum_range": "40"}
+    else:
+        # Halo 5's close-range falloff (owner 2026-10-21): the round slows to 160 over 2 units from the muzzle and
+        # its damage with it; Spartans' armour and skin take the stock assault rifle's smaller impacts
+        assert {key: bullet[key] for key in ("initial_velocity", "final_velocity", "maximum_range",
+                                              "air_damage_range")} == {
+            "initial_velocity": "400", "final_velocity": "160", "maximum_range": "40", "air_damage_range": "25.4 27.4"}
+        assert bullet["projectile_material_response[24].default_effect"] == \
+            "weapons\\assault rifle\\effects\\impact h skin.effect"
     # the silenced one's bullet carries no tracer: the contrail attachment is taken off
     assert (["erase", "attachments[*]"] in projectile["edits"]) == silenced
-    damage = "7" if silenced else "8"                     # the silenced one: evened with the SMG by the bot grid
-    assert sets(step(data, "fix-ae", DAMAGE)) == {"damage_lower_bound": damage,
-                                                  "damage_upper_bound": damage + " " + damage}
+    # the silenced one: evened with the SMG by the bot grid; the SMG: 12 close, 4.4 once the round has slowed
+    lower, upper = ("7", "7") if silenced else ("4.4", "12")
+    assert sets(step(data, "fix-ae", DAMAGE)) == {"damage_lower_bound": lower, "damage_upper_bound": upper + " " + upper}
     for entry in data["steps"]:
         if entry["layer"] == "fix-ae" and entry["op"] == "edit":
             assert len(entry.get("why", "")) > 30, entry["tag"]

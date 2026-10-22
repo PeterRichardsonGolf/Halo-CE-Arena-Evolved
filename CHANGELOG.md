@@ -6,6 +6,28 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## Unreleased
 
+- OpenCE build-250 merged. The visibility readback (which lights and lens flares are visible) is OpenCE's final
+  version of PR #433, by hkmodd: nothing is asked of the graphics driver before the frame is shown, and the counts are
+  read after it once the GPU says they are done, so NVIDIA's driver and the game no longer take turns. If a driver
+  fails to pass the counts back that way, the game reads them the old way from then on, as 0.3.5.1 did (now
+  OpenCE's own rule; Arena Evolved's extra line for it is gone).
+- The menus show a blue arrow mouse cursor in place of the system's, sized to the window as Halo PC's was, and hidden
+  while a controller is used (OpenCE build-250; the art is by pugzysixtyfour).
+- Online co-op: the gravity lift on Truth and Reconciliation (and other scripted moves of the players) takes every
+  player beyond the first two along too, instead of leaving them in the part of the level that was unloaded (OpenCE
+  build-246, by eltanschauung).
+- Plays with 0.3.6-beta, OpenCE build-244 to build-250 and ChupathingyCE 0.8 (network version 32).
+- DualSense on Windows: the adaptive triggers, rumble, lightbar and player lights go straight to the pad's HID device
+  in one whole report, as on Linux, not through SDL's queue, which merged and dropped the triggers' kicks (they felt
+  hardly there). Where the HID device cannot be opened, SDL's way as before (`debug.txt` says which and why).
+
+## 0.3.6-beta - 2026-10-21
+
+- Bots see an enemy above or below a ledge by the head, and aim at it: they no longer ignore someone shooting down
+  at them.
+- A gametype a map cannot play (King on a map with no hills) falls back to Slayer with a Slayer score (50 kills, 25
+  in 1v1 and 2v2), not the mode's own small score.
+- Discord's activity is off by default until Arena Evolved has its own Discord application (it showed ChupathingyCE's).
 - The pause menu's box is whole with five buttons (a hosted team game's: CHANGE TEAMS, SETTINGS, END GAME): its
   bottom edge was cut off, the B and A prompts below it.
 - Weapon packs: a gametype can name several packs at once (the battle rifle's, and next the Halo 2 SMG's, silenced
@@ -15,8 +37,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   on the map's pistol spots and the SMG on its assault rifle spots, each spot keeping its own respawn time.
 - Three new weapon packs from CMT's The Silent Cartographer: Evolved (credited in each pack): the SMG, the silenced
   SMG and the covenant carbine, with Halo 2's numbers where they fit one weapon in one hand. The SMG fires 15 rounds
-  a second from a 60-round magazine, a strong close-range automatic (Halo 2 built it for dual wielding; here it
-  stands alone). The silenced SMG is quieter, shows no tracer and is silent to bots' hearing. The carbine fires
+  a second from a 60-round magazine and is lethal up close (about 0.8 s inside 5 units), its damage falling to about
+  a third by mid range, where the assault rifle wins (Halo 5's balance; Halo 2 built it for dual wielding; here it
+  stands alone), with smaller blood on a hit. The silenced SMG is quieter, shows no tracer and is silent to bots' hearing. The carbine fires
   single rounds, 5 a second, from an 18-round magazine with a 2x zoom and no bloom: 5 rounds pop a shield and the
   sixth to the head kills, a second at best, the fastest precision kill if every round lands (the battle rifle stays
   the more forgiving rifle). Each has its own ammunition counter, reticle and pickup

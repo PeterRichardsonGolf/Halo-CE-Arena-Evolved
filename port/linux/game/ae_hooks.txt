@@ -17,7 +17,7 @@ port/linux/src/port_config.c	{ "debug.ae_test_screen", _config_integer, "0", "HA
 port/linux/src/sdl_platform.c	#include "ae_platform.h" /* AE hook */
 port/linux/src/sdl_platform.c	if (input_state.ui_pointer)\n{\nif (event.button.down && event.button.button == SDL_BUTTON_X1) ae_platform_count_back_press(); /* AE hook */\nif (event.button.down && event.button.button == SDL_BUTTON_LEFT)
 port/linux/src/d3d8_gl.c	#include "ae_draw.h" /* AE hook */
-port/linux/src/d3d8_gl.c	render_target_resolve(&back_buffer->target);\nae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */\n#ifndef HALO_GLES\nvisibility_read_batch();
+port/linux/src/d3d8_gl.c	render_target_resolve(&back_buffer->target);\nae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */\n#ifndef HALO_GLES\nvisibility_send_batch();
 source/interface/ui_widget.c	#include "ae_hooks.h" /* AE hook */
 source/interface/ui_widget.c	ae_ce_map_widget_opened(tag_index, local_player_index); /* AE hook */
 source/interface/ui_widget.c	ae_ce_map_view_place(widget->definition_tag_index, window_bounds, &offset, &bounds); /* AE hook */
@@ -1116,11 +1116,6 @@ source/game/game_engine.c	#include "ae_gametype_ammo.h" /* AE hook */
 source/game/game_engine.c	ae_gametype_ammo_log_rules(universal->pack_loadout); /* AE hook */
 # MAP GRENADES OFF (seed revision 18, AE SWAT; bit 7 of the same byte): the item spawn skips a grenade pickup
 source/game/game_engine.c	if (ae_gametype_skips_map_item(definition_index)) continue; /* AE hook */
-# 0.3.5.1: OpenCE PR #433's readback takes counts the GPU copied into a coherent mapping without a fence. On a driver
-# that never shows those copies there (the spec does not promise it; AMD Mesa was named in the PR's review), a batch
-# was dropped after VISIBILITY_COPY_FRAMES presents and, all three gone, lens flares and coronas kept their counts for
-# the rest of the game. AE reads them on the CPU from then on (the queries are kept until read), and says so once.
-port/linux/src/d3d8_gl.c	{ platform_log("GPU: visibility counts did not arrive through the buffer in %lu presents; they are read on the CPU from now on", device.frame - batch->frame); device.visibility_mapped = NULL; device.visibility_stats.failures++; return; } /* AE hook */
 # LOOK DOWN (0.3.6): an enemy below/above a ledge shows the bot only its head; bots_find_target tries it when the middle is hidden.
 port/linux/game/bots.c	if (ae_bots_fight_head_in_sight(bot, player->unit_index, eye, candidates[least].unit_index)) return candidates[least].player_index; /* AE hook */
 # SENSOR RANGE (seed revision 19: 10 m in every AE gametype with the motion sensor on): bits 6-7 of the universal

@@ -3,7 +3,7 @@
 Back to the [README](../README.md).
 
 - [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) is where the port is
-  made. Arena Evolved merges its releases: it is on OpenCE build-244 and
+  made. Arena Evolved merges its releases: it is on OpenCE build-250 and
   ChupathingyCE 0.8.0b. Arena Evolved is AGPL-3.0-or-later from its merge of
   OpenCE build-237, as OpenCE is; ChupathingyCE's code from its 0.8.0 is
   GPL-3.0-or-later, which the GPL lets it combine with an AGPL work (README,

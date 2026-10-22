@@ -22,6 +22,8 @@ states cleared; a map without the pack has none */
 void ae_burst_rifle_new_map(void);
 /* whether a weapon tag is one of the burst rifles set up on this map */
 boolean ae_burst_rifle_definition(long weapon_definition_index);
+/* whether a damage effect is a burst rifle's rounds' (its bullet's impact damage) on this map */
+boolean ae_burst_rifle_damage(long damage_definition_index);
 /* (weapon_trigger_fire) the damage effect fired on the firer's view: NONE (no kick) for a burst rifle's
 trigger 0, else damage_effect_index */
 long ae_burst_rifle_kick(long weapon_definition_index, short trigger_index, long damage_effect_index);

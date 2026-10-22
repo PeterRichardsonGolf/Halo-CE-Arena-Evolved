@@ -500,6 +500,24 @@ boolean ae_burst_rifle_definition(
 	return FALSE;
 }
 
+boolean ae_burst_rifle_damage(
+	long damage_definition_index)
+{
+	short index;
+
+	for (index = 0; index < burst_rifles.count && damage_definition_index != NONE; index++)
+	{
+		long projectile_index = burst_rifles.projectile_definitions[index];
+
+		if (projectile_index != NONE &&
+			projectile_definition_get(projectile_index)->projectile.impact_damage.index == damage_definition_index)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /* no kick on the firer's view (Halo 2's battle rifle has none: dd1cf7dd) */
 long ae_burst_rifle_kick(
 	long weapon_definition_index,
