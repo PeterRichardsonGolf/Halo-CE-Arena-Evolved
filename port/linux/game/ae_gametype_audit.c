@@ -111,8 +111,10 @@ static struct ae_audit_column const ae_audit_columns[] =
 	BITS("universal_variant.flags.sensor_range", universal_variant.flags, _audit_bits_long, AE_SENSOR_RANGE_MASK),
 	/* (bit 8: CONTROLLER CROUCH, 1 STAYS DOWN, 0 HALO CE: ae_crouch_rules.h, seed revision 21) */
 	FLAG_BIT("controller_crouch", _game_variant_controller_crouch_bit),
-	FLAG_BIT("bit9", 9),
-	FLAG_BIT("bit10", 10),
+	/* (bit 9: MELEE UNZOOMS, 1 ON, 0 OFF: ae_melee_unzoom_rules.h, seed revision 22) */
+	FLAG_BIT("melee_unzoom", _game_variant_melee_unzoom_bit),
+	/* (bit 10: MOUSE AIM ASSIST, 1 OFF (blocked), 0 ALLOWED: ae_mouse_aim_rules.h, seed revision 22) */
+	FLAG_BIT("mouse_aim_assist_off", _game_variant_block_mouse_aim_assist_bit),
 	FLAG_BIT("bit11", 11),
 	FLAG_BIT("bit12", 12),
 	FLAG_BIT("bit13", 13),

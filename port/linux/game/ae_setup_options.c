@@ -82,6 +82,11 @@ static const char *const odd_man_help[] = { "The odd man out cannot respawn unti
 static const char *const crouch_values[] = { "STAYS DOWN", "HALO CE" };
 static const char *const crouch_help[] = { "Holding crouch on a controller keeps you down, stick pushed all the way "
 	"too, as on a keyboard.", "As Halo CE: on a controller, pushing the stick all the way stands you up from a crouch." };
+static const char *const melee_unzoom_help[] = { "A melee while zoomed takes the zoom off and strikes, as in Halo 2.",
+	"As Halo CE: no melee while zoomed; take the zoom off first." };
+static const char *const mouse_aim_values[] = { "OFF", "ALLOWED" };
+static const char *const mouse_aim_help[] = { "No aim assist for the mouse, for every player; controllers keep theirs.",
+	"Each player's own MOUSE AIM ASSIST setting decides, unless the host blocks it." };
 
 static const char *const team_play_help[] = { "The players play in teams.", "Every player plays for themselves." };
 static const char *const friendly_fire_values[] = { "OFF", "ON", "SHIELDS ONLY", "EXPLOSIVES ONLY" };
@@ -276,6 +281,8 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 	[AE_SO_SENSOR_RANGE] = ROW("SENSOR RANGE", AE_SG_PLAYERS, 0, 0, 1, range_values, range_help),
 	[AE_SO_ODD_MAN_OUT] = ROW("ODD MAN OUT", AE_SG_PLAYERS, 0, 0, 0, yes_no, odd_man_help),
 	[AE_SO_CONTROLLER_CROUCH] = ROW("CONTROLLER CROUCH", AE_SG_PLAYERS, 0, 0, 1, crouch_values, crouch_help),
+	[AE_SO_MELEE_UNZOOMS] = ROW("MELEE UNZOOMS", AE_SG_PLAYERS, 0, 0, 1, on_off, melee_unzoom_help),
+	[AE_SO_MOUSE_AIM_ASSIST] = ROW("MOUSE AIM ASSIST", AE_SG_PLAYERS, 0, 0, 1, mouse_aim_values, mouse_aim_help),
 
 	[AE_SO_TEAM_PLAY] = ROW("TEAM PLAY", AE_SG_TEAMS, TEAM_ENGINES, 0, 0, yes_no, team_play_help),
 	[AE_SO_FRIENDLY_FIRE] = ROW("FRIENDLY FIRE", AE_SG_TEAMS, 0, 1, 0, friendly_fire_values, friendly_fire_help),

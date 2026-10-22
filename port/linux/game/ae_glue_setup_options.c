@@ -99,6 +99,10 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 		3UL << AE_SENSOR_RANGE_SHIFT),
 	[AE_SO_ODD_MAN_OUT] = BYTE(universal_variant.odd_man_out, 1, 0),
 	[AE_SO_CONTROLLER_CROUCH] = BIT(_game_variant_controller_crouch_bit, 1, 0),
+	/* (MELEE UNZOOMS: bit 9, ae_melee_unzoom_rules.h; ON sets it, OFF, every gametype from before, has 0) */
+	[AE_SO_MELEE_UNZOOMS] = BIT(_game_variant_melee_unzoom_bit, 1, 0),
+	/* (MOUSE AIM ASSIST: bit 10, ae_mouse_aim_rules.h; OFF sets it, ALLOWED, every gametype from before, has 0) */
+	[AE_SO_MOUSE_AIM_ASSIST] = BIT(_game_variant_block_mouse_aim_assist_bit, 1, 0),
 
 	[AE_SO_TEAM_PLAY] = BYTE(universal_variant.teams, 1, 0),
 	[AE_SO_FRIENDLY_FIRE] = SHORT(friendly_fire, 4, _friendly_fire_off, _friendly_fire_on, _friendly_fire_shields_only,

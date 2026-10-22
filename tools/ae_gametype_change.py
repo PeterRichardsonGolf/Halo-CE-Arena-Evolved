@@ -725,6 +725,8 @@ RULES_WORDS = {
     "starting_frags": ("starting frags", lambda v: "none" if v == 0xFF else (str(v) if v else None)),
     "ball_melee": ("ball melee", lambda v: "lethal" if v == 1 else "stock"),
     "universal_variant.flags.controller_crouch": ("controller crouch", lambda v: "stays down" if v else "halo ce"),
+    "universal_variant.flags.melee_unzoom": ("melee unzooms", lambda v: "on" if v else "off"),
+    "universal_variant.flags.mouse_aim_assist_off": ("mouse aim assist", lambda v: "off" if v else "allowed"),
 }
 
 

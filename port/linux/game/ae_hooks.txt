@@ -1166,3 +1166,28 @@ source/networking/network_server_manager.c	#include "ae_disc_join.h" /* AE hook 
 source/networking/network_server_manager.c	ae_disc_join_token(join_token, NETWORK_JOIN_GAME_TOKEN_SIZE); /* AE hook */
 source/networking/network_client_manager.c	#include "ae_disc_join.h" /* AE hook */
 source/networking/network_client_manager.c	ae_disc_join_rejected(rejection_code); /* AE hook */
+# MELEE UNZOOMS (seed revision 22: ON in every AE gametype, the NHE set OFF; owner 10-22): bit 9 of the universal
+# variant's flags (ae_melee_unzoom_rules.h). ON: a melee while zoomed takes the zoom off and strikes (Halo 2's); OFF
+# (every gametype without the bit) keeps Halo CE's gate, no melee while zoomed. The local player's action asks for no
+# zoom while melee is held (player_control.c); the melee's start unzooms the unit on every machine (bipeds.c), the
+# host's variant deciding on a network client; the rules log's "AE melee unzooms:" line
+source/game/game_engine.h	_game_variant_melee_unzoom_bit = 9, /* AE hook */
+source/units/bipeds.c	#include "ae_melee_unzoom.h" /* AE hook */
+source/units/bipeds.c	(biped->unit.current_zoom_level==NONE || ae_melee_unzoom_begin(biped_index))) /* AE hook */
+source/game/player_control.c	#include "ae_melee_unzoom.h" /* AE hook */
+source/game/player_control.c	player->zoom_level = ae_melee_unzoom_local(local_player_index, player->zoom_level, TEST_FLAG(input.unit_control_flags, _unit_control_use_equipment_bit)); /* AE hook */
+source/game/game_engine.c	#include "ae_melee_unzoom.h" /* AE hook */
+source/game/game_engine.c	ae_melee_unzoom_log_rules(flags); /* AE hook */
+# MOUSE AIM ASSIST (seed revision 22: OFF in every AE gametype, the NHE set ALLOWED; owner 10-22): bit 10 of the
+# universal variant's flags (ae_mouse_aim_rules.h). The host's policy (OpenCE's message 90, unchanged on the wire) is
+# its network.block_mouse_aim_assist OR the running gametype's OFF; a local game plays the gametype's rule too; a
+# client logs the policy its host sends (ae_mouse_aim.c); the rules log's "AE mouse aim assist:" line
+source/game/game_engine.h	_game_variant_block_mouse_aim_assist_bit = 10, /* AE hook */
+source/game/game_engine.c	#include "ae_mouse_aim.h" /* AE hook */
+source/game/game_engine.c	ae_mouse_aim_assist_log_rules(flags); /* AE hook */
+port/linux/game/network_aim_assist.c	#include "ae_mouse_aim.h" /* AE hook */
+port/linux/game/network_aim_assist.c	if (game_connection() == _game_connection_local) return ae_mouse_aim_assist_host_blocks(FALSE); /* AE hook */
+port/linux/game/network_aim_assist.c	return ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
+port/linux/game/network_aim_assist.c	message.block_mouse = ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
+port/linux/game/network_aim_assist.c	policy = ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
+port/linux/game/network_aim_assist.c	ae_mouse_aim_assist_note_policy(client_blocks_mouse); /* AE hook */

@@ -112,6 +112,12 @@ def fields(text):
     # (revision 21's CONTROLLER CROUCH, a line of its own: "AE controller crouch: stays down")
     mm = re.search(r"AE controller crouch: (stays down|halo ce)", text)
     if mm: out["controller crouch"] = mm[1]
+    # (revision 22's MELEE UNZOOMS, a line of its own: "AE melee unzooms: on")
+    mm = re.search(r"AE melee unzooms: (on|off)", text)
+    if mm: out["melee unzooms"] = mm[1]
+    # (and its MOUSE AIM ASSIST: "AE mouse aim assist: off")
+    mm = re.search(r"AE mouse aim assist: (off|allowed)\s", text)
+    if mm: out["mouse aim assist"] = mm[1]
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -292,6 +298,12 @@ for _name in ("AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT T
 # CONTROLLER CROUCH (bit 8 of the variant's flags): HALO CE in every gametype before revision 21 (no seed had the bit)
 for _name, (_want, _, _) in ROWS.items():
     _want["controller crouch"] = "halo ce"
+# MELEE UNZOOMS (bit 9 of the variant's flags): OFF in every gametype before revision 22 (no seed had the bit)
+for _name, (_want, _, _) in ROWS.items():
+    _want["melee unzooms"] = "off"
+# MOUSE AIM ASSIST (bit 10 of the variant's flags): ALLOWED in every gametype before revision 22 (no seed had the bit)
+for _name, (_want, _, _) in ROWS.items():
+    _want["mouse aim assist"] = "allowed"
 
 # revision 21 (tools/ae_gametype_change.py): CONTROLLER CROUCH STAYS DOWN in every AE gametype: a controller's held
 # crouch keeps you down at full stick; the NHE set keeps HALO CE

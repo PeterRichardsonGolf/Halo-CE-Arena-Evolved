@@ -217,6 +217,7 @@ symbols in this file:
 #include "ae_glue_zoom.h" /* AE hook */
 #include "ae_ds5_game.h" /* AE hook */
 #include "ae_crouch.h" /* AE hook */
+#include "ae_melee_unzoom.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -764,6 +765,7 @@ static void handle_one_player_input(
 				player->zoom_level);
 		}
 		player->zoom_level = ae_zoom_update(local_player_index, player->zoom_level, current_weapon_index, player_control_camera_control_is_active() && !cinematic_in_progress(), input.player_control_flags); /* AE hook */
+		player->zoom_level = ae_melee_unzoom_local(local_player_index, player->zoom_level, TEST_FLAG(input.unit_control_flags, _unit_control_use_equipment_bit)); /* AE hook */
 		ae_ds5_player(local_player_index, current_weapon_index, player->zoom_level); /* AE hook */
 
 		if (!director_inhibited_facing(local_player_index))

@@ -7,6 +7,7 @@
 #include "networking/network_game_globals.h"
 #include "network_distributed.h"
 #include "network_aim_assist.h"
+#include "ae_mouse_aim.h" /* AE hook */
 #include <string.h>
 
 int config_boolean(char const *name);
@@ -29,8 +30,9 @@ void network_aim_assist_reset(void)
 boolean network_aim_assist_block_mouse(void)
 {
     if (!game_in_progress() || main_menu_is_active()) return FALSE;
+    if (game_connection() == _game_connection_local) return ae_mouse_aim_assist_host_blocks(FALSE); /* AE hook */
     if (game_connection() == _game_connection_network_server)
-        return config_boolean("network.block_mouse_aim_assist") != 0;
+        return ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
     return game_connection() == _game_connection_network_client && client_blocks_mouse;
 }
 
@@ -39,7 +41,7 @@ void network_aim_assist_send_policy(long machine_index)
     struct aim_assist_policy_message message;
     if (game_connection() != _game_connection_network_server) return;
     memset(&message, 0, sizeof(message));
-    message.block_mouse = config_boolean("network.block_mouse_aim_assist") != 0;
+    message.block_mouse = ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
     distributed_send_to_machine_reliably(machine_index, &message,
         _distributed_message_aim_assist_policy, 1, sizeof(message));
 }
@@ -50,7 +52,7 @@ void network_aim_assist_update(void)
     short policy;
     if (!game_in_progress() || main_menu_is_active() ||
         game_connection() != _game_connection_network_server) return;
-    policy = config_boolean("network.block_mouse_aim_assist") != 0;
+    policy = ae_mouse_aim_assist_host_blocks(config_boolean("network.block_mouse_aim_assist") != 0); /* AE hook */
     if (sent_policy == policy) return;
     sent_policy = policy;
     memset(&message, 0, sizeof(message));
@@ -77,4 +79,5 @@ void network_aim_assist_handle_message(long machine_index, word const *data, wor
         message.header.type != _distributed_message_aim_assist_policy ||
         message.header.count != 1 || message.block_mouse > 1 || message.reserved != 0) return;
     client_blocks_mouse = message.block_mouse != 0;
+    ae_mouse_aim_assist_note_policy(client_blocks_mouse); /* AE hook */
 }
