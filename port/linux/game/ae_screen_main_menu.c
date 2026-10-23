@@ -87,7 +87,7 @@ static void rows_multiplayer(void)
 	short count = 0;
 
 	flow->rows[count++] = (struct ae_flow_row){ ROW_CREATE, -1, "CREATE GAME", NULL,
-		"Pick a map, a gametype and its rules, and how others join: your network, or online with an invite.",
+		"Opens your lobby at once, friends join while you pick the map, the gametype and its rules.",
 		NULL };
 	flow->rows[count++] = (struct ae_flow_row){ ROW_JOIN, -1, "JOIN WITH INVITE", NULL,
 		"Paste or type the invite link or code a friend sent you, and join their game.", NULL };

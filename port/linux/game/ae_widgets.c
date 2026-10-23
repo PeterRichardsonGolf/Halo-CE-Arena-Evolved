@@ -567,7 +567,8 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	{
 		/* (a disabled row's background at 43 %: its reason stays readable in full warning colour) */
 		ae_draw_rect(x, y, width, layout.height, corner,
-			disabled ? scaled_alpha(AE_COLOR_ROW, AE_DISABLED_ROW_ALPHA) : AE_COLOR_ROW);
+			disabled ? scaled_alpha(AE_COLOR_ROW, AE_DISABLED_ROW_ALPHA) : (flags & AE_ROW_PRIMARY) ? AE_COLOR_PRIMARY :
+			AE_COLOR_ROW);
 		if (flags & AE_ROW_HOVER)
 			ae_draw_rect(x, y, width, layout.height, corner, AE_COLOR_HOVER);
 	}
@@ -589,7 +590,8 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	if (layout.label[0])
 	{
 		ae_draw_text(AE_FONT_ROW, text, x + layout.label_x, text_top(AE_FONT_ROW, text, center_y), AE_ALIGN_LEFT,
-			disabled ? AE_COLOR_DISABLED_TEXT : on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_TEXT, layout.label);
+			disabled ? AE_COLOR_DISABLED_TEXT : on_bar ? AE_COLOR_SELECTION_TEXT : (flags & AE_ROW_PRIMARY) ? AE_COLOR_TITLE :
+			AE_COLOR_TEXT, layout.label);
 	}
 	if (layout.dot)
 	{

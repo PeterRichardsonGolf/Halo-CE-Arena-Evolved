@@ -123,7 +123,7 @@ CLIENT = "127.0.0.201"
 
 
 def play_pair(cfg, out, name, host_env, client_env, seconds=100, join_delay=6, client_input=None,
-              client_shots=300):
+              client_shots=300, host_input=None):
     """two machines in one network namespace (tools/ae_test/handshake.py's way, with AE's drives instead of
     network_test): (host result, client result, host text, client text)"""
     harness = menus.harness
@@ -135,6 +135,8 @@ def play_pair(cfg, out, name, host_env, client_env, seconds=100, join_delay=6, c
                                  "screenshots": client_shots, "env": client_env, "expect": {"ticks": 0}})
     if client_input:
         client["test_input"] = client_input
+    if host_input:
+        host["test_input"] = host_input
     pdir = out / name
     work = harness.expand(cfg["work_dir"]) / f"{out.name}-{name}"
     harness.OWN_WORK.add(work)
@@ -190,6 +192,29 @@ def test_lan_games_join(cfg):
     in_order(client, ["ae browser: open (lan games)", "ae browser: join '", "ae browser: joined",
                       "ae create game: lobby: open"])
     in_order(host, ["ae lobby: hosting (LAN)", "ae lobby: roster 2"])
+
+def test_create_game_hosts_a_joiner(cfg):
+    """(0.3.9 one lobby) CREATE GAME (32) hosts at once on the LAN; a player at AE's main menu joins it from LAN GAMES
+    and sees the same screen read only (LOBBY); the host's PLAYERS goes to 2, START GAME plays the game for both"""
+    out = menus.out_dir(cfg, "lobby-create-game")
+    host_r, client_r, host, client = play_pair(
+        cfg, out, "pair", {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "32", "HALO_AE_TEST_GAMETYPE": "AE TEAM SLY",
+                           "HALO_NET_ONLINE": "false"},
+        {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "0", "HALO_NET_ONLINE": "false"}, join_delay=2,
+        client_shots=60, client_input=menus.menu_input("pad:a", "pad:down", "pad:down", "pad:down", "pad:a", "wait",
+                                                       "wait", "pad:a"),
+        host_input=menus.menu_input(*(("wait",) * 18 + ("pad:start",))))
+    assert host_r.get("status") == "PASS", host_r.get("why")
+    in_order(host, ["ae create game: hosting (LAN, ", "ae create game: lobby: open",
+                    "ae create game: lobby: players 2, bots 0", "ae lobby: starting", "ae create game: lobby: start"])
+    # (the game played on both machines)
+    assert "game rules:" in host and "game rules:" in client
+    in_order(client, ["ae browser: join '", "ae browser: joined", "ae create game: lobby: open",
+                      "ae create game: lobby: the host started"])
+    assert SELECT_MAP_FAILED not in host and SELECT_MAP_FAILED not in client
+    shots = sorted((out / "pair" / "client").rglob("frame*.png"))
+    assert shots, "no joiner screenshots"
+
 
 def test_local_refuses(cfg):
     """a LOCAL host (93) with a bot: nobody joins (the roster stays 1, the bot tool joins nothing)"""

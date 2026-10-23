@@ -31,6 +31,7 @@ struct ae_lobby_roster
 	char map[64];              /* the map's file name ("bloodgulch") */
 	char gametype[48];         /* the gametype's name, UTF-8 */
 	int team_game, in_game, postgame;
+	short maximum_players;     /* (0.3.9 one lobby) the most players the session takes (the host's MAX PLAYERS) */
 };
 
 /* the roster as the game reports it, sorted host first, then by machine, then in the order it lists them (a stable

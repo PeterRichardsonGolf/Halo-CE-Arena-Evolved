@@ -1,12 +1,15 @@
-"""The game setup spike end to end (CREATE GAME, its LOBBY, a game) in real games, headless, through the ae_test
-harness (tools/ae_test), in tools/test_ae_gallery.py's pattern (tools/test_ae_menus.py's helpers).
+"""CREATE GAME, one screen with its lobby (0.3.9: the game on the left, the lobby panel on the right), in real games,
+headless, through the ae_test harness (tools/ae_test), in tools/test_ae_gallery.py's pattern (tools/test_ae_menus.py's
+helpers).
 
-- CREATE GAME (debug.ae_test_screen 32) at 1080p 100 % and 130 %;
-- START GAME: hosted (LAN), player 1 in, the map chosen, the copy applied, the LOBBY; a quick option stepped there
-  and applied to the server;
-- the LOBBY's START GAME: the game plays (no AE screen over it);
-- BOTS and BOT SKILL: stepped in CREATE GAME (bots.count, bots.skill written), and in the LOBBY (down from START GAME
-  to the rows under the roster): the lobby's bots join at once, PLAYERS counts the person alone.
+- CREATE GAME (debug.ae_test_screen 32) at 1080p 100 % and 130 %: it hosts at once (LAN: internet play is off here),
+  player 1 in, the map chosen, the copy applied, the lobby live;
+- 130 %: the rows scroll with the focus, down past START GAME into the panel;
+- LOBBY SETUP (X): the popover at 100 % and 130 %; PUBLIC on and NETWORK to HOST ONLINE: the lobby opens again online
+  (internet play off: its INVITE row says so);
+- a quick option stepped and applied to the server;
+- START GAME: the game plays (no AE screen over it), the gametype's PC options in it;
+- BOTS and BOT SKILL at the panel's foot: the lobby's bots join at once, PLAYERS counts the person alone.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is 30-50 s:
 
@@ -28,17 +31,24 @@ _spec.loader.exec_module(menus)
 CASES = (
     ("create", 32, 100, (), 30),
     ("create-130", 32, 130, (), 30),
-    # (130 %: the rows scroll with the focus, the help kept: down to the last row)
-    ("create-130-foot", 32, 130, ("pad:down",) * 12, 34),
-    # (HOST ONLINE: PRIVACY and MAX PLAYERS shown, past BOTS and BOT SKILL to JOIN WITH INVITE)
-    ("online", 32, 100, ("pad:down",) * 5 + ("pad:right",) + ("pad:down",) * 6, 30),
-    # (LAN: BOTS is the eighth row, BOT SKILL the ninth: OFF -> 2, NORMAL -> HEROIC)
-    ("create-bots", 32, 100, ("pad:down",) * 7 + ("pad:right", "pad:right", "pad:down", "pad:right"), 34),
-    # (the lobby: down from START GAME to BOTS under the roster, 3 bots, then BOT SKILL focused)
-    ("lobby-bots", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:down", "pad:right", "pad:right", "pad:right",
-                             "wait", "wait", "pad:down"), 40),
-    ("lobby", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:up", "pad:right"), 34),
-    ("play", 32, 100, ("pad:start", "wait", "wait", "wait", "pad:start"), 50),
+    # (130 %: the rows scroll with the focus, the help kept: down past START GAME into the panel's LOBBY row)
+    ("create-130-foot", 32, 130, ("pad:down",) * 11, 34),
+    # (START GAME, the primary action, focused: down to the last row of the left column)
+    ("create-start", 32, 100, ("pad:down",) * 10, 34),
+    # (the panel's LOBBY row focused: down to its last row, BOT SKILL, then up past BOTS)
+    ("panel-lobby", 32, 100, ("wait",) + ("pad:down",) * 14 + ("pad:up", "pad:up"), 40),
+    ("panel-lobby-130", 32, 130, ("wait",) + ("pad:down",) * 14 + ("pad:up", "pad:up"), 40),
+    # (LOBBY SETUP: X opens it over the panel)
+    ("setup", 32, 100, ("wait", "pad:x"), 30),
+    ("setup-130", 32, 130, ("wait", "pad:x"), 30),
+    # (NETWORK to HOST ONLINE, PUBLIC on, B: the lobby opens again online)
+    ("online", 32, 100, ("wait", "pad:x", "pad:right", "pad:down", "pad:right", "pad:b", "wait", "wait"), 36),
+    # (the lobby: down to the panel's last row (BOT SKILL), up to BOTS, 3 bots, then BOT SKILL focused)
+    ("lobby-bots", 32, 100, ("wait",) + ("pad:down",) * 14 + ("pad:up", "pad:right", "pad:right", "pad:right",
+                                                                 "wait", "wait", "pad:down"), 44),
+    # (a quick option: down past MAP, GAMETYPE, GAME OPTIONS to the first, stepped)
+    ("lobby", 32, 100, ("wait", "pad:down", "pad:down", "pad:down", "pad:right"), 34),
+    ("play", 32, 100, ("wait", "wait", "pad:start"), 50),
 )
 
 
@@ -80,12 +90,29 @@ def runs(cfg):
     return run_cases(cfg, menus.out_dir(cfg, "create-game"))
 
 
-def test_create_game_opens(runs):
+def test_create_game_opens_a_live_lobby(runs):
     for name in ("create", "create-130"):
-        assert "open" in lines(runs[name][1], "ae create game: "), name
+        said = lines(runs[name][1], "ae create game: ")
+        assert "open" in said, (name, said)
+        assert any(line.startswith("hosting (LAN, ") for line in said), (name, said)
+        assert said.index("hosted, player 1 in") < said.index("lobby: open"), (name, said)
+        assert "lobby: players 1, bots 0" in said, (name, said)
+        assert not [line for line in said if line.startswith("open failed")], (name, said)
 
 
-def test_start_hosts_and_opens_the_lobby(runs):
+def test_lobby_setup(runs):
+    for name in ("setup", "setup-130"):
+        assert "lobby: setup open" in lines(runs[name][1], "ae create game: "), name
+    said = lines(runs["online"][1], "ae create game: ")
+    assert "lobby: public on" in said, said
+    reopen = said.index("lobby: network HOST ONLINE, reopening")
+    hosted = [index for index, line in enumerate(said) if line == "hosted, player 1 in"]
+    assert len(hosted) == 2 and hosted[0] < reopen < hosted[1], said
+    assert any(line.startswith("hosting (HOST ONLINE, ") for line in said[reopen:]), said
+    assert "ae lobby: hosting (ONLINE, invite only)" in runs["online"][1]
+
+
+def test_quick_option_reaches_the_server(runs):
     said = lines(runs["lobby"][1], "ae create game: ")
     assert "hosted, player 1 in" in said and "lobby: open" in said, said
     assert any(line.startswith("lobby: quick ") for line in said), said
@@ -93,12 +120,11 @@ def test_start_hosts_and_opens_the_lobby(runs):
 
 
 def test_bots_rows(runs):
-    said = lines(runs["create-bots"][1], "ae create game: ")
-    assert "bots 1" in said and "bots 2" in said and "bot skill HEROIC" in said, said
     said = lines(runs["lobby-bots"][1], "ae create game: ")
-    assert "lobby: bots 3" in said, said
-    # (the lobby's bots follow the setting at once)
+    assert "lobby: bots 1" in said and "lobby: bots 3" in said, said
+    # (the lobby's bots follow the setting at once; PLAYERS counts the person alone)
     assert lines(runs["lobby-bots"][1], "lan bots: bot 3 joined the lobby"), said
+    assert "lobby: players 1, bots 3" in said, said
 
 
 def test_the_lobby_starts_the_game(runs):
