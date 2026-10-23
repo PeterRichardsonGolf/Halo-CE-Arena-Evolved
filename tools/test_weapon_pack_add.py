@@ -208,9 +208,12 @@ class Game(unittest.TestCase):
         (folder / "ae_battle_rifle.aepack").write_bytes(image)
         return folder
 
-    def play(self, name, *arguments, refused=False, seconds=30, map_name="bloodgulch"):
+    def play(self, name, *arguments, refused=False, seconds=30, map_name="bloodgulch", overflow_ok=False):
+        """overflow_ok: a map whose own bitmap overflows the texture cache with or without the pack (Timberland's
+        jackal shield noise: the Custom Edition map's own, logged without any pack too)"""
         spec = self.folder / f"{name}.json"
-        spec.write_text(json.dumps({"expect": {"refusals_ok": True}} if refused else {}))
+        expect = {**({"refusals_ok": True} if refused else {}), **({"cache_overflow_ok": True} if overflow_ok else {})}
+        spec.write_text(json.dumps({"expect": expect} if expect else {}))
         rc = run.main(["--spec", str(spec), "--build", BUILD, "--exit-after", str(seconds), "--name", name,
                        "--out-name", f"packadd-{name}", *(["--map", map_name] if map_name else []), *arguments])
         self.assertEqual(rc, 0, name)

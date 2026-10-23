@@ -56,7 +56,9 @@ The pack's checks against the map and the fallback (tools/test_weapon_pack_check
 forced-failure packs made from the real one (labels `zz`, a required and an optional external renamed, the
 weapon renamed to a stock weapon's name, a first-person animation node renamed), a full tag table
 (`debug.weapon_pack_table_limit` / `HALO_WEAPON_PACK_TABLE_LIMIT=<tags>`, tests only), a Custom Edition map
-(`homobox@ce`) and no pack at all: each refused with its reason, `first spawn: assault rifle + pistol` (the stock
+(`homobox@ce`: the synthetic pack checked by the tag validator beside the map's tags; `timberland@ce`: the real
+pack added; `h2_blood_gulch@ce`: refused for a stock tag it lacks; each skips without its map in `maps/ce`) and no
+pack at all: each refused with its reason, `first spawn: assault rifle + pistol` (the stock
 fallback), the console's `weapon pack: BATTLE RIFLE unavailable on <map>: <reason>` line, and the game played to
 its end. The long cases: all 13 Xbox multiplayer maps in one rotation (a minute each, about 20 minutes), Halo 1:
 NHE's badcreek (`discs/NHE`, or `mods/NHE` on an older data root) and CE+ X's Blood Gulch beside its own rifle (`discs/CE+ X`).

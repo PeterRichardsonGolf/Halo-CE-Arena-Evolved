@@ -1,7 +1,8 @@
 """The weapon pack's checks against the map a game loads (port/linux/game/ae_weapon_pack.c, Task 7) and the
 fallback: a map the pack cannot be added to refuses it with one line, the players get the stock weapons (the
-assault rifle for a pack primary), the console says "BATTLE RIFLE unavailable on <map>: <reason>" (or "BATTLE
-RIFLE: not on Custom Edition maps yet"), and the game plays on.
+assault rifle for a pack primary), the console says "BATTLE RIFLE unavailable on <map>: <reason>", and the game
+plays on. A Custom Edition map takes the pack as an Xbox map does, checked the same way (a Gearbox map has every
+stock tag the pack borrows; a custom map that lacks one refuses it with "missing <group> <name>").
 
 Needs a game: AE_TEST_PACK_BUILD (a build for tools/ae_test/run.py) and a config for the machine that plays
 (docs/testing.md). The real-pack cases also need AE_TEST_PACK_REAL (a real battle rifle pack: game art, never in
@@ -36,8 +37,9 @@ STOCK_MAPS = ("beavercreek", "bloodgulch", "boardingaction", "carousel", "chillo
 ADDED = r"weapon pack: added to {map}: \d+ tags new"
 HELD = r"weapon pack: battle_rifle is held by the label '(h_br|ar)'"
 UNAVAILABLE = r"weapon pack: BATTLE RIFLE unavailable on {map}: {reason}\r?$"
-CE_REFUSED = r"weapon pack: refused for \S+: not on Custom Edition maps yet; the game plays without it\r?$"
-CE_LINE = r"weapon pack: BATTLE RIFLE: not on Custom Edition maps yet\r?$"
+# (a Custom Edition map's tags checked by the validator before the pack's: its state is the map's, not ui.map's)
+CE_CHECKED = r"the map 'ae_battle_rifle \(weapon pack\) on {map}' "
+NOISE = r"its tags failed the tag check \(the line before this one says which\)"
 # (the fallback: the stock loadout's assault rifle first, as game_engine_log_first_spawn names it)
 STOCK_FIRST_SPAWN = r"first spawn: assault rifle \+ pistol"
 PACK_FIRST_SPAWN = r"first spawn: battle_rifle \+ pistol"
@@ -124,12 +126,20 @@ class Checks(add.Game):
     def lines(self, name):
         return self.debug_lines(name)
 
+    def ce_map(self, file):
+        """a Custom Edition map's case skips without its file in the data root's maps/ce"""
+        cfg = harness.load_config(None)
+        if not (harness.expand(cfg["data_dir"]) / "maps" / "ce" / f"{file}.map").exists():
+            self.skipTest(f"no maps/ce/{file}.map in the data root")
+
     def fallback(self, name, image, reason, *arguments, map_name="bloodgulch"):
         """refused for the map with its reason, the fallback given (the stock assault rifle), the console's line,
-        and the game plays to its end (exit 0, no assert)"""
+        and the game plays to its end (exit 0, no assert). The lines name the map by its file (a Custom Edition
+        map's without its @ce)"""
+        logged = map_name.split("@")[0]
         self.play(name, "--packs-from", str(self.packs(name, image)), "--pack-loadout", "primary",
-                  "--expect-line", add.REFUSED.format(reason=reason).replace("bloodgulch", map_name),
-                  "--expect-line", UNAVAILABLE.format(map=map_name, reason=reason),
+                  "--expect-line", add.REFUSED.format(reason=reason).replace("bloodgulch", logged),
+                  "--expect-line", UNAVAILABLE.format(map=logged, reason=reason),
                   "--expect-line", STOCK_FIRST_SPAWN,
                   "--expect-no-line", add.ANY_ADDED, "--expect-no-line", add.ANY_FIRST_SPAWN,
                   *arguments, refused=True, map_name=map_name)
@@ -142,22 +152,21 @@ class NoRealPack(Checks):
                   "--expect-line", UNAVAILABLE.format(map="bloodgulch", reason="this machine has no battle rifle pack"),
                   "--expect-line", STOCK_FIRST_SPAWN, "--expect-no-line", add.ANY_ADDED)
 
-    def test_custom_edition_map_refused(self):
-        """R34: a Custom Edition map gets no pack (its branch of scenario_tags_load says so), the stock weapons,
-        and the console's "BATTLE RIFLE: not on Custom Edition maps yet". The pack is a synthetic one: a Custom
-        Edition map never reaches the add"""
-        cfg = harness.load_config(None)
-        if not (harness.expand(cfg["data_dir"]) / "maps" / "ce" / "homobox.map").exists():
-            self.skipTest("no maps/ce/homobox.map in the data root")
+    def test_custom_edition_map_checks_the_pack(self):
+        """a Custom Edition map takes the pack as an Xbox map does: the synthetic pack's noise tags go through the
+        tag validator beside the map's (its line names the pack on the map) and are refused, the stock weapons
+        given, and the console's line names the map by its file"""
+        self.ce_map("homobox")
         self.play("ce", "--packs-from", str(self.packs("ce", add.load.make_pack())), "--pack-loadout", "primary",
-                  "--expect-line", CE_REFUSED, "--expect-line", CE_LINE,
+                  "--expect-line", CE_CHECKED.format(map="homobox"),
+                  "--expect-line", add.REFUSED.format(reason=NOISE).replace("bloodgulch", "homobox"),
+                  "--expect-line", UNAVAILABLE.format(map="homobox", reason=NOISE),
+                  "--expect-line", STOCK_FIRST_SPAWN,
                   "--expect-no-line", add.ANY_ADDED, "--expect-no-line", add.ANY_FIRST_SPAWN,
-                  "--expect-no-line", "weapon pack: let go", refused=True, map_name="homobox@ce")
+                  "--expect-no-line", "not on Custom Edition maps", refused=True, map_name="homobox@ce")
 
     def test_custom_edition_map_unasked_says_nothing(self):
-        cfg = harness.load_config(None)
-        if not (harness.expand(cfg["data_dir"]) / "maps" / "ce" / "homobox.map").exists():
-            self.skipTest("no maps/ce/homobox.map in the data root")
+        self.ce_map("homobox")
         self.play("ce-unasked", "--packs-from", str(self.packs("ce-unasked", add.load.make_pack())),
                   "--expect-no-line", "weapon pack: refused", "--expect-no-line", "BATTLE RIFLE",
                   map_name="homobox@ce")
@@ -198,6 +207,31 @@ class RealPackChecks(Checks):
 
     def test_first_person_arms_refused(self):
         self.fallback("arms", arms_mismatch(self.real()), r"first-person arms do not match: .*")
+
+    def test_added_on_a_gearbox_custom_edition_map(self):
+        """a Gearbox map (Timberland) has every stock tag the pack borrows: added, held, the first spawn the rifle,
+        no read of the pack's tags outside them, no refusal and no console line"""
+        self.ce_map("timberland")
+        self.play("ce-timberland", "--packs-from", str(self.packs("ce-timberland", self.real())),
+                  "--pack-loadout", "primary",
+                  "--expect-line", add.ADDED.format(map="timberland", corrections=add.NO_CORRECTIONS),
+                  "--expect-line", HELD, "--expect-line", PACK_FIRST_SPAWN,
+                  "--expect-no-line", "outside them", "--expect-no-line", "BATTLE RIFLE unavailable",
+                  "--expect-no-line", "weapon pack: refused", refused=True, overflow_ok=True,
+                  map_name="timberland@ce")
+
+    def test_custom_map_without_the_stock_tags_falls_back(self):
+        """a custom Custom Edition map without the stock assault rifle's tags the pack borrows (H2 Blood Gulch):
+        refused for "missing <group> <name>", the map's own weapons (named as the map names them: not the stock
+        first spawn line's), the console's line, the game played"""
+        self.ce_map("h2_blood_gulch")
+        reason = r"missing \w+ weapons\\assault rifle\\.*"
+        self.play("ce-missing", "--packs-from", str(self.packs("ce-missing", self.real())), "--pack-loadout", "primary",
+                  "--expect-line", add.REFUSED.format(reason=reason).replace("bloodgulch", "h2_blood_gulch"),
+                  "--expect-line", UNAVAILABLE.format(map="h2_blood_gulch", reason=reason),
+                  "--expect-line", r"first spawn: ",
+                  "--expect-no-line", add.ANY_ADDED, "--expect-no-line", add.ANY_FIRST_SPAWN,
+                  refused=True, map_name="h2_blood_gulch@ce")
 
     def test_tag_table_full_refused(self):
         self.fallback("table", self.real(), r"tag table full: \d+ of the map's and \d+ of the pack's, at most 1000",

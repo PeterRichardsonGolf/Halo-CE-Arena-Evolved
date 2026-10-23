@@ -65,6 +65,7 @@ Three things stood in the way, all handled here:
 #include "ae_layout.h"
 #include "ae_ce_ui_check.h"
 #include "ce_map_checks.h"
+#include "ae_weapon_pack.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -1000,6 +1001,9 @@ int ae_ce_map_menu_memory(unsigned long address, long size)
 
 	/* (a map layout's item list, read in place of the map's: ae_layout.c) */
 	if (ae_layout_memory(address, size))
+		return 1;
+	/* (a pack's own tags, added to the map in memory of their own: ae_weapon_pack.c) */
+	if (ae_weapon_pack_memory(address, size))
 		return 1;
 	if (size <= 0 || !menu_memory.count || !(menu_memory.collecting || menu_memory.active))
 		return 0;

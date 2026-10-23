@@ -346,7 +346,7 @@ source/cache/cache_files.c	menu_tags_unloaded();\n}\nae_weapon_pack_tags_unloade
 source/cache/cache_files_windows.c	#include "ae_weapon_pack.h" /* AE hook */
 source/cache/cache_files_windows.c	if (ae_weapon_pack_read(tag_index, offset, size, buffer, completion_flag_reference)) return request_index; /* AE hook */\nif (size & (CACHE_FILE_SECTOR_SIZE - 1)
 port/linux/game/tag_validate.c	#include "ae_tag_validate.inc" /* AE hook */
-source/cache/cache_files.c	ae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */\nreturn ce_header->scenario_tag_index;
+source/cache/cache_files.c	ae_tag_validate_custom_edition_map(tag_cache_base_address, cache_file_globals.header.tag_data_size, cache_file_globals.header.file_length, scenario_name); /* AE hook */\nae_weapon_pack_tags_loaded_ce(scenario_name, ce_header->scenario_tag_index); /* AE hook */\nae_ce_map_tags_loaded(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 port/linux/src/port_config.c	{ "debug.weapon_pack_table_limit", _config_integer, "0", "HALO_WEAPON_PACK_TABLE_LIMIT", _environment_value, /* AE hook */\n_platform_all,
 port/linux/game/menu_functions.c	#include "ae_weapon_pack.h" /* AE hook */
 port/linux/game/menu_functions.c	if (global_network_game_server_get()) ae_weapon_pack_lobby_line(text, NUMBEROF(text), game->map.name, &game->variant); /* AE hook */\ntext_set_length(named(description, "lobby_game_data", 0), text, LOBBY_TEXT_LENGTH);
@@ -938,6 +938,10 @@ port/linux/src/menu_files.c	platform_log("modded discs: %d in %s and earlier rel
 port/linux/src/menu_files.c	char const *mod = config_string("game.disc"); /* AE hook */
 port/linux/src/menu_files.c	snprintf(mod_folder, sizeof(mod_folder), "%s/%s/%s/voices", platform_data_root(), ae_disc_folder(mod), mod); /* AE hook */
 port/linux/src/menu_files.c	platform_log("callouts: %d voice packs in %s%s%s%s", voice_count, folder, mod && mod[0] ? " and disc " : "", /* AE hook */
+# weapon packs on Custom Edition maps (0.3.9): a pack's own bitmap uploaded in the Xbox's layout, the map's own in
+# Halo PC's (ae_pack_memory_rules.h)
+source/cache/xbox_texture_cache.c	#include "ae_weapon_pack.h" /* AE hook */
+source/cache/xbox_texture_cache.c	texture->Common = ae_weapon_pack_texture_common(bitmap, texture->Common); /* AE hook */\nIDirect3DBaseTexture8_Register(texture, xbox_pointer(bitmap->base_address));
 # OpenCE build-220 merge: mods (bitmaps left out: ae_mod_bitmaps.c; many-node models refused), the resampler's earlier key, the texture cache's pitch rule
 source/cache/xbox_texture_cache.c	(row_pitch%D3DTEXTURE_PITCH_ALIGNMENT==0 || any_pitch || /* AE hook */
 port/linux/game/mod_bitmaps.c	#if 0 /* AE hook */
@@ -967,7 +971,7 @@ port/linux/src/xinput_sdl.c	if (ae_platform_input_held_back()) return; /* AE hoo
 # card), on Xbox and Custom Edition maps; and the rasterizer's "incompatible bitmap type" error said once for each
 # bitmap and type until the next map, not at every draw (46k lines a game on h2d_coagulation)
 source/cache/cache_files.c	#include "ae_map_look_fixes.h" /* AE hook */
-source/cache/cache_files.c	ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */\nae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
+source/cache/cache_files.c	ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */\nreturn ce_header->scenario_tag_index;
 source/cache/cache_files.c	ae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */\nae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox.c	#include "ae_map_look_fixes.h" /* AE hook */
 # the scoreboard's time left (2026-10-20): HUD STYLE AE's header says it ("FIRST TO 25 . 7:53 LEFT"), the scoreboard's

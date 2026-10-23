@@ -120,6 +120,7 @@ symbols in this file:
 #include "tag_files/tag_groups.h"
 #include "text/draw_string.h"
 #include <xtl.h>
+#include "ae_weapon_pack.h" /* AE hook */
 #include "halo_perf_log.h" /* port: console.perf_log */
 
 /* ---------- constants */
@@ -726,6 +727,7 @@ static void texture_cache_initialize_hardware_format(
 			texture->Common |= D3DCOMMON_PORT_PC_MULTIPURPOSE;
 	}
 #endif
+	texture->Common = ae_weapon_pack_texture_common(bitmap, texture->Common); /* AE hook */
 	IDirect3DBaseTexture8_Register(texture, xbox_pointer(bitmap->base_address));
 
 	return;

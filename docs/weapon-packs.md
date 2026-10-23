@@ -276,16 +276,21 @@ of the pack, first <group> <name>: they are no tag there`). A map's own battle r
 made it and the pack's is added beside it (`weapon pack: map has its own battle rifle: left as the map made it
 (...)`).
 
-**Custom Edition maps** (and Halo PC's and HaloMD's: every map family but the Xbox's) never get a pack yet:
-`weapon pack: refused for <map>: not on Custom Edition maps yet; the game plays without it`. A protected map is
-one of them and is refused the same way.
+**Custom Edition maps** (and Halo PC's and HaloMD's) take the packs as an Xbox map does (0.3.9), by the same
+steps and checks. Their tags are made the Xbox's as they load (models, shaders, functions, HUD, indexed tags), and
+the packs are added once that is done; the build check is not made (their build is Halo PC's). The lines name such
+a map by its file, without `@ce`. The Gearbox maps (Timberland and the rest), and custom maps built on the stock
+tags (h2_coagulation, h2_foundation, h2_relic, ascetic, gothra_mp, ...), have every stock tag the packs borrow.
+Many custom maps do not (CMT's, h2_blood_gulch, h2_warlock, beavercreek_v2, ...: the assault rifle's collision,
+melee or first-person animations): `weapon pack: refused for h2_blood_gulch: missing coll weapons\assault
+rifle\assault rifle; the game plays without it`, and the map's own weapons are played. A protected map (its tags
+renamed) is refused the same way. The vehicle damage pack follows the same path.
 
 **The fallback.** On a map the pack was not added to, the loadout gives its stock value (an assault rifle for a
 battle rifle primary, a pistol for a secondary) and BATTLE RIFLE ON MAP replaces nothing. Every machine says so
-at game start, on the console and in the log: `BATTLE RIFLE unavailable on <map>: <reason>`, or `BATTLE RIFLE:
-not on Custom Edition maps yet`. The host's PC lobby adds a line to its panel before the game where it already
-knows: on a map of another family, with no pack on this machine, or after the pack was refused for that map
-earlier in this run (`BATTLE RIFLE unavailable on <map>`).
+at game start, on the console and in the log: `BATTLE RIFLE unavailable on <map>: <reason>`. The host's PC lobby
+adds a line to its panel before the game where it already knows: with no pack on this machine, or after the pack
+was refused for that map earlier in this run (`BATTLE RIFLE unavailable on <map>`).
 
 A refusal is one line, `weapon pack: refused for <map>: <reason>; the game plays without it`, and the game
 plays with the stock weapons (a loadout slot that asked for the pack keeps its stock value). When it is added:

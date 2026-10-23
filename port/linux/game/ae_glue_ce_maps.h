@@ -41,8 +41,9 @@ void ae_ce_map_menu_block(void const *block, long size);
 void ae_ce_map_menu_blocks_forget(void);
 /* (ce_map_checks.c's ce_tags_pointer, a read outside a Custom Edition map's
 tag cache) whether the size bytes at the Xbox address lie in one block of
-the menus' tags of the Custom Edition map loaded, or in a map layout's item
-list (ae_layout_memory): 1, read as they are; else 0 */
+the menus' tags of the Custom Edition map loaded, in a map layout's item
+list (ae_layout_memory), or in a pack's own tags added to the map
+(ae_weapon_pack_memory): 1, read as they are; else 0 */
 int ae_ce_map_menu_memory(unsigned long address, long size);
 
 /* (ce_repairs.c's ce_repairs_tags_loaded, AE hook) a Custom Edition map's projectiles faster than 32-bit floats can

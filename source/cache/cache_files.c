@@ -1828,9 +1828,10 @@ long scenario_tags_load(
 
 				ce_hud_tags_loaded(global_tag_instances, ce_header->tag_count);
 			}
+			ae_tag_validate_custom_edition_map(tag_cache_base_address, cache_file_globals.header.tag_data_size, cache_file_globals.header.file_length, scenario_name); /* AE hook */
+			ae_weapon_pack_tags_loaded_ce(scenario_name, ce_header->scenario_tag_index); /* AE hook */
 			ae_ce_map_tags_loaded(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 			ae_map_look_fixes_tags_loaded(cache_file_globals.header.name); /* AE hook */
-			ae_weapon_pack_tags_refused_ce(cache_file_globals.header.name, ce_header->scenario_tag_index); /* AE hook */
 			return ce_header->scenario_tag_index;
 		}
 #endif

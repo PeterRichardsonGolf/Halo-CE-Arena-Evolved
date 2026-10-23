@@ -55,8 +55,8 @@ They are in the gametype list the first time you play. Back to the [README](../R
   TEAM AE BR BTB SLAYER, ..., TEAM AE BR COMP 2V2 SLAYER, ..., stored as AE BR BTB S/C/K/B/H and AE BR C2 TS, AE BR
   C2CTF, AE BR C2KOH, AE BR C2 OB). Every other value is its twin's. Not made for the
   single-weapon modes (snipers, rockets, shotguns, SWAT, heavies, shotty snipers), RACE, RALLY or TRAINING. They
-  need the battle rifle's pack (the `packs` folder): only machines with it join; on Custom Edition maps, and where
-  the pack is not, the slot plays an assault rifle.
+  need the battle rifle's pack (the `packs` folder): only machines with it join; on a Custom Edition map without the
+  stock tags the pack borrows, and where the pack is not, the slot plays an assault rifle.
 - **Arena Evolved COMP**: FFA AE COMP SLAYER (25 kills), TEAM AE
   COMP SLAYER (50), TEAM AE COMP CTF (3 captures), TEAM AE COMP KING and TEAM
   AE COMP ODDBALL (5 minutes held, with the lethal ball). 5-second respawn and suicide penalty, 2

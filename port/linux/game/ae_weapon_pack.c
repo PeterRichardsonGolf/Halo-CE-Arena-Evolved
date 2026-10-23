@@ -56,11 +56,28 @@ the slot's pack is ADDED to the map (ae_weapon_pack_tags_loaded):
    by one of its labels in every seat it holds weapons in ("the player
    cannot hold it"); the weapon's first-person animations move the map's
    hands and the weapon's model ("first-person arms do not match"). A map's
-   own battle rifle (CE+ X's) is left alone and logged. A Custom Edition
-   map (or Halo PC's, HaloMD's) never gets the pack (R34: its branch of
-   scenario_tags_load returns before the add; ae_weapon_pack_tags_refused_ce
-   says so).
+   own battle rifle (CE+ X's) is left alone and logged.
 6. Only then is the grown table made the game's.
+
+A CUSTOM EDITION MAP (and Halo PC's, HaloMD's) takes the pack as an Xbox
+map does, by the same steps and checks (ae_weapon_pack_tags_loaded_ce):
+its branch of scenario_tags_load makes the map's tags the Xbox's as they
+load (its models, shaders, functions, HUD and indexed tags converted:
+ce_models.c, ce_shaders, ce_hud.c, ce_resources.c), and the pack is added
+once that is done, before the menus' tags (which are let go first as the
+map unloads, the pack after them, as on an Xbox map). Its build is Halo
+PC's, so the build check is not made: what loaded is laid out as the
+engine's. Three things are per map there and are kept from the pack's own:
+the map's tag reads outside its tag cache read as zeroes (ce_map_checks.c's
+ce_tags_pointer), which let a pack's memory through (ae_weapon_pack_memory,
+asked through ae_glue_ce_maps.c); every texture is uploaded in Halo PC's
+layout, which a pack's own bitmap is not (ae_weapon_pack_bitmap_is_own,
+xbox_texture_cache.c); and the tag validator never ran on the map's tags,
+so they are made the tags last checked first (ae_tag_validate.inc's
+ae_tag_validate_custom_edition_map). A map that lacks a stock tag the pack
+borrows (most custom maps: the assault rifle's collision, melee and first-
+person animations) refuses it as any map does ("missing <group> <name>"),
+and plays the stock weapons. The vehicle damage pack follows the same path.
 
 THE FALLBACK (decision 10). A map the pack was not added to plays the stock
 weapons: ae_weapon_pack_added() is 0 and ae_weapon_pack_weapon_definition()
@@ -175,9 +192,6 @@ enum
 	MAP_NAME_SIZE = 33,
 	REASON_SIZE = 200,
 };
-
-/* what a Custom Edition map (and Halo PC's, HaloMD's) is told (R34) */
-#define NOT_ON_CUSTOM_EDITION "not on Custom Edition maps yet"
 
 /* ---------- structures */
 
@@ -1850,10 +1864,12 @@ static void placed_looks_set(
 	}
 }
 
-/* the slot's pack added to the map whose tags have just loaded, or refused for it (one line, the reason kept) */
+/* the slot's pack added to the map whose tags have just loaded (an Xbox map's, or a Custom Edition map's made the
+Xbox's: custom_edition), or refused for it (one line, the reason kept) */
 static void placed_add_slot(
 	short slot,
-	char const *map_name)
+	char const *map_name,
+	boolean custom_edition)
 {
 	struct ae_pack *pack = slot_pack(slot);
 
@@ -1875,7 +1891,9 @@ static void placed_add_slot(
 		return;
 	}
 	/* CHECK: the map's tags are laid out as the engine's: a build it plays multiplayer on (2276, NHE's 2300,
-	PAL's through pal_tags.c: cache_files.c's list) */
+	PAL's through pal_tags.c: cache_files.c's list). A Custom Edition map's build is Halo PC's: its tags were made
+	the Xbox's as they loaded (scenario_tags_load's branch for it) */
+	if (!custom_edition)
 	{
 		char build[0x20];
 
@@ -1919,12 +1937,13 @@ static boolean vehicle_pack_asked(
 		scenario->vehicles.count > 0;
 }
 
-/* once a map's tags are read and checked (scenario_tags_load), before anything else adds to its tag table: the
-pack the game about to be played asks for is added to a multiplayer map. A map loaded for no game (the menus',
-the campaign: no pending game variant) gets none */
-void ae_weapon_pack_tags_loaded(
+/* the packs the game about to be played asks for, added to the multiplayer map whose tags have just loaded (an
+Xbox map's, or a Custom Edition map's made the Xbox's: custom_edition). A map loaded for no game (the menus', the
+campaign: no pending game variant) gets none */
+static void placed_add_slots(
 	char const *map_name,
-	long scenario_tag_index)
+	long scenario_tag_index,
+	boolean custom_edition)
 {
 	/* (the map's header's name: 32 bytes, its terminator the header's to keep) */
 	char name[MAP_NAME_SIZE];
@@ -1942,39 +1961,37 @@ void ae_weapon_pack_tags_loaded(
 		for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
 		{
 			if (mask & AE_WEAPON_SLOT_BIT(slot))
-				placed_add_slot(slot, map_name);
+				placed_add_slot(slot, map_name, custom_edition);
 		}
 	}
 	/* (the vehicle damage pack, after them: VEHICLES DESTRUCTIBLE on, a multiplayer map with vehicles) */
 	if (vehicle_pack_asked(scenario_tag_index))
-		placed_add_slot(VEHICLE_PACK_SLOT, map_name);
+		placed_add_slot(VEHICLE_PACK_SLOT, map_name, custom_edition);
 	placed_select(1);
 }
 
-/* the Custom Edition branch of scenario_tags_load: no pack on such a map (R34: the pack's tags would be read
-through the Custom Edition tag cache's bounds, and its bitmaps uploaded in Halo PC's layout); said once a map */
-void ae_weapon_pack_tags_refused_ce(
+/* once a map's tags are read and checked (scenario_tags_load), before anything else adds to its tag table */
+void ae_weapon_pack_tags_loaded(
 	char const *map_name,
 	long scenario_tag_index)
 {
-	char name[MAP_NAME_SIZE];
-	unsigned int mask;
-	short slot;
+	placed_add_slots(map_name, scenario_tag_index, FALSE);
+}
 
-	if (placed_any() || !map_name)
+/* the Custom Edition branch of scenario_tags_load, once the map's tags are made the Xbox's and the validator's state
+is the map's (ae_tag_validate_custom_edition_map), before the menus' tags are added (ae_ce_map_tags_loaded). The map
+goes by its file's name (scenario_name: h2_coagulation@ce is h2_coagulation), not its header's (H2 Coagulation),
+which the lobby's line cannot know before the map loads; both machines of a game load the file the game names */
+void ae_weapon_pack_tags_loaded_ce(
+	char const *scenario_name,
+	long scenario_tag_index)
+{
+	char file[MAP_NAME_SIZE];
+
+	if (!scenario_name)
 		return;
-	snprintf(name, sizeof(name), "%.32s", map_name);
-	if (!refusal_asked(name, scenario_tag_index, &mask))
-		return;
-	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
-	{
-		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
-			continue;
-		placed_select(slot);
-		error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", name, NOT_ON_CUSTOM_EDITION);
-		refusal_note(name, NOT_ON_CUSTOM_EDITION, TRUE);
-	}
-	placed_select(1);
+	map_family_parse(scenario_name, file, sizeof(file));
+	placed_add_slots(file, scenario_tag_index, TRUE);
 }
 
 boolean ae_weapon_pack_unavailable_line(
@@ -1986,13 +2003,8 @@ boolean ae_weapon_pack_unavailable_line(
 
 	if (!line || size <= 0 || !state || !state->asked || placements[slot - 1].added)
 		return FALSE;
-	if (!strcmp(state->reason, NOT_ON_CUSTOM_EDITION))
-		snprintf(line, (size_t)size, "%s: %s", ae_weapon_slots_display(slot), NOT_ON_CUSTOM_EDITION);
-	else
-	{
-		snprintf(line, (size_t)size, "%s unavailable on %s: %s", ae_weapon_slots_display(slot), state->map_name,
-			state->reason[0] ? state->reason : "not added");
-	}
+	snprintf(line, (size_t)size, "%s unavailable on %s: %s", ae_weapon_slots_display(slot), state->map_name,
+		state->reason[0] ? state->reason : "not added");
 
 	return TRUE;
 }
@@ -2019,10 +2031,9 @@ void ae_weapon_pack_lobby_line(
 		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
 			continue;
 		placed_select(slot);
-		/* (the pre-game check on the map's family, R34: before any map is loaded) */
-		if (map_family_parse(map_name, file, sizeof(file)) != _map_family_xbox)
-			snprintf(line, sizeof(line), "%s: %s", ae_weapon_slots_display(slot), NOT_ON_CUSTOM_EDITION);
-		else if (!slot_pack(slot) || refused_map_reason(file))
+		/* (the map by its file's name, whatever its family: a Custom Edition map takes packs as an Xbox map does) */
+		map_family_parse(map_name, file, sizeof(file));
+		if (!slot_pack(slot) || refused_map_reason(file))
 			snprintf(line, sizeof(line), "%s unavailable on %.40s", ae_weapon_slots_display(slot), file);
 		else
 			continue;
@@ -2191,6 +2202,38 @@ boolean ae_weapon_pack_read(
 	}
 	placed_select(selected);
 	return read;
+}
+
+boolean ae_weapon_pack_memory(
+	unsigned long address,
+	long size)
+{
+	short slot;
+
+	for (slot = 1; slot <= PLACED_SLOTS; slot++)
+	{
+		struct placed_state const *state = &placements[slot - 1];
+
+		if (state->arena && ae_pack_memory_holds((unsigned long)XBOX_ADDRESS(state->arena),
+			(unsigned long)state->arena_size, address, size))
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+boolean ae_weapon_pack_bitmap_is_own(
+	void const *bitmap)
+{
+	return bitmap && ae_weapon_pack_memory((unsigned long)XBOX_ADDRESS(bitmap), 1);
+}
+
+unsigned long ae_weapon_pack_texture_common(
+	void const *bitmap,
+	unsigned long common)
+{
+	return ae_pack_texture_common(common, ae_weapon_pack_bitmap_is_own(bitmap));
 }
 
 short ae_weapon_pack_added(

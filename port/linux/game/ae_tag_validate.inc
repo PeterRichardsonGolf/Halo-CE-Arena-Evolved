@@ -164,3 +164,30 @@ boolean ae_tag_validate_added_tags(
 
 	return !validation.refused;
 }
+
+/* a Custom Edition map's tags (or Halo PC's, HaloMD's), which tag_validate_tags never checks (they are Halo PC's
+layout, checked as they load: ce_map_checks.c), made the tags last checked: the validator's state is this map's,
+not the map checked before it (the menus' ui.map, or none at all on a dedicated server that plays only such maps),
+so the tags a pack adds to it are checked beside it as beside an Xbox map's. Its structure bsps are never checked
+here (scenario_load_structure_bsp skips them on such a map), and the next map checked starts anew */
+void ae_tag_validate_custom_edition_map(
+	void *tag_header,
+	long tag_data_size,
+	long file_length,
+	char const *map_name)
+{
+	memset(&tag_validate_globals, 0, sizeof(tag_validate_globals));
+	if (!tag_header || tag_data_size <= 0 || !map_name)
+		return;
+#ifdef HALO_64BIT
+	if (!tag_validate_empty_name)
+		tag_validate_empty_name = malloc(1);
+	if (!tag_validate_empty_name)
+		return;
+	tag_validate_empty_name[0] = 0;
+#endif
+	tag_validate_globals.header = tag_header;
+	tag_validate_globals.tag_data_size = tag_data_size;
+	tag_validate_globals.file_length = file_length;
+	snprintf(tag_validate_globals.map_name, sizeof(tag_validate_globals.map_name), "%s", map_name);
+}

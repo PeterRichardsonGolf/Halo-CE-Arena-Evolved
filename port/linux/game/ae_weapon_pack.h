@@ -25,6 +25,8 @@ Include after cseries.h.
 #ifndef __AE_WEAPON_PACK_H
 #define __AE_WEAPON_PACK_H
 
+#include "ae_pack_memory_rules.h"
+
 struct ae_pack_weapon_record;
 
 enum
@@ -122,17 +124,26 @@ long ae_weapon_pack_smooth_bitmap_at(unsigned long address, long width, long hei
 struct game_variant;
 
 /* (scenario_tags_load, its Custom Edition branch, which returns before ae_weapon_pack_tags_loaded is reached) a
-Custom Edition map (or Halo PC's, HaloMD's) gets no pack: one refusal line when the pending game asks for one */
-void ae_weapon_pack_tags_refused_ce(char const *map_name, long scenario_tag_index);
+Custom Edition map (or Halo PC's, HaloMD's) takes the packs as an Xbox map does, once its tags are made the Xbox's
+and before the menus' tags are added; refused with the reason any map is ("missing <group> <name>") */
+void ae_weapon_pack_tags_loaded_ce(char const *scenario_name, long scenario_tag_index);
+/* (ae_glue_ce_maps.c's ae_ce_map_menu_memory, which ce_map_checks.c's ce_tags_pointer asks on a Custom Edition map)
+whether size bytes at an Xbox address lie wholly in a pack's own tags on the loaded map (its arena, from the moment
+it is made as the pack is added until it is let go; any slot's, the vehicle damage pack's too) */
+boolean ae_weapon_pack_memory(unsigned long address, long size);
+/* whether a bitmap (a bitmap tag's bitmaps element) is one of a pack's own */
+boolean ae_weapon_pack_bitmap_is_own(void const *bitmap);
+/* (xbox_texture_cache.c) a texture's common flags for its bitmap: a pack's own is laid out as the Xbox's on any map,
+a Custom Edition map's too (whose own bitmaps are Halo PC's): ae_pack_memory_rules.h */
+unsigned long ae_weapon_pack_texture_common(void const *bitmap, unsigned long common);
 /* (game_engine_log_rules: every machine, at game start) the line the console and the log give when the game's
-gametype names the slot and the loaded map did not get its pack ("BATTLE RIFLE unavailable on <map>: <reason>", or
-"SMG: not on Custom Edition maps yet"): TRUE and line written, or FALSE (the pack is on the map, or not asked for) */
+gametype names the slot and the loaded map did not get its pack ("BATTLE RIFLE unavailable on <map>: <reason>"):
+TRUE and line written, or FALSE (the pack is on the map, or not asked for) */
 boolean ae_weapon_pack_unavailable_line(short slot, char *line, long size);
 /* (the PC lobby, on the host) appended to the lobby's panel text (count characters) as a line of its own for each
 slot the variant names (the slot's display name in place of BATTLE RIFLE), for a game of this variant on this map
-before it starts: "BATTLE RIFLE: not on Custom Edition maps yet" on a map of
-another family than the Xbox's; "BATTLE RIFLE unavailable on <map>" where this machine knows the pack cannot be
-added (no pack in the slot here, or the pack was refused for that map before); nothing otherwise */
+before it starts: "BATTLE RIFLE unavailable on <map>" where this machine knows the pack cannot be added (no pack
+in the slot here, or the pack was refused for that map before, a Custom Edition map's as any); nothing otherwise */
 void ae_weapon_pack_lobby_line(wchar_t *text, long count, char const *map_name, struct game_variant const *variant);
 
 #endif

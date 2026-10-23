@@ -9510,8 +9510,9 @@ void game_engine_log_rules(
 		ae_mouse_aim_assist_log_rules(flags); /* AE hook */
 		ae_vehicle_death_log_rules(flags); /* AE hook */
 		/* port: weapon pack: the fallback said on every machine (decision 10): a gametype that uses the pack on
-		a map that did not get it (refused there, a Custom Edition map, no pack here) plays the stock weapons
-		(the loadout's assault rifle or pistol; BATTLE RIFLE ON MAP replaces nothing), and the console says why */
+		a map that did not get it (refused there: a Custom Edition map without the stock tags it borrows; no pack
+		here) plays the stock weapons (the loadout's assault rifle or pistol; BATTLE RIFLE ON MAP replaces
+		nothing), and the console says why */
 		if (pack)
 		{
 			char unavailable[256];

@@ -222,6 +222,8 @@ UNITS = {
     "ae_vehicle_death_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (the vehicle damage pack's look: the kinds by the tag's name, the pack's names, the damaged threshold)
     "ae_vehicle_pack_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (a pack's tags on a Custom Edition map: the reads its memory lets through, its bitmaps' Xbox layout)
+    "ae_pack_memory_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
     # (editing a field's text: under the sanitizers, as it takes pasted text)
     "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

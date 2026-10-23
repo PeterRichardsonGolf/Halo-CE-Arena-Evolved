@@ -276,6 +276,16 @@ default) checks a map as upstream does: any overlap refuses it */
 void tag_validate_allow_shared_bytes(
 	boolean allow);
 
+/* port (Arena Evolved): a Custom Edition map's tags (Halo PC's layout,
+checked as they load: ce_map_checks.c, never by tag_validate_tags) made the
+tags last checked, so that tags added to it (a weapon pack's:
+ae_tag_validate.inc) are checked beside this map's, not the map's before */
+void ae_tag_validate_custom_edition_map(
+	void *tag_header,
+	long tag_data_size,
+	long file_length,
+	char const *map_name);
+
 /* the tags at tag_header (tag_data_size bytes read from a map file of
 file_length bytes): FALSE if they cannot be used. Before anything else
 reads them; corrections are made in place */

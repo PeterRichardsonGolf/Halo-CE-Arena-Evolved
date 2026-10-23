@@ -310,7 +310,8 @@ a value is given as value + 1 */
 second (revision 13; the pistol second before), two frag grenades (revision
 13). The weapon pack's rifle takes the PRIMARY slot, which keeps an assault
 rifle as its own weapon (what is played where the pack is not: an older
-build, a Custom Edition map; game_engine.h's pack_loadout) */
+build, a Custom Edition map without the stock tags it borrows;
+game_engine.h's pack_loadout) */
 #define ARENA_BR_START \
 	.loadout_primary = ARENA_SET(_loadout_weapon_assault_rifle), \
 	.loadout_secondary = ARENA_SET(_loadout_weapon_assault_rifle), \
