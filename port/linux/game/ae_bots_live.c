@@ -29,7 +29,8 @@ takes its bots from the setting as before. LAN games keep their lobby's bots
 (ae_lan_bots.c) until the bots' networking is done.
 
 HALO_BOTS_LIVE_TEST="<second>:<count>,..." (tests only) writes bots.count at
-those seconds of the game's clock, as the menus would.
+those seconds of the game's clock, as the menus would; in a LAN or internet
+game the host hosts too (its network bots follow it: ae_lan_bots.c).
 */
 
 #include "cseries.h"
@@ -119,12 +120,16 @@ void ae_bots_live(struct network_game_server *server, struct network_game *game,
 
 	/* (the host's own machine plays the game: it takes the in-game
 	messages) */
-	if (!local_ingame || !client || network_game_client_get_state(client, NULL) != AE_BOTS_LIVE_CLIENT_INGAME ||
+	if (!client || network_game_client_get_state(client, NULL) != AE_BOTS_LIVE_CLIENT_INGAME ||
 		!game_engine_running())
 	{
 		return;
 	}
+	/* (the test's bots.count in a LAN or internet game too: the network bots
+	follow it, ae_lan_bots.c's ae_lan_bots_ingame) */
 	ae_bots_live_test(game);
+	if (!local_ingame)
+		return;
 	if (ae_bots_engine_played(game->variant.game_engine_index))
 		wanted = bots_wanted_count();
 

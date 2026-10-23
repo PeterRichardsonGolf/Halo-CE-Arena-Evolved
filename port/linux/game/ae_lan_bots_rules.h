@@ -28,7 +28,11 @@ machines": in the game's machines, at the top machine indices, with no
 connection), four to a machine, which every other machine sees as a machine
 with four players. The lobby still leaves one player slot free; at the start
 of a team game whose players are odd in number, one more bot takes it, so the
-teams are even (ae_lan_bots_start_extra).
+teams are even (ae_lan_bots_start_extra). The game in progress takes more bots
+as it has room (no slot kept free there: a person joining a full game takes a
+bot's place), new virtual machines too, four at a time
+(ae_lan_bots_ingame_step), so a game started before its lobby had all of
+bots.count's fills up a few seconds in.
 */
 
 #ifndef __AE_LAN_BOTS_RULES_H
@@ -70,6 +74,24 @@ the game has player slots (none kept free: a person joining a full game takes a 
 ae_lan_bots_leaving_team), one more in a team game whose players are odd (as at the start) */
 int ae_lan_bots_ingame_target(int wanted, int eligible, int other_players, int maximum_players, int capacity, int teams,
 	int against);
+
+/* (debug.network_bots) the game in progress's seats: the bots there are (bots), the free seats of the host's
+controllers and of its virtual machines (free_seats), and four on each virtual machine it may yet add (new_machines: a
+virtual machine joins the game in progress as a late-joining machine does), up to AE_NET_BOTS_MAXIMUM */
+int ae_lan_bots_ingame_capacity(int bots, int free_seats, int new_machines);
+
+/* (debug.network_bots) the game in progress's next step towards its target: the bots that join (> 0) or leave (< 0)
+at once, at most a machine's four (AE_LAN_BOTS_CONTROLLERS); 0 for none */
+int ae_lan_bots_ingame_step(int bots, int target);
+
+/* (debug.network_bots) the ticks the game in progress waits before a step (`next`: ae_lan_bots_ingame_step's) since
+its players last changed: AE_LAN_BOTS_STEP_TICKS when the last change was the bots' own step the same way (`last`:
+> 0 joined, < 0 left; a bots.count of 31 fills a game started at once in a few seconds), else
+AE_LAN_BOTS_SETTLE_TICKS (a person joined or left, the game started, or the bots turn from leaving to joining: a
+seat let go is taken again only once its player has quit on every machine) */
+#define AE_LAN_BOTS_SETTLE_TICKS 60
+#define AE_LAN_BOTS_STEP_TICKS 3
+int ae_lan_bots_ingame_wait(int last, int next);
 
 /* (debug.network_bots) the team whose bot leaves (a person takes its place, or fewer are wanted): in a team game the
 team with more players that has a bot (red when even), else the other's (0 red, 1 blue); -1 in a game without teams

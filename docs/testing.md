@@ -181,7 +181,8 @@ never under /tmp (each game's private /tmp would hide them). A spec's `env` adds
 local game's clock, as the pause menu's SETTINGS would (`game/ae_bots_live.c`): for example
 `HALO_BOTS=1 HALO_BOTS_LIVE_TEST=20:3,40:1,60:0` with `--network-test local:bloodgulch`. halo.log/debug.txt says
 `bots: test sets bots.count to N`, then `bots: bot N joined the game in progress (team T)` or `bots: bot N left the
-game in progress` for each change. A LAN game (`host:`) ignores it.
+game in progress` for each change. A LAN or internet game it hosts (`host:`) takes it too: the host's network bots
+follow it, four at a time (`net bots: bot N joined the game in progress (...)` / `left the game in progress`).
 
 ## The Windows test box (a shared PC: people, children included, use it)
 

@@ -187,6 +187,64 @@ static void test_ingame_target(void)
 	CHECK(ae_lan_bots_ingame_target(15, 1, 2, 15, 127, 1, 0) == 13);
 }
 
+/* the game in progress's seats: those there, the free ones, four on each virtual machine it may still add */
+static void test_ingame_capacity(void)
+{
+	/* the owner's game: 15 bots on the host's three and three virtual machines, no free seat: 29 more machines */
+	CHECK(ae_lan_bots_ingame_capacity(15, 0, 29) == 127);
+	CHECK(ae_lan_bots_ingame_capacity(15, 0, 4) == 31);
+	CHECK(ae_lan_bots_ingame_capacity(15, 0, 0) == 15);
+	CHECK(ae_lan_bots_ingame_capacity(13, 2, 0) == 15);
+	CHECK(ae_lan_bots_ingame_capacity(0, 3, 1) == 7);
+	/* (no more virtual machines than the bots take, no more than AE_NET_BOTS_MAXIMUM) */
+	CHECK(ae_lan_bots_ingame_capacity(0, 0, 1000) == AE_NET_BOTS_MAXIMUM);
+	CHECK(ae_lan_bots_ingame_capacity(-1, -1, -1) == 0);
+	/* with ae_lan_bots_ingame_target: bots.count 31, host alone, max 128: 31 */
+	CHECK(ae_lan_bots_ingame_target(31, 1, 1, 128, ae_lan_bots_ingame_capacity(15, 0, 29), 0, 0) == 31);
+	/* ... max 16 (a full game): 15 */
+	CHECK(ae_lan_bots_ingame_target(31, 1, 1, 16, ae_lan_bots_ingame_capacity(15, 0, 29), 0, 0) == 15);
+}
+
+/* four at a time towards the target, either way */
+static void test_ingame_step(void)
+{
+	CHECK(ae_lan_bots_ingame_step(15, 31) == 4);
+	CHECK(ae_lan_bots_ingame_step(28, 31) == 3);
+	CHECK(ae_lan_bots_ingame_step(31, 31) == 0);
+	CHECK(ae_lan_bots_ingame_step(31, 20) == -4);
+	CHECK(ae_lan_bots_ingame_step(22, 20) == -2);
+	CHECK(ae_lan_bots_ingame_step(0, 1) == 1);
+	/* 15 to 31: four steps; 31 to 20: three */
+	{
+		int bots = 15, steps = 0;
+
+		while (ae_lan_bots_ingame_step(bots, 31))
+			bots += ae_lan_bots_ingame_step(bots, 31), steps++;
+		CHECK(bots == 31 && steps == 4);
+		steps = 0;
+		while (ae_lan_bots_ingame_step(bots, 20))
+			bots += ae_lan_bots_ingame_step(bots, 20), steps++;
+		CHECK(bots == 20 && steps == 3);
+	}
+}
+
+/* the wait before a step: short after the bots' own step the same way, else the two seconds the game settles */
+static void test_ingame_wait(void)
+{
+	CHECK(ae_lan_bots_ingame_wait(4, 4) == AE_LAN_BOTS_STEP_TICKS);
+	CHECK(ae_lan_bots_ingame_wait(1, 3) == AE_LAN_BOTS_STEP_TICKS);
+	CHECK(ae_lan_bots_ingame_wait(-4, -2) == AE_LAN_BOTS_STEP_TICKS);
+	/* the first step (the game started, or a person joined or left) */
+	CHECK(ae_lan_bots_ingame_wait(0, 4) == AE_LAN_BOTS_SETTLE_TICKS);
+	CHECK(ae_lan_bots_ingame_wait(0, -1) == AE_LAN_BOTS_SETTLE_TICKS);
+	/* turning from leaving to joining (a seat let go is taken only once its player quit everywhere), and back */
+	CHECK(ae_lan_bots_ingame_wait(-4, 4) == AE_LAN_BOTS_SETTLE_TICKS);
+	CHECK(ae_lan_bots_ingame_wait(4, -4) == AE_LAN_BOTS_SETTLE_TICKS);
+	CHECK(AE_LAN_BOTS_STEP_TICKS < AE_LAN_BOTS_SETTLE_TICKS);
+	/* 16 bots after the start: 2 s, then three more steps */
+	CHECK(AE_LAN_BOTS_SETTLE_TICKS + 3 * AE_LAN_BOTS_STEP_TICKS <= 10 * 30);
+}
+
 /* the bot that gives way: the larger team's, so the person joins the team it leaves (the host puts a joiner on
 the smaller team, red when even) and the teams stay even */
 static void test_leaving_team(void)
@@ -213,6 +271,9 @@ int main(void)
 	test_name();
 	test_ingame_target();
 	test_leaving_team();
+	test_ingame_capacity();
+	test_ingame_step();
+	test_ingame_wait();
 	printf("%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

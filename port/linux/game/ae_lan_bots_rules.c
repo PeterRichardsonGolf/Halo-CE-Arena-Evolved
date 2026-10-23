@@ -74,6 +74,35 @@ int ae_lan_bots_ingame_target(int wanted, int eligible, int other_players, int m
 	return count;
 }
 
+int ae_lan_bots_ingame_capacity(int bots, int free_seats, int new_machines)
+{
+	int count = (bots > 0 ? bots : 0) + (free_seats > 0 ? free_seats : 0);
+
+	if (new_machines > AE_NET_BOTS_MACHINES)
+		new_machines = AE_NET_BOTS_MACHINES;
+	if (new_machines > 0)
+		count += new_machines * AE_LAN_BOTS_CONTROLLERS;
+	return count > AE_NET_BOTS_MAXIMUM ? AE_NET_BOTS_MAXIMUM : count;
+}
+
+int ae_lan_bots_ingame_step(int bots, int target)
+{
+	int step = target - bots;
+
+	if (step > AE_LAN_BOTS_CONTROLLERS)
+		return AE_LAN_BOTS_CONTROLLERS;
+	if (step < -AE_LAN_BOTS_CONTROLLERS)
+		return -AE_LAN_BOTS_CONTROLLERS;
+	return step;
+}
+
+int ae_lan_bots_ingame_wait(int last, int next)
+{
+	if ((last > 0 && next > 0) || (last < 0 && next < 0))
+		return AE_LAN_BOTS_STEP_TICKS;
+	return AE_LAN_BOTS_SETTLE_TICKS;
+}
+
 int ae_lan_bots_leaving_team(int teams, int red_bots, int blue_bots, int red_players, int blue_players)
 {
 	int first;
