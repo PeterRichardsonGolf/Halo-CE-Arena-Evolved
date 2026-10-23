@@ -42,6 +42,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   packs come in every download: Helljumper, Corporal, Aurora, Bastion, Selene and Solace.
 - Bots: in a network game in progress, bots fill up to BOTS (new bot machines join too);
   the classic Game Options BOTS row goes up to 31.
+- Bots that join a LAN or online game in progress (BOTS raised mid-game) no longer show up as split-screen views on
+  the host (the host drew a view for each of the first three, and its frame rate fell).
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
   FFmpeg on every platform, Grifball and Bomb, game type files.
 - NETWORK VERSION 36 (OpenCE build-266 merged): plays with OpenCE build-266 both ways. Arena Evolved 0.3.5 to 0.3.8,
