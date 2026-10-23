@@ -108,17 +108,21 @@ int main(void)
 		ae_settings_value_count(ae_settings_row(ae_settings_row_of("action.gametypes_folder"))) == 0);
 	CHECK(ae_settings_group(AE_SETTINGS_VIDEO)->whose == AE_SETTINGS_PC);
 
-	/* rows.md's counts: CONTROLS 29 with everything shown (a pad-only player sees fewer), VIEW 11, HUD 26 */
+	/* rows.md's counts: CONTROLS 30 with everything shown (a pad-only player sees fewer; GYRO's other four only with
+	GYRO AIMING on), VIEW 11, HUD 26 */
 	zoom_mode = "both";
 	mouse_zoom = "both";
 	callouts = "items";
 	glow = "true";
-	/* (CONTROLS: MOUSE STYLE picks CLASSIC's two or MCC's three: 29 counts the classic ones and MCC's three) */
-	CHECK(rows_of(AE_SETTINGS_CONTROLS, &both) == 26);
-	mouse_style = "mcc";
+	/* (CONTROLS: MOUSE STYLE picks CLASSIC's two or MCC's three: 30 counts the classic ones and MCC's three) */
 	CHECK(rows_of(AE_SETTINGS_CONTROLS, &both) == 27);
+	mouse_style = "mcc";
+	CHECK(rows_of(AE_SETTINGS_CONTROLS, &both) == 28);
 	CHECK(has_label(AE_SETTINGS_CONTROLS, &both, "MOUSE SENSITIVITY") &&
 		!has_label(AE_SETTINGS_CONTROLS, &both, "HORIZONTAL SENSITIVITY"));
+	/* (0.3.9: GYRO AIMING for every player, this PC's; its sensitivity and invert rows only with it on) */
+	CHECK(has_label(AE_SETTINGS_CONTROLS, &pad, "GYRO AIMING") && !has_label(AE_SETTINGS_CONTROLS, &pad, "TURN SENSITIVITY"));
+	CHECK(ae_settings_row(ae_settings_row_of("input.gyro_aim"))->flags & AE_SETTINGS_THIS_PC);
 	mouse_style = "classic";
 	CHECK(rows_of(AE_SETTINGS_VIEW, &pad) == 11);
 	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 23);
@@ -128,7 +132,7 @@ int main(void)
 	CHECK(has_label(AE_SETTINGS_CONTROLS, &pad, "ZOOM HOLD TIME"));
 	zoom_mode = "toggle";
 	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "ZOOM HOLD TIME"));
-	CHECK(rows_of(AE_SETTINGS_CONTROLS, &pad) == 12);
+	CHECK(rows_of(AE_SETTINGS_CONTROLS, &pad) == 13);
 	/* the rows that hang on another: GLOW INTENSITY, CLOCK LABELS, PANEL COLOR, CALLOUT DETAIL / VOICE */
 	glow = "false";
 	clock = "off";
@@ -147,8 +151,9 @@ int main(void)
 	CHECK(ae_settings_entry_is_header(entries[0]) && !strcmp(ae_settings_entry_section(entries[0]), "CONTROLLER"));
 	CHECK(!strcmp(ae_settings_row(entries[1])->label, "BUTTON LAYOUT"));
 	found = ae_settings_sections(entries, count, sections, AE_SETTINGS_SECTIONS);
-	CHECK(found == 3 && !strcmp(sections[1].name, "MOUSE") && !strcmp(sections[2].name, "KEYBOARD"));
-	CHECK(sections[0].rows == 12 && sections[2].rows == 2);
+	CHECK(found == 4 && !strcmp(sections[1].name, "GYRO") && !strcmp(sections[2].name, "MOUSE") &&
+		!strcmp(sections[3].name, "KEYBOARD"));
+	CHECK(sections[0].rows == 12 && sections[1].rows == 1 && sections[3].rows == 2);
 	CHECK(ae_settings_section_at(sections, found, (short)(sections[1].header + 1)) == 1);
 	CHECK(ae_settings_row_step(entries, count, (short)(sections[1].header - 1), 1) == sections[1].header + 1);
 	CHECK(ae_settings_row_step(entries, count, 1, -1) == 1);
@@ -240,14 +245,14 @@ int main(void)
 		CHECK(ae_settings_value_index(ae_settings_row(ae_settings_row_of("network.map_seed_upload")), "300") == 2);
 	}
 
-	/* ACCESSIBILITY (6): the menus' rows this PC's (LANGUAGE needs a restart; English is the empty value), the links
+	/* ACCESSIBILITY (8): the menus' rows this PC's (LANGUAGE needs a restart; English is the empty value), the links
 	the HUD rows' own settings (row_of finds HUD's: where A goes) */
 	{
 		struct ae_settings_row const *language = ae_settings_row(ae_settings_row_of("game.language"));
 		short entries_here[AE_SETTINGS_ENTRIES], here = ae_settings_entries(AE_SETTINGS_ACCESSIBILITY, &pad, entries_here,
 			AE_SETTINGS_ENTRIES);
 
-		CHECK(rows_of(AE_SETTINGS_ACCESSIBILITY, &pad) == 6 && here == 8);
+		CHECK(rows_of(AE_SETTINGS_ACCESSIBILITY, &pad) == 8 && here == 11);
 		CHECK((language->flags & AE_SETTINGS_RESTART) && (language->flags & AE_SETTINGS_THIS_PC));
 		CHECK(ae_settings_row_takes_empty(language) && ae_settings_value_index(language, "") == 0 &&
 			ae_settings_value_index(language, "ja") == 5);

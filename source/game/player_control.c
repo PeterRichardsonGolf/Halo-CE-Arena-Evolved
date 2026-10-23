@@ -1378,7 +1378,7 @@ static void get_local_player_input_blob(
 							input->facing_delta.pitch += mouse_pitch;
 						}
 					}
-#ifdef HALO_SWITCH_CONSOLE
+#if defined(HALO_SWITCH_CONSOLE) || (!defined(HALO_ANDROID) && !defined(HALO_SERVER)) /* AE hook */
 					{
 						/* port: the controller's gyroscope (port/linux/src/xinput_sdl.c),
 						as the mouse's turn above, with its own invert; with
