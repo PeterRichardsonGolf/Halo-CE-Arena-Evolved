@@ -256,7 +256,7 @@ int main(void)
 	}
 
 	/* ONLINE (19 of rows.md's 22: GAME PORT, LAN ADDRESS and BROADCAST ADDRESSES wait for their own lists; and
-	OpenCE's host SHIELD EFFECTS, HOSTING's): INTERNET
+	OpenCE's host SHIELD EFFECTS, HOSTING's; and INTERNET SHARING, MAPS's): INTERNET
 	DOWNLOADS with DOWNLOAD MAPS on, UPLOAD LIMIT with HELP SEND MAPS on, the Discord rows unless DISCORD STATUS is OFF;
 	COMMUNITY SERVICES ON / OFF writes yes / no */
 	{
@@ -265,11 +265,11 @@ int main(void)
 		set("network.map_download", "true");
 		set("network.map_seed", "true");
 		set("discord.presence", "full");
-		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 20);
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 21);
 		set("network.map_download", "false");
 		set("network.map_seed", "false");
 		set("discord.presence", "off");
-		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 16);
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 17);
 		CHECK(!has_label(AE_SETTINGS_ONLINE, &pad, "INTERNET DOWNLOADS") && !has_label(AE_SETTINGS_ONLINE, &pad,
 			"DISCORD JOIN BUTTON"));
 		CHECK(!strcmp(ae_settings_value_of(community, 0), "yes") && !strcmp(ae_settings_value_text(community, 1), "OFF"));
