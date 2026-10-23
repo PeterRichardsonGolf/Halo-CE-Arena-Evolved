@@ -66,6 +66,13 @@ int main(void)
 		CHECK(ae_vehicle_death_health_for("vehicles\\c gun turret\\c gun turret_mp") == 290.0f);
 		CHECK(ae_vehicle_death_health_for("levels\\test\\snowhog\\snow_warthog") == 410.0f);
 		CHECK(ae_vehicle_death_health_for("vehicles\\pelican\\pelican") == 0.0f);
+		CHECK(ae_vehicle_death_health_for("vehicles\\g_warthog\\g_warthog") == 410.0f);
+		CHECK(ae_vehicle_death_health_for("vehicles\\h2_ghost\\h2_ghost") == 290.0f);
+		/* (a map's wreck pieces and parts: the folder's word is not the tag's) */
+		CHECK(ae_vehicle_death_health_for("vehicles\\h2_ghost\\pieces\\dead_hull") == 0.0f);
+		CHECK(ae_vehicle_death_health_for("vehicles\\h2_banshee\\pieces\\single_rudder") == 0.0f);
+		CHECK(ae_vehicle_death_health_for("vehicles\\hog_tire\\hog_tire") == 0.0f);
+		CHECK(ae_vehicle_death_health_for("vehicles/warthog/") == 0.0f);
 		CHECK(ae_vehicle_death_health_for("") == 0.0f);
 		CHECK(ae_vehicle_death_health_for(NULL) == 0.0f);
 	}

@@ -75,8 +75,9 @@ area damage on a warthog): what the table's healths are counted in */
 
 /* the health the rule gives a vehicle whose tag has none, by its tag. Halo 2's model vitality (warthog 250, ghost
 and banshee 175, scorpion 400, turrets 175) against its rocket (200 at its core) is Halo CE's against its own
-(~325): x1.65. The stock multiplayer tags by name first, then a word of the name (a map's copy of a stock vehicle
-under another folder). Rockets to kill at the centre: warthog 2, ghost 1, banshee 1, scorpion 3 (2 when both land
+(~325): x1.65. The stock multiplayer tags by name first, then a word of the tag's own name, its last part (a map's
+copy of a stock vehicle under another folder: g_warthog, h2_ghost; never a folder's word, so a map's wreck pieces,
+vehicles\h2_ghost\pieces\dead_hull, stay as their tags make them). Rockets to kill at the centre: warthog 2, ghost 1, banshee 1, scorpion 3 (2 when both land
 near its centre), turret 1. */
 struct ae_vehicle_death_health
 {
@@ -151,10 +152,20 @@ static inline float ae_vehicle_death_health_for(char const *tag_name)
 		if (ae_vehicle_death_same(tag_name, ae_vehicle_death_tags[index].name))
 			return ae_vehicle_death_tags[index].health;
 	}
-	for (index = 0; index < sizeof(ae_vehicle_death_words) / sizeof(ae_vehicle_death_words[0]); index++)
 	{
-		if (ae_vehicle_death_contains(tag_name, ae_vehicle_death_words[index].name))
-			return ae_vehicle_death_words[index].health;
+		char const *own = tag_name;
+		char const *c;
+
+		for (c = tag_name; *c; c++)
+		{
+			if (*c == '\\' || *c == '/')
+				own = c + 1;
+		}
+		for (index = 0; index < sizeof(ae_vehicle_death_words) / sizeof(ae_vehicle_death_words[0]); index++)
+		{
+			if (ae_vehicle_death_contains(own, ae_vehicle_death_words[index].name))
+				return ae_vehicle_death_words[index].health;
+		}
 	}
 	return 0.0f;
 }
