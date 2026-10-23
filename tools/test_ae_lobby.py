@@ -206,7 +206,9 @@ def test_create_game_hosts_a_joiner(cfg):
         host_input=menus.menu_input(*(("wait",) * 18 + ("pad:start",))))
     assert host_r.get("status") == "PASS", host_r.get("why")
     in_order(host, ["ae create game: hosting (LAN, ", "ae create game: lobby: open",
-                    "ae create game: lobby: players 2, bots 0", "ae create game: lobby: start", "ae lobby: starting"])
+                    "ae create game: lobby: players 2, bots 0", "ae lobby: starting", "ae create game: lobby: start"])
+    # (the game played on both machines)
+    assert "game rules:" in host and "game rules:" in client
     in_order(client, ["ae browser: join '", "ae browser: joined", "ae create game: lobby: open",
                       "ae create game: lobby: the host started"])
     assert SELECT_MAP_FAILED not in host and SELECT_MAP_FAILED not in client
