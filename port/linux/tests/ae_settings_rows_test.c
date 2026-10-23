@@ -106,6 +106,36 @@ int main(void)
 		ae_settings_row(ae_settings_row_of("action.gametypes_folder"))->group == AE_SETTINGS_SYSTEM &&
 		ae_settings_row(ae_settings_row_of("action.gametypes_folder"))->kind == AE_SETTINGS_SUBSCREEN &&
 		ae_settings_value_count(ae_settings_row(ae_settings_row_of("action.gametypes_folder"))) == 0);
+	/* (0.3.9: the seven settings only the classic menus had) */
+	{
+		struct ae_settings_row const *sound = ae_settings_row(ae_settings_row_of("audio.enabled"));
+		struct ae_settings_row const *disc = ae_settings_row(ae_settings_row_of("game.disc"));
+		struct ae_settings_row const *mcc = ae_settings_row(ae_settings_row_of("game.mcc_use"));
+		struct ae_settings_row const *health = ae_settings_row(ae_settings_row_of("game.health"));
+		const char *keys[] = { "audio.enabled", "network.map_share_internet", "game.weapon_packs", "game.disc",
+			"game.mcc_use", "game.fall_damage", "game.health" };
+		short which;
+
+		for (which = 0; which < 7; which++)
+			CHECK(ae_settings_row_of(keys[which]) >= 0);
+		CHECK(sound->group == AE_SETTINGS_AUDIO && (sound->flags & AE_SETTINGS_RESTART) &&
+			!strcmp(ae_settings_value_of(sound, 0), "true"));
+		CHECK(ae_settings_row(ae_settings_row_of("network.map_share_internet"))->group == AE_SETTINGS_ONLINE);
+		CHECK(disc->group == AE_SETTINGS_SYSTEM && (disc->flags & AE_SETTINGS_RESTART));
+		/* (its values are read when SYSTEM opens: STOCK is the empty text) */
+		{
+			const char *texts[] = { "STOCK", "NHE" }, *values[] = { "", "nhe" };
+
+			CHECK(ae_settings_set_values("game.disc", texts, values, 2) && ae_settings_row_takes_empty(disc) &&
+				ae_settings_value_index(disc, "nhe") == 1 && ae_settings_value_index(disc, "") == 0);
+		}
+		CHECK(ae_settings_value_count(mcc) == 3 && !strcmp(ae_settings_value_of(mcc, 1), "yes") &&
+			!strcmp(ae_settings_value_text(mcc, 1), "ON"));
+		CHECK(ae_settings_value_count(health) == 4 && !strcmp(ae_settings_value_of(health, 2), "halo2") &&
+			!strcmp(ae_settings_value_text(health, 3), "HALO 3"));
+		CHECK(!strcmp(ae_settings_row(ae_settings_row_of("game.health"))->section, "CAMPAIGN") &&
+			!strcmp(ae_settings_row(ae_settings_row_of("game.fall_damage"))->section, "CAMPAIGN"));
+	}
 	CHECK(ae_settings_group(AE_SETTINGS_VIDEO)->whose == AE_SETTINGS_PC);
 
 	/* rows.md's counts: CONTROLS 30 with everything shown (a pad-only player sees fewer; GYRO's other four only with
@@ -214,9 +244,9 @@ int main(void)
 		struct ae_settings_row const *master = ae_settings_row(ae_settings_row_of("audio.volume"));
 
 		set("audio.voice_chat", "push_to_talk");
-		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 14); /* (CALLOUTS off above: its row alone) */
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 15); /* (CALLOUTS off above: its row alone) */
 		set("audio.voice_chat", "off");
-		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 12 && !has_label(AE_SETTINGS_AUDIO, &pad, "INPUT DEVICE"));
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 13 && !has_label(AE_SETTINGS_AUDIO, &pad, "INPUT DEVICE"));
 		CHECK(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))->kind == AE_SETTINGS_KEY &&
 			!ae_settings_value_count(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))));
 		CHECK(ae_settings_value_count(master) == 11 && !strcmp(ae_settings_value_of(master, 10), "1") &&
@@ -234,11 +264,11 @@ int main(void)
 		set("network.map_download", "true");
 		set("network.map_seed", "true");
 		set("discord.presence", "full");
-		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 19);
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 20);
 		set("network.map_download", "false");
 		set("network.map_seed", "false");
 		set("discord.presence", "off");
-		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 15);
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 16);
 		CHECK(!has_label(AE_SETTINGS_ONLINE, &pad, "INTERNET DOWNLOADS") && !has_label(AE_SETTINGS_ONLINE, &pad,
 			"DISCORD JOIN BUTTON"));
 		CHECK(!strcmp(ae_settings_value_of(community, 0), "yes") && !strcmp(ae_settings_value_text(community, 1), "OFF"));

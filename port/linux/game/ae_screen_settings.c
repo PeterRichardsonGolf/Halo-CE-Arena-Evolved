@@ -22,6 +22,7 @@ values back.
 #include "interface/player_ui.h"
 #include "saved games/player_profile.h"
 #include "../src/ae_draw.h"
+#include "../src/ae_discs.h"
 #include "../src/ae_ds5.h"
 #include "ae_glue_player_settings.h"
 #include "ae_glue_profiles.h"
@@ -574,6 +575,61 @@ static void voices_read(void)
 		voice_name_count++;
 	}
 	ae_settings_set_voices(voice_names, voice_name_count);
+}
+
+/* MODDED DISC's values: STOCK (the empty text), then each folder of discs/ (and of mods/, where earlier releases kept
+them) with a maps/ in it, by name as the classic menus' picker has them; the disc now is always one of them */
+static char disc_names[32][64];
+static short disc_count;
+
+static void disc_seen(const char *name, void *context)
+{
+	char maps[1200];
+	short index;
+
+	if (disc_count >= 32 || name[0] == '.' || strlen(name) >= sizeof(disc_names[0]) || strchr(name, '|') ||
+		strchr(name, '\\') || strchr(name, '/'))
+		return;
+	snprintf(maps, sizeof(maps), "%s/%s/maps", (const char *)context, name);
+	if (!platform_folder_exists(maps))
+		return;
+	for (index = 0; index < disc_count; index++)
+	{
+		if (!strcmp(disc_names[index], name))
+			return;
+	}
+	snprintf(disc_names[disc_count++], sizeof(disc_names[0]), "%s", name);
+}
+
+static void discs_read(void)
+{
+	static char texts[33][64];
+	const char *shown[33], *values[33];
+	char folder[1100], current[VALUE_TEXT];
+	short index, count = 0;
+
+	disc_count = 0;
+	snprintf(folder, sizeof(folder), "%s/discs", platform_data_root());
+	platform_folder_list(folder, disc_seen, folder);
+	snprintf(folder, sizeof(folder), "%s/mods", platform_data_root());
+	platform_folder_list(folder, disc_seen, folder);
+	ae_player_setting_get(who.player, "game.disc", current, sizeof(current));
+	if (current[0])
+	{
+		for (index = 0; index < disc_count && strcmp(disc_names[index], current); index++)
+			;
+		if (index == disc_count && disc_count < 32)
+			snprintf(disc_names[disc_count++], sizeof(disc_names[0]), "%s", current);
+	}
+	shown[count] = "STOCK";
+	values[count++] = "";
+	for (index = 0; index < disc_count; index++)
+	{
+		upper(disc_names[index], texts[index], sizeof(texts[index]));
+		shown[count] = texts[index];
+		values[count++] = disc_names[index];
+	}
+	ae_settings_set_values("game.disc", shown, values, count);
 }
 
 /* ---------- drawing helpers */
@@ -1921,8 +1977,8 @@ int ae_screen_settings_open_group(short group_number, short local_player)
 	who.player = local_player >= 0 && local_player < PLAYERS ? local_player : 0;
 	ae_player_settings_update();
 	players_read();
-	if (group_number == AE_SETTINGS_HUD)
-		voices_read();
+	if (group_number == AE_SETTINGS_SYSTEM)
+		discs_read();
 	else if (group_number == AE_SETTINGS_VIDEO)
 	{
 		sizes_read("display.resolution", platform_display_resolutions, 1);
@@ -1930,6 +1986,8 @@ int ae_screen_settings_open_group(short group_number, short local_player)
 	}
 	else if (group_number == AE_SETTINGS_AUDIO)
 	{
+		/* (CALLOUT VOICE moved here from HUD in 0.3.9: its voices are read here now) */
+		voices_read();
 		devices_read("audio.output_device", 0);
 		devices_read("audio.input_device", 1);
 	}

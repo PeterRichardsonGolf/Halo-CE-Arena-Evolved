@@ -26,7 +26,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ACCESSIBILITY", "Menu size, motion, help, language and loading.", AE_SETTINGS_MIXED, 1 },
-	{ "SYSTEM", "The menus, files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
+	{ "SYSTEM", "The menus, files, campaign rules, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
 };
 
 struct ae_settings_group_info const *ae_settings_group(short group)
@@ -107,6 +107,11 @@ static const char *const callout_texts[] = { "OFF", "ITEMS", "ITEMS + CLOCK" };
 static const char *const callout_values[] = { "off", "items", "items_clock" };
 static const char *const detail_texts[] = { "MINIMAL", "STANDARD", "VERBOSE" };
 static const char *const detail_values[] = { "minimal", "standard", "verbose" };
+/* (0.3.9: the settings only the classic menus had; their texts are the classic menus') */
+static const char *const mcc_use_texts[] = { "ASK", "ON", "OFF" };
+static const char *const mcc_use_values[] = { "ask", "yes", "no" };
+static const char *const health_texts[] = { "HALO CE", "REACH", "HALO 2", "HALO 3" };
+static const char *const health_values[] = { "classic", "reach", "halo2", "halo3" };
 
 /* (phase B) VIDEO */
 static const char *const display_mode_texts[] = { "FULLSCREEN", "BORDERLESS", "WINDOWED" };
@@ -195,7 +200,7 @@ static const char *fov_texts[FOV_STEPS], *fov_values[FOV_STEPS], *deadzone_texts
 /* the run-time rows' values (ae_settings_set_values): CALLOUT VOICE's voices, VIDEO's display sizes, AUDIO's devices */
 enum { RUN_LISTS = 6, RUN_VALUES = 64, RUN_TEXT = 64 };
 static const char *const run_keys[RUN_LISTS] = { "game.callout_voice", "display.resolution", "display.window_size",
-	"audio.output_device", "audio.input_device", NULL };
+	"audio.output_device", "audio.input_device", "game.disc" };
 static struct
 {
 	char value[RUN_VALUES][RUN_TEXT], text[RUN_VALUES][RUN_TEXT];
@@ -499,6 +504,8 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_VIDEO, "ADVANCED", "SHOW COORDINATES", AE_SETTINGS_TOGGLE, "display.coordinates", ON_OFF,
 		AE_SETTINGS_ALWAYS, "Your position on the map, for map makers and layouts.", 0 },
 	/* AUDIO (this PC's; the classic menus' Audio Setup writes the same keys) */
+	{ AE_SETTINGS_AUDIO, "VOLUME", "SOUND", AE_SETTINGS_TOGGLE, "audio.enabled", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Play any sound at all. OFF is silent; the game restarts to change it.", AE_SETTINGS_RESTART },
 	{ AE_SETTINGS_AUDIO, "VOLUME", "MASTER VOLUME", AE_SETTINGS_SLIDER, "audio.volume", volume_texts, volume_values,
 		VOLUME_STEPS, AE_SETTINGS_ALWAYS, "Everything at once.", 0 },
 	{ AE_SETTINGS_AUDIO, "VOLUME", "MUSIC VOLUME", AE_SETTINGS_SLIDER, "audio.music_volume", volume_texts, volume_values,
@@ -555,6 +562,8 @@ static struct ae_settings_row const rows[] =
 		AE_SETTINGS_ALWAYS, "Get a map you don't have from the host when you join.", 0 },
 	{ AE_SETTINGS_ONLINE, "MAPS", "INTERNET DOWNLOADS", AE_SETTINGS_TOGGLE, "network.map_download_internet", ON_OFF,
 		AE_SETTINGS_WHEN_MAP_DOWNLOAD, "Also from hosts over the internet, not only on your LAN.", 0 },
+	{ AE_SETTINGS_ONLINE, "MAPS", "INTERNET SHARING", AE_SETTINGS_TOGGLE, "network.map_share_internet", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Hosting: also send your maps to players who are not on your local network.", 0 },
 	{ AE_SETTINGS_ONLINE, "MAPS", "MAP DOWNLOADS", AE_SETTINGS_SPINNER, "network.map_downloads",
 		VALUES(ask_texts, ask_values), AE_SETTINGS_ALWAYS,
 		"Maps from the community map sites, for games the browser lists.", 0 },
@@ -631,6 +640,19 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_SYSTEM, "FILES", "OPEN GAMETYPES FOLDER", AE_SETTINGS_SUBSCREEN, "action.gametypes_folder", NULL,
 		NULL, 0, AE_SETTINGS_ALWAYS,
 		"Your own game types as files. Copy one to a server's admin/gametypes, or add one: it is listed next start.", 0 },
+	{ AE_SETTINGS_SYSTEM, "FILES", "WEAPON PACKS", AE_SETTINGS_TOGGLE, "game.weapon_packs", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Read the packs folder's weapons (the battle rifle). OFF plays stock weapons and cannot join a pack game.", 0 },
+	{ AE_SETTINGS_SYSTEM, "FILES", "MODDED DISC", AE_SETTINGS_SPINNER, "game.disc", NULL, NULL, 0,
+		AE_SETTINGS_ALWAYS, "A modded disc's maps replace the stock maps it has. The game restarts to play it.",
+		AE_SETTINGS_RESTART },
+	{ AE_SETTINGS_SYSTEM, "FILES", "MCC FILES", AE_SETTINGS_SPINNER, "game.mcc_use",
+		VALUES(mcc_use_texts, mcc_use_values), AE_SETTINGS_ALWAYS,
+		"Custom Edition maps read MCC's bitmaps, sounds and text: ASK first, always (ON), or never (OFF).", 0 },
+	{ AE_SETTINGS_SYSTEM, "CAMPAIGN", "FALL DAMAGE", AE_SETTINGS_TOGGLE, "game.fall_damage", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Campaign only: OFF and landings never hurt. Gametypes have their own in Arena Options.", 0 },
+	{ AE_SETTINGS_SYSTEM, "CAMPAIGN", "HEALTH", AE_SETTINGS_SPINNER, "game.health",
+		VALUES(health_texts, health_values), AE_SETTINGS_ALWAYS,
+		"Campaign only: how health comes back. HALO CE: health packs. Gametypes have their own.", 0 },
 };
 
 short ae_settings_row_count(void)

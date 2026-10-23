@@ -29,7 +29,7 @@ menus = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(menus)
 
 EXIT_AFTER = 30
-CONTROLS, VIDEO, VIEW, AUDIO, HUD, CHAT, ONLINE, ACCESSIBILITY = 0, 1, 2, 3, 4, 5, 6, 7
+CONTROLS, VIDEO, VIEW, AUDIO, HUD, CHAT, ONLINE, ACCESSIBILITY, SYSTEM = 0, 1, 2, 3, 4, 5, 6, 7, 8
 GROUP_NAMES = ("CONTROLS", "VIDEO", "VIEW", "AUDIO", "HUD", "CHAT AND STREAMING", "ONLINE", "ACCESSIBILITY", "SYSTEM")
 # name, screen (34 top, 35 a group), group, players, window, UI SCALE, the presses (after the lead-in: one a second)
 CASES = (
@@ -80,16 +80,27 @@ CASES = (
     # (DISPLAY MODE one left (the hidden window is WINDOWED, the last value): the timed KEEP / UNDO, shown; B undoes it)
     ("video-display", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait")),
     ("video-display-undo", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait", "pad:b", "wait")),
-    # AUDIO: MASTER VOLUME one left (9), B: KEEP; RESTORE DEFAULTS puts it back (down, A)
+    # AUDIO: SOUND is the first row; down once, MASTER VOLUME one left (9), B: KEEP; RESTORE DEFAULTS puts it back
+    # (down, A); SOUND itself one right (OFF, a RESTART row)
     ("audio", 35, AUDIO, 1, "1920x1080", 100, ()),
     ("audio-130", 35, AUDIO, 1, "1920x1080", 130, ()),
-    ("audio-keep", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:b", "pad:a")),
-    ("audio-defaults", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:y", "pad:down", "pad:a")),
+    ("audio-keep", 35, AUDIO, 1, "1920x1080", 100, ("pad:down", "pad:left", "pad:b", "pad:a")),
+    ("audio-defaults", 35, AUDIO, 1, "1920x1080", 100, ("pad:down", "pad:left", "pad:y", "pad:down", "pad:a")),
+    ("audio-sound", 35, AUDIO, 1, "1920x1080", 100, ("pad:right",)),
     # ONLINE: RB to MAPS, DOWNLOAD MAPS one right (OFF: INTERNET DOWNLOADS goes), B, UNDO (down, A)
     ("online", 35, ONLINE, 1, "1920x1080", 100, ()),
     ("online-130", 35, ONLINE, 1, "1920x1080", 130, ()),
     ("online-changed", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right")),
     ("online-undo", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right", "pad:b", "pad:down", "pad:a")),
+    # (INTERNET SHARING: RB to MAPS, down 2, one right)
+    ("online-sharing", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:down", "pad:down", "pad:right")),
+    # SYSTEM: the FILES and CAMPAIGN rows (down to WEAPON PACKS: right; MODDED DISC, MCC FILES: right; the campaign's
+    # two by RB); shots only for the rest
+    ("system", 35, SYSTEM, 1, "1920x1080", 100, ()),
+    ("system-130", 35, SYSTEM, 1, "1920x1080", 130, ()),
+    ("system-files", 35, SYSTEM, 1, "1920x1080", 100, ("pad:down", "pad:down", "pad:right", "pad:down", "pad:down",
+                                                       "pad:right")),
+    ("system-campaign", 35, SYSTEM, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:right", "pad:down", "pad:right")),
     # ACCESSIBILITY: MENU SIZE one right (115 %, the screen laid out again at once); the link PLAYER NAME SIZE (down 4,
     # A: HUD's row); LANGUAGE (a RESTART row) from the top level: DEUTSCH, B, KEEP, B asks RESTART NOW / LATER
     ("accessibility", 35, ACCESSIBILITY, 1, "1920x1080", 100, ()),
@@ -244,6 +255,19 @@ def test_audio(runs):
     said = lines(runs["audio-keep"][1], "ae settings: ")
     assert "set MASTER VOLUME 9" in said and "keep" in said and "closed AUDIO (1 changed)" in said, said
     assert lines(runs["audio-defaults"][1], "ae settings: defaults ") == ["(1 rows)"]
+    # (SOUND, a RESTART row: written to config.toml, so the harness's config shows it)
+    assert "set SOUND OFF" in lines(runs["audio-sound"][1], "ae settings: ")
+
+
+def test_online_sharing(runs):
+    assert "set INTERNET SHARING ON" in lines(runs["online-sharing"][1], "ae settings: ")
+
+
+def test_system_rows(runs):
+    said = lines(runs["system-files"][1], "ae settings: ")
+    assert "set WEAPON PACKS OFF" in said and any(line.startswith("set MCC FILES") for line in said), said
+    said = lines(runs["system-campaign"][1], "ae settings: ")
+    assert "set FALL DAMAGE OFF" in said and "set HEALTH REACH" in said, said
 
 
 def test_online(runs):
