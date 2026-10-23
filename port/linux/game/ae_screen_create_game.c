@@ -209,7 +209,8 @@ static void option_step(int option, short direction, const char *who)
 
 	if (!row || current < 0)
 		return;
-	next = ae_value_step(row->value_count, (short)current, direction);
+	/* (PRIMARY: the stock weapons and the packs that can start, as GAME OPTIONS offers them) */
+	next = ae_setup_value_step(&access, option, (short)current, direction);
 	if (next == current)
 	{
 		ae_sound_request(AE_SOUND_FAILURE, 0);

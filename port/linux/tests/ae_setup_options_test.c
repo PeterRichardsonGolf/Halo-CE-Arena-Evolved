@@ -130,19 +130,36 @@ int main(void)
 	CHECK(ae_setup_changes(&access) == 0);
 
 	/* the rows of GAME OPTIONS' second pass: the packs, PACK WEAPONS ON MAP, STARTING GRENADES, BOTTOMLESS CLIP in
-	EQUIPMENT (a gametype from before reads 0 = the stock value in each), NAME in MATCH */
+	EQUIPMENT (a gametype from before reads 0 = the stock value in each), NAME in MATCH; the packs and PACK WEAPONS ON
+	MAP on the WEAPON PACKS screen, one WEAPON PACKS row in EQUIPMENT opening it */
 	{
 		static const short packs[] = { AE_SO_PACK_BATTLE_RIFLE, AE_SO_PACK_SMG, AE_SO_PACK_SMG_SILENCED,
 			AE_SO_PACK_CARBINE, AE_SO_PACK_AR_SILENCED };
 		static const short equipment[] = { AE_SO_PACKS_ON_MAP, AE_SO_STARTING_GRENADES, AE_SO_BOTTOMLESS_CLIP };
-		short row_index;
+		short row_index, page[16], page_count;
 
 		fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
 		count = ae_setup_entries(&access, entries, 160);
+		page_count = ae_setup_packs_entries(&access, page, 16);
 		CHECK(AE_SO_PACK_FIRST == AE_SO_PACK_BATTLE_RIFLE && AE_SO_PACK_AR_SILENCED == AE_SO_PACK_FIRST + AE_SETUP_PACKS - 1);
+		/* (EQUIPMENT: WEAPON PACKS right after GRENADES ON MAP; no pack row, no PACK WEAPONS ON MAP) */
+		index = index_of(entries, count, AE_SO_GRENADES_ON_MAP);
+		CHECK(index >= 0 && entries[index + 1] == AE_SO_WEAPON_PACKS && ae_setup_row(AE_SO_WEAPON_PACKS)->ae);
+		CHECK(!has(entries, count, AE_SO_PACKS_ON_MAP));
+		/* (the screen: PACKS, five packs, PACK WEAPONS ON MAP, START WEAPONS, PRIMARY, SECONDARY) */
+		CHECK(page_count == 10 && page[0] == -1 - AE_SETUP_SECTION_PACKS && page[6] == AE_SO_PACKS_ON_MAP &&
+			page[7] == -1 - AE_SETUP_SECTION_START && page[8] == AE_SO_PRIMARY && page[9] == AE_SO_SECONDARY);
+		CHECK(!strcmp(ae_setup_section_name(&access, AE_SETUP_SECTION_PACKS), "PACKS") &&
+			!strcmp(ae_setup_section_name(&access, AE_SETUP_SECTION_START), "START WEAPONS") &&
+			!strcmp(ae_setup_section_name(&access, AE_SG_EQUIPMENT), "EQUIPMENT"));
+		CHECK(ae_setup_row_step(page, page_count, 6, 1) == 8 && ae_setup_row_step(page, page_count, 8, -1) == 6);
+		/* (a short list: no header left without its row) */
+		CHECK(ae_setup_packs_entries(&access, page, 8) == 7 && page[6] == AE_SO_PACKS_ON_MAP);
+		page_count = ae_setup_packs_entries(&access, page, 16);
 		for (row_index = 0; row_index < 5; row_index++)
 		{
-			CHECK(has(entries, count, packs[row_index]) && ae_setup_row(packs[row_index])->group == AE_SG_EQUIPMENT);
+			CHECK(!has(entries, count, packs[row_index]) && has(page, page_count, packs[row_index]));
+			CHECK(ae_setup_row(packs[row_index])->group == AE_SG_EQUIPMENT);
 			CHECK(ae_setup_row(packs[row_index])->value_count == 2 && ae_setup_row(packs[row_index])->ae);
 			CHECK(!strcmp(ae_setup_value_text(packs[row_index], 0), "OFF") && !strcmp(ae_setup_value_text(packs[row_index], 1), "ON"));
 			fake.now[packs[row_index]] = 1;
@@ -151,7 +168,8 @@ int main(void)
 		}
 		for (row_index = 0; row_index < 3; row_index++)
 		{
-			CHECK(has(entries, count, equipment[row_index]) && ae_setup_row(equipment[row_index])->group == AE_SG_EQUIPMENT);
+			CHECK((has(entries, count, equipment[row_index]) || has(page, page_count, equipment[row_index])) &&
+				ae_setup_row(equipment[row_index])->group == AE_SG_EQUIPMENT);
 			fake.now[equipment[row_index]] = 1;
 			CHECK(ae_setup_changes(&access) == 1);
 			fake.now[equipment[row_index]] = 0;
@@ -178,6 +196,67 @@ int main(void)
 		fake.now[AE_SO_NAME] = -1;
 		count = ae_setup_entries(&access, entries, 160);
 		CHECK(!has(entries, count, AE_SO_NAME));
+	}
+
+	/* WEAPON PACKS: the summary, which packs can start (the first two on, in slot order), what PRIMARY / SECONDARY
+	offer (the stock ten, the packs that can start, and always the value they have) */
+	{
+		char text[64], help[320];
+		short offered[24], offered_count;
+
+		fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
+		ae_setup_packs_summary(&access, text, sizeof(text));
+		CHECK(!strcmp(text, "NONE"));
+		fake.now[AE_SO_PACK_SMG] = fake.now[AE_SO_PACK_CARBINE] = 1;
+		ae_setup_packs_summary(&access, text, sizeof(text));
+		CHECK(!strcmp(text, "SMG, CARBINE"));
+		CHECK(ae_setup_pack_source(&access, 2) == 1 && ae_setup_pack_source(&access, 4) == 2 &&
+			ae_setup_pack_source(&access, 1) == 0);
+		/* (the BR on: the carbine goes to the map only) */
+		fake.now[AE_SO_PACK_BATTLE_RIFLE] = 1;
+		ae_setup_packs_summary(&access, text, sizeof(text));
+		CHECK(!strcmp(text, "3 ON"));
+		CHECK(ae_setup_pack_source(&access, 1) == 1 && ae_setup_pack_source(&access, 2) == 2 &&
+			ae_setup_pack_source(&access, 4) == 0 && ae_setup_pack_on(&access, 4));
+		CHECK(ae_setup_pack_help(&access, AE_SO_PACK_CARBINE, 1, help, sizeof(help)) &&
+			strstr(help, "only the first two packs on can be start weapons (battle rifle and SMG)") &&
+			strstr(help, "start with the carbine"));
+		CHECK(ae_setup_pack_help(&access, AE_SO_PACK_SMG, 1, help, sizeof(help)) &&
+			strstr(help, "it can also be a start weapon"));
+		CHECK(ae_setup_pack_help(&access, AE_SO_PACK_AR_SILENCED, 0, help, sizeof(help)) &&
+			strstr(help, "Not installed on this PC"));
+		CHECK(ae_setup_pack_help(&access, AE_SO_PACK_AR_SILENCED, 1, help, sizeof(help)) &&
+			strstr(help, "turns the pack on"));
+		CHECK(ae_setup_pack_help(&access, AE_SO_PRIMARY, 1, help, sizeof(help)) == NULL);
+		/* (one long name alone is shown; NONE when all are off) */
+		fake.now[AE_SO_PACK_BATTLE_RIFLE] = fake.now[AE_SO_PACK_SMG] = fake.now[AE_SO_PACK_CARBINE] = 0;
+		fake.now[AE_SO_PACK_SMG_SILENCED] = 1;
+		ae_setup_packs_summary(&access, text, sizeof(text));
+		CHECK(!strcmp(text, "SILENCED SMG"));
+		/* (PRIMARY: the ten, then the silenced SMG only) */
+		fake.now[AE_SO_PRIMARY] = 3;
+		offered_count = ae_setup_offered_values(&access, AE_SO_PRIMARY, offered, 24);
+		CHECK(offered_count == 11 && offered[9] == 9 && offered[10] == AE_SETUP_WEAPON_PACK_FIRST + 2);
+		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, 9, 1) == AE_SETUP_WEAPON_PACK_FIRST + 2);
+		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, AE_SETUP_WEAPON_PACK_FIRST + 2, 1) ==
+			AE_SETUP_WEAPON_PACK_FIRST + 2);
+		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, AE_SETUP_WEAPON_PACK_FIRST + 2, -1) == 9);
+		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, 0, -1) == 0);
+		/* (a saved gametype's pack weapon whose pack is off still shows: never reset silently) */
+		fake.now[AE_SO_SECONDARY] = AE_SETUP_WEAPON_PACK_FIRST + 3;
+		CHECK(ae_setup_value_offered(&access, AE_SO_SECONDARY, AE_SETUP_WEAPON_PACK_FIRST + 3) &&
+			!ae_setup_value_offered(&access, AE_SO_SECONDARY, AE_SETUP_WEAPON_PACK_FIRST + 4) &&
+			!ae_setup_value_offered(&access, AE_SO_PRIMARY, AE_SETUP_WEAPON_PACK_FIRST + 3));
+		/* (other rows: every value; their step as before) */
+		CHECK(ae_setup_value_offered(&access, AE_SO_LIVES, 1) && ae_setup_value_step(&access, AE_SO_LIVES, 0, 1) == 1);
+		CHECK(!ae_setup_value_offered(&access, AE_SO_LIVES, 99));
+		/* (no pack row in this build: no WEAPON PACKS row) */
+		fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
+		for (option = AE_SO_PACK_FIRST; option < AE_SO_PACK_FIRST + AE_SETUP_PACKS; option++)
+			fake.now[option] = -1;
+		fake.now[AE_SO_PACKS_ON_MAP] = -1;
+		count = ae_setup_entries(&access, entries, 160);
+		CHECK(!has(entries, count, AE_SO_WEAPON_PACKS));
 	}
 
 	/* a custom loadout: the weapons, and WEAPON SET only on AE's rules */
