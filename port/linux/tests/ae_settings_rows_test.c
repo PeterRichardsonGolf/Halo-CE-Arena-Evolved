@@ -255,7 +255,8 @@ int main(void)
 		CHECK(ae_settings_row(ae_settings_row_of("audio.channels"))->flags & AE_SETTINGS_RESTART);
 	}
 
-	/* ONLINE (19 of rows.md's 22: GAME PORT, LAN ADDRESS and BROADCAST ADDRESSES wait for their own lists): INTERNET
+	/* ONLINE (19 of rows.md's 22: GAME PORT, LAN ADDRESS and BROADCAST ADDRESSES wait for their own lists; and
+	OpenCE's host SHIELD EFFECTS, HOSTING's): INTERNET
 	DOWNLOADS with DOWNLOAD MAPS on, UPLOAD LIMIT with HELP SEND MAPS on, the Discord rows unless DISCORD STATUS is OFF;
 	COMMUNITY SERVICES ON / OFF writes yes / no */
 	{

@@ -117,7 +117,21 @@ int main(void)
 	}
 	CHECK(last_header == AE_SG_NHE);
 	ae_setup_groups(&access, entries, count, groups);
-	CHECK(groups[AE_SG_TEAMS].rows == 1 && groups[AE_SG_MATCH].rows == 4 && groups[AE_SG_MODE].rows == 3);
+	/* (SLAYER: its three, and OpenCE's MODE; Infection's and Gun Game's rows while it is theirs) */
+	CHECK(groups[AE_SG_TEAMS].rows == 1 && groups[AE_SG_MATCH].rows == 4 && groups[AE_SG_MODE].rows == 4);
+	CHECK(has(entries, count, AE_SO_OPENCE_MODE) && has(entries, count, AE_SO_HARDCORE) &&
+		!has(entries, count, AE_SO_INFECTION_ZOMBIES) && !has(entries, count, AE_SO_GUN_GAME_ORDER));
+	fake.now[AE_SO_OPENCE_MODE] = AE_SETUP_OPENCE_INFECTION;
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(has(entries, count, AE_SO_INFECTION_ZOMBIES) && has(entries, count, AE_SO_INFECTION_SHIELDS) &&
+		!has(entries, count, AE_SO_GUN_GAME_MELEE));
+	fake.now[AE_SO_OPENCE_MODE] = AE_SETUP_OPENCE_GUN_GAME;
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(has(entries, count, AE_SO_GUN_GAME_ORDER) && has(entries, count, AE_SO_GUN_GAME_MELEE) &&
+		!has(entries, count, AE_SO_INFECTION_ZOMBIES));
+	fake.now[AE_SO_OPENCE_MODE] = 0;
+	count = ae_setup_entries(&access, entries, 160);
+	ae_setup_groups(&access, entries, count, groups);
 	CHECK(groups[AE_SG_MATCH].header == 0 && ae_setup_changes(&access) == 0);
 	/* turning TEAM PLAY on brings the team rules, blue's vehicles and RED VEHICLES */
 	fake.now[AE_SO_TEAM_PLAY] = AE_SETUP_TEAM_PLAY_YES;

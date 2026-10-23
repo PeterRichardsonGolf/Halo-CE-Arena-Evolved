@@ -185,6 +185,23 @@ int main(void)
 	CHECK(ae_gtp_plays_well(&maps, AE_SETUP_ENGINE_RACE, 0, 0, indices, 8, &have, &read) == 0 && have == 0);
 	CHECK(ae_gtp_plays_well(&maps, AE_SETUP_ENGINE_SLAYER, 0, 1u, indices, 1, NULL, NULL) == 1 && indices[0] == 1);
 
+	/* OpenCE's built-in gametypes: their own folder, OPENCE, after NHE and before STOCK; Infection is Slayer's */
+	memset(&gtp, 0, sizeof(gtp));
+	{
+		short opence_infection, opence_stock;
+
+		opence_stock = add("SLAYER", AE_GTP_FOLDER_STOCK, 0, AE_SETUP_ENGINE_SLAYER, 0);
+		opence_infection = add("INFECTION", AE_GTP_FOLDER_OPENCE, 1, AE_SETUP_ENGINE_SLAYER, 0);
+		ae_gtp_finish(&gtp);
+		count = ae_gtp_rows(&gtp, AE_GTF_ALL, NULL, -1, rows, 64);
+		CHECK(count == 2 && rows[0].folder == AE_GTP_FOLDER_OPENCE && rows[1].folder == AE_GTP_FOLDER_STOCK);
+		CHECK(!strcmp(ae_gtp_folder_name(AE_GTP_FOLDER_OPENCE), "OPENCE"));
+		CHECK(ae_gtp_count(&gtp, AE_GTF_SLAYER, NULL) == 2);
+		count = ae_gtp_rows(&gtp, AE_GTF_ALL, NULL, AE_GTP_FOLDER_OPENCE, rows, 64);
+		CHECK(count == 3 && rows[1].gametype == opence_infection && rows[2].folder == AE_GTP_FOLDER_STOCK);
+		(void)opence_stock;
+	}
+
 	if (failures)
 		printf("%d failures\n", failures);
 	else

@@ -64,7 +64,8 @@ enum
 	_encoding_summary,          /* a row that opens a screen (WEAPON PACKS): one value, nothing stored, never changed */
 	_encoding_byte_value,       /* a byte of the variant, its value itself */
 	_encoding_byte_bit,         /* a bit of a byte of the variant (argument: its mask), its value 1 when set */
-	_encoding_melee_only        /* Bomb's MELEE ONLY bit, and the PC options it goes with (game_variant_options_default) */
+	_encoding_melee_only,       /* Bomb's MELEE ONLY bit, and the PC options it goes with (game_variant_options_default) */
+	_encoding_opence_mode       /* the options' OpenCE MODE, and the teams it plays on (menu_functions.c gametype_options_save) */
 };
 
 struct encoding { short kind; short offset; unsigned long argument; short count; long values[20]; };
@@ -116,6 +117,8 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_MELEE_UNZOOMS] = BIT(_game_variant_melee_unzoom_bit, 1, 0),
 	/* (MOUSE AIM ASSIST: bit 10, ae_mouse_aim_rules.h; OFF sets it, ALLOWED, every gametype from before, has 0) */
 	[AE_SO_MOUSE_AIM_ASSIST] = BIT(_game_variant_block_mouse_aim_assist_bit, 1, 0),
+	/* (OpenCE's gametypes' options, game_modes.c: menu_functions.c's gametype_options' values) */
+	[AE_SO_HARDCORE] = OPTION_BYTE(hardcore, 2, FALSE, TRUE),
 
 	[AE_SO_TEAM_PLAY] = BYTE(universal_variant.teams, 1, 0),
 	[AE_SO_FRIENDLY_FIRE] = SHORT(friendly_fire, 4, _friendly_fire_off, _friendly_fire_on, _friendly_fire_shields_only,
@@ -169,6 +172,17 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_DEATH_BONUS] = BYTE(game_engine_variant.slayer.no_death_bonus, 0, 1),
 	[AE_SO_KILL_PENALTY] = BYTE(game_engine_variant.slayer.no_kill_penalty, 0, 1),
 	[AE_SO_KILL_IN_ORDER] = BYTE(game_engine_variant.slayer.kill_in_order, 1, 0),
+	[AE_SO_OPENCE_MODE] = { _encoding_opence_mode, OPTIONS_FIELD(mode), 0, 4,
+		{ _game_mode_none, _game_mode_swat, _game_mode_infection, _game_mode_gun_game } },
+	[AE_SO_INFECTION_ZOMBIES] = OPTION_BYTE(infection_initial_zombies, 6, 1, 2, 3, 4, 8, 16),
+	[AE_SO_INFECTION_SPEED] = OPTION_BYTE(infection_zombie_speed, 6, 100, 110, 125, 150, 175, 200),
+	[AE_SO_INFECTION_DAMAGE] = OPTION_BYTE(infection_skull_damage, 4, 100, 150, 200, 250),
+	[AE_SO_INFECTION_RESPAWN] = OPTION_BYTE(infection_respawn_time, 6, 1, 3, 5, 10, 15, 30),
+	[AE_SO_INFECTION_COUNTDOWN] = OPTION_BYTE(infection_countdown, 5, 0, 5, 10, 15, 30),
+	[AE_SO_INFECTION_SHIELDS] = OPTION_BYTE(infection_zombie_shields, 2, FALSE, TRUE),
+	[AE_SO_GUN_GAME_ORDER] = OPTION_BYTE(gun_game_order, 3, _gun_game_order_strongest_first,
+		_gun_game_order_weakest_first, _gun_game_order_random),
+	[AE_SO_GUN_GAME_MELEE] = OPTION_BYTE(gun_game_melee_demotes, 2, FALSE, TRUE),
 	[AE_SO_ASSAULT] = BYTE(game_engine_variant.ctf.assault, 1, 0),
 	[AE_SO_SINGLE_FLAG] = LONG(game_engine_variant.ctf.single_flag_time, 6, 0, 1800, 3600, 5400, 9000, 18000),
 	[AE_SO_FLAG_MUST_RESET] = BYTE(game_engine_variant.ctf.flag_must_reset, 1, 0),
@@ -268,7 +282,7 @@ static long raw_get(struct encoding const *encoding, struct rules const *rules)
 	case _encoding_flags: return (long)(variant->universal_variant.flags & encoding->argument);
 	case _encoding_health: return (long)(variant->universal_variant.health * 10.0f + 0.5f);
 	case _encoding_short: return *(short const *)(o + encoding->offset);
-	case _encoding_option_byte: return o[encoding->offset];
+	case _encoding_option_byte: case _encoding_opence_mode: return o[encoding->offset];
 	case _encoding_radar: return options->radar_players;
 	case _encoding_ball_melee: return v[encoding->offset] == 1;
 	case _encoding_nhe_mode: return game_variant_nhe_mode(variant->universal_variant.nhe_mode);
@@ -388,6 +402,14 @@ static void raw_set(struct encoding const *encoding, long value, struct rules *r
 	case _encoding_health: variant->universal_variant.health = (real)value / 10.0f; break;
 	case _encoding_short: *(short *)(o + encoding->offset) = (short)value; break;
 	case _encoding_option_byte: o[encoding->offset] = (byte)value; break;
+	case _encoding_opence_mode:
+		/* (Infection is played on teams, Gun Game free for all: game_modes_variant_mode) */
+		o[encoding->offset] = (byte)value;
+		if (value == _game_mode_infection)
+			variant->universal_variant.teams = TRUE;
+		else if (value == _game_mode_gun_game)
+			variant->universal_variant.teams = FALSE;
+		break;
 	case _encoding_nhe_mode: variant->universal_variant.nhe_mode = (byte)value; break;
 	case _encoding_ball_melee: v[encoding->offset] = (byte)value; break;
 	case _encoding_goal_radar:

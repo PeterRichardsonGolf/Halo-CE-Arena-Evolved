@@ -103,6 +103,7 @@ symbols in this file:
 
 #include "cseries.h"
 #include "damage.h"
+#include "game_modes.h" /* port: port/linux/game/game_modes.c */
 #include "ai/ai.h"
 #include "cseries/errors.h"
 #include "effects/effects.h"
@@ -154,15 +155,20 @@ void network_damage_player_effect(long player_index, struct damage_data const *d
 void network_damage_aftermath(long object_index, struct damage_data const *damage, unsigned long being_damaged_flags,
 	real shield_damage, real body_damage, real body_damage_multiplier, short body_part, short node_index,
 	short region_index, short material_index, long victim_player_index);
+boolean network_damage_static_target(long object_index);
 
 /* set while a distributed client carries out a kill it does not decide (an
 act of god: the host's word, network_distributed.c, or the world's) */
 static boolean distributed_damage_authorized;
 
-/* whether this machine runs objects' shields (their stun, recharge and
+/* whether this machine runs the object's shields (their stun, recharge and
 overcharge): not a client of the distributed netcode, which has the host's
-(damage_set_network_state) */
-#define objects_update_shields() (!network_game_distributed_client())
+(damage_set_network_state), but for the map's scenery and devices that
+damage can break, whose damage every machine deals as the host did and of
+which the host sends no state (network_damage.c's static targets: a
+scenery's shield, broken, came back on no client) */
+#define objects_update_shields(object_index) \
+	(!network_game_distributed_client() || network_damage_static_target(object_index))
 
 /* port: HALO 2, HALO 3 and REACH health styles (enum health_style), host
 side. Halo 3's tags and code use Halo 2's numbers and rule, so both run this.
@@ -1233,11 +1239,14 @@ static void object_damage_aftermath(
 
 			game_stats_kill_damage(damage->definition_index);
 #endif
+			/* port: whether it is a melee's (Gun Game's demotion: game_modes.c) */
+			game_modes_kill_by_melee(damage_effect->damage.category == _damage_category_melee);
 			game_statistics_record_kill(
 				object_index,
 				damage->owner_player_index,
 				damage->owner_object_index,
 				damage->owner_team_index);
+			game_modes_kill_by_melee(FALSE);
 #ifdef HALO_GAME_BROWSER
 			game_stats_kill_damage(NONE);
 #endif
@@ -1349,7 +1358,14 @@ static void object_damage_body(
 	{
 		if (damage_amount > 0.f && TEST_FLAG(damage_material->flags, _damage_material_head_bit))
 		{
-			if (TEST_FLAG(damage_definition->flags, _damage_can_cause_headshots_bit))
+			/* port: SWAT's headshots, a shot of any weapon's (game_modes.c) */
+			if (TEST_FLAG(damage_definition->flags, _damage_can_cause_headshots_bit) ||
+				game_modes_headshot_kills(object_index,
+					damage_definition->category == _damage_category_bullet ||
+					damage_definition->category == _damage_category_sniper ||
+					damage_definition->category == _damage_category_plasma ||
+					damage_definition->category == _damage_category_needle ||
+					damage_definition->category == _damage_category_shotgun))
 			{
 				if (game_engine_running() ||
 					object->object.type != _object_type_biped ||
@@ -2277,10 +2293,10 @@ void object_damage_update(
 				FLAG(_object_die_act_of_god_no_statistics_bit));
 	}
 
-	if (objects_update_shields())
+	if (objects_update_shields(object_index))
 		SET_FLAG(object->object.damage_flags, _object_shield_charging_bit, FALSE);
 	damage_flags = object->object.damage_flags;
-	if (objects_update_shields() &&
+	if (objects_update_shields(object_index) &&
 		object->object.maximum_shield_vitality > 0.f &&
 		!TEST_FLAG(damage_flags, _object_dead_bit))
 	{
@@ -2372,7 +2388,7 @@ void object_damage_update(
 		}
 	}
 
-	if (objects_update_shields() && health_style_current() != _health_style_classic)
+	if (objects_update_shields(object_index) && health_style_current() != _health_style_classic)
 		object_regenerate_health(object_index, health_style_current());
 
 	if (object->object.body_damage_decay_timer != NONE)

@@ -1018,8 +1018,8 @@ source/interface/hud.c	(void)hud_draw_match_timer; /* AE hook */
 port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
 # OpenCE build-244's passenger camera calls render_camera_world_to_screen, which the 64-bit builds need declared
 port/linux/game/passenger_camera.c	#include "render/render_cameras_internal.h" /* AE hook */
-# Arena Evolved's Delta wire (network 32): ChupathingyCE 0.8's chupa-32a from 0.3.6 (0.3.5's was its own, ae-32a)
-port/linux/include/delta.h	#define DELTA_WIRE "chupa-32a" /* AE hook */
+# Arena Evolved's Delta wire (network 36, from 0.3.9): its own chupa-36z (0.3.6-0.3.8: ChupathingyCE 0.8's chupa-32a; 0.3.5: ae-32a)
+port/linux/include/delta.h	#define DELTA_WIRE "chupa-36z" /* AE hook */
 # A widget deleted between the menus' render and the next frame's pointer (a join closing the menus) left its mouse
 # targets on freed memory: the hover read its name and crashed (10-19). Its targets are dropped first (ae_ui_deleted.c).
 source/interface/ui_widget.c	#include "ae_ui_deleted.h" /* AE hook */
@@ -1320,8 +1320,14 @@ port/linux/game/menu_functions.c	static wchar_t const *const engine_names[] = { 
 port/linux/game/menu_functions.c	long engine = PIN(variant->game_engine_index, 0, 6); /* AE hook */
 port/linux/game/menu_functions.c	return engine_type == 0 ? L"CO-OP" : engine_names[PIN(engine_type, 0, 6)]; /* AE hook */
 port/linux/game/menu_functions.c	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 6)], /* AE hook */
-port/linux/game/menu_functions.c	engine_names[PIN(game->variant.game_engine_index, 0, 6)], lobby_player_count, game->maximum_players, /* AE hook */
-port/linux/game/menu_functions.c	engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 6)], /* AE hook */
+port/linux/game/menu_functions.c	kind ? kind : engine_names[PIN(game->variant.game_engine_index, 0, 6)], lobby_player_count, /* AE hook */
+port/linux/game/menu_functions.c	kind ? kind : engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 6)], /* AE hook */
 port/linux/game/menu_functions.c	long engine = PIN(variant->game_engine_index, 0, 6); /* AE hook */
 port/linux/game/menu_functions.c	static char const *const gametypes[] = { "Game", "CTF", "Slayer", "Oddball", "King", "Race", "Bomb" }; /* AE hook */
 port/linux/game/discord_game.c	if (engine == game_engine_bomb) game->mode = variant->game_engine_variant.bomb.traits != _bomb_traits_none ? DISCORD_MODE_GRIFBALL : DISCORD_MODE_BOMB; /* AE hook */
+# OpenCE main dedb3755d (network 36) merge (0.3.9): OpenCE's gametypes' rules text names Bomb (engine 6) as the
+# other lists do; OpenCE's new units built on Arena Evolved's headers (ChupathingyCE moved
+# network_game_server_get_game into the server manager's internal header; AE's cseries.h has no unicode.h)
+port/linux/game/menu_functions.c	engine = PIN(variant.game_engine_index, 0, 6); /* AE hook */
+port/linux/game/infection.c	#include "networking/network_server_manager_internal.h" /* AE hook */
+port/linux/game/game_modes.c	#include "text/unicode.h" /* AE hook */

@@ -45,8 +45,6 @@ int ae_delta_wire_decide(int decided, const unsigned char *reserved, int size, i
 {
 	struct delta_wire_id mine, host, host_oldest;
 
-	if (decided == 0 && !strcmp(theirs, AE_DELTA_WIRE_0_3_5))
-		return 1;
 	if (decided != 1 || !delta_wire_parse(own, (int)strlen(own), &mine))
 		return decided;
 	/* (joined by delta_compat_decide: also by this build's own range alone?

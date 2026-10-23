@@ -13,18 +13,19 @@ Back to the [README](../README.md).
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, Arena Evolved is network version 32 (from 0.3.5): it plays with
-  OpenCE builds on network 32 (build-244 onward, until OpenCE changes its
-  network version), both ways, and joins only games hosted on version 32
-  (an older host is refused: the host needs to update). Arena Evolved
-  0.3.0-beta to 0.3.4-beta, OpenCE build-206 to build-237 and ChupathingyCE
-  0.7.5 (29), and OpenCE build-242 (31), don't play with 0.3.5: their
-  players are told which side needs to update. From 0.3.6 Arena Evolved is
-  on ChupathingyCE 0.8's Delta wire, `chupa-32a`, with a range of that wire
-  alone (its 30 to 32 are OpenCE's: `port/linux/src/ae_delta_wire.h`), so it
-  plays with ChupathingyCE 0.8 both ways, and with Arena Evolved 0.3.5 (its
-  own wire, `ae-32a`); ChupathingyCE 0.7.5's clients (`chupa-29a`) are
-  refused, as its hosts are. 0.3.0-beta to 0.3.4-beta
+- Online, Arena Evolved is network version 36 (from 0.3.9; 32 from 0.3.5 to
+  0.3.8): it plays with OpenCE builds on network 36 (OpenCE main past
+  build-256 onward, until OpenCE changes its network version), both ways, and
+  joins only games hosted on version 36 (an older host is refused: the host
+  needs to update). Arena Evolved 0.3.5 to 0.3.8, OpenCE build-244 to
+  build-256 and ChupathingyCE 0.8 (32) don't play with 0.3.9: their players
+  are told which side needs to update. From 0.3.9 Arena Evolved's Delta wire
+  is its own, `chupa-36z`, with a range of that wire alone
+  (`port/linux/src/ae_delta_wire.h`); 0.3.6 to 0.3.8 were on ChupathingyCE
+  0.8's `chupa-32a` (and played with it both ways), 0.3.5 on `ae-32a`.
+  Arena Evolved 0.3.0-beta to 0.3.4-beta, OpenCE build-206 to build-237 and
+  ChupathingyCE 0.7.5 (29), and OpenCE build-242 (31), played with 0.3.5 to
+  0.3.8 neither. 0.3.0-beta to 0.3.4-beta
   (29) play with OpenCE build-206 to build-237; 0.2.3-beta to 0.2.5-beta
   (28) with OpenCE build-201 to build-205. A game on a Custom Edition map is named by the
   map's own name, as OpenCE names it, its version the map's hash, so OpenCE

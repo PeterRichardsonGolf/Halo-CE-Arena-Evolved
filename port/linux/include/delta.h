@@ -211,13 +211,17 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one. */
-/* (Arena Evolved: ChupathingyCE 0.8's wire from 0.3.6, as both play OpenCE
-build-244's network 32, with the client input's co-op friendly fire byte and
-the host's aim assist policy (message 90); its range that wire alone, its 30
-to 32 being OpenCE's: port/linux/src/ae_delta_wire.h. Its 0.3.5 was on a wire
-of its own, ae-32a, which this build joins as its own; 0.3.4-beta and earlier
-were on chupa-29a, which it does not) */
-#define DELTA_WIRE "chupa-32a" /* AE hook */
+/* (Arena Evolved: a wire of its own from 0.3.9, chupa-36z (the letter z,
+which ChupathingyCE's releases never reach, keeps it apart from any
+ChupathingyCE wire of 36), as it plays OpenCE's network 36 (OpenCE main past
+build-256: the 0x2C bytes of PC options, the longer game settings record,
+Infection's state, the host's shield effects) and ChupathingyCE 0.8 plays 32;
+its range that wire alone: port/linux/src/ae_delta_wire.h. 0.3.6 to 0.3.8
+were on ChupathingyCE 0.8's chupa-32a (network 32), 0.3.5 on a wire of its
+own, ae-32a, and 0.3.4-beta and earlier on chupa-29a, none of which it
+joins. Once a ChupathingyCE release plays 36 and a handshake with it passes,
+its wire here is one line) */
+#define DELTA_WIRE "chupa-36z" /* AE hook */
 
 /* Wire compatibility ranges: the oldest wire each one plays the game with,
 without a desync and without losing what the older wire has (a feature the
@@ -280,7 +284,11 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(29, "build-206", additive) /* a Custom Edition map by its own name, its hash's first 32 bits its version in the game record (a client of 29 also takes 28's hashed names and header checksums; wire chupa-29a) */ \
 	X(30, "build-242", breaking) /* every machine carries an elevator's riders by the same tick's movement (released only within build-242's 31) */ \
 	X(31, "build-242", breaking) /* the keep-alive's message table; a datagram's tick near its sender's latest, hits, identity and readiness only over a client's stream */ \
-	X(32, "build-244", breaking) /* the host's aim assist policy (message 90), which a client must not ignore */
+	X(32, "build-244", breaking) /* the host's aim assist policy (message 90), which a client must not ignore */ \
+	X(33, "build-257", additive) /* (33 to 36: OpenCE main dedb3755d, past build-256, before a build of it was tagged) co-op's ALLY FRIENDLY FIRE, bit 1 of the game settings' cooperative_flags (the host deals the damage) */ \
+	X(34, "build-257", breaking) /* the map's breakable scenery and device shields and tripmines over the network: the host deals what they deal */ \
+	X(35, "build-257", breaking) /* OpenCE's gametypes: PC options 0x2C bytes, the game settings record 16 bytes longer, Infection's state */ \
+	X(36, "build-257", breaking) /* the host's shield effects (message 91), which a client draws in place of its own */
 
 /* ---------- the legacy table (port/linux/src/delta.c)
 

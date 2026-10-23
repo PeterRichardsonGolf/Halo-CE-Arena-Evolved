@@ -1,18 +1,16 @@
 # Delta: ChupathingyCE's network family
 
 (Arena Evolved: this is ChupathingyCE's document, kept as it is. Arena
-Evolved's wire is ChupathingyCE 0.8's `chupa-32a` from 0.3.6 (its 0.3.5 was on
-a wire of its own, `ae-32a`, which it still joins as its own; 0.3.4-beta and
-earlier were on ChupathingyCE 0.7.5b's `chupa-29a`). Its range is that wire
-alone (`port/linux/src/ae_delta_wire.h`; `chupa-32a`'s row below is
-ChupathingyCE's own hosts', from `chupa-28a`): its network
-30 to 32 are OpenCE build-242/244's, which do not play with 29's machines, so
-it neither advertises nor joins older wires, and joins a ChupathingyCE 0.8 host
-whose range has `chupa-32a`. It announces network 32 and joins hosts of 32
-alone by number (`DELTA_LEGACY_PRESUMED` is 0, as OpenCE's clients join their
-own version only), and fetches ChupathingyCE's signed tables only with
-`network.legacy_table_fetch` on (off by default; a table's `chupa-32a` row would
-then apply to it). Its text chat is OpenCE's (`chat.enabled`, the Delta chat
+Evolved's wire is its own, `chupa-36z`, from 0.3.9: it plays OpenCE's network
+36, which no ChupathingyCE release plays yet (0.3.6 to 0.3.8 were on
+ChupathingyCE 0.8's `chupa-32a`, 0.3.5 on `ae-32a`, 0.3.4-beta and earlier on
+ChupathingyCE 0.7.5b's `chupa-29a`). Its range is that wire alone
+(`port/linux/src/ae_delta_wire.h`), so it neither advertises nor joins any
+other wire. It announces network 36 and joins hosts of 36 alone by number
+(`DELTA_LEGACY_PRESUMED` is 0, as OpenCE's clients join their own version
+only), and fetches ChupathingyCE's signed tables only with
+`network.legacy_table_fetch` on (off by default; a table has no `chupa-36z`
+row, so the built-in numbers stay). Its text chat is OpenCE's (`chat.enabled`, the Delta chat
 below, is off by default). It shares Custom Edition maps from the host
 (OpenCE's map sharing) as well as ChupathingyCE's map downloads:
 `port/linux/README.md`, "Map sharing".)

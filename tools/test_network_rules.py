@@ -121,13 +121,15 @@ def test_policy_setting_is_documented():
 
 
 def test_the_version_and_the_wire():
-    """(Arena Evolved: ChupathingyCE 0.8's wire, chupa-32a; its network 30 to 32 are OpenCE build-242/244's, which
-    OpenCE calls breaking, and its range is the wire alone: port/linux/src/ae_delta_wire.c)"""
+    """(Arena Evolved: OpenCE's network 36 on a Delta wire of its own, chupa-36z; network 30 to 32 and 34 to 36 are
+    OpenCE's breaking raises, and its range is the wire alone: port/linux/src/ae_delta_wire.c)"""
     limits = (ROOT / "port/linux/include/halo_port_limits.h").read_text(encoding="utf-8")
     delta = (ROOT / "port/linux/include/delta.h").read_text(encoding="utf-8")
-    assert "#define HALO_PORT_NETWORK_VERSION 32\n" in limits
-    assert '#define DELTA_WIRE "chupa-32a"' in delta
-    for number in (30, 31, 32):
+    assert "#define HALO_PORT_NETWORK_VERSION 36\n" in limits
+    assert "#define HALO_PORT_NETWORK_VERSION_MINIMUM 36\n" in limits
+    assert "#define HALO_PORT_NETWORK_VERSION_MAXIMUM 36\n" in limits
+    assert '#define DELTA_WIRE "chupa-36z"' in delta
+    for number in (30, 31, 32, 34, 35, 36):
         assert re.search(rf'X\({number}, "build-\d+", breaking\)', delta)
 
 

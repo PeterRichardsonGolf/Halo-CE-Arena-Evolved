@@ -1,4 +1,4 @@
-"""Arena Evolved's range on ChupathingyCE 0.8's Delta wire (port/linux/src/ae_delta_wire.c): the C tests
+"""Arena Evolved's range on its own Delta wire, chupa-36z (port/linux/src/ae_delta_wire.c): the C tests
 (port/linux/tests/ae_delta_wire_test.c), built with the build machine's C compiler, and the hooks that use it."""
 import shutil
 import subprocess

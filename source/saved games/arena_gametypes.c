@@ -8226,16 +8226,26 @@ static void arena_gametypes_self_check(
 			unsigned char block[SAVED_GAME_FILE_BLOCK_SIZE];
 			XCALCSIG_SIGNATURE signature;
 			char hash[2 * sizeof(signature.Signature) + 1];
+			short version;
 
 			arena_gametype_wide_name(migration->old_row.name, wide_name);
 			csmemset(variant, 0, sizeof(variant));
 			csmemset(options, 0, sizeof(options));
 			arena_gametype_build(&migration->old_row, wide_name, &variant[0], &options[0]);
-			playlist_profile_expected_block(&variant[0], &options[0], block);
-			saved_game_file_generate_checksum(block, sizeof(block), &signature);
-			for (index = 0; index < (short)sizeof(signature.Signature); index++)
-				_snprintf(hash + 2 * index, 3, "%02x", (unsigned int)signature.Signature[index]);
-			hash[sizeof(hash) - 1] = 0;
+			/* (the builds that seeded it wrote its 'GPVO' block as version 1, up
+			to Arena Evolved 0.3.8, or as version 2, after OpenCE's network 36
+			merge: either hash is its) */
+			for (version = 2; version >= 1; version--)
+			{
+				if (!playlist_profile_expected_block_version(&variant[0], &options[0], version, block))
+					continue;
+				saved_game_file_generate_checksum(block, sizeof(block), &signature);
+				for (index = 0; index < (short)sizeof(signature.Signature); index++)
+					_snprintf(hash + 2 * index, 3, "%02x", (unsigned int)signature.Signature[index]);
+				hash[sizeof(hash) - 1] = 0;
+				if (!strcmp(hash, migration->old_block_hash))
+					break;
+			}
 			if (strcmp(hash, migration->old_block_hash))
 			{
 				arena_gametype_migration_unsafe[migration_index] = TRUE;

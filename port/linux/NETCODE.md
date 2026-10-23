@@ -241,11 +241,35 @@ from, so that a second copy of the game on one computer, on a port of its
 own, plays too; version 32 sends the host's mouse aim assist policy
 (distributed message 90, `network_aim_assist.c`), which a client must not
 ignore, and has a client's input say whether its player plays co-op with
-friendly fire.
+friendly fire; version 33 sends with the game's settings whether co-op's
+players hurt their AI allies (Server Setup's ALLY FRIENDLY FIRE: the host
+then deals the players' hits of them no damage); version 34 takes clients'
+hits on, and sends the host's damage to, the map's scenery and devices
+whose shield is all damage can break (Rat Race's energy shields, a Custom
+Edition map's tripmines), which version 17 left out as having no body to
+destroy, and has every machine run those shields' stun and recharge itself;
+and the host deals what such an object deals itself (its shield or body
+breaking: a tripmine a client's player threw going off under the host's
+vehicle), which a client no longer reports and the host took from no one.
+One made in the game, a tripmine, is at an index of its own on each machine:
+the host takes a client's hit on its copy as one on the host's nearest where
+the client had it, and a client the host's damage to one as damage to its own
+copy nearest the damage. Then version 35 sends with the game's settings the
+options of OpenCE's gametypes (SWAT, Infection, Gun Game and Hardcore:
+`port/linux/game/game_modes.c`), which make the gametype's PC options 0x2C
+bytes where they were 0x1C, and the game settings record 16 bytes longer; and
+in an Infection game the host sends its round in the game type's state
+(`struct distributed_infection_state`: each player's role and score, the
+round's phase and winner) in place of Slayer's, which each client checks whole
+before taking it. Then version 36 sends the host's shield effects (distributed
+message 91, `network_shield_effects.c`: the shield glow, its Light Show reach
+and the overshield effect, Server Setup's SHIELD EFFECTS), which every client
+draws in place of its player's own, so that a build that would draw its own
+cannot join.
 Arena Evolved 0.2.3-beta to 0.2.5-beta named such maps' files for their
 hash (`hugeass_1a2b3c4d.map`): they are still found, and are given their own
 names back where no file of that name is there. Arena Evolved follows OpenCE
-from version 32 (0.3.5): it joins hosts of 32 alone.
+from version 32 (0.3.5), and to 36 from 0.3.9: it joins hosts of 36 alone.
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the
@@ -257,24 +281,25 @@ begin-game and keep-alive field lists under their own messages
 wire's begin game is a short and padding, its keep-alive a long), and
 `network_distributed.c`'s `DISTRIBUTED_TIME_WINDOW_TICKS` is a local check.)
 
-Arena Evolved announces 32, the table's newest (`delta.h`), and joins hosts
-of 32 alone (from 0.3.5; 30, 31 and 32 are breaking rows: the elevator's
-riders, the keep-alive table and datagram tick window, the host's aim assist
-policy). It plays with OpenCE build-244 onward, both ways, while they stay on
-network 32; hosts of an older version are refused (Arena Evolved 0.3.0-beta
-to 0.3.4-beta's, OpenCE build-206 to 237's and ChupathingyCE 0.7.5's 29,
-OpenCE build-242's 31 among them), and clients that join their own version
-alone do not join Arena Evolved's games, and are told the host is newer.
-Its Delta wire ID is ChupathingyCE 0.8's `chupa-32a` from 0.3.6 (`delta.h`),
-with a range of that wire alone (`port/linux/src/ae_delta_wire.h`): its host
-advertises `chupa-32a` in the old slot and the range bytes, so ChupathingyCE
-0.8's clients join it and 0.7.5's (`chupa-29a`, an exact match of the slot)
-do not; as a client it joins a Delta host whose range has `chupa-32a`
-(ChupathingyCE 0.8's, from `chupa-28a`), or one on 0.3.5's own wire,
-`ae-32a`, and refuses the others (ChupathingyCE 0.7.5's) with the wire
-named. Arena Evolved 0.3.4-beta and earlier were on ChupathingyCE 0.7.5b's
-`chupa-29a`, and 0.3.5 on `ae-32a`; 0.3.5 checks no wire and joins by number
-(32). ChupathingyCE's signed legacy tables
+Arena Evolved announces 36, the table's newest (`delta.h`), and joins hosts
+of 36 alone (from 0.3.9; 30 to 32 and 34 to 36 are breaking rows: the
+elevator's riders, the keep-alive table and datagram tick window, the host's
+aim assist policy, scenery shields and tripmines dealt by the host, OpenCE's
+gametypes' longer game settings record, the host's shield effects). It plays
+with OpenCE main past build-256 (network 36), both ways, while they stay on
+36; hosts of an older version are refused (Arena Evolved 0.3.5 to 0.3.8's,
+OpenCE build-244 to 256's and ChupathingyCE 0.8's 32 among them), and
+clients that do not join 36 (ChupathingyCE 0.8 joins up to 33, OpenCE
+build-256 and Arena Evolved 0.3.8 their own 32) do not join Arena Evolved's
+games, and are told the host is newer. Its Delta wire ID is its own,
+`chupa-36z`, from 0.3.9 (`delta.h`; the letter z keeps it apart from any
+ChupathingyCE release's wire of 36), with a range of that wire alone
+(`port/linux/src/ae_delta_wire.h`): its host advertises `chupa-36z` in the
+old slot and the range bytes, so no ChupathingyCE client joins it by Delta
+(0.8's `chupa-32a` is also refused by number); as a client it joins a Delta
+host whose range has `chupa-36z`. Arena Evolved 0.3.4-beta and earlier were
+on ChupathingyCE 0.7.5b's `chupa-29a`, 0.3.5 on `ae-32a`, and 0.3.6 to 0.3.8
+on ChupathingyCE 0.8's `chupa-32a` (network 32). ChupathingyCE's signed legacy tables
 (Delta, `docs/delta.md`) are not fetched unless `network.legacy_table_fetch`
 is on (off by default). Internet play's signalling is OpenCE's version 4
 alone. Arena Evolved's own rules travel in the gametype's flags, which a
@@ -312,7 +337,7 @@ them drops them as unknown, so they take no version of their own.
 A host never checks a joining client's version: the client reads the
 host's from its advertisement and joins only a version it plays with. The
 built-in range is HALO_PORT_NETWORK_VERSION_MINIMUM to
-HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 32 to 32 in Arena Evolved): versions
+HALO_PORT_NETWORK_VERSION_MAXIMUM (halo_port_limits.h: 36 to 36 in Arena Evolved): versions
 that differ from one another only in messages the other machine drops, not
 knowing them. The historical example is version 10 (OpenCE's build-73),
 which added the host's message of the players' pings, which a machine of

@@ -72,6 +72,11 @@ static const char *const shield_values[] = { "default", "white", "black", "red",
 	"pink", "purple", "cyan", "cobalt", "orange", "teal", "sage", "brown", "tan", "maroon", "salmon" };
 static const char *const intensity_texts[] = { "DEFAULT", "LIGHT SHOW" };
 static const char *const intensity_values[] = { "default", "light_show" };
+/* (the host's shield effects in network games: network_shield_effects.c) */
+static const char *const shield_effects_texts[] = { "STOCK", "GLOW", "LIGHT SHOW", "OVERSHIELD", "GLOW + OVERSHIELD",
+	"SHOW + OVERSHIELD" };
+static const char *const shield_effects_values[] = { "stock", "glow", "light_show", "overshield", "glow_overshield",
+	"light_show_overshield" };
 static const char *const hud_style_texts[] = { "AE", "CLASSIC" };
 static const char *const hud_style_values[] = { "ae", "classic" };
 static const char *const area_texts[] = { "FULL", "16:9", "4:3" };
@@ -385,11 +390,12 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_VIEW, "SHIELDS", "SHIELD COLOR", AE_SETTINGS_SPINNER, "display.shield_color",
 		VALUES(shield_texts, shield_values), AE_SETTINGS_ALWAYS, "The colour your shield flashes when it is hit.", 0 },
 	{ AE_SETTINGS_VIEW, "SHIELDS", "SHIELD GLOW", AE_SETTINGS_TOGGLE, "display.shield_glow", ON_OFF,
-		AE_SETTINGS_ALWAYS, "Shields glow as they recharge.", 0 },
+		AE_SETTINGS_ALWAYS, "Shields glow as they recharge. Online, the host's choice.", 0 },
 	{ AE_SETTINGS_VIEW, "SHIELDS", "GLOW INTENSITY", AE_SETTINGS_SPINNER, "display.shield_glow_intensity",
-		VALUES(intensity_texts, intensity_values), AE_SETTINGS_WHEN_GLOW, "How bright the shield glow is.", 0 },
+		VALUES(intensity_texts, intensity_values), AE_SETTINGS_WHEN_GLOW,
+		"How bright the shield glow is. Online, the host's choice.", 0 },
 	{ AE_SETTINGS_VIEW, "SHIELDS", "OVERSHIELD", AE_SETTINGS_TOGGLE, "display.overshield_effect", ON_OFF,
-		AE_SETTINGS_ALWAYS, "The overshield's own look on players who carry one.", 0 },
+		AE_SETTINGS_ALWAYS, "The overshield's own look on players who carry one. Online, the host's choice.", 0 },
 	/* HUD */
 	{ AE_SETTINGS_HUD, "HUD", "HUD STYLE", AE_SETTINGS_SPINNER, "display.hud_style",
 		VALUES(hud_style_texts, hud_style_values), AE_SETTINGS_ALWAYS,
@@ -588,6 +594,9 @@ static struct ae_settings_row const rows[] =
 		AE_SETTINGS_WHEN_DISCORD, "Include the game's name in your status.", 0 },
 	{ AE_SETTINGS_ONLINE, "PRIVACY", "DISCORD JOIN BUTTON", AE_SETTINGS_TOGGLE, "discord.show_join", ON_OFF,
 		AE_SETTINGS_WHEN_DISCORD, "Friends can join you from Discord.", 0 },
+	{ AE_SETTINGS_ONLINE, "HOSTING", "SHIELD EFFECTS", AE_SETTINGS_SPINNER, "network.shield_effects",
+		VALUES(shield_effects_texts, shield_effects_values), AE_SETTINGS_ALWAYS,
+		"The shield glow and overshield everyone sees in games you host.", 0 },
 	{ AE_SETTINGS_ONLINE, "ADVANCED", "PROTOCOL", AE_SETTINGS_SPINNER, "network.protocol",
 		VALUES(protocol_texts, protocol_values), AE_SETTINGS_ALWAYS,
 		"How this PC talks to other machines. AUTO picks the best both have.", 0 },

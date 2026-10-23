@@ -16,7 +16,11 @@ enum
 {
 	/* characters, without the NUL */
 	PLAYLIST_DISPLAY_NAME_MAXIMUM_LENGTH = 31,
-	PLAYLIST_DISPLAY_NAME_OFFSET = 0x140,
+	/* (0x150 from 0.3.9: OpenCE's network 35 made the 'GPVO' block's options
+	0x2C bytes, so it ends at 0x148; 0.3.8 and before kept the block at 0x140,
+	read there too while the 'GPVO' block is the old one's) */
+	PLAYLIST_DISPLAY_NAME_OFFSET = 0x150,
+	PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET = 0x140,
 	PLAYLIST_DISPLAY_NAME_MAGIC = 0x4E444541, /* 'AEDN' little-endian */
 	PLAYLIST_DISPLAY_NAME_VERSION = 1,
 	/* the block: header (magic, version, size), 32 UTF-16 units, signature */
@@ -25,7 +29,8 @@ enum
 
 /* TRUE, and name (at least MAXIMUM_LENGTH + 1 characters), when the 512-byte
 block holds a whole display name block with a right signature and a name
-that is not empty; else FALSE and name empty */
+that is not empty (at its offset, else at the legacy one); else FALSE and
+name empty */
 boolean playlist_display_name_from_block(
 	byte const *block,
 	wchar_t *name);

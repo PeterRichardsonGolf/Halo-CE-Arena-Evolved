@@ -12,9 +12,13 @@ signature (the real one, a SHA-1, is tested through the game's own files):
   name of exactly 31 is whole; an empty or NULL name clears the block
   (all zeros); a control character ends a name; a character past 16 bits is
   a question mark;
-- writing the block changes only its own bytes (0x140 .. 0x19B): the
+- writing the block changes only its own bytes (0x150 .. 0x1AD): the
   variant's 0..0x67, its signature, and the PC options' 'GPVO' block
-  (0x100 .. 0x137) and the rest are untouched, and it ends inside the 512;
+  (0x100 .. 0x147, version 2's) and the rest are untouched, and it ends
+  inside the 512;
+- the legacy block (0x140, Arena Evolved 0.3.8 and before) is read when the
+  new place holds none, and is none once a version 2 'GPVO' block runs over
+  its first 8 bytes;
 - a foreign block with 32 filled units (valid signature) reads as 31 characters and a NUL, nothing written
   past them; DEL, a C1 control and a surrogate end a name;
 - carrying: a whole block of the old bytes arrives in the new; none, a torn
@@ -153,7 +157,8 @@ int main(void)
 	int index;
 	int outside;
 
-	check(PLAYLIST_DISPLAY_NAME_OFFSET >= 0x100 + 8 + 0x1C + 20, "the block starts after the GPVO block");
+	check(PLAYLIST_DISPLAY_NAME_OFFSET >= 0x100 + 8 + 0x2C + 20, "the block starts after the version 2 GPVO block");
+	check(PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET >= 0x100 + 8 + 0x1C + 20, "the legacy block after the version 1 GPVO block");
 	check(PLAYLIST_DISPLAY_NAME_OFFSET + PLAYLIST_DISPLAY_NAME_BLOCK_SIZE <= SAVED_GAME_FILE_BLOCK_SIZE,
 		"the block fits in 512 bytes");
 
@@ -176,6 +181,24 @@ int main(void)
 			outside++;
 	}
 	check(outside == 0, "no byte outside the block changed (0..0x67, GPVO, the rest)");
+
+	/* the legacy place (0.3.8's files): read when the new one holds none */
+	memset(other, 0, sizeof(other));
+	playlist_display_name_to_block(other, L"Old Name");
+	memmove(other + PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET, other + PLAYLIST_DISPLAY_NAME_OFFSET,
+		PLAYLIST_DISPLAY_NAME_BLOCK_SIZE);
+	memset(other + PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET + PLAYLIST_DISPLAY_NAME_BLOCK_SIZE, 0,
+		PLAYLIST_DISPLAY_NAME_OFFSET - PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET);
+	check(playlist_display_name_from_block(other, name) && wsame(name, L"Old Name"), "the legacy block is read");
+	memcpy(original, other, sizeof(other));
+	playlist_display_name_carry(block, other);
+	check(playlist_display_name_from_block(block, name) && wsame(name, L"Old Name"),
+		"a legacy block carries into the new place");
+	playlist_display_name_to_block(block, L"Big Team Battle");
+	/* ... a version 2 GPVO block's last 8 bytes over it: none */
+	memset(original + PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET, 0x5A, 8);
+	check(!playlist_display_name_from_block(original, name) && name[0] == 0,
+		"a legacy block under a version 2 GPVO block is none");
 
 	/* tampering */
 	memcpy(other, block, sizeof(block));

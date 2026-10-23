@@ -1069,7 +1069,7 @@ typedef char network_game_layout_header_assert[
 typedef char network_game_layout_size_assert[
 	sizeof(struct network_game) == 0x114 + MAXIMUM_NETWORK_MACHINE_COUNT * 0x44 + 2 +
 		MAXIMUM_NUMBER_OF_PLAYERS * 0x20 + 0x2A ? 1 : -1];
-typedef char network_game_layout_wire_assert[HALO_PORT_WIRE_NETWORK_GAME_SIZE == 13120 ? 1 : -1];
+typedef char network_game_layout_wire_assert[HALO_PORT_WIRE_NETWORK_GAME_SIZE == 13136 ? 1 : -1];
 static boolean network_game_client_settings_told_clamped = FALSE;
 #else
 static struct network_game network_game_client_settings_staging;

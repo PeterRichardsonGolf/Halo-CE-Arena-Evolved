@@ -16,6 +16,7 @@ CHANGE GAMETYPE's glue. See ae_glue_gametype_picker.h.
 #include "ae_saved_limits.h"
 #include "ae_setup_options.h"
 #include "ae_weapon_slots.h"
+#include "game_modes.h"
 
 void platform_log(char const *format, ...);
 
@@ -43,6 +44,14 @@ static const char *const stock_descriptions[] =
 	"Halo CE's own Oddball: hold the skull the longest.",
 	"Halo CE's own King of the Hill: hold the hill the longest.",
 	"Halo CE's own Race: run the course's flags in order.",
+};
+/* OpenCE's built-in gametypes (game_modes.c), by their mode */
+static const char *const opence_descriptions[NUMBER_OF_GAME_MODES] =
+{
+	"OpenCE's Hardcore: no motion sensor, no aim assist, and a kill restores the killer's health and shields.",
+	"OpenCE's SWAT: no shields, and a shot to the head kills. Pistol and assault rifle, no grenades.",
+	"OpenCE's Infection: humans killed join the zombies, who win when no human is left.",
+	"OpenCE's Gun Game: each kill gives the next weapon; a kill with the last wins.",
 };
 #define MINE_DESCRIPTION "Your own gametype. Change it in GAME OPTIONS, and SAVE AS NEW keeps the changes."
 
@@ -258,6 +267,14 @@ void ae_gtp_load(struct ae_gtp *gtp, short *current)
 			gametype->description = gametype->folder == AE_GTP_FOLDER_STOCK ?
 				stock_descriptions[variant.game_engine_index >= 0 && variant.game_engine_index <= 5 ?
 				variant.game_engine_index : 0] : MINE_DESCRIPTION;
+			/* (a built-in one of OpenCE's: its own folder and words) */
+			if (gametype->folder == AE_GTP_FOLDER_STOCK && game_modes_variant_is_opence(&variant, &options))
+			{
+				short mode = game_modes_variant_mode(&variant, &options);
+
+				gametype->folder = AE_GTP_FOLDER_OPENCE;
+				gametype->description = opence_descriptions[mode >= 0 && mode < NUMBER_OF_GAME_MODES ? mode : 0];
+			}
 		}
 		gametype->engine = (int)variant.game_engine_index;
 		gametype->ae = arena_gametype_has_ae_rules(variant.human_readable_game_description);

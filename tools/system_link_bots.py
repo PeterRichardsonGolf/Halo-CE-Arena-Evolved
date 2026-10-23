@@ -130,10 +130,12 @@ def network_game_layout(machines, players):
     player_count = 0x114 + machines * 0x44
     players_offset = player_count + 2
     players_end = players_offset + players * 0x20
-    # (the record ends 0x2A bytes past the players since the gametype's PC
-    # options, HALO_PORT_NETWORK_GAME_SIZE; 0xE before them)
+    # (the record ends 0x3A bytes past the players since network version 35's
+    # 0x2C bytes of PC options, HALO_PORT_NETWORK_GAME_SIZE; 0x2A with the
+    # 0x1C bytes before them, 0xE before the PC options)
     return {"map_name": 0x24, "machine_count": 0x112, "player_count": player_count,
-            "players": players_offset, "sizes": (players_end + 0x2A, players_end + 0xE)}
+            "players": players_offset,
+            "sizes": (players_end + 0x3A, players_end + 0x2A, players_end + 0xE)}
 
 
 def wide(text, count):

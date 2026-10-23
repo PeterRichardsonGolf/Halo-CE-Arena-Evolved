@@ -11,12 +11,17 @@ int main(void)
 	unsigned int minimum = HALO_PORT_NETWORK_VERSION_MINIMUM, maximum = HALO_PORT_NETWORK_VERSION_MAXIMUM;
 	unsigned int floor = HALO_PORT_NETWORK_VERSION, version;
 
-	/* a host below this build's version (Arena Evolved 0.3.0-beta to 0.3.4-beta, OpenCE build-206 to 237 and
+	/* a host below this build's version (Arena Evolved 0.3.5 to 0.3.8, OpenCE build-244 to 256 and ChupathingyCE 0.8
+	are 32; Arena Evolved 0.3.0-beta to 0.3.4-beta, OpenCE build-206 to 237 and
 	ChupathingyCE 0.7.5 are 29, OpenCE build-242 31; Arena Evolved 0.2.3-beta to 0.2.5-beta and OpenCE build-201 to 205 are 28,
 	OpenCE build-189 to 200, ChupathingyCE 0.7.3e and DamnationCE 0.3.41 27, DamnationCE 0.3.40 and OpenCE
 	build-184 to 188 26, Arena Evolved 0.2.2-beta and OpenCE build-169 to 183 25, the published 0.2.0-beta and
 	ChupathingyCE 0.7.1e 24, 0.1.0-beta 20) is refused, though inside the range */
-	CHECK(floor == 32 && minimum <= floor && floor <= maximum);
+	CHECK(floor == 36 && minimum <= floor && floor <= maximum);
+	CHECK(!halo_port_advertised_joinable(32, flag, minimum, maximum));
+	CHECK(!halo_port_advertised_joinable(33, flag, minimum, maximum));
+	CHECK(!halo_port_advertised_joinable(35, flag, minimum, maximum));
+	CHECK(halo_port_advertised_join_state(32, flag, minimum, maximum) == HALO_PORT_JOIN_HOST_OLDER);
 	CHECK(!halo_port_advertised_joinable(29, flag, minimum, maximum));
 	CHECK(!halo_port_advertised_joinable(30, flag, minimum, maximum));
 	CHECK(!halo_port_advertised_joinable(31, flag, minimum, maximum));
