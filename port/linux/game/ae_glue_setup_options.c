@@ -60,7 +60,8 @@ enum
 	_encoding_name,             /* the stored name: one value, set by ae_setup_edit_set_name */
 	_encoding_pack_slot,        /* a weapon pack slot in the variant's weapon_pack mask (argument: the slot's bit) */
 	_encoding_loadout_slot,     /* PRIMARY / SECONDARY: the game's weapons, then a pack slot's (argument: the slot) */
-	_encoding_frags             /* the variant's starting_frags: 0 the game's own, 255 none, 1-4 */
+	_encoding_frags,            /* the variant's starting_frags: 0 the game's own, 255 none, 1-4 */
+	_encoding_summary           /* a row that opens a screen (WEAPON PACKS): one value, nothing stored, never changed */
 };
 
 struct encoding { short kind; short offset; unsigned long argument; short count; long values[20]; };
@@ -122,6 +123,7 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_WEAPON_SET] = LONG(universal_variant.weapon_set, 14, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 10),
 	[AE_SO_MAP_WEAPONS] = OPTION_BYTE(no_map_weapons, 2, 0, 1),
 	[AE_SO_GRENADES_ON_MAP] = { _encoding_pack_bit, 0, AE_MAP_GRENADES_OFF_BIT, 2, { 0, 1 } },
+	[AE_SO_WEAPON_PACKS] = { _encoding_summary, 0, 0, 1, { 0 } },
 	/* (the packs: the weapon_pack mask's bits, slot n = bit n - 1; PACK WEAPONS ON MAP: pack_loadout bit 4) */
 	[AE_SO_PACK_BATTLE_RIFLE] = { _encoding_pack_slot, 0, AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_BATTLE_RIFLE), 2, { 0, 1 } },
 	[AE_SO_PACK_SMG] = { _encoding_pack_slot, 0, AE_WEAPON_SLOT_BIT(AE_WEAPON_SLOT_SMG), 2, { 0, 1 } },
@@ -272,6 +274,7 @@ static long raw_get(struct encoding const *encoding, struct rules const *rules)
 			[encoding->argument % NUMBER_OF_VARIANT_VEHICLES];
 	case _encoding_sound_preset: return split_screen(rules);
 	case _encoding_name: return 0;
+	case _encoding_summary: return 0;
 	case _encoding_pack_slot: return (ae_weapon_slots_mask(variant->universal_variant.weapon_pack) & encoding->argument) != 0;
 	case _encoding_loadout_slot:
 	{
@@ -426,6 +429,7 @@ static void raw_set(struct encoding const *encoding, long value, struct rules *r
 		}
 		break;
 	case _encoding_name: break;
+	case _encoding_summary: break;
 	case _encoding_pack_slot:
 	{
 		unsigned int mask = ae_weapon_slots_mask(variant->universal_variant.weapon_pack);
@@ -480,7 +484,7 @@ static int access_changed(void *context, int option)
 
 	(void)context;
 	/* (SOUND PRESET follows the SILENT rows: their changes are counted, not it) */
-	if (!encoding || !setup_edit.open || encoding->kind == _encoding_sound_preset)
+	if (!encoding || !setup_edit.open || encoding->kind == _encoding_sound_preset || encoding->kind == _encoding_summary)
 		return 0;
 	if (encoding->kind == _encoding_name)
 		return memcmp(setup_edit.edit.variant.human_readable_game_description,
@@ -594,6 +598,23 @@ void ae_setup_edit_defaults(void)
 		return;
 	setup_edit.edit = setup_edit.base;
 	platform_log("ae game options: defaults");
+}
+
+void ae_setup_edit_defaults_packs(void)
+{
+	struct universal_variant *edit = &setup_edit.edit.variant.universal_variant;
+	struct universal_variant const *base = &setup_edit.base.variant.universal_variant;
+	/* (the two loadout slots' sources and MAP SPAWNS; GRENADES ON MAP, INFINITE AMMO, BOTTOMLESS CLIP are EQUIPMENT's) */
+	byte mask = (byte)(PACK_LOADOUT_SOURCE_MASK << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary) |
+		PACK_LOADOUT_SOURCE_MASK << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary) | PACK_MAP_SPAWNS_BIT);
+
+	if (!setup_edit.open)
+		return;
+	edit->weapon_pack = base->weapon_pack;
+	edit->pack_loadout = (byte)((edit->pack_loadout & ~mask) | (base->pack_loadout & mask));
+	setup_edit.edit.options.primary_weapon = setup_edit.base.options.primary_weapon;
+	setup_edit.edit.options.secondary_weapon = setup_edit.base.options.secondary_weapon;
+	platform_log("ae game options: defaults (weapon packs)");
 }
 
 void ae_setup_edit_name(char *name, int size)
