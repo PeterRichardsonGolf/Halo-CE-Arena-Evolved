@@ -43,8 +43,17 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots: in a network game in progress, bots fill up to BOTS (new bot machines join too);
   the classic Game Options BOTS row goes up to 31.
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
-  FFmpeg on every platform, Grifball and Bomb, game type files. Internet play with OpenCE build-256 and ChupathingyCE
-  works both ways (network version 32).
+  FFmpeg on every platform, Grifball and Bomb, game type files.
+- NETWORK VERSION 36 (OpenCE build-266 merged): plays with OpenCE build-266 both ways. Arena Evolved 0.3.5 to 0.3.8,
+  OpenCE build-244 to build-256 and ChupathingyCE 0.8 (network 32) can no longer join it or host for it, until they
+  move to 36 too. The Delta wire is Arena Evolved's own, chupa-36z.
+- OpenCE's gametypes: SWAT, INFECTION, GUN GAME and HARDCORE (Slayer, CTF, Oddball, King), in an OPENCE folder of
+  CHANGE GAMETYPE, with OPENCE MODE and HARDCORE rows in GAME OPTIONS. Bots play SWAT and Gun Game; in Infection
+  they hardly fight yet.
+- The host's shield effects in network games (SETTINGS > ONLINE > HOSTING > SHIELD EFFECTS); co-op ALLY FRIENDLY FIRE
+  (classic menus); breakable scenery shields and tripmines over the network.
+- Saved gametypes keep OpenCE's longer options; gametypes from 0.3.8 upgrade unchanged (their display names move
+  within the file). 0.3.8 reads a gametype saved by 0.3.9 with default options and without its display name.
 - Internet play: ChupathingyCE's own broker, mqtt.chupathingy.org, joins the list (brokers.txt), so Arena Evolved
   meets both OpenCE and ChupathingyCE players on a broker of their own; the game now uses up to 5 brokers.
 
